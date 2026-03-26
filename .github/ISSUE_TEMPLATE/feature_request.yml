@@ -8,7 +8,6 @@ body:
       label: Request Type
       description: What kind of feature are you requesting?
       options:
-        - New AWS service
         - New AWS operation (existing service)
         - Enhancement to existing implementation
         - Terraform compatibility
