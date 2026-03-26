@@ -1,0 +1,4 @@
+# Generated protobuf code - exclude from language stats
+web_ui/lib/src/generated/** linguist-generated=true
+internal/pb/** linguist-generated=true
+proto/**/*.pb.go linguist-generated=true
