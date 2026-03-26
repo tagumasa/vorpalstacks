@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package admin_auth;
+
+option go_package = "vorpalstacks/internal/pb/aws/admin_auth";
+
+import "common.proto";
+
+service AdminAuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (common.Empty);
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string id_token = 3;
+  int32 expires_in = 4;
+  string token_type = 5;
+  int32 refresh_expires_in = 6;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message LogoutRequest {
+  string access_token = 1;
+}
+
+message GetCurrentUserRequest {
+  string access_token = 1;
+}
+
+message GetCurrentUserResponse {
+  string username = 1;
+  string arn = 2;
+  string user_id = 3;
+  repeated string groups = 4;
+  repeated string attached_policies = 5;
+  string create_date = 6;
+}

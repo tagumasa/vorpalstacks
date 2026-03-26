@@ -1,0 +1,278 @@
+package sqs
+
+import (
+	"encoding/json"
+	"fmt"
+	"strconv"
+	"time"
+
+	pb "vorpalstacks/internal/pb/storage/storage_sqs"
+	"vorpalstacks/internal/store/aws/common"
+)
+
+// CreateQueue creates a new SQS queue.
+func (s *SQSStore) CreateQueue(queue *Queue) (*Queue, error) {
+	if err := validateQueueName(queue.Name); err != nil {
+		return nil, err
+	}
+
+	if err := validateVisibilityTimeout(queue.VisibilityTimeout); err != nil {
+		return nil, err
+	}
+	if err := validateMaximumMessageSize(queue.MaximumMessageSize); err != nil {
+		return nil, err
+	}
+	if err := validateMessageRetentionPeriod(queue.MessageRetentionPeriod); err != nil {
+		return nil, err
+	}
+	if err := validateDelaySeconds(queue.DelaySeconds); err != nil {
+		return nil, err
+	}
+	if err := validateReceiveMessageWaitTimeSeconds(queue.ReceiveMessageWaitTimeSeconds); err != nil {
+		return nil, err
+	}
+	if len(queue.Tags) > 0 {
+		if err := validateTags(queue.Tags); err != nil {
+			return nil, err
+		}
+	}
+
+	queueURL := s.buildQueueURL(queue.Name)
+
+	s.queueMutex.Lock()
+	defer s.queueMutex.Unlock()
+
+	if s.Exists(queueURL) {
+		return nil, ErrQueueAlreadyExists
+	}
+
+	now := time.Now().UTC()
+	queue.URL = queueURL
+	queue.ARN = s.buildQueueARN(queue.Name)
+	queue.Region = s.region
+	queue.AccountID = s.accountID
+	queue.CreatedTimestamp = now
+	queue.LastModifiedTimestamp = now
+
+	if queue.Attributes == nil {
+		queue.Attributes = make(map[string]string)
+	}
+
+	queue.Attributes["QueueArn"] = queue.ARN
+	queue.Attributes["CreatedTimestamp"] = fmt.Sprintf("%d", now.Unix())
+	queue.Attributes["LastModifiedTimestamp"] = fmt.Sprintf("%d", now.Unix())
+	queue.Attributes["VisibilityTimeout"] = fmt.Sprintf("%d", queue.VisibilityTimeout)
+	queue.Attributes["MaximumMessageSize"] = fmt.Sprintf("%d", queue.MaximumMessageSize)
+	queue.Attributes["MessageRetentionPeriod"] = fmt.Sprintf("%d", queue.MessageRetentionPeriod)
+	queue.Attributes["DelaySeconds"] = fmt.Sprintf("%d", queue.DelaySeconds)
+	queue.Attributes["ReceiveMessageWaitTimeSeconds"] = fmt.Sprintf("%d", queue.ReceiveMessageWaitTimeSeconds)
+	queue.Attributes["FifoQueue"] = fmt.Sprintf("%v", queue.FifoQueue)
+	queue.Attributes["ContentBasedDeduplication"] = fmt.Sprintf("%v", queue.ContentBasedDeduplication)
+
+	if err := s.BaseStore.PutProto(queueURL, QueueToProto(queue)); err != nil {
+		return nil, err
+	}
+
+	if len(queue.Tags) > 0 {
+		if err := s.TagStore.TagResource(queueURL, queue.Tags); err != nil {
+			return nil, err
+		}
+	}
+
+	return queue, nil
+}
+
+// GetQueue retrieves a queue by its URL.
+func (s *SQSStore) GetQueue(queueURL string) (*Queue, error) {
+	var p pb.Queue
+	if err := s.BaseStore.GetProto(queueURL, &p); err != nil {
+		return nil, ErrQueueNotFound
+	}
+	return ProtoToQueue(&p), nil
+}
+
+// GetQueueByName retrieves a queue by its name.
+func (s *SQSStore) GetQueueByName(queueName string) (*Queue, error) {
+	queueURL := s.buildQueueURL(queueName)
+	return s.GetQueue(queueURL)
+}
+
+// UpdateQueue updates an existing queue.
+func (s *SQSStore) UpdateQueue(queue *Queue) error {
+	if !s.Exists(queue.URL) {
+		return ErrQueueNotFound
+	}
+	queue.LastModifiedTimestamp = time.Now().UTC()
+	queue.Attributes["LastModifiedTimestamp"] = fmt.Sprintf("%d", queue.LastModifiedTimestamp.Unix())
+	return s.BaseStore.PutProto(queue.URL, QueueToProto(queue))
+}
+
+// DeleteQueue deletes a queue by its URL.
+func (s *SQSStore) DeleteQueue(queueURL string) error {
+	if !s.Exists(queueURL) {
+		return ErrQueueNotFound
+	}
+
+	opts := common.ListOptions{MaxItems: 10000}
+	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
+		return m.QueueUrl == queueURL
+	})
+	if err == nil {
+		for _, msg := range result.Items {
+			s.messagesStore.Delete(msg.Id)
+		}
+	}
+
+	s.TagStore.Delete(queueURL)
+
+	s.deduplicationMu.Lock()
+	s.cleanupDeduplicationCacheForQueue(queueURL)
+	s.deduplicationMu.Unlock()
+
+	return s.BaseStore.Delete(queueURL)
+}
+
+// ListQueues lists queues with the specified pagination options.
+func (s *SQSStore) ListQueues(opts common.ListOptions) (*common.ListResult[Queue], error) {
+	result, err := common.ListProto[*pb.Queue](s.BaseStore, opts, func() *pb.Queue { return &pb.Queue{} }, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	queues := make([]*Queue, 0, len(result.Items))
+	for _, pbQueue := range result.Items {
+		queues = append(queues, ProtoToQueue(pbQueue))
+	}
+
+	return &common.ListResult[Queue]{
+		Items:       queues,
+		NextMarker:  result.NextMarker,
+		IsTruncated: result.IsTruncated,
+	}, nil
+}
+
+// SetQueueAttributes sets attributes for a queue.
+func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]string) error {
+	s.queueMutex.Lock()
+	defer s.queueMutex.Unlock()
+
+	queue, err := s.GetQueue(queueURL)
+	if err != nil {
+		return err
+	}
+
+	if queue.Attributes == nil {
+		queue.Attributes = make(map[string]string)
+	}
+
+	for k, v := range attributes {
+		var valid bool
+		switch k {
+		case "VisibilityTimeout":
+			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
+				if err := validateVisibilityTimeout(int32(val)); err != nil {
+					return err
+				}
+				queue.VisibilityTimeout = int32(val)
+				valid = true
+			}
+		case "MaximumMessageSize":
+			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
+				if err := validateMaximumMessageSize(int32(val)); err != nil {
+					return err
+				}
+				queue.MaximumMessageSize = int32(val)
+				valid = true
+			}
+		case "MessageRetentionPeriod":
+			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
+				if err := validateMessageRetentionPeriod(int32(val)); err != nil {
+					return err
+				}
+				queue.MessageRetentionPeriod = int32(val)
+				valid = true
+			}
+		case "DelaySeconds":
+			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
+				if err := validateDelaySeconds(int32(val)); err != nil {
+					return err
+				}
+				queue.DelaySeconds = int32(val)
+				valid = true
+			}
+		case "ReceiveMessageWaitTimeSeconds":
+			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
+				if err := validateReceiveMessageWaitTimeSeconds(int32(val)); err != nil {
+					return err
+				}
+				queue.ReceiveMessageWaitTimeSeconds = int32(val)
+				valid = true
+			}
+		case "RedrivePolicy":
+			var rdp RedrivePolicy
+			if err := json.Unmarshal([]byte(v), &rdp); err == nil {
+				queue.RedrivePolicy = &rdp
+				valid = true
+			}
+		default:
+			valid = true
+		}
+		if valid {
+			queue.Attributes[k] = v
+		}
+	}
+
+	return s.UpdateQueue(queue)
+}
+
+// AddPermission adds permission to a queue.
+func (s *SQSStore) AddPermission(queueURL, label string, awsAccountIDs []string, actions []string) error {
+	queue, err := s.GetQueue(queueURL)
+	if err != nil {
+		return err
+	}
+
+	if queue.Permissions == nil {
+		queue.Permissions = make(map[string]*Permission)
+	}
+
+	queue.Permissions[label] = &Permission{
+		Label:         label,
+		AWSAccountIDs: awsAccountIDs,
+		Actions:       actions,
+	}
+
+	return s.UpdateQueue(queue)
+}
+
+// RemovePermission removes permission from a queue.
+func (s *SQSStore) RemovePermission(queueURL, label string) error {
+	queue, err := s.GetQueue(queueURL)
+	if err != nil {
+		return err
+	}
+
+	if queue.Permissions != nil {
+		delete(queue.Permissions, label)
+	}
+
+	return s.UpdateQueue(queue)
+}
+
+// ListQueueTags lists all tags for a queue.
+func (s *SQSStore) ListQueueTags(queueURL string) (map[string]string, error) {
+	return s.TagStore.ListTags(queueURL)
+}
+
+// TagQueue adds tags to a queue.
+func (s *SQSStore) TagQueue(queueURL string, tags map[string]string) error {
+	if err := validateTags(tags); err != nil {
+		return err
+	}
+	return s.TagStore.TagResource(queueURL, tags)
+}
+
+// UntagQueue removes tags from a queue.
+func (s *SQSStore) UntagQueue(queueURL string, tagKeys []string) error {
+	return s.TagStore.UntagResource(queueURL, tagKeys)
+}

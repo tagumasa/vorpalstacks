@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package storage.cloudwatchlogs;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_cloudwatchlogs";
+
+message LogGroup {
+  string name = 1;
+  string arn = 2;
+  string region = 3;
+  string account_id = 4;
+  int64 created_at = 5;
+  int32 retention_in_days = 6;
+  int32 metric_filter_count = 7;
+  int64 stored_bytes = 8;
+  map<string, string> tags = 9;
+}
+
+message LogStream {
+  string name = 1;
+  string log_group_name = 2;
+  string arn = 3;
+  int64 created_at = 4;
+  int64 first_event_ts = 5;
+  int64 last_event_ts = 6;
+  int64 last_ingestion_ts = 7;
+  string upload_sequence_token = 8;
+}
+
+message ChunkMeta {
+  string chunk_id = 1;
+  string log_group = 2;
+  string log_stream = 3;
+  int64 min_ts = 4;
+  int64 max_ts = 5;
+  int32 entry_count = 6;
+  string chunk_path = 7;
+}
+
+message MetricFilter {
+  string name = 1;
+  string log_group_name = 2;
+  string filter_pattern = 3;
+  repeated MetricTransformation metric_transformations = 4;
+  int64 created_at = 5;
+}
+
+message MetricTransformation {
+  string metric_name = 1;
+  string metric_namespace = 2;
+  string metric_value = 3;
+  double default_value = 4;
+  bool default_value_set = 5;
+}
+
+message SubscriptionFilter {
+  string log_group_name = 1;
+  string filter_name = 2;
+  string filter_pattern = 3;
+  string destination_arn = 4;
+  string role_arn = 5;
+  string distribution = 6;
+  int64 created_at = 7;
+}
+
+message LogEntry {
+  int64 timestamp = 1;
+  string message = 2;
+}

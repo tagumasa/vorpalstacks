@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package vorpalstacks.storage.cloudtrail;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_cloudtrail";
+
+message Trail {
+  string name = 1;
+  string trail_arn = 2;
+  string s3_bucket_name = 3;
+  string s3_key_prefix = 4;
+  string sns_topic_name = 5;
+  string sns_topic_arn = 6;
+  bool include_global_service_events = 7;
+  bool is_multi_region_trail = 8;
+  string home_region = 9;
+  bool is_organization_trail = 10;
+  bool is_logging = 11;
+  bool log_file_validation_enabled = 12;
+  string cloud_watch_logs_log_group_arn = 13;
+  string cloud_watch_logs_role_arn = 14;
+  string kms_key_id = 15;
+  bool has_custom_event_selectors = 16;
+  bool has_insight_selectors = 17;
+  repeated EventSelector event_selectors = 18;
+  repeated InsightSelector insight_selectors = 19;
+  int64 created_at = 20;
+  int64 last_updated = 21;
+  int64 started_logging_at = 22;
+  int64 stopped_logging_at = 23;
+  map<string, string> tags = 24;
+}
+
+message EventSelector {
+  string read_write_type = 1;
+  bool include_management_events = 2;
+  repeated DataResource data_resources = 3;
+}
+
+message DataResource {
+  string type = 1;
+  repeated string values = 2;
+}
+
+message InsightSelector {
+  string insight_type = 1;
+}
+
+message Event {
+  string event_id = 1;
+  string event_name = 2;
+  string read_only = 3;
+  string access_key_id = 4;
+  string event_source = 5;
+  int64 event_time = 6;
+  string event_type = 7;
+  string event_version = 8;
+  UserIdentity user_identity = 9;
+  repeated Resource resources = 10;
+  string cloud_trail_event = 11;
+  string request_parameters_json = 12;
+  string response_elements_json = 13;
+  string request_id = 14;
+  string source_ip_address = 15;
+  string user_agent = 16;
+  string error_code = 17;
+  string error_message = 18;
+  map<string, string> tags = 19;
+}
+
+message UserIdentity {
+  string type = 1;
+  string principal_id = 2;
+  string arn = 3;
+  string account_id = 4;
+  string access_key_id = 5;
+  string user_name = 6;
+  SessionContext session_context = 7;
+}
+
+message SessionContext {
+  SessionIssuer session_issuer = 1;
+  SessionAttributes attributes = 2;
+}
+
+message SessionIssuer {
+  string type = 1;
+  string user_name = 2;
+  string principal_id = 3;
+  string arn = 4;
+  string account_id = 5;
+}
+
+message SessionAttributes {
+  int64 creation_date = 1;
+  string mfa_authenticated = 2;
+}
+
+message Resource {
+  string resource_type = 1;
+  string resource_name = 2;
+  string arn = 3;
+  string account_id = 4;
+}
+
+message ResourcePolicy {
+  string resource_arn = 1;
+  string policy = 2;
+}

@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package storage.sqs;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_sqs";
+
+import "google/protobuf/timestamp.proto";
+
+// Permission represents an SQS queue permission.
+message Permission {
+  string label = 1;
+  repeated string aws_account_ids = 2;
+  repeated string actions = 3;
+}
+
+// RedrivePolicy represents the redrive policy for an SQS queue.
+message RedrivePolicy {
+  string dead_letter_target_arn = 1;
+  int32 max_receive_count = 2;
+}
+
+// Queue represents an SQS queue.
+message Queue {
+  string name = 1;
+  string url = 2;
+  string arn = 3;
+  string region = 4;
+  string account_id = 5;
+  google.protobuf.Timestamp created_timestamp = 6;
+  google.protobuf.Timestamp last_modified_timestamp = 7;
+  int32 visibility_timeout = 8;
+  int32 maximum_message_size = 9;
+  int32 message_retention_period = 10;
+  int32 delay_seconds = 11;
+  int32 receive_message_wait_time_seconds = 12;
+  map<string, string> attributes = 13;
+  map<string, string> tags = 14;
+  map<string, Permission> permissions = 15;
+  string policy = 16;
+  RedrivePolicy redrive_policy = 17;
+  bool fifo_queue = 18;
+  bool content_based_deduplication = 19;
+}
+
+// MessageAttributeValue represents an SQS message attribute.
+message MessageAttributeValue {
+  string string_value = 1;
+  bytes binary_value = 2;
+  repeated string string_list_values = 3;
+  repeated bytes binary_list_values = 4;
+  string data_type = 5;
+}
+
+// Message represents an SQS message.
+message Message {
+  string id = 1;
+  string body = 2;
+  string md5_of_body = 3;
+  string md5_of_message_attributes = 4;
+  map<string, MessageAttributeValue> message_attributes = 5;
+  string receipt_handle = 6;
+  string queue_url = 7;
+  string queue_arn = 8;
+  google.protobuf.Timestamp sent_timestamp = 9;
+  int32 delay_seconds = 10;
+  int32 visibility_timeout = 11;
+  google.protobuf.Timestamp received_at = 12;
+  google.protobuf.Timestamp visible_after = 13;
+  int32 approximate_receive_count = 14;
+  google.protobuf.Timestamp approximate_first_receive_timestamp = 15;
+  string sequence_number = 16;
+  string message_deduplication_id = 17;
+  string message_group_id = 18;
+  map<string, string> attributes = 19;
+}
+
+// MessageMoveTask represents a message move task between queues.
+message MessageMoveTask {
+  string task_id = 1;
+  string source_queue_arn = 2;
+  string destination_queue_arn = 3;
+  string status = 4;
+  int32 max_number_of_messages = 5;
+  int32 moved_messages = 6;
+  int32 failure_messages = 7;
+  google.protobuf.Timestamp start_time = 8;
+  google.protobuf.Timestamp end_time = 9;
+}

@@ -1,0 +1,147 @@
+package wafv2
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/google/uuid"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/services/aws/common/request"
+	wafstore "vorpalstacks/internal/store/aws/waf"
+)
+
+type wafv2Stores struct {
+	webACLs          *wafstore.WebACLStore
+	ruleGroups       *wafstore.RuleGroupStore
+	ipSets           *wafstore.IPSetStore
+	regexPatternSets *wafstore.RegexPatternSetStore
+	associations     *wafstore.WebACLAssociationStore
+	loggingConfigs   *wafstore.LoggingStore
+	arnBuilder       *wafstore.ARNBuilder
+}
+
+// WAFv2Service implements the AWS WAF v2 API operations.
+type WAFv2Service struct{}
+
+// NewWAFv2Service creates a new WAFv2Service instance.
+func NewWAFv2Service(store storage.BasicStorage, accountID, region string) *WAFv2Service {
+	return &WAFv2Service{}
+}
+
+func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, error) {
+	if stores := reqCtx.GetWAFStores(); stores != nil {
+		return &wafv2Stores{
+			webACLs:          stores.WebACLStore().Raw(),
+			ruleGroups:       stores.RuleGroupStore().Raw(),
+			ipSets:           stores.IPSetStore().Raw(),
+			regexPatternSets: stores.RegexPatternSetStore().Raw(),
+			associations:     stores.AssociationStore().Raw(),
+			loggingConfigs:   stores.LoggingStore().Raw(),
+			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), ""),
+		}, nil
+	}
+	storage, err := reqCtx.GetGlobalStorage()
+	if err != nil {
+		return nil, err
+	}
+	return &wafv2Stores{
+		webACLs:          wafstore.NewWebACLStore(storage, reqCtx.GetAccountID(), ""),
+		ruleGroups:       wafstore.NewRuleGroupStore(storage, reqCtx.GetAccountID(), ""),
+		ipSets:           wafstore.NewIPSetStore(storage, reqCtx.GetAccountID(), ""),
+		regexPatternSets: wafstore.NewRegexPatternSetStore(storage, reqCtx.GetAccountID(), ""),
+		associations:     wafstore.NewWebACLAssociationStore(storage),
+		loggingConfigs:   wafstore.NewLoggingStore(storage),
+		arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), ""),
+	}, nil
+}
+
+// RegisterHandlers registers all WAFv2 API operation handlers with the dispatcher.
+func (s *WAFv2Service) RegisterHandlers(d *dispatcher.Dispatcher) {
+	d.RegisterHandlerForService("wafv2", "CreateWebACL", s.CreateWebACL)
+	d.RegisterHandlerForService("wafv2", "GetWebACL", s.GetWebACL)
+	d.RegisterHandlerForService("wafv2", "ListWebACLs", s.ListWebACLs)
+	d.RegisterHandlerForService("wafv2", "UpdateWebACL", s.UpdateWebACL)
+	d.RegisterHandlerForService("wafv2", "DeleteWebACL", s.DeleteWebACL)
+	d.RegisterHandlerForService("wafv2", "CheckCapacity", s.CheckCapacity)
+
+	d.RegisterHandlerForService("wafv2", "CreateRuleGroup", s.CreateRuleGroup)
+	d.RegisterHandlerForService("wafv2", "GetRuleGroup", s.GetRuleGroup)
+	d.RegisterHandlerForService("wafv2", "ListRuleGroups", s.ListRuleGroups)
+	d.RegisterHandlerForService("wafv2", "UpdateRuleGroup", s.UpdateRuleGroup)
+	d.RegisterHandlerForService("wafv2", "DeleteRuleGroup", s.DeleteRuleGroup)
+
+	d.RegisterHandlerForService("wafv2", "CreateIPSet", s.CreateIPSet)
+	d.RegisterHandlerForService("wafv2", "GetIPSet", s.GetIPSet)
+	d.RegisterHandlerForService("wafv2", "ListIPSets", s.ListIPSets)
+	d.RegisterHandlerForService("wafv2", "UpdateIPSet", s.UpdateIPSet)
+	d.RegisterHandlerForService("wafv2", "DeleteIPSet", s.DeleteIPSet)
+
+	d.RegisterHandlerForService("wafv2", "CreateRegexPatternSet", s.CreateRegexPatternSet)
+	d.RegisterHandlerForService("wafv2", "GetRegexPatternSet", s.GetRegexPatternSet)
+	d.RegisterHandlerForService("wafv2", "ListRegexPatternSets", s.ListRegexPatternSets)
+	d.RegisterHandlerForService("wafv2", "UpdateRegexPatternSet", s.UpdateRegexPatternSet)
+	d.RegisterHandlerForService("wafv2", "DeleteRegexPatternSet", s.DeleteRegexPatternSet)
+
+	d.RegisterHandlerForService("wafv2", "AssociateWebACL", s.AssociateWebACL)
+	d.RegisterHandlerForService("wafv2", "DisassociateWebACL", s.DisassociateWebACL)
+	d.RegisterHandlerForService("wafv2", "ListResourcesForWebACL", s.ListResourcesForWebACL)
+
+	d.RegisterHandlerForService("wafv2", "PutLoggingConfiguration", s.PutLoggingConfiguration)
+	d.RegisterHandlerForService("wafv2", "GetLoggingConfiguration", s.GetLoggingConfiguration)
+	d.RegisterHandlerForService("wafv2", "DeleteLoggingConfiguration", s.DeleteLoggingConfiguration)
+	d.RegisterHandlerForService("wafv2", "ListLoggingConfigurations", s.ListLoggingConfigurations)
+
+	d.RegisterHandlerForService("wafv2", "TagResource", s.TagResource)
+	d.RegisterHandlerForService("wafv2", "UntagResource", s.UntagResource)
+	d.RegisterHandlerForService("wafv2", "ListTagsForResource", s.ListTagsForResource)
+
+	d.RegisterHandlerForService("wafv2", "GetChangeToken", s.GetChangeToken)
+	d.RegisterHandlerForService("wafv2", "GetChangeTokenStatus", s.GetChangeTokenStatus)
+
+	d.RegisterHandlerForService("wafv2", "ListAvailableManagedRuleGroups", s.ListAvailableManagedRuleGroups)
+	d.RegisterHandlerForService("wafv2", "DescribeManagedRuleGroup", s.DescribeManagedRuleGroup)
+	d.RegisterHandlerForService("wafv2", "ListAvailableManagedRuleGroupVersions", s.ListAvailableManagedRuleGroupVersions)
+}
+
+// GetChangeToken generates and returns a new change token for WAFv2 write operations.
+func (s *WAFv2Service) GetChangeToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	token := uuid.New().String()
+	return map[string]interface{}{
+		"ChangeToken": token,
+	}, nil
+}
+
+// GetChangeTokenStatus returns the current status of the most recent change token.
+func (s *WAFv2Service) GetChangeTokenStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	return map[string]interface{}{
+		"ChangeTokenStatus": "PROVISIONED",
+	}, nil
+}
+
+// CheckCapacity returns the capacity consumed by the specified rules.
+func (s *WAFv2Service) CheckCapacity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	return map[string]interface{}{
+		"Capacity": 10,
+	}, nil
+}
+
+func generateID() (string, error) {
+	return uuid.New().String(), nil
+}
+
+func newAPIError(code, message string, httpStatus int) error {
+	return fmt.Errorf("%s: %s", code, message)
+}
+
+func notFoundError(resource string) error {
+	return fmt.Errorf("WAFNonexistentItemException: %s not found", resource)
+}
+
+func validationError(msg string) error {
+	return fmt.Errorf("ValidationException: %s", msg)
+}
+
+func lockTokenError() error {
+	return fmt.Errorf("WAFInvalidLockTokenException: The provided lock token is not valid")
+}

@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package storage.kinesis;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_kinesis";
+
+import "google/protobuf/timestamp.proto";
+
+// StreamMode represents the mode of a Kinesis stream.
+enum StreamMode {
+  STREAM_MODE_UNSPECIFIED = 0;
+  STREAM_MODE_PROVISIONED = 1;
+  STREAM_MODE_ON_DEMAND = 2;
+}
+
+// StreamStatus represents the status of a Kinesis stream.
+message StreamStatus {
+  string status = 1;
+}
+
+// HashKeyRange represents the hash key range for a Kinesis shard.
+message HashKeyRange {
+  string starting_hash_key = 1;
+  string ending_hash_key = 2;
+}
+
+// SequenceNumberRange represents the sequence number range for a Kinesis shard.
+message SequenceNumberRange {
+  string starting_sequence_number = 1;
+  string ending_sequence_number = 2;
+}
+
+// StreamModeDetails represents the mode details of a Kinesis stream.
+message StreamModeDetails {
+  StreamMode stream_mode = 1;
+}
+
+// EnhancedMonitoring represents enhanced monitoring settings.
+message EnhancedMonitoring {
+  repeated string shard_level_metrics = 1;
+}
+
+// Stream represents a Kinesis stream.
+message Stream {
+  string stream_name = 1;
+  string stream_arn = 2;
+  string stream_status = 3;
+  StreamModeDetails stream_mode_details = 4;
+  int32 shard_count = 5;
+  int32 retention_period_hours = 6;
+  repeated EnhancedMonitoring enhanced_monitoring = 7;
+  string encryption_type = 8;
+  string key_id = 9;
+  int32 consumer_count = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp last_modified_at = 12;
+}
+
+// StreamSummary represents a summary of a Kinesis stream.
+message StreamSummary {
+  string stream_name = 1;
+  string stream_arn = 2;
+  string stream_status = 3;
+  StreamModeDetails stream_mode_details = 4;
+  int32 consumer_count = 5;
+}
+
+// Shard represents a Kinesis shard.
+message Shard {
+  string shard_id = 1;
+  string stream_name = 2;
+  string parent_shard_id = 3;
+  string adjacent_parent_shard_id = 4;
+  HashKeyRange hash_key_range = 5;
+  SequenceNumberRange sequence_number_range = 6;
+  string latest_sequence_number = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+// Record represents a Kinesis record.
+message Record {
+  string sequence_number = 1;
+  google.protobuf.Timestamp approximate_arrival_timestamp = 2;
+  string data = 3;
+  string partition_key = 4;
+  string encryption_type = 5;
+}
+
+// Consumer represents a Kinesis consumer.
+message Consumer {
+  string consumer_name = 1;
+  string consumer_arn = 2;
+  string stream_arn = 3;
+  string consumer_status = 4;
+  google.protobuf.Timestamp consumer_creation_timestamp = 5;
+}
+
+// ConsumerSummary represents a summary of a Kinesis consumer.
+message ConsumerSummary {
+  string consumer_name = 1;
+  string consumer_arn = 2;
+  string stream_arn = 3;
+  string consumer_status = 4;
+  google.protobuf.Timestamp consumer_creation_timestamp = 5;
+}

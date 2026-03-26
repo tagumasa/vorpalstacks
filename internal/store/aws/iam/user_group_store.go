@@ -1,0 +1,201 @@
+package iam
+
+// Package iam provides IAM (Identity and Access Management) data store implementations
+// for vorpalstacks.
+
+import (
+	"encoding/json"
+	"time"
+
+	"vorpalstacks/internal/core/storage"
+)
+
+const userGroupBucketName = "iam_user_groups"
+
+// UserGroupStore manages user-group membership.
+type UserGroupStore struct {
+	bucket storage.Bucket
+}
+
+// NewUserGroupStore creates a new UserGroupStore.
+func NewUserGroupStore(store storage.BasicStorage) *UserGroupStore {
+	return &UserGroupStore{
+		bucket: store.Bucket(userGroupBucketName),
+	}
+}
+
+func (s *UserGroupStore) membershipKey(userName, groupName string) []byte {
+	return []byte(userName + ":" + groupName)
+}
+
+// AddUserToGroup adds a user to a group.
+func (s *UserGroupStore) AddUserToGroup(userName, groupName string) error {
+	if s.IsUserInGroup(userName, groupName) {
+		return NewStoreError("add_user_to_group", ErrUserAlreadyInGroup)
+	}
+
+	membership := &UserGroupMembership{
+		UserName:  userName,
+		GroupName: groupName,
+		JoinDate:  time.Now().UTC(),
+	}
+
+	data, err := json.Marshal(membership)
+	if err != nil {
+		return NewStoreError("add_user_to_group", err)
+	}
+
+	if err := s.bucket.Put(s.membershipKey(userName, groupName), data); err != nil {
+		return NewStoreError("add_user_to_group", err)
+	}
+	return nil
+}
+
+// RemoveUserFromGroup removes a user from a group.
+func (s *UserGroupStore) RemoveUserFromGroup(userName, groupName string) error {
+	if !s.IsUserInGroup(userName, groupName) {
+		return NewStoreError("remove_user_from_group", ErrUserNotInGroup)
+	}
+
+	if err := s.bucket.Delete(s.membershipKey(userName, groupName)); err != nil {
+		return NewStoreError("remove_user_from_group", err)
+	}
+	return nil
+}
+
+// IsUserInGroup checks whether a user is in a group.
+func (s *UserGroupStore) IsUserInGroup(userName, groupName string) bool {
+	return s.bucket.Has(s.membershipKey(userName, groupName))
+}
+
+// ListGroupsForUser returns the groups a user belongs to.
+func (s *UserGroupStore) ListGroupsForUser(userName string) ([]string, error) {
+	var groups []string
+	prefix := userName + ":"
+
+	err := s.bucket.ForEach(func(k, v []byte) error {
+		key := string(k)
+		if len(key) > len(prefix) && key[:len(prefix)] == prefix {
+			groups = append(groups, key[len(prefix):])
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, NewStoreError("list_groups_for_user", err)
+	}
+	return groups, nil
+}
+
+// ListUsersInGroup returns the users in a group.
+func (s *UserGroupStore) ListUsersInGroup(groupName string) ([]string, error) {
+	var users []string
+	suffix := ":" + groupName
+
+	err := s.bucket.ForEach(func(k, v []byte) error {
+		key := string(k)
+		if len(key) > len(suffix) && key[len(key)-len(suffix):] == suffix {
+			users = append(users, key[:len(key)-len(suffix)])
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, NewStoreError("list_users_in_group", err)
+	}
+	return users, nil
+}
+
+// RemoveAllGroupsForUser removes a user from all groups.
+func (s *UserGroupStore) RemoveAllGroupsForUser(userName string) error {
+	prefix := userName + ":"
+	var keysToDelete [][]byte
+
+	err := s.bucket.ForEach(func(k, v []byte) error {
+		key := string(k)
+		if len(key) > len(prefix) && key[:len(prefix)] == prefix {
+			keysToDelete = append(keysToDelete, k)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return NewStoreError("remove_all_groups_for_user", err)
+	}
+
+	for _, key := range keysToDelete {
+		if err := s.bucket.Delete(key); err != nil {
+			return NewStoreError("remove_all_groups_for_user", err)
+		}
+	}
+	return nil
+}
+
+// RemoveAllUsersFromGroup removes all users from a group.
+func (s *UserGroupStore) RemoveAllUsersFromGroup(groupName string) error {
+	suffix := ":" + groupName
+	var keysToDelete [][]byte
+
+	err := s.bucket.ForEach(func(k, v []byte) error {
+		key := string(k)
+		if len(key) > len(suffix) && key[len(key)-len(suffix):] == suffix {
+			keysToDelete = append(keysToDelete, k)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return NewStoreError("remove_all_users_from_group", err)
+	}
+
+	for _, key := range keysToDelete {
+		if err := s.bucket.Delete(key); err != nil {
+			return NewStoreError("remove_all_users_from_group", err)
+		}
+	}
+	return nil
+}
+
+// CountUsersInGroup returns the number of users in a group.
+func (s *UserGroupStore) CountUsersInGroup(groupName string) int {
+	users, _ := s.ListUsersInGroup(groupName)
+	return len(users)
+}
+
+// MigrateUser moves user memberships to a new user name.
+func (s *UserGroupStore) MigrateUser(oldUserName, newUserName string) error {
+	prefix := oldUserName + ":"
+	var memberships []UserGroupMembership
+
+	err := s.bucket.ForEach(func(k, v []byte) error {
+		key := string(k)
+		if len(key) > len(prefix) && key[:len(prefix)] == prefix {
+			var membership UserGroupMembership
+			if err := json.Unmarshal(v, &membership); err != nil {
+				return err
+			}
+			memberships = append(memberships, membership)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return NewStoreError("migrate_user", err)
+	}
+
+	for _, membership := range memberships {
+		if err := s.bucket.Delete(s.membershipKey(oldUserName, membership.GroupName)); err != nil {
+			return NewStoreError("migrate_user", err)
+		}
+		membership.UserName = newUserName
+		data, err := json.Marshal(membership)
+		if err != nil {
+			return NewStoreError("migrate_user", err)
+		}
+		if err := s.bucket.Put(s.membershipKey(newUserName, membership.GroupName), data); err != nil {
+			return NewStoreError("migrate_user", err)
+		}
+	}
+
+	return nil
+}

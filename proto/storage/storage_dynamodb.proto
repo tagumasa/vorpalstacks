@@ -1,0 +1,365 @@
+syntax = "proto3";
+
+package storage.dynamodb;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_dynamodb";
+
+import "google/protobuf/timestamp.proto";
+
+// TableStatus represents the status of a DynamoDB table.
+enum TableStatus {
+  TABLE_STATUS_UNSPECIFIED = 0;
+  TABLE_STATUS_CREATING = 1;
+  TABLE_STATUS_ACTIVE = 2;
+  TABLE_STATUS_UPDATING = 3;
+  TABLE_STATUS_DELETING = 4;
+}
+
+// BillingMode represents the billing mode for a DynamoDB table.
+enum BillingMode {
+  BILLING_MODE_UNSPECIFIED = 0;
+  BILLING_MODE_PROVISIONED = 1;
+  BILLING_MODE_PAY_PER_REQUEST = 2;
+}
+
+// KeyType represents the type of a key in a DynamoDB key schema.
+enum KeyType {
+  KEY_TYPE_UNSPECIFIED = 0;
+  KEY_TYPE_HASH = 1;
+  KEY_TYPE_RANGE = 2;
+}
+
+// ScalarAttributeType represents the data type of a scalar attribute.
+enum ScalarAttributeType {
+  SCALAR_ATTRIBUTE_TYPE_UNSPECIFIED = 0;
+  SCALAR_ATTRIBUTE_TYPE_S = 1;
+  SCALAR_ATTRIBUTE_TYPE_N = 2;
+  SCALAR_ATTRIBUTE_TYPE_B = 3;
+}
+
+// StreamViewType represents the type of view for DynamoDB streams.
+enum StreamViewType {
+  STREAM_VIEW_TYPE_UNSPECIFIED = 0;
+  STREAM_VIEW_TYPE_NEW_IMAGE = 1;
+  STREAM_VIEW_TYPE_OLD_IMAGE = 2;
+  STREAM_VIEW_TYPE_NEW_AND_OLD_IMAGES = 3;
+  STREAM_VIEW_TYPE_KEYS_ONLY = 4;
+}
+
+// SSEType represents the server-side encryption type.
+enum SSEType {
+  SSE_TYPE_UNSPECIFIED = 0;
+  SSE_TYPE_AES256 = 1;
+  SSE_TYPE_KMS = 2;
+}
+
+// IndexStatus represents the status of a DynamoDB index.
+enum IndexStatus {
+  INDEX_STATUS_UNSPECIFIED = 0;
+  INDEX_STATUS_CREATING = 1;
+  INDEX_STATUS_ACTIVE = 2;
+  INDEX_STATUS_UPDATING = 3;
+  INDEX_STATUS_DELETING = 4;
+}
+
+// BackupStatus represents the status of a DynamoDB backup.
+enum BackupStatus {
+  BACKUP_STATUS_UNSPECIFIED = 0;
+  BACKUP_STATUS_CREATING = 1;
+  BACKUP_STATUS_AVAILABLE = 2;
+  BACKUP_STATUS_DELETED = 3;
+}
+
+// BackupType represents the type of a DynamoDB backup.
+enum BackupType {
+  BACKUP_TYPE_UNSPECIFIED = 0;
+  BACKUP_TYPE_USER = 1;
+  BACKUP_TYPE_SYSTEM = 2;
+  BACKUP_TYPE_AWS_BACKUP = 3;
+}
+
+// TTLStatus represents the status of TTL for a DynamoDB table.
+enum TTLStatus {
+  TTL_STATUS_UNSPECIFIED = 0;
+  TTL_STATUS_ENABLING = 1;
+  TTL_STATUS_ENABLED = 2;
+  TTL_STATUS_DISABLING = 3;
+  TTL_STATUS_DISABLED = 4;
+}
+
+// PointInTimeRecoveryStatus represents the status of point-in-time recovery.
+enum PointInTimeRecoveryStatus {
+  POINT_IN_TIME_RECOVERY_STATUS_UNSPECIFIED = 0;
+  POINT_IN_TIME_RECOVERY_STATUS_ENABLED = 1;
+  POINT_IN_TIME_RECOVERY_STATUS_DISABLED = 2;
+}
+
+// KeySchemaElement represents an element of a key schema.
+message KeySchemaElement {
+  string attribute_name = 1;
+  KeyType key_type = 2;
+}
+
+// AttributeDefinition represents the definition of an attribute.
+message AttributeDefinition {
+  string attribute_name = 1;
+  ScalarAttributeType attribute_type = 2;
+}
+
+// ProvisionedThroughput represents the provisioned throughput.
+message ProvisionedThroughput {
+  int64 read_capacity_units = 1;
+  int64 write_capacity_units = 2;
+  google.protobuf.Timestamp last_decrease_date_time = 3;
+  google.protobuf.Timestamp last_increase_date_time = 4;
+  int64 number_of_decreases_today = 5;
+}
+
+// Projection represents the attributes that are projected from an index.
+message Projection {
+  string projection_type = 1;
+  repeated string non_key_attributes = 2;
+}
+
+// GlobalSecondaryIndex represents a global secondary index.
+message GlobalSecondaryIndex {
+  string index_name = 1;
+  string index_arn = 8;
+  repeated KeySchemaElement key_schema = 2;
+  Projection projection = 3;
+  ProvisionedThroughput provisioned_throughput = 4;
+  IndexStatus index_status = 5;
+  int64 index_size_bytes = 6;
+  int64 item_count = 7;
+}
+
+// LocalSecondaryIndex represents a local secondary index.
+message LocalSecondaryIndex {
+  string index_name = 1;
+  repeated KeySchemaElement key_schema = 2;
+  Projection projection = 3;
+  int64 index_size_bytes = 4;
+  int64 item_count = 5;
+}
+
+// StreamSpecification represents the DynamoDB streams specification.
+message StreamSpecification {
+  bool stream_enabled = 1;
+  StreamViewType stream_view_type = 2;
+}
+
+// SSEDescription represents the server-side encryption description.
+message SSEDescription {
+  string status = 1;
+  SSEType sse_type = 2;
+  string kms_master_key_arn = 3;
+  google.protobuf.Timestamp inaccessible_encryption_date_time = 4;
+}
+
+// Tag represents a key-value pair for tagging resources.
+message Tag {
+  string key = 1;
+  string value = 2;
+}
+
+// TimeToLiveSpecification represents the time-to-live specification.
+message TimeToLiveSpecification {
+  bool enabled = 1;
+  string attribute_name = 2;
+  TTLStatus status = 3;
+}
+
+// PointInTimeRecoveryDescription represents the point-in-time recovery description.
+message PointInTimeRecoveryDescription {
+  PointInTimeRecoveryStatus status = 1;
+  google.protobuf.Timestamp earliest_restorable_date_time = 2;
+  google.protobuf.Timestamp latest_restorable_date_time = 3;
+}
+
+// KinesisDataStreamDestination represents a Kinesis data stream destination.
+message KinesisDataStreamDestination {
+  string stream_arn = 1;
+  string destination_status = 2;
+  string destination_status_description = 3;
+}
+
+// Table represents a DynamoDB table.
+message Table {
+  string name = 1;
+  string arn = 2;
+  TableStatus status = 3;
+  google.protobuf.Timestamp creation_date_time = 4;
+  google.protobuf.Timestamp last_updated_date_time = 5;
+  repeated KeySchemaElement key_schema = 6;
+  repeated AttributeDefinition attribute_definitions = 7;
+  ProvisionedThroughput provisioned_throughput = 8;
+  BillingMode billing_mode = 9;
+  repeated GlobalSecondaryIndex global_secondary_indexes = 10;
+  repeated LocalSecondaryIndex local_secondary_indexes = 11;
+  StreamSpecification stream_specification = 12;
+  SSEDescription sse_description = 13;
+  int64 table_size_bytes = 14;
+  int64 item_count = 15;
+  repeated Tag tags = 16;
+  bool deletion_protection_enabled = 17;
+  string stream_arn = 18;
+  string latest_stream_label = 19;
+  TimeToLiveSpecification time_to_live = 20;
+  PointInTimeRecoveryDescription point_in_time_recovery = 21;
+  string resource_policy = 22;
+  repeated KinesisDataStreamDestination kinesis_data_stream_destinations = 23;
+  bool contributor_insights_enabled = 24;
+}
+
+// AttributeValue represents a DynamoDB attribute value.
+message AttributeValue {
+  oneof value {
+    string s = 1;           // String
+    string n = 2;           // Number (as string to preserve precision)
+    bytes b = 3;            // Binary
+    StringSet ss = 4;       // String Set
+    NumberSet ns = 5;       // Number Set
+    BytesSet bs = 6;        // Binary Set
+    MapValue m = 7;         // Map
+    ListValue l = 8;        // List
+    NullValue null = 9;     // Null
+    bool bool_val = 10;     // Boolean
+  }
+}
+
+// StringSet represents a set of strings.
+message StringSet {
+  repeated string values = 1;
+}
+
+// NumberSet represents a set of numbers (as strings).
+message NumberSet {
+  repeated string values = 1;
+}
+
+// BytesSet represents a set of binary values.
+message BytesSet {
+  repeated bytes values = 1;
+}
+
+// MapValue represents a map of attribute values.
+message MapValue {
+  map<string, AttributeValue> entries = 1;
+}
+
+// ListValue represents a list of attribute values.
+message ListValue {
+  repeated AttributeValue values = 1;
+}
+
+// NullValue represents a null value.
+message NullValue {
+  // Empty message to represent null
+}
+
+// Item represents a DynamoDB item.
+message Item {
+  string table_name = 1;
+  map<string, AttributeValue> key = 2;
+  map<string, AttributeValue> attributes = 3;
+}
+
+// Backup represents a DynamoDB table backup.
+message Backup {
+  string backup_name = 1;
+  string backup_arn = 2;
+  string source_table_name = 3;
+  string source_table_arn = 4;
+  google.protobuf.Timestamp source_table_creation_time = 5;
+  int64 source_table_size_bytes = 6;
+  int64 source_table_item_count = 7;
+  BackupStatus backup_status = 8;
+  BackupType backup_type = 9;
+  google.protobuf.Timestamp backup_creation_date_time = 10;
+  int64 backup_size_bytes = 11;
+  google.protobuf.Timestamp backup_expiry_date_time = 12;
+  repeated KeySchemaElement key_schema = 13;
+  repeated AttributeDefinition attribute_definitions = 14;
+  BillingMode billing_mode = 15;
+  ProvisionedThroughput provisioned_throughput = 16;
+  repeated GlobalSecondaryIndex global_secondary_indexes = 17;
+  repeated LocalSecondaryIndex local_secondary_indexes = 18;
+}
+
+// Replica represents a replica of a global table.
+message Replica {
+  string region_name = 1;
+  string replica_status = 2;
+  string billing_mode = 3;
+  int64 provisioned_read_capacity_units = 4;
+  int64 provisioned_write_capacity_units = 5;
+}
+
+// GlobalTable represents a global table in DynamoDB.
+message GlobalTable {
+  string global_table_name = 1;
+  string global_table_arn = 2;
+  string global_table_status = 3;
+  google.protobuf.Timestamp creation_date_time = 4;
+  repeated Replica replication_group = 5;
+}
+
+// TTLSpecification represents the TTL specification for a table.
+message TTLSpecification {
+  string table_name = 1;
+  bool enabled = 2;
+  string attribute_name = 3;
+}
+
+// Endpoint represents a DynamoDB endpoint.
+message Endpoint {
+  string address = 1;
+  int64 cache_period_in_minutes = 2;
+}
+
+// S3BucketSource represents an S3 bucket source for table import.
+message S3BucketSource {
+  string s3_bucket = 1;
+  string s3_prefix = 2;
+  string s3_bucket_owner = 3;
+}
+
+// ImportTableDescription represents the description of a table import.
+message ImportTableDescription {
+  string import_arn = 1;
+  string import_status = 2;
+  string table_arn = 3;
+  string table_id = 4;
+  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  int64 processed_item_count = 7;
+  int64 processed_size_bytes = 8;
+  string input_format = 9;
+  S3BucketSource s3_bucket_source = 10;
+  string failure_code = 11;
+  string failure_message = 12;
+}
+
+// ExportDescription represents the description of a table export.
+message ExportDescription {
+  string export_arn = 1;
+  string export_status = 2;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+  int64 manifest_files_size = 5;
+  int64 item_count = 6;
+  string table_arn = 7;
+  string table_id = 8;
+  string export_format = 9;
+  string s3_bucket = 10;
+  string s3_prefix = 11;
+  string failure_code = 12;
+  string failure_message = 13;
+}
+
+// ContributorInsightsSummary represents the contributor insights summary.
+message ContributorInsightsSummary {
+  string table_name = 1;
+  string index_name = 2;
+  string contributor_insights_status = 3;
+}

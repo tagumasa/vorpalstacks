@@ -1,0 +1,24 @@
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+run:
+  timeout: 5m
+
+issues:
+  exclude-dirs:
+    - third_party
+    - tmp
+  exclude-files:
+    - ".*_gen\\.go$"
+    - ".*\\.pb\\.go$"
+    - ".*_grpc\\.pb\\.go$"
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck

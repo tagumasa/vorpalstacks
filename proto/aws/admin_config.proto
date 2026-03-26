@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package admin_config;
+
+option go_package = "vorpalstacks/internal/pb/aws/admin_config";
+
+import "common.proto";
+
+service AdminConfigService {
+  // Configuration management (full CRUD)
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc ListConfig(ListConfigRequest) returns (ListConfigResponse);
+  rpc UpdateConfig(UpdateConfigRequest) returns (ConfigEntry);
+  rpc ResetConfig(ResetConfigRequest) returns (ConfigEntry);
+
+  // Service information (read-only)
+  rpc ListServices(ListServicesRequest) returns (ListServicesResponse);
+  rpc GetServiceStatus(GetServiceStatusRequest) returns (ServiceStatus);
+
+  // Port mappings for resources
+  rpc GetResourcePort(GetResourcePortRequest) returns (GetResourcePortResponse);
+  rpc SetResourcePort(SetResourcePortRequest) returns (common.Empty);
+}
+
+message ConfigEntry {
+  string key = 1;
+  string value = 2;
+  string type = 3;
+  string source = 4;
+  string description = 5;
+  bool read_only = 6;
+  int64 updated_at = 7;
+  string env_var = 8;
+  string category = 9;
+}
+
+message GetConfigRequest {
+  string key = 1;
+}
+
+message GetConfigResponse {
+  ConfigEntry entry = 1;
+}
+
+message ListConfigRequest {
+  string category = 1;
+}
+
+message ListConfigResponse {
+  repeated ConfigEntry entries = 1;
+}
+
+message UpdateConfigRequest {
+  string key = 1;
+  string value = 2;
+}
+
+message ResetConfigRequest {
+  string key = 1;
+}
+
+message ListServicesRequest {}
+
+message ListServicesResponse {
+  repeated ServiceInfo services = 1;
+}
+
+message ServiceInfo {
+  string name = 1;
+  bool enabled = 2;
+  int32 resource_count = 3;
+}
+
+message GetServiceStatusRequest {
+  string name = 1;
+}
+
+message ServiceStatus {
+  string name = 1;
+  bool enabled = 2;
+  string mode = 3;
+  int32 resource_count = 4;
+  int64 last_request_at = 5;
+}
+
+message GetResourcePortRequest {
+  string service_port_key = 1;
+  string resource_id = 2;
+}
+
+message GetResourcePortResponse {
+  int32 port = 1;
+  string source = 2;
+}
+
+message SetResourcePortRequest {
+  string service_port_key = 1;
+  string resource_id = 2;
+  int32 port = 3;
+}

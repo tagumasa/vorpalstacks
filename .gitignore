@@ -1,0 +1,49 @@
+# Binaries
+vorpalstacks
+vorpalstacks_server
+pebble-loader
+/proto_generator
+main
+sdk-tests-test
+
+# Test data
+tmp/
+tmp_lambda/
+data/
+data-test/
+database/
+database.db
+
+# Go
+*.out
+coverage.out
+go.work
+
+# IDE
+.idea/
+.vscode/
+.claude/
+.opencode/
+*.swp
+*.swo
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flutter/Dart
+web_ui/.dart_tool/
+web_ui/build/
+web_ui/.packages
+web_ui/.flutter-plugins
+web_ui/.flutter-plugins-dependencies
+*.iml
+
+# Ruff
+.ruff_cache/

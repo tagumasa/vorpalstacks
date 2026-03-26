@@ -1,0 +1,432 @@
+syntax = "proto3";
+
+package storage.s3;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_s3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+// ObjectStorageClass represents the storage class for an S3 object.
+enum ObjectStorageClass {
+  OBJECT_STORAGE_CLASS_UNSPECIFIED = 0;
+  OBJECT_STORAGE_CLASS_STANDARD = 1;
+  OBJECT_STORAGE_CLASS_REDUCED_REDUNDANCY = 2;
+  OBJECT_STORAGE_CLASS_GLACIER = 3;
+  OBJECT_STORAGE_CLASS_STANDARD_IA = 4;
+  OBJECT_STORAGE_CLASS_ONEZONE_IA = 5;
+  OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING = 6;
+}
+
+// BucketVersioningStatus represents the versioning status of an S3 bucket.
+enum BucketVersioningStatus {
+  BUCKET_VERSIONING_STATUS_UNSPECIFIED = 0;
+  BUCKET_VERSIONING_STATUS_ENABLED = 1;
+  BUCKET_VERSIONING_STATUS_SUSPENDED = 2;
+}
+
+// SSEType represents the server-side encryption type.
+enum SSEType {
+  SSE_TYPE_UNSPECIFIED = 0;
+  SSE_TYPE_AES256 = 1;
+  SSE_TYPE_KMS = 2;
+  SSE_TYPE_KMS_ES = 3;
+  SSE_TYPE_CUSTOMER = 4;
+}
+
+// ObjectLockRetentionMode represents the object lock retention mode.
+enum ObjectLockRetentionMode {
+  OBJECT_LOCK_RETENTION_MODE_UNSPECIFIED = 0;
+  OBJECT_LOCK_RETENTION_MODE_GOVERNANCE = 1;
+  OBJECT_LOCK_RETENTION_MODE_COMPLIANCE = 2;
+}
+
+// ObjectLockLegalHoldStatus represents the legal hold status for an S3 object.
+enum ObjectLockLegalHoldStatus {
+  OBJECT_LOCK_LEGAL_HOLD_STATUS_UNSPECIFIED = 0;
+  OBJECT_LOCK_LEGAL_HOLD_STATUS_ON = 1;
+  OBJECT_LOCK_LEGAL_HOLD_STATUS_OFF = 2;
+}
+
+// Tag represents a key-value pair for tagging resources.
+message Tag {
+  string key = 1;
+  string value = 2;
+}
+
+// ACLOwner represents the owner of an S3 bucket or object.
+message ACLOwner {
+  string id = 1;
+  string display_name = 2;
+}
+
+// GranteeType represents the type of grantee in an S3 ACL.
+enum GranteeType {
+  GRANTEE_TYPE_UNSPECIFIED = 0;
+  GRANTEE_TYPE_CANONICAL_USER = 1;
+  GRANTEE_TYPE_GROUP = 2;
+  GRANTEE_TYPE_AMAZON_CUSTOMER_BY_EMAIL = 3;
+}
+
+// Permission represents an S3 permission.
+enum Permission {
+  PERMISSION_UNSPECIFIED = 0;
+  PERMISSION_FULL_CONTROL = 1;
+  PERMISSION_READ = 2;
+  PERMISSION_WRITE = 3;
+  PERMISSION_READ_ACP = 4;
+  PERMISSION_WRITE_ACP = 5;
+}
+
+// Grantee represents a grantee in an S3 ACL.
+message Grantee {
+  GranteeType type = 1;
+  string id = 2;
+  string display_name = 3;
+  string email = 4;
+  string uri = 5;
+}
+
+// Grant represents a single grant in an S3 ACL.
+message Grant {
+  Grantee grantee = 1;
+  Permission permission = 2;
+}
+
+// AccessControlPolicy represents the access control policy for an S3 bucket or object.
+message AccessControlPolicy {
+  ACLOwner owner = 1;
+  repeated Grant grants = 2;
+}
+
+// EncryptionConfig represents the encryption configuration for an S3 bucket.
+message EncryptionConfig {
+  string sse_algorithm = 1;
+  string kms_master_key_id = 2;
+  google.protobuf.BoolValue bucket_key_enabled = 3;
+}
+
+// SSEObjectMetadata represents the server-side encryption metadata for an S3 object.
+message SSEObjectMetadata {
+  SSEType encryption_type = 1;
+  bytes encrypted_data_key = 2;
+  bytes content_nonce = 3;
+  string kms_key_id = 4;
+  string encryption_context = 5;
+  string unencrypted_md5 = 6;
+  int64 unencrypted_size = 7;
+}
+
+// ObjectLockLegalHold represents the legal hold status for an S3 object.
+message ObjectLockLegalHold {
+  ObjectLockLegalHoldStatus status = 1;
+}
+
+// ObjectLockRetention represents the object lock retention settings for an S3 object.
+message ObjectLockRetention {
+  ObjectLockRetentionMode mode = 1;
+  google.protobuf.Timestamp retain_until_date = 2;
+}
+
+// Object represents an S3 object.
+message Object {
+  string key = 1;
+  string bucket_name = 2;
+  int64 size = 3;
+  string etag = 4;
+  google.protobuf.Timestamp last_modified = 5;
+  string content_type = 6;
+  string content_encoding = 7;
+  string content_language = 8;
+  string content_disposition = 9;
+  string cache_control = 10;
+  google.protobuf.Timestamp expires = 11;
+  map<string, string> metadata = 12;
+  ObjectStorageClass storage_class = 13;
+  string server_side_encryption = 14;
+  string sse_kms_key_id = 15;
+  string version_id = 16;
+  bool is_latest = 17;
+  bool is_delete_marker = 18;
+  repeated Tag tags = 19;
+  AccessControlPolicy acl = 20;
+  ACLOwner owner = 21;
+  ObjectLockLegalHold object_lock_legal_hold = 22;
+  ObjectLockRetention object_lock_retention = 23;
+  SSEObjectMetadata sse_metadata = 24;
+}
+
+// ObjectPart represents a part in a multipart upload.
+message ObjectPart {
+  int32 part_number = 1;
+  string etag = 2;
+  int64 size = 3;
+  google.protobuf.Timestamp last_modified = 4;
+  int64 encrypted_size = 5;
+  bytes content_nonce = 6;
+  bytes data_key = 7;
+}
+
+// MultipartUpload represents a multipart upload to S3.
+message MultipartUpload {
+  string upload_id = 1;
+  string key = 2;
+  string bucket_name = 3;
+  google.protobuf.Timestamp initiated = 4;
+  ObjectStorageClass storage_class = 5;
+  string owner = 6;
+  string initiator = 7;
+  repeated ObjectPart parts = 8;
+  map<string, string> metadata = 9;
+  string content_type = 10;
+  SSEObjectMetadata sse_metadata = 11;
+  SSEType sse_type = 12;
+  string kms_key_id = 13;
+  string customer_key_md5 = 14;
+  bytes plaintext_data_key = 15;
+}
+
+// DefaultRetention represents the default retention settings for object lock.
+message DefaultRetention {
+  ObjectLockRetentionMode mode = 1;
+  int32 days = 2;
+  int32 years = 3;
+}
+
+// ObjectLockRule represents the object lock rule for an S3 bucket.
+message ObjectLockRule {
+  DefaultRetention default_retention = 1;
+}
+
+// ObjectLockConfiguration represents the object lock configuration for an S3 bucket.
+message ObjectLockConfiguration {
+  string object_lock_enabled = 1;
+  ObjectLockRule rule = 2;
+}
+
+// LifecycleExpiration represents the expiration configuration for a lifecycle rule.
+message LifecycleExpiration {
+  google.protobuf.Timestamp date = 1;
+  int32 days = 2;
+  bool expired_object_delete_marker = 3;
+}
+
+// LifecycleTransition represents the transition configuration for a lifecycle rule.
+message LifecycleTransition {
+  google.protobuf.Timestamp date = 1;
+  int32 days = 2;
+  ObjectStorageClass storage_class = 3;
+}
+
+// NoncurrentVersionExpiration represents the expiration configuration for noncurrent object versions.
+message NoncurrentVersionExpiration {
+  int32 noncurrent_days = 1;
+  int32 newer_noncurrent_versions = 2;
+}
+
+// NoncurrentVersionTransition represents the transition configuration for noncurrent object versions.
+message NoncurrentVersionTransition {
+  int32 noncurrent_days = 1;
+  int32 newer_noncurrent_versions = 2;
+  ObjectStorageClass storage_class = 3;
+}
+
+// AbortIncompleteUpload represents the configuration for aborting incomplete multipart uploads.
+message AbortIncompleteUpload {
+  int32 days_after_initiation = 1;
+}
+
+// LifecycleRuleAndOperator represents a logical AND operator for lifecycle rule filters.
+message LifecycleRuleAndOperator {
+  string prefix = 1;
+  repeated Tag tags = 2;
+  int64 object_size_greater_than = 3;
+  int64 object_size_less_than = 4;
+}
+
+// LifecycleRuleFilter represents the filter criteria for a lifecycle rule.
+message LifecycleRuleFilter {
+  string prefix = 1;
+  int64 object_size_greater_than = 2;
+  int64 object_size_less_than = 3;
+  LifecycleRuleAndOperator and = 4;
+  Tag tag = 5;
+}
+
+// LifecycleRule represents a lifecycle rule for an S3 bucket.
+message LifecycleRule {
+  string id = 1;
+  string status = 2;
+  LifecycleRuleFilter filter = 3;
+  LifecycleExpiration expiration = 4;
+  repeated LifecycleTransition transitions = 5;
+  NoncurrentVersionExpiration noncurrent_version_expiration = 6;
+  repeated NoncurrentVersionTransition noncurrent_version_transitions = 7;
+  AbortIncompleteUpload abort_incomplete_multipart_upload = 8;
+}
+
+// LifecycleConfiguration represents the lifecycle configuration for an S3 bucket.
+message LifecycleConfiguration {
+  repeated LifecycleRule rules = 1;
+}
+
+// RedirectAllRequestsTo represents the redirect configuration for all requests to an S3 bucket.
+message RedirectAllRequestsTo {
+  string host_name = 1;
+  string protocol = 2;
+}
+
+// RoutingRuleCondition represents the condition for a routing rule.
+message RoutingRuleCondition {
+  string http_error_code_returned_equals = 1;
+  string key_prefix_equals = 2;
+}
+
+// RoutingRuleRedirect represents the redirect configuration for a routing rule.
+message RoutingRuleRedirect {
+  string host_name = 1;
+  string http_redirect_code = 2;
+  string protocol = 3;
+  string replace_key_prefix_with = 4;
+  string replace_key_with = 5;
+}
+
+// RoutingRule represents a routing rule for S3 bucket website configuration.
+message RoutingRule {
+  RoutingRuleCondition condition = 1;
+  RoutingRuleRedirect redirect = 2;
+}
+
+// WebsiteConfiguration represents the website configuration for an S3 bucket.
+message WebsiteConfiguration {
+  string index_document = 1;
+  string error_document = 2;
+  RedirectAllRequestsTo redirect_all_requests_to = 3;
+  repeated RoutingRule routing_rules = 4;
+}
+
+// CORSRule represents a CORS rule for an S3 bucket.
+message CORSRule {
+  repeated string allowed_headers = 1;
+  repeated string allowed_methods = 2;
+  repeated string allowed_origins = 3;
+  repeated string expose_headers = 4;
+  int32 max_age_seconds = 5;
+  string id = 6;
+}
+
+// CORSConfiguration represents the CORS configuration for an S3 bucket.
+message CORSConfiguration {
+  repeated CORSRule cors_rules = 1;
+}
+
+// PublicAccessBlockConfig represents the public access block configuration for an S3 bucket.
+message PublicAccessBlockConfig {
+  bool block_public_acls = 1;
+  bool block_public_policy = 2;
+  bool ignore_public_acls = 3;
+  bool restrict_public_buckets = 4;
+}
+
+// FilterRule represents a filter rule for S3 notifications.
+message FilterRule {
+  string name = 1;
+  string value = 2;
+}
+
+// S3KeyFilter represents a key-based filter for S3 notifications.
+message S3KeyFilter {
+  repeated FilterRule filter_rules = 1;
+}
+
+// NotificationConfigurationFilter represents a filter for notification configurations.
+message NotificationConfigurationFilter {
+  S3KeyFilter key = 1;
+}
+
+// TopicNotificationConfiguration represents an SNS topic notification configuration.
+message TopicNotificationConfiguration {
+  string id = 1;
+  string topic_arn = 2;
+  repeated string events = 3;
+  NotificationConfigurationFilter filter = 4;
+}
+
+// QueueNotificationConfiguration represents an SQS queue notification configuration.
+message QueueNotificationConfiguration {
+  string id = 1;
+  string queue_arn = 2;
+  repeated string events = 3;
+  NotificationConfigurationFilter filter = 4;
+}
+
+// LambdaNotificationConfiguration represents a Lambda function notification configuration.
+message LambdaNotificationConfiguration {
+  string id = 1;
+  string lambda_function_arn = 2;
+  repeated string events = 3;
+  NotificationConfigurationFilter filter = 4;
+}
+
+// NotificationConfiguration represents the notification configuration for an S3 bucket.
+message NotificationConfiguration {
+  repeated TopicNotificationConfiguration topic_configurations = 1;
+  repeated QueueNotificationConfiguration queue_configurations = 2;
+  repeated LambdaNotificationConfiguration lambda_configurations = 3;
+}
+
+// TargetGrant represents a grant in the logging configuration.
+message TargetGrant {
+  Grantee grantee = 1;
+  Permission permission = 2;
+}
+
+// LoggingConfiguration represents the logging configuration for an S3 bucket.
+message LoggingConfiguration {
+  string target_bucket = 1;
+  string target_prefix = 2;
+  repeated TargetGrant target_grants = 3;
+}
+
+// OwnershipControlsRule specifies an ownership rule for a bucket.
+message OwnershipControlsRule {
+  string object_ownership = 1;
+}
+
+// OwnershipControls specifies the ownership rules for a bucket.
+message OwnershipControls {
+  repeated OwnershipControlsRule rules = 1;
+}
+
+// RequestPaymentConfiguration specifies who pays for the bucket's downloads.
+message RequestPaymentConfiguration {
+  string payer = 1;
+}
+
+// AccelerateConfiguration specifies the transfer acceleration configuration for a bucket.
+message AccelerateConfiguration {
+  string status = 1;
+}
+
+// Bucket represents an S3 bucket.
+message Bucket {
+  string name = 1;
+  string region = 2;
+  google.protobuf.Timestamp creation_date = 3;
+  AccessControlPolicy acl = 4;
+  bool object_lock_enabled = 5;
+  ObjectLockConfiguration object_lock_config = 6;
+  BucketVersioningStatus versioning_status = 7;
+  EncryptionConfig encryption_config = 8;
+  LifecycleConfiguration lifecycle_configuration = 9;
+  WebsiteConfiguration website_configuration = 10;
+  CORSConfiguration cors_configuration = 11;
+  string policy = 12;
+  PublicAccessBlockConfig public_access_block = 13;
+  repeated Tag tags = 14;
+  NotificationConfiguration notification_configuration = 15;
+  LoggingConfiguration logging_configuration = 16;
+  OwnershipControls ownership_controls = 17;
+  RequestPaymentConfiguration request_payment = 18;
+  AccelerateConfiguration accelerate_configuration = 19;
+}
