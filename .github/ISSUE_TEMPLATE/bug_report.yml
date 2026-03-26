@@ -1,54 +1,108 @@
 name: Bug Report
-description: Report a bug or unexpected behavior
+description: Report a bug in an AWS service implementation
 labels: bug
 body:
+  - type: dropdown
+    id: service
+    attributes:
+      label: Affected AWS Service
+      description: Which AWS service has the bug?
+      options:
+        - S3
+        - SQS
+        - SNS
+        - Lambda
+        - DynamoDB
+        - IAM
+        - KMS
+        - Kinesis
+        - API Gateway
+        - Step Functions
+        - EventBridge
+        - CloudFront
+        - WAF / WAFv2
+        - Cognito
+        - STS
+        - Route53
+        - CloudWatch
+        - CloudTrail
+        - Secrets Manager
+        - SSM
+        - Scheduler
+        - SESv2
+        - Athena
+        - Timestream
+        - ACM
+        - Other (specify below)
+    validations:
+      required: true
   - type: textarea
     id: description
     attributes:
       label: Description
-      description: A clear description of the bug.
-      placeholder: What happened?
+      description: What went wrong?
+      placeholder: e.g., PutObject returns 200 but the object is not stored in PebbleDB
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
       label: Expected Behavior
-      description: What did you expect to happen?
+      description: What should happen according to AWS?
+      placeholder: e.g., Object should be persisted and retrievable via GetObject
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
       label: Steps to Reproduce
-      description: Steps to reproduce the issue.
+      description: Minimal reproduction steps.
       placeholder: |
-        1. Start server with ...
-        2. Run command ...
-        3. Observe ...
+        1. Start server: SIGNATURE_VERIFICATION_ENABLED=false ./vorpalstacks
+        2. Run: aws --endpoint-url=http://localhost:8080 s3 mb s3://test
+        3. Run: aws --endpoint-url=http://localhost:8080 s3api put-object --bucket test --key foo --body bar
+        4. Observe: ...
     validations:
       required: true
   - type: textarea
+    id: aws-compatibility
+    attributes:
+      label: AWS Compatibility
+      description: How does real AWS behave in this case? Include AWS CLI commands or SDK calls if tested against real AWS.
+      placeholder: On real AWS, the same operation returns ...
+  - type: textarea
     id: logs
     attributes:
-      label: Logs / Error Output
-      description: Relevant log output or error messages.
+      label: Server Logs / Error Output
+      description: Relevant server log output or SDK error messages.
       render: shell
   - type: input
     id: version
     attributes:
       label: Version
       description: Git commit hash or version tag.
-      placeholder: abc1234
+      placeholder: v0.0.1 or abc1234
     validations:
       required: true
-  - type: input
-    id: go-version
+  - type: dropdown
+    id: client
     attributes:
-      label: Go Version
-      placeholder: 1.25.x
+      label: Client Used
+      description: How are you interacting with Vorpalstacks?
+      options:
+        - AWS CLI
+        - AWS SDK (Go)
+        - AWS SDK (Python/boto3)
+        - AWS SDK (JavaScript)
+        - AWS SDK (Java)
+        - Terraform
+        - Other
   - type: textarea
     id: additional
     attributes:
       label: Additional Context
-      description: Any other context about the problem.
+      description: Environment info, configuration, or anything else relevant.
+      placeholder: |
+        - OS: Ubuntu 24.04
+        - Go version: 1.25.x
+        - Docker version (if Lambda related):

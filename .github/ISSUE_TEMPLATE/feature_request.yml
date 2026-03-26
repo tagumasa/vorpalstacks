@@ -1,30 +1,57 @@
 name: Feature Request
-description: Suggest a new feature or enhancement
+description: Request a new AWS service, operation, or enhancement
 labels: enhancement
 body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Request Type
+      description: What kind of feature are you requesting?
+      options:
+        - New AWS service
+        - New AWS operation (existing service)
+        - Enhancement to existing implementation
+        - Terraform compatibility
+        - SDK compatibility
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: service
+    attributes:
+      label: Target AWS Service
+      description: Which AWS service does this relate to?
+      placeholder: e.g., EC2, SNS, CloudFormation
   - type: textarea
     id: description
     attributes:
-      label: Feature Description
+      label: Description
       description: A clear description of the feature you'd like.
-      placeholder: What would you like Vorpalstacks to do?
+      placeholder: e.g., Add support for SNS message deduplication for FIFO topics
     validations:
       required: true
   - type: textarea
     id: use-case
     attributes:
       label: Use Case
-      description: Why is this feature needed?
-      placeholder: What problem does this solve?
+      description: Why is this needed? What problem does it solve?
+      placeholder: e.g., My application relies on SNS FIFO dedup and cannot migrate to Vorpalstacks without it
     validations:
       required: true
+  - type: textarea
+    id: aws-reference
+    attributes:
+      label: AWS Documentation Reference
+      description: Link to AWS documentation for the requested feature.
+      placeholder: https://docs.aws.amazon.com/sns/latest/dg/sns-fifo-topic-dedup.html
   - type: textarea
     id: alternatives
     attributes:
       label: Alternatives Considered
-      description: Any alternative solutions or workarounds you've tried.
+      description: Any workarounds you've tried.
   - type: textarea
     id: additional
     attributes:
       label: Additional Context
-      description: Any other context about the feature request.
+      description: Any other relevant information (SDK version, Terraform version, etc.).
