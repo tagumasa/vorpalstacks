@@ -131,6 +131,11 @@ func (a *Authorizer) Authorize(
 	}
 
 	if a.isRootAccessKey(accessKeyID) {
+		if accessKeyID != "" {
+			reqCtx.Principal = accessKeyID
+			reqCtx.PrincipalID = accessKeyID
+			reqCtx.PrincipalType = request.PrincipalTypeUser
+		}
 		return &AuthorizationResult{
 			Allowed: true,
 			Reason:  "Root access key",
@@ -162,6 +167,10 @@ func (a *Authorizer) Authorize(
 			Reason:  "User not found",
 		}, nil
 	}
+
+	reqCtx.Principal = user.UserName
+	reqCtx.PrincipalID = user.ID
+	reqCtx.PrincipalType = request.PrincipalTypeUser
 
 	policies, err := a.getEffectivePolicies(ctx, user.UserName)
 	if err != nil {

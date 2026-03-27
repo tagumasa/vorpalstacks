@@ -13,6 +13,7 @@ type AuditEvent struct {
 	ReadOnly          bool
 	AccountID         string
 	AccessKeyID       string
+	PrincipalName     string
 }
 
 // Recorder defines the interface for recording audit events.

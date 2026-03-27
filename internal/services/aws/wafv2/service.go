@@ -3,6 +3,7 @@ package wafv2
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"vorpalstacks/internal/core/storage"
@@ -30,6 +31,7 @@ func NewWAFv2Service(store storage.BasicStorage, accountID, region string) *WAFv
 }
 
 func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, error) {
+	region := reqCtx.GetRegion()
 	if stores := reqCtx.GetWAFStores(); stores != nil {
 		return &wafv2Stores{
 			webACLs:          stores.WebACLStore().Raw(),
@@ -38,21 +40,21 @@ func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, erro
 			regexPatternSets: stores.RegexPatternSetStore().Raw(),
 			associations:     stores.AssociationStore().Raw(),
 			loggingConfigs:   stores.LoggingStore().Raw(),
-			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), ""),
+			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), region),
 		}, nil
 	}
-	storage, err := reqCtx.GetGlobalStorage()
+	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
 	return &wafv2Stores{
-		webACLs:          wafstore.NewWebACLStore(storage, reqCtx.GetAccountID(), ""),
-		ruleGroups:       wafstore.NewRuleGroupStore(storage, reqCtx.GetAccountID(), ""),
-		ipSets:           wafstore.NewIPSetStore(storage, reqCtx.GetAccountID(), ""),
-		regexPatternSets: wafstore.NewRegexPatternSetStore(storage, reqCtx.GetAccountID(), ""),
+		webACLs:          wafstore.NewWebACLStore(storage, reqCtx.GetAccountID(), region),
+		ruleGroups:       wafstore.NewRuleGroupStore(storage, reqCtx.GetAccountID(), region),
+		ipSets:           wafstore.NewIPSetStore(storage, reqCtx.GetAccountID(), region),
+		regexPatternSets: wafstore.NewRegexPatternSetStore(storage, reqCtx.GetAccountID(), region),
 		associations:     wafstore.NewWebACLAssociationStore(storage),
 		loggingConfigs:   wafstore.NewLoggingStore(storage),
-		arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), ""),
+		arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), region),
 	}, nil
 }
 
@@ -86,6 +88,7 @@ func (s *WAFv2Service) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("wafv2", "AssociateWebACL", s.AssociateWebACL)
 	d.RegisterHandlerForService("wafv2", "DisassociateWebACL", s.DisassociateWebACL)
 	d.RegisterHandlerForService("wafv2", "ListResourcesForWebACL", s.ListResourcesForWebACL)
+	d.RegisterHandlerForService("wafv2", "GetWebACLForResource", s.GetWebACLForResource)
 
 	d.RegisterHandlerForService("wafv2", "PutLoggingConfiguration", s.PutLoggingConfiguration)
 	d.RegisterHandlerForService("wafv2", "GetLoggingConfiguration", s.GetLoggingConfiguration)
@@ -124,6 +127,38 @@ func (s *WAFv2Service) CheckCapacity(ctx context.Context, reqCtx *request.Reques
 	return map[string]interface{}{
 		"Capacity": 10,
 	}, nil
+}
+
+func isCloudFrontResource(resourceArn string) bool {
+	return strings.Contains(resourceArn, ":cloudfront:")
+}
+
+func (s *WAFv2Service) associationStoreFor(reqCtx *request.RequestContext, resourceArn string) (*wafstore.WebACLAssociationStore, error) {
+	if isCloudFrontResource(resourceArn) {
+		globalStorage, err := reqCtx.GetGlobalStorage()
+		if err != nil {
+			return nil, err
+		}
+		return wafstore.NewWebACLAssociationStore(globalStorage), nil
+	}
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	return stores.associations, nil
+}
+
+func (s *WAFv2Service) allAssociationStores(reqCtx *request.RequestContext) ([]*wafstore.WebACLAssociationStore, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	result := []*wafstore.WebACLAssociationStore{stores.associations}
+	globalStorage, err := reqCtx.GetGlobalStorage()
+	if err == nil {
+		result = append(result, wafstore.NewWebACLAssociationStore(globalStorage))
+	}
+	return result, nil
 }
 
 func generateID() (string, error) {

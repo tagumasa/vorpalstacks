@@ -660,6 +660,10 @@ func (s *CloudFrontService) CreateDistribution(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	if err := s.syncWAFAssociation(reqCtx, config.WebACLId, distribution.ARN); err != nil {
+		return nil, fmt.Errorf("failed to sync WAF association: %w", err)
+	}
+
 	return map[string]interface{}{
 		"Distribution": formatDistributionResponse(distribution),
 	}, nil
@@ -687,6 +691,10 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 	distribution, err := store.distributions.Create(callerRef, config)
 	if err != nil {
 		return nil, err
+	}
+
+	if err := s.syncWAFAssociation(reqCtx, config.WebACLId, distribution.ARN); err != nil {
+		return nil, fmt.Errorf("failed to sync WAF association: %w", err)
 	}
 
 	var tags []common.Tag
@@ -850,6 +858,16 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 	distribution.Enabled = newConfig.Enabled
 	distribution.ETag = s.generateETag()
 
+	if oldWebACLId := distribution.DistributionConfig.WebACLId; oldWebACLId != newConfig.WebACLId {
+		distArn := distribution.ARN
+		if err := s.removeWAFAssociation(reqCtx, oldWebACLId, distArn); err != nil {
+			return nil, fmt.Errorf("failed to remove old WAF association: %w", err)
+		}
+		if err := s.syncWAFAssociation(reqCtx, newConfig.WebACLId, distArn); err != nil {
+			return nil, fmt.Errorf("failed to sync WAF association: %w", err)
+		}
+	}
+
 	if err := store.distributions.UpdateWithLastModified(id, distribution); err != nil {
 		if cloudfrontstore.IsNotFound(err) {
 			return nil, newCloudFrontError("NoSuchDistribution", "Distribution not found", 404)
@@ -890,6 +908,12 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 
 	if distribution.Enabled {
 		return nil, newCloudFrontError("DistributionNotDisabled", "Distribution must be disabled before deletion", 409)
+	}
+
+	if distribution.DistributionConfig != nil {
+		if err := s.removeWAFAssociation(reqCtx, distribution.DistributionConfig.WebACLId, distribution.ARN); err != nil {
+			return nil, fmt.Errorf("failed to remove WAF association: %w", err)
+		}
 	}
 
 	err = store.distributions.Delete(id)

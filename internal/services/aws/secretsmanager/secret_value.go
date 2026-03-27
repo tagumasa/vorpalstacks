@@ -99,6 +99,9 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 			"SecretVersionsToStages": s.buildSecretVersionsToStages(reqCtx, secret),
 		}
 		s.addRotationFields(entry, secret)
+		if len(secret.ReplicationStatus) > 0 {
+			entry["ReplicationStatus"] = buildReplicationStatusResponse(secret.ReplicationStatus)
+		}
 		secretList = append(secretList, entry)
 	}
 
@@ -137,6 +140,9 @@ func (s *SecretsManagerService) DescribeSecret(ctx context.Context, reqCtx *requ
 		"Tags":                   s.buildTagsList(secret),
 	}
 	s.addRotationFields(result, secret)
+	if len(secret.ReplicationStatus) > 0 {
+		result["ReplicationStatus"] = buildReplicationStatusResponse(secret.ReplicationStatus)
+	}
 	return result, nil
 }
 

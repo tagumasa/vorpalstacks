@@ -1,6 +1,6 @@
 # Vorpalstacks
 
-> **Warning: This is a beta release.** Vorpalstacks is under active development. While 29 AWS services are implemented with 594 passing SDK tests, not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
+> **Warning: This is a beta release.** Vorpalstacks is under active development. While nearly thirty AWS services are implemented with hundreds of passing SDK tests, not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
 
 A lightweight edge and on-premise cloud platform providing AWS-compatible services.
 
@@ -17,10 +17,10 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 
 > **What this is**: A real implementation of AWS-compatible APIs, not a mock framework. Each service stores data in PebbleDB and supports multi-region isolation.
 
-> **What this is not**: A 100% faithful reproduction of every AWS behaviour. Some edge cases, undocumented behaviours, and advanced features may differ from AWS. See [docs/services.md](docs/services.md) for the current scope of each service.
+> **What this is not**: A fully faithful reproduction of every AWS behaviour. Some edge cases, undocumented behaviours, and advanced features may differ from AWS. See [docs/services.md](docs/services.md) for the current scope of each service.
 
 - **AWS API Compatible**: Works with existing AWS SDKs and CLI
-- **29 AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, API Gateway, Step Functions, WAF, WAFv2, Kinesis, KMS, and more
+- **Twenty-nine AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, API Gateway, Step Functions, WAF, WAFv2, Kinesis, KMS, and more
 - **IAM Authorization**: Full IAM policy evaluation with user/group/role-based access control
 - **DynamoDB PartiQL**: SQL-like queries with WHERE functions (attribute_exists, begins_with, contains, size)
 - **S3 SelectObjectContent**: SQL queries on CSV/JSON objects with event streaming
@@ -35,39 +35,38 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 
 ## Implemented Services
 
-| Service | Protocol | Operations | Scope |
-|---------|----------|------------|-------|
-| ACM | REST-JSON 1.1 | 16 | Regional |
-| API Gateway | REST-JSON 1.1 | 80 | Regional |
-| Athena | AWS JSON 1.1 | 37 | Regional |
-| CloudFront | REST-XML | 32 | Global |
-| CloudTrail | AWS JSON 1.1 | 24 | Regional |
-| CloudWatch Logs | AWS JSON 1.1 | 29 | Regional |
-| CloudWatch Metrics | AWS JSON 1.1 | 17 | Regional |
-| Cognito IDP | AWS JSON 1.1 | 51 | Regional |
-| Cognito Identity | AWS JSON 1.1 | 13 | Regional |
-| DynamoDB | AWS JSON 1.0 | 57 | Regional |
-| EventBridge | AWS JSON 1.1 | 39 | Regional |
-| IAM | AWS JSON 1.1 | 155 | Global |
-| Kinesis | AWS JSON 1.1 | 39 | Regional |
-| KMS | AWS JSON 1.1 | 45 | Regional |
-| Lambda | AWS JSON 1.1 | 50 | Regional |
-| Route53 | AWS JSON 1.1 | 18 | Global |
-| S3 | REST-XML | 68 | Regional |
-| Scheduler | AWS JSON 1.1 | 12 | Regional |
-| SecretsManager | AWS JSON 1.1 | 21 | Regional |
-| SESv2 | AWS JSON 1.1 | 58 | Regional |
-| SNS | AWS JSON 1.1 | 31 | Regional |
-| SQS | AWS Query | 23 | Regional |
-| SSM | AWS JSON 1.1 | 12 | Regional |
-| STS | AWS JSON 1.1 | 11 | Global |
-| Step Functions | AWS JSON 1.1 | 28 | Regional |
-| Timestream Query | AWS JSON 1.1 | 13 | Regional |
-| Timestream Write | AWS JSON 1.1 | 19 | Regional |
-| WAF | AWS JSON 1.1 | 34 | Regional |
-| WAFv2 | AWS JSON 1.1 | 36 | Regional |
+| Service | Coverage | Notes |
+|---------|----------|-------|
+| ACM | Full | |
+| API Gateway | Broad | No client certificates, documentation, or SDK generation |
+| Athena | Broad | No capacity reservations or notebook sessions |
+| CloudFront | Full | |
+| CloudTrail | Broad | No event data stores or SQL queries |
+| CloudWatch Logs | Selective | No Logs Insights queries or export |
+| CloudWatch Metrics | Broad | No metric streams or anomaly detection |
+| Cognito IDP | Selective | No external IdP, no hosted UI |
+| Cognito Identity | Selective | Basic identity pool support |
+| DynamoDB | Full | |
+| EventBridge | Broad | No global endpoints or partner event sources |
+| IAM | Broad | No policy simulator or organisations integration |
+| Kinesis | Full | |
+| KMS | Full | |
+| Lambda | Broad | No durable functions or code signing |
+| Route53 | Selective | DNS record management only |
+| S3 | Broad | No analytics, inventory, or S3 Express |
+| Scheduler | Full | |
+| Secrets Manager | Full | |
+| SESv2 | Broad | No deliverability testing or multi-tenancy |
+| SNS | Broad | SMS sending not supported |
+| SQS | Full | |
+| SSM | Selective | Parameter Store only |
+| STS | Full | |
+| Step Functions | Full | |
+| Timestream | Full | |
+| WAF | Selective | No managed rule groups or logging configuration |
+| WAFv2 | Broad | |
 
-**SDK Tests**: 594/594 (100%) pass rate
+See [docs/services.md](docs/services.md) for detailed coverage tiers and service integration patterns.
 
 ## Quick Start
 
@@ -178,7 +177,7 @@ For Lambda functionality:
 ## Documentation
 
 - [Architecture](docs/architecture.md) - System architecture overview
-- [Services](docs/services.md) - Implemented AWS services and operations
+- [Services](docs/services.md) - Implemented AWS services
 - [Configuration](docs/configuration.md) - Environment variables and settings
 - [Integration](docs/integration.md) - Service-to-service communication
 

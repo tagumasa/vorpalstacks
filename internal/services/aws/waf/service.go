@@ -31,6 +31,7 @@ func NewWAFService(store storage.BasicStorage, accountID, region string) *WAFSer
 }
 
 func (s *WAFService) store(reqCtx *request.RequestContext) (*wafStores, error) {
+	region := reqCtx.GetRegion()
 	if stores := reqCtx.GetWAFStores(); stores != nil {
 		return &wafStores{
 			webACLs:          stores.WebACLStore().Raw(),
@@ -39,21 +40,21 @@ func (s *WAFService) store(reqCtx *request.RequestContext) (*wafStores, error) {
 			regexPatternSets: stores.RegexPatternSetStore().Raw(),
 			associations:     stores.AssociationStore().Raw(),
 			loggingConfigs:   stores.LoggingStore().Raw(),
-			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), ""),
+			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), region),
 		}, nil
 	}
-	storage, err := reqCtx.GetGlobalStorage()
+	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
 	return &wafStores{
-		webACLs:          wafstore.NewWebACLStore(storage, reqCtx.GetAccountID(), ""),
-		ruleGroups:       wafstore.NewRuleGroupStore(storage, reqCtx.GetAccountID(), ""),
-		ipSets:           wafstore.NewIPSetStore(storage, reqCtx.GetAccountID(), ""),
-		regexPatternSets: wafstore.NewRegexPatternSetStore(storage, reqCtx.GetAccountID(), ""),
+		webACLs:          wafstore.NewWebACLStore(storage, reqCtx.GetAccountID(), region),
+		ruleGroups:       wafstore.NewRuleGroupStore(storage, reqCtx.GetAccountID(), region),
+		ipSets:           wafstore.NewIPSetStore(storage, reqCtx.GetAccountID(), region),
+		regexPatternSets: wafstore.NewRegexPatternSetStore(storage, reqCtx.GetAccountID(), region),
 		associations:     wafstore.NewWebACLAssociationStore(storage),
 		loggingConfigs:   wafstore.NewLoggingStore(storage),
-		arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), ""),
+		arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), region),
 	}, nil
 }
 

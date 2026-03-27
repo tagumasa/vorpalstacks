@@ -22,6 +22,7 @@ func (r *CloudTrailRecorder) RecordEvent(event *audit.AuditEvent) error {
 	userIdentity := &cloudtrailstore.UserIdentity{
 		Type:      "AssumedRole",
 		AccountID: event.AccountID,
+		UserName:  event.PrincipalName,
 	}
 	if event.AccessKeyID != "" {
 		if len(event.AccessKeyID) >= 16 {

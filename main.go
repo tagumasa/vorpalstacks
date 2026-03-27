@@ -155,6 +155,7 @@ func main() {
 	wafv2Service.RegisterHandlers(server.Dispatcher())
 
 	secretsManagerService := svcsecretsmanager.NewSecretsManagerService(cfg.AccountID)
+	secretsManagerService.SetStorageManager(server.StorageManager())
 	secretsManagerService.RegisterHandlers(server.Dispatcher())
 
 	var sqsStoreInstance *storesqs.SQSStore

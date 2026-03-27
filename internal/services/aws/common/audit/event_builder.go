@@ -79,6 +79,7 @@ func (b *EventBuilder) Build(response interface{}, err error) *AuditEvent {
 
 	if b.reqCtx != nil {
 		event.AccountID = b.reqCtx.GetAccountID()
+		event.PrincipalName = b.reqCtx.Principal
 	}
 
 	if b.req != nil && b.req.Parameters != nil {

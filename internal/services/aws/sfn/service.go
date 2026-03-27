@@ -140,4 +140,7 @@ func (s *StepFunctionService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("states", "TagResource", s.TagResource)
 	d.RegisterHandlerForService("states", "UntagResource", s.UntagResource)
 	d.RegisterHandlerForService("states", "ListTagsForResource", s.ListTagsForResource)
+
+	d.RegisterHandlerForService("states", "RedriveExecution", s.RedriveExecution)
+	d.RegisterHandlerForService("states", "TestState", s.TestState)
 }

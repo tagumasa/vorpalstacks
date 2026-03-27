@@ -186,4 +186,7 @@ func (s *IAMService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("iam", "CreateServiceLinkedRole", s.CreateServiceLinkedRole)
 	d.RegisterHandlerForService("iam", "DeleteServiceLinkedRole", s.DeleteServiceLinkedRole)
 	d.RegisterHandlerForService("iam", "GetServiceLinkedRoleDeletionStatus", s.GetServiceLinkedRoleDeletionStatus)
+	d.RegisterHandlerForService("iam", "GenerateServiceLastAccessedDetails", s.GenerateServiceLastAccessedDetails)
+	d.RegisterHandlerForService("iam", "GetServiceLastAccessedDetails", s.GetServiceLastAccessedDetails)
+	d.RegisterHandlerForService("iam", "GetServiceLastAccessedDetailsWithEntities", s.GetServiceLastAccessedDetailsWithEntities)
 }

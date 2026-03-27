@@ -148,6 +148,7 @@ func (r *ActionRegistry) initDefaults() {
 		"ListExecutions", "GetExecutionHistory",
 		"CreateActivity", "DeleteActivity", "DescribeActivity",
 		"ListActivities",
+		"RedriveExecution", "TestState",
 	})
 }
 

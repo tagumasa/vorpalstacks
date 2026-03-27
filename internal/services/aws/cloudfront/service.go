@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
+	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
 var managedPoliciesOnce sync.Once
@@ -70,6 +71,36 @@ func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontSt
 		tags:                    cloudfrontstore.NewTagStore(storage),
 		arnBuilder:              arnBuilder,
 	}, nil
+}
+
+func (s *CloudFrontService) wafAssociationStore(reqCtx *request.RequestContext) (*wafstore.WebACLAssociationStore, error) {
+	storage, err := reqCtx.GetGlobalStorage()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get global storage for WAF association: %w", err)
+	}
+	return wafstore.NewWebACLAssociationStore(storage), nil
+}
+
+func (s *CloudFrontService) syncWAFAssociation(reqCtx *request.RequestContext, webACLId, distributionArn string) error {
+	if webACLId == "" {
+		return nil
+	}
+	assocStore, err := s.wafAssociationStore(reqCtx)
+	if err != nil {
+		return err
+	}
+	return assocStore.Associate(webACLId, distributionArn)
+}
+
+func (s *CloudFrontService) removeWAFAssociation(reqCtx *request.RequestContext, webACLId, distributionArn string) error {
+	if webACLId == "" {
+		return nil
+	}
+	assocStore, err := s.wafAssociationStore(reqCtx)
+	if err != nil {
+		return err
+	}
+	return assocStore.Disassociate(webACLId, distributionArn)
 }
 
 // AccountId returns the account ID.

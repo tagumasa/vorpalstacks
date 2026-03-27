@@ -7,6 +7,7 @@ import (
 	"vorpalstacks/internal/services/aws/common/audit"
 	"vorpalstacks/internal/services/aws/common/request"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
+	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
 func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.RequestContext, req *request.ParsedRequest, response interface{}, err error) {
@@ -14,13 +15,17 @@ func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.
 		return
 	}
 
+	if reqCtx.Principal == "" && req != nil && req.AccessKeyID != "" {
+		d.resolvePrincipal(reqCtx, req.AccessKeyID)
+	}
+
 	if !reqCtx.HasAuditRecorder() {
 		store, storeErr := reqCtx.GetStorage()
 		if storeErr != nil {
 			return
 		}
-		cloudtrailStore := cloudtrailstore.NewCloudTrailStore(store, reqCtx.GetAccountID(), reqCtx.GetRegion())
-		recorder := cloudtrailaudit.NewCloudTrailRecorder(cloudtrailStore)
+		ctStore := cloudtrailstore.NewCloudTrailStore(store, reqCtx.GetAccountID(), reqCtx.GetRegion())
+		recorder := cloudtrailaudit.NewCloudTrailRecorder(ctStore)
 		reqCtx.SetAuditRecorder(recorder)
 	}
 
@@ -32,6 +37,28 @@ func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.
 			if err := auditRecorder.RecordEvent(event); err != nil {
 				log.Printf("Failed to record audit event: %v", err)
 			}
+		}
+	}
+}
+
+func (d *Dispatcher) resolvePrincipal(reqCtx *request.RequestContext, accessKeyID string) {
+	globalStorage, err := reqCtx.GetGlobalStorage()
+	if err != nil {
+		return
+	}
+	iamStore := iamstore.NewIAMStore(globalStorage, reqCtx.GetAccountID())
+	accessKey, err := iamStore.AccessKeys().Get(accessKeyID)
+	if err != nil {
+		return
+	}
+	if accessKey != nil && accessKey.UserName != "" {
+		user, err := iamStore.Users().Get(accessKey.UserName)
+		if err != nil || user == nil {
+			reqCtx.Principal = accessKey.UserName
+		} else {
+			reqCtx.Principal = user.UserName
+			reqCtx.PrincipalID = user.ID
+			reqCtx.PrincipalType = request.PrincipalTypeUser
 		}
 	}
 }

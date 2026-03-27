@@ -27,6 +27,7 @@ type IAMStore struct {
 	samlProviders        *SAMLProviderStore
 	oidcProviders        *OpenIDConnectProviderStore
 	accountSettings      *AccountSettingsStore
+	serviceLastAccessed  *ServiceLastAccessedDetailsJobStore
 	arnBuilder           *ARNBuilder
 	accountID            string
 }
@@ -54,6 +55,7 @@ func NewIAMStore(store storage.BasicStorage, accountID string) *IAMStore {
 		samlProviders:        NewSAMLProviderStore(store, accountID),
 		oidcProviders:        NewOpenIDConnectProviderStore(store, accountID),
 		accountSettings:      NewAccountSettingsStore(store),
+		serviceLastAccessed:  NewServiceLastAccessedDetailsJobStore(store),
 		arnBuilder:           NewARNBuilder(accountID),
 		accountID:            accountID,
 	}
@@ -304,4 +306,9 @@ func (s *IAMStore) OpenIDConnectProviders() *OpenIDConnectProviderStore {
 // AccountSettings returns the account settings store.
 func (s *IAMStore) AccountSettings() *AccountSettingsStore {
 	return s.accountSettings
+}
+
+// ServiceLastAccessed returns the service last accessed details job store.
+func (s *IAMStore) ServiceLastAccessed() *ServiceLastAccessedDetailsJobStore {
+	return s.serviceLastAccessed
 }

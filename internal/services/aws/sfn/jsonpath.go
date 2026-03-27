@@ -278,3 +278,48 @@ func (e *Executor) extractStatesFromDefinition(definition *sfnstore.StateMachine
 
 	return states, nil
 }
+
+func (e *Executor) parseState(name string, stateData interface{}) (sfnstore.State, error) {
+	stateMap, ok := stateData.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid state format for %s", name)
+	}
+
+	stateType, ok := stateMap["Type"].(string)
+	if !ok {
+		return nil, fmt.Errorf("state type not specified for %s", name)
+	}
+
+	var state sfnstore.State
+	switch stateType {
+	case "Pass":
+		state = &sfnstore.PassState{Name: name}
+	case "Task":
+		state = &sfnstore.TaskState{Name: name}
+	case "Choice":
+		state = &sfnstore.ChoiceState{Name: name}
+	case "Wait":
+		state = &sfnstore.WaitState{Name: name}
+	case "Parallel":
+		state = &sfnstore.ParallelState{Name: name}
+	case "Map":
+		state = &sfnstore.MapState{Name: name}
+	case "Fail":
+		state = &sfnstore.FailState{Name: name}
+	case "Succeed":
+		state = &sfnstore.SucceedState{Name: name}
+	default:
+		return nil, fmt.Errorf("unknown state type: %s", stateType)
+	}
+
+	stateJSON, err := json.Marshal(stateMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal state data: %w", err)
+	}
+
+	if err := json.Unmarshal(stateJSON, state); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal state: %w", err)
+	}
+
+	return state, nil
+}

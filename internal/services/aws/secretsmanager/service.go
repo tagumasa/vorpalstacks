@@ -2,6 +2,7 @@
 package secretsmanager
 
 import (
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
@@ -9,7 +10,8 @@ import (
 
 // SecretsManagerService provides AWS Secrets Manager operations.
 type SecretsManagerService struct {
-	accountID string
+	accountID      string
+	storageManager *storage.RegionStorageManager
 }
 
 // NewSecretsManagerService creates a new Secrets Manager service instance.
@@ -17,6 +19,11 @@ func NewSecretsManagerService(accountID string) *SecretsManagerService {
 	return &SecretsManagerService{
 		accountID: accountID,
 	}
+}
+
+// SetStorageManager injects a region storage manager for cross-region operations.
+func (s *SecretsManagerService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
 }
 
 // store returns the Secrets Manager store for the given request context.
@@ -55,4 +62,7 @@ func (s *SecretsManagerService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("secretsmanager", "ListSecretVersionIds", s.ListSecretVersionIds)
 	d.RegisterHandlerForService("secretsmanager", "UpdateSecretVersionStage", s.UpdateSecretVersionStage)
 	d.RegisterHandlerForService("secretsmanager", "BatchGetSecretValue", s.BatchGetSecretValue)
+	d.RegisterHandlerForService("secretsmanager", "ReplicateSecretToRegions", s.ReplicateSecretToRegions)
+	d.RegisterHandlerForService("secretsmanager", "RemoveRegionsFromReplication", s.RemoveRegionsFromReplication)
+	d.RegisterHandlerForService("secretsmanager", "StopReplicationToReplica", s.StopReplicationToReplica)
 }

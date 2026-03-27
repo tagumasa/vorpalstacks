@@ -7,7 +7,6 @@ import (
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
-// AssociateWebACL associates the specified web ACL with a regional resource.
 func (s *WAFv2Service) AssociateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	webACLArn := request.GetStringParam(req.Parameters, "WebACLArn")
 	if webACLArn == "" {
@@ -32,15 +31,81 @@ func (s *WAFv2Service) AssociateWebACL(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	if err := stores.associations.Associate(webACLArn, resourceArn); err != nil {
+	assocStore, err := s.associationStoreFor(reqCtx, resourceArn)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := assocStore.Associate(webACLArn, resourceArn); err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
 }
 
-// DisassociateWebACL removes the association between a web ACL and a regional resource.
 func (s *WAFv2Service) DisassociateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
+	if resourceArn == "" {
+		return nil, validationError("ResourceArn is required")
+	}
+
+	assocStore, err := s.associationStoreFor(reqCtx, resourceArn)
+	if err != nil {
+		return nil, err
+	}
+
+	assoc, err := assocStore.GetByResourceArn(resourceArn)
+	if err != nil {
+		if wafstore.IsNotFound(err) {
+			return nil, notFoundError("WebACL association")
+		}
+		return nil, err
+	}
+
+	if err := assocStore.Disassociate(assoc.WebACLArn, resourceArn); err != nil {
+		if wafstore.IsNotFound(err) {
+			return nil, notFoundError("WebACL association")
+		}
+		return nil, err
+	}
+
+	return map[string]interface{}{}, nil
+}
+
+func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	webACLArn := request.GetStringParam(req.Parameters, "WebACLArn")
+	if webACLArn == "" {
+		return nil, validationError("WebACLArn is required")
+	}
+
+	associationStores, err := s.allAssociationStores(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	seen := make(map[string]bool)
+	resources := make([]interface{}, 0)
+	for _, assocStore := range associationStores {
+		associations, err := assocStore.GetByWebACLArn(webACLArn)
+		if err != nil {
+			return nil, err
+		}
+		for _, assoc := range associations {
+			if !seen[assoc.ResourceArn] {
+				seen[assoc.ResourceArn] = true
+				resources = append(resources, map[string]interface{}{
+					"ResourceArn": assoc.ResourceArn,
+				})
+			}
+		}
+	}
+
+	return map[string]interface{}{
+		"ResourceArns": resources,
+	}, nil
+}
+
+func (s *WAFv2Service) GetWebACLForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
 	if resourceArn == "" {
 		return nil, validationError("ResourceArn is required")
@@ -51,49 +116,39 @@ func (s *WAFv2Service) DisassociateWebACL(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	assoc, err := stores.associations.GetByResourceArn(resourceArn)
+	assocStore, err := s.associationStoreFor(reqCtx, resourceArn)
+	if err != nil {
+		return nil, err
+	}
+
+	assoc, err := assocStore.GetByResourceArn(resourceArn)
 	if err != nil {
 		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL association")
+			return nil, notFoundError("WebACL association for the specified resource")
 		}
 		return nil, err
 	}
 
-	if err := stores.associations.Disassociate(assoc.WebACLArn, resourceArn); err != nil {
+	webACL, err := stores.webACLs.GetByARN(assoc.WebACLArn)
+	if err != nil {
 		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL association")
+			return nil, notFoundError("WebACL")
 		}
 		return nil, err
-	}
-
-	return map[string]interface{}{}, nil
-}
-
-// ListResourcesForWebACL returns all regional resources associated with the specified web ACL.
-func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	webACLArn := request.GetStringParam(req.Parameters, "WebACLArn")
-	if webACLArn == "" {
-		return nil, validationError("WebACLArn is required")
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	associations, err := stores.associations.GetByWebACLArn(webACLArn)
-	if err != nil {
-		return nil, err
-	}
-
-	resources := make([]interface{}, 0, len(associations))
-	for _, assoc := range associations {
-		resources = append(resources, map[string]interface{}{
-			"ResourceArn": assoc.ResourceArn,
-		})
 	}
 
 	return map[string]interface{}{
-		"ResourceArns": resources,
+		"WebACL": map[string]interface{}{
+			"Id":               webACL.ID,
+			"Name":             webACL.Name,
+			"ARN":              webACL.ARN,
+			"Description":      webACL.Description,
+			"DefaultAction":    convertActionToResponse(webACL.DefaultAction),
+			"Rules":            convertRulesToResponse(webACL.Rules),
+			"VisibilityConfig": convertVisibilityConfigToResponse(webACL.VisibilityConfig),
+			"Capacity":         webACL.Capacity,
+			"Scope":            webACL.Scope,
+			"LockToken":        webACL.LockToken,
+		},
 	}, nil
 }
