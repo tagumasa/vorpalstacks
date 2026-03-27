@@ -1,6 +1,6 @@
 # Vorpalstacks
 
-> **Warning: This is a beta release.** Vorpalstacks is under active development. While 30 AWS services are implemented with 594 passing SDK tests, not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
+> **Warning: This is a beta release.** Vorpalstacks is under active development. While 29 AWS services are implemented with 594 passing SDK tests, not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
 
 A lightweight edge and on-premise cloud platform providing AWS-compatible services.
 
@@ -20,7 +20,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 > **What this is not**: A 100% faithful reproduction of every AWS behaviour. Some edge cases, undocumented behaviours, and advanced features may differ from AWS. See [docs/services.md](docs/services.md) for the current scope of each service.
 
 - **AWS API Compatible**: Works with existing AWS SDKs and CLI
-- **30 AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, API Gateway, Step Functions, WAF, WAFv2, Kinesis, KMS, and more
+- **29 AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, API Gateway, Step Functions, WAF, WAFv2, Kinesis, KMS, and more
 - **IAM Authorization**: Full IAM policy evaluation with user/group/role-based access control
 - **DynamoDB PartiQL**: SQL-like queries with WHERE functions (attribute_exists, begins_with, contains, size)
 - **S3 SelectObjectContent**: SQL queries on CSV/JSON objects with event streaming
@@ -208,5 +208,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 ## License
 
 This project is licensed under the [Functional Source License, Version 1.1, MIT Future License (FSL-1.1-MIT)](LICENSE).
+
+> **Note**: The root licence will change to MIT after the project reaches production stability.
 
 The `pkg/` directory contains code licensed under Apache License 2.0 — see `pkg/sqlparser/LICENSE.md` and `pkg/vsjwt/LICENSE` for details.
