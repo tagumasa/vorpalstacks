@@ -15,7 +15,7 @@ func (s *KMSService) EnableKeyRotation(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "EnableKeyRotation", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (s *KMSService) DisableKeyRotation(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "DisableKeyRotation", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (s *KMSService) GetKeyRotationStatus(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GetKeyRotationStatus", nil)
 	if err != nil {
 		return nil, err
 	}

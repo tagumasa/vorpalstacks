@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/services/aws/common/iam"
 	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/services/aws/iam/policy"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	stsstore "vorpalstacks/internal/store/aws/sts"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
@@ -151,6 +153,26 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 	}
 	if !iamStore.Roles().Exists(roleName) {
 		return nil, ErrNoSuchRole
+	}
+
+	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
+	if err != nil {
+		return nil, ErrNoSuchRole
+	}
+
+	parsedPolicy, err := policy.ParseDocument(trustPolicyDoc)
+	if err != nil {
+		return nil, ErrInvalidRoleArn
+	}
+
+	callerArn, _ := s.resolveCallerIdentity(reqCtx, req)
+	if callerArn == "" {
+		callerArn = "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+	}
+
+	evalCtx := iam.BuildEvaluationContext(reqCtx.GetAccountID(), callerArn)
+	if err := iam.EvaluateTrustPolicy(parsedPolicy, callerArn, evalCtx); err != nil {
+		return nil, ErrAccessDenied
 	}
 
 	store, err := s.store(reqCtx)
@@ -312,6 +334,21 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 		return nil, ErrNoSuchRole
 	}
 
+	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
+	if err != nil {
+		return nil, ErrNoSuchRole
+	}
+
+	parsedPolicy, err := policy.ParseDocument(trustPolicyDoc)
+	if err != nil {
+		return nil, ErrInvalidRoleArn
+	}
+
+	evalCtx := iam.BuildEvaluationContext(reqCtx.GetAccountID(), principalArn)
+	if err := iam.EvaluateTrustPolicyForAction(parsedPolicy, principalArn, "sts:AssumeRoleWithSAML", evalCtx); err != nil {
+		return nil, ErrAccessDenied
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -376,6 +413,26 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 	}
 	if !iamStore.Roles().Exists(roleName) {
 		return nil, ErrNoSuchRole
+	}
+
+	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
+	if err != nil {
+		return nil, ErrNoSuchRole
+	}
+
+	parsedPolicy, err := policy.ParseDocument(trustPolicyDoc)
+	if err != nil {
+		return nil, ErrInvalidRoleArn
+	}
+
+	federatedPrincipal := ""
+	if providerId != "" {
+		federatedPrincipal = "arn:aws:iam::" + reqCtx.GetAccountID() + ":oidc-provider/" + providerId
+	}
+
+	evalCtx := iam.BuildEvaluationContext(reqCtx.GetAccountID(), federatedPrincipal)
+	if err := iam.EvaluateTrustPolicyForAction(parsedPolicy, federatedPrincipal, "sts:AssumeRoleWithWebIdentity", evalCtx); err != nil {
+		return nil, ErrAccessDenied
 	}
 
 	store, err := s.store(reqCtx)

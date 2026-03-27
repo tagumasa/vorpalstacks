@@ -42,6 +42,9 @@ func (s *KMSService) Encrypt(ctx context.Context, reqCtx *request.RequestContext
 	}
 
 	encryptionContext := parseEncryptionContext(req.Parameters)
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Encrypt", key.KeyID, encryptionContext); err != nil {
+		return nil, err
+	}
 
 	result, err := s.hsmBackend.Encrypt(key.KeyID, plaintext, encryptionContext)
 	if err != nil {
@@ -79,6 +82,9 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 		if err != nil {
 			return nil, err
 		}
+		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", key.KeyID, encryptionContext); err != nil {
+			return nil, err
+		}
 		if err := s.validateKeyState(key); err != nil {
 			return nil, err
 		}
@@ -95,6 +101,9 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 		}
 		key, err := stores.keys.Get(resolvedKeyID)
 		if err != nil {
+			return nil, err
+		}
+		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", key.KeyID, encryptionContext); err != nil {
 			return nil, err
 		}
 		keyArn = key.Arn
@@ -134,6 +143,9 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 		if err != nil {
 			return nil, err
 		}
+		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", sourceKey.KeyID, sourceEncryptionContext); err != nil {
+			return nil, err
+		}
 		if err := s.validateKeyState(sourceKey); err != nil {
 			return nil, err
 		}
@@ -155,6 +167,9 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 		if err != nil {
 			return nil, err
 		}
+		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", sourceKey.KeyID, sourceEncryptionContext); err != nil {
+			return nil, err
+		}
 		if err := s.validateKeyState(sourceKey); err != nil {
 			return nil, err
 		}
@@ -167,6 +182,9 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 	destinationKeyID := request.GetStringParam(req.Parameters, "DestinationKeyId")
 	destinationKey, err := s.resolveKeyByKeyID(stores, destinationKeyID)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Encrypt", destinationKey.KeyID, destinationEncryptionContext); err != nil {
 		return nil, err
 	}
 
@@ -198,7 +216,7 @@ func (s *KMSService) GenerateDataKey(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKey", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +250,7 @@ func (s *KMSService) GenerateDataKeyWithoutPlaintext(ctx context.Context, reqCtx
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKeyWithoutPlaintext", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +333,9 @@ func (s *KMSService) GenerateDataKeyPair(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+
+	encryptionContext := parseEncryptionContext(req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKeyPair", encryptionContext)
 	if err != nil {
 		return nil, err
 	}
@@ -332,8 +352,6 @@ func (s *KMSService) GenerateDataKeyPair(ctx context.Context, reqCtx *request.Re
 	if keyPairSpec == "" {
 		return nil, ErrValidation
 	}
-
-	encryptionContext := parseEncryptionContext(req.Parameters)
 
 	privKey, pubKey, err := generateAsymmetricKeyPair(keyPairSpec)
 	if err != nil {
@@ -370,7 +388,9 @@ func (s *KMSService) GenerateDataKeyPairWithoutPlaintext(ctx context.Context, re
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+
+	encryptionContext := parseEncryptionContext(req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKeyPairWithoutPlaintext", encryptionContext)
 	if err != nil {
 		return nil, err
 	}
@@ -387,8 +407,6 @@ func (s *KMSService) GenerateDataKeyPairWithoutPlaintext(ctx context.Context, re
 	if keyPairSpec == "" {
 		return nil, ErrValidation
 	}
-
-	encryptionContext := parseEncryptionContext(req.Parameters)
 
 	privKey, pubKey, err := generateAsymmetricKeyPair(keyPairSpec)
 	if err != nil {
@@ -424,7 +442,7 @@ func (s *KMSService) ListKeyRotations(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "ListKeyRotations", nil)
 	if err != nil {
 		return nil, err
 	}

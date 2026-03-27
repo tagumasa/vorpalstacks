@@ -17,7 +17,7 @@ func (s *KMSService) GenerateMac(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateMac", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (s *KMSService) VerifyMac(ctx context.Context, reqCtx *request.RequestConte
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "VerifyMac", nil)
 	if err != nil {
 		return nil, err
 	}

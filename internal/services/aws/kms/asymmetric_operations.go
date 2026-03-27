@@ -17,7 +17,7 @@ func (s *KMSService) Sign(ctx context.Context, reqCtx *request.RequestContext, r
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "Sign", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (s *KMSService) Verify(ctx context.Context, reqCtx *request.RequestContext,
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "Verify", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (s *KMSService) GetPublicKey(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GetPublicKey", nil)
 	if err != nil {
 		return nil, err
 	}

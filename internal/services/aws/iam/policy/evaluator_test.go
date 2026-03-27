@@ -514,6 +514,60 @@ func TestEvaluationContext_resolveAWSVariable(t *testing.T) {
 			key:  "aws:unknown",
 			want: "",
 		},
+		{
+			name: "aws:referer lowercase",
+			ctx:  &EvaluationContext{Referer: "https://example.com"},
+			key:  "aws:referer",
+			want: "https://example.com",
+		},
+		{
+			name: "aws:Referer mixed case",
+			ctx:  &EvaluationContext{Referer: "https://example.com"},
+			key:  "aws:Referer",
+			want: "https://example.com",
+		},
+		{
+			name: "aws:referer empty",
+			ctx:  &EvaluationContext{},
+			key:  "aws:referer",
+			want: "",
+		},
+		{
+			name: "aws:securetransport true",
+			ctx:  &EvaluationContext{SecureTransport: true},
+			key:  "aws:securetransport",
+			want: "true",
+		},
+		{
+			name: "aws:SecureTransport false",
+			ctx:  &EvaluationContext{SecureTransport: false},
+			key:  "aws:SecureTransport",
+			want: "false",
+		},
+		{
+			name: "aws:tokenissuetime set",
+			ctx:  &EvaluationContext{TokenIssueTime: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)},
+			key:  "aws:tokenissuetime",
+			want: "2026-01-01T00:00:00Z",
+		},
+		{
+			name: "aws:tokenissuetime zero",
+			ctx:  &EvaluationContext{},
+			key:  "aws:tokenissuetime",
+			want: "",
+		},
+		{
+			name: "aws:multifactorauthpresent true",
+			ctx:  &EvaluationContext{MultiFactorAuthPresent: true},
+			key:  "aws:multifactorauthpresent",
+			want: "true",
+		},
+		{
+			name: "aws:MultiFactorAuthPresent false",
+			ctx:  &EvaluationContext{MultiFactorAuthPresent: false},
+			key:  "aws:MultiFactorAuthPresent",
+			want: "false",
+		},
 	}
 
 	for _, tt := range tests {

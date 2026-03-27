@@ -190,6 +190,39 @@ func (s *KMSService) resolveKey(stores *kmsStores, params map[string]interface{}
 	return key, nil
 }
 
+func (s *KMSService) resolveCallerPrincipal(reqCtx *request.RequestContext, req *request.ParsedRequest) string {
+	accessKeyId := req.AccessKeyID
+	if accessKeyId == "" {
+		accessKeyId = request.ExtractAccessKeyIDFromAuth(req.Headers.Get("Authorization"))
+	}
+	if accessKeyId == "" {
+		accessKeyId = req.Headers.Get("X-Amz-Access-Key")
+	}
+	if accessKeyId == "" {
+		return "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+	}
+	iamStore := reqCtx.GetIAMStore()
+	if iamStore == nil {
+		return "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+	}
+	accessKey, err := iamStore.AccessKeys().Get(accessKeyId)
+	if err != nil || accessKey == nil {
+		return "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+	}
+	return "arn:aws:iam::" + reqCtx.GetAccountID() + ":user/" + accessKey.UserName
+}
+
+func (s *KMSService) resolveAndAuthorizeKey(reqCtx *request.RequestContext, req *request.ParsedRequest, stores *kmsStores, action string, encryptionContext map[string]string) (*kmsstore.Key, error) {
+	key, err := s.resolveKey(stores, req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), action, key.KeyID, encryptionContext); err != nil {
+		return nil, err
+	}
+	return key, nil
+}
+
 func getEncryptionContextKeys(ctx map[string]string) string {
 	if ctx == nil {
 		return ""

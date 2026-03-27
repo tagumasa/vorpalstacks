@@ -26,19 +26,23 @@ type Decision struct {
 
 // EvaluationContext holds the context information for policy evaluation.
 type EvaluationContext struct {
-	Principal         string
-	PrincipalAccount  string
-	Action            string
-	Resource          string
-	RequestTime       time.Time
-	SourceIP          string
-	UserAgent         string
-	UserID            string
-	UserName          string
-	SessionContext    map[string]string
-	EncryptionContext map[string]string
-	ServiceContext    map[string]string
-	Variables         map[string]string
+	Principal              string
+	PrincipalAccount       string
+	Action                 string
+	Resource               string
+	RequestTime            time.Time
+	SourceIP               string
+	UserAgent              string
+	UserID                 string
+	UserName               string
+	Referer                string
+	SecureTransport        bool
+	TokenIssueTime         time.Time
+	MultiFactorAuthPresent bool
+	SessionContext         map[string]string
+	EncryptionContext      map[string]string
+	ServiceContext         map[string]string
+	Variables              map[string]string
 }
 
 // ResolveVariable resolves a variable in an IAM policy condition key.
@@ -85,6 +89,22 @@ func (ctx *EvaluationContext) resolveAWSVariable(key string) string {
 		}
 	case "aws:RequestedAccount":
 		return ctx.PrincipalAccount
+	case "aws:referer", "aws:Referer":
+		return ctx.Referer
+	case "aws:securetransport", "aws:SecureTransport":
+		if ctx.SecureTransport {
+			return "true"
+		}
+		return "false"
+	case "aws:tokenissuetime", "aws:TokenIssueTime":
+		if !ctx.TokenIssueTime.IsZero() {
+			return ctx.TokenIssueTime.Format(time.RFC3339)
+		}
+	case "aws:multifactorauthpresent", "aws:MultiFactorAuthPresent":
+		if ctx.MultiFactorAuthPresent {
+			return "true"
+		}
+		return "false"
 	}
 	return ""
 }

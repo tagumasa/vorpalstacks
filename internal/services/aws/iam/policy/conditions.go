@@ -52,6 +52,8 @@ const (
 	ConditionArnLike                     ConditionOperator = "ArnLike"
 	ConditionArnNotEquals                ConditionOperator = "ArnNotEquals"
 	ConditionArnNotLike                  ConditionOperator = "ArnNotLike"
+	ConditionNull                        ConditionOperator = "Null"
+	ConditionBinaryEquals                ConditionOperator = "BinaryEquals"
 	ConditionForAnyValueStringEquals     ConditionOperator = "ForAnyValue:StringEquals"
 	ConditionForAllValuesStringEquals    ConditionOperator = "ForAllValues:StringEquals"
 	ConditionForAnyValueStringNotEquals  ConditionOperator = "ForAnyValue:StringNotEquals"
@@ -74,6 +76,23 @@ func (ce *ConditionEvaluator) Evaluate(conditions ConditionMap, context *Evaluat
 
 	for operator, keyValues := range conditions {
 		op := ConditionOperator(operator)
+
+		if op == ConditionNull {
+			for key, values := range keyValues {
+				resolved := context.ResolveVariable(key)
+				keyExists := resolved != ""
+				if len(values) > 0 {
+					expectNull := strings.EqualFold(values[0], "true")
+					if expectNull && keyExists {
+						return false
+					}
+					if !expectNull && !keyExists {
+						return false
+					}
+				}
+			}
+			continue
+		}
 
 		if op == ConditionForAllValuesStringEquals {
 			for key, values := range keyValues {
@@ -253,6 +272,10 @@ func (ce *ConditionEvaluator) matchValue(op ConditionOperator, contextValue, pol
 		return contextValue != policyValue
 	case ConditionArnNotLike:
 		return !matchArnLike(policyValue, contextValue)
+	case ConditionBinaryEquals:
+		return contextValue == policyValue
+	case ConditionNull:
+		return false
 	default:
 		return false
 	}

@@ -68,7 +68,7 @@ func (v *IAMValidator) ValidateRoleForServiceWithErrors(ctx context.Context, rol
 		return errFactory.RoleNotFoundError(roleArn)
 	}
 
-	evalCtx := BuildEvaluationContext(v.accountID)
+	evalCtx := BuildEvaluationContext(v.accountID, string(servicePrincipal))
 	if err := v.ValidateTrustPolicy(parsed.RoleName, policyDoc, servicePrincipal, evalCtx); err != nil {
 		return errFactory.RoleCannotBeAssumedError(roleArn)
 	}
@@ -104,7 +104,7 @@ func (v *IAMValidator) ValidateTrustPolicy(roleName, policyDoc string, servicePr
 		return NewLambdaRoleCannotBeAssumedError("")
 	}
 
-	return EvaluateTrustPolicy(doc, servicePrincipal, evalCtx)
+	return EvaluateTrustPolicy(doc, string(servicePrincipal), evalCtx)
 }
 
 // InvalidateCache invalidates the policy cache for a role.

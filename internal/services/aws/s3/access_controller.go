@@ -27,14 +27,16 @@ func NewAccessController(accountID string) *AccessController {
 
 // AccessCheck contains parameters for access control checks.
 type AccessCheck struct {
-	Principal     string
-	PrincipalID   string
-	PrincipalType request.PrincipalType
-	Action        string
-	Resource      string
-	Bucket        string
-	Key           string
-	SourceIP      string
+	Principal       string
+	PrincipalID     string
+	PrincipalType   request.PrincipalType
+	Action          string
+	Resource        string
+	Bucket          string
+	Key             string
+	SourceIP        string
+	Referer         string
+	SecureTransport bool
 }
 
 // CheckAccess evaluates whether an operation should be allowed.
@@ -185,6 +187,8 @@ func (ac *AccessController) evaluateBucketPolicy(check *AccessCheck, bucket *s3s
 		Resource:         check.Resource,
 		SourceIP:         check.SourceIP,
 		RequestTime:      time.Now(),
+		Referer:          check.Referer,
+		SecureTransport:  check.SecureTransport,
 	}
 
 	decision := ac.policyEvaluator.Evaluate(evalCtx, []*policy.Document{policyDoc})

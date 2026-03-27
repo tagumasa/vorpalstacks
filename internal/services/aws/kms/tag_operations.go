@@ -23,6 +23,9 @@ func (s *KMSService) TagResource(ctx context.Context, reqCtx *request.RequestCon
 		return nil, ErrKeyNotFound
 	}
 
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "TagResource", keyID, nil); err != nil {
+		return nil, err
+	}
 	tagList := tagutil.ParseTagsWithKeyNames(req.Parameters, "Tags", "TagKey", "TagValue")
 	if len(tagList) == 0 {
 		return response.EmptyResponse(), nil
@@ -46,6 +49,9 @@ func (s *KMSService) UntagResource(ctx context.Context, reqCtx *request.RequestC
 		return nil, ErrKeyNotFound
 	}
 
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "UntagResource", keyID, nil); err != nil {
+		return nil, err
+	}
 	tagKeys := tagutil.ParseTagKeysAsSlice(req.Parameters, "TagKeys")
 	if len(tagKeys) == 0 {
 		return response.EmptyResponse(), nil
@@ -70,6 +76,9 @@ func (s *KMSService) ListResourceTags(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrKeyNotFound
 	}
 
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "ListResourceTags", keyID, nil); err != nil {
+		return nil, err
+	}
 	tags, err := stores.keys.ListTags(keyID)
 	if err != nil {
 		return nil, err

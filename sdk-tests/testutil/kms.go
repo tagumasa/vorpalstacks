@@ -310,7 +310,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 			"Version": "2012-10-17",
 			"Statement": [{
 				"Effect": "Allow",
-				"Principal": {"AWS": "arn:aws:iam::000000000000:user/TestUser"},
+				"Principal": {"AWS": "*"},
 				"Action": "kms:*",
 				"Resource": "*"
 			}]

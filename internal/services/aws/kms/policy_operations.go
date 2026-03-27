@@ -15,7 +15,7 @@ func (s *KMSService) GetKeyPolicy(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GetKeyPolicy", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (s *KMSService) PutKeyPolicy(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "PutKeyPolicy", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (s *KMSService) ListKeyPolicies(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "ListKeyPolicies", nil)
 	if err != nil {
 		return nil, err
 	}

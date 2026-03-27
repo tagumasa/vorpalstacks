@@ -267,3 +267,117 @@ func TestFilepathMatch(t *testing.T) {
 		})
 	}
 }
+
+func TestConditionEvaluator_Null(t *testing.T) {
+	evaluator := NewConditionEvaluator()
+
+	tests := []struct {
+		name       string
+		conditions ConditionMap
+		ctx        *EvaluationContext
+		expected   bool
+	}{
+		{
+			name: "null true - key absent",
+			conditions: ConditionMap{
+				"Null": {
+					"aws:referer": []string{"true"},
+				},
+			},
+			ctx:      &EvaluationContext{},
+			expected: true,
+		},
+		{
+			name: "null true - key present",
+			conditions: ConditionMap{
+				"Null": {
+					"aws:referer": []string{"true"},
+				},
+			},
+			ctx:      &EvaluationContext{Referer: "https://example.com"},
+			expected: false,
+		},
+		{
+			name: "null false - key present",
+			conditions: ConditionMap{
+				"Null": {
+					"aws:referer": []string{"false"},
+				},
+			},
+			ctx:      &EvaluationContext{Referer: "https://example.com"},
+			expected: true,
+		},
+		{
+			name: "null false - key absent",
+			conditions: ConditionMap{
+				"Null": {
+					"aws:referer": []string{"false"},
+				},
+			},
+			ctx:      &EvaluationContext{},
+			expected: false,
+		},
+		{
+			name: "null true case insensitive",
+			conditions: ConditionMap{
+				"Null": {
+					"aws:referer": []string{"TRUE"},
+				},
+			},
+			ctx:      &EvaluationContext{},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := evaluator.Evaluate(tt.conditions, tt.ctx)
+			if result != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestConditionEvaluator_BinaryEquals(t *testing.T) {
+	ce := NewConditionEvaluator()
+
+	tests := []struct {
+		name         string
+		op           ConditionOperator
+		contextValue string
+		policyValue  string
+		expected     bool
+	}{
+		{
+			name:         "binary equals match",
+			op:           ConditionBinaryEquals,
+			contextValue: "dGVzdA==",
+			policyValue:  "dGVzdA==",
+			expected:     true,
+		},
+		{
+			name:         "binary equals no match",
+			op:           ConditionBinaryEquals,
+			contextValue: "dGVzdA==",
+			policyValue:  "b3RoZXI=",
+			expected:     false,
+		},
+		{
+			name:         "binary equals empty",
+			op:           ConditionBinaryEquals,
+			contextValue: "",
+			policyValue:  "dGVzdA==",
+			expected:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ce.matchValue(tt.op, tt.contextValue, tt.policyValue)
+			if result != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}

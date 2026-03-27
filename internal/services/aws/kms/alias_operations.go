@@ -64,11 +64,12 @@ func (s *KMSService) CreateAlias(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "CreateAlias", key.KeyID, nil); err != nil {
+		return nil, err
+	}
 	if key.KeyState == kmsstore.KeyStatePendingDeletion {
 		return nil, ErrKeyPendingDeletion
 	}
-
 	_, err = stores.aliases.Create(aliasName, key.KeyID)
 	if err != nil {
 		return nil, s.mapAliasStoreError(err)
@@ -172,11 +173,12 @@ func (s *KMSService) UpdateAlias(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "UpdateAlias", key.KeyID, nil); err != nil {
+		return nil, err
+	}
 	if key.KeyState == kmsstore.KeyStatePendingDeletion {
 		return nil, ErrKeyPendingDeletion
 	}
-
 	if err := stores.aliases.UpdateTarget(aliasName, key.KeyID); err != nil {
 		return nil, s.mapAliasStoreError(err)
 	}

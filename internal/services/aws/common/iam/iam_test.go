@@ -212,7 +212,7 @@ func TestIsValidRoleARN(t *testing.T) {
 
 func TestBuildEvaluationContext(t *testing.T) {
 	accountID := "123456789012"
-	ctx := BuildEvaluationContext(accountID)
+	ctx := BuildEvaluationContext(accountID, "")
 
 	if ctx.PrincipalAccount != accountID {
 		t.Errorf("PrincipalAccount = %v, want %v", ctx.PrincipalAccount, accountID)
@@ -482,7 +482,7 @@ func TestEvaluateTrustPolicy(t *testing.T) {
 		Variables:        map[string]string{"aws:SourceAccount": "123456789012"},
 	}
 
-	err := EvaluateTrustPolicy(doc, ServicePrincipalLambda, evalCtx)
+	err := EvaluateTrustPolicy(doc, string(ServicePrincipalLambda), evalCtx)
 	if err != nil {
 		t.Errorf("EvaluateTrustPolicy() error = %v", err)
 	}
@@ -499,7 +499,7 @@ func TestEvaluateTrustPolicy(t *testing.T) {
 		},
 	}
 
-	err = EvaluateTrustPolicy(docDeny, ServicePrincipalLambda, evalCtx)
+	err = EvaluateTrustPolicy(docDeny, string(ServicePrincipalLambda), evalCtx)
 	if err != ErrRoleCannotBeAssumed {
 		t.Errorf("EvaluateTrustPolicy() expected ErrRoleCannotBeAssumed, got %v", err)
 	}
@@ -516,7 +516,7 @@ func TestEvaluateTrustPolicy(t *testing.T) {
 		},
 	}
 
-	err = EvaluateTrustPolicy(docNoMatch, ServicePrincipalLambda, evalCtx)
+	err = EvaluateTrustPolicy(docNoMatch, string(ServicePrincipalLambda), evalCtx)
 	if err != ErrRoleCannotBeAssumed {
 		t.Errorf("EvaluateTrustPolicy() expected ErrRoleCannotBeAssumed, got %v", err)
 	}

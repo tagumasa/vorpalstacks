@@ -93,7 +93,7 @@ func (s *KMSService) DescribeKey(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "DescribeKey", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (s *KMSService) EnableKey(ctx context.Context, reqCtx *request.RequestConte
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "EnableKey", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (s *KMSService) DisableKey(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "DisableKey", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (s *KMSService) ScheduleKeyDeletion(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "ScheduleKeyDeletion", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func (s *KMSService) CancelKeyDeletion(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "CancelKeyDeletion", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +247,7 @@ func (s *KMSService) UpdateKeyDescription(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "UpdateKeyDescription", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -322,6 +322,9 @@ func (s *KMSService) GetParametersForImport(ctx context.Context, reqCtx *request
 	}
 
 	keyID := s.getKeyID(req.Parameters)
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "GetParametersForImport", keyID, nil); err != nil {
+		return nil, err
+	}
 	wrappingKeySpec := request.GetStringParam(req.Parameters, "WrappingKeySpec")
 	if wrappingKeySpec == "" {
 		wrappingKeySpec = "RSA_2048"
@@ -349,6 +352,9 @@ func (s *KMSService) ImportKeyMaterial(ctx context.Context, reqCtx *request.Requ
 	}
 
 	keyID := s.getKeyID(req.Parameters)
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "ImportKeyMaterial", keyID, nil); err != nil {
+		return nil, err
+	}
 	importToken := request.GetStringParam(req.Parameters, "ImportToken")
 	encryptedKeyMaterialB64 := request.GetStringParam(req.Parameters, "EncryptedKeyMaterial")
 	validTo := request.GetIntParam(req.Parameters, "ValidTo")
@@ -381,6 +387,9 @@ func (s *KMSService) DeleteImportedKeyMaterial(ctx context.Context, reqCtx *requ
 
 	keyID := s.getKeyID(req.Parameters)
 
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "DeleteImportedKeyMaterial", keyID, nil); err != nil {
+		return nil, err
+	}
 	if err := stores.keys.DeleteImportedKeyMaterial(keyID); err != nil {
 		return nil, err
 	}
@@ -398,6 +407,9 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 
 	keyID := s.getKeyID(req.Parameters)
 	replicaRegion := request.GetStringParam(req.Parameters, "ReplicaRegion")
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "ReplicateKey", keyID, nil); err != nil {
+		return nil, err
+	}
 
 	replicaKeyID, err := kmsstore.GenerateKeyID()
 	if err != nil {
@@ -425,6 +437,9 @@ func (s *KMSService) UpdatePrimaryRegion(ctx context.Context, reqCtx *request.Re
 
 	keyID := s.getKeyID(req.Parameters)
 	primaryRegion := request.GetStringParam(req.Parameters, "PrimaryRegion")
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "UpdatePrimaryRegion", keyID, nil); err != nil {
+		return nil, err
+	}
 
 	if err := stores.keys.UpdatePrimaryRegion(keyID, primaryRegion); err != nil {
 		return nil, err

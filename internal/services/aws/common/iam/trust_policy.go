@@ -8,8 +8,9 @@ import (
 )
 
 // BuildEvaluationContext creates an evaluation context for trust policy evaluation.
-func BuildEvaluationContext(sourceAccount string) *policy.EvaluationContext {
+func BuildEvaluationContext(sourceAccount string, principalArn string) *policy.EvaluationContext {
 	return &policy.EvaluationContext{
+		Principal:        principalArn,
 		PrincipalAccount: sourceAccount,
 		Variables: map[string]string{
 			"aws:SourceAccount": sourceAccount,
@@ -18,17 +19,22 @@ func BuildEvaluationContext(sourceAccount string) *policy.EvaluationContext {
 }
 
 // EvaluateTrustPolicy evaluates if a trust policy allows assuming a role.
-func EvaluateTrustPolicy(doc *policy.Document, servicePrincipal ServicePrincipal, evalCtx *policy.EvaluationContext) error {
+func EvaluateTrustPolicy(doc *policy.Document, callerPrincipal string, evalCtx *policy.EvaluationContext) error {
+	return EvaluateTrustPolicyForAction(doc, callerPrincipal, "sts:AssumeRole", evalCtx)
+}
+
+// EvaluateTrustPolicyForAction evaluates if a trust policy allows a specific STS action.
+func EvaluateTrustPolicyForAction(doc *policy.Document, callerPrincipal string, action string, evalCtx *policy.EvaluationContext) error {
 	for _, stmt := range doc.Statement {
 		if stmt.Effect != policy.EffectAllow {
 			continue
 		}
 
-		if !matchesPrincipal(stmt.Principal, string(servicePrincipal)) {
+		if !matchesPrincipal(stmt.Principal, callerPrincipal) {
 			continue
 		}
 
-		if !matchesAction(stmt.Action, "sts:AssumeRole") {
+		if !matchesAction(stmt.Action, action) {
 			continue
 		}
 
@@ -60,15 +66,23 @@ func matchConditionValue(operator string, value string, expected []string) bool 
 	return false
 }
 
-func matchesPrincipal(principal *policy.Principal, servicePrincipal string) bool {
+func matchesPrincipal(principal *policy.Principal, callerPrincipal string) bool {
 	if principal == nil {
 		return false
 	}
 	if principal.Everyone {
 		return true
 	}
+	if principal.Matches(callerPrincipal) {
+		return true
+	}
 	for _, s := range principal.Service {
-		if s == servicePrincipal || s == "*" {
+		if s == callerPrincipal || s == "*" {
+			return true
+		}
+	}
+	for _, f := range principal.Federated {
+		if f == callerPrincipal || f == "*" {
 			return true
 		}
 	}

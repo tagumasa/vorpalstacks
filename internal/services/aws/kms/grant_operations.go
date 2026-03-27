@@ -16,7 +16,7 @@ func (s *KMSService) CreateGrant(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "CreateGrant", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s *KMSService) ListGrants(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "ListGrants", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -169,8 +169,7 @@ func (s *KMSService) RevokeGrant(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-
-	key, err := s.resolveKey(stores, req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "RevokeGrant", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -217,6 +216,9 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 	if keyID != "" {
 		key, err := s.resolveKey(stores, req.Parameters)
 		if err != nil {
+			return nil, err
+		}
+		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "RetireGrant", key.KeyID, nil); err != nil {
 			return nil, err
 		}
 		if grant.KeyID != key.KeyID {
