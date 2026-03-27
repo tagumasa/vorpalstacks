@@ -35,7 +35,9 @@ type RuntimeServer struct {
 	lambdaAuthorizer *auth.LambdaAuthorizer
 }
 
-// NewRuntimeServer creates a new runtime server.
+// NewRuntimeServer creates a new API Gateway runtime server.
+// Optional SQS/SNS stores for integration targets should be injected via
+// setter methods after construction.
 func NewRuntimeServer(store *apigatewaystore.RestApiStore, usageStore *apigatewaystore.UsageStore, lambdaInvoker LambdaInvoker) *RuntimeServer {
 	return &RuntimeServer{
 		store:            store,
@@ -49,18 +51,16 @@ func NewRuntimeServer(store *apigatewaystore.RestApiStore, usageStore *apigatewa
 	}
 }
 
-// NewRuntimeServerWithStores creates a new runtime server with SQS and SNS stores.
-func NewRuntimeServerWithStores(store *apigatewaystore.RestApiStore, usageStore *apigatewaystore.UsageStore, lambdaInvoker LambdaInvoker, sqsStore sqsstore.SQSStoreInterface, snsStore snsstore.SNSStoreInterface, accountID, region string) *RuntimeServer {
-	return &RuntimeServer{
-		store:            store,
-		usageStore:       usageStore,
-		router:           NewRuntimeRouter(),
-		executorFactory:  integration.NewExecutorFactoryWithStores(lambdaInvoker, sqsStore, snsStore, accountID, region),
-		lambdaInvoker:    lambdaInvoker,
-		validator:        validator.NewValidator(),
-		authenticator:    auth.NewAPIKeyAuthenticator(usageStore),
-		lambdaAuthorizer: auth.NewLambdaAuthorizer(lambdaInvoker, store),
-	}
+// SetSQSStore injects an SQS store into the executor factory for SQS integration targets.
+func (s *RuntimeServer) SetSQSStore(store sqsstore.SQSStoreInterface, accountID, region string) {
+	s.executorFactory.SetSQSStore(store)
+	s.executorFactory.SetAccountAndRegion(accountID, region)
+}
+
+// SetSNSStore injects an SNS store into the executor factory for SNS integration targets.
+func (s *RuntimeServer) SetSNSStore(store snsstore.SNSStoreInterface, accountID, region string) {
+	s.executorFactory.SetSNSStore(store)
+	s.executorFactory.SetAccountAndRegion(accountID, region)
 }
 
 // HandleRequest handles incoming API Gateway requests.

@@ -37,6 +37,8 @@ type EventsService struct {
 const targetConcurrencyLimit = 100
 
 // NewEventsService creates a new Events service instance.
+// Optional cross-service dependencies should be injected via setter methods
+// before registering handlers.
 func NewEventsService(storageMgr *storage.RegionStorageManager, accountID, region string) *EventsService {
 	return &EventsService{
 		storageManager:  storageMgr,
@@ -46,49 +48,33 @@ func NewEventsService(storageMgr *storage.RegionStorageManager, accountID, regio
 	}
 }
 
-// NewEventsServiceWithClients creates a new Events service instance with custom clients.
-func NewEventsServiceWithClients(storageMgr *storage.RegionStorageManager, accountID, region string, sqsStore sqsstore.SQSStoreInterface, snsStore snsstore.SNSStoreInterface, lambdaInvoker common.LambdaInvoker) *EventsService {
-	s := &EventsService{
-		storageManager:  storageMgr,
-		lambdaInvoker:   lambdaInvoker,
-		accountID:       accountID,
-		region:          region,
-		targetSemaphore: make(chan struct{}, targetConcurrencyLimit),
-	}
-	if sqsStore != nil {
-		s.sqsStores.Store(region, sqsStore)
-	}
-	if snsStore != nil {
-		s.snsStores.Store(region, snsStore)
-	}
-	return s
+// SetEventsStore sets a pre-built events store, bypassing per-request store creation.
+func (s *EventsService) SetEventsStore(store *eventsstore.EventsStore) {
+	s.eventsStore = store
 }
 
-// NewEventsServiceWithStore creates a new Events service instance with a custom store.
-func NewEventsServiceWithStore(storageMgr *storage.RegionStorageManager, accountID, region string, eventsStore *eventsstore.EventsStore) *EventsService {
-	return &EventsService{
-		storageManager:  storageMgr,
-		eventsStore:     eventsStore,
-		accountID:       accountID,
-		region:          region,
-		targetSemaphore: make(chan struct{}, targetConcurrencyLimit),
+// SetSQSStore registers an SQS store for a given region for cross-service event delivery.
+func (s *EventsService) SetSQSStore(region string, store sqsstore.SQSStoreInterface) {
+	if store != nil {
+		s.sqsStores.Store(region, store)
 	}
 }
 
-// NewEventsServiceWithPublisher creates a new Events service instance with a custom SNS publisher.
-func NewEventsServiceWithPublisher(storageMgr *storage.RegionStorageManager, accountID, region string, sqsStore *sqsstore.SQSStore, snsPublisher SNSPublisher, lambdaInvoker common.LambdaInvoker) *EventsService {
-	s := &EventsService{
-		storageManager:  storageMgr,
-		snsPublisher:    snsPublisher,
-		lambdaInvoker:   lambdaInvoker,
-		accountID:       accountID,
-		region:          region,
-		targetSemaphore: make(chan struct{}, targetConcurrencyLimit),
+// SetSNSStore registers an SNS store for a given region for cross-service event delivery.
+func (s *EventsService) SetSNSStore(region string, store snsstore.SNSStoreInterface) {
+	if store != nil {
+		s.snsStores.Store(region, store)
 	}
-	if sqsStore != nil {
-		s.sqsStores.Store(region, sqsStore)
-	}
-	return s
+}
+
+// SetSNSPublisher injects an SNS publisher for cross-service event-to-topic delivery.
+func (s *EventsService) SetSNSPublisher(publisher SNSPublisher) {
+	s.snsPublisher = publisher
+}
+
+// SetLambdaInvoker injects a Lambda invoker for cross-service event-to-function delivery.
+func (s *EventsService) SetLambdaInvoker(invoker common.LambdaInvoker) {
+	s.lambdaInvoker = invoker
 }
 
 func (s *EventsService) store(ctx *request.RequestContext) (*eventsstore.EventsStore, error) {

@@ -26,31 +26,33 @@ type SchedulerService struct {
 }
 
 // NewSchedulerService creates a new Scheduler service instance.
-func NewSchedulerService(storageManager *storage.RegionStorageManager, accountID, _ string) *SchedulerService {
+// Cross-service dependencies and the engine must be set up before starting.
+func NewSchedulerService(storageManager *storage.RegionStorageManager, accountID string) *SchedulerService {
 	return &SchedulerService{
 		storageManager: storageManager,
 		accountID:      accountID,
 	}
 }
 
-// NewSchedulerServiceWithClients creates a new Scheduler service with custom clients.
-func NewSchedulerServiceWithClients(
-	storageManager *storage.RegionStorageManager,
-	accountID string,
-	sqsStore sqsstore.SQSStoreInterface,
-	snsStore snsstore.SNSStoreInterface,
-	lambdaInvoker common.LambdaInvoker,
-) *SchedulerService {
-	svc := &SchedulerService{
-		storageManager: storageManager,
-		sqsStore:       sqsStore,
-		snsStore:       snsStore,
-		lambdaInvoker:  lambdaInvoker,
-		accountID:      accountID,
-	}
+// SetSQSStore injects an SQS store for target resolution.
+func (s *SchedulerService) SetSQSStore(store sqsstore.SQSStoreInterface) {
+	s.sqsStore = store
+}
 
-	svc.engine = NewEngine(storageManager, sqsStore, snsStore, lambdaInvoker, accountID)
-	return svc
+// SetSNSStore injects an SNS store for target resolution.
+func (s *SchedulerService) SetSNSStore(store snsstore.SNSStoreInterface) {
+	s.snsStore = store
+}
+
+// SetLambdaInvoker injects a Lambda invoker for target resolution.
+func (s *SchedulerService) SetLambdaInvoker(invoker common.LambdaInvoker) {
+	s.lambdaInvoker = invoker
+}
+
+// BuildEngine constructs the scheduling engine from the currently injected dependencies.
+// Must be called after all setter methods and before StartEngine.
+func (s *SchedulerService) BuildEngine() {
+	s.engine = NewEngine(s.storageManager, s.sqsStore, s.snsStore, s.lambdaInvoker, s.accountID)
 }
 
 func (s *SchedulerService) store(ctx *request.RequestContext) (*schedulerstore.SchedulerStore, error) {

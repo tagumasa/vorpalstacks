@@ -31,6 +31,8 @@ type LogsService struct {
 }
 
 // NewLogsService creates a new CloudWatch Logs service.
+// Optional cross-service dependencies (Lambda invoker, Kinesis store) should be
+// injected via setter methods before registering handlers.
 func NewLogsService(storageMgr *storage.RegionStorageManager, accountID, dataPath string) *LogsService {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &LogsService{
@@ -44,29 +46,18 @@ func NewLogsService(storageMgr *storage.RegionStorageManager, accountID, dataPat
 	return s
 }
 
-// NewLogsServiceWithClients creates a new CloudWatch Logs service with custom Lambda and Kinesis clients.
-func NewLogsServiceWithClients(
-	storageMgr *storage.RegionStorageManager,
-	accountID, region, dataPath string,
-	lambdaInvoker common.LambdaInvoker,
-	kinesisStore kinesisstore.KinesisStoreInterface,
-) *LogsService {
-	ctx, cancel := context.WithCancel(context.Background())
-	s := &LogsService{
-		storageManager: storageMgr,
-		accountID:      accountID,
-		dataPath:       dataPath,
-		ctx:            ctx,
-		cancel:         cancel,
+// SetLambdaInvoker registers a Lambda invoker for a given region for subscription filter delivery.
+func (s *LogsService) SetLambdaInvoker(region string, invoker common.LambdaInvoker) {
+	if invoker != nil {
+		s.lambdaStores.Store(region, invoker)
 	}
-	if lambdaInvoker != nil {
-		s.lambdaStores.Store(region, lambdaInvoker)
+}
+
+// SetKinesisStore registers a Kinesis store for a given region for subscription filter delivery.
+func (s *LogsService) SetKinesisStore(region string, store kinesisstore.KinesisStoreInterface) {
+	if store != nil {
+		s.kinesisStores.Store(region, store)
 	}
-	if kinesisStore != nil {
-		s.kinesisStores.Store(region, kinesisStore)
-	}
-	s.startRetentionPurger()
-	return s
 }
 
 func (s *LogsService) store(reqCtx *request.RequestContext) (*logsstore.Store, error) {

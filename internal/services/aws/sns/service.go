@@ -48,7 +48,9 @@ func (s *SNSService) store(reqCtx *request.RequestContext) (snsstore.SNSStoreInt
 }
 
 // NewSNSService creates a new SNS service instance.
-func NewSNSService(storageMgr *storage.RegionStorageManager, accountID, region string) *SNSService {
+// Optional cross-service dependencies (SQS store, Lambda invoker) should be
+// injected via setter methods before registering handlers.
+func NewSNSService(storageMgr *storage.RegionStorageManager, accountID string) *SNSService {
 	return &SNSService{
 		storageManager: storageMgr,
 		accountID:      accountID,
@@ -56,41 +58,23 @@ func NewSNSService(storageMgr *storage.RegionStorageManager, accountID, region s
 	}
 }
 
-// NewSNSServiceWithSQS creates a new SNS service with an SQS store for FIFO queues.
-func NewSNSServiceWithSQS(storageMgr *storage.RegionStorageManager, accountID, region string, sqsStore sqsstore.SQSStoreInterface) *SNSService {
-	return &SNSService{
-		storageManager: storageMgr,
-		sqsStore:       sqsStore,
-		accountID:      accountID,
-		httpClient:     &http.Client{Timeout: 30 * time.Second},
-	}
+// SetSQSStore injects an SQS store for cross-service topic-to-queue delivery.
+func (s *SNSService) SetSQSStore(store sqsstore.SQSStoreInterface) {
+	s.sqsStore = store
 }
 
-// NewSNSServiceWithClients creates a new SNS service with SQS and Lambda clients.
-func NewSNSServiceWithClients(storageMgr *storage.RegionStorageManager, accountID, region string, sqsStore sqsstore.SQSStoreInterface, lambdaInvoker common.LambdaInvoker) *SNSService {
-	return &SNSService{
-		storageManager: storageMgr,
-		sqsStore:       sqsStore,
-		lambdaInvoker:  lambdaInvoker,
-		accountID:      accountID,
-		httpClient:     &http.Client{Timeout: 30 * time.Second},
-	}
+// SetLambdaInvoker injects a Lambda invoker for cross-service topic-to-function delivery.
+func (s *SNSService) SetLambdaInvoker(invoker common.LambdaInvoker) {
+	s.lambdaInvoker = invoker
 }
 
-// NewSNSServiceWithStore creates a new SNS service with a pre-configured store.
-func NewSNSServiceWithStore(storageMgr *storage.RegionStorageManager, accountID, region string, snsStore *snsstore.SNSStore) *SNSService {
-	svc := &SNSService{
-		storageManager: storageMgr,
-		accountID:      accountID,
-		httpClient:     &http.Client{Timeout: 30 * time.Second},
-	}
+// SetSNSStore pre-populates the regional store cache with an existing SNS store instance.
+func (s *SNSService) SetSNSStore(region string, snsStore *snsstore.SNSStore) {
 	if snsStore != nil {
-		svc.stores.Store(region, snsStore)
+		s.stores.Store(region, snsStore)
 	}
-	return svc
 }
 
-// initSigningKey initializes the RSA key and certificate for signing notifications.
 func (s *SNSService) initSigningKey() {
 	s.signingKeyOnce.Do(func() {
 		privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -123,8 +107,8 @@ func (s *SNSService) initSigningKey() {
 	})
 }
 
-// RegisterHandlers registers the SNS handlers with the dispatcher.
 func (s *SNSService) RegisterHandlers(d *dispatcher.Dispatcher) {
+	s.initSigningKey()
 	d.RegisterHandlerForService("sns", "CreateTopic", s.CreateTopic)
 	d.RegisterHandlerForService("sns", "DeleteTopic", s.DeleteTopic)
 	d.RegisterHandlerForService("sns", "GetTopicAttributes", s.GetTopicAttributes)

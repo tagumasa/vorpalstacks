@@ -3,18 +3,66 @@
 package cognitoidentityprovider
 
 import (
+	"context"
+	"encoding/json"
+	"net/http"
+
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
-// CognitoService provides operations for AWS Cognito.
-type CognitoService struct{}
+// CognitoService provides operations for AWS Cognito User Pools.
+type CognitoService struct {
+	storageManager *storage.RegionStorageManager
+	accountID      string
+	region         string
+}
 
-// NewCognitoService creates a new Cognito service instance.
+// NewCognitoService creates a new Cognito User Pools service instance.
 func NewCognitoService(store storage.BasicStorage, accountID, region string) *CognitoService {
-	return &CognitoService{}
+	return &CognitoService{
+		accountID: accountID,
+		region:    region,
+	}
+}
+
+// SetStorageManager injects the storage manager, required for the JWKS handler.
+func (s *CognitoService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
+// JWKSHandler serves the JSON Web Key Set for a Cognito User Pool.
+// If no userPoolId query parameter is provided, the first available pool is used.
+func (s *CognitoService) JWKSHandler(w http.ResponseWriter, r *http.Request) {
+	if s.storageManager == nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
+		return
+	}
+	ctx := context.Background()
+	reqCtx := request.NewRequestContext(ctx, s.storageManager, s.accountID, s.region)
+	userPoolID := r.URL.Query().Get("userPoolId")
+	if userPoolID == "" {
+		pools, _ := s.ListUserPoolsRaw(reqCtx)
+		if len(pools) > 0 {
+			userPoolID = pools[0].ID
+		}
+	}
+	if userPoolID == "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
+		return
+	}
+	jwks, err := s.GetJWKS(reqCtx, userPoolID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(jwks)
 }
 
 // store returns the Cognito store for the given request context.

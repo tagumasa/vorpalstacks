@@ -91,6 +91,8 @@ func (s *LambdaService) store(reqCtx *request.RequestContext) (*lambdaStore, err
 }
 
 // NewLambdaService creates a new Lambda service instance.
+// Optional dependencies (logs store, S3 object store) should be injected via
+// setter methods before registering handlers.
 func NewLambdaService(store storage.BasicStorage, dockerClient *mobyclient.Client, accountID, region, dataDir string) *LambdaService {
 	return &LambdaService{
 		storage:      store,
@@ -102,20 +104,11 @@ func NewLambdaService(store storage.BasicStorage, dockerClient *mobyclient.Clien
 	}
 }
 
-// NewLambdaServiceWithLogs creates a new Lambda service instance with a pre-configured CloudWatch Logs store.
-func NewLambdaServiceWithLogs(store storage.BasicStorage, dockerClient *mobyclient.Client, logsStore *logsstore.Store, accountID, region, dataDir string) *LambdaService {
-	s := &LambdaService{
-		storage:      store,
-		s3Objects:    make(map[string]s3store.ObjectStoreInterface),
-		dockerClient: dockerClient,
-		accountID:    accountID,
-		region:       region,
-		dataDir:      dataDir,
+// SetLogsStore registers a CloudWatch Logs store for a given region for Lambda log delivery.
+func (s *LambdaService) SetLogsStore(region string, store *logsstore.Store) {
+	if store != nil {
+		s.logsStores.Store(region, store)
 	}
-	if logsStore != nil {
-		s.logsStores.Store(region, logsStore)
-	}
-	return s
 }
 
 // SetS3ObjectStore registers an S3 object store for the specified region.

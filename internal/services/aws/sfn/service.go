@@ -35,6 +35,8 @@ type StepFunctionService struct {
 }
 
 // NewStepFunctionService creates a new Step Functions service instance.
+// Optional cross-service dependencies should be injected via setter methods
+// before registering handlers.
 func NewStepFunctionService(storageMgr *storage.RegionStorageManager, accountID string) *StepFunctionService {
 	s := &StepFunctionService{
 		accountID:      accountID,
@@ -44,29 +46,24 @@ func NewStepFunctionService(storageMgr *storage.RegionStorageManager, accountID 
 	return s
 }
 
-// NewStepFunctionServiceWithClients creates a new Step Functions service instance with Lambda invoker.
-func NewStepFunctionServiceWithClients(storageMgr *storage.RegionStorageManager, accountID string, lambdaInvoker common.LambdaInvoker) *StepFunctionService {
-	s := &StepFunctionService{
-		lambdaInvoker:  lambdaInvoker,
-		accountID:      accountID,
-		storageManager: storageMgr,
-	}
-	s.executor = NewExecutor(nil, lambdaInvoker)
-	return s
+// SetLambdaInvoker injects a Lambda invoker for AWS SDK and Lambda integration states.
+func (s *StepFunctionService) SetLambdaInvoker(invoker common.LambdaInvoker) {
+	s.lambdaInvoker = invoker
 }
 
-// NewStepFunctionServiceWithStores creates a new Step Functions service instance with custom stores.
-func NewStepFunctionServiceWithStores(storageMgr *storage.RegionStorageManager, accountID string, lambdaInvoker common.LambdaInvoker, sqsStore sqsstore.SQSStoreInterface, snsStore snsstore.SNSStoreInterface, eventsStore *eventsstore.EventsStore) *StepFunctionService {
-	s := &StepFunctionService{
-		lambdaInvoker:  lambdaInvoker,
-		sqsStore:       sqsStore,
-		snsStore:       snsStore,
-		eventsStore:    eventsStore,
-		accountID:      accountID,
-		storageManager: storageMgr,
-	}
-	s.executor = NewExecutorWithStores(nil, lambdaInvoker, sqsStore, snsStore, eventsStore, accountID, "")
-	return s
+// SetSQSStore injects an SQS store for cross-service SQS integration states.
+func (s *StepFunctionService) SetSQSStore(store sqsstore.SQSStoreInterface) {
+	s.sqsStore = store
+}
+
+// SetSNSStore injects an SNS store for cross-service SNS integration states.
+func (s *StepFunctionService) SetSNSStore(store snsstore.SNSStoreInterface) {
+	s.snsStore = store
+}
+
+// SetEventsStore injects an EventBridge store for cross-service EventBridge integration states.
+func (s *StepFunctionService) SetEventsStore(store *eventsstore.EventsStore) {
+	s.eventsStore = store
 }
 
 func (s *StepFunctionService) store(reqCtx *request.RequestContext) (*sfnstore.StepFunctionStore, error) {

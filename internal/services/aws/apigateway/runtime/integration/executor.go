@@ -84,6 +84,22 @@ func NewExecutorFactoryWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSS
 	}
 }
 
+// SetSQSStore sets the SQS store for SQS integration targets.
+func (f *ExecutorFactory) SetSQSStore(store sqs.SQSStoreInterface) {
+	f.sqsStore = store
+}
+
+// SetSNSStore sets the SNS store for SNS integration targets.
+func (f *ExecutorFactory) SetSNSStore(store sns.SNSStoreInterface) {
+	f.snsStore = store
+}
+
+// SetAccountAndRegion sets the account ID and region for ARN construction.
+func (f *ExecutorFactory) SetAccountAndRegion(accountID, region string) {
+	f.accountID = accountID
+	f.region = region
+}
+
 // CreateExecutor creates an executor for the given integration type.
 func (f *ExecutorFactory) CreateExecutor(integrationType string) (Executor, error) {
 	switch integrationType {
