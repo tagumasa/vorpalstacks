@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -30,12 +32,53 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		})
 	}
 
+	createIAMRole := func(roleName string) error {
+		trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
+		form := url.Values{}
+		form.Set("Action", "CreateRole")
+		form.Set("Version", "2010-05-08")
+		form.Set("RoleName", roleName)
+		form.Set("AssumeRolePolicyDocument", trustPolicy)
+		req, err := http.NewRequestWithContext(context.Background(), "POST", r.endpoint, bytes.NewBufferString(form.Encode()))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
+		return nil
+	}
+
+	deleteIAMRole := func(roleName string) {
+		form := url.Values{}
+		form.Set("Action", "DeleteRole")
+		form.Set("Version", "2010-05-08")
+		form.Set("RoleName", roleName)
+		req, _ := http.NewRequestWithContext(context.Background(), "POST", r.endpoint, bytes.NewBufferString(form.Encode()))
+		if req != nil {
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			resp, _ := http.DefaultClient.Do(req)
+			if resp != nil {
+				resp.Body.Close()
+			}
+		}
+	}
+
 	client := lambda.NewFromConfig(cfg)
 	ctx := context.Background()
 
 	functionName := fmt.Sprintf("TestFunction-%d", time.Now().UnixNano())
 	roleName := fmt.Sprintf("TestRole-%d", time.Now().UnixNano())
 	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
+
+	if err := createIAMRole(roleName); err != nil {
+		results = append(results, TestResult{Service: "lambda", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
+		return results
+	}
+	defer deleteIAMRole(roleName)
 
 	functionCode := []byte("exports.handler = async (event) => { return { statusCode: 200, body: 'Hello' }; };")
 
@@ -377,8 +420,13 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	results = append(results, r.RunTest("lambda", "CreateFunction_DuplicateName", func() error {
 		dupName := fmt.Sprintf("DupFunc-%d", time.Now().UnixNano())
-		dupRole := fmt.Sprintf("arn:aws:iam::000000000000:role/DupRole-%d", time.Now().UnixNano())
+		dupRoleName := fmt.Sprintf("DupRole-%d", time.Now().UnixNano())
+		dupRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", dupRoleName)
 		dupCode := []byte("exports.handler = async () => { return 1; };")
+		if err := createIAMRole(dupRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(dupRoleName)
 		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(dupName),
 			Runtime:      types.RuntimeNodejs22x,
@@ -410,8 +458,13 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	results = append(results, r.RunTest("lambda", "Invoke_VerifyResponsePayload", func() error {
 		invFunc := fmt.Sprintf("InvFunc-%d", time.Now().UnixNano())
-		invRole := fmt.Sprintf("arn:aws:iam::000000000000:role/InvRole-%d", time.Now().UnixNano())
+		invRoleName := fmt.Sprintf("InvRole-%d", time.Now().UnixNano())
+		invRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", invRoleName)
 		invCode := []byte("exports.handler = async (event) => { return { statusCode: 200, body: JSON.stringify({result: 'ok'}) }; };")
+		if err := createIAMRole(invRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(invRoleName)
 		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(invFunc),
 			Runtime:      types.RuntimeNodejs22x,
@@ -448,9 +501,14 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	results = append(results, r.RunTest("lambda", "GetFunction_ContainsCodeConfig", func() error {
 		gfcFunc := fmt.Sprintf("GfcFunc-%d", time.Now().UnixNano())
-		gfcRole := fmt.Sprintf("arn:aws:iam::000000000000:role/GfcRole-%d", time.Now().UnixNano())
+		gfcRoleName := fmt.Sprintf("GfcRole-%d", time.Now().UnixNano())
+		gfcRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", gfcRoleName)
 		gfcCode := []byte("exports.handler = async () => { return 1; };")
 		gfcDesc := "Test description for verification"
+		if err := createIAMRole(gfcRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(gfcRoleName)
 		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(gfcFunc),
 			Runtime:      types.RuntimeNodejs22x,
@@ -495,8 +553,13 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	results = append(results, r.RunTest("lambda", "PublishVersion_VerifyVersion", func() error {
 		pvFunc := fmt.Sprintf("PvFunc-%d", time.Now().UnixNano())
-		pvRole := fmt.Sprintf("arn:aws:iam::000000000000:role/PvRole-%d", time.Now().UnixNano())
+		pvRoleName := fmt.Sprintf("PvRole-%d", time.Now().UnixNano())
+		pvRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", pvRoleName)
 		pvCode := []byte("exports.handler = async () => { return 1; };")
+		if err := createIAMRole(pvRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(pvRoleName)
 		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(pvFunc),
 			Runtime:      types.RuntimeNodejs22x,
@@ -526,8 +589,13 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	results = append(results, r.RunTest("lambda", "ListFunctions_ReturnsCreated", func() error {
 		lfFunc := fmt.Sprintf("LfFunc-%d", time.Now().UnixNano())
-		lfRole := fmt.Sprintf("arn:aws:iam::000000000000:role/LfRole-%d", time.Now().UnixNano())
+		lfRoleName := fmt.Sprintf("LfRole-%d", time.Now().UnixNano())
+		lfRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", lfRoleName)
 		lfCode := []byte("exports.handler = async () => { return 1; };")
+		if err := createIAMRole(lfRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(lfRoleName)
 		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(lfFunc),
 			Runtime:      types.RuntimeNodejs22x,
@@ -565,8 +633,13 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	results = append(results, r.RunTest("lambda", "CreateAlias_DuplicateName", func() error {
 		caFunc := fmt.Sprintf("CaFunc-%d", time.Now().UnixNano())
-		caRole := fmt.Sprintf("arn:aws:iam::000000000000:role/CaRole-%d", time.Now().UnixNano())
+		caRoleName := fmt.Sprintf("CaRole-%d", time.Now().UnixNano())
+		caRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", caRoleName)
 		caCode := []byte("exports.handler = async () => { return 1; };")
+		if err := createIAMRole(caRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(caRoleName)
 		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(caFunc),
 			Runtime:      types.RuntimeNodejs22x,
@@ -605,8 +678,13 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	results = append(results, r.RunTest("lambda", "UpdateFunctionConfiguration_VerifyUpdate", func() error {
 		ucFunc := fmt.Sprintf("UcFunc-%d", time.Now().UnixNano())
-		ucRole := fmt.Sprintf("arn:aws:iam::000000000000:role/UcRole-%d", time.Now().UnixNano())
+		ucRoleName := fmt.Sprintf("UcRole-%d", time.Now().UnixNano())
+		ucRole := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", ucRoleName)
 		ucCode := []byte("exports.handler = async () => { return 1; };")
+		if err := createIAMRole(ucRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(ucRoleName)
 		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(ucFunc),
 			Runtime:      types.RuntimeNodejs22x,

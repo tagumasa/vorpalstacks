@@ -28,10 +28,9 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | Document | Description |
 |----------|-------------|
 | [Architecture](architecture.md) | System architecture, request flow, storage |
-| [Services](services.md) | Implemented AWS services (30 services, 594/594 tests) |
+| [Services](services.md) | Implemented AWS services (29 APIs, 25 AWS services, 594/594 tests) |
 | [Configuration](configuration.md) | Environment variables, TLS, gRPC-Web, IAM Auth |
 | [Integration](integration.md) | Service-to-service communication patterns |
-| [Terraform & OpenTofu](terraform.md) | Infrastructure-as-Code guide with verified services |
 
 ## Quick Start
 
@@ -50,4 +49,4 @@ aws --endpoint-url=http://localhost:8080 lambda list-functions
 
 ## For Developers
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.
+See [plans/](../plans/) for development guidelines, API gap analyses, and implementation guides.

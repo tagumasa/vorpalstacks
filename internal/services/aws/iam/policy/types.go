@@ -52,6 +52,23 @@ type ResourceList []string
 // StringList represents a list of strings in a policy statement.
 type StringList []string
 
+// UnmarshalJSON implements custom JSON unmarshalling for StringList.
+// It handles both single string and array of strings formats.
+func (sl *StringList) UnmarshalJSON(data []byte) error {
+	var single string
+	if err := json.Unmarshal(data, &single); err == nil {
+		*sl = StringList{single}
+		return nil
+	}
+
+	var multi []string
+	if err := json.Unmarshal(data, &multi); err != nil {
+		return err
+	}
+	*sl = StringList(multi)
+	return nil
+}
+
 // ConditionMap represents the condition block in a policy statement.
 type ConditionMap map[string]ConditionKeyValue
 

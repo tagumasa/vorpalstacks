@@ -1,9 +1,12 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -33,7 +36,41 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 
 	stateMachineName := fmt.Sprintf("TestStateMachine-%d", time.Now().UnixNano())
 	activityName := fmt.Sprintf("TestActivity-%d", time.Now().UnixNano())
-	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/TestRole")
+	roleName := fmt.Sprintf("TestSfnRole-%d", time.Now().UnixNano())
+	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
+
+	trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"states.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
+	form := url.Values{}
+	form.Set("Action", "CreateRole")
+	form.Set("Version", "2010-05-08")
+	form.Set("RoleName", roleName)
+	form.Set("AssumeRolePolicyDocument", trustPolicy)
+	req, err := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(form.Encode()))
+	if err != nil {
+		results = append(results, TestResult{Service: "stepfunctions", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role request: %v", err)})
+		return results
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		results = append(results, TestResult{Service: "stepfunctions", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
+		return results
+	}
+	resp.Body.Close()
+	defer func() {
+		cleanupForm := url.Values{}
+		cleanupForm.Set("Action", "DeleteRole")
+		cleanupForm.Set("Version", "2010-05-08")
+		cleanupForm.Set("RoleName", roleName)
+		cleanupReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(cleanupForm.Encode()))
+		if cleanupReq != nil {
+			cleanupReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			cleanupResp, _ := http.DefaultClient.Do(cleanupReq)
+			if cleanupResp != nil {
+				cleanupResp.Body.Close()
+			}
+		}
+	}()
 
 	stateMachineDefinition := map[string]interface{}{
 		"Comment": "A Hello World example",
@@ -277,10 +314,36 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "CreateStateMachine_InvalidDefinition", func() error {
 		invalidName := fmt.Sprintf("InvalidSM-%d", time.Now().UnixNano())
+		invalidRoleName := fmt.Sprintf("InvalidRole-%d", time.Now().UnixNano())
+		invalidForm := url.Values{}
+		invalidForm.Set("Action", "CreateRole")
+		invalidForm.Set("Version", "2010-05-08")
+		invalidForm.Set("RoleName", invalidRoleName)
+		invalidForm.Set("AssumeRolePolicyDocument", trustPolicy)
+		invalidReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(invalidForm.Encode()))
+		if invalidReq != nil {
+			invalidReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			if invalidResp, err := http.DefaultClient.Do(invalidReq); err == nil {
+				invalidResp.Body.Close()
+				defer func() {
+					delForm := url.Values{}
+					delForm.Set("Action", "DeleteRole")
+					delForm.Set("Version", "2010-05-08")
+					delForm.Set("RoleName", invalidRoleName)
+					delReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(delForm.Encode()))
+					if delReq != nil {
+						delReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+						if delResp, _ := http.DefaultClient.Do(delReq); delResp != nil {
+							delResp.Body.Close()
+						}
+					}
+				}()
+			}
+		}
 		_, err := client.CreateStateMachine(ctx, &sfn.CreateStateMachineInput{
 			Name:       aws.String(invalidName),
 			Definition: aws.String("not valid json {{{"),
-			RoleArn:    aws.String("arn:aws:iam::000000000000:role/TestRole"),
+			RoleArn:    aws.String(fmt.Sprintf("arn:aws:iam::000000000000:role/%s", invalidRoleName)),
 		})
 		if err != nil {
 			defer client.DeleteStateMachine(ctx, &sfn.DeleteStateMachineInput{
@@ -299,11 +362,37 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	results = append(results, r.RunTest("stepfunctions", "UpdateStateMachine_VerifyDefinition", func() error {
 		smName := fmt.Sprintf("VerifySM-%d", time.Now().UnixNano())
 		verifySMName = smName
+		verifyRoleName := fmt.Sprintf("VerifyRole-%d", time.Now().UnixNano())
+		verifyForm := url.Values{}
+		verifyForm.Set("Action", "CreateRole")
+		verifyForm.Set("Version", "2010-05-08")
+		verifyForm.Set("RoleName", verifyRoleName)
+		verifyForm.Set("AssumeRolePolicyDocument", trustPolicy)
+		verifyReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(verifyForm.Encode()))
+		if verifyReq != nil {
+			verifyReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			if verifyResp, err := http.DefaultClient.Do(verifyReq); err == nil {
+				verifyResp.Body.Close()
+				defer func() {
+					delForm := url.Values{}
+					delForm.Set("Action", "DeleteRole")
+					delForm.Set("Version", "2010-05-08")
+					delForm.Set("RoleName", verifyRoleName)
+					delReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(delForm.Encode()))
+					if delReq != nil {
+						delReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+						if delResp, _ := http.DefaultClient.Do(delReq); delResp != nil {
+							delResp.Body.Close()
+						}
+					}
+				}()
+			}
+		}
 		def1 := `{"Comment":"v1","StartAt":"A","States":{"A":{"Type":"Pass","End":true}}}`
 		resp, err := client.CreateStateMachine(ctx, &sfn.CreateStateMachineInput{
 			Name:       aws.String(smName),
 			Definition: aws.String(def1),
-			RoleArn:    aws.String("arn:aws:iam::000000000000:role/TestRole"),
+			RoleArn:    aws.String(fmt.Sprintf("arn:aws:iam::000000000000:role/%s", verifyRoleName)),
 		})
 		if err != nil {
 			return fmt.Errorf("create: %v", err)

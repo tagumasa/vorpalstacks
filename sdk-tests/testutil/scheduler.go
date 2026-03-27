@@ -1,9 +1,12 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -32,7 +35,69 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 	ctx := context.Background()
 
 	scheduleName := fmt.Sprintf("TestSchedule-%d", time.Now().UnixNano())
-	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/TestRole")
+	roleName := fmt.Sprintf("TestSchedRole-%d", time.Now().UnixNano())
+	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
+
+	trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"scheduler.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
+	form := url.Values{}
+	form.Set("Action", "CreateRole")
+	form.Set("Version", "2010-05-08")
+	form.Set("RoleName", roleName)
+	form.Set("AssumeRolePolicyDocument", trustPolicy)
+	req, err := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(form.Encode()))
+	if err != nil {
+		results = append(results, TestResult{Service: "scheduler", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role request: %v", err)})
+		return results
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		results = append(results, TestResult{Service: "scheduler", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
+		return results
+	}
+	resp.Body.Close()
+	defer func() {
+		cleanupForm := url.Values{}
+		cleanupForm.Set("Action", "DeleteRole")
+		cleanupForm.Set("Version", "2010-05-08")
+		cleanupForm.Set("RoleName", roleName)
+		cleanupReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(cleanupForm.Encode()))
+		if cleanupReq != nil {
+			cleanupReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			cleanupResp, _ := http.DefaultClient.Do(cleanupReq)
+			if cleanupResp != nil {
+				cleanupResp.Body.Close()
+			}
+		}
+	}()
+
+	createRole := func(rn string) {
+		f := url.Values{}
+		f.Set("Action", "CreateRole")
+		f.Set("Version", "2010-05-08")
+		f.Set("RoleName", rn)
+		f.Set("AssumeRolePolicyDocument", trustPolicy)
+		r, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(f.Encode()))
+		if r != nil {
+			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			if rp, err := http.DefaultClient.Do(r); err == nil {
+				rp.Body.Close()
+			}
+		}
+	}
+	deleteRole := func(rn string) {
+		f := url.Values{}
+		f.Set("Action", "DeleteRole")
+		f.Set("Version", "2010-05-08")
+		f.Set("RoleName", rn)
+		r, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(f.Encode()))
+		if r != nil {
+			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			if rp, _ := http.DefaultClient.Do(r); rp != nil {
+				rp.Body.Close()
+			}
+		}
+	}
 
 	targetInput := map[string]string{
 		"message": "test message",
@@ -160,16 +225,19 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 
 	results = append(results, r.RunTest("scheduler", "CreateSchedule_DuplicateName", func() error {
 		dupName := fmt.Sprintf("DupSchedule-%d", time.Now().UnixNano())
+		dupRoleName := fmt.Sprintf("DupSchedRole-%d", time.Now().UnixNano())
+		createRole(dupRoleName)
+		defer deleteRole(dupRoleName)
 		targetInput := map[string]string{"msg": "test"}
 		targetInputJSON, _ := json.Marshal(targetInput)
-		roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/TestRole")
+		dupRoleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", dupRoleName)
 
 		_, err := client.CreateSchedule(ctx, &scheduler.CreateScheduleInput{
 			Name:               aws.String(dupName),
 			ScheduleExpression: aws.String("rate(30 minutes)"),
 			Target: &types.Target{
 				Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFn", r.region)),
-				RoleArn: aws.String(roleARN),
+				RoleArn: aws.String(dupRoleARN),
 				Input:   aws.String(string(targetInputJSON)),
 			},
 			FlexibleTimeWindow: &types.FlexibleTimeWindow{
@@ -186,7 +254,7 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 			ScheduleExpression: aws.String("rate(60 minutes)"),
 			Target: &types.Target{
 				Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFn", r.region)),
-				RoleArn: aws.String(roleARN),
+				RoleArn: aws.String(dupRoleARN),
 				Input:   aws.String(string(targetInputJSON)),
 			},
 			FlexibleTimeWindow: &types.FlexibleTimeWindow{
@@ -201,16 +269,19 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 
 	results = append(results, r.RunTest("scheduler", "UpdateSchedule_VerifyExpression", func() error {
 		updName := fmt.Sprintf("UpdSchedule-%d", time.Now().UnixNano())
+		updRoleName := fmt.Sprintf("UpdSchedRole-%d", time.Now().UnixNano())
+		createRole(updRoleName)
+		defer deleteRole(updRoleName)
 		targetInput := map[string]string{"msg": "test"}
 		targetInputJSON, _ := json.Marshal(targetInput)
-		roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/TestRole")
+		updRoleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", updRoleName)
 
 		_, err := client.CreateSchedule(ctx, &scheduler.CreateScheduleInput{
 			Name:               aws.String(updName),
 			ScheduleExpression: aws.String("rate(30 minutes)"),
 			Target: &types.Target{
 				Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFn", r.region)),
-				RoleArn: aws.String(roleARN),
+				RoleArn: aws.String(updRoleARN),
 				Input:   aws.String(string(targetInputJSON)),
 			},
 			FlexibleTimeWindow: &types.FlexibleTimeWindow{
@@ -228,7 +299,7 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 			ScheduleExpression: aws.String(newExpr),
 			Target: &types.Target{
 				Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFn", r.region)),
-				RoleArn: aws.String(roleARN),
+				RoleArn: aws.String(updRoleARN),
 				Input:   aws.String(string(targetInputJSON)),
 			},
 			FlexibleTimeWindow: &types.FlexibleTimeWindow{
