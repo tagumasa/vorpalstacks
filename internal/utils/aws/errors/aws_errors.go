@@ -166,7 +166,7 @@ func WriteAWSError(w http.ResponseWriter, err *AWSError, contentType string) {
 		}
 	} else {
 		ct := contentType
-		if ct == "" {
+		if ct == "" || ct == "text/plain" {
 			ct = "application/json"
 		}
 		w.Header().Set("Content-Type", ct)

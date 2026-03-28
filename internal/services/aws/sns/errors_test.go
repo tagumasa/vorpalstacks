@@ -70,7 +70,7 @@ func TestSNSErrors(t *testing.T) {
 
 	t.Run("NewNotFoundException", func(t *testing.T) {
 		err := NewNotFoundException("topic")
-		assert.Equal(t, "NotFoundException: topic not found", err.Error())
+		assert.Equal(t, "NotFound: topic not found", err.Error())
 		assert.Equal(t, 404, err.GetHTTPStatusCode())
 	})
 

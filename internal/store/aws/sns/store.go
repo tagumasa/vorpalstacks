@@ -475,6 +475,9 @@ func (s *SNSStore) GetSubscriptionAttributes(subscriptionArn string) (map[string
 	if subscription.ConfirmationWasAuthenticated {
 		attrs["ConfirmationWasAuthenticated"] = "true"
 	}
+	if subscription.ConfirmationToken != "" {
+		attrs["Token"] = subscription.ConfirmationToken
+	}
 
 	return attrs, nil
 }

@@ -51,6 +51,7 @@ func EncodeJSONResponse(w http.ResponseWriter, response interface{}) error {
 		return err
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write(buf.Bytes())
@@ -68,6 +69,7 @@ func EncodeJSONResponseWithStatus(w http.ResponseWriter, statusCode int, respons
 		return err
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 	w.WriteHeader(statusCode)
 	_, err := w.Write(buf.Bytes())
