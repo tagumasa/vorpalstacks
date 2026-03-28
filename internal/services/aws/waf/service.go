@@ -75,8 +75,10 @@ func (s *WAFService) RegisterHandlers(d *dispatcher.Dispatcher) {
 
 	d.RegisterHandlerForService("waf", "CreateRule", s.CreateRule)
 	d.RegisterHandlerForService("waf", "GetRule", s.GetRule)
+	d.RegisterHandlerForService("waf", "ListRules", s.ListRules)
 	d.RegisterHandlerForService("waf", "UpdateRule", s.UpdateRule)
 	d.RegisterHandlerForService("waf", "DeleteRule", s.DeleteRule)
+	d.RegisterHandlerForService("waf", "ListRateBasedRules", s.ListRateBasedRules)
 
 	d.RegisterHandlerForService("waf", "CreateIPSet", s.CreateIPSet)
 	d.RegisterHandlerForService("waf", "GetIPSet", s.GetIPSet)

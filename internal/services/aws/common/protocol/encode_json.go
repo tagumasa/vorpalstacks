@@ -40,14 +40,14 @@ func sanitizeFloats(v interface{}) interface{} {
 	}
 }
 
-// EncodeJSONResponse writes the response as JSON to the HTTP response with appropriate headers.
 func EncodeJSONResponse(w http.ResponseWriter, response interface{}) error {
 	sanitized := sanitizeFloats(response)
+	converted := ConvertTimestampsToSeconds(sanitized)
 
 	buf := buffer.GlobalPool.Get(4096)
 	defer buffer.GlobalPool.Put(buf)
 
-	if err := json.NewEncoder(buf).Encode(sanitized); err != nil {
+	if err := json.NewEncoder(buf).Encode(converted); err != nil {
 		return err
 	}
 
@@ -58,14 +58,14 @@ func EncodeJSONResponse(w http.ResponseWriter, response interface{}) error {
 	return err
 }
 
-// EncodeJSONResponseWithStatus writes the response as JSON with the specified HTTP status code.
 func EncodeJSONResponseWithStatus(w http.ResponseWriter, statusCode int, response interface{}) error {
 	sanitized := sanitizeFloats(response)
+	converted := ConvertTimestampsToSeconds(sanitized)
 
 	buf := buffer.GlobalPool.Get(4096)
 	defer buffer.GlobalPool.Put(buf)
 
-	if err := json.NewEncoder(buf).Encode(sanitized); err != nil {
+	if err := json.NewEncoder(buf).Encode(converted); err != nil {
 		return err
 	}
 
@@ -74,4 +74,47 @@ func EncodeJSONResponseWithStatus(w http.ResponseWriter, statusCode int, respons
 	w.WriteHeader(statusCode)
 	_, err := w.Write(buf.Bytes())
 	return err
+}
+
+var jsonTimestampKeys = map[string]bool{
+	"Timestamp":                          true,
+	"StateUpdatedTimestamp":              true,
+	"StateTransitionedTimestamp":         true,
+	"AlarmConfigurationUpdatedTimestamp": true,
+	"CreationDate":                       true,
+	"LastUpdated":                        true,
+}
+
+func ConvertTimestampsToSeconds(v interface{}) interface{} {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		for k, vv := range val {
+			if jsonTimestampKeys[k] {
+				if ts, ok := vv.(int64); ok {
+					val[k] = float64(ts) / 1000
+					continue
+				}
+				if ts, ok := vv.(float64); ok && ts > 1e12 {
+					val[k] = ts / 1000
+					continue
+				}
+			}
+			val[k] = ConvertTimestampsToSeconds(vv)
+		}
+		return val
+	case []interface{}:
+		for i, vv := range val {
+			val[i] = ConvertTimestampsToSeconds(vv)
+		}
+		return val
+	default:
+		if m, ok := toGenericSlice(v); ok {
+			result := make([]interface{}, len(m))
+			for i, vv := range m {
+				result[i] = ConvertTimestampsToSeconds(vv)
+			}
+			return result
+		}
+		return v
+	}
 }

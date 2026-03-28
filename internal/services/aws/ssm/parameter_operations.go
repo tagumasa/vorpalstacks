@@ -311,15 +311,17 @@ func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.Req
 
 	filters := make(map[string]string)
 
-	if filterArr, ok := req.Parameters["ParameterFilters"]; ok {
-		if filterArr, ok := filterArr.([]interface{}); ok {
-			for _, f := range filterArr {
-				if fm, ok := f.(map[string]interface{}); ok {
-					key, _ := fm["Key"].(string)
-					values, _ := fm["Values"].([]interface{})
-					if key != "" && len(values) > 0 {
-						if v, ok := values[0].(string); ok {
-							filters[key] = v
+	for _, filterKey := range []string{"ParameterFilters", "Filters"} {
+		if filterArr, ok := req.Parameters[filterKey]; ok {
+			if filterArr, ok := filterArr.([]interface{}); ok {
+				for _, f := range filterArr {
+					if fm, ok := f.(map[string]interface{}); ok {
+						key, _ := fm["Key"].(string)
+						values, _ := fm["Values"].([]interface{})
+						if key != "" && len(values) > 0 {
+							if v, ok := values[0].(string); ok {
+								filters[key] = v
+							}
 						}
 					}
 				}
@@ -329,11 +331,19 @@ func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.Req
 
 	if len(filters) == 0 {
 		for i := 1; ; i++ {
-			filterKey := getParam(req, "Filters."+strconv.Itoa(i)+".Key")
+			filterKey := getParam(req, "ParameterFilters.member."+strconv.Itoa(i)+".Key")
 			if filterKey == "" {
 				break
 			}
-			filterValue := getParam(req, "Filters."+strconv.Itoa(i)+".Value")
+			filterValue := getParam(req, "ParameterFilters.member."+strconv.Itoa(i)+".Values.member.1")
+			if filterValue == "" {
+				filterValue = getParam(req, "Filters."+strconv.Itoa(i)+".Key")
+				if filterValue == "" {
+					break
+				}
+				filterKey = filterValue
+				filterValue = getParam(req, "Filters."+strconv.Itoa(i)+".Value")
+			}
 			filters[filterKey] = filterValue
 		}
 	}

@@ -113,7 +113,7 @@ func (s *CloudFrontService) ListCachePolicies(ctx context.Context, reqCtx *reque
 
 	return map[string]interface{}{
 		"CachePolicyList": map[string]interface{}{
-			"Items":       items,
+			"Items":       protocol.XMLElements{ElementName: "CachePolicySummary", Items: items},
 			"IsTruncated": result.IsTruncated,
 			"NextMarker":  result.NextMarker,
 		},
@@ -242,7 +242,7 @@ func (s *CloudFrontService) ListOriginRequestPolicies(ctx context.Context, reqCt
 
 	return map[string]interface{}{
 		"OriginRequestPolicyList": map[string]interface{}{
-			"Items":       items,
+			"Items":       protocol.XMLElements{ElementName: "OriginRequestPolicySummary", Items: items},
 			"IsTruncated": result.IsTruncated,
 			"NextMarker":  result.NextMarker,
 		},

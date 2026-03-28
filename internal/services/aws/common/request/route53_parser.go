@@ -69,6 +69,16 @@ func extractRoute53Operation(r *http.Request) string {
 		if len(parts) >= 2 && method == "GET" {
 			return "GetChange"
 		}
+	case "hostedzonesbyname":
+		if method == "GET" {
+			return "ListHostedZonesByName"
+		}
+	case "delegationset":
+		if len(parts) == 1 || parts[1] == "" {
+			if method == "GET" {
+				return "ListReusableDelegationSets"
+			}
+		}
 	case "tags":
 		if len(parts) >= 2 {
 			switch method {

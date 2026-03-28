@@ -62,3 +62,8 @@ func (s *SubscribeToShardEventStreamWriter) WriteInvalidArgumentException(messag
 func (s *SubscribeToShardEventStreamWriter) WriteEndEvent() error {
 	return s.encoder.WriteEndEvent()
 }
+
+// WriteInitialResponse writes an initial-response event to the stream.
+func (s *SubscribeToShardEventStreamWriter) WriteInitialResponse() error {
+	return s.encoder.WriteInitialResponse([]byte("{}"))
+}

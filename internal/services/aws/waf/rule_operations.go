@@ -165,3 +165,55 @@ func (s *WAFService) DeleteRule(ctx context.Context, reqCtx *request.RequestCont
 		"ChangeToken": changeToken,
 	}, nil
 }
+
+// ListRules returns a list of all WAF rules.
+func (s *WAFService) ListRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	limit := request.GetIntParam(req.Parameters, "Limit")
+	rules, err := stores.ruleGroups.ListRules(limit)
+	if err != nil {
+		return nil, NewAPIError("WAFInternalError", err.Error(), 500)
+	}
+	items := make([]interface{}, 0, len(rules))
+	for _, r := range rules {
+		items = append(items, map[string]interface{}{
+			"RuleId":     r.ID,
+			"Name":       r.Name,
+			"MetricName": r.MetricName,
+		})
+	}
+	return map[string]interface{}{
+		"Rules":      items,
+		"NextMarker": "",
+	}, nil
+}
+
+// ListRateBasedRules returns a list of all rate-based rules.
+func (s *WAFService) ListRateBasedRules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	limit := request.GetIntParam(req.Parameters, "Limit")
+	rules, err := stores.ruleGroups.ListRules(limit)
+	if err != nil {
+		return nil, NewAPIError("WAFInternalError", err.Error(), 500)
+	}
+	items := make([]interface{}, 0, len(rules))
+	for _, r := range rules {
+		items = append(items, map[string]interface{}{
+			"RuleId":     r.ID,
+			"Name":       r.Name,
+			"MetricName": r.MetricName,
+			"RateKey":    "IP",
+			"RateLimit":  float64(2000),
+		})
+	}
+	return map[string]interface{}{
+		"Rules":      items,
+		"NextMarker": "",
+	}, nil
+}

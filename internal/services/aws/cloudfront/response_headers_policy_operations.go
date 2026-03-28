@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
@@ -236,7 +237,7 @@ func (s *CloudFrontService) ListResponseHeadersPolicies(ctx context.Context, req
 			"IsTruncated": result.IsTruncated,
 			"Quantity":    len(items),
 			"NextMarker":  result.NextMarker,
-			"Items":       items,
+			"Items":       protocol.XMLElements{ElementName: "ResponseHeadersPolicySummary", Items: items},
 		},
 	}, nil
 }
@@ -281,27 +282,43 @@ func buildCorsConfigResponse(cors *cloudfrontstore.ResponseHeadersPolicyCorsConf
 	}
 
 	if cors.AccessControlAllowHeaders != nil {
+		items := make([]interface{}, len(cors.AccessControlAllowHeaders.Items))
+		for i, h := range cors.AccessControlAllowHeaders.Items {
+			items[i] = h
+		}
 		resp["AccessControlAllowHeaders"] = map[string]interface{}{
 			"Quantity": cors.AccessControlAllowHeaders.Quantity,
-			"Items":    cors.AccessControlAllowHeaders.Items,
+			"Items":    protocol.XMLElements{ElementName: "Header", Items: items},
 		}
 	}
 	if cors.AccessControlAllowMethods != nil {
+		items := make([]interface{}, len(cors.AccessControlAllowMethods.Items))
+		for i, m := range cors.AccessControlAllowMethods.Items {
+			items[i] = m
+		}
 		resp["AccessControlAllowMethods"] = map[string]interface{}{
 			"Quantity": cors.AccessControlAllowMethods.Quantity,
-			"Items":    cors.AccessControlAllowMethods.Items,
+			"Items":    protocol.XMLElements{ElementName: "Method", Items: items},
 		}
 	}
 	if cors.AccessControlAllowOrigins != nil {
+		items := make([]interface{}, len(cors.AccessControlAllowOrigins.Items))
+		for i, o := range cors.AccessControlAllowOrigins.Items {
+			items[i] = o
+		}
 		resp["AccessControlAllowOrigins"] = map[string]interface{}{
 			"Quantity": cors.AccessControlAllowOrigins.Quantity,
-			"Items":    cors.AccessControlAllowOrigins.Items,
+			"Items":    protocol.XMLElements{ElementName: "Origin", Items: items},
 		}
 	}
 	if cors.AccessControlExposeHeaders != nil {
+		items := make([]interface{}, len(cors.AccessControlExposeHeaders.Items))
+		for i, h := range cors.AccessControlExposeHeaders.Items {
+			items[i] = h
+		}
 		resp["AccessControlExposeHeaders"] = map[string]interface{}{
 			"Quantity": cors.AccessControlExposeHeaders.Quantity,
-			"Items":    cors.AccessControlExposeHeaders.Items,
+			"Items":    protocol.XMLElements{ElementName: "ExposeHeader", Items: items},
 		}
 	}
 	if cors.AccessControlMaxAgeSec > 0 {
@@ -320,9 +337,13 @@ func buildCustomHeadersConfigResponse(custom *cloudfrontstore.ResponseHeadersPol
 			"Value":    h.Value,
 		})
 	}
+	itemsI := make([]interface{}, len(items))
+	for i, item := range items {
+		itemsI[i] = item
+	}
 	return map[string]interface{}{
 		"Quantity": custom.Quantity,
-		"Items":    items,
+		"Items":    protocol.XMLElements{ElementName: "CustomHeader", Items: itemsI},
 	}
 }
 
@@ -333,9 +354,13 @@ func buildRemoveHeadersConfigResponse(remove *cloudfrontstore.ResponseHeadersPol
 			"Header": h.Header,
 		})
 	}
+	itemsI := make([]interface{}, len(items))
+	for i, item := range items {
+		itemsI[i] = item
+	}
 	return map[string]interface{}{
 		"Quantity": remove.Quantity,
-		"Items":    items,
+		"Items":    protocol.XMLElements{ElementName: "RemoveHeader", Items: itemsI},
 	}
 }
 

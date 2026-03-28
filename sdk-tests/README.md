@@ -8,41 +8,41 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 25 AWS services with 434+ test cases
+- **Comprehensive Coverage**: Tests for 27 AWS services with 595 test cases
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
 
 | Service | Tests | Pass Rate | Status |
 |---------|--------|-----------|--------|
-| DynamoDB | 28 | 96% | ✅ Excellent |
-| SQS | 16 | 94% | ✅ Excellent |
-| SNS | 14 | 100% | ✅ Perfect |
-| S3 | 12 | 58% | ⚠️ Partial |
-| Lambda | 23 | 96% | ✅ Excellent |
-| IAM | 41 | 88% | ✅ Great |
-| KMS | 32 | 75% | ✅ Good |
-| EventBridge | 17 | 65% | ✅ Good |
-| StepFunctions | 14 | 29% | ⚠️ Low |
-| API Gateway | 11 | 73% | ✅ Great |
-| CloudWatch Logs | 10 | 90% | ✅ Excellent |
-| CloudWatch | 6 | 0% | ❌ Issues |
-| SSM | 6 | 100% | ✅ Perfect |
-| SecretsManager | 8 | 38% | ⚠️ Partial |
-| STS | 3 | 67% | ✅ OK |
-| Scheduler | 8 | 50% | ✅ OK |
-| Cognito | 34 | 100% | ✅ Perfect |
-| SESv2 | 14 | 86% | ✅ Excellent |
-| Kinesis | 32 | 72% | ✅ Good |
-| ACM | 15 | 80% | ✅ Great |
-| Athena | 18 | 44% | ⚠️ Partial |
-| Timestream | 12 | 25% | ⚠️ Partial |
-| Route53 | 9 | 67% | ✅ OK |
-| CloudFront | 10 | 80% | ✅ Great |
-| CloudTrail | 16 | 63% | ✅ OK |
-| WAF | 16 | 63% | ✅ OK |
+| DynamoDB | 42 | 100% | ✅ Perfect |
+| IAM | 46 | 100% | ✅ Perfect |
+| KMS | 41 | 100% | ✅ Perfect |
+| Cognito | 41 | 100% | ✅ Perfect |
+| Kinesis | 37 | 100% | ✅ Perfect |
+| Lambda | 36 | 100% | ✅ Perfect |
+| Athena | 29 | 100% | ✅ Perfect |
+| EventBridge | 27 | 100% | ✅ Perfect |
+| StepFunctions | 24 | 100% | ✅ Perfect |
+| S3 | 24 | 100% | ✅ Perfect |
+| WAF | 23 | 100% | ✅ Perfect |
+| CloudTrail | 22 | 100% | ✅ Perfect |
+| SQS | 21 | 100% | ✅ Perfect |
+| SNS | 19 | 100% | ✅ Perfect |
+| API Gateway | 19 | 100% | ✅ Perfect |
+| CloudFront | 18 | 100% | ✅ Perfect |
+| Timestream | 16 | 100% | ✅ Perfect |
+| SecretsManager | 15 | 100% | ✅ Perfect |
+| ACM | 15 | 100% | ✅ Perfect |
+| SESv2 | 14 | 100% | ✅ Perfect |
+| Route53 | 14 | 100% | ✅ Perfect |
+| CloudWatch Logs | 14 | 100% | ✅ Perfect |
+| Scheduler | 12 | 100% | ✅ Perfect |
+| SSM | 11 | 100% | ✅ Perfect |
+| CloudWatch | 9 | 100% | ✅ Perfect |
+| STS | 6 | 100% | ✅ Perfect |
 
-**Overall: 326/434 tests passing (75%)**
+**Overall: 595/595 tests passing (100%)**
 
 ## Prerequisites
 

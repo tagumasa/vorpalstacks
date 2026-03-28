@@ -123,7 +123,7 @@ func formatDistributionConfig(config *cloudfrontstore.DistributionConfig) map[st
 			for i, a := range config.Aliases.Items {
 				items[i] = a
 			}
-			aliasMap["Items"] = items
+			aliasMap["Items"] = protocol.XMLElements{ElementName: "CNAME", Items: items}
 		}
 		m["Aliases"] = aliasMap
 	} else {
@@ -288,7 +288,7 @@ func formatCacheBehaviors(cbs *cloudfrontstore.CacheBehaviors) map[string]interf
 		for i, cb := range cbs.Items {
 			items[i] = formatCacheBehavior(cb)
 		}
-		m["Items"] = items
+		m["Items"] = protocol.XMLElements{ElementName: "CacheBehavior", Items: items}
 	}
 	return m
 }
@@ -817,7 +817,7 @@ func (s *CloudFrontService) ListDistributions(ctx context.Context, reqCtx *reque
 			"IsTruncated": result.IsTruncated,
 			"Quantity":    len(items),
 			"NextMarker":  result.NextMarker,
-			"Items":       items,
+			"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: items},
 		},
 	}, nil
 }
@@ -967,7 +967,7 @@ func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, req
 			"MaxItems":    maxItems,
 			"IsTruncated": false,
 			"Quantity":    len(items),
-			"Items":       items,
+			"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: items},
 		},
 	}, nil
 }

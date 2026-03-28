@@ -14,6 +14,7 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/server/http/router"
+	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/utils/buffer"
 )
 
@@ -341,7 +342,7 @@ func serializeJSON(ctx *RequestContext) error {
 	buf := buffer.GlobalPool.Get(4096)
 	defer buffer.GlobalPool.Put(buf)
 
-	if err := json.NewEncoder(buf).Encode(ctx.ResponseBody); err != nil {
+	if err := json.NewEncoder(buf).Encode(protocol.ConvertTimestampsToSeconds(ctx.ResponseBody)); err != nil {
 		return err
 	}
 

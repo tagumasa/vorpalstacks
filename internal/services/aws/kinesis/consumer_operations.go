@@ -182,9 +182,14 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 		return nil, ErrInvalidArgument
 	}
 
-	startingPosition := request.GetParamLowerFirst(req.Parameters, "StartingPosition.Type")
-	seqNum := request.GetParamLowerFirst(req.Parameters, "StartingPosition.SequenceNumber")
-	tsStr := request.GetParamLowerFirst(req.Parameters, "StartingPosition.Timestamp")
+	startingPosition := ""
+	seqNum := ""
+	tsStr := ""
+	if sp := request.GetMapParam(req.Parameters, "StartingPosition"); sp != nil {
+		startingPosition = request.GetStringParam(sp, "Type")
+		seqNum = request.GetStringParam(sp, "SequenceNumber")
+		tsStr = request.GetStringParam(sp, "Timestamp")
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -220,6 +225,11 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 		defer pw.Close()
 
 		writer := NewSubscribeToShardEventStreamWriter(pw)
+
+		if err := writer.WriteInitialResponse(); err != nil {
+			log.Printf("Failed to write initial response: %v", err)
+			return
+		}
 
 		includeStart := startingPosition == "AT_SEQUENCE_NUMBER"
 		records, lastSeqNum, err := store.GetRecords(stream.StreamName, shardID, iterator.SequenceNumber, 1000, includeStart)

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/services/aws/common/errors"
+	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
 )
 
@@ -87,6 +88,11 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 		pathItems = append(pathItems, map[string]interface{}{"Path": p})
 	}
 
+	pathItemsXML := protocol.XMLElements{ElementName: "Path", Items: make([]interface{}, len(pathItems))}
+	for i, p := range pathItems {
+		pathItemsXML.Items[i] = p
+	}
+
 	invalidation := map[string]interface{}{
 		"Id":         invalidationID,
 		"CreateTime": now.Format(time.RFC3339),
@@ -95,7 +101,7 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 			"CallerReference": callerRef,
 			"Paths": map[string]interface{}{
 				"Quantity": len(paths),
-				"Items":    pathItems,
+				"Items":    pathItemsXML,
 			},
 		},
 	}
@@ -115,7 +121,7 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 				"CallerReference": callerRef,
 				"Paths": map[string]interface{}{
 					"Quantity": len(paths),
-					"Items":    pathItems,
+					"Items":    pathItemsXML,
 				},
 			},
 		},
@@ -186,7 +192,7 @@ func (s *CloudFrontService) ListInvalidations(ctx context.Context, reqCtx *reque
 			"MaxItems":    maxItems,
 			"Marker":      marker,
 			"NextMarker":  nextMarker,
-			"Items":       items,
+			"Items":       protocol.XMLElements{ElementName: "InvalidationSummary", Items: makeSliceFromMaps(items)},
 		},
 	}, nil
 }
@@ -225,4 +231,12 @@ func (s *CloudFrontService) GetInvalidation(ctx context.Context, reqCtx *request
 	}
 
 	return nil, errors.NewAWSError("NoSuchInvalidation", fmt.Sprintf("The specified invalidation does not exist: %s", invalidationID), 404)
+}
+
+func makeSliceFromMaps(maps []map[string]interface{}) []interface{} {
+	result := make([]interface{}, len(maps))
+	for i, m := range maps {
+		result[i] = m
+	}
+	return result
 }

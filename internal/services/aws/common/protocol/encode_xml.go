@@ -86,6 +86,38 @@ func EncodeRestXMLResponse(w http.ResponseWriter, operationName string, response
 	return nil
 }
 
+func EncodeRestXMLResponseWithNamespace(w http.ResponseWriter, operationName string, xmlNamespace string, response interface{}) error {
+	if response == nil {
+		w.Header().Set("Content-Type", "application/xml")
+		if _, err := w.Write([]byte(fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?><Result xmlns="%s"></Result>`, xmlNamespace))); err != nil {
+			return fmt.Errorf("write response: %w", err)
+		}
+		return nil
+	}
+	if m, ok := response.(map[string]interface{}); ok && len(m) == 0 {
+		w.Header().Set("Content-Type", "application/xml")
+		if _, err := w.Write([]byte(fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?><Result xmlns="%s"></Result>`, xmlNamespace))); err != nil {
+			return fmt.Errorf("write response: %w", err)
+		}
+		return nil
+	}
+
+	rootName := operationName + "Response"
+
+	var xmlBuilder strings.Builder
+	xmlBuilder.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+	xmlBuilder.WriteString(fmt.Sprintf(`<%s xmlns="%s">`, rootName, xmlNamespace))
+	encodeValueToXML(&xmlBuilder, response)
+	xmlBuilder.WriteString("</" + rootName + ">")
+
+	w.Header().Set("Content-Type", "application/xml")
+	if _, err := w.Write([]byte(xmlBuilder.String())); err != nil {
+		return fmt.Errorf("write response: %w", err)
+	}
+
+	return nil
+}
+
 // EncodeRestXMLPayloadResponse writes the response as XML using REST-XML payload encoding.
 func EncodeRestXMLPayloadResponse(w http.ResponseWriter, payloadRoot string, response interface{}) error {
 	if response == nil {

@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
@@ -213,7 +214,7 @@ func (s *Route53Service) buildHostedZonesListResponse(zones []*route53store.Host
 		result[i] = s.hostedZoneToResponse(z)
 	}
 	response := map[string]interface{}{
-		"HostedZones": result,
+		"HostedZones": protocol.XMLElements{ElementName: "HostedZone", Items: result},
 		"IsTruncated": isTruncated,
 		"Marker":      nextMarker,
 		"MaxItems":    maxItems,
@@ -235,7 +236,7 @@ func (s *Route53Service) buildHealthChecksListResponse(healthChecks []*route53st
 		}
 	}
 	response := map[string]interface{}{
-		"HealthChecks": result,
+		"HealthChecks": protocol.XMLElements{ElementName: "HealthCheck", Items: result},
 		"IsTruncated":  isTruncated,
 	}
 	if isTruncated && nextMarker != "" {

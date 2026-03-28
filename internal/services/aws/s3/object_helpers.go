@@ -2,6 +2,7 @@ package s3
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -88,6 +89,10 @@ func parseRangeHeader(rangeHeader string) (ranges []RangeSpec, err error) {
 
 func parseCopySource(copySource string) (bucket, key, versionId string, err error) {
 	copySource = strings.TrimPrefix(copySource, "/")
+
+	if decoded, decodeErr := url.PathUnescape(copySource); decodeErr == nil {
+		copySource = decoded
+	}
 
 	if idx := strings.Index(copySource, "?"); idx != -1 {
 		queryPart := copySource[idx+1:]

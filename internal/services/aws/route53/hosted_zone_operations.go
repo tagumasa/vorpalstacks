@@ -63,6 +63,42 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		return nil, mapStoreError(err)
 	}
 
+	nameServers := []string{
+		"ns-1.awsdns.com.",
+		"ns-2.awsdns.net.",
+		"ns-3.awsdns.org.",
+		"ns-4.awsdns.co.uk.",
+	}
+
+	nsRecords := make([]*route53store.ResourceRecord, len(nameServers))
+	for i, ns := range nameServers {
+		nsRecords[i] = &route53store.ResourceRecord{Value: ns}
+	}
+	if err := st.RecordSets().Create(zone.ID, &route53store.ResourceRecordSet{
+		Name:            zone.Name,
+		Type:            "NS",
+		TTL:             172800,
+		ResourceRecords: nsRecords,
+	}); err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	if err := st.RecordSets().Create(zone.ID, &route53store.ResourceRecordSet{
+		Name: zone.Name,
+		Type: "SOA",
+		TTL:  900,
+		ResourceRecords: []*route53store.ResourceRecord{
+			{Value: fmt.Sprintf("%s ns-1.awsdns.com. 1 7200 900 1209600 86400", zone.Name)},
+		},
+	}); err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	zone.ResourceRecordSetCount = 2
+	if err := st.HostedZones().Update(zone); err != nil {
+		return nil, mapStoreError(err)
+	}
+
 	if tags := tagutil.ParseTags(req.Parameters, "HostedZoneTags"); len(tags) > 0 {
 		resourceKey := "hostedzone/" + zone.ID
 		if err := st.Tags().TagResource(resourceKey, tags); err != nil {
@@ -93,12 +129,13 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 			"CallerReference": callerRef,
 			"NameServers": protocol.XMLElements{
 				ElementName: "NameServer",
-				Items: []interface{}{
-					"ns-1.awsdns.com.",
-					"ns-2.awsdns.net.",
-					"ns-3.awsdns.org.",
-					"ns-4.awsdns.co.uk.",
-				},
+				Items: func() []interface{} {
+					items := make([]interface{}, len(nameServers))
+					for i, ns := range nameServers {
+						items[i] = ns
+					}
+					return items
+				}(),
 			},
 		},
 	}, nil
@@ -196,7 +233,15 @@ func (s *Route53Service) DeleteHostedZone(ctx context.Context, reqCtx *request.R
 	}
 
 	if len(recordSets) > 0 {
-		return nil, NewAPIError("HostedZoneNotEmpty", "The hosted zone must be empty before it can be deleted.", 400)
+		userRecords := 0
+		for _, rs := range recordSets {
+			if rs.Type != "NS" && rs.Type != "SOA" {
+				userRecords++
+			}
+		}
+		if userRecords > 0 {
+			return nil, NewAPIError("HostedZoneNotEmpty", "The hosted zone must be empty before it can be deleted.", 400)
+		}
 	}
 
 	if err := st.HostedZones().Delete(id); err != nil {
@@ -275,14 +320,14 @@ func (s *Route53Service) hostedZoneToResponse(zone *route53store.HostedZone) map
 	}
 
 	if len(zone.VPCs) > 0 {
-		vpcs := make([]map[string]string, len(zone.VPCs))
+		vpcs := make([]interface{}, len(zone.VPCs))
 		for i, vpc := range zone.VPCs {
 			vpcs[i] = map[string]string{
 				"VPCRegion": vpc.VPCRegion,
 				"VPCId":     vpc.VPCID,
 			}
 		}
-		result["VPCs"] = vpcs
+		result["VPCs"] = protocol.XMLElements{ElementName: "VPC", Items: vpcs}
 	}
 
 	return result

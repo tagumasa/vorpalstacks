@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
@@ -244,7 +245,7 @@ func (s *CloudFrontService) ListOriginAccessControls(ctx context.Context, reqCtx
 			"IsTruncated": result.IsTruncated,
 			"Quantity":    len(items),
 			"NextMarker":  result.NextMarker,
-			"Items":       items,
+			"Items":       protocol.XMLElements{ElementName: "OriginAccessControlSummary", Items: items},
 		},
 	}, nil
 }

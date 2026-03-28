@@ -124,6 +124,15 @@ func (e *Encoder) WriteEndEvent() error {
 	return e.Encode("End", nil, headers)
 }
 
+// WriteInitialResponse writes an initial-response event to the stream.
+func (e *Encoder) WriteInitialResponse(payload []byte) error {
+	headers := []Header{
+		{HeaderMessageType, MessageTypeEvent},
+		{HeaderEventType, "initial-response"},
+	}
+	return e.Encode("initial-response", payload, headers)
+}
+
 // WriteErrorEvent writes an error event to the stream.
 func (e *Encoder) WriteErrorEvent(errorCode, errorMessage string) error {
 	payload := fmt.Sprintf(`{"errorCode":"%s","errorMessage":"%s"}`, errorCode, errorMessage)

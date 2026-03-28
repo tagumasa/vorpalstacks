@@ -4,6 +4,27 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-03-29
+
+### Added
+- Route53 path-based routing (create/get/delete by zone name)
+- Route53 NS and SOA record auto-creation on hosted zone creation
+- WAF ListRules and ListRateBasedRules APIs
+- XML namespace encoder for REST-XML protocols
+- Integration test scripts for API Gateway → Lambda → DynamoDB and S3
+
+### Fixed
+- CloudWatch millisecond timestamps converted to epoch seconds in JSON responses
+- Kinesis SubscribeToShard initial-response event and nested JSON parameter parsing
+- S3 URL-decoded copy-source header
+- Route53/CloudFront XML list encoding (nil-slice → empty elements)
+- SSM DescribeParameters filter by type/path
+- CloudFront response headers policy, invalidation, origin access control, and cache policy list operations
+- Go SDK tests 594/594, Python 605/605, TypeScript 603/603, C# 622/622 — all passing
+
+### Documentation
+- Updated API coverage stats (SecretsManager 100%, StepFunctions 100%, KMS 90%)
+
 ## [0.0.2] - 2026-03-28
 
 ### Added

@@ -195,3 +195,31 @@ func (s *RuleGroupStore) GetRule(id string) (*Rule, error) {
 func (s *RuleGroupStore) DeleteRule(id string) error {
 	return s.BaseStore.Delete(ruleKeyPrefix + id)
 }
+
+// ListRules returns all standalone WAF Rules.
+func (s *RuleGroupStore) ListRules(limit int) ([]*Rule, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	var rules []*Rule
+	count := 0
+	err := s.ForEach(func(key string, value []byte) error {
+		if len(key) <= len(ruleKeyPrefix) || key[:len(ruleKeyPrefix)] != ruleKeyPrefix {
+			return nil
+		}
+		if count >= limit {
+			return nil
+		}
+		var rule Rule
+		if err := json.Unmarshal(value, &rule); err != nil {
+			return err
+		}
+		rules = append(rules, &rule)
+		count++
+		return nil
+	})
+	if err != nil {
+		return nil, NewStoreError("list_rules", err)
+	}
+	return rules, nil
+}
