@@ -20,13 +20,25 @@ import (
 var _ = pb.Queue{}
 
 const (
-	maxQueueNameLength        = 80
-	maxMessageBodySize        = 262144
-	maxBatchSize              = 10
-	maxBatchEntryIdLength     = 80
-	maxTagsPerQueue           = 50
-	maxTagKeyLength           = 128
-	maxTagValueLength         = 256
+	maxQueueNameLength    = 80
+	maxMessageBodySize    = 262144
+	maxBatchSize          = 10
+	maxBatchEntryIdLength = 80
+	maxTagsPerQueue       = 50
+	maxTagKeyLength       = 128
+	maxTagValueLength     = 256
+)
+
+func messageKey(queueURL, messageID string) string {
+	return queueURL + "\x00" + messageID
+}
+
+func messagePrefix(queueURL string) string {
+	return queueURL + "\x00"
+}
+
+const (
+	purgeTimeout              = 60 * time.Second
 	minVisibilityTimeout      = 0
 	maxVisibilityTimeout      = 43200
 	minDelaySeconds           = 0
@@ -184,11 +196,11 @@ func (s *SQSStore) moveToDLQ(msg *Message, dlqARN string) error {
 	newMsg.Attributes["SenderId"] = s.accountID
 	newMsg.Attributes["SentTimestamp"] = fmt.Sprintf("%d", newMsg.SentTimestamp.UnixMilli())
 
-	if err := s.messagesStore.PutProto(newMsg.ID, MessageToProto(newMsg)); err != nil {
+	if err := s.messagesStore.PutProto(messageKey(dlqURL, newMsg.ID), MessageToProto(newMsg)); err != nil {
 		return fmt.Errorf("failed to put message to DLQ: %w", err)
 	}
 
-	if err := s.messagesStore.Delete(msg.ID); err != nil {
+	if err := s.messagesStore.Delete(messageKey(msg.QueueURL, msg.ID)); err != nil {
 		return fmt.Errorf("failed to delete original message after DLQ move: %w", err)
 	}
 
@@ -291,10 +303,10 @@ func (s *SQSStore) GetMessageCounts(queueURL string) (visible, notVisible, delay
 	defer s.msgMutex.RUnlock()
 
 	now := time.Now().UTC()
-	opts := common.ListOptions{MaxItems: 10000}
+	opts := common.ListOptions{Prefix: messagePrefix(queueURL), MaxItems: 10000}
 
 	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
-		return m.QueueUrl == queueURL
+		return true
 	})
 	if err != nil {
 		return 0, 0, 0

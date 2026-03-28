@@ -225,7 +225,7 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 			return map[string]interface{}{
 				"output":    "",
 				"status":    "FAILED",
-				"error":     execErr.Error,
+				"error":     execErr.ErrorCode,
 				"cause":     execErr.Cause,
 				"nextState": nextState,
 			}, nil
@@ -236,7 +236,7 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 			return map[string]interface{}{
 				"output":    "",
 				"status":    "FAILED",
-				"error":     execErr.Error,
+				"error":     execErr.ErrorCode,
 				"cause":     execErr.Cause,
 				"nextState": nextState,
 			}, nil
@@ -247,7 +247,7 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 			return map[string]interface{}{
 				"output":    "",
 				"status":    "FAILED",
-				"error":     execErr.Error,
+				"error":     execErr.ErrorCode,
 				"cause":     execErr.Cause,
 				"nextState": nextState,
 			}, nil

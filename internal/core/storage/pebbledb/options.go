@@ -11,6 +11,8 @@ type Options struct {
 	Encryption EncryptionOptions
 
 	TTL TTLOptions
+
+	SyncWrites bool
 }
 
 // EncryptionOptions contains configuration for database encryption.

@@ -2,6 +2,7 @@ package timestreamquery
 
 import (
 	"context"
+	"log"
 	"strconv"
 	"time"
 
@@ -258,21 +259,31 @@ func (s *Service) ExecuteScheduledQuery(ctx context.Context, reqCtx *request.Req
 		return nil, ErrInternalServer
 	}
 
-	_ = st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusRunning, "", nil)
+	if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusRunning, "", nil); err != nil {
+		log.Printf("Failed to update scheduled query run %s to RUNNING: %v", run.ARN, err)
+	}
 
 	result, execErr := s.executeSQLQuery(ctx, reqCtx, sq.QueryString)
 
 	if execErr != nil {
-		_ = st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusFailed, execErr.Error(), nil)
-		_ = st.scheduledQueryStore.UpdateLastRun(name, "FAILED", now)
+		if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusFailed, execErr.Error(), nil); err != nil {
+			log.Printf("Failed to update scheduled query run %s to FAILED: %v", run.ARN, err)
+		}
+		if err := st.scheduledQueryStore.UpdateLastRun(name, "FAILED", now); err != nil {
+			log.Printf("Failed to update last run status for scheduled query %s: %v", name, err)
+		}
 		return nil, ErrQueryExecutionError
 	}
 
 	stats := &tsstore.ExecutionStats{
 		QueryResultRows: int64(len(result.Rows)),
 	}
-	_ = st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusSucceeded, "", stats)
-	_ = st.scheduledQueryStore.UpdateLastRun(name, "SUCCESS", now)
+	if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusSucceeded, "", stats); err != nil {
+		log.Printf("Failed to update scheduled query run %s to SUCCEEDED: %v", run.ARN, err)
+	}
+	if err := st.scheduledQueryStore.UpdateLastRun(name, "SUCCESS", now); err != nil {
+		log.Printf("Failed to update last run status for scheduled query %s: %v", name, err)
+	}
 
 	return map[string]interface{}{
 		"ScheduledQueryRunArn": run.ARN,

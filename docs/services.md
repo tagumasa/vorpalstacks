@@ -29,7 +29,7 @@
 | Cognito Identity | Selective | Basic identity pool support |
 | DynamoDB | Full | |
 | EventBridge | Broad | No global endpoints or partner event sources |
-| IAM | Broad | No policy simulator or organisations integration |
+| IAM | Broad | No organisations integration |
 | Kinesis | Full | |
 | KMS | Full | |
 | Lambda | Broad | No durable functions or code signing |

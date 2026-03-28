@@ -7,7 +7,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
-	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"vorpalstacks-sdk-tests/config"
 )
@@ -48,10 +47,7 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 		AssumeRolePolicyDocument: aws.String(trustPolicy),
 	})
 	if err != nil {
-		var alreadyExists *types.EntityAlreadyExistsException
-		if err.Error() != "EntityAlreadyExists" && err.Error() != "" {
-			_ = alreadyExists
-		}
+		_ = fmt.Errorf("failed to create test role: %v", err)
 	}
 	defer func() {
 		_, _ = iamClient.DeleteRole(ctx, &iam.DeleteRoleInput{
@@ -84,11 +80,17 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 	results = append(results, r.RunTest("sts", "AssumeRole", func() error {
 		roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
 		roleSessionName := "TestSession"
-		_, err := client.AssumeRole(ctx, &sts.AssumeRoleInput{
+		resp, err := client.AssumeRole(ctx, &sts.AssumeRoleInput{
 			RoleArn:         aws.String(roleARN),
 			RoleSessionName: aws.String(roleSessionName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Credentials == nil {
+			return fmt.Errorf("credentials is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

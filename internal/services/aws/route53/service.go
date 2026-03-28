@@ -132,6 +132,7 @@ func (s *Route53Service) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("route53", "DisassociateVPCFromHostedZone", s.DisassociateVPCFromHostedZone)
 	d.RegisterHandlerForService("route53", "ChangeTagsForResource", s.ChangeTagsForResource)
 	d.RegisterHandlerForService("route53", "ListTagsForResource", s.ListTagsForResource)
+	d.RegisterHandlerForService("route53", "ListReusableDelegationSets", s.ListReusableDelegationSets)
 }
 
 func getEnvOrDefault(key, defaultVal string) string {

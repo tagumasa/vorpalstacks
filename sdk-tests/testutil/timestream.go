@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/timestreamquery"
 	"github.com/aws/aws-sdk-go-v2/service/timestreamwrite"
 	"github.com/aws/aws-sdk-go-v2/service/timestreamwrite/types"
 	"vorpalstacks-sdk-tests/config"
@@ -28,6 +29,7 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 	}
 
 	client := timestreamwrite.NewFromConfig(cfg)
+	queryClient := timestreamquery.NewFromConfig(cfg)
 	ctx := context.Background()
 
 	databaseName := fmt.Sprintf("test-db-%d", time.Now().UnixNano())
@@ -234,6 +236,16 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 		})
 		if err != nil {
 			return fmt.Errorf("write: %v", err)
+		}
+
+		queryResp, err := queryClient.Query(ctx, &timestreamquery.QueryInput{
+			QueryString: aws.String(fmt.Sprintf(`SELECT * FROM "%s"."%s"`, rtDBName, rtTableName)),
+		})
+		if err != nil {
+			return fmt.Errorf("query: %v", err)
+		}
+		if len(queryResp.Rows) == 0 {
+			return fmt.Errorf("query returned zero rows, expected at least 1")
 		}
 		return nil
 	}))

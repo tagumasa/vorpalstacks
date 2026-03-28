@@ -5,10 +5,13 @@ package kms
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
 )
+
+var errStopIteration = errors.New("stop iteration")
 
 // GrantStore manages KMS grants.
 type GrantStore struct {
@@ -52,6 +55,42 @@ func (s *GrantStore) Create(keyID, granteePrincipal, retiringPrincipal string, o
 	}
 
 	return grant, nil
+}
+
+// CreateWithToken creates a new grant with a pre-generated token.
+func (s *GrantStore) CreateWithToken(keyID, granteePrincipal, retiringPrincipal string, operations []string, name string, constraints *GrantConstraints, token string) (*Grant, error) {
+	grant, err := s.Create(keyID, granteePrincipal, retiringPrincipal, operations, name, constraints)
+	if err != nil {
+		return nil, err
+	}
+	grant.GrantToken = token
+	if err := s.save(grant); err != nil {
+		return nil, err
+	}
+	return grant, nil
+}
+
+// GetByToken retrieves a grant by its token.
+func (s *GrantStore) GetByToken(token string) (*Grant, error) {
+	var found *Grant
+	err := s.bucket.ForEach(func(k, v []byte) error {
+		var grant Grant
+		if err := json.Unmarshal(v, &grant); err != nil {
+			return err
+		}
+		if grant.GrantToken == token {
+			found = &grant
+			return errStopIteration
+		}
+		return nil
+	})
+	if err != nil && err != errStopIteration {
+		return nil, NewStoreError("get_grant_by_token", err)
+	}
+	if found == nil {
+		return nil, NewStoreError("get_grant_by_token", ErrGrantNotFound)
+	}
+	return found, nil
 }
 
 // Get retrieves a grant by its ID.

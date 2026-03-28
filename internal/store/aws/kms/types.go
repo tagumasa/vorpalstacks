@@ -128,6 +128,7 @@ type Alias struct {
 // Grant represents a grant on a KMS key.
 type Grant struct {
 	GrantID           string            `json:"grant_id"`
+	GrantToken        string            `json:"grant_token,omitempty"`
 	KeyID             string            `json:"key_id"`
 	GranteePrincipal  string            `json:"grantee_principal"`
 	RetiringPrincipal string            `json:"retiring_principal,omitempty"`

@@ -74,12 +74,7 @@ func (b *PebbleBucket) ScanPrefix(prefix []byte) Iterator {
 	copy(end[len(b.prefix):], prefix)
 	end[len(b.prefix)+len(prefix)] = 0xFF
 
-	return &PebbleDBIterator{
-		db:        b.db,
-		start:     start,
-		end:       end,
-		prefixLen: len(b.prefix),
-	}
+	return newPebbleDBIterator(b.db, start, end, len(b.prefix))
 }
 
 // ScanRange returns an iterator for keys within the given range.
@@ -87,12 +82,7 @@ func (b *PebbleBucket) ScanRange(start, end []byte) Iterator {
 	lower := b.makeKey(start)
 	upper := b.makeKey(end)
 
-	return &PebbleDBIterator{
-		db:        b.db,
-		start:     lower,
-		end:       upper,
-		prefixLen: len(b.prefix),
-	}
+	return newPebbleDBIterator(b.db, lower, upper, len(b.prefix))
 }
 
 // Count returns the number of keys in the bucket.
@@ -106,52 +96,22 @@ func (b *PebbleBucket) Count() int {
 
 // PebbleDBIterator provides an iterator implementation for pebbledb.
 type PebbleDBIterator struct {
-	db        *pebbledb.DB
-	start     []byte
-	end       []byte
-	keys      [][]byte
-	values    [][]byte
-	current   int
-	err       error
+	lazy      *pebbledb.LazyIterator
 	prefixLen int
-	closed    bool
 }
 
 // Next advances the iterator to the next key-value pair.
 // Returns false if there are no more items or an error occurred.
 func (i *PebbleDBIterator) Next() bool {
-	if i.err != nil || i.closed {
-		return false
-	}
-	if i.keys == nil {
-		i.keys = make([][]byte, 0)
-		i.values = make([][]byte, 0)
-		i.current = -1
-
-		err := i.db.ScanRange(i.start, i.end, func(k, v []byte) error {
-			keyCopy := make([]byte, len(k))
-			copy(keyCopy, k)
-			valCopy := make([]byte, len(v))
-			copy(valCopy, v)
-			i.keys = append(i.keys, keyCopy)
-			i.values = append(i.values, valCopy)
-			return nil
-		})
-		if err != nil {
-			i.err = err
-			return false
-		}
-	}
-	i.current++
-	return i.current < len(i.keys)
+	return i.lazy.Next()
 }
 
 // Key returns the key at the current iterator position.
 func (i *PebbleDBIterator) Key() []byte {
-	if i.current < 0 || i.current >= len(i.keys) {
+	key := i.lazy.Key()
+	if key == nil {
 		return nil
 	}
-	key := i.keys[i.current]
 	if len(key) > i.prefixLen {
 		origKey := make([]byte, len(key)-i.prefixLen)
 		copy(origKey, key[i.prefixLen:])
@@ -162,20 +122,64 @@ func (i *PebbleDBIterator) Key() []byte {
 
 // Value returns the value at the current iterator position.
 func (i *PebbleDBIterator) Value() []byte {
-	if i.current < 0 || i.current >= len(i.values) {
-		return nil
-	}
-	result := make([]byte, len(i.values[i.current]))
-	copy(result, i.values[i.current])
-	return result
+	return i.lazy.Value()
 }
 
 // Error returns the error that occurred during iteration, if any.
 func (i *PebbleDBIterator) Error() error {
-	return i.err
+	return i.lazy.Error()
 }
 
 // Close closes the iterator and releases resources.
 func (i *PebbleDBIterator) Close() {
-	i.closed = true
+	i.lazy.Close()
+}
+
+func newPebbleDBIterator(db *pebbledb.DB, start, end []byte, prefixLen int) *PebbleDBIterator {
+	return &PebbleDBIterator{
+		lazy:      db.NewLazyIterator(start, end),
+		prefixLen: prefixLen,
+	}
+}
+
+// TxnPebbleDBIterator provides a lazy iterator for transactional bucket scans.
+type TxnPebbleDBIterator struct {
+	lazy      *pebbledb.TxnLazyIterator
+	prefixLen int
+}
+
+func (i *TxnPebbleDBIterator) Next() bool {
+	return i.lazy.Next()
+}
+
+func (i *TxnPebbleDBIterator) Key() []byte {
+	key := i.lazy.Key()
+	if key == nil {
+		return nil
+	}
+	if len(key) > i.prefixLen {
+		origKey := make([]byte, len(key)-i.prefixLen)
+		copy(origKey, key[i.prefixLen:])
+		return origKey
+	}
+	return key
+}
+
+func (i *TxnPebbleDBIterator) Value() []byte {
+	return i.lazy.Value()
+}
+
+func (i *TxnPebbleDBIterator) Error() error {
+	return i.lazy.Error()
+}
+
+func (i *TxnPebbleDBIterator) Close() {
+	i.lazy.Close()
+}
+
+func newTxnPebbleDBIterator(txn *pebbledb.Txn, start, end []byte, prefixLen int) *TxnPebbleDBIterator {
+	return &TxnPebbleDBIterator{
+		lazy:      txn.NewTxnLazyIterator(start, end),
+		prefixLen: prefixLen,
+	}
 }

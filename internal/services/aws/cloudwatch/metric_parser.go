@@ -235,6 +235,8 @@ func parseTimestampFromMap(m map[string]interface{}, key string) time.Time {
 			return time.Unix(int64(ts), 0)
 		case int64:
 			return time.Unix(ts, 0)
+		case uint64:
+			return time.Unix(int64(ts), 0)
 		case float64:
 			return time.Unix(int64(ts), 0)
 		}

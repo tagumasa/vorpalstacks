@@ -2,6 +2,7 @@
 package lambda
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"fmt"
@@ -23,6 +24,7 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	s3store "vorpalstacks/internal/store/aws/s3"
+	"vorpalstacks/internal/utils/naming"
 )
 
 // lambdaStore holds the stores for Lambda resources.
@@ -233,20 +235,6 @@ func (s *LambdaService) resolveQualifier(store *lambdastore.FunctionStore, funct
 	return function, version, alias, nil
 }
 
-func sanitizePathComponent(name string) string {
-	safe := strings.Map(func(r rune) rune {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') ||
-			r == '-' || r == '_' || r == '.' {
-			return r
-		}
-		return '_'
-	}, name)
-	if safe == "" {
-		safe = "unnamed"
-	}
-	return safe
-}
-
 func (s *LambdaService) storeCode(functionName, version string, code []byte, region string) (string, int64, error) {
 	s.dataDirOnce.Do(func() {
 		if s.dataDir == "" {
@@ -259,9 +247,9 @@ func (s *LambdaService) storeCode(functionName, version string, code []byte, reg
 		version = "$LATEST"
 	}
 
-	safeFunctionName := sanitizePathComponent(functionName)
-	safeVersion := sanitizePathComponent(version)
-	codeDir := fmt.Sprintf("%s/%s/code/%s/%s", dataDir, sanitizePathComponent(region), safeFunctionName, safeVersion)
+	safeFunctionName := naming.SanitizePathComponent(functionName)
+	safeVersion := naming.SanitizePathComponent(version)
+	codeDir := fmt.Sprintf("%s/%s/code/%s/%s", dataDir, naming.SanitizePathComponent(region), safeFunctionName, safeVersion)
 	if err := os.MkdirAll(codeDir, 0755); err != nil {
 		return "", 0, fmt.Errorf("failed to create code directory: %w", err)
 	}
@@ -299,7 +287,7 @@ func (s *LambdaService) loadCode(functionName, version string, region string) ([
 		version = "$LATEST"
 	}
 
-	codePath := fmt.Sprintf("%s/%s/code/%s/%s/code.zip", dataDir, sanitizePathComponent(region), sanitizePathComponent(functionName), sanitizePathComponent(version))
+	codePath := fmt.Sprintf("%s/%s/code/%s/%s/code.zip", dataDir, naming.SanitizePathComponent(region), naming.SanitizePathComponent(functionName), naming.SanitizePathComponent(version))
 	code, err := os.ReadFile(codePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read code file: %w", err)
@@ -406,7 +394,34 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 
 func (s *LambdaService) copyCodeToContainer(containerID string, code []byte) error {
 	ctx := context.Background()
-	return s.dockerClient.CreateFileInContainer(ctx, containerID, "/var/task/code.zip", code)
+
+	reader, err := zip.NewReader(bytes.NewReader(code), int64(len(code)))
+	if err == nil {
+		for _, f := range reader.File {
+			if f.FileInfo().IsDir() {
+				continue
+			}
+
+			rc, err := f.Open()
+			if err != nil {
+				return fmt.Errorf("failed to open zip entry %s: %w", f.Name, err)
+			}
+
+			data, err := io.ReadAll(rc)
+			rc.Close()
+			if err != nil {
+				return fmt.Errorf("failed to read zip entry %s: %w", f.Name, err)
+			}
+
+			destPath := fmt.Sprintf("/var/task/%s", f.Name)
+			if err := s.dockerClient.CreateFileInContainer(ctx, containerID, destPath, data); err != nil {
+				return fmt.Errorf("failed to copy %s to container: %w", f.Name, err)
+			}
+		}
+		return nil
+	}
+
+	return s.dockerClient.CreateFileInContainer(ctx, containerID, "/var/task/index.js", code)
 }
 
 func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lambdastore.Version, store *lambdastore.FunctionStore, region string, payload []byte) (*lambdastore.InvocationResult, error) {
@@ -429,22 +444,63 @@ func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lamb
 		}
 	}
 
-	execResult, err := s.dockerClient.ExecWithStdin(ctx, containerID, mobyclient.ExecConfig{
-		Cmd:          []string{"/var/runtime/bootstrap"},
+	handlerParts := strings.Split(function.Handler, ".")
+	moduleFile := handlerParts[0]
+	handlerFunc := "handler"
+	if len(handlerParts) > 1 {
+		handlerFunc = handlerParts[1]
+	}
+
+	eventJSON := "{}"
+	if len(payload) > 0 {
+		eventJSON = string(payload)
+	}
+
+	invokeCmd := s.buildInvokeCommand(function.Runtime, moduleFile, handlerFunc, eventJSON)
+
+	execResult, err := s.dockerClient.Exec(ctx, containerID, mobyclient.ExecConfig{
+		Cmd:          invokeCmd,
 		AttachStdout: true,
 		AttachStderr: true,
-	}, bytes.NewReader(payload))
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to exec in container: %w", err)
 	}
 
-	s.writeLambdaLogs(function.FunctionName, version, execResult.Stdout, execResult.Stderr, region)
+	stdout := strings.TrimSpace(execResult.Stdout)
+
+	s.writeLambdaLogs(function.FunctionName, version, stdout, execResult.Stderr, region)
+
+	var functionError string
+	if execResult.ExitCode != 0 {
+		functionError = execResult.Stderr
+	}
 
 	return &lambdastore.InvocationResult{
 		StatusCode:      http.StatusOK,
 		ExecutedVersion: version,
-		Payload:         []byte(execResult.Stdout),
+		Payload:         []byte(stdout),
+		FunctionError:   functionError,
 	}, nil
+}
+
+func (s *LambdaService) buildInvokeCommand(runtime lambdastore.Runtime, moduleFile, handlerFunc, eventJSON string) []string {
+	if strings.HasPrefix(string(runtime), "nodejs") {
+		escaped := strings.ReplaceAll(strings.ReplaceAll(eventJSON, `\`, `\\`), "'", `\'`)
+		script := fmt.Sprintf(
+			"const m=require('/var/task/%s');const h=typeof m==='function'?m:m['%s'];const p=Promise.resolve(h(JSON.parse('%s')));p.then(r=>{if(r&&typeof r==='object')process.stdout.write(JSON.stringify(r));else if(r!==undefined)process.stdout.write(String(r));}).catch(e=>{process.stderr.write(e.message||String(e));process.exit(1);});",
+			moduleFile, handlerFunc, escaped,
+		)
+		return []string{"node", "-e", script}
+	}
+	if strings.HasPrefix(string(runtime), "python") {
+		escaped := strings.ReplaceAll(eventJSON, "'", `\'`)
+		return []string{"python3", "-c", fmt.Sprintf(
+			"import json,sys;mod=__import__('%s');h=getattr(mod,'%s',mod);r=h(json.loads('%s'));print(json.dumps(r) if isinstance(r,dict) else str(r))",
+			moduleFile, handlerFunc, escaped,
+		)}
+	}
+	return []string{"/var/runtime/bootstrap"}
 }
 
 func (s *LambdaService) writeLambdaLogs(functionName, version, stdout, stderr, region string) {

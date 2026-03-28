@@ -443,7 +443,10 @@ func (s *StepFunctionStore) CompleteActivityTask(taskToken string, output string
 
 	s.pendingTasksMu.Lock()
 	if ch, ok := s.pendingTasks[taskToken]; ok {
-		ch <- &ActivityTaskResult{TaskToken: taskToken, Output: output}
+		select {
+		case ch <- &ActivityTaskResult{TaskToken: taskToken, Output: output}:
+		default:
+		}
 	}
 	s.pendingTasksMu.Unlock()
 
@@ -471,7 +474,10 @@ func (s *StepFunctionStore) FailActivityTask(taskToken string, errorMsg string, 
 
 	s.pendingTasksMu.Lock()
 	if ch, ok := s.pendingTasks[taskToken]; ok {
-		ch <- &ActivityTaskResult{TaskToken: taskToken, Error: fmt.Errorf("%s: %s", errorMsg, cause)}
+		select {
+		case ch <- &ActivityTaskResult{TaskToken: taskToken, Error: fmt.Errorf("%s: %s", errorMsg, cause)}:
+		default:
+		}
 	}
 	s.pendingTasksMu.Unlock()
 

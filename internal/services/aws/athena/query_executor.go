@@ -3,6 +3,7 @@ package athena
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -37,7 +38,9 @@ func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenast
 	}
 	qe.Status.State = athenastore.QueryExecutionStateRunning
 	qe.Status.StateChangeReason = ""
-	_ = st.queryExecutionStore.UpdateQueryExecution(qe)
+	if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {
+		log.Printf("Failed to update query execution %s to RUNNING: %v", qe.QueryExecutionId, err)
+	}
 
 	result, stats, err := s.executeSQLQuery(reqCtx, ctx, qe.Query, qe.QueryExecutionContext)
 	if err != nil {
@@ -60,7 +63,9 @@ func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenast
 			QueryExecutionId: qe.QueryExecutionId,
 			ResultSet:        result,
 		}
-		_ = st.resultStore.StoreResult(qe.QueryExecutionId, queryResult)
+		if err := st.resultStore.StoreResult(qe.QueryExecutionId, queryResult); err != nil {
+			log.Printf("Failed to store query result for %s: %v", qe.QueryExecutionId, err)
+		}
 
 		if qe.ResultConfiguration != nil && qe.ResultConfiguration.OutputLocation != "" {
 			if writeErr := s.writeQueryResultsToS3(ctx, qe.QueryExecutionId, queryResult, qe.ResultConfiguration.OutputLocation); writeErr != nil {
@@ -86,7 +91,9 @@ func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenast
 		ResultReuseInformation:        &athenastore.ResultReuseInformation{ReusedPreviousResult: false},
 	}
 
-	_ = st.queryExecutionStore.UpdateQueryExecution(qe)
+	if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {
+		log.Printf("Failed to update query execution %s final state: %v", qe.QueryExecutionId, err)
+	}
 }
 
 func (s *Service) executeSQLQuery(reqCtx *request.RequestContext, ctx context.Context, queryString string, context *athenastore.QueryExecutionContext) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {

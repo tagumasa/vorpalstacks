@@ -54,9 +54,14 @@ func NewInvalidParameterException(message string) *SNSError {
 	return &SNSError{awserrors.NewInvalidParameterException(message)}
 }
 
+// NewTopicNotFoundException creates a new SNSError for non-existent topic errors.
+func NewTopicNotFoundException() *SNSError {
+	return &SNSError{awserrors.NewAWSError("NotFound", "Topic does not exist", 404)}
+}
+
 // NewNotFoundException creates a new SNSError for not found errors.
 func NewNotFoundException(resource string) *SNSError {
-	return &SNSError{awserrors.NewNotFoundException(resource)}
+	return &SNSError{awserrors.NewAWSError("NotFound", resource+" not found", 404)}
 }
 
 // NewAuthorizationErrorException creates a new SNSError for authorization errors.

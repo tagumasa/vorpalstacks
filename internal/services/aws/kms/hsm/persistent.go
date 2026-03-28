@@ -61,7 +61,7 @@ func NewPersistentBackend(dataPath string) (*PersistentBackend, error) {
 		}
 	}
 
-	if err := b.loadKeys(); err != nil && !os.IsNotExist(err) {
+	if err := b.loadKeys(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("failed to load keys: %w", err)
 	}
 
@@ -75,7 +75,7 @@ func (b *PersistentBackend) saveMasterKey(path string) error {
 func (b *PersistentBackend) loadMasterKey(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading master key file: %w", err)
 	}
 
 	if len(data) != 32 {
@@ -89,7 +89,7 @@ func (b *PersistentBackend) loadMasterKey(path string) error {
 func (b *PersistentBackend) saveKeys() error {
 	aead, err := chacha20poly1305.NewX(b.masterKey[:])
 	if err != nil {
-		return err
+		return fmt.Errorf("creating AEAD cipher for key save: %w", err)
 	}
 
 	serialized := make(map[string]serializedKey)
@@ -113,12 +113,12 @@ func (b *PersistentBackend) saveKeys() error {
 
 	plaintext, err := json.Marshal(serialized)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshaling serialized keys: %w", err)
 	}
 
 	nonce := make([]byte, aead.NonceSize())
 	if _, err := rand.Read(nonce); err != nil {
-		return err
+		return fmt.Errorf("generating encryption nonce: %w", err)
 	}
 
 	ciphertext := aead.Seal(nil, nonce, plaintext, nil)
@@ -132,7 +132,7 @@ func (b *PersistentBackend) loadKeys() error {
 	keysPath := filepath.Join(b.dataPath, "hsm", "keys.enc")
 	data, err := os.ReadFile(keysPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading encrypted keys file: %w", err)
 	}
 
 	if len(data) < chacha20poly1305.NonceSizeX {
@@ -141,7 +141,7 @@ func (b *PersistentBackend) loadKeys() error {
 
 	aead, err := chacha20poly1305.NewX(b.masterKey[:])
 	if err != nil {
-		return err
+		return fmt.Errorf("creating AEAD cipher for key load: %w", err)
 	}
 
 	nonce := data[:aead.NonceSize()]
@@ -149,12 +149,12 @@ func (b *PersistentBackend) loadKeys() error {
 
 	plaintext, err := aead.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("decrypting keys data: %w", err)
 	}
 
 	var serialized map[string]serializedKey
 	if err := json.Unmarshal(plaintext, &serialized); err != nil {
-		return err
+		return fmt.Errorf("unmarshaling keys JSON: %w", err)
 	}
 
 	for keyID, sk := range serialized {
@@ -197,62 +197,62 @@ func (b *PersistentBackend) GenerateKey(keyID string, keySpec KeySpec) error {
 	case KeySpecSymmetricDefault:
 		key.symmetric = make([]byte, 32)
 		if _, err := rand.Read(key.symmetric); err != nil {
-			return err
+			return fmt.Errorf("generating symmetric key: %w", err)
 		}
 	case KeySpecHMAC224:
 		key.symmetric = make([]byte, 28)
 		if _, err := rand.Read(key.symmetric); err != nil {
-			return err
+			return fmt.Errorf("generating HMAC-224 key: %w", err)
 		}
 	case KeySpecHMAC256:
 		key.symmetric = make([]byte, 32)
 		if _, err := rand.Read(key.symmetric); err != nil {
-			return err
+			return fmt.Errorf("generating HMAC-256 key: %w", err)
 		}
 	case KeySpecHMAC384:
 		key.symmetric = make([]byte, 48)
 		if _, err := rand.Read(key.symmetric); err != nil {
-			return err
+			return fmt.Errorf("generating HMAC-384 key: %w", err)
 		}
 	case KeySpecHMAC512:
 		key.symmetric = make([]byte, 64)
 		if _, err := rand.Read(key.symmetric); err != nil {
-			return err
+			return fmt.Errorf("generating HMAC-512 key: %w", err)
 		}
 	case KeySpecRSA2048:
 		rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
-			return err
+			return fmt.Errorf("generating RSA-2048 key pair: %w", err)
 		}
 		key.rsaKey = rsaKey
 	case KeySpecRSA3072:
 		rsaKey, err := rsa.GenerateKey(rand.Reader, 3072)
 		if err != nil {
-			return err
+			return fmt.Errorf("generating RSA-3072 key pair: %w", err)
 		}
 		key.rsaKey = rsaKey
 	case KeySpecRSA4096:
 		rsaKey, err := rsa.GenerateKey(rand.Reader, 4096)
 		if err != nil {
-			return err
+			return fmt.Errorf("generating RSA-4096 key pair: %w", err)
 		}
 		key.rsaKey = rsaKey
 	case KeySpecECCNISTP256, KeySpecECCSECPP256R1:
 		ecdsaKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
-			return err
+			return fmt.Errorf("generating ECDSA P-256 key pair: %w", err)
 		}
 		key.ecdsaKey = ecdsaKey
 	case KeySpecECCNISTP384:
 		ecdsaKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 		if err != nil {
-			return err
+			return fmt.Errorf("generating ECDSA P-384 key pair: %w", err)
 		}
 		key.ecdsaKey = ecdsaKey
 	case KeySpecECCNISTP521:
 		ecdsaKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 		if err != nil {
-			return err
+			return fmt.Errorf("generating ECDSA P-521 key pair: %w", err)
 		}
 		key.ecdsaKey = ecdsaKey
 	default:
@@ -314,7 +314,7 @@ func (b *PersistentBackend) Encrypt(keyID string, plaintext []byte, context map[
 
 	ciphertext, err := aesEncrypt(key.symmetric, plaintext, serializeEncryptionContext(context))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("encrypting plaintext: %w", err)
 	}
 
 	ciphertextWithKeyID := prependKeyIDToCiphertext(keyID, ciphertext)
@@ -347,7 +347,7 @@ func (b *PersistentBackend) Decrypt(keyID string, ciphertext []byte, context map
 
 	plaintext, err := aesDecrypt(key.symmetric, ciphertext, serializeEncryptionContext(context))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decrypting ciphertext: %w", err)
 	}
 
 	return &DecryptResult{
@@ -363,7 +363,7 @@ func (b *PersistentBackend) DecryptWithoutKeyID(ciphertext []byte, context map[s
 
 	keyID, actualCiphertext, err := extractKeyIDFromCiphertext(ciphertext)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("extracting key ID from ciphertext: %w", err)
 	}
 
 	key, exists := b.keys[keyID]
@@ -377,7 +377,7 @@ func (b *PersistentBackend) DecryptWithoutKeyID(ciphertext []byte, context map[s
 
 	plaintext, err := aesDecrypt(key.symmetric, actualCiphertext, serializeEncryptionContext(context))
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("decrypting ciphertext: %w", err)
 	}
 
 	return &DecryptResult{

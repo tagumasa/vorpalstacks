@@ -36,3 +36,12 @@ func GenerateImportToken() (string, error) {
 	}
 	return hex.EncodeToString(token), nil
 }
+
+// GenerateGrantToken generates a new KMS grant token.
+func GenerateGrantToken() (string, error) {
+	token := make([]byte, 48)
+	if _, err := rand.Read(token); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(token), nil
+}

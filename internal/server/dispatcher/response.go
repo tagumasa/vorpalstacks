@@ -10,22 +10,23 @@ import (
 
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/protocol"
+	"vorpalstacks/internal/services/aws/common/response"
 	"vorpalstacks/internal/store/api"
 )
 
-// StreamableResponse is an interface for responses that can be streamed.
-type StreamableResponse interface {
-	GetStream() io.Reader
-	GetStreamHeaders() http.Header
-}
-
-func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, operation *api.Operation, opNameOverride string, response interface{}) {
-	if streamable, ok := response.(StreamableResponse); ok {
+func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, operation *api.Operation, opNameOverride string, resp interface{}) {
+	if streamable, ok := resp.(response.StreamableResponse); ok {
 		headers := streamable.GetStreamHeaders()
 		for k, v := range headers {
 			w.Header()[k] = v
 		}
-		w.WriteHeader(http.StatusOK)
+		statusCode := http.StatusOK
+		if sc, ok := resp.(response.StatusCodeResponse); ok {
+			if code := sc.GetStreamStatusCode(); code > 0 {
+				statusCode = code
+			}
+		}
+		w.WriteHeader(statusCode)
 		if reader := streamable.GetStream(); reader != nil {
 			if rc, ok := reader.(io.ReadCloser); ok {
 				defer rc.Close()
@@ -60,9 +61,12 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 	}
 
 	reqContentType := r.Header.Get("Content-Type")
-	acceptHeader := r.Header.Get("Accept")
 	reqAmzTarget := r.Header.Get("X-Amz-Target")
+	if r.Header.Get("X-Amzn-Query-Mode") == "true" {
+		xAmznQueryMode = true
+	}
 	isJSONRequest := reqAmzTarget != "" || strings.Contains(reqContentType, "application/x-amz-json") || strings.Contains(reqContentType, "application/x-amzn-json")
+	isCBORRequest := strings.Contains(reqContentType, "application/cbor") || r.Header.Get("smithy-protocol") == "rpc-v2-cbor"
 
 	if smithyProtocol == "" && strings.Contains(reqContentType, "application/x-www-form-urlencoded") {
 		hasAction := false
@@ -93,10 +97,21 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 		}
 	}
 
+	if contentType == "" && isJSONRequest && reqContentType != "" {
+		contentType = reqContentType
+	}
+
 	protocol.SetProtocolHeaders(w, contentType, xAmzTarget, smithyProtocol, xAmznQueryMode)
 
+	if isCBORRequest {
+		if err := protocol.EncodeCBORResponse(w, resp); err != nil {
+			log.Printf("Failed to encode CBOR response: %v", err)
+		}
+		return
+	}
+
 	if isJSONRequest {
-		if err := protocol.EncodeJSONResponse(w, response); err != nil {
+		if err := protocol.EncodeJSONResponse(w, resp); err != nil {
 			log.Printf("Failed to encode JSON response: %v", err)
 		}
 		return
@@ -105,17 +120,17 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 	if smithyProtocol == "aws.protocols#restXml" || smithyProtocol == "aws.protocols#ec2Query" || smithyProtocol == "aws.protocols#awsQuery" {
 		var err error
 		if smithyProtocol == "aws.protocols#awsQuery" || smithyProtocol == "aws.protocols#ec2Query" {
-			err = protocol.EncodeQueryXMLResponse(w, opName, response)
+			err = protocol.EncodeQueryXMLResponse(w, opName, resp)
 		} else if strings.HasPrefix(r.URL.Path, "/2020-05-31/") {
 			if isCloudFrontPayloadOperation(opName) {
 				payloadRoot := getCloudFrontPayloadRoot(opName)
-				extractCloudFrontETag(w, response, payloadRoot)
-				err = protocol.EncodeRestXMLPayloadResponse(w, payloadRoot, response)
+				extractCloudFrontETag(w, resp, payloadRoot)
+				err = protocol.EncodeRestXMLPayloadResponse(w, payloadRoot, resp)
 			} else {
-				err = protocol.EncodeRestXMLResponse(w, opName, response)
+				err = protocol.EncodeRestXMLResponse(w, opName, resp)
 			}
 		} else {
-			err = protocol.EncodeRestXMLResponse(w, opName, response)
+			err = protocol.EncodeRestXMLResponse(w, opName, resp)
 		}
 		if err != nil {
 			log.Printf("Failed to encode XML response: %v", err)
@@ -123,14 +138,7 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 		return
 	}
 
-	if strings.Contains(acceptHeader, "application/cbor") || strings.Contains(reqContentType, "application/cbor") {
-		if err := protocol.EncodeCBORResponse(w, response); err != nil {
-			log.Printf("Failed to encode CBOR response: %v", err)
-		}
-		return
-	}
-
-	if err := protocol.EncodeJSONResponse(w, response); err != nil {
+	if err := protocol.EncodeJSONResponse(w, resp); err != nil {
 		log.Printf("Failed to encode JSON response: %v", err)
 	}
 }
@@ -227,7 +235,7 @@ func (d *Dispatcher) getErrorContentTypeForRequest(r *http.Request) string {
 	reqContentType := r.Header.Get("Content-Type")
 	reqAmzTarget := r.Header.Get("X-Amz-Target")
 	if reqAmzTarget != "" || strings.Contains(reqContentType, "application/x-amz-json") || strings.Contains(reqContentType, "application/x-amzn-json") {
-		return "application/x-amz-json-1.0"
+		return reqContentType
 	}
 	if strings.Contains(reqContentType, "application/x-www-form-urlencoded") {
 		return "text/xml"

@@ -33,72 +33,126 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 	trailName := fmt.Sprintf("test-trail-%d", time.Now().UnixNano())
 
 	results = append(results, r.RunTest("cloudtrail", "ListTrails", func() error {
-		_, err := client.ListTrails(ctx, &cloudtrail.ListTrailsInput{})
-		return err
+		resp, err := client.ListTrails(ctx, &cloudtrail.ListTrailsInput{})
+		if err != nil {
+			return err
+		}
+		if resp.Trails == nil {
+			return fmt.Errorf("trails list is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail", func() error {
-		_, err := client.CreateTrail(ctx, &cloudtrail.CreateTrailInput{
+		resp, err := client.CreateTrail(ctx, &cloudtrail.CreateTrailInput{
 			Name:                       aws.String(trailName),
 			S3BucketName:               aws.String("test-bucket"),
 			IncludeGlobalServiceEvents: aws.Bool(true),
 			IsMultiRegionTrail:         aws.Bool(true),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Name == nil {
+			return fmt.Errorf("trail name is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "GetTrail", func() error {
-		_, err := client.GetTrail(ctx, &cloudtrail.GetTrailInput{
+		resp, err := client.GetTrail(ctx, &cloudtrail.GetTrailInput{
 			Name: aws.String(trailName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Trail == nil {
+			return fmt.Errorf("trail is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "DescribeTrails", func() error {
-		_, err := client.DescribeTrails(ctx, &cloudtrail.DescribeTrailsInput{
+		resp, err := client.DescribeTrails(ctx, &cloudtrail.DescribeTrailsInput{
 			TrailNameList: []string{trailName},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.TrailList == nil {
+			return fmt.Errorf("trail list is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "StartLogging", func() error {
-		_, err := client.StartLogging(ctx, &cloudtrail.StartLoggingInput{
+		resp, err := client.StartLogging(ctx, &cloudtrail.StartLoggingInput{
 			Name: aws.String(trailName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "StopLogging", func() error {
-		_, err := client.StopLogging(ctx, &cloudtrail.StopLoggingInput{
+		resp, err := client.StopLogging(ctx, &cloudtrail.StopLoggingInput{
 			Name: aws.String(trailName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "GetTrailStatus", func() error {
-		_, err := client.GetTrailStatus(ctx, &cloudtrail.GetTrailStatusInput{
+		resp, err := client.GetTrailStatus(ctx, &cloudtrail.GetTrailStatusInput{
 			Name: aws.String(trailName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "UpdateTrail", func() error {
-		_, err := client.UpdateTrail(ctx, &cloudtrail.UpdateTrailInput{
+		resp, err := client.UpdateTrail(ctx, &cloudtrail.UpdateTrailInput{
 			Name:         aws.String(trailName),
 			S3BucketName: aws.String("updated-bucket"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "GetEventSelectors", func() error {
-		_, err := client.GetEventSelectors(ctx, &cloudtrail.GetEventSelectorsInput{
+		resp, err := client.GetEventSelectors(ctx, &cloudtrail.GetEventSelectorsInput{
 			TrailName: aws.String(trailName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.EventSelectors == nil {
+			return fmt.Errorf("event selectors list is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "PutEventSelectors", func() error {
-		_, err := client.PutEventSelectors(ctx, &cloudtrail.PutEventSelectorsInput{
+		resp, err := client.PutEventSelectors(ctx, &cloudtrail.PutEventSelectorsInput{
 			TrailName: aws.String(trailName),
 			EventSelectors: []types.EventSelector{
 				{
@@ -107,7 +161,13 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	var trailARN string
@@ -123,7 +183,7 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		if resourceID == "" {
 			resourceID = trailName
 		}
-		_, err := client.AddTags(ctx, &cloudtrail.AddTagsInput{
+		resp, err := client.AddTags(ctx, &cloudtrail.AddTagsInput{
 			ResourceId: aws.String(resourceID),
 			TagsList: []types.Tag{
 				{
@@ -136,7 +196,13 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "ListTags", func() error {
@@ -144,10 +210,16 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		if resourceID == "" {
 			resourceID = trailName
 		}
-		_, err := client.ListTags(ctx, &cloudtrail.ListTagsInput{
+		resp, err := client.ListTags(ctx, &cloudtrail.ListTagsInput{
 			ResourceIdList: []string{resourceID},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ResourceTagList == nil {
+			return fmt.Errorf("resource tag list is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "RemoveTags", func() error {
@@ -155,7 +227,7 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		if resourceID == "" {
 			resourceID = trailName
 		}
-		_, err := client.RemoveTags(ctx, &cloudtrail.RemoveTagsInput{
+		resp, err := client.RemoveTags(ctx, &cloudtrail.RemoveTagsInput{
 			ResourceId: aws.String(resourceID),
 			TagsList: []types.Tag{
 				{
@@ -163,21 +235,39 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "LookupEvents", func() error {
-		_, err := client.LookupEvents(ctx, &cloudtrail.LookupEventsInput{
+		resp, err := client.LookupEvents(ctx, &cloudtrail.LookupEventsInput{
 			MaxResults: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Events == nil {
+			return fmt.Errorf("events list is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "DeleteTrail", func() error {
-		_, err := client.DeleteTrail(ctx, &cloudtrail.DeleteTrailInput{
+		resp, err := client.DeleteTrail(ctx, &cloudtrail.DeleteTrailInput{
 			Name: aws.String(trailName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

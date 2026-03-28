@@ -352,7 +352,7 @@ func (s *Server) handleShutdown() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	s.httpServerMu.Lock()
@@ -373,6 +373,15 @@ func (s *Server) handleShutdown() {
 		if err := tlsSrv.Shutdown(ctx); err != nil {
 			log.Printf("handleShutdown: TLS server shutdown error: %v", err)
 		}
+	}
+
+	s.shutdownHooksMu.Lock()
+	hooks := make([]ShutdownHook, len(s.shutdownHooks))
+	copy(hooks, s.shutdownHooks)
+	s.shutdownHooksMu.Unlock()
+
+	for i := len(hooks) - 1; i >= 0; i-- {
+		hooks[i](ctx)
 	}
 
 	s.closeOnce.Do(func() {

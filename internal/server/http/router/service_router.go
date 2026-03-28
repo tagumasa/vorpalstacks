@@ -40,6 +40,25 @@ func (r *ServiceRouter) DetermineService(req *http.Request) string {
 	// Check Authorization header for signing name first (most reliable)
 	if cred := r.extractCredential(req); cred != nil {
 		if cred.Service != "" {
+			if cred.Service == "timestream" {
+				if target := req.Header.Get("X-Amz-Target"); target != "" {
+					parts := strings.SplitN(target, ".", 2)
+					if len(parts) == 2 {
+						queryOps := map[string]bool{
+							"Query": true, "CancelQuery": true, "PrepareQuery": true,
+							"CreateScheduledQuery": true, "DeleteScheduledQuery": true,
+							"DescribeScheduledQuery": true, "ListScheduledQueries": true,
+							"UpdateScheduledQuery": true, "ExecuteScheduledQuery": true,
+							"DescribeAccountSettings": true, "UpdateAccountSettings": true,
+							"DescribeEndpoints": true,
+						}
+						if queryOps[parts[1]] {
+							return "timestream-query"
+						}
+					}
+				}
+				return "timestream-write"
+			}
 			if mapped := mapAuthServiceToService(cred.Service); mapped != "" {
 				return mapped
 			}

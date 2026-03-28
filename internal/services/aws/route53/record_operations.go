@@ -2,6 +2,7 @@ package route53
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -69,8 +70,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 	if err := st.Changes().Create(change); err != nil {
-		log.Printf("CreateChange failed: %v", err)
-		return nil, NewAPIError("CreateChange", "Failed to create change. See server logs for details.", 500)
+		return nil, NewAPIError("CreateChange", fmt.Sprintf("Failed to create change: %v", err), 500)
 	}
 
 	var appliedChanges []*route53store.ResourceRecordSet
@@ -160,8 +160,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 						log.Printf("Failed to rollback record %s: %v", ac.Name, delErr)
 					}
 				}
-				log.Printf("CREATE record failed: %v", err)
-				return nil, NewAPIError("InvalidChangeBatch", "Failed to create resource record set. See server logs for details.", 400)
+				return nil, NewAPIError("InvalidChangeBatch", fmt.Sprintf("Failed to create resource record set %s: %v", rrs.Name, err), 400)
 			}
 			appliedChanges = append(appliedChanges, rrs)
 		case "UPSERT":
@@ -178,7 +177,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 					}
 				}
 				log.Printf("UPSERT record failed: %v", err)
-				return nil, NewAPIError("InvalidChangeBatch", "Failed to upsert resource record set. See server logs for details.", 400)
+				return nil, NewAPIError("InvalidChangeBatch", fmt.Sprintf("Failed to upsert resource record set %s: %v", rrs.Name, err), 400)
 			}
 			appliedChanges = append(appliedChanges, rrs)
 		case "DELETE":
@@ -195,26 +194,23 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 					}
 				}
 				log.Printf("DELETE record failed: %v", err)
-				return nil, NewAPIError("InvalidChangeBatch", "Failed to delete resource record set. See server logs for details.", 400)
+				return nil, NewAPIError("InvalidChangeBatch", fmt.Sprintf("Failed to delete resource record set %s: %v", rrs.Name, err), 400)
 			}
 		}
 	}
 
 	if err := st.Changes().UpdateStatus(changeId, "INSYNC"); err != nil {
-		log.Printf("UpdateChange status failed: %v", err)
-		return nil, NewAPIError("UpdateChange", "Failed to update change status. See server logs for details.", 500)
+		return nil, NewAPIError("UpdateChange", fmt.Sprintf("Failed to update change status: %v", err), 500)
 	}
 	change.Status = "INSYNC"
 
 	recordSets, err := st.RecordSets().List(hostedZoneId)
 	if err != nil {
-		log.Printf("ListRecordSets failed: %v", err)
-		return nil, NewAPIError("ListRecordSets", "Failed to list record sets. See server logs for details.", 500)
+		return nil, NewAPIError("ListRecordSets", fmt.Sprintf("Failed to list record sets: %v", err), 500)
 	}
 	zone.ResourceRecordSetCount = len(recordSets)
 	if err := st.HostedZones().Update(zone); err != nil {
-		log.Printf("UpdateHostedZone failed: %v", err)
-		return nil, NewAPIError("UpdateHostedZone", "Failed to update hosted zone. See server logs for details.", 500)
+		return nil, NewAPIError("UpdateHostedZone", fmt.Sprintf("Failed to update hosted zone: %v", err), 500)
 	}
 
 	return map[string]interface{}{

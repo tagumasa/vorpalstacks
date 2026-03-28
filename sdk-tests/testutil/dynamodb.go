@@ -35,7 +35,7 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	tableARN := fmt.Sprintf("arn:aws:dynamodb:%s:000000000000:table/%s", r.region, tableName)
 
 	results = append(results, r.RunTest("dynamodb", "CreateTable", func() error {
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+		resp, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
 			TableName: aws.String(tableName),
 			AttributeDefinitions: []types.AttributeDefinition{
 				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
@@ -45,7 +45,13 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 			},
 			BillingMode: types.BillingModePayPerRequest,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.TableDescription == nil {
+			return fmt.Errorf("TableDescription is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "DescribeTable", func() error {
@@ -73,7 +79,7 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "PutItem", func() error {
-		_, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+		resp, err := client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(tableName),
 			Item: map[string]types.AttributeValue{
 				"id":    &types.AttributeValueMemberS{Value: "test1"},
@@ -81,7 +87,13 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 				"count": &types.AttributeValueMemberN{Value: "42"},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("PutItem response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "GetItem", func() error {
@@ -159,7 +171,7 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "BatchWriteItem", func() error {
-		_, err := client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
+		resp, err := client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
 			RequestItems: map[string][]types.WriteRequest{
 				tableName: {
 					{
@@ -181,7 +193,13 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.UnprocessedItems == nil {
+			return fmt.Errorf("UnprocessedItems is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "BatchGetItem", func() error {
@@ -246,14 +264,20 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "UpdateTimeToLive", func() error {
-		_, err := client.UpdateTimeToLive(ctx, &dynamodb.UpdateTimeToLiveInput{
+		resp, err := client.UpdateTimeToLive(ctx, &dynamodb.UpdateTimeToLiveInput{
 			TableName: aws.String(tableName),
 			TimeToLiveSpecification: &types.TimeToLiveSpecification{
 				AttributeName: aws.String("ttl"),
 				Enabled:       aws.Bool(true),
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.TimeToLiveSpecification == nil {
+			return fmt.Errorf("TimeToLiveSpecification is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "DescribeTimeToLive", func() error {
@@ -271,11 +295,17 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 
 	results = append(results, r.RunTest("dynamodb", "CreateBackup", func() error {
 		backupName := fmt.Sprintf("TestBackup-%d", time.Now().UnixNano())
-		_, err := client.CreateBackup(ctx, &dynamodb.CreateBackupInput{
+		resp, err := client.CreateBackup(ctx, &dynamodb.CreateBackupInput{
 			TableName:  aws.String(tableName),
 			BackupName: aws.String(backupName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.BackupDetails == nil {
+			return fmt.Errorf("BackupDetails is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "ListBackups", func() error {
@@ -303,20 +333,32 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "UpdateContinuousBackups", func() error {
-		_, err := client.UpdateContinuousBackups(ctx, &dynamodb.UpdateContinuousBackupsInput{
+		resp, err := client.UpdateContinuousBackups(ctx, &dynamodb.UpdateContinuousBackupsInput{
 			TableName: aws.String(tableName),
 			PointInTimeRecoverySpecification: &types.PointInTimeRecoverySpecification{
 				PointInTimeRecoveryEnabled: aws.Bool(true),
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ContinuousBackupsDescription == nil {
+			return fmt.Errorf("ContinuousBackupsDescription is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "ExecuteStatement (PartiQL)", func() error {
-		_, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+		resp, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
 			Statement: aws.String("INSERT INTO \"" + tableName + "\" VALUE {'id': 'partiql1', 'name': 'PartiQL Item'}"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("ExecuteStatement response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "ExecuteStatement (SELECT)", func() error {
@@ -333,7 +375,7 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "TransactWriteItems", func() error {
-		_, err := client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		resp, err := client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
 			TransactItems: []types.TransactWriteItem{
 				{
 					Put: &types.Put{
@@ -346,7 +388,13 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("TransactWriteItems response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "TransactGetItems", func() error {
@@ -372,7 +420,7 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "BatchExecuteStatement", func() error {
-		_, err := client.BatchExecuteStatement(ctx, &dynamodb.BatchExecuteStatementInput{
+		resp, err := client.BatchExecuteStatement(ctx, &dynamodb.BatchExecuteStatementInput{
 			Statements: []types.BatchStatementRequest{
 				{
 					Statement: aws.String("UPDATE \"" + tableName + "\" SET #n = :name WHERE id = 'batch1'"),
@@ -382,7 +430,13 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Responses == nil {
+			return fmt.Errorf("BatchExecuteStatement Responses is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "ExecuteTransaction", func() error {
@@ -403,10 +457,16 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "UpdateTable", func() error {
-		_, err := client.UpdateTable(ctx, &dynamodb.UpdateTableInput{
+		resp, err := client.UpdateTable(ctx, &dynamodb.UpdateTableInput{
 			TableName: aws.String(tableName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.TableDescription == nil {
+			return fmt.Errorf("TableDescription is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "DeleteTable", func() error {

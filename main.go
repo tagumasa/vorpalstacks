@@ -6,9 +6,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"vorpalstacks/internal/client/mobyclient"
 	appconfig "vorpalstacks/internal/config"
@@ -96,6 +98,14 @@ func main() {
 		BaseURL:   appconfig.BaseURL(),
 	})
 
+	server.RegisterShutdownHook(func(ctx context.Context) {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		if err := grpcWebServer.Shutdown(shutdownCtx); err != nil {
+			fmt.Fprintf(os.Stderr, "gRPC-Web server shutdown error: %v\n", err)
+		}
+	})
+
 	go func() {
 		fmt.Printf("Starting gRPC-Web admin server on :%s\n", cfg.GRPCWebPort)
 		if err := grpcWebServer.Start(); err != nil {
@@ -105,6 +115,9 @@ func main() {
 
 	iamService := svciam.NewIAMService(cfg.AccountID)
 	iamService.RegisterHandlers(server.Dispatcher())
+	server.RegisterShutdownHook(func(ctx context.Context) {
+		svciam.ShutdownSLRoleCleanup()
+	})
 
 	stsService := svcsts.NewSTSService()
 	stsService.RegisterHandlers(server.Dispatcher())
@@ -135,6 +148,11 @@ func main() {
 		os.Exit(1)
 	}
 	route53Service.RegisterHandlers(server.Dispatcher())
+	server.RegisterShutdownHook(func(ctx context.Context) {
+		if err := route53Service.Shutdown(); err != nil {
+			fmt.Fprintf(os.Stderr, "Route53 shutdown error: %v\n", err)
+		}
+	})
 
 	cloudWatchService := svccloudwatch.NewCloudWatchService(server.Storage(), cfg.AccountID, cfg.Region, cfg.DataPath)
 	cloudWatchService.RegisterHandlers(server.Dispatcher())
@@ -198,6 +216,9 @@ func main() {
 			}
 			lambdaService.SetS3ObjectStore(cfg.Region, s3Store.Objects(cfg.Region))
 			lambdaService.RegisterHandlers(server.Dispatcher())
+			server.RegisterShutdownHook(func(ctx context.Context) {
+				lambdaService.Shutdown()
+			})
 		}
 	}
 
@@ -210,6 +231,9 @@ func main() {
 			logsService.SetKinesisStore(cfg.Region, kinesisStoreInstance)
 		}
 		logsService.RegisterHandlers(server.Dispatcher())
+		server.RegisterShutdownHook(func(ctx context.Context) {
+			logsService.Stop()
+		})
 	}
 
 	var snsStoreInstance *storesns.SNSStore
@@ -258,6 +282,9 @@ func main() {
 			stepFunctionService.SetEventsStore(eventsStoreInstance)
 		}
 		stepFunctionService.RegisterHandlers(server.Dispatcher())
+		server.RegisterShutdownHook(func(ctx context.Context) {
+			stepFunctionService.Shutdown()
+		})
 	}
 
 	if cfg.APIGateway {
@@ -315,6 +342,11 @@ func main() {
 		schedulerService.BuildEngine()
 		schedulerService.RegisterHandlers(server.Dispatcher())
 		schedulerService.StartEngine()
+		server.RegisterShutdownHook(func(ctx context.Context) {
+			if err := schedulerService.StopEngine(); err != nil {
+				fmt.Fprintf(os.Stderr, "Scheduler shutdown error: %v\n", err)
+			}
+		})
 	}
 
 	if cfg.CloudTrail {
@@ -335,6 +367,9 @@ func main() {
 	if cfg.Athena {
 		athenaService := svcathena.NewServiceWithS3(cfg.AccountID, cfg.ServerHost(), s3ObjectStore)
 		athenaService.RegisterHandlers(server.Dispatcher())
+		server.RegisterShutdownHook(func(ctx context.Context) {
+			athenaService.Shutdown()
+		})
 	}
 
 	cfg.PrintStartupBanner()

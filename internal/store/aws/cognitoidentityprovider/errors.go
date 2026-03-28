@@ -82,4 +82,7 @@ var (
 
 	// ErrInvalidParameter is returned when a parameter is not valid.
 	ErrInvalidParameter = errors.New("invalid parameter")
+
+	// ErrResourceAlreadyExists is returned when a resource already exists.
+	ErrResourceAlreadyExists = errors.New("resource already exists")
 )

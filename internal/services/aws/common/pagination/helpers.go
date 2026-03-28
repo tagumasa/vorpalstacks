@@ -8,6 +8,9 @@ import (
 // DefaultMaxItems is the default maximum number of items to return in a list operation.
 const DefaultMaxItems = 100
 
+// AbsoluteMaxItems is the hard upper limit for any pagination parameter.
+const AbsoluteMaxItems = 1000
+
 // GetMaxItems extracts the MaxItems parameter from the given params map.
 func GetMaxItems(params map[string]interface{}, defaultVal int) int {
 	if defaultVal <= 0 {
@@ -16,6 +19,9 @@ func GetMaxItems(params map[string]interface{}, defaultVal int) int {
 	maxItems := request.GetIntParam(params, "MaxItems")
 	if maxItems <= 0 {
 		return defaultVal
+	}
+	if maxItems > AbsoluteMaxItems {
+		return AbsoluteMaxItems
 	}
 	return maxItems
 }

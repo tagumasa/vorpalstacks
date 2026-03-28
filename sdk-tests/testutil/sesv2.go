@@ -32,75 +32,123 @@ func (r *TestRunner) RunSESv2Tests() []TestResult {
 
 	// Test 1: Get Account
 	results = append(results, r.RunTest("sesv2", "GetAccount", func() error {
-		_, err := client.GetAccount(ctx, &sesv2.GetAccountInput{})
-		return err
+		resp, err := client.GetAccount(ctx, &sesv2.GetAccountInput{})
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 2: Create Email Identity
 	emailAddress := fmt.Sprintf("test-%d@example.com", time.Now().UnixNano())
 	results = append(results, r.RunTest("sesv2", "CreateEmailIdentity", func() error {
-		_, err := client.CreateEmailIdentity(ctx, &sesv2.CreateEmailIdentityInput{
+		resp, err := client.CreateEmailIdentity(ctx, &sesv2.CreateEmailIdentityInput{
 			EmailIdentity: aws.String(emailAddress),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 3: Get Email Identity
 	results = append(results, r.RunTest("sesv2", "GetEmailIdentity", func() error {
-		_, err := client.GetEmailIdentity(ctx, &sesv2.GetEmailIdentityInput{
+		resp, err := client.GetEmailIdentity(ctx, &sesv2.GetEmailIdentityInput{
 			EmailIdentity: aws.String(emailAddress),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 4: List Email Identities
 	results = append(results, r.RunTest("sesv2", "ListEmailIdentities", func() error {
-		_, err := client.ListEmailIdentities(ctx, &sesv2.ListEmailIdentitiesInput{
+		resp, err := client.ListEmailIdentities(ctx, &sesv2.ListEmailIdentitiesInput{
 			PageSize: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.EmailIdentities == nil {
+			return fmt.Errorf("email identities list is nil")
+		}
+		return nil
 	}))
 
 	// Test 5: Create Email Identity Policy
 	policyName := fmt.Sprintf("test-policy-%d", time.Now().UnixNano())
 	results = append(results, r.RunTest("sesv2", "CreateEmailIdentityPolicy", func() error {
-		_, err := client.CreateEmailIdentityPolicy(ctx, &sesv2.CreateEmailIdentityPolicyInput{
+		resp, err := client.CreateEmailIdentityPolicy(ctx, &sesv2.CreateEmailIdentityPolicyInput{
 			EmailIdentity: aws.String(emailAddress),
 			PolicyName:    aws.String(policyName),
 			Policy:        aws.String(`{"Version":"2008-10-17","Statement":[]}`),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 6: Get Email Identity Policies
 	results = append(results, r.RunTest("sesv2", "GetEmailIdentityPolicies", func() error {
-		_, err := client.GetEmailIdentityPolicies(ctx, &sesv2.GetEmailIdentityPoliciesInput{
+		resp, err := client.GetEmailIdentityPolicies(ctx, &sesv2.GetEmailIdentityPoliciesInput{
 			EmailIdentity: aws.String(emailAddress),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Policies == nil {
+			return fmt.Errorf("policies map is nil")
+		}
+		return nil
 	}))
 
 	// Test 7: Delete Email Identity Policy (cleanup the policy created in Test 5)
 	results = append(results, r.RunTest("sesv2", "DeleteEmailIdentityPolicy", func() error {
-		_, err := client.DeleteEmailIdentityPolicy(ctx, &sesv2.DeleteEmailIdentityPolicyInput{
+		resp, err := client.DeleteEmailIdentityPolicy(ctx, &sesv2.DeleteEmailIdentityPolicyInput{
 			EmailIdentity: aws.String(emailAddress),
 			PolicyName:    aws.String(policyName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 8: Put Email Identity Feedback Attributes
 	results = append(results, r.RunTest("sesv2", "PutEmailIdentityFeedbackAttributes", func() error {
-		_, err := client.PutEmailIdentityFeedbackAttributes(ctx, &sesv2.PutEmailIdentityFeedbackAttributesInput{
+		resp, err := client.PutEmailIdentityFeedbackAttributes(ctx, &sesv2.PutEmailIdentityFeedbackAttributesInput{
 			EmailIdentity:          aws.String(emailAddress),
 			EmailForwardingEnabled: true,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 9: Send Email
 	results = append(results, r.RunTest("sesv2", "SendEmail", func() error {
-		_, err := client.SendEmail(ctx, &sesv2.SendEmailInput{
+		resp, err := client.SendEmail(ctx, &sesv2.SendEmailInput{
 			FromEmailAddress: aws.String(emailAddress),
 			Destination: &types.Destination{
 				ToAddresses: []string{emailAddress},
@@ -118,48 +166,84 @@ func (r *TestRunner) RunSESv2Tests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.MessageId == nil {
+			return fmt.Errorf("message ID is nil")
+		}
+		return nil
 	}))
 
 	// Test 10: Create Contact List
 	contactListName := fmt.Sprintf("test-contactlist-%d", time.Now().UnixNano())
 	results = append(results, r.RunTest("sesv2", "CreateContactList", func() error {
-		_, err := client.CreateContactList(ctx, &sesv2.CreateContactListInput{
+		resp, err := client.CreateContactList(ctx, &sesv2.CreateContactListInput{
 			ContactListName: aws.String(contactListName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 11: List Contact Lists
 	results = append(results, r.RunTest("sesv2", "ListContactLists", func() error {
-		_, err := client.ListContactLists(ctx, &sesv2.ListContactListsInput{
+		resp, err := client.ListContactLists(ctx, &sesv2.ListContactListsInput{
 			PageSize: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ContactLists == nil {
+			return fmt.Errorf("contact lists is nil")
+		}
+		return nil
 	}))
 
 	// Test 12: Get Contact List
 	results = append(results, r.RunTest("sesv2", "GetContactList", func() error {
-		_, err := client.GetContactList(ctx, &sesv2.GetContactListInput{
+		resp, err := client.GetContactList(ctx, &sesv2.GetContactListInput{
 			ContactListName: aws.String(contactListName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ContactListName == nil {
+			return fmt.Errorf("contact list name is nil")
+		}
+		return nil
 	}))
 
 	// Test 13: Delete Contact List
 	results = append(results, r.RunTest("sesv2", "DeleteContactList", func() error {
-		_, err := client.DeleteContactList(ctx, &sesv2.DeleteContactListInput{
+		resp, err := client.DeleteContactList(ctx, &sesv2.DeleteContactListInput{
 			ContactListName: aws.String(contactListName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 14: Delete Email Identity
 	results = append(results, r.RunTest("sesv2", "DeleteEmailIdentity", func() error {
-		_, err := client.DeleteEmailIdentity(ctx, &sesv2.DeleteEmailIdentityInput{
+		resp, err := client.DeleteEmailIdentity(ctx, &sesv2.DeleteEmailIdentityInput{
 			EmailIdentity: aws.String(emailAddress),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	return results

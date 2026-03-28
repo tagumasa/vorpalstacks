@@ -38,10 +38,16 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 	targetID := fmt.Sprintf("TestTarget-%d", time.Now().UnixNano())
 
 	results = append(results, r.RunTest("events", "CreateEventBus", func() error {
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
+		resp, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
 			Name: aws.String(busName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("events", "DescribeEventBus", func() error {
@@ -69,11 +75,17 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("events", "PutRule", func() error {
-		_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
+		resp, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
 			Name:         aws.String(ruleName),
 			EventBusName: aws.String(busName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("events", "DescribeRule", func() error {
@@ -104,7 +116,7 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("events", "PutTargets", func() error {
-		_, err := client.PutTargets(ctx, &eventbridge.PutTargetsInput{
+		resp, err := client.PutTargets(ctx, &eventbridge.PutTargetsInput{
 			Rule:         aws.String(ruleName),
 			EventBusName: aws.String(busName),
 			Targets: []types.Target{
@@ -114,7 +126,13 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("events", "ListTargetsByRule", func() error {
@@ -137,7 +155,7 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 			"detail-type": "TestEvent",
 			"detail":      map[string]string{"message": "test"},
 		})
-		_, err := client.PutEvents(ctx, &eventbridge.PutEventsInput{
+		resp, err := client.PutEvents(ctx, &eventbridge.PutEventsInput{
 			Entries: []types.PutEventsRequestEntry{
 				{
 					Source:       aws.String("com.example.test"),
@@ -147,43 +165,73 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("events", "RemoveTargets", func() error {
-		_, err := client.RemoveTargets(ctx, &eventbridge.RemoveTargetsInput{
+		resp, err := client.RemoveTargets(ctx, &eventbridge.RemoveTargetsInput{
 			Rule:         aws.String(ruleName),
 			EventBusName: aws.String(busName),
 			Ids:          []string{targetID},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("events", "DisableRule", func() error {
-		_, err := client.DisableRule(ctx, &eventbridge.DisableRuleInput{
+		resp, err := client.DisableRule(ctx, &eventbridge.DisableRuleInput{
 			Name:         aws.String(ruleName),
 			EventBusName: aws.String(busName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("events", "EnableRule", func() error {
-		_, err := client.EnableRule(ctx, &eventbridge.EnableRuleInput{
+		resp, err := client.EnableRule(ctx, &eventbridge.EnableRuleInput{
 			Name:         aws.String(ruleName),
 			EventBusName: aws.String(busName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("events", "TagResource", func() error {
 		ruleARN := fmt.Sprintf("arn:aws:events:%s:000000000000:rule/%s/%s", r.region, busName, ruleName)
-		_, err := client.TagResource(ctx, &eventbridge.TagResourceInput{
+		resp, err := client.TagResource(ctx, &eventbridge.TagResourceInput{
 			ResourceARN: aws.String(ruleARN),
 			Tags: []types.Tag{
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("events", "ListTagsForResource", func() error {
@@ -202,26 +250,44 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 
 	results = append(results, r.RunTest("events", "UntagResource", func() error {
 		ruleARN := fmt.Sprintf("arn:aws:events:%s:000000000000:rule/%s/%s", r.region, busName, ruleName)
-		_, err := client.UntagResource(ctx, &eventbridge.UntagResourceInput{
+		resp, err := client.UntagResource(ctx, &eventbridge.UntagResourceInput{
 			ResourceARN: aws.String(ruleARN),
 			TagKeys:     []string{"Environment"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("events", "DeleteRule", func() error {
-		_, err := client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{
+		resp, err := client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{
 			Name:         aws.String(ruleName),
 			EventBusName: aws.String(busName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("events", "DeleteEventBus", func() error {
-		_, err := client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{
+		resp, err := client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{
 			Name: aws.String(busName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

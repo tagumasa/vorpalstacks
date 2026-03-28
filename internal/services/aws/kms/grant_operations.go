@@ -4,6 +4,8 @@ package kms
 
 import (
 	"context"
+	"errors"
+
 	"vorpalstacks/internal/services/aws/common/pagination"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
@@ -42,14 +44,20 @@ func (s *KMSService) CreateGrant(ctx context.Context, reqCtx *request.RequestCon
 
 	constraints := parseGrantConstraints(req.Parameters)
 
-	grant, err := stores.grants.Create(key.KeyID, granteePrincipal, retiringPrincipal, operations, name, constraints)
+	grantToken, err := kmsstore.GenerateGrantToken()
+	if err != nil {
+		return nil, err
+	}
+
+	grant, err := stores.grants.CreateWithToken(key.KeyID, granteePrincipal, retiringPrincipal, operations, name, constraints, grantToken)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"GrantId": grant.GrantID,
-		"KeyId":   key.Arn,
+		"GrantId":    grant.GrantID,
+		"GrantToken": grantToken,
+		"KeyId":      key.Arn,
 	}, nil
 }
 
@@ -181,6 +189,9 @@ func (s *KMSService) RevokeGrant(ctx context.Context, reqCtx *request.RequestCon
 
 	grant, err := stores.grants.Get(grantID)
 	if err != nil {
+		if errors.Is(err, kmsstore.ErrGrantNotFound) {
+			return nil, ErrGrantNotFound
+		}
 		return nil, err
 	}
 
@@ -203,13 +214,30 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 	}
 
 	grantID := request.GetStringParam(req.Parameters, "GrantId")
-	if grantID == "" {
-		return nil, ErrGrantNotFound
-	}
+	grantToken := request.GetStringParam(req.Parameters, "GrantToken")
 
-	grant, err := stores.grants.Get(grantID)
-	if err != nil {
-		return nil, err
+	var grant *kmsstore.Grant
+	if grantID != "" {
+		var err error
+		grant, err = stores.grants.Get(grantID)
+		if err != nil {
+			if errors.Is(err, kmsstore.ErrGrantNotFound) {
+				return nil, ErrGrantNotFound
+			}
+			return nil, err
+		}
+	} else if grantToken != "" {
+		var err error
+		grant, err = stores.grants.GetByToken(grantToken)
+		if err != nil {
+			if errors.Is(err, kmsstore.ErrGrantNotFound) {
+				return nil, ErrGrantNotFound
+			}
+			return nil, err
+		}
+		grantID = grant.GrantID
+	} else {
+		return nil, ErrGrantNotFound
 	}
 
 	keyID := s.getKeyID(req.Parameters)

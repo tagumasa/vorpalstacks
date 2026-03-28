@@ -22,7 +22,7 @@ func NewSubscribeToShardEventStreamWriter(w io.Writer) *SubscribeToShardEventStr
 
 // WriteSubscribeToShardEvent writes a SubscribeToShardEvent to the stream.
 func (s *SubscribeToShardEventStreamWriter) WriteSubscribeToShardEvent(records []*kinesisstore.Record, continuationSeqNum string, millisBehindLatest int64, childShards []interface{}) error {
-	var formattedRecords []map[string]interface{}
+	formattedRecords := make([]map[string]interface{}, 0)
 	for _, r := range records {
 		formattedRecords = append(formattedRecords, map[string]interface{}{
 			"SequenceNumber":              r.SequenceNumber,

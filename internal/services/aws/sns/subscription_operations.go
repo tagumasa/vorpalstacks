@@ -62,7 +62,7 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 	created, err := store.CreateSubscription(subscription)
 	if err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewNotFoundException("Topic does not exist")
+			return nil, NewTopicNotFoundException()
 		}
 		return nil, err
 	}

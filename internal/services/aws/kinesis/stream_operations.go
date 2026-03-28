@@ -335,7 +335,7 @@ func (s *KinesisService) mapStoreError(err error) error {
 	case errors.Is(err, kinesisstore.ErrStreamNotFound):
 		return ErrResourceNotFound
 	case errors.Is(err, kinesisstore.ErrStreamAlreadyExists):
-		return ErrResourceAlreadyExists
+		return ErrResourceInUse
 	case errors.Is(err, kinesisstore.ErrShardNotFound):
 		return ErrResourceNotFound
 	case errors.Is(err, kinesisstore.ErrConsumerNotFound):

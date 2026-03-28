@@ -80,7 +80,7 @@ func (s *SQSStore) SendMessage(queueURL string, message *Message) (*Message, err
 		s.sequenceMu.Unlock()
 	}
 
-	if err := s.messagesStore.PutProto(message.ID, MessageToProto(message)); err != nil {
+	if err := s.messagesStore.PutProto(messageKey(queueURL, message.ID), MessageToProto(message)); err != nil {
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func (s *SQSStore) SendMessage(queueURL string, message *Message) (*Message, err
 		if dedupKey != "" {
 			s.deduplicationMu.Lock()
 			s.deduplicationCache[dedupKey] = &deduplicationEntry{
-				messageID: message.ID,
+				messageID: messageKey(queueURL, message.ID),
 				expiresAt: time.Now().Add(deduplicationWindow),
 			}
 			if len(s.deduplicationCache) > deduplicationCacheMaxSize {
@@ -133,15 +133,12 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 	}
 
 	now := time.Now().UTC()
-	opts := common.ListOptions{MaxItems: int(maxNumberOfMessages) * 3}
+	opts := common.ListOptions{Prefix: messagePrefix(queueURL), MaxItems: int(maxNumberOfMessages) * 3}
 
 	s.msgMutex.Lock()
 	defer s.msgMutex.Unlock()
 
 	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
-		if m.QueueUrl != queueURL {
-			return false
-		}
 		visibleAfter := protoToTime(m.VisibleAfter)
 		if !visibleAfter.IsZero() && now.Before(visibleAfter) {
 			return false
@@ -190,7 +187,7 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 			msg.Attributes["MessageDeduplicationId"] = msg.MessageDeduplicationID
 		}
 
-		if err := s.messagesStore.PutProto(msg.ID, MessageToProto(msg)); err != nil {
+		if err := s.messagesStore.PutProto(messageKey(queueURL, msg.ID), MessageToProto(msg)); err != nil {
 			continue
 		}
 
@@ -205,9 +202,9 @@ func (s *SQSStore) DeleteMessage(queueURL, receiptHandle string) error {
 	s.msgMutex.Lock()
 	defer s.msgMutex.Unlock()
 
-	opts := common.ListOptions{MaxItems: 1000}
+	opts := common.ListOptions{Prefix: messagePrefix(queueURL), MaxItems: 1000}
 	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
-		return m.QueueUrl == queueURL && m.ReceiptHandle == receiptHandle
+		return m.ReceiptHandle == receiptHandle
 	})
 	if err != nil {
 		return err
@@ -217,7 +214,7 @@ func (s *SQSStore) DeleteMessage(queueURL, receiptHandle string) error {
 		return ErrInvalidReceiptHandle
 	}
 
-	return s.messagesStore.Delete(result.Items[0].Id)
+	return s.messagesStore.Delete(messageKey(queueURL, result.Items[0].Id))
 }
 
 // ChangeMessageVisibility changes the visibility timeout of a message.
@@ -229,9 +226,9 @@ func (s *SQSStore) ChangeMessageVisibility(queueURL, receiptHandle string, visib
 	s.msgMutex.Lock()
 	defer s.msgMutex.Unlock()
 
-	opts := common.ListOptions{MaxItems: 1000}
+	opts := common.ListOptions{Prefix: messagePrefix(queueURL), MaxItems: 1000}
 	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
-		return m.QueueUrl == queueURL && m.ReceiptHandle == receiptHandle
+		return m.ReceiptHandle == receiptHandle
 	})
 	if err != nil {
 		return err
@@ -249,7 +246,7 @@ func (s *SQSStore) ChangeMessageVisibility(queueURL, receiptHandle string, visib
 		msg.ReceiptHandle = ""
 	}
 
-	return s.messagesStore.PutProto(msg.ID, MessageToProto(msg))
+	return s.messagesStore.PutProto(messageKey(queueURL, msg.ID), MessageToProto(msg))
 }
 
 // PurgeQueue removes all messages from the specified queue.
@@ -258,7 +255,6 @@ func (s *SQSStore) PurgeQueue(queueURL string) error {
 		return ErrQueueNotFound
 	}
 
-	const purgeTimeout = 60 * time.Second
 	s.purgeMutex.Lock()
 
 	if startTime, inProgress := s.purgeInProgress[queueURL]; inProgress {
@@ -283,18 +279,5 @@ func (s *SQSStore) PurgeQueue(queueURL string) error {
 		s.purgeMutex.Unlock()
 	}()
 
-	opts := common.ListOptions{MaxItems: 10000}
-	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
-		return m.QueueUrl == queueURL
-	})
-	if err != nil {
-		return err
-	}
-	for _, msg := range result.Items {
-		if err := s.messagesStore.Delete(msg.Id); err != nil {
-			return fmt.Errorf("failed to delete message %s: %w", msg.Id, err)
-		}
-	}
-
-	return nil
+	return s.messagesStore.DeleteByPrefix(messagePrefix(queueURL))
 }

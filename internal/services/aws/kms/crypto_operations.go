@@ -8,6 +8,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
@@ -90,14 +91,14 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 		}
 		result, err = s.hsmBackend.Decrypt(key.KeyID, ciphertext, encryptionContext)
 		if err != nil {
-			return nil, err
+			return nil, s.mapHSMError(err)
 		}
 		keyArn = key.Arn
 	} else {
 		var resolvedKeyID string
 		result, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, encryptionContext)
 		if err != nil {
-			return nil, err
+			return nil, s.mapHSMError(err)
 		}
 		key, err := stores.keys.Get(resolvedKeyID)
 		if err != nil {
@@ -510,4 +511,14 @@ func generateAsymmetricKeyPair(spec hsm.KeySpec) (interface{}, interface{}, erro
 	default:
 		return nil, nil, fmt.Errorf("unsupported KeyPairSpec: %s", spec)
 	}
+}
+
+func (s *KMSService) mapHSMError(err error) error {
+	if errors.Is(err, hsm.ErrKeyNotFound) {
+		return NewKeyNotFoundError("")
+	}
+	if errors.Is(err, hsm.ErrDecryptFailed) {
+		return ErrInvalidCiphertext
+	}
+	return ErrInvalidCiphertext
 }

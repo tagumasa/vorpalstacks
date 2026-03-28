@@ -113,7 +113,7 @@ func (s *Service) ListDatabases(ctx context.Context, reqCtx *request.RequestCont
 		return nil, s.mapStoreError(err)
 	}
 
-	var dbList []map[string]interface{}
+	dbList := make([]map[string]interface{}, 0)
 	for _, db := range result.Items {
 		tags, _ := st.store.ListTags(db.ARN)
 		dbList = append(dbList, s.formatDatabaseResponse(db, tags))

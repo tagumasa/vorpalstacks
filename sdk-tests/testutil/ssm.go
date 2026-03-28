@@ -33,12 +33,18 @@ func (r *TestRunner) RunSSMTests() []TestResult {
 	parameterName := fmt.Sprintf("/test/param-%d", time.Now().UnixNano())
 
 	results = append(results, r.RunTest("ssm", "PutParameter", func() error {
-		_, err := client.PutParameter(ctx, &ssm.PutParameterInput{
+		resp, err := client.PutParameter(ctx, &ssm.PutParameterInput{
 			Name:  aws.String(parameterName),
 			Value: aws.String("test-value"),
 			Type:  types.ParameterTypeString,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("ssm", "GetParameter", func() error {
@@ -100,10 +106,16 @@ func (r *TestRunner) RunSSMTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("ssm", "DeleteParameter", func() error {
-		_, err := client.DeleteParameter(ctx, &ssm.DeleteParameterInput{
+		resp, err := client.DeleteParameter(ctx, &ssm.DeleteParameterInput{
 			Name: aws.String(parameterName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

@@ -188,7 +188,7 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 		return nil, s.mapStoreError(err)
 	}
 
-	var formattedRecords []map[string]interface{}
+	formattedRecords := make([]map[string]interface{}, 0)
 	for _, r := range records {
 		formattedRecords = append(formattedRecords, map[string]interface{}{
 			"SequenceNumber":              r.SequenceNumber,

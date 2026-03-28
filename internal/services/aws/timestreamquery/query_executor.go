@@ -45,7 +45,7 @@ func (s *Service) executeSQLQuery(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, fmt.Errorf("failed to get store: %w", err)
 	}
-	records, err := st.recordStore.QueryRecords(databaseName, tableName, time.Time{}, time.Time{})
+	records, err := st.recordStore.QueryRecords(databaseName, tableName, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), time.Now().Add(24*time.Hour))
 	if err != nil {
 		return nil, err
 	}

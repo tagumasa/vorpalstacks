@@ -32,6 +32,10 @@ func (s *Service) WriteRecords(ctx context.Context, reqCtx *request.RequestConte
 		return nil, s.mapStoreError(err)
 	}
 
+	if flushErr := st.recordStore.FlushAllBuffers(); flushErr != nil {
+		return nil, s.mapStoreError(flushErr)
+	}
+
 	response := map[string]interface{}{
 		"RecordsIngested": map[string]interface{}{
 			"Total":         int64(len(records)),

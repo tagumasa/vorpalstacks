@@ -270,7 +270,7 @@ func (d *DB) SetWithTTL(key, value []byte, ttl time.Duration) error {
 		return fmt.Errorf("failed to encrypt value: %w", err)
 	}
 
-	return d.db.Set(key, encrypted, pebble.Sync)
+	return d.db.Set(key, encrypted, d.syncFlag())
 }
 
 // Delete removes the specified key from the database.
@@ -283,7 +283,7 @@ func (d *DB) Delete(key []byte) error {
 		return ErrClosed
 	}
 
-	return d.db.Delete(key, pebble.Sync)
+	return d.db.Delete(key, d.syncFlag())
 }
 
 // DeleteRange removes all keys in the range [start, end).
@@ -296,7 +296,7 @@ func (d *DB) DeleteRange(start, end []byte) error {
 		return ErrClosed
 	}
 
-	return d.db.DeleteRange(start, end, pebble.Sync)
+	return d.db.DeleteRange(start, end, d.syncFlag())
 }
 
 // NewIter returns an iterator over the database.
@@ -321,7 +321,7 @@ func (d *DB) SetRaw(key, value []byte) error {
 		return ErrClosed
 	}
 
-	return d.db.Set(key, value, pebble.Sync)
+	return d.db.Set(key, value, d.syncFlag())
 }
 
 // GetRaw retrieves a value without decryption.
@@ -702,8 +702,138 @@ func (d *DB) Encryptor() Encryptor {
 	return d.encryptor
 }
 
+func (d *DB) syncFlag() *pebble.WriteOptions {
+	if d.opts.SyncWrites {
+		return pebble.Sync
+	}
+	return pebble.NoSync
+}
+
 // DataDir returns the path to the data directory for a given base path.
 // This is a utility function for constructing database paths.
 func DataDir(basePath string) string {
 	return filepath.Join(basePath, "data")
+}
+
+// LazyIterator provides lazy, on-demand iteration over a key range.
+// Unlike ScanRange which materialises all results upfront, this iterator
+// wraps a pebble.Iterator and decrypts values one at a time.
+type LazyIterator struct {
+	iter      *pebble.Iterator
+	encryptor Encryptor
+	ttlOpts   *TTLOptions
+	key       []byte
+	value     []byte
+	err       error
+	closed    bool
+	first     bool
+}
+
+// NewLazyIterator creates a lazy iterator over the given range.
+// The caller must call Close when finished.
+func (d *DB) NewLazyIterator(start, end []byte) *LazyIterator {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	if d.closed {
+		return &LazyIterator{err: ErrClosed}
+	}
+
+	iter, err := d.db.NewIter(&pebble.IterOptions{
+		LowerBound: start,
+		UpperBound: end,
+	})
+	if err != nil {
+		return &LazyIterator{err: err}
+	}
+
+	var ttlOpts *TTLOptions
+	if d.opts.TTL.Enabled {
+		ttlOpts = &d.opts.TTL
+	}
+
+	li := &LazyIterator{
+		iter:      iter,
+		encryptor: d.encryptor,
+		ttlOpts:   ttlOpts,
+	}
+	li.first = true
+	return li
+}
+
+func (li *LazyIterator) advance() {
+	for li.iter.Valid() {
+		key := li.iter.Key()
+		val, err := li.iter.ValueAndErr()
+		if err != nil {
+			li.err = err
+			return
+		}
+
+		decrypted, err := li.encryptor.Decrypt(val)
+		if err != nil {
+			li.err = err
+			return
+		}
+
+		if li.ttlOpts != nil {
+			ttlVal, err := UnmarshalTTLValue(decrypted)
+			if err == nil && ttlVal.ExpiresAt > 0 {
+				if time.Now().Unix() > ttlVal.ExpiresAt {
+					li.iter.Next()
+					continue
+				}
+				decrypted = ttlVal.Data
+			}
+		}
+
+		keyCopy := make([]byte, len(key))
+		copy(keyCopy, key)
+		li.key = keyCopy
+		li.value = decrypted
+		return
+	}
+	li.key = nil
+	li.value = nil
+}
+
+// Next advances the iterator to the next key-value pair.
+func (li *LazyIterator) Next() bool {
+	if li.err != nil || li.closed {
+		return false
+	}
+	if li.first {
+		li.first = false
+		li.iter.First()
+	} else {
+		li.iter.Next()
+	}
+	li.advance()
+	return li.key != nil
+}
+
+// Key returns the current key.
+func (li *LazyIterator) Key() []byte {
+	return li.key
+}
+
+// Value returns the current decrypted value.
+func (li *LazyIterator) Value() []byte {
+	return li.value
+}
+
+// Error returns any error encountered during iteration.
+func (li *LazyIterator) Error() error {
+	return li.err
+}
+
+// Close releases the underlying iterator resources.
+func (li *LazyIterator) Close() {
+	if li.closed {
+		return
+	}
+	li.closed = true
+	if li.iter != nil {
+		li.iter.Close()
+	}
 }

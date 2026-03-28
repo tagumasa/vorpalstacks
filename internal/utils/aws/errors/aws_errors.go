@@ -165,7 +165,11 @@ func WriteAWSError(w http.ResponseWriter, err *AWSError, contentType string) {
 			log.Printf("Failed to write CBOR error response: %v", writeErr)
 		}
 	} else {
-		w.Header().Set("Content-Type", "application/json")
+		ct := contentType
+		if ct == "" {
+			ct = "application/json"
+		}
+		w.Header().Set("Content-Type", ct)
 		w.Header().Set("X-Amzn-ErrorType", err.Code)
 		if err.QueryErrorCode != "" {
 			w.Header().Set("x-amzn-query-error", err.QueryErrorCode)

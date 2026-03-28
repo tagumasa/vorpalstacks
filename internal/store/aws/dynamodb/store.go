@@ -120,14 +120,14 @@ func (t *DynamoDBTxn) GetTable(name string) (*Table, error) {
 	bucket := t.txn.Bucket(tableBucketName(t.region()))
 	data, err := bucket.Get([]byte(name))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get table %s: %w", name, err)
 	}
 	if data == nil {
 		return nil, ErrTableNotFound
 	}
 	var pbTable pb.Table
 	if err := proto.Unmarshal(data, &pbTable); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal table %s: %w", name, err)
 	}
 	return ProtoToTable(&pbTable), nil
 }
@@ -137,7 +137,7 @@ func (t *DynamoDBTxn) PutTable(table *Table) error {
 	bucket := t.txn.Bucket(tableBucketName(t.region()))
 	data, err := proto.Marshal(TableToProto(table))
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal table %s: %w", table.Name, err)
 	}
 	return bucket.Put([]byte(table.Name), data)
 }
@@ -146,7 +146,7 @@ func (t *DynamoDBTxn) PutTable(table *Table) error {
 func (t *DynamoDBTxn) GetItem(tableName string, key map[string]*AttributeValue) (*Item, error) {
 	table, err := t.GetTable(tableName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get table %s for GetItem: %w", tableName, err)
 	}
 	itemKey := buildItemKeyFromTable(tableName, key, table)
 	if itemKey == "" {
@@ -155,14 +155,14 @@ func (t *DynamoDBTxn) GetItem(tableName string, key map[string]*AttributeValue) 
 	bucket := t.txn.Bucket(itemBucketName(t.region()))
 	data, err := bucket.Get([]byte(itemKey))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get item %s#%v: %w", tableName, key, err)
 	}
 	if data == nil {
 		return nil, ErrItemNotFound
 	}
 	var pbItem pb.Item
 	if err := proto.Unmarshal(data, &pbItem); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal item %s#%v: %w", tableName, key, err)
 	}
 	return &Item{
 		TableName:  pbItem.TableName,
@@ -175,7 +175,7 @@ func (t *DynamoDBTxn) GetItem(tableName string, key map[string]*AttributeValue) 
 func (t *DynamoDBTxn) PutItem(tableName string, key map[string]*AttributeValue, attributes map[string]*AttributeValue) error {
 	table, err := t.GetTable(tableName)
 	if err != nil {
-		return err
+		return fmt.Errorf("get table %s for PutItem: %w", tableName, err)
 	}
 
 	mergedAttrs := make(map[string]*AttributeValue, len(attributes)+len(key))
@@ -197,7 +197,7 @@ func (t *DynamoDBTxn) PutItem(tableName string, key map[string]*AttributeValue, 
 	}
 	data, err := proto.Marshal(pbItem)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal item %s: %w", tableName, err)
 	}
 	bucket := t.txn.Bucket(itemBucketName(t.region()))
 	return bucket.Put([]byte(itemKey), data)
@@ -207,7 +207,7 @@ func (t *DynamoDBTxn) PutItem(tableName string, key map[string]*AttributeValue, 
 func (t *DynamoDBTxn) DeleteItem(tableName string, key map[string]*AttributeValue) error {
 	table, err := t.GetTable(tableName)
 	if err != nil {
-		return err
+		return fmt.Errorf("get table %s for DeleteItem: %w", tableName, err)
 	}
 	itemKey := buildItemKeyFromTable(tableName, key, table)
 	if itemKey == "" {
@@ -221,7 +221,7 @@ func (t *DynamoDBTxn) DeleteItem(tableName string, key map[string]*AttributeValu
 func (t *DynamoDBTxn) ItemExists(tableName string, key map[string]*AttributeValue) (bool, error) {
 	table, err := t.GetTable(tableName)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("get table %s for ItemExists: %w", tableName, err)
 	}
 	itemKey := buildItemKeyFromTable(tableName, key, table)
 	if itemKey == "" {
@@ -231,15 +231,11 @@ func (t *DynamoDBTxn) ItemExists(tableName string, key map[string]*AttributeValu
 	return bucket.Has([]byte(itemKey)), nil
 }
 
-// UpdateItemCount increments or decrements the item count for a table.
+// UpdateItemCount increments or decrements the item count for a table within the current transaction.
 func (t *DynamoDBTxn) UpdateItemCount(tableName string, delta int64) error {
-	if t.tableStore != nil {
-		t.tableStore.mu.Lock()
-		defer t.tableStore.mu.Unlock()
-	}
 	table, err := t.GetTable(tableName)
 	if err != nil {
-		return err
+		return fmt.Errorf("get table %s for UpdateItemCount: %w", tableName, err)
 	}
 	table.ItemCount += delta
 	if table.ItemCount < 0 {
@@ -248,15 +244,11 @@ func (t *DynamoDBTxn) UpdateItemCount(tableName string, delta int64) error {
 	return t.PutTable(table)
 }
 
-// UpdateTableSize increments or decrements the table size in bytes.
+// UpdateTableSize increments or decrements the table size in bytes within the current transaction.
 func (t *DynamoDBTxn) UpdateTableSize(tableName string, delta int64) error {
-	if t.tableStore != nil {
-		t.tableStore.mu.Lock()
-		defer t.tableStore.mu.Unlock()
-	}
 	table, err := t.GetTable(tableName)
 	if err != nil {
-		return err
+		return fmt.Errorf("get table %s for UpdateTableSize: %w", tableName, err)
 	}
 	table.TableSizeBytes += delta
 	if table.TableSizeBytes < 0 {
@@ -351,7 +343,7 @@ func formatNumberForSort(numStr string) string {
 func (t *DynamoDBTxn) PutIndexEntries(tableName string, item *Item) error {
 	table, err := t.GetTable(tableName)
 	if err != nil {
-		return err
+		return fmt.Errorf("get table %s for PutIndexEntries: %w", tableName, err)
 	}
 	return t.putIndexEntriesForTable(table, item)
 }
@@ -360,7 +352,7 @@ func (t *DynamoDBTxn) PutIndexEntries(tableName string, item *Item) error {
 func (t *DynamoDBTxn) DeleteIndexEntries(tableName string, item *Item) error {
 	table, err := t.GetTable(tableName)
 	if err != nil {
-		return err
+		return fmt.Errorf("get table %s for DeleteIndexEntries: %w", tableName, err)
 	}
 	return t.deleteIndexEntriesForTable(table, item)
 }
@@ -509,7 +501,7 @@ func (t *DynamoDBTxn) getAttributeValueForIndex(item *Item, attrName string) str
 func (t *DynamoDBTxn) QueryByGSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error) {
 	_, err := t.GetTable(tableName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get table %s for GSI query: %w", tableName, err)
 	}
 
 	prefix := tableName + "#" + indexName + "#" + hashKeyValue + "#"
@@ -562,7 +554,7 @@ func (t *DynamoDBTxn) QueryByGSI(tableName, indexName, hashKeyValue string, opts
 func (t *DynamoDBTxn) QueryByLSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error) {
 	_, err := t.GetTable(tableName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get table %s for LSI query: %w", tableName, err)
 	}
 
 	prefix := tableName + "#" + indexName + "#" + hashKeyValue + "#"
@@ -645,7 +637,7 @@ func (t *DynamoDBTxn) Scan(tableName string, fn func(item *Item) error) error {
 func (t *DynamoDBTxn) ScanByPartitionKey(tableName, partitionKeyValue string, fn func(item *Item) error) error {
 	table, err := t.GetTable(tableName)
 	if err != nil {
-		return err
+		return fmt.Errorf("get table %s for ScanByPartitionKey: %w", tableName, err)
 	}
 
 	prefix := tableName + "#" + partitionKeyValue

@@ -16,25 +16,40 @@ import (
 var (
 	slRoleDeletionTasks sync.Map
 	slRoleCleanupOnce   sync.Once
+	slRoleCleanupCancel context.CancelFunc
 )
 
 func init() {
 	slRoleCleanupOnce.Do(func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		slRoleCleanupCancel = cancel
 		go func() {
 			ticker := time.NewTicker(30 * time.Minute)
 			defer ticker.Stop()
-			for range ticker.C {
-				now := time.Now()
-				slRoleDeletionTasks.Range(func(key, value interface{}) bool {
-					task := value.(*serviceLinkedRoleDeletionTask)
-					if task.CreatedAt.Add(1 * time.Hour).Before(now) {
-						slRoleDeletionTasks.Delete(key)
-					}
-					return true
-				})
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					now := time.Now()
+					slRoleDeletionTasks.Range(func(key, value interface{}) bool {
+						task := value.(*serviceLinkedRoleDeletionTask)
+						if task.CreatedAt.Add(1 * time.Hour).Before(now) {
+							slRoleDeletionTasks.Delete(key)
+						}
+						return true
+					})
+				}
 			}
 		}()
 	})
+}
+
+// ShutdownSLRoleCleanup stops the service-linked role deletion task cleanup goroutine.
+func ShutdownSLRoleCleanup() {
+	if slRoleCleanupCancel != nil {
+		slRoleCleanupCancel()
+	}
 }
 
 type serviceLinkedRoleDeletionTask struct {

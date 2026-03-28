@@ -19,8 +19,13 @@ func tableBucketName(region string) string {
 type TableStore struct {
 	*common.BaseStore
 	arnBuilder *svcarn.DynamoDBBuilder
-	mu         sync.Mutex
+	tableMu    sync.Map
 	region     string
+}
+
+func (s *TableStore) getTableLock(name string) *sync.Mutex {
+	v, _ := s.tableMu.LoadOrStore(name, &sync.Mutex{})
+	return v.(*sync.Mutex)
 }
 
 // NewTableStore creates a new store for DynamoDB tables.
@@ -54,8 +59,9 @@ func (s *TableStore) Create(
 	tags []common.Tag,
 	deletionProtectionEnabled bool,
 ) (*Table, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 	if s.Exists(name) {
 		return nil, ErrTableAlreadyExists
 	}
@@ -103,6 +109,9 @@ func (s *TableStore) Put(table *Table) error {
 
 // Delete removes a DynamoDB table by name.
 func (s *TableStore) Delete(name string) error {
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 	return s.BaseStore.Delete(name)
 }
 
@@ -133,8 +142,9 @@ func (s *TableStore) List(marker string, limit int) ([]*Table, string, error) {
 
 // UpdateItemCount updates the item count for a DynamoDB table.
 func (s *TableStore) UpdateItemCount(name string, delta int64) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 
 	table, err := s.Get(name)
 	if err != nil {
@@ -149,8 +159,9 @@ func (s *TableStore) UpdateItemCount(name string, delta int64) error {
 
 // UpdateTableSize updates the table size for a DynamoDB table.
 func (s *TableStore) UpdateTableSize(name string, delta int64) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 
 	table, err := s.Get(name)
 	if err != nil {
@@ -165,8 +176,9 @@ func (s *TableStore) UpdateTableSize(name string, delta int64) error {
 
 // SetTags sets the tags for a DynamoDB table.
 func (s *TableStore) SetTags(name string, tags []common.Tag) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 
 	table, err := s.Get(name)
 	if err != nil {
@@ -203,8 +215,9 @@ func (s *TableStore) GetSortKey(table *Table) string {
 
 // SetTimeToLive sets the time-to-live specification for a DynamoDB table.
 func (s *TableStore) SetTimeToLive(name string, ttl *TimeToLiveSpecification) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 
 	table, err := s.Get(name)
 	if err != nil {
@@ -225,8 +238,9 @@ func (s *TableStore) GetTimeToLive(name string) (*TimeToLiveSpecification, error
 
 // SetPointInTimeRecovery sets the point-in-time recovery description for a DynamoDB table.
 func (s *TableStore) SetPointInTimeRecovery(name string, pitr *PointInTimeRecoveryDescription) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 
 	table, err := s.Get(name)
 	if err != nil {
@@ -247,8 +261,9 @@ func (s *TableStore) GetPointInTimeRecovery(name string) (*PointInTimeRecoveryDe
 
 // SetResourcePolicy sets the resource policy for a DynamoDB table.
 func (s *TableStore) SetResourcePolicy(name string, policy string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 
 	table, err := s.Get(name)
 	if err != nil {
@@ -269,8 +284,9 @@ func (s *TableStore) GetResourcePolicy(name string) (string, error) {
 
 // DeleteResourcePolicy removes the resource policy from a DynamoDB table.
 func (s *TableStore) DeleteResourcePolicy(name string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 
 	table, err := s.Get(name)
 	if err != nil {
@@ -282,8 +298,9 @@ func (s *TableStore) DeleteResourcePolicy(name string) error {
 
 // SetKinesisStreamingDestination sets the Kinesis streaming destination for a DynamoDB table.
 func (s *TableStore) SetKinesisStreamingDestination(name string, destinations []*KinesisDataStreamDestination) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 
 	table, err := s.Get(name)
 	if err != nil {
@@ -295,8 +312,9 @@ func (s *TableStore) SetKinesisStreamingDestination(name string, destinations []
 
 // SetContributorInsights enables or disables contributor insights for a DynamoDB table.
 func (s *TableStore) SetContributorInsights(name string, enabled bool) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getTableLock(name)
+	mu.Lock()
+	defer mu.Unlock()
 
 	table, err := s.Get(name)
 	if err != nil {

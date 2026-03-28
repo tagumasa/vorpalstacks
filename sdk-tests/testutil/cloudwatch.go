@@ -34,7 +34,7 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 	metricName := fmt.Sprintf("TestMetric-%d", time.Now().UnixNano())
 
 	results = append(results, r.RunTest("cloudwatch", "PutMetricData", func() error {
-		_, err := client.PutMetricData(ctx, &cloudwatch.PutMetricDataInput{
+		resp, err := client.PutMetricData(ctx, &cloudwatch.PutMetricDataInput{
 			Namespace: aws.String(namespace),
 			MetricData: []types.MetricDatum{
 				{
@@ -44,7 +44,13 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudwatch", "ListMetrics", func() error {
@@ -62,7 +68,7 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 
 	results = append(results, r.RunTest("cloudwatch", "GetMetricStatistics", func() error {
 		now := time.Now()
-		_, err := client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+		resp, err := client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
 			Namespace:  aws.String(namespace),
 			MetricName: aws.String(metricName),
 			StartTime:  aws.Time(now.Add(-1 * time.Hour)),
@@ -70,12 +76,18 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 			Period:     aws.Int32(300),
 			Statistics: []types.Statistic{types.StatisticAverage},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Datapoints == nil {
+			return fmt.Errorf("datapoints list is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudwatch", "PutMetricAlarm", func() error {
 		alarmName := fmt.Sprintf("TestAlarm-%d", time.Now().UnixNano())
-		_, err := client.PutMetricAlarm(ctx, &cloudwatch.PutMetricAlarmInput{
+		resp, err := client.PutMetricAlarm(ctx, &cloudwatch.PutMetricAlarmInput{
 			AlarmName:          aws.String(alarmName),
 			ComparisonOperator: types.ComparisonOperatorGreaterThanThreshold,
 			EvaluationPeriods:  aws.Int32(1),
@@ -85,7 +97,13 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 			Threshold:          aws.Float64(50.0),
 			Statistic:          types.StatisticAverage,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("cloudwatch", "DescribeAlarms", func() error {
@@ -104,7 +122,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		_ = resp
+		if resp.DashboardEntries != nil && len(resp.DashboardEntries) != 0 {
+			return fmt.Errorf("expected no dashboards, got %d", len(resp.DashboardEntries))
+		}
 		return nil
 	}))
 

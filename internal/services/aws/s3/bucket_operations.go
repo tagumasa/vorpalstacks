@@ -181,16 +181,22 @@ type HeadBucketInput struct {
 	Bucket string
 }
 
-// HeadBucket checks if a bucket exists.
-func (o *BucketOperations) HeadBucket(ctx *request.RequestContext, input *HeadBucketInput) error {
+type HeadBucketOutput struct {
+	BucketRegion string
+}
+
+func (o *BucketOperations) HeadBucket(ctx *request.RequestContext, input *HeadBucketInput) (*HeadBucketOutput, error) {
 	store, err := o.svc.store(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if !store.buckets.Exists(input.Bucket) {
-		return fmt.Errorf("bucket not found")
+	bucket, err := store.buckets.Get(input.Bucket)
+	if err != nil {
+		return nil, fmt.Errorf("bucket not found")
 	}
-	return nil
+	return &HeadBucketOutput{
+		BucketRegion: bucket.Region,
+	}, nil
 }
 
 // ListBucketsInput contains the input parameters for the ListBuckets operation.
@@ -213,8 +219,8 @@ func (o *ListBucketsOutput) ToXML() string {
 		result.WriteString(xmlEscape(o.Owner.DisplayName))
 		result.WriteString(`</DisplayName></Owner>`)
 	}
+	result.WriteString(`<Buckets>`)
 	if len(o.Buckets) > 0 {
-		result.WriteString(`<Buckets>`)
 		for _, b := range o.Buckets {
 			result.WriteString(`<Bucket><Name>`)
 			result.WriteString(xmlEscape(b.Name))
@@ -222,8 +228,8 @@ func (o *ListBucketsOutput) ToXML() string {
 			result.WriteString(b.CreationDate.Format(time.RFC3339))
 			result.WriteString(`</CreationDate></Bucket>`)
 		}
-		result.WriteString(`</Buckets>`)
 	}
+	result.WriteString(`</Buckets>`)
 	result.WriteString(`</ListAllMyBucketsResult>`)
 	return result.String()
 }
@@ -272,7 +278,7 @@ func (o *BucketOperations) ListBuckets(ctx *request.RequestContext, input *ListB
 		return nil, err
 	}
 
-	var bucketInfos []*BucketInfo
+	bucketInfos := make([]*BucketInfo, 0)
 	for _, b := range buckets {
 		bucketInfos = append(bucketInfos, &BucketInfo{
 			Name:         b.Name,

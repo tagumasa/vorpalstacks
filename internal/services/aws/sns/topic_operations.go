@@ -90,7 +90,7 @@ func (s *SNSService) DeleteTopic(ctx context.Context, reqCtx *request.RequestCon
 	}
 	if err := store.DeleteTopic(topicArn); err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewNotFoundException("Topic does not exist")
+			return nil, NewTopicNotFoundException()
 		}
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (s *SNSService) GetTopicAttributes(ctx context.Context, reqCtx *request.Req
 	topic, err := store.GetTopic(topicArn)
 	if err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewNotFoundException("Topic does not exist")
+			return nil, NewTopicNotFoundException()
 		}
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func (s *SNSService) SetTopicAttributes(ctx context.Context, reqCtx *request.Req
 	}
 	if err := store.SetTopicAttributes(topicArn, attrs); err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewNotFoundException("Topic does not exist")
+			return nil, NewTopicNotFoundException()
 		}
 		return nil, err
 	}

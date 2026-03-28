@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -336,6 +337,11 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 	go func() {
 		defer s.asyncWg.Done()
 		defer store.UnregisterExecution(executionArn)
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("sfn: panic in execution %s: %v", executionArn, r)
+			}
+		}()
 		_ = executor.ExecuteStateMachine(execCtx, exec)
 	}()
 

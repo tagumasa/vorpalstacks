@@ -76,6 +76,9 @@ func (s *CloudWatchService) ListDashboards(ctx context.Context, reqCtx *request.
 			"Size":          len(d.Body),
 		})
 	}
+	if entries == nil {
+		entries = []map[string]interface{}{}
+	}
 
 	return map[string]interface{}{
 		"DashboardEntries": entries,

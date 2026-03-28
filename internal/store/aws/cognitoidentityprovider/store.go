@@ -850,3 +850,69 @@ func (s *CognitoStore) GetChallengeSession(sessionID string) (*ChallengeSession,
 func (s *CognitoStore) DeleteChallengeSession(sessionID string) error {
 	return s.challengeSessionsStore.Delete(sessionID)
 }
+
+func (s *CognitoStore) SetUserPoolDomain(domain string, entry *UserPoolDomain) error {
+	return s.BaseStore.Put("domain:"+domain, entry)
+}
+
+func (s *CognitoStore) GetUserPoolDomain(domain string) (*UserPoolDomain, error) {
+	var entry UserPoolDomain
+	if err := s.BaseStore.Get("domain:"+domain, &entry); err != nil {
+		return nil, ErrUserPoolNotFound
+	}
+	return &entry, nil
+}
+
+func (s *CognitoStore) DeleteUserPoolDomain(domain string) error {
+	return s.BaseStore.Delete("domain:" + domain)
+}
+
+func (s *CognitoStore) CreateResourceServer(rs *ResourceServer) error {
+	key := "resourceserver:" + rs.UserPoolID + "#" + rs.Identifier
+	if s.BaseStore.Exists(key) {
+		return ErrResourceAlreadyExists
+	}
+	return s.BaseStore.Put(key, rs)
+}
+
+func (s *CognitoStore) ListResourceServers(userPoolID string) ([]*ResourceServer, error) {
+	var servers []*ResourceServer
+	prefix := "resourceserver:" + userPoolID + "#"
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		var rs ResourceServer
+		if err := json.Unmarshal(value, &rs); err != nil {
+			return err
+		}
+		servers = append(servers, &rs)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return servers, nil
+}
+
+func (s *CognitoStore) CreateIdentityProvider(ip *IdentityProvider) error {
+	key := "identityprovider:" + ip.UserPoolID + "#" + ip.ProviderName
+	if s.BaseStore.Exists(key) {
+		return ErrResourceAlreadyExists
+	}
+	return s.BaseStore.Put(key, ip)
+}
+
+func (s *CognitoStore) ListIdentityProviders(userPoolID string) ([]*IdentityProvider, error) {
+	var providers []*IdentityProvider
+	prefix := "identityprovider:" + userPoolID + "#"
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		var ip IdentityProvider
+		if err := json.Unmarshal(value, &ip); err != nil {
+			return err
+		}
+		providers = append(providers, &ip)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return providers, nil
+}

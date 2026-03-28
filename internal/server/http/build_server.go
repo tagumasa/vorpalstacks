@@ -44,6 +44,9 @@ type TLSConfig struct {
 	Hostname string
 }
 
+// ShutdownHook is a function called during graceful shutdown.
+type ShutdownHook func(ctx context.Context)
+
 // Server represents the HTTP server that handles AWS API requests.
 type Server struct {
 	config            *Config
@@ -69,6 +72,8 @@ type Server struct {
 	iamStore          iamstore.IAMStoreInterface
 	s3Store           s3store.S3StoreInterface
 	blobStore         storage.BlobStore
+	shutdownHooks     []ShutdownHook
+	shutdownHooksMu   sync.Mutex
 }
 
 // ServiceRouter returns the service router.
@@ -210,4 +215,12 @@ func (s *Server) JWKSHandler() http.Handler {
 	s.handlerMu.RLock()
 	defer s.handlerMu.RUnlock()
 	return s.jwksHandler
+}
+
+// RegisterShutdownHook adds a function to be called during graceful shutdown.
+// Hooks are called in reverse registration order (LIFO).
+func (s *Server) RegisterShutdownHook(hook ShutdownHook) {
+	s.shutdownHooksMu.Lock()
+	defer s.shutdownHooksMu.Unlock()
+	s.shutdownHooks = append(s.shutdownHooks, hook)
 }

@@ -32,16 +32,22 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 
 	// Test 1: List Work Groups
 	results = append(results, r.RunTest("athena", "ListWorkGroups", func() error {
-		_, err := client.ListWorkGroups(ctx, &athena.ListWorkGroupsInput{
+		resp, err := client.ListWorkGroups(ctx, &athena.ListWorkGroupsInput{
 			MaxResults: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.WorkGroups == nil {
+			return fmt.Errorf("work groups list is nil")
+		}
+		return nil
 	}))
 
 	// Test 2: Create Work Group
 	workGroupName := fmt.Sprintf("test-wg-%d", time.Now().UnixNano()%1000000000)
 	results = append(results, r.RunTest("athena", "CreateWorkGroup", func() error {
-		_, err := client.CreateWorkGroup(ctx, &athena.CreateWorkGroupInput{
+		resp, err := client.CreateWorkGroup(ctx, &athena.CreateWorkGroupInput{
 			Name: aws.String(workGroupName),
 			Configuration: &types.WorkGroupConfiguration{
 				ResultConfiguration: &types.ResultConfiguration{
@@ -49,69 +55,117 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 3: Get Work Group
 	results = append(results, r.RunTest("athena", "GetWorkGroup", func() error {
-		_, err := client.GetWorkGroup(ctx, &athena.GetWorkGroupInput{
+		resp, err := client.GetWorkGroup(ctx, &athena.GetWorkGroupInput{
 			WorkGroup: aws.String(workGroupName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.WorkGroup == nil {
+			return fmt.Errorf("work group is nil")
+		}
+		return nil
 	}))
 
 	// Test 4: List Data Catalogs
 	results = append(results, r.RunTest("athena", "ListDataCatalogs", func() error {
-		_, err := client.ListDataCatalogs(ctx, &athena.ListDataCatalogsInput{
+		resp, err := client.ListDataCatalogs(ctx, &athena.ListDataCatalogsInput{
 			MaxResults: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DataCatalogsSummary == nil {
+			return fmt.Errorf("data catalogs summary list is nil")
+		}
+		return nil
 	}))
 
 	customCatalogName := fmt.Sprintf("test-catalog-%d", time.Now().UnixNano()%1000000000)
 
 	// Test 5: Create Data Catalog (for GetDataCatalog test)
 	results = append(results, r.RunTest("athena", "CreateDataCatalog", func() error {
-		_, err := client.CreateDataCatalog(ctx, &athena.CreateDataCatalogInput{
+		resp, err := client.CreateDataCatalog(ctx, &athena.CreateDataCatalogInput{
 			Name:        aws.String(customCatalogName),
 			Type:        types.DataCatalogTypeGlue,
 			Description: aws.String("Test catalog for GetDataCatalog"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 6: Get Data Catalog (uses custom catalog - AwsDataCatalog returns error per AWS spec)
 	results = append(results, r.RunTest("athena", "GetDataCatalog", func() error {
-		_, err := client.GetDataCatalog(ctx, &athena.GetDataCatalogInput{
+		resp, err := client.GetDataCatalog(ctx, &athena.GetDataCatalogInput{
 			Name: aws.String(customCatalogName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DataCatalog == nil {
+			return fmt.Errorf("data catalog is nil")
+		}
+		return nil
 	}))
 
 	// Test 7: List Databases
 	results = append(results, r.RunTest("athena", "ListDatabases", func() error {
-		_, err := client.ListDatabases(ctx, &athena.ListDatabasesInput{
+		resp, err := client.ListDatabases(ctx, &athena.ListDatabasesInput{
 			CatalogName: aws.String("AwsDataCatalog"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DatabaseList == nil {
+			return fmt.Errorf("database list is nil")
+		}
+		return nil
 	}))
 
 	// Test 8: Get Database
 	results = append(results, r.RunTest("athena", "GetDatabase", func() error {
-		_, err := client.GetDatabase(ctx, &athena.GetDatabaseInput{
+		resp, err := client.GetDatabase(ctx, &athena.GetDatabaseInput{
 			CatalogName:  aws.String("AwsDataCatalog"),
 			DatabaseName: aws.String("default"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Database == nil {
+			return fmt.Errorf("database is nil")
+		}
+		return nil
 	}))
 
 	// Test 9: List Table Metadata
 	results = append(results, r.RunTest("athena", "ListTableMetadata", func() error {
-		_, err := client.ListTableMetadata(ctx, &athena.ListTableMetadataInput{
+		resp, err := client.ListTableMetadata(ctx, &athena.ListTableMetadataInput{
 			CatalogName:  aws.String("AwsDataCatalog"),
 			DatabaseName: aws.String("default"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 10: Create Named Query
@@ -132,30 +186,48 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 
 	// Test 10: Get Named Query
 	results = append(results, r.RunTest("athena", "GetNamedQuery", func() error {
-		_, err := client.GetNamedQuery(ctx, &athena.GetNamedQueryInput{
+		resp, err := client.GetNamedQuery(ctx, &athena.GetNamedQueryInput{
 			NamedQueryId: aws.String(namedQueryId),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.NamedQuery == nil {
+			return fmt.Errorf("named query is nil")
+		}
+		return nil
 	}))
 
 	// Test 11: List Named Queries
 	results = append(results, r.RunTest("athena", "ListNamedQueries", func() error {
-		_, err := client.ListNamedQueries(ctx, &athena.ListNamedQueriesInput{
+		resp, err := client.ListNamedQueries(ctx, &athena.ListNamedQueriesInput{
 			MaxResults: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.NamedQueryIds == nil {
+			return fmt.Errorf("named query IDs list is nil")
+		}
+		return nil
 	}))
 
 	// Test 12: Update Named Query
 	updatedQueryName := fmt.Sprintf("updated-query-%d", time.Now().UnixNano())
 	results = append(results, r.RunTest("athena", "UpdateNamedQuery", func() error {
-		_, err := client.UpdateNamedQuery(ctx, &athena.UpdateNamedQueryInput{
+		resp, err := client.UpdateNamedQuery(ctx, &athena.UpdateNamedQueryInput{
 			NamedQueryId: aws.String(namedQueryId),
 			Name:         aws.String(updatedQueryName),
 			Description:  aws.String("Updated test query"),
 			QueryString:  aws.String("SELECT 2"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 12a: Verify updated name via GetNamedQuery
@@ -231,10 +303,16 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 
 	// Test 13: Delete Named Query
 	results = append(results, r.RunTest("athena", "DeleteNamedQuery", func() error {
-		_, err := client.DeleteNamedQuery(ctx, &athena.DeleteNamedQueryInput{
+		resp, err := client.DeleteNamedQuery(ctx, &athena.DeleteNamedQueryInput{
 			NamedQueryId: aws.String(namedQueryId),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 13: Start Query Execution
@@ -257,18 +335,30 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 
 	// Test 14: Get Query Execution
 	results = append(results, r.RunTest("athena", "GetQueryExecution", func() error {
-		_, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
+		resp, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
 			QueryExecutionId: aws.String(queryExecutionId),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.QueryExecution == nil {
+			return fmt.Errorf("query execution is nil")
+		}
+		return nil
 	}))
 
 	// Test 15: List Query Executions
 	results = append(results, r.RunTest("athena", "ListQueryExecutions", func() error {
-		_, err := client.ListQueryExecutions(ctx, &athena.ListQueryExecutionsInput{
+		resp, err := client.ListQueryExecutions(ctx, &athena.ListQueryExecutionsInput{
 			MaxResults: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.QueryExecutionIds == nil {
+			return fmt.Errorf("query execution IDs list is nil")
+		}
+		return nil
 	}))
 
 	// Test 16: Stop Query Execution
@@ -292,28 +382,46 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 
 	// Test 17: Update Work Group
 	results = append(results, r.RunTest("athena", "UpdateWorkGroup", func() error {
-		_, err := client.UpdateWorkGroup(ctx, &athena.UpdateWorkGroupInput{
+		resp, err := client.UpdateWorkGroup(ctx, &athena.UpdateWorkGroupInput{
 			WorkGroup:   aws.String(workGroupName),
 			Description: aws.String("Updated work group"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 18: Delete Work Group
 	results = append(results, r.RunTest("athena", "DeleteWorkGroup", func() error {
-		_, err := client.DeleteWorkGroup(ctx, &athena.DeleteWorkGroupInput{
+		resp, err := client.DeleteWorkGroup(ctx, &athena.DeleteWorkGroupInput{
 			WorkGroup:             aws.String(workGroupName),
 			RecursiveDeleteOption: aws.Bool(true),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 19: Delete Data Catalog (cleanup)
 	results = append(results, r.RunTest("athena", "DeleteDataCatalog", func() error {
-		_, err := client.DeleteDataCatalog(ctx, &athena.DeleteDataCatalogInput{
+		resp, err := client.DeleteDataCatalog(ctx, &athena.DeleteDataCatalogInput{
 			Name: aws.String(customCatalogName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

@@ -32,11 +32,17 @@ func (r *TestRunner) RunWAFTests() []TestResult {
 
 	// Test 1: List Web ACLs
 	results = append(results, r.RunTest("waf", "ListWebACLs", func() error {
-		_, err := client.ListWebACLs(ctx, &wafv2.ListWebACLsInput{
+		resp, err := client.ListWebACLs(ctx, &wafv2.ListWebACLsInput{
 			Scope: types.ScopeCloudfront,
 			Limit: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.WebACLs == nil {
+			return fmt.Errorf("web ACLs list is nil")
+		}
+		return nil
 	}))
 
 	// Test 2: Create IP Set
@@ -65,21 +71,33 @@ func (r *TestRunner) RunWAFTests() []TestResult {
 
 	// Test 3: Get IP Set
 	results = append(results, r.RunTest("waf", "GetIPSet", func() error {
-		_, err := client.GetIPSet(ctx, &wafv2.GetIPSetInput{
+		resp, err := client.GetIPSet(ctx, &wafv2.GetIPSetInput{
 			Name:  aws.String(ipSetName),
 			Scope: types.ScopeCloudfront,
 			Id:    aws.String(ipSetID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.IPSet == nil {
+			return fmt.Errorf("IP set is nil")
+		}
+		return nil
 	}))
 
 	// Test 4: List IP Sets
 	results = append(results, r.RunTest("waf", "ListIPSets", func() error {
-		_, err := client.ListIPSets(ctx, &wafv2.ListIPSetsInput{
+		resp, err := client.ListIPSets(ctx, &wafv2.ListIPSetsInput{
 			Scope: types.ScopeCloudfront,
 			Limit: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.IPSets == nil {
+			return fmt.Errorf("IP sets list is nil")
+		}
+		return nil
 	}))
 
 	// Test 5: List Tags for Resource (before update/delete)
@@ -122,13 +140,19 @@ func (r *TestRunner) RunWAFTests() []TestResult {
 
 	// Test 7: Delete IP Set
 	results = append(results, r.RunTest("waf", "DeleteIPSet", func() error {
-		_, err := client.DeleteIPSet(ctx, &wafv2.DeleteIPSetInput{
+		resp, err := client.DeleteIPSet(ctx, &wafv2.DeleteIPSetInput{
 			Name:      aws.String(ipSetName),
 			Scope:     types.ScopeCloudfront,
 			Id:        aws.String(ipSetID),
 			LockToken: aws.String(ipSetLockToken),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 8: Create Regex Pattern Set
@@ -154,32 +178,50 @@ func (r *TestRunner) RunWAFTests() []TestResult {
 
 	// Test 9: Get Regex Pattern Set
 	results = append(results, r.RunTest("waf", "GetRegexPatternSet", func() error {
-		_, err := client.GetRegexPatternSet(ctx, &wafv2.GetRegexPatternSetInput{
+		resp, err := client.GetRegexPatternSet(ctx, &wafv2.GetRegexPatternSetInput{
 			Name:  aws.String(regexPatternSetName),
 			Scope: types.ScopeCloudfront,
 			Id:    aws.String(regexPatternSetID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.RegexPatternSet == nil {
+			return fmt.Errorf("regex pattern set is nil")
+		}
+		return nil
 	}))
 
 	// Test 10: List Regex Pattern Sets
 	results = append(results, r.RunTest("waf", "ListRegexPatternSets", func() error {
-		_, err := client.ListRegexPatternSets(ctx, &wafv2.ListRegexPatternSetsInput{
+		resp, err := client.ListRegexPatternSets(ctx, &wafv2.ListRegexPatternSetsInput{
 			Scope: types.ScopeCloudfront,
 			Limit: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.RegexPatternSets == nil {
+			return fmt.Errorf("regex pattern sets list is nil")
+		}
+		return nil
 	}))
 
 	// Test 11: Delete Regex Pattern Set
 	results = append(results, r.RunTest("waf", "DeleteRegexPatternSet", func() error {
-		_, err := client.DeleteRegexPatternSet(ctx, &wafv2.DeleteRegexPatternSetInput{
+		resp, err := client.DeleteRegexPatternSet(ctx, &wafv2.DeleteRegexPatternSetInput{
 			Name:      aws.String(regexPatternSetName),
 			Scope:     types.ScopeCloudfront,
 			Id:        aws.String(regexPatternSetID),
 			LockToken: aws.String(regexPatternSetLockToken),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 12: Create Rule Group
@@ -206,41 +248,65 @@ func (r *TestRunner) RunWAFTests() []TestResult {
 
 	// Test 13: Get Rule Group
 	results = append(results, r.RunTest("waf", "GetRuleGroup", func() error {
-		_, err := client.GetRuleGroup(ctx, &wafv2.GetRuleGroupInput{
+		resp, err := client.GetRuleGroup(ctx, &wafv2.GetRuleGroupInput{
 			Name:  aws.String(ruleGroupName),
 			Scope: types.ScopeCloudfront,
 			Id:    aws.String(ruleGroupID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.RuleGroup == nil {
+			return fmt.Errorf("rule group is nil")
+		}
+		return nil
 	}))
 
 	// Test 14: List Rule Groups
 	results = append(results, r.RunTest("waf", "ListRuleGroups", func() error {
-		_, err := client.ListRuleGroups(ctx, &wafv2.ListRuleGroupsInput{
+		resp, err := client.ListRuleGroups(ctx, &wafv2.ListRuleGroupsInput{
 			Scope: types.ScopeCloudfront,
 			Limit: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.RuleGroups == nil {
+			return fmt.Errorf("rule groups list is nil")
+		}
+		return nil
 	}))
 
 	// Test 15: Delete Rule Group
 	results = append(results, r.RunTest("waf", "DeleteRuleGroup", func() error {
-		_, err := client.DeleteRuleGroup(ctx, &wafv2.DeleteRuleGroupInput{
+		resp, err := client.DeleteRuleGroup(ctx, &wafv2.DeleteRuleGroupInput{
 			Name:      aws.String(ruleGroupName),
 			Scope:     types.ScopeCloudfront,
 			Id:        aws.String(ruleGroupID),
 			LockToken: aws.String(ruleGroupLockToken),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 16: List Available Managed Rule Groups
 	results = append(results, r.RunTest("waf", "ListAvailableManagedRuleGroups", func() error {
-		_, err := client.ListAvailableManagedRuleGroups(ctx, &wafv2.ListAvailableManagedRuleGroupsInput{
+		resp, err := client.ListAvailableManagedRuleGroups(ctx, &wafv2.ListAvailableManagedRuleGroupsInput{
 			Scope: types.ScopeCloudfront,
 			Limit: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ManagedRuleGroups == nil {
+			return fmt.Errorf("managed rule groups list is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

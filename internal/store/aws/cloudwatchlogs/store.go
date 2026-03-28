@@ -17,6 +17,7 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_cloudwatchlogs"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/naming"
 	"vorpalstacks/pkg/filterpattern"
 
 	"google.golang.org/protobuf/proto"
@@ -56,6 +57,10 @@ func NewStore(bucket storage.Bucket, accountID, region, dataPath string) *Store 
 // ARNBuilder returns the ARN builder for the store.
 func (s *Store) ARNBuilder() *svcarn.ARNBuilder {
 	return s.arnBuilder
+}
+
+func (s *Store) safeChunkPath(chunkPath string) (string, error) {
+	return naming.ValidatePathWithinDir(s.chunksDir, chunkPath)
 }
 
 // CreateLogGroup creates a new CloudWatch Logs log group.
@@ -101,7 +106,11 @@ func (s *Store) DeleteLogGroup(name string) error {
 	}
 	chunks := s.ListChunksForLogGroup(name)
 	for _, chunk := range chunks {
-		if err := os.Remove(filepath.Join(s.chunksDir, chunk.ChunkPath)); err != nil {
+		cp, err := s.safeChunkPath(chunk.ChunkPath)
+		if err != nil {
+			return err
+		}
+		if err := os.Remove(cp); err != nil {
 			return err
 		}
 	}
@@ -189,7 +198,12 @@ func (s *Store) DeleteLogStream(logGroupName, logStreamName string) error {
 
 	chunks := s.ListChunksForStream(logGroupName, logStreamName)
 	for _, chunk := range chunks {
-		if err := os.Remove(filepath.Join(s.chunksDir, chunk.ChunkPath)); err != nil {
+		cp, err := s.safeChunkPath(chunk.ChunkPath)
+		if err != nil {
+			log.Printf("Path traversal attempt in chunk %s: %v", chunk.ChunkPath, err)
+			continue
+		}
+		if err := os.Remove(cp); err != nil {
 			log.Printf("Failed to remove chunk file %s: %v", chunk.ChunkPath, err)
 		}
 		deleteKey := s.chunkIndexKey(logGroupName, logStreamName, chunk.ChunkID)
@@ -376,7 +390,11 @@ func (s *Store) writeChunkFile(entries []LogEntry) (string, *chunk.Header, error
 func (s *Store) readChunkFile(chunkPath string) ([]LogEntry, error) {
 	fullPath := chunkPath
 	if !filepath.IsAbs(chunkPath) {
-		fullPath = filepath.Join(s.chunksDir, chunkPath)
+		p, err := s.safeChunkPath(chunkPath)
+		if err != nil {
+			return nil, err
+		}
+		fullPath = p
 	}
 
 	r := chunk.NewReader(&chunk.ReaderOptions{ChunksDir: s.chunksDir})
@@ -787,7 +805,10 @@ func (s *Store) PurgeExpiredChunks(logGroupName string, cutoffTime int64) (int64
 			continue
 		}
 
-		chunkPath := filepath.Join(s.chunksDir, chunk.ChunkPath)
+		chunkPath, err := s.safeChunkPath(chunk.ChunkPath)
+		if err != nil {
+			continue
+		}
 		var fileSize int64
 		if info, err := os.Stat(chunkPath); err == nil {
 			fileSize = info.Size()

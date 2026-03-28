@@ -308,7 +308,7 @@ func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestC
 		return nil, mapStoreError(err)
 	}
 
-	var outputEvents []map[string]interface{}
+	outputEvents := make([]map[string]interface{}, 0, len(events))
 	for _, e := range events {
 		outputEvents = append(outputEvents, logEventToResponse(e))
 	}
@@ -366,12 +366,12 @@ func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.Reque
 		return nil, mapStoreError(err)
 	}
 
-	var outputEvents []map[string]interface{}
+	outputEvents := make([]map[string]interface{}, 0, len(events))
 	for _, e := range events {
 		outputEvents = append(outputEvents, logEventToResponse(e))
 	}
 
-	var searchedStreamNames []map[string]interface{}
+	searchedStreamNames := make([]map[string]interface{}, 0, len(searchedStreams))
 	for name := range searchedStreams {
 		searchedStreamNames = append(searchedStreamNames, map[string]interface{}{
 			"logStreamName":      name,

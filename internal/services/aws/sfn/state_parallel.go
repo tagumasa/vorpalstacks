@@ -80,7 +80,7 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 				return catchOutput, catchPolicy.Next, nil
 			}
 		}
-		return "", "", &ExecutionError{Error: "States.BranchFailed", Cause: firstError.Error()}
+		return "", "", &ExecutionError{ErrorCode: "States.BranchFailed", Cause: firstError.Error()}
 	}
 
 	output := fmt.Sprintf(`[%s]`, strings.Join(results, ","))

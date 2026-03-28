@@ -11,6 +11,7 @@ import (
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/chunk"
+	"vorpalstacks/internal/utils/naming"
 )
 
 // RecordStore manages Timestream records.
@@ -22,6 +23,7 @@ type RecordStore struct {
 	index      *chunk.PebbleIndex
 	useIndex   bool
 	chunkMu    sync.Map
+	chunkPaths sync.Map
 	buffers    map[string]*chunkBuffer
 	bufferMu   sync.Mutex
 	bufferSize int
@@ -80,23 +82,9 @@ func convertMeasureValues(measureValues []MeasureValue) []chunk.MeasureValue {
 	return result
 }
 
-func sanitizePathComponent(name string) string {
-	safe := strings.Map(func(r rune) rune {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') ||
-			r == '-' || r == '_' || r == '.' {
-			return r
-		}
-		return '_'
-	}, name)
-	if safe == "" {
-		safe = "unnamed"
-	}
-	return safe
-}
-
 func (s *RecordStore) getChunkPath(databaseName, tableName string, ts time.Time) string {
 	hour := ts.Format("2006-01-02-15")
-	return fmt.Sprintf("%s/timestream_chunks/%s/%s/%s/%s.chunk", s.dataPath, s.region, sanitizePathComponent(databaseName), sanitizePathComponent(tableName), hour)
+	return fmt.Sprintf("%s/timestream_chunks/%s/%s/%s/%s.chunk", s.dataPath, s.region, naming.SanitizePathComponent(databaseName), naming.SanitizePathComponent(tableName), hour)
 }
 
 func (s *RecordStore) getChunkLock(chunkPath string) *sync.Mutex {
@@ -136,8 +124,18 @@ func (s *RecordStore) writeChunk(chunkPath string, entry *chunk.TimestreamEntry)
 		return err
 	}
 
-	entries, err := s.readChunk(chunkPath)
-	if err != nil {
+	var existingPath string
+	if v, ok := s.chunkPaths.Load(chunkPath); ok {
+		existingPath = v.(string)
+	}
+
+	var entries []chunk.TimestreamEntry
+	if existingPath != "" {
+		if readEntries, err := s.readChunkFile(existingPath); err == nil {
+			entries = readEntries
+		}
+	}
+	if entries == nil {
 		entries = []chunk.TimestreamEntry{*entry}
 	} else {
 		entries = append(entries, *entry)
@@ -159,8 +157,15 @@ func (s *RecordStore) writeChunk(chunkPath string, entry *chunk.TimestreamEntry)
 		return err
 	}
 
-	if _, err := writer.Flush(); err != nil {
+	actualChunkPath, err := writer.Flush()
+	if err != nil {
 		return err
+	}
+
+	s.chunkPaths.Store(chunkPath, actualChunkPath)
+
+	if existingPath != "" && existingPath != actualChunkPath {
+		os.Remove(existingPath)
 	}
 
 	if s.useIndex && s.index != nil {
@@ -176,13 +181,13 @@ func (s *RecordStore) writeChunk(chunkPath string, entry *chunk.TimestreamEntry)
 			}
 		}
 
-		chunkID := filepath.Base(chunkPath)
+		chunkID := filepath.Base(actualChunkPath)
 		meta := chunk.Meta{
 			ChunkID:    chunkID,
 			MinTs:      minTs,
 			MaxTs:      maxTs,
 			EntryCount: len(entries),
-			ChunkPath:  chunkPath,
+			ChunkPath:  actualChunkPath,
 			Tags: map[string]string{
 				"database": entry.DatabaseName,
 				"table":    entry.TableName,
@@ -198,7 +203,14 @@ func (s *RecordStore) writeChunk(chunkPath string, entry *chunk.TimestreamEntry)
 }
 
 func (s *RecordStore) readChunk(chunkPath string) ([]chunk.TimestreamEntry, error) {
-	entries, err := chunk.Read(chunkPath)
+	if v, ok := s.chunkPaths.Load(chunkPath); ok {
+		return s.readChunkFile(v.(string))
+	}
+	return s.readChunkFile(chunkPath)
+}
+
+func (s *RecordStore) readChunkFile(path string) ([]chunk.TimestreamEntry, error) {
+	entries, err := chunk.Read(path)
 	if err != nil {
 		return nil, err
 	}
@@ -338,6 +350,10 @@ func (s *RecordStore) WriteRecords(databaseName, tableName string, records []Rec
 		}
 	}
 
+	if err := s.FlushAllBuffers(); err != nil {
+		return rejectedRecords, fmt.Errorf("failed to flush write buffers: %w", err)
+	}
+
 	return rejectedRecords, nil
 }
 
@@ -390,7 +406,17 @@ func (s *RecordStore) flushBuffer(chunkPath string, buf *chunkBuffer) error {
 		return err
 	}
 
-	existingEntries, _ := s.readChunk(chunkPath)
+	var existingPath string
+	if v, ok := s.chunkPaths.Load(chunkPath); ok {
+		existingPath = v.(string)
+	}
+
+	var existingEntries []chunk.TimestreamEntry
+	if existingPath != "" {
+		if readEntries, err := s.readChunkFile(existingPath); err == nil {
+			existingEntries = readEntries
+		}
+	}
 	allEntries := make([]chunk.TimestreamEntry, 0, len(existingEntries)+len(buf.entries))
 	allEntries = append(allEntries, existingEntries...)
 	allEntries = append(allEntries, buf.entries...)
@@ -411,8 +437,15 @@ func (s *RecordStore) flushBuffer(chunkPath string, buf *chunkBuffer) error {
 		return err
 	}
 
-	if _, err := writer.Flush(); err != nil {
+	actualChunkPath, err := writer.Flush()
+	if err != nil {
 		return err
+	}
+
+	s.chunkPaths.Store(chunkPath, actualChunkPath)
+
+	if existingPath != "" && existingPath != actualChunkPath {
+		os.Remove(existingPath)
 	}
 
 	if s.useIndex && s.index != nil && len(allEntries) > 0 {
@@ -428,13 +461,13 @@ func (s *RecordStore) flushBuffer(chunkPath string, buf *chunkBuffer) error {
 			}
 		}
 
-		chunkID := filepath.Base(chunkPath)
+		chunkID := filepath.Base(actualChunkPath)
 		meta := chunk.Meta{
 			ChunkID:    chunkID,
 			MinTs:      minTs,
 			MaxTs:      maxTs,
 			EntryCount: len(allEntries),
-			ChunkPath:  chunkPath,
+			ChunkPath:  actualChunkPath,
 			Tags: map[string]string{
 				"database": allEntries[0].DatabaseName,
 				"table":    allEntries[0].TableName,
@@ -514,19 +547,24 @@ func (s *RecordStore) QueryRecords(databaseName, tableName string, startTime, en
 			}
 		}
 	} else {
-		chunkDir := fmt.Sprintf("%s/timestream_chunks/%s/%s/%s", s.dataPath, s.region, sanitizePathComponent(databaseName), sanitizePathComponent(tableName))
+		chunkDir := fmt.Sprintf("%s/timestream_chunks/%s/%s/%s", s.dataPath, s.region, naming.SanitizePathComponent(databaseName), naming.SanitizePathComponent(tableName))
 
-		startHour := startTime.Format("2006-01-02-15")
-		endHour := endTime.Add(1 * time.Hour).Format("2006-01-02-15")
+		dirEntries, err := os.ReadDir(chunkDir)
+		if err != nil {
+			return records, nil
+		}
 
-		for h := startTime.Truncate(time.Hour); h.Before(endTime.Add(1 * time.Hour)); h = h.Add(1 * time.Hour) {
-			hourStr := h.Format("2006-01-02-15")
-			if hourStr < startHour || hourStr > endHour {
+		for _, dirEntry := range dirEntries {
+			if dirEntry.IsDir() {
+				continue
+			}
+			name := dirEntry.Name()
+			if !strings.HasSuffix(name, ".vlog") {
 				continue
 			}
 
-			chunkPath := fmt.Sprintf("%s/%s.chunk", chunkDir, hourStr)
-			entries, err := s.readChunk(chunkPath)
+			chunkPath := filepath.Join(chunkDir, name)
+			entries, err := s.readChunkFile(chunkPath)
 			if err != nil {
 				continue
 			}

@@ -2,9 +2,12 @@
 package lambda
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/pagination"
@@ -38,13 +41,47 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 		return nil, fmt.Errorf("invocation returned nil result")
 	}
 
-	return map[string]interface{}{
-		"StatusCode":      result.StatusCode,
-		"ExecutedVersion": result.ExecutedVersion,
-		"Payload":         result.Payload,
-		"FunctionError":   result.FunctionError,
-	}, nil
+	return &lambdaInvokeResponse{result: result}, nil
 }
+
+type lambdaInvokeResponse struct {
+	result *lambdastore.InvocationResult
+}
+
+func (r *lambdaInvokeResponse) GetStream() io.Reader {
+	if r.result == nil || len(r.result.Payload) == 0 {
+		return bytes.NewReader(nil)
+	}
+	return bytes.NewReader(r.result.Payload)
+}
+
+func (r *lambdaInvokeResponse) GetStreamHeaders() http.Header {
+	h := make(http.Header)
+	if r.result != nil {
+		if r.result.ExecutedVersion != "" {
+			h.Set("x-amz-executed-version", r.result.ExecutedVersion)
+		}
+		if r.result.FunctionError != "" {
+			h.Set("x-amz-function-error", r.result.FunctionError)
+		}
+		if r.result.LogResult != "" {
+			h.Set("x-amz-log-result", r.result.LogResult)
+		}
+	}
+	return h
+}
+
+func (r *lambdaInvokeResponse) GetStreamStatusCode() int {
+	if r.result == nil {
+		return http.StatusOK
+	}
+	return int(r.result.StatusCode)
+}
+
+var (
+	_ response.StreamableResponse = (*lambdaInvokeResponse)(nil)
+	_ response.StatusCodeResponse = (*lambdaInvokeResponse)(nil)
+)
 
 // InvokeWithResponseStream invokes a Lambda function with response streaming.
 func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {

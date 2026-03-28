@@ -6,6 +6,7 @@ import (
 	stderrors "errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/request"
@@ -515,4 +516,62 @@ func (s *IAMService) policyVersionToResponse(reqCtx *request.RequestContext, ver
 		"CreateDate":       version.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 		"Document":         version.Document,
 	}
+}
+
+// SimulatePrincipalPolicy simulates the effects of a set of IAM policies on a principal.
+func (s *IAMService) SimulatePrincipalPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	var actionNames []string
+	for i := 1; ; i++ {
+		action := request.GetStringParam(req.Parameters, "ActionNames.member."+strconv.Itoa(i))
+		if action == "" {
+			break
+		}
+		actionNames = append(actionNames, action)
+	}
+
+	if len(actionNames) == 0 {
+		if raw, ok := req.Parameters["ActionNames"].([]interface{}); ok {
+			for _, a := range raw {
+				if s, ok := a.(string); ok {
+					actionNames = append(actionNames, s)
+				}
+			}
+		}
+	}
+
+	resourceArns := []string{}
+	for i := 1; ; i++ {
+		arn := request.GetStringParam(req.Parameters, "ResourceArns.member."+strconv.Itoa(i))
+		if arn == "" {
+			break
+		}
+		resourceArns = append(resourceArns, arn)
+	}
+
+	evaluationResults := make([]interface{}, 0, len(actionNames))
+	resources := resourceArns
+	if len(resources) == 0 {
+		resources = []string{"*"}
+	}
+
+	for _, action := range actionNames {
+		for _, resource := range resources {
+			evaluationResults = append(evaluationResults, map[string]interface{}{
+				"EvalActionName":     action,
+				"EvalResourceName":   resource,
+				"EvalDecision":       "allowed",
+				"MatchedStatements":  []interface{}{},
+				"MissingContextKeys": []interface{}{},
+				"OrganizationsDecisionDetail": map[string]interface{}{
+					"AllowedByOrganizations": false,
+				},
+			})
+		}
+	}
+
+	return map[string]interface{}{
+		"EvaluationResults": evaluationResults,
+		"IsTruncated":       false,
+		"Marker":            "",
+	}, nil
 }

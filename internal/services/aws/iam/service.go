@@ -189,4 +189,5 @@ func (s *IAMService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("iam", "GenerateServiceLastAccessedDetails", s.GenerateServiceLastAccessedDetails)
 	d.RegisterHandlerForService("iam", "GetServiceLastAccessedDetails", s.GetServiceLastAccessedDetails)
 	d.RegisterHandlerForService("iam", "GetServiceLastAccessedDetailsWithEntities", s.GetServiceLastAccessedDetailsWithEntities)
+	d.RegisterHandlerForService("iam", "SimulatePrincipalPolicy", s.SimulatePrincipalPolicy)
 }

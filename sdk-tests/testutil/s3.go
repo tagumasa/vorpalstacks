@@ -38,10 +38,16 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 	bucketName := fmt.Sprintf("test-bucket-%d", time.Now().UnixNano())
 
 	results = append(results, r.RunTest("s3", "CreateBucket", func() error {
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+		resp, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
 			Bucket: aws.String(bucketName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Location == nil {
+			return fmt.Errorf("Location is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("s3", "ListBuckets", func() error {
@@ -88,20 +94,32 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("s3", "HeadBucket", func() error {
-		_, err := client.HeadBucket(ctx, &s3.HeadBucketInput{
+		resp, err := client.HeadBucket(ctx, &s3.HeadBucketInput{
 			Bucket: aws.String(bucketName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.BucketRegion == nil {
+			return fmt.Errorf("BucketRegion is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("s3", "PutObject", func() error {
 		content := "Hello, World!"
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
+		resp, err := client.PutObject(ctx, &s3.PutObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String("test.txt"),
 			Body:   strings.NewReader(content),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ETag == nil {
+			return fmt.Errorf("ETag is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("s3", "GetObject", func() error {
@@ -120,18 +138,33 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("s3", "HeadObject", func() error {
-		_, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+		resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String("test.txt"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ContentLength == nil {
+			return fmt.Errorf("ContentLength is nil")
+		}
+		if resp.ETag == nil {
+			return fmt.Errorf("ETag is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("s3", "ListObjects", func() error {
-		_, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+		resp, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 			Bucket: aws.String(bucketName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Contents == nil {
+			return fmt.Errorf("Contents is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("s3", "DeleteObject", func() error {
@@ -172,10 +205,26 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("s3", "GetBucketTagging", func() error {
-		_, err := client.GetBucketTagging(ctx, &s3.GetBucketTaggingInput{
+		resp, err := client.GetBucketTagging(ctx, &s3.GetBucketTaggingInput{
 			Bucket: aws.String(bucketName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.TagSet == nil {
+			return fmt.Errorf("TagSet is nil")
+		}
+		found := false
+		for _, t := range resp.TagSet {
+			if t.Key != nil && *t.Key == "Environment" && t.Value != nil && *t.Value == "Test" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("expected tag Environment=Test not found in TagSet")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("s3", "DeleteBucketTagging", func() error {

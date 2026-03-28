@@ -34,11 +34,17 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 	apiName := fmt.Sprintf("TestAPI-%d", time.Now().UnixNano())
 
 	results = append(results, r.RunTest("apigateway", "CreateRestApi", func() error {
-		_, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
+		resp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
 			Name:        aws.String(apiName),
 			Description: aws.String("Test API"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Id == nil {
+			return fmt.Errorf("API ID is nil")
+		}
+		return nil
 	}))
 
 	var apiID string
@@ -84,7 +90,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		_, err := client.UpdateRestApi(ctx, &apigateway.UpdateRestApiInput{
+		resp, err := client.UpdateRestApi(ctx, &apigateway.UpdateRestApiInput{
 			RestApiId: aws.String(apiID),
 			PatchOperations: []types.PatchOperation{
 				{
@@ -94,7 +100,13 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "CreateResource", func() error {
@@ -171,12 +183,18 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if deploymentID == "" {
 			return fmt.Errorf("Deployment ID not available")
 		}
-		_, err := client.CreateStage(ctx, &apigateway.CreateStageInput{
+		resp, err := client.CreateStage(ctx, &apigateway.CreateStageInput{
 			RestApiId:    aws.String(apiID),
 			StageName:    aws.String("test"),
 			DeploymentId: aws.String(deploymentID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetStage", func() error {
@@ -216,10 +234,16 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		_, err := client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{
+		resp, err := client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{
 			RestApiId: aws.String(apiID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

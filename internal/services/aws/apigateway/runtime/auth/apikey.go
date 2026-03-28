@@ -82,6 +82,13 @@ func (a *APIKeyAuthenticator) Authenticate(ctx context.Context, apiKeyValue stri
 	}
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("Panic in API key usage recording",
+					logs.String("apiKeyId", apiKey.Id),
+					logs.Any("panic", r))
+			}
+		}()
 		a.recordUsage(ctx, apiKey, restAPIID, stageName)
 	}()
 

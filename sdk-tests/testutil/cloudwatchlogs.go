@@ -34,10 +34,16 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 	logStreamName := fmt.Sprintf("TestLogStream-%d", time.Now().UnixNano())
 
 	results = append(results, r.RunTest("logs", "CreateLogGroup", func() error {
-		_, err := client.CreateLogGroup(ctx, &cloudwatchlogs.CreateLogGroupInput{
+		resp, err := client.CreateLogGroup(ctx, &cloudwatchlogs.CreateLogGroupInput{
 			LogGroupName: aws.String(logGroupName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("logs", "DescribeLogGroups", func() error {
@@ -65,15 +71,21 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("logs", "CreateLogStream", func() error {
-		_, err := client.CreateLogStream(ctx, &cloudwatchlogs.CreateLogStreamInput{
+		resp, err := client.CreateLogStream(ctx, &cloudwatchlogs.CreateLogStreamInput{
 			LogGroupName:  aws.String(logGroupName),
 			LogStreamName: aws.String(logStreamName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("logs", "PutLogEvents", func() error {
-		_, err := client.PutLogEvents(ctx, &cloudwatchlogs.PutLogEventsInput{
+		resp, err := client.PutLogEvents(ctx, &cloudwatchlogs.PutLogEventsInput{
 			LogGroupName:  aws.String(logGroupName),
 			LogStreamName: aws.String(logStreamName),
 			LogEvents: []types.InputLogEvent{
@@ -83,7 +95,13 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("logs", "GetLogEvents", func() error {
@@ -114,26 +132,44 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("logs", "PutRetentionPolicy", func() error {
-		_, err := client.PutRetentionPolicy(ctx, &cloudwatchlogs.PutRetentionPolicyInput{
+		resp, err := client.PutRetentionPolicy(ctx, &cloudwatchlogs.PutRetentionPolicyInput{
 			LogGroupName:    aws.String(logGroupName),
 			RetentionInDays: aws.Int32(7),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("logs", "DeleteLogStream", func() error {
-		_, err := client.DeleteLogStream(ctx, &cloudwatchlogs.DeleteLogStreamInput{
+		resp, err := client.DeleteLogStream(ctx, &cloudwatchlogs.DeleteLogStreamInput{
 			LogGroupName:  aws.String(logGroupName),
 			LogStreamName: aws.String(logStreamName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("logs", "DeleteLogGroup", func() error {
-		_, err := client.DeleteLogGroup(ctx, &cloudwatchlogs.DeleteLogGroupInput{
+		resp, err := client.DeleteLogGroup(ctx, &cloudwatchlogs.DeleteLogGroupInput{
 			LogGroupName: aws.String(logGroupName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

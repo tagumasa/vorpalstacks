@@ -190,7 +190,7 @@ func (s *SSMService) GetParameters(ctx context.Context, reqCtx *request.RequestC
 	}
 	parameters, invalidNames := store.GetParameters(names, false)
 
-	var params []map[string]interface{}
+	params := make([]map[string]interface{}, 0, len(parameters))
 	for _, p := range parameters {
 		if withDecryption && p.Type == ssmstore.ParameterTypeSecureString && s.kmsEncryptor != nil {
 			decryptedValue, err := s.decryptValue(ctx, p.Value, p.KeyID)
@@ -230,7 +230,7 @@ func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	var params []map[string]interface{}
+	params := make([]map[string]interface{}, 0, len(parameters))
 	for _, p := range parameters {
 		if withDecryption && p.Type == ssmstore.ParameterTypeSecureString && s.kmsEncryptor != nil {
 			decryptedValue, err := s.decryptValue(ctx, p.Value, p.KeyID)
@@ -347,7 +347,7 @@ func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	var params []map[string]interface{}
+	params := make([]map[string]interface{}, 0, len(metadata))
 	for _, m := range metadata {
 		params = append(params, map[string]interface{}{
 			"Name":             m.Name,
@@ -393,7 +393,7 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	var versions []map[string]interface{}
+	versions := make([]map[string]interface{}, 0, len(history))
 	for _, v := range history {
 		value := v.Value
 		if !withDecryption && v.Type == ssmstore.ParameterTypeSecureString {

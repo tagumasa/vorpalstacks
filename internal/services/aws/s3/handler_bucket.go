@@ -261,7 +261,7 @@ func (h *S3Handler) handleBucketRequest(ctx *request.RequestContext, r *http.Req
 		}
 		_ = xml.Unmarshal(bodyBytes, &createConfig)
 
-		_, err := h.bucketOps.CreateBucket(ctx, &CreateBucketInput{
+		result, err := h.bucketOps.CreateBucket(ctx, &CreateBucketInput{
 			Bucket:                     bucket,
 			LocationConstraint:         createConfig.LocationConstraint,
 			ObjectLockEnabledForBucket: createConfig.ObjectLockEnabled,
@@ -275,7 +275,7 @@ func (h *S3Handler) handleBucketRequest(ctx *request.RequestContext, r *http.Req
 				Tags:   createConfig.Tags,
 			})
 		}
-		return nil, http.StatusOK, err
+		return result, http.StatusOK, err
 
 	case "GET":
 		if query.Has("acl") {
@@ -492,8 +492,8 @@ func (h *S3Handler) handleBucketRequest(ctx *request.RequestContext, r *http.Req
 		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
 			return nil, http.StatusForbidden, err
 		}
-		err := h.bucketOps.HeadBucket(ctx, &HeadBucketInput{Bucket: bucket})
-		return nil, http.StatusOK, err
+		result, err := h.bucketOps.HeadBucket(ctx, &HeadBucketInput{Bucket: bucket})
+		return result, http.StatusOK, err
 
 	case "DELETE":
 		if query.Has("encryption") {

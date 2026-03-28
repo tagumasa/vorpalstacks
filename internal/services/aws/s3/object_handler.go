@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,6 +12,34 @@ import (
 	"vorpalstacks/internal/services/aws/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
+
+const (
+	s3MaxKeys    = 1000
+	s3MaxParts   = 1000
+	s3MaxUploads = 1000
+	s3MaxPartNum = 10000
+	s3MinPartNum = 1
+)
+
+func clampInt(val, min, max int) int {
+	if val < min {
+		return min
+	}
+	if val > max {
+		return max
+	}
+	return val
+}
+
+func clampInt64(val, min, max int64) int64 {
+	if val < min {
+		return min
+	}
+	if val > max {
+		return max
+	}
+	return val
+}
 
 // HandleRequest processes HTTP requests for object-level operations such as
 // get, put, delete, copy, multipart uploads, tagging, ACL, and legal hold.
@@ -33,7 +62,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			if err != nil {
 				return nil, header, http.StatusBadRequest, NewInvalidArgumentError("Provided max-keys not an integer")
 			}
-			input.MaxKeys = mk
+			input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
 		}
 		result, err := o.ListObjectVersions(ctx, reqCtx, input)
 		return result, header, http.StatusOK, err
@@ -51,7 +80,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			if err != nil {
 				return nil, header, http.StatusBadRequest, NewInvalidArgumentError("Provided max-uploads not an integer")
 			}
-			input.MaxUploads = mu
+			input.MaxUploads = clampInt(mu, 0, s3MaxUploads)
 		}
 		result, err := o.ListMultipartUploads(ctx, reqCtx, input)
 		return result, header, http.StatusOK, err
@@ -97,8 +126,8 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 
 	case method == "PUT" && query.Has("uploadId") && query.Has("partNumber") && r.Header.Get("x-amz-copy-source") != "":
 		partNumber, err := strconv.Atoi(query.Get("partNumber"))
-		if err != nil {
-			return nil, nil, http.StatusBadRequest, fmt.Errorf("invalid partNumber: %w", err)
+		if err != nil || partNumber < s3MinPartNum || partNumber > s3MaxPartNum {
+			return nil, nil, http.StatusBadRequest, fmt.Errorf("invalid partNumber: must be between %d and %d", s3MinPartNum, s3MaxPartNum)
 		}
 		input := &UploadPartCopyInput{
 			Bucket:                    bucket,
@@ -123,15 +152,21 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 
 	case method == "PUT" && query.Has("uploadId") && query.Has("partNumber"):
 		partNumber, err := strconv.Atoi(query.Get("partNumber"))
-		if err != nil {
-			return nil, nil, http.StatusBadRequest, fmt.Errorf("invalid partNumber: %w", err)
+		if err != nil || partNumber < s3MinPartNum || partNumber > s3MaxPartNum {
+			return nil, nil, http.StatusBadRequest, fmt.Errorf("invalid partNumber: must be between %d and %d", s3MinPartNum, s3MaxPartNum)
 		}
+
+		var partBody io.Reader = r.Body
+		if isAwsChunkedRequest(r) {
+			partBody = decodeAwsChunkedBody(r.Body)
+		}
+
 		input := &UploadPartInput{
 			Bucket:               bucket,
 			Key:                  key,
 			UploadId:             query.Get("uploadId"),
 			PartNumber:           partNumber,
-			Body:                 r.Body,
+			Body:                 partBody,
 			SSECustomerAlgorithm: r.Header.Get("x-amz-server-side-encryption-customer-algorithm"),
 			SSECustomerKey:       r.Header.Get("x-amz-server-side-encryption-customer-key"),
 			SSECustomerKeyMD5:    r.Header.Get("x-amz-server-side-encryption-customer-key-MD5"),
@@ -153,7 +188,10 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			UploadId: query.Get("uploadId"),
 		}
 		if maxParts := query.Get("max-parts"); maxParts != "" {
-			input.MaxParts, _ = strconv.Atoi(maxParts)
+			mp, err := strconv.Atoi(maxParts)
+			if err == nil {
+				input.MaxParts = clampInt(mp, 0, s3MaxParts)
+			}
 		}
 		if partNumberMarker := query.Get("part-number-marker"); partNumberMarker != "" {
 			input.PartNumberMarker = partNumberMarker
@@ -203,7 +241,10 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			StartAfter:        query.Get("start-after"),
 		}
 		if maxKeys := query.Get("max-keys"); maxKeys != "" {
-			input.MaxKeys, _ = strconv.Atoi(maxKeys)
+			mk, err := strconv.Atoi(maxKeys)
+			if err == nil {
+				input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
+			}
 		}
 		result, err := o.ListObjectsV2(ctx, reqCtx, input)
 		return result, header, http.StatusOK, err
@@ -216,7 +257,10 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			Marker:    query.Get("marker"),
 		}
 		if maxKeys := query.Get("max-keys"); maxKeys != "" {
-			input.MaxKeys, _ = strconv.Atoi(maxKeys)
+			mk, err := strconv.Atoi(maxKeys)
+			if err == nil {
+				input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
+			}
 		}
 		result, err := o.ListObjects(ctx, reqCtx, input)
 		return result, header, http.StatusOK, err
@@ -453,8 +497,14 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if contentLengthStr != "" {
 			var parseErr error
 			contentLength, parseErr = strconv.ParseInt(contentLengthStr, 10, 64)
-			if parseErr != nil {
+			if parseErr != nil || contentLength < 0 {
 				return nil, header, http.StatusBadRequest, fmt.Errorf("invalid Content-Length: %s", contentLengthStr)
+			}
+		}
+
+		if decodedContentLengthStr := r.Header.Get("X-Amz-Decoded-Content-Length"); decodedContentLengthStr != "" {
+			if dcl, err := strconv.ParseInt(decodedContentLengthStr, 10, 64); err == nil {
+				contentLength = dcl
 			}
 		}
 
@@ -465,10 +515,16 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 				metadata[metaKey] = v[0]
 			}
 		}
+
+		var body io.Reader = r.Body
+		if isAwsChunkedRequest(r) {
+			body = decodeAwsChunkedBody(r.Body)
+		}
+
 		input := &PutObjectInput{
 			Bucket:               bucket,
 			Key:                  key,
-			Body:                 r.Body,
+			Body:                 body,
 			ContentLength:        contentLength,
 			ContentType:          contentType,
 			Metadata:             metadata,

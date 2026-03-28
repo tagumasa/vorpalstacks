@@ -56,8 +56,8 @@ func (e *SSES3Encryptor) getOrCreateBucketKey(bucket string) ([]byte, string, er
 		CreatedAt: 0,
 	}
 
-	e.bucketKeys.Store(bucket, meta)
-	return key, keyID, nil
+	actual, _ := e.bucketKeys.LoadOrStore(bucket, meta)
+	return actual.(*sseS3KeyMetadata).Key, actual.(*sseS3KeyMetadata).KeyID, nil
 }
 
 // Encrypt encrypts data using S3-managed keys.

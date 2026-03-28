@@ -148,12 +148,6 @@ type PebbleDBTransaction struct {
 // Bucket returns a bucket with the given name within the transaction.
 func (t *PebbleDBTransaction) Bucket(name string) Bucket {
 	prefix := []byte(BucketPrefix + name + ":")
-	iter, _ := t.txn.NewIter(&pebble.IterOptions{
-		LowerBound: prefix,
-	})
-	if iter != nil {
-		defer iter.Close()
-	}
 	return &PebbleDBTransactionBucket{
 		txn:     t.txn,
 		prefix:  prefix,
@@ -265,47 +259,7 @@ func (b *PebbleDBTransactionBucket) ScanPrefix(prefix []byte) Iterator {
 	copy(end[len(b.prefix):], prefix)
 	end[len(b.prefix)+len(prefix)] = 0xFF
 
-	var keys [][]byte
-	var values [][]byte
-	var iterErr error
-
-	iter, err := b.txn.NewIter(&pebble.IterOptions{
-		LowerBound: start,
-		UpperBound: end,
-	})
-	if err != nil {
-		return &PebbleDBIterator{
-			keys:   [][]byte{},
-			values: [][]byte{},
-			err:    err,
-		}
-	}
-	defer iter.Close()
-
-	for iter.First(); iter.Valid(); iter.Next() {
-		key := iter.Key()
-		val, err := iter.ValueAndErr()
-		if err != nil {
-			iterErr = err
-			break
-		}
-		if len(key) > b.prefixL {
-			origKey := make([]byte, len(key)-b.prefixL)
-			copy(origKey, key[b.prefixL:])
-			keys = append(keys, origKey)
-			values = append(values, val)
-		}
-	}
-	if iterErr == nil {
-		iterErr = iter.Error()
-	}
-
-	return &PebbleDBIterator{
-		keys:    keys,
-		values:  values,
-		err:     iterErr,
-		current: -1,
-	}
+	return newTxnPebbleDBIterator(b.txn, start, end, b.prefixL)
 }
 
 // ScanRange returns an iterator for keys within the given range in the transaction bucket.
@@ -313,47 +267,7 @@ func (b *PebbleDBTransactionBucket) ScanRange(start, end []byte) Iterator {
 	lower := b.makeKey(start)
 	upper := b.makeKey(end)
 
-	var keys [][]byte
-	var values [][]byte
-	var iterErr error
-
-	iter, err := b.txn.NewIter(&pebble.IterOptions{
-		LowerBound: lower,
-		UpperBound: upper,
-	})
-	if err != nil {
-		return &PebbleDBIterator{
-			keys:   [][]byte{},
-			values: [][]byte{},
-			err:    err,
-		}
-	}
-	defer iter.Close()
-
-	for iter.First(); iter.Valid(); iter.Next() {
-		key := iter.Key()
-		val, err := iter.ValueAndErr()
-		if err != nil {
-			iterErr = err
-			break
-		}
-		if len(key) > b.prefixL {
-			origKey := make([]byte, len(key)-b.prefixL)
-			copy(origKey, key[b.prefixL:])
-			keys = append(keys, origKey)
-			values = append(values, val)
-		}
-	}
-	if iterErr == nil {
-		iterErr = iter.Error()
-	}
-
-	return &PebbleDBIterator{
-		keys:    keys,
-		values:  values,
-		err:     iterErr,
-		current: -1,
-	}
+	return newTxnPebbleDBIterator(b.txn, lower, upper, b.prefixL)
 }
 
 // Count returns the number of keys in the transaction bucket.

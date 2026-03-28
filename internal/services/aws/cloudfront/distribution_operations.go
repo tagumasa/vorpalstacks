@@ -926,3 +926,48 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 
 	return response.EmptyResponse(), nil
 }
+
+// ListDistributionsByWebACLId lists distributions that are associated with a specified Web ACL.
+func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	webACLId := request.GetStringParam(req.Parameters, "WebACLId")
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
+	if maxItems <= 0 {
+		maxItems = 100
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	allDistributions, err := store.distributions.List("", 0)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]interface{}, 0)
+	for _, d := range allDistributions.Distributions {
+		if d.DistributionConfig != nil && d.DistributionConfig.WebACLId == webACLId {
+			items = append(items, map[string]interface{}{
+				"Id":               d.ID,
+				"ARN":              d.ARN,
+				"Status":           d.Status,
+				"DomainName":       d.DomainName,
+				"Enabled":          d.Enabled,
+				"CallerReference":  d.CallerReference,
+				"LastModifiedTime": d.LastModifiedAt.Format(time.RFC3339),
+			})
+		}
+	}
+
+	return map[string]interface{}{
+		"DistributionList": map[string]interface{}{
+			"Marker":      marker,
+			"MaxItems":    maxItems,
+			"IsTruncated": false,
+			"Quantity":    len(items),
+			"Items":       items,
+		},
+	}, nil
+}

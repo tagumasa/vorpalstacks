@@ -39,10 +39,16 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 	var accessKeyId string
 
 	results = append(results, r.RunTest("iam", "CreateUser", func() error {
-		_, err := client.CreateUser(ctx, &iam.CreateUserInput{
+		resp, err := client.CreateUser(ctx, &iam.CreateUserInput{
 			UserName: aws.String(userName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.User == nil {
+			return fmt.Errorf("user is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetUser", func() error {
@@ -76,6 +82,12 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 		if err != nil {
 			return err
 		}
+		if resp.AccessKey == nil {
+			return fmt.Errorf("access key is nil")
+		}
+		if resp.AccessKey.AccessKeyId == nil {
+			return fmt.Errorf("access key id is nil")
+		}
 		accessKeyId = *resp.AccessKey.AccessKeyId
 		return nil
 	}))
@@ -94,11 +106,17 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "CreateLoginProfile", func() error {
-		_, err := client.CreateLoginProfile(ctx, &iam.CreateLoginProfileInput{
+		resp, err := client.CreateLoginProfile(ctx, &iam.CreateLoginProfileInput{
 			UserName: aws.String(userName),
 			Password: aws.String("TempPassword123!"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetLoginProfile", func() error {
@@ -127,13 +145,19 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "TagUser", func() error {
-		_, err := client.TagUser(ctx, &iam.TagUserInput{
+		resp, err := client.TagUser(ctx, &iam.TagUserInput{
 			UserName: aws.String(userName),
 			Tags: []types.Tag{
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListUserTags", func() error {
@@ -150,18 +174,30 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "UntagUser", func() error {
-		_, err := client.UntagUser(ctx, &iam.UntagUserInput{
+		resp, err := client.UntagUser(ctx, &iam.UntagUserInput{
 			UserName: aws.String(userName),
 			TagKeys:  []string{"Environment"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "CreateGroup", func() error {
-		_, err := client.CreateGroup(ctx, &iam.CreateGroupInput{
+		resp, err := client.CreateGroup(ctx, &iam.CreateGroupInput{
 			GroupName: aws.String(groupName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Group == nil {
+			return fmt.Errorf("group is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetGroup", func() error {
@@ -189,19 +225,31 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "AddUserToGroup", func() error {
-		_, err := client.AddUserToGroup(ctx, &iam.AddUserToGroupInput{
+		resp, err := client.AddUserToGroup(ctx, &iam.AddUserToGroupInput{
 			GroupName: aws.String(groupName),
 			UserName:  aws.String(userName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "RemoveUserFromGroup", func() error {
-		_, err := client.RemoveUserFromGroup(ctx, &iam.RemoveUserFromGroupInput{
+		resp, err := client.RemoveUserFromGroup(ctx, &iam.RemoveUserFromGroupInput{
 			GroupName: aws.String(groupName),
 			UserName:  aws.String(userName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "CreateRole", func() error {
@@ -213,11 +261,20 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 				"Action": "sts:AssumeRole"
 			}]
 		}`
-		_, err := client.CreateRole(ctx, &iam.CreateRoleInput{
+		resp, err := client.CreateRole(ctx, &iam.CreateRoleInput{
 			RoleName:                 aws.String(roleName),
 			AssumeRolePolicyDocument: aws.String(assumeRolePolicy),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Role == nil {
+			return fmt.Errorf("role is nil")
+		}
+		if resp.Role.Arn == nil {
+			return fmt.Errorf("role arn is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "CreateRole_InvalidName", func() error {
@@ -264,13 +321,19 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "TagRole", func() error {
-		_, err := client.TagRole(ctx, &iam.TagRoleInput{
+		resp, err := client.TagRole(ctx, &iam.TagRoleInput{
 			RoleName: aws.String(roleName),
 			Tags: []types.Tag{
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListRoleTags", func() error {
@@ -287,11 +350,17 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "UntagRole", func() error {
-		_, err := client.UntagRole(ctx, &iam.UntagRoleInput{
+		resp, err := client.UntagRole(ctx, &iam.UntagRoleInput{
 			RoleName: aws.String(roleName),
 			TagKeys:  []string{"Environment"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "CreatePolicy", func() error {
@@ -303,11 +372,20 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 				"Resource": "*"
 			}]
 		}`
-		_, err := client.CreatePolicy(ctx, &iam.CreatePolicyInput{
+		resp, err := client.CreatePolicy(ctx, &iam.CreatePolicyInput{
 			PolicyName:     aws.String(policyName),
 			PolicyDocument: aws.String(policyDocument),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Policy == nil {
+			return fmt.Errorf("policy is nil")
+		}
+		if resp.Policy.Arn == nil {
+			return fmt.Errorf("policy arn is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListPolicies", func() error {
@@ -323,10 +401,16 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 
 	profileName := fmt.Sprintf("TestProfile-%d", time.Now().UnixNano())
 	results = append(results, r.RunTest("iam", "CreateInstanceProfile", func() error {
-		_, err := client.CreateInstanceProfile(ctx, &iam.CreateInstanceProfileInput{
+		resp, err := client.CreateInstanceProfile(ctx, &iam.CreateInstanceProfileInput{
 			InstanceProfileName: aws.String(profileName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.InstanceProfile == nil {
+			return fmt.Errorf("instance profile is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetInstanceProfile", func() error {
@@ -354,26 +438,44 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "AddRoleToInstanceProfile", func() error {
-		_, err := client.AddRoleToInstanceProfile(ctx, &iam.AddRoleToInstanceProfileInput{
+		resp, err := client.AddRoleToInstanceProfile(ctx, &iam.AddRoleToInstanceProfileInput{
 			InstanceProfileName: aws.String(profileName),
 			RoleName:            aws.String(roleName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "RemoveRoleFromInstanceProfile", func() error {
-		_, err := client.RemoveRoleFromInstanceProfile(ctx, &iam.RemoveRoleFromInstanceProfileInput{
+		resp, err := client.RemoveRoleFromInstanceProfile(ctx, &iam.RemoveRoleFromInstanceProfileInput{
 			InstanceProfileName: aws.String(profileName),
 			RoleName:            aws.String(roleName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteInstanceProfile", func() error {
-		_, err := client.DeleteInstanceProfile(ctx, &iam.DeleteInstanceProfileInput{
+		resp, err := client.DeleteInstanceProfile(ctx, &iam.DeleteInstanceProfileInput{
 			InstanceProfileName: aws.String(profileName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "PutUserPolicy", func() error {
@@ -385,12 +487,18 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 				"Resource": "*"
 			}]
 		}`
-		_, err := client.PutUserPolicy(ctx, &iam.PutUserPolicyInput{
+		resp, err := client.PutUserPolicy(ctx, &iam.PutUserPolicyInput{
 			UserName:       aws.String(userName),
 			PolicyName:     aws.String(userInlinePolicyName),
 			PolicyDocument: aws.String(policyDocument),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetUserPolicy", func() error {
@@ -429,12 +537,18 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 				"Resource": "*"
 			}]
 		}`
-		_, err := client.PutRolePolicy(ctx, &iam.PutRolePolicyInput{
+		resp, err := client.PutRolePolicy(ctx, &iam.PutRolePolicyInput{
 			RoleName:       aws.String(roleName),
 			PolicyName:     aws.String(roleInlinePolicyName),
 			PolicyDocument: aws.String(policyDocument),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetRolePolicy", func() error {
@@ -476,55 +590,97 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteUserPolicy", func() error {
-		_, err := client.DeleteUserPolicy(ctx, &iam.DeleteUserPolicyInput{
+		resp, err := client.DeleteUserPolicy(ctx, &iam.DeleteUserPolicyInput{
 			UserName:   aws.String(userName),
 			PolicyName: aws.String(userInlinePolicyName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteRolePolicy", func() error {
-		_, err := client.DeleteRolePolicy(ctx, &iam.DeleteRolePolicyInput{
+		resp, err := client.DeleteRolePolicy(ctx, &iam.DeleteRolePolicyInput{
 			RoleName:   aws.String(roleName),
 			PolicyName: aws.String(roleInlinePolicyName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteLoginProfile", func() error {
-		_, err := client.DeleteLoginProfile(ctx, &iam.DeleteLoginProfileInput{
+		resp, err := client.DeleteLoginProfile(ctx, &iam.DeleteLoginProfileInput{
 			UserName: aws.String(userName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteAccessKey", func() error {
-		_, err := client.DeleteAccessKey(ctx, &iam.DeleteAccessKeyInput{
+		resp, err := client.DeleteAccessKey(ctx, &iam.DeleteAccessKeyInput{
 			UserName:    aws.String(userName),
 			AccessKeyId: aws.String(accessKeyId),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteUser", func() error {
-		_, err := client.DeleteUser(ctx, &iam.DeleteUserInput{
+		resp, err := client.DeleteUser(ctx, &iam.DeleteUserInput{
 			UserName: aws.String(userName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteGroup", func() error {
-		_, err := client.DeleteGroup(ctx, &iam.DeleteGroupInput{
+		resp, err := client.DeleteGroup(ctx, &iam.DeleteGroupInput{
 			GroupName: aws.String(groupName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteRole", func() error {
-		_, err := client.DeleteRole(ctx, &iam.DeleteRoleInput{
+		resp, err := client.DeleteRole(ctx, &iam.DeleteRoleInput{
 			RoleName: aws.String(roleName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	return results

@@ -29,7 +29,7 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	var inputData map[string]interface{}
 	if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
-		return "", "", &ExecutionError{Error: "States.InvalidInput", Cause: "failed to parse input JSON"}
+		return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
 	}
 
 	itemsPath := state.ItemsPath
@@ -39,12 +39,12 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	items, err := getJSONPathValue(inputData, itemsPath)
 	if err != nil {
-		return "", "", &ExecutionError{Error: "States.InvalidItemsPath", Cause: err.Error()}
+		return "", "", &ExecutionError{ErrorCode: "States.InvalidItemsPath", Cause: err.Error()}
 	}
 
 	itemsArray, ok := items.([]interface{})
 	if !ok {
-		return "", "", &ExecutionError{Error: "States.InvalidItems", Cause: "items is not an array"}
+		return "", "", &ExecutionError{ErrorCode: "States.InvalidItems", Cause: "items is not an array"}
 	}
 
 	maxConcurrency := int(state.MaxConcurrency)
@@ -179,7 +179,7 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 				return catchOutput, catchPolicy.Next, nil
 			}
 		}
-		return "", "", &ExecutionError{Error: "States.IteratorFailed", Cause: firstError.Error()}
+		return "", "", &ExecutionError{ErrorCode: "States.IteratorFailed", Cause: firstError.Error()}
 	}
 
 	mapRunsMu.Lock()

@@ -33,17 +33,29 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 	queueName := fmt.Sprintf("TestQueue-%d", time.Now().UnixNano())
 
 	results = append(results, r.RunTest("sqs", "CreateQueue", func() error {
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+		resp, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
 			QueueName: aws.String(queueName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.QueueUrl == nil {
+			return fmt.Errorf("CreateQueue returned nil QueueUrl")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sqs", "GetQueueUrl", func() error {
-		_, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
 			QueueName: aws.String(queueName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.QueueUrl == nil {
+			return fmt.Errorf("GetQueueUrl returned nil QueueUrl")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sqs", "GetQueueAttributes", func() error {
@@ -53,10 +65,16 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+		attrResp, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
 			QueueUrl: resp.QueueUrl,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if attrResp.Attributes == nil {
+			return fmt.Errorf("GetQueueAttributes returned nil Attributes")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sqs", "SendMessage", func() error {
@@ -66,11 +84,17 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = client.SendMessage(ctx, &sqs.SendMessageInput{
+		sendResp, err := client.SendMessage(ctx, &sqs.SendMessageInput{
 			QueueUrl:    resp.QueueUrl,
 			MessageBody: aws.String("Test message"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if sendResp.MessageId == nil || *sendResp.MessageId == "" {
+			return fmt.Errorf("SendMessage returned nil or empty MessageId")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sqs", "ReceiveMessage", func() error {
@@ -80,15 +104,27 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 			QueueUrl: resp.QueueUrl,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if len(recvResp.Messages) == 0 {
+			return fmt.Errorf("ReceiveMessage returned empty Messages list")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sqs", "ListQueues", func() error {
-		_, err := client.ListQueues(ctx, &sqs.ListQueuesInput{})
-		return err
+		resp, err := client.ListQueues(ctx, &sqs.ListQueuesInput{})
+		if err != nil {
+			return err
+		}
+		if resp.QueueUrls == nil {
+			return fmt.Errorf("ListQueues returned nil QueueUrls")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sqs", "SetQueueAttributes", func() error {
@@ -130,10 +166,16 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = client.ListQueueTags(ctx, &sqs.ListQueueTagsInput{
+		tagResp, err := client.ListQueueTags(ctx, &sqs.ListQueueTagsInput{
 			QueueUrl: resp.QueueUrl,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if tagResp.Tags == nil || len(tagResp.Tags) == 0 {
+			return fmt.Errorf("ListQueueTags returned nil or empty Tags (expected Environment=Test)")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sqs", "UntagQueue", func() error {
@@ -177,13 +219,25 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 			QueueUrl: resp.QueueUrl,
 		})
 		if err != nil {
 			return err
 		}
-		return nil
+		if len(recvResp.Messages) == 0 {
+			return fmt.Errorf("no messages received from queue")
+		}
+		receiptHandle := aws.ToString(recvResp.Messages[0].ReceiptHandle)
+		if receiptHandle == "" {
+			return fmt.Errorf("receipt handle is empty")
+		}
+		_, err = client.ChangeMessageVisibility(ctx, &sqs.ChangeMessageVisibilityInput{
+			QueueUrl:          resp.QueueUrl,
+			ReceiptHandle:     aws.String(receiptHandle),
+			VisibilityTimeout: 60,
+		})
+		return err
 	}))
 
 	results = append(results, r.RunTest("sqs", "DeleteQueue", func() error {
@@ -201,24 +255,33 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 
 	results = append(results, r.RunTest("sqs", "CreateQueue (FIFO)", func() error {
 		fifoQueueName := fmt.Sprintf("TestFifoQueue-%d.fifo", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+		resp, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
 			QueueName: aws.String(fifoQueueName),
 			Attributes: map[string]string{
 				"ContentBasedDeduplication": "true",
 				"FifoQueue":                 "true",
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.QueueUrl == nil {
+			return fmt.Errorf("CreateQueue (FIFO) returned nil QueueUrl")
+		}
+		return nil
 	}))
 
 	batchQueueName := fmt.Sprintf("TestBatchQueue-%d", time.Now().UnixNano())
 
 	results = append(results, r.RunTest("sqs", "SendMessageBatch", func() error {
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+		respCreate, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
 			QueueName: aws.String(batchQueueName),
 		})
 		if err != nil {
 			return err
+		}
+		if respCreate.QueueUrl == nil {
+			return fmt.Errorf("CreateQueue for batch returned nil QueueUrl")
 		}
 		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
 			QueueName: aws.String(batchQueueName),
@@ -226,7 +289,7 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = client.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
+		batchResp, err := client.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
 			QueueUrl: resp.QueueUrl,
 			Entries: []types.SendMessageBatchRequestEntry{
 				{
@@ -239,7 +302,13 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if len(batchResp.Successful) == 0 {
+			return fmt.Errorf("SendMessageBatch returned empty Successful entries")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sqs", "DeleteMessageBatch", func() error {

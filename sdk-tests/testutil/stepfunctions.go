@@ -125,11 +125,17 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	results = append(results, r.RunTest("stepfunctions", "StartExecution", func() error {
 		input := map[string]string{"message": "test"}
 		inputJSON, _ := json.Marshal(input)
-		_, err := client.StartExecution(ctx, &sfn.StartExecutionInput{
+		resp, err := client.StartExecution(ctx, &sfn.StartExecutionInput{
 			StateMachineArn: aws.String(stateMachineARN),
 			Input:           aws.String(string(inputJSON)),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ExecutionArn == nil {
+			return fmt.Errorf("execution ARN is nil")
+		}
+		return nil
 	}))
 
 	var executionARN string
@@ -182,11 +188,17 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "UpdateStateMachine", func() error {
-		_, err := client.UpdateStateMachine(ctx, &sfn.UpdateStateMachineInput{
+		resp, err := client.UpdateStateMachine(ctx, &sfn.UpdateStateMachineInput{
 			StateMachineArn: aws.String(stateMachineARN),
 			Definition:      aws.String(string(definitionJSON)),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	var activityARN string
@@ -226,13 +238,19 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "TagResource", func() error {
-		_, err := client.TagResource(ctx, &sfn.TagResourceInput{
+		resp, err := client.TagResource(ctx, &sfn.TagResourceInput{
 			ResourceArn: aws.String(stateMachineARN),
 			Tags: []types.Tag{
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "ListTagsForResource", func() error {
@@ -249,25 +267,43 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "UntagResource", func() error {
-		_, err := client.UntagResource(ctx, &sfn.UntagResourceInput{
+		resp, err := client.UntagResource(ctx, &sfn.UntagResourceInput{
 			ResourceArn: aws.String(stateMachineARN),
 			TagKeys:     []string{"Environment"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "DeleteActivity", func() error {
-		_, err := client.DeleteActivity(ctx, &sfn.DeleteActivityInput{
+		resp, err := client.DeleteActivity(ctx, &sfn.DeleteActivityInput{
 			ActivityArn: aws.String(activityARN),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "DeleteStateMachine", func() error {
-		_, err := client.DeleteStateMachine(ctx, &sfn.DeleteStateMachineInput{
+		resp, err := client.DeleteStateMachine(ctx, &sfn.DeleteStateMachineInput{
 			StateMachineArn: aws.String(stateMachineARN),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

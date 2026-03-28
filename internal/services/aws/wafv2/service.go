@@ -3,6 +3,7 @@ package wafv2
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
@@ -10,6 +11,7 @@ import (
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
+	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
 
 type wafv2Stores struct {
@@ -166,17 +168,17 @@ func generateID() (string, error) {
 }
 
 func newAPIError(code, message string, httpStatus int) error {
-	return fmt.Errorf("%s: %s", code, message)
+	return awserrors.NewAWSError(code, message, httpStatus)
 }
 
 func notFoundError(resource string) error {
-	return fmt.Errorf("WAFNonexistentItemException: %s not found", resource)
+	return awserrors.NewAWSError("WAFNonexistentItemException", fmt.Sprintf("%s not found", resource), http.StatusNotFound)
 }
 
 func validationError(msg string) error {
-	return fmt.Errorf("ValidationException: %s", msg)
+	return awserrors.NewAWSError("ValidationException", msg, http.StatusBadRequest)
 }
 
 func lockTokenError() error {
-	return fmt.Errorf("WAFInvalidLockTokenException: The provided lock token is not valid")
+	return awserrors.NewAWSError("WAFInvalidLockTokenException", "The provided lock token is not valid", http.StatusBadRequest)
 }

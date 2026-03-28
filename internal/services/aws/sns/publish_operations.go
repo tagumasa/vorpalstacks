@@ -13,7 +13,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -51,7 +50,7 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 	topic, err := store.GetTopic(topicArn)
 	if err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewNotFoundException("Topic does not exist")
+			return nil, NewTopicNotFoundException()
 		}
 		return nil, err
 	}
@@ -253,7 +252,11 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 	}
 
 	if _, err := s.sqsStore.SendMessage(queueURL, sqsMsg); err != nil {
-		log.Printf("Failed to deliver SNS message to SQS queue %s: %v", queueURL, err)
+		logs.Error("Failed to deliver SNS message to SQS queue — message may be permanently lost",
+			logs.String("queueURL", queueURL),
+			logs.String("messageId", msg.MessageId),
+			logs.String("topicArn", msg.TopicArn),
+			logs.Err(err))
 	}
 }
 
@@ -465,7 +468,7 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 	topic, err := store.GetTopic(topicArn)
 	if err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewNotFoundException("Topic does not exist")
+			return nil, NewTopicNotFoundException()
 		}
 		return nil, err
 	}

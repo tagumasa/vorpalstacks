@@ -135,4 +135,14 @@ func (s *CognitoService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("cognito-idp", "GetUserPoolMfaConfig", s.GetUserPoolMfaConfig)
 	d.RegisterHandlerForService("cognito-idp", "AssociateSoftwareToken", s.AssociateSoftwareToken)
 	d.RegisterHandlerForService("cognito-idp", "VerifySoftwareToken", s.VerifySoftwareToken)
+
+	d.RegisterHandlerForService("cognito-idp", "CreateUserPoolDomain", s.CreateUserPoolDomain)
+	d.RegisterHandlerForService("cognito-idp", "DescribeUserPoolDomain", s.DescribeUserPoolDomain)
+	d.RegisterHandlerForService("cognito-idp", "DeleteUserPoolDomain", s.DeleteUserPoolDomain)
+	d.RegisterHandlerForService("cognito-idp", "CreateResourceServer", s.CreateResourceServer)
+	d.RegisterHandlerForService("cognito-idp", "ListResourceServers", s.ListResourceServers)
+	d.RegisterHandlerForService("cognito-idp", "CreateIdentityProvider", s.CreateIdentityProvider)
+	d.RegisterHandlerForService("cognito-idp", "ListIdentityProviders", s.ListIdentityProviders)
+	d.RegisterHandlerForService("cognito-idp", "GetCSVHeader", s.GetCSVHeader)
+	d.RegisterHandlerForService("cognito-idp", "DescribeRiskConfiguration", s.DescribeRiskConfiguration)
 }

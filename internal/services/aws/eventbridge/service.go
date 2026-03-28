@@ -163,6 +163,7 @@ func (s *EventsService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("eventbridge", "PutTargets", s.PutTargets)
 	d.RegisterHandlerForService("eventbridge", "RemoveTargets", s.RemoveTargets)
 	d.RegisterHandlerForService("eventbridge", "ListTargetsByRule", s.ListTargetsByRule)
+	d.RegisterHandlerForService("eventbridge", "ListRuleNamesByTarget", s.ListRuleNamesByTarget)
 
 	d.RegisterHandlerForService("eventbridge", "PutEvents", s.PutEvents)
 

@@ -27,6 +27,8 @@ var (
 	sqsActionRegex      = regexp.MustCompile(`sqs:action/[^/]+/([^/]+)`)
 	snsPathRegex        = regexp.MustCompile(`sns:path/[^/]+/([^/]+)`)
 	snsActionRegex      = regexp.MustCompile(`sns:action/[^/]+/([^/]+)`)
+
+	snsDeliverySem = make(chan struct{}, 10)
 )
 
 // AWSExecutor executes AWS integration requests for API Gateway.
@@ -713,6 +715,15 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 	}
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("Panic in SNS delivery goroutine",
+					logs.String("topicArn", topicArn),
+					logs.Any("panic", r))
+			}
+		}()
+		snsDeliverySem <- struct{}{}
+		defer func() { <-snsDeliverySem }()
 		e.deliverToSNSSubscribers(topicArn, notification)
 	}()
 

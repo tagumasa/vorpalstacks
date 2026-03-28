@@ -24,83 +24,69 @@ func GetStringParam(params map[string]interface{}, key string) string {
 // GetIntParam extracts an integer parameter from the params map.
 func GetIntParam(params map[string]interface{}, key string) int {
 	if v, ok := params[key]; ok {
-		switch n := v.(type) {
-		case int:
+		if n, ok := asInt(v); ok {
 			return n
-		case int64:
-			return int(n)
-		case float64:
-			return int(n)
-		case string:
-			var result int
-			for _, c := range n {
-				if c >= '0' && c <= '9' {
-					result = result*10 + int(c-'0')
-				}
-			}
-			return result
 		}
 	}
 	if v, ok := params[strings.ToLower(key)]; ok {
-		switch n := v.(type) {
-		case int:
+		if n, ok := asInt(v); ok {
 			return n
-		case int64:
-			return int(n)
-		case float64:
-			return int(n)
-		case string:
-			var result int
-			for _, c := range n {
-				if c >= '0' && c <= '9' {
-					result = result*10 + int(c-'0')
-				}
-			}
-			return result
 		}
 	}
 	return 0
 }
 
+func asInt(v interface{}) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case int64:
+		return int(n), true
+	case float64:
+		return int(n), true
+	case string:
+		parsed, err := strconv.Atoi(n)
+		if err != nil {
+			return 0, false
+		}
+		return parsed, true
+	default:
+		return 0, false
+	}
+}
+
 // GetInt64Param extracts a 64-bit integer parameter from the params map.
 func GetInt64Param(params map[string]interface{}, key string) int64 {
 	if v, ok := params[key]; ok {
-		switch n := v.(type) {
-		case int64:
+		if n, ok := asInt64(v); ok {
 			return n
-		case int:
-			return int64(n)
-		case float64:
-			return int64(n)
-		case string:
-			var result int64
-			for _, c := range n {
-				if c >= '0' && c <= '9' {
-					result = result*10 + int64(c-'0')
-				}
-			}
-			return result
 		}
 	}
 	if v, ok := params[strings.ToLower(key)]; ok {
-		switch n := v.(type) {
-		case int64:
+		if n, ok := asInt64(v); ok {
 			return n
-		case int:
-			return int64(n)
-		case float64:
-			return int64(n)
-		case string:
-			var result int64
-			for _, c := range n {
-				if c >= '0' && c <= '9' {
-					result = result*10 + int64(c-'0')
-				}
-			}
-			return result
 		}
 	}
 	return 0
+}
+
+func asInt64(v interface{}) (int64, bool) {
+	switch n := v.(type) {
+	case int64:
+		return n, true
+	case int:
+		return int64(n), true
+	case float64:
+		return int64(n), true
+	case string:
+		parsed, err := strconv.ParseInt(n, 10, 64)
+		if err != nil {
+			return 0, false
+		}
+		return parsed, true
+	default:
+		return 0, false
+	}
 }
 
 // GetFloatParam extracts a float parameter from the params map.

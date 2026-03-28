@@ -366,6 +366,9 @@ func (s *EventsService) UpdateApiDestination(ctx context.Context, reqCtx *reques
 		apiDest.ConnectionARN = connArn
 	}
 	if rateLimit := int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond")); rateLimit > 0 {
+		if rateLimit > 300 {
+			rateLimit = 300
+		}
 		apiDest.InvocationRateLimitPerSecond = rateLimit
 	}
 
@@ -523,6 +526,9 @@ func (s *EventsService) CreateApiDestination(ctx context.Context, reqCtx *reques
 	}
 
 	if rateLimit := int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond")); rateLimit > 0 {
+		if rateLimit > 300 {
+			rateLimit = 300
+		}
 		apiDest.InvocationRateLimitPerSecond = rateLimit
 	}
 

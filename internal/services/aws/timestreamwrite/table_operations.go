@@ -113,7 +113,7 @@ func (s *Service) ListTables(ctx context.Context, reqCtx *request.RequestContext
 		return nil, s.mapStoreError(err)
 	}
 
-	var tableList []map[string]interface{}
+	tableList := make([]map[string]interface{}, 0)
 	for _, table := range result.Items {
 		tags, _ := st.store.ListTags(table.ARN)
 		tableList = append(tableList, s.formatTableResponse(table, tags))

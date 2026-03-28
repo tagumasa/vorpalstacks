@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -140,6 +141,11 @@ func (e *Engine) checkSchedules() {
 				e.wg.Add(1)
 				go func(sch *schedulerstore.Schedule) {
 					defer e.wg.Done()
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("scheduler: panic executing schedule %s: %v", sch.Name, r)
+						}
+					}()
 					select {
 					case <-e.ctx.Done():
 						return

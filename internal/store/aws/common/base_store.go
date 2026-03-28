@@ -13,6 +13,9 @@ import (
 // DefaultMaxItems is the default maximum number of items for paginated list operations.
 const DefaultMaxItems = 100
 
+// AbsoluteMaxItems is the hard upper limit for paginated list operations.
+const AbsoluteMaxItems = 1000
+
 // BaseStore provides common storage operations for AWS services.
 type BaseStore struct {
 	bucket  storage.Bucket
@@ -194,6 +197,9 @@ func ListProto[T proto.Message](store *BaseStore, opts ListOptions, newFunc func
 	if opts.MaxItems <= 0 {
 		opts.MaxItems = DefaultMaxItems
 	}
+	if opts.MaxItems > AbsoluteMaxItems {
+		opts.MaxItems = AbsoluteMaxItems
+	}
 
 	var items []T
 	count := 0
@@ -254,6 +260,9 @@ func ListProto[T proto.Message](store *BaseStore, opts ListOptions, newFunc func
 func List[T any](store *BaseStore, opts ListOptions, filter FilterFunc[T]) (*ListResult[T], error) {
 	if opts.MaxItems <= 0 {
 		opts.MaxItems = DefaultMaxItems
+	}
+	if opts.MaxItems > AbsoluteMaxItems {
+		opts.MaxItems = AbsoluteMaxItems
 	}
 
 	var items []*T

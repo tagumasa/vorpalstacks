@@ -22,13 +22,14 @@ func metricBucketName(region string) string {
 // MetricChunkStore provides CloudWatch metric chunk storage operations.
 type MetricChunkStore struct {
 	*common.BaseStore
-	storage   storage.BasicStorage
-	region    string
-	dataPath  string
-	chunkSize int
-	index     *chunk.PebbleIndex
-	useIndex  bool
-	chunkMu   sync.Map
+	storage    storage.BasicStorage
+	region     string
+	dataPath   string
+	chunkSize  int
+	index      *chunk.PebbleIndex
+	useIndex   bool
+	chunkMu    sync.Map
+	chunkPaths sync.Map
 }
 
 // NewMetricChunkStore creates a new CloudWatch metric chunk store.
@@ -110,8 +111,18 @@ func (s *MetricChunkStore) writeChunk(chunkPath string, entry *chunk.CloudWatchM
 		return err
 	}
 
-	entries, err := s.readChunk(chunkPath)
-	if err != nil {
+	var existingPath string
+	if v, ok := s.chunkPaths.Load(chunkPath); ok {
+		existingPath = v.(string)
+	}
+
+	var entries []chunk.CloudWatchMetricEntry
+	if existingPath != "" {
+		if readEntries, err := s.readChunkFile(existingPath); err == nil {
+			entries = readEntries
+		}
+	}
+	if entries == nil {
 		entries = []chunk.CloudWatchMetricEntry{*entry}
 	} else {
 		entries = append(entries, *entry)
@@ -133,8 +144,15 @@ func (s *MetricChunkStore) writeChunk(chunkPath string, entry *chunk.CloudWatchM
 		return err
 	}
 
-	if _, err := writer.Flush(); err != nil {
+	actualChunkPath, err := writer.Flush()
+	if err != nil {
 		return err
+	}
+
+	s.chunkPaths.Store(chunkPath, actualChunkPath)
+
+	if existingPath != "" && existingPath != actualChunkPath {
+		os.Remove(existingPath)
 	}
 
 	if s.useIndex && s.index != nil {
@@ -150,13 +168,13 @@ func (s *MetricChunkStore) writeChunk(chunkPath string, entry *chunk.CloudWatchM
 			}
 		}
 
-		chunkID := filepath.Base(chunkPath)
+		chunkID := filepath.Base(actualChunkPath)
 		meta := chunk.Meta{
 			ChunkID:    chunkID,
 			MinTs:      minTs,
 			MaxTs:      maxTs,
 			EntryCount: len(entries),
-			ChunkPath:  chunkPath,
+			ChunkPath:  actualChunkPath,
 			Tags: map[string]string{
 				"namespace":   entry.Namespace,
 				"metric_name": entry.MetricName,
@@ -173,7 +191,14 @@ func (s *MetricChunkStore) writeChunk(chunkPath string, entry *chunk.CloudWatchM
 }
 
 func (s *MetricChunkStore) readChunk(chunkPath string) ([]chunk.CloudWatchMetricEntry, error) {
-	entries, err := chunk.Read(chunkPath)
+	if v, ok := s.chunkPaths.Load(chunkPath); ok {
+		return s.readChunkFile(v.(string))
+	}
+	return s.readChunkFile(chunkPath)
+}
+
+func (s *MetricChunkStore) readChunkFile(path string) ([]chunk.CloudWatchMetricEntry, error) {
+	entries, err := chunk.Read(path)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +338,7 @@ func (s *MetricChunkStore) GetMetricStatistics(query MetricQuery) ([]*MetricStat
 				continue
 			}
 
-			entries, err := s.readChunk(meta.ChunkPath)
+			entries, err := s.readChunkFile(meta.ChunkPath)
 			if err != nil {
 				continue
 			}

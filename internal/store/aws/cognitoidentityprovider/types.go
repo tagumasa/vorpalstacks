@@ -335,3 +335,29 @@ type ChallengeSession struct {
 func generateToken() string {
 	return uuid.New().String() + uuid.New().String()
 }
+
+type UserPoolDomain struct {
+	Domain           string    `json:"domain"`
+	UserPoolID       string    `json:"userPoolId"`
+	CloudFrontDomain string    `json:"cloudFrontDomain"`
+	CreatedDate      time.Time `json:"createdDate"`
+}
+
+type ResourceServer struct {
+	UserPoolID string                `json:"userPoolId"`
+	Identifier string                `json:"identifier"`
+	Name       string                `json:"name"`
+	Scopes     []ResourceServerScope `json:"scopes,omitempty"`
+}
+
+type ResourceServerScope struct {
+	ScopeName        string `json:"scopeName"`
+	ScopeDescription string `json:"scopeDescription"`
+}
+
+type IdentityProvider struct {
+	UserPoolID      string            `json:"userPoolId"`
+	ProviderName    string            `json:"providerName"`
+	ProviderType    string            `json:"providerType"`
+	ProviderDetails map[string]string `json:"providerDetails,omitempty"`
+}

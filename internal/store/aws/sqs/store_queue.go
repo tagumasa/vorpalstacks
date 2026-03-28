@@ -113,15 +113,7 @@ func (s *SQSStore) DeleteQueue(queueURL string) error {
 		return ErrQueueNotFound
 	}
 
-	opts := common.ListOptions{MaxItems: 10000}
-	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
-		return m.QueueUrl == queueURL
-	})
-	if err == nil {
-		for _, msg := range result.Items {
-			s.messagesStore.Delete(msg.Id)
-		}
-	}
+	_ = s.messagesStore.DeleteByPrefix(messagePrefix(queueURL))
 
 	s.TagStore.Delete(queueURL)
 
@@ -158,7 +150,7 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 
 	queue, err := s.GetQueue(queueURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("getting queue: %w", err)
 	}
 
 	if queue.Attributes == nil {
@@ -171,7 +163,7 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 		case "VisibilityTimeout":
 			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
 				if err := validateVisibilityTimeout(int32(val)); err != nil {
-					return err
+					return fmt.Errorf("validating visibility timeout: %w", err)
 				}
 				queue.VisibilityTimeout = int32(val)
 				valid = true
@@ -179,7 +171,7 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 		case "MaximumMessageSize":
 			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
 				if err := validateMaximumMessageSize(int32(val)); err != nil {
-					return err
+					return fmt.Errorf("validating maximum message size: %w", err)
 				}
 				queue.MaximumMessageSize = int32(val)
 				valid = true
@@ -187,7 +179,7 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 		case "MessageRetentionPeriod":
 			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
 				if err := validateMessageRetentionPeriod(int32(val)); err != nil {
-					return err
+					return fmt.Errorf("validating message retention period: %w", err)
 				}
 				queue.MessageRetentionPeriod = int32(val)
 				valid = true
@@ -195,7 +187,7 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 		case "DelaySeconds":
 			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
 				if err := validateDelaySeconds(int32(val)); err != nil {
-					return err
+					return fmt.Errorf("validating delay seconds: %w", err)
 				}
 				queue.DelaySeconds = int32(val)
 				valid = true
@@ -203,7 +195,7 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 		case "ReceiveMessageWaitTimeSeconds":
 			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
 				if err := validateReceiveMessageWaitTimeSeconds(int32(val)); err != nil {
-					return err
+					return fmt.Errorf("validating receive message wait time: %w", err)
 				}
 				queue.ReceiveMessageWaitTimeSeconds = int32(val)
 				valid = true
@@ -229,7 +221,7 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 func (s *SQSStore) AddPermission(queueURL, label string, awsAccountIDs []string, actions []string) error {
 	queue, err := s.GetQueue(queueURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("getting queue: %w", err)
 	}
 
 	if queue.Permissions == nil {
@@ -249,7 +241,7 @@ func (s *SQSStore) AddPermission(queueURL, label string, awsAccountIDs []string,
 func (s *SQSStore) RemovePermission(queueURL, label string) error {
 	queue, err := s.GetQueue(queueURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("getting queue: %w", err)
 	}
 
 	if queue.Permissions != nil {
@@ -267,7 +259,7 @@ func (s *SQSStore) ListQueueTags(queueURL string) (map[string]string, error) {
 // TagQueue adds tags to a queue.
 func (s *SQSStore) TagQueue(queueURL string, tags map[string]string) error {
 	if err := validateTags(tags); err != nil {
-		return err
+		return fmt.Errorf("validating tags: %w", err)
 	}
 	return s.TagStore.TagResource(queueURL, tags)
 }

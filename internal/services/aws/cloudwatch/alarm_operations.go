@@ -105,7 +105,7 @@ func alarmToResponse(alarm *cwstore.Alarm, stateUpdatedTs time.Time) map[string]
 		"Period":                alarm.Period,
 		"Statistic":             alarm.Statistic,
 		"StateValue":            alarm.State,
-		"StateUpdatedTimestamp": stateUpdatedTs.UTC(),
+		"StateUpdatedTimestamp": stateUpdatedTs.UTC().UnixMilli(),
 		"TreatMissingData":      alarm.TreatMissingData,
 		"ActionsEnabled":        alarm.ActionsEnabled,
 	}

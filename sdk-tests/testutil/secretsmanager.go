@@ -34,11 +34,17 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 	secretValue := "my-secret-value"
 
 	results = append(results, r.RunTest("secretsmanager", "CreateSecret", func() error {
-		_, err := client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
+		resp, err := client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
 			Name:         aws.String(secretName),
 			SecretString: aws.String(secretValue),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ARN == nil {
+			return fmt.Errorf("secret ARN is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("secretsmanager", "DescribeSecret", func() error {
@@ -79,22 +85,34 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("secretsmanager", "UpdateSecret", func() error {
-		_, err := client.UpdateSecret(ctx, &secretsmanager.UpdateSecretInput{
+		resp, err := client.UpdateSecret(ctx, &secretsmanager.UpdateSecretInput{
 			SecretId:     aws.String(secretName),
 			SecretString: aws.String("updated-secret-value"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ARN == nil {
+			return fmt.Errorf("secret ARN is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("secretsmanager", "TagResource", func() error {
-		_, err := client.TagResource(ctx, &secretsmanager.TagResourceInput{
+		resp, err := client.TagResource(ctx, &secretsmanager.TagResourceInput{
 			SecretId: aws.String(secretName),
 			Tags: []types.Tag{
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 				{Key: aws.String("Project"), Value: aws.String("sdk-tests")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("secretsmanager", "ListSecretVersionIds", func() error {
@@ -111,11 +129,17 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("secretsmanager", "DeleteSecret", func() error {
-		_, err := client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
+		resp, err := client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
 			SecretId:                   aws.String(secretName),
 			ForceDeleteWithoutRecovery: aws.Bool(true),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

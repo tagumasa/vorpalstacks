@@ -13,6 +13,8 @@ import (
 	"github.com/fxamacker/cbor/v2"
 )
 
+const maxRequestBodySize = 64 * 1024 * 1024 // 64 MiB
+
 // ParsedRequest represents a parsed AWS HTTP request.
 type ParsedRequest struct {
 	Operation   string
@@ -45,7 +47,7 @@ func ParseAWSRequest(r *http.Request) (*ParsedRequest, error) {
 	var bodyBytes []byte
 	if r.Body != nil {
 		var err error
-		bodyBytes, err = io.ReadAll(r.Body)
+		bodyBytes, err = io.ReadAll(io.LimitReader(r.Body, maxRequestBodySize))
 		if err != nil {
 			return nil, err
 		}
@@ -201,7 +203,7 @@ func extractOperation(r *http.Request, bodyBytes []byte) string {
 
 	if op := extractCloudFrontOperation(r); op != "" {
 		if op == "CreateDistribution" && r.Method == "POST" && r.Body != nil {
-			buf, err := io.ReadAll(r.Body)
+			buf, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBodySize))
 			if err == nil {
 				r.Body = io.NopCloser(bytes.NewReader(buf))
 				if bytes.Contains(buf, []byte("DistributionConfigWithTags")) {

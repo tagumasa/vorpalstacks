@@ -69,30 +69,48 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.EnableKey(ctx, &kms.EnableKeyInput{
+		resp, err := client.EnableKey(ctx, &kms.EnableKeyInput{
 			KeyId: aws.String(keyID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "DisableKey", func() error {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.DisableKey(ctx, &kms.DisableKeyInput{
+		resp, err := client.DisableKey(ctx, &kms.DisableKeyInput{
 			KeyId: aws.String(keyID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "EnableKey", func() error {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.EnableKey(ctx, &kms.EnableKeyInput{
+		resp, err := client.EnableKey(ctx, &kms.EnableKeyInput{
 			KeyId: aws.String(keyID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "UpdateKeyDescription", func() error {
@@ -100,22 +118,34 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 			return fmt.Errorf("key ID not available")
 		}
 		newDescription := fmt.Sprintf("Updated Key %d", time.Now().UnixNano())
-		_, err := client.UpdateKeyDescription(ctx, &kms.UpdateKeyDescriptionInput{
+		resp, err := client.UpdateKeyDescription(ctx, &kms.UpdateKeyDescriptionInput{
 			KeyId:       aws.String(keyID),
 			Description: aws.String(newDescription),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "CreateAlias", func() error {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.CreateAlias(ctx, &kms.CreateAliasInput{
+		resp, err := client.CreateAlias(ctx, &kms.CreateAliasInput{
 			AliasName:   aws.String(keyAlias),
 			TargetKeyId: aws.String(keyID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "ListAliases", func() error {
@@ -150,11 +180,17 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 			return fmt.Errorf("key ID not available")
 		}
 		plaintext := []byte("Hello, KMS!")
-		_, err := client.Encrypt(ctx, &kms.EncryptInput{
+		resp, err := client.Encrypt(ctx, &kms.EncryptInput{
 			KeyId:     aws.String(keyID),
 			Plaintext: plaintext,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CiphertextBlob == nil {
+			return fmt.Errorf("ciphertext blob is nil")
+		}
+		return nil
 	}))
 
 	var ciphertextBlob []byte
@@ -188,29 +224,50 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.GenerateDataKey(ctx, &kms.GenerateDataKeyInput{
+		resp, err := client.GenerateDataKey(ctx, &kms.GenerateDataKeyInput{
 			KeyId:   aws.String(keyID),
 			KeySpec: types.DataKeySpecAes256,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CiphertextBlob == nil || len(resp.CiphertextBlob) == 0 {
+			return fmt.Errorf("ciphertext blob is nil or empty")
+		}
+		if resp.Plaintext == nil || len(resp.Plaintext) != 32 {
+			return fmt.Errorf("expected 32-byte plaintext, got %d", len(resp.Plaintext))
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateDataKeyWithoutPlaintext", func() error {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.GenerateDataKeyWithoutPlaintext(ctx, &kms.GenerateDataKeyWithoutPlaintextInput{
+		resp, err := client.GenerateDataKeyWithoutPlaintext(ctx, &kms.GenerateDataKeyWithoutPlaintextInput{
 			KeyId:   aws.String(keyID),
 			KeySpec: types.DataKeySpecAes256,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CiphertextBlob == nil || len(resp.CiphertextBlob) == 0 {
+			return fmt.Errorf("ciphertext blob is nil or empty")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateRandom", func() error {
-		_, err := client.GenerateRandom(ctx, &kms.GenerateRandomInput{
+		resp, err := client.GenerateRandom(ctx, &kms.GenerateRandomInput{
 			NumberOfBytes: aws.Int32(32),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Plaintext == nil || len(resp.Plaintext) != 32 {
+			return fmt.Errorf("expected 32-byte plaintext, got %d", len(resp.Plaintext))
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "ReEncrypt", func() error {
@@ -220,21 +277,33 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if ciphertextBlob == nil {
 			return fmt.Errorf("ciphertext not available")
 		}
-		_, err := client.ReEncrypt(ctx, &kms.ReEncryptInput{
+		resp, err := client.ReEncrypt(ctx, &kms.ReEncryptInput{
 			CiphertextBlob:   ciphertextBlob,
 			DestinationKeyId: aws.String(keyID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CiphertextBlob == nil {
+			return fmt.Errorf("ciphertext blob is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "EnableKeyRotation", func() error {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.EnableKeyRotation(ctx, &kms.EnableKeyRotationInput{
+		resp, err := client.EnableKeyRotation(ctx, &kms.EnableKeyRotationInput{
 			KeyId: aws.String(keyID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "GetKeyRotationStatus", func() error {
@@ -254,10 +323,16 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.DisableKeyRotation(ctx, &kms.DisableKeyRotationInput{
+		resp, err := client.DisableKeyRotation(ctx, &kms.DisableKeyRotationInput{
 			KeyId: aws.String(keyID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "CreateGrant", func() error {
@@ -265,12 +340,21 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 			return fmt.Errorf("key ID not available")
 		}
 		granteePrincipal := fmt.Sprintf("arn:aws:iam::000000000000:user/TestUser")
-		_, err := client.CreateGrant(ctx, &kms.CreateGrantInput{
+		resp, err := client.CreateGrant(ctx, &kms.CreateGrantInput{
 			KeyId:            aws.String(keyID),
 			GranteePrincipal: aws.String(granteePrincipal),
 			Operations:       []types.GrantOperation{types.GrantOperationEncrypt},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.GrantToken == nil || *resp.GrantToken == "" {
+			return fmt.Errorf("grant token is nil or empty")
+		}
+		if resp.GrantId == nil || *resp.GrantId == "" {
+			return fmt.Errorf("grant ID is nil or empty")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "ListGrants", func() error {
@@ -320,7 +404,10 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 			PolicyName: aws.String("default"),
 			Policy:     aws.String(policy),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "GetKeyPolicy", func() error {
@@ -360,14 +447,20 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.TagResource(ctx, &kms.TagResourceInput{
+		resp, err := client.TagResource(ctx, &kms.TagResourceInput{
 			KeyId: aws.String(keyID),
 			Tags: []types.Tag{
 				{TagKey: aws.String("Environment"), TagValue: aws.String("test")},
 				{TagKey: aws.String("Project"), TagValue: aws.String("sdk-tests")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "ListResourceTags", func() error {
@@ -390,11 +483,17 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.UntagResource(ctx, &kms.UntagResourceInput{
+		resp, err := client.UntagResource(ctx, &kms.UntagResourceInput{
 			KeyId:   aws.String(keyID),
 			TagKeys: []string{"Environment"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "UpdateAlias", func() error {
@@ -406,6 +505,20 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if err != nil {
 			return err
 		}
+		listResp, err := client.ListAliases(ctx, &kms.ListAliasesInput{})
+		if err != nil {
+			return fmt.Errorf("list aliases after update: %v", err)
+		}
+		found := false
+		for _, a := range listResp.Aliases {
+			if aws.ToString(a.AliasName) == keyAlias {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("alias %q not found after update", keyAlias)
+		}
 		keyAlias = newAlias
 		return nil
 	}))
@@ -414,28 +527,46 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
+		resp, err := client.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
 			KeyId:               aws.String(keyID),
 			PendingWindowInDays: aws.Int32(7),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DeletionDate == nil {
+			return fmt.Errorf("deletion date is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "CancelKeyDeletion", func() error {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		_, err := client.CancelKeyDeletion(ctx, &kms.CancelKeyDeletionInput{
+		resp, err := client.CancelKeyDeletion(ctx, &kms.CancelKeyDeletionInput{
 			KeyId: aws.String(keyID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.KeyId == nil || *resp.KeyId == "" {
+			return fmt.Errorf("key ID in response is nil or empty")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "DeleteAlias", func() error {
-		_, err := client.DeleteAlias(ctx, &kms.DeleteAliasInput{
+		resp, err := client.DeleteAlias(ctx, &kms.DeleteAliasInput{
 			AliasName: aws.String(keyAlias),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

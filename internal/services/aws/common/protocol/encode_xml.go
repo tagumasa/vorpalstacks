@@ -2,10 +2,12 @@
 package protocol
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // XMLElements wraps a slice of items with an XML element name for serialisation.
@@ -20,14 +22,14 @@ func EncodeXMLResponse(w http.ResponseWriter, operationName string, response int
 	if response == nil {
 		w.Header().Set("Content-Type", "application/xml")
 		if _, err := w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><Result></Result>`)); err != nil {
-			return err
+			return fmt.Errorf("write response: %w", err)
 		}
 		return nil
 	}
 	if m, ok := response.(map[string]interface{}); ok && len(m) == 0 {
 		w.Header().Set("Content-Type", "application/xml")
 		if _, err := w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><Result></Result>`)); err != nil {
-			return err
+			return fmt.Errorf("write response: %w", err)
 		}
 		return nil
 	}
@@ -45,7 +47,7 @@ func EncodeXMLResponse(w http.ResponseWriter, operationName string, response int
 
 	w.Header().Set("Content-Type", "application/xml")
 	if _, err := w.Write([]byte(xmlBuilder.String())); err != nil {
-		return err
+		return fmt.Errorf("write response: %w", err)
 	}
 
 	return nil
@@ -56,14 +58,14 @@ func EncodeRestXMLResponse(w http.ResponseWriter, operationName string, response
 	if response == nil {
 		w.Header().Set("Content-Type", "application/xml")
 		if _, err := w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><Result></Result>`)); err != nil {
-			return err
+			return fmt.Errorf("write response: %w", err)
 		}
 		return nil
 	}
 	if m, ok := response.(map[string]interface{}); ok && len(m) == 0 {
 		w.Header().Set("Content-Type", "application/xml")
 		if _, err := w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><Result></Result>`)); err != nil {
-			return err
+			return fmt.Errorf("write response: %w", err)
 		}
 		return nil
 	}
@@ -78,7 +80,7 @@ func EncodeRestXMLResponse(w http.ResponseWriter, operationName string, response
 
 	w.Header().Set("Content-Type", "application/xml")
 	if _, err := w.Write([]byte(xmlBuilder.String())); err != nil {
-		return err
+		return fmt.Errorf("write response: %w", err)
 	}
 
 	return nil
@@ -89,14 +91,14 @@ func EncodeRestXMLPayloadResponse(w http.ResponseWriter, payloadRoot string, res
 	if response == nil {
 		w.Header().Set("Content-Type", "application/xml")
 		if _, err := w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><Result></Result>`)); err != nil {
-			return err
+			return fmt.Errorf("write response: %w", err)
 		}
 		return nil
 	}
 	if m, ok := response.(map[string]interface{}); ok && len(m) == 0 {
 		w.Header().Set("Content-Type", "application/xml")
 		if _, err := w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><Result></Result>`)); err != nil {
-			return err
+			return fmt.Errorf("write response: %w", err)
 		}
 		return nil
 	}
@@ -116,7 +118,7 @@ func EncodeRestXMLPayloadResponse(w http.ResponseWriter, payloadRoot string, res
 
 	w.Header().Set("Content-Type", "application/xml")
 	if _, err := w.Write([]byte(xmlBuilder.String())); err != nil {
-		return err
+		return fmt.Errorf("write response: %w", err)
 	}
 
 	return nil
@@ -142,7 +144,7 @@ func EncodeQueryXMLResponse(w http.ResponseWriter, operationName string, respons
 
 	w.Header().Set("Content-Type", "application/xml")
 	if _, err := w.Write([]byte(xmlBuilder.String())); err != nil {
-		return err
+		return fmt.Errorf("write response: %w", err)
 	}
 	return nil
 }
@@ -186,6 +188,8 @@ func encodeValueToXML(builder *strings.Builder, v interface{}) {
 			builder.WriteString(escapeXML(item))
 			builder.WriteString("</member>")
 		}
+	case time.Time:
+		builder.WriteString(escapeXML(val.UTC().Format(time.RFC3339)))
 	default:
 		rv := reflect.ValueOf(v)
 		for rv.Kind() == reflect.Ptr {
@@ -348,6 +352,8 @@ func anyToString(v interface{}) string {
 	switch val := v.(type) {
 	case string:
 		return escapeXML(val)
+	case time.Time:
+		return escapeXML(val.UTC().Format(time.RFC3339))
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		return numberToString(val)
 	case bool:

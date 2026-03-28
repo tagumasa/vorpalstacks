@@ -32,10 +32,16 @@ func (r *TestRunner) RunRoute53Tests() []TestResult {
 
 	// Test 1: List Hosted Zones
 	results = append(results, r.RunTest("route53", "ListHostedZones", func() error {
-		_, err := client.ListHostedZones(ctx, &route53.ListHostedZonesInput{
+		resp, err := client.ListHostedZones(ctx, &route53.ListHostedZonesInput{
 			MaxItems: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.HostedZones == nil {
+			return fmt.Errorf("hosted zones list is nil")
+		}
+		return nil
 	}))
 
 	// Test 2: Create Hosted Zone
@@ -55,19 +61,31 @@ func (r *TestRunner) RunRoute53Tests() []TestResult {
 	// Test 3: Get Hosted Zone
 	if hostedZoneID != "" {
 		results = append(results, r.RunTest("route53", "GetHostedZone", func() error {
-			_, err := client.GetHostedZone(ctx, &route53.GetHostedZoneInput{
+			resp, err := client.GetHostedZone(ctx, &route53.GetHostedZoneInput{
 				Id: aws.String(hostedZoneID),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp.HostedZone == nil {
+				return fmt.Errorf("hosted zone is nil")
+			}
+			return nil
 		}))
 
 		// Test 4: List Resource Record Sets
 		results = append(results, r.RunTest("route53", "ListResourceRecordSets", func() error {
-			_, err := client.ListResourceRecordSets(ctx, &route53.ListResourceRecordSetsInput{
+			resp, err := client.ListResourceRecordSets(ctx, &route53.ListResourceRecordSetsInput{
 				HostedZoneId: aws.String(hostedZoneID),
 				MaxItems:     aws.Int32(10),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp.ResourceRecordSets == nil {
+				return fmt.Errorf("resource record sets list is nil")
+			}
+			return nil
 		}))
 
 		var changeID string
@@ -96,22 +114,34 @@ func (r *TestRunner) RunRoute53Tests() []TestResult {
 			if err == nil {
 				changeID = aws.ToString(resp.ChangeInfo.Id)
 			}
+			if resp == nil {
+				return fmt.Errorf("response is nil")
+			}
+			if resp.ChangeInfo == nil {
+				return fmt.Errorf("change info is nil")
+			}
 			return err
 		}))
 
 		// Test 6: Get Change (only if changeID was created)
 		if changeID != "" {
 			results = append(results, r.RunTest("route53", "GetChange", func() error {
-				_, err := client.GetChange(ctx, &route53.GetChangeInput{
+				resp, err := client.GetChange(ctx, &route53.GetChangeInput{
 					Id: aws.String(changeID),
 				})
-				return err
+				if err != nil {
+					return err
+				}
+				if resp.ChangeInfo == nil {
+					return fmt.Errorf("change info is nil")
+				}
+				return nil
 			}))
 		}
 
 		// Test 7: Delete Resource Record (cleanup before deleting hosted zone)
 		results = append(results, r.RunTest("route53", "DeleteResourceRecord", func() error {
-			_, err := client.ChangeResourceRecordSets(ctx, &route53.ChangeResourceRecordSetsInput{
+			resp, err := client.ChangeResourceRecordSets(ctx, &route53.ChangeResourceRecordSetsInput{
 				HostedZoneId: aws.String(hostedZoneID),
 				ChangeBatch: &types.ChangeBatch{
 					Changes: []types.Change{
@@ -127,32 +157,56 @@ func (r *TestRunner) RunRoute53Tests() []TestResult {
 					},
 				},
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp == nil {
+				return fmt.Errorf("response is nil")
+			}
+			return nil
 		}))
 
 		// Test 8: GetDNSSEC (before deleting hosted zone)
 		results = append(results, r.RunTest("route53", "GetDNSSEC", func() error {
-			_, err := client.GetDNSSEC(ctx, &route53.GetDNSSECInput{
+			resp, err := client.GetDNSSEC(ctx, &route53.GetDNSSECInput{
 				HostedZoneId: aws.String(hostedZoneID),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp == nil {
+				return fmt.Errorf("response is nil")
+			}
+			return nil
 		}))
 
 		// Test 9: Delete Hosted Zone
 		results = append(results, r.RunTest("route53", "DeleteHostedZone", func() error {
-			_, err := client.DeleteHostedZone(ctx, &route53.DeleteHostedZoneInput{
+			resp, err := client.DeleteHostedZone(ctx, &route53.DeleteHostedZoneInput{
 				Id: aws.String(hostedZoneID),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp == nil {
+				return fmt.Errorf("response is nil")
+			}
+			return nil
 		}))
 	}
 
 	// Test 10: ListReusableDelegationSets
 	results = append(results, r.RunTest("route53", "ListReusableDelegationSets", func() error {
-		_, err := client.ListReusableDelegationSets(ctx, &route53.ListReusableDelegationSetsInput{
+		resp, err := client.ListReusableDelegationSets(ctx, &route53.ListReusableDelegationSetsInput{
 			MaxItems: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DelegationSets != nil && len(resp.DelegationSets) != 0 {
+			return fmt.Errorf("expected no delegation sets, got %d", len(resp.DelegationSets))
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

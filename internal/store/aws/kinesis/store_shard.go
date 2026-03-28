@@ -47,7 +47,7 @@ func (s *KinesisStore) ListShards(streamName string, filter *ShardFilter, exclus
 		if skip {
 			var pbShard pb.Shard
 			if err := proto.Unmarshal(value, &pbShard); err != nil {
-				return err
+				return fmt.Errorf("unmarshal shard for skip check: %w", err)
 			}
 			if pbShard.ShardId == exclusiveStartShardID {
 				skip = false
@@ -57,7 +57,7 @@ func (s *KinesisStore) ListShards(streamName string, filter *ShardFilter, exclus
 
 		var pbShard pb.Shard
 		if err := proto.Unmarshal(value, &pbShard); err != nil {
-			return err
+			return fmt.Errorf("unmarshal shard: %w", err)
 		}
 		shard := ProtoToShard(&pbShard)
 		if filter == nil || s.shardMatchesFilter(shard, filter) {
@@ -71,7 +71,10 @@ func (s *KinesisStore) ListShards(streamName string, filter *ShardFilter, exclus
 	if errors.Is(err, errStopIteration) {
 		err = nil
 	}
-	return shards, err
+	if err != nil {
+		return shards, fmt.Errorf("scan shards prefix: %w", err)
+	}
+	return shards, nil
 }
 
 func (s *KinesisStore) listShardsInTxn(txn storage.Transaction, streamName string) ([]*Shard, error) {
@@ -83,7 +86,7 @@ func (s *KinesisStore) listShardsInTxn(txn storage.Transaction, streamName strin
 	for iter.Next() {
 		var pbShard pb.Shard
 		if err := proto.Unmarshal(iter.Value(), &pbShard); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unmarshal shard: %w", err)
 		}
 		shard := ProtoToShard(&pbShard)
 		if shard.SequenceNumberRange.EndingSequenceNumber == "" {
@@ -91,7 +94,7 @@ func (s *KinesisStore) listShardsInTxn(txn storage.Transaction, streamName strin
 		}
 	}
 	if err := iter.Error(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scan shards iterator: %w", err)
 	}
 	return shards, nil
 }
@@ -118,14 +121,14 @@ func (s *KinesisStore) getShardInTxn(txn storage.Transaction, streamName, shardI
 	key := []byte(fmt.Sprintf("%s#%s", streamName, shardID))
 	data, err := bucket.Get(key)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get shard from bucket: %w", err)
 	}
 	if data == nil {
 		return nil, ErrShardNotFound
 	}
 	var pbShard pb.Shard
 	if err := proto.Unmarshal(data, &pbShard); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal shard data: %w", err)
 	}
 	return ProtoToShard(&pbShard), nil
 }
@@ -135,7 +138,7 @@ func (s *KinesisStore) putShardInTxn(txn storage.Transaction, shard *Shard) erro
 	key := []byte(fmt.Sprintf("%s#%s", shard.StreamName, shard.ShardID))
 	data, err := proto.Marshal(ShardToProto(shard))
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal shard: %w", err)
 	}
 	return bucket.Put(key, data)
 }
@@ -156,7 +159,7 @@ func (s *KinesisStore) splitShardInternal(streamName, shardID, newStartingHashKe
 func (s *KinesisStore) splitShardInTxn(txn storage.Transaction, streamName, shardID, newStartingHashKey string) error {
 	shard, err := s.getShardInTxn(txn, streamName, shardID)
 	if err != nil {
-		return err
+		return fmt.Errorf("get existing shard: %w", err)
 	}
 
 	if shard.SequenceNumberRange.EndingSequenceNumber != "" {
@@ -168,7 +171,7 @@ func (s *KinesisStore) splitShardInTxn(txn storage.Transaction, streamName, shar
 		shard.SequenceNumberRange.EndingSequenceNumber = shard.SequenceNumberRange.StartingSequenceNumber
 	}
 	if err := s.putShardInTxn(txn, shard); err != nil {
-		return err
+		return fmt.Errorf("put closed shard: %w", err)
 	}
 
 	startHash, ok := new(big.Int).SetString(shard.HashKeyRange.StartingHashKey, 10)
@@ -208,15 +211,15 @@ func (s *KinesisStore) splitShardInTxn(txn storage.Transaction, streamName, shar
 	}
 
 	if err := s.putShardInTxn(txn, newShard1); err != nil {
-		return err
+		return fmt.Errorf("put new shard 1: %w", err)
 	}
 	if err := s.putShardInTxn(txn, newShard2); err != nil {
-		return err
+		return fmt.Errorf("put new shard 2: %w", err)
 	}
 
 	stream, err := s.getStreamInTxn(txn, streamName)
 	if err != nil {
-		return err
+		return fmt.Errorf("get stream for split: %w", err)
 	}
 	stream.ShardCount++
 	return s.updateStreamInTxn(txn, stream)
@@ -238,11 +241,11 @@ func (s *KinesisStore) mergeShardsInternal(streamName, shardID1, shardID2 string
 func (s *KinesisStore) mergeShardsInTxn(txn storage.Transaction, streamName, shardID1, shardID2 string) error {
 	shard1, err := s.getShardInTxn(txn, streamName, shardID1)
 	if err != nil {
-		return err
+		return fmt.Errorf("get shard 1: %w", err)
 	}
 	shard2, err := s.getShardInTxn(txn, streamName, shardID2)
 	if err != nil {
-		return err
+		return fmt.Errorf("get shard 2: %w", err)
 	}
 
 	if !s.areAdjacentShards(shard1, shard2) {
@@ -258,10 +261,10 @@ func (s *KinesisStore) mergeShardsInTxn(txn storage.Transaction, streamName, sha
 		shard2.SequenceNumberRange.EndingSequenceNumber = shard2.SequenceNumberRange.StartingSequenceNumber
 	}
 	if err := s.putShardInTxn(txn, shard1); err != nil {
-		return err
+		return fmt.Errorf("put closed shard 1: %w", err)
 	}
 	if err := s.putShardInTxn(txn, shard2); err != nil {
-		return err
+		return fmt.Errorf("put closed shard 2: %w", err)
 	}
 
 	start1, ok1 := new(big.Int).SetString(shard1.HashKeyRange.StartingHashKey, 10)
@@ -286,12 +289,12 @@ func (s *KinesisStore) mergeShardsInTxn(txn storage.Transaction, streamName, sha
 	}
 
 	if err := s.putShardInTxn(txn, newShard); err != nil {
-		return err
+		return fmt.Errorf("put merged shard: %w", err)
 	}
 
 	stream, err := s.getStreamInTxn(txn, streamName)
 	if err != nil {
-		return err
+		return fmt.Errorf("get stream for merge: %w", err)
 	}
 	stream.ShardCount--
 	return s.updateStreamInTxn(txn, stream)
@@ -331,7 +334,7 @@ func (s *KinesisStore) UpdateShardCount(streamName string, targetCount int32) er
 func (s *KinesisStore) updateShardCountInTxn(txn storage.Transaction, streamName string, targetCount int32) error {
 	stream, err := s.getStreamInTxn(txn, streamName)
 	if err != nil {
-		return err
+		return fmt.Errorf("get stream: %w", err)
 	}
 
 	if stream.StreamModeDetails != nil && stream.StreamModeDetails.StreamMode == StreamModeOnDemand {
@@ -340,7 +343,7 @@ func (s *KinesisStore) updateShardCountInTxn(txn storage.Transaction, streamName
 
 	currentShards, err := s.listShardsInTxn(txn, streamName)
 	if err != nil {
-		return err
+		return fmt.Errorf("list current shards: %w", err)
 	}
 
 	var activeShards []*Shard
@@ -368,7 +371,7 @@ func (s *KinesisStore) updateShardCountInTxn(txn storage.Transaction, streamName
 		for i := 0; i < int(splitsNeeded); i++ {
 			refreshedShards, err := s.listShardsInTxn(txn, streamName)
 			if err != nil {
-				return err
+				return fmt.Errorf("list shards for split: %w", err)
 			}
 			var splitCandidates []*Shard
 			for _, shard := range refreshedShards {
@@ -381,7 +384,7 @@ func (s *KinesisStore) updateShardCountInTxn(txn storage.Transaction, streamName
 			}
 			shardToSplit := splitCandidates[i%len(splitCandidates)]
 			if err := s.splitShardInTxn(txn, streamName, shardToSplit.ShardID, ""); err != nil {
-				return err
+				return fmt.Errorf("split shard: %w", err)
 			}
 		}
 	} else {
@@ -389,7 +392,7 @@ func (s *KinesisStore) updateShardCountInTxn(txn storage.Transaction, streamName
 		for i := 0; i < int(mergesNeeded); i++ {
 			refreshedShards, err := s.listShardsInTxn(txn, streamName)
 			if err != nil {
-				return err
+				return fmt.Errorf("list shards for merge: %w", err)
 			}
 			var mergeCandidates []*Shard
 			for _, shard := range refreshedShards {
@@ -407,7 +410,7 @@ func (s *KinesisStore) updateShardCountInTxn(txn storage.Transaction, streamName
 			for j := 0; j < len(mergeCandidates)-1; j++ {
 				if s.areAdjacentShards(mergeCandidates[j], mergeCandidates[j+1]) {
 					if err := s.mergeShardsInTxn(txn, streamName, mergeCandidates[j].ShardID, mergeCandidates[j+1].ShardID); err != nil {
-						return err
+						return fmt.Errorf("merge adjacent shards: %w", err)
 					}
 					merged = true
 					break
@@ -421,7 +424,7 @@ func (s *KinesisStore) updateShardCountInTxn(txn storage.Transaction, streamName
 
 	finalShards, err := s.listShardsInTxn(txn, streamName)
 	if err != nil {
-		return err
+		return fmt.Errorf("list final shards: %w", err)
 	}
 	stream.ShardCount = int32(len(finalShards))
 	return s.updateStreamInTxn(txn, stream)

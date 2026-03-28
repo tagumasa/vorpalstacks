@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"vorpalstacks/internal/utils/naming"
 )
 
 // HybridBlobStore implements a hybrid blob storage strategy that stores small objects
@@ -119,8 +120,13 @@ func (s *HybridBlobStore) putLargeObject(bucket, key string, data []byte, meta *
 	if err := os.MkdirAll(dir, 0755); err != nil { // #nosec G301
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0644); err != nil { // #nosec G306
-		return fmt.Errorf("failed to write file: %w", err)
+	tmpPath := path + ".tmp." + uuid.New().String()
+	if err := os.WriteFile(tmpPath, data, 0644); err != nil { // #nosec G306
+		return fmt.Errorf("failed to write temp file: %w", err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("failed to rename temp file: %w", err)
 	}
 
 	metaBytes, err := json.Marshal(meta)
@@ -158,25 +164,30 @@ func (s *HybridBlobStore) Get(ctx context.Context, bucket, key string) (BlobRead
 
 	path := s.filePath(bucket, key)
 	// #nosec G304
-	fileData, err := os.ReadFile(path)
+	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil, fmt.Errorf("object not found: %s/%s", bucket, key)
 		}
-		return nil, nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, nil, fmt.Errorf("failed to open file: %w", err)
+	}
+
+	info, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, nil, fmt.Errorf("failed to stat file: %w", err)
 	}
 
 	meta, err := s.getMetadata(storageKey)
 	if err != nil {
 		meta = &BlobMetadata{
 			Key:          key,
-			Size:         int64(len(fileData)),
-			ETag:         s.calculateETag(fileData),
-			LastModified: time.Now().UTC(),
+			Size:         info.Size(),
+			LastModified: info.ModTime().UTC(),
 		}
 	}
 
-	return newMemoryReader(fileData, meta), meta, nil
+	return newFileReader(f, info.Size(), meta), meta, nil
 }
 
 func (s *HybridBlobStore) getMetadata(storageKey string) (*BlobMetadata, error) {
@@ -205,24 +216,74 @@ func (s *HybridBlobStore) getMetadata(storageKey string) (*BlobMetadata, error) 
 //   - *BlobMetadata: The object metadata
 //   - error: An error if the object is not found or the operation fails
 func (s *HybridBlobStore) GetRange(ctx context.Context, bucket, key string, offset, length int64) (BlobReader, *BlobMetadata, error) {
-	reader, meta, err := s.Get(ctx, bucket, key)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer reader.Close()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	mr := reader.(*memoryReader)
+	storageKey := s.storageKey(bucket, key)
+
+	data, err := s.storage.Bucket("blob_small").Get([]byte(storageKey))
+	if err == nil && data != nil {
+		var obj smallObject
+		if err := json.Unmarshal(data, &obj); err == nil {
+			start := offset
+			if start < 0 {
+				start = 0
+			}
+			if start > int64(len(obj.Data)) {
+				start = int64(len(obj.Data))
+			}
+			end := start + length
+			if end > int64(len(obj.Data)) {
+				end = int64(len(obj.Data))
+			}
+			if end < start {
+				end = start
+			}
+			return newMemoryReader(obj.Data[start:end], obj.Metadata), obj.Metadata, nil
+		}
+	}
+
+	path := s.filePath(bucket, key)
+	// #nosec G304
+	f, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil, fmt.Errorf("object not found: %s/%s", bucket, key)
+		}
+		return nil, nil, fmt.Errorf("failed to open file: %w", err)
+	}
+
+	info, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, nil, fmt.Errorf("failed to stat file: %w", err)
+	}
+
 	start := offset
 	if start < 0 {
 		start = 0
 	}
+	if start > info.Size() {
+		start = info.Size()
+	}
 	end := start + length
-	if end > int64(len(mr.data)) {
-		end = int64(len(mr.data))
+	if end > info.Size() {
+		end = info.Size()
+	}
+	if end < start {
+		end = start
 	}
 
-	rangedData := mr.data[start:end]
-	return newMemoryReader(rangedData, meta), meta, nil
+	meta, err := s.getMetadata(storageKey)
+	if err != nil {
+		meta = &BlobMetadata{
+			Key:          key,
+			Size:         info.Size(),
+			LastModified: info.ModTime().UTC(),
+		}
+	}
+
+	return newSectionFileReader(f, start, end-start, meta), meta, nil
 }
 
 // GetRangeWithVersion retrieves a range of bytes from a specific version of an object.
@@ -240,24 +301,74 @@ func (s *HybridBlobStore) GetRange(ctx context.Context, bucket, key string, offs
 //   - *BlobMetadata: The object metadata
 //   - error: An error if the object is not found or the operation fails
 func (s *HybridBlobStore) GetRangeWithVersion(ctx context.Context, bucket, key, versionId string, offset, length int64) (BlobReader, *BlobMetadata, error) {
-	reader, meta, err := s.GetWithVersion(ctx, bucket, key, versionId)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer reader.Close()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	mr := reader.(*memoryReader)
+	storageKey := s.storageKeyWithVersion(bucket, key, versionId)
+
+	data, err := s.storage.Bucket("blob_small").Get([]byte(storageKey))
+	if err == nil && data != nil {
+		var obj smallObject
+		if err := json.Unmarshal(data, &obj); err == nil {
+			start := offset
+			if start < 0 {
+				start = 0
+			}
+			if start > int64(len(obj.Data)) {
+				start = int64(len(obj.Data))
+			}
+			end := start + length
+			if end > int64(len(obj.Data)) {
+				end = int64(len(obj.Data))
+			}
+			if end < start {
+				end = start
+			}
+			return newMemoryReader(obj.Data[start:end], obj.Metadata), obj.Metadata, nil
+		}
+	}
+
+	path := s.filePathWithVersion(bucket, key, versionId)
+	// #nosec G304
+	f, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil, fmt.Errorf("object not found: %s/%s (version %s)", bucket, key, versionId)
+		}
+		return nil, nil, fmt.Errorf("failed to open file: %w", err)
+	}
+
+	info, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, nil, fmt.Errorf("failed to stat file: %w", err)
+	}
+
 	start := offset
 	if start < 0 {
 		start = 0
 	}
+	if start > info.Size() {
+		start = info.Size()
+	}
 	end := start + length
-	if end > int64(len(mr.data)) {
-		end = int64(len(mr.data))
+	if end > info.Size() {
+		end = info.Size()
+	}
+	if end < start {
+		end = start
 	}
 
-	rangedData := mr.data[start:end]
-	return newMemoryReader(rangedData, meta), meta, nil
+	meta, err := s.getMetadata(storageKey)
+	if err != nil {
+		meta = &BlobMetadata{
+			Key:          key,
+			Size:         info.Size(),
+			LastModified: info.ModTime().UTC(),
+		}
+	}
+
+	return newSectionFileReader(f, start, end-start, meta), meta, nil
 }
 
 // Delete removes an object from the hybrid blob store.
@@ -378,25 +489,31 @@ func (s *HybridBlobStore) GetWithVersion(ctx context.Context, bucket, key, versi
 	}
 
 	path := s.filePathWithVersion(bucket, key, versionId)
-	fileData, err := os.ReadFile(path)
+	// #nosec G304
+	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil, fmt.Errorf("object not found: %s/%s (version %s)", bucket, key, versionId)
 		}
-		return nil, nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, nil, fmt.Errorf("failed to open file: %w", err)
+	}
+
+	info, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, nil, fmt.Errorf("failed to stat file: %w", err)
 	}
 
 	meta, err := s.getMetadata(storageKey)
 	if err != nil {
 		meta = &BlobMetadata{
 			Key:          key,
-			Size:         int64(len(fileData)),
-			ETag:         s.calculateETag(fileData),
-			LastModified: time.Now().UTC(),
+			Size:         info.Size(),
+			LastModified: info.ModTime().UTC(),
 		}
 	}
 
-	return newMemoryReader(fileData, meta), meta, nil
+	return newFileReader(f, info.Size(), meta), meta, nil
 }
 
 // DeleteWithVersion removes a specific version of an object.
@@ -676,7 +793,11 @@ func (s *HybridBlobStore) CreateBucket(ctx context.Context, name string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return os.MkdirAll(filepath.Join(s.dataDir, "blobs", name), 0755) // #nosec G301
+	bucketDir := filepath.Join(s.dataDir, "blobs", name)
+	if _, err := naming.ValidatePathWithinDir(filepath.Join(s.dataDir, "blobs"), name); err != nil {
+		return fmt.Errorf("invalid bucket name: %w", err)
+	}
+	return os.MkdirAll(bucketDir, 0755) // #nosec G301
 }
 
 // DeleteBucket deletes a bucket from the hybrid blob store.
@@ -691,7 +812,11 @@ func (s *HybridBlobStore) DeleteBucket(ctx context.Context, name string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return os.RemoveAll(filepath.Join(s.dataDir, "blobs", name))
+	bucketDir := filepath.Join(s.dataDir, "blobs", name)
+	if _, err := naming.ValidatePathWithinDir(filepath.Join(s.dataDir, "blobs"), name); err != nil {
+		return fmt.Errorf("invalid bucket name: %w", err)
+	}
+	return os.RemoveAll(bucketDir)
 }
 
 func (s *HybridBlobStore) storageKey(bucket, key string) string {
@@ -765,11 +890,44 @@ func newMemoryReader(data []byte, meta *BlobMetadata) *memoryReader {
 	}
 }
 
-// Size returns the size of the stored data in bytes.
 func (r *memoryReader) Size() int64 { return int64(len(r.data)) }
 
-// ETag returns the ETag of the stored data.
 func (r *memoryReader) ETag() string { return r.meta.ETag }
 
-// Close closes the memory reader. This is a no-op since the data is held in memory.
 func (r *memoryReader) Close() error { return nil }
+
+type fileReader struct {
+	io.ReadCloser
+	size int64
+	meta *BlobMetadata
+}
+
+func newFileReader(rc io.ReadCloser, size int64, meta *BlobMetadata) *fileReader {
+	return &fileReader{ReadCloser: rc, size: size, meta: meta}
+}
+
+func (r *fileReader) Size() int64 { return r.size }
+
+func (r *fileReader) ETag() string { return r.meta.ETag }
+
+type sectionFileReader struct {
+	*io.SectionReader
+	file *os.File
+	meta *BlobMetadata
+}
+
+func newSectionFileReader(f *os.File, offset, length int64, meta *BlobMetadata) *sectionFileReader {
+	return &sectionFileReader{
+		SectionReader: io.NewSectionReader(f, offset, length),
+		file:          f,
+		meta:          meta,
+	}
+}
+
+func (r *sectionFileReader) Size() int64 { return r.SectionReader.Size() }
+
+func (r *sectionFileReader) ETag() string { return r.meta.ETag }
+
+func (r *sectionFileReader) Close() error {
+	return r.file.Close()
+}

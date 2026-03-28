@@ -32,10 +32,16 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 
 	// Test 1: List Distributions (empty)
 	results = append(results, r.RunTest("cloudfront", "ListDistributions", func() error {
-		_, err := client.ListDistributions(ctx, &cloudfront.ListDistributionsInput{
+		resp, err := client.ListDistributions(ctx, &cloudfront.ListDistributionsInput{
 			MaxItems: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DistributionList == nil {
+			return fmt.Errorf("distribution list is nil")
+		}
+		return nil
 	}))
 
 	// Test 2: Create Distribution
@@ -120,18 +126,30 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 	// Test 3: Get Distribution
 	if distID != "" {
 		results = append(results, r.RunTest("cloudfront", "GetDistribution", func() error {
-			_, err := client.GetDistribution(ctx, &cloudfront.GetDistributionInput{
+			resp, err := client.GetDistribution(ctx, &cloudfront.GetDistributionInput{
 				Id: aws.String(distID),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp.Distribution == nil {
+				return fmt.Errorf("distribution is nil")
+			}
+			return nil
 		}))
 
 		// Test 4: Get Distribution Config
 		results = append(results, r.RunTest("cloudfront", "GetDistributionConfig", func() error {
-			_, err := client.GetDistributionConfig(ctx, &cloudfront.GetDistributionConfigInput{
+			resp, err := client.GetDistributionConfig(ctx, &cloudfront.GetDistributionConfigInput{
 				Id: aws.String(distID),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp.DistributionConfig == nil {
+				return fmt.Errorf("distribution config is nil")
+			}
+			return nil
 		}))
 
 		// Test 5: List Distributions (should contain the created one)
@@ -172,11 +190,17 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 		// Test 7: Delete Distribution
 		if updateETag != "" {
 			results = append(results, r.RunTest("cloudfront", "DeleteDistribution", func() error {
-				_, err := client.DeleteDistribution(ctx, &cloudfront.DeleteDistributionInput{
+				resp, err := client.DeleteDistribution(ctx, &cloudfront.DeleteDistributionInput{
 					Id:      aws.String(distID),
 					IfMatch: aws.String(updateETag),
 				})
-				return err
+				if err != nil {
+					return err
+				}
+				if resp == nil {
+					return fmt.Errorf("response is nil")
+				}
+				return nil
 			}))
 		}
 
@@ -194,18 +218,30 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 
 	// Test 9: List Distributions By WebACLId
 	results = append(results, r.RunTest("cloudfront", "ListDistributionsByWebACLId", func() error {
-		_, err := client.ListDistributionsByWebACLId(ctx, &cloudfront.ListDistributionsByWebACLIdInput{
+		resp, err := client.ListDistributionsByWebACLId(ctx, &cloudfront.ListDistributionsByWebACLIdInput{
 			WebACLId: aws.String("12345678-1234-1234-1234-123456789012"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DistributionList == nil {
+			return fmt.Errorf("distribution list is nil")
+		}
+		return nil
 	}))
 
 	// Test 10: List Origin Access Controls
 	results = append(results, r.RunTest("cloudfront", "ListOriginAccessControls", func() error {
-		_, err := client.ListOriginAccessControls(ctx, &cloudfront.ListOriginAccessControlsInput{
+		resp, err := client.ListOriginAccessControls(ctx, &cloudfront.ListOriginAccessControlsInput{
 			MaxItems: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.OriginAccessControlList == nil {
+			return fmt.Errorf("OAC list is nil")
+		}
+		return nil
 	}))
 
 	// Test 11: Create Origin Access Control
@@ -229,59 +265,101 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 	// Test 12: Get Origin Access Control
 	if oacID != "" {
 		results = append(results, r.RunTest("cloudfront", "GetOriginAccessControl", func() error {
-			_, err := client.GetOriginAccessControl(ctx, &cloudfront.GetOriginAccessControlInput{
+			resp, err := client.GetOriginAccessControl(ctx, &cloudfront.GetOriginAccessControlInput{
 				Id: aws.String(oacID),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp.OriginAccessControl == nil {
+				return fmt.Errorf("OAC is nil")
+			}
+			return nil
 		}))
 
 		// Test 13: Delete Origin Access Control
 		results = append(results, r.RunTest("cloudfront", "DeleteOriginAccessControl", func() error {
-			_, err := client.DeleteOriginAccessControl(ctx, &cloudfront.DeleteOriginAccessControlInput{
+			resp, err := client.DeleteOriginAccessControl(ctx, &cloudfront.DeleteOriginAccessControlInput{
 				Id: aws.String(oacID),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp == nil {
+				return fmt.Errorf("response is nil")
+			}
+			return nil
 		}))
 	}
 
 	// Test 14: List Key Groups
 	results = append(results, r.RunTest("cloudfront", "ListKeyGroups", func() error {
-		_, err := client.ListKeyGroups(ctx, &cloudfront.ListKeyGroupsInput{
+		resp, err := client.ListKeyGroups(ctx, &cloudfront.ListKeyGroupsInput{
 			MaxItems: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.KeyGroupList == nil {
+			return fmt.Errorf("key group list is nil")
+		}
+		return nil
 	}))
 
 	// Test 15: List Cache Policies
 	results = append(results, r.RunTest("cloudfront", "ListCachePolicies", func() error {
-		_, err := client.ListCachePolicies(ctx, &cloudfront.ListCachePoliciesInput{
+		resp, err := client.ListCachePolicies(ctx, &cloudfront.ListCachePoliciesInput{
 			MaxItems: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CachePolicyList == nil {
+			return fmt.Errorf("cache policy list is nil")
+		}
+		return nil
 	}))
 
 	// Test 16: Get Cache Policy
 	results = append(results, r.RunTest("cloudfront", "GetCachePolicy", func() error {
-		_, err := client.GetCachePolicy(ctx, &cloudfront.GetCachePolicyInput{
+		resp, err := client.GetCachePolicy(ctx, &cloudfront.GetCachePolicyInput{
 			Id: aws.String("658327ea-f89d-4fab-a63d-7e88639e58f6"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CachePolicy == nil {
+			return fmt.Errorf("cache policy is nil")
+		}
+		return nil
 	}))
 
 	// Test 17: List Origin Request Policies
 	results = append(results, r.RunTest("cloudfront", "ListOriginRequestPolicies", func() error {
-		_, err := client.ListOriginRequestPolicies(ctx, &cloudfront.ListOriginRequestPoliciesInput{
+		resp, err := client.ListOriginRequestPolicies(ctx, &cloudfront.ListOriginRequestPoliciesInput{
 			MaxItems: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.OriginRequestPolicyList == nil {
+			return fmt.Errorf("origin request policy list is nil")
+		}
+		return nil
 	}))
 
 	// Test 18: List Response Headers Policies
 	results = append(results, r.RunTest("cloudfront", "ListResponseHeadersPolicies", func() error {
-		_, err := client.ListResponseHeadersPolicies(ctx, &cloudfront.ListResponseHeadersPoliciesInput{
+		resp, err := client.ListResponseHeadersPolicies(ctx, &cloudfront.ListResponseHeadersPoliciesInput{
 			MaxItems: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ResponseHeadersPolicyList == nil {
+			return fmt.Errorf("response headers policy list is nil")
+		}
+		return nil
 	}))
 
 	return results

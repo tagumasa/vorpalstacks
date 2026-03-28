@@ -134,27 +134,45 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	results = append(results, r.RunTest("lambda", "UpdateFunctionCode", func() error {
 		newCode := []byte("exports.handler = async (event) => { return { statusCode: 200, body: 'Updated' }; };")
-		_, err := client.UpdateFunctionCode(ctx, &lambda.UpdateFunctionCodeInput{
+		resp, err := client.UpdateFunctionCode(ctx, &lambda.UpdateFunctionCodeInput{
 			FunctionName: aws.String(functionName),
 			ZipFile:      newCode,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.LastModified == nil {
+			return fmt.Errorf("LastModified is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "UpdateFunctionConfiguration", func() error {
 		description := "Updated function"
-		_, err := client.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
+		resp, err := client.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
 			FunctionName: aws.String(functionName),
 			Description:  aws.String(description),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "PublishVersion", func() error {
-		_, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+		resp, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
 			FunctionName: aws.String(functionName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Version == nil {
+			return fmt.Errorf("Version is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "ListVersionsByFunction", func() error {
@@ -171,12 +189,18 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("lambda", "CreateAlias", func() error {
-		_, err := client.CreateAlias(ctx, &lambda.CreateAliasInput{
+		resp, err := client.CreateAlias(ctx, &lambda.CreateAliasInput{
 			FunctionName:    aws.String(functionName),
 			Name:            aws.String("live"),
 			FunctionVersion: aws.String("$LATEST"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.AliasArn == nil {
+			return fmt.Errorf("AliasArn is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "GetAlias", func() error {
@@ -194,12 +218,18 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("lambda", "UpdateAlias", func() error {
-		_, err := client.UpdateAlias(ctx, &lambda.UpdateAliasInput{
+		resp, err := client.UpdateAlias(ctx, &lambda.UpdateAliasInput{
 			FunctionName: aws.String(functionName),
 			Name:         aws.String("live"),
 			Description:  aws.String("Production alias"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "ListAliases", func() error {
@@ -229,11 +259,17 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("lambda", "PutFunctionConcurrency", func() error {
-		_, err := client.PutFunctionConcurrency(ctx, &lambda.PutFunctionConcurrencyInput{
+		resp, err := client.PutFunctionConcurrency(ctx, &lambda.PutFunctionConcurrencyInput{
 			FunctionName:                 aws.String(functionName),
 			ReservedConcurrentExecutions: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "GetFunctionConcurrency", func() error {
@@ -250,21 +286,33 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("lambda", "DeleteFunctionConcurrency", func() error {
-		_, err := client.DeleteFunctionConcurrency(ctx, &lambda.DeleteFunctionConcurrencyInput{
+		resp, err := client.DeleteFunctionConcurrency(ctx, &lambda.DeleteFunctionConcurrencyInput{
 			FunctionName: aws.String(functionName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "AddPermission", func() error {
 		statementID := fmt.Sprintf("stmt-%d", time.Now().UnixNano())
-		_, err := client.AddPermission(ctx, &lambda.AddPermissionInput{
+		resp, err := client.AddPermission(ctx, &lambda.AddPermissionInput{
 			FunctionName: aws.String(functionName),
 			StatementId:  aws.String(statementID),
 			Action:       aws.String("lambda:InvokeFunction"),
 			Principal:    aws.String("apigateway.amazonaws.com"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("AddPermission response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "GetPolicy", func() error {
@@ -300,14 +348,20 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	results = append(results, r.RunTest("lambda", "TagResource", func() error {
 		functionARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", r.region, functionName)
-		_, err := client.TagResource(ctx, &lambda.TagResourceInput{
+		resp, err := client.TagResource(ctx, &lambda.TagResourceInput{
 			Resource: aws.String(functionARN),
 			Tags: map[string]string{
 				"Environment": "test",
 				"Project":     "sdk-tests",
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "ListTags", func() error {
@@ -326,19 +380,31 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	results = append(results, r.RunTest("lambda", "UntagResource", func() error {
 		functionARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", r.region, functionName)
-		_, err := client.UntagResource(ctx, &lambda.UntagResourceInput{
+		resp, err := client.UntagResource(ctx, &lambda.UntagResourceInput{
 			Resource: aws.String(functionARN),
 			TagKeys:  []string{"Environment"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "DeleteAlias", func() error {
-		_, err := client.DeleteAlias(ctx, &lambda.DeleteAliasInput{
+		resp, err := client.DeleteAlias(ctx, &lambda.DeleteAliasInput{
 			FunctionName: aws.String(functionName),
 			Name:         aws.String("live"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("lambda", "GetAccountSettings", func() error {
@@ -353,10 +419,16 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("lambda", "DeleteFunction", func() error {
-		_, err := client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
+		resp, err := client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
 			FunctionName: aws.String(functionName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

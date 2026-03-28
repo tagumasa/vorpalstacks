@@ -102,6 +102,9 @@ func (s *StepFunctionService) Shutdown() {
 		return true
 	})
 	s.asyncWg.Wait()
+	mapRunsMu.Lock()
+	mapRuns = make(map[string][]map[string]interface{})
+	mapRunsMu.Unlock()
 }
 
 // RegisterHandlers registers the Step Functions service handlers with the dispatcher.

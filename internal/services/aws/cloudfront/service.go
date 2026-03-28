@@ -127,6 +127,7 @@ func (s *CloudFrontService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("cloudfront", "GetDistribution", s.GetDistribution)
 	d.RegisterHandlerForService("cloudfront", "GetDistributionConfig", s.GetDistributionConfig)
 	d.RegisterHandlerForService("cloudfront", "ListDistributions", s.ListDistributions)
+	d.RegisterHandlerForService("cloudfront", "ListDistributionsByWebACLId", s.ListDistributionsByWebACLId)
 	d.RegisterHandlerForService("cloudfront", "UpdateDistribution", s.UpdateDistribution)
 	d.RegisterHandlerForService("cloudfront", "DeleteDistribution", s.DeleteDistribution)
 

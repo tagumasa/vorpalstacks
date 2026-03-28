@@ -11,6 +11,9 @@ type CognitoStoreInterface interface {
 	TokenOperations
 	ChallengeOperations
 	TagOperations
+	DomainOperations
+	ResourceServerOperations
+	IdentityProviderOperations
 	Raw() *CognitoStore
 }
 
@@ -96,4 +99,23 @@ type TagOperations interface {
 // Raw returns the underlying Cognito store.
 func (s *CognitoStore) Raw() *CognitoStore {
 	return s
+}
+
+// DomainOperations defines operations for managing user pool domains.
+type DomainOperations interface {
+	SetUserPoolDomain(domain string, entry *UserPoolDomain) error
+	GetUserPoolDomain(domain string) (*UserPoolDomain, error)
+	DeleteUserPoolDomain(domain string) error
+}
+
+// ResourceServerOperations defines operations for managing resource servers.
+type ResourceServerOperations interface {
+	CreateResourceServer(rs *ResourceServer) error
+	ListResourceServers(userPoolID string) ([]*ResourceServer, error)
+}
+
+// IdentityProviderOperations defines operations for managing identity providers.
+type IdentityProviderOperations interface {
+	CreateIdentityProvider(ip *IdentityProvider) error
+	ListIdentityProviders(userPoolID string) ([]*IdentityProvider, error)
 }

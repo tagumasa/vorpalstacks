@@ -356,3 +356,59 @@ func (s *EventsService) DisableRule(ctx context.Context, reqCtx *request.Request
 
 	return response.EmptyResponse(), nil
 }
+
+// ListRuleNamesByTarget returns the list of rules that have the specified target.
+func (s *EventsService) ListRuleNamesByTarget(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	targetArn := request.GetStringParam(req.Parameters, "TargetArn")
+	if targetArn == "" {
+		return nil, NewValidationException("TargetArn is required")
+	}
+
+	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
+	if eventBusName == "" {
+		eventBusName = "default"
+	}
+	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
+	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
+
+	if limit == 0 {
+		limit = 100
+	}
+	if limit < 1 || limit > 100 {
+		return nil, NewValidationException("Limit must be between 1 and 100")
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	rulesResult, err := store.ListRules(ctx, eventBusName, "", limit, nextToken)
+	if err != nil {
+		return nil, err
+	}
+
+	ruleNames := make([]string, 0)
+	for _, rule := range rulesResult.Rules {
+		targets, err := store.ListTargetsByRule(ctx, eventBusName, rule.Name, 100, "")
+		if err != nil {
+			continue
+		}
+		for _, t := range targets.Targets {
+			if t.ARN == targetArn {
+				ruleNames = append(ruleNames, rule.Name)
+				break
+			}
+		}
+	}
+
+	response := map[string]interface{}{
+		"RuleNames": ruleNames,
+	}
+
+	if rulesResult.NextToken != "" {
+		response["NextToken"] = rulesResult.NextToken
+	}
+
+	return response, nil
+}

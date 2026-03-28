@@ -4,6 +4,7 @@ package s3
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -108,7 +109,9 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case *SelectObjectContentOutput:
 		if v.Payload != nil {
 			defer v.Payload.Close()
-			_, _ = io.Copy(w, v.Payload)
+			if _, err := io.Copy(w, v.Payload); err != nil {
+				log.Printf("S3: failed to stream SelectObjectContent payload: %v", err)
+			}
 		}
 		return
 	case *GetObjectOutput:
@@ -125,7 +128,9 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if v.Body != nil {
 			defer v.Body.Close()
-			_, _ = io.Copy(w, v.Body)
+			if _, err := io.Copy(w, v.Body); err != nil {
+				log.Printf("S3: failed to stream GetObject body: %v", err)
+			}
 		}
 		return
 	case *HeadObjectOutput:
@@ -195,6 +200,14 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.WriteHeader(statusCode)
 		}
+	case *CreateBucketOutput:
+		w.Header().Set("Location", v.Location)
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(statusCode)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><CreateBucketResult><Location>` + v.Location + `</Location></CreateBucketResult>`))
+	case *HeadBucketOutput:
+		w.Header().Set("x-amz-bucket-region", v.BucketRegion)
+		w.WriteHeader(statusCode)
 	case nil:
 		w.WriteHeader(statusCode)
 	default:

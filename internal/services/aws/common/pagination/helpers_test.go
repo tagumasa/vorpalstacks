@@ -59,7 +59,7 @@ func TestGetMaxItems(t *testing.T) {
 			name:       "large MaxItems",
 			params:     map[string]interface{}{"MaxItems": 10000},
 			defaultVal: 100,
-			expected:   10000,
+			expected:   1000,
 		},
 	}
 

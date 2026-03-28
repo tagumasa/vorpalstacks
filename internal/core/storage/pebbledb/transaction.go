@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cockroachdb/pebble/v2"
 )
@@ -171,4 +172,116 @@ func (t *Txn) Close() error {
 		return t.batch.Close()
 	}
 	return nil
+}
+
+// TxnLazyIterator provides lazy iteration over a transaction range.
+type TxnLazyIterator struct {
+	iter      *pebble.Iterator
+	encryptor Encryptor
+	ttlOpts   *TTLOptions
+	key       []byte
+	value     []byte
+	err       error
+	closed    bool
+	first     bool
+}
+
+// NewTxnLazyIterator creates a lazy iterator for the transaction.
+func (t *Txn) NewTxnLazyIterator(start, end []byte) *TxnLazyIterator {
+	if t.closed {
+		return &TxnLazyIterator{err: ErrTxnClosed}
+	}
+
+	iter, err := t.NewIter(&pebble.IterOptions{
+		LowerBound: start,
+		UpperBound: end,
+	})
+	if err != nil {
+		return &TxnLazyIterator{err: err}
+	}
+
+	var ttlOpts *TTLOptions
+	if t.db.opts.TTL.Enabled {
+		ttlOpts = &t.db.opts.TTL
+	}
+
+	li := &TxnLazyIterator{
+		iter:      iter,
+		encryptor: t.db.encryptor,
+		ttlOpts:   ttlOpts,
+	}
+	li.first = true
+	return li
+}
+
+func (li *TxnLazyIterator) advance() {
+	for li.iter.Valid() {
+		key := li.iter.Key()
+		val, err := li.iter.ValueAndErr()
+		if err != nil {
+			li.err = err
+			return
+		}
+
+		decrypted, err := li.encryptor.Decrypt(val)
+		if err != nil {
+			li.err = err
+			return
+		}
+
+		if li.ttlOpts != nil {
+			ttlVal, err := UnmarshalTTLValue(decrypted)
+			if err == nil && ttlVal.ExpiresAt > 0 {
+				if time.Now().Unix() > ttlVal.ExpiresAt {
+					li.iter.Next()
+					continue
+				}
+				decrypted = ttlVal.Data
+			}
+		}
+
+		keyCopy := make([]byte, len(key))
+		copy(keyCopy, key)
+		li.key = keyCopy
+		li.value = decrypted
+		return
+	}
+	li.key = nil
+	li.value = nil
+}
+
+func (li *TxnLazyIterator) Next() bool {
+	if li.err != nil || li.closed {
+		return false
+	}
+	if li.first {
+		li.first = false
+		li.iter.First()
+	} else {
+		li.iter.Next()
+	}
+	li.advance()
+	return li.key != nil
+}
+
+func (li *TxnLazyIterator) Key() []byte {
+	return li.key
+}
+
+func (li *TxnLazyIterator) Value() []byte {
+	return li.value
+}
+
+func (li *TxnLazyIterator) Error() error {
+	return li.err
+}
+
+func (li *TxnLazyIterator) Close() {
+	if li.closed {
+		return
+	}
+	li.closed = true
+	if li.iter != nil {
+		li.iter.Close()
+	}
 }

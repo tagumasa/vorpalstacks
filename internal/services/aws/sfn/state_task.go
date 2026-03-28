@@ -107,7 +107,7 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 				case <-timer.C:
 				case <-ctx.Done():
 					timer.Stop()
-					return "", "", &ExecutionError{Error: "States.Timeout", Cause: "Execution interrupted during retry"}
+					return "", "", &ExecutionError{ErrorCode: "States.Timeout", Cause: "Execution interrupted during retry"}
 				}
 				continue
 			}
@@ -154,7 +154,7 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 				Cause:    cause,
 			},
 		})
-		return "", "", &ExecutionError{Error: errorCode, Cause: cause}
+		return "", "", &ExecutionError{ErrorCode: errorCode, Cause: cause}
 	}
 
 	output = e.applyResultSelector(output, state.GetResultSelector())

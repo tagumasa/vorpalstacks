@@ -196,16 +196,16 @@ func (s *SNSStore) DeleteTopic(topicArn string) error {
 
 	subscriptions, err := s.ListSubscriptionsByTopic(topicArn, common.ListOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("listing topic subscriptions: %w", err)
 	}
 	for _, sub := range subscriptions.Items {
 		if err := s.topicSubscriptionsStore.Delete(sub.SubscriptionArn); err != nil {
-			return err
+			return fmt.Errorf("deleting subscription: %w", err)
 		}
 	}
 
 	if err := s.TagStore.Delete(topicArn); err != nil {
-		return err
+		return fmt.Errorf("deleting topic tags: %w", err)
 	}
 
 	s.deduplicationMu.Lock()
@@ -338,7 +338,7 @@ func (s *SNSStore) DeleteSubscription(subscriptionArn string) error {
 		topic.SubscriptionsDeleted++
 		topic.LastModifiedTime = time.Now().UTC()
 		if err := s.Put(topic.Arn, &topic); err != nil {
-			return err
+			return fmt.Errorf("updating topic: %w", err)
 		}
 	}
 
@@ -363,7 +363,7 @@ func (s *SNSStore) AutoConfirmSubscription(subscription *Subscription) error {
 	subscription.ConfirmationToken = ""
 
 	if err := s.topicSubscriptionsStore.Put(subscription.SubscriptionArn, subscription); err != nil {
-		return err
+		return fmt.Errorf("updating subscription: %w", err)
 	}
 
 	var topic Topic
@@ -374,7 +374,7 @@ func (s *SNSStore) AutoConfirmSubscription(subscription *Subscription) error {
 		topic.SubscriptionsConfirmed++
 		topic.LastModifiedTime = time.Now().UTC()
 		if err := s.Put(topic.Arn, &topic); err != nil {
-			return err
+			return fmt.Errorf("updating topic: %w", err)
 		}
 	}
 
@@ -692,7 +692,7 @@ func (s *SNSStore) DeletePlatformApplication(arn string) error {
 	})
 
 	if err := s.TagStore.Delete(arn); err != nil {
-		return err
+		return fmt.Errorf("deleting platform application tags: %w", err)
 	}
 
 	return s.platformApplicationsStore.Delete(arn)

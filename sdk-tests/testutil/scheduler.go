@@ -105,7 +105,7 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 	targetInputJSON, _ := json.Marshal(targetInput)
 
 	results = append(results, r.RunTest("scheduler", "CreateSchedule", func() error {
-		_, err := client.CreateSchedule(ctx, &scheduler.CreateScheduleInput{
+		resp, err := client.CreateSchedule(ctx, &scheduler.CreateScheduleInput{
 			Name:               aws.String(scheduleName),
 			ScheduleExpression: aws.String("rate(30 minutes)"),
 			Target: &types.Target{
@@ -117,7 +117,13 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 				Mode: types.FlexibleTimeWindowModeOff,
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("scheduler", "GetSchedule", func() error {
@@ -145,7 +151,7 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("scheduler", "UpdateSchedule", func() error {
-		_, err := client.UpdateSchedule(ctx, &scheduler.UpdateScheduleInput{
+		resp, err := client.UpdateSchedule(ctx, &scheduler.UpdateScheduleInput{
 			Name:               aws.String(scheduleName),
 			ScheduleExpression: aws.String("rate(60 minutes)"),
 			Target: &types.Target{
@@ -157,18 +163,30 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 				Mode: types.FlexibleTimeWindowModeOff,
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("scheduler", "TagResource", func() error {
 		scheduleARN := fmt.Sprintf("arn:aws:scheduler:%s:000000000000:schedule/%s", r.region, scheduleName)
-		_, err := client.TagResource(ctx, &scheduler.TagResourceInput{
+		resp, err := client.TagResource(ctx, &scheduler.TagResourceInput{
 			ResourceArn: aws.String(scheduleARN),
 			Tags: []types.Tag{
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("scheduler", "ListTagsForResource", func() error {
@@ -187,18 +205,30 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 
 	results = append(results, r.RunTest("scheduler", "UntagResource", func() error {
 		scheduleARN := fmt.Sprintf("arn:aws:scheduler:%s:000000000000:schedule/%s", r.region, scheduleName)
-		_, err := client.UntagResource(ctx, &scheduler.UntagResourceInput{
+		resp, err := client.UntagResource(ctx, &scheduler.UntagResourceInput{
 			ResourceArn: aws.String(scheduleARN),
 			TagKeys:     []string{"Environment"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("scheduler", "DeleteSchedule", func() error {
-		_, err := client.DeleteSchedule(ctx, &scheduler.DeleteScheduleInput{
+		resp, err := client.DeleteSchedule(ctx, &scheduler.DeleteScheduleInput{
 			Name: aws.String(scheduleName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

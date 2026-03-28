@@ -45,15 +45,27 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "ListTopics", func() error {
-		_, err := client.ListTopics(ctx, &sns.ListTopicsInput{})
-		return err
+		resp, err := client.ListTopics(ctx, &sns.ListTopicsInput{})
+		if err != nil {
+			return err
+		}
+		if resp.Topics == nil {
+			return fmt.Errorf("Topics is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sns", "GetTopicAttributes", func() error {
-		_, err := client.GetTopicAttributes(ctx, &sns.GetTopicAttributesInput{
+		resp, err := client.GetTopicAttributes(ctx, &sns.GetTopicAttributesInput{
 			TopicArn: aws.String(topicArn),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Attributes == nil {
+			return fmt.Errorf("Attributes is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sns", "SetTopicAttributes", func() error {
@@ -66,11 +78,17 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "Publish", func() error {
-		_, err := client.Publish(ctx, &sns.PublishInput{
+		resp, err := client.Publish(ctx, &sns.PublishInput{
 			TopicArn: aws.String(topicArn),
 			Message:  aws.String("Test message"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.MessageId == nil {
+			return fmt.Errorf("MessageId is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sns", "AddPermission", func() error {
@@ -92,17 +110,29 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "Subscribe", func() error {
-		_, err := client.Subscribe(ctx, &sns.SubscribeInput{
+		resp, err := client.Subscribe(ctx, &sns.SubscribeInput{
 			TopicArn: aws.String(topicArn),
 			Protocol: aws.String("email"),
 			Endpoint: aws.String("test@example.com"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.SubscriptionArn == nil {
+			return fmt.Errorf("SubscriptionArn is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sns", "ListSubscriptions", func() error {
-		_, err := client.ListSubscriptions(ctx, &sns.ListSubscriptionsInput{})
-		return err
+		resp, err := client.ListSubscriptions(ctx, &sns.ListSubscriptionsInput{})
+		if err != nil {
+			return err
+		}
+		if resp.Subscriptions == nil {
+			return fmt.Errorf("Subscriptions is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sns", "TagResource", func() error {
@@ -116,10 +146,16 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "ListTagsForResource", func() error {
-		_, err := client.ListTagsForResource(ctx, &sns.ListTagsForResourceInput{
+		resp, err := client.ListTagsForResource(ctx, &sns.ListTagsForResourceInput{
 			ResourceArn: aws.String(topicArn),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Tags == nil {
+			return fmt.Errorf("Tags is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sns", "UntagResource", func() error {
@@ -131,7 +167,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "PublishBatch", func() error {
-		_, err := client.PublishBatch(ctx, &sns.PublishBatchInput{
+		resp, err := client.PublishBatch(ctx, &sns.PublishBatchInput{
 			TopicArn: aws.String(topicArn),
 			PublishBatchRequestEntries: []types.PublishBatchRequestEntry{
 				{
@@ -144,19 +180,34 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Successful == nil {
+			return fmt.Errorf("Successful is nil")
+		}
+		if len(resp.Successful) == 0 {
+			return fmt.Errorf("expected at least one successful publish, got 0")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sns", "CreateTopic (FIFO)", func() error {
 		fifoTopicName := fmt.Sprintf("TestFifoTopic-%d.fifo", time.Now().UnixNano())
-		_, err := client.CreateTopic(ctx, &sns.CreateTopicInput{
+		resp, err := client.CreateTopic(ctx, &sns.CreateTopicInput{
 			Name: aws.String(fifoTopicName),
 			Attributes: map[string]string{
 				"ContentBasedDeduplication": "true",
 				"FifoTopic":                 "true",
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.TopicArn == nil {
+			return fmt.Errorf("TopicArn is nil")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

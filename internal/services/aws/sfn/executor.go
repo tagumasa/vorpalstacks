@@ -65,9 +65,10 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 		log.Printf("Failed to parse state machine definition for %s: %v", execution.StateMachineArn, err)
 		execution.Cause = "Invalid state machine definition syntax"
 		execution.StopDate = time.Now().UTC()
-		if err := e.store.UpdateExecution(ctx, execution); err != nil {
-			log.Printf("Failed to update execution status to FAILED after definition error: %v", err)
+		if updateErr := e.store.UpdateExecution(ctx, execution); updateErr != nil {
+			log.Printf("Failed to update execution status to FAILED after definition error: %v", updateErr)
 		}
+		return fmt.Errorf("failed to parse state machine definition: %w", err)
 	}
 
 	if definition.TimeoutSeconds > 0 {
@@ -215,13 +216,13 @@ func (ctx *ExecutionContext) nextEventId() int64 {
 
 // ExecutionError represents an error that occurred during state machine execution.
 type ExecutionError struct {
-	Error string
-	Cause string
+	ErrorCode string
+	Cause     string
 }
 
-// String returns the string representation of the ExecutionError.
-func (e *ExecutionError) String() string {
-	return e.Error + ": " + e.Cause
+// Error returns the error representation of the ExecutionError.
+func (e *ExecutionError) Error() string {
+	return e.ErrorCode + ": " + e.Cause
 }
 
 func (e *Executor) executeStates(ctx context.Context, execCtx *ExecutionContext) error {
@@ -248,7 +249,7 @@ func (e *Executor) executeStates(ctx context.Context, execCtx *ExecutionContext)
 		case *sfnstore.TaskState:
 			output, nextState, execErr = e.executeTask(ctx, execCtx, s)
 			if execErr != nil {
-				return fmt.Errorf("%s: %s", execErr.Error, execErr.Cause)
+				return fmt.Errorf("%s: %s", execErr.ErrorCode, execErr.Cause)
 			}
 		case *sfnstore.ChoiceState:
 			nextState, err = e.executeChoice(ctx, execCtx, s)
@@ -260,12 +261,12 @@ func (e *Executor) executeStates(ctx context.Context, execCtx *ExecutionContext)
 		case *sfnstore.ParallelState:
 			output, nextState, execErr = e.executeParallel(ctx, execCtx, s)
 			if execErr != nil {
-				return fmt.Errorf("%s: %s", execErr.Error, execErr.Cause)
+				return fmt.Errorf("%s: %s", execErr.ErrorCode, execErr.Cause)
 			}
 		case *sfnstore.MapState:
 			output, nextState, execErr = e.executeMap(ctx, execCtx, s)
 			if execErr != nil {
-				return fmt.Errorf("%s: %s", execErr.Error, execErr.Cause)
+				return fmt.Errorf("%s: %s", execErr.ErrorCode, execErr.Cause)
 			}
 		case *sfnstore.FailState:
 			return e.executeFail(ctx, execCtx, s)

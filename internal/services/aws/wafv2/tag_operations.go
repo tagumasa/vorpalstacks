@@ -108,8 +108,17 @@ func extractResourceTypeFromARN(arn string) string {
 	}
 	resource := parts[5]
 	subParts := strings.Split(resource, "/")
-	if len(subParts) > 0 {
-		return strings.ToLower(subParts[0])
+	if len(subParts) == 0 {
+		return ""
+	}
+	first := strings.ToLower(subParts[0])
+	switch first {
+	case "ipset", "webacl", "rulegroup", "regexpatternset":
+		return first
+	case "regional", "cloudfront":
+		if len(subParts) > 1 {
+			return strings.ToLower(subParts[1])
+		}
 	}
 	return ""
 }

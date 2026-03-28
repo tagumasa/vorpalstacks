@@ -32,10 +32,16 @@ func (r *TestRunner) RunACMTests() []TestResult {
 
 	// Test 1: List Certificates
 	results = append(results, r.RunTest("acm", "ListCertificates", func() error {
-		_, err := client.ListCertificates(ctx, &acm.ListCertificatesInput{
+		resp, err := client.ListCertificates(ctx, &acm.ListCertificatesInput{
 			MaxItems: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CertificateSummaryList == nil {
+			return fmt.Errorf("certificate summary list is nil")
+		}
+		return nil
 	}))
 
 	// Test 2: Describe Certificate - Create a cert first, then describe
@@ -50,10 +56,19 @@ func (r *TestRunner) RunACMTests() []TestResult {
 			return err
 		}
 		testCertARN = aws.ToString(resp.CertificateArn)
-		_, err = client.DescribeCertificate(ctx, &acm.DescribeCertificateInput{
+		if testCertARN == "" {
+			return fmt.Errorf("certificate ARN is empty")
+		}
+		descResp, err := client.DescribeCertificate(ctx, &acm.DescribeCertificateInput{
 			CertificateArn: resp.CertificateArn,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if descResp.Certificate == nil {
+			return fmt.Errorf("certificate is nil")
+		}
+		return nil
 	}))
 
 	// Test 3: Get Certificate
@@ -61,10 +76,16 @@ func (r *TestRunner) RunACMTests() []TestResult {
 		if testCertARN == "" {
 			return fmt.Errorf("no certificate ARN available from DescribeCertificate test")
 		}
-		_, err := client.GetCertificate(ctx, &acm.GetCertificateInput{
+		resp, err := client.GetCertificate(ctx, &acm.GetCertificateInput{
 			CertificateArn: aws.String(testCertARN),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 4: Request Certificate
@@ -76,27 +97,43 @@ func (r *TestRunner) RunACMTests() []TestResult {
 			ValidationMethod: types.ValidationMethodDns,
 			IdempotencyToken: aws.String("test-token"),
 		})
-		if err == nil {
-			certARN = aws.ToString(resp.CertificateArn)
+		if err != nil {
+			return err
 		}
-		return err
+		if resp.CertificateArn == nil {
+			return fmt.Errorf("certificate ARN is nil")
+		}
+		certARN = aws.ToString(resp.CertificateArn)
+		return nil
 	}))
 
 	// Test 5: Describe Certificate (with created cert)
 	if certARN != "" {
 		results = append(results, r.RunTest("acm", "DescribeCertificateCreated", func() error {
-			_, err := client.DescribeCertificate(ctx, &acm.DescribeCertificateInput{
+			resp, err := client.DescribeCertificate(ctx, &acm.DescribeCertificateInput{
 				CertificateArn: aws.String(certARN),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp.Certificate == nil {
+				return fmt.Errorf("certificate is nil")
+			}
+			return nil
 		}))
 
 		// Test 6: Delete Certificate
 		results = append(results, r.RunTest("acm", "DeleteCertificate", func() error {
-			_, err := client.DeleteCertificate(ctx, &acm.DeleteCertificateInput{
+			resp, err := client.DeleteCertificate(ctx, &acm.DeleteCertificateInput{
 				CertificateArn: aws.String(certARN),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp == nil {
+				return fmt.Errorf("response is nil")
+			}
+			return nil
 		}))
 	}
 
@@ -118,7 +155,7 @@ func (r *TestRunner) RunACMTests() []TestResult {
 			return err
 		}
 		certARN2 := aws.ToString(resp.CertificateArn)
-		_, err = client.AddTagsToCertificate(ctx, &acm.AddTagsToCertificateInput{
+		tagResp, err := client.AddTagsToCertificate(ctx, &acm.AddTagsToCertificateInput{
 			CertificateArn: aws.String(certARN2),
 			Tags: []types.Tag{
 				{
@@ -135,7 +172,13 @@ func (r *TestRunner) RunACMTests() []TestResult {
 		client.DeleteCertificate(ctx, &acm.DeleteCertificateInput{
 			CertificateArn: aws.String(certARN2),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if tagResp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 8: List Tags for Certificate
@@ -158,14 +201,20 @@ func (r *TestRunner) RunACMTests() []TestResult {
 				},
 			},
 		})
-		_, err = client.ListTagsForCertificate(ctx, &acm.ListTagsForCertificateInput{
+		tagResp, err := client.ListTagsForCertificate(ctx, &acm.ListTagsForCertificateInput{
 			CertificateArn: aws.String(certARN3),
 		})
 		// Cleanup
 		client.DeleteCertificate(ctx, &acm.DeleteCertificateInput{
 			CertificateArn: aws.String(certARN3),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if tagResp.Tags == nil {
+			return fmt.Errorf("tags list is nil")
+		}
+		return nil
 	}))
 
 	// Test 9: Remove Tags from Certificate
@@ -188,7 +237,7 @@ func (r *TestRunner) RunACMTests() []TestResult {
 				},
 			},
 		})
-		_, err = client.RemoveTagsFromCertificate(ctx, &acm.RemoveTagsFromCertificateInput{
+		removeResp, err := client.RemoveTagsFromCertificate(ctx, &acm.RemoveTagsFromCertificateInput{
 			CertificateArn: aws.String(certARN4),
 			Tags: []types.Tag{
 				{
@@ -200,7 +249,13 @@ func (r *TestRunner) RunACMTests() []TestResult {
 		client.DeleteCertificate(ctx, &acm.DeleteCertificateInput{
 			CertificateArn: aws.String(certARN4),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if removeResp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 10: Resend Validation Email
@@ -214,7 +269,7 @@ func (r *TestRunner) RunACMTests() []TestResult {
 			return err
 		}
 		certARN5 := aws.ToString(resp.CertificateArn)
-		_, err = client.ResendValidationEmail(ctx, &acm.ResendValidationEmailInput{
+		resendResp, err := client.ResendValidationEmail(ctx, &acm.ResendValidationEmailInput{
 			CertificateArn:   aws.String(certARN5),
 			Domain:           aws.String(domainName5),
 			ValidationDomain: aws.String(domainName5),
@@ -223,7 +278,13 @@ func (r *TestRunner) RunACMTests() []TestResult {
 		client.DeleteCertificate(ctx, &acm.DeleteCertificateInput{
 			CertificateArn: aws.String(certARN5),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resendResp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 11: Update Certificate Options
@@ -237,7 +298,7 @@ func (r *TestRunner) RunACMTests() []TestResult {
 			return err
 		}
 		certARN6 := aws.ToString(resp.CertificateArn)
-		_, err = client.UpdateCertificateOptions(ctx, &acm.UpdateCertificateOptionsInput{
+		updateResp, err := client.UpdateCertificateOptions(ctx, &acm.UpdateCertificateOptionsInput{
 			CertificateArn: aws.String(certARN6),
 			Options: &types.CertificateOptions{
 				CertificateTransparencyLoggingPreference: types.CertificateTransparencyLoggingPreferenceEnabled,
@@ -247,7 +308,13 @@ func (r *TestRunner) RunACMTests() []TestResult {
 		client.DeleteCertificate(ctx, &acm.DeleteCertificateInput{
 			CertificateArn: aws.String(certARN6),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if updateResp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 12: Import Certificate
@@ -261,28 +328,46 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 		privateKeyPem := []byte(`-----BEGIN RSA PRIVATE KEY-----
 MIIBOQIBAAJBAKjHCBmV1SlQwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMCr
 -----END RSA PRIVATE KEY-----`)
-		_, err := client.ImportCertificate(ctx, &acm.ImportCertificateInput{
+		resp, err := client.ImportCertificate(ctx, &acm.ImportCertificateInput{
 			Certificate: certPem,
 			PrivateKey:  privateKeyPem,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CertificateArn == nil {
+			return fmt.Errorf("certificate ARN is nil")
+		}
+		return nil
 	}))
 
 	// Test 13: Get Account Configuration
 	results = append(results, r.RunTest("acm", "GetAccountConfiguration", func() error {
-		_, err := client.GetAccountConfiguration(ctx, &acm.GetAccountConfigurationInput{})
-		return err
+		resp, err := client.GetAccountConfiguration(ctx, &acm.GetAccountConfigurationInput{})
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 14: Put Account Configuration
 	results = append(results, r.RunTest("acm", "PutAccountConfiguration", func() error {
-		_, err := client.PutAccountConfiguration(ctx, &acm.PutAccountConfigurationInput{
+		resp, err := client.PutAccountConfiguration(ctx, &acm.PutAccountConfigurationInput{
 			IdempotencyToken: aws.String("test-token"),
 			ExpiryEvents: &types.ExpiryEventsConfiguration{
 				DaysBeforeExpiry: aws.Int32(30),
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 15: Export Certificate (import a cert, then export it)
@@ -341,11 +426,17 @@ Vzw7YxT498cnLJsBFDy+kk9uKMf7cpLCdRF1gRpeIP3K6sFLNF96Gw==
 		defer client.DeleteCertificate(ctx, &acm.DeleteCertificateInput{
 			CertificateArn: importResp.CertificateArn,
 		})
-		_, err = client.ExportCertificate(ctx, &acm.ExportCertificateInput{
+		exportResp, err := client.ExportCertificate(ctx, &acm.ExportCertificateInput{
 			CertificateArn: importResp.CertificateArn,
 			Passphrase:     []byte("test-passphrase"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if exportResp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	return results

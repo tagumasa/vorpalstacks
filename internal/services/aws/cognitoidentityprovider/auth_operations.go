@@ -319,7 +319,7 @@ func (s *CognitoService) GlobalSignOut(ctx context.Context, reqCtx *request.Requ
 	}
 	at, err := store.GetAccessTokenByValue(accessToken)
 	if err != nil {
-		return response.EmptyResponse(), nil
+		return nil, ErrNotAuthorized
 	}
 
 	if err := store.DeleteAllRefreshTokensForUser(at.UserPoolID, at.UserID); err != nil {

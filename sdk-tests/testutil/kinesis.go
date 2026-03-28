@@ -34,19 +34,31 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 
 	// Test 1: Create Stream
 	results = append(results, r.RunTest("kinesis", "CreateStream", func() error {
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
+		resp, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
 			StreamName: aws.String(streamName),
 			ShardCount: aws.Int32(1),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return fmt.Errorf("response is nil")
+		}
+		return nil
 	}))
 
 	// Test 2: List Streams
 	results = append(results, r.RunTest("kinesis", "ListStreams", func() error {
-		_, err := client.ListStreams(ctx, &kinesis.ListStreamsInput{
+		resp, err := client.ListStreams(ctx, &kinesis.ListStreamsInput{
 			Limit: aws.Int32(10),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.StreamNames == nil {
+			return fmt.Errorf("StreamNames is nil")
+		}
+		return nil
 	}))
 
 	// Test 3: Describe Stream
@@ -58,31 +70,49 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 		if err != nil {
 			return err
 		}
+		if resp.StreamDescription == nil {
+			return fmt.Errorf("StreamDescription is nil")
+		}
+		if resp.StreamDescription.StreamARN == nil {
+			return fmt.Errorf("StreamDescription.StreamARN is nil")
+		}
 		streamARN = aws.ToString(resp.StreamDescription.StreamARN)
 		return nil
 	}))
 
 	// Test 4: Describe Stream Summary
 	results = append(results, r.RunTest("kinesis", "DescribeStreamSummary", func() error {
-		_, err := client.DescribeStreamSummary(ctx, &kinesis.DescribeStreamSummaryInput{
+		resp, err := client.DescribeStreamSummary(ctx, &kinesis.DescribeStreamSummaryInput{
 			StreamName: aws.String(streamName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.StreamDescriptionSummary == nil {
+			return fmt.Errorf("StreamDescriptionSummary is nil")
+		}
+		return nil
 	}))
 
 	// Test 5: Put Record
 	results = append(results, r.RunTest("kinesis", "PutRecord", func() error {
-		_, err := client.PutRecord(ctx, &kinesis.PutRecordInput{
+		resp, err := client.PutRecord(ctx, &kinesis.PutRecordInput{
 			StreamName:   aws.String(streamName),
 			Data:         []byte("test-data"),
 			PartitionKey: aws.String("partition-key-1"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.SequenceNumber == nil {
+			return fmt.Errorf("SequenceNumber is nil")
+		}
+		return nil
 	}))
 
 	// Test 6: Put Records
 	results = append(results, r.RunTest("kinesis", "PutRecords", func() error {
-		_, err := client.PutRecords(ctx, &kinesis.PutRecordsInput{
+		resp, err := client.PutRecords(ctx, &kinesis.PutRecordsInput{
 			StreamName: aws.String(streamName),
 			Records: []types.PutRecordsRequestEntry{
 				{
@@ -95,7 +125,18 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 				},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Records == nil {
+			return fmt.Errorf("Records is nil")
+		}
+		for i, rec := range resp.Records {
+			if rec.SequenceNumber == nil {
+				return fmt.Errorf("record[%d].SequenceNumber is nil", i)
+			}
+		}
+		return nil
 	}))
 
 	// Test 7: Get Shard Iterator
@@ -125,10 +166,16 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 
 	// Test 8: List Shards
 	results = append(results, r.RunTest("kinesis", "ListShards", func() error {
-		_, err := client.ListShards(ctx, &kinesis.ListShardsInput{
+		resp, err := client.ListShards(ctx, &kinesis.ListShardsInput{
 			StreamName: aws.String(streamName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Shards == nil {
+			return fmt.Errorf("Shards is nil")
+		}
+		return nil
 	}))
 
 	// Test 8b: ListShards_MultiShard - verify all shards returned for a multi-shard stream
@@ -161,32 +208,50 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 	// Test 9: Get Records (using real iterator)
 	if shardIterator != "" {
 		results = append(results, r.RunTest("kinesis", "GetRecords", func() error {
-			_, err := client.GetRecords(ctx, &kinesis.GetRecordsInput{
+			resp, err := client.GetRecords(ctx, &kinesis.GetRecordsInput{
 				ShardIterator: aws.String(shardIterator),
 			})
-			return err
+			if err != nil {
+				return err
+			}
+			if resp.Records == nil {
+				return fmt.Errorf("Records is nil")
+			}
+			return nil
 		}))
 	}
 
 	// Test 10: Enable Enhanced Monitoring
 	results = append(results, r.RunTest("kinesis", "EnableEnhancedMonitoring", func() error {
-		_, err := client.EnableEnhancedMonitoring(ctx, &kinesis.EnableEnhancedMonitoringInput{
+		resp, err := client.EnableEnhancedMonitoring(ctx, &kinesis.EnableEnhancedMonitoringInput{
 			StreamName: aws.String(streamName),
 			ShardLevelMetrics: []types.MetricsName{
 				types.MetricsNameIncomingBytes,
 				types.MetricsNameOutgoingBytes,
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CurrentShardLevelMetrics == nil {
+			return fmt.Errorf("CurrentShardLevelMetrics is nil")
+		}
+		return nil
 	}))
 
 	// Test 11: Disable Enhanced Monitoring
 	results = append(results, r.RunTest("kinesis", "DisableEnhancedMonitoring", func() error {
-		_, err := client.DisableEnhancedMonitoring(ctx, &kinesis.DisableEnhancedMonitoringInput{
+		resp, err := client.DisableEnhancedMonitoring(ctx, &kinesis.DisableEnhancedMonitoringInput{
 			StreamName:        aws.String(streamName),
 			ShardLevelMetrics: []types.MetricsName{},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CurrentShardLevelMetrics == nil {
+			return fmt.Errorf("CurrentShardLevelMetrics is nil")
+		}
+		return nil
 	}))
 
 	// Test 12: Add Tags to Stream
@@ -203,10 +268,16 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 
 	// Test 13: List Tags for Stream
 	results = append(results, r.RunTest("kinesis", "ListTagsForStream", func() error {
-		_, err := client.ListTagsForStream(ctx, &kinesis.ListTagsForStreamInput{
+		resp, err := client.ListTagsForStream(ctx, &kinesis.ListTagsForStreamInput{
 			StreamName: aws.String(streamName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Tags == nil {
+			return fmt.Errorf("Tags is nil")
+		}
+		return nil
 	}))
 
 	// Test 14: Remove Tags from Stream
@@ -276,32 +347,129 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 	// Test 20: Register Stream Consumer
 	consumerName := fmt.Sprintf("test-consumer-%d", time.Now().UnixNano())
 	results = append(results, r.RunTest("kinesis", "RegisterStreamConsumer", func() error {
-		_, err := client.RegisterStreamConsumer(ctx, &kinesis.RegisterStreamConsumerInput{
+		resp, err := client.RegisterStreamConsumer(ctx, &kinesis.RegisterStreamConsumerInput{
 			StreamARN:    aws.String(streamARN),
 			ConsumerName: aws.String(consumerName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Consumer == nil {
+			return fmt.Errorf("Consumer is nil")
+		}
+		return nil
 	}))
 
 	// Test 21: Describe Stream Consumer
 	results = append(results, r.RunTest("kinesis", "DescribeStreamConsumer", func() error {
-		_, err := client.DescribeStreamConsumer(ctx, &kinesis.DescribeStreamConsumerInput{
+		resp, err := client.DescribeStreamConsumer(ctx, &kinesis.DescribeStreamConsumerInput{
 			StreamARN:    aws.String(streamARN),
 			ConsumerName: aws.String(consumerName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.ConsumerDescription == nil {
+			return fmt.Errorf("ConsumerDescription is nil")
+		}
+		if resp.ConsumerDescription.ConsumerARN == nil {
+			return fmt.Errorf("ConsumerDescription.ConsumerARN is nil")
+		}
+		return nil
 	}))
 
 	// Test 22: List Stream Consumers
 	results = append(results, r.RunTest("kinesis", "ListStreamConsumers", func() error {
-		_, err := client.ListStreamConsumers(ctx, &kinesis.ListStreamConsumersInput{
+		resp, err := client.ListStreamConsumers(ctx, &kinesis.ListStreamConsumersInput{
 			StreamARN: aws.String(streamARN),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Consumers == nil {
+			return fmt.Errorf("Consumers is nil")
+		}
+		return nil
 	}))
 
-	// Test 23: SubscribeToShard - skip this test as it's a streaming API
-	// The test framework doesn't support streaming responses well
+	// Test 23: SubscribeToShard (event stream API)
+	var consumerARN string
+	if streamARN != "" && consumerName != "" {
+		describeConsumerResp, describeConsumerErr := client.DescribeStreamConsumer(ctx, &kinesis.DescribeStreamConsumerInput{
+			StreamARN:    aws.String(streamARN),
+			ConsumerName: aws.String(consumerName),
+		})
+		if describeConsumerErr == nil {
+			consumerARN = aws.ToString(describeConsumerResp.ConsumerDescription.ConsumerARN)
+		}
+	}
+	if consumerARN != "" && shardID != "" {
+		results = append(results, r.RunTest("kinesis", "SubscribeToShard", func() error {
+			type result struct {
+				err error
+			}
+			resultCh := make(chan result, 1)
+
+			go func() {
+				subCtx, cancel := context.WithCancel(ctx)
+				defer cancel()
+
+				resp, err := client.SubscribeToShard(subCtx, &kinesis.SubscribeToShardInput{
+					ConsumerARN: aws.String(consumerARN),
+					ShardId:     aws.String(shardID),
+					StartingPosition: &types.StartingPosition{
+						Type: types.ShardIteratorTypeTrimHorizon,
+					},
+				})
+				if err != nil {
+					resultCh <- result{err: fmt.Errorf("SubscribeToShard failed: %v", err)}
+					return
+				}
+				defer resp.GetStream().Close()
+
+				eventCh := resp.GetStream().Events()
+				timeout := time.After(10 * time.Second)
+				for {
+					select {
+					case <-timeout:
+						resultCh <- result{err: fmt.Errorf("timed out waiting for SubscribeToShard event")}
+						return
+					case event, ok := <-eventCh:
+						if !ok {
+							resultCh <- result{err: fmt.Errorf("stream closed without receiving any event")}
+							return
+						}
+						switch v := event.(type) {
+						case *types.SubscribeToShardEventStreamMemberSubscribeToShardEvent:
+							if len(v.Value.Records) == 0 {
+								resultCh <- result{err: fmt.Errorf("SubscribeToShardEvent contained zero records")}
+								return
+							}
+							resultCh <- result{err: nil}
+							return
+						case *types.UnknownUnionMember:
+							resultCh <- result{err: fmt.Errorf("SubscribeToShard returned unknown event type: %s", v.Tag)}
+							return
+						}
+					}
+				}
+			}()
+
+			select {
+			case r := <-resultCh:
+				return r.err
+			case <-time.After(15 * time.Second):
+				return fmt.Errorf("SubscribeToShard test timed out (server event stream may not be closing connection)")
+			}
+		}))
+	} else {
+		results = append(results, TestResult{
+			Service:  "kinesis",
+			TestName: "SubscribeToShard",
+			Status:   "SKIP",
+			Error:    "consumerARN or shardID not available from prior tests",
+		})
+	}
 
 	// Test 24: Deregister Stream Consumer
 	results = append(results, r.RunTest("kinesis", "DeregisterStreamConsumer", func() error {
@@ -346,12 +514,18 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 
 	// Test 26: Update Shard Count
 	results = append(results, r.RunTest("kinesis", "UpdateShardCount", func() error {
-		_, err := client.UpdateShardCount(ctx, &kinesis.UpdateShardCountInput{
+		resp, err := client.UpdateShardCount(ctx, &kinesis.UpdateShardCountInput{
 			StreamName:       aws.String(streamName),
 			TargetShardCount: aws.Int32(2),
 			ScalingType:      types.ScalingTypeUniformScaling,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.CurrentShardCount == nil {
+			return fmt.Errorf("CurrentShardCount is nil")
+		}
+		return nil
 	}))
 
 	// Test 27: Merge Shards - create new stream with 2 shards for merge test
@@ -417,13 +591,22 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 			ShardToSplit:       openShard.ShardId,
 			NewStartingHashKey: aws.String("9223372036854775808"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		return nil
 	}))
 
 	// Test 29: Describe Limits
 	results = append(results, r.RunTest("kinesis", "DescribeLimits", func() error {
-		_, err := client.DescribeLimits(ctx, &kinesis.DescribeLimitsInput{})
-		return err
+		resp, err := client.DescribeLimits(ctx, &kinesis.DescribeLimitsInput{})
+		if err != nil {
+			return err
+		}
+		if resp.ShardLimit == nil {
+			return fmt.Errorf("ShardLimit is nil")
+		}
+		return nil
 	}))
 
 	// Test 30: Delete Stream
@@ -442,13 +625,19 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 			ShardCount: aws.Int32(1),
 		})
 		time.Sleep(1 * time.Second)
-		_, err := client.ListShards(ctx, &kinesis.ListShardsInput{
+		resp, err := client.ListShards(ctx, &kinesis.ListShardsInput{
 			StreamName: aws.String(streamName3),
 		})
+		if err != nil {
+			return err
+		}
+		if resp.Shards == nil {
+			return fmt.Errorf("Shards is nil")
+		}
 		client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
 			StreamName: aws.String(streamName3),
 		})
-		return err
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===
