@@ -1,6 +1,6 @@
 # Vorpalstacks
 
-> **Warning: This is a beta release.** Vorpalstacks is under active development. While 27 AWS services are implemented with 595 passing Go SDK tests (plus 631 Python, 629 TypeScript, 606 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
+> **Warning: This is a beta release.** Vorpalstacks is under active development. While 29 AWS services are implemented with 595 passing Go SDK tests (plus 631 Python, 629 TypeScript, 606 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
 
 A lightweight edge and on-premise cloud platform providing AWS-compatible services.
 
