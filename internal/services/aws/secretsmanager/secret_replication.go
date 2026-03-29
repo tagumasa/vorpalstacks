@@ -3,10 +3,10 @@ package secretsmanager
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/request"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
@@ -126,7 +126,7 @@ func (s *SecretsManagerService) ReplicateSecretToRegions(ctx context.Context, re
 		}
 
 		if err := replicaStore.UpdateSecretMetadata(replica); err != nil {
-			log.Printf("Failed to set replication status on replica in %s: %v", replicaRegion.Region, err)
+			logs.Error("Failed to set replication status on replica", logs.String("region", replicaRegion.Region), logs.Err(err))
 		}
 
 		secret.ReplicationStatus = append(secret.ReplicationStatus, secretsmanagerstore.ReplicationStatus{

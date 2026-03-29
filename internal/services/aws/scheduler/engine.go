@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -143,7 +142,7 @@ func (e *Engine) checkSchedules() {
 					defer e.wg.Done()
 					defer func() {
 						if r := recover(); r != nil {
-							log.Printf("scheduler: panic executing schedule %s: %v", sch.Name, r)
+							logs.Error("scheduler: panic executing schedule", logs.String("name", sch.Name), logs.Any("panic", r))
 						}
 					}()
 					select {

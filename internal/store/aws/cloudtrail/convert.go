@@ -2,9 +2,9 @@ package cloudtrail
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	pb "vorpalstacks/internal/pb/storage/storage_cloudtrail"
 )
 
@@ -224,12 +224,12 @@ func ProtoToEvent(p *pb.Event) *Event {
 	var reqParams, respElements map[string]interface{}
 	if p.RequestParametersJson != "" {
 		if err := json.Unmarshal([]byte(p.RequestParametersJson), &reqParams); err != nil {
-			log.Printf("Failed to unmarshal RequestParametersJson: %v", err)
+			logs.Error("Failed to unmarshal RequestParametersJson", logs.Err(err))
 		}
 	}
 	if p.ResponseElementsJson != "" {
 		if err := json.Unmarshal([]byte(p.ResponseElementsJson), &respElements); err != nil {
-			log.Printf("Failed to unmarshal ResponseElementsJson: %v", err)
+			logs.Error("Failed to unmarshal ResponseElementsJson", logs.Err(err))
 		}
 	}
 

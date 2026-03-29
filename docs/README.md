@@ -31,6 +31,8 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | [Services](services.md) | Implemented AWS services (29 APIs, 25 AWS services) |
 | [Configuration](configuration.md) | Environment variables, TLS, gRPC-Web, IAM Auth |
 | [Integration](integration.md) | Service-to-service communication patterns |
+| [Lambda Guide](lambda-guide.md) | Lambda runtime, Docker containers, endpoint injection |
+| [New Service Guide](new-service-guide.md) | Step-by-step guide for adding a new AWS service |
 | [Terraform](terraform.md) | Terraform provider usage guide |
 
 ## Quick Start

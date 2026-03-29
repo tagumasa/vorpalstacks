@@ -2,14 +2,15 @@ package dispatcher
 
 import (
 	"errors"
-	"log"
 	"net/http"
+
+	"vorpalstacks/internal/core/logs"
 )
 
 func (d *Dispatcher) executeWithRecovery(w http.ResponseWriter, r *http.Request, serviceName, opName string, fn func()) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			log.Printf("PANIC in %s.%s: %v", serviceName, opName, rec)
+			logs.Error("PANIC in handler", logs.String("service", serviceName), logs.String("operation", opName), logs.Any("panic", rec))
 			d.handleErrorForRequest(w, r, errors.New("panic in handler"))
 		}
 	}()

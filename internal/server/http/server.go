@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
@@ -308,7 +308,7 @@ func (s *Server) Start() error {
 		if s.config.TLSConfig.Enabled && s.tlsManager != nil {
 			tlsConfig, err := s.tlsManager.GetTLSConfig()
 			if err != nil {
-				log.Printf("Failed to get TLS config: %v", err)
+				logs.Error("Failed to get TLS config", logs.Err(err))
 				return
 			}
 
@@ -331,7 +331,7 @@ func (s *Server) Start() error {
 
 				err := tlsSrv.ListenAndServeTLS("", "")
 				if err != nil && !errors.Is(err, http.ErrServerClosed) {
-					log.Printf("TLS server error: %v", err)
+					logs.Error("TLS server error", logs.Err(err))
 				}
 			}()
 		}
@@ -365,7 +365,7 @@ func (s *Server) handleShutdown() {
 
 	if srv != nil {
 		if err := srv.Shutdown(ctx); err != nil {
-			log.Printf("handleShutdown: server shutdown error: %v", err)
+			logs.Error("Server shutdown error", logs.Err(err))
 		}
 	}
 
@@ -375,7 +375,7 @@ func (s *Server) handleShutdown() {
 
 	if tlsSrv != nil {
 		if err := tlsSrv.Shutdown(ctx); err != nil {
-			log.Printf("handleShutdown: TLS server shutdown error: %v", err)
+			logs.Error("TLS server shutdown error", logs.Err(err))
 		}
 	}
 
@@ -394,7 +394,7 @@ func (s *Server) handleShutdown() {
 
 	s.closeOnce.Do(func() {
 		if err := s.storageManager.Close(); err != nil {
-			log.Printf("handleShutdown: storage manager close error: %v", err)
+			logs.Error("Storage manager close error", logs.Err(err))
 		}
 	})
 }
@@ -414,7 +414,7 @@ func (s *Server) Close() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(ctx); err != nil {
-			log.Printf("Close: server shutdown error: %v", err)
+			logs.Error("Server shutdown error", logs.Err(err))
 		}
 	}
 
@@ -425,7 +425,7 @@ func (s *Server) Close() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := tlsSrv.Shutdown(ctx); err != nil {
-			log.Printf("Close: TLS server shutdown error: %v", err)
+			logs.Error("TLS server shutdown error", logs.Err(err))
 		}
 	}
 

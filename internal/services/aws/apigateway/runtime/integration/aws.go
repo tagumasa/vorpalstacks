@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -813,7 +812,7 @@ func (e *AWSExecutor) deliverToSQSSubscriber(queueArn string, notification *sns.
 		MessageAttributes: convertSNSAttrsToSQS(notification.MessageAttributes),
 	}
 	if _, err := e.sqsStore.SendMessage(queueURL, msg); err != nil {
-		log.Printf("Failed to send SQS message to %s: %v", queueURL, err)
+		logs.Error("Failed to send SQS message to subscriber", logs.String("queue", queueURL), logs.Err(err))
 	}
 }
 

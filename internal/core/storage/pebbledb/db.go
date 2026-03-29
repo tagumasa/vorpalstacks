@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"math"
 	"os"
@@ -95,20 +94,20 @@ type pebbleLogger struct{}
 // Infof logs an informational message from the Pebble database.
 // It formats the message with the given arguments and logs it with a PEBBLE INFO prefix.
 func (l *pebbleLogger) Infof(format string, args ...interface{}) {
-	log.Printf("[PEBBLE INFO] "+format, args...)
+	slog.Info(fmt.Sprintf(format, args...), "source", "pebble")
 }
 
 // Fatalf logs a fatal error message from the Pebble database.
 // It formats the message with the given arguments and logs it with a PEBBLE FATAL prefix.
 // This is typically called when the database encounters a critical error from which it cannot recover.
 func (l *pebbleLogger) Fatalf(format string, args ...interface{}) {
-	slog.Error("[PEBBLE FATAL] "+fmt.Sprintf(format, args...), "severity", "critical")
+	slog.Error(fmt.Sprintf(format, args...), "source", "pebble", "severity", "critical")
 }
 
 // Errorf logs an error message from the Pebble database.
 // It formats the message with the given arguments and logs it with a PEBBLE ERROR prefix.
 func (l *pebbleLogger) Errorf(format string, args ...interface{}) {
-	log.Printf("[PEBBLE ERROR] "+format, args...)
+	slog.Error(fmt.Sprintf(format, args...), "source", "pebble")
 }
 
 // Open opens a new Pebble database with the given options.

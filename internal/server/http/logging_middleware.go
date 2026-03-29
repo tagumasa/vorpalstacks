@@ -3,11 +3,12 @@ package http
 
 import (
 	"bufio"
-	"log"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"vorpalstacks/internal/core/logs"
 )
 
 func sanitizeForLog(s string) string {
@@ -26,13 +27,12 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(ww, r)
 
 		duration := time.Since(start)
-		// #nosec G706
-		log.Printf("[%s] %s %s %d %v",
-			r.Method,
-			sanitizeForLog(r.URL.Path),
-			sanitizeForLog(r.URL.RawQuery),
-			ww.statusCode,
-			duration,
+		logs.Info("HTTP request",
+			logs.String("method", r.Method),
+			logs.String("path", sanitizeForLog(r.URL.Path)),
+			logs.String("query", sanitizeForLog(r.URL.RawQuery)),
+			logs.Int("status", ww.statusCode),
+			logs.Any("duration", duration),
 		)
 	})
 }

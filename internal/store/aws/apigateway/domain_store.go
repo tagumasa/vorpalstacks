@@ -3,10 +3,10 @@ package apigateway
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -101,7 +101,7 @@ func (s *DomainStore) DeleteDomainName(domainName string) error {
 	if err == nil {
 		for _, mapping := range mappings.Items {
 			if err := s.DeleteBasePathMapping(domainName, mapping.BasePath); err != nil {
-				log.Printf("failed to delete base path mapping %s/%s: %v", domainName, mapping.BasePath, err)
+				logs.Error("Failed to delete base path mapping", logs.String("domain", domainName), logs.String("basePath", mapping.BasePath), logs.Err(err))
 			}
 		}
 	}

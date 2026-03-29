@@ -1,8 +1,7 @@
 package dispatcher
 
 import (
-	"log"
-
+	"vorpalstacks/internal/core/logs"
 	cloudtrailaudit "vorpalstacks/internal/services/aws/cloudtrail/audit"
 	"vorpalstacks/internal/services/aws/common/audit"
 	"vorpalstacks/internal/services/aws/common/request"
@@ -35,7 +34,7 @@ func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.
 	if recorder := reqCtx.GetAuditRecorder(); recorder != nil {
 		if auditRecorder, ok := recorder.(audit.Recorder); ok {
 			if err := auditRecorder.RecordEvent(event); err != nil {
-				log.Printf("Failed to record audit event: %v", err)
+				logs.Error("Failed to record audit event", logs.Err(err))
 			}
 		}
 	}

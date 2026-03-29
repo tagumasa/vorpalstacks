@@ -5,13 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/chunk"
 	pb "vorpalstacks/internal/pb/storage/storage_cloudwatchlogs"
@@ -117,13 +117,13 @@ func (s *Store) DeleteLogGroup(name string) error {
 	metricFilters, _, _ := s.ListMetricFilters(name, "", "", 1000)
 	for _, mf := range metricFilters {
 		if err := s.Delete(s.metricFilterKey(name, mf.Name)); err != nil {
-			log.Printf("Failed to delete metric filter %s: %v", mf.Name, err)
+			logs.Error("Failed to delete metric filter", logs.String("name", mf.Name), logs.Err(err))
 		}
 	}
 	subFilters, _ := s.ListSubscriptionFilters(name, "")
 	for _, sf := range subFilters {
 		if err := s.Delete(s.subscriptionFilterKey(name, sf.FilterName)); err != nil {
-			log.Printf("Failed to delete subscription filter %s: %v", sf.FilterName, err)
+			logs.Error("Failed to delete subscription filter", logs.String("name", sf.FilterName), logs.Err(err))
 		}
 	}
 	key := s.logGroupKey(name)
@@ -200,15 +200,15 @@ func (s *Store) DeleteLogStream(logGroupName, logStreamName string) error {
 	for _, chunk := range chunks {
 		cp, err := s.safeChunkPath(chunk.ChunkPath)
 		if err != nil {
-			log.Printf("Path traversal attempt in chunk %s: %v", chunk.ChunkPath, err)
+			logs.Warn("Path traversal attempt in chunk", logs.String("chunkPath", chunk.ChunkPath), logs.Err(err))
 			continue
 		}
 		if err := os.Remove(cp); err != nil {
-			log.Printf("Failed to remove chunk file %s: %v", chunk.ChunkPath, err)
+			logs.Error("Failed to remove chunk file", logs.String("chunkPath", chunk.ChunkPath), logs.Err(err))
 		}
 		deleteKey := s.chunkIndexKey(logGroupName, logStreamName, chunk.ChunkID)
 		if err := s.Delete(deleteKey); err != nil {
-			log.Printf("Failed to delete chunk index %s: %v", deleteKey, err)
+			logs.Error("Failed to delete chunk index", logs.String("key", deleteKey), logs.Err(err))
 		}
 	}
 	key := s.logStreamKey(logGroupName, logStreamName)
@@ -429,7 +429,7 @@ func (s *Store) ListChunksForStream(logGroupName, logStreamName string) []*Chunk
 		}
 		return nil
 	}); err != nil {
-		log.Printf("Failed to scan chunks for stream %s/%s: %v", logGroupName, logStreamName, err)
+		logs.Error("Failed to scan chunks for stream", logs.String("logGroup", logGroupName), logs.String("logStream", logStreamName), logs.Err(err))
 	}
 
 	return chunks
@@ -450,7 +450,7 @@ func (s *Store) ListChunksForLogGroup(logGroupName string) []*ChunkMeta {
 		}
 		return nil
 	}); err != nil {
-		log.Printf("Failed to scan chunks for log group %s: %v", logGroupName, err)
+		logs.Error("Failed to scan chunks for log group", logs.String("logGroup", logGroupName), logs.Err(err))
 	}
 
 	return chunks
@@ -513,7 +513,7 @@ func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endT
 	if nextToken != "" {
 		if decoded, err := base64.StdEncoding.DecodeString(nextToken); err == nil {
 			if _, err := fmt.Sscanf(string(decoded), "%d", &startIndex); err != nil {
-				log.Printf("Failed to parse next token %q: %v", nextToken, err)
+				logs.Warn("Failed to parse next token", logs.String("token", nextToken), logs.Err(err))
 				startIndex = 0
 			}
 		}
@@ -610,7 +610,7 @@ func (s *Store) flushIfNeeded(logGroupName, logStreamName string) {
 
 	if ac, exists := s.activeChunks[streamKey]; exists && len(ac.entries) > 0 {
 		if err := s.flushChunk(logGroupName, logStreamName, ac); err != nil {
-			log.Printf("Failed to flush chunk for %s/%s: %v", logGroupName, logStreamName, err)
+			logs.Error("Failed to flush chunk", logs.String("logGroup", logGroupName), logs.String("logStream", logStreamName), logs.Err(err))
 		}
 		ac.entries = ac.entries[:0]
 	}
@@ -718,7 +718,7 @@ func (s *Store) ListSubscriptionFilters(logGroupName, filterNamePrefix string) (
 		}
 		return nil
 	}); err != nil {
-		log.Printf("Failed to scan subscription filters for %s: %v", logGroupName, err)
+		logs.Error("Failed to scan subscription filters", logs.String("logGroup", logGroupName), logs.Err(err))
 	}
 
 	return filters, nil
@@ -820,7 +820,7 @@ func (s *Store) PurgeExpiredChunks(logGroupName string, cutoffTime int64) (int64
 
 		indexKey := s.chunkIndexKey(logGroupName, chunk.LogStream, chunk.ChunkID)
 		if err := s.Delete(indexKey); err != nil {
-			log.Printf("Failed to delete chunk index %s: %v", indexKey, err)
+			logs.Error("Failed to delete chunk index", logs.String("key", indexKey), logs.Err(err))
 		}
 
 		totalBytesRemoved += fileSize

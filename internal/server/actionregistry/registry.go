@@ -150,6 +150,28 @@ func (r *ActionRegistry) initDefaults() {
 		"ListActivities",
 		"RedriveExecution", "TestState",
 	})
+
+	r.Register("acm", []string{
+		"RequestCertificate", "GetCertificate", "DeleteCertificate",
+		"ListCertificates", "DescribeCertificate",
+		"ResendValidationEmail",
+		"AddTagsToCertificate", "RemoveTagsFromCertificate", "ListTagsForCertificate",
+		"ImportCertificate", "ExportCertificate",
+		"GetAccountConfiguration", "PutAccountConfiguration",
+		"UpdateCertificateOptions", "RenewCertificate", "RevokeCertificate",
+	})
+
+	r.Register("cloudtrail", []string{
+		"CreateTrail", "DeleteTrail", "UpdateTrail", "GetTrail",
+		"DescribeTrails", "GetTrailStatus", "ListTrails",
+		"StartLogging", "StopLogging",
+		"GetEventSelectors", "PutEventSelectors",
+		"GetInsightSelectors", "PutInsightSelectors",
+		"AddTags", "RemoveTags", "ListTags",
+		"TagResource", "UntagResource", "ListTagsForResource",
+		"LookupEvents", "ListPublicKeys",
+		"GetResourcePolicy", "PutResourcePolicy", "DeleteResourcePolicy",
+	})
 }
 
 // LookupServiceByAction returns the service name for a given action using the global registry.

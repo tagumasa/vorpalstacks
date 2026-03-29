@@ -10,6 +10,8 @@ import (
 )
 
 func (e *Executor) executeChoice(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.ChoiceState) (string, error) {
+	isJSONata := IsJSONataState(state, execCtx.QueryLanguage)
+
 	eventId := execCtx.nextEventId()
 	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
 		ExecutionArn:    execCtx.Execution.ExecutionArn,
@@ -22,6 +24,10 @@ func (e *Executor) executeChoice(ctx context.Context, execCtx *ExecutionContext,
 			Name:  execCtx.CurrentState,
 		},
 	})
+
+	if isJSONata {
+		return e.executeChoiceJSONata(ctx, execCtx, state)
+	}
 
 	var inputData map[string]interface{}
 	if err := json.Unmarshal([]byte(execCtx.Input), &inputData); err != nil {
@@ -53,6 +59,72 @@ func (e *Executor) executeChoice(ctx context.Context, execCtx *ExecutionContext,
 	}
 
 	eventId = execCtx.nextEventId()
+	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
+		ExecutionArn:    execCtx.Execution.ExecutionArn,
+		EventId:         eventId,
+		PreviousEventId: eventId - 1,
+		Type:            "ChoiceStateExited",
+		Timestamp:       time.Now().UTC(),
+		ChoiceStateExitedEventDetails: &sfnstore.ChoiceStateExitedEventDetails{
+			Output:    execCtx.Input,
+			Name:      execCtx.CurrentState,
+			NextState: nextState,
+		},
+	})
+
+	return nextState, nil
+}
+
+func (e *Executor) executeChoiceJSONata(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.ChoiceState) (string, error) {
+	var inputData interface{}
+	if execCtx.Input != "" {
+		json.Unmarshal([]byte(execCtx.Input), &inputData)
+	}
+	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
+
+	for _, rule := range state.Choices {
+		if rule.Condition != "" {
+			vars := buildVarsMap(statesVar, execCtx.VariableScope)
+			result, err := EvaluateJSONata(ctx, UnwrapExpression(rule.Condition), nil, vars)
+			if err != nil {
+				return "", e.newQueryEvalError(ctx, execCtx, "Condition", err.Error())
+			}
+			matched, ok := result.(bool)
+			if !ok || !matched {
+				continue
+			}
+
+			if len(rule.Assign) > 0 {
+				evaluated, err := evaluateAssign(ctx, rule.Assign, statesVar, execCtx.VariableScope)
+				if err != nil {
+					return "", e.newQueryEvalError(ctx, execCtx, "Assign", err.Error())
+				}
+				execCtx.PendingAssign = evaluated
+			}
+
+			eventId := execCtx.nextEventId()
+			e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
+				ExecutionArn:    execCtx.Execution.ExecutionArn,
+				EventId:         eventId,
+				PreviousEventId: eventId - 1,
+				Type:            "ChoiceStateExited",
+				Timestamp:       time.Now().UTC(),
+				ChoiceStateExitedEventDetails: &sfnstore.ChoiceStateExitedEventDetails{
+					Output:    execCtx.Input,
+					Name:      execCtx.CurrentState,
+					NextState: rule.Next,
+				},
+			})
+			return rule.Next, nil
+		}
+	}
+
+	nextState := state.Default
+	if nextState == "" {
+		return "", fmt.Errorf("no choice rule matched and no default state specified")
+	}
+
+	eventId := execCtx.nextEventId()
 	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
 		ExecutionArn:    execCtx.Execution.ExecutionArn,
 		EventId:         eventId,

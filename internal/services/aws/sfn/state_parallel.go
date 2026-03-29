@@ -2,6 +2,7 @@ package sfn
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -11,7 +12,21 @@ import (
 )
 
 func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.ParallelState) (string, string, *ExecutionError) {
+	isJSONata := IsJSONataState(state, execCtx.QueryLanguage)
+
 	processedInput := e.applyInputPath(execCtx.Input, state.GetInputPath())
+
+	if isJSONata && state.Arguments != nil {
+		var inputData interface{}
+		json.Unmarshal([]byte(processedInput), &inputData)
+		statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
+		argsInput, err := e.applyJSONataArguments(ctx, state.Arguments, statesVar, execCtx.VariableScope)
+		if err != nil {
+			return "", "", e.newQueryEvalError(ctx, execCtx, "Arguments", err.Error())
+		}
+		processedInput = argsInput
+		execCtx.AfterArguments = &processedInput
+	}
 
 	eventId := execCtx.nextEventId()
 	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
@@ -44,13 +59,16 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 				return
 			}
 			branchCtx := &ExecutionContext{
-				Execution:    execCtx.Execution,
-				Definition:   b,
-				CurrentState: b.StartAt,
-				Input:        processedInput,
-				Output:       "",
-				EventId:      execCtx.EventId,
-				States:       branchStates,
+				Execution:     execCtx.Execution,
+				Definition:    b,
+				CurrentState:  b.StartAt,
+				Input:         processedInput,
+				Output:        "",
+				EventId:       execCtx.EventId,
+				States:        branchStates,
+				QueryLanguage: execCtx.QueryLanguage,
+				VariableScope: execCtx.VariableScope.NewChild(),
+				MapItemIndex:  -1,
 			}
 			execErr := e.executeStates(ctx, branchCtx)
 			mu.Lock()
@@ -76,6 +94,9 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 		if len(state.Catch) > 0 {
 			catchPolicy := e.findMatchingCatchPolicy(state.Catch, "States.BranchFailed")
 			if catchPolicy != nil {
+				if isJSONata {
+					return e.executeParallelJSONataCatch(ctx, execCtx, state, processedInput, "States.BranchFailed", firstError.Error(), catchPolicy)
+				}
 				catchOutput := e.buildCatchOutput(processedInput, "States.BranchFailed", firstError.Error(), catchPolicy.ResultPath)
 				return catchOutput, catchPolicy.Next, nil
 			}
@@ -84,7 +105,44 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 	}
 
 	output := fmt.Sprintf(`[%s]`, strings.Join(results, ","))
-	output = e.applyOutputPath(output, state.GetOutputPath())
+
+	if isJSONata {
+		var inputData interface{}
+		json.Unmarshal([]byte(processedInput), &inputData)
+		var resultData interface{}
+		json.Unmarshal([]byte(output), &resultData)
+		statesVar := e.buildStatesVarWithContext(execCtx, inputData, resultData, nil)
+
+		if len(state.Assign) > 0 {
+			evaluated, err := evaluateAssign(ctx, state.Assign, statesVar, execCtx.VariableScope)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Assign", err.Error())
+			}
+			execCtx.PendingAssign = evaluated
+		}
+
+		if state.JSONataOutput == nil && len(state.OutputRaw) > 0 {
+			var err error
+			state.JSONataOutput, err = resolveJSONataOutput(state)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Output", err.Error())
+			}
+		}
+
+		if state.JSONataOutput != nil {
+			resolved, err := e.applyJSONataOutput(ctx, state.JSONataOutput, statesVar, execCtx.VariableScope)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Output", err.Error())
+			}
+			outputJSON, err := json.Marshal(resolved)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Output", fmt.Sprintf("failed to marshal: %s", err.Error()))
+			}
+			output = string(outputJSON)
+		}
+	} else {
+		output = e.applyOutputPath(output, state.GetOutputPath())
+	}
 
 	eventId = execCtx.nextEventId()
 	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
@@ -100,6 +158,40 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 	})
 
 	return output, state.Next, nil
+}
+
+func (e *Executor) executeParallelJSONataCatch(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.ParallelState, processedInput, errorCode, cause string, catchPolicy *sfnstore.CatchPolicy) (string, string, *ExecutionError) {
+	errorOutput := map[string]interface{}{
+		"Error": errorCode,
+		"Cause": cause,
+	}
+
+	var inputData interface{}
+	json.Unmarshal([]byte(processedInput), &inputData)
+	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, errorOutput)
+
+	if len(catchPolicy.Assign) > 0 {
+		evaluated, err := evaluateAssign(ctx, catchPolicy.Assign, statesVar, execCtx.VariableScope)
+		if err != nil {
+			return "", "", e.newQueryEvalError(ctx, execCtx, "Catch.Assign", err.Error())
+		}
+		execCtx.PendingAssign = evaluated
+	}
+
+	if catchPolicy.Output != nil {
+		resolved, err := e.applyJSONataOutput(ctx, catchPolicy.Output, statesVar, execCtx.VariableScope)
+		if err != nil {
+			return "", "", e.newQueryEvalError(ctx, execCtx, "Catch.Output", err.Error())
+		}
+		outputJSON, err := json.Marshal(resolved)
+		if err != nil {
+			return "", "", e.newQueryEvalError(ctx, execCtx, "Catch.Output", fmt.Sprintf("failed to marshal: %s", err.Error()))
+		}
+		return string(outputJSON), catchPolicy.Next, nil
+	}
+
+	errorJSON, _ := json.Marshal(errorOutput)
+	return string(errorJSON), catchPolicy.Next, nil
 }
 
 func getBranchNames(branches []*sfnstore.StateMachineDefinition) []string {

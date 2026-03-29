@@ -3,7 +3,6 @@ package athena
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -39,7 +38,7 @@ func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenast
 	qe.Status.State = athenastore.QueryExecutionStateRunning
 	qe.Status.StateChangeReason = ""
 	if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {
-		log.Printf("Failed to update query execution %s to RUNNING: %v", qe.QueryExecutionId, err)
+		logs.Error("Failed to update query execution to RUNNING", logs.String("id", qe.QueryExecutionId), logs.Err(err))
 	}
 
 	result, stats, err := s.executeSQLQuery(reqCtx, ctx, qe.Query, qe.QueryExecutionContext)
@@ -64,7 +63,7 @@ func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenast
 			ResultSet:        result,
 		}
 		if err := st.resultStore.StoreResult(qe.QueryExecutionId, queryResult); err != nil {
-			log.Printf("Failed to store query result for %s: %v", qe.QueryExecutionId, err)
+			logs.Error("Failed to store query result", logs.String("id", qe.QueryExecutionId), logs.Err(err))
 		}
 
 		if qe.ResultConfiguration != nil && qe.ResultConfiguration.OutputLocation != "" {
@@ -92,7 +91,7 @@ func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenast
 	}
 
 	if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {
-		log.Printf("Failed to update query execution %s final state: %v", qe.QueryExecutionId, err)
+		logs.Error("Failed to update query execution final state", logs.String("id", qe.QueryExecutionId), logs.Err(err))
 	}
 }
 

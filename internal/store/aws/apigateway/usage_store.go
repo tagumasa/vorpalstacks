@@ -2,10 +2,10 @@ package apigateway
 
 import (
 	"encoding/json"
-	"log"
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -168,7 +168,7 @@ func (s *UsageStore) DeleteUsagePlan(usagePlanId string) error {
 	if err == nil {
 		for _, key := range keys.Items {
 			if delErr := s.DeleteUsagePlanKey(usagePlanId, key.Id); delErr != nil {
-				log.Printf("failed to delete usage plan key %s/%s: %v", usagePlanId, key.Id, delErr)
+				logs.Error("Failed to delete usage plan key", logs.String("usagePlanId", usagePlanId), logs.String("keyId", key.Id), logs.Err(delErr))
 			}
 		}
 	}
@@ -276,7 +276,7 @@ func (s *UsageStore) ListUsagePlansForAPIKey(apiKeyId string) ([]*UsagePlan, err
 	for _, plan := range allPlans.Items {
 		keys, err := s.ListUsagePlanKeys(plan.Id, common.ListOptions{MaxItems: 1000})
 		if err != nil {
-			log.Printf("failed to list usage plan keys %s: %v", plan.Id, err)
+			logs.Error("Failed to list usage plan keys", logs.String("planId", plan.Id), logs.Err(err))
 			continue
 		}
 		for _, key := range keys.Items {

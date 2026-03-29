@@ -1,6 +1,10 @@
 package iam
 
-import "fmt"
+import (
+	"fmt"
+
+	awserrors "vorpalstacks/internal/services/aws/common/errors"
+)
 
 // InvalidParameterValueError is returned when a parameter value is invalid.
 type InvalidParameterValueError struct {
@@ -13,6 +17,15 @@ func (e *InvalidParameterValueError) Error() string {
 	return e.Message
 }
 
+// GetAWSError returns the underlying AWS error for dispatcher error extraction.
+func (e *InvalidParameterValueError) GetAWSError() *awserrors.AWSError {
+	code := e.Code
+	if code == "" {
+		code = "InvalidParameterValue"
+	}
+	return awserrors.NewAWSError(code, e.Message, 400)
+}
+
 // InvalidArnError is returned when an Amazon Resource Name (ARN) is invalid.
 type InvalidArnError struct {
 	Message string
@@ -21,6 +34,11 @@ type InvalidArnError struct {
 // Error returns the error message.
 func (e *InvalidArnError) Error() string {
 	return e.Message
+}
+
+// GetAWSError returns the underlying AWS error for dispatcher error extraction.
+func (e *InvalidArnError) GetAWSError() *awserrors.AWSError {
+	return awserrors.NewAWSError("InvalidArn", e.Message, 400)
 }
 
 // ValidationException is returned when validation fails.
@@ -33,6 +51,11 @@ func (e *ValidationException) Error() string {
 	return e.Message
 }
 
+// GetAWSError returns the underlying AWS error for dispatcher error extraction.
+func (e *ValidationException) GetAWSError() *awserrors.AWSError {
+	return awserrors.NewAWSError("ValidationException", e.Message, 400)
+}
+
 // InvalidParameterCombinationError is returned when parameters cannot be used together.
 type InvalidParameterCombinationError struct {
 	Message string
@@ -41,6 +64,11 @@ type InvalidParameterCombinationError struct {
 // Error returns the error message.
 func (e *InvalidParameterCombinationError) Error() string {
 	return e.Message
+}
+
+// GetAWSError returns the underlying AWS error for dispatcher error extraction.
+func (e *InvalidParameterCombinationError) GetAWSError() *awserrors.AWSError {
+	return awserrors.NewAWSError("InvalidParameterCombination", e.Message, 400)
 }
 
 var (

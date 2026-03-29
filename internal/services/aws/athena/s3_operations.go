@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 	s3store "vorpalstacks/internal/store/aws/s3"
@@ -66,7 +66,7 @@ func (s *Service) resultSetToCSV(resultSet *athenastore.ResultSet) []byte {
 			record = append(record, datum.VarCharValue)
 		}
 		if err := writer.Write(record); err != nil {
-			log.Printf("Failed to write CSV record: %v", err)
+			logs.Error("Failed to write CSV record", logs.Err(err))
 		}
 	}
 	writer.Flush()

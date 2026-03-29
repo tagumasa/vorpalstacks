@@ -51,7 +51,9 @@ func EncodeJSONResponse(w http.ResponseWriter, response interface{}) error {
 		return err
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	if w.Header().Get("Content-Type") == "" {
+		w.Header().Set("Content-Type", "application/json")
+	}
 	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write(buf.Bytes())
@@ -69,7 +71,9 @@ func EncodeJSONResponseWithStatus(w http.ResponseWriter, statusCode int, respons
 		return err
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	if w.Header().Get("Content-Type") == "" {
+		w.Header().Set("Content-Type", "application/json")
+	}
 	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 	w.WriteHeader(statusCode)
 	_, err := w.Write(buf.Bytes())
@@ -91,7 +95,11 @@ func ConvertTimestampsToSeconds(v interface{}) interface{} {
 		for k, vv := range val {
 			if jsonTimestampKeys[k] {
 				if ts, ok := vv.(int64); ok {
-					val[k] = float64(ts) / 1000
+					if ts > 1e12 {
+						val[k] = float64(ts) / 1000
+					} else {
+						val[k] = float64(ts)
+					}
 					continue
 				}
 				if ts, ok := vv.(float64); ok && ts > 1e12 {

@@ -4,12 +4,12 @@ package s3
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/utils/crypto"
@@ -110,7 +110,7 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if v.Payload != nil {
 			defer v.Payload.Close()
 			if _, err := io.Copy(w, v.Payload); err != nil {
-				log.Printf("S3: failed to stream SelectObjectContent payload: %v", err)
+				logs.Error("S3: failed to stream SelectObjectContent payload", logs.Err(err))
 			}
 		}
 		return
@@ -129,7 +129,7 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if v.Body != nil {
 			defer v.Body.Close()
 			if _, err := io.Copy(w, v.Body); err != nil {
-				log.Printf("S3: failed to stream GetObject body: %v", err)
+				logs.Error("S3: failed to stream GetObject body", logs.Err(err))
 			}
 		}
 		return

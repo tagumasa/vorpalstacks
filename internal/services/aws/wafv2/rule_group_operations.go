@@ -3,8 +3,8 @@ package wafv2
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 	wafstore "vorpalstacks/internal/store/aws/waf"
@@ -49,7 +49,7 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 	if tags := parseTags(req.Parameters["Tags"]); len(tags) > 0 && ruleGroup.ARN != "" {
 		ruleGroup.Tags = tags
 		if err := stores.ruleGroups.Put(ruleGroup.ID, ruleGroup); err != nil {
-			log.Printf("WARNING: failed to persist tags for RuleGroup %s: %v", ruleGroup.ID, err)
+			logs.Warn("failed to persist tags for RuleGroup", logs.String("id", ruleGroup.ID), logs.Err(err))
 		}
 	}
 

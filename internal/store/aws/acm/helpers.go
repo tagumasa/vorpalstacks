@@ -5,9 +5,10 @@ import (
 	cryptorand "crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"sync/atomic"
 	"time"
+
+	"vorpalstacks/internal/core/logs"
 )
 
 var certificateCounter uint64 = 0
@@ -34,7 +35,7 @@ func generateValidationToken() string {
 	randBytes := make([]byte, 256)
 
 	if _, err := cryptorand.Read(randBytes); err != nil {
-		log.Printf("[WARN] crypto/rand.Read failed in generateValidationToken: %v, using fallback", err)
+		logs.Warn("crypto/rand.Read failed in generateValidationToken, using fallback", logs.Err(err))
 		for i := range b {
 			b[i] = letters[(time.Now().UnixNano()+int64(i))%int64(lettersLen)]
 		}

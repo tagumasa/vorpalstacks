@@ -3,9 +3,9 @@ package apigateway
 
 import (
 	"context"
-	"log"
 	"strings"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 	tagutil "vorpalstacks/internal/services/aws/common/tags"
@@ -698,7 +698,7 @@ func (s *APIGatewayService) GetUsage(ctx context.Context, reqCtx *request.Reques
 	for _, keyId := range apiKeys {
 		records, err := stores.usage.ListUsageRecordsForAPIKey(usagePlanId, keyId, startDate, endDate)
 		if err != nil {
-			log.Printf("[WARN] GetUsage: failed to list usage records for key %s: %v", keyId, err)
+			logs.Warn("GetUsage: failed to list usage records for key", logs.String("keyId", keyId), logs.Err(err))
 			continue
 		}
 		for _, record := range records {

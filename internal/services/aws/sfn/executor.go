@@ -2,11 +2,12 @@ package sfn
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"log"
 	"sync/atomic"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -62,11 +63,11 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 	if err != nil {
 		execution.Status = "FAILED"
 		execution.Error = "InvalidDefinition"
-		log.Printf("Failed to parse state machine definition for %s: %v", execution.StateMachineArn, err)
+		logs.Error("Failed to parse state machine definition", logs.String("arn", execution.StateMachineArn), logs.Err(err))
 		execution.Cause = "Invalid state machine definition syntax"
 		execution.StopDate = time.Now().UTC()
 		if updateErr := e.store.UpdateExecution(ctx, execution); updateErr != nil {
-			log.Printf("Failed to update execution status to FAILED after definition error: %v", updateErr)
+			logs.Error("Failed to update execution status to FAILED after definition error", logs.Err(updateErr))
 		}
 		return fmt.Errorf("failed to parse state machine definition: %w", err)
 	}
@@ -95,17 +96,20 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 		},
 	})
 	if err != nil {
-		log.Printf("Failed to add ExecutionStarted event: %v", err)
+		logs.Error("Failed to add ExecutionStarted event", logs.Err(err))
 	}
 
 	execCtx := &ExecutionContext{
-		Execution:    execution,
-		Definition:   definition,
-		CurrentState: definition.StartAt,
-		Input:        execution.Input,
-		Output:       "",
-		EventId:      &eventId,
-		States:       states,
+		Execution:     execution,
+		Definition:    definition,
+		CurrentState:  definition.StartAt,
+		Input:         execution.Input,
+		Output:        "",
+		EventId:       &eventId,
+		States:        states,
+		QueryLanguage: definition.QueryLanguage,
+		VariableScope: NewVariableScope(nil),
+		MapItemIndex:  -1,
 	}
 
 	err = e.executeStates(ctx, execCtx)
@@ -130,7 +134,7 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 					Cause: execution.Cause,
 				},
 			}); err != nil {
-				log.Printf("Failed to add ExecutionTimedOut event: %v", err)
+				logs.Error("Failed to add ExecutionTimedOut event", logs.Err(err))
 			}
 		} else if ctx.Err() == context.Canceled {
 			execution.Status = "ABORTED"
@@ -148,12 +152,12 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 					Cause: execution.Cause,
 				},
 			}); err != nil {
-				log.Printf("Failed to add ExecutionAborted event: %v", err)
+				logs.Error("Failed to add ExecutionAborted event", logs.Err(err))
 			}
 		} else {
 			execution.Status = "FAILED"
 			execution.Error = "ExecutionFailed"
-			log.Printf("State machine execution failed for %s: %v", execution.ExecutionArn, err)
+			logs.Error("State machine execution failed", logs.String("arn", execution.ExecutionArn), logs.Err(err))
 			execution.Cause = "An internal error occurred during execution"
 			execution.StopDate = time.Now().UTC()
 
@@ -167,12 +171,12 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 					Cause: execution.Cause,
 				},
 			}); err != nil {
-				log.Printf("Failed to add ExecutionFailed event: %v", err)
+				logs.Error("Failed to add ExecutionFailed event", logs.Err(err))
 			}
 		}
 
 		if err := e.store.UpdateExecution(ctx, execution); err != nil {
-			log.Printf("Failed to update execution status to %s: %v", execution.Status, err)
+			logs.Error("Failed to update execution status", logs.String("status", execution.Status), logs.Err(err))
 		}
 		return err
 	}
@@ -190,28 +194,51 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 			Output: execCtx.Output,
 		},
 	}); err != nil {
-		log.Printf("Failed to add ExecutionSucceeded event: %v", err)
+		logs.Error("Failed to add ExecutionSucceeded event", logs.Err(err))
 	}
 
 	if err := e.store.UpdateExecution(ctx, execution); err != nil {
-		log.Printf("Failed to update execution status to SUCCEEDED: %v", err)
+		logs.Error("Failed to update execution status to SUCCEEDED", logs.Err(err))
 	}
 	return nil
 }
 
 // ExecutionContext holds the context for a state machine execution.
 type ExecutionContext struct {
-	Execution    *sfnstore.Execution
-	Definition   *sfnstore.StateMachineDefinition
-	CurrentState string
-	Input        string
-	Output       string
-	EventId      *int64
-	States       map[string]sfnstore.State
+	Execution         *sfnstore.Execution
+	Definition        *sfnstore.StateMachineDefinition
+	CurrentState      string
+	Input             string
+	Output            string
+	EventId           *int64
+	States            map[string]sfnstore.State
+	QueryLanguage     string
+	VariableScope     *VariableScope
+	PendingAssign     map[string]interface{}
+	StateEnteredTime  time.Time
+	RetryCount        int32
+	MapItemIndex      int
+	MapItemValue      interface{}
+	AfterArguments    *string
+	AfterItemSelector *string
 }
 
 func (ctx *ExecutionContext) nextEventId() int64 {
 	return atomic.AddInt64(ctx.EventId, 1)
+}
+
+func GetEffectiveQueryLanguage(state sfnstore.State, defaultLang string) string {
+	if ql := state.GetQueryLanguage(); ql != "" {
+		return ql
+	}
+	if defaultLang != "" {
+		return defaultLang
+	}
+	return "JSONPath"
+}
+
+func IsJSONataState(state sfnstore.State, defaultLang string) bool {
+	return GetEffectiveQueryLanguage(state, defaultLang) == "JSONata"
 }
 
 // ExecutionError represents an error that occurred during state machine execution.
@@ -242,6 +269,10 @@ func (e *Executor) executeStates(ctx context.Context, execCtx *ExecutionContext)
 		var output string
 		var err error
 		var execErr *ExecutionError
+
+		execCtx.PendingAssign = nil
+		execCtx.StateEnteredTime = time.Now().UTC()
+		execCtx.RetryCount = 0
 
 		switch s := state.(type) {
 		case *sfnstore.PassState:
@@ -285,6 +316,12 @@ func (e *Executor) executeStates(ctx context.Context, execCtx *ExecutionContext)
 			return fmt.Errorf("state execution failed: %w", err)
 		}
 
+		if len(execCtx.PendingAssign) > 0 && execCtx.VariableScope != nil {
+			if assignErr := execCtx.VariableScope.SetAll(execCtx.PendingAssign); assignErr != nil {
+				return fmt.Errorf("failed to apply Assign in state %s: %w", execCtx.CurrentState, assignErr)
+			}
+		}
+
 		execCtx.Input = output
 		execCtx.Output = output
 
@@ -311,6 +348,71 @@ func (e *Executor) addExecutionHistoryEvent(ctx context.Context, execution *sfns
 
 func (e *Executor) logHistoryEvent(ctx context.Context, execution *sfnstore.Execution, event *sfnstore.ExecutionHistoryEvent) {
 	if err := e.addExecutionHistoryEvent(ctx, execution, event); err != nil {
-		log.Printf("Failed to add %s history event: %v", event.Type, err)
+		logs.Error("Failed to add history event", logs.String("type", event.Type), logs.Err(err))
 	}
+}
+
+func (e *Executor) buildContextObject(execCtx *ExecutionContext) map[string]interface{} {
+	ctx := map[string]interface{}{}
+
+	if execCtx.Execution != nil {
+		var execInput interface{}
+		if execCtx.Execution.Input != "" {
+			json.Unmarshal([]byte(execCtx.Execution.Input), &execInput)
+		}
+		ctx["Execution"] = map[string]interface{}{
+			"Id":        execCtx.Execution.ExecutionArn,
+			"Name":      execCtx.Execution.Name,
+			"RoleArn":   e.extractExecutionRoleArn(),
+			"StartTime": execCtx.Execution.StartDate.Format(time.RFC3339),
+			"Input":     execInput,
+		}
+	}
+
+	if e.currentStateMachine != nil {
+		ctx["StateMachine"] = map[string]interface{}{
+			"Id":   e.currentStateMachine.StateMachineArn,
+			"Name": e.currentStateMachine.Name,
+		}
+	}
+
+	ctx["State"] = map[string]interface{}{
+		"Name":        execCtx.CurrentState,
+		"EnteredTime": execCtx.StateEnteredTime.Format(time.RFC3339),
+		"RetryCount":  execCtx.RetryCount,
+	}
+
+	if execCtx.MapItemIndex >= 0 {
+		ctx["Map"] = map[string]interface{}{
+			"Item": map[string]interface{}{
+				"Index": execCtx.MapItemIndex,
+				"Value": execCtx.MapItemValue,
+			},
+		}
+	}
+
+	return ctx
+}
+
+func (e *Executor) buildStatesVarWithContext(execCtx *ExecutionContext, input, result, errorOutput interface{}) map[string]interface{} {
+	ctxObj := e.buildContextObject(execCtx)
+	return BuildStatesVar(input, result, errorOutput, ctxObj)
+}
+
+func (e *Executor) newQueryEvalError(ctx context.Context, execCtx *ExecutionContext, location, cause string) *ExecutionError {
+	if execCtx.Execution != nil {
+		e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
+			ExecutionArn: execCtx.Execution.ExecutionArn,
+			EventId:      execCtx.nextEventId(),
+			Type:         "EvaluationFailed",
+			Timestamp:    time.Now().UTC(),
+			EvaluationFailedEventDetails: &sfnstore.EvaluationFailedEventDetails{
+				State:    execCtx.CurrentState,
+				Cause:    cause,
+				Error:    "States.QueryEvaluationError",
+				Location: location,
+			},
+		})
+	}
+	return &ExecutionError{ErrorCode: "States.QueryEvaluationError", Cause: cause}
 }

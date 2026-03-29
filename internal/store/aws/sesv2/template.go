@@ -1,9 +1,9 @@
 package sesv2
 
 import (
-	"log"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/common"
 )
 
@@ -65,7 +65,7 @@ func (s *SESv2Store) DeleteEmailTemplate(name string) error {
 	}
 	arn := s.BuildTemplateArn(name)
 	if err := s.TagStore.Delete(arn); err != nil {
-		log.Printf("Failed to delete tags for template %s: %v", name, err)
+		logs.Error("Failed to delete tags for template", logs.String("name", name), logs.Err(err))
 	}
 	return s.templateStore.Delete(name)
 }

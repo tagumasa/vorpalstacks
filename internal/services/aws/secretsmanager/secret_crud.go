@@ -87,19 +87,41 @@ func (s *SecretsManagerService) GetSecretValue(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	var version *secretsmanagerstore.SecretVersion
 	if versionId == "" && versionStage != "" {
-		version, err := store.GetSecretVersionByStage(secret.Name, versionStage)
+		var err error
+		version, err = store.GetSecretVersionByStage(secret.Name, versionStage)
 		if err != nil {
 			return nil, mapStoreError(err)
 		}
-		versionId = version.VersionId
 	} else if versionId == "" {
-		versionId = secret.CurrentVersion
-	}
-
-	version, err := store.GetSecretVersion(secret.Name, versionId)
-	if err != nil {
-		return nil, mapStoreError(err)
+		if secret.CurrentVersion == "" {
+			return nil, errors.NewAWSError("ResourceNotFoundException",
+				"Secrets Manager can't find the version for the secret because no version has been created.", http.StatusNotFound)
+		}
+		var err error
+		version, err = store.GetSecretVersion(secret.Name, secret.CurrentVersion)
+		if err != nil {
+			return nil, mapStoreError(err)
+		}
+	} else {
+		if isStageLabel(versionId) {
+			if secret.CurrentVersion == "" {
+				return nil, errors.NewAWSError("ResourceNotFoundException",
+					"Secrets Manager can't find the version for the secret because no version has been created.", http.StatusNotFound)
+			}
+			var err error
+			version, err = store.GetSecretVersionByStage(secret.Name, versionId)
+			if err != nil {
+				return nil, mapStoreError(err)
+			}
+		} else {
+			var err error
+			version, err = store.GetSecretVersion(secret.Name, versionId)
+			if err != nil {
+				return nil, mapStoreError(err)
+			}
+		}
 	}
 
 	result := map[string]interface{}{
@@ -220,4 +242,13 @@ func (s *SecretsManagerService) DeleteSecret(ctx context.Context, reqCtx *reques
 		"Name":         secret.Name,
 		"DeletionDate": deletionDate.Unix(),
 	}, nil
+}
+
+func isStageLabel(s string) bool {
+	switch s {
+	case "AWSCURRENT", "AWSPREVIOUS", "AWSPENDING":
+		return true
+	default:
+		return false
+	}
 }

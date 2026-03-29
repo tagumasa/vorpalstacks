@@ -3,7 +3,6 @@ package dispatcher
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/iam/policy"
 	"vorpalstacks/internal/store/aws/iam"
@@ -193,12 +193,16 @@ func (a *Authorizer) Authorize(
 
 	evalCtx := a.buildEvaluationContext(parsedReq, serviceName, user, r)
 
-	log.Printf("[AUTHZ] Evaluating %d policies for user=%s action=%s resource=%s",
-		len(policies), user.UserName, evalCtx.Action, evalCtx.Resource)
+	logs.Info("Evaluating policies",
+		logs.Int("count", len(policies)),
+		logs.String("user", user.UserName),
+		logs.String("action", evalCtx.Action),
+		logs.String("resource", evalCtx.Resource),
+	)
 
 	decision := a.policyEvaluator.Evaluate(evalCtx, policies)
 
-	log.Printf("[AUTHZ] Decision: effect=%s reason=%s", decision.Effect, decision.Reason)
+	logs.Info("Authorization decision", logs.String("effect", string(decision.Effect)), logs.String("reason", decision.Reason))
 
 	switch decision.Effect {
 	case policy.DecisionEffectAllow:
@@ -254,11 +258,11 @@ func (a *Authorizer) getEffectivePolicies(ctx context.Context, userName string) 
 func (a *Authorizer) fetchEffectivePolicies(userName string) ([]*policy.Document, error) {
 	var documents []*policy.Document
 
-	log.Printf("[AUTHZ] FetchEffectivePolicies for user=%s", userName)
+	logs.Info("Fetching effective policies", logs.String("user", userName))
 
 	inlineNames, err := a.iamStore.InlinePolicies().List("user", userName)
 	if err != nil {
-		log.Printf("[AUTHZ] Warning: failed to list inline policies for user %s: %v", userName, err)
+		logs.Warn("Failed to list inline policies", logs.String("user", userName), logs.Err(err))
 	}
 	for _, name := range inlineNames {
 		inline, err := a.iamStore.InlinePolicies().Get("user", userName, name)
@@ -318,7 +322,7 @@ func (a *Authorizer) fetchEffectivePolicies(userName string) ([]*policy.Document
 		}
 	}
 
-	log.Printf("[AUTHZ] Found %d policies for user %s", len(documents), userName)
+	logs.Info("Found policies for user", logs.Int("count", len(documents)), logs.String("user", userName))
 	return documents, nil
 }
 
@@ -413,7 +417,7 @@ func (a *Authorizer) cleanupExpiredEntries() {
 	}
 
 	if len(toDelete) > 0 {
-		log.Printf("[AUTHZ] Cleaned up %d expired cache entries (total: %d)", len(toDelete), count-len(toDelete))
+		logs.Info("Cleaned up expired cache entries", logs.Int("expired", len(toDelete)), logs.Int("remaining", count-len(toDelete)))
 	}
 
 	if count > a.maxCacheSize {
@@ -450,7 +454,7 @@ func (a *Authorizer) evictOldestEntries(toEvict int) {
 	}
 
 	if evicted > 0 {
-		log.Printf("[AUTHZ] Evicted %d oldest cache entries to maintain max size", evicted)
+		logs.Info("Evicted oldest cache entries", logs.Int("evicted", evicted))
 	}
 }
 

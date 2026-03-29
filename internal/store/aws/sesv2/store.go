@@ -2,10 +2,10 @@
 package sesv2
 
 import (
-	"log"
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -199,7 +199,7 @@ func (s *SESv2Store) DeleteEmailIdentity(identity string) error {
 		return ErrIdentityNotFound
 	}
 	if err := s.TagStore.Delete(arn); err != nil {
-		log.Printf("Failed to delete tags for identity %s: %v", identity, err)
+		logs.Error("Failed to delete tags for identity", logs.String("identity", identity), logs.Err(err))
 	}
 	return s.BaseStore.Delete(arn)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/services/aws/common/request"
@@ -134,6 +135,7 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 	stateName := request.GetParamLowerFirst(req.Parameters, "stateName")
 	input := request.GetParamLowerFirst(req.Parameters, "input")
 	inspectionLevel := request.GetParamLowerFirst(req.Parameters, "inspectionLevel")
+	variablesParam := request.GetParamLowerFirst(req.Parameters, "variables")
 
 	if definition == "" {
 		return nil, NewInvalidDefinitionException("definition is required")
@@ -149,6 +151,10 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 	var def sfnstore.StateMachineDefinition
 	if err := json.Unmarshal([]byte(definition), &def); err != nil {
 		return nil, NewInvalidDefinitionException("definition is not valid JSON: " + err.Error())
+	}
+
+	if def.QueryLanguage == "" {
+		def.QueryLanguage = "JSONPath"
 	}
 
 	rawState, exists := def.States[stateName]
@@ -172,9 +178,31 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 	}
 
 	executor := NewExecutorWithStores(store, s.lambdaInvoker, sqsStore, snsStore, s.eventsStore, s.accountID, reqCtx.GetRegion())
+	executor.currentStateMachine = &sfnstore.StateMachine{
+		StateMachineArn: "arn:aws:states:" + reqCtx.GetRegion() + ":" + s.accountID + ":stateMachine:test-sm",
+		Name:            "test-sm",
+	}
+
 	state, err := executor.parseState(stateName, rawState)
 	if err != nil {
 		return nil, NewInvalidDefinitionException(err.Error())
+	}
+
+	variableScope := NewVariableScope(nil)
+	if variablesParam != "" {
+		var rawVars map[string]interface{}
+		if err := json.Unmarshal([]byte(variablesParam), &rawVars); err != nil {
+			return nil, NewInvalidDefinitionException("variables is not valid JSON: " + err.Error())
+		}
+		vars := make(map[string]interface{}, len(rawVars))
+		for k, v := range rawVars {
+			vars[strings.TrimPrefix(k, "$")] = v
+		}
+		if len(vars) > 0 {
+			if err := variableScope.SetAll(vars); err != nil {
+				return nil, NewInvalidDefinitionException("invalid variables: " + err.Error())
+			}
+		}
 	}
 
 	testExec := &sfnstore.Execution{
@@ -188,15 +216,17 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 
 	eventId := int64(1)
 	execCtx := &ExecutionContext{
-		Execution:    testExec,
-		Definition:   &def,
-		CurrentState: stateName,
-		Input:        input,
-		Output:       "",
-		EventId:      &eventId,
-		States: map[string]sfnstore.State{
-			stateName: state,
-		},
+		Execution:        testExec,
+		Definition:       &def,
+		CurrentState:     stateName,
+		Input:            input,
+		Output:           "",
+		EventId:          &eventId,
+		States:           map[string]sfnstore.State{stateName: state},
+		QueryLanguage:    def.QueryLanguage,
+		VariableScope:    variableScope,
+		StateEnteredTime: time.Now().UTC(),
+		MapItemIndex:     -1,
 	}
 
 	var output string
@@ -222,39 +252,55 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 	case *sfnstore.TaskState:
 		output, nextState, execErr = executor.executeTask(ctx, execCtx, st)
 		if execErr != nil {
-			return map[string]interface{}{
+			errResult := map[string]interface{}{
 				"output":    "",
 				"status":    "FAILED",
 				"error":     execErr.ErrorCode,
 				"cause":     execErr.Cause,
 				"nextState": nextState,
-			}, nil
+			}
+			if inspectionLevel != "" {
+				errResult["inspectionData"] = buildInspectionData(inspectionLevel, execCtx, output, state)
+			}
+			return errResult, nil
 		}
 	case *sfnstore.ParallelState:
 		output, nextState, execErr = executor.executeParallel(ctx, execCtx, st)
 		if execErr != nil {
-			return map[string]interface{}{
+			errResult := map[string]interface{}{
 				"output":    "",
 				"status":    "FAILED",
 				"error":     execErr.ErrorCode,
 				"cause":     execErr.Cause,
 				"nextState": nextState,
-			}, nil
+			}
+			if inspectionLevel != "" {
+				errResult["inspectionData"] = buildInspectionData(inspectionLevel, execCtx, output, state)
+			}
+			return errResult, nil
 		}
 	case *sfnstore.MapState:
 		output, nextState, execErr = executor.executeMap(ctx, execCtx, st)
 		if execErr != nil {
-			return map[string]interface{}{
+			errResult := map[string]interface{}{
 				"output":    "",
 				"status":    "FAILED",
 				"error":     execErr.ErrorCode,
 				"cause":     execErr.Cause,
 				"nextState": nextState,
-			}, nil
+			}
+			if inspectionLevel != "" {
+				errResult["inspectionData"] = buildInspectionData(inspectionLevel, execCtx, output, state)
+			}
+			return errResult, nil
 		}
 	default:
 		return nil, NewInvalidDefinitionException(
 			fmt.Sprintf("Unsupported state type: %s", state.GetType()))
+	}
+
+	if len(execCtx.PendingAssign) > 0 && execCtx.VariableScope != nil {
+		execCtx.VariableScope.SetAll(execCtx.PendingAssign)
 	}
 
 	result := map[string]interface{}{
@@ -271,13 +317,37 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 	}
 
 	if inspectionLevel != "" {
-		result["inspectionData"] = map[string]interface{}{
-			"input":  input,
-			"output": output,
-		}
+		result["inspectionData"] = buildInspectionData(inspectionLevel, execCtx, output, state)
 	}
 
 	return result, nil
+}
+
+func buildInspectionData(inspectionLevel string, execCtx *ExecutionContext, output string, state sfnstore.State) map[string]interface{} {
+	data := map[string]interface{}{
+		"input":  execCtx.Input,
+		"output": output,
+	}
+
+	if inspectionLevel == "DEBUG" || inspectionLevel == "TRACE" {
+		if execCtx.VariableScope != nil {
+			allVars := execCtx.VariableScope.GetAll()
+			if len(allVars) > 0 {
+				varsJSON, _ := json.Marshal(allVars)
+				data["variables"] = string(varsJSON)
+			}
+		}
+
+		if execCtx.AfterArguments != nil {
+			data["afterArguments"] = *execCtx.AfterArguments
+		}
+
+		if execCtx.AfterItemSelector != nil {
+			data["afterItemSelector"] = *execCtx.AfterItemSelector
+		}
+	}
+
+	return data
 }
 
 func extractStateMachineName(arn string) string {

@@ -1,9 +1,9 @@
 package sesv2
 
 import (
-	"log"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/common"
 )
 
@@ -160,7 +160,7 @@ func (s *SESv2Store) DeleteConfigurationSet(name string) error {
 	}
 	arn := s.BuildConfigSetArn(name)
 	if err := s.TagStore.Delete(arn); err != nil {
-		log.Printf("Failed to delete tags for config set %s: %v", name, err)
+		logs.Error("Failed to delete tags for config set", logs.String("name", name), logs.Err(err))
 	}
 	return s.configSetStore.Delete(name)
 }

@@ -1,6 +1,7 @@
 package sfn
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 
@@ -199,4 +200,136 @@ func (e *Executor) applyResultSelector(result string, selector *sfnstore.ResultS
 		return result
 	}
 	return string(outputJSON)
+}
+
+func buildVarsMap(statesVar interface{}, scope *VariableScope) map[string]interface{} {
+	vars, ok := statesVar.(map[string]interface{})
+	if !ok {
+		vars = map[string]interface{}{}
+		if statesVar != nil {
+			vars["states"] = statesVar
+		}
+	}
+	if scope != nil {
+		allVars := scope.GetAll()
+		for k, v := range allVars {
+			if _, exists := vars[k]; !exists {
+				vars[k] = v
+			}
+		}
+	}
+	return vars
+}
+
+func evaluateAssign(ctx context.Context, assign map[string]interface{}, statesVar interface{}, scope *VariableScope) (map[string]interface{}, error) {
+	if len(assign) == 0 {
+		return nil, nil
+	}
+
+	vars := buildVarsMap(statesVar, scope)
+
+	evaluated := make(map[string]interface{}, len(assign))
+	for name, value := range assign {
+		resolved, err := ResolveTemplate(ctx, value, nil, vars)
+		if err != nil {
+			return nil, err
+		}
+		evaluated[strings.TrimPrefix(name, "$")] = resolved
+	}
+
+	return evaluated, nil
+}
+
+func (e *Executor) applyAssign(ctx context.Context, assign map[string]interface{}, statesVar interface{}, scope *VariableScope) error {
+	if len(assign) == 0 {
+		return nil
+	}
+
+	vars := buildVarsMap(statesVar, scope)
+
+	evaluated := make(map[string]interface{}, len(assign))
+	for name, value := range assign {
+		resolved, err := ResolveTemplate(ctx, value, nil, vars)
+		if err != nil {
+			return err
+		}
+		evaluated[strings.TrimPrefix(name, "$")] = resolved
+	}
+
+	if scope != nil {
+		return scope.SetAll(evaluated)
+	}
+	return nil
+}
+
+func (e *Executor) applyJSONataOutput(ctx context.Context, output interface{}, statesVar interface{}, scope *VariableScope) (interface{}, error) {
+	if output == nil {
+		return nil, nil
+	}
+
+	vars := buildVarsMap(statesVar, scope)
+
+	return ResolveTemplate(ctx, output, nil, vars)
+}
+
+func (e *Executor) applyJSONataArguments(ctx context.Context, arguments interface{}, statesVar interface{}, scope *VariableScope) (string, error) {
+	if arguments == nil {
+		return "{}", nil
+	}
+
+	vars := buildVarsMap(statesVar, scope)
+
+	result, err := ResolveTemplate(ctx, arguments, nil, vars)
+	if err != nil {
+		return "{}", err
+	}
+
+	resultJSON, err := json.Marshal(result)
+	if err != nil {
+		return "{}", err
+	}
+	return string(resultJSON), nil
+}
+
+func (e *Executor) applyItemSelector(ctx context.Context, execCtx *ExecutionContext, selector interface{}, itemValue interface{}, isJSONata bool) (interface{}, error) {
+	if selector == nil {
+		return itemValue, nil
+	}
+
+	if isJSONata {
+		statesVar := e.buildStatesVarWithContext(execCtx, itemValue, nil, nil)
+		vars := buildVarsMap(statesVar, execCtx.VariableScope)
+		return ResolveTemplate(ctx, selector, nil, vars)
+	}
+
+	return e.applyItemSelectorJSONPath(selector, itemValue)
+}
+
+func (e *Executor) applyItemSelectorJSONPath(selector interface{}, itemValue interface{}) (interface{}, error) {
+	selectorMap, ok := selector.(map[string]interface{})
+	if !ok {
+		return itemValue, nil
+	}
+
+	itemMap, ok := itemValue.(map[string]interface{})
+	if !ok {
+		return itemValue, nil
+	}
+
+	output := make(map[string]interface{})
+	for key, value := range selectorMap {
+		if strings.HasSuffix(key, ".$") {
+			cleanKey := strings.TrimSuffix(key, ".$")
+			if jsonPath, ok := value.(string); ok {
+				if strings.HasPrefix(jsonPath, "$$.") {
+					output[cleanKey] = e.getContextValue(jsonPath)
+				} else if resolved, exists := getJSONPathValueRaw(itemMap, jsonPath); exists {
+					output[cleanKey] = resolved
+				}
+			}
+		} else {
+			output[key] = value
+		}
+	}
+	return output, nil
 }

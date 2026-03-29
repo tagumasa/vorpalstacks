@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/server/actionregistry"
+	"vorpalstacks/internal/server/http/router"
 )
 
 func (s *Server) extractServiceFromRequest(r *http.Request) string {
@@ -19,7 +20,7 @@ func (s *Server) extractServiceFromRequest(r *http.Request) string {
 }
 
 func extractServiceFromRequestFallback(r *http.Request) string {
-	if isLambdaRestPath(r.URL.Path) {
+	if router.IsLambdaRestPath(r.URL.Path) {
 		return "lambda"
 	}
 

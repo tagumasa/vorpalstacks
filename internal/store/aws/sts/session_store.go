@@ -8,9 +8,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"log"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 )
 
@@ -89,7 +89,7 @@ func (s *SessionStore) Get(sessionToken string) (*Session, error) {
 
 	if session.Expiration.Before(time.Now().UTC()) {
 		if err := s.bucket.Delete([]byte(sessionToken)); err != nil {
-			log.Printf("Failed to delete expired session: %v", err)
+			logs.Error("Failed to delete expired session", logs.Err(err))
 		}
 		return nil, ErrSessionExpired
 	}

@@ -3,11 +3,12 @@ package dispatcher
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
+	"vorpalstacks/internal/core/logs"
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/response"
@@ -32,7 +33,7 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 				defer rc.Close()
 			}
 			if _, err := io.Copy(w, reader); err != nil {
-				log.Printf("Failed to stream response: %v", err)
+				logs.Error("Failed to stream response", logs.Err(err))
 			}
 		}
 		return
@@ -105,14 +106,14 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 
 	if isCBORRequest {
 		if err := protocol.EncodeCBORResponse(w, resp); err != nil {
-			log.Printf("Failed to encode CBOR response: %v", err)
+			logs.Error("Failed to encode CBOR response", logs.Err(err))
 		}
 		return
 	}
 
 	if isJSONRequest {
 		if err := protocol.EncodeJSONResponse(w, resp); err != nil {
-			log.Printf("Failed to encode JSON response: %v", err)
+			logs.Error("Failed to encode JSON response", logs.Err(err))
 		}
 		return
 	}
@@ -135,13 +136,13 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 			err = protocol.EncodeRestXMLResponse(w, opName, resp)
 		}
 		if err != nil {
-			log.Printf("Failed to encode XML response: %v", err)
+			logs.Error("Failed to encode XML response", logs.Err(err))
 		}
 		return
 	}
 
 	if err := protocol.EncodeJSONResponse(w, resp); err != nil {
-		log.Printf("Failed to encode JSON response: %v", err)
+		logs.Error("Failed to encode JSON response", logs.Err(err))
 	}
 }
 
@@ -181,7 +182,7 @@ func (d *Dispatcher) handleErrorForRequest(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	log.Printf("ERROR: unhandled error type=%T: %v", err, err)
+	logs.Error("Unhandled error", logs.String("type", fmt.Sprintf("%T", err)), logs.Err(err))
 	awserrors.WriteAWSError(w, awserrors.ErrInternal, contentType)
 }
 

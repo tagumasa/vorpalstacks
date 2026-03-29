@@ -3,11 +3,11 @@ package cloudfront
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	cfstore "vorpalstacks/internal/store/aws/cloudfront"
 )
@@ -95,7 +95,7 @@ func (s *DistributionServer) HandleRequest(w http.ResponseWriter, r *http.Reques
 
 	resp, err := s.client.Do(originReq)
 	if err != nil {
-		log.Printf("CloudFront origin request failed for %s: %v", targetURL, err)
+		logs.Error("CloudFront origin request failed", logs.String("url", targetURL), logs.Err(err))
 		http.Error(w, fmt.Sprintf(`{"message":"Origin request failed: %s"}`, err.Error()), http.StatusBadGateway)
 		return
 	}

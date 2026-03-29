@@ -85,7 +85,7 @@ func (g *Gateway) routeRequest(ctx *RequestContext) error {
 }
 
 func (g *Gateway) fallbackServiceName(r *http.Request) string {
-	if isLambdaRestPath(r.URL.Path) {
+	if router.IsLambdaRestPath(r.URL.Path) {
 		return "lambda"
 	}
 
@@ -182,23 +182,7 @@ func ctxParams(r *http.Request, key string) string {
 	return ""
 }
 
-func isLambdaRestPath(path string) bool {
-	return strings.HasPrefix(path, "/2015-03-31/") ||
-		strings.HasPrefix(path, "/2016-08-19/") ||
-		strings.HasPrefix(path, "/2017-03-31/") ||
-		strings.HasPrefix(path, "/2017-10-31/") ||
-		strings.HasPrefix(path, "/2018-10-31/") ||
-		strings.HasPrefix(path, "/2019-09-30/") ||
-		strings.HasPrefix(path, "/2020-01-01/") ||
-		strings.HasPrefix(path, "/2020-06-30/") ||
-		strings.HasPrefix(path, "/2021-01-01/") ||
-		strings.HasPrefix(path, "/2021-10-01/") ||
-		strings.HasPrefix(path, "/2022-01-01/") ||
-		strings.HasPrefix(path, "/2022-07-01/") ||
-		strings.HasPrefix(path, "/2023-01-01/") ||
-		strings.HasPrefix(path, "/2023-07-01/") ||
-		strings.HasPrefix(path, "/2024-01-01/") ||
-		strings.HasPrefix(path, "/2025-01-01/")
+func (g *Gateway) finalizer(ctx *RequestContext) {
 }
 
 func isApiGatewayPath(path string) bool {
@@ -209,9 +193,6 @@ func isApiGatewayPath(path string) bool {
 		strings.HasPrefix(path, "/vpclinks") ||
 		strings.HasPrefix(path, "/apis") ||
 		strings.HasPrefix(path, "/authorizers")
-}
-
-func (g *Gateway) finalizer(ctx *RequestContext) {
 }
 
 // ServeHTTP implements the http.Handler interface to handle HTTP requests.

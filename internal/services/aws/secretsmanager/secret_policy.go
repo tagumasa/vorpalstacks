@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/request"
 )
@@ -130,7 +130,7 @@ func (s *SecretsManagerService) ValidateResourcePolicy(ctx context.Context, reqC
 	if policy != "" {
 		var js interface{}
 		if err := json.Unmarshal([]byte(policy), &js); err != nil {
-			log.Printf("Resource policy JSON validation failed: %v", err)
+			logs.Warn("Resource policy JSON validation failed", logs.Err(err))
 			result["PolicyValidationPassed"] = false
 			result["ValidationErrors"] = []interface{}{
 				map[string]interface{}{

@@ -251,6 +251,15 @@ func historyEventToResponse(event *sfnstore.ExecutionHistoryEvent) map[string]in
 				"cause": event.ActivityTaskTimedOutEventDetails.Cause,
 			}
 		}
+	case "EvaluationFailed":
+		if event.EvaluationFailedEventDetails != nil {
+			response["evaluationFailedEventDetails"] = map[string]interface{}{
+				"state":    event.EvaluationFailedEventDetails.State,
+				"cause":    event.EvaluationFailedEventDetails.Cause,
+				"error":    event.EvaluationFailedEventDetails.Error,
+				"location": event.EvaluationFailedEventDetails.Location,
+			}
+		}
 	}
 
 	return response

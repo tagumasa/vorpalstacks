@@ -3,10 +3,10 @@ package athena
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"google.golang.org/protobuf/proto"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_athena"
 	"vorpalstacks/internal/store/aws/common"
@@ -86,7 +86,7 @@ func (s *WorkGroupStore) ensurePrimaryWorkGroup() {
 			CreatedTime: time.Now().UTC(),
 		}
 		if err := s.PutProto("primary", WorkGroupToProto(primaryWg)); err != nil {
-			log.Printf("failed to create primary workgroup: %v", err)
+			logs.Error("Failed to create primary workgroup", logs.Err(err))
 		}
 	}
 }

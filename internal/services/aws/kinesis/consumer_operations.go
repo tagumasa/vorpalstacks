@@ -3,11 +3,11 @@ package kinesis
 import (
 	"context"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
@@ -227,7 +227,7 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 		writer := NewSubscribeToShardEventStreamWriter(pw)
 
 		if err := writer.WriteInitialResponse(); err != nil {
-			log.Printf("Failed to write initial response: %v", err)
+			logs.Error("Failed to write initial response", logs.Err(err))
 			return
 		}
 
@@ -235,7 +235,7 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 		records, lastSeqNum, err := store.GetRecords(stream.StreamName, shardID, iterator.SequenceNumber, 1000, includeStart)
 		if err != nil {
 			if writeErr := writer.WriteResourceNotFoundException(err.Error()); writeErr != nil {
-				log.Printf("Failed to write error event: %v", writeErr)
+				logs.Error("Failed to write error event", logs.Err(writeErr))
 			}
 			return
 		}
@@ -245,7 +245,7 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 		}
 
 		if err := writer.WriteEndEvent(); err != nil {
-			log.Printf("Failed to write end event: %v", err)
+			logs.Error("Failed to write end event", logs.Err(err))
 		}
 	}()
 

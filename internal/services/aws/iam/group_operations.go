@@ -4,7 +4,7 @@ package iam
 import (
 	"context"
 	"errors"
-	"log"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -113,7 +113,7 @@ func (s *IAMService) UpdateGroup(ctx context.Context, reqCtx *request.RequestCon
 		users, err := store.UserGroups().ListUsersInGroup(groupName)
 		if err != nil {
 			if delErr := store.Groups().Delete(newGroupName); delErr != nil {
-				log.Printf("UpdateGroup: failed to rollback group creation: %v", delErr)
+				logs.Error("UpdateGroup: failed to rollback group creation", logs.Err(delErr))
 			}
 			return nil, err
 		}

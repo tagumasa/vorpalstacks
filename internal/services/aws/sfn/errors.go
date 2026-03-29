@@ -24,6 +24,7 @@ var (
 	ErrInvalidName              = &SFNError{awserrors.NewAWSError("InvalidName", "Invalid Name", 400)}
 	ErrTaskTimedOut             = &SFNError{awserrors.NewAWSError("TaskTimedOut", "Task timed out", 400)}
 	ErrTaskNotRunning           = &SFNError{awserrors.NewAWSError("TaskNotRunning", "Task is not running", 400)}
+	ErrQueryEvaluationError     = &SFNError{awserrors.NewAWSError("States.QueryEvaluationError", "The query evaluation failed", 400)}
 )
 
 // NewStateMachineDoesNotExist creates a new StateMachineDoesNotExist error.

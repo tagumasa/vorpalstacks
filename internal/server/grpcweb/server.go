@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"time"
+
+	"vorpalstacks/internal/core/logs"
 )
 
 // Server is a gRPC-Web server that can handle both HTTP and WebSocket connections.
@@ -40,7 +42,15 @@ func (s *Server) HandleFunc(pattern string, handler http.HandlerFunc) {
 
 // Start starts the gRPC-Web server and blocks until it stops.
 func (s *Server) Start() error {
-	s.httpServer.Handler = s.mux
+	s.httpServer.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				logs.Error("PANIC in gRPC-Web handler", logs.Any("panic", rec))
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			}
+		}()
+		s.mux.ServeHTTP(w, r)
+	})
 	return s.httpServer.ListenAndServe()
 }
 

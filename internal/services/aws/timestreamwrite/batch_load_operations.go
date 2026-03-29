@@ -5,10 +5,10 @@ import (
 	"context"
 	cryptorand "crypto/rand"
 	"fmt"
-	"log"
 	"math/big"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
@@ -159,7 +159,7 @@ func (s *Service) ResumeBatchLoadTask(ctx context.Context, reqCtx *request.Reque
 
 func (s *Service) simulateBatchLoad(store *tsstore.BatchLoadTaskStore, taskId string) {
 	if err := store.UpdateBatchLoadTaskStatus(taskId, tsstore.BatchLoadStatusInProgress, ""); err != nil {
-		log.Printf("Failed to update batch load task status: %v", err)
+		logs.Error("Failed to update batch load task status", logs.Err(err))
 		return
 	}
 
@@ -174,7 +174,7 @@ func (s *Service) simulateBatchLoad(store *tsstore.BatchLoadTaskStore, taskId st
 		RecordIngestionFailures: 40,
 	}
 	if err := store.UpdateBatchLoadTaskProgress(taskId, progress); err != nil {
-		log.Printf("Failed to update batch load task progress: %v", err)
+		logs.Error("Failed to update batch load task progress", logs.Err(err))
 	}
 
 	time.Sleep(1 * time.Second)
@@ -183,7 +183,7 @@ func (s *Service) simulateBatchLoad(store *tsstore.BatchLoadTaskStore, taskId st
 	progress.RecordsIngested = 1900
 	progress.BytesMetered = 204800
 	if err := store.UpdateBatchLoadTaskProgress(taskId, progress); err != nil {
-		log.Printf("Failed to update batch load task progress: %v", err)
+		logs.Error("Failed to update batch load task progress", logs.Err(err))
 	}
 
 	time.Sleep(1 * time.Second)
@@ -192,11 +192,11 @@ func (s *Service) simulateBatchLoad(store *tsstore.BatchLoadTaskStore, taskId st
 	progress.RecordsIngested = 2850
 	progress.BytesMetered = 307200
 	if err := store.UpdateBatchLoadTaskProgress(taskId, progress); err != nil {
-		log.Printf("Failed to update batch load task progress: %v", err)
+		logs.Error("Failed to update batch load task progress", logs.Err(err))
 	}
 
 	if err := store.UpdateBatchLoadTaskStatus(taskId, tsstore.BatchLoadStatusSucceeded, ""); err != nil {
-		log.Printf("Failed to update batch load task status: %v", err)
+		logs.Error("Failed to update batch load task status", logs.Err(err))
 	}
 }
 

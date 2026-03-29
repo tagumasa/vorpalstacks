@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"strings"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/auth"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/integration"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/validator"
@@ -293,7 +293,7 @@ func (s *RuntimeServer) sendResponse(w http.ResponseWriter, resp *integration.In
 
 	if len(resp.Body) > 0 {
 		if _, err := w.Write(resp.Body); err != nil {
-			log.Printf("Failed to write response body: %v", err)
+			logs.Error("Failed to write response body", logs.Err(err))
 		}
 	}
 }
@@ -324,7 +324,7 @@ func (s *RuntimeServer) sendError(w http.ResponseWriter, statusCode int, message
 	}
 
 	if err := json.NewEncoder(w).Encode(errorResp); err != nil {
-		log.Printf("Failed to encode error response: %v", err)
+		logs.Error("Failed to encode error response", logs.Err(err))
 	}
 }
 

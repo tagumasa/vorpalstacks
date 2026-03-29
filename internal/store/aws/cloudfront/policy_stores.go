@@ -3,9 +3,9 @@ package cloudfront
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -387,7 +387,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 
 	for _, cp := range managedCachePolicies {
 		if err := cacheStore.Put(cp.ID, cp); err != nil {
-			log.Printf("failed to seed managed cache policy %s: %v", cp.ID, err)
+			logs.Error("Failed to seed managed cache policy", logs.String("id", cp.ID), logs.Err(err))
 		}
 	}
 
@@ -456,7 +456,7 @@ func SeedManagedPolicies(cacheStore *CachePolicyStore, orpStore *OriginRequestPo
 
 	for _, orp := range managedORPPolicies {
 		if err := orpStore.Put(orp.ID, orp); err != nil {
-			log.Printf("failed to seed managed origin request policy %s: %v", orp.ID, err)
+			logs.Error("Failed to seed managed origin request policy", logs.String("id", orp.ID), logs.Err(err))
 		}
 	}
 }

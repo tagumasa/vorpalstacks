@@ -3,12 +3,13 @@ package listener
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	"vorpalstacks/internal/core/logs"
 )
 
 type ListenerConfig struct {
@@ -78,10 +79,10 @@ func (m *Manager) Start() {
 
 	for name, l := range m.listeners {
 		ll := l
-		log.Printf("Starting secondary listener [%s] on port %s", name, ll.server.Addr)
+		logs.Info("Starting secondary listener", logs.String("name", name), logs.String("port", ll.server.Addr))
 		go func() {
 			if err := ll.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				log.Printf("Secondary listener [%s] error: %v", name, err)
+				logs.Error("Secondary listener error", logs.String("name", name), logs.Err(err))
 			}
 		}()
 	}
@@ -93,13 +94,13 @@ func (m *Manager) Shutdown(ctx context.Context) {
 
 	for name, l := range m.listeners {
 		if err := l.server.Shutdown(ctx); err != nil {
-			log.Printf("Secondary listener [%s] shutdown error: %v", name, err)
+			logs.Error("Secondary listener shutdown error", logs.String("name", name), logs.Err(err))
 		}
 	}
 
 	for i := len(m.shutdownHooks) - 1; i >= 0; i-- {
 		if err := m.shutdownHooks[i](ctx); err != nil {
-			log.Printf("Listener shutdown hook error: %v", err)
+			logs.Error("Listener shutdown hook error", logs.Err(err))
 		}
 	}
 }

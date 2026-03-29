@@ -2,10 +2,10 @@ package timestreamquery
 
 import (
 	"context"
-	"log"
 	"strconv"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/iam"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
@@ -260,17 +260,17 @@ func (s *Service) ExecuteScheduledQuery(ctx context.Context, reqCtx *request.Req
 	}
 
 	if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusRunning, "", nil); err != nil {
-		log.Printf("Failed to update scheduled query run %s to RUNNING: %v", run.ARN, err)
+		logs.Error("Failed to update scheduled query run to RUNNING", logs.String("arn", run.ARN), logs.Err(err))
 	}
 
 	result, execErr := s.executeSQLQuery(ctx, reqCtx, sq.QueryString)
 
 	if execErr != nil {
 		if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusFailed, execErr.Error(), nil); err != nil {
-			log.Printf("Failed to update scheduled query run %s to FAILED: %v", run.ARN, err)
+			logs.Error("Failed to update scheduled query run to FAILED", logs.String("arn", run.ARN), logs.Err(err))
 		}
 		if err := st.scheduledQueryStore.UpdateLastRun(name, "FAILED", now); err != nil {
-			log.Printf("Failed to update last run status for scheduled query %s: %v", name, err)
+			logs.Error("Failed to update last run status for scheduled query", logs.String("name", name), logs.Err(err))
 		}
 		return nil, ErrQueryExecutionError
 	}
@@ -279,10 +279,10 @@ func (s *Service) ExecuteScheduledQuery(ctx context.Context, reqCtx *request.Req
 		QueryResultRows: int64(len(result.Rows)),
 	}
 	if err := st.scheduledQueryRunStore.UpdateRunStatus(run.ARN, tsstore.ScheduleRunStatusSucceeded, "", stats); err != nil {
-		log.Printf("Failed to update scheduled query run %s to SUCCEEDED: %v", run.ARN, err)
+		logs.Error("Failed to update scheduled query run to SUCCEEDED", logs.String("arn", run.ARN), logs.Err(err))
 	}
 	if err := st.scheduledQueryStore.UpdateLastRun(name, "SUCCESS", now); err != nil {
-		log.Printf("Failed to update last run status for scheduled query %s: %v", name, err)
+		logs.Error("Failed to update last run status for scheduled query", logs.String("name", name), logs.Err(err))
 	}
 
 	return map[string]interface{}{

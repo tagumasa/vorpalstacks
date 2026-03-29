@@ -6,9 +6,9 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"log"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/pagination"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
@@ -73,10 +73,10 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 	}
 	if err := stores.keyPolicies.PutDefault(keyID, policyStr); err != nil {
 		if delErr := stores.keys.Delete(keyID); delErr != nil {
-			log.Printf("Failed to delete key during rollback: %v", delErr)
+			logs.Error("Failed to delete key during rollback", logs.Err(delErr))
 		}
 		if delErr := s.hsmBackend.DeleteKey(keyID); delErr != nil {
-			log.Printf("Failed to delete HSM key during rollback: %v", delErr)
+			logs.Error("Failed to delete HSM key during rollback", logs.Err(delErr))
 		}
 		return nil, err
 	}

@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
@@ -83,7 +83,7 @@ func (s *FunctionURLServer) HandleRequest(w http.ResponseWriter, r *http.Request
 
 	statusCode, payload, err := s.lambdaInvoker.InvokeForGateway(r.Context(), functionName, eventJSON)
 	if err != nil {
-		log.Printf("Function URL invocation failed for %s: %v", functionName, err)
+		logs.Error("Function URL invocation failed", logs.String("function", functionName), logs.Err(err))
 		http.Error(w, fmt.Sprintf(`{"message":"Invocation failed: %s"}`, err.Error()), http.StatusBadGateway)
 		return
 	}

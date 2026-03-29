@@ -8,10 +8,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
@@ -232,7 +232,7 @@ func (s *LogsService) applyMetricFilters(reqCtx *request.RequestContext, logGrou
 						Timestamp:  ts,
 					}
 					if err := cwMetricStore.PutMetricData(transform.MetricNamespace, []cwstore.MetricDatum{datum}); err != nil {
-						log.Printf("Failed to put metric data: %v", err)
+						logs.Error("Failed to put metric data", logs.Err(err))
 					}
 				}
 			}

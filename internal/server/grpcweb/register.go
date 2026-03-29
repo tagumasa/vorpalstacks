@@ -1,10 +1,17 @@
 package grpcweb
 
 import (
+	"crypto/rsa"
+	"fmt"
+	"os"
+	"path/filepath"
+
 	chihttp "vorpalstacks/internal/server/http"
 	"vorpalstacks/internal/store/config"
+	"vorpalstacks/pkg/vsjwt"
 
 	acmconnect "vorpalstacks/internal/pb/aws/acm/acmconnect"
+	adminauthconnect "vorpalstacks/internal/pb/aws/admin_auth/admin_authconnect"
 	adminconfigconnect "vorpalstacks/internal/pb/aws/admin_config/admin_configconnect"
 	apigatewayconnect "vorpalstacks/internal/pb/aws/apigateway/apigatewayconnect"
 	athenaconnect "vorpalstacks/internal/pb/aws/athena/athenaconnect"
@@ -35,6 +42,7 @@ import (
 	wafconnect "vorpalstacks/internal/pb/aws/waf/wafconnect"
 	wafv2connect "vorpalstacks/internal/pb/aws/wafv2/wafv2connect"
 	svcacm "vorpalstacks/internal/services/aws/acm"
+	svcadminauth "vorpalstacks/internal/services/aws/admin_auth"
 	svcadminconfig "vorpalstacks/internal/services/aws/admin_config"
 	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
 	svcathena "vorpalstacks/internal/services/aws/athena"
@@ -130,4 +138,40 @@ func RegisterAllAdminHandlers(s *Server, deps AdminDeps) {
 	s.Handle(ssmconnect.NewSSMServiceHandler(svcssm.NewAdminHandler(sm, aid)))
 	s.Handle(querytimestreamconnect.NewTimestreamQueryServiceHandler(svctimestreamquery.NewAdminHandler(sm, aid, dp)))
 	s.Handle(ingesttimestreamconnect.NewTimestreamWriteServiceHandler(svctimestreamwrite.NewAdminHandler(sm, aid, dp)))
+
+	adminAuthKey, err := loadOrGenerateAdminAuthKey(dp)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: Failed to initialise admin auth JWT key: %v\n", err)
+	} else {
+		jwtManager := vsjwt.NewManager(adminAuthKey, "admin-auth-key", "vorpalstacks/admin-auth")
+		adminAuthService := svcadminauth.NewService(st, jwtManager, aid)
+		s.Handle(adminauthconnect.NewAdminAuthServiceHandler(adminAuthService))
+	}
+}
+
+func loadOrGenerateAdminAuthKey(dataPath string) (*rsa.PrivateKey, error) {
+	keyDir := filepath.Join(dataPath, "admin_auth")
+	keyFile := filepath.Join(keyDir, "jwt_key.pem")
+
+	if pemData, err := os.ReadFile(keyFile); err == nil {
+		key, err := vsjwt.DecodePrivateKeyFromPEM(string(pemData))
+		if err == nil {
+			return key, nil
+		}
+	}
+
+	key, err := vsjwt.GenerateRSAKeyPair()
+	if err != nil {
+		return nil, fmt.Errorf("generate RSA key pair: %w", err)
+	}
+
+	if err := os.MkdirAll(keyDir, 0700); err != nil {
+		return nil, fmt.Errorf("create key directory: %w", err)
+	}
+
+	if err := os.WriteFile(keyFile, []byte(vsjwt.EncodePrivateKeyToPEM(key)), 0600); err != nil {
+		return nil, fmt.Errorf("write key file: %w", err)
+	}
+
+	return key, nil
 }

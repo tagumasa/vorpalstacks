@@ -3,8 +3,8 @@ package waf
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
@@ -47,13 +47,13 @@ func (s *WAFService) CreateRegexPatternSet(ctx context.Context, reqCtx *request.
 
 	rps.RegexPatternStrings = regexPatternStrings
 	if err := stores.regexPatternSets.Put(rps.ID, rps); err != nil {
-		log.Printf("WARNING: failed to persist patterns for RegexPatternSet %s: %v", rps.ID, err)
+		logs.Warn("failed to persist patterns for RegexPatternSet", logs.String("id", rps.ID), logs.Err(err))
 	}
 
 	if tags := parseTags(req.Parameters["Tags"]); len(tags) > 0 && rps.ARN != "" {
 		rps.Tags = tags
 		if err := stores.regexPatternSets.Put(rps.ID, rps); err != nil {
-			log.Printf("WARNING: failed to persist tags for RegexPatternSet %s: %v", rps.ID, err)
+			logs.Warn("failed to persist tags for RegexPatternSet", logs.String("id", rps.ID), logs.Err(err))
 		}
 	}
 

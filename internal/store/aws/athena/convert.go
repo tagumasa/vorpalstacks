@@ -2,9 +2,9 @@ package athena
 
 import (
 	"encoding/json"
-	"log"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"vorpalstacks/internal/core/logs"
 	pb "vorpalstacks/internal/pb/storage/storage_athena"
 )
 
@@ -723,7 +723,7 @@ func ProtoToStoredRow(p *pb.StoredRow) *StoredRow {
 	}
 	if len(p.ValuesJson) > 0 {
 		if err := json.Unmarshal(p.ValuesJson, &sr.Values); err != nil {
-			log.Printf("Failed to unmarshal ValuesJson: %v", err)
+			logs.Error("Failed to unmarshal ValuesJson", logs.Err(err))
 		}
 	}
 	return sr

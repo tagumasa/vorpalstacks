@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
 
@@ -189,7 +189,7 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 	}
 
 	if err := s.AbortMultipartUpload(ctx, bucket, key, uploadId); err != nil {
-		log.Printf("Failed to cleanup multipart upload after complete: %v", err)
+		logs.Error("Failed to cleanup multipart upload after complete", logs.Err(err))
 	}
 
 	versionId := "null"

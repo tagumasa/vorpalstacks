@@ -12,6 +12,8 @@ import (
 )
 
 func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.MapState) (string, string, *ExecutionError) {
+	isJSONata := IsJSONataState(state, execCtx.QueryLanguage)
+
 	processedInput := e.applyInputPath(execCtx.Input, state.GetInputPath())
 
 	eventId := execCtx.nextEventId()
@@ -27,24 +29,65 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 		},
 	})
 
-	var inputData map[string]interface{}
-	if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
-		return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
-	}
+	var itemsArray []interface{}
 
-	itemsPath := state.ItemsPath
-	if itemsPath == "" {
-		itemsPath = "$"
-	}
+	if isJSONata {
+		var inputData interface{}
+		json.Unmarshal([]byte(processedInput), &inputData)
+		statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
 
-	items, err := getJSONPathValue(inputData, itemsPath)
-	if err != nil {
-		return "", "", &ExecutionError{ErrorCode: "States.InvalidItemsPath", Cause: err.Error()}
-	}
+		if state.Items != nil {
+			vars := buildVarsMap(statesVar, execCtx.VariableScope)
+			resolved, err := ResolveTemplate(ctx, state.Items, nil, vars)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Items", err.Error())
+			}
+			switch v := resolved.(type) {
+			case []interface{}:
+				itemsArray = v
+			default:
+				return "", "", &ExecutionError{ErrorCode: "States.InvalidItems", Cause: "Items must evaluate to an array"}
+			}
+		} else {
+			var inputDataMap map[string]interface{}
+			if err := json.Unmarshal([]byte(processedInput), &inputDataMap); err != nil {
+				return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+			}
+			itemsPath := state.ItemsPath
+			if itemsPath == "" {
+				itemsPath = "$"
+			}
+			items, err := getJSONPathValue(inputDataMap, itemsPath)
+			if err != nil {
+				return "", "", &ExecutionError{ErrorCode: "States.InvalidItemsPath", Cause: err.Error()}
+			}
+			var ok bool
+			itemsArray, ok = items.([]interface{})
+			if !ok {
+				return "", "", &ExecutionError{ErrorCode: "States.InvalidItems", Cause: "items is not an array"}
+			}
+		}
+	} else {
+		var inputData map[string]interface{}
+		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+		}
 
-	itemsArray, ok := items.([]interface{})
-	if !ok {
-		return "", "", &ExecutionError{ErrorCode: "States.InvalidItems", Cause: "items is not an array"}
+		itemsPath := state.ItemsPath
+		if itemsPath == "" {
+			itemsPath = "$"
+		}
+
+		items, err := getJSONPathValue(inputData, itemsPath)
+		if err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidItemsPath", Cause: err.Error()}
+		}
+
+		var ok bool
+		itemsArray, ok = items.([]interface{})
+		if !ok {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidItems", Cause: "items is not an array"}
+		}
 	}
 
 	maxConcurrency := int(state.MaxConcurrency)
@@ -93,11 +136,37 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 	itemsFailed := int64(0)
 	var mu sync.Mutex
 
+	processedItems := make([]interface{}, len(itemsArray))
+	if state.ItemSelector != nil {
+		for i, item := range itemsArray {
+			execCtx.MapItemIndex = i
+			execCtx.MapItemValue = item
+			var selected interface{}
+			var err error
+			if isJSONata {
+				selected, err = e.applyItemSelector(ctx, execCtx, state.ItemSelector, item, true)
+			} else {
+				selected, err = e.applyItemSelectorJSONPath(state.ItemSelector, item)
+			}
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "ItemSelector", err.Error())
+			}
+			processedItems[i] = selected
+		}
+		selJSON, _ := json.Marshal(processedItems)
+		s := string(selJSON)
+		execCtx.AfterItemSelector = &s
+		execCtx.MapItemIndex = -1
+		execCtx.MapItemValue = nil
+	} else {
+		copy(processedItems, itemsArray)
+	}
+
 	sem := make(chan struct{}, maxConcurrency)
 
-	for i, item := range itemsArray {
+	for i, _ := range processedItems {
 		wg.Add(1)
-		go func(idx int, itemValue interface{}) {
+		go func(idx int, itemValue interface{}, originalItem interface{}) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
@@ -110,7 +179,7 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 				mu.Unlock()
 				return
 			}
-			iteratorStates, err := e.extractStatesFromDefinition(state.Iterator)
+			iteratorStates, err := e.extractStatesFromDefinition(state.GetIterator())
 			if err != nil {
 				mu.Lock()
 				defer mu.Unlock()
@@ -119,13 +188,17 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 				return
 			}
 			iteratorCtx := &ExecutionContext{
-				Execution:    execCtx.Execution,
-				Definition:   state.Iterator,
-				CurrentState: state.Iterator.StartAt,
-				Input:        string(itemJSON),
-				Output:       "",
-				EventId:      execCtx.EventId,
-				States:       iteratorStates,
+				Execution:     execCtx.Execution,
+				Definition:    state.GetIterator(),
+				CurrentState:  state.GetIterator().StartAt,
+				Input:         string(itemJSON),
+				Output:        "",
+				EventId:       execCtx.EventId,
+				States:        iteratorStates,
+				QueryLanguage: execCtx.QueryLanguage,
+				VariableScope: execCtx.VariableScope.NewChild(),
+				MapItemIndex:  idx,
+				MapItemValue:  originalItem,
 			}
 			execErr := e.executeStates(ctx, iteratorCtx)
 			mu.Lock()
@@ -137,7 +210,7 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 			} else {
 				itemsFailed++
 			}
-		}(i, item)
+		}(i, processedItems[i], itemsArray[i])
 	}
 
 	wg.Wait()
@@ -175,6 +248,10 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 		if len(state.Catch) > 0 {
 			catchPolicy := e.findMatchingCatchPolicy(state.Catch, "States.IteratorFailed")
 			if catchPolicy != nil {
+				isJSONataCatch := IsJSONataState(state, execCtx.QueryLanguage)
+				if isJSONataCatch {
+					return e.executeMapJSONataCatch(ctx, execCtx, state, processedInput, "States.IteratorFailed", firstError.Error(), catchPolicy)
+				}
 				catchOutput := e.buildCatchOutput(processedInput, "States.IteratorFailed", firstError.Error(), catchPolicy.ResultPath)
 				return catchOutput, catchPolicy.Next, nil
 			}
@@ -193,7 +270,44 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 	mapRunsMu.Unlock()
 
 	output := fmt.Sprintf(`[%s]`, strings.Join(results, ","))
-	output = e.applyOutputPath(output, state.GetOutputPath())
+
+	if isJSONata {
+		var inputData interface{}
+		json.Unmarshal([]byte(processedInput), &inputData)
+		var resultData interface{}
+		json.Unmarshal([]byte(output), &resultData)
+		statesVar := e.buildStatesVarWithContext(execCtx, inputData, resultData, nil)
+
+		if len(state.Assign) > 0 {
+			evaluated, err := evaluateAssign(ctx, state.Assign, statesVar, execCtx.VariableScope)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Assign", err.Error())
+			}
+			execCtx.PendingAssign = evaluated
+		}
+
+		if state.JSONataOutput == nil && len(state.OutputRaw) > 0 {
+			var err error
+			state.JSONataOutput, err = resolveJSONataOutput(state)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Output", err.Error())
+			}
+		}
+
+		if state.JSONataOutput != nil {
+			resolved, err := e.applyJSONataOutput(ctx, state.JSONataOutput, statesVar, execCtx.VariableScope)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Output", err.Error())
+			}
+			outputJSON, err := json.Marshal(resolved)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Output", fmt.Sprintf("failed to marshal: %s", err.Error()))
+			}
+			output = string(outputJSON)
+		}
+	} else {
+		output = e.applyOutputPath(output, state.GetOutputPath())
+	}
 
 	eventId = execCtx.nextEventId()
 	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
@@ -211,4 +325,38 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 	})
 
 	return output, state.Next, nil
+}
+
+func (e *Executor) executeMapJSONataCatch(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.MapState, processedInput, errorCode, cause string, catchPolicy *sfnstore.CatchPolicy) (string, string, *ExecutionError) {
+	errorOutput := map[string]interface{}{
+		"Error": errorCode,
+		"Cause": cause,
+	}
+
+	var inputData interface{}
+	json.Unmarshal([]byte(processedInput), &inputData)
+	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, errorOutput)
+
+	if len(catchPolicy.Assign) > 0 {
+		evaluated, err := evaluateAssign(ctx, catchPolicy.Assign, statesVar, execCtx.VariableScope)
+		if err != nil {
+			return "", "", e.newQueryEvalError(ctx, execCtx, "Catch.Assign", err.Error())
+		}
+		execCtx.PendingAssign = evaluated
+	}
+
+	if catchPolicy.Output != nil {
+		resolved, err := e.applyJSONataOutput(ctx, catchPolicy.Output, statesVar, execCtx.VariableScope)
+		if err != nil {
+			return "", "", e.newQueryEvalError(ctx, execCtx, "Catch.Output", err.Error())
+		}
+		outputJSON, err := json.Marshal(resolved)
+		if err != nil {
+			return "", "", e.newQueryEvalError(ctx, execCtx, "Catch.Output", fmt.Sprintf("failed to marshal: %s", err.Error()))
+		}
+		return string(outputJSON), catchPolicy.Next, nil
+	}
+
+	errorJSON, _ := json.Marshal(errorOutput)
+	return string(errorJSON), catchPolicy.Next, nil
 }

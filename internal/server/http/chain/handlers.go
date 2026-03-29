@@ -6,7 +6,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -439,7 +438,7 @@ func writeJSONResponse(w http.ResponseWriter, statusCode int, body interface{}) 
 	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 	w.WriteHeader(statusCode)
 	if _, err := w.Write(buf.Bytes()); err != nil {
-		log.Printf("Failed to write response: %v", err)
+		logs.Error("Failed to write response", logs.Err(err))
 	}
 }
 

@@ -1,10 +1,10 @@
 package timestream
 
 import (
-	"log"
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_timestream"
 	"vorpalstacks/internal/store/aws/common"
@@ -76,7 +76,7 @@ func (s *TableStore) CreateTable(databaseName, tableName string, retentionProper
 	if db, err := s.databaseStore.GetDatabase(databaseName); err == nil {
 		db.TableCount++
 		if err := s.databaseStore.PutProto(databaseName, DatabaseToProto(db)); err != nil {
-			log.Printf("Failed to update database table count: %v", err)
+			logs.Error("Failed to update database table count", logs.Err(err))
 		}
 	}
 
@@ -133,7 +133,7 @@ func (s *TableStore) DeleteTable(databaseName, tableName string) error {
 		if db.TableCount > 0 {
 			db.TableCount--
 			if err := s.databaseStore.PutProto(databaseName, DatabaseToProto(db)); err != nil {
-				log.Printf("Failed to update database table count: %v", err)
+				logs.Error("Failed to update database table count", logs.Err(err))
 			}
 		}
 	}

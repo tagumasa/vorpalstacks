@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+
+	"vorpalstacks/internal/server/http/router"
 )
 
 func (s *Server) registerRoutes(r chi.Router) {
@@ -33,7 +35,7 @@ func (s *Server) registerRoutes(r chi.Router) {
 				next.ServeHTTP(w, r)
 				return
 			}
-			if isLambdaRestPath(r.URL.Path) || isApiGatewayPath(r.URL.Path) || isSchedulerPath(r.URL.Path) || isSESv2Path(r.URL.Path) || isRoute53Path(r.URL.Path) || isCloudFrontPath(r.URL.Path) || isCloudWatchCBORPath(r.URL.Path) {
+			if router.IsLambdaRestPath(r.URL.Path) || isApiGatewayPath(r.URL.Path) || isSchedulerPath(r.URL.Path) || isSESv2Path(r.URL.Path) || isRoute53Path(r.URL.Path) || isCloudFrontPath(r.URL.Path) || isCloudWatchCBORPath(r.URL.Path) {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -69,7 +71,7 @@ func (s *Server) registerRoutes(r chi.Router) {
 			s.handleRequest(w, r)
 			return
 		}
-		if isLambdaRestPath(r.URL.Path) {
+		if router.IsLambdaRestPath(r.URL.Path) {
 			s.handleRequest(w, r)
 			return
 		}
@@ -151,25 +153,6 @@ func (s *Server) registerServiceRoutes(r chi.Router, serviceName string) {
 func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 	serviceName := s.extractServiceFromRequest(r)
 	s.dispatcher.Dispatch(w, r, serviceName, nil)
-}
-
-func isLambdaRestPath(path string) bool {
-	return strings.HasPrefix(path, "/2015-03-31/") ||
-		strings.HasPrefix(path, "/2016-08-19/") ||
-		strings.HasPrefix(path, "/2017-03-31/") ||
-		strings.HasPrefix(path, "/2017-10-31/") ||
-		strings.HasPrefix(path, "/2018-10-31/") ||
-		strings.HasPrefix(path, "/2019-09-30/") ||
-		strings.HasPrefix(path, "/2020-01-01/") ||
-		strings.HasPrefix(path, "/2020-06-30/") ||
-		strings.HasPrefix(path, "/2021-01-01/") ||
-		strings.HasPrefix(path, "/2021-10-01/") ||
-		strings.HasPrefix(path, "/2022-01-01/") ||
-		strings.HasPrefix(path, "/2022-07-01/") ||
-		strings.HasPrefix(path, "/2023-01-01/") ||
-		strings.HasPrefix(path, "/2023-07-01/") ||
-		strings.HasPrefix(path, "/2024-01-01/") ||
-		strings.HasPrefix(path, "/2025-01-01/")
 }
 
 func isApiGatewayPath(path string) bool {

@@ -3,10 +3,10 @@ package route53
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
 	route53store "vorpalstacks/internal/store/aws/route53"
@@ -154,10 +154,10 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 
 		switch action {
 		case "CREATE":
-			if err := st.RecordSets().Create(hostedZoneId, rrs); err != nil {
+			if err := st.RecordSets().Upsert(hostedZoneId, rrs); err != nil {
 				for _, ac := range appliedChanges {
 					if delErr := st.RecordSets().Delete(hostedZoneId, ac.Name, ac.Type, ac.SetIdentifier); delErr != nil {
-						log.Printf("Failed to rollback record %s: %v", ac.Name, delErr)
+						logs.Error("Failed to rollback record", logs.String("name", ac.Name), logs.Err(delErr))
 					}
 				}
 				return nil, NewAPIError("InvalidChangeBatch", fmt.Sprintf("Failed to create resource record set %s: %v", rrs.Name, err), 400)
@@ -168,15 +168,15 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 			if err := st.RecordSets().Upsert(hostedZoneId, rrs); err != nil {
 				for _, ac := range appliedChanges {
 					if delErr := st.RecordSets().Delete(hostedZoneId, ac.Name, ac.Type, ac.SetIdentifier); delErr != nil {
-						log.Printf("Failed to rollback record %s: %v", ac.Name, delErr)
+						logs.Error("Failed to rollback record", logs.String("name", ac.Name), logs.Err(delErr))
 					}
 				}
 				if oldRRS != nil {
 					if createErr := st.RecordSets().Create(hostedZoneId, oldRRS); createErr != nil {
-						log.Printf("Failed to restore record %s: %v", oldRRS.Name, createErr)
+						logs.Error("Failed to restore record", logs.String("name", oldRRS.Name), logs.Err(createErr))
 					}
 				}
-				log.Printf("UPSERT record failed: %v", err)
+				logs.Error("UPSERT record failed", logs.Err(err))
 				return nil, NewAPIError("InvalidChangeBatch", fmt.Sprintf("Failed to upsert resource record set %s: %v", rrs.Name, err), 400)
 			}
 			appliedChanges = append(appliedChanges, rrs)
@@ -185,15 +185,15 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 			if err := st.RecordSets().Delete(hostedZoneId, rrs.Name, rrs.Type, rrs.SetIdentifier); err != nil {
 				for _, ac := range appliedChanges {
 					if delErr := st.RecordSets().Delete(hostedZoneId, ac.Name, ac.Type, ac.SetIdentifier); delErr != nil {
-						log.Printf("Failed to rollback record %s: %v", ac.Name, delErr)
+						logs.Error("Failed to rollback record", logs.String("name", ac.Name), logs.Err(delErr))
 					}
 				}
 				if deletedRRS != nil {
 					if createErr := st.RecordSets().Create(hostedZoneId, deletedRRS); createErr != nil {
-						log.Printf("Failed to restore record %s: %v", deletedRRS.Name, createErr)
+						logs.Error("Failed to restore record", logs.String("name", deletedRRS.Name), logs.Err(createErr))
 					}
 				}
-				log.Printf("DELETE record failed: %v", err)
+				logs.Error("DELETE record failed", logs.Err(err))
 				return nil, NewAPIError("InvalidChangeBatch", fmt.Sprintf("Failed to delete resource record set %s: %v", rrs.Name, err), 400)
 			}
 		}
@@ -245,8 +245,17 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 	}
 
 	startRecordName := request.GetStringParam(req.Parameters, "StartRecordName")
+	if startRecordName == "" {
+		startRecordName = request.GetStringParam(req.Parameters, "name")
+	}
 	startRecordType := request.GetStringParam(req.Parameters, "StartRecordType")
+	if startRecordType == "" {
+		startRecordType = request.GetStringParam(req.Parameters, "type")
+	}
 	maxItems := int(request.GetIntParam(req.Parameters, "MaxItems"))
+	if maxItems == 0 {
+		maxItems = int(request.GetIntParam(req.Parameters, "maxitems"))
+	}
 
 	var filtered []*route53store.ResourceRecordSet
 	started := startRecordName == "" && startRecordType == ""
@@ -256,10 +265,12 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 			filtered = append(filtered, rs)
 		} else if strings.EqualFold(rs.Name, startRecordName) && strings.EqualFold(rs.Type, startRecordType) {
 			started = true
+			filtered = append(filtered, rs)
 		}
 	}
 
-	if maxItems > 0 && len(filtered) > maxItems {
+	totalFiltered := len(filtered)
+	if maxItems > 0 && totalFiltered > maxItems {
 		filtered = filtered[:maxItems]
 	}
 
@@ -268,7 +279,7 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 		records[i] = s.recordSetToResponse(rs)
 	}
 
-	isTruncated := maxItems > 0 && len(filtered) == maxItems && (startRecordName != "" || startRecordType != "" || len(records) < len(recordSets))
+	isTruncated := maxItems > 0 && totalFiltered > maxItems
 
 	return map[string]interface{}{
 		"ResourceRecordSets": protocol.XMLElements{ElementName: "ResourceRecordSet", Items: records},

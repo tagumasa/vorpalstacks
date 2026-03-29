@@ -87,12 +87,11 @@ type Bucket interface {
 }
 
 // Transaction provides a transactional view of storage.
+// Commit and rollback are handled automatically by View()/Update().
 type Transaction interface {
 	Bucket(name string) Bucket
 	CreateBucket(name string) error
 	DeleteBucket(name string) error
-	Commit() error
-	Rollback() error
 }
 
 // ConditionalBucket provides conditional write operations.

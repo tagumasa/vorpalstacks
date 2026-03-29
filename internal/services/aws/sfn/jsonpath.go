@@ -223,10 +223,68 @@ func (e *Executor) parseDefinition(ctx context.Context, stateMachineArn string) 
 			return nil, nil, fmt.Errorf("failed to unmarshal state: %w", err)
 		}
 
+		if err := resolveOutputRaw(state, stateMap); err != nil {
+			return nil, nil, fmt.Errorf("failed to resolve output for %s: %w", name, err)
+		}
+
 		states[name] = state
 	}
 
 	return &definition, states, nil
+}
+
+func resolveOutputRaw(state sfnstore.State, stateMap map[string]interface{}) error {
+	outputVal, hasOutput := stateMap["Output"]
+	if !hasOutput {
+		return nil
+	}
+
+	outputJSON, err := json.Marshal(outputVal)
+	if err != nil {
+		return nil
+	}
+
+	switch s := state.(type) {
+	case *sfnstore.PassState:
+		s.OutputRaw = outputJSON
+	case *sfnstore.TaskState:
+		s.OutputRaw = outputJSON
+	case *sfnstore.ParallelState:
+		s.OutputRaw = outputJSON
+	case *sfnstore.MapState:
+		s.OutputRaw = outputJSON
+	case *sfnstore.SucceedState:
+		s.OutputRaw = outputJSON
+	}
+	return nil
+}
+
+func resolveJSONataOutput(state sfnstore.State) (interface{}, error) {
+	var outputRaw json.RawMessage
+	switch s := state.(type) {
+	case *sfnstore.PassState:
+		outputRaw = s.OutputRaw
+	case *sfnstore.TaskState:
+		outputRaw = s.OutputRaw
+	case *sfnstore.ParallelState:
+		outputRaw = s.OutputRaw
+	case *sfnstore.MapState:
+		outputRaw = s.OutputRaw
+	case *sfnstore.SucceedState:
+		outputRaw = s.OutputRaw
+	default:
+		return nil, nil
+	}
+
+	if len(outputRaw) == 0 {
+		return nil, nil
+	}
+
+	var result interface{}
+	if err := json.Unmarshal(outputRaw, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (e *Executor) extractStatesFromDefinition(definition *sfnstore.StateMachineDefinition) (map[string]sfnstore.State, error) {
@@ -271,6 +329,10 @@ func (e *Executor) extractStatesFromDefinition(definition *sfnstore.StateMachine
 
 		if err := json.Unmarshal(stateJSON, state); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal state: %w", err)
+		}
+
+		if err := resolveOutputRaw(state, stateMap); err != nil {
+			return nil, fmt.Errorf("failed to resolve output for %s: %w", name, err)
 		}
 
 		states[name] = state
@@ -319,6 +381,10 @@ func (e *Executor) parseState(name string, stateData interface{}) (sfnstore.Stat
 
 	if err := json.Unmarshal(stateJSON, state); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal state: %w", err)
+	}
+
+	if err := resolveOutputRaw(state, stateMap); err != nil {
+		return nil, fmt.Errorf("failed to resolve output for %s: %w", name, err)
 	}
 
 	return state, nil

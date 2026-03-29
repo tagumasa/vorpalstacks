@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -391,15 +391,15 @@ func (s *HybridBlobStore) deleteUnlock(bucket, key string) error {
 	storageKey := s.storageKey(bucket, key)
 
 	if err := s.storage.Bucket("blob_small").Delete([]byte(storageKey)); err != nil {
-		log.Printf("Failed to delete from blob_small: %v", err)
+		slog.Error("Failed to delete from blob_small", "error", err)
 	}
 	if err := s.storage.Bucket("blob_meta").Delete([]byte(storageKey)); err != nil {
-		log.Printf("Failed to delete from blob_meta: %v", err)
+		slog.Error("Failed to delete from blob_meta", "error", err)
 	}
 
 	path := s.filePath(bucket, key)
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		log.Printf("Failed to remove file %s: %v", path, err)
+		slog.Error("Failed to remove file", "path", path, "error", err)
 	}
 
 	return nil
@@ -533,15 +533,15 @@ func (s *HybridBlobStore) DeleteWithVersion(ctx context.Context, bucket, key, ve
 	storageKey := s.storageKeyWithVersion(bucket, key, versionId)
 
 	if err := s.storage.Bucket("blob_small").Delete([]byte(storageKey)); err != nil {
-		log.Printf("Failed to delete from blob_small: %v", err)
+		slog.Error("Failed to delete from blob_small", "error", err)
 	}
 	if err := s.storage.Bucket("blob_meta").Delete([]byte(storageKey)); err != nil {
-		log.Printf("Failed to delete from blob_meta: %v", err)
+		slog.Error("Failed to delete from blob_meta", "error", err)
 	}
 
 	path := s.filePathWithVersion(bucket, key, versionId)
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		log.Printf("Failed to remove file %s: %v", path, err)
+		slog.Error("Failed to remove file", "path", path, "error", err)
 	}
 
 	return nil
@@ -689,7 +689,7 @@ func (s *HybridBlobStore) CompleteMultipartUpload(ctx context.Context, bucket, k
 	}
 
 	if err := s.abortMultipartUploadUnlock(uploadID); err != nil {
-		log.Printf("Failed to cleanup multipart upload %s: %v", uploadID, err)
+		slog.Error("Failed to cleanup multipart upload", "uploadID", uploadID, "error", err)
 	}
 
 	var metadata *BlobMetadata
@@ -722,10 +722,10 @@ func (s *HybridBlobStore) AbortMultipartUpload(ctx context.Context, bucket, key,
 
 func (s *HybridBlobStore) abortMultipartUploadUnlock(uploadID string) error {
 	if err := os.RemoveAll(s.uploadDir(uploadID)); err != nil {
-		log.Printf("Failed to remove upload dir: %v", err)
+		slog.Error("Failed to remove upload dir", "error", err)
 	}
 	if err := s.storage.Bucket("blob_uploads").Delete([]byte(uploadID)); err != nil {
-		log.Printf("Failed to delete upload metadata: %v", err)
+		slog.Error("Failed to delete upload metadata", "error", err)
 	}
 	return nil
 }

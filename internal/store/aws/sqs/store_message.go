@@ -2,11 +2,11 @@ package sqs
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/core/logs"
 	pb "vorpalstacks/internal/pb/storage/storage_sqs"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -166,7 +166,7 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 
 		if queue.RedrivePolicy != nil && msg.ApproximateReceiveCount > queue.RedrivePolicy.MaxReceiveCount {
 			if err := s.moveToDLQ(msg, queue.RedrivePolicy.DeadLetterTargetARN); err != nil {
-				log.Printf("[WARN] failed to move message %s to DLQ: %v", msg.ID, err)
+				logs.Warn("Failed to move message to DLQ", logs.String("messageId", msg.ID), logs.Err(err))
 			}
 			continue
 		}

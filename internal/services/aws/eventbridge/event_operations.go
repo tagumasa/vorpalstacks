@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"strings"
 	"sync"
@@ -171,7 +170,7 @@ func (s *EventsService) deliverEventWithStore(ctx context.Context, region string
 						<-s.targetSemaphore
 						targetWg.Done()
 						if r := recover(); r != nil {
-							log.Printf("eventbridge: panic delivering to target %s: %v", targetCopy.ARN, r)
+							logs.Error("eventbridge: panic delivering to target", logs.String("arn", targetCopy.ARN), logs.Any("panic", r))
 						}
 					}()
 					s.deliverToTarget(ctx, region, event, targetCopy)

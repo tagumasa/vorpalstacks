@@ -1,9 +1,9 @@
 package sesv2
 
 import (
-	"log"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/common"
 )
 
@@ -99,7 +99,7 @@ func (s *SESv2Store) DeleteContactList(name string) error {
 	}
 	arn := s.arnBuilder.Build("ses", "contact-list/"+name)
 	if err := s.TagStore.Delete(arn); err != nil {
-		log.Printf("Failed to delete tags for contact list %s: %v", name, err)
+		logs.Error("Failed to delete tags for contact list", logs.String("name", name), logs.Err(err))
 	}
 	return s.contactListStore.Delete(name)
 }

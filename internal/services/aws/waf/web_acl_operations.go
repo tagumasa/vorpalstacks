@@ -3,8 +3,8 @@ package waf
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
@@ -66,7 +66,7 @@ func (s *WAFService) CreateWebACL(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	if err := stores.webACLs.Put(webACL.ID, webACL); err != nil {
-		log.Printf("WARNING: failed to persist WebACL %s: %v", webACL.ID, err)
+		logs.Warn("failed to persist WebACL", logs.String("id", webACL.ID), logs.Err(err))
 	}
 
 	return map[string]interface{}{

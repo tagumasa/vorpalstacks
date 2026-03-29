@@ -3,10 +3,10 @@ package cloudwatchlogs
 
 import (
 	"context"
-	"log"
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common"
@@ -198,7 +198,7 @@ func (s *LogsService) purgeAllRegions() {
 	s.logsStores.Range(func(key, value interface{}) bool {
 		store := value.(*logsstore.Store)
 		if err := store.PurgeAllExpiredChunks(); err != nil {
-			log.Printf("Failed to purge expired chunks: %v", err)
+			logs.Error("Failed to purge expired chunks", logs.Err(err))
 		}
 		return true
 	})

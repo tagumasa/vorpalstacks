@@ -2,8 +2,8 @@ package wafv2
 
 import (
 	"context"
-	"log"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
@@ -55,7 +55,7 @@ func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestC
 	if tags := parseTags(req.Parameters["Tags"]); len(tags) > 0 {
 		ipSet.Tags = tags
 		if err := stores.ipSets.Put(ipSet.ID, ipSet); err != nil {
-			log.Printf("WARNING: failed to persist tags for IPSet %s: %v", ipSet.ID, err)
+			logs.Warn("failed to persist tags for IPSet", logs.String("id", ipSet.ID), logs.Err(err))
 		}
 	}
 

@@ -4,7 +4,6 @@ package dnsserver
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -131,7 +130,7 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 	if len(r.Question) == 0 {
 		if err := w.WriteMsg(m); err != nil {
-			log.Printf("DNS write error: %v", err)
+			logs.Error("DNS write error", logs.Err(err))
 		}
 		return
 	}
@@ -143,7 +142,7 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if zone == nil {
 		m.Rcode = dns.RcodeNameError
 		if err := w.WriteMsg(m); err != nil {
-			log.Printf("DNS write error: %v", err)
+			logs.Error("DNS write error", logs.Err(err))
 		}
 		return
 	}
@@ -152,7 +151,7 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if err != nil {
 		m.Rcode = dns.RcodeServerFailure
 		if err := w.WriteMsg(m); err != nil {
-			log.Printf("DNS write error: %v", err)
+			logs.Error("DNS write error", logs.Err(err))
 		}
 		return
 	}
@@ -169,7 +168,7 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	}
 
 	if err := w.WriteMsg(m); err != nil {
-		log.Printf("DNS write error: %v", err)
+		logs.Error("DNS write error", logs.Err(err))
 	}
 }
 

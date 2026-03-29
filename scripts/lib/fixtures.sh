@@ -183,6 +183,218 @@ STATE_MACHINE_RESULTSELECTOR='{
   }
 }'
 
+# JSONata state machine definitions
+STATE_MACHINE_JSONATA_PASS='{
+  "Comment": "JSONata Pass state",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Hello",
+  "States": {
+    "Hello": {
+      "Type": "Pass",
+      "Output": "{% $states.input %}",
+      "End": true
+    }
+  }
+}'
+
+STATE_MACHINE_JSONATA_EXPRESSIONS='{
+  "Comment": "JSONata expressions",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Transform",
+  "States": {
+    "Transform": {
+      "Type": "Pass",
+      "Output": {"result": "{% $states.input.x + $states.input.y %}", "source": "{% $states.input.label %}"},
+      "End": true
+    }
+  }
+}'
+
+STATE_MACHINE_JSONATA_VARIABLES='{
+  "Comment": "JSONata variables",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Assign",
+  "States": {
+    "Assign": {
+      "Type": "Pass",
+      "Assign": {"sum": "{% $states.input.a + $states.input.b %}", "label": "{% $states.input.name %}"},
+      "Output": {"computedSum": "{% $sum %}", "computedLabel": "{% $label %}"},
+      "Next": "Verify"
+    },
+    "Verify": {
+      "Type": "Pass",
+      "Output": {"sum": "{% $sum %}", "label": "{% $label %}", "doubled": "{% $sum * 2 %}"},
+      "End": true
+    }
+  }
+}'
+
+STATE_MACHINE_JSONATA_CHOICE='{
+  "Comment": "JSONata Choice state",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Check",
+  "States": {
+    "Check": {
+      "Type": "Choice",
+      "Choices": [
+        {"Condition": "{% $states.input.value = 1 %}", "Next": "One"},
+        {"Condition": "{% $states.input.value = 2 %}", "Next": "Two"}
+      ],
+      "Default": "Default"
+    },
+    "One": {"Type": "Pass", "Result": "One", "End": true},
+    "Two": {"Type": "Pass", "Result": "Two", "End": true},
+    "Default": {"Type": "Pass", "Result": "Default", "End": true}
+  }
+}'
+
+STATE_MACHINE_JSONATA_MAP='{
+  "Comment": "JSONata Map state",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Map",
+  "States": {
+    "Map": {
+      "Type": "Map",
+      "Items": "{% $states.input.items %}",
+      "ItemProcessor": {
+        "StartAt": "Process",
+        "States": {
+          "Process": {
+            "Type": "Pass",
+            "Output": {"original": "{% $states.input %}", "doubled": "{% $states.input * 2 %}"},
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}'
+
+STATE_MACHINE_JSONATA_PARALLEL='{
+  "Comment": "JSONata Parallel state",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Parallel",
+  "States": {
+    "Parallel": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Branch1",
+          "States": {
+            "Branch1": {"Type": "Pass", "Output": {"branch": 1, "data": "{% $states.input.value %}"}, "End": true}
+          }
+        },
+        {
+          "StartAt": "Branch2",
+          "States": {
+            "Branch2": {"Type": "Pass", "Output": {"branch": 2, "data": "{% $states.input.value * 10 %}"}, "End": true}
+          }
+        }
+      ],
+      "End": true
+    }
+  }
+}'
+
+STATE_MACHINE_JSONATA_WAIT='{
+  "Comment": "JSONata Wait state",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Wait",
+  "States": {
+    "Wait": {
+      "Type": "Wait",
+      "Seconds": "{% 1 %}",
+      "End": true
+    }
+  }
+}'
+
+STATE_MACHINE_JSONATA_ITEMSELECTOR='{
+  "Comment": "JSONata Map with ItemSelector",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Map",
+  "States": {
+    "Map": {
+      "Type": "Map",
+      "Items": "{% $states.input.items %}",
+      "ItemSelector": {"name": "{% $states.context.Map.Item.Value.name %}", "val": "{% $states.context.Map.Item.Value.value %}"},
+      "ItemProcessor": {
+        "StartAt": "Process",
+        "States": {
+          "Process": {
+            "Type": "Pass",
+            "Output": {"processedName": "{% $states.input.name %}", "processedVal": "{% $states.input.val %}"},
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}'
+
+STATE_MACHINE_MIXED_MODE='{
+  "Comment": "Mixed JSONPath/JSONata",
+  "StartAt": "JsonPathState",
+  "States": {
+    "JsonPathState": {
+      "Type": "Pass",
+      "InputPath": "$.data",
+      "Result": {"processed": true},
+      "ResultPath": "$.result1",
+      "Next": "JsonataState"
+    },
+    "JsonataState": {
+      "Type": "Pass",
+      "QueryLanguage": "JSONata",
+      "Output": {"transformed": "{% $states.input.value %}", "hasResult": "{% $states.input.result1.processed %}"},
+      "End": true
+    }
+  }
+}'
+
+STATE_MACHINE_JSONATA_SUCCEED='{
+  "Comment": "JSONata Succeed state",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Transform",
+  "States": {
+    "Transform": {
+      "Type": "Pass",
+      "Output": {"final": "{% $states.input.x * 2 %}"},
+      "Next": "Done"
+    },
+    "Done": {
+      "Type": "Succeed"
+    }
+  }
+}'
+
+STATE_MACHINE_JSONATA_FAIL='{
+  "Comment": "JSONata Fail state",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Check",
+  "States": {
+    "Check": {
+      "Type": "Choice",
+      "Choices": [
+        {"Condition": "{% $states.input.shouldFail %}", "Next": "FailState"}
+      ],
+      "Default": "PassState"
+    },
+    "FailState": {
+      "Type": "Fail",
+      "Cause": "{% \"Failed because: \" & $states.input.reason %}",
+      "Error": "CustomError"
+    },
+    "PassState": {
+      "Type": "Pass",
+      "Result": "ok",
+      "End": true
+    }
+  }
+}'
+
 # Event patterns
 EVENT_PATTERN_SIMPLE='{"source": ["test.source"]}'
 EVENT_PATTERN_DETAIL='{"source": ["test.source"], "detail-type": ["test-event"], "detail": {"status": ["success"]}}'

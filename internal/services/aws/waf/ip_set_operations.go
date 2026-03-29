@@ -3,8 +3,8 @@ package waf
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
@@ -50,14 +50,14 @@ func (s *WAFService) CreateIPSet(ctx context.Context, reqCtx *request.RequestCon
 	if len(descriptors) > 0 {
 		ipSet.IPSetDescriptors = descriptors
 		if err := stores.ipSets.Put(ipSet.ID, ipSet); err != nil {
-			log.Printf("WARNING: failed to persist descriptors for IPSet %s: %v", ipSet.ID, err)
+			logs.Warn("failed to persist descriptors for IPSet", logs.String("id", ipSet.ID), logs.Err(err))
 		}
 	}
 
 	if len(tags) > 0 && ipSet.ARN != "" {
 		ipSet.Tags = tags
 		if err := stores.ipSets.Put(ipSet.ID, ipSet); err != nil {
-			log.Printf("WARNING: failed to persist tags for IPSet %s: %v", ipSet.ID, err)
+			logs.Warn("failed to persist tags for IPSet", logs.String("id", ipSet.ID), logs.Err(err))
 		}
 	}
 

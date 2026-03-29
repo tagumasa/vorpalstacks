@@ -4,6 +4,34 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-03-30
+
+### Added
+- Step Functions JSONata query language support (full AWS specification compliance)
+- Workflow variables with scope management (Assign field on all state types)
+- Built-in variables: `$states.input`, `$states.result`, `$states.context`, `$states.errorOutput`
+- JSONata Output, Arguments, Items, Condition, Seconds expressions
+- TestState Variables support and VariableReferences on DescribeStateMachine
+- EvaluationFailed history events for JSONata query errors
+- JSONata-only / JSONPath-only field validation on Create/UpdateStateMachine
+- Custom AWS JSONata functions: `$uuid`, `$hash`, `$random`, `$parse`, `$partition`, `$range`
+- Context object (`$states.context`) matching `$$.` intrinsic function structure
+- HeartbeatSeconds / TimeoutSeconds expression evaluation in JSONata mode
+- MapItemValue / MapItemIndex for Map state ItemSelector
+- Catch.Assign and Catch.Output for JSONata error handling
+- Lambda Function URL server, S3 website hosting, CloudFront distribution server
+- Cognito hosted UI server, listener manager, gRPC-Web admin_auth registration
+- Lambda and new service guide documentation
+
+### Fixed
+- InputOutput unmarshal for string values in JSONata definitions
+- Choice Condition unwrapping for JSONata expressions
+- Variable names incorrectly stored with `$` prefix
+- VariableReferences regex, builtin filtering, and describe-time recomputation
+- Double-wrapping of `states` key in variable map construction
+- BuiltinFunction value leaking into JSONata expression results
+- Various service log/request refactors
+
 ## [0.0.3] - 2026-03-29
 
 ### Added

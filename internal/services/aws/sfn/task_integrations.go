@@ -315,7 +315,7 @@ func getStringOrEmpty(m map[string]interface{}, keys ...string) string {
 	return ""
 }
 
-func (e *Executor) executeActivityTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string) (string, string, error) {
+func (e *Executor) executeActivityTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string, timeoutSeconds, heartbeatSeconds int32) (string, string, error) {
 	parts := strings.Split(state.Resource, ":")
 	if len(parts) < 7 {
 		return "", "", fmt.Errorf("invalid activity ARN: %s", state.Resource)
@@ -344,13 +344,14 @@ func (e *Executor) executeActivityTask(ctx context.Context, execCtx *ExecutionCo
 		EventId:      execCtx.nextEventId(),
 		Type:         "ActivityTaskScheduled",
 		ActivityTaskScheduledEventDetails: &sfnstore.ActivityTaskScheduledEventDetails{
-			Resource:  state.Resource,
-			Input:     input,
-			TaskToken: task.TaskToken,
+			Resource:         state.Resource,
+			Input:            input,
+			TaskToken:        task.TaskToken,
+			HeartbeatSeconds: heartbeatSeconds,
 		},
 	})
 
-	timeout := time.Duration(state.TimeoutSeconds) * time.Second
+	timeout := time.Duration(timeoutSeconds) * time.Second
 	if timeout == 0 {
 		timeout = 60 * time.Second
 	}

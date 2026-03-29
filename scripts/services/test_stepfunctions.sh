@@ -141,4 +141,130 @@ run_test "20. ResultSelector" \
     "done"
 aws_noauth stepfunctions delete-state-machine --state-machine-arn "$SM_ARN6" 2>/dev/null || true
 
+# ============================================
+# JSONata Tests (Tests 21-35)
+# ============================================
+echo ""
+echo "--- JSONata Tests ---"
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-pass-$$" --definition "$STATE_MACHINE_JSONATA_PASS" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"msg":"hello jsonata"}' --query 'executionArn' --output text 2>&1)
+sleep 2
+JOUTPUT=$(aws_noauth stepfunctions describe-execution --execution-arn "$JEXEC" --query 'output' --output text 2>&1)
+run_test "21. JSONata Pass passthrough" \
+    "echo '$JOUTPUT'" \
+    "hello jsonata"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-expr-$$" --definition "$STATE_MACHINE_JSONATA_EXPRESSIONS" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"x":10,"y":20,"label":"test"}' --query 'executionArn' --output text 2>&1)
+sleep 2
+JOUTPUT=$(aws_noauth stepfunctions describe-execution --execution-arn "$JEXEC" --query 'output' --output text 2>&1)
+run_test "22. JSONata expressions" \
+    "echo '$JOUTPUT'" \
+    "30"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-vars-$$" --definition "$STATE_MACHINE_JSONATA_VARIABLES" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"a":5,"b":3,"name":"calc"}' --query 'executionArn' --output text 2>&1)
+sleep 2
+JOUTPUT=$(aws_noauth stepfunctions describe-execution --execution-arn "$JEXEC" --query 'output' --output text 2>&1)
+run_test "23. JSONata variables" \
+    "echo '$JOUTPUT'" \
+    "16"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-choice-$$" --definition "$STATE_MACHINE_JSONATA_CHOICE" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"value":2}' --query 'executionArn' --output text 2>&1)
+sleep 2
+JOUTPUT=$(aws_noauth stepfunctions describe-execution --execution-arn "$JEXEC" --query 'output' --output text 2>&1)
+run_test "24. JSONata Choice" \
+    "echo '$JOUTPUT'" \
+    "Two"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-map-$$" --definition "$STATE_MACHINE_JSONATA_MAP" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"items":[1,2,3]}' --query 'executionArn' --output text 2>&1)
+sleep 2
+JOUTPUT=$(aws_noauth stepfunctions describe-execution --execution-arn "$JEXEC" --query 'output' --output text 2>&1)
+run_test "25. JSONata Map" \
+    "echo '$JOUTPUT'" \
+    "doubled"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-parallel-$$" --definition "$STATE_MACHINE_JSONATA_PARALLEL" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"value":5}' --query 'executionArn' --output text 2>&1)
+sleep 2
+JOUTPUT=$(aws_noauth stepfunctions describe-execution --execution-arn "$JEXEC" --query 'output' --output text 2>&1)
+run_test "26. JSONata Parallel" \
+    "echo '$JOUTPUT'" \
+    "branch"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-wait-$$" --definition "$STATE_MACHINE_JSONATA_WAIT" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{}' --query 'executionArn' --output text 2>&1)
+sleep 3
+run_test "27. JSONata Wait" \
+    "aws_noauth stepfunctions describe-execution --execution-arn '$JEXEC' --query 'status' --output text" \
+    "SUCCEEDED"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-itemselector-$$" --definition "$STATE_MACHINE_JSONATA_ITEMSELECTOR" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"items":[{"name":"a","value":1},{"name":"b","value":2}]}' --query 'executionArn' --output text 2>&1)
+sleep 2
+JOUTPUT=$(aws_noauth stepfunctions describe-execution --execution-arn "$JEXEC" --query 'output' --output text 2>&1)
+run_test "28. JSONata ItemSelector" \
+    "echo '$JOUTPUT'" \
+    "processedName"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "mixed-mode-$$" --definition "$STATE_MACHINE_MIXED_MODE" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"data":{"value":42}}' --query 'executionArn' --output text 2>&1)
+sleep 2
+JOUTPUT=$(aws_noauth stepfunctions describe-execution --execution-arn "$JEXEC" --query 'output' --output text 2>&1)
+run_test "29. Mixed JSONPath+JSONata" \
+    "echo '$JOUTPUT'" \
+    "transformed"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-succeed-$$" --definition "$STATE_MACHINE_JSONATA_SUCCEED" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"x":21}' --query 'executionArn' --output text 2>&1)
+sleep 2
+JOUTPUT=$(aws_noauth stepfunctions describe-execution --execution-arn "$JEXEC" --query 'output' --output text 2>&1)
+run_test "30. JSONata Succeed" \
+    "echo '$JOUTPUT'" \
+    "42"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-fail-$$" --definition "$STATE_MACHINE_JSONATA_FAIL" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"shouldFail":true,"reason":"test"}' --query 'executionArn' --output text 2>&1)
+sleep 2
+run_test "31. JSONata Fail" \
+    "aws_noauth stepfunctions describe-execution --execution-arn '$JEXEC' --query 'status' --output text" \
+    "FAILED"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-choice-default-$$" --definition "$STATE_MACHINE_JSONATA_CHOICE" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"value":99}' --query 'executionArn' --output text 2>&1)
+sleep 2
+JOUTPUT=$(aws_noauth stepfunctions describe-execution --execution-arn "$JEXEC" --query 'output' --output text 2>&1)
+run_test "32. JSONata Choice default" \
+    "echo '$JOUTPUT'" \
+    "Default"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-fail-pass-$$" --definition "$STATE_MACHINE_JSONATA_FAIL" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+JEXEC=$(aws_noauth stepfunctions start-execution --state-machine-arn "$JSM_ARN" --input '{"shouldFail":false,"reason":"n/a"}' --query 'executionArn' --output text 2>&1)
+sleep 2
+run_test "33. JSONata Fail bypass" \
+    "aws_noauth stepfunctions describe-execution --execution-arn '$JEXEC' --query 'status' --output text" \
+    "SUCCEEDED"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
+JSM_ARN=$(aws_noauth stepfunctions create-state-machine --name "jsonata-vardesc-$$" --definition "$STATE_MACHINE_JSONATA_VARIABLES" --role-arn "arn:aws:iam:$REGION:$ACCOUNT_ID:role/test-role" --query 'stateMachineArn' --output text 2>&1)
+run_test "34. JSONata DescribeStateMachine" \
+    "aws_noauth stepfunctions describe-state-machine --state-machine-arn '$JSM_ARN' --query 'variableReferences' --output text" \
+    "sum"
+aws_noauth stepfunctions delete-state-machine --state-machine-arn "$JSM_ARN" 2>/dev/null || true
+
 print_summary

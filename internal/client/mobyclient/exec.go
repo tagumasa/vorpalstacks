@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 
 	"vorpalstacks/internal/core/logs"
 
@@ -108,10 +107,10 @@ func (c *Client) ExecWithStdin(ctx context.Context, containerID string, cfg Exec
 	go func() {
 		defer close(stdinDone)
 		if _, err := io.Copy(attachResult.Conn, stdin); err != nil {
-			log.Printf("Failed to copy stdin: %v", err)
+			logs.Error("Failed to copy stdin", logs.Err(err))
 		}
 		if err := attachResult.CloseWrite(); err != nil {
-			log.Printf("Failed to close write: %v", err)
+			logs.Error("Failed to close write", logs.Err(err))
 		}
 	}()
 
@@ -243,7 +242,7 @@ func (c *Client) ExecInteractive(ctx context.Context, containerID string, cfg Ex
 	go func() {
 		defer close(stdinDone)
 		if _, err := io.Copy(attachResult.Conn, stdin); err != nil {
-			log.Printf("Failed to copy stdin in interactive exec: %v", err)
+			logs.Error("Failed to copy stdin in interactive exec", logs.Err(err))
 		}
 	}()
 

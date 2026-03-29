@@ -166,16 +166,6 @@ func (t *PebbleDBTransaction) DeleteBucket(name string) error {
 	return t.txn.DeleteRange(prefix, append(prefix, 0xFF))
 }
 
-// Commit commits the transaction.
-func (t *PebbleDBTransaction) Commit() error {
-	return nil
-}
-
-// Rollback aborts the transaction.
-func (t *PebbleDBTransaction) Rollback() error {
-	return nil
-}
-
 // PebbleDBTransactionBucket provides a bucket interface for pebbledb.Txn.
 type PebbleDBTransactionBucket struct {
 	txn     *pebbledb.Txn

@@ -1,13 +1,15 @@
 package errors
 
 import (
+	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
+	"vorpalstacks/internal/core/logs"
 )
 
 // AWSError represents an AWS service error.
@@ -46,20 +48,29 @@ func (e *AWSError) ToXML() string {
 		faultType = "Receiver"
 	}
 
-	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<ErrorResponse>
-  <Error>
-    <Type>%s</Type>
-    <Code>%s</Code>
-    <Message>%s</Message>
-  </Error>
-  <RequestId>%s</RequestId>
-</ErrorResponse>`, faultType, e.Code, e.Message, e.RequestID)
+	resp := XMLErrorResponse{}
+	resp.Error.Type = faultType
+	resp.Error.Code = e.Code
+	resp.Error.Message = e.Message
+	resp.RequestID = e.RequestID
+
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+	enc := xml.NewEncoder(&buf)
+	enc.Indent("", "  ")
+	_ = enc.Encode(resp)
+	return buf.String()
 }
 
 // ToJSON converts the error to JSON format.
 func (e *AWSError) ToJSON() string {
-	return fmt.Sprintf(`{"__type":"%s","message":"%s","requestId":"%s"}`, e.Code, e.Message, e.RequestID)
+	data := map[string]string{
+		"__type":    e.Code,
+		"message":   e.Message,
+		"requestId": e.RequestID,
+	}
+	result, _ := json.Marshal(data)
+	return string(result)
 }
 
 // ToCBOR converts the error to CBOR format.
@@ -101,9 +112,20 @@ func (e *AWSError) ToJSONWithFormat(format string) string {
 		if e.Fault == "Server" {
 			faultType = "Server"
 		}
-		return fmt.Sprintf(`{"Type":"%s","Code":"%s","Message":"%s"}`, faultType, e.Code, e.Message)
+		data := map[string]string{
+			"Type":    faultType,
+			"Code":    e.Code,
+			"Message": e.Message,
+		}
+		result, _ := json.Marshal(data)
+		return string(result)
 	case "rest-json":
-		return fmt.Sprintf(`{"type":"%s","message":"%s"}`, e.Code, e.Message)
+		data := map[string]string{
+			"type":    e.Code,
+			"message": e.Message,
+		}
+		result, _ := json.Marshal(data)
+		return string(result)
 	default:
 		return e.ToJSON()
 	}
@@ -155,14 +177,14 @@ func WriteAWSError(w http.ResponseWriter, err *AWSError, contentType string) {
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(err.HTTPStatus)
 		if _, writeErr := w.Write([]byte(err.ToXML())); writeErr != nil {
-			log.Printf("Failed to write XML error response: %v", writeErr)
+			logs.Error("Failed to write XML error response", logs.Err(writeErr))
 		}
 	} else if contentType == "application/cbor" {
 		w.Header().Set("Content-Type", "application/cbor")
 		w.Header().Set("smithy-protocol", "rpc-v2-cbor")
 		w.WriteHeader(err.HTTPStatus)
 		if _, writeErr := w.Write(err.ToCBOR()); writeErr != nil {
-			log.Printf("Failed to write CBOR error response: %v", writeErr)
+			logs.Error("Failed to write CBOR error response", logs.Err(writeErr))
 		}
 	} else {
 		ct := contentType
@@ -176,7 +198,7 @@ func WriteAWSError(w http.ResponseWriter, err *AWSError, contentType string) {
 		}
 		w.WriteHeader(err.HTTPStatus)
 		if _, writeErr := w.Write([]byte(err.ToJSON())); writeErr != nil {
-			log.Printf("Failed to write JSON error response: %v", writeErr)
+			logs.Error("Failed to write JSON error response", logs.Err(writeErr))
 		}
 	}
 }
@@ -198,7 +220,7 @@ func WriteCustomJSONError(w http.ResponseWriter, err CustomJSONMarshaler, conten
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(err.GetHTTPStatusCode())
 	if _, writeErr := w.Write([]byte(err.ToJSON())); writeErr != nil {
-		log.Printf("Failed to write JSON error response: %v", writeErr)
+		logs.Error("Failed to write JSON error response", logs.Err(writeErr))
 	}
 }
 
@@ -208,7 +230,7 @@ func WriteError(w http.ResponseWriter, err *AWSError, jsonFormat bool) {
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(err.HTTPStatus)
 		if _, writeErr := w.Write([]byte(err.ToXML())); writeErr != nil {
-			log.Printf("Failed to write XML error response: %v", writeErr)
+			logs.Error("Failed to write XML error response", logs.Err(writeErr))
 		}
 	} else {
 		w.Header().Set("Content-Type", "application/json")
@@ -218,7 +240,7 @@ func WriteError(w http.ResponseWriter, err *AWSError, jsonFormat bool) {
 			format = "formatted"
 		}
 		if _, writeErr := w.Write([]byte(err.ToJSONWithFormat(format))); writeErr != nil {
-			log.Printf("Failed to write JSON error response: %v", writeErr)
+			logs.Error("Failed to write JSON error response", logs.Err(writeErr))
 		}
 	}
 }
@@ -229,13 +251,13 @@ func WriteAWSErrorWithFormat(w http.ResponseWriter, err *AWSError, contentType, 
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(err.HTTPStatus)
 		if _, writeErr := w.Write([]byte(err.ToXML())); writeErr != nil {
-			log.Printf("Failed to write XML error response: %v", writeErr)
+			logs.Error("Failed to write XML error response", logs.Err(writeErr))
 		}
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(err.HTTPStatus)
 		if _, writeErr := w.Write([]byte(err.ToJSONWithFormat(jsonFormat))); writeErr != nil {
-			log.Printf("Failed to write JSON error response: %v", writeErr)
+			logs.Error("Failed to write JSON error response", logs.Err(writeErr))
 		}
 	}
 }
