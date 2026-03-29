@@ -40,7 +40,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | ACM | Full | |
 | API Gateway | Broad | No client certificates, documentation, or SDK generation |
 | Athena | Broad | No capacity reservations or notebook sessions |
-| CloudFront | Full | |
+| CloudFront | Selective | No actual edge traffic distribution |
 | CloudTrail | Broad | No event data stores or SQL queries |
 | CloudWatch Logs | Selective | No Logs Insights queries or export |
 | CloudWatch Metrics | Broad | No metric streams or anomaly detection |
