@@ -336,6 +336,10 @@ func (s *Server) Start() error {
 			}()
 		}
 
+		if s.listenerManager != nil {
+			s.listenerManager.Start()
+		}
+
 		<-s.shutdownCtx.Done()
 	})
 	return startErr
@@ -373,6 +377,10 @@ func (s *Server) handleShutdown() {
 		if err := tlsSrv.Shutdown(ctx); err != nil {
 			log.Printf("handleShutdown: TLS server shutdown error: %v", err)
 		}
+	}
+
+	if s.listenerManager != nil {
+		s.listenerManager.Shutdown(ctx)
 	}
 
 	s.shutdownHooksMu.Lock()
@@ -419,6 +427,12 @@ func (s *Server) Close() error {
 		if err := tlsSrv.Shutdown(ctx); err != nil {
 			log.Printf("Close: TLS server shutdown error: %v", err)
 		}
+	}
+
+	if s.listenerManager != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		s.listenerManager.Shutdown(ctx)
 	}
 
 	var err error

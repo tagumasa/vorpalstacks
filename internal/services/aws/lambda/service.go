@@ -36,17 +36,19 @@ type lambdaStore struct {
 
 // LambdaService provides Lambda operations.
 type LambdaService struct {
-	storage      storage.BasicStorage
-	s3Objects    map[string]s3store.ObjectStoreInterface
-	dockerClient *mobyclient.Client
-	logsStores   sync.Map // region → *logsstore.Store
-	storeCache   sync.Map // region → *lambdaStore
-	accountID    string
-	region       string
-	dataDir      string
-	dataDirOnce  sync.Once
-	asyncWg      sync.WaitGroup // goroutine tracking for InvokeAsync
-	s3ObjectsMu  sync.RWMutex
+	storage        storage.BasicStorage
+	storageManager *storage.RegionStorageManager
+	s3Objects      map[string]s3store.ObjectStoreInterface
+	dockerClient   *mobyclient.Client
+	logsStores     sync.Map // region → *logsstore.Store
+	storeCache     sync.Map // region → *lambdaStore
+	accountID      string
+	region         string
+	hostEndpoint   string
+	dataDir        string
+	dataDirOnce    sync.Once
+	asyncWg        sync.WaitGroup // goroutine tracking for InvokeAsync
+	s3ObjectsMu    sync.RWMutex
 }
 
 func (s *LambdaService) store(reqCtx *request.RequestContext) (*lambdaStore, error) {
@@ -121,6 +123,26 @@ func (s *LambdaService) SetS3ObjectStore(region string, store s3store.ObjectStor
 		s.s3Objects = make(map[string]s3store.ObjectStoreInterface)
 	}
 	s.s3Objects[region] = store
+}
+
+// SetStorageManager sets the region storage manager for resolving regional storage.
+func (s *LambdaService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
+// SetHostEndpoint sets the endpoint URL injected into Lambda containers
+// so they can reach the vorpalstacks host from inside Docker.
+func (s *LambdaService) SetHostEndpoint(endpoint string) {
+	s.hostEndpoint = endpoint
+}
+
+func (s *LambdaService) getRegionalStorage(region string) storage.BasicStorage {
+	if s.storageManager != nil {
+		if st, err := s.storageManager.GetStorage(region); err == nil {
+			return st
+		}
+	}
+	return s.storage
 }
 
 func (s *LambdaService) getS3ObjectStore(region string) s3store.ObjectStoreInterface {
@@ -341,6 +363,10 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 		}
 	}
 
+	if _, ok := envVars["AWS_ENDPOINT_URL"]; !ok && s.hostEndpoint != "" {
+		envVars["AWS_ENDPOINT_URL"] = s.hostEndpoint
+	}
+
 	cfg := mobyclient.AdvancedContainerConfig{
 		Name:       containerName,
 		Image:      image,
@@ -350,6 +376,7 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 		Cmd:        []string{function.Handler},
 		Network:    "bridge",
 		AutoRemove: false,
+		ExtraHosts: []string{"host.docker.internal:host-gateway"},
 	}
 
 	result, err := s.dockerClient.CreateContainerFromConfig(ctx, cfg)
@@ -558,7 +585,7 @@ func (s *LambdaService) writeLambdaLogs(functionName, version, stdout, stderr, r
 // InvokeForGateway invokes a Lambda function by name for API Gateway integration.
 // Returns the HTTP status code, response payload, and any error.
 func (s *LambdaService) InvokeForGateway(ctx context.Context, functionName string, payload []byte) (int64, []byte, error) {
-	store := lambdastore.NewFunctionStore(s.storage, s.accountID, s.region)
+	store := lambdastore.NewFunctionStore(s.getRegionalStorage(s.region), s.accountID, s.region)
 	function, ver, _, err := s.resolveQualifier(store, functionName, "")
 	if err != nil {
 		return 0, nil, err
@@ -575,7 +602,7 @@ func (s *LambdaService) InvokeForGateway(ctx context.Context, functionName strin
 
 // GetFunctionStore returns a new FunctionStore for the Lambda service.
 func (s *LambdaService) GetFunctionStore() *lambdastore.FunctionStore {
-	return lambdastore.NewFunctionStore(s.storage, s.accountID, s.region)
+	return lambdastore.NewFunctionStore(s.getRegionalStorage(s.region), s.accountID, s.region)
 }
 
 // GetAccountSettings returns account limits and usage for Lambda functions.

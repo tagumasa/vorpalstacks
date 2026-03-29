@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/server/http/chain"
 	"vorpalstacks/internal/server/http/router"
+	"vorpalstacks/internal/server/listener"
 	"vorpalstacks/internal/store/api"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	s3store "vorpalstacks/internal/store/aws/s3"
@@ -74,6 +75,7 @@ type Server struct {
 	blobStore         storage.BlobStore
 	shutdownHooks     []ShutdownHook
 	shutdownHooksMu   sync.Mutex
+	listenerManager   *listener.Manager
 }
 
 // ServiceRouter returns the service router.
@@ -223,4 +225,14 @@ func (s *Server) RegisterShutdownHook(hook ShutdownHook) {
 	s.shutdownHooksMu.Lock()
 	defer s.shutdownHooksMu.Unlock()
 	s.shutdownHooks = append(s.shutdownHooks, hook)
+}
+
+// SetListenerManager sets the secondary listener manager.
+func (s *Server) SetListenerManager(m *listener.Manager) {
+	s.listenerManager = m
+}
+
+// ListenerManager returns the secondary listener manager.
+func (s *Server) ListenerManager() *listener.Manager {
+	return s.listenerManager
 }

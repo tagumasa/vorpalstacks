@@ -179,7 +179,7 @@ func loadDefaults() map[string]ConfigEntry {
 		// Default Public Endpoint Ports
 		"ports.s3_website": {
 			Key:         "ports.s3_website",
-			Value:       getEnvInt("VS_PORT_S3_WEBSITE", 8080),
+			Value:       getEnvInt("VS_PORT_S3_WEBSITE", 8081),
 			Type:        ConfigTypePort,
 			Description: "S3 website default port",
 			ReadOnly:    false,
@@ -188,7 +188,7 @@ func loadDefaults() map[string]ConfigEntry {
 		},
 		"ports.apigateway": {
 			Key:         "ports.apigateway",
-			Value:       getEnvInt("VS_PORT_APIGW", 8080),
+			Value:       getEnvInt("VS_PORT_APIGW", 8082),
 			Type:        ConfigTypePort,
 			Description: "API Gateway invoke URL port",
 			ReadOnly:    false,
@@ -197,7 +197,7 @@ func loadDefaults() map[string]ConfigEntry {
 		},
 		"ports.cognito_hosted": {
 			Key:         "ports.cognito_hosted",
-			Value:       getEnvInt("VS_PORT_COGNITO_HOSTED", 8080),
+			Value:       getEnvInt("VS_PORT_COGNITO_HOSTED", 8083),
 			Type:        ConfigTypePort,
 			Description: "Cognito Hosted UI port",
 			ReadOnly:    false,
@@ -206,7 +206,7 @@ func loadDefaults() map[string]ConfigEntry {
 		},
 		"ports.cloudfront": {
 			Key:         "ports.cloudfront",
-			Value:       getEnvInt("VS_PORT_CLOUDFRONT", 8080),
+			Value:       getEnvInt("VS_PORT_CLOUDFRONT", 8084),
 			Type:        ConfigTypePort,
 			Description: "CloudFront distribution port",
 			ReadOnly:    false,
@@ -215,7 +215,7 @@ func loadDefaults() map[string]ConfigEntry {
 		},
 		"ports.lambda_url": {
 			Key:         "ports.lambda_url",
-			Value:       getEnvInt("VS_PORT_LAMBDA_URL", 8080),
+			Value:       getEnvInt("VS_PORT_LAMBDA_URL", 8085),
 			Type:        ConfigTypePort,
 			Description: "Lambda Function URL port",
 			ReadOnly:    false,

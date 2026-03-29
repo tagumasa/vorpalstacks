@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"vorpalstacks/internal/client/mobyclient"
@@ -18,6 +19,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/grpcweb"
 	chihttp "vorpalstacks/internal/server/http"
+	"vorpalstacks/internal/server/listener"
 	svcacm "vorpalstacks/internal/services/aws/acm"
 	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
 	svcapigatewayruntime "vorpalstacks/internal/services/aws/apigateway/runtime"
@@ -142,6 +144,25 @@ func main() {
 
 	s3ObjectStore := s3Store.Objects(cfg.Region)
 
+	mainPort, _ := strconv.Atoi(cfg.Port)
+	if mainPort == 0 {
+		mainPort = 8080
+	}
+	lm := listener.NewManager(mainPort)
+
+	s3WebsiteServer := svcs3.NewWebsiteServer(server.StorageManager(), blobStore, cfg.AccountID, cfg.Region)
+	s3WebsiteHandler := http.HandlerFunc(s3WebsiteServer.HandleRequest)
+	s3WebsitePort := appconfig.GetInt("ports.s3_website")
+	if s3WebsitePort == 0 {
+		s3WebsitePort = 8081
+	}
+	lm.Register(listener.ListenerConfig{
+		Name:        "s3_website",
+		PortKey:     "ports.s3_website",
+		DefaultPort: s3WebsitePort,
+		Handler:     s3WebsiteHandler,
+	})
+
 	route53Service, err := svcroute53.NewRoute53ServiceWithDNS(server.Storage(), cfg.AccountID, cfg.Route53DNSBindAddr, cfg.Route53DNSEnabled)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create Route53 service: %v\n", err)
@@ -165,6 +186,19 @@ func main() {
 
 	cloudfrontService := svccloudfront.NewCloudFrontService(cfg.AccountID)
 	cloudfrontService.RegisterHandlers(server.Dispatcher())
+
+	cloudfrontDistServer := svccloudfront.NewDistributionServer(server.StorageManager(), cfg.AccountID, cfg.Region)
+	cloudfrontHandler := http.HandlerFunc(cloudfrontDistServer.HandleRequest)
+	cloudfrontPort := appconfig.GetInt("ports.cloudfront")
+	if cloudfrontPort == 0 {
+		cloudfrontPort = 8084
+	}
+	lm.Register(listener.ListenerConfig{
+		Name:        "cloudfront",
+		PortKey:     "ports.cloudfront",
+		DefaultPort: cloudfrontPort,
+		Handler:     cloudfrontHandler,
+	})
 
 	wafService := svcwaf.NewWAFService(server.Storage(), cfg.AccountID, cfg.Region)
 	wafService.RegisterHandlers(server.Dispatcher())
@@ -211,11 +245,27 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Warning: Failed to create Docker client for Lambda: %v\n", err)
 		} else {
 			lambdaService = svclambda.NewLambdaService(server.Storage(), dockerClient, cfg.AccountID, cfg.Region, cfg.DataPath)
+			lambdaService.SetStorageManager(server.StorageManager())
+			lambdaService.SetHostEndpoint(fmt.Sprintf("http://host.docker.internal:%s", cfg.Port))
 			if logsStoreInstance != nil {
 				lambdaService.SetLogsStore(cfg.Region, logsStoreInstance)
 			}
 			lambdaService.SetS3ObjectStore(cfg.Region, s3Store.Objects(cfg.Region))
 			lambdaService.RegisterHandlers(server.Dispatcher())
+
+			lambdaUrlServer := svclambda.NewFunctionURLServer(server.StorageManager(), cfg.AccountID, cfg.Region, lambdaService)
+			lambdaUrlHandler := http.HandlerFunc(lambdaUrlServer.HandleRequest)
+			lambdaUrlPort := appconfig.GetInt("ports.lambda_url")
+			if lambdaUrlPort == 0 {
+				lambdaUrlPort = 8085
+			}
+			lm.Register(listener.ListenerConfig{
+				Name:        "lambda_url",
+				PortKey:     "ports.lambda_url",
+				DefaultPort: lambdaUrlPort,
+				Handler:     lambdaUrlHandler,
+			})
+
 			server.RegisterShutdownHook(func(ctx context.Context) {
 				lambdaService.Shutdown()
 			})
@@ -292,8 +342,13 @@ func main() {
 		apiGatewayService.RegisterHandlers(server.Dispatcher())
 
 		if lambdaService != nil {
-			restApiStore := storeapigateway.NewRestApiStore(server.Storage(), cfg.AccountID, cfg.Region)
-			usageStore := storeapigateway.NewUsageStore(server.Storage(), cfg.AccountID, cfg.Region)
+			apiGatewayStorage, err := server.StorageManager().GetStorage(cfg.Region)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to get API Gateway storage: %v\n", err)
+				os.Exit(1)
+			}
+			restApiStore := storeapigateway.NewRestApiStore(apiGatewayStorage, cfg.AccountID, cfg.Region)
+			usageStore := storeapigateway.NewUsageStore(apiGatewayStorage, cfg.AccountID, cfg.Region)
 			runtimeServer := svcapigatewayruntime.NewRuntimeServer(restApiStore, usageStore, lambdaService)
 			if sqsStoreInstance != nil {
 				runtimeServer.SetSQSStore(sqsStoreInstance, cfg.AccountID, cfg.Region)
@@ -301,7 +356,19 @@ func main() {
 			if snsStoreInstance != nil {
 				runtimeServer.SetSNSStore(snsStoreInstance, cfg.AccountID, cfg.Region)
 			}
-			server.RegisterAPIGatewayRuntimeHandler(http.HandlerFunc(runtimeServer.HandleRequest))
+			runtimeHandler := http.HandlerFunc(runtimeServer.HandleRequest)
+			server.RegisterAPIGatewayRuntimeHandler(runtimeHandler)
+
+			apiGatewayPort := appconfig.GetInt("ports.apigateway")
+			if apiGatewayPort == 0 {
+				apiGatewayPort = 8082
+			}
+			lm.Register(listener.ListenerConfig{
+				Name:        "apigateway",
+				PortKey:     "ports.apigateway",
+				DefaultPort: apiGatewayPort,
+				Handler:     runtimeHandler,
+			})
 		}
 	}
 
@@ -311,6 +378,18 @@ func main() {
 		cognitoService.SetStorageManager(server.StorageManager())
 		cognitoService.RegisterHandlers(server.Dispatcher())
 		server.RegisterJWKSHandler(http.HandlerFunc(cognitoService.JWKSHandler))
+
+		cognitoUIHandler := http.HandlerFunc(cognitoService.HostedUIHandler)
+		cognitoUIPort := appconfig.GetInt("ports.cognito_hosted")
+		if cognitoUIPort == 0 {
+			cognitoUIPort = 8083
+		}
+		lm.Register(listener.ListenerConfig{
+			Name:        "cognito_hosted",
+			PortKey:     "ports.cognito_hosted",
+			DefaultPort: cognitoUIPort,
+			Handler:     cognitoUIHandler,
+		})
 	}
 
 	if cfg.CognitoIdentity {
@@ -373,6 +452,8 @@ func main() {
 	}
 
 	cfg.PrintStartupBanner()
+
+	server.SetListenerManager(lm)
 
 	if err := server.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "Server error: %v\n", err)
