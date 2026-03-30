@@ -207,6 +207,24 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 - Go 1.25+
 - Docker (for Lambda functionality)
 
+## Performance
+
+Vorpalstacks implements all 29 services as native Go binaries backed by PebbleDB, avoiding the overhead of interpreted languages or external process dependencies.
+
+This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (595 Go SDK, 631 Python, 629 TypeScript, 606 C# tests) directly within CI/CD pipelines without containerization overhead.
+
+### Benchmark Results (Reference)
+
+Platform: AMD Ryzen 7 5700U (16 cores), Linux, Go 1.25.8, Pebble v2.1.4
+
+> **Note**: These figures are environment-dependent. Direct comparison with other systems is not meaningful without identical hardware, configuration, and workload.
+
+| Service | Operation | Avg Latency | ops/sec |
+|---------|-----------|-------------|---------|
+| DynamoDB | GetItem | 0.38ms | ~2,630 |
+| S3 | GetObject (1KB) | 0.27ms | ~3,700 |
+| SQS | SendMessage | 0.67ms | ~1,490 |
+
 ## License
 
 This project is licensed under the [Functional Source License, Version 1.1, MIT Future License (FSL-1.1-MIT)](LICENSE).

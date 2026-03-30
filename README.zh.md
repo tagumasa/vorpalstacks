@@ -207,6 +207,24 @@ DATA_PATH/
 - Go 1.25+
 - Docker（使用 Lambda 功能时）
 
+## 性能
+
+Vorpalstacks 将全部 29 个服务实现为基于 PebbleDB 的原生 Go 二进制文件，避免了解释型语言和外部进程依赖的开销。
+
+这种架构使核心操作达到亚毫秒级延迟，可以在 CI/CD 流水线中直接运行大量 API 测试（Go SDK 595 项、Python 631 项、TypeScript 629 项、C# 606 项），无需容器化开销。
+
+### 基准测试结果（参考值）
+
+平台: AMD Ryzen 7 5700U (16 核), Linux, Go 1.25.8, Pebble v2.1.4
+
+> **注意**：以下数据受环境影响。在硬件、配置和工作负载完全相同的情况下，与其他系统的直接比较才有意义。
+
+| 服务 | 操作 | 平均延迟 | ops/sec |
+|------|------|---------|---------|
+| DynamoDB | GetItem | 0.38ms | ~2,630 |
+| S3 | GetObject (1KB) | 0.27ms | ~3,700 |
+| SQS | SendMessage | 0.67ms | ~1,490 |
+
 ## 许可证
 
 本项目基于 [Functional Source License, Version 1.1, MIT Future License (FSL-1.1-MIT)](LICENSE) 许可。
