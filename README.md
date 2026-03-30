@@ -196,7 +196,7 @@ For Lambda functionality:
 ## Roadmap
 
 - **Short-term**: Bug fixes, refactoring, and stability improvements
-- **Service expansion**: AWS IoT Core
+- **Service expansion**: AWS IoT Core, Neptune, AppSync
 - **Terraform**: Improving provider compatibility for existing services
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.

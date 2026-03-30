@@ -196,7 +196,7 @@ DATA_PATH/
 ## 路线图
 
 - **短期**：Bug 修复、重构和稳定性改进
-- **服务扩展**：AWS IoT Core
+- **服务扩展**：AWS IoT Core, Neptune, AppSync
 - **Terraform**：改进现有服务的 Provider 兼容性
 
 发布历史请参阅 [CHANGELOG.md](CHANGELOG.md)。
