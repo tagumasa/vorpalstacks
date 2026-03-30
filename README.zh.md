@@ -34,6 +34,7 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 - **Docker 集成**：Lambda 函数在容器中运行
 - **服务间联动**：基于事件驱动的服务间通信
 - **TLS 支持**：可选 HTTPS，支持自动生成或自定义证书
+- **与 LocalStack 的对比**：技术比较请参阅 [docs/localstack_vs_vorpalstacks_report.md](docs/localstack_vs_vorpalstacks_report.md)
 
 ## 已实现服务
 
@@ -197,7 +198,7 @@ DATA_PATH/
 
 - **短期**：Bug 修复、重构和稳定性改进
 - **服务扩展**：AWS IoT Core, Neptune, AppSync
-- **Terraform**：改进现有服务的 Provider 兼容性
+- **Terraform**：28 个服务已通过基本适用性测试 — 详情及运行方式请参阅 [vorpalstacks-conformance-tests](https://github.com/tagumasa/vorpalstacks-conformance-tests)
 
 发布历史请参阅 [CHANGELOG.md](CHANGELOG.md)。
 

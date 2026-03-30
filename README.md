@@ -34,6 +34,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 - **Docker Integration**: Lambda functions run in containers
 - **Service Integration**: Event-driven communication between services
 - **TLS Support**: Optional HTTPS with auto-generated or custom certificates
+- **LocalStack Comparison**: See [docs/localstack_vs_vorpalstacks_report.md](docs/localstack_vs_vorpalstacks_report.md) for a technical comparison with LocalStack
 
 ## Implemented Services
 
@@ -197,7 +198,7 @@ For Lambda functionality:
 
 - **Short-term**: Bug fixes, refactoring, and stability improvements
 - **Service expansion**: AWS IoT Core, Neptune, AppSync
-- **Terraform**: Improving provider compatibility for existing services
+- **Terraform**: 28 services have passed basic conformance testing — see [vorpalstacks-conformance-tests](https://github.com/tagumasa/vorpalstacks-conformance-tests) for details and how to run
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
