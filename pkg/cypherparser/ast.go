@@ -67,6 +67,7 @@ type WithClause struct {
 	OrderBy  []OrderItem
 	Skip     *int
 	Limit    *int
+	Where    *Expression
 }
 
 // WithItem is a single expression in a WITH clause.

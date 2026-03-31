@@ -198,11 +198,7 @@ func (p *parser) parseQuery() (*CypherQuery, error) {
 				if err != nil {
 					return nil, err
 				}
-				if q.Where != nil {
-					q.Where = &Expression{Kind: ExprAnd, Operands: []Expression{*q.Where, expr}}
-				} else {
-					q.Where = &expr
-				}
+				q.With.Where = &expr
 			}
 			if p.is(tokOrder) {
 				p.advance()

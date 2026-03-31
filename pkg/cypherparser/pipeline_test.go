@@ -476,7 +476,7 @@ func TestApplyWith_WithWhere(t *testing.T) {
 		},
 	}
 
-	where := compExpr(propExpr("n", "age"), OpGt, litExpr(28))
+	where := compExpr(varRefExpr("name"), OpEq, litExpr("Alice"))
 	result, err := applyWith(wc, &where, bindings)
 	if err != nil {
 		t.Fatalf("applyWith error: %v", err)

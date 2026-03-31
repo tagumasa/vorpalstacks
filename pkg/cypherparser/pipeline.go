@@ -48,7 +48,7 @@ func ExecutePipeline(ctx context.Context, reader graphengine.GraphReader, writer
 
 		if seg.With != nil && prevBindings != nil {
 			var err error
-			prevBindings, err = applyWith(seg.With, nil, prevBindings)
+			prevBindings, err = applyWith(seg.With, seg.With.Where, prevBindings)
 			if err != nil {
 				return nil, err
 			}
@@ -121,7 +121,7 @@ func executeSegmentRead(ctx context.Context, reader graphengine.GraphReader, q *
 	}
 
 	if q.With != nil {
-		return applyWith(q.With, q.Where, result)
+		return applyWith(q.With, q.With.Where, result)
 	}
 
 	return result, nil
@@ -163,7 +163,7 @@ func executeSegmentFinal(ctx context.Context, reader graphengine.GraphReader, q 
 
 	if q.With != nil {
 		var err error
-		allBindings, err = applyWith(q.With, q.Where, allBindings)
+		allBindings, err = applyWith(q.With, q.With.Where, allBindings)
 		if err != nil {
 			return nil, err
 		}
@@ -208,7 +208,7 @@ func executeSegmentWrite(ctx context.Context, reader graphengine.GraphReader, wr
 
 	if q.With != nil {
 		var err error
-		allBindings, err = applyWith(q.With, q.Where, allBindings)
+		allBindings, err = applyWith(q.With, q.With.Where, allBindings)
 		if err != nil {
 			return nil, err
 		}
@@ -625,16 +625,6 @@ func applyWith(wc *WithClause, where *Expression, bindings []map[string]any) ([]
 	var result []map[string]any
 
 	for _, binding := range bindings {
-		if where != nil {
-			ok, err := evalBool(&EvalContext{Bindings: binding}, where)
-			if err != nil {
-				return nil, err
-			}
-			if !ok {
-				continue
-			}
-		}
-
 		newBinding := make(map[string]any, len(wc.Items))
 		for _, item := range wc.Items {
 			val, err := evalExpr(&EvalContext{Bindings: binding}, &item.Expr)
@@ -652,6 +642,16 @@ func applyWith(wc *WithClause, where *Expression, bindings []map[string]any) ([]
 			}
 
 			newBinding[name] = val
+		}
+
+		if where != nil {
+			ok, err := evalBool(&EvalContext{Bindings: newBinding}, where)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				continue
+			}
 		}
 
 		result = append(result, newBinding)

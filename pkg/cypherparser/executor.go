@@ -958,7 +958,15 @@ func projectResults(reader graphengine.GraphReader, q *CypherQuery, nodes []*gra
 		}
 
 		sorted := h.sorted()
-		for _, item := range sorted {
+		startIdx := derefInt(q.Skip)
+		if startIdx > len(sorted) {
+			startIdx = len(sorted)
+		}
+		limitEnd := len(sorted)
+		if q.Limit != nil && *q.Limit > 0 && startIdx+*q.Limit < limitEnd {
+			limitEnd = startIdx + *q.Limit
+		}
+		for _, item := range sorted[startIdx:limitEnd] {
 			n := item.source.(*graphengine.Node)
 			bindings := map[string]any{nodeVar: n}
 			row := make(map[string]any)
@@ -1044,7 +1052,15 @@ func projectPatternResults(reader graphengine.GraphReader, q *CypherQuery, rows 
 		}
 
 		sorted := h.sorted()
-		for _, item := range sorted {
+		startIdx := derefInt(q.Skip)
+		if startIdx > len(sorted) {
+			startIdx = len(sorted)
+		}
+		limitEnd := len(sorted)
+		if q.Limit != nil && *q.Limit > 0 && startIdx+*q.Limit < limitEnd {
+			limitEnd = startIdx + *q.Limit
+		}
+		for _, item := range sorted[startIdx:limitEnd] {
 			rr := item.source.(resultRow)
 			bindings := map[string]any{aVar: rr.a, bVar: rr.b}
 			if rVar != "" {
@@ -1439,7 +1455,7 @@ func executeFullQuery(ctx context.Context, reader graphengine.GraphReader, q *Cy
 
 	if q.With != nil {
 		var err error
-		bindings, err = applyWith(q.With, nil, bindings)
+		bindings, err = applyWith(q.With, q.With.Where, bindings)
 		if err != nil {
 			return nil, err
 		}
