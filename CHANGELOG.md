@@ -4,6 +4,22 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-04-01
+
+### Added
+- Neptune graph database service (property graph + RDF, openCypher/Gremlin, bulk loader)
+- Neptune Data API (Neptunedata) with routing and request handling
+
+### Changed
+- Updated gRPC dependency from v1.79.1 to v1.79.3
+- Service count updated to 30, Go SDK tests to 890 passing
+
+### Documentation
+- Added Japanese and Chinese READMEs
+- Added performance benchmark section
+- Added Terraform conformance tests and LocalStack comparison links
+- Updated roadmap: Neptune promoted to implemented
+
 ## [0.0.4] - 2026-03-30
 
 ### Added

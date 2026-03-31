@@ -945,7 +945,11 @@ func projectResults(reader graphengine.GraphReader, q *CypherQuery, nodes []*gra
 	}
 
 	if len(q.OrderBy) > 0 && q.Limit != nil && *q.Limit > 0 && !q.Return.Distinct {
-		h := newTopKHeap(q.OrderBy, *q.Limit)
+		heapSize := *q.Limit + derefInt(q.Skip)
+		if heapSize <= 0 {
+			heapSize = *q.Limit
+		}
+		h := newTopKHeap(q.OrderBy, heapSize)
 
 		for _, n := range nodes {
 			bindings := map[string]any{nodeVar: n}
@@ -997,7 +1001,7 @@ func projectResults(reader graphengine.GraphReader, q *CypherQuery, nodes []*gra
 		if *q.Skip < len(result.Rows) {
 			result.Rows = result.Rows[*q.Skip:]
 		} else {
-			result.Rows = nil
+			result.Rows = []map[string]any{}
 		}
 	}
 
@@ -1024,7 +1028,11 @@ func projectPatternResults(reader graphengine.GraphReader, q *CypherQuery, rows 
 	}
 
 	if len(q.OrderBy) > 0 && q.Limit != nil && *q.Limit > 0 && !q.Return.Distinct {
-		h := newTopKHeap(q.OrderBy, *q.Limit)
+		heapSize := *q.Limit + derefInt(q.Skip)
+		if heapSize <= 0 {
+			heapSize = *q.Limit
+		}
+		h := newTopKHeap(q.OrderBy, heapSize)
 
 		for _, rr := range rows {
 			bindings := map[string]any{aVar: rr.a, bVar: rr.b}
@@ -1086,7 +1094,7 @@ func projectPatternResults(reader graphengine.GraphReader, q *CypherQuery, rows 
 		if *q.Skip < len(result.Rows) {
 			result.Rows = result.Rows[*q.Skip:]
 		} else {
-			result.Rows = nil
+			result.Rows = []map[string]any{}
 		}
 	}
 
@@ -1137,7 +1145,7 @@ func projectBindings(reader graphengine.GraphReader, q *CypherQuery, bindings []
 		if *q.Skip < len(result.Rows) {
 			result.Rows = result.Rows[*q.Skip:]
 		} else {
-			result.Rows = nil
+			result.Rows = []map[string]any{}
 		}
 	}
 
@@ -1415,27 +1423,7 @@ func executeFullQuery(ctx context.Context, reader graphengine.GraphReader, q *Cy
 		}
 	}
 
-	if q.With != nil {
-		var err error
-		bindings, err = applyWith(q.With, nil, bindings)
-		if err != nil {
-			return nil, err
-		}
-
-		if q.Where != nil {
-			filtered := make([]map[string]any, 0, len(bindings))
-			for _, b := range bindings {
-				ok, err := evalBool(&EvalContext{Bindings: b}, q.Where)
-				if err != nil {
-					return nil, fmt.Errorf("cypher: WHERE after WITH error on binding %v: %w", b, err)
-				}
-				if ok {
-					filtered = append(filtered, b)
-				}
-			}
-			bindings = filtered
-		}
-	} else if q.Where != nil {
+	if q.Where != nil && q.With == nil {
 		filtered := make([]map[string]any, 0, len(bindings))
 		for _, b := range bindings {
 			ok, err := evalBool(&EvalContext{Bindings: b}, q.Where)
@@ -1447,6 +1435,14 @@ func executeFullQuery(ctx context.Context, reader graphengine.GraphReader, q *Cy
 			}
 		}
 		bindings = filtered
+	}
+
+	if q.With != nil {
+		var err error
+		bindings, err = applyWith(q.With, nil, bindings)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if q.Unwind != nil && q.With != nil {
@@ -1510,7 +1506,10 @@ func matchBindings(ctx context.Context, reader graphengine.GraphReader, q *Cyphe
 }
 
 func matchWhere(q *CypherQuery, bindings map[string]any) bool {
-	if q.Where == nil || q.With != nil {
+	if q.Where == nil {
+		return true
+	}
+	if q.With != nil {
 		return true
 	}
 	ok, err := evalBool(&EvalContext{Bindings: bindings}, q.Where)

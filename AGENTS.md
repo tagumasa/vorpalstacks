@@ -2,11 +2,11 @@
 
 ## Project Overview
 
-**vorpalstacks** is a lightweight edge and on-premise cloud platform providing AWS-compatible services. It is a real implementation (not a mock) that supports 29 service APIs (25 AWS services) with full SDK compatibility.
+**vorpalstacks** is a lightweight edge and on-premise cloud platform providing AWS-compatible services. It is a real implementation (not a mock) that supports 30 service APIs (26 AWS services) with full SDK compatibility.
 
 - **Language**: Go 1.25+
 - **License**: FSL-1.1-MIT (root), Apache 2.0 (`pkg/`)
-- **SDK Tests**: 594 tests in `sdk-tests/` using AWS Go SDK v2
+- **SDK Tests**: 890 tests in `sdk-tests/` using AWS Go SDK v2
 
 ## Architecture
 

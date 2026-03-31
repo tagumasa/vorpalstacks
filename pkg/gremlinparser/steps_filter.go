@@ -588,7 +588,12 @@ func execRepeat(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 		}
 	}
 
-	untilTrav, untilHasTrav := untilMod.Args[0].Trav, hasUntil && len(untilMod.Args) > 0 && untilMod.Args[0].Kind == ArgNestedTraversal
+	var untilTrav *Traversal
+	var untilHasTrav bool
+	if hasUntil && len(untilMod.Args) > 0 && untilMod.Args[0].Kind == ArgNestedTraversal {
+		untilTrav = untilMod.Args[0].Trav
+		untilHasTrav = true
+	}
 
 	const maxTotalTraversers = 100000
 

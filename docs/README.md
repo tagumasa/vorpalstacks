@@ -14,7 +14,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 ## Key Features
 
 - **AWS API Compatible**: Works with existing AWS SDKs and CLI
-- **29 AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, Kinesis, KMS, and more
+- **30 AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, Kinesis, KMS, Neptune, and more
 - **IAM Authorization**: Full policy-based access control
 - **gRPC-Web Admin API**: Connect-RPC admin interface for all services
 - **Lightweight**: Single binary, minimal dependencies
@@ -28,7 +28,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | Document | Description |
 |----------|-------------|
 | [Architecture](architecture.md) | System architecture, request flow, storage |
-| [Services](services.md) | Implemented AWS services (29 APIs, 25 AWS services) |
+| [Services](services.md) | Implemented AWS services (30 APIs, 26 AWS services) |
 | [Configuration](configuration.md) | Environment variables, TLS, gRPC-Web, IAM Auth |
 | [Integration](integration.md) | Service-to-service communication patterns |
 | [Lambda Guide](lambda-guide.md) | Lambda runtime, Docker containers, endpoint injection |

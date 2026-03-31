@@ -1,8 +1,8 @@
 # Implemented Services
 
-**Last Updated**: 2026-03-27
-**Total**: 29 service APIs (25 AWS services)
-**SDK Tests**: 594/594 (100%)
+**Last Updated**: 2026-03-31
+**Total**: 30 service APIs (26 AWS services)
+**SDK Tests**: 890/890 (100%)
 
 ---
 
@@ -34,6 +34,7 @@
 | KMS | Full | |
 | Lambda | Broad | No durable functions or code signing |
 | Route53 | Selective | DNS record management only |
+| Neptune | Full | Property graph + RDF, openCypher/Gremlin, bulk loader, management API |
 | S3 | Broad | No analytics, inventory, or S3 Express |
 | Scheduler | Full | |
 | Secrets Manager | Full | |

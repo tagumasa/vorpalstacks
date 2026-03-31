@@ -147,7 +147,7 @@ func (p *parser) expectIdentOrKeyword() (Token, error) {
 		p.pos++
 		return t, nil
 	}
-	if t.Kind >= tokMatch && t.Kind <= tokConstraints {
+	if t.Kind >= tokMatch && t.Kind <= tokLabels {
 		p.pos++
 		return t, nil
 	}

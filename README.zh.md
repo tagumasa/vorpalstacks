@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-> **注意：目前为测试版。** Vorpalstacks 正在积极开发中。已实现 29 个 AWS 服务，Go SDK 测试 595 项通过（另有 Python 631 项、TypeScript 629 项、C# 606 项），但并未完全覆盖所有边界情况和 AWS 行为。可能存在破坏性变更。欢迎提交 Bug 报告和贡献代码。
+> **注意：目前为测试版。** Vorpalstacks 正在积极开发中。已实现 30 个 AWS 服务，Go SDK 测试 890 项通过（另有 Python 631 项、TypeScript 629 项、C# 606 项），但并未完全覆盖所有边界情况和 AWS 行为。可能存在破坏性变更。欢迎提交 Bug 报告和贡献代码。
 
 提供 AWS 兼容服务的轻量边缘及本地云平台。
 
@@ -22,7 +22,7 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 > **关于本项目的局限**：并非对所有 AWS 行为的完整复刻。某些边界情况、未公开文档的行为和高级功能可能与 AWS 存在差异。各服务的具体支持范围请参阅 [docs/services.md](docs/services.md)。
 
 - **AWS API 兼容**：可直接使用现有 AWS SDK 和 CLI
-- **29 个 AWS 服务**：S3、SQS、SNS、Lambda、DynamoDB、API Gateway、Step Functions、WAF、WAFv2、Kinesis、KMS 等
+- **30 个 AWS 服务**：S3、SQS、SNS、Lambda、DynamoDB、API Gateway、Step Functions、WAF、WAFv2、Kinesis、KMS、Neptune 等
 - **IAM 授权**：完整的 IAM 策略评估，支持基于用户/组/角色的访问控制
 - **DynamoDB PartiQL**：支持 WHERE 函数（attribute_exists、begins_with、contains、size）的类 SQL 查询
 - **S3 SelectObjectContent**：通过事件流对 CSV/JSON 对象执行 SQL 查询
@@ -66,6 +66,7 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 | STS | 完整 | |
 | Step Functions | 完整 | |
 | Timestream | 完整 | |
+| Neptune | 完整 | Property graph + RDF、openCypher/Gremlin、批量加载器 |
 | WAF | 有限 | 不支持托管规则组或日志配置 |
 | WAFv2 | 较全面 | |
 
@@ -197,7 +198,7 @@ DATA_PATH/
 ## 路线图
 
 - **短期**：Bug 修复、重构和稳定性改进
-- **服务扩展**：AWS IoT Core, Neptune, AppSync
+- **服务扩展**：AWS IoT Core, AppSync
 - **Terraform**：28 个服务已通过基本适用性测试 — 详情及运行方式请参阅 [vorpalstacks-conformance-tests](https://github.com/tagumasa/vorpalstacks-conformance-tests)
 
 发布历史请参阅 [CHANGELOG.md](CHANGELOG.md)。
@@ -211,7 +212,7 @@ DATA_PATH/
 
 Vorpalstacks 将全部 29 个服务实现为基于 PebbleDB 的原生 Go 二进制文件，避免了解释型语言和外部进程依赖的开销。
 
-这种架构使核心操作达到亚毫秒级延迟，可以在 CI/CD 流水线中直接运行大量 API 测试（Go SDK 595 项、Python 631 项、TypeScript 629 项、C# 606 项），无需容器化开销。
+这种架构使核心操作达到亚毫秒级延迟，可以在 CI/CD 流水线中直接运行大量 API 测试（Go SDK 890 项、Python 631 项、TypeScript 629 项、C# 606 项），无需容器化开销。
 
 ### 基准测试结果（参考值）
 

@@ -209,11 +209,13 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		}
 
 		keyStr := buildKeyString(tableName, key)
-		if usedKeys[keyStr] {
-			cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
-			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+		if opType != "ConditionCheck" {
+			if usedKeys[keyStr] {
+				cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
+				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+			}
+			usedKeys[keyStr] = true
 		}
-		usedKeys[keyStr] = true
 
 		op := &writeOperation{
 			idx:                          idx,

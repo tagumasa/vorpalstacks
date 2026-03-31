@@ -183,7 +183,7 @@ func tokenizeExpression(expr string) []string {
 			continue
 		}
 
-		if ch == '=' || ch == '<' || ch == '>' || ch == '(' || ch == ')' || ch == ',' {
+		if ch == '=' || ch == '<' || ch == '>' || ch == ',' {
 			if current.Len() > 0 {
 				tokens = append(tokens, current.String())
 				current.Reset()
@@ -205,6 +205,44 @@ func tokenizeExpression(expr string) []string {
 			}
 
 			tokens = append(tokens, string(ch))
+			i++
+			continue
+		}
+
+		if ch == '(' {
+			if current.Len() > 0 && isIdentRune(current.String()) {
+				current.WriteByte(ch)
+				depth := 1
+				i++
+				for i < len(expr) && depth > 0 {
+					c := expr[i]
+					current.WriteByte(c)
+					if c == '(' {
+						depth++
+					} else if c == ')' {
+						depth--
+					}
+					i++
+				}
+				tokens = append(tokens, current.String())
+				current.Reset()
+				continue
+			}
+			if current.Len() > 0 {
+				tokens = append(tokens, current.String())
+				current.Reset()
+			}
+			tokens = append(tokens, "(")
+			i++
+			continue
+		}
+
+		if ch == ')' {
+			if current.Len() > 0 {
+				tokens = append(tokens, current.String())
+				current.Reset()
+			}
+			tokens = append(tokens, ")")
 			i++
 			continue
 		}
@@ -245,4 +283,16 @@ func trim(s string) string {
 		end--
 	}
 	return s[start:end]
+}
+
+func isIdentRune(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, c := range s {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+			return false
+		}
+	}
+	return true
 }

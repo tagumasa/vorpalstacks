@@ -2,7 +2,7 @@
 
 [日本語](README.ja.md) | [中文](README.zh.md)
 
-> **Warning: This is a beta release.** Vorpalstacks is under active development. While 29 AWS services are implemented with 595 passing Go SDK tests (plus 631 Python, 629 TypeScript, 606 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
+> **Warning: This is a beta release.** Vorpalstacks is under active development. While 30 AWS services are implemented with 890 passing Go SDK tests (plus 631 Python, 629 TypeScript, 606 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
 
 A lightweight edge and on-premise cloud platform providing AWS-compatible services.
 
@@ -22,7 +22,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 > **What this is not**: A fully faithful reproduction of every AWS behaviour. Some edge cases, undocumented behaviours, and advanced features may differ from AWS. See [docs/services.md](docs/services.md) for the current scope of each service.
 
 - **AWS API Compatible**: Works with existing AWS SDKs and CLI
-- **Twenty-nine AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, API Gateway, Step Functions, WAF, WAFv2, Kinesis, KMS, and more
+- **Thirty AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, API Gateway, Step Functions, WAF, WAFv2, Kinesis, KMS, Neptune, and more
 - **IAM Authorization**: Full IAM policy evaluation with user/group/role-based access control
 - **DynamoDB PartiQL**: SQL-like queries with WHERE functions (attribute_exists, begins_with, contains, size)
 - **S3 SelectObjectContent**: SQL queries on CSV/JSON objects with event streaming
@@ -66,6 +66,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | STS | Full | |
 | Step Functions | Full | |
 | Timestream | Full | |
+| Neptune | Full | Property graph + RDF, openCypher/Gremlin, bulk loader |
 | WAF | Selective | No managed rule groups or logging configuration |
 | WAFv2 | Broad | |
 
@@ -197,7 +198,7 @@ For Lambda functionality:
 ## Roadmap
 
 - **Short-term**: Bug fixes, refactoring, and stability improvements
-- **Service expansion**: AWS IoT Core, Neptune, AppSync
+- **Service expansion**: AWS IoT Core, AppSync
 - **Terraform**: 28 services have passed basic conformance testing — see [vorpalstacks-conformance-tests](https://github.com/tagumasa/vorpalstacks-conformance-tests) for details and how to run
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
@@ -209,9 +210,9 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Performance
 
-Vorpalstacks implements all 29 services as native Go binaries backed by PebbleDB, avoiding the overhead of interpreted languages or external process dependencies.
+Vorpalstacks implements all 30 services as native Go binaries backed by PebbleDB, avoiding the overhead of interpreted languages or external process dependencies.
 
-This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (595 Go SDK, 631 Python, 629 TypeScript, 606 C# tests) directly within CI/CD pipelines without containerization overhead.
+This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (890 Go SDK, 631 Python, 629 TypeScript, 606 C# tests) directly within CI/CD pipelines without containerization overhead.
 
 ### Benchmark Results (Reference)
 

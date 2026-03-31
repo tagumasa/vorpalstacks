@@ -1,6 +1,6 @@
 // Vorpalstacks is an AWS-compatible cloud platform for edge and on-premises environments.
 //
-// It provides 29 service APIs covering 25 AWS services with a single binary,
+// It provides 30 service APIs covering 26 AWS services with a single binary,
 // using CockroachDB Pebble for persistent storage and supporting both
 // JSON and Query AWS API protocols.
 package main

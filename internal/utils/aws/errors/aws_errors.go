@@ -169,6 +169,7 @@ var (
 type CustomJSONMarshaler interface {
 	ToJSON() string
 	GetHTTPStatusCode() int
+	GetCode() string
 }
 
 // WriteAWSError writes an AWS error to the response writer.
@@ -217,7 +218,8 @@ func WriteCustomJSONError(w http.ResponseWriter, err CustomJSONMarshaler, conten
 			return
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("X-Amzn-ErrorType", err.GetCode())
 	w.WriteHeader(err.GetHTTPStatusCode())
 	if _, writeErr := w.Write([]byte(err.ToJSON())); writeErr != nil {
 		logs.Error("Failed to write JSON error response", logs.Err(writeErr))

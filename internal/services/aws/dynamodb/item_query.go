@@ -3,7 +3,6 @@ package dynamodb
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/pagination"
 	"vorpalstacks/internal/services/aws/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
@@ -24,7 +23,13 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 	}
 
 	_ = request.GetBoolParam(req.Parameters, "ConsistentRead")
-	limit := pagination.GetMaxItems(req.Parameters, 100)
+	limit := request.GetIntParam(req.Parameters, "Limit")
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
 	exclusiveStartKey := parseExclusiveStartKey(req.Parameters)
 	scanIndexForward := getBoolParamWithDefault(req.Parameters, "ScanIndexForward", true)
 
@@ -203,7 +208,13 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 	}
 
 	_ = request.GetBoolParam(req.Parameters, "ConsistentRead")
-	limit := pagination.GetMaxItems(req.Parameters, 100)
+	limit := request.GetIntParam(req.Parameters, "Limit")
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
 	exclusiveStartKey := parseExclusiveStartKey(req.Parameters)
 
 	store, err := s.store(reqCtx)

@@ -32,14 +32,20 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 					return nil, ErrInvalidParameter
 				}
 				path := resolveName(tokens[i], names)
-				value := resolveValueWithIfNotExists(tokens[i+2], values, names, attrs)
+				exprTokens := []string{tokens[i+2]}
+				j := i + 3
+				for j < len(tokens) && (tokens[j] == "+" || tokens[j] == "-" || tokens[j] == "*") && j+1 < len(tokens) {
+					exprTokens = append(exprTokens, tokens[j], tokens[j+1])
+					j += 2
+				}
+				value := resolveValueWithIfNotExists(strings.Join(exprTokens, " "), values, names, attrs)
 				if value != nil {
 					if err := setNestedValue(attrs, path, value); err != nil {
 						return nil, err
 					}
 					updatedAttrs = append(updatedAttrs, getTopLevelAttr(path))
 				}
-				i += 3
+				i = j
 				if i < len(tokens) && tokens[i] == "," {
 					i++
 				}
@@ -625,6 +631,10 @@ func resolveValue(token string, values map[string]*dbstore.AttributeValue, names
 }
 
 func resolveValueWithIfNotExists(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) *dbstore.AttributeValue {
+	if result := evaluateArithmeticExpression(token, values, names, attrs); result != nil {
+		return result
+	}
+
 	if strings.HasPrefix(token, "if_not_exists(") {
 		closeParen := strings.Index(token, ")")
 		if closeParen != -1 {
@@ -664,10 +674,6 @@ func resolveValueWithIfNotExists(token string, values map[string]*dbstore.Attrib
 				}
 			}
 		}
-	}
-
-	if result := evaluateArithmeticExpression(token, values, names, attrs); result != nil {
-		return result
 	}
 
 	return resolveValue(token, values, names)
@@ -759,7 +765,7 @@ func splitArithmeticExpression(expr string) []string {
 			depth--
 			current += string(c)
 		case ' ', '\t':
-			if inString {
+			if inString || depth > 0 {
 				current += string(c)
 			} else if current != "" {
 				parts = append(parts, current)
@@ -802,6 +808,9 @@ func splitListAppendArgs(s string) []string {
 }
 
 func resolveValueOrPath(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) *dbstore.AttributeValue {
+	if strings.HasPrefix(token, "if_not_exists(") {
+		return resolveValueWithIfNotExists(token, values, names, attrs)
+	}
 	if strings.HasPrefix(token, ":") {
 		return resolveValue(token, values, names)
 	}

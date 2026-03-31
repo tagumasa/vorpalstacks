@@ -304,7 +304,7 @@ func (l *Lexer) scanIdentOrKeyword() error {
 }
 
 func isIdentStart(ch byte) bool {
-	return ch == '_' || ch == '$' || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
+	return ch == '_' || ch == '$' || ch == '~' || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
 }
 
 func isIdentPart(ch byte) bool {

@@ -313,7 +313,7 @@ func (p *Parser) parseIdentArgument() (*Argument, error) {
 		return p.parseEnum()
 	}
 
-	if isBareEnum(t.Text) && !(isBarePredicate(t.Text) && p.peek(1).Kind == tokLParen) {
+	if isBareEnum(t.Text) && !(isBarePredicate(t.Text) && p.peek(1).Kind == tokLParen) && p.peek(1).Kind != tokLParen && p.peek(1).Kind != tokDot {
 		p.advance()
 		return &Argument{Kind: ArgEnum, Enum: &EnumRef{Value: t.Text}}, nil
 	}
