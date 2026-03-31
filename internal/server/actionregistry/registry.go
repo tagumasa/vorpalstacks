@@ -172,6 +172,32 @@ func (r *ActionRegistry) initDefaults() {
 		"LookupEvents", "ListPublicKeys",
 		"GetResourcePolicy", "PutResourcePolicy", "DeleteResourcePolicy",
 	})
+
+	r.Register("neptune", []string{
+		"CreateDBCluster", "DeleteDBCluster", "ModifyDBCluster", "DescribeDBClusters",
+		"StartDBCluster", "StopDBCluster", "FailoverDBCluster",
+		"CreateDBClusterEndpoint", "DescribeDBClusterEndpoints", "ModifyDBClusterEndpoint", "DeleteDBClusterEndpoint",
+		"CreateDBInstance", "DeleteDBInstance", "ModifyDBInstance", "DescribeDBInstances", "RebootDBInstance",
+		"CreateDBClusterSnapshot", "DeleteDBClusterSnapshot", "DescribeDBClusterSnapshots",
+		"CopyDBClusterSnapshot", "DescribeDBClusterSnapshotAttributes", "ModifyDBClusterSnapshotAttribute",
+		"CreateDBClusterParameterGroup", "DeleteDBClusterParameterGroup",
+		"DescribeDBClusterParameterGroups", "DescribeDBClusterParameters", "ModifyDBClusterParameterGroup",
+		"CreateDBParameterGroup", "DeleteDBParameterGroup",
+		"DescribeDBParameterGroups", "DescribeDBParameters", "ModifyDBParameterGroup",
+		"ResetDBClusterParameterGroup", "ResetDBParameterGroup",
+		"CopyDBClusterParameterGroup", "CopyDBParameterGroup",
+		"DescribeEngineDefaultClusterParameters", "DescribeEngineDefaultParameters",
+		"CreateGlobalCluster", "DeleteGlobalCluster", "DescribeGlobalClusters",
+		"ModifyGlobalCluster", "FailoverGlobalCluster", "SwitchoverGlobalCluster", "RemoveFromGlobalCluster",
+		"CreateDBSubnetGroup", "DeleteDBSubnetGroup", "DescribeDBSubnetGroups", "ModifyDBSubnetGroup",
+		"CreateEventSubscription", "DeleteEventSubscription", "DescribeEventSubscriptions",
+		"ModifyEventSubscription", "AddSourceIdentifierToSubscription", "RemoveSourceIdentifierFromSubscription",
+		"AddTagsToResource", "ListTagsForResource", "RemoveTagsFromResource",
+		"DescribeEvents", "DescribeEventCategories", "DescribePendingMaintenanceActions", "ApplyPendingMaintenanceAction",
+		"DescribeDBEngineVersions", "DescribeOrderableDBInstanceOptions", "DescribeValidDBInstanceModifications",
+		"RestoreDBClusterFromSnapshot", "RestoreDBClusterToPointInTime", "PromoteReadReplicaDBCluster",
+		"AddRoleToDBCluster", "RemoveRoleFromDBCluster",
+	})
 }
 
 // LookupServiceByAction returns the service name for a given action using the global registry.

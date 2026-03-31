@@ -85,6 +85,8 @@ var ServicesUsingApplicationJSON = map[string]bool{
 	"opsworks":                     true,
 	"opsworkscm":                   true,
 	"organizations":                true,
+	"neptune":                      true,
+	"neptunedata":                  true,
 	"pinpoint":                     true,
 	"polly":                        true,
 	"pricing":                      true,

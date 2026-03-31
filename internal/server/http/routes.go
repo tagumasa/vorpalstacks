@@ -19,6 +19,12 @@ func (s *Server) registerRoutes(r chi.Router) {
 
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/.well-known/health" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"status":"ok"}`))
+				return
+			}
 			if r.Header.Get("X-Amz-Target") != "" {
 				next.ServeHTTP(w, r)
 				return
@@ -35,7 +41,7 @@ func (s *Server) registerRoutes(r chi.Router) {
 				next.ServeHTTP(w, r)
 				return
 			}
-			if router.IsLambdaRestPath(r.URL.Path) || isApiGatewayPath(r.URL.Path) || isSchedulerPath(r.URL.Path) || isSESv2Path(r.URL.Path) || isRoute53Path(r.URL.Path) || isCloudFrontPath(r.URL.Path) || isCloudWatchCBORPath(r.URL.Path) {
+			if router.IsLambdaRestPath(r.URL.Path) || isApiGatewayPath(r.URL.Path) || isSchedulerPath(r.URL.Path) || isSESv2Path(r.URL.Path) || isRoute53Path(r.URL.Path) || isCloudFrontPath(r.URL.Path) || isCloudWatchCBORPath(r.URL.Path) || isNeptunedataPath(r.URL.Path) {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -197,6 +203,18 @@ func isCloudFrontPath(path string) bool {
 
 func isCloudWatchCBORPath(path string) bool {
 	return strings.HasPrefix(path, "/service/GraniteServiceVersion20100801/")
+}
+
+func isNeptunedataPath(path string) bool {
+	return strings.HasPrefix(path, "/gremlin") ||
+		strings.HasPrefix(path, "/opencypher") ||
+		strings.HasPrefix(path, "/status") ||
+		strings.HasPrefix(path, "/system") ||
+		strings.HasPrefix(path, "/loader") ||
+		strings.HasPrefix(path, "/propertygraph") ||
+		strings.HasPrefix(path, "/sparql") ||
+		strings.HasPrefix(path, "/rdf") ||
+		strings.HasPrefix(path, "/ml")
 }
 
 func isS3StyleRoute(routePath string) bool {

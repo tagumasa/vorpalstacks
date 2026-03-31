@@ -46,7 +46,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 ## Prerequisites
 
-1. **Go 1.21+** installed
+1. **Go 1.25+** installed
 2. **VorpalStacks server** running on `http://localhost:8080`
 3. **AWS credentials** set (can be dummy values for testing)
 

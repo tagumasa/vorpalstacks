@@ -80,6 +80,7 @@ func (m *ActionMapper) registerDefaults() {
 	m.registerRedshiftMappings()
 	m.registerRDSMappings()
 	m.registerEC2Mappings()
+	m.registerNeptuneMappings()
 }
 
 func (m *ActionMapper) registerS3Mappings() {
@@ -189,4 +190,9 @@ func (m *ActionMapper) registerRDSMappings() {
 
 func (m *ActionMapper) registerEC2Mappings() {
 	m.RegisterWildcard("ec2", "ec2")
+}
+
+func (m *ActionMapper) registerNeptuneMappings() {
+	m.RegisterWildcard("neptune", "neptune")
+	m.RegisterWildcard("neptunedata", "neptune-db")
 }

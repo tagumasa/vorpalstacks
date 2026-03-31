@@ -15,6 +15,7 @@ import (
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
+	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	route53store "vorpalstacks/internal/store/aws/route53"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
@@ -57,6 +58,7 @@ type StoreProvider interface {
 	GetSSMStore() ssmstore.SSMStoreInterface
 	GetSTSStore() stsstore.SessionStoreInterface
 	GetTimestreamStores() timestreamstore.TimestreamStoresInterface
+	GetNeptuneStore() neptunestore.NeptuneStoreInterface
 	GetWAFStores() wafstore.WAFStoresInterface
 }
 
@@ -89,6 +91,7 @@ type StoreProviderImpl struct {
 	secretsManagerStore   secretsmanagerstore.SecretStoreInterface
 	snsStore              snsstore.SNSStoreInterface
 	sqsStore              sqsstore.SQSStoreInterface
+	neptuneStore          neptunestore.NeptuneStoreInterface
 }
 
 // NewStoreProvider creates a new StoreProviderImpl with the provided store dependencies.
@@ -150,6 +153,10 @@ func NewStoreProvider(
 		snsStore:              snsStore,
 		sqsStore:              sqsStore,
 	}
+}
+
+func (s *StoreProviderImpl) SetNeptuneStore(store neptunestore.NeptuneStoreInterface) {
+	s.neptuneStore = store
 }
 
 // GetIAMStore returns the IAM store.
@@ -260,5 +267,9 @@ func (s *StoreProviderImpl) GetSNSStore() snsstore.SNSStoreInterface { return s.
 
 // GetSQSStore returns the SQS store.
 func (s *StoreProviderImpl) GetSQSStore() sqsstore.SQSStoreInterface { return s.sqsStore }
+
+func (s *StoreProviderImpl) GetNeptuneStore() neptunestore.NeptuneStoreInterface {
+	return s.neptuneStore
+}
 
 var _ StoreProvider = (*StoreProviderImpl)(nil)

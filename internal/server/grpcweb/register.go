@@ -29,7 +29,9 @@ import (
 	lambdaconnect "vorpalstacks/internal/pb/aws/lambda/lambdaconnect"
 	logsconnect "vorpalstacks/internal/pb/aws/logs/logsconnect"
 	monitoringconnect "vorpalstacks/internal/pb/aws/monitoring/monitoringconnect"
+	neptunedataconnect "vorpalstacks/internal/pb/aws/neptunedata/neptunedataconnect"
 	querytimestreamconnect "vorpalstacks/internal/pb/aws/query.timestream/query_timestreamconnect"
+	rdsconnect "vorpalstacks/internal/pb/aws/rds/rdsconnect"
 	route53connect "vorpalstacks/internal/pb/aws/route53/route53connect"
 	s3connect "vorpalstacks/internal/pb/aws/s3/s3connect"
 	schedulerconnect "vorpalstacks/internal/pb/aws/scheduler/schedulerconnect"
@@ -58,6 +60,8 @@ import (
 	svckinesis "vorpalstacks/internal/services/aws/kinesis"
 	svckms "vorpalstacks/internal/services/aws/kms"
 	svclambda "vorpalstacks/internal/services/aws/lambda"
+	svcneptune "vorpalstacks/internal/services/aws/neptune"
+	svcneptunedata "vorpalstacks/internal/services/aws/neptunedata"
 	svcroute53 "vorpalstacks/internal/services/aws/route53"
 	svcs3 "vorpalstacks/internal/services/aws/s3"
 	svcscheduler "vorpalstacks/internal/services/aws/scheduler"
@@ -138,6 +142,9 @@ func RegisterAllAdminHandlers(s *Server, deps AdminDeps) {
 	s.Handle(ssmconnect.NewSSMServiceHandler(svcssm.NewAdminHandler(sm, aid)))
 	s.Handle(querytimestreamconnect.NewTimestreamQueryServiceHandler(svctimestreamquery.NewAdminHandler(sm, aid, dp)))
 	s.Handle(ingesttimestreamconnect.NewTimestreamWriteServiceHandler(svctimestreamwrite.NewAdminHandler(sm, aid, dp)))
+
+	s.Handle(rdsconnect.NewNeptuneServiceHandler(svcneptune.NewAdminHandler(sm, aid)))
+	s.Handle(neptunedataconnect.NewNeptunedataServiceHandler(svcneptunedata.NewAdminHandler()))
 
 	adminAuthKey, err := loadOrGenerateAdminAuthKey(dp)
 	if err != nil {

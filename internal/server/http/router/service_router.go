@@ -129,6 +129,9 @@ func (r *ServiceRouter) DetermineService(req *http.Request) string {
 	if strings.HasPrefix(path, "/schedule-groups") || strings.HasPrefix(path, "/schedules") || strings.HasPrefix(path, "/tags/arn:aws:scheduler") {
 		return "scheduler"
 	}
+	if isNeptunedataPath(path) {
+		return "neptunedata"
+	}
 	if strings.HasPrefix(path, "/service/GraniteServiceVersion20100801/operation/") {
 		return "monitoring"
 	}
@@ -247,6 +250,8 @@ func mapAuthServiceToService(authService string) string {
 		"runtime.sagemaker": "lambda",
 		"wafv2":             "wafv2",
 		"events":            "eventbridge",
+		"rds":               "neptune",
+		"neptune-db":        "neptunedata",
 	}
 	if mapped, ok := mapping[authService]; ok {
 		return mapped
@@ -348,4 +353,16 @@ func (r *ServiceRouter) extractHost(req *http.Request) string {
 // GetIndex returns the service index used by the router.
 func (r *ServiceRouter) GetIndex() *ServiceIndex {
 	return r.index
+}
+
+func isNeptunedataPath(path string) bool {
+	return strings.HasPrefix(path, "/gremlin") ||
+		strings.HasPrefix(path, "/opencypher") ||
+		strings.HasPrefix(path, "/status") ||
+		strings.HasPrefix(path, "/system") ||
+		strings.HasPrefix(path, "/loader") ||
+		strings.HasPrefix(path, "/propertygraph") ||
+		strings.HasPrefix(path, "/sparql") ||
+		strings.HasPrefix(path, "/rdf") ||
+		strings.HasPrefix(path, "/ml")
 }

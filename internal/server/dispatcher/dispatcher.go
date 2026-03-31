@@ -14,6 +14,7 @@ import (
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/mock"
 	"vorpalstacks/internal/store/api"
+	"vorpalstacks/pkg/graphengine"
 )
 
 // Dispatcher routes incoming AWS API requests to appropriate handlers.
@@ -37,6 +38,7 @@ type Dispatcher struct {
 	authorizer           *Authorizer
 	authorizationEnabled bool
 	accountID            string
+	graphDB              *graphengine.DB
 }
 
 // Handler processes an AWS API request and returns a response or error.
@@ -95,6 +97,7 @@ func (d *Dispatcher) Dispatch(w http.ResponseWriter, r *http.Request, serviceNam
 				httpCtx := r.Context()
 				reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
 				reqCtx.SetStoreProvider(d.storeProvider)
+				reqCtx.SetGraphDBManager(d.graphDB)
 
 				if d.authorizationEnabled && d.authorizer != nil {
 					authzResult, err := d.authorizer.Authorize(httpCtx, reqCtx, parsedReq, serviceName, r)
@@ -192,6 +195,7 @@ func (d *Dispatcher) DispatchWithContext(w http.ResponseWriter, r *http.Request,
 				parsedReq := d.buildParsedRequest(r, dispatchCtx)
 				reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
 				reqCtx.SetStoreProvider(d.storeProvider)
+				reqCtx.SetGraphDBManager(d.graphDB)
 
 				if d.authorizationEnabled && d.authorizer != nil {
 					authzResult, err := d.authorizer.Authorize(httpCtx, reqCtx, parsedReq, dispatchCtx.ServiceName, r)
@@ -221,4 +225,8 @@ func (d *Dispatcher) DispatchWithContext(w http.ResponseWriter, r *http.Request,
 	}
 
 	d.Dispatch(w, r, dispatchCtx.ServiceName, nil)
+}
+
+func (d *Dispatcher) SetGraphDB(db *graphengine.DB) {
+	d.graphDB = db
 }

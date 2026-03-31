@@ -145,6 +145,10 @@ func ParseAWSRequest(r *http.Request) (*ParsedRequest, error) {
 		extractCloudFrontPathParams(r.URL.Path, req.Parameters)
 	}
 
+	if isNeptunedataPath(r.URL.Path) {
+		extractNeptunedataPathParams(r.URL.Path, req.Parameters)
+	}
+
 	return req, nil
 }
 
@@ -211,6 +215,10 @@ func extractOperation(r *http.Request, bodyBytes []byte) string {
 				}
 			}
 		}
+		return op
+	}
+
+	if op := extractNeptunedataOperation(r); op != "" {
 		return op
 	}
 

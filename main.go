@@ -37,6 +37,8 @@ import (
 	svckms "vorpalstacks/internal/services/aws/kms"
 	svckmshsm "vorpalstacks/internal/services/aws/kms/hsm"
 	svclambda "vorpalstacks/internal/services/aws/lambda"
+	svcneptune "vorpalstacks/internal/services/aws/neptune"
+	svcneptunedata "vorpalstacks/internal/services/aws/neptunedata"
 	svcroute53 "vorpalstacks/internal/services/aws/route53"
 	svcs3 "vorpalstacks/internal/services/aws/s3"
 	svcscheduler "vorpalstacks/internal/services/aws/scheduler"
@@ -57,16 +59,16 @@ import (
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
+	"vorpalstacks/pkg/graphengine"
 )
 
 func main() {
 	cfg := appconfig.LoadBootstrapConfig()
 
 	serverCfg := &chihttp.Config{
-		Port:         cfg.Port,
-		DataPath:     cfg.DataPath,
-		MetadataPath: cfg.MetadataPath,
-		AccountID:    cfg.AccountID,
+		Port:      cfg.Port,
+		DataPath:  cfg.DataPath,
+		AccountID: cfg.AccountID,
 		SignatureConfig: chihttp.SignatureConfig{
 			Enabled:         cfg.SignatureVerification,
 			Region:          cfg.Region,
@@ -448,6 +450,23 @@ func main() {
 		athenaService.RegisterHandlers(server.Dispatcher())
 		server.RegisterShutdownHook(func(ctx context.Context) {
 			athenaService.Shutdown()
+		})
+	}
+
+	neptuneService := svcneptune.NewNeptuneService(server.Storage(), cfg.AccountID, cfg.Region)
+	neptuneService.RegisterHandlers(server.Dispatcher())
+
+	neptunedataService := svcneptunedata.NewNeptuneDataService()
+	neptunedataService.RegisterHandlers(server.Dispatcher())
+
+	graphDir := cfg.DataPath + "/graph"
+	graphDB, err := graphengine.Open(graphDir, graphengine.DefaultOptions())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to open graph DB at %s: %v\n", graphDir, err)
+	} else {
+		server.Dispatcher().SetGraphDB(graphDB)
+		server.RegisterShutdownHook(func(ctx context.Context) {
+			graphDB.Close()
 		})
 	}
 

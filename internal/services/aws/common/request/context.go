@@ -20,6 +20,7 @@ import (
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
+	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	route53store "vorpalstacks/internal/store/aws/route53"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
@@ -32,6 +33,7 @@ import (
 	stsstore "vorpalstacks/internal/store/aws/sts"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 	wafstore "vorpalstacks/internal/store/aws/waf"
+	"vorpalstacks/pkg/graphengine"
 )
 
 // AuditRecorder records audit events for CloudTrail.
@@ -65,6 +67,7 @@ type RequestContext struct {
 	SourceIP       string
 	UserAgent      string
 	auditRecorder  AuditRecorder
+	graphDBManager *graphengine.DB
 }
 
 // NewRequestContext creates a new RequestContext with the given parameters.
@@ -375,4 +378,23 @@ func (c *RequestContext) GetSQSStore() sqsstore.SQSStoreInterface {
 		return nil
 	}
 	return c.storeProvider.GetSQSStore()
+}
+
+func (c *RequestContext) GetNeptuneStore() neptunestore.NeptuneStoreInterface {
+	if c.storeProvider == nil {
+		return nil
+	}
+	return c.storeProvider.GetNeptuneStore()
+}
+
+func (c *RequestContext) SetGraphDBManager(db *graphengine.DB) {
+	c.graphDBManager = db
+}
+
+func (c *RequestContext) GraphReader() graphengine.GraphReader {
+	return c.graphDBManager
+}
+
+func (c *RequestContext) GraphWriter() graphengine.GraphWriter {
+	return c.graphDBManager
 }

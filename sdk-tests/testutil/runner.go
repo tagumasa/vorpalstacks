@@ -41,6 +41,7 @@ func (r *TestRunner) GetAllServices() []string {
 		"stepfunctions", "apigateway", "logs", "cloudwatch", "ssm", "cloudtrail",
 		"acm", "cognito", "secretsmanager", "kinesis", "sts", "scheduler",
 		"athena", "timestream", "sesv2", "route53", "cloudfront", "waf",
+		"neptune", "neptunedata",
 	}
 }
 
@@ -100,6 +101,10 @@ func (r *TestRunner) RunServiceTests(service string) []TestResult {
 		results = r.RunCloudFrontTests()
 	case "waf":
 		results = r.RunWAFTests()
+	case "neptune":
+		results = r.RunNeptuneTests()
+	case "neptunedata":
+		results = r.RunNeptunedataTests()
 	default:
 		results = []TestResult{{
 			Service:  service,

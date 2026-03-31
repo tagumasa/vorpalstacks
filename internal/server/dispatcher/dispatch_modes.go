@@ -42,6 +42,8 @@ func (d *Dispatcher) handleImplemented(w http.ResponseWriter, r *http.Request, s
 			if handler, exists := d.getHandler(serviceName, opName); exists && handler != nil {
 				httpCtx := r.Context()
 				reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
+				reqCtx.SetStoreProvider(d.storeProvider)
+				reqCtx.SetGraphDBManager(d.graphDB)
 				if d.checkAuthorization(w, r, httpCtx, reqCtx, parsedReq, serviceName) {
 					return
 				}
@@ -78,6 +80,8 @@ func (d *Dispatcher) handleImplemented(w http.ResponseWriter, r *http.Request, s
 
 	httpCtx := r.Context()
 	reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
+	reqCtx.SetStoreProvider(d.storeProvider)
+	reqCtx.SetGraphDBManager(d.graphDB)
 	if d.checkAuthorization(w, r, httpCtx, reqCtx, parsedReq, serviceName) {
 		return
 	}

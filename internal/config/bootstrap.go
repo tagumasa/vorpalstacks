@@ -14,7 +14,6 @@ type BootstrapConfig struct {
 	GRPCWebPort           string
 	GRPCWebBindAddr       string
 	DataPath              string
-	MetadataPath          string
 	AccountID             string
 	Region                string
 	AccessKeyID           string
@@ -68,7 +67,6 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		GRPCWebPort:           envOr("GRPC_WEB_PORT", "9090"),
 		GRPCWebBindAddr:       envOr("GRPC_WEB_BIND_ADDR", "127.0.0.1"),
 		DataPath:              envOr("DATA_PATH", "./data"),
-		MetadataPath:          envOr("METADATA_PATH", ""),
 		AccountID:             accountId,
 		Region:                envOr("AWS_REGION", "us-east-1"),
 		AccessKeyID:           os.Getenv("AWS_ACCESS_KEY_ID"),

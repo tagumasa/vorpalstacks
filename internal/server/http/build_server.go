@@ -20,7 +20,6 @@ import (
 type Config struct {
 	Port            string
 	DataPath        string
-	MetadataPath    string
 	AccountID       string
 	SignatureConfig SignatureConfig
 	UseChainGateway bool

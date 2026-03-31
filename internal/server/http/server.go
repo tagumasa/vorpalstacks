@@ -198,18 +198,6 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg.AccountID,
 	)
 
-	shapeTraitStore := api.NewShapeTraitStore(globalStore)
-	memberTraitStore := api.NewMemberTraitStore(globalStore)
-	operationErrorStore := api.NewOperationErrorStore(globalStore)
-	enumValueStore := api.NewEnumValueStore(globalStore)
-
-	if cfg.MetadataPath != "" {
-		if err := loadMetadata(cfg.MetadataPath, serviceStore, operationStore, shapeStore, memberStore, shapeTraitStore, memberTraitStore, operationErrorStore, enumValueStore, configStore); err != nil {
-			storageMgr.Close()
-			return nil, fmt.Errorf("failed to load metadata: %w", err)
-		}
-	}
-
 	serviceIndex, err := router.NewServiceIndex(serviceStore, operationStore)
 	if err != nil {
 		storageMgr.Close()
