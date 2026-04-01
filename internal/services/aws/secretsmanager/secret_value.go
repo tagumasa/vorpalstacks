@@ -5,11 +5,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/store/aws/common"
+	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
 
 // PutSecretValue stores a secret value in a secret.
@@ -27,6 +30,7 @@ func (s *SecretsManagerService) PutSecretValue(ctx context.Context, reqCtx *requ
 
 	secretString := request.GetStringParam(req.Parameters, "SecretString")
 	secretBinaryStr := request.GetStringParam(req.Parameters, "SecretBinary")
+	versionStages := request.GetStringList(req.Parameters, "VersionStages")
 
 	if secretString != "" {
 		secret.SecretString = secretString
@@ -55,6 +59,18 @@ func (s *SecretsManagerService) PutSecretValue(ctx context.Context, reqCtx *requ
 		return nil, mapStoreError(err)
 	}
 
+	if len(versionStages) > 0 {
+		customStages := []string{}
+		for _, st := range versionStages {
+			if st != "AWSCURRENT" {
+				customStages = append(customStages, st)
+			}
+		}
+		customStages = append(customStages, "AWSCURRENT")
+		_ = store.UpdateSecretVersionStage(updated.Name, updated.CurrentVersion, customStages)
+		version.VersionStages = customStages
+	}
+
 	return map[string]interface{}{
 		"ARN":           updated.ARN,
 		"Name":          updated.Name,
@@ -71,6 +87,10 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 	if maxResults <= 0 {
 		maxResults = 100
 	}
+	includePlannedDeletion := request.GetBoolParam(req.Parameters, "IncludePlannedDeletion")
+	sortBy := request.GetStringParam(req.Parameters, "SortBy")
+	sortOrder := request.GetStringParam(req.Parameters, "SortOrder")
+	filters := request.GetListParam(req.Parameters, "Filters")
 
 	opts := common.ListOptions{MaxItems: maxResults}
 	if nextToken != "" {
@@ -86,8 +106,32 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
+	filtered := result.Items
+	if !includePlannedDeletion {
+		kept := filtered[:0]
+		for _, sec := range filtered {
+			if sec.DeletedDate == nil && sec.ScheduledDeletionDate == nil {
+				kept = append(kept, sec)
+			}
+		}
+		filtered = kept
+	}
+
+	if len(filters) > 0 {
+		filtered = applySecretFilters(filtered, filters)
+	}
+
+	if sortBy != "" {
+		sortSecrets(filtered, sortBy, sortOrder)
+	}
+
+	paged := filtered
+	if maxResults < len(paged) {
+		paged = paged[:maxResults]
+	}
+
 	secretList := []interface{}{}
-	for _, secret := range result.Items {
+	for _, secret := range paged {
 		entry := map[string]interface{}{
 			"ARN":                    secret.ARN,
 			"Name":                   secret.Name,
@@ -97,6 +141,9 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 			"LastChangedDate":        secret.LastChangedDate.Unix(),
 			"LastAccessedDate":       secret.LastAccessedDate.Unix(),
 			"SecretVersionsToStages": s.buildSecretVersionsToStages(reqCtx, secret),
+		}
+		if secret.Type != "" {
+			entry["Type"] = secret.Type
 		}
 		s.addRotationFields(entry, secret)
 		if len(secret.ReplicationStatus) > 0 {
@@ -108,10 +155,130 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 	response := map[string]interface{}{
 		"SecretList": secretList,
 	}
-	if result.NextMarker != "" {
-		response["NextToken"] = result.NextMarker
+	if maxResults < len(filtered) {
+		response["NextToken"] = fmt.Sprintf("%d", maxResults)
 	}
 	return response, nil
+}
+
+func applySecretFilters(secrets []*secretsmanagerstore.Secret, filters []map[string]interface{}) []*secretsmanagerstore.Secret {
+	for _, f := range filters {
+		key := request.GetStringParam(f, "Key")
+		values := request.GetStringList(f, "Values")
+		if key == "" || len(values) == 0 {
+			continue
+		}
+		switch key {
+		case "name":
+			kept := secrets[:0]
+			for _, sec := range secrets {
+				for _, v := range values {
+					if strings.Contains(sec.Name, v) {
+						kept = append(kept, sec)
+						break
+					}
+				}
+			}
+			secrets = kept
+		case "description":
+			kept := secrets[:0]
+			for _, sec := range secrets {
+				for _, v := range values {
+					if strings.Contains(sec.Description, v) {
+						kept = append(kept, sec)
+						break
+					}
+				}
+			}
+			secrets = kept
+		case "tag-key":
+			kept := secrets[:0]
+			for _, sec := range secrets {
+				for _, v := range values {
+					if _, ok := sec.Tags[v]; ok {
+						kept = append(kept, sec)
+						break
+					}
+				}
+			}
+			secrets = kept
+		case "tag-value":
+			kept := secrets[:0]
+			for _, sec := range secrets {
+				for _, v := range values {
+					found := false
+					for _, tv := range sec.Tags {
+						if strings.Contains(tv, v) {
+							found = true
+							break
+						}
+					}
+					if found {
+						kept = append(kept, sec)
+						break
+					}
+				}
+			}
+			secrets = kept
+		case "primary-region":
+			kept := secrets[:0]
+			for _, sec := range secrets {
+				for _, v := range values {
+					if sec.PrimaryRegion == v {
+						kept = append(kept, sec)
+						break
+					}
+				}
+			}
+			secrets = kept
+		case "owning-service":
+			kept := secrets[:0]
+			for _, sec := range secrets {
+				for _, v := range values {
+					if sec.OwningService == v {
+						kept = append(kept, sec)
+						break
+					}
+				}
+			}
+			secrets = kept
+		}
+	}
+	return secrets
+}
+
+func sortSecrets(secrets []*secretsmanagerstore.Secret, sortBy, sortOrder string) {
+	desc := sortOrder == "desc"
+	switch sortBy {
+	case "name":
+		sort.Slice(secrets, func(i, j int) bool {
+			if desc {
+				return secrets[i].Name > secrets[j].Name
+			}
+			return secrets[i].Name < secrets[j].Name
+		})
+	case "created-date":
+		sort.Slice(secrets, func(i, j int) bool {
+			if desc {
+				return secrets[i].CreatedDate.After(secrets[j].CreatedDate)
+			}
+			return secrets[i].CreatedDate.Before(secrets[j].CreatedDate)
+		})
+	case "last-accessed-date":
+		sort.Slice(secrets, func(i, j int) bool {
+			if desc {
+				return secrets[i].LastAccessedDate.After(secrets[j].LastAccessedDate)
+			}
+			return secrets[i].LastAccessedDate.Before(secrets[j].LastAccessedDate)
+		})
+	case "last-changed-date":
+		sort.Slice(secrets, func(i, j int) bool {
+			if desc {
+				return secrets[i].LastChangedDate.After(secrets[j].LastChangedDate)
+			}
+			return secrets[i].LastChangedDate.Before(secrets[j].LastChangedDate)
+		})
+	}
 }
 
 // DescribeSecret returns the metadata for a secret.
@@ -128,18 +295,30 @@ func (s *SecretsManagerService) DescribeSecret(ctx context.Context, reqCtx *requ
 	}
 
 	result := map[string]interface{}{
-		"ARN":                    secret.ARN,
-		"Name":                   secret.Name,
-		"SecretId":               secret.ARN,
-		"Description":            secret.Description,
-		"KmsKeyId":               secret.KmsKeyId,
-		"CreatedDate":            secret.CreatedDate.Unix(),
-		"LastChangedDate":        secret.LastChangedDate.Unix(),
-		"LastAccessedDate":       secret.LastAccessedDate.Unix(),
-		"SecretVersionsToStages": s.buildSecretVersionsToStages(reqCtx, secret),
-		"Tags":                   s.buildTagsList(secret),
+		"ARN":                secret.ARN,
+		"Name":               secret.Name,
+		"SecretId":           secret.ARN,
+		"Description":        secret.Description,
+		"KmsKeyId":           secret.KmsKeyId,
+		"CreatedDate":        secret.CreatedDate.Unix(),
+		"LastChangedDate":    secret.LastChangedDate.Unix(),
+		"LastAccessedDate":   secret.LastAccessedDate.Unix(),
+		"VersionIdsToStages": s.buildSecretVersionsToStages(reqCtx, secret),
+		"Tags":               s.buildTagsList(secret),
 	}
 	s.addRotationFields(result, secret)
+	if secret.OwningService != "" {
+		result["OwningService"] = secret.OwningService
+	}
+	if secret.PrimaryRegion != "" {
+		result["PrimaryRegion"] = secret.PrimaryRegion
+	}
+	if secret.Type != "" {
+		result["Type"] = secret.Type
+	}
+	if !secret.NextRotationDate.IsZero() {
+		result["NextRotationDate"] = secret.NextRotationDate.Unix()
+	}
 	if len(secret.ReplicationStatus) > 0 {
 		result["ReplicationStatus"] = buildReplicationStatusResponse(secret.ReplicationStatus)
 	}
@@ -210,32 +389,37 @@ func (s *SecretsManagerService) UpdateSecretVersionStage(ctx context.Context, re
 		return nil, err
 	}
 
-	if removeFromVersionId != "" {
-		existingVer, err := store.GetSecretVersion(secret.Name, removeFromVersionId)
+	removeVersionId := removeFromVersionId
+	if removeVersionId == "" {
+		existingVer, err := store.GetSecretVersionByStage(secret.Name, versionStage)
 		if err != nil {
 			return nil, awserrors.NewAWSError("ResourceNotFoundException",
-				fmt.Sprintf("Secrets Manager can't find the version %s", removeFromVersionId), http.StatusNotFound)
+				fmt.Sprintf("Secrets Manager can't find the version with stage %s", versionStage), http.StatusNotFound)
+		}
+		removeVersionId = existingVer.VersionId
+	}
+
+	if removeVersionId != moveToVersionId {
+		existingVer, err := store.GetSecretVersion(secret.Name, removeVersionId)
+		if err != nil {
+			return nil, awserrors.NewAWSError("ResourceNotFoundException",
+				fmt.Sprintf("Secrets Manager can't find the version %s", removeVersionId), http.StatusNotFound)
 		}
 		newStages := []string{}
-		for _, s := range existingVer.VersionStages {
-			if s != versionStage {
-				newStages = append(newStages, s)
+		for _, st := range existingVer.VersionStages {
+			if st != versionStage {
+				newStages = append(newStages, st)
 			}
 		}
-		existingVer.VersionStages = newStages
-		if err := store.UpdateSecretVersionStage(secret.Name, removeFromVersionId, newStages); err != nil {
+		if err := store.UpdateSecretVersionStage(secret.Name, removeVersionId, newStages); err != nil {
 			return nil, mapStoreError(err)
 		}
 	}
 
 	targetVerId := moveToVersionId
 	if targetVerId == "" {
-		currentVer, err := store.GetSecretVersionByStage(secret.Name, versionStage)
-		if err != nil {
-			return nil, awserrors.NewAWSError("ResourceNotFoundException",
-				fmt.Sprintf("Secrets Manager can't find the version with stage %s", versionStage), http.StatusNotFound)
-		}
-		targetVerId = currentVer.VersionId
+		return nil, awserrors.NewAWSError("InvalidParameterException",
+			"You must specify MoveToVersionId.", http.StatusBadRequest)
 	}
 
 	targetVer, err := store.GetSecretVersion(secret.Name, targetVerId)
@@ -245,8 +429,8 @@ func (s *SecretsManagerService) UpdateSecretVersionStage(ctx context.Context, re
 	}
 
 	found := false
-	for _, s := range targetVer.VersionStages {
-		if s == versionStage {
+	for _, st := range targetVer.VersionStages {
+		if st == versionStage {
 			found = true
 			break
 		}
@@ -258,6 +442,39 @@ func (s *SecretsManagerService) UpdateSecretVersionStage(ctx context.Context, re
 	if versionStage == "AWSCURRENT" {
 		secret.CurrentVersion = targetVerId
 		secret.LastChangedDate = time.Now().UTC()
+
+		oldPrevious, err := store.GetSecretVersionByStage(secret.Name, "AWSPREVIOUS")
+		if err == nil && oldPrevious.VersionId != targetVerId {
+			prevStages := []string{}
+			for _, st := range oldPrevious.VersionStages {
+				if st != "AWSPREVIOUS" {
+					prevStages = append(prevStages, st)
+				}
+			}
+			if err := store.UpdateSecretVersionStage(secret.Name, oldPrevious.VersionId, prevStages); err != nil {
+				return nil, mapStoreError(err)
+			}
+		}
+
+		if removeVersionId != "" && removeVersionId != targetVerId {
+			oldCurrentVer, err := store.GetSecretVersion(secret.Name, removeVersionId)
+			if err == nil {
+				hasPrev := false
+				for _, st := range oldCurrentVer.VersionStages {
+					if st == "AWSPREVIOUS" {
+						hasPrev = true
+						break
+					}
+				}
+				if !hasPrev {
+					oldCurrentVer.VersionStages = append(oldCurrentVer.VersionStages, "AWSPREVIOUS")
+					if err := store.UpdateSecretVersionStage(secret.Name, removeVersionId, oldCurrentVer.VersionStages); err != nil {
+						return nil, mapStoreError(err)
+					}
+				}
+			}
+		}
+
 		if err := store.UpdateSecretMetadata(secret); err != nil {
 			return nil, mapStoreError(err)
 		}

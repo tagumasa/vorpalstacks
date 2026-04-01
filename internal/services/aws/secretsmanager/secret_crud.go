@@ -25,6 +25,7 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 	secretBinaryStr := request.GetStringParam(req.Parameters, "SecretBinary")
 	description := request.GetStringParam(req.Parameters, "Description")
 	kmsKeyId := request.GetStringParam(req.Parameters, "KmsKeyId")
+	secretType := request.GetStringParam(req.Parameters, "Type")
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
 
 	var secretBinary []byte
@@ -41,6 +42,7 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 	secret.SecretBinary = secretBinary
 	secret.Description = description
 	secret.KmsKeyId = kmsKeyId
+	secret.Type = secretType
 	if len(tags) > 0 {
 		secret.Tags = tags
 	}
@@ -159,6 +161,7 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 	secretBinaryStr := request.GetStringParam(req.Parameters, "SecretBinary")
 	description := request.GetStringParam(req.Parameters, "Description")
 	kmsKeyId := request.GetStringParam(req.Parameters, "KmsKeyId")
+	secretType := request.GetStringParam(req.Parameters, "Type")
 
 	hasSecretValue := secretString != "" || secretBinaryStr != ""
 
@@ -174,11 +177,14 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 		secret.SecretBinary = decoded
 		secret.SecretString = ""
 	}
-	if description != "" {
+	if request.HasParam(req.Parameters, "Description") {
 		secret.Description = description
 	}
-	if kmsKeyId != "" {
+	if request.HasParam(req.Parameters, "KmsKeyId") {
 		secret.KmsKeyId = kmsKeyId
+	}
+	if request.HasParam(req.Parameters, "Type") {
+		secret.Type = secretType
 	}
 
 	store, err := s.store(reqCtx)

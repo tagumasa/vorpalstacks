@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/request"
@@ -147,4 +148,8 @@ func decodeSecretBinary(secretBinaryStr string) ([]byte, error) {
 		return nil, fmt.Errorf("invalid SecretBinary encoding: %w", err)
 	}
 	return decoded, nil
+}
+
+func storeClock() time.Time {
+	return time.Now().UTC()
 }

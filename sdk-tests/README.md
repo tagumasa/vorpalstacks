@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 30 AWS services with 1420 test cases
+- **Comprehensive Coverage**: Tests for 30 AWS services with 1464 test cases
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -34,8 +34,8 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | NeptuneData | 168 | 100% | ✅ Perfect |
 | Route53 | 14 | 100% | ✅ Perfect |
 | S3 | 100 | 100% | ✅ Perfect |
-| Scheduler | 12 | 100% | ✅ Perfect |
-| SecretsManager | 15 | 100% | ✅ Perfect |
+| Scheduler | 29 | 100% | ✅ Perfect |
+| SecretsManager | 42 | 100% | ✅ Perfect |
 | SESv2 | 14 | 100% | ✅ Perfect |
 | SNS | 62 | 100% | ✅ Perfect |
 | SQS | 40 | 100% | ✅ Perfect |
@@ -45,7 +45,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | Timestream | 44 | 100% | ✅ Perfect |
 | WAF | 23 | 100% | ✅ Perfect |
 
-**Overall: 1420/1420 tests passing (100%)**
+**Overall: 1464/1464 tests passing (100%)**
 
 ## Prerequisites
 

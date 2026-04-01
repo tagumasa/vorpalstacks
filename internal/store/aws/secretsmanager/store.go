@@ -380,9 +380,10 @@ func (s *SecretStore) GetResourcePolicy(name string) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	secret, err := s.GetSecret(name)
-	if err != nil {
-		return "", err
+	key := s.buildSecretKey(name)
+	var secret Secret
+	if err := s.BaseStore.Get(key, &secret); err != nil {
+		return "", ErrSecretNotFound
 	}
 	return secret.ResourcePolicy, nil
 }

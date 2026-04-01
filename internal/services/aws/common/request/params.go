@@ -6,6 +6,17 @@ import (
 	"strings"
 )
 
+// HasParam checks whether a parameter key exists in the params map.
+func HasParam(params map[string]interface{}, key string) bool {
+	if _, ok := params[key]; ok {
+		return true
+	}
+	if _, ok := params[strings.ToLower(key)]; ok {
+		return true
+	}
+	return false
+}
+
 // GetStringParam extracts a string parameter from the params map.
 func GetStringParam(params map[string]interface{}, key string) string {
 	if v, ok := params[key]; ok {

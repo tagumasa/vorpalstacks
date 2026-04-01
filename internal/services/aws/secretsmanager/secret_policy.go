@@ -18,7 +18,7 @@ func (s *SecretsManagerService) GetResourcePolicy(ctx context.Context, reqCtx *r
 		return nil, errors.ErrMissingParameter
 	}
 
-	secret, err := s.resolveSecret(reqCtx, secretId)
+	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (s *SecretsManagerService) PutResourcePolicy(ctx context.Context, reqCtx *r
 		return nil, fmt.Errorf("invalid resource policy: %w", err)
 	}
 
-	secret, err := s.resolveSecret(reqCtx, secretId)
+	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (s *SecretsManagerService) DeleteResourcePolicy(ctx context.Context, reqCtx
 		return nil, errors.ErrMissingParameter
 	}
 
-	secret, err := s.resolveSecret(reqCtx, secretId)
+	secret, err := s.resolveSecretForMetadata(reqCtx, secretId)
 	if err != nil {
 		return nil, err
 	}
@@ -113,13 +113,15 @@ func (s *SecretsManagerService) ValidateResourcePolicy(ctx context.Context, reqC
 	secretId := request.GetStringParam(req.Parameters, "SecretId")
 	policy := request.GetStringParam(req.Parameters, "ResourcePolicy")
 
-	if secretId == "" {
+	if policy == "" {
 		return nil, errors.ErrMissingParameter
 	}
 
-	_, err := s.resolveSecret(reqCtx, secretId)
-	if err != nil {
-		return nil, err
+	if secretId != "" {
+		_, err := s.resolveSecretForMetadata(reqCtx, secretId)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	result := map[string]interface{}{

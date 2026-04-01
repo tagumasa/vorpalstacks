@@ -27,6 +27,10 @@ type Secret struct {
 	ResourcePolicy        string              `json:"resourcePolicy,omitempty"`
 	DeletedDate           *time.Time          `json:"deletedDate,omitempty"`
 	ScheduledDeletionDate *time.Time          `json:"scheduledDeletionDate,omitempty"`
+	Type                  string              `json:"type,omitempty"`
+	OwningService         string              `json:"owningService,omitempty"`
+	PrimaryRegion         string              `json:"primaryRegion,omitempty"`
+	NextRotationDate      time.Time           `json:"nextRotationDate,omitempty"`
 }
 
 // RotationRules defines the rotation rules for a secret.

@@ -218,6 +218,37 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("scheduler", "GetSchedule_ContentVerify", func() error {
+		getResp, err := client.GetSchedule(ctx, &scheduler.GetScheduleInput{
+			Name: aws.String(scheduleName),
+		})
+		if err != nil {
+			return err
+		}
+		if getResp.Name == nil || *getResp.Name != scheduleName {
+			return fmt.Errorf("name mismatch")
+		}
+		if getResp.ScheduleExpression == nil || *getResp.ScheduleExpression != "rate(60 minutes)" {
+			return fmt.Errorf("expression mismatch: %q", aws.ToString(getResp.ScheduleExpression))
+		}
+		if getResp.Arn == nil {
+			return fmt.Errorf("ARN is nil")
+		}
+		if getResp.CreationDate == nil {
+			return fmt.Errorf("CreationDate is nil")
+		}
+		if getResp.LastModificationDate == nil {
+			return fmt.Errorf("LastModificationDate is nil")
+		}
+		if getResp.Target == nil {
+			return fmt.Errorf("Target is nil")
+		}
+		if getResp.FlexibleTimeWindow == nil || getResp.FlexibleTimeWindow.Mode != types.FlexibleTimeWindowModeOff {
+			return fmt.Errorf("FlexibleTimeWindow mode mismatch")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("scheduler", "DeleteSchedule", func() error {
 		resp, err := client.DeleteSchedule(ctx, &scheduler.DeleteScheduleInput{
 			Name: aws.String(scheduleName),
@@ -351,6 +382,366 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		}
 		return nil
 	}))
+
+	// === SCHEDULE GROUP TESTS ===
+
+	groupName := fmt.Sprintf("TestGroup-%d", time.Now().UnixNano())
+
+	results = append(results, r.RunTest("scheduler", "CreateScheduleGroup", func() error {
+		resp, err := client.CreateScheduleGroup(ctx, &scheduler.CreateScheduleGroupInput{
+			Name: aws.String(groupName),
+		})
+		if err != nil {
+			return err
+		}
+		if resp == nil || resp.ScheduleGroupArn == nil {
+			return fmt.Errorf("response or ARN is nil")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "GetScheduleGroup", func() error {
+		resp, err := client.GetScheduleGroup(ctx, &scheduler.GetScheduleGroupInput{
+			Name: aws.String(groupName),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Name == nil || *resp.Name != groupName {
+			return fmt.Errorf("expected group name %q, got %q", groupName, aws.ToString(resp.Name))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "ListScheduleGroups", func() error {
+		resp, err := client.ListScheduleGroups(ctx, &scheduler.ListScheduleGroupsInput{})
+		if err != nil {
+			return err
+		}
+		if resp.ScheduleGroups == nil {
+			return fmt.Errorf("schedule groups list is nil")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "GetScheduleGroup_NonExistent", func() error {
+		_, err := client.GetScheduleGroup(ctx, &scheduler.GetScheduleGroupInput{
+			Name: aws.String("nonexistent-group-xyz"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for non-existent group")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "CreateScheduleGroup_DuplicateName", func() error {
+		dupGroupName := fmt.Sprintf("DupGroup-%d", time.Now().UnixNano())
+		_, err := client.CreateScheduleGroup(ctx, &scheduler.CreateScheduleGroupInput{
+			Name: aws.String(dupGroupName),
+		})
+		if err != nil {
+			return fmt.Errorf("first create: %v", err)
+		}
+		defer client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(dupGroupName)})
+
+		_, err = client.CreateScheduleGroup(ctx, &scheduler.CreateScheduleGroupInput{
+			Name: aws.String(dupGroupName),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for duplicate group name")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "ListScheduleGroups_ContainsCreated", func() error {
+		resp, err := client.ListScheduleGroups(ctx, &scheduler.ListScheduleGroupsInput{})
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, g := range resp.ScheduleGroups {
+			if g.Name != nil && *g.Name == groupName {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("created group %q not found in list", groupName)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "CreateSchedule_WithGroupName", func() error {
+		schedName := fmt.Sprintf("GroupSched-%d", time.Now().UnixNano())
+		groupRoleName := fmt.Sprintf("GroupSchedRole-%d", time.Now().UnixNano())
+		createRole(groupRoleName)
+		defer deleteRole(groupRoleName)
+		groupRoleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", groupRoleName)
+
+		_, err := client.CreateSchedule(ctx, &scheduler.CreateScheduleInput{
+			Name:               aws.String(schedName),
+			GroupName:          aws.String(groupName),
+			ScheduleExpression: aws.String("rate(30 minutes)"),
+			Target: &types.Target{
+				Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFn", r.region)),
+				RoleArn: aws.String(groupRoleARN),
+			},
+			FlexibleTimeWindow: &types.FlexibleTimeWindow{
+				Mode: types.FlexibleTimeWindowModeOff,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		defer client.DeleteSchedule(ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName), GroupName: aws.String(groupName)})
+
+		getResp, err := client.GetSchedule(ctx, &scheduler.GetScheduleInput{
+			Name:      aws.String(schedName),
+			GroupName: aws.String(groupName),
+		})
+		if err != nil {
+			return fmt.Errorf("get: %v", err)
+		}
+		if getResp.GroupName == nil || *getResp.GroupName != groupName {
+			return fmt.Errorf("expected group name %q, got %q", groupName, aws.ToString(getResp.GroupName))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "UpdateSchedule_NonExistent", func() error {
+		_, err := client.UpdateSchedule(ctx, &scheduler.UpdateScheduleInput{
+			Name:               aws.String("nonexistent-schedule-xyz"),
+			ScheduleExpression: aws.String("rate(30 minutes)"),
+			Target: &types.Target{
+				Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFn", r.region)),
+				RoleArn: aws.String(roleARN),
+			},
+			FlexibleTimeWindow: &types.FlexibleTimeWindow{
+				Mode: types.FlexibleTimeWindowModeOff,
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for non-existent schedule")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "UpdateSchedule_StateToggle", func() error {
+		stateName := fmt.Sprintf("StateSchedule-%d", time.Now().UnixNano())
+		stateRoleName := fmt.Sprintf("StateSchedRole-%d", time.Now().UnixNano())
+		createRole(stateRoleName)
+		defer deleteRole(stateRoleName)
+		stateRoleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", stateRoleName)
+
+		_, err := client.CreateSchedule(ctx, &scheduler.CreateScheduleInput{
+			Name:               aws.String(stateName),
+			ScheduleExpression: aws.String("rate(30 minutes)"),
+			Target: &types.Target{
+				Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFn", r.region)),
+				RoleArn: aws.String(stateRoleARN),
+			},
+			FlexibleTimeWindow: &types.FlexibleTimeWindow{
+				Mode: types.FlexibleTimeWindowModeOff,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteSchedule(ctx, &scheduler.DeleteScheduleInput{Name: aws.String(stateName)})
+
+		_, err = client.UpdateSchedule(ctx, &scheduler.UpdateScheduleInput{
+			Name:               aws.String(stateName),
+			ScheduleExpression: aws.String("rate(30 minutes)"),
+			Target: &types.Target{
+				Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFn", r.region)),
+				RoleArn: aws.String(stateRoleARN),
+			},
+			FlexibleTimeWindow: &types.FlexibleTimeWindow{
+				Mode: types.FlexibleTimeWindowModeOff,
+			},
+			State: types.ScheduleStateDisabled,
+		})
+		if err != nil {
+			return fmt.Errorf("update: %v", err)
+		}
+
+		getResp, err := client.GetSchedule(ctx, &scheduler.GetScheduleInput{
+			Name: aws.String(stateName),
+		})
+		if err != nil {
+			return fmt.Errorf("get: %v", err)
+		}
+		if getResp.State != types.ScheduleStateDisabled {
+			return fmt.Errorf("expected DISABLED, got %q", getResp.State)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "ListSchedules_NamePrefix", func() error {
+		prefixName := fmt.Sprintf("PrefixSched-%d", time.Now().UnixNano())
+		prefixRoleName := fmt.Sprintf("PrefixSchedRole-%d", time.Now().UnixNano())
+		createRole(prefixRoleName)
+		defer deleteRole(prefixRoleName)
+		prefixRoleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", prefixRoleName)
+
+		_, err := client.CreateSchedule(ctx, &scheduler.CreateScheduleInput{
+			Name:               aws.String(prefixName),
+			ScheduleExpression: aws.String("rate(30 minutes)"),
+			Target: &types.Target{
+				Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFn", r.region)),
+				RoleArn: aws.String(prefixRoleARN),
+			},
+			FlexibleTimeWindow: &types.FlexibleTimeWindow{
+				Mode: types.FlexibleTimeWindowModeOff,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		defer client.DeleteSchedule(ctx, &scheduler.DeleteScheduleInput{Name: aws.String(prefixName)})
+
+		prefix := prefixName[:len(prefixName)-8]
+		resp, err := client.ListSchedules(ctx, &scheduler.ListSchedulesInput{
+			NamePrefix: aws.String(prefix),
+		})
+		if err != nil {
+			return fmt.Errorf("list: %v", err)
+		}
+		found := false
+		for _, s := range resp.Schedules {
+			if s.Name != nil && *s.Name == prefixName {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("schedule %q not found with prefix %q", prefixName, prefix)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "TagResource_ScheduleGroup", func() error {
+		groupResp, err := client.CreateScheduleGroup(ctx, &scheduler.CreateScheduleGroupInput{
+			Name: aws.String(fmt.Sprintf("TagGroup-%d", time.Now().UnixNano())),
+		})
+		if err != nil {
+			return err
+		}
+		defer client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(fmt.Sprintf("TagGroup-%d", time.Now().UnixNano()))})
+
+		_, err = client.TagResource(ctx, &scheduler.TagResourceInput{
+			ResourceArn: groupResp.ScheduleGroupArn,
+			Tags: []types.Tag{
+				{Key: aws.String("Env"), Value: aws.String("prod")},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		tagResp, err := client.ListTagsForResource(ctx, &scheduler.ListTagsForResourceInput{
+			ResourceArn: groupResp.ScheduleGroupArn,
+		})
+		if err != nil {
+			return fmt.Errorf("list tags: %v", err)
+		}
+		found := false
+		for _, t := range tagResp.Tags {
+			if t.Key != nil && *t.Key == "Env" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("tag Env not found on schedule group")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "ListTagsForResource_ScheduleGroup", func() error {
+		groupResp, err := client.GetScheduleGroup(ctx, &scheduler.GetScheduleGroupInput{
+			Name: aws.String(groupName),
+		})
+		if err != nil {
+			return fmt.Errorf("get group: %v", err)
+		}
+
+		_, err = client.ListTagsForResource(ctx, &scheduler.ListTagsForResourceInput{
+			ResourceArn: groupResp.Arn,
+		})
+		if err != nil {
+			return fmt.Errorf("list tags: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "UntagResource_NonExistentKey", func() error {
+		scheduleARN := fmt.Sprintf("arn:aws:scheduler:%s:000000000000:schedule/%s", r.region, scheduleName)
+		_, err := client.UntagResource(ctx, &scheduler.UntagResourceInput{
+			ResourceArn: aws.String(scheduleARN),
+			TagKeys:     []string{"NonExistentKey"},
+		})
+		if err != nil {
+			return fmt.Errorf("untag non-existent key should not error: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "CreateSchedule_InvalidExpression", func() error {
+		invName := fmt.Sprintf("InvExprSched-%d", time.Now().UnixNano())
+		_, err := client.CreateSchedule(ctx, &scheduler.CreateScheduleInput{
+			Name:               aws.String(invName),
+			ScheduleExpression: aws.String("not-a-valid-expression"),
+			Target: &types.Target{
+				Arn:     aws.String(fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:TestFn", r.region)),
+				RoleArn: aws.String(roleARN),
+			},
+			FlexibleTimeWindow: &types.FlexibleTimeWindow{
+				Mode: types.FlexibleTimeWindowModeOff,
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for invalid schedule expression")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "DeleteScheduleGroup_NonExistent", func() error {
+		_, err := client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{
+			Name: aws.String("nonexistent-group-xyz"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for non-existent group")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("scheduler", "DeleteScheduleGroup", func() error {
+		delGroupName := fmt.Sprintf("DelGroup-%d", time.Now().UnixNano())
+		_, err := client.CreateScheduleGroup(ctx, &scheduler.CreateScheduleGroupInput{
+			Name: aws.String(delGroupName),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+
+		_, err = client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{
+			Name: aws.String(delGroupName),
+		})
+		if err != nil {
+			return fmt.Errorf("delete: %v", err)
+		}
+
+		_, err = client.GetScheduleGroup(ctx, &scheduler.GetScheduleGroupInput{
+			Name: aws.String(delGroupName),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error after deleting group")
+		}
+		return nil
+	}))
+
+	client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(groupName)})
 
 	return results
 }
