@@ -128,6 +128,8 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 	roleArn := request.GetStringParam(req.Parameters, "RoleArn")
 	roleSessionName := request.GetStringParam(req.Parameters, "RoleSessionName")
 	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	sessionPolicy := request.GetStringParam(req.Parameters, "Policy")
+	sourceIdentity := request.GetStringParam(req.Parameters, "SourceIdentity")
 
 	validDuration, err := validateDurationSeconds(durationSeconds)
 	if err != nil {
@@ -195,6 +197,8 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 			"AssumedRoleId": session.AccessKeyId + ":" + roleSessionName,
 			"Arn":           "arn:aws:sts::" + reqCtx.GetAccountID() + ":assumed-role/" + roleName + "/" + roleSessionName,
 		},
+		"PackedPolicySize": computePackedPolicySize(sessionPolicy, req.Parameters),
+		"SourceIdentity":   sourceIdentity,
 	}, nil
 }
 
@@ -250,6 +254,23 @@ func (s *STSService) GetSessionToken(ctx context.Context, reqCtx *request.Reques
 	}, nil
 }
 
+func computePackedPolicySize(policy string, params map[string]interface{}) int32 {
+	const maxPolicySize = 2048
+	totalSize := len(policy)
+	for i := 1; ; i++ {
+		arnKey := fmt.Sprintf("PolicyArns.member.%d.arn", i)
+		arn := request.GetStringParam(params, arnKey)
+		if arn == "" {
+			break
+		}
+		totalSize += len(arn)
+	}
+	if totalSize == 0 {
+		return 0
+	}
+	return int32((totalSize * 100) / maxPolicySize)
+}
+
 func validateDurationSeconds(durationSeconds int) (int, error) {
 	if durationSeconds == 0 {
 		return DefaultDurationSeconds, nil
@@ -299,6 +320,7 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 	samlAssertion := request.GetStringParam(req.Parameters, "SAMLAssertion")
 	roleSessionName := request.GetStringParam(req.Parameters, "RoleSessionName")
 	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	sessionPolicy := request.GetStringParam(req.Parameters, "Policy")
 
 	if roleSessionName == "" {
 		roleSessionName = "SAML"
@@ -369,11 +391,12 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 			"AssumedRoleId": session.AccessKeyId + ":" + roleSessionName,
 			"Arn":           "arn:aws:sts::" + reqCtx.GetAccountID() + ":assumed-role/" + roleName + "/" + roleSessionName,
 		},
-		"Subject":       principalArn,
-		"SubjectType":   "persistent",
-		"Issuer":        "VorpalStacks",
-		"NameQualifier": "SAML",
-		"Audience":      "STS",
+		"Subject":          principalArn,
+		"SubjectType":      "persistent",
+		"Issuer":           "VorpalStacks",
+		"NameQualifier":    "SAML",
+		"Audience":         "STS",
+		"PackedPolicySize": computePackedPolicySize(sessionPolicy, req.Parameters),
 	}, nil
 }
 
@@ -384,6 +407,8 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 	webIdentityToken := request.GetStringParam(req.Parameters, "WebIdentityToken")
 	providerId := request.GetStringParam(req.Parameters, "ProviderId")
 	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	sessionPolicy := request.GetStringParam(req.Parameters, "Policy")
+	sourceIdentity := request.GetStringParam(req.Parameters, "SourceIdentity")
 
 	validDuration, err := validateDurationSeconds(durationSeconds)
 	if err != nil {
@@ -458,6 +483,8 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 		"Provider":                    providerId,
 		"SubjectFromWebIdentityToken": roleSessionName,
 		"Audience":                    "sts.amazonaws.com",
+		"PackedPolicySize":            computePackedPolicySize(sessionPolicy, req.Parameters),
+		"SourceIdentity":              sourceIdentity,
 	}, nil
 }
 
@@ -506,22 +533,8 @@ func (s *STSService) DecodeAuthorizationMessage(ctx context.Context, reqCtx *req
 		}
 	}
 
-	var decodedData map[string]interface{}
-	if err := json.Unmarshal(decodedBytes, &decodedData); err != nil {
-		return map[string]interface{}{
-			"DecodedMessage": string(decodedBytes),
-		}, nil
-	}
-
-	decodedJSON, err := json.Marshal(decodedData)
-	if err != nil {
-		return map[string]interface{}{
-			"DecodedMessage": string(decodedBytes),
-		}, nil
-	}
-
 	return map[string]interface{}{
-		"DecodedMessage": string(decodedJSON),
+		"DecodedMessage": string(decodedBytes),
 	}, nil
 }
 

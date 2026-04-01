@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 30 AWS services with 1387 test cases
+- **Comprehensive Coverage**: Tests for 30 AWS services with 1420 test cases
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -17,12 +17,12 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 |---------|--------|-----------|--------|
 | ACM | 15 | 100% | ✅ Perfect |
 | API Gateway | 91 | 100% | ✅ Perfect |
-| Athena | 29 | 100% | ✅ Perfect |
+| Athena | 64 | 100% | ✅ Perfect |
 | CloudFront | 18 | 100% | ✅ Perfect |
 | CloudTrail | 22 | 100% | ✅ Perfect |
 | CloudWatch | 9 | 100% | ✅ Perfect |
 | CloudWatch Logs | 14 | 100% | ✅ Perfect |
-| Cognito | 66 | 100% | ✅ Perfect |
+| Cognito | 106 | 100% | ✅ Perfect |
 | Cognito Identity | 40 | 100% | ✅ Perfect |
 | DynamoDB | 96 | 100% | ✅ Perfect |
 | EventBridge | 55 | 100% | ✅ Perfect |
@@ -40,12 +40,12 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | SNS | 62 | 100% | ✅ Perfect |
 | SQS | 40 | 100% | ✅ Perfect |
 | SSM | 11 | 100% | ✅ Perfect |
-| STS | 6 | 100% | ✅ Perfect |
-| StepFunctions | 24 | 100% | ✅ Perfect |
-| Timestream | 16 | 100% | ✅ Perfect |
+| STS | 39 | 100% | ✅ Perfect |
+| StepFunctions | 42 | 100% | ✅ Perfect |
+| Timestream | 44 | 100% | ✅ Perfect |
 | WAF | 23 | 100% | ✅ Perfect |
 
-**Overall: 1387/1387 tests passing (100%)**
+**Overall: 1420/1420 tests passing (100%)**
 
 ## Prerequisites
 

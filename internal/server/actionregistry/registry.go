@@ -122,7 +122,8 @@ func (r *ActionRegistry) initDefaults() {
 	r.Register("sts", []string{
 		"GetCallerIdentity", "GetSessionToken", "GetFederationToken",
 		"AssumeRole", "AssumeRoleWithSAML", "AssumeRoleWithWebIdentity",
-		"DecodeAuthorizationMessage",
+		"AssumeRoot", "DecodeAuthorizationMessage", "GetAccessKeyInfo",
+		"GetDelegatedAccessToken", "GetWebIdentityToken",
 	})
 
 	r.Register("events", []string{
