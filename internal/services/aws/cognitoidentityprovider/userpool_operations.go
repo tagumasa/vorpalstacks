@@ -195,3 +195,33 @@ func (s *CognitoService) GetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 
 	return result, nil
 }
+
+// SetUserPoolMfaConfig updates the multi-factor authentication configuration for a Cognito user pool.
+func (s *CognitoService) SetUserPoolMfaConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	userPoolID := getUserPoolID(req)
+	if userPoolID == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	userPool, err := store.GetUserPool(userPoolID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
+	if mfaConfig := getParam(req, "MfaConfiguration"); mfaConfig != "" {
+		userPool.MfaConfiguration = mfaConfig
+	}
+
+	if err := store.UpdateUserPool(userPool); err != nil {
+		return nil, ErrInternalError
+	}
+
+	return map[string]interface{}{
+		"MfaConfiguration":    userPool.MfaConfiguration,
+		"SmsMfaConfiguration": map[string]interface{}{"SmsConfiguration": map[string]interface{}{"SmsConfigType": "EXTERNAL"}},
+	}, nil
+}

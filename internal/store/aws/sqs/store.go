@@ -288,13 +288,18 @@ func EncodeBinaryValue(data []byte) string {
 // ListDeadLetterSourceQueues returns all queues that have the specified dead letter queue as their target.
 func (s *SQSStore) ListDeadLetterSourceQueues(dlqARN string) ([]*Queue, error) {
 	opts := common.ListOptions{MaxItems: 1000}
-	result, err := common.List(s.BaseStore, opts, func(q *Queue) bool {
-		return q.RedrivePolicy != nil && q.RedrivePolicy.DeadLetterTargetARN == dlqARN
+	result, err := common.ListProto[*pb.Queue](s.BaseStore, opts, func() *pb.Queue { return &pb.Queue{} }, func(q *pb.Queue) bool {
+		return q.GetRedrivePolicy() != nil && q.GetRedrivePolicy().GetDeadLetterTargetArn() == dlqARN
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.Items, nil
+
+	queues := make([]*Queue, 0, len(result.Items))
+	for _, pbQueue := range result.Items {
+		queues = append(queues, ProtoToQueue(pbQueue))
+	}
+	return queues, nil
 }
 
 // GetMessageCounts returns the count of visible, not visible, and delayed messages for a queue.

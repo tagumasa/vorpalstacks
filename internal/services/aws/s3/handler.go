@@ -200,6 +200,58 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.WriteHeader(statusCode)
 		}
+	case *GetBucketCORSOutput:
+		if v.CORSConfiguration != nil {
+			h.writeXMLResponse(w, "CORSConfiguration", v.CORSConfiguration, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/")
+		} else {
+			w.WriteHeader(statusCode)
+		}
+	case *GetBucketOwnershipControlsOutput:
+		if v.OwnershipControls != nil {
+			h.writeXMLResponse(w, "OwnershipControls", v.OwnershipControls, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/")
+		} else {
+			w.WriteHeader(statusCode)
+		}
+	case *GetBucketRequestPaymentOutput:
+		if v.RequestPaymentConfiguration != nil {
+			h.writeXMLResponse(w, "RequestPaymentConfiguration", v.RequestPaymentConfiguration, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/")
+		} else {
+			w.WriteHeader(statusCode)
+		}
+	case *GetBucketAccelerateConfigurationOutput:
+		if v.AccelerateConfiguration != nil {
+			h.writeXMLResponse(w, "AccelerateConfiguration", v.AccelerateConfiguration, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/")
+		} else {
+			w.WriteHeader(statusCode)
+		}
+	case *GetBucketLocationOutput:
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(statusCode)
+		_, _ = w.Write([]byte(fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?><LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">%s</LocationConstraint>`, v.LocationConstraint)))
+	case *GetObjectLockConfigurationOutput:
+		if v.ObjectLockConfiguration != nil {
+			h.writeXMLResponse(w, "ObjectLockConfiguration", v.ObjectLockConfiguration, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/")
+		} else {
+			w.WriteHeader(statusCode)
+		}
+	case *GetPublicAccessBlockOutput:
+		if v.PublicAccessBlockConfiguration != nil {
+			h.writeXMLResponse(w, "PublicAccessBlockConfiguration", v.PublicAccessBlockConfiguration, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/")
+		} else {
+			w.WriteHeader(statusCode)
+		}
+	case *GetObjectLegalHoldOutput:
+		if v.LegalHold != nil {
+			h.writeXMLResponse(w, "LegalHold", v.LegalHold, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/")
+		} else {
+			w.WriteHeader(statusCode)
+		}
+	case *GetObjectRetentionOutput:
+		if v.Retention != nil {
+			h.writeXMLResponse(w, "Retention", v.Retention, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/")
+		} else {
+			w.WriteHeader(statusCode)
+		}
 	case *CreateBucketOutput:
 		w.Header().Set("Location", v.Location)
 		w.Header().Set("Content-Type", "application/xml")

@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 29 AWS services with 890 test cases
+- **Comprehensive Coverage**: Tests for 29 AWS services with 1311 test cases
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -16,35 +16,36 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | Service | Tests | Pass Rate | Status |
 |---------|--------|-----------|--------|
 | NeptuneData | 168 | 100% | ✅ Perfect |
+| IAM | 114 | 100% | ✅ Perfect |
+| S3 | 100 | 100% | ✅ Perfect |
 | DynamoDB | 96 | 100% | ✅ Perfect |
-| IAM | 46 | 100% | ✅ Perfect |
+| API Gateway | 91 | 100% | ✅ Perfect |
 | Neptune | 73 | 100% | ✅ Perfect |
 | KMS | 41 | 100% | ✅ Perfect |
-| Cognito | 41 | 100% | ✅ Perfect |
+| Cognito | 66 | 100% | ✅ Perfect |
+| Cognito Identity | 40 | 100% | ✅ Perfect |
 | Kinesis | 37 | 100% | ✅ Perfect |
-| Lambda | 36 | 100% | ✅ Perfect |
+| Lambda | 68 | 100% | ✅ Perfect |
 | Athena | 29 | 100% | ✅ Perfect |
-| EventBridge | 27 | 100% | ✅ Perfect |
-| S3 | 24 | 100% | ✅ Perfect |
+| EventBridge | 55 | 100% | ✅ Perfect |
 | StepFunctions | 24 | 100% | ✅ Perfect |
-| CloudTrail | 22 | 100% | ✅ Perfect |
-| SQS | 21 | 100% | ✅ Perfect |
 | WAF | 23 | 100% | ✅ Perfect |
-| SNS | 19 | 100% | ✅ Perfect |
-| API Gateway | 19 | 100% | ✅ Perfect |
+| CloudTrail | 22 | 100% | ✅ Perfect |
+| SQS | 40 | 100% | ✅ Perfect |
+| SNS | 62 | 100% | ✅ Perfect |
 | CloudFront | 18 | 100% | ✅ Perfect |
 | Timestream | 16 | 100% | ✅ Perfect |
-| SecretsManager | 15 | 100% | ✅ Perfect |
 | ACM | 15 | 100% | ✅ Perfect |
+| SecretsManager | 15 | 100% | ✅ Perfect |
+| CloudWatch Logs | 14 | 100% | ✅ Perfect |
 | SESv2 | 14 | 100% | ✅ Perfect |
 | Route53 | 14 | 100% | ✅ Perfect |
-| CloudWatch Logs | 14 | 100% | ✅ Perfect |
 | Scheduler | 12 | 100% | ✅ Perfect |
 | SSM | 11 | 100% | ✅ Perfect |
 | CloudWatch | 9 | 100% | ✅ Perfect |
 | STS | 6 | 100% | ✅ Perfect |
 
-**Overall: 890/890 tests passing (100%)**
+**Overall: 1293/1293 tests passing (100%)**
 
 ## Prerequisites
 
@@ -274,8 +275,6 @@ Review the error message to identify the cause.
 
 ## Reference Materials
 
-- **API Gap Analysis**: `../plans/final_api_gap_summary.md`
-- **Service-Specific Plans**: `../plans/*_api_gap_analysis.md`
 - **VorpalStacks Docs**: `../README.md`
 
 ## Contributing

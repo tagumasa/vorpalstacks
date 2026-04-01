@@ -23,6 +23,8 @@ type StepFunctionStore struct {
 	executionHistoryStore *common.BaseStore
 	activitiesStore       *common.BaseStore
 	tasksStore            *common.BaseStore
+	versionsStore         *common.BaseStore
+	aliasesStore          *common.BaseStore
 	*common.TagStore
 	arnBuilder         *svcarn.ARNBuilder
 	accountID          string
@@ -33,6 +35,8 @@ type StepFunctionStore struct {
 	activityQueuesMu   sync.RWMutex
 	tasksMu            sync.Mutex
 	eventIdCounter     int64
+	versionCounters    map[string]int64
+	versionCountersMu  sync.Mutex
 	activeExecutions   map[string]context.CancelFunc
 	activeExecutionsMu sync.RWMutex
 	createMu           sync.Mutex
@@ -46,6 +50,8 @@ func NewStepFunctionStore(store storage.BasicStorage, accountID, region string) 
 		executionHistoryStore: common.NewBaseStore(store.Bucket("stepfunction-history-"+region), "stepfunction-history"),
 		activitiesStore:       common.NewBaseStore(store.Bucket("stepfunction-activities-"+region), "stepfunction-activities"),
 		tasksStore:            common.NewBaseStore(store.Bucket("stepfunction-tasks-"+region), "stepfunction-tasks"),
+		versionsStore:         common.NewBaseStore(store.Bucket("stepfunction-versions-"+region), "stepfunction-versions"),
+		aliasesStore:          common.NewBaseStore(store.Bucket("stepfunction-aliases-"+region), "stepfunction-aliases"),
 		TagStore:              common.NewTagStoreWithRegion(store, "stepfunction", region),
 		arnBuilder:            svcarn.NewARNBuilder(accountID, region),
 		accountID:             accountID,
@@ -53,6 +59,7 @@ func NewStepFunctionStore(store storage.BasicStorage, accountID, region string) 
 		pendingTasks:          make(map[string]chan *ActivityTaskResult),
 		activityQueues:        make(map[string]chan *ActivityTask),
 		activeExecutions:      make(map[string]context.CancelFunc),
+		versionCounters:       make(map[string]int64),
 	}
 }
 
@@ -573,4 +580,166 @@ func (s *StepFunctionStore) CancelAllExecutions() {
 		cancel()
 	}
 	s.activeExecutionsMu.Unlock()
+}
+
+func (s *StepFunctionStore) buildVersionARN(smArn string, version int64) string {
+	return smArn + fmt.Sprintf(":%d", version)
+}
+
+func (s *StepFunctionStore) buildAliasARN(smArn, aliasName string) string {
+	return smArn + ":" + aliasName
+}
+
+func (s *StepFunctionStore) nextVersionNumber(smArn string) int64 {
+	s.versionCountersMu.Lock()
+	defer s.versionCountersMu.Unlock()
+	s.versionCounters[smArn]++
+	return s.versionCounters[smArn]
+}
+
+func (s *StepFunctionStore) recoverVersionCounter(smArn string) {
+	opts := common.ListOptions{Prefix: smArn + ":", MaxItems: 10000}
+	result, err := common.List[StateMachineVersion](s.versionsStore, opts, nil)
+	if err != nil {
+		return
+	}
+	var maxVersion int64
+	for _, v := range result.Items {
+		if v.Version > maxVersion {
+			maxVersion = v.Version
+		}
+	}
+	s.versionCountersMu.Lock()
+	if maxVersion > s.versionCounters[smArn] {
+		s.versionCounters[smArn] = maxVersion
+	}
+	s.versionCountersMu.Unlock()
+}
+
+func (s *StepFunctionStore) PublishStateMachineVersion(ctx context.Context, smArn string, description string) (*StateMachineVersion, error) {
+	sm, err := s.GetStateMachine(ctx, smArn)
+	if err != nil {
+		return nil, ErrStateMachineNotFound
+	}
+
+	s.versionCountersMu.Lock()
+	if _, exists := s.versionCounters[smArn]; !exists {
+		s.versionCountersMu.Unlock()
+		s.recoverVersionCounter(smArn)
+	} else {
+		s.versionCountersMu.Unlock()
+	}
+
+	version := s.nextVersionNumber(smArn)
+	versionArn := s.buildVersionARN(smArn, version)
+
+	v := &StateMachineVersion{
+		StateMachineVersionArn: versionArn,
+		StateMachineArn:        smArn,
+		Version:                version,
+		Description:            description,
+		CreationDate:           time.Now().UTC(),
+		Definition:             sm.Definition,
+	}
+
+	if err := s.versionsStore.Put(versionArn, v); err != nil {
+		return nil, err
+	}
+
+	return v, nil
+}
+
+func (s *StepFunctionStore) GetStateMachineVersion(ctx context.Context, arn string) (*StateMachineVersion, error) {
+	var v StateMachineVersion
+	if err := s.versionsStore.Get(arn, &v); err != nil {
+		return nil, ErrStateMachineVersionNotFound
+	}
+	return &v, nil
+}
+
+func (s *StepFunctionStore) DeleteStateMachineVersion(ctx context.Context, arn string) error {
+	if !s.versionsStore.Exists(arn) {
+		return ErrStateMachineVersionNotFound
+	}
+	return s.versionsStore.Delete(arn)
+}
+
+func (s *StepFunctionStore) ListStateMachineVersions(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineVersionListResult, error) {
+	opts := common.ListOptions{
+		Prefix:   smArn + ":",
+		Marker:   nextToken,
+		MaxItems: int(limit),
+	}
+
+	result, err := common.List[StateMachineVersion](s.versionsStore, opts, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &StateMachineVersionListResult{
+		Versions:  result.Items,
+		NextToken: result.NextMarker,
+	}, nil
+}
+
+func (s *StepFunctionStore) CreateStateMachineAlias(ctx context.Context, alias *StateMachineAlias) error {
+	s.createMu.Lock()
+	defer s.createMu.Unlock()
+
+	if alias.Name == "" {
+		return ErrInvalidARN
+	}
+
+	aliasArn := s.buildAliasARN(alias.StateMachineArn, alias.Name)
+	if s.aliasesStore.Exists(aliasArn) {
+		return ErrStateMachineAliasAlreadyExists
+	}
+
+	now := time.Now().UTC()
+	alias.StateMachineAliasArn = aliasArn
+	alias.CreationDate = now
+	alias.UpdateDate = now
+
+	return s.aliasesStore.Put(aliasArn, alias)
+}
+
+func (s *StepFunctionStore) GetStateMachineAlias(ctx context.Context, arn string) (*StateMachineAlias, error) {
+	var alias StateMachineAlias
+	if err := s.aliasesStore.Get(arn, &alias); err != nil {
+		return nil, ErrStateMachineAliasNotFound
+	}
+	return &alias, nil
+}
+
+func (s *StepFunctionStore) UpdateStateMachineAlias(ctx context.Context, alias *StateMachineAlias) error {
+	if !s.aliasesStore.Exists(alias.StateMachineAliasArn) {
+		return ErrStateMachineAliasNotFound
+	}
+	alias.UpdateDate = time.Now().UTC()
+	return s.aliasesStore.Put(alias.StateMachineAliasArn, alias)
+}
+
+func (s *StepFunctionStore) DeleteStateMachineAlias(ctx context.Context, arn string) error {
+	if !s.aliasesStore.Exists(arn) {
+		return ErrStateMachineAliasNotFound
+	}
+	return s.aliasesStore.Delete(arn)
+}
+
+func (s *StepFunctionStore) ListStateMachineAliases(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineAliasListResult, error) {
+	opts := common.ListOptions{
+		Prefix:   smArn + ":",
+		Marker:   nextToken,
+		MaxItems: int(limit),
+	}
+
+	result, err := common.List[StateMachineAlias](s.aliasesStore, opts, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &StateMachineAliasListResult{
+		Aliases:   result.Items,
+		NextToken: result.NextMarker,
+	}, nil
 }

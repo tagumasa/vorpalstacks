@@ -38,6 +38,22 @@ type Identity struct {
 	LastModifiedDate time.Time         `json:"lastModifiedDate"`
 }
 
+// DeveloperIdentity represents a mapping between a developer user identifier and a Cognito identity.
+type DeveloperIdentity struct {
+	DeveloperUserIdentifier string `json:"developerUserIdentifier"`
+	DeveloperProviderName   string `json:"developerProviderName"`
+	IdentityPoolID          string `json:"identityPoolId"`
+	IdentityID              string `json:"identityId"`
+}
+
+// PrincipalTagAttributeMap represents the principal tag attribute mapping for an identity provider.
+type PrincipalTagAttributeMap struct {
+	IdentityPoolID       string            `json:"identityPoolId"`
+	IdentityProviderName string            `json:"identityProviderName"`
+	PrincipalTags        map[string]string `json:"principalTags,omitempty"`
+	UseDefaults          bool              `json:"useDefaults"`
+}
+
 // CognitoIdentityProvider represents a Cognito Identity Provider configuration.
 type CognitoIdentityProvider struct {
 	ProviderName         string `json:"providerName"`

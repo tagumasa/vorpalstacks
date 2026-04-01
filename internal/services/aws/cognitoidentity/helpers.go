@@ -71,6 +71,21 @@ func parseSupportedLoginProviders(req *request.ParsedRequest) map[string]string 
 	return nil
 }
 
+func parseMapParam(req *request.ParsedRequest, key string) map[string]string {
+	if val, ok := req.Parameters[key]; ok {
+		if m, ok := val.(map[string]interface{}); ok {
+			result := make(map[string]string)
+			for k, v := range m {
+				if s, ok := v.(string); ok {
+					result[k] = s
+				}
+			}
+			return result
+		}
+	}
+	return nil
+}
+
 func parseRoleMappings(req *request.ParsedRequest) map[string]cognitoidentitystore.RoleMapping {
 	if val, ok := req.Parameters["RoleMappings"]; ok {
 		if m, ok := val.(map[string]interface{}); ok {
@@ -130,6 +145,8 @@ func formatIdentityPool(pool *cognitoidentitystore.IdentityPool) map[string]inte
 		"IdentityPoolName":               pool.Name,
 		"AllowUnauthenticatedIdentities": pool.AllowUnauthenticatedIdentities,
 		"Arn":                            pool.Arn,
+		"CreationDate":                   pool.CreationDate.Unix(),
+		"LastModifiedDate":               pool.LastModifiedDate.Unix(),
 	}
 
 	if pool.AllowClassicFlow {

@@ -85,51 +85,71 @@ func (s *SQSService) SendMessage(ctx context.Context, reqCtx *request.RequestCon
 	message.MessageDeduplicationID = request.GetParamCaseInsensitive(req.Parameters, "MessageDeduplicationId")
 
 	messageAttributes := make(map[string]*sqsstore.MessageAttributeValue)
-	for i := 1; ; i++ {
-		attrName := request.GetParamCaseInsensitive(req.Parameters, "MessageAttribute."+strconv.Itoa(i)+".Name")
-		if attrName == "" {
-			attrNameKey := "MessageAttribute." + strconv.Itoa(i) + ".Name"
-			if val, ok := req.Parameters[attrNameKey].(string); ok {
-				attrName = val
+
+	if jsonAttrs, ok := req.Parameters["MessageAttributes"].(map[string]interface{}); ok && len(jsonAttrs) > 0 {
+		for name, val := range jsonAttrs {
+			attrMap, ok := val.(map[string]interface{})
+			if !ok {
+				continue
 			}
-		}
-		if attrName == "" {
-			break
-		}
-
-		dataType := request.GetParamCaseInsensitive(req.Parameters, "MessageAttribute."+strconv.Itoa(i)+".Value.DataType")
-		if dataType == "" {
-			dataTypeKey := "MessageAttribute." + strconv.Itoa(i) + ".Value.DataType"
-			if val, ok := req.Parameters[dataTypeKey].(string); ok {
-				dataType = val
+			attrValue := &sqsstore.MessageAttributeValue{
+				DataType: getStringFromMap(attrMap, "DataType"),
 			}
-		}
-
-		attrValue := &sqsstore.MessageAttributeValue{DataType: dataType}
-
-		stringValue := request.GetParamCaseInsensitive(req.Parameters, "MessageAttribute."+strconv.Itoa(i)+".Value.StringValue")
-		if stringValue == "" {
-			svKey := "MessageAttribute." + strconv.Itoa(i) + ".Value.StringValue"
-			if val, ok := req.Parameters[svKey].(string); ok {
-				stringValue = val
+			if sv, ok := attrMap["StringValue"].(string); ok && sv != "" {
+				attrValue.StringValue = &sv
 			}
-		}
-		if stringValue != "" {
-			attrValue.StringValue = &stringValue
-		}
-
-		binaryValue := request.GetParamCaseInsensitive(req.Parameters, "MessageAttribute."+strconv.Itoa(i)+".Value.BinaryValue")
-		if binaryValue == "" {
-			bvKey := "MessageAttribute." + strconv.Itoa(i) + ".Value.BinaryValue"
-			if val, ok := req.Parameters[bvKey].(string); ok {
-				binaryValue = val
+			if bv, ok := attrMap["BinaryValue"].(string); ok && bv != "" {
+				attrValue.BinaryValue = sqsstore.DecodeBinaryValue(bv)
 			}
+			messageAttributes[name] = attrValue
 		}
-		if binaryValue != "" {
-			attrValue.BinaryValue = sqsstore.DecodeBinaryValue(binaryValue)
-		}
+	} else {
+		for i := 1; ; i++ {
+			attrName := request.GetParamCaseInsensitive(req.Parameters, "MessageAttribute."+strconv.Itoa(i)+".Name")
+			if attrName == "" {
+				attrNameKey := "MessageAttribute." + strconv.Itoa(i) + ".Name"
+				if val, ok := req.Parameters[attrNameKey].(string); ok {
+					attrName = val
+				}
+			}
+			if attrName == "" {
+				break
+			}
 
-		messageAttributes[attrName] = attrValue
+			dataType := request.GetParamCaseInsensitive(req.Parameters, "MessageAttribute."+strconv.Itoa(i)+".Value.DataType")
+			if dataType == "" {
+				dataTypeKey := "MessageAttribute." + strconv.Itoa(i) + ".Value.DataType"
+				if val, ok := req.Parameters[dataTypeKey].(string); ok {
+					dataType = val
+				}
+			}
+
+			attrValue := &sqsstore.MessageAttributeValue{DataType: dataType}
+
+			stringValue := request.GetParamCaseInsensitive(req.Parameters, "MessageAttribute."+strconv.Itoa(i)+".Value.StringValue")
+			if stringValue == "" {
+				svKey := "MessageAttribute." + strconv.Itoa(i) + ".Value.StringValue"
+				if val, ok := req.Parameters[svKey].(string); ok {
+					stringValue = val
+				}
+			}
+			if stringValue != "" {
+				attrValue.StringValue = &stringValue
+			}
+
+			binaryValue := request.GetParamCaseInsensitive(req.Parameters, "MessageAttribute."+strconv.Itoa(i)+".Value.BinaryValue")
+			if binaryValue == "" {
+				bvKey := "MessageAttribute." + strconv.Itoa(i) + ".Value.BinaryValue"
+				if val, ok := req.Parameters[bvKey].(string); ok {
+					binaryValue = val
+				}
+			}
+			if binaryValue != "" {
+				attrValue.BinaryValue = sqsstore.DecodeBinaryValue(binaryValue)
+			}
+
+			messageAttributes[attrName] = attrValue
+		}
 	}
 	message.MessageAttributes = messageAttributes
 
@@ -653,67 +673,124 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 	seenIDs := make(map[string]bool)
 	entryCount := 0
 
-	for i := 1; ; i++ {
-		id := request.GetParamCaseInsensitive(req.Parameters, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".Id")
-		if id == "" {
-			idKey := "ChangeMessageVisibilityBatchRequestEntry." + strconv.Itoa(i) + ".Id"
-			if val, ok := req.Parameters[idKey].(string); ok {
-				id = val
+	if jsonEntries, ok := req.Parameters["Entries"].([]interface{}); ok && len(jsonEntries) > 0 {
+		for _, entry := range jsonEntries {
+			entryMap, ok := entry.(map[string]interface{})
+			if !ok {
+				continue
 			}
-		}
-		if id == "" {
-			break
-		}
 
-		if err := sqsstore.ValidateBatchEntryId(id); err != nil {
-			return nil, ErrInvalidBatchEntryId
-		}
-
-		if seenIDs[id] {
-			return nil, ErrBatchEntryIdsNotDistinct
-		}
-		seenIDs[id] = true
-		entryCount++
-
-		if entryCount > 10 {
-			return nil, ErrTooManyEntriesInBatch
-		}
-
-		receiptHandle := request.GetParamCaseInsensitive(req.Parameters, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".ReceiptHandle")
-		if receiptHandle == "" {
-			rhKey := "ChangeMessageVisibilityBatchRequestEntry." + strconv.Itoa(i) + ".ReceiptHandle"
-			if val, ok := req.Parameters[rhKey].(string); ok {
-				receiptHandle = val
+			id := getStringFromMap(entryMap, "Id")
+			receiptHandle := getStringFromMap(entryMap, "ReceiptHandle")
+			if id == "" {
+				continue
 			}
-		}
 
-		visibilityTimeout := int32(request.GetIntParam(req.Parameters, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".VisibilityTimeout"))
+			if err := sqsstore.ValidateBatchEntryId(id); err != nil {
+				return nil, ErrInvalidBatchEntryId
+			}
 
-		store, err := s.store(reqCtx)
-		if err != nil {
+			if seenIDs[id] {
+				return nil, ErrBatchEntryIdsNotDistinct
+			}
+			seenIDs[id] = true
+			entryCount++
+
+			if entryCount > 10 {
+				return nil, ErrTooManyEntriesInBatch
+			}
+
+			visibilityTimeout := int32(request.GetIntParam(entryMap, "VisibilityTimeout"))
+
+			store, err := s.store(reqCtx)
+			if err != nil {
+				entries = append(entries, map[string]interface{}{
+					"Id":          id,
+					"SenderFault": true,
+					"Code":        "InternalError",
+					"Message":     err.Error(),
+				})
+				continue
+			}
+
+			if err := store.ChangeMessageVisibility(queueURL, receiptHandle, visibilityTimeout); err != nil {
+				code, senderFault := mapStoreErrorToBatchCode(err)
+				entries = append(entries, map[string]interface{}{
+					"Id":          id,
+					"SenderFault": senderFault,
+					"Code":        code,
+					"Message":     err.Error(),
+				})
+				continue
+			}
+
 			entries = append(entries, map[string]interface{}{
-				"Id":          id,
-				"SenderFault": true,
-				"Code":        "InternalError",
-				"Message":     err.Error(),
+				"Id": id,
 			})
-			continue
 		}
+	} else {
+		for i := 1; ; i++ {
+			id := request.GetParamCaseInsensitive(req.Parameters, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".Id")
+			if id == "" {
+				idKey := "ChangeMessageVisibilityBatchRequestEntry." + strconv.Itoa(i) + ".Id"
+				if val, ok := req.Parameters[idKey].(string); ok {
+					id = val
+				}
+			}
+			if id == "" {
+				break
+			}
 
-		if err := store.ChangeMessageVisibility(queueURL, receiptHandle, visibilityTimeout); err != nil {
-			code, senderFault := mapStoreErrorToBatchCode(err)
+			if err := sqsstore.ValidateBatchEntryId(id); err != nil {
+				return nil, ErrInvalidBatchEntryId
+			}
+
+			if seenIDs[id] {
+				return nil, ErrBatchEntryIdsNotDistinct
+			}
+			seenIDs[id] = true
+			entryCount++
+
+			if entryCount > 10 {
+				return nil, ErrTooManyEntriesInBatch
+			}
+
+			receiptHandle := request.GetParamCaseInsensitive(req.Parameters, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".ReceiptHandle")
+			if receiptHandle == "" {
+				rhKey := "ChangeMessageVisibilityBatchRequestEntry." + strconv.Itoa(i) + ".ReceiptHandle"
+				if val, ok := req.Parameters[rhKey].(string); ok {
+					receiptHandle = val
+				}
+			}
+
+			visibilityTimeout := int32(request.GetIntParam(req.Parameters, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".VisibilityTimeout"))
+
+			store, err := s.store(reqCtx)
+			if err != nil {
+				entries = append(entries, map[string]interface{}{
+					"Id":          id,
+					"SenderFault": true,
+					"Code":        "InternalError",
+					"Message":     err.Error(),
+				})
+				continue
+			}
+
+			if err := store.ChangeMessageVisibility(queueURL, receiptHandle, visibilityTimeout); err != nil {
+				code, senderFault := mapStoreErrorToBatchCode(err)
+				entries = append(entries, map[string]interface{}{
+					"Id":          id,
+					"SenderFault": senderFault,
+					"Code":        code,
+					"Message":     err.Error(),
+				})
+				continue
+			}
+
 			entries = append(entries, map[string]interface{}{
-				"Id":          id,
-				"SenderFault": senderFault,
-				"Code":        code,
-				"Message":     err.Error(),
+				"Id": id,
 			})
-			continue
 		}
-
-		entries = append(entries, map[string]interface{}{
-			"Id": id,
-		})
 	}
 
 	if len(entries) == 0 {
@@ -734,4 +811,11 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 		"Successful": successEntries,
 		"Failed":     failedEntries,
 	}, nil
+}
+
+func getStringFromMap(m map[string]interface{}, key string) string {
+	if val, ok := m[key].(string); ok {
+		return val
+	}
+	return ""
 }

@@ -65,8 +65,7 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		cleanupReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(cleanupForm.Encode()))
 		if cleanupReq != nil {
 			cleanupReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			cleanupResp, _ := http.DefaultClient.Do(cleanupReq)
-			if cleanupResp != nil {
+			if cleanupResp, _ := http.DefaultClient.Do(cleanupReq); cleanupResp != nil {
 				cleanupResp.Body.Close()
 			}
 		}
@@ -512,6 +511,432 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		}
 		if !found {
 			return fmt.Errorf("state machine not found in list")
+		}
+		return nil
+	}))
+
+	// === NEW TESTS: Version/Alias/Additional Operations ===
+
+	results = append(results, r.RunTest("stepfunctions", "ValidateStateMachineDefinition_Valid", func() error {
+		validDef := `{"StartAt":"A","States":{"A":{"Type":"Pass","End":true}}}`
+		resp, err := client.ValidateStateMachineDefinition(ctx, &sfn.ValidateStateMachineDefinitionInput{
+			Definition: aws.String(validDef),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Result != types.ValidateStateMachineDefinitionResultCodeOk {
+			return fmt.Errorf("expected OK, got %s", resp.Result)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "ValidateStateMachineDefinition_Invalid", func() error {
+		invalidDef := `{"StartAt":"Missing","States":{}}`
+		resp, err := client.ValidateStateMachineDefinition(ctx, &sfn.ValidateStateMachineDefinitionInput{
+			Definition: aws.String(invalidDef),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Result == types.ValidateStateMachineDefinitionResultCodeOk {
+			return fmt.Errorf("expected FAIL for invalid definition")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "GetStateMachine", func() error {
+		if verifySMARN == "" {
+			return fmt.Errorf("state machine ARN not available")
+		}
+		getForm := url.Values{}
+		getForm.Set("stateMachineArn", verifySMARN)
+		getReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(getForm.Encode()))
+		if getReq != nil {
+			getReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			getReq.Header.Set("X-Amz-Target", "AWSStepFunctions.GetStateMachine")
+			if getResp, err := http.DefaultClient.Do(getReq); err == nil {
+				defer getResp.Body.Close()
+				if getResp.StatusCode != 200 {
+					return fmt.Errorf("GetStateMachine returned status %d", getResp.StatusCode)
+				}
+				var result map[string]interface{}
+				if err := json.NewDecoder(getResp.Body).Decode(&result); err != nil {
+					return fmt.Errorf("failed to decode response: %v", err)
+				}
+				if result["stateMachineArn"] != verifySMARN {
+					return fmt.Errorf("state machine ARN mismatch")
+				}
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "DescribeStateMachineForExecution", func() error {
+		if executionARN == "" {
+			return fmt.Errorf("no execution ARN available")
+		}
+		descExecResp, err := client.DescribeExecution(ctx, &sfn.DescribeExecutionInput{
+			ExecutionArn: aws.String(executionARN),
+		})
+		if err != nil {
+			return fmt.Errorf("describe execution: %v", err)
+		}
+		if descExecResp.StateMachineArn == nil {
+			return fmt.Errorf("execution has no state machine ARN")
+		}
+		if descExecResp.Status != types.ExecutionStatusSucceeded && descExecResp.Status != types.ExecutionStatusRunning {
+			return fmt.Errorf("execution not in suitable state: %s", descExecResp.Status)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "StartSyncExecution", func() error {
+		if verifySMARN == "" {
+			return fmt.Errorf("state machine ARN not available")
+		}
+		body := map[string]interface{}{
+			"stateMachineArn": verifySMARN,
+			"input":           `{"sync":true}`,
+		}
+		bodyBytes, _ := json.Marshal(body)
+		syncReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewReader(bodyBytes))
+		if syncReq == nil {
+			return fmt.Errorf("failed to create request")
+		}
+		syncReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
+		syncReq.Header.Set("X-Amz-Target", "AWSStepFunctions.StartSyncExecution")
+		syncResp, err := http.DefaultClient.Do(syncReq)
+		if err != nil {
+			return err
+		}
+		defer syncResp.Body.Close()
+		if syncResp.StatusCode != 200 {
+			var errBody map[string]interface{}
+			json.NewDecoder(syncResp.Body).Decode(&errBody)
+			return fmt.Errorf("status %d: %v", syncResp.StatusCode, errBody)
+		}
+		var result map[string]interface{}
+		json.NewDecoder(syncResp.Body).Decode(&result)
+		if status, _ := result["status"].(string); status != "SUCCEEDED" {
+			return fmt.Errorf("expected SUCCEEDED, got %s", status)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "TestState_Pass", func() error {
+		def := `{"StartAt":"TestPass","States":{"TestPass":{"Type":"Pass","Result":{"hello":"world"},"End":true}}}`
+		body := map[string]interface{}{
+			"definition": def,
+			"stateName":  "TestPass",
+			"input":      `{}`,
+		}
+		bodyBytes, _ := json.Marshal(body)
+		testReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewReader(bodyBytes))
+		if testReq == nil {
+			return fmt.Errorf("failed to create request")
+		}
+		testReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
+		testReq.Header.Set("X-Amz-Target", "AWSStepFunctions.TestState")
+		testResp, err := http.DefaultClient.Do(testReq)
+		if err != nil {
+			return err
+		}
+		defer testResp.Body.Close()
+		if testResp.StatusCode != 200 {
+			var errBody map[string]interface{}
+			json.NewDecoder(testResp.Body).Decode(&errBody)
+			return fmt.Errorf("status %d: %v", testResp.StatusCode, errBody)
+		}
+		var result map[string]interface{}
+		json.NewDecoder(testResp.Body).Decode(&result)
+		if status, _ := result["status"].(string); status != "SUCCEEDED" {
+			return fmt.Errorf("expected SUCCEEDED, got %s", status)
+		}
+		if _, ok := result["output"]; !ok {
+			return fmt.Errorf("output is missing")
+		}
+		return nil
+	}))
+
+	// === Version Operations ===
+
+	var versionARN string
+	results = append(results, r.RunTest("stepfunctions", "PublishStateMachineVersion", func() error {
+		if verifySMARN == "" {
+			return fmt.Errorf("state machine ARN not available")
+		}
+		resp, err := client.PublishStateMachineVersion(ctx, &sfn.PublishStateMachineVersionInput{
+			StateMachineArn: aws.String(verifySMARN),
+			Description:     aws.String("test version 1"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.StateMachineVersionArn == nil {
+			return fmt.Errorf("version ARN is nil")
+		}
+		versionARN = *resp.StateMachineVersionArn
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "ListStateMachineVersions", func() error {
+		if verifySMARN == "" {
+			return fmt.Errorf("state machine ARN not available")
+		}
+		resp, err := client.ListStateMachineVersions(ctx, &sfn.ListStateMachineVersionsInput{
+			StateMachineArn: aws.String(verifySMARN),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.StateMachineVersions == nil || len(resp.StateMachineVersions) == 0 {
+			return fmt.Errorf("expected at least one version")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "PublishStateMachineVersion_Second", func() error {
+		if verifySMARN == "" {
+			return fmt.Errorf("state machine ARN not available")
+		}
+		resp, err := client.PublishStateMachineVersion(ctx, &sfn.PublishStateMachineVersionInput{
+			StateMachineArn: aws.String(verifySMARN),
+			Description:     aws.String("test version 2"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.StateMachineVersionArn == nil {
+			return fmt.Errorf("version ARN is nil")
+		}
+		if *resp.StateMachineVersionArn == versionARN {
+			return fmt.Errorf("second version should have different ARN")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "DeleteStateMachineVersion", func() error {
+		if versionARN == "" {
+			return fmt.Errorf("version ARN not available")
+		}
+		_, err := client.DeleteStateMachineVersion(ctx, &sfn.DeleteStateMachineVersionInput{
+			StateMachineVersionArn: aws.String(versionARN),
+		})
+		if err != nil {
+			return err
+		}
+		_, err = client.ListStateMachineVersions(ctx, &sfn.ListStateMachineVersionsInput{
+			StateMachineArn: aws.String(verifySMARN),
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "DeleteStateMachineVersion_NonExistent", func() error {
+		_, err := client.DeleteStateMachineVersion(ctx, &sfn.DeleteStateMachineVersionInput{
+			StateMachineVersionArn: aws.String("arn:aws:states:us-east-1:000000000000:stateMachine:fake:999"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for non-existent version")
+		}
+		return nil
+	}))
+
+	// === Alias Operations ===
+
+	var aliasARN string
+	var aliasName string
+	results = append(results, r.RunTest("stepfunctions", "CreateStateMachineAlias", func() error {
+		if verifySMARN == "" {
+			return fmt.Errorf("state machine ARN not available")
+		}
+		aliasName = fmt.Sprintf("PROD-%d", time.Now().UnixNano())
+		listResp, err := client.ListStateMachineVersions(ctx, &sfn.ListStateMachineVersionsInput{
+			StateMachineArn: aws.String(verifySMARN),
+		})
+		if err != nil {
+			return fmt.Errorf("list versions: %v", err)
+		}
+		if len(listResp.StateMachineVersions) == 0 {
+			return fmt.Errorf("no versions available for alias")
+		}
+		latestVersion := *listResp.StateMachineVersions[0].StateMachineVersionArn
+
+		aliasBody := map[string]interface{}{
+			"name":        aliasName,
+			"description": "production alias",
+			"routingConfiguration": []map[string]interface{}{
+				{"stateMachineVersionArn": latestVersion, "weight": float64(100)},
+			},
+		}
+		bodyBytes, _ := json.Marshal(aliasBody)
+		aliasReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewReader(bodyBytes))
+		if aliasReq != nil {
+			aliasReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
+			aliasReq.Header.Set("X-Amz-Target", "AWSStepFunctions.CreateStateMachineAlias")
+			aliasResp, err := http.DefaultClient.Do(aliasReq)
+			if err != nil {
+				return err
+			}
+			defer aliasResp.Body.Close()
+			if aliasResp.StatusCode != 200 {
+				var errBody map[string]interface{}
+				json.NewDecoder(aliasResp.Body).Decode(&errBody)
+				return fmt.Errorf("status %d: %v", aliasResp.StatusCode, errBody)
+			}
+			var result map[string]interface{}
+			json.NewDecoder(aliasResp.Body).Decode(&result)
+			if arn, ok := result["stateMachineAliasArn"].(string); ok {
+				aliasARN = arn
+			} else {
+				return fmt.Errorf("alias ARN not in response")
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "DescribeStateMachineAlias", func() error {
+		if aliasARN == "" {
+			return fmt.Errorf("alias ARN not available")
+		}
+		resp, err := client.DescribeStateMachineAlias(ctx, &sfn.DescribeStateMachineAliasInput{
+			StateMachineAliasArn: aws.String(aliasARN),
+		})
+		if err != nil {
+			return fmt.Errorf("describe alias error: %v", err)
+		}
+		if resp.Name == nil || *resp.Name != aliasName {
+			return fmt.Errorf("alias name mismatch: got %v, want %q", resp.Name, aliasName)
+		}
+		if resp.CreationDate.IsZero() {
+			return fmt.Errorf("creation date is zero")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "ListStateMachineAliases", func() error {
+		if verifySMARN == "" {
+			return fmt.Errorf("state machine ARN not available")
+		}
+		listBody := map[string]interface{}{
+			"stateMachineArn": verifySMARN,
+		}
+		listBytes, _ := json.Marshal(listBody)
+		listReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewReader(listBytes))
+		if listReq != nil {
+			listReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
+			listReq.Header.Set("X-Amz-Target", "AWSStepFunctions.ListStateMachineAliases")
+			listResp, err := http.DefaultClient.Do(listReq)
+			if err != nil {
+				return err
+			}
+			defer listResp.Body.Close()
+			if listResp.StatusCode != 200 {
+				var errBody map[string]interface{}
+				json.NewDecoder(listResp.Body).Decode(&errBody)
+				return fmt.Errorf("status %d: %v", listResp.StatusCode, errBody)
+			}
+			var result map[string]interface{}
+			json.NewDecoder(listResp.Body).Decode(&result)
+			aliases, _ := result["stateMachineAliases"].([]interface{})
+			if len(aliases) == 0 {
+				return fmt.Errorf("expected at least one alias, got %v (arn=%s)", result, verifySMARN)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "UpdateStateMachineAlias", func() error {
+		if aliasARN == "" {
+			return fmt.Errorf("alias ARN not available")
+		}
+		resp, err := client.UpdateStateMachineAlias(ctx, &sfn.UpdateStateMachineAliasInput{
+			StateMachineAliasArn: aws.String(aliasARN),
+			Description:          aws.String("updated production alias"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.UpdateDate.IsZero() {
+			return fmt.Errorf("update date is zero")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "DeleteStateMachineAlias", func() error {
+		if aliasARN == "" {
+			return fmt.Errorf("alias ARN not available")
+		}
+		_, err := client.DeleteStateMachineAlias(ctx, &sfn.DeleteStateMachineAliasInput{
+			StateMachineAliasArn: aws.String(aliasARN),
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "DeleteStateMachineAlias_NonExistent", func() error {
+		_, err := client.DeleteStateMachineAlias(ctx, &sfn.DeleteStateMachineAliasInput{
+			StateMachineAliasArn: aws.String("arn:aws:states:us-east-1:000000000000:stateMachine:fake:NONEXISTENT"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for non-existent alias")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("stepfunctions", "CreateStateMachineAlias_Duplicate", func() error {
+		if verifySMARN == "" {
+			return fmt.Errorf("state machine ARN not available")
+		}
+		listVerResp, err := client.ListStateMachineVersions(ctx, &sfn.ListStateMachineVersionsInput{
+			StateMachineArn: aws.String(verifySMARN),
+		})
+		if err != nil {
+			return fmt.Errorf("list versions: %v", err)
+		}
+		if len(listVerResp.StateMachineVersions) == 0 {
+			return fmt.Errorf("no versions available")
+		}
+		realVersionArn := *listVerResp.StateMachineVersions[0].StateMachineVersionArn
+
+		dupAliasName := fmt.Sprintf("DUP-%d", time.Now().UnixNano())
+		aliasBody := map[string]interface{}{
+			"name": dupAliasName,
+			"routingConfiguration": []map[string]interface{}{
+				{"stateMachineVersionArn": realVersionArn, "weight": float64(100)},
+			},
+		}
+		bodyBytes, _ := json.Marshal(aliasBody)
+		aliasReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewReader(bodyBytes))
+		if aliasReq != nil {
+			aliasReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
+			aliasReq.Header.Set("X-Amz-Target", "AWSStepFunctions.CreateStateMachineAlias")
+			aliasResp, err := http.DefaultClient.Do(aliasReq)
+			if err != nil {
+				return fmt.Errorf("first create: %v", err)
+			}
+			aliasResp.Body.Close()
+			if aliasResp.StatusCode != 200 {
+				return fmt.Errorf("first create returned %d", aliasResp.StatusCode)
+			}
+		}
+		aliasReq2, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewReader(bodyBytes))
+		if aliasReq2 != nil {
+			aliasReq2.Header.Set("Content-Type", "application/x-amz-json-1.0")
+			aliasReq2.Header.Set("X-Amz-Target", "AWSStepFunctions.CreateStateMachineAlias")
+			aliasResp2, err := http.DefaultClient.Do(aliasReq2)
+			if err != nil {
+				return fmt.Errorf("second create request: %v", err)
+			}
+			defer aliasResp2.Body.Close()
+			if aliasResp2.StatusCode == 200 {
+				return fmt.Errorf("expected error for duplicate alias")
+			}
 		}
 		return nil
 	}))

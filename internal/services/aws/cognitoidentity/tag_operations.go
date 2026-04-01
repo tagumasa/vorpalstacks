@@ -71,6 +71,6 @@ func (s *CognitoIdentityService) ListTagsForResource(ctx context.Context, reqCtx
 	}
 
 	return map[string]interface{}{
-		"Tags": tagutil.MapToResponse(tags),
+		"Tags": tags,
 	}, nil
 }

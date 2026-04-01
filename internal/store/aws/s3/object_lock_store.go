@@ -22,11 +22,15 @@ func (s *ObjectStore) SetObjectLegalHold(ctx context.Context, bucket, key, versi
 
 	obj.ObjectLockLegalHold = legalHold
 
+	isVersioned := s.isVersioningEnabled(bucket)
+
 	var storageKey string
-	if versionId != "" {
-		storageKey = s.versionedStorageKey(bucket, key, versionId)
-	} else if obj.VersionID != "" {
-		storageKey = s.versionedStorageKey(bucket, key, obj.VersionID)
+	if isVersioned {
+		vid := versionId
+		if vid == "" {
+			vid = obj.VersionID
+		}
+		storageKey = s.versionedStorageKey(bucket, key, vid)
 	} else {
 		storageKey = s.storageKey(bucket, key)
 	}
@@ -35,7 +39,7 @@ func (s *ObjectStore) SetObjectLegalHold(ctx context.Context, bucket, key, versi
 		return err
 	}
 
-	if versionId == "" && obj.VersionID != "" {
+	if isVersioned {
 		latestKey := s.latestKeyStorageKey(bucket, key)
 		if err := s.BaseStore.PutProto(latestKey, ObjectToProto(obj)); err != nil {
 			return err
@@ -76,11 +80,15 @@ func (s *ObjectStore) SetObjectRetention(ctx context.Context, bucket, key, versi
 
 	obj.ObjectLockRetention = retention
 
+	isVersioned := s.isVersioningEnabled(bucket)
+
 	var storageKey string
-	if versionId != "" {
-		storageKey = s.versionedStorageKey(bucket, key, versionId)
-	} else if obj.VersionID != "" {
-		storageKey = s.versionedStorageKey(bucket, key, obj.VersionID)
+	if isVersioned {
+		vid := versionId
+		if vid == "" {
+			vid = obj.VersionID
+		}
+		storageKey = s.versionedStorageKey(bucket, key, vid)
 	} else {
 		storageKey = s.storageKey(bucket, key)
 	}
@@ -89,7 +97,7 @@ func (s *ObjectStore) SetObjectRetention(ctx context.Context, bucket, key, versi
 		return err
 	}
 
-	if versionId == "" && obj.VersionID != "" {
+	if isVersioned {
 		latestKey := s.latestKeyStorageKey(bucket, key)
 		if err := s.BaseStore.PutProto(latestKey, ObjectToProto(obj)); err != nil {
 			return err

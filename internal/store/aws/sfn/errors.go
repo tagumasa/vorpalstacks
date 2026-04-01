@@ -43,4 +43,19 @@ var (
 
 	// ErrTaskNotRunning is returned when the task is not running.
 	ErrTaskNotRunning = errors.New("task is not running")
+
+	// ErrStateMachineVersionNotFound is returned when the specified state machine version does not exist.
+	ErrStateMachineVersionNotFound = errors.New("state machine version not found")
+
+	// ErrStateMachineAliasNotFound is returned when the specified state machine alias does not exist.
+	ErrStateMachineAliasNotFound = errors.New("state machine alias not found")
+
+	// ErrStateMachineAliasAlreadyExists is returned when attempting to create an alias that already exists.
+	ErrStateMachineAliasAlreadyExists = errors.New("state machine alias already exists")
+
+	// ErrInvalidRoutingConfiguration is returned when the routing configuration is invalid.
+	ErrInvalidRoutingConfiguration = errors.New("invalid routing configuration")
+
+	// ErrMapRunNotFound is returned when the specified map run does not exist.
+	ErrMapRunNotFound = errors.New("map run not found")
 )

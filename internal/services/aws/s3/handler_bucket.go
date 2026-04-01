@@ -194,13 +194,15 @@ func (h *S3Handler) handleBucketRequest(ctx *request.RequestContext, r *http.Req
 			if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
 				return nil, http.StatusForbidden, err
 			}
-			var config LoggingConfigurationInput
-			if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
+			var wrapper struct {
+				LoggingEnabled *LoggingConfigurationInput `xml:"LoggingEnabled"`
+			}
+			if err := request.NewSafeXMLDecoder(r.Body).Decode(&wrapper); err != nil {
 				return nil, http.StatusBadRequest, err
 			}
 			err := h.bucketOps.PutBucketLogging(ctx, &PutBucketLoggingInput{
 				Bucket:               bucket,
-				LoggingConfiguration: &config,
+				LoggingConfiguration: wrapper.LoggingEnabled,
 			})
 			return nil, http.StatusOK, err
 		}
@@ -249,6 +251,21 @@ func (h *S3Handler) handleBucketRequest(ctx *request.RequestContext, r *http.Req
 			})
 			return nil, http.StatusOK, err
 		}
+		if query.Has("publicAccessBlock") {
+			action := "s3:PutBucketPublicAccessBlock"
+			if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
+				return nil, http.StatusForbidden, err
+			}
+			var config PublicAccessBlockConfiguration
+			if err := request.NewSafeXMLDecoder(r.Body).Decode(&config); err != nil {
+				return nil, http.StatusBadRequest, err
+			}
+			err := h.bucketOps.PutPublicAccessBlock(ctx, &PutPublicAccessBlockInput{
+				Bucket:                         bucket,
+				PublicAccessBlockConfiguration: &config,
+			})
+			return nil, http.StatusOK, err
+		}
 		var createConfig struct {
 			XMLName            xml.Name `xml:"CreateBucketConfiguration"`
 			LocationConstraint string   `xml:"LocationConstraint"`
@@ -260,6 +277,10 @@ func (h *S3Handler) handleBucketRequest(ctx *request.RequestContext, r *http.Req
 			return nil, http.StatusInternalServerError, bodyErr
 		}
 		_ = xml.Unmarshal(bodyBytes, &createConfig)
+
+		if r.Header.Get("x-amz-bucket-object-lock-enabled") == "true" {
+			createConfig.ObjectLockEnabled = true
+		}
 
 		result, err := h.bucketOps.CreateBucket(ctx, &CreateBucketInput{
 			Bucket:                     bucket,
@@ -399,6 +420,14 @@ func (h *S3Handler) handleBucketRequest(ctx *request.RequestContext, r *http.Req
 				return nil, http.StatusForbidden, err
 			}
 			result, err := h.bucketOps.GetBucketLocation(ctx, &GetBucketLocationInput{Bucket: bucket})
+			return result, http.StatusOK, err
+		}
+		if query.Has("publicAccessBlock") {
+			action := "s3:GetBucketPublicAccessBlock"
+			if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
+				return nil, http.StatusForbidden, err
+			}
+			result, err := h.bucketOps.GetPublicAccessBlock(ctx, &GetPublicAccessBlockInput{Bucket: bucket})
 			return result, http.StatusOK, err
 		}
 		if query.Has("versions") {
@@ -550,6 +579,14 @@ func (h *S3Handler) handleBucketRequest(ctx *request.RequestContext, r *http.Req
 				return nil, http.StatusForbidden, err
 			}
 			err := h.bucketOps.DeleteBucketOwnershipControls(ctx, &DeleteBucketOwnershipControlsInput{Bucket: bucket})
+			return nil, http.StatusNoContent, err
+		}
+		if query.Has("publicAccessBlock") {
+			action := "s3:DeleteBucketPublicAccessBlock"
+			if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
+				return nil, http.StatusForbidden, err
+			}
+			err := h.bucketOps.DeletePublicAccessBlock(ctx, &DeletePublicAccessBlockInput{Bucket: bucket})
 			return nil, http.StatusNoContent, err
 		}
 		action := "s3:DeleteBucket"

@@ -875,6 +875,31 @@ func (s *CognitoStore) CreateResourceServer(rs *ResourceServer) error {
 	return s.BaseStore.Put(key, rs)
 }
 
+// GetResourceServer retrieves a resource server by user pool ID and identifier.
+func (s *CognitoStore) GetResourceServer(userPoolID, identifier string) (*ResourceServer, error) {
+	key := "resourceserver:" + userPoolID + "#" + identifier
+	var rs ResourceServer
+	if err := s.BaseStore.Get(key, &rs); err != nil {
+		return nil, ErrUserPoolNotFound
+	}
+	return &rs, nil
+}
+
+// UpdateResourceServer updates an existing resource server in the store.
+func (s *CognitoStore) UpdateResourceServer(rs *ResourceServer) error {
+	key := "resourceserver:" + rs.UserPoolID + "#" + rs.Identifier
+	return s.BaseStore.Put(key, rs)
+}
+
+// DeleteResourceServer removes a resource server from the store by user pool ID and identifier.
+func (s *CognitoStore) DeleteResourceServer(userPoolID, identifier string) error {
+	key := "resourceserver:" + userPoolID + "#" + identifier
+	if !s.BaseStore.Exists(key) {
+		return ErrUserPoolNotFound
+	}
+	return s.BaseStore.Delete(key)
+}
+
 func (s *CognitoStore) ListResourceServers(userPoolID string) ([]*ResourceServer, error) {
 	var servers []*ResourceServer
 	prefix := "resourceserver:" + userPoolID + "#"
@@ -898,6 +923,31 @@ func (s *CognitoStore) CreateIdentityProvider(ip *IdentityProvider) error {
 		return ErrResourceAlreadyExists
 	}
 	return s.BaseStore.Put(key, ip)
+}
+
+// GetIdentityProvider retrieves an identity provider by user pool ID and provider name.
+func (s *CognitoStore) GetIdentityProvider(userPoolID, providerName string) (*IdentityProvider, error) {
+	key := "identityprovider:" + userPoolID + "#" + providerName
+	var ip IdentityProvider
+	if err := s.BaseStore.Get(key, &ip); err != nil {
+		return nil, ErrUserPoolNotFound
+	}
+	return &ip, nil
+}
+
+// UpdateIdentityProvider updates an existing identity provider in the store.
+func (s *CognitoStore) UpdateIdentityProvider(ip *IdentityProvider) error {
+	key := "identityprovider:" + ip.UserPoolID + "#" + ip.ProviderName
+	return s.BaseStore.Put(key, ip)
+}
+
+// DeleteIdentityProvider removes an identity provider from the store by user pool ID and provider name.
+func (s *CognitoStore) DeleteIdentityProvider(userPoolID, providerName string) error {
+	key := "identityprovider:" + userPoolID + "#" + providerName
+	if !s.BaseStore.Exists(key) {
+		return ErrUserPoolNotFound
+	}
+	return s.BaseStore.Delete(key)
 }
 
 func (s *CognitoStore) ListIdentityProviders(userPoolID string) ([]*IdentityProvider, error) {

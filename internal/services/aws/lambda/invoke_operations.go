@@ -153,10 +153,29 @@ func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.Request
 		}
 	}()
 
-	return map[string]interface{}{
-		"Status": 202,
-	}, nil
+	return &invokeAsyncResponse{Status: 202}, nil
 }
+
+type invokeAsyncResponse struct {
+	Status int
+}
+
+func (r *invokeAsyncResponse) GetStreamStatusCode() int {
+	return r.Status
+}
+
+func (r *invokeAsyncResponse) GetStream() io.Reader {
+	return bytes.NewReader(nil)
+}
+
+func (r *invokeAsyncResponse) GetStreamHeaders() http.Header {
+	return http.Header{}
+}
+
+var (
+	_ response.StatusCodeResponse = (*invokeAsyncResponse)(nil)
+	_ response.StreamableResponse = (*invokeAsyncResponse)(nil)
+)
 
 // PublishVersion creates a new version of the Lambda function from the current $LATEST version.
 // The new version is immutable and can be used for deployments.

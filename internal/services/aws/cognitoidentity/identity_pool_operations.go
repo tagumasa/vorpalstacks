@@ -41,6 +41,11 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 	if samlArns := getStringSliceParam(req, "SamlProviderARNs"); len(samlArns) > 0 {
 		pool.SamlProviderARNs = samlArns
 	}
+	if allowClassic, ok := req.Parameters["AllowClassicFlow"]; ok {
+		if b, ok := allowClassic.(bool); ok {
+			pool.AllowClassicFlow = b
+		}
+	}
 
 	created, err := store.CreateIdentityPool(pool)
 	if err != nil {
@@ -58,6 +63,9 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 		}
 	}
 
+	if len(tags) > 0 {
+		return formatIdentityPoolWithTags(created, tags), nil
+	}
 	return formatIdentityPool(created), nil
 }
 
@@ -254,8 +262,17 @@ func (s *CognitoIdentityService) SetIdentityPoolRoles(ctx context.Context, reqCt
 		return nil, err
 	}
 
-	authRole := getParam(req, "AuthenticatedRoleArn")
-	unauthRole := getParam(req, "UnauthenticatedRoleArn")
+	authRole, unauthRole := "", ""
+	if roles, ok := req.Parameters["Roles"]; ok {
+		if m, ok := roles.(map[string]interface{}); ok {
+			if v, ok := m["authenticated"].(string); ok {
+				authRole = v
+			}
+			if v, ok := m["unauthenticated"].(string); ok {
+				unauthRole = v
+			}
+		}
+	}
 	mappings := parseRoleMappings(req)
 
 	if err := store.SetIdentityPoolRoles(poolID, authRole, unauthRole, mappings); err != nil {

@@ -189,7 +189,19 @@ func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"Arn": eventBus.ARN,
-	}, nil
+	result := map[string]interface{}{
+		"Arn":              eventBus.ARN,
+		"Name":             eventBus.Name,
+		"CreationTime":     eventBus.CreatedAt.Unix(),
+		"LastModifiedTime": eventBus.LastModifiedAt.Unix(),
+	}
+
+	if eventBus.Description != "" {
+		result["Description"] = eventBus.Description
+	}
+	if eventBus.Policy != "" {
+		result["Policy"] = eventBus.Policy
+	}
+
+	return result, nil
 }

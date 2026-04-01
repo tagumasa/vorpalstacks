@@ -358,17 +358,12 @@ func (s *APIGatewayService) UntagResource(ctx context.Context, reqCtx *request.R
 
 	arnStr := request.GetStringParam(req.Parameters, "resourceArn")
 
-	tagKeys, ok := req.Parameters["tagKeys"].([]interface{})
-	if !ok {
+	tagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "tagKeys")
+	if len(tagKeys) == 0 {
 		return nil, NewBadRequestException("tagKeys is required")
 	}
 
-	keys := make([]string, 0, len(tagKeys))
-	for _, k := range tagKeys {
-		if ks, ok := k.(string); ok {
-			keys = append(keys, ks)
-		}
-	}
+	keys := tagKeys
 
 	stores, err := s.store(reqCtx)
 	if err != nil {

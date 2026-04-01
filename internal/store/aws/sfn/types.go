@@ -734,3 +734,38 @@ type ActivityTaskTimedOutEventDetails struct {
 	Error string `json:"error"`
 	Cause string `json:"cause"`
 }
+
+type StateMachineVersion struct {
+	StateMachineVersionArn string    `json:"stateMachineVersionArn"`
+	StateMachineArn        string    `json:"stateMachineArn"`
+	Version                int64     `json:"version"`
+	Description            string    `json:"description,omitempty"`
+	CreationDate           time.Time `json:"creationDate"`
+	Definition             string    `json:"definition,omitempty"`
+	RevisionId             string    `json:"revisionId,omitempty"`
+}
+
+type RoutingConfiguration struct {
+	StateMachineVersionArn string `json:"stateMachineVersionArn"`
+	Weight                 int32  `json:"weight"`
+}
+
+type StateMachineAlias struct {
+	StateMachineAliasArn string                 `json:"stateMachineAliasArn"`
+	StateMachineArn      string                 `json:"stateMachineArn,omitempty"`
+	Name                 string                 `json:"name"`
+	Description          string                 `json:"description,omitempty"`
+	RoutingConfiguration []RoutingConfiguration `json:"routingConfiguration"`
+	CreationDate         time.Time              `json:"creationDate"`
+	UpdateDate           time.Time              `json:"updateDate,omitempty"`
+}
+
+type StateMachineVersionListResult struct {
+	Versions  []*StateMachineVersion
+	NextToken string
+}
+
+type StateMachineAliasListResult struct {
+	Aliases   []*StateMachineAlias
+	NextToken string
+}

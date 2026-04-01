@@ -3,6 +3,7 @@ package apigateway
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"vorpalstacks/internal/services/aws/common/request"
 	store "vorpalstacks/internal/store/aws/apigateway"
@@ -168,7 +169,8 @@ func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *re
 	switch authorizer.Type {
 	case "TOKEN":
 		if authorizer.IdentitySource != "" {
-			token := headers[authorizer.IdentitySource]
+			headerName := extractHeaderFromIdentitySource(authorizer.IdentitySource)
+			token := headers[headerName]
 			if token == "" {
 				for _, vals := range multiValueHeaders {
 					if len(vals) > 0 {
@@ -177,9 +179,15 @@ func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *re
 					}
 				}
 			}
+			if token == "" {
+				for _, v := range headers {
+					token = v
+					break
+				}
+			}
 			if token != "" {
 				result["authorization"] = map[string]interface{}{
-					"principalId": "test-user",
+					"principalId": []string{"test-user"},
 				}
 				result["policy"] = buildTestPolicy(authorizer, apiId)
 			} else {
@@ -189,12 +197,12 @@ func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *re
 		}
 	case "REQUEST":
 		result["authorization"] = map[string]interface{}{
-			"principalId": "test-user",
+			"principalId": []string{"test-user"},
 		}
 		result["policy"] = buildTestPolicy(authorizer, apiId)
 	case "AWS_IAM":
 		result["authorization"] = map[string]interface{}{
-			"principalId": "test-user",
+			"principalId": []string{"test-user"},
 		}
 		result["policy"] = buildTestPolicy(authorizer, apiId)
 		result["claims"] = map[string]string{
@@ -232,4 +240,12 @@ func buildTestPolicy(authorizer *store.Authorizer, apiId string) string {
 	}
 	b, _ := json.Marshal(policy)
 	return string(b)
+}
+
+func extractHeaderFromIdentitySource(identitySource string) string {
+	identitySource = strings.TrimSpace(identitySource)
+	if strings.HasPrefix(identitySource, "method.request.header.") {
+		return strings.TrimPrefix(identitySource, "method.request.header.")
+	}
+	return identitySource
 }

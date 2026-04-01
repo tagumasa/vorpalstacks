@@ -126,6 +126,8 @@ func extractResourceOperation(parts []string, method string) string {
 					return "PutIntegrationResponse"
 				case "DELETE":
 					return "DeleteIntegrationResponse"
+				case "PATCH":
+					return "UpdateIntegrationResponse"
 				}
 				return ""
 			}
@@ -161,6 +163,11 @@ func extractResourceOperation(parts []string, method string) string {
 			return "DeleteMethod"
 		case "PATCH":
 			return "UpdateMethod"
+		case "POST":
+			if parts[2] == "authorizers" {
+				return "TestInvokeAuthorizer"
+			}
+			return "TestInvokeMethod"
 		}
 	}
 
@@ -183,6 +190,8 @@ func extractDeploymentOperation(parts []string, method string) string {
 		return "GetDeployment"
 	case "DELETE":
 		return "DeleteDeployment"
+	case "PATCH":
+		return "UpdateDeployment"
 	}
 
 	return ""
@@ -266,6 +275,10 @@ func extractAuthorizerOperation(parts []string, method string) string {
 			return "CreateAuthorizer"
 		}
 		return ""
+	}
+
+	if method == "POST" {
+		return "TestInvokeAuthorizer"
 	}
 
 	switch method {
@@ -357,6 +370,10 @@ func extractUsagePlanOperation(path, method string) string {
 		case "POST":
 			return "CreateUsagePlanKey"
 		}
+	}
+
+	if parts[1] == "usage" && method == "GET" {
+		return "GetUsage"
 	}
 
 	return ""

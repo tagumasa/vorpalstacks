@@ -146,4 +146,16 @@ func (s *StepFunctionService) RegisterHandlers(d *dispatcher.Dispatcher) {
 
 	d.RegisterHandlerForService("states", "RedriveExecution", s.RedriveExecution)
 	d.RegisterHandlerForService("states", "TestState", s.TestState)
+
+	d.RegisterHandlerForService("states", "PublishStateMachineVersion", s.PublishStateMachineVersion)
+	d.RegisterHandlerForService("states", "DeleteStateMachineVersion", s.DeleteStateMachineVersion)
+	d.RegisterHandlerForService("states", "ListStateMachineVersions", s.ListStateMachineVersions)
+
+	d.RegisterHandlerForService("states", "CreateStateMachineAlias", s.CreateStateMachineAlias)
+	d.RegisterHandlerForService("states", "DescribeStateMachineAlias", s.DescribeStateMachineAlias)
+	d.RegisterHandlerForService("states", "DeleteStateMachineAlias", s.DeleteStateMachineAlias)
+	d.RegisterHandlerForService("states", "UpdateStateMachineAlias", s.UpdateStateMachineAlias)
+	d.RegisterHandlerForService("states", "ListStateMachineAliases", s.ListStateMachineAliases)
+
+	d.RegisterHandlerForService("states", "UpdateMapRun", s.UpdateMapRun)
 }

@@ -3,6 +3,7 @@ package apigateway
 
 import (
 	"context"
+	"strings"
 	"vorpalstacks/internal/services/aws/common/request"
 )
 
@@ -23,7 +24,8 @@ func (s *APIGatewayService) UpdateResource(ctx context.Context, reqCtx *request.
 		return nil, ErrNotFoundException
 	}
 
-	for _, po := range parsePatchOperations(req.Parameters) {
+	ops := parsePatchOperations(req.Parameters)
+	for _, po := range ops {
 		switch po.Path {
 		case "/pathPart":
 			resource.PathPart = po.Value
@@ -32,7 +34,8 @@ func (s *APIGatewayService) UpdateResource(ctx context.Context, reqCtx *request.
 			} else {
 				parent, err := stores.restApis.GetResource(apiId, resource.ParentId)
 				if err == nil {
-					resource.Path = parent.Path + "/" + po.Value
+					parentPath := strings.TrimRight(parent.Path, "/")
+					resource.Path = parentPath + "/" + po.Value
 				}
 			}
 		}
@@ -132,6 +135,8 @@ func (s *APIGatewayService) UpdateIntegration(ctx context.Context, reqCtx *reque
 			integration.ConnectionType = po.Value
 		case "/connectionId":
 			integration.ConnectionId = po.Value
+		case "/timeoutInMillis":
+			integration.TimeoutInMillis = parseInt32(po.Value)
 		}
 	}
 

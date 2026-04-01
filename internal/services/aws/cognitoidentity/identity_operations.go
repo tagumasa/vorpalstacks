@@ -91,11 +91,16 @@ func (s *CognitoIdentityService) DescribeIdentity(ctx context.Context, reqCtx *r
 		return nil, ErrResourceNotFound
 	}
 
+	logins := make([]string, 0, len(identity.Logins))
+	for k := range identity.Logins {
+		logins = append(logins, k)
+	}
+
 	return map[string]interface{}{
 		"IdentityId":       identity.ID,
 		"CreationDate":     identity.CreationDate.Unix(),
 		"LastModifiedDate": identity.LastModifiedDate.Unix(),
-		"Logins":           identity.Logins,
+		"Logins":           logins,
 	}, nil
 }
 

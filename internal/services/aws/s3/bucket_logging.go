@@ -41,25 +41,28 @@ func (o *BucketOperations) PutBucketLogging(ctx *request.RequestContext, input *
 		return err
 	}
 
-	config := &s3store.LoggingConfiguration{
-		TargetBucket: input.LoggingConfiguration.TargetBucket,
-		TargetPrefix: input.LoggingConfiguration.TargetPrefix,
-	}
+	var config *s3store.LoggingConfiguration
+	if input.LoggingConfiguration != nil {
+		config = &s3store.LoggingConfiguration{
+			TargetBucket: input.LoggingConfiguration.TargetBucket,
+			TargetPrefix: input.LoggingConfiguration.TargetPrefix,
+		}
 
-	for _, tg := range input.LoggingConfiguration.TargetGrants {
-		grant := s3store.TargetGrant{
-			Permission: s3store.Permission(tg.Permission),
-		}
-		if tg.Grantee != nil {
-			grant.Grantee = &s3store.Grantee{
-				Type:        s3store.GranteeType(tg.Grantee.Type),
-				ID:          tg.Grantee.ID,
-				DisplayName: tg.Grantee.DisplayName,
-				URI:         tg.Grantee.URI,
-				Email:       tg.Grantee.EmailAddress,
+		for _, tg := range input.LoggingConfiguration.TargetGrants {
+			grant := s3store.TargetGrant{
+				Permission: s3store.Permission(tg.Permission),
 			}
+			if tg.Grantee != nil {
+				grant.Grantee = &s3store.Grantee{
+					Type:        s3store.GranteeType(tg.Grantee.Type),
+					ID:          tg.Grantee.ID,
+					DisplayName: tg.Grantee.DisplayName,
+					URI:         tg.Grantee.URI,
+					Email:       tg.Grantee.EmailAddress,
+				}
+			}
+			config.TargetGrants = append(config.TargetGrants, grant)
 		}
-		config.TargetGrants = append(config.TargetGrants, grant)
 	}
 
 	return store.buckets.SetLoggingConfiguration(input.Bucket, config)

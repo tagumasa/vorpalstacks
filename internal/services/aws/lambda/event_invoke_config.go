@@ -2,11 +2,11 @@ package lambda
 
 import (
 	"context"
+	"time"
 
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
-	"vorpalstacks/internal/utils/timeutils"
 )
 
 // PutFunctionEventInvokeConfig creates or updates the configuration for asynchronous invocation of the specified Lambda function.
@@ -137,7 +137,7 @@ func (s *LambdaService) toEventInvokeConfig(c *lambdastore.EventInvokeConfig) ma
 	result := map[string]interface{}{
 		"FunctionName": c.FunctionName,
 		"Qualifier":    c.Qualifier,
-		"LastModified": c.LastModified.Format(timeutils.ISO8601UTCFormat),
+		"LastModified": float64(c.LastModified.UnixNano() / int64(time.Millisecond)),
 	}
 
 	if c.MaximumEventAgeInSeconds > 0 {

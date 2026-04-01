@@ -111,11 +111,17 @@ type DomainOperations interface {
 // ResourceServerOperations defines operations for managing resource servers.
 type ResourceServerOperations interface {
 	CreateResourceServer(rs *ResourceServer) error
+	GetResourceServer(userPoolID, identifier string) (*ResourceServer, error)
+	UpdateResourceServer(rs *ResourceServer) error
+	DeleteResourceServer(userPoolID, identifier string) error
 	ListResourceServers(userPoolID string) ([]*ResourceServer, error)
 }
 
 // IdentityProviderOperations defines operations for managing identity providers.
 type IdentityProviderOperations interface {
 	CreateIdentityProvider(ip *IdentityProvider) error
+	GetIdentityProvider(userPoolID, providerName string) (*IdentityProvider, error)
+	UpdateIdentityProvider(ip *IdentityProvider) error
+	DeleteIdentityProvider(userPoolID, providerName string) error
 	ListIdentityProviders(userPoolID string) ([]*IdentityProvider, error)
 }

@@ -35,6 +35,15 @@ type StepFunctionStoreInterface interface {
 	CancelExecution(executionArn string) bool
 	UnregisterExecution(executionArn string)
 	CancelAllExecutions()
+	PublishStateMachineVersion(ctx context.Context, smArn string, description string) (*StateMachineVersion, error)
+	GetStateMachineVersion(ctx context.Context, arn string) (*StateMachineVersion, error)
+	DeleteStateMachineVersion(ctx context.Context, arn string) error
+	ListStateMachineVersions(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineVersionListResult, error)
+	CreateStateMachineAlias(ctx context.Context, alias *StateMachineAlias) error
+	GetStateMachineAlias(ctx context.Context, arn string) (*StateMachineAlias, error)
+	UpdateStateMachineAlias(ctx context.Context, alias *StateMachineAlias) error
+	DeleteStateMachineAlias(ctx context.Context, arn string) error
+	ListStateMachineAliases(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineAliasListResult, error)
 }
 
 var _ StepFunctionStoreInterface = (*StepFunctionStore)(nil)

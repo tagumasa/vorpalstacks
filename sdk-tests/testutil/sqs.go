@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -77,6 +78,35 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sqs", "GetQueueAttributes_SpecificAttributes", func() error {
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(queueName),
+		})
+		if err != nil {
+			return err
+		}
+		attrResp, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl: resp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{
+				types.QueueAttributeNameQueueArn,
+				types.QueueAttributeNameVisibilityTimeout,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if attrResp.Attributes == nil {
+			return fmt.Errorf("GetQueueAttributes returned nil Attributes")
+		}
+		if _, ok := attrResp.Attributes[string(types.QueueAttributeNameQueueArn)]; !ok {
+			return fmt.Errorf("GetQueueAttributes missing QueueArn")
+		}
+		if _, ok := attrResp.Attributes[string(types.QueueAttributeNameVisibilityTimeout)]; !ok {
+			return fmt.Errorf("GetQueueAttributes missing VisibilityTimeout")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "SendMessage", func() error {
 		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
 			QueueName: aws.String(queueName),
@@ -93,6 +123,88 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		}
 		if sendResp.MessageId == nil || *sendResp.MessageId == "" {
 			return fmt.Errorf("SendMessage returned nil or empty MessageId")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "SendMessage_WithDelaySeconds", func() error {
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(queueName),
+		})
+		if err != nil {
+			return err
+		}
+		sendResp, err := client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:     resp.QueueUrl,
+			MessageBody:  aws.String("Delayed message"),
+			DelaySeconds: 5,
+		})
+		if err != nil {
+			return err
+		}
+		if sendResp.MessageId == nil || *sendResp.MessageId == "" {
+			return fmt.Errorf("SendMessage with DelaySeconds returned nil MessageId")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "SendMessage_WithMessageAttributes", func() error {
+		attrQueueName := fmt.Sprintf("AttrQueue-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(attrQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(attrQueueName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(attrQueueName),
+		})
+		if err != nil {
+			return err
+		}
+		sendResp, err := client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:    resp.QueueUrl,
+			MessageBody: aws.String("Message with attributes"),
+			MessageAttributes: map[string]types.MessageAttributeValue{
+				"Attr1": {
+					DataType:    aws.String("String"),
+					StringValue: aws.String("value1"),
+				},
+				"Attr2": {
+					DataType:    aws.String("Number"),
+					StringValue: aws.String("42"),
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if sendResp.MessageId == nil || *sendResp.MessageId == "" {
+			return fmt.Errorf("SendMessage with MessageAttributes returned nil MessageId")
+		}
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:              resp.QueueUrl,
+			MessageAttributeNames: []string{"All"},
+		})
+		if err != nil {
+			return fmt.Errorf("receive: %v", err)
+		}
+		if len(recvResp.Messages) == 0 {
+			return fmt.Errorf("no messages received")
+		}
+		msg := recvResp.Messages[0]
+		if len(msg.MessageAttributes) < 2 {
+			return fmt.Errorf("expected at least 2 message attributes, got %d", len(msg.MessageAttributes))
+		}
+		if msg.MessageAttributes["Attr1"].StringValue == nil || *msg.MessageAttributes["Attr1"].StringValue != "value1" {
+			return fmt.Errorf("Attr1 mismatch: got %v", msg.MessageAttributes["Attr1"])
 		}
 		return nil
 	}))
@@ -116,6 +228,161 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sqs", "ReceiveMessage_MaxNumberOfMessages", func() error {
+		rtQueueName := fmt.Sprintf("RMNQueue-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(rtQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(rtQueueName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+
+		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(rtQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("get url: %v", err)
+		}
+
+		for i := 0; i < 5; i++ {
+			client.SendMessage(ctx, &sqs.SendMessageInput{
+				QueueUrl:    urlResp.QueueUrl,
+				MessageBody: aws.String(fmt.Sprintf("msg-%d", i)),
+			})
+		}
+
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:            urlResp.QueueUrl,
+			MaxNumberOfMessages: 5,
+		})
+		if err != nil {
+			return fmt.Errorf("receive: %v", err)
+		}
+		if len(recvResp.Messages) < 5 {
+			return fmt.Errorf("expected at least 5 messages, got %d", len(recvResp.Messages))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ReceiveMessage_WaitTimeSeconds", func() error {
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(queueName),
+		})
+		if err != nil {
+			return err
+		}
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:        resp.QueueUrl,
+			WaitTimeSeconds: 1,
+		})
+		if err != nil {
+			return err
+		}
+		_ = recvResp
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ReceiveMessage_VisibilityTimeout", func() error {
+		rtQueueName := fmt.Sprintf("RVTQueue-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(rtQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(rtQueueName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+
+		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(rtQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("get url: %v", err)
+		}
+
+		client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:    urlResp.QueueUrl,
+			MessageBody: aws.String("visibility-test-msg"),
+		})
+
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:          urlResp.QueueUrl,
+			VisibilityTimeout: 120,
+		})
+		if err != nil {
+			return fmt.Errorf("receive: %v", err)
+		}
+		if len(recvResp.Messages) == 0 {
+			return fmt.Errorf("no messages received")
+		}
+
+		recvResp2, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl: urlResp.QueueUrl,
+		})
+		if err != nil {
+			return fmt.Errorf("second receive: %v", err)
+		}
+		if len(recvResp2.Messages) > 0 {
+			return fmt.Errorf("message should be invisible after 120s visibility timeout, but got %d messages", len(recvResp2.Messages))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "DeleteMessage", func() error {
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(queueName),
+		})
+		if err != nil {
+			return err
+		}
+		_, err = client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:    resp.QueueUrl,
+			MessageBody: aws.String("Message to delete"),
+		})
+		if err != nil {
+			return fmt.Errorf("send: %v", err)
+		}
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl: resp.QueueUrl,
+		})
+		if err != nil {
+			return fmt.Errorf("receive: %v", err)
+		}
+		if len(recvResp.Messages) == 0 {
+			return fmt.Errorf("no messages received for DeleteMessage test")
+		}
+		receiptHandle := recvResp.Messages[0].ReceiptHandle
+		_, err = client.DeleteMessage(ctx, &sqs.DeleteMessageInput{
+			QueueUrl:      resp.QueueUrl,
+			ReceiptHandle: receiptHandle,
+		})
+		if err != nil {
+			return fmt.Errorf("delete: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "DeleteMessage_NonExistent", func() error {
+		_, err := client.DeleteMessage(ctx, &sqs.DeleteMessageInput{
+			QueueUrl:      aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
+			ReceiptHandle: aws.String("fake-receipt-handle"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for non-existent receipt handle")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "ListQueues", func() error {
 		resp, err := client.ListQueues(ctx, &sqs.ListQueuesInput{})
 		if err != nil {
@@ -123,6 +390,40 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		}
 		if resp.QueueUrls == nil {
 			return fmt.Errorf("ListQueues returned nil QueueUrls")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ListQueues_WithPrefix", func() error {
+		prefix := fmt.Sprintf("PrefixTest-%d", time.Now().UnixNano())
+		client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(prefix + "-alpha"),
+		})
+		client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(prefix + "-beta"),
+		})
+		defer func() {
+			for _, suffix := range []string{"-alpha", "-beta"} {
+				urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(prefix + suffix)})
+				if urlResp.QueueUrl != nil {
+					client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+				}
+			}
+		}()
+
+		resp, err := client.ListQueues(ctx, &sqs.ListQueuesInput{
+			QueueNamePrefix: aws.String(prefix),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.QueueUrls == nil || len(resp.QueueUrls) < 2 {
+			return fmt.Errorf("expected at least 2 queues with prefix %q, got %d", prefix, len(resp.QueueUrls))
+		}
+		for _, u := range resp.QueueUrls {
+			if !strings.Contains(u, prefix) {
+				return fmt.Errorf("ListQueues returned URL not matching prefix: %s", u)
+			}
 		}
 		return nil
 	}))
@@ -141,6 +442,68 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 			},
 		})
 		return err
+	}))
+
+	results = append(results, r.RunTest("sqs", "SetQueueAttributes_MultipleAttrs", func() error {
+		rtQueueName := fmt.Sprintf("SMAQueue-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(rtQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(rtQueueName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+
+		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(rtQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("get url: %v", err)
+		}
+
+		_, err = client.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+			QueueUrl: urlResp.QueueUrl,
+			Attributes: map[string]string{
+				"VisibilityTimeout":      "45",
+				"MaximumMessageSize":     "1024",
+				"MessageRetentionPeriod": "345600",
+				"DelaySeconds":           "10",
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("set attrs: %v", err)
+		}
+
+		attrResp, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl: urlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{
+				types.QueueAttributeNameVisibilityTimeout,
+				types.QueueAttributeNameMaximumMessageSize,
+				types.QueueAttributeNameMessageRetentionPeriod,
+				types.QueueAttributeNameDelaySeconds,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("get attrs: %v", err)
+		}
+		if attrResp.Attributes[string(types.QueueAttributeNameVisibilityTimeout)] != "45" {
+			return fmt.Errorf("VisibilityTimeout mismatch: got %s", attrResp.Attributes["VisibilityTimeout"])
+		}
+		if attrResp.Attributes[string(types.QueueAttributeNameMaximumMessageSize)] != "1024" {
+			return fmt.Errorf("MaximumMessageSize mismatch: got %s", attrResp.Attributes["MaximumMessageSize"])
+		}
+		if attrResp.Attributes[string(types.QueueAttributeNameMessageRetentionPeriod)] != "345600" {
+			return fmt.Errorf("MessageRetentionPeriod mismatch: got %s", attrResp.Attributes["MessageRetentionPeriod"])
+		}
+		if attrResp.Attributes[string(types.QueueAttributeNameDelaySeconds)] != "10" {
+			return fmt.Errorf("DelaySeconds mismatch: got %s", attrResp.Attributes["DelaySeconds"])
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("sqs", "TagQueue", func() error {
@@ -240,6 +603,76 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		return err
 	}))
 
+	results = append(results, r.RunTest("sqs", "ChangeMessageVisibilityBatch", func() error {
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(queueName),
+		})
+		if err != nil {
+			return err
+		}
+		for i := 0; i < 3; i++ {
+			client.SendMessage(ctx, &sqs.SendMessageInput{
+				QueueUrl:    resp.QueueUrl,
+				MessageBody: aws.String(fmt.Sprintf("CMVB-msg-%d", i)),
+			})
+		}
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:            resp.QueueUrl,
+			MaxNumberOfMessages: 10,
+		})
+		if err != nil {
+			return fmt.Errorf("receive: %v", err)
+		}
+		if len(recvResp.Messages) == 0 {
+			return fmt.Errorf("no messages received for ChangeMessageVisibilityBatch")
+		}
+		var entries []types.ChangeMessageVisibilityBatchRequestEntry
+		for i, msg := range recvResp.Messages {
+			entries = append(entries, types.ChangeMessageVisibilityBatchRequestEntry{
+				Id:                aws.String(fmt.Sprintf("cmvb%d", i)),
+				ReceiptHandle:     msg.ReceiptHandle,
+				VisibilityTimeout: 120,
+			})
+		}
+		batchResp, err := client.ChangeMessageVisibilityBatch(ctx, &sqs.ChangeMessageVisibilityBatchInput{
+			QueueUrl: resp.QueueUrl,
+			Entries:  entries,
+		})
+		if err != nil {
+			return fmt.Errorf("change visibility batch: %v", err)
+		}
+		if len(batchResp.Successful) == 0 {
+			return fmt.Errorf("ChangeMessageVisibilityBatch returned empty Successful entries")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ChangeMessageVisibilityBatch_NonExistent", func() error {
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(queueName),
+		})
+		if err != nil {
+			return err
+		}
+		batchResp, err := client.ChangeMessageVisibilityBatch(ctx, &sqs.ChangeMessageVisibilityBatchInput{
+			QueueUrl: resp.QueueUrl,
+			Entries: []types.ChangeMessageVisibilityBatchRequestEntry{
+				{
+					Id:                aws.String("cmvb-fail"),
+					ReceiptHandle:     aws.String("nonexistent-receipt-handle"),
+					VisibilityTimeout: 30,
+				},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("batch call itself failed: %v", err)
+		}
+		if len(batchResp.Failed) == 0 {
+			return fmt.Errorf("expected Failed entry for non-existent receipt handle")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "DeleteQueue", func() error {
 		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
 			QueueName: aws.String(queueName),
@@ -311,6 +744,37 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sqs", "SendMessageBatch_WithDelaySeconds", func() error {
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(batchQueueName),
+		})
+		if err != nil {
+			return err
+		}
+		batchResp, err := client.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
+			QueueUrl: resp.QueueUrl,
+			Entries: []types.SendMessageBatchRequestEntry{
+				{
+					Id:           aws.String("delayed1"),
+					MessageBody:  aws.String("Delayed batch 1"),
+					DelaySeconds: 3,
+				},
+				{
+					Id:           aws.String("delayed2"),
+					MessageBody:  aws.String("Delayed batch 2"),
+					DelaySeconds: 3,
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if len(batchResp.Successful) != 2 {
+			return fmt.Errorf("expected 2 successful entries, got %d", len(batchResp.Successful))
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "DeleteMessageBatch", func() error {
 		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
 			QueueName: aws.String(batchQueueName),
@@ -341,6 +805,333 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 			Entries:  entries,
 		})
 		return err
+	}))
+
+	// === PERMISSION TESTS ===
+
+	results = append(results, r.RunTest("sqs", "AddPermission", func() error {
+		permQueueName := fmt.Sprintf("PermQueue-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(permQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(permQueueName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+
+		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(permQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("get url: %v", err)
+		}
+
+		_, err = client.AddPermission(ctx, &sqs.AddPermissionInput{
+			QueueUrl:      urlResp.QueueUrl,
+			Label:         aws.String("TestPermission"),
+			AWSAccountIds: []string{"123456789012"},
+			Actions:       []string{"SendMessage", "ReceiveMessage"},
+		})
+		return err
+	}))
+
+	results = append(results, r.RunTest("sqs", "RemovePermission", func() error {
+		permQueueName := fmt.Sprintf("RPermQueue-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(permQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(permQueueName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+
+		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(permQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("get url: %v", err)
+		}
+
+		_, err = client.AddPermission(ctx, &sqs.AddPermissionInput{
+			QueueUrl:      urlResp.QueueUrl,
+			Label:         aws.String("RemoveTestPerm"),
+			AWSAccountIds: []string{"123456789012"},
+			Actions:       []string{"SendMessage"},
+		})
+		if err != nil {
+			return fmt.Errorf("add permission: %v", err)
+		}
+
+		_, err = client.RemovePermission(ctx, &sqs.RemovePermissionInput{
+			QueueUrl: urlResp.QueueUrl,
+			Label:    aws.String("RemoveTestPerm"),
+		})
+		return err
+	}))
+
+	// === DLQ / MESSAGE MOVE TASK TESTS ===
+
+	results = append(results, r.RunTest("sqs", "ListDeadLetterSourceQueues_Empty", func() error {
+		dlqName := fmt.Sprintf("DLQ-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(dlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("create dlq: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(dlqName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+
+		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(dlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("get url: %v", err)
+		}
+
+		dlqResp, err := client.ListDeadLetterSourceQueues(ctx, &sqs.ListDeadLetterSourceQueuesInput{
+			QueueUrl: urlResp.QueueUrl,
+		})
+		if err != nil {
+			return err
+		}
+		if dlqResp.QueueUrls != nil && len(dlqResp.QueueUrls) != 0 {
+			return fmt.Errorf("expected empty queue URLs for new DLQ, got %d", len(dlqResp.QueueUrls))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "StartMessageMoveTask", func() error {
+		srcDlqName := fmt.Sprintf("SrcDLQ-%d", time.Now().UnixNano())
+		destQueueName := fmt.Sprintf("DestQueue-%d", time.Now().UnixNano())
+
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(srcDlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("create src: %v", err)
+		}
+		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(destQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("create dest: %v", err)
+		}
+		defer func() {
+			for _, name := range []string{srcDlqName, destQueueName} {
+				urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(name)})
+				if urlResp.QueueUrl != nil {
+					client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+				}
+			}
+		}()
+
+		srcUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(srcDlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("get src url: %v", err)
+		}
+		destUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(destQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("get dest url: %v", err)
+		}
+
+		srcAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       srcUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get src attrs: %v", err)
+		}
+		destAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       destUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get dest attrs: %v", err)
+		}
+
+		srcArn := srcAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+		destArn := destAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+
+		taskResp, err := client.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
+			SourceArn:      aws.String(srcArn),
+			DestinationArn: aws.String(destArn),
+		})
+		if err != nil {
+			return fmt.Errorf("start task: %v", err)
+		}
+		if taskResp.TaskHandle == nil || *taskResp.TaskHandle == "" {
+			return fmt.Errorf("StartMessageMoveTask returned nil or empty TaskHandle")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "CancelMessageMoveTask", func() error {
+		srcDlqName := fmt.Sprintf("CancelDLQ-%d", time.Now().UnixNano())
+		destQueueName := fmt.Sprintf("CancelDest-%d", time.Now().UnixNano())
+
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(srcDlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("create src: %v", err)
+		}
+		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(destQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("create dest: %v", err)
+		}
+		defer func() {
+			for _, name := range []string{srcDlqName, destQueueName} {
+				urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(name)})
+				if urlResp.QueueUrl != nil {
+					client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+				}
+			}
+		}()
+
+		srcUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(srcDlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("get src url: %v", err)
+		}
+		destUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(destQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("get dest url: %v", err)
+		}
+
+		srcAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       srcUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get src attrs: %v", err)
+		}
+		destAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       destUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get dest attrs: %v", err)
+		}
+
+		srcArn := srcAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+		destArn := destAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+
+		taskResp, err := client.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
+			SourceArn:      aws.String(srcArn),
+			DestinationArn: aws.String(destArn),
+		})
+		if err != nil {
+			return fmt.Errorf("start task: %v", err)
+		}
+
+		cancelResp, err := client.CancelMessageMoveTask(ctx, &sqs.CancelMessageMoveTaskInput{
+			TaskHandle: taskResp.TaskHandle,
+		})
+		if err != nil {
+			return fmt.Errorf("cancel task: %v", err)
+		}
+		_ = cancelResp.ApproximateNumberOfMessagesMoved
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ListMessageMoveTasks", func() error {
+		srcDlqName := fmt.Sprintf("ListDLQ-%d", time.Now().UnixNano())
+		destQueueName := fmt.Sprintf("ListDest-%d", time.Now().UnixNano())
+
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(srcDlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("create src: %v", err)
+		}
+		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(destQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("create dest: %v", err)
+		}
+		defer func() {
+			for _, name := range []string{srcDlqName, destQueueName} {
+				urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(name)})
+				if urlResp.QueueUrl != nil {
+					client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+				}
+			}
+		}()
+
+		srcUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(srcDlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("get src url: %v", err)
+		}
+		destUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(destQueueName),
+		})
+		if err != nil {
+			return fmt.Errorf("get dest url: %v", err)
+		}
+
+		srcAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       srcUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get src attrs: %v", err)
+		}
+		destAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       destUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get dest attrs: %v", err)
+		}
+
+		srcArn := srcAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+		destArn := destAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+
+		_, err = client.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
+			SourceArn:      aws.String(srcArn),
+			DestinationArn: aws.String(destArn),
+		})
+		if err != nil {
+			return fmt.Errorf("start task: %v", err)
+		}
+
+		listResp, err := client.ListMessageMoveTasks(ctx, &sqs.ListMessageMoveTasksInput{
+			SourceArn: aws.String(srcArn),
+		})
+		if err != nil {
+			return fmt.Errorf("list tasks: %v", err)
+		}
+		if listResp.Results == nil || len(listResp.Results) == 0 {
+			return fmt.Errorf("ListMessageMoveTasks returned empty Results")
+		}
+		return nil
 	}))
 
 	// === ERROR / EDGE CASE TESTS ===

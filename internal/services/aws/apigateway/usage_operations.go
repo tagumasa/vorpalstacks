@@ -49,7 +49,7 @@ func (s *APIGatewayService) CreateApiKey(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	return s.toApiKeyResponse(created), nil
+	return s.toApiKeyResponseWithIncludeValue(created, true), nil
 }
 
 // GetApiKey retrieves an API key from API Gateway.

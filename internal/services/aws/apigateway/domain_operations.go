@@ -134,6 +134,8 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 					domain.CertificateArn = value
 				case "/regionalCertificateArn":
 					domain.RegionalCertificateArn = value
+				case "/certificateName":
+					domain.CertificateName = value
 				}
 			}
 		}

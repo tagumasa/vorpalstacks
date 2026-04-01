@@ -447,7 +447,7 @@ func (s *SQSService) StartMessageMoveTask(ctx context.Context, reqCtx *request.R
 // CancelMessageMoveTask cancels a message move task.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_CancelMessageMoveTask.html
 func (s *SQSService) CancelMessageMoveTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	taskId := request.GetParamCaseInsensitive(req.Parameters, "TaskId")
+	taskId := request.GetParamCaseInsensitive(req.Parameters, "TaskHandle")
 	if taskId == "" {
 		return nil, ErrMissingParameter
 	}

@@ -104,6 +104,8 @@ func (r *ActionRegistry) initDefaults() {
 		"GetEndpointAttributes", "SetEndpointAttributes",
 		"ListEndpointsByPlatformApplication",
 		"TagResource", "UntagResource", "ListTagsForResource",
+		"AddPermission", "RemovePermission",
+		"GetDataProtectionPolicy", "PutDataProtectionPolicy",
 	})
 
 	r.Register("sqs", []string{
@@ -129,6 +131,7 @@ func (r *ActionRegistry) initDefaults() {
 		"PutRule", "DeleteRule", "DescribeRule",
 		"ListRules", "EnableRule", "DisableRule",
 		"PutTargets", "RemoveTargets", "ListTargetsByRule",
+		"ListRuleNamesByTarget",
 		"PutEvents",
 		"CreateArchive", "DeleteArchive", "DescribeArchive",
 		"ListArchives", "UpdateArchive",
@@ -171,6 +174,23 @@ func (r *ActionRegistry) initDefaults() {
 		"TagResource", "UntagResource", "ListTagsForResource",
 		"LookupEvents", "ListPublicKeys",
 		"GetResourcePolicy", "PutResourcePolicy", "DeleteResourcePolicy",
+	})
+
+	r.Register("lambda", []string{
+		"CreateFunction", "DeleteFunction", "GetFunction", "GetFunctionConfiguration", "ListFunctions",
+		"UpdateFunctionCode", "UpdateFunctionConfiguration",
+		"Invoke", "InvokeAsync", "InvokeWithResponseStream",
+		"PublishVersion", "ListVersionsByFunction",
+		"CreateAlias", "DeleteAlias", "GetAlias", "UpdateAlias", "ListAliases",
+		"PublishLayerVersion", "DeleteLayerVersion", "GetLayerVersion", "ListLayers", "ListLayerVersions",
+		"CreateEventSourceMapping", "DeleteEventSourceMapping", "GetEventSourceMapping", "UpdateEventSourceMapping", "ListEventSourceMappings",
+		"AddPermission", "RemovePermission", "GetPolicy",
+		"TagResource", "UntagResource", "ListTags",
+		"PutFunctionConcurrency", "GetFunctionConcurrency", "DeleteFunctionConcurrency",
+		"PutProvisionedConcurrencyConcurrency", "GetProvisionedConcurrencyConfig", "DeleteProvisionedConcurrencyConcurrency", "ListProvisionedConcurrencyConfigs",
+		"PutFunctionEventInvokeConfig", "GetFunctionEventInvokeConfig", "DeleteFunctionEventInvokeConfig", "ListFunctionEventInvokeConfigs",
+		"CreateFunctionUrlConfig", "DeleteFunctionUrlConfig", "GetFunctionUrlConfig", "UpdateFunctionUrlConfig", "ListFunctionUrlConfigs",
+		"GetAccountSettings",
 	})
 
 	r.Register("neptune", []string{

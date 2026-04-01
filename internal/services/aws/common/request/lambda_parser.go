@@ -28,6 +28,18 @@ func extractLambdaOperation(r *http.Request) string {
 		if method == "GET" {
 			return "GetFunctionConcurrency"
 		}
+	case strings.HasPrefix(path, "/2019-09-30/functions/") && strings.Contains(path, "/provisioned-concurrency"):
+		return extractLambdaProvisionedConcurrencyOperation(path, method, r)
+	case strings.HasPrefix(path, "/2019-09-25/functions/") && strings.Contains(path, "/event-invoke-config"):
+		return extractLambdaEventInvokeConfigOperation(path, method)
+	case strings.HasPrefix(path, "/2014-11-13/functions/") && strings.HasSuffix(path, "/invoke-async"):
+		if method == "POST" {
+			return "InvokeAsync"
+		}
+	case strings.HasPrefix(path, "/2021-11-15/functions/") && strings.Contains(path, "/response-streaming-invocations"):
+		if method == "POST" {
+			return "InvokeWithResponseStream"
+		}
 	case strings.HasPrefix(path, "/2021-10-31/functions/"):
 		return extractLambdaUrlOperation(path, method)
 	case path == "/2016-08-19/account-settings" && method == "GET":
@@ -237,6 +249,50 @@ func extractLambdaUrlOperation(path, method string) string {
 	return ""
 }
 
+func extractLambdaProvisionedConcurrencyOperation(path string, method string, r *http.Request) string {
+	path = strings.TrimPrefix(path, "/2019-09-30/functions/")
+
+	if strings.HasSuffix(path, "/provisioned-concurrency") {
+		if method == "GET" && r.URL.Query().Get("List") != "" {
+			return "ListProvisionedConcurrencyConfigs"
+		}
+		switch method {
+		case "PUT":
+			return "PutProvisionedConcurrencyConcurrency"
+		case "GET":
+			return "GetProvisionedConcurrencyConfig"
+		case "DELETE":
+			return "DeleteProvisionedConcurrencyConcurrency"
+		}
+	}
+
+	return ""
+}
+
+func extractLambdaEventInvokeConfigOperation(path, method string) string {
+	path = strings.TrimPrefix(path, "/2019-09-25/functions/")
+
+	if strings.HasSuffix(path, "/event-invoke-config/list") {
+		if method == "GET" {
+			return "ListFunctionEventInvokeConfigs"
+		}
+		return ""
+	}
+
+	if strings.HasSuffix(path, "/event-invoke-config") {
+		switch method {
+		case "PUT":
+			return "PutFunctionEventInvokeConfig"
+		case "GET":
+			return "GetFunctionEventInvokeConfig"
+		case "DELETE":
+			return "DeleteFunctionEventInvokeConfig"
+		}
+	}
+
+	return ""
+}
+
 func extractLambdaPathParams(path string, params map[string]interface{}) {
 	switch {
 	case strings.HasPrefix(path, "/2015-03-31/functions/"):
@@ -250,9 +306,19 @@ func extractLambdaPathParams(path string, params map[string]interface{}) {
 	case strings.HasPrefix(path, "/2017-10-31/functions/"):
 		extractConcurrencyPathParams(path, params)
 	case strings.HasPrefix(path, "/2019-09-30/functions/"):
-		extractConcurrencyPathParams(path, params)
+		if strings.Contains(path, "/provisioned-concurrency") {
+			extractProvisionedConcurrencyPathParams(path, params)
+		} else {
+			extractConcurrencyPathParams(path, params)
+		}
+	case strings.HasPrefix(path, "/2019-09-25/functions/"):
+		extractEventInvokeConfigPathParams(path, params)
 	case strings.HasPrefix(path, "/2021-10-31/functions/"):
 		extractUrlPathParams(path, params)
+	case strings.HasPrefix(path, "/2014-11-13/functions/"):
+		extractInvokeAsyncPathParams(path, params)
+	case strings.HasPrefix(path, "/2021-11-15/functions/"):
+		extractResponseStreamPathParams(path, params)
 	}
 }
 
@@ -350,4 +416,57 @@ func isLambdaDatePath(s string) bool {
 		return false
 	}
 	return strings.Count(s, "-") == 2
+}
+
+func extractProvisionedConcurrencyPathParams(path string, params map[string]interface{}) {
+	re := strings.TrimSuffix(strings.TrimPrefix(path, "/"), "/provisioned-concurrency")
+	parts := strings.Split(re, "/")
+	for i := len(parts) - 1; i >= 0; i-- {
+		if parts[i] != "" && !isLambdaDatePath(parts[i]) {
+			if _, ok := params["FunctionName"]; !ok {
+				params["FunctionName"] = parts[i]
+			}
+			break
+		}
+	}
+}
+
+func extractEventInvokeConfigPathParams(path string, params map[string]interface{}) {
+	re := strings.TrimSuffix(path, "/event-invoke-config")
+	re = strings.TrimSuffix(re, "/event-invoke-config/list")
+	parts := strings.Split(strings.Trim(re, "/"), "/")
+	for i := len(parts) - 1; i >= 0; i-- {
+		if parts[i] != "" && !isLambdaDatePath(parts[i]) {
+			if _, ok := params["FunctionName"]; !ok {
+				params["FunctionName"] = parts[i]
+			}
+			break
+		}
+	}
+}
+
+func extractInvokeAsyncPathParams(path string, params map[string]interface{}) {
+	re := strings.TrimSuffix(path, "/invoke-async")
+	parts := strings.Split(strings.Trim(re, "/"), "/")
+	for i := len(parts) - 1; i >= 0; i-- {
+		if parts[i] != "" && !isLambdaDatePath(parts[i]) {
+			if _, ok := params["FunctionName"]; !ok {
+				params["FunctionName"] = parts[i]
+			}
+			break
+		}
+	}
+}
+
+func extractResponseStreamPathParams(path string, params map[string]interface{}) {
+	re := strings.TrimSuffix(path, "/response-streaming-invocations")
+	parts := strings.Split(strings.Trim(re, "/"), "/")
+	for i := len(parts) - 1; i >= 0; i-- {
+		if parts[i] != "" && !isLambdaDatePath(parts[i]) {
+			if _, ok := params["FunctionName"]; !ok {
+				params["FunctionName"] = parts[i]
+			}
+			break
+		}
+	}
 }

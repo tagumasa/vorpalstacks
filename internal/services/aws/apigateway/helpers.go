@@ -41,6 +41,11 @@ func parseInt64(s string) int64 {
 	return v
 }
 
+func parseInt32(s string) int32 {
+	v, _ := strconv.ParseInt(s, 10, 32)
+	return int32(v)
+}
+
 func parseFloat64(s string) float64 {
 	v, _ := strconv.ParseFloat(s, 64)
 	return v
