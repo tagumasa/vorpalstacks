@@ -116,26 +116,12 @@ func (s *KinesisService) DescribeLimits(ctx context.Context, reqCtx *request.Req
 
 // DescribeAccountSettings returns the Kinesis account settings.
 func (s *KinesisService) DescribeAccountSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{
-		"AccountSettingsList": []map[string]interface{}{
-			{
-				"AccountId":                reqCtx.GetAccountID(),
-				"ShardLimit":               500,
-				"OnDemandStreamCount":      0,
-				"OnDemandStreamCountLimit": 50,
-			},
-		},
-	}, nil
+	return map[string]interface{}{}, nil
 }
 
 // UpdateAccountSettings updates the Kinesis account settings.
 func (s *KinesisService) UpdateAccountSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{
-		"AccountId":                reqCtx.GetAccountID(),
-		"ShardLimit":               500,
-		"OnDemandStreamCount":      0,
-		"OnDemandStreamCountLimit": 50,
-	}, nil
+	return map[string]interface{}{}, nil
 }
 
 // EnableEnhancedMonitoring enables enhanced monitoring for a Kinesis stream.
@@ -168,8 +154,10 @@ func (s *KinesisService) EnableEnhancedMonitoring(ctx context.Context, reqCtx *r
 		return nil, s.mapStoreError(err)
 	}
 
+	desiredMetrics := []string{"IncomingBytes", "IncomingRecords", "OutgoingBytes", "OutgoingRecords"}
+
 	stream.EnhancedMonitoring = []kinesisstore.EnhancedMonitoring{
-		{ShardLevelMetrics: []string{"IncomingBytes", "IncomingRecords", "OutgoingBytes", "OutgoingRecords"}},
+		{ShardLevelMetrics: desiredMetrics},
 	}
 	if err := store.UpdateStream(stream); err != nil {
 		return nil, fmt.Errorf("failed to update stream monitoring: %w", err)
@@ -177,7 +165,8 @@ func (s *KinesisService) EnableEnhancedMonitoring(ctx context.Context, reqCtx *r
 
 	return map[string]interface{}{
 		"StreamName":               streamName,
-		"CurrentShardLevelMetrics": []string{"IncomingBytes", "IncomingRecords", "OutgoingBytes", "OutgoingRecords"},
+		"CurrentShardLevelMetrics": desiredMetrics,
+		"DesiredShardLevelMetrics": desiredMetrics,
 		"StreamARN":                stream.StreamARN,
 	}, nil
 }
@@ -212,8 +201,10 @@ func (s *KinesisService) DisableEnhancedMonitoring(ctx context.Context, reqCtx *
 		return nil, s.mapStoreError(err)
 	}
 
+	desiredMetrics := []string{}
+
 	stream.EnhancedMonitoring = []kinesisstore.EnhancedMonitoring{
-		{ShardLevelMetrics: []string{}},
+		{ShardLevelMetrics: desiredMetrics},
 	}
 	if err := store.UpdateStream(stream); err != nil {
 		return nil, fmt.Errorf("failed to update stream monitoring: %w", err)
@@ -221,7 +212,8 @@ func (s *KinesisService) DisableEnhancedMonitoring(ctx context.Context, reqCtx *
 
 	return map[string]interface{}{
 		"StreamName":               streamName,
-		"CurrentShardLevelMetrics": []string{},
+		"CurrentShardLevelMetrics": desiredMetrics,
+		"DesiredShardLevelMetrics": desiredMetrics,
 		"StreamARN":                stream.StreamARN,
 	}, nil
 }
@@ -318,23 +310,40 @@ func (s *KinesisService) GetResourcePolicy(ctx context.Context, reqCtx *request.
 		return nil, ErrInvalidArgument
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	policy, err := store.GetResourcePolicy(resourceARN)
+	if err != nil {
+		policy = ""
+	}
+
 	return map[string]interface{}{
-		"ResourceARN": resourceARN,
-		"Policy":      "",
+		"Policy": policy,
 	}, nil
 }
 
 // PutResourcePolicy attaches a resource policy to a Kinesis stream.
 func (s *KinesisService) PutResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
+	policy := request.GetParamLowerFirst(req.Parameters, "Policy")
 
 	if resourceARN == "" {
 		return nil, ErrInvalidArgument
 	}
 
-	return map[string]interface{}{
-		"ResourceARN": resourceARN,
-	}, nil
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := store.PutResourcePolicy(resourceARN, policy); err != nil {
+		return nil, fmt.Errorf("failed to put resource policy: %w", err)
+	}
+
+	return response.EmptyResponse(), nil
 }
 
 // DeleteResourcePolicy removes the resource policy from a Kinesis stream.
@@ -344,6 +353,13 @@ func (s *KinesisService) DeleteResourcePolicy(ctx context.Context, reqCtx *reque
 	if resourceARN == "" {
 		return nil, ErrInvalidArgument
 	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	store.DeleteResourcePolicy(resourceARN)
 
 	return response.EmptyResponse(), nil
 }
@@ -376,15 +392,14 @@ func (s *KinesisService) UpdateMaxRecordSize(ctx context.Context, reqCtx *reques
 		return nil, s.mapStoreError(err)
 	}
 
-	return map[string]interface{}{
-		"StreamARN":          streamARN,
-		"MaxRecordSizeInKiB": maxRecordSizeInKiB,
-	}, nil
+	return response.EmptyResponse(), nil
 }
 
 // UpdateStreamWarmThroughput updates the warm throughput capacity for an on-demand Kinesis stream.
 func (s *KinesisService) UpdateStreamWarmThroughput(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
+	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
+	warmThroughputMiBps := int32(request.GetIntParam(req.Parameters, "WarmThroughputMiBps"))
 
 	if streamARN == "" {
 		return nil, ErrInvalidArgument
@@ -394,7 +409,20 @@ func (s *KinesisService) UpdateStreamWarmThroughput(ctx context.Context, reqCtx 
 	if err != nil {
 		return nil, err
 	}
-	stream, err := store.GetStreamByARN(streamARN)
+
+	if streamARN != "" {
+		stream, err := store.GetStreamByARN(streamARN)
+		if err != nil {
+			return nil, s.mapStoreError(err)
+		}
+		streamName = stream.StreamName
+	}
+
+	if streamName == "" {
+		return nil, ErrInvalidArgument
+	}
+
+	stream, err := store.GetStream(streamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
@@ -409,7 +437,11 @@ func (s *KinesisService) UpdateStreamWarmThroughput(ctx context.Context, reqCtx 
 	}
 
 	return map[string]interface{}{
-		"StreamARN":            streamARN,
-		"OnDemandStreamConfig": stream.OnDemandStreamConfig,
+		"StreamARN":  streamARN,
+		"StreamName": streamName,
+		"WarmThroughput": map[string]interface{}{
+			"CurrentMiBps": warmThroughputMiBps,
+			"TargetMiBps":  warmThroughputMiBps,
+		},
 	}, nil
 }

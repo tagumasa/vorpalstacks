@@ -80,6 +80,7 @@ func (s *Service) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("timestream-write", "DescribeBatchLoadTask", s.DescribeBatchLoadTask)
 	d.RegisterHandlerForService("timestream-write", "ListBatchLoadTasks", s.ListBatchLoadTasks)
 	d.RegisterHandlerForService("timestream-write", "ResumeBatchLoadTask", s.ResumeBatchLoadTask)
+	d.RegisterHandlerForService("timestream-write", "DeleteBatchLoadTask", s.DeleteBatchLoadTask)
 }
 
 func (s *Service) mapStoreError(err error) error {

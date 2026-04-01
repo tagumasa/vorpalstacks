@@ -18,10 +18,11 @@ func (s *Service) DescribeAccountSettings(ctx context.Context, reqCtx *request.R
 	}
 
 	return map[string]interface{}{
-		"MaxQueryTCU":             settings.MaxQueryTCU,
-		"QueryPricingMode":        settings.QueryPricingMode,
-		"QueryComputeType":        settings.QueryComputeType,
-		"EncryptionConfiguration": settings.EncryptionConfiguration,
+		"MaxQueryTCU":       settings.MaxQueryTCU,
+		"QueryPricingModel": settings.QueryPricingMode,
+		"QueryCompute": map[string]interface{}{
+			"ComputeMode": settings.QueryComputeType,
+		},
 	}, nil
 }
 
@@ -33,13 +34,12 @@ func (s *Service) UpdateAccountSettings(ctx context.Context, reqCtx *request.Req
 		maxQueryTCU = &tcu
 	}
 
-	queryPricingMode := request.GetParamCaseInsensitive(req.Parameters, "QueryPricingMode")
-	queryComputeType := request.GetParamCaseInsensitive(req.Parameters, "QueryComputeType")
-	encryptionConfiguration := ""
+	queryPricingModel := request.GetParamCaseInsensitive(req.Parameters, "QueryPricingModel")
+	queryComputeType := ""
 
-	if encMap := request.GetMapParamCaseInsensitive(req.Parameters, "EncryptionConfiguration"); encMap != nil {
-		if opt, ok := encMap["KmsKeyId"].(string); ok {
-			encryptionConfiguration = opt
+	if qcMap := request.GetMapParamCaseInsensitive(req.Parameters, "QueryCompute"); qcMap != nil {
+		if mode, ok := qcMap["ComputeMode"].(string); ok {
+			queryComputeType = mode
 		}
 	}
 
@@ -47,15 +47,16 @@ func (s *Service) UpdateAccountSettings(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	settings, err := store.accountSettingsStore.UpdateAccountSettings(maxQueryTCU, queryPricingMode, queryComputeType, encryptionConfiguration)
+	settings, err := store.accountSettingsStore.UpdateAccountSettings(maxQueryTCU, queryPricingModel, queryComputeType, "")
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"MaxQueryTCU":             settings.MaxQueryTCU,
-		"QueryPricingMode":        settings.QueryPricingMode,
-		"QueryComputeType":        settings.QueryComputeType,
-		"EncryptionConfiguration": settings.EncryptionConfiguration,
+		"MaxQueryTCU":       settings.MaxQueryTCU,
+		"QueryPricingModel": settings.QueryPricingMode,
+		"QueryCompute": map[string]interface{}{
+			"ComputeMode": settings.QueryComputeType,
+		},
 	}, nil
 }

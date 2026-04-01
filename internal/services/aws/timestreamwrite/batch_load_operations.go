@@ -4,8 +4,8 @@ package timestreamwrite
 import (
 	"context"
 	cryptorand "crypto/rand"
-	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
@@ -157,6 +157,27 @@ func (s *Service) ResumeBatchLoadTask(ctx context.Context, reqCtx *request.Reque
 	return response.EmptyResponse(), nil
 }
 
+// DeleteBatchLoadTask deletes a batch load task.
+func (s *Service) DeleteBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	taskId := request.GetParamCaseInsensitive(req.Parameters, "TaskId")
+	if taskId == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	st, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if err := st.batchLoadStore.DeleteBatchLoadTask(taskId); err != nil {
+		if err == tsstore.ErrBatchLoadTaskNotFound {
+			return nil, ErrResourceNotFound
+		}
+		return nil, s.mapStoreError(err)
+	}
+
+	return response.EmptyResponse(), nil
+}
+
 func (s *Service) simulateBatchLoad(store *tsstore.BatchLoadTaskStore, taskId string) {
 	if err := store.UpdateBatchLoadTaskStatus(taskId, tsstore.BatchLoadStatusInProgress, ""); err != nil {
 		logs.Error("Failed to update batch load task status", logs.Err(err))
@@ -209,13 +230,13 @@ func (s *Service) formatBatchLoadTask(task *tsstore.BatchLoadTask) map[string]in
 	}
 
 	if !task.CreationTime.IsZero() {
-		response["CreationTime"] = task.CreationTime.UTC().Format(time.RFC3339Nano)
+		response["CreationTime"] = float64(task.CreationTime.UnixNano()) / 1e9
 	}
 	if !task.LastUpdatedTime.IsZero() {
-		response["LastUpdatedTime"] = task.LastUpdatedTime.UTC().Format(time.RFC3339Nano)
+		response["LastUpdatedTime"] = float64(task.LastUpdatedTime.UnixNano()) / 1e9
 	}
 	if !task.ResumableUntil.IsZero() {
-		response["ResumableUntil"] = task.ResumableUntil.UTC().Format(time.RFC3339Nano)
+		response["ResumableUntil"] = float64(task.ResumableUntil.UnixNano()) / 1e9
 	}
 
 	return response
@@ -230,13 +251,13 @@ func (s *Service) formatBatchLoadTaskDescription(task *tsstore.BatchLoadTaskDesc
 	}
 
 	if !task.CreationTime.IsZero() {
-		response["CreationTime"] = task.CreationTime.UTC().Format(time.RFC3339Nano)
+		response["CreationTime"] = float64(task.CreationTime.UnixNano()) / 1e9
 	}
 	if !task.LastUpdatedTime.IsZero() {
-		response["LastUpdatedTime"] = task.LastUpdatedTime.UTC().Format(time.RFC3339Nano)
+		response["LastUpdatedTime"] = float64(task.LastUpdatedTime.UnixNano()) / 1e9
 	}
 	if !task.ResumableUntil.IsZero() {
-		response["ResumableUntil"] = task.ResumableUntil.UTC().Format(time.RFC3339Nano)
+		response["ResumableUntil"] = float64(task.ResumableUntil.UnixNano()) / 1e9
 	}
 	if task.ErrorMessage != "" {
 		response["ErrorMessage"] = task.ErrorMessage
@@ -444,10 +465,10 @@ func formatDataModelConfiguration(config *tsstore.DataModelConfiguration) map[st
 			for _, m := range config.DataModel.DimensionMappings {
 				mapping := map[string]interface{}{}
 				if m.SourceColumn != nil {
-					mapping["SourceColumn"] = map[string]interface{}{"Name": m.SourceColumn.Name}
+					mapping["SourceColumn"] = m.SourceColumn.Name
 				}
 				if m.DestinationColumn != nil {
-					mapping["DestinationColumn"] = map[string]interface{}{"Name": m.DestinationColumn.Name}
+					mapping["DestinationColumn"] = m.DestinationColumn.Name
 				}
 				mappings = append(mappings, mapping)
 			}
@@ -516,7 +537,6 @@ func randomString(n int) string {
 }
 
 func parseint64(s string) (int64, bool) {
-	var result int64
-	_, err := fmt.Sscanf(s, "%d", &result)
+	result, err := strconv.ParseInt(s, 10, 64)
 	return result, err == nil
 }

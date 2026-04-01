@@ -54,7 +54,7 @@ func (s *KinesisService) RegisterStreamConsumer(ctx context.Context, reqCtx *req
 			"ConsumerARN":               consumer.ConsumerARN,
 			"StreamARN":                 consumer.StreamARN,
 			"ConsumerStatus":            consumer.ConsumerStatus,
-			"ConsumerCreationTimestamp": consumer.ConsumerCreationTimestamp.Unix(),
+			"ConsumerCreationTimestamp": float64(consumer.ConsumerCreationTimestamp.Unix()),
 		},
 	}, nil
 }
@@ -127,7 +127,7 @@ func (s *KinesisService) DescribeStreamConsumer(ctx context.Context, reqCtx *req
 			"ConsumerARN":               consumer.ConsumerARN,
 			"StreamARN":                 consumer.StreamARN,
 			"ConsumerStatus":            consumer.ConsumerStatus,
-			"ConsumerCreationTimestamp": consumer.ConsumerCreationTimestamp.Unix(),
+			"ConsumerCreationTimestamp": float64(consumer.ConsumerCreationTimestamp.Unix()),
 		},
 	}, nil
 }
@@ -162,7 +162,7 @@ func (s *KinesisService) ListStreamConsumers(ctx context.Context, reqCtx *reques
 			"ConsumerARN":               c.ConsumerARN,
 			"StreamARN":                 c.StreamARN,
 			"ConsumerStatus":            c.ConsumerStatus,
-			"ConsumerCreationTimestamp": c.ConsumerCreationTimestamp.Unix(),
+			"ConsumerCreationTimestamp": float64(c.ConsumerCreationTimestamp.Unix()),
 		})
 	}
 

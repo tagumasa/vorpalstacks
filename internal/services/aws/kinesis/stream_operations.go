@@ -146,7 +146,7 @@ func (s *KinesisService) DescribeStream(ctx context.Context, reqCtx *request.Req
 			"Shards":                  s.formatShards(shards),
 			"HasMoreShards":           false,
 			"RetentionPeriodHours":    stream.RetentionPeriodHours,
-			"StreamCreationTimestamp": stream.CreatedAt.Unix(),
+			"StreamCreationTimestamp": float64(stream.CreatedAt.Unix()),
 			"EnhancedMonitoring":      stream.EnhancedMonitoring,
 			"EncryptionType":          encryptionType,
 			"KeyId":                   stream.KeyID,
@@ -203,7 +203,7 @@ func (s *KinesisService) DescribeStreamSummary(ctx context.Context, reqCtx *requ
 			"ConsumerCount":           stream.ConsumerCount,
 			"OpenShardCount":          stream.ShardCount,
 			"RetentionPeriodHours":    stream.RetentionPeriodHours,
-			"StreamCreationTimestamp": stream.CreatedAt.Unix(),
+			"StreamCreationTimestamp": float64(stream.CreatedAt.Unix()),
 			"EnhancedMonitoring":      stream.EnhancedMonitoring,
 			"EncryptionType":          encryptionType,
 			"KeyId":                   stream.KeyID,
@@ -241,11 +241,12 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 		}
 		streamNames = append(streamNames, stream.StreamName)
 		streamSummaries = append(streamSummaries, map[string]interface{}{
-			"StreamName":        stream.StreamName,
-			"StreamARN":         stream.StreamARN,
-			"StreamStatus":      stream.StreamStatus,
-			"StreamModeDetails": stream.StreamModeDetails,
-			"ConsumerCount":     stream.ConsumerCount,
+			"StreamName":              stream.StreamName,
+			"StreamARN":               stream.StreamARN,
+			"StreamStatus":            stream.StreamStatus,
+			"StreamModeDetails":       stream.StreamModeDetails,
+			"ConsumerCount":           stream.ConsumerCount,
+			"StreamCreationTimestamp": float64(stream.CreatedAt.Unix()),
 		})
 		if len(streamSummaries) >= limit {
 			break

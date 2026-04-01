@@ -756,5 +756,318 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 		return nil
 	}))
 
+	// === NEW OPERATIONS: ARN-based tagging ===
+
+	tagStreamName := fmt.Sprintf("test-tag-arn-%d", time.Now().UnixNano())
+	_, _ = client.CreateStream(ctx, &kinesis.CreateStreamInput{
+		StreamName: aws.String(tagStreamName),
+		ShardCount: aws.Int32(1),
+	})
+	time.Sleep(1 * time.Second)
+	tagStreamDesc, _ := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+		StreamName: aws.String(tagStreamName),
+	})
+	var tagStreamARN string
+	if tagStreamDesc != nil && tagStreamDesc.StreamDescription != nil {
+		tagStreamARN = aws.ToString(tagStreamDesc.StreamDescription.StreamARN)
+	}
+
+	if tagStreamARN != "" {
+		results = append(results, r.RunTest("kinesis", "TagResource", func() error {
+			_, err := client.TagResource(ctx, &kinesis.TagResourceInput{
+				ResourceARN: aws.String(tagStreamARN),
+				Tags: map[string]string{
+					"TagTest":  "value1",
+					"TagTest2": "value2",
+				},
+			})
+			return err
+		}))
+
+		results = append(results, r.RunTest("kinesis", "ListTagsForResource", func() error {
+			resp, err := client.ListTagsForResource(ctx, &kinesis.ListTagsForResourceInput{
+				ResourceARN: aws.String(tagStreamARN),
+			})
+			if err != nil {
+				return err
+			}
+			if len(resp.Tags) < 2 {
+				return fmt.Errorf("expected >= 2 tags, got %d", len(resp.Tags))
+			}
+			return nil
+		}))
+
+		results = append(results, r.RunTest("kinesis", "UntagResource", func() error {
+			_, err := client.UntagResource(ctx, &kinesis.UntagResourceInput{
+				ResourceARN: aws.String(tagStreamARN),
+				TagKeys:     []string{"TagTest"},
+			})
+			if err != nil {
+				return err
+			}
+			resp, err := client.ListTagsForResource(ctx, &kinesis.ListTagsForResourceInput{
+				ResourceARN: aws.String(tagStreamARN),
+			})
+			if err != nil {
+				return err
+			}
+			for _, t := range resp.Tags {
+				if aws.ToString(t.Key) == "TagTest" {
+					return fmt.Errorf("TagTest should have been removed")
+				}
+			}
+			return nil
+		}))
+	} else {
+		results = append(results, TestResult{Service: "kinesis", TestName: "TagResource", Status: "SKIP", Error: "tagStreamARN not available"})
+		results = append(results, TestResult{Service: "kinesis", TestName: "ListTagsForResource", Status: "SKIP", Error: "tagStreamARN not available"})
+		results = append(results, TestResult{Service: "kinesis", TestName: "UntagResource", Status: "SKIP", Error: "tagStreamARN not available"})
+	}
+
+	_, _ = client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(tagStreamName)})
+
+	// === NEW OPERATIONS: Account Settings ===
+
+	results = append(results, r.RunTest("kinesis", "DescribeAccountSettings", func() error {
+		_, err := client.DescribeAccountSettings(ctx, &kinesis.DescribeAccountSettingsInput{})
+		return err
+	}))
+
+	results = append(results, r.RunTest("kinesis", "UpdateAccountSettings", func() error {
+		_, err := client.UpdateAccountSettings(ctx, &kinesis.UpdateAccountSettingsInput{
+			MinimumThroughputBillingCommitment: &types.MinimumThroughputBillingCommitmentInput{
+				Status: types.MinimumThroughputBillingCommitmentInputStatusDisabled,
+			},
+		})
+		return err
+	}))
+
+	// === NEW OPERATIONS: Resource Policy ===
+
+	policyStreamName := fmt.Sprintf("test-policy-%d", time.Now().UnixNano())
+	_, _ = client.CreateStream(ctx, &kinesis.CreateStreamInput{
+		StreamName: aws.String(policyStreamName),
+		ShardCount: aws.Int32(1),
+	})
+	time.Sleep(1 * time.Second)
+	policyStreamDesc, _ := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+		StreamName: aws.String(policyStreamName),
+	})
+	var policyStreamARN string
+	if policyStreamDesc != nil && policyStreamDesc.StreamDescription != nil {
+		policyStreamARN = aws.ToString(policyStreamDesc.StreamDescription.StreamARN)
+	}
+
+	if policyStreamARN != "" {
+		results = append(results, r.RunTest("kinesis", "PutResourcePolicy", func() error {
+			_, err := client.PutResourcePolicy(ctx, &kinesis.PutResourcePolicyInput{
+				ResourceARN: aws.String(policyStreamARN),
+				Policy:      aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":"kinesis:*","Resource":"*"}]}`),
+			})
+			return err
+		}))
+
+		results = append(results, r.RunTest("kinesis", "GetResourcePolicy", func() error {
+			resp, err := client.GetResourcePolicy(ctx, &kinesis.GetResourcePolicyInput{
+				ResourceARN: aws.String(policyStreamARN),
+			})
+			if err != nil {
+				return err
+			}
+			policy := aws.ToString(resp.Policy)
+			if policy == "" {
+				return fmt.Errorf("expected non-empty policy")
+			}
+			return nil
+		}))
+
+		results = append(results, r.RunTest("kinesis", "DeleteResourcePolicy", func() error {
+			_, err := client.DeleteResourcePolicy(ctx, &kinesis.DeleteResourcePolicyInput{
+				ResourceARN: aws.String(policyStreamARN),
+			})
+			if err != nil {
+				return err
+			}
+			resp, err := client.GetResourcePolicy(ctx, &kinesis.GetResourcePolicyInput{
+				ResourceARN: aws.String(policyStreamARN),
+			})
+			if err != nil {
+				return err
+			}
+			policy := aws.ToString(resp.Policy)
+			if policy != "" {
+				return fmt.Errorf("expected empty policy after delete, got: %s", policy)
+			}
+			return nil
+		}))
+	} else {
+		results = append(results, TestResult{Service: "kinesis", TestName: "PutResourcePolicy", Status: "SKIP", Error: "policyStreamARN not available"})
+		results = append(results, TestResult{Service: "kinesis", TestName: "GetResourcePolicy", Status: "SKIP", Error: "policyStreamARN not available"})
+		results = append(results, TestResult{Service: "kinesis", TestName: "DeleteResourcePolicy", Status: "SKIP", Error: "policyStreamARN not available"})
+	}
+
+	_, _ = client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(policyStreamName)})
+
+	// === NEW OPERATIONS: UpdateMaxRecordSize ===
+
+	maxRecordStreamName := fmt.Sprintf("test-maxrec-%d", time.Now().UnixNano())
+	_, _ = client.CreateStream(ctx, &kinesis.CreateStreamInput{
+		StreamName: aws.String(maxRecordStreamName),
+		ShardCount: aws.Int32(1),
+	})
+	time.Sleep(1 * time.Second)
+	maxRecordDesc, _ := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+		StreamName: aws.String(maxRecordStreamName),
+	})
+
+	if maxRecordDesc != nil && maxRecordDesc.StreamDescription != nil {
+		results = append(results, r.RunTest("kinesis", "UpdateMaxRecordSize", func() error {
+			_, err := client.UpdateMaxRecordSize(ctx, &kinesis.UpdateMaxRecordSizeInput{
+				StreamARN:          maxRecordDesc.StreamDescription.StreamARN,
+				MaxRecordSizeInKiB: aws.Int32(1024),
+			})
+			return err
+		}))
+	} else {
+		results = append(results, TestResult{Service: "kinesis", TestName: "UpdateMaxRecordSize", Status: "SKIP", Error: "stream not available"})
+	}
+
+	_, _ = client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(maxRecordStreamName)})
+
+	// === NEW OPERATIONS: UpdateStreamWarmThroughput ===
+
+	warmStreamName := fmt.Sprintf("test-warm-%d", time.Now().UnixNano())
+	_, _ = client.CreateStream(ctx, &kinesis.CreateStreamInput{
+		StreamName: aws.String(warmStreamName),
+		ShardCount: aws.Int32(1),
+	})
+	time.Sleep(1 * time.Second)
+
+	warmDesc, _ := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+		StreamName: aws.String(warmStreamName),
+	})
+
+	if warmDesc != nil && warmDesc.StreamDescription != nil {
+		results = append(results, r.RunTest("kinesis", "UpdateStreamWarmThroughput", func() error {
+			resp, err := client.UpdateStreamWarmThroughput(ctx, &kinesis.UpdateStreamWarmThroughputInput{
+				StreamARN:           warmDesc.StreamDescription.StreamARN,
+				WarmThroughputMiBps: aws.Int32(256),
+			})
+			if err != nil {
+				return err
+			}
+			if resp.WarmThroughput == nil {
+				return fmt.Errorf("WarmThroughput is nil")
+			}
+			return nil
+		}))
+	} else {
+		results = append(results, TestResult{Service: "kinesis", TestName: "UpdateStreamWarmThroughput", Status: "SKIP", Error: "stream not available"})
+	}
+
+	_, _ = client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(warmStreamName)})
+
+	// === VERIFICATION TESTS ===
+
+	results = append(results, r.RunTest("kinesis", "DescribeStream_VerifyTimestamp", func() error {
+		tsStreamName := fmt.Sprintf("test-ts-%d", time.Now().UnixNano())
+		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
+			StreamName: aws.String(tsStreamName),
+			ShardCount: aws.Int32(1),
+		})
+		if err != nil {
+			return err
+		}
+		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
+			StreamName: aws.String(tsStreamName),
+		})
+		time.Sleep(500 * time.Millisecond)
+		resp, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+			StreamName: aws.String(tsStreamName),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.StreamDescription.StreamCreationTimestamp == nil {
+			return fmt.Errorf("StreamCreationTimestamp is nil")
+		}
+		if resp.StreamDescription.StreamCreationTimestamp.IsZero() {
+			return fmt.Errorf("StreamCreationTimestamp is zero")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("kinesis", "DescribeStream_VerifyEncryption", func() error {
+		encStreamName := fmt.Sprintf("test-enc-%d", time.Now().UnixNano())
+		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
+			StreamName: aws.String(encStreamName),
+			ShardCount: aws.Int32(1),
+		})
+		if err != nil {
+			return err
+		}
+		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
+			StreamName: aws.String(encStreamName),
+		})
+		time.Sleep(500 * time.Millisecond)
+
+		_, err = client.StartStreamEncryption(ctx, &kinesis.StartStreamEncryptionInput{
+			StreamName:     aws.String(encStreamName),
+			EncryptionType: types.EncryptionTypeKms,
+			KeyId:          aws.String("arn:aws:kms:us-east-1:123456789012:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+		})
+		if err != nil {
+			return fmt.Errorf("start encryption: %v", err)
+		}
+
+		resp, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+			StreamName: aws.String(encStreamName),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.StreamDescription.EncryptionType != types.EncryptionTypeKms {
+			return fmt.Errorf("expected KMS encryption, got %s", resp.StreamDescription.EncryptionType)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("kinesis", "ListTagsForResource_StreamCreated", func() error {
+		tlcStreamName := fmt.Sprintf("test-tlcr-%d", time.Now().UnixNano())
+		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
+			StreamName: aws.String(tlcStreamName),
+			ShardCount: aws.Int32(1),
+			Tags: map[string]string{
+				"CreatedBy": "sdk-test",
+				"Project":   "vorpalstacks",
+			},
+		})
+		if err != nil {
+			return err
+		}
+		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
+			StreamName: aws.String(tlcStreamName),
+		})
+		time.Sleep(500 * time.Millisecond)
+
+		descResp, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+			StreamName: aws.String(tlcStreamName),
+		})
+		if err != nil {
+			return err
+		}
+
+		resp, err := client.ListTagsForResource(ctx, &kinesis.ListTagsForResourceInput{
+			ResourceARN: descResp.StreamDescription.StreamARN,
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.Tags) < 2 {
+			return fmt.Errorf("expected >= 2 tags from stream creation, got %d", len(resp.Tags))
+		}
+		return nil
+	}))
+
 	return results
 }

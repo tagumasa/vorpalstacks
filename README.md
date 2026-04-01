@@ -2,7 +2,7 @@
 
 [日本語](README.ja.md) | [中文](README.zh.md)
 
-> **Warning: This is a beta release.** Vorpalstacks is under active development. While 30 AWS services are implemented with 1311 passing Go SDK tests (plus 631 Python, 629 TypeScript, 606 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
+> **Warning: This is a beta release.** Vorpalstacks is under active development. While 30 AWS services are implemented with 1387 passing Go SDK tests (plus 631 Python, 629 TypeScript, 606 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
 
 A lightweight edge and on-premise cloud platform providing AWS-compatible services.
 
@@ -55,6 +55,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | Kinesis | Full | |
 | KMS | Full | |
 | Lambda | Broad | No durable functions or code signing |
+| Neptune | Full | Property graph + RDF, openCypher/Gremlin, bulk loader |
 | Route53 | Selective | DNS record management only |
 | S3 | Broad | No analytics, inventory, or S3 Express |
 | Scheduler | Full | |
@@ -66,7 +67,6 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | STS | Full | |
 | Step Functions | Full | |
 | Timestream | Full | |
-| Neptune | Full | Property graph + RDF, openCypher/Gremlin, bulk loader |
 | WAF | Selective | No managed rule groups or logging configuration |
 | WAFv2 | Broad | |
 
@@ -212,7 +212,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 Vorpalstacks implements all 30 services as native Go binaries backed by PebbleDB, avoiding the overhead of interpreted languages or external process dependencies.
 
-This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (1311 Go SDK, 631 Python, 629 TypeScript, 606 C# tests) directly within CI/CD pipelines without containerization overhead.
+This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (1387 Go SDK, 631 Python, 629 TypeScript, 606 C# tests) directly within CI/CD pipelines without containerization overhead.
 
 ### Benchmark Results (Reference)
 

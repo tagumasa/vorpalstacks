@@ -91,4 +91,6 @@ func (s *Service) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("timestream-query", "UpdateAccountSettings", s.UpdateAccountSettings)
 	d.RegisterHandlerForService("timestream-query", "DescribeAccountSettings", s.DescribeAccountSettings)
 	d.RegisterHandlerForService("timestream-query", "ListTagsForResource", s.ListTagsForResource)
+	d.RegisterHandlerForService("timestream-query", "TagResource", s.TagResource)
+	d.RegisterHandlerForService("timestream-query", "UntagResource", s.UntagResource)
 }

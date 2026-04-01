@@ -32,10 +32,6 @@ func (s *Service) WriteRecords(ctx context.Context, reqCtx *request.RequestConte
 		return nil, s.mapStoreError(err)
 	}
 
-	if flushErr := st.recordStore.FlushAllBuffers(); flushErr != nil {
-		return nil, s.mapStoreError(flushErr)
-	}
-
 	response := map[string]interface{}{
 		"RecordsIngested": map[string]interface{}{
 			"Total":         int64(len(records)),
@@ -180,7 +176,7 @@ func (s *Service) UntagResource(ctx context.Context, reqCtx *request.RequestCont
 		return nil, ErrInvalidParameter
 	}
 
-	tagKeys := request.GetStringList(req.Parameters, "TagKeys")
+	tagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys")
 	if len(tagKeys) == 0 {
 		return nil, ErrInvalidParameter
 	}

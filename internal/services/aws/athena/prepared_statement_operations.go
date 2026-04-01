@@ -2,7 +2,6 @@ package athena
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
@@ -135,7 +134,7 @@ func (s *Service) ListPreparedStatements(ctx context.Context, reqCtx *request.Re
 	for _, ps := range preparedStatements {
 		summaries = append(summaries, map[string]interface{}{
 			"StatementName":    ps.StatementName,
-			"LastModifiedTime": ps.LastModifiedTime,
+			"LastModifiedTime": float64(ps.LastModifiedTime.UnixNano()) / 1e9,
 		})
 	}
 
@@ -239,6 +238,6 @@ func (s *Service) preparedStatementToResponse(ps *athenastore.PreparedStatement)
 		"QueryStatement":   ps.QueryStatement,
 		"WorkGroupName":    ps.WorkGroupName,
 		"Description":      ps.Description,
-		"LastModifiedTime": ps.LastModifiedTime.Format(time.RFC3339),
+		"LastModifiedTime": float64(ps.LastModifiedTime.UnixNano()) / 1e9,
 	}
 }

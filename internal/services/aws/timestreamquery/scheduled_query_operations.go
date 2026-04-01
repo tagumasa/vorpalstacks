@@ -76,9 +76,85 @@ func (s *Service) CreateScheduledQuery(ctx context.Context, reqCtx *request.Requ
 		return nil, ErrInternalServer
 	}
 
+	if tagMap := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")); len(tagMap) > 0 {
+		_ = st.scheduledQueryStore.TagResource(sq.ARN, tagMap)
+	}
+
 	tags, _ := st.scheduledQueryStore.ListTags(sq.ARN)
 
 	return s.formatScheduledQueryResponse(sq, tags), nil
+}
+
+// TagResource adds tags to a scheduled query.
+func (s *Service) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
+	if resourceARN == "" {
+		return nil, ErrValidationException
+	}
+
+	tagMap := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
+	if len(tagMap) == 0 {
+		return nil, ErrValidationException
+	}
+
+	st, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	name := st.arnBuilder.Timestream().ParseScheduledQueryName(resourceARN)
+	if name == "" {
+		return nil, ErrValidationException
+	}
+
+	if _, err := st.scheduledQueryStore.GetScheduledQuery(name); err != nil {
+		if err == tsstore.ErrScheduledQueryNotFound {
+			return nil, ErrResourceNotFound
+		}
+		return nil, ErrInternalServer
+	}
+
+	if err := st.scheduledQueryStore.TagResource(resourceARN, tagMap); err != nil {
+		return nil, ErrInternalServer
+	}
+
+	return response.EmptyResponse(), nil
+}
+
+// UntagResource removes tags from a scheduled query.
+func (s *Service) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
+	if resourceARN == "" {
+		return nil, ErrValidationException
+	}
+
+	tagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys")
+	if len(tagKeys) == 0 {
+		return nil, ErrValidationException
+	}
+
+	st, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	name := st.arnBuilder.Timestream().ParseScheduledQueryName(resourceARN)
+	if name == "" {
+		return nil, ErrValidationException
+	}
+
+	if _, err := st.scheduledQueryStore.GetScheduledQuery(name); err != nil {
+		if err == tsstore.ErrScheduledQueryNotFound {
+			return nil, ErrResourceNotFound
+		}
+		return nil, ErrInternalServer
+	}
+
+	if err := st.scheduledQueryStore.UntagResource(resourceARN, tagKeys); err != nil {
+		return nil, ErrInternalServer
+	}
+
+	return response.EmptyResponse(), nil
 }
 
 // DeleteScheduledQuery deletes a scheduled query.
@@ -135,7 +211,7 @@ func (s *Service) DescribeScheduledQuery(ctx context.Context, reqCtx *request.Re
 	tags, _ := st.scheduledQueryStore.ListTags(sq.ARN)
 
 	return map[string]interface{}{
-		"ScheduledQuery": s.formatScheduledQueryResponse(sq, tags),
+		"ScheduledQuery": s.formatScheduledQueryDescriptionResponse(sq, tags),
 	}, nil
 }
 
@@ -405,14 +481,59 @@ func (s *Service) ListTagsForResource(ctx context.Context, reqCtx *request.Reque
 	}, nil
 }
 
+func epochFloat(t time.Time) float64 {
+	return float64(t.UnixNano()) / 1e9
+}
+
 func (s *Service) formatScheduledQueryResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
 	response := map[string]interface{}{
-		"Arn":                            sq.ARN,
-		"Name":                           sq.Name,
-		"QueryString":                    sq.QueryString,
-		"CreationTime":                   sq.CreationTime.Format(time.RFC3339),
-		"ScheduledQueryStatus":           sq.ScheduledQueryStatus,
-		"ScheduledQueryExecutionRoleArn": sq.ScheduledQueryExecutionRoleARN,
+		"Arn":          sq.ARN,
+		"Name":         sq.Name,
+		"State":        sq.ScheduledQueryStatus,
+		"CreationTime": epochFloat(sq.CreationTime),
+	}
+
+	if sq.ErrorReportConfiguration != nil && sq.ErrorReportConfiguration.S3Configuration != nil {
+		response["ErrorReportConfiguration"] = map[string]interface{}{
+			"S3Configuration": map[string]interface{}{
+				"BucketName":      sq.ErrorReportConfiguration.S3Configuration.BucketName,
+				"ObjectKeyPrefix": sq.ErrorReportConfiguration.S3Configuration.ObjectKeyPrefix,
+			},
+		}
+	}
+
+	if sq.LastRunStatus != "" {
+		response["LastRunStatus"] = sq.LastRunStatus
+	}
+
+	if !sq.NextRunTime.IsZero() {
+		response["NextInvocationTime"] = epochFloat(sq.NextRunTime)
+	}
+
+	if !sq.PreviousRunTime.IsZero() {
+		response["PreviousInvocationTime"] = epochFloat(sq.PreviousRunTime)
+	}
+
+	if sq.TargetConfiguration != nil && sq.TargetConfiguration.TimestreamConfiguration != nil {
+		tsConfig := sq.TargetConfiguration.TimestreamConfiguration
+		response["TargetDestination"] = map[string]interface{}{
+			"TimestreamDestination": map[string]interface{}{
+				"DatabaseName": tsConfig.DatabaseName,
+				"TableName":    tsConfig.TableName,
+			},
+		}
+	}
+
+	return response
+}
+
+func (s *Service) formatScheduledQueryDescriptionResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
+	response := map[string]interface{}{
+		"Arn":          sq.ARN,
+		"Name":         sq.Name,
+		"State":        sq.ScheduledQueryStatus,
+		"QueryString":  sq.QueryString,
+		"CreationTime": epochFloat(sq.CreationTime),
 	}
 
 	if sq.ScheduleConfiguration != nil {
@@ -429,6 +550,10 @@ func (s *Service) formatScheduledQueryResponse(sq *tsstore.ScheduledQuery, tags 
 		}
 	}
 
+	if sq.ScheduledQueryExecutionRoleARN != "" {
+		response["ScheduledQueryExecutionRoleArn"] = sq.ScheduledQueryExecutionRoleARN
+	}
+
 	if sq.KmsKeyID != "" {
 		response["KmsKeyId"] = sq.KmsKeyID
 	}
@@ -442,34 +567,28 @@ func (s *Service) formatScheduledQueryResponse(sq *tsstore.ScheduledQuery, tags 
 		}
 	}
 
-	if sq.TargetConfiguration != nil && sq.TargetConfiguration.TimestreamConfiguration != nil {
-		tsConfig := sq.TargetConfiguration.TimestreamConfiguration
-		tsConfigMap := map[string]interface{}{
-			"DatabaseName": tsConfig.DatabaseName,
-			"TableName":    tsConfig.TableName,
+	if sq.LastRunStatus != "" {
+		response["LastRunSummary"] = map[string]interface{}{
+			"RunStatus": sq.LastRunStatus,
 		}
-		if tsConfig.TimeColumn != "" {
-			tsConfigMap["TimeColumn"] = tsConfig.TimeColumn
-		}
-		response["TargetConfiguration"] = map[string]interface{}{
-			"TimestreamConfiguration": tsConfigMap,
-		}
-	}
-
-	if len(tags) > 0 {
-		response["Tags"] = tagutil.MapToResponse(tags)
-	}
-
-	if !sq.PreviousRunTime.IsZero() {
-		response["PreviousRunTime"] = sq.PreviousRunTime.Format(time.RFC3339)
 	}
 
 	if !sq.NextRunTime.IsZero() {
-		response["NextRunTime"] = sq.NextRunTime.Format(time.RFC3339)
+		response["NextInvocationTime"] = epochFloat(sq.NextRunTime)
 	}
 
-	if sq.LastRunStatus != "" {
-		response["LastRunStatus"] = sq.LastRunStatus
+	if !sq.PreviousRunTime.IsZero() {
+		response["PreviousInvocationTime"] = epochFloat(sq.PreviousRunTime)
+	}
+
+	if sq.TargetConfiguration != nil && sq.TargetConfiguration.TimestreamConfiguration != nil {
+		tsConfig := sq.TargetConfiguration.TimestreamConfiguration
+		response["TargetDestination"] = map[string]interface{}{
+			"TimestreamDestination": map[string]interface{}{
+				"DatabaseName": tsConfig.DatabaseName,
+				"TableName":    tsConfig.TableName,
+			},
+		}
 	}
 
 	return response

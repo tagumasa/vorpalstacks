@@ -51,6 +51,7 @@ func (r *ServiceRouter) DetermineService(req *http.Request) string {
 							"UpdateScheduledQuery": true, "ExecuteScheduledQuery": true,
 							"DescribeAccountSettings": true, "UpdateAccountSettings": true,
 							"DescribeEndpoints": true,
+							"TagResource":       true, "UntagResource": true, "ListTagsForResource": true,
 						}
 						if queryOps[parts[1]] {
 							return "timestream-query"
@@ -182,6 +183,8 @@ func extractServiceFromTargetHeader(target string) string {
 				"CreateScheduledQuery": true, "DeleteScheduledQuery": true, "DescribeScheduledQuery": true,
 				"ListScheduledQueries": true, "UpdateScheduledQuery": true, "ExecuteScheduledQuery": true,
 				"DescribeAccountSettings": true, "UpdateAccountSettings": true,
+				"DescribeEndpoints": true,
+				"TagResource":       true, "UntagResource": true, "ListTagsForResource": true,
 			}
 			if queryOps[parts[1]] {
 				return "timestream-query"

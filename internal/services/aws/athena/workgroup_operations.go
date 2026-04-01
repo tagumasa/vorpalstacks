@@ -357,7 +357,15 @@ func (s *Service) ListTagsForResource(ctx context.Context, reqCtx *request.Reque
 
 	resourceArn = normalizeAthenaARN(resourceArn, s.accountID)
 
-	tags, err := stores.workGroupStore.ListTags(resourceArn)
+	var tags map[string]string
+	switch matches[1] {
+	case "workgroup":
+		tags, err = stores.workGroupStore.ListTags(resourceArn)
+	case "datacatalog":
+		tags, err = stores.dataCatalogStore.ListTags(resourceArn)
+	default:
+		return nil, ErrInvalidRequestException
+	}
 	if err != nil {
 		return nil, err
 	}
