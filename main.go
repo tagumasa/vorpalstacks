@@ -1,6 +1,6 @@
 // Vorpalstacks is an AWS-compatible cloud platform for edge and on-premises environments.
 //
-// It provides 30 service APIs covering 26 AWS services with a single binary,
+// It provides 29 service APIs covering 25 AWS services with a single binary,
 // using CockroachDB Pebble for persistent storage and supporting both
 // JSON and Query AWS API protocols.
 package main
@@ -51,7 +51,6 @@ import (
 	svcsts "vorpalstacks/internal/services/aws/sts"
 	svctimestreamquery "vorpalstacks/internal/services/aws/timestreamquery"
 	svctimestreamwrite "vorpalstacks/internal/services/aws/timestreamwrite"
-	svcwaf "vorpalstacks/internal/services/aws/waf"
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	storeapigateway "vorpalstacks/internal/store/aws/apigateway"
 	storelogs "vorpalstacks/internal/store/aws/cloudwatchlogs"
@@ -201,9 +200,6 @@ func main() {
 		DefaultPort: cloudfrontPort,
 		Handler:     cloudfrontHandler,
 	})
-
-	wafService := svcwaf.NewWAFService(server.Storage(), cfg.AccountID, cfg.Region)
-	wafService.RegisterHandlers(server.Dispatcher())
 
 	wafv2Service := svcwafv2.NewWAFv2Service(server.Storage(), cfg.AccountID, cfg.Region)
 	wafv2Service.RegisterHandlers(server.Dispatcher())
