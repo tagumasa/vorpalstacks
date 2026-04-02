@@ -43,15 +43,20 @@ type Parameter struct {
 	VersionLabels    map[int64][]string `json:"versionLabels,omitempty"`
 }
 
-// ParameterVersion represents a specific version of a parameter.
+// ParameterVersion represents a specific version of a parameter,
+// storing all metadata needed to reconstruct historical parameter state.
 type ParameterVersion struct {
 	ParameterName    string        `json:"parameterName"`
 	Version          int64         `json:"version"`
 	Value            string        `json:"value"`
 	Type             ParameterType `json:"type"`
+	Tier             ParameterTier `json:"tier,omitempty"`
 	LastModifiedDate time.Time     `json:"lastModifiedDate"`
 	DataType         string        `json:"dataType,omitempty"`
 	Labels           []string      `json:"labels,omitempty"`
+	Description      string        `json:"description,omitempty"`
+	KeyID            string        `json:"keyId,omitempty"`
+	AllowedPattern   string        `json:"allowedPattern,omitempty"`
 }
 
 // ParameterMetadata represents the metadata of a parameter without its value.

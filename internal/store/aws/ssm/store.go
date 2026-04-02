@@ -110,8 +110,12 @@ func (s *Store) PutParameter(param *Parameter, overwrite bool) (int64, error) {
 		Version:          param.Version,
 		Value:            param.Value,
 		Type:             param.Type,
+		Tier:             param.Tier,
 		LastModifiedDate: param.LastModifiedDate,
 		DataType:         param.DataType,
+		Description:      param.Description,
+		KeyID:            param.KeyID,
+		AllowedPattern:   param.AllowedPattern,
 	}
 	hKey := s.historyKey(param.Name, param.Version)
 	if err := s.historyStore.Put(hKey, historyEntry); err != nil {
@@ -132,6 +136,8 @@ func (s *Store) GetParameter(name string, withDecryption bool) (*Parameter, erro
 }
 
 // GetParameterByVersion retrieves a specific version of a parameter.
+// The returned parameter includes the full ARN reconstructed from the
+// parameter name, matching AWS behaviour for versioned lookups.
 func (s *Store) GetParameterByVersion(name string, version int64) (*Parameter, error) {
 	if _, err := s.GetParameter(name, false); err != nil {
 		return nil, err
@@ -150,6 +156,7 @@ func (s *Store) GetParameterByVersion(name string, version int64) (*Parameter, e
 		Version:          paramVersion.Version,
 		LastModifiedDate: paramVersion.LastModifiedDate,
 		DataType:         paramVersion.DataType,
+		ARN:              s.buildARN(paramVersion.ParameterName),
 	}, nil
 }
 
@@ -198,6 +205,8 @@ func (s *Store) GetParameters(names []string, withDecryption bool) ([]*Parameter
 }
 
 // GetParameterHistory retrieves the version history of a parameter.
+// Results are returned in reverse chronological order (newest first),
+// matching the AWS API behaviour.
 func (s *Store) GetParameterHistory(name string, maxResults int32) ([]*ParameterVersion, error) {
 	param, err := s.GetParameter(name, false)
 	if err != nil {
@@ -222,6 +231,11 @@ func (s *Store) GetParameterHistory(name string, maxResults int32) ([]*Parameter
 		} else {
 			pv.Labels = []string{}
 		}
+	}
+
+	// Reverse results to return newest version first, matching AWS behaviour.
+	for i, j := 0, len(result.Items)-1; i < j; i, j = i+1, j-1 {
+		result.Items[i], result.Items[j] = result.Items[j], result.Items[i]
 	}
 
 	return result.Items, nil

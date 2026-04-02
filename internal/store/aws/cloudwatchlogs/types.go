@@ -50,6 +50,7 @@ type OutputLogEvent struct {
 	Timestamp     int64  `json:"timestamp"`
 	Message       string `json:"message"`
 	IngestionTime int64  `json:"ingestionTime"`
+	LogStreamName string `json:"logStreamName,omitempty"`
 }
 
 // ChunkMeta represents metadata for a log chunk.

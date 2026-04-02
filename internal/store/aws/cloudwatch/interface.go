@@ -8,6 +8,9 @@ type AlarmStoreInterface interface {
 	DeleteAlarm(name string) error
 	ListAlarms(alarmNamePrefix string) ([]*Alarm, error)
 	SetAlarmState(name, state, reason string) error
+	SetAlarmActionsEnabled(name string, enabled bool) error
+	AddAlarmHistory(entry *AlarmHistoryEntry) error
+	ListAlarmHistory(alarmName string, historyItemType string) ([]*AlarmHistoryEntry, error)
 	TagResource(arn string, tags map[string]string) error
 	ListTags(resourceKey string) (map[string]string, error)
 	UntagResource(resourceKey string, tagKeys []string) error

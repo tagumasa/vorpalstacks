@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-> **注意：目前为测试版。** Vorpalstacks 正在积极开发中。已实现 30 个 AWS 服务，Go SDK 测试 1464 项通过（另有 Python 631 项、TypeScript 629 项、C# 606 项），但并未完全覆盖所有边界情况和 AWS 行为。可能存在破坏性变更。欢迎提交 Bug 报告和贡献代码。
+> **注意：目前为测试版。** Vorpalstacks 正在积极开发中。已实现 30 个 AWS 服务，Go SDK 测试 1544 项通过（另有 Python 631 项、TypeScript 629 项、C# 606 项），但并未完全覆盖所有边界情况和 AWS 行为。可能存在破坏性变更。欢迎提交 Bug 报告和贡献代码。
 
 提供 AWS 兼容服务的轻量边缘及本地云平台。
 
@@ -212,7 +212,7 @@ DATA_PATH/
 
 Vorpalstacks 将全部 29 个服务实现为基于 PebbleDB 的原生 Go 二进制文件，避免了解释型语言和外部进程依赖的开销。
 
-这种架构使核心操作达到亚毫秒级延迟，可以在 CI/CD 流水线中直接运行大量 API 测试（Go SDK 1464 项、Python 631 项、TypeScript 629 项、C# 606 项），无需容器化开销。
+这种架构使核心操作达到亚毫秒级延迟，可以在 CI/CD 流水线中直接运行大量 API 测试（Go SDK 1544 项、Python 631 项、TypeScript 629 项、C# 606 项），无需容器化开销。
 
 ### 基准测试结果（参考值）
 

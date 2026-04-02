@@ -77,6 +77,9 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 		}
 	}
 
+	tags := tagutil.ParseTagsWithQueryFallback(params, "Tags")
+	cert.Tags = tags
+
 	domainValidationOptions := buildDomainValidationOptions(domainName, validationMethod)
 	cert.DomainValidationOptions = domainValidationOptions
 
@@ -136,10 +139,40 @@ func (s *ACMService) ListCertificates(ctx context.Context, reqCtx *request.Reque
 	marker := request.GetStringParam(params, "NextToken")
 	maxItems := getMaxItems(params)
 
+	var statuses []string
+	if raw, ok := params["CertificateStatuses"]; ok {
+		if arr, ok := raw.([]interface{}); ok {
+			for _, v := range arr {
+				if s, ok := v.(string); ok {
+					statuses = append(statuses, s)
+				}
+			}
+		}
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+
+	if len(statuses) > 0 {
+		allCerts, err := stores.certificates.ListAll()
+		if err != nil {
+			return nil, err
+		}
+		statusSet := make(map[string]bool)
+		for _, s := range statuses {
+			statusSet[s] = true
+		}
+		var filtered []*acmstorelib.CertificateSummary
+		for _, cert := range allCerts {
+			if statusSet[cert.Status] {
+				filtered = append(filtered, stores.certificates.(*acmstorelib.CertificateStore).CertificateToSummary(cert))
+			}
+		}
+		return filteredListToResponse(filtered, marker, maxItems), nil
+	}
+
 	result, err := stores.certificates.List(marker, maxItems)
 	if err != nil {
 		return nil, err
@@ -546,6 +579,11 @@ func (s *ACMService) RevokeCertificate(ctx context.Context, reqCtx *request.Requ
 		return nil, NewInvalidStateException("Certificate is not in a valid state for revocation.")
 	}
 
+	if reasonRaw, ok := req.Parameters["RevocationReason"]; ok {
+		if reason, ok := reasonRaw.(string); ok {
+			cert.RevocationReason = reason
+		}
+	}
 	cert.Status = "REVOKED"
 	cert.RevokedAt = time.Now().UTC()
 

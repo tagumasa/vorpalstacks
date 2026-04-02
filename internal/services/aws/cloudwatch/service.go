@@ -107,4 +107,8 @@ func (s *CloudWatchService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("monitoring", "TagResource", s.TagResource)
 	d.RegisterHandlerForService("monitoring", "UntagResource", s.UntagResource)
 	d.RegisterHandlerForService("monitoring", "ListTagsForResource", s.ListTagsForResource)
+	d.RegisterHandlerForService("monitoring", "EnableAlarmActions", s.EnableAlarmActions)
+	d.RegisterHandlerForService("monitoring", "DisableAlarmActions", s.DisableAlarmActions)
+	d.RegisterHandlerForService("monitoring", "DescribeAlarmHistory", s.DescribeAlarmHistory)
+	d.RegisterHandlerForService("monitoring", "PutCompositeAlarm", s.PutCompositeAlarm)
 }

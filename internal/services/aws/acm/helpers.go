@@ -306,3 +306,41 @@ func listCertificatesToResponse(result *acmstorelib.CertificateListResult) map[s
 		"CertificateSummaryList": certs,
 	}
 }
+
+func filteredListToResponse(summaries []*acmstorelib.CertificateSummary, marker string, maxItems int) map[string]interface{} {
+	if maxItems <= 0 {
+		maxItems = 100
+	}
+	started := marker == ""
+	var filtered []*acmstorelib.CertificateSummary
+	for _, s := range summaries {
+		if !started {
+			if s.CertificateArn > marker {
+				started = true
+			}
+			if !started {
+				continue
+			}
+		}
+		filtered = append(filtered, s)
+	}
+	certs := make([]interface{}, 0, len(filtered))
+	hasMore := false
+	var lastArn string
+	for i, s := range filtered {
+		if i >= maxItems {
+			hasMore = true
+			break
+		}
+		certs = append(certs, certificateSummaryToResponse(s))
+		lastArn = s.CertificateArn
+	}
+	nextToken := ""
+	if hasMore && lastArn != "" {
+		nextToken = lastArn
+	}
+	return map[string]interface{}{
+		"NextToken":              nextToken,
+		"CertificateSummaryList": certs,
+	}
+}

@@ -215,6 +215,7 @@ func ListProto[T proto.Message](store *BaseStore, opts ListOptions, newFunc func
 		if !started {
 			if key == opts.Marker {
 				started = true
+				return nil
 			} else if key > opts.Marker {
 				started = true
 			}
@@ -279,6 +280,7 @@ func List[T any](store *BaseStore, opts ListOptions, filter FilterFunc[T]) (*Lis
 		if !started {
 			if key == opts.Marker {
 				started = true
+				return nil
 			} else if key > opts.Marker {
 				started = true
 			}

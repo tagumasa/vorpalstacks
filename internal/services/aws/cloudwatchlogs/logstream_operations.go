@@ -21,11 +21,15 @@ import (
 )
 
 func logEventToResponse(e *logsstore.OutputLogEvent) map[string]interface{} {
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"timestamp":     e.Timestamp,
 		"message":       e.Message,
 		"ingestionTime": e.IngestionTime,
 	}
+	if e.LogStreamName != "" {
+		resp["logStreamName"] = e.LogStreamName
+	}
+	return resp
 }
 
 // CreateLogStream creates a new CloudWatch Logs log stream.
@@ -295,7 +299,7 @@ func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestC
 	if limit <= 0 {
 		limit = 10000
 	}
-	startFromHead := request.GetParamLowerFirst(req.Parameters, "StartFromHead") == "true"
+	startFromHead := request.GetBoolParam(req.Parameters, "StartFromHead")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
@@ -339,14 +343,7 @@ func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrMissingParameter
 	}
 
-	var logStreamNames []string
-	for i := 1; ; i++ {
-		name := request.GetParamLowerFirst(req.Parameters, "LogStreamNames."+strconv.Itoa(i))
-		if name == "" {
-			break
-		}
-		logStreamNames = append(logStreamNames, name)
-	}
+	logStreamNames := request.GetStringList(req.Parameters, "LogStreamNames")
 
 	startTime := int64(request.GetIntParam(req.Parameters, "StartTime"))
 	endTime := int64(request.GetIntParam(req.Parameters, "EndTime"))
@@ -355,13 +352,14 @@ func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.Reque
 	if limit <= 0 {
 		limit = 10000
 	}
+	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	events, searchedStreams, err := store.FilterLogEvents(logGroupName, logStreamNames, startTime, endTime, filterPattern, limit)
+	events, searchedStreams, nextMarker, err := store.FilterLogEvents(logGroupName, logStreamNames, startTime, endTime, filterPattern, limit, nextToken)
 	if err != nil {
 		return nil, mapStoreError(err)
 	}
@@ -379,11 +377,15 @@ func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.Reque
 		})
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"events":             outputEvents,
 		"searchedLogStreams": searchedStreamNames,
-		"nextToken":          "",
-	}, nil
+	}
+	if nextMarker != "" {
+		resp["nextToken"] = nextMarker
+	}
+
+	return resp, nil
 }
 
 func (s *LogsService) applySubscriptionFilters(reqCtx *request.RequestContext, logGroupName, logStreamName string, events []logsstore.LogEntry) {

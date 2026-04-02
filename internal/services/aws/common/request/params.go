@@ -120,6 +120,14 @@ func GetBoolParam(params map[string]interface{}, key string) bool {
 			return strings.ToLower(s) == "true"
 		}
 	}
+	if v, ok := params[LowerFirst(key)]; ok {
+		if b, ok := v.(bool); ok {
+			return b
+		}
+		if s, ok := v.(string); ok {
+			return strings.ToLower(s) == "true"
+		}
+	}
 	return false
 }
 
@@ -186,6 +194,10 @@ func GetStringList(params map[string]interface{}, key string) []string {
 	if !ok {
 		listIf, ok = params[strings.ToLower(key)]
 	}
+	if !ok {
+		lowerFirst := strings.ToLower(string(key[0])) + key[1:]
+		listIf, ok = params[lowerFirst]
+	}
 	if ok {
 		if list, ok := listIf.([]interface{}); ok {
 			for _, item := range list {
@@ -193,6 +205,11 @@ func GetStringList(params map[string]interface{}, key string) []string {
 					result = append(result, s)
 				}
 			}
+			if len(result) > 0 {
+				return result
+			}
+		} else if list, ok := listIf.([]string); ok {
+			result = append(result, list...)
 			if len(result) > 0 {
 				return result
 			}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -503,6 +504,8 @@ func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endT
 		}
 	}
 
+	sortEventsByTimestamp(allEvents)
+
 	if !startFromHead {
 		for i, j := 0, len(allEvents)-1; i < j; i, j = i+1, j-1 {
 			allEvents[i], allEvents[j] = allEvents[j], allEvents[i]
@@ -539,13 +542,17 @@ func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endT
 }
 
 // FilterLogEvents filters log events from a log group based on filter pattern.
-func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, startTime, endTime int64, filterPattern string, limit int) ([]*OutputLogEvent, map[string]bool, error) {
+func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, startTime, endTime int64, filterPattern string, limit int, nextToken string) ([]*OutputLogEvent, map[string]bool, string, error) {
 	if _, err := s.GetLogGroup(logGroupName); err != nil {
-		return nil, nil, ErrLogGroupNotFound
+		return nil, nil, "", ErrLogGroupNotFound
 	}
 
 	for _, streamName := range logStreamNames {
 		s.flushIfNeeded(logGroupName, streamName)
+	}
+
+	if len(logStreamNames) == 0 {
+		s.flushAllForLogGroup(logGroupName)
 	}
 
 	var chunks []*ChunkMeta
@@ -590,17 +597,33 @@ func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, st
 				Timestamp:     e.Timestamp,
 				Message:       e.Message,
 				IngestionTime: ingestionTime,
+				LogStreamName: chunk.LogStream,
 			})
 		}
 	}
 
 	sortEventsByTimestamp(allEvents)
 
+	skipCount := 0
+	if nextToken != "" {
+		if decoded, err := base64.StdEncoding.DecodeString(nextToken); err == nil {
+			skipCount, _ = strconv.Atoi(string(decoded))
+		}
+	}
+
+	if skipCount > 0 && skipCount < len(allEvents) {
+		allEvents = allEvents[skipCount:]
+	} else if skipCount >= len(allEvents) {
+		return []*OutputLogEvent{}, searchedStreams, "", nil
+	}
+
+	newNextToken := ""
 	if limit > 0 && len(allEvents) > limit {
+		newNextToken = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", skipCount+limit)))
 		allEvents = allEvents[:limit]
 	}
 
-	return allEvents, searchedStreams, nil
+	return allEvents, searchedStreams, newNextToken, nil
 }
 
 func (s *Store) flushIfNeeded(logGroupName, logStreamName string) {
@@ -613,6 +636,16 @@ func (s *Store) flushIfNeeded(logGroupName, logStreamName string) {
 			logs.Error("Failed to flush chunk", logs.String("logGroup", logGroupName), logs.String("logStream", logStreamName), logs.Err(err))
 		}
 		ac.entries = ac.entries[:0]
+	}
+}
+
+func (s *Store) flushAllForLogGroup(logGroupName string) {
+	streams, _, err := s.ListLogStreams(logGroupName, "", "", 10000)
+	if err != nil {
+		return
+	}
+	for _, stream := range streams {
+		s.flushIfNeeded(logGroupName, stream.Name)
 	}
 }
 
@@ -731,11 +764,12 @@ func (s *Store) subscriptionFilterKey(logGroupName, filterName string) string {
 // PutDestination creates a new CloudWatch Logs destination.
 func (s *Store) PutDestination(dest *Destination) error {
 	key := "destination:" + dest.Name
-	if s.Exists(key) {
-		return ErrDestinationAlreadyExists
-	}
 	if dest.CreationTime == 0 {
-		dest.CreationTime = time.Now().UnixMilli()
+		if existing, err := s.GetDestination(dest.Name); err == nil {
+			dest.CreationTime = existing.CreationTime
+		} else {
+			dest.CreationTime = time.Now().UnixMilli()
+		}
 	}
 	return s.Put(key, dest)
 }

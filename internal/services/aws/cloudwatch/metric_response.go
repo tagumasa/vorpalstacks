@@ -1,6 +1,8 @@
 package cloudwatch
 
 import (
+	"time"
+
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 
@@ -52,10 +54,10 @@ func buildListMetricsResponse(namespace string, metrics []cwstore.MetricDatum) m
 }
 
 func buildMetricDataResult(query cwstore.MetricDataQuery, stats []*cwstore.MetricStatistics) map[string]interface{} {
-	var timestamps []float64
+	var timestamps []time.Time
 	var values []float64
 	for _, dp := range stats {
-		timestamps = append(timestamps, float64(dp.Timestamp.UnixMilli()))
+		timestamps = append(timestamps, dp.Timestamp)
 		var val float64
 		switch query.MetricStat.Stat {
 		case "Average":

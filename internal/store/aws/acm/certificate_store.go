@@ -95,7 +95,7 @@ func (s *CertificateStore) List(marker string, maxItems int) (*CertificateListRe
 		}
 
 		if count < maxItems {
-			certs = append(certs, s.certificateToSummary(&cert))
+			certs = append(certs, s.CertificateToSummary(&cert))
 			count++
 			lastIncludedArn = cert.CertificateArn
 		} else {
@@ -207,7 +207,7 @@ func formatEpochSeconds(t time.Time) float64 {
 	return float64(t.Unix()) + float64(t.Nanosecond())/1e9
 }
 
-func (s *CertificateStore) certificateToSummary(cert *Certificate) *CertificateSummary {
+func (s *CertificateStore) CertificateToSummary(cert *Certificate) *CertificateSummary {
 	summary := &CertificateSummary{
 		CertificateArn:                       cert.CertificateArn,
 		DomainName:                           cert.DomainName,

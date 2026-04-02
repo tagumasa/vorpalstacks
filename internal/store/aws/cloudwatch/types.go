@@ -198,6 +198,31 @@ type Alarm struct {
 	StateUpdatedTimestamp   time.Time         `json:"stateUpdatedTimestamp"`
 	CreatedAt               time.Time         `json:"createdAt"`
 	Tags                    map[string]string `json:"tags,omitempty"`
+	AlarmRule               string            `json:"alarmRule,omitempty"`
+	AlarmType               string            `json:"alarmType,omitempty"`
+}
+
+// AlarmType constants
+const (
+	AlarmTypeMetricAlarm    = "MetricAlarm"
+	AlarmTypeCompositeAlarm = "CompositeAlarm"
+)
+
+// HistoryItemType constants
+const (
+	HistoryItemTypeConfigurationUpdate = "ConfigurationUpdate"
+	HistoryItemTypeStateUpdate         = "StateUpdate"
+	HistoryItemTypeAction              = "Action"
+)
+
+// AlarmHistoryEntry represents an entry in an alarm's history.
+type AlarmHistoryEntry struct {
+	AlarmName       string `json:"alarmName"`
+	AlarmType       string `json:"alarmType"`
+	Timestamp       int64  `json:"timestamp"`
+	HistoryItemType string `json:"historyItemType"`
+	HistorySummary  string `json:"historySummary"`
+	HistoryData     string `json:"historyData,omitempty"`
 }
 
 // Dashboard represents a CloudWatch dashboard.

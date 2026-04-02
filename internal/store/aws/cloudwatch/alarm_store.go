@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 	"vorpalstacks/internal/core/storage"
@@ -168,4 +169,55 @@ func (s *AlarmStore) SetAlarmState(name, state, reason string) error {
 
 	key := s.buildAlarmKey(alarm.Name)
 	return s.Put(key, alarm)
+}
+
+// SetAlarmActionsEnabled enables or disables actions for a CloudWatch alarm.
+func (s *AlarmStore) SetAlarmActionsEnabled(name string, enabled bool) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	alarm, err := s.GetAlarm(name)
+	if err != nil {
+		return err
+	}
+
+	alarm.ActionsEnabled = enabled
+
+	key := s.buildAlarmKey(name)
+	return s.Put(key, alarm)
+}
+
+// AddAlarmHistory adds a history entry for an alarm.
+func (s *AlarmStore) AddAlarmHistory(entry *AlarmHistoryEntry) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	key := fmt.Sprintf("history:%s:%d", entry.AlarmName, entry.Timestamp)
+	return s.Put(key, entry)
+}
+
+// ListAlarmHistory retrieves alarm history entries, optionally filtered by alarm name and history item type.
+func (s *AlarmStore) ListAlarmHistory(alarmName string, historyItemType string) ([]*AlarmHistoryEntry, error) {
+	prefix := "history:"
+	if alarmName != "" {
+		prefix = "history:" + alarmName + ":"
+	}
+
+	var entries []*AlarmHistoryEntry
+	err := s.ScanPrefix(prefix, func(key string, value []byte) error {
+		var entry AlarmHistoryEntry
+		if err := json.Unmarshal(value, &entry); err != nil {
+			return err
+		}
+		if historyItemType != "" && entry.HistoryItemType != historyItemType {
+			return nil
+		}
+		entries = append(entries, &entry)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return entries, nil
 }

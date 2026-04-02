@@ -2,7 +2,6 @@ package cloudwatchlogs
 
 import (
 	"context"
-	"strconv"
 
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
@@ -202,14 +201,7 @@ func (s *LogsService) UntagResource(ctx context.Context, reqCtx *request.Request
 		return nil, ErrMissingParameter
 	}
 
-	var tagKeys []string
-	for i := 1; ; i++ {
-		key := request.GetParamLowerFirst(req.Parameters, "TagKeys."+strconv.Itoa(i))
-		if key == "" {
-			break
-		}
-		tagKeys = append(tagKeys, key)
-	}
+	tagKeys := request.GetStringList(req.Parameters, "TagKeys")
 
 	logGroupName := arn.ExtractLogGroupNameFromARN(resourceARN)
 

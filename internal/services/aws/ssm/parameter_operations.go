@@ -128,15 +128,17 @@ func (s *SSMService) GetParameter(ctx context.Context, reqCtx *request.RequestCo
 	var param *ssmstore.Parameter
 	var usedSelector string
 
+	// When a selector is provided (version or label), the Selector response
+	// field must include the full "name:selector" string, matching AWS behaviour.
 	if selector == "" {
 		param, err = store.GetParameter(baseName, false)
 		usedSelector = ""
 	} else if version, err := strconv.ParseInt(selector, 10, 64); err == nil {
 		param, err = store.GetParameterByVersion(baseName, version)
-		usedSelector = selector
+		usedSelector = name
 	} else {
 		param, err = store.GetParameterByLabel(baseName, selector)
-		usedSelector = selector
+		usedSelector = name
 	}
 
 	if err != nil {
@@ -416,14 +418,14 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 		versions = append(versions, map[string]interface{}{
 			"Name":             v.ParameterName,
 			"Type":             string(v.Type),
-			"KeyId":            "",
+			"KeyId":            v.KeyID,
 			"LastModifiedDate": v.LastModifiedDate.Unix(),
 			"LastModifiedUser": "N/A",
-			"Description":      "",
-			"AllowedPattern":   "",
+			"Description":      v.Description,
+			"AllowedPattern":   v.AllowedPattern,
 			"Version":          v.Version,
 			"Labels":           labels,
-			"Tier":             "Standard",
+			"Tier":             string(v.Tier),
 			"Value":            value,
 			"DataType":         v.DataType,
 		})
