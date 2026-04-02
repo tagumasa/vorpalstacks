@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 30 AWS services with 1580 test cases
+- **Comprehensive Coverage**: Tests for 30 AWS services with 1630 test cases
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -28,7 +28,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | EventBridge | 55 | 100% | ✅ Perfect |
 | IAM | 114 | 100% | ✅ Perfect |
 | Kinesis | 50 | 100% | ✅ Perfect |
-| KMS | 41 | 100% | ✅ Perfect |
+| KMS | 91 | 100% | ✅ Perfect |
 | Lambda | 68 | 100% | ✅ Perfect |
 | Neptune | 73 | 100% | ✅ Perfect |
 | NeptuneData | 168 | 100% | ✅ Perfect |
@@ -45,7 +45,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | Timestream | 44 | 100% | ✅ Perfect |
 | WAF | 23 | 100% | ✅ Perfect |
 
-**Overall: 1580/1580 tests passing (100%)**
+**Overall: 1630/1630 tests passing (100%)**
 
 ## Prerequisites
 
