@@ -3,6 +3,7 @@ package cloudtrail
 import (
 	"context"
 	"strings"
+	"time"
 
 	"vorpalstacks/internal/services/aws/common/iam"
 	"vorpalstacks/internal/services/aws/common/request"
@@ -304,7 +305,8 @@ func (s *CloudTrailService) GetTrailStatus(ctx context.Context, reqCtx *request.
 	}
 
 	result := map[string]interface{}{
-		"IsLogging": trail.IsLogging,
+		"IsLogging":           trail.IsLogging,
+		"LatestDeliveryError": "",
 	}
 
 	if trail.StartedLoggingAt != nil {
@@ -312,6 +314,9 @@ func (s *CloudTrailService) GetTrailStatus(ctx context.Context, reqCtx *request.
 	}
 	if trail.StoppedLoggingAt != nil {
 		result["StopLoggingTime"] = float64(trail.StoppedLoggingAt.Unix())
+	}
+	if trail.IsLogging {
+		result["LatestDeliveryTime"] = float64(time.Now().UTC().Unix())
 	}
 
 	return result, nil
@@ -329,8 +334,20 @@ func (s *CloudTrailService) ListTrails(ctx context.Context, reqCtx *request.Requ
 		return nil, s.mapStoreError(err)
 	}
 
+	resumeAfter := ""
+	if nextToken := getParam(req, "NextToken"); nextToken != "" {
+		resumeAfter = nextToken
+	}
+
 	formattedTrails := make([]map[string]interface{}, 0)
+	skipping := resumeAfter != ""
 	for _, t := range trails {
+		if skipping {
+			if t.Name == resumeAfter {
+				skipping = false
+			}
+			continue
+		}
 		formattedTrails = append(formattedTrails, map[string]interface{}{
 			"TrailARN":   t.TrailARN,
 			"Name":       t.Name,
@@ -405,6 +422,7 @@ func (s *CloudTrailService) formatTrail(t *cloudtrailstore.Trail) map[string]int
 		"HasInsightSelectors":        t.HasInsightSelectors,
 		"IsOrganizationTrail":        t.IsOrganizationTrail,
 		"LogFileValidationEnabled":   t.LogFileValidationEnabled,
+		"IsLogging":                  t.IsLogging,
 	}
 
 	if t.S3BucketName != "" {

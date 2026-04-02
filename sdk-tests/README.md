@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 30 AWS services with 1544 test cases
+- **Comprehensive Coverage**: Tests for 30 AWS services with 1580 test cases
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -19,7 +19,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | API Gateway | 91 | 100% | ✅ Perfect |
 | Athena | 64 | 100% | ✅ Perfect |
 | CloudFront | 18 | 100% | ✅ Perfect |
-| CloudTrail | 22 | 100% | ✅ Perfect |
+| CloudTrail | 58 | 100% | ✅ Perfect |
 | CloudWatch | 21 | 100% | ✅ Perfect |
 | CloudWatch Logs | 42 | 100% | ✅ Perfect |
 | Cognito | 106 | 100% | ✅ Perfect |
@@ -45,7 +45,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | Timestream | 44 | 100% | ✅ Perfect |
 | WAF | 23 | 100% | ✅ Perfect |
 
-**Overall: 1544/1544 tests passing (100%)**
+**Overall: 1580/1580 tests passing (100%)**
 
 ## Prerequisites
 

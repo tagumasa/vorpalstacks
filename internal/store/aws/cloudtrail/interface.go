@@ -1,6 +1,10 @@
 package cloudtrail
 
-import "vorpalstacks/internal/store/aws/common"
+import (
+	"time"
+
+	"vorpalstacks/internal/store/aws/common"
+)
 
 // CloudTrailStoreInterface defines operations for managing CloudTrail trails and events.
 type CloudTrailStoreInterface interface {
@@ -29,6 +33,8 @@ type CloudTrailStoreInterface interface {
 	TagResource(trailName string, tags map[string]string) error
 	UntagResource(trailName string, tagKeys []string) error
 	ListTagsAsSlice(trailName string) ([]common.Tag, error)
+	ListPublicKeys(startTime, endTime *time.Time) ([]*PublicKey, error)
+	GenerateAndStorePublicKey(trailName string) (*PublicKey, error)
 }
 
 var _ CloudTrailStoreInterface = (*CloudTrailStore)(nil)

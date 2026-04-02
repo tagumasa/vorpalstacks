@@ -2,6 +2,7 @@ package cloudtrail
 
 import (
 	"context"
+	"encoding/base64"
 	"strings"
 	"time"
 
@@ -99,16 +100,67 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 
 // ListPublicKeys retrieves the public keys for CloudTrail.
 func (s *CloudTrailService) ListPublicKeys(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	now := time.Now()
-	return map[string]interface{}{
-		"PublicKeyList": []map[string]interface{}{
-			{
-				"Value":      "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0EXAMPLE",
-				"ValidFrom":  now.Add(-24 * time.Hour).Format(time.RFC3339),
-				"ValidUntil": now.Add(24 * time.Hour).Format(time.RFC3339),
-			},
-		},
-	}, nil
+	var startTime, endTime *time.Time
+
+	// Accept both RFC3339 string and Unix timestamp (float64) formats
+	// for StartTime/EndTime, as the AWS SDK serialises time.Time as
+	// a Unix timestamp number in JSON-RPC 1.1.
+	if st := getParam(req, "StartTime"); st != "" {
+		t, err := time.Parse(time.RFC3339, st)
+		if err != nil {
+			return nil, ErrInvalidParameter
+		}
+		startTime = &t
+	} else if stRaw := req.Parameters["StartTime"]; stRaw != nil {
+		if ts, ok := stRaw.(float64); ok {
+			t := time.Unix(int64(ts), 0).UTC()
+			startTime = &t
+		}
+	}
+	if et := getParam(req, "EndTime"); et != "" {
+		t, err := time.Parse(time.RFC3339, et)
+		if err != nil {
+			return nil, ErrInvalidParameter
+		}
+		endTime = &t
+	} else if etRaw := req.Parameters["EndTime"]; etRaw != nil {
+		if ts, ok := etRaw.(float64); ok {
+			t := time.Unix(int64(ts), 0).UTC()
+			endTime = &t
+		}
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, s.mapStoreError(err)
+	}
+
+	keys, err := store.ListPublicKeys(startTime, endTime)
+	if err != nil {
+		return nil, s.mapStoreError(err)
+	}
+
+	publicKeyList := make([]map[string]interface{}, 0, len(keys))
+	for _, pk := range keys {
+		// Map internal PublicKeyID to SDK's Fingerprint field; the SDK type
+		// uses "Fingerprint" as the identifier, not "PublicKeyId".
+		publicKeyList = append(publicKeyList, map[string]interface{}{
+			"Fingerprint":       pk.PublicKeyID,
+			"Value":             base64.StdEncoding.EncodeToString(pk.Value),
+			"ValidityStartTime": pk.ValidityStartTime.Unix(),
+			"ValidityEndTime":   pk.ValidityEndTime.Unix(),
+		})
+	}
+
+	result := map[string]interface{}{
+		"PublicKeyList": publicKeyList,
+	}
+
+	if nextToken := getParam(req, "NextToken"); nextToken != "" {
+		result["NextToken"] = nextToken
+	}
+
+	return result, nil
 }
 
 // GetEventSelectors retrieves the event selectors for a trail.
@@ -349,15 +401,41 @@ func (s *CloudTrailService) PutInsightSelectors(ctx context.Context, reqCtx *req
 
 func (s *CloudTrailService) formatEvent(e *cloudtrailstore.Event) map[string]interface{} {
 	result := map[string]interface{}{
-		"EventId":     e.EventID,
-		"EventName":   e.EventName,
-		"EventSource": e.EventSource,
-		"EventTime":   e.EventTime.Unix(),
-		"ReadOnly":    e.ReadOnly,
+		"EventId":      e.EventID,
+		"EventName":    e.EventName,
+		"EventSource":  e.EventSource,
+		"EventTime":    e.EventTime.Unix(),
+		"ReadOnly":     e.ReadOnly,
+		"EventVersion": e.EventVersion,
+		"EventType":    e.EventType,
 	}
 
+	if e.AccessKeyId != "" {
+		result["AccessKeyId"] = e.AccessKeyId
+	}
 	if e.UserIdentity != nil {
 		result["Username"] = e.UserIdentity.UserName
+		if e.UserIdentity.AccountID != "" {
+			result["AccountId"] = e.UserIdentity.AccountID
+		}
+	}
+	if e.RequestID != "" {
+		result["RequestId"] = e.RequestID
+	}
+	if e.SourceIPAddress != "" {
+		result["SourceIpAddress"] = e.SourceIPAddress
+	}
+	if e.UserAgent != "" {
+		result["UserAgent"] = e.UserAgent
+	}
+	if e.ErrorCode != "" {
+		result["ErrorCode"] = e.ErrorCode
+	}
+	if e.ErrorMessage != "" {
+		result["ErrorMessage"] = e.ErrorMessage
+	}
+	if e.CloudTrailEvent != "" {
+		result["CloudTrailEvent"] = e.CloudTrailEvent
 	}
 
 	if len(e.Resources) > 0 {

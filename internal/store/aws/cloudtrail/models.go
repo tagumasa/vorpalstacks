@@ -2,9 +2,12 @@
 package cloudtrail
 
 import (
+	"crypto/x509"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	vcrypto "vorpalstacks/internal/utils/crypto"
 )
 
 // Trail represents a CloudTrail trail.
@@ -119,6 +122,37 @@ type Resource struct {
 type ResourcePolicy struct {
 	ResourceARN string `json:"resourceArn"`
 	Policy      string `json:"policy"`
+}
+
+// PublicKey represents a CloudTrail public key used for log file validation.
+type PublicKey struct {
+	PublicKeyID       string    `json:"publicKeyId"`
+	Value             []byte    `json:"value"`
+	ValidityStartTime time.Time `json:"validityStartTime"`
+	ValidityEndTime   time.Time `json:"validityEndTime"`
+	TrailName         string    `json:"trailName,omitempty"`
+}
+
+// GenerateKeyPair generates an RSA key pair using the common crypto utility.
+// Returns the DER-encoded public key bytes suitable for CloudTrail log file validation.
+func GenerateKeyPair() (*PublicKey, error) {
+	privKey, err := vcrypto.GenerateRSAKey(vcrypto.DefaultRSAKeySize)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate RSA key pair: %w", err)
+	}
+
+	derBytes, err := x509.MarshalPKIXPublicKey(&privKey.PublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal public key to DER: %w", err)
+	}
+
+	now := time.Now().UTC()
+	return &PublicKey{
+		PublicKeyID:       "K" + uuid.NewString(),
+		Value:             derBytes,
+		ValidityStartTime: now,
+		ValidityEndTime:   now.Add(365 * 24 * time.Hour),
+	}, nil
 }
 
 // NewTrail creates a new CloudTrail trail with default settings.

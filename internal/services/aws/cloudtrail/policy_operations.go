@@ -2,6 +2,7 @@ package cloudtrail
 
 import (
 	"context"
+	"strings"
 
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
@@ -51,6 +52,12 @@ func (s *CloudTrailService) PutResourcePolicy(ctx context.Context, reqCtx *reque
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, s.mapStoreError(err)
+	}
+
+	if strings.Contains(resourceARN, ":trail/") {
+		if _, err := store.GetTrailByARN(resourceARN); err != nil {
+			return nil, s.mapStoreError(err)
+		}
 	}
 
 	if err := store.PutResourcePolicy(resourceARN, policy); err != nil {

@@ -73,6 +73,20 @@ func (s *CloudTrailService) RemoveTags(ctx context.Context, reqCtx *request.Requ
 	tagKeys := tags.ParseTagKeysAsSlice(req.Parameters, "TagKeyList")
 
 	if len(tagKeys) == 0 {
+		if tagsListRaw := req.Parameters["TagsList"]; tagsListRaw != nil {
+			if arr, ok := tagsListRaw.([]interface{}); ok {
+				for _, item := range arr {
+					if tagMap, ok := item.(map[string]interface{}); ok {
+						if key, ok := tagMap["Key"].(string); ok && key != "" {
+							tagKeys = append(tagKeys, key)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if len(tagKeys) == 0 {
 		return response.EmptyResponse(), nil
 	}
 

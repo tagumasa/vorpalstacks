@@ -99,9 +99,10 @@ func eventSelectorsToProto(selectors []EventSelector) []*pb.EventSelector {
 	result := make([]*pb.EventSelector, len(selectors))
 	for i, s := range selectors {
 		result[i] = &pb.EventSelector{
-			ReadWriteType:           s.ReadWriteType,
-			IncludeManagementEvents: s.IncludeManagementEvents,
-			DataResources:           dataResourcesToProto(s.DataResources),
+			ReadWriteType:                 s.ReadWriteType,
+			IncludeManagementEvents:       s.IncludeManagementEvents,
+			DataResources:                 dataResourcesToProto(s.DataResources),
+			ExcludeManagementEventSources: s.ExcludeManagementEventSources,
 		}
 	}
 	return result
@@ -114,9 +115,10 @@ func protoToEventSelectors(selectors []*pb.EventSelector) []EventSelector {
 	result := make([]EventSelector, len(selectors))
 	for i, s := range selectors {
 		result[i] = EventSelector{
-			ReadWriteType:           s.ReadWriteType,
-			IncludeManagementEvents: s.IncludeManagementEvents,
-			DataResources:           protoToDataResources(s.DataResources),
+			ReadWriteType:                 s.ReadWriteType,
+			IncludeManagementEvents:       s.IncludeManagementEvents,
+			DataResources:                 protoToDataResources(s.DataResources),
+			ExcludeManagementEventSources: s.ExcludeManagementEventSources,
 		}
 	}
 	return result
@@ -399,5 +401,33 @@ func ProtoToResourcePolicy(p *pb.ResourcePolicy) *ResourcePolicy {
 	return &ResourcePolicy{
 		ResourceARN: p.ResourceArn,
 		Policy:      p.Policy,
+	}
+}
+
+// PublicKeyToProto converts a PublicKey to its protobuf representation.
+func PublicKeyToProto(pk *PublicKey) *pb.PublicKey {
+	if pk == nil {
+		return nil
+	}
+	return &pb.PublicKey{
+		PublicKeyId:       pk.PublicKeyID,
+		Value:             pk.Value,
+		ValidityStartTime: pk.ValidityStartTime.UnixMilli(),
+		ValidityEndTime:   pk.ValidityEndTime.UnixMilli(),
+		TrailName:         pk.TrailName,
+	}
+}
+
+// ProtoToPublicKey converts a protobuf PublicKey to its internal representation.
+func ProtoToPublicKey(p *pb.PublicKey) *PublicKey {
+	if p == nil {
+		return nil
+	}
+	return &PublicKey{
+		PublicKeyID:       p.PublicKeyId,
+		Value:             p.Value,
+		ValidityStartTime: time.UnixMilli(p.ValidityStartTime),
+		ValidityEndTime:   time.UnixMilli(p.ValidityEndTime),
+		TrailName:         p.TrailName,
 	}
 }

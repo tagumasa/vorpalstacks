@@ -33,6 +33,7 @@ type CloudTrailStore struct {
 	indexer             *EventIndexManager
 	arnIndexStore       *common.BaseStore
 	resourcePolicyStore *common.BaseStore
+	publicKeyStore      *common.BaseStore
 	storage             storage.TransactionalStorageWith2PC
 }
 
@@ -50,6 +51,10 @@ func arnIndexBucketName(region string) string {
 
 func resourcePolicyBucketName(region string) string {
 	return "cloudtrail-resource-policy-" + region
+}
+
+func publicKeyBucketName(region string) string {
+	return "cloudtrail-public-keys-" + region
 }
 
 func eventIDIndexBucketName(region string) string {
@@ -74,6 +79,7 @@ func NewCloudTrailStore(store storage.BasicStorage, accountID, region string) *C
 		indexer:             NewEventIndexManager(store, accountID, region),
 		arnIndexStore:       common.NewBaseStore(store.Bucket(arnIndexBucketName(region)), "cloudtrail-arn-index"),
 		resourcePolicyStore: common.NewBaseStore(store.Bucket(resourcePolicyBucketName(region)), "cloudtrail-resource-policy"),
+		publicKeyStore:      common.NewBaseStore(store.Bucket(publicKeyBucketName(region)), "cloudtrail-public-keys"),
 		storage:             tstore,
 	}
 }
@@ -148,6 +154,12 @@ func (s *CloudTrailStore) CreateTrail(trail *Trail) (*Trail, error) {
 			}
 		}
 
+		if trail.LogFileValidationEnabled {
+			if _, err := s.GenerateAndStorePublicKey(trail.Name); err != nil {
+				return nil, fmt.Errorf("failed to generate public key for trail: %w", err)
+			}
+		}
+
 		return trail, nil
 	}
 
@@ -164,6 +176,12 @@ func (s *CloudTrailStore) CreateTrail(trail *Trail) (*Trail, error) {
 	if len(trail.Tags) > 0 {
 		if err := s.TagStore.TagResource(trail.Name, trail.Tags); err != nil {
 			return nil, err
+		}
+	}
+
+	if trail.LogFileValidationEnabled {
+		if _, err := s.GenerateAndStorePublicKey(trail.Name); err != nil {
+			return nil, fmt.Errorf("failed to generate public key for trail: %w", err)
 		}
 	}
 
@@ -647,10 +665,52 @@ func (s *CloudTrailStore) PutResourcePolicy(resourceARN string, policy string) e
 		ResourceARN: resourceARN,
 		Policy:      policy,
 	}
-	return s.resourcePolicyStore.Put(resourceARN, rp)
+	return s.resourcePolicyStore.PutProto(resourceARN, ResourcePolicyToProto(rp))
 }
 
 // DeleteResourcePolicy deletes a resource policy for CloudTrail.
 func (s *CloudTrailStore) DeleteResourcePolicy(resourceARN string) error {
 	return s.resourcePolicyStore.Delete(resourceARN)
+}
+
+// StorePublicKey persists a public key for log file validation.
+func (s *CloudTrailStore) StorePublicKey(pk *PublicKey) error {
+	return s.publicKeyStore.PutProto(pk.PublicKeyID, PublicKeyToProto(pk))
+}
+
+// ListPublicKeys returns all stored public keys, optionally filtered by time range.
+func (s *CloudTrailStore) ListPublicKeys(startTime, endTime *time.Time) ([]*PublicKey, error) {
+	var keys []*PublicKey
+	err := s.publicKeyStore.ForEach(func(key string, value []byte) error {
+		var p pb.PublicKey
+		if err := proto.Unmarshal(value, &p); err != nil {
+			return err
+		}
+		pk := ProtoToPublicKey(&p)
+		if startTime != nil && pk.ValidityEndTime.Before(*startTime) {
+			return nil
+		}
+		if endTime != nil && pk.ValidityStartTime.After(*endTime) {
+			return nil
+		}
+		keys = append(keys, pk)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return keys, nil
+}
+
+// GenerateAndStorePublicKey creates a new RSA key pair and stores the public key.
+func (s *CloudTrailStore) GenerateAndStorePublicKey(trailName string) (*PublicKey, error) {
+	pk, err := GenerateKeyPair()
+	if err != nil {
+		return nil, err
+	}
+	pk.TrailName = trailName
+	if err := s.StorePublicKey(pk); err != nil {
+		return nil, err
+	}
+	return pk, nil
 }
