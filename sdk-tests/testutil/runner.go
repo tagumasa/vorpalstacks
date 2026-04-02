@@ -40,7 +40,7 @@ func (r *TestRunner) GetAllServices() []string {
 		"dynamodb", "sqs", "sns", "s3", "lambda", "iam", "kms", "events",
 		"stepfunctions", "apigateway", "logs", "cloudwatch", "ssm", "cloudtrail",
 		"acm", "cognito", "cognito-identity", "secretsmanager", "kinesis", "sts", "scheduler",
-		"athena", "timestream", "sesv2", "route53", "cloudfront", "waf",
+		"athena", "timestream", "sesv2", "route53", "cloudfront", "wafv2",
 		"neptune", "neptunedata",
 	}
 }
@@ -101,8 +101,8 @@ func (r *TestRunner) RunServiceTests(service string) []TestResult {
 		results = r.RunRoute53Tests()
 	case "cloudfront":
 		results = r.RunCloudFrontTests()
-	case "waf":
-		results = r.RunWAFTests()
+	case "wafv2":
+		results = r.RunWAFv2Tests()
 	case "neptune":
 		results = r.RunNeptuneTests()
 	case "neptunedata":

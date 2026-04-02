@@ -146,6 +146,7 @@ func (s *ResponseHeadersPolicyStore) List(marker string, maxItems int) (*Respons
 		if !started {
 			if policy.ID == marker {
 				started = true
+				return nil
 			}
 			return nil
 		}

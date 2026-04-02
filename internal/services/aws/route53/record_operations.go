@@ -82,6 +82,9 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 		}
 
 		action, _ := changeMap["Action"].(string)
+		if action != "CREATE" && action != "UPSERT" && action != "DELETE" {
+			return nil, NewAPIError("InvalidInput", fmt.Sprintf("Invalid action: %s. Must be CREATE, UPSERT, or DELETE", action), 400)
+		}
 		rrsRaw, _ := changeMap["ResourceRecordSet"].(map[string]interface{})
 		if rrsRaw == nil {
 			continue
@@ -107,6 +110,8 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 		rrs.Region = request.GetStringParam(rrsRaw, "Region")
 		rrs.Failover = request.GetStringParam(rrsRaw, "Failover")
 		rrs.HealthCheckID = request.GetStringParam(rrsRaw, "HealthCheckId")
+		rrs.MultiValueAnswer = request.GetBoolParam(rrsRaw, "MultiValueAnswer")
+		rrs.TrafficPolicyInstanceID = request.GetStringParam(rrsRaw, "TrafficPolicyInstanceId")
 
 		if geoRaw, ok := rrsRaw["GeoLocation"].(map[string]interface{}); ok {
 			rrs.GeoLocation = &route53store.GeoLocation{
@@ -172,8 +177,8 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 					}
 				}
 				if oldRRS != nil {
-					if createErr := st.RecordSets().Create(hostedZoneId, oldRRS); createErr != nil {
-						logs.Error("Failed to restore record", logs.String("name", oldRRS.Name), logs.Err(createErr))
+					if restoreErr := st.RecordSets().Upsert(hostedZoneId, oldRRS); restoreErr != nil {
+						logs.Error("Failed to restore record", logs.String("name", oldRRS.Name), logs.Err(restoreErr))
 					}
 				}
 				logs.Error("UPSERT record failed", logs.Err(err))
@@ -281,10 +286,19 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 
 	isTruncated := maxItems > 0 && totalFiltered > maxItems
 
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"ResourceRecordSets": protocol.XMLElements{ElementName: "ResourceRecordSet", Items: records},
 		"IsTruncated":        isTruncated,
-	}, nil
+		"MaxItems":           maxItems,
+	}
+
+	if isTruncated && len(filtered) > 0 {
+		lastRecord := filtered[len(filtered)-1]
+		result["NextRecordName"] = lastRecord.Name
+		result["NextRecordType"] = lastRecord.Type
+	}
+
+	return result, nil
 }
 
 // GetChange returns the status of a change batch request.
@@ -313,7 +327,10 @@ func (s *Route53Service) recordSetToResponse(rs *route53store.ResourceRecordSet)
 	result := map[string]interface{}{
 		"Name": rs.Name,
 		"Type": rs.Type,
-		"TTL":  rs.TTL,
+	}
+
+	if rs.AliasTarget == nil {
+		result["TTL"] = rs.TTL
 	}
 
 	if len(rs.ResourceRecords) > 0 {

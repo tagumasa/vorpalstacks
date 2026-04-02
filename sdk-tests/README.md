@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 30 AWS services with 1630 test cases
+- **Comprehensive Coverage**: Tests for 30 AWS services with 1767 test cases
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -18,11 +18,11 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | ACM | 37 | 100% | ✅ Perfect |
 | API Gateway | 91 | 100% | ✅ Perfect |
 | Athena | 64 | 100% | ✅ Perfect |
-| CloudFront | 18 | 100% | ✅ Perfect |
+| CloudFront | 52 | 100% | ✅ Perfect |
 | CloudTrail | 58 | 100% | ✅ Perfect |
 | CloudWatch | 21 | 100% | ✅ Perfect |
 | CloudWatch Logs | 42 | 100% | ✅ Perfect |
-| Cognito | 106 | 100% | ✅ Perfect |
+| Cognito | 66 | 100% | ✅ Perfect |
 | Cognito Identity | 40 | 100% | ✅ Perfect |
 | DynamoDB | 96 | 100% | ✅ Perfect |
 | EventBridge | 55 | 100% | ✅ Perfect |
@@ -32,20 +32,20 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | Lambda | 68 | 100% | ✅ Perfect |
 | Neptune | 73 | 100% | ✅ Perfect |
 | NeptuneData | 168 | 100% | ✅ Perfect |
-| Route53 | 14 | 100% | ✅ Perfect |
+| Route53 | 38 | 100% | ✅ Perfect |
 | S3 | 100 | 100% | ✅ Perfect |
 | Scheduler | 29 | 100% | ✅ Perfect |
 | SecretsManager | 42 | 100% | ✅ Perfect |
-| SESv2 | 14 | 100% | ✅ Perfect |
+| SESv2 | 65 | 100% | ✅ Perfect |
 | SNS | 62 | 100% | ✅ Perfect |
 | SQS | 40 | 100% | ✅ Perfect |
 | SSM | 29 | 100% | ✅ Perfect |
 | STS | 39 | 100% | ✅ Perfect |
 | StepFunctions | 42 | 100% | ✅ Perfect |
 | Timestream | 44 | 100% | ✅ Perfect |
-| WAF | 23 | 100% | ✅ Perfect |
+| WAFv2 | 51 | 100% | ✅ Perfect |
 
-**Overall: 1630/1630 tests passing (100%)**
+**Overall: 1767/1767 tests passing (100%)**
 
 ## Prerequisites
 

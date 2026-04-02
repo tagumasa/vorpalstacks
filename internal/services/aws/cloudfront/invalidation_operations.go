@@ -50,7 +50,7 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 
 	batch := request.GetMapParam(req.Parameters, "InvalidationBatch")
 	if batch == nil {
-		return nil, errors.NewAWSError("InvalidArgument", "Required parameter InvalidationBatch is missing.", 400)
+		batch = req.Parameters
 	}
 
 	callerRef, _ := batch["CallerReference"].(string)
@@ -60,10 +60,26 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 
 	var paths []string
 	if pathsMap, ok := batch["Paths"].(map[string]interface{}); ok {
-		if items, ok := pathsMap["Items"].([]interface{}); ok {
-			for _, item := range items {
-				if p, ok := item.(string); ok {
-					paths = append(paths, p)
+		if items, ok := pathsMap["Items"]; ok {
+			switch iv := items.(type) {
+			case []interface{}:
+				for _, item := range iv {
+					if p, ok := item.(string); ok {
+						paths = append(paths, p)
+					}
+				}
+			case map[string]interface{}:
+				if pathItems, ok := iv["Path"]; ok {
+					switch pv := pathItems.(type) {
+					case []interface{}:
+						for _, item := range pv {
+							if p, ok := item.(string); ok {
+								paths = append(paths, p)
+							}
+						}
+					case string:
+						paths = append(paths, pv)
+					}
 				}
 			}
 		}
@@ -83,13 +99,8 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 	invalidationID := generateInvalidationID()
 	now := time.Now().UTC()
 
-	pathItems := make([]map[string]interface{}, 0, len(paths))
-	for _, p := range paths {
-		pathItems = append(pathItems, map[string]interface{}{"Path": p})
-	}
-
-	pathItemsXML := protocol.XMLElements{ElementName: "Path", Items: make([]interface{}, len(pathItems))}
-	for i, p := range pathItems {
+	pathItemsXML := protocol.XMLElements{ElementName: "Path", Items: make([]interface{}, len(paths))}
+	for i, p := range paths {
 		pathItemsXML.Items[i] = p
 	}
 

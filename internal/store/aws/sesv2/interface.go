@@ -48,6 +48,8 @@ type SESv2StoreInterface interface {
 	PutAccountDetails(details *AccountDetails) error
 	PutSendingAttributes(sendingEnabled bool) error
 	PutSuppressionAttributes(reasons []string) error
+	PutVdmAttributes(vdm *VdmAttributes) error
+	PutDedicatedIpAutoWarmupEnabled(enabled bool) error
 
 	PutEmailIdentityPolicy(identity, policyName, policy string) error
 	DeleteEmailIdentityPolicy(identity, policyName string) error

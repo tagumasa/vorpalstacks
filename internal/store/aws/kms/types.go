@@ -93,6 +93,7 @@ type Key struct {
 	MultiRegionConfiguration       *MultiRegionConfiguration `json:"multi_region_configuration,omitempty"`
 	EncryptionAlgorithms           []string                  `json:"encryption_algorithms,omitempty"`
 	SigningAlgorithms              []string                  `json:"signing_algorithms,omitempty"`
+	PreDeletionEnabled             *bool                     `json:"pre_deletion_enabled,omitempty"`
 	Tags                           []common.Tag              `json:"tags,omitempty"`
 }
 

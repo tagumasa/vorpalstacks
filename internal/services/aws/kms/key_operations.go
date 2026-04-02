@@ -18,6 +18,23 @@ import (
 	"vorpalstacks/internal/utils/aws/arn"
 )
 
+var keyUsageKeySpecConstraints = map[kmsstore.KeyUsage][]kmsstore.KeySpec{
+	kmsstore.KeyUsageEncryptDecrypt: {
+		kmsstore.KeySpecSymmetricDefault,
+		kmsstore.KeySpecRSA2048, kmsstore.KeySpecRSA3072, kmsstore.KeySpecRSA4096,
+		kmsstore.KeySpecECCNISTP256, kmsstore.KeySpecECCNISTP384, kmsstore.KeySpecECCNISTP521,
+		kmsstore.KeySpecECCSECGP256K1, kmsstore.KeySpecSM2,
+	},
+	kmsstore.KeyUsageSignVerify: {
+		kmsstore.KeySpecRSA2048, kmsstore.KeySpecRSA3072, kmsstore.KeySpecRSA4096,
+		kmsstore.KeySpecECCNISTP256, kmsstore.KeySpecECCNISTP384, kmsstore.KeySpecECCNISTP521,
+		kmsstore.KeySpecECCSECGP256K1, kmsstore.KeySpecSM2,
+	},
+	kmsstore.KeyUsageGenerateVerifyMAC: {
+		kmsstore.KeySpecHMAC224, kmsstore.KeySpecHMAC256, kmsstore.KeySpecHMAC384, kmsstore.KeySpecHMAC512,
+	},
+}
+
 // CreateKey creates a new customer master key (CMK) in KMS.
 // You can specify the key usage, key spec, origin, and tags for the new key.
 // If no key usage is specified, ENCRYPT_DECRYPT is used by default.
@@ -42,6 +59,19 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 	}
 	if origin == "" {
 		origin = string(kmsstore.OriginTypeAWSKMS)
+	}
+
+	if allowed, ok := keyUsageKeySpecConstraints[kmsstore.KeyUsage(keyUsage)]; ok {
+		valid := false
+		for _, spec := range allowed {
+			if kmsstore.KeySpec(keySpec) == spec {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return nil, ErrValidation
+		}
 	}
 
 	keyID, err := kmsstore.GenerateKeyID()
@@ -208,7 +238,7 @@ func (s *KMSService) ScheduleKeyDeletion(ctx context.Context, reqCtx *request.Re
 	}
 
 	return map[string]interface{}{
-		"KeyId":               key.Arn,
+		"KeyId":               key.KeyID,
 		"DeletionDate":        updatedKey.DeletionDate.Unix(),
 		"KeyState":            updatedKey.KeyState,
 		"PendingWindowInDays": pendingWindowInDays,
@@ -237,7 +267,7 @@ func (s *KMSService) CancelKeyDeletion(ctx context.Context, reqCtx *request.Requ
 	}
 
 	return map[string]interface{}{
-		"KeyId": key.Arn,
+		"KeyId": key.KeyID,
 	}, nil
 }
 

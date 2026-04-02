@@ -10,8 +10,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"time"
 
+	"vorpalstacks/internal/services/aws/common/pagination"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
@@ -39,7 +39,10 @@ func (s *KMSService) Encrypt(ctx context.Context, reqCtx *request.RequestContext
 	plaintextB64 := request.GetStringParam(req.Parameters, "Plaintext")
 	plaintext, err := base64.StdEncoding.DecodeString(plaintextB64)
 	if err != nil {
-		plaintext = []byte(plaintextB64)
+		plaintext, err = base64.RawStdEncoding.DecodeString(plaintextB64)
+		if err != nil {
+			return nil, ErrValidation
+		}
 	}
 
 	encryptionContext := parseEncryptionContext(req.Parameters)
@@ -217,7 +220,9 @@ func (s *KMSService) GenerateDataKey(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKey", nil)
+
+	encryptionContext := parseEncryptionContext(req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKey", encryptionContext)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +256,9 @@ func (s *KMSService) GenerateDataKeyWithoutPlaintext(ctx context.Context, reqCtx
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKeyWithoutPlaintext", nil)
+
+	encryptionContext := parseEncryptionContext(req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKeyWithoutPlaintext", encryptionContext)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +289,7 @@ func (s *KMSService) GenerateDataKeyWithoutPlaintext(ctx context.Context, reqCtx
 func (s *KMSService) GenerateRandom(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	numberOfBytes := request.GetIntParam(req.Parameters, "NumberOfBytes")
 	if numberOfBytes == 0 {
-		numberOfBytes = 32
+		return nil, ErrValidation
 	}
 	if numberOfBytes < 1 || numberOfBytes > 1024 {
 		return nil, ErrValidation
@@ -453,15 +460,40 @@ func (s *KMSService) ListKeyRotations(ctx context.Context, reqCtx *request.Reque
 	if key.KeyRotationEnabled && !key.CreationDate.IsZero() {
 		rotations = append(rotations, map[string]interface{}{
 			"KeyId":        key.Arn,
-			"RotationDate": key.CreationDate.UTC().Format(time.RFC3339),
+			"RotationDate": key.CreationDate.Unix(),
 			"RotationType": "AUTOMATIC",
 		})
 	}
 
-	return map[string]interface{}{
-		"Rotations": rotations,
-		"Truncated": false,
-	}, nil
+	marker := pagination.GetMarker(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, 100)
+
+	type rotationEntry struct {
+		data map[string]interface{}
+	}
+	entries := make([]rotationEntry, len(rotations))
+	for i, r := range rotations {
+		entries[i] = rotationEntry{data: r}
+	}
+
+	result := pagination.PaginateSlice(entries, marker, maxItems, func(e rotationEntry) string {
+		return fmt.Sprintf("%v", e.data["RotationDate"])
+	})
+
+	paginatedRotations := make([]map[string]interface{}, len(result.Items))
+	for i, e := range result.Items {
+		paginatedRotations[i] = e.data
+	}
+
+	response := map[string]interface{}{
+		"Rotations": paginatedRotations,
+		"Truncated": result.IsTruncated,
+	}
+	if result.NextMarker != "" {
+		response["NextMarker"] = result.NextMarker
+	}
+
+	return response, nil
 }
 
 func generateAsymmetricKeyPair(spec hsm.KeySpec) (interface{}, interface{}, error) {

@@ -7,7 +7,8 @@ import (
 	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ChangeTagsForResource adds or removes tags for a Route 53 resource.
@@ -22,24 +23,63 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 		return nil, NewAPIError("InvalidParameter", "ResourceType and ResourceId are required", 400)
 	}
 
+	normalizedType := strings.ToLower(resourceType)
+	if normalizedType != "hostedzone" && normalizedType != "healthcheck" {
+		return nil, NewAPIError("InvalidParameter", "ResourceType must be 'hostedzone' or 'healthcheck'", 400)
+	}
+
+	resourceId = strings.TrimPrefix(resourceId, "/hostedzone/")
+	resourceId = strings.TrimPrefix(resourceId, "/healthcheck/")
+
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	resourceKey := resourceType + "/" + resourceId
+	resourceKey := normalizedType + "/" + resourceId
 
-	addTags := tagutil.ParseTagsWithKeyNames(req.Parameters, "AddTags", "Key", "Value")
+	addTags := tags.ParseTagsWithKeyNames(req.Parameters, "AddTags", "Key", "Value")
 	if len(addTags) == 0 {
-		addTags = tagutil.ParseTags(req.Parameters, "Tags")
+		addTags = tags.ParseTags(req.Parameters, "Tags")
 	}
 	if len(addTags) == 0 {
-		addTags = tagutil.ParseTagsWithQueryFallback(req.Parameters, "AddTags")
+		addTags = tags.ParseTagsWithQueryFallback(req.Parameters, "AddTags")
+	}
+	if len(addTags) == 0 {
+		if addTagsMap, ok := req.Parameters["AddTags"].(map[string]interface{}); ok {
+			if tagList, ok := addTagsMap["Tag"]; ok {
+				switch tl := tagList.(type) {
+				case []interface{}:
+					for _, t := range tl {
+						if tagMap, ok := t.(map[string]interface{}); ok {
+							addTags = append(addTags, types.Tag{
+								Key:   request.GetStringParam(tagMap, "Key"),
+								Value: request.GetStringParam(tagMap, "Value"),
+							})
+						}
+					}
+				case map[string]interface{}:
+					addTags = append(addTags, types.Tag{
+						Key:   request.GetStringParam(tl, "Key"),
+						Value: request.GetStringParam(tl, "Value"),
+					})
+				}
+			}
+		}
 	}
 
-	removeTagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "RemoveTagKeys")
+	removeTagKeys := tags.ParseTagKeysWithQueryFallback(req.Parameters, "RemoveTagKeys")
 	if len(removeTagKeys) == 0 {
-		removeTagKeys = tagutil.ParseTagKeysAsSlice(req.Parameters, "RemoveTagKeys")
+		removeTagKeys = tags.ParseTagKeysAsSlice(req.Parameters, "RemoveTagKeys")
+	}
+	if len(removeTagKeys) == 0 {
+		if rkMap, ok := req.Parameters["RemoveTagKeys"].(map[string]interface{}); ok {
+			if k, ok := rkMap["Key"].(string); ok {
+				removeTagKeys = []string{k}
+			} else if k, ok := rkMap["key"].(string); ok {
+				removeTagKeys = []string{k}
+			}
+		}
 	}
 
 	if len(addTags) > 0 {
@@ -49,18 +89,15 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 	}
 
 	if len(removeTagKeys) > 0 {
-		existingTags, err := st.Tags().ListTagsForResource(resourceKey)
-		if err != nil {
-			return nil, NewAPIError("ListTags", err.Error(), 500)
-		}
-		keysToRemoveMap := make(map[string]bool)
-		for _, k := range removeTagKeys {
-			keysToRemoveMap[k] = true
-		}
-		remainingTags := tagutil.Remove(existingTags, keysToRemoveMap)
-		if err := st.Tags().TagResource(resourceKey, remainingTags); err != nil {
+		if err := st.Tags().Raw().UntagResource(resourceKey, removeTagKeys); err != nil {
 			return nil, NewAPIError("UntagResource", err.Error(), 500)
 		}
+		if len(addTags) > 0 {
+			if err := st.Tags().TagResource(resourceKey, addTags); err != nil {
+				return nil, NewAPIError("TagResource", err.Error(), 500)
+			}
+		}
+		return response.EmptyResponse(), nil
 	}
 
 	return response.EmptyResponse(), nil
@@ -78,23 +115,24 @@ func (s *Route53Service) ListTagsForResource(ctx context.Context, reqCtx *reques
 		return nil, NewAPIError("InvalidParameter", "ResourceType and ResourceId are required", 400)
 	}
 
+	normalizedResourceType := strings.ToLower(resourceType)
+	if normalizedResourceType != "hostedzone" && normalizedResourceType != "healthcheck" {
+		return nil, NewAPIError("InvalidParameter", "ResourceType must be 'hostedzone' or 'healthcheck'", 400)
+	}
+
+	resourceId = strings.TrimPrefix(resourceId, "/hostedzone/")
+	resourceId = strings.TrimPrefix(resourceId, "/healthcheck/")
+
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	resourceKey := resourceType + "/" + resourceId
+	resourceKey := normalizedResourceType + "/" + resourceId
 
 	tags, err := st.Tags().ListTagsForResource(resourceKey)
 	if err != nil {
 		return nil, NewAPIError("ListTags", err.Error(), 500)
-	}
-
-	normalizedResourceType := strings.ToLower(resourceType)
-	switch normalizedResourceType {
-	case "healthcheck", "hostedzone":
-	default:
-		normalizedResourceType = resourceType
 	}
 
 	var tagItems []interface{}

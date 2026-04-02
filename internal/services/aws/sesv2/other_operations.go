@@ -2,6 +2,7 @@ package sesv2
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/services/aws/common/request"
@@ -76,8 +77,10 @@ func (s *SESv2Service) GetDedicatedIpPool(ctx context.Context, reqCtx *request.R
 	}
 
 	return map[string]interface{}{
-		"PoolName":    pool.PoolName,
-		"ScalingMode": pool.ScalingMode,
+		"DedicatedIpPool": map[string]interface{}{
+			"PoolName":    pool.PoolName,
+			"ScalingMode": pool.ScalingMode,
+		},
 	}, nil
 }
 
@@ -104,12 +107,9 @@ func (s *SESv2Service) ListDedicatedIpPools(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	pools := make([]map[string]interface{}, 0, len(result.Items))
+	pools := make([]string, 0, len(result.Items))
 	for _, pool := range result.Items {
-		pools = append(pools, map[string]interface{}{
-			"PoolName":    pool.PoolName,
-			"ScalingMode": pool.ScalingMode,
-		})
+		pools = append(pools, pool.PoolName)
 	}
 
 	response := map[string]interface{}{
@@ -137,7 +137,7 @@ func (s *SESv2Service) GetSuppressedDestination(ctx context.Context, reqCtx *req
 
 	dest, err := store.GetSuppressedDestination(emailAddress)
 	if err != nil {
-		return nil, NewNotFoundException("Suppressed destination not found")
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -145,7 +145,7 @@ func (s *SESv2Service) GetSuppressedDestination(ctx context.Context, reqCtx *req
 			"EmailAddress":      dest.EmailAddress,
 			"Reason":            dest.Reason,
 			"SuppressionReason": dest.SuppressionReason,
-			"LastUpdateTime":    dest.LastUpdateTime,
+			"LastUpdateTime":    float64(time.Now().UTC().Unix()),
 		},
 	}, nil
 }
@@ -168,7 +168,7 @@ func (s *SESv2Service) PutSuppressedDestination(ctx context.Context, reqCtx *req
 		EmailAddress:      emailAddress,
 		Reason:            reason,
 		SuppressionReason: reason,
-		LastUpdateTime:    time.Now().UTC().Format(time.RFC3339),
+		LastUpdateTime:    fmt.Sprintf("%d", time.Now().UTC().Unix()),
 	}
 
 	if err := store.PutSuppressedDestination(dest); err != nil {
@@ -225,7 +225,7 @@ func (s *SESv2Service) ListSuppressedDestinations(ctx context.Context, reqCtx *r
 		destinations = append(destinations, map[string]interface{}{
 			"EmailAddress":   dest.EmailAddress,
 			"Reason":         dest.Reason,
-			"LastUpdateTime": dest.LastUpdateTime,
+			"LastUpdateTime": float64(time.Now().UTC().Unix()),
 		})
 	}
 

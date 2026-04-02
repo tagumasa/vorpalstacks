@@ -41,7 +41,6 @@ import (
 	ssmconnect "vorpalstacks/internal/pb/aws/ssm/ssmconnect"
 	statesconnect "vorpalstacks/internal/pb/aws/states/statesconnect"
 	stsconnect "vorpalstacks/internal/pb/aws/sts/stsconnect"
-	wafconnect "vorpalstacks/internal/pb/aws/waf/wafconnect"
 	wafv2connect "vorpalstacks/internal/pb/aws/wafv2/wafv2connect"
 	svcacm "vorpalstacks/internal/services/aws/acm"
 	svcadminauth "vorpalstacks/internal/services/aws/admin_auth"
@@ -74,7 +73,6 @@ import (
 	svcsts "vorpalstacks/internal/services/aws/sts"
 	svctimestreamquery "vorpalstacks/internal/services/aws/timestreamquery"
 	svctimestreamwrite "vorpalstacks/internal/services/aws/timestreamwrite"
-	svcwaf "vorpalstacks/internal/services/aws/waf"
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	storecloudwatch "vorpalstacks/internal/store/aws/cloudwatch"
 	storecognitoidentity "vorpalstacks/internal/store/aws/cognitoidentity"
@@ -111,7 +109,6 @@ func RegisterAllAdminHandlers(s *Server, deps AdminDeps) {
 	s.Handle(route53connect.NewRoute53ServiceHandler(svcroute53.NewAdminHandler()))
 	s.Handle(secretsmanagerconnect.NewSecretsManagerServiceHandler(svcsecretsmanager.NewAdminHandler()))
 	s.Handle(stsconnect.NewSTSServiceHandler(svcsts.NewAdminHandler(aid)))
-	s.Handle(wafconnect.NewWAFServiceHandler(svcwaf.NewAdminHandler()))
 	s.Handle(wafv2connect.NewWAFV2ServiceHandler(svcwafv2.NewAdminHandler()))
 	s.Handle(schedulerconnect.NewSchedulerServiceHandler(svcscheduler.NewAdminHandler()))
 	s.Handle(dynamodbconnect.NewDynamoDBServiceHandler(svcdynamodb.NewAdminHandler(sm, aid)))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"vorpalstacks/internal/services/aws/common/pagination"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 )
@@ -86,8 +87,20 @@ func (s *KMSService) ListKeyPolicies(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"PolicyNames": policies,
-		"Truncated":   false,
-	}, nil
+	marker := pagination.GetMarker(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, 100)
+
+	result := pagination.PaginateSlice(policies, marker, maxItems, func(p string) string {
+		return p
+	})
+
+	response := map[string]interface{}{
+		"PolicyNames": result.Items,
+		"Truncated":   result.IsTruncated,
+	}
+	if result.NextMarker != "" {
+		response["NextMarker"] = result.NextMarker
+	}
+
+	return response, nil
 }

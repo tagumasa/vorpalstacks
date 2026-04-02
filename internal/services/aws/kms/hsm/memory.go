@@ -399,9 +399,7 @@ func (b *MemoryBackend) GenerateMAC(keyID string, message []byte, algorithm MACA
 		h.Write(message)
 		hmacHash = h.Sum(nil)
 	default:
-		h := hmac.New(sha256.New, key.symmetric)
-		h.Write(message)
-		hmacHash = h.Sum(nil)
+		return nil, ErrInvalidAlgorithm
 	}
 
 	return hmacHash, nil
@@ -441,9 +439,7 @@ func (b *MemoryBackend) VerifyMAC(keyID string, message, macValue []byte, algori
 		h.Write(message)
 		expectedMAC = h.Sum(nil)
 	default:
-		h := hmac.New(sha256.New, key.symmetric)
-		h.Write(message)
-		expectedMAC = h.Sum(nil)
+		return false, ErrInvalidAlgorithm
 	}
 
 	return hmac.Equal(macValue, expectedMAC), nil

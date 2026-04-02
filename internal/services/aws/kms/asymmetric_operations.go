@@ -114,10 +114,60 @@ func (s *KMSService) GetPublicKey(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	encryptionAlgorithms, signingAlgorithms, keyAgreementAlgorithms := getAlgorithmSets(key.KeySpec, key.KeyUsage)
+
+	result := map[string]interface{}{
 		"KeyId":     key.Arn,
 		"PublicKey": base64.StdEncoding.EncodeToString(publicKey),
 		"KeySpec":   key.KeySpec,
 		"KeyUsage":  key.KeyUsage,
-	}, nil
+	}
+	if len(encryptionAlgorithms) > 0 {
+		result["EncryptionAlgorithms"] = encryptionAlgorithms
+	}
+	if len(signingAlgorithms) > 0 {
+		result["SigningAlgorithms"] = signingAlgorithms
+	}
+	if len(keyAgreementAlgorithms) > 0 {
+		result["KeyAgreementAlgorithms"] = keyAgreementAlgorithms
+	}
+
+	return result, nil
+}
+
+// getAlgorithmSets returns the default algorithm sets for a given KeySpec and KeyUsage.
+func getAlgorithmSets(keySpec kmsstore.KeySpec, keyUsage kmsstore.KeyUsage) (encryptionAlgorithms []string, signingAlgorithms []string, keyAgreementAlgorithms []string) {
+	switch {
+	case keyUsage == kmsstore.KeyUsageSignVerify:
+		switch keySpec {
+		case kmsstore.KeySpecRSA2048, kmsstore.KeySpecRSA3072, kmsstore.KeySpecRSA4096:
+			signingAlgorithms = []string{
+				"RSASSA_PKCS1_V1_5_SHA_256",
+				"RSASSA_PKCS1_V1_5_SHA_384",
+				"RSASSA_PKCS1_V1_5_SHA_512",
+				"RSASSA_PSS_SHA_256",
+				"RSASSA_PSS_SHA_384",
+				"RSASSA_PSS_SHA_512",
+			}
+		case kmsstore.KeySpecECCNISTP256, kmsstore.KeySpecECCSECGP256K1:
+			signingAlgorithms = []string{"ECDSA_SHA_256"}
+		case kmsstore.KeySpecECCNISTP384:
+			signingAlgorithms = []string{"ECDSA_SHA_384"}
+		case kmsstore.KeySpecECCNISTP521:
+			signingAlgorithms = []string{"ECDSA_SHA_512"}
+		case kmsstore.KeySpecSM2:
+			signingAlgorithms = []string{"SM2"}
+		}
+	case keyUsage == kmsstore.KeyUsageEncryptDecrypt && keySpec != kmsstore.KeySpecSymmetricDefault:
+		switch keySpec {
+		case kmsstore.KeySpecRSA2048, kmsstore.KeySpecRSA3072, kmsstore.KeySpecRSA4096:
+			encryptionAlgorithms = []string{
+				"RSAES_OAEP_SHA_256",
+				"RSAES_OAEP_SHA_1",
+			}
+		case kmsstore.KeySpecSM2:
+			encryptionAlgorithms = []string{"SM2PKE"}
+		}
+	}
+	return
 }

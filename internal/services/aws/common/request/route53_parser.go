@@ -29,8 +29,8 @@ func extractRoute53Operation(r *http.Request) string {
 			case "GET":
 				return "ListHostedZones"
 			}
-		} else if len(parts) >= 2 {
-			if len(parts) >= 3 && parts[2] == "rrset" {
+		} else if len(parts) >= 3 {
+			if parts[2] == "rrset" {
 				switch method {
 				case "POST":
 					return "ChangeResourceRecordSets"
@@ -38,6 +38,14 @@ func extractRoute53Operation(r *http.Request) string {
 					return "ListResourceRecordSets"
 				}
 			}
+			if parts[2] == "associatevpc" {
+				return "AssociateVPCWithHostedZone"
+			}
+			if parts[2] == "disassociatevpc" {
+				return "DisassociateVPCFromHostedZone"
+			}
+		}
+		if len(parts) >= 2 {
 			switch method {
 			case "GET":
 				return "GetHostedZone"
@@ -124,12 +132,16 @@ func extractRoute53PathParams(path string, params map[string]interface{}) {
 			}
 		}
 	case "tags":
-		if len(parts) >= 3 && parts[1] != "" && parts[2] != "" {
+		if len(parts) >= 2 && parts[1] != "" {
+			resourceType := parts[1]
 			if _, ok := params["ResourceType"]; !ok {
-				params["ResourceType"] = parts[1]
+				params["ResourceType"] = resourceType
 			}
-			if _, ok := params["ResourceId"]; !ok {
-				params["ResourceId"] = parts[2]
+			remaining := strings.Join(parts[2:], "/")
+			if remaining != "" {
+				if _, ok := params["ResourceId"]; !ok {
+					params["ResourceId"] = remaining
+				}
 			}
 		}
 	}

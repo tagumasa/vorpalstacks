@@ -45,6 +45,7 @@ func (s *SESv2Service) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("email", "PutEmailIdentityDkimSigningAttributes", s.PutEmailIdentityDkimSigningAttributes)
 	d.RegisterHandlerForService("email", "PutEmailIdentityFeedbackAttributes", s.PutEmailIdentityFeedbackAttributes)
 	d.RegisterHandlerForService("email", "PutEmailIdentityMailFromAttributes", s.PutEmailIdentityMailFromAttributes)
+	d.RegisterHandlerForService("email", "PutEmailIdentityConfigurationSetAttributes", s.PutEmailIdentityConfigurationSetAttributes)
 	d.RegisterHandlerForService("email", "GetEmailIdentityPolicies", s.GetEmailIdentityPolicies)
 	d.RegisterHandlerForService("email", "CreateEmailIdentityPolicy", s.CreateEmailIdentityPolicy)
 	d.RegisterHandlerForService("email", "UpdateEmailIdentityPolicy", s.UpdateEmailIdentityPolicy)
@@ -64,6 +65,8 @@ func (s *SESv2Service) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("email", "PutConfigurationSetSendingOptions", s.PutConfigurationSetSendingOptions)
 	d.RegisterHandlerForService("email", "PutConfigurationSetSuppressionOptions", s.PutConfigurationSetSuppressionOptions)
 	d.RegisterHandlerForService("email", "PutConfigurationSetTrackingOptions", s.PutConfigurationSetTrackingOptions)
+	d.RegisterHandlerForService("email", "PutConfigurationSetVdmOptions", s.PutConfigurationSetVdmOptions)
+	d.RegisterHandlerForService("email", "PutConfigurationSetArchivingOptions", s.PutConfigurationSetArchivingOptions)
 
 	// Template operations
 	d.RegisterHandlerForService("email", "CreateEmailTemplate", s.CreateEmailTemplate)
@@ -74,15 +77,17 @@ func (s *SESv2Service) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("email", "TestRenderEmailTemplate", s.TestRenderEmailTemplate)
 
 	// Tag operations
-	d.RegisterHandlerForService("sesv2", "TagResource", s.TagResource)
-	d.RegisterHandlerForService("sesv2", "UntagResource", s.UntagResource)
-	d.RegisterHandlerForService("sesv2", "ListTagsForResource", s.ListTagsForResource)
+	d.RegisterHandlerForService("email", "TagResource", s.TagResource)
+	d.RegisterHandlerForService("email", "UntagResource", s.UntagResource)
+	d.RegisterHandlerForService("email", "ListTagsForResource", s.ListTagsForResource)
 
 	// Account operations
 	d.RegisterHandlerForService("email", "GetAccount", s.GetAccount)
 	d.RegisterHandlerForService("email", "PutAccountSendingAttributes", s.PutAccountSendingAttributes)
 	d.RegisterHandlerForService("email", "PutAccountSuppressionAttributes", s.PutAccountSuppressionAttributes)
 	d.RegisterHandlerForService("email", "PutAccountDetails", s.PutAccountDetails)
+	d.RegisterHandlerForService("email", "PutAccountVdmAttributes", s.PutAccountVdmAttributes)
+	d.RegisterHandlerForService("email", "PutAccountDedicatedIpWarmupAttributes", s.PutAccountDedicatedIpWarmupAttributes)
 
 	// Dedicated IP pool operations
 	d.RegisterHandlerForService("email", "CreateDedicatedIpPool", s.CreateDedicatedIpPool)

@@ -18,12 +18,12 @@ func (s *KMSService) TagResource(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	keyID := s.getKeyID(req.Parameters)
-	if keyID == "" {
-		return nil, ErrKeyNotFound
+	key, err := s.resolveKey(stores, req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "TagResource", keyID, nil); err != nil {
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "TagResource", key.KeyID, nil); err != nil {
 		return nil, err
 	}
 	tagList := tagutil.ParseTagsWithKeyNames(req.Parameters, "Tags", "TagKey", "TagValue")
@@ -31,7 +31,7 @@ func (s *KMSService) TagResource(ctx context.Context, reqCtx *request.RequestCon
 		return response.EmptyResponse(), nil
 	}
 
-	if err := stores.keys.AddTags(keyID, tagList); err != nil {
+	if err := stores.keys.AddTags(key.KeyID, tagList); err != nil {
 		return nil, err
 	}
 
@@ -44,12 +44,12 @@ func (s *KMSService) UntagResource(ctx context.Context, reqCtx *request.RequestC
 	if err != nil {
 		return nil, err
 	}
-	keyID := s.getKeyID(req.Parameters)
-	if keyID == "" {
-		return nil, ErrKeyNotFound
+	key, err := s.resolveKey(stores, req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "UntagResource", keyID, nil); err != nil {
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "UntagResource", key.KeyID, nil); err != nil {
 		return nil, err
 	}
 	tagKeys := tagutil.ParseTagKeysAsSlice(req.Parameters, "TagKeys")
@@ -57,7 +57,7 @@ func (s *KMSService) UntagResource(ctx context.Context, reqCtx *request.RequestC
 		return response.EmptyResponse(), nil
 	}
 
-	if err := stores.keys.RemoveTags(keyID, tagKeys); err != nil {
+	if err := stores.keys.RemoveTags(key.KeyID, tagKeys); err != nil {
 		return nil, err
 	}
 
@@ -71,15 +71,15 @@ func (s *KMSService) ListResourceTags(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	keyID := s.getKeyID(req.Parameters)
-	if keyID == "" {
-		return nil, ErrKeyNotFound
-	}
-
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "ListResourceTags", keyID, nil); err != nil {
+	key, err := s.resolveKey(stores, req.Parameters)
+	if err != nil {
 		return nil, err
 	}
-	tags, err := stores.keys.ListTags(keyID)
+
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "ListResourceTags", key.KeyID, nil); err != nil {
+		return nil, err
+	}
+	tags, err := stores.keys.ListTags(key.KeyID)
 	if err != nil {
 		return nil, err
 	}

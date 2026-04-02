@@ -9,19 +9,20 @@ import (
 	"vorpalstacks/internal/services/aws/common/response"
 	tagutil "vorpalstacks/internal/services/aws/common/tags"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // CreateCachePolicy creates a cache policy.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_CreateCachePolicy.html
 func (s *CloudFrontService) CreateCachePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, NewAPIError("InvalidArgument", "Name is required", 400)
-	}
-
 	configMap := request.GetMapParam(req.Parameters, "CachePolicyConfig")
 	if configMap == nil {
-		return nil, NewAPIError("InvalidArgument", "CachePolicyConfig is required", 400)
+		configMap = req.Parameters
+	}
+
+	name := request.GetStringParam(configMap, "Name")
+	if name == "" {
+		return nil, NewAPIError("InvalidArgument", "Name is required", 400)
 	}
 
 	config := &cloudfrontstore.CachePolicyConfig{
@@ -103,10 +104,15 @@ func (s *CloudFrontService) ListCachePolicies(ctx context.Context, reqCtx *reque
 
 	items := make([]interface{}, 0, len(result.CachePolicies))
 	for _, cp := range result.CachePolicies {
+		policyType := "custom"
+		if cp.ETag == "managed" {
+			policyType = "managed"
+		}
 		items = append(items, map[string]interface{}{
 			"Id":               cp.ID,
 			"ARN":              cp.ARN,
 			"Name":             cp.Name,
+			"Type":             policyType,
 			"LastModifiedTime": cp.ModifiedAt.Format(time.RFC3339),
 		})
 	}
@@ -117,6 +123,87 @@ func (s *CloudFrontService) ListCachePolicies(ctx context.Context, reqCtx *reque
 			"IsTruncated": result.IsTruncated,
 			"NextMarker":  result.NextMarker,
 		},
+	}, nil
+}
+
+// GetCachePolicyConfig returns the configuration of a cache policy.
+func (s *CloudFrontService) GetCachePolicyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	id := request.GetStringParam(req.Parameters, "Id")
+	if id == "" {
+		return nil, NewAPIError("InvalidArgument", "Id is required", 400)
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	cachePolicy, err := store.cachePolicies.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, NewAPIError("NoSuchCachePolicy", "Cache policy not found", 404)
+		}
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"CachePolicyConfig": cachePolicy.CachePolicyConfig,
+		"ETag":              cachePolicy.ETag,
+	}, nil
+}
+
+// UpdateCachePolicy updates a cache policy.
+func (s *CloudFrontService) UpdateCachePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	id := request.GetStringParam(req.Parameters, "Id")
+	if id == "" {
+		return nil, NewAPIError("InvalidArgument", "Id is required", 400)
+	}
+
+	ifMatch := getIfMatch(req)
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	existing, err := store.cachePolicies.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, NewAPIError("NoSuchCachePolicy", "Cache policy not found", 404)
+		}
+		return nil, err
+	}
+
+	if ifMatch != "" && ifMatch != "*" && existing.ETag != ifMatch {
+		return nil, NewAPIError("PreconditionFailed", "The If-Match header does not match the current ETag", 412)
+	}
+
+	configMap := request.GetMapParam(req.Parameters, "CachePolicyConfig")
+	if configMap == nil {
+		configMap = req.Parameters
+	}
+
+	config := &cloudfrontstore.CachePolicyConfig{
+		Name:       request.GetStringParam(configMap, "Name"),
+		Comment:    request.GetStringParam(configMap, "Comment"),
+		DefaultTTL: int64(request.GetIntParam(configMap, "DefaultTTL")),
+		MaxTTL:     int64(request.GetIntParam(configMap, "MaxTTL")),
+		MinTTL:     int64(request.GetIntParam(configMap, "MinTTL")),
+	}
+
+	cachePolicy, err := store.cachePolicies.Update(id, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"CachePolicy": map[string]interface{}{
+			"Id":                cachePolicy.ID,
+			"ARN":               cachePolicy.ARN,
+			"Name":              cachePolicy.Name,
+			"CachePolicyConfig": cachePolicy.CachePolicyConfig,
+			"LastModifiedTime":  cachePolicy.ModifiedAt.Format(time.RFC3339),
+		},
+		"ETag": cachePolicy.ETag,
 	}, nil
 }
 
@@ -146,14 +233,14 @@ func (s *CloudFrontService) DeleteCachePolicy(ctx context.Context, reqCtx *reque
 // CreateOriginRequestPolicy creates an origin request policy.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_CreateOriginRequestPolicy.html
 func (s *CloudFrontService) CreateOriginRequestPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, NewAPIError("InvalidArgument", "Name is required", 400)
-	}
-
 	configMap := request.GetMapParam(req.Parameters, "OriginRequestPolicyConfig")
 	if configMap == nil {
-		return nil, NewAPIError("InvalidArgument", "OriginRequestPolicyConfig is required", 400)
+		configMap = req.Parameters
+	}
+
+	name := request.GetStringParam(configMap, "Name")
+	if name == "" {
+		return nil, NewAPIError("InvalidArgument", "Name is required", 400)
 	}
 
 	config := &cloudfrontstore.OriginRequestPolicyConfig{
@@ -232,10 +319,15 @@ func (s *CloudFrontService) ListOriginRequestPolicies(ctx context.Context, reqCt
 
 	items := make([]interface{}, 0, len(result.OriginRequestPolicies))
 	for _, p := range result.OriginRequestPolicies {
+		policyType := "custom"
+		if p.ETag == "managed" {
+			policyType = "managed"
+		}
 		items = append(items, map[string]interface{}{
 			"Id":               p.ID,
 			"ARN":              p.ARN,
 			"Name":             p.Name,
+			"Type":             policyType,
 			"LastModifiedTime": p.ModifiedAt.Format(time.RFC3339),
 		})
 	}
@@ -246,6 +338,84 @@ func (s *CloudFrontService) ListOriginRequestPolicies(ctx context.Context, reqCt
 			"IsTruncated": result.IsTruncated,
 			"NextMarker":  result.NextMarker,
 		},
+	}, nil
+}
+
+// GetOriginRequestPolicyConfig returns the configuration of an origin request policy.
+func (s *CloudFrontService) GetOriginRequestPolicyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	id := request.GetStringParam(req.Parameters, "Id")
+	if id == "" {
+		return nil, NewAPIError("InvalidArgument", "Id is required", 400)
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	policy, err := store.originRequestPolicies.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, NewAPIError("NoSuchOriginRequestPolicy", "Origin request policy not found", 404)
+		}
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"OriginRequestPolicyConfig": policy.OriginRequestPolicyConfig,
+		"ETag":                      policy.ETag,
+	}, nil
+}
+
+// UpdateOriginRequestPolicy updates an origin request policy.
+func (s *CloudFrontService) UpdateOriginRequestPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	id := request.GetStringParam(req.Parameters, "Id")
+	if id == "" {
+		return nil, NewAPIError("InvalidArgument", "Id is required", 400)
+	}
+
+	ifMatch := getIfMatch(req)
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	existing, err := store.originRequestPolicies.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, NewAPIError("NoSuchOriginRequestPolicy", "Origin request policy not found", 404)
+		}
+		return nil, err
+	}
+
+	if ifMatch != "" && ifMatch != "*" && existing.ETag != ifMatch {
+		return nil, NewAPIError("PreconditionFailed", "The If-Match header does not match the current ETag", 412)
+	}
+
+	configMap := request.GetMapParam(req.Parameters, "OriginRequestPolicyConfig")
+	if configMap == nil {
+		configMap = req.Parameters
+	}
+
+	config := &cloudfrontstore.OriginRequestPolicyConfig{
+		Name:    request.GetStringParam(configMap, "Name"),
+		Comment: request.GetStringParam(configMap, "Comment"),
+	}
+
+	policy, err := store.originRequestPolicies.Update(id, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"OriginRequestPolicy": map[string]interface{}{
+			"Id":                        policy.ID,
+			"ARN":                       policy.ARN,
+			"Name":                      policy.Name,
+			"OriginRequestPolicyConfig": policy.OriginRequestPolicyConfig,
+			"LastModifiedTime":          policy.ModifiedAt.Format(time.RFC3339),
+		},
+		"ETag": policy.ETag,
 	}, nil
 }
 
@@ -321,9 +491,32 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 		return nil, NewAPIError("InvalidArgument", "Resource is required", 400)
 	}
 
-	tags := tagutil.ParseTags(req.Parameters, "Tags")
+	var tags []common.Tag
+	tagsMap := request.GetMapParam(req.Parameters, "Tags")
+	if tagsMap != nil {
+		if items := tagsMap["Items"]; items != nil {
+			switch v := items.(type) {
+			case map[string]interface{}:
+				if tagItems, ok := v["Tag"]; ok {
+					switch tv := tagItems.(type) {
+					case []interface{}:
+						for _, t := range tv {
+							if m, ok := t.(map[string]interface{}); ok {
+								tags = append(tags, common.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
+							}
+						}
+					case map[string]interface{}:
+						tags = append(tags, common.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
+					}
+				}
+			}
+		}
+	}
 	if len(tags) == 0 {
-		tags = tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")
+		parsedTags := tagutil.ParseTags(req.Parameters, "Tags")
+		for _, t := range parsedTags {
+			tags = append(tags, common.Tag{Key: t.Key, Value: t.Value})
+		}
 	}
 
 	store, err := s.store(reqCtx)
@@ -350,6 +543,43 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 	}
 
 	tagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys")
+	if len(tagKeys) == 0 {
+		if tagKeysMap := request.GetMapParam(req.Parameters, "TagKeys"); tagKeysMap != nil {
+			if items := tagKeysMap["Items"]; items != nil {
+				switch v := items.(type) {
+				case map[string]interface{}:
+					if keyItems, ok := v["Key"]; ok {
+						switch kv := keyItems.(type) {
+						case []interface{}:
+							for _, k := range kv {
+								if s, ok := k.(string); ok {
+									tagKeys = append(tagKeys, s)
+								}
+							}
+						case string:
+							tagKeys = append(tagKeys, kv)
+						}
+					}
+				}
+			}
+		}
+	}
+	if len(tagKeys) == 0 {
+		if items := request.GetMapParam(req.Parameters, "Items"); items != nil {
+			if keyItems, ok := items["Key"]; ok {
+				switch kv := keyItems.(type) {
+				case []interface{}:
+					for _, k := range kv {
+						if s, ok := k.(string); ok {
+							tagKeys = append(tagKeys, s)
+						}
+					}
+				case string:
+					tagKeys = append(tagKeys, kv)
+				}
+			}
+		}
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

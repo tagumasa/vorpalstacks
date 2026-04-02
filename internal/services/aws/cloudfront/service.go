@@ -137,16 +137,21 @@ func (s *CloudFrontService) RegisterHandlers(d *dispatcher.Dispatcher) {
 
 	d.RegisterHandlerForService("cloudfront", "CreateCachePolicy", s.CreateCachePolicy)
 	d.RegisterHandlerForService("cloudfront", "GetCachePolicy", s.GetCachePolicy)
+	d.RegisterHandlerForService("cloudfront", "GetCachePolicyConfig", s.GetCachePolicyConfig)
 	d.RegisterHandlerForService("cloudfront", "ListCachePolicies", s.ListCachePolicies)
+	d.RegisterHandlerForService("cloudfront", "UpdateCachePolicy", s.UpdateCachePolicy)
 	d.RegisterHandlerForService("cloudfront", "DeleteCachePolicy", s.DeleteCachePolicy)
 
 	d.RegisterHandlerForService("cloudfront", "CreateOriginRequestPolicy", s.CreateOriginRequestPolicy)
 	d.RegisterHandlerForService("cloudfront", "GetOriginRequestPolicy", s.GetOriginRequestPolicy)
+	d.RegisterHandlerForService("cloudfront", "GetOriginRequestPolicyConfig", s.GetOriginRequestPolicyConfig)
 	d.RegisterHandlerForService("cloudfront", "ListOriginRequestPolicies", s.ListOriginRequestPolicies)
+	d.RegisterHandlerForService("cloudfront", "UpdateOriginRequestPolicy", s.UpdateOriginRequestPolicy)
 	d.RegisterHandlerForService("cloudfront", "DeleteOriginRequestPolicy", s.DeleteOriginRequestPolicy)
 
 	d.RegisterHandlerForService("cloudfront", "CreateOriginAccessControl", s.CreateOriginAccessControl)
 	d.RegisterHandlerForService("cloudfront", "GetOriginAccessControl", s.GetOriginAccessControl)
+	d.RegisterHandlerForService("cloudfront", "GetOriginAccessControlConfig", s.GetOriginAccessControlConfig)
 	d.RegisterHandlerForService("cloudfront", "UpdateOriginAccessControl", s.UpdateOriginAccessControl)
 	d.RegisterHandlerForService("cloudfront", "DeleteOriginAccessControl", s.DeleteOriginAccessControl)
 	d.RegisterHandlerForService("cloudfront", "ListOriginAccessControls", s.ListOriginAccessControls)

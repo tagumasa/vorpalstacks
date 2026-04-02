@@ -133,6 +133,7 @@ func (s *Route53Service) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("route53", "ChangeTagsForResource", s.ChangeTagsForResource)
 	d.RegisterHandlerForService("route53", "ListTagsForResource", s.ListTagsForResource)
 	d.RegisterHandlerForService("route53", "ListReusableDelegationSets", s.ListReusableDelegationSets)
+	d.RegisterHandlerForService("route53", "GetDNSSEC", s.GetDNSSEC)
 }
 
 func getEnvOrDefault(key, defaultVal string) string {

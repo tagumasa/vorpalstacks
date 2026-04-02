@@ -143,6 +143,7 @@ func (s *OriginAccessControlStore) List(marker string, maxItems int) (*OriginAcc
 		if !started {
 			if oac.ID == marker {
 				started = true
+				return nil
 			}
 			return nil
 		}

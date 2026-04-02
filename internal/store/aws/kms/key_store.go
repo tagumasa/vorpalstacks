@@ -49,6 +49,49 @@ func (s *KeyStore) Create(keyID string, keyUsage KeyUsage, keySpec KeySpec, desc
 		Tags:               tags,
 	}
 
+	switch keyUsage {
+	case KeyUsageEncryptDecrypt:
+		switch keySpec {
+		case KeySpecSymmetricDefault:
+			key.EncryptionAlgorithms = []string{"SYMMETRIC_DEFAULT"}
+		case KeySpecRSA2048, KeySpecRSA3072, KeySpecRSA4096:
+			key.EncryptionAlgorithms = []string{"RSAES_OAEP_SHA_256", "RSAES_OAEP_SHA_1"}
+		case KeySpecSM2:
+			key.EncryptionAlgorithms = []string{"SM2PKE"}
+		}
+	case KeyUsageSignVerify:
+		switch keySpec {
+		case KeySpecRSA2048, KeySpecRSA3072, KeySpecRSA4096:
+			key.SigningAlgorithms = []string{
+				"RSASSA_PKCS1_V1_5_SHA_256",
+				"RSASSA_PKCS1_V1_5_SHA_384",
+				"RSASSA_PKCS1_V1_5_SHA_512",
+				"RSASSA_PSS_SHA_256",
+				"RSASSA_PSS_SHA_384",
+				"RSASSA_PSS_SHA_512",
+			}
+		case KeySpecECCNISTP256, KeySpecECCSECGP256K1:
+			key.SigningAlgorithms = []string{"ECDSA_SHA_256"}
+		case KeySpecECCNISTP384:
+			key.SigningAlgorithms = []string{"ECDSA_SHA_384"}
+		case KeySpecECCNISTP521:
+			key.SigningAlgorithms = []string{"ECDSA_SHA_512"}
+		case KeySpecSM2:
+			key.SigningAlgorithms = []string{"SM2DSA"}
+		}
+	case KeyUsageGenerateVerifyMAC:
+		switch keySpec {
+		case KeySpecHMAC224:
+			key.SigningAlgorithms = []string{"HMAC_SHA_224"}
+		case KeySpecHMAC256:
+			key.SigningAlgorithms = []string{"HMAC_SHA_256"}
+		case KeySpecHMAC384:
+			key.SigningAlgorithms = []string{"HMAC_SHA_384"}
+		case KeySpecHMAC512:
+			key.SigningAlgorithms = []string{"HMAC_SHA_512"}
+		}
+	}
+
 	if multiRegion {
 		key.MultiRegionConfiguration = &MultiRegionConfiguration{
 			MultiRegionKeyType: "PRIMARY",
@@ -199,6 +242,7 @@ func (s *KeyStore) ScheduleDeletion(keyID string, pendingWindowInDays int) error
 	deletionDate := time.Now().AddDate(0, 0, pendingWindowInDays)
 	key.DeletionDate = &deletionDate
 	key.PendingWindowInDays = pendingWindowInDays
+	key.PreDeletionEnabled = &key.Enabled
 	key.KeyState = KeyStatePendingDeletion
 	key.Enabled = false
 
@@ -218,8 +262,13 @@ func (s *KeyStore) CancelDeletion(keyID string) error {
 
 	key.DeletionDate = nil
 	key.PendingWindowInDays = 0
-	key.KeyState = KeyStateEnabled
-	key.Enabled = true
+	if key.PreDeletionEnabled != nil && !*key.PreDeletionEnabled {
+		key.KeyState = KeyStateDisabled
+		key.Enabled = false
+	} else {
+		key.KeyState = KeyStateEnabled
+		key.Enabled = true
+	}
 
 	return s.Update(key)
 }

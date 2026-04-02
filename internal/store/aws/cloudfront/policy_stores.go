@@ -124,8 +124,14 @@ func (s *CachePolicyStore) List(marker string, maxItems int) (*CachePolicyListRe
 		if !started {
 			if cp.ID == marker {
 				started = true
+				return nil
 			}
-			return nil
+			if cp.ID > marker {
+				started = true
+			}
+			if !started {
+				return nil
+			}
 		}
 
 		if count < maxItems {
@@ -263,8 +269,14 @@ func (s *OriginRequestPolicyStore) List(marker string, maxItems int) (*OriginReq
 		if !started {
 			if orp.ID == marker {
 				started = true
+				return nil
 			}
-			return nil
+			if orp.ID > marker {
+				started = true
+			}
+			if !started {
+				return nil
+			}
 		}
 
 		if count < maxItems {

@@ -111,6 +111,32 @@ func (s *CloudFrontService) GetOriginAccessControl(ctx context.Context, reqCtx *
 	}, nil
 }
 
+// GetOriginAccessControlConfig returns the configuration of an origin access control.
+func (s *CloudFrontService) GetOriginAccessControlConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	id := request.GetStringParam(req.Parameters, "Id")
+	if id == "" {
+		return nil, NewAPIError("InvalidArgument", "Id is required", 400)
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	oac, err := store.originAccessControls.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, NewAPIError("NoSuchOriginAccessControl", "Origin access control not found", 404)
+		}
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"OriginAccessControlConfig": buildOACConfigResponse(oac),
+		"ETag":                      oac.ETag,
+	}, nil
+}
+
 // UpdateOriginAccessControl updates an origin access control.
 // https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_UpdateOriginAccessControl.html
 func (s *CloudFrontService) UpdateOriginAccessControl(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {

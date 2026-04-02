@@ -41,6 +41,13 @@ type VdmOptions struct {
 	GuardianOptions  *VDMGuardianOptions  `json:"guardianOptions,omitempty"`
 }
 
+// ArchivingOptions specifies the archiving options for a configuration set.
+type ArchivingOptions struct {
+	Enabled         bool   `json:"enabled"`
+	RetentionPeriod int32  `json:"retentionPeriod,omitempty"`
+	TargetArn       string `json:"targetArn,omitempty"`
+}
+
 // VDMDashboardOptions specifies the dashboard options for VDM.
 type VDMDashboardOptions struct {
 	EngagementMetrics string `json:"engagementMetrics,omitempty"`
@@ -60,6 +67,7 @@ type ConfigurationSet struct {
 	TrackingOptions      *TrackingOptions    `json:"trackingOptions,omitempty"`
 	SuppressionOptions   *SuppressionOptions `json:"suppressionOptions,omitempty"`
 	VdmOptions           *VdmOptions         `json:"vdmOptions,omitempty"`
+	ArchivingOptions     *ArchivingOptions   `json:"archivingOptions,omitempty"`
 	CreatedTimestamp     time.Time           `json:"createdTimestamp"`
 	LastUpdatedTimestamp time.Time           `json:"lastUpdatedTimestamp"`
 }

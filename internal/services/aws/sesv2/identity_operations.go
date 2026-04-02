@@ -297,6 +297,34 @@ func (s *SESv2Service) PutEmailIdentityMailFromAttributes(ctx context.Context, r
 	return response.EmptyResponse(), nil
 }
 
+// PutEmailIdentityConfigurationSetAttributes associates a configuration set with an email identity.
+func (s *SESv2Service) PutEmailIdentityConfigurationSetAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	emailIdentity := request.GetStringParam(req.Parameters, "EmailIdentity")
+	if emailIdentity == "" {
+		return nil, ErrMissingParameter
+	}
+
+	configurationSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	identity, err := store.GetEmailIdentity(emailIdentity)
+	if err != nil {
+		return nil, err
+	}
+
+	identity.ConfigurationSetName = configurationSetName
+
+	if err := store.UpdateEmailIdentity(identity); err != nil {
+		return nil, err
+	}
+
+	return response.EmptyResponse(), nil
+}
+
 // GetEmailIdentityPolicies retrieves the policies for an email identity.
 func (s *SESv2Service) GetEmailIdentityPolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	emailIdentity := request.GetStringParam(req.Parameters, "EmailIdentity")

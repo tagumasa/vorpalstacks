@@ -130,6 +130,8 @@ func (s *Route53Service) UpdateHealthCheck(ctx context.Context, reqCtx *request.
 	healthCheckConfig := request.GetMapParam(req.Parameters, "HealthCheckConfig")
 	if healthCheckConfig != nil {
 		applyHealthCheckConfigUpdates(healthCheck.HealthCheckConfig, healthCheckConfig)
+	} else {
+		applyHealthCheckConfigUpdates(healthCheck.HealthCheckConfig, req.Parameters)
 	}
 
 	st, err := s.store(reqCtx)

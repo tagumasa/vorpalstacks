@@ -709,9 +709,30 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 					}
 				}
 			case map[string]interface{}:
-				if tag, ok := v["Tag"].(map[string]interface{}); ok {
-					tags = append(tags, common.Tag{Key: request.GetStringParam(tag, "Key"), Value: request.GetStringParam(tag, "Value")})
+				if tagVal, ok := v["Tag"]; ok {
+					switch tv := tagVal.(type) {
+					case []interface{}:
+						for _, t := range tv {
+							if m, ok := t.(map[string]interface{}); ok {
+								tags = append(tags, common.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
+							}
+						}
+					case map[string]interface{}:
+						tags = append(tags, common.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
+					}
 				}
+			}
+		}
+		if tagVal := tagsMap["Tag"]; tagVal != nil && len(tags) == 0 {
+			switch v := tagVal.(type) {
+			case []interface{}:
+				for _, t := range v {
+					if m, ok := t.(map[string]interface{}); ok {
+						tags = append(tags, common.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
+					}
+				}
+			case map[string]interface{}:
+				tags = append(tags, common.Tag{Key: request.GetStringParam(v, "Key"), Value: request.GetStringParam(v, "Value")})
 			}
 		}
 	}

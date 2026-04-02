@@ -84,7 +84,7 @@ func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *reque
 	}
 
 	seen := make(map[string]bool)
-	resources := make([]interface{}, 0)
+	resources := make([]string, 0)
 	for _, assocStore := range associationStores {
 		associations, err := assocStore.GetByWebACLArn(webACLArn)
 		if err != nil {
@@ -93,9 +93,7 @@ func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *reque
 		for _, assoc := range associations {
 			if !seen[assoc.ResourceArn] {
 				seen[assoc.ResourceArn] = true
-				resources = append(resources, map[string]interface{}{
-					"ResourceArn": assoc.ResourceArn,
-				})
+				resources = append(resources, assoc.ResourceArn)
 			}
 		}
 	}

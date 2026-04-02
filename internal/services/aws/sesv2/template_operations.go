@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -13,6 +14,8 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
+
+var awsVarPattern = regexp.MustCompile(`\{\{([^#/^}{]+)\}\}`)
 
 // CreateEmailTemplate creates a new email template.
 func (s *SESv2Service) CreateEmailTemplate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -216,12 +219,15 @@ func (s *SESv2Service) TestRenderEmailTemplate(ctx context.Context, reqCtx *requ
 		return nil, NewBadRequestException("Failed to render text: " + err.Error())
 	}
 
+	returnedHtml := renderedHtml
+	if returnedHtml == "" {
+		returnedHtml = renderedText
+	}
+
+	rendered := "Subject: " + renderedSubject + "\nContent-Type: text/html\n\n" + returnedHtml
+
 	return map[string]interface{}{
-		"RenderedTemplate": map[string]interface{}{
-			"Subject": renderedSubject,
-			"Html":    renderedHtml,
-			"Text":    renderedText,
-		},
+		"RenderedTemplate": rendered,
 	}, nil
 }
 
@@ -255,5 +261,13 @@ func convertAWSTemplateSyntax(s string) string {
 	s = strings.ReplaceAll(s, "{{else}}", "{{else}}")
 	s = strings.ReplaceAll(s, "{{^if", "{{if not ")
 	s = strings.ReplaceAll(s, "{{^each", "{{range")
+	s = awsVarPattern.ReplaceAllStringFunc(s, func(match string) string {
+		varName := awsVarPattern.FindStringSubmatch(match)[1]
+		varName = strings.TrimSpace(varName)
+		if varName != "" && !strings.HasPrefix(varName, ".") && !strings.HasPrefix(varName, "if") && !strings.HasPrefix(varName, "range") && !strings.HasPrefix(varName, "with") && !strings.HasPrefix(varName, "end") && !strings.HasPrefix(varName, "else") && !strings.HasPrefix(varName, "not") {
+			return "{{." + varName + "}}"
+		}
+		return match
+	})
 	return s
 }

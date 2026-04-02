@@ -19,6 +19,13 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 	if name == "" {
 		return nil, NewAPIError("InvalidInput", "Name is required", 400)
 	}
+	name = strings.ToLower(name)
+	if !strings.HasSuffix(name, ".") {
+		name = name + "."
+	}
+	if strings.Contains(name, " ") || len(name) < 2 {
+		return nil, NewAPIError("InvalidInput", "Invalid hosted zone name", 400)
+	}
 
 	callerRef := request.GetStringParam(req.Parameters, "CallerReference")
 	if callerRef == "" {
@@ -48,6 +55,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		ResourceRecordSetCount: 0,
 		Private:                privateZone,
 		VPCs:                   vpcs,
+		DelegationSetID:        generateDelegationSetId(),
 		Region:                 reqCtx.GetRegion(),
 		AccountID:              s.accountID,
 	}
@@ -125,7 +133,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 			"SubmittedAt": now.Format(time.RFC3339),
 		},
 		"DelegationSet": map[string]interface{}{
-			"Id":              "/delegationset/" + generateDelegationSetId(),
+			"Id":              "/delegationset/" + zone.DelegationSetID,
 			"CallerReference": callerRef,
 			"NameServers": protocol.XMLElements{
 				ElementName: "NameServer",
@@ -153,7 +161,7 @@ func (s *Route53Service) GetHostedZone(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"HostedZone": s.hostedZoneToResponse(zone),
 		"DelegationSet": map[string]interface{}{
 			"NameServers": protocol.XMLElements{
@@ -166,8 +174,26 @@ func (s *Route53Service) GetHostedZone(ctx context.Context, reqCtx *request.Requ
 				},
 			},
 		},
-		"VPCs": []interface{}{},
-	}, nil
+	}
+
+	if zone.DelegationSetID != "" {
+		result["DelegationSet"].(map[string]interface{})["Id"] = "/delegationset/" + zone.DelegationSetID
+	}
+
+	if len(zone.VPCs) > 0 {
+		vpcs := make([]interface{}, len(zone.VPCs))
+		for i, vpc := range zone.VPCs {
+			vpcs[i] = map[string]string{
+				"VPCRegion": vpc.VPCRegion,
+				"VPCId":     vpc.VPCID,
+			}
+		}
+		result["VPCs"] = protocol.XMLElements{ElementName: "VPC", Items: vpcs}
+	} else {
+		result["VPCs"] = []interface{}{}
+	}
+
+	return result, nil
 }
 
 // ListHostedZones returns a list of hosted zones with pagination support.
@@ -190,30 +216,86 @@ func (s *Route53Service) ListHostedZones(ctx context.Context, reqCtx *request.Re
 // ListHostedZonesByName returns hosted zones sorted by name with optional DNS name filter.
 func (s *Route53Service) ListHostedZonesByName(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	dnsName := request.GetStringParam(req.Parameters, "DNSName")
-	marker := request.GetStringParam(req.Parameters, "Marker")
+	hostedZoneIdMarker := request.GetStringParam(req.Parameters, "HostedZoneId")
 	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
+	if maxItems <= 0 {
+		maxItems = 100
+	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if dnsName != "" {
-		zone, err := st.HostedZones().GetByName(dnsName)
-		if err != nil {
-			if route53store.IsNotFound(err) {
-				return s.buildHostedZonesListResponse(nil, false, "", maxItems), nil
-			}
-			return nil, mapStoreError(err)
-		}
-		return s.buildHostedZonesListResponse([]*route53store.HostedZone{zone}, false, "", maxItems), nil
-	}
 
-	result, err := st.HostedZones().List(marker, maxItems)
+	allZones, err := st.HostedZones().ListByName()
 	if err != nil {
 		return nil, mapStoreError(err)
 	}
 
-	return s.buildHostedZonesListResponse(result.HostedZones, result.IsTruncated, result.Marker, maxItems), nil
+	var filtered []*route53store.HostedZone
+	if dnsName != "" {
+		dnsName = strings.ToLower(dnsName)
+		if !strings.HasSuffix(dnsName, ".") {
+			dnsName = dnsName + "."
+		}
+		started := false
+		if hostedZoneIdMarker != "" {
+			for _, z := range allZones {
+				if strings.EqualFold(z.Name, dnsName) && z.ID == hostedZoneIdMarker {
+					started = true
+					continue
+				}
+				if started {
+					filtered = append(filtered, z)
+				}
+			}
+		} else {
+			for _, z := range allZones {
+				if !started {
+					if strings.Compare(z.Name, dnsName) >= 0 {
+						started = true
+					}
+				}
+				if started {
+					filtered = append(filtered, z)
+				}
+			}
+		}
+	} else {
+		filtered = allZones
+	}
+
+	isTruncated := len(filtered) > int(maxItems)
+	if isTruncated {
+		filtered = filtered[:int(maxItems)]
+	}
+
+	result := map[string]interface{}{
+		"HostedZones": protocol.XMLElements{ElementName: "HostedZone", Items: func() []interface{} {
+			items := make([]interface{}, len(filtered))
+			for i, z := range filtered {
+				items[i] = s.hostedZoneToResponse(z)
+			}
+			return items
+		}()},
+		"IsTruncated": isTruncated,
+		"MaxItems":    maxItems,
+	}
+
+	if dnsName != "" {
+		result["DNSName"] = dnsName
+	}
+	if hostedZoneIdMarker != "" {
+		result["HostedZoneId"] = hostedZoneIdMarker
+	}
+
+	if isTruncated && len(filtered) > 0 {
+		lastZone := filtered[len(filtered)-1]
+		result["NextDNSName"] = lastZone.Name
+		result["NextHostedZoneId"] = lastZone.ID
+	}
+
+	return result, nil
 }
 
 // DeleteHostedZone deletes a hosted zone by its ID. The zone must be empty.
@@ -339,4 +421,18 @@ func normalizeZoneNameForCreate(name string) string {
 		name = name + "."
 	}
 	return name
+}
+
+func (s *Route53Service) GetDNSSEC(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	_, err := extractHostedZoneId(req.Parameters, "HostedZoneId")
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Status": map[string]interface{}{
+			"ServeSignature": "NOT_SIGNING",
+		},
+		"KeySigningKeys": []interface{}{},
+	}, nil
 }

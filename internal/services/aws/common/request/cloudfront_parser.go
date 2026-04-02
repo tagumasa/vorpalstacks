@@ -25,6 +25,9 @@ func extractCloudFrontOperation(r *http.Request) string {
 		if len(parts) == 1 || parts[1] == "" {
 			switch method {
 			case "POST":
+				if r.URL.Query().Has("WithTags") {
+					return "CreateDistributionWithTags"
+				}
 				return "CreateDistribution"
 			case "GET":
 				return "ListDistributions"
@@ -40,6 +43,9 @@ func extractCloudFrontOperation(r *http.Request) string {
 				case "POST":
 					return "CreateInvalidation"
 				case "GET":
+					if len(parts) >= 4 && parts[3] != "" {
+						return "GetInvalidation"
+					}
 					return "ListInvalidations"
 				}
 			}
@@ -53,13 +59,21 @@ func extractCloudFrontOperation(r *http.Request) string {
 			}
 		}
 	case "tagging":
-		switch method {
-		case "POST":
+		op := r.URL.Query().Get("Operation")
+		switch op {
+		case "Tag":
 			return "TagResource"
-		case "DELETE":
+		case "Untag":
 			return "UntagResource"
-		case "GET":
-			return "ListTagsForResource"
+		default:
+			switch method {
+			case "POST":
+				return "TagResource"
+			case "DELETE":
+				return "UntagResource"
+			case "GET":
+				return "ListTagsForResource"
+			}
 		}
 	case "cache-policy":
 		if len(parts) == 1 || parts[1] == "" {
@@ -70,9 +84,17 @@ func extractCloudFrontOperation(r *http.Request) string {
 				return "ListCachePolicies"
 			}
 		} else if len(parts) >= 2 {
+			if len(parts) >= 3 && parts[2] == "config" {
+				switch method {
+				case "GET":
+					return "GetCachePolicyConfig"
+				}
+			}
 			switch method {
 			case "GET":
 				return "GetCachePolicy"
+			case "PUT":
+				return "UpdateCachePolicy"
 			case "DELETE":
 				return "DeleteCachePolicy"
 			}
@@ -86,9 +108,17 @@ func extractCloudFrontOperation(r *http.Request) string {
 				return "ListOriginRequestPolicies"
 			}
 		} else if len(parts) >= 2 {
+			if len(parts) >= 3 && parts[2] == "config" {
+				switch method {
+				case "GET":
+					return "GetOriginRequestPolicyConfig"
+				}
+			}
 			switch method {
 			case "GET":
 				return "GetOriginRequestPolicy"
+			case "PUT":
+				return "UpdateOriginRequestPolicy"
 			case "DELETE":
 				return "DeleteOriginRequestPolicy"
 			}
@@ -106,6 +136,8 @@ func extractCloudFrontOperation(r *http.Request) string {
 				switch method {
 				case "PUT":
 					return "UpdateOriginAccessControl"
+				case "GET":
+					return "GetOriginAccessControlConfig"
 				}
 			} else {
 				switch method {
@@ -159,6 +191,11 @@ func extractCloudFrontPathParams(path string, params map[string]interface{}) {
 		if len(parts) >= 2 && parts[1] != "" {
 			if _, ok := params["Id"]; !ok {
 				params["Id"] = parts[1]
+			}
+		}
+		if len(parts) >= 4 && parts[2] == "invalidation" && parts[3] != "" {
+			if _, ok := params["invalidationId"]; !ok {
+				params["invalidationId"] = parts[3]
 			}
 		}
 	case "cache-policy":

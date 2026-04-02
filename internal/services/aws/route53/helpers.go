@@ -70,7 +70,7 @@ func extractHealthCheckId(params map[string]interface{}, paramName string) (stri
 	if id == "" {
 		return "", NewAPIError("InvalidInput", fmt.Sprintf("%s is required", paramName), 400)
 	}
-	return id, nil
+	return strings.TrimPrefix(id, "/healthcheck/"), nil
 }
 
 func extractChangeId(params map[string]interface{}, paramName string) (string, error) {
@@ -133,6 +133,7 @@ func parseHealthCheckConfig(configMap map[string]interface{}) *route53store.Heal
 
 	config := &route53store.HealthCheckConfig{
 		Type: request.GetStringParam(configMap, "Type"),
+		Port: 80,
 	}
 
 	if v, ok := configMap["IPAddress"].(string); ok {
@@ -169,8 +170,8 @@ func applyHealthCheckConfigUpdates(config *route53store.HealthCheckConfig, updat
 	if v, ok := updates["IPAddress"].(string); ok {
 		config.IPAddress = v
 	}
-	if v, ok := updates["Port"].(float64); ok {
-		config.Port = int64(v)
+	if _, ok := updates["Port"]; ok {
+		config.Port = int64(request.GetIntParam(updates, "Port"))
 	}
 	if v, ok := updates["ResourcePath"].(string); ok {
 		config.ResourcePath = v
@@ -178,11 +179,11 @@ func applyHealthCheckConfigUpdates(config *route53store.HealthCheckConfig, updat
 	if v, ok := updates["FullyQualifiedDomainName"].(string); ok {
 		config.FullyQualifiedDomainName = v
 	}
-	if v, ok := updates["RequestInterval"].(float64); ok {
-		config.RequestInterval = int64(v)
+	if _, ok := updates["RequestInterval"]; ok {
+		config.RequestInterval = int64(request.GetIntParam(updates, "RequestInterval"))
 	}
-	if v, ok := updates["FailureThreshold"].(float64); ok {
-		config.FailureThreshold = int64(v)
+	if _, ok := updates["FailureThreshold"]; ok {
+		config.FailureThreshold = int64(request.GetIntParam(updates, "FailureThreshold"))
 	}
 	if updates["MeasureLatency"] != nil {
 		config.MeasureLatency = request.GetBoolParam(updates, "MeasureLatency")

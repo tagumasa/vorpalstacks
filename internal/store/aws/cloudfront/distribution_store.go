@@ -160,6 +160,9 @@ func (s *DistributionStore) List(marker string, maxItems int) (*DistributionList
 			if !started {
 				return nil
 			}
+			if dist.ID == marker {
+				return nil
+			}
 		}
 
 		if count < maxItems {

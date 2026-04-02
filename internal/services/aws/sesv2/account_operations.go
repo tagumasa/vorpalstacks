@@ -107,3 +107,38 @@ func (s *SESv2Service) PutAccountDetails(ctx context.Context, reqCtx *request.Re
 
 	return response.EmptyResponse(), nil
 }
+
+// PutAccountVdmAttributes updates the VDM attributes for the SES v2 account.
+func (s *SESv2Service) PutAccountVdmAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	vdm := &sesv2store.VdmAttributes{
+		VdmEnabled:          request.GetBoolParam(req.Parameters, "VdmEnabled"),
+		DashboardAttributes: request.GetStringParam(req.Parameters, "DashboardAttributes"),
+		GuardianAttributes:  request.GetStringParam(req.Parameters, "GuardianAttributes"),
+	}
+
+	if err := store.PutVdmAttributes(vdm); err != nil {
+		return nil, err
+	}
+
+	return response.EmptyResponse(), nil
+}
+
+// PutAccountDedicatedIpWarmupAttributes updates the dedicated IP auto warmup setting.
+func (s *SESv2Service) PutAccountDedicatedIpWarmupAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	enabled := request.GetBoolParam(req.Parameters, "AutoWarmupEnabled")
+	if err := store.PutDedicatedIpAutoWarmupEnabled(enabled); err != nil {
+		return nil, err
+	}
+
+	return response.EmptyResponse(), nil
+}

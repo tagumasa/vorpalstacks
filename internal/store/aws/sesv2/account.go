@@ -28,11 +28,20 @@ type SuppressionAttributes struct {
 	SuppressedReasons []string `json:"suppressedReasons,omitempty"`
 }
 
+// VdmAttributes represents the VDM (Visibility in Delivery Metrics) attributes for an account.
+type VdmAttributes struct {
+	VdmEnabled                      bool     `json:"vdmEnabled"`
+	DashboardAttributes             string   `json:"dashboardAttributes,omitempty"`
+	GuardianAttributes              string   `json:"guardianAttributes,omitempty"`
+	AdditionalContactEmailAddresses []string `json:"additionalContactEmailAddresses,omitempty"`
+}
+
 // Account represents the overall SESv2 account configuration.
 type Account struct {
 	Details                 *AccountDetails        `json:"details,omitempty"`
 	SendingAttributes       *SendingAttributes     `json:"sendingAttributes"`
 	SuppressionAttributes   *SuppressionAttributes `json:"suppressionAttributes"`
+	VdmAttributes           *VdmAttributes         `json:"vdmAttributes,omitempty"`
 	EnforcementStatus       string                 `json:"enforcementStatus"`
 	ProductionAccessEnabled bool                   `json:"productionAccessEnabled"`
 	SendingEnabled          bool                   `json:"sendingEnabled"`
@@ -102,6 +111,33 @@ func (s *SESv2Store) PutSuppressionAttributes(reasons []string) error {
 		return err
 	}
 	account.SuppressionAttributes.SuppressedReasons = reasons
+	return s.accountStore.Put("account", account)
+}
+
+// PutVdmAttributes updates the VDM attributes for the SESv2 account.
+func (s *SESv2Store) PutVdmAttributes(vdm *VdmAttributes) error {
+	s.accountMu.Lock()
+	defer s.accountMu.Unlock()
+	account, err := s.getAccountLocked()
+	if err != nil {
+		return err
+	}
+	account.VdmAttributes = vdm
+	return s.accountStore.Put("account", account)
+}
+
+// PutDedicatedIpAutoWarmupEnabled updates the dedicated IP auto warmup flag.
+func (s *SESv2Store) PutDedicatedIpAutoWarmupEnabled(enabled bool) error {
+	s.accountMu.Lock()
+	defer s.accountMu.Unlock()
+	account, err := s.getAccountLocked()
+	if err != nil {
+		return err
+	}
+	if account.SendingAttributes == nil {
+		account.SendingAttributes = &SendingAttributes{}
+	}
+	account.SendingAttributes.DedicatedIpAutoWarmup = enabled
 	return s.accountStore.Put("account", account)
 }
 

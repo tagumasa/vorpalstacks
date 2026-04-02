@@ -1,0 +1,225 @@
+syntax = "proto3";
+
+package storage.neptune;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_neptune";
+
+import "google/protobuf/timestamp.proto";
+
+message ServerlessV2ScalingConfiguration {
+  double min_capacity = 1;
+  double max_capacity = 2;
+}
+
+message DBClusterRole {
+  string role_arn = 1;
+  string feature_name = 2;
+  string status = 3;
+}
+
+message DBCluster {
+  string db_cluster_identifier = 1;
+  string engine = 2;
+  string engine_version = 3;
+  string status = 4;
+  string master_username = 5;
+  string database_name = 6;
+  int32 port = 7;
+  int32 backup_retention_period = 8;
+  string preferred_backup_window = 9;
+  string preferred_maintenance_window = 10;
+  repeated string availability_zones = 11;
+  bool multi_az = 12;
+  repeated string vpc_security_group_ids = 13;
+  string db_subnet_group_name = 14;
+  string db_cluster_parameter_group_name = 15;
+  bool storage_encrypted = 16;
+  string kms_key_id = 17;
+  bool copy_tags_to_snapshot = 18;
+  bool deletion_protection = 19;
+  repeated string enable_cloudwatch_logs_exports = 20;
+  bool enable_iam_database_authentication = 21;
+  google.protobuf.Timestamp cluster_create_time = 22;
+  google.protobuf.Timestamp earliest_restorable_time = 23;
+  google.protobuf.Timestamp latest_restorable_time = 24;
+  repeated DBClusterRole associated_roles = 25;
+  string replication_source_identifier = 26;
+  string global_cluster_identifier = 27;
+  string storage_type = 28;
+  ServerlessV2ScalingConfiguration serverless_v2_scaling_configuration = 29;
+  string account_id = 30;
+  string region = 31;
+}
+
+message DBInstance {
+  string db_instance_identifier = 1;
+  string db_cluster_identifier = 2;
+  string engine = 3;
+  string engine_version = 4;
+  string db_instance_class = 5;
+  string status = 6;
+  string availability_zone = 7;
+  string preferred_maintenance_window = 8;
+  string db_parameter_group_name = 9;
+  repeated string db_security_groups = 10;
+  repeated string vpc_security_group_ids = 11;
+  string db_subnet_group_name = 12;
+  repeated string enable_cloudwatch_logs_exports = 13;
+  bool enable_iam_database_authentication = 14;
+  bool publicly_accessible = 15;
+  bool auto_minor_version_upgrade = 16;
+  google.protobuf.Timestamp instance_create_time = 17;
+  bool copy_tags_to_snapshot = 18;
+  string account_id = 19;
+  string region = 20;
+}
+
+message DBClusterSnapshot {
+  string db_cluster_snapshot_identifier = 1;
+  string db_cluster_identifier = 2;
+  google.protobuf.Timestamp snapshot_create_time = 3;
+  string engine = 4;
+  string engine_version = 5;
+  string status = 6;
+  int32 port = 7;
+  string vpc_id = 8;
+  google.protobuf.Timestamp cluster_create_time = 9;
+  bool storage_encrypted = 10;
+  string kms_key_id = 11;
+  string db_snapshot_arn = 12;
+  string account_id = 13;
+  string region = 14;
+}
+
+message DBClusterParameterGroup {
+  string db_cluster_parameter_group_name = 1;
+  string db_parameter_group_family = 2;
+  string description = 3;
+  string arn = 4;
+}
+
+message DBParameterGroup {
+  string db_parameter_group_name = 1;
+  string db_parameter_group_family = 2;
+  string description = 3;
+  string arn = 4;
+}
+
+message Subnet {
+  string subnet_identifier = 1;
+  string subnet_availability_zone = 2;
+  string subnet_outpost = 3;
+  string subnet_status = 4;
+}
+
+message DBSubnetGroup {
+  string db_subnet_group_name = 1;
+  string db_subnet_group_description = 2;
+  string vpc_id = 3;
+  string subnet_group_status = 4;
+  repeated Subnet subnets = 5;
+  string arn = 6;
+}
+
+message GlobalClusterMember {
+  string db_cluster_arn = 1;
+  repeated string readers = 2;
+  bool is_writer = 3;
+  string global_cluster_identifier = 4;
+}
+
+message GlobalCluster {
+  string global_cluster_identifier = 1;
+  string global_cluster_resource_id = 2;
+  string global_cluster_arn = 3;
+  string engine = 4;
+  string engine_version = 5;
+  string status = 6;
+  bool storage_encrypted = 7;
+  bool deletion_protection = 8;
+  repeated GlobalClusterMember global_cluster_members = 9;
+  string account_id = 10;
+  string region = 11;
+}
+
+message EventSubscription {
+  string cust_subscription_id = 1;
+  string sns_topic_arn = 2;
+  string status = 3;
+  google.protobuf.Timestamp subscription_creation_time = 4;
+  string source_type = 5;
+  repeated string source_ids_list = 6;
+  repeated string event_categories_list = 7;
+  bool enabled = 8;
+  string cust_subscription_arn = 9;
+}
+
+message Parameter {
+  string parameter_name = 1;
+  string parameter_value = 2;
+  string description = 3;
+  string source = 4;
+  string apply_type = 5;
+  string data_type = 6;
+  string allowed_values = 7;
+  bool is_modifiable = 8;
+  string minimum_engine_version = 9;
+  string apply_method = 10;
+}
+
+message Tag {
+  string key = 1;
+  string value = 2;
+}
+
+message TagList {
+  repeated Tag tags = 1;
+}
+
+message DBClusterEndpoint {
+  string db_cluster_endpoint_identifier = 1;
+  string db_cluster_identifier = 2;
+  string endpoint = 3;
+  string status = 4;
+  string endpoint_type = 5;
+  repeated string excluded_members = 6;
+  repeated string static_members = 7;
+  string db_cluster_endpoint_arn = 8;
+}
+
+message QueryState {
+  string query_id = 1;
+  string query_type = 2;
+  string status = 3;
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Timestamp end_time = 5;
+  string result = 6;
+  string error = 7;
+}
+
+message LoaderJob {
+  string load_id = 1;
+  string status = 2;
+  string source = 3;
+  string format = 4;
+  google.protobuf.Timestamp submit_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  int64 total_records = 7;
+  int64 total_errors = 8;
+  string overall_status = 9;
+  map<string, string> details = 10;
+}
+
+message GraphStatistics {
+  bool active = 1;
+  bool auto_compute = 2;
+  string date = 3;
+  string note = 4;
+  string statistics_id = 5;
+  int64 node_count = 6;
+  int64 edge_count = 7;
+  map<string, int64> label_counts = 8;
+  map<string, int64> rel_counts = 9;
+  int64 predicate_count = 10;
+  int64 signature_count = 11;
+}

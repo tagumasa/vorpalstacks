@@ -160,11 +160,9 @@ func (s *SESv2Service) ListConfigurationSets(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	configSets := make([]map[string]interface{}, 0, len(result.Items))
+	configSets := make([]string, 0, len(result.Items))
 	for _, cs := range result.Items {
-		configSets = append(configSets, map[string]interface{}{
-			"ConfigurationSetName": cs.Name,
-		})
+		configSets = append(configSets, cs.Name)
 	}
 
 	response := map[string]interface{}{
@@ -425,6 +423,84 @@ func (s *SESv2Service) PutConfigurationSetTrackingOptions(ctx context.Context, r
 	}
 	if httpsPolicy != "" {
 		configSet.TrackingOptions.HttpsPolicy = httpsPolicy
+	}
+
+	if err := store.UpdateConfigurationSet(configSet); err != nil {
+		return nil, err
+	}
+
+	return response.EmptyResponse(), nil
+}
+
+// PutConfigurationSetVdmOptions updates the VDM options for a configuration set.
+func (s *SESv2Service) PutConfigurationSetVdmOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
+	if configSetName == "" {
+		return nil, ErrMissingParameter
+	}
+
+	configSet, err := store.GetConfigurationSet(configSetName)
+	if err != nil {
+		return nil, err
+	}
+
+	if configSet.VdmOptions == nil {
+		configSet.VdmOptions = &sesv2store.VdmOptions{}
+	}
+
+	if dashboardOpts := request.GetMapParam(req.Parameters, "DashboardOptions"); dashboardOpts != nil {
+		if configSet.VdmOptions.DashboardOptions == nil {
+			configSet.VdmOptions.DashboardOptions = &sesv2store.VDMDashboardOptions{}
+		}
+		configSet.VdmOptions.DashboardOptions.EngagementMetrics = request.GetStringParam(dashboardOpts, "EngagementMetrics")
+	}
+
+	if guardianOpts := request.GetMapParam(req.Parameters, "GuardianOptions"); guardianOpts != nil {
+		if configSet.VdmOptions.GuardianOptions == nil {
+			configSet.VdmOptions.GuardianOptions = &sesv2store.VDMGuardianOptions{}
+		}
+		configSet.VdmOptions.GuardianOptions.OptimizedSharedDelivery = request.GetStringParam(guardianOpts, "OptimizedSharedDelivery")
+	}
+
+	if err := store.UpdateConfigurationSet(configSet); err != nil {
+		return nil, err
+	}
+
+	return response.EmptyResponse(), nil
+}
+
+// PutConfigurationSetArchivingOptions updates the archiving options for a configuration set.
+func (s *SESv2Service) PutConfigurationSetArchivingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
+	if configSetName == "" {
+		return nil, ErrMissingParameter
+	}
+
+	configSet, err := store.GetConfigurationSet(configSetName)
+	if err != nil {
+		return nil, err
+	}
+
+	if configSet.ArchivingOptions == nil {
+		configSet.ArchivingOptions = &sesv2store.ArchivingOptions{}
+	}
+
+	configSet.ArchivingOptions.Enabled = request.GetBoolParam(req.Parameters, "Enabled")
+	if targetArn := request.GetStringParam(req.Parameters, "TargetArn"); targetArn != "" {
+		configSet.ArchivingOptions.TargetArn = targetArn
+	}
+	if retentionPeriod := int32(request.GetIntParam(req.Parameters, "RetentionPeriod")); retentionPeriod > 0 {
+		configSet.ArchivingOptions.RetentionPeriod = retentionPeriod
 	}
 
 	if err := store.UpdateConfigurationSet(configSet); err != nil {

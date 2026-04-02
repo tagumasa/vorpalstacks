@@ -137,6 +137,7 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 	q := r.Question[0]
 	qname := strings.ToLower(dns.CanonicalName(q.Name))
+	qtype := q.Qtype
 
 	zone := s.findHostedZone(qname)
 	if zone == nil {
@@ -159,12 +160,15 @@ func (s *DNSServer) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	for _, rs := range recordSets {
 		rsName := strings.ToLower(dns.CanonicalName(rs.Name))
 		if rsName == qname || rsName == qname+"." {
-			m.Answer = append(m.Answer, s.recordToRR(rs, qname)...)
+			m.Answer = append(m.Answer, s.recordToRR(rs, qname, qtype)...)
 		}
 	}
 
 	if len(m.Answer) == 0 {
-		m.Rcode = dns.RcodeNameError
+		soa := s.findSOA(zone, recordSets)
+		if soa != nil {
+			m.Ns = append(m.Ns, soa)
+		}
 	}
 
 	if err := w.WriteMsg(m); err != nil {
@@ -191,7 +195,7 @@ func (s *DNSServer) findHostedZone(qname string) *route53store.HostedZone {
 	return bestMatch
 }
 
-func (s *DNSServer) recordToRR(rs *route53store.ResourceRecordSet, qname string) []dns.RR {
+func (s *DNSServer) recordToRR(rs *route53store.ResourceRecordSet, qname string, qtype uint16) []dns.RR {
 	var rrs []dns.RR
 
 	ttl := uint32(rs.TTL)
@@ -200,10 +204,25 @@ func (s *DNSServer) recordToRR(rs *route53store.ResourceRecordSet, qname string)
 	}
 
 	if rs.AliasTarget != nil {
-		rr := &dns.A{}
-		rr.Hdr = dns.RR_Header{Name: qname, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: ttl}
-		rr.A = net.ParseIP(rs.AliasTarget.DNSName)
-		if rr.A != nil {
+		switch qtype {
+		case dns.TypeA:
+			rr := &dns.A{}
+			rr.Hdr = dns.RR_Header{Name: qname, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: ttl}
+			rr.A = net.ParseIP(rs.AliasTarget.DNSName)
+			if rr.A != nil {
+				rrs = append(rrs, rr)
+			}
+		case dns.TypeAAAA:
+			rr := &dns.AAAA{}
+			rr.Hdr = dns.RR_Header{Name: qname, Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: ttl}
+			rr.AAAA = net.ParseIP(rs.AliasTarget.DNSName)
+			if rr.AAAA != nil {
+				rrs = append(rrs, rr)
+			}
+		case dns.TypeCNAME:
+			rr := &dns.CNAME{}
+			rr.Hdr = dns.RR_Header{Name: qname, Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: ttl}
+			rr.Target = dns.Fqdn(rs.AliasTarget.DNSName)
 			rrs = append(rrs, rr)
 		}
 		return rrs
@@ -283,8 +302,51 @@ func (s *DNSServer) recordToRR(rs *route53store.ResourceRecordSet, qname string)
 			rr.Hdr = dns.RR_Header{Name: qname, Rrtype: dns.TypePTR, Class: dns.ClassINET, Ttl: ttl}
 			rr.Ptr = dns.Fqdn(record.Value)
 			rrs = append(rrs, rr)
+		case "SRV":
+			rr := &dns.SRV{}
+			rr.Hdr = dns.RR_Header{Name: qname, Rrtype: dns.TypeSRV, Class: dns.ClassINET, Ttl: ttl}
+			parts := strings.Fields(record.Value)
+			if len(parts) >= 4 {
+				if priority, err := strconv.ParseUint(parts[0], 10, 16); err == nil {
+					rr.Priority = uint16(priority)
+				}
+				if weight, err := strconv.ParseUint(parts[1], 10, 16); err == nil {
+					rr.Weight = uint16(weight)
+				}
+				if port, err := strconv.ParseUint(parts[2], 10, 16); err == nil {
+					rr.Port = uint16(port)
+				}
+				rr.Target = dns.Fqdn(parts[3])
+			}
+			rrs = append(rrs, rr)
+		case "CAA":
+			rr := &dns.CAA{}
+			rr.Hdr = dns.RR_Header{Name: qname, Rrtype: dns.TypeCAA, Class: dns.ClassINET, Ttl: ttl}
+			parts := strings.SplitN(record.Value, " ", 3)
+			if len(parts) >= 3 {
+				if flag, err := strconv.ParseUint(parts[0], 10, 8); err == nil {
+					rr.Flag = uint8(flag)
+				}
+				rr.Tag = parts[1]
+				rr.Value = parts[2]
+			}
+			rrs = append(rrs, rr)
 		}
 	}
 
 	return rrs
+}
+
+func (s *DNSServer) findSOA(zone *route53store.HostedZone, recordSets []*route53store.ResourceRecordSet) dns.RR {
+	zoneName := strings.ToLower(dns.CanonicalName(zone.Name))
+	for _, rs := range recordSets {
+		rsName := strings.ToLower(dns.CanonicalName(rs.Name))
+		if rs.Type == "SOA" && (rsName == zoneName || rsName == zoneName+".") {
+			rrs := s.recordToRR(rs, zoneName, dns.TypeSOA)
+			if len(rrs) > 0 {
+				return rrs[0]
+			}
+		}
+	}
+	return nil
 }

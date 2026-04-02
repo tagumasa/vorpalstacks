@@ -568,9 +568,7 @@ func (b *PersistentBackend) GenerateMAC(keyID string, message []byte, algorithm 
 		h.Write(message)
 		hmacHash = h.Sum(nil)
 	default:
-		h := hmac.New(sha256.New, key.symmetric)
-		h.Write(message)
-		hmacHash = h.Sum(nil)
+		return nil, ErrInvalidAlgorithm
 	}
 
 	return hmacHash, nil
@@ -609,21 +607,14 @@ func (b *PersistentBackend) VerifyMAC(keyID string, message, macValue []byte, al
 		h.Write(message)
 		expectedMAC = h.Sum(nil)
 	default:
-		h := hmac.New(sha256.New, key.symmetric)
-		h.Write(message)
-		expectedMAC = h.Sum(nil)
+		return false, ErrInvalidAlgorithm
 	}
 
 	if len(macValue) != len(expectedMAC) {
 		return false, nil
 	}
 
-	for i := range macValue {
-		if macValue[i] != expectedMAC[i] {
-			return false, nil
-		}
-	}
-	return true, nil
+	return hmac.Equal(macValue, expectedMAC), nil
 }
 
 // GetPublicKey retrieves the public key from an HSM key.

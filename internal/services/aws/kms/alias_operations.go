@@ -89,6 +89,14 @@ func (s *KMSService) DeleteAlias(ctx context.Context, reqCtx *request.RequestCon
 		return nil, ErrInvalidAliasName
 	}
 
+	if strings.HasPrefix(aliasName, "alias/aws/") {
+		return nil, ErrInvalidAliasName
+	}
+
+	if !stores.aliases.Exists(aliasName) {
+		return nil, ErrAliasNotFound
+	}
+
 	if err := stores.aliases.Delete(aliasName); err != nil {
 		return nil, s.mapAliasStoreError(err)
 	}

@@ -32,28 +32,58 @@ func extractSESv2Operation(r *http.Request) string {
 				return "CreateConfigurationSet"
 			}
 		} else if len(parts) >= 2 {
-			switch method {
-			case http.MethodGet:
-				return "GetConfigurationSet"
-			case http.MethodDelete:
-				return "DeleteConfigurationSet"
-			}
-			if len(parts) >= 3 && parts[2] == "event-destinations" {
+			if len(parts) == 2 {
 				switch method {
 				case http.MethodGet:
-					return "GetConfigurationSetEventDestinations"
+					return "GetConfigurationSet"
+				case http.MethodDelete:
+					return "DeleteConfigurationSet"
 				}
-				if len(parts) >= 4 {
+			}
+			if len(parts) >= 3 {
+				switch parts[2] {
+				case "event-destinations":
 					switch method {
-					case http.MethodPut:
-						return "UpdateConfigurationSetEventDestination"
-					case http.MethodDelete:
-						return "DeleteConfigurationSetEventDestination"
-					}
-				} else {
-					switch method {
+					case http.MethodGet:
+						return "GetConfigurationSetEventDestinations"
 					case http.MethodPost:
 						return "CreateConfigurationSetEventDestination"
+					}
+					if len(parts) >= 4 {
+						switch method {
+						case http.MethodPut:
+							return "UpdateConfigurationSetEventDestination"
+						case http.MethodDelete:
+							return "DeleteConfigurationSetEventDestination"
+						}
+					}
+				case "delivery-options":
+					if method == http.MethodPut {
+						return "PutConfigurationSetDeliveryOptions"
+					}
+				case "reputation-options":
+					if method == http.MethodPut {
+						return "PutConfigurationSetReputationOptions"
+					}
+				case "sending":
+					if method == http.MethodPut {
+						return "PutConfigurationSetSendingOptions"
+					}
+				case "suppression-options":
+					if method == http.MethodPut {
+						return "PutConfigurationSetSuppressionOptions"
+					}
+				case "tracking-options":
+					if method == http.MethodPut {
+						return "PutConfigurationSetTrackingOptions"
+					}
+				case "vdm-options":
+					if method == http.MethodPut {
+						return "PutConfigurationSetVdmOptions"
+					}
+				case "archiving-options":
+					if method == http.MethodPut {
+						return "PutConfigurationSetArchivingOptions"
 					}
 				}
 			}
@@ -104,13 +134,19 @@ func extractSESv2Operation(r *http.Request) string {
 					if method == http.MethodPut {
 						return "PutEmailIdentityMailFromAttributes"
 					}
+				case "configuration-set":
+					if method == http.MethodPut {
+						return "PutEmailIdentityConfigurationSetAttributes"
+					}
 				}
 			}
-			switch method {
-			case http.MethodGet:
-				return "GetEmailIdentity"
-			case http.MethodDelete:
-				return "DeleteEmailIdentity"
+			if len(parts) == 2 {
+				switch method {
+				case http.MethodGet:
+					return "GetEmailIdentity"
+				case http.MethodDelete:
+					return "DeleteEmailIdentity"
+				}
 			}
 		}
 
@@ -123,13 +159,19 @@ func extractSESv2Operation(r *http.Request) string {
 				return "CreateEmailTemplate"
 			}
 		} else if len(parts) >= 2 {
-			switch method {
-			case http.MethodGet:
-				return "GetEmailTemplate"
-			case http.MethodPut:
-				return "UpdateEmailTemplate"
-			case http.MethodDelete:
-				return "DeleteEmailTemplate"
+			if len(parts) >= 3 && parts[2] == "render" {
+				if method == http.MethodPost {
+					return "TestRenderEmailTemplate"
+				}
+			} else {
+				switch method {
+				case http.MethodGet:
+					return "GetEmailTemplate"
+				case http.MethodPut:
+					return "UpdateEmailTemplate"
+				case http.MethodDelete:
+					return "DeleteEmailTemplate"
+				}
 			}
 		}
 
@@ -138,13 +180,16 @@ func extractSESv2Operation(r *http.Request) string {
 			return "SendEmail"
 		}
 
+	case "outbound-bulk-emails":
+		if method == http.MethodPost {
+			return "SendBulkEmail"
+		}
+
 	case "account":
 		if len(parts) == 1 {
 			switch method {
 			case http.MethodGet:
 				return "GetAccount"
-			case http.MethodPut:
-				return "PutAccountAttributes"
 			}
 		} else if len(parts) >= 2 {
 			switch parts[1] {
@@ -159,6 +204,14 @@ func extractSESv2Operation(r *http.Request) string {
 			case "details":
 				if method == http.MethodPut {
 					return "PutAccountDetails"
+				}
+			case "vdm":
+				if method == http.MethodPut {
+					return "PutAccountVdmAttributes"
+				}
+			case "dedicated-ips":
+				if len(parts) >= 3 && parts[2] == "warmup" && method == http.MethodPut {
+					return "PutAccountDedicatedIpWarmupAttributes"
 				}
 			}
 		}
@@ -183,7 +236,11 @@ func extractSESv2Operation(r *http.Request) string {
 			}
 		} else if len(parts) >= 2 {
 			if len(parts) >= 3 && parts[2] == "contacts" {
-				if len(parts) >= 4 {
+				if len(parts) >= 4 && parts[3] == "list" {
+					if method == http.MethodPost {
+						return "ListContacts"
+					}
+				} else if len(parts) >= 4 {
 					switch method {
 					case http.MethodGet:
 						return "GetContact"
@@ -213,19 +270,25 @@ func extractSESv2Operation(r *http.Request) string {
 		}
 
 	case "suppression":
-		if len(parts) == 1 {
-			switch method {
-			case http.MethodGet:
+		if len(parts) >= 2 && parts[1] == "addresses" {
+			if len(parts) >= 3 {
+				switch method {
+				case http.MethodGet:
+					return "GetSuppressedDestination"
+				case http.MethodDelete:
+					return "DeleteSuppressedDestination"
+				case http.MethodPut:
+					return "PutSuppressedDestination"
+				}
+			}
+			if method == http.MethodGet {
 				return "ListSuppressedDestinations"
-			case http.MethodPost:
+			}
+			if method == http.MethodPut {
 				return "PutSuppressedDestination"
 			}
-		} else if len(parts) >= 2 {
-			switch method {
-			case http.MethodGet:
-				return "GetSuppressedDestination"
-			case http.MethodDelete:
-				return "DeleteSuppressedDestination"
+			if method == http.MethodPost {
+				return "PutSuppressedDestination"
 			}
 		}
 
@@ -238,11 +301,37 @@ func extractSESv2Operation(r *http.Request) string {
 				return "CreateDedicatedIpPool"
 			}
 		} else if len(parts) >= 2 {
+			if len(parts) >= 3 && parts[2] == "scaling" && method == http.MethodPut {
+				return "PutDedicatedIpPoolScalingAttributes"
+			}
 			switch method {
 			case http.MethodGet:
 				return "GetDedicatedIpPool"
 			case http.MethodDelete:
 				return "DeleteDedicatedIpPool"
+			}
+		}
+
+	case "dedicated-ips":
+		if len(parts) == 1 {
+			if method == http.MethodGet {
+				return "GetDedicatedIps"
+			}
+		} else if len(parts) >= 2 {
+			if len(parts) >= 3 {
+				switch parts[2] {
+				case "pool":
+					if method == http.MethodPut {
+						return "PutDedicatedIpInPool"
+					}
+				case "warmup":
+					if method == http.MethodPut {
+						return "PutDedicatedIpWarmupAttributes"
+					}
+				}
+			}
+			if method == http.MethodGet {
+				return "GetDedicatedIp"
 			}
 		}
 	}
@@ -264,6 +353,9 @@ func extractSESv2PathParams(path string, params map[string]interface{}) {
 	case "configuration-sets":
 		if len(parts) >= 2 && parts[1] != "" {
 			params["ConfigurationSetName"] = parts[1]
+			if len(parts) >= 4 && parts[2] == "event-destinations" && parts[3] != "" {
+				params["EventDestinationName"] = parts[3]
+			}
 		}
 	case "identities":
 		if len(parts) >= 2 && parts[1] != "" {
@@ -284,12 +376,16 @@ func extractSESv2PathParams(path string, params map[string]interface{}) {
 			}
 		}
 	case "suppression":
-		if len(parts) >= 2 && parts[1] != "" {
-			params["EmailAddress"] = parts[1]
+		if len(parts) >= 2 && parts[1] == "addresses" && len(parts) >= 3 && parts[2] != "" {
+			params["EmailAddress"] = parts[2]
 		}
 	case "dedicated-ip-pools":
 		if len(parts) >= 2 && parts[1] != "" {
 			params["PoolName"] = parts[1]
+		}
+	case "dedicated-ips":
+		if len(parts) >= 2 && parts[1] != "" {
+			params["Ip"] = parts[1]
 		}
 	case "tags":
 		if len(parts) >= 2 && parts[1] != "" {
