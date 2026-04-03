@@ -2,8 +2,13 @@
 package secretsmanager
 
 import (
+	"context"
+
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/request"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
@@ -11,7 +16,12 @@ import (
 // SecretsManagerService provides AWS Secrets Manager operations.
 type SecretsManagerService struct {
 	accountID      string
+	region         string
 	storageManager *storage.RegionStorageManager
+	bus            eventbus.Bus
+	lambdaInvoker  common.LambdaInvoker
+	logger         logs.Logger
+	rotChecker     *rotationChecker
 }
 
 // NewSecretsManagerService creates a new Secrets Manager service instance.
@@ -21,9 +31,46 @@ func NewSecretsManagerService(accountID string) *SecretsManagerService {
 	}
 }
 
+// SetRegion sets the default AWS region for this service instance.
+func (s *SecretsManagerService) SetRegion(region string) {
+	s.region = region
+}
+
 // SetStorageManager injects a region storage manager for cross-region operations.
 func (s *SecretsManagerService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// SetEventBus registers the Secrets Manager rotation handler on the event bus.
+func (s *SecretsManagerService) SetEventBus(bus eventbus.Bus) {
+	s.bus = bus
+}
+
+// SetLambdaInvoker injects the Lambda invoker for rotation Lambda calls.
+func (s *SecretsManagerService) SetLambdaInvoker(invoker common.LambdaInvoker) {
+	s.lambdaInvoker = invoker
+}
+
+// SetLogger injects a structured logger for rotation diagnostics.
+func (s *SecretsManagerService) SetLogger(logger logs.Logger) {
+	s.logger = logger
+}
+
+// StartRotationChecker launches the background goroutine that triggers
+// automatic secret rotation based on NextRotationDate.
+func (s *SecretsManagerService) StartRotationChecker(ctx context.Context) {
+	if s.storageManager == nil {
+		return
+	}
+	s.rotChecker = newRotationChecker(s, s.logger)
+	s.rotChecker.start(ctx)
+}
+
+// StopRotationChecker signals the background rotation checker to stop.
+func (s *SecretsManagerService) StopRotationChecker() {
+	if s.rotChecker != nil {
+		s.rotChecker.stop()
+	}
 }
 
 // store returns the Secrets Manager store for the given request context.

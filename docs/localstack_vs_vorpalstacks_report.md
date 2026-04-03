@@ -54,12 +54,12 @@ LocalStack (30 service APIs)
 
 **Architecture:**
 ```
-Vorpalstacks (29 service APIs, 25 AWS services)
+Vorpalstacks (30 service APIs, 26 AWS services)
 ├── All Custom Implementation (1,081 operations)
 │   ├── IAM (156), API Gateway (80), S3 (71),
 │   ├── SESv2 incl. SESv1 (58), Cognito User Pools (51),
 │   ├── Lambda (50), KMS (45), Kinesis (39),
-│   ├── EventBridge (39), WAF v1 (40), WAF v2 (36),
+│   ├── EventBridge (39), WAFv2 (36),
 │   ├── CloudFront (32), DynamoDB (57), Athena (37),
 │   ├── CloudWatch Logs (29), Step Functions (28),
 │   ├── CloudTrail (24), Secrets Manager (21),
@@ -80,7 +80,7 @@ Vorpalstacks (29 service APIs, 25 AWS services)
 **Service API grouping note:**
 - SESv2 also handles SESv1 (Query protocol)
 - CloudWatch Metrics + CloudWatch Logs are separate service APIs
-- WAF (v1) + WAF v2 are separate service APIs
+- WAFv2 only (WAF v1 removed)
 - Cognito Identity + Cognito User Pools are separate service APIs
 - Timestream Write + Timestream Query are separate service APIs
 
@@ -235,6 +235,7 @@ case "lambda":
 | **Cognito** | Not implemented | Pebble (persistent) |
 | **CloudFront** | Not implemented | Pebble (persistent) |
 | **WAF** | Not implemented | Pebble (persistent) |
+| **Neptune** | Not implemented | Pebble (persistent) |
 | **EC2** | Custom + Moto fallback | Not implemented |
 | **OpenSearch / ES** | Custom + native binary | Not implemented |
 | **Firehose** | Custom (pure) | Not implemented |
@@ -251,8 +252,8 @@ case "lambda":
 | Firehose | Timestream (Write + Query) |
 | CloudFormation | Cognito (Identity + User Pools) |
 | Redshift | CloudFront |
-| Config | WAF (v1 + v2) |
-| S3 Control | |
+| Config | WAFv2 |
+| S3 Control | Neptune (Data + Management) |
 | Route53 Resolver | |
 | SWF | |
 | Resource Groups | |
@@ -305,7 +306,7 @@ snsService = sns.NewSNSServiceWithClients(..., lambdaService)
 eventsService = events.NewEventsServiceWithClients(..., lambdaService)
 ```
 
-All 29 service APIs use custom Go implementation with Pebble storage. Services communicate internally via gRPC, with dependency injection for cross-service integration (e.g., EventBridge invoking Lambda).
+All 30 service APIs use custom Go implementation with Pebble storage. Services communicate internally via gRPC, with dependency injection for cross-service integration (e.g., EventBridge invoking Lambda).
 
 ---
 
@@ -323,7 +324,7 @@ All 29 service APIs use custom Go implementation with Pebble storage. Services c
 
 | Aspect | Detail |
 |--------|--------|
-| **Service APIs** | 29 (covering 25 AWS services) |
+| **Service APIs** | 30 (covering 26 AWS services) |
 | **Implemented Operations** | 1,081 |
 | **Storage** | Pebble v2.1.4 (persistent KV store, all services) |
 | **Lambda Execution** | Docker containers via Moby client |
@@ -393,7 +394,7 @@ All 29 service APIs use custom Go implementation with Pebble storage. Services c
 | **Primary Use Case** | Development and testing | Edge and on-premises deployment |
 | **Deployment Model** | Docker container (required) | Single binary |
 | **Language** | Python | Go |
-| **Service APIs** | 30 | 29 |
+| **Service APIs** | 30 | 30 |
 | **Implementation** | Hybrid (Custom + Moto + External) | All custom |
 | **Data Persistence** | Mixed (in-memory + file) | Pebble (persistent, all services) |
 | **Lambda Execution** | Docker (real) | Docker (real) |

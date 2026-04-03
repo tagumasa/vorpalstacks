@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
@@ -244,6 +245,68 @@ func (s *LogsService) applyMetricFilters(reqCtx *request.RequestContext, logGrou
 	}
 }
 
+// applyMetricFiltersByRegion evaluates metric filters for the given log group
+// and events, emitting CloudWatch metrics for matched log entries. This is the
+// region-based variant used by bus handlers that lack an HTTP request context.
+func (s *LogsService) applyMetricFiltersByRegion(region, logGroupName string, events []logsstore.LogEntry) {
+	store, err := s.getLogsStoreByRegion(region)
+	if err != nil {
+		return
+	}
+
+	filters, _, err := store.ListMetricFilters(logGroupName, "", "", 1000)
+	if err != nil || len(filters) == 0 {
+		return
+	}
+
+	cwMetricStore, err := s.getMetricStoreByRegion(region)
+	if err != nil {
+		return
+	}
+
+	matcher := filterpattern.NewMatcher()
+	now := time.Now()
+
+	for _, event := range events {
+		for _, filter := range filters {
+			matched := matcher.Matches(filter.FilterPattern, event.Message)
+			for _, transform := range filter.MetricTransformations {
+				var value float64
+				var shouldEmit bool
+
+				if matched {
+					value = 1.0
+					if transform.MetricValue != "" && transform.MetricValue != "1" {
+						if v, err := strconv.ParseFloat(transform.MetricValue, 64); err == nil {
+							value = v
+						}
+					}
+					shouldEmit = true
+				} else if transform.DefaultValueSet {
+					value = transform.DefaultValue
+					shouldEmit = true
+				}
+
+				if shouldEmit {
+					ts := time.UnixMilli(event.Timestamp)
+					if ts.IsZero() || ts.After(now) {
+						ts = now
+					}
+
+					datum := cwstore.MetricDatum{
+						MetricName: transform.MetricName,
+						Value:      value,
+						Timestamp:  ts,
+					}
+					if err := cwMetricStore.PutMetricData(transform.MetricNamespace, []cwstore.MetricDatum{datum}); err != nil {
+						logs.Error("Failed to put metric data from Lambda log write", logs.Err(err))
+					}
+				}
+			}
+		}
+	}
+}
+
 func parseLogEventsFromMap(req *request.ParsedRequest) []logsstore.LogEntry {
 	var events []logsstore.LogEntry
 
@@ -400,6 +463,7 @@ func (s *LogsService) applySubscriptionFilters(reqCtx *request.RequestContext, l
 	}
 
 	matcher := filterpattern.NewMatcher()
+	region := reqCtx.GetRegion()
 
 	for _, filter := range filters {
 		var matchedEvents []logsstore.LogEntry
@@ -413,7 +477,81 @@ func (s *LogsService) applySubscriptionFilters(reqCtx *request.RequestContext, l
 			continue
 		}
 
-		s.deliverToDestination(reqCtx, filter, logGroupName, logStreamName, matchedEvents)
+		if s.bus != nil {
+			payload := s.buildSubscriptionPayload(filter, logGroupName, logStreamName, matchedEvents)
+
+			var buf bytes.Buffer
+			gw := gzip.NewWriter(&buf)
+			if err := json.NewEncoder(gw).Encode(payload); err != nil {
+				continue
+			}
+			if err := gw.Close(); err != nil {
+				continue
+			}
+			compressed := buf.Bytes()
+
+			s.bus.Publish(context.Background(), &eventbus.CloudWatchLogDeliveryEvent{
+				LogGroup:       logGroupName,
+				LogStream:      logStreamName,
+				DestinationArn: filter.DestinationArn,
+				Payload:        compressed,
+				Region:         region,
+			})
+		} else {
+			s.deliverToDestination(reqCtx, filter, logGroupName, logStreamName, matchedEvents)
+		}
+	}
+}
+
+// applySubscriptionFiltersByRegion evaluates subscription filters for the given
+// log group and publishes CloudWatchLogDeliveryEvent for matched events. This
+// is the region-based variant used by bus handlers that lack an HTTP request context.
+func (s *LogsService) applySubscriptionFiltersByRegion(region, logGroupName, logStreamName string, events []logsstore.LogEntry) {
+	store, err := s.getLogsStoreByRegion(region)
+	if err != nil {
+		return
+	}
+
+	filters, err := store.ListSubscriptionFilters(logGroupName, "")
+	if err != nil || len(filters) == 0 {
+		return
+	}
+
+	matcher := filterpattern.NewMatcher()
+
+	for _, filter := range filters {
+		var matchedEvents []logsstore.LogEntry
+		for _, event := range events {
+			if filter.FilterPattern == "" || matcher.Matches(filter.FilterPattern, event.Message) {
+				matchedEvents = append(matchedEvents, event)
+			}
+		}
+
+		if len(matchedEvents) == 0 {
+			continue
+		}
+
+		if s.bus != nil {
+			payload := s.buildSubscriptionPayload(filter, logGroupName, logStreamName, matchedEvents)
+
+			var buf bytes.Buffer
+			gw := gzip.NewWriter(&buf)
+			if err := json.NewEncoder(gw).Encode(payload); err != nil {
+				continue
+			}
+			if err := gw.Close(); err != nil {
+				continue
+			}
+			compressed := buf.Bytes()
+
+			s.bus.Publish(context.Background(), &eventbus.CloudWatchLogDeliveryEvent{
+				LogGroup:       logGroupName,
+				LogStream:      logStreamName,
+				DestinationArn: filter.DestinationArn,
+				Payload:        compressed,
+				Region:         region,
+			})
+		}
 	}
 }
 

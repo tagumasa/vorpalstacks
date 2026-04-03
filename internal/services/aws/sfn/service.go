@@ -7,6 +7,7 @@ import (
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -30,6 +31,7 @@ type StepFunctionService struct {
 	eventsStore    *eventsstore.EventsStore
 	accountID      string
 	storageManager *storage.RegionStorageManager
+	bus            *eventbus.EventBus
 	stores         sync.Map
 	asyncWg        sync.WaitGroup
 }
@@ -64,6 +66,12 @@ func (s *StepFunctionService) SetSNSStore(store snsstore.SNSStoreInterface) {
 // SetEventsStore injects an EventBridge store for cross-service EventBridge integration states.
 func (s *StepFunctionService) SetEventsStore(store *eventsstore.EventsStore) {
 	s.eventsStore = store
+}
+
+// SetEventBus injects the event bus. When set, executors created for state machine
+// runs will use the bus for SNS fan-out and EventBridge rule matching delivery.
+func (s *StepFunctionService) SetEventBus(bus *eventbus.EventBus) {
+	s.bus = bus
 }
 
 func (s *StepFunctionService) store(reqCtx *request.RequestContext) (*sfnstore.StepFunctionStore, error) {

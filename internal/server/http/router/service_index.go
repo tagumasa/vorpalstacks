@@ -214,6 +214,31 @@ func (idx *ServiceIndex) GetPathPatternCount() int {
 	return len(idx.pathPatterns)
 }
 
+// FindServiceByActionPriority returns the service name for the given action using a priority order.
+// Priority: sns, sqs, iam, sts, kms, dynamodb, s3, lambda, events, states.
+func (idx *ServiceIndex) FindServiceByActionPriority(action string) string {
+	priorityServices := []string{"sns", "sqs", "iam", "sts", "kms", "dynamodb", "s3", "lambda", "events", "states"}
+
+	for _, svcName := range priorityServices {
+		key := svcName + ":" + action
+		if _, exists := idx.actionToOperation[key]; exists {
+			return svcName
+		}
+	}
+
+	var matches []string
+	for key, opRef := range idx.actionToOperation {
+		if strings.HasSuffix(key, ":"+action) {
+			matches = append(matches, opRef.ServiceName)
+		}
+	}
+	if len(matches) > 0 {
+		sort.Strings(matches)
+		return matches[0]
+	}
+	return ""
+}
+
 func extractPath(uri string) string {
 	for i, c := range uri {
 		if c == '?' {

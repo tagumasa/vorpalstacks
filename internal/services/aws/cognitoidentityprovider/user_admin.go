@@ -29,8 +29,21 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 		return nil, ErrResourceNotFound
 	}
 
+	userAttrs := parseUserAttributes(req)
+	userAttrs["sub"] = ""
+
+	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, userAttrs)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+
+	if preSignUpResult.UserAttributes != nil {
+		userAttrs = preSignUpResult.UserAttributes
+	}
+	delete(userAttrs, "sub")
+
 	user := cognitostore.NewUser(userPoolID, username)
-	user.Attributes = parseUserAttributes(req)
+	user.Attributes = userAttrs
 	user.UserStatus = "FORCE_CHANGE_PASSWORD"
 
 	tempPassword := getParam(req, "TemporaryPassword")
@@ -49,11 +62,22 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 		user.UserStatus = "FORCE_CHANGE_PASSWORD"
 	}
 
+	if preSignUpResult.AutoConfirmUser {
+		user.UserStatus = "CONFIRMED"
+	}
+
 	if err := store.CreateUser(user); err != nil {
 		if errors.Is(err, cognitostore.ErrUserAlreadyExists) {
 			return nil, ErrUserAlreadyExists
 		}
 		return nil, ErrInternalError
+	}
+
+	attrs := userAttributesMap(user)
+	if preSignUpResult.AutoConfirmUser || getParam(req, "MessageAction") == "SUPPRESS" {
+		invokePostConfirmation(ctx, s, PostConfirmationAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, attrs)
+	} else {
+		invokeCustomMessage(ctx, s, CustomMessageAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, "####", attrs)
 	}
 
 	return map[string]interface{}{

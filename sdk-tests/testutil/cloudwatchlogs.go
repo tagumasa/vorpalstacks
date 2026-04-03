@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"vorpalstacks-sdk-tests/config"
 )
 
@@ -758,12 +759,23 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 			LogGroupName: aws.String(sfName),
 		})
 
+		iamClient := iam.NewFromConfig(cfg)
+		roleName := fmt.Sprintf("test-sub-filter-role-%d", time.Now().UnixNano())
+		_, err = iamClient.CreateRole(ctx, &iam.CreateRoleInput{
+			RoleName:                 aws.String(roleName),
+			AssumeRolePolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"logs.amazonaws.com"},"Action":"sts:AssumeRole"}]}`),
+		})
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer iamClient.DeleteRole(ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)})
+
 		_, err = client.PutSubscriptionFilter(ctx, &cloudwatchlogs.PutSubscriptionFilterInput{
 			LogGroupName:   aws.String(sfName),
 			FilterName:     aws.String("TestSub"),
 			FilterPattern:  aws.String("ERROR"),
 			DestinationArn: aws.String("arn:aws:lambda:us-east-1:000000000000:function:test-func"),
-			RoleArn:        aws.String("arn:aws:iam::000000000000:role/test-role"),
+			RoleArn:        aws.String(fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)),
 			Distribution:   types.DistributionByLogStream,
 		})
 		if err != nil {
@@ -784,12 +796,23 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 			LogGroupName: aws.String(dsfName),
 		})
 
+		iamClient := iam.NewFromConfig(cfg)
+		roleName := fmt.Sprintf("test-desc-sub-role-%d", time.Now().UnixNano())
+		_, err = iamClient.CreateRole(ctx, &iam.CreateRoleInput{
+			RoleName:                 aws.String(roleName),
+			AssumeRolePolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"logs.amazonaws.com"},"Action":"sts:AssumeRole"}]}`),
+		})
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer iamClient.DeleteRole(ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)})
+
 		client.PutSubscriptionFilter(ctx, &cloudwatchlogs.PutSubscriptionFilterInput{
 			LogGroupName:   aws.String(dsfName),
 			FilterName:     aws.String("DescSub"),
 			FilterPattern:  aws.String("ERROR"),
 			DestinationArn: aws.String("arn:aws:lambda:us-east-1:000000000000:function:test"),
-			RoleArn:        aws.String("arn:aws:iam::000000000000:role/test"),
+			RoleArn:        aws.String(fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)),
 		})
 
 		resp, err := client.DescribeSubscriptionFilters(ctx, &cloudwatchlogs.DescribeSubscriptionFiltersInput{
@@ -822,12 +845,23 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 			LogGroupName: aws.String(delSFName),
 		})
 
+		iamClient := iam.NewFromConfig(cfg)
+		roleName := fmt.Sprintf("test-del-sub-role-%d", time.Now().UnixNano())
+		_, err = iamClient.CreateRole(ctx, &iam.CreateRoleInput{
+			RoleName:                 aws.String(roleName),
+			AssumeRolePolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"logs.amazonaws.com"},"Action":"sts:AssumeRole"}]}`),
+		})
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer iamClient.DeleteRole(ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)})
+
 		client.PutSubscriptionFilter(ctx, &cloudwatchlogs.PutSubscriptionFilterInput{
 			LogGroupName:   aws.String(delSFName),
 			FilterName:     aws.String("DelSub"),
 			FilterPattern:  aws.String("ERROR"),
 			DestinationArn: aws.String("arn:aws:lambda:us-east-1:000000000000:function:test"),
-			RoleArn:        aws.String("arn:aws:iam::000000000000:role/test"),
+			RoleArn:        aws.String(fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)),
 		})
 
 		_, err = client.DeleteSubscriptionFilter(ctx, &cloudwatchlogs.DeleteSubscriptionFilterInput{

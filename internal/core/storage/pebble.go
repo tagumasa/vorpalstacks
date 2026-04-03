@@ -54,7 +54,7 @@ func NewPebbleStorage(cfg *Config) (*PebbleStorage, error) {
 		db: db,
 	}
 	storage.idempotencyStore = NewPebbleIdempotencyStore(storage.db)
-	storage.lockManager = NewPebbleLockManager(storage.db, nil)
+	storage.lockManager = NewPebbleLockManager(storage.db)
 	return storage, nil
 }
 
@@ -330,11 +330,6 @@ func (s *PebbleStorage) VersionedBucket(name string) VersionedBucket {
 // LockManager returns the distributed lock manager for this storage.
 func (s *PebbleStorage) LockManager() LockManager {
 	return s.lockManager
-}
-
-// CleanupExpired removes expired entries from the storage.
-func (s *PebbleStorage) CleanupExpired() error {
-	return s.idempotencyStore.Cleanup()
 }
 
 // BackupToDir creates a checkpoint backup of the database to the specified directory.

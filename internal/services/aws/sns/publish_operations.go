@@ -14,11 +14,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
@@ -138,7 +140,19 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 			subsCopy[i] = &subCopy
 		}
 		region := reqCtx.GetRegion()
-		go s.deliverToSubscriptions(&msgCopy, subsCopy, region)
+
+		if s.bus != nil {
+			s.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+				TopicARN:       topicArn,
+				MessageID:      messageId,
+				Message:        message,
+				Subject:        subject,
+				MessageGroupId: messageGroupId,
+				Region:         region,
+			})
+		} else {
+			go s.deliverToSubscriptions(&msgCopy, subsCopy, region)
+		}
 	}
 
 	result := map[string]interface{}{
@@ -196,6 +210,25 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 		return
 	}
 
+	queueURL := sub.Endpoint
+
+	if s.bus != nil {
+		queue, qErr := s.sqsStore.GetQueue(queueURL)
+		if qErr == nil && queue.ARN != "" {
+			allowed, evalErr := s.bus.EvaluateTargetPolicy(context.Background(), queue.ARN, "sqs", "sns.amazonaws.com", "sqs:SendMessage", queue.ARN)
+			if evalErr != nil {
+				logs.Warn("resource policy evaluation failed for SQS delivery, dropping message",
+					logs.String("queueArn", queue.ARN),
+					logs.String("topicArn", msg.TopicArn),
+					logs.String("error", evalErr.Error()))
+				return
+			}
+			if !allowed {
+				return
+			}
+		}
+	}
+
 	protocolMessage := extractProtocolMessage(msg, "sqs")
 
 	var body string
@@ -229,8 +262,6 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 		}
 		body = string(jsonData)
 	}
-
-	queueURL := sub.Endpoint
 	sqsMsg := &sqsstore.Message{
 		Body:              body,
 		MessageAttributes: make(map[string]*sqsstore.MessageAttributeValue),
@@ -396,6 +427,24 @@ func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscr
 
 	if region == "" {
 		region = request.DefaultRegion
+	}
+
+	if s.bus != nil {
+		functionARN := sub.Endpoint
+		if !strings.HasPrefix(functionARN, "arn:") {
+			functionARN = fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", s.accountID, region, sub.Endpoint)
+		}
+		allowed, evalErr := s.bus.EvaluateTargetPolicy(context.Background(), functionARN, "lambda", "sns.amazonaws.com", "lambda:InvokeFunction", functionARN)
+		if evalErr != nil {
+			logs.Warn("resource policy evaluation failed for Lambda delivery, dropping message",
+				logs.String("functionArn", functionARN),
+				logs.String("topicArn", msg.TopicArn),
+				logs.String("error", evalErr.Error()))
+			return
+		}
+		if !allowed {
+			return
+		}
 	}
 
 	protocolMessage := extractProtocolMessage(msg, "lambda")
@@ -605,7 +654,19 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 				subCopy := *sub
 				subsCopy[j] = &subCopy
 			}
-			go s.deliverToSubscriptions(&msgCopy, subsCopy, region)
+
+			if s.bus != nil {
+				s.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+					TopicARN:       topicArn,
+					MessageID:      messageId,
+					Message:        message,
+					Subject:        subject,
+					MessageGroupId: messageGroupId,
+					Region:         region,
+				})
+			} else {
+				go s.deliverToSubscriptions(&msgCopy, subsCopy, region)
+			}
 		}
 
 		result := map[string]interface{}{

@@ -4,44 +4,47 @@ import (
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
 )
 
-// SchedulerError represents an error from the EventBridge Scheduler service.
-type SchedulerError struct {
-	*awserrors.AWSError
-}
-
-// Unwrap returns the underlying AWS error.
-func (e *SchedulerError) Unwrap() error {
-	return e.AWSError
-}
-
 // Error variables provide common Scheduler error instances.
 var (
-	ErrScheduleGroupNotFound        = &SchedulerError{awserrors.NewResourceNotFoundException("Schedule group", "")}
-	ErrScheduleGroupAlreadyExists   = &SchedulerError{awserrors.NewConflictException("Schedule group already exists")}
-	ErrScheduleNotFound             = &SchedulerError{awserrors.NewResourceNotFoundException("Schedule", "")}
-	ErrScheduleAlreadyExists        = &SchedulerError{awserrors.NewConflictException("Schedule already exists")}
-	ErrValidation                   = &SchedulerError{awserrors.NewValidationException("Validation error")}
-	ErrInvalidScheduleExpression    = &SchedulerError{awserrors.NewValidationException("Invalid schedule expression")}
-	ErrInvalidTarget                = &SchedulerError{awserrors.NewValidationException("Invalid target")}
-	ErrInvalidFlexibleTimeWindow    = &SchedulerError{awserrors.NewValidationException("Invalid flexible time window")}
-	ErrInvalidDate                  = &SchedulerError{awserrors.NewValidationException("Invalid date format")}
-	ErrInvalidState                 = &SchedulerError{awserrors.NewValidationException("Invalid state value")}
-	ErrInvalidActionAfterCompletion = &SchedulerError{awserrors.NewValidationException("Invalid action after completion value")}
-	ErrScheduleGroupNotEmpty        = &SchedulerError{awserrors.NewConflictException("Schedule group is not empty")}
-	ErrInternalServer               = &SchedulerError{awserrors.NewInternalErrorException("Internal server error")}
+	// ErrScheduleGroupNotFound is returned when the specified schedule group does not exist.
+	ErrScheduleGroupNotFound = awserrors.NewResourceNotFoundException("Schedule group", "")
+	// ErrScheduleGroupAlreadyExists is returned when a schedule group already exists.
+	ErrScheduleGroupAlreadyExists = awserrors.NewConflictException("Schedule group already exists")
+	// ErrScheduleNotFound is returned when the specified schedule does not exist.
+	ErrScheduleNotFound = awserrors.NewResourceNotFoundException("Schedule", "")
+	// ErrScheduleAlreadyExists is returned when a schedule already exists.
+	ErrScheduleAlreadyExists = awserrors.NewConflictException("Schedule already exists")
+	// ErrValidation is returned when validation fails.
+	ErrValidation = awserrors.NewValidationException("Validation error")
+	// ErrInvalidScheduleExpression is returned when the schedule expression is invalid.
+	ErrInvalidScheduleExpression = awserrors.NewValidationException("Invalid schedule expression")
+	// ErrInvalidTarget is returned when the target is invalid.
+	ErrInvalidTarget = awserrors.NewValidationException("Invalid target")
+	// ErrInvalidFlexibleTimeWindow is returned when the flexible time window is invalid.
+	ErrInvalidFlexibleTimeWindow = awserrors.NewValidationException("Invalid flexible time window")
+	// ErrInvalidDate is returned when the date format is invalid.
+	ErrInvalidDate = awserrors.NewValidationException("Invalid date format")
+	// ErrInvalidState is returned when the state value is invalid.
+	ErrInvalidState = awserrors.NewValidationException("Invalid state value")
+	// ErrInvalidActionAfterCompletion is returned when the action after completion value is invalid.
+	ErrInvalidActionAfterCompletion = awserrors.NewValidationException("Invalid action after completion value")
+	// ErrScheduleGroupNotEmpty is returned when the schedule group is not empty.
+	ErrScheduleGroupNotEmpty = awserrors.NewConflictException("Schedule group is not empty")
+	// ErrInternalServer is returned when an internal server error occurs.
+	ErrInternalServer = awserrors.NewInternalErrorException("Internal server error")
 )
 
 // NewValidationException creates a validation error.
-func NewValidationException(message string) *SchedulerError {
-	return &SchedulerError{awserrors.NewValidationException(message)}
+func NewValidationException(message string) *awserrors.AWSError {
+	return awserrors.NewValidationException(message)
 }
 
 // NewResourceNotFoundException creates a resource not found error.
-func NewResourceNotFoundException(resource string) *SchedulerError {
-	return &SchedulerError{awserrors.NewNotFoundException(resource)}
+func NewResourceNotFoundException(resource string) *awserrors.AWSError {
+	return awserrors.NewNotFoundException(resource)
 }
 
 // NewConflictException creates a conflict error.
-func NewConflictException(message string) *SchedulerError {
-	return &SchedulerError{awserrors.NewConflictException(message)}
+func NewConflictException(message string) *awserrors.AWSError {
+	return awserrors.NewConflictException(message)
 }

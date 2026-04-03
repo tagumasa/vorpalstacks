@@ -6,63 +6,70 @@ import (
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
 )
 
-// SESv2Error represents an error returned by the SESv2 service.
-type SESv2Error struct {
-	*awserrors.AWSError
-}
-
-// Unwrap returns the underlying AWS error for error chaining.
-func (e *SESv2Error) Unwrap() error {
-	return e.AWSError
-}
-
 // Error variables for common SESv2 error conditions.
 var (
-	ErrAlreadyExists             = &SESv2Error{awserrors.NewAWSError("AlreadyExistsException", "Resource already exists", http.StatusConflict)}
-	ErrBadRequest                = &SESv2Error{awserrors.NewBadRequestException("Invalid request")}
-	ErrNotFound                  = &SESv2Error{awserrors.NewNotFoundException("Resource")}
-	ErrLimitExceeded             = &SESv2Error{awserrors.NewLimitExceededException("Limit exceeded")}
-	ErrTooManyRequests           = &SESv2Error{awserrors.NewThrottlingException("Too many requests")}
-	ErrMessageRejected           = &SESv2Error{awserrors.NewAWSError("MessageRejected", "Message rejected", http.StatusBadRequest)}
-	ErrAccountSuspended          = &SESv2Error{awserrors.NewAWSError("AccountSuspendedException", "Account suspended", http.StatusBadRequest)}
-	ErrSendingPaused             = &SESv2Error{awserrors.NewAWSError("SendingPausedException", "Sending paused", http.StatusBadRequest)}
-	ErrMailFromDomainNotVerified = &SESv2Error{awserrors.NewAWSError("MailFromDomainNotVerifiedException", "MAIL FROM domain not verified", http.StatusBadRequest)}
-	ErrConcurrentModification    = &SESv2Error{awserrors.NewAWSError("ConcurrentModificationException", "Concurrent modification", http.StatusInternalServerError)}
-	ErrMissingParameter          = &SESv2Error{awserrors.NewBadRequestException("Missing required parameter")}
-	ErrInvalidParameter          = &SESv2Error{awserrors.NewBadRequestException("Invalid parameter")}
-	ErrIdentityNotFound          = &SESv2Error{awserrors.NewNotFoundException("Email identity")}
-	ErrConfigurationSetNotFound  = &SESv2Error{awserrors.NewNotFoundException("Configuration set")}
-	ErrTemplateNotFound          = &SESv2Error{awserrors.NewNotFoundException("Email template")}
-	ErrContactListNotFound       = &SESv2Error{awserrors.NewNotFoundException("Contact list")}
-	ErrContactNotFound           = &SESv2Error{awserrors.NewNotFoundException("Contact")}
+	// ErrAlreadyExists is returned when a resource already exists.
+	ErrAlreadyExists = awserrors.NewAWSError("AlreadyExistsException", "Resource already exists", http.StatusConflict)
+	// ErrBadRequest is returned when a request is invalid.
+	ErrBadRequest = awserrors.NewBadRequestException("Invalid request")
+	// ErrNotFound is returned when a resource is not found.
+	ErrNotFound = awserrors.NewNotFoundException("Resource")
+	// ErrLimitExceeded is returned when a limit is exceeded.
+	ErrLimitExceeded = awserrors.NewLimitExceededException("Limit exceeded")
+	// ErrTooManyRequests is returned when too many requests are sent.
+	ErrTooManyRequests = awserrors.NewThrottlingException("Too many requests")
+	// ErrMessageRejected is returned when a message is rejected.
+	ErrMessageRejected = awserrors.NewAWSError("MessageRejected", "Message rejected", http.StatusBadRequest)
+	// ErrAccountSuspended is returned when the account is suspended.
+	ErrAccountSuspended = awserrors.NewAWSError("AccountSuspendedException", "Account suspended", http.StatusBadRequest)
+	// ErrSendingPaused is returned when sending is paused.
+	ErrSendingPaused = awserrors.NewAWSError("SendingPausedException", "Sending paused", http.StatusBadRequest)
+	// ErrMailFromDomainNotVerified is returned when the MAIL FROM domain is not verified.
+	ErrMailFromDomainNotVerified = awserrors.NewAWSError("MailFromDomainNotVerifiedException", "MAIL FROM domain not verified", http.StatusBadRequest)
+	// ErrConcurrentModification is returned when a concurrent modification conflict occurs.
+	ErrConcurrentModification = awserrors.NewAWSError("ConcurrentModificationException", "Concurrent modification", http.StatusInternalServerError)
+	// ErrMissingParameter is returned when a required parameter is missing.
+	ErrMissingParameter = awserrors.NewBadRequestException("Missing required parameter")
+	// ErrInvalidParameter is returned when a parameter is invalid.
+	ErrInvalidParameter = awserrors.NewBadRequestException("Invalid parameter")
+	// ErrIdentityNotFound is returned when an email identity is not found.
+	ErrIdentityNotFound = awserrors.NewNotFoundException("Email identity")
+	// ErrConfigurationSetNotFound is returned when a configuration set is not found.
+	ErrConfigurationSetNotFound = awserrors.NewNotFoundException("Configuration set")
+	// ErrTemplateNotFound is returned when an email template is not found.
+	ErrTemplateNotFound = awserrors.NewNotFoundException("Email template")
+	// ErrContactListNotFound is returned when a contact list is not found.
+	ErrContactListNotFound = awserrors.NewNotFoundException("Contact list")
+	// ErrContactNotFound is returned when a contact is not found.
+	ErrContactNotFound = awserrors.NewNotFoundException("Contact")
 )
 
 // NewAlreadyExistsException creates a new AlreadyExistsException error.
-func NewAlreadyExistsException(resource string) *SESv2Error {
-	return &SESv2Error{awserrors.NewResourceAlreadyExistsException(resource)}
+func NewAlreadyExistsException(resource string) *awserrors.AWSError {
+	return awserrors.NewResourceAlreadyExistsException(resource)
 }
 
 // NewNotFoundException creates a new NotFoundException error.
-func NewNotFoundException(resource string) *SESv2Error {
-	return &SESv2Error{awserrors.NewNotFoundException(resource)}
+func NewNotFoundException(resource string) *awserrors.AWSError {
+	return awserrors.NewNotFoundException(resource)
 }
 
 // NewBadRequestException creates a new BadRequestException error.
-func NewBadRequestException(message string) *SESv2Error {
-	return &SESv2Error{awserrors.NewBadRequestException(message)}
+func NewBadRequestException(message string) *awserrors.AWSError {
+	return awserrors.NewBadRequestException(message)
 }
 
 // NewMessageRejectedException creates a new MessageRejectedException error.
-func NewMessageRejectedException(message string) *SESv2Error {
-	return &SESv2Error{awserrors.NewAWSError("MessageRejected", message, http.StatusBadRequest)}
+func NewMessageRejectedException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("MessageRejected", message, http.StatusBadRequest)
 }
 
 // NewLimitExceededException creates a new LimitExceededException error.
-func NewLimitExceededException(message string) *SESv2Error {
-	return &SESv2Error{awserrors.NewLimitExceededException(message)}
+func NewLimitExceededException(message string) *awserrors.AWSError {
+	return awserrors.NewLimitExceededException(message)
 }
 
 // NewInvalidParameterException creates a new InvalidParameterException error.
-func NewInvalidParameterException(message string) *SESv2Error {
-	return &SESv2Error{awserrors.NewBadRequestException(message)}
+func NewInvalidParameterException(message string) *awserrors.AWSError {
+	return awserrors.NewBadRequestException(message)
 }

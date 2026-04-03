@@ -8,6 +8,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/query.timestream"
 	querytimestreamconnect "vorpalstacks/internal/pb/aws/query.timestream/query_timestreamconnect"
+	svccommon "vorpalstacks/internal/services/aws/common"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 )
 
@@ -35,10 +36,7 @@ func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId, da
 // getScheduledQueryStore retrieves the Timestream Query scheduled query store for the request.
 // It extracts the region from the request header and creates a new ScheduledQueryStore instance.
 func (h *AdminHandler) getScheduledQueryStore(req *connect.Request[pb.ListScheduledQueriesRequest]) (*timestreamstore.ScheduledQueryStore, error) {
-	region := req.Header().Get("X-Aws-Region")
-	if region == "" {
-		region = "us-east-1"
-	}
+	region := svccommon.GetRegionFromHeader(req.Header())
 	regionStorage, err := h.storageManager.GetStorage(region)
 	if err != nil {
 		return nil, err

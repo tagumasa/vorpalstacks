@@ -1,14 +1,17 @@
-// Package http provides HTTP server functionality for vorpalstacks.
 package http
 
 import (
 	"net/http"
 
+	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/services/aws/common/auth"
 )
 
-// SignatureMiddleware returns a middleware that verifies AWS signature version 4 on incoming requests.
-func SignatureMiddleware(cfg SignatureConfig) func(http.Handler) http.Handler {
+// SignatureMiddleware returns an HTTP middleware that verifies AWS Signature
+// Version 4 on incoming requests. It uses the classifier to determine the
+// target service name for signature verification. When signature verification
+// is disabled, it returns a pass-through middleware.
+func SignatureMiddleware(cfg SignatureConfig, c *classifier.Classifier) func(http.Handler) http.Handler {
 	if !cfg.Enabled {
 		return func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -32,13 +35,17 @@ func SignatureMiddleware(cfg SignatureConfig) func(http.Handler) http.Handler {
 				return
 			}
 
-			service := extractServiceFromRequestFallback(r)
-			if service == "" {
+			cr, err := c.Classify(r)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+			if cr == nil || cr.ServiceName == "" {
 				http.Error(w, "Forbidden: Could not determine service", http.StatusForbidden)
 				return
 			}
 
-			if err := verifier.VerifyRequest(r, service, cfg.Region); err != nil {
+			if err := verifier.VerifyRequest(r, cr.ServiceName, cfg.Region); err != nil {
 				http.Error(w, "Forbidden: Invalid signature", http.StatusForbidden)
 				return
 			}

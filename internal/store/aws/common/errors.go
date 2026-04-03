@@ -21,6 +21,8 @@ var (
 	ErrConflict = errors.New("conflict")
 	// ErrInternal is returned when an internal error occurs.
 	ErrInternal = errors.New("internal error")
+	// ErrInvalidParameter is returned when a parameter is not valid.
+	ErrInvalidParameter = errors.New("invalid parameter")
 )
 
 // StoreError represents an error in a store operation.

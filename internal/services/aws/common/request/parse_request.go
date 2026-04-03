@@ -248,6 +248,69 @@ func convertCBORMapToStringMap(v interface{}) interface{} {
 	}
 }
 
+// ExtractRESTOperation determines the operation for REST protocol services.
+// Dispatches to lambda, apigateway, scheduler, sesv2, route53, cloudfront, neptunedata extractors.
+// bodyBytes is used for CloudFront CreateDistributionWithTags detection.
+func ExtractRESTOperation(r *http.Request, bodyBytes []byte) string {
+	if op := extractLambdaOperation(r); op != "" {
+		return op
+	}
+	if op := extractApiGatewayOperation(r); op != "" {
+		return op
+	}
+	if op := extractSchedulerOperation(r); op != "" {
+		return op
+	}
+	if op := extractSESv2Operation(r); op != "" {
+		return op
+	}
+	if op := extractRoute53Operation(r); op != "" {
+		return op
+	}
+	if op := extractCloudFrontOperation(r); op != "" {
+		if op == "CreateDistribution" && r.Method == "POST" && len(bodyBytes) > 0 {
+			if bytes.Contains(bodyBytes, []byte("DistributionConfigWithTags")) {
+				return "CreateDistributionWithTags"
+			}
+		}
+		return op
+	}
+	if op := extractNeptunedataOperation(r); op != "" {
+		return op
+	}
+	return ""
+}
+
+// ExtractRESTPathParams extracts path parameters for REST protocol services.
+func ExtractRESTPathParams(path string, method string, params map[string]interface{}) {
+	if strings.HasPrefix(path, "/20") {
+		extractLambdaPathParams(path, params)
+	}
+	if isApiGatewayPath(path) {
+		extractApiGatewayPathParams(path, params)
+	}
+	if strings.HasPrefix(path, "/schedule-groups") || strings.HasPrefix(path, "/schedules") {
+		extractSchedulerPathParams(path, method, params)
+	}
+	if strings.HasPrefix(path, "/v2/email/") {
+		extractSESv2PathParams(path, params)
+	}
+	if strings.HasPrefix(path, "/2013-04-01/") {
+		extractRoute53PathParams(path, params)
+	}
+	if strings.HasPrefix(path, "/2020-05-31/") {
+		extractCloudFrontPathParams(path, params)
+	}
+	if isNeptunedataPath(path) {
+		extractNeptunedataPathParams(path, params)
+	}
+}
+
+// ParseXMLBody parses XML body bytes into params map.
+func ParseXMLBody(bodyBytes []byte, params map[string]interface{}) {
+	parseXMLBody(bodyBytes, params)
+}
+
 func toString(v interface{}) string {
 	switch val := v.(type) {
 	case string:

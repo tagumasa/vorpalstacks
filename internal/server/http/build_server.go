@@ -8,8 +8,9 @@ import (
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/server/http/chain"
-	"vorpalstacks/internal/server/http/router"
+	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/server/listener"
 	"vorpalstacks/internal/store/api"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -21,6 +22,7 @@ type Config struct {
 	Port            string
 	DataPath        string
 	AccountID       string
+	Region          string
 	SignatureConfig SignatureConfig
 	UseChainGateway bool
 	TLSConfig       TLSConfig
@@ -51,6 +53,7 @@ type ShutdownHook func(ctx context.Context)
 type Server struct {
 	config            *Config
 	storageManager    *storage.RegionStorageManager
+	eventBus          *eventbus.EventBus
 	httpServer        *http.Server
 	httpServerMu      sync.Mutex
 	dispatcher        *dispatcher.Dispatcher
@@ -58,7 +61,7 @@ type Server struct {
 	apiGatewayRuntime http.Handler
 	jwksHandler       http.Handler
 	handlerMu         sync.RWMutex
-	serviceRouter     *router.ServiceRouter
+	classifier        *classifier.Classifier
 	serviceStore      *api.ServiceStore
 	operationStore    *api.OperationStore
 	chainGateway      *chain.Gateway
@@ -77,12 +80,12 @@ type Server struct {
 	listenerManager   *listener.Manager
 }
 
-// ServiceRouter returns the service router.
+// Classifier returns the request classifier.
 //
 // Returns:
-//   - *router.ServiceRouter: The service router
-func (s *Server) ServiceRouter() *router.ServiceRouter {
-	return s.serviceRouter
+//   - *classifier.Classifier: The request classifier
+func (s *Server) Classifier() *classifier.Classifier {
+	return s.classifier
 }
 
 // ServiceStore returns the service store.
@@ -156,6 +159,16 @@ func (s *Server) S3Store() s3store.S3StoreInterface {
 // BlobStore returns the blob store interface.
 func (s *Server) BlobStore() storage.BlobStore {
 	return s.blobStore
+}
+
+// EventBus returns the event bus.
+func (s *Server) EventBus() *eventbus.EventBus {
+	return s.eventBus
+}
+
+// SetEventBus sets the event bus.
+func (s *Server) SetEventBus(bus *eventbus.EventBus) {
+	s.eventBus = bus
 }
 
 // RegisterS3Handler registers an S3 handler.

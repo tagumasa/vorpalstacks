@@ -165,20 +165,21 @@ func (d *Dispatcher) handleError(w http.ResponseWriter, r *http.Request, operati
 		return
 	}
 
+	logs.Error("Unhandled error", logs.String("type", fmt.Sprintf("%T", err)), logs.Err(err))
 	awserrors.WriteAWSError(w, awserrors.ErrInternal, contentType)
 }
 
 func (d *Dispatcher) handleErrorForRequest(w http.ResponseWriter, r *http.Request, err error) {
 	contentType := d.getErrorContentTypeForRequest(r)
 
-	awsErr := d.extractAWSError(err)
-	if awsErr != nil {
-		awserrors.WriteAWSError(w, awsErr, contentType)
+	if customErr, ok := err.(awserrors.CustomJSONMarshaler); ok {
+		awserrors.WriteCustomJSONError(w, customErr, contentType)
 		return
 	}
 
-	if customErr, ok := err.(awserrors.CustomJSONMarshaler); ok {
-		awserrors.WriteCustomJSONError(w, customErr, contentType)
+	awsErr := d.extractAWSError(err)
+	if awsErr != nil {
+		awserrors.WriteAWSError(w, awsErr, contentType)
 		return
 	}
 

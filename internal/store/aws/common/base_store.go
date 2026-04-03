@@ -192,133 +192,137 @@ type ListProtoResult[T proto.Message] struct {
 	IsTruncated bool
 }
 
-// ListProto retrieves a list of protobuf items from the store.
-func ListProto[T proto.Message](store *BaseStore, opts ListOptions, newFunc func() T, filter func(T) bool) (*ListProtoResult[T], error) {
+// pageIterator holds shared pagination state for List/ListProto operations.
+type pageIterator struct {
+	store   *BaseStore
+	opts    ListOptions
+	count   int
+	started bool
+	lastKey string
+	hasMore bool
+}
+
+// newPageIterator creates a pageIterator with clamped MaxItems.
+func newPageIterator(store *BaseStore, opts ListOptions) *pageIterator {
 	if opts.MaxItems <= 0 {
 		opts.MaxItems = DefaultMaxItems
 	}
 	if opts.MaxItems > AbsoluteMaxItems {
 		opts.MaxItems = AbsoluteMaxItems
 	}
+	return &pageIterator{
+		store:   store,
+		opts:    opts,
+		started: opts.Marker == "",
+	}
+}
 
-	var items []T
-	count := 0
-	started := opts.Marker == ""
-	var lastKey string
-	hasMore := false
-
-	err := store.ForEach(func(key string, value []byte) error {
-		if opts.Prefix != "" && !strings.HasPrefix(key, opts.Prefix) {
+// forEachPage iterates over store entries applying pagination logic.
+// visit is called for each entry that passes prefix/marker/count checks.
+// It must return (accepted, err). If accepted is true, the item counts towards
+// the page limit and its key is recorded as the last emitted key.
+func (it *pageIterator) forEachPage(visit func(key string, value []byte) (bool, error)) error {
+	return it.store.ForEach(func(key string, value []byte) error {
+		if it.opts.Prefix != "" && !strings.HasPrefix(key, it.opts.Prefix) {
 			return nil
 		}
 
-		if !started {
-			if key == opts.Marker {
-				started = true
+		if !it.started {
+			if key == it.opts.Marker {
+				it.started = true
 				return nil
-			} else if key > opts.Marker {
-				started = true
+			} else if key > it.opts.Marker {
+				it.started = true
 			}
-			if !started {
+			if !it.started {
 				return nil
 			}
 		}
 
-		if count >= opts.MaxItems {
-			hasMore = true
+		if it.count >= it.opts.MaxItems {
+			it.hasMore = true
 			return nil
 		}
 
-		item := newFunc()
-		if err := proto.Unmarshal(value, item); err != nil {
+		accepted, err := visit(key, value)
+		if err != nil {
 			return err
 		}
-
-		if filter == nil || filter(item) {
-			items = append(items, item)
-			lastKey = key
-			count++
+		if accepted {
+			it.lastKey = key
+			it.count++
 		}
 		return nil
+	})
+}
+
+// result builds the pagination metadata (nextMarker, isTruncated).
+func (it *pageIterator) result() (nextMarker string, isTruncated bool) {
+	if it.hasMore {
+		return it.lastKey, true
+	}
+	return "", false
+}
+
+// ListProto retrieves a list of protobuf items from the store.
+func ListProto[T proto.Message](store *BaseStore, opts ListOptions, newFunc func() T, filter func(T) bool) (*ListProtoResult[T], error) {
+	it := newPageIterator(store, opts)
+
+	var items []T
+	err := it.forEachPage(func(key string, value []byte) (bool, error) {
+		item := newFunc()
+		if err := proto.Unmarshal(value, item); err != nil {
+			return false, err
+		}
+
+		if filter != nil && !filter(item) {
+			return false, nil
+		}
+
+		items = append(items, item)
+		return true, nil
 	})
 
 	if err != nil {
 		return nil, NewStoreError(store.service, "list_proto", err)
 	}
 
-	nextMarker := ""
-	if hasMore {
-		nextMarker = lastKey
-	}
+	nextMarker, isTruncated := it.result()
 	return &ListProtoResult[T]{
 		Items:       items,
 		NextMarker:  nextMarker,
-		IsTruncated: hasMore,
+		IsTruncated: isTruncated,
 	}, nil
 }
 
 // List retrieves a list of items from the store with the given options and optional filter.
 func List[T any](store *BaseStore, opts ListOptions, filter FilterFunc[T]) (*ListResult[T], error) {
-	if opts.MaxItems <= 0 {
-		opts.MaxItems = DefaultMaxItems
-	}
-	if opts.MaxItems > AbsoluteMaxItems {
-		opts.MaxItems = AbsoluteMaxItems
-	}
+	it := newPageIterator(store, opts)
 
 	var items []*T
-	count := 0
-	started := opts.Marker == ""
-	var lastKey string
-	hasMore := false
-
-	err := store.ForEach(func(key string, value []byte) error {
-		if !strings.HasPrefix(key, opts.Prefix) {
-			return nil
-		}
-
-		if !started {
-			if key == opts.Marker {
-				started = true
-				return nil
-			} else if key > opts.Marker {
-				started = true
-			}
-			if !started {
-				return nil
-			}
-		}
-
-		if count >= opts.MaxItems {
-			hasMore = true
-			return nil
-		}
-
+	err := it.forEachPage(func(key string, value []byte) (bool, error) {
 		var item T
 		if err := json.Unmarshal(value, &item); err != nil {
-			return err
+			return false, err
 		}
 
-		if filter == nil || filter(&item) {
-			items = append(items, &item)
-			lastKey = key
-			count++
+		if filter != nil && !filter(&item) {
+			return false, nil
 		}
-		return nil
+
+		items = append(items, &item)
+		return true, nil
 	})
 
 	if err != nil {
 		return nil, NewStoreError(store.service, "list", err)
 	}
 
-	nextMarker := ""
-	if hasMore {
-		nextMarker = lastKey
-	}
+	nextMarker, isTruncated := it.result()
 	return &ListResult[T]{
 		Items:       items,
 		NextMarker:  nextMarker,
-		IsTruncated: hasMore,
+		IsTruncated: isTruncated,
 	}, nil
 }
 

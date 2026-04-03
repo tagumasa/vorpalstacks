@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common/request"
 )
 
@@ -39,6 +40,12 @@ func (o *ObjectOperations) DeleteObject(ctx context.Context, reqCtx *request.Req
 	marker, err := store.objects.DeleteWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
 	if err != nil {
 		return nil, err
+	}
+
+	if marker != nil {
+		o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, 0, marker.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
+	} else {
+		o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, 0, "", "", eventbus.S3ObjectRemovedDelete)
 	}
 
 	output := &DeleteObjectOutput{}
@@ -121,6 +128,9 @@ func (o *ObjectOperations) DeleteObjects(ctx context.Context, reqCtx *request.Re
 			if marker != nil {
 				deletedObj.DeleteMarker = true
 				deletedObj.DeleteMarkerId = marker.VersionID
+				o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, marker.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
+			} else {
+				o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, "", "", eventbus.S3ObjectRemovedDelete)
 			}
 			deleted = append(deleted, deletedObj)
 		}

@@ -14,8 +14,10 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -30,6 +32,7 @@ type SNSService struct {
 	lambdaInvoker  common.LambdaInvoker
 	accountID      string
 	httpClient     *http.Client
+	bus            *eventbus.EventBus
 	stores         sync.Map
 
 	signingKeyOnce sync.Once
@@ -73,6 +76,62 @@ func (s *SNSService) SetSNSStore(region string, snsStore *snsstore.SNSStore) {
 	if snsStore != nil {
 		s.stores.Store(region, snsStore)
 	}
+}
+
+// SetEventBus injects the event bus and registers the SNS delivery handler.
+// When the bus is set, Publish() routes delivery through the bus instead of
+// spawning goroutines directly.
+func (s *SNSService) SetEventBus(bus *eventbus.EventBus) {
+	s.bus = bus
+	_, _ = eventbus.SubscribeTyped[*eventbus.SNSDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
+}
+
+func (s *SNSService) handleBusDelivery(ctx context.Context, evt *eventbus.SNSDeliveryEvent) eventbus.HandlerResult {
+	store, err := s.getSNSStoreByRegion(evt.Region)
+	if err != nil {
+		logs.Warn("SNS bus delivery: failed to get store", logs.String("region", evt.Region), logs.String("error", err.Error()))
+		return eventbus.HandlerResult{Error: err}
+	}
+
+	subscriptions, err := store.ListSubscriptionsByTopic(evt.TopicARN, storecommon.ListOptions{})
+	if err != nil || len(subscriptions.Items) == 0 {
+		return eventbus.HandlerResult{}
+	}
+
+	subsCopy := make([]*snsstore.Subscription, len(subscriptions.Items))
+	for i, sub := range subscriptions.Items {
+		subCopy := *sub
+		subsCopy[i] = &subCopy
+	}
+
+	msg := &snsstore.Message{
+		MessageId:          evt.MessageID,
+		TopicArn:           evt.TopicARN,
+		Message:            evt.Message,
+		Subject:            evt.Subject,
+		MessageGroupId:     evt.MessageGroupId,
+		PublishedTimestamp: evt.EventTimestamp(),
+		ReceivedTimestamp:  evt.EventTimestamp(),
+		MessageAttributes:  make(map[string]*snsstore.MessageAttribute),
+	}
+
+	s.deliverToSubscriptions(msg, subsCopy, evt.Region)
+	return eventbus.HandlerResult{}
+}
+
+func (s *SNSService) getSNSStoreByRegion(region string) (snsstore.SNSStoreInterface, error) {
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(snsstore.SNSStoreInterface); ok {
+			return typed, nil
+		}
+	}
+	storage, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store := snsstore.NewSNSStore(storage, s.accountID, region)
+	s.stores.Store(region, store)
+	return store, nil
 }
 
 func (s *SNSService) initSigningKey() {
@@ -176,13 +235,22 @@ func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topi
 			ReceivedTimestamp:  time.Now().UTC(),
 		}
 
-		subsCopy := make([]*snsstore.Subscription, len(subscriptions.Items))
-		for i, sub := range subscriptions.Items {
-			subCopy := *sub
-			subsCopy[i] = &subCopy
-		}
+		if s.bus != nil {
+			s.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+				TopicARN:  topic.Arn,
+				MessageID: msg.MessageId,
+				Message:   message,
+				Region:    region,
+			})
+		} else {
+			subsCopy := make([]*snsstore.Subscription, len(subscriptions.Items))
+			for i, sub := range subscriptions.Items {
+				subCopy := *sub
+				subsCopy[i] = &subCopy
+			}
 
-		go s.deliverToSubscriptions(msg, subsCopy, region)
+			go s.deliverToSubscriptions(msg, subsCopy, region)
+		}
 	}
 
 	return nil

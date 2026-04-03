@@ -4,7 +4,6 @@ package route53
 
 import (
 	"errors"
-	"fmt"
 
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -44,57 +43,28 @@ var (
 
 // StoreError represents an error that occurs during Route 53 store operations.
 // It encapsulates the service name, operation, and underlying error.
-type StoreError struct {
-	Service string
-	Op      string
-	Err     error
-}
-
-// Error returns a string representation of the StoreError.
-func (e *StoreError) Error() string {
-	return fmt.Sprintf("route53 store %s: %v", e.Op, e.Err)
-}
-
-// Unwrap returns the underlying error.
-func (e *StoreError) Unwrap() error {
-	return e.Err
-}
+type StoreError = common.StoreError
 
 // NewStoreError creates a new Route 53 store error with the given operation and error.
 func NewStoreError(op string, err error) *StoreError {
-	return &StoreError{Service: "route53", Op: op, Err: err}
+	return common.NewStoreError("route53", op, err)
 }
 
 // IsNotFound checks if the error indicates that a Route 53 resource
 // was not found. This includes hosted zones, health checks, record sets, and changes.
 func IsNotFound(err error) bool {
-	var storeErr *StoreError
-	if errors.As(err, &storeErr) {
-		return errors.Is(storeErr.Err, ErrHostedZoneNotFound) ||
-			errors.Is(storeErr.Err, ErrHealthCheckNotFound) ||
-			errors.Is(storeErr.Err, ErrRecordSetNotFound) ||
-			errors.Is(storeErr.Err, ErrChangeNotFound) ||
-			errors.Is(storeErr.Err, common.ErrNotFound)
-	}
-	return errors.Is(err, ErrHostedZoneNotFound) ||
+	return common.IsNotFound(err) ||
+		errors.Is(err, ErrHostedZoneNotFound) ||
 		errors.Is(err, ErrHealthCheckNotFound) ||
 		errors.Is(err, ErrRecordSetNotFound) ||
-		errors.Is(err, ErrChangeNotFound) ||
-		errors.Is(err, common.ErrNotFound)
+		errors.Is(err, ErrChangeNotFound)
 }
 
 // IsAlreadyExists checks if the error indicates that a Route 53 resource
 // already exists. This includes hosted zones, health checks, and record sets.
 func IsAlreadyExists(err error) bool {
-	var storeErr *StoreError
-	if errors.As(err, &storeErr) {
-		return errors.Is(storeErr.Err, ErrHostedZoneExists) ||
-			errors.Is(storeErr.Err, ErrHealthCheckExists) ||
-			errors.Is(storeErr.Err, ErrRecordSetExists) ||
-			errors.Is(storeErr.Err, common.ErrAlreadyExists)
-	}
-	return errors.Is(err, ErrHostedZoneExists) ||
+	return common.IsAlreadyExists(err) ||
+		errors.Is(err, ErrHostedZoneExists) ||
 		errors.Is(err, ErrHealthCheckExists) ||
-		errors.Is(err, ErrRecordSetExists) ||
-		errors.Is(err, common.ErrAlreadyExists)
+		errors.Is(err, ErrRecordSetExists)
 }

@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
-
-	"vorpalstacks/internal/server/http/router"
 )
 
+// registerRoutes sets up the HTTP routing table, installing the classify
+// middleware and registering service-specific routes. When the chain gateway
+// is enabled, it delegates entirely to registerChainRoutes.
 func (s *Server) registerRoutes(r chi.Router) {
 	if s.chainGateway != nil && s.config.UseChainGateway {
 		s.registerChainRoutes(r)
@@ -25,26 +25,29 @@ func (s *Server) registerRoutes(r chi.Router) {
 				w.Write([]byte(`{"status":"ok"}`))
 				return
 			}
-			if r.Header.Get("X-Amz-Target") != "" {
+
+			cr, err := s.classifier.Classify(r)
+			if err != nil || cr == nil {
+				if s3Handler := s.S3Handler(); s3Handler != nil {
+					s3Handler.ServeHTTP(w, r)
+					return
+				}
 				next.ServeHTTP(w, r)
 				return
 			}
-			if r.URL.Query().Get("Action") != "" {
-				next.ServeHTTP(w, r)
+
+			if cr.ServiceName == "s3" {
+				if s3Handler := s.S3Handler(); s3Handler != nil {
+					s3Handler.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			if cr.ServiceName != "" {
+				s.dispatcher.DispatchClassified(w, r, cr)
 				return
 			}
-			if r.Method == "POST" && strings.Contains(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
-				next.ServeHTTP(w, r)
-				return
-			}
-			if strings.Contains(r.Header.Get("Content-Type"), "application/cbor") {
-				next.ServeHTTP(w, r)
-				return
-			}
-			if router.IsLambdaRestPath(r.URL.Path) || isApiGatewayPath(r.URL.Path) || isSchedulerPath(r.URL.Path) || isSESv2Path(r.URL.Path) || isRoute53Path(r.URL.Path) || isCloudFrontPath(r.URL.Path) || isCloudWatchCBORPath(r.URL.Path) || isNeptunedataPath(r.URL.Path) {
-				next.ServeHTTP(w, r)
-				return
-			}
+
 			if s3Handler := s.S3Handler(); s3Handler != nil {
 				s3Handler.ServeHTTP(w, r)
 				return
@@ -72,39 +75,11 @@ func (s *Server) registerRoutes(r chi.Router) {
 		r.Handle("/.well-known/jwks.json", jwksHandler)
 	}
 
-	awsJSONHandler := func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("X-Amz-Target") != "" {
-			s.handleRequest(w, r)
-			return
-		}
-		if router.IsLambdaRestPath(r.URL.Path) {
-			s.handleRequest(w, r)
-			return
-		}
-		apiGatewayRuntime := s.APIGatewayRuntimeHandler()
-		if isApiGatewayRuntimePath(r.URL.Path) && apiGatewayRuntime != nil {
-			apiGatewayRuntime.ServeHTTP(w, r)
-			return
-		}
-		if isApiGatewayPath(r.URL.Path) {
-			s.handleRequest(w, r)
-			return
-		}
-		if r.URL.Query().Get("Action") != "" {
-			s.handleRequest(w, r)
-			return
-		}
-		if r.Method == "POST" && strings.Contains(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
-			s.handleRequest(w, r)
-			return
-		}
-		s.handleRequest(w, r)
-	}
-
-	r.HandleFunc("/", awsJSONHandler)
-	r.HandleFunc("/*", awsJSONHandler)
+	r.HandleFunc("/", s.handleClassifiedRequest)
+	r.HandleFunc("/*", s.handleClassifiedRequest)
 }
 
+// registerChainRoutes sets up the chain gateway as the sole request handler.
 func (s *Server) registerChainRoutes(r chi.Router) {
 	if apiGatewayRuntime := s.APIGatewayRuntimeHandler(); apiGatewayRuntime != nil {
 		r.HandleFunc("/restapis/{restApiId}/{stageName}/_user_request_/*", func(w http.ResponseWriter, req *http.Request) {
@@ -120,6 +95,9 @@ func (s *Server) registerChainRoutes(r chi.Router) {
 	r.HandleFunc("/*", s.chainGateway.ServeHTTP)
 }
 
+// registerServiceRoutes registers chi routes for each operation of the given
+// service. S3-style routes (containing {Bucket} or {Key+}) are skipped
+// because S3 has its own dedicated handler.
 func (s *Server) registerServiceRoutes(r chi.Router, serviceName string) {
 	if serviceName == "s3" {
 		return
@@ -156,72 +134,43 @@ func (s *Server) registerServiceRoutes(r chi.Router, serviceName string) {
 	}
 }
 
-func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
-	serviceName := s.extractServiceFromRequest(r)
-	s.dispatcher.Dispatch(w, r, serviceName, nil)
-}
-
-func isApiGatewayPath(path string) bool {
-	if isApiGatewayRuntimePath(path) {
-		return false
+// handleClassifiedRequest is the chi fallback handler that classifies
+// unrecognised routes and dispatches them via DispatchClassified.
+func (s *Server) handleClassifiedRequest(w http.ResponseWriter, r *http.Request) {
+	cr, err := s.classifier.Classify(r)
+	if err != nil || cr == nil {
+		if s3Handler := s.S3Handler(); s3Handler != nil {
+			s3Handler.ServeHTTP(w, r)
+			return
+		}
+		s.dispatcher.Dispatch(w, r, "", nil)
+		return
 	}
-	return strings.HasPrefix(path, "/restapis") ||
-		strings.HasPrefix(path, "/apikeys") ||
-		strings.HasPrefix(path, "/usageplans") ||
-		strings.HasPrefix(path, "/domainnames") ||
-		strings.HasPrefix(path, "/vpclinks") ||
-		strings.HasPrefix(path, "/apis") ||
-		strings.HasPrefix(path, "/authorizers") ||
-		(strings.HasPrefix(path, "/tags/") && strings.Contains(path, "apigateway"))
+	if cr.ServiceName == "s3" {
+		if s3Handler := s.S3Handler(); s3Handler != nil {
+			s3Handler.ServeHTTP(w, r)
+			return
+		}
+	}
+	s.dispatcher.DispatchClassified(w, r, cr)
 }
 
-func isApiGatewayRuntimePath(path string) bool {
-	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) >= 4 && parts[0] == "restapis" && parts[3] == "_user_request_" {
-		return true
+// isS3StyleRoute reports whether the route path contains S3-style path
+// parameters ({Bucket} or {Key+}).
+func isS3StyleRoute(routePath string) bool {
+	for _, s := range []string{"{Bucket}", "{Key+"} {
+		if len(routePath) >= len(s) {
+			for i := 0; i <= len(routePath)-len(s); i++ {
+				if routePath[i:i+len(s)] == s {
+					return true
+				}
+			}
+		}
 	}
 	return false
 }
 
-func isSchedulerPath(path string) bool {
-	return strings.HasPrefix(path, "/schedule-groups") ||
-		strings.HasPrefix(path, "/schedules") ||
-		strings.HasPrefix(path, "/tags/arn:aws:scheduler")
-}
-
-func isSESv2Path(path string) bool {
-	return strings.HasPrefix(path, "/v2/email/")
-}
-
-func isRoute53Path(path string) bool {
-	return strings.HasPrefix(path, "/2013-04-01/")
-}
-
-func isCloudFrontPath(path string) bool {
-	return strings.HasPrefix(path, "/2020-05-31/")
-}
-
-func isCloudWatchCBORPath(path string) bool {
-	return strings.HasPrefix(path, "/service/GraniteServiceVersion20100801/")
-}
-
-func isNeptunedataPath(path string) bool {
-	return strings.HasPrefix(path, "/gremlin") ||
-		strings.HasPrefix(path, "/opencypher") ||
-		strings.HasPrefix(path, "/status") ||
-		strings.HasPrefix(path, "/system") ||
-		strings.HasPrefix(path, "/loader") ||
-		strings.HasPrefix(path, "/propertygraph") ||
-		strings.HasPrefix(path, "/sparql") ||
-		strings.HasPrefix(path, "/rdf") ||
-		strings.HasPrefix(path, "/ml")
-}
-
-func isS3StyleRoute(routePath string) bool {
-	return strings.Contains(routePath, "{Bucket}") ||
-		strings.Contains(routePath, "{Key+")
-}
-
+// extractPath strips query parameters from a URI, returning only the path portion.
 func extractPath(uri string) string {
 	for i, c := range uri {
 		if c == '?' {

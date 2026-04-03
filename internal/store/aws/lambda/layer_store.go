@@ -16,7 +16,7 @@ import (
 // LayerStore provides storage operations for AWS Lambda layers.
 type LayerStore struct {
 	*common.BaseStore
-	arnBuilder *ArnBuilder
+	arnBuilder *ARNBuilder
 	accountId  string
 	region     string
 	mu         sync.Mutex
@@ -27,7 +27,7 @@ func NewLayerStore(store storage.BasicStorage, accountId, region string) *LayerS
 	bucket := store.Bucket("lambda-layers-" + region)
 	return &LayerStore{
 		BaseStore:  common.NewBaseStore(bucket, "lambda-layers"),
-		arnBuilder: NewArnBuilder(accountId, region),
+		arnBuilder: NewARNBuilder(accountId, region),
 		accountId:  accountId,
 		region:     region,
 	}

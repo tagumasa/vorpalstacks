@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
@@ -159,31 +160,84 @@ func (s *EventsService) deliverEventWithStore(ctx context.Context, region string
 			continue
 		}
 
-	targetLoop:
 		for _, target := range targetsResult.Targets {
 			targetCopy := *target
-			targetWg.Add(1)
-			select {
-			case s.targetSemaphore <- struct{}{}:
-				go func() {
-					defer func() {
-						<-s.targetSemaphore
-						targetWg.Done()
-						if r := recover(); r != nil {
-							logs.Error("eventbridge: panic delivering to target", logs.String("arn", targetCopy.ARN), logs.Any("panic", r))
-						}
-					}()
-					s.deliverToTarget(ctx, region, event, targetCopy)
-				}()
-			case <-ctx.Done():
-				targetWg.Done()
-				break targetLoop
+			payload := s.buildTargetPayload(event, targetCopy)
+			payloadBytes, err := json.Marshal(payload)
+			if err != nil {
+				logs.Error("failed to marshal event payload",
+					logs.String("eventId", event.ID),
+					logs.String("targetId", targetCopy.ID),
+					logs.Err(err))
+				continue
+			}
+
+			if s.bus != nil {
+				s.bus.Publish(context.Background(), &eventbus.EventBridgeDeliveryEvent{
+					RuleARN:   rule.ARN,
+					TargetID:  targetCopy.ID,
+					TargetARN: targetCopy.ARN,
+					Input:     payloadBytes,
+					Region:    region,
+				})
+			} else {
+				targetWg.Add(1)
+				select {
+				case s.targetSemaphore <- struct{}{}:
+					go func(evt *eventsstore.Event, tgt eventsstore.Target) {
+						defer func() {
+							<-s.targetSemaphore
+							targetWg.Done()
+							if r := recover(); r != nil {
+								logs.Error("eventbridge: panic delivering to target", logs.String("arn", tgt.ARN), logs.Any("panic", r))
+							}
+						}()
+						s.deliverToTarget(ctx, region, evt, tgt)
+					}(event, targetCopy)
+				case <-ctx.Done():
+					targetWg.Done()
+					goto done
+				}
 			}
 		}
 	}
 
+done:
 	targetWg.Wait()
 	return nil
+}
+
+func (s *EventsService) buildTargetPayload(event *eventsstore.Event, target eventsstore.Target) map[string]interface{} {
+	payload := map[string]interface{}{
+		"version":     event.Version,
+		"id":          event.ID,
+		"detail-type": event.DetailType,
+		"source":      event.Source,
+		"account":     event.Account,
+		"time":        event.Time,
+		"region":      event.Region,
+		"resources":   event.Resources,
+		"detail":      event.Detail,
+	}
+
+	if target.Input != "" {
+		var inputPayload map[string]interface{}
+		if err := json.Unmarshal([]byte(target.Input), &inputPayload); err == nil {
+			payload = inputPayload
+		}
+	} else if target.InputPath != "" {
+		extracted := s.extractInputPath(payload, target.InputPath)
+		if extracted != nil {
+			payload = extracted
+		}
+	} else if target.InputTransformer != nil {
+		transformed := s.applyInputTransformer(payload, target.InputTransformer)
+		if transformed != nil {
+			payload = transformed
+		}
+	}
+
+	return payload
 }
 
 func (s *EventsService) archiveEvent(ctx context.Context, store *eventsstore.EventsStore, event *eventsstore.Event, eventBusName string) {
@@ -235,13 +289,12 @@ func (s *EventsService) archiveEvent(ctx context.Context, store *eventsstore.Eve
 			continue
 		}
 
-		archiveCopy := *archive
-		archiveCopy.EventCount = archive.EventCount + 1
+		eventSize := int64(0)
 		if eventBytes, err := json.Marshal(eventMap); err == nil {
-			archiveCopy.SizeBytes += int64(len(eventBytes))
+			eventSize = int64(len(eventBytes))
 		}
-		if err := store.UpdateArchive(ctx, &archiveCopy); err != nil {
-			logs.Warn("failed to update archive",
+		if err := store.IncrementArchiveCounters(ctx, archive.Name, eventSize); err != nil {
+			logs.Warn("failed to update archive counters",
 				logs.String("archiveName", archive.Name),
 				logs.Err(err))
 		}
@@ -412,33 +465,38 @@ func (s *EventsService) matchOperator(eventValue interface{}, op string, operand
 }
 
 func matchWildcardPattern(s, pattern string) bool {
-	if pattern == "*" {
+	for len(pattern) > 0 && pattern[0] == '*' {
+		pattern = pattern[1:]
+	}
+	if pattern == "" {
 		return true
 	}
-	sIdx := 0
-	pIdx := 0
-	for sIdx < len(s) && pIdx < len(pattern) {
-		if pattern[pIdx] == '*' {
-			if pIdx == len(pattern)-1 {
-				return true
+	for len(pattern) > 0 {
+		starIdx := -1
+		for i, c := range pattern {
+			if c == '*' {
+				starIdx = i
+				break
 			}
-			for i := sIdx; i <= len(s); i++ {
-				if matchWildcardPattern(s[i:], pattern[pIdx+1:]) {
-					return true
-				}
-			}
-			return false
-		} else if pattern[pIdx] == '?' {
-			sIdx++
-			pIdx++
-		} else if sIdx < len(s) && s[sIdx] == pattern[pIdx] {
-			sIdx++
-			pIdx++
-		} else {
+		}
+		if starIdx == -1 {
+			return s == pattern
+		}
+		fragment := pattern[:starIdx]
+		pattern = pattern[starIdx+1:]
+		for len(pattern) > 0 && pattern[0] == '*' {
+			pattern = pattern[1:]
+		}
+		idx := strings.Index(s, fragment)
+		if idx == -1 {
 			return false
 		}
+		if len(pattern) == 0 {
+			return strings.HasSuffix(s, fragment)
+		}
+		s = s[idx+len(fragment):]
 	}
-	return sIdx == len(s) && pIdx == len(pattern)
+	return true
 }
 
 func matchCIDRBlock(ipStr, cidr string) bool {
@@ -544,6 +602,26 @@ func (s *EventsService) deliverToTarget(ctx context.Context, region string, even
 		s.deliverToSQS(ctx, region, target.ARN, payloadBytes)
 	case "sns":
 		s.deliverToSNS(ctx, region, target.ARN, payloadBytes)
+	case "logs":
+		s.deliverToCloudWatchLogs(ctx, region, event.ID, target.ARN, payloadBytes)
+	default:
+		logs.Warn("target type not yet implemented, event not delivered",
+			logs.String("targetType", targetType),
+			logs.String("targetArn", target.ARN),
+			logs.String("eventId", event.ID))
+	}
+}
+
+func (s *EventsService) dispatchToTarget(ctx context.Context, region string, event *eventsstore.Event, target eventsstore.Target, targetType string, payload []byte) {
+	switch targetType {
+	case "lambda":
+		s.deliverToLambda(ctx, region, event.ID, target.ARN, payload)
+	case "sqs":
+		s.deliverToSQS(ctx, region, target.ARN, payload)
+	case "sns":
+		s.deliverToSNS(ctx, region, target.ARN, payload)
+	case "logs":
+		s.deliverToCloudWatchLogs(ctx, region, event.ID, target.ARN, payload)
 	default:
 		logs.Warn("target type not yet implemented, event not delivered",
 			logs.String("targetType", targetType),
@@ -563,6 +641,19 @@ func (s *EventsService) deliverToLambda(ctx context.Context, region string, even
 			logs.String("eventId", eventID),
 			logs.String("targetArn", targetArn))
 		return
+	}
+
+	if s.bus != nil {
+		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, targetArn, "lambda", "events.amazonaws.com", "lambda:InvokeFunction", targetArn)
+		if evalErr != nil {
+			logs.Warn("resource policy evaluation failed for Lambda target, dropping delivery",
+				logs.String("targetArn", targetArn),
+				logs.String("error", evalErr.Error()))
+			return
+		}
+		if !allowed {
+			return
+		}
 	}
 
 	functionName := arnutil.ExtractFunctionNameFromARN(targetArn)
@@ -684,6 +775,19 @@ func (s *EventsService) extractValueByPath(payload map[string]interface{}, path 
 }
 
 func (s *EventsService) deliverToSQS(ctx context.Context, region string, arnStr string, payload []byte) {
+	if s.bus != nil {
+		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, arnStr, "sqs", "events.amazonaws.com", "sqs:SendMessage", arnStr)
+		if evalErr != nil {
+			logs.Warn("resource policy evaluation failed for SQS target, dropping delivery",
+				logs.String("targetArn", arnStr),
+				logs.String("error", evalErr.Error()))
+			return
+		}
+		if !allowed {
+			return
+		}
+	}
+
 	sqsStore, err := s.getSQSStoreForRegion(region)
 	if err != nil {
 		logs.Warn("SQS store not available, skipping SQS delivery",
@@ -715,6 +819,19 @@ func (s *EventsService) deliverToSQS(ctx context.Context, region string, arnStr 
 }
 
 func (s *EventsService) deliverToSNS(ctx context.Context, region string, arnStr string, payload []byte) {
+	if s.bus != nil {
+		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, arnStr, "sns", "events.amazonaws.com", "sns:Publish", arnStr)
+		if evalErr != nil {
+			logs.Warn("resource policy evaluation failed for SNS target, dropping delivery",
+				logs.String("targetArn", arnStr),
+				logs.String("error", evalErr.Error()))
+			return
+		}
+		if !allowed {
+			return
+		}
+	}
+
 	if s.snsPublisher == nil {
 		logs.Warn("SNS publisher not configured, skipping SNS delivery",
 			logs.String("arn", arnStr))
@@ -741,6 +858,50 @@ func (s *EventsService) deliverToSNS(ctx context.Context, region string, arnStr 
 	logs.Debug("Event delivered to SNS successfully",
 		logs.String("topic", topicName),
 		logs.String("arn", arnStr))
+}
+
+func (s *EventsService) deliverToCloudWatchLogs(ctx context.Context, region string, eventID string, arnStr string, payload []byte) {
+	if s.bus == nil {
+		logs.Warn("event bus not configured, skipping CloudWatch Logs delivery",
+			logs.String("arn", arnStr))
+		return
+	}
+
+	_, _, _, _, resource := arnutil.SplitARN(arnStr)
+	logGroup := arnutil.ExtractLogGroupNameFromARN(arnStr)
+	if logGroup == "" {
+		logs.Error("failed to extract log group from CloudWatch Logs ARN",
+			logs.String("arn", arnStr))
+		return
+	}
+
+	logStream := resource
+	if idx := strings.LastIndex(resource, ":log-stream:"); idx != -1 {
+		logStream = resource[idx+12:]
+	} else {
+		logStream = fmt.Sprintf("eventbridge-%s", eventID)
+	}
+
+	evt := &eventbus.CloudWatchLogsPutEvent{
+		LogGroup:  logGroup,
+		LogStream: logStream,
+		LogEvents: []eventbus.LogEntry{
+			{Timestamp: time.Now().UnixMilli(), Message: string(payload)},
+		},
+		Region:    region,
+		AccountID: s.accountID,
+	}
+
+	if err := s.bus.Publish(ctx, evt); err != nil {
+		logs.Error("Failed to deliver event to CloudWatch Logs",
+			logs.String("logGroup", logGroup),
+			logs.String("error", err.Error()))
+		return
+	}
+
+	logs.Debug("Event delivered to CloudWatch Logs successfully",
+		logs.String("logGroup", logGroup),
+		logs.String("logStream", logStream))
 }
 
 // TestEventPattern tests whether an event pattern matches a given event.

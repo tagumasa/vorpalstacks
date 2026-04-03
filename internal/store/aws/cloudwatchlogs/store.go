@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -40,11 +42,11 @@ type activeChunk struct {
 }
 
 // NewStore creates a new CloudWatch Logs store.
-func NewStore(bucket storage.Bucket, accountID, region, dataPath string) *Store {
+func NewStore(bucket storage.Bucket, accountID, region, dataPath string) (*Store, error) {
 	baseStore := common.NewBaseStore(bucket, "logs")
 	chunksDir := filepath.Join(dataPath, "logs-chunks")
 	if err := os.MkdirAll(chunksDir, 0755); err != nil {
-		return nil
+		return nil, fmt.Errorf("failed to create logs chunks directory: %w", err)
 	}
 
 	return &Store{
@@ -52,7 +54,7 @@ func NewStore(bucket storage.Bucket, accountID, region, dataPath string) *Store 
 		arnBuilder:   svcarn.NewARNBuilder(accountID, region),
 		chunksDir:    chunksDir,
 		activeChunks: make(map[string]*activeChunk),
-	}
+	}, nil
 }
 
 // ARNBuilder returns the ARN builder for the store.
@@ -144,7 +146,7 @@ func (s *Store) ListLogGroups(prefix, marker string, maxItems int) ([]*LogGroup,
 	}
 
 	result, err := common.ListProto[*pb.LogGroup](s.BaseStore, opts, func() *pb.LogGroup { return &pb.LogGroup{} }, func(lg *pb.LogGroup) bool {
-		if prefix != "" && lg.Name != prefix && !hasPrefix(lg.Name, prefix) {
+		if prefix != "" && lg.Name != prefix && !strings.HasPrefix(lg.Name, prefix) {
 			return false
 		}
 		return true
@@ -683,26 +685,15 @@ func hexChar(b byte) byte {
 	return 'a' + b - 10
 }
 
-func hasPrefix(s, prefix string) bool {
-	if len(prefix) > len(s) {
-		return false
-	}
-	return s[:len(prefix)] == prefix
-}
-
 func matchFilterPattern(message, pattern string) bool {
 	matcher := filterpattern.NewMatcher()
 	return matcher.Matches(pattern, message)
 }
 
 func sortEventsByTimestamp(events []*OutputLogEvent) {
-	for i := 0; i < len(events)-1; i++ {
-		for j := i + 1; j < len(events); j++ {
-			if events[i].Timestamp > events[j].Timestamp {
-				events[i], events[j] = events[j], events[i]
-			}
-		}
-	}
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].Timestamp < events[j].Timestamp
+	})
 }
 
 // PutSubscriptionFilter creates or updates a subscription filter.
@@ -745,7 +736,7 @@ func (s *Store) ListSubscriptionFilters(logGroupName, filterNamePrefix string) (
 		var p pb.SubscriptionFilter
 		if err := proto.Unmarshal(value, &p); err == nil {
 			filter := ProtoToSubscriptionFilter(&p)
-			if filterNamePrefix == "" || hasPrefix(filter.FilterName, filterNamePrefix) {
+			if filterNamePrefix == "" || strings.HasPrefix(filter.FilterName, filterNamePrefix) {
 				filters = append(filters, filter)
 			}
 		}
@@ -761,9 +752,13 @@ func (s *Store) subscriptionFilterKey(logGroupName, filterName string) string {
 	return "subscription-filter:" + escapePath(logGroupName) + ":" + filterName
 }
 
+func (s *Store) destinationKey(name string) string {
+	return "destination:" + name
+}
+
 // PutDestination creates a new CloudWatch Logs destination.
 func (s *Store) PutDestination(dest *Destination) error {
-	key := "destination:" + dest.Name
+	key := s.destinationKey(dest.Name)
 	if dest.CreationTime == 0 {
 		if existing, err := s.GetDestination(dest.Name); err == nil {
 			dest.CreationTime = existing.CreationTime
@@ -776,7 +771,7 @@ func (s *Store) PutDestination(dest *Destination) error {
 
 // GetDestination retrieves a CloudWatch Logs destination by name.
 func (s *Store) GetDestination(name string) (*Destination, error) {
-	key := "destination:" + name
+	key := s.destinationKey(name)
 	var dest Destination
 	if err := s.Get(key, &dest); err != nil {
 		return nil, ErrDestinationNotFound
@@ -786,7 +781,7 @@ func (s *Store) GetDestination(name string) (*Destination, error) {
 
 // DeleteDestination deletes a CloudWatch Logs destination by name.
 func (s *Store) DeleteDestination(name string) error {
-	key := "destination:" + name
+	key := s.destinationKey(name)
 	if !s.Exists(key) {
 		return ErrDestinationNotFound
 	}
@@ -813,7 +808,7 @@ func (s *Store) ListDestinations(prefix string) ([]*Destination, error) {
 		if err := json.Unmarshal(value, &dest); err != nil {
 			return nil
 		}
-		if prefix == "" || hasPrefix(dest.Name, prefix) {
+		if prefix == "" || strings.HasPrefix(dest.Name, prefix) {
 			destinations = append(destinations, &dest)
 		}
 		return nil

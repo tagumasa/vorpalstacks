@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/services/aws/common/audit"
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/interfaces"
@@ -82,56 +83,42 @@ func NewDispatcher(
 	return d
 }
 
-// Dispatch handles an incoming HTTP request by routing it to the appropriate service handler.
-// It manages service mode (fallback, error injection, implemented), authentication, and response writing.
-func (d *Dispatcher) Dispatch(w http.ResponseWriter, r *http.Request, serviceName string, operation *api.Operation) {
-	parsedReq, parseErr := request.ParseAWSRequest(r)
-	opName := ""
-	if parsedReq != nil {
-		opName = parsedReq.Operation
-	}
+// executeHandler runs the shared handler execution pipeline:
+// build request context, check authorisation, execute with resilience wrapper,
+// record audit, and write the response or error.
+func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serviceName, opName string, parsedReq *request.ParsedRequest, handler Handler) {
+	httpCtx := r.Context()
+	reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
+	reqCtx.SetStoreProvider(d.storeProvider)
+	reqCtx.SetGraphDBManager(d.graphDB)
 
-	if parseErr == nil && opName != "" {
-		if handler, exists := d.getHandler(serviceName, opName); exists && handler != nil {
-			d.executeWithRecovery(w, r, serviceName, opName, func() {
-				httpCtx := r.Context()
-				reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
-				reqCtx.SetStoreProvider(d.storeProvider)
-				reqCtx.SetGraphDBManager(d.graphDB)
-
-				if d.authorizationEnabled && d.authorizer != nil {
-					authzResult, err := d.authorizer.Authorize(httpCtx, reqCtx, parsedReq, serviceName, r)
-					if err != nil {
-						d.handleErrorForRequest(w, r, err)
-						return
-					}
-					if !authzResult.Allowed {
-						d.handleErrorForRequest(w, r, awserrors.ErrAccessDenied)
-						return
-					}
-				}
-
-				wrapper := d.builder.BuildWrapper(serviceName, opName)
-				result, err := wrapper.ExecuteWithResult(httpCtx, func() (interface{}, error) {
-					return handler(httpCtx, reqCtx, parsedReq)
-				})
-				d.recordAudit(serviceName, opName, reqCtx, parsedReq, result, err)
-				if err != nil {
-					d.handleErrorForRequest(w, r, err)
-					return
-				}
-				d.writeResponseWithOpName(w, r, serviceName, opName, result)
-			})
+	if d.authorizationEnabled && d.authorizer != nil {
+		authzResult, err := d.authorizer.Authorize(httpCtx, reqCtx, parsedReq, serviceName, r)
+		if err != nil {
+			d.handleErrorForRequest(w, r, err)
+			return
+		}
+		if !authzResult.Allowed {
+			d.handleErrorForRequest(w, r, awserrors.ErrAccessDenied)
 			return
 		}
 	}
 
-	if serviceName == "" {
-		contentType := d.getErrorContentTypeForRequest(r)
-		awserrors.WriteAWSError(w, awserrors.ErrInvalidAction, contentType)
+	wrapper := d.builder.BuildWrapper(serviceName, opName)
+	result, err := wrapper.ExecuteWithResult(httpCtx, func() (interface{}, error) {
+		return handler(httpCtx, reqCtx, parsedReq)
+	})
+	d.recordAudit(serviceName, opName, reqCtx, parsedReq, result, err)
+	if err != nil {
+		d.handleErrorForRequest(w, r, err)
 		return
 	}
+	d.writeResponseWithOpName(w, r, serviceName, opName, result)
+}
 
+// dispatchByServiceMode resolves the service mode and dispatches to the
+// appropriate handler (fallback, error injection, or implemented).
+func (d *Dispatcher) dispatchByServiceMode(w http.ResponseWriter, r *http.Request, serviceName, opName string, operation *api.Operation, parsedReq *request.ParsedRequest) {
 	mode, hasMode := d.getServiceMode(serviceName)
 	if !hasMode {
 		cfg, err := d.configStore.Get(serviceName)
@@ -174,6 +161,33 @@ func (d *Dispatcher) Dispatch(w http.ResponseWriter, r *http.Request, serviceNam
 	}
 }
 
+// Dispatch handles an incoming HTTP request by routing it to the appropriate service handler.
+// It manages service mode (fallback, error injection, implemented), authentication, and response writing.
+func (d *Dispatcher) Dispatch(w http.ResponseWriter, r *http.Request, serviceName string, operation *api.Operation) {
+	parsedReq, parseErr := request.ParseAWSRequest(r)
+	opName := ""
+	if parsedReq != nil {
+		opName = parsedReq.Operation
+	}
+
+	if parseErr == nil && opName != "" {
+		if handler, exists := d.getHandler(serviceName, opName); exists && handler != nil {
+			d.executeWithRecovery(w, r, serviceName, opName, func() {
+				d.executeHandler(w, r, serviceName, opName, parsedReq, handler)
+			})
+			return
+		}
+	}
+
+	if serviceName == "" {
+		contentType := d.getErrorContentTypeForRequest(r)
+		awserrors.WriteAWSError(w, awserrors.ErrInvalidAction, contentType)
+		return
+	}
+
+	d.dispatchByServiceMode(w, r, serviceName, opName, operation, parsedReq)
+}
+
 // DispatchContext holds the context information for a dispatched request.
 type DispatchContext struct {
 	ServiceName string
@@ -191,34 +205,8 @@ func (d *Dispatcher) DispatchWithContext(w http.ResponseWriter, r *http.Request,
 	if dispatchCtx.Operation != "" {
 		if handler, exists := d.getHandler(dispatchCtx.ServiceName, dispatchCtx.Operation); exists && handler != nil {
 			d.executeWithRecovery(w, r, dispatchCtx.ServiceName, dispatchCtx.Operation, func() {
-				httpCtx := r.Context()
 				parsedReq := d.buildParsedRequest(r, dispatchCtx)
-				reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
-				reqCtx.SetStoreProvider(d.storeProvider)
-				reqCtx.SetGraphDBManager(d.graphDB)
-
-				if d.authorizationEnabled && d.authorizer != nil {
-					authzResult, err := d.authorizer.Authorize(httpCtx, reqCtx, parsedReq, dispatchCtx.ServiceName, r)
-					if err != nil {
-						d.handleErrorForRequest(w, r, err)
-						return
-					}
-					if !authzResult.Allowed {
-						d.handleErrorForRequest(w, r, awserrors.ErrAccessDenied)
-						return
-					}
-				}
-
-				wrapper := d.builder.BuildWrapper(dispatchCtx.ServiceName, dispatchCtx.Operation)
-				result, err := wrapper.ExecuteWithResult(httpCtx, func() (interface{}, error) {
-					return handler(httpCtx, reqCtx, parsedReq)
-				})
-				d.recordAudit(dispatchCtx.ServiceName, dispatchCtx.Operation, reqCtx, parsedReq, result, err)
-				if err != nil {
-					d.handleErrorForRequest(w, r, err)
-					return
-				}
-				d.writeResponseWithOpName(w, r, dispatchCtx.ServiceName, dispatchCtx.Operation, result)
+				d.executeHandler(w, r, dispatchCtx.ServiceName, dispatchCtx.Operation, parsedReq, handler)
 			})
 			return
 		}
@@ -229,4 +217,46 @@ func (d *Dispatcher) DispatchWithContext(w http.ResponseWriter, r *http.Request,
 
 func (d *Dispatcher) SetGraphDB(db *graphengine.DB) {
 	d.graphDB = db
+}
+
+// DispatchClassified handles an incoming HTTP request that has already been
+// classified by the request classifier. It converts the ClassifiedRequest to
+// a ParsedRequest and routes it through the standard dispatch pipeline,
+// including authorisation, resilience wrapping, and audit recording.
+func (d *Dispatcher) DispatchClassified(w http.ResponseWriter, r *http.Request, cr *classifier.ClassifiedRequest) {
+	parsedReq := classifiedToParsed(cr)
+
+	opName := parsedReq.Operation
+
+	if opName != "" {
+		if handler, exists := d.getHandler(cr.ServiceName, opName); exists && handler != nil {
+			d.executeWithRecovery(w, r, cr.ServiceName, opName, func() {
+				d.executeHandler(w, r, cr.ServiceName, opName, parsedReq, handler)
+			})
+			return
+		}
+	}
+
+	if cr.ServiceName == "" {
+		contentType := d.getErrorContentTypeForRequest(r)
+		awserrors.WriteAWSError(w, awserrors.ErrInvalidAction, contentType)
+		return
+	}
+
+	d.dispatchByServiceMode(w, r, cr.ServiceName, opName, nil, parsedReq)
+}
+
+// classifiedToParsed converts a ClassifiedRequest into a ParsedRequest
+// suitable for the existing handler pipeline.
+func classifiedToParsed(cr *classifier.ClassifiedRequest) *request.ParsedRequest {
+	return &request.ParsedRequest{
+		Operation:   cr.Operation,
+		Parameters:  cr.Parameters,
+		Headers:     cr.Headers,
+		QueryParams: cr.QueryParams,
+		PathParams:  cr.PathParams,
+		Body:        cr.Body,
+		Region:      cr.Region,
+		AccessKeyID: cr.AccessKeyID,
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"time"
 
@@ -80,7 +81,34 @@ func (s *CognitoService) handleUserPasswordAuth(ctx context.Context, reqCtx *req
 
 	user, err := store.GetUser(userPool.ID, username)
 	if err != nil {
-		return nil, ErrIncorrectPassword
+		migrationResult, migrationErr := invokeUserMigration(ctx, s, userPool.ID, username, getClientId(req), password, userPool.LambdaConfig)
+		if migrationErr != nil || migrationResult == nil {
+			return nil, ErrIncorrectPassword
+		}
+
+		migratedUser := cognitostore.NewUser(userPool.ID, username)
+		if migrationResult.UserAttributes != nil {
+			migratedUser.Attributes = migrationResult.UserAttributes
+		}
+		if migrationResult.FinalUserStatus != "" {
+			migratedUser.UserStatus = migrationResult.FinalUserStatus
+		} else {
+			migratedUser.UserStatus = "CONFIRMED"
+		}
+		if migrationResult.MessageAction != "SUPPRESS" && password != "" {
+			hash, hashErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if hashErr != nil {
+				return nil, ErrInternalError
+			}
+			migratedUser.PasswordHash = string(hash)
+		}
+		if err := store.CreateUser(migratedUser); err != nil {
+			if errors.Is(err, cognitostore.ErrUserAlreadyExists) {
+				return nil, ErrIncorrectPassword
+			}
+			return nil, ErrInternalError
+		}
+		user = migratedUser
 	}
 
 	if !user.Enabled {
@@ -115,9 +143,14 @@ func (s *CognitoService) handleUserPasswordAuth(ctx context.Context, reqCtx *req
 		return nil, ErrUserNotConfirmed
 	}
 
+	attrs := userAttributesMap(user)
+	invokePreAuthentication(ctx, s, userPool.ID, username, getClientId(req), userPool.LambdaConfig, attrs)
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return nil, ErrIncorrectPassword
 	}
+
+	invokePostAuthentication(ctx, s, userPool.ID, username, getClientId(req), userPool.LambdaConfig, attrs)
 
 	accessToken, idToken, refreshToken, expiresIn := s.CreateTokens(reqCtx, userPool.ID, user.ID, getClientId(req))
 
@@ -170,6 +203,9 @@ func (s *CognitoService) handleRefreshTokenAuth(ctx context.Context, reqCtx *req
 	if err != nil {
 		return nil, ErrNotAuthorized
 	}
+
+	attrs := userAttributesMap(user)
+	invokePostAuthentication(ctx, s, userPool.ID, user.Username, rt.ClientID, nil, attrs)
 
 	accessToken, idToken, _, expiresIn := s.CreateTokens(reqCtx, userPool.ID, user.ID, rt.ClientID)
 
@@ -417,12 +453,20 @@ func (s *CognitoService) ForgotPassword(ctx context.Context, reqCtx *request.Req
 		return nil, ErrInternalError
 	}
 
+	attrs := userAttributesMap(user)
+	customMsg, _ := invokeCustomMessage(ctx, s, CustomMessageForgotPassword, userPool.ID, username, clientID, userPool.LambdaConfig, "####", attrs)
+
+	codeDeliveryDetails := map[string]interface{}{
+		"Destination":    "***",
+		"DeliveryMedium": "EMAIL",
+		"AttributeName":  "email",
+	}
+	if customMsg != nil && customMsg.EmailSubject != "" {
+		codeDeliveryDetails["_customEmailSubject"] = customMsg.EmailSubject
+	}
+
 	return map[string]interface{}{
-		"CodeDeliveryDetails": map[string]interface{}{
-			"Destination":    "***",
-			"DeliveryMedium": "EMAIL",
-			"AttributeName":  "email",
-		},
+		"CodeDeliveryDetails": codeDeliveryDetails,
 	}, nil
 }
 
@@ -534,7 +578,34 @@ func (s *CognitoService) handleAdminNoSrpAuth(reqCtx *request.RequestContext, re
 	}
 	user, err := store.GetUser(userPoolID, username)
 	if err != nil {
-		return nil, ErrIncorrectPassword
+		migrationResult, migrationErr := invokeUserMigration(reqCtx, s, userPoolID, username, clientID, password, nil)
+		if migrationErr != nil || migrationResult == nil {
+			return nil, ErrIncorrectPassword
+		}
+
+		migratedUser := cognitostore.NewUser(userPoolID, username)
+		if migrationResult.UserAttributes != nil {
+			migratedUser.Attributes = migrationResult.UserAttributes
+		}
+		if migrationResult.FinalUserStatus != "" {
+			migratedUser.UserStatus = migrationResult.FinalUserStatus
+		} else {
+			migratedUser.UserStatus = "CONFIRMED"
+		}
+		if migrationResult.MessageAction != "SUPPRESS" && password != "" {
+			hash, hashErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if hashErr != nil {
+				return nil, ErrInternalError
+			}
+			migratedUser.PasswordHash = string(hash)
+		}
+		if err := store.CreateUser(migratedUser); err != nil {
+			if errors.Is(err, cognitostore.ErrUserAlreadyExists) {
+				return nil, ErrIncorrectPassword
+			}
+			return nil, ErrInternalError
+		}
+		user = migratedUser
 	}
 
 	if !user.Enabled {
@@ -569,9 +640,14 @@ func (s *CognitoService) handleAdminNoSrpAuth(reqCtx *request.RequestContext, re
 		return nil, ErrUserNotConfirmed
 	}
 
+	attrs := userAttributesMap(user)
+	invokePreAuthentication(reqCtx, s, userPoolID, username, clientID, nil, attrs)
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return nil, ErrIncorrectPassword
 	}
+
+	invokePostAuthentication(reqCtx, s, userPoolID, username, clientID, nil, attrs)
 
 	accessToken, idToken, refreshToken, expiresIn := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID)
 
@@ -616,6 +692,9 @@ func (s *CognitoService) handleAdminRefreshTokenAuth(reqCtx *request.RequestCont
 	if err != nil {
 		return nil, ErrNotAuthorized
 	}
+
+	attrs := userAttributesMap(user)
+	invokePostAuthentication(reqCtx, s, userPoolID, user.Username, rt.ClientID, nil, attrs)
 
 	accessToken, idToken, _, expiresIn := s.CreateTokens(reqCtx, userPoolID, user.ID, rt.ClientID)
 

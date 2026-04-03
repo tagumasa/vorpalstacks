@@ -1,6 +1,10 @@
 package cognitoidentityprovider
 
-import "errors"
+import (
+	"errors"
+
+	"vorpalstacks/internal/store/aws/common"
+)
 
 var (
 	// ErrUserPoolNotFound is returned when the specified Cognito user pool
@@ -81,7 +85,7 @@ var (
 	ErrClientAlreadyExists = errors.New("client already exists")
 
 	// ErrInvalidParameter is returned when a parameter is not valid.
-	ErrInvalidParameter = errors.New("invalid parameter")
+	ErrInvalidParameter = common.ErrInvalidParameter
 
 	// ErrResourceAlreadyExists is returned when a resource already exists.
 	ErrResourceAlreadyExists = errors.New("resource already exists")

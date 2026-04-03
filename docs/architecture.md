@@ -45,7 +45,7 @@ This document describes the architecture of Vorpalstacks.
 │              gRPC-Web Admin Server (Connect-RPC)                │
 │                 :9090 (configurable)                            │
 │                                                                 │
-│  Admin handlers for all 29 services (admin_handler.go)          │
+│  Admin handlers for all 30 services (admin_handler.go)          │
 │  Runtime config, service status, port mapping                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -137,7 +137,7 @@ Request → Extract Access Key → Gather Policies → Evaluate → Allow/Deny
 | AWS JSON 1.0 | `application/x-amz-json-1.0` | DynamoDB |
 | REST-XML | XML over HTTP | S3, CloudFront |
 | AWS Query | `application/x-www-form-urlencoded` | SQS |
-| Connect-RPC | `application/connect+proto` | All 29 services (admin API on :9090) |
+| Connect-RPC | `application/connect+proto` | All 30 services (admin API on :9090) |
 
 ## Service Integration Patterns
 

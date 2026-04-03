@@ -32,8 +32,21 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 		return nil, ErrPasswordPolicyViolation
 	}
 
+	userAttrs := parseUserAttributes(req)
+	userAttrs["sub"] = ""
+
+	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, userAttrs)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+
+	if preSignUpResult.UserAttributes != nil {
+		userAttrs = preSignUpResult.UserAttributes
+	}
+	delete(userAttrs, "sub")
+
 	user := cognitostore.NewUser(targetPool.ID, username)
-	user.Attributes = parseUserAttributes(req)
+	user.Attributes = userAttrs
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -41,12 +54,23 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 	}
 	user.PasswordHash = string(hash)
 
+	if preSignUpResult.AutoConfirmUser {
+		user.UserStatus = "CONFIRMED"
+	}
+
 	if err := store.CreateUser(user); err != nil {
 		return nil, ErrUserAlreadyExists
 	}
 
+	if preSignUpResult.AutoConfirmUser {
+		attrs := userAttributesMap(user)
+		invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, attrs)
+	} else {
+		invokeCustomMessage(ctx, s, CustomMessageSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, "####", userAttributesMap(user))
+	}
+
 	return map[string]interface{}{
-		"UserConfirmed":       false,
+		"UserConfirmed":       preSignUpResult.AutoConfirmUser,
 		"CodeDeliveryDetails": map[string]interface{}{},
 		"UserSub":             user.ID,
 	}, nil
@@ -84,6 +108,9 @@ func (s *CognitoService) ConfirmSignUp(ctx context.Context, reqCtx *request.Requ
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
 	}
+
+	attrs := userAttributesMap(user)
+	invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, attrs)
 
 	return response.EmptyResponse(), nil
 }

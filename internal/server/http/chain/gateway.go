@@ -2,38 +2,37 @@ package chain
 
 import (
 	"net/http"
-	"strings"
 
-	"vorpalstacks/internal/server/actionregistry"
 	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/http/router"
+	"vorpalstacks/internal/server/http/classifier"
 )
 
-// Gateway routes HTTP requests to the appropriate service and operation based on the request content.
+// Gateway is the chain-based HTTP request gateway that classifies incoming
+// requests and routes them to the dispatcher.
 type Gateway struct {
 	chain      *HandlerChain
 	dispatcher *dispatcher.Dispatcher
-	router     *router.ServiceRouter
+	classifier *classifier.Classifier
 }
 
-// NewGateway creates a new Gateway with the given service router and dispatcher.
-func NewGateway(serviceRouter *router.ServiceRouter, disp *dispatcher.Dispatcher) *Gateway {
+// NewGateway creates a new Gateway with the given classifier and dispatcher.
+func NewGateway(c *classifier.Classifier, disp *dispatcher.Dispatcher) *Gateway {
 	g := &Gateway{
 		dispatcher: disp,
-		router:     serviceRouter,
+		classifier: c,
 	}
 
 	g.chain = g.buildChain()
 	return g
 }
 
+// buildChain constructs the default handler chain with request, exception,
+// response, and finaliser handlers.
 func (g *Gateway) buildChain() *HandlerChain {
 	c := NewHandlerChain()
 
 	c.AddRequestHandler(AddRequestContext)
-	c.AddRequestHandler(ParseServiceName(g.router))
-	c.AddRequestHandler(ParseOperationName(g.router))
-	c.AddRequestHandler(ParseRequestParams)
+	c.AddRequestHandler(g.parseRequest)
 	c.AddRequestHandler(AddRegionFromHeader)
 	c.AddRequestHandler(EnforceCORS)
 	c.AddRequestHandler(LogRequest)
@@ -53,11 +52,34 @@ func (g *Gateway) buildChain() *HandlerChain {
 	return c
 }
 
-func (g *Gateway) routeRequest(ctx *RequestContext) error {
-	if ctx.ServiceName == "" {
-		ctx.ServiceName = g.fallbackServiceName(ctx.Request)
+// parseRequest uses the classifier to extract service name, operation, and
+// parameters from the incoming request, populating the RequestContext.
+func (g *Gateway) parseRequest(ctx *RequestContext) error {
+	if ctx.Request == nil {
+		return nil
 	}
 
+	cr, err := g.classifier.Classify(ctx.Request)
+	if err != nil || cr == nil {
+		return nil
+	}
+
+	ctx.Classified = cr
+	ctx.ServiceName = cr.ServiceName
+	ctx.Operation = cr.Operation
+	if ctx.Params == nil {
+		ctx.Params = make(map[string]interface{})
+	}
+	for k, v := range cr.Parameters {
+		ctx.Params[k] = v
+	}
+
+	return nil
+}
+
+// routeRequest dispatches the classified request to the appropriate handler
+// via the dispatcher. If no service was identified, it returns a 404 error.
+func (g *Gateway) routeRequest(ctx *RequestContext) error {
 	if ctx.ServiceName == "" {
 		ctx.StatusCode = http.StatusNotFound
 		ctx.ResponseBody = map[string]interface{}{
@@ -68,8 +90,10 @@ func (g *Gateway) routeRequest(ctx *RequestContext) error {
 		return nil
 	}
 
-	if ctx.Operation == "" {
-		ctx.Operation = g.fallbackOperation(ctx.Request, ctx.ServiceName)
+	if ctx.Classified != nil {
+		g.dispatcher.DispatchClassified(ctx.Response, ctx.Request, ctx.Classified)
+		ctx.SetHandled()
+		return nil
 	}
 
 	dispatchCtx := &dispatcher.DispatchContext{
@@ -84,143 +108,37 @@ func (g *Gateway) routeRequest(ctx *RequestContext) error {
 	return nil
 }
 
-func (g *Gateway) fallbackServiceName(r *http.Request) string {
-	if router.IsLambdaRestPath(r.URL.Path) {
-		return "lambda"
-	}
-
-	if isApiGatewayPath(r.URL.Path) {
-		return "apigateway"
-	}
-
-	authHeader := r.Header.Get("Authorization")
-	if authHeader != "" {
-		if strings.Contains(authHeader, "Credential=") {
-			parts := strings.Split(authHeader, ",")
-			for _, part := range parts {
-				part = strings.TrimSpace(part)
-				if idx := strings.Index(part, "Credential="); idx >= 0 {
-					cred := part[idx+11:]
-					credParts := strings.Split(cred, "/")
-					if len(credParts) >= 4 {
-						return credParts[3]
-					}
-				}
-			}
-		}
-	}
-
-	xAmzTarget := r.Header.Get("X-Amz-Target")
-	if xAmzTarget != "" {
-		parts := strings.Split(xAmzTarget, ".")
-		if len(parts) > 0 {
-			target := parts[0]
-			switch target {
-			case "AmazonSSM":
-				return "ssm"
-			case "AWSCognitoIdentityProviderService":
-				return "cognito-idp"
-			case "AWSCognitoIdentityService":
-				return "cognito-identity"
-			default:
-				return strings.ToLower(target)
-			}
-		}
-	}
-
-	action := r.URL.Query().Get("Action")
-	if action != "" {
-		return g.inferServiceFromAction(action)
-	}
-
-	if r.Method == "POST" && r.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
-		if actionParam := ctxParams(r, "Action"); actionParam != "" {
-			return g.inferServiceFromAction(actionParam)
-		}
-	}
-
-	return ""
-}
-
-func (g *Gateway) fallbackOperation(r *http.Request, serviceName string) string {
-	xAmzTarget := r.Header.Get("X-Amz-Target")
-	if xAmzTarget != "" {
-		parts := strings.Split(xAmzTarget, ".")
-		if len(parts) > 1 {
-			return parts[1]
-		}
-		return xAmzTarget
-	}
-
-	action := r.URL.Query().Get("Action")
-	if action != "" {
-		return action
-	}
-
-	if r.Method == "POST" && r.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
-		if actionParam := ctxParams(r, "Action"); actionParam != "" {
-			return actionParam
-		}
-	}
-
-	return ""
-}
-
-func (g *Gateway) inferServiceFromAction(action string) string {
-	return actionregistry.LookupServiceByAction(action)
-}
-
-func ctxParams(r *http.Request, key string) string {
-	if r.Form == nil {
-		if err := r.ParseForm(); err != nil {
-			return ""
-		}
-	}
-	if vals, ok := r.Form[key]; ok && len(vals) > 0 {
-		return vals[0]
-	}
-	return ""
-}
-
+// finalizer is a no-op chain finaliser reserved for future use.
 func (g *Gateway) finalizer(ctx *RequestContext) {
 }
 
-func isApiGatewayPath(path string) bool {
-	return strings.HasPrefix(path, "/restapis") ||
-		strings.HasPrefix(path, "/apikeys") ||
-		strings.HasPrefix(path, "/usageplans") ||
-		strings.HasPrefix(path, "/domainnames") ||
-		strings.HasPrefix(path, "/vpclinks") ||
-		strings.HasPrefix(path, "/apis") ||
-		strings.HasPrefix(path, "/authorizers")
-}
-
-// ServeHTTP implements the http.Handler interface to handle HTTP requests.
+// ServeHTTP implements http.Handler, executing the full handler chain for
+// each incoming request.
 func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	g.chain.Execute(w, r)
 }
 
-// GetChain returns the handler chain used by the gateway.
+// GetChain returns the underlying handler chain for inspection or extension.
 func (g *Gateway) GetChain() *HandlerChain {
 	return g.chain
 }
 
-// AddRequestHandler adds a request handler to the gateway's handler chain.
+// AddRequestHandler appends a request handler to the chain.
 func (g *Gateway) AddRequestHandler(handler RequestHandler) {
 	g.chain.AddRequestHandler(handler)
 }
 
-// AddExceptionHandler adds an exception handler to the gateway's handler chain.
+// AddExceptionHandler appends an exception handler to the chain.
 func (g *Gateway) AddExceptionHandler(handler ExceptionHandler) {
 	g.chain.AddExceptionHandler(handler)
 }
 
-// AddResponseHandler adds a response handler to the gateway's handler chain.
+// AddResponseHandler appends a response handler to the chain.
 func (g *Gateway) AddResponseHandler(handler ResponseHandler) {
 	g.chain.AddResponseHandler(handler)
 }
 
-// AddFinalizer adds a finaliser to the gateway's handler chain.
+// AddFinalizer appends a finaliser to the chain.
 func (g *Gateway) AddFinalizer(finalizer Finalizer) {
 	g.chain.AddFinalizer(finalizer)
 }

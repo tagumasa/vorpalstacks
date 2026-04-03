@@ -3,11 +3,15 @@ package eventbridge
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"sync"
 
 	appconfig "vorpalstacks/internal/config"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
@@ -30,6 +34,7 @@ type EventsService struct {
 	lambdaInvoker   common.LambdaInvoker
 	accountID       string
 	region          string
+	bus             *eventbus.EventBus
 	targetSemaphore chan struct{}
 	replayCancels   sync.Map // replayName → context.CancelFunc
 }
@@ -75,6 +80,52 @@ func (s *EventsService) SetSNSPublisher(publisher SNSPublisher) {
 // SetLambdaInvoker injects a Lambda invoker for cross-service event-to-function delivery.
 func (s *EventsService) SetLambdaInvoker(invoker common.LambdaInvoker) {
 	s.lambdaInvoker = invoker
+}
+
+// SetEventBus injects the event bus and registers the EventBridge delivery handler.
+// When the bus is set, deliverToTarget() routes through the bus instead of
+// spawning goroutines directly.
+func (s *EventsService) SetEventBus(bus *eventbus.EventBus) {
+	s.bus = bus
+	_, _ = eventbus.SubscribeTyped[*eventbus.EventBridgeDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
+}
+
+func (s *EventsService) handleBusDelivery(ctx context.Context, evt *eventbus.EventBridgeDeliveryEvent) eventbus.HandlerResult {
+	if s.eventsStore != nil && strings.Contains(evt.TargetARN, ":event-bus/") {
+		return s.handleEventBusDelivery(ctx, evt)
+	}
+
+	targetType := s.parseTargetType(evt.TargetARN)
+	target := eventsstore.Target{
+		ARN: evt.TargetARN,
+		ID:  evt.TargetID,
+	}
+
+	event := &eventsstore.Event{
+		ID: evt.EventID(),
+	}
+
+	s.dispatchToTarget(ctx, evt.Region, event, target, targetType, evt.Input)
+	return eventbus.HandlerResult{}
+}
+
+func (s *EventsService) handleEventBusDelivery(ctx context.Context, evt *eventbus.EventBridgeDeliveryEvent) eventbus.HandlerResult {
+	var event eventsstore.Event
+	if err := json.Unmarshal(evt.Input, &event); err != nil {
+		logs.Warn("eventbridge: failed to unmarshal event for rule matching", logs.String("error", err.Error()))
+		return eventbus.HandlerResult{}
+	}
+
+	eventBusName := "default"
+	if idx := strings.Index(evt.TargetARN, ":event-bus/"); idx != -1 {
+		eventBusName = evt.TargetARN[idx+len(":event-bus/"):]
+	}
+
+	if err := s.deliverEventWithStore(ctx, evt.Region, &event, eventBusName, s.eventsStore); err != nil {
+		logs.Warn("eventbridge: failed to deliver event via rule matching", logs.String("error", err.Error()))
+	}
+
+	return eventbus.HandlerResult{}
 }
 
 func (s *EventsService) store(ctx *request.RequestContext) (*eventsstore.EventsStore, error) {

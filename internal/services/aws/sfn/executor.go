@@ -4,15 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
+	"vorpalstacks/internal/utils/aws/arn"
 )
 
 // Executor manages the execution of Step Functions state machines.
@@ -24,6 +27,7 @@ type Executor struct {
 	eventsStore         *eventsstore.EventsStore
 	accountID           string
 	region              string
+	bus                 *eventbus.EventBus
 	currentRoleArn      string
 	currentExecution    *sfnstore.Execution
 	currentStateMachine *sfnstore.StateMachine
@@ -48,6 +52,13 @@ func NewExecutorWithStores(store *sfnstore.StepFunctionStore, lambdaInvoker comm
 		accountID:     accountID,
 		region:        region,
 	}
+}
+
+// SetEventBus injects the event bus. When set, SNS publish and EventBridge
+// PutEvents task integrations route through the bus, fixing fan-out and rule
+// matching bugs that exist in the direct store access path.
+func (e *Executor) SetEventBus(bus *eventbus.EventBus) {
+	e.bus = bus
 }
 
 // ExecuteStateMachine executes a state machine with the given execution context.
@@ -343,7 +354,11 @@ func (e *Executor) executeStates(ctx context.Context, execCtx *ExecutionContext)
 
 func (e *Executor) addExecutionHistoryEvent(ctx context.Context, execution *sfnstore.Execution, event *sfnstore.ExecutionHistoryEvent) error {
 	event.ExecutionArn = execution.ExecutionArn
-	return e.store.AddExecutionHistoryEvent(ctx, event)
+	err := e.store.AddExecutionHistoryEvent(ctx, event)
+	if err == nil {
+		e.publishHistoryToCloudWatchLogs(execution, event)
+	}
+	return err
 }
 
 func (e *Executor) logHistoryEvent(ctx context.Context, execution *sfnstore.Execution, event *sfnstore.ExecutionHistoryEvent) {
@@ -415,4 +430,61 @@ func (e *Executor) newQueryEvalError(ctx context.Context, execCtx *ExecutionCont
 		})
 	}
 	return &ExecutionError{ErrorCode: "States.QueryEvaluationError", Cause: cause}
+}
+
+func (e *Executor) publishHistoryToCloudWatchLogs(execution *sfnstore.Execution, event *sfnstore.ExecutionHistoryEvent) {
+	if e.bus == nil || e.currentStateMachine == nil {
+		return
+	}
+	lc := e.currentStateMachine.LoggingConfiguration
+	if lc == nil || len(lc.Destinations) == 0 {
+		return
+	}
+
+	logGroupArn := ""
+	for _, dest := range lc.Destinations {
+		if dest.CloudWatchLogsLogGroup != nil && dest.CloudWatchLogsLogGroup.LogGroupArn != "" {
+			logGroupArn = dest.CloudWatchLogsLogGroup.LogGroupArn
+			break
+		}
+	}
+	if logGroupArn == "" {
+		return
+	}
+
+	_, _, region, _, _ := arn.SplitARN(logGroupArn)
+	logGroup := arn.ExtractLogGroupNameFromARN(logGroupArn)
+	if logGroup == "" {
+		return
+	}
+
+	execParts := strings.Split(execution.ExecutionArn, ":")
+	execName := execution.Name
+	if len(execParts) > 0 {
+		if last := execParts[len(execParts)-1]; last != "" {
+			execName = last
+		}
+	}
+	logStream := fmt.Sprintf("%s-%s", e.currentStateMachine.Name, execName)
+
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		return
+	}
+
+	evt := &eventbus.CloudWatchLogsPutEvent{
+		LogGroup:  logGroup,
+		LogStream: logStream,
+		LogEvents: []eventbus.LogEntry{
+			{Timestamp: event.Timestamp.UnixMilli(), Message: string(eventBytes)},
+		},
+		Region:    region,
+		AccountID: e.accountID,
+	}
+
+	if err := e.bus.Publish(context.Background(), evt); err != nil {
+		logs.Debug("Failed to publish execution history to CloudWatch Logs",
+			logs.String("executionArn", execution.ExecutionArn),
+			logs.Err(err))
+	}
 }

@@ -1,7 +1,11 @@
 // Package timestream provides Timestream storage functionality for vorpalstacks.
 package timestream
 
-import "errors"
+import (
+	"errors"
+
+	"vorpalstacks/internal/store/aws/common"
+)
 
 var (
 	// ErrDatabaseNotFound is returned when a database is not found.
@@ -15,7 +19,7 @@ var (
 	// ErrTableAlreadyExists is returned when a table already exists.
 	ErrTableAlreadyExists = errors.New("table already exists")
 	// ErrInvalidParameter is returned when a parameter is invalid.
-	ErrInvalidParameter = errors.New("invalid parameter")
+	ErrInvalidParameter = common.ErrInvalidParameter
 	// ErrResourceNotFound is returned when a resource is not found.
 	ErrResourceNotFound = errors.New("resource not found")
 	// ErrScheduledQueryNotFound is returned when a scheduled query is not found.

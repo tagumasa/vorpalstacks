@@ -46,6 +46,27 @@ func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID
 		return "", "", "", 3600
 	}
 
+	attrs := userAttributesMap(user)
+	tokGenResult, tokGenErr := invokePreTokenGeneration(
+		reqCtx, s, TokenGenerationAuthentication, userPoolID, user.Username, clientID,
+		userPool.LambdaConfig, attrs, user.Groups,
+	)
+	if tokGenErr != nil {
+		return "", "", "", 3600
+	}
+
+	if tokGenResult != nil {
+		for k, v := range tokGenResult.ClaimsToAddOrOverride {
+			user.Attributes[k] = v
+		}
+		for _, k := range tokGenResult.ClaimsToSuppress {
+			delete(user.Attributes, k)
+		}
+		if len(tokGenResult.GroupsToOverride) > 0 {
+			user.Groups = tokGenResult.GroupsToOverride
+		}
+	}
+
 	accessToken, err = jwtManager.GenerateAccessToken(user, clientID, 3600)
 	if err != nil {
 		return "", "", "", 3600

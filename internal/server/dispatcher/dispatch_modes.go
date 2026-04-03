@@ -1,7 +1,6 @@
 package dispatcher
 
 import (
-	"context"
 	"net/http"
 
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
@@ -40,23 +39,7 @@ func (d *Dispatcher) handleImplemented(w http.ResponseWriter, r *http.Request, s
 		}
 		if opName != "" {
 			if handler, exists := d.getHandler(serviceName, opName); exists && handler != nil {
-				httpCtx := r.Context()
-				reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
-				reqCtx.SetStoreProvider(d.storeProvider)
-				reqCtx.SetGraphDBManager(d.graphDB)
-				if d.checkAuthorization(w, r, httpCtx, reqCtx, parsedReq, serviceName) {
-					return
-				}
-				wrapper := d.builder.BuildWrapper(serviceName, opName)
-				result, err := wrapper.ExecuteWithResult(httpCtx, func() (interface{}, error) {
-					return handler(httpCtx, reqCtx, parsedReq)
-				})
-				d.recordAudit(serviceName, opName, reqCtx, parsedReq, result, err)
-				if err != nil {
-					d.handleErrorForRequest(w, r, err)
-					return
-				}
-				d.writeResponseWithOpName(w, r, serviceName, opName, result)
+				d.executeHandler(w, r, serviceName, opName, parsedReq, handler)
 				return
 			}
 		}
@@ -78,37 +61,5 @@ func (d *Dispatcher) handleImplemented(w http.ResponseWriter, r *http.Request, s
 		return
 	}
 
-	httpCtx := r.Context()
-	reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
-	reqCtx.SetStoreProvider(d.storeProvider)
-	reqCtx.SetGraphDBManager(d.graphDB)
-	if d.checkAuthorization(w, r, httpCtx, reqCtx, parsedReq, serviceName) {
-		return
-	}
-	wrapper := d.builder.BuildWrapper(serviceName, operation.Name)
-	result, err := wrapper.ExecuteWithResult(httpCtx, func() (interface{}, error) {
-		return handler(httpCtx, reqCtx, parsedReq)
-	})
-	d.recordAudit(serviceName, operation.Name, reqCtx, parsedReq, result, err)
-	if err != nil {
-		d.handleError(w, r, operation, err)
-		return
-	}
-
-	d.writeResponse(w, r, operation, operation.Name, result)
-}
-
-func (d *Dispatcher) checkAuthorization(w http.ResponseWriter, r *http.Request, httpCtx context.Context, reqCtx *request.RequestContext, parsedReq *request.ParsedRequest, serviceName string) bool {
-	if d.authorizationEnabled && d.authorizer != nil {
-		authzResult, err := d.authorizer.Authorize(httpCtx, reqCtx, parsedReq, serviceName, r)
-		if err != nil {
-			d.handleErrorForRequest(w, r, err)
-			return true
-		}
-		if !authzResult.Allowed {
-			d.handleErrorForRequest(w, r, awserrors.ErrAccessDenied)
-			return true
-		}
-	}
-	return false
+	d.executeHandler(w, r, serviceName, operation.Name, parsedReq, handler)
 }

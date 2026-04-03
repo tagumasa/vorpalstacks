@@ -7,9 +7,9 @@ import (
 )
 
 func TestEventsErrors(t *testing.T) {
-	t.Run("EventsError Unwrap", func(t *testing.T) {
+	t.Run("EventsError has no Unwrap", func(t *testing.T) {
 		err := NewValidationException("test")
-		assert.NotNil(t, err.Unwrap())
+		assert.Equal(t, "ValidationException: test", err.Error())
 	})
 
 	t.Run("predefined errors", func(t *testing.T) {

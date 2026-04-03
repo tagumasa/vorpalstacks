@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 
+	"vorpalstacks/internal/server/eventbus"
 	sns "vorpalstacks/internal/store/aws/sns"
 	sqs "vorpalstacks/internal/store/aws/sqs"
 )
@@ -64,6 +65,7 @@ type ExecutorFactory struct {
 	snsStore      sns.SNSStoreInterface
 	accountID     string
 	region        string
+	bus           *eventbus.EventBus
 }
 
 // NewExecutorFactory creates a new executor factory.
@@ -82,6 +84,11 @@ func NewExecutorFactoryWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSS
 		accountID:     accountID,
 		region:        region,
 	}
+}
+
+// SetEventBus sets the event bus for SNS fan-out bug fix.
+func (f *ExecutorFactory) SetEventBus(bus *eventbus.EventBus) {
+	f.bus = bus
 }
 
 // SetSQSStore sets the SQS store for SQS integration targets.
@@ -108,7 +115,7 @@ func (f *ExecutorFactory) CreateExecutor(integrationType string) (Executor, erro
 	case "HTTP", "HTTP_PROXY":
 		return NewHTTPExecutor(), nil
 	case "AWS", "AWS_PROXY":
-		return NewAWSExecutorWithStores(f.lambdaInvoker, f.sqsStore, f.snsStore, f.accountID, f.region), nil
+		return NewAWSExecutorWithStores(f.lambdaInvoker, f.sqsStore, f.snsStore, f.accountID, f.region, f.bus), nil
 	default:
 		return nil, &IntegrationError{
 			Message:  "Unsupported integration type: " + integrationType,

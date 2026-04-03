@@ -18,7 +18,9 @@ import (
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/server/http/chain"
+	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/server/http/router"
 	"vorpalstacks/internal/services/aws/common/interfaces"
 	"vorpalstacks/internal/store/api"
@@ -203,15 +205,59 @@ func NewServer(cfg *Config) (*Server, error) {
 		storageMgr.Close()
 		return nil, fmt.Errorf("failed to build service index: %w", err)
 	}
-	serviceRouter := router.NewServiceRouter(serviceIndex)
+	classifier := classifier.NewClassifier(serviceIndex)
+
+	region := cfg.Region
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	regionStorage, err := storageMgr.GetStorage(region)
+	if err != nil {
+		storageMgr.Close()
+		return nil, fmt.Errorf("eventbus: get storage for region %s: %w", region, err)
+	}
+
+	pebbleStorage, ok := regionStorage.(*storage.PebbleStorage)
+	if !ok {
+		storageMgr.Close()
+		return nil, fmt.Errorf("eventbus: storage is not PebbleStorage")
+	}
+
+	pebbleDB := pebbleStorage.DB()
+
+	outbox := eventbus.NewPebbleOutboxStore(pebbleDB)
+
+	registry := eventbus.NewEventRegistry()
+	registry.Register("service:invoke", func() eventbus.Event { return &eventbus.ServiceInvokeRequest{} })
+	registry.Register("sns:deliver", func() eventbus.Event { return &eventbus.SNSDeliveryEvent{} })
+	registry.Register("events:deliver", func() eventbus.Event { return &eventbus.EventBridgeDeliveryEvent{} })
+	registry.Register("scheduler:fired", func() eventbus.Event { return &eventbus.ScheduleFiredEvent{} })
+	registry.Register("logs:deliver", func() eventbus.Event { return &eventbus.CloudWatchLogDeliveryEvent{} })
+	registry.Register("s3:ObjectEvent", func() eventbus.Event { return &eventbus.S3ObjectEvent{} })
+	registry.Register("cloudwatch:AlarmStateChange", func() eventbus.Event { return &eventbus.CloudWatchAlarmStateEvent{} })
+	registry.Register("cognito:Trigger", func() eventbus.Event { return &eventbus.CognitoTriggerEvent{} })
+	registry.Register("secretsmanager:Rotation", func() eventbus.Event { return &eventbus.SecretRotationEvent{} })
+	registry.Register("dynamodb:Record", func() eventbus.Event { return &eventbus.DynamoDBRecordEvent{} })
+	registry.Register("lambda:LogWrite", func() eventbus.Event { return &eventbus.LambdaLogWriteEvent{} })
+	registry.Register("apigateway:AccessLog", func() eventbus.Event { return &eventbus.APIGatewayAccessLogEvent{} })
+	registry.Register("logs:PutLogEvents", func() eventbus.Event { return &eventbus.CloudWatchLogsPutEvent{} })
+
+	bus := eventbus.NewEventBus(
+		eventbus.WithOutbox(outbox),
+		eventbus.WithEventRegistry(registry),
+		eventbus.WithPolicyEvaluator(eventbus.NewSimplePolicyEvaluator()),
+		eventbus.WithRoleResolver(eventbus.NewIAMRoleResolver(nil)),
+	)
 
 	shutdownCtx, shutdownCancel := context.WithCancel(context.Background())
 
 	srv := &Server{
 		config:         cfg,
 		storageManager: storageMgr,
+		eventBus:       bus,
 		dispatcher:     disp,
-		serviceRouter:  serviceRouter,
+		classifier:     classifier,
 		serviceStore:   serviceStore,
 		operationStore: operationStore,
 		shutdownCtx:    shutdownCtx,
@@ -231,7 +277,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 
 	if cfg.UseChainGateway {
-		srv.chainGateway = chain.NewGateway(serviceRouter, disp)
+		srv.chainGateway = chain.NewGateway(classifier, disp)
 	}
 
 	return srv, nil
@@ -259,7 +305,7 @@ func (s *Server) Start() error {
 		})
 
 		if s.config.SignatureConfig.Enabled {
-			r.Use(SignatureMiddleware(s.config.SignatureConfig))
+			r.Use(SignatureMiddleware(s.config.SignatureConfig, s.classifier))
 		}
 
 		r.Use(LoggingMiddleware)
@@ -328,6 +374,12 @@ func (s *Server) Start() error {
 			s.listenerManager.Start()
 		}
 
+		if s.eventBus != nil {
+			if err := s.eventBus.Start(context.Background()); err != nil {
+				logs.Error("Event bus start error", logs.Err(err))
+			}
+		}
+
 		<-s.shutdownCtx.Done()
 	})
 	return startErr
@@ -378,6 +430,12 @@ func (s *Server) handleShutdown() {
 
 	for i := len(hooks) - 1; i >= 0; i-- {
 		hooks[i](ctx)
+	}
+
+	if s.eventBus != nil {
+		if err := s.eventBus.Shutdown(ctx); err != nil {
+			logs.Error("Event bus shutdown error", logs.Err(err))
+		}
 	}
 
 	s.closeOnce.Do(func() {

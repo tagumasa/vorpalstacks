@@ -1,7 +1,11 @@
 // Package apigateway provides API Gateway storage functionality for vorpalstacks.
 package apigateway
 
-import "errors"
+import (
+	"errors"
+
+	"vorpalstacks/internal/store/aws/common"
+)
 
 var (
 	// ErrRestApiNotFound is returned when the specified REST API does not exist.
@@ -114,5 +118,5 @@ var (
 	ErrIntegrationResponseNotFound = errors.New("integration response not found")
 
 	// ErrInvalidParameter is returned when a parameter is not valid.
-	ErrInvalidParameter = errors.New("invalid parameter")
+	ErrInvalidParameter = common.ErrInvalidParameter
 )

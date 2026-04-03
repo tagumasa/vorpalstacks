@@ -13,7 +13,7 @@ import (
 // UsageStore provides storage operations for API keys and usage plans.
 type UsageStore struct {
 	*common.BaseStore
-	arnBuilder *ArnBuilder
+	arnBuilder *ARNBuilder
 	accountId  string
 	region     string
 	usageMutex sync.Map
@@ -29,7 +29,7 @@ func NewUsageStore(store storage.BasicStorage, accountId, region string) *UsageS
 	bucket := store.Bucket(usageBucketName(region))
 	return &UsageStore{
 		BaseStore:  common.NewBaseStore(bucket, "apigateway-usage"),
-		arnBuilder: NewArnBuilder(accountId, region),
+		arnBuilder: NewARNBuilder(accountId, region),
 		accountId:  accountId,
 		region:     region,
 	}

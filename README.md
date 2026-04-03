@@ -67,7 +67,6 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | STS | Full | |
 | Step Functions | Full | |
 | Timestream | Full | |
-| WAF | Selective | No managed rule groups or logging configuration |
 | WAFv2 | Broad | |
 
 See [docs/services.md](docs/services.md) for detailed coverage tiers and service integration patterns.

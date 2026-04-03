@@ -91,6 +91,7 @@ func (s *StepFunctionService) StartSyncExecution(ctx context.Context, reqCtx *re
 	}
 
 	executor := NewExecutorWithStores(store, s.lambdaInvoker, sqsStore, snsStore, eventsStore, s.accountID, reqCtx.GetRegion())
+	executor.SetEventBus(s.bus)
 	execErr := executor.ExecuteStateMachine(ctx, exec)
 
 	updated, err := store.GetExecution(ctx, executionArn)

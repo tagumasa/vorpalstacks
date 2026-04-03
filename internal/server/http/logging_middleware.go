@@ -39,7 +39,8 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 
 type responseWriter struct {
 	http.ResponseWriter
-	statusCode int
+	statusCode  int
+	headerWrote bool
 }
 
 // WriteHeader writes the header and captures the status code for logging.
@@ -47,7 +48,11 @@ type responseWriter struct {
 // Parameters:
 //   - statusCode: The HTTP status code to write
 func (w *responseWriter) WriteHeader(statusCode int) {
+	if w.headerWrote {
+		return
+	}
 	w.statusCode = statusCode
+	w.headerWrote = true
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 

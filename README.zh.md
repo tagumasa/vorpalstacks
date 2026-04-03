@@ -67,7 +67,6 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 | STS | 完整 | |
 | Step Functions | 完整 | |
 | Timestream | 完整 | |
-| WAF | 有限 | 不支持托管规则组或日志配置 |
 | WAFv2 | 较全面 | |
 
 覆盖范围的详细分级和服务联动方式请参阅 [docs/services.md](docs/services.md)。

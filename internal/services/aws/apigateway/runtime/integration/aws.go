@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common/endpoint"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sns "vorpalstacks/internal/store/aws/sns"
@@ -37,6 +38,7 @@ type AWSExecutor struct {
 	snsStore      sns.SNSStoreInterface
 	accountID     string
 	region        string
+	bus           *eventbus.EventBus
 }
 
 // NewAWSExecutor creates a new AWSExecutor with the given Lambda invoker.
@@ -47,13 +49,14 @@ func NewAWSExecutor(lambdaInvoker LambdaInvoker) *AWSExecutor {
 }
 
 // NewAWSExecutorWithStores creates a new AWSExecutor with the given Lambda invoker and store dependencies.
-func NewAWSExecutorWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string) *AWSExecutor {
+func NewAWSExecutorWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string, bus *eventbus.EventBus) *AWSExecutor {
 	return &AWSExecutor{
 		lambdaInvoker: lambdaInvoker,
 		sqsStore:      sqsStore,
 		snsStore:      snsStore,
 		accountID:     accountID,
 		region:        region,
+		bus:           bus,
 	}
 }
 
@@ -713,18 +716,28 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 		}
 	}
 
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logs.Error("Panic in SNS delivery goroutine",
-					logs.String("topicArn", topicArn),
-					logs.Any("panic", r))
-			}
+	if e.bus != nil {
+		e.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+			TopicARN:  topicArn,
+			MessageID: messageID,
+			Message:   message,
+			Subject:   req.Headers["Subject"],
+			Region:    e.region,
+		})
+	} else {
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					logs.Error("Panic in SNS delivery goroutine",
+						logs.String("topicArn", topicArn),
+						logs.Any("panic", r))
+				}
+			}()
+			snsDeliverySem <- struct{}{}
+			defer func() { <-snsDeliverySem }()
+			e.deliverToSNSSubscribers(topicArn, notification)
 		}()
-		snsDeliverySem <- struct{}{}
-		defer func() { <-snsDeliverySem }()
-		e.deliverToSNSSubscribers(topicArn, notification)
-	}()
+	}
 
 	_ = topic
 

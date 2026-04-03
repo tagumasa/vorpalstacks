@@ -852,23 +852,23 @@ func (s *CognitoStore) DeleteChallengeSession(sessionID string) error {
 }
 
 func (s *CognitoStore) SetUserPoolDomain(domain string, entry *UserPoolDomain) error {
-	return s.BaseStore.Put("domain:"+domain, entry)
+	return s.BaseStore.Put(domainKey(domain), entry)
 }
 
 func (s *CognitoStore) GetUserPoolDomain(domain string) (*UserPoolDomain, error) {
 	var entry UserPoolDomain
-	if err := s.BaseStore.Get("domain:"+domain, &entry); err != nil {
+	if err := s.BaseStore.Get(domainKey(domain), &entry); err != nil {
 		return nil, ErrUserPoolNotFound
 	}
 	return &entry, nil
 }
 
 func (s *CognitoStore) DeleteUserPoolDomain(domain string) error {
-	return s.BaseStore.Delete("domain:" + domain)
+	return s.BaseStore.Delete(domainKey(domain))
 }
 
 func (s *CognitoStore) CreateResourceServer(rs *ResourceServer) error {
-	key := "resourceserver:" + rs.UserPoolID + "#" + rs.Identifier
+	key := resourceServerKey(rs.UserPoolID, rs.Identifier)
 	if s.BaseStore.Exists(key) {
 		return ErrResourceAlreadyExists
 	}
@@ -877,7 +877,7 @@ func (s *CognitoStore) CreateResourceServer(rs *ResourceServer) error {
 
 // GetResourceServer retrieves a resource server by user pool ID and identifier.
 func (s *CognitoStore) GetResourceServer(userPoolID, identifier string) (*ResourceServer, error) {
-	key := "resourceserver:" + userPoolID + "#" + identifier
+	key := resourceServerKey(userPoolID, identifier)
 	var rs ResourceServer
 	if err := s.BaseStore.Get(key, &rs); err != nil {
 		return nil, ErrUserPoolNotFound
@@ -887,13 +887,13 @@ func (s *CognitoStore) GetResourceServer(userPoolID, identifier string) (*Resour
 
 // UpdateResourceServer updates an existing resource server in the store.
 func (s *CognitoStore) UpdateResourceServer(rs *ResourceServer) error {
-	key := "resourceserver:" + rs.UserPoolID + "#" + rs.Identifier
+	key := resourceServerKey(rs.UserPoolID, rs.Identifier)
 	return s.BaseStore.Put(key, rs)
 }
 
 // DeleteResourceServer removes a resource server from the store by user pool ID and identifier.
 func (s *CognitoStore) DeleteResourceServer(userPoolID, identifier string) error {
-	key := "resourceserver:" + userPoolID + "#" + identifier
+	key := resourceServerKey(userPoolID, identifier)
 	if !s.BaseStore.Exists(key) {
 		return ErrUserPoolNotFound
 	}
@@ -902,7 +902,7 @@ func (s *CognitoStore) DeleteResourceServer(userPoolID, identifier string) error
 
 func (s *CognitoStore) ListResourceServers(userPoolID string) ([]*ResourceServer, error) {
 	var servers []*ResourceServer
-	prefix := "resourceserver:" + userPoolID + "#"
+	prefix := resourceServerPrefix(userPoolID)
 	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
 		var rs ResourceServer
 		if err := json.Unmarshal(value, &rs); err != nil {
@@ -918,7 +918,7 @@ func (s *CognitoStore) ListResourceServers(userPoolID string) ([]*ResourceServer
 }
 
 func (s *CognitoStore) CreateIdentityProvider(ip *IdentityProvider) error {
-	key := "identityprovider:" + ip.UserPoolID + "#" + ip.ProviderName
+	key := identityProviderKey(ip.UserPoolID, ip.ProviderName)
 	if s.BaseStore.Exists(key) {
 		return ErrResourceAlreadyExists
 	}
@@ -927,7 +927,7 @@ func (s *CognitoStore) CreateIdentityProvider(ip *IdentityProvider) error {
 
 // GetIdentityProvider retrieves an identity provider by user pool ID and provider name.
 func (s *CognitoStore) GetIdentityProvider(userPoolID, providerName string) (*IdentityProvider, error) {
-	key := "identityprovider:" + userPoolID + "#" + providerName
+	key := identityProviderKey(userPoolID, providerName)
 	var ip IdentityProvider
 	if err := s.BaseStore.Get(key, &ip); err != nil {
 		return nil, ErrUserPoolNotFound
@@ -937,13 +937,13 @@ func (s *CognitoStore) GetIdentityProvider(userPoolID, providerName string) (*Id
 
 // UpdateIdentityProvider updates an existing identity provider in the store.
 func (s *CognitoStore) UpdateIdentityProvider(ip *IdentityProvider) error {
-	key := "identityprovider:" + ip.UserPoolID + "#" + ip.ProviderName
+	key := identityProviderKey(ip.UserPoolID, ip.ProviderName)
 	return s.BaseStore.Put(key, ip)
 }
 
 // DeleteIdentityProvider removes an identity provider from the store by user pool ID and provider name.
 func (s *CognitoStore) DeleteIdentityProvider(userPoolID, providerName string) error {
-	key := "identityprovider:" + userPoolID + "#" + providerName
+	key := identityProviderKey(userPoolID, providerName)
 	if !s.BaseStore.Exists(key) {
 		return ErrUserPoolNotFound
 	}
@@ -952,7 +952,7 @@ func (s *CognitoStore) DeleteIdentityProvider(userPoolID, providerName string) e
 
 func (s *CognitoStore) ListIdentityProviders(userPoolID string) ([]*IdentityProvider, error) {
 	var providers []*IdentityProvider
-	prefix := "identityprovider:" + userPoolID + "#"
+	prefix := identityProviderPrefix(userPoolID)
 	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
 		var ip IdentityProvider
 		if err := json.Unmarshal(value, &ip); err != nil {
@@ -965,4 +965,24 @@ func (s *CognitoStore) ListIdentityProviders(userPoolID string) ([]*IdentityProv
 		return nil, err
 	}
 	return providers, nil
+}
+
+func resourceServerKey(userPoolID, identifier string) string {
+	return "resourceserver:" + userPoolID + "#" + identifier
+}
+
+func resourceServerPrefix(userPoolID string) string {
+	return "resourceserver:" + userPoolID + "#"
+}
+
+func identityProviderKey(userPoolID, providerName string) string {
+	return "identityprovider:" + userPoolID + "#" + providerName
+}
+
+func identityProviderPrefix(userPoolID string) string {
+	return "identityprovider:" + userPoolID + "#"
+}
+
+func domainKey(domain string) string {
+	return "domain:" + domain
 }

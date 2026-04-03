@@ -14,7 +14,7 @@ import (
 // DomainStore provides storage operations for API Gateway domain names.
 type DomainStore struct {
 	*common.BaseStore
-	arnBuilder *ArnBuilder
+	arnBuilder *ARNBuilder
 	accountId  string
 	region     string
 	mu         sync.Mutex
@@ -29,7 +29,7 @@ func NewDomainStore(store storage.BasicStorage, accountId, region string) *Domai
 	bucket := store.Bucket(domainBucketName(region))
 	return &DomainStore{
 		BaseStore:  common.NewBaseStore(bucket, "apigateway-domains"),
-		arnBuilder: NewArnBuilder(accountId, region),
+		arnBuilder: NewARNBuilder(accountId, region),
 		accountId:  accountId,
 		region:     region,
 	}

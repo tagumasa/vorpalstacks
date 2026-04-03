@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common/endpoint"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -184,6 +185,16 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 		return "", fmt.Errorf("failed to store SNS message: %w", err)
 	}
 
+	if e.bus != nil {
+		e.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+			TopicARN:  topicArn,
+			MessageID: msg.MessageId,
+			Message:   message,
+			Subject:   subject,
+			Region:    e.region,
+		})
+	}
+
 	result := map[string]interface{}{
 		"MessageId": msg.MessageId,
 	}
@@ -289,6 +300,17 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 		key := fmt.Sprintf("events:%s:%s", eventBusName, event.ID)
 		if err := e.eventsStore.Put(key, event); err != nil {
 			return "", fmt.Errorf("failed to store event: %w", err)
+		}
+
+		if e.bus != nil {
+			eventJSON, err := json.Marshal(event)
+			if err == nil {
+				e.bus.Publish(context.Background(), &eventbus.EventBridgeDeliveryEvent{
+					TargetARN: fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", e.region, e.accountID, eventBusName),
+					Input:     eventJSON,
+					Region:    e.region,
+				})
+			}
 		}
 
 		eventIds = append(eventIds, event.ID)

@@ -24,65 +24,38 @@ var (
 	ErrLockTokenMismatch = errors.New("lock token mismatch")
 
 	// ErrInvalidParameter is returned when a parameter is not valid.
-	ErrInvalidParameter = errors.New("invalid parameter")
+	ErrInvalidParameter = common.ErrInvalidParameter
 
 	// ErrInternalError is returned when an internal error occurs.
 	ErrInternalError = errors.New("internal error")
 )
 
 // StoreError represents an error that occurs during WAF store operations.
-type StoreError struct {
-	Operation string
-	Err       error
-}
-
-// Error returns a string representation of the StoreError.
-func (e *StoreError) Error() string {
-	return e.Operation + ": " + e.Err.Error()
-}
-
-// Unwrap returns the underlying error.
-func (e *StoreError) Unwrap() error {
-	return e.Err
-}
+type StoreError = common.StoreError
 
 // NewStoreError creates a new WAF store error with the given operation and error.
 func NewStoreError(operation string, err error) *StoreError {
-	return &StoreError{Operation: operation, Err: err}
+	return common.NewStoreError("waf", operation, err)
 }
 
 // IsNotFound checks if the error indicates that a WAF entity was not found.
 func IsNotFound(err error) bool {
-	var se *StoreError
-	if errors.As(err, &se) {
-		return errors.Is(se.Err, ErrNotFound) || errors.Is(se.Err, common.ErrNotFound)
-	}
-	return errors.Is(err, ErrNotFound) || errors.Is(err, common.ErrNotFound)
+	return common.IsNotFound(err) ||
+		errors.Is(err, ErrNotFound)
 }
 
 // IsAlreadyExists checks if the error indicates that a WAF entity already exists.
 func IsAlreadyExists(err error) bool {
-	var se *StoreError
-	if errors.As(err, &se) {
-		return errors.Is(se.Err, ErrAlreadyExists) || errors.Is(se.Err, common.ErrAlreadyExists)
-	}
-	return errors.Is(err, ErrAlreadyExists) || errors.Is(err, common.ErrAlreadyExists)
+	return common.IsAlreadyExists(err) ||
+		errors.Is(err, ErrAlreadyExists)
 }
 
 // IsInUse checks if the error indicates that a WAF entity is in use.
 func IsInUse(err error) bool {
-	var se *StoreError
-	if errors.As(err, &se) {
-		return errors.Is(se.Err, ErrInUse)
-	}
 	return errors.Is(err, ErrInUse)
 }
 
 // IsLockTokenMismatch checks if the error indicates a lock token mismatch.
 func IsLockTokenMismatch(err error) bool {
-	var se *StoreError
-	if errors.As(err, &se) {
-		return errors.Is(se.Err, ErrLockTokenMismatch)
-	}
 	return errors.Is(err, ErrLockTokenMismatch)
 }

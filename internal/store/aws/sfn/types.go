@@ -6,17 +6,36 @@ import (
 )
 
 type StateMachine struct {
-	StateMachineArn    string              `json:"stateMachineArn"`
-	Name               string              `json:"name"`
-	Definition         string              `json:"definition"`
-	RoleArn            string              `json:"roleArn"`
-	Type               string              `json:"type"`
-	CreationDate       time.Time           `json:"creationDate"`
-	UpdateDate         time.Time           `json:"updateDate"`
-	Description        string              `json:"description"`
-	Status             string              `json:"status"`
-	Tags               map[string]string   `json:"tags"`
-	VariableReferences map[string][]string `json:"-"`
+	StateMachineArn      string                `json:"stateMachineArn"`
+	Name                 string                `json:"name"`
+	Definition           string                `json:"definition"`
+	RoleArn              string                `json:"roleArn"`
+	Type                 string                `json:"type"`
+	CreationDate         time.Time             `json:"creationDate"`
+	UpdateDate           time.Time             `json:"updateDate"`
+	Description          string                `json:"description"`
+	Status               string                `json:"status"`
+	Tags                 map[string]string     `json:"tags"`
+	VariableReferences   map[string][]string   `json:"-"`
+	LoggingConfiguration *LoggingConfiguration `json:"loggingConfiguration,omitempty"`
+}
+
+// LoggingConfiguration controls whether execution history is logged to
+// CloudWatch Logs and where.
+type LoggingConfiguration struct {
+	Level                string           `json:"level,omitempty"`
+	IncludeExecutionData bool             `json:"includeExecutionData,omitempty"`
+	Destinations         []LogDestination `json:"destinations,omitempty"`
+}
+
+// LogDestination specifies a CloudWatch Logs log group for execution history.
+type LogDestination struct {
+	CloudWatchLogsLogGroup *CloudWatchLogsLogGroup `json:"cloudWatchLogsLogGroup,omitempty"`
+}
+
+// CloudWatchLogsLogGroup identifies the log group for SFN execution history.
+type CloudWatchLogsLogGroup struct {
+	LogGroupArn string `json:"logGroupArn,omitempty"`
 }
 
 type Execution struct {

@@ -15,7 +15,7 @@ import (
 // EventSourceStore manages Lambda event source mappings.
 type EventSourceStore struct {
 	*common.BaseStore
-	arnBuilder *ArnBuilder
+	arnBuilder *ARNBuilder
 	accountId  string
 	region     string
 	mu         sync.Mutex
@@ -32,7 +32,7 @@ func NewEventSourceStore(store storage.BasicStorage, accountId, region string) *
 	bucket := store.Bucket("lambda-event-sources-" + region)
 	return &EventSourceStore{
 		BaseStore:  common.NewBaseStore(bucket, "lambda-event-sources"),
-		arnBuilder: NewArnBuilder(accountId, region),
+		arnBuilder: NewARNBuilder(accountId, region),
 		accountId:  accountId,
 		region:     region,
 	}

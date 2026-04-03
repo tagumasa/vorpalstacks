@@ -44,7 +44,7 @@ func (s *DashboardStore) PutDashboard(name, body string) (*Dashboard, error) {
 	defer s.mu.Unlock()
 
 	now := time.Now().UTC()
-	key := "dashboard:" + name
+	key := dashboardKey(name)
 
 	existing := &Dashboard{}
 	if err := s.BaseStore.Get(key, existing); err == nil {
@@ -72,7 +72,7 @@ func (s *DashboardStore) PutDashboard(name, body string) (*Dashboard, error) {
 // GetDashboard retrieves a CloudWatch dashboard by name.
 func (s *DashboardStore) GetDashboard(name string) (*Dashboard, error) {
 	var dashboard Dashboard
-	key := "dashboard:" + name
+	key := dashboardKey(name)
 	if err := s.BaseStore.Get(key, &dashboard); err != nil {
 		return nil, fmt.Errorf("dashboard not found: %s", name)
 	}
@@ -86,7 +86,7 @@ func (s *DashboardStore) DeleteDashboards(names []string) ([]string, []string, e
 
 	var deleted, notFound []string
 	for _, name := range names {
-		key := "dashboard:" + name
+		key := dashboardKey(name)
 		if !s.BaseStore.Exists(key) {
 			notFound = append(notFound, name)
 			continue
@@ -102,7 +102,7 @@ func (s *DashboardStore) DeleteDashboards(names []string) ([]string, []string, e
 // ListDashboards returns all dashboards whose names match the given prefix.
 func (s *DashboardStore) ListDashboards(prefix string) ([]*Dashboard, error) {
 	var dashboards []*Dashboard
-	prefixKey := "dashboard:" + prefix
+	prefixKey := dashboardKey(prefix)
 	err := s.BaseStore.ScanPrefix(prefixKey, func(key string, value []byte) error {
 		var dashboard Dashboard
 		if err := json.Unmarshal(value, &dashboard); err != nil {
@@ -115,4 +115,8 @@ func (s *DashboardStore) ListDashboards(prefix string) ([]*Dashboard, error) {
 		return nil, err
 	}
 	return dashboards, nil
+}
+
+func dashboardKey(name string) string {
+	return "dashboard:" + name
 }

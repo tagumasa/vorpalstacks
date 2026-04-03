@@ -109,6 +109,7 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	}
 
 	executor := NewExecutorWithStores(store, s.lambdaInvoker, sqsStore, snsStore, s.eventsStore, s.accountID, reqCtx.GetRegion())
+	executor.SetEventBus(s.bus)
 	execCtx, cancel := context.WithCancel(context.Background())
 	store.RegisterExecution(newExecutionArn, cancel)
 	s.asyncWg.Add(1)
@@ -178,6 +179,7 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 	}
 
 	executor := NewExecutorWithStores(store, s.lambdaInvoker, sqsStore, snsStore, s.eventsStore, s.accountID, reqCtx.GetRegion())
+	executor.SetEventBus(s.bus)
 	executor.currentStateMachine = &sfnstore.StateMachine{
 		StateMachineArn: "arn:aws:states:" + reqCtx.GetRegion() + ":" + s.accountID + ":stateMachine:test-sm",
 		Name:            "test-sm",

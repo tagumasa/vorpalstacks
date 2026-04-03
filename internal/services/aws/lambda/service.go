@@ -19,11 +19,13 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common/request"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	"vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	s3store "vorpalstacks/internal/store/aws/s3"
+	storesqs "vorpalstacks/internal/store/aws/sqs"
 	"vorpalstacks/internal/utils/naming"
 )
 
@@ -40,6 +42,7 @@ type LambdaService struct {
 	storageManager *storage.RegionStorageManager
 	s3Objects      map[string]s3store.ObjectStoreInterface
 	dockerClient   *mobyclient.Client
+	bus            *eventbus.EventBus
 	logsStores     sync.Map // region → *logsstore.Store
 	storeCache     sync.Map // region → *lambdaStore
 	accountID      string
@@ -49,6 +52,7 @@ type LambdaService struct {
 	dataDirOnce    sync.Once
 	asyncWg        sync.WaitGroup // goroutine tracking for InvokeAsync
 	s3ObjectsMu    sync.RWMutex
+	esmPoller      *esmPoller
 }
 
 func (s *LambdaService) store(reqCtx *request.RequestContext) (*lambdaStore, error) {
@@ -136,6 +140,45 @@ func (s *LambdaService) SetHostEndpoint(endpoint string) {
 	s.hostEndpoint = endpoint
 }
 
+// SetEventBus injects the event bus for Lambda log delivery. When set,
+// writeLambdaLogs publishes a LambdaLogWriteEvent instead of calling
+// the logsStore directly, enabling metric filter and subscription filter
+// evaluation on Lambda-produced logs.
+func (s *LambdaService) SetEventBus(bus *eventbus.EventBus) {
+	s.bus = bus
+}
+
+// SetSQSStore injects the SQS store used by the ESM poller to receive
+// messages from source queues. Must be called before StartESMPoller.
+func (s *LambdaService) SetSQSStore(sqss *storesqs.SQSStore) {
+	if s.esmPoller == nil {
+		s.esmPoller = newESMPoller(0, 0, nil)
+	}
+	s.esmPoller.sqsStore = sqss
+}
+
+// StartESMPoller starts the background ESM polling goroutine. It creates
+// an EventSourceStore for the configured region and begins polling all
+// enabled SQS event source mappings. Safe to call multiple times.
+func (s *LambdaService) StartESMPoller(ctx context.Context) {
+	if s.esmPoller == nil {
+		s.esmPoller = newESMPoller(0, 0, nil)
+	}
+	s.esmPoller.esmStore = lambdastore.NewEventSourceStore(s.getRegionalStorage(s.region), s.accountID, s.region)
+	s.esmPoller.lambdaSvc = s
+	s.esmPoller.accountID = s.accountID
+	s.esmPoller.region = s.region
+	s.esmPoller.Start(ctx)
+}
+
+// StopESMPoller gracefully shuts down the ESM polling loop, waiting for
+// any in-flight Lambda invocations to complete.
+func (s *LambdaService) StopESMPoller() {
+	if s.esmPoller != nil {
+		s.esmPoller.Stop()
+	}
+}
+
 func (s *LambdaService) getRegionalStorage(region string) storage.BasicStorage {
 	if s.storageManager != nil {
 		if st, err := s.storageManager.GetStorage(region); err == nil {
@@ -151,25 +194,28 @@ func (s *LambdaService) getS3ObjectStore(region string) s3store.ObjectStoreInter
 	return s.s3Objects[region]
 }
 
-func (s *LambdaService) getLogsStore(region string) *logsstore.Store {
+func (s *LambdaService) getLogsStore(region string) (*logsstore.Store, error) {
 	if cached, ok := s.logsStores.Load(region); ok {
 		if typed, ok := cached.(*logsstore.Store); ok {
-			return typed
+			return typed, nil
 		}
 	}
-	store := logsstore.NewStore(s.storage.Bucket("logs-"+region), s.accountID, region, s.dataDir)
+	store, err := logsstore.NewStore(s.storage.Bucket("logs-"+region), s.accountID, region, s.dataDir)
+	if err != nil {
+		return nil, err
+	}
 	if actual, loaded := s.logsStores.LoadOrStore(region, store); loaded {
 		if typed, ok := actual.(*logsstore.Store); ok {
-			return typed
+			return typed, nil
 		}
 	}
-	return store
+	return store, nil
 }
 
-func (s *LambdaService) getLogsStoreFromContext(reqCtx *request.RequestContext) *logsstore.Store {
+func (s *LambdaService) getLogsStoreFromContext(reqCtx *request.RequestContext) (*logsstore.Store, error) {
 	if store := reqCtx.GetCloudWatchLogsStore(); store != nil {
 		if concrete, ok := store.(*logsstore.Store); ok {
-			return concrete
+			return concrete, nil
 		}
 	}
 	return s.getLogsStore(reqCtx.GetRegion())
@@ -531,15 +577,62 @@ func (s *LambdaService) buildInvokeCommand(runtime lambdastore.Runtime, moduleFi
 }
 
 func (s *LambdaService) writeLambdaLogs(functionName, version, stdout, stderr, region string) {
-	logsStore := s.getLogsStore(region)
-
 	logGroupName := "/aws/lambda/" + functionName
 	now := time.Now().UTC()
 	requestID := uuid.New().String()
 	streamName := fmt.Sprintf("%d/%02d/%02d/[%s]%s",
 		now.Year(), now.Month(), now.Day(), version, requestID[:8])
 
-	_, err := logsStore.GetLogGroup(logGroupName)
+	ts := now.UnixNano() / int64(time.Millisecond)
+	busEvents := []eventbus.LogEntry{
+		{Timestamp: ts, Message: fmt.Sprintf("START RequestId: %s", requestID)},
+	}
+
+	for _, line := range strings.Split(stdout, "\n") {
+		if line != "" {
+			busEvents = append(busEvents, eventbus.LogEntry{Timestamp: ts, Message: line})
+		}
+	}
+	for _, line := range strings.Split(stderr, "\n") {
+		if line != "" {
+			busEvents = append(busEvents, eventbus.LogEntry{Timestamp: ts, Message: line})
+		}
+	}
+
+	busEvents = append(busEvents, eventbus.LogEntry{
+		Timestamp: ts,
+		Message:   fmt.Sprintf("END RequestId: %s", requestID),
+	})
+	busEvents = append(busEvents, eventbus.LogEntry{
+		Timestamp: ts,
+		Message:   fmt.Sprintf("REPORT RequestId: %s\tDuration: 0.00 ms\tBilled Duration: 0 ms\tMemory Size: 128 MB\tMax Memory Used: 0 MB", requestID),
+	})
+
+	if s.bus != nil {
+		s.bus.Publish(context.Background(), &eventbus.LambdaLogWriteEvent{
+			FunctionName: functionName,
+			Version:      version,
+			LogGroup:     logGroupName,
+			LogStream:    streamName,
+			LogEvents:    busEvents,
+			Region:       region,
+		})
+		return
+	}
+
+	s.writeLambdaLogsDirect(logGroupName, streamName, busEvents, functionName, region)
+}
+
+// writeLambdaLogsDirect is the fallback path when the event bus is not
+// available. It writes Lambda execution logs directly to the CloudWatch
+// Logs store without applying metric or subscription filters.
+func (s *LambdaService) writeLambdaLogsDirect(logGroupName, logStreamName string, events []eventbus.LogEntry, functionName, region string) {
+	logsStore, err := s.getLogsStore(region)
+	if err != nil {
+		return
+	}
+
+	_, err = logsStore.GetLogGroup(logGroupName)
 	if err != nil {
 		lg := logsstore.NewLogGroup(logGroupName, region, s.accountID)
 		if createErr := logsStore.CreateLogGroup(lg); createErr != nil {
@@ -547,37 +640,17 @@ func (s *LambdaService) writeLambdaLogs(functionName, version, stdout, stderr, r
 		}
 	}
 
-	ls := logsstore.NewLogStream(streamName, logGroupName)
+	ls := logsstore.NewLogStream(logStreamName, logGroupName)
 	if createErr := logsStore.CreateLogStream(ls); createErr != nil {
 		return
 	}
 
-	ts := now.UnixNano() / int64(time.Millisecond)
-	events := []logsstore.LogEntry{
-		{Timestamp: ts, Message: fmt.Sprintf("START RequestId: %s", requestID)},
+	storeEvents := make([]logsstore.LogEntry, len(events))
+	for i, e := range events {
+		storeEvents[i] = logsstore.LogEntry{Timestamp: e.Timestamp, Message: e.Message}
 	}
 
-	for _, line := range strings.Split(stdout, "\n") {
-		if line != "" {
-			events = append(events, logsstore.LogEntry{Timestamp: ts, Message: line})
-		}
-	}
-	for _, line := range strings.Split(stderr, "\n") {
-		if line != "" {
-			events = append(events, logsstore.LogEntry{Timestamp: ts, Message: line})
-		}
-	}
-
-	events = append(events, logsstore.LogEntry{
-		Timestamp: ts,
-		Message:   fmt.Sprintf("END RequestId: %s", requestID),
-	})
-	events = append(events, logsstore.LogEntry{
-		Timestamp: ts,
-		Message:   fmt.Sprintf("REPORT RequestId: %s\tDuration: 0.00 ms\tBilled Duration: 0 ms\tMemory Size: 128 MB\tMax Memory Used: 0 MB", requestID),
-	})
-
-	if _, err := logsStore.PutLogEvents(logGroupName, streamName, events); err != nil {
+	if _, err := logsStore.PutLogEvents(logGroupName, logStreamName, storeEvents); err != nil {
 		logs.Warn("Failed to write Lambda logs", logs.String("function", functionName), logs.Err(err))
 	}
 }
@@ -603,6 +676,12 @@ func (s *LambdaService) InvokeForGateway(ctx context.Context, functionName strin
 // GetFunctionStore returns a new FunctionStore for the Lambda service.
 func (s *LambdaService) GetFunctionStore() *lambdastore.FunctionStore {
 	return lambdastore.NewFunctionStore(s.getRegionalStorage(s.region), s.accountID, s.region)
+}
+
+// GetFunctionPolicy retrieves the resource-based policy for a Lambda function.
+func (s *LambdaService) GetFunctionPolicy(functionName string) ([]lambdastore.FunctionPolicy, error) {
+	store := s.GetFunctionStore()
+	return store.GetPolicy(functionName)
 }
 
 // GetAccountSettings returns account limits and usage for Lambda functions.

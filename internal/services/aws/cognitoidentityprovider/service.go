@@ -9,6 +9,8 @@ import (
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
@@ -18,6 +20,8 @@ type CognitoService struct {
 	storageManager *storage.RegionStorageManager
 	accountID      string
 	region         string
+	bus            eventbus.Bus
+	lambdaInvoker  common.LambdaInvoker
 }
 
 // NewCognitoService creates a new Cognito User Pools service instance.
@@ -31,6 +35,26 @@ func NewCognitoService(store storage.BasicStorage, accountID, region string) *Co
 // SetStorageManager injects the storage manager, required for the JWKS handler.
 func (s *CognitoService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// SetEventBus registers the Cognito trigger handler on the event bus.
+// The handler invokes the Lambda function specified in the trigger event
+// and returns the Lambda response payload.
+func (s *CognitoService) SetEventBus(bus eventbus.Bus) {
+	s.bus = bus
+	if bus != nil {
+		if eb, ok := bus.(*eventbus.EventBus); ok {
+			_, _ = eventbus.SubscribeTyped[*eventbus.CognitoTriggerEvent](eb, s.handleCognitoTrigger,
+				eventbus.WithCallerPrincipal("cognito-idp.amazonaws.com"),
+			)
+		}
+	}
+}
+
+// SetLambdaInjector sets the Lambda invoker used for Cognito trigger
+// Lambda functions. This must be called before any trigger can fire.
+func (s *CognitoService) SetLambdaInvoker(invoker common.LambdaInvoker) {
+	s.lambdaInvoker = invoker
 }
 
 // JWKSHandler serves the JSON Web Key Set for a Cognito User Pool.

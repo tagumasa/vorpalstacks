@@ -252,18 +252,23 @@ func Any(key string, value interface{}) Field {
 	return Field{Key: key, Value: value}
 }
 
-var defaultLogger Logger
+var (
+	defaultLogger Logger
+	defaultOnce   sync.Once
+)
 
 // InitDefault initializes the default logger with the given configuration.
 func InitDefault(cfg *Config) {
-	defaultLogger = NewLogger(cfg)
+	defaultOnce.Do(func() {
+		defaultLogger = NewLogger(cfg)
+	})
 }
 
 // Default returns the default logger, creating one if it does not exist.
 func Default() Logger {
-	if defaultLogger == nil {
+	defaultOnce.Do(func() {
 		defaultLogger = NewLogger(nil)
-	}
+	})
 	return defaultLogger
 }
 

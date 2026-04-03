@@ -3,12 +3,14 @@ package cloudwatchlogs
 import (
 	"net/http"
 	"testing"
+
+	awserrors "vorpalstacks/internal/services/aws/common/errors"
 )
 
 func TestLogsError(t *testing.T) {
 	tests := []struct {
 		name         string
-		err          *LogsError
+		err          *awserrors.AWSError
 		wantCode     string
 		wantMsg      string
 		wantHTTPCode int

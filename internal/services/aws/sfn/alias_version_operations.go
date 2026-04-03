@@ -63,7 +63,7 @@ func (s *StepFunctionService) DescribeStateMachineVersion(ctx context.Context, r
 	version, err := store.GetStateMachineVersion(ctx, versionArn)
 	if err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineVersionNotFound) {
-			return nil, &SFNError{awserrors.NewAWSError("StateMachineVersionNotFound", "State Machine Version Does not exist: "+versionArn, 400)}
+			return nil, awserrors.NewAWSError("StateMachineVersionNotFound", "State Machine Version Does not exist: "+versionArn, 400)
 		}
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (s *StepFunctionService) DeleteStateMachineVersion(ctx context.Context, req
 
 	if err := store.DeleteStateMachineVersion(ctx, versionArn); err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineVersionNotFound) {
-			return nil, &SFNError{awserrors.NewAWSError("StateMachineVersionNotFound", "State Machine Version Does not exist: "+versionArn, 400)}
+			return nil, awserrors.NewAWSError("StateMachineVersionNotFound", "State Machine Version Does not exist: "+versionArn, 400)
 		}
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (s *StepFunctionService) CreateStateMachineAlias(ctx context.Context, reqCt
 
 	if err := store.CreateStateMachineAlias(ctx, alias); err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineAliasAlreadyExists) {
-			return nil, &SFNError{awserrors.NewAWSError("StateMachineAliasAlreadyExists", fmt.Sprintf("State Machine Alias already exists: %s", name), 400)}
+			return nil, awserrors.NewAWSError("StateMachineAliasAlreadyExists", fmt.Sprintf("State Machine Alias already exists: %s", name), 400)
 		}
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (s *StepFunctionService) DescribeStateMachineAlias(ctx context.Context, req
 	alias, err := store.GetStateMachineAlias(ctx, aliasArn)
 	if err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineAliasNotFound) {
-			return nil, &SFNError{awserrors.NewAWSError("StateMachineAliasDoesNotExist", "State Machine Alias Does not exist: "+aliasArn, 400)}
+			return nil, awserrors.NewAWSError("StateMachineAliasDoesNotExist", "State Machine Alias Does not exist: "+aliasArn, 400)
 		}
 		return nil, err
 	}
@@ -259,7 +259,7 @@ func (s *StepFunctionService) UpdateStateMachineAlias(ctx context.Context, reqCt
 	alias, err := store.GetStateMachineAlias(ctx, aliasArn)
 	if err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineAliasNotFound) {
-			return nil, &SFNError{awserrors.NewAWSError("StateMachineAliasDoesNotExist", "State Machine Alias Does not exist: "+aliasArn, 400)}
+			return nil, awserrors.NewAWSError("StateMachineAliasDoesNotExist", "State Machine Alias Does not exist: "+aliasArn, 400)
 		}
 		return nil, err
 	}
@@ -300,7 +300,7 @@ func (s *StepFunctionService) DeleteStateMachineAlias(ctx context.Context, reqCt
 
 	if err := store.DeleteStateMachineAlias(ctx, aliasArn); err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineAliasNotFound) {
-			return nil, &SFNError{awserrors.NewAWSError("StateMachineAliasDoesNotExist", "State Machine Alias Does not exist: "+aliasArn, 400)}
+			return nil, awserrors.NewAWSError("StateMachineAliasDoesNotExist", "State Machine Alias Does not exist: "+aliasArn, 400)
 		}
 		return nil, err
 	}

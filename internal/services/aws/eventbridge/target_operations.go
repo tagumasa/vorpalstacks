@@ -131,15 +131,29 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 
 		if roleArn, ok := targetMap["RoleArn"].(string); ok {
 			if roleArn != "" {
-				validator := reqCtx.GetIAMValidator()
-				if err := validator.ValidateRoleForService(ctx, roleArn, iam.ServicePrincipalEvents); err != nil {
-					failedEntries = append(failedEntries, map[string]interface{}{
-						"TargetId":     targetID,
-						"ErrorCode":    "ValidationException",
-						"ErrorMessage": err.Error(),
-					})
-					failedCount++
-					continue
+				if s.bus != nil {
+					if rr := s.bus.RoleResolver(); rr != nil {
+						if err := rr.ValidateRole(ctx, roleArn); err != nil {
+							failedEntries = append(failedEntries, map[string]interface{}{
+								"TargetId":     targetID,
+								"ErrorCode":    "ValidationException",
+								"ErrorMessage": err.Error(),
+							})
+							failedCount++
+							continue
+						}
+					}
+				}
+				if validator := reqCtx.GetIAMValidator(); validator != nil {
+					if err := validator.ValidateRoleForService(ctx, roleArn, iam.ServicePrincipalEvents); err != nil {
+						failedEntries = append(failedEntries, map[string]interface{}{
+							"TargetId":     targetID,
+							"ErrorCode":    "ValidationException",
+							"ErrorMessage": err.Error(),
+						})
+						failedCount++
+						continue
+					}
 				}
 			}
 			target.RoleARN = roleArn

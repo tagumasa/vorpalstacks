@@ -17,7 +17,7 @@ import (
 // FunctionStore provides Lambda function storage functionality.
 type FunctionStore struct {
 	*common.BaseStore
-	arnBuilder *ArnBuilder
+	arnBuilder *ARNBuilder
 	accountId  string
 	region     string
 	mu         sync.Mutex
@@ -28,7 +28,7 @@ func NewFunctionStore(store storage.BasicStorage, accountId, region string) *Fun
 	bucket := store.Bucket("lambda-functions-" + region)
 	return &FunctionStore{
 		BaseStore:  common.NewBaseStore(bucket, "lambda-functions"),
-		arnBuilder: NewArnBuilder(accountId, region),
+		arnBuilder: NewARNBuilder(accountId, region),
 		accountId:  accountId,
 		region:     region,
 	}

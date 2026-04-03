@@ -7,11 +7,6 @@ import (
 )
 
 func TestSNSErrors(t *testing.T) {
-	t.Run("SNSError Unwrap", func(t *testing.T) {
-		err := NewInvalidParameterException("test")
-		assert.NotNil(t, err.Unwrap())
-	})
-
 	t.Run("predefined errors", func(t *testing.T) {
 		assert.Equal(t, "InvalidParameter: Invalid parameter", ErrInvalidParameter.Error())
 		assert.Equal(t, 400, ErrInvalidParameter.GetHTTPStatusCode())

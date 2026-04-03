@@ -27,8 +27,8 @@ func TestNewServerError(t *testing.T) {
 	}
 }
 
-func TestErrInvalidRequest(t *testing.T) {
-	err := ErrInvalidRequest("invalid request")
+func TestNewBadRequestError(t *testing.T) {
+	err := NewBadRequestError("invalid request")
 
 	if err.Message != "invalid request" {
 		t.Errorf("expected Message 'invalid request', got '%s'", err.Message)
@@ -38,8 +38,8 @@ func TestErrInvalidRequest(t *testing.T) {
 	}
 }
 
-func TestErrUnauthorized(t *testing.T) {
-	err := ErrUnauthorized("unauthorized")
+func TestNewUnauthorizedError(t *testing.T) {
+	err := NewUnauthorizedError("unauthorized")
 
 	if err.Message != "unauthorized" {
 		t.Errorf("expected Message 'unauthorized', got '%s'", err.Message)
@@ -49,8 +49,8 @@ func TestErrUnauthorized(t *testing.T) {
 	}
 }
 
-func TestErrForbidden(t *testing.T) {
-	err := ErrForbidden("forbidden")
+func TestNewForbiddenError(t *testing.T) {
+	err := NewForbiddenError("forbidden")
 
 	if err.Message != "forbidden" {
 		t.Errorf("expected Message 'forbidden', got '%s'", err.Message)
@@ -60,8 +60,8 @@ func TestErrForbidden(t *testing.T) {
 	}
 }
 
-func TestErrNotFound(t *testing.T) {
-	err := ErrNotFound("not found")
+func TestNewNotFoundError(t *testing.T) {
+	err := NewNotFoundError("not found")
 
 	if err.Message != "not found" {
 		t.Errorf("expected Message 'not found', got '%s'", err.Message)
@@ -71,8 +71,8 @@ func TestErrNotFound(t *testing.T) {
 	}
 }
 
-func TestErrInternal(t *testing.T) {
-	err := ErrInternal("internal error")
+func TestNewInternalError(t *testing.T) {
+	err := NewInternalError("internal error")
 
 	if err.Message != "internal error" {
 		t.Errorf("expected Message 'internal error', got '%s'", err.Message)

@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/server/http/router"
 	"vorpalstacks/internal/services/aws/common/protocol"
+	"vorpalstacks/internal/utils/aws/authutil"
 	"vorpalstacks/internal/utils/buffer"
 )
 
@@ -23,40 +23,6 @@ func AddRequestContext(ctx *RequestContext) error {
 		return fmt.Errorf("nil request")
 	}
 	return nil
-}
-
-// ParseServiceName returns a RequestHandler that parses the service name from the request.
-func ParseServiceName(serviceRouter *router.ServiceRouter) RequestHandler {
-	return func(ctx *RequestContext) error {
-		if serviceRouter == nil {
-			return nil
-		}
-
-		serviceName := serviceRouter.DetermineService(ctx.Request)
-		if serviceName != "" {
-			ctx.ServiceName = serviceName
-			logs.Debug("Parsed service name", logs.String("service", serviceName))
-		}
-
-		return nil
-	}
-}
-
-// ParseOperationName returns a RequestHandler that parses the operation name from the request.
-func ParseOperationName(serviceRouter *router.ServiceRouter) RequestHandler {
-	return func(ctx *RequestContext) error {
-		if serviceRouter == nil || ctx.ServiceName == "" {
-			return nil
-		}
-
-		opName := serviceRouter.DetermineOperation(ctx.Request, ctx.ServiceName)
-		if opName != "" {
-			ctx.Operation = opName
-			logs.Debug("Parsed operation", logs.String("service", ctx.ServiceName), logs.String("operation", opName))
-		}
-
-		return nil
-	}
 }
 
 // ParseRequestParams parses the request parameters from the request body or query string.
@@ -165,26 +131,12 @@ func AddRegionFromHeader(ctx *RequestContext) error {
 		return nil
 	}
 
-	authHeader := ctx.Request.Header.Get("Authorization")
-	if authHeader == "" {
-		return nil
-	}
-
-	if strings.Contains(authHeader, "Credential=") {
-		parts := strings.Split(authHeader, ",")
-		for _, part := range parts {
-			part = strings.TrimSpace(part)
-			if idx := strings.Index(part, "Credential="); idx >= 0 {
-				cred := part[idx+11:]
-				credParts := strings.Split(cred, "/")
-				if len(credParts) >= 3 {
-					if ctx.Params == nil {
-						ctx.Params = make(map[string]interface{})
-					}
-					ctx.Params["Region"] = credParts[2]
-				}
-			}
+	cred := authutil.ParseAWSCredential(ctx.Request.Header.Get("Authorization"))
+	if cred != nil && cred.Region != "" {
+		if ctx.Params == nil {
+			ctx.Params = make(map[string]interface{})
 		}
+		ctx.Params["Region"] = cred.Region
 	}
 
 	return nil
@@ -332,23 +284,12 @@ func SerializeResponse(ctx *RequestContext) error {
 }
 
 func serializeJSON(ctx *RequestContext) error {
-	ctx.Response.Header().Set("Content-Type", "application/json")
-
 	if ctx.StatusCode == 0 {
 		ctx.StatusCode = http.StatusOK
 	}
 
-	buf := buffer.GlobalPool.Get(4096)
-	defer buffer.GlobalPool.Put(buf)
-
-	if err := json.NewEncoder(buf).Encode(protocol.ConvertTimestampsToSeconds(ctx.ResponseBody)); err != nil {
-		return err
-	}
-
-	ctx.Response.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
-	ctx.Response.WriteHeader(ctx.StatusCode)
-	_, err := ctx.Response.Write(buf.Bytes())
-	return err
+	encodeAndWriteJSON(ctx.Response, ctx.StatusCode, protocol.ConvertTimestampsToSeconds(ctx.ResponseBody))
+	return nil
 }
 
 func serializeXML(ctx *RequestContext) error {
@@ -425,12 +366,16 @@ func SetCloseConnectionHeader(ctx *RequestContext) {
 }
 
 func writeJSONResponse(w http.ResponseWriter, statusCode int, body interface{}) {
+	encodeAndWriteJSON(w, statusCode, body)
+}
+
+func encodeAndWriteJSON(w http.ResponseWriter, statusCode int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 
 	buf := buffer.GlobalPool.Get(4096)
 	defer buffer.GlobalPool.Put(buf)
 
-	if err := json.NewEncoder(buf).Encode(body); err != nil {
+	if err := json.NewEncoder(buf).Encode(v); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

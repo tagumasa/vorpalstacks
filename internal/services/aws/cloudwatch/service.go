@@ -2,8 +2,13 @@
 package cloudwatch
 
 import (
+	"context"
+
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
@@ -17,9 +22,14 @@ type cloudwatchStores struct {
 
 // CloudWatchService provides CloudWatch operations.
 type CloudWatchService struct {
-	storage   storage.BasicStorage
-	accountID string
-	dataPath  string
+	storage       storage.BasicStorage
+	accountID     string
+	region        string
+	dataPath      string
+	bus           eventbus.Bus
+	lambdaInvoker common.LambdaInvoker
+	evaluator     *alarmEvaluator
+	logger        logs.Logger
 }
 
 // NewCloudWatchService creates a new CloudWatch service.
@@ -36,7 +46,44 @@ func NewCloudWatchService(store storage.BasicStorage, accountID, region, dataPat
 	return &CloudWatchService{
 		storage:   store,
 		accountID: accountID,
+		region:    region,
 		dataPath:  dataPath,
+	}
+}
+
+// SetEventBus sets the event bus used for publishing alarm state change
+// events. The alarm evaluator is started when both the bus and a logger
+// are available.
+func (s *CloudWatchService) SetEventBus(bus eventbus.Bus) {
+	s.bus = bus
+}
+
+// SetLambdaInvoker sets the Lambda invoker used for dispatching alarm
+// actions to Lambda function targets.
+func (s *CloudWatchService) SetLambdaInvoker(invoker common.LambdaInvoker) {
+	s.lambdaInvoker = invoker
+}
+
+// SetLogger sets the structured logger used by the alarm evaluator for
+// diagnostic output.
+func (s *CloudWatchService) SetLogger(logger logs.Logger) {
+	s.logger = logger
+}
+
+// StartEvaluator creates and starts the background alarm evaluation loop.
+// This should be called once during server initialisation after SetEventBus
+// and SetLambdaInvoker have been wired.
+func (s *CloudWatchService) StartEvaluator(ctx context.Context) {
+	s.evaluator = newAlarmEvaluator(0, 0, s.logger)
+	s.evaluator.Start(ctx, s)
+}
+
+// StopEvaluator gracefully shuts down the alarm evaluation loop, waiting
+// for any in-flight evaluations to complete. This should be called during
+// server shutdown.
+func (s *CloudWatchService) StopEvaluator() {
+	if s.evaluator != nil {
+		s.evaluator.Stop()
 	}
 }
 

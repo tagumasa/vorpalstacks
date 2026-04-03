@@ -2,10 +2,16 @@
 package scheduler
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
 	"sync"
+	"time"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -53,6 +59,63 @@ func (s *SchedulerService) SetLambdaInvoker(invoker common.LambdaInvoker) {
 // Must be called after all setter methods and before StartEngine.
 func (s *SchedulerService) BuildEngine() {
 	s.engine = NewEngine(s.storageManager, s.sqsStore, s.snsStore, s.lambdaInvoker, s.accountID)
+}
+
+// SetEventBus injects the event bus into the scheduler engine and registers
+// the ScheduleFiredEvent handler. When the bus is set, schedule execution
+// routes through the bus instead of direct store/invoker calls.
+func (s *SchedulerService) SetEventBus(bus *eventbus.EventBus) {
+	if s.engine != nil {
+		s.engine.SetEventBus(bus)
+		_, _ = eventbus.SubscribeTyped[*eventbus.ScheduleFiredEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
+	}
+}
+
+func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.ScheduleFiredEvent) eventbus.HandlerResult {
+	if s.engine == nil {
+		return eventbus.HandlerResult{}
+	}
+
+	target := &schedulerstore.Target{
+		Arn:   evt.TargetArn,
+		Input: evt.Input,
+	}
+	schedule := &schedulerstore.Schedule{
+		Name:   evt.ScheduleName,
+		Region: evt.Region,
+		Target: target,
+	}
+
+	if strings.Contains(evt.TargetArn, ":lambda:") {
+		s.engine.invokeLambda(ctx, schedule, target)
+	} else if strings.Contains(evt.TargetArn, ":sqs:") {
+		s.engine.sendToSQS(ctx, schedule, target)
+	} else if strings.Contains(evt.TargetArn, ":sns:") {
+		if s.engine.bus != nil {
+			message := target.Input
+			if message == "" {
+				msgPayload := map[string]interface{}{
+					"schedule":  schedule.Name,
+					"timestamp": time.Now().UTC().Format(time.RFC3339),
+				}
+				if msgBytes, err := json.Marshal(msgPayload); err == nil {
+					message = string(msgBytes)
+				}
+			}
+			s.engine.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+				TopicARN:  evt.TargetArn,
+				MessageID: fmt.Sprintf("%d", time.Now().UnixNano()),
+				Message:   message,
+				Region:    evt.Region,
+			})
+		} else {
+			s.engine.publishToSNS(ctx, schedule, target)
+		}
+	} else if strings.Contains(evt.TargetArn, ":logs:") {
+		s.engine.sendToCloudWatchLogs(ctx, schedule, target)
+	}
+
+	return eventbus.HandlerResult{}
 }
 
 func (s *SchedulerService) store(ctx *request.RequestContext) (*schedulerstore.SchedulerStore, error) {

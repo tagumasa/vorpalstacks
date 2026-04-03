@@ -3,12 +3,14 @@ package ssm
 import (
 	"net/http"
 	"testing"
+
+	"vorpalstacks/internal/services/aws/common/errors"
 )
 
 func TestSSMError(t *testing.T) {
 	tests := []struct {
 		name         string
-		err          *SSMError
+		err          *errors.AWSError
 		wantCode     string
 		wantMsg      string
 		wantHTTPCode int

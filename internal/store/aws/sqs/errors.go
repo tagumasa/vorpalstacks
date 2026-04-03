@@ -24,10 +24,6 @@ var (
 	// is not valid or has expired.
 	ErrInvalidReceiptHandle = errors.New("invalid receipt handle")
 
-	// ErrInvalidParameter is returned when a required parameter is missing
-	// or has an invalid value.
-	ErrInvalidParameter = errors.New("invalid parameter")
-
 	// ErrBatchEntryIdsNotDistinct is returned when two or more batch entries
 	// share the same entry ID.
 	ErrBatchEntryIdsNotDistinct = errors.New("batch entry ids not distinct")

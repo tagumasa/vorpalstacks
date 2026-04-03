@@ -36,7 +36,7 @@ func (h *AdminHandler) getStoreByRegion(region string) (*cloudwatchlogsstore.Sto
 	if err != nil {
 		return nil, err
 	}
-	return cloudwatchlogsstore.NewStore(regionStorage.Bucket("logs"), h.accountId, region, h.dataPath), nil
+	return cloudwatchlogsstore.NewStore(regionStorage.Bucket("logs"), h.accountId, region, h.dataPath)
 }
 
 // ListLogGroups lists log groups in CloudWatch Logs.

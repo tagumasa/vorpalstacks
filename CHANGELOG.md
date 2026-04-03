@@ -4,6 +4,35 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Event bus system (`internal/server/eventbus/`) with Pebble outbox store, IAM role resolver, policy evaluator, and subscription management for cross-service event routing
+- HTTP request classifier (`internal/server/http/classifier/`) replacing legacy ServiceRouter — classifies requests by protocol (REST-XML, REST-JSON, AWS JSON, Query, CBOR) and service
+- CloudWatch alarm evaluator engine extracted from admin handler (`alarm_evaluator.go`, 629 lines)
+- Lambda Event Source Mapping (ESM) poller for DynamoDB/Kinesis streams (`esm_poller.go`)
+- Secrets Manager rotation engine with configurable rotation strategies (`rotation_engine.go`)
+- Cognito User Pool trigger pipeline (Pre/Post Sign-up, Sign-in, MFA, Token, Auth challenges — `triggers.go`)
+- S3 event notifications (ObjectCreated, ObjectRemoved, ObjectRestore) published via event bus (`notifications.go`)
+- CloudWatch Logs subscription filter delivery via event bus (`bus_handlers.go`, `log_writer.go`)
+- Neptune Data API: Gremlin, OpenCypher, loader, statistics, and explain handlers refactored into dedicated files
+- PebbleDB iterator extracted into `db_iter.go`, lazy iterator (`db_lazy_iterator.go`), and TTL support (`db_ttl.go`)
+- Blob storage split into `blob_multipart.go`, `blob_reader.go`, `blob_versioning.go`
+- AWS SigV4 credential parser utility (`internal/utils/aws/authutil/credential.go`)
+- Common request helpers: `GetBoolParam`, `GetIntParam` in `internal/services/aws/common/request/`
+
+### Changed
+- Dispatcher refactored: extracted `executeHandler` pipeline, added `DispatchClassified` for classifier-based routing
+- Admin handlers across 20+ services refactored: gRPC stubs removed from Neptune Data, Kinesis, SNS, SQS, EventBridge; large monolithic handlers trimmed
+- gRPC-Web error constructors renamed from `ErrXxx()` to `NewXxxError()` for consistency
+- NeptuneData error type simplified — removed wrapper struct, returns `*awserrors.AWSError` directly
+- Service index builder extracted (`router/service_index.go`)
+- Removed legacy files: `request_extraction.go`, `router/service_router.go`, `router/path_patterns.go`, `core/events/bus.go`
+- Removed docs: `docs/integration.md`, `docs/new-service-guide.md`
+- IAM role resolver wired into event bus at startup for trust policy evaluation
+
+### Documentation
+- Updated architecture doc (`docs/architecture.md`)
+- Updated LocalStack comparison report (`docs/localstack_vs_vorpalstacks_report.md`)
+
 ## [0.0.5] - 2026-04-01
 
 ### Added

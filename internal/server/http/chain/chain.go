@@ -4,6 +4,8 @@ package chain
 import (
 	"context"
 	"net/http"
+
+	"vorpalstacks/internal/server/http/classifier"
 )
 
 // RequestContext holds the request and response state for the handler chain.
@@ -18,6 +20,7 @@ type RequestContext struct {
 	StatusCode   int
 	ResponseBody interface{}
 	Error        error
+	Classified   *classifier.ClassifiedRequest
 
 	handled bool
 }

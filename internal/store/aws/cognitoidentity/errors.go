@@ -19,6 +19,4 @@ var (
 	ErrIdentityNotFound = errors.New("identity not found")
 	// ErrIdentityAlreadyExists is returned when attempting to create an Identity that already exists.
 	ErrIdentityAlreadyExists = errors.New("identity already exists")
-	// ErrInvalidParameter is returned when an invalid parameter is provided.
-	ErrInvalidParameter = errors.New("invalid parameter")
 )

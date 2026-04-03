@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -691,6 +692,8 @@ func (o *ObjectOperations) CompleteMultipartUpload(ctx context.Context, reqCtx *
 	if err != nil {
 		return nil, err
 	}
+
+	o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedCompleteMultipartUpload)
 
 	output := &CompleteMultipartUploadOutput{
 		Location:  fmt.Sprintf("http://%s.s3.amazonaws.com/%s", input.Bucket, input.Key),

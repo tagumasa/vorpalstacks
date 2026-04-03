@@ -133,10 +133,7 @@ func (s *AlarmStore) DeleteAlarm(name string) error {
 
 // ListAlarms returns a list of CloudWatch alarms, optionally filtered by name prefix.
 func (s *AlarmStore) ListAlarms(alarmNamePrefix string) ([]*Alarm, error) {
-	prefix := "alarm:"
-	if alarmNamePrefix != "" {
-		prefix = "alarm:" + alarmNamePrefix
-	}
+	prefix := s.buildAlarmKey(alarmNamePrefix)
 
 	var alarms []*Alarm
 	err := s.ScanPrefix(prefix, func(key string, value []byte) error {
@@ -192,16 +189,13 @@ func (s *AlarmStore) AddAlarmHistory(entry *AlarmHistoryEntry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	key := fmt.Sprintf("history:%s:%d", entry.AlarmName, entry.Timestamp)
+	key := alarmHistoryKey(entry.AlarmName, entry.Timestamp)
 	return s.Put(key, entry)
 }
 
 // ListAlarmHistory retrieves alarm history entries, optionally filtered by alarm name and history item type.
 func (s *AlarmStore) ListAlarmHistory(alarmName string, historyItemType string) ([]*AlarmHistoryEntry, error) {
-	prefix := "history:"
-	if alarmName != "" {
-		prefix = "history:" + alarmName + ":"
-	}
+	prefix := alarmHistoryPrefix(alarmName)
 
 	var entries []*AlarmHistoryEntry
 	err := s.ScanPrefix(prefix, func(key string, value []byte) error {
@@ -220,4 +214,15 @@ func (s *AlarmStore) ListAlarmHistory(alarmName string, historyItemType string) 
 	}
 
 	return entries, nil
+}
+
+func alarmHistoryKey(alarmName string, timestamp int64) string {
+	return fmt.Sprintf("history:%s:%d", alarmName, timestamp)
+}
+
+func alarmHistoryPrefix(alarmName string) string {
+	if alarmName == "" {
+		return "history:"
+	}
+	return "history:" + alarmName + ":"
 }

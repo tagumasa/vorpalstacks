@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -685,7 +686,10 @@ func (s *SNSStore) DeletePlatformApplication(arn string) error {
 
 	s.platformEndpointsStore.ScanPrefix("", func(key string, value []byte) error {
 		var ep PlatformEndpoint
-		if json.Unmarshal(value, &ep) != nil {
+		if err := json.Unmarshal(value, &ep); err != nil {
+			logs.Warn("failed to unmarshal platform endpoint during deletion",
+				logs.String("key", key),
+				logs.Err(err))
 			return nil
 		}
 		if ep.PlatformApplicationArn == arn {

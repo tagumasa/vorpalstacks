@@ -2,6 +2,7 @@ package cloudwatchlogs
 
 import (
 	"context"
+	"fmt"
 
 	"vorpalstacks/internal/services/aws/common/pagination"
 	"vorpalstacks/internal/services/aws/common/request"
@@ -20,6 +21,16 @@ func (s *LogsService) PutSubscriptionFilter(ctx context.Context, reqCtx *request
 
 	if logGroupName == "" || filterName == "" || destinationArn == "" {
 		return nil, ErrMissingParameter
+	}
+
+	if roleArn != "" {
+		if s.bus != nil {
+			if rr := s.bus.RoleResolver(); rr != nil {
+				if err := rr.ValidateRole(ctx, roleArn); err != nil {
+					return nil, NewLogsError("InvalidParameterException", fmt.Sprintf("Invalid role ARN: %s", roleArn), 400)
+				}
+			}
+		}
 	}
 
 	if distribution == "" {

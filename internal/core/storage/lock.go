@@ -31,7 +31,7 @@ type PebbleLockManager struct {
 }
 
 // NewPebbleLockManager creates a new lock manager backed by Pebble.
-func NewPebbleLockManager(db *pebbledb.DB, writeOpts *pebble.WriteOptions) *PebbleLockManager {
+func NewPebbleLockManager(db *pebbledb.DB) *PebbleLockManager {
 	return &PebbleLockManager{
 		db:             db,
 		prefix:         []byte(LockPrefix),

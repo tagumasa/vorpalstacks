@@ -35,7 +35,7 @@ var (
 	// IAM password policy requirements.
 	ErrInvalidPassword = errors.New("invalid password")
 
-	// ErrUserNotFound is returned when the specified IAM group does not exist.
+	// ErrGroupNotFound is returned when the specified IAM group does not exist.
 	ErrGroupNotFound = errors.New("group not found")
 
 	// ErrGroupAlreadyExists is returned when attempting to create a group

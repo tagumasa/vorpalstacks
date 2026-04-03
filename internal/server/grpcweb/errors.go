@@ -36,40 +36,40 @@ func NewServerError(message string, httpStatus int) *ServerError {
 	}
 }
 
-// ErrInvalidRequest returns a bad request error with the given message.
-func ErrInvalidRequest(message string) *ServerError {
+// NewBadRequestError returns a bad request error with the given message.
+func NewBadRequestError(message string) *ServerError {
 	return &ServerError{
 		Message:    message,
 		HTTPStatus: http.StatusBadRequest,
 	}
 }
 
-// ErrUnauthorized returns an unauthorized error with the given message.
-func ErrUnauthorized(message string) *ServerError {
+// NewUnauthorizedError returns an unauthorized error with the given message.
+func NewUnauthorizedError(message string) *ServerError {
 	return &ServerError{
 		Message:    message,
 		HTTPStatus: http.StatusUnauthorized,
 	}
 }
 
-// ErrForbidden returns a forbidden error with the given message.
-func ErrForbidden(message string) *ServerError {
+// NewForbiddenError returns a forbidden error with the given message.
+func NewForbiddenError(message string) *ServerError {
 	return &ServerError{
 		Message:    message,
 		HTTPStatus: http.StatusForbidden,
 	}
 }
 
-// ErrNotFound returns a not found error with the given message.
-func ErrNotFound(message string) *ServerError {
+// NewNotFoundError returns a not found error with the given message.
+func NewNotFoundError(message string) *ServerError {
 	return &ServerError{
 		Message:    message,
 		HTTPStatus: http.StatusNotFound,
 	}
 }
 
-// ErrInternal returns an internal server error with the given message.
-func ErrInternal(message string) *ServerError {
+// NewInternalError returns an internal server error with the given message.
+func NewInternalError(message string) *ServerError {
 	return &ServerError{
 		Message:    message,
 		HTTPStatus: http.StatusInternalServerError,

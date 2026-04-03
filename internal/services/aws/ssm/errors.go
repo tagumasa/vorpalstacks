@@ -6,21 +6,9 @@ import (
 	"vorpalstacks/internal/services/aws/common/errors"
 )
 
-// SSMError represents an error returned by the SSM service.
-type SSMError struct {
-	*errors.AWSError
-}
-
-// Unwrap returns the underlying AWS error.
-func (e *SSMError) Unwrap() error {
-	return e.AWSError
-}
-
 // NewSSMError creates a new SSMError with the specified code, message and status code.
-func NewSSMError(code, message string, statusCode int) *SSMError {
-	return &SSMError{
-		AWSError: errors.NewAWSError(code, message, statusCode),
-	}
+func NewSSMError(code, message string, statusCode int) *errors.AWSError {
+	return errors.NewAWSError(code, message, statusCode)
 }
 
 var (

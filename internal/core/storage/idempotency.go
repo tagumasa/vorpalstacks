@@ -141,8 +141,3 @@ func (s *PebbleIdempotencyStore) Delete(token string) error {
 	key := s.makeKey(token)
 	return s.db.Delete(key)
 }
-
-// Cleanup removes expired idempotency tokens from the store.
-func (s *PebbleIdempotencyStore) Cleanup() error {
-	return nil
-}

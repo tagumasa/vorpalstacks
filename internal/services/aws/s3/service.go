@@ -2,12 +2,17 @@
 package s3
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
+	storesqs "vorpalstacks/internal/store/aws/sqs"
 	"vorpalstacks/internal/utils/crypto"
 )
 
@@ -26,6 +31,9 @@ type S3Service struct {
 	credentialsProvider crypto.CredentialsProvider
 	encryptionManager   *EncryptionManager
 	fallbackCache       sync.Map
+	bus                 eventbus.Bus
+	sqsStore            *storesqs.SQSStore
+	lambdaInvoker       common.LambdaInvoker
 }
 
 // NewS3Service creates a new S3Service with the given store and blob store.
@@ -58,6 +66,63 @@ func (s *S3Service) SetCredentialsProvider(provider crypto.CredentialsProvider) 
 // SetKMSClient sets the KMS client for server-side encryption.
 func (s *S3Service) SetKMSClient(kmsClient KMSClient) {
 	s.encryptionManager = NewEncryptionManagerWithKMS(kmsClient)
+}
+
+// SetEventBus sets the event bus and registers the S3 notification handler.
+// The handler is subscribed asynchronously so that object operations return
+// immediately without waiting for notification delivery.
+func (s *S3Service) SetEventBus(bus eventbus.Bus) {
+	s.bus = bus
+	if bus != nil {
+		if eb, ok := bus.(*eventbus.EventBus); ok {
+			_, _ = eventbus.SubscribeTyped[*eventbus.S3ObjectEvent](eb, s.handleS3Notification, eventbus.WithAsync())
+		}
+	}
+}
+
+// SetSQSStore sets the SQS store used for dispatching S3 event notifications
+// to SQS queue destinations.
+func (s *S3Service) SetSQSStore(store *storesqs.SQSStore) {
+	s.sqsStore = store
+}
+
+// SetLambdaInvoker sets the Lambda invoker used for dispatching S3 event
+// notifications to Lambda function destinations.
+func (s *S3Service) SetLambdaInvoker(invoker common.LambdaInvoker) {
+	s.lambdaInvoker = invoker
+}
+
+// publishObjectNotification publishes an S3ObjectEvent to the event bus after
+// a successful object operation. The event region is taken from the request
+// context to support multi-region buckets.
+func (s *S3Service) publishObjectNotification(ctx context.Context, reqCtx *request.RequestContext, bucket, key string, size int64, versionID, etag string, op eventbus.S3ObjectOp) {
+	if s.bus == nil {
+		return
+	}
+
+	region := reqCtx.GetRegion()
+	_ = ctx
+
+	evt := &eventbus.S3ObjectEvent{
+		EventBase: eventbus.EventBase{
+			Timestamp: time.Now().UTC(),
+			Source:    "aws:s3",
+			Region:    region,
+			AccountID: s.accountID,
+			Caller: eventbus.CallerContext{
+				ServicePrincipal: "s3.amazonaws.com",
+				AccountID:        s.accountID,
+			},
+		},
+		Bucket:    bucket,
+		Key:       key,
+		Size:      size,
+		VersionID: versionID,
+		ETag:      etag,
+		Op:        op,
+	}
+
+	_ = s.bus.Publish(context.Background(), evt)
 }
 
 func (s *S3Service) store(ctx *request.RequestContext) (*s3Stores, error) {

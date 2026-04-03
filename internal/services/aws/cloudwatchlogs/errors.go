@@ -8,21 +8,9 @@ import (
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
-// LogsError represents an error from CloudWatch Logs.
-type LogsError struct {
-	*awserrors.AWSError
-}
-
-// Unwrap returns the underlying AWS error.
-func (e *LogsError) Unwrap() error {
-	return e.AWSError
-}
-
 // NewLogsError creates a new CloudWatch Logs error.
-func NewLogsError(code, message string, statusCode int) *LogsError {
-	return &LogsError{
-		AWSError: awserrors.NewAWSError(code, message, statusCode),
-	}
+func NewLogsError(code, message string, statusCode int) *awserrors.AWSError {
+	return awserrors.NewAWSError(code, message, statusCode)
 }
 
 var (
@@ -54,6 +42,7 @@ var (
 	ErrDestinationAlreadyExists = NewLogsError("ResourceAlreadyExistsException", "Destination already exists", http.StatusConflict)
 )
 
+// mapStoreError converts a store error into an appropriate CloudWatch Logs API error.
 func mapStoreError(err error) error {
 	if err == nil {
 		return nil

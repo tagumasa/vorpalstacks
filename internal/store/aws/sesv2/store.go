@@ -2,6 +2,7 @@
 package sesv2
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -126,16 +127,7 @@ func NewEmailIdentity(identity string) *EmailIdentity {
 }
 
 func isDomain(identity string) bool {
-	return len(identity) > 0 && !contains(identity, "@")
-}
-
-func contains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+	return len(identity) > 0 && !strings.Contains(identity, "@")
 }
 
 // GenerateDkimAttributes generates DKIM attributes for an email identity.

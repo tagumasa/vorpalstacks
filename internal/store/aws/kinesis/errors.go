@@ -1,6 +1,10 @@
 package kinesis
 
-import "errors"
+import (
+	"errors"
+
+	"vorpalstacks/internal/store/aws/common"
+)
 
 var (
 	// ErrStreamNotFound is returned when the specified Kinesis stream
@@ -50,7 +54,7 @@ var (
 	ErrConsumerAlreadyExists = errors.New("consumer already exists")
 
 	// ErrInvalidParameter is returned when a parameter is not valid.
-	ErrInvalidParameter = errors.New("invalid parameter")
+	ErrInvalidParameter = common.ErrInvalidParameter
 
 	// ErrResourceNotFound is returned when the specified resource does not exist.
 	ErrResourceNotFound = errors.New("resource not found")

@@ -6,6 +6,7 @@ package iam
 import (
 	"crypto/rand"
 	"encoding/base32"
+	"encoding/base64"
 	"fmt"
 	"strings"
 )
@@ -26,7 +27,7 @@ const (
 	// ServerCertificateIDPrefix is the prefix for IAM server certificate IDs.
 	ServerCertificateIDPrefix = "ASCA"
 	// SAMLProviderIDPrefix is the prefix for IAM SAML provider IDs.
-	SAMLProviderIDPrefix = "AROA"
+	SAMLProviderIDPrefix = "ARPA"
 	// OpenIDConnectProviderIDPrefix is the prefix for IAM OIDC provider IDs.
 	OpenIDConnectProviderIDPrefix = "AROA"
 )
@@ -84,7 +85,7 @@ func GenerateSecretAccessKey() (string, error) {
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
-	encoded := base64Encode(bytes)
+	encoded := base64.StdEncoding.EncodeToString(bytes)
 	trimmed := strings.ReplaceAll(encoded, "=", "")
 	if len(trimmed) < 40 {
 		return "", fmt.Errorf("generated secret key too short: %d < 40", len(trimmed))
@@ -98,29 +99,4 @@ func generateID(prefix string) (string, error) {
 		return "", err
 	}
 	return prefix + base32Encoder.EncodeToString(bytes), nil
-}
-
-func base64Encode(bytes []byte) string {
-	const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-	var result strings.Builder
-	for i := 0; i < len(bytes); i += 3 {
-		b1 := bytes[i]
-		b2 := byte(0)
-		b3 := byte(0)
-		if i+1 < len(bytes) {
-			b2 = bytes[i+1]
-		}
-		if i+2 < len(bytes) {
-			b3 = bytes[i+2]
-		}
-		result.WriteByte(base64Chars[b1>>2])
-		result.WriteByte(base64Chars[((b1&0x03)<<4)|(b2>>4)])
-		if i+1 < len(bytes) {
-			result.WriteByte(base64Chars[((b2&0x0f)<<2)|(b3>>6)])
-		}
-		if i+2 < len(bytes) {
-			result.WriteByte(base64Chars[b3&0x3f])
-		}
-	}
-	return result.String()
 }

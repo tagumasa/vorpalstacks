@@ -19,9 +19,6 @@ var (
 	// that already exists.
 	ErrLogStreamAlreadyExists = errors.New("log stream already exists")
 
-	// ErrInvalidParameter is returned when a parameter is not valid.
-	ErrInvalidParameter = errors.New("invalid parameter")
-
 	// ErrResourceAlreadyExists is returned when attempting to create a resource
 	// that already exists.
 	ErrResourceAlreadyExists = errors.New("resource already exists")

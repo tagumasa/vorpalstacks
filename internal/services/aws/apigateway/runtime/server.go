@@ -8,14 +8,17 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/auth"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/integration"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/validator"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
+	"vorpalstacks/internal/utils/aws/arn"
 )
 
 // LambdaInvoker invokes Lambda functions for API Gateway integrations.
@@ -33,6 +36,8 @@ type RuntimeServer struct {
 	validator        *validator.Validator
 	authenticator    *auth.APIKeyAuthenticator
 	lambdaAuthorizer *auth.LambdaAuthorizer
+	bus              *eventbus.EventBus
+	accountID        string
 }
 
 // NewRuntimeServer creates a new API Gateway runtime server.
@@ -61,6 +66,17 @@ func (s *RuntimeServer) SetSQSStore(store sqsstore.SQSStoreInterface, accountID,
 func (s *RuntimeServer) SetSNSStore(store snsstore.SNSStoreInterface, accountID, region string) {
 	s.executorFactory.SetSNSStore(store)
 	s.executorFactory.SetAccountAndRegion(accountID, region)
+}
+
+// SetEventBus injects the event bus for SNS fan-out and cross-service delivery.
+func (s *RuntimeServer) SetEventBus(bus *eventbus.EventBus) {
+	s.bus = bus
+	s.executorFactory.SetEventBus(bus)
+}
+
+// SetAccountID stores the AWS account ID used for access log ARN parsing.
+func (s *RuntimeServer) SetAccountID(accountID string) {
+	s.accountID = accountID
 }
 
 // HandleRequest handles incoming API Gateway requests.
@@ -210,17 +226,27 @@ func (s *RuntimeServer) executeIntegration(w http.ResponseWriter, r *http.Reques
 		IntegrationResponses:        convertIntegrationResponses(methodIntegration.IntegrationResponses),
 	}
 
+	startTime := time.Now()
 	integrationResp, err := executor.Execute(r.Context(), integrationReq)
+	latency := time.Since(startTime)
+	statusCode := http.StatusInternalServerError
+	if integrationResp != nil {
+		statusCode = integrationResp.StatusCode
+	}
+
 	if err != nil {
 		if intErr, ok := err.(*integration.IntegrationError); ok {
+			statusCode = intErr.HTTPCode
 			s.sendError(w, intErr.HTTPCode, intErr.Message)
 		} else {
 			s.sendError(w, http.StatusInternalServerError, fmt.Sprintf("Integration execution failed: %v", err))
 		}
+		s.writeAccessLog(r, stage, restApiID, match.Path, statusCode, latency)
 		return
 	}
 
 	s.sendResponse(w, integrationResp)
+	s.writeAccessLog(r, stage, restApiID, match.Path, statusCode, latency)
 }
 
 func (s *RuntimeServer) getHeaders(r *http.Request) map[string]string {
@@ -340,4 +366,80 @@ func clientIP(r *http.Request) string {
 		return r.RemoteAddr
 	}
 	return host
+}
+
+func (s *RuntimeServer) writeAccessLog(r *http.Request, stage *apigatewaystore.Stage, restApiID, resourcePath string, statusCode int, latency time.Duration) {
+	if stage == nil || stage.AccessLogSettings == nil || stage.AccessLogSettings.DestinationArn == "" {
+		return
+	}
+
+	if s.bus == nil {
+		return
+	}
+
+	_, _, region, _, _ := arn.SplitARN(stage.AccessLogSettings.DestinationArn)
+	logGroup := arn.ExtractLogGroupNameFromARN(stage.AccessLogSettings.DestinationArn)
+	if logGroup == "" || region == "" {
+		return
+	}
+
+	logStream := fmt.Sprintf("%s/%s", restApiID, stage.StageName)
+
+	formatted := s.formatAccessLog(stage.AccessLogSettings.Format, r, restApiID, stage.StageName, resourcePath, statusCode, latency)
+
+	evt := &eventbus.APIGatewayAccessLogEvent{
+		RestApiId:      restApiID,
+		StageName:      stage.StageName,
+		DestinationArn: stage.AccessLogSettings.DestinationArn,
+		LogGroup:       logGroup,
+		LogStream:      logStream,
+		FormattedLog:   formatted,
+		Region:         region,
+		AccountID:      s.accountID,
+	}
+
+	_ = s.bus.Publish(context.Background(), evt)
+}
+
+func (s *RuntimeServer) formatAccessLog(format string, r *http.Request, restApiID, stageName, resourcePath string, statusCode int, latency time.Duration) string {
+	if format == "" {
+		return fmt.Sprintf("%s %s %s %d %dms", r.Method, r.URL.Path, r.Proto, statusCode, latency.Milliseconds())
+	}
+
+	requestID := r.Header.Get("X-Amzn-RequestId")
+	if requestID == "" {
+		requestID = r.Header.Get("X-Amz-Request-Id")
+	}
+	if requestID == "" {
+		requestID = r.Header.Get("X-Amzn-Trace-Id")
+	}
+	if requestID == "" {
+		requestID = "req-unknown"
+	}
+
+	result := format
+	result = strings.ReplaceAll(result, "$context.requestId", requestID)
+	result = strings.ReplaceAll(result, "$context.requestTime", time.Now().UTC().Format("02/Jan/2006:15:04:05 +0000"))
+	result = strings.ReplaceAll(result, "$context.httpMethod", r.Method)
+	result = strings.ReplaceAll(result, "$context.resourcePath", resourcePath)
+	result = strings.ReplaceAll(result, "$context.path", r.URL.Path)
+	result = strings.ReplaceAll(result, "$context.protocol", r.Proto)
+	result = strings.ReplaceAll(result, "$context.status", fmt.Sprintf("%d", statusCode))
+	result = strings.ReplaceAll(result, "$context.responseLatency", fmt.Sprintf("%d", latency.Milliseconds()))
+	result = strings.ReplaceAll(result, "$context.integrationLatency", fmt.Sprintf("%d", latency.Milliseconds()))
+	result = strings.ReplaceAll(result, "$context.sourceIp", clientIP(r))
+	result = strings.ReplaceAll(result, "$context.accountId", s.accountID)
+	result = strings.ReplaceAll(result, "$context.apiId", restApiID)
+	result = strings.ReplaceAll(result, "$context.stage", stageName)
+	result = strings.ReplaceAll(result, "$context.error.message", "")
+	result = strings.ReplaceAll(result, "$context.error.messageString", "")
+
+	if strings.Contains(result, "$context.request.header.") {
+		for key, values := range r.Header {
+			varName := "$context.request.header." + strings.ToLower(strings.ReplaceAll(key, "-", ""))
+			result = strings.ReplaceAll(result, varName, strings.Join(values, ","))
+		}
+	}
+
+	return result
 }

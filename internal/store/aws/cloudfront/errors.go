@@ -23,57 +23,35 @@ var (
 	ErrInUse = errors.New("entity is in use")
 
 	// ErrInvalidParameter is returned when a parameter is not valid.
-	ErrInvalidParameter = errors.New("invalid parameter")
+	ErrInvalidParameter = common.ErrInvalidParameter
 
 	// ErrInternalError is returned when an internal error occurs.
 	ErrInternalError = errors.New("internal error")
 )
 
 // StoreError represents an error that occurs during CloudFront store operations.
-type StoreError struct {
-	Operation string
-	Err       error
-}
-
-// Error returns a string representation of the StoreError.
-func (e *StoreError) Error() string {
-	return e.Operation + ": " + e.Err.Error()
-}
-
-// Unwrap returns the underlying error.
-func (e *StoreError) Unwrap() error {
-	return e.Err
-}
+type StoreError = common.StoreError
 
 // NewStoreError creates a new CloudFront store error with the given operation and error.
 func NewStoreError(operation string, err error) *StoreError {
-	return &StoreError{Operation: operation, Err: err}
+	return common.NewStoreError("cloudfront", operation, err)
 }
 
 // IsNotFound checks if the error indicates that a CloudFront entity was not found.
 func IsNotFound(err error) bool {
-	var se *StoreError
-	if errors.As(err, &se) {
-		return errors.Is(se.Err, ErrNotFound) || common.IsNotFound(se.Err)
-	}
-	return common.IsNotFound(err)
+	return common.IsNotFound(err) ||
+		errors.Is(err, ErrNotFound) ||
+		errors.Is(err, ErrDistributionNotFound)
 }
 
 // IsAlreadyExists checks if the error indicates that a CloudFront entity
 // already exists.
 func IsAlreadyExists(err error) bool {
-	var se *StoreError
-	if errors.As(err, &se) {
-		return errors.Is(se.Err, ErrAlreadyExists) || common.IsAlreadyExists(se.Err)
-	}
-	return common.IsAlreadyExists(err)
+	return common.IsAlreadyExists(err) ||
+		errors.Is(err, ErrAlreadyExists)
 }
 
 // IsInUse checks if the error indicates that a CloudFront entity is in use.
 func IsInUse(err error) bool {
-	var se *StoreError
-	if errors.As(err, &se) {
-		return errors.Is(se.Err, ErrInUse)
-	}
 	return errors.Is(err, ErrInUse)
 }

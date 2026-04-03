@@ -61,6 +61,15 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 		VariableReferences: extractVariableReferences(definition),
 	}
 
+	if lcRaw, ok := req.Parameters["loggingConfiguration"]; ok {
+		if lcBytes, err := json.Marshal(lcRaw); err == nil {
+			var lc sfnstore.LoggingConfiguration
+			if json.Unmarshal(lcBytes, &lc) == nil {
+				sm.LoggingConfiguration = &lc
+			}
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -344,6 +353,7 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 	}
 
 	executor := NewExecutorWithStores(store, s.lambdaInvoker, sqsStore, snsStore, eventsStore, s.accountID, reqCtx.GetRegion())
+	executor.SetEventBus(s.bus)
 	execCtx, cancel := context.WithCancel(context.Background())
 	store.RegisterExecution(executionArn, cancel)
 	s.asyncWg.Add(1)
@@ -706,15 +716,15 @@ func validateStateMachineRole(ctx context.Context, reqCtx *request.RequestContex
 }
 
 func sfnRoleNotFoundError(roleArn string) error {
-	return &SFNError{awserrors.NewAWSError("InvalidParameterException", fmt.Sprintf("Role Arn is not valid for State Machine: %s", roleArn), 400)}
+	return awserrors.NewAWSError("InvalidParameterException", fmt.Sprintf("Role Arn is not valid for State Machine: %s", roleArn), 400)
 }
 
 func sfnRoleCannotBeAssumedError(roleArn string) error {
-	return &SFNError{awserrors.NewAWSError("AccessDeniedException", fmt.Sprintf("Role %s is invalid or cannot be assumed.", roleArn), 400)}
+	return awserrors.NewAWSError("AccessDeniedException", fmt.Sprintf("Role %s is invalid or cannot be assumed.", roleArn), 400)
 }
 
 func sfnInvalidRoleArnError(roleArn string) error {
-	return &SFNError{awserrors.NewAWSError("InvalidArn", fmt.Sprintf("Invalid Role Arn: %s", roleArn), 400)}
+	return awserrors.NewAWSError("InvalidArn", fmt.Sprintf("Invalid Role Arn: %s", roleArn), 400)
 }
 
 func validateDefinitionJSONataFields(definition string) error {

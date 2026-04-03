@@ -3,7 +3,11 @@ package sns
 // Package sns provides SNS (Simple Notification Service) data store implementations
 // for vorpalstacks.
 
-import "errors"
+import (
+	"errors"
+
+	"vorpalstacks/internal/store/aws/common"
+)
 
 var (
 	// ErrTopicNotFound is returned when the specified SNS topic does not exist.
@@ -23,7 +27,7 @@ var (
 
 	// ErrInvalidParameter is returned when a required parameter is missing
 	// or has an invalid value.
-	ErrInvalidParameter = errors.New("invalid parameter")
+	ErrInvalidParameter = common.ErrInvalidParameter
 
 	// ErrInvalidTopicName is returned when the topic name does not meet
 	// SNS naming requirements.

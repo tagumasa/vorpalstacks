@@ -3,12 +3,14 @@ package cloudwatchlogs
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
@@ -25,6 +27,7 @@ type LogsService struct {
 	metricStores   sync.Map // region → *cwstore.MetricChunkStore
 	lambdaStores   sync.Map // region → common.LambdaInvoker
 	kinesisStores  sync.Map // region → kinesisstore.KinesisStoreInterface
+	bus            *eventbus.EventBus
 	ctx            context.Context
 	cancel         context.CancelFunc
 	wg             sync.WaitGroup
@@ -60,6 +63,17 @@ func (s *LogsService) SetKinesisStore(region string, store kinesisstore.KinesisS
 	}
 }
 
+// SetEventBus injects the event bus and registers handlers for CloudWatch Logs
+// delivery, Lambda log writes, API Gateway access logs, and direct log event
+// ingestion from EventBridge/Scheduler targets.
+func (s *LogsService) SetEventBus(bus *eventbus.EventBus) {
+	s.bus = bus
+	_, _ = eventbus.SubscribeTyped[*eventbus.CloudWatchLogDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
+	_, _ = eventbus.SubscribeTyped[*eventbus.LambdaLogWriteEvent](bus, s.handleLambdaLogWrite, eventbus.WithAsync())
+	_, _ = eventbus.SubscribeTyped[*eventbus.APIGatewayAccessLogEvent](bus, s.handleAPIGatewayAccessLog, eventbus.WithAsync())
+	_, _ = eventbus.SubscribeTyped[*eventbus.CloudWatchLogsPutEvent](bus, s.handleDirectPutLogEvents, eventbus.WithAsync())
+}
+
 func (s *LogsService) store(reqCtx *request.RequestContext) (*logsstore.Store, error) {
 	if store := reqCtx.GetCloudWatchLogsStore(); store != nil {
 		return store.Raw(), nil
@@ -74,7 +88,34 @@ func (s *LogsService) store(reqCtx *request.RequestContext) (*logsstore.Store, e
 	if err != nil {
 		return nil, err
 	}
-	store := logsstore.NewStore(storage.Bucket("logs-"+region), s.accountID, region, s.dataPath)
+	store, err := logsstore.NewStore(storage.Bucket("logs-"+region), s.accountID, region, s.dataPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CloudWatch Logs store: %w", err)
+	}
+	if actual, loaded := s.logsStores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(*logsstore.Store); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
+}
+
+// getLogsStoreByRegion resolves the CloudWatch Logs store for the given region.
+// Used by bus handlers that operate outside of an HTTP request context.
+func (s *LogsService) getLogsStoreByRegion(region string) (*logsstore.Store, error) {
+	if cached, ok := s.logsStores.Load(region); ok {
+		if typed, ok := cached.(*logsstore.Store); ok {
+			return typed, nil
+		}
+	}
+	regionStorage, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get storage for region %q: %w", region, err)
+	}
+	store, err := logsstore.NewStore(regionStorage.Bucket("logs-"+region), s.accountID, region, s.dataPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CloudWatch Logs store: %w", err)
+	}
 	if actual, loaded := s.logsStores.LoadOrStore(region, store); loaded {
 		if typed, ok := actual.(*logsstore.Store); ok {
 			return typed, nil
@@ -127,6 +168,30 @@ func (s *LogsService) getMetricStore(reqCtx *request.RequestContext) (*cwstore.M
 		return nil, err
 	}
 	store, err := cwstore.NewMetricChunkStoreWithIndex(storage, region, s.dataPath)
+	if err != nil {
+		return nil, err
+	}
+	if actual, loaded := s.metricStores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(*cwstore.MetricChunkStore); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
+}
+
+// getMetricStoreByRegion resolves the CloudWatch metric store for the given region.
+// Used by bus handlers that operate outside of an HTTP request context.
+func (s *LogsService) getMetricStoreByRegion(region string) (*cwstore.MetricChunkStore, error) {
+	if cached, ok := s.metricStores.Load(region); ok {
+		if typed, ok := cached.(*cwstore.MetricChunkStore); ok {
+			return typed, nil
+		}
+	}
+	regionStorage, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get storage for region %q: %w", region, err)
+	}
+	store, err := cwstore.NewMetricChunkStoreWithIndex(regionStorage, region, s.dataPath)
 	if err != nil {
 		return nil, err
 	}

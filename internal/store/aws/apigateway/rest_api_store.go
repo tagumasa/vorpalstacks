@@ -13,7 +13,7 @@ import (
 // RestApiStore provides storage operations for REST APIs.
 type RestApiStore struct {
 	*common.BaseStore
-	arnBuilder *ArnBuilder
+	arnBuilder *ARNBuilder
 	accountId  string
 	region     string
 	mu         sync.Mutex
@@ -28,7 +28,7 @@ func NewRestApiStore(store storage.BasicStorage, accountId, region string) *Rest
 	bucket := store.Bucket(restApiBucketName(region))
 	return &RestApiStore{
 		BaseStore:  common.NewBaseStore(bucket, "apigateway-restapis"),
-		arnBuilder: NewArnBuilder(accountId, region),
+		arnBuilder: NewARNBuilder(accountId, region),
 		accountId:  accountId,
 		region:     region,
 	}

@@ -34,6 +34,7 @@ type EventsStoreInterface interface {
 	UpdateArchive(ctx context.Context, archive *Archive) error
 	ListArchivesForEventBus(ctx context.Context, eventBusName string) ([]*Archive, error)
 	ListArchives(ctx context.Context, namePrefix string, state string, limit int32, nextToken string) (*ArchiveListResult, error)
+	IncrementArchiveCounters(ctx context.Context, archiveName string, eventSize int64) error
 
 	StoreArchiveEvent(ctx context.Context, archiveName string, event *ArchivedEvent) error
 	GetArchiveEvents(ctx context.Context, archiveName string, startTime, endTime time.Time) ([]*ArchivedEvent, error)

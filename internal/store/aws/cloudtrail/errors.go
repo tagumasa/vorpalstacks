@@ -11,9 +11,6 @@ var (
 	// that already exists.
 	ErrTrailAlreadyExists = errors.New("trail already exists")
 
-	// ErrInvalidParameter is returned when a parameter is not valid.
-	ErrInvalidParameter = errors.New("invalid parameter")
-
 	// ErrS3BucketNotFound is returned when the specified S3 bucket
 	// does not exist.
 	ErrS3BucketNotFound = errors.New("s3 bucket not found")

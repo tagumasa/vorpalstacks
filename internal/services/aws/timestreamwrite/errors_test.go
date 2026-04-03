@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"testing"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,12 +47,4 @@ func TestTimestreamWriteErrors(t *testing.T) {
 		assert.Equal(t, "ServiceQuotaExceededException: The request exceeded the service quota.", ErrServiceQuotaExceeded.Error())
 		assert.Equal(t, http.StatusTooManyRequests, ErrServiceQuotaExceeded.GetHTTPStatusCode())
 	})
-}
-
-func TestTimestreamWriteErrorMethods(t *testing.T) {
-	err := &TimestreamWriteError{AWSError: awserrors.NewAWSError("TestCode", "TestMessage", http.StatusBadRequest)}
-
-	assert.Equal(t, "TestCode", err.GetCode())
-	assert.Equal(t, "TestMessage", err.GetMessage())
-	assert.Equal(t, http.StatusBadRequest, err.GetHTTPStatusCode())
 }

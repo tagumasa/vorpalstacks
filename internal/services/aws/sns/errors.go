@@ -4,92 +4,82 @@ import (
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
 )
 
-// SNSError represents an error returned by the SNS service.
-type SNSError struct {
-	*awserrors.AWSError
-}
-
-// Unwrap returns the underlying error.
-func (e *SNSError) Unwrap() error {
-	return e.AWSError
-}
-
 var (
 	// ErrInvalidParameter is returned when a parameter is invalid.
-	ErrInvalidParameter = &SNSError{awserrors.NewAWSError("InvalidParameter", "Invalid parameter", 400)}
+	ErrInvalidParameter = awserrors.NewAWSError("InvalidParameter", "Invalid parameter", 400)
 	// ErrNotFound is returned when the requested resource is not found.
-	ErrNotFound = &SNSError{awserrors.NewAWSError("NotFound", "Resource not found", 404)}
+	ErrNotFound = awserrors.NewAWSError("NotFound", "Resource not found", 404)
 	// ErrAuthorizationError is returned when the request is not authorized.
-	ErrAuthorizationError = &SNSError{awserrors.NewAWSError("AuthorizationError", "Authorization error", 403)}
+	ErrAuthorizationError = awserrors.NewAWSError("AuthorizationError", "Authorization error", 403)
 	// ErrInternalError is returned when an internal server error occurs.
-	ErrInternalError = &SNSError{awserrors.NewAWSError("InternalError", "Internal server error", 500)}
+	ErrInternalError = awserrors.NewAWSError("InternalError", "Internal server error", 500)
 	// ErrEndpointDisabled is returned when the endpoint is disabled.
-	ErrEndpointDisabled = &SNSError{awserrors.NewAWSError("EndpointDisabled", "Endpoint is disabled", 400)}
+	ErrEndpointDisabled = awserrors.NewAWSError("EndpointDisabled", "Endpoint is disabled", 400)
 	// ErrFilterLimitExceeded is returned when the filter limit is exceeded.
-	ErrFilterLimitExceeded = &SNSError{awserrors.NewAWSError("FilterLimitExceeded", "Filter limit exceeded", 400)}
+	ErrFilterLimitExceeded = awserrors.NewAWSError("FilterLimitExceeded", "Filter limit exceeded", 400)
 	// ErrThrottled is returned when the request is throttled.
-	ErrThrottled = &SNSError{awserrors.NewAWSError("Throttled", "Request was throttled", 429)}
+	ErrThrottled = awserrors.NewAWSError("Throttled", "Request was throttled", 429)
 	// ErrValidation is returned when validation fails.
-	ErrValidation = &SNSError{awserrors.NewAWSError("ValidationException", "Validation error", 400)}
+	ErrValidation = awserrors.NewAWSError("ValidationException", "Validation error", 400)
 	// ErrTopicNotFound is returned when the topic does not exist.
-	ErrTopicNotFound = &SNSError{awserrors.NewAWSError("NotFound", "Topic does not exist", 404)}
+	ErrTopicNotFound = awserrors.NewAWSError("NotFound", "Topic does not exist", 404)
 	// ErrSubscriptionNotFound is returned when the subscription does not exist.
-	ErrSubscriptionNotFound = &SNSError{awserrors.NewAWSError("NotFound", "Subscription does not exist", 404)}
+	ErrSubscriptionNotFound = awserrors.NewAWSError("NotFound", "Subscription does not exist", 404)
 	// ErrPlatformAppNotFound is returned when the platform application does not exist.
-	ErrPlatformAppNotFound = &SNSError{awserrors.NewAWSError("NotFound", "Platform application does not exist", 404)}
+	ErrPlatformAppNotFound = awserrors.NewAWSError("NotFound", "Platform application does not exist", 404)
 	// ErrEndpointNotFound is returned when the endpoint does not exist.
-	ErrEndpointNotFound = &SNSError{awserrors.NewAWSError("NotFound", "Endpoint does not exist", 404)}
+	ErrEndpointNotFound = awserrors.NewAWSError("NotFound", "Endpoint does not exist", 404)
 	// ErrTagLimitExceeded is returned when the tag limit is exceeded.
-	ErrTagLimitExceeded = &SNSError{awserrors.NewAWSError("TagLimitExceeded", "Tag limit exceeded", 400)}
+	ErrTagLimitExceeded = awserrors.NewAWSError("TagLimitExceeded", "Tag limit exceeded", 400)
 	// ErrTagPolicy is returned when there is a tag policy violation.
-	ErrTagPolicy = &SNSError{awserrors.NewAWSError("TagPolicy", "Tag policy violation", 400)}
+	ErrTagPolicy = awserrors.NewAWSError("TagPolicy", "Tag policy violation", 400)
 	// ErrBatchEntryIdsNotDistinct is returned when two or more batch entries have the same ID.
-	ErrBatchEntryIdsNotDistinct = &SNSError{awserrors.NewAWSError("BatchEntryIdsNotDistinct", "Two or more batch entries have the same ID", 400)}
+	ErrBatchEntryIdsNotDistinct = awserrors.NewAWSError("BatchEntryIdsNotDistinct", "Two or more batch entries have the same ID", 400)
 	// ErrTooManyEntriesInBatch is returned when the batch request contains more than 10 entries.
-	ErrTooManyEntriesInBatch = &SNSError{awserrors.NewAWSError("TooManyEntriesInBatchRequest", "Maximum number of entries per request are 10", 400)}
+	ErrTooManyEntriesInBatch = awserrors.NewAWSError("TooManyEntriesInBatchRequest", "Maximum number of entries per request are 10", 400)
 )
 
 // NewInvalidParameterException creates a new SNSError for invalid parameter errors.
-func NewInvalidParameterException(message string) *SNSError {
-	return &SNSError{awserrors.NewInvalidParameterException(message)}
+func NewInvalidParameterException(message string) *awserrors.AWSError {
+	return awserrors.NewInvalidParameterException(message)
 }
 
 // NewTopicNotFoundException creates a new SNSError for non-existent topic errors.
-func NewTopicNotFoundException() *SNSError {
-	return &SNSError{awserrors.NewAWSError("NotFound", "Topic does not exist", 404)}
+func NewTopicNotFoundException() *awserrors.AWSError {
+	return awserrors.NewAWSError("NotFound", "Topic does not exist", 404)
 }
 
 // NewNotFoundException creates a new SNSError for not found errors.
-func NewNotFoundException(resource string) *SNSError {
-	return &SNSError{awserrors.NewAWSError("NotFound", resource+" not found", 404)}
+func NewNotFoundException(resource string) *awserrors.AWSError {
+	return awserrors.NewAWSError("NotFound", resource+" not found", 404)
 }
 
 // NewAuthorizationErrorException creates a new SNSError for authorization errors.
-func NewAuthorizationErrorException(message string) *SNSError {
-	return &SNSError{awserrors.NewAccessDeniedException(message)}
+func NewAuthorizationErrorException(message string) *awserrors.AWSError {
+	return awserrors.NewAccessDeniedException(message)
 }
 
 // NewInternalErrorException creates a new SNSError for internal errors.
-func NewInternalErrorException(message string) *SNSError {
-	return &SNSError{awserrors.NewInternalErrorException(message)}
+func NewInternalErrorException(message string) *awserrors.AWSError {
+	return awserrors.NewInternalErrorException(message)
 }
 
 // NewEndpointDisabledException creates a new SNSError for endpoint disabled errors.
-func NewEndpointDisabledException(message string) *SNSError {
-	return &SNSError{awserrors.NewAWSError("EndpointDisabled", message, 400)}
+func NewEndpointDisabledException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("EndpointDisabled", message, 400)
 }
 
 // NewFilterLimitExceededException creates a new SNSError for filter limit exceeded errors.
-func NewFilterLimitExceededException(message string) *SNSError {
-	return &SNSError{awserrors.NewAWSError("FilterLimitExceeded", message, 400)}
+func NewFilterLimitExceededException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("FilterLimitExceeded", message, 400)
 }
 
 // NewThrottledException creates a new SNSError for throttled errors.
-func NewThrottledException(message string) *SNSError {
-	return &SNSError{awserrors.NewThrottlingException(message)}
+func NewThrottledException(message string) *awserrors.AWSError {
+	return awserrors.NewThrottlingException(message)
 }
 
 // NewValidationException creates a new SNSError for validation errors.
-func NewValidationException(message string) *SNSError {
-	return &SNSError{awserrors.NewValidationException(message)}
+func NewValidationException(message string) *awserrors.AWSError {
+	return awserrors.NewValidationException(message)
 }

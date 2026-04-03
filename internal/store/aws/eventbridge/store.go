@@ -4,6 +4,7 @@ package eventbridge
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,10 +24,11 @@ type EventsStore struct {
 	connectionsStore     *common.BaseStore
 	apiDestinationsStore *common.BaseStore
 	*common.TagStore
-	arnBuilder *svcarn.ARNBuilder
-	accountID  string
-	region     string
-	createMu   sync.Mutex
+	arnBuilder        *svcarn.ARNBuilder
+	accountID         string
+	region            string
+	createMu          sync.Mutex
+	archiveCountersMu sync.Mutex
 }
 
 // NewEventsStore creates a new EventBridge events store.
@@ -500,6 +502,20 @@ func (s *EventsStore) DeleteArchive(ctx context.Context, name string) error {
 	return s.archivesStore.Delete(name)
 }
 
+// IncrementArchiveCounters atomically increments EventCount and SizeBytes for an archive.
+func (s *EventsStore) IncrementArchiveCounters(ctx context.Context, archiveName string, eventSize int64) error {
+	s.archiveCountersMu.Lock()
+	defer s.archiveCountersMu.Unlock()
+
+	var archive Archive
+	if err := s.archivesStore.Get(archiveName, &archive); err != nil {
+		return err
+	}
+	archive.EventCount++
+	archive.SizeBytes += eventSize
+	return s.archivesStore.Put(archiveName, &archive)
+}
+
 // UpdateArchive updates an existing archive.
 //
 // Parameters:
@@ -883,7 +899,7 @@ func (s *EventsStore) ListReplays(ctx context.Context, namePrefix string, state 
 	}
 
 	result, err := common.List[Replay](s.replaysStore, opts, func(r *Replay) bool {
-		if namePrefix != "" && !prefixMatch(r.Name, namePrefix) {
+		if namePrefix != "" && !strings.HasPrefix(r.Name, namePrefix) {
 			return false
 		}
 		if state != "" && r.State != state {
@@ -901,10 +917,6 @@ func (s *EventsStore) ListReplays(ctx context.Context, namePrefix string, state 
 	}, nil
 }
 
-func prefixMatch(s, prefix string) bool {
-	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
-}
-
 // ListArchives lists archives with optional filtering.
 func (s *EventsStore) ListArchives(ctx context.Context, namePrefix string, state string, limit int32, nextToken string) (*ArchiveListResult, error) {
 	opts := common.ListOptions{
@@ -913,7 +925,7 @@ func (s *EventsStore) ListArchives(ctx context.Context, namePrefix string, state
 	}
 
 	result, err := common.List[Archive](s.archivesStore, opts, func(a *Archive) bool {
-		if namePrefix != "" && !prefixMatch(a.Name, namePrefix) {
+		if namePrefix != "" && !strings.HasPrefix(a.Name, namePrefix) {
 			return false
 		}
 		if state != "" && string(a.State) != state {
@@ -939,7 +951,7 @@ func (s *EventsStore) ListConnections(ctx context.Context, namePrefix string, st
 	}
 
 	result, err := common.List[Connection](s.connectionsStore, opts, func(c *Connection) bool {
-		if namePrefix != "" && !prefixMatch(c.Name, namePrefix) {
+		if namePrefix != "" && !strings.HasPrefix(c.Name, namePrefix) {
 			return false
 		}
 		if state != "" && string(c.State) != state {
@@ -965,7 +977,7 @@ func (s *EventsStore) ListApiDestinations(ctx context.Context, namePrefix string
 	}
 
 	result, err := common.List[ApiDestination](s.apiDestinationsStore, opts, func(d *ApiDestination) bool {
-		if namePrefix != "" && !prefixMatch(d.Name, namePrefix) {
+		if namePrefix != "" && !strings.HasPrefix(d.Name, namePrefix) {
 			return false
 		}
 		return true

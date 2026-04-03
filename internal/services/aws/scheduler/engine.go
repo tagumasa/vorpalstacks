@@ -14,6 +14,7 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/endpoint"
 	"vorpalstacks/internal/services/aws/common/request"
@@ -32,6 +33,7 @@ type Engine struct {
 	snsStore       snsstore.SNSStoreInterface
 	lambdaInvoker  common.LambdaInvoker
 	accountID      string
+	bus            *eventbus.EventBus
 
 	running   bool
 	runningMu sync.RWMutex
@@ -41,7 +43,6 @@ type Engine struct {
 	cancel    context.CancelFunc
 }
 
-// NewEngine creates a new scheduler engine with the given dependencies.
 func NewEngine(
 	storageManager *storage.RegionStorageManager,
 	sqsStore sqsstore.SQSStoreInterface,
@@ -57,6 +58,10 @@ func NewEngine(
 		accountID:      accountID,
 		stopChan:       make(chan struct{}),
 	}
+}
+
+func (e *Engine) SetEventBus(bus *eventbus.EventBus) {
+	e.bus = bus
 }
 
 // Start starts the scheduler engine.
@@ -295,15 +300,33 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 
 	target := schedule.Target
 	targetArn := target.Arn
+	region := schedule.Region
+	if region == "" {
+		region = request.DefaultRegion
+	}
 
-	if strings.Contains(targetArn, ":lambda:") {
-		e.invokeLambda(ctx, schedule, target)
-	} else if strings.Contains(targetArn, ":sqs:") {
-		e.sendToSQS(ctx, schedule, target)
-	} else if strings.Contains(targetArn, ":sns:") {
-		e.publishToSNS(ctx, schedule, target)
+	if e.bus != nil {
+		input := target.Input
+		if input == "" {
+			input = "{}"
+		}
+		e.bus.Publish(context.Background(), &eventbus.ScheduleFiredEvent{
+			ScheduleName: schedule.Name,
+			ScheduleArn:  "",
+			TargetArn:    targetArn,
+			Input:        input,
+			Region:       region,
+		})
 	} else {
-		logs.Debug("Unsupported target type", logs.String("arn", targetArn))
+		if strings.Contains(targetArn, ":lambda:") {
+			e.invokeLambda(ctx, schedule, target)
+		} else if strings.Contains(targetArn, ":sqs:") {
+			e.sendToSQS(ctx, schedule, target)
+		} else if strings.Contains(targetArn, ":sns:") {
+			e.publishToSNS(ctx, schedule, target)
+		} else {
+			logs.Debug("Unsupported target type", logs.String("arn", targetArn))
+		}
 	}
 
 	if schedule.ActionAfterCompletion == schedulerstore.ActionAfterCompletionDelete {
@@ -529,4 +552,61 @@ func (e *Engine) deliverSNSToLambda(ctx context.Context, schedule *schedulerstor
 			logs.String("function", functionName),
 			logs.String("error", err.Error()))
 	}
+}
+
+func (e *Engine) sendToCloudWatchLogs(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) {
+	if e.bus == nil {
+		logs.Debug("event bus not configured, skipping CloudWatch Logs delivery",
+			logs.String("schedule", schedule.Name))
+		return
+	}
+
+	logGroup := svcarn.ExtractLogGroupNameFromARN(target.Arn)
+	if logGroup == "" {
+		logs.Debug("Failed to extract log group from CloudWatch Logs ARN",
+			logs.String("schedule", schedule.Name),
+			logs.String("arn", target.Arn))
+		return
+	}
+
+	_, _, region, _, resource := svcarn.SplitARN(target.Arn)
+	logStream := resource
+	if idx := strings.LastIndex(resource, ":log-stream:"); idx != -1 {
+		logStream = resource[idx+12:]
+	} else {
+		logStream = fmt.Sprintf("scheduler-%s", schedule.Name)
+	}
+
+	message := target.Input
+	if message == "" {
+		msgPayload := map[string]interface{}{
+			"schedule":  schedule.Name,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		}
+		if msgBytes, err := json.Marshal(msgPayload); err == nil {
+			message = string(msgBytes)
+		}
+	}
+
+	evt := &eventbus.CloudWatchLogsPutEvent{
+		LogGroup:  logGroup,
+		LogStream: logStream,
+		LogEvents: []eventbus.LogEntry{
+			{Timestamp: time.Now().UnixMilli(), Message: message},
+		},
+		Region:    region,
+		AccountID: e.accountID,
+	}
+
+	if err := e.bus.Publish(ctx, evt); err != nil {
+		logs.Debug("Failed to deliver schedule to CloudWatch Logs",
+			logs.String("schedule", schedule.Name),
+			logs.String("logGroup", logGroup),
+			logs.String("error", err.Error()))
+		return
+	}
+
+	logs.Debug("Schedule delivered to CloudWatch Logs",
+		logs.String("schedule", schedule.Name),
+		logs.String("logGroup", logGroup))
 }

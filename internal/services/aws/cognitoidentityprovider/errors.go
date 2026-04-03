@@ -6,21 +6,9 @@ import (
 	"vorpalstacks/internal/services/aws/common/errors"
 )
 
-// CognitoError represents an error returned by the Cognito service.
-type CognitoError struct {
-	*errors.AWSError
-}
-
-// Unwrap returns the underlying AWS error.
-func (e *CognitoError) Unwrap() error {
-	return e.AWSError
-}
-
 // NewCognitoError creates a new CognitoError with the specified code, message and status code.
-func NewCognitoError(code, message string, statusCode int) *CognitoError {
-	return &CognitoError{
-		AWSError: errors.NewAWSError(code, message, statusCode),
-	}
+func NewCognitoError(code, message string, statusCode int) *errors.AWSError {
+	return errors.NewAWSError(code, message, statusCode)
 }
 
 var (

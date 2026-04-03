@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -131,6 +132,8 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 			return nil, err
 		}
 
+		o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedPut)
+
 		return &PutObjectOutput{
 			ETag:                 formatETag(obj.ETag),
 			VersionId:            obj.VersionID,
@@ -143,6 +146,8 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
+
+	o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedPut)
 
 	return &PutObjectOutput{
 		ETag:      formatETag(obj.ETag),
@@ -336,6 +341,8 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 			LastModified: obj.LastModified,
 		},
 	}
+
+	o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedCopy)
 
 	if obj.SSEMetadata != nil {
 		output.ServerSideEncryption = string(obj.SSEMetadata.EncryptionType)

@@ -8,11 +8,10 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/lambda"
 	lambdaconnect "vorpalstacks/internal/pb/aws/lambda/lambdaconnect"
+	svccommon "vorpalstacks/internal/services/aws/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
-
-const defaultRegion = "us-east-1"
 
 // AdminHandler provides Lambda service administration functionality.
 // It implements the LambdaServiceHandler interface for gRPC-Web communication.
@@ -36,10 +35,7 @@ func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId str
 // getFunctionStore returns the Lambda function store for the specified region.
 // It extracts the region from the request headers and creates a new function store.
 func (h *AdminHandler) getFunctionStore(req *connect.Request[pb.ListFunctionsRequest]) (*lambdastore.FunctionStore, error) {
-	region := req.Header().Get("X-Aws-Region")
-	if region == "" {
-		region = defaultRegion
-	}
+	region := svccommon.GetRegionFromHeader(req.Header())
 	regionStorage, err := h.storageManager.GetStorage(region)
 	if err != nil {
 		return nil, err

@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -439,13 +440,9 @@ func (a *Authorizer) evictOldestEntries(toEvict int) {
 		return true
 	})
 
-	for i := 0; i < len(entries) && i < toEvict; i++ {
-		for j := i + 1; j < len(entries); j++ {
-			if entries[j].cachedAt.Before(entries[i].cachedAt) {
-				entries[i], entries[j] = entries[j], entries[i]
-			}
-		}
-	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].cachedAt.Before(entries[j].cachedAt)
+	})
 
 	evicted := 0
 	for i := 0; i < toEvict && i < len(entries); i++ {

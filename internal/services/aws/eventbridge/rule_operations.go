@@ -109,9 +109,17 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 
 	if roleArn, ok := req.Parameters["RoleArn"].(string); ok {
 		if roleArn != "" {
-			validator := reqCtx.GetIAMValidator()
-			if err := validator.ValidateRoleForService(ctx, roleArn, iam.ServicePrincipalEvents); err != nil {
-				return nil, err
+			if s.bus != nil {
+				if rr := s.bus.RoleResolver(); rr != nil {
+					if err := rr.ValidateRole(ctx, roleArn); err != nil {
+						return nil, err
+					}
+				}
+			}
+			if validator := reqCtx.GetIAMValidator(); validator != nil {
+				if err := validator.ValidateRoleForService(ctx, roleArn, iam.ServicePrincipalEvents); err != nil {
+					return nil, err
+				}
 			}
 		}
 		rule.RoleARN = roleArn

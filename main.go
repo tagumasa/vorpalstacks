@@ -1,6 +1,6 @@
 // Vorpalstacks is an AWS-compatible cloud platform for edge and on-premises environments.
 //
-// It provides 29 service APIs covering 25 AWS services with a single binary,
+// It provides 30 service APIs covering 26 AWS services with a single binary,
 // using CockroachDB Pebble for persistent storage and supporting both
 // JSON and Query AWS API protocols.
 package main
@@ -17,6 +17,7 @@ import (
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/server/grpcweb"
 	chihttp "vorpalstacks/internal/server/http"
 	"vorpalstacks/internal/server/listener"
@@ -53,11 +54,12 @@ import (
 	svctimestreamwrite "vorpalstacks/internal/services/aws/timestreamwrite"
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	storeapigateway "vorpalstacks/internal/store/aws/apigateway"
-	storelogs "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	storeevents "vorpalstacks/internal/store/aws/eventbridge"
+	iamstore "vorpalstacks/internal/store/aws/iam"
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/pkg/graphengine"
 )
 
@@ -118,6 +120,25 @@ func main() {
 
 	iamService := svciam.NewIAMService(cfg.AccountID)
 	iamService.RegisterHandlers(server.Dispatcher())
+
+	if eb := server.EventBus(); eb != nil {
+		if rr, ok := eb.RoleResolver().(*eventbus.IAMRoleResolver); ok {
+			globalStore := server.Storage()
+			iamStoreInstance := iamstore.NewIAMStore(globalStore, cfg.AccountID)
+			rr.SetLookup(func(ctx context.Context, roleARN string) (string, error) {
+				roleName := svcarn.ExtractRoleNameFromARN(roleARN)
+				if roleName == "" {
+					return "", fmt.Errorf("invalid role ARN format: %q", roleARN)
+				}
+				role, err := iamStoreInstance.Roles().Get(roleName)
+				if err != nil {
+					return "", err
+				}
+				return role.AssumeRolePolicyDocument, nil
+			})
+		}
+	}
+
 	server.RegisterShutdownHook(func(ctx context.Context) {
 		svciam.ShutdownSLRoleCleanup()
 	})
@@ -142,6 +163,7 @@ func main() {
 	s3Service := svcs3.NewS3Service(s3Store, blobStore, cfg.AccountID)
 	s3Handler := svcs3.NewS3Handler(s3Service, cfg.Region, server.StorageManager())
 	server.RegisterS3Handler(s3Handler)
+	s3Service.SetEventBus(server.EventBus())
 
 	s3ObjectStore := s3Store.Objects(cfg.Region)
 
@@ -205,6 +227,7 @@ func main() {
 	wafv2Service.RegisterHandlers(server.Dispatcher())
 
 	secretsManagerService := svcsecretsmanager.NewSecretsManagerService(cfg.AccountID)
+	secretsManagerService.SetRegion(cfg.Region)
 	secretsManagerService.SetStorageManager(server.StorageManager())
 	secretsManagerService.RegisterHandlers(server.Dispatcher())
 
@@ -213,9 +236,9 @@ func main() {
 		sqsStoreInstance = storesqs.NewSQSStore(server.Storage(), cfg.AccountID, cfg.Region, appconfig.BaseURL())
 		sqsService := svcsqs.NewSQSServiceWithStore(sqsStoreInstance)
 		sqsService.RegisterHandlers(server.Dispatcher())
+		s3Service.SetSQSStore(sqsStoreInstance)
 	}
 
-	var logsStoreInstance *storelogs.Store
 	var kinesisStoreInstance *storekinesis.KinesisStore
 
 	if cfg.Kinesis {
@@ -225,10 +248,6 @@ func main() {
 		}
 		kinesisService := svckinesis.NewKinesisService(server.Storage(), cfg.AccountID, cfg.Region)
 		kinesisService.RegisterHandlers(server.Dispatcher())
-	}
-
-	if cfg.Logs {
-		logsStoreInstance = storelogs.NewStore(server.Storage().Bucket("logs"), cfg.AccountID, cfg.Region, cfg.DataPath)
 	}
 
 	var lambdaService *svclambda.LambdaService
@@ -245,11 +264,12 @@ func main() {
 			lambdaService = svclambda.NewLambdaService(server.Storage(), dockerClient, cfg.AccountID, cfg.Region, cfg.DataPath)
 			lambdaService.SetStorageManager(server.StorageManager())
 			lambdaService.SetHostEndpoint(fmt.Sprintf("http://host.docker.internal:%s", cfg.Port))
-			if logsStoreInstance != nil {
-				lambdaService.SetLogsStore(cfg.Region, logsStoreInstance)
-			}
 			lambdaService.SetS3ObjectStore(cfg.Region, s3Store.Objects(cfg.Region))
+			if sqsStoreInstance != nil {
+				lambdaService.SetSQSStore(sqsStoreInstance)
+			}
 			lambdaService.RegisterHandlers(server.Dispatcher())
+			s3Service.SetLambdaInvoker(lambdaService)
 
 			lambdaUrlServer := svclambda.NewFunctionURLServer(server.StorageManager(), cfg.AccountID, cfg.Region, lambdaService)
 			lambdaUrlHandler := http.HandlerFunc(lambdaUrlServer.HandleRequest)
@@ -267,8 +287,26 @@ func main() {
 			server.RegisterShutdownHook(func(ctx context.Context) {
 				lambdaService.Shutdown()
 			})
+			lambdaService.StartESMPoller(context.Background())
+			server.RegisterShutdownHook(func(ctx context.Context) {
+				lambdaService.StopESMPoller()
+			})
 		}
 	}
+
+	cloudWatchService.SetEventBus(server.EventBus())
+	if lambdaService != nil {
+		cloudWatchService.SetLambdaInvoker(lambdaService)
+		secretsManagerService.SetLambdaInvoker(lambdaService)
+	}
+	cloudWatchService.StartEvaluator(context.Background())
+	secretsManagerService.StartRotationChecker(context.Background())
+	server.RegisterShutdownHook(func(ctx context.Context) {
+		cloudWatchService.StopEvaluator()
+	})
+	server.RegisterShutdownHook(func(ctx context.Context) {
+		secretsManagerService.StopRotationChecker()
+	})
 
 	if cfg.Logs {
 		logsService := svclogs.NewLogsService(server.StorageManager(), cfg.AccountID, cfg.DataPath)
@@ -278,7 +316,11 @@ func main() {
 		if kinesisStoreInstance != nil {
 			logsService.SetKinesisStore(cfg.Region, kinesisStoreInstance)
 		}
+		logsService.SetEventBus(server.EventBus())
 		logsService.RegisterHandlers(server.Dispatcher())
+		if lambdaService != nil {
+			lambdaService.SetEventBus(server.EventBus())
+		}
 		server.RegisterShutdownHook(func(ctx context.Context) {
 			logsService.Stop()
 		})
@@ -287,6 +329,9 @@ func main() {
 	var snsStoreInstance *storesns.SNSStore
 	if cfg.SNS {
 		snsStoreInstance = storesns.NewSNSStore(server.Storage(), cfg.AccountID, cfg.Region)
+		server.RegisterShutdownHook(func(ctx context.Context) {
+			snsStoreInstance.Close()
+		})
 		snsService := svcsns.NewSNSService(server.StorageManager(), cfg.AccountID)
 		if sqsStoreInstance != nil {
 			snsService.SetSQSStore(sqsStoreInstance)
@@ -295,6 +340,7 @@ func main() {
 			snsService.SetLambdaInvoker(lambdaService)
 		}
 		snsService.SetSNSStore(cfg.Region, snsStoreInstance)
+		snsService.SetEventBus(server.EventBus())
 		snsService.RegisterHandlers(server.Dispatcher())
 	}
 
@@ -312,6 +358,7 @@ func main() {
 		if lambdaService != nil {
 			eventsService.SetLambdaInvoker(lambdaService)
 		}
+		eventsService.SetEventBus(server.EventBus())
 		eventsService.RegisterHandlers(server.Dispatcher())
 	}
 
@@ -329,6 +376,7 @@ func main() {
 		if eventsStoreInstance != nil {
 			stepFunctionService.SetEventsStore(eventsStoreInstance)
 		}
+		stepFunctionService.SetEventBus(server.EventBus())
 		stepFunctionService.RegisterHandlers(server.Dispatcher())
 		server.RegisterShutdownHook(func(ctx context.Context) {
 			stepFunctionService.Shutdown()
@@ -348,12 +396,14 @@ func main() {
 			restApiStore := storeapigateway.NewRestApiStore(apiGatewayStorage, cfg.AccountID, cfg.Region)
 			usageStore := storeapigateway.NewUsageStore(apiGatewayStorage, cfg.AccountID, cfg.Region)
 			runtimeServer := svcapigatewayruntime.NewRuntimeServer(restApiStore, usageStore, lambdaService)
+			runtimeServer.SetAccountID(cfg.AccountID)
 			if sqsStoreInstance != nil {
 				runtimeServer.SetSQSStore(sqsStoreInstance, cfg.AccountID, cfg.Region)
 			}
 			if snsStoreInstance != nil {
 				runtimeServer.SetSNSStore(snsStoreInstance, cfg.AccountID, cfg.Region)
 			}
+			runtimeServer.SetEventBus(server.EventBus())
 			runtimeHandler := http.HandlerFunc(runtimeServer.HandleRequest)
 			server.RegisterAPIGatewayRuntimeHandler(runtimeHandler)
 
@@ -374,6 +424,10 @@ func main() {
 	if cfg.Cognito {
 		cognitoService = svccognito.NewCognitoService(server.Storage(), cfg.AccountID, cfg.Region)
 		cognitoService.SetStorageManager(server.StorageManager())
+		cognitoService.SetEventBus(server.EventBus())
+		if lambdaService != nil {
+			cognitoService.SetLambdaInvoker(lambdaService)
+		}
 		cognitoService.RegisterHandlers(server.Dispatcher())
 		server.RegisterJWKSHandler(http.HandlerFunc(cognitoService.JWKSHandler))
 
@@ -417,6 +471,7 @@ func main() {
 			schedulerService.SetLambdaInvoker(lambdaService)
 		}
 		schedulerService.BuildEngine()
+		schedulerService.SetEventBus(server.EventBus())
 		schedulerService.RegisterHandlers(server.Dispatcher())
 		schedulerService.StartEngine()
 		server.RegisterShutdownHook(func(ctx context.Context) {
@@ -464,6 +519,70 @@ func main() {
 		server.RegisterShutdownHook(func(ctx context.Context) {
 			graphDB.Close()
 		})
+	}
+
+	if eb := server.EventBus(); eb != nil {
+		if lambdaService != nil {
+			eb.SetResourcePolicyFunc("lambda", eventbus.LambdaResourcePolicyFn(
+				func(ctx context.Context, functionARN string) ([]eventbus.LambdaPolicyEntry, error) {
+					fnName := svcarn.ExtractFunctionNameFromARN(functionARN)
+					policies, err := lambdaService.GetFunctionPolicy(fnName)
+					if err != nil {
+						return nil, err
+					}
+					entries := make([]eventbus.LambdaPolicyEntry, len(policies))
+					for i, p := range policies {
+						entries[i] = eventbus.LambdaPolicyEntry{
+							Statement: p.Statement,
+							Principal: p.Principal,
+							Action:    p.Action,
+							Resource:  p.Resource,
+						}
+					}
+					return entries, nil
+				},
+			))
+		}
+
+		if sqsStoreInstance != nil {
+			eb.SetResourcePolicyFunc("sqs", eventbus.SQSResourcePolicyFn(
+				func(ctx context.Context, queueURL string) (string, error) {
+					queue, err := sqsStoreInstance.GetQueue(queueURL)
+					if err != nil {
+						return "", err
+					}
+					return queue.Policy, nil
+				},
+			))
+		}
+
+		if snsStoreInstance != nil {
+			eb.SetResourcePolicyFunc("sns", eventbus.SNSTopicResourcePolicyFn(
+				func(ctx context.Context, topicARN string) (string, error) {
+					topic, err := snsStoreInstance.GetTopic(topicARN)
+					if err != nil {
+						return "", err
+					}
+					policyJSON, ok := topic.Attributes["Policy"]
+					if !ok {
+						return "", nil
+					}
+					return policyJSON, nil
+				},
+			))
+		}
+
+		if eventsStoreInstance != nil {
+			eb.SetResourcePolicyFunc("events", eventbus.EventBridgeBusResourcePolicyFn(
+				func(ctx context.Context, busName string) (string, error) {
+					bus, err := eventsStoreInstance.GetEventBus(context.Background(), busName)
+					if err != nil {
+						return "", err
+					}
+					return bus.Policy, nil
+				},
+			))
+		}
 	}
 
 	cfg.PrintStartupBanner()
