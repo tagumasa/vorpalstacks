@@ -76,6 +76,14 @@ func isNeptunedataPath(path string) bool {
 		strings.HasPrefix(path, "/ml")
 }
 
+// isAppSyncPath reports whether the path matches an AppSync API endpoint.
+func isAppSyncPath(path string) bool {
+	return strings.HasPrefix(path, "/v1/apis") || strings.HasPrefix(path, "/v2/apis") ||
+		strings.HasPrefix(path, "/v1/domainnames") || strings.HasPrefix(path, "/v1/tags") ||
+		strings.HasPrefix(path, "/v1/mergedApis") || strings.HasPrefix(path, "/v1/sourceApis") ||
+		strings.HasPrefix(path, "/v1/datasources/introspections") || strings.HasPrefix(path, "/v1/dataplane-")
+}
+
 // lookupServiceByPath maps a URL path to an internal service name based on
 // known path prefixes. Returns an empty string if no service matches.
 func lookupServiceByPath(path string) string {
@@ -104,6 +112,9 @@ func lookupServiceByPath(path string) string {
 	}
 	if strings.HasPrefix(path, "/service/GraniteServiceVersion20100801/") {
 		return "monitoring"
+	}
+	if isAppSyncPath(path) {
+		return "appsync"
 	}
 	return ""
 }

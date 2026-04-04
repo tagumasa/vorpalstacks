@@ -117,7 +117,9 @@ func (s *WAFv2Service) ListRegexPatternSets(ctx context.Context, reqCtx *request
 		maxItems = 100
 	}
 
-	result, err := stores.regexPatternSets.List("", maxItems)
+	nextMarker := request.GetStringParam(req.Parameters, "NextMarker")
+
+	result, err := stores.regexPatternSets.List(nextMarker, maxItems)
 	if err != nil {
 		return nil, err
 	}

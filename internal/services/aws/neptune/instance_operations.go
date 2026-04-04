@@ -47,7 +47,7 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 	}
 
 	if err := store.CreateInstance(instance); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -70,7 +70,7 @@ func (s *NeptuneService) DeleteDBInstance(ctx context.Context, reqCtx *request.R
 
 	instance, err := store.GetInstance(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	_ = store.DeleteInstance(id)
@@ -96,7 +96,7 @@ func (s *NeptuneService) ModifyDBInstance(ctx context.Context, reqCtx *request.R
 
 	instance, err := store.GetInstance(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	if v := request.GetStringParam(params, "DBInstanceClass"); v != "" {
@@ -132,7 +132,7 @@ func (s *NeptuneService) DescribeDBInstances(ctx context.Context, reqCtx *reques
 	if instanceID != "" {
 		instance, err := store.GetInstance(instanceID)
 		if err != nil {
-			return nil, err
+			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{
 			"DBInstances": protocol.XMLElements{ElementName: "DBInstance", Items: []interface{}{instance}},
@@ -141,7 +141,7 @@ func (s *NeptuneService) DescribeDBInstances(ctx context.Context, reqCtx *reques
 
 	instances, err := store.ListInstances()
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	result := make([]interface{}, 0, len(instances))
@@ -169,7 +169,7 @@ func (s *NeptuneService) RebootDBInstance(ctx context.Context, reqCtx *request.R
 
 	instance, err := store.GetInstance(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	instance.Status = "rebooting"

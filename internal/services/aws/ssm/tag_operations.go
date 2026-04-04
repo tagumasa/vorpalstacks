@@ -2,10 +2,12 @@ package ssm
 
 import (
 	"context"
+	"errors"
 
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
 	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
 // AddTagsToResource adds tags to an SSM resource.
@@ -23,6 +25,9 @@ func (s *SSMService) AddTagsToResource(ctx context.Context, reqCtx *request.Requ
 			return nil, err
 		}
 		if err := store.AddTagsToResource(resourceID, tagutil.ToMap(tags)); err != nil {
+			if errors.Is(err, ssmstore.ErrParameterNotFound) {
+				return nil, ErrParameterNotFound
+			}
 			return nil, err
 		}
 	}
@@ -45,6 +50,9 @@ func (s *SSMService) RemoveTagsFromResource(ctx context.Context, reqCtx *request
 			return nil, err
 		}
 		if err := store.RemoveTagsFromResource(resourceID, tagKeys); err != nil {
+			if errors.Is(err, ssmstore.ErrParameterNotFound) {
+				return nil, ErrParameterNotFound
+			}
 			return nil, err
 		}
 	}

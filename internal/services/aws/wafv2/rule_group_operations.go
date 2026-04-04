@@ -110,7 +110,9 @@ func (s *WAFv2Service) ListRuleGroups(ctx context.Context, reqCtx *request.Reque
 		maxItems = 100
 	}
 
-	result, err := stores.ruleGroups.List("", maxItems)
+	nextMarker := request.GetStringParam(req.Parameters, "NextMarker")
+
+	result, err := stores.ruleGroups.List(nextMarker, maxItems)
 	if err != nil {
 		return nil, err
 	}

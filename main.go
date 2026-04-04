@@ -1,6 +1,6 @@
 // Vorpalstacks is an AWS-compatible cloud platform for edge and on-premises environments.
 //
-// It provides 30 service APIs covering 26 AWS services with a single binary,
+// It provides 31 service APIs covering 27 AWS services with a single binary,
 // using CockroachDB Pebble for persistent storage and supporting both
 // JSON and Query AWS API protocols.
 package main
@@ -24,6 +24,7 @@ import (
 	svcacm "vorpalstacks/internal/services/aws/acm"
 	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
 	svcapigatewayruntime "vorpalstacks/internal/services/aws/apigateway/runtime"
+	svcappsync "vorpalstacks/internal/services/aws/appsync"
 	svcathena "vorpalstacks/internal/services/aws/athena"
 	svccloudfront "vorpalstacks/internal/services/aws/cloudfront"
 	svccloudtrail "vorpalstacks/internal/services/aws/cloudtrail"
@@ -501,6 +502,34 @@ func main() {
 		athenaService.RegisterHandlers(server.Dispatcher())
 		server.RegisterShutdownHook(func(ctx context.Context) {
 			athenaService.Shutdown()
+		})
+	}
+
+	if cfg.AppSync {
+		appsyncService := svcappsync.NewAppSyncService(cfg.AccountID)
+		if lambdaService != nil {
+			appsyncService.SetLambdaInvoker(lambdaService)
+		}
+		appsyncService.SetEventBus(server.EventBus())
+		appsyncService.RegisterHandlers(server.Dispatcher())
+
+		appsyncEventsServer := svcappsync.NewEventServer()
+		appsyncEventsServer.SetEventBus(server.EventBus())
+		appsyncEventsPort := appconfig.GetInt("ports.appsync_events")
+		if appsyncEventsPort == 0 {
+			appsyncEventsPort = 8086
+		}
+		lm.Register(listener.ListenerConfig{
+			Name:        "appsync_events",
+			PortKey:     "ports.appsync_events",
+			DefaultPort: appsyncEventsPort,
+			Handler:     appsyncEventsServer,
+			Timeouts: &listener.ListenerTimeouts{
+				ReadHeaderTimeout: 5 * time.Second,
+				ReadTimeout:       0,
+				WriteTimeout:      0,
+				IdleTimeout:       0,
+			},
 		})
 	}
 

@@ -39,7 +39,7 @@ func (s *NeptuneService) CreateDBClusterParameterGroup(ctx context.Context, reqC
 	}
 
 	if err := store.CreateClusterParameterGroup(pg); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -61,7 +61,7 @@ func (s *NeptuneService) DeleteDBClusterParameterGroup(ctx context.Context, reqC
 	}
 
 	if err := store.DeleteClusterParameterGroup(name); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{}, nil
@@ -80,7 +80,7 @@ func (s *NeptuneService) DescribeDBClusterParameterGroups(ctx context.Context, r
 	if name != "" {
 		pg, err := store.GetClusterParameterGroup(name)
 		if err != nil {
-			return nil, err
+			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{
 			"DBClusterParameterGroups": protocol.XMLElements{ElementName: "DBClusterParameterGroup", Items: []interface{}{pg}},
@@ -89,7 +89,7 @@ func (s *NeptuneService) DescribeDBClusterParameterGroups(ctx context.Context, r
 
 	groups, err := store.ListClusterParameterGroups()
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	result := make([]interface{}, 0, len(groups))
@@ -117,7 +117,7 @@ func (s *NeptuneService) DescribeDBClusterParameters(ctx context.Context, reqCtx
 	}
 
 	if _, err := store.GetClusterParameterGroup(name); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	defaultParams := []map[string]interface{}{
@@ -149,7 +149,7 @@ func (s *NeptuneService) ModifyDBClusterParameterGroup(ctx context.Context, reqC
 	}
 
 	if _, err := store.GetClusterParameterGroup(name); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -172,7 +172,7 @@ func (s *NeptuneService) ResetDBClusterParameterGroup(ctx context.Context, reqCt
 	}
 
 	if _, err := store.GetClusterParameterGroup(name); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -201,7 +201,7 @@ func (s *NeptuneService) CopyDBClusterParameterGroup(ctx context.Context, reqCtx
 
 	source, err := store.GetClusterParameterGroup(sourceName)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	if desc == "" {
@@ -216,7 +216,7 @@ func (s *NeptuneService) CopyDBClusterParameterGroup(ctx context.Context, reqCtx
 	}
 
 	if err := store.CreateClusterParameterGroup(pg); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -254,7 +254,7 @@ func (s *NeptuneService) CreateDBParameterGroup(ctx context.Context, reqCtx *req
 	}
 
 	if err := store.CreateParameterGroup(pg); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -276,7 +276,7 @@ func (s *NeptuneService) DeleteDBParameterGroup(ctx context.Context, reqCtx *req
 	}
 
 	if err := store.DeleteParameterGroup(name); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{}, nil
@@ -295,7 +295,7 @@ func (s *NeptuneService) DescribeDBParameterGroups(ctx context.Context, reqCtx *
 	if name != "" {
 		pg, err := store.GetParameterGroup(name)
 		if err != nil {
-			return nil, err
+			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{
 			"DBParameterGroups": protocol.XMLElements{ElementName: "DBParameterGroup", Items: []interface{}{pg}},
@@ -304,7 +304,7 @@ func (s *NeptuneService) DescribeDBParameterGroups(ctx context.Context, reqCtx *
 
 	groups, err := store.ListParameterGroups()
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	result := make([]interface{}, 0, len(groups))
@@ -332,7 +332,7 @@ func (s *NeptuneService) DescribeDBParameters(ctx context.Context, reqCtx *reque
 	}
 
 	if _, err := store.GetParameterGroup(name); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	defaultParams := []map[string]interface{}{
@@ -363,7 +363,7 @@ func (s *NeptuneService) ModifyDBParameterGroup(ctx context.Context, reqCtx *req
 	}
 
 	if _, err := store.GetParameterGroup(name); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -386,7 +386,7 @@ func (s *NeptuneService) ResetDBParameterGroup(ctx context.Context, reqCtx *requ
 	}
 
 	if _, err := store.GetParameterGroup(name); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -413,7 +413,7 @@ func (s *NeptuneService) CopyDBParameterGroup(ctx context.Context, reqCtx *reque
 
 	source, err := store.GetParameterGroup(sourceName)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	pg := &neptunestore.DBParameterGroup{
@@ -424,7 +424,7 @@ func (s *NeptuneService) CopyDBParameterGroup(ctx context.Context, reqCtx *reque
 	}
 
 	if err := store.CreateParameterGroup(pg); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{

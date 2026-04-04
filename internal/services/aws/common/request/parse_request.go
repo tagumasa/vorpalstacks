@@ -222,6 +222,10 @@ func extractOperation(r *http.Request, bodyBytes []byte) string {
 		return op
 	}
 
+	if op := extractAppSyncOperation(r); op != "" {
+		return op
+	}
+
 	return ""
 }
 
@@ -278,6 +282,9 @@ func ExtractRESTOperation(r *http.Request, bodyBytes []byte) string {
 	if op := extractNeptunedataOperation(r); op != "" {
 		return op
 	}
+	if op := extractAppSyncOperation(r); op != "" {
+		return op
+	}
 	return ""
 }
 
@@ -303,6 +310,9 @@ func ExtractRESTPathParams(path string, method string, params map[string]interfa
 	}
 	if isNeptunedataPath(path) {
 		extractNeptunedataPathParams(path, params)
+	}
+	if isAppSyncPath(path) {
+		extractAppSyncPathParams(path, params)
 	}
 }
 

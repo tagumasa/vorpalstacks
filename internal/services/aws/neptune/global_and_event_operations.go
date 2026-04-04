@@ -41,7 +41,7 @@ func (s *NeptuneService) CreateGlobalCluster(ctx context.Context, reqCtx *reques
 	}
 
 	if err := store.CreateGlobalCluster(gc); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -64,7 +64,7 @@ func (s *NeptuneService) DeleteGlobalCluster(ctx context.Context, reqCtx *reques
 
 	gc, err := store.GetGlobalCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	_ = store.DeleteGlobalCluster(id)
@@ -88,7 +88,7 @@ func (s *NeptuneService) DescribeGlobalClusters(ctx context.Context, reqCtx *req
 	if id != "" {
 		gc, err := store.GetGlobalCluster(id)
 		if err != nil {
-			return nil, err
+			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{
 			"GlobalClusters": protocol.XMLElements{ElementName: "GlobalClusterMember", Items: []interface{}{gc}},
@@ -97,7 +97,7 @@ func (s *NeptuneService) DescribeGlobalClusters(ctx context.Context, reqCtx *req
 
 	clusters, err := store.ListGlobalClusters()
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	result := make([]interface{}, 0, len(clusters))
@@ -125,7 +125,7 @@ func (s *NeptuneService) ModifyGlobalCluster(ctx context.Context, reqCtx *reques
 
 	gc, err := store.GetGlobalCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	if v := request.GetStringParam(params, "NewGlobalClusterIdentifier"); v != "" {
@@ -160,7 +160,7 @@ func (s *NeptuneService) FailoverGlobalCluster(ctx context.Context, reqCtx *requ
 
 	gc, err := store.GetGlobalCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	gc.Status = "failing-over"
@@ -189,7 +189,7 @@ func (s *NeptuneService) SwitchoverGlobalCluster(ctx context.Context, reqCtx *re
 
 	gc, err := store.GetGlobalCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -212,7 +212,7 @@ func (s *NeptuneService) RemoveFromGlobalCluster(ctx context.Context, reqCtx *re
 
 	gc, err := store.GetGlobalCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -257,7 +257,7 @@ func (s *NeptuneService) CreateEventSubscription(ctx context.Context, reqCtx *re
 	}
 
 	if err := store.CreateEventSubscription(sub); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -280,7 +280,7 @@ func (s *NeptuneService) DeleteEventSubscription(ctx context.Context, reqCtx *re
 
 	sub, err := store.GetEventSubscription(name)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	_ = store.DeleteEventSubscription(name)
@@ -304,7 +304,7 @@ func (s *NeptuneService) DescribeEventSubscriptions(ctx context.Context, reqCtx 
 	if name != "" {
 		sub, err := store.GetEventSubscription(name)
 		if err != nil {
-			return nil, err
+			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{
 			"EventSubscriptionsList": protocol.XMLElements{ElementName: "EventSubscription", Items: []interface{}{sub}},
@@ -313,7 +313,7 @@ func (s *NeptuneService) DescribeEventSubscriptions(ctx context.Context, reqCtx 
 
 	subs, err := store.ListEventSubscriptions()
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	result := make([]interface{}, 0, len(subs))
@@ -342,7 +342,7 @@ func (s *NeptuneService) ModifyEventSubscription(ctx context.Context, reqCtx *re
 
 	sub, err := store.GetEventSubscription(name)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	if topicArn := request.GetStringParam(params, "SnsTopicArn"); topicArn != "" {
@@ -379,7 +379,7 @@ func (s *NeptuneService) AddSourceIdentifierToSubscription(ctx context.Context, 
 
 	sub, err := store.GetEventSubscription(name)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	sub.SourceIdsList = append(sub.SourceIdsList, sourceID)
@@ -410,7 +410,7 @@ func (s *NeptuneService) RemoveSourceIdentifierFromSubscription(ctx context.Cont
 
 	sub, err := store.GetEventSubscription(name)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	filtered := sub.SourceIdsList[:0]

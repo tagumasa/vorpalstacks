@@ -141,3 +141,55 @@ func extractSuffix(arn, prefix string) string {
 	}
 	return ""
 }
+
+// AppSyncBuilder provides methods for constructing AppSync ARNs.
+type AppSyncBuilder struct{ *ARNBuilder }
+
+// AppSync returns an AppSyncBuilder for constructing AppSync ARNs.
+func (b *ARNBuilder) AppSync() *AppSyncBuilder { return &AppSyncBuilder{b} }
+
+// Api constructs an ARN for an AppSync API.
+func (b *AppSyncBuilder) Api(id string) string { return b.Build("appsync", "apis/"+id) }
+
+// ChannelNamespace constructs an ARN for an AppSync channel namespace.
+func (b *AppSyncBuilder) ChannelNamespace(apiId, name string) string {
+	return b.Build("appsync", fmt.Sprintf("apis/%s/channelNamespaces/%s", apiId, name))
+}
+
+// GraphQLApi constructs an ARN for an AppSync GraphQL API.
+func (b *AppSyncBuilder) GraphQLApi(id string) string { return b.Build("appsync", "apis/"+id) }
+
+// DataSource constructs an ARN for an AppSync data source.
+func (b *AppSyncBuilder) DataSource(apiId, name string) string {
+	return b.Build("appsync", fmt.Sprintf("apis/%s/datasources/%s", apiId, name))
+}
+
+// Resolver constructs an ARN for an AppSync resolver.
+func (b *AppSyncBuilder) Resolver(apiId, typeName, fieldName string) string {
+	return b.Build("appsync", fmt.Sprintf("apis/%s/types/%s/resolvers/%s", apiId, typeName, fieldName))
+}
+
+// Function constructs an ARN for an AppSync function.
+func (b *AppSyncBuilder) Function(apiId, functionId string) string {
+	return b.Build("appsync", fmt.Sprintf("apis/%s/functions/%s", apiId, functionId))
+}
+
+// DomainName constructs an ARN for an AppSync domain name.
+func (b *AppSyncBuilder) DomainName(name string) string {
+	return b.Build("appsync", "domainnames/"+name)
+}
+
+// ApiKey constructs an ARN for an AppSync API key.
+func (b *AppSyncBuilder) ApiKey(apiId, id string) string {
+	return b.Build("appsync", fmt.Sprintf("apis/%s/apikeys/%s", apiId, id))
+}
+
+// Type constructs an ARN for an AppSync type.
+func (b *AppSyncBuilder) Type(apiId, typeName string) string {
+	return b.Build("appsync", fmt.Sprintf("apis/%s/types/%s", apiId, typeName))
+}
+
+// ApiCache constructs an ARN for an AppSync API cache.
+func (b *AppSyncBuilder) ApiCache(apiId string) string {
+	return b.Build("appsync", fmt.Sprintf("apis/%s/ApiCaches", apiId))
+}

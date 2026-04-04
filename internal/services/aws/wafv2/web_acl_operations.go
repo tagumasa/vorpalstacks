@@ -114,11 +114,13 @@ func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestC
 		maxItems = 100
 	}
 
+	nextMarker := request.GetStringParam(req.Parameters, "NextMarker")
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := stores.webACLs.List("", maxItems)
+	result, err := stores.webACLs.List(nextMarker, maxItems)
 	if err != nil {
 		return nil, err
 	}

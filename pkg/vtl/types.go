@@ -48,13 +48,53 @@ type ContextLoopMetadata struct {
 	HasPrev bool
 }
 
+// AppSyncFieldInfo contains metadata about the currently resolving GraphQL field.
+// This information is available via $ctx.info within AppSync resolver templates.
+type AppSyncFieldInfo struct {
+	FieldName           string
+	ParentTypeName      string
+	Variables           map[string]interface{}
+	SelectionSetGraphQL string
+	SelectionSetList    []string
+	ParentTypeFields    []string
+	RootTypeName        string
+}
+
+// AppSyncError represents an error raised by $util.error() or $util.appendError()
+// within an AppSync resolver template.
+type AppSyncError struct {
+	Message   string
+	ErrorType string
+	Data      interface{}
+}
+
+// AppSyncContext holds all AppSync-specific resolver context data accessible
+// via $ctx.* variables in VTL templates. This is distinct from the API Gateway
+// $context.* variables — AppSync uses the shorter $ctx prefix.
+type AppSyncContext struct {
+	Args     map[string]interface{}
+	Source   interface{}
+	Stash    map[string]interface{}
+	Identity map[string]interface{}
+	Info     *AppSyncFieldInfo
+	Result   interface{}
+	Error    interface{}
+	Request  map[string]interface{}
+	Prev     map[string]interface{}
+	Trigger  map[string]interface{}
+	Errors   []AppSyncError
+}
+
 // Engine is the core VTL template processing engine. It maintains the
 // execution context and provides methods for transforming templates.
 // The engine processes templates through multiple phases: control flow,
 // input parsing, utility functions, context variables, and stage variables.
+// When AppSyncCtx is set, additional $ctx.* and AppSync-specific $util.*
+// processing is applied.
 type Engine struct {
-	context   *Context
-	variables map[string]interface{}
+	context    *Context
+	variables  map[string]interface{}
+	AppSyncCtx *AppSyncContext
 }
 
 // NewEngine creates a new VTL engine instance with default context

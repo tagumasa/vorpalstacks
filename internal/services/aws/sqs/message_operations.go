@@ -55,6 +55,8 @@ func mapStoreErrorToBatchCode(err error) (code string, senderFault bool) {
 		return "MissingDeduplicationId", true
 	case errors.Is(err, sqsstore.ErrMessageTooLarge):
 		return "MessageTooLarge", true
+	case errors.Is(err, sqsstore.ErrInvalidReceiptHandle):
+		return "ReceiptHandleIsInvalid", true
 	case errors.Is(err, sqsstore.ErrInvalidParameterValue):
 		return "InvalidParameterValue", true
 	case errors.Is(err, sqsstore.ErrQueueNotFound):

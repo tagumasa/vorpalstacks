@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -12,11 +13,22 @@ import (
 	"vorpalstacks/internal/core/logs"
 )
 
+// ListenerTimeouts allows per-listener timeout overrides.
+// When nil, the Manager applies sensible defaults (15s read, 30s write, 120s idle).
+// Set individual fields to zero to disable that timeout (e.g. for WebSocket).
+type ListenerTimeouts struct {
+	ReadHeaderTimeout time.Duration
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
+	IdleTimeout       time.Duration
+}
+
 type ListenerConfig struct {
 	Name        string
 	PortKey     string
 	DefaultPort int
 	Handler     http.Handler
+	Timeouts    *ListenerTimeouts
 }
 
 type managedListener struct {
@@ -58,16 +70,27 @@ func (m *Manager) Register(cfg ListenerConfig) {
 	r.Use(middleware.RequestID)
 	r.Handle("/*", cfg.Handler)
 
+	defaultTimeouts := &ListenerTimeouts{
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+	timeouts := cfg.Timeouts
+	if timeouts == nil {
+		timeouts = defaultTimeouts
+	}
+
 	m.listeners[cfg.Name] = &managedListener{
 		name:    cfg.Name,
 		portKey: cfg.PortKey,
 		server: &http.Server{
 			Addr:              fmt.Sprintf(":%d", port),
 			Handler:           r,
-			ReadHeaderTimeout: 5 * 1e9,
-			ReadTimeout:       15 * 1e9,
-			WriteTimeout:      30 * 1e9,
-			IdleTimeout:       120 * 1e9,
+			ReadHeaderTimeout: timeouts.ReadHeaderTimeout,
+			ReadTimeout:       timeouts.ReadTimeout,
+			WriteTimeout:      timeouts.WriteTimeout,
+			IdleTimeout:       timeouts.IdleTimeout,
 		},
 		handler: cfg.Handler,
 	}

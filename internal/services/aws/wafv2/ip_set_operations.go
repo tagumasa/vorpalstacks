@@ -113,7 +113,9 @@ func (s *WAFv2Service) ListIPSets(ctx context.Context, reqCtx *request.RequestCo
 		maxItems = 100
 	}
 
-	result, err := stores.ipSets.List("", maxItems)
+	nextMarker := request.GetStringParam(req.Parameters, "NextMarker")
+
+	result, err := stores.ipSets.List(nextMarker, maxItems)
 	if err != nil {
 		return nil, err
 	}

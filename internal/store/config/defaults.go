@@ -222,6 +222,15 @@ func loadDefaults() map[string]ConfigEntry {
 			EnvVar:      "VS_PORT_LAMBDA_URL",
 			Category:    CategoryPorts,
 		},
+		"ports.appsync_events": {
+			Key:         "ports.appsync_events",
+			Value:       getEnvInt("VS_PORT_APPSYNC_EVENTS", 8086),
+			Type:        ConfigTypePort,
+			Description: "AppSync Events (WebSocket + HTTP publish) port",
+			ReadOnly:    false,
+			EnvVar:      "VS_PORT_APPSYNC_EVENTS",
+			Category:    CategoryPorts,
+		},
 	}
 }
 

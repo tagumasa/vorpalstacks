@@ -72,7 +72,7 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 
 	if err := store.CreateCluster(cluster); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -95,7 +95,7 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 
 	cluster, err := store.GetCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	if request.GetBoolParam(params, "SkipFinalSnapshot") {
@@ -105,7 +105,7 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 
 	if err := store.UpdateCluster(cluster); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	_ = store.DeleteCluster(id)
@@ -130,7 +130,7 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 
 	cluster, err := store.GetCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	if v := request.GetStringParam(params, "NewDBClusterIdentifier"); v != "" {
@@ -165,7 +165,7 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 
 	if err := store.UpdateCluster(cluster); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -186,7 +186,7 @@ func (s *NeptuneService) DescribeDBClusters(ctx context.Context, reqCtx *request
 	if clusterID != "" {
 		cluster, err := store.GetCluster(clusterID)
 		if err != nil {
-			return nil, err
+			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{
 			"DBClusters": protocol.XMLElements{ElementName: "DBCluster", Items: []interface{}{cluster}},
@@ -195,7 +195,7 @@ func (s *NeptuneService) DescribeDBClusters(ctx context.Context, reqCtx *request
 
 	clusters, err := store.ListClusters()
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	items := make([]interface{}, 0, len(clusters))
@@ -223,12 +223,12 @@ func (s *NeptuneService) StartDBCluster(ctx context.Context, reqCtx *request.Req
 
 	cluster, err := store.GetCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	cluster.Status = "starting"
 	if err := store.UpdateCluster(cluster); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	cluster.Status = "available"
@@ -254,12 +254,12 @@ func (s *NeptuneService) StopDBCluster(ctx context.Context, reqCtx *request.Requ
 
 	cluster, err := store.GetCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	cluster.Status = "stopped"
 	if err := store.UpdateCluster(cluster); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -282,7 +282,7 @@ func (s *NeptuneService) FailoverDBCluster(ctx context.Context, reqCtx *request.
 
 	cluster, err := store.GetCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	cluster.Status = "failing-over"
@@ -314,7 +314,7 @@ func (s *NeptuneService) AddRoleToDBCluster(ctx context.Context, reqCtx *request
 
 	cluster, err := store.GetCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	featureName := request.GetStringParam(params, "FeatureName")
@@ -347,7 +347,7 @@ func (s *NeptuneService) RemoveRoleFromDBCluster(ctx context.Context, reqCtx *re
 
 	cluster, err := store.GetCluster(id)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	filtered := cluster.AssociatedRoles[:0]

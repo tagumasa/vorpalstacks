@@ -120,6 +120,8 @@ func (e *Engine) processForeachBlock(template string) (string, bool) {
 			"index0":    i,
 			"first":     i == 0,
 			"last":      i == len(items)-1,
+			"hasNext":   i < len(items)-1,
+			"hasPrev":   i > 0,
 			"length":    len(items),
 			"revindex":  len(items) - i,
 			"revindex0": len(items) - i - 1,

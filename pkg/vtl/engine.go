@@ -34,8 +34,10 @@ func (e *Engine) Transform(templateStr string) (string, error) {
 
 	result := templateStr
 	result = e.processControlFlow(result)
+	result = e.processAppSyncUtil(result)
 	result = e.processInput(result)
 	result = e.processUtil(result)
+	result = e.processAppSyncContext(result)
 	result = e.processContext(result)
 	result = e.processStageVariables(result)
 

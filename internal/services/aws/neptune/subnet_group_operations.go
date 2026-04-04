@@ -9,9 +9,6 @@ import (
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
 
-// getNeptuneStringList extracts a string list from Neptune/RDS Query protocol parameters.
-// Neptune uses {ListKey}.{MemberName}.{N} (e.g. SubnetIds.SubnetIdentifier.1)
-// rather than the EC2-style {ListKey}.member.{N} used by some other services.
 func getNeptuneStringList(params map[string]interface{}, key string, memberNames ...string) []string {
 	var result []string
 	if len(memberNames) == 0 {
@@ -33,8 +30,6 @@ func getNeptuneStringList(params map[string]interface{}, key string, memberNames
 	return request.GetStringList(params, key)
 }
 
-// getNeptuneTagList extracts a list of tags from Neptune/RDS Query protocol parameters.
-// Wire format: Tags.Tag.1.Key=k1, Tags.Tag.1.Value=v1, Tags.Tag.2.Key=k2, ...
 func getNeptuneTagList(params map[string]interface{}) []map[string]interface{} {
 	var tags []map[string]interface{}
 	for i := 1; ; i++ {
@@ -49,7 +44,6 @@ func getNeptuneTagList(params map[string]interface{}) []map[string]interface{} {
 	return tags
 }
 
-// CreateDBSubnetGroup creates a new DB subnet group with the specified subnets.
 func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	name := request.GetStringParam(params, "DBSubnetGroupName")
@@ -87,7 +81,7 @@ func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *reques
 	}
 
 	if err := store.CreateSubnetGroup(sg); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -95,7 +89,6 @@ func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *reques
 	}, nil
 }
 
-// DeleteDBSubnetGroup deletes the specified DB subnet group.
 func (s *NeptuneService) DeleteDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	name := request.GetStringParam(params, "DBSubnetGroupName")
@@ -109,14 +102,12 @@ func (s *NeptuneService) DeleteDBSubnetGroup(ctx context.Context, reqCtx *reques
 	}
 
 	if err := store.DeleteSubnetGroup(name); err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{}, nil
 }
 
-// DescribeDBSubnetGroups returns information about the specified DB subnet
-// group or lists all groups when no name is provided.
 func (s *NeptuneService) DescribeDBSubnetGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	store, err := s.store(reqCtx)
@@ -128,7 +119,7 @@ func (s *NeptuneService) DescribeDBSubnetGroups(ctx context.Context, reqCtx *req
 	if name != "" {
 		sg, err := store.GetSubnetGroup(name)
 		if err != nil {
-			return nil, err
+			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{
 			"DBSubnetGroups": protocol.XMLElements{ElementName: "DBSubnetGroup", Items: []interface{}{sg}},
@@ -137,7 +128,7 @@ func (s *NeptuneService) DescribeDBSubnetGroups(ctx context.Context, reqCtx *req
 
 	groups, err := store.ListSubnetGroups()
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	result := make([]interface{}, 0, len(groups))
@@ -150,7 +141,6 @@ func (s *NeptuneService) DescribeDBSubnetGroups(ctx context.Context, reqCtx *req
 	}, nil
 }
 
-// ModifyDBSubnetGroup updates the configuration of the specified DB subnet group.
 func (s *NeptuneService) ModifyDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	name := request.GetStringParam(params, "DBSubnetGroupName")
@@ -165,7 +155,7 @@ func (s *NeptuneService) ModifyDBSubnetGroup(ctx context.Context, reqCtx *reques
 
 	sg, err := store.GetSubnetGroup(name)
 	if err != nil {
-		return nil, err
+		return nil, translateStoreError(err)
 	}
 
 	if desc := request.GetStringParam(params, "DBSubnetGroupDescription"); desc != "" {
@@ -184,7 +174,9 @@ func (s *NeptuneService) ModifyDBSubnetGroup(ctx context.Context, reqCtx *reques
 		sg.Subnets = subnets
 	}
 
-	_ = store.UpdateSubnetGroup(sg)
+	if err := store.UpdateSubnetGroup(sg); err != nil {
+		return nil, translateStoreError(err)
+	}
 
 	return map[string]interface{}{
 		"DBSubnetGroup": sg,
