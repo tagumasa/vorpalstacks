@@ -38,6 +38,7 @@ const (
 	ACMService_RequestCertificate_FullMethodName        = "/acm.ACMService/RequestCertificate"
 	ACMService_ResendValidationEmail_FullMethodName     = "/acm.ACMService/ResendValidationEmail"
 	ACMService_RevokeCertificate_FullMethodName         = "/acm.ACMService/RevokeCertificate"
+	ACMService_SearchCertificates_FullMethodName        = "/acm.ACMService/SearchCertificates"
 	ACMService_UpdateCertificateOptions_FullMethodName  = "/acm.ACMService/UpdateCertificateOptions"
 )
 
@@ -51,7 +52,7 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTagsToCertificate(ctx context.Context, in *AddTagsToCertificateRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// Deletes a certificate and its associated private key. If this action succeeds, the certificate no longer appears in the list that can be displayed by calling the ListCertificates action or be retri...
+	// Deletes a certificate and its associated private key. If this action succeeds, the certificate is not available for use by Amazon Web Services services integrated with ACM. Deleting a certificate i...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteCertificate(ctx context.Context, in *DeleteCertificateRequest, opts ...grpc.CallOption) (*common.Empty, error)
@@ -59,7 +60,7 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeCertificate(ctx context.Context, in *DescribeCertificateRequest, opts ...grpc.CallOption) (*DescribeCertificateResponse, error)
-	// Exports a private certificate issued by a private certificate authority (CA) or public certificate for use anywhere. The exported file contains the certificate, the certificate chain, and the encry...
+	// Exports a private certificate issued by a private certificate authority (CA) or a public certificate for use anywhere. The exported file contains the certificate, the certificate chain, and the enc...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ExportCertificate(ctx context.Context, in *ExportCertificateRequest, opts ...grpc.CallOption) (*ExportCertificateResponse, error)
@@ -103,10 +104,14 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ResendValidationEmail(ctx context.Context, in *ResendValidationEmailRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported.
+	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported. Once a certificate is revoked, you cannot reuse the certificate. Revoking a certificate is per...
 	// HTTP:
 	// Protocol: awsJson1_1
 	RevokeCertificate(ctx context.Context, in *RevokeCertificateRequest, opts ...grpc.CallOption) (*RevokeCertificateResponse, error)
+	// Retrieves a list of certificates matching search criteria. You can filter certificates by X.509 attributes and ACM specific properties like certificate status, type and renewal eligibility. This op...
+	// HTTP:
+	// Protocol: awsJson1_1
+	SearchCertificates(ctx context.Context, in *SearchCertificatesRequest, opts ...grpc.CallOption) (*SearchCertificatesResponse, error)
 	// Updates a certificate. You can use this function to specify whether to opt in to or out of recording your certificate in a certificate transparency log and exporting. For more information, see Opti...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -271,6 +276,16 @@ func (c *aCMServiceClient) RevokeCertificate(ctx context.Context, in *RevokeCert
 	return out, nil
 }
 
+func (c *aCMServiceClient) SearchCertificates(ctx context.Context, in *SearchCertificatesRequest, opts ...grpc.CallOption) (*SearchCertificatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SearchCertificatesResponse)
+	err := c.cc.Invoke(ctx, ACMService_SearchCertificates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aCMServiceClient) UpdateCertificateOptions(ctx context.Context, in *UpdateCertificateOptionsRequest, opts ...grpc.CallOption) (*common.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
@@ -291,7 +306,7 @@ type ACMServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTagsToCertificate(context.Context, *AddTagsToCertificateRequest) (*common.Empty, error)
-	// Deletes a certificate and its associated private key. If this action succeeds, the certificate no longer appears in the list that can be displayed by calling the ListCertificates action or be retri...
+	// Deletes a certificate and its associated private key. If this action succeeds, the certificate is not available for use by Amazon Web Services services integrated with ACM. Deleting a certificate i...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteCertificate(context.Context, *DeleteCertificateRequest) (*common.Empty, error)
@@ -299,7 +314,7 @@ type ACMServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeCertificate(context.Context, *DescribeCertificateRequest) (*DescribeCertificateResponse, error)
-	// Exports a private certificate issued by a private certificate authority (CA) or public certificate for use anywhere. The exported file contains the certificate, the certificate chain, and the encry...
+	// Exports a private certificate issued by a private certificate authority (CA) or a public certificate for use anywhere. The exported file contains the certificate, the certificate chain, and the enc...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ExportCertificate(context.Context, *ExportCertificateRequest) (*ExportCertificateResponse, error)
@@ -343,10 +358,14 @@ type ACMServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ResendValidationEmail(context.Context, *ResendValidationEmailRequest) (*common.Empty, error)
-	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported.
+	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported. Once a certificate is revoked, you cannot reuse the certificate. Revoking a certificate is per...
 	// HTTP:
 	// Protocol: awsJson1_1
 	RevokeCertificate(context.Context, *RevokeCertificateRequest) (*RevokeCertificateResponse, error)
+	// Retrieves a list of certificates matching search criteria. You can filter certificates by X.509 attributes and ACM specific properties like certificate status, type and renewal eligibility. This op...
+	// HTTP:
+	// Protocol: awsJson1_1
+	SearchCertificates(context.Context, *SearchCertificatesRequest) (*SearchCertificatesResponse, error)
 	// Updates a certificate. You can use this function to specify whether to opt in to or out of recording your certificate in a certificate transparency log and exporting. For more information, see Opti...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -405,6 +424,9 @@ func (UnimplementedACMServiceServer) ResendValidationEmail(context.Context, *Res
 }
 func (UnimplementedACMServiceServer) RevokeCertificate(context.Context, *RevokeCertificateRequest) (*RevokeCertificateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RevokeCertificate not implemented")
+}
+func (UnimplementedACMServiceServer) SearchCertificates(context.Context, *SearchCertificatesRequest) (*SearchCertificatesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchCertificates not implemented")
 }
 func (UnimplementedACMServiceServer) UpdateCertificateOptions(context.Context, *UpdateCertificateOptionsRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateCertificateOptions not implemented")
@@ -700,6 +722,24 @@ func _ACMService_RevokeCertificate_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ACMService_SearchCertificates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchCertificatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).SearchCertificates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_SearchCertificates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).SearchCertificates(ctx, req.(*SearchCertificatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ACMService_UpdateCertificateOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateCertificateOptionsRequest)
 	if err := dec(in); err != nil {
@@ -784,6 +824,10 @@ var ACMService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeCertificate",
 			Handler:    _ACMService_RevokeCertificate_Handler,
+		},
+		{
+			MethodName: "SearchCertificates",
+			Handler:    _ACMService_SearchCertificates_Handler,
 		},
 		{
 			MethodName: "UpdateCertificateOptions",

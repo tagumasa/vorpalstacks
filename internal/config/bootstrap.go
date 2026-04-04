@@ -47,6 +47,8 @@ type BootstrapConfig struct {
 	TimestreamQuery bool
 	Athena          bool
 	AppSync         bool
+	Neptune         bool
+	NeptuneData     bool
 }
 
 // ServerHost returns the server hostname suitable for self-referencing URLs.
@@ -101,6 +103,8 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		TimestreamQuery: envBool("TIMESTREAM_QUERY_ENABLED", true),
 		Athena:          envBool("ATHENA_ENABLED", true),
 		AppSync:         envBool("APPSYNC_ENABLED", true),
+		Neptune:         envBool("NEPTUNE_ENABLED", true),
+		NeptuneData:     envBool("NEPTUNE_DATA_ENABLED", true),
 	}
 }
 
@@ -130,7 +134,7 @@ func (c *BootstrapConfig) PrintStartupBanner() {
 	} else {
 		fmt.Printf("Gateway mode: Standard (hardcoded routing)\n")
 	}
-	fmt.Printf("Services: IAM, STS, KMS, S3, Route53, CloudWatch, DynamoDB, ACM, CloudFront, WAF, SecretsManager, SNS, SQS, Events, Lambda, APIGateway, StepFunctions, Cognito, SSM, Logs, SESv2, Scheduler, Kinesis, CloudTrail, TimestreamWrite, TimestreamQuery, Athena, AppSync\n")
+	fmt.Printf("Services: IAM, STS, KMS, S3, Route53, CloudWatch, DynamoDB, ACM, CloudFront, WAF, SecretsManager, SNS, SQS, Events, Lambda, APIGateway, StepFunctions, Cognito, SSM, Logs, SESv2, Scheduler, Kinesis, CloudTrail, TimestreamWrite, TimestreamQuery, Athena, AppSync, Neptune, NeptuneData\n")
 	if c.Route53DNSEnabled {
 		fmt.Printf("Route53 DNS server: enabled on %s:53\n", c.Route53DNSBindAddr)
 	}

@@ -123,8 +123,8 @@ func (r *TestRunner) RunSSMTests() []TestResult {
 		_, err := client.GetParameter(ctx, &ssm.GetParameterInput{
 			Name: aws.String("/nonexistent/param-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent parameter")
+		if err := AssertErrorContains(err, "ParameterNotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -133,8 +133,8 @@ func (r *TestRunner) RunSSMTests() []TestResult {
 		_, err := client.DeleteParameter(ctx, &ssm.DeleteParameterInput{
 			Name: aws.String("/nonexistent/param-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent parameter")
+		if err := AssertErrorContains(err, "ParameterNotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -412,8 +412,8 @@ func (r *TestRunner) RunSSMTests() []TestResult {
 				{Key: aws.String("k"), Value: aws.String("v")},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent parameter")
+		if err := AssertErrorContains(err, "ParameterNotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -424,8 +424,8 @@ func (r *TestRunner) RunSSMTests() []TestResult {
 			ResourceId:   aws.String("/nonexistent/param-xyz"),
 			TagKeys:      []string{"k"},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent parameter")
+		if err := AssertErrorContains(err, "ParameterNotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -856,6 +856,59 @@ func (r *TestRunner) RunSSMTests() []TestResult {
 		}
 		if resp.Tier != types.ParameterTierStandard {
 			return fmt.Errorf("expected Standard tier, got %v", resp.Tier)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("ssm", "DescribeParameters_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgParams []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("/pag/param-%s-%d", pgTs, i)
+			_, err := client.PutParameter(ctx, &ssm.PutParameterInput{
+				Name:  aws.String(name),
+				Value: aws.String("pagval"),
+				Type:  types.ParameterTypeString,
+			})
+			if err != nil {
+				for _, pn := range pgParams {
+					client.DeleteParameter(ctx, &ssm.DeleteParameterInput{Name: aws.String(pn)})
+				}
+				return fmt.Errorf("put parameter %s: %v", name, err)
+			}
+			pgParams = append(pgParams, name)
+		}
+
+		var allParams []string
+		var nextToken *string
+		for {
+			resp, err := client.DescribeParameters(ctx, &ssm.DescribeParametersInput{
+				MaxResults: aws.Int32(2),
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				for _, pn := range pgParams {
+					client.DeleteParameter(ctx, &ssm.DeleteParameterInput{Name: aws.String(pn)})
+				}
+				return fmt.Errorf("describe parameters page: %v", err)
+			}
+			for _, p := range resp.Parameters {
+				if p.Name != nil && strings.Contains(*p.Name, "/pag/param-"+pgTs) {
+					allParams = append(allParams, *p.Name)
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, pn := range pgParams {
+			client.DeleteParameter(ctx, &ssm.DeleteParameterInput{Name: aws.String(pn)})
+		}
+		if len(allParams) != 5 {
+			return fmt.Errorf("expected 5 paginated parameters, got %d", len(allParams))
 		}
 		return nil
 	}))

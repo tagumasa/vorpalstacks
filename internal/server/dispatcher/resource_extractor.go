@@ -67,6 +67,8 @@ func (e *ResourceExtractor) registerDefaults() {
 	e.registerAPIGatewayExtractors()
 	e.registerAthenaExtractors()
 	e.registerSecretsManagerExtractors()
+	e.registerAppSyncExtractors()
+	e.registerNeptuneExtractors()
 }
 
 func (e *ResourceExtractor) registerS3Extractors() {
@@ -667,4 +669,157 @@ func extractKinesisStreamName(params map[string]interface{}) string {
 		}
 	}
 	return ""
+}
+
+// registerAppSyncExtractors registers resource ARN extractors for the AWS AppSync
+// service. All AppSync resources share the ARN pattern
+// arn:aws:appsync:{region}:{account}:apis/{apiId}.
+func (e *ResourceExtractor) registerAppSyncExtractors() {
+	e.Register("appsync", "*", func(params map[string]interface{}, accountID, region string) string {
+		apiId, _ := params["apiId"].(string)
+		if apiId == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:appsync:%s:%s:apis/%s", region, accountID, apiId)
+	})
+}
+
+// registerNeptuneExtractors registers resource ARN extractors for the AWS Neptune
+// service. Neptune resources use ARN patterns such as
+// arn:aws:neptune:{region}:{account}:cluster/{clusterId}.
+func (e *ResourceExtractor) registerNeptuneExtractors() {
+	clusterExtractor := func(params map[string]interface{}, accountID, region string) string {
+		clusterId, _ := params["DBClusterIdentifier"].(string)
+		if clusterId == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune:%s:%s:cluster/%s", region, accountID, clusterId)
+	}
+
+	for _, op := range []string{
+		"CreateDBCluster", "DeleteDBCluster", "ModifyDBCluster", "DescribeDBClusters",
+		"StartDBCluster", "StopDBCluster", "FailoverDBCluster",
+		"AddRoleToDBCluster", "RemoveRoleFromDBCluster",
+		"RestoreDBClusterFromSnapshot", "RestoreDBClusterToPointInTime",
+		"PromoteReadReplicaDBCluster",
+		"CreateDBClusterEndpoint", "DescribeDBClusterEndpoints",
+		"ModifyDBClusterEndpoint", "DeleteDBClusterEndpoint",
+	} {
+		e.Register("neptune", op, clusterExtractor)
+	}
+
+	snapshotExtractor := func(params map[string]interface{}, accountID, region string) string {
+		snapshotId, _ := params["DBClusterSnapshotIdentifier"].(string)
+		if snapshotId == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune:%s:%s:cluster-snapshot/%s", region, accountID, snapshotId)
+	}
+
+	for _, op := range []string{
+		"CreateDBClusterSnapshot", "DeleteDBClusterSnapshot", "DescribeDBClusterSnapshots",
+		"CopyDBClusterSnapshot",
+		"DescribeDBClusterSnapshotAttributes", "ModifyDBClusterSnapshotAttribute",
+	} {
+		e.Register("neptune", op, snapshotExtractor)
+	}
+
+	paramGroupExtractor := func(params map[string]interface{}, accountID, region string) string {
+		groupName, _ := params["DBClusterParameterGroupName"].(string)
+		if groupName == "" {
+			groupName, _ = params["DBParameterGroupName"].(string)
+		}
+		if groupName == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune:%s:%s:cluster-pg/%s", region, accountID, groupName)
+	}
+
+	for _, op := range []string{
+		"CreateDBClusterParameterGroup", "DeleteDBClusterParameterGroup",
+		"DescribeDBClusterParameterGroups", "DescribeDBClusterParameters",
+		"ModifyDBClusterParameterGroup", "ResetDBClusterParameterGroup",
+		"CopyDBClusterParameterGroup",
+		"CreateDBParameterGroup", "DeleteDBParameterGroup",
+		"DescribeDBParameterGroups", "DescribeDBParameters",
+		"ModifyDBParameterGroup", "ResetDBParameterGroup",
+		"CopyDBParameterGroup",
+	} {
+		e.Register("neptune", op, paramGroupExtractor)
+	}
+
+	subnetGroupExtractor := func(params map[string]interface{}, accountID, region string) string {
+		groupName, _ := params["DBSubnetGroupName"].(string)
+		if groupName == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune:%s:%s:subnet-group/%s", region, accountID, groupName)
+	}
+
+	for _, op := range []string{
+		"CreateDBSubnetGroup", "DeleteDBSubnetGroup",
+		"DescribeDBSubnetGroups", "ModifyDBSubnetGroup",
+	} {
+		e.Register("neptune", op, subnetGroupExtractor)
+	}
+
+	instanceExtractor := func(params map[string]interface{}, accountID, region string) string {
+		instanceId, _ := params["DBInstanceIdentifier"].(string)
+		if instanceId == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune:%s:%s:db/%s", region, accountID, instanceId)
+	}
+
+	for _, op := range []string{
+		"CreateDBInstance", "DeleteDBInstance", "ModifyDBInstance",
+		"DescribeDBInstances", "RebootDBInstance",
+	} {
+		e.Register("neptune", op, instanceExtractor)
+	}
+
+	globalClusterExtractor := func(params map[string]interface{}, accountID, region string) string {
+		clusterId, _ := params["GlobalClusterIdentifier"].(string)
+		if clusterId == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune:%s:%s:global-cluster/%s", region, accountID, clusterId)
+	}
+
+	for _, op := range []string{
+		"CreateGlobalCluster", "DeleteGlobalCluster", "DescribeGlobalClusters",
+		"ModifyGlobalCluster", "RemoveFromGlobalCluster",
+	} {
+		e.Register("neptune", op, globalClusterExtractor)
+	}
+
+	eventSubExtractor := func(params map[string]interface{}, accountID, region string) string {
+		subName, _ := params["SubscriptionName"].(string)
+		if subName == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune:%s:%s:event-subscription/%s", region, accountID, subName)
+	}
+
+	for _, op := range []string{
+		"CreateEventSubscription", "DeleteEventSubscription",
+		"DescribeEventSubscriptions", "ModifyEventSubscription",
+		"AddSourceIdentifierToSubscription", "RemoveSourceIdentifierFromSubscription",
+	} {
+		e.Register("neptune", op, eventSubExtractor)
+	}
+
+	tagExtractor := func(params map[string]interface{}, accountID, region string) string {
+		resourceName, _ := params["ResourceName"].(string)
+		if resourceName == "" {
+			return "*"
+		}
+		return resourceName
+	}
+
+	for _, op := range []string{
+		"AddTagsToResource", "ListTagsForResource", "RemoveTagsFromResource",
+	} {
+		e.Register("neptune", op, tagExtractor)
+	}
 }

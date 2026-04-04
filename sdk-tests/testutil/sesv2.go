@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -367,7 +368,13 @@ func (r *TestRunner) RunSESv2Tests() []TestResult {
 			EmailIdentity:        aws.String(emailAddress),
 			ConfigurationSetName: aws.String(csName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		client.DeleteConfigurationSet(ctx, &sesv2.DeleteConfigurationSetInput{
+			ConfigurationSetName: aws.String(csName),
+		})
+		return nil
 	}))
 
 	policyName := fmt.Sprintf("test-policy-%d", uid)
@@ -767,6 +774,59 @@ func (r *TestRunner) RunSESv2Tests() []TestResult {
 			ContactListName: aws.String(contactListName),
 		})
 		return err
+	}))
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("sesv2", "ListConfigurationSets_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgConfigSets []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagCS-%s-%d", pgTs, i)
+			_, err := client.CreateConfigurationSet(ctx, &sesv2.CreateConfigurationSetInput{
+				ConfigurationSetName: aws.String(name),
+			})
+			if err != nil {
+				for _, cn := range pgConfigSets {
+					client.DeleteConfigurationSet(ctx, &sesv2.DeleteConfigurationSetInput{ConfigurationSetName: aws.String(cn)})
+				}
+				return fmt.Errorf("create configuration set %s: %v", name, err)
+			}
+			pgConfigSets = append(pgConfigSets, name)
+		}
+
+		var allConfigSets []string
+		var nextToken *string
+		for {
+			resp, err := client.ListConfigurationSets(ctx, &sesv2.ListConfigurationSetsInput{
+				PageSize:  aws.Int32(2),
+				NextToken: nextToken,
+			})
+			if err != nil {
+				for _, cn := range pgConfigSets {
+					client.DeleteConfigurationSet(ctx, &sesv2.DeleteConfigurationSetInput{ConfigurationSetName: aws.String(cn)})
+				}
+				return fmt.Errorf("list configuration sets page: %v", err)
+			}
+			for _, cs := range resp.ConfigurationSets {
+				if strings.Contains(cs, "PagCS-"+pgTs) {
+					allConfigSets = append(allConfigSets, cs)
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, cn := range pgConfigSets {
+			client.DeleteConfigurationSet(ctx, &sesv2.DeleteConfigurationSetInput{ConfigurationSetName: aws.String(cn)})
+		}
+		if len(allConfigSets) != 5 {
+			return fmt.Errorf("expected 5 paginated configuration sets, got %d", len(allConfigSets))
+		}
+		return nil
 	}))
 
 	return results

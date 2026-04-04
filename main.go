@@ -58,6 +58,7 @@ import (
 	storeevents "vorpalstacks/internal/store/aws/eventbridge"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
+	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -95,13 +96,32 @@ func main() {
 
 	appconfig.Initialise(server.Storage())
 
+	var neptunedataService *svcneptunedata.NeptuneDataService
+	var sharedNeptuneStore *neptunestore.NeptuneStore
+
+	if cfg.Neptune || cfg.NeptuneData {
+		sharedNeptuneStore = neptunestore.NewNeptuneStore(server.Storage())
+		server.Dispatcher().SetNeptuneStore(sharedNeptuneStore)
+	}
+
+	if cfg.Neptune {
+		neptuneService := svcneptune.NewNeptuneService(cfg.AccountID, cfg.Region)
+		neptuneService.RegisterHandlers(server.Dispatcher())
+	}
+
+	if cfg.NeptuneData {
+		neptunedataService = svcneptunedata.NewNeptuneDataService(sharedNeptuneStore)
+		neptunedataService.RegisterHandlers(server.Dispatcher())
+	}
+
 	grpcWebServer := grpcweb.NewServer(&grpcweb.Config{Port: cfg.GRPCWebPort, BindAddr: cfg.GRPCWebBindAddr})
 	grpcweb.RegisterAllAdminHandlers(grpcWebServer, grpcweb.AdminDeps{
-		Server:    server,
-		AccountID: cfg.AccountID,
-		Region:    cfg.Region,
-		DataPath:  cfg.DataPath,
-		BaseURL:   appconfig.BaseURL(),
+		Server:           server,
+		AccountID:        cfg.AccountID,
+		Region:           cfg.Region,
+		DataPath:         cfg.DataPath,
+		BaseURL:          appconfig.BaseURL(),
+		NeptuneDataAdmin: neptunedataService,
 	})
 
 	server.RegisterShutdownHook(func(ctx context.Context) {
@@ -532,12 +552,6 @@ func main() {
 			},
 		})
 	}
-
-	neptuneService := svcneptune.NewNeptuneService(server.Storage(), cfg.AccountID, cfg.Region)
-	neptuneService.RegisterHandlers(server.Dispatcher())
-
-	neptunedataService := svcneptunedata.NewNeptuneDataService()
-	neptunedataService.RegisterHandlers(server.Dispatcher())
 
 	graphDir := cfg.DataPath + "/graph"
 	graphDB, err := graphengine.Open(graphDir, graphengine.DefaultOptions())

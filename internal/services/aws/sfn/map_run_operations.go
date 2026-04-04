@@ -142,8 +142,11 @@ func (s *StepFunctionService) DescribeMapRun(ctx context.Context, reqCtx *reques
 }
 
 // ListMapRuns lists map runs, optionally filtered by execution ARN.
+// Supports pagination via nextToken/maxResults, returning nextToken
+// when more results are available than the requested page size.
 func (s *StepFunctionService) ListMapRuns(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	executionArn := request.GetParamLowerFirst(req.Parameters, "executionArn")
+	nextToken := request.GetParamLowerFirst(req.Parameters, "nextToken")
 
 	mapRunsMu.Lock()
 	defer mapRunsMu.Unlock()
@@ -161,11 +164,31 @@ func (s *StepFunctionService) ListMapRuns(ctx context.Context, reqCtx *request.R
 		limit = 100
 	}
 
-	if int32(len(matchingRuns)) > limit {
-		matchingRuns = matchingRuns[:limit]
+	skipCount := 0
+	if nextToken != "" {
+		for i, run := range matchingRuns {
+			if arn, ok := run["executionArn"].(string); ok && arn == nextToken {
+				skipCount = i + 1
+				break
+			}
+		}
+	}
+
+	paged := matchingRuns[skipCount:]
+	isTruncated := int32(len(paged)) > limit
+	if isTruncated {
+		paged = paged[:limit]
+	}
+
+	respNextToken := ""
+	if isTruncated && len(paged) > 0 {
+		if arn, ok := paged[len(paged)-1]["executionArn"].(string); ok {
+			respNextToken = arn
+		}
 	}
 
 	return map[string]interface{}{
-		"mapRuns": matchingRuns,
+		"mapRuns":   paged,
+		"nextToken": respNextToken,
 	}, nil
 }

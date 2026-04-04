@@ -207,13 +207,14 @@ func (s *Store) GetParameters(names []string, withDecryption bool) ([]*Parameter
 // GetParameterHistory retrieves the version history of a parameter.
 // Results are returned in reverse chronological order (newest first),
 // matching the AWS API behaviour.
-func (s *Store) GetParameterHistory(name string, maxResults int32) ([]*ParameterVersion, error) {
+// Returns the history items along with pagination metadata (NextMarker, IsTruncated).
+func (s *Store) GetParameterHistory(name string, maxResults int32, marker string) ([]*ParameterVersion, string, bool, error) {
 	param, err := s.GetParameter(name, false)
 	if err != nil {
-		return nil, err
+		return nil, "", false, err
 	}
 
-	opts := common.ListOptions{MaxItems: int(maxResults)}
+	opts := common.ListOptions{MaxItems: int(maxResults), Marker: marker}
 	if maxResults <= 0 {
 		opts.MaxItems = 50
 	}
@@ -222,7 +223,7 @@ func (s *Store) GetParameterHistory(name string, maxResults int32) ([]*Parameter
 		return pv.ParameterName == name
 	})
 	if err != nil {
-		return nil, err
+		return nil, "", false, err
 	}
 
 	for _, pv := range result.Items {
@@ -238,7 +239,7 @@ func (s *Store) GetParameterHistory(name string, maxResults int32) ([]*Parameter
 		result.Items[i], result.Items[j] = result.Items[j], result.Items[i]
 	}
 
-	return result.Items, nil
+	return result.Items, result.NextMarker, result.IsTruncated, nil
 }
 
 // DeleteParameter deletes a parameter.

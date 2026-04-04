@@ -282,11 +282,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 		_, err := client.DescribeCertificate(ctx, &acm.DescribeCertificateInput{
 			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent certificate")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") && !strings.Contains(err.Error(), "NotFound") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -320,11 +317,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 		_, err := client.GetCertificate(ctx, &acm.GetCertificateInput{
 			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent certificate")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") && !strings.Contains(err.Error(), "NotFound") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -429,11 +423,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 		_, err := client.DeleteCertificate(ctx, &acm.DeleteCertificateInput{
 			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent certificate")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") && !strings.Contains(err.Error(), "NotFound") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -536,11 +527,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
 			Tags:           []types.Tag{{Key: aws.String("X"), Value: aws.String("Y")}},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent certificate")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") && !strings.Contains(err.Error(), "NotFound") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -550,11 +538,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
 			Tags:           []types.Tag{{Key: aws.String("X")}},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent certificate")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") && !strings.Contains(err.Error(), "NotFound") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -563,11 +548,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 		_, err := client.ListTagsForCertificate(ctx, &acm.ListTagsForCertificateInput{
 			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent certificate")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") && !strings.Contains(err.Error(), "NotFound") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -609,11 +591,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			Domain:           aws.String("example.com"),
 			ValidationDomain: aws.String("example.com"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for ISSUED status")
-		}
-		if !strings.Contains(err.Error(), "InvalidStateException") {
-			return fmt.Errorf("expected InvalidStateException, got: %v", err)
+		if err := AssertErrorContains(err, "InvalidStateException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -660,11 +639,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 				CertificateTransparencyLoggingPreference: types.CertificateTransparencyLoggingPreferenceEnabled,
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent certificate")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") && !strings.Contains(err.Error(), "NotFound") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -683,11 +659,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 		_, err = client.RenewCertificate(ctx, &acm.RenewCertificateInput{
 			CertificateArn: importResp.CertificateArn,
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for IMPORTED cert")
-		}
-		if !strings.Contains(err.Error(), "ValidationException") {
-			return fmt.Errorf("expected ValidationException, got: %v", err)
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -696,11 +669,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 		_, err := client.RenewCertificate(ctx, &acm.RenewCertificateInput{
 			CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent certificate")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") && !strings.Contains(err.Error(), "NotFound") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -825,11 +795,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			CertificateArn:   resp.CertificateArn,
 			RevocationReason: types.RevocationReasonKeyCompromise,
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for PENDING_VALIDATION cert")
-		}
-		if !strings.Contains(err.Error(), "InvalidStateException") {
-			return fmt.Errorf("expected InvalidStateException, got: %v", err)
+		if err := AssertErrorContains(err, "InvalidStateException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -839,11 +806,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			CertificateArn:   aws.String("arn:aws:acm:us-east-1:123456789012:certificate/nonexistent"),
 			RevocationReason: types.RevocationReasonKeyCompromise,
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent certificate")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") && !strings.Contains(err.Error(), "NotFound") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -926,11 +890,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			CertificateArn: resp.CertificateArn,
 			Passphrase:     []byte("test-passphrase"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for AMAZON_ISSUED cert")
-		}
-		if !strings.Contains(err.Error(), "ValidationException") {
-			return fmt.Errorf("expected ValidationException, got: %v", err)
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
 		}
 		return nil
 	}))

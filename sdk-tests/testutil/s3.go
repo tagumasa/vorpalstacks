@@ -545,11 +545,8 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 		_, err := client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{
 			Bucket: aws.String(bucketName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for missing policy")
-		}
-		if !strings.Contains(err.Error(), "NoSuchBucketPolicy") {
-			return fmt.Errorf("expected NoSuchBucketPolicy, got: %v", err)
+		if err := AssertErrorContains(err, "NoSuchBucketPolicy"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -599,11 +596,8 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 		_, err := client.GetBucketCors(ctx, &s3.GetBucketCorsInput{
 			Bucket: aws.String(bucketName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for missing CORS")
-		}
-		if !strings.Contains(err.Error(), "NoSuchCORSConfiguration") {
-			return fmt.Errorf("expected NoSuchCORSConfiguration, got: %v", err)
+		if err := AssertErrorContains(err, "NoSuchCORSConfiguration"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -653,11 +647,8 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 		_, err := client.GetBucketEncryption(ctx, &s3.GetBucketEncryptionInput{
 			Bucket: aws.String(bucketName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for missing encryption")
-		}
-		if !strings.Contains(err.Error(), "ServerSideEncryptionConfigurationNotFoundError") {
-			return fmt.Errorf("expected ServerSideEncryptionConfigurationNotFoundError, got: %v", err)
+		if err := AssertErrorContains(err, "ServerSideEncryptionConfigurationNotFoundError"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -761,11 +752,8 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 		_, err := client.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
 			Bucket: aws.String(bucketName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for missing lifecycle")
-		}
-		if !strings.Contains(err.Error(), "NoSuchLifecycleConfiguration") {
-			return fmt.Errorf("expected NoSuchLifecycleConfiguration, got: %v", err)
+		if err := AssertErrorContains(err, "NoSuchLifecycleConfiguration"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -814,11 +802,8 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 		_, err := client.GetBucketWebsite(ctx, &s3.GetBucketWebsiteInput{
 			Bucket: aws.String(bucketName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for missing website")
-		}
-		if !strings.Contains(err.Error(), "NoSuchWebsiteConfiguration") {
-			return fmt.Errorf("expected NoSuchWebsiteConfiguration, got: %v", err)
+		if err := AssertErrorContains(err, "NoSuchWebsiteConfiguration"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -972,11 +957,8 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 		_, err := client.GetPublicAccessBlock(ctx, &s3.GetPublicAccessBlockInput{
 			Bucket: aws.String(bucketName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for missing public access block")
-		}
-		if !strings.Contains(err.Error(), "NoSuchPublicAccessBlockConfiguration") {
-			return fmt.Errorf("expected NoSuchPublicAccessBlockConfiguration, got: %v", err)
+		if err := AssertErrorContains(err, "NoSuchPublicAccessBlockConfiguration"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1022,11 +1004,8 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 		_, err := client.GetBucketOwnershipControls(ctx, &s3.GetBucketOwnershipControlsInput{
 			Bucket: aws.String(bucketName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for missing ownership controls")
-		}
-		if !strings.Contains(err.Error(), "OwnershipControlsNotFoundError") {
-			return fmt.Errorf("expected OwnershipControlsNotFoundError, got: %v", err)
+		if err := AssertErrorContains(err, "OwnershipControlsNotFoundError"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1625,11 +1604,8 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 		_, err = client.DeleteBucket(ctx, &s3.DeleteBucketInput{
 			Bucket: aws.String(neBucket),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleting non-empty bucket")
-		}
-		if !strings.Contains(err.Error(), "BucketNotEmpty") {
-			return fmt.Errorf("expected BucketNotEmpty, got: %v", err)
+		if err := AssertErrorContains(err, "BucketNotEmpty"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -2049,6 +2025,63 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 	}))
 
 	// ========== CLEANUP ==========
+
+	results = append(results, r.RunTest("s3", "ListObjectsV2_Pagination", func() error {
+		pagBucket := s3Bucket(ts, "pag")
+		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(pagBucket)})
+		if err != nil {
+			return fmt.Errorf("create bucket: %v", err)
+		}
+
+		var pagKeys []string
+		for i := 0; i < 5; i++ {
+			key := fmt.Sprintf("pag/object-%d.txt", i)
+			_, err := client.PutObject(ctx, &s3.PutObjectInput{
+				Bucket: aws.String(pagBucket),
+				Key:    aws.String(key),
+				Body:   strings.NewReader("pagination test data"),
+			})
+			if err != nil {
+				s3CleanupBucket(ctx, client, pagBucket)
+				return fmt.Errorf("put object %s: %v", key, err)
+			}
+			pagKeys = append(pagKeys, key)
+		}
+
+		var allKeys []string
+		var contToken *string
+		pageCount := 0
+		for {
+			resp, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+				Bucket:            aws.String(pagBucket),
+				Prefix:            aws.String("pag/"),
+				MaxKeys:           aws.Int32(2),
+				ContinuationToken: contToken,
+			})
+			if err != nil {
+				s3CleanupBucket(ctx, client, pagBucket)
+				return fmt.Errorf("list objects page: %v", err)
+			}
+			pageCount++
+			for _, obj := range resp.Contents {
+				allKeys = append(allKeys, *obj.Key)
+			}
+			if resp.IsTruncated != nil && *resp.IsTruncated {
+				contToken = resp.NextContinuationToken
+			} else {
+				break
+			}
+		}
+
+		s3CleanupBucket(ctx, client, pagBucket)
+		if len(allKeys) != 5 {
+			return fmt.Errorf("expected 5 paginated objects, got %d", len(allKeys))
+		}
+		if pageCount < 2 {
+			return fmt.Errorf("expected at least 2 pages, got %d", pageCount)
+		}
+		return nil
+	}))
 
 	results = append(results, r.RunTest("s3", "DeleteBucket", func() error {
 		s3CleanupBucket(ctx, client, bucketName)

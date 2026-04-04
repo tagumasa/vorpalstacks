@@ -447,6 +447,52 @@ func (BucketLogsPermission) EnumDescriptor() ([]byte, []int) {
 	return file_s3_proto_rawDescGZIP(), []int{6}
 }
 
+type BucketNamespace int32
+
+const (
+	BucketNamespace_BUCKET_NAMESPACE_GLOBAL           BucketNamespace = 0
+	BucketNamespace_BUCKET_NAMESPACE_ACCOUNT_REGIONAL BucketNamespace = 1
+)
+
+// Enum value maps for BucketNamespace.
+var (
+	BucketNamespace_name = map[int32]string{
+		0: "BUCKET_NAMESPACE_GLOBAL",
+		1: "BUCKET_NAMESPACE_ACCOUNT_REGIONAL",
+	}
+	BucketNamespace_value = map[string]int32{
+		"BUCKET_NAMESPACE_GLOBAL":           0,
+		"BUCKET_NAMESPACE_ACCOUNT_REGIONAL": 1,
+	}
+)
+
+func (x BucketNamespace) Enum() *BucketNamespace {
+	p := new(BucketNamespace)
+	*p = x
+	return p
+}
+
+func (x BucketNamespace) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BucketNamespace) Descriptor() protoreflect.EnumDescriptor {
+	return file_s3_proto_enumTypes[7].Descriptor()
+}
+
+func (BucketNamespace) Type() protoreflect.EnumType {
+	return &file_s3_proto_enumTypes[7]
+}
+
+func (x BucketNamespace) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BucketNamespace.Descriptor instead.
+func (BucketNamespace) EnumDescriptor() ([]byte, []int) {
+	return file_s3_proto_rawDescGZIP(), []int{7}
+}
+
 type BucketType int32
 
 const (
@@ -474,11 +520,11 @@ func (x BucketType) String() string {
 }
 
 func (BucketType) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[7].Descriptor()
+	return file_s3_proto_enumTypes[8].Descriptor()
 }
 
 func (BucketType) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[7]
+	return &file_s3_proto_enumTypes[8]
 }
 
 func (x BucketType) Number() protoreflect.EnumNumber {
@@ -487,7 +533,7 @@ func (x BucketType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use BucketType.Descriptor instead.
 func (BucketType) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{7}
+	return file_s3_proto_rawDescGZIP(), []int{8}
 }
 
 type BucketVersioningStatus int32
@@ -520,11 +566,11 @@ func (x BucketVersioningStatus) String() string {
 }
 
 func (BucketVersioningStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[8].Descriptor()
+	return file_s3_proto_enumTypes[9].Descriptor()
 }
 
 func (BucketVersioningStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[8]
+	return &file_s3_proto_enumTypes[9]
 }
 
 func (x BucketVersioningStatus) Number() protoreflect.EnumNumber {
@@ -533,7 +579,7 @@ func (x BucketVersioningStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use BucketVersioningStatus.Descriptor instead.
 func (BucketVersioningStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{8}
+	return file_s3_proto_rawDescGZIP(), []int{9}
 }
 
 type ChecksumAlgorithm int32
@@ -575,11 +621,11 @@ func (x ChecksumAlgorithm) String() string {
 }
 
 func (ChecksumAlgorithm) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[9].Descriptor()
+	return file_s3_proto_enumTypes[10].Descriptor()
 }
 
 func (ChecksumAlgorithm) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[9]
+	return &file_s3_proto_enumTypes[10]
 }
 
 func (x ChecksumAlgorithm) Number() protoreflect.EnumNumber {
@@ -588,7 +634,7 @@ func (x ChecksumAlgorithm) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ChecksumAlgorithm.Descriptor instead.
 func (ChecksumAlgorithm) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{9}
+	return file_s3_proto_rawDescGZIP(), []int{10}
 }
 
 type ChecksumMode int32
@@ -618,11 +664,11 @@ func (x ChecksumMode) String() string {
 }
 
 func (ChecksumMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[10].Descriptor()
+	return file_s3_proto_enumTypes[11].Descriptor()
 }
 
 func (ChecksumMode) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[10]
+	return &file_s3_proto_enumTypes[11]
 }
 
 func (x ChecksumMode) Number() protoreflect.EnumNumber {
@@ -631,7 +677,7 @@ func (x ChecksumMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ChecksumMode.Descriptor instead.
 func (ChecksumMode) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{10}
+	return file_s3_proto_rawDescGZIP(), []int{11}
 }
 
 type ChecksumType int32
@@ -664,11 +710,11 @@ func (x ChecksumType) String() string {
 }
 
 func (ChecksumType) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[11].Descriptor()
+	return file_s3_proto_enumTypes[12].Descriptor()
 }
 
 func (ChecksumType) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[11]
+	return &file_s3_proto_enumTypes[12]
 }
 
 func (x ChecksumType) Number() protoreflect.EnumNumber {
@@ -677,7 +723,7 @@ func (x ChecksumType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ChecksumType.Descriptor instead.
 func (ChecksumType) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{11}
+	return file_s3_proto_rawDescGZIP(), []int{12}
 }
 
 type CompressionType int32
@@ -713,11 +759,11 @@ func (x CompressionType) String() string {
 }
 
 func (CompressionType) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[12].Descriptor()
+	return file_s3_proto_enumTypes[13].Descriptor()
 }
 
 func (CompressionType) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[12]
+	return &file_s3_proto_enumTypes[13]
 }
 
 func (x CompressionType) Number() protoreflect.EnumNumber {
@@ -726,7 +772,7 @@ func (x CompressionType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CompressionType.Descriptor instead.
 func (CompressionType) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{12}
+	return file_s3_proto_rawDescGZIP(), []int{13}
 }
 
 type DataRedundancy int32
@@ -759,11 +805,11 @@ func (x DataRedundancy) String() string {
 }
 
 func (DataRedundancy) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[13].Descriptor()
+	return file_s3_proto_enumTypes[14].Descriptor()
 }
 
 func (DataRedundancy) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[13]
+	return &file_s3_proto_enumTypes[14]
 }
 
 func (x DataRedundancy) Number() protoreflect.EnumNumber {
@@ -772,7 +818,7 @@ func (x DataRedundancy) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataRedundancy.Descriptor instead.
 func (DataRedundancy) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{13}
+	return file_s3_proto_rawDescGZIP(), []int{14}
 }
 
 type DeleteMarkerReplicationStatus int32
@@ -805,11 +851,11 @@ func (x DeleteMarkerReplicationStatus) String() string {
 }
 
 func (DeleteMarkerReplicationStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[14].Descriptor()
+	return file_s3_proto_enumTypes[15].Descriptor()
 }
 
 func (DeleteMarkerReplicationStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[14]
+	return &file_s3_proto_enumTypes[15]
 }
 
 func (x DeleteMarkerReplicationStatus) Number() protoreflect.EnumNumber {
@@ -818,7 +864,7 @@ func (x DeleteMarkerReplicationStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DeleteMarkerReplicationStatus.Descriptor instead.
 func (DeleteMarkerReplicationStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{14}
+	return file_s3_proto_rawDescGZIP(), []int{15}
 }
 
 type EncodingType int32
@@ -848,11 +894,11 @@ func (x EncodingType) String() string {
 }
 
 func (EncodingType) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[15].Descriptor()
+	return file_s3_proto_enumTypes[16].Descriptor()
 }
 
 func (EncodingType) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[15]
+	return &file_s3_proto_enumTypes[16]
 }
 
 func (x EncodingType) Number() protoreflect.EnumNumber {
@@ -861,7 +907,7 @@ func (x EncodingType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EncodingType.Descriptor instead.
 func (EncodingType) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{15}
+	return file_s3_proto_rawDescGZIP(), []int{16}
 }
 
 type EncryptionType int32
@@ -894,11 +940,11 @@ func (x EncryptionType) String() string {
 }
 
 func (EncryptionType) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[16].Descriptor()
+	return file_s3_proto_enumTypes[17].Descriptor()
 }
 
 func (EncryptionType) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[16]
+	return &file_s3_proto_enumTypes[17]
 }
 
 func (x EncryptionType) Number() protoreflect.EnumNumber {
@@ -907,7 +953,7 @@ func (x EncryptionType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EncryptionType.Descriptor instead.
 func (EncryptionType) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{16}
+	return file_s3_proto_rawDescGZIP(), []int{17}
 }
 
 type Event int32
@@ -1015,11 +1061,11 @@ func (x Event) String() string {
 }
 
 func (Event) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[17].Descriptor()
+	return file_s3_proto_enumTypes[18].Descriptor()
 }
 
 func (Event) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[17]
+	return &file_s3_proto_enumTypes[18]
 }
 
 func (x Event) Number() protoreflect.EnumNumber {
@@ -1028,7 +1074,7 @@ func (x Event) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Event.Descriptor instead.
 func (Event) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{17}
+	return file_s3_proto_rawDescGZIP(), []int{18}
 }
 
 type ExistingObjectReplicationStatus int32
@@ -1061,11 +1107,11 @@ func (x ExistingObjectReplicationStatus) String() string {
 }
 
 func (ExistingObjectReplicationStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[18].Descriptor()
+	return file_s3_proto_enumTypes[19].Descriptor()
 }
 
 func (ExistingObjectReplicationStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[18]
+	return &file_s3_proto_enumTypes[19]
 }
 
 func (x ExistingObjectReplicationStatus) Number() protoreflect.EnumNumber {
@@ -1074,7 +1120,7 @@ func (x ExistingObjectReplicationStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ExistingObjectReplicationStatus.Descriptor instead.
 func (ExistingObjectReplicationStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{18}
+	return file_s3_proto_rawDescGZIP(), []int{19}
 }
 
 type ExpirationState int32
@@ -1107,11 +1153,11 @@ func (x ExpirationState) String() string {
 }
 
 func (ExpirationState) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[19].Descriptor()
+	return file_s3_proto_enumTypes[20].Descriptor()
 }
 
 func (ExpirationState) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[19]
+	return &file_s3_proto_enumTypes[20]
 }
 
 func (x ExpirationState) Number() protoreflect.EnumNumber {
@@ -1120,7 +1166,7 @@ func (x ExpirationState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ExpirationState.Descriptor instead.
 func (ExpirationState) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{19}
+	return file_s3_proto_rawDescGZIP(), []int{20}
 }
 
 type ExpirationStatus int32
@@ -1153,11 +1199,11 @@ func (x ExpirationStatus) String() string {
 }
 
 func (ExpirationStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[20].Descriptor()
+	return file_s3_proto_enumTypes[21].Descriptor()
 }
 
 func (ExpirationStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[20]
+	return &file_s3_proto_enumTypes[21]
 }
 
 func (x ExpirationStatus) Number() protoreflect.EnumNumber {
@@ -1166,7 +1212,7 @@ func (x ExpirationStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ExpirationStatus.Descriptor instead.
 func (ExpirationStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{20}
+	return file_s3_proto_rawDescGZIP(), []int{21}
 }
 
 type ExpressionType int32
@@ -1196,11 +1242,11 @@ func (x ExpressionType) String() string {
 }
 
 func (ExpressionType) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[21].Descriptor()
+	return file_s3_proto_enumTypes[22].Descriptor()
 }
 
 func (ExpressionType) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[21]
+	return &file_s3_proto_enumTypes[22]
 }
 
 func (x ExpressionType) Number() protoreflect.EnumNumber {
@@ -1209,7 +1255,7 @@ func (x ExpressionType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ExpressionType.Descriptor instead.
 func (ExpressionType) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{21}
+	return file_s3_proto_rawDescGZIP(), []int{22}
 }
 
 type FileHeaderInfo int32
@@ -1245,11 +1291,11 @@ func (x FileHeaderInfo) String() string {
 }
 
 func (FileHeaderInfo) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[22].Descriptor()
+	return file_s3_proto_enumTypes[23].Descriptor()
 }
 
 func (FileHeaderInfo) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[22]
+	return &file_s3_proto_enumTypes[23]
 }
 
 func (x FileHeaderInfo) Number() protoreflect.EnumNumber {
@@ -1258,7 +1304,7 @@ func (x FileHeaderInfo) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use FileHeaderInfo.Descriptor instead.
 func (FileHeaderInfo) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{22}
+	return file_s3_proto_rawDescGZIP(), []int{23}
 }
 
 type FilterRuleName int32
@@ -1291,11 +1337,11 @@ func (x FilterRuleName) String() string {
 }
 
 func (FilterRuleName) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[23].Descriptor()
+	return file_s3_proto_enumTypes[24].Descriptor()
 }
 
 func (FilterRuleName) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[23]
+	return &file_s3_proto_enumTypes[24]
 }
 
 func (x FilterRuleName) Number() protoreflect.EnumNumber {
@@ -1304,7 +1350,7 @@ func (x FilterRuleName) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use FilterRuleName.Descriptor instead.
 func (FilterRuleName) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{23}
+	return file_s3_proto_rawDescGZIP(), []int{24}
 }
 
 type IntelligentTieringAccessTier int32
@@ -1337,11 +1383,11 @@ func (x IntelligentTieringAccessTier) String() string {
 }
 
 func (IntelligentTieringAccessTier) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[24].Descriptor()
+	return file_s3_proto_enumTypes[25].Descriptor()
 }
 
 func (IntelligentTieringAccessTier) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[24]
+	return &file_s3_proto_enumTypes[25]
 }
 
 func (x IntelligentTieringAccessTier) Number() protoreflect.EnumNumber {
@@ -1350,7 +1396,7 @@ func (x IntelligentTieringAccessTier) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use IntelligentTieringAccessTier.Descriptor instead.
 func (IntelligentTieringAccessTier) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{24}
+	return file_s3_proto_rawDescGZIP(), []int{25}
 }
 
 type IntelligentTieringStatus int32
@@ -1383,11 +1429,11 @@ func (x IntelligentTieringStatus) String() string {
 }
 
 func (IntelligentTieringStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[25].Descriptor()
+	return file_s3_proto_enumTypes[26].Descriptor()
 }
 
 func (IntelligentTieringStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[25]
+	return &file_s3_proto_enumTypes[26]
 }
 
 func (x IntelligentTieringStatus) Number() protoreflect.EnumNumber {
@@ -1396,7 +1442,7 @@ func (x IntelligentTieringStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use IntelligentTieringStatus.Descriptor instead.
 func (IntelligentTieringStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{25}
+	return file_s3_proto_rawDescGZIP(), []int{26}
 }
 
 type InventoryConfigurationState int32
@@ -1429,11 +1475,11 @@ func (x InventoryConfigurationState) String() string {
 }
 
 func (InventoryConfigurationState) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[26].Descriptor()
+	return file_s3_proto_enumTypes[27].Descriptor()
 }
 
 func (InventoryConfigurationState) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[26]
+	return &file_s3_proto_enumTypes[27]
 }
 
 func (x InventoryConfigurationState) Number() protoreflect.EnumNumber {
@@ -1442,7 +1488,7 @@ func (x InventoryConfigurationState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use InventoryConfigurationState.Descriptor instead.
 func (InventoryConfigurationState) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{26}
+	return file_s3_proto_rawDescGZIP(), []int{27}
 }
 
 type InventoryFormat int32
@@ -1478,11 +1524,11 @@ func (x InventoryFormat) String() string {
 }
 
 func (InventoryFormat) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[27].Descriptor()
+	return file_s3_proto_enumTypes[28].Descriptor()
 }
 
 func (InventoryFormat) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[27]
+	return &file_s3_proto_enumTypes[28]
 }
 
 func (x InventoryFormat) Number() protoreflect.EnumNumber {
@@ -1491,7 +1537,7 @@ func (x InventoryFormat) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use InventoryFormat.Descriptor instead.
 func (InventoryFormat) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{27}
+	return file_s3_proto_rawDescGZIP(), []int{28}
 }
 
 type InventoryFrequency int32
@@ -1524,11 +1570,11 @@ func (x InventoryFrequency) String() string {
 }
 
 func (InventoryFrequency) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[28].Descriptor()
+	return file_s3_proto_enumTypes[29].Descriptor()
 }
 
 func (InventoryFrequency) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[28]
+	return &file_s3_proto_enumTypes[29]
 }
 
 func (x InventoryFrequency) Number() protoreflect.EnumNumber {
@@ -1537,7 +1583,7 @@ func (x InventoryFrequency) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use InventoryFrequency.Descriptor instead.
 func (InventoryFrequency) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{28}
+	return file_s3_proto_rawDescGZIP(), []int{29}
 }
 
 type InventoryIncludedObjectVersions int32
@@ -1570,11 +1616,11 @@ func (x InventoryIncludedObjectVersions) String() string {
 }
 
 func (InventoryIncludedObjectVersions) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[29].Descriptor()
+	return file_s3_proto_enumTypes[30].Descriptor()
 }
 
 func (InventoryIncludedObjectVersions) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[29]
+	return &file_s3_proto_enumTypes[30]
 }
 
 func (x InventoryIncludedObjectVersions) Number() protoreflect.EnumNumber {
@@ -1583,7 +1629,7 @@ func (x InventoryIncludedObjectVersions) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use InventoryIncludedObjectVersions.Descriptor instead.
 func (InventoryIncludedObjectVersions) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{29}
+	return file_s3_proto_rawDescGZIP(), []int{30}
 }
 
 type InventoryOptionalField int32
@@ -1658,11 +1704,11 @@ func (x InventoryOptionalField) String() string {
 }
 
 func (InventoryOptionalField) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[30].Descriptor()
+	return file_s3_proto_enumTypes[31].Descriptor()
 }
 
 func (InventoryOptionalField) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[30]
+	return &file_s3_proto_enumTypes[31]
 }
 
 func (x InventoryOptionalField) Number() protoreflect.EnumNumber {
@@ -1671,7 +1717,7 @@ func (x InventoryOptionalField) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use InventoryOptionalField.Descriptor instead.
 func (InventoryOptionalField) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{30}
+	return file_s3_proto_rawDescGZIP(), []int{31}
 }
 
 type JSONType int32
@@ -1704,11 +1750,11 @@ func (x JSONType) String() string {
 }
 
 func (JSONType) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[31].Descriptor()
+	return file_s3_proto_enumTypes[32].Descriptor()
 }
 
 func (JSONType) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[31]
+	return &file_s3_proto_enumTypes[32]
 }
 
 func (x JSONType) Number() protoreflect.EnumNumber {
@@ -1717,7 +1763,7 @@ func (x JSONType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use JSONType.Descriptor instead.
 func (JSONType) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{31}
+	return file_s3_proto_rawDescGZIP(), []int{32}
 }
 
 type LocationType int32
@@ -1750,11 +1796,11 @@ func (x LocationType) String() string {
 }
 
 func (LocationType) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[32].Descriptor()
+	return file_s3_proto_enumTypes[33].Descriptor()
 }
 
 func (LocationType) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[32]
+	return &file_s3_proto_enumTypes[33]
 }
 
 func (x LocationType) Number() protoreflect.EnumNumber {
@@ -1763,7 +1809,7 @@ func (x LocationType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LocationType.Descriptor instead.
 func (LocationType) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{32}
+	return file_s3_proto_rawDescGZIP(), []int{33}
 }
 
 type MFADelete int32
@@ -1796,11 +1842,11 @@ func (x MFADelete) String() string {
 }
 
 func (MFADelete) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[33].Descriptor()
+	return file_s3_proto_enumTypes[34].Descriptor()
 }
 
 func (MFADelete) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[33]
+	return &file_s3_proto_enumTypes[34]
 }
 
 func (x MFADelete) Number() protoreflect.EnumNumber {
@@ -1809,7 +1855,7 @@ func (x MFADelete) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MFADelete.Descriptor instead.
 func (MFADelete) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{33}
+	return file_s3_proto_rawDescGZIP(), []int{34}
 }
 
 type MFADeleteStatus int32
@@ -1842,11 +1888,11 @@ func (x MFADeleteStatus) String() string {
 }
 
 func (MFADeleteStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[34].Descriptor()
+	return file_s3_proto_enumTypes[35].Descriptor()
 }
 
 func (MFADeleteStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[34]
+	return &file_s3_proto_enumTypes[35]
 }
 
 func (x MFADeleteStatus) Number() protoreflect.EnumNumber {
@@ -1855,7 +1901,7 @@ func (x MFADeleteStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MFADeleteStatus.Descriptor instead.
 func (MFADeleteStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{34}
+	return file_s3_proto_rawDescGZIP(), []int{35}
 }
 
 type MetadataDirective int32
@@ -1888,11 +1934,11 @@ func (x MetadataDirective) String() string {
 }
 
 func (MetadataDirective) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[35].Descriptor()
+	return file_s3_proto_enumTypes[36].Descriptor()
 }
 
 func (MetadataDirective) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[35]
+	return &file_s3_proto_enumTypes[36]
 }
 
 func (x MetadataDirective) Number() protoreflect.EnumNumber {
@@ -1901,7 +1947,7 @@ func (x MetadataDirective) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MetadataDirective.Descriptor instead.
 func (MetadataDirective) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{35}
+	return file_s3_proto_rawDescGZIP(), []int{36}
 }
 
 type MetricsStatus int32
@@ -1934,11 +1980,11 @@ func (x MetricsStatus) String() string {
 }
 
 func (MetricsStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[36].Descriptor()
+	return file_s3_proto_enumTypes[37].Descriptor()
 }
 
 func (MetricsStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[36]
+	return &file_s3_proto_enumTypes[37]
 }
 
 func (x MetricsStatus) Number() protoreflect.EnumNumber {
@@ -1947,7 +1993,7 @@ func (x MetricsStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MetricsStatus.Descriptor instead.
 func (MetricsStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{36}
+	return file_s3_proto_rawDescGZIP(), []int{37}
 }
 
 type ObjectAttributes int32
@@ -1989,11 +2035,11 @@ func (x ObjectAttributes) String() string {
 }
 
 func (ObjectAttributes) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[37].Descriptor()
+	return file_s3_proto_enumTypes[38].Descriptor()
 }
 
 func (ObjectAttributes) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[37]
+	return &file_s3_proto_enumTypes[38]
 }
 
 func (x ObjectAttributes) Number() protoreflect.EnumNumber {
@@ -2002,7 +2048,7 @@ func (x ObjectAttributes) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ObjectAttributes.Descriptor instead.
 func (ObjectAttributes) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{37}
+	return file_s3_proto_rawDescGZIP(), []int{38}
 }
 
 type ObjectCannedACL int32
@@ -2050,11 +2096,11 @@ func (x ObjectCannedACL) String() string {
 }
 
 func (ObjectCannedACL) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[38].Descriptor()
+	return file_s3_proto_enumTypes[39].Descriptor()
 }
 
 func (ObjectCannedACL) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[38]
+	return &file_s3_proto_enumTypes[39]
 }
 
 func (x ObjectCannedACL) Number() protoreflect.EnumNumber {
@@ -2063,7 +2109,7 @@ func (x ObjectCannedACL) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ObjectCannedACL.Descriptor instead.
 func (ObjectCannedACL) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{38}
+	return file_s3_proto_rawDescGZIP(), []int{39}
 }
 
 type ObjectLockEnabled int32
@@ -2093,11 +2139,11 @@ func (x ObjectLockEnabled) String() string {
 }
 
 func (ObjectLockEnabled) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[39].Descriptor()
+	return file_s3_proto_enumTypes[40].Descriptor()
 }
 
 func (ObjectLockEnabled) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[39]
+	return &file_s3_proto_enumTypes[40]
 }
 
 func (x ObjectLockEnabled) Number() protoreflect.EnumNumber {
@@ -2106,7 +2152,7 @@ func (x ObjectLockEnabled) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ObjectLockEnabled.Descriptor instead.
 func (ObjectLockEnabled) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{39}
+	return file_s3_proto_rawDescGZIP(), []int{40}
 }
 
 type ObjectLockLegalHoldStatus int32
@@ -2139,11 +2185,11 @@ func (x ObjectLockLegalHoldStatus) String() string {
 }
 
 func (ObjectLockLegalHoldStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[40].Descriptor()
+	return file_s3_proto_enumTypes[41].Descriptor()
 }
 
 func (ObjectLockLegalHoldStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[40]
+	return &file_s3_proto_enumTypes[41]
 }
 
 func (x ObjectLockLegalHoldStatus) Number() protoreflect.EnumNumber {
@@ -2152,7 +2198,7 @@ func (x ObjectLockLegalHoldStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ObjectLockLegalHoldStatus.Descriptor instead.
 func (ObjectLockLegalHoldStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{40}
+	return file_s3_proto_rawDescGZIP(), []int{41}
 }
 
 type ObjectLockMode int32
@@ -2185,11 +2231,11 @@ func (x ObjectLockMode) String() string {
 }
 
 func (ObjectLockMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[41].Descriptor()
+	return file_s3_proto_enumTypes[42].Descriptor()
 }
 
 func (ObjectLockMode) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[41]
+	return &file_s3_proto_enumTypes[42]
 }
 
 func (x ObjectLockMode) Number() protoreflect.EnumNumber {
@@ -2198,7 +2244,7 @@ func (x ObjectLockMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ObjectLockMode.Descriptor instead.
 func (ObjectLockMode) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{41}
+	return file_s3_proto_rawDescGZIP(), []int{42}
 }
 
 type ObjectLockRetentionMode int32
@@ -2231,11 +2277,11 @@ func (x ObjectLockRetentionMode) String() string {
 }
 
 func (ObjectLockRetentionMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[42].Descriptor()
+	return file_s3_proto_enumTypes[43].Descriptor()
 }
 
 func (ObjectLockRetentionMode) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[42]
+	return &file_s3_proto_enumTypes[43]
 }
 
 func (x ObjectLockRetentionMode) Number() protoreflect.EnumNumber {
@@ -2244,7 +2290,7 @@ func (x ObjectLockRetentionMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ObjectLockRetentionMode.Descriptor instead.
 func (ObjectLockRetentionMode) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{42}
+	return file_s3_proto_rawDescGZIP(), []int{43}
 }
 
 type ObjectOwnership int32
@@ -2280,11 +2326,11 @@ func (x ObjectOwnership) String() string {
 }
 
 func (ObjectOwnership) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[43].Descriptor()
+	return file_s3_proto_enumTypes[44].Descriptor()
 }
 
 func (ObjectOwnership) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[43]
+	return &file_s3_proto_enumTypes[44]
 }
 
 func (x ObjectOwnership) Number() protoreflect.EnumNumber {
@@ -2293,7 +2339,7 @@ func (x ObjectOwnership) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ObjectOwnership.Descriptor instead.
 func (ObjectOwnership) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{43}
+	return file_s3_proto_rawDescGZIP(), []int{44}
 }
 
 type ObjectStorageClass int32
@@ -2359,11 +2405,11 @@ func (x ObjectStorageClass) String() string {
 }
 
 func (ObjectStorageClass) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[44].Descriptor()
+	return file_s3_proto_enumTypes[45].Descriptor()
 }
 
 func (ObjectStorageClass) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[44]
+	return &file_s3_proto_enumTypes[45]
 }
 
 func (x ObjectStorageClass) Number() protoreflect.EnumNumber {
@@ -2372,7 +2418,7 @@ func (x ObjectStorageClass) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ObjectStorageClass.Descriptor instead.
 func (ObjectStorageClass) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{44}
+	return file_s3_proto_rawDescGZIP(), []int{45}
 }
 
 type ObjectVersionStorageClass int32
@@ -2402,11 +2448,11 @@ func (x ObjectVersionStorageClass) String() string {
 }
 
 func (ObjectVersionStorageClass) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[45].Descriptor()
+	return file_s3_proto_enumTypes[46].Descriptor()
 }
 
 func (ObjectVersionStorageClass) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[45]
+	return &file_s3_proto_enumTypes[46]
 }
 
 func (x ObjectVersionStorageClass) Number() protoreflect.EnumNumber {
@@ -2415,7 +2461,7 @@ func (x ObjectVersionStorageClass) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ObjectVersionStorageClass.Descriptor instead.
 func (ObjectVersionStorageClass) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{45}
+	return file_s3_proto_rawDescGZIP(), []int{46}
 }
 
 type OptionalObjectAttributes int32
@@ -2445,11 +2491,11 @@ func (x OptionalObjectAttributes) String() string {
 }
 
 func (OptionalObjectAttributes) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[46].Descriptor()
+	return file_s3_proto_enumTypes[47].Descriptor()
 }
 
 func (OptionalObjectAttributes) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[46]
+	return &file_s3_proto_enumTypes[47]
 }
 
 func (x OptionalObjectAttributes) Number() protoreflect.EnumNumber {
@@ -2458,7 +2504,7 @@ func (x OptionalObjectAttributes) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OptionalObjectAttributes.Descriptor instead.
 func (OptionalObjectAttributes) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{46}
+	return file_s3_proto_rawDescGZIP(), []int{47}
 }
 
 type OwnerOverride int32
@@ -2488,11 +2534,11 @@ func (x OwnerOverride) String() string {
 }
 
 func (OwnerOverride) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[47].Descriptor()
+	return file_s3_proto_enumTypes[48].Descriptor()
 }
 
 func (OwnerOverride) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[47]
+	return &file_s3_proto_enumTypes[48]
 }
 
 func (x OwnerOverride) Number() protoreflect.EnumNumber {
@@ -2501,7 +2547,7 @@ func (x OwnerOverride) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OwnerOverride.Descriptor instead.
 func (OwnerOverride) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{47}
+	return file_s3_proto_rawDescGZIP(), []int{48}
 }
 
 type PartitionDateSource int32
@@ -2534,11 +2580,11 @@ func (x PartitionDateSource) String() string {
 }
 
 func (PartitionDateSource) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[48].Descriptor()
+	return file_s3_proto_enumTypes[49].Descriptor()
 }
 
 func (PartitionDateSource) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[48]
+	return &file_s3_proto_enumTypes[49]
 }
 
 func (x PartitionDateSource) Number() protoreflect.EnumNumber {
@@ -2547,7 +2593,7 @@ func (x PartitionDateSource) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PartitionDateSource.Descriptor instead.
 func (PartitionDateSource) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{48}
+	return file_s3_proto_rawDescGZIP(), []int{49}
 }
 
 type Payer int32
@@ -2580,11 +2626,11 @@ func (x Payer) String() string {
 }
 
 func (Payer) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[49].Descriptor()
+	return file_s3_proto_enumTypes[50].Descriptor()
 }
 
 func (Payer) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[49]
+	return &file_s3_proto_enumTypes[50]
 }
 
 func (x Payer) Number() protoreflect.EnumNumber {
@@ -2593,7 +2639,7 @@ func (x Payer) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Payer.Descriptor instead.
 func (Payer) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{49}
+	return file_s3_proto_rawDescGZIP(), []int{50}
 }
 
 type Permission int32
@@ -2635,11 +2681,11 @@ func (x Permission) String() string {
 }
 
 func (Permission) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[50].Descriptor()
+	return file_s3_proto_enumTypes[51].Descriptor()
 }
 
 func (Permission) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[50]
+	return &file_s3_proto_enumTypes[51]
 }
 
 func (x Permission) Number() protoreflect.EnumNumber {
@@ -2648,7 +2694,7 @@ func (x Permission) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Permission.Descriptor instead.
 func (Permission) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{50}
+	return file_s3_proto_rawDescGZIP(), []int{51}
 }
 
 type Protocol int32
@@ -2681,11 +2727,11 @@ func (x Protocol) String() string {
 }
 
 func (Protocol) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[51].Descriptor()
+	return file_s3_proto_enumTypes[52].Descriptor()
 }
 
 func (Protocol) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[51]
+	return &file_s3_proto_enumTypes[52]
 }
 
 func (x Protocol) Number() protoreflect.EnumNumber {
@@ -2694,7 +2740,7 @@ func (x Protocol) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Protocol.Descriptor instead.
 func (Protocol) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{51}
+	return file_s3_proto_rawDescGZIP(), []int{52}
 }
 
 type QuoteFields int32
@@ -2727,11 +2773,11 @@ func (x QuoteFields) String() string {
 }
 
 func (QuoteFields) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[52].Descriptor()
+	return file_s3_proto_enumTypes[53].Descriptor()
 }
 
 func (QuoteFields) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[52]
+	return &file_s3_proto_enumTypes[53]
 }
 
 func (x QuoteFields) Number() protoreflect.EnumNumber {
@@ -2740,7 +2786,7 @@ func (x QuoteFields) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use QuoteFields.Descriptor instead.
 func (QuoteFields) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{52}
+	return file_s3_proto_rawDescGZIP(), []int{53}
 }
 
 type ReplicaModificationsStatus int32
@@ -2773,11 +2819,11 @@ func (x ReplicaModificationsStatus) String() string {
 }
 
 func (ReplicaModificationsStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[53].Descriptor()
+	return file_s3_proto_enumTypes[54].Descriptor()
 }
 
 func (ReplicaModificationsStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[53]
+	return &file_s3_proto_enumTypes[54]
 }
 
 func (x ReplicaModificationsStatus) Number() protoreflect.EnumNumber {
@@ -2786,7 +2832,7 @@ func (x ReplicaModificationsStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ReplicaModificationsStatus.Descriptor instead.
 func (ReplicaModificationsStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{53}
+	return file_s3_proto_rawDescGZIP(), []int{54}
 }
 
 type ReplicationRuleStatus int32
@@ -2819,11 +2865,11 @@ func (x ReplicationRuleStatus) String() string {
 }
 
 func (ReplicationRuleStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[54].Descriptor()
+	return file_s3_proto_enumTypes[55].Descriptor()
 }
 
 func (ReplicationRuleStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[54]
+	return &file_s3_proto_enumTypes[55]
 }
 
 func (x ReplicationRuleStatus) Number() protoreflect.EnumNumber {
@@ -2832,7 +2878,7 @@ func (x ReplicationRuleStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ReplicationRuleStatus.Descriptor instead.
 func (ReplicationRuleStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{54}
+	return file_s3_proto_rawDescGZIP(), []int{55}
 }
 
 type ReplicationStatus int32
@@ -2874,11 +2920,11 @@ func (x ReplicationStatus) String() string {
 }
 
 func (ReplicationStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[55].Descriptor()
+	return file_s3_proto_enumTypes[56].Descriptor()
 }
 
 func (ReplicationStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[55]
+	return &file_s3_proto_enumTypes[56]
 }
 
 func (x ReplicationStatus) Number() protoreflect.EnumNumber {
@@ -2887,7 +2933,7 @@ func (x ReplicationStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ReplicationStatus.Descriptor instead.
 func (ReplicationStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{55}
+	return file_s3_proto_rawDescGZIP(), []int{56}
 }
 
 type ReplicationTimeStatus int32
@@ -2920,11 +2966,11 @@ func (x ReplicationTimeStatus) String() string {
 }
 
 func (ReplicationTimeStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[56].Descriptor()
+	return file_s3_proto_enumTypes[57].Descriptor()
 }
 
 func (ReplicationTimeStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[56]
+	return &file_s3_proto_enumTypes[57]
 }
 
 func (x ReplicationTimeStatus) Number() protoreflect.EnumNumber {
@@ -2933,7 +2979,7 @@ func (x ReplicationTimeStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ReplicationTimeStatus.Descriptor instead.
 func (ReplicationTimeStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{56}
+	return file_s3_proto_rawDescGZIP(), []int{57}
 }
 
 type RequestCharged int32
@@ -2963,11 +3009,11 @@ func (x RequestCharged) String() string {
 }
 
 func (RequestCharged) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[57].Descriptor()
+	return file_s3_proto_enumTypes[58].Descriptor()
 }
 
 func (RequestCharged) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[57]
+	return &file_s3_proto_enumTypes[58]
 }
 
 func (x RequestCharged) Number() protoreflect.EnumNumber {
@@ -2976,7 +3022,7 @@ func (x RequestCharged) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RequestCharged.Descriptor instead.
 func (RequestCharged) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{57}
+	return file_s3_proto_rawDescGZIP(), []int{58}
 }
 
 type RequestPayer int32
@@ -3006,11 +3052,11 @@ func (x RequestPayer) String() string {
 }
 
 func (RequestPayer) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[58].Descriptor()
+	return file_s3_proto_enumTypes[59].Descriptor()
 }
 
 func (RequestPayer) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[58]
+	return &file_s3_proto_enumTypes[59]
 }
 
 func (x RequestPayer) Number() protoreflect.EnumNumber {
@@ -3019,7 +3065,7 @@ func (x RequestPayer) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RequestPayer.Descriptor instead.
 func (RequestPayer) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{58}
+	return file_s3_proto_rawDescGZIP(), []int{59}
 }
 
 type RestoreRequestType int32
@@ -3049,11 +3095,11 @@ func (x RestoreRequestType) String() string {
 }
 
 func (RestoreRequestType) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[59].Descriptor()
+	return file_s3_proto_enumTypes[60].Descriptor()
 }
 
 func (RestoreRequestType) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[59]
+	return &file_s3_proto_enumTypes[60]
 }
 
 func (x RestoreRequestType) Number() protoreflect.EnumNumber {
@@ -3062,7 +3108,7 @@ func (x RestoreRequestType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RestoreRequestType.Descriptor instead.
 func (RestoreRequestType) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{59}
+	return file_s3_proto_rawDescGZIP(), []int{60}
 }
 
 type S3TablesBucketType int32
@@ -3095,11 +3141,11 @@ func (x S3TablesBucketType) String() string {
 }
 
 func (S3TablesBucketType) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[60].Descriptor()
+	return file_s3_proto_enumTypes[61].Descriptor()
 }
 
 func (S3TablesBucketType) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[60]
+	return &file_s3_proto_enumTypes[61]
 }
 
 func (x S3TablesBucketType) Number() protoreflect.EnumNumber {
@@ -3108,7 +3154,7 @@ func (x S3TablesBucketType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use S3TablesBucketType.Descriptor instead.
 func (S3TablesBucketType) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{60}
+	return file_s3_proto_rawDescGZIP(), []int{61}
 }
 
 type ServerSideEncryption int32
@@ -3147,11 +3193,11 @@ func (x ServerSideEncryption) String() string {
 }
 
 func (ServerSideEncryption) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[61].Descriptor()
+	return file_s3_proto_enumTypes[62].Descriptor()
 }
 
 func (ServerSideEncryption) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[61]
+	return &file_s3_proto_enumTypes[62]
 }
 
 func (x ServerSideEncryption) Number() protoreflect.EnumNumber {
@@ -3160,7 +3206,7 @@ func (x ServerSideEncryption) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ServerSideEncryption.Descriptor instead.
 func (ServerSideEncryption) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{61}
+	return file_s3_proto_rawDescGZIP(), []int{62}
 }
 
 type SessionMode int32
@@ -3193,11 +3239,11 @@ func (x SessionMode) String() string {
 }
 
 func (SessionMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[62].Descriptor()
+	return file_s3_proto_enumTypes[63].Descriptor()
 }
 
 func (SessionMode) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[62]
+	return &file_s3_proto_enumTypes[63]
 }
 
 func (x SessionMode) Number() protoreflect.EnumNumber {
@@ -3206,7 +3252,7 @@ func (x SessionMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SessionMode.Descriptor instead.
 func (SessionMode) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{62}
+	return file_s3_proto_rawDescGZIP(), []int{63}
 }
 
 type SseKmsEncryptedObjectsStatus int32
@@ -3239,11 +3285,11 @@ func (x SseKmsEncryptedObjectsStatus) String() string {
 }
 
 func (SseKmsEncryptedObjectsStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[63].Descriptor()
+	return file_s3_proto_enumTypes[64].Descriptor()
 }
 
 func (SseKmsEncryptedObjectsStatus) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[63]
+	return &file_s3_proto_enumTypes[64]
 }
 
 func (x SseKmsEncryptedObjectsStatus) Number() protoreflect.EnumNumber {
@@ -3252,7 +3298,7 @@ func (x SseKmsEncryptedObjectsStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SseKmsEncryptedObjectsStatus.Descriptor instead.
 func (SseKmsEncryptedObjectsStatus) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{63}
+	return file_s3_proto_rawDescGZIP(), []int{64}
 }
 
 type StorageClass int32
@@ -3318,11 +3364,11 @@ func (x StorageClass) String() string {
 }
 
 func (StorageClass) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[64].Descriptor()
+	return file_s3_proto_enumTypes[65].Descriptor()
 }
 
 func (StorageClass) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[64]
+	return &file_s3_proto_enumTypes[65]
 }
 
 func (x StorageClass) Number() protoreflect.EnumNumber {
@@ -3331,7 +3377,7 @@ func (x StorageClass) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StorageClass.Descriptor instead.
 func (StorageClass) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{64}
+	return file_s3_proto_rawDescGZIP(), []int{65}
 }
 
 type StorageClassAnalysisSchemaVersion int32
@@ -3361,11 +3407,11 @@ func (x StorageClassAnalysisSchemaVersion) String() string {
 }
 
 func (StorageClassAnalysisSchemaVersion) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[65].Descriptor()
+	return file_s3_proto_enumTypes[66].Descriptor()
 }
 
 func (StorageClassAnalysisSchemaVersion) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[65]
+	return &file_s3_proto_enumTypes[66]
 }
 
 func (x StorageClassAnalysisSchemaVersion) Number() protoreflect.EnumNumber {
@@ -3374,7 +3420,7 @@ func (x StorageClassAnalysisSchemaVersion) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StorageClassAnalysisSchemaVersion.Descriptor instead.
 func (StorageClassAnalysisSchemaVersion) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{65}
+	return file_s3_proto_rawDescGZIP(), []int{66}
 }
 
 type TableSseAlgorithm int32
@@ -3407,11 +3453,11 @@ func (x TableSseAlgorithm) String() string {
 }
 
 func (TableSseAlgorithm) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[66].Descriptor()
+	return file_s3_proto_enumTypes[67].Descriptor()
 }
 
 func (TableSseAlgorithm) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[66]
+	return &file_s3_proto_enumTypes[67]
 }
 
 func (x TableSseAlgorithm) Number() protoreflect.EnumNumber {
@@ -3420,7 +3466,7 @@ func (x TableSseAlgorithm) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TableSseAlgorithm.Descriptor instead.
 func (TableSseAlgorithm) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{66}
+	return file_s3_proto_rawDescGZIP(), []int{67}
 }
 
 type TaggingDirective int32
@@ -3453,11 +3499,11 @@ func (x TaggingDirective) String() string {
 }
 
 func (TaggingDirective) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[67].Descriptor()
+	return file_s3_proto_enumTypes[68].Descriptor()
 }
 
 func (TaggingDirective) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[67]
+	return &file_s3_proto_enumTypes[68]
 }
 
 func (x TaggingDirective) Number() protoreflect.EnumNumber {
@@ -3466,7 +3512,7 @@ func (x TaggingDirective) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TaggingDirective.Descriptor instead.
 func (TaggingDirective) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{67}
+	return file_s3_proto_rawDescGZIP(), []int{68}
 }
 
 type Tier int32
@@ -3502,11 +3548,11 @@ func (x Tier) String() string {
 }
 
 func (Tier) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[68].Descriptor()
+	return file_s3_proto_enumTypes[69].Descriptor()
 }
 
 func (Tier) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[68]
+	return &file_s3_proto_enumTypes[69]
 }
 
 func (x Tier) Number() protoreflect.EnumNumber {
@@ -3515,7 +3561,7 @@ func (x Tier) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Tier.Descriptor instead.
 func (Tier) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{68}
+	return file_s3_proto_rawDescGZIP(), []int{69}
 }
 
 type TransitionDefaultMinimumObjectSize int32
@@ -3548,11 +3594,11 @@ func (x TransitionDefaultMinimumObjectSize) String() string {
 }
 
 func (TransitionDefaultMinimumObjectSize) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[69].Descriptor()
+	return file_s3_proto_enumTypes[70].Descriptor()
 }
 
 func (TransitionDefaultMinimumObjectSize) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[69]
+	return &file_s3_proto_enumTypes[70]
 }
 
 func (x TransitionDefaultMinimumObjectSize) Number() protoreflect.EnumNumber {
@@ -3561,7 +3607,7 @@ func (x TransitionDefaultMinimumObjectSize) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TransitionDefaultMinimumObjectSize.Descriptor instead.
 func (TransitionDefaultMinimumObjectSize) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{69}
+	return file_s3_proto_rawDescGZIP(), []int{70}
 }
 
 type TransitionStorageClass int32
@@ -3606,11 +3652,11 @@ func (x TransitionStorageClass) String() string {
 }
 
 func (TransitionStorageClass) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[70].Descriptor()
+	return file_s3_proto_enumTypes[71].Descriptor()
 }
 
 func (TransitionStorageClass) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[70]
+	return &file_s3_proto_enumTypes[71]
 }
 
 func (x TransitionStorageClass) Number() protoreflect.EnumNumber {
@@ -3619,7 +3665,7 @@ func (x TransitionStorageClass) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TransitionStorageClass.Descriptor instead.
 func (TransitionStorageClass) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{70}
+	return file_s3_proto_rawDescGZIP(), []int{71}
 }
 
 type Type int32
@@ -3655,11 +3701,11 @@ func (x Type) String() string {
 }
 
 func (Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_s3_proto_enumTypes[71].Descriptor()
+	return file_s3_proto_enumTypes[72].Descriptor()
 }
 
 func (Type) Type() protoreflect.EnumType {
-	return &file_s3_proto_enumTypes[71]
+	return &file_s3_proto_enumTypes[72]
 }
 
 func (x Type) Number() protoreflect.EnumNumber {
@@ -3668,7 +3714,7 @@ func (x Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Type.Descriptor instead.
 func (Type) EnumDescriptor() ([]byte, []int) {
-	return file_s3_proto_rawDescGZIP(), []int{71}
+	return file_s3_proto_rawDescGZIP(), []int{72}
 }
 
 type AbacStatus struct {
@@ -6635,6 +6681,7 @@ type CreateBucketRequest struct {
 	state                      protoimpl.MessageState     `protogen:"open.v1"`
 	Acl                        BucketCannedACL            `protobuf:"varint,394696836,opt,name=acl,proto3,enum=s3.BucketCannedACL" json:"acl,omitempty"`
 	Bucket                     string                     `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
+	Bucketnamespace            BucketNamespace            `protobuf:"varint,412736747,opt,name=bucketnamespace,proto3,enum=s3.BucketNamespace" json:"bucketnamespace,omitempty"`
 	Createbucketconfiguration  *CreateBucketConfiguration `protobuf:"bytes,27550528,opt,name=createbucketconfiguration,proto3" json:"createbucketconfiguration,omitempty"`
 	Grantfullcontrol           string                     `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3" json:"grantfullcontrol,omitempty"`
 	Grantread                  string                     `protobuf:"bytes,4518126,opt,name=grantread,proto3" json:"grantread,omitempty"`
@@ -6689,6 +6736,13 @@ func (x *CreateBucketRequest) GetBucket() string {
 		return x.Bucket
 	}
 	return ""
+}
+
+func (x *CreateBucketRequest) GetBucketnamespace() BucketNamespace {
+	if x != nil {
+		return x.Bucketnamespace
+	}
+	return BucketNamespace_BUCKET_NAMESPACE_GLOBAL
 }
 
 func (x *CreateBucketRequest) GetCreatebucketconfiguration() *CreateBucketConfiguration {
@@ -28202,10 +28256,11 @@ const file_s3_proto_rawDesc = "" +
 	"\x1ametadatatableconfiguration\x18\xaf\xdc\xf4\x89\x01 \x01(\v2\x1e.s3.MetadataTableConfigurationB\x04\x88\xb5\x18\x01R\x1ametadatatableconfiguration\"U\n" +
 	"\x12CreateBucketOutput\x12\x1f\n" +
 	"\tbucketarn\x18\xbb\xda\xf5y \x01(\tR\tbucketarn\x12\x1e\n" +
-	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\"\x8b\x04\n" +
+	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\"\xce\x04\n" +
 	"\x13CreateBucketRequest\x12)\n" +
 	"\x03acl\x18\x84\xb1\x9a\xbc\x01 \x01(\x0e2\x13.s3.BucketCannedACLR\x03acl\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12d\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12A\n" +
+	"\x0fbucketnamespace\x18\xeb\xb9\xe7\xc4\x01 \x01(\x0e2\x13.s3.BucketNamespaceR\x0fbucketnamespace\x12d\n" +
 	"\x19createbucketconfiguration\x18\xc0Ƒ\r \x01(\v2\x1d.s3.CreateBucketConfigurationB\x04\x88\xb5\x18\x01R\x19createbucketconfiguration\x12-\n" +
 	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tR\x10grantfullcontrol\x12\x1f\n" +
 	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tR\tgrantread\x12%\n" +
@@ -30004,7 +30059,10 @@ const file_s3_proto_rawDesc = "" +
 	"\x14BucketLogsPermission\x12\x1f\n" +
 	"\x1bBUCKET_LOGS_PERMISSION_READ\x10\x00\x12 \n" +
 	"\x1cBUCKET_LOGS_PERMISSION_WRITE\x10\x01\x12'\n" +
-	"#BUCKET_LOGS_PERMISSION_FULL_CONTROL\x10\x02*'\n" +
+	"#BUCKET_LOGS_PERMISSION_FULL_CONTROL\x10\x02*U\n" +
+	"\x0fBucketNamespace\x12\x1b\n" +
+	"\x17BUCKET_NAMESPACE_GLOBAL\x10\x00\x12%\n" +
+	"!BUCKET_NAMESPACE_ACCOUNT_REGIONAL\x10\x01*'\n" +
 	"\n" +
 	"BucketType\x12\x19\n" +
 	"\x15BUCKET_TYPE_DIRECTORY\x10\x00*f\n" +
@@ -30410,7 +30468,7 @@ func file_s3_proto_rawDescGZIP() []byte {
 	return file_s3_proto_rawDescData
 }
 
-var file_s3_proto_enumTypes = make([]protoimpl.EnumInfo, 72)
+var file_s3_proto_enumTypes = make([]protoimpl.EnumInfo, 73)
 var file_s3_proto_msgTypes = make([]protoimpl.MessageInfo, 354)
 var file_s3_proto_goTypes = []any{
 	(AnalyticsS3ExportFileFormat)(0),                               // 0: s3.AnalyticsS3ExportFileFormat
@@ -30420,1128 +30478,1130 @@ var file_s3_proto_goTypes = []any{
 	(BucketCannedACL)(0),                                           // 4: s3.BucketCannedACL
 	(BucketLocationConstraint)(0),                                  // 5: s3.BucketLocationConstraint
 	(BucketLogsPermission)(0),                                      // 6: s3.BucketLogsPermission
-	(BucketType)(0),                                                // 7: s3.BucketType
-	(BucketVersioningStatus)(0),                                    // 8: s3.BucketVersioningStatus
-	(ChecksumAlgorithm)(0),                                         // 9: s3.ChecksumAlgorithm
-	(ChecksumMode)(0),                                              // 10: s3.ChecksumMode
-	(ChecksumType)(0),                                              // 11: s3.ChecksumType
-	(CompressionType)(0),                                           // 12: s3.CompressionType
-	(DataRedundancy)(0),                                            // 13: s3.DataRedundancy
-	(DeleteMarkerReplicationStatus)(0),                             // 14: s3.DeleteMarkerReplicationStatus
-	(EncodingType)(0),                                              // 15: s3.EncodingType
-	(EncryptionType)(0),                                            // 16: s3.EncryptionType
-	(Event)(0),                                                     // 17: s3.Event
-	(ExistingObjectReplicationStatus)(0),                           // 18: s3.ExistingObjectReplicationStatus
-	(ExpirationState)(0),                                           // 19: s3.ExpirationState
-	(ExpirationStatus)(0),                                          // 20: s3.ExpirationStatus
-	(ExpressionType)(0),                                            // 21: s3.ExpressionType
-	(FileHeaderInfo)(0),                                            // 22: s3.FileHeaderInfo
-	(FilterRuleName)(0),                                            // 23: s3.FilterRuleName
-	(IntelligentTieringAccessTier)(0),                              // 24: s3.IntelligentTieringAccessTier
-	(IntelligentTieringStatus)(0),                                  // 25: s3.IntelligentTieringStatus
-	(InventoryConfigurationState)(0),                               // 26: s3.InventoryConfigurationState
-	(InventoryFormat)(0),                                           // 27: s3.InventoryFormat
-	(InventoryFrequency)(0),                                        // 28: s3.InventoryFrequency
-	(InventoryIncludedObjectVersions)(0),                           // 29: s3.InventoryIncludedObjectVersions
-	(InventoryOptionalField)(0),                                    // 30: s3.InventoryOptionalField
-	(JSONType)(0),                                                  // 31: s3.JSONType
-	(LocationType)(0),                                              // 32: s3.LocationType
-	(MFADelete)(0),                                                 // 33: s3.MFADelete
-	(MFADeleteStatus)(0),                                           // 34: s3.MFADeleteStatus
-	(MetadataDirective)(0),                                         // 35: s3.MetadataDirective
-	(MetricsStatus)(0),                                             // 36: s3.MetricsStatus
-	(ObjectAttributes)(0),                                          // 37: s3.ObjectAttributes
-	(ObjectCannedACL)(0),                                           // 38: s3.ObjectCannedACL
-	(ObjectLockEnabled)(0),                                         // 39: s3.ObjectLockEnabled
-	(ObjectLockLegalHoldStatus)(0),                                 // 40: s3.ObjectLockLegalHoldStatus
-	(ObjectLockMode)(0),                                            // 41: s3.ObjectLockMode
-	(ObjectLockRetentionMode)(0),                                   // 42: s3.ObjectLockRetentionMode
-	(ObjectOwnership)(0),                                           // 43: s3.ObjectOwnership
-	(ObjectStorageClass)(0),                                        // 44: s3.ObjectStorageClass
-	(ObjectVersionStorageClass)(0),                                 // 45: s3.ObjectVersionStorageClass
-	(OptionalObjectAttributes)(0),                                  // 46: s3.OptionalObjectAttributes
-	(OwnerOverride)(0),                                             // 47: s3.OwnerOverride
-	(PartitionDateSource)(0),                                       // 48: s3.PartitionDateSource
-	(Payer)(0),                                                     // 49: s3.Payer
-	(Permission)(0),                                                // 50: s3.Permission
-	(Protocol)(0),                                                  // 51: s3.Protocol
-	(QuoteFields)(0),                                               // 52: s3.QuoteFields
-	(ReplicaModificationsStatus)(0),                                // 53: s3.ReplicaModificationsStatus
-	(ReplicationRuleStatus)(0),                                     // 54: s3.ReplicationRuleStatus
-	(ReplicationStatus)(0),                                         // 55: s3.ReplicationStatus
-	(ReplicationTimeStatus)(0),                                     // 56: s3.ReplicationTimeStatus
-	(RequestCharged)(0),                                            // 57: s3.RequestCharged
-	(RequestPayer)(0),                                              // 58: s3.RequestPayer
-	(RestoreRequestType)(0),                                        // 59: s3.RestoreRequestType
-	(S3TablesBucketType)(0),                                        // 60: s3.S3TablesBucketType
-	(ServerSideEncryption)(0),                                      // 61: s3.ServerSideEncryption
-	(SessionMode)(0),                                               // 62: s3.SessionMode
-	(SseKmsEncryptedObjectsStatus)(0),                              // 63: s3.SseKmsEncryptedObjectsStatus
-	(StorageClass)(0),                                              // 64: s3.StorageClass
-	(StorageClassAnalysisSchemaVersion)(0),                         // 65: s3.StorageClassAnalysisSchemaVersion
-	(TableSseAlgorithm)(0),                                         // 66: s3.TableSseAlgorithm
-	(TaggingDirective)(0),                                          // 67: s3.TaggingDirective
-	(Tier)(0),                                                      // 68: s3.Tier
-	(TransitionDefaultMinimumObjectSize)(0),                        // 69: s3.TransitionDefaultMinimumObjectSize
-	(TransitionStorageClass)(0),                                    // 70: s3.TransitionStorageClass
-	(Type)(0),                                                      // 71: s3.Type
-	(*AbacStatus)(nil),                                             // 72: s3.AbacStatus
-	(*AbortIncompleteMultipartUpload)(nil),                         // 73: s3.AbortIncompleteMultipartUpload
-	(*AbortMultipartUploadOutput)(nil),                             // 74: s3.AbortMultipartUploadOutput
-	(*AbortMultipartUploadRequest)(nil),                            // 75: s3.AbortMultipartUploadRequest
-	(*AccelerateConfiguration)(nil),                                // 76: s3.AccelerateConfiguration
-	(*AccessControlPolicy)(nil),                                    // 77: s3.AccessControlPolicy
-	(*AccessControlTranslation)(nil),                               // 78: s3.AccessControlTranslation
-	(*AccessDenied)(nil),                                           // 79: s3.AccessDenied
-	(*AnalyticsAndOperator)(nil),                                   // 80: s3.AnalyticsAndOperator
-	(*AnalyticsConfiguration)(nil),                                 // 81: s3.AnalyticsConfiguration
-	(*AnalyticsExportDestination)(nil),                             // 82: s3.AnalyticsExportDestination
-	(*AnalyticsFilter)(nil),                                        // 83: s3.AnalyticsFilter
-	(*AnalyticsS3BucketDestination)(nil),                           // 84: s3.AnalyticsS3BucketDestination
-	(*BlockedEncryptionTypes)(nil),                                 // 85: s3.BlockedEncryptionTypes
-	(*Bucket)(nil),                                                 // 86: s3.Bucket
-	(*BucketAlreadyExists)(nil),                                    // 87: s3.BucketAlreadyExists
-	(*BucketAlreadyOwnedByYou)(nil),                                // 88: s3.BucketAlreadyOwnedByYou
-	(*BucketInfo)(nil),                                             // 89: s3.BucketInfo
-	(*BucketLifecycleConfiguration)(nil),                           // 90: s3.BucketLifecycleConfiguration
-	(*BucketLoggingStatus)(nil),                                    // 91: s3.BucketLoggingStatus
-	(*CORSConfiguration)(nil),                                      // 92: s3.CORSConfiguration
-	(*CORSRule)(nil),                                               // 93: s3.CORSRule
-	(*CSVInput)(nil),                                               // 94: s3.CSVInput
-	(*CSVOutput)(nil),                                              // 95: s3.CSVOutput
-	(*Checksum)(nil),                                               // 96: s3.Checksum
-	(*CommonPrefix)(nil),                                           // 97: s3.CommonPrefix
-	(*CompleteMultipartUploadOutput)(nil),                          // 98: s3.CompleteMultipartUploadOutput
-	(*CompleteMultipartUploadRequest)(nil),                         // 99: s3.CompleteMultipartUploadRequest
-	(*CompletedMultipartUpload)(nil),                               // 100: s3.CompletedMultipartUpload
-	(*CompletedPart)(nil),                                          // 101: s3.CompletedPart
-	(*Condition)(nil),                                              // 102: s3.Condition
-	(*ContinuationEvent)(nil),                                      // 103: s3.ContinuationEvent
-	(*CopyObjectOutput)(nil),                                       // 104: s3.CopyObjectOutput
-	(*CopyObjectRequest)(nil),                                      // 105: s3.CopyObjectRequest
-	(*CopyObjectResult)(nil),                                       // 106: s3.CopyObjectResult
-	(*CopyPartResult)(nil),                                         // 107: s3.CopyPartResult
-	(*CreateBucketConfiguration)(nil),                              // 108: s3.CreateBucketConfiguration
-	(*CreateBucketMetadataConfigurationRequest)(nil),               // 109: s3.CreateBucketMetadataConfigurationRequest
-	(*CreateBucketMetadataTableConfigurationRequest)(nil),          // 110: s3.CreateBucketMetadataTableConfigurationRequest
-	(*CreateBucketOutput)(nil),                                     // 111: s3.CreateBucketOutput
-	(*CreateBucketRequest)(nil),                                    // 112: s3.CreateBucketRequest
-	(*CreateMultipartUploadOutput)(nil),                            // 113: s3.CreateMultipartUploadOutput
-	(*CreateMultipartUploadRequest)(nil),                           // 114: s3.CreateMultipartUploadRequest
-	(*CreateSessionOutput)(nil),                                    // 115: s3.CreateSessionOutput
-	(*CreateSessionRequest)(nil),                                   // 116: s3.CreateSessionRequest
-	(*DefaultRetention)(nil),                                       // 117: s3.DefaultRetention
-	(*Delete)(nil),                                                 // 118: s3.Delete
-	(*DeleteBucketAnalyticsConfigurationRequest)(nil),              // 119: s3.DeleteBucketAnalyticsConfigurationRequest
-	(*DeleteBucketCorsRequest)(nil),                                // 120: s3.DeleteBucketCorsRequest
-	(*DeleteBucketEncryptionRequest)(nil),                          // 121: s3.DeleteBucketEncryptionRequest
-	(*DeleteBucketIntelligentTieringConfigurationRequest)(nil),     // 122: s3.DeleteBucketIntelligentTieringConfigurationRequest
-	(*DeleteBucketInventoryConfigurationRequest)(nil),              // 123: s3.DeleteBucketInventoryConfigurationRequest
-	(*DeleteBucketLifecycleRequest)(nil),                           // 124: s3.DeleteBucketLifecycleRequest
-	(*DeleteBucketMetadataConfigurationRequest)(nil),               // 125: s3.DeleteBucketMetadataConfigurationRequest
-	(*DeleteBucketMetadataTableConfigurationRequest)(nil),          // 126: s3.DeleteBucketMetadataTableConfigurationRequest
-	(*DeleteBucketMetricsConfigurationRequest)(nil),                // 127: s3.DeleteBucketMetricsConfigurationRequest
-	(*DeleteBucketOwnershipControlsRequest)(nil),                   // 128: s3.DeleteBucketOwnershipControlsRequest
-	(*DeleteBucketPolicyRequest)(nil),                              // 129: s3.DeleteBucketPolicyRequest
-	(*DeleteBucketReplicationRequest)(nil),                         // 130: s3.DeleteBucketReplicationRequest
-	(*DeleteBucketRequest)(nil),                                    // 131: s3.DeleteBucketRequest
-	(*DeleteBucketTaggingRequest)(nil),                             // 132: s3.DeleteBucketTaggingRequest
-	(*DeleteBucketWebsiteRequest)(nil),                             // 133: s3.DeleteBucketWebsiteRequest
-	(*DeleteMarkerEntry)(nil),                                      // 134: s3.DeleteMarkerEntry
-	(*DeleteMarkerReplication)(nil),                                // 135: s3.DeleteMarkerReplication
-	(*DeleteObjectOutput)(nil),                                     // 136: s3.DeleteObjectOutput
-	(*DeleteObjectRequest)(nil),                                    // 137: s3.DeleteObjectRequest
-	(*DeleteObjectTaggingOutput)(nil),                              // 138: s3.DeleteObjectTaggingOutput
-	(*DeleteObjectTaggingRequest)(nil),                             // 139: s3.DeleteObjectTaggingRequest
-	(*DeleteObjectsOutput)(nil),                                    // 140: s3.DeleteObjectsOutput
-	(*DeleteObjectsRequest)(nil),                                   // 141: s3.DeleteObjectsRequest
-	(*DeletePublicAccessBlockRequest)(nil),                         // 142: s3.DeletePublicAccessBlockRequest
-	(*DeletedObject)(nil),                                          // 143: s3.DeletedObject
-	(*Destination)(nil),                                            // 144: s3.Destination
-	(*DestinationResult)(nil),                                      // 145: s3.DestinationResult
-	(*Encryption)(nil),                                             // 146: s3.Encryption
-	(*EncryptionConfiguration)(nil),                                // 147: s3.EncryptionConfiguration
-	(*EncryptionTypeMismatch)(nil),                                 // 148: s3.EncryptionTypeMismatch
-	(*EndEvent)(nil),                                               // 149: s3.EndEvent
-	(*Error)(nil),                                                  // 150: s3.Error
-	(*ErrorDetails)(nil),                                           // 151: s3.ErrorDetails
-	(*ErrorDocument)(nil),                                          // 152: s3.ErrorDocument
-	(*EventBridgeConfiguration)(nil),                               // 153: s3.EventBridgeConfiguration
-	(*ExistingObjectReplication)(nil),                              // 154: s3.ExistingObjectReplication
-	(*FilterRule)(nil),                                             // 155: s3.FilterRule
-	(*GetBucketAbacOutput)(nil),                                    // 156: s3.GetBucketAbacOutput
-	(*GetBucketAbacRequest)(nil),                                   // 157: s3.GetBucketAbacRequest
-	(*GetBucketAccelerateConfigurationOutput)(nil),                 // 158: s3.GetBucketAccelerateConfigurationOutput
-	(*GetBucketAccelerateConfigurationRequest)(nil),                // 159: s3.GetBucketAccelerateConfigurationRequest
-	(*GetBucketAclOutput)(nil),                                     // 160: s3.GetBucketAclOutput
-	(*GetBucketAclRequest)(nil),                                    // 161: s3.GetBucketAclRequest
-	(*GetBucketAnalyticsConfigurationOutput)(nil),                  // 162: s3.GetBucketAnalyticsConfigurationOutput
-	(*GetBucketAnalyticsConfigurationRequest)(nil),                 // 163: s3.GetBucketAnalyticsConfigurationRequest
-	(*GetBucketCorsOutput)(nil),                                    // 164: s3.GetBucketCorsOutput
-	(*GetBucketCorsRequest)(nil),                                   // 165: s3.GetBucketCorsRequest
-	(*GetBucketEncryptionOutput)(nil),                              // 166: s3.GetBucketEncryptionOutput
-	(*GetBucketEncryptionRequest)(nil),                             // 167: s3.GetBucketEncryptionRequest
-	(*GetBucketIntelligentTieringConfigurationOutput)(nil),         // 168: s3.GetBucketIntelligentTieringConfigurationOutput
-	(*GetBucketIntelligentTieringConfigurationRequest)(nil),        // 169: s3.GetBucketIntelligentTieringConfigurationRequest
-	(*GetBucketInventoryConfigurationOutput)(nil),                  // 170: s3.GetBucketInventoryConfigurationOutput
-	(*GetBucketInventoryConfigurationRequest)(nil),                 // 171: s3.GetBucketInventoryConfigurationRequest
-	(*GetBucketLifecycleConfigurationOutput)(nil),                  // 172: s3.GetBucketLifecycleConfigurationOutput
-	(*GetBucketLifecycleConfigurationRequest)(nil),                 // 173: s3.GetBucketLifecycleConfigurationRequest
-	(*GetBucketLocationOutput)(nil),                                // 174: s3.GetBucketLocationOutput
-	(*GetBucketLocationRequest)(nil),                               // 175: s3.GetBucketLocationRequest
-	(*GetBucketLoggingOutput)(nil),                                 // 176: s3.GetBucketLoggingOutput
-	(*GetBucketLoggingRequest)(nil),                                // 177: s3.GetBucketLoggingRequest
-	(*GetBucketMetadataConfigurationOutput)(nil),                   // 178: s3.GetBucketMetadataConfigurationOutput
-	(*GetBucketMetadataConfigurationRequest)(nil),                  // 179: s3.GetBucketMetadataConfigurationRequest
-	(*GetBucketMetadataConfigurationResult)(nil),                   // 180: s3.GetBucketMetadataConfigurationResult
-	(*GetBucketMetadataTableConfigurationOutput)(nil),              // 181: s3.GetBucketMetadataTableConfigurationOutput
-	(*GetBucketMetadataTableConfigurationRequest)(nil),             // 182: s3.GetBucketMetadataTableConfigurationRequest
-	(*GetBucketMetadataTableConfigurationResult)(nil),              // 183: s3.GetBucketMetadataTableConfigurationResult
-	(*GetBucketMetricsConfigurationOutput)(nil),                    // 184: s3.GetBucketMetricsConfigurationOutput
-	(*GetBucketMetricsConfigurationRequest)(nil),                   // 185: s3.GetBucketMetricsConfigurationRequest
-	(*GetBucketNotificationConfigurationRequest)(nil),              // 186: s3.GetBucketNotificationConfigurationRequest
-	(*GetBucketOwnershipControlsOutput)(nil),                       // 187: s3.GetBucketOwnershipControlsOutput
-	(*GetBucketOwnershipControlsRequest)(nil),                      // 188: s3.GetBucketOwnershipControlsRequest
-	(*GetBucketPolicyOutput)(nil),                                  // 189: s3.GetBucketPolicyOutput
-	(*GetBucketPolicyRequest)(nil),                                 // 190: s3.GetBucketPolicyRequest
-	(*GetBucketPolicyStatusOutput)(nil),                            // 191: s3.GetBucketPolicyStatusOutput
-	(*GetBucketPolicyStatusRequest)(nil),                           // 192: s3.GetBucketPolicyStatusRequest
-	(*GetBucketReplicationOutput)(nil),                             // 193: s3.GetBucketReplicationOutput
-	(*GetBucketReplicationRequest)(nil),                            // 194: s3.GetBucketReplicationRequest
-	(*GetBucketRequestPaymentOutput)(nil),                          // 195: s3.GetBucketRequestPaymentOutput
-	(*GetBucketRequestPaymentRequest)(nil),                         // 196: s3.GetBucketRequestPaymentRequest
-	(*GetBucketTaggingOutput)(nil),                                 // 197: s3.GetBucketTaggingOutput
-	(*GetBucketTaggingRequest)(nil),                                // 198: s3.GetBucketTaggingRequest
-	(*GetBucketVersioningOutput)(nil),                              // 199: s3.GetBucketVersioningOutput
-	(*GetBucketVersioningRequest)(nil),                             // 200: s3.GetBucketVersioningRequest
-	(*GetBucketWebsiteOutput)(nil),                                 // 201: s3.GetBucketWebsiteOutput
-	(*GetBucketWebsiteRequest)(nil),                                // 202: s3.GetBucketWebsiteRequest
-	(*GetObjectAclOutput)(nil),                                     // 203: s3.GetObjectAclOutput
-	(*GetObjectAclRequest)(nil),                                    // 204: s3.GetObjectAclRequest
-	(*GetObjectAttributesOutput)(nil),                              // 205: s3.GetObjectAttributesOutput
-	(*GetObjectAttributesParts)(nil),                               // 206: s3.GetObjectAttributesParts
-	(*GetObjectAttributesRequest)(nil),                             // 207: s3.GetObjectAttributesRequest
-	(*GetObjectLegalHoldOutput)(nil),                               // 208: s3.GetObjectLegalHoldOutput
-	(*GetObjectLegalHoldRequest)(nil),                              // 209: s3.GetObjectLegalHoldRequest
-	(*GetObjectLockConfigurationOutput)(nil),                       // 210: s3.GetObjectLockConfigurationOutput
-	(*GetObjectLockConfigurationRequest)(nil),                      // 211: s3.GetObjectLockConfigurationRequest
-	(*GetObjectOutput)(nil),                                        // 212: s3.GetObjectOutput
-	(*GetObjectRequest)(nil),                                       // 213: s3.GetObjectRequest
-	(*GetObjectRetentionOutput)(nil),                               // 214: s3.GetObjectRetentionOutput
-	(*GetObjectRetentionRequest)(nil),                              // 215: s3.GetObjectRetentionRequest
-	(*GetObjectTaggingOutput)(nil),                                 // 216: s3.GetObjectTaggingOutput
-	(*GetObjectTaggingRequest)(nil),                                // 217: s3.GetObjectTaggingRequest
-	(*GetObjectTorrentOutput)(nil),                                 // 218: s3.GetObjectTorrentOutput
-	(*GetObjectTorrentRequest)(nil),                                // 219: s3.GetObjectTorrentRequest
-	(*GetPublicAccessBlockOutput)(nil),                             // 220: s3.GetPublicAccessBlockOutput
-	(*GetPublicAccessBlockRequest)(nil),                            // 221: s3.GetPublicAccessBlockRequest
-	(*GlacierJobParameters)(nil),                                   // 222: s3.GlacierJobParameters
-	(*Grant)(nil),                                                  // 223: s3.Grant
-	(*Grantee)(nil),                                                // 224: s3.Grantee
-	(*HeadBucketOutput)(nil),                                       // 225: s3.HeadBucketOutput
-	(*HeadBucketRequest)(nil),                                      // 226: s3.HeadBucketRequest
-	(*HeadObjectOutput)(nil),                                       // 227: s3.HeadObjectOutput
-	(*HeadObjectRequest)(nil),                                      // 228: s3.HeadObjectRequest
-	(*IdempotencyParameterMismatch)(nil),                           // 229: s3.IdempotencyParameterMismatch
-	(*IndexDocument)(nil),                                          // 230: s3.IndexDocument
-	(*Initiator)(nil),                                              // 231: s3.Initiator
-	(*InputSerialization)(nil),                                     // 232: s3.InputSerialization
-	(*IntelligentTieringAndOperator)(nil),                          // 233: s3.IntelligentTieringAndOperator
-	(*IntelligentTieringConfiguration)(nil),                        // 234: s3.IntelligentTieringConfiguration
-	(*IntelligentTieringFilter)(nil),                               // 235: s3.IntelligentTieringFilter
-	(*InvalidObjectState)(nil),                                     // 236: s3.InvalidObjectState
-	(*InvalidRequest)(nil),                                         // 237: s3.InvalidRequest
-	(*InvalidWriteOffset)(nil),                                     // 238: s3.InvalidWriteOffset
-	(*InventoryConfiguration)(nil),                                 // 239: s3.InventoryConfiguration
-	(*InventoryDestination)(nil),                                   // 240: s3.InventoryDestination
-	(*InventoryEncryption)(nil),                                    // 241: s3.InventoryEncryption
-	(*InventoryFilter)(nil),                                        // 242: s3.InventoryFilter
-	(*InventoryS3BucketDestination)(nil),                           // 243: s3.InventoryS3BucketDestination
-	(*InventorySchedule)(nil),                                      // 244: s3.InventorySchedule
-	(*InventoryTableConfiguration)(nil),                            // 245: s3.InventoryTableConfiguration
-	(*InventoryTableConfigurationResult)(nil),                      // 246: s3.InventoryTableConfigurationResult
-	(*InventoryTableConfigurationUpdates)(nil),                     // 247: s3.InventoryTableConfigurationUpdates
-	(*JSONInput)(nil),                                              // 248: s3.JSONInput
-	(*JSONOutput)(nil),                                             // 249: s3.JSONOutput
-	(*JournalTableConfiguration)(nil),                              // 250: s3.JournalTableConfiguration
-	(*JournalTableConfigurationResult)(nil),                        // 251: s3.JournalTableConfigurationResult
-	(*JournalTableConfigurationUpdates)(nil),                       // 252: s3.JournalTableConfigurationUpdates
-	(*LambdaFunctionConfiguration)(nil),                            // 253: s3.LambdaFunctionConfiguration
-	(*LifecycleExpiration)(nil),                                    // 254: s3.LifecycleExpiration
-	(*LifecycleRule)(nil),                                          // 255: s3.LifecycleRule
-	(*LifecycleRuleAndOperator)(nil),                               // 256: s3.LifecycleRuleAndOperator
-	(*LifecycleRuleFilter)(nil),                                    // 257: s3.LifecycleRuleFilter
-	(*ListBucketAnalyticsConfigurationsOutput)(nil),                // 258: s3.ListBucketAnalyticsConfigurationsOutput
-	(*ListBucketAnalyticsConfigurationsRequest)(nil),               // 259: s3.ListBucketAnalyticsConfigurationsRequest
-	(*ListBucketIntelligentTieringConfigurationsOutput)(nil),       // 260: s3.ListBucketIntelligentTieringConfigurationsOutput
-	(*ListBucketIntelligentTieringConfigurationsRequest)(nil),      // 261: s3.ListBucketIntelligentTieringConfigurationsRequest
-	(*ListBucketInventoryConfigurationsOutput)(nil),                // 262: s3.ListBucketInventoryConfigurationsOutput
-	(*ListBucketInventoryConfigurationsRequest)(nil),               // 263: s3.ListBucketInventoryConfigurationsRequest
-	(*ListBucketMetricsConfigurationsOutput)(nil),                  // 264: s3.ListBucketMetricsConfigurationsOutput
-	(*ListBucketMetricsConfigurationsRequest)(nil),                 // 265: s3.ListBucketMetricsConfigurationsRequest
-	(*ListBucketsOutput)(nil),                                      // 266: s3.ListBucketsOutput
-	(*ListBucketsRequest)(nil),                                     // 267: s3.ListBucketsRequest
-	(*ListDirectoryBucketsOutput)(nil),                             // 268: s3.ListDirectoryBucketsOutput
-	(*ListDirectoryBucketsRequest)(nil),                            // 269: s3.ListDirectoryBucketsRequest
-	(*ListMultipartUploadsOutput)(nil),                             // 270: s3.ListMultipartUploadsOutput
-	(*ListMultipartUploadsRequest)(nil),                            // 271: s3.ListMultipartUploadsRequest
-	(*ListObjectVersionsOutput)(nil),                               // 272: s3.ListObjectVersionsOutput
-	(*ListObjectVersionsRequest)(nil),                              // 273: s3.ListObjectVersionsRequest
-	(*ListObjectsOutput)(nil),                                      // 274: s3.ListObjectsOutput
-	(*ListObjectsRequest)(nil),                                     // 275: s3.ListObjectsRequest
-	(*ListObjectsV2Output)(nil),                                    // 276: s3.ListObjectsV2Output
-	(*ListObjectsV2Request)(nil),                                   // 277: s3.ListObjectsV2Request
-	(*ListPartsOutput)(nil),                                        // 278: s3.ListPartsOutput
-	(*ListPartsRequest)(nil),                                       // 279: s3.ListPartsRequest
-	(*LocationInfo)(nil),                                           // 280: s3.LocationInfo
-	(*LoggingEnabled)(nil),                                         // 281: s3.LoggingEnabled
-	(*MetadataConfiguration)(nil),                                  // 282: s3.MetadataConfiguration
-	(*MetadataConfigurationResult)(nil),                            // 283: s3.MetadataConfigurationResult
-	(*MetadataEntry)(nil),                                          // 284: s3.MetadataEntry
-	(*MetadataTableConfiguration)(nil),                             // 285: s3.MetadataTableConfiguration
-	(*MetadataTableConfigurationResult)(nil),                       // 286: s3.MetadataTableConfigurationResult
-	(*MetadataTableEncryptionConfiguration)(nil),                   // 287: s3.MetadataTableEncryptionConfiguration
-	(*Metrics)(nil),                                                // 288: s3.Metrics
-	(*MetricsAndOperator)(nil),                                     // 289: s3.MetricsAndOperator
-	(*MetricsConfiguration)(nil),                                   // 290: s3.MetricsConfiguration
-	(*MetricsFilter)(nil),                                          // 291: s3.MetricsFilter
-	(*MultipartUpload)(nil),                                        // 292: s3.MultipartUpload
-	(*NoSuchBucket)(nil),                                           // 293: s3.NoSuchBucket
-	(*NoSuchKey)(nil),                                              // 294: s3.NoSuchKey
-	(*NoSuchUpload)(nil),                                           // 295: s3.NoSuchUpload
-	(*NoncurrentVersionExpiration)(nil),                            // 296: s3.NoncurrentVersionExpiration
-	(*NoncurrentVersionTransition)(nil),                            // 297: s3.NoncurrentVersionTransition
-	(*NotFound)(nil),                                               // 298: s3.NotFound
-	(*NotificationConfiguration)(nil),                              // 299: s3.NotificationConfiguration
-	(*NotificationConfigurationFilter)(nil),                        // 300: s3.NotificationConfigurationFilter
-	(*Object)(nil),                                                 // 301: s3.Object
-	(*ObjectAlreadyInActiveTierError)(nil),                         // 302: s3.ObjectAlreadyInActiveTierError
-	(*ObjectEncryption)(nil),                                       // 303: s3.ObjectEncryption
-	(*ObjectIdentifier)(nil),                                       // 304: s3.ObjectIdentifier
-	(*ObjectLockConfiguration)(nil),                                // 305: s3.ObjectLockConfiguration
-	(*ObjectLockLegalHold)(nil),                                    // 306: s3.ObjectLockLegalHold
-	(*ObjectLockRetention)(nil),                                    // 307: s3.ObjectLockRetention
-	(*ObjectLockRule)(nil),                                         // 308: s3.ObjectLockRule
-	(*ObjectNotInActiveTierError)(nil),                             // 309: s3.ObjectNotInActiveTierError
-	(*ObjectPart)(nil),                                             // 310: s3.ObjectPart
-	(*ObjectVersion)(nil),                                          // 311: s3.ObjectVersion
-	(*OutputLocation)(nil),                                         // 312: s3.OutputLocation
-	(*OutputSerialization)(nil),                                    // 313: s3.OutputSerialization
-	(*Owner)(nil),                                                  // 314: s3.Owner
-	(*OwnershipControls)(nil),                                      // 315: s3.OwnershipControls
-	(*OwnershipControlsRule)(nil),                                  // 316: s3.OwnershipControlsRule
-	(*ParquetInput)(nil),                                           // 317: s3.ParquetInput
-	(*Part)(nil),                                                   // 318: s3.Part
-	(*PartitionedPrefix)(nil),                                      // 319: s3.PartitionedPrefix
-	(*PolicyStatus)(nil),                                           // 320: s3.PolicyStatus
-	(*Progress)(nil),                                               // 321: s3.Progress
-	(*ProgressEvent)(nil),                                          // 322: s3.ProgressEvent
-	(*PublicAccessBlockConfiguration)(nil),                         // 323: s3.PublicAccessBlockConfiguration
-	(*PutBucketAbacRequest)(nil),                                   // 324: s3.PutBucketAbacRequest
-	(*PutBucketAccelerateConfigurationRequest)(nil),                // 325: s3.PutBucketAccelerateConfigurationRequest
-	(*PutBucketAclRequest)(nil),                                    // 326: s3.PutBucketAclRequest
-	(*PutBucketAnalyticsConfigurationRequest)(nil),                 // 327: s3.PutBucketAnalyticsConfigurationRequest
-	(*PutBucketCorsRequest)(nil),                                   // 328: s3.PutBucketCorsRequest
-	(*PutBucketEncryptionRequest)(nil),                             // 329: s3.PutBucketEncryptionRequest
-	(*PutBucketIntelligentTieringConfigurationRequest)(nil),        // 330: s3.PutBucketIntelligentTieringConfigurationRequest
-	(*PutBucketInventoryConfigurationRequest)(nil),                 // 331: s3.PutBucketInventoryConfigurationRequest
-	(*PutBucketLifecycleConfigurationOutput)(nil),                  // 332: s3.PutBucketLifecycleConfigurationOutput
-	(*PutBucketLifecycleConfigurationRequest)(nil),                 // 333: s3.PutBucketLifecycleConfigurationRequest
-	(*PutBucketLoggingRequest)(nil),                                // 334: s3.PutBucketLoggingRequest
-	(*PutBucketMetricsConfigurationRequest)(nil),                   // 335: s3.PutBucketMetricsConfigurationRequest
-	(*PutBucketNotificationConfigurationRequest)(nil),              // 336: s3.PutBucketNotificationConfigurationRequest
-	(*PutBucketOwnershipControlsRequest)(nil),                      // 337: s3.PutBucketOwnershipControlsRequest
-	(*PutBucketPolicyRequest)(nil),                                 // 338: s3.PutBucketPolicyRequest
-	(*PutBucketReplicationRequest)(nil),                            // 339: s3.PutBucketReplicationRequest
-	(*PutBucketRequestPaymentRequest)(nil),                         // 340: s3.PutBucketRequestPaymentRequest
-	(*PutBucketTaggingRequest)(nil),                                // 341: s3.PutBucketTaggingRequest
-	(*PutBucketVersioningRequest)(nil),                             // 342: s3.PutBucketVersioningRequest
-	(*PutBucketWebsiteRequest)(nil),                                // 343: s3.PutBucketWebsiteRequest
-	(*PutObjectAclOutput)(nil),                                     // 344: s3.PutObjectAclOutput
-	(*PutObjectAclRequest)(nil),                                    // 345: s3.PutObjectAclRequest
-	(*PutObjectLegalHoldOutput)(nil),                               // 346: s3.PutObjectLegalHoldOutput
-	(*PutObjectLegalHoldRequest)(nil),                              // 347: s3.PutObjectLegalHoldRequest
-	(*PutObjectLockConfigurationOutput)(nil),                       // 348: s3.PutObjectLockConfigurationOutput
-	(*PutObjectLockConfigurationRequest)(nil),                      // 349: s3.PutObjectLockConfigurationRequest
-	(*PutObjectOutput)(nil),                                        // 350: s3.PutObjectOutput
-	(*PutObjectRequest)(nil),                                       // 351: s3.PutObjectRequest
-	(*PutObjectRetentionOutput)(nil),                               // 352: s3.PutObjectRetentionOutput
-	(*PutObjectRetentionRequest)(nil),                              // 353: s3.PutObjectRetentionRequest
-	(*PutObjectTaggingOutput)(nil),                                 // 354: s3.PutObjectTaggingOutput
-	(*PutObjectTaggingRequest)(nil),                                // 355: s3.PutObjectTaggingRequest
-	(*PutPublicAccessBlockRequest)(nil),                            // 356: s3.PutPublicAccessBlockRequest
-	(*QueueConfiguration)(nil),                                     // 357: s3.QueueConfiguration
-	(*RecordExpiration)(nil),                                       // 358: s3.RecordExpiration
-	(*RecordsEvent)(nil),                                           // 359: s3.RecordsEvent
-	(*Redirect)(nil),                                               // 360: s3.Redirect
-	(*RedirectAllRequestsTo)(nil),                                  // 361: s3.RedirectAllRequestsTo
-	(*RenameObjectOutput)(nil),                                     // 362: s3.RenameObjectOutput
-	(*RenameObjectRequest)(nil),                                    // 363: s3.RenameObjectRequest
-	(*ReplicaModifications)(nil),                                   // 364: s3.ReplicaModifications
-	(*ReplicationConfiguration)(nil),                               // 365: s3.ReplicationConfiguration
-	(*ReplicationRule)(nil),                                        // 366: s3.ReplicationRule
-	(*ReplicationRuleAndOperator)(nil),                             // 367: s3.ReplicationRuleAndOperator
-	(*ReplicationRuleFilter)(nil),                                  // 368: s3.ReplicationRuleFilter
-	(*ReplicationTime)(nil),                                        // 369: s3.ReplicationTime
-	(*ReplicationTimeValue)(nil),                                   // 370: s3.ReplicationTimeValue
-	(*RequestPaymentConfiguration)(nil),                            // 371: s3.RequestPaymentConfiguration
-	(*RequestProgress)(nil),                                        // 372: s3.RequestProgress
-	(*RestoreObjectOutput)(nil),                                    // 373: s3.RestoreObjectOutput
-	(*RestoreObjectRequest)(nil),                                   // 374: s3.RestoreObjectRequest
-	(*RestoreRequest)(nil),                                         // 375: s3.RestoreRequest
-	(*RestoreStatus)(nil),                                          // 376: s3.RestoreStatus
-	(*RoutingRule)(nil),                                            // 377: s3.RoutingRule
-	(*S3KeyFilter)(nil),                                            // 378: s3.S3KeyFilter
-	(*S3Location)(nil),                                             // 379: s3.S3Location
-	(*S3TablesDestination)(nil),                                    // 380: s3.S3TablesDestination
-	(*S3TablesDestinationResult)(nil),                              // 381: s3.S3TablesDestinationResult
-	(*SSEKMS)(nil),                                                 // 382: s3.SSEKMS
-	(*SSEKMSEncryption)(nil),                                       // 383: s3.SSEKMSEncryption
-	(*SSES3)(nil),                                                  // 384: s3.SSES3
-	(*ScanRange)(nil),                                              // 385: s3.ScanRange
-	(*SelectObjectContentEventStream)(nil),                         // 386: s3.SelectObjectContentEventStream
-	(*SelectObjectContentOutput)(nil),                              // 387: s3.SelectObjectContentOutput
-	(*SelectObjectContentRequest)(nil),                             // 388: s3.SelectObjectContentRequest
-	(*SelectParameters)(nil),                                       // 389: s3.SelectParameters
-	(*ServerSideEncryptionByDefault)(nil),                          // 390: s3.ServerSideEncryptionByDefault
-	(*ServerSideEncryptionConfiguration)(nil),                      // 391: s3.ServerSideEncryptionConfiguration
-	(*ServerSideEncryptionRule)(nil),                               // 392: s3.ServerSideEncryptionRule
-	(*SessionCredentials)(nil),                                     // 393: s3.SessionCredentials
-	(*SimplePrefix)(nil),                                           // 394: s3.SimplePrefix
-	(*SourceSelectionCriteria)(nil),                                // 395: s3.SourceSelectionCriteria
-	(*SseKmsEncryptedObjects)(nil),                                 // 396: s3.SseKmsEncryptedObjects
-	(*Stats)(nil),                                                  // 397: s3.Stats
-	(*StatsEvent)(nil),                                             // 398: s3.StatsEvent
-	(*StorageClassAnalysis)(nil),                                   // 399: s3.StorageClassAnalysis
-	(*StorageClassAnalysisDataExport)(nil),                         // 400: s3.StorageClassAnalysisDataExport
-	(*Tag)(nil),                                                    // 401: s3.Tag
-	(*Tagging)(nil),                                                // 402: s3.Tagging
-	(*TargetGrant)(nil),                                            // 403: s3.TargetGrant
-	(*TargetObjectKeyFormat)(nil),                                  // 404: s3.TargetObjectKeyFormat
-	(*Tiering)(nil),                                                // 405: s3.Tiering
-	(*TooManyParts)(nil),                                           // 406: s3.TooManyParts
-	(*TopicConfiguration)(nil),                                     // 407: s3.TopicConfiguration
-	(*Transition)(nil),                                             // 408: s3.Transition
-	(*UpdateBucketMetadataInventoryTableConfigurationRequest)(nil), // 409: s3.UpdateBucketMetadataInventoryTableConfigurationRequest
-	(*UpdateBucketMetadataJournalTableConfigurationRequest)(nil),   // 410: s3.UpdateBucketMetadataJournalTableConfigurationRequest
-	(*UpdateObjectEncryptionRequest)(nil),                          // 411: s3.UpdateObjectEncryptionRequest
-	(*UpdateObjectEncryptionResponse)(nil),                         // 412: s3.UpdateObjectEncryptionResponse
-	(*UploadPartCopyOutput)(nil),                                   // 413: s3.UploadPartCopyOutput
-	(*UploadPartCopyRequest)(nil),                                  // 414: s3.UploadPartCopyRequest
-	(*UploadPartOutput)(nil),                                       // 415: s3.UploadPartOutput
-	(*UploadPartRequest)(nil),                                      // 416: s3.UploadPartRequest
-	(*VersioningConfiguration)(nil),                                // 417: s3.VersioningConfiguration
-	(*WebsiteConfiguration)(nil),                                   // 418: s3.WebsiteConfiguration
-	(*WriteGetObjectResponseRequest)(nil),                          // 419: s3.WriteGetObjectResponseRequest
-	nil,                                                            // 420: s3.CopyObjectRequest.MetadataEntry
-	nil,                                                            // 421: s3.CreateMultipartUploadRequest.MetadataEntry
-	nil,                                                            // 422: s3.GetObjectOutput.MetadataEntry
-	nil,                                                            // 423: s3.HeadObjectOutput.MetadataEntry
-	nil,                                                            // 424: s3.PutObjectRequest.MetadataEntry
-	nil,                                                            // 425: s3.WriteGetObjectResponseRequest.MetadataEntry
-	(*common.Empty)(nil),                                           // 426: common.Empty
+	(BucketNamespace)(0),                                           // 7: s3.BucketNamespace
+	(BucketType)(0),                                                // 8: s3.BucketType
+	(BucketVersioningStatus)(0),                                    // 9: s3.BucketVersioningStatus
+	(ChecksumAlgorithm)(0),                                         // 10: s3.ChecksumAlgorithm
+	(ChecksumMode)(0),                                              // 11: s3.ChecksumMode
+	(ChecksumType)(0),                                              // 12: s3.ChecksumType
+	(CompressionType)(0),                                           // 13: s3.CompressionType
+	(DataRedundancy)(0),                                            // 14: s3.DataRedundancy
+	(DeleteMarkerReplicationStatus)(0),                             // 15: s3.DeleteMarkerReplicationStatus
+	(EncodingType)(0),                                              // 16: s3.EncodingType
+	(EncryptionType)(0),                                            // 17: s3.EncryptionType
+	(Event)(0),                                                     // 18: s3.Event
+	(ExistingObjectReplicationStatus)(0),                           // 19: s3.ExistingObjectReplicationStatus
+	(ExpirationState)(0),                                           // 20: s3.ExpirationState
+	(ExpirationStatus)(0),                                          // 21: s3.ExpirationStatus
+	(ExpressionType)(0),                                            // 22: s3.ExpressionType
+	(FileHeaderInfo)(0),                                            // 23: s3.FileHeaderInfo
+	(FilterRuleName)(0),                                            // 24: s3.FilterRuleName
+	(IntelligentTieringAccessTier)(0),                              // 25: s3.IntelligentTieringAccessTier
+	(IntelligentTieringStatus)(0),                                  // 26: s3.IntelligentTieringStatus
+	(InventoryConfigurationState)(0),                               // 27: s3.InventoryConfigurationState
+	(InventoryFormat)(0),                                           // 28: s3.InventoryFormat
+	(InventoryFrequency)(0),                                        // 29: s3.InventoryFrequency
+	(InventoryIncludedObjectVersions)(0),                           // 30: s3.InventoryIncludedObjectVersions
+	(InventoryOptionalField)(0),                                    // 31: s3.InventoryOptionalField
+	(JSONType)(0),                                                  // 32: s3.JSONType
+	(LocationType)(0),                                              // 33: s3.LocationType
+	(MFADelete)(0),                                                 // 34: s3.MFADelete
+	(MFADeleteStatus)(0),                                           // 35: s3.MFADeleteStatus
+	(MetadataDirective)(0),                                         // 36: s3.MetadataDirective
+	(MetricsStatus)(0),                                             // 37: s3.MetricsStatus
+	(ObjectAttributes)(0),                                          // 38: s3.ObjectAttributes
+	(ObjectCannedACL)(0),                                           // 39: s3.ObjectCannedACL
+	(ObjectLockEnabled)(0),                                         // 40: s3.ObjectLockEnabled
+	(ObjectLockLegalHoldStatus)(0),                                 // 41: s3.ObjectLockLegalHoldStatus
+	(ObjectLockMode)(0),                                            // 42: s3.ObjectLockMode
+	(ObjectLockRetentionMode)(0),                                   // 43: s3.ObjectLockRetentionMode
+	(ObjectOwnership)(0),                                           // 44: s3.ObjectOwnership
+	(ObjectStorageClass)(0),                                        // 45: s3.ObjectStorageClass
+	(ObjectVersionStorageClass)(0),                                 // 46: s3.ObjectVersionStorageClass
+	(OptionalObjectAttributes)(0),                                  // 47: s3.OptionalObjectAttributes
+	(OwnerOverride)(0),                                             // 48: s3.OwnerOverride
+	(PartitionDateSource)(0),                                       // 49: s3.PartitionDateSource
+	(Payer)(0),                                                     // 50: s3.Payer
+	(Permission)(0),                                                // 51: s3.Permission
+	(Protocol)(0),                                                  // 52: s3.Protocol
+	(QuoteFields)(0),                                               // 53: s3.QuoteFields
+	(ReplicaModificationsStatus)(0),                                // 54: s3.ReplicaModificationsStatus
+	(ReplicationRuleStatus)(0),                                     // 55: s3.ReplicationRuleStatus
+	(ReplicationStatus)(0),                                         // 56: s3.ReplicationStatus
+	(ReplicationTimeStatus)(0),                                     // 57: s3.ReplicationTimeStatus
+	(RequestCharged)(0),                                            // 58: s3.RequestCharged
+	(RequestPayer)(0),                                              // 59: s3.RequestPayer
+	(RestoreRequestType)(0),                                        // 60: s3.RestoreRequestType
+	(S3TablesBucketType)(0),                                        // 61: s3.S3TablesBucketType
+	(ServerSideEncryption)(0),                                      // 62: s3.ServerSideEncryption
+	(SessionMode)(0),                                               // 63: s3.SessionMode
+	(SseKmsEncryptedObjectsStatus)(0),                              // 64: s3.SseKmsEncryptedObjectsStatus
+	(StorageClass)(0),                                              // 65: s3.StorageClass
+	(StorageClassAnalysisSchemaVersion)(0),                         // 66: s3.StorageClassAnalysisSchemaVersion
+	(TableSseAlgorithm)(0),                                         // 67: s3.TableSseAlgorithm
+	(TaggingDirective)(0),                                          // 68: s3.TaggingDirective
+	(Tier)(0),                                                      // 69: s3.Tier
+	(TransitionDefaultMinimumObjectSize)(0),                        // 70: s3.TransitionDefaultMinimumObjectSize
+	(TransitionStorageClass)(0),                                    // 71: s3.TransitionStorageClass
+	(Type)(0),                                                      // 72: s3.Type
+	(*AbacStatus)(nil),                                             // 73: s3.AbacStatus
+	(*AbortIncompleteMultipartUpload)(nil),                         // 74: s3.AbortIncompleteMultipartUpload
+	(*AbortMultipartUploadOutput)(nil),                             // 75: s3.AbortMultipartUploadOutput
+	(*AbortMultipartUploadRequest)(nil),                            // 76: s3.AbortMultipartUploadRequest
+	(*AccelerateConfiguration)(nil),                                // 77: s3.AccelerateConfiguration
+	(*AccessControlPolicy)(nil),                                    // 78: s3.AccessControlPolicy
+	(*AccessControlTranslation)(nil),                               // 79: s3.AccessControlTranslation
+	(*AccessDenied)(nil),                                           // 80: s3.AccessDenied
+	(*AnalyticsAndOperator)(nil),                                   // 81: s3.AnalyticsAndOperator
+	(*AnalyticsConfiguration)(nil),                                 // 82: s3.AnalyticsConfiguration
+	(*AnalyticsExportDestination)(nil),                             // 83: s3.AnalyticsExportDestination
+	(*AnalyticsFilter)(nil),                                        // 84: s3.AnalyticsFilter
+	(*AnalyticsS3BucketDestination)(nil),                           // 85: s3.AnalyticsS3BucketDestination
+	(*BlockedEncryptionTypes)(nil),                                 // 86: s3.BlockedEncryptionTypes
+	(*Bucket)(nil),                                                 // 87: s3.Bucket
+	(*BucketAlreadyExists)(nil),                                    // 88: s3.BucketAlreadyExists
+	(*BucketAlreadyOwnedByYou)(nil),                                // 89: s3.BucketAlreadyOwnedByYou
+	(*BucketInfo)(nil),                                             // 90: s3.BucketInfo
+	(*BucketLifecycleConfiguration)(nil),                           // 91: s3.BucketLifecycleConfiguration
+	(*BucketLoggingStatus)(nil),                                    // 92: s3.BucketLoggingStatus
+	(*CORSConfiguration)(nil),                                      // 93: s3.CORSConfiguration
+	(*CORSRule)(nil),                                               // 94: s3.CORSRule
+	(*CSVInput)(nil),                                               // 95: s3.CSVInput
+	(*CSVOutput)(nil),                                              // 96: s3.CSVOutput
+	(*Checksum)(nil),                                               // 97: s3.Checksum
+	(*CommonPrefix)(nil),                                           // 98: s3.CommonPrefix
+	(*CompleteMultipartUploadOutput)(nil),                          // 99: s3.CompleteMultipartUploadOutput
+	(*CompleteMultipartUploadRequest)(nil),                         // 100: s3.CompleteMultipartUploadRequest
+	(*CompletedMultipartUpload)(nil),                               // 101: s3.CompletedMultipartUpload
+	(*CompletedPart)(nil),                                          // 102: s3.CompletedPart
+	(*Condition)(nil),                                              // 103: s3.Condition
+	(*ContinuationEvent)(nil),                                      // 104: s3.ContinuationEvent
+	(*CopyObjectOutput)(nil),                                       // 105: s3.CopyObjectOutput
+	(*CopyObjectRequest)(nil),                                      // 106: s3.CopyObjectRequest
+	(*CopyObjectResult)(nil),                                       // 107: s3.CopyObjectResult
+	(*CopyPartResult)(nil),                                         // 108: s3.CopyPartResult
+	(*CreateBucketConfiguration)(nil),                              // 109: s3.CreateBucketConfiguration
+	(*CreateBucketMetadataConfigurationRequest)(nil),               // 110: s3.CreateBucketMetadataConfigurationRequest
+	(*CreateBucketMetadataTableConfigurationRequest)(nil),          // 111: s3.CreateBucketMetadataTableConfigurationRequest
+	(*CreateBucketOutput)(nil),                                     // 112: s3.CreateBucketOutput
+	(*CreateBucketRequest)(nil),                                    // 113: s3.CreateBucketRequest
+	(*CreateMultipartUploadOutput)(nil),                            // 114: s3.CreateMultipartUploadOutput
+	(*CreateMultipartUploadRequest)(nil),                           // 115: s3.CreateMultipartUploadRequest
+	(*CreateSessionOutput)(nil),                                    // 116: s3.CreateSessionOutput
+	(*CreateSessionRequest)(nil),                                   // 117: s3.CreateSessionRequest
+	(*DefaultRetention)(nil),                                       // 118: s3.DefaultRetention
+	(*Delete)(nil),                                                 // 119: s3.Delete
+	(*DeleteBucketAnalyticsConfigurationRequest)(nil),              // 120: s3.DeleteBucketAnalyticsConfigurationRequest
+	(*DeleteBucketCorsRequest)(nil),                                // 121: s3.DeleteBucketCorsRequest
+	(*DeleteBucketEncryptionRequest)(nil),                          // 122: s3.DeleteBucketEncryptionRequest
+	(*DeleteBucketIntelligentTieringConfigurationRequest)(nil),     // 123: s3.DeleteBucketIntelligentTieringConfigurationRequest
+	(*DeleteBucketInventoryConfigurationRequest)(nil),              // 124: s3.DeleteBucketInventoryConfigurationRequest
+	(*DeleteBucketLifecycleRequest)(nil),                           // 125: s3.DeleteBucketLifecycleRequest
+	(*DeleteBucketMetadataConfigurationRequest)(nil),               // 126: s3.DeleteBucketMetadataConfigurationRequest
+	(*DeleteBucketMetadataTableConfigurationRequest)(nil),          // 127: s3.DeleteBucketMetadataTableConfigurationRequest
+	(*DeleteBucketMetricsConfigurationRequest)(nil),                // 128: s3.DeleteBucketMetricsConfigurationRequest
+	(*DeleteBucketOwnershipControlsRequest)(nil),                   // 129: s3.DeleteBucketOwnershipControlsRequest
+	(*DeleteBucketPolicyRequest)(nil),                              // 130: s3.DeleteBucketPolicyRequest
+	(*DeleteBucketReplicationRequest)(nil),                         // 131: s3.DeleteBucketReplicationRequest
+	(*DeleteBucketRequest)(nil),                                    // 132: s3.DeleteBucketRequest
+	(*DeleteBucketTaggingRequest)(nil),                             // 133: s3.DeleteBucketTaggingRequest
+	(*DeleteBucketWebsiteRequest)(nil),                             // 134: s3.DeleteBucketWebsiteRequest
+	(*DeleteMarkerEntry)(nil),                                      // 135: s3.DeleteMarkerEntry
+	(*DeleteMarkerReplication)(nil),                                // 136: s3.DeleteMarkerReplication
+	(*DeleteObjectOutput)(nil),                                     // 137: s3.DeleteObjectOutput
+	(*DeleteObjectRequest)(nil),                                    // 138: s3.DeleteObjectRequest
+	(*DeleteObjectTaggingOutput)(nil),                              // 139: s3.DeleteObjectTaggingOutput
+	(*DeleteObjectTaggingRequest)(nil),                             // 140: s3.DeleteObjectTaggingRequest
+	(*DeleteObjectsOutput)(nil),                                    // 141: s3.DeleteObjectsOutput
+	(*DeleteObjectsRequest)(nil),                                   // 142: s3.DeleteObjectsRequest
+	(*DeletePublicAccessBlockRequest)(nil),                         // 143: s3.DeletePublicAccessBlockRequest
+	(*DeletedObject)(nil),                                          // 144: s3.DeletedObject
+	(*Destination)(nil),                                            // 145: s3.Destination
+	(*DestinationResult)(nil),                                      // 146: s3.DestinationResult
+	(*Encryption)(nil),                                             // 147: s3.Encryption
+	(*EncryptionConfiguration)(nil),                                // 148: s3.EncryptionConfiguration
+	(*EncryptionTypeMismatch)(nil),                                 // 149: s3.EncryptionTypeMismatch
+	(*EndEvent)(nil),                                               // 150: s3.EndEvent
+	(*Error)(nil),                                                  // 151: s3.Error
+	(*ErrorDetails)(nil),                                           // 152: s3.ErrorDetails
+	(*ErrorDocument)(nil),                                          // 153: s3.ErrorDocument
+	(*EventBridgeConfiguration)(nil),                               // 154: s3.EventBridgeConfiguration
+	(*ExistingObjectReplication)(nil),                              // 155: s3.ExistingObjectReplication
+	(*FilterRule)(nil),                                             // 156: s3.FilterRule
+	(*GetBucketAbacOutput)(nil),                                    // 157: s3.GetBucketAbacOutput
+	(*GetBucketAbacRequest)(nil),                                   // 158: s3.GetBucketAbacRequest
+	(*GetBucketAccelerateConfigurationOutput)(nil),                 // 159: s3.GetBucketAccelerateConfigurationOutput
+	(*GetBucketAccelerateConfigurationRequest)(nil),                // 160: s3.GetBucketAccelerateConfigurationRequest
+	(*GetBucketAclOutput)(nil),                                     // 161: s3.GetBucketAclOutput
+	(*GetBucketAclRequest)(nil),                                    // 162: s3.GetBucketAclRequest
+	(*GetBucketAnalyticsConfigurationOutput)(nil),                  // 163: s3.GetBucketAnalyticsConfigurationOutput
+	(*GetBucketAnalyticsConfigurationRequest)(nil),                 // 164: s3.GetBucketAnalyticsConfigurationRequest
+	(*GetBucketCorsOutput)(nil),                                    // 165: s3.GetBucketCorsOutput
+	(*GetBucketCorsRequest)(nil),                                   // 166: s3.GetBucketCorsRequest
+	(*GetBucketEncryptionOutput)(nil),                              // 167: s3.GetBucketEncryptionOutput
+	(*GetBucketEncryptionRequest)(nil),                             // 168: s3.GetBucketEncryptionRequest
+	(*GetBucketIntelligentTieringConfigurationOutput)(nil),         // 169: s3.GetBucketIntelligentTieringConfigurationOutput
+	(*GetBucketIntelligentTieringConfigurationRequest)(nil),        // 170: s3.GetBucketIntelligentTieringConfigurationRequest
+	(*GetBucketInventoryConfigurationOutput)(nil),                  // 171: s3.GetBucketInventoryConfigurationOutput
+	(*GetBucketInventoryConfigurationRequest)(nil),                 // 172: s3.GetBucketInventoryConfigurationRequest
+	(*GetBucketLifecycleConfigurationOutput)(nil),                  // 173: s3.GetBucketLifecycleConfigurationOutput
+	(*GetBucketLifecycleConfigurationRequest)(nil),                 // 174: s3.GetBucketLifecycleConfigurationRequest
+	(*GetBucketLocationOutput)(nil),                                // 175: s3.GetBucketLocationOutput
+	(*GetBucketLocationRequest)(nil),                               // 176: s3.GetBucketLocationRequest
+	(*GetBucketLoggingOutput)(nil),                                 // 177: s3.GetBucketLoggingOutput
+	(*GetBucketLoggingRequest)(nil),                                // 178: s3.GetBucketLoggingRequest
+	(*GetBucketMetadataConfigurationOutput)(nil),                   // 179: s3.GetBucketMetadataConfigurationOutput
+	(*GetBucketMetadataConfigurationRequest)(nil),                  // 180: s3.GetBucketMetadataConfigurationRequest
+	(*GetBucketMetadataConfigurationResult)(nil),                   // 181: s3.GetBucketMetadataConfigurationResult
+	(*GetBucketMetadataTableConfigurationOutput)(nil),              // 182: s3.GetBucketMetadataTableConfigurationOutput
+	(*GetBucketMetadataTableConfigurationRequest)(nil),             // 183: s3.GetBucketMetadataTableConfigurationRequest
+	(*GetBucketMetadataTableConfigurationResult)(nil),              // 184: s3.GetBucketMetadataTableConfigurationResult
+	(*GetBucketMetricsConfigurationOutput)(nil),                    // 185: s3.GetBucketMetricsConfigurationOutput
+	(*GetBucketMetricsConfigurationRequest)(nil),                   // 186: s3.GetBucketMetricsConfigurationRequest
+	(*GetBucketNotificationConfigurationRequest)(nil),              // 187: s3.GetBucketNotificationConfigurationRequest
+	(*GetBucketOwnershipControlsOutput)(nil),                       // 188: s3.GetBucketOwnershipControlsOutput
+	(*GetBucketOwnershipControlsRequest)(nil),                      // 189: s3.GetBucketOwnershipControlsRequest
+	(*GetBucketPolicyOutput)(nil),                                  // 190: s3.GetBucketPolicyOutput
+	(*GetBucketPolicyRequest)(nil),                                 // 191: s3.GetBucketPolicyRequest
+	(*GetBucketPolicyStatusOutput)(nil),                            // 192: s3.GetBucketPolicyStatusOutput
+	(*GetBucketPolicyStatusRequest)(nil),                           // 193: s3.GetBucketPolicyStatusRequest
+	(*GetBucketReplicationOutput)(nil),                             // 194: s3.GetBucketReplicationOutput
+	(*GetBucketReplicationRequest)(nil),                            // 195: s3.GetBucketReplicationRequest
+	(*GetBucketRequestPaymentOutput)(nil),                          // 196: s3.GetBucketRequestPaymentOutput
+	(*GetBucketRequestPaymentRequest)(nil),                         // 197: s3.GetBucketRequestPaymentRequest
+	(*GetBucketTaggingOutput)(nil),                                 // 198: s3.GetBucketTaggingOutput
+	(*GetBucketTaggingRequest)(nil),                                // 199: s3.GetBucketTaggingRequest
+	(*GetBucketVersioningOutput)(nil),                              // 200: s3.GetBucketVersioningOutput
+	(*GetBucketVersioningRequest)(nil),                             // 201: s3.GetBucketVersioningRequest
+	(*GetBucketWebsiteOutput)(nil),                                 // 202: s3.GetBucketWebsiteOutput
+	(*GetBucketWebsiteRequest)(nil),                                // 203: s3.GetBucketWebsiteRequest
+	(*GetObjectAclOutput)(nil),                                     // 204: s3.GetObjectAclOutput
+	(*GetObjectAclRequest)(nil),                                    // 205: s3.GetObjectAclRequest
+	(*GetObjectAttributesOutput)(nil),                              // 206: s3.GetObjectAttributesOutput
+	(*GetObjectAttributesParts)(nil),                               // 207: s3.GetObjectAttributesParts
+	(*GetObjectAttributesRequest)(nil),                             // 208: s3.GetObjectAttributesRequest
+	(*GetObjectLegalHoldOutput)(nil),                               // 209: s3.GetObjectLegalHoldOutput
+	(*GetObjectLegalHoldRequest)(nil),                              // 210: s3.GetObjectLegalHoldRequest
+	(*GetObjectLockConfigurationOutput)(nil),                       // 211: s3.GetObjectLockConfigurationOutput
+	(*GetObjectLockConfigurationRequest)(nil),                      // 212: s3.GetObjectLockConfigurationRequest
+	(*GetObjectOutput)(nil),                                        // 213: s3.GetObjectOutput
+	(*GetObjectRequest)(nil),                                       // 214: s3.GetObjectRequest
+	(*GetObjectRetentionOutput)(nil),                               // 215: s3.GetObjectRetentionOutput
+	(*GetObjectRetentionRequest)(nil),                              // 216: s3.GetObjectRetentionRequest
+	(*GetObjectTaggingOutput)(nil),                                 // 217: s3.GetObjectTaggingOutput
+	(*GetObjectTaggingRequest)(nil),                                // 218: s3.GetObjectTaggingRequest
+	(*GetObjectTorrentOutput)(nil),                                 // 219: s3.GetObjectTorrentOutput
+	(*GetObjectTorrentRequest)(nil),                                // 220: s3.GetObjectTorrentRequest
+	(*GetPublicAccessBlockOutput)(nil),                             // 221: s3.GetPublicAccessBlockOutput
+	(*GetPublicAccessBlockRequest)(nil),                            // 222: s3.GetPublicAccessBlockRequest
+	(*GlacierJobParameters)(nil),                                   // 223: s3.GlacierJobParameters
+	(*Grant)(nil),                                                  // 224: s3.Grant
+	(*Grantee)(nil),                                                // 225: s3.Grantee
+	(*HeadBucketOutput)(nil),                                       // 226: s3.HeadBucketOutput
+	(*HeadBucketRequest)(nil),                                      // 227: s3.HeadBucketRequest
+	(*HeadObjectOutput)(nil),                                       // 228: s3.HeadObjectOutput
+	(*HeadObjectRequest)(nil),                                      // 229: s3.HeadObjectRequest
+	(*IdempotencyParameterMismatch)(nil),                           // 230: s3.IdempotencyParameterMismatch
+	(*IndexDocument)(nil),                                          // 231: s3.IndexDocument
+	(*Initiator)(nil),                                              // 232: s3.Initiator
+	(*InputSerialization)(nil),                                     // 233: s3.InputSerialization
+	(*IntelligentTieringAndOperator)(nil),                          // 234: s3.IntelligentTieringAndOperator
+	(*IntelligentTieringConfiguration)(nil),                        // 235: s3.IntelligentTieringConfiguration
+	(*IntelligentTieringFilter)(nil),                               // 236: s3.IntelligentTieringFilter
+	(*InvalidObjectState)(nil),                                     // 237: s3.InvalidObjectState
+	(*InvalidRequest)(nil),                                         // 238: s3.InvalidRequest
+	(*InvalidWriteOffset)(nil),                                     // 239: s3.InvalidWriteOffset
+	(*InventoryConfiguration)(nil),                                 // 240: s3.InventoryConfiguration
+	(*InventoryDestination)(nil),                                   // 241: s3.InventoryDestination
+	(*InventoryEncryption)(nil),                                    // 242: s3.InventoryEncryption
+	(*InventoryFilter)(nil),                                        // 243: s3.InventoryFilter
+	(*InventoryS3BucketDestination)(nil),                           // 244: s3.InventoryS3BucketDestination
+	(*InventorySchedule)(nil),                                      // 245: s3.InventorySchedule
+	(*InventoryTableConfiguration)(nil),                            // 246: s3.InventoryTableConfiguration
+	(*InventoryTableConfigurationResult)(nil),                      // 247: s3.InventoryTableConfigurationResult
+	(*InventoryTableConfigurationUpdates)(nil),                     // 248: s3.InventoryTableConfigurationUpdates
+	(*JSONInput)(nil),                                              // 249: s3.JSONInput
+	(*JSONOutput)(nil),                                             // 250: s3.JSONOutput
+	(*JournalTableConfiguration)(nil),                              // 251: s3.JournalTableConfiguration
+	(*JournalTableConfigurationResult)(nil),                        // 252: s3.JournalTableConfigurationResult
+	(*JournalTableConfigurationUpdates)(nil),                       // 253: s3.JournalTableConfigurationUpdates
+	(*LambdaFunctionConfiguration)(nil),                            // 254: s3.LambdaFunctionConfiguration
+	(*LifecycleExpiration)(nil),                                    // 255: s3.LifecycleExpiration
+	(*LifecycleRule)(nil),                                          // 256: s3.LifecycleRule
+	(*LifecycleRuleAndOperator)(nil),                               // 257: s3.LifecycleRuleAndOperator
+	(*LifecycleRuleFilter)(nil),                                    // 258: s3.LifecycleRuleFilter
+	(*ListBucketAnalyticsConfigurationsOutput)(nil),                // 259: s3.ListBucketAnalyticsConfigurationsOutput
+	(*ListBucketAnalyticsConfigurationsRequest)(nil),               // 260: s3.ListBucketAnalyticsConfigurationsRequest
+	(*ListBucketIntelligentTieringConfigurationsOutput)(nil),       // 261: s3.ListBucketIntelligentTieringConfigurationsOutput
+	(*ListBucketIntelligentTieringConfigurationsRequest)(nil),      // 262: s3.ListBucketIntelligentTieringConfigurationsRequest
+	(*ListBucketInventoryConfigurationsOutput)(nil),                // 263: s3.ListBucketInventoryConfigurationsOutput
+	(*ListBucketInventoryConfigurationsRequest)(nil),               // 264: s3.ListBucketInventoryConfigurationsRequest
+	(*ListBucketMetricsConfigurationsOutput)(nil),                  // 265: s3.ListBucketMetricsConfigurationsOutput
+	(*ListBucketMetricsConfigurationsRequest)(nil),                 // 266: s3.ListBucketMetricsConfigurationsRequest
+	(*ListBucketsOutput)(nil),                                      // 267: s3.ListBucketsOutput
+	(*ListBucketsRequest)(nil),                                     // 268: s3.ListBucketsRequest
+	(*ListDirectoryBucketsOutput)(nil),                             // 269: s3.ListDirectoryBucketsOutput
+	(*ListDirectoryBucketsRequest)(nil),                            // 270: s3.ListDirectoryBucketsRequest
+	(*ListMultipartUploadsOutput)(nil),                             // 271: s3.ListMultipartUploadsOutput
+	(*ListMultipartUploadsRequest)(nil),                            // 272: s3.ListMultipartUploadsRequest
+	(*ListObjectVersionsOutput)(nil),                               // 273: s3.ListObjectVersionsOutput
+	(*ListObjectVersionsRequest)(nil),                              // 274: s3.ListObjectVersionsRequest
+	(*ListObjectsOutput)(nil),                                      // 275: s3.ListObjectsOutput
+	(*ListObjectsRequest)(nil),                                     // 276: s3.ListObjectsRequest
+	(*ListObjectsV2Output)(nil),                                    // 277: s3.ListObjectsV2Output
+	(*ListObjectsV2Request)(nil),                                   // 278: s3.ListObjectsV2Request
+	(*ListPartsOutput)(nil),                                        // 279: s3.ListPartsOutput
+	(*ListPartsRequest)(nil),                                       // 280: s3.ListPartsRequest
+	(*LocationInfo)(nil),                                           // 281: s3.LocationInfo
+	(*LoggingEnabled)(nil),                                         // 282: s3.LoggingEnabled
+	(*MetadataConfiguration)(nil),                                  // 283: s3.MetadataConfiguration
+	(*MetadataConfigurationResult)(nil),                            // 284: s3.MetadataConfigurationResult
+	(*MetadataEntry)(nil),                                          // 285: s3.MetadataEntry
+	(*MetadataTableConfiguration)(nil),                             // 286: s3.MetadataTableConfiguration
+	(*MetadataTableConfigurationResult)(nil),                       // 287: s3.MetadataTableConfigurationResult
+	(*MetadataTableEncryptionConfiguration)(nil),                   // 288: s3.MetadataTableEncryptionConfiguration
+	(*Metrics)(nil),                                                // 289: s3.Metrics
+	(*MetricsAndOperator)(nil),                                     // 290: s3.MetricsAndOperator
+	(*MetricsConfiguration)(nil),                                   // 291: s3.MetricsConfiguration
+	(*MetricsFilter)(nil),                                          // 292: s3.MetricsFilter
+	(*MultipartUpload)(nil),                                        // 293: s3.MultipartUpload
+	(*NoSuchBucket)(nil),                                           // 294: s3.NoSuchBucket
+	(*NoSuchKey)(nil),                                              // 295: s3.NoSuchKey
+	(*NoSuchUpload)(nil),                                           // 296: s3.NoSuchUpload
+	(*NoncurrentVersionExpiration)(nil),                            // 297: s3.NoncurrentVersionExpiration
+	(*NoncurrentVersionTransition)(nil),                            // 298: s3.NoncurrentVersionTransition
+	(*NotFound)(nil),                                               // 299: s3.NotFound
+	(*NotificationConfiguration)(nil),                              // 300: s3.NotificationConfiguration
+	(*NotificationConfigurationFilter)(nil),                        // 301: s3.NotificationConfigurationFilter
+	(*Object)(nil),                                                 // 302: s3.Object
+	(*ObjectAlreadyInActiveTierError)(nil),                         // 303: s3.ObjectAlreadyInActiveTierError
+	(*ObjectEncryption)(nil),                                       // 304: s3.ObjectEncryption
+	(*ObjectIdentifier)(nil),                                       // 305: s3.ObjectIdentifier
+	(*ObjectLockConfiguration)(nil),                                // 306: s3.ObjectLockConfiguration
+	(*ObjectLockLegalHold)(nil),                                    // 307: s3.ObjectLockLegalHold
+	(*ObjectLockRetention)(nil),                                    // 308: s3.ObjectLockRetention
+	(*ObjectLockRule)(nil),                                         // 309: s3.ObjectLockRule
+	(*ObjectNotInActiveTierError)(nil),                             // 310: s3.ObjectNotInActiveTierError
+	(*ObjectPart)(nil),                                             // 311: s3.ObjectPart
+	(*ObjectVersion)(nil),                                          // 312: s3.ObjectVersion
+	(*OutputLocation)(nil),                                         // 313: s3.OutputLocation
+	(*OutputSerialization)(nil),                                    // 314: s3.OutputSerialization
+	(*Owner)(nil),                                                  // 315: s3.Owner
+	(*OwnershipControls)(nil),                                      // 316: s3.OwnershipControls
+	(*OwnershipControlsRule)(nil),                                  // 317: s3.OwnershipControlsRule
+	(*ParquetInput)(nil),                                           // 318: s3.ParquetInput
+	(*Part)(nil),                                                   // 319: s3.Part
+	(*PartitionedPrefix)(nil),                                      // 320: s3.PartitionedPrefix
+	(*PolicyStatus)(nil),                                           // 321: s3.PolicyStatus
+	(*Progress)(nil),                                               // 322: s3.Progress
+	(*ProgressEvent)(nil),                                          // 323: s3.ProgressEvent
+	(*PublicAccessBlockConfiguration)(nil),                         // 324: s3.PublicAccessBlockConfiguration
+	(*PutBucketAbacRequest)(nil),                                   // 325: s3.PutBucketAbacRequest
+	(*PutBucketAccelerateConfigurationRequest)(nil),                // 326: s3.PutBucketAccelerateConfigurationRequest
+	(*PutBucketAclRequest)(nil),                                    // 327: s3.PutBucketAclRequest
+	(*PutBucketAnalyticsConfigurationRequest)(nil),                 // 328: s3.PutBucketAnalyticsConfigurationRequest
+	(*PutBucketCorsRequest)(nil),                                   // 329: s3.PutBucketCorsRequest
+	(*PutBucketEncryptionRequest)(nil),                             // 330: s3.PutBucketEncryptionRequest
+	(*PutBucketIntelligentTieringConfigurationRequest)(nil),        // 331: s3.PutBucketIntelligentTieringConfigurationRequest
+	(*PutBucketInventoryConfigurationRequest)(nil),                 // 332: s3.PutBucketInventoryConfigurationRequest
+	(*PutBucketLifecycleConfigurationOutput)(nil),                  // 333: s3.PutBucketLifecycleConfigurationOutput
+	(*PutBucketLifecycleConfigurationRequest)(nil),                 // 334: s3.PutBucketLifecycleConfigurationRequest
+	(*PutBucketLoggingRequest)(nil),                                // 335: s3.PutBucketLoggingRequest
+	(*PutBucketMetricsConfigurationRequest)(nil),                   // 336: s3.PutBucketMetricsConfigurationRequest
+	(*PutBucketNotificationConfigurationRequest)(nil),              // 337: s3.PutBucketNotificationConfigurationRequest
+	(*PutBucketOwnershipControlsRequest)(nil),                      // 338: s3.PutBucketOwnershipControlsRequest
+	(*PutBucketPolicyRequest)(nil),                                 // 339: s3.PutBucketPolicyRequest
+	(*PutBucketReplicationRequest)(nil),                            // 340: s3.PutBucketReplicationRequest
+	(*PutBucketRequestPaymentRequest)(nil),                         // 341: s3.PutBucketRequestPaymentRequest
+	(*PutBucketTaggingRequest)(nil),                                // 342: s3.PutBucketTaggingRequest
+	(*PutBucketVersioningRequest)(nil),                             // 343: s3.PutBucketVersioningRequest
+	(*PutBucketWebsiteRequest)(nil),                                // 344: s3.PutBucketWebsiteRequest
+	(*PutObjectAclOutput)(nil),                                     // 345: s3.PutObjectAclOutput
+	(*PutObjectAclRequest)(nil),                                    // 346: s3.PutObjectAclRequest
+	(*PutObjectLegalHoldOutput)(nil),                               // 347: s3.PutObjectLegalHoldOutput
+	(*PutObjectLegalHoldRequest)(nil),                              // 348: s3.PutObjectLegalHoldRequest
+	(*PutObjectLockConfigurationOutput)(nil),                       // 349: s3.PutObjectLockConfigurationOutput
+	(*PutObjectLockConfigurationRequest)(nil),                      // 350: s3.PutObjectLockConfigurationRequest
+	(*PutObjectOutput)(nil),                                        // 351: s3.PutObjectOutput
+	(*PutObjectRequest)(nil),                                       // 352: s3.PutObjectRequest
+	(*PutObjectRetentionOutput)(nil),                               // 353: s3.PutObjectRetentionOutput
+	(*PutObjectRetentionRequest)(nil),                              // 354: s3.PutObjectRetentionRequest
+	(*PutObjectTaggingOutput)(nil),                                 // 355: s3.PutObjectTaggingOutput
+	(*PutObjectTaggingRequest)(nil),                                // 356: s3.PutObjectTaggingRequest
+	(*PutPublicAccessBlockRequest)(nil),                            // 357: s3.PutPublicAccessBlockRequest
+	(*QueueConfiguration)(nil),                                     // 358: s3.QueueConfiguration
+	(*RecordExpiration)(nil),                                       // 359: s3.RecordExpiration
+	(*RecordsEvent)(nil),                                           // 360: s3.RecordsEvent
+	(*Redirect)(nil),                                               // 361: s3.Redirect
+	(*RedirectAllRequestsTo)(nil),                                  // 362: s3.RedirectAllRequestsTo
+	(*RenameObjectOutput)(nil),                                     // 363: s3.RenameObjectOutput
+	(*RenameObjectRequest)(nil),                                    // 364: s3.RenameObjectRequest
+	(*ReplicaModifications)(nil),                                   // 365: s3.ReplicaModifications
+	(*ReplicationConfiguration)(nil),                               // 366: s3.ReplicationConfiguration
+	(*ReplicationRule)(nil),                                        // 367: s3.ReplicationRule
+	(*ReplicationRuleAndOperator)(nil),                             // 368: s3.ReplicationRuleAndOperator
+	(*ReplicationRuleFilter)(nil),                                  // 369: s3.ReplicationRuleFilter
+	(*ReplicationTime)(nil),                                        // 370: s3.ReplicationTime
+	(*ReplicationTimeValue)(nil),                                   // 371: s3.ReplicationTimeValue
+	(*RequestPaymentConfiguration)(nil),                            // 372: s3.RequestPaymentConfiguration
+	(*RequestProgress)(nil),                                        // 373: s3.RequestProgress
+	(*RestoreObjectOutput)(nil),                                    // 374: s3.RestoreObjectOutput
+	(*RestoreObjectRequest)(nil),                                   // 375: s3.RestoreObjectRequest
+	(*RestoreRequest)(nil),                                         // 376: s3.RestoreRequest
+	(*RestoreStatus)(nil),                                          // 377: s3.RestoreStatus
+	(*RoutingRule)(nil),                                            // 378: s3.RoutingRule
+	(*S3KeyFilter)(nil),                                            // 379: s3.S3KeyFilter
+	(*S3Location)(nil),                                             // 380: s3.S3Location
+	(*S3TablesDestination)(nil),                                    // 381: s3.S3TablesDestination
+	(*S3TablesDestinationResult)(nil),                              // 382: s3.S3TablesDestinationResult
+	(*SSEKMS)(nil),                                                 // 383: s3.SSEKMS
+	(*SSEKMSEncryption)(nil),                                       // 384: s3.SSEKMSEncryption
+	(*SSES3)(nil),                                                  // 385: s3.SSES3
+	(*ScanRange)(nil),                                              // 386: s3.ScanRange
+	(*SelectObjectContentEventStream)(nil),                         // 387: s3.SelectObjectContentEventStream
+	(*SelectObjectContentOutput)(nil),                              // 388: s3.SelectObjectContentOutput
+	(*SelectObjectContentRequest)(nil),                             // 389: s3.SelectObjectContentRequest
+	(*SelectParameters)(nil),                                       // 390: s3.SelectParameters
+	(*ServerSideEncryptionByDefault)(nil),                          // 391: s3.ServerSideEncryptionByDefault
+	(*ServerSideEncryptionConfiguration)(nil),                      // 392: s3.ServerSideEncryptionConfiguration
+	(*ServerSideEncryptionRule)(nil),                               // 393: s3.ServerSideEncryptionRule
+	(*SessionCredentials)(nil),                                     // 394: s3.SessionCredentials
+	(*SimplePrefix)(nil),                                           // 395: s3.SimplePrefix
+	(*SourceSelectionCriteria)(nil),                                // 396: s3.SourceSelectionCriteria
+	(*SseKmsEncryptedObjects)(nil),                                 // 397: s3.SseKmsEncryptedObjects
+	(*Stats)(nil),                                                  // 398: s3.Stats
+	(*StatsEvent)(nil),                                             // 399: s3.StatsEvent
+	(*StorageClassAnalysis)(nil),                                   // 400: s3.StorageClassAnalysis
+	(*StorageClassAnalysisDataExport)(nil),                         // 401: s3.StorageClassAnalysisDataExport
+	(*Tag)(nil),                                                    // 402: s3.Tag
+	(*Tagging)(nil),                                                // 403: s3.Tagging
+	(*TargetGrant)(nil),                                            // 404: s3.TargetGrant
+	(*TargetObjectKeyFormat)(nil),                                  // 405: s3.TargetObjectKeyFormat
+	(*Tiering)(nil),                                                // 406: s3.Tiering
+	(*TooManyParts)(nil),                                           // 407: s3.TooManyParts
+	(*TopicConfiguration)(nil),                                     // 408: s3.TopicConfiguration
+	(*Transition)(nil),                                             // 409: s3.Transition
+	(*UpdateBucketMetadataInventoryTableConfigurationRequest)(nil), // 410: s3.UpdateBucketMetadataInventoryTableConfigurationRequest
+	(*UpdateBucketMetadataJournalTableConfigurationRequest)(nil),   // 411: s3.UpdateBucketMetadataJournalTableConfigurationRequest
+	(*UpdateObjectEncryptionRequest)(nil),                          // 412: s3.UpdateObjectEncryptionRequest
+	(*UpdateObjectEncryptionResponse)(nil),                         // 413: s3.UpdateObjectEncryptionResponse
+	(*UploadPartCopyOutput)(nil),                                   // 414: s3.UploadPartCopyOutput
+	(*UploadPartCopyRequest)(nil),                                  // 415: s3.UploadPartCopyRequest
+	(*UploadPartOutput)(nil),                                       // 416: s3.UploadPartOutput
+	(*UploadPartRequest)(nil),                                      // 417: s3.UploadPartRequest
+	(*VersioningConfiguration)(nil),                                // 418: s3.VersioningConfiguration
+	(*WebsiteConfiguration)(nil),                                   // 419: s3.WebsiteConfiguration
+	(*WriteGetObjectResponseRequest)(nil),                          // 420: s3.WriteGetObjectResponseRequest
+	nil,                                                            // 421: s3.CopyObjectRequest.MetadataEntry
+	nil,                                                            // 422: s3.CreateMultipartUploadRequest.MetadataEntry
+	nil,                                                            // 423: s3.GetObjectOutput.MetadataEntry
+	nil,                                                            // 424: s3.HeadObjectOutput.MetadataEntry
+	nil,                                                            // 425: s3.PutObjectRequest.MetadataEntry
+	nil,                                                            // 426: s3.WriteGetObjectResponseRequest.MetadataEntry
+	(*common.Empty)(nil),                                           // 427: common.Empty
 }
 var file_s3_proto_depIdxs = []int32{
 	2,   // 0: s3.AbacStatus.status:type_name -> s3.BucketAbacStatus
-	57,  // 1: s3.AbortMultipartUploadOutput.requestcharged:type_name -> s3.RequestCharged
-	58,  // 2: s3.AbortMultipartUploadRequest.requestpayer:type_name -> s3.RequestPayer
+	58,  // 1: s3.AbortMultipartUploadOutput.requestcharged:type_name -> s3.RequestCharged
+	59,  // 2: s3.AbortMultipartUploadRequest.requestpayer:type_name -> s3.RequestPayer
 	3,   // 3: s3.AccelerateConfiguration.status:type_name -> s3.BucketAccelerateStatus
-	223, // 4: s3.AccessControlPolicy.grants:type_name -> s3.Grant
-	314, // 5: s3.AccessControlPolicy.owner:type_name -> s3.Owner
-	47,  // 6: s3.AccessControlTranslation.owner:type_name -> s3.OwnerOverride
-	401, // 7: s3.AnalyticsAndOperator.tags:type_name -> s3.Tag
-	83,  // 8: s3.AnalyticsConfiguration.filter:type_name -> s3.AnalyticsFilter
-	399, // 9: s3.AnalyticsConfiguration.storageclassanalysis:type_name -> s3.StorageClassAnalysis
-	84,  // 10: s3.AnalyticsExportDestination.s3bucketdestination:type_name -> s3.AnalyticsS3BucketDestination
-	80,  // 11: s3.AnalyticsFilter.and:type_name -> s3.AnalyticsAndOperator
-	401, // 12: s3.AnalyticsFilter.tag:type_name -> s3.Tag
+	224, // 4: s3.AccessControlPolicy.grants:type_name -> s3.Grant
+	315, // 5: s3.AccessControlPolicy.owner:type_name -> s3.Owner
+	48,  // 6: s3.AccessControlTranslation.owner:type_name -> s3.OwnerOverride
+	402, // 7: s3.AnalyticsAndOperator.tags:type_name -> s3.Tag
+	84,  // 8: s3.AnalyticsConfiguration.filter:type_name -> s3.AnalyticsFilter
+	400, // 9: s3.AnalyticsConfiguration.storageclassanalysis:type_name -> s3.StorageClassAnalysis
+	85,  // 10: s3.AnalyticsExportDestination.s3bucketdestination:type_name -> s3.AnalyticsS3BucketDestination
+	81,  // 11: s3.AnalyticsFilter.and:type_name -> s3.AnalyticsAndOperator
+	402, // 12: s3.AnalyticsFilter.tag:type_name -> s3.Tag
 	0,   // 13: s3.AnalyticsS3BucketDestination.format:type_name -> s3.AnalyticsS3ExportFileFormat
-	16,  // 14: s3.BlockedEncryptionTypes.encryptiontype:type_name -> s3.EncryptionType
-	13,  // 15: s3.BucketInfo.dataredundancy:type_name -> s3.DataRedundancy
-	7,   // 16: s3.BucketInfo.type:type_name -> s3.BucketType
-	255, // 17: s3.BucketLifecycleConfiguration.rules:type_name -> s3.LifecycleRule
-	281, // 18: s3.BucketLoggingStatus.loggingenabled:type_name -> s3.LoggingEnabled
-	93,  // 19: s3.CORSConfiguration.corsrules:type_name -> s3.CORSRule
-	22,  // 20: s3.CSVInput.fileheaderinfo:type_name -> s3.FileHeaderInfo
-	52,  // 21: s3.CSVOutput.quotefields:type_name -> s3.QuoteFields
-	11,  // 22: s3.Checksum.checksumtype:type_name -> s3.ChecksumType
-	11,  // 23: s3.CompleteMultipartUploadOutput.checksumtype:type_name -> s3.ChecksumType
-	57,  // 24: s3.CompleteMultipartUploadOutput.requestcharged:type_name -> s3.RequestCharged
-	61,  // 25: s3.CompleteMultipartUploadOutput.serversideencryption:type_name -> s3.ServerSideEncryption
-	11,  // 26: s3.CompleteMultipartUploadRequest.checksumtype:type_name -> s3.ChecksumType
-	100, // 27: s3.CompleteMultipartUploadRequest.multipartupload:type_name -> s3.CompletedMultipartUpload
-	58,  // 28: s3.CompleteMultipartUploadRequest.requestpayer:type_name -> s3.RequestPayer
-	101, // 29: s3.CompletedMultipartUpload.parts:type_name -> s3.CompletedPart
-	106, // 30: s3.CopyObjectOutput.copyobjectresult:type_name -> s3.CopyObjectResult
-	57,  // 31: s3.CopyObjectOutput.requestcharged:type_name -> s3.RequestCharged
-	61,  // 32: s3.CopyObjectOutput.serversideencryption:type_name -> s3.ServerSideEncryption
-	38,  // 33: s3.CopyObjectRequest.acl:type_name -> s3.ObjectCannedACL
-	9,   // 34: s3.CopyObjectRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	420, // 35: s3.CopyObjectRequest.metadata:type_name -> s3.CopyObjectRequest.MetadataEntry
-	35,  // 36: s3.CopyObjectRequest.metadatadirective:type_name -> s3.MetadataDirective
-	40,  // 37: s3.CopyObjectRequest.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
-	41,  // 38: s3.CopyObjectRequest.objectlockmode:type_name -> s3.ObjectLockMode
-	58,  // 39: s3.CopyObjectRequest.requestpayer:type_name -> s3.RequestPayer
-	61,  // 40: s3.CopyObjectRequest.serversideencryption:type_name -> s3.ServerSideEncryption
-	64,  // 41: s3.CopyObjectRequest.storageclass:type_name -> s3.StorageClass
-	67,  // 42: s3.CopyObjectRequest.taggingdirective:type_name -> s3.TaggingDirective
-	11,  // 43: s3.CopyObjectResult.checksumtype:type_name -> s3.ChecksumType
-	89,  // 44: s3.CreateBucketConfiguration.bucket:type_name -> s3.BucketInfo
-	280, // 45: s3.CreateBucketConfiguration.location:type_name -> s3.LocationInfo
+	17,  // 14: s3.BlockedEncryptionTypes.encryptiontype:type_name -> s3.EncryptionType
+	14,  // 15: s3.BucketInfo.dataredundancy:type_name -> s3.DataRedundancy
+	8,   // 16: s3.BucketInfo.type:type_name -> s3.BucketType
+	256, // 17: s3.BucketLifecycleConfiguration.rules:type_name -> s3.LifecycleRule
+	282, // 18: s3.BucketLoggingStatus.loggingenabled:type_name -> s3.LoggingEnabled
+	94,  // 19: s3.CORSConfiguration.corsrules:type_name -> s3.CORSRule
+	23,  // 20: s3.CSVInput.fileheaderinfo:type_name -> s3.FileHeaderInfo
+	53,  // 21: s3.CSVOutput.quotefields:type_name -> s3.QuoteFields
+	12,  // 22: s3.Checksum.checksumtype:type_name -> s3.ChecksumType
+	12,  // 23: s3.CompleteMultipartUploadOutput.checksumtype:type_name -> s3.ChecksumType
+	58,  // 24: s3.CompleteMultipartUploadOutput.requestcharged:type_name -> s3.RequestCharged
+	62,  // 25: s3.CompleteMultipartUploadOutput.serversideencryption:type_name -> s3.ServerSideEncryption
+	12,  // 26: s3.CompleteMultipartUploadRequest.checksumtype:type_name -> s3.ChecksumType
+	101, // 27: s3.CompleteMultipartUploadRequest.multipartupload:type_name -> s3.CompletedMultipartUpload
+	59,  // 28: s3.CompleteMultipartUploadRequest.requestpayer:type_name -> s3.RequestPayer
+	102, // 29: s3.CompletedMultipartUpload.parts:type_name -> s3.CompletedPart
+	107, // 30: s3.CopyObjectOutput.copyobjectresult:type_name -> s3.CopyObjectResult
+	58,  // 31: s3.CopyObjectOutput.requestcharged:type_name -> s3.RequestCharged
+	62,  // 32: s3.CopyObjectOutput.serversideencryption:type_name -> s3.ServerSideEncryption
+	39,  // 33: s3.CopyObjectRequest.acl:type_name -> s3.ObjectCannedACL
+	10,  // 34: s3.CopyObjectRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	421, // 35: s3.CopyObjectRequest.metadata:type_name -> s3.CopyObjectRequest.MetadataEntry
+	36,  // 36: s3.CopyObjectRequest.metadatadirective:type_name -> s3.MetadataDirective
+	41,  // 37: s3.CopyObjectRequest.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
+	42,  // 38: s3.CopyObjectRequest.objectlockmode:type_name -> s3.ObjectLockMode
+	59,  // 39: s3.CopyObjectRequest.requestpayer:type_name -> s3.RequestPayer
+	62,  // 40: s3.CopyObjectRequest.serversideencryption:type_name -> s3.ServerSideEncryption
+	65,  // 41: s3.CopyObjectRequest.storageclass:type_name -> s3.StorageClass
+	68,  // 42: s3.CopyObjectRequest.taggingdirective:type_name -> s3.TaggingDirective
+	12,  // 43: s3.CopyObjectResult.checksumtype:type_name -> s3.ChecksumType
+	90,  // 44: s3.CreateBucketConfiguration.bucket:type_name -> s3.BucketInfo
+	281, // 45: s3.CreateBucketConfiguration.location:type_name -> s3.LocationInfo
 	5,   // 46: s3.CreateBucketConfiguration.locationconstraint:type_name -> s3.BucketLocationConstraint
-	401, // 47: s3.CreateBucketConfiguration.tags:type_name -> s3.Tag
-	9,   // 48: s3.CreateBucketMetadataConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	282, // 49: s3.CreateBucketMetadataConfigurationRequest.metadataconfiguration:type_name -> s3.MetadataConfiguration
-	9,   // 50: s3.CreateBucketMetadataTableConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	285, // 51: s3.CreateBucketMetadataTableConfigurationRequest.metadatatableconfiguration:type_name -> s3.MetadataTableConfiguration
+	402, // 47: s3.CreateBucketConfiguration.tags:type_name -> s3.Tag
+	10,  // 48: s3.CreateBucketMetadataConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	283, // 49: s3.CreateBucketMetadataConfigurationRequest.metadataconfiguration:type_name -> s3.MetadataConfiguration
+	10,  // 50: s3.CreateBucketMetadataTableConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	286, // 51: s3.CreateBucketMetadataTableConfigurationRequest.metadatatableconfiguration:type_name -> s3.MetadataTableConfiguration
 	4,   // 52: s3.CreateBucketRequest.acl:type_name -> s3.BucketCannedACL
-	108, // 53: s3.CreateBucketRequest.createbucketconfiguration:type_name -> s3.CreateBucketConfiguration
-	43,  // 54: s3.CreateBucketRequest.objectownership:type_name -> s3.ObjectOwnership
-	9,   // 55: s3.CreateMultipartUploadOutput.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	11,  // 56: s3.CreateMultipartUploadOutput.checksumtype:type_name -> s3.ChecksumType
-	57,  // 57: s3.CreateMultipartUploadOutput.requestcharged:type_name -> s3.RequestCharged
-	61,  // 58: s3.CreateMultipartUploadOutput.serversideencryption:type_name -> s3.ServerSideEncryption
-	38,  // 59: s3.CreateMultipartUploadRequest.acl:type_name -> s3.ObjectCannedACL
-	9,   // 60: s3.CreateMultipartUploadRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	11,  // 61: s3.CreateMultipartUploadRequest.checksumtype:type_name -> s3.ChecksumType
-	421, // 62: s3.CreateMultipartUploadRequest.metadata:type_name -> s3.CreateMultipartUploadRequest.MetadataEntry
-	40,  // 63: s3.CreateMultipartUploadRequest.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
-	41,  // 64: s3.CreateMultipartUploadRequest.objectlockmode:type_name -> s3.ObjectLockMode
-	58,  // 65: s3.CreateMultipartUploadRequest.requestpayer:type_name -> s3.RequestPayer
-	61,  // 66: s3.CreateMultipartUploadRequest.serversideencryption:type_name -> s3.ServerSideEncryption
-	64,  // 67: s3.CreateMultipartUploadRequest.storageclass:type_name -> s3.StorageClass
-	393, // 68: s3.CreateSessionOutput.credentials:type_name -> s3.SessionCredentials
-	61,  // 69: s3.CreateSessionOutput.serversideencryption:type_name -> s3.ServerSideEncryption
-	61,  // 70: s3.CreateSessionRequest.serversideencryption:type_name -> s3.ServerSideEncryption
-	62,  // 71: s3.CreateSessionRequest.sessionmode:type_name -> s3.SessionMode
-	42,  // 72: s3.DefaultRetention.mode:type_name -> s3.ObjectLockRetentionMode
-	304, // 73: s3.Delete.objects:type_name -> s3.ObjectIdentifier
-	314, // 74: s3.DeleteMarkerEntry.owner:type_name -> s3.Owner
-	14,  // 75: s3.DeleteMarkerReplication.status:type_name -> s3.DeleteMarkerReplicationStatus
-	57,  // 76: s3.DeleteObjectOutput.requestcharged:type_name -> s3.RequestCharged
-	58,  // 77: s3.DeleteObjectRequest.requestpayer:type_name -> s3.RequestPayer
-	143, // 78: s3.DeleteObjectsOutput.deleted:type_name -> s3.DeletedObject
-	150, // 79: s3.DeleteObjectsOutput.errors:type_name -> s3.Error
-	57,  // 80: s3.DeleteObjectsOutput.requestcharged:type_name -> s3.RequestCharged
-	9,   // 81: s3.DeleteObjectsRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	118, // 82: s3.DeleteObjectsRequest.delete:type_name -> s3.Delete
-	58,  // 83: s3.DeleteObjectsRequest.requestpayer:type_name -> s3.RequestPayer
-	78,  // 84: s3.Destination.accesscontroltranslation:type_name -> s3.AccessControlTranslation
-	147, // 85: s3.Destination.encryptionconfiguration:type_name -> s3.EncryptionConfiguration
-	288, // 86: s3.Destination.metrics:type_name -> s3.Metrics
-	369, // 87: s3.Destination.replicationtime:type_name -> s3.ReplicationTime
-	64,  // 88: s3.Destination.storageclass:type_name -> s3.StorageClass
-	60,  // 89: s3.DestinationResult.tablebuckettype:type_name -> s3.S3TablesBucketType
-	61,  // 90: s3.Encryption.encryptiontype:type_name -> s3.ServerSideEncryption
-	18,  // 91: s3.ExistingObjectReplication.status:type_name -> s3.ExistingObjectReplicationStatus
-	23,  // 92: s3.FilterRule.name:type_name -> s3.FilterRuleName
-	72,  // 93: s3.GetBucketAbacOutput.abacstatus:type_name -> s3.AbacStatus
-	57,  // 94: s3.GetBucketAccelerateConfigurationOutput.requestcharged:type_name -> s3.RequestCharged
-	3,   // 95: s3.GetBucketAccelerateConfigurationOutput.status:type_name -> s3.BucketAccelerateStatus
-	58,  // 96: s3.GetBucketAccelerateConfigurationRequest.requestpayer:type_name -> s3.RequestPayer
-	223, // 97: s3.GetBucketAclOutput.grants:type_name -> s3.Grant
-	314, // 98: s3.GetBucketAclOutput.owner:type_name -> s3.Owner
-	81,  // 99: s3.GetBucketAnalyticsConfigurationOutput.analyticsconfiguration:type_name -> s3.AnalyticsConfiguration
-	93,  // 100: s3.GetBucketCorsOutput.corsrules:type_name -> s3.CORSRule
-	391, // 101: s3.GetBucketEncryptionOutput.serversideencryptionconfiguration:type_name -> s3.ServerSideEncryptionConfiguration
-	234, // 102: s3.GetBucketIntelligentTieringConfigurationOutput.intelligenttieringconfiguration:type_name -> s3.IntelligentTieringConfiguration
-	239, // 103: s3.GetBucketInventoryConfigurationOutput.inventoryconfiguration:type_name -> s3.InventoryConfiguration
-	255, // 104: s3.GetBucketLifecycleConfigurationOutput.rules:type_name -> s3.LifecycleRule
-	69,  // 105: s3.GetBucketLifecycleConfigurationOutput.transitiondefaultminimumobjectsize:type_name -> s3.TransitionDefaultMinimumObjectSize
-	5,   // 106: s3.GetBucketLocationOutput.locationconstraint:type_name -> s3.BucketLocationConstraint
-	281, // 107: s3.GetBucketLoggingOutput.loggingenabled:type_name -> s3.LoggingEnabled
-	180, // 108: s3.GetBucketMetadataConfigurationOutput.getbucketmetadataconfigurationresult:type_name -> s3.GetBucketMetadataConfigurationResult
-	283, // 109: s3.GetBucketMetadataConfigurationResult.metadataconfigurationresult:type_name -> s3.MetadataConfigurationResult
-	183, // 110: s3.GetBucketMetadataTableConfigurationOutput.getbucketmetadatatableconfigurationresult:type_name -> s3.GetBucketMetadataTableConfigurationResult
-	151, // 111: s3.GetBucketMetadataTableConfigurationResult.error:type_name -> s3.ErrorDetails
-	286, // 112: s3.GetBucketMetadataTableConfigurationResult.metadatatableconfigurationresult:type_name -> s3.MetadataTableConfigurationResult
-	290, // 113: s3.GetBucketMetricsConfigurationOutput.metricsconfiguration:type_name -> s3.MetricsConfiguration
-	315, // 114: s3.GetBucketOwnershipControlsOutput.ownershipcontrols:type_name -> s3.OwnershipControls
-	320, // 115: s3.GetBucketPolicyStatusOutput.policystatus:type_name -> s3.PolicyStatus
-	365, // 116: s3.GetBucketReplicationOutput.replicationconfiguration:type_name -> s3.ReplicationConfiguration
-	49,  // 117: s3.GetBucketRequestPaymentOutput.payer:type_name -> s3.Payer
-	401, // 118: s3.GetBucketTaggingOutput.tagset:type_name -> s3.Tag
-	34,  // 119: s3.GetBucketVersioningOutput.mfadelete:type_name -> s3.MFADeleteStatus
-	8,   // 120: s3.GetBucketVersioningOutput.status:type_name -> s3.BucketVersioningStatus
-	152, // 121: s3.GetBucketWebsiteOutput.errordocument:type_name -> s3.ErrorDocument
-	230, // 122: s3.GetBucketWebsiteOutput.indexdocument:type_name -> s3.IndexDocument
-	361, // 123: s3.GetBucketWebsiteOutput.redirectallrequeststo:type_name -> s3.RedirectAllRequestsTo
-	377, // 124: s3.GetBucketWebsiteOutput.routingrules:type_name -> s3.RoutingRule
-	223, // 125: s3.GetObjectAclOutput.grants:type_name -> s3.Grant
-	314, // 126: s3.GetObjectAclOutput.owner:type_name -> s3.Owner
-	57,  // 127: s3.GetObjectAclOutput.requestcharged:type_name -> s3.RequestCharged
-	58,  // 128: s3.GetObjectAclRequest.requestpayer:type_name -> s3.RequestPayer
-	96,  // 129: s3.GetObjectAttributesOutput.checksum:type_name -> s3.Checksum
-	206, // 130: s3.GetObjectAttributesOutput.objectparts:type_name -> s3.GetObjectAttributesParts
-	57,  // 131: s3.GetObjectAttributesOutput.requestcharged:type_name -> s3.RequestCharged
-	64,  // 132: s3.GetObjectAttributesOutput.storageclass:type_name -> s3.StorageClass
-	310, // 133: s3.GetObjectAttributesParts.parts:type_name -> s3.ObjectPart
-	37,  // 134: s3.GetObjectAttributesRequest.objectattributes:type_name -> s3.ObjectAttributes
-	58,  // 135: s3.GetObjectAttributesRequest.requestpayer:type_name -> s3.RequestPayer
-	306, // 136: s3.GetObjectLegalHoldOutput.legalhold:type_name -> s3.ObjectLockLegalHold
-	58,  // 137: s3.GetObjectLegalHoldRequest.requestpayer:type_name -> s3.RequestPayer
-	305, // 138: s3.GetObjectLockConfigurationOutput.objectlockconfiguration:type_name -> s3.ObjectLockConfiguration
-	11,  // 139: s3.GetObjectOutput.checksumtype:type_name -> s3.ChecksumType
-	422, // 140: s3.GetObjectOutput.metadata:type_name -> s3.GetObjectOutput.MetadataEntry
-	40,  // 141: s3.GetObjectOutput.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
-	41,  // 142: s3.GetObjectOutput.objectlockmode:type_name -> s3.ObjectLockMode
-	55,  // 143: s3.GetObjectOutput.replicationstatus:type_name -> s3.ReplicationStatus
-	57,  // 144: s3.GetObjectOutput.requestcharged:type_name -> s3.RequestCharged
-	61,  // 145: s3.GetObjectOutput.serversideencryption:type_name -> s3.ServerSideEncryption
-	64,  // 146: s3.GetObjectOutput.storageclass:type_name -> s3.StorageClass
-	10,  // 147: s3.GetObjectRequest.checksummode:type_name -> s3.ChecksumMode
-	58,  // 148: s3.GetObjectRequest.requestpayer:type_name -> s3.RequestPayer
-	307, // 149: s3.GetObjectRetentionOutput.retention:type_name -> s3.ObjectLockRetention
-	58,  // 150: s3.GetObjectRetentionRequest.requestpayer:type_name -> s3.RequestPayer
-	401, // 151: s3.GetObjectTaggingOutput.tagset:type_name -> s3.Tag
-	58,  // 152: s3.GetObjectTaggingRequest.requestpayer:type_name -> s3.RequestPayer
-	57,  // 153: s3.GetObjectTorrentOutput.requestcharged:type_name -> s3.RequestCharged
-	58,  // 154: s3.GetObjectTorrentRequest.requestpayer:type_name -> s3.RequestPayer
-	323, // 155: s3.GetPublicAccessBlockOutput.publicaccessblockconfiguration:type_name -> s3.PublicAccessBlockConfiguration
-	68,  // 156: s3.GlacierJobParameters.tier:type_name -> s3.Tier
-	224, // 157: s3.Grant.grantee:type_name -> s3.Grantee
-	50,  // 158: s3.Grant.permission:type_name -> s3.Permission
-	71,  // 159: s3.Grantee.type:type_name -> s3.Type
-	32,  // 160: s3.HeadBucketOutput.bucketlocationtype:type_name -> s3.LocationType
-	1,   // 161: s3.HeadObjectOutput.archivestatus:type_name -> s3.ArchiveStatus
-	11,  // 162: s3.HeadObjectOutput.checksumtype:type_name -> s3.ChecksumType
-	423, // 163: s3.HeadObjectOutput.metadata:type_name -> s3.HeadObjectOutput.MetadataEntry
-	40,  // 164: s3.HeadObjectOutput.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
-	41,  // 165: s3.HeadObjectOutput.objectlockmode:type_name -> s3.ObjectLockMode
-	55,  // 166: s3.HeadObjectOutput.replicationstatus:type_name -> s3.ReplicationStatus
-	57,  // 167: s3.HeadObjectOutput.requestcharged:type_name -> s3.RequestCharged
-	61,  // 168: s3.HeadObjectOutput.serversideencryption:type_name -> s3.ServerSideEncryption
-	64,  // 169: s3.HeadObjectOutput.storageclass:type_name -> s3.StorageClass
-	10,  // 170: s3.HeadObjectRequest.checksummode:type_name -> s3.ChecksumMode
-	58,  // 171: s3.HeadObjectRequest.requestpayer:type_name -> s3.RequestPayer
-	94,  // 172: s3.InputSerialization.csv:type_name -> s3.CSVInput
-	12,  // 173: s3.InputSerialization.compressiontype:type_name -> s3.CompressionType
-	248, // 174: s3.InputSerialization.json:type_name -> s3.JSONInput
-	317, // 175: s3.InputSerialization.parquet:type_name -> s3.ParquetInput
-	401, // 176: s3.IntelligentTieringAndOperator.tags:type_name -> s3.Tag
-	235, // 177: s3.IntelligentTieringConfiguration.filter:type_name -> s3.IntelligentTieringFilter
-	25,  // 178: s3.IntelligentTieringConfiguration.status:type_name -> s3.IntelligentTieringStatus
-	405, // 179: s3.IntelligentTieringConfiguration.tierings:type_name -> s3.Tiering
-	233, // 180: s3.IntelligentTieringFilter.and:type_name -> s3.IntelligentTieringAndOperator
-	401, // 181: s3.IntelligentTieringFilter.tag:type_name -> s3.Tag
-	24,  // 182: s3.InvalidObjectState.accesstier:type_name -> s3.IntelligentTieringAccessTier
-	64,  // 183: s3.InvalidObjectState.storageclass:type_name -> s3.StorageClass
-	240, // 184: s3.InventoryConfiguration.destination:type_name -> s3.InventoryDestination
-	242, // 185: s3.InventoryConfiguration.filter:type_name -> s3.InventoryFilter
-	29,  // 186: s3.InventoryConfiguration.includedobjectversions:type_name -> s3.InventoryIncludedObjectVersions
-	30,  // 187: s3.InventoryConfiguration.optionalfields:type_name -> s3.InventoryOptionalField
-	244, // 188: s3.InventoryConfiguration.schedule:type_name -> s3.InventorySchedule
-	243, // 189: s3.InventoryDestination.s3bucketdestination:type_name -> s3.InventoryS3BucketDestination
-	382, // 190: s3.InventoryEncryption.ssekms:type_name -> s3.SSEKMS
-	384, // 191: s3.InventoryEncryption.sses3:type_name -> s3.SSES3
-	241, // 192: s3.InventoryS3BucketDestination.encryption:type_name -> s3.InventoryEncryption
-	27,  // 193: s3.InventoryS3BucketDestination.format:type_name -> s3.InventoryFormat
-	28,  // 194: s3.InventorySchedule.frequency:type_name -> s3.InventoryFrequency
-	26,  // 195: s3.InventoryTableConfiguration.configurationstate:type_name -> s3.InventoryConfigurationState
-	287, // 196: s3.InventoryTableConfiguration.encryptionconfiguration:type_name -> s3.MetadataTableEncryptionConfiguration
-	26,  // 197: s3.InventoryTableConfigurationResult.configurationstate:type_name -> s3.InventoryConfigurationState
-	151, // 198: s3.InventoryTableConfigurationResult.error:type_name -> s3.ErrorDetails
-	26,  // 199: s3.InventoryTableConfigurationUpdates.configurationstate:type_name -> s3.InventoryConfigurationState
-	287, // 200: s3.InventoryTableConfigurationUpdates.encryptionconfiguration:type_name -> s3.MetadataTableEncryptionConfiguration
-	31,  // 201: s3.JSONInput.type:type_name -> s3.JSONType
-	287, // 202: s3.JournalTableConfiguration.encryptionconfiguration:type_name -> s3.MetadataTableEncryptionConfiguration
-	358, // 203: s3.JournalTableConfiguration.recordexpiration:type_name -> s3.RecordExpiration
-	151, // 204: s3.JournalTableConfigurationResult.error:type_name -> s3.ErrorDetails
-	358, // 205: s3.JournalTableConfigurationResult.recordexpiration:type_name -> s3.RecordExpiration
-	358, // 206: s3.JournalTableConfigurationUpdates.recordexpiration:type_name -> s3.RecordExpiration
-	17,  // 207: s3.LambdaFunctionConfiguration.events:type_name -> s3.Event
-	300, // 208: s3.LambdaFunctionConfiguration.filter:type_name -> s3.NotificationConfigurationFilter
-	73,  // 209: s3.LifecycleRule.abortincompletemultipartupload:type_name -> s3.AbortIncompleteMultipartUpload
-	254, // 210: s3.LifecycleRule.expiration:type_name -> s3.LifecycleExpiration
-	257, // 211: s3.LifecycleRule.filter:type_name -> s3.LifecycleRuleFilter
-	296, // 212: s3.LifecycleRule.noncurrentversionexpiration:type_name -> s3.NoncurrentVersionExpiration
-	297, // 213: s3.LifecycleRule.noncurrentversiontransitions:type_name -> s3.NoncurrentVersionTransition
-	20,  // 214: s3.LifecycleRule.status:type_name -> s3.ExpirationStatus
-	408, // 215: s3.LifecycleRule.transitions:type_name -> s3.Transition
-	401, // 216: s3.LifecycleRuleAndOperator.tags:type_name -> s3.Tag
-	256, // 217: s3.LifecycleRuleFilter.and:type_name -> s3.LifecycleRuleAndOperator
-	401, // 218: s3.LifecycleRuleFilter.tag:type_name -> s3.Tag
-	81,  // 219: s3.ListBucketAnalyticsConfigurationsOutput.analyticsconfigurationlist:type_name -> s3.AnalyticsConfiguration
-	234, // 220: s3.ListBucketIntelligentTieringConfigurationsOutput.intelligenttieringconfigurationlist:type_name -> s3.IntelligentTieringConfiguration
-	239, // 221: s3.ListBucketInventoryConfigurationsOutput.inventoryconfigurationlist:type_name -> s3.InventoryConfiguration
-	290, // 222: s3.ListBucketMetricsConfigurationsOutput.metricsconfigurationlist:type_name -> s3.MetricsConfiguration
-	86,  // 223: s3.ListBucketsOutput.buckets:type_name -> s3.Bucket
-	314, // 224: s3.ListBucketsOutput.owner:type_name -> s3.Owner
-	86,  // 225: s3.ListDirectoryBucketsOutput.buckets:type_name -> s3.Bucket
-	97,  // 226: s3.ListMultipartUploadsOutput.commonprefixes:type_name -> s3.CommonPrefix
-	15,  // 227: s3.ListMultipartUploadsOutput.encodingtype:type_name -> s3.EncodingType
-	57,  // 228: s3.ListMultipartUploadsOutput.requestcharged:type_name -> s3.RequestCharged
-	292, // 229: s3.ListMultipartUploadsOutput.uploads:type_name -> s3.MultipartUpload
-	15,  // 230: s3.ListMultipartUploadsRequest.encodingtype:type_name -> s3.EncodingType
-	58,  // 231: s3.ListMultipartUploadsRequest.requestpayer:type_name -> s3.RequestPayer
-	97,  // 232: s3.ListObjectVersionsOutput.commonprefixes:type_name -> s3.CommonPrefix
-	134, // 233: s3.ListObjectVersionsOutput.deletemarkers:type_name -> s3.DeleteMarkerEntry
-	15,  // 234: s3.ListObjectVersionsOutput.encodingtype:type_name -> s3.EncodingType
-	57,  // 235: s3.ListObjectVersionsOutput.requestcharged:type_name -> s3.RequestCharged
-	311, // 236: s3.ListObjectVersionsOutput.versions:type_name -> s3.ObjectVersion
-	15,  // 237: s3.ListObjectVersionsRequest.encodingtype:type_name -> s3.EncodingType
-	46,  // 238: s3.ListObjectVersionsRequest.optionalobjectattributes:type_name -> s3.OptionalObjectAttributes
-	58,  // 239: s3.ListObjectVersionsRequest.requestpayer:type_name -> s3.RequestPayer
-	97,  // 240: s3.ListObjectsOutput.commonprefixes:type_name -> s3.CommonPrefix
-	301, // 241: s3.ListObjectsOutput.contents:type_name -> s3.Object
-	15,  // 242: s3.ListObjectsOutput.encodingtype:type_name -> s3.EncodingType
-	57,  // 243: s3.ListObjectsOutput.requestcharged:type_name -> s3.RequestCharged
-	15,  // 244: s3.ListObjectsRequest.encodingtype:type_name -> s3.EncodingType
-	46,  // 245: s3.ListObjectsRequest.optionalobjectattributes:type_name -> s3.OptionalObjectAttributes
-	58,  // 246: s3.ListObjectsRequest.requestpayer:type_name -> s3.RequestPayer
-	97,  // 247: s3.ListObjectsV2Output.commonprefixes:type_name -> s3.CommonPrefix
-	301, // 248: s3.ListObjectsV2Output.contents:type_name -> s3.Object
-	15,  // 249: s3.ListObjectsV2Output.encodingtype:type_name -> s3.EncodingType
-	57,  // 250: s3.ListObjectsV2Output.requestcharged:type_name -> s3.RequestCharged
-	15,  // 251: s3.ListObjectsV2Request.encodingtype:type_name -> s3.EncodingType
-	46,  // 252: s3.ListObjectsV2Request.optionalobjectattributes:type_name -> s3.OptionalObjectAttributes
-	58,  // 253: s3.ListObjectsV2Request.requestpayer:type_name -> s3.RequestPayer
-	9,   // 254: s3.ListPartsOutput.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	11,  // 255: s3.ListPartsOutput.checksumtype:type_name -> s3.ChecksumType
-	231, // 256: s3.ListPartsOutput.initiator:type_name -> s3.Initiator
-	314, // 257: s3.ListPartsOutput.owner:type_name -> s3.Owner
-	318, // 258: s3.ListPartsOutput.parts:type_name -> s3.Part
-	57,  // 259: s3.ListPartsOutput.requestcharged:type_name -> s3.RequestCharged
-	64,  // 260: s3.ListPartsOutput.storageclass:type_name -> s3.StorageClass
-	58,  // 261: s3.ListPartsRequest.requestpayer:type_name -> s3.RequestPayer
-	32,  // 262: s3.LocationInfo.type:type_name -> s3.LocationType
-	403, // 263: s3.LoggingEnabled.targetgrants:type_name -> s3.TargetGrant
-	404, // 264: s3.LoggingEnabled.targetobjectkeyformat:type_name -> s3.TargetObjectKeyFormat
-	245, // 265: s3.MetadataConfiguration.inventorytableconfiguration:type_name -> s3.InventoryTableConfiguration
-	250, // 266: s3.MetadataConfiguration.journaltableconfiguration:type_name -> s3.JournalTableConfiguration
-	145, // 267: s3.MetadataConfigurationResult.destinationresult:type_name -> s3.DestinationResult
-	246, // 268: s3.MetadataConfigurationResult.inventorytableconfigurationresult:type_name -> s3.InventoryTableConfigurationResult
-	251, // 269: s3.MetadataConfigurationResult.journaltableconfigurationresult:type_name -> s3.JournalTableConfigurationResult
-	380, // 270: s3.MetadataTableConfiguration.s3tablesdestination:type_name -> s3.S3TablesDestination
-	381, // 271: s3.MetadataTableConfigurationResult.s3tablesdestinationresult:type_name -> s3.S3TablesDestinationResult
-	66,  // 272: s3.MetadataTableEncryptionConfiguration.ssealgorithm:type_name -> s3.TableSseAlgorithm
-	370, // 273: s3.Metrics.eventthreshold:type_name -> s3.ReplicationTimeValue
-	36,  // 274: s3.Metrics.status:type_name -> s3.MetricsStatus
-	401, // 275: s3.MetricsAndOperator.tags:type_name -> s3.Tag
-	291, // 276: s3.MetricsConfiguration.filter:type_name -> s3.MetricsFilter
-	289, // 277: s3.MetricsFilter.and:type_name -> s3.MetricsAndOperator
-	401, // 278: s3.MetricsFilter.tag:type_name -> s3.Tag
-	9,   // 279: s3.MultipartUpload.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	11,  // 280: s3.MultipartUpload.checksumtype:type_name -> s3.ChecksumType
-	231, // 281: s3.MultipartUpload.initiator:type_name -> s3.Initiator
-	314, // 282: s3.MultipartUpload.owner:type_name -> s3.Owner
-	64,  // 283: s3.MultipartUpload.storageclass:type_name -> s3.StorageClass
-	70,  // 284: s3.NoncurrentVersionTransition.storageclass:type_name -> s3.TransitionStorageClass
-	153, // 285: s3.NotificationConfiguration.eventbridgeconfiguration:type_name -> s3.EventBridgeConfiguration
-	253, // 286: s3.NotificationConfiguration.lambdafunctionconfigurations:type_name -> s3.LambdaFunctionConfiguration
-	357, // 287: s3.NotificationConfiguration.queueconfigurations:type_name -> s3.QueueConfiguration
-	407, // 288: s3.NotificationConfiguration.topicconfigurations:type_name -> s3.TopicConfiguration
-	378, // 289: s3.NotificationConfigurationFilter.key:type_name -> s3.S3KeyFilter
-	9,   // 290: s3.Object.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	11,  // 291: s3.Object.checksumtype:type_name -> s3.ChecksumType
-	314, // 292: s3.Object.owner:type_name -> s3.Owner
-	376, // 293: s3.Object.restorestatus:type_name -> s3.RestoreStatus
-	44,  // 294: s3.Object.storageclass:type_name -> s3.ObjectStorageClass
-	383, // 295: s3.ObjectEncryption.ssekms:type_name -> s3.SSEKMSEncryption
-	39,  // 296: s3.ObjectLockConfiguration.objectlockenabled:type_name -> s3.ObjectLockEnabled
-	308, // 297: s3.ObjectLockConfiguration.rule:type_name -> s3.ObjectLockRule
-	40,  // 298: s3.ObjectLockLegalHold.status:type_name -> s3.ObjectLockLegalHoldStatus
-	42,  // 299: s3.ObjectLockRetention.mode:type_name -> s3.ObjectLockRetentionMode
-	117, // 300: s3.ObjectLockRule.defaultretention:type_name -> s3.DefaultRetention
-	9,   // 301: s3.ObjectVersion.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	11,  // 302: s3.ObjectVersion.checksumtype:type_name -> s3.ChecksumType
-	314, // 303: s3.ObjectVersion.owner:type_name -> s3.Owner
-	376, // 304: s3.ObjectVersion.restorestatus:type_name -> s3.RestoreStatus
-	45,  // 305: s3.ObjectVersion.storageclass:type_name -> s3.ObjectVersionStorageClass
-	379, // 306: s3.OutputLocation.s3:type_name -> s3.S3Location
-	95,  // 307: s3.OutputSerialization.csv:type_name -> s3.CSVOutput
-	249, // 308: s3.OutputSerialization.json:type_name -> s3.JSONOutput
-	316, // 309: s3.OwnershipControls.rules:type_name -> s3.OwnershipControlsRule
-	43,  // 310: s3.OwnershipControlsRule.objectownership:type_name -> s3.ObjectOwnership
-	48,  // 311: s3.PartitionedPrefix.partitiondatesource:type_name -> s3.PartitionDateSource
-	321, // 312: s3.ProgressEvent.details:type_name -> s3.Progress
-	72,  // 313: s3.PutBucketAbacRequest.abacstatus:type_name -> s3.AbacStatus
-	9,   // 314: s3.PutBucketAbacRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	76,  // 315: s3.PutBucketAccelerateConfigurationRequest.accelerateconfiguration:type_name -> s3.AccelerateConfiguration
-	9,   // 316: s3.PutBucketAccelerateConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	4,   // 317: s3.PutBucketAclRequest.acl:type_name -> s3.BucketCannedACL
-	77,  // 318: s3.PutBucketAclRequest.accesscontrolpolicy:type_name -> s3.AccessControlPolicy
-	9,   // 319: s3.PutBucketAclRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	81,  // 320: s3.PutBucketAnalyticsConfigurationRequest.analyticsconfiguration:type_name -> s3.AnalyticsConfiguration
-	92,  // 321: s3.PutBucketCorsRequest.corsconfiguration:type_name -> s3.CORSConfiguration
-	9,   // 322: s3.PutBucketCorsRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	9,   // 323: s3.PutBucketEncryptionRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	391, // 324: s3.PutBucketEncryptionRequest.serversideencryptionconfiguration:type_name -> s3.ServerSideEncryptionConfiguration
-	234, // 325: s3.PutBucketIntelligentTieringConfigurationRequest.intelligenttieringconfiguration:type_name -> s3.IntelligentTieringConfiguration
-	239, // 326: s3.PutBucketInventoryConfigurationRequest.inventoryconfiguration:type_name -> s3.InventoryConfiguration
-	69,  // 327: s3.PutBucketLifecycleConfigurationOutput.transitiondefaultminimumobjectsize:type_name -> s3.TransitionDefaultMinimumObjectSize
-	9,   // 328: s3.PutBucketLifecycleConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	90,  // 329: s3.PutBucketLifecycleConfigurationRequest.lifecycleconfiguration:type_name -> s3.BucketLifecycleConfiguration
-	69,  // 330: s3.PutBucketLifecycleConfigurationRequest.transitiondefaultminimumobjectsize:type_name -> s3.TransitionDefaultMinimumObjectSize
-	91,  // 331: s3.PutBucketLoggingRequest.bucketloggingstatus:type_name -> s3.BucketLoggingStatus
-	9,   // 332: s3.PutBucketLoggingRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	290, // 333: s3.PutBucketMetricsConfigurationRequest.metricsconfiguration:type_name -> s3.MetricsConfiguration
-	299, // 334: s3.PutBucketNotificationConfigurationRequest.notificationconfiguration:type_name -> s3.NotificationConfiguration
-	9,   // 335: s3.PutBucketOwnershipControlsRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	315, // 336: s3.PutBucketOwnershipControlsRequest.ownershipcontrols:type_name -> s3.OwnershipControls
-	9,   // 337: s3.PutBucketPolicyRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	9,   // 338: s3.PutBucketReplicationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	365, // 339: s3.PutBucketReplicationRequest.replicationconfiguration:type_name -> s3.ReplicationConfiguration
-	9,   // 340: s3.PutBucketRequestPaymentRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	371, // 341: s3.PutBucketRequestPaymentRequest.requestpaymentconfiguration:type_name -> s3.RequestPaymentConfiguration
-	9,   // 342: s3.PutBucketTaggingRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	402, // 343: s3.PutBucketTaggingRequest.tagging:type_name -> s3.Tagging
-	9,   // 344: s3.PutBucketVersioningRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	417, // 345: s3.PutBucketVersioningRequest.versioningconfiguration:type_name -> s3.VersioningConfiguration
-	9,   // 346: s3.PutBucketWebsiteRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	418, // 347: s3.PutBucketWebsiteRequest.websiteconfiguration:type_name -> s3.WebsiteConfiguration
-	57,  // 348: s3.PutObjectAclOutput.requestcharged:type_name -> s3.RequestCharged
-	38,  // 349: s3.PutObjectAclRequest.acl:type_name -> s3.ObjectCannedACL
-	77,  // 350: s3.PutObjectAclRequest.accesscontrolpolicy:type_name -> s3.AccessControlPolicy
-	9,   // 351: s3.PutObjectAclRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	58,  // 352: s3.PutObjectAclRequest.requestpayer:type_name -> s3.RequestPayer
-	57,  // 353: s3.PutObjectLegalHoldOutput.requestcharged:type_name -> s3.RequestCharged
-	9,   // 354: s3.PutObjectLegalHoldRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	306, // 355: s3.PutObjectLegalHoldRequest.legalhold:type_name -> s3.ObjectLockLegalHold
-	58,  // 356: s3.PutObjectLegalHoldRequest.requestpayer:type_name -> s3.RequestPayer
-	57,  // 357: s3.PutObjectLockConfigurationOutput.requestcharged:type_name -> s3.RequestCharged
-	9,   // 358: s3.PutObjectLockConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	305, // 359: s3.PutObjectLockConfigurationRequest.objectlockconfiguration:type_name -> s3.ObjectLockConfiguration
-	58,  // 360: s3.PutObjectLockConfigurationRequest.requestpayer:type_name -> s3.RequestPayer
-	11,  // 361: s3.PutObjectOutput.checksumtype:type_name -> s3.ChecksumType
-	57,  // 362: s3.PutObjectOutput.requestcharged:type_name -> s3.RequestCharged
-	61,  // 363: s3.PutObjectOutput.serversideencryption:type_name -> s3.ServerSideEncryption
-	38,  // 364: s3.PutObjectRequest.acl:type_name -> s3.ObjectCannedACL
-	9,   // 365: s3.PutObjectRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	424, // 366: s3.PutObjectRequest.metadata:type_name -> s3.PutObjectRequest.MetadataEntry
-	40,  // 367: s3.PutObjectRequest.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
-	41,  // 368: s3.PutObjectRequest.objectlockmode:type_name -> s3.ObjectLockMode
-	58,  // 369: s3.PutObjectRequest.requestpayer:type_name -> s3.RequestPayer
-	61,  // 370: s3.PutObjectRequest.serversideencryption:type_name -> s3.ServerSideEncryption
-	64,  // 371: s3.PutObjectRequest.storageclass:type_name -> s3.StorageClass
-	57,  // 372: s3.PutObjectRetentionOutput.requestcharged:type_name -> s3.RequestCharged
-	9,   // 373: s3.PutObjectRetentionRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	58,  // 374: s3.PutObjectRetentionRequest.requestpayer:type_name -> s3.RequestPayer
-	307, // 375: s3.PutObjectRetentionRequest.retention:type_name -> s3.ObjectLockRetention
-	9,   // 376: s3.PutObjectTaggingRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	58,  // 377: s3.PutObjectTaggingRequest.requestpayer:type_name -> s3.RequestPayer
-	402, // 378: s3.PutObjectTaggingRequest.tagging:type_name -> s3.Tagging
-	9,   // 379: s3.PutPublicAccessBlockRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	323, // 380: s3.PutPublicAccessBlockRequest.publicaccessblockconfiguration:type_name -> s3.PublicAccessBlockConfiguration
-	17,  // 381: s3.QueueConfiguration.events:type_name -> s3.Event
-	300, // 382: s3.QueueConfiguration.filter:type_name -> s3.NotificationConfigurationFilter
-	19,  // 383: s3.RecordExpiration.expiration:type_name -> s3.ExpirationState
-	51,  // 384: s3.Redirect.protocol:type_name -> s3.Protocol
-	51,  // 385: s3.RedirectAllRequestsTo.protocol:type_name -> s3.Protocol
-	53,  // 386: s3.ReplicaModifications.status:type_name -> s3.ReplicaModificationsStatus
-	366, // 387: s3.ReplicationConfiguration.rules:type_name -> s3.ReplicationRule
-	135, // 388: s3.ReplicationRule.deletemarkerreplication:type_name -> s3.DeleteMarkerReplication
-	144, // 389: s3.ReplicationRule.destination:type_name -> s3.Destination
-	154, // 390: s3.ReplicationRule.existingobjectreplication:type_name -> s3.ExistingObjectReplication
-	368, // 391: s3.ReplicationRule.filter:type_name -> s3.ReplicationRuleFilter
-	395, // 392: s3.ReplicationRule.sourceselectioncriteria:type_name -> s3.SourceSelectionCriteria
-	54,  // 393: s3.ReplicationRule.status:type_name -> s3.ReplicationRuleStatus
-	401, // 394: s3.ReplicationRuleAndOperator.tags:type_name -> s3.Tag
-	367, // 395: s3.ReplicationRuleFilter.and:type_name -> s3.ReplicationRuleAndOperator
-	401, // 396: s3.ReplicationRuleFilter.tag:type_name -> s3.Tag
-	56,  // 397: s3.ReplicationTime.status:type_name -> s3.ReplicationTimeStatus
-	370, // 398: s3.ReplicationTime.time:type_name -> s3.ReplicationTimeValue
-	49,  // 399: s3.RequestPaymentConfiguration.payer:type_name -> s3.Payer
-	57,  // 400: s3.RestoreObjectOutput.requestcharged:type_name -> s3.RequestCharged
-	9,   // 401: s3.RestoreObjectRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	58,  // 402: s3.RestoreObjectRequest.requestpayer:type_name -> s3.RequestPayer
-	375, // 403: s3.RestoreObjectRequest.restorerequest:type_name -> s3.RestoreRequest
-	222, // 404: s3.RestoreRequest.glacierjobparameters:type_name -> s3.GlacierJobParameters
-	312, // 405: s3.RestoreRequest.outputlocation:type_name -> s3.OutputLocation
-	389, // 406: s3.RestoreRequest.selectparameters:type_name -> s3.SelectParameters
-	68,  // 407: s3.RestoreRequest.tier:type_name -> s3.Tier
-	59,  // 408: s3.RestoreRequest.type:type_name -> s3.RestoreRequestType
-	102, // 409: s3.RoutingRule.condition:type_name -> s3.Condition
-	360, // 410: s3.RoutingRule.redirect:type_name -> s3.Redirect
-	155, // 411: s3.S3KeyFilter.filterrules:type_name -> s3.FilterRule
-	223, // 412: s3.S3Location.accesscontrollist:type_name -> s3.Grant
-	38,  // 413: s3.S3Location.cannedacl:type_name -> s3.ObjectCannedACL
-	146, // 414: s3.S3Location.encryption:type_name -> s3.Encryption
-	64,  // 415: s3.S3Location.storageclass:type_name -> s3.StorageClass
-	402, // 416: s3.S3Location.tagging:type_name -> s3.Tagging
-	284, // 417: s3.S3Location.usermetadata:type_name -> s3.MetadataEntry
-	103, // 418: s3.SelectObjectContentEventStream.cont:type_name -> s3.ContinuationEvent
-	149, // 419: s3.SelectObjectContentEventStream.end:type_name -> s3.EndEvent
-	322, // 420: s3.SelectObjectContentEventStream.progress:type_name -> s3.ProgressEvent
-	359, // 421: s3.SelectObjectContentEventStream.records:type_name -> s3.RecordsEvent
-	398, // 422: s3.SelectObjectContentEventStream.stats:type_name -> s3.StatsEvent
-	386, // 423: s3.SelectObjectContentOutput.payload:type_name -> s3.SelectObjectContentEventStream
-	21,  // 424: s3.SelectObjectContentRequest.expressiontype:type_name -> s3.ExpressionType
-	232, // 425: s3.SelectObjectContentRequest.inputserialization:type_name -> s3.InputSerialization
-	313, // 426: s3.SelectObjectContentRequest.outputserialization:type_name -> s3.OutputSerialization
-	372, // 427: s3.SelectObjectContentRequest.requestprogress:type_name -> s3.RequestProgress
-	385, // 428: s3.SelectObjectContentRequest.scanrange:type_name -> s3.ScanRange
-	21,  // 429: s3.SelectParameters.expressiontype:type_name -> s3.ExpressionType
-	232, // 430: s3.SelectParameters.inputserialization:type_name -> s3.InputSerialization
-	313, // 431: s3.SelectParameters.outputserialization:type_name -> s3.OutputSerialization
-	61,  // 432: s3.ServerSideEncryptionByDefault.ssealgorithm:type_name -> s3.ServerSideEncryption
-	392, // 433: s3.ServerSideEncryptionConfiguration.rules:type_name -> s3.ServerSideEncryptionRule
-	390, // 434: s3.ServerSideEncryptionRule.applyserversideencryptionbydefault:type_name -> s3.ServerSideEncryptionByDefault
-	85,  // 435: s3.ServerSideEncryptionRule.blockedencryptiontypes:type_name -> s3.BlockedEncryptionTypes
-	364, // 436: s3.SourceSelectionCriteria.replicamodifications:type_name -> s3.ReplicaModifications
-	396, // 437: s3.SourceSelectionCriteria.ssekmsencryptedobjects:type_name -> s3.SseKmsEncryptedObjects
-	63,  // 438: s3.SseKmsEncryptedObjects.status:type_name -> s3.SseKmsEncryptedObjectsStatus
-	397, // 439: s3.StatsEvent.details:type_name -> s3.Stats
-	400, // 440: s3.StorageClassAnalysis.dataexport:type_name -> s3.StorageClassAnalysisDataExport
-	82,  // 441: s3.StorageClassAnalysisDataExport.destination:type_name -> s3.AnalyticsExportDestination
-	65,  // 442: s3.StorageClassAnalysisDataExport.outputschemaversion:type_name -> s3.StorageClassAnalysisSchemaVersion
-	401, // 443: s3.Tagging.tagset:type_name -> s3.Tag
-	224, // 444: s3.TargetGrant.grantee:type_name -> s3.Grantee
-	6,   // 445: s3.TargetGrant.permission:type_name -> s3.BucketLogsPermission
-	319, // 446: s3.TargetObjectKeyFormat.partitionedprefix:type_name -> s3.PartitionedPrefix
-	394, // 447: s3.TargetObjectKeyFormat.simpleprefix:type_name -> s3.SimplePrefix
-	24,  // 448: s3.Tiering.accesstier:type_name -> s3.IntelligentTieringAccessTier
-	17,  // 449: s3.TopicConfiguration.events:type_name -> s3.Event
-	300, // 450: s3.TopicConfiguration.filter:type_name -> s3.NotificationConfigurationFilter
-	70,  // 451: s3.Transition.storageclass:type_name -> s3.TransitionStorageClass
-	9,   // 452: s3.UpdateBucketMetadataInventoryTableConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	247, // 453: s3.UpdateBucketMetadataInventoryTableConfigurationRequest.inventorytableconfiguration:type_name -> s3.InventoryTableConfigurationUpdates
-	9,   // 454: s3.UpdateBucketMetadataJournalTableConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	252, // 455: s3.UpdateBucketMetadataJournalTableConfigurationRequest.journaltableconfiguration:type_name -> s3.JournalTableConfigurationUpdates
-	9,   // 456: s3.UpdateObjectEncryptionRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	303, // 457: s3.UpdateObjectEncryptionRequest.objectencryption:type_name -> s3.ObjectEncryption
-	58,  // 458: s3.UpdateObjectEncryptionRequest.requestpayer:type_name -> s3.RequestPayer
-	57,  // 459: s3.UpdateObjectEncryptionResponse.requestcharged:type_name -> s3.RequestCharged
-	107, // 460: s3.UploadPartCopyOutput.copypartresult:type_name -> s3.CopyPartResult
-	57,  // 461: s3.UploadPartCopyOutput.requestcharged:type_name -> s3.RequestCharged
-	61,  // 462: s3.UploadPartCopyOutput.serversideencryption:type_name -> s3.ServerSideEncryption
-	58,  // 463: s3.UploadPartCopyRequest.requestpayer:type_name -> s3.RequestPayer
-	57,  // 464: s3.UploadPartOutput.requestcharged:type_name -> s3.RequestCharged
-	61,  // 465: s3.UploadPartOutput.serversideencryption:type_name -> s3.ServerSideEncryption
-	9,   // 466: s3.UploadPartRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
-	58,  // 467: s3.UploadPartRequest.requestpayer:type_name -> s3.RequestPayer
-	33,  // 468: s3.VersioningConfiguration.mfadelete:type_name -> s3.MFADelete
-	8,   // 469: s3.VersioningConfiguration.status:type_name -> s3.BucketVersioningStatus
-	152, // 470: s3.WebsiteConfiguration.errordocument:type_name -> s3.ErrorDocument
-	230, // 471: s3.WebsiteConfiguration.indexdocument:type_name -> s3.IndexDocument
-	361, // 472: s3.WebsiteConfiguration.redirectallrequeststo:type_name -> s3.RedirectAllRequestsTo
-	377, // 473: s3.WebsiteConfiguration.routingrules:type_name -> s3.RoutingRule
-	425, // 474: s3.WriteGetObjectResponseRequest.metadata:type_name -> s3.WriteGetObjectResponseRequest.MetadataEntry
-	40,  // 475: s3.WriteGetObjectResponseRequest.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
-	41,  // 476: s3.WriteGetObjectResponseRequest.objectlockmode:type_name -> s3.ObjectLockMode
-	55,  // 477: s3.WriteGetObjectResponseRequest.replicationstatus:type_name -> s3.ReplicationStatus
-	57,  // 478: s3.WriteGetObjectResponseRequest.requestcharged:type_name -> s3.RequestCharged
-	61,  // 479: s3.WriteGetObjectResponseRequest.serversideencryption:type_name -> s3.ServerSideEncryption
-	64,  // 480: s3.WriteGetObjectResponseRequest.storageclass:type_name -> s3.StorageClass
-	75,  // 481: s3.S3Service.AbortMultipartUpload:input_type -> s3.AbortMultipartUploadRequest
-	99,  // 482: s3.S3Service.CompleteMultipartUpload:input_type -> s3.CompleteMultipartUploadRequest
-	105, // 483: s3.S3Service.CopyObject:input_type -> s3.CopyObjectRequest
-	112, // 484: s3.S3Service.CreateBucket:input_type -> s3.CreateBucketRequest
-	109, // 485: s3.S3Service.CreateBucketMetadataConfiguration:input_type -> s3.CreateBucketMetadataConfigurationRequest
-	110, // 486: s3.S3Service.CreateBucketMetadataTableConfiguration:input_type -> s3.CreateBucketMetadataTableConfigurationRequest
-	114, // 487: s3.S3Service.CreateMultipartUpload:input_type -> s3.CreateMultipartUploadRequest
-	116, // 488: s3.S3Service.CreateSession:input_type -> s3.CreateSessionRequest
-	131, // 489: s3.S3Service.DeleteBucket:input_type -> s3.DeleteBucketRequest
-	119, // 490: s3.S3Service.DeleteBucketAnalyticsConfiguration:input_type -> s3.DeleteBucketAnalyticsConfigurationRequest
-	120, // 491: s3.S3Service.DeleteBucketCors:input_type -> s3.DeleteBucketCorsRequest
-	121, // 492: s3.S3Service.DeleteBucketEncryption:input_type -> s3.DeleteBucketEncryptionRequest
-	122, // 493: s3.S3Service.DeleteBucketIntelligentTieringConfiguration:input_type -> s3.DeleteBucketIntelligentTieringConfigurationRequest
-	123, // 494: s3.S3Service.DeleteBucketInventoryConfiguration:input_type -> s3.DeleteBucketInventoryConfigurationRequest
-	124, // 495: s3.S3Service.DeleteBucketLifecycle:input_type -> s3.DeleteBucketLifecycleRequest
-	125, // 496: s3.S3Service.DeleteBucketMetadataConfiguration:input_type -> s3.DeleteBucketMetadataConfigurationRequest
-	126, // 497: s3.S3Service.DeleteBucketMetadataTableConfiguration:input_type -> s3.DeleteBucketMetadataTableConfigurationRequest
-	127, // 498: s3.S3Service.DeleteBucketMetricsConfiguration:input_type -> s3.DeleteBucketMetricsConfigurationRequest
-	128, // 499: s3.S3Service.DeleteBucketOwnershipControls:input_type -> s3.DeleteBucketOwnershipControlsRequest
-	129, // 500: s3.S3Service.DeleteBucketPolicy:input_type -> s3.DeleteBucketPolicyRequest
-	130, // 501: s3.S3Service.DeleteBucketReplication:input_type -> s3.DeleteBucketReplicationRequest
-	132, // 502: s3.S3Service.DeleteBucketTagging:input_type -> s3.DeleteBucketTaggingRequest
-	133, // 503: s3.S3Service.DeleteBucketWebsite:input_type -> s3.DeleteBucketWebsiteRequest
-	137, // 504: s3.S3Service.DeleteObject:input_type -> s3.DeleteObjectRequest
-	141, // 505: s3.S3Service.DeleteObjects:input_type -> s3.DeleteObjectsRequest
-	139, // 506: s3.S3Service.DeleteObjectTagging:input_type -> s3.DeleteObjectTaggingRequest
-	142, // 507: s3.S3Service.DeletePublicAccessBlock:input_type -> s3.DeletePublicAccessBlockRequest
-	157, // 508: s3.S3Service.GetBucketAbac:input_type -> s3.GetBucketAbacRequest
-	159, // 509: s3.S3Service.GetBucketAccelerateConfiguration:input_type -> s3.GetBucketAccelerateConfigurationRequest
-	161, // 510: s3.S3Service.GetBucketAcl:input_type -> s3.GetBucketAclRequest
-	163, // 511: s3.S3Service.GetBucketAnalyticsConfiguration:input_type -> s3.GetBucketAnalyticsConfigurationRequest
-	165, // 512: s3.S3Service.GetBucketCors:input_type -> s3.GetBucketCorsRequest
-	167, // 513: s3.S3Service.GetBucketEncryption:input_type -> s3.GetBucketEncryptionRequest
-	169, // 514: s3.S3Service.GetBucketIntelligentTieringConfiguration:input_type -> s3.GetBucketIntelligentTieringConfigurationRequest
-	171, // 515: s3.S3Service.GetBucketInventoryConfiguration:input_type -> s3.GetBucketInventoryConfigurationRequest
-	173, // 516: s3.S3Service.GetBucketLifecycleConfiguration:input_type -> s3.GetBucketLifecycleConfigurationRequest
-	175, // 517: s3.S3Service.GetBucketLocation:input_type -> s3.GetBucketLocationRequest
-	177, // 518: s3.S3Service.GetBucketLogging:input_type -> s3.GetBucketLoggingRequest
-	179, // 519: s3.S3Service.GetBucketMetadataConfiguration:input_type -> s3.GetBucketMetadataConfigurationRequest
-	182, // 520: s3.S3Service.GetBucketMetadataTableConfiguration:input_type -> s3.GetBucketMetadataTableConfigurationRequest
-	185, // 521: s3.S3Service.GetBucketMetricsConfiguration:input_type -> s3.GetBucketMetricsConfigurationRequest
-	186, // 522: s3.S3Service.GetBucketNotificationConfiguration:input_type -> s3.GetBucketNotificationConfigurationRequest
-	188, // 523: s3.S3Service.GetBucketOwnershipControls:input_type -> s3.GetBucketOwnershipControlsRequest
-	190, // 524: s3.S3Service.GetBucketPolicy:input_type -> s3.GetBucketPolicyRequest
-	192, // 525: s3.S3Service.GetBucketPolicyStatus:input_type -> s3.GetBucketPolicyStatusRequest
-	194, // 526: s3.S3Service.GetBucketReplication:input_type -> s3.GetBucketReplicationRequest
-	196, // 527: s3.S3Service.GetBucketRequestPayment:input_type -> s3.GetBucketRequestPaymentRequest
-	198, // 528: s3.S3Service.GetBucketTagging:input_type -> s3.GetBucketTaggingRequest
-	200, // 529: s3.S3Service.GetBucketVersioning:input_type -> s3.GetBucketVersioningRequest
-	202, // 530: s3.S3Service.GetBucketWebsite:input_type -> s3.GetBucketWebsiteRequest
-	213, // 531: s3.S3Service.GetObject:input_type -> s3.GetObjectRequest
-	204, // 532: s3.S3Service.GetObjectAcl:input_type -> s3.GetObjectAclRequest
-	207, // 533: s3.S3Service.GetObjectAttributes:input_type -> s3.GetObjectAttributesRequest
-	209, // 534: s3.S3Service.GetObjectLegalHold:input_type -> s3.GetObjectLegalHoldRequest
-	211, // 535: s3.S3Service.GetObjectLockConfiguration:input_type -> s3.GetObjectLockConfigurationRequest
-	215, // 536: s3.S3Service.GetObjectRetention:input_type -> s3.GetObjectRetentionRequest
-	217, // 537: s3.S3Service.GetObjectTagging:input_type -> s3.GetObjectTaggingRequest
-	219, // 538: s3.S3Service.GetObjectTorrent:input_type -> s3.GetObjectTorrentRequest
-	221, // 539: s3.S3Service.GetPublicAccessBlock:input_type -> s3.GetPublicAccessBlockRequest
-	226, // 540: s3.S3Service.HeadBucket:input_type -> s3.HeadBucketRequest
-	228, // 541: s3.S3Service.HeadObject:input_type -> s3.HeadObjectRequest
-	259, // 542: s3.S3Service.ListBucketAnalyticsConfigurations:input_type -> s3.ListBucketAnalyticsConfigurationsRequest
-	261, // 543: s3.S3Service.ListBucketIntelligentTieringConfigurations:input_type -> s3.ListBucketIntelligentTieringConfigurationsRequest
-	263, // 544: s3.S3Service.ListBucketInventoryConfigurations:input_type -> s3.ListBucketInventoryConfigurationsRequest
-	265, // 545: s3.S3Service.ListBucketMetricsConfigurations:input_type -> s3.ListBucketMetricsConfigurationsRequest
-	267, // 546: s3.S3Service.ListBuckets:input_type -> s3.ListBucketsRequest
-	269, // 547: s3.S3Service.ListDirectoryBuckets:input_type -> s3.ListDirectoryBucketsRequest
-	271, // 548: s3.S3Service.ListMultipartUploads:input_type -> s3.ListMultipartUploadsRequest
-	275, // 549: s3.S3Service.ListObjects:input_type -> s3.ListObjectsRequest
-	277, // 550: s3.S3Service.ListObjectsV2:input_type -> s3.ListObjectsV2Request
-	273, // 551: s3.S3Service.ListObjectVersions:input_type -> s3.ListObjectVersionsRequest
-	279, // 552: s3.S3Service.ListParts:input_type -> s3.ListPartsRequest
-	324, // 553: s3.S3Service.PutBucketAbac:input_type -> s3.PutBucketAbacRequest
-	325, // 554: s3.S3Service.PutBucketAccelerateConfiguration:input_type -> s3.PutBucketAccelerateConfigurationRequest
-	326, // 555: s3.S3Service.PutBucketAcl:input_type -> s3.PutBucketAclRequest
-	327, // 556: s3.S3Service.PutBucketAnalyticsConfiguration:input_type -> s3.PutBucketAnalyticsConfigurationRequest
-	328, // 557: s3.S3Service.PutBucketCors:input_type -> s3.PutBucketCorsRequest
-	329, // 558: s3.S3Service.PutBucketEncryption:input_type -> s3.PutBucketEncryptionRequest
-	330, // 559: s3.S3Service.PutBucketIntelligentTieringConfiguration:input_type -> s3.PutBucketIntelligentTieringConfigurationRequest
-	331, // 560: s3.S3Service.PutBucketInventoryConfiguration:input_type -> s3.PutBucketInventoryConfigurationRequest
-	333, // 561: s3.S3Service.PutBucketLifecycleConfiguration:input_type -> s3.PutBucketLifecycleConfigurationRequest
-	334, // 562: s3.S3Service.PutBucketLogging:input_type -> s3.PutBucketLoggingRequest
-	335, // 563: s3.S3Service.PutBucketMetricsConfiguration:input_type -> s3.PutBucketMetricsConfigurationRequest
-	336, // 564: s3.S3Service.PutBucketNotificationConfiguration:input_type -> s3.PutBucketNotificationConfigurationRequest
-	337, // 565: s3.S3Service.PutBucketOwnershipControls:input_type -> s3.PutBucketOwnershipControlsRequest
-	338, // 566: s3.S3Service.PutBucketPolicy:input_type -> s3.PutBucketPolicyRequest
-	339, // 567: s3.S3Service.PutBucketReplication:input_type -> s3.PutBucketReplicationRequest
-	340, // 568: s3.S3Service.PutBucketRequestPayment:input_type -> s3.PutBucketRequestPaymentRequest
-	341, // 569: s3.S3Service.PutBucketTagging:input_type -> s3.PutBucketTaggingRequest
-	342, // 570: s3.S3Service.PutBucketVersioning:input_type -> s3.PutBucketVersioningRequest
-	343, // 571: s3.S3Service.PutBucketWebsite:input_type -> s3.PutBucketWebsiteRequest
-	351, // 572: s3.S3Service.PutObject:input_type -> s3.PutObjectRequest
-	345, // 573: s3.S3Service.PutObjectAcl:input_type -> s3.PutObjectAclRequest
-	347, // 574: s3.S3Service.PutObjectLegalHold:input_type -> s3.PutObjectLegalHoldRequest
-	349, // 575: s3.S3Service.PutObjectLockConfiguration:input_type -> s3.PutObjectLockConfigurationRequest
-	353, // 576: s3.S3Service.PutObjectRetention:input_type -> s3.PutObjectRetentionRequest
-	355, // 577: s3.S3Service.PutObjectTagging:input_type -> s3.PutObjectTaggingRequest
-	356, // 578: s3.S3Service.PutPublicAccessBlock:input_type -> s3.PutPublicAccessBlockRequest
-	363, // 579: s3.S3Service.RenameObject:input_type -> s3.RenameObjectRequest
-	374, // 580: s3.S3Service.RestoreObject:input_type -> s3.RestoreObjectRequest
-	388, // 581: s3.S3Service.SelectObjectContent:input_type -> s3.SelectObjectContentRequest
-	409, // 582: s3.S3Service.UpdateBucketMetadataInventoryTableConfiguration:input_type -> s3.UpdateBucketMetadataInventoryTableConfigurationRequest
-	410, // 583: s3.S3Service.UpdateBucketMetadataJournalTableConfiguration:input_type -> s3.UpdateBucketMetadataJournalTableConfigurationRequest
-	411, // 584: s3.S3Service.UpdateObjectEncryption:input_type -> s3.UpdateObjectEncryptionRequest
-	416, // 585: s3.S3Service.UploadPart:input_type -> s3.UploadPartRequest
-	414, // 586: s3.S3Service.UploadPartCopy:input_type -> s3.UploadPartCopyRequest
-	419, // 587: s3.S3Service.WriteGetObjectResponse:input_type -> s3.WriteGetObjectResponseRequest
-	74,  // 588: s3.S3Service.AbortMultipartUpload:output_type -> s3.AbortMultipartUploadOutput
-	98,  // 589: s3.S3Service.CompleteMultipartUpload:output_type -> s3.CompleteMultipartUploadOutput
-	104, // 590: s3.S3Service.CopyObject:output_type -> s3.CopyObjectOutput
-	111, // 591: s3.S3Service.CreateBucket:output_type -> s3.CreateBucketOutput
-	426, // 592: s3.S3Service.CreateBucketMetadataConfiguration:output_type -> common.Empty
-	426, // 593: s3.S3Service.CreateBucketMetadataTableConfiguration:output_type -> common.Empty
-	113, // 594: s3.S3Service.CreateMultipartUpload:output_type -> s3.CreateMultipartUploadOutput
-	115, // 595: s3.S3Service.CreateSession:output_type -> s3.CreateSessionOutput
-	426, // 596: s3.S3Service.DeleteBucket:output_type -> common.Empty
-	426, // 597: s3.S3Service.DeleteBucketAnalyticsConfiguration:output_type -> common.Empty
-	426, // 598: s3.S3Service.DeleteBucketCors:output_type -> common.Empty
-	426, // 599: s3.S3Service.DeleteBucketEncryption:output_type -> common.Empty
-	426, // 600: s3.S3Service.DeleteBucketIntelligentTieringConfiguration:output_type -> common.Empty
-	426, // 601: s3.S3Service.DeleteBucketInventoryConfiguration:output_type -> common.Empty
-	426, // 602: s3.S3Service.DeleteBucketLifecycle:output_type -> common.Empty
-	426, // 603: s3.S3Service.DeleteBucketMetadataConfiguration:output_type -> common.Empty
-	426, // 604: s3.S3Service.DeleteBucketMetadataTableConfiguration:output_type -> common.Empty
-	426, // 605: s3.S3Service.DeleteBucketMetricsConfiguration:output_type -> common.Empty
-	426, // 606: s3.S3Service.DeleteBucketOwnershipControls:output_type -> common.Empty
-	426, // 607: s3.S3Service.DeleteBucketPolicy:output_type -> common.Empty
-	426, // 608: s3.S3Service.DeleteBucketReplication:output_type -> common.Empty
-	426, // 609: s3.S3Service.DeleteBucketTagging:output_type -> common.Empty
-	426, // 610: s3.S3Service.DeleteBucketWebsite:output_type -> common.Empty
-	136, // 611: s3.S3Service.DeleteObject:output_type -> s3.DeleteObjectOutput
-	140, // 612: s3.S3Service.DeleteObjects:output_type -> s3.DeleteObjectsOutput
-	138, // 613: s3.S3Service.DeleteObjectTagging:output_type -> s3.DeleteObjectTaggingOutput
-	426, // 614: s3.S3Service.DeletePublicAccessBlock:output_type -> common.Empty
-	156, // 615: s3.S3Service.GetBucketAbac:output_type -> s3.GetBucketAbacOutput
-	158, // 616: s3.S3Service.GetBucketAccelerateConfiguration:output_type -> s3.GetBucketAccelerateConfigurationOutput
-	160, // 617: s3.S3Service.GetBucketAcl:output_type -> s3.GetBucketAclOutput
-	162, // 618: s3.S3Service.GetBucketAnalyticsConfiguration:output_type -> s3.GetBucketAnalyticsConfigurationOutput
-	164, // 619: s3.S3Service.GetBucketCors:output_type -> s3.GetBucketCorsOutput
-	166, // 620: s3.S3Service.GetBucketEncryption:output_type -> s3.GetBucketEncryptionOutput
-	168, // 621: s3.S3Service.GetBucketIntelligentTieringConfiguration:output_type -> s3.GetBucketIntelligentTieringConfigurationOutput
-	170, // 622: s3.S3Service.GetBucketInventoryConfiguration:output_type -> s3.GetBucketInventoryConfigurationOutput
-	172, // 623: s3.S3Service.GetBucketLifecycleConfiguration:output_type -> s3.GetBucketLifecycleConfigurationOutput
-	174, // 624: s3.S3Service.GetBucketLocation:output_type -> s3.GetBucketLocationOutput
-	176, // 625: s3.S3Service.GetBucketLogging:output_type -> s3.GetBucketLoggingOutput
-	178, // 626: s3.S3Service.GetBucketMetadataConfiguration:output_type -> s3.GetBucketMetadataConfigurationOutput
-	181, // 627: s3.S3Service.GetBucketMetadataTableConfiguration:output_type -> s3.GetBucketMetadataTableConfigurationOutput
-	184, // 628: s3.S3Service.GetBucketMetricsConfiguration:output_type -> s3.GetBucketMetricsConfigurationOutput
-	299, // 629: s3.S3Service.GetBucketNotificationConfiguration:output_type -> s3.NotificationConfiguration
-	187, // 630: s3.S3Service.GetBucketOwnershipControls:output_type -> s3.GetBucketOwnershipControlsOutput
-	189, // 631: s3.S3Service.GetBucketPolicy:output_type -> s3.GetBucketPolicyOutput
-	191, // 632: s3.S3Service.GetBucketPolicyStatus:output_type -> s3.GetBucketPolicyStatusOutput
-	193, // 633: s3.S3Service.GetBucketReplication:output_type -> s3.GetBucketReplicationOutput
-	195, // 634: s3.S3Service.GetBucketRequestPayment:output_type -> s3.GetBucketRequestPaymentOutput
-	197, // 635: s3.S3Service.GetBucketTagging:output_type -> s3.GetBucketTaggingOutput
-	199, // 636: s3.S3Service.GetBucketVersioning:output_type -> s3.GetBucketVersioningOutput
-	201, // 637: s3.S3Service.GetBucketWebsite:output_type -> s3.GetBucketWebsiteOutput
-	212, // 638: s3.S3Service.GetObject:output_type -> s3.GetObjectOutput
-	203, // 639: s3.S3Service.GetObjectAcl:output_type -> s3.GetObjectAclOutput
-	205, // 640: s3.S3Service.GetObjectAttributes:output_type -> s3.GetObjectAttributesOutput
-	208, // 641: s3.S3Service.GetObjectLegalHold:output_type -> s3.GetObjectLegalHoldOutput
-	210, // 642: s3.S3Service.GetObjectLockConfiguration:output_type -> s3.GetObjectLockConfigurationOutput
-	214, // 643: s3.S3Service.GetObjectRetention:output_type -> s3.GetObjectRetentionOutput
-	216, // 644: s3.S3Service.GetObjectTagging:output_type -> s3.GetObjectTaggingOutput
-	218, // 645: s3.S3Service.GetObjectTorrent:output_type -> s3.GetObjectTorrentOutput
-	220, // 646: s3.S3Service.GetPublicAccessBlock:output_type -> s3.GetPublicAccessBlockOutput
-	225, // 647: s3.S3Service.HeadBucket:output_type -> s3.HeadBucketOutput
-	227, // 648: s3.S3Service.HeadObject:output_type -> s3.HeadObjectOutput
-	258, // 649: s3.S3Service.ListBucketAnalyticsConfigurations:output_type -> s3.ListBucketAnalyticsConfigurationsOutput
-	260, // 650: s3.S3Service.ListBucketIntelligentTieringConfigurations:output_type -> s3.ListBucketIntelligentTieringConfigurationsOutput
-	262, // 651: s3.S3Service.ListBucketInventoryConfigurations:output_type -> s3.ListBucketInventoryConfigurationsOutput
-	264, // 652: s3.S3Service.ListBucketMetricsConfigurations:output_type -> s3.ListBucketMetricsConfigurationsOutput
-	266, // 653: s3.S3Service.ListBuckets:output_type -> s3.ListBucketsOutput
-	268, // 654: s3.S3Service.ListDirectoryBuckets:output_type -> s3.ListDirectoryBucketsOutput
-	270, // 655: s3.S3Service.ListMultipartUploads:output_type -> s3.ListMultipartUploadsOutput
-	274, // 656: s3.S3Service.ListObjects:output_type -> s3.ListObjectsOutput
-	276, // 657: s3.S3Service.ListObjectsV2:output_type -> s3.ListObjectsV2Output
-	272, // 658: s3.S3Service.ListObjectVersions:output_type -> s3.ListObjectVersionsOutput
-	278, // 659: s3.S3Service.ListParts:output_type -> s3.ListPartsOutput
-	426, // 660: s3.S3Service.PutBucketAbac:output_type -> common.Empty
-	426, // 661: s3.S3Service.PutBucketAccelerateConfiguration:output_type -> common.Empty
-	426, // 662: s3.S3Service.PutBucketAcl:output_type -> common.Empty
-	426, // 663: s3.S3Service.PutBucketAnalyticsConfiguration:output_type -> common.Empty
-	426, // 664: s3.S3Service.PutBucketCors:output_type -> common.Empty
-	426, // 665: s3.S3Service.PutBucketEncryption:output_type -> common.Empty
-	426, // 666: s3.S3Service.PutBucketIntelligentTieringConfiguration:output_type -> common.Empty
-	426, // 667: s3.S3Service.PutBucketInventoryConfiguration:output_type -> common.Empty
-	332, // 668: s3.S3Service.PutBucketLifecycleConfiguration:output_type -> s3.PutBucketLifecycleConfigurationOutput
-	426, // 669: s3.S3Service.PutBucketLogging:output_type -> common.Empty
-	426, // 670: s3.S3Service.PutBucketMetricsConfiguration:output_type -> common.Empty
-	426, // 671: s3.S3Service.PutBucketNotificationConfiguration:output_type -> common.Empty
-	426, // 672: s3.S3Service.PutBucketOwnershipControls:output_type -> common.Empty
-	426, // 673: s3.S3Service.PutBucketPolicy:output_type -> common.Empty
-	426, // 674: s3.S3Service.PutBucketReplication:output_type -> common.Empty
-	426, // 675: s3.S3Service.PutBucketRequestPayment:output_type -> common.Empty
-	426, // 676: s3.S3Service.PutBucketTagging:output_type -> common.Empty
-	426, // 677: s3.S3Service.PutBucketVersioning:output_type -> common.Empty
-	426, // 678: s3.S3Service.PutBucketWebsite:output_type -> common.Empty
-	350, // 679: s3.S3Service.PutObject:output_type -> s3.PutObjectOutput
-	344, // 680: s3.S3Service.PutObjectAcl:output_type -> s3.PutObjectAclOutput
-	346, // 681: s3.S3Service.PutObjectLegalHold:output_type -> s3.PutObjectLegalHoldOutput
-	348, // 682: s3.S3Service.PutObjectLockConfiguration:output_type -> s3.PutObjectLockConfigurationOutput
-	352, // 683: s3.S3Service.PutObjectRetention:output_type -> s3.PutObjectRetentionOutput
-	354, // 684: s3.S3Service.PutObjectTagging:output_type -> s3.PutObjectTaggingOutput
-	426, // 685: s3.S3Service.PutPublicAccessBlock:output_type -> common.Empty
-	362, // 686: s3.S3Service.RenameObject:output_type -> s3.RenameObjectOutput
-	373, // 687: s3.S3Service.RestoreObject:output_type -> s3.RestoreObjectOutput
-	387, // 688: s3.S3Service.SelectObjectContent:output_type -> s3.SelectObjectContentOutput
-	426, // 689: s3.S3Service.UpdateBucketMetadataInventoryTableConfiguration:output_type -> common.Empty
-	426, // 690: s3.S3Service.UpdateBucketMetadataJournalTableConfiguration:output_type -> common.Empty
-	412, // 691: s3.S3Service.UpdateObjectEncryption:output_type -> s3.UpdateObjectEncryptionResponse
-	415, // 692: s3.S3Service.UploadPart:output_type -> s3.UploadPartOutput
-	413, // 693: s3.S3Service.UploadPartCopy:output_type -> s3.UploadPartCopyOutput
-	426, // 694: s3.S3Service.WriteGetObjectResponse:output_type -> common.Empty
-	588, // [588:695] is the sub-list for method output_type
-	481, // [481:588] is the sub-list for method input_type
-	481, // [481:481] is the sub-list for extension type_name
-	481, // [481:481] is the sub-list for extension extendee
-	0,   // [0:481] is the sub-list for field type_name
+	7,   // 53: s3.CreateBucketRequest.bucketnamespace:type_name -> s3.BucketNamespace
+	109, // 54: s3.CreateBucketRequest.createbucketconfiguration:type_name -> s3.CreateBucketConfiguration
+	44,  // 55: s3.CreateBucketRequest.objectownership:type_name -> s3.ObjectOwnership
+	10,  // 56: s3.CreateMultipartUploadOutput.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	12,  // 57: s3.CreateMultipartUploadOutput.checksumtype:type_name -> s3.ChecksumType
+	58,  // 58: s3.CreateMultipartUploadOutput.requestcharged:type_name -> s3.RequestCharged
+	62,  // 59: s3.CreateMultipartUploadOutput.serversideencryption:type_name -> s3.ServerSideEncryption
+	39,  // 60: s3.CreateMultipartUploadRequest.acl:type_name -> s3.ObjectCannedACL
+	10,  // 61: s3.CreateMultipartUploadRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	12,  // 62: s3.CreateMultipartUploadRequest.checksumtype:type_name -> s3.ChecksumType
+	422, // 63: s3.CreateMultipartUploadRequest.metadata:type_name -> s3.CreateMultipartUploadRequest.MetadataEntry
+	41,  // 64: s3.CreateMultipartUploadRequest.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
+	42,  // 65: s3.CreateMultipartUploadRequest.objectlockmode:type_name -> s3.ObjectLockMode
+	59,  // 66: s3.CreateMultipartUploadRequest.requestpayer:type_name -> s3.RequestPayer
+	62,  // 67: s3.CreateMultipartUploadRequest.serversideencryption:type_name -> s3.ServerSideEncryption
+	65,  // 68: s3.CreateMultipartUploadRequest.storageclass:type_name -> s3.StorageClass
+	394, // 69: s3.CreateSessionOutput.credentials:type_name -> s3.SessionCredentials
+	62,  // 70: s3.CreateSessionOutput.serversideencryption:type_name -> s3.ServerSideEncryption
+	62,  // 71: s3.CreateSessionRequest.serversideencryption:type_name -> s3.ServerSideEncryption
+	63,  // 72: s3.CreateSessionRequest.sessionmode:type_name -> s3.SessionMode
+	43,  // 73: s3.DefaultRetention.mode:type_name -> s3.ObjectLockRetentionMode
+	305, // 74: s3.Delete.objects:type_name -> s3.ObjectIdentifier
+	315, // 75: s3.DeleteMarkerEntry.owner:type_name -> s3.Owner
+	15,  // 76: s3.DeleteMarkerReplication.status:type_name -> s3.DeleteMarkerReplicationStatus
+	58,  // 77: s3.DeleteObjectOutput.requestcharged:type_name -> s3.RequestCharged
+	59,  // 78: s3.DeleteObjectRequest.requestpayer:type_name -> s3.RequestPayer
+	144, // 79: s3.DeleteObjectsOutput.deleted:type_name -> s3.DeletedObject
+	151, // 80: s3.DeleteObjectsOutput.errors:type_name -> s3.Error
+	58,  // 81: s3.DeleteObjectsOutput.requestcharged:type_name -> s3.RequestCharged
+	10,  // 82: s3.DeleteObjectsRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	119, // 83: s3.DeleteObjectsRequest.delete:type_name -> s3.Delete
+	59,  // 84: s3.DeleteObjectsRequest.requestpayer:type_name -> s3.RequestPayer
+	79,  // 85: s3.Destination.accesscontroltranslation:type_name -> s3.AccessControlTranslation
+	148, // 86: s3.Destination.encryptionconfiguration:type_name -> s3.EncryptionConfiguration
+	289, // 87: s3.Destination.metrics:type_name -> s3.Metrics
+	370, // 88: s3.Destination.replicationtime:type_name -> s3.ReplicationTime
+	65,  // 89: s3.Destination.storageclass:type_name -> s3.StorageClass
+	61,  // 90: s3.DestinationResult.tablebuckettype:type_name -> s3.S3TablesBucketType
+	62,  // 91: s3.Encryption.encryptiontype:type_name -> s3.ServerSideEncryption
+	19,  // 92: s3.ExistingObjectReplication.status:type_name -> s3.ExistingObjectReplicationStatus
+	24,  // 93: s3.FilterRule.name:type_name -> s3.FilterRuleName
+	73,  // 94: s3.GetBucketAbacOutput.abacstatus:type_name -> s3.AbacStatus
+	58,  // 95: s3.GetBucketAccelerateConfigurationOutput.requestcharged:type_name -> s3.RequestCharged
+	3,   // 96: s3.GetBucketAccelerateConfigurationOutput.status:type_name -> s3.BucketAccelerateStatus
+	59,  // 97: s3.GetBucketAccelerateConfigurationRequest.requestpayer:type_name -> s3.RequestPayer
+	224, // 98: s3.GetBucketAclOutput.grants:type_name -> s3.Grant
+	315, // 99: s3.GetBucketAclOutput.owner:type_name -> s3.Owner
+	82,  // 100: s3.GetBucketAnalyticsConfigurationOutput.analyticsconfiguration:type_name -> s3.AnalyticsConfiguration
+	94,  // 101: s3.GetBucketCorsOutput.corsrules:type_name -> s3.CORSRule
+	392, // 102: s3.GetBucketEncryptionOutput.serversideencryptionconfiguration:type_name -> s3.ServerSideEncryptionConfiguration
+	235, // 103: s3.GetBucketIntelligentTieringConfigurationOutput.intelligenttieringconfiguration:type_name -> s3.IntelligentTieringConfiguration
+	240, // 104: s3.GetBucketInventoryConfigurationOutput.inventoryconfiguration:type_name -> s3.InventoryConfiguration
+	256, // 105: s3.GetBucketLifecycleConfigurationOutput.rules:type_name -> s3.LifecycleRule
+	70,  // 106: s3.GetBucketLifecycleConfigurationOutput.transitiondefaultminimumobjectsize:type_name -> s3.TransitionDefaultMinimumObjectSize
+	5,   // 107: s3.GetBucketLocationOutput.locationconstraint:type_name -> s3.BucketLocationConstraint
+	282, // 108: s3.GetBucketLoggingOutput.loggingenabled:type_name -> s3.LoggingEnabled
+	181, // 109: s3.GetBucketMetadataConfigurationOutput.getbucketmetadataconfigurationresult:type_name -> s3.GetBucketMetadataConfigurationResult
+	284, // 110: s3.GetBucketMetadataConfigurationResult.metadataconfigurationresult:type_name -> s3.MetadataConfigurationResult
+	184, // 111: s3.GetBucketMetadataTableConfigurationOutput.getbucketmetadatatableconfigurationresult:type_name -> s3.GetBucketMetadataTableConfigurationResult
+	152, // 112: s3.GetBucketMetadataTableConfigurationResult.error:type_name -> s3.ErrorDetails
+	287, // 113: s3.GetBucketMetadataTableConfigurationResult.metadatatableconfigurationresult:type_name -> s3.MetadataTableConfigurationResult
+	291, // 114: s3.GetBucketMetricsConfigurationOutput.metricsconfiguration:type_name -> s3.MetricsConfiguration
+	316, // 115: s3.GetBucketOwnershipControlsOutput.ownershipcontrols:type_name -> s3.OwnershipControls
+	321, // 116: s3.GetBucketPolicyStatusOutput.policystatus:type_name -> s3.PolicyStatus
+	366, // 117: s3.GetBucketReplicationOutput.replicationconfiguration:type_name -> s3.ReplicationConfiguration
+	50,  // 118: s3.GetBucketRequestPaymentOutput.payer:type_name -> s3.Payer
+	402, // 119: s3.GetBucketTaggingOutput.tagset:type_name -> s3.Tag
+	35,  // 120: s3.GetBucketVersioningOutput.mfadelete:type_name -> s3.MFADeleteStatus
+	9,   // 121: s3.GetBucketVersioningOutput.status:type_name -> s3.BucketVersioningStatus
+	153, // 122: s3.GetBucketWebsiteOutput.errordocument:type_name -> s3.ErrorDocument
+	231, // 123: s3.GetBucketWebsiteOutput.indexdocument:type_name -> s3.IndexDocument
+	362, // 124: s3.GetBucketWebsiteOutput.redirectallrequeststo:type_name -> s3.RedirectAllRequestsTo
+	378, // 125: s3.GetBucketWebsiteOutput.routingrules:type_name -> s3.RoutingRule
+	224, // 126: s3.GetObjectAclOutput.grants:type_name -> s3.Grant
+	315, // 127: s3.GetObjectAclOutput.owner:type_name -> s3.Owner
+	58,  // 128: s3.GetObjectAclOutput.requestcharged:type_name -> s3.RequestCharged
+	59,  // 129: s3.GetObjectAclRequest.requestpayer:type_name -> s3.RequestPayer
+	97,  // 130: s3.GetObjectAttributesOutput.checksum:type_name -> s3.Checksum
+	207, // 131: s3.GetObjectAttributesOutput.objectparts:type_name -> s3.GetObjectAttributesParts
+	58,  // 132: s3.GetObjectAttributesOutput.requestcharged:type_name -> s3.RequestCharged
+	65,  // 133: s3.GetObjectAttributesOutput.storageclass:type_name -> s3.StorageClass
+	311, // 134: s3.GetObjectAttributesParts.parts:type_name -> s3.ObjectPart
+	38,  // 135: s3.GetObjectAttributesRequest.objectattributes:type_name -> s3.ObjectAttributes
+	59,  // 136: s3.GetObjectAttributesRequest.requestpayer:type_name -> s3.RequestPayer
+	307, // 137: s3.GetObjectLegalHoldOutput.legalhold:type_name -> s3.ObjectLockLegalHold
+	59,  // 138: s3.GetObjectLegalHoldRequest.requestpayer:type_name -> s3.RequestPayer
+	306, // 139: s3.GetObjectLockConfigurationOutput.objectlockconfiguration:type_name -> s3.ObjectLockConfiguration
+	12,  // 140: s3.GetObjectOutput.checksumtype:type_name -> s3.ChecksumType
+	423, // 141: s3.GetObjectOutput.metadata:type_name -> s3.GetObjectOutput.MetadataEntry
+	41,  // 142: s3.GetObjectOutput.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
+	42,  // 143: s3.GetObjectOutput.objectlockmode:type_name -> s3.ObjectLockMode
+	56,  // 144: s3.GetObjectOutput.replicationstatus:type_name -> s3.ReplicationStatus
+	58,  // 145: s3.GetObjectOutput.requestcharged:type_name -> s3.RequestCharged
+	62,  // 146: s3.GetObjectOutput.serversideencryption:type_name -> s3.ServerSideEncryption
+	65,  // 147: s3.GetObjectOutput.storageclass:type_name -> s3.StorageClass
+	11,  // 148: s3.GetObjectRequest.checksummode:type_name -> s3.ChecksumMode
+	59,  // 149: s3.GetObjectRequest.requestpayer:type_name -> s3.RequestPayer
+	308, // 150: s3.GetObjectRetentionOutput.retention:type_name -> s3.ObjectLockRetention
+	59,  // 151: s3.GetObjectRetentionRequest.requestpayer:type_name -> s3.RequestPayer
+	402, // 152: s3.GetObjectTaggingOutput.tagset:type_name -> s3.Tag
+	59,  // 153: s3.GetObjectTaggingRequest.requestpayer:type_name -> s3.RequestPayer
+	58,  // 154: s3.GetObjectTorrentOutput.requestcharged:type_name -> s3.RequestCharged
+	59,  // 155: s3.GetObjectTorrentRequest.requestpayer:type_name -> s3.RequestPayer
+	324, // 156: s3.GetPublicAccessBlockOutput.publicaccessblockconfiguration:type_name -> s3.PublicAccessBlockConfiguration
+	69,  // 157: s3.GlacierJobParameters.tier:type_name -> s3.Tier
+	225, // 158: s3.Grant.grantee:type_name -> s3.Grantee
+	51,  // 159: s3.Grant.permission:type_name -> s3.Permission
+	72,  // 160: s3.Grantee.type:type_name -> s3.Type
+	33,  // 161: s3.HeadBucketOutput.bucketlocationtype:type_name -> s3.LocationType
+	1,   // 162: s3.HeadObjectOutput.archivestatus:type_name -> s3.ArchiveStatus
+	12,  // 163: s3.HeadObjectOutput.checksumtype:type_name -> s3.ChecksumType
+	424, // 164: s3.HeadObjectOutput.metadata:type_name -> s3.HeadObjectOutput.MetadataEntry
+	41,  // 165: s3.HeadObjectOutput.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
+	42,  // 166: s3.HeadObjectOutput.objectlockmode:type_name -> s3.ObjectLockMode
+	56,  // 167: s3.HeadObjectOutput.replicationstatus:type_name -> s3.ReplicationStatus
+	58,  // 168: s3.HeadObjectOutput.requestcharged:type_name -> s3.RequestCharged
+	62,  // 169: s3.HeadObjectOutput.serversideencryption:type_name -> s3.ServerSideEncryption
+	65,  // 170: s3.HeadObjectOutput.storageclass:type_name -> s3.StorageClass
+	11,  // 171: s3.HeadObjectRequest.checksummode:type_name -> s3.ChecksumMode
+	59,  // 172: s3.HeadObjectRequest.requestpayer:type_name -> s3.RequestPayer
+	95,  // 173: s3.InputSerialization.csv:type_name -> s3.CSVInput
+	13,  // 174: s3.InputSerialization.compressiontype:type_name -> s3.CompressionType
+	249, // 175: s3.InputSerialization.json:type_name -> s3.JSONInput
+	318, // 176: s3.InputSerialization.parquet:type_name -> s3.ParquetInput
+	402, // 177: s3.IntelligentTieringAndOperator.tags:type_name -> s3.Tag
+	236, // 178: s3.IntelligentTieringConfiguration.filter:type_name -> s3.IntelligentTieringFilter
+	26,  // 179: s3.IntelligentTieringConfiguration.status:type_name -> s3.IntelligentTieringStatus
+	406, // 180: s3.IntelligentTieringConfiguration.tierings:type_name -> s3.Tiering
+	234, // 181: s3.IntelligentTieringFilter.and:type_name -> s3.IntelligentTieringAndOperator
+	402, // 182: s3.IntelligentTieringFilter.tag:type_name -> s3.Tag
+	25,  // 183: s3.InvalidObjectState.accesstier:type_name -> s3.IntelligentTieringAccessTier
+	65,  // 184: s3.InvalidObjectState.storageclass:type_name -> s3.StorageClass
+	241, // 185: s3.InventoryConfiguration.destination:type_name -> s3.InventoryDestination
+	243, // 186: s3.InventoryConfiguration.filter:type_name -> s3.InventoryFilter
+	30,  // 187: s3.InventoryConfiguration.includedobjectversions:type_name -> s3.InventoryIncludedObjectVersions
+	31,  // 188: s3.InventoryConfiguration.optionalfields:type_name -> s3.InventoryOptionalField
+	245, // 189: s3.InventoryConfiguration.schedule:type_name -> s3.InventorySchedule
+	244, // 190: s3.InventoryDestination.s3bucketdestination:type_name -> s3.InventoryS3BucketDestination
+	383, // 191: s3.InventoryEncryption.ssekms:type_name -> s3.SSEKMS
+	385, // 192: s3.InventoryEncryption.sses3:type_name -> s3.SSES3
+	242, // 193: s3.InventoryS3BucketDestination.encryption:type_name -> s3.InventoryEncryption
+	28,  // 194: s3.InventoryS3BucketDestination.format:type_name -> s3.InventoryFormat
+	29,  // 195: s3.InventorySchedule.frequency:type_name -> s3.InventoryFrequency
+	27,  // 196: s3.InventoryTableConfiguration.configurationstate:type_name -> s3.InventoryConfigurationState
+	288, // 197: s3.InventoryTableConfiguration.encryptionconfiguration:type_name -> s3.MetadataTableEncryptionConfiguration
+	27,  // 198: s3.InventoryTableConfigurationResult.configurationstate:type_name -> s3.InventoryConfigurationState
+	152, // 199: s3.InventoryTableConfigurationResult.error:type_name -> s3.ErrorDetails
+	27,  // 200: s3.InventoryTableConfigurationUpdates.configurationstate:type_name -> s3.InventoryConfigurationState
+	288, // 201: s3.InventoryTableConfigurationUpdates.encryptionconfiguration:type_name -> s3.MetadataTableEncryptionConfiguration
+	32,  // 202: s3.JSONInput.type:type_name -> s3.JSONType
+	288, // 203: s3.JournalTableConfiguration.encryptionconfiguration:type_name -> s3.MetadataTableEncryptionConfiguration
+	359, // 204: s3.JournalTableConfiguration.recordexpiration:type_name -> s3.RecordExpiration
+	152, // 205: s3.JournalTableConfigurationResult.error:type_name -> s3.ErrorDetails
+	359, // 206: s3.JournalTableConfigurationResult.recordexpiration:type_name -> s3.RecordExpiration
+	359, // 207: s3.JournalTableConfigurationUpdates.recordexpiration:type_name -> s3.RecordExpiration
+	18,  // 208: s3.LambdaFunctionConfiguration.events:type_name -> s3.Event
+	301, // 209: s3.LambdaFunctionConfiguration.filter:type_name -> s3.NotificationConfigurationFilter
+	74,  // 210: s3.LifecycleRule.abortincompletemultipartupload:type_name -> s3.AbortIncompleteMultipartUpload
+	255, // 211: s3.LifecycleRule.expiration:type_name -> s3.LifecycleExpiration
+	258, // 212: s3.LifecycleRule.filter:type_name -> s3.LifecycleRuleFilter
+	297, // 213: s3.LifecycleRule.noncurrentversionexpiration:type_name -> s3.NoncurrentVersionExpiration
+	298, // 214: s3.LifecycleRule.noncurrentversiontransitions:type_name -> s3.NoncurrentVersionTransition
+	21,  // 215: s3.LifecycleRule.status:type_name -> s3.ExpirationStatus
+	409, // 216: s3.LifecycleRule.transitions:type_name -> s3.Transition
+	402, // 217: s3.LifecycleRuleAndOperator.tags:type_name -> s3.Tag
+	257, // 218: s3.LifecycleRuleFilter.and:type_name -> s3.LifecycleRuleAndOperator
+	402, // 219: s3.LifecycleRuleFilter.tag:type_name -> s3.Tag
+	82,  // 220: s3.ListBucketAnalyticsConfigurationsOutput.analyticsconfigurationlist:type_name -> s3.AnalyticsConfiguration
+	235, // 221: s3.ListBucketIntelligentTieringConfigurationsOutput.intelligenttieringconfigurationlist:type_name -> s3.IntelligentTieringConfiguration
+	240, // 222: s3.ListBucketInventoryConfigurationsOutput.inventoryconfigurationlist:type_name -> s3.InventoryConfiguration
+	291, // 223: s3.ListBucketMetricsConfigurationsOutput.metricsconfigurationlist:type_name -> s3.MetricsConfiguration
+	87,  // 224: s3.ListBucketsOutput.buckets:type_name -> s3.Bucket
+	315, // 225: s3.ListBucketsOutput.owner:type_name -> s3.Owner
+	87,  // 226: s3.ListDirectoryBucketsOutput.buckets:type_name -> s3.Bucket
+	98,  // 227: s3.ListMultipartUploadsOutput.commonprefixes:type_name -> s3.CommonPrefix
+	16,  // 228: s3.ListMultipartUploadsOutput.encodingtype:type_name -> s3.EncodingType
+	58,  // 229: s3.ListMultipartUploadsOutput.requestcharged:type_name -> s3.RequestCharged
+	293, // 230: s3.ListMultipartUploadsOutput.uploads:type_name -> s3.MultipartUpload
+	16,  // 231: s3.ListMultipartUploadsRequest.encodingtype:type_name -> s3.EncodingType
+	59,  // 232: s3.ListMultipartUploadsRequest.requestpayer:type_name -> s3.RequestPayer
+	98,  // 233: s3.ListObjectVersionsOutput.commonprefixes:type_name -> s3.CommonPrefix
+	135, // 234: s3.ListObjectVersionsOutput.deletemarkers:type_name -> s3.DeleteMarkerEntry
+	16,  // 235: s3.ListObjectVersionsOutput.encodingtype:type_name -> s3.EncodingType
+	58,  // 236: s3.ListObjectVersionsOutput.requestcharged:type_name -> s3.RequestCharged
+	312, // 237: s3.ListObjectVersionsOutput.versions:type_name -> s3.ObjectVersion
+	16,  // 238: s3.ListObjectVersionsRequest.encodingtype:type_name -> s3.EncodingType
+	47,  // 239: s3.ListObjectVersionsRequest.optionalobjectattributes:type_name -> s3.OptionalObjectAttributes
+	59,  // 240: s3.ListObjectVersionsRequest.requestpayer:type_name -> s3.RequestPayer
+	98,  // 241: s3.ListObjectsOutput.commonprefixes:type_name -> s3.CommonPrefix
+	302, // 242: s3.ListObjectsOutput.contents:type_name -> s3.Object
+	16,  // 243: s3.ListObjectsOutput.encodingtype:type_name -> s3.EncodingType
+	58,  // 244: s3.ListObjectsOutput.requestcharged:type_name -> s3.RequestCharged
+	16,  // 245: s3.ListObjectsRequest.encodingtype:type_name -> s3.EncodingType
+	47,  // 246: s3.ListObjectsRequest.optionalobjectattributes:type_name -> s3.OptionalObjectAttributes
+	59,  // 247: s3.ListObjectsRequest.requestpayer:type_name -> s3.RequestPayer
+	98,  // 248: s3.ListObjectsV2Output.commonprefixes:type_name -> s3.CommonPrefix
+	302, // 249: s3.ListObjectsV2Output.contents:type_name -> s3.Object
+	16,  // 250: s3.ListObjectsV2Output.encodingtype:type_name -> s3.EncodingType
+	58,  // 251: s3.ListObjectsV2Output.requestcharged:type_name -> s3.RequestCharged
+	16,  // 252: s3.ListObjectsV2Request.encodingtype:type_name -> s3.EncodingType
+	47,  // 253: s3.ListObjectsV2Request.optionalobjectattributes:type_name -> s3.OptionalObjectAttributes
+	59,  // 254: s3.ListObjectsV2Request.requestpayer:type_name -> s3.RequestPayer
+	10,  // 255: s3.ListPartsOutput.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	12,  // 256: s3.ListPartsOutput.checksumtype:type_name -> s3.ChecksumType
+	232, // 257: s3.ListPartsOutput.initiator:type_name -> s3.Initiator
+	315, // 258: s3.ListPartsOutput.owner:type_name -> s3.Owner
+	319, // 259: s3.ListPartsOutput.parts:type_name -> s3.Part
+	58,  // 260: s3.ListPartsOutput.requestcharged:type_name -> s3.RequestCharged
+	65,  // 261: s3.ListPartsOutput.storageclass:type_name -> s3.StorageClass
+	59,  // 262: s3.ListPartsRequest.requestpayer:type_name -> s3.RequestPayer
+	33,  // 263: s3.LocationInfo.type:type_name -> s3.LocationType
+	404, // 264: s3.LoggingEnabled.targetgrants:type_name -> s3.TargetGrant
+	405, // 265: s3.LoggingEnabled.targetobjectkeyformat:type_name -> s3.TargetObjectKeyFormat
+	246, // 266: s3.MetadataConfiguration.inventorytableconfiguration:type_name -> s3.InventoryTableConfiguration
+	251, // 267: s3.MetadataConfiguration.journaltableconfiguration:type_name -> s3.JournalTableConfiguration
+	146, // 268: s3.MetadataConfigurationResult.destinationresult:type_name -> s3.DestinationResult
+	247, // 269: s3.MetadataConfigurationResult.inventorytableconfigurationresult:type_name -> s3.InventoryTableConfigurationResult
+	252, // 270: s3.MetadataConfigurationResult.journaltableconfigurationresult:type_name -> s3.JournalTableConfigurationResult
+	381, // 271: s3.MetadataTableConfiguration.s3tablesdestination:type_name -> s3.S3TablesDestination
+	382, // 272: s3.MetadataTableConfigurationResult.s3tablesdestinationresult:type_name -> s3.S3TablesDestinationResult
+	67,  // 273: s3.MetadataTableEncryptionConfiguration.ssealgorithm:type_name -> s3.TableSseAlgorithm
+	371, // 274: s3.Metrics.eventthreshold:type_name -> s3.ReplicationTimeValue
+	37,  // 275: s3.Metrics.status:type_name -> s3.MetricsStatus
+	402, // 276: s3.MetricsAndOperator.tags:type_name -> s3.Tag
+	292, // 277: s3.MetricsConfiguration.filter:type_name -> s3.MetricsFilter
+	290, // 278: s3.MetricsFilter.and:type_name -> s3.MetricsAndOperator
+	402, // 279: s3.MetricsFilter.tag:type_name -> s3.Tag
+	10,  // 280: s3.MultipartUpload.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	12,  // 281: s3.MultipartUpload.checksumtype:type_name -> s3.ChecksumType
+	232, // 282: s3.MultipartUpload.initiator:type_name -> s3.Initiator
+	315, // 283: s3.MultipartUpload.owner:type_name -> s3.Owner
+	65,  // 284: s3.MultipartUpload.storageclass:type_name -> s3.StorageClass
+	71,  // 285: s3.NoncurrentVersionTransition.storageclass:type_name -> s3.TransitionStorageClass
+	154, // 286: s3.NotificationConfiguration.eventbridgeconfiguration:type_name -> s3.EventBridgeConfiguration
+	254, // 287: s3.NotificationConfiguration.lambdafunctionconfigurations:type_name -> s3.LambdaFunctionConfiguration
+	358, // 288: s3.NotificationConfiguration.queueconfigurations:type_name -> s3.QueueConfiguration
+	408, // 289: s3.NotificationConfiguration.topicconfigurations:type_name -> s3.TopicConfiguration
+	379, // 290: s3.NotificationConfigurationFilter.key:type_name -> s3.S3KeyFilter
+	10,  // 291: s3.Object.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	12,  // 292: s3.Object.checksumtype:type_name -> s3.ChecksumType
+	315, // 293: s3.Object.owner:type_name -> s3.Owner
+	377, // 294: s3.Object.restorestatus:type_name -> s3.RestoreStatus
+	45,  // 295: s3.Object.storageclass:type_name -> s3.ObjectStorageClass
+	384, // 296: s3.ObjectEncryption.ssekms:type_name -> s3.SSEKMSEncryption
+	40,  // 297: s3.ObjectLockConfiguration.objectlockenabled:type_name -> s3.ObjectLockEnabled
+	309, // 298: s3.ObjectLockConfiguration.rule:type_name -> s3.ObjectLockRule
+	41,  // 299: s3.ObjectLockLegalHold.status:type_name -> s3.ObjectLockLegalHoldStatus
+	43,  // 300: s3.ObjectLockRetention.mode:type_name -> s3.ObjectLockRetentionMode
+	118, // 301: s3.ObjectLockRule.defaultretention:type_name -> s3.DefaultRetention
+	10,  // 302: s3.ObjectVersion.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	12,  // 303: s3.ObjectVersion.checksumtype:type_name -> s3.ChecksumType
+	315, // 304: s3.ObjectVersion.owner:type_name -> s3.Owner
+	377, // 305: s3.ObjectVersion.restorestatus:type_name -> s3.RestoreStatus
+	46,  // 306: s3.ObjectVersion.storageclass:type_name -> s3.ObjectVersionStorageClass
+	380, // 307: s3.OutputLocation.s3:type_name -> s3.S3Location
+	96,  // 308: s3.OutputSerialization.csv:type_name -> s3.CSVOutput
+	250, // 309: s3.OutputSerialization.json:type_name -> s3.JSONOutput
+	317, // 310: s3.OwnershipControls.rules:type_name -> s3.OwnershipControlsRule
+	44,  // 311: s3.OwnershipControlsRule.objectownership:type_name -> s3.ObjectOwnership
+	49,  // 312: s3.PartitionedPrefix.partitiondatesource:type_name -> s3.PartitionDateSource
+	322, // 313: s3.ProgressEvent.details:type_name -> s3.Progress
+	73,  // 314: s3.PutBucketAbacRequest.abacstatus:type_name -> s3.AbacStatus
+	10,  // 315: s3.PutBucketAbacRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	77,  // 316: s3.PutBucketAccelerateConfigurationRequest.accelerateconfiguration:type_name -> s3.AccelerateConfiguration
+	10,  // 317: s3.PutBucketAccelerateConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	4,   // 318: s3.PutBucketAclRequest.acl:type_name -> s3.BucketCannedACL
+	78,  // 319: s3.PutBucketAclRequest.accesscontrolpolicy:type_name -> s3.AccessControlPolicy
+	10,  // 320: s3.PutBucketAclRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	82,  // 321: s3.PutBucketAnalyticsConfigurationRequest.analyticsconfiguration:type_name -> s3.AnalyticsConfiguration
+	93,  // 322: s3.PutBucketCorsRequest.corsconfiguration:type_name -> s3.CORSConfiguration
+	10,  // 323: s3.PutBucketCorsRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	10,  // 324: s3.PutBucketEncryptionRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	392, // 325: s3.PutBucketEncryptionRequest.serversideencryptionconfiguration:type_name -> s3.ServerSideEncryptionConfiguration
+	235, // 326: s3.PutBucketIntelligentTieringConfigurationRequest.intelligenttieringconfiguration:type_name -> s3.IntelligentTieringConfiguration
+	240, // 327: s3.PutBucketInventoryConfigurationRequest.inventoryconfiguration:type_name -> s3.InventoryConfiguration
+	70,  // 328: s3.PutBucketLifecycleConfigurationOutput.transitiondefaultminimumobjectsize:type_name -> s3.TransitionDefaultMinimumObjectSize
+	10,  // 329: s3.PutBucketLifecycleConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	91,  // 330: s3.PutBucketLifecycleConfigurationRequest.lifecycleconfiguration:type_name -> s3.BucketLifecycleConfiguration
+	70,  // 331: s3.PutBucketLifecycleConfigurationRequest.transitiondefaultminimumobjectsize:type_name -> s3.TransitionDefaultMinimumObjectSize
+	92,  // 332: s3.PutBucketLoggingRequest.bucketloggingstatus:type_name -> s3.BucketLoggingStatus
+	10,  // 333: s3.PutBucketLoggingRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	291, // 334: s3.PutBucketMetricsConfigurationRequest.metricsconfiguration:type_name -> s3.MetricsConfiguration
+	300, // 335: s3.PutBucketNotificationConfigurationRequest.notificationconfiguration:type_name -> s3.NotificationConfiguration
+	10,  // 336: s3.PutBucketOwnershipControlsRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	316, // 337: s3.PutBucketOwnershipControlsRequest.ownershipcontrols:type_name -> s3.OwnershipControls
+	10,  // 338: s3.PutBucketPolicyRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	10,  // 339: s3.PutBucketReplicationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	366, // 340: s3.PutBucketReplicationRequest.replicationconfiguration:type_name -> s3.ReplicationConfiguration
+	10,  // 341: s3.PutBucketRequestPaymentRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	372, // 342: s3.PutBucketRequestPaymentRequest.requestpaymentconfiguration:type_name -> s3.RequestPaymentConfiguration
+	10,  // 343: s3.PutBucketTaggingRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	403, // 344: s3.PutBucketTaggingRequest.tagging:type_name -> s3.Tagging
+	10,  // 345: s3.PutBucketVersioningRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	418, // 346: s3.PutBucketVersioningRequest.versioningconfiguration:type_name -> s3.VersioningConfiguration
+	10,  // 347: s3.PutBucketWebsiteRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	419, // 348: s3.PutBucketWebsiteRequest.websiteconfiguration:type_name -> s3.WebsiteConfiguration
+	58,  // 349: s3.PutObjectAclOutput.requestcharged:type_name -> s3.RequestCharged
+	39,  // 350: s3.PutObjectAclRequest.acl:type_name -> s3.ObjectCannedACL
+	78,  // 351: s3.PutObjectAclRequest.accesscontrolpolicy:type_name -> s3.AccessControlPolicy
+	10,  // 352: s3.PutObjectAclRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	59,  // 353: s3.PutObjectAclRequest.requestpayer:type_name -> s3.RequestPayer
+	58,  // 354: s3.PutObjectLegalHoldOutput.requestcharged:type_name -> s3.RequestCharged
+	10,  // 355: s3.PutObjectLegalHoldRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	307, // 356: s3.PutObjectLegalHoldRequest.legalhold:type_name -> s3.ObjectLockLegalHold
+	59,  // 357: s3.PutObjectLegalHoldRequest.requestpayer:type_name -> s3.RequestPayer
+	58,  // 358: s3.PutObjectLockConfigurationOutput.requestcharged:type_name -> s3.RequestCharged
+	10,  // 359: s3.PutObjectLockConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	306, // 360: s3.PutObjectLockConfigurationRequest.objectlockconfiguration:type_name -> s3.ObjectLockConfiguration
+	59,  // 361: s3.PutObjectLockConfigurationRequest.requestpayer:type_name -> s3.RequestPayer
+	12,  // 362: s3.PutObjectOutput.checksumtype:type_name -> s3.ChecksumType
+	58,  // 363: s3.PutObjectOutput.requestcharged:type_name -> s3.RequestCharged
+	62,  // 364: s3.PutObjectOutput.serversideencryption:type_name -> s3.ServerSideEncryption
+	39,  // 365: s3.PutObjectRequest.acl:type_name -> s3.ObjectCannedACL
+	10,  // 366: s3.PutObjectRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	425, // 367: s3.PutObjectRequest.metadata:type_name -> s3.PutObjectRequest.MetadataEntry
+	41,  // 368: s3.PutObjectRequest.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
+	42,  // 369: s3.PutObjectRequest.objectlockmode:type_name -> s3.ObjectLockMode
+	59,  // 370: s3.PutObjectRequest.requestpayer:type_name -> s3.RequestPayer
+	62,  // 371: s3.PutObjectRequest.serversideencryption:type_name -> s3.ServerSideEncryption
+	65,  // 372: s3.PutObjectRequest.storageclass:type_name -> s3.StorageClass
+	58,  // 373: s3.PutObjectRetentionOutput.requestcharged:type_name -> s3.RequestCharged
+	10,  // 374: s3.PutObjectRetentionRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	59,  // 375: s3.PutObjectRetentionRequest.requestpayer:type_name -> s3.RequestPayer
+	308, // 376: s3.PutObjectRetentionRequest.retention:type_name -> s3.ObjectLockRetention
+	10,  // 377: s3.PutObjectTaggingRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	59,  // 378: s3.PutObjectTaggingRequest.requestpayer:type_name -> s3.RequestPayer
+	403, // 379: s3.PutObjectTaggingRequest.tagging:type_name -> s3.Tagging
+	10,  // 380: s3.PutPublicAccessBlockRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	324, // 381: s3.PutPublicAccessBlockRequest.publicaccessblockconfiguration:type_name -> s3.PublicAccessBlockConfiguration
+	18,  // 382: s3.QueueConfiguration.events:type_name -> s3.Event
+	301, // 383: s3.QueueConfiguration.filter:type_name -> s3.NotificationConfigurationFilter
+	20,  // 384: s3.RecordExpiration.expiration:type_name -> s3.ExpirationState
+	52,  // 385: s3.Redirect.protocol:type_name -> s3.Protocol
+	52,  // 386: s3.RedirectAllRequestsTo.protocol:type_name -> s3.Protocol
+	54,  // 387: s3.ReplicaModifications.status:type_name -> s3.ReplicaModificationsStatus
+	367, // 388: s3.ReplicationConfiguration.rules:type_name -> s3.ReplicationRule
+	136, // 389: s3.ReplicationRule.deletemarkerreplication:type_name -> s3.DeleteMarkerReplication
+	145, // 390: s3.ReplicationRule.destination:type_name -> s3.Destination
+	155, // 391: s3.ReplicationRule.existingobjectreplication:type_name -> s3.ExistingObjectReplication
+	369, // 392: s3.ReplicationRule.filter:type_name -> s3.ReplicationRuleFilter
+	396, // 393: s3.ReplicationRule.sourceselectioncriteria:type_name -> s3.SourceSelectionCriteria
+	55,  // 394: s3.ReplicationRule.status:type_name -> s3.ReplicationRuleStatus
+	402, // 395: s3.ReplicationRuleAndOperator.tags:type_name -> s3.Tag
+	368, // 396: s3.ReplicationRuleFilter.and:type_name -> s3.ReplicationRuleAndOperator
+	402, // 397: s3.ReplicationRuleFilter.tag:type_name -> s3.Tag
+	57,  // 398: s3.ReplicationTime.status:type_name -> s3.ReplicationTimeStatus
+	371, // 399: s3.ReplicationTime.time:type_name -> s3.ReplicationTimeValue
+	50,  // 400: s3.RequestPaymentConfiguration.payer:type_name -> s3.Payer
+	58,  // 401: s3.RestoreObjectOutput.requestcharged:type_name -> s3.RequestCharged
+	10,  // 402: s3.RestoreObjectRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	59,  // 403: s3.RestoreObjectRequest.requestpayer:type_name -> s3.RequestPayer
+	376, // 404: s3.RestoreObjectRequest.restorerequest:type_name -> s3.RestoreRequest
+	223, // 405: s3.RestoreRequest.glacierjobparameters:type_name -> s3.GlacierJobParameters
+	313, // 406: s3.RestoreRequest.outputlocation:type_name -> s3.OutputLocation
+	390, // 407: s3.RestoreRequest.selectparameters:type_name -> s3.SelectParameters
+	69,  // 408: s3.RestoreRequest.tier:type_name -> s3.Tier
+	60,  // 409: s3.RestoreRequest.type:type_name -> s3.RestoreRequestType
+	103, // 410: s3.RoutingRule.condition:type_name -> s3.Condition
+	361, // 411: s3.RoutingRule.redirect:type_name -> s3.Redirect
+	156, // 412: s3.S3KeyFilter.filterrules:type_name -> s3.FilterRule
+	224, // 413: s3.S3Location.accesscontrollist:type_name -> s3.Grant
+	39,  // 414: s3.S3Location.cannedacl:type_name -> s3.ObjectCannedACL
+	147, // 415: s3.S3Location.encryption:type_name -> s3.Encryption
+	65,  // 416: s3.S3Location.storageclass:type_name -> s3.StorageClass
+	403, // 417: s3.S3Location.tagging:type_name -> s3.Tagging
+	285, // 418: s3.S3Location.usermetadata:type_name -> s3.MetadataEntry
+	104, // 419: s3.SelectObjectContentEventStream.cont:type_name -> s3.ContinuationEvent
+	150, // 420: s3.SelectObjectContentEventStream.end:type_name -> s3.EndEvent
+	323, // 421: s3.SelectObjectContentEventStream.progress:type_name -> s3.ProgressEvent
+	360, // 422: s3.SelectObjectContentEventStream.records:type_name -> s3.RecordsEvent
+	399, // 423: s3.SelectObjectContentEventStream.stats:type_name -> s3.StatsEvent
+	387, // 424: s3.SelectObjectContentOutput.payload:type_name -> s3.SelectObjectContentEventStream
+	22,  // 425: s3.SelectObjectContentRequest.expressiontype:type_name -> s3.ExpressionType
+	233, // 426: s3.SelectObjectContentRequest.inputserialization:type_name -> s3.InputSerialization
+	314, // 427: s3.SelectObjectContentRequest.outputserialization:type_name -> s3.OutputSerialization
+	373, // 428: s3.SelectObjectContentRequest.requestprogress:type_name -> s3.RequestProgress
+	386, // 429: s3.SelectObjectContentRequest.scanrange:type_name -> s3.ScanRange
+	22,  // 430: s3.SelectParameters.expressiontype:type_name -> s3.ExpressionType
+	233, // 431: s3.SelectParameters.inputserialization:type_name -> s3.InputSerialization
+	314, // 432: s3.SelectParameters.outputserialization:type_name -> s3.OutputSerialization
+	62,  // 433: s3.ServerSideEncryptionByDefault.ssealgorithm:type_name -> s3.ServerSideEncryption
+	393, // 434: s3.ServerSideEncryptionConfiguration.rules:type_name -> s3.ServerSideEncryptionRule
+	391, // 435: s3.ServerSideEncryptionRule.applyserversideencryptionbydefault:type_name -> s3.ServerSideEncryptionByDefault
+	86,  // 436: s3.ServerSideEncryptionRule.blockedencryptiontypes:type_name -> s3.BlockedEncryptionTypes
+	365, // 437: s3.SourceSelectionCriteria.replicamodifications:type_name -> s3.ReplicaModifications
+	397, // 438: s3.SourceSelectionCriteria.ssekmsencryptedobjects:type_name -> s3.SseKmsEncryptedObjects
+	64,  // 439: s3.SseKmsEncryptedObjects.status:type_name -> s3.SseKmsEncryptedObjectsStatus
+	398, // 440: s3.StatsEvent.details:type_name -> s3.Stats
+	401, // 441: s3.StorageClassAnalysis.dataexport:type_name -> s3.StorageClassAnalysisDataExport
+	83,  // 442: s3.StorageClassAnalysisDataExport.destination:type_name -> s3.AnalyticsExportDestination
+	66,  // 443: s3.StorageClassAnalysisDataExport.outputschemaversion:type_name -> s3.StorageClassAnalysisSchemaVersion
+	402, // 444: s3.Tagging.tagset:type_name -> s3.Tag
+	225, // 445: s3.TargetGrant.grantee:type_name -> s3.Grantee
+	6,   // 446: s3.TargetGrant.permission:type_name -> s3.BucketLogsPermission
+	320, // 447: s3.TargetObjectKeyFormat.partitionedprefix:type_name -> s3.PartitionedPrefix
+	395, // 448: s3.TargetObjectKeyFormat.simpleprefix:type_name -> s3.SimplePrefix
+	25,  // 449: s3.Tiering.accesstier:type_name -> s3.IntelligentTieringAccessTier
+	18,  // 450: s3.TopicConfiguration.events:type_name -> s3.Event
+	301, // 451: s3.TopicConfiguration.filter:type_name -> s3.NotificationConfigurationFilter
+	71,  // 452: s3.Transition.storageclass:type_name -> s3.TransitionStorageClass
+	10,  // 453: s3.UpdateBucketMetadataInventoryTableConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	248, // 454: s3.UpdateBucketMetadataInventoryTableConfigurationRequest.inventorytableconfiguration:type_name -> s3.InventoryTableConfigurationUpdates
+	10,  // 455: s3.UpdateBucketMetadataJournalTableConfigurationRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	253, // 456: s3.UpdateBucketMetadataJournalTableConfigurationRequest.journaltableconfiguration:type_name -> s3.JournalTableConfigurationUpdates
+	10,  // 457: s3.UpdateObjectEncryptionRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	304, // 458: s3.UpdateObjectEncryptionRequest.objectencryption:type_name -> s3.ObjectEncryption
+	59,  // 459: s3.UpdateObjectEncryptionRequest.requestpayer:type_name -> s3.RequestPayer
+	58,  // 460: s3.UpdateObjectEncryptionResponse.requestcharged:type_name -> s3.RequestCharged
+	108, // 461: s3.UploadPartCopyOutput.copypartresult:type_name -> s3.CopyPartResult
+	58,  // 462: s3.UploadPartCopyOutput.requestcharged:type_name -> s3.RequestCharged
+	62,  // 463: s3.UploadPartCopyOutput.serversideencryption:type_name -> s3.ServerSideEncryption
+	59,  // 464: s3.UploadPartCopyRequest.requestpayer:type_name -> s3.RequestPayer
+	58,  // 465: s3.UploadPartOutput.requestcharged:type_name -> s3.RequestCharged
+	62,  // 466: s3.UploadPartOutput.serversideencryption:type_name -> s3.ServerSideEncryption
+	10,  // 467: s3.UploadPartRequest.checksumalgorithm:type_name -> s3.ChecksumAlgorithm
+	59,  // 468: s3.UploadPartRequest.requestpayer:type_name -> s3.RequestPayer
+	34,  // 469: s3.VersioningConfiguration.mfadelete:type_name -> s3.MFADelete
+	9,   // 470: s3.VersioningConfiguration.status:type_name -> s3.BucketVersioningStatus
+	153, // 471: s3.WebsiteConfiguration.errordocument:type_name -> s3.ErrorDocument
+	231, // 472: s3.WebsiteConfiguration.indexdocument:type_name -> s3.IndexDocument
+	362, // 473: s3.WebsiteConfiguration.redirectallrequeststo:type_name -> s3.RedirectAllRequestsTo
+	378, // 474: s3.WebsiteConfiguration.routingrules:type_name -> s3.RoutingRule
+	426, // 475: s3.WriteGetObjectResponseRequest.metadata:type_name -> s3.WriteGetObjectResponseRequest.MetadataEntry
+	41,  // 476: s3.WriteGetObjectResponseRequest.objectlocklegalholdstatus:type_name -> s3.ObjectLockLegalHoldStatus
+	42,  // 477: s3.WriteGetObjectResponseRequest.objectlockmode:type_name -> s3.ObjectLockMode
+	56,  // 478: s3.WriteGetObjectResponseRequest.replicationstatus:type_name -> s3.ReplicationStatus
+	58,  // 479: s3.WriteGetObjectResponseRequest.requestcharged:type_name -> s3.RequestCharged
+	62,  // 480: s3.WriteGetObjectResponseRequest.serversideencryption:type_name -> s3.ServerSideEncryption
+	65,  // 481: s3.WriteGetObjectResponseRequest.storageclass:type_name -> s3.StorageClass
+	76,  // 482: s3.S3Service.AbortMultipartUpload:input_type -> s3.AbortMultipartUploadRequest
+	100, // 483: s3.S3Service.CompleteMultipartUpload:input_type -> s3.CompleteMultipartUploadRequest
+	106, // 484: s3.S3Service.CopyObject:input_type -> s3.CopyObjectRequest
+	113, // 485: s3.S3Service.CreateBucket:input_type -> s3.CreateBucketRequest
+	110, // 486: s3.S3Service.CreateBucketMetadataConfiguration:input_type -> s3.CreateBucketMetadataConfigurationRequest
+	111, // 487: s3.S3Service.CreateBucketMetadataTableConfiguration:input_type -> s3.CreateBucketMetadataTableConfigurationRequest
+	115, // 488: s3.S3Service.CreateMultipartUpload:input_type -> s3.CreateMultipartUploadRequest
+	117, // 489: s3.S3Service.CreateSession:input_type -> s3.CreateSessionRequest
+	132, // 490: s3.S3Service.DeleteBucket:input_type -> s3.DeleteBucketRequest
+	120, // 491: s3.S3Service.DeleteBucketAnalyticsConfiguration:input_type -> s3.DeleteBucketAnalyticsConfigurationRequest
+	121, // 492: s3.S3Service.DeleteBucketCors:input_type -> s3.DeleteBucketCorsRequest
+	122, // 493: s3.S3Service.DeleteBucketEncryption:input_type -> s3.DeleteBucketEncryptionRequest
+	123, // 494: s3.S3Service.DeleteBucketIntelligentTieringConfiguration:input_type -> s3.DeleteBucketIntelligentTieringConfigurationRequest
+	124, // 495: s3.S3Service.DeleteBucketInventoryConfiguration:input_type -> s3.DeleteBucketInventoryConfigurationRequest
+	125, // 496: s3.S3Service.DeleteBucketLifecycle:input_type -> s3.DeleteBucketLifecycleRequest
+	126, // 497: s3.S3Service.DeleteBucketMetadataConfiguration:input_type -> s3.DeleteBucketMetadataConfigurationRequest
+	127, // 498: s3.S3Service.DeleteBucketMetadataTableConfiguration:input_type -> s3.DeleteBucketMetadataTableConfigurationRequest
+	128, // 499: s3.S3Service.DeleteBucketMetricsConfiguration:input_type -> s3.DeleteBucketMetricsConfigurationRequest
+	129, // 500: s3.S3Service.DeleteBucketOwnershipControls:input_type -> s3.DeleteBucketOwnershipControlsRequest
+	130, // 501: s3.S3Service.DeleteBucketPolicy:input_type -> s3.DeleteBucketPolicyRequest
+	131, // 502: s3.S3Service.DeleteBucketReplication:input_type -> s3.DeleteBucketReplicationRequest
+	133, // 503: s3.S3Service.DeleteBucketTagging:input_type -> s3.DeleteBucketTaggingRequest
+	134, // 504: s3.S3Service.DeleteBucketWebsite:input_type -> s3.DeleteBucketWebsiteRequest
+	138, // 505: s3.S3Service.DeleteObject:input_type -> s3.DeleteObjectRequest
+	142, // 506: s3.S3Service.DeleteObjects:input_type -> s3.DeleteObjectsRequest
+	140, // 507: s3.S3Service.DeleteObjectTagging:input_type -> s3.DeleteObjectTaggingRequest
+	143, // 508: s3.S3Service.DeletePublicAccessBlock:input_type -> s3.DeletePublicAccessBlockRequest
+	158, // 509: s3.S3Service.GetBucketAbac:input_type -> s3.GetBucketAbacRequest
+	160, // 510: s3.S3Service.GetBucketAccelerateConfiguration:input_type -> s3.GetBucketAccelerateConfigurationRequest
+	162, // 511: s3.S3Service.GetBucketAcl:input_type -> s3.GetBucketAclRequest
+	164, // 512: s3.S3Service.GetBucketAnalyticsConfiguration:input_type -> s3.GetBucketAnalyticsConfigurationRequest
+	166, // 513: s3.S3Service.GetBucketCors:input_type -> s3.GetBucketCorsRequest
+	168, // 514: s3.S3Service.GetBucketEncryption:input_type -> s3.GetBucketEncryptionRequest
+	170, // 515: s3.S3Service.GetBucketIntelligentTieringConfiguration:input_type -> s3.GetBucketIntelligentTieringConfigurationRequest
+	172, // 516: s3.S3Service.GetBucketInventoryConfiguration:input_type -> s3.GetBucketInventoryConfigurationRequest
+	174, // 517: s3.S3Service.GetBucketLifecycleConfiguration:input_type -> s3.GetBucketLifecycleConfigurationRequest
+	176, // 518: s3.S3Service.GetBucketLocation:input_type -> s3.GetBucketLocationRequest
+	178, // 519: s3.S3Service.GetBucketLogging:input_type -> s3.GetBucketLoggingRequest
+	180, // 520: s3.S3Service.GetBucketMetadataConfiguration:input_type -> s3.GetBucketMetadataConfigurationRequest
+	183, // 521: s3.S3Service.GetBucketMetadataTableConfiguration:input_type -> s3.GetBucketMetadataTableConfigurationRequest
+	186, // 522: s3.S3Service.GetBucketMetricsConfiguration:input_type -> s3.GetBucketMetricsConfigurationRequest
+	187, // 523: s3.S3Service.GetBucketNotificationConfiguration:input_type -> s3.GetBucketNotificationConfigurationRequest
+	189, // 524: s3.S3Service.GetBucketOwnershipControls:input_type -> s3.GetBucketOwnershipControlsRequest
+	191, // 525: s3.S3Service.GetBucketPolicy:input_type -> s3.GetBucketPolicyRequest
+	193, // 526: s3.S3Service.GetBucketPolicyStatus:input_type -> s3.GetBucketPolicyStatusRequest
+	195, // 527: s3.S3Service.GetBucketReplication:input_type -> s3.GetBucketReplicationRequest
+	197, // 528: s3.S3Service.GetBucketRequestPayment:input_type -> s3.GetBucketRequestPaymentRequest
+	199, // 529: s3.S3Service.GetBucketTagging:input_type -> s3.GetBucketTaggingRequest
+	201, // 530: s3.S3Service.GetBucketVersioning:input_type -> s3.GetBucketVersioningRequest
+	203, // 531: s3.S3Service.GetBucketWebsite:input_type -> s3.GetBucketWebsiteRequest
+	214, // 532: s3.S3Service.GetObject:input_type -> s3.GetObjectRequest
+	205, // 533: s3.S3Service.GetObjectAcl:input_type -> s3.GetObjectAclRequest
+	208, // 534: s3.S3Service.GetObjectAttributes:input_type -> s3.GetObjectAttributesRequest
+	210, // 535: s3.S3Service.GetObjectLegalHold:input_type -> s3.GetObjectLegalHoldRequest
+	212, // 536: s3.S3Service.GetObjectLockConfiguration:input_type -> s3.GetObjectLockConfigurationRequest
+	216, // 537: s3.S3Service.GetObjectRetention:input_type -> s3.GetObjectRetentionRequest
+	218, // 538: s3.S3Service.GetObjectTagging:input_type -> s3.GetObjectTaggingRequest
+	220, // 539: s3.S3Service.GetObjectTorrent:input_type -> s3.GetObjectTorrentRequest
+	222, // 540: s3.S3Service.GetPublicAccessBlock:input_type -> s3.GetPublicAccessBlockRequest
+	227, // 541: s3.S3Service.HeadBucket:input_type -> s3.HeadBucketRequest
+	229, // 542: s3.S3Service.HeadObject:input_type -> s3.HeadObjectRequest
+	260, // 543: s3.S3Service.ListBucketAnalyticsConfigurations:input_type -> s3.ListBucketAnalyticsConfigurationsRequest
+	262, // 544: s3.S3Service.ListBucketIntelligentTieringConfigurations:input_type -> s3.ListBucketIntelligentTieringConfigurationsRequest
+	264, // 545: s3.S3Service.ListBucketInventoryConfigurations:input_type -> s3.ListBucketInventoryConfigurationsRequest
+	266, // 546: s3.S3Service.ListBucketMetricsConfigurations:input_type -> s3.ListBucketMetricsConfigurationsRequest
+	268, // 547: s3.S3Service.ListBuckets:input_type -> s3.ListBucketsRequest
+	270, // 548: s3.S3Service.ListDirectoryBuckets:input_type -> s3.ListDirectoryBucketsRequest
+	272, // 549: s3.S3Service.ListMultipartUploads:input_type -> s3.ListMultipartUploadsRequest
+	276, // 550: s3.S3Service.ListObjects:input_type -> s3.ListObjectsRequest
+	278, // 551: s3.S3Service.ListObjectsV2:input_type -> s3.ListObjectsV2Request
+	274, // 552: s3.S3Service.ListObjectVersions:input_type -> s3.ListObjectVersionsRequest
+	280, // 553: s3.S3Service.ListParts:input_type -> s3.ListPartsRequest
+	325, // 554: s3.S3Service.PutBucketAbac:input_type -> s3.PutBucketAbacRequest
+	326, // 555: s3.S3Service.PutBucketAccelerateConfiguration:input_type -> s3.PutBucketAccelerateConfigurationRequest
+	327, // 556: s3.S3Service.PutBucketAcl:input_type -> s3.PutBucketAclRequest
+	328, // 557: s3.S3Service.PutBucketAnalyticsConfiguration:input_type -> s3.PutBucketAnalyticsConfigurationRequest
+	329, // 558: s3.S3Service.PutBucketCors:input_type -> s3.PutBucketCorsRequest
+	330, // 559: s3.S3Service.PutBucketEncryption:input_type -> s3.PutBucketEncryptionRequest
+	331, // 560: s3.S3Service.PutBucketIntelligentTieringConfiguration:input_type -> s3.PutBucketIntelligentTieringConfigurationRequest
+	332, // 561: s3.S3Service.PutBucketInventoryConfiguration:input_type -> s3.PutBucketInventoryConfigurationRequest
+	334, // 562: s3.S3Service.PutBucketLifecycleConfiguration:input_type -> s3.PutBucketLifecycleConfigurationRequest
+	335, // 563: s3.S3Service.PutBucketLogging:input_type -> s3.PutBucketLoggingRequest
+	336, // 564: s3.S3Service.PutBucketMetricsConfiguration:input_type -> s3.PutBucketMetricsConfigurationRequest
+	337, // 565: s3.S3Service.PutBucketNotificationConfiguration:input_type -> s3.PutBucketNotificationConfigurationRequest
+	338, // 566: s3.S3Service.PutBucketOwnershipControls:input_type -> s3.PutBucketOwnershipControlsRequest
+	339, // 567: s3.S3Service.PutBucketPolicy:input_type -> s3.PutBucketPolicyRequest
+	340, // 568: s3.S3Service.PutBucketReplication:input_type -> s3.PutBucketReplicationRequest
+	341, // 569: s3.S3Service.PutBucketRequestPayment:input_type -> s3.PutBucketRequestPaymentRequest
+	342, // 570: s3.S3Service.PutBucketTagging:input_type -> s3.PutBucketTaggingRequest
+	343, // 571: s3.S3Service.PutBucketVersioning:input_type -> s3.PutBucketVersioningRequest
+	344, // 572: s3.S3Service.PutBucketWebsite:input_type -> s3.PutBucketWebsiteRequest
+	352, // 573: s3.S3Service.PutObject:input_type -> s3.PutObjectRequest
+	346, // 574: s3.S3Service.PutObjectAcl:input_type -> s3.PutObjectAclRequest
+	348, // 575: s3.S3Service.PutObjectLegalHold:input_type -> s3.PutObjectLegalHoldRequest
+	350, // 576: s3.S3Service.PutObjectLockConfiguration:input_type -> s3.PutObjectLockConfigurationRequest
+	354, // 577: s3.S3Service.PutObjectRetention:input_type -> s3.PutObjectRetentionRequest
+	356, // 578: s3.S3Service.PutObjectTagging:input_type -> s3.PutObjectTaggingRequest
+	357, // 579: s3.S3Service.PutPublicAccessBlock:input_type -> s3.PutPublicAccessBlockRequest
+	364, // 580: s3.S3Service.RenameObject:input_type -> s3.RenameObjectRequest
+	375, // 581: s3.S3Service.RestoreObject:input_type -> s3.RestoreObjectRequest
+	389, // 582: s3.S3Service.SelectObjectContent:input_type -> s3.SelectObjectContentRequest
+	410, // 583: s3.S3Service.UpdateBucketMetadataInventoryTableConfiguration:input_type -> s3.UpdateBucketMetadataInventoryTableConfigurationRequest
+	411, // 584: s3.S3Service.UpdateBucketMetadataJournalTableConfiguration:input_type -> s3.UpdateBucketMetadataJournalTableConfigurationRequest
+	412, // 585: s3.S3Service.UpdateObjectEncryption:input_type -> s3.UpdateObjectEncryptionRequest
+	417, // 586: s3.S3Service.UploadPart:input_type -> s3.UploadPartRequest
+	415, // 587: s3.S3Service.UploadPartCopy:input_type -> s3.UploadPartCopyRequest
+	420, // 588: s3.S3Service.WriteGetObjectResponse:input_type -> s3.WriteGetObjectResponseRequest
+	75,  // 589: s3.S3Service.AbortMultipartUpload:output_type -> s3.AbortMultipartUploadOutput
+	99,  // 590: s3.S3Service.CompleteMultipartUpload:output_type -> s3.CompleteMultipartUploadOutput
+	105, // 591: s3.S3Service.CopyObject:output_type -> s3.CopyObjectOutput
+	112, // 592: s3.S3Service.CreateBucket:output_type -> s3.CreateBucketOutput
+	427, // 593: s3.S3Service.CreateBucketMetadataConfiguration:output_type -> common.Empty
+	427, // 594: s3.S3Service.CreateBucketMetadataTableConfiguration:output_type -> common.Empty
+	114, // 595: s3.S3Service.CreateMultipartUpload:output_type -> s3.CreateMultipartUploadOutput
+	116, // 596: s3.S3Service.CreateSession:output_type -> s3.CreateSessionOutput
+	427, // 597: s3.S3Service.DeleteBucket:output_type -> common.Empty
+	427, // 598: s3.S3Service.DeleteBucketAnalyticsConfiguration:output_type -> common.Empty
+	427, // 599: s3.S3Service.DeleteBucketCors:output_type -> common.Empty
+	427, // 600: s3.S3Service.DeleteBucketEncryption:output_type -> common.Empty
+	427, // 601: s3.S3Service.DeleteBucketIntelligentTieringConfiguration:output_type -> common.Empty
+	427, // 602: s3.S3Service.DeleteBucketInventoryConfiguration:output_type -> common.Empty
+	427, // 603: s3.S3Service.DeleteBucketLifecycle:output_type -> common.Empty
+	427, // 604: s3.S3Service.DeleteBucketMetadataConfiguration:output_type -> common.Empty
+	427, // 605: s3.S3Service.DeleteBucketMetadataTableConfiguration:output_type -> common.Empty
+	427, // 606: s3.S3Service.DeleteBucketMetricsConfiguration:output_type -> common.Empty
+	427, // 607: s3.S3Service.DeleteBucketOwnershipControls:output_type -> common.Empty
+	427, // 608: s3.S3Service.DeleteBucketPolicy:output_type -> common.Empty
+	427, // 609: s3.S3Service.DeleteBucketReplication:output_type -> common.Empty
+	427, // 610: s3.S3Service.DeleteBucketTagging:output_type -> common.Empty
+	427, // 611: s3.S3Service.DeleteBucketWebsite:output_type -> common.Empty
+	137, // 612: s3.S3Service.DeleteObject:output_type -> s3.DeleteObjectOutput
+	141, // 613: s3.S3Service.DeleteObjects:output_type -> s3.DeleteObjectsOutput
+	139, // 614: s3.S3Service.DeleteObjectTagging:output_type -> s3.DeleteObjectTaggingOutput
+	427, // 615: s3.S3Service.DeletePublicAccessBlock:output_type -> common.Empty
+	157, // 616: s3.S3Service.GetBucketAbac:output_type -> s3.GetBucketAbacOutput
+	159, // 617: s3.S3Service.GetBucketAccelerateConfiguration:output_type -> s3.GetBucketAccelerateConfigurationOutput
+	161, // 618: s3.S3Service.GetBucketAcl:output_type -> s3.GetBucketAclOutput
+	163, // 619: s3.S3Service.GetBucketAnalyticsConfiguration:output_type -> s3.GetBucketAnalyticsConfigurationOutput
+	165, // 620: s3.S3Service.GetBucketCors:output_type -> s3.GetBucketCorsOutput
+	167, // 621: s3.S3Service.GetBucketEncryption:output_type -> s3.GetBucketEncryptionOutput
+	169, // 622: s3.S3Service.GetBucketIntelligentTieringConfiguration:output_type -> s3.GetBucketIntelligentTieringConfigurationOutput
+	171, // 623: s3.S3Service.GetBucketInventoryConfiguration:output_type -> s3.GetBucketInventoryConfigurationOutput
+	173, // 624: s3.S3Service.GetBucketLifecycleConfiguration:output_type -> s3.GetBucketLifecycleConfigurationOutput
+	175, // 625: s3.S3Service.GetBucketLocation:output_type -> s3.GetBucketLocationOutput
+	177, // 626: s3.S3Service.GetBucketLogging:output_type -> s3.GetBucketLoggingOutput
+	179, // 627: s3.S3Service.GetBucketMetadataConfiguration:output_type -> s3.GetBucketMetadataConfigurationOutput
+	182, // 628: s3.S3Service.GetBucketMetadataTableConfiguration:output_type -> s3.GetBucketMetadataTableConfigurationOutput
+	185, // 629: s3.S3Service.GetBucketMetricsConfiguration:output_type -> s3.GetBucketMetricsConfigurationOutput
+	300, // 630: s3.S3Service.GetBucketNotificationConfiguration:output_type -> s3.NotificationConfiguration
+	188, // 631: s3.S3Service.GetBucketOwnershipControls:output_type -> s3.GetBucketOwnershipControlsOutput
+	190, // 632: s3.S3Service.GetBucketPolicy:output_type -> s3.GetBucketPolicyOutput
+	192, // 633: s3.S3Service.GetBucketPolicyStatus:output_type -> s3.GetBucketPolicyStatusOutput
+	194, // 634: s3.S3Service.GetBucketReplication:output_type -> s3.GetBucketReplicationOutput
+	196, // 635: s3.S3Service.GetBucketRequestPayment:output_type -> s3.GetBucketRequestPaymentOutput
+	198, // 636: s3.S3Service.GetBucketTagging:output_type -> s3.GetBucketTaggingOutput
+	200, // 637: s3.S3Service.GetBucketVersioning:output_type -> s3.GetBucketVersioningOutput
+	202, // 638: s3.S3Service.GetBucketWebsite:output_type -> s3.GetBucketWebsiteOutput
+	213, // 639: s3.S3Service.GetObject:output_type -> s3.GetObjectOutput
+	204, // 640: s3.S3Service.GetObjectAcl:output_type -> s3.GetObjectAclOutput
+	206, // 641: s3.S3Service.GetObjectAttributes:output_type -> s3.GetObjectAttributesOutput
+	209, // 642: s3.S3Service.GetObjectLegalHold:output_type -> s3.GetObjectLegalHoldOutput
+	211, // 643: s3.S3Service.GetObjectLockConfiguration:output_type -> s3.GetObjectLockConfigurationOutput
+	215, // 644: s3.S3Service.GetObjectRetention:output_type -> s3.GetObjectRetentionOutput
+	217, // 645: s3.S3Service.GetObjectTagging:output_type -> s3.GetObjectTaggingOutput
+	219, // 646: s3.S3Service.GetObjectTorrent:output_type -> s3.GetObjectTorrentOutput
+	221, // 647: s3.S3Service.GetPublicAccessBlock:output_type -> s3.GetPublicAccessBlockOutput
+	226, // 648: s3.S3Service.HeadBucket:output_type -> s3.HeadBucketOutput
+	228, // 649: s3.S3Service.HeadObject:output_type -> s3.HeadObjectOutput
+	259, // 650: s3.S3Service.ListBucketAnalyticsConfigurations:output_type -> s3.ListBucketAnalyticsConfigurationsOutput
+	261, // 651: s3.S3Service.ListBucketIntelligentTieringConfigurations:output_type -> s3.ListBucketIntelligentTieringConfigurationsOutput
+	263, // 652: s3.S3Service.ListBucketInventoryConfigurations:output_type -> s3.ListBucketInventoryConfigurationsOutput
+	265, // 653: s3.S3Service.ListBucketMetricsConfigurations:output_type -> s3.ListBucketMetricsConfigurationsOutput
+	267, // 654: s3.S3Service.ListBuckets:output_type -> s3.ListBucketsOutput
+	269, // 655: s3.S3Service.ListDirectoryBuckets:output_type -> s3.ListDirectoryBucketsOutput
+	271, // 656: s3.S3Service.ListMultipartUploads:output_type -> s3.ListMultipartUploadsOutput
+	275, // 657: s3.S3Service.ListObjects:output_type -> s3.ListObjectsOutput
+	277, // 658: s3.S3Service.ListObjectsV2:output_type -> s3.ListObjectsV2Output
+	273, // 659: s3.S3Service.ListObjectVersions:output_type -> s3.ListObjectVersionsOutput
+	279, // 660: s3.S3Service.ListParts:output_type -> s3.ListPartsOutput
+	427, // 661: s3.S3Service.PutBucketAbac:output_type -> common.Empty
+	427, // 662: s3.S3Service.PutBucketAccelerateConfiguration:output_type -> common.Empty
+	427, // 663: s3.S3Service.PutBucketAcl:output_type -> common.Empty
+	427, // 664: s3.S3Service.PutBucketAnalyticsConfiguration:output_type -> common.Empty
+	427, // 665: s3.S3Service.PutBucketCors:output_type -> common.Empty
+	427, // 666: s3.S3Service.PutBucketEncryption:output_type -> common.Empty
+	427, // 667: s3.S3Service.PutBucketIntelligentTieringConfiguration:output_type -> common.Empty
+	427, // 668: s3.S3Service.PutBucketInventoryConfiguration:output_type -> common.Empty
+	333, // 669: s3.S3Service.PutBucketLifecycleConfiguration:output_type -> s3.PutBucketLifecycleConfigurationOutput
+	427, // 670: s3.S3Service.PutBucketLogging:output_type -> common.Empty
+	427, // 671: s3.S3Service.PutBucketMetricsConfiguration:output_type -> common.Empty
+	427, // 672: s3.S3Service.PutBucketNotificationConfiguration:output_type -> common.Empty
+	427, // 673: s3.S3Service.PutBucketOwnershipControls:output_type -> common.Empty
+	427, // 674: s3.S3Service.PutBucketPolicy:output_type -> common.Empty
+	427, // 675: s3.S3Service.PutBucketReplication:output_type -> common.Empty
+	427, // 676: s3.S3Service.PutBucketRequestPayment:output_type -> common.Empty
+	427, // 677: s3.S3Service.PutBucketTagging:output_type -> common.Empty
+	427, // 678: s3.S3Service.PutBucketVersioning:output_type -> common.Empty
+	427, // 679: s3.S3Service.PutBucketWebsite:output_type -> common.Empty
+	351, // 680: s3.S3Service.PutObject:output_type -> s3.PutObjectOutput
+	345, // 681: s3.S3Service.PutObjectAcl:output_type -> s3.PutObjectAclOutput
+	347, // 682: s3.S3Service.PutObjectLegalHold:output_type -> s3.PutObjectLegalHoldOutput
+	349, // 683: s3.S3Service.PutObjectLockConfiguration:output_type -> s3.PutObjectLockConfigurationOutput
+	353, // 684: s3.S3Service.PutObjectRetention:output_type -> s3.PutObjectRetentionOutput
+	355, // 685: s3.S3Service.PutObjectTagging:output_type -> s3.PutObjectTaggingOutput
+	427, // 686: s3.S3Service.PutPublicAccessBlock:output_type -> common.Empty
+	363, // 687: s3.S3Service.RenameObject:output_type -> s3.RenameObjectOutput
+	374, // 688: s3.S3Service.RestoreObject:output_type -> s3.RestoreObjectOutput
+	388, // 689: s3.S3Service.SelectObjectContent:output_type -> s3.SelectObjectContentOutput
+	427, // 690: s3.S3Service.UpdateBucketMetadataInventoryTableConfiguration:output_type -> common.Empty
+	427, // 691: s3.S3Service.UpdateBucketMetadataJournalTableConfiguration:output_type -> common.Empty
+	413, // 692: s3.S3Service.UpdateObjectEncryption:output_type -> s3.UpdateObjectEncryptionResponse
+	416, // 693: s3.S3Service.UploadPart:output_type -> s3.UploadPartOutput
+	414, // 694: s3.S3Service.UploadPartCopy:output_type -> s3.UploadPartCopyOutput
+	427, // 695: s3.S3Service.WriteGetObjectResponse:output_type -> common.Empty
+	589, // [589:696] is the sub-list for method output_type
+	482, // [482:589] is the sub-list for method input_type
+	482, // [482:482] is the sub-list for extension type_name
+	482, // [482:482] is the sub-list for extension extendee
+	0,   // [0:482] is the sub-list for field type_name
 }
 
 func init() { file_s3_proto_init() }
@@ -31554,7 +31614,7 @@ func file_s3_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_s3_proto_rawDesc), len(file_s3_proto_rawDesc)),
-			NumEnums:      72,
+			NumEnums:      73,
 			NumMessages:   354,
 			NumExtensions: 0,
 			NumServices:   1,

@@ -212,8 +212,8 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 			_, err := client.GetDistribution(ctx, &cloudfront.GetDistributionInput{
 				Id: aws.String(distID),
 			})
-			if err == nil {
-				return fmt.Errorf("expected error for deleted distribution")
+			if err := AssertErrorContains(err, "NoSuchDistribution"); err != nil {
+				return err
 			}
 			return nil
 		}))
@@ -751,8 +751,8 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 			_, err := client.GetCachePolicy(ctx, &cloudfront.GetCachePolicyInput{
 				Id: aws.String(cachePolicyID),
 			})
-			if err == nil {
-				return fmt.Errorf("expected error for deleted cache policy")
+			if err := AssertErrorContains(err, "NoSuchCachePolicy"); err != nil {
+				return err
 			}
 			return nil
 		}))
@@ -875,8 +875,8 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 			_, err := client.GetOriginRequestPolicy(ctx, &cloudfront.GetOriginRequestPolicyInput{
 				Id: aws.String(orpID),
 			})
-			if err == nil {
-				return fmt.Errorf("expected error for deleted ORP")
+			if err := AssertErrorContains(err, "NoSuchOriginRequestPolicy"); err != nil {
+				return err
 			}
 			return nil
 		}))
@@ -993,8 +993,8 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 			_, err := client.GetResponseHeadersPolicy(ctx, &cloudfront.GetResponseHeadersPolicyInput{
 				Id: aws.String(rhpID),
 			})
-			if err == nil {
-				return fmt.Errorf("expected error for deleted RHP")
+			if err := AssertErrorContains(err, "NoSuchResponseHeadersPolicy"); err != nil {
+				return err
 			}
 			return nil
 		}))
@@ -1010,6 +1010,72 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 		}
 		if resp.KeyGroupList == nil {
 			return fmt.Errorf("key group list is nil")
+		}
+		return nil
+	}))
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("cloudfront", "ListCachePolicies_Pagination", func() error {
+		pgTs := time.Now().UnixNano()
+		var pgIDs []string
+		for i := 0; i < 5; i++ {
+			resp, err := client.CreateCachePolicy(ctx, &cloudfront.CreateCachePolicyInput{
+				CachePolicyConfig: &types.CachePolicyConfig{
+					Name:       aws.String(fmt.Sprintf("pagcp-%d-%d", pgTs, i)),
+					Comment:    aws.String("pagination test"),
+					DefaultTTL: aws.Int64(3600),
+					MaxTTL:     aws.Int64(86400),
+					MinTTL:     aws.Int64(0),
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("create cache policy: %v", err)
+			}
+			pgIDs = append(pgIDs, aws.ToString(resp.CachePolicy.Id))
+		}
+
+		pageCount := 0
+		totalCount := 0
+		var marker *string
+		for {
+			resp, err := client.ListCachePolicies(ctx, &cloudfront.ListCachePoliciesInput{
+				Marker:   marker,
+				MaxItems: aws.Int32(2),
+			})
+			if err != nil {
+				for _, id := range pgIDs {
+					gr, gerr := client.GetCachePolicy(ctx, &cloudfront.GetCachePolicyInput{Id: aws.String(id)})
+					if gerr == nil {
+						client.DeleteCachePolicy(ctx, &cloudfront.DeleteCachePolicyInput{Id: aws.String(id), IfMatch: gr.ETag})
+					}
+				}
+				return fmt.Errorf("list cache policies page: %v", err)
+			}
+			pageCount++
+			if resp.CachePolicyList != nil {
+				totalCount += len(resp.CachePolicyList.Items)
+			}
+			if resp.CachePolicyList != nil && resp.CachePolicyList.NextMarker != nil && *resp.CachePolicyList.NextMarker != "" {
+				marker = resp.CachePolicyList.NextMarker
+			} else {
+				break
+			}
+		}
+
+		for _, id := range pgIDs {
+			resp, err := client.GetCachePolicy(ctx, &cloudfront.GetCachePolicyInput{Id: aws.String(id)})
+			if err != nil {
+				continue
+			}
+			client.DeleteCachePolicy(ctx, &cloudfront.DeleteCachePolicyInput{
+				Id:      aws.String(id),
+				IfMatch: resp.ETag,
+			})
+		}
+
+		if pageCount < 2 {
+			return fmt.Errorf("expected at least 2 pages, got %d (total items: %d)", pageCount, totalCount)
 		}
 		return nil
 	}))

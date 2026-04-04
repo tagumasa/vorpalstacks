@@ -306,6 +306,9 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		if resp.BackupDetails == nil {
 			return fmt.Errorf("BackupDetails is nil")
 		}
+		client.DeleteBackup(ctx, &dynamodb.DeleteBackupInput{
+			BackupArn: resp.BackupDetails.BackupArn,
+		})
 		return nil
 	}))
 
@@ -3036,6 +3039,139 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 
 	// Clean up composite key table
 	client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(compTableName)})
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("dynamodb", "Query_Limit_Pagination", func() error {
+		pagTableName := fmt.Sprintf("PagTable-%d", time.Now().UnixNano())
+		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(pagTableName),
+			AttributeDefinitions: []types.AttributeDefinition{
+				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+		})
+		if err != nil {
+			return fmt.Errorf("create table: %v", err)
+		}
+
+		for i := 0; i < 5; i++ {
+			_, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(pagTableName),
+				Item: map[string]types.AttributeValue{
+					"pk":   &types.AttributeValueMemberS{Value: fmt.Sprintf("item-%d", i)},
+					"data": &types.AttributeValueMemberS{Value: "pagination"},
+				},
+			})
+			if err != nil {
+				client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagTableName)})
+				return fmt.Errorf("put item %d: %v", i, err)
+			}
+		}
+
+		var allItems []string
+		var exclusiveStartKey map[string]types.AttributeValue
+		pageCount := 0
+		for {
+			resp, err := client.Query(ctx, &dynamodb.QueryInput{
+				TableName:              aws.String(pagTableName),
+				KeyConditionExpression: aws.String("pk = :pk"),
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":pk": &types.AttributeValueMemberS{Value: "item-0"},
+				},
+				Limit:             aws.Int32(2),
+				ExclusiveStartKey: exclusiveStartKey,
+			})
+			if err != nil {
+				client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagTableName)})
+				return fmt.Errorf("query page: %v", err)
+			}
+			pageCount++
+			for _, item := range resp.Items {
+				if pk, ok := item["pk"].(*types.AttributeValueMemberS); ok {
+					allItems = append(allItems, pk.Value)
+				}
+			}
+			if resp.LastEvaluatedKey != nil {
+				exclusiveStartKey = resp.LastEvaluatedKey
+			} else {
+				break
+			}
+		}
+
+		client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagTableName)})
+		if len(allItems) != 1 {
+			return fmt.Errorf("expected 1 item for pk=item-0, got %d", len(allItems))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "ListGlobalTables_Pagination", func() error {
+		pagGT1 := fmt.Sprintf("PagGT-%d-1", time.Now().UnixNano())
+		pagGT2 := fmt.Sprintf("PagGT-%d-2", time.Now().UnixNano())
+		_, err := client.CreateGlobalTable(ctx, &dynamodb.CreateGlobalTableInput{
+			GlobalTableName: aws.String(pagGT1),
+			ReplicationGroup: []types.Replica{
+				{RegionName: aws.String("us-east-1")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create global table %s: %v", pagGT1, err)
+		}
+		_, err = client.CreateGlobalTable(ctx, &dynamodb.CreateGlobalTableInput{
+			GlobalTableName: aws.String(pagGT2),
+			ReplicationGroup: []types.Replica{
+				{RegionName: aws.String("us-east-1")},
+			},
+		})
+		if err != nil {
+			client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagGT1)})
+			return fmt.Errorf("create global table %s: %v", pagGT2, err)
+		}
+
+		found := map[string]bool{pagGT1: false, pagGT2: false}
+		var exclusiveStartName *string
+		pageCount := 0
+		for {
+			resp, err := client.ListGlobalTables(ctx, &dynamodb.ListGlobalTablesInput{
+				Limit:                         aws.Int32(1),
+				ExclusiveStartGlobalTableName: exclusiveStartName,
+			})
+			if err != nil {
+				client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagGT1)})
+				client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagGT2)})
+				return fmt.Errorf("list global tables page: %v", err)
+			}
+			pageCount++
+			for _, gt := range resp.GlobalTables {
+				if gt.GlobalTableName != nil {
+					if _, ok := found[*gt.GlobalTableName]; ok {
+						found[*gt.GlobalTableName] = true
+					}
+				}
+			}
+			if resp.LastEvaluatedGlobalTableName != nil && *resp.LastEvaluatedGlobalTableName != "" {
+				exclusiveStartName = resp.LastEvaluatedGlobalTableName
+			} else {
+				break
+			}
+		}
+
+		client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagGT1)})
+		client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagGT2)})
+		for name, f := range found {
+			if !f {
+				return fmt.Errorf("created global table %q not found in ListGlobalTables", name)
+			}
+		}
+		if pageCount < 2 {
+			return fmt.Errorf("expected at least 2 pages, got %d", pageCount)
+		}
+		return nil
+	}))
 
 	return results
 }

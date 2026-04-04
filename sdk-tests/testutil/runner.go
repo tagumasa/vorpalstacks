@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"time"
 )
@@ -26,6 +27,48 @@ type TestRunner struct {
 	verbose  bool
 }
 
+type ServiceFactory func(*TestRunner) []TestResult
+
+var serviceRegistry = map[string]ServiceFactory{}
+
+func RegisterService(name string, factory ServiceFactory) {
+	serviceRegistry[name] = factory
+}
+
+func init() {
+	RegisterService("dynamodb", (*TestRunner).RunDynamoDBTests)
+	RegisterService("sqs", (*TestRunner).RunSQSTests)
+	RegisterService("sns", (*TestRunner).RunSNSTests)
+	RegisterService("s3", (*TestRunner).RunS3Tests)
+	RegisterService("lambda", (*TestRunner).RunLambdaTests)
+	RegisterService("iam", (*TestRunner).RunIAMTests)
+	RegisterService("kms", (*TestRunner).RunKMSTests)
+	RegisterService("events", (*TestRunner).RunEventBridgeTests)
+	RegisterService("stepfunctions", (*TestRunner).RunStepFunctionsTests)
+	RegisterService("apigateway", (*TestRunner).RunAPIGatewayTests)
+	RegisterService("logs", (*TestRunner).RunCloudWatchLogsTests)
+	RegisterService("cloudwatch", (*TestRunner).RunCloudWatchTests)
+	RegisterService("ssm", (*TestRunner).RunSSMTests)
+	RegisterService("cloudtrail", (*TestRunner).RunCloudTrailTests)
+	RegisterService("acm", (*TestRunner).RunACMTests)
+	RegisterService("cognito", (*TestRunner).RunCognitoTests)
+	RegisterService("cognito-identity", (*TestRunner).RunCognitoIdentityTests)
+	RegisterService("secretsmanager", (*TestRunner).RunSecretsManagerTests)
+	RegisterService("kinesis", (*TestRunner).RunKinesisTests)
+	RegisterService("sts", (*TestRunner).RunSTSTests)
+	RegisterService("scheduler", (*TestRunner).RunSchedulerTests)
+	RegisterService("athena", (*TestRunner).RunAthenaTests)
+	RegisterService("timestream", (*TestRunner).RunTimestreamTests)
+	RegisterService("sesv2", (*TestRunner).RunSESv2Tests)
+	RegisterService("route53", (*TestRunner).RunRoute53Tests)
+	RegisterService("cloudfront", (*TestRunner).RunCloudFrontTests)
+	RegisterService("wafv2", (*TestRunner).RunWAFv2Tests)
+	RegisterService("neptune", (*TestRunner).RunNeptuneTests)
+	RegisterService("neptunedata", (*TestRunner).RunNeptunedataTests)
+	RegisterService("appsync", (*TestRunner).RunAppSyncTests)
+	RegisterService("appsync-ws", (*TestRunner).RunAppSyncWSTests)
+}
+
 func NewTestRunner(endpoint, region string, verbose bool) *TestRunner {
 	return &TestRunner{
 		endpoint: endpoint,
@@ -35,88 +78,29 @@ func NewTestRunner(endpoint, region string, verbose bool) *TestRunner {
 	}
 }
 
+func (r *TestRunner) Endpoint() string { return r.endpoint }
+func (r *TestRunner) Region() string   { return r.region }
+
 func (r *TestRunner) GetAllServices() []string {
-	return []string{
-		"dynamodb", "sqs", "sns", "s3", "lambda", "iam", "kms", "events",
-		"stepfunctions", "apigateway", "logs", "cloudwatch", "ssm", "cloudtrail",
-		"acm", "cognito", "cognito-identity", "secretsmanager", "kinesis", "sts", "scheduler",
-		"athena", "timestream", "sesv2", "route53", "cloudfront", "wafv2",
-		"neptune", "neptunedata",
+	services := make([]string, 0, len(serviceRegistry))
+	for name := range serviceRegistry {
+		services = append(services, name)
 	}
+	sort.Strings(services)
+	return services
 }
 
 func (r *TestRunner) RunServiceTests(service string) []TestResult {
-	var results []TestResult
-
-	switch service {
-	case "dynamodb":
-		results = r.RunDynamoDBTests()
-	case "sqs":
-		results = r.RunSQSTests()
-	case "sns":
-		results = r.RunSNSTests()
-	case "s3":
-		results = r.RunS3Tests()
-	case "lambda":
-		results = r.RunLambdaTests()
-	case "iam":
-		results = r.RunIAMTests()
-	case "kms":
-		results = r.RunKMSTests()
-	case "events":
-		results = r.RunEventBridgeTests()
-	case "stepfunctions":
-		results = r.RunStepFunctionsTests()
-	case "apigateway":
-		results = r.RunAPIGatewayTests()
-	case "logs":
-		results = r.RunCloudWatchLogsTests()
-	case "cloudwatch":
-		results = r.RunCloudWatchTests()
-	case "ssm":
-		results = r.RunSSMTests()
-	case "cloudtrail":
-		results = r.RunCloudTrailTests()
-	case "acm":
-		results = r.RunACMTests()
-	case "cognito":
-		results = r.RunCognitoTests()
-	case "cognito-identity":
-		results = r.RunCognitoIdentityTests()
-	case "secretsmanager":
-		results = r.RunSecretsManagerTests()
-	case "kinesis":
-		results = r.RunKinesisTests()
-	case "sts":
-		results = r.RunSTSTests()
-	case "scheduler":
-		results = r.RunSchedulerTests()
-	case "athena":
-		results = r.RunAthenaTests()
-	case "timestream":
-		results = r.RunTimestreamTests()
-	case "sesv2":
-		results = r.RunSESv2Tests()
-	case "route53":
-		results = r.RunRoute53Tests()
-	case "cloudfront":
-		results = r.RunCloudFrontTests()
-	case "wafv2":
-		results = r.RunWAFv2Tests()
-	case "neptune":
-		results = r.RunNeptuneTests()
-	case "neptunedata":
-		results = r.RunNeptunedataTests()
-	default:
-		results = []TestResult{{
+	factory, ok := serviceRegistry[service]
+	if !ok {
+		return []TestResult{{
 			Service:  service,
 			TestName: "Unknown",
 			Status:   "SKIP",
 			Error:    "Unknown service",
 		}}
 	}
-
-	return results
+	return factory(r)
 }
 
 func (r *TestRunner) RunTest(service, testName string, testFunc func() error) TestResult {
@@ -149,6 +133,18 @@ func (r *TestRunner) RunTest(service, testName string, testFunc func() error) Te
 	}
 
 	return result
+}
+
+func (r *TestRunner) SkipTest(service, testName, reason string) TestResult {
+	if r.verbose {
+		fmt.Printf("  - %s (skipped: %s)\n", testName, reason)
+	}
+	return TestResult{
+		Service:  service,
+		TestName: testName,
+		Status:   "SKIP",
+		Error:    reason,
+	}
 }
 
 func (r *TestRunner) PrintReport(results map[string][]TestResult, format string) {
@@ -218,7 +214,7 @@ func (r *TestRunner) CheckServerHealth() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

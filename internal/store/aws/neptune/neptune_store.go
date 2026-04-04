@@ -24,6 +24,8 @@ const (
 	eventSubBucket          = "neptune_event_subscriptions"
 	tagsBucket              = "neptune_tags"
 	clusterEndpointBucket   = "neptune_cluster_endpoints"
+	queryStateBucket        = "neptunedata_queries"
+	loaderJobBucket         = "neptunedata_loader_jobs"
 )
 
 // NeptuneStoreInterface aggregates all Neptune resource CRUD operations into a
@@ -39,6 +41,31 @@ type NeptuneStoreInterface interface {
 	EventSubscriptionOps
 	TagOps
 	ClusterEndpointOps
+}
+
+// NeptuneDataStoreInterface aggregates Neptune Data API persistence operations
+// for query states and bulk loader jobs.
+type NeptuneDataStoreInterface interface {
+	QueryOps
+	LoaderJobOps
+}
+
+// QueryOps defines CRUD operations for Neptune Data API query states.
+type QueryOps interface {
+	CreateQuery(q *pb.QueryState) error
+	GetQuery(id string) (*pb.QueryState, error)
+	UpdateQuery(q *pb.QueryState) error
+	DeleteQuery(id string) error
+	ListQueries() ([]*pb.QueryState, error)
+}
+
+// LoaderJobOps defines CRUD operations for Neptune Data API bulk loader jobs.
+type LoaderJobOps interface {
+	CreateLoaderJob(job *pb.LoaderJob) error
+	GetLoaderJob(id string) (*pb.LoaderJob, error)
+	UpdateLoaderJob(job *pb.LoaderJob) error
+	DeleteLoaderJob(id string) error
+	ListLoaderJobs() ([]*pb.LoaderJob, error)
 }
 
 // ClusterOps defines CRUD operations for Neptune DB clusters.
@@ -140,6 +167,8 @@ type NeptuneStore struct {
 	eventSubs          *common.BaseStore
 	tags               *common.BaseStore
 	clusterEndpoints   *common.BaseStore
+	queries            *common.BaseStore
+	loaderJobs         *common.BaseStore
 	mu                 sync.RWMutex
 }
 
@@ -159,6 +188,8 @@ func NewNeptuneStore(store storage.BasicStorage) *NeptuneStore {
 		eventSubs:          common.NewBaseStore(store.Bucket(eventSubBucket), "neptune"),
 		tags:               common.NewBaseStore(store.Bucket(tagsBucket), "neptune"),
 		clusterEndpoints:   common.NewBaseStore(store.Bucket(clusterEndpointBucket), "neptune"),
+		queries:            common.NewBaseStore(store.Bucket(queryStateBucket), "neptunedata"),
+		loaderJobs:         common.NewBaseStore(store.Bucket(loaderJobBucket), "neptunedata"),
 	}
 }
 
@@ -759,4 +790,116 @@ func (s *NeptuneStore) ListClusterEndpoints(clusterID string) ([]*DBClusterEndpo
 		return nil
 	})
 	return endpoints, err
+}
+
+// CreateQuery persists a new Neptune Data API query state.
+func (s *NeptuneStore) CreateQuery(q *pb.QueryState) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data, err := proto.Marshal(q)
+	if err != nil {
+		return NewStoreError("create_query", err)
+	}
+	return NewStoreError("create_query", s.queries.Bucket().Put([]byte(q.GetQueryId()), data))
+}
+
+// GetQuery retrieves a Neptune Data API query state by ID.
+func (s *NeptuneStore) GetQuery(id string) (*pb.QueryState, error) {
+	data, err := s.queries.Bucket().Get([]byte(id))
+	if err != nil || data == nil {
+		return nil, nil
+	}
+	var q pb.QueryState
+	if err := proto.Unmarshal(data, &q); err != nil {
+		return nil, NewStoreError("get_query", err)
+	}
+	return &q, nil
+}
+
+// UpdateQuery replaces the persisted state of a Neptune Data API query.
+func (s *NeptuneStore) UpdateQuery(q *pb.QueryState) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data, err := proto.Marshal(q)
+	if err != nil {
+		return NewStoreError("update_query", err)
+	}
+	return NewStoreError("update_query", s.queries.Bucket().Put([]byte(q.GetQueryId()), data))
+}
+
+// DeleteQuery removes a Neptune Data API query state.
+func (s *NeptuneStore) DeleteQuery(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return NewStoreError("delete_query", s.queries.Delete(id))
+}
+
+// ListQueries returns all Neptune Data API query states.
+func (s *NeptuneStore) ListQueries() ([]*pb.QueryState, error) {
+	var queries []*pb.QueryState
+	err := s.queries.ForEach(func(key string, value []byte) error {
+		var q pb.QueryState
+		if err := proto.Unmarshal(value, &q); err != nil {
+			return err
+		}
+		queries = append(queries, &q)
+		return nil
+	})
+	return queries, err
+}
+
+// CreateLoaderJob persists a new Neptune Data API bulk loader job.
+func (s *NeptuneStore) CreateLoaderJob(job *pb.LoaderJob) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data, err := proto.Marshal(job)
+	if err != nil {
+		return NewStoreError("create_loader_job", err)
+	}
+	return NewStoreError("create_loader_job", s.loaderJobs.Bucket().Put([]byte(job.GetLoadId()), data))
+}
+
+// GetLoaderJob retrieves a Neptune Data API bulk loader job by ID.
+func (s *NeptuneStore) GetLoaderJob(id string) (*pb.LoaderJob, error) {
+	data, err := s.loaderJobs.Bucket().Get([]byte(id))
+	if err != nil || data == nil {
+		return nil, nil
+	}
+	var job pb.LoaderJob
+	if err := proto.Unmarshal(data, &job); err != nil {
+		return nil, NewStoreError("get_loader_job", err)
+	}
+	return &job, nil
+}
+
+// UpdateLoaderJob replaces the persisted state of a Neptune Data API bulk loader job.
+func (s *NeptuneStore) UpdateLoaderJob(job *pb.LoaderJob) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data, err := proto.Marshal(job)
+	if err != nil {
+		return NewStoreError("update_loader_job", err)
+	}
+	return NewStoreError("update_loader_job", s.loaderJobs.Bucket().Put([]byte(job.GetLoadId()), data))
+}
+
+// DeleteLoaderJob removes a Neptune Data API bulk loader job.
+func (s *NeptuneStore) DeleteLoaderJob(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return NewStoreError("delete_loader_job", s.loaderJobs.Delete(id))
+}
+
+// ListLoaderJobs returns all Neptune Data API bulk loader jobs.
+func (s *NeptuneStore) ListLoaderJobs() ([]*pb.LoaderJob, error) {
+	var jobs []*pb.LoaderJob
+	err := s.loaderJobs.ForEach(func(key string, value []byte) error {
+		var job pb.LoaderJob
+		if err := proto.Unmarshal(value, &job); err != nil {
+			return err
+		}
+		jobs = append(jobs, &job)
+		return nil
+	})
+	return jobs, err
 }

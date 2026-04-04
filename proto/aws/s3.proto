@@ -98,7 +98,7 @@ service S3Service {
   // Protocol: restXml
   rpc DeleteBucketMetadataTableConfiguration(DeleteBucketMetadataTableConfigurationRequest) returns (common.Empty);
 
-  // This operation is not supported for directory buckets. Deletes a metrics configuration for the Amazon CloudWatch request metrics (specified by the metrics configuration ID) from the bucket. Note th...
+  // Deletes a metrics configuration for the Amazon CloudWatch request metrics (specified by the metrics configuration ID) from the bucket. Note that this doesn't include the daily storage metrics. Dire...
   // HTTP: DELETE /{Bucket}?metrics
   // Protocol: restXml
   rpc DeleteBucketMetricsConfiguration(DeleteBucketMetricsConfigurationRequest) returns (common.Empty);
@@ -213,7 +213,7 @@ service S3Service {
   // Protocol: restXml
   rpc GetBucketMetadataTableConfiguration(GetBucketMetadataTableConfigurationRequest) returns (GetBucketMetadataTableConfigurationOutput);
 
-  // This operation is not supported for directory buckets. Gets a metrics configuration (specified by the metrics configuration ID) from the bucket. Note that this doesn't include the daily storage met...
+  // Gets a metrics configuration (specified by the metrics configuration ID) from the bucket. Note that this doesn't include the daily storage metrics. Directory buckets - For directory buckets, you mu...
   // HTTP: GET /{Bucket}?metrics&x-id=GetBucketMetricsConfiguration
   // Protocol: restXml
   rpc GetBucketMetricsConfiguration(GetBucketMetricsConfigurationRequest) returns (GetBucketMetricsConfigurationOutput);
@@ -248,7 +248,7 @@ service S3Service {
   // Protocol: restXml
   rpc GetBucketRequestPayment(GetBucketRequestPaymentRequest) returns (GetBucketRequestPaymentOutput);
 
-  // This operation is not supported for directory buckets. Returns the tag set associated with the general purpose bucket. if ABAC is not enabled for the bucket. When you enable ABAC for a general purp...
+  // This operation is not supported for directory buckets. Returns the tag set associated with the general purpose bucket. To use this operation, you must have permission to perform the s3:GetBucketTag...
   // HTTP: GET /{Bucket}?tagging
   // Protocol: restXml
   rpc GetBucketTagging(GetBucketTaggingRequest) returns (GetBucketTaggingOutput);
@@ -333,7 +333,7 @@ service S3Service {
   // Protocol: restXml
   rpc ListBucketInventoryConfigurations(ListBucketInventoryConfigurationsRequest) returns (ListBucketInventoryConfigurationsOutput);
 
-  // This operation is not supported for directory buckets. Lists the metrics configurations for the bucket. The metrics configurations are only for the request metrics of the bucket and do not provide ...
+  // Lists the metrics configurations for the bucket. The metrics configurations are only for the request metrics of the bucket and do not provide information on daily storage metrics. You can have up t...
   // HTTP: GET /{Bucket}?metrics&x-id=ListBucketMetricsConfigurations
   // Protocol: restXml
   rpc ListBucketMetricsConfigurations(ListBucketMetricsConfigurationsRequest) returns (ListBucketMetricsConfigurationsOutput);
@@ -423,7 +423,7 @@ service S3Service {
   // Protocol: restXml
   rpc PutBucketLogging(PutBucketLoggingRequest) returns (common.Empty);
 
-  // This operation is not supported for directory buckets. Sets a metrics configuration (specified by the metrics configuration ID) for the bucket. You can have up to 1,000 metrics configurations per b...
+  // Sets a metrics configuration (specified by the metrics configuration ID) for the bucket. You can have up to 1,000 metrics configurations per bucket. If you're updating an existing metrics configura...
   // HTTP: PUT /{Bucket}?metrics
   // Protocol: restXml
   rpc PutBucketMetricsConfiguration(PutBucketMetricsConfigurationRequest) returns (common.Empty);
@@ -909,6 +909,16 @@ enum BucketLogsPermission {
   BUCKET_LOGS_PERMISSION_WRITE = 1;
 
   BUCKET_LOGS_PERMISSION_FULL_CONTROL = 2;
+
+}
+
+
+
+enum BucketNamespace {
+
+  BUCKET_NAMESPACE_GLOBAL = 0;
+
+  BUCKET_NAMESPACE_ACCOUNT_REGIONAL = 1;
 
 }
 
@@ -1439,6 +1449,8 @@ message CreateBucketRequest {
   BucketCannedACL acl = 394696836;
 
   string bucket = 55457112;
+
+  BucketNamespace bucketnamespace = 412736747;
 
   CreateBucketConfiguration createbucketconfiguration = 27550528 [(aws.http_payload) = true];
 

@@ -377,8 +377,8 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 			QueueUrl:      aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
 			ReceiptHandle: aws.String("fake-receipt-handle"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent receipt handle")
+		if err := AssertErrorContains(err, "ReceiptHandleIsInvalid"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -670,6 +670,11 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if len(batchResp.Failed) == 0 {
 			return fmt.Errorf("expected Failed entry for non-existent receipt handle")
 		}
+		if batchResp.Failed[0].Code == nil || !strings.Contains(*batchResp.Failed[0].Code, "ReceiptHandleIsInvalid") {
+			if batchResp.Failed[0].Message == nil || !strings.Contains(*batchResp.Failed[0].Message, "ReceiptHandleIsInvalid") {
+				return fmt.Errorf("expected ReceiptHandleIsInvalid in failed entry, got Code=%v Message=%v", batchResp.Failed[0].Code, batchResp.Failed[0].Message)
+			}
+		}
 		return nil
 	}))
 
@@ -701,6 +706,7 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if resp.QueueUrl == nil {
 			return fmt.Errorf("CreateQueue (FIFO) returned nil QueueUrl")
 		}
+		client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: resp.QueueUrl})
 		return nil
 	}))
 
@@ -804,7 +810,11 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 			QueueUrl: resp.QueueUrl,
 			Entries:  entries,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: resp.QueueUrl})
+		return nil
 	}))
 
 	// === PERMISSION TESTS ===
@@ -1140,8 +1150,8 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		_, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
 			QueueName: aws.String("nonexistent-queue-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent queue")
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1235,8 +1245,8 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 			ReceiptHandle:     aws.String("fake-receipt-handle"),
 			VisibilityTimeout: 30,
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent receipt handle")
+		if err := AssertErrorContains(err, "ReceiptHandleIsInvalid"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1261,6 +1271,66 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		})
 		if err != nil {
 			return fmt.Errorf("duplicate queue name should be idempotent, got: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ListQueues_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgQueues []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagQ-%s-%d", pgTs, i)
+			_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+				QueueName: aws.String(name),
+			})
+			if err != nil {
+				for _, qn := range pgQueues {
+					uResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(qn)})
+					if uResp.QueueUrl != nil {
+						client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: uResp.QueueUrl})
+					}
+				}
+				return fmt.Errorf("create queue %s: %v", name, err)
+			}
+			pgQueues = append(pgQueues, name)
+		}
+
+		var allQueues []string
+		var nextToken *string
+		for {
+			resp, err := client.ListQueues(ctx, &sqs.ListQueuesInput{
+				MaxResults: aws.Int32(2),
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				for _, qn := range pgQueues {
+					uResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(qn)})
+					if uResp.QueueUrl != nil {
+						client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: uResp.QueueUrl})
+					}
+				}
+				return fmt.Errorf("list queues page: %v", err)
+			}
+			for _, u := range resp.QueueUrls {
+				if strings.Contains(u, "PagQ-"+pgTs) {
+					allQueues = append(allQueues, u)
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, qn := range pgQueues {
+			uResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(qn)})
+			if uResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: uResp.QueueUrl})
+			}
+		}
+		if len(allQueues) != 5 {
+			return fmt.Errorf("expected 5 paginated queues, got %d", len(allQueues))
 		}
 		return nil
 	}))

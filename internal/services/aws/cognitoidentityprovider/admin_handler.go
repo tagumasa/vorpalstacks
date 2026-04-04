@@ -5,18 +5,18 @@ import (
 
 	"connectrpc.com/connect"
 
-	pb "vorpalstacks/internal/pb/aws/cognito_idp"
-	cognitoidpconnect "vorpalstacks/internal/pb/aws/cognito_idp/cognito_idpconnect"
+	pb "vorpalstacks/internal/pb/aws/cognitoidentityprovider"
+	"vorpalstacks/internal/pb/aws/cognitoidentityprovider/cognitoidentityproviderconnect"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
 // AdminHandler provides Cognito Identity Provider service administration functionality.
 type AdminHandler struct {
-	cognitoidpconnect.UnimplementedCognitoIdentityProviderServiceHandler
+	cognitoidentityproviderconnect.UnimplementedCognitoIdentityProviderServiceHandler
 	store *cognitostore.CognitoStore
 }
 
-var _ cognitoidpconnect.CognitoIdentityProviderServiceHandler = (*AdminHandler)(nil)
+var _ cognitoidentityproviderconnect.CognitoIdentityProviderServiceHandler = (*AdminHandler)(nil)
 
 // NewAdminHandler creates a new Cognito Identity Provider AdminHandler.
 func NewAdminHandler(store *cognitostore.CognitoStore) *AdminHandler {

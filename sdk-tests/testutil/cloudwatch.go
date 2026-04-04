@@ -103,6 +103,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if resp == nil {
 			return fmt.Errorf("response is nil")
 		}
+		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
 		return nil
 	}))
 
@@ -111,8 +114,10 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.MetricAlarms == nil {
-			return fmt.Errorf("metric alarms list is nil")
+		for _, alarm := range resp.MetricAlarms {
+			if alarm.AlarmName == nil {
+				return fmt.Errorf("alarm with nil name in response")
+			}
 		}
 		return nil
 	}))
@@ -323,6 +328,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if !found {
 			return fmt.Errorf("alarm %s not found in DescribeAlarmsForMetric result", alarmName)
 		}
+		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
 		return nil
 	}))
 
@@ -364,6 +372,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if descResp.MetricAlarms[0].StateValue != types.StateValueAlarm {
 			return fmt.Errorf("expected ALARM state, got %s", descResp.MetricAlarms[0].StateValue)
 		}
+		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
 		return nil
 	}))
 
@@ -422,6 +433,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if len(resp.MetricAlarms) != 2 {
 			return fmt.Errorf("expected 2 alarms with prefix %s, got %d", prefix, len(resp.MetricAlarms))
 		}
+		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{prefix + "-alpha", prefix + "-beta", "OtherAlarm-no-match"},
+		})
 		return nil
 	}))
 
@@ -473,6 +487,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if len(tagResp.Tags) != 2 {
 			return fmt.Errorf("expected 2 tags, got %d", len(tagResp.Tags))
 		}
+		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
 		return nil
 	}))
 
@@ -535,6 +552,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if tagResp.Tags[0].Key == nil || *tagResp.Tags[0].Key != "Keep" {
 			return fmt.Errorf("expected Keep tag, got %v", tagResp.Tags[0].Key)
 		}
+		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
 		return nil
 	}))
 
@@ -605,6 +625,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if descResp2.MetricAlarms[0].ActionsEnabled == nil || !*descResp2.MetricAlarms[0].ActionsEnabled {
 			return fmt.Errorf("expected ActionsEnabled=true after enable")
 		}
+		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
 		return nil
 	}))
 
@@ -653,6 +676,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if !hasStateUpdate {
 			return fmt.Errorf("expected StateUpdate history item")
 		}
+		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
 		return nil
 	}))
 
@@ -697,6 +723,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if len(histResp.AlarmHistoryItems) == 0 {
 			return fmt.Errorf("expected at least 1 StateUpdate item")
 		}
+		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
 		return nil
 	}))
 
@@ -739,6 +768,9 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if !found {
 			return fmt.Errorf("composite alarm %s not found", alarmName)
 		}
+		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
 		return nil
 	}))
 

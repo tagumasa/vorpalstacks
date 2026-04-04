@@ -949,6 +949,8 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 }
 
 // ListDistributionsByWebACLId lists distributions that are associated with a specified Web ACL.
+// Supports pagination via Marker/MaxItems, returning IsTruncated and NextMarker
+// when more results are available than the requested page size.
 func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	webACLId := request.GetStringParam(req.Parameters, "WebACLId")
 	marker := request.GetStringParam(req.Parameters, "Marker")
@@ -967,10 +969,10 @@ func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, req
 		return nil, err
 	}
 
-	items := make([]interface{}, 0)
+	var matched []interface{}
 	for _, d := range allDistributions.Distributions {
 		if d.DistributionConfig != nil && d.DistributionConfig.WebACLId == webACLId {
-			items = append(items, map[string]interface{}{
+			matched = append(matched, map[string]interface{}{
 				"Id":               d.ID,
 				"ARN":              d.ARN,
 				"Status":           d.Status,
@@ -982,13 +984,41 @@ func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, req
 		}
 	}
 
+	skipCount := 0
+	if marker != "" {
+		for i, item := range matched {
+			if summary, ok := item.(map[string]interface{}); ok {
+				if id, ok := summary["Id"].(string); ok && id == marker {
+					skipCount = i + 1
+					break
+				}
+			}
+		}
+	}
+
+	paged := matched[skipCount:]
+	isTruncated := len(paged) > maxItems
+	if isTruncated {
+		paged = paged[:maxItems]
+	}
+
+	nextMarker := ""
+	if isTruncated && len(paged) > 0 {
+		if summary, ok := paged[len(paged)-1].(map[string]interface{}); ok {
+			if id, ok := summary["Id"].(string); ok {
+				nextMarker = id
+			}
+		}
+	}
+
 	return map[string]interface{}{
 		"DistributionList": map[string]interface{}{
 			"Marker":      marker,
 			"MaxItems":    maxItems,
-			"IsTruncated": false,
-			"Quantity":    len(items),
-			"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: items},
+			"IsTruncated": isTruncated,
+			"NextMarker":  nextMarker,
+			"Quantity":    len(paged),
+			"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: paged},
 		},
 	}, nil
 }

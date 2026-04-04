@@ -587,8 +587,8 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				UserPoolId:   aws.String(userPoolID),
 				ProviderName: aws.String(delProvider),
 			})
-			if err == nil {
-				return fmt.Errorf("expected error after deleting identity provider")
+			if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+				return err
 			}
 			return nil
 		}))
@@ -655,8 +655,8 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				UserPoolId: aws.String(userPoolID),
 				Identifier: aws.String(delRS),
 			})
-			if err == nil {
-				return fmt.Errorf("expected error after deleting resource server")
+			if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+				return err
 			}
 			return nil
 		}))
@@ -1728,6 +1728,61 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 		})
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent resource server")
+		}
+		return nil
+	}))
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("cognito", "ListUserPools_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgPoolIds []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagPool-%s-%d", pgTs, i)
+			createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+				PoolName: aws.String(name),
+			})
+			if err != nil {
+				for _, pid := range pgPoolIds {
+					client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{UserPoolId: aws.String(pid)})
+				}
+				return fmt.Errorf("create user pool %s: %v", name, err)
+			}
+			if createResp.UserPool == nil || createResp.UserPool.Id == nil {
+				for _, pid := range pgPoolIds {
+					client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{UserPoolId: aws.String(pid)})
+				}
+				return fmt.Errorf("create user pool %s: UserPool.Id is nil", name)
+			}
+			pgPoolIds = append(pgPoolIds, *createResp.UserPool.Id)
+		}
+
+		pageCount := 0
+		var nextToken *string
+		for {
+			resp, err := client.ListUserPools(ctx, &cognitoidentityprovider.ListUserPoolsInput{
+				MaxResults: aws.Int32(2),
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				for _, pid := range pgPoolIds {
+					client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{UserPoolId: aws.String(pid)})
+				}
+				return fmt.Errorf("list user pools page: %v", err)
+			}
+			pageCount++
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, pid := range pgPoolIds {
+			client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{UserPoolId: aws.String(pid)})
+		}
+		if pageCount < 2 {
+			return fmt.Errorf("expected at least 2 pages with MaxResults=2, got %d", pageCount)
 		}
 		return nil
 	}))

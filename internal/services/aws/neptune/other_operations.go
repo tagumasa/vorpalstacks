@@ -6,6 +6,7 @@ import (
 
 	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
+	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
 
 // AddTagsToResource adds metadata tags to the specified Neptune resource.
@@ -14,6 +15,25 @@ func (s *NeptuneService) AddTagsToResource(ctx context.Context, reqCtx *request.
 	resourceName := request.GetStringParam(params, "ResourceName")
 	if resourceName == "" {
 		return nil, fmt.Errorf("neptune: ResourceName is required")
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	tags := getNeptuneTagList(params)
+	storeTags := make([]neptunestore.Tag, 0, len(tags))
+	for _, t := range tags {
+		key, _ := t["Key"].(string)
+		value, _ := t["Value"].(string)
+		if key != "" {
+			storeTags = append(storeTags, neptunestore.Tag{Key: key, Value: value})
+		}
+	}
+
+	if err := store.AddTags(resourceName, storeTags); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -27,10 +47,23 @@ func (s *NeptuneService) ListTagsForResource(ctx context.Context, reqCtx *reques
 		return nil, fmt.Errorf("neptune: ResourceName is required")
 	}
 
-	_ = resourceName
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	tags, err := store.GetTags(resourceName)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]interface{}, 0, len(tags))
+	for _, t := range tags {
+		items = append(items, map[string]interface{}{"Key": t.Key, "Value": t.Value})
+	}
 
 	return map[string]interface{}{
-		"TagList": protocol.XMLElements{ElementName: "Tag", Items: []interface{}{}},
+		"TagList": protocol.XMLElements{ElementName: "Tag", Items: items},
 	}, nil
 }
 
@@ -42,7 +75,15 @@ func (s *NeptuneService) RemoveTagsFromResource(ctx context.Context, reqCtx *req
 		return nil, fmt.Errorf("neptune: ResourceName is required")
 	}
 
-	_ = resourceName
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	tagKeys := request.GetStringList(params, "TagKeys")
+	if err := store.RemoveTags(resourceName, tagKeys); err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{}, nil
 }
@@ -69,22 +110,67 @@ func (s *NeptuneService) CreateDBClusterEndpoint(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	_ = store
+	accountID := reqCtx.GetAccountID()
+	region := reqCtx.GetRegion()
+
+	excludedMembers := request.GetStringList(params, "ExcludedMembers")
+	staticMembers := request.GetStringList(params, "StaticMembers")
+
+	ep := &neptunestore.DBClusterEndpoint{
+		DBClusterEndpointIdentifier: epID,
+		DBClusterIdentifier:         clusterID,
+		Endpoint:                    fmt.Sprintf("%s.cluster-%s.%s.amazonaws.com", epID, clusterID, region),
+		Status:                      "available",
+		EndpointType:                epType,
+		ExcludedMembers:             excludedMembers,
+		StaticMembers:               staticMembers,
+		DBClusterEndpointArn:        fmt.Sprintf("arn:aws:rds:%s:%s:cluster-endpoint:%s", region, accountID, epID),
+	}
+
+	if err := store.CreateClusterEndpoint(ep); err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{
 		"DBClusterEndpointIdentifier": epID,
 		"DBClusterIdentifier":         clusterID,
-		"Endpoint":                    fmt.Sprintf("%s.cluster-%s.%s.amazonaws.com", epID, clusterID, reqCtx.GetRegion()),
+		"Endpoint":                    ep.Endpoint,
 		"EndpointType":                epType,
 		"Status":                      "available",
+		"DBClusterEndpointArn":        ep.DBClusterEndpointArn,
 	}, nil
 }
 
 // DescribeDBClusterEndpoints returns information about the custom endpoints for
 // the specified DB cluster.
 func (s *NeptuneService) DescribeDBClusterEndpoints(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	params := req.Parameters
+	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoints, err := store.ListClusterEndpoints(clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]interface{}, 0, len(endpoints))
+	for _, ep := range endpoints {
+		items = append(items, map[string]interface{}{
+			"DBClusterEndpointIdentifier": ep.DBClusterEndpointIdentifier,
+			"DBClusterIdentifier":         ep.DBClusterIdentifier,
+			"Endpoint":                    ep.Endpoint,
+			"Status":                      ep.Status,
+			"EndpointType":                ep.EndpointType,
+			"DBClusterEndpointArn":        ep.DBClusterEndpointArn,
+		})
+	}
+
 	return map[string]interface{}{
-		"DBClusterEndpoints": protocol.XMLElements{ElementName: "DBClusterEndpoint", Items: []interface{}{}},
+		"DBClusterEndpoints": protocol.XMLElements{ElementName: "DBClusterEndpointList", Items: items},
 	}, nil
 }
 
@@ -97,8 +183,36 @@ func (s *NeptuneService) ModifyDBClusterEndpoint(ctx context.Context, reqCtx *re
 		return nil, fmt.Errorf("neptune: DBClusterEndpointIdentifier is required")
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	ep, err := store.GetClusterEndpoint(epID)
+	if err != nil {
+		return nil, err
+	}
+
+	if newExcluded := request.GetStringList(params, "ExcludedMembers"); len(newExcluded) > 0 {
+		ep.ExcludedMembers = newExcluded
+	}
+	if newStatic := request.GetStringList(params, "StaticMembers"); len(newStatic) > 0 {
+		ep.StaticMembers = newStatic
+	}
+	if newType := request.GetStringParam(params, "EndpointType"); newType != "" {
+		ep.EndpointType = newType
+	}
+
+	ep.Status = "modifying"
+	if err := store.UpdateClusterEndpoint(ep); err != nil {
+		return nil, err
+	}
+
 	return map[string]interface{}{
 		"DBClusterEndpointIdentifier": epID,
+		"DBClusterIdentifier":         ep.DBClusterIdentifier,
+		"Endpoint":                    ep.Endpoint,
+		"EndpointType":                ep.EndpointType,
 		"Status":                      "modifying",
 	}, nil
 }
@@ -109,6 +223,15 @@ func (s *NeptuneService) DeleteDBClusterEndpoint(ctx context.Context, reqCtx *re
 	epID := request.GetStringParam(params, "DBClusterEndpointIdentifier")
 	if epID == "" {
 		return nil, fmt.Errorf("neptune: DBClusterEndpointIdentifier is required")
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := store.DeleteClusterEndpoint(epID); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{

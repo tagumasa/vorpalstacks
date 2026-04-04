@@ -206,7 +206,7 @@ type S3ServiceClient interface {
 	// HTTP: DELETE /{Bucket}?metadataTable
 	// Protocol: restXml
 	DeleteBucketMetadataTableConfiguration(ctx context.Context, in *DeleteBucketMetadataTableConfigurationRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// This operation is not supported for directory buckets. Deletes a metrics configuration for the Amazon CloudWatch request metrics (specified by the metrics configuration ID) from the bucket. Note th...
+	// Deletes a metrics configuration for the Amazon CloudWatch request metrics (specified by the metrics configuration ID) from the bucket. Note that this doesn't include the daily storage metrics. Dire...
 	// HTTP: DELETE /{Bucket}?metrics
 	// Protocol: restXml
 	DeleteBucketMetricsConfiguration(ctx context.Context, in *DeleteBucketMetricsConfigurationRequest, opts ...grpc.CallOption) (*common.Empty, error)
@@ -298,7 +298,7 @@ type S3ServiceClient interface {
 	// HTTP: GET /{Bucket}?metadataTable
 	// Protocol: restXml
 	GetBucketMetadataTableConfiguration(ctx context.Context, in *GetBucketMetadataTableConfigurationRequest, opts ...grpc.CallOption) (*GetBucketMetadataTableConfigurationOutput, error)
-	// This operation is not supported for directory buckets. Gets a metrics configuration (specified by the metrics configuration ID) from the bucket. Note that this doesn't include the daily storage met...
+	// Gets a metrics configuration (specified by the metrics configuration ID) from the bucket. Note that this doesn't include the daily storage metrics. Directory buckets - For directory buckets, you mu...
 	// HTTP: GET /{Bucket}?metrics&x-id=GetBucketMetricsConfiguration
 	// Protocol: restXml
 	GetBucketMetricsConfiguration(ctx context.Context, in *GetBucketMetricsConfigurationRequest, opts ...grpc.CallOption) (*GetBucketMetricsConfigurationOutput, error)
@@ -326,7 +326,7 @@ type S3ServiceClient interface {
 	// HTTP: GET /{Bucket}?requestPayment
 	// Protocol: restXml
 	GetBucketRequestPayment(ctx context.Context, in *GetBucketRequestPaymentRequest, opts ...grpc.CallOption) (*GetBucketRequestPaymentOutput, error)
-	// This operation is not supported for directory buckets. Returns the tag set associated with the general purpose bucket. if ABAC is not enabled for the bucket. When you enable ABAC for a general purp...
+	// This operation is not supported for directory buckets. Returns the tag set associated with the general purpose bucket. To use this operation, you must have permission to perform the s3:GetBucketTag...
 	// HTTP: GET /{Bucket}?tagging
 	// Protocol: restXml
 	GetBucketTagging(ctx context.Context, in *GetBucketTaggingRequest, opts ...grpc.CallOption) (*GetBucketTaggingOutput, error)
@@ -394,7 +394,7 @@ type S3ServiceClient interface {
 	// HTTP: GET /{Bucket}?inventory&x-id=ListBucketInventoryConfigurations
 	// Protocol: restXml
 	ListBucketInventoryConfigurations(ctx context.Context, in *ListBucketInventoryConfigurationsRequest, opts ...grpc.CallOption) (*ListBucketInventoryConfigurationsOutput, error)
-	// This operation is not supported for directory buckets. Lists the metrics configurations for the bucket. The metrics configurations are only for the request metrics of the bucket and do not provide ...
+	// Lists the metrics configurations for the bucket. The metrics configurations are only for the request metrics of the bucket and do not provide information on daily storage metrics. You can have up t...
 	// HTTP: GET /{Bucket}?metrics&x-id=ListBucketMetricsConfigurations
 	// Protocol: restXml
 	ListBucketMetricsConfigurations(ctx context.Context, in *ListBucketMetricsConfigurationsRequest, opts ...grpc.CallOption) (*ListBucketMetricsConfigurationsOutput, error)
@@ -466,7 +466,7 @@ type S3ServiceClient interface {
 	// HTTP: PUT /{Bucket}?logging
 	// Protocol: restXml
 	PutBucketLogging(ctx context.Context, in *PutBucketLoggingRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// This operation is not supported for directory buckets. Sets a metrics configuration (specified by the metrics configuration ID) for the bucket. You can have up to 1,000 metrics configurations per b...
+	// Sets a metrics configuration (specified by the metrics configuration ID) for the bucket. You can have up to 1,000 metrics configurations per bucket. If you're updating an existing metrics configura...
 	// HTTP: PUT /{Bucket}?metrics
 	// Protocol: restXml
 	PutBucketMetricsConfiguration(ctx context.Context, in *PutBucketMetricsConfigurationRequest, opts ...grpc.CallOption) (*common.Empty, error)
@@ -1720,7 +1720,7 @@ type S3ServiceServer interface {
 	// HTTP: DELETE /{Bucket}?metadataTable
 	// Protocol: restXml
 	DeleteBucketMetadataTableConfiguration(context.Context, *DeleteBucketMetadataTableConfigurationRequest) (*common.Empty, error)
-	// This operation is not supported for directory buckets. Deletes a metrics configuration for the Amazon CloudWatch request metrics (specified by the metrics configuration ID) from the bucket. Note th...
+	// Deletes a metrics configuration for the Amazon CloudWatch request metrics (specified by the metrics configuration ID) from the bucket. Note that this doesn't include the daily storage metrics. Dire...
 	// HTTP: DELETE /{Bucket}?metrics
 	// Protocol: restXml
 	DeleteBucketMetricsConfiguration(context.Context, *DeleteBucketMetricsConfigurationRequest) (*common.Empty, error)
@@ -1812,7 +1812,7 @@ type S3ServiceServer interface {
 	// HTTP: GET /{Bucket}?metadataTable
 	// Protocol: restXml
 	GetBucketMetadataTableConfiguration(context.Context, *GetBucketMetadataTableConfigurationRequest) (*GetBucketMetadataTableConfigurationOutput, error)
-	// This operation is not supported for directory buckets. Gets a metrics configuration (specified by the metrics configuration ID) from the bucket. Note that this doesn't include the daily storage met...
+	// Gets a metrics configuration (specified by the metrics configuration ID) from the bucket. Note that this doesn't include the daily storage metrics. Directory buckets - For directory buckets, you mu...
 	// HTTP: GET /{Bucket}?metrics&x-id=GetBucketMetricsConfiguration
 	// Protocol: restXml
 	GetBucketMetricsConfiguration(context.Context, *GetBucketMetricsConfigurationRequest) (*GetBucketMetricsConfigurationOutput, error)
@@ -1840,7 +1840,7 @@ type S3ServiceServer interface {
 	// HTTP: GET /{Bucket}?requestPayment
 	// Protocol: restXml
 	GetBucketRequestPayment(context.Context, *GetBucketRequestPaymentRequest) (*GetBucketRequestPaymentOutput, error)
-	// This operation is not supported for directory buckets. Returns the tag set associated with the general purpose bucket. if ABAC is not enabled for the bucket. When you enable ABAC for a general purp...
+	// This operation is not supported for directory buckets. Returns the tag set associated with the general purpose bucket. To use this operation, you must have permission to perform the s3:GetBucketTag...
 	// HTTP: GET /{Bucket}?tagging
 	// Protocol: restXml
 	GetBucketTagging(context.Context, *GetBucketTaggingRequest) (*GetBucketTaggingOutput, error)
@@ -1908,7 +1908,7 @@ type S3ServiceServer interface {
 	// HTTP: GET /{Bucket}?inventory&x-id=ListBucketInventoryConfigurations
 	// Protocol: restXml
 	ListBucketInventoryConfigurations(context.Context, *ListBucketInventoryConfigurationsRequest) (*ListBucketInventoryConfigurationsOutput, error)
-	// This operation is not supported for directory buckets. Lists the metrics configurations for the bucket. The metrics configurations are only for the request metrics of the bucket and do not provide ...
+	// Lists the metrics configurations for the bucket. The metrics configurations are only for the request metrics of the bucket and do not provide information on daily storage metrics. You can have up t...
 	// HTTP: GET /{Bucket}?metrics&x-id=ListBucketMetricsConfigurations
 	// Protocol: restXml
 	ListBucketMetricsConfigurations(context.Context, *ListBucketMetricsConfigurationsRequest) (*ListBucketMetricsConfigurationsOutput, error)
@@ -1980,7 +1980,7 @@ type S3ServiceServer interface {
 	// HTTP: PUT /{Bucket}?logging
 	// Protocol: restXml
 	PutBucketLogging(context.Context, *PutBucketLoggingRequest) (*common.Empty, error)
-	// This operation is not supported for directory buckets. Sets a metrics configuration (specified by the metrics configuration ID) for the bucket. You can have up to 1,000 metrics configurations per b...
+	// Sets a metrics configuration (specified by the metrics configuration ID) for the bucket. You can have up to 1,000 metrics configurations per bucket. If you're updating an existing metrics configura...
 	// HTTP: PUT /{Bucket}?metrics
 	// Protocol: restXml
 	PutBucketMetricsConfiguration(context.Context, *PutBucketMetricsConfigurationRequest) (*common.Empty, error)

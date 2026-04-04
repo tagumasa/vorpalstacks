@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -148,8 +149,8 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 		_, err := client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
 			SecretId: aws.String("arn:aws:secretsmanager:us-east-1:000000000000:secret:nonexistent-secret-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent secret")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -158,8 +159,8 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 		_, err := client.DescribeSecret(ctx, &secretsmanager.DescribeSecretInput{
 			SecretId: aws.String("arn:aws:secretsmanager:us-east-1:000000000000:secret:nonexistent-secret-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent secret")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -286,8 +287,8 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 			SecretId:                   aws.String("arn:aws:secretsmanager:us-east-1:000000000000:secret:nonexistent-xyz"),
 			ForceDeleteWithoutRecovery: aws.Bool(true),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent secret")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -429,8 +430,8 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 		_, err := client.RestoreSecret(ctx, &secretsmanager.RestoreSecretInput{
 			SecretId: aws.String("nonexistent-restore-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent secret")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -818,8 +819,8 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 		_, err := client.GetResourcePolicy(ctx, &secretsmanager.GetResourcePolicyInput{
 			SecretId: aws.String("nonexistent-policy-secret"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent secret")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -829,8 +830,8 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 			SecretId:       aws.String("nonexistent-policy-secret"),
 			ResourcePolicy: aws.String(`{"Version":"2012-10-17"}`),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent secret")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1150,6 +1151,69 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 		}
 		if resp.Description != nil && *resp.Description != "" {
 			return fmt.Errorf("description should be cleared, got %q", aws.ToString(resp.Description))
+		}
+		return nil
+	}))
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("secretsmanager", "ListSecrets_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgSecrets []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagSecret-%s-%d", pgTs, i)
+			_, err := client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
+				Name:         aws.String(name),
+				SecretString: aws.String("pagval"),
+			})
+			if err != nil {
+				for _, sn := range pgSecrets {
+					client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
+						SecretId:                   aws.String(sn),
+						ForceDeleteWithoutRecovery: aws.Bool(true),
+					})
+				}
+				return fmt.Errorf("create secret %s: %v", name, err)
+			}
+			pgSecrets = append(pgSecrets, name)
+		}
+
+		var allSecrets []string
+		var nextToken *string
+		for {
+			resp, err := client.ListSecrets(ctx, &secretsmanager.ListSecretsInput{
+				MaxResults: aws.Int32(2),
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				for _, sn := range pgSecrets {
+					client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
+						SecretId:                   aws.String(sn),
+						ForceDeleteWithoutRecovery: aws.Bool(true),
+					})
+				}
+				return fmt.Errorf("list secrets page: %v", err)
+			}
+			for _, s := range resp.SecretList {
+				if s.Name != nil && strings.Contains(*s.Name, "PagSecret-"+pgTs) {
+					allSecrets = append(allSecrets, *s.Name)
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, sn := range pgSecrets {
+			client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
+				SecretId:                   aws.String(sn),
+				ForceDeleteWithoutRecovery: aws.Bool(true),
+			})
+		}
+		if len(allSecrets) != 5 {
+			return fmt.Errorf("expected 5 paginated secrets, got %d", len(allSecrets))
 		}
 		return nil
 	}))

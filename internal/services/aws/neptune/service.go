@@ -2,20 +2,21 @@
 package neptune
 
 import (
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
 
 // NeptuneService handles incoming Neptune Management API requests.
-type NeptuneService struct{}
+type NeptuneService struct {
+	accountID string
+	region    string
+}
 
-// NewNeptuneService creates a new NeptuneService. The store, accountID, and
-// region arguments are accepted for initialisation compatibility but are not
-// currently retained.
-func NewNeptuneService(store storage.BasicStorage, accountID, region string) *NeptuneService {
-	return &NeptuneService{}
+// NewNeptuneService creates a new NeptuneService for the specified account and
+// region.
+func NewNeptuneService(accountID, region string) *NeptuneService {
+	return &NeptuneService{accountID: accountID, region: region}
 }
 
 // store retrieves or creates the NeptuneStoreInterface for the current request

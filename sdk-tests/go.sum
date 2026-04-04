@@ -20,6 +20,8 @@ github.com/aws/aws-sdk-go-v2/service/acm v1.37.20 h1:lK39/l75lJkopS7WIk8bhGnWstT
 github.com/aws/aws-sdk-go-v2/service/acm v1.37.20/go.mod h1:3iaG4YcV+H0ERcefngFFs+ZpFfUaUY8Q0GA8TmkDtE8=
 github.com/aws/aws-sdk-go-v2/service/apigateway v1.38.5 h1:YQq9Nc7b1u4qIwUPQACr59mPCW3Gfb8QwFL7r4PxOP4=
 github.com/aws/aws-sdk-go-v2/service/apigateway v1.38.5/go.mod h1:iRxNPQXn19AXRzweQQVRT153qLbmSzW6S6KKQYCYZ5U=
+github.com/aws/aws-sdk-go-v2/service/appsync v1.53.5 h1:G80ZgLaXuxRg6TvtxZUidNPjg5LinHwFTCcA9OIgC+o=
+github.com/aws/aws-sdk-go-v2/service/appsync v1.53.5/go.mod h1:bfM1veTf52ESSCXHm0PmsV5qVI0NUvjIxqc+u0Ds76Y=
 github.com/aws/aws-sdk-go-v2/service/athena v1.57.1 h1:I+YmJvkeAN+r4mUlH2CODoYyAkoP0cQWGItPPkK60hk=
 github.com/aws/aws-sdk-go-v2/service/athena v1.57.1/go.mod h1:yZ507NVXolOco9hA2+mKH3ELnLEOZ/4mGqkrp2phNYs=
 github.com/aws/aws-sdk-go-v2/service/cloudfront v1.60.1 h1:fwkGr0AyYMq/oxzBrNWVLcmSgSWVyGtFAanNs+ECRes=
@@ -96,6 +98,8 @@ github.com/aws/smithy-go v1.24.2 h1:FzA3bu/nt/vDvmnkg+R8Xl46gmzEDam6mZ1hzmwXFng=
 github.com/aws/smithy-go v1.24.2/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
+github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1 h1:shLQSRRSCCPj3f2gpwzGwWFoC7ycTf1rcQZHOlsJ6N8=

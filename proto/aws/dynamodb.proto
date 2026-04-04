@@ -3130,6 +3130,8 @@ message ReplicaDescription {
 
   string regionname = 112086463;
 
+  string replicaarn = 119254443;
+
   string replicainaccessibledatetime = 20060608;
 
   ReplicaStatus replicastatus = 466739730;

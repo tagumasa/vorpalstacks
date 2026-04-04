@@ -5,19 +5,24 @@ import (
 
 	"connectrpc.com/connect"
 
-	pb "vorpalstacks/internal/pb/aws/monitoring"
-	monitoringconnect "vorpalstacks/internal/pb/aws/monitoring/monitoringconnect"
+	pb "vorpalstacks/internal/pb/aws/cloudwatch"
+	cloudwatchconnect "vorpalstacks/internal/pb/aws/cloudwatch/cloudwatchconnect"
 	cloudwatchstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 
+// AdminHandler implements the CloudWatch gRPC-Web admin console handler. It
+// exposes list and describe operations for alarms and metrics for the Flutter
+// management UI.
 type AdminHandler struct {
-	monitoringconnect.UnimplementedCloudWatchServiceHandler
+	cloudwatchconnect.UnimplementedCloudWatchServiceHandler
 	alarmStore  *cloudwatchstore.AlarmStore
 	metricStore *cloudwatchstore.MetricChunkStore
 }
 
-var _ monitoringconnect.CloudWatchServiceHandler = (*AdminHandler)(nil)
+var _ cloudwatchconnect.CloudWatchServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new CloudWatch admin console handler backed by the
+// given alarm and metric stores.
 func NewAdminHandler(alarmStore *cloudwatchstore.AlarmStore, metricStore *cloudwatchstore.MetricChunkStore) *AdminHandler {
 	return &AdminHandler{
 		alarmStore:  alarmStore,
@@ -25,6 +30,8 @@ func NewAdminHandler(alarmStore *cloudwatchstore.AlarmStore, metricStore *cloudw
 	}
 }
 
+// ListMetrics lists the specified metrics within a namespace, optionally
+// filtered by metric name and dimensions.
 func (h *AdminHandler) ListMetrics(ctx context.Context, req *connect.Request[pb.ListMetricsInput]) (*connect.Response[pb.ListMetricsOutput], error) {
 	var dimensions []cloudwatchstore.Dimension
 	for _, d := range req.Msg.Dimensions {
@@ -60,6 +67,7 @@ func (h *AdminHandler) ListMetrics(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
+// DescribeAlarms retrieves the alarms for the specified alarm name prefix.
 func (h *AdminHandler) DescribeAlarms(ctx context.Context, req *connect.Request[pb.DescribeAlarmsInput]) (*connect.Response[pb.DescribeAlarmsOutput], error) {
 	alarms, err := h.alarmStore.ListAlarms(req.Msg.Alarmnameprefix)
 	if err != nil {

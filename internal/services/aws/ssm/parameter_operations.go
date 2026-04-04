@@ -395,12 +395,13 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 
 	maxResults := getIntParam(req, "MaxResults")
 	withDecryption := getBoolParam(req, "WithDecryption")
+	nextToken := getParam(req, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	history, err := store.GetParameterHistory(name, maxResults)
+	history, nextMarker, isTruncated, err := store.GetParameterHistory(name, maxResults, nextToken)
 	if err != nil {
 		return nil, err
 	}
@@ -431,8 +432,13 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 		})
 	}
 
+	respNextToken := ""
+	if isTruncated && nextMarker != "" {
+		respNextToken = nextMarker
+	}
+
 	return map[string]interface{}{
-		"NextToken":  "",
+		"NextToken":  respNextToken,
 		"Parameters": versions,
 	}, nil
 }

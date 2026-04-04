@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -646,8 +647,8 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 		_, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
 			StreamName: aws.String("nonexistent-stream-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent stream")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -656,8 +657,8 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 		_, err := client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
 			StreamName: aws.String("nonexistent-stream-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent stream")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -750,8 +751,8 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 		_, err := client.ListShards(ctx, &kinesis.ListShardsInput{
 			StreamName: aws.String("nonexistent-stream-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent stream")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1065,6 +1066,67 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 		}
 		if len(resp.Tags) < 2 {
 			return fmt.Errorf("expected >= 2 tags from stream creation, got %d", len(resp.Tags))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("kinesis", "ListStreams_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgStreams []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagStr-%s-%d", pgTs, i)
+			_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
+				StreamName: aws.String(name),
+				ShardCount: aws.Int32(1),
+			})
+			if err != nil {
+				for _, sn := range pgStreams {
+					client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
+						StreamName:              aws.String(sn),
+						EnforceConsumerDeletion: aws.Bool(true),
+					})
+				}
+				return fmt.Errorf("create stream %s: %v", name, err)
+			}
+			pgStreams = append(pgStreams, name)
+		}
+
+		var allStreams []string
+		var nextToken *string
+		for {
+			resp, err := client.ListStreams(ctx, &kinesis.ListStreamsInput{
+				Limit:     aws.Int32(2),
+				NextToken: nextToken,
+			})
+			if err != nil {
+				for _, sn := range pgStreams {
+					client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
+						StreamName:              aws.String(sn),
+						EnforceConsumerDeletion: aws.Bool(true),
+					})
+				}
+				return fmt.Errorf("list streams page: %v", err)
+			}
+			for _, sn := range resp.StreamNames {
+				if strings.HasPrefix(sn, "PagStr-"+pgTs) {
+					allStreams = append(allStreams, sn)
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, sn := range pgStreams {
+			client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
+				StreamName:              aws.String(sn),
+				EnforceConsumerDeletion: aws.Bool(true),
+			})
+		}
+		if len(allStreams) != 5 {
+			return fmt.Errorf("expected 5 paginated streams, got %d", len(allStreams))
 		}
 		return nil
 	}))

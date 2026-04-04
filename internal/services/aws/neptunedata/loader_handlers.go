@@ -4,11 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 	"vorpalstacks/internal/services/aws/common/request"
 )
 
+// StartLoaderJob initiates a bulk load job for loading data into the Neptune
+// graph from the specified source location.
 func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
 	_ = reqCtx
@@ -32,15 +36,16 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 
 	loadId := generateQueryID()
 
-	s.mu.Lock()
-	s.loaderJobs[loadId] = &loaderJobState{
-		LoadId:    loadId,
-		Status:    "LOAD_COMPLETED",
-		Source:    params.Source,
-		Format:    params.Format,
-		StartedAt: time.Now(),
+	job := &pb.LoaderJob{
+		LoadId:     loadId,
+		Status:     "LOAD_COMPLETED",
+		Source:     params.Source,
+		Format:     params.Format,
+		SubmitTime: timestamppb.Now(),
 	}
-	s.mu.Unlock()
+	if err := s.store.CreateLoaderJob(job); err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{
 		"status": "200",
@@ -50,6 +55,8 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 	}, nil
 }
 
+// GetLoaderJobStatus returns the current status and statistics of a bulk load
+// job.
 func (s *NeptuneDataService) GetLoaderJobStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
 	_ = reqCtx
@@ -57,27 +64,15 @@ func (s *NeptuneDataService) GetLoaderJobStatus(ctx context.Context, reqCtx *req
 	if loadId == "" {
 		return nil, missingParameter("loadId")
 	}
-	details := request.GetBoolParam(req.Parameters, "details")
-	errors := request.GetBoolParam(req.Parameters, "errors")
-	errorsPerPage := request.GetIntParam(req.Parameters, "errorsPerPage")
-	page := request.GetIntParam(req.Parameters, "page")
 
-	_ = details
-	_ = errors
-	_ = errorsPerPage
-	_ = page
-
-	s.mu.RLock()
-	job, ok := s.loaderJobs[loadId]
-	s.mu.RUnlock()
-
-	if !ok {
+	job, err := s.store.GetLoaderJob(loadId)
+	if err != nil || job == nil {
 		return nil, bulkLoadNotFound(loadId)
 	}
 
 	payload := map[string]interface{}{
-		"loadId":        job.LoadId,
-		"status":        job.Status,
+		"loadId":        job.GetLoadId(),
+		"status":        job.GetStatus(),
 		"feedCount":     map[string]interface{}{"total": 0, "succeeded": 0, "failed": 0},
 		"overallStatus": map[string]interface{}{"totalRecords": 0, "totalTime": 0},
 	}
@@ -88,18 +83,23 @@ func (s *NeptuneDataService) GetLoaderJobStatus(ctx context.Context, reqCtx *req
 	}, nil
 }
 
+// ListLoaderJobs returns the load IDs of all submitted bulk load jobs,
+// optionally including queued loads.
 func (s *NeptuneDataService) ListLoaderJobs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
 	_ = reqCtx
 	_ = request.GetBoolParam(req.Parameters, "includeQueuedLoads")
 	_ = request.GetIntParam(req.Parameters, "limit")
 
-	s.mu.RLock()
-	loadIds := make([]string, 0, len(s.loaderJobs))
-	for _, job := range s.loaderJobs {
-		loadIds = append(loadIds, job.LoadId)
+	jobs, err := s.store.ListLoaderJobs()
+	if err != nil {
+		return nil, err
 	}
-	s.mu.RUnlock()
+
+	loadIds := make([]string, 0, len(jobs))
+	for _, job := range jobs {
+		loadIds = append(loadIds, job.GetLoadId())
+	}
 
 	return map[string]interface{}{
 		"status": "200",
@@ -109,6 +109,8 @@ func (s *NeptuneDataService) ListLoaderJobs(ctx context.Context, reqCtx *request
 	}, nil
 }
 
+// CancelLoaderJob cancels a running or queued bulk load job and marks its
+// status as cancelled.
 func (s *NeptuneDataService) CancelLoaderJob(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
 	_ = reqCtx
@@ -117,15 +119,13 @@ func (s *NeptuneDataService) CancelLoaderJob(ctx context.Context, reqCtx *reques
 		return nil, missingParameter("loadId")
 	}
 
-	s.mu.Lock()
-	job, ok := s.loaderJobs[loadId]
-	if !ok {
-		s.mu.Unlock()
+	job, err := s.store.GetLoaderJob(loadId)
+	if err != nil || job == nil {
 		return nil, bulkLoadNotFound(loadId)
 	}
 	job.Status = "CANCELLED"
-	job.FinishedAt = time.Now()
-	s.mu.Unlock()
+	job.EndTime = timestamppb.Now()
+	_ = s.store.UpdateLoaderJob(job)
 
 	return map[string]interface{}{
 		"status": "200",

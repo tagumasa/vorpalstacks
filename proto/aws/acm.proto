@@ -18,7 +18,7 @@ service ACMService {
   // Protocol: awsJson1_1
   rpc AddTagsToCertificate(AddTagsToCertificateRequest) returns (common.Empty);
 
-  // Deletes a certificate and its associated private key. If this action succeeds, the certificate no longer appears in the list that can be displayed by calling the ListCertificates action or be retri...
+  // Deletes a certificate and its associated private key. If this action succeeds, the certificate is not available for use by Amazon Web Services services integrated with ACM. Deleting a certificate i...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DeleteCertificate(DeleteCertificateRequest) returns (common.Empty);
@@ -28,7 +28,7 @@ service ACMService {
   // Protocol: awsJson1_1
   rpc DescribeCertificate(DescribeCertificateRequest) returns (DescribeCertificateResponse);
 
-  // Exports a private certificate issued by a private certificate authority (CA) or public certificate for use anywhere. The exported file contains the certificate, the certificate chain, and the encry...
+  // Exports a private certificate issued by a private certificate authority (CA) or a public certificate for use anywhere. The exported file contains the certificate, the certificate chain, and the enc...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc ExportCertificate(ExportCertificateRequest) returns (ExportCertificateResponse);
@@ -83,10 +83,15 @@ service ACMService {
   // Protocol: awsJson1_1
   rpc ResendValidationEmail(ResendValidationEmailRequest) returns (common.Empty);
 
-  // Revokes a public ACM certificate. You can only revoke certificates that have been previously exported.
+  // Revokes a public ACM certificate. You can only revoke certificates that have been previously exported. Once a certificate is revoked, you cannot reuse the certificate. Revoking a certificate is per...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc RevokeCertificate(RevokeCertificateRequest) returns (RevokeCertificateResponse);
+
+  // Retrieves a list of certificates matching search criteria. You can filter certificates by X.509 attributes and ACM specific properties like certificate status, type and renewal eligibility. This op...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc SearchCertificates(SearchCertificatesRequest) returns (SearchCertificatesResponse);
 
   // Updates a certificate. You can use this function to specify whether to opt in to or out of recording your certificate in a certificate transparency log and exporting. For more information, see Opti...
   // HTTP:  
@@ -102,6 +107,64 @@ service ACMService {
 message AccessDeniedException {
 
   string message = 235854213;
+
+}
+
+
+
+// Contains ACM-specific metadata about a certificate.
+
+message AcmCertificateMetadata {
+
+  string createdat = 258192751;
+
+  CertificateExport exportoption = 19500687;
+
+  bool exported = 491164947;
+
+  string importedat = 348649225;
+
+  bool inuse = 398346234;
+
+  string issuedat = 17449786;
+
+  CertificateManagedBy managedby = 455511232;
+
+  RenewalEligibility renewaleligibility = 172871849;
+
+  RenewalStatus renewalstatus = 277232086;
+
+  string revokedat = 63251417;
+
+  CertificateStatus status = 6222352;
+
+  CertificateType type = 290836590;
+
+  ValidationMethod validationmethod = 58092520;
+
+}
+
+
+
+// Filters certificates by ACM metadata.
+
+message AcmCertificateMetadataFilter {
+
+  CertificateExport exportoption = 19500687;
+
+  bool exported = 491164947;
+
+  bool inuse = 398346234;
+
+  CertificateManagedBy managedby = 455511232;
+
+  RenewalStatus renewalstatus = 277232086;
+
+  CertificateStatus status = 6222352;
+
+  CertificateType type = 290836590;
+
+  ValidationMethod validationmethod = 58092520;
 
 }
 
@@ -189,9 +252,49 @@ enum CertificateExport {
 
 
 
+// Defines a filter for searching certificates by ARN, X.509 attributes, or ACM metadata.
+
+message CertificateFilter {
+
+  AcmCertificateMetadataFilter acmcertificatemetadatafilter = 412384501;
+
+  string certificatearn = 92693880;
+
+  X509AttributeFilter x509attributefilter = 113905206;
+
+}
+
+
+
+// A filter statement used to search for certificates. Can contain AND, OR, NOT logical operators or a single filter.
+
+message CertificateFilterStatement {
+
+  repeated CertificateFilterStatement and = 297135431;
+
+  CertificateFilter filter = 346669208;
+
+  CertificateFilterStatement not = 205375275;
+
+  repeated CertificateFilterStatement or = 484734885;
+
+}
+
+
+
 enum CertificateManagedBy {
 
   CERTIFICATE_MANAGED_BY_CLOUDFRONT = 0;
+
+}
+
+
+
+// Contains metadata about a certificate. Currently supports ACM certificate metadata.
+
+message CertificateMetadata {
+
+  AcmCertificateMetadata acmcertificatemetadata = 138396827;
 
 }
 
@@ -204,6 +307,20 @@ message CertificateOptions {
   CertificateTransparencyLoggingPreference certificatetransparencyloggingpreference = 414636075;
 
   CertificateExport export = 140724692;
+
+}
+
+
+
+// Contains information about a certificate returned by the SearchCertificates action. This structure includes the certificate ARN, X.509 attributes, and ACM metadata.
+
+message CertificateSearchResult {
+
+  string certificatearn = 92693880;
+
+  CertificateMetadata certificatemetadata = 491370262;
+
+  X509Attributes x509attributes = 275616905;
 
 }
 
@@ -299,11 +416,45 @@ enum CertificateType {
 
 
 
+// Filters certificates by common name.
+
+message CommonNameFilter {
+
+  ComparisonOperator comparisonoperator = 7059861;
+
+  string value = 289929579;
+
+}
+
+
+
+enum ComparisonOperator {
+
+  COMPARISON_OPERATOR_CONTAINS = 0;
+
+  COMPARISON_OPERATOR_EQUALS = 1;
+
+}
+
+
+
 // You are trying to update a resource or configuration that is already being created or updated. Wait for the previous operation to finish and try again.
 
 message ConflictException {
 
   string message = 82970853;
+
+}
+
+
+
+// Defines the X.500 relative distinguished name (RDN).
+
+message CustomAttribute {
+
+  string objectidentifier = 389541722;
+
+  string value = 289929579;
 
 }
 
@@ -328,6 +479,58 @@ message DescribeCertificateRequest {
 message DescribeCertificateResponse {
 
   CertificateDetail certificate = 198060817;
+
+}
+
+
+
+// Contains X.500 distinguished name information.
+
+message DistinguishedName {
+
+  string commonname = 458508720;
+
+  string country = 83164786;
+
+  repeated CustomAttribute customattributes = 423725708;
+
+  string distinguishednamequalifier = 36440625;
+
+  repeated string domaincomponents = 165023822;
+
+  string generationqualifier = 286484430;
+
+  string givenname = 140410262;
+
+  string initials = 137547985;
+
+  string locality = 120123285;
+
+  string organization = 426894091;
+
+  string organizationalunit = 397752454;
+
+  string pseudonym = 187082178;
+
+  string serialnumber = 418274661;
+
+  string state = 502047895;
+
+  string surname = 303038887;
+
+  string title = 81031594;
+
+}
+
+
+
+// Filters certificates by DNS name.
+
+message DnsNameFilter {
+
+  ComparisonOperator comparisonoperator = 7059861;
+
+  string value = 289929579;
 
 }
 
@@ -506,6 +709,28 @@ message Filters {
   repeated KeyUsageName keyusage = 502227108;
 
   CertificateManagedBy managedby = 401567328;
+
+}
+
+
+
+// Describes an ASN.1 X.400 GeneralName as defined in RFC 5280. Only one of the following naming options should be provided.
+
+message GeneralName {
+
+  DistinguishedName directoryname = 223019436;
+
+  string dnsname = 166132088;
+
+  string ipaddress = 1800397;
+
+  OtherName othername = 249067223;
+
+  string registeredid = 457905173;
+
+  string rfc822name = 339698422;
+
+  string uniformresourceidentifier = 84673413;
 
 }
 
@@ -745,6 +970,18 @@ message ListTagsForCertificateResponse {
 
 
 
+// Defines a custom ASN.1 X.400 GeneralName using an object identifier (OID) and value. For more information, see NIST's definition of Object Identifier (OID).
+
+message OtherName {
+
+  string objectidentifier = 389541722;
+
+  string value = 289929579;
+
+}
+
+
+
 message PutAccountConfigurationRequest {
 
   ExpiryEventsConfiguration expiryevents = 358763356;
@@ -957,6 +1194,84 @@ message RevokeCertificateResponse {
 
 
 
+message SearchCertificatesRequest {
+
+  CertificateFilterStatement filterstatement = 530491181;
+
+  int32 maxresults = 275174450;
+
+  string nexttoken = 216957566;
+
+  SearchCertificatesSortBy sortby = 186052369;
+
+  SearchCertificatesSortOrder sortorder = 274231684;
+
+}
+
+
+
+message SearchCertificatesResponse {
+
+  string nexttoken = 216957566;
+
+  repeated CertificateSearchResult results = 486024854;
+
+}
+
+
+
+enum SearchCertificatesSortBy {
+
+  SEARCH_CERTIFICATES_SORT_BY_ISSUED_AT = 0;
+
+  SEARCH_CERTIFICATES_SORT_BY_REVOKED_AT = 1;
+
+  SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME = 2;
+
+  SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY = 3;
+
+  SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER = 4;
+
+  SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD = 5;
+
+  SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS = 6;
+
+  SEARCH_CERTIFICATES_SORT_BY_STATUS = 7;
+
+  SEARCH_CERTIFICATES_SORT_BY_EXPORTED = 8;
+
+  SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE = 9;
+
+  SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY = 10;
+
+  SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN = 11;
+
+  SEARCH_CERTIFICATES_SORT_BY_IN_USE = 12;
+
+  SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM = 13;
+
+  SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION = 14;
+
+  SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT = 15;
+
+  SEARCH_CERTIFICATES_SORT_BY_TYPE = 16;
+
+  SEARCH_CERTIFICATES_SORT_BY_CREATED_AT = 17;
+
+}
+
+
+
+enum SearchCertificatesSortOrder {
+
+  SEARCH_CERTIFICATES_SORT_ORDER_ASCENDING = 0;
+
+  SEARCH_CERTIFICATES_SORT_ORDER_DESCENDING = 1;
+
+}
+
+
+
 enum SortBy {
 
   SORT_BY_CREATED_AT = 0;
@@ -970,6 +1285,26 @@ enum SortOrder {
   SORT_ORDER_ASCENDING = 0;
 
   SORT_ORDER_DESCENDING = 1;
+
+}
+
+
+
+// Filters certificates by subject alternative name attributes.
+
+message SubjectAlternativeNameFilter {
+
+  DnsNameFilter dnsname = 166132088;
+
+}
+
+
+
+// Filters certificates by subject attributes.
+
+message SubjectFilter {
+
+  CommonNameFilter commonname = 458508720;
 
 }
 
@@ -1002,6 +1337,32 @@ message TagPolicyException {
 message ThrottlingException {
 
   string message = 82970853;
+
+  repeated ThrottlingReason throttlingreasons = 170616084;
+
+}
+
+
+
+// A description of why a request was throttled.
+
+message ThrottlingReason {
+
+  string reason = 413359642;
+
+  string resource = 165642230;
+
+}
+
+
+
+// Specifies a time range for filtering certificates.
+
+message TimestampRange {
+
+  string end = 261322315;
+
+  string start = 182978944;
 
 }
 
@@ -1044,6 +1405,56 @@ enum ValidationMethod {
   VALIDATION_METHOD_EMAIL = 1;
 
   VALIDATION_METHOD_DNS = 2;
+
+}
+
+
+
+// Filters certificates by X.509 attributes.
+
+message X509AttributeFilter {
+
+  ExtendedKeyUsageName extendedkeyusage = 135993903;
+
+  KeyAlgorithm keyalgorithm = 452317818;
+
+  KeyUsageName keyusage = 357216772;
+
+  TimestampRange notafter = 287678033;
+
+  TimestampRange notbefore = 459074038;
+
+  string serialnumber = 418274661;
+
+  SubjectFilter subject = 7939312;
+
+  SubjectAlternativeNameFilter subjectalternativename = 53477234;
+
+}
+
+
+
+// Contains X.509 certificate attributes extracted from the certificate.
+
+message X509Attributes {
+
+  repeated ExtendedKeyUsageName extendedkeyusages = 531267688;
+
+  DistinguishedName issuer = 528708823;
+
+  KeyAlgorithm keyalgorithm = 452317818;
+
+  repeated KeyUsageName keyusages = 345433681;
+
+  string notafter = 287678033;
+
+  string notbefore = 459074038;
+
+  string serialnumber = 418274661;
+
+  DistinguishedName subject = 7939312;
+
+  repeated GeneralName subjectalternativenames = 109998119;
 
 }
 

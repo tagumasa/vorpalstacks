@@ -6,20 +6,23 @@ import (
 	"connectrpc.com/connect"
 
 	"vorpalstacks/internal/core/storage"
-	pb "vorpalstacks/internal/pb/aws/states"
-	"vorpalstacks/internal/pb/aws/states/statesconnect"
+	pb "vorpalstacks/internal/pb/aws/sfn"
+	"vorpalstacks/internal/pb/aws/sfn/sfnconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 
+// AdminHandler implements the Step Functions gRPC-Web admin console handler. It
+// exposes list operations for state machines for the Flutter management UI.
 type AdminHandler struct {
-	statesconnect.UnimplementedSFNServiceHandler
+	sfnconnect.UnimplementedSFNServiceHandler
 	storageManager *storage.RegionStorageManager
 	accountId      string
 }
 
-var _ statesconnect.SFNServiceHandler = (*AdminHandler)(nil)
+var _ sfnconnect.SFNServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new Step Functions admin console handler.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -35,6 +38,8 @@ func (h *AdminHandler) getStoreByRegion(region string) (*sfnstore.StepFunctionSt
 	return sfnstore.NewStepFunctionStore(regionStorage, h.accountId, region), nil
 }
 
+// ListStateMachines returns a paginated list of state machines in the
+// requested region.
 func (h *AdminHandler) ListStateMachines(ctx context.Context, req *connect.Request[pb.ListStateMachinesInput]) (*connect.Response[pb.ListStateMachinesOutput], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getStoreByRegion(region)

@@ -92,16 +92,17 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 	sortOrder := request.GetStringParam(req.Parameters, "SortOrder")
 	filters := request.GetListParam(req.Parameters, "Filters")
 
-	opts := common.ListOptions{MaxItems: maxResults}
-	if nextToken != "" {
-		opts.Marker = nextToken
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.ListSecrets(opts)
+
+	// Load all secrets from the store without pagination, then apply
+	// filtering (IncludePlannedDeletion, Filters) and sorting in the handler
+	// before paginating with an offset-based NextToken. This avoids the
+	// previous bug where filtering was applied after store-level pagination,
+	// causing NextToken to never be returned.
+	result, err := store.ListSecrets(common.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +126,18 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 		sortSecrets(filtered, sortBy, sortOrder)
 	}
 
-	paged := filtered
-	if maxResults < len(paged) {
+	// Parse the offset from the NextToken (encoded as a decimal integer).
+	// Subsequent requests resume from where the previous page ended.
+	skipCount := 0
+	if nextToken != "" {
+		if n, err := fmt.Sscanf(nextToken, "%d", &skipCount); n != 1 || err != nil {
+			skipCount = 0
+		}
+	}
+
+	paged := filtered[skipCount:]
+	isTruncated := maxResults < len(paged)
+	if isTruncated {
 		paged = paged[:maxResults]
 	}
 
@@ -155,8 +166,8 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 	response := map[string]interface{}{
 		"SecretList": secretList,
 	}
-	if maxResults < len(filtered) {
-		response["NextToken"] = fmt.Sprintf("%d", maxResults)
+	if isTruncated {
+		response["NextToken"] = fmt.Sprintf("%d", skipCount+maxResults)
 	}
 	return response, nil
 }

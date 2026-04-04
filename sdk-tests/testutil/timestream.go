@@ -1,11 +1,9 @@
 package testutil
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"net/http"
-	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -299,38 +297,11 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 	var sqARN string
 
 	createIAMRole := func(roleName string) error {
-		trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"timestream.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
-		form := url.Values{}
-		form.Set("Action", "CreateRole")
-		form.Set("Version", "2010-05-08")
-		form.Set("RoleName", roleName)
-		form.Set("AssumeRolePolicyDocument", trustPolicy)
-		req, err := http.NewRequestWithContext(context.Background(), "POST", r.endpoint, bytes.NewBufferString(form.Encode()))
-		if err != nil {
-			return err
-		}
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-		resp.Body.Close()
-		return nil
+		return IAMCreateRole(r.endpoint, roleName, `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"timestream.amazonaws.com"},"Action":"sts:AssumeRole"}]}`)
 	}
 
 	deleteIAMRole := func(roleName string) {
-		form := url.Values{}
-		form.Set("Action", "DeleteRole")
-		form.Set("Version", "2010-05-08")
-		form.Set("RoleName", roleName)
-		req, _ := http.NewRequestWithContext(context.Background(), "POST", r.endpoint, bytes.NewBufferString(form.Encode()))
-		if req != nil {
-			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			resp, _ := http.DefaultClient.Do(req)
-			if resp != nil {
-				resp.Body.Close()
-			}
-		}
+		IAMDeleteRole(r.endpoint, roleName)
 	}
 
 	results = append(results, r.RunTest("timestream", "ScheduledQuery_Setup", func() error {
@@ -494,8 +465,8 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 		_, err := queryClient.DescribeScheduledQuery(ctx, &timestreamquery.DescribeScheduledQueryInput{
 			ScheduledQueryArn: aws.String(fakeARN),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent scheduled query")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -596,8 +567,8 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 		_, err := client.DescribeDatabase(ctx, &timestreamwrite.DescribeDatabaseInput{
 			DatabaseName: aws.String("nonexistent-db-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent database")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -607,8 +578,8 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 			DatabaseName: aws.String("nonexistent-db-xyz"),
 			TableName:    aws.String("nonexistent-table-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent table")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -689,8 +660,61 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 		_, err := client.DescribeBatchLoadTask(ctx, &timestreamwrite.DescribeBatchLoadTaskInput{
 			TaskId: aws.String("nonexistent-task-id"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent task")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("timestream", "ListDatabases_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgDatabases []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagDB-%s-%d", pgTs, i)
+			_, err := client.CreateDatabase(ctx, &timestreamwrite.CreateDatabaseInput{
+				DatabaseName: aws.String(name),
+			})
+			if err != nil {
+				for _, dn := range pgDatabases {
+					client.DeleteDatabase(ctx, &timestreamwrite.DeleteDatabaseInput{DatabaseName: aws.String(dn)})
+				}
+				return fmt.Errorf("create database %s: %v", name, err)
+			}
+			pgDatabases = append(pgDatabases, name)
+		}
+
+		var allDatabases []string
+		var nextToken *string
+		for {
+			resp, err := client.ListDatabases(ctx, &timestreamwrite.ListDatabasesInput{
+				MaxResults: aws.Int32(2),
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				for _, dn := range pgDatabases {
+					client.DeleteDatabase(ctx, &timestreamwrite.DeleteDatabaseInput{DatabaseName: aws.String(dn)})
+				}
+				return fmt.Errorf("list databases page: %v", err)
+			}
+			for _, d := range resp.Databases {
+				if d.DatabaseName != nil && strings.Contains(*d.DatabaseName, "PagDB-"+pgTs) {
+					allDatabases = append(allDatabases, *d.DatabaseName)
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, dn := range pgDatabases {
+			client.DeleteDatabase(ctx, &timestreamwrite.DeleteDatabaseInput{DatabaseName: aws.String(dn)})
+		}
+		if len(allDatabases) != 5 {
+			return fmt.Errorf("expected 5 paginated databases, got %d", len(allDatabases))
 		}
 		return nil
 	}))

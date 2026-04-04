@@ -122,6 +122,9 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		if resp.SubscriptionArn == nil {
 			return fmt.Errorf("SubscriptionArn is nil")
 		}
+		if *resp.SubscriptionArn != "pending confirmation" {
+			client.Unsubscribe(ctx, &sns.UnsubscribeInput{SubscriptionArn: resp.SubscriptionArn})
+		}
 		return nil
 	}))
 
@@ -208,6 +211,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		if resp.TopicArn == nil {
 			return fmt.Errorf("TopicArn is nil")
 		}
+		client.DeleteTopic(ctx, &sns.DeleteTopicInput{TopicArn: resp.TopicArn})
 		return nil
 	}))
 
@@ -243,8 +247,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		_, err := client.DeleteTopic(ctx, &sns.DeleteTopicInput{
 			TopicArn: aws.String("arn:aws:sns:us-east-1:000000000000:nonexistent-del-topic"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent topic")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -752,8 +756,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		_, err := client.GetDataProtectionPolicy(ctx, &sns.GetDataProtectionPolicyInput{
 			ResourceArn: aws.String("arn:aws:sns:us-east-1:000000000000:nonexistent-dpp-topic"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent topic")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -785,7 +789,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return fmt.Errorf("platformAppArn not set from previous test")
 		}
 		appName := fmt.Sprintf("TestApp-%d", time.Now().UnixNano())
-		_, err := client.CreatePlatformApplication(ctx, &sns.CreatePlatformApplicationInput{
+		dupResp, err := client.CreatePlatformApplication(ctx, &sns.CreatePlatformApplicationInput{
 			Name:     aws.String(appName),
 			Platform: aws.String("GCM"),
 			Attributes: map[string]string{
@@ -795,6 +799,9 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("create with unique name should succeed: %v", err)
 		}
+		client.DeletePlatformApplication(ctx, &sns.DeletePlatformApplicationInput{
+			PlatformApplicationArn: dupResp.PlatformApplicationArn,
+		})
 		return nil
 	}))
 
@@ -1024,8 +1031,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		_, err := client.GetTopicAttributes(ctx, &sns.GetTopicAttributesInput{
 			TopicArn: aws.String("arn:aws:sns:us-east-1:000000000000:nonexistent-topic-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent topic")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1035,8 +1042,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			TopicArn: aws.String("arn:aws:sns:us-east-1:000000000000:nonexistent-topic-xyz"),
 			Message:  aws.String("test message"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent topic")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1130,8 +1137,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			Protocol: aws.String("sqs"),
 			Endpoint: aws.String("arn:aws:sqs:us-east-1:000000000000:fake-queue"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent topic")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1140,8 +1147,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		_, err := client.Unsubscribe(ctx, &sns.UnsubscribeInput{
 			SubscriptionArn: aws.String("arn:aws:sns:us-east-1:000000000000:nonexistent-topic:fake-sub-id"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent subscription")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1152,8 +1159,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			AttributeName:   aws.String("RawMessageDelivery"),
 			AttributeValue:  aws.String("true"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent subscription")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1162,8 +1169,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		_, err := client.GetSubscriptionAttributes(ctx, &sns.GetSubscriptionAttributesInput{
 			SubscriptionArn: aws.String("arn:aws:sns:us-east-1:000000000000:nonexistent-topic:fake-sub-id"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent subscription")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1174,8 +1181,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			AttributeName:  aws.String("DisplayName"),
 			AttributeValue: aws.String("test"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent topic")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1384,8 +1391,72 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sns", "ListTopics_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgTopicARNs []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagTopic-%s-%d", pgTs, i)
+			resp, err := client.CreateTopic(ctx, &sns.CreateTopicInput{Name: aws.String(name)})
+			if err != nil {
+				for _, arn := range pgTopicARNs {
+					client.DeleteTopic(ctx, &sns.DeleteTopicInput{TopicArn: aws.String(arn)})
+				}
+				return fmt.Errorf("create topic %s: %v", name, err)
+			}
+			pgTopicARNs = append(pgTopicARNs, *resp.TopicArn)
+		}
+
+		var allTopics []string
+		var nextToken *string
+		for {
+			resp, err := client.ListTopics(ctx, &sns.ListTopicsInput{NextToken: nextToken})
+			if err != nil {
+				for _, arn := range pgTopicARNs {
+					client.DeleteTopic(ctx, &sns.DeleteTopicInput{TopicArn: aws.String(arn)})
+				}
+				return fmt.Errorf("list topics page: %v", err)
+			}
+			for _, t := range resp.Topics {
+				if strings.Contains(aws.ToString(t.TopicArn), "PagTopic-"+pgTs) {
+					allTopics = append(allTopics, aws.ToString(t.TopicArn))
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, arn := range pgTopicARNs {
+			client.DeleteTopic(ctx, &sns.DeleteTopicInput{TopicArn: aws.String(arn)})
+		}
+		if len(allTopics) != 5 {
+			return fmt.Errorf("expected 5 paginated topics, got %d", len(allTopics))
+		}
+		return nil
+	}))
+
 	if sqsSubTopicArn != "" {
 		client.DeleteTopic(ctx, &sns.DeleteTopicInput{TopicArn: aws.String(sqsSubTopicArn)})
+	}
+
+	if sqsSubArn != "" {
+		client.Unsubscribe(ctx, &sns.UnsubscribeInput{SubscriptionArn: aws.String(sqsSubArn)})
+	}
+
+	if endpointArn != "" {
+		client.DeleteEndpoint(ctx, &sns.DeleteEndpointInput{EndpointArn: aws.String(endpointArn)})
+	}
+
+	if platformAppArn != "" {
+		client.DeletePlatformApplication(ctx, &sns.DeletePlatformApplicationInput{
+			PlatformApplicationArn: aws.String(platformAppArn),
+		})
+	}
+
+	if topicArn != "" {
+		client.DeleteTopic(ctx, &sns.DeleteTopicInput{TopicArn: aws.String(topicArn)})
 	}
 
 	return results

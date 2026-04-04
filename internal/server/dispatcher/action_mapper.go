@@ -81,6 +81,7 @@ func (m *ActionMapper) registerDefaults() {
 	m.registerRDSMappings()
 	m.registerEC2Mappings()
 	m.registerNeptuneMappings()
+	m.registerAppSyncMappings()
 }
 
 func (m *ActionMapper) registerS3Mappings() {
@@ -195,4 +196,9 @@ func (m *ActionMapper) registerEC2Mappings() {
 func (m *ActionMapper) registerNeptuneMappings() {
 	m.RegisterWildcard("neptune", "neptune")
 	m.RegisterWildcard("neptunedata", "neptune-db")
+}
+
+// registerAppSyncMappings registers IAM action mappings for the AWS AppSync service.
+func (m *ActionMapper) registerAppSyncMappings() {
+	m.RegisterWildcard("appsync", "appsync")
 }

@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -430,8 +431,8 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 		_, err := client.GetWorkGroup(ctx, &athena.GetWorkGroupInput{
 			WorkGroup: aws.String("nonexistent_wg_xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent work group")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -440,8 +441,8 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 		_, err := client.DeleteWorkGroup(ctx, &athena.DeleteWorkGroupInput{
 			WorkGroup: aws.String("nonexistent_wg_xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent work group")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -450,8 +451,8 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 		_, err := client.GetNamedQuery(ctx, &athena.GetNamedQueryInput{
 			NamedQueryId: aws.String("00000000-0000-0000-0000-000000000000"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent named query")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -460,8 +461,8 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 		_, err := client.GetDataCatalog(ctx, &athena.GetDataCatalogInput{
 			Name: aws.String("nonexistent_catalog_xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent catalog")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -723,8 +724,8 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 			StatementName: aws.String(psName),
 			WorkGroup:     aws.String(psWorkGroup),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent prepared statement")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -734,8 +735,8 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 			StatementName: aws.String(psName),
 			WorkGroup:     aws.String(psWorkGroup),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent prepared statement")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -983,8 +984,61 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 			DatabaseName: aws.String("default"),
 			TableName:    aws.String("nonexistent_table_xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent table")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("athena", "ListWorkGroups_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano()%1000000000)
+		var pgWorkGroups []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagWG-%s-%d", pgTs, i)
+			_, err := client.CreateWorkGroup(ctx, &athena.CreateWorkGroupInput{
+				Name: aws.String(name),
+			})
+			if err != nil {
+				for _, wn := range pgWorkGroups {
+					client.DeleteWorkGroup(ctx, &athena.DeleteWorkGroupInput{WorkGroup: aws.String(wn)})
+				}
+				return fmt.Errorf("create work group %s: %v", name, err)
+			}
+			pgWorkGroups = append(pgWorkGroups, name)
+		}
+
+		var allWorkGroups []string
+		var nextToken *string
+		for {
+			resp, err := client.ListWorkGroups(ctx, &athena.ListWorkGroupsInput{
+				MaxResults: aws.Int32(2),
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				for _, wn := range pgWorkGroups {
+					client.DeleteWorkGroup(ctx, &athena.DeleteWorkGroupInput{WorkGroup: aws.String(wn)})
+				}
+				return fmt.Errorf("list work groups page: %v", err)
+			}
+			for _, wg := range resp.WorkGroups {
+				if wg.Name != nil && strings.Contains(*wg.Name, "PagWG-"+pgTs) {
+					allWorkGroups = append(allWorkGroups, *wg.Name)
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, wn := range pgWorkGroups {
+			client.DeleteWorkGroup(ctx, &athena.DeleteWorkGroupInput{WorkGroup: aws.String(wn)})
+		}
+		if len(allWorkGroups) != 5 {
+			return fmt.Errorf("expected 5 paginated work groups, got %d", len(allWorkGroups))
 		}
 		return nil
 	}))

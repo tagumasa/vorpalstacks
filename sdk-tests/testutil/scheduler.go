@@ -1,12 +1,10 @@
 package testutil
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -39,64 +37,17 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
 
 	trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"scheduler.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
-	form := url.Values{}
-	form.Set("Action", "CreateRole")
-	form.Set("Version", "2010-05-08")
-	form.Set("RoleName", roleName)
-	form.Set("AssumeRolePolicyDocument", trustPolicy)
-	req, err := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(form.Encode()))
-	if err != nil {
-		results = append(results, TestResult{Service: "scheduler", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role request: %v", err)})
-		return results
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
+	if err := IAMCreateRole(r.endpoint, roleName, trustPolicy); err != nil {
 		results = append(results, TestResult{Service: "scheduler", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
 		return results
 	}
-	resp.Body.Close()
-	defer func() {
-		cleanupForm := url.Values{}
-		cleanupForm.Set("Action", "DeleteRole")
-		cleanupForm.Set("Version", "2010-05-08")
-		cleanupForm.Set("RoleName", roleName)
-		cleanupReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(cleanupForm.Encode()))
-		if cleanupReq != nil {
-			cleanupReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			cleanupResp, _ := http.DefaultClient.Do(cleanupReq)
-			if cleanupResp != nil {
-				cleanupResp.Body.Close()
-			}
-		}
-	}()
+	defer IAMDeleteRoleCtx(ctx, r.endpoint, roleName)
 
 	createRole := func(rn string) {
-		f := url.Values{}
-		f.Set("Action", "CreateRole")
-		f.Set("Version", "2010-05-08")
-		f.Set("RoleName", rn)
-		f.Set("AssumeRolePolicyDocument", trustPolicy)
-		r, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(f.Encode()))
-		if r != nil {
-			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			if rp, err := http.DefaultClient.Do(r); err == nil {
-				rp.Body.Close()
-			}
-		}
+		IAMCreateRole(r.endpoint, rn, trustPolicy)
 	}
 	deleteRole := func(rn string) {
-		f := url.Values{}
-		f.Set("Action", "DeleteRole")
-		f.Set("Version", "2010-05-08")
-		f.Set("RoleName", rn)
-		r, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(f.Encode()))
-		if r != nil {
-			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			if rp, _ := http.DefaultClient.Do(r); rp != nil {
-				rp.Body.Close()
-			}
-		}
+		IAMDeleteRole(r.endpoint, rn)
 	}
 
 	targetInput := map[string]string{
@@ -268,8 +219,8 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		_, err := client.GetSchedule(ctx, &scheduler.GetScheduleInput{
 			Name: aws.String("nonexistent-schedule-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent schedule")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -278,8 +229,8 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		_, err := client.DeleteSchedule(ctx, &scheduler.DeleteScheduleInput{
 			Name: aws.String("nonexistent-schedule-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent schedule")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -428,8 +379,8 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		_, err := client.GetScheduleGroup(ctx, &scheduler.GetScheduleGroupInput{
 			Name: aws.String("nonexistent-group-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent group")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -520,8 +471,8 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 				Mode: types.FlexibleTimeWindowModeOff,
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent schedule")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -621,13 +572,13 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("scheduler", "TagResource_ScheduleGroup", func() error {
+		tagGroupName := fmt.Sprintf("TagGroup-%d", time.Now().UnixNano())
 		groupResp, err := client.CreateScheduleGroup(ctx, &scheduler.CreateScheduleGroupInput{
-			Name: aws.String(fmt.Sprintf("TagGroup-%d", time.Now().UnixNano())),
+			Name: aws.String(tagGroupName),
 		})
 		if err != nil {
 			return err
 		}
-		defer client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(fmt.Sprintf("TagGroup-%d", time.Now().UnixNano()))})
 
 		_, err = client.TagResource(ctx, &scheduler.TagResourceInput{
 			ResourceArn: groupResp.ScheduleGroupArn,
@@ -655,6 +606,7 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		if !found {
 			return fmt.Errorf("tag Env not found on schedule group")
 		}
+		client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(tagGroupName)})
 		return nil
 	}))
 
@@ -710,8 +662,8 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		_, err := client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{
 			Name: aws.String("nonexistent-group-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent group")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -742,6 +694,59 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 	}))
 
 	client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(groupName)})
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("scheduler", "ListScheduleGroups_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgGroups []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagGroup-%s-%d", pgTs, i)
+			_, err := client.CreateScheduleGroup(ctx, &scheduler.CreateScheduleGroupInput{
+				Name: aws.String(name),
+			})
+			if err != nil {
+				for _, gn := range pgGroups {
+					client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(gn)})
+				}
+				return fmt.Errorf("create schedule group %s: %v", name, err)
+			}
+			pgGroups = append(pgGroups, name)
+		}
+
+		var allGroups []string
+		var nextToken *string
+		for {
+			resp, err := client.ListScheduleGroups(ctx, &scheduler.ListScheduleGroupsInput{
+				MaxResults: aws.Int32(2),
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				for _, gn := range pgGroups {
+					client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(gn)})
+				}
+				return fmt.Errorf("list schedule groups page: %v", err)
+			}
+			for _, g := range resp.ScheduleGroups {
+				if g.Name != nil && strings.Contains(*g.Name, "PagGroup-"+pgTs) {
+					allGroups = append(allGroups, *g.Name)
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, gn := range pgGroups {
+			client.DeleteScheduleGroup(ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(gn)})
+		}
+		if len(allGroups) != 5 {
+			return fmt.Errorf("expected 5 paginated schedule groups, got %d", len(allGroups))
+		}
+		return nil
+	}))
 
 	return results
 }

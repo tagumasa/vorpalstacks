@@ -177,8 +177,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 			Scope: types.ScopeCloudfront,
 			Id:    aws.String(ipSetID),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleted IP Set")
+		if err := AssertErrorContains(err, "WAFNonexistentItemException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -190,8 +190,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 			Id:        aws.String(ipSetID),
 			LockToken: aws.String("fake-lock-token"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleted IP Set")
+		if err := AssertErrorContains(err, "WAFNonexistentItemException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -304,8 +304,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 			Scope: types.ScopeCloudfront,
 			Id:    aws.String(regexPatternSetID),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleted Regex Pattern Set")
+		if err := AssertErrorContains(err, "WAFNonexistentItemException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -444,8 +444,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 			Scope: types.ScopeCloudfront,
 			Id:    aws.String(ruleGroupID),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleted Rule Group")
+		if err := AssertErrorContains(err, "WAFNonexistentItemException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -838,8 +838,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 			VendorName: aws.String("AWS"),
 			Scope:      types.ScopeCloudfront,
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent managed rule group")
+		if err := AssertErrorContains(err, "WAFNonexistentItemException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -868,8 +868,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 			Scope: types.ScopeCloudfront,
 			Id:    aws.String(webACLID),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleted WebACL")
+		if err := AssertErrorContains(err, "WAFNonexistentItemException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -910,6 +910,79 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 		Id:        aws.String(verifyIPSetID),
 		LockToken: aws.String(verifyIPSetLockToken),
 	})
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("wafv2", "ListIPSets_Pagination", func() error {
+		pgTs := fmt.Sprintf("pgwaf%d", time.Now().UnixNano())
+		type pgIPSet struct {
+			id, name, lockToken string
+		}
+		var pgSets []pgIPSet
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("%s-%d", pgTs, i)
+			resp, err := client.CreateIPSet(ctx, &wafv2.CreateIPSetInput{
+				Name:             aws.String(name),
+				Scope:            types.ScopeCloudfront,
+				IPAddressVersion: types.IPAddressVersionIpv4,
+				Addresses:        []string{},
+			})
+			if err != nil {
+				return fmt.Errorf("create ip set %s: %v", name, err)
+			}
+			pgSets = append(pgSets, pgIPSet{
+				id:        aws.ToString(resp.Summary.Id),
+				name:      name,
+				lockToken: aws.ToString(resp.Summary.LockToken),
+			})
+		}
+
+		pgIDSet := make(map[string]bool)
+		for _, s := range pgSets {
+			pgIDSet[s.id] = true
+		}
+		var foundCount int
+		var nextMarker *string
+		for {
+			resp, err := client.ListIPSets(ctx, &wafv2.ListIPSetsInput{
+				Scope:      types.ScopeCloudfront,
+				Limit:      aws.Int32(2),
+				NextMarker: nextMarker,
+			})
+			if err != nil {
+				for _, s := range pgSets {
+					client.DeleteIPSet(ctx, &wafv2.DeleteIPSetInput{
+						Name: aws.String(s.name), Scope: types.ScopeCloudfront,
+						Id: aws.String(s.id), LockToken: aws.String(s.lockToken),
+					})
+				}
+				return fmt.Errorf("list ip sets page: %v", err)
+			}
+			for _, s := range resp.IPSets {
+				if pgIDSet[aws.ToString(s.Id)] {
+					foundCount++
+				}
+			}
+			if resp.NextMarker != nil && *resp.NextMarker != "" {
+				nextMarker = resp.NextMarker
+			} else {
+				break
+			}
+		}
+
+		for _, s := range pgSets {
+			client.DeleteIPSet(ctx, &wafv2.DeleteIPSetInput{
+				Name:      aws.String(s.name),
+				Scope:     types.ScopeCloudfront,
+				Id:        aws.String(s.id),
+				LockToken: aws.String(s.lockToken),
+			})
+		}
+		if foundCount != 5 {
+			return fmt.Errorf("expected 5 paginated IP sets, got %d", foundCount)
+		}
+		return nil
+	}))
 
 	return results
 }

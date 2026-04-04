@@ -1928,5 +1928,58 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		return nil
 	}))
 
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("kms", "ListKeys_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgKeyIDs []string
+		for i := 0; i < 5; i++ {
+			resp, err := client.CreateKey(ctx, &kms.CreateKeyInput{
+				Description: aws.String(fmt.Sprintf("pag-key-%s-%d", pgTs, i)),
+			})
+			if err != nil {
+				return fmt.Errorf("create key: %v", err)
+			}
+			pgKeyIDs = append(pgKeyIDs, aws.ToString(resp.KeyMetadata.KeyId))
+		}
+
+		var allKeys []string
+		var marker *string
+		for {
+			resp, err := client.ListKeys(ctx, &kms.ListKeysInput{
+				Marker: marker,
+				Limit:  aws.Int32(2),
+			})
+			if err != nil {
+				for _, kid := range pgKeyIDs {
+					client.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
+						KeyId:               aws.String(kid),
+						PendingWindowInDays: aws.Int32(7),
+					})
+				}
+				return fmt.Errorf("list keys page: %v", err)
+			}
+			for _, k := range resp.Keys {
+				allKeys = append(allKeys, aws.ToString(k.KeyId))
+			}
+			if resp.Truncated && resp.NextMarker != nil {
+				marker = resp.NextMarker
+			} else {
+				break
+			}
+		}
+
+		for _, kid := range pgKeyIDs {
+			client.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
+				KeyId:               aws.String(kid),
+				PendingWindowInDays: aws.Int32(7),
+			})
+		}
+		if len(allKeys) < 5 {
+			return fmt.Errorf("expected at least 5 keys across pages, got %d", len(allKeys))
+		}
+		return nil
+	}))
+
 	return results
 }

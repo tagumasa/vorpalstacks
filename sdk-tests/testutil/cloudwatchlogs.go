@@ -201,8 +201,8 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 		_, err := client.DeleteLogGroup(ctx, &cloudwatchlogs.DeleteLogGroupInput{
 			LogGroupName: aws.String("nonexistent-log-group-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent log group")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -887,14 +887,18 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 	// === DESTINATION TESTS ===
 
 	results = append(results, r.RunTest("logs", "PutDestination_Basic", func() error {
+		destName := fmt.Sprintf("TestDest-%d", time.Now().UnixNano())
 		_, err := client.PutDestination(ctx, &cloudwatchlogs.PutDestinationInput{
-			DestinationName: aws.String(fmt.Sprintf("TestDest-%d", time.Now().UnixNano())),
+			DestinationName: aws.String(destName),
 			RoleArn:         aws.String("arn:aws:iam::000000000000:role/dest-role"),
 			TargetArn:       aws.String("arn:aws:kinesis:us-east-1:000000000000:stream/test-stream"),
 		})
 		if err != nil {
 			return fmt.Errorf("put destination: %v", err)
 		}
+		client.DeleteDestination(ctx, &cloudwatchlogs.DeleteDestinationInput{
+			DestinationName: aws.String(destName),
+		})
 		return nil
 	}))
 
@@ -1184,8 +1188,8 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 			LogGroupName:  aws.String(dlsName),
 			LogStreamName: aws.String("nonexistent-stream-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent log stream")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))

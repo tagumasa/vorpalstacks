@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -108,6 +109,9 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		if len(resp.SupportedLoginProviders) != 1 {
 			return fmt.Errorf("expected 1 SupportedLoginProvider")
 		}
+		client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{
+			IdentityPoolId: resp.IdentityPoolId,
+		})
 		return nil
 	}))
 
@@ -611,8 +615,8 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		_, err := client.DescribeIdentityPool(ctx, &cognitoidentity.DescribeIdentityPoolInput{
 			IdentityPoolId: aws.String("us-east-1:00000000-0000-0000-0000-000000000000"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent pool")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -621,8 +625,8 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		_, err := client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{
 			IdentityPoolId: aws.String("us-east-1:00000000-0000-0000-0000-000000000000"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent pool")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -631,8 +635,8 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		_, err := client.DescribeIdentity(ctx, &cognitoidentity.DescribeIdentityInput{
 			IdentityId: aws.String("00000000-0000-0000-0000-000000000000"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent identity")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -641,8 +645,8 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		_, err := client.GetId(ctx, &cognitoidentity.GetIdInput{
 			IdentityPoolId: aws.String("us-east-1:00000000-0000-0000-0000-000000000000"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent pool")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -666,6 +670,9 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		if resp.IdentityPoolTags["Env"] != "production" {
 			return fmt.Errorf("expected Env=production")
 		}
+		client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{
+			IdentityPoolId: resp.IdentityPoolId,
+		})
 		return nil
 	}))
 
@@ -726,6 +733,9 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		if *rule.Claim != "isAdmin" {
 			return fmt.Errorf("expected claim isAdmin")
 		}
+		client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{
+			IdentityPoolId: aws.String(pid),
+		})
 		return nil
 	}))
 
@@ -733,8 +743,8 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		_, err := client.GetCredentialsForIdentity(ctx, &cognitoidentity.GetCredentialsForIdentityInput{
 			IdentityId: aws.String("00000000-0000-0000-0000-000000000000"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent identity")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -743,8 +753,8 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		_, err := client.GetOpenIdToken(ctx, &cognitoidentity.GetOpenIdTokenInput{
 			IdentityId: aws.String("00000000-0000-0000-0000-000000000000"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent identity")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -766,8 +776,62 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		_, err := client.GetIdentityPoolRoles(ctx, &cognitoidentity.GetIdentityPoolRolesInput{
 			IdentityPoolId: aws.String("us-east-1:00000000-0000-0000-0000-000000000000"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent pool")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("cognito-identity", "ListIdentityPools_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgPools []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagIdPool-%s-%d", pgTs, i)
+			resp, err := client.CreateIdentityPool(ctx, &cognitoidentity.CreateIdentityPoolInput{
+				IdentityPoolName:               aws.String(name),
+				AllowUnauthenticatedIdentities: true,
+			})
+			if err != nil {
+				for _, pid := range pgPools {
+					client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{IdentityPoolId: aws.String(pid)})
+				}
+				return fmt.Errorf("create identity pool %s: %v", name, err)
+			}
+			pgPools = append(pgPools, *resp.IdentityPoolId)
+		}
+
+		var allPools []string
+		var nextToken *string
+		for {
+			resp, err := client.ListIdentityPools(ctx, &cognitoidentity.ListIdentityPoolsInput{
+				MaxResults: aws.Int32(2),
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				for _, pid := range pgPools {
+					client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{IdentityPoolId: aws.String(pid)})
+				}
+				return fmt.Errorf("list identity pools page: %v", err)
+			}
+			for _, p := range resp.IdentityPools {
+				if p.IdentityPoolName != nil && strings.Contains(*p.IdentityPoolName, "PagIdPool-"+pgTs) {
+					allPools = append(allPools, *p.IdentityPoolName)
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, pid := range pgPools {
+			client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{IdentityPoolId: aws.String(pid)})
+		}
+		if len(allPools) != 5 {
+			return fmt.Errorf("expected 5 paginated identity pools, got %d", len(allPools))
 		}
 		return nil
 	}))

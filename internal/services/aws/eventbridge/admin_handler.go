@@ -6,20 +6,24 @@ import (
 	"connectrpc.com/connect"
 
 	"vorpalstacks/internal/core/storage"
-	pb "vorpalstacks/internal/pb/aws/events"
-	eventsconnect "vorpalstacks/internal/pb/aws/events/eventsconnect"
+	pb "vorpalstacks/internal/pb/aws/cloudwatchevents"
+	cloudwatcheventsconnect "vorpalstacks/internal/pb/aws/cloudwatchevents/cloudwatcheventsconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
 	eventbridgestore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
+// AdminHandler implements the EventBridge (CloudWatch Events) gRPC-Web admin
+// console handler. It exposes list operations for event buses and rules for
+// the Flutter management UI.
 type AdminHandler struct {
-	eventsconnect.UnimplementedCloudWatchEventsServiceHandler
+	cloudwatcheventsconnect.UnimplementedCloudWatchEventsServiceHandler
 	storageManager *storage.RegionStorageManager
 	accountId      string
 }
 
-var _ eventsconnect.CloudWatchEventsServiceHandler = (*AdminHandler)(nil)
+var _ cloudwatcheventsconnect.CloudWatchEventsServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new EventBridge admin console handler.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -35,6 +39,7 @@ func (h *AdminHandler) getStoreByRegion(region string) (*eventbridgestore.Events
 	return eventbridgestore.NewEventsStore(regionStorage, h.accountId, region), nil
 }
 
+// ListEventBuses returns a paginated list of event buses in the requested region.
 func (h *AdminHandler) ListEventBuses(ctx context.Context, req *connect.Request[pb.ListEventBusesRequest]) (*connect.Response[pb.ListEventBusesResponse], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getStoreByRegion(region)
@@ -58,6 +63,7 @@ func (h *AdminHandler) ListEventBuses(ctx context.Context, req *connect.Request[
 	}), nil
 }
 
+// ListRules returns a paginated list of rules in the specified event bus.
 func (h *AdminHandler) ListRules(ctx context.Context, req *connect.Request[pb.ListRulesRequest]) (*connect.Response[pb.ListRulesResponse], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getStoreByRegion(region)

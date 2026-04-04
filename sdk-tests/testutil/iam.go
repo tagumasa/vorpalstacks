@@ -1378,11 +1378,8 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 		_, err := client.DeleteUser(ctx, &iam.DeleteUserInput{
 			UserName: aws.String("NonExistentUser-" + ts),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleting non-existent user")
-		}
-		if !strings.Contains(err.Error(), "NoSuchEntity") {
-			return fmt.Errorf("expected NoSuchEntity error, got: %v", err)
+		if err := AssertErrorContains(err, "NoSuchEntity"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1391,11 +1388,8 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 		_, err := client.GetRole(ctx, &iam.GetRoleInput{
 			RoleName: aws.String("NonExistentRole-" + ts),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for getting non-existent role")
-		}
-		if !strings.Contains(err.Error(), "NoSuchEntity") {
-			return fmt.Errorf("expected NoSuchEntity error, got: %v", err)
+		if err := AssertErrorContains(err, "NoSuchEntity"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1405,11 +1399,8 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 			UserName:  aws.String("NonExistentUser-" + ts),
 			PolicyArn: aws.String(policyArn),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for attaching policy to non-existent user")
-		}
-		if !strings.Contains(err.Error(), "NoSuchEntity") {
-			return fmt.Errorf("expected NoSuchEntity error, got: %v", err)
+		if err := AssertErrorContains(err, "NoSuchEntity"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1448,11 +1439,8 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 		_, err := client.CreateUser(ctx, &iam.CreateUserInput{
 			UserName: aws.String(userName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for creating duplicate user")
-		}
-		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
-			return fmt.Errorf("expected EntityAlreadyExists error, got: %v", err)
+		if err := AssertErrorContains(err, "EntityAlreadyExists"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1463,11 +1451,160 @@ func (r *TestRunner) RunIAMTests() []TestResult {
 			PolicyName:     aws.String(policyName),
 			PolicyDocument: aws.String(policyDocument),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for creating duplicate policy")
+		if err := AssertErrorContains(err, "EntityAlreadyExists"); err != nil {
+			return err
 		}
-		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
-			return fmt.Errorf("expected EntityAlreadyExists error, got: %v", err)
+		return nil
+	}))
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("iam", "ListUsers_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgUsers []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagUser-%s-%d", pgTs, i)
+			_, err := client.CreateUser(ctx, &iam.CreateUserInput{UserName: aws.String(name)})
+			if err != nil {
+				return fmt.Errorf("create user %s: %v", name, err)
+			}
+			pgUsers = append(pgUsers, name)
+		}
+
+		var allUsers []types.User
+		var marker *string
+		for {
+			resp, err := client.ListUsers(ctx, &iam.ListUsersInput{
+				PathPrefix: aws.String("/"),
+				Marker:     marker,
+				MaxItems:   aws.Int32(2),
+			})
+			if err != nil {
+				for _, name := range pgUsers {
+					client.DeleteUser(ctx, &iam.DeleteUserInput{UserName: aws.String(name)})
+				}
+				return fmt.Errorf("list users page: %v", err)
+			}
+			for _, u := range resp.Users {
+				if strings.HasPrefix(aws.ToString(u.UserName), "PagUser-"+pgTs) {
+					allUsers = append(allUsers, u)
+				}
+			}
+			if resp.IsTruncated && resp.Marker != nil {
+				marker = resp.Marker
+			} else {
+				break
+			}
+		}
+
+		for _, name := range pgUsers {
+			client.DeleteUser(ctx, &iam.DeleteUserInput{UserName: aws.String(name)})
+		}
+
+		if len(allUsers) != 5 {
+			return fmt.Errorf("expected 5 paginated users, got %d", len(allUsers))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "ListRoles_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgRoles []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagRole-%s-%d", pgTs, i)
+			_, err := client.CreateRole(ctx, &iam.CreateRoleInput{
+				RoleName:                 aws.String(name),
+				AssumeRolePolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`),
+			})
+			if err != nil {
+				return fmt.Errorf("create role %s: %v", name, err)
+			}
+			pgRoles = append(pgRoles, name)
+		}
+
+		var allRoles []types.Role
+		var marker *string
+		for {
+			resp, err := client.ListRoles(ctx, &iam.ListRolesInput{
+				PathPrefix: aws.String("/"),
+				Marker:     marker,
+				MaxItems:   aws.Int32(2),
+			})
+			if err != nil {
+				for _, name := range pgRoles {
+					client.DeleteRole(ctx, &iam.DeleteRoleInput{RoleName: aws.String(name)})
+				}
+				return fmt.Errorf("list roles page: %v", err)
+			}
+			for _, r := range resp.Roles {
+				if strings.HasPrefix(aws.ToString(r.RoleName), "PagRole-"+pgTs) {
+					allRoles = append(allRoles, r)
+				}
+			}
+			if resp.IsTruncated && resp.Marker != nil {
+				marker = resp.Marker
+			} else {
+				break
+			}
+		}
+
+		for _, name := range pgRoles {
+			client.DeleteRole(ctx, &iam.DeleteRoleInput{RoleName: aws.String(name)})
+		}
+
+		if len(allRoles) != 5 {
+			return fmt.Errorf("expected 5 paginated roles, got %d", len(allRoles))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "ListPolicies_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgPolicyArns []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagPolicy-%s-%d", pgTs, i)
+			resp, err := client.CreatePolicy(ctx, &iam.CreatePolicyInput{
+				PolicyName:     aws.String(name),
+				PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}`),
+			})
+			if err != nil {
+				return fmt.Errorf("create policy %s: %v", name, err)
+			}
+			pgPolicyArns = append(pgPolicyArns, aws.ToString(resp.Policy.Arn))
+		}
+
+		var allPolicies []types.Policy
+		var marker *string
+		for {
+			resp, err := client.ListPolicies(ctx, &iam.ListPoliciesInput{
+				Scope:    types.PolicyScopeTypeLocal,
+				Marker:   marker,
+				MaxItems: aws.Int32(2),
+			})
+			if err != nil {
+				for _, arn := range pgPolicyArns {
+					client.DeletePolicy(ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(arn)})
+				}
+				return fmt.Errorf("list policies page: %v", err)
+			}
+			for _, p := range resp.Policies {
+				if strings.HasPrefix(aws.ToString(p.PolicyName), "PagPolicy-"+pgTs) {
+					allPolicies = append(allPolicies, p)
+				}
+			}
+			if resp.IsTruncated && resp.Marker != nil {
+				marker = resp.Marker
+			} else {
+				break
+			}
+		}
+
+		for _, arn := range pgPolicyArns {
+			client.DeletePolicy(ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(arn)})
+		}
+
+		if len(allPolicies) != 5 {
+			return fmt.Errorf("expected 5 paginated policies, got %d", len(allPolicies))
 		}
 		return nil
 	}))

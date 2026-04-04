@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -35,38 +33,11 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	}
 
 	createIAMRole := func(roleName string) error {
-		trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
-		form := url.Values{}
-		form.Set("Action", "CreateRole")
-		form.Set("Version", "2010-05-08")
-		form.Set("RoleName", roleName)
-		form.Set("AssumeRolePolicyDocument", trustPolicy)
-		req, err := http.NewRequestWithContext(context.Background(), "POST", r.endpoint, bytes.NewBufferString(form.Encode()))
-		if err != nil {
-			return err
-		}
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-		resp.Body.Close()
-		return nil
+		return IAMCreateRole(r.endpoint, roleName, `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`)
 	}
 
 	deleteIAMRole := func(roleName string) {
-		form := url.Values{}
-		form.Set("Action", "DeleteRole")
-		form.Set("Version", "2010-05-08")
-		form.Set("RoleName", roleName)
-		req, _ := http.NewRequestWithContext(context.Background(), "POST", r.endpoint, bytes.NewBufferString(form.Encode()))
-		if req != nil {
-			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			resp, _ := http.DefaultClient.Do(req)
-			if resp != nil {
-				resp.Body.Close()
-			}
-		}
+		IAMDeleteRole(r.endpoint, roleName)
 	}
 
 	client := lambda.NewFromConfig(cfg)
@@ -300,11 +271,13 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		return nil
 	}))
 
+	var addPermStatementID string
+
 	results = append(results, r.RunTest("lambda", "AddPermission", func() error {
-		statementID := fmt.Sprintf("stmt-%d", time.Now().UnixNano())
+		addPermStatementID = fmt.Sprintf("stmt-%d", time.Now().UnixNano())
 		resp, err := client.AddPermission(ctx, &lambda.AddPermissionInput{
 			FunctionName: aws.String(functionName),
-			StatementId:  aws.String(statementID),
+			StatementId:  aws.String(addPermStatementID),
 			Action:       aws.String("lambda:InvokeFunction"),
 			Principal:    aws.String("apigateway.amazonaws.com"),
 		})
@@ -421,6 +394,12 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("lambda", "DeleteFunction", func() error {
+		if addPermStatementID != "" {
+			client.RemovePermission(ctx, &lambda.RemovePermissionInput{
+				FunctionName: aws.String(functionName),
+				StatementId:  aws.String(addPermStatementID),
+			})
+		}
 		resp, err := client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
 			FunctionName: aws.String(functionName),
 		})
@@ -1448,6 +1427,60 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		var rnf *types.ResourceNotFoundException
 		if !errors.As(err, &rnf) {
 			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+		}
+		return nil
+	}))
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("lambda", "ListFunctions_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgFuncs []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagFunc-%s-%d", pgTs, i)
+			_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+				FunctionName: aws.String(name),
+				Runtime:      types.RuntimeNodejs22x,
+				Role:         aws.String(roleARN),
+				Handler:      aws.String("index.handler"),
+				Code:         &types.FunctionCode{ZipFile: functionCode},
+			})
+			if err != nil {
+				return fmt.Errorf("create function %s: %v", name, err)
+			}
+			pgFuncs = append(pgFuncs, name)
+		}
+
+		var allFuncs []string
+		var marker *string
+		for {
+			resp, err := client.ListFunctions(ctx, &lambda.ListFunctionsInput{
+				Marker:   marker,
+				MaxItems: aws.Int32(2),
+			})
+			if err != nil {
+				for _, name := range pgFuncs {
+					client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(name)})
+				}
+				return fmt.Errorf("list functions page: %v", err)
+			}
+			for _, f := range resp.Functions {
+				if strings.HasPrefix(aws.ToString(f.FunctionName), "PagFunc-"+pgTs) {
+					allFuncs = append(allFuncs, aws.ToString(f.FunctionName))
+				}
+			}
+			if resp.NextMarker != nil && *resp.NextMarker != "" {
+				marker = resp.NextMarker
+			} else {
+				break
+			}
+		}
+
+		for _, name := range pgFuncs {
+			client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(name)})
+		}
+		if len(allFuncs) != 5 {
+			return fmt.Errorf("expected 5 paginated functions, got %d", len(allFuncs))
 		}
 		return nil
 	}))

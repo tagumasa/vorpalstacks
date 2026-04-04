@@ -8,8 +8,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
+	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	"vorpalstacks/pkg/graphengine"
 )
 
@@ -20,43 +24,21 @@ const (
 )
 
 // NeptuneDataService implements the Neptune Data API service, handling Gremlin,
-// OpenCypher, graph statistics, loader, and ML operations. Query state is
-// tracked in-memory with TTL-based expiry. Graph data is read and written via
-// the GraphReader/GraphWriter interfaces provided by the request context.
+// OpenCypher, graph statistics, loader, and ML operations. Query state and
+// loader jobs are persisted in Pebble storage via the shared Neptune store.
+// Graph data is read and written via the GraphReader/GraphWriter interfaces
+// provided by the request context.
 type NeptuneDataService struct {
+	store      *neptunestore.NeptuneStore
 	mu         sync.RWMutex
-	queryState map[string]*queryState
 	fastTokens map[string]time.Time
 	stats      *GraphStatistics
 	startTime  time.Time
-	loaderJobs map[string]*loaderJobState
 }
 
-type loaderJobState struct {
-	LoadId     string    `json:"loadId"`
-	Status     string    `json:"status"`
-	Source     string    `json:"source"`
-	Format     string    `json:"format"`
-	StartedAt  time.Time `json:"startedAt"`
-	FinishedAt time.Time `json:"finishedAt"`
-}
-
-// queryState holds the runtime state of an executed query, including timing,
-// status, and optional result or error information.
-type queryState struct {
-	ID        string
-	Query     string
-	QueryType string
-	Status    string
-	StartedAt time.Time
-	EndedAt   time.Time
-	Result    any
-	Error     string
-}
-
-// elapsedMs returns the elapsed time between start and end in milliseconds.
-func elapsedMs(start, end time.Time) int64 {
-	return int64(end.Sub(start).Milliseconds())
+// elapsedMs returns the elapsed time between two Unix-millisecond timestamps.
+func elapsedMs(startMs, endMs int64) int64 {
+	return endMs - startMs
 }
 
 // GraphStatistics holds cached graph-level statistics for the property graph.
@@ -68,18 +50,17 @@ type GraphStatistics struct {
 	RelCounts   map[string]int64 `json:"-"`
 }
 
-// NewNeptuneDataService creates a new service instance with empty query state,
-// FastReset token store, and zeroed statistics.
-func NewNeptuneDataService() *NeptuneDataService {
+// NewNeptuneDataService creates a new service instance backed by the shared
+// Neptune Pebble store for query states and loader jobs.
+func NewNeptuneDataService(store *neptunestore.NeptuneStore) *NeptuneDataService {
 	return &NeptuneDataService{
-		queryState: make(map[string]*queryState),
+		store:      store,
 		fastTokens: make(map[string]time.Time),
 		stats: &GraphStatistics{
 			LabelCounts: make(map[string]int64),
 			RelCounts:   make(map[string]int64),
 		},
-		startTime:  time.Now(),
-		loaderJobs: make(map[string]*loaderJobState),
+		startTime: time.Now(),
 	}
 }
 
@@ -225,53 +206,32 @@ func (s *NeptuneDataService) unsupported(ctx context.Context, reqCtx *request.Re
 	return nil, unsupported("this operation is not supported by vorpalstacks")
 }
 
-// trackQuery records the start of a query execution. Caller must not hold the lock.
+// trackQuery records the start of a query execution in Pebble storage.
 func (s *NeptuneDataService) trackQuery(id, query, queryType string) {
-	s.mu.Lock()
-	s.cleanupExpired()
-	s.queryState[id] = &queryState{
-		ID:        id,
-		Query:     query,
+	qr := &pb.QueryState{
+		QueryId:   id,
 		QueryType: queryType,
 		Status:    "running",
-		StartedAt: time.Now(),
+		StartTime: timestamppb.Now(),
 	}
-	s.mu.Unlock()
+	_ = s.store.CreateQuery(qr)
 }
 
-// resolveQuery records the completion of a query, setting its status, end time,
-// and optional result or error.
+// resolveQuery records the completion of a query in Pebble storage.
 func (s *NeptuneDataService) resolveQuery(id string, result any, err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	qs, ok := s.queryState[id]
-	if !ok {
+	qr, storeErr := s.store.GetQuery(id)
+	if storeErr != nil || qr == nil {
 		return
 	}
-	qs.EndedAt = time.Now()
+	qr.EndTime = timestamppb.Now()
 
 	if err != nil {
-		qs.Status = "failed"
-		qs.Error = err.Error()
+		qr.Status = "failed"
+		qr.Error = err.Error()
 	} else {
-		qs.Status = "complete"
-		qs.Result = result
+		qr.Status = "complete"
 	}
-}
-
-// cleanupExpired removes query state entries whose elapsed time exceeds
-// queryStateTTL. Caller must hold the write lock.
-func (s *NeptuneDataService) cleanupExpired() {
-	now := time.Now()
-	for id, qs := range s.queryState {
-		if qs.EndedAt.IsZero() {
-			continue
-		}
-		if now.Sub(qs.EndedAt) > queryStateTTL {
-			delete(s.queryState, id)
-		}
-	}
+	_ = s.store.UpdateQuery(qr)
 }
 
 // refreshStatistics re-reads graph statistics from the engine and updates the
@@ -298,10 +258,10 @@ func generateQueryID() string {
 }
 
 // generateFastResetToken produces a unique token for the two-phase FastReset
-// protocol. The counter is safe because the caller holds s.mu before incrementing.
+// protocol. Uses atomic operations for thread safety.
 var tokenCounter int64
 
 func generateFastResetToken() string {
-	tokenCounter++
-	return fmt.Sprintf("frt-%d-%d", time.Now().UnixNano(), tokenCounter)
+	id := atomic.AddInt64(&tokenCounter, 1)
+	return fmt.Sprintf("frt-%d-%d", time.Now().UnixNano(), id)
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -40,36 +41,11 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
 
 	trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"states.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
-	form := url.Values{}
-	form.Set("Action", "CreateRole")
-	form.Set("Version", "2010-05-08")
-	form.Set("RoleName", roleName)
-	form.Set("AssumeRolePolicyDocument", trustPolicy)
-	req, err := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(form.Encode()))
-	if err != nil {
-		results = append(results, TestResult{Service: "stepfunctions", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role request: %v", err)})
-		return results
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
+	if err := IAMCreateRole(r.endpoint, roleName, trustPolicy); err != nil {
 		results = append(results, TestResult{Service: "stepfunctions", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
 		return results
 	}
-	resp.Body.Close()
-	defer func() {
-		cleanupForm := url.Values{}
-		cleanupForm.Set("Action", "DeleteRole")
-		cleanupForm.Set("Version", "2010-05-08")
-		cleanupForm.Set("RoleName", roleName)
-		cleanupReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(cleanupForm.Encode()))
-		if cleanupReq != nil {
-			cleanupReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			if cleanupResp, _ := http.DefaultClient.Do(cleanupReq); cleanupResp != nil {
-				cleanupResp.Body.Close()
-			}
-		}
-	}()
+	defer IAMDeleteRoleCtx(ctx, r.endpoint, roleName)
 
 	stateMachineDefinition := map[string]interface{}{
 		"Comment": "A Hello World example",
@@ -311,8 +287,8 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		_, err := client.DescribeStateMachine(ctx, &sfn.DescribeStateMachineInput{
 			StateMachineArn: aws.String("arn:aws:states:us-east-1:000000000000:stateMachine:nonexistent-fake-arn"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent state machine")
+		if err := AssertErrorContains(err, "StateMachineDoesNotExist"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -321,8 +297,8 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		_, err := client.DeleteStateMachine(ctx, &sfn.DeleteStateMachineInput{
 			StateMachineArn: aws.String("arn:aws:states:us-east-1:000000000000:stateMachine:nonexistent-fake-arn"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent state machine")
+		if err := AssertErrorContains(err, "StateMachineDoesNotExist"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -331,8 +307,8 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		_, err := client.DescribeExecution(ctx, &sfn.DescribeExecutionInput{
 			ExecutionArn: aws.String("arn:aws:states:us-east-1:000000000000:execution:nonexistent:fake-exec"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent execution")
+		if err := AssertErrorContains(err, "ExecutionDoesNotExist"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -341,8 +317,8 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		_, err := client.DescribeActivity(ctx, &sfn.DescribeActivityInput{
 			ActivityArn: aws.String("arn:aws:states:us-east-1:000000000000:activity:nonexistent-fake-arn"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent activity")
+		if err := AssertErrorContains(err, "ActivityDoesNotExist"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -662,6 +638,7 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	// === Version Operations ===
 
 	var versionARN string
+	var secondVersionARN string
 	results = append(results, r.RunTest("stepfunctions", "PublishStateMachineVersion", func() error {
 		if verifySMARN == "" {
 			return fmt.Errorf("state machine ARN not available")
@@ -713,6 +690,7 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		if *resp.StateMachineVersionArn == versionARN {
 			return fmt.Errorf("second version should have different ARN")
 		}
+		secondVersionARN = *resp.StateMachineVersionArn
 		return nil
 	}))
 
@@ -739,8 +717,8 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		_, err := client.DeleteStateMachineVersion(ctx, &sfn.DeleteStateMachineVersionInput{
 			StateMachineVersionArn: aws.String("arn:aws:states:us-east-1:000000000000:stateMachine:fake:999"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent version")
+		if err := AssertErrorContains(err, "StateMachineVersionNotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -883,8 +861,8 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		_, err := client.DeleteStateMachineAlias(ctx, &sfn.DeleteStateMachineAliasInput{
 			StateMachineAliasArn: aws.String("arn:aws:states:us-east-1:000000000000:stateMachine:fake:NONEXISTENT"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent alias")
+		if err := AssertErrorContains(err, "StateMachineAliasDoesNotExist"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -938,8 +916,70 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 				return fmt.Errorf("expected error for duplicate alias")
 			}
 		}
+		client.DeleteStateMachineAlias(ctx, &sfn.DeleteStateMachineAliasInput{
+			StateMachineAliasArn: aws.String(fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachineAlias:%s", r.region, dupAliasName)),
+		})
 		return nil
 	}))
+
+	results = append(results, r.RunTest("stepfunctions", "ListStateMachines_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgARNs []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagSM-%s-%d", pgTs, i)
+			resp, err := client.CreateStateMachine(ctx, &sfn.CreateStateMachineInput{
+				Name:       aws.String(name),
+				Definition: aws.String(`{"Comment":"pag test","StartAt":"Done","States":{"Done":{"Type":"Pass","End":true}}}`),
+				RoleArn:    aws.String(roleARN),
+			})
+			if err != nil {
+				for _, arn := range pgARNs {
+					client.DeleteStateMachine(ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(arn)})
+				}
+				return fmt.Errorf("create state machine %s: %v", name, err)
+			}
+			pgARNs = append(pgARNs, *resp.StateMachineArn)
+		}
+
+		var allNames []string
+		var nextToken *string
+		for {
+			resp, err := client.ListStateMachines(ctx, &sfn.ListStateMachinesInput{
+				MaxResults: 2,
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				for _, arn := range pgARNs {
+					client.DeleteStateMachine(ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(arn)})
+				}
+				return fmt.Errorf("list state machines page: %v", err)
+			}
+			for _, sm := range resp.StateMachines {
+				if strings.HasPrefix(aws.ToString(sm.Name), "PagSM-"+pgTs) {
+					allNames = append(allNames, aws.ToString(sm.Name))
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, arn := range pgARNs {
+			client.DeleteStateMachine(ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(arn)})
+		}
+		if len(allNames) != 5 {
+			return fmt.Errorf("expected 5 paginated state machines, got %d", len(allNames))
+		}
+		return nil
+	}))
+
+	if secondVersionARN != "" {
+		client.DeleteStateMachineVersion(ctx, &sfn.DeleteStateMachineVersionInput{
+			StateMachineVersionArn: aws.String(secondVersionARN),
+		})
+	}
 
 	if verifySMARN != "" {
 		client.DeleteStateMachine(ctx, &sfn.DeleteStateMachineInput{

@@ -82,6 +82,9 @@ const (
 	// ACMServiceRevokeCertificateProcedure is the fully-qualified name of the ACMService's
 	// RevokeCertificate RPC.
 	ACMServiceRevokeCertificateProcedure = "/acm.ACMService/RevokeCertificate"
+	// ACMServiceSearchCertificatesProcedure is the fully-qualified name of the ACMService's
+	// SearchCertificates RPC.
+	ACMServiceSearchCertificatesProcedure = "/acm.ACMService/SearchCertificates"
 	// ACMServiceUpdateCertificateOptionsProcedure is the fully-qualified name of the ACMService's
 	// UpdateCertificateOptions RPC.
 	ACMServiceUpdateCertificateOptionsProcedure = "/acm.ACMService/UpdateCertificateOptions"
@@ -93,7 +96,7 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTagsToCertificate(context.Context, *connect.Request[acm.AddTagsToCertificateRequest]) (*connect.Response[common.Empty], error)
-	// Deletes a certificate and its associated private key. If this action succeeds, the certificate no longer appears in the list that can be displayed by calling the ListCertificates action or be retri...
+	// Deletes a certificate and its associated private key. If this action succeeds, the certificate is not available for use by Amazon Web Services services integrated with ACM. Deleting a certificate i...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteCertificate(context.Context, *connect.Request[acm.DeleteCertificateRequest]) (*connect.Response[common.Empty], error)
@@ -101,7 +104,7 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeCertificate(context.Context, *connect.Request[acm.DescribeCertificateRequest]) (*connect.Response[acm.DescribeCertificateResponse], error)
-	// Exports a private certificate issued by a private certificate authority (CA) or public certificate for use anywhere. The exported file contains the certificate, the certificate chain, and the encry...
+	// Exports a private certificate issued by a private certificate authority (CA) or a public certificate for use anywhere. The exported file contains the certificate, the certificate chain, and the enc...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ExportCertificate(context.Context, *connect.Request[acm.ExportCertificateRequest]) (*connect.Response[acm.ExportCertificateResponse], error)
@@ -145,10 +148,14 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ResendValidationEmail(context.Context, *connect.Request[acm.ResendValidationEmailRequest]) (*connect.Response[common.Empty], error)
-	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported.
+	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported. Once a certificate is revoked, you cannot reuse the certificate. Revoking a certificate is per...
 	// HTTP:
 	// Protocol: awsJson1_1
 	RevokeCertificate(context.Context, *connect.Request[acm.RevokeCertificateRequest]) (*connect.Response[acm.RevokeCertificateResponse], error)
+	// Retrieves a list of certificates matching search criteria. You can filter certificates by X.509 attributes and ACM specific properties like certificate status, type and renewal eligibility. This op...
+	// HTTP:
+	// Protocol: awsJson1_1
+	SearchCertificates(context.Context, *connect.Request[acm.SearchCertificatesRequest]) (*connect.Response[acm.SearchCertificatesResponse], error)
 	// Updates a certificate. You can use this function to specify whether to opt in to or out of recording your certificate in a certificate transparency log and exporting. For more information, see Opti...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -256,6 +263,12 @@ func NewACMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(aCMServiceMethods.ByName("RevokeCertificate")),
 			connect.WithClientOptions(opts...),
 		),
+		searchCertificates: connect.NewClient[acm.SearchCertificatesRequest, acm.SearchCertificatesResponse](
+			httpClient,
+			baseURL+ACMServiceSearchCertificatesProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("SearchCertificates")),
+			connect.WithClientOptions(opts...),
+		),
 		updateCertificateOptions: connect.NewClient[acm.UpdateCertificateOptionsRequest, common.Empty](
 			httpClient,
 			baseURL+ACMServiceUpdateCertificateOptionsProcedure,
@@ -282,6 +295,7 @@ type aCMServiceClient struct {
 	requestCertificate        *connect.Client[acm.RequestCertificateRequest, acm.RequestCertificateResponse]
 	resendValidationEmail     *connect.Client[acm.ResendValidationEmailRequest, common.Empty]
 	revokeCertificate         *connect.Client[acm.RevokeCertificateRequest, acm.RevokeCertificateResponse]
+	searchCertificates        *connect.Client[acm.SearchCertificatesRequest, acm.SearchCertificatesResponse]
 	updateCertificateOptions  *connect.Client[acm.UpdateCertificateOptionsRequest, common.Empty]
 }
 
@@ -360,6 +374,11 @@ func (c *aCMServiceClient) RevokeCertificate(ctx context.Context, req *connect.R
 	return c.revokeCertificate.CallUnary(ctx, req)
 }
 
+// SearchCertificates calls acm.ACMService.SearchCertificates.
+func (c *aCMServiceClient) SearchCertificates(ctx context.Context, req *connect.Request[acm.SearchCertificatesRequest]) (*connect.Response[acm.SearchCertificatesResponse], error) {
+	return c.searchCertificates.CallUnary(ctx, req)
+}
+
 // UpdateCertificateOptions calls acm.ACMService.UpdateCertificateOptions.
 func (c *aCMServiceClient) UpdateCertificateOptions(ctx context.Context, req *connect.Request[acm.UpdateCertificateOptionsRequest]) (*connect.Response[common.Empty], error) {
 	return c.updateCertificateOptions.CallUnary(ctx, req)
@@ -371,7 +390,7 @@ type ACMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTagsToCertificate(context.Context, *connect.Request[acm.AddTagsToCertificateRequest]) (*connect.Response[common.Empty], error)
-	// Deletes a certificate and its associated private key. If this action succeeds, the certificate no longer appears in the list that can be displayed by calling the ListCertificates action or be retri...
+	// Deletes a certificate and its associated private key. If this action succeeds, the certificate is not available for use by Amazon Web Services services integrated with ACM. Deleting a certificate i...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteCertificate(context.Context, *connect.Request[acm.DeleteCertificateRequest]) (*connect.Response[common.Empty], error)
@@ -379,7 +398,7 @@ type ACMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeCertificate(context.Context, *connect.Request[acm.DescribeCertificateRequest]) (*connect.Response[acm.DescribeCertificateResponse], error)
-	// Exports a private certificate issued by a private certificate authority (CA) or public certificate for use anywhere. The exported file contains the certificate, the certificate chain, and the encry...
+	// Exports a private certificate issued by a private certificate authority (CA) or a public certificate for use anywhere. The exported file contains the certificate, the certificate chain, and the enc...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ExportCertificate(context.Context, *connect.Request[acm.ExportCertificateRequest]) (*connect.Response[acm.ExportCertificateResponse], error)
@@ -423,10 +442,14 @@ type ACMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ResendValidationEmail(context.Context, *connect.Request[acm.ResendValidationEmailRequest]) (*connect.Response[common.Empty], error)
-	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported.
+	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported. Once a certificate is revoked, you cannot reuse the certificate. Revoking a certificate is per...
 	// HTTP:
 	// Protocol: awsJson1_1
 	RevokeCertificate(context.Context, *connect.Request[acm.RevokeCertificateRequest]) (*connect.Response[acm.RevokeCertificateResponse], error)
+	// Retrieves a list of certificates matching search criteria. You can filter certificates by X.509 attributes and ACM specific properties like certificate status, type and renewal eligibility. This op...
+	// HTTP:
+	// Protocol: awsJson1_1
+	SearchCertificates(context.Context, *connect.Request[acm.SearchCertificatesRequest]) (*connect.Response[acm.SearchCertificatesResponse], error)
 	// Updates a certificate. You can use this function to specify whether to opt in to or out of recording your certificate in a certificate transparency log and exporting. For more information, see Opti...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -530,6 +553,12 @@ func NewACMServiceHandler(svc ACMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(aCMServiceMethods.ByName("RevokeCertificate")),
 		connect.WithHandlerOptions(opts...),
 	)
+	aCMServiceSearchCertificatesHandler := connect.NewUnaryHandler(
+		ACMServiceSearchCertificatesProcedure,
+		svc.SearchCertificates,
+		connect.WithSchema(aCMServiceMethods.ByName("SearchCertificates")),
+		connect.WithHandlerOptions(opts...),
+	)
 	aCMServiceUpdateCertificateOptionsHandler := connect.NewUnaryHandler(
 		ACMServiceUpdateCertificateOptionsProcedure,
 		svc.UpdateCertificateOptions,
@@ -568,6 +597,8 @@ func NewACMServiceHandler(svc ACMServiceHandler, opts ...connect.HandlerOption) 
 			aCMServiceResendValidationEmailHandler.ServeHTTP(w, r)
 		case ACMServiceRevokeCertificateProcedure:
 			aCMServiceRevokeCertificateHandler.ServeHTTP(w, r)
+		case ACMServiceSearchCertificatesProcedure:
+			aCMServiceSearchCertificatesHandler.ServeHTTP(w, r)
 		case ACMServiceUpdateCertificateOptionsProcedure:
 			aCMServiceUpdateCertificateOptionsHandler.ServeHTTP(w, r)
 		default:
@@ -637,6 +668,10 @@ func (UnimplementedACMServiceHandler) ResendValidationEmail(context.Context, *co
 
 func (UnimplementedACMServiceHandler) RevokeCertificate(context.Context, *connect.Request[acm.RevokeCertificateRequest]) (*connect.Response[acm.RevokeCertificateResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.RevokeCertificate is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) SearchCertificates(context.Context, *connect.Request[acm.SearchCertificatesRequest]) (*connect.Response[acm.SearchCertificatesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.SearchCertificates is not implemented"))
 }
 
 func (UnimplementedACMServiceHandler) UpdateCertificateOptions(context.Context, *connect.Request[acm.UpdateCertificateOptionsRequest]) (*connect.Response[common.Empty], error) {

@@ -13207,6 +13207,7 @@ type ReplicaDescription struct {
 	Ondemandthroughputoverride         *OnDemandThroughputOverride               `protobuf:"bytes,317165234,opt,name=ondemandthroughputoverride,proto3" json:"ondemandthroughputoverride,omitempty"`
 	Provisionedthroughputoverride      *ProvisionedThroughputOverride            `protobuf:"bytes,413332116,opt,name=provisionedthroughputoverride,proto3" json:"provisionedthroughputoverride,omitempty"`
 	Regionname                         string                                    `protobuf:"bytes,112086463,opt,name=regionname,proto3" json:"regionname,omitempty"`
+	Replicaarn                         string                                    `protobuf:"bytes,119254443,opt,name=replicaarn,proto3" json:"replicaarn,omitempty"`
 	Replicainaccessibledatetime        string                                    `protobuf:"bytes,20060608,opt,name=replicainaccessibledatetime,proto3" json:"replicainaccessibledatetime,omitempty"`
 	Replicastatus                      ReplicaStatus                             `protobuf:"varint,466739730,opt,name=replicastatus,proto3,enum=dynamodb.ReplicaStatus" json:"replicastatus,omitempty"`
 	Replicastatusdescription           string                                    `protobuf:"bytes,416683638,opt,name=replicastatusdescription,proto3" json:"replicastatusdescription,omitempty"`
@@ -13285,6 +13286,13 @@ func (x *ReplicaDescription) GetProvisionedthroughputoverride() *ProvisionedThro
 func (x *ReplicaDescription) GetRegionname() string {
 	if x != nil {
 		return x.Regionname
+	}
+	return ""
+}
+
+func (x *ReplicaDescription) GetReplicaarn() string {
+	if x != nil {
+		return x.Replicaarn
 	}
 	return ""
 }
@@ -19393,7 +19401,7 @@ const file_dynamodb_proto_rawDesc = "" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
 	"regionname\x12\x89\x01\n" +
 	"\"replicaglobalsecondaryindexupdates\x18\xf1\xbe\xeb\a \x03(\v26.dynamodb.ReplicaGlobalSecondaryIndexAutoScalingUpdateR\"replicaglobalsecondaryindexupdates\x12\x90\x01\n" +
-	"/replicaprovisionedreadcapacityautoscalingupdate\x18\xa1\x9f\x88} \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR/replicaprovisionedreadcapacityautoscalingupdate\"\xf2\a\n" +
+	"/replicaprovisionedreadcapacityautoscalingupdate\x18\xa1\x9f\x88} \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR/replicaprovisionedreadcapacityautoscalingupdate\"\x95\b\n" +
 	"\x12ReplicaDescription\x12l\n" +
 	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v20.dynamodb.ReplicaGlobalSecondaryIndexDescriptionR\x16globalsecondaryindexes\x12\x7f\n" +
 	"\"globaltablesettingsreplicationmode\x18\xf1\xcd\xfd\x04 \x01(\x0e2,.dynamodb.GlobalTableSettingsReplicationModeR\"globaltablesettingsreplicationmode\x12*\n" +
@@ -19402,7 +19410,10 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x1dprovisionedthroughputoverride\x18\x94\xe5\x8b\xc5\x01 \x01(\v2'.dynamodb.ProvisionedThroughputOverrideR\x1dprovisionedthroughputoverride\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
-	"regionname\x12C\n" +
+	"regionname\x12!\n" +
+	"\n" +
+	"replicaarn\x18\xab\xdb\xee8 \x01(\tR\n" +
+	"replicaarn\x12C\n" +
 	"\x1breplicainaccessibledatetime\x18\xc0\xb3\xc8\t \x01(\tR\x1breplicainaccessibledatetime\x12A\n" +
 	"\rreplicastatus\x18\x92\xc4\xc7\xde\x01 \x01(\x0e2\x17.dynamodb.ReplicaStatusR\rreplicastatus\x12>\n" +
 	"\x18replicastatusdescription\x18\xf6\xac\xd8\xc6\x01 \x01(\tR\x18replicastatusdescription\x12F\n" +

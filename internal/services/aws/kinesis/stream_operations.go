@@ -224,6 +224,11 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 	}
 
 	exclusiveStartName := request.GetStringParam(req.Parameters, "ExclusiveStartStreamName")
+	// The SDK paginator sends NextToken instead of ExclusiveStartStreamName
+	// on subsequent pages; accept both for compatibility.
+	if exclusiveStartName == "" {
+		exclusiveStartName = request.GetStringParam(req.Parameters, "NextToken")
+	}
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit <= 0 || limit > 100 {
 		limit = 100

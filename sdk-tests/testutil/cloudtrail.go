@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -280,8 +279,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		_, err := client.GetTrail(ctx, &cloudtrail.GetTrailInput{
 			Name: aws.String("nonexistent-trail-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -290,8 +289,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		_, err := client.DeleteTrail(ctx, &cloudtrail.DeleteTrailInput{
 			Name: aws.String("nonexistent-trail-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -300,8 +299,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		_, err := client.StartLogging(ctx, &cloudtrail.StartLoggingInput{
 			Name: aws.String("nonexistent-trail-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -458,11 +457,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 			Name:         aws.String(name),
 			S3BucketName: aws.String("dup-bucket"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate trail creation")
-		}
-		if !strings.Contains(err.Error(), "TrailAlreadyExists") {
-			return fmt.Errorf("expected TrailAlreadyExists error, got: %v", err)
+		if err := AssertErrorContains(err, "TrailAlreadyExists"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1026,8 +1022,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 			ResourceArn:    aws.String(fakeARN),
 			ResourcePolicy: aws.String(`{"Version":"2012-10-17"}`),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail ARN")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1178,8 +1174,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		_, err := client.StopLogging(ctx, &cloudtrail.StopLoggingInput{
 			Name: aws.String("nonexistent-stop-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1188,8 +1184,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		_, err := client.GetTrailStatus(ctx, &cloudtrail.GetTrailStatusInput{
 			Name: aws.String("nonexistent-status-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1199,8 +1195,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 			Name:         aws.String("nonexistent-update-xyz"),
 			S3BucketName: aws.String("some-bucket"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1209,8 +1205,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		_, err := client.GetEventSelectors(ctx, &cloudtrail.GetEventSelectorsInput{
 			TrailName: aws.String("nonexistent-es-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1222,8 +1218,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 				{ReadWriteType: types.ReadWriteTypeAll},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1235,8 +1231,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 				{InsightType: types.InsightTypeApiCallRateInsight},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1245,8 +1241,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		_, err := client.GetInsightSelectors(ctx, &cloudtrail.GetInsightSelectorsInput{
 			TrailName: aws.String("nonexistent-is-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1256,8 +1252,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 			ResourceId: aws.String("arn:aws:cloudtrail:us-east-1:123456789012:trail/nonexistent-tag-xyz"),
 			TagsList:   []types.Tag{{Key: aws.String("K"), Value: aws.String("V")}},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1267,8 +1263,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 			ResourceId: aws.String("arn:aws:cloudtrail:us-east-1:123456789012:trail/nonexistent-rm-xyz"),
 			TagsList:   []types.Tag{{Key: aws.String("K")}},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1277,8 +1273,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		_, err := client.ListTags(ctx, &cloudtrail.ListTagsInput{
 			ResourceIdList: []string{"arn:aws:cloudtrail:us-east-1:123456789012:trail/nonexistent-lt-xyz"},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1288,8 +1284,8 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		_, err := client.GetResourcePolicy(ctx, &cloudtrail.GetResourcePolicyInput{
 			ResourceArn: aws.String(fakeARN),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent trail")
+		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))

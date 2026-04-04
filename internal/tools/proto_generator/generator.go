@@ -26,10 +26,13 @@ func NewProtoGenerator(reader ProtoDataReader) *ProtoGenerator {
 }
 
 func (g *ProtoGenerator) getServiceFilename(service *ServiceInfo) string {
+	if service.Name != "" {
+		return sanitizePackageName(strings.ToLower(strings.ReplaceAll(service.Name, " ", "")))
+	}
 	if service.EndpointPrefix != "" {
 		return sanitizePackageName(service.EndpointPrefix)
 	}
-	return sanitizePackageName(strings.ToLower(service.Name))
+	return "unknown"
 }
 
 // GenerateProto generates a proto file
@@ -89,9 +92,9 @@ func (g *ProtoGenerator) buildTemplateData(ctx context.Context, service *Service
 	if service.Name == "" {
 		return ProtoTemplateData{}, fmt.Errorf("service name cannot be empty")
 	}
-	packageName := sanitizePackageName(service.EndpointPrefix)
+	packageName := sanitizePackageName(strings.ToLower(strings.ReplaceAll(service.Name, " ", "")))
 	if packageName == "" {
-		packageName = sanitizePackageName(strings.ToLower(service.Name))
+		packageName = sanitizePackageName(service.EndpointPrefix)
 	}
 	serviceName := sanitizeServiceName(service.Name)
 

@@ -15,6 +15,7 @@ import (
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/mock"
 	"vorpalstacks/internal/store/api"
+	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	"vorpalstacks/pkg/graphengine"
 )
 
@@ -217,6 +218,13 @@ func (d *Dispatcher) DispatchWithContext(w http.ResponseWriter, r *http.Request,
 
 func (d *Dispatcher) SetGraphDB(db *graphengine.DB) {
 	d.graphDB = db
+}
+
+// SetNeptuneStore sets the Neptune store on the underlying store provider.
+func (d *Dispatcher) SetNeptuneStore(store neptunestore.NeptuneStoreInterface) {
+	if sp, ok := d.storeProvider.(*interfaces.StoreProviderImpl); ok {
+		sp.SetNeptuneStore(store)
+	}
 }
 
 // DispatchClassified handles an incoming HTTP request that has already been

@@ -11,6 +11,9 @@ import (
 	"vorpalstacks-sdk-tests/config"
 )
 
+// RunNeptuneTests exercises the Neptune Management API end-to-end, covering
+// cluster lifecycle, snapshots, instances, parameter groups, subnet groups,
+// tags, and cluster endpoints.
 func (r *TestRunner) RunNeptuneTests() []TestResult {
 	var results []TestResult
 
@@ -655,6 +658,22 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 		if resp.TagList == nil {
 			return fmt.Errorf("expected TagList to be non-nil")
 		}
+		foundEnv := false
+		foundOwner := false
+		for _, t := range resp.TagList {
+			if t.Key != nil && *t.Key == "Environment" && t.Value != nil && *t.Value == "test" {
+				foundEnv = true
+			}
+			if t.Key != nil && *t.Key == "Owner" && t.Value != nil && *t.Value == "sdk-test" {
+				foundOwner = true
+			}
+		}
+		if !foundEnv {
+			return fmt.Errorf("expected tag Environment=test not found in TagList")
+		}
+		if !foundOwner {
+			return fmt.Errorf("expected tag Owner=sdk-test not found in TagList")
+		}
 		return nil
 	}))
 
@@ -664,6 +683,30 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 			TagKeys:      []string{"Environment"},
 		})
 		return err
+	}))
+
+	results = append(results, r.RunTest("neptune", "ListTagsForResource_AfterRemove", func() error {
+		resp, err := client.ListTagsForResource(ctx, &neptune.ListTagsForResourceInput{
+			ResourceName: aws.String(fmt.Sprintf("arn:aws:rds:us-east-1:000000000000:cluster:%s", clusterID)),
+		})
+		if err != nil {
+			return err
+		}
+		for _, t := range resp.TagList {
+			if t.Key != nil && *t.Key == "Environment" {
+				return fmt.Errorf("expected tag Environment to be removed but still present")
+			}
+		}
+		foundOwner := false
+		for _, t := range resp.TagList {
+			if t.Key != nil && *t.Key == "Owner" {
+				foundOwner = true
+			}
+		}
+		if !foundOwner {
+			return fmt.Errorf("expected tag Owner to still be present after removing Environment")
+		}
+		return nil
 	}))
 
 	// === Cluster Endpoints ===
@@ -679,8 +722,28 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusterEndpoints", func() error {
-		_, err := client.DescribeDBClusterEndpoints(ctx, &neptune.DescribeDBClusterEndpointsInput{})
-		return err
+		resp, err := client.DescribeDBClusterEndpoints(ctx, &neptune.DescribeDBClusterEndpointsInput{
+			DBClusterIdentifier: aws.String(clusterID),
+		})
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, ep := range resp.DBClusterEndpoints {
+			if ep.DBClusterEndpointIdentifier != nil && *ep.DBClusterEndpointIdentifier == endpointID {
+				found = true
+				if ep.EndpointType == nil || *ep.EndpointType != "READER" {
+					return fmt.Errorf("expected EndpointType READER, got %v", ep.EndpointType)
+				}
+				if ep.Status == nil || *ep.Status == "" {
+					return fmt.Errorf("expected non-empty Status")
+				}
+			}
+		}
+		if !found {
+			return fmt.Errorf("expected endpoint %s in DescribeDBClusterEndpoints response", endpointID)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyDBClusterEndpoint", func() error {
@@ -779,8 +842,8 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 		_, err := client.DescribeDBClusters(ctx, &neptune.DescribeDBClustersInput{
 			DBClusterIdentifier: aws.String("nonexistent-cluster"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent cluster")
+		if err := AssertErrorContains(err, "DBClusterNotFoundFault"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -789,8 +852,8 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 		_, err := client.DescribeDBInstances(ctx, &neptune.DescribeDBInstancesInput{
 			DBInstanceIdentifier: aws.String("nonexistent-instance"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent instance")
+		if err := AssertErrorContains(err, "DBInstanceNotFoundFault"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -836,8 +899,8 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 		_, err := client.DescribeDBClusters(ctx, &neptune.DescribeDBClustersInput{
 			DBClusterIdentifier: aws.String(clusterID),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error after cluster deletion")
+		if err := AssertErrorContains(err, "DBClusterNotFoundFault"); err != nil {
+			return err
 		}
 		return nil
 	}))

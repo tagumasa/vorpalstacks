@@ -8698,6 +8698,8 @@ message UpdateAnycastIpListRequest {
 
   IpAddressType ipaddresstype = 459110693;
 
+  repeated IpamCidrConfig ipamcidrconfigs = 314539184;
+
 }
 
 

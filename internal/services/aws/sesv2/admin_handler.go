@@ -6,21 +6,24 @@ import (
 	"connectrpc.com/connect"
 
 	"vorpalstacks/internal/core/storage"
-	pb "vorpalstacks/internal/pb/aws/email"
-	emailconnect "vorpalstacks/internal/pb/aws/email/emailconnect"
+	pb "vorpalstacks/internal/pb/aws/sesv2"
+	sesv2connect "vorpalstacks/internal/pb/aws/sesv2/sesv2connect"
 	svccommon "vorpalstacks/internal/services/aws/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
 
+// AdminHandler implements the SESv2 gRPC-Web admin console handler. It exposes
+// list operations for email identities for the Flutter management UI.
 type AdminHandler struct {
-	emailconnect.UnimplementedSESv2ServiceHandler
+	sesv2connect.UnimplementedSESv2ServiceHandler
 	storageManager *storage.RegionStorageManager
 	accountId      string
 }
 
-var _ emailconnect.SESv2ServiceHandler = (*AdminHandler)(nil)
+var _ sesv2connect.SESv2ServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new SESv2 admin console handler.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -37,6 +40,8 @@ func (h *AdminHandler) getSESv2Store(req *connect.Request[pb.ListEmailIdentities
 	return sesv2store.NewSESv2Store(regionStorage, h.accountId, region), nil
 }
 
+// ListEmailIdentities returns a paginated list of email identities in the
+// requested region.
 func (h *AdminHandler) ListEmailIdentities(ctx context.Context, req *connect.Request[pb.ListEmailIdentitiesRequest]) (*connect.Response[pb.ListEmailIdentitiesResponse], error) {
 	store, err := h.getSESv2Store(req)
 	if err != nil {

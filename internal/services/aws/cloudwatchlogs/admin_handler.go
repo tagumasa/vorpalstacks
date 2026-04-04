@@ -6,15 +6,15 @@ import (
 	"connectrpc.com/connect"
 
 	"vorpalstacks/internal/core/storage"
-	pb "vorpalstacks/internal/pb/aws/logs"
-	logsconnect "vorpalstacks/internal/pb/aws/logs/logsconnect"
+	pb "vorpalstacks/internal/pb/aws/cloudwatchlogs"
+	cloudwatchlogsconnect "vorpalstacks/internal/pb/aws/cloudwatchlogs/cloudwatchlogsconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
 	cloudwatchlogsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
 // AdminHandler provides CloudWatch Logs service administration functionality.
 type AdminHandler struct {
-	logsconnect.UnimplementedCloudWatchLogsServiceHandler
+	cloudwatchlogsconnect.UnimplementedCloudWatchLogsServiceHandler
 	storageManager *storage.RegionStorageManager
 	accountId      string
 	dataPath       string

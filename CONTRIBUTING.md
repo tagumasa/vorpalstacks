@@ -29,7 +29,6 @@ Thank you for your interest in contributing! This guide covers the basics.
 - Follow existing conventions in each package
 - Use `gofmt` for formatting
 - Add godoc comments to all exported symbols (functions, types, constants, variables)
-- Use British English in comments
 
 ## Testing
 

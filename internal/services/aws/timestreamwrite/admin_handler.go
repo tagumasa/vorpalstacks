@@ -6,22 +6,26 @@ import (
 	"connectrpc.com/connect"
 
 	"vorpalstacks/internal/core/storage"
-	pb "vorpalstacks/internal/pb/aws/ingest.timestream"
-	ingesttimestreamconnect "vorpalstacks/internal/pb/aws/ingest.timestream/ingest_timestreamconnect"
+	pb "vorpalstacks/internal/pb/aws/timestreamwrite"
+	timestreamwriteconnect "vorpalstacks/internal/pb/aws/timestreamwrite/timestreamwriteconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 )
 
+// AdminHandler implements the Timestream Write gRPC-Web admin console handler.
+// It exposes list operations for databases and tables for the Flutter
+// management UI.
 type AdminHandler struct {
-	ingesttimestreamconnect.UnimplementedTimestreamWriteServiceHandler
+	timestreamwriteconnect.UnimplementedTimestreamWriteServiceHandler
 	storageManager *storage.RegionStorageManager
 	accountId      string
 	dataPath       string
 }
 
-var _ ingesttimestreamconnect.TimestreamWriteServiceHandler = (*AdminHandler)(nil)
+var _ timestreamwriteconnect.TimestreamWriteServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new Timestream Write admin console handler.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId, dataPath string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -49,6 +53,8 @@ func (h *AdminHandler) getTableStore(req *connect.Request[pb.ListTablesRequest])
 	return timestreamstore.NewTableStore(regionStorage, dbStore, h.accountId, region), nil
 }
 
+// ListDatabases returns a paginated list of Timestream databases in the
+// requested region.
 func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[pb.ListDatabasesRequest]) (*connect.Response[pb.ListDatabasesResponse], error) {
 	store, err := h.getStore(req)
 	if err != nil {
@@ -88,6 +94,8 @@ func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[p
 	}), nil
 }
 
+// ListTables returns a paginated list of Timestream tables in the specified
+// database.
 func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.ListTablesRequest]) (*connect.Response[pb.ListTablesResponse], error) {
 	store, err := h.getTableStore(req)
 	if err != nil {

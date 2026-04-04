@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -1219,7 +1220,6 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("create bus: %v", err)
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(srBus)})
 
 		busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/%s", r.region, srBus)
 		archiveARN := fmt.Sprintf("arn:aws:events:%s:000000000000:archive/%s", r.region, srArchive)
@@ -1230,7 +1230,6 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("create archive: %v", err)
 		}
-		defer client.DeleteArchive(ctx, &eventbridge.DeleteArchiveInput{ArchiveName: aws.String(srArchive)})
 
 		now := time.Now()
 		startResp, err := client.StartReplay(ctx, &eventbridge.StartReplayInput{
@@ -1267,6 +1266,9 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 		if describeResp.EventSourceArn == nil || *describeResp.EventSourceArn != archiveARN {
 			return fmt.Errorf("event source ARN mismatch, got %v", describeResp.EventSourceArn)
 		}
+		client.CancelReplay(ctx, &eventbridge.CancelReplayInput{ReplayName: aws.String(srReplay)})
+		client.DeleteArchive(ctx, &eventbridge.DeleteArchiveInput{ArchiveName: aws.String(srArchive)})
+		client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(srBus)})
 		return nil
 	}))
 
@@ -1426,6 +1428,56 @@ func (r *TestRunner) RunEventBridgeTests() []TestResult {
 		}
 		if len(resp.Entries) != 2 {
 			return fmt.Errorf("expected 2 entry results, got %d", len(resp.Entries))
+		}
+		return nil
+	}))
+
+	// === PAGINATION TESTS ===
+
+	results = append(results, r.RunTest("events", "ListRules_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgRules []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagRule-%s-%d", pgTs, i)
+			_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
+				Name: aws.String(name),
+			})
+			if err != nil {
+				return fmt.Errorf("put rule %s: %v", name, err)
+			}
+			pgRules = append(pgRules, name)
+		}
+
+		var allRules []string
+		var nextToken *string
+		for {
+			resp, err := client.ListRules(ctx, &eventbridge.ListRulesInput{
+				NextToken: nextToken,
+				Limit:     aws.Int32(2),
+			})
+			if err != nil {
+				for _, name := range pgRules {
+					client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(name)})
+				}
+				return fmt.Errorf("list rules page: %v", err)
+			}
+			for _, r := range resp.Rules {
+				if strings.HasPrefix(aws.ToString(r.Name), "PagRule-"+pgTs) {
+					allRules = append(allRules, aws.ToString(r.Name))
+				}
+			}
+			if resp.NextToken != nil && *resp.NextToken != "" {
+				nextToken = resp.NextToken
+			} else {
+				break
+			}
+		}
+
+		for _, name := range pgRules {
+			client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(name)})
+		}
+		if len(allRules) != 5 {
+			return fmt.Errorf("expected 5 paginated rules, got %d", len(allRules))
 		}
 		return nil
 	}))

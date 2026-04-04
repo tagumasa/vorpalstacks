@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -2421,7 +2422,59 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 			return fmt.Errorf("expected apiStages to be set")
 		}
 
-		_ = upResp
+		client.DeleteUsagePlan(ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: upResp.Id})
+		return nil
+	}))
+
+	results = append(results, r.RunTest("apigateway", "GetRestApis_Pagination", func() error {
+		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
+		var pgAPIs []string
+		for i := 0; i < 5; i++ {
+			name := fmt.Sprintf("PagAPI-%s-%d", pgTs, i)
+			resp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
+				Name:        aws.String(name),
+				Description: aws.String("pagination test"),
+			})
+			if err != nil {
+				for _, id := range pgAPIs {
+					client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: aws.String(id)})
+				}
+				return fmt.Errorf("create rest api %s: %v", name, err)
+			}
+			pgAPIs = append(pgAPIs, *resp.Id)
+		}
+
+		var allAPIs []string
+		var position *string
+		for {
+			resp, err := client.GetRestApis(ctx, &apigateway.GetRestApisInput{
+				Limit:    aws.Int32(2),
+				Position: position,
+			})
+			if err != nil {
+				for _, id := range pgAPIs {
+					client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: aws.String(id)})
+				}
+				return fmt.Errorf("get rest apis page: %v", err)
+			}
+			for _, item := range resp.Items {
+				if item.Name != nil && strings.HasPrefix(*item.Name, "PagAPI-"+pgTs) {
+					allAPIs = append(allAPIs, *item.Name)
+				}
+			}
+			if resp.Position != nil && *resp.Position != "" {
+				position = resp.Position
+			} else {
+				break
+			}
+		}
+
+		for _, id := range pgAPIs {
+			client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: aws.String(id)})
+		}
+		if len(allAPIs) != 5 {
+			return fmt.Errorf("expected 5 paginated rest apis, got %d", len(allAPIs))
+		}
 		return nil
 	}))
 

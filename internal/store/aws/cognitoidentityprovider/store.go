@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -154,7 +155,14 @@ func (s *CognitoStore) DeleteUserPool(userPoolID string) error {
 // ListUserPools lists all Cognito user pools.
 func (s *CognitoStore) ListUserPools() ([]*UserPool, error) {
 	var userPools []*UserPool
+	// The user pool bucket also contains other entities (domains, identity
+	// providers, etc.) keyed by prefixed names like "domain:..." or
+	// "identityprovider:...". Only keys matching the user pool ID format
+	// ({region}_{uuid}) are actual user pool entries.
 	err := s.ForEach(func(key string, value []byte) error {
+		if !strings.HasPrefix(key, s.region+"_") {
+			return nil
+		}
 		var userPool UserPool
 		if err := json.Unmarshal(value, &userPool); err != nil {
 			return err

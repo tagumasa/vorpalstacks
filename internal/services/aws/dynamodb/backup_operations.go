@@ -190,7 +190,7 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 
 	filteredBackups = filteredBackups[startIdx:]
 
-	var backupSummaries []map[string]interface{}
+	backupSummaries := make([]map[string]interface{}, 0)
 	hasMore := len(filteredBackups) > limit
 
 	if len(filteredBackups) > limit {

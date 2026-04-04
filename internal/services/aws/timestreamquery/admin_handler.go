@@ -6,8 +6,8 @@ import (
 	"connectrpc.com/connect"
 
 	"vorpalstacks/internal/core/storage"
-	pb "vorpalstacks/internal/pb/aws/query.timestream"
-	querytimestreamconnect "vorpalstacks/internal/pb/aws/query.timestream/query_timestreamconnect"
+	pb "vorpalstacks/internal/pb/aws/timestreamquery"
+	timestreamqueryconnect "vorpalstacks/internal/pb/aws/timestreamquery/timestreamqueryconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 )
@@ -15,13 +15,13 @@ import (
 // AdminHandler provides Timestream Query service administration functionality.
 // It implements the TimestreamQueryServiceHandler interface for gRPC-Web communication.
 type AdminHandler struct {
-	querytimestreamconnect.UnimplementedTimestreamQueryServiceHandler
+	timestreamqueryconnect.UnimplementedTimestreamQueryServiceHandler
 	storageManager *storage.RegionStorageManager
 	accountId      string
 	dataPath       string
 }
 
-var _ querytimestreamconnect.TimestreamQueryServiceHandler = (*AdminHandler)(nil)
+var _ timestreamqueryconnect.TimestreamQueryServiceHandler = (*AdminHandler)(nil)
 
 // NewAdminHandler creates a new Timestream Query AdminHandler.
 // It initialises the handler with the provided storage manager, account ID, and data path.

@@ -5,8 +5,8 @@ import (
 
 	"connectrpc.com/connect"
 
-	pb "vorpalstacks/internal/pb/aws/cognito_identity"
-	cognitoidentityconnect "vorpalstacks/internal/pb/aws/cognito_identity/cognito_identityconnect"
+	pb "vorpalstacks/internal/pb/aws/cognitoidentity"
+	"vorpalstacks/internal/pb/aws/cognitoidentity/cognitoidentityconnect"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 )
 
