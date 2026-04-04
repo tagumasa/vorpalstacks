@@ -1,3 +1,16 @@
+// Gremlin traversal executor.
+//
+// Executes a parsed Gremlin Query AST against graphengine.GraphReader/GraphWriter.
+//
+// Architecture:
+//   - Traverser wraps each element as it flows through the step pipeline
+//   - StepExecutor is the function signature for each registered step
+//   - Steps are registered via RegisterStep() in init() functions across files
+//   - The source step (V, E, addV, etc.) produces initial traversers
+//   - Subsequent steps consume traversers from the previous step
+//   - Modulators (by, as, emit, etc.) are applied after each step
+//   - Terminal steps (toList, next, iterate, etc.) produce the final result
+
 package gremlinparser
 
 import (
@@ -7,6 +20,8 @@ import (
 	"vorpalstacks/pkg/graphengine"
 )
 
+// Traverser carries an element through the traversal pipeline along with
+// metadata: path history, loop counters, bulk count, tags, and sack value.
 type Traverser struct {
 	Element any
 	Path    []any
@@ -16,6 +31,7 @@ type Traverser struct {
 	Sack    any
 }
 
+// newTraverser creates a Traverser with a single-element path, empty loops/tags, and bulk=1.
 func newTraverser(element any) *Traverser {
 	return &Traverser{
 		Element: element,
@@ -26,6 +42,7 @@ func newTraverser(element any) *Traverser {
 	}
 }
 
+// clone creates a deep copy of the traverser, safe to mutate independently.
 func (t *Traverser) clone() *Traverser {
 	path := make([]any, len(t.Path))
 	copy(path, t.Path)
@@ -47,6 +64,7 @@ func (t *Traverser) clone() *Traverser {
 	}
 }
 
+// ExecContext carries the execution state: context, graph reader/writer, parameters, and side-effects.
 type ExecContext struct {
 	Ctx         context.Context
 	Reader      graphengine.GraphReader
@@ -55,14 +73,22 @@ type ExecContext struct {
 	SideEffects map[string]any
 }
 
+// StepExecutor is the function signature for a step implementation.
+// Receives the execution context, incoming traversers, and the step definition;
+// returns the outgoing traversers.
 type StepExecutor func(*ExecContext, []*Traverser, Step) ([]*Traverser, error)
 
+// stepRegistry maps step names to their executor functions.
 var stepRegistry = map[string]StepExecutor{}
 
+// RegisterStep adds a step executor to the registry. Called from init() in step files.
 func RegisterStep(name string, executor StepExecutor) {
 	stepRegistry[name] = executor
 }
 
+// ExecuteQuery runs all statements in a query against the graph, returning the combined result.
+// For single-statement queries, returns the result directly; for multiple statements,
+// flattens all results into a single slice.
 func ExecuteQuery(ctx context.Context, reader graphengine.GraphReader, writer graphengine.GraphWriter, query *Query, params map[string]any) (any, error) {
 	if len(query.Statements) == 0 {
 		return nil, nil
@@ -103,6 +129,9 @@ func ExecuteQuery(ctx context.Context, reader graphengine.GraphReader, writer gr
 	return flattened, nil
 }
 
+// executeStatement runs a single traversal statement through the step pipeline.
+// The first step is treated as a source step (receives nil traversers).
+// Modulators are applied after each step.
 func executeStatement(ec *ExecContext, stmt *Statement) ([]any, error) {
 	trav := stmt.Traversal
 	if len(trav.Steps) == 0 {
@@ -161,6 +190,7 @@ func executeStatement(ec *ExecContext, stmt *Statement) ([]any, error) {
 	return result, nil
 }
 
+// applyModulators runs all modulator steps attached to a step in order.
 func applyModulators(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	for _, mod := range step.Modulators {
 		exec, ok := stepRegistry[mod.Name]
@@ -176,6 +206,9 @@ func applyModulators(ec *ExecContext, traversers []*Traverser, step Step) ([]*Tr
 	return traversers, nil
 }
 
+// executeTerminal handles terminal steps that produce the final result.
+// toList/toBulkSet returns all elements; toSet deduplicates; next returns n elements;
+// tryNext returns at most one; iterate discards all; hasNext returns boolean.
 func executeTerminal(ec *ExecContext, traversers []*Traverser, term *TerminalStep) ([]any, error) {
 	switch term.Name {
 	case "toList":
@@ -226,24 +259,29 @@ func executeTerminal(ec *ExecContext, traversers []*Traverser, term *TerminalSte
 	}
 }
 
+// asNode extracts a *graphengine.Node from a traverser's element, returning false if not a node.
 func asNode(t *Traverser) (*graphengine.Node, bool) {
 	n, ok := t.Element.(*graphengine.Node)
 	return n, ok
 }
 
+// asEdge extracts a *graphengine.Edge from a traverser's element, returning false if not an edge.
 func asEdge(t *Traverser) (*graphengine.Edge, bool) {
 	e, ok := t.Element.(*graphengine.Edge)
 	return e, ok
 }
 
+// argString returns the string value of an argument.
 func argString(arg Argument) string {
 	return arg.Str
 }
 
+// argInt returns the integer value of an argument.
 func argInt(arg Argument) int64 {
 	return arg.Int
 }
 
+// argStrings extracts a slice of strings from a list of arguments.
 func argStrings(args []Argument) []string {
 	result := make([]string, len(args))
 	for i, a := range args {
@@ -252,6 +290,7 @@ func argStrings(args []Argument) []string {
 	return result
 }
 
+// resolveEnum returns the enum value string if the argument is an enum, otherwise the raw string.
 func resolveEnum(arg Argument) string {
 	if arg.Kind == ArgEnum && arg.Enum != nil {
 		return arg.Enum.Value

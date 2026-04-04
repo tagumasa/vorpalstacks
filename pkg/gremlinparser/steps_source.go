@@ -1,3 +1,18 @@
+// Source step executors: graph element access, mutation, and property operations.
+//
+// Registers the following steps:
+//   - V, E: source steps for iterating all vertices/edges or looking up by ID
+//   - addV, addE: vertex/edge creation (requires GraphWriter)
+//   - out, in, both: vertex-to-vertex traversal via edges
+//   - outE, inE, bothE: vertex-to-edge traversal
+//   - outV, inV, otherV: edge-to-vertex traversal
+//   - has, hasLabel, hasId, hasNot: element filtering
+//   - values, valueMap, properties, propertyMap: property projection
+//   - id, label: element metadata access
+//   - property: property mutation (supports single/set/list cardinality)
+//   - drop: element deletion (requires GraphWriter)
+//   - count, identity, keys, sample, sack, match, math: miscellaneous steps
+
 package gremlinparser
 
 import (
@@ -47,6 +62,8 @@ func init() {
 	RegisterStep("math", execMath)
 }
 
+// execV is the vertex source step. With no arguments, iterates all vertices;
+// with arguments, looks up vertices by ID.
 func execV(ec *ExecContext, _ []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		var traversers []*Traverser
@@ -69,6 +86,8 @@ func execV(ec *ExecContext, _ []*Traverser, step Step) ([]*Traverser, error) {
 	return traversers, nil
 }
 
+// execE is the edge source step. With no arguments, iterates all edges;
+// with arguments, looks up edges by ID.
 func execE(ec *ExecContext, _ []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		var traversers []*Traverser
@@ -91,6 +110,7 @@ func execE(ec *ExecContext, _ []*Traverser, step Step) ([]*Traverser, error) {
 	return traversers, nil
 }
 
+// execAddV creates a new vertex with the given label(s).
 func execAddV(ec *ExecContext, _ []*Traverser, step Step) ([]*Traverser, error) {
 	if ec.Writer == nil {
 		return nil, fmt.Errorf("gremlin: addV requires a GraphWriter")
@@ -112,6 +132,8 @@ func execAddV(ec *ExecContext, _ []*Traverser, step Step) ([]*Traverser, error) 
 	return []*Traverser{newTraverser(n)}, nil
 }
 
+// execAddE creates a new edge with the given label. The source vertex comes from
+// the incoming traverser (or a from() modulator), and the target from a to() modulator.
 func execAddE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if ec.Writer == nil {
 		return nil, fmt.Errorf("gremlin: addE requires a GraphWriter")
@@ -184,6 +206,7 @@ func execAddE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return []*Traverser{newTraverser(e)}, nil
 }
 
+// execOut traverses outgoing edges to adjacent vertices, filtered by optional edge labels.
 func execOut(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	labels := argStrings(step.Args)
 	var result []*Traverser
@@ -212,6 +235,7 @@ func execOut(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 	return result, nil
 }
 
+// execIn traverses incoming edges to adjacent vertices, filtered by optional edge labels.
 func execIn(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	labels := argStrings(step.Args)
 	var result []*Traverser
@@ -240,6 +264,7 @@ func execIn(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, 
 	return result, nil
 }
 
+// execBoth traverses both incoming and outgoing edges to adjacent vertices.
 func execBoth(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	labels := argStrings(step.Args)
 	var result []*Traverser
@@ -274,6 +299,7 @@ func execBoth(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return result, nil
 }
 
+// execOutE traverses outgoing edges from each vertex, filtered by optional edge labels.
 func execOutE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	labels := argStrings(step.Args)
 	var result []*Traverser
@@ -298,6 +324,7 @@ func execOutE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return result, nil
 }
 
+// execInE traverses incoming edges to each vertex, filtered by optional edge labels.
 func execInE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	labels := argStrings(step.Args)
 	var result []*Traverser
@@ -322,6 +349,7 @@ func execInE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 	return result, nil
 }
 
+// execBothE traverses both incoming and outgoing edges from each vertex.
 func execBothE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	labels := argStrings(step.Args)
 	var result []*Traverser
@@ -346,6 +374,7 @@ func execBothE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return result, nil
 }
 
+// execOutV returns the source vertex of each edge.
 func execOutV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 	for _, t := range traversers {
@@ -365,6 +394,7 @@ func execOutV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return result, nil
 }
 
+// execInV returns the target vertex of each edge.
 func execInV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 	for _, t := range traversers {
@@ -384,6 +414,7 @@ func execInV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 	return result, nil
 }
 
+// execOtherV returns the vertex at the opposite end of each edge from the traverser's path.
 func execOtherV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 	for _, t := range traversers {
@@ -416,12 +447,15 @@ func execOtherV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return result, nil
 }
 
+// execHas filters traversers by property value, id, label, or predicate.
+// Supports has(T.id, ...), has(T.label, ...), has('key', predicate), has('key', value).
 func execHas(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	return filterTraversers(traversers, func(t *Traverser) bool {
 		return matchHasStep(ec, t, step.Args)
 	}), nil
 }
 
+// execHasLabel filters traversers whose labels match all specified labels.
 func execHasLabel(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	labels := argStrings(step.Args)
 	var result []*Traverser
@@ -454,6 +488,7 @@ func execHasLabel(ec *ExecContext, traversers []*Traverser, step Step) ([]*Trave
 	return result, nil
 }
 
+// execHasId filters traversers by element ID. Supports both direct values and predicates.
 func execHasId(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) > 0 && step.Args[0].Kind == ArgPredicate {
 		return filterTraversers(traversers, func(t *Traverser) bool {
@@ -470,6 +505,7 @@ func execHasId(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	}), nil
 }
 
+// execHasNot filters traversers that do NOT have the specified property key.
 func execHasNot(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -482,6 +518,8 @@ func execHasNot(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	}), nil
 }
 
+// execValues projects element property values. With no arguments, emits all values;
+// with keys, emits only the values of matching properties.
 func execValues(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	keys := argStrings(step.Args)
 	var result []*Traverser
@@ -509,12 +547,14 @@ func execValues(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return result, nil
 }
 
+// isSlice returns true if val is a slice or array.
 func isSlice(val any) bool {
 	v := reflect.ValueOf(val)
 	kind := v.Kind()
 	return kind == reflect.Slice || kind == reflect.Array
 }
 
+// asSlice converts a slice or array value to []any. Returns nil for non-slice types.
 func asSlice(val any) []any {
 	v := reflect.ValueOf(val)
 	if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
@@ -527,6 +567,8 @@ func asSlice(val any) []any {
 	return nil
 }
 
+// execValueMap projects element properties as a map. Property values are wrapped in lists
+// (Gremlin convention). Includes ~id and ~label metadata.
 func execValueMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	keys := argStrings(step.Args)
 	var result []*Traverser
@@ -567,6 +609,7 @@ func execValueMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Trave
 	return result, nil
 }
 
+// execProperties projects individual properties as {key, value, ~id, ~label} maps.
 func execProperties(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	keys := argStrings(step.Args)
 	var result []*Traverser
@@ -610,6 +653,7 @@ func execProperties(ec *ExecContext, traversers []*Traverser, step Step) ([]*Tra
 	return result, nil
 }
 
+// execPropertyMap projects element properties as a flat map (no list wrapping).
 func execPropertyMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	keys := argStrings(step.Args)
 	var result []*Traverser
@@ -636,6 +680,7 @@ func execPropertyMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Tr
 	return result, nil
 }
 
+// execId projects the element ID.
 func execId(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 	for _, t := range traversers {
@@ -656,6 +701,7 @@ func execId(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, 
 	return result, nil
 }
 
+// execLabel projects the element label (joined with "::" for multi-label nodes).
 func execLabel(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 	for _, t := range traversers {
@@ -676,6 +722,8 @@ func execLabel(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return result, nil
 }
 
+// execProperty sets or updates element properties. Supports Cardinality enum (single, set, list).
+// For set/list cardinality, existing values are accumulated.
 func execProperty(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if ec.Writer == nil {
 		return nil, fmt.Errorf("gremlin: property requires a GraphWriter")
@@ -772,6 +820,8 @@ func execProperty(ec *ExecContext, traversers []*Traverser, step Step) ([]*Trave
 	return traversers, nil
 }
 
+// existingValsAsList attempts to extract a []any from a property value. Used by
+// set/list cardinality property handling.
 func existingValsAsList(v any) ([]any, bool) {
 	if v == nil {
 		return nil, false
@@ -782,6 +832,7 @@ func existingValsAsList(v any) ([]any, bool) {
 	return nil, false
 }
 
+// execDrop removes all traversed elements from the graph (requires GraphWriter).
 func execDrop(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if ec.Writer == nil {
 		return nil, fmt.Errorf("gremlin: drop requires a GraphWriter")
@@ -802,6 +853,7 @@ func execDrop(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return nil, nil
 }
 
+// execCount returns the number of traversers. Supports global (default) and local scope.
 func execCount(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	scope := "global"
 	if len(step.Args) > 0 && step.Args[0].Kind == ArgEnum && step.Args[0].Enum.Value == "local" {
@@ -830,10 +882,12 @@ func execCount(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return []*Traverser{newTraverser(int64(len(traversers)))}, nil
 }
 
+// execIdentity is a no-op step that passes traversers through unchanged.
 func execIdentity(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	return traversers, nil
 }
 
+// matchHasStep evaluates a has() step's arguments against a traverser.
 func matchHasStep(ec *ExecContext, t *Traverser, args []Argument) bool {
 	if len(args) == 0 {
 		return true
@@ -900,6 +954,7 @@ func matchHasStep(ec *ExecContext, t *Traverser, args []Argument) bool {
 	return true
 }
 
+// matchLabels returns true if all labels in matchLabels are present in nodeLabels.
 func matchLabels(nodeLabels []string, matchLabels []string) bool {
 	if len(matchLabels) == 0 {
 		return true
@@ -916,6 +971,10 @@ func matchLabels(nodeLabels []string, matchLabels []string) bool {
 	return true
 }
 
+// matchPredicate evaluates a Gremlin predicate against a value.
+// Supports eq, neq, gt, gte, lt, lte, between, inside, outside, within, without,
+// containing, notContaining, startingWith, notStartingWith, endingWith, notEndingWith,
+// regex, notRegex.
 func matchPredicate(val any, pred *Predicate) bool {
 	if pred == nil {
 		return true
@@ -1028,6 +1087,7 @@ func matchPredicate(val any, pred *Predicate) bool {
 	return false
 }
 
+// filterTraversers filters a slice of traversers by the given predicate function.
 func filterTraversers(traversers []*Traverser, fn func(*Traverser) bool) []*Traverser {
 	result := make([]*Traverser, 0, len(traversers))
 	for _, t := range traversers {
@@ -1038,6 +1098,7 @@ func filterTraversers(traversers []*Traverser, fn func(*Traverser) bool) []*Trav
 	return result
 }
 
+// elementID returns the string representation of an element's ID.
 func elementID(el any) string {
 	switch v := el.(type) {
 	case *graphengine.Node:
@@ -1051,6 +1112,7 @@ func elementID(el any) string {
 	}
 }
 
+// elementLabel returns the label of a node (first label) or edge.
 func elementLabel(el any) string {
 	switch v := el.(type) {
 	case *graphengine.Node:
@@ -1065,6 +1127,7 @@ func elementLabel(el any) string {
 	}
 }
 
+// elementProps returns the property map of a node or edge, or nil for other types.
 func elementProps(el any) map[string]any {
 	switch v := el.(type) {
 	case *graphengine.Node:
@@ -1076,6 +1139,7 @@ func elementProps(el any) map[string]any {
 	}
 }
 
+// resolveArgValue converts an Argument AST node to its runtime Go value.
 func resolveArgValue(arg Argument) any {
 	switch arg.Kind {
 	case ArgString:
@@ -1112,6 +1176,7 @@ func resolveArgValue(arg Argument) any {
 	}
 }
 
+// toNodeID converts an Argument to a graphengine.NodeID.
 func toNodeID(arg Argument) graphengine.NodeID {
 	switch arg.Kind {
 	case ArgInt:
@@ -1132,6 +1197,7 @@ func toNodeID(arg Argument) graphengine.NodeID {
 	}
 }
 
+// toEdgeID converts an Argument to a graphengine.EdgeID.
 func toEdgeID(arg Argument) graphengine.EdgeID {
 	switch arg.Kind {
 	case ArgInt:
@@ -1152,6 +1218,8 @@ func toEdgeID(arg Argument) graphengine.EdgeID {
 	}
 }
 
+// toFloat64 attempts to convert a value to float64 for numeric comparisons.
+// Returns (0, false) for non-numeric types.
 func toFloat64(val any) (float64, bool) {
 	switch v := val.(type) {
 	case int64:
@@ -1167,6 +1235,7 @@ func toFloat64(val any) (float64, bool) {
 	}
 }
 
+// compareNumeric compares two values numerically. Returns -2 if either value is non-numeric.
 func compareNumeric(a, b any) int {
 	af, aok := toFloat64(a)
 	bf, bok := toFloat64(b)
@@ -1182,6 +1251,7 @@ func compareNumeric(a, b any) int {
 	return 0
 }
 
+// elementOrValueEqual compares two values for equality, handling node and edge identity comparison.
 func elementOrValueEqual(a, b any) bool {
 	if a == b {
 		return true
@@ -1199,6 +1269,7 @@ func elementOrValueEqual(a, b any) bool {
 	return false
 }
 
+// toString converts a value to its string representation for text predicates.
 func toString(val any) (string, bool) {
 	switch v := val.(type) {
 	case string:
@@ -1219,10 +1290,12 @@ func toString(val any) (string, bool) {
 	}
 }
 
+// containsStr is a convenience wrapper around strings.Contains.
 func containsStr(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
 
+// execKeys projects the property keys of each traverser's element.
 func execKeys(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 	for _, t := range traversers {
@@ -1239,6 +1312,7 @@ func execKeys(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return result, nil
 }
 
+// execSample returns a random sample of n traversers.
 func execSample(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -1258,6 +1332,7 @@ func execSample(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return cloned[:n], nil
 }
 
+// execSack projects the sack value from each traverser.
 func execSack(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 	for _, t := range traversers {
@@ -1269,14 +1344,18 @@ func execSack(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return result, nil
 }
 
+// execMatch is a stub for the match() step (not yet implemented).
 func execMatch(ec *ExecContext, _ []*Traverser, step Step) ([]*Traverser, error) {
 	return nil, fmt.Errorf("gremlin: match() step is not yet supported")
 }
 
+// execMath is a stub for the math() step (not yet implemented).
 func execMath(ec *ExecContext, _ []*Traverser, step Step) ([]*Traverser, error) {
 	return nil, fmt.Errorf("gremlin: math() step is not yet supported")
 }
 
+// singleLabelFilter returns the single label if exactly one is provided, otherwise ""
+// (the graph engine returns all edges when label filter is empty).
 func singleLabelFilter(labels []string) string {
 	if len(labels) == 1 {
 		return labels[0]
@@ -1284,6 +1363,8 @@ func singleLabelFilter(labels []string) string {
 	return ""
 }
 
+// filterEdgesByLabels filters edges by label when more than one label is specified.
+// For a single label, the graph engine already handles filtering efficiently.
 func filterEdgesByLabels(edges []*graphengine.Edge, labels []string) []*graphengine.Edge {
 	if len(labels) <= 1 {
 		return edges
@@ -1301,6 +1382,7 @@ func filterEdgesByLabels(edges []*graphengine.Edge, labels []string) []*grapheng
 	return filtered
 }
 
+// containsVal checks if a value exists in a slice using elementOrValueEqual for identity comparison.
 func containsVal(vals []any, val any) bool {
 	for _, v := range vals {
 		if elementOrValueEqual(v, val) {

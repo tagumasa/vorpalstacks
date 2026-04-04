@@ -1,45 +1,74 @@
+// Package gremlinparser implements a Gremlin traversal query parser and executor.
+// It targets the subset required by the Neptune Data API (ExecuteGremlinQuery).
+//
+// Architecture:
+//
+//	gremlin string → [Lexer] → []Token → [Parser] → AST → [Executor] → result
+//
+// The lexer and parser are hand-written recursive descent. The executor operates
+// against the graphengine.GraphReader/GraphWriter interfaces, decoupled from
+// Pebble storage. Steps are registered via a step registry pattern, allowing
+// source steps and filter/map steps to be split across files.
+//
+// Grammar (simplified):
+//
+//	Query         → Statement (';' Statement)*
+//	Statement     → 'g' '.' Traversal ['.' Terminal]
+//	Traversal     → SourceStep ('.' Step)*
+//	SourceStep    → 'V' | 'E' | 'addV' | 'addE' | 'mergeV' | 'inject'
+//	Step          → StepName ['(' Arguments ')'] ('.' Modulator)*
+//	Modulator     → 'by' | 'as' | 'emit' | 'until' | 'times' | 'option' | 'with' | 'from' | 'to' | 'without' | 'scope'
+//	Terminal      → 'toList' | 'toSet' | 'next' | 'iterate' | 'hasNext' | 'tryNext' | 'explain'
+//	Arguments     → Argument (',' Argument)*
+//	Argument      → String | Integer | Float | Bool | Null | List | Map
+//	              | Predicate | NestedTraversal | Enum | Identifier
+
 package gremlinparser
 
 import (
 	"fmt"
 )
 
+// TokenKind identifies the type of a lexer token.
 type TokenKind int
 
 const (
-	tokEOF TokenKind = iota
-	tokDot
-	tokComma
-	tokLParen
-	tokRParen
-	tokLBracket
-	tokRBracket
-	tokLBrace
-	tokRBrace
-	tokColon
-	tokSemicolon
-	tokUnderscoreUnderscore
-	tokString
-	tokInteger
-	tokFloat
-	tokIdentifier
-	tokTrue
-	tokFalse
-	tokNull
+	tokEOF                  TokenKind = iota
+	tokDot                            // '.' — method chaining operator
+	tokComma                          // ','
+	tokLParen                         // '('
+	tokRParen                         // ')'
+	tokLBracket                       // '['
+	tokRBracket                       // ']'
+	tokLBrace                         // '{'
+	tokRBrace                         // '}'
+	tokColon                          // ':' — map key-value separator
+	tokSemicolon                      // ';' — statement separator
+	tokUnderscoreUnderscore           // '__' — nested traversal prefix
+	tokString                         // single- or double-quoted string literal
+	tokInteger                        // integer literal (decimal, hex, with optional type suffix)
+	tokFloat                          // floating-point literal (with optional type suffix)
+	tokIdentifier                     // unquoted identifier (step names, labels, etc.)
+	tokTrue                           // 'true' keyword
+	tokFalse                          // 'false' keyword
+	tokNull                           // 'null' keyword
 )
 
+// Token is a single lexer token with its kind, raw text, and byte offset.
 type Token struct {
 	Kind TokenKind
 	Text string
 	Pos  int
 }
 
+// Lexer holds the state for tokenising a Gremlin traversal string.
 type Lexer struct {
 	input  []byte
 	pos    int
 	tokens []Token
 }
 
+// Tokenize converts a Gremlin query string into a slice of tokens.
 func Tokenize(input string) ([]Token, error) {
 	l := &Lexer{input: []byte(input), pos: 0}
 	for l.pos < len(l.input) {
@@ -55,6 +84,7 @@ func Tokenize(input string) ([]Token, error) {
 	return l.tokens, nil
 }
 
+// skipWhitespaceAndComments skips whitespace, line comments (//), and block comments (/* */).
 func (l *Lexer) skipWhitespaceAndComments() {
 	for l.pos < len(l.input) {
 		ch := l.input[l.pos]
@@ -86,6 +116,9 @@ func (l *Lexer) skipWhitespaceAndComments() {
 	}
 }
 
+// nextToken scans the next token from the current position.
+// Handles single-character tokens, '..' range operator, string literals,
+// numeric literals (including hex and type suffixes), and identifiers/keywords.
 func (l *Lexer) nextToken() error {
 	ch := l.input[l.pos]
 	start := l.pos
@@ -159,6 +192,10 @@ func (l *Lexer) nextToken() error {
 	return fmt.Errorf("gremlin: unexpected character %q at position %d", ch, l.pos)
 }
 
+// scanString scans a single- or double-quoted string literal.
+// Supports doubled-quote escaping (” or "") and backslash escapes
+// including \n, \t, \r, \\, \', \", and \uXXXX unicode escapes.
+// Surrogate code points (U+D800–U+DFFF) are rejected.
 func (l *Lexer) scanString(quote byte) error {
 	start := l.pos
 	l.pos++
@@ -219,6 +256,13 @@ func (l *Lexer) scanString(quote byte) error {
 	return fmt.Errorf("gremlin: unterminated string starting at position %d", start)
 }
 
+// scanNumber scans an integer or floating-point literal.
+// Supports optional leading minus (only when preceded by a non-value token),
+// hexadecimal (0x prefix), decimal point (disambiguated from '..' range operator),
+// scientific notation (e/E), and Groovy-style type suffixes:
+//
+//	Integer suffixes: i, I, s, S, l, L, n, N
+//	Float suffixes:   f, F, d, D, m, M
 func (l *Lexer) scanNumber() error {
 	start := l.pos
 	isFloat := false
@@ -284,6 +328,8 @@ func (l *Lexer) scanNumber() error {
 	return nil
 }
 
+// scanIdentOrKeyword scans an identifier and promotes it to a keyword if it
+// matches 'true', 'false', or 'null'. All other identifiers remain as tokIdentifier.
 func (l *Lexer) scanIdentOrKeyword() error {
 	start := l.pos
 	for l.pos < len(l.input) && isIdentPart(l.input[l.pos]) {
@@ -303,18 +349,23 @@ func (l *Lexer) scanIdentOrKeyword() error {
 	return nil
 }
 
+// isIdentStart returns true if ch can begin an identifier.
+// Includes '_', '$', '~' (for Groovy closure syntax), and ASCII letters.
 func isIdentStart(ch byte) bool {
 	return ch == '_' || ch == '$' || ch == '~' || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
 }
 
+// isIdentPart returns true if ch can continue an identifier (ident start chars + digits).
 func isIdentPart(ch byte) bool {
 	return isIdentStart(ch) || (ch >= '0' && ch <= '9')
 }
 
+// isHexDigit returns true if ch is a hexadecimal digit (0-9, a-f, A-F).
 func isHexDigit(ch byte) bool {
 	return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')
 }
 
+// hexDigit converts a hexadecimal character to its numeric value.
 func hexDigit(ch byte) byte {
 	if ch >= '0' && ch <= '9' {
 		return ch - '0'
@@ -325,6 +376,7 @@ func hexDigit(ch byte) byte {
 	return ch - 'A' + 10
 }
 
+// prevTokenKind returns the kind of the most recently emitted token, or tokEOF if none.
 func (l *Lexer) prevTokenKind() TokenKind {
 	if len(l.tokens) > 0 {
 		return l.tokens[len(l.tokens)-1].Kind
@@ -332,6 +384,8 @@ func (l *Lexer) prevTokenKind() TokenKind {
 	return tokEOF
 }
 
+// isValueToken returns true if the token kind represents a value that can
+// precede a minus sign in numeric context (used to disambiguate unary minus).
 func isValueToken(kind TokenKind) bool {
 	switch kind {
 	case tokInteger, tokFloat, tokString, tokTrue, tokFalse, tokNull, tokRParen, tokRBracket, tokIdentifier:

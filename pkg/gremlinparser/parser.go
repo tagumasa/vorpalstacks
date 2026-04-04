@@ -1,3 +1,21 @@
+// Gremlin recursive descent parser.
+//
+// Grammar:
+//
+//	Query         → Statement (';' Statement)*
+//	Statement     → 'g' '.' Traversal ['.' Terminal]
+//	Traversal     → SourceStep ('.' Step)*
+//	Step          → StepName ['(' Arguments ')'] ('.' Modulator)*
+//	Modulator     → ModName ['(' Arguments ')']
+//	Arguments     → Argument (',' Argument)*
+//	Argument      → Literal | Predicate | NestedTraversal | Enum | Identifier
+//	Terminal      → TerminalName ['(' Arguments ')']
+//
+// The parser handles Gremlin's fluent-chaining syntax, modulator steps (by, as, emit,
+// until, times, option, with, from, to, without, scope), predicate expressions (P.*,
+// TextP.*), enum references (T.*, Order.*, Cardinality.*), nested traversals (__.out()),
+// bare predicates (eq(), gt(), etc.), and bare traversals as arguments.
+
 package gremlinparser
 
 import (
@@ -6,11 +24,13 @@ import (
 	"strings"
 )
 
+// Parser holds the state for parsing a tokenised Gremlin query.
 type Parser struct {
 	tokens []Token
 	pos    int
 }
 
+// Parse tokenises and parses a Gremlin query string into a Query AST.
 func Parse(input string) (*Query, error) {
 	tokens, err := Tokenize(input)
 	if err != nil {
@@ -20,6 +40,7 @@ func Parse(input string) (*Query, error) {
 	return p.parseQuery()
 }
 
+// cur returns the current token without advancing.
 func (p *Parser) cur() Token {
 	if p.pos >= len(p.tokens) {
 		return Token{Kind: tokEOF}
@@ -27,6 +48,7 @@ func (p *Parser) cur() Token {
 	return p.tokens[p.pos]
 }
 
+// peek returns the token at the given offset from the current position.
 func (p *Parser) peek(offset int) Token {
 	idx := p.pos + offset
 	if idx >= len(p.tokens) {
@@ -35,6 +57,7 @@ func (p *Parser) peek(offset int) Token {
 	return p.tokens[idx]
 }
 
+// advance returns the current token and moves to the next position.
 func (p *Parser) advance() Token {
 	t := p.cur()
 	if t.Kind != tokEOF {
@@ -43,6 +66,7 @@ func (p *Parser) advance() Token {
 	return t
 }
 
+// expect advances and returns the current token if it matches kind, otherwise returns an error.
 func (p *Parser) expect(kind TokenKind) (Token, error) {
 	t := p.cur()
 	if t.Kind != kind {
@@ -51,6 +75,7 @@ func (p *Parser) expect(kind TokenKind) (Token, error) {
 	return p.advance(), nil
 }
 
+// match advances if the current token matches kind, returning it and true; otherwise returns false.
 func (p *Parser) match(kind TokenKind) (Token, bool) {
 	if p.cur().Kind == kind {
 		return p.advance(), true
@@ -58,6 +83,7 @@ func (p *Parser) match(kind TokenKind) (Token, bool) {
 	return Token{}, false
 }
 
+// matchIdent advances if the current token is an identifier with the given text.
 func (p *Parser) matchIdent(text string) bool {
 	t := p.cur()
 	if t.Kind == tokIdentifier && t.Text == text {
@@ -67,11 +93,13 @@ func (p *Parser) matchIdent(text string) bool {
 	return false
 }
 
+// isIdent returns true if the current token is an identifier with the given text.
 func (p *Parser) isIdent(text string) bool {
 	t := p.cur()
 	return t.Kind == tokIdentifier && t.Text == text
 }
 
+// parseQuery parses the top-level query: zero or more semicolon-separated statements.
 func (p *Parser) parseQuery() (*Query, error) {
 	q := &Query{}
 
@@ -92,6 +120,7 @@ func (p *Parser) parseQuery() (*Query, error) {
 	return q, nil
 }
 
+// parseStatement expects a traversal statement starting with 'g'.
 func (p *Parser) parseStatement() (*Statement, error) {
 	if p.cur().Kind == tokEOF {
 		return nil, nil
@@ -105,6 +134,7 @@ func (p *Parser) parseStatement() (*Statement, error) {
 	return nil, fmt.Errorf("gremlin: expected traversal starting with 'g' or '__', got %q at position %d", ident.Text, ident.Pos)
 }
 
+// parseTraversalStatement parses 'g' '.' <traversal> ['.' <terminal>].
 func (p *Parser) parseTraversalStatement() (*Statement, error) {
 	g := p.advance()
 	if g.Text != "g" {
@@ -132,6 +162,9 @@ func (p *Parser) parseTraversalStatement() (*Statement, error) {
 	return &Statement{Traversal: trav}, nil
 }
 
+// parseChainedTraversal parses a sequence of steps separated by '.', stopping before
+// a terminal method. Handles modulator steps (by, as, emit, etc.) by attaching them
+// to the preceding step's Modulators slice.
 func (p *Parser) parseChainedTraversal() (*Traversal, error) {
 	source := ""
 	if p.cur().Kind == tokUnderscoreUnderscore {
@@ -223,6 +256,7 @@ func (p *Parser) parseChainedTraversal() (*Traversal, error) {
 	return trav, nil
 }
 
+// parseArguments parses a comma-separated list of arguments until ')'.
 func (p *Parser) parseArguments() ([]Argument, error) {
 	if p.cur().Kind == tokRParen {
 		return nil, nil
@@ -243,6 +277,7 @@ func (p *Parser) parseArguments() ([]Argument, error) {
 	return args, nil
 }
 
+// parseArgument dispatches to the appropriate sub-parser based on the current token kind.
 func (p *Parser) parseArgument() (*Argument, error) {
 	t := p.cur()
 
@@ -298,6 +333,9 @@ func (p *Parser) parseArgument() (*Argument, error) {
 	}
 }
 
+// parseIdentArgument handles identifier-led arguments: predicates (P.eq, TextP.containing),
+// enum references (T.label, Order.asc), bare predicates (eq(), gt()), bare traversals,
+// and bare enums. Falls back to treating the identifier as a plain string argument.
 func (p *Parser) parseIdentArgument() (*Argument, error) {
 	t := p.cur()
 
@@ -330,6 +368,7 @@ func (p *Parser) parseIdentArgument() (*Argument, error) {
 	return &Argument{Kind: ArgString, Str: t.Text}, nil
 }
 
+// parseBareTraversal parses a bare traversal argument (e.g. g.V() as an argument to choose()).
 func (p *Parser) parseBareTraversal() (*Argument, error) {
 	if p.cur().Kind == tokIdentifier && p.cur().Text == "g" && p.peek(1).Kind == tokDot {
 		p.advance()
@@ -342,6 +381,8 @@ func (p *Parser) parseBareTraversal() (*Argument, error) {
 	return &Argument{Kind: ArgNestedTraversal, Trav: trav}, nil
 }
 
+// parseBarePredicate handles bare predicate calls like eq(42) or containing('foo').
+// Automatically detects TextP predicates (containing, startingWith, etc.).
 func (p *Parser) parseBarePredicate() (*Argument, error) {
 	method := p.cur()
 	p.advance()
@@ -367,6 +408,8 @@ func (p *Parser) parseBarePredicate() (*Argument, error) {
 	return &Argument{Kind: ArgPredicate, Pred: pred}, nil
 }
 
+// parsePredicate parses P.method(args) with optional chained .and(), .or(), .negate().
+// Builds a left-recursive predicate tree for chained combinators.
 func (p *Parser) parsePredicate() (*Argument, error) {
 	p.advance()
 	if _, err := p.expect(tokDot); err != nil {
@@ -452,6 +495,7 @@ func (p *Parser) parsePredicate() (*Argument, error) {
 	return &Argument{Kind: ArgPredicate, Pred: pred}, nil
 }
 
+// parseTextPredicate parses TextP.method(args) for text-specific predicates.
 func (p *Parser) parseTextPredicate() (*Argument, error) {
 	p.advance()
 	if _, err := p.expect(tokDot); err != nil {
@@ -479,6 +523,7 @@ func (p *Parser) parseTextPredicate() (*Argument, error) {
 	return &Argument{Kind: ArgPredicate, Pred: pred}, nil
 }
 
+// parseEnum parses Category.value or Category.value(args) enum references.
 func (p *Parser) parseEnum() (*Argument, error) {
 	category := p.cur().Text
 	p.advance()
@@ -508,6 +553,7 @@ func (p *Parser) parseEnum() (*Argument, error) {
 	return &Argument{Kind: ArgEnum, Enum: &EnumRef{Category: category, Value: value.Text}}, nil
 }
 
+// parseNestedTraversal parses '__' '.' <traversal> for nested traversal arguments.
 func (p *Parser) parseNestedTraversal() (*Argument, error) {
 	p.advance()
 	if _, err := p.expect(tokDot); err != nil {
@@ -523,6 +569,11 @@ func (p *Parser) parseNestedTraversal() (*Argument, error) {
 	return &Argument{Kind: ArgNestedTraversal, Trav: trav}, nil
 }
 
+// parseListOrSetOrRange parses '[' ... ']' which may be:
+//   - An empty map: [:]
+//   - An empty list: []
+//   - A map literal: [key: val, ...]
+//   - A list literal: [1, 2, 3]
 func (p *Parser) parseListOrSetOrRange() (*Argument, error) {
 	p.advance()
 
@@ -594,6 +645,7 @@ func (p *Parser) parseListOrSetOrRange() (*Argument, error) {
 	return &Argument{Kind: ArgList, List: items}, nil
 }
 
+// parseSetLiteral parses '{' items '}' as a set (stored as ArgList internally).
 func (p *Parser) parseSetLiteral() (*Argument, error) {
 	p.advance()
 
@@ -621,6 +673,7 @@ func (p *Parser) parseSetLiteral() (*Argument, error) {
 	return &Argument{Kind: ArgList, List: items}, nil
 }
 
+// parseTerminal parses a terminal method name with optional arguments.
 func (p *Parser) parseTerminal() (*TerminalStep, error) {
 	t := p.cur()
 	if t.Kind != tokIdentifier {
@@ -644,6 +697,7 @@ func (p *Parser) parseTerminal() (*TerminalStep, error) {
 	return &TerminalStep{Name: t.Text, Args: args}, nil
 }
 
+// isTerminalMethod returns true if name is a terminal method that ends a traversal.
 func isTerminalMethod(name string) bool {
 	switch name {
 	case "toList", "toSet", "toBulkSet", "next", "iterate", "hasNext", "tryNext", "explain":
@@ -652,6 +706,7 @@ func isTerminalMethod(name string) bool {
 	return false
 }
 
+// isModulatorStep returns true if name is a modulator step that modifies the preceding step.
 func isModulatorStep(name string) bool {
 	switch name {
 	case "by", "as", "emit", "until", "times", "option", "with", "from", "to", "without", "scope":
@@ -660,6 +715,7 @@ func isModulatorStep(name string) bool {
 	return false
 }
 
+// isEnumPrefix returns true if name is a known enum category prefix (e.g. "T", "Order", "Cardinality").
 func isEnumPrefix(name string) bool {
 	switch name {
 	case "T", "Order", "Scope", "Cardinality", "Pop", "Column", "Direction",
@@ -670,6 +726,7 @@ func isEnumPrefix(name string) bool {
 	return false
 }
 
+// isBareEnum returns true if name is a bare enum value (e.g. "id", "label", "asc", "desc").
 func isBareEnum(name string) bool {
 	switch name {
 	case "id", "label", "key", "value",
@@ -686,6 +743,7 @@ func isBareEnum(name string) bool {
 	return false
 }
 
+// isBarePredicate returns true if name is a bare predicate method (e.g. "eq", "gt", "between").
 func isBarePredicate(name string) bool {
 	switch name {
 	case "eq", "neq", "gt", "gte", "lt", "lte",
@@ -699,6 +757,7 @@ func isBarePredicate(name string) bool {
 	return false
 }
 
+// isTextPredicate returns true if name is a TextP-specific predicate method.
 func isTextPredicate(name string) bool {
 	switch name {
 	case "containing", "notContaining",
@@ -710,6 +769,7 @@ func isTextPredicate(name string) bool {
 	return false
 }
 
+// parseInt parses an integer string, stripping optional Groovy type suffixes (i, I, s, S, l, L, n, N).
 func parseInt(text string) (int64, error) {
 	trimmed := strings.TrimRightFunc(text, func(r rune) bool {
 		return r == 'i' || r == 'I' || r == 's' || r == 'S' || r == 'l' || r == 'L'

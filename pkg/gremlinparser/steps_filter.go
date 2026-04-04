@@ -1,3 +1,28 @@
+// Filter, branch, and projection step executors.
+//
+// Registers the following steps:
+//   - select, as: label-based side-effect storage and retrieval
+//   - where, filter: traversal-based filtering
+//   - limit, range, skip: result set slicing
+//   - dedup: deduplication by element, label, or by() modulator
+//   - order, by: sorting (by() provides sort keys)
+//   - group, groupCount: aggregation into maps
+//   - path: path history projection
+//   - union, coalesce, choose, optional: branching
+//   - is, not, and, or: boolean filtering
+//   - repeat, emit, until, times: looping/gremlin traversal
+//   - local: scoped sub-traversal
+//   - simplePath: cycle detection in paths
+//   - tail: last-n elements
+//   - constant, unfold, fold: element transformation
+//   - map, flatMap: projection and flattening
+//   - aggregate, cap: side-effect storage and retrieval
+//   - from, to: edge source/target resolution for addE
+//   - mergeV: upsert vertex (match or create)
+//   - option, project, elementMap: advanced projection
+//   - mean, sum, min, max: numeric aggregation
+//   - inject, coin: element injection and random sampling
+
 package gremlinparser
 
 import (
@@ -59,6 +84,7 @@ func init() {
 	RegisterStep("coin", execCoin)
 }
 
+// execAs labels the current element in each traverser's tags for later retrieval via select().
 func execAs(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -70,6 +96,8 @@ func execAs(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, 
 	return traversers, nil
 }
 
+// execSelect retrieves previously labelled elements from traverser tags.
+// Supports Pop enum (all, first) and by() modulators for projection.
 func execSelect(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -135,6 +163,7 @@ func execSelect(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return result, nil
 }
 
+// execWhere filters traversers using a nested traversal or a label-predicate pair.
 func execWhere(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -165,6 +194,7 @@ func execWhere(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return traversers, nil
 }
 
+// execFilter filters traversers using a nested traversal (retains those producing results).
 func execFilter(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -180,6 +210,7 @@ func execFilter(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return traversers, nil
 }
 
+// execLimit retains only the first n traversers.
 func execLimit(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -194,6 +225,7 @@ func execLimit(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return traversers[:n], nil
 }
 
+// execRange retains traversers from index lo (inclusive) to hi (exclusive).
 func execRange(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) < 2 {
 		return traversers, nil
@@ -212,6 +244,7 @@ func execRange(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return traversers[lo:hi], nil
 }
 
+// execSkip discards the first n traversers.
 func execSkip(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -226,6 +259,7 @@ func execSkip(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return traversers[n:], nil
 }
 
+// execDedup removes duplicate traversers based on element identity, label, or by() modulator.
 func execDedup(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	seen := make(map[string]bool)
 	var result []*Traverser
@@ -255,6 +289,7 @@ func execDedup(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return result, nil
 }
 
+// dedupKey produces a deduplication key string for a traverser element.
 func dedupKey(val any) string {
 	switch v := val.(type) {
 	case *graphengine.Node:
@@ -266,6 +301,7 @@ func dedupKey(val any) string {
 	}
 }
 
+// execOrder sorts traversers in-place by one or more by() modulators. Supports asc/desc via enum args.
 func execOrder(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	byMods := getModulators(step, "by")
 	if len(byMods) == 0 {
@@ -311,6 +347,8 @@ func execOrder(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return traversers, nil
 }
 
+// execBy is a no-op when used as a standalone step. As a modulator, it provides
+// sort keys to order() and group keys to group()/groupCount()/dedup().
 func execBy(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	_ = ec
 	_ = traversers
@@ -318,6 +356,8 @@ func execBy(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, 
 	return traversers, nil
 }
 
+// execGroup groups traversers into a map keyed by the first by() modulator,
+// with values collected from the second by() modulator (or raw elements).
 func execGroup(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	byMods := getModulators(step, "by")
 	groups := make(map[string][]any)
@@ -360,6 +400,7 @@ func execGroup(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return []*Traverser{newTraverser(result)}, nil
 }
 
+// execGroupCount groups traversers and counts occurrences per key.
 func execGroupCount(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	byMods := getModulators(step, "by")
 	counts := make(map[string]int64)
@@ -391,6 +432,7 @@ func execGroupCount(ec *ExecContext, traversers []*Traverser, step Step) ([]*Tra
 	return []*Traverser{newTraverser(result)}, nil
 }
 
+// execPath projects the full traversal path history as the element.
 func execPath(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 	for _, t := range traversers {
@@ -403,6 +445,7 @@ func execPath(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return result, nil
 }
 
+// execUnion merges the results of all nested traversal arguments into a single stream.
 func execUnion(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 
@@ -420,6 +463,7 @@ func execUnion(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return result, nil
 }
 
+// execCoalesce returns the results of the first nested traversal that produces output for each traverser.
 func execCoalesce(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 
@@ -443,6 +487,8 @@ func execCoalesce(ec *ExecContext, traversers []*Traverser, step Step) ([]*Trave
 	return result, nil
 }
 
+// execChoose branches each traverser based on a condition traversal (args[0]).
+// If the condition produces results, args[1] traversal is executed; otherwise args[2].
 func execChoose(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 
@@ -475,6 +521,8 @@ func execChoose(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return result, nil
 }
 
+// execOptional applies a nested traversal to each traverser, keeping the original
+// traverser if the nested traversal yields no results.
 func execOptional(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 
@@ -493,6 +541,7 @@ func execOptional(ec *ExecContext, traversers []*Traverser, step Step) ([]*Trave
 	return result, nil
 }
 
+// execIs filters traversers by a predicate or exact value match.
 func execIs(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -510,6 +559,7 @@ func execIs(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, 
 	}), nil
 }
 
+// execNot retains traversers for which the nested traversal produces no results.
 func execNot(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 || step.Args[0].Kind != ArgNestedTraversal {
 		return traversers, nil
@@ -530,6 +580,7 @@ func execNot(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 	return filtered, nil
 }
 
+// execAnd retains traversers for which ALL nested traversal arguments produce results.
 func execAnd(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	return filterTraversers(traversers, func(t *Traverser) bool {
 		for _, arg := range step.Args {
@@ -545,6 +596,7 @@ func execAnd(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 	}), nil
 }
 
+// execOr retains traversers for which ANY nested traversal argument produces results.
 func execOr(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	return filterTraversers(traversers, func(t *Traverser) bool {
 		for _, arg := range step.Args {
@@ -560,6 +612,10 @@ func execOr(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, 
 	}), nil
 }
 
+// execRepeat iterates a nested traversal with support for emit(), until(), and times()
+// modulators. The nested traversal is executed repeatedly on each traverser until a
+// stop condition is met (until modulator, max iterations from times, or exhaustion).
+// When emit is active, traversers are yielded at each iteration.
 func execRepeat(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 || step.Args[0].Kind != ArgNestedTraversal {
 		return traversers, nil
@@ -666,18 +722,26 @@ func execRepeat(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return result, nil
 }
 
+// execEmit is a no-op when used standalone. As a modulator on repeat(), it causes
+// traversers to be emitted at each iteration rather than only at the end.
 func execEmit(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	return traversers, nil
 }
 
+// execUntil is a no-op when used standalone. As a modulator on repeat(), it defines
+// the stop condition for loop iteration.
 func execUntil(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	return traversers, nil
 }
 
+// execTimes is a no-op when used standalone. As a modulator on repeat(), it limits
+// the number of loop iterations.
 func execTimes(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	return traversers, nil
 }
 
+// execLocal executes a nested traversal scoped to each individual traverser,
+// allowing per-element sub-traversals without polluting the outer traversal stream.
 func execLocal(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 || step.Args[0].Kind != ArgNestedTraversal {
 		return traversers, nil
@@ -694,6 +758,8 @@ func execLocal(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverse
 	return result, nil
 }
 
+// execSimplePath filters out traversers whose path history contains duplicate elements,
+// effectively removing cycles from traversal paths.
 func execSimplePath(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	return filterTraversers(traversers, func(t *Traverser) bool {
 		seen := make(map[string]bool)
@@ -708,6 +774,7 @@ func execSimplePath(ec *ExecContext, traversers []*Traverser, step Step) ([]*Tra
 	}), nil
 }
 
+// execTail returns the last n traversers from the stream, or the final element if no count is given.
 func execTail(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		if len(traversers) == 0 {
@@ -725,6 +792,8 @@ func execTail(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return traversers[len(traversers)-n:], nil
 }
 
+// execConstant replaces each traverser's element with the specified constant value,
+// useful for injecting fixed values mid-traversal.
 func execConstant(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -740,6 +809,8 @@ func execConstant(ec *ExecContext, traversers []*Traverser, step Step) ([]*Trave
 	return result, nil
 }
 
+// execUnfold iterates over traverser elements that are lists or maps, emitting one traverser
+// per item. Non-iterable elements pass through unchanged.
 func execUnfold(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 	for _, t := range traversers {
@@ -765,6 +836,8 @@ func execUnfold(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return result, nil
 }
 
+// execFold aggregates all traverser elements into a single list traverser.
+// The inverse of unfold(); an empty stream yields an empty list.
 func execFold(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(traversers) == 0 {
 		return []*Traverser{newTraverser([]any{})}, nil
@@ -776,6 +849,8 @@ func execFold(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return []*Traverser{newTraverser(list)}, nil
 }
 
+// execMap applies a nested traversal to each traverser and collects the results as a list element,
+// producing one output traverser per input traverser.
 func execMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 || step.Args[0].Kind != ArgNestedTraversal {
 		return traversers, nil
@@ -797,6 +872,8 @@ func execMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 	return result, nil
 }
 
+// execFlatMap applies a nested traversal to each traverser and flattens all results into the stream.
+// Unlike execMap, each nested result becomes a separate traverser in the output.
 func execFlatMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 || step.Args[0].Kind != ArgNestedTraversal {
 		return traversers, nil
@@ -812,6 +889,8 @@ func execFlatMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traver
 	return result, nil
 }
 
+// execAggregate collects all traverser elements into a named side-effect collection,
+// which can later be retrieved with cap(). The original traversers pass through unchanged.
 func execAggregate(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -833,6 +912,8 @@ func execAggregate(ec *ExecContext, traversers []*Traverser, step Step) ([]*Trav
 	return traversers, nil
 }
 
+// execCap retrieves a named side-effect collection (populated by aggregate() or group())
+// and emits it as a single traverser. Returns an empty list if the key does not exist.
 func execCap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -846,6 +927,8 @@ func execCap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 	return []*Traverser{newTraverser(val)}, nil
 }
 
+// execFrom resolves the source vertex for addE() from a labelled tag or nested traversal.
+// Stores the resolved node ID in the "__from" tag for the subsequent addE step to consume.
 func execFrom(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -893,6 +976,8 @@ func execFrom(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return traversers, nil
 }
 
+// execTo resolves the target vertex for addE() from a labelled tag or nested traversal.
+// Stores the resolved node ID in the "__to" tag for the subsequent addE step to consume.
 func execTo(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -940,6 +1025,8 @@ func execTo(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, 
 	return traversers, nil
 }
 
+// execMergeV upserts a vertex: returns an existing match (by label + properties) or creates
+// a new one with the given properties. Requires a GraphWriter in the execution context.
 func execMergeV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if ec.Writer == nil {
 		return nil, fmt.Errorf("gremlin: mergeV requires a GraphWriter")
@@ -997,6 +1084,8 @@ func execMergeV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return []*Traverser{newTraverser(n)}, nil
 }
 
+// execOption registers a conditional branch pair (condition traversal + result traversal)
+// as a side-effect for use with choose() or coalesce().
 func execOption(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) > 0 && step.Args[0].Kind == ArgNestedTraversal {
 		if len(step.Args) > 1 && step.Args[1].Kind == ArgNestedTraversal {
@@ -1009,16 +1098,21 @@ func execOption(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return traversers, nil
 }
 
+// optionEntry pairs a condition traversal with the traversal to execute when the condition matches.
 type optionEntry struct {
 	condition *Traversal
 	traversal *Traversal
 }
 
+// getSideEffectOptions retrieves all registered option entries from the execution context's
+// "__options" side-effect key.
 func getSideEffectOptions(ec *ExecContext) []optionEntry {
 	opts, _ := ec.SideEffects["__options"].([]optionEntry)
 	return opts
 }
 
+// execProject projects traverser elements into a map using the specified keys, looking up
+// values from tags or element properties. Optional by() modulators control value extraction.
 func execProject(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -1056,6 +1150,8 @@ func execProject(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traver
 	return result, nil
 }
 
+// execElementMap converts each traverser's element (Node or Edge) into a map containing
+// its label, id, and properties. Optional key arguments restrict which fields are included.
 func execElementMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	keys := argStrings(step.Args)
 	var result []*Traverser
@@ -1103,6 +1199,7 @@ func execElementMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Tra
 	return result, nil
 }
 
+// sliceContains reports whether item appears in the string slice s.
 func sliceContains(s []string, item string) bool {
 	for _, v := range s {
 		if v == item {
@@ -1112,6 +1209,8 @@ func sliceContains(s []string, item string) bool {
 	return false
 }
 
+// execMean computes the arithmetic mean of all numeric traverser elements,
+// returning a single traverser with the result. Non-numeric elements are skipped.
 func execMean(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(traversers) == 0 {
 		return []*Traverser{newTraverser(float64(0))}, nil
@@ -1130,6 +1229,8 @@ func execMean(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return []*Traverser{newTraverser(sum / float64(count))}, nil
 }
 
+// execSum computes the sum of all numeric traverser elements, returning a single
+// traverser with the result. Non-numeric elements are skipped.
 func execSum(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(traversers) == 0 {
 		return []*Traverser{newTraverser(float64(0))}, nil
@@ -1143,6 +1244,8 @@ func execSum(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 	return []*Traverser{newTraverser(sum)}, nil
 }
 
+// execMin finds the minimum element across all traversers using numeric comparison,
+// returning a single traverser. Returns nil for an empty input.
 func execMin(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(traversers) == 0 {
 		return nil, nil
@@ -1156,6 +1259,8 @@ func execMin(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 	return []*Traverser{newTraverser(min)}, nil
 }
 
+// execMax finds the maximum element across all traversers using numeric comparison,
+// returning a single traverser. Returns nil for an empty input.
 func execMax(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(traversers) == 0 {
 		return nil, nil
@@ -1169,6 +1274,8 @@ func execMax(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 	return []*Traverser{newTraverser(max)}, nil
 }
 
+// execInject inserts the specified values at the start of the traverser stream,
+// before the existing traversers. Useful for seeding a traversal with initial values.
 func execInject(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	var result []*Traverser
 	for _, arg := range step.Args {
@@ -1178,6 +1285,8 @@ func execInject(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return result, nil
 }
 
+// execCoin randomly filters traversers, retaining each with the given probability (default 0.5).
+// Produces a probabilistic sample of the traverser stream.
 func execCoin(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	if len(step.Args) == 0 {
 		return traversers, nil
@@ -1198,6 +1307,9 @@ func execCoin(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return result, nil
 }
 
+// executeNestedTraversal runs a sub-traversal in the context of a parent traverser.
+// Handles two cases: (1) source steps (V, E, addV, etc.) start fresh, and
+// (2) mid-traversal steps use the parent traverser as their starting element.
 func executeNestedTraversal(ec *ExecContext, parent *Traverser, trav *Traversal) ([]*Traverser, error) {
 	if len(trav.Steps) == 0 {
 		return nil, nil
@@ -1266,6 +1378,7 @@ func executeNestedTraversal(ec *ExecContext, parent *Traverser, trav *Traversal)
 	return current, nil
 }
 
+// getModulators returns all modulators on a step with the given name (e.g. "by").
 func getModulators(step Step, name string) []Step {
 	var result []Step
 	for _, m := range step.Modulators {
@@ -1276,6 +1389,7 @@ func getModulators(step Step, name string) []Step {
 	return result
 }
 
+// getFirstModulator returns the first modulator on a step with the given name.
 func getFirstModulator(step Step, name string) (Step, bool) {
 	for _, m := range step.Modulators {
 		if m.Name == name {
@@ -1285,6 +1399,9 @@ func getFirstModulator(step Step, name string) (Step, bool) {
 	return Step{}, false
 }
 
+// computeByValue resolves the value that a by() modulator extracts from a traverser.
+// Supports nested traversals, property key lookups (including ~id and ~label), and
+// identity (no args returns the element as-is).
 func computeByValue(ec *ExecContext, t *Traverser, byMod Step) any {
 	if len(byMod.Args) == 0 {
 		return t.Element
@@ -1313,11 +1430,15 @@ func computeByValue(ec *ExecContext, t *Traverser, byMod Step) any {
 	return t.Element
 }
 
+// computeByValueAsString resolves a by() modulator value and formats it as a string.
+// Used by dedup() and groupCount() for map key computation.
 func computeByValueAsString(ec *ExecContext, t *Traverser, byMod Step) string {
 	v := computeByValue(ec, t, byMod)
 	return fmt.Sprintf("%v", v)
 }
 
+// valuesEqual compares two values for equality, handling numeric coercion (both values
+// convertible to float64 are compared numerically) and string representation fallback.
 func valuesEqual(a, b any) bool {
 	if a == nil && b == nil {
 		return true
