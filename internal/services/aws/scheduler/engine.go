@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,6 +26,14 @@ import (
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
+
+var schedulerTickerInterval = 1 * time.Minute
+
+func init() {
+	if os.Getenv("TEST_MODE") == "true" {
+		schedulerTickerInterval = 1 * time.Second
+	}
+}
 
 // Engine manages scheduled task execution for EventBridge Scheduler.
 type Engine struct {
@@ -103,7 +112,7 @@ func (e *Engine) Stop() error {
 func (e *Engine) run() {
 	defer e.wg.Done()
 
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(schedulerTickerInterval)
 	defer ticker.Stop()
 
 	e.checkSchedules()
@@ -310,13 +319,14 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 		if input == "" {
 			input = "{}"
 		}
-		e.bus.Publish(context.Background(), &eventbus.ScheduleFiredEvent{
+		schedEvt := &eventbus.ScheduleFiredEvent{
 			ScheduleName: schedule.Name,
 			ScheduleArn:  "",
 			TargetArn:    targetArn,
 			Input:        input,
-			Region:       region,
-		})
+		}
+		schedEvt.Region = region
+		e.bus.Publish(context.Background(), schedEvt)
 	} else {
 		if strings.Contains(targetArn, ":lambda:") {
 			e.invokeLambda(ctx, schedule, target)
@@ -324,6 +334,10 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 			e.sendToSQS(ctx, schedule, target)
 		} else if strings.Contains(targetArn, ":sns:") {
 			e.publishToSNS(ctx, schedule, target)
+		} else if strings.Contains(targetArn, ":states:") {
+			e.startStepFunctionExecution(ctx, schedule, target)
+		} else if strings.Contains(targetArn, ":events:") {
+			e.sendToEventBridge(ctx, schedule, target)
 		} else {
 			logs.Debug("Unsupported target type", logs.String("arn", targetArn))
 		}
@@ -374,7 +388,7 @@ func (e *Engine) invokeLambda(ctx context.Context, schedule *schedulerstore.Sche
 		logs.String("schedule", schedule.Name),
 		logs.String("function", functionName))
 
-	statusCode, _, err := e.lambdaInvoker.InvokeForGateway(ctx, functionName, []byte(input))
+	statusCode, _, err := e.lambdaInvoker.InvokeForGateway(ctx, target.Arn, []byte(input))
 	if err != nil {
 		logs.Debug("Failed to invoke Lambda",
 			logs.String("schedule", schedule.Name),
@@ -545,7 +559,7 @@ func (e *Engine) deliverSNSToLambda(ctx context.Context, schedule *schedulerstor
 		return
 	}
 
-	_, _, err = e.lambdaInvoker.InvokeForGateway(ctx, functionName, payloadBytes)
+	_, _, err = e.lambdaInvoker.InvokeForGateway(ctx, sub.Endpoint, payloadBytes)
 	if err != nil {
 		logs.Debug("Failed to deliver SNS to Lambda",
 			logs.String("schedule", schedule.Name),
@@ -594,9 +608,9 @@ func (e *Engine) sendToCloudWatchLogs(ctx context.Context, schedule *schedulerst
 		LogEvents: []eventbus.LogEntry{
 			{Timestamp: time.Now().UnixMilli(), Message: message},
 		},
-		Region:    region,
-		AccountID: e.accountID,
 	}
+	evt.Region = region
+	evt.AccountID = e.accountID
 
 	if err := e.bus.Publish(ctx, evt); err != nil {
 		logs.Debug("Failed to deliver schedule to CloudWatch Logs",
@@ -609,4 +623,83 @@ func (e *Engine) sendToCloudWatchLogs(ctx context.Context, schedule *schedulerst
 	logs.Debug("Schedule delivered to CloudWatch Logs",
 		logs.String("schedule", schedule.Name),
 		logs.String("logGroup", logGroup))
+}
+
+func (e *Engine) startStepFunctionExecution(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) {
+	if e.bus == nil {
+		logs.Debug("event bus not configured, skipping Step Functions delivery",
+			logs.String("schedule", schedule.Name))
+		return
+	}
+
+	_, _, smRegion, _, _ := svcarn.SplitARN(target.Arn)
+	if smRegion == "" {
+		smRegion = schedule.Region
+	}
+
+	input := target.Input
+	if input == "" {
+		input = "{}"
+	}
+
+	evt := &eventbus.StepFunctionsStartExecutionEvent{
+		StateMachineArn: target.Arn,
+		Input:           input,
+	}
+	evt.Region = smRegion
+	evt.AccountID = e.accountID
+
+	if err := e.bus.Publish(ctx, evt); err != nil {
+		logs.Debug("Failed to start Step Functions execution from schedule",
+			logs.String("schedule", schedule.Name),
+			logs.String("stateMachineArn", target.Arn),
+			logs.String("error", err.Error()))
+		return
+	}
+
+	logs.Debug("Schedule delivered to Step Functions",
+		logs.String("schedule", schedule.Name),
+		logs.String("stateMachineArn", target.Arn))
+}
+
+func (e *Engine) sendToEventBridge(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) {
+	if e.bus == nil {
+		logs.Debug("event bus not configured, skipping EventBridge delivery",
+			logs.String("schedule", schedule.Name))
+		return
+	}
+
+	_, _, ebRegion, _, resource := svcarn.SplitARN(target.Arn)
+	if ebRegion == "" {
+		ebRegion = schedule.Region
+	}
+
+	eventBusName := "default"
+	if idx := strings.LastIndex(resource, ":event-bus/"); idx != -1 {
+		eventBusName = resource[idx+len(":event-bus/"):]
+	}
+
+	input := target.Input
+	if input == "" {
+		input = "{}"
+	}
+
+	evt := &eventbus.EventBridgePutEventsEvent{
+		EventBusName: eventBusName,
+		Input:        input,
+	}
+	evt.Region = ebRegion
+	evt.AccountID = e.accountID
+
+	if err := e.bus.Publish(ctx, evt); err != nil {
+		logs.Debug("Failed to deliver schedule to EventBridge",
+			logs.String("schedule", schedule.Name),
+			logs.String("eventBus", eventBusName),
+			logs.String("error", err.Error()))
+		return
+	}
+
+	logs.Debug("Schedule delivered to EventBridge",
+		logs.String("schedule", schedule.Name),
+		logs.String("eventBus", eventBusName))
 }

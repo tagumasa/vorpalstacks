@@ -478,9 +478,9 @@ func (e *Executor) publishHistoryToCloudWatchLogs(execution *sfnstore.Execution,
 		LogEvents: []eventbus.LogEntry{
 			{Timestamp: event.Timestamp.UnixMilli(), Message: string(eventBytes)},
 		},
-		Region:    region,
-		AccountID: e.accountID,
 	}
+	evt.Region = region
+	evt.AccountID = e.accountID
 
 	if err := e.bus.Publish(context.Background(), evt); err != nil {
 		logs.Debug("Failed to publish execution history to CloudWatch Logs",

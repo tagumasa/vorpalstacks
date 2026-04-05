@@ -31,6 +31,7 @@ type SNSService struct {
 	sqsStore       sqsstore.SQSStoreInterface
 	lambdaInvoker  common.LambdaInvoker
 	accountID      string
+	defaultRegion  string
 	httpClient     *http.Client
 	bus            *eventbus.EventBus
 	stores         sync.Map
@@ -53,10 +54,11 @@ func (s *SNSService) store(reqCtx *request.RequestContext) (snsstore.SNSStoreInt
 // NewSNSService creates a new SNS service instance.
 // Optional cross-service dependencies (SQS store, Lambda invoker) should be
 // injected via setter methods before registering handlers.
-func NewSNSService(storageMgr *storage.RegionStorageManager, accountID string) *SNSService {
+func NewSNSService(storageMgr *storage.RegionStorageManager, accountID, region string) *SNSService {
 	return &SNSService{
 		storageManager: storageMgr,
 		accountID:      accountID,
+		defaultRegion:  region,
 		httpClient:     &http.Client{Timeout: 30 * time.Second},
 	}
 }
@@ -136,6 +138,22 @@ func (s *SNSService) getSNSStoreByRegion(region string) (snsstore.SNSStoreInterf
 
 func (s *SNSService) initSigningKey() {
 	s.signingKeyOnce.Do(func() {
+		rs, err := s.storageManager.GetStorage(s.defaultRegion)
+		if err != nil {
+			return
+		}
+		bucket := rs.Bucket("sns-signing")
+
+		if keyPEM, err := bucket.Get([]byte("signing_key")); err == nil && keyPEM != nil {
+			if key, err := parseSigningKeyFromPEM(string(keyPEM)); err == nil {
+				s.signingKey = key
+				if certPEM, err := bucket.Get([]byte("signing_cert")); err == nil && certPEM != nil {
+					s.signingCertPEM = certPEM
+					return
+				}
+			}
+		}
+
 		privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
 			return
@@ -159,11 +177,21 @@ func (s *SNSService) initSigningKey() {
 			return
 		}
 
-		s.signingCertPEM = pem.EncodeToMemory(&pem.Block{
-			Type:  "CERTIFICATE",
-			Bytes: certDER,
-		})
+		keyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
+		certBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+		s.signingCertPEM = certBytes
+
+		bucket.Put([]byte("signing_key"), keyBytes)
+		bucket.Put([]byte("signing_cert"), certBytes)
 	})
+}
+
+func parseSigningKeyFromPEM(pemData string) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode([]byte(pemData))
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM")
+	}
+	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }
 
 func (s *SNSService) RegisterHandlers(d *dispatcher.Dispatcher) {
@@ -236,12 +264,13 @@ func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topi
 		}
 
 		if s.bus != nil {
-			s.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+			snsEvt := &eventbus.SNSDeliveryEvent{
 				TopicARN:  topic.Arn,
 				MessageID: msg.MessageId,
 				Message:   message,
-				Region:    region,
-			})
+			}
+			snsEvt.Region = region
+			s.bus.Publish(context.Background(), snsEvt)
 		} else {
 			subsCopy := make([]*snsstore.Subscription, len(subscriptions.Items))
 			for i, sub := range subscriptions.Items {

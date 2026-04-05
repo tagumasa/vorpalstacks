@@ -102,17 +102,22 @@ func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.
 					message = string(msgBytes)
 				}
 			}
-			s.engine.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+			snsEvt := &eventbus.SNSDeliveryEvent{
 				TopicARN:  evt.TargetArn,
 				MessageID: fmt.Sprintf("%d", time.Now().UnixNano()),
 				Message:   message,
-				Region:    evt.Region,
-			})
+			}
+			snsEvt.Region = evt.Region
+			s.engine.bus.Publish(context.Background(), snsEvt)
 		} else {
 			s.engine.publishToSNS(ctx, schedule, target)
 		}
 	} else if strings.Contains(evt.TargetArn, ":logs:") {
 		s.engine.sendToCloudWatchLogs(ctx, schedule, target)
+	} else if strings.Contains(evt.TargetArn, ":states:") {
+		s.engine.startStepFunctionExecution(ctx, schedule, target)
+	} else if strings.Contains(evt.TargetArn, ":events:") {
+		s.engine.sendToEventBridge(ctx, schedule, target)
 	}
 
 	return eventbus.HandlerResult{}

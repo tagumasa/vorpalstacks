@@ -13,6 +13,7 @@ import (
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 func (e *Executor) executeLambdaTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string) (string, error) {
@@ -24,9 +25,8 @@ func (e *Executor) executeLambdaTask(ctx context.Context, execCtx *ExecutionCont
 	if len(parts) < 7 {
 		return "", fmt.Errorf("invalid Lambda ARN: %s", state.Resource)
 	}
-	functionName := parts[len(parts)-1]
 
-	statusCode, payload, err := e.lambdaInvoker.InvokeForGateway(ctx, functionName, []byte(input))
+	statusCode, payload, err := e.lambdaInvoker.InvokeForGateway(ctx, state.Resource, []byte(input))
 	if err != nil {
 		return "", fmt.Errorf("failed to invoke Lambda function: %w", err)
 	}
@@ -80,7 +80,12 @@ func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *Execution
 		if queueName == "" {
 			queueName = "default-queue"
 		}
-		queueURL = endpoint.SQSQueueURL(e.accountID, queueName)
+
+		if q, qErr := e.sqsStore.GetQueueByName(queueName); qErr == nil {
+			queueURL = q.URL
+		} else {
+			queueURL = endpoint.SQSQueueURL(e.accountID, queueName)
+		}
 	}
 
 	messageBody := input
@@ -141,18 +146,26 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 		inputData = map[string]interface{}{"Message": input}
 	}
 
-	topicName := ""
-	if tn, ok := inputData["TopicName"].(string); ok {
-		topicName = tn
-	} else if tn, ok := inputData["topicName"].(string); ok {
-		topicName = tn
-	}
+	topicArn := ""
+	if ta, ok := inputData["TopicArn"].(string); ok && ta != "" {
+		topicArn = ta
+	} else {
+		topicName := ""
+		if tn, ok := inputData["TopicName"].(string); ok {
+			topicName = tn
+		} else if tn, ok := inputData["topicName"].(string); ok {
+			topicName = tn
+		}
+		if topicName == "" {
+			topicName = "default-topic"
+		}
 
-	if topicName == "" {
-		topicName = "default-topic"
+		_, _, topicRegion, _, _ := svcarn.SplitARN(state.Resource)
+		if topicRegion == "" {
+			topicRegion = e.region
+		}
+		topicArn = fmt.Sprintf("arn:aws:sns:%s:%s:%s", topicRegion, e.accountID, topicName)
 	}
-
-	topicArn := fmt.Sprintf("arn:aws:sns:%s:%s:%s", e.region, e.accountID, topicName)
 
 	message := input
 	if m, ok := inputData["Message"].(string); ok {
@@ -186,13 +199,18 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 	}
 
 	if e.bus != nil {
-		e.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+		snsEvt := &eventbus.SNSDeliveryEvent{
 			TopicARN:  topicArn,
 			MessageID: msg.MessageId,
 			Message:   message,
 			Subject:   subject,
-			Region:    e.region,
-		})
+		}
+		_, _, evtRegion, _, _ := svcarn.SplitARN(topicArn)
+		if evtRegion == "" {
+			evtRegion = e.region
+		}
+		snsEvt.Region = evtRegion
+		e.bus.Publish(context.Background(), snsEvt)
 	}
 
 	result := map[string]interface{}{
@@ -228,6 +246,11 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 	var inputData map[string]interface{}
 	if err := json.Unmarshal([]byte(input), &inputData); err != nil {
 		inputData = map[string]interface{}{"Entries": []interface{}{}}
+	}
+
+	_, _, eventsRegion, _, _ := svcarn.SplitARN(state.Resource)
+	if eventsRegion == "" {
+		eventsRegion = e.region
 	}
 
 	var entries []map[string]interface{}
@@ -292,7 +315,7 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 			Source:       getStringOrEmpty(entry, "Source", "source"),
 			DetailType:   getStringOrEmpty(entry, "DetailType", "detailType"),
 			Time:         now,
-			Region:       e.region,
+			Region:       eventsRegion,
 			Account:      e.accountID,
 			Detail:       detail,
 		}
@@ -305,11 +328,12 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 		if e.bus != nil {
 			eventJSON, err := json.Marshal(event)
 			if err == nil {
-				e.bus.Publish(context.Background(), &eventbus.EventBridgeDeliveryEvent{
-					TargetARN: fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", e.region, e.accountID, eventBusName),
+				ebEvt := &eventbus.EventBridgeDeliveryEvent{
+					TargetARN: fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", eventsRegion, e.accountID, eventBusName),
 					Input:     eventJSON,
-					Region:    e.region,
-				})
+				}
+				ebEvt.Region = eventsRegion
+				e.bus.Publish(context.Background(), ebEvt)
 			}
 		}
 

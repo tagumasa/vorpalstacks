@@ -29,44 +29,58 @@ type TestRunner struct {
 
 type ServiceFactory func(*TestRunner) []TestResult
 
-var serviceRegistry = map[string]ServiceFactory{}
+type TestCategory string
 
-func RegisterService(name string, factory ServiceFactory) {
-	serviceRegistry[name] = factory
+const (
+	CategorySDK         TestCategory = "sdk"
+	CategoryWS          TestCategory = "ws"
+	CategoryIntegration TestCategory = "integration"
+)
+
+type serviceEntry struct {
+	factory  ServiceFactory
+	category TestCategory
+}
+
+var serviceRegistry = map[string]serviceEntry{}
+
+func RegisterService(name string, category TestCategory, factory ServiceFactory) {
+	serviceRegistry[name] = serviceEntry{factory: factory, category: category}
 }
 
 func init() {
-	RegisterService("dynamodb", (*TestRunner).RunDynamoDBTests)
-	RegisterService("sqs", (*TestRunner).RunSQSTests)
-	RegisterService("sns", (*TestRunner).RunSNSTests)
-	RegisterService("s3", (*TestRunner).RunS3Tests)
-	RegisterService("lambda", (*TestRunner).RunLambdaTests)
-	RegisterService("iam", (*TestRunner).RunIAMTests)
-	RegisterService("kms", (*TestRunner).RunKMSTests)
-	RegisterService("events", (*TestRunner).RunEventBridgeTests)
-	RegisterService("stepfunctions", (*TestRunner).RunStepFunctionsTests)
-	RegisterService("apigateway", (*TestRunner).RunAPIGatewayTests)
-	RegisterService("logs", (*TestRunner).RunCloudWatchLogsTests)
-	RegisterService("cloudwatch", (*TestRunner).RunCloudWatchTests)
-	RegisterService("ssm", (*TestRunner).RunSSMTests)
-	RegisterService("cloudtrail", (*TestRunner).RunCloudTrailTests)
-	RegisterService("acm", (*TestRunner).RunACMTests)
-	RegisterService("cognito", (*TestRunner).RunCognitoTests)
-	RegisterService("cognito-identity", (*TestRunner).RunCognitoIdentityTests)
-	RegisterService("secretsmanager", (*TestRunner).RunSecretsManagerTests)
-	RegisterService("kinesis", (*TestRunner).RunKinesisTests)
-	RegisterService("sts", (*TestRunner).RunSTSTests)
-	RegisterService("scheduler", (*TestRunner).RunSchedulerTests)
-	RegisterService("athena", (*TestRunner).RunAthenaTests)
-	RegisterService("timestream", (*TestRunner).RunTimestreamTests)
-	RegisterService("sesv2", (*TestRunner).RunSESv2Tests)
-	RegisterService("route53", (*TestRunner).RunRoute53Tests)
-	RegisterService("cloudfront", (*TestRunner).RunCloudFrontTests)
-	RegisterService("wafv2", (*TestRunner).RunWAFv2Tests)
-	RegisterService("neptune", (*TestRunner).RunNeptuneTests)
-	RegisterService("neptunedata", (*TestRunner).RunNeptunedataTests)
-	RegisterService("appsync", (*TestRunner).RunAppSyncTests)
-	RegisterService("appsync-ws", (*TestRunner).RunAppSyncWSTests)
+	RegisterService("dynamodb", CategorySDK, (*TestRunner).RunDynamoDBTests)
+	RegisterService("sqs", CategorySDK, (*TestRunner).RunSQSTests)
+	RegisterService("sns", CategorySDK, (*TestRunner).RunSNSTests)
+	RegisterService("s3", CategorySDK, (*TestRunner).RunS3Tests)
+	RegisterService("lambda", CategorySDK, (*TestRunner).RunLambdaTests)
+	RegisterService("iam", CategorySDK, (*TestRunner).RunIAMTests)
+	RegisterService("kms", CategorySDK, (*TestRunner).RunKMSTests)
+	RegisterService("events", CategorySDK, (*TestRunner).RunEventBridgeTests)
+	RegisterService("stepfunctions", CategorySDK, (*TestRunner).RunStepFunctionsTests)
+	RegisterService("apigateway", CategorySDK, (*TestRunner).RunAPIGatewayTests)
+	RegisterService("logs", CategorySDK, (*TestRunner).RunCloudWatchLogsTests)
+	RegisterService("cloudwatch", CategorySDK, (*TestRunner).RunCloudWatchTests)
+	RegisterService("ssm", CategorySDK, (*TestRunner).RunSSMTests)
+	RegisterService("cloudtrail", CategorySDK, (*TestRunner).RunCloudTrailTests)
+	RegisterService("acm", CategorySDK, (*TestRunner).RunACMTests)
+	RegisterService("cognito", CategorySDK, (*TestRunner).RunCognitoTests)
+	RegisterService("cognito-identity", CategorySDK, (*TestRunner).RunCognitoIdentityTests)
+	RegisterService("secretsmanager", CategorySDK, (*TestRunner).RunSecretsManagerTests)
+	RegisterService("kinesis", CategorySDK, (*TestRunner).RunKinesisTests)
+	RegisterService("sts", CategorySDK, (*TestRunner).RunSTSTests)
+	RegisterService("scheduler", CategorySDK, (*TestRunner).RunSchedulerTests)
+	RegisterService("athena", CategorySDK, (*TestRunner).RunAthenaTests)
+	RegisterService("timestream", CategorySDK, (*TestRunner).RunTimestreamTests)
+	RegisterService("sesv2", CategorySDK, (*TestRunner).RunSESv2Tests)
+	RegisterService("route53", CategorySDK, (*TestRunner).RunRoute53Tests)
+	RegisterService("cloudfront", CategorySDK, (*TestRunner).RunCloudFrontTests)
+	RegisterService("wafv2", CategorySDK, (*TestRunner).RunWAFv2Tests)
+	RegisterService("neptune", CategorySDK, (*TestRunner).RunNeptuneTests)
+	RegisterService("neptunedata", CategorySDK, (*TestRunner).RunNeptunedataTests)
+	RegisterService("appsync", CategorySDK, (*TestRunner).RunAppSyncTests)
+	RegisterService("appsync-ws", CategoryWS, (*TestRunner).RunAppSyncWSTests)
+	RegisterService("integration", CategoryIntegration, (*TestRunner).RunIntegrationTests)
 }
 
 func NewTestRunner(endpoint, region string, verbose bool) *TestRunner {
@@ -82,16 +96,29 @@ func (r *TestRunner) Endpoint() string { return r.endpoint }
 func (r *TestRunner) Region() string   { return r.region }
 
 func (r *TestRunner) GetAllServices() []string {
+	return r.GetServicesByCategory("")
+}
+
+func (r *TestRunner) GetServicesByCategory(category TestCategory) []string {
 	services := make([]string, 0, len(serviceRegistry))
-	for name := range serviceRegistry {
-		services = append(services, name)
+	for name, entry := range serviceRegistry {
+		if category == "" || entry.category == category {
+			services = append(services, name)
+		}
 	}
 	sort.Strings(services)
 	return services
 }
 
+func (r *TestRunner) GetServiceCategory(name string) TestCategory {
+	if entry, ok := serviceRegistry[name]; ok {
+		return entry.category
+	}
+	return CategorySDK
+}
+
 func (r *TestRunner) RunServiceTests(service string) []TestResult {
-	factory, ok := serviceRegistry[service]
+	entry, ok := serviceRegistry[service]
 	if !ok {
 		return []TestResult{{
 			Service:  service,
@@ -100,7 +127,7 @@ func (r *TestRunner) RunServiceTests(service string) []TestResult {
 			Error:    "Unknown service",
 		}}
 	}
-	return factory(r)
+	return entry.factory(r)
 }
 
 func (r *TestRunner) RunTest(service, testName string, testFunc func() error) TestResult {
@@ -155,40 +182,104 @@ func (r *TestRunner) PrintReport(results map[string][]TestResult, format string)
 	}
 }
 
+type CategorySummary struct {
+	Passed  int
+	Failed  int
+	Skipped int
+}
+
+func (r *TestRunner) SummariseByCategory(results map[string][]TestResult) map[TestCategory]*CategorySummary {
+	summary := map[TestCategory]*CategorySummary{
+		CategorySDK:         {},
+		CategoryWS:          {},
+		CategoryIntegration: {},
+	}
+	for svc, svcResults := range results {
+		cat := r.GetServiceCategory(svc)
+		for _, result := range svcResults {
+			switch result.Status {
+			case "PASS":
+				summary[cat].Passed++
+			case "FAIL":
+				summary[cat].Failed++
+			case "SKIP":
+				summary[cat].Skipped++
+			}
+		}
+	}
+	return summary
+}
+
 func (r *TestRunner) printTableReport(results map[string][]TestResult) {
-	for _, service := range r.GetAllServices() {
-		serviceResults, exists := results[service]
-		if !exists || len(serviceResults) == 0 {
+	categoryOrder := []TestCategory{CategorySDK, CategoryIntegration, CategoryWS}
+	categoryHeaders := map[TestCategory]string{
+		CategorySDK:         "SDK TESTS",
+		CategoryIntegration: "INTEGRATION TESTS",
+		CategoryWS:          "WEBSOCKET TESTS",
+	}
+
+	for _, cat := range categoryOrder {
+		catResults := make(map[string][]TestResult)
+		for svc, svcResults := range results {
+			if r.GetServiceCategory(svc) == cat {
+				catResults[svc] = svcResults
+			}
+		}
+		if len(catResults) == 0 {
 			continue
 		}
 
-		fmt.Printf("\n=== %s ===\n", strings.ToUpper(service))
-		for _, result := range serviceResults {
-			statusSymbol := "✓"
-			if result.Status == "FAIL" {
-				statusSymbol = "✗"
-			} else if result.Status == "SKIP" {
-				statusSymbol = "-"
+		fmt.Printf("\n========== %s ==========\n", categoryHeaders[cat])
+		for _, service := range r.GetServicesByCategory(cat) {
+			serviceResults, exists := catResults[service]
+			if !exists || len(serviceResults) == 0 {
+				continue
 			}
-			fmt.Printf("  %s %s (%.2fs)", statusSymbol, result.TestName, result.Duration.Seconds())
-			if result.Error != "" {
-				fmt.Printf(" - %s", result.Error)
+
+			fmt.Printf("\n=== %s ===\n", strings.ToUpper(service))
+			for _, result := range serviceResults {
+				statusSymbol := "✓"
+				if result.Status == "FAIL" {
+					statusSymbol = "✗"
+				} else if result.Status == "SKIP" {
+					statusSymbol = "-"
+				}
+				fmt.Printf("  %s %s (%.2fs)", statusSymbol, result.TestName, result.Duration.Seconds())
+				if result.Error != "" {
+					fmt.Printf(" - %s", result.Error)
+				}
+				fmt.Println()
 			}
-			fmt.Println()
 		}
 	}
 }
 
 func (r *TestRunner) printJSONReport(results map[string][]TestResult) {
+	type categoryBreakdown struct {
+		Passed  int `json:"passed"`
+		Failed  int `json:"failed"`
+		Skipped int `json:"skipped"`
+	}
 	report := struct {
-		Results map[string][]TestResult
+		Results map[string][]TestResult `json:"results"`
 		Summary struct {
-			Passed  int
-			Failed  int
-			Skipped int
-		}
+			Passed  int `json:"passed"`
+			Failed  int `json:"failed"`
+			Skipped int `json:"skipped"`
+		} `json:"summary"`
+		ByCategory map[TestCategory]*categoryBreakdown `json:"byCategory"`
 	}{
-		Results: results,
+		Results:    results,
+		ByCategory: map[TestCategory]*categoryBreakdown{},
+	}
+
+	catSummary := r.SummariseByCategory(results)
+	for cat, s := range catSummary {
+		report.ByCategory[cat] = &categoryBreakdown{
+			Passed:  s.Passed,
+			Failed:  s.Failed,
+			Skipped: s.Skipped,
+		}
 	}
 
 	for _, serviceResults := range results {

@@ -104,8 +104,7 @@ func (s *CognitoService) handleCognitoTrigger(ctx context.Context, event *eventb
 		return eventbus.HandlerResult{StatusCode: 200}
 	}
 
-	functionName := svcarn.ExtractFunctionNameFromARN(event.LambdaARN)
-	_, payload, err := s.lambdaInvoker.InvokeForGateway(ctx, functionName, event.Payload)
+	_, payload, err := s.lambdaInvoker.InvokeForGateway(ctx, event.LambdaARN, event.Payload)
 	if err != nil {
 		logs.Error("cognito trigger Lambda invocation failed",
 			logs.String("trigger_source", event.TriggerSource),
@@ -165,6 +164,9 @@ func (s *CognitoService) invokeTrigger(
 	}
 
 	cte := &eventbus.CognitoTriggerEvent{
+		EventBase: eventbus.EventBase{
+			Region: region,
+		},
 		TriggerSource: triggerSource,
 		UserPoolID:    userPoolID,
 		Username:      username,

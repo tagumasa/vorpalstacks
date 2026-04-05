@@ -22,6 +22,7 @@ func isValidTargetARN(arn string) bool {
 		"kinesis":       true,
 		"firehose":      true,
 		"stepfunctions": true,
+		"states":        true,
 		"ecs":           true,
 	}
 	return validServices[service]

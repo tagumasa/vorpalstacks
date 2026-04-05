@@ -490,13 +490,14 @@ func (s *LogsService) applySubscriptionFilters(reqCtx *request.RequestContext, l
 			}
 			compressed := buf.Bytes()
 
-			s.bus.Publish(context.Background(), &eventbus.CloudWatchLogDeliveryEvent{
+			evt := &eventbus.CloudWatchLogDeliveryEvent{
 				LogGroup:       logGroupName,
 				LogStream:      logStreamName,
 				DestinationArn: filter.DestinationArn,
 				Payload:        compressed,
-				Region:         region,
-			})
+			}
+			evt.Region = region
+			s.bus.Publish(context.Background(), evt)
 		} else {
 			s.deliverToDestination(reqCtx, filter, logGroupName, logStreamName, matchedEvents)
 		}
@@ -544,13 +545,16 @@ func (s *LogsService) applySubscriptionFiltersByRegion(region, logGroupName, log
 			}
 			compressed := buf.Bytes()
 
-			s.bus.Publish(context.Background(), &eventbus.CloudWatchLogDeliveryEvent{
-				LogGroup:       logGroupName,
-				LogStream:      logStreamName,
-				DestinationArn: filter.DestinationArn,
-				Payload:        compressed,
-				Region:         region,
-			})
+			s.bus.Publish(context.Background(), func() *eventbus.CloudWatchLogDeliveryEvent {
+				evt := &eventbus.CloudWatchLogDeliveryEvent{
+					LogGroup:       logGroupName,
+					LogStream:      logStreamName,
+					DestinationArn: filter.DestinationArn,
+					Payload:        compressed,
+				}
+				evt.Region = region
+				return evt
+			}())
 		}
 	}
 }

@@ -36,7 +36,11 @@ func NewS3Handler(svc *S3Service, region string, storageMgr *storage.RegionStora
 }
 
 func (h *S3Handler) newRequestContext(r *http.Request) *request.RequestContext {
-	ctx := request.NewRequestContext(r.Context(), h.storageManager, h.svc.accountID, h.region)
+	region := request.ExtractRegionFromAuth(r.Header.Get("Authorization"))
+	if region == "" {
+		region = h.region
+	}
+	ctx := request.NewRequestContext(r.Context(), h.storageManager, h.svc.accountID, region)
 	ctx.SourceIP = extractSourceIP(r)
 	ctx.UserAgent = r.UserAgent()
 	ctx.Principal = h.svc.accountID

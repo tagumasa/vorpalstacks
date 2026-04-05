@@ -242,6 +242,8 @@ func NewServer(cfg *Config) (*Server, error) {
 	registry.Register("lambda:LogWrite", func() eventbus.Event { return &eventbus.LambdaLogWriteEvent{} })
 	registry.Register("apigateway:AccessLog", func() eventbus.Event { return &eventbus.APIGatewayAccessLogEvent{} })
 	registry.Register("logs:PutLogEvents", func() eventbus.Event { return &eventbus.CloudWatchLogsPutEvent{} })
+	registry.Register("states:startExecution", func() eventbus.Event { return &eventbus.StepFunctionsStartExecutionEvent{} })
+	registry.Register("events:putEvents", func() eventbus.Event { return &eventbus.EventBridgePutEventsEvent{} })
 
 	bus := eventbus.NewEventBus(
 		eventbus.WithOutbox(outbox),

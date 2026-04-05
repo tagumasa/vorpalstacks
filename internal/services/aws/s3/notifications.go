@@ -184,7 +184,6 @@ func (s *S3Service) dispatchToSNS(ctx context.Context, topicArn string, payload 
 		TopicARN:  topicArn,
 		MessageID: messageID,
 		Message:   string(payload),
-		Region:    region,
 	}
 	_ = s.bus.Publish(ctx, snsEvt)
 }
@@ -197,8 +196,19 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 		return
 	}
 
+	queueName := svcarn.ExtractQueueNameFromARN(queueArn)
+	if queueName == "" {
+		return
+	}
+
+	queue, qErr := s.sqsStore.GetQueueByName(queueName)
+	if qErr != nil {
+		fmt.Printf("[s3:notification] queue not found for SQS delivery queue=%s: %v\n", queueName, qErr)
+		return
+	}
+
 	if s.bus != nil {
-		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queueArn, "sqs", "s3.amazonaws.com", "sqs:SendMessage", queueArn)
+		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queue.ARN, "sqs", "s3.amazonaws.com", "sqs:SendMessage", queue.ARN)
 		if evalErr != nil {
 			fmt.Printf("[s3:notification] policy evaluation failed for SQS queue=%s: %v\n", queueArn, evalErr)
 			return
@@ -208,16 +218,10 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 		}
 	}
 
-	queueName := svcarn.ExtractQueueNameFromARN(queueArn)
-	if queueName == "" {
-		return
-	}
-	_, _, region, accountID, _ := svcarn.SplitARN(queueArn)
-	queueURL := fmt.Sprintf("https://sqs.%s.amazonaws.com/%s/%s", region, accountID, queueName)
 	message := &sqsstore.Message{
 		Body: string(payload),
 	}
-	if _, err := s.sqsStore.SendMessage(queueURL, message); err != nil {
+	if _, err := s.sqsStore.SendMessage(queue.URL, message); err != nil {
 		fmt.Printf("[s3:notification] sqs dispatch failed queue=%s: %v\n", queueName, err)
 	}
 }
@@ -241,7 +245,7 @@ func (s *S3Service) dispatchToLambda(ctx context.Context, functionArn string, pa
 	}
 
 	fnName := svcarn.ExtractFunctionNameFromARN(functionArn)
-	_, _, err := s.lambdaInvoker.InvokeForGateway(ctx, fnName, payload)
+	_, _, err := s.lambdaInvoker.InvokeForGateway(ctx, functionArn, payload)
 	if err != nil {
 		fmt.Printf("[s3:notification] lambda dispatch failed function=%s: %v\n", fnName, err)
 	}

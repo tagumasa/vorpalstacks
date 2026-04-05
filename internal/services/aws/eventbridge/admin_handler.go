@@ -2,6 +2,8 @@ package eventbridge
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"connectrpc.com/connect"
 
@@ -9,40 +11,53 @@ import (
 	pb "vorpalstacks/internal/pb/aws/cloudwatchevents"
 	cloudwatcheventsconnect "vorpalstacks/internal/pb/aws/cloudwatchevents/cloudwatcheventsconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
-	eventbridgestore "vorpalstacks/internal/store/aws/eventbridge"
+	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
 // AdminHandler implements the EventBridge (CloudWatch Events) gRPC-Web admin
 // console handler. It exposes list operations for event buses and rules for
-// the Flutter management UI.
+// the Flutter management UI, delegating to the shared EventsService store.
 type AdminHandler struct {
 	cloudwatcheventsconnect.UnimplementedCloudWatchEventsServiceHandler
+	service        *EventsService
 	storageManager *storage.RegionStorageManager
-	accountId      string
 }
 
 var _ cloudwatcheventsconnect.CloudWatchEventsServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new EventBridge admin console handler.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
-	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
-	}
+// NewAdminHandler creates a new EventBridge admin console handler backed by
+// the given service instance, ensuring the same per-region cached stores are used
+// as the HTTP API handlers.
+func NewAdminHandler(svc *EventsService, sm *storage.RegionStorageManager) *AdminHandler {
+	return &AdminHandler{service: svc, storageManager: sm}
 }
 
-func (h *AdminHandler) getStoreByRegion(region string) (*eventbridgestore.EventsStore, error) {
-	regionStorage, err := h.storageManager.GetStorage(region)
+func (h *AdminHandler) getStore(header http.Header) (*eventsstore.EventsStore, error) {
+	region := svccommon.GetRegionFromHeader(header)
+	if cached, ok := h.service.eventsStores.Load(region); ok {
+		if typed, ok := cached.(*eventsstore.EventsStore); ok {
+			return typed, nil
+		}
+	}
+	if h.storageManager == nil {
+		return nil, fmt.Errorf("storage manager not initialised")
+	}
+	st, err := h.storageManager.GetStorage(region)
 	if err != nil {
 		return nil, err
 	}
-	return eventbridgestore.NewEventsStore(regionStorage, h.accountId, region), nil
+	es := eventsstore.NewEventsStore(st, h.service.accountID, region)
+	if actual, loaded := h.service.eventsStores.LoadOrStore(region, es); loaded {
+		if typed, ok := actual.(*eventsstore.EventsStore); ok {
+			return typed, nil
+		}
+	}
+	return es, nil
 }
 
 // ListEventBuses returns a paginated list of event buses in the requested region.
 func (h *AdminHandler) ListEventBuses(ctx context.Context, req *connect.Request[pb.ListEventBusesRequest]) (*connect.Response[pb.ListEventBusesResponse], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getStoreByRegion(region)
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -65,8 +80,7 @@ func (h *AdminHandler) ListEventBuses(ctx context.Context, req *connect.Request[
 
 // ListRules returns a paginated list of rules in the specified event bus.
 func (h *AdminHandler) ListRules(ctx context.Context, req *connect.Request[pb.ListRulesRequest]) (*connect.Response[pb.ListRulesResponse], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getStoreByRegion(region)
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -92,7 +106,7 @@ func (h *AdminHandler) ListRules(ctx context.Context, req *connect.Request[pb.Li
 	}), nil
 }
 
-func toPbEventBus(eb *eventbridgestore.EventBus) *pb.EventBus {
+func toPbEventBus(eb *eventsstore.EventBus) *pb.EventBus {
 	return &pb.EventBus{
 		Name:   eb.Name,
 		Arn:    eb.ARN,
@@ -100,7 +114,7 @@ func toPbEventBus(eb *eventbridgestore.EventBus) *pb.EventBus {
 	}
 }
 
-func toPbRule(r *eventbridgestore.Rule) *pb.Rule {
+func toPbRule(r *eventsstore.Rule) *pb.Rule {
 	return &pb.Rule{
 		Name:               r.Name,
 		Arn:                r.ARN,
@@ -114,9 +128,9 @@ func toPbRule(r *eventbridgestore.Rule) *pb.Rule {
 	}
 }
 
-func toPbRuleState(state eventbridgestore.RuleState) pb.RuleState {
+func toPbRuleState(state eventsstore.RuleState) pb.RuleState {
 	switch state {
-	case eventbridgestore.RuleStateEnabled:
+	case eventsstore.RuleStateEnabled:
 		return pb.RuleState_RULE_STATE_ENABLED
 	default:
 		return pb.RuleState_RULE_STATE_DISABLED

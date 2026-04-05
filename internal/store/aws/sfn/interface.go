@@ -44,6 +44,12 @@ type StepFunctionStoreInterface interface {
 	UpdateStateMachineAlias(ctx context.Context, alias *StateMachineAlias) error
 	DeleteStateMachineAlias(ctx context.Context, arn string) error
 	ListStateMachineAliases(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineAliasListResult, error)
+	CreateMapRun(ctx context.Context, mr *MapRun) error
+	UpdateMapRun(ctx context.Context, mr *MapRun) error
+	GetMapRun(ctx context.Context, mapRunArn string) (*MapRun, error)
+	ListMapRunsByExecution(ctx context.Context, executionArn string) ([]*MapRun, error)
+	ListAllMapRuns(ctx context.Context, executionArn string, limit int32, nextToken string) (*MapRunListResult, error)
+	NextMapRunSeq() int64
 }
 
 var _ StepFunctionStoreInterface = (*StepFunctionStore)(nil)

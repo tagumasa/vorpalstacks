@@ -3,6 +3,7 @@ package appsync
 import (
 	"sync"
 
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/eventbus"
 	awscommon "vorpalstacks/internal/services/aws/common"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
@@ -39,6 +40,19 @@ func (s *AppSyncService) SetLambdaInvoker(invoker awscommon.LambdaInvoker) {
 // and cross-service event delivery.
 func (s *AppSyncService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
+}
+
+// GetStoreForRegion returns the cached AppSync store for the given region,
+// creating one if not already cached. Used by both HTTP handlers and the
+// admin console to ensure a single store instance per region.
+func (s *AppSyncService) GetStoreForRegion(region string, rs storage.BasicStorage) *appsyncstore.AppSyncStore {
+	key := region
+	if cached, ok := s.stores.Load(key); ok {
+		return cached.(*appsyncstore.AppSyncStore)
+	}
+	store := appsyncstore.NewAppSyncStore(rs, s.accountID, region)
+	actual, _ := s.stores.LoadOrStore(key, store)
+	return actual.(*appsyncstore.AppSyncStore)
 }
 
 // store resolves the AppSync store for the current request context.

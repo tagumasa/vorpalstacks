@@ -4,6 +4,7 @@ package sfn
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -25,6 +26,7 @@ type StepFunctionStore struct {
 	tasksStore            *common.BaseStore
 	versionsStore         *common.BaseStore
 	aliasesStore          *common.BaseStore
+	mapRunsStore          *common.BaseStore
 	*common.TagStore
 	arnBuilder         *svcarn.ARNBuilder
 	accountID          string
@@ -40,6 +42,7 @@ type StepFunctionStore struct {
 	activeExecutions   map[string]context.CancelFunc
 	activeExecutionsMu sync.RWMutex
 	createMu           sync.Mutex
+	mapRunSeq          int64
 }
 
 // NewStepFunctionStore creates a new StepFunctionStore instance.
@@ -52,6 +55,7 @@ func NewStepFunctionStore(store storage.BasicStorage, accountID, region string) 
 		tasksStore:            common.NewBaseStore(store.Bucket("stepfunction-tasks-"+region), "stepfunction-tasks"),
 		versionsStore:         common.NewBaseStore(store.Bucket("stepfunction-versions-"+region), "stepfunction-versions"),
 		aliasesStore:          common.NewBaseStore(store.Bucket("stepfunction-aliases-"+region), "stepfunction-aliases"),
+		mapRunsStore:          common.NewBaseStore(store.Bucket("stepfunction-mapruns-"+region), "stepfunction-mapruns"),
 		TagStore:              common.NewTagStoreWithRegion(store, "stepfunction", region),
 		arnBuilder:            svcarn.NewARNBuilder(accountID, region),
 		accountID:             accountID,
@@ -740,6 +744,94 @@ func (s *StepFunctionStore) ListStateMachineAliases(ctx context.Context, smArn s
 
 	return &StateMachineAliasListResult{
 		Aliases:   result.Items,
+		NextToken: result.NextMarker,
+	}, nil
+}
+
+func (s *StepFunctionStore) nextMapRunSeq() int64 {
+	if atomic.LoadInt64(&s.mapRunSeq) == 0 {
+		s.recoverMapRunSeq()
+	}
+	return atomic.AddInt64(&s.mapRunSeq, 1)
+}
+
+func (s *StepFunctionStore) NextMapRunSeq() int64 {
+	return s.nextMapRunSeq()
+}
+
+func (s *StepFunctionStore) recoverMapRunSeq() {
+	opts := common.ListOptions{MaxItems: 10000}
+	result, err := common.List[MapRun](s.mapRunsStore, opts, nil)
+	if err != nil {
+		return
+	}
+	var maxSeq int64
+	for _, mr := range result.Items {
+		arn := mr.MapRunArn
+		if idx := strings.LastIndex(arn, "/mapRun-"); idx >= 0 {
+			rest := arn[idx+7:]
+			if spaceIdx := strings.IndexByte(rest, '-'); spaceIdx > 0 {
+				if n, err := strconv.ParseInt(rest[:spaceIdx], 10, 64); err == nil && n > maxSeq {
+					maxSeq = n
+				}
+			}
+		}
+	}
+	if maxSeq > s.mapRunSeq {
+		atomic.StoreInt64(&s.mapRunSeq, maxSeq)
+	}
+}
+
+// CreateMapRun persists a new map run in Pebble-backed storage.
+func (s *StepFunctionStore) CreateMapRun(ctx context.Context, mr *MapRun) error {
+	return s.mapRunsStore.Put(mr.MapRunArn, mr)
+}
+
+// UpdateMapRun persists an updated map run record.
+func (s *StepFunctionStore) UpdateMapRun(ctx context.Context, mr *MapRun) error {
+	return s.mapRunsStore.Put(mr.MapRunArn, mr)
+}
+
+// GetMapRun retrieves a map run by its ARN.
+func (s *StepFunctionStore) GetMapRun(ctx context.Context, mapRunArn string) (*MapRun, error) {
+	var mr MapRun
+	if err := s.mapRunsStore.Get(mapRunArn, &mr); err != nil {
+		return nil, ErrMapRunNotFound
+	}
+	return &mr, nil
+}
+
+// ListMapRunsByExecution returns all map runs for a given execution ARN.
+func (s *StepFunctionStore) ListMapRunsByExecution(ctx context.Context, executionArn string) ([]*MapRun, error) {
+	opts := common.ListOptions{Prefix: "", MaxItems: 10000}
+	result, err := common.List[MapRun](s.mapRunsStore, opts, func(mr *MapRun) bool {
+		return mr.ExecutionArn == executionArn
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.Items, nil
+}
+
+// ListAllMapRuns returns all map runs, optionally filtered by execution ARN.
+func (s *StepFunctionStore) ListAllMapRuns(ctx context.Context, executionArn string, limit int32, nextToken string) (*MapRunListResult, error) {
+	opts := common.ListOptions{
+		Marker:   nextToken,
+		MaxItems: int(limit),
+	}
+
+	result, err := common.List[MapRun](s.mapRunsStore, opts, func(mr *MapRun) bool {
+		if executionArn != "" && mr.ExecutionArn != executionArn {
+			return false
+		}
+		return true
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &MapRunListResult{
+		MapRuns:   result.Items,
 		NextToken: result.NextMarker,
 	}, nil
 }

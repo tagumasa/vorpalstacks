@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/eventbus"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -19,6 +21,11 @@ const (
 	// evaluator loop. One minute matches the minimum configurable alarm
 	// Period, ensuring no evaluation window is missed.
 	defaultEvalInterval = 60 * time.Second
+
+	// testEvalInterval is the tick interval used when TEST_MODE is enabled.
+	// A short interval allows integration tests to verify alarm evaluation
+	// without waiting for the full default period.
+	testEvalInterval = 1 * time.Second
 
 	// defaultEvalWorkers is the number of concurrent goroutines used to
 	// evaluate alarms in parallel.
@@ -58,6 +65,9 @@ type alarmEvaluator struct {
 func newAlarmEvaluator(interval time.Duration, workers int, logger logs.Logger) *alarmEvaluator {
 	if interval <= 0 {
 		interval = defaultEvalInterval
+		if os.Getenv("TEST_MODE") == "true" {
+			interval = testEvalInterval
+		}
 	}
 	if workers <= 0 {
 		workers = defaultEvalWorkers
@@ -119,10 +129,17 @@ func (e *alarmEvaluator) evalLoop(ctx context.Context, s *CloudWatchService) {
 	}
 }
 
-// evaluateAll fetches all metric alarms from the store and dispatches
+// evaluateAll fetches all metric alarms from all regions and dispatches
 // them to a pool of worker goroutines for parallel evaluation.
 func (e *alarmEvaluator) evaluateAll(ctx context.Context, s *CloudWatchService) {
-	alarmStore, metricStore := s.evaluatorStores()
+	regions := s.getEvaluatorRegions()
+	for _, region := range regions {
+		e.evaluateAllForRegion(ctx, s, region)
+	}
+}
+
+func (e *alarmEvaluator) evaluateAllForRegion(ctx context.Context, s *CloudWatchService, region string) {
+	alarmStore, metricStore := s.evaluatorStoresForRegion(region)
 	if alarmStore == nil || metricStore == nil {
 		return
 	}
@@ -376,11 +393,16 @@ func (s *CloudWatchService) publishAlarmStateEvent(ctx context.Context, result *
 		return
 	}
 
+	_, _, alarmRegion, _, _ := svcarn.SplitARN(result.alarm.ARN)
+	if alarmRegion == "" {
+		alarmRegion = s.region
+	}
+
 	evt := &eventbus.CloudWatchAlarmStateEvent{
 		EventBase: eventbus.EventBase{
 			Timestamp: time.Now().UTC(),
 			Source:    "aws:cloudwatch",
-			Region:    s.region,
+			Region:    alarmRegion,
 			AccountID: s.accountID,
 			Caller: eventbus.CallerContext{
 				ServicePrincipal: "cloudwatch.amazonaws.com",
@@ -407,6 +429,8 @@ func (s *CloudWatchService) dispatchAlarmActions(ctx context.Context, result *al
 			s.dispatchAlarmToSNS(ctx, actionArn, result)
 		} else if strings.HasPrefix(actionArn, "arn:aws:lambda:") {
 			s.dispatchAlarmToLambda(ctx, actionArn, result)
+		} else if strings.HasPrefix(actionArn, "arn:aws:states:") {
+			s.dispatchAlarmToStepFunctions(ctx, actionArn, result)
 		}
 	}
 }
@@ -449,8 +473,8 @@ func (s *CloudWatchService) dispatchAlarmToSNS(ctx context.Context, topicArn str
 		MessageID: messageID,
 		Message:   string(messageBytes),
 		Subject:   fmt.Sprintf("ALARM: \"%s\" in %s", result.alarm.Name, result.newState),
-		Region:    region,
 	}
+	snsEvt.Region = region
 
 	_ = s.bus.Publish(ctx, snsEvt)
 }
@@ -478,10 +502,33 @@ func (s *CloudWatchService) dispatchAlarmToLambda(ctx context.Context, functionA
 	payload := buildAlarmNotificationPayload(result)
 	payloadBytes, _ := json.Marshal(payload)
 
-	_, _, err := s.lambdaInvoker.InvokeForGateway(ctx, fnName, payloadBytes)
+	_, _, err := s.lambdaInvoker.InvokeForGateway(ctx, functionArn, payloadBytes)
 	if err != nil {
 		s.log("lambda dispatch failed for alarm action", "alarm", result.alarm.Name, "function", fnName, "error", err)
 	}
+}
+
+func (s *CloudWatchService) dispatchAlarmToStepFunctions(ctx context.Context, stateMachineArn string, result *alarmEvalResult) {
+	if s.bus == nil {
+		return
+	}
+
+	_, _, smRegion, _, _ := svcarn.SplitARN(stateMachineArn)
+	if smRegion == "" {
+		smRegion = s.region
+	}
+
+	payload := buildAlarmNotificationPayload(result)
+	payloadBytes, _ := json.Marshal(payload)
+
+	evt := &eventbus.StepFunctionsStartExecutionEvent{
+		StateMachineArn: stateMachineArn,
+		Input:           string(payloadBytes),
+	}
+	evt.Region = smRegion
+	evt.AccountID = s.accountID
+
+	_ = s.bus.Publish(ctx, evt)
 }
 
 // operatorPhrase returns a human-readable phrase describing the comparison
@@ -585,22 +632,51 @@ func buildAlarmConfiguration(alarm *cwstore.Alarm) map[string]interface{} {
 }
 
 // evaluatorStores returns the alarm store and metric store for the
-// evaluator's default region. These stores are used for background alarm
-// evaluation outside of any request context. The service's BasicStorage is
-// passed directly since both AlarmStore and MetricChunkStore accept
-// BasicStorage; the region is used for bucket names and data paths.
+// constructor region. These stores are used for background alarm
+// evaluation outside of any request context.
 func (s *CloudWatchService) evaluatorStores() (*cwstore.AlarmStore, *cwstore.MetricChunkStore) {
-	if s.storage == nil || s.region == "" {
+	return s.evaluatorStoresForRegion(s.region)
+}
+
+// evaluatorStoresForRegion returns the alarm store and metric store for
+// the specified region.
+func (s *CloudWatchService) evaluatorStoresForRegion(region string) (*cwstore.AlarmStore, *cwstore.MetricChunkStore) {
+	if region == "" {
 		return nil, nil
 	}
 
-	alarmStore := cwstore.NewAlarmStore(s.storage, s.accountID, s.region)
-	metricStore, err := cwstore.NewMetricChunkStoreWithIndex(s.storage, s.region, s.dataPath)
+	var storage storage.BasicStorage
+	if s.storageManager != nil {
+		var err error
+		storage, err = s.storageManager.GetStorage(region)
+		if err != nil {
+			return nil, nil
+		}
+	} else {
+		storage = s.storage
+	}
+	if storage == nil {
+		return nil, nil
+	}
+
+	alarmStore := cwstore.NewAlarmStore(storage, s.accountID, region)
+	metricStore, err := cwstore.NewMetricChunkStoreWithIndex(storage, region, s.dataPath)
 	if err != nil {
 		return alarmStore, nil
 	}
 
 	return alarmStore, metricStore
+}
+
+// getEvaluatorRegions returns the list of regions to evaluate alarms for.
+func (s *CloudWatchService) getEvaluatorRegions() []string {
+	if s.storageManager != nil {
+		return s.storageManager.GetActiveRegions()
+	}
+	if s.region != "" {
+		return []string{s.region}
+	}
+	return nil
 }
 
 // log emits a structured log message if a logger is configured on the

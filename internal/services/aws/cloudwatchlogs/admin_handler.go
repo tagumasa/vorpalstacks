@@ -5,7 +5,6 @@ import (
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchlogs"
 	cloudwatchlogsconnect "vorpalstacks/internal/pb/aws/cloudwatchlogs/cloudwatchlogsconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
@@ -13,30 +12,23 @@ import (
 )
 
 // AdminHandler provides CloudWatch Logs service administration functionality.
+// It delegates to the shared LogsService to ensure the same per-region cached
+// stores are used as the HTTP API handlers.
 type AdminHandler struct {
 	cloudwatchlogsconnect.UnimplementedCloudWatchLogsServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
-	dataPath       string
+	service *LogsService
 }
 
-// NewAdminHandler creates a new CloudWatch Logs AdminHandler.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId, dataPath string) *AdminHandler {
-	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
-		dataPath:       dataPath,
-	}
+// NewAdminHandler creates a new CloudWatch Logs AdminHandler backed by the
+// given service instance.
+func NewAdminHandler(svc *LogsService) *AdminHandler {
+	return &AdminHandler{service: svc}
 }
 
-// getStoreByRegion retrieves the CloudWatch Logs store for the specified region.
-// It fetches the region-specific storage and creates a new Store instance.
+// getStoreByRegion retrieves the CloudWatch Logs store for the specified region
+// via the shared service cache.
 func (h *AdminHandler) getStoreByRegion(region string) (*cloudwatchlogsstore.Store, error) {
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return cloudwatchlogsstore.NewStore(regionStorage.Bucket("logs"), h.accountId, region, h.dataPath)
+	return h.service.getLogsStoreByRegion(region)
 }
 
 // ListLogGroups lists log groups in CloudWatch Logs.

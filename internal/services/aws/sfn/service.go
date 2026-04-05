@@ -3,8 +3,12 @@ package sfn
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
+	"github.com/google/uuid"
+
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/server/eventbus"
@@ -15,6 +19,7 @@ import (
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
+	arncommon "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ExecutorInterface defines the interface for executing state machines.
@@ -68,10 +73,72 @@ func (s *StepFunctionService) SetEventsStore(store *eventsstore.EventsStore) {
 	s.eventsStore = store
 }
 
-// SetEventBus injects the event bus. When set, executors created for state machine
-// runs will use the bus for SNS fan-out and EventBridge rule matching delivery.
+// SetEventBus injects the event bus and subscribes to cross-service start
+// execution events from EventBridge, Scheduler, and CloudWatch Alarms.
 func (s *StepFunctionService) SetEventBus(bus *eventbus.EventBus) {
 	s.bus = bus
+	_, _ = eventbus.SubscribeTyped[*eventbus.StepFunctionsStartExecutionEvent](bus, s.handleStartExecutionEvent, eventbus.WithAsync())
+}
+
+func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt *eventbus.StepFunctionsStartExecutionEvent) eventbus.HandlerResult {
+	region := evt.Region
+	if region == "" {
+		region = request.DefaultRegion
+	}
+
+	store, err := s.getStoreForRegion(region)
+	if err != nil {
+		logs.Error("sfn: failed to get store for start execution event",
+			logs.String("region", region),
+			logs.String("stateMachineArn", evt.StateMachineArn),
+			logs.Err(err))
+		return eventbus.HandlerResult{}
+	}
+
+	sm, err := store.GetStateMachine(ctx, evt.StateMachineArn)
+	if err != nil {
+		logs.Error("sfn: failed to get state machine for start execution event",
+			logs.String("arn", evt.StateMachineArn),
+			logs.Err(err))
+		return eventbus.HandlerResult{}
+	}
+
+	name := fmt.Sprintf("bus-%s", uuid.New().String())
+	executionArn := fmt.Sprintf("arn:aws:states:%s:%s:execution:%s:%s",
+		region, s.accountID,
+		arncommon.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
+
+	exec := sfnstore.NewExecution(sm.StateMachineArn, name, evt.Input, "")
+	exec.ExecutionArn = executionArn
+
+	if err := store.CreateExecution(ctx, exec); err != nil {
+		logs.Error("sfn: failed to create execution from bus event",
+			logs.String("executionArn", executionArn),
+			logs.Err(err))
+		return eventbus.HandlerResult{}
+	}
+
+	executor := NewExecutorWithStores(store, s.lambdaInvoker, s.sqsStore, s.snsStore, s.eventsStore, s.accountID, region)
+	executor.SetEventBus(s.bus)
+	execCtx, cancel := context.WithCancel(context.Background())
+	store.RegisterExecution(executionArn, cancel)
+	s.asyncWg.Add(1)
+	go func() {
+		defer s.asyncWg.Done()
+		defer store.UnregisterExecution(executionArn)
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("sfn: panic in bus-triggered execution", logs.String("arn", executionArn), logs.Any("panic", r))
+			}
+		}()
+		_ = executor.ExecuteStateMachine(execCtx, exec)
+	}()
+
+	logs.Debug("sfn: started execution from bus event",
+		logs.String("executionArn", executionArn),
+		logs.String("stateMachineArn", evt.StateMachineArn))
+
+	return eventbus.HandlerResult{}
 }
 
 func (s *StepFunctionService) store(reqCtx *request.RequestContext) (*sfnstore.StepFunctionStore, error) {
@@ -110,9 +177,6 @@ func (s *StepFunctionService) Shutdown() {
 		return true
 	})
 	s.asyncWg.Wait()
-	mapRunsMu.Lock()
-	mapRuns = make(map[string][]map[string]interface{})
-	mapRunsMu.Unlock()
 }
 
 // RegisterHandlers registers the Step Functions service handlers with the dispatcher.

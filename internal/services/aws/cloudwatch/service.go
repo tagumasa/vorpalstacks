@@ -22,14 +22,15 @@ type cloudwatchStores struct {
 
 // CloudWatchService provides CloudWatch operations.
 type CloudWatchService struct {
-	storage       storage.BasicStorage
-	accountID     string
-	region        string
-	dataPath      string
-	bus           eventbus.Bus
-	lambdaInvoker common.LambdaInvoker
-	evaluator     *alarmEvaluator
-	logger        logs.Logger
+	storage        storage.BasicStorage
+	storageManager *storage.RegionStorageManager
+	accountID      string
+	region         string
+	dataPath       string
+	bus            eventbus.Bus
+	lambdaInvoker  common.LambdaInvoker
+	evaluator      *alarmEvaluator
+	logger         logs.Logger
 }
 
 // NewCloudWatchService creates a new CloudWatch service.
@@ -62,6 +63,12 @@ func (s *CloudWatchService) SetEventBus(bus eventbus.Bus) {
 // actions to Lambda function targets.
 func (s *CloudWatchService) SetLambdaInvoker(invoker common.LambdaInvoker) {
 	s.lambdaInvoker = invoker
+}
+
+// SetStorageManager injects the region storage manager for multi-region
+// alarm evaluation.
+func (s *CloudWatchService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
 }
 
 // SetLogger sets the structured logger used by the alarm evaluator for

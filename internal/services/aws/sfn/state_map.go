@@ -95,38 +95,26 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 		maxConcurrency = len(itemsArray)
 	}
 
-	mapRunArn := generateMapRunArn(e.region, e.accountID, execCtx.Execution.ExecutionArn, execCtx.CurrentState)
+	mapRunArn := generateMapRunArn(e.store, e.region, e.accountID, execCtx.Execution.ExecutionArn, execCtx.CurrentState)
 	now := time.Now().UTC()
-	mapRunRecord := map[string]interface{}{
-		"mapRunArn":           mapRunArn,
-		"executionArn":        execCtx.Execution.ExecutionArn,
-		"stateMachineArn":     execCtx.Execution.StateMachineArn,
-		"name":                execCtx.CurrentState,
-		"status":              "RUNNING",
-		"startDate":           now.Unix(),
-		"itemCount":           int64(len(itemsArray)),
-		"maxConcurrency":      int64(maxConcurrency),
-		"itemsProcessedCount": int64(0),
-		"itemsFailedCount":    int64(0),
-		"itemsCancelledCount": int64(0),
+	mapRunRecord := &sfnstore.MapRun{
+		MapRunArn:           mapRunArn,
+		ExecutionArn:        execCtx.Execution.ExecutionArn,
+		StateMachineArn:     execCtx.Execution.StateMachineArn,
+		Name:                execCtx.CurrentState,
+		Status:              "RUNNING",
+		StartDate:           now.Unix(),
+		ItemCount:           int64(len(itemsArray)),
+		MaxConcurrency:      int64(maxConcurrency),
+		ItemsProcessedCount: 0,
+		ItemsFailedCount:    0,
+		ItemsCancelledCount: 0,
 	}
-	mapRunsMu.Lock()
-	mapRuns[execCtx.Execution.ExecutionArn] = append(mapRuns[execCtx.Execution.ExecutionArn], mapRunRecord)
-	mapRunsMu.Unlock()
+	e.store.CreateMapRun(ctx, mapRunRecord)
 
 	defer func() {
-		mapRunsMu.Lock()
-		defer mapRunsMu.Unlock()
-		runs, ok := mapRuns[execCtx.Execution.ExecutionArn]
-		if !ok {
-			return
-		}
-		for i, r := range runs {
-			if arn, ok := r["mapRunArn"].(string); ok && arn == mapRunArn {
-				runs[i]["stopDate"] = time.Now().UTC().Unix()
-				return
-			}
-		}
+		mapRunRecord.StopDate = time.Now().UTC().Unix()
+		e.store.UpdateMapRun(ctx, mapRunRecord)
 	}()
 
 	var wg sync.WaitGroup
@@ -215,16 +203,9 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	wg.Wait()
 
-	mapRunsMu.Lock()
-	if runs, ok := mapRuns[execCtx.Execution.ExecutionArn]; ok {
-		for i, r := range runs {
-			if arn, ok := r["mapRunArn"].(string); ok && arn == mapRunArn {
-				runs[i]["itemsProcessedCount"] = itemsProcessed
-				runs[i]["itemsFailedCount"] = itemsFailed
-			}
-		}
-	}
-	mapRunsMu.Unlock()
+	mapRunRecord.ItemsProcessedCount = itemsProcessed
+	mapRunRecord.ItemsFailedCount = itemsFailed
+	e.store.UpdateMapRun(ctx, mapRunRecord)
 
 	var firstError error
 	for _, err := range errors {
@@ -235,15 +216,8 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 	}
 
 	if firstError != nil {
-		mapRunsMu.Lock()
-		if runs, ok := mapRuns[execCtx.Execution.ExecutionArn]; ok {
-			for i, r := range runs {
-				if arn, ok := r["mapRunArn"].(string); ok && arn == mapRunArn {
-					runs[i]["status"] = "FAILED"
-				}
-			}
-		}
-		mapRunsMu.Unlock()
+		mapRunRecord.Status = "FAILED"
+		e.store.UpdateMapRun(ctx, mapRunRecord)
 
 		if len(state.Catch) > 0 {
 			catchPolicy := e.findMatchingCatchPolicy(state.Catch, "States.IteratorFailed")
@@ -259,15 +233,8 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 		return "", "", &ExecutionError{ErrorCode: "States.IteratorFailed", Cause: firstError.Error()}
 	}
 
-	mapRunsMu.Lock()
-	if runs, ok := mapRuns[execCtx.Execution.ExecutionArn]; ok {
-		for i, r := range runs {
-			if arn, ok := r["mapRunArn"].(string); ok && arn == mapRunArn {
-				runs[i]["status"] = "SUCCEEDED"
-			}
-		}
-	}
-	mapRunsMu.Unlock()
+	mapRunRecord.Status = "SUCCEEDED"
+	e.store.UpdateMapRun(ctx, mapRunRecord)
 
 	output := fmt.Sprintf(`[%s]`, strings.Join(results, ","))
 

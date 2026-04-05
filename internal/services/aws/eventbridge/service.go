@@ -4,8 +4,10 @@ package eventbridge
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
@@ -15,6 +17,7 @@ import (
 	"vorpalstacks/internal/services/aws/common"
 	"vorpalstacks/internal/services/aws/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
+	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
@@ -27,13 +30,13 @@ type SNSPublisher interface {
 // EventsService provides AWS EventBridge operations.
 type EventsService struct {
 	storageManager  *storage.RegionStorageManager
-	eventsStore     *eventsstore.EventsStore
+	eventsStores    sync.Map // region → *eventsstore.EventsStore
 	sqsStores       sync.Map // region → *sqsstore.SQSStore
 	snsStores       sync.Map // region → *snsstore.SNSStore
+	kinesisStores   sync.Map // region → *kinesisstore.KinesisStore
 	snsPublisher    SNSPublisher
 	lambdaInvoker   common.LambdaInvoker
 	accountID       string
-	region          string
 	bus             *eventbus.EventBus
 	targetSemaphore chan struct{}
 	replayCancels   sync.Map // replayName → context.CancelFunc
@@ -44,18 +47,20 @@ const targetConcurrencyLimit = 100
 // NewEventsService creates a new Events service instance.
 // Optional cross-service dependencies should be injected via setter methods
 // before registering handlers.
-func NewEventsService(storageMgr *storage.RegionStorageManager, accountID, region string) *EventsService {
+func NewEventsService(storageMgr *storage.RegionStorageManager, accountID string) *EventsService {
 	return &EventsService{
 		storageManager:  storageMgr,
 		accountID:       accountID,
-		region:          region,
 		targetSemaphore: make(chan struct{}, targetConcurrencyLimit),
 	}
 }
 
-// SetEventsStore sets a pre-built events store, bypassing per-request store creation.
-func (s *EventsService) SetEventsStore(store *eventsstore.EventsStore) {
-	s.eventsStore = store
+// SetEventsStore sets a pre-built events store for the given region,
+// bypassing per-request store creation.
+func (s *EventsService) SetEventsStore(region string, store *eventsstore.EventsStore) {
+	if store != nil {
+		s.eventsStores.Store(region, store)
+	}
 }
 
 // SetSQSStore registers an SQS store for a given region for cross-service event delivery.
@@ -88,10 +93,15 @@ func (s *EventsService) SetLambdaInvoker(invoker common.LambdaInvoker) {
 func (s *EventsService) SetEventBus(bus *eventbus.EventBus) {
 	s.bus = bus
 	_, _ = eventbus.SubscribeTyped[*eventbus.EventBridgeDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
+	_, _ = eventbus.SubscribeTyped[*eventbus.EventBridgePutEventsEvent](bus, s.handlePutEventsEvent, eventbus.WithAsync())
 }
 
 func (s *EventsService) handleBusDelivery(ctx context.Context, evt *eventbus.EventBridgeDeliveryEvent) eventbus.HandlerResult {
-	if s.eventsStore != nil && strings.Contains(evt.TargetARN, ":event-bus/") {
+	var store *eventsstore.EventsStore
+	if v, ok := s.eventsStores.Load(evt.Region); ok {
+		store = v.(*eventsstore.EventsStore)
+	}
+	if store == nil && strings.Contains(evt.TargetARN, ":event-bus/") {
 		return s.handleEventBusDelivery(ctx, evt)
 	}
 
@@ -121,25 +131,130 @@ func (s *EventsService) handleEventBusDelivery(ctx context.Context, evt *eventbu
 		eventBusName = evt.TargetARN[idx+len(":event-bus/"):]
 	}
 
-	if err := s.deliverEventWithStore(ctx, evt.Region, &event, eventBusName, s.eventsStore); err != nil {
+	var es *eventsstore.EventsStore
+	if v, ok := s.eventsStores.Load(evt.Region); ok {
+		es = v.(*eventsstore.EventsStore)
+	}
+	if es == nil {
+		return eventbus.HandlerResult{}
+	}
+
+	if err := s.deliverEventWithStore(ctx, evt.Region, &event, eventBusName, es); err != nil {
 		logs.Warn("eventbridge: failed to deliver event via rule matching", logs.String("error", err.Error()))
 	}
 
 	return eventbus.HandlerResult{}
 }
 
+func (s *EventsService) handlePutEventsEvent(ctx context.Context, evt *eventbus.EventBridgePutEventsEvent) eventbus.HandlerResult {
+	region := evt.Region
+	if region == "" {
+		return eventbus.HandlerResult{}
+	}
+
+	var es *eventsstore.EventsStore
+	if v, ok := s.eventsStores.Load(region); ok {
+		es = v.(*eventsstore.EventsStore)
+	}
+	if es == nil {
+		st, err := s.storageManager.GetStorage(region)
+		if err != nil {
+			logs.Warn("eventbridge: failed to get storage for putEvents bus event",
+				logs.String("region", region),
+				logs.Err(err))
+			return eventbus.HandlerResult{}
+		}
+		es = eventsstore.NewEventsStore(st, s.accountID, region)
+		s.eventsStores.Store(region, es)
+	}
+
+	var inputMap map[string]interface{}
+	if err := json.Unmarshal([]byte(evt.Input), &inputMap); err != nil {
+		logs.Warn("eventbridge: failed to unmarshal putEvents input",
+			logs.String("region", region),
+			logs.Err(err))
+		return eventbus.HandlerResult{}
+	}
+
+	source, _ := inputMap["Source"].(string)
+	detailType, _ := inputMap["DetailType"].(string)
+	if source == "" || detailType == "" {
+		logs.Warn("eventbridge: putEvents input missing Source or DetailType",
+			logs.String("region", region))
+		return eventbus.HandlerResult{}
+	}
+
+	var detail map[string]interface{}
+	if detailRaw, ok := inputMap["Detail"]; ok {
+		switch d := detailRaw.(type) {
+		case map[string]interface{}:
+			detail = d
+		case string:
+			_ = json.Unmarshal([]byte(d), &detail)
+		}
+	}
+
+	eventBusName := evt.EventBusName
+	if eventBusName == "" {
+		eventBusName = "default"
+	}
+
+	event := &eventsstore.Event{
+		ID:           generateEventID(),
+		Version:      "0",
+		DetailType:   detailType,
+		Source:       source,
+		Account:      s.accountID,
+		Time:         time.Now().UTC(),
+		Region:       region,
+		Detail:       detail,
+		EventBusName: eventBusName,
+	}
+
+	if resources, ok := inputMap["Resources"].([]interface{}); ok {
+		for _, r := range resources {
+			if rStr, ok := r.(string); ok {
+				event.Resources = append(event.Resources, rStr)
+			}
+		}
+	}
+
+	if err := s.deliverEventWithStore(ctx, region, event, eventBusName, es); err != nil {
+		logs.Warn("eventbridge: failed to deliver putEvents bus event",
+			logs.String("region", region),
+			logs.String("error", err.Error()))
+	}
+
+	return eventbus.HandlerResult{}
+}
+
 func (s *EventsService) store(ctx *request.RequestContext) (*eventsstore.EventsStore, error) {
-	if s.eventsStore != nil {
-		return s.eventsStore, nil
+	region := ctx.GetRegion()
+	if cached, ok := s.eventsStores.Load(region); ok {
+		if typed, ok := cached.(*eventsstore.EventsStore); ok {
+			return typed, nil
+		}
 	}
 	if store := ctx.GetEventBridgeStore(); store != nil {
-		return store.(*eventsstore.EventsStore), nil
+		es := store.(*eventsstore.EventsStore)
+		if actual, loaded := s.eventsStores.LoadOrStore(region, es); loaded {
+			if typed, ok := actual.(*eventsstore.EventsStore); ok {
+				return typed, nil
+			}
+		}
+		return es, nil
 	}
 	storage, err := ctx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return eventsstore.NewEventsStore(storage, s.accountID, ctx.GetRegion()), nil
+	es := eventsstore.NewEventsStore(storage, s.accountID, region)
+	if actual, loaded := s.eventsStores.LoadOrStore(region, es); loaded {
+		if typed, ok := actual.(*eventsstore.EventsStore); ok {
+			return typed, nil
+		}
+	}
+	return es, nil
 }
 
 func (s *EventsService) getSQSStore(ctx *request.RequestContext) (sqsstore.SQSStoreInterface, error) {
@@ -190,6 +305,29 @@ func (s *EventsService) getSNSStoreForRegion(region string) (snsstore.SNSStoreIn
 	store := snsstore.NewSNSStore(storage, s.accountID, region)
 	if actual, loaded := s.snsStores.LoadOrStore(region, store); loaded {
 		if typed, ok := actual.(snsstore.SNSStoreInterface); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
+}
+
+func (s *EventsService) getKinesisStoreForRegion(region string) (*kinesisstore.KinesisStore, error) {
+	if cached, ok := s.kinesisStores.Load(region); ok {
+		if typed, ok := cached.(*kinesisstore.KinesisStore); ok {
+			return typed, nil
+		}
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	tstore, ok := st.(storage.TransactionalStorageWith2PC)
+	if !ok {
+		return nil, fmt.Errorf("storage for region %s does not support TransactionalStorageWith2PC", region)
+	}
+	store := kinesisstore.NewKinesisStore(tstore, s.accountID, region)
+	if actual, loaded := s.kinesisStores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(*kinesisstore.KinesisStore); ok {
 			return typed, nil
 		}
 	}

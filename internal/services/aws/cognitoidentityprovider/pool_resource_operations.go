@@ -25,7 +25,7 @@ func (s *CognitoService) CreateUserPoolDomain(ctx context.Context, reqCtx *reque
 		return nil, ErrResourceNotFound
 	}
 
-	cfDomain := fmt.Sprintf("%s.auth.%s.amazoncognito.com", domain, s.region)
+	cfDomain := fmt.Sprintf("%s.auth.%s.amazoncognito.com", domain, reqCtx.GetRegion())
 	domainEntry := &cognitostore.UserPoolDomain{
 		Domain:           domain,
 		UserPoolID:       userPoolID,
@@ -101,7 +101,7 @@ func (s *CognitoService) UpdateUserPoolDomain(ctx context.Context, reqCtx *reque
 		return nil, ErrResourceNotFound
 	}
 
-	cfDomain := fmt.Sprintf("%s.auth.%s.amazoncognito.com", domain, s.region)
+	cfDomain := fmt.Sprintf("%s.auth.%s.amazoncognito.com", domain, reqCtx.GetRegion())
 	domainEntry := &cognitostore.UserPoolDomain{
 		Domain:           domain,
 		UserPoolID:       userPoolID,

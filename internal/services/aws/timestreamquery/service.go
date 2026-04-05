@@ -2,10 +2,9 @@
 package timestreamquery
 
 import (
-	"sync"
-
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/pkg/sqlparser"
@@ -18,32 +17,35 @@ type tsQueryStores struct {
 	scheduledQueryStore    *tsstore.ScheduledQueryStore
 	scheduledQueryRunStore *tsstore.ScheduledQueryRunStore
 	accountSettingsStore   *tsstore.AccountSettingsStore
+	queryInfoStore         *storecommon.BaseStore
 	arnBuilder             *svcarn.ARNBuilder
 }
 
 // Service represents the Timestream Query service.
 type Service struct {
-	accountID      string
-	serverHost     string
-	dataPath       string
-	runningQueries map[string]*QueryInfo
-	queryMutex     sync.RWMutex
-	preprocessor   *sqlparser.Preprocessor
+	accountID    string
+	serverHost   string
+	dataPath     string
+	preprocessor *sqlparser.Preprocessor
 }
 
 // NewService creates a new Timestream Query service.
 func NewService(accountID, serverHost, dataPath string) *Service {
 	return &Service{
-		accountID:      accountID,
-		serverHost:     serverHost,
-		dataPath:       dataPath,
-		runningQueries: make(map[string]*QueryInfo),
-		preprocessor:   sqlparser.NewTimestreamPreprocessor(),
+		accountID:    accountID,
+		serverHost:   serverHost,
+		dataPath:     dataPath,
+		preprocessor: sqlparser.NewTimestreamPreprocessor(),
 	}
 }
 
 func (s *Service) store(ctx *request.RequestContext) (*tsQueryStores, error) {
 	if stores := ctx.GetTimestreamStores(); stores != nil {
+		storage, err := ctx.GetStorage()
+		if err != nil {
+			return nil, err
+		}
+		region := ctx.GetRegion()
 		return &tsQueryStores{
 			recordStore:            stores.RecordStore().Raw(),
 			tableStore:             stores.TableStore().Raw(),
@@ -51,6 +53,7 @@ func (s *Service) store(ctx *request.RequestContext) (*tsQueryStores, error) {
 			scheduledQueryStore:    stores.ScheduledQueryStore().Raw(),
 			scheduledQueryRunStore: stores.ScheduledQueryRunStore().Raw(),
 			accountSettingsStore:   stores.AccountSettingsStore().Raw(),
+			queryInfoStore:         storecommon.NewBaseStore(storage.Bucket("timestream-query-info-"+region), "timestream-query"),
 			arnBuilder:             svcarn.NewARNBuilder(s.accountID, ctx.GetRegion()),
 		}, nil
 	}
@@ -72,6 +75,7 @@ func (s *Service) store(ctx *request.RequestContext) (*tsQueryStores, error) {
 		scheduledQueryStore:    tsstore.NewScheduledQueryStore(storage, s.accountID, region),
 		scheduledQueryRunStore: tsstore.NewScheduledQueryRunStore(storage, region),
 		accountSettingsStore:   tsstore.NewAccountSettingsStore(storage, s.accountID, region),
+		queryInfoStore:         storecommon.NewBaseStore(storage.Bucket("timestream-query-info-"+region), "timestream-query"),
 		arnBuilder:             svcarn.NewARNBuilder(s.accountID, region),
 	}, nil
 }

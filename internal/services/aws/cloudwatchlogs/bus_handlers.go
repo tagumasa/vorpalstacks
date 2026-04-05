@@ -18,7 +18,6 @@ func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.Cloud
 			return eventbus.HandlerResult{}
 		}
 
-		functionName := arn.ExtractFunctionNameFromARN(evt.DestinationArn)
 		encodedData := base64.StdEncoding.EncodeToString(evt.Payload)
 
 		payload := map[string]interface{}{
@@ -31,7 +30,7 @@ func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.Cloud
 			return eventbus.HandlerResult{}
 		}
 
-		_, _, _ = invoker.InvokeForGateway(context.Background(), functionName, payloadBytes)
+		_, _, _ = invoker.InvokeForGateway(context.Background(), evt.DestinationArn, payloadBytes)
 	} else if arn.IsKinesisARN(evt.DestinationArn) {
 		kinesisStore, ok := s.getKinesisStore(evt.Region)
 		if !ok {
@@ -40,7 +39,16 @@ func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.Cloud
 
 		streamName := arn.ExtractStreamNameFromARN(evt.DestinationArn)
 		partitionKey := generatePartitionKey()
-		encodedData := base64.StdEncoding.EncodeToString(evt.Payload)
+
+		payload := map[string]interface{}{
+			"awslogs": map[string]interface{}{
+				"data": base64.StdEncoding.EncodeToString(evt.Payload),
+			},
+		}
+		encodedData, err := json.Marshal(payload)
+		if err != nil {
+			return eventbus.HandlerResult{}
+		}
 
 		shards, err := kinesisStore.ListShards(streamName, nil, "", 0)
 		if err != nil || len(shards) == 0 {
@@ -56,7 +64,7 @@ func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.Cloud
 		}
 
 		if activeShardID != "" {
-			_, _ = kinesisStore.PutRecord(streamName, activeShardID, partitionKey, encodedData)
+			_, _ = kinesisStore.PutRecord(streamName, activeShardID, partitionKey, base64.StdEncoding.EncodeToString(encodedData))
 		}
 	}
 

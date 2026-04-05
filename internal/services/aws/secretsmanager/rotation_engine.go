@@ -12,7 +12,6 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/common"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
-	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 const (
@@ -68,18 +67,26 @@ func (rc *rotationChecker) loop(ctx context.Context) {
 	}
 }
 
-// checkDueRotations lists all secrets and triggers rotation for any whose
-// NextRotationDate has passed.
+// checkDueRotations lists all secrets across all regions and triggers
+// rotation for any whose NextRotationDate has passed.
 func (rc *rotationChecker) checkDueRotations(ctx context.Context) {
-	if rc.svc.storageManager == nil || rc.svc.region == "" {
+	if rc.svc.storageManager == nil {
 		return
 	}
-	storage, err := rc.svc.storageManager.GetStorage(rc.svc.region)
+
+	regions := rc.svc.storageManager.GetActiveRegions()
+	for _, region := range regions {
+		rc.checkDueRotationsForRegion(ctx, region)
+	}
+}
+
+func (rc *rotationChecker) checkDueRotationsForRegion(ctx context.Context, region string) {
+	storage, err := rc.svc.storageManager.GetStorage(region)
 	if err != nil {
-		rc.logError("failed to get storage for rotation check", logs.Err(err))
+		rc.logError("failed to get storage for rotation check", logs.String("region", region), logs.Err(err))
 		return
 	}
-	store := secretsmanagerstore.NewSecretStore(storage, rc.svc.accountID, rc.svc.region)
+	store := secretsmanagerstore.NewSecretStore(storage, rc.svc.accountID, region)
 
 	opts := common.ListOptions{MaxItems: 100}
 	result, err := common.List[secretsmanagerstore.Secret](store.GetBaseStore(), opts, nil)
@@ -146,7 +153,6 @@ func (s *SecretsManagerService) executeRotation(ctx context.Context, store secre
 		return fmt.Errorf("lambda invoker not configured for secret rotation")
 	}
 
-	functionName := svcarn.ExtractFunctionNameFromARN(secret.RotationLambdaARN)
 	clientToken := uuid.New().String()[:32]
 
 	steps := []string{rotationStepCreate, rotationStepSet, rotationStepTest}
@@ -162,7 +168,7 @@ func (s *SecretsManagerService) executeRotation(ctx context.Context, store secre
 			return fmt.Errorf("failed to marshal rotation payload for step %s: %w", step, err)
 		}
 
-		statusCode, respBytes, invokeErr := s.lambdaInvoker.InvokeForGateway(ctx, functionName, payloadBytes)
+		statusCode, respBytes, invokeErr := s.lambdaInvoker.InvokeForGateway(ctx, secret.RotationLambdaARN, payloadBytes)
 		if invokeErr != nil {
 			return fmt.Errorf("rotation Lambda invocation failed at step %s: %w", step, invokeErr)
 		}

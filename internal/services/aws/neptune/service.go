@@ -2,15 +2,22 @@
 package neptune
 
 import (
+	"fmt"
+	"sync"
+
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
 
 // NeptuneService handles incoming Neptune Management API requests.
 type NeptuneService struct {
-	accountID string
-	region    string
+	accountID      string
+	region         string
+	storageManager *storage.RegionStorageManager
+	stores         sync.Map
 }
 
 // NewNeptuneService creates a new NeptuneService for the specified account and
@@ -19,17 +26,33 @@ func NewNeptuneService(accountID, region string) *NeptuneService {
 	return &NeptuneService{accountID: accountID, region: region}
 }
 
-// store retrieves or creates the NeptuneStoreInterface for the current request
-// context, using the pre-initialised store when available.
+// SetStorageManager injects the region storage manager for per-region store
+// caching and admin console access.
+func (s *NeptuneService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
+// GetStoreForRegion returns the cached Neptune store for the given region,
+// creating one if not already cached. Used by both HTTP handlers and the
+// admin console to ensure a single store instance per region.
+func (s *NeptuneService) GetStoreForRegion(region string) (neptunestore.NeptuneStoreInterface, error) {
+	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (neptunestore.NeptuneStoreInterface, error) {
+		if s.storageManager == nil {
+			return nil, fmt.Errorf("storage manager not set")
+		}
+		rs, err := s.storageManager.GetStorage(region)
+		if err != nil {
+			return nil, err
+		}
+		return neptunestore.NewNeptuneStore(rs), nil
+	})
+}
+
+// store resolves the NeptuneStore for the current request context, using the
+// per-region cache.
 func (s *NeptuneService) store(reqCtx *request.RequestContext) (neptunestore.NeptuneStoreInterface, error) {
-	if ns := reqCtx.GetNeptuneStore(); ns != nil {
-		return ns, nil
-	}
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	return neptunestore.NewNeptuneStore(storage), nil
+	region := reqCtx.GetRegion()
+	return s.GetStoreForRegion(region)
 }
 
 // RegisterHandlers registers all Neptune Management API action handlers with

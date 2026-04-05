@@ -788,3 +788,28 @@ type StateMachineAliasListResult struct {
 	Aliases   []*StateMachineAlias
 	NextToken string
 }
+
+// MapRun represents a distributed map state execution within a Step Functions
+// state machine. Map runs are persisted in Pebble so they survive restarts.
+type MapRun struct {
+	MapRunArn                  string  `json:"mapRunArn"`
+	ExecutionArn               string  `json:"executionArn"`
+	StateMachineArn            string  `json:"stateMachineArn"`
+	Name                       string  `json:"name"`
+	Status                     string  `json:"status"`
+	StartDate                  int64   `json:"startDate"`
+	StopDate                   int64   `json:"stopDate,omitempty"`
+	ItemCount                  int64   `json:"itemCount"`
+	MaxConcurrency             int64   `json:"maxConcurrency"`
+	ToleratedFailureCount      int64   `json:"toleratedFailureCount,omitempty"`
+	ToleratedFailurePercentage float32 `json:"toleratedFailurePercentage,omitempty"`
+	ItemsProcessedCount        int64   `json:"itemsProcessedCount"`
+	ItemsFailedCount           int64   `json:"itemsFailedCount"`
+	ItemsCancelledCount        int64   `json:"itemsCancelledCount"`
+}
+
+// MapRunListResult holds a paginated list of map runs.
+type MapRunListResult struct {
+	MapRuns   []*MapRun
+	NextToken string
+}

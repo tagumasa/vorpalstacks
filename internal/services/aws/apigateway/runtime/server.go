@@ -394,9 +394,9 @@ func (s *RuntimeServer) writeAccessLog(r *http.Request, stage *apigatewaystore.S
 		LogGroup:       logGroup,
 		LogStream:      logStream,
 		FormattedLog:   formatted,
-		Region:         region,
-		AccountID:      s.accountID,
 	}
+	evt.Region = region
+	evt.AccountID = s.accountID
 
 	_ = s.bus.Publish(context.Background(), evt)
 }

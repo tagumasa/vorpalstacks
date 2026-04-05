@@ -98,18 +98,22 @@ func main() {
 
 	var neptunedataService *svcneptunedata.NeptuneDataService
 	var sharedNeptuneStore *neptunestore.NeptuneStore
-
-	if cfg.Neptune || cfg.NeptuneData {
-		sharedNeptuneStore = neptunestore.NewNeptuneStore(server.Storage())
-		server.Dispatcher().SetNeptuneStore(sharedNeptuneStore)
-	}
+	var neptuneService *svcneptune.NeptuneService
+	var appsyncService *svcappsync.AppSyncService
+	var logsService *svclogs.LogsService
+	var eventsService *svcevents.EventsService
+	var stepFunctionService *svcstepfunction.StepFunctionService
+	var snsService *svcsns.SNSService
+	var sqsService *svcsqs.SQSService
 
 	if cfg.Neptune {
-		neptuneService := svcneptune.NewNeptuneService(cfg.AccountID, cfg.Region)
+		neptuneService = svcneptune.NewNeptuneService(cfg.AccountID, cfg.Region)
+		neptuneService.SetStorageManager(server.StorageManager())
 		neptuneService.RegisterHandlers(server.Dispatcher())
 	}
 
 	if cfg.NeptuneData {
+		sharedNeptuneStore = neptunestore.NewNeptuneStore(server.Storage())
 		neptunedataService = svcneptunedata.NewNeptuneDataService(sharedNeptuneStore)
 		neptunedataService.RegisterHandlers(server.Dispatcher())
 	}
@@ -122,6 +126,13 @@ func main() {
 		DataPath:         cfg.DataPath,
 		BaseURL:          appconfig.BaseURL(),
 		NeptuneDataAdmin: neptunedataService,
+		NeptuneAdmin:     neptuneService,
+		AppSyncAdmin:     appsyncService,
+		LogsAdmin:        logsService,
+		EventsAdmin:      eventsService,
+		SFNAdmin:         stepFunctionService,
+		SNSAdmin:         snsService,
+		SQSAdmin:         sqsService,
 	})
 
 	server.RegisterShutdownHook(func(ctx context.Context) {
@@ -220,6 +231,7 @@ func main() {
 	})
 
 	cloudWatchService := svccloudwatch.NewCloudWatchService(server.Storage(), cfg.AccountID, cfg.Region, cfg.DataPath)
+	cloudWatchService.SetStorageManager(server.StorageManager())
 	cloudWatchService.RegisterHandlers(server.Dispatcher())
 
 	dynamodbService := svcdynamodb.NewDynamoDBService(cfg.AccountID)
@@ -254,8 +266,10 @@ func main() {
 
 	var sqsStoreInstance *storesqs.SQSStore
 	if cfg.SQS {
-		sqsStoreInstance = storesqs.NewSQSStore(server.Storage(), cfg.AccountID, cfg.Region, appconfig.BaseURL())
-		sqsService := svcsqs.NewSQSServiceWithStore(sqsStoreInstance)
+		regionalStorage, _ := server.StorageManager().GetStorage(cfg.Region)
+		sqsStoreInstance = storesqs.NewSQSStore(regionalStorage, cfg.AccountID, cfg.Region, appconfig.BaseURL())
+		sqsService = svcsqs.NewSQSServiceWithStore(sqsStoreInstance)
+		sqsService.SetStorageManager(server.StorageManager())
 		sqsService.RegisterHandlers(server.Dispatcher())
 		s3Service.SetSQSStore(sqsStoreInstance)
 	}
@@ -263,11 +277,12 @@ func main() {
 	var kinesisStoreInstance *storekinesis.KinesisStore
 
 	if cfg.Kinesis {
-		tstore, ok := server.Storage().(storage.TransactionalStorageWith2PC)
+		kinesisRegionalStorage, _ := server.StorageManager().GetStorage(cfg.Region)
+		tstore, ok := kinesisRegionalStorage.(storage.TransactionalStorageWith2PC)
 		if ok {
 			kinesisStoreInstance = storekinesis.NewKinesisStore(tstore, cfg.AccountID, cfg.Region)
 		}
-		kinesisService := svckinesis.NewKinesisService(server.Storage(), cfg.AccountID, cfg.Region)
+		kinesisService := svckinesis.NewKinesisService(kinesisRegionalStorage, cfg.AccountID, cfg.Region)
 		kinesisService.RegisterHandlers(server.Dispatcher())
 	}
 
@@ -288,6 +303,9 @@ func main() {
 			lambdaService.SetS3ObjectStore(cfg.Region, s3Store.Objects(cfg.Region))
 			if sqsStoreInstance != nil {
 				lambdaService.SetSQSStore(sqsStoreInstance)
+			}
+			if kinesisStoreInstance != nil {
+				lambdaService.SetKinesisStore(kinesisStoreInstance)
 			}
 			lambdaService.RegisterHandlers(server.Dispatcher())
 			s3Service.SetLambdaInvoker(lambdaService)
@@ -330,7 +348,7 @@ func main() {
 	})
 
 	if cfg.Logs {
-		logsService := svclogs.NewLogsService(server.StorageManager(), cfg.AccountID, cfg.DataPath)
+		logsService = svclogs.NewLogsService(server.StorageManager(), cfg.AccountID, cfg.DataPath)
 		if lambdaService != nil {
 			logsService.SetLambdaInvoker(cfg.Region, lambdaService)
 		}
@@ -349,11 +367,12 @@ func main() {
 
 	var snsStoreInstance *storesns.SNSStore
 	if cfg.SNS {
-		snsStoreInstance = storesns.NewSNSStore(server.Storage(), cfg.AccountID, cfg.Region)
+		snsRegionalStorage, _ := server.StorageManager().GetStorage(cfg.Region)
+		snsStoreInstance = storesns.NewSNSStore(snsRegionalStorage, cfg.AccountID, cfg.Region)
 		server.RegisterShutdownHook(func(ctx context.Context) {
 			snsStoreInstance.Close()
 		})
-		snsService := svcsns.NewSNSService(server.StorageManager(), cfg.AccountID)
+		snsService = svcsns.NewSNSService(server.StorageManager(), cfg.AccountID, cfg.Region)
 		if sqsStoreInstance != nil {
 			snsService.SetSQSStore(sqsStoreInstance)
 		}
@@ -367,14 +386,18 @@ func main() {
 
 	var eventsStoreInstance *storeevents.EventsStore
 	if cfg.Events {
-		eventsStoreInstance = storeevents.NewEventsStore(server.Storage(), cfg.AccountID, cfg.Region)
-		eventsService := svcevents.NewEventsService(server.StorageManager(), cfg.AccountID, cfg.Region)
-		eventsService.SetEventsStore(eventsStoreInstance)
+		eventsRegionalStorage, _ := server.StorageManager().GetStorage(cfg.Region)
+		eventsStoreInstance = storeevents.NewEventsStore(eventsRegionalStorage, cfg.AccountID, cfg.Region)
+		eventsService = svcevents.NewEventsService(server.StorageManager(), cfg.AccountID)
+		eventsService.SetEventsStore(cfg.Region, eventsStoreInstance)
 		if sqsStoreInstance != nil {
 			eventsService.SetSQSStore(cfg.Region, sqsStoreInstance)
 		}
 		if snsStoreInstance != nil {
 			eventsService.SetSNSStore(cfg.Region, snsStoreInstance)
+		}
+		if snsService != nil {
+			eventsService.SetSNSPublisher(snsService)
 		}
 		if lambdaService != nil {
 			eventsService.SetLambdaInvoker(lambdaService)
@@ -384,7 +407,7 @@ func main() {
 	}
 
 	if cfg.StepFunctions {
-		stepFunctionService := svcstepfunction.NewStepFunctionService(server.StorageManager(), cfg.AccountID)
+		stepFunctionService = svcstepfunction.NewStepFunctionService(server.StorageManager(), cfg.AccountID)
 		if lambdaService != nil {
 			stepFunctionService.SetLambdaInvoker(lambdaService)
 		}
@@ -526,7 +549,7 @@ func main() {
 	}
 
 	if cfg.AppSync {
-		appsyncService := svcappsync.NewAppSyncService(cfg.AccountID)
+		appsyncService = svcappsync.NewAppSyncService(cfg.AccountID)
 		if lambdaService != nil {
 			appsyncService.SetLambdaInvoker(lambdaService)
 		}
@@ -589,8 +612,9 @@ func main() {
 
 		if sqsStoreInstance != nil {
 			eb.SetResourcePolicyFunc("sqs", eventbus.SQSResourcePolicyFn(
-				func(ctx context.Context, queueURL string) (string, error) {
-					queue, err := sqsStoreInstance.GetQueue(queueURL)
+				func(ctx context.Context, queueARN string) (string, error) {
+					queueName := svcarn.ExtractQueueNameFromARN(queueARN)
+					queue, err := sqsStoreInstance.GetQueueByName(queueName)
 					if err != nil {
 						return "", err
 					}

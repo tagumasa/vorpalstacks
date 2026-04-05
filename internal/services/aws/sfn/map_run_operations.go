@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"vorpalstacks/internal/services/aws/common/request"
@@ -13,22 +12,13 @@ import (
 	arncommon "vorpalstacks/internal/utils/aws/arn"
 )
 
-var (
-	mapRunsMu sync.Mutex
-	mapRuns   = map[string][]map[string]interface{}{}
-	mapRunSeq int64
-)
-
-func generateMapRunArn(region, accountID, executionArn, stateName string) string {
+func generateMapRunArn(store *sfnstore.StepFunctionStore, region, accountID, executionArn, stateName string) string {
 	return fmt.Sprintf("arn:aws:states:%s:%s:mapRun:%s/%s/%s",
-		region, accountID, arncommon.ExtractStateMachineNameFromARN(executionArn), stateName, generateMapRunID())
+		region, accountID, arncommon.ExtractStateMachineNameFromARN(executionArn), stateName, generateMapRunID(store))
 }
 
-func generateMapRunID() string {
-	mapRunsMu.Lock()
-	mapRunSeq++
-	id := mapRunSeq
-	mapRunsMu.Unlock()
+func generateMapRunID(store *sfnstore.StepFunctionStore) string {
+	id := store.NextMapRunSeq()
 	return fmt.Sprintf("mapRun-%d-%s", id, time.Now().UTC().Format("20060102150405"))
 }
 
@@ -127,18 +117,30 @@ func (s *StepFunctionService) DescribeMapRun(ctx context.Context, reqCtx *reques
 		return nil, NewInvalidName("mapRunArn is required")
 	}
 
-	mapRunsMu.Lock()
-	defer mapRunsMu.Unlock()
-
-	for _, runs := range mapRuns {
-		for _, run := range runs {
-			if arn, ok := run["mapRunArn"].(string); ok && arn == mapRunArn {
-				return run, nil
-			}
-		}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, NewMapRunDoesNotExist("Map Run does not exist: " + mapRunArn)
+	mr, err := store.GetMapRun(ctx, mapRunArn)
+	if err != nil {
+		return nil, NewMapRunDoesNotExist("Map Run does not exist: " + mapRunArn)
+	}
+
+	return map[string]interface{}{
+		"mapRunArn":           mr.MapRunArn,
+		"executionArn":        mr.ExecutionArn,
+		"stateMachineArn":     mr.StateMachineArn,
+		"name":                mr.Name,
+		"status":              mr.Status,
+		"startDate":           mr.StartDate,
+		"stopDate":            mr.StopDate,
+		"itemCount":           mr.ItemCount,
+		"maxConcurrency":      mr.MaxConcurrency,
+		"itemsProcessedCount": mr.ItemsProcessedCount,
+		"itemsFailedCount":    mr.ItemsFailedCount,
+		"itemsCancelledCount": mr.ItemsCancelledCount,
+	}, nil
 }
 
 // ListMapRuns lists map runs, optionally filtered by execution ARN.
@@ -148,15 +150,9 @@ func (s *StepFunctionService) ListMapRuns(ctx context.Context, reqCtx *request.R
 	executionArn := request.GetParamLowerFirst(req.Parameters, "executionArn")
 	nextToken := request.GetParamLowerFirst(req.Parameters, "nextToken")
 
-	mapRunsMu.Lock()
-	defer mapRunsMu.Unlock()
-
-	var matchingRuns []map[string]interface{}
-	for execArn, runs := range mapRuns {
-		if executionArn != "" && execArn != executionArn {
-			continue
-		}
-		matchingRuns = append(matchingRuns, runs...)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	limit := int32(request.GetIntParam(req.Parameters, "maxResults"))
@@ -164,31 +160,36 @@ func (s *StepFunctionService) ListMapRuns(ctx context.Context, reqCtx *request.R
 		limit = 100
 	}
 
-	skipCount := 0
-	if nextToken != "" {
-		for i, run := range matchingRuns {
-			if arn, ok := run["executionArn"].(string); ok && arn == nextToken {
-				skipCount = i + 1
-				break
-			}
-		}
+	result, err := store.ListAllMapRuns(ctx, executionArn, limit, nextToken)
+	if err != nil {
+		return nil, err
 	}
 
-	paged := matchingRuns[skipCount:]
-	isTruncated := int32(len(paged)) > limit
-	if isTruncated {
-		paged = paged[:limit]
+	mapRuns := make([]map[string]interface{}, 0, len(result.MapRuns))
+	for _, mr := range result.MapRuns {
+		mapRuns = append(mapRuns, map[string]interface{}{
+			"mapRunArn":           mr.MapRunArn,
+			"executionArn":        mr.ExecutionArn,
+			"stateMachineArn":     mr.StateMachineArn,
+			"name":                mr.Name,
+			"status":              mr.Status,
+			"startDate":           mr.StartDate,
+			"stopDate":            mr.StopDate,
+			"itemCount":           mr.ItemCount,
+			"maxConcurrency":      mr.MaxConcurrency,
+			"itemsProcessedCount": mr.ItemsProcessedCount,
+			"itemsFailedCount":    mr.ItemsFailedCount,
+			"itemsCancelledCount": mr.ItemsCancelledCount,
+		})
 	}
 
 	respNextToken := ""
-	if isTruncated && len(paged) > 0 {
-		if arn, ok := paged[len(paged)-1]["executionArn"].(string); ok {
-			respNextToken = arn
-		}
+	if result.NextToken != "" && len(result.MapRuns) > 0 {
+		respNextToken = result.MapRuns[len(result.MapRuns)-1].MapRunArn
 	}
 
 	return map[string]interface{}{
-		"mapRuns":   paged,
+		"mapRuns":   mapRuns,
 		"nextToken": respNextToken,
 	}, nil
 }

@@ -399,24 +399,18 @@ func LambdaResourcePolicyFn(lookup LambdaPolicyLookupFunc) ResourcePolicyFunc {
 }
 
 // SQSPolicyLookupFunc retrieves an SQS queue's resource-based policy
-// document as raw JSON by queue URL.
-type SQSPolicyLookupFunc func(ctx context.Context, queueURL string) (policyJSON string, err error)
+// document as raw JSON by queue ARN.
+type SQSPolicyLookupFunc func(ctx context.Context, queueARN string) (policyJSON string, err error)
 
 // SQSResourcePolicyFn creates a ResourcePolicyFunc that retrieves an SQS
-// queue's policy by converting the queue ARN to a queue URL, looking up
-// the queue, and parsing its Policy attribute into a BusPolicyDocument.
+// queue's policy by looking up the queue by name extracted from the ARN
+// and reading its Policy attribute.
 func SQSResourcePolicyFn(lookup SQSPolicyLookupFunc) ResourcePolicyFunc {
 	return func(ctx context.Context, queueARN string) (*BusPolicyDocument, error) {
 		if lookup == nil {
 			return EmptyBusPolicyDocument(), nil
 		}
-		_, region, _, accountID, _ := svcarn.SplitARN(queueARN)
-		queueName := svcarn.ExtractQueueNameFromARN(queueARN)
-		if region == "" || accountID == "" || queueName == "" {
-			return EmptyBusPolicyDocument(), nil
-		}
-		queueURL := fmt.Sprintf("https://sqs.%s.amazonaws.com/%s/%s", region, accountID, queueName)
-		policyJSON, err := lookup(ctx, queueURL)
+		policyJSON, err := lookup(ctx, queueARN)
 		if err != nil {
 			return nil, fmt.Errorf("eventbus: failed to lookup SQS policy for %q: %w", queueARN, err)
 		}

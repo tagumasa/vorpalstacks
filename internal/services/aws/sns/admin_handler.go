@@ -5,7 +5,6 @@ import (
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/sns"
 	snsconnect "vorpalstacks/internal/pb/aws/sns/snsconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
@@ -13,27 +12,24 @@ import (
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
 
+// AdminHandler implements the SNS gRPC-Web admin console handler. It delegates
+// to the shared SNSService to ensure the same per-region cached stores are used
+// as the HTTP API handlers.
 type AdminHandler struct {
 	snsconnect.UnimplementedSNSServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *SNSService
 }
 
 var _ snsconnect.SNSServiceHandler = (*AdminHandler)(nil)
 
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
-	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
-	}
+// NewAdminHandler creates a new SNS admin console handler backed by the given
+// service instance.
+func NewAdminHandler(svc *SNSService) *AdminHandler {
+	return &AdminHandler{service: svc}
 }
 
-func (h *AdminHandler) getSNSStoreByRegion(region string) (*snsstore.SNSStore, error) {
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return snsstore.NewSNSStore(regionStorage, h.accountId, region), nil
+func (h *AdminHandler) getSNSStoreByRegion(region string) (snsstore.SNSStoreInterface, error) {
+	return h.service.getSNSStoreByRegion(region)
 }
 
 func (h *AdminHandler) ListTopics(ctx context.Context, req *connect.Request[pb.ListTopicsInput]) (*connect.Response[pb.ListTopicsResponse], error) {

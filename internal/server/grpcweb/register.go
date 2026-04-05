@@ -90,6 +90,13 @@ type AdminDeps struct {
 	DataPath         string
 	BaseURL          string
 	NeptuneDataAdmin *svcneptunedata.NeptuneDataService
+	AppSyncAdmin     *svcappsync.AppSyncService
+	LogsAdmin        *svclogs.LogsService
+	EventsAdmin      *svcevents.EventsService
+	SFNAdmin         *svcstepfunction.StepFunctionService
+	SNSAdmin         *svcsns.SNSService
+	SQSAdmin         *svcsqs.SQSService
+	NeptuneAdmin     *svcneptune.NeptuneService
 }
 
 // RegisterAllAdminHandlers registers Connect RPC handlers for all services
@@ -118,11 +125,11 @@ func RegisterAllAdminHandlers(s *Server, deps AdminDeps) {
 	s.Handle(kinesisconnect.NewKinesisServiceHandler(svckinesis.NewAdminHandler(sm, aid)))
 	s.Handle(lambdaconnect.NewLambdaServiceHandler(svclambda.NewAdminHandler(sm, aid)))
 	s.Handle(s3connect.NewS3ServiceHandler(svcs3.NewAdminHandler(sm, aid)))
-	s.Handle(sfnconnect.NewSFNServiceHandler(svcstepfunction.NewAdminHandler(sm, aid)))
-	s.Handle(sqsconnect.NewSQSServiceHandler(svcsqs.NewAdminHandler(sm, aid, deps.BaseURL)))
-	s.Handle(cloudwatcheventsconnect.NewCloudWatchEventsServiceHandler(svcevents.NewAdminHandler(sm, aid)))
-	s.Handle(cloudwatchlogsconnect.NewCloudWatchLogsServiceHandler(svclogs.NewAdminHandler(sm, aid, dp)))
-	s.Handle(snsconnect.NewSNSServiceHandler(svcsns.NewAdminHandler(sm, aid)))
+	s.Handle(sfnconnect.NewSFNServiceHandler(svcstepfunction.NewAdminHandler(deps.SFNAdmin)))
+	s.Handle(sqsconnect.NewSQSServiceHandler(svcsqs.NewAdminHandler(deps.SQSAdmin)))
+	s.Handle(cloudwatcheventsconnect.NewCloudWatchEventsServiceHandler(svcevents.NewAdminHandler(deps.EventsAdmin, sm)))
+	s.Handle(cloudwatchlogsconnect.NewCloudWatchLogsServiceHandler(svclogs.NewAdminHandler(deps.LogsAdmin)))
+	s.Handle(snsconnect.NewSNSServiceHandler(svcsns.NewAdminHandler(deps.SNSAdmin)))
 	s.Handle(iamconnect.NewIAMServiceHandler(svciam.NewAdminHandler(st, aid)))
 	s.Handle(kmsconnect.NewKMSServiceHandler(svckms.NewAdminHandler(storekms.NewKeyStore(st, aid, reg))))
 	s.Handle(cloudwatchconnect.NewCloudWatchServiceHandler(svccloudwatch.NewAdminHandler(
@@ -143,11 +150,11 @@ func RegisterAllAdminHandlers(s *Server, deps AdminDeps) {
 	s.Handle(timestreamqueryconnect.NewTimestreamQueryServiceHandler(svctimestreamquery.NewAdminHandler(sm, aid, dp)))
 	s.Handle(timestreamwriteconnect.NewTimestreamWriteServiceHandler(svctimestreamwrite.NewAdminHandler(sm, aid, dp)))
 
-	s.Handle(neptuneconnect.NewNeptuneServiceHandler(svcneptune.NewAdminHandler(sm, aid)))
+	s.Handle(neptuneconnect.NewNeptuneServiceHandler(svcneptune.NewAdminHandler(deps.NeptuneAdmin, aid)))
 	if deps.NeptuneDataAdmin != nil {
 		s.Handle(neptunedataconnect.NewNeptunedataServiceHandler(svcneptunedata.NewAdminHandler(deps.NeptuneDataAdmin)))
 	}
-	s.Handle(appsyncconnect.NewAppSyncServiceHandler(svcappsync.NewAdminHandler(sm, aid)))
+	s.Handle(appsyncconnect.NewAppSyncServiceHandler(svcappsync.NewAdminHandler(deps.AppSyncAdmin, sm)))
 
 	adminAuthKey, err := loadOrGenerateAdminAuthKey(dp)
 	if err != nil {

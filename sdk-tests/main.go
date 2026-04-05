@@ -13,6 +13,7 @@ var (
 	endpoint = flag.String("endpoint", "http://localhost:8080", "VorpalStacks endpoint")
 	region   = flag.String("region", "us-east-1", "AWS region")
 	services = flag.String("service", "", "Comma-separated list of services to test (or 'all')")
+	testType = flag.String("type", "all", "Test type to run: all, sdk, ws, integration")
 	format   = flag.String("format", "table", "Output format: table, json")
 	verbose  = flag.Bool("v", false, "Verbose output")
 )
@@ -29,7 +30,11 @@ func main() {
 
 	var targetServices []string
 	if *services == "" || *services == "all" {
-		targetServices = tester.GetAllServices()
+		cat := testutil.TestCategory(*testType)
+		if *testType == "all" {
+			cat = ""
+		}
+		targetServices = tester.GetServicesByCategory(cat)
 	} else {
 		targetServices = strings.Split(*services, ",")
 	}
@@ -46,20 +51,20 @@ func main() {
 
 	tester.PrintReport(allResults, *format)
 
-	passed := 0
-	failed := 0
-	for _, results := range allResults {
-		for _, r := range results {
-			if r.Status == "PASS" {
-				passed++
-			} else if r.Status == "FAIL" {
-				failed++
-			}
-		}
-	}
+	catSummary := tester.SummariseByCategory(allResults)
+	totalPassed, totalFailed, totalSkipped := 0, 0, 0
 
-	fmt.Printf("\nSummary: %d passed, %d failed\n", passed, failed)
-	if failed > 0 {
+	fmt.Println()
+	for _, cat := range []testutil.TestCategory{testutil.CategorySDK, testutil.CategoryIntegration, testutil.CategoryWS} {
+		s := catSummary[cat]
+		totalPassed += s.Passed
+		totalFailed += s.Failed
+		totalSkipped += s.Skipped
+		fmt.Printf("  %-15s %d passed, %d failed, %d skipped\n", cat+":", s.Passed, s.Failed, s.Skipped)
+	}
+	fmt.Printf("\n  %-15s %d passed, %d failed, %d skipped\n", "TOTAL:", totalPassed, totalFailed, totalSkipped)
+
+	if totalFailed > 0 {
 		os.Exit(1)
 	}
 }

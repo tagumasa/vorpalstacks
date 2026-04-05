@@ -42,9 +42,8 @@ func (s *FunctionURLServer) HandleRequest(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	store := s.getFunctionStore()
-	function, err := store.Get(functionName)
-	if err != nil || function == nil {
+	function, _ := s.findFunction(functionName)
+	if function == nil {
 		http.Error(w, `{"message":"Function not found"}`, http.StatusNotFound)
 		return
 	}
@@ -223,10 +222,25 @@ func (s *FunctionURLServer) setCORSHeaders(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (s *FunctionURLServer) getFunctionStore() *lambdastore.FunctionStore {
-	store, err := s.storageManager.GetStorage(s.region)
-	if err != nil {
-		return lambdastore.NewFunctionStore(nil, s.accountID, s.region)
+// findFunction searches all regions for a function by name and returns
+// the function and its region. Returns nil if not found in any region.
+func (s *FunctionURLServer) findFunction(functionName string) (*lambdastore.Function, string) {
+	regions := []string{s.region}
+	if s.storageManager != nil {
+		if activeRegions := s.storageManager.GetActiveRegions(); len(activeRegions) > 0 {
+			regions = activeRegions
+		}
 	}
-	return lambdastore.NewFunctionStore(store, s.accountID, s.region)
+	for _, region := range regions {
+		st, err := s.storageManager.GetStorage(region)
+		if err != nil {
+			continue
+		}
+		fs := lambdastore.NewFunctionStore(st, s.accountID, region)
+		fn, err := fs.Get(functionName)
+		if err == nil && fn != nil {
+			return fn, region
+		}
+	}
+	return nil, ""
 }

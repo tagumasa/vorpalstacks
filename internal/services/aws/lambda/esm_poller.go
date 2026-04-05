@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
+	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -74,18 +76,22 @@ type esmSQSEvent struct {
 // again after the visibility timeout expires, providing at-least-once
 // delivery semantics.
 type esmPoller struct {
-	mu        sync.Mutex
-	running   bool
-	cancel    context.CancelFunc
-	wg        sync.WaitGroup
-	interval  time.Duration
-	workers   int
-	logger    logs.Logger
-	sqsStore  *sqsstore.SQSStore
-	esmStore  *lambdastore.EventSourceStore
-	lambdaSvc *LambdaService
-	accountID string
-	region    string
+	mu             sync.Mutex
+	running        bool
+	cancel         context.CancelFunc
+	wg             sync.WaitGroup
+	interval       time.Duration
+	workers        int
+	logger         logs.Logger
+	sqsStore       *sqsstore.SQSStore
+	kinesisStore   kinesisstore.KinesisStoreInterface
+	esmStore       *lambdastore.EventSourceStore
+	lambdaSvc      *LambdaService
+	accountID      string
+	region         string
+	storageManager *storage.RegionStorageManager
+	kinesisCP      map[string]string // "mappingUUID:streamName:shardID" -> lastSeqNum
+	kinesisCPMu    sync.RWMutex
 }
 
 // newESMPoller creates a new ESM poller with the given poll interval and
@@ -99,9 +105,10 @@ func newESMPoller(interval time.Duration, workers int, logger logs.Logger) *esmP
 		workers = defaultESMMaxWorkers
 	}
 	return &esmPoller{
-		interval: interval,
-		workers:  workers,
-		logger:   logger,
+		interval:  interval,
+		workers:   workers,
+		logger:    logger,
+		kinesisCP: make(map[string]string),
 	}
 }
 
@@ -160,11 +167,34 @@ func (p *esmPoller) pollLoop(ctx context.Context) {
 // source ARNs are skipped. Errors during individual mapping processing are
 // logged but do not halt the loop.
 func (p *esmPoller) pollAll(ctx context.Context) {
-	if p.esmStore == nil {
+	regions := []string{p.region}
+	if p.storageManager != nil {
+		if activeRegions := p.storageManager.GetActiveRegions(); len(activeRegions) > 0 {
+			regions = activeRegions
+		}
+	}
+
+	for _, region := range regions {
+		p.pollRegion(ctx, region)
+	}
+}
+
+func (p *esmPoller) pollRegion(ctx context.Context, region string) {
+	var esmStore *lambdastore.EventSourceStore
+	if region == p.region && p.esmStore != nil {
+		esmStore = p.esmStore
+	} else if p.storageManager != nil {
+		st, err := p.storageManager.GetStorage(region)
+		if err != nil {
+			return
+		}
+		esmStore = lambdastore.NewEventSourceStore(st, p.accountID, region)
+	}
+	if esmStore == nil {
 		return
 	}
 
-	result, err := p.esmStore.List(lambdastore.ListOptions{MaxItems: 1000})
+	result, err := esmStore.List(lambdastore.ListOptions{MaxItems: 1000})
 	if err != nil {
 		p.log("failed to list event source mappings", "error", err)
 		return
@@ -178,7 +208,9 @@ func (p *esmPoller) pollAll(ctx context.Context) {
 		if m.State != "Enabled" {
 			continue
 		}
-		if !strings.HasPrefix(m.EventSourceArn, "arn:aws:sqs:") {
+		if !strings.HasPrefix(m.EventSourceArn, "arn:aws:sqs:") &&
+			!strings.HasPrefix(m.EventSourceArn, "arn:aws:kinesis:") &&
+			!strings.HasPrefix(m.EventSourceArn, "arn:aws:dynamodb:") {
 			continue
 		}
 		jobs <- pollJob{mapping: m}
@@ -217,6 +249,135 @@ func (p *esmPoller) pollAll(ctx context.Context) {
 // the mapped function, and deletes successfully processed messages from
 // the queue.
 func (p *esmPoller) processMapping(ctx context.Context, mapping *lambdastore.EventSourceMapping) {
+	if strings.HasPrefix(mapping.EventSourceArn, "arn:aws:kinesis:") {
+		p.processKinesisMapping(ctx, mapping)
+		return
+	}
+	if strings.HasPrefix(mapping.EventSourceArn, "arn:aws:dynamodb:") {
+		p.log("DynamoDB Streams ESM not yet implemented, skipping mapping",
+			"eventSourceArn", mapping.EventSourceArn,
+			"functionArn", mapping.FunctionArn)
+		return
+	}
+	p.processSQSMapping(ctx, mapping)
+}
+
+func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdastore.EventSourceMapping) {
+	if p.kinesisStore == nil {
+		return
+	}
+
+	_, _, streamRegion, _, resource := svcarn.SplitARN(mapping.EventSourceArn)
+	if streamRegion == "" {
+		p.log("failed to parse Kinesis event source ARN", "arn", mapping.EventSourceArn)
+		return
+	}
+
+	streamName := resource
+	if idx := strings.Index(resource, "stream/"); idx != -1 {
+		streamName = resource[idx+len("stream/"):]
+	}
+
+	shards, err := p.kinesisStore.ListShards(streamName, nil, "", 100)
+	if err != nil {
+		p.log("failed to list shards for Kinesis ESM", "stream", streamName, "error", err)
+		return
+	}
+
+	batchSize := int32(mapping.BatchSize)
+	if batchSize <= 0 {
+		batchSize = 100
+	}
+	if batchSize > 10000 {
+		batchSize = 10000
+	}
+
+	for _, shard := range shards {
+		if shard.SequenceNumberRange != nil && shard.SequenceNumberRange.EndingSequenceNumber != "" {
+			continue
+		}
+
+		cpKey := fmt.Sprintf("%s:%s:%s", mapping.UUID, streamName, shard.ShardID)
+
+		p.kinesisCPMu.RLock()
+		lastSeq := p.kinesisCP[cpKey]
+		p.kinesisCPMu.RUnlock()
+
+		var iteratorType, iteratorSeqNum string
+		if lastSeq != "" {
+			iteratorType = "AFTER_SEQUENCE_NUMBER"
+			iteratorSeqNum = lastSeq
+		} else {
+			iteratorType = "TRIM_HORIZON"
+		}
+
+		iterator, err := p.kinesisStore.CreateShardIterator(streamName, shard.ShardID, iteratorType, iteratorSeqNum, nil)
+		if err != nil {
+			p.log("failed to create shard iterator", "stream", streamName, "shard", shard.ShardID, "error", err)
+			continue
+		}
+
+		records, _, err := p.kinesisStore.GetRecords(streamName, shard.ShardID, iterator.SequenceNumber, batchSize, true)
+		if err != nil {
+			p.log("failed to get records from Kinesis", "stream", streamName, "shard", shard.ShardID, "error", err)
+			continue
+		}
+
+		if len(records) == 0 {
+			continue
+		}
+
+		kinesisRecords := make([]map[string]interface{}, 0, len(records))
+		for _, rec := range records {
+			kinesisRecords = append(kinesisRecords, map[string]interface{}{
+				"kinesis": map[string]interface{}{
+					"kinesisSchemaVersion":        "1.0",
+					"partitionKey":                rec.PartitionKey,
+					"sequenceNumber":              rec.SequenceNumber,
+					"data":                        rec.Data,
+					"approximateArrivalTimestamp": rec.ApproximateArrivalTimestamp.Format("2006-01-02T15:04:05.000Z"),
+				},
+				"eventSource":       "aws:kinesis",
+				"eventVersion":      "1.0",
+				"eventID":           fmt.Sprintf("%s:%s:%s", shard.ShardID, rec.SequenceNumber, mapping.UUID),
+				"awsRegion":         streamRegion,
+				"eventName":         "aws:kinesis:record",
+				"invokeIdentityArn": fmt.Sprintf("arn:aws:iam::%s:role/vorpalstacks-lambda", p.accountID),
+			})
+		}
+
+		eventPayload := map[string]interface{}{
+			"Records": kinesisRecords,
+		}
+		payload, err := json.Marshal(eventPayload)
+		if err != nil {
+			p.log("failed to marshal Kinesis ESM payload", "stream", streamName, "error", err)
+			continue
+		}
+
+		fnName := svcarn.ExtractFunctionNameFromARN(mapping.FunctionArn)
+		if fnName == "" {
+			p.log("failed to extract function name from ARN", "arn", mapping.FunctionArn)
+			continue
+		}
+
+		_, _, invokeErr := p.invokeLambda(ctx, mapping.FunctionArn, payload)
+		if invokeErr != nil {
+			p.log("lambda invocation failed for Kinesis ESM", "function", fnName, "stream", streamName, "error", invokeErr)
+			_ = p.esmStore.SetState(mapping.UUID, "Enabled", fmt.Sprintf("Last processing result: %s", invokeErr.Error()))
+			return
+		}
+
+		latestSeq := records[len(records)-1].SequenceNumber
+		p.kinesisCPMu.Lock()
+		p.kinesisCP[cpKey] = latestSeq
+		p.kinesisCPMu.Unlock()
+	}
+
+	_ = p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors.")
+}
+
+func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.EventSourceMapping) {
 	if p.sqsStore == nil {
 		return
 	}
@@ -233,7 +394,12 @@ func (p *esmPoller) processMapping(ctx context.Context, mapping *lambdastore.Eve
 		return
 	}
 
-	queueURL := fmt.Sprintf("https://sqs.%s.amazonaws.com/%s/%s", region, accountID, queueName)
+	queue, err := p.sqsStore.GetQueueByName(queueName)
+	if err != nil {
+		p.log("sqs queue not found by name", "queue", queueName, "mapping", mapping.UUID, "error", err)
+		return
+	}
+	queueURL := queue.URL
 
 	batchSize := mapping.BatchSize
 	if batchSize <= 0 {
@@ -283,7 +449,7 @@ func (p *esmPoller) processMapping(ctx context.Context, mapping *lambdastore.Eve
 		return
 	}
 
-	_, _, invokeErr := p.invokeLambda(ctx, fnName, payload)
+	_, _, invokeErr := p.invokeLambda(ctx, mapping.FunctionArn, payload)
 
 	if invokeErr != nil {
 		p.log("lambda invocation failed", "function", fnName, "queue", queueName, "error", invokeErr)
@@ -356,18 +522,27 @@ func sqsMessageToRecord(msg *sqsstore.Message, eventSourceArn, region string) es
 // invokeLambda invokes the Lambda function with the given name and payload.
 // It constructs the necessary store context and delegates to the internal
 // invokeFunction method on the LambdaService.
-func (p *esmPoller) invokeLambda(ctx context.Context, functionName string, payload []byte) (int64, []byte, error) {
+func (p *esmPoller) invokeLambda(ctx context.Context, functionRef string, payload []byte) (int64, []byte, error) {
 	if p.lambdaSvc == nil {
 		return 0, nil, fmt.Errorf("esm: lambda service not available")
 	}
 
-	fnStore := lambdastore.NewFunctionStore(p.lambdaSvc.getRegionalStorage(p.region), p.accountID, p.region)
+	region := p.region
+	functionName := functionRef
+	if strings.HasPrefix(functionRef, "arn:") {
+		if _, _, arnRegion, _, _ := svcarn.SplitARN(functionRef); arnRegion != "" {
+			region = arnRegion
+		}
+		functionName = svcarn.ExtractFunctionNameFromARN(functionRef)
+	}
+
+	fnStore := lambdastore.NewFunctionStore(p.lambdaSvc.getRegionalStorage(region), p.accountID, region)
 	function, ver, _, err := p.lambdaSvc.resolveQualifier(fnStore, functionName, "")
 	if err != nil {
 		return 0, nil, fmt.Errorf("esm: failed to resolve function %s: %w", functionName, err)
 	}
 
-	result, err := p.lambdaSvc.invokeFunction(function, ver, fnStore, p.region, payload)
+	result, err := p.lambdaSvc.invokeFunction(function, ver, fnStore, region, payload)
 	if err != nil {
 		return 0, nil, fmt.Errorf("esm: invocation failed for %s: %w", functionName, err)
 	}

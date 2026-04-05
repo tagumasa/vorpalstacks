@@ -5,7 +5,6 @@ import (
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/sfn"
 	"vorpalstacks/internal/pb/aws/sfn/sfnconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
@@ -13,29 +12,24 @@ import (
 )
 
 // AdminHandler implements the Step Functions gRPC-Web admin console handler. It
-// exposes list operations for state machines for the Flutter management UI.
+// exposes list operations for state machines for the Flutter management UI,
+// delegating to the shared StepFunctionService cache.
 type AdminHandler struct {
 	sfnconnect.UnimplementedSFNServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *StepFunctionService
 }
 
 var _ sfnconnect.SFNServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Step Functions admin console handler.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
-	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
-	}
+// NewAdminHandler creates a new Step Functions admin console handler backed by
+// the given service instance, ensuring the same per-region cached stores are
+// used as the HTTP API handlers.
+func NewAdminHandler(svc *StepFunctionService) *AdminHandler {
+	return &AdminHandler{service: svc}
 }
 
 func (h *AdminHandler) getStoreByRegion(region string) (*sfnstore.StepFunctionStore, error) {
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return sfnstore.NewStepFunctionStore(regionStorage, h.accountId, region), nil
+	return h.service.getStoreForRegion(region)
 }
 
 // ListStateMachines returns a paginated list of state machines in the

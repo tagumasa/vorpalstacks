@@ -25,6 +25,7 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // Publish publishes a message to an SNS topic.
@@ -142,14 +143,15 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 		region := reqCtx.GetRegion()
 
 		if s.bus != nil {
-			s.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+			snsEvt := &eventbus.SNSDeliveryEvent{
 				TopicARN:       topicArn,
 				MessageID:      messageId,
 				Message:        message,
 				Subject:        subject,
 				MessageGroupId: messageGroupId,
-				Region:         region,
-			})
+			}
+			snsEvt.Region = region
+			s.bus.Publish(context.Background(), snsEvt)
 		} else {
 			go s.deliverToSubscriptions(&msgCopy, subsCopy, region)
 		}
@@ -211,6 +213,14 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 	}
 
 	queueURL := sub.Endpoint
+	if strings.HasPrefix(queueURL, "arn:") {
+		queueName := arnutil.ExtractQueueNameFromARN(queueURL)
+		if queueName != "" {
+			if q, err := s.sqsStore.GetQueueByName(queueName); err == nil {
+				queueURL = q.URL
+			}
+		}
+	}
 
 	if s.bus != nil {
 		queue, qErr := s.sqsStore.GetQueue(queueURL)
@@ -656,14 +666,15 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 			}
 
 			if s.bus != nil {
-				s.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+				snsEvt := &eventbus.SNSDeliveryEvent{
 					TopicARN:       topicArn,
 					MessageID:      messageId,
 					Message:        message,
 					Subject:        subject,
 					MessageGroupId: messageGroupId,
-					Region:         region,
-				})
+				}
+				snsEvt.Region = region
+				s.bus.Publish(context.Background(), snsEvt)
 			} else {
 				go s.deliverToSubscriptions(&msgCopy, subsCopy, region)
 			}

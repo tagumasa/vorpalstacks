@@ -39,8 +39,8 @@ type QueryInfo struct {
 	CompletionTime time.Time                `json:"completionTime,omitempty"`
 	Error          string                   `json:"error,omitempty"`
 	Cancelled      bool                     `json:"cancelled"`
-	CachedResult   *QueryResult             `json:"-"`
-	CachedRows     []map[string]interface{} `json:"-"`
+	CachedResult   *QueryResult             `json:"cachedResult,omitempty"`
+	CachedRows     []map[string]interface{} `json:"cachedRows,omitempty"`
 }
 
 // QueryResult contains the results of a query execution.
@@ -80,6 +80,11 @@ func (s *Service) Query(ctx context.Context, reqCtx *request.RequestContext, req
 		return nil, ErrValidationException
 	}
 
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	queryID := uuid.New().String()
 	now := time.Now().UTC()
 
@@ -91,37 +96,30 @@ func (s *Service) Query(ctx context.Context, reqCtx *request.RequestContext, req
 		Cancelled:   false,
 	}
 
-	s.queryMutex.Lock()
-	s.runningQueries[queryID] = queryInfo
-	if len(s.runningQueries) > 1000 {
-		for id, qi := range s.runningQueries {
-			if qi.Status == QueryStatusSucceeded || qi.Status == QueryStatusFailed {
-				delete(s.runningQueries, id)
-				if len(s.runningQueries) <= 500 {
-					break
-				}
-			}
+	stores.queryInfoStore.Put(queryID, queryInfo)
+
+	result, execErr := s.executeSQLQuery(ctx, reqCtx, queryString)
+
+	var latestInfo QueryInfo
+	if getErr := stores.queryInfoStore.Get(queryID, &latestInfo); getErr == nil {
+		if latestInfo.Cancelled {
+			return nil, fmt.Errorf("query was cancelled")
 		}
 	}
-	s.queryMutex.Unlock()
 
-	result, err := s.executeSQLQuery(ctx, reqCtx, queryString)
-	s.queryMutex.Lock()
-	defer s.queryMutex.Unlock()
-	if queryInfo.Cancelled {
-		return nil, fmt.Errorf("query was cancelled")
-	}
-	if err != nil {
+	if execErr != nil {
 		queryInfo.Status = QueryStatusFailed
-		queryInfo.Error = err.Error()
+		queryInfo.Error = execErr.Error()
 		queryInfo.CompletionTime = time.Now().UTC()
-		return nil, err
+		stores.queryInfoStore.Put(queryID, queryInfo)
+		return nil, execErr
 	}
 
 	queryInfo.Status = QueryStatusSucceeded
 	queryInfo.CompletionTime = time.Now().UTC()
 	queryInfo.CachedResult = result
 	queryInfo.CachedRows = result.Rows
+	stores.queryInfoStore.Put(queryID, queryInfo)
 
 	maxRows := 100
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxRows"); maxStr != "" {
@@ -170,17 +168,20 @@ func (s *Service) CancelQuery(ctx context.Context, reqCtx *request.RequestContex
 		return nil, ErrValidationException
 	}
 
-	s.queryMutex.Lock()
-	defer s.queryMutex.Unlock()
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
 
-	queryInfo, exists := s.runningQueries[queryID]
-	if !exists {
+	var queryInfo QueryInfo
+	if err := stores.queryInfoStore.Get(queryID, &queryInfo); err != nil {
 		return nil, ErrResourceNotFound
 	}
 
 	queryInfo.Cancelled = true
 	queryInfo.Status = QueryStatusCancelled
 	queryInfo.CompletionTime = time.Now().UTC()
+	stores.queryInfoStore.Put(queryID, &queryInfo)
 
 	return map[string]interface{}{
 		"CancellationMessage": "Query has been cancelled",
@@ -236,56 +237,47 @@ func (s *Service) extractParameters(queryString string) []map[string]interface{}
 }
 
 // GetQueryStatus returns the status of a query.
-func (s *Service) GetQueryStatus(queryID string) (*QueryInfo, error) {
-	s.queryMutex.RLock()
-	defer s.queryMutex.RUnlock()
+func (s *Service) GetQueryStatus(ctx context.Context, reqCtx *request.RequestContext, queryID string) (*QueryInfo, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
 
-	queryInfo, exists := s.runningQueries[queryID]
-	if !exists {
+	var queryInfo QueryInfo
+	if err := stores.queryInfoStore.Get(queryID, &queryInfo); err != nil {
 		return nil, ErrResourceNotFound
 	}
 
-	return queryInfo, nil
+	return &queryInfo, nil
 }
 
 // ListQueryResults returns the results of a completed query.
 func (s *Service) ListQueryResults(ctx context.Context, reqCtx *request.RequestContext, queryID string) (*QueryResult, error) {
-	s.queryMutex.RLock()
-	queryInfo, exists := s.runningQueries[queryID]
-	if !exists {
-		s.queryMutex.RUnlock()
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	var queryInfo QueryInfo
+	if err := stores.queryInfoStore.Get(queryID, &queryInfo); err != nil {
 		return nil, ErrResourceNotFound
 	}
-	status := queryInfo.Status
-	var cachedResult *QueryResult
-	var cachedRows []map[string]interface{}
-	if queryInfo.CachedResult != nil {
-		cachedResult = &QueryResult{
-			QueryID:    queryInfo.CachedResult.QueryID,
-			Rows:       queryInfo.CachedResult.Rows,
-			ColumnInfo: queryInfo.CachedResult.ColumnInfo,
-		}
-	} else if queryInfo.CachedRows != nil {
-		cachedRows = make([]map[string]interface{}, len(queryInfo.CachedRows))
-		copy(cachedRows, queryInfo.CachedRows)
-	}
-	s.queryMutex.RUnlock()
 
-	if status != QueryStatusSucceeded {
+	if queryInfo.Status != QueryStatusSucceeded {
 		return nil, fmt.Errorf("query not completed")
 	}
 
-	if cachedResult != nil {
-		return cachedResult, nil
+	if queryInfo.CachedResult != nil {
+		return queryInfo.CachedResult, nil
 	}
 
-	if cachedRows == nil {
+	if queryInfo.CachedRows == nil {
 		return nil, fmt.Errorf("query result not found")
 	}
 
 	result := &QueryResult{
 		QueryID:    queryID,
-		Rows:       cachedRows,
+		Rows:       queryInfo.CachedRows,
 		ColumnInfo: []ColumnInfo{},
 	}
 	return result, nil

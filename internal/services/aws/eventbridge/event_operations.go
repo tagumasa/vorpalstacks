@@ -2,6 +2,7 @@ package eventbridge
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -15,6 +16,7 @@ import (
 	"vorpalstacks/internal/server/eventbus"
 	"vorpalstacks/internal/services/aws/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
+	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -173,13 +175,14 @@ func (s *EventsService) deliverEventWithStore(ctx context.Context, region string
 			}
 
 			if s.bus != nil {
-				s.bus.Publish(context.Background(), &eventbus.EventBridgeDeliveryEvent{
+				ebEvt := &eventbus.EventBridgeDeliveryEvent{
 					RuleARN:   rule.ARN,
 					TargetID:  targetCopy.ID,
 					TargetARN: targetCopy.ARN,
 					Input:     payloadBytes,
-					Region:    region,
-				})
+				}
+				ebEvt.Region = region
+				s.bus.Publish(context.Background(), ebEvt)
 			} else {
 				targetWg.Add(1)
 				select {
@@ -604,6 +607,14 @@ func (s *EventsService) deliverToTarget(ctx context.Context, region string, even
 		s.deliverToSNS(ctx, region, target.ARN, payloadBytes)
 	case "logs":
 		s.deliverToCloudWatchLogs(ctx, region, event.ID, target.ARN, payloadBytes)
+	case "states":
+		s.deliverToStepFunctions(ctx, region, target.ARN, payloadBytes)
+	case "kinesis":
+		s.deliverToKinesis(ctx, region, target.ARN, payloadBytes)
+	case "firehose":
+		s.deliverToFirehose(ctx, region, target.ARN, payloadBytes)
+	case "ecs":
+		s.deliverToECS(ctx, region, target.ARN, payloadBytes)
 	default:
 		logs.Warn("target type not yet implemented, event not delivered",
 			logs.String("targetType", targetType),
@@ -622,6 +633,14 @@ func (s *EventsService) dispatchToTarget(ctx context.Context, region string, eve
 		s.deliverToSNS(ctx, region, target.ARN, payload)
 	case "logs":
 		s.deliverToCloudWatchLogs(ctx, region, event.ID, target.ARN, payload)
+	case "states":
+		s.deliverToStepFunctions(ctx, region, target.ARN, payload)
+	case "kinesis":
+		s.deliverToKinesis(ctx, region, target.ARN, payload)
+	case "firehose":
+		s.deliverToFirehose(ctx, region, target.ARN, payload)
+	case "ecs":
+		s.deliverToECS(ctx, region, target.ARN, payload)
 	default:
 		logs.Warn("target type not yet implemented, event not delivered",
 			logs.String("targetType", targetType),
@@ -664,7 +683,7 @@ func (s *EventsService) deliverToLambda(ctx context.Context, region string, even
 		return
 	}
 
-	statusCode, result, err := s.lambdaInvoker.InvokeForGateway(ctx, functionName, payload)
+	statusCode, result, err := s.lambdaInvoker.InvokeForGateway(ctx, targetArn, payload)
 	if err != nil {
 		logs.Error("failed to invoke Lambda function",
 			logs.String("eventId", eventID),
@@ -775,19 +794,6 @@ func (s *EventsService) extractValueByPath(payload map[string]interface{}, path 
 }
 
 func (s *EventsService) deliverToSQS(ctx context.Context, region string, arnStr string, payload []byte) {
-	if s.bus != nil {
-		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, arnStr, "sqs", "events.amazonaws.com", "sqs:SendMessage", arnStr)
-		if evalErr != nil {
-			logs.Warn("resource policy evaluation failed for SQS target, dropping delivery",
-				logs.String("targetArn", arnStr),
-				logs.String("error", evalErr.Error()))
-			return
-		}
-		if !allowed {
-			return
-		}
-	}
-
 	sqsStore, err := s.getSQSStoreForRegion(region)
 	if err != nil {
 		logs.Warn("SQS store not available, skipping SQS delivery",
@@ -803,12 +809,32 @@ func (s *EventsService) deliverToSQS(ctx context.Context, region string, arnStr 
 		return
 	}
 
-	queueURL := fmt.Sprintf("https://sqs.%s.amazonaws.com/%s/%s", region, s.accountID, queueName)
+	queue, qErr := sqsStore.GetQueueByName(queueName)
+	if qErr != nil {
+		logs.Warn("queue not found for SQS delivery",
+			logs.String("arn", arnStr),
+			logs.String("queueName", queueName),
+			logs.String("error", qErr.Error()))
+		return
+	}
+
+	if s.bus != nil {
+		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queue.ARN, "sqs", "events.amazonaws.com", "sqs:SendMessage", queue.ARN)
+		if evalErr != nil {
+			logs.Warn("resource policy evaluation failed for SQS target, dropping delivery",
+				logs.String("targetArn", arnStr),
+				logs.String("error", evalErr.Error()))
+			return
+		}
+		if !allowed {
+			return
+		}
+	}
 
 	message := &sqsstore.Message{
 		Body: string(payload),
 	}
-	if _, err := sqsStore.SendMessage(queueURL, message); err != nil {
+	if _, err := sqsStore.SendMessage(queue.URL, message); err != nil {
 		logs.Error("Failed to deliver event to SQS",
 			logs.String("queue", queueName),
 			logs.String("error", err.Error()))
@@ -888,9 +914,9 @@ func (s *EventsService) deliverToCloudWatchLogs(ctx context.Context, region stri
 		LogEvents: []eventbus.LogEntry{
 			{Timestamp: time.Now().UnixMilli(), Message: string(payload)},
 		},
-		Region:    region,
-		AccountID: s.accountID,
 	}
+	evt.Region = region
+	evt.AccountID = s.accountID
 
 	if err := s.bus.Publish(ctx, evt); err != nil {
 		logs.Error("Failed to deliver event to CloudWatch Logs",
@@ -902,6 +928,108 @@ func (s *EventsService) deliverToCloudWatchLogs(ctx context.Context, region stri
 	logs.Debug("Event delivered to CloudWatch Logs successfully",
 		logs.String("logGroup", logGroup),
 		logs.String("logStream", logStream))
+}
+
+func (s *EventsService) deliverToStepFunctions(ctx context.Context, region string, targetArn string, payload []byte) {
+	if s.bus == nil {
+		logs.Warn("event bus not configured, skipping Step Functions delivery",
+			logs.String("arn", targetArn))
+		return
+	}
+
+	_, _, smRegion, _, _ := arnutil.SplitARN(targetArn)
+	if smRegion == "" {
+		smRegion = region
+	}
+
+	evt := &eventbus.StepFunctionsStartExecutionEvent{
+		StateMachineArn: targetArn,
+		Input:           string(payload),
+	}
+	evt.Region = smRegion
+	evt.AccountID = s.accountID
+	if err := s.bus.Publish(ctx, evt); err != nil {
+		logs.Error("failed to publish Step Functions start event",
+			logs.String("targetArn", targetArn),
+			logs.Err(err))
+		return
+	}
+
+	logs.Debug("event delivered to Step Functions successfully",
+		logs.String("targetArn", targetArn))
+}
+
+func (s *EventsService) deliverToKinesis(ctx context.Context, region string, targetArn string, payload []byte) {
+	_, _, kRegion, _, resource := arnutil.SplitARN(targetArn)
+	if kRegion == "" {
+		kRegion = region
+	}
+
+	streamName := resource
+	if idx := strings.Index(resource, "stream/"); idx != -1 {
+		streamName = resource[idx+len("stream/"):]
+	}
+
+	kinesisStore, err := s.getKinesisStoreForRegion(kRegion)
+	if err != nil {
+		logs.Warn("Kinesis store not available, skipping Kinesis delivery",
+			logs.String("arn", targetArn),
+			logs.Err(err))
+		return
+	}
+
+	shards, err := kinesisStore.ListShards(streamName, nil, "", 100)
+	if err != nil {
+		logs.Error("failed to list shards for Kinesis delivery",
+			logs.String("stream", streamName),
+			logs.Err(err))
+		return
+	}
+
+	if len(shards) == 0 {
+		logs.Error("no shards found in Kinesis stream",
+			logs.String("stream", streamName))
+		return
+	}
+
+	var openShard *kinesisstore.Shard
+	for _, shard := range shards {
+		if shard.SequenceNumberRange == nil || shard.SequenceNumberRange.EndingSequenceNumber == "" {
+			openShard = shard
+			break
+		}
+	}
+	if openShard == nil {
+		logs.Warn("all shards are closed in Kinesis stream, writing to last shard",
+			logs.String("stream", streamName))
+		openShard = shards[len(shards)-1]
+	}
+
+	partitionKey := fmt.Sprintf("eventbridge-%s", generateEventID())
+	_, err = kinesisStore.PutRecord(streamName, openShard.ShardID, partitionKey, base64.StdEncoding.EncodeToString(payload))
+	if err != nil {
+		logs.Error("failed to put record to Kinesis stream",
+			logs.String("stream", streamName),
+			logs.String("shard", openShard.ShardID),
+			logs.Err(err))
+		return
+	}
+
+	logs.Debug("event delivered to Kinesis successfully",
+		logs.String("stream", streamName),
+		logs.String("shard", openShard.ShardID))
+}
+
+func (s *EventsService) deliverToFirehose(ctx context.Context, region string, targetArn string, payload []byte) {
+	logs.Warn("Firehose target delivery is not yet implemented",
+		logs.String("targetArn", targetArn),
+		logs.String("region", region))
+}
+
+func (s *EventsService) deliverToECS(ctx context.Context, region string, targetArn string, payload []byte) {
+	logs.Warn("ECS target delivery is not yet implemented",
+		logs.String("targetArn", targetArn),
+		logs.String("region", region))
 }
 
 // TestEventPattern tests whether an event pattern matches a given event.

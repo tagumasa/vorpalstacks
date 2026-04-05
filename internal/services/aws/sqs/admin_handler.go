@@ -7,7 +7,6 @@ import (
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/sqs"
 	sqsconnect "vorpalstacks/internal/pb/aws/sqs/sqsconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
@@ -15,29 +14,24 @@ import (
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 
+// AdminHandler implements the SQS gRPC-Web admin console handler. It delegates
+// to the shared SQSService to ensure the same per-region cached stores are used
+// as the HTTP API handlers.
 type AdminHandler struct {
 	sqsconnect.UnimplementedSQSServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
-	baseURL        string
+	service *SQSService
 }
 
 var _ sqsconnect.SQSServiceHandler = (*AdminHandler)(nil)
 
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId, baseURL string) *AdminHandler {
-	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
-		baseURL:        baseURL,
-	}
+// NewAdminHandler creates a new SQS admin console handler backed by the given
+// service instance.
+func NewAdminHandler(svc *SQSService) *AdminHandler {
+	return &AdminHandler{service: svc}
 }
 
 func (h *AdminHandler) getSQSStoreByRegion(region string) (sqsstore.SQSStoreInterface, error) {
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return sqsstore.NewSQSStore(regionStorage, h.accountId, region, h.baseURL), nil
+	return h.service.GetStoreForRegion(region)
 }
 
 func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.ListQueuesRequest]) (*connect.Response[pb.ListQueuesResult], error) {

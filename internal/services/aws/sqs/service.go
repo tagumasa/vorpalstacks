@@ -2,6 +2,7 @@
 package sqs
 
 import (
+	"fmt"
 	"sync"
 
 	appconfig "vorpalstacks/internal/config"
@@ -14,9 +15,10 @@ import (
 
 // SQSService provides SQS operations for managing queues and messages.
 type SQSService struct {
-	storage   storage.BasicStorage
-	accountID string
-	stores    sync.Map
+	storage        storage.BasicStorage
+	storageManager *storage.RegionStorageManager
+	accountID      string
+	stores         sync.Map
 }
 
 // NewSQSService creates a new SQS service instance.
@@ -25,6 +27,27 @@ func NewSQSService(store storage.BasicStorage, accountID string) *SQSService {
 		storage:   store,
 		accountID: accountID,
 	}
+}
+
+// SetStorageManager injects the region storage manager for admin console access.
+func (s *SQSService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
+// GetStoreForRegion returns the cached SQS store for the given region,
+// creating one if not already cached. Used by the admin console to ensure a
+// single store instance per region.
+func (s *SQSService) GetStoreForRegion(region string) (sqsstore.SQSStoreInterface, error) {
+	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (sqsstore.SQSStoreInterface, error) {
+		if s.storageManager == nil {
+			return nil, fmt.Errorf("storage manager not set")
+		}
+		rs, err := s.storageManager.GetStorage(region)
+		if err != nil {
+			return nil, err
+		}
+		return sqsstore.NewSQSStore(rs, s.accountID, region, appconfig.BaseURL()), nil
+	})
 }
 
 // NewSQSServiceWithStore creates a new SQS service instance with a pre-configured store.

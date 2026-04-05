@@ -23,9 +23,11 @@ import (
 	"vorpalstacks/internal/services/aws/common/request"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	"vorpalstacks/internal/store/aws/common"
+	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/naming"
 )
 
@@ -157,8 +159,17 @@ func (s *LambdaService) SetSQSStore(sqss *storesqs.SQSStore) {
 	s.esmPoller.sqsStore = sqss
 }
 
+// SetKinesisStore injects a Kinesis store used by the ESM poller to read
+// records from source streams. Must be called before StartESMPoller.
+func (s *LambdaService) SetKinesisStore(ks kinesisstore.KinesisStoreInterface) {
+	if s.esmPoller == nil {
+		s.esmPoller = newESMPoller(0, 0, nil)
+	}
+	s.esmPoller.kinesisStore = ks
+}
+
 // StartESMPoller starts the background ESM polling goroutine. It creates
-// an EventSourceStore for the configured region and begins polling all
+// an EventSourceStore for each configured region and begins polling all
 // enabled SQS event source mappings. Safe to call multiple times.
 func (s *LambdaService) StartESMPoller(ctx context.Context) {
 	if s.esmPoller == nil {
@@ -168,6 +179,7 @@ func (s *LambdaService) StartESMPoller(ctx context.Context) {
 	s.esmPoller.lambdaSvc = s
 	s.esmPoller.accountID = s.accountID
 	s.esmPoller.region = s.region
+	s.esmPoller.storageManager = s.storageManager
 	s.esmPoller.Start(ctx)
 }
 
@@ -609,14 +621,15 @@ func (s *LambdaService) writeLambdaLogs(functionName, version, stdout, stderr, r
 	})
 
 	if s.bus != nil {
-		s.bus.Publish(context.Background(), &eventbus.LambdaLogWriteEvent{
+		logEvt := &eventbus.LambdaLogWriteEvent{
 			FunctionName: functionName,
 			Version:      version,
 			LogGroup:     logGroupName,
 			LogStream:    streamName,
 			LogEvents:    busEvents,
-			Region:       region,
-		})
+		}
+		logEvt.Region = region
+		s.bus.Publish(context.Background(), logEvt)
 		return
 	}
 
@@ -655,15 +668,25 @@ func (s *LambdaService) writeLambdaLogsDirect(logGroupName, logStreamName string
 	}
 }
 
-// InvokeForGateway invokes a Lambda function by name for API Gateway integration.
-// Returns the HTTP status code, response payload, and any error.
-func (s *LambdaService) InvokeForGateway(ctx context.Context, functionName string, payload []byte) (int64, []byte, error) {
-	store := lambdastore.NewFunctionStore(s.getRegionalStorage(s.region), s.accountID, s.region)
+// InvokeForGateway invokes a Lambda function for cross-service integration.
+// Accepts either a bare function name or a full Lambda ARN. When an ARN is
+// provided, both the region and function name are extracted from it;
+// otherwise the constructor region is used as a fallback.
+func (s *LambdaService) InvokeForGateway(ctx context.Context, functionRef string, payload []byte) (int64, []byte, error) {
+	region := s.region
+	functionName := functionRef
+	if strings.HasPrefix(functionRef, "arn:") {
+		if _, _, arnRegion, _, _ := svcarn.SplitARN(functionRef); arnRegion != "" {
+			region = arnRegion
+		}
+		functionName = svcarn.ExtractFunctionNameFromARN(functionRef)
+	}
+	store := lambdastore.NewFunctionStore(s.getRegionalStorage(region), s.accountID, region)
 	function, ver, _, err := s.resolveQualifier(store, functionName, "")
 	if err != nil {
 		return 0, nil, err
 	}
-	result, err := s.invokeFunction(function, ver, store, s.region, payload)
+	result, err := s.invokeFunction(function, ver, store, region, payload)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -673,9 +696,15 @@ func (s *LambdaService) InvokeForGateway(ctx context.Context, functionName strin
 	return result.StatusCode, result.Payload, nil
 }
 
-// GetFunctionStore returns a new FunctionStore for the Lambda service.
+// GetFunctionStore returns a new FunctionStore for the Lambda service
+// using the constructor region.
 func (s *LambdaService) GetFunctionStore() *lambdastore.FunctionStore {
 	return lambdastore.NewFunctionStore(s.getRegionalStorage(s.region), s.accountID, s.region)
+}
+
+// GetFunctionStoreForRegion returns a FunctionStore for the specified region.
+func (s *LambdaService) GetFunctionStoreForRegion(region string) *lambdastore.FunctionStore {
+	return lambdastore.NewFunctionStore(s.getRegionalStorage(region), s.accountID, region)
 }
 
 // GetFunctionPolicy retrieves the resource-based policy for a Lambda function.

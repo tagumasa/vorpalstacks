@@ -17,12 +17,12 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sns "vorpalstacks/internal/store/aws/sns"
 	sqs "vorpalstacks/internal/store/aws/sqs"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/pkg/vtl"
 )
 
 var (
 	lambdaFunctionRegex = regexp.MustCompile(`functions/(.+?)/invocations`)
-	lambdaArnRegex      = regexp.MustCompile(`function:(.+)$`)
 	sqsPathRegex        = regexp.MustCompile(`sqs:path/[^/]+/([^/]+)`)
 	sqsActionRegex      = regexp.MustCompile(`sqs:action/[^/]+/([^/]+)`)
 	snsPathRegex        = regexp.MustCompile(`sns:path/[^/]+/([^/]+)`)
@@ -90,7 +90,7 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 		}
 	}
 
-	functionName, err := extractFunctionNameFromURI(req.URI)
+	functionRef, err := extractFunctionRefFromURI(req.URI)
 	if err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Invalid Lambda URI: %v", err),
@@ -134,7 +134,7 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 		}
 	}
 
-	statusCode, payload, err := e.lambdaInvoker.InvokeForGateway(ctx, functionName, eventJSON)
+	statusCode, payload, err := e.lambdaInvoker.InvokeForGateway(ctx, functionRef, eventJSON)
 	if err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Lambda invocation failed: %v", err),
@@ -216,6 +216,7 @@ func (e *AWSExecutor) buildLambdaProxyEvent(req *IntegrationRequest) *LambdaProx
 			"requestId":    requestID,
 			"resourcePath": req.Path,
 			"stage":        req.StageName,
+			"region":       e.region,
 			"http": map[string]interface{}{
 				"method":    req.Method,
 				"path":      req.Path,
@@ -337,17 +338,10 @@ func applyResponseTemplate(tmpl string, responseBody []byte, req *IntegrationReq
 	return []byte(result), nil
 }
 
-func extractFunctionNameFromURI(uri string) (string, error) {
+func extractFunctionRefFromURI(uri string) (string, error) {
 	matches := lambdaFunctionRegex.FindStringSubmatch(uri)
 	if len(matches) < 2 {
 		return "", fmt.Errorf("invalid Lambda URI format")
-	}
-
-	functionArn := matches[1]
-
-	matches = lambdaArnRegex.FindStringSubmatch(functionArn)
-	if len(matches) < 2 {
-		return functionArn, nil
 	}
 
 	return matches[1], nil
@@ -646,7 +640,7 @@ func (e *AWSExecutor) executeSNS(ctx context.Context, req *IntegrationRequest) (
 		}
 	}
 
-	topicName, err := extractTopicNameFromURI(req.URI)
+	topicName, topicRegion, err := extractTopicFromURI(req.URI)
 	if err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Invalid SNS URI: %v", err),
@@ -655,7 +649,10 @@ func (e *AWSExecutor) executeSNS(ctx context.Context, req *IntegrationRequest) (
 		}
 	}
 
-	topicArn := fmt.Sprintf("arn:aws:sns:%s:%s:%s", e.region, e.accountID, topicName)
+	if topicRegion == "" {
+		topicRegion = e.region
+	}
+	topicArn := fmt.Sprintf("arn:aws:sns:%s:%s:%s", topicRegion, e.accountID, topicName)
 
 	action := req.QueryParams["Action"]
 	if action == "" {
@@ -717,13 +714,18 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 	}
 
 	if e.bus != nil {
-		e.bus.Publish(context.Background(), &eventbus.SNSDeliveryEvent{
+		_, _, snsRegion, _, _ := svcarn.SplitARN(topicArn)
+		if snsRegion == "" {
+			snsRegion = e.region
+		}
+		snsEvt := &eventbus.SNSDeliveryEvent{
 			TopicARN:  topicArn,
 			MessageID: messageID,
 			Message:   message,
 			Subject:   req.Headers["Subject"],
-			Region:    e.region,
-		})
+		}
+		snsEvt.Region = snsRegion
+		e.bus.Publish(context.Background(), snsEvt)
 	} else {
 		go func() {
 			defer func() {
@@ -761,15 +763,15 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 	}, nil
 }
 
-func extractTopicNameFromURI(uri string) (string, error) {
+func extractTopicFromURI(uri string) (topicName, region string, err error) {
 	matches := snsPathRegex.FindStringSubmatch(uri)
 	if len(matches) < 2 {
 		matches = snsActionRegex.FindStringSubmatch(uri)
 		if len(matches) < 2 {
-			return "", fmt.Errorf("invalid SNS URI format: %s", uri)
+			return "", "", fmt.Errorf("invalid SNS URI format: %s", uri)
 		}
 	}
-	return matches[1], nil
+	return matches[1], "", nil
 }
 
 func (e *AWSExecutor) deliverToSNSSubscribers(topicArn string, notification *sns.Message) {
@@ -806,7 +808,11 @@ func (e *AWSExecutor) deliverToSQSSubscriber(queueArn string, notification *sns.
 		return
 	}
 	queueName := parts[5]
-	queueURL := fmt.Sprintf("https://sqs.%s.amazonaws.com/%s/%s", e.region, e.accountID, queueName)
+	queueRegion := parts[3]
+	if queueRegion == "" {
+		queueRegion = e.region
+	}
+	queueURL := fmt.Sprintf("https://sqs.%s.amazonaws.com/%s/%s", queueRegion, e.accountID, queueName)
 
 	body, err := json.Marshal(map[string]interface{}{
 		"Type":      "Notification",
@@ -854,11 +860,6 @@ func (e *AWSExecutor) deliverToLambdaSubscriber(functionArn string, notification
 		return
 	}
 
-	functionName, err := extractFunctionNameFromURI(functionArn)
-	if err != nil {
-		return
-	}
-
 	event := map[string]interface{}{
 		"Records": []interface{}{
 			map[string]interface{}{
@@ -879,8 +880,5 @@ func (e *AWSExecutor) deliverToLambdaSubscriber(functionArn string, notification
 
 	eventJSON, _ := json.Marshal(event)
 	ctx := context.Background()
-	_, _, err = e.lambdaInvoker.InvokeForGateway(ctx, functionName, eventJSON)
-	if err != nil {
-		// Log the error but don't fail - async delivery
-	}
+	_, _, _ = e.lambdaInvoker.InvokeForGateway(ctx, functionArn, eventJSON)
 }

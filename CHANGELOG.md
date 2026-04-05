@@ -4,6 +4,41 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-04-05
+
+### Added
+- AppSync service (GraphQL API v1, Event API v2) with full CRUD for APIs, data sources, resolvers, functions, types, schemas, API keys, caches, domain names, and merged APIs
+- AppSync GraphQL engine with VTL resolver execution, introspection, pipeline resolvers, and `$ctx` context variables (`$ctx.args`, `$ctx.source`, `$ctx.identity`, `$ctx.info`, `$ctx.stash`, etc.)
+- AppSync WebSocket server for real-time subscriptions and mutations
+- AppSync request parser supporting both v1 (GraphQL) and v2 (Event API) protocols
+- VTL engine AppSync context extensions (`pkg/vtl/appsync_context.go`, `appsync_util.go`)
+- WAF gRPC-Web proto definitions and generated code
+- Gremlin parser enhancements: comprehensive AST, lexer improvements, new filter steps (`where`, `has`, `select`, `order`, `group`, `dedup`, `path`), and source steps (`V`, `E`, `addV`, `addE`)
+- Event bus resource extractors for AppSync and Neptune (dispatcher audit logging)
+- Integration test suite (1748 lines) covering cross-service event flows: EventBridge→Lambda/SQS/SNS/Kinesis/StepFunctions, ESM SQS/Kinesis→Lambda, CloudWatch Alarm→SNS/Lambda/StepFunctions, Scheduler→Lambda/SQS/SNS/StepFunctions, SFN Task→Lambda/SQS/SNS, S3 Notification→Lambda
+- SDK test service registry with category support (SDK, WebSocket, Integration)
+- SDK tests for AppSync (2135 lines) and AppSync WebSocket (740 lines)
+- Additional SDK test coverage for DynamoDB (backup), KMS, Lambda, and other services
+
+### Changed
+- Proto packages renamed to match AWS service naming conventions (`rds→neptune`, `email→sesv2`, `states→sfn`, `monitoring→cloudwatch`, `events→cloudwatchevents`, `logs→cloudwatchlogs`, etc.)
+- Neptune admin handler expanded with full DescribeDBClusters/Instances and gRPC-Web management operations; proto migrated from RDS package
+- Step Functions now subscribes to event bus for cross-service start execution events (EventBridge, Scheduler, CloudWatch Alarms); added Map state `ItemProcessor` and enhanced parallel execution
+- EventBridge refactored to multi-region store support (`sync.Map` per-region stores); added Kinesis stream target delivery
+- Lambda ESM poller enhanced with Kinesis stream source support (shard iterator, checkpoint tracking)
+- CloudWatch alarm evaluator extended to multi-region evaluation with TEST_MODE 1-second tick interval
+- EventBridge Scheduler engine enhanced with Step Functions target support and TEST_MODE 1-second ticker
+- SNS/SQS admin handlers refactored to delegate to shared service instances instead of owning storage
+- SNS publish operations now resolve SNS topic ARN components for event bus delivery
+- AppSync ARN builder added to `internal/utils/aws/arn/builder_services.go`
+
+### Documentation
+- Updated README files (English, Japanese, Chinese) with AppSync service and updated test counts
+- Updated SDK test README with integration test documentation
+- Updated ACM proto with expanded field coverage
+
+## [0.0.6] - 2026-04-04
+
 ### Added
 - Event bus system (`internal/server/eventbus/`) with Pebble outbox store, IAM role resolver, policy evaluator, and subscription management for cross-service event routing
 - HTTP request classifier (`internal/server/http/classifier/`) replacing legacy ServiceRouter — classifies requests by protocol (REST-XML, REST-JSON, AWS JSON, Query, CBOR) and service

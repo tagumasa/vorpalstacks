@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 31 AWS services with 1897 test cases
+- **Comprehensive Coverage**: Tests for 31 AWS services with 1940 test cases (1916 SDK + 24 cross-service integration)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -44,9 +44,10 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | STS | 39 | 100% | ✅ Perfect |
 | StepFunctions | 42 | 100% | ✅ Perfect |
 | Timestream | 44 | 100% | ✅ Perfect |
+| WAF | Removed | No longer a supported service |
 | WAFv2 | 51 | 100% | ✅ Perfect |
 
-**Overall: 1897/1897 tests passing (100%)**
+**Overall: 1916/1916 SDK tests passing (100%), 24/24 integration tests passing (3 skipped — server not implemented)**
 
 ## Prerequisites
 
@@ -192,6 +193,48 @@ func (r *TestRunner) RunServiceTests() []TestResult {
     return results
 }
 ```
+
+## Cross-Service Integration Tests
+
+In addition to per-service SDK tests, 24 cross-service integration tests verify end-to-end delivery between services. These tests create real resources via SDK, trigger cross-service connections, and verify data arrives at the destination.
+
+### Running Integration Tests
+
+```bash
+# From project root — server must be running
+./sdk-tests/tmp/sdk-tests-all -service integration -endpoint http://127.0.0.1:8080
+```
+
+### Test Matrix
+
+| Source | → Lambda | → SQS | → SNS | → Kinesis | → Step Functions |
+|--------|----------|-------|-------|-----------|------------------|
+| EventBridge | ✓ | ✓ | ✓ | ✓ | ✓ |
+| CloudWatch Alarm | ✓ | | | | ✓ |
+| CloudWatch Logs | ✓ | | | ✓ | |
+| Scheduler | ✓ | ✓ | ✓ | | ✓ |
+| Step Functions Task | ✓ | ✓ | ✓ | | |
+| S3 Notifications | ✓ | ✓ | ✓ | | |
+| SNS | ✓ | ✓ | | | |
+| ESM (SQS) | ✓ | | | | |
+| ESM (Kinesis) | ✓ | | | | |
+
+### Verification Methods
+
+| Method | Used By | What It Checks |
+|--------|---------|----------------|
+| CW Logs `/aws/lambda/<fn>` | EB/S3/CWAlarm/CWLogs/SNS→Lambda | Lambda was invoked by the source service (Docker execution writes logs) |
+| `ReceiveMessage` | EB/Scheduler/SFN/S3/SNS→SQS, EB/Scheduler→SNS→SQS | Message arrived in destination queue |
+| `GetRecords` | EB/CWLogs→Kinesis | Records written to Kinesis stream |
+| `ListExecutions` | EB/CWAlarm/Scheduler→SFN | Step Functions execution was triggered |
+| `DescribeAlarms` State | CWAlarm→Lambda/SNS/SFN | Alarm transitioned to ALARM state |
+| ESM message consumption | ESM→SQS | Messages deleted from SQS after Lambda invocation |
+
+### Skipped Tests (server not implemented)
+
+- ESM→DynamoDB Streams — DynamoDB Streams storage not implemented
+- S3→Kinesis notification — Server-side S3→Kinesis delivery not implemented
+- SFN Task→DynamoDB — DynamoDB task integration not implemented
 
 ## Adding New Tests
 

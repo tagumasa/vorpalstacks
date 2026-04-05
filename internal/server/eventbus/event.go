@@ -47,39 +47,6 @@ func (e *EventBase) EventDepth() int            { return e.Depth }
 func (e *EventBase) SetEventDepth(d int)        { e.Depth = d }
 func (e *EventBase) EventCaller() CallerContext { return e.Caller }
 
-func (e *EventBase) MarshalJSON() ([]byte, error) {
-	type Alias EventBase
-	aux := &struct {
-		Timestamp string `json:"timestamp"`
-		*Alias
-	}{
-		Timestamp: e.Timestamp.UTC().Format(time.RFC3339Nano),
-		Alias:     (*Alias)(e),
-	}
-	return json.Marshal(aux)
-}
-
-func (e *EventBase) UnmarshalJSON(data []byte) error {
-	type Alias EventBase
-	aux := &struct {
-		Timestamp string `json:"timestamp"`
-		*Alias
-	}{
-		Alias: (*Alias)(e),
-	}
-	if err := json.Unmarshal(data, aux); err != nil {
-		return err
-	}
-	if aux.Timestamp != "" {
-		t, err := time.Parse(time.RFC3339Nano, aux.Timestamp)
-		if err != nil {
-			return fmt.Errorf("eventbase: invalid timestamp %q: %w", aux.Timestamp, err)
-		}
-		e.Timestamp = t
-	}
-	return nil
-}
-
 type ServiceInvokeRequest struct {
 	EventBase
 	TargetARN         string              `json:"target_arn"`
@@ -104,7 +71,6 @@ type SNSDeliveryEvent struct {
 	Message        string `json:"message"`
 	Subject        string `json:"subject,omitempty"`
 	MessageGroupId string `json:"message_group_id,omitempty"`
-	Region         string `json:"region"`
 }
 
 func (e *SNSDeliveryEvent) EventType() string { return "sns:deliver" }
@@ -117,7 +83,6 @@ type EventBridgeDeliveryEvent struct {
 	TargetID  string `json:"target_id"`
 	TargetARN string `json:"target_arn"`
 	Input     []byte `json:"input"`
-	Region    string `json:"region"`
 }
 
 func (e *EventBridgeDeliveryEvent) EventType() string { return "events:deliver" }
@@ -129,7 +94,6 @@ type ScheduleFiredEvent struct {
 	ScheduleArn  string `json:"schedule_arn"`
 	TargetArn    string `json:"target_arn"`
 	Input        string `json:"input"`
-	Region       string `json:"region"`
 }
 
 func (e *ScheduleFiredEvent) EventType() string { return "scheduler:fired" }
@@ -142,7 +106,6 @@ type CloudWatchLogDeliveryEvent struct {
 	LogStream      string `json:"log_stream"`
 	DestinationArn string `json:"destination_arn"`
 	Payload        []byte `json:"payload"`
-	Region         string `json:"region"`
 }
 
 func (e *CloudWatchLogDeliveryEvent) EventType() string { return "logs:deliver" }
@@ -261,8 +224,6 @@ type APIGatewayAccessLogEvent struct {
 	LogGroup       string `json:"log_group"`
 	LogStream      string `json:"log_stream"`
 	FormattedLog   string `json:"formatted_log"`
-	Region         string `json:"region"`
-	AccountID      string `json:"account_id"`
 }
 
 func (e *APIGatewayAccessLogEvent) EventType() string { return "apigateway:AccessLog" }
@@ -275,8 +236,6 @@ type CloudWatchLogsPutEvent struct {
 	LogGroup  string     `json:"log_group"`
 	LogStream string     `json:"log_stream"`
 	LogEvents []LogEntry `json:"log_events"`
-	Region    string     `json:"region"`
-	AccountID string     `json:"account_id"`
 }
 
 func (e *CloudWatchLogsPutEvent) EventType() string { return "logs:PutLogEvents" }
@@ -298,10 +257,33 @@ type LambdaLogWriteEvent struct {
 	LogGroup     string     `json:"log_group"`
 	LogStream    string     `json:"log_stream"`
 	LogEvents    []LogEntry `json:"log_events"`
-	Region       string     `json:"region"`
 }
 
 func (e *LambdaLogWriteEvent) EventType() string { return "lambda:LogWrite" }
+
+// StepFunctionsStartExecutionEvent is published when EventBridge, Scheduler,
+// or CloudWatch Alarms needs to start a Step Functions execution. The SFN
+// service subscribes to this event and creates + executes the state machine
+// run asynchronously.
+type StepFunctionsStartExecutionEvent struct {
+	EventBase
+	ExecutionArn    string `json:"execution_arn"`
+	StateMachineArn string `json:"state_machine_arn"`
+	Input           string `json:"input"`
+}
+
+func (e *StepFunctionsStartExecutionEvent) EventType() string { return "states:startExecution" }
+
+// EventBridgePutEventsEvent is published when Scheduler or another service
+// needs to put events into an EventBridge event bus. The EventBridge service
+// subscribes to this event and delivers to matching rules/targets.
+type EventBridgePutEventsEvent struct {
+	EventBase
+	EventBusName string `json:"event_bus_name"`
+	Input        string `json:"input"`
+}
+
+func (e *EventBridgePutEventsEvent) EventType() string { return "events:putEvents" }
 
 // HandlerResult is returned by event handlers. StatusCode and Payload carry the
 // response for synchronous dispatch; Error indicates handler failure.

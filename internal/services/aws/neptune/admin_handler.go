@@ -6,7 +6,6 @@ import (
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/neptune"
 	neptuneconnect "vorpalstacks/internal/pb/aws/neptune/neptuneconnect"
 	svccommon "vorpalstacks/internal/services/aws/common"
@@ -15,27 +14,30 @@ import (
 
 // AdminHandler implements the Neptune Management API gRPC-Web admin console
 // handler. It exposes List/Describe operations for the Flutter management UI,
-// delegating data access to the NeptuneStore via RegionStorageManager.
+// delegating data access to the NeptuneStore via the shared NeptuneService
+// per-region cache.
 type AdminHandler struct {
 	neptuneconnect.UnimplementedNeptuneServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service   *NeptuneService
+	accountId string
 }
 
 var _ neptuneconnect.NeptuneServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Neptune admin console handler.
-func NewAdminHandler(sm *storage.RegionStorageManager, accountId string) *AdminHandler {
-	return &AdminHandler{storageManager: sm, accountId: accountId}
+// NewAdminHandler creates a new Neptune admin console handler backed by the
+// given service instance, ensuring the same per-region cached stores are used
+// as the HTTP API handlers.
+func NewAdminHandler(svc *NeptuneService, accountId string) *AdminHandler {
+	return &AdminHandler{service: svc, accountId: accountId}
 }
 
 func (h *AdminHandler) getStore(header http.Header) (*storeneptune.NeptuneStore, error) {
 	region := svccommon.GetRegionFromHeader(header)
-	rs, err := h.storageManager.GetStorage(region)
+	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, err
 	}
-	return storeneptune.NewNeptuneStore(rs), nil
+	return store.(*storeneptune.NeptuneStore), nil
 }
 
 // DescribeDBClusters returns information about DB clusters, optionally filtered
