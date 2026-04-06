@@ -147,11 +147,13 @@ func (d *DB) Dir() string {
 }
 
 func (d *DB) Stats() *GraphStats {
+	labelCounts, _ := d.GetLabelCounts()
+	relCounts, _ := d.GetRelCounts()
 	return &GraphStats{
 		NodeCount:     int64(d.nodeCount.Load()),
 		EdgeCount:     int64(d.edgeCount.Load()),
-		LabelCounts:   d.GetLabelCounts(),
-		RelCounts:     d.GetRelCounts(),
+		LabelCounts:   labelCounts,
+		RelCounts:     relCounts,
 		DiskSizeBytes: int64(d.db.Metrics().DiskSpaceUsage()),
 	}
 }
@@ -164,7 +166,7 @@ func (d *DB) CountEdges() int64 {
 	return int64(d.edgeCount.Load())
 }
 
-func (d *DB) GetLabelCounts() map[string]int64 {
+func (d *DB) GetLabelCounts() (map[string]int64, error) {
 	counts := make(map[string]int64)
 	lower := append([]byte(nil), idxLabelPrefix...)
 	upper := append([]byte(nil), idxLabelPrefix...)
@@ -174,7 +176,7 @@ func (d *DB) GetLabelCounts() map[string]int64 {
 		UpperBound: upper,
 	})
 	if err != nil {
-		return counts
+		return counts, fmt.Errorf("graphengine: GetLabelCounts iterator creation failed: %w", err)
 	}
 	defer iter.Close()
 	for iter.First(); iter.Valid(); iter.Next() {
@@ -190,12 +192,12 @@ func (d *DB) GetLabelCounts() map[string]int64 {
 		}
 	}
 	if err := iter.Error(); err != nil {
-		fmt.Fprintf(os.Stderr, "graphengine: GetLabelCounts iteration error: %v\n", err)
+		return nil, fmt.Errorf("graphengine: GetLabelCounts iteration error: %w", err)
 	}
-	return counts
+	return counts, nil
 }
 
-func (d *DB) GetRelCounts() map[string]int64 {
+func (d *DB) GetRelCounts() (map[string]int64, error) {
 	counts := make(map[string]int64)
 	lower := append([]byte(nil), idxEtypePrefix...)
 	upper := append([]byte(nil), idxEtypePrefix...)
@@ -205,7 +207,7 @@ func (d *DB) GetRelCounts() map[string]int64 {
 		UpperBound: upper,
 	})
 	if err != nil {
-		return counts
+		return counts, fmt.Errorf("graphengine: GetRelCounts iterator creation failed: %w", err)
 	}
 	defer iter.Close()
 	for iter.First(); iter.Valid(); iter.Next() {
@@ -221,9 +223,9 @@ func (d *DB) GetRelCounts() map[string]int64 {
 		}
 	}
 	if err := iter.Error(); err != nil {
-		fmt.Fprintf(os.Stderr, "graphengine: GetRelCounts iteration error: %v\n", err)
+		return nil, fmt.Errorf("graphengine: GetRelCounts iteration error: %w", err)
 	}
-	return counts
+	return counts, nil
 }
 
 // loadCounters reads persisted metadata from Pebble. If all counters are zero
@@ -273,23 +275,20 @@ func (d *DB) loadCounters() error {
 		closer.Close()
 	}
 
-	if d.nextNodeID.Load() == 0 || d.nextEdgeID.Load() == 0 {
-		d.selfHealCounters()
-		if nodeIDLoaded && loadedNodeID > d.nextNodeID.Load() {
-			d.nextNodeID.Store(loadedNodeID)
-		}
-		if edgeIDLoaded && loadedEdgeID > d.nextEdgeID.Load() {
-			d.nextEdgeID.Store(loadedEdgeID)
-		}
+	d.selfHealCounters()
+	if nodeIDLoaded && loadedNodeID > d.nextNodeID.Load() {
+		d.nextNodeID.Store(loadedNodeID)
+	}
+	if edgeIDLoaded && loadedEdgeID > d.nextEdgeID.Load() {
+		d.nextEdgeID.Store(loadedEdgeID)
 	}
 
 	return nil
 }
 
 // selfHealCounters performs a full scan of node and edge keys to reconstruct
-// the next-ID and count metadata. Called only when loadCounters detects that
-// all persisted values are zero, indicating a fresh or uncleanly closed
-// database.
+// the next-ID and count metadata. Called on every Open to guarantee correctness
+// after an unclean shutdown (crash without Close).
 func (d *DB) selfHealCounters() {
 	var maxNodeID, maxEdgeID, nodeCt, edgeCt uint64
 
@@ -373,7 +372,7 @@ func nodeKey(id NodeID) []byte {
 // nodeEndKey returns the exclusive upper bound for node key iteration.
 // Since node keys are "node/{id}", the byte after 'n' ('o') suffices.
 func nodeEndKey() []byte {
-	return append([]byte(nil), nodePrefix[0]+1)
+	return append(append([]byte(nil), nodePrefix...), 0xFF)
 }
 
 func edgeKey(id EdgeID) []byte {
@@ -382,7 +381,7 @@ func edgeKey(id EdgeID) []byte {
 
 // edgeEndKey returns the exclusive upper bound for edge key iteration.
 func edgeEndKey() []byte {
-	return append([]byte(nil), edgePrefix[0]+1)
+	return append(append([]byte(nil), edgePrefix...), 0xFF)
 }
 
 func adjOutKey(nodeID NodeID, edgeID EdgeID) []byte {
@@ -564,7 +563,29 @@ func (d *DB) AddNodeBatch(items []struct {
 	batch := d.db.NewBatch()
 	defer batch.Close()
 
+	seenUC := make(map[string]struct{})
+
 	for i, item := range items {
+		ucProps := d.getConstrainedProps(item.Labels)
+		labelSet := make(map[string]bool, len(item.Labels))
+		for _, l := range item.Labels {
+			labelSet[l] = true
+		}
+		for prop, val := range item.Props {
+			if cl, ok := ucProps[prop]; ok {
+				for _, label := range cl {
+					if !labelSet[label] {
+						continue
+					}
+					ucKeyStr := string(ucKey(label, prop, val))
+					if _, dup := seenUC[ucKeyStr]; dup {
+						return nil, fmt.Errorf("graphengine: unique constraint violation for %s.%s=%v (duplicate within batch)", label, prop, val)
+					}
+					seenUC[ucKeyStr] = struct{}{}
+				}
+			}
+		}
+
 		if err := d.enforceUniqueConstraints(item.Labels, item.Props, 0); err != nil {
 			return nil, err
 		}
@@ -650,6 +671,10 @@ func (d *DB) UpdateNode(id NodeID, props Props) error {
 	}
 
 	ucProps := d.getConstrainedProps(labels)
+
+	if err := d.enforceUniqueConstraints(labels, props, id); err != nil {
+		return err
+	}
 
 	batch := d.db.NewBatch()
 	defer batch.Close()
@@ -941,9 +966,11 @@ func (d *DB) getEdgesForNode(id NodeID, dir Direction, loadProps bool, labelFilt
 			}
 			edge := &Edge{ID: edgeID, From: id, To: targetID, Label: label}
 			if loadProps {
-				if full, err := d.GetEdge(edgeID); err == nil {
-					edge = full
+				full, err := d.GetEdge(edgeID)
+				if err != nil {
+					return nil, fmt.Errorf("graphengine: failed to load edge %d props: %w", edgeID, err)
 				}
+				edge = full
 			}
 			edges = append(edges, edge)
 		}
@@ -974,9 +1001,11 @@ func (d *DB) getEdgesForNode(id NodeID, dir Direction, loadProps bool, labelFilt
 			}
 			edge := &Edge{ID: edgeID, From: sourceID, To: id, Label: label}
 			if loadProps {
-				if full, err := d.GetEdge(edgeID); err == nil {
-					edge = full
+				full, err := d.GetEdge(edgeID)
+				if err != nil {
+					return nil, fmt.Errorf("graphengine: failed to load edge %d props: %w", edgeID, err)
 				}
+				edge = full
 			}
 			edges = append(edges, edge)
 		}
@@ -1554,46 +1583,38 @@ func (d *DB) deleteUniqueConstraintEntries(batch *pebble.Batch, labels []string,
 	})
 }
 
+// clearPrefixes lists all Pebble key prefixes in the graph schema. Used by
+// Clear to delete each range in a single operation instead of iterating
+// individual keys.
+var clearPrefixes = [][]byte{
+	nodePrefix,
+	edgePrefix,
+	adjOutPrefix,
+	adjInPrefix,
+	idxLabelPrefix,
+	idxPropPrefix,
+	idxEtypePrefix,
+	ucPrefix,
+	[]byte("meta/"),
+}
+
 func (d *DB) Clear() error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
 	}
 
-	iter, err := d.db.NewIter(nil)
-	if err != nil {
-		return fmt.Errorf("graphengine: failed to create iterator for Clear: %w", err)
-	}
-	defer iter.Close()
-
 	batch := d.db.NewBatch()
+	defer batch.Close()
 
-	count := 0
-	for iter.First(); iter.Valid(); iter.Next() {
-		batch.Delete(iter.Key(), nil)
-		count++
-		if count >= 10000 {
-			if err := d.db.Apply(batch, pebble.NoSync); err != nil {
-				batch.Close()
-				return fmt.Errorf("graphengine: failed to clear: %w", err)
-			}
-			batch.Close()
-			batch = d.db.NewBatch()
-			count = 0
-		}
+	for _, prefix := range clearPrefixes {
+		end := append([]byte(nil), prefix...)
+		end = append(end, 0xFF)
+		batch.DeleteRange(prefix, end, nil)
 	}
 
-	if err := iter.Error(); err != nil {
-		batch.Close()
-		return fmt.Errorf("graphengine: Clear iteration error: %w", err)
+	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
+		return fmt.Errorf("graphengine: failed to clear: %w", err)
 	}
-
-	if count > 0 {
-		if err := d.db.Apply(batch, pebble.NoSync); err != nil {
-			batch.Close()
-			return fmt.Errorf("graphengine: failed to clear: %w", err)
-		}
-	}
-	batch.Close()
 
 	d.nodeCount.Store(0)
 	d.edgeCount.Store(0)
@@ -1627,6 +1648,43 @@ func (d *DB) CreateUniqueConstraint(label, prop string) error {
 
 	if err := d.db.Set(key, nil, pebble.NoSync); err != nil {
 		return fmt.Errorf("graphengine: failed to create unique constraint: %w", err)
+	}
+
+	ids, err := d.FindByLabel(label)
+	if err != nil {
+		return fmt.Errorf("graphengine: failed to backfill unique constraint: %w", err)
+	}
+
+	batch := d.db.NewBatch()
+	defer batch.Close()
+
+	for _, id := range ids {
+		node, err := d.GetNode(id)
+		if err != nil {
+			continue
+		}
+		val, ok := node.Props[prop]
+		if !ok {
+			continue
+		}
+		ucKey := ucKey(label, prop, val)
+		existingVal, closer, err := d.db.Get(ucKey)
+		if closer != nil {
+			closer.Close()
+		}
+		if err == nil && existingVal != nil {
+			existingNodeID := decodeNodeID(existingVal)
+			if existingNodeID != id {
+				batch.Close()
+				return fmt.Errorf("graphengine: unique constraint violation during backfill for %s.%s=%v (existing node %d)", label, prop, val, existingNodeID)
+			}
+			continue
+		}
+		batch.Set(ucKey, encodeNodeID(id), nil)
+	}
+
+	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
+		return fmt.Errorf("graphengine: failed to backfill unique constraint index: %w", err)
 	}
 
 	return nil

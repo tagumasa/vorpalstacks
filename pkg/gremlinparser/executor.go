@@ -167,6 +167,11 @@ func executeStatement(ec *ExecContext, stmt *Statement) ([]any, error) {
 			if err != nil {
 				return nil, err
 			}
+			traversers, err = exec(ec, traversers, step)
+			if err != nil {
+				return nil, err
+			}
+			continue
 		}
 
 		traversers, err = exec(ec, traversers, step)

@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"vorpalstacks/internal/core/logs"
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 	"vorpalstacks/internal/services/aws/common/request"
 )
@@ -15,7 +18,6 @@ import (
 // graph from the specified source location.
 func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
 	body := req.Body
 	var params struct {
 		Source      string `json:"source"`
@@ -34,18 +36,26 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 		return nil, missingParameter("format")
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
 	loadId := generateQueryID()
 
 	job := &pb.LoaderJob{
 		LoadId:     loadId,
-		Status:     "LOAD_COMPLETED",
+		Status:     "LOAD_IN_PROGRESS",
 		Source:     params.Source,
 		Format:     params.Format,
 		SubmitTime: timestamppb.Now(),
 	}
-	if err := s.store.CreateLoaderJob(job); err != nil {
+	if err := store.CreateLoaderJob(job); err != nil {
 		return nil, err
 	}
+
+	region := reqCtx.GetRegion()
+	go s.runLoaderJob(region, loadId, params.Source, params.Format)
 
 	return map[string]interface{}{
 		"status": "200",
@@ -59,13 +69,17 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 // job.
 func (s *NeptuneDataService) GetLoaderJobStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
 	loadId := getPathParam(req, "loadId")
 	if loadId == "" {
 		return nil, missingParameter("loadId")
 	}
 
-	job, err := s.store.GetLoaderJob(loadId)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
+	job, err := store.GetLoaderJob(loadId)
 	if err != nil || job == nil {
 		return nil, bulkLoadNotFound(loadId)
 	}
@@ -87,18 +101,29 @@ func (s *NeptuneDataService) GetLoaderJobStatus(ctx context.Context, reqCtx *req
 // optionally including queued loads.
 func (s *NeptuneDataService) ListLoaderJobs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
-	_ = request.GetBoolParam(req.Parameters, "includeQueuedLoads")
-	_ = request.GetIntParam(req.Parameters, "limit")
+	includeQueuedLoads := request.GetBoolParam(req.Parameters, "includeQueuedLoads")
+	limit := request.GetIntParam(req.Parameters, "limit")
 
-	jobs, err := s.store.ListLoaderJobs()
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
+	jobs, err := store.ListLoaderJobs()
 	if err != nil {
 		return nil, err
 	}
 
 	loadIds := make([]string, 0, len(jobs))
 	for _, job := range jobs {
+		if !includeQueuedLoads && job.GetStatus() == "LOAD_QUEUED" {
+			continue
+		}
 		loadIds = append(loadIds, job.GetLoadId())
+	}
+
+	if limit > 0 && len(loadIds) > limit {
+		loadIds = loadIds[:limit]
 	}
 
 	return map[string]interface{}{
@@ -113,21 +138,73 @@ func (s *NeptuneDataService) ListLoaderJobs(ctx context.Context, reqCtx *request
 // status as cancelled.
 func (s *NeptuneDataService) CancelLoaderJob(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
 	loadId := getPathParam(req, "loadId")
 	if loadId == "" {
 		return nil, missingParameter("loadId")
 	}
 
-	job, err := s.store.GetLoaderJob(loadId)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
+	job, err := store.GetLoaderJob(loadId)
 	if err != nil || job == nil {
 		return nil, bulkLoadNotFound(loadId)
 	}
+	st := job.GetStatus()
+	if st == "LOAD_COMPLETED" || st == "LOAD_FAILED" || st == "CANCELLED" {
+		return nil, badRequest(fmt.Sprintf("cannot cancel loader job in terminal state: %s", st))
+	}
 	job.Status = "CANCELLED"
 	job.EndTime = timestamppb.Now()
-	_ = s.store.UpdateLoaderJob(job)
+	_ = store.UpdateLoaderJob(job)
 
 	return map[string]interface{}{
 		"status": "200",
 	}, nil
+}
+
+// runLoaderJob executes a bulk load job asynchronously. For S3 sources, the job
+// fails immediately because external S3 access is unavailable in standalone mode.
+// For local file sources (file://), the job attempts to read and parse the file.
+// The job status is persisted to Pebble storage on completion or failure.
+func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string) {
+	time.Sleep(100 * time.Millisecond)
+
+	store, err := s.GetStoreForRegion(region)
+	if err != nil {
+		logs.Warn("loader job failed to get store", logs.String("loadId", loadID), logs.Err(err))
+		return
+	}
+
+	job, err := store.GetLoaderJob(loadID)
+	if err != nil || job == nil {
+		return
+	}
+
+	if job.GetStatus() == "CANCELLED" {
+		return
+	}
+
+	var loadErr string
+
+	if strings.HasPrefix(source, "s3://") {
+		loadErr = fmt.Sprintf("source %s is not accessible in standalone mode", source)
+	} else {
+		loadErr = fmt.Sprintf("unsupported source URI scheme: %s", source)
+	}
+
+	job.Status = "LOAD_FAILED"
+	job.EndTime = timestamppb.Now()
+	if loadErr != "" {
+		if job.Details == nil {
+			job.Details = make(map[string]string)
+		}
+		job.Details["error"] = loadErr
+	}
+
+	if updateErr := store.UpdateLoaderJob(job); updateErr != nil {
+		logs.Warn("failed to update loader job", logs.String("loadId", loadID), logs.Err(updateErr))
+	}
 }

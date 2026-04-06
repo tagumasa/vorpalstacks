@@ -27,10 +27,6 @@ func (s *NeptuneService) CreateDBClusterParameterGroup(ctx context.Context, reqC
 		return nil, err
 	}
 
-	if _, err := store.GetClusterParameterGroup(name); err == nil {
-		return nil, fmt.Errorf("neptune: DBClusterParameterGroup %s already exists", name)
-	}
-
 	pg := &neptunestore.DBClusterParameterGroup{
 		DBClusterParameterGroupName: name,
 		DBParameterGroupFamily:      family,
@@ -92,14 +88,24 @@ func (s *NeptuneService) DescribeDBClusterParameterGroups(ctx context.Context, r
 		return nil, translateStoreError(err)
 	}
 
-	result := make([]interface{}, 0, len(groups))
+	items := make([]interface{}, 0, len(groups))
 	for _, g := range groups {
-		result = append(result, g)
+		items = append(items, g)
 	}
 
-	return map[string]interface{}{
-		"DBClusterParameterGroups": protocol.XMLElements{ElementName: "DBClusterParameterGroup", Items: result},
-	}, nil
+	marker := request.GetStringParam(params, "Marker")
+	maxRecords := request.GetIntParam(params, "MaxRecords")
+	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
+		return item.(*neptunestore.DBClusterParameterGroup).DBClusterParameterGroupName
+	})
+
+	result := map[string]interface{}{
+		"DBClusterParameterGroups": protocol.XMLElements{ElementName: "DBClusterParameterGroup", Items: resultItems},
+	}
+	if isTruncated {
+		result["Marker"] = nextMarker
+	}
+	return result, nil
 }
 
 // DescribeDBClusterParameters returns the parameters contained in the
@@ -116,7 +122,8 @@ func (s *NeptuneService) DescribeDBClusterParameters(ctx context.Context, reqCtx
 		return nil, err
 	}
 
-	if _, err := store.GetClusterParameterGroup(name); err != nil {
+	pg, err := store.GetClusterParameterGroup(name)
+	if err != nil {
 		return nil, translateStoreError(err)
 	}
 
@@ -124,14 +131,46 @@ func (s *NeptuneService) DescribeDBClusterParameters(ctx context.Context, reqCtx
 		{"ParameterName": "neptune_query_timeout", "ParameterValue": "120000", "Description": "Query execution timeout in milliseconds", "Source": "system", "ApplyType": "dynamic", "DataType": "integer", "IsModifiable": true},
 		{"ParameterName": "neptune_enable_audit_log", "ParameterValue": "0", "Description": "Enable audit logging", "Source": "system", "ApplyType": "static", "DataType": "boolean", "IsModifiable": true},
 	}
-	items := make([]interface{}, 0, len(defaultParams))
-	for _, p := range defaultParams {
-		items = append(items, p)
+	userMods := make(map[string]neptunestore.Parameter, len(pg.Parameters))
+	for _, p := range pg.Parameters {
+		userMods[p.ParameterName] = p
 	}
 
-	return map[string]interface{}{
-		"Parameters": protocol.XMLElements{ElementName: "Parameter", Items: items},
-	}, nil
+	items := make([]interface{}, 0, len(defaultParams))
+	for _, p := range defaultParams {
+		name := p["ParameterName"].(string)
+		if mod, ok := userMods[name]; ok {
+			items = append(items, map[string]interface{}{
+				"ParameterName": mod.ParameterName, "ParameterValue": mod.ParameterValue,
+				"Description": mod.Description, "Source": mod.Source, "ApplyType": mod.ApplyType,
+				"DataType": mod.DataType, "IsModifiable": mod.IsModifiable,
+			})
+			delete(userMods, name)
+		} else {
+			items = append(items, p)
+		}
+	}
+	for _, p := range userMods {
+		items = append(items, map[string]interface{}{
+			"ParameterName": p.ParameterName, "ParameterValue": p.ParameterValue,
+			"Description": p.Description, "Source": p.Source, "ApplyType": p.ApplyType,
+			"DataType": p.DataType, "IsModifiable": p.IsModifiable,
+		})
+	}
+
+	marker := request.GetStringParam(params, "Marker")
+	maxRecords := request.GetIntParam(params, "MaxRecords")
+	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
+		return item.(map[string]interface{})["ParameterName"].(string)
+	})
+
+	result := map[string]interface{}{
+		"Parameters": protocol.XMLElements{ElementName: "Parameter", Items: resultItems},
+	}
+	if isTruncated {
+		result["Marker"] = nextMarker
+	}
+	return result, nil
 }
 
 // ModifyDBClusterParameterGroup modifies the parameters of the specified DB
@@ -148,8 +187,26 @@ func (s *NeptuneService) ModifyDBClusterParameterGroup(ctx context.Context, reqC
 		return nil, err
 	}
 
-	if _, err := store.GetClusterParameterGroup(name); err != nil {
+	pg, err := store.GetClusterParameterGroup(name)
+	if err != nil {
 		return nil, translateStoreError(err)
+	}
+
+	if modParams := getNeptuneParameterList(params); len(modParams) > 0 {
+		existing := make(map[string]neptunestore.Parameter, len(pg.Parameters))
+		for _, p := range pg.Parameters {
+			existing[p.ParameterName] = p
+		}
+		for _, mp := range modParams {
+			existing[mp.ParameterName] = mp
+		}
+		pg.Parameters = make([]neptunestore.Parameter, 0, len(existing))
+		for _, p := range existing {
+			pg.Parameters = append(pg.Parameters, p)
+		}
+		if err := store.UpdateClusterParameterGroup(pg); err != nil {
+			return nil, translateStoreError(err)
+		}
 	}
 
 	return map[string]interface{}{
@@ -171,7 +228,13 @@ func (s *NeptuneService) ResetDBClusterParameterGroup(ctx context.Context, reqCt
 		return nil, err
 	}
 
-	if _, err := store.GetClusterParameterGroup(name); err != nil {
+	pg, err := store.GetClusterParameterGroup(name)
+	if err != nil {
+		return nil, translateStoreError(err)
+	}
+
+	pg.Parameters = nil
+	if err := store.UpdateClusterParameterGroup(pg); err != nil {
 		return nil, translateStoreError(err)
 	}
 
@@ -213,6 +276,7 @@ func (s *NeptuneService) CopyDBClusterParameterGroup(ctx context.Context, reqCtx
 		DBParameterGroupFamily:      source.DBParameterGroupFamily,
 		Description:                 desc,
 		ARN:                         neptunestore.ClusterParameterGroupARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), targetName),
+		Parameters:                  append([]neptunestore.Parameter(nil), source.Parameters...),
 	}
 
 	if err := store.CreateClusterParameterGroup(pg); err != nil {
@@ -240,10 +304,6 @@ func (s *NeptuneService) CreateDBParameterGroup(ctx context.Context, reqCtx *req
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
-	}
-
-	if _, err := store.GetParameterGroup(name); err == nil {
-		return nil, fmt.Errorf("neptune: DBParameterGroup %s already exists", name)
 	}
 
 	pg := &neptunestore.DBParameterGroup{
@@ -307,14 +367,24 @@ func (s *NeptuneService) DescribeDBParameterGroups(ctx context.Context, reqCtx *
 		return nil, translateStoreError(err)
 	}
 
-	result := make([]interface{}, 0, len(groups))
+	items := make([]interface{}, 0, len(groups))
 	for _, g := range groups {
-		result = append(result, g)
+		items = append(items, g)
 	}
 
-	return map[string]interface{}{
-		"DBParameterGroups": protocol.XMLElements{ElementName: "DBParameterGroup", Items: result},
-	}, nil
+	marker := request.GetStringParam(params, "Marker")
+	maxRecords := request.GetIntParam(params, "MaxRecords")
+	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
+		return item.(*neptunestore.DBParameterGroup).DBParameterGroupName
+	})
+
+	result := map[string]interface{}{
+		"DBParameterGroups": protocol.XMLElements{ElementName: "DBParameterGroup", Items: resultItems},
+	}
+	if isTruncated {
+		result["Marker"] = nextMarker
+	}
+	return result, nil
 }
 
 // DescribeDBParameters returns the parameters contained in the specified DB
@@ -331,21 +401,54 @@ func (s *NeptuneService) DescribeDBParameters(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	if _, err := store.GetParameterGroup(name); err != nil {
+	pg, err := store.GetParameterGroup(name)
+	if err != nil {
 		return nil, translateStoreError(err)
 	}
 
 	defaultParams := []map[string]interface{}{
 		{"ParameterName": "neptune_query_timeout", "ParameterValue": "120000", "Description": "Query execution timeout", "Source": "system", "ApplyType": "dynamic", "DataType": "integer", "IsModifiable": true},
 	}
-	items := make([]interface{}, 0, len(defaultParams))
-	for _, p := range defaultParams {
-		items = append(items, p)
+	userMods := make(map[string]neptunestore.Parameter, len(pg.Parameters))
+	for _, p := range pg.Parameters {
+		userMods[p.ParameterName] = p
 	}
 
-	return map[string]interface{}{
-		"Parameters": protocol.XMLElements{ElementName: "Parameter", Items: items},
-	}, nil
+	items := make([]interface{}, 0, len(defaultParams))
+	for _, p := range defaultParams {
+		name := p["ParameterName"].(string)
+		if mod, ok := userMods[name]; ok {
+			items = append(items, map[string]interface{}{
+				"ParameterName": mod.ParameterName, "ParameterValue": mod.ParameterValue,
+				"Description": mod.Description, "Source": mod.Source, "ApplyType": mod.ApplyType,
+				"DataType": mod.DataType, "IsModifiable": mod.IsModifiable,
+			})
+			delete(userMods, name)
+		} else {
+			items = append(items, p)
+		}
+	}
+	for _, p := range userMods {
+		items = append(items, map[string]interface{}{
+			"ParameterName": p.ParameterName, "ParameterValue": p.ParameterValue,
+			"Description": p.Description, "Source": p.Source, "ApplyType": p.ApplyType,
+			"DataType": p.DataType, "IsModifiable": p.IsModifiable,
+		})
+	}
+
+	marker := request.GetStringParam(params, "Marker")
+	maxRecords := request.GetIntParam(params, "MaxRecords")
+	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
+		return item.(map[string]interface{})["ParameterName"].(string)
+	})
+
+	result := map[string]interface{}{
+		"Parameters": protocol.XMLElements{ElementName: "Parameter", Items: resultItems},
+	}
+	if isTruncated {
+		result["Marker"] = nextMarker
+	}
+	return result, nil
 }
 
 // ModifyDBParameterGroup modifies the parameters of the specified DB parameter
@@ -362,8 +465,26 @@ func (s *NeptuneService) ModifyDBParameterGroup(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	if _, err := store.GetParameterGroup(name); err != nil {
+	pg, err := store.GetParameterGroup(name)
+	if err != nil {
 		return nil, translateStoreError(err)
+	}
+
+	if modParams := getNeptuneParameterList(params); len(modParams) > 0 {
+		existing := make(map[string]neptunestore.Parameter, len(pg.Parameters))
+		for _, p := range pg.Parameters {
+			existing[p.ParameterName] = p
+		}
+		for _, mp := range modParams {
+			existing[mp.ParameterName] = mp
+		}
+		pg.Parameters = make([]neptunestore.Parameter, 0, len(existing))
+		for _, p := range existing {
+			pg.Parameters = append(pg.Parameters, p)
+		}
+		if err := store.UpdateParameterGroup(pg); err != nil {
+			return nil, translateStoreError(err)
+		}
 	}
 
 	return map[string]interface{}{
@@ -385,7 +506,13 @@ func (s *NeptuneService) ResetDBParameterGroup(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	if _, err := store.GetParameterGroup(name); err != nil {
+	pg, err := store.GetParameterGroup(name)
+	if err != nil {
+		return nil, translateStoreError(err)
+	}
+
+	pg.Parameters = nil
+	if err := store.UpdateParameterGroup(pg); err != nil {
 		return nil, translateStoreError(err)
 	}
 
@@ -416,11 +543,17 @@ func (s *NeptuneService) CopyDBParameterGroup(ctx context.Context, reqCtx *reque
 		return nil, translateStoreError(err)
 	}
 
+	desc := request.GetStringParam(params, "TargetDBParameterGroupDescription")
+	if desc == "" {
+		desc = source.Description
+	}
+
 	pg := &neptunestore.DBParameterGroup{
 		DBParameterGroupName:   targetName,
 		DBParameterGroupFamily: source.DBParameterGroupFamily,
-		Description:            request.GetStringParam(params, "TargetDBParameterGroupDescription"),
+		Description:            desc,
 		ARN:                    neptunestore.ParameterGroupARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), targetName),
+		Parameters:             append([]neptunestore.Parameter(nil), source.Parameters...),
 	}
 
 	if err := store.CreateParameterGroup(pg); err != nil {

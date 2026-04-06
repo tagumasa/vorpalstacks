@@ -3,6 +3,7 @@ package neptunedata
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/neptunedata"
 	neptunedataconnect "vorpalstacks/internal/pb/aws/neptunedata/neptunedataconnect"
+	svccommon "vorpalstacks/internal/services/aws/common"
+	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
 
 // AdminHandler implements the Neptune Data API gRPC-Web admin console handler.
@@ -27,6 +30,11 @@ var _ neptunedataconnect.NeptunedataServiceHandler = (*AdminHandler)(nil)
 // by the given NeptuneDataService instance.
 func NewAdminHandler(svc *NeptuneDataService) *AdminHandler {
 	return &AdminHandler{service: svc}
+}
+
+func (h *AdminHandler) getStore(header http.Header) (*neptunestore.NeptuneStore, error) {
+	region := svccommon.GetRegionFromHeader(header)
+	return h.service.GetStoreForRegion(region)
 }
 
 // GetEngineStatus returns the health status and engine version information
@@ -59,17 +67,21 @@ func (h *AdminHandler) GetEngineStatus(ctx context.Context, req *connect.Request
 
 // GetGremlinQueryStatus returns the status and timing of a Gremlin query.
 func (h *AdminHandler) GetGremlinQueryStatus(ctx context.Context, req *connect.Request[pb.GetGremlinQueryStatusInput]) (*connect.Response[pb.GetGremlinQueryStatusOutput], error) {
-	s := h.service
 	queryId := req.Msg.Queryid
 
-	qr, err := s.store.GetQuery(queryId)
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	qr, err := store.GetQuery(queryId)
 	if err != nil || qr == nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("query not found: %s", queryId))
 	}
 
 	output := &pb.GetGremlinQueryStatusOutput{
 		Queryid:     qr.GetQueryId(),
-		Querystring: qr.GetQueryType(),
+		Querystring: qr.GetQueryString(),
 	}
 
 	if qr.EndTime != nil && qr.StartTime != nil {
@@ -84,17 +96,21 @@ func (h *AdminHandler) GetGremlinQueryStatus(ctx context.Context, req *connect.R
 
 // GetOpenCypherQueryStatus returns the status and timing of an openCypher query.
 func (h *AdminHandler) GetOpenCypherQueryStatus(ctx context.Context, req *connect.Request[pb.GetOpenCypherQueryStatusInput]) (*connect.Response[pb.GetOpenCypherQueryStatusOutput], error) {
-	s := h.service
 	queryId := req.Msg.Queryid
 
-	qr, err := s.store.GetQuery(queryId)
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	qr, err := store.GetQuery(queryId)
 	if err != nil || qr == nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("query not found: %s", queryId))
 	}
 
 	output := &pb.GetOpenCypherQueryStatusOutput{
 		Queryid:     qr.GetQueryId(),
-		Querystring: qr.GetQueryType(),
+		Querystring: qr.GetQueryString(),
 	}
 
 	if qr.EndTime != nil && qr.StartTime != nil {
@@ -109,9 +125,12 @@ func (h *AdminHandler) GetOpenCypherQueryStatus(ctx context.Context, req *connec
 
 // ListGremlinQueries returns the status of all accepted and running Gremlin queries.
 func (h *AdminHandler) ListGremlinQueries(ctx context.Context, req *connect.Request[pb.ListGremlinQueriesInput]) (*connect.Response[pb.ListGremlinQueriesOutput], error) {
-	s := h.service
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 
-	queries, err := s.store.ListQueries()
+	queries, err := store.ListQueries()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -123,13 +142,17 @@ func (h *AdminHandler) ListGremlinQueries(ctx context.Context, req *connect.Requ
 		if qr.GetQueryType() != "gremlin" {
 			continue
 		}
+		st := qr.GetStatus()
+		if st == "complete" || st == "failed" || st == "cancelled" {
+			continue
+		}
 		accepted++
-		if qr.GetStatus() == "running" {
+		if st == "running" {
 			running++
 		}
 		status := &pb.GremlinQueryStatus{
 			Queryid:     qr.GetQueryId(),
-			Querystring: qr.GetQueryType(),
+			Querystring: qr.GetQueryString(),
 		}
 		if qr.EndTime != nil && qr.StartTime != nil {
 			elapsed := qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
@@ -149,9 +172,12 @@ func (h *AdminHandler) ListGremlinQueries(ctx context.Context, req *connect.Requ
 
 // ListOpenCypherQueries returns the status of all accepted and running openCypher queries.
 func (h *AdminHandler) ListOpenCypherQueries(ctx context.Context, req *connect.Request[pb.ListOpenCypherQueriesInput]) (*connect.Response[pb.ListOpenCypherQueriesOutput], error) {
-	s := h.service
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 
-	queries, err := s.store.ListQueries()
+	queries, err := store.ListQueries()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -163,13 +189,17 @@ func (h *AdminHandler) ListOpenCypherQueries(ctx context.Context, req *connect.R
 		if qr.GetQueryType() != "opencypher" {
 			continue
 		}
+		st := qr.GetStatus()
+		if st == "complete" || st == "failed" || st == "cancelled" {
+			continue
+		}
 		accepted++
-		if qr.GetStatus() == "running" {
+		if st == "running" {
 			running++
 		}
 		status := &pb.GremlinQueryStatus{
 			Queryid:     qr.GetQueryId(),
-			Querystring: qr.GetQueryType(),
+			Querystring: qr.GetQueryString(),
 		}
 		if qr.EndTime != nil && qr.StartTime != nil {
 			elapsed := qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
@@ -189,10 +219,14 @@ func (h *AdminHandler) ListOpenCypherQueries(ctx context.Context, req *connect.R
 
 // GetLoaderJobStatus returns the status of a bulk loader job.
 func (h *AdminHandler) GetLoaderJobStatus(ctx context.Context, req *connect.Request[pb.GetLoaderJobStatusInput]) (*connect.Response[pb.GetLoaderJobStatusOutput], error) {
-	s := h.service
 	loadId := req.Msg.Loadid
 
-	job, err := s.store.GetLoaderJob(loadId)
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	job, err := store.GetLoaderJob(loadId)
 	if err != nil || job == nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("loader job not found: %s", loadId))
 	}
@@ -205,9 +239,12 @@ func (h *AdminHandler) GetLoaderJobStatus(ctx context.Context, req *connect.Requ
 
 // ListLoaderJobs returns the IDs of all known bulk loader jobs.
 func (h *AdminHandler) ListLoaderJobs(ctx context.Context, req *connect.Request[pb.ListLoaderJobsInput]) (*connect.Response[pb.ListLoaderJobsOutput], error) {
-	s := h.service
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 
-	jobs, err := s.store.ListLoaderJobs()
+	jobs, err := store.ListLoaderJobs()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -228,29 +265,34 @@ func (h *AdminHandler) ListLoaderJobs(ctx context.Context, req *connect.Request[
 // GetPropertygraphStatistics returns node and edge counts for the property graph.
 func (h *AdminHandler) GetPropertygraphStatistics(ctx context.Context, req *connect.Request[common.Empty]) (*connect.Response[pb.GetPropertygraphStatisticsOutput], error) {
 	s := h.service
+	region := svccommon.GetRegionFromHeader(req.Header())
 
-	s.mu.RLock()
-	sigCount := int64(0)
-	predCount := int64(0)
-	for _, cnt := range s.stats.LabelCounts {
-		sigCount += cnt
+	s.mu.Lock()
+	if !s.statsDisabled {
+		s.refreshStatistics(nil)
 	}
-	for _, cnt := range s.stats.RelCounts {
-		predCount += cnt
+	st := s.getStats(region)
+	sigCount := 0
+	for range st.LabelCounts {
+		sigCount++
+	}
+	predCount := 0
+	for range st.RelCounts {
+		predCount++
 	}
 	stats := &pb.Statistics{
-		Active:       "true",
-		Autocompute:  "true",
+		Active:       fmt.Sprintf("%t", !s.statsDisabled),
+		Autocompute:  fmt.Sprintf("%t", s.autoComputeEnabled),
 		Date:         time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
 		Note:         "Automatically computed",
 		Statisticsid: "auto-statistics",
 		Signatureinfo: &pb.StatisticsSummary{
-			Signaturecount: fmt.Sprintf("%d", sigCount),
-			Instancecount:  fmt.Sprintf("%d", s.stats.NodeCount),
-			Predicatecount: fmt.Sprintf("%d", predCount),
+			Signaturecount: fmt.Sprintf("%d", int64(sigCount)),
+			Instancecount:  fmt.Sprintf("%d", st.NodeCount),
+			Predicatecount: fmt.Sprintf("%d", int64(predCount)),
 		},
 	}
-	s.mu.RUnlock()
+	s.mu.Unlock()
 
 	return connect.NewResponse(&pb.GetPropertygraphStatisticsOutput{
 		Status:  "200 OK",
@@ -261,15 +303,20 @@ func (h *AdminHandler) GetPropertygraphStatistics(ctx context.Context, req *conn
 // GetPropertygraphSummary returns a summary of the property graph metadata.
 func (h *AdminHandler) GetPropertygraphSummary(ctx context.Context, req *connect.Request[pb.GetPropertygraphSummaryInput]) (*connect.Response[pb.GetPropertygraphSummaryOutput], error) {
 	s := h.service
+	region := svccommon.GetRegionFromHeader(req.Header())
 
-	s.mu.RLock()
+	s.mu.Lock()
+	if !s.statsDisabled {
+		s.refreshStatistics(nil)
+	}
+	st := s.getStats(region)
 	summaryMap := &pb.PropertygraphSummaryValueMap{
 		Graphsummary: &pb.PropertygraphSummary{
-			Numnodes: fmt.Sprintf("%d", s.stats.NodeCount),
-			Numedges: fmt.Sprintf("%d", s.stats.EdgeCount),
+			Numnodes: fmt.Sprintf("%d", st.NodeCount),
+			Numedges: fmt.Sprintf("%d", st.EdgeCount),
 		},
 	}
-	s.mu.RUnlock()
+	s.mu.Unlock()
 
 	return connect.NewResponse(&pb.GetPropertygraphSummaryOutput{
 		Statuscode: "200 OK",

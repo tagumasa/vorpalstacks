@@ -569,6 +569,19 @@ func executeMerge(ctx context.Context, reader graphengine.GraphReader, writer gr
 		}
 	}
 
+	if matched == nil && len(mp.Props) > 0 && len(mp.Labels) == 0 {
+		err := reader.ForEachNode(func(n *graphengine.Node) error {
+			if matchProps(n.Props, mp.Props) {
+				matched = n
+				return fmt.Errorf("stop")
+			}
+			return nil
+		})
+		if err != nil && err.Error() != "stop" {
+			return nil, fmt.Errorf("cypher exec: MERGE full scan failed: %w", err)
+		}
+	}
+
 	wasCreated := false
 	if matched == nil {
 		props := make(graphengine.Props, len(mp.Props))

@@ -58,7 +58,6 @@ import (
 	storeevents "vorpalstacks/internal/store/aws/eventbridge"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -97,7 +96,6 @@ func main() {
 	appconfig.Initialise(server.Storage())
 
 	var neptunedataService *svcneptunedata.NeptuneDataService
-	var sharedNeptuneStore *neptunestore.NeptuneStore
 	var neptuneService *svcneptune.NeptuneService
 	var appsyncService *svcappsync.AppSyncService
 	var logsService *svclogs.LogsService
@@ -113,8 +111,8 @@ func main() {
 	}
 
 	if cfg.NeptuneData {
-		sharedNeptuneStore = neptunestore.NewNeptuneStore(server.Storage())
-		neptunedataService = svcneptunedata.NewNeptuneDataService(sharedNeptuneStore)
+		neptunedataService = svcneptunedata.NewNeptuneDataService()
+		neptunedataService.SetStorageManager(server.StorageManager())
 		neptunedataService.RegisterHandlers(server.Dispatcher())
 	}
 
@@ -183,7 +181,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to create persistent HSM backend: %v\n", err)
 		os.Exit(1)
 	}
-	kmsService := svckms.NewKMSService(server.Storage(), cfg.AccountID, cfg.Region, hsmBackend)
+	kmsService := svckms.NewKMSService(cfg.AccountID, cfg.Region, hsmBackend)
 	kmsService.RegisterHandlers(server.Dispatcher())
 
 	if err := kmsService.EnsureDefaultSSMKey(); err != nil {
@@ -230,14 +228,14 @@ func main() {
 		}
 	})
 
-	cloudWatchService := svccloudwatch.NewCloudWatchService(server.Storage(), cfg.AccountID, cfg.Region, cfg.DataPath)
+	cloudWatchService := svccloudwatch.NewCloudWatchService(cfg.AccountID, cfg.Region, cfg.DataPath)
 	cloudWatchService.SetStorageManager(server.StorageManager())
 	cloudWatchService.RegisterHandlers(server.Dispatcher())
 
 	dynamodbService := svcdynamodb.NewDynamoDBService(cfg.AccountID)
 	dynamodbService.RegisterHandlers(server.Dispatcher())
 
-	acmService := svcacm.NewACMService(server.Storage(), cfg.AccountID, cfg.Region)
+	acmService := svcacm.NewACMService(cfg.AccountID, cfg.Region)
 	acmService.RegisterHandlers(server.Dispatcher())
 
 	cloudfrontService := svccloudfront.NewCloudFrontService(cfg.AccountID)
@@ -256,7 +254,7 @@ func main() {
 		Handler:     cloudfrontHandler,
 	})
 
-	wafv2Service := svcwafv2.NewWAFv2Service(server.Storage(), cfg.AccountID, cfg.Region)
+	wafv2Service := svcwafv2.NewWAFv2Service(cfg.AccountID, cfg.Region)
 	wafv2Service.RegisterHandlers(server.Dispatcher())
 
 	secretsManagerService := svcsecretsmanager.NewSecretsManagerService(cfg.AccountID)
@@ -282,7 +280,7 @@ func main() {
 		if ok {
 			kinesisStoreInstance = storekinesis.NewKinesisStore(tstore, cfg.AccountID, cfg.Region)
 		}
-		kinesisService := svckinesis.NewKinesisService(kinesisRegionalStorage, cfg.AccountID, cfg.Region)
+		kinesisService := svckinesis.NewKinesisService(cfg.AccountID, cfg.Region)
 		kinesisService.RegisterHandlers(server.Dispatcher())
 	}
 
@@ -297,7 +295,7 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: Failed to create Docker client for Lambda: %v\n", err)
 		} else {
-			lambdaService = svclambda.NewLambdaService(server.Storage(), dockerClient, cfg.AccountID, cfg.Region, cfg.DataPath)
+			lambdaService = svclambda.NewLambdaService(dockerClient, cfg.AccountID, cfg.Region, cfg.DataPath)
 			lambdaService.SetStorageManager(server.StorageManager())
 			lambdaService.SetHostEndpoint(fmt.Sprintf("http://host.docker.internal:%s", cfg.Port))
 			lambdaService.SetS3ObjectStore(cfg.Region, s3Store.Objects(cfg.Region))
@@ -428,7 +426,7 @@ func main() {
 	}
 
 	if cfg.APIGateway {
-		apiGatewayService := svcapigateway.NewAPIGatewayService(server.Storage(), cfg.AccountID, cfg.Region)
+		apiGatewayService := svcapigateway.NewAPIGatewayService(cfg.AccountID, cfg.Region)
 		apiGatewayService.RegisterHandlers(server.Dispatcher())
 
 		if lambdaService != nil {
@@ -466,7 +464,7 @@ func main() {
 
 	var cognitoService *svccognito.CognitoService
 	if cfg.Cognito {
-		cognitoService = svccognito.NewCognitoService(server.Storage(), cfg.AccountID, cfg.Region)
+		cognitoService = svccognito.NewCognitoService(cfg.AccountID, cfg.Region)
 		cognitoService.SetStorageManager(server.StorageManager())
 		cognitoService.SetEventBus(server.EventBus())
 		if lambdaService != nil {
@@ -489,7 +487,7 @@ func main() {
 	}
 
 	if cfg.CognitoIdentity {
-		cognitoIdentityService := svccognitoidentity.NewCognitoIdentityService(server.Storage(), cfg.AccountID, cfg.Region)
+		cognitoIdentityService := svccognitoidentity.NewCognitoIdentityService(cfg.AccountID, cfg.Region)
 		cognitoIdentityService.RegisterHandlers(server.Dispatcher())
 	}
 
@@ -526,7 +524,7 @@ func main() {
 	}
 
 	if cfg.CloudTrail {
-		cloudtrailService := svccloudtrail.NewCloudTrailService(server.Storage(), cfg.AccountID, cfg.Region)
+		cloudtrailService := svccloudtrail.NewCloudTrailService(cfg.AccountID, cfg.Region)
 		cloudtrailService.RegisterHandlers(server.Dispatcher())
 	}
 

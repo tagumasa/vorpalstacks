@@ -22,6 +22,7 @@ var (
 	ErrSchemaCreationNotFound       = errors.New("schema creation status not found")
 	ErrApiKeyNotFound               = errors.New("api key not found")
 	ErrApiCacheNotFound             = errors.New("api cache not found")
+	ErrApiCacheAlreadyExists        = errors.New("api cache already exists")
 	ErrDomainNameNotFound           = errors.New("domain name not found")
 	ErrDomainNameAlreadyExists      = errors.New("domain name already exists")
 	ErrApiAssociationNotFound       = errors.New("api association not found")

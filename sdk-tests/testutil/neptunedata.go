@@ -1509,23 +1509,11 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 
 	// --- Server API tests ---
 	results = append(results, r.RunTest("neptunedata", "CancelGremlinQuery", func() error {
-		resp, err := client.ExecuteGremlinQuery(ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String("g.V().count()"),
+		_, err := client.CancelGremlinQuery(ctx, &neptunedata.CancelGremlinQueryInput{
+			QueryId: aws.String("nonexistent-query-id"),
 		})
-		if err != nil {
-			return err
-		}
-		if resp.RequestId == nil {
-			return fmt.Errorf("expected requestId")
-		}
-		cancelResp, err := client.CancelGremlinQuery(ctx, &neptunedata.CancelGremlinQueryInput{
-			QueryId: resp.RequestId,
-		})
-		if err != nil {
-			return err
-		}
-		if cancelResp.Status == nil {
-			return fmt.Errorf("expected non-nil cancel status")
+		if err == nil {
+			return fmt.Errorf("expected error for cancelling non-existent query")
 		}
 		return nil
 	}))

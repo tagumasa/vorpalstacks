@@ -40,7 +40,6 @@ type lambdaStore struct {
 
 // LambdaService provides Lambda operations.
 type LambdaService struct {
-	storage        storage.BasicStorage
 	storageManager *storage.RegionStorageManager
 	s3Objects      map[string]s3store.ObjectStoreInterface
 	dockerClient   *mobyclient.Client
@@ -103,9 +102,8 @@ func (s *LambdaService) store(reqCtx *request.RequestContext) (*lambdaStore, err
 // NewLambdaService creates a new Lambda service instance.
 // Optional dependencies (logs store, S3 object store) should be injected via
 // setter methods before registering handlers.
-func NewLambdaService(store storage.BasicStorage, dockerClient *mobyclient.Client, accountID, region, dataDir string) *LambdaService {
+func NewLambdaService(dockerClient *mobyclient.Client, accountID, region, dataDir string) *LambdaService {
 	return &LambdaService{
-		storage:      store,
 		s3Objects:    make(map[string]s3store.ObjectStoreInterface),
 		dockerClient: dockerClient,
 		accountID:    accountID,
@@ -197,7 +195,7 @@ func (s *LambdaService) getRegionalStorage(region string) storage.BasicStorage {
 			return st
 		}
 	}
-	return s.storage
+	return nil
 }
 
 func (s *LambdaService) getS3ObjectStore(region string) s3store.ObjectStoreInterface {
@@ -212,7 +210,11 @@ func (s *LambdaService) getLogsStore(region string) (*logsstore.Store, error) {
 			return typed, nil
 		}
 	}
-	store, err := logsstore.NewStore(s.storage.Bucket("logs-"+region), s.accountID, region, s.dataDir)
+	regionalStore := s.getRegionalStorage(region)
+	if regionalStore == nil {
+		return nil, fmt.Errorf("lambda: no regional storage available for %s", region)
+	}
+	store, err := logsstore.NewStore(regionalStore.Bucket("logs-"+region), s.accountID, region, s.dataDir)
 	if err != nil {
 		return nil, err
 	}

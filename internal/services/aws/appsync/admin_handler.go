@@ -99,7 +99,7 @@ func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request
 		Marker:   req.Msg.Nexttoken,
 	}
 
-	graphqlApis, nextToken, err := store.ListGraphqlApis(opts)
+	graphqlApis, nextToken, err := store.ListGraphqlApis(opts, "")
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

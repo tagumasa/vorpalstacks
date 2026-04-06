@@ -2,7 +2,6 @@
 package acm
 
 import (
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	acmstore "vorpalstacks/internal/store/aws/acm"
@@ -18,7 +17,7 @@ type acmStores struct {
 type ACMService struct{}
 
 // NewACMService creates a new ACM service instance with the given storage, account ID, and region.
-func NewACMService(store storage.BasicStorage, accountID, region string) *ACMService {
+func NewACMService(accountID, region string) *ACMService {
 	return &ACMService{}
 }
 

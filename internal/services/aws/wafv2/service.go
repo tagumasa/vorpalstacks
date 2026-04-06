@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
@@ -28,7 +27,7 @@ type wafv2Stores struct {
 type WAFv2Service struct{}
 
 // NewWAFv2Service creates a new WAFv2Service instance.
-func NewWAFv2Service(store storage.BasicStorage, accountID, region string) *WAFv2Service {
+func NewWAFv2Service(accountID, region string) *WAFv2Service {
 	return &WAFv2Service{}
 }
 

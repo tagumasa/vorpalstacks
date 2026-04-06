@@ -154,9 +154,11 @@ func SubscribeTyped[T Event](bus *EventBus, handler func(ctx context.Context, ev
 		return "", fmt.Errorf("eventbus: handler must not be nil")
 	}
 
+	var zero T
 	cfg := &subscribeConfig{
 		authzMode: AuthzNone,
 		async:     false,
+		eventType: zero.EventType(),
 	}
 	for _, opt := range opts {
 		opt(cfg)
@@ -220,9 +222,14 @@ func (b *EventBus) subscribeInternal(cfg *subscribeConfig, handler func(ctx cont
 		sem = make(chan struct{}, cfg.maxConcurrency)
 	}
 
+	et := cfg.eventType
+	if et == "" {
+		et = "*"
+	}
+
 	entry := &subscriptionEntry{
 		id:             subID,
-		eventType:      "*",
+		eventType:      et,
 		filter:         cfg.filter,
 		handler:        handler,
 		async:          cfg.async,
@@ -234,7 +241,7 @@ func (b *EventBus) subscribeInternal(cfg *subscribeConfig, handler func(ctx cont
 	}
 
 	b.mu.Lock()
-	b.subscriptions["*"] = append(b.subscriptions["*"], entry)
+	b.subscriptions[et] = append(b.subscriptions[et], entry)
 	b.mu.Unlock()
 
 	return subID, nil

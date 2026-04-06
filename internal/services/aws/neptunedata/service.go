@@ -10,30 +10,38 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	"vorpalstacks/pkg/graphengine"
 )
 
-// queryStateTTL defines how long completed query state entries are retained
-// before being eligible for cleanup.
 const (
-	queryStateTTL = 5 * time.Minute
+	queryStateTTL      = 5 * time.Minute
+	loaderJobTTL       = 1 * time.Hour
+	statsCacheTTL      = 10 * time.Minute
+	statsLastAccessTTL = 30 * time.Minute
 )
 
 // NeptuneDataService implements the Neptune Data API service, handling Gremlin,
 // OpenCypher, graph statistics, loader, and ML operations. Query state and
-// loader jobs are persisted in Pebble storage via the shared Neptune store.
+// loader jobs are persisted in Pebble storage via per-region Neptune stores.
 // Graph data is read and written via the GraphReader/GraphWriter interfaces
 // provided by the request context.
 type NeptuneDataService struct {
-	store      *neptunestore.NeptuneStore
-	mu         sync.RWMutex
-	fastTokens map[string]time.Time
-	stats      *GraphStatistics
-	startTime  time.Time
+	mu                 sync.RWMutex
+	fastTokens         sync.Map
+	statsMap           sync.Map
+	statsDisabled      bool
+	autoComputeEnabled bool
+	startTime          time.Time
+	storageManager     *storage.RegionStorageManager
+	stores             sync.Map
+	cancelCleanup      context.CancelFunc
 }
 
 // elapsedMs returns the elapsed time between two Unix-millisecond timestamps.
@@ -48,20 +56,151 @@ type GraphStatistics struct {
 	EdgeCount   int64            `json:"numEdges"`
 	LabelCounts map[string]int64 `json:"-"`
 	RelCounts   map[string]int64 `json:"-"`
+	LastRefresh time.Time        `json:"-"`
+	LastAccess  time.Time        `json:"-"`
 }
 
-// NewNeptuneDataService creates a new service instance backed by the shared
-// Neptune Pebble store for query states and loader jobs.
-func NewNeptuneDataService(store *neptunestore.NeptuneStore) *NeptuneDataService {
-	return &NeptuneDataService{
-		store:      store,
-		fastTokens: make(map[string]time.Time),
-		stats: &GraphStatistics{
-			LabelCounts: make(map[string]int64),
-			RelCounts:   make(map[string]int64),
-		},
-		startTime: time.Now(),
+// NewNeptuneDataService creates a new service instance. Per-region stores are
+// created lazily via the RegionStorageManager. A background goroutine is
+// started to periodically purge expired query states from Pebble storage.
+func NewNeptuneDataService() *NeptuneDataService {
+	ctx, cancel := context.WithCancel(context.Background())
+	s := &NeptuneDataService{
+		autoComputeEnabled: true,
+		startTime:          time.Now(),
+		cancelCleanup:      cancel,
 	}
+	go s.cleanupExpiredQueries(ctx)
+	return s
+}
+
+// Close stops the background query-state cleanup goroutine.
+func (s *NeptuneDataService) Close() {
+	if s.cancelCleanup != nil {
+		s.cancelCleanup()
+	}
+}
+
+// cleanupExpiredQueries periodically scans all per-region stores and deletes
+// terminal query states whose EndTime has exceeded queryStateTTL.
+func (s *NeptuneDataService) cleanupExpiredQueries(ctx context.Context) {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			s.purgeExpiredQueries()
+		}
+	}
+}
+
+// purgeExpiredQueries iterates every region's store and removes expired
+// terminal queries ("complete", "failed", "cancelled"). Also purges expired
+// loader jobs and evicts stale statistics cache entries.
+func (s *NeptuneDataService) purgeExpiredQueries() {
+	terminalStates := map[string]bool{
+		"complete":  true,
+		"failed":    true,
+		"cancelled": true,
+	}
+	terminalLoaderStates := map[string]bool{
+		"LOAD_COMPLETED": true,
+		"LOAD_FAILED":    true,
+		"CANCELLED":      true,
+	}
+
+	s.stores.Range(func(_, value any) bool {
+		store, ok := value.(*neptunestore.NeptuneStore)
+		if !ok {
+			return true
+		}
+
+		queries, err := store.ListQueries()
+		if err != nil {
+			logs.Warn("failed to list queries for cleanup", logs.Err(err))
+		} else {
+			for _, q := range queries {
+				if !terminalStates[q.Status] {
+					continue
+				}
+				if q.EndTime == nil {
+					continue
+				}
+				endTime := q.EndTime.AsTime()
+				if time.Since(endTime) > queryStateTTL {
+					if delErr := store.DeleteQuery(q.QueryId); delErr != nil {
+						logs.Warn("failed to delete expired query", logs.String("queryId", q.QueryId), logs.Err(delErr))
+					}
+				}
+			}
+		}
+
+		jobs, err := store.ListLoaderJobs()
+		if err != nil {
+			logs.Warn("failed to list loader jobs for cleanup", logs.Err(err))
+		} else {
+			for _, j := range jobs {
+				if !terminalLoaderStates[j.GetStatus()] {
+					continue
+				}
+				if j.EndTime == nil {
+					continue
+				}
+				endTime := j.EndTime.AsTime()
+				if time.Since(endTime) > loaderJobTTL {
+					if delErr := store.DeleteLoaderJob(j.GetLoadId()); delErr != nil {
+						logs.Warn("failed to delete expired loader job", logs.String("loadId", j.GetLoadId()), logs.Err(delErr))
+					}
+				}
+			}
+		}
+
+		return true
+	})
+
+	now := time.Now()
+	s.statsMap.Range(func(key, value any) bool {
+		st := value.(*GraphStatistics)
+		if now.Sub(st.LastAccess) > statsLastAccessTTL {
+			s.statsMap.Delete(key)
+		}
+		return true
+	})
+}
+
+// SetStorageManager injects the region storage manager for per-region store
+// caching and admin console access.
+func (s *NeptuneDataService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
+// GetStoreForRegion returns the cached Neptune store for the given region,
+// creating one if not already cached.
+func (s *NeptuneDataService) GetStoreForRegion(region string) (*neptunestore.NeptuneStore, error) {
+	val, err := storecommon.GetOrCreateStoreE(&s.stores, region, func() (*neptunestore.NeptuneStore, error) {
+		if s.storageManager == nil {
+			return nil, fmt.Errorf("storage manager not set")
+		}
+		rs, err := s.storageManager.GetStorage(region)
+		if err != nil {
+			return nil, err
+		}
+		return neptunestore.NewNeptuneStore(rs), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return val, nil
+}
+
+// store resolves the NeptuneStore for the current request context, using the
+// per-region cache.
+func (s *NeptuneDataService) store(reqCtx *request.RequestContext) (*neptunestore.NeptuneStore, error) {
+	region := reqCtx.GetRegion()
+	return s.GetStoreForRegion(region)
 }
 
 // RegisterHandlers registers all Neptune Data API operation handlers with the
@@ -157,15 +296,14 @@ func (s *NeptuneDataService) ExecuteFastReset(ctx context.Context, reqCtx *reque
 	switch params.Action {
 	case "initiateDatabaseReset":
 		token := generateFastResetToken()
-		s.mu.Lock()
 		now := time.Now()
-		for k, expiry := range s.fastTokens {
-			if now.After(expiry) {
-				delete(s.fastTokens, k)
+		s.fastTokens.Store(token, now.Add(30*time.Second))
+		s.fastTokens.Range(func(key, value any) bool {
+			if now.After(value.(time.Time)) {
+				s.fastTokens.Delete(key)
 			}
-		}
-		s.fastTokens[token] = now.Add(30 * time.Second)
-		s.mu.Unlock()
+			return true
+		})
 		return map[string]interface{}{
 			"payload": map[string]interface{}{
 				"token": token,
@@ -176,17 +314,31 @@ func (s *NeptuneDataService) ExecuteFastReset(ctx context.Context, reqCtx *reque
 		if params.Token == "" {
 			return nil, missingParameter("token")
 		}
-		s.mu.Lock()
-		expiry, ok := s.fastTokens[params.Token]
-		if !ok || time.Now().After(expiry) {
-			s.mu.Unlock()
+		val, ok := s.fastTokens.Load(params.Token)
+		if !ok || time.Now().After(val.(time.Time)) {
 			return nil, preconditionFailed("invalid or expired token")
 		}
-		delete(s.fastTokens, params.Token)
-		s.mu.Unlock()
+		s.fastTokens.Delete(params.Token)
 
 		if gs, ok := reqCtx.GraphWriter().(graphengine.GraphStore); ok {
 			gs.Clear()
+		}
+		region := reqCtx.GetRegion()
+		s.statsDisabled = false
+		s.autoComputeEnabled = true
+		s.statsMap.Store(region, &GraphStatistics{
+			LabelCounts: make(map[string]int64),
+			RelCounts:   make(map[string]int64),
+		})
+		if resetStore, err := s.GetStoreForRegion(region); err == nil {
+			queries, _ := resetStore.ListQueries()
+			for _, q := range queries {
+				resetStore.DeleteQuery(q.GetQueryId())
+			}
+			jobs, _ := resetStore.ListLoaderJobs()
+			for _, j := range jobs {
+				resetStore.DeleteLoaderJob(j.GetLoadId())
+			}
 		}
 		return map[string]interface{}{
 			"status": "200 OK",
@@ -207,19 +359,25 @@ func (s *NeptuneDataService) unsupported(ctx context.Context, reqCtx *request.Re
 }
 
 // trackQuery records the start of a query execution in Pebble storage.
-func (s *NeptuneDataService) trackQuery(id, query, queryType string) {
-	qr := &pb.QueryState{
-		QueryId:   id,
-		QueryType: queryType,
-		Status:    "running",
-		StartTime: timestamppb.Now(),
+func (s *NeptuneDataService) trackQuery(store *neptunestore.NeptuneStore, id, query, queryType string) {
+	if queryType != "gremlin" && queryType != "opencypher" && queryType != "sparql" {
+		queryType = "unknown"
 	}
-	_ = s.store.CreateQuery(qr)
+	qr := &pb.QueryState{
+		QueryId:     id,
+		QueryType:   queryType,
+		QueryString: query,
+		Status:      "running",
+		StartTime:   timestamppb.Now(),
+	}
+	if err := store.CreateQuery(qr); err != nil {
+		logs.Warn("failed to track query", logs.String("queryId", id), logs.Err(err))
+	}
 }
 
 // resolveQuery records the completion of a query in Pebble storage.
-func (s *NeptuneDataService) resolveQuery(id string, result any, err error) {
-	qr, storeErr := s.store.GetQuery(id)
+func (s *NeptuneDataService) resolveQuery(store *neptunestore.NeptuneStore, id string, result any, err error) {
+	qr, storeErr := store.GetQuery(id)
 	if storeErr != nil || qr == nil {
 		return
 	}
@@ -231,25 +389,40 @@ func (s *NeptuneDataService) resolveQuery(id string, result any, err error) {
 	} else {
 		qr.Status = "complete"
 	}
-	_ = s.store.UpdateQuery(qr)
+	if updateErr := store.UpdateQuery(qr); updateErr != nil {
+		logs.Warn("failed to resolve query", logs.String("queryId", id), logs.Err(updateErr))
+	}
 }
 
-// refreshStatistics re-reads graph statistics from the engine and updates the
-// cached stats struct. Caller must hold the appropriate lock.
+func (s *NeptuneDataService) getStats(region string) *GraphStatistics {
+	val, _ := s.statsMap.LoadOrStore(region, &GraphStatistics{
+		LabelCounts: make(map[string]int64),
+		RelCounts:   make(map[string]int64),
+		LastAccess:  time.Now(),
+		LastRefresh: time.Now(),
+	})
+	st := val.(*GraphStatistics)
+	st.LastAccess = time.Now()
+	return st
+}
+
 func (s *NeptuneDataService) refreshStatistics(reqCtx *request.RequestContext) {
+	if reqCtx == nil {
+		return
+	}
 	reader := reqCtx.GraphReader()
 	if reader == nil {
 		return
 	}
-	s.stats.NodeCount = reader.CountNodes()
-	s.stats.EdgeCount = reader.CountEdges()
-	s.stats.LabelCounts = reader.GetLabelCounts()
-	s.stats.RelCounts = reader.GetRelCounts()
+	region := reqCtx.GetRegion()
+	stats := s.getStats(region)
+	stats.NodeCount = reader.CountNodes()
+	stats.EdgeCount = reader.CountEdges()
+	stats.LabelCounts, _ = reader.GetLabelCounts()
+	stats.RelCounts, _ = reader.GetRelCounts()
+	stats.LastRefresh = time.Now()
 }
 
-// generateQueryID produces a unique query identifier from the current timestamp
-// and a monotonically increasing counter. The counter is safe because all callers
-// hold s.mu (via trackQuery/resolveQuery) before incrementing.
 var queryCounter int64
 
 func generateQueryID() string {
@@ -257,8 +430,6 @@ func generateQueryID() string {
 	return fmt.Sprintf("query-%d-%d", time.Now().UnixMilli(), id)
 }
 
-// generateFastResetToken produces a unique token for the two-phase FastReset
-// protocol. Uses atomic operations for thread safety.
 var tokenCounter int64
 
 func generateFastResetToken() string {

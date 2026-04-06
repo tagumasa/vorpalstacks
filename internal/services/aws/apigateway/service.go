@@ -2,7 +2,6 @@
 package apigateway
 
 import (
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
@@ -19,7 +18,7 @@ type apiGatewayStores struct {
 type APIGatewayService struct{}
 
 // NewAPIGatewayService creates a new API Gateway service instance.
-func NewAPIGatewayService(store storage.BasicStorage, accountID, region string) *APIGatewayService {
+func NewAPIGatewayService(accountID, region string) *APIGatewayService {
 	return &APIGatewayService{}
 }
 

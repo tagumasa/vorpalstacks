@@ -2,7 +2,6 @@
 package cognitoidentity
 
 import (
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
@@ -12,7 +11,7 @@ import (
 type CognitoIdentityService struct{}
 
 // NewCognitoIdentityService creates a new Cognito Identity service.
-func NewCognitoIdentityService(store storage.BasicStorage, accountID, region string) *CognitoIdentityService {
+func NewCognitoIdentityService(accountID, region string) *CognitoIdentityService {
 	return &CognitoIdentityService{}
 }
 

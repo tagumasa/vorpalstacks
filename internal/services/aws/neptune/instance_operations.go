@@ -3,8 +3,10 @@ package neptune
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
+	awserrors "vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
@@ -23,18 +25,21 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	if _, err := store.GetInstance(id); err == nil {
-		return nil, fmt.Errorf("neptune: DBInstance %s already exists", id)
+	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
+	if clusterID != "" {
+		if _, err := store.GetCluster(clusterID); err != nil {
+			return nil, fmt.Errorf("neptune: DBCluster %s not found", clusterID)
+		}
 	}
 
 	now := time.Now()
 	instance := &neptunestore.DBInstance{
 		DBInstanceIdentifier:            id,
-		DBClusterIdentifier:             request.GetStringParam(params, "DBClusterIdentifier"),
+		DBClusterIdentifier:             clusterID,
 		Engine:                          request.GetStringParam(params, "Engine"),
 		EngineVersion:                   request.GetStringParam(params, "EngineVersion"),
 		DBInstanceClass:                 request.GetStringParam(params, "DBInstanceClass"),
-		Status:                          "creating",
+		Status:                          "available",
 		AvailabilityZone:                request.GetStringParam(params, "AvailabilityZone"),
 		DBParameterGroupName:            request.GetStringParam(params, "DBParameterGroupName"),
 		DBSubnetGroupName:               request.GetStringParam(params, "DBSubnetGroupName"),
@@ -49,6 +54,9 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 	if err := store.CreateInstance(instance); err != nil {
 		return nil, translateStoreError(err)
 	}
+
+	recordEvent(store, "db-instance", id, instance.ARN(reqCtx.GetAccountID(), reqCtx.GetRegion()),
+		fmt.Sprintf("DB instance %s created", id), []string{"creation"})
 
 	return map[string]interface{}{
 		"DBInstance": instance,
@@ -73,8 +81,14 @@ func (s *NeptuneService) DeleteDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, translateStoreError(err)
 	}
 
-	_ = store.DeleteInstance(id)
 	instance.Status = "deleting"
+
+	if err := store.DeleteInstance(id); err != nil {
+		return nil, translateStoreError(err)
+	}
+
+	recordEvent(store, "db-instance", id, instance.ARN(reqCtx.GetAccountID(), reqCtx.GetRegion()),
+		fmt.Sprintf("DB instance %s deleted", id), []string{"deletion"})
 
 	return map[string]interface{}{
 		"DBInstance": instance,
@@ -111,8 +125,22 @@ func (s *NeptuneService) ModifyDBInstance(ctx context.Context, reqCtx *request.R
 	if v := request.GetStringParam(params, "PreferredMaintenanceWindow"); v != "" {
 		instance.PreferredMaintenanceWindow = v
 	}
+	if request.HasParam(params, "PubliclyAccessible") {
+		instance.PubliclyAccessible = request.GetBoolParam(params, "PubliclyAccessible")
+	}
+	if request.HasParam(params, "AutoMinorVersionUpgrade") {
+		instance.AutoMinorVersionUpgrade = request.GetBoolParam(params, "AutoMinorVersionUpgrade")
+	}
+	if request.HasParam(params, "EnableIAMDatabaseAuthentication") {
+		instance.EnableIAMDatabaseAuthentication = request.GetBoolParam(params, "EnableIAMDatabaseAuthentication")
+	}
+	if request.HasParam(params, "CopyTagsToSnapshot") {
+		instance.CopyTagsToSnapshot = request.GetBoolParam(params, "CopyTagsToSnapshot")
+	}
 
-	_ = store.UpdateInstance(instance)
+	if err := store.UpdateInstance(instance); err != nil {
+		return nil, translateStoreError(err)
+	}
 
 	return map[string]interface{}{
 		"DBInstance": instance,
@@ -144,14 +172,24 @@ func (s *NeptuneService) DescribeDBInstances(ctx context.Context, reqCtx *reques
 		return nil, translateStoreError(err)
 	}
 
-	result := make([]interface{}, 0, len(instances))
+	items := make([]interface{}, 0, len(instances))
 	for _, i := range instances {
-		result = append(result, i)
+		items = append(items, i)
 	}
 
-	return map[string]interface{}{
-		"DBInstances": protocol.XMLElements{ElementName: "DBInstance", Items: result},
-	}, nil
+	marker := request.GetStringParam(params, "Marker")
+	maxRecords := request.GetIntParam(params, "MaxRecords")
+	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
+		return item.(*neptunestore.DBInstance).DBInstanceIdentifier
+	})
+
+	result := map[string]interface{}{
+		"DBInstances": protocol.XMLElements{ElementName: "DBInstance", Items: resultItems},
+	}
+	if isTruncated {
+		result["Marker"] = nextMarker
+	}
+	return result, nil
 }
 
 // RebootDBInstance reboots the specified DB instance.
@@ -172,10 +210,19 @@ func (s *NeptuneService) RebootDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, translateStoreError(err)
 	}
 
+	if instance.Status != "available" {
+		return nil, awserrors.NewAWSError("InvalidDBInstanceStateFault", fmt.Sprintf("instance %s is not in available state", id), http.StatusBadRequest)
+	}
+
 	instance.Status = "rebooting"
-	_ = store.UpdateInstance(instance)
+	if err := store.UpdateInstance(instance); err != nil {
+		return nil, translateStoreError(err)
+	}
+
 	instance.Status = "available"
-	_ = store.UpdateInstance(instance)
+	if err := store.UpdateInstance(instance); err != nil {
+		return nil, translateStoreError(err)
+	}
 
 	return map[string]interface{}{
 		"DBInstance": instance,

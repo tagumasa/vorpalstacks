@@ -5,19 +5,39 @@ import (
 	"strings"
 )
 
-// isNeptunedataPath returns true if the HTTP request path belongs to the Neptune
-// Data API namespace. Used by the dispatcher to route requests to the
-// neptunedata service.
-func isNeptunedataPath(path string) bool {
-	return strings.HasPrefix(path, "/gremlin") ||
-		strings.HasPrefix(path, "/opencypher") ||
-		strings.HasPrefix(path, "/status") ||
-		strings.HasPrefix(path, "/system") ||
-		strings.HasPrefix(path, "/loader") ||
-		strings.HasPrefix(path, "/propertygraph") ||
-		strings.HasPrefix(path, "/sparql") ||
-		strings.HasPrefix(path, "/rdf") ||
-		strings.HasPrefix(path, "/ml")
+// IsNeptunedataPath returns true if the HTTP request path belongs to the Neptune
+// Data API namespace. Used by the classifier and dispatcher to route requests
+// to the neptunedata service. Uses strict matching for single-segment paths
+// (e.g. "/status") and prefix matching for namespace paths (e.g. "/ml/").
+func IsNeptunedataPath(path string) bool {
+	if path == "/status" {
+		return true
+	}
+	if path == "/system" {
+		return true
+	}
+	if path == "/gremlin" || strings.HasPrefix(path, "/gremlin/") {
+		return true
+	}
+	if path == "/opencypher" || strings.HasPrefix(path, "/opencypher/") {
+		return true
+	}
+	if path == "/loader" || strings.HasPrefix(path, "/loader/") {
+		return true
+	}
+	if path == "/propertygraph" || strings.HasPrefix(path, "/propertygraph/") {
+		return true
+	}
+	if strings.HasPrefix(path, "/sparql/") {
+		return true
+	}
+	if strings.HasPrefix(path, "/rdf/") {
+		return true
+	}
+	if strings.HasPrefix(path, "/ml/") {
+		return true
+	}
+	return false
 }
 
 // extractNeptunedataOperation maps an HTTP method and path to the corresponding

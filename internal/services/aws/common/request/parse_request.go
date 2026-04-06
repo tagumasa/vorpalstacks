@@ -145,7 +145,7 @@ func ParseAWSRequest(r *http.Request) (*ParsedRequest, error) {
 		extractCloudFrontPathParams(r.URL.Path, req.Parameters)
 	}
 
-	if isNeptunedataPath(r.URL.Path) {
+	if IsNeptunedataPath(r.URL.Path) {
 		extractNeptunedataPathParams(r.URL.Path, req.Parameters)
 	}
 
@@ -308,7 +308,7 @@ func ExtractRESTPathParams(path string, method string, params map[string]interfa
 	if strings.HasPrefix(path, "/2020-05-31/") {
 		extractCloudFrontPathParams(path, params)
 	}
-	if isNeptunedataPath(path) {
+	if IsNeptunedataPath(path) {
 		extractNeptunedataPathParams(path, params)
 	}
 	if isAppSyncPath(path) {

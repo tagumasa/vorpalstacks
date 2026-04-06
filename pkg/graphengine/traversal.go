@@ -8,7 +8,9 @@ package graphengine
 import (
 	"container/heap"
 	"container/list"
+	"encoding/json"
 	"fmt"
+	"reflect"
 )
 
 // BFS performs a breadth-first traversal from startID up to maxDepth levels.
@@ -160,16 +162,12 @@ func (d *DB) ShortestPathLabeled(fromID, toID NodeID, label string) (*PathResult
 		queue.Remove(front)
 		entry := front.Value.(bfsEntry)
 
-		edges, err := d.getEdgesForNode(entry.nodeID, Outgoing, false, "")
+		edges, err := d.getEdgesForNode(entry.nodeID, Outgoing, false, label)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, edge := range edges {
-			if label != "" && edge.Label != label {
-				continue
-			}
-
 			if visited[edge.To] {
 				continue
 			}
@@ -247,6 +245,22 @@ func (d *DB) ShortestPathWeighted(fromID, toID NodeID, weightProp string, defaul
 					weight = float64(v)
 				case int64:
 					weight = float64(v)
+				case json.Number:
+					f, err := v.Float64()
+					if err != nil {
+						break
+					}
+					weight = f
+				default:
+					rv := reflect.ValueOf(w)
+					switch rv.Kind() {
+					case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+						weight = float64(rv.Int())
+					case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+						weight = float64(rv.Uint())
+					case reflect.Float32, reflect.Float64:
+						weight = rv.Float()
+					}
 				}
 			}
 
@@ -345,10 +359,9 @@ func (d *DB) TopologicalSort() ([]NodeID, error) {
 	}
 
 	inDegree := make(map[NodeID]int)
-	allNodes := make(map[NodeID]bool)
+	adjacency := make(map[NodeID][]NodeID)
 
 	err := d.ForEachNode(func(node *Node) error {
-		allNodes[node.ID] = true
 		if _, exists := inDegree[node.ID]; !exists {
 			inDegree[node.ID] = 0
 		}
@@ -359,7 +372,7 @@ func (d *DB) TopologicalSort() ([]NodeID, error) {
 		}
 		for _, e := range edges {
 			inDegree[e.To]++
-			allNodes[e.To] = true
+			adjacency[node.ID] = append(adjacency[node.ID], e.To)
 		}
 		return nil
 	})
@@ -367,9 +380,11 @@ func (d *DB) TopologicalSort() ([]NodeID, error) {
 		return nil, err
 	}
 
+	totalNodes := len(inDegree)
+
 	queue := list.New()
-	for id := range allNodes {
-		if inDegree[id] == 0 {
+	for id, deg := range inDegree {
+		if deg == 0 {
 			queue.PushBack(id)
 		}
 	}
@@ -381,20 +396,15 @@ func (d *DB) TopologicalSort() ([]NodeID, error) {
 		nodeID := front.Value.(NodeID)
 		sorted = append(sorted, nodeID)
 
-		edges, err := d.getEdgesForNode(nodeID, Outgoing, false, "")
-		if err != nil {
-			return nil, err
-		}
-
-		for _, e := range edges {
-			inDegree[e.To]--
-			if inDegree[e.To] == 0 {
-				queue.PushBack(e.To)
+		for _, to := range adjacency[nodeID] {
+			inDegree[to]--
+			if inDegree[to] == 0 {
+				queue.PushBack(to)
 			}
 		}
 	}
 
-	if len(sorted) != len(allNodes) {
+	if len(sorted) != totalNodes {
 		return nil, fmt.Errorf("graphengine: graph contains cycles, topological sort not possible")
 	}
 

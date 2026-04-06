@@ -236,6 +236,7 @@ func SnapshotToProto(s *DBClusterSnapshot) *pb.DBClusterSnapshot {
 		DbSnapshotArn:               s.DBSnapshotArn,
 		AccountId:                   s.AccountID,
 		Region:                      s.Region,
+		RestoreAttributeValues:      s.RestoreAttributeValues,
 	}
 	if s.SnapshotCreateTime != nil {
 		p.SnapshotCreateTime = timestamppb.New(*s.SnapshotCreateTime)
@@ -264,6 +265,7 @@ func ProtoToSnapshot(p *pb.DBClusterSnapshot) *DBClusterSnapshot {
 		DBSnapshotArn:               p.GetDbSnapshotArn(),
 		AccountID:                   p.GetAccountId(),
 		Region:                      p.GetRegion(),
+		RestoreAttributeValues:      p.GetRestoreAttributeValues(),
 	}
 	if p.SnapshotCreateTime != nil {
 		t := p.SnapshotCreateTime.AsTime()
@@ -281,12 +283,16 @@ func ClusterParameterGroupToProto(pg *DBClusterParameterGroup) *pb.DBClusterPara
 	if pg == nil {
 		return nil
 	}
-	return &pb.DBClusterParameterGroup{
+	p := &pb.DBClusterParameterGroup{
 		DbClusterParameterGroupName: pg.DBClusterParameterGroupName,
 		DbParameterGroupFamily:      pg.DBParameterGroupFamily,
 		Description:                 pg.Description,
 		Arn:                         pg.ARN,
 	}
+	for _, param := range pg.Parameters {
+		p.Parameters = append(p.Parameters, ParameterToProto(&param))
+	}
+	return p
 }
 
 // ProtoToClusterParameterGroup converts a protobuf DBClusterParameterGroup to its domain representation.
@@ -294,12 +300,16 @@ func ProtoToClusterParameterGroup(p *pb.DBClusterParameterGroup) *DBClusterParam
 	if p == nil {
 		return nil
 	}
-	return &DBClusterParameterGroup{
+	pg := &DBClusterParameterGroup{
 		DBClusterParameterGroupName: p.GetDbClusterParameterGroupName(),
 		DBParameterGroupFamily:      p.GetDbParameterGroupFamily(),
 		Description:                 p.GetDescription(),
 		ARN:                         p.GetArn(),
 	}
+	for _, param := range p.Parameters {
+		pg.Parameters = append(pg.Parameters, *ProtoToParameter(param))
+	}
+	return pg
 }
 
 // ParameterGroupToProto converts a DBParameterGroup to protobuf.
@@ -307,12 +317,16 @@ func ParameterGroupToProto(pg *DBParameterGroup) *pb.DBParameterGroup {
 	if pg == nil {
 		return nil
 	}
-	return &pb.DBParameterGroup{
+	p := &pb.DBParameterGroup{
 		DbParameterGroupName:   pg.DBParameterGroupName,
 		DbParameterGroupFamily: pg.DBParameterGroupFamily,
 		Description:            pg.Description,
 		Arn:                    pg.ARN,
 	}
+	for _, param := range pg.Parameters {
+		p.Parameters = append(p.Parameters, ParameterToProto(&param))
+	}
+	return p
 }
 
 // ProtoToParameterGroup converts a protobuf DBParameterGroup to its domain representation.
@@ -320,12 +334,16 @@ func ProtoToParameterGroup(p *pb.DBParameterGroup) *DBParameterGroup {
 	if p == nil {
 		return nil
 	}
-	return &DBParameterGroup{
+	pg := &DBParameterGroup{
 		DBParameterGroupName:   p.GetDbParameterGroupName(),
 		DBParameterGroupFamily: p.GetDbParameterGroupFamily(),
 		Description:            p.GetDescription(),
 		ARN:                    p.GetArn(),
 	}
+	for _, param := range p.Parameters {
+		pg.Parameters = append(pg.Parameters, *ProtoToParameter(param))
+	}
+	return pg
 }
 
 // subnetToProto converts a Subnet to its protobuf representation.

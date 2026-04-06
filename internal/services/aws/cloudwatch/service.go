@@ -22,7 +22,6 @@ type cloudwatchStores struct {
 
 // CloudWatchService provides CloudWatch operations.
 type CloudWatchService struct {
-	storage        storage.BasicStorage
 	storageManager *storage.RegionStorageManager
 	accountID      string
 	region         string
@@ -36,16 +35,14 @@ type CloudWatchService struct {
 // NewCloudWatchService creates a new CloudWatch service.
 //
 // Parameters:
-//   - store: The storage instance
 //   - accountID: The AWS account ID
 //   - region: The AWS region
 //   - dataPath: The data path for chunk storage
 //
 // Returns:
 //   - *CloudWatchService: A new CloudWatch service
-func NewCloudWatchService(store storage.BasicStorage, accountID, region, dataPath string) *CloudWatchService {
+func NewCloudWatchService(accountID, region, dataPath string) *CloudWatchService {
 	return &CloudWatchService{
-		storage:   store,
 		accountID: accountID,
 		region:    region,
 		dataPath:  dataPath,

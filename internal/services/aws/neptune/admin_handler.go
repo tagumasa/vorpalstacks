@@ -306,18 +306,18 @@ func (h *AdminHandler) DescribeDBEngineVersions(ctx context.Context, req *connec
 		Dbengineversions: []*pb.DBEngineVersion{
 			{
 				Engine:                 "neptune",
-				Engineversion:          "1.4.0.1",
-				Dbparametergroupfamily: "neptune1.4",
+				Engineversion:          "1.3.2.0",
+				Dbparametergroupfamily: "neptune1",
 			},
 			{
 				Engine:                 "neptune",
-				Engineversion:          "1.3.2.1",
-				Dbparametergroupfamily: "neptune1.3",
+				Engineversion:          "1.3.1.0",
+				Dbparametergroupfamily: "neptune1",
 			},
 			{
 				Engine:                 "neptune",
 				Engineversion:          "1.2.1.0",
-				Dbparametergroupfamily: "neptune1.2",
+				Dbparametergroupfamily: "neptune1",
 			},
 		},
 	}), nil
@@ -327,19 +327,50 @@ func (h *AdminHandler) DescribeDBEngineVersions(ctx context.Context, req *connec
 func (h *AdminHandler) DescribeEventCategories(ctx context.Context, req *connect.Request[pb.DescribeEventCategoriesMessage]) (*connect.Response[pb.EventCategoriesMessage], error) {
 	return connect.NewResponse(&pb.EventCategoriesMessage{
 		Eventcategoriesmaplist: []*pb.EventCategoriesMap{
-			{Sourcetype: "db-cluster", Eventcategories: []string{"creation", "failure", "failover", "maintenance", "notification", "recovery"}},
-			{Sourcetype: "db-instance", Eventcategories: []string{"creation", "failure", "maintenance", "notification", "recovery"}},
-			{Sourcetype: "db-snapshot", Eventcategories: []string{"creation", "deletion"}},
+			{Sourcetype: "db-cluster", Eventcategories: []string{"creation", "deletion", "failover", "failure", "maintenance", "notification", "read replica", "recovery", "restoration", "backup"}},
+			{Sourcetype: "db-instance", Eventcategories: []string{"creation", "deletion", "failure", "maintenance", "notification", "recovery"}},
+			{Sourcetype: "db-snapshot", Eventcategories: []string{"creation", "deletion", "restoration"}},
 			{Sourcetype: "db-parameter-group", Eventcategories: []string{"creation", "modification", "deletion"}},
 		},
 	}), nil
 }
 
-// DescribeEvents returns Neptune events. Currently returns an empty list as
-// event history is not persisted.
+// DescribeEvents returns Neptune events from the per-region store.
 func (h *AdminHandler) DescribeEvents(ctx context.Context, req *connect.Request[pb.DescribeEventsMessage]) (*connect.Response[pb.EventsMessage], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, err
+	}
+	result, err := store.ListEvents(storeneptune.EventListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	events := make([]*pb.Event, 0, len(result.Events))
+	for _, evt := range result.Events {
+		var sourceType pb.SourceType
+		switch evt.SourceType {
+		case "db-cluster":
+			sourceType = pb.SourceType_SOURCE_TYPE_DB_CLUSTER
+		case "db-instance":
+			sourceType = pb.SourceType_SOURCE_TYPE_DB_INSTANCE
+		case "db-snapshot":
+			sourceType = pb.SourceType_SOURCE_TYPE_DB_CLUSTER_SNAPSHOT
+		case "db-parameter-group":
+			sourceType = pb.SourceType_SOURCE_TYPE_DB_PARAMETER_GROUP
+		default:
+			sourceType = pb.SourceType_SOURCE_TYPE_DB_CLUSTER
+		}
+		events = append(events, &pb.Event{
+			Date:             evt.Date.UTC().Format("2006-01-02T15:04:05.000Z"),
+			Message:          evt.Message,
+			Sourcearn:        evt.SourceArn,
+			Sourceidentifier: evt.SourceIdentifier,
+			Sourcetype:       sourceType,
+			Eventcategories:  evt.EventCategories,
+		})
+	}
 	return connect.NewResponse(&pb.EventsMessage{
-		Events: []*pb.Event{},
+		Events: events,
 	}), nil
 }
 
@@ -374,19 +405,128 @@ func (h *AdminHandler) DescribeValidDBInstanceModifications(ctx context.Context,
 }
 
 // DescribeDBClusterParameters returns the parameters of a DB cluster
-// parameter group. Currently returns an empty parameter list.
+// parameter group, including system defaults and any user modifications.
 func (h *AdminHandler) DescribeDBClusterParameters(ctx context.Context, req *connect.Request[pb.DescribeDBClusterParametersMessage]) (*connect.Response[pb.DBClusterParameterGroupDetails], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, err
+	}
+	pg, err := store.GetClusterParameterGroup(req.Msg.Dbclusterparametergroupname)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, err)
+	}
+
+	defaultParams := []struct{ name, value, desc, source, apply, dtype, modifiable string }{
+		{"neptune_query_timeout", "120000", "Query execution timeout in milliseconds", "system", "dynamic", "integer", "true"},
+		{"neptune_enable_audit_log", "0", "Enable audit logging", "system", "static", "boolean", "true"},
+	}
+	userMods := make(map[string]storeneptune.Parameter, len(pg.Parameters))
+	for _, p := range pg.Parameters {
+		userMods[p.ParameterName] = p
+	}
+
+	pbParams := make([]*pb.Parameter, 0, len(defaultParams))
+	for _, dp := range defaultParams {
+		if mod, ok := userMods[dp.name]; ok {
+			pbParams = append(pbParams, &pb.Parameter{
+				Parametername:  mod.ParameterName,
+				Parametervalue: mod.ParameterValue,
+				Description:    mod.Description,
+				Source:         mod.Source,
+				Applytype:      mod.ApplyType,
+				Datatype:       mod.DataType,
+				Ismodifiable:   mod.IsModifiable,
+			})
+			delete(userMods, dp.name)
+		} else {
+			pbParams = append(pbParams, &pb.Parameter{
+				Parametername:  dp.name,
+				Parametervalue: dp.value,
+				Description:    dp.desc,
+				Source:         dp.source,
+				Applytype:      dp.apply,
+				Datatype:       dp.dtype,
+				Ismodifiable:   dp.modifiable == "true",
+			})
+		}
+	}
+	for _, p := range userMods {
+		pbParams = append(pbParams, &pb.Parameter{
+			Parametername:  p.ParameterName,
+			Parametervalue: p.ParameterValue,
+			Description:    p.Description,
+			Source:         p.Source,
+			Applytype:      p.ApplyType,
+			Datatype:       p.DataType,
+			Ismodifiable:   p.IsModifiable,
+		})
+	}
+
 	return connect.NewResponse(&pb.DBClusterParameterGroupDetails{
-		Parameters: []*pb.Parameter{},
+		Parameters: pbParams,
 		Marker:     "",
 	}), nil
 }
 
-// DescribeDBParameters returns the parameters of a DB parameter group.
-// Currently returns an empty parameter list.
+// DescribeDBParameters returns the parameters of a DB parameter group,
+// including system defaults and any user modifications.
 func (h *AdminHandler) DescribeDBParameters(ctx context.Context, req *connect.Request[pb.DescribeDBParametersMessage]) (*connect.Response[pb.DBParameterGroupDetails], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, err
+	}
+	pg, err := store.GetParameterGroup(req.Msg.Dbparametergroupname)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, err)
+	}
+
+	defaultParams := []struct{ name, value, desc, source, apply, dtype, modifiable string }{
+		{"neptune_query_timeout", "120000", "Query execution timeout", "system", "dynamic", "integer", "true"},
+	}
+	userMods := make(map[string]storeneptune.Parameter, len(pg.Parameters))
+	for _, p := range pg.Parameters {
+		userMods[p.ParameterName] = p
+	}
+
+	pbParams := make([]*pb.Parameter, 0, len(defaultParams))
+	for _, dp := range defaultParams {
+		if mod, ok := userMods[dp.name]; ok {
+			pbParams = append(pbParams, &pb.Parameter{
+				Parametername:  mod.ParameterName,
+				Parametervalue: mod.ParameterValue,
+				Description:    mod.Description,
+				Source:         mod.Source,
+				Applytype:      mod.ApplyType,
+				Datatype:       mod.DataType,
+				Ismodifiable:   mod.IsModifiable,
+			})
+			delete(userMods, dp.name)
+		} else {
+			pbParams = append(pbParams, &pb.Parameter{
+				Parametername:  dp.name,
+				Parametervalue: dp.value,
+				Description:    dp.desc,
+				Source:         dp.source,
+				Applytype:      dp.apply,
+				Datatype:       dp.dtype,
+				Ismodifiable:   dp.modifiable == "true",
+			})
+		}
+	}
+	for _, p := range userMods {
+		pbParams = append(pbParams, &pb.Parameter{
+			Parametername:  p.ParameterName,
+			Parametervalue: p.ParameterValue,
+			Description:    p.Description,
+			Source:         p.Source,
+			Applytype:      p.ApplyType,
+			Datatype:       p.DataType,
+			Ismodifiable:   p.IsModifiable,
+		})
+	}
+
 	return connect.NewResponse(&pb.DBParameterGroupDetails{
-		Parameters: []*pb.Parameter{},
+		Parameters: pbParams,
 		Marker:     "",
 	}), nil
 }
@@ -394,11 +534,15 @@ func (h *AdminHandler) DescribeDBParameters(ctx context.Context, req *connect.Re
 // DescribeEngineDefaultClusterParameters returns the default engine
 // parameters for a cluster parameter group family.
 func (h *AdminHandler) DescribeEngineDefaultClusterParameters(ctx context.Context, req *connect.Request[pb.DescribeEngineDefaultClusterParametersMessage]) (*connect.Response[pb.DescribeEngineDefaultClusterParametersResult], error) {
+	pbParams := []*pb.Parameter{
+		{Parametername: "neptune_query_timeout", Parametervalue: "120000", Description: "Query execution timeout in milliseconds", Source: "system", Applytype: "dynamic", Datatype: "integer", Ismodifiable: true},
+		{Parametername: "neptune_enable_audit_log", Parametervalue: "0", Description: "Enable audit logging", Source: "system", Applytype: "static", Datatype: "boolean", Ismodifiable: true},
+	}
 	return connect.NewResponse(&pb.DescribeEngineDefaultClusterParametersResult{
 		Enginedefaults: &pb.EngineDefaults{
-			Dbparametergroupfamily: "neptune1.4",
+			Dbparametergroupfamily: "neptune1",
 			Marker:                 "",
-			Parameters:             []*pb.Parameter{},
+			Parameters:             pbParams,
 		},
 	}), nil
 }
@@ -406,11 +550,14 @@ func (h *AdminHandler) DescribeEngineDefaultClusterParameters(ctx context.Contex
 // DescribeEngineDefaultParameters returns the default engine parameters for
 // a DB parameter group family.
 func (h *AdminHandler) DescribeEngineDefaultParameters(ctx context.Context, req *connect.Request[pb.DescribeEngineDefaultParametersMessage]) (*connect.Response[pb.DescribeEngineDefaultParametersResult], error) {
+	pbParams := []*pb.Parameter{
+		{Parametername: "neptune_query_timeout", Parametervalue: "120000", Description: "Query execution timeout", Source: "system", Applytype: "dynamic", Datatype: "integer", Ismodifiable: true},
+	}
 	return connect.NewResponse(&pb.DescribeEngineDefaultParametersResult{
 		Enginedefaults: &pb.EngineDefaults{
-			Dbparametergroupfamily: "neptune1.4",
+			Dbparametergroupfamily: "neptune1",
 			Marker:                 "",
-			Parameters:             []*pb.Parameter{},
+			Parameters:             pbParams,
 		},
 	}), nil
 }

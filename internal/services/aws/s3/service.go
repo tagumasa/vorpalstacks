@@ -24,7 +24,6 @@ type s3Stores struct {
 // S3Service provides S3 service operations.
 type S3Service struct {
 	s3Store             s3store.S3StoreInterface
-	storage             storage.BasicStorage
 	blobStore           storage.BlobStore
 	accountID           string
 	accessController    *AccessController
@@ -48,9 +47,8 @@ func NewS3Service(s3Store s3store.S3StoreInterface, blobStore storage.BlobStore,
 }
 
 // NewS3ServiceWithStorage creates a new S3Service with the given storage.
-func NewS3ServiceWithStorage(store storage.BasicStorage, blobStore storage.BlobStore, accountID, region string) *S3Service {
+func NewS3ServiceWithStorage(blobStore storage.BlobStore, accountID string) *S3Service {
 	return &S3Service{
-		storage:           store,
 		blobStore:         blobStore,
 		accountID:         accountID,
 		accessController:  NewAccessController(accountID),

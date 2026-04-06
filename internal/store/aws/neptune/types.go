@@ -104,6 +104,7 @@ type DBClusterSnapshot struct {
 	StorageEncrypted            bool       `json:"StorageEncrypted"`
 	KmsKeyId                    string     `json:"KmsKeyId,omitempty"`
 	DBSnapshotArn               string     `json:"DBSnapshotArn,omitempty"`
+	RestoreAttributeValues      []string   `json:"RestoreAttributeValues,omitempty"`
 	AccountID                   string     `json:"AccountId,omitempty"`
 	Region                      string     `json:"Region,omitempty"`
 }
@@ -116,19 +117,21 @@ func (s *DBClusterSnapshot) ARN(accountID, region string) string {
 // DBClusterParameterGroup defines a set of engine configuration parameters
 // applied at the cluster level.
 type DBClusterParameterGroup struct {
-	DBClusterParameterGroupName string `json:"DBClusterParameterGroupName"`
-	DBParameterGroupFamily      string `json:"DBParameterGroupFamily"`
-	Description                 string `json:"Description"`
-	ARN                         string `json:"DBClusterParameterGroupArn,omitempty"`
+	DBClusterParameterGroupName string      `json:"DBClusterParameterGroupName"`
+	DBParameterGroupFamily      string      `json:"DBParameterGroupFamily"`
+	Description                 string      `json:"Description"`
+	ARN                         string      `json:"DBClusterParameterGroupArn,omitempty"`
+	Parameters                  []Parameter `json:"Parameters,omitempty"`
 }
 
 // DBParameterGroup defines a set of engine configuration parameters applied
 // at the instance level.
 type DBParameterGroup struct {
-	DBParameterGroupName   string `json:"DBParameterGroupName"`
-	DBParameterGroupFamily string `json:"DBParameterGroupFamily"`
-	Description            string `json:"Description"`
-	ARN                    string `json:"DBParameterGroupArn,omitempty"`
+	DBParameterGroupName   string      `json:"DBParameterGroupName"`
+	DBParameterGroupFamily string      `json:"DBParameterGroupFamily"`
+	Description            string      `json:"Description"`
+	ARN                    string      `json:"DBParameterGroupArn,omitempty"`
+	Parameters             []Parameter `json:"Parameters,omitempty"`
 }
 
 // DBSubnetGroup specifies the VPC subnets used by DB instances within a cluster.

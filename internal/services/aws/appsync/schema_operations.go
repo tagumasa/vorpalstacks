@@ -39,8 +39,6 @@ func (s *AppSyncService) StartSchemaCreation(ctx context.Context, reqCtx *reques
 		}
 	}
 
-	_ = decodedDef
-
 	_, err = store.GetGraphqlApiById(apiId)
 	if err != nil {
 		return nil, NewNotFoundException(fmt.Sprintf("GraphQL API with ID %s", apiId))

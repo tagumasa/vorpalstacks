@@ -809,5 +809,5 @@ func isIdentStart(ch byte) bool {
 }
 
 func isIdentPart(ch byte) bool {
-	return isIdentStart(ch)
+	return isIdentStart(ch) || (ch >= '0' && ch <= '9')
 }

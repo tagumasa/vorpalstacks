@@ -163,9 +163,22 @@ func execSelect(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return result, nil
 }
 
-// execWhere filters traversers using a nested traversal or a label-predicate pair.
+// execWhere filters traversers using a nested traversal, a label-predicate pair,
+// or by() modulators that extract values for truthiness checking.
 func execWhere(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
-	if len(step.Args) == 0 {
+	if len(step.Args) == 0 && len(step.Modulators) == 0 {
+		return traversers, nil
+	}
+
+	if len(step.Args) == 0 && len(step.Modulators) > 0 {
+		for _, mod := range step.Modulators {
+			if mod.Name == "by" {
+				traversers = filterTraversers(traversers, func(t *Traverser) bool {
+					val := computeByValue(ec, t, mod)
+					return val != nil && !isZeroValue(val)
+				})
+			}
+		}
 		return traversers, nil
 	}
 
@@ -1348,18 +1361,20 @@ func executeNestedTraversal(ec *ExecContext, parent *Traverser, trav *Traversal)
 			}
 		}
 	} else {
-		for _, step := range trav.Steps {
+		for i, step := range trav.Steps {
 			exec, ok := stepRegistry[step.Name]
 			if !ok {
 				return nil, fmt.Errorf("gremlin: unknown step %q", step.Name)
 			}
 			var err error
-			inputs := make([]*Traverser, len(current))
-			for i, t := range current {
-				inputs[i] = t
+			var inputs []*Traverser
+			if i == 0 && len(current) == 0 {
+				inputs = []*Traverser{parent.clone()}
+			} else {
+				inputs = current
 			}
 			if len(inputs) == 0 {
-				inputs = []*Traverser{parent.clone()}
+				continue
 			}
 			current, err = exec(ec, inputs, step)
 			if err != nil {
@@ -1452,4 +1467,22 @@ func valuesEqual(a, b any) bool {
 		return af == bf
 	}
 	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
+}
+
+func isZeroValue(v any) bool {
+	switch val := v.(type) {
+	case nil:
+		return true
+	case bool:
+		return !val
+	case int:
+		return val == 0
+	case int64:
+		return val == 0
+	case float64:
+		return val == 0
+	case string:
+		return val == ""
+	}
+	return false
 }

@@ -42,6 +42,7 @@ const (
 )
 
 type subscribeConfig struct {
+	eventType        string
 	async            bool
 	priority         int
 	filter           filterMatcher

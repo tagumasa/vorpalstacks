@@ -390,7 +390,7 @@ func evalComparison(ctx *EvalContext, e *Expression) (any, error) {
 	cmp, cerr := compareValuesSafe(left, right)
 	if cerr != nil {
 		if e.Op == OpNeq {
-			return true, nil
+			return nil, nil
 		}
 		return nil, nil
 	}
@@ -2190,6 +2190,23 @@ func sortRows(rows []map[string]any, orderItems []OrderItem) {
 		for _, oi := range orderItems {
 			vi := evalOrderValue(&oi.Expr, rows[i])
 			vj := evalOrderValue(&oi.Expr, rows[j])
+
+			if vi == nil && vj == nil {
+				continue
+			}
+			if vi == nil {
+				if oi.Desc {
+					return false
+				}
+				return false
+			}
+			if vj == nil {
+				if oi.Desc {
+					return true
+				}
+				return true
+			}
+
 			cmp := compareValues(vi, vj)
 			if cmp == 0 {
 				continue

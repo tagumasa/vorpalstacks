@@ -3,8 +3,10 @@ package neptune
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
+	awserrors "vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
@@ -27,10 +29,6 @@ func (s *NeptuneService) CreateDBClusterSnapshot(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	if _, err := store.GetSnapshot(snapshotID); err == nil {
-		return nil, fmt.Errorf("neptune: DBClusterSnapshot %s already exists", snapshotID)
-	}
-
 	cluster, err := store.GetCluster(clusterID)
 	if err != nil {
 		return nil, translateStoreError(err)
@@ -43,7 +41,7 @@ func (s *NeptuneService) CreateDBClusterSnapshot(ctx context.Context, reqCtx *re
 		SnapshotCreateTime:          &now,
 		Engine:                      cluster.Engine,
 		EngineVersion:               cluster.EngineVersion,
-		Status:                      "creating",
+		Status:                      "available",
 		Port:                        cluster.Port,
 		StorageEncrypted:            cluster.StorageEncrypted,
 		KmsKeyId:                    cluster.KmsKeyId,
@@ -51,11 +49,13 @@ func (s *NeptuneService) CreateDBClusterSnapshot(ctx context.Context, reqCtx *re
 		AccountID:                   reqCtx.GetAccountID(),
 		Region:                      reqCtx.GetRegion(),
 	}
-	snapshot.Status = "available"
 
 	if err := store.CreateSnapshot(snapshot); err != nil {
 		return nil, translateStoreError(err)
 	}
+
+	recordEvent(store, "db-snapshot", snapshotID, snapshot.ARN(reqCtx.GetAccountID(), reqCtx.GetRegion()),
+		fmt.Sprintf("DB cluster snapshot %s created", snapshotID), []string{"creation"})
 
 	return map[string]interface{}{
 		"DBClusterSnapshot": snapshot,
@@ -80,7 +80,12 @@ func (s *NeptuneService) DeleteDBClusterSnapshot(ctx context.Context, reqCtx *re
 		return nil, translateStoreError(err)
 	}
 
-	_ = store.DeleteSnapshot(snapshotID)
+	if err := store.DeleteSnapshot(snapshotID); err != nil {
+		return nil, translateStoreError(err)
+	}
+
+	recordEvent(store, "db-snapshot", snapshotID, snapshot.ARN(reqCtx.GetAccountID(), reqCtx.GetRegion()),
+		fmt.Sprintf("DB cluster snapshot %s deleted", snapshotID), []string{"deletion"})
 
 	return map[string]interface{}{
 		"DBClusterSnapshot": snapshot,
@@ -112,14 +117,28 @@ func (s *NeptuneService) DescribeDBClusterSnapshots(ctx context.Context, reqCtx 
 		return nil, translateStoreError(err)
 	}
 
-	result := make([]interface{}, 0, len(snapshots))
+	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
+	items := make([]interface{}, 0, len(snapshots))
 	for _, snap := range snapshots {
-		result = append(result, snap)
+		if clusterID != "" && snap.DBClusterIdentifier != clusterID {
+			continue
+		}
+		items = append(items, snap)
 	}
 
-	return map[string]interface{}{
-		"DBClusterSnapshots": protocol.XMLElements{ElementName: "DBClusterSnapshot", Items: result},
-	}, nil
+	marker := request.GetStringParam(params, "Marker")
+	maxRecords := request.GetIntParam(params, "MaxRecords")
+	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
+		return item.(*neptunestore.DBClusterSnapshot).DBClusterSnapshotIdentifier
+	})
+
+	result := map[string]interface{}{
+		"DBClusterSnapshots": protocol.XMLElements{ElementName: "DBClusterSnapshot", Items: resultItems},
+	}
+	if isTruncated {
+		result["Marker"] = nextMarker
+	}
+	return result, nil
 }
 
 // CopyDBClusterSnapshot creates a copy of the specified DB cluster snapshot.
@@ -148,6 +167,10 @@ func (s *NeptuneService) CopyDBClusterSnapshot(ctx context.Context, reqCtx *requ
 	copy := *source
 	copy.DBClusterSnapshotIdentifier = targetID
 	copy.SnapshotCreateTime = &now
+	if source.ClusterCreateTime != nil {
+		ct := *source.ClusterCreateTime
+		copy.ClusterCreateTime = &ct
+	}
 	copy.DBSnapshotArn = copy.ARN(reqCtx.GetAccountID(), reqCtx.GetRegion())
 
 	if err := store.CreateSnapshot(&copy); err != nil {
@@ -173,15 +196,24 @@ func (s *NeptuneService) DescribeDBClusterSnapshotAttributes(ctx context.Context
 		return nil, err
 	}
 
-	_, err = store.GetSnapshot(snapshotID)
+	snap, err := store.GetSnapshot(snapshotID)
 	if err != nil {
 		return nil, translateStoreError(err)
+	}
+
+	attrValues := snap.RestoreAttributeValues
+	if attrValues == nil {
+		attrValues = []string{}
+	}
+	attrItems := make([]interface{}, 0, len(attrValues))
+	for _, v := range attrValues {
+		attrItems = append(attrItems, v)
 	}
 
 	return map[string]interface{}{
 		"DBClusterSnapshotIdentifier": snapshotID,
 		"DBClusterSnapshotAttributes": protocol.XMLElements{ElementName: "DBClusterSnapshotAttribute", Items: []interface{}{
-			map[string]interface{}{"AttributeName": "restore", "AttributeValues": protocol.XMLElements{ElementName: "AttributeValue", Items: []interface{}{}}},
+			map[string]interface{}{"AttributeName": "restore", "AttributeValues": protocol.XMLElements{ElementName: "AttributeValue", Items: attrItems}},
 		}},
 	}, nil
 }
@@ -195,10 +227,55 @@ func (s *NeptuneService) ModifyDBClusterSnapshotAttribute(ctx context.Context, r
 		return nil, fmt.Errorf("neptune: DBClusterSnapshotIdentifier is required")
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	snap, err := store.GetSnapshot(snapshotID)
+	if err != nil {
+		return nil, translateStoreError(err)
+	}
+
+	attrName := request.GetStringParam(params, "AttributeName")
+	valuesToAdd := request.GetStringList(params, "ValuesToAdd")
+	valuesToRemove := request.GetStringList(params, "ValuesToRemove")
+
+	if attrName == "" {
+		attrName = "restore"
+	}
+	if attrName != "restore" {
+		return nil, fmt.Errorf("neptune: unsupported attribute name '%s', only 'restore' is supported", attrName)
+	}
+
+	existing := make(map[string]bool, len(snap.RestoreAttributeValues))
+	for _, v := range snap.RestoreAttributeValues {
+		existing[v] = true
+	}
+	for _, v := range valuesToRemove {
+		delete(existing, v)
+	}
+	for _, v := range valuesToAdd {
+		existing[v] = true
+	}
+	result := make([]string, 0, len(existing))
+	for v := range existing {
+		result = append(result, v)
+	}
+	snap.RestoreAttributeValues = result
+	if err := store.UpdateSnapshot(snap); err != nil {
+		return nil, translateStoreError(err)
+	}
+
+	attrItems := make([]interface{}, 0, len(snap.RestoreAttributeValues))
+	for _, v := range snap.RestoreAttributeValues {
+		attrItems = append(attrItems, v)
+	}
+
 	return map[string]interface{}{
 		"DBClusterSnapshotIdentifier": snapshotID,
 		"DBClusterSnapshotAttributes": protocol.XMLElements{ElementName: "DBClusterSnapshotAttribute", Items: []interface{}{
-			map[string]interface{}{"AttributeName": "restore", "AttributeValues": protocol.XMLElements{ElementName: "AttributeValue", Items: []interface{}{}}},
+			map[string]interface{}{"AttributeName": attrName, "AttributeValues": protocol.XMLElements{ElementName: "AttributeValue", Items: attrItems}},
 		}},
 	}, nil
 }
@@ -234,7 +311,7 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 		DBClusterIdentifier:         clusterID,
 		Engine:                      engine,
 		EngineVersion:               snapshot.EngineVersion,
-		Status:                      "creating",
+		Status:                      "available",
 		Port:                        request.GetIntParam(params, "Port"),
 		BackupRetentionPeriod:       request.GetIntParam(params, "BackupRetentionPeriod"),
 		DBClusterParameterGroupName: request.GetStringParam(params, "DBClusterParameterGroupName"),
@@ -247,7 +324,6 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 		AccountID:                   reqCtx.GetAccountID(),
 		Region:                      reqCtx.GetRegion(),
 	}
-	cluster.Status = "available"
 
 	if err := store.CreateCluster(cluster); err != nil {
 		return nil, translateStoreError(err)
@@ -286,7 +362,7 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 		DBClusterIdentifier:         clusterID,
 		Engine:                      source.Engine,
 		EngineVersion:               source.EngineVersion,
-		Status:                      "creating",
+		Status:                      "available",
 		Port:                        request.GetIntParam(params, "Port"),
 		BackupRetentionPeriod:       request.GetIntParam(params, "BackupRetentionPeriod"),
 		DBClusterParameterGroupName: request.GetStringParam(params, "DBClusterParameterGroupName"),
@@ -299,7 +375,6 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 		AccountID:                   reqCtx.GetAccountID(),
 		Region:                      reqCtx.GetRegion(),
 	}
-	cluster.Status = "available"
 
 	if err := store.CreateCluster(cluster); err != nil {
 		return nil, translateStoreError(err)
@@ -329,9 +404,25 @@ func (s *NeptuneService) PromoteReadReplicaDBCluster(ctx context.Context, reqCtx
 		return nil, translateStoreError(err)
 	}
 
+	if cluster.ReplicationSourceIdentifier == "" {
+		return nil, awserrors.NewAWSError("InvalidDBClusterStateFault", fmt.Sprintf("cluster %s is not a read replica", id), http.StatusBadRequest)
+	}
+
+	if cluster.Status != "available" {
+		return nil, awserrors.NewAWSError("InvalidDBClusterStateFault", fmt.Sprintf("cluster %s is not in available state", id), http.StatusBadRequest)
+	}
+
 	cluster.ReplicationSourceIdentifier = ""
+	cluster.GlobalClusterIdentifier = ""
+	cluster.Status = "promoting"
+	if err := store.UpdateCluster(cluster); err != nil {
+		return nil, translateStoreError(err)
+	}
+
 	cluster.Status = "available"
-	_ = store.UpdateCluster(cluster)
+	if err := store.UpdateCluster(cluster); err != nil {
+		return nil, translateStoreError(err)
+	}
 
 	return map[string]interface{}{
 		"DBCluster": cluster,

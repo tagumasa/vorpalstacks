@@ -399,14 +399,24 @@ func TestNeptunedataPath(t *testing.T) {
 		want bool
 	}{
 		{"/gremlin", true},
+		{"/gremlin/status", true},
 		{"/opencypher", true},
+		{"/opencypher/status", true},
 		{"/status", true},
 		{"/system", true},
 		{"/loader", true},
+		{"/loader/job-1", true},
 		{"/propertygraph", true},
-		{"/sparql", true},
-		{"/rdf", true},
-		{"/ml", true},
+		{"/propertygraph/statistics", true},
+		{"/sparql/statistics", true},
+		{"/rdf/statistics/summary", true},
+		{"/ml/endpoints", true},
+		{"/statusbar", false},
+		{"/status-page", false},
+		{"/systeminfo", false},
+		{"/loaderx", false},
+		{"/ml", false},
+		{"/mls", false},
 		{"/unknown", false},
 	}
 

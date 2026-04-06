@@ -25,7 +25,7 @@ type CognitoService struct {
 }
 
 // NewCognitoService creates a new Cognito User Pools service instance.
-func NewCognitoService(store storage.BasicStorage, accountID, region string) *CognitoService {
+func NewCognitoService(accountID, region string) *CognitoService {
 	return &CognitoService{
 		accountID: accountID,
 		region:    region,

@@ -2,9 +2,12 @@
 package neptune
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
@@ -18,12 +21,48 @@ type NeptuneService struct {
 	region         string
 	storageManager *storage.RegionStorageManager
 	stores         sync.Map
+	cancelCleanup  context.CancelFunc
 }
 
 // NewNeptuneService creates a new NeptuneService for the specified account and
-// region.
+// region. A background goroutine is started to periodically purge old events.
 func NewNeptuneService(accountID, region string) *NeptuneService {
-	return &NeptuneService{accountID: accountID, region: region}
+	ctx, cancel := context.WithCancel(context.Background())
+	s := &NeptuneService{accountID: accountID, region: region, cancelCleanup: cancel}
+	go s.cleanupOldEvents(ctx)
+	return s
+}
+
+// Close stops the background event cleanup goroutine.
+func (s *NeptuneService) Close() {
+	if s.cancelCleanup != nil {
+		s.cancelCleanup()
+	}
+}
+
+// cleanupOldEvents periodically purges events older than the retention period.
+func (s *NeptuneService) cleanupOldEvents(ctx context.Context) {
+	ticker := time.NewTicker(10 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			s.stores.Range(func(_, value any) bool {
+				store, ok := value.(neptunestore.NeptuneStoreInterface)
+				if !ok {
+					return true
+				}
+				if purgeable, ok := store.(interface{ PurgeOldEvents() error }); ok {
+					if err := purgeable.PurgeOldEvents(); err != nil {
+						logs.Warn("failed to purge old events", logs.Err(err))
+					}
+				}
+				return true
+			})
+		}
+	}
 }
 
 // SetStorageManager injects the region storage manager for per-region store
@@ -53,6 +92,20 @@ func (s *NeptuneService) GetStoreForRegion(region string) (neptunestore.NeptuneS
 func (s *NeptuneService) store(reqCtx *request.RequestContext) (neptunestore.NeptuneStoreInterface, error) {
 	region := reqCtx.GetRegion()
 	return s.GetStoreForRegion(region)
+}
+
+func recordEvent(store neptunestore.NeptuneStoreInterface, sourceType, sourceID, sourceArn, message string, categories []string) {
+	evt := &neptunestore.Event{
+		Date:             time.Now().UTC(),
+		EventCategories:  categories,
+		Message:          message,
+		SourceArn:        sourceArn,
+		SourceIdentifier: sourceID,
+		SourceType:       sourceType,
+	}
+	if err := store.RecordEvent(evt); err != nil {
+		logs.Warn("failed to record event", logs.Err(err))
+	}
 }
 
 // RegisterHandlers registers all Neptune Management API action handlers with

@@ -25,7 +25,7 @@ func translateStoreError(err error) error {
 	case errors.Is(err, neptunestore.ErrDBClusterSnapshotNotFound):
 		return awserrors.NewAWSError("DBClusterSnapshotNotFoundFault", "DBClusterSnapshot not found: "+extractStoreMsg(err), http.StatusNotFound)
 	case errors.Is(err, neptunestore.ErrDBClusterParameterGroupNotFound):
-		return awserrors.NewAWSError("DBParameterGroupNotFoundFault", "DBParameterGroup not found: "+extractStoreMsg(err), http.StatusNotFound)
+		return awserrors.NewAWSError("DBClusterParameterGroupNotFoundFault", "DBClusterParameterGroup not found: "+extractStoreMsg(err), http.StatusNotFound)
 	case errors.Is(err, neptunestore.ErrDBParameterGroupNotFound):
 		return awserrors.NewAWSError("DBParameterGroupNotFoundFault", "DBParameterGroup not found: "+extractStoreMsg(err), http.StatusNotFound)
 	case errors.Is(err, neptunestore.ErrDBSubnetGroupNotFound):
@@ -43,7 +43,7 @@ func translateStoreError(err error) error {
 	case errors.Is(err, neptunestore.ErrDBClusterSnapshotAlreadyExists):
 		return awserrors.NewAWSError("DBClusterSnapshotAlreadyExistsFault", "DBClusterSnapshot already exists", http.StatusConflict)
 	case errors.Is(err, neptunestore.ErrDBClusterParameterGroupAlreadyExists):
-		return awserrors.NewAWSError("DBParameterGroupAlreadyExistsFault", "DBClusterParameterGroup already exists", http.StatusConflict)
+		return awserrors.NewAWSError("DBClusterParameterGroupAlreadyExistsFault", "DBClusterParameterGroup already exists", http.StatusConflict)
 	case errors.Is(err, neptunestore.ErrDBParameterGroupAlreadyExists):
 		return awserrors.NewAWSError("DBParameterGroupAlreadyExistsFault", "DBParameterGroup already exists", http.StatusConflict)
 	case errors.Is(err, neptunestore.ErrDBSubnetGroupAlreadyExists):

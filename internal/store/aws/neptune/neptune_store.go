@@ -4,7 +4,11 @@
 package neptune
 
 import (
+	"encoding/json"
+	"fmt"
+	"sort"
 	"sync"
+	"time"
 
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 
@@ -22,6 +26,7 @@ const (
 	subnetGroupBucket       = "neptune_subnet_groups"
 	globalClusterBucket     = "neptune_global_clusters"
 	eventSubBucket          = "neptune_event_subscriptions"
+	eventsBucket            = "neptune_events"
 	tagsBucket              = "neptune_tags"
 	clusterEndpointBucket   = "neptune_cluster_endpoints"
 	queryStateBucket        = "neptunedata_queries"
@@ -39,6 +44,7 @@ type NeptuneStoreInterface interface {
 	SubnetGroupOps
 	GlobalClusterOps
 	EventSubscriptionOps
+	EventOps
 	TagOps
 	ClusterEndpointOps
 }
@@ -91,6 +97,7 @@ type SnapshotOps interface {
 	CreateSnapshot(snapshot *DBClusterSnapshot) error
 	GetSnapshot(id string) (*DBClusterSnapshot, error)
 	DeleteSnapshot(id string) error
+	UpdateSnapshot(snapshot *DBClusterSnapshot) error
 	ListSnapshots() ([]*DBClusterSnapshot, error)
 }
 
@@ -98,6 +105,7 @@ type SnapshotOps interface {
 type ClusterParameterGroupOps interface {
 	CreateClusterParameterGroup(pg *DBClusterParameterGroup) error
 	GetClusterParameterGroup(name string) (*DBClusterParameterGroup, error)
+	UpdateClusterParameterGroup(pg *DBClusterParameterGroup) error
 	DeleteClusterParameterGroup(name string) error
 	ListClusterParameterGroups() ([]*DBClusterParameterGroup, error)
 }
@@ -106,6 +114,7 @@ type ClusterParameterGroupOps interface {
 type ParameterGroupOps interface {
 	CreateParameterGroup(pg *DBParameterGroup) error
 	GetParameterGroup(name string) (*DBParameterGroup, error)
+	UpdateParameterGroup(pg *DBParameterGroup) error
 	DeleteParameterGroup(name string) error
 	ListParameterGroups() ([]*DBParameterGroup, error)
 }
@@ -153,6 +162,12 @@ type ClusterEndpointOps interface {
 	ListClusterEndpoints(clusterID string) ([]*DBClusterEndpoint, error)
 }
 
+type EventOps interface {
+	RecordEvent(evt *Event) error
+	ListEvents(opts EventListOptions) (*EventListResult, error)
+	PurgeOldEvents() error
+}
+
 // NeptuneStore provides the Pebble-backed storage implementation for all Neptune
 // Management API resources. Each resource type is stored in its own bucket with
 // protobuf serialisation. A single RWMutex guards all write operations.
@@ -165,6 +180,7 @@ type NeptuneStore struct {
 	subnetGroups       *common.BaseStore
 	globalClusters     *common.BaseStore
 	eventSubs          *common.BaseStore
+	events             *common.BaseStore
 	tags               *common.BaseStore
 	clusterEndpoints   *common.BaseStore
 	queries            *common.BaseStore
@@ -173,6 +189,7 @@ type NeptuneStore struct {
 }
 
 var _ NeptuneStoreInterface = (*NeptuneStore)(nil)
+var _ NeptuneDataStoreInterface = (*NeptuneStore)(nil)
 
 // NewNeptuneStore creates a new NeptuneStore backed by the given storage instance.
 // Each bucket is allocated a separate BaseStore for the neptune service namespace.
@@ -186,6 +203,7 @@ func NewNeptuneStore(store storage.BasicStorage) *NeptuneStore {
 		subnetGroups:       common.NewBaseStore(store.Bucket(subnetGroupBucket), "neptune"),
 		globalClusters:     common.NewBaseStore(store.Bucket(globalClusterBucket), "neptune"),
 		eventSubs:          common.NewBaseStore(store.Bucket(eventSubBucket), "neptune"),
+		events:             common.NewBaseStore(store.Bucket(eventsBucket), "neptune"),
 		tags:               common.NewBaseStore(store.Bucket(tagsBucket), "neptune"),
 		clusterEndpoints:   common.NewBaseStore(store.Bucket(clusterEndpointBucket), "neptune"),
 		queries:            common.NewBaseStore(store.Bucket(queryStateBucket), "neptunedata"),
@@ -211,7 +229,10 @@ func (s *NeptuneStore) CreateCluster(cluster *DBCluster) error {
 // ErrDBClusterNotFound if the cluster does not exist.
 func (s *NeptuneStore) GetCluster(id string) (*DBCluster, error) {
 	data, err := s.clusters.Bucket().Get([]byte(id))
-	if err != nil || data == nil {
+	if err != nil {
+		return nil, NewStoreError("get_cluster", err)
+	}
+	if data == nil {
 		return nil, ErrDBClusterNotFound
 	}
 	var pbCluster pb.DBCluster
@@ -353,6 +374,20 @@ func (s *NeptuneStore) DeleteSnapshot(id string) error {
 	return NewStoreError("delete_snapshot", s.snapshots.Delete(id))
 }
 
+// UpdateSnapshot persists modifications to an existing cluster snapshot.
+func (s *NeptuneStore) UpdateSnapshot(snapshot *DBClusterSnapshot) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.snapshots.Bucket().Has([]byte(snapshot.DBClusterSnapshotIdentifier)) {
+		return ErrDBClusterSnapshotNotFound
+	}
+	data, err := proto.Marshal(SnapshotToProto(snapshot))
+	if err != nil {
+		return NewStoreError("update_snapshot", err)
+	}
+	return NewStoreError("update_snapshot", s.snapshots.Bucket().Put([]byte(snapshot.DBClusterSnapshotIdentifier), data))
+}
+
 // ListSnapshots returns all cluster snapshots in the store.
 func (s *NeptuneStore) ListSnapshots() ([]*DBClusterSnapshot, error) {
 	var snapshots []*DBClusterSnapshot
@@ -401,6 +436,20 @@ func (s *NeptuneStore) DeleteClusterParameterGroup(name string) error {
 	return NewStoreError("delete_cluster_param_group", s.clusterParamGroups.Delete(name))
 }
 
+// UpdateClusterParameterGroup replaces the persisted state of a cluster parameter group.
+func (s *NeptuneStore) UpdateClusterParameterGroup(pg *DBClusterParameterGroup) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.clusterParamGroups.Bucket().Has([]byte(pg.DBClusterParameterGroupName)) {
+		return ErrDBClusterParameterGroupNotFound
+	}
+	data, err := proto.Marshal(ClusterParameterGroupToProto(pg))
+	if err != nil {
+		return NewStoreError("update_cluster_param_group", err)
+	}
+	return NewStoreError("update_cluster_param_group", s.clusterParamGroups.Bucket().Put([]byte(pg.DBClusterParameterGroupName), data))
+}
+
 // ListClusterParameterGroups returns all cluster parameter groups.
 func (s *NeptuneStore) ListClusterParameterGroups() ([]*DBClusterParameterGroup, error) {
 	var groups []*DBClusterParameterGroup
@@ -447,6 +496,20 @@ func (s *NeptuneStore) DeleteParameterGroup(name string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return NewStoreError("delete_param_group", s.paramGroups.Delete(name))
+}
+
+// UpdateParameterGroup replaces the persisted state of a DB parameter group.
+func (s *NeptuneStore) UpdateParameterGroup(pg *DBParameterGroup) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.paramGroups.Bucket().Has([]byte(pg.DBParameterGroupName)) {
+		return ErrDBParameterGroupNotFound
+	}
+	data, err := proto.Marshal(ParameterGroupToProto(pg))
+	if err != nil {
+		return NewStoreError("update_param_group", err)
+	}
+	return NewStoreError("update_param_group", s.paramGroups.Bucket().Put([]byte(pg.DBParameterGroupName), data))
 }
 
 // ListParameterGroups returns all DB parameter groups.
@@ -688,7 +751,10 @@ func (s *NeptuneStore) GetTags(resourceArn string) ([]Tag, error) {
 // at least a read lock.
 func (s *NeptuneStore) getTagsUnlocked(resourceArn string) ([]Tag, error) {
 	data, err := s.tags.Bucket().Get([]byte(resourceArn))
-	if err != nil || data == nil {
+	if err != nil {
+		return nil, NewStoreError("get_tags", err)
+	}
+	if data == nil {
 		return []Tag{}, nil
 	}
 	var pbTags pb.TagList
@@ -772,6 +838,13 @@ func (s *NeptuneStore) UpdateClusterEndpoint(ep *DBClusterEndpoint) error {
 func (s *NeptuneStore) DeleteClusterEndpoint(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	data, err := s.clusterEndpoints.Bucket().Get([]byte(id))
+	if err != nil {
+		return NewStoreError("delete_cluster_endpoint", err)
+	}
+	if data == nil {
+		return ErrDBClusterEndpointNotFound
+	}
 	return NewStoreError("delete_cluster_endpoint", s.clusterEndpoints.Delete(id))
 }
 
@@ -902,4 +975,147 @@ func (s *NeptuneStore) ListLoaderJobs() ([]*pb.LoaderJob, error) {
 		return nil
 	})
 	return jobs, err
+}
+
+type Event struct {
+	EventID          string    `json:"event_id"`
+	Date             time.Time `json:"date"`
+	EventCategories  []string  `json:"event_categories"`
+	Message          string    `json:"message"`
+	SourceArn        string    `json:"source_arn"`
+	SourceIdentifier string    `json:"source_identifier"`
+	SourceType       string    `json:"source_type"`
+}
+
+const (
+	maxEventAge = 7 * 24 * time.Hour
+	maxEvents   = 10000
+)
+
+func (s *NeptuneStore) RecordEvent(evt *Event) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if evt.EventID == "" {
+		evt.EventID = fmt.Sprintf("evt-%d", time.Now().UnixNano())
+	}
+	data, err := json.Marshal(evt)
+	if err != nil {
+		return NewStoreError("record_event", err)
+	}
+	return NewStoreError("record_event", s.events.Bucket().Put([]byte(evt.EventID), data))
+}
+
+// EventListOptions controls filtering and pagination for event listing.
+type EventListOptions struct {
+	SourceType       string
+	SourceIdentifier string
+	StartTime        time.Time
+	EndTime          time.Time
+	Marker           string
+	MaxRecords       int
+}
+
+// EventListResult holds a page of events with pagination metadata.
+type EventListResult struct {
+	Events      []*Event
+	Marker      string
+	IsTruncated bool
+}
+
+// ListEvents returns events matching the given filters with pagination.
+func (s *NeptuneStore) ListEvents(opts EventListOptions) (*EventListResult, error) {
+	if opts.MaxRecords <= 0 {
+		opts.MaxRecords = 100
+	}
+
+	cutoff := time.Now().Add(-maxEventAge)
+
+	var allEvents []*Event
+	err := s.events.ForEach(func(key string, value []byte) error {
+		var evt Event
+		if err := json.Unmarshal(value, &evt); err != nil {
+			return err
+		}
+		if evt.Date.Before(cutoff) {
+			return nil
+		}
+		if opts.SourceType != "" && evt.SourceType != opts.SourceType {
+			return nil
+		}
+		if opts.SourceIdentifier != "" && evt.SourceIdentifier != opts.SourceIdentifier {
+			return nil
+		}
+		if !opts.StartTime.IsZero() && evt.Date.Before(opts.StartTime) {
+			return nil
+		}
+		if !opts.EndTime.IsZero() && evt.Date.After(opts.EndTime) {
+			return nil
+		}
+		allEvents = append(allEvents, &evt)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	started := opts.Marker == ""
+	var page []*Event
+	for _, evt := range allEvents {
+		if !started {
+			if evt.EventID == opts.Marker {
+				started = true
+			}
+			continue
+		}
+		page = append(page, evt)
+		if len(page) >= opts.MaxRecords {
+			break
+		}
+	}
+
+	result := &EventListResult{Events: page}
+	if len(page) < len(allEvents) {
+		result.IsTruncated = true
+		result.Marker = page[len(page)-1].EventID
+	}
+	return result, nil
+}
+
+// PurgeOldEvents removes events older than maxEventAge and trims the total
+// count to maxEvents by deleting the oldest entries first.
+func (s *NeptuneStore) PurgeOldEvents() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	cutoff := time.Now().Add(-maxEventAge)
+
+	var allEvents []*Event
+	err := s.events.ForEach(func(key string, value []byte) error {
+		var evt Event
+		if err := json.Unmarshal(value, &evt); err != nil {
+			return err
+		}
+		allEvents = append(allEvents, &evt)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	keep := make([]*Event, 0, len(allEvents))
+	for _, evt := range allEvents {
+		if evt.Date.Before(cutoff) {
+			_ = s.events.Delete(evt.EventID)
+			continue
+		}
+		keep = append(keep, evt)
+	}
+
+	if len(keep) > maxEvents {
+		sort.Slice(keep, func(i, j int) bool { return keep[i].Date.Before(keep[j].Date) })
+		for i := 0; i < len(keep)-maxEvents; i++ {
+			_ = s.events.Delete(keep[i].EventID)
+		}
+	}
+	return nil
 }

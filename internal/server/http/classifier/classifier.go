@@ -130,6 +130,12 @@ func (c *Classifier) detectProtocol(r *http.Request, bodyBytes []byte) Protocol 
 		return ProtocolQuery
 	}
 	if isNeptunedataPath(r.URL.Path) {
+		// Neptune Data API uses its own protocol (ProtocolNeptune) with
+		// strict path matching (exact or prefix with trailing slash).
+		// This must be checked before REST-JSON because some paths like
+		// /sparql/ or /ml/ could theoretically overlap with future
+		// REST-JSON services. The strict matching in IsNeptunedataPath
+		// prevents false positives.
 		return ProtocolNeptune
 	}
 	if strings.HasPrefix(r.URL.Path, "/2013-04-01/") || strings.HasPrefix(r.URL.Path, "/2020-05-31/") {
@@ -412,8 +418,6 @@ func convertCBORMapToStringMap(v interface{}) interface{} {
 			keyStr, ok := k.(string)
 			if !ok {
 				switch kv := k.(type) {
-				case string:
-					keyStr = kv
 				case []byte:
 					keyStr = string(kv)
 				default:

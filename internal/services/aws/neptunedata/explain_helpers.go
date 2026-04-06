@@ -3,17 +3,16 @@ package neptunedata
 import (
 	"fmt"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/pkg/gremlinparser"
 )
 
 // explainGremlinQuery parses a Gremlin query and produces a step-by-step
-// explanation of the traversal plan.
-func explainGremlinQuery(query string) map[string]interface{} {
+// explanation of the traversal plan. Returns an error if parsing fails.
+func explainGremlinQuery(query string) (map[string]interface{}, error) {
 	parsed, err := gremlinparser.Parse(query)
 	if err != nil {
-		return map[string]interface{}{
-			"error": fmt.Sprintf("parse error: %v", err),
-		}
+		return nil, fmt.Errorf("parse error: %v", err)
 	}
 
 	steps := []map[string]interface{}{}
@@ -35,13 +34,16 @@ func explainGremlinQuery(query string) map[string]interface{} {
 
 	return map[string]interface{}{
 		"steps": steps,
-	}
+	}, nil
 }
 
 // profileGremlinQuery returns an explain plan augmented with profiling metrics.
-func profileGremlinQuery(query string) map[string]interface{} {
-	explain := explainGremlinQuery(query)
-	explain["profile"] = map[string]interface{}{
+func profileGremlinQuery(query string) (map[string]interface{}, error) {
+	plan, err := explainGremlinQuery(query)
+	if err != nil {
+		return nil, err
+	}
+	plan["profile"] = map[string]interface{}{
 		"metrics": map[string]interface{}{
 			"dur":     0,
 			"count":   1,
@@ -51,7 +53,7 @@ func profileGremlinQuery(query string) map[string]interface{} {
 		},
 		"indices": map[string]interface{}{},
 	}
-	return explain
+	return plan, nil
 }
 
 // describeArg converts a Gremlin argument to a serialisable representation for
@@ -116,7 +118,8 @@ func describeArg(arg gremlinparser.Argument) interface{} {
 		}
 		return nil
 	default:
-		return arg.Str
+		logs.Warn("describeArg: unhandled arg kind", logs.Int("kind", int(arg.Kind)))
+		return fmt.Sprintf("<unknown:%d>", arg.Kind)
 	}
 }
 

@@ -607,7 +607,7 @@ func applyWith(wc *WithClause, where *Expression, bindings []map[string]any) ([]
 	}
 
 	if len(bindings) == 0 {
-		return nil, nil
+		return []map[string]any{}, nil
 	}
 
 	hasAgg := false
@@ -734,11 +734,29 @@ func applyWithAggregation(wc *WithClause, where *Expression, bindings []map[stri
 			return nil, err
 		}
 		if !ok {
-			return nil, nil
+			return []map[string]any{}, nil
 		}
 	}
 
-	return []map[string]any{aggResult}, nil
+	result := []map[string]any{aggResult}
+
+	if len(wc.OrderBy) > 0 {
+		sortRows(result, wc.OrderBy)
+	}
+
+	if wc.Skip != nil && *wc.Skip > 0 {
+		if *wc.Skip < len(result) {
+			result = result[*wc.Skip:]
+		} else {
+			result = []map[string]any{}
+		}
+	}
+
+	if wc.Limit != nil && *wc.Limit > 0 && len(result) > *wc.Limit {
+		result = result[:*wc.Limit]
+	}
+
+	return result, nil
 }
 
 // ---------------------------------------------------------------------------

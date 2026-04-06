@@ -1,6 +1,10 @@
 package classifier
 
-import "strings"
+import (
+	"strings"
+
+	"vorpalstacks/internal/services/aws/common/request"
+)
 
 // lambdaRestPrefixes lists known Lambda REST API date-based path prefixes.
 var lambdaRestPrefixes = []string{
@@ -63,17 +67,10 @@ func isApiGatewayPath(path string) bool {
 }
 
 // isNeptunedataPath reports whether the path matches a Neptune Data API endpoint
-// (gremlin, opencypher, sparql, rdf, ml, etc.).
+// (gremlin, opencypher, sparql, rdf, ml, etc.). Delegates to the canonical
+// implementation in the request package to avoid duplication.
 func isNeptunedataPath(path string) bool {
-	return strings.HasPrefix(path, "/gremlin") ||
-		strings.HasPrefix(path, "/opencypher") ||
-		strings.HasPrefix(path, "/status") ||
-		strings.HasPrefix(path, "/system") ||
-		strings.HasPrefix(path, "/loader") ||
-		strings.HasPrefix(path, "/propertygraph") ||
-		strings.HasPrefix(path, "/sparql") ||
-		strings.HasPrefix(path, "/rdf") ||
-		strings.HasPrefix(path, "/ml")
+	return request.IsNeptunedataPath(path)
 }
 
 // isAppSyncPath reports whether the path matches an AppSync API endpoint.

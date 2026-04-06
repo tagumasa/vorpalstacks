@@ -16,7 +16,7 @@ type KinesisService struct {
 }
 
 // NewKinesisService creates a new Kinesis service instance.
-func NewKinesisService(store storage.BasicStorage, accountID, region string) *KinesisService {
+func NewKinesisService(accountID, region string) *KinesisService {
 	return &KinesisService{
 		accountID: accountID,
 	}

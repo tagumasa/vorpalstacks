@@ -155,18 +155,14 @@ func (s *AppSyncService) ListGraphqlApis(ctx context.Context, reqCtx *request.Re
 	}
 
 	opts := parsePaginationOptions(req)
-	apis, nextToken, err := store.ListGraphqlApis(opts)
+	apiTypeFilter := request.GetStringParam(req.Parameters, "apiType")
+	apis, nextToken, err := store.ListGraphqlApis(opts, apiTypeFilter)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
-	apiTypeFilter := request.GetStringParam(req.Parameters, "apiType")
-
 	items := make([]interface{}, 0, len(apis))
 	for _, api := range apis {
-		if apiTypeFilter != "" && api.ApiType != apiTypeFilter {
-			continue
-		}
 		items = append(items, graphqlApiToMap(api))
 	}
 

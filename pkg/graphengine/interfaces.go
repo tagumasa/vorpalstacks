@@ -20,8 +20,8 @@ type GraphReader interface {
 	Stats() *GraphStats
 	CountNodes() int64
 	CountEdges() int64
-	GetLabelCounts() map[string]int64
-	GetRelCounts() map[string]int64
+	GetLabelCounts() (map[string]int64, error)
+	GetRelCounts() (map[string]int64, error)
 }
 
 // GraphWriter provides write access to graph data, decoupled from the

@@ -18,7 +18,6 @@ package gremlinparser
 import (
 	"fmt"
 	"math/rand"
-	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -76,7 +75,10 @@ func execV(ec *ExecContext, _ []*Traverser, step Step) ([]*Traverser, error) {
 
 	var traversers []*Traverser
 	for _, arg := range step.Args {
-		id := toNodeID(arg)
+		id, err := toNodeID(arg)
+		if err != nil {
+			continue
+		}
 		n, err := ec.Reader.GetNode(id)
 		if err != nil {
 			continue
@@ -100,7 +102,10 @@ func execE(ec *ExecContext, _ []*Traverser, step Step) ([]*Traverser, error) {
 
 	var traversers []*Traverser
 	for _, arg := range step.Args {
-		id := toEdgeID(arg)
+		id, err := toEdgeID(arg)
+		if err != nil {
+			continue
+		}
 		e, err := ec.Reader.GetEdge(id)
 		if err != nil {
 			continue
@@ -191,19 +196,25 @@ func execAddE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 		return nil, fmt.Errorf("gremlin: addE to ID is not a valid NodeID")
 	}
 
-	var edgeID graphengine.EdgeID
-	var err error
-	edgeID, err = ec.Writer.AddEdge(fromNodeID, toNodeIDVal, label, nil)
-	if err != nil {
-		return nil, err
+	var result []*Traverser
+	for _, t := range traversers {
+		edgeID, err := ec.Writer.AddEdge(fromNodeID, toNodeIDVal, label, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		e, err := ec.Reader.GetEdge(edgeID)
+		if err != nil {
+			return nil, err
+		}
+
+		nt := t.clone()
+		nt.Element = e
+		nt.Path = append(nt.Path, e)
+		result = append(result, nt)
 	}
 
-	e, err := ec.Reader.GetEdge(edgeID)
-	if err != nil {
-		return nil, err
-	}
-
-	return []*Traverser{newTraverser(e)}, nil
+	return result, nil
 }
 
 // execOut traverses outgoing edges to adjacent vertices, filtered by optional edge labels.
@@ -433,7 +444,7 @@ func execOtherV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 			}
 		}
 		if otherID == 0 {
-			otherID = e.From
+			continue
 		}
 		n, err := ec.Reader.GetNode(otherID)
 		if err != nil {
@@ -901,6 +912,9 @@ func matchHasStep(ec *ExecContext, t *Traverser, args []Argument) bool {
 			}
 			elID := elementID(t.Element)
 			if args[1].Kind == ArgPredicate {
+				if idInt, err := strconv.ParseInt(elID, 10, 64); err == nil {
+					return matchPredicate(idInt, args[1].Pred)
+				}
 				return matchPredicate(elID, args[1].Pred)
 			}
 			return elID == fmt.Sprintf("%v", resolveArgValue(args[1]))
@@ -928,7 +942,7 @@ func matchHasStep(ec *ExecContext, t *Traverser, args []Argument) bool {
 			}
 			props := elementProps(t.Element)
 			val, ok := props[key]
-			return ok && val == resolveArgValue(args[1])
+			return ok && valuesEqual(val, resolveArgValue(args[1]))
 		}
 	}
 
@@ -947,7 +961,7 @@ func matchHasStep(ec *ExecContext, t *Traverser, args []Argument) bool {
 			}
 			props := elementProps(t.Element)
 			val, ok := props[key]
-			return ok && val == resolveArgValue(args[1])
+			return ok && valuesEqual(val, resolveArgValue(args[1]))
 		}
 	}
 
@@ -979,6 +993,15 @@ func matchPredicate(val any, pred *Predicate) bool {
 	if pred == nil {
 		return true
 	}
+
+	result := evalPredicateImpl(val, pred)
+	if pred.Negate {
+		return !result
+	}
+	return result
+}
+
+func evalPredicateImpl(val any, pred *Predicate) bool {
 
 	switch pred.Method {
 	case "eq":
@@ -1082,6 +1105,24 @@ func matchPredicate(val any, pred *Predicate) bool {
 			return err == nil && !matched
 		}
 		return false
+	case "and":
+		for _, arg := range pred.Args {
+			if arg.Kind == ArgPredicate {
+				if !matchPredicate(val, arg.Pred) {
+					return false
+				}
+			}
+		}
+		return true
+	case "or":
+		for _, arg := range pred.Args {
+			if arg.Kind == ArgPredicate {
+				if matchPredicate(val, arg.Pred) {
+					return true
+				}
+			}
+		}
+		return false
 	}
 
 	return false
@@ -1177,44 +1218,40 @@ func resolveArgValue(arg Argument) any {
 }
 
 // toNodeID converts an Argument to a graphengine.NodeID.
-func toNodeID(arg Argument) graphengine.NodeID {
+func toNodeID(arg Argument) (graphengine.NodeID, error) {
 	switch arg.Kind {
 	case ArgInt:
-		return graphengine.NodeID(arg.Int)
+		return graphengine.NodeID(arg.Int), nil
 	case ArgFloat:
-		return graphengine.NodeID(int64(arg.Float))
+		return graphengine.NodeID(int64(arg.Float)), nil
 	case ArgString:
 		s := strings.TrimPrefix(arg.Str, "n")
 		id, err := strconv.ParseUint(s, 10, 64)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "gremlin: toNodeID parse error: %q: %v\n", arg.Str, err)
-			return 0
+			return 0, fmt.Errorf("gremlin: toNodeID parse error: %q: %w", arg.Str, err)
 		}
-		return graphengine.NodeID(id)
+		return graphengine.NodeID(id), nil
 	default:
-		fmt.Fprintf(os.Stderr, "gremlin: toNodeID unsupported arg kind: %v\n", arg.Kind)
-		return 0
+		return 0, fmt.Errorf("gremlin: toNodeID unsupported arg kind: %v", arg.Kind)
 	}
 }
 
 // toEdgeID converts an Argument to a graphengine.EdgeID.
-func toEdgeID(arg Argument) graphengine.EdgeID {
+func toEdgeID(arg Argument) (graphengine.EdgeID, error) {
 	switch arg.Kind {
 	case ArgInt:
-		return graphengine.EdgeID(arg.Int)
+		return graphengine.EdgeID(arg.Int), nil
 	case ArgFloat:
-		return graphengine.EdgeID(int64(arg.Float))
+		return graphengine.EdgeID(int64(arg.Float)), nil
 	case ArgString:
 		s := strings.TrimPrefix(arg.Str, "n")
 		id, err := strconv.ParseUint(s, 10, 64)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "gremlin: toEdgeID parse error: %q: %v\n", arg.Str, err)
-			return 0
+			return 0, fmt.Errorf("gremlin: toEdgeID parse error: %q: %w", arg.Str, err)
 		}
-		return graphengine.EdgeID(id)
+		return graphengine.EdgeID(id), nil
 	default:
-		fmt.Fprintf(os.Stderr, "gremlin: toEdgeID unsupported arg kind: %v\n", arg.Kind)
-		return 0
+		return 0, fmt.Errorf("gremlin: toEdgeID unsupported arg kind: %v", arg.Kind)
 	}
 }
 

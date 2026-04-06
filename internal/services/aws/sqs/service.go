@@ -15,16 +15,14 @@ import (
 
 // SQSService provides SQS operations for managing queues and messages.
 type SQSService struct {
-	storage        storage.BasicStorage
 	storageManager *storage.RegionStorageManager
 	accountID      string
 	stores         sync.Map
 }
 
 // NewSQSService creates a new SQS service instance.
-func NewSQSService(store storage.BasicStorage, accountID string) *SQSService {
+func NewSQSService(accountID string) *SQSService {
 	return &SQSService{
-		storage:   store,
 		accountID: accountID,
 	}
 }
@@ -53,7 +51,6 @@ func (s *SQSService) GetStoreForRegion(region string) (sqsstore.SQSStoreInterfac
 // NewSQSServiceWithStore creates a new SQS service instance with a pre-configured store.
 func NewSQSServiceWithStore(store *sqsstore.SQSStore) *SQSService {
 	return &SQSService{
-		storage:   store.Storage(),
 		accountID: store.GetAccountID(),
 	}
 }

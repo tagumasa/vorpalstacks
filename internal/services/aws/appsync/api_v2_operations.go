@@ -191,6 +191,8 @@ func mapStoreError(err error) (interface{}, error) {
 		return nil, NewNotFoundException("API key")
 	case appsyncstore.ErrApiCacheNotFound:
 		return nil, NewNotFoundException("API cache")
+	case appsyncstore.ErrApiCacheAlreadyExists:
+		return nil, NewConflictException("API cache already exists")
 	case appsyncstore.ErrDomainNameNotFound:
 		return nil, NewNotFoundException("Domain name")
 	case appsyncstore.ErrDomainNameAlreadyExists:

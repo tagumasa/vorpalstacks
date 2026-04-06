@@ -630,6 +630,7 @@ type DBClusterSnapshot struct {
 	DbSnapshotArn               string                 `protobuf:"bytes,12,opt,name=db_snapshot_arn,json=dbSnapshotArn,proto3" json:"db_snapshot_arn,omitempty"`
 	AccountId                   string                 `protobuf:"bytes,13,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 	Region                      string                 `protobuf:"bytes,14,opt,name=region,proto3" json:"region,omitempty"`
+	RestoreAttributeValues      []string               `protobuf:"bytes,15,rep,name=restore_attribute_values,json=restoreAttributeValues,proto3" json:"restore_attribute_values,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -762,12 +763,20 @@ func (x *DBClusterSnapshot) GetRegion() string {
 	return ""
 }
 
+func (x *DBClusterSnapshot) GetRestoreAttributeValues() []string {
+	if x != nil {
+		return x.RestoreAttributeValues
+	}
+	return nil
+}
+
 type DBClusterParameterGroup struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	DbClusterParameterGroupName string                 `protobuf:"bytes,1,opt,name=db_cluster_parameter_group_name,json=dbClusterParameterGroupName,proto3" json:"db_cluster_parameter_group_name,omitempty"`
 	DbParameterGroupFamily      string                 `protobuf:"bytes,2,opt,name=db_parameter_group_family,json=dbParameterGroupFamily,proto3" json:"db_parameter_group_family,omitempty"`
 	Description                 string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	Arn                         string                 `protobuf:"bytes,4,opt,name=arn,proto3" json:"arn,omitempty"`
+	Parameters                  []*Parameter           `protobuf:"bytes,5,rep,name=parameters,proto3" json:"parameters,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -830,12 +839,20 @@ func (x *DBClusterParameterGroup) GetArn() string {
 	return ""
 }
 
+func (x *DBClusterParameterGroup) GetParameters() []*Parameter {
+	if x != nil {
+		return x.Parameters
+	}
+	return nil
+}
+
 type DBParameterGroup struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	DbParameterGroupName   string                 `protobuf:"bytes,1,opt,name=db_parameter_group_name,json=dbParameterGroupName,proto3" json:"db_parameter_group_name,omitempty"`
 	DbParameterGroupFamily string                 `protobuf:"bytes,2,opt,name=db_parameter_group_family,json=dbParameterGroupFamily,proto3" json:"db_parameter_group_family,omitempty"`
 	Description            string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	Arn                    string                 `protobuf:"bytes,4,opt,name=arn,proto3" json:"arn,omitempty"`
+	Parameters             []*Parameter           `protobuf:"bytes,5,rep,name=parameters,proto3" json:"parameters,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -896,6 +913,13 @@ func (x *DBParameterGroup) GetArn() string {
 		return x.Arn
 	}
 	return ""
+}
+
+func (x *DBParameterGroup) GetParameters() []*Parameter {
+	if x != nil {
+		return x.Parameters
+	}
+	return nil
 }
 
 type Subnet struct {
@@ -1666,11 +1690,12 @@ type QueryState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	QueryId       string                 `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
 	QueryType     string                 `protobuf:"bytes,2,opt,name=query_type,json=queryType,proto3" json:"query_type,omitempty"`
-	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
-	StartTime     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	EndTime       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	Result        string                 `protobuf:"bytes,6,opt,name=result,proto3" json:"result,omitempty"`
-	Error         string                 `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
+	QueryString   string                 `protobuf:"bytes,3,opt,name=query_string,json=queryString,proto3" json:"query_string,omitempty"`
+	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	StartTime     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	EndTime       *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	Result        string                 `protobuf:"bytes,7,opt,name=result,proto3" json:"result,omitempty"`
+	Error         string                 `protobuf:"bytes,8,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1715,6 +1740,13 @@ func (x *QueryState) GetQueryId() string {
 func (x *QueryState) GetQueryType() string {
 	if x != nil {
 		return x.QueryType
+	}
+	return ""
+}
+
+func (x *QueryState) GetQueryString() string {
+	if x != nil {
+		return x.QueryString
 	}
 	return ""
 }
@@ -2064,7 +2096,7 @@ const file_storage_neptune_proto_rawDesc = "" +
 	"\x15copy_tags_to_snapshot\x18\x12 \x01(\bR\x12copyTagsToSnapshot\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x13 \x01(\tR\taccountId\x12\x16\n" +
-	"\x06region\x18\x14 \x01(\tR\x06region\"\xd2\x04\n" +
+	"\x06region\x18\x14 \x01(\tR\x06region\"\x8c\x05\n" +
 	"\x11DBClusterSnapshot\x12C\n" +
 	"\x1edb_cluster_snapshot_identifier\x18\x01 \x01(\tR\x1bdbClusterSnapshotIdentifier\x122\n" +
 	"\x15db_cluster_identifier\x18\x02 \x01(\tR\x13dbClusterIdentifier\x12L\n" +
@@ -2082,17 +2114,24 @@ const file_storage_neptune_proto_rawDesc = "" +
 	"\x0fdb_snapshot_arn\x18\f \x01(\tR\rdbSnapshotArn\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\r \x01(\tR\taccountId\x12\x16\n" +
-	"\x06region\x18\x0e \x01(\tR\x06region\"\xce\x01\n" +
+	"\x06region\x18\x0e \x01(\tR\x06region\x128\n" +
+	"\x18restore_attribute_values\x18\x0f \x03(\tR\x16restoreAttributeValues\"\x8a\x02\n" +
 	"\x17DBClusterParameterGroup\x12D\n" +
 	"\x1fdb_cluster_parameter_group_name\x18\x01 \x01(\tR\x1bdbClusterParameterGroupName\x129\n" +
 	"\x19db_parameter_group_family\x18\x02 \x01(\tR\x16dbParameterGroupFamily\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x10\n" +
-	"\x03arn\x18\x04 \x01(\tR\x03arn\"\xb8\x01\n" +
+	"\x03arn\x18\x04 \x01(\tR\x03arn\x12:\n" +
+	"\n" +
+	"parameters\x18\x05 \x03(\v2\x1a.storage.neptune.ParameterR\n" +
+	"parameters\"\xf4\x01\n" +
 	"\x10DBParameterGroup\x125\n" +
 	"\x17db_parameter_group_name\x18\x01 \x01(\tR\x14dbParameterGroupName\x129\n" +
 	"\x19db_parameter_group_family\x18\x02 \x01(\tR\x16dbParameterGroupFamily\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x10\n" +
-	"\x03arn\x18\x04 \x01(\tR\x03arn\"\xbb\x01\n" +
+	"\x03arn\x18\x04 \x01(\tR\x03arn\x12:\n" +
+	"\n" +
+	"parameters\x18\x05 \x03(\v2\x1a.storage.neptune.ParameterR\n" +
+	"parameters\"\xbb\x01\n" +
 	"\x06Subnet\x12+\n" +
 	"\x11subnet_identifier\x18\x01 \x01(\tR\x10subnetIdentifier\x128\n" +
 	"\x18subnet_availability_zone\x18\x02 \x01(\tR\x16subnetAvailabilityZone\x12%\n" +
@@ -2161,18 +2200,19 @@ const file_storage_neptune_proto_rawDesc = "" +
 	"\rendpoint_type\x18\x05 \x01(\tR\fendpointType\x12)\n" +
 	"\x10excluded_members\x18\x06 \x03(\tR\x0fexcludedMembers\x12%\n" +
 	"\x0estatic_members\x18\a \x03(\tR\rstaticMembers\x125\n" +
-	"\x17db_cluster_endpoint_arn\x18\b \x01(\tR\x14dbClusterEndpointArn\"\xfe\x01\n" +
+	"\x17db_cluster_endpoint_arn\x18\b \x01(\tR\x14dbClusterEndpointArn\"\xa1\x02\n" +
 	"\n" +
 	"QueryState\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12\x1d\n" +
 	"\n" +
-	"query_type\x18\x02 \x01(\tR\tqueryType\x12\x16\n" +
-	"\x06status\x18\x03 \x01(\tR\x06status\x129\n" +
+	"query_type\x18\x02 \x01(\tR\tqueryType\x12!\n" +
+	"\fquery_string\x18\x03 \x01(\tR\vqueryString\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x129\n" +
 	"\n" +
-	"start_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
-	"\bend_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12\x16\n" +
-	"\x06result\x18\x06 \x01(\tR\x06result\x12\x14\n" +
-	"\x05error\x18\a \x01(\tR\x05error\"\xce\x03\n" +
+	"start_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
+	"\bend_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12\x16\n" +
+	"\x06result\x18\a \x01(\tR\x06result\x12\x14\n" +
+	"\x05error\x18\b \x01(\tR\x05error\"\xce\x03\n" +
 	"\tLoaderJob\x12\x17\n" +
 	"\aload_id\x18\x01 \x01(\tR\x06loadId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x16\n" +
@@ -2259,22 +2299,24 @@ var file_storage_neptune_proto_depIdxs = []int32{
 	22, // 5: storage.neptune.DBInstance.instance_create_time:type_name -> google.protobuf.Timestamp
 	22, // 6: storage.neptune.DBClusterSnapshot.snapshot_create_time:type_name -> google.protobuf.Timestamp
 	22, // 7: storage.neptune.DBClusterSnapshot.cluster_create_time:type_name -> google.protobuf.Timestamp
-	7,  // 8: storage.neptune.DBSubnetGroup.subnets:type_name -> storage.neptune.Subnet
-	9,  // 9: storage.neptune.GlobalCluster.global_cluster_members:type_name -> storage.neptune.GlobalClusterMember
-	22, // 10: storage.neptune.EventSubscription.subscription_creation_time:type_name -> google.protobuf.Timestamp
-	13, // 11: storage.neptune.TagList.tags:type_name -> storage.neptune.Tag
-	22, // 12: storage.neptune.QueryState.start_time:type_name -> google.protobuf.Timestamp
-	22, // 13: storage.neptune.QueryState.end_time:type_name -> google.protobuf.Timestamp
-	22, // 14: storage.neptune.LoaderJob.submit_time:type_name -> google.protobuf.Timestamp
-	22, // 15: storage.neptune.LoaderJob.end_time:type_name -> google.protobuf.Timestamp
-	19, // 16: storage.neptune.LoaderJob.details:type_name -> storage.neptune.LoaderJob.DetailsEntry
-	20, // 17: storage.neptune.GraphStatistics.label_counts:type_name -> storage.neptune.GraphStatistics.LabelCountsEntry
-	21, // 18: storage.neptune.GraphStatistics.rel_counts:type_name -> storage.neptune.GraphStatistics.RelCountsEntry
-	19, // [19:19] is the sub-list for method output_type
-	19, // [19:19] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	12, // 8: storage.neptune.DBClusterParameterGroup.parameters:type_name -> storage.neptune.Parameter
+	12, // 9: storage.neptune.DBParameterGroup.parameters:type_name -> storage.neptune.Parameter
+	7,  // 10: storage.neptune.DBSubnetGroup.subnets:type_name -> storage.neptune.Subnet
+	9,  // 11: storage.neptune.GlobalCluster.global_cluster_members:type_name -> storage.neptune.GlobalClusterMember
+	22, // 12: storage.neptune.EventSubscription.subscription_creation_time:type_name -> google.protobuf.Timestamp
+	13, // 13: storage.neptune.TagList.tags:type_name -> storage.neptune.Tag
+	22, // 14: storage.neptune.QueryState.start_time:type_name -> google.protobuf.Timestamp
+	22, // 15: storage.neptune.QueryState.end_time:type_name -> google.protobuf.Timestamp
+	22, // 16: storage.neptune.LoaderJob.submit_time:type_name -> google.protobuf.Timestamp
+	22, // 17: storage.neptune.LoaderJob.end_time:type_name -> google.protobuf.Timestamp
+	19, // 18: storage.neptune.LoaderJob.details:type_name -> storage.neptune.LoaderJob.DetailsEntry
+	20, // 19: storage.neptune.GraphStatistics.label_counts:type_name -> storage.neptune.GraphStatistics.LabelCountsEntry
+	21, // 20: storage.neptune.GraphStatistics.rel_counts:type_name -> storage.neptune.GraphStatistics.RelCountsEntry
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_storage_neptune_proto_init() }

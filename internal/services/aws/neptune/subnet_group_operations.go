@@ -44,6 +44,32 @@ func getNeptuneTagList(params map[string]interface{}) []map[string]interface{} {
 	return tags
 }
 
+func getNeptuneParameterList(params map[string]interface{}) []neptunestore.Parameter {
+	var parameters []neptunestore.Parameter
+	for i := 1; ; i++ {
+		prefix := fmt.Sprintf("Parameters.Parameter.%d", i)
+		paramName := request.GetStringParam(params, prefix+".ParameterName")
+		if paramName == "" {
+			break
+		}
+		paramValue := request.GetStringParam(params, prefix+".ParameterValue")
+		description := request.GetStringParam(params, prefix+".Description")
+		source := request.GetStringParam(params, prefix+".Source")
+		applyType := request.GetStringParam(params, prefix+".ApplyType")
+		dataType := request.GetStringParam(params, prefix+".DataType")
+		parameters = append(parameters, neptunestore.Parameter{
+			ParameterName:  paramName,
+			ParameterValue: paramValue,
+			Description:    description,
+			Source:         source,
+			ApplyType:      applyType,
+			DataType:       dataType,
+			IsModifiable:   true,
+		})
+	}
+	return parameters
+}
+
 func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	name := request.GetStringParam(params, "DBSubnetGroupName")
@@ -61,9 +87,13 @@ func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
+	if len(subnetIds) > 26 {
+		return nil, fmt.Errorf("neptune: cannot assign more than 26 subnets to a DB subnet group")
+	}
 	subnets := make([]neptunestore.Subnet, 0, len(subnetIds))
+	region := reqCtx.GetRegion()
 	for i, id := range subnetIds {
-		az := fmt.Sprintf("us-east-1%c", 'a'+i)
+		az := fmt.Sprintf("%s%c", region, 'a'+byte(i))
 		subnets = append(subnets, neptunestore.Subnet{
 			SubnetIdentifier:       id,
 			SubnetAvailabilityZone: az,
@@ -74,7 +104,7 @@ func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *reques
 	sg := &neptunestore.DBSubnetGroup{
 		DBSubnetGroupName:        name,
 		DBSubnetGroupDescription: desc,
-		VpcId:                    "vpc-default",
+		VpcId:                    fmt.Sprintf("vpc-%s", region),
 		SubnetGroupStatus:        "Complete",
 		Subnets:                  subnets,
 		ARN:                      neptunestore.SubnetGroupARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name),
@@ -162,9 +192,13 @@ func (s *NeptuneService) ModifyDBSubnetGroup(ctx context.Context, reqCtx *reques
 		sg.DBSubnetGroupDescription = desc
 	}
 	if subnetIds := getNeptuneStringList(params, "SubnetIds"); len(subnetIds) > 0 {
+		if len(subnetIds) > 26 {
+			return nil, fmt.Errorf("neptune: cannot assign more than 26 subnets to a DB subnet group")
+		}
 		subnets := make([]neptunestore.Subnet, 0, len(subnetIds))
+		region := reqCtx.GetRegion()
 		for i, id := range subnetIds {
-			az := fmt.Sprintf("us-east-1%c", 'a'+i)
+			az := fmt.Sprintf("%s%c", region, 'a'+byte(i))
 			subnets = append(subnets, neptunestore.Subnet{
 				SubnetIdentifier:       id,
 				SubnetAvailabilityZone: az,

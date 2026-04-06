@@ -3,6 +3,7 @@ package appsync
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -479,7 +480,7 @@ func (s *AppSyncStore) GetGraphqlApi(name string) (*GraphqlApi, error) {
 // GetGraphqlApiById retrieves a GraphQL API by its UUID.
 // Scans all GraphQL APIs to find the one matching the given ID.
 func (s *AppSyncStore) GetGraphqlApiById(apiId string) (*GraphqlApi, error) {
-	apis, _, err := s.ListGraphqlApis(common.ListOptions{MaxItems: 10000})
+	apis, _, err := s.ListGraphqlApis(common.ListOptions{MaxItems: 10000}, "")
 	if err != nil {
 		return nil, err
 	}
@@ -608,8 +609,16 @@ func (s *AppSyncStore) DeleteGraphqlApiById(apiId string) error {
 }
 
 // ListGraphqlApis returns a paginated list of GraphQL APIs.
-func (s *AppSyncStore) ListGraphqlApis(opts common.ListOptions) ([]*GraphqlApi, string, error) {
-	result, err := common.List[GraphqlApi](s.graphqlApisStore, opts, nil)
+// When apiType is non-empty, only APIs matching that type are returned
+// and the filter is applied before pagination.
+func (s *AppSyncStore) ListGraphqlApis(opts common.ListOptions, apiType string) ([]*GraphqlApi, string, error) {
+	var filter common.FilterFunc[GraphqlApi]
+	if apiType != "" {
+		filter = func(api *GraphqlApi) bool {
+			return api.ApiType == apiType
+		}
+	}
+	result, err := common.List[GraphqlApi](s.graphqlApisStore, opts, filter)
 	if err != nil {
 		return nil, "", err
 	}
@@ -849,6 +858,8 @@ func (s *AppSyncStore) ListResolvers(apiId, typeName string, opts common.ListOpt
 }
 
 // ListResolversByFunction returns resolvers that reference a given function ID.
+// Performs a full scan filtered by functionId, then applies offset-based pagination
+// using the Marker as a decimal skip count.
 func (s *AppSyncStore) ListResolversByFunction(apiId, functionId string, opts common.ListOptions) ([]*Resolver, string, error) {
 	allResolvers, _, err := s.ListResolvers(apiId, "", common.ListOptions{MaxItems: 10000, Prefix: apiId + "/"})
 	if err != nil {
@@ -867,12 +878,23 @@ func (s *AppSyncStore) ListResolversByFunction(apiId, functionId string, opts co
 		}
 	}
 
-	var nextToken string
-	if len(filtered) > opts.MaxItems {
-		nextToken = fmt.Sprintf("%d", opts.MaxItems)
-		filtered = filtered[:opts.MaxItems]
+	offset := 0
+	if opts.Marker != "" {
+		if n, err := strconv.Atoi(opts.Marker); err == nil {
+			offset = n
+		}
 	}
-	return filtered, nextToken, nil
+
+	if offset >= len(filtered) {
+		return []*Resolver{}, "", nil
+	}
+
+	remaining := filtered[offset:]
+	if len(remaining) > opts.MaxItems {
+		nextToken := fmt.Sprintf("%d", offset+opts.MaxItems)
+		return remaining[:opts.MaxItems], nextToken, nil
+	}
+	return remaining, "", nil
 }
 
 // --- Function (AppSync) ---
@@ -1202,6 +1224,13 @@ func (s *AppSyncStore) ListApiKeys(apiId string, opts common.ListOptions) ([]*Ap
 
 // CreateApiCache persists a new API cache configuration.
 func (s *AppSyncStore) CreateApiCache(apiId string, cache *ApiCache) error {
+	s.createMu.Lock()
+	defer s.createMu.Unlock()
+
+	if s.apiCachesStore.Exists(apiId) {
+		return ErrApiCacheAlreadyExists
+	}
+
 	return s.apiCachesStore.Put(apiId, cache)
 }
 

@@ -147,7 +147,7 @@ func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.Request
 			return
 		default:
 		}
-		asyncStore := lambdastore.NewFunctionStore(s.storage, s.accountID, region)
+		asyncStore := lambdastore.NewFunctionStore(s.getRegionalStorage(region), s.accountID, region)
 		if _, err := s.invokeFunction(functionCopy, nil, asyncStore, region, payload); err != nil {
 			logs.Error("InvokeAsync failed", logs.String("function", functionCopy.FunctionName), logs.Err(err))
 		}

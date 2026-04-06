@@ -735,7 +735,6 @@ func isBareEnum(name string) bool {
 		"single", "set", "list",
 		"first", "last", "all", "mixed",
 		"keys", "values",
-		"in", "out", "both",
 		"onCreate", "onMatch",
 		"any", "none", "unproductive":
 		return true
@@ -772,7 +771,7 @@ func isTextPredicate(name string) bool {
 // parseInt parses an integer string, stripping optional Groovy type suffixes (i, I, s, S, l, L, n, N).
 func parseInt(text string) (int64, error) {
 	trimmed := strings.TrimRightFunc(text, func(r rune) bool {
-		return r == 'i' || r == 'I' || r == 's' || r == 'S' || r == 'l' || r == 'L'
+		return r == 'i' || r == 'I' || r == 's' || r == 'S' || r == 'l' || r == 'L' || r == 'n' || r == 'N'
 	})
 	val, err := strconv.ParseInt(trimmed, 10, 64)
 	if err != nil {

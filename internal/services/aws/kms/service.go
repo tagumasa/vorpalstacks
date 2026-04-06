@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"net/http"
 
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/errors"
 	"vorpalstacks/internal/services/aws/common/request"
@@ -31,7 +30,7 @@ type KMSService struct {
 }
 
 // NewKMSService creates a new KMS service instance.
-func NewKMSService(store storage.BasicStorage, accountID, region string, hsmBackend hsm.Backend) *KMSService {
+func NewKMSService(accountID, region string, hsmBackend hsm.Backend) *KMSService {
 	return &KMSService{
 		hsmBackend:      hsmBackend,
 		policyEvaluator: policy.NewPolicyEvaluator(),

@@ -1,6 +1,7 @@
 package graphengine
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -476,5 +477,243 @@ func TestEdgeTypeIndexCleanup(t *testing.T) {
 	})
 	if after != 0 {
 		t.Fatalf("expected 0 edges after delete, got %d", after)
+	}
+}
+
+func TestAddNodeBatch(t *testing.T) {
+	db := openTestDB(t)
+
+	items := []struct {
+		Labels []string
+		Props  Props
+	}{
+		{Labels: []string{"Person"}, Props: Props{"name": "Alice", "age": 30}},
+		{Labels: []string{"Person"}, Props: Props{"name": "Bob", "age": 25}},
+		{Labels: []string{"City"}, Props: Props{"name": "London"}},
+	}
+
+	ids, err := db.AddNodeBatch(items)
+	if err != nil {
+		t.Fatalf("AddNodeBatch failed: %v", err)
+	}
+	if len(ids) != 3 {
+		t.Fatalf("expected 3 IDs, got %d", len(ids))
+	}
+
+	for i, id := range ids {
+		if id == 0 {
+			t.Fatalf("expected non-zero ID at index %d", i)
+		}
+		if id == ids[0] && i > 0 {
+			t.Fatalf("expected unique IDs, duplicate at index %d", i)
+		}
+	}
+
+	alice := ids[0]
+	node, err := db.GetNode(alice)
+	if err != nil {
+		t.Fatalf("GetNode failed: %v", err)
+	}
+	if len(node.Labels) != 1 || node.Labels[0] != "Person" {
+		t.Fatalf("expected label Person, got %v", node.Labels)
+	}
+	if node.GetString("name") != "Alice" {
+		t.Fatalf("expected name Alice, got %s", node.GetString("name"))
+	}
+
+	stats := db.Stats()
+	if stats.NodeCount != 3 {
+		t.Fatalf("expected 3 nodes, got %d", stats.NodeCount)
+	}
+
+	labelIDs, err := db.FindByLabel("Person")
+	if err != nil {
+		t.Fatalf("FindByLabel failed: %v", err)
+	}
+	if len(labelIDs) != 2 {
+		t.Fatalf("expected 2 Person nodes, got %d", len(labelIDs))
+	}
+}
+
+func TestAddNodeBatchEmpty(t *testing.T) {
+	db := openTestDB(t)
+
+	ids, err := db.AddNodeBatch(nil)
+	if err != nil {
+		t.Fatalf("AddNodeBatch(nil) failed: %v", err)
+	}
+	if len(ids) != 0 {
+		t.Fatalf("expected 0 IDs for empty batch, got %d", len(ids))
+	}
+
+	stats := db.Stats()
+	if stats.NodeCount != 0 {
+		t.Fatalf("expected 0 nodes, got %d", stats.NodeCount)
+	}
+}
+
+func TestAddNodeBatchDuplicateWithinBatch(t *testing.T) {
+	db := openTestDB(t)
+
+	db.CreateUniqueConstraint("Person", "email")
+
+	items := []struct {
+		Labels []string
+		Props  Props
+	}{
+		{Labels: []string{"Person"}, Props: Props{"email": "alice@example.com"}},
+		{Labels: []string{"Person"}, Props: Props{"email": "alice@example.com"}},
+	}
+
+	_, err := db.AddNodeBatch(items)
+	if err == nil {
+		t.Fatal("expected unique constraint violation within batch")
+	}
+}
+
+func TestAddNodeBatchClosedDB(t *testing.T) {
+	dir := tempDir(t)
+
+	db, err := Open(dir, DefaultOptions())
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	db.Close()
+
+	items := []struct {
+		Labels []string
+		Props  Props
+	}{
+		{Labels: []string{"Person"}, Props: Props{"name": "Alice"}},
+	}
+
+	_, err = db.AddNodeBatch(items)
+	if err == nil {
+		t.Fatal("expected error on closed DB")
+	}
+}
+
+func TestConcurrentReadWrite(t *testing.T) {
+	db := openTestDB(t)
+
+	const numGoroutines = 10
+	const numOps = 50
+
+	done := make(chan error, numGoroutines*2)
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(idx int) {
+			for j := 0; j < numOps; j++ {
+				_, err := db.AddNode([]string{"Worker"}, Props{"worker": idx, "op": j})
+				if err != nil {
+					done <- fmt.Errorf("AddNode failed: %v", err)
+					return
+				}
+			}
+			done <- nil
+		}(i)
+
+		go func(idx int) {
+			for j := 0; j < numOps; j++ {
+				_, err := db.FindByLabel("Worker")
+				if err != nil {
+					done <- fmt.Errorf("FindByLabel failed: %v", err)
+					return
+				}
+				_ = db.Stats()
+			}
+			done <- nil
+		}(i)
+	}
+
+	for i := 0; i < numGoroutines*2; i++ {
+		if err := <-done; err != nil {
+			t.Fatalf("concurrent operation failed: %v", err)
+		}
+	}
+
+	stats := db.Stats()
+	expectedNodes := int64(numGoroutines * numOps)
+	if stats.NodeCount != expectedNodes {
+		t.Fatalf("expected %d nodes after concurrent writes, got %d", expectedNodes, stats.NodeCount)
+	}
+}
+
+func TestConcurrentEdgeAddAndTraversal(t *testing.T) {
+	db := openTestDB(t)
+
+	nodes := make([]NodeID, 5)
+	for i := range nodes {
+		id, err := db.AddNode(nil, Props{"idx": i})
+		if err != nil {
+			t.Fatalf("AddNode failed: %v", err)
+		}
+		nodes[i] = id
+	}
+
+	const numGoroutines = 10
+	done := make(chan error, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(idx int) {
+			for j := 0; j < 20; j++ {
+				from := nodes[idx%len(nodes)]
+				to := nodes[(idx+j+1)%len(nodes)]
+				_, err := db.AddEdge(from, to, "rel", Props{"g": idx})
+				if err != nil {
+					done <- fmt.Errorf("AddEdge failed: %v", err)
+					return
+				}
+			}
+			done <- nil
+		}(i)
+	}
+
+	for i := 0; i < numGoroutines; i++ {
+		if err := <-done; err != nil {
+			t.Fatalf("concurrent edge add failed: %v", err)
+		}
+	}
+
+	for _, id := range nodes {
+		edges, err := db.OutEdges(id)
+		if err != nil {
+			t.Fatalf("OutEdges failed for node %d: %v", id, err)
+		}
+		if len(edges) == 0 {
+			t.Fatalf("expected at least 1 outgoing edge for node %d", id)
+		}
+	}
+}
+
+func TestGetLabelCountsReturnsError(t *testing.T) {
+	db := openTestDB(t)
+
+	db.CreateUniqueConstraint("Person", "email")
+	db.AddNode([]string{"Person"}, Props{"email": "alice@example.com"})
+	db.AddNode([]string{"Person"}, Props{"email": "bob@example.com"})
+
+	counts, err := db.GetLabelCounts()
+	if err != nil {
+		t.Fatalf("GetLabelCounts should succeed: %v", err)
+	}
+	if counts["Person"] != 2 {
+		t.Fatalf("expected 2 Person nodes, got %d", counts["Person"])
+	}
+}
+
+func TestGetRelCountsReturnsError(t *testing.T) {
+	db := openTestDB(t)
+
+	a, _ := db.AddNode(nil, nil)
+	b, _ := db.AddNode(nil, nil)
+	db.AddEdge(a, b, "knows", nil)
+
+	counts, err := db.GetRelCounts()
+	if err != nil {
+		t.Fatalf("GetRelCounts should succeed: %v", err)
+	}
+	if counts["knows"] != 1 {
+		t.Fatalf("expected 1 knows edge, got %d", counts["knows"])
 	}
 }

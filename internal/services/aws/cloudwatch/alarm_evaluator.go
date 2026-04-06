@@ -652,8 +652,6 @@ func (s *CloudWatchService) evaluatorStoresForRegion(region string) (*cwstore.Al
 		if err != nil {
 			return nil, nil
 		}
-	} else {
-		storage = s.storage
 	}
 	if storage == nil {
 		return nil, nil

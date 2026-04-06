@@ -3,6 +3,7 @@ package neptune
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
@@ -110,6 +111,10 @@ func (s *NeptuneService) CreateDBClusterEndpoint(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
+	if _, err := store.GetCluster(clusterID); err != nil {
+		return nil, fmt.Errorf("neptune: DBCluster %s not found", clusterID)
+	}
+
 	accountID := reqCtx.GetAccountID()
 	region := reqCtx.GetRegion()
 
@@ -193,11 +198,11 @@ func (s *NeptuneService) ModifyDBClusterEndpoint(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	if newExcluded := request.GetStringList(params, "ExcludedMembers"); len(newExcluded) > 0 {
-		ep.ExcludedMembers = newExcluded
+	if request.HasParam(params, "ExcludedMembers") {
+		ep.ExcludedMembers = request.GetStringList(params, "ExcludedMembers")
 	}
-	if newStatic := request.GetStringList(params, "StaticMembers"); len(newStatic) > 0 {
-		ep.StaticMembers = newStatic
+	if request.HasParam(params, "StaticMembers") {
+		ep.StaticMembers = request.GetStringList(params, "StaticMembers")
 	}
 	if newType := request.GetStringParam(params, "EndpointType"); newType != "" {
 		ep.EndpointType = newType
@@ -242,9 +247,67 @@ func (s *NeptuneService) DeleteDBClusterEndpoint(ctx context.Context, reqCtx *re
 
 // DescribeEvents returns Neptune events matching the specified filter criteria.
 func (s *NeptuneService) DescribeEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{
-		"Events": protocol.XMLElements{ElementName: "Event", Items: []interface{}{}},
-	}, nil
+	params := req.Parameters
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	var startTime time.Time
+	if stStr := request.GetStringParam(params, "StartTime"); stStr != "" {
+		startTime, _ = time.Parse(time.RFC3339, stStr)
+	}
+
+	duration := request.GetIntParam(params, "Duration")
+	var endTime time.Time
+	if duration > 0 && !startTime.IsZero() {
+		endTime = startTime.Add(time.Duration(duration) * time.Minute)
+	}
+
+	opts := neptunestore.EventListOptions{
+		SourceType:       request.GetStringParam(params, "SourceType"),
+		SourceIdentifier: request.GetStringParam(params, "SourceIdentifier"),
+		StartTime:        startTime,
+		EndTime:          endTime,
+		Marker:           request.GetStringParam(params, "Marker"),
+		MaxRecords:       request.GetIntParam(params, "MaxRecords"),
+	}
+
+	result, err := store.ListEvents(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	filtered := make([]interface{}, 0, len(result.Events))
+	for _, evt := range result.Events {
+		filtered = append(filtered, map[string]interface{}{
+			"Date":             evt.Date.UTC().Format("2006-01-02T15:04:05.000Z"),
+			"EventCategories":  protocol.XMLElements{ElementName: "EventCategory", Items: stringSliceToInterface(evt.EventCategories)},
+			"Message":          evt.Message,
+			"SourceArn":        evt.SourceArn,
+			"SourceIdentifier": evt.SourceIdentifier,
+			"SourceType":       evt.SourceType,
+		})
+	}
+
+	resp := map[string]interface{}{
+		"Events": protocol.XMLElements{ElementName: "Event", Items: filtered},
+	}
+	if result.IsTruncated {
+		resp["Marker"] = result.Marker
+	}
+	return resp, nil
+}
+
+func stringSliceToInterface(s []string) []interface{} {
+	if s == nil {
+		return nil
+	}
+	result := make([]interface{}, len(s))
+	for i, v := range s {
+		result[i] = v
+	}
+	return result
 }
 
 // DescribeEventCategories returns the available event categories for Neptune
@@ -316,6 +379,11 @@ func (s *NeptuneService) DescribeDBEngineVersions(ctx context.Context, reqCtx *r
 	if engine == "" {
 		engine = "neptune"
 	}
+	if engine != "neptune" {
+		return map[string]interface{}{
+			"DBEngineVersions": protocol.XMLElements{ElementName: "DBEngineVersion", Items: []interface{}{}},
+		}, nil
+	}
 
 	versions := []map[string]interface{}{
 		{
@@ -380,6 +448,12 @@ func (s *NeptuneService) DescribeOrderableDBInstanceOptions(ctx context.Context,
 	if engine == "" {
 		engine = "neptune"
 	}
+	if engine != "neptune" {
+		return map[string]interface{}{
+			"OrderableDBInstanceOptions": protocol.XMLElements{ElementName: "OrderableDBInstanceOption", Items: []interface{}{}},
+		}, nil
+	}
+	region := reqCtx.GetRegion()
 
 	classes := []string{"db.r5.large", "db.r5.xlarge", "db.r5.2xlarge", "db.r5.4xlarge", "db.r6g.large", "db.r6g.xlarge", "db.r6g.2xlarge", "db.t3.medium"}
 
@@ -391,9 +465,9 @@ func (s *NeptuneService) DescribeOrderableDBInstanceOptions(ctx context.Context,
 			"DBInstanceClass": cls,
 			"LicenseModel":    "bring-your-own-license",
 			"AvailabilityZones": protocol.XMLElements{ElementName: "AvailabilityZone", Items: []interface{}{
-				map[string]interface{}{"Name": "us-east-1a"},
-				map[string]interface{}{"Name": "us-east-1b"},
-				map[string]interface{}{"Name": "us-east-1c"},
+				map[string]interface{}{"Name": region + "a"},
+				map[string]interface{}{"Name": region + "b"},
+				map[string]interface{}{"Name": region + "c"},
 			}},
 			"MultiAZCapable":            true,
 			"ReadReplicaCapable":        true,

@@ -117,8 +117,6 @@ type PathResult struct {
 	Cost  float64
 }
 
-type NodeFilter func(*Node) bool
-
 type EdgeFilter func(*Edge) bool
 
 type Visitor func(result *TraversalResult) bool

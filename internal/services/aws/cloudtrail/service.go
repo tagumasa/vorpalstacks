@@ -2,7 +2,6 @@
 package cloudtrail
 
 import (
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
@@ -12,7 +11,7 @@ import (
 type CloudTrailService struct{}
 
 // NewCloudTrailService creates a new CloudTrail service instance.
-func NewCloudTrailService(store storage.BasicStorage, accountID, region string) *CloudTrailService {
+func NewCloudTrailService(accountID, region string) *CloudTrailService {
 	return &CloudTrailService{}
 }
 

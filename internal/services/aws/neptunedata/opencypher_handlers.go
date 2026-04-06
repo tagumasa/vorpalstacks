@@ -45,12 +45,17 @@ func (s *NeptuneDataService) ExecuteOpenCypherQuery(ctx context.Context, reqCtx 
 		}
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
 	qid := generateQueryID()
-	s.trackQuery(qid, params.Query, "opencypher")
+	s.trackQuery(store, qid, params.Query, "opencypher")
 
 	parsed, err := cypherparser.Parse(params.Query)
 	if err != nil {
-		s.resolveQuery(qid, nil, err)
+		s.resolveQuery(store, qid, nil, err)
 		return nil, malformedQuery(err.Error())
 	}
 
@@ -66,9 +71,13 @@ func (s *NeptuneDataService) ExecuteOpenCypherQuery(ctx context.Context, reqCtx 
 	case parsed.Read != nil && (len(parsed.Read.Set) > 0 || len(parsed.Read.Delete) > 0 || len(parsed.Read.Remove) > 0 || parsed.Read.Create != nil):
 		result, err = cypherparser.ExecuteQueryWrite(ctx, reader, writer, parsed.Read, cypherParams)
 	default:
+		if parsed.Read == nil {
+			s.resolveQuery(store, qid, nil, fmt.Errorf("unsupported query type"))
+			return nil, malformedQuery("unsupported query type")
+		}
 		result, err = cypherparser.Execute(ctx, reader, parsed.Read, cypherParams)
 	}
-	s.resolveQuery(qid, result, err)
+	s.resolveQuery(store, qid, result, err)
 	if err != nil {
 		return nil, malformedQuery(err.Error())
 	}
@@ -114,13 +123,17 @@ func (s *NeptuneDataService) ExecuteOpenCypherExplainQuery(ctx context.Context, 
 // of a previously submitted OpenCypher query.
 func (s *NeptuneDataService) GetOpenCypherQueryStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
 	queryId := getPathParam(req, "queryId")
 	if queryId == "" {
 		return nil, missingParameter("queryId")
 	}
 
-	qr, err := s.store.GetQuery(queryId)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
+	qr, err := store.GetQuery(queryId)
 	if err != nil || qr == nil {
 		return nil, badRequest(fmt.Sprintf("query not found: %s", queryId))
 	}
@@ -138,7 +151,7 @@ func (s *NeptuneDataService) GetOpenCypherQueryStatus(ctx context.Context, reqCt
 
 	return map[string]interface{}{
 		"queryId":        qr.GetQueryId(),
-		"queryString":    qr.GetQueryType(),
+		"queryString":    qr.GetQueryString(),
 		"queryEvalStats": evalStats,
 	}, nil
 }
@@ -147,10 +160,14 @@ func (s *NeptuneDataService) GetOpenCypherQueryStatus(ctx context.Context, reqCt
 // including those in a waiting state.
 func (s *NeptuneDataService) ListOpenCypherQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
 	includeWaiting := request.GetBoolParam(req.Parameters, "includeWaiting")
 
-	queries, err := s.store.ListQueries()
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
+	queries, err := store.ListQueries()
 	if err != nil {
 		return nil, err
 	}
@@ -162,14 +179,18 @@ func (s *NeptuneDataService) ListOpenCypherQueries(ctx context.Context, reqCtx *
 		if qr.GetQueryType() != "opencypher" {
 			continue
 		}
-		if qr.GetStatus() == "waiting" && !includeWaiting {
+		st := qr.GetStatus()
+		if st == "complete" || st == "failed" || st == "cancelled" {
+			continue
+		}
+		if st == "waiting" && !includeWaiting {
 			continue
 		}
 		entry := map[string]interface{}{
 			"queryId":     qr.GetQueryId(),
-			"queryString": qr.GetQueryType(),
+			"queryString": qr.GetQueryString(),
 		}
-		if qr.GetStatus() == "running" {
+		if st == "running" {
 			runningCount++
 		} else {
 			acceptedCount++
@@ -188,20 +209,28 @@ func (s *NeptuneDataService) ListOpenCypherQueries(ctx context.Context, reqCtx *
 // as cancelled.
 func (s *NeptuneDataService) CancelOpenCypherQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
 	queryId := getPathParam(req, "queryId")
 	silent := request.GetBoolParam(req.Parameters, "silent")
 	if queryId == "" {
 		return nil, missingParameter("queryId")
 	}
 
-	qr, err := s.store.GetQuery(queryId)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
+	qr, err := store.GetQuery(queryId)
 	if err != nil || qr == nil {
 		return nil, badRequest(fmt.Sprintf("query not found: %s", queryId))
 	}
+	switch qr.GetStatus() {
+	case "complete", "failed", "cancelled":
+		return nil, badRequest(fmt.Sprintf("cannot cancel query in terminal state: %s", qr.GetStatus()))
+	}
 	qr.Status = "cancelled"
 	qr.EndTime = timestamppb.Now()
-	_ = s.store.UpdateQuery(qr)
+	_ = store.UpdateQuery(qr)
 
 	if silent {
 		return map[string]interface{}{}, nil
