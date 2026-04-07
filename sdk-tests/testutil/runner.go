@@ -78,6 +78,7 @@ func init() {
 	RegisterService("wafv2", CategorySDK, (*TestRunner).RunWAFv2Tests)
 	RegisterService("neptune", CategorySDK, (*TestRunner).RunNeptuneTests)
 	RegisterService("neptunedata", CategorySDK, (*TestRunner).RunNeptunedataTests)
+	RegisterService("neptunegraph", CategorySDK, (*TestRunner).RunNeptunegraphTests)
 	RegisterService("appsync", CategorySDK, (*TestRunner).RunAppSyncTests)
 	RegisterService("appsync-ws", CategoryWS, (*TestRunner).RunAppSyncWSTests)
 	RegisterService("integration", CategoryIntegration, (*TestRunner).RunIntegrationTests)

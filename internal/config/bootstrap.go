@@ -49,6 +49,7 @@ type BootstrapConfig struct {
 	AppSync         bool
 	Neptune         bool
 	NeptuneData     bool
+	NeptuneGraph    bool
 }
 
 // ServerHost returns the server hostname suitable for self-referencing URLs.
@@ -105,6 +106,7 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		AppSync:         envBool("APPSYNC_ENABLED", true),
 		Neptune:         envBool("NEPTUNE_ENABLED", true),
 		NeptuneData:     envBool("NEPTUNE_DATA_ENABLED", true),
+		NeptuneGraph:    envBool("NEPTUNE_GRAPH_ENABLED", true),
 	}
 }
 

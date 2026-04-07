@@ -363,20 +363,32 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 	}))
 
 	// Test 16: Stop Query Execution
-	// Note: Query may complete very fast after optimization, so check state first
+	// Uses /* SLOW */ hint to ensure query is still running when stop is called.
 	results = append(results, r.RunTest("athena", "StopQueryExecution", func() error {
-		getResp, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
-			QueryExecutionId: aws.String(queryExecutionId),
+		stopResp, err := client.StartQueryExecution(ctx, &athena.StartQueryExecutionInput{
+			QueryString: aws.String("/* SLOW */ SELECT 1"),
+			WorkGroup:   aws.String(workGroupName),
 		})
 		if err != nil {
 			return err
 		}
-		state := getResp.QueryExecution.Status.State
-		if state == types.QueryExecutionStateQueued || state == types.QueryExecutionStateRunning {
-			_, err = client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
-				QueryExecutionId: aws.String(queryExecutionId),
-			})
+		stopQueryId := stopResp.QueryExecutionId
+
+		_, err = client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
+			QueryExecutionId: stopQueryId,
+		})
+		if err != nil {
+			return fmt.Errorf("StopQueryExecution failed: %v", err)
+		}
+
+		getResp, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
+			QueryExecutionId: stopQueryId,
+		})
+		if err != nil {
 			return err
+		}
+		if getResp.QueryExecution.Status.State != types.QueryExecutionStateCancelled {
+			return fmt.Errorf("expected CANCELLED, got %s", getResp.QueryExecution.Status.State)
 		}
 		return nil
 	}))

@@ -89,6 +89,7 @@ message DBClusterSnapshot {
   string db_snapshot_arn = 12;
   string account_id = 13;
   string region = 14;
+  repeated string restore_attribute_values = 15;
 }
 
 message DBClusterParameterGroup {
@@ -96,6 +97,7 @@ message DBClusterParameterGroup {
   string db_parameter_group_family = 2;
   string description = 3;
   string arn = 4;
+  repeated Parameter parameters = 5;
 }
 
 message DBParameterGroup {
@@ -103,6 +105,7 @@ message DBParameterGroup {
   string db_parameter_group_family = 2;
   string description = 3;
   string arn = 4;
+  repeated Parameter parameters = 5;
 }
 
 message Subnet {
@@ -190,11 +193,12 @@ message DBClusterEndpoint {
 message QueryState {
   string query_id = 1;
   string query_type = 2;
-  string status = 3;
-  google.protobuf.Timestamp start_time = 4;
-  google.protobuf.Timestamp end_time = 5;
-  string result = 6;
-  string error = 7;
+  string query_string = 3;
+  string status = 4;
+  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  string result = 7;
+  string error = 8;
 }
 
 message LoaderJob {

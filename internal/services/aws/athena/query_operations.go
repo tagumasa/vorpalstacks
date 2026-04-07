@@ -157,12 +157,15 @@ func (s *Service) StopQueryExecution(ctx context.Context, reqCtx *request.Reques
 
 	if queryExecution.Status.State == athenastore.QueryExecutionStateRunning ||
 		queryExecution.Status.State == athenastore.QueryExecutionStateQueued {
+		if cancelFn, ok := s.getAndRemoveCancelFunc(queryExecutionId); ok {
+			cancelFn()
+		}
 		queryExecution.Status.State = athenastore.QueryExecutionStateCancelled
 		queryExecution.Status.CompletionDateTime = time.Now().UTC()
 		if err := st.queryExecutionStore.UpdateQueryExecution(queryExecution); err != nil {
 			return nil, err
 		}
-	} else {
+	} else if queryExecution.Status.State != athenastore.QueryExecutionStateCancelled {
 		return nil, NewValidationError("Query execution is not in a cancellable state")
 	}
 

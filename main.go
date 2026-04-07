@@ -1,6 +1,6 @@
 // Vorpalstacks is an AWS-compatible cloud platform for edge and on-premises environments.
 //
-// It provides 31 service APIs covering 27 AWS services with a single binary,
+// It provides 32 service APIs covering 27 AWS services with a single binary,
 // using CockroachDB Pebble for persistent storage and supporting both
 // JSON and Query AWS API protocols.
 package main
@@ -41,6 +41,7 @@ import (
 	svclambda "vorpalstacks/internal/services/aws/lambda"
 	svcneptune "vorpalstacks/internal/services/aws/neptune"
 	svcneptunedata "vorpalstacks/internal/services/aws/neptunedata"
+	svcneptuneGraph "vorpalstacks/internal/services/aws/neptunegraph"
 	svcroute53 "vorpalstacks/internal/services/aws/route53"
 	svcs3 "vorpalstacks/internal/services/aws/s3"
 	svcscheduler "vorpalstacks/internal/services/aws/scheduler"
@@ -104,10 +105,19 @@ func main() {
 	var snsService *svcsns.SNSService
 	var sqsService *svcsqs.SQSService
 
+	var neptuneGraphService *svcneptuneGraph.NeptuneGraphService
+
 	if cfg.Neptune {
 		neptuneService = svcneptune.NewNeptuneService(cfg.AccountID, cfg.Region)
 		neptuneService.SetStorageManager(server.StorageManager())
 		neptuneService.RegisterHandlers(server.Dispatcher())
+	}
+
+	if cfg.NeptuneGraph {
+		neptuneGraphService = svcneptuneGraph.NewNeptuneGraphService(cfg.AccountID, cfg.Region, cfg.DataPath)
+		neptuneGraphService.SetStorageManager(server.StorageManager())
+		neptuneGraphService.RegisterHandlers(server.Dispatcher())
+		neptuneGraphService.RestoreEngines()
 	}
 
 	if cfg.NeptuneData {
@@ -118,24 +128,34 @@ func main() {
 
 	grpcWebServer := grpcweb.NewServer(&grpcweb.Config{Port: cfg.GRPCWebPort, BindAddr: cfg.GRPCWebBindAddr})
 	grpcweb.RegisterAllAdminHandlers(grpcWebServer, grpcweb.AdminDeps{
-		Server:           server,
-		AccountID:        cfg.AccountID,
-		Region:           cfg.Region,
-		DataPath:         cfg.DataPath,
-		BaseURL:          appconfig.BaseURL(),
-		NeptuneDataAdmin: neptunedataService,
-		NeptuneAdmin:     neptuneService,
-		AppSyncAdmin:     appsyncService,
-		LogsAdmin:        logsService,
-		EventsAdmin:      eventsService,
-		SFNAdmin:         stepFunctionService,
-		SNSAdmin:         snsService,
-		SQSAdmin:         sqsService,
+		Server:            server,
+		AccountID:         cfg.AccountID,
+		Region:            cfg.Region,
+		DataPath:          cfg.DataPath,
+		BaseURL:           appconfig.BaseURL(),
+		NeptuneDataAdmin:  neptunedataService,
+		NeptuneAdmin:      neptuneService,
+		NeptuneGraphAdmin: neptuneGraphService,
+		AppSyncAdmin:      appsyncService,
+		LogsAdmin:         logsService,
+		EventsAdmin:       eventsService,
+		SFNAdmin:          stepFunctionService,
+		SNSAdmin:          snsService,
+		SQSAdmin:          sqsService,
 	})
 
 	server.RegisterShutdownHook(func(ctx context.Context) {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer shutdownCancel()
+		if neptuneGraphService != nil {
+			neptuneGraphService.Close()
+		}
+		if neptuneService != nil {
+			neptuneService.Close()
+		}
+		if neptunedataService != nil {
+			neptunedataService.Close()
+		}
 		if err := grpcWebServer.Shutdown(shutdownCtx); err != nil {
 			fmt.Fprintf(os.Stderr, "gRPC-Web server shutdown error: %v\n", err)
 		}

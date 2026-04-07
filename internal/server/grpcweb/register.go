@@ -30,6 +30,7 @@ import (
 	lambdaconnect "vorpalstacks/internal/pb/aws/lambda/lambdaconnect"
 	neptuneconnect "vorpalstacks/internal/pb/aws/neptune/neptuneconnect"
 	neptunedataconnect "vorpalstacks/internal/pb/aws/neptunedata/neptunedataconnect"
+	neptunegraphconnect "vorpalstacks/internal/pb/aws/neptunegraph/neptunegraphconnect"
 	route53connect "vorpalstacks/internal/pb/aws/route53/route53connect"
 	s3connect "vorpalstacks/internal/pb/aws/s3/s3connect"
 	schedulerconnect "vorpalstacks/internal/pb/aws/scheduler/schedulerconnect"
@@ -63,6 +64,7 @@ import (
 	svclambda "vorpalstacks/internal/services/aws/lambda"
 	svcneptune "vorpalstacks/internal/services/aws/neptune"
 	svcneptunedata "vorpalstacks/internal/services/aws/neptunedata"
+	svcneptuneGraph "vorpalstacks/internal/services/aws/neptunegraph"
 	svcroute53 "vorpalstacks/internal/services/aws/route53"
 	svcs3 "vorpalstacks/internal/services/aws/s3"
 	svcscheduler "vorpalstacks/internal/services/aws/scheduler"
@@ -84,19 +86,20 @@ import (
 
 // AdminDeps bundles the dependencies required to register all admin console handlers.
 type AdminDeps struct {
-	Server           *chihttp.Server
-	AccountID        string
-	Region           string
-	DataPath         string
-	BaseURL          string
-	NeptuneDataAdmin *svcneptunedata.NeptuneDataService
-	AppSyncAdmin     *svcappsync.AppSyncService
-	LogsAdmin        *svclogs.LogsService
-	EventsAdmin      *svcevents.EventsService
-	SFNAdmin         *svcstepfunction.StepFunctionService
-	SNSAdmin         *svcsns.SNSService
-	SQSAdmin         *svcsqs.SQSService
-	NeptuneAdmin     *svcneptune.NeptuneService
+	Server            *chihttp.Server
+	AccountID         string
+	Region            string
+	DataPath          string
+	BaseURL           string
+	NeptuneDataAdmin  *svcneptunedata.NeptuneDataService
+	AppSyncAdmin      *svcappsync.AppSyncService
+	LogsAdmin         *svclogs.LogsService
+	EventsAdmin       *svcevents.EventsService
+	SFNAdmin          *svcstepfunction.StepFunctionService
+	SNSAdmin          *svcsns.SNSService
+	SQSAdmin          *svcsqs.SQSService
+	NeptuneAdmin      *svcneptune.NeptuneService
+	NeptuneGraphAdmin *svcneptuneGraph.NeptuneGraphService
 }
 
 // RegisterAllAdminHandlers registers Connect RPC handlers for all services
@@ -151,6 +154,7 @@ func RegisterAllAdminHandlers(s *Server, deps AdminDeps) {
 	s.Handle(timestreamwriteconnect.NewTimestreamWriteServiceHandler(svctimestreamwrite.NewAdminHandler(sm, aid, dp)))
 
 	s.Handle(neptuneconnect.NewNeptuneServiceHandler(svcneptune.NewAdminHandler(deps.NeptuneAdmin, aid)))
+	s.Handle(neptunegraphconnect.NewNeptuneGraphServiceHandler(svcneptuneGraph.NewAdminHandler(deps.NeptuneGraphAdmin, aid)))
 	if deps.NeptuneDataAdmin != nil {
 		s.Handle(neptunedataconnect.NewNeptunedataServiceHandler(svcneptunedata.NewAdminHandler(deps.NeptuneDataAdmin)))
 	}

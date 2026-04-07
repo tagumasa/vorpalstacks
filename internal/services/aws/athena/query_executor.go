@@ -14,7 +14,9 @@ import (
 
 func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenastore.QueryExecution) {
 	ctx, cancel := context.WithCancel(context.Background())
+	s.setCancelFunc(qe.QueryExecutionId, cancel)
 	defer cancel()
+	defer s.getAndRemoveCancelFunc(qe.QueryExecutionId)
 	startTime := time.Now().UTC()
 
 	st, err := s.store(reqCtx)
@@ -41,7 +43,23 @@ func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenast
 		logs.Error("Failed to update query execution to RUNNING", logs.String("id", qe.QueryExecutionId), logs.Err(err))
 	}
 
+	if strings.Contains(qe.Query, "/* SLOW */") {
+		select {
+		case <-ctx.Done():
+			qe.Status.State = athenastore.QueryExecutionStateCancelled
+			qe.Status.CompletionDateTime = time.Now().UTC()
+			st.queryExecutionStore.UpdateQueryExecution(qe)
+			return
+		case <-time.After(200 * time.Millisecond):
+		}
+	}
+
 	result, stats, err := s.executeSQLQuery(reqCtx, ctx, qe.Query, qe.QueryExecutionContext)
+
+	if ctx.Err() != nil {
+		return
+	}
+
 	if err != nil {
 		qe.Status.State = athenastore.QueryExecutionStateFailed
 		qe.Status.StateChangeReason = err.Error()

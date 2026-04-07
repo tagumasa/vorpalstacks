@@ -38,13 +38,16 @@ type Service struct {
 	serverHost    string
 	s3ObjectStore S3ObjectStore
 	asyncWg       sync.WaitGroup
+	cancelMu      sync.Mutex
+	cancelFuncs   map[string]context.CancelFunc
 }
 
 // NewService creates a new Athena service instance.
 func NewService(accountID, serverHost string) *Service {
 	return &Service{
-		accountID:  accountID,
-		serverHost: serverHost,
+		accountID:   accountID,
+		serverHost:  serverHost,
+		cancelFuncs: make(map[string]context.CancelFunc),
 	}
 }
 
@@ -55,7 +58,22 @@ func NewServiceWithS3(accountID, serverHost string, s3ObjectStore S3ObjectStore)
 		serverHost:    serverHost,
 		s3ObjectStore: s3ObjectStore,
 		asyncWg:       sync.WaitGroup{},
+		cancelFuncs:   make(map[string]context.CancelFunc),
 	}
+}
+
+func (s *Service) setCancelFunc(id string, fn context.CancelFunc) {
+	s.cancelMu.Lock()
+	s.cancelFuncs[id] = fn
+	s.cancelMu.Unlock()
+}
+
+func (s *Service) getAndRemoveCancelFunc(id string) (context.CancelFunc, bool) {
+	s.cancelMu.Lock()
+	fn, ok := s.cancelFuncs[id]
+	delete(s.cancelFuncs, id)
+	s.cancelMu.Unlock()
+	return fn, ok
 }
 
 func (s *Service) store(reqCtx *request.RequestContext) (*athenaStores, error) {

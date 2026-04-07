@@ -91,9 +91,40 @@ func parseAuthModes(raw []interface{}) []appsyncstore.AuthMode {
 }
 
 // parseTags extracts a map[string]string from the "tags" request parameter.
-// AppSync uses flat map tags (not the []Tag format used by most other services).
+// Handles both flat map format ({"mykey": "myval"}) and CLI single-tag format ({"Key": "k", "Value": "v"}).
 func parseTags(params map[string]interface{}) map[string]string {
-	return request.ParseAttributes(params, "tags")
+	raw := request.GetMapParam(params, "tags")
+	if raw == nil {
+		raw = request.GetMapParam(params, "Tags")
+	}
+	if raw == nil {
+		return nil
+	}
+	if k, ok := raw["key"]; ok {
+		if v, ok2 := raw["value"]; ok2 {
+			if ks, ok3 := k.(string); ok3 {
+				if vs, ok4 := v.(string); ok4 {
+					return map[string]string{ks: vs}
+				}
+			}
+		}
+	}
+	if k, ok := raw["Key"]; ok {
+		if v, ok2 := raw["Value"]; ok2 {
+			if ks, ok3 := k.(string); ok3 {
+				if vs, ok4 := v.(string); ok4 {
+					return map[string]string{ks: vs}
+				}
+			}
+		}
+	}
+	result := make(map[string]string)
+	for k, v := range raw {
+		if vs, ok := v.(string); ok {
+			result[k] = vs
+		}
+	}
+	return result
 }
 
 // parseHandlerConfigs parses HandlerConfigs from the request parameters.

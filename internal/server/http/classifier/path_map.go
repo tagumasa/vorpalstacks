@@ -113,5 +113,8 @@ func lookupServiceByPath(path string) string {
 	if isAppSyncPath(path) {
 		return "appsync"
 	}
+	if request.IsNeptuneGraphPath(path) {
+		return "neptunegraph"
+	}
 	return ""
 }

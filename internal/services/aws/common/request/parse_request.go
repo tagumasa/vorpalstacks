@@ -149,6 +149,14 @@ func ParseAWSRequest(r *http.Request) (*ParsedRequest, error) {
 		extractNeptunedataPathParams(r.URL.Path, req.Parameters)
 	}
 
+	if IsNeptuneGraphPath(r.URL.Path) {
+		extractNeptuneGraphPathParams(r.URL.Path, req.Parameters)
+	}
+
+	if graphId := r.Header.Get("Graphidentifier"); graphId != "" {
+		req.Parameters["graphIdentifier"] = graphId
+	}
+
 	return req, nil
 }
 
@@ -226,6 +234,10 @@ func extractOperation(r *http.Request, bodyBytes []byte) string {
 		return op
 	}
 
+	if op := extractNeptuneGraphOperation(r); op != "" {
+		return op
+	}
+
 	return ""
 }
 
@@ -285,6 +297,9 @@ func ExtractRESTOperation(r *http.Request, bodyBytes []byte) string {
 	if op := extractAppSyncOperation(r); op != "" {
 		return op
 	}
+	if op := extractNeptuneGraphOperation(r); op != "" {
+		return op
+	}
 	return ""
 }
 
@@ -313,6 +328,9 @@ func ExtractRESTPathParams(path string, method string, params map[string]interfa
 	}
 	if isAppSyncPath(path) {
 		extractAppSyncPathParams(path, params)
+	}
+	if IsNeptuneGraphPath(path) {
+		extractNeptuneGraphPathParams(path, params)
 	}
 }
 

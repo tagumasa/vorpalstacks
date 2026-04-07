@@ -147,7 +147,8 @@ func (c *Classifier) detectProtocol(r *http.Request, bodyBytes []byte) Protocol 
 		strings.HasPrefix(r.URL.Path, "/schedules") ||
 		strings.HasPrefix(r.URL.Path, "/v2/email/") ||
 		strings.HasPrefix(r.URL.Path, "/service/GraniteServiceVersion20100801/") ||
-		isAppSyncPath(r.URL.Path) {
+		isAppSyncPath(r.URL.Path) ||
+		request.IsNeptuneGraphPath(r.URL.Path) {
 		return ProtocolRESTJSON
 	}
 	return ProtocolUnknown
@@ -195,6 +196,7 @@ func (c *Classifier) serviceFromSigningService(r *http.Request, bodyBytes []byte
 		"events":            "eventbridge",
 		"rds":               "neptune",
 		"neptune-db":        "neptunedata",
+		"neptune-graph":     "neptunegraph",
 	}
 	if mapped, ok := mapping[signingService]; ok {
 		if signingService == "timestream" {

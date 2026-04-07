@@ -62,6 +62,8 @@ github.com/aws/aws-sdk-go-v2/service/neptune v1.44.3 h1:YlOAIqn5ShfNnplTj17y/4W7
 github.com/aws/aws-sdk-go-v2/service/neptune v1.44.3/go.mod h1:iJQ7qpaNp26sMZvqmSF0zGz0beApcLcWkAerfsoCTrs=
 github.com/aws/aws-sdk-go-v2/service/neptunedata v1.17.5 h1:f4w4ycWUZVYsuW/cFcDNOOE/DT+ov988XTV1VRtJ2oI=
 github.com/aws/aws-sdk-go-v2/service/neptunedata v1.17.5/go.mod h1:5iqNgWBB8/IbOuSFF0kLw5ZqEWnYOh+S5NedvMRQ8+w=
+github.com/aws/aws-sdk-go-v2/service/neptunegraph v1.21.20 h1:Uwva4W8Df91FwaEEJc/3xDcGmmklE9G7ConAx53UNSU=
+github.com/aws/aws-sdk-go-v2/service/neptunegraph v1.21.20/go.mod h1:egPCYSi+oty+YpBNX3rQTDhCVQluGGh9XR0+uJzEnQs=
 github.com/aws/aws-sdk-go-v2/service/route53 v1.62.2 h1:zoD/SoiVQi8l8tuQn//VexrXS2yorg/+717JNA4Ble8=
 github.com/aws/aws-sdk-go-v2/service/route53 v1.62.2/go.mod h1:Ll1DCasPTBFtHK5t/U5WIwGIyRuY3xY+x8/LmqIlqpM=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.96.2 h1:M1A9AjcFwlxTLuf0Faj88L8Iqw0n/AJHjpZTQzMMsSc=

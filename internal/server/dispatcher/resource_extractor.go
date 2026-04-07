@@ -69,6 +69,7 @@ func (e *ResourceExtractor) registerDefaults() {
 	e.registerSecretsManagerExtractors()
 	e.registerAppSyncExtractors()
 	e.registerNeptuneExtractors()
+	e.registerNeptuneGraphExtractors()
 }
 
 func (e *ResourceExtractor) registerS3Extractors() {
@@ -821,5 +822,97 @@ func (e *ResourceExtractor) registerNeptuneExtractors() {
 		"AddTagsToResource", "ListTagsForResource", "RemoveTagsFromResource",
 	} {
 		e.Register("neptune", op, tagExtractor)
+	}
+}
+
+func (e *ResourceExtractor) registerNeptuneGraphExtractors() {
+	graphExtractor := func(params map[string]interface{}, accountID, region string) string {
+		graphId, _ := params["graphIdentifier"].(string)
+		if graphId == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune-graph:%s:%s:graph/%s", region, accountID, graphId)
+	}
+
+	for _, op := range []string{
+		"CreateGraph", "DeleteGraph", "GetGraph", "ListGraphs", "UpdateGraph",
+		"StartGraph", "StopGraph", "ResetGraph",
+		"RestoreGraphFromSnapshot",
+		"CreatePrivateGraphEndpoint", "GetPrivateGraphEndpoint",
+		"ListPrivateGraphEndpoints", "DeletePrivateGraphEndpoint",
+		"ExecuteQuery", "GetGraphSummary",
+	} {
+		e.Register("neptunegraph", op, graphExtractor)
+	}
+
+	snapshotExtractor := func(params map[string]interface{}, accountID, region string) string {
+		snapshotId, _ := params["snapshotIdentifier"].(string)
+		if snapshotId == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune-graph:%s:%s:snapshot/%s", region, accountID, snapshotId)
+	}
+
+	for _, op := range []string{
+		"CreateGraphSnapshot", "DeleteGraphSnapshot", "GetGraphSnapshot", "ListGraphSnapshots",
+	} {
+		e.Register("neptunegraph", op, snapshotExtractor)
+	}
+
+	importTaskExtractor := func(params map[string]interface{}, accountID, region string) string {
+		taskId, _ := params["taskIdentifier"].(string)
+		if taskId == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune-graph:%s:%s:import-task/%s", region, accountID, taskId)
+	}
+
+	for _, op := range []string{
+		"CreateGraphUsingImportTask", "GetImportTask", "ListImportTasks",
+		"CancelImportTask", "StartImportTask",
+	} {
+		e.Register("neptunegraph", op, importTaskExtractor)
+	}
+
+	exportTaskExtractor := func(params map[string]interface{}, accountID, region string) string {
+		taskId, _ := params["taskIdentifier"].(string)
+		if taskId == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune-graph:%s:%s:export-task/%s", region, accountID, taskId)
+	}
+
+	for _, op := range []string{
+		"StartExportTask", "GetExportTask", "ListExportTasks", "CancelExportTask",
+	} {
+		e.Register("neptunegraph", op, exportTaskExtractor)
+	}
+
+	ngTagExtractor := func(params map[string]interface{}, accountID, region string) string {
+		resourceArn, _ := params["resourceArn"].(string)
+		if resourceArn == "" {
+			return "*"
+		}
+		return resourceArn
+	}
+
+	for _, op := range []string{
+		"ListTagsForResource", "TagResource", "UntagResource",
+	} {
+		e.Register("neptunegraph", op, ngTagExtractor)
+	}
+
+	queryExtractor := func(params map[string]interface{}, accountID, region string) string {
+		graphId, _ := params["graphIdentifier"].(string)
+		if graphId == "" {
+			return "*"
+		}
+		return fmt.Sprintf("arn:aws:neptune-graph:%s:%s:graph/%s", region, accountID, graphId)
+	}
+
+	for _, op := range []string{
+		"GetQuery", "ListQueries", "CancelQuery",
+	} {
+		e.Register("neptunegraph", op, queryExtractor)
 	}
 }

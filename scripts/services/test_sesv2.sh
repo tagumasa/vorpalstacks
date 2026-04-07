@@ -34,7 +34,7 @@ run_test "3. GetConfigurationSet" \
     "$CONFIG_SET"
 
 run_test "4. ListConfigurationSets" \
-    "aws_noauth sesv2 list-configuration-sets --query 'ConfigurationSets[?ConfigurationSetName==\`$CONFIG_SET\`].ConfigurationSetName | [0]' --output text" \
+    "aws_noauth sesv2 list-configuration-sets --query 'ConfigurationSets[?@==\`'$CONFIG_SET'\`]' --output text" \
     "$CONFIG_SET"
 
 run_test "5. CreateEmailIdentity" \

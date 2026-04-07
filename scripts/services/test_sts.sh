@@ -13,7 +13,7 @@ echo "Region: $REGION"
 echo ""
 
 echo "Creating test IAM role for AssumeRole tests..."
-aws_cmd iam create-role --role-name test-sts-role --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"*"},"Action":"sts:AssumeRole"}]}' 2>/dev/null || true
+aws_cmd iam create-role --role-name test-sts-role --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"*","Federated":"arn:aws:iam::'"$ACCOUNT_ID"':saml-provider/test-provider"},"Action":["sts:AssumeRole","sts:AssumeRoleWithWebIdentity","sts:AssumeRoleWithSAML"]}]}' 2>/dev/null || true
 
 run_test "1. GetCallerIdentity" \
     "aws_cmd sts get-caller-identity --query 'Arn' --output text" \

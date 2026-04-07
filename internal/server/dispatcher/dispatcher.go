@@ -257,7 +257,7 @@ func (d *Dispatcher) DispatchClassified(w http.ResponseWriter, r *http.Request, 
 // classifiedToParsed converts a ClassifiedRequest into a ParsedRequest
 // suitable for the existing handler pipeline.
 func classifiedToParsed(cr *classifier.ClassifiedRequest) *request.ParsedRequest {
-	return &request.ParsedRequest{
+	parsed := &request.ParsedRequest{
 		Operation:   cr.Operation,
 		Parameters:  cr.Parameters,
 		Headers:     cr.Headers,
@@ -267,4 +267,10 @@ func classifiedToParsed(cr *classifier.ClassifiedRequest) *request.ParsedRequest
 		Region:      cr.Region,
 		AccessKeyID: cr.AccessKeyID,
 	}
+
+	if graphID := cr.Headers.Get("Graphidentifier"); graphID != "" {
+		parsed.Parameters["graphIdentifier"] = graphID
+	}
+
+	return parsed
 }
