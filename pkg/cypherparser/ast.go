@@ -555,3 +555,11 @@ type DDLStatement struct {
 	Property   string
 	Constraint string
 }
+
+// CypherCall represents a CALL statement for invoking a stored procedure.
+// CALL procName(args...) YIELD field1, field2, ... RETURN ...
+type CypherCall struct {
+	Name       string
+	Args       []Expression
+	YieldItems []string
+}

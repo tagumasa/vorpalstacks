@@ -57,6 +57,7 @@ type ParsedCypher struct {
 	Read  *CypherQuery
 	Write *CypherWrite
 	Merge *CypherMerge
+	Call  *CypherCall
 	DDL   *DDLStatement
 }
 
@@ -93,6 +94,14 @@ func Parse(input string) (*ParsedCypher, error) {
 			return nil, err
 		}
 		return &ParsedCypher{Merge: m}, nil
+	}
+
+	if p.is(tokCall) {
+		c, err := p.parseCallStatement()
+		if err != nil {
+			return nil, err
+		}
+		return &ParsedCypher{Call: c}, nil
 	}
 
 	q, err := p.parseQuery()
@@ -1780,4 +1789,74 @@ func (p *parser) parseShow() (*ParsedCypher, error) {
 		return &ParsedCypher{DDL: &DDLStatement{Kind: "SHOW_CONSTRAINTS"}}, nil
 	}
 	return nil, fmt.Errorf("cypher parser: expected INDEX(ES) or CONSTRAINT(S) after SHOW")
+}
+
+func (p *parser) parseCallStatement() (*CypherCall, error) {
+	if _, err := p.expect(tokCall); err != nil {
+		return nil, err
+	}
+
+	var nameParts []string
+	for {
+		t, err := p.expectIdentOrKeyword()
+		if err != nil {
+			return nil, fmt.Errorf("cypher parser: expected procedure name after CALL at position %d", p.cur().Pos)
+		}
+		nameParts = append(nameParts, t.Text)
+		if !p.is(tokDot) {
+			break
+		}
+		p.advance()
+	}
+	procName := strings.Join(nameParts, ".")
+
+	if _, err := p.expect(tokLParen); err != nil {
+		return nil, fmt.Errorf("cypher parser: expected '(' after procedure name at position %d", p.cur().Pos)
+	}
+
+	var args []Expression
+	if !p.is(tokRParen) {
+		for {
+			arg, err := p.parseExpr()
+			if err != nil {
+				return nil, fmt.Errorf("cypher parser: failed to parse CALL argument: %w", err)
+			}
+			args = append(args, arg)
+			if !p.is(tokComma) {
+				break
+			}
+			p.advance()
+		}
+	}
+
+	if _, err := p.expect(tokRParen); err != nil {
+		return nil, fmt.Errorf("cypher parser: expected ')' after CALL arguments at position %d", p.cur().Pos)
+	}
+
+	call := &CypherCall{
+		Name: procName,
+		Args: args,
+	}
+
+	if p.is(tokYield) {
+		p.advance()
+		if p.is(tokStar) {
+			p.advance()
+			call.YieldItems = []string{"*"}
+		} else {
+			for {
+				t, err := p.expectIdentOrKeyword()
+				if err != nil {
+					return nil, fmt.Errorf("cypher parser: expected YIELD item name at position %d", p.cur().Pos)
+				}
+				call.YieldItems = append(call.YieldItems, t.Text)
+				if !p.is(tokComma) {
+					break
+				}
+				p.advance()
+			}
+		}
+	}
+
+	return call, nil
 }

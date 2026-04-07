@@ -87,6 +87,7 @@ type DB struct {
 	nodeCount  atomic.Uint64
 	edgeCount  atomic.Uint64
 	closed     atomic.Bool
+	Embeddings *EmbeddingStore
 }
 
 // Open creates or opens a graph database at the given directory. A Pebble
@@ -121,6 +122,8 @@ func Open(dir string, opts Options) (*DB, error) {
 		cache.Unref()
 		return nil, err
 	}
+
+	d.Embeddings = NewEmbeddingStore(d)
 
 	return d, nil
 }
@@ -1595,6 +1598,7 @@ var clearPrefixes = [][]byte{
 	idxPropPrefix,
 	idxEtypePrefix,
 	ucPrefix,
+	vecPrefix,
 	[]byte("meta/"),
 }
 
@@ -1620,6 +1624,10 @@ func (d *DB) Clear() error {
 	d.edgeCount.Store(0)
 	d.nextNodeID.Store(1)
 	d.nextEdgeID.Store(1)
+
+	if d.Embeddings != nil {
+		d.Embeddings.Clear()
+	}
 
 	if err := d.persistCounters(); err != nil {
 		return fmt.Errorf("graphengine: failed to persist counters after clear: %w", err)
@@ -1824,4 +1832,70 @@ func (d *DB) FindByProperty(propName string, value interface{}) ([]NodeID, error
 
 func hasPrefix(key, prefix []byte) bool {
 	return bytes.HasPrefix(key, prefix)
+}
+
+func (d *DB) getRaw(key []byte) ([]byte, error) {
+	if d.closed.Load() {
+		return nil, fmt.Errorf("graphengine: database is closed")
+	}
+	val, closer, err := d.db.Get(key)
+	if err != nil {
+		if err == pebble.ErrNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer closer.Close()
+	result := make([]byte, len(val))
+	copy(result, val)
+	return result, nil
+}
+
+func (d *DB) setRaw(key, value []byte) error {
+	if d.closed.Load() {
+		return fmt.Errorf("graphengine: database is closed")
+	}
+	return d.db.Set(key, value, pebble.NoSync)
+}
+
+func (d *DB) deleteRaw(key []byte) error {
+	if d.closed.Load() {
+		return fmt.Errorf("graphengine: database is closed")
+	}
+	return d.db.Delete(key, pebble.NoSync)
+}
+
+func (d *DB) deleteRangeRaw(prefix []byte) error {
+	if d.closed.Load() {
+		return fmt.Errorf("graphengine: database is closed")
+	}
+	end := append([]byte(nil), prefix...)
+	end = append(end, 0xFF)
+	return d.db.DeleteRange(prefix, end, pebble.NoSync)
+}
+
+func (d *DB) iteratePrefixRaw(prefix []byte, fn func(key, value []byte) error) error {
+	if d.closed.Load() {
+		return fmt.Errorf("graphengine: database is closed")
+	}
+	end := append([]byte(nil), prefix...)
+	end = append(end, 0xFF)
+	iter, err := d.db.NewIter(&pebble.IterOptions{
+		LowerBound: prefix,
+		UpperBound: end,
+	})
+	if err != nil {
+		return err
+	}
+	defer iter.Close()
+	for iter.First(); iter.Valid(); iter.Next() {
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+		val := make([]byte, len(iter.Value()))
+		copy(val, iter.Value())
+		if err := fn(key, val); err != nil {
+			return err
+		}
+	}
+	return iter.Error()
 }
