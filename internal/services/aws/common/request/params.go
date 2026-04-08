@@ -142,8 +142,12 @@ func GetMapParam(params map[string]interface{}, key string) map[string]interface
 }
 
 // GetParamCaseInsensitive extracts a parameter from the params map using case-insensitive key matching.
+// It tries exact match, lower-first-letter (camelCase from C# SDK), then fully lowercased.
 func GetParamCaseInsensitive(params map[string]interface{}, key string) string {
 	if v := GetStringParam(params, key); v != "" {
+		return v
+	}
+	if v := GetStringParam(params, LowerFirst(key)); v != "" {
 		return v
 	}
 	return GetStringParam(params, strings.ToLower(key))

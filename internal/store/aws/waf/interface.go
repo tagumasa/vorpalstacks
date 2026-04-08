@@ -5,7 +5,7 @@ type WebACLStoreInterface interface {
 	Get(id string) (*WebACL, error)
 	GetByARN(arn string) (*WebACL, error)
 	Create(id, name, description, scope string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig) (*WebACL, error)
-	Update(id, lockToken string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig) (*WebACL, error)
+	Update(id, lockToken string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig, description string) (*WebACL, error)
 	Delete(id, lockToken string) error
 	List(marker string, maxItems int) (*WebACLListResult, error)
 	Raw() *WebACLStore

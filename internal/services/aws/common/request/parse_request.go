@@ -123,6 +123,7 @@ func ParseAWSRequest(r *http.Request) (*ParsedRequest, error) {
 
 	if strings.HasPrefix(r.URL.Path, "/20") {
 		extractLambdaPathParams(r.URL.Path, req.Parameters)
+		extractLambdaHeaders(r, req.Parameters)
 	}
 
 	if isApiGatewayPath(r.URL.Path) {

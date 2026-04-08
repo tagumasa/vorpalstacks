@@ -2,6 +2,8 @@ package timestreamwrite
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
@@ -150,11 +152,23 @@ func (s *Service) formatRejectedRecords(records []tsstore.RejectedRecord) []map[
 func (s *Service) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceARN == "" {
+		var keys []string
+		for k := range req.Parameters {
+			keys = append(keys, k)
+		}
+		fmt.Fprintf(os.Stderr, "[DBG TS TagResource] ResourceARN empty, keys=%v\n", keys)
 		return nil, ErrInvalidParameter
 	}
 
-	tagMap := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
+	parsedTags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")
+	tagMap := tagutil.ToMap(parsedTags)
+	fmt.Fprintf(os.Stderr, "[DBG TS TagResource] ARN=%s parsedTags=%v tagMap=%v\n", resourceARN, parsedTags, tagMap)
 	if len(tagMap) == 0 {
+		var keys []string
+		for k := range req.Parameters {
+			keys = append(keys, k)
+		}
+		fmt.Fprintf(os.Stderr, "[DBG TS TagResource] tagMap empty, keys=%v\n", keys)
 		return nil, ErrInvalidParameter
 	}
 

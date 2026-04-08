@@ -48,7 +48,7 @@ func (s *Service) CreatePreparedStatement(ctx context.Context, reqCtx *request.R
 	}
 	if err := stores.preparedStatementStore.CreatePreparedStatement(preparedStatement); err != nil {
 		if err == athenastore.ErrPreparedStatementAlreadyExists {
-			return nil, ErrResourceAlreadyExistsException
+			return nil, ErrInvalidRequestException
 		}
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (s *Service) GetPreparedStatement(ctx context.Context, reqCtx *request.Requ
 	preparedStatement, err := stores.preparedStatementStore.GetPreparedStatement(workGroup, statementName)
 	if err != nil {
 		if err == athenastore.ErrPreparedStatementNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, ErrInvalidRequestException
 		}
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (s *Service) DeletePreparedStatement(ctx context.Context, reqCtx *request.R
 
 	if err := stores.preparedStatementStore.DeletePreparedStatement(workGroup, statementName); err != nil {
 		if err == athenastore.ErrPreparedStatementNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, ErrInvalidRequestException
 		}
 		return nil, err
 	}

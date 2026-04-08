@@ -2,8 +2,12 @@ package cloudfront
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/protocol"
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
@@ -109,11 +113,18 @@ func (s *CloudFrontService) ListCachePolicies(ctx context.Context, reqCtx *reque
 			policyType = "managed"
 		}
 		items = append(items, map[string]interface{}{
-			"Id":               cp.ID,
-			"ARN":              cp.ARN,
-			"Name":             cp.Name,
-			"Type":             policyType,
-			"LastModifiedTime": cp.ModifiedAt.Format(time.RFC3339),
+			"Type": policyType,
+			"CachePolicy": map[string]interface{}{
+				"Id":               cp.ID,
+				"LastModifiedTime": cp.ModifiedAt.Format(time.RFC3339),
+				"CachePolicyConfig": map[string]interface{}{
+					"Name":       cp.CachePolicyConfig.Name,
+					"Comment":    cp.CachePolicyConfig.Comment,
+					"DefaultTTL": cp.CachePolicyConfig.DefaultTTL,
+					"MaxTTL":     cp.CachePolicyConfig.MaxTTL,
+					"MinTTL":     cp.CachePolicyConfig.MinTTL,
+				},
+			},
 		})
 	}
 
@@ -122,6 +133,8 @@ func (s *CloudFrontService) ListCachePolicies(ctx context.Context, reqCtx *reque
 			"Items":       protocol.XMLElements{ElementName: "CachePolicySummary", Items: items},
 			"IsTruncated": result.IsTruncated,
 			"NextMarker":  result.NextMarker,
+			"Quantity":    len(result.CachePolicies),
+			"MaxItems":    maxItems,
 		},
 	}, nil
 }
@@ -324,11 +337,15 @@ func (s *CloudFrontService) ListOriginRequestPolicies(ctx context.Context, reqCt
 			policyType = "managed"
 		}
 		items = append(items, map[string]interface{}{
-			"Id":               p.ID,
-			"ARN":              p.ARN,
-			"Name":             p.Name,
-			"Type":             policyType,
-			"LastModifiedTime": p.ModifiedAt.Format(time.RFC3339),
+			"Type": policyType,
+			"OriginRequestPolicy": map[string]interface{}{
+				"Id":               p.ID,
+				"LastModifiedTime": p.ModifiedAt.Format(time.RFC3339),
+				"OriginRequestPolicyConfig": map[string]interface{}{
+					"Name":    p.OriginRequestPolicyConfig.Name,
+					"Comment": p.OriginRequestPolicyConfig.Comment,
+				},
+			},
 		})
 	}
 
@@ -337,6 +354,8 @@ func (s *CloudFrontService) ListOriginRequestPolicies(ctx context.Context, reqCt
 			"Items":       protocol.XMLElements{ElementName: "OriginRequestPolicySummary", Items: items},
 			"IsTruncated": result.IsTruncated,
 			"NextMarker":  result.NextMarker,
+			"Quantity":    len(result.OriginRequestPolicies),
+			"MaxItems":    maxItems,
 		},
 	}, nil
 }
@@ -453,14 +472,24 @@ func (s *CloudFrontService) ListTagsForResource(ctx context.Context, reqCtx *req
 		return nil, NewAPIError("InvalidArgument", "Resource is required", 400)
 	}
 
+	resourceKey := arn
+	if !strings.HasPrefix(strings.ToLower(arn), "arn:") {
+		resourceKey = "arn:aws:cloudfront:::distribution/" + arn
+	}
+	fmt.Fprintf(os.Stderr, "[DBG ListTagsForResource] arn=%s resourceKey=%s\n", arn, resourceKey)
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	tags, err := store.tags.ListTagsForResource(arn)
+	tags, err := store.tags.ListTagsForResource(resourceKey)
 	if err != nil {
 		return nil, NewAPIError("ListTags", err.Error(), 500)
+	}
+	fmt.Fprintf(os.Stderr, "[DBG ListTagsForResource] found %d tags for resourceKey=%s\n", len(tags), resourceKey)
+	for _, t := range tags {
+		fmt.Fprintf(os.Stderr, "[DBG ListTagsForResource]   tag: %s=%s\n", t.Key, t.Value)
 	}
 
 	tagItems := tagutil.ToResponse(tags)
@@ -491,10 +520,26 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 		return nil, NewAPIError("InvalidArgument", "Resource is required", 400)
 	}
 
+	resourceKey := arn
+	if !strings.HasPrefix(strings.ToLower(arn), "arn:") {
+		resourceKey = "arn:aws:cloudfront:::distribution/" + arn
+	}
+
 	var tags []common.Tag
 	tagsMap := request.GetMapParam(req.Parameters, "Tags")
 	if tagsMap != nil {
-		if items := tagsMap["Items"]; items != nil {
+		if tagInner, ok := tagsMap["Tag"]; ok {
+			switch tv := tagInner.(type) {
+			case []interface{}:
+				for _, t := range tv {
+					if m, ok := t.(map[string]interface{}); ok {
+						tags = append(tags, common.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
+					}
+				}
+			case map[string]interface{}:
+				tags = append(tags, common.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
+			}
+		} else if items := tagsMap["Items"]; items != nil {
 			switch v := items.(type) {
 			case map[string]interface{}:
 				if tagItems, ok := v["Tag"]; ok {
@@ -513,6 +558,11 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 		}
 	}
 	if len(tags) == 0 {
+		var keys []string
+		for k := range req.Parameters {
+			keys = append(keys, k)
+		}
+		logs.Debug("CloudFront TagResource: no tags parsed", logs.String("arn", arn), logs.String("param_keys", strings.Join(keys, ",")))
 		parsedTags := tagutil.ParseTags(req.Parameters, "Tags")
 		for _, t := range parsedTags {
 			tags = append(tags, common.Tag{Key: t.Key, Value: t.Value})
@@ -524,7 +574,7 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	if err := store.tags.TagResource(arn, tags); err != nil {
+	if err := store.tags.TagResource(resourceKey, tags); err != nil {
 		return nil, NewAPIError("TagResource", err.Error(), 500)
 	}
 
@@ -542,10 +592,26 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 		return nil, NewAPIError("InvalidArgument", "Resource is required", 400)
 	}
 
+	resourceKey := arn
+	if !strings.HasPrefix(strings.ToLower(arn), "arn:") {
+		resourceKey = "arn:aws:cloudfront:::distribution/" + arn
+	}
+
 	tagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys")
 	if len(tagKeys) == 0 {
 		if tagKeysMap := request.GetMapParam(req.Parameters, "TagKeys"); tagKeysMap != nil {
-			if items := tagKeysMap["Items"]; items != nil {
+			if keyVal, ok := tagKeysMap["Key"]; ok {
+				switch kv := keyVal.(type) {
+				case string:
+					tagKeys = append(tagKeys, kv)
+				case []interface{}:
+					for _, k := range kv {
+						if s, ok := k.(string); ok {
+							tagKeys = append(tagKeys, s)
+						}
+					}
+				}
+			} else if items := tagKeysMap["Items"]; items != nil {
 				switch v := items.(type) {
 				case map[string]interface{}:
 					if keyItems, ok := v["Key"]; ok {
@@ -587,7 +653,7 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 	}
 
 	if len(tagKeys) > 0 {
-		if err := store.tags.UntagResource(arn, tagKeys); err != nil {
+		if err := store.tags.UntagResource(resourceKey, tagKeys); err != nil {
 			return nil, NewAPIError("UntagResource", err.Error(), 500)
 		}
 	}

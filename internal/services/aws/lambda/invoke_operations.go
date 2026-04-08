@@ -18,6 +18,7 @@ import (
 
 // Invoke synchronously invokes a Lambda function with the given payload.
 // Returns the function output, status code, and executed version.
+// If InvocationType is "Event", the function is invoked asynchronously and HTTP 202 is returned.
 func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	function, ver, _, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
 	if err != nil {
@@ -29,10 +30,38 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 		payload = []byte(payloadStr)
 	}
 
+	invocationType := request.GetStringParam(req.Parameters, "InvocationType")
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+
+	if invocationType == "Event" {
+		region := reqCtx.GetRegion()
+		functionCopy := deepCopyFunction(function)
+		s.asyncWg.Add(1)
+		go func() {
+			defer s.asyncWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					logs.Error("Invoke Event panic", logs.String("function", functionCopy.FunctionName), logs.Any("panic", r))
+				}
+			}()
+			select {
+			case <-ctx.Done():
+				logs.Info("Invoke Event cancelled", logs.String("function", functionCopy.FunctionName))
+				return
+			default:
+			}
+			asyncStore := lambdastore.NewFunctionStore(s.getRegionalStorage(region), s.accountID, region)
+			if _, err := s.invokeFunction(functionCopy, nil, asyncStore, region, payload); err != nil {
+				logs.Error("Invoke Event failed", logs.String("function", functionCopy.FunctionName), logs.Err(err))
+			}
+		}()
+		return &lambdaInvokeResponse{result: &lambdastore.InvocationResult{StatusCode: 202}}, nil
+	}
+
 	result, err := s.invokeFunction(function, ver, store.Functions, reqCtx.GetRegion(), payload)
 	if err != nil {
 		return nil, err

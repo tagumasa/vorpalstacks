@@ -343,7 +343,7 @@ func (s *Service) GetTableMetadata(ctx context.Context, reqCtx *request.RequestC
 	table, err := stores.tableStore.GetTable(catalogName, databaseName, tableName)
 	if err != nil {
 		if err == athenastore.ErrTableNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, ErrMetadataException
 		}
 		return nil, err
 	}

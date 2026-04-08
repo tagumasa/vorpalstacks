@@ -736,7 +736,7 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 			StatementName: aws.String(psName),
 			WorkGroup:     aws.String(psWorkGroup),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
 			return err
 		}
 		return nil
@@ -747,7 +747,7 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 			StatementName: aws.String(psName),
 			WorkGroup:     aws.String(psWorkGroup),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
 			return err
 		}
 		return nil
@@ -996,7 +996,7 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 			DatabaseName: aws.String("default"),
 			TableName:    aws.String("nonexistent_table_xyz"),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := AssertErrorContains(err, "MetadataException"); err != nil {
 			return err
 		}
 		return nil

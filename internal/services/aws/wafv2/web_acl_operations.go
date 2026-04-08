@@ -201,7 +201,7 @@ func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.Request
 		}
 	}
 
-	updated, err := stores.webACLs.Update(id, lockToken, capacity, rules, daAction, visibilityConfig)
+	updated, err := stores.webACLs.Update(id, lockToken, capacity, rules, daAction, visibilityConfig, request.GetStringParam(req.Parameters, "Description"))
 	if err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()

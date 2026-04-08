@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	awserrors "vorpalstacks/internal/services/aws/common/errors"
@@ -460,5 +461,9 @@ func extractStateMachineArnFromVersionArn(versionArn string) string {
 	if idx < 0 {
 		return ""
 	}
-	return versionArn[:idx]
+	afterColon := versionArn[idx+1:]
+	if _, err := strconv.Atoi(afterColon); err == nil {
+		return versionArn[:idx]
+	}
+	return versionArn
 }

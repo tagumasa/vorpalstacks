@@ -2,7 +2,6 @@ package lambda
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/services/aws/common/request"
 	"vorpalstacks/internal/services/aws/common/response"
@@ -137,7 +136,7 @@ func (s *LambdaService) toEventInvokeConfig(c *lambdastore.EventInvokeConfig) ma
 	result := map[string]interface{}{
 		"FunctionName": c.FunctionName,
 		"Qualifier":    c.Qualifier,
-		"LastModified": float64(c.LastModified.UnixNano() / int64(time.Millisecond)),
+		"LastModified": float64(c.LastModified.Unix()),
 	}
 
 	if c.MaximumEventAgeInSeconds > 0 {

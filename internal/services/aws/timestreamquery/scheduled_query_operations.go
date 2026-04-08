@@ -85,7 +85,7 @@ func (s *Service) CreateScheduledQuery(ctx context.Context, reqCtx *request.Requ
 	return s.formatScheduledQueryResponse(sq, tags), nil
 }
 
-// TagResource adds tags to a scheduled query.
+// TagResource adds tags to a Timestream resource.
 func (s *Service) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceARN == "" {
@@ -103,25 +103,26 @@ func (s *Service) TagResource(ctx context.Context, reqCtx *request.RequestContex
 	}
 
 	name := st.arnBuilder.Timestream().ParseScheduledQueryName(resourceARN)
-	if name == "" {
-		return nil, ErrValidationException
-	}
-
-	if _, err := st.scheduledQueryStore.GetScheduledQuery(name); err != nil {
-		if err == tsstore.ErrScheduledQueryNotFound {
-			return nil, ErrResourceNotFound
+	if name != "" {
+		if _, err := st.scheduledQueryStore.GetScheduledQuery(name); err != nil {
+			if err == tsstore.ErrScheduledQueryNotFound {
+				return nil, ErrResourceNotFound
+			}
+			return nil, ErrInternalServer
 		}
-		return nil, ErrInternalServer
-	}
-
-	if err := st.scheduledQueryStore.TagResource(resourceARN, tagMap); err != nil {
-		return nil, ErrInternalServer
+		if err := st.scheduledQueryStore.TagResource(resourceARN, tagMap); err != nil {
+			return nil, ErrInternalServer
+		}
+	} else {
+		if err := st.dbStore.TagResource(resourceARN, tagMap); err != nil {
+			return nil, ErrInternalServer
+		}
 	}
 
 	return response.EmptyResponse(), nil
 }
 
-// UntagResource removes tags from a scheduled query.
+// UntagResource removes tags from a Timestream resource.
 func (s *Service) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceARN == "" {
@@ -139,19 +140,20 @@ func (s *Service) UntagResource(ctx context.Context, reqCtx *request.RequestCont
 	}
 
 	name := st.arnBuilder.Timestream().ParseScheduledQueryName(resourceARN)
-	if name == "" {
-		return nil, ErrValidationException
-	}
-
-	if _, err := st.scheduledQueryStore.GetScheduledQuery(name); err != nil {
-		if err == tsstore.ErrScheduledQueryNotFound {
-			return nil, ErrResourceNotFound
+	if name != "" {
+		if _, err := st.scheduledQueryStore.GetScheduledQuery(name); err != nil {
+			if err == tsstore.ErrScheduledQueryNotFound {
+				return nil, ErrResourceNotFound
+			}
+			return nil, ErrInternalServer
 		}
-		return nil, ErrInternalServer
-	}
-
-	if err := st.scheduledQueryStore.UntagResource(resourceARN, tagKeys); err != nil {
-		return nil, ErrInternalServer
+		if err := st.scheduledQueryStore.UntagResource(resourceARN, tagKeys); err != nil {
+			return nil, ErrInternalServer
+		}
+	} else {
+		if err := st.dbStore.UntagResource(resourceARN, tagKeys); err != nil {
+			return nil, ErrInternalServer
+		}
 	}
 
 	return response.EmptyResponse(), nil
@@ -462,19 +464,19 @@ func (s *Service) ListTagsForResource(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
+	var tags map[string]string
 	name := st.arnBuilder.Timestream().ParseScheduledQueryName(resourceARN)
-	if name == "" {
-		return nil, ErrValidationException
-	}
-
-	if _, err := st.scheduledQueryStore.GetScheduledQuery(name); err != nil {
-		if err == tsstore.ErrScheduledQueryNotFound {
-			return nil, ErrResourceNotFound
+	if name != "" {
+		if _, err := st.scheduledQueryStore.GetScheduledQuery(name); err != nil {
+			if err == tsstore.ErrScheduledQueryNotFound {
+				return nil, ErrResourceNotFound
+			}
+			return nil, ErrInternalServer
 		}
-		return nil, ErrInternalServer
+		tags, _ = st.scheduledQueryStore.ListTags(resourceARN)
+	} else {
+		tags, _ = st.dbStore.ListTags(resourceARN)
 	}
-
-	tags, _ := st.scheduledQueryStore.ListTags(resourceARN)
 
 	return map[string]interface{}{
 		"Tags": tagutil.MapToResponse(tags),

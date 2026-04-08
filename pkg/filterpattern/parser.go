@@ -206,7 +206,7 @@ func DetectPatternType(pattern string) PatternType {
 	if strings.HasPrefix(pattern, "{") && strings.HasSuffix(pattern, "}") {
 		return PatternTypeJSON
 	}
-	if strings.HasPrefix(pattern, "[") && strings.HasSuffix(pattern, "]") {
+	if strings.HasPrefix(pattern, "[") && strings.Contains(pattern, "]") {
 		return PatternTypeDelimited
 	}
 	return PatternTypeUnstructured

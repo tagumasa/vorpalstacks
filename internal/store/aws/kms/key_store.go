@@ -242,7 +242,8 @@ func (s *KeyStore) ScheduleDeletion(keyID string, pendingWindowInDays int) error
 	deletionDate := time.Now().AddDate(0, 0, pendingWindowInDays)
 	key.DeletionDate = &deletionDate
 	key.PendingWindowInDays = pendingWindowInDays
-	key.PreDeletionEnabled = &key.Enabled
+	origEnabled := key.Enabled
+	key.PreDeletionEnabled = &origEnabled
 	key.KeyState = KeyStatePendingDeletion
 	key.Enabled = false
 

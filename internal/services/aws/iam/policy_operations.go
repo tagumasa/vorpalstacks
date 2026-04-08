@@ -258,7 +258,7 @@ func (s *IAMService) DeletePolicyVersion(ctx context.Context, reqCtx *request.Re
 	}
 
 	if policy.DefaultVersionId == versionId {
-		return nil, errors.NewAWSError("InvalidInput", "Cannot delete the default policy version.", http.StatusBadRequest)
+		return nil, errors.NewAWSError("DeleteConflict", "Cannot delete the default policy version.", http.StatusConflict)
 	}
 
 	if err := store.Policies().DeleteVersion(policyArn, versionId); err != nil {

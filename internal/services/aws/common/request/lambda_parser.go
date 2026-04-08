@@ -470,3 +470,18 @@ func extractResponseStreamPathParams(path string, params map[string]interface{})
 		}
 	}
 }
+
+func extractLambdaHeaders(r *http.Request, params map[string]interface{}) {
+	headerMappings := map[string]string{
+		"X-Amz-Invocation-Type": "InvocationType",
+		"X-Amz-Log-Type":        "LogType",
+		"X-Amz-Client-Context":  "ClientContext",
+		"X-Amz-Function-Error":  "FunctionError",
+		"X-Amz-Qualifier":       "Qualifier",
+	}
+	for header, param := range headerMappings {
+		if v := r.Header.Get(header); v != "" {
+			params[param] = v
+		}
+	}
+}

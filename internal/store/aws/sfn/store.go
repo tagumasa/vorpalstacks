@@ -591,6 +591,10 @@ func (s *StepFunctionStore) buildVersionARN(smArn string, version int64) string 
 }
 
 func (s *StepFunctionStore) buildAliasARN(smArn, aliasName string) string {
+	parts := strings.Split(smArn, ":")
+	if len(parts) >= 5 {
+		return fmt.Sprintf("arn:aws:states:%s:%s:stateMachineAlias:%s", parts[3], parts[4], aliasName)
+	}
 	return smArn + ":" + aliasName
 }
 
@@ -695,7 +699,8 @@ func (s *StepFunctionStore) CreateStateMachineAlias(ctx context.Context, alias *
 	}
 
 	aliasArn := s.buildAliasARN(alias.StateMachineArn, alias.Name)
-	if s.aliasesStore.Exists(aliasArn) {
+	storageKey := aliasArn
+	if s.aliasesStore.Exists(storageKey) {
 		return ErrStateMachineAliasAlreadyExists
 	}
 
@@ -704,7 +709,7 @@ func (s *StepFunctionStore) CreateStateMachineAlias(ctx context.Context, alias *
 	alias.CreationDate = now
 	alias.UpdateDate = now
 
-	return s.aliasesStore.Put(aliasArn, alias)
+	return s.aliasesStore.Put(storageKey, alias)
 }
 
 func (s *StepFunctionStore) GetStateMachineAlias(ctx context.Context, arn string) (*StateMachineAlias, error) {
@@ -730,9 +735,19 @@ func (s *StepFunctionStore) DeleteStateMachineAlias(ctx context.Context, arn str
 	return s.aliasesStore.Delete(arn)
 }
 
+func (s *StepFunctionStore) aliasStorageKey(arn string) string {
+	parts := strings.Split(arn, ":")
+	for i, p := range parts {
+		if p == "stateMachineAlias" && i+1 < len(parts) {
+			smPrefix := strings.Join(parts[:i-1], ":")
+			return smPrefix + ":stateMachine:" + parts[i+1]
+		}
+	}
+	return arn
+}
+
 func (s *StepFunctionStore) ListStateMachineAliases(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineAliasListResult, error) {
 	opts := common.ListOptions{
-		Prefix:   smArn + ":",
 		Marker:   nextToken,
 		MaxItems: int(limit),
 	}
@@ -742,8 +757,15 @@ func (s *StepFunctionStore) ListStateMachineAliases(ctx context.Context, smArn s
 		return nil, err
 	}
 
+	var filtered []*StateMachineAlias
+	for _, a := range result.Items {
+		if a.StateMachineArn == smArn {
+			filtered = append(filtered, a)
+		}
+	}
+
 	return &StateMachineAliasListResult{
-		Aliases:   result.Items,
+		Aliases:   filtered,
 		NextToken: result.NextMarker,
 	}, nil
 }

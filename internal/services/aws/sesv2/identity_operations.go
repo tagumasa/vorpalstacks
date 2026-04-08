@@ -193,6 +193,9 @@ func (s *SESv2Service) PutEmailIdentityDkimAttributes(ctx context.Context, reqCt
 	if identity.DkimAttributes == nil {
 		identity.DkimAttributes = sesv2store.GenerateDkimAttributes(identity.IdentityType)
 	}
+	if identity.DkimAttributes == nil {
+		identity.DkimAttributes = &sesv2store.DkimAttributes{}
+	}
 	identity.DkimAttributes.SigningEnabled = signingEnabled
 
 	if err := store.UpdateEmailIdentity(identity); err != nil {

@@ -505,6 +505,9 @@ func (s *SecretStore) UpdateSecretMetadata(secret *Secret) error {
 
 // CreateVersionDirect creates a secret version with a specific version ID (used for replication).
 func (s *SecretStore) CreateVersionDirect(secretName string, version *SecretVersion) error {
+	if version.VersionId == "" {
+		version.VersionId = generateVersionId()
+	}
 	key := s.buildVersionKey(secretName, version.VersionId)
 	return s.versionsStore.Put(key, version)
 }

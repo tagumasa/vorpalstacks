@@ -470,13 +470,22 @@ func evalIsTest(val any, test string) bool {
 
 // matchDelimited evaluates a delimited (space/comma-separated) filter pattern.
 // The pattern uses positional fields (w1, w2, etc.) to match specific columns.
+// Supports bracket notation with conditions after the closing bracket,
+// e.g. [level, ...] = "ERROR", ...
 func (m *Matcher) matchDelimited(pattern, message string) bool {
 	pattern = strings.TrimSpace(pattern)
-	if !strings.HasPrefix(pattern, "[") || !strings.HasSuffix(pattern, "]") {
+	if !strings.HasPrefix(pattern, "[") {
 		return false
 	}
 
-	inner := pattern[1 : len(pattern)-1]
+	bracketEnd := strings.Index(pattern, "]")
+	if bracketEnd < 0 {
+		return false
+	}
+
+	inner := pattern[1:bracketEnd]
+	afterBracket := strings.TrimSpace(pattern[bracketEnd+1:])
+
 	fields := parseDelimitedFields(message)
 	conditions := splitDelimitedConditions(inner)
 
@@ -485,6 +494,7 @@ func (m *Matcher) matchDelimited(pattern, message string) bool {
 		fieldMap[fmt.Sprintf("w%d", i+1)] = f
 	}
 
+	namedFieldIdx := 0
 	for i, cond := range conditions {
 		cond = strings.TrimSpace(cond)
 		if cond == "..." {
@@ -493,10 +503,33 @@ func (m *Matcher) matchDelimited(pattern, message string) bool {
 
 		if strings.HasPrefix(cond, "...") {
 			cond = strings.TrimSpace(cond[3:])
+			if cond == "" {
+				continue
+			}
 		}
 
 		if !evalDelimitedConditionAt(cond, fields, fieldMap, i) {
 			return false
+		}
+		namedFieldIdx = i + 1
+	}
+
+	if afterBracket != "" {
+		afterConds := splitDelimitedConditions(afterBracket)
+		for _, ac := range afterConds {
+			ac = strings.TrimSpace(ac)
+			if ac == "..." {
+				continue
+			}
+			if strings.HasPrefix(ac, "...") {
+				ac = strings.TrimSpace(ac[3:])
+				if ac == "" {
+					continue
+				}
+			}
+			if !evalDelimitedConditionAt(ac, fields, fieldMap, namedFieldIdx) {
+				return false
+			}
 		}
 	}
 	return true

@@ -311,7 +311,7 @@ func (s *Store) DescribeParameters(filters map[string]string, maxResults int32, 
 					return false
 				}
 			case "Name":
-				if p.Name != v {
+				if !strings.HasPrefix(p.Name, v) {
 					return false
 				}
 			case "Path":
@@ -354,7 +354,7 @@ func (s *Store) GetParametersByPath(path string, recursive bool, withDecryption 
 			}
 			return true
 		}
-		return strings.HasPrefix(p.Name, path) && !strings.Contains(strings.TrimPrefix(p.Name, path), "/")
+		return strings.HasPrefix(p.Name, path) && !strings.Contains(strings.TrimPrefix(strings.TrimPrefix(p.Name, path), "/"), "/")
 	})
 	if err != nil {
 		return nil, "", err
