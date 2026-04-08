@@ -56,8 +56,8 @@ github.com/aws/aws-sdk-go-v2/service/kinesis v1.43.1 h1:rnQBqK+aD4aXVYd8TKvsVyW7
 github.com/aws/aws-sdk-go-v2/service/kinesis v1.43.1/go.mod h1:umzl/XlRWxeiDQbFMXVFXQZsWMDJE5XLkNnMRTGaOmc=
 github.com/aws/aws-sdk-go-v2/service/kms v1.50.1 h1:wb/PYYm3wlcqGzw7Ls4GD3X5+seDDoNdVYIB6I/V87E=
 github.com/aws/aws-sdk-go-v2/service/kms v1.50.1/go.mod h1:xvHowJ6J9CuaFE04S8fitWQXytf4sHz3DTPGhw9FtmU=
-github.com/aws/aws-sdk-go-v2/service/lambda v1.88.1 h1:9WZiZ+1YXpvqvOi2CszopJJlzvv2h8cpxzPBy/rF+NA=
-github.com/aws/aws-sdk-go-v2/service/lambda v1.88.1/go.mod h1:NFUHqj4J37VOyZvFHoMn4FjSBaFsPEHeTaBup0isZWM=
+github.com/aws/aws-sdk-go-v2/service/lambda v1.88.5 h1:HWN7xwaV7Zwrn3Jlauio4u4aTMFgRzG2fblHWQeir/k=
+github.com/aws/aws-sdk-go-v2/service/lambda v1.88.5/go.mod h1:6HBXRyFFqOw+ALkJ6YGHfrr20/YXYv6X9pcZErXRvCA=
 github.com/aws/aws-sdk-go-v2/service/neptune v1.44.3 h1:YlOAIqn5ShfNnplTj17y/4W7sWAdvu3I7b8dF3Ry1cQ=
 github.com/aws/aws-sdk-go-v2/service/neptune v1.44.3/go.mod h1:iJQ7qpaNp26sMZvqmSF0zGz0beApcLcWkAerfsoCTrs=
 github.com/aws/aws-sdk-go-v2/service/neptunedata v1.17.5 h1:f4w4ycWUZVYsuW/cFcDNOOE/DT+ov988XTV1VRtJ2oI=

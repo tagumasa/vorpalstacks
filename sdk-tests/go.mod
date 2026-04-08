@@ -20,7 +20,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iam v1.53.3
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.43.5
 	github.com/aws/aws-sdk-go-v2/service/kms v1.50.1
-	github.com/aws/aws-sdk-go-v2/service/lambda v1.88.1
+	github.com/aws/aws-sdk-go-v2/service/lambda v1.88.5
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.44.3
 	github.com/aws/aws-sdk-go-v2/service/neptunedata v1.17.5
 	github.com/aws/aws-sdk-go-v2/service/neptunegraph v1.21.20
