@@ -12,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.60.1
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.55.6
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.55.0
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.63.2
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.65.0
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.33.22
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.59.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.34.3
