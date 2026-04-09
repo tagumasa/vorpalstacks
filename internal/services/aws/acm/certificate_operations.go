@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -18,6 +19,8 @@ import (
 	"vorpalstacks/internal/services/aws/common/response"
 	tagutil "vorpalstacks/internal/services/aws/common/tags"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
+
+	"golang.org/x/crypto/pbkdf2"
 )
 
 func generateCertificateId() string {
@@ -201,7 +204,7 @@ func (s *ACMService) ListCertificates(ctx context.Context, reqCtx *request.Reque
 		var filtered []*acmstorelib.CertificateSummary
 		for _, cert := range allCerts {
 			if statusSet[cert.Status] {
-				filtered = append(filtered, stores.certificates.(*acmstorelib.CertificateStore).CertificateToSummary(cert))
+				filtered = append(filtered, acmstorelib.CertificateToSummary(cert))
 			}
 		}
 		return filteredListToResponse(filtered, marker, maxItems), nil
@@ -746,7 +749,12 @@ func encryptPrivateKey(privateKeyPEM, passphrase string) (string, error) {
 		return "", fmt.Errorf("failed to decode private key PEM")
 	}
 
-	key := deriveKey([]byte(passphrase), 32)
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		return "", err
+	}
+
+	key := pbkdf2.Key([]byte(passphrase), salt, 100000, 32, sha256.New)
 	nonce := make([]byte, 12)
 	if _, err := rand.Read(nonce); err != nil {
 		return "", err
@@ -763,7 +771,8 @@ func encryptPrivateKey(privateKeyPEM, passphrase string) (string, error) {
 	}
 
 	encrypted := gcm.Seal(nil, nonce, block.Bytes, nil)
-	result := append(nonce, encrypted...)
+	result := append(salt, nonce...)
+	result = append(result, encrypted...)
 	return base64.StdEncoding.EncodeToString(result), nil
 }
 
@@ -810,15 +819,4 @@ func pemFixNewlines(pemStr string) string {
 	}
 	b.WriteString(pemStr[end:])
 	return b.String()
-}
-
-func deriveKey(passphrase []byte, keyLen int) []byte {
-	key := make([]byte, keyLen)
-	copy(key, passphrase)
-	for i := 0; i < len(key); i++ {
-		for j := 0; j < i; j++ {
-			key[i] ^= key[j]
-		}
-	}
-	return key
 }

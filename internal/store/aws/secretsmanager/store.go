@@ -292,7 +292,9 @@ func (s *SecretStore) DeleteSecret(name string) error {
 
 // ListSecrets returns a list of secrets from the store using the specified list options.
 func (s *SecretStore) ListSecrets(opts common.ListOptions) (*common.ListResult[Secret], error) {
-	return common.List[Secret](s.BaseStore, opts, nil)
+	return common.List[Secret](s.BaseStore, opts, func(secret *Secret) bool {
+		return secret.DeletedDate == nil && secret.ScheduledDeletionDate == nil
+	})
 }
 
 // GetSecretVersion retrieves a specific version of a secret by name and version ID.

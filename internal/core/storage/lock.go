@@ -81,6 +81,10 @@ func (m *PebbleLockManager) tryAcquire(key []byte, mode LockMode, ttl time.Durat
 
 		var existingVersion uint64
 		if existing != nil {
+			if existing.ExpiresAt > 0 && time.Now().Unix() > existing.ExpiresAt {
+				_ = m.db.Delete(fullKey)
+				continue
+			}
 			existingVersion = existing.Version
 			return nil, &LockConflictError{
 				Key: key,
@@ -291,6 +295,10 @@ func (m *PebbleLockManager) IsLocked(key []byte) (bool, *LockHandle, error) {
 		return false, nil, err
 	}
 	if entry == nil {
+		return false, nil, nil
+	}
+
+	if entry.ExpiresAt > 0 && time.Now().Unix() > entry.ExpiresAt {
 		return false, nil, nil
 	}
 

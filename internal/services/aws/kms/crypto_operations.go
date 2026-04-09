@@ -552,5 +552,5 @@ func (s *KMSService) mapHSMError(err error) error {
 	if errors.Is(err, hsm.ErrDecryptFailed) {
 		return ErrInvalidCiphertext
 	}
-	return ErrInvalidCiphertext
+	return ErrKMSInternal
 }

@@ -186,24 +186,3 @@ func ContainsValue(haystack, needle any) bool {
 	}
 	return false
 }
-
-// WildcardMatch performs wildcard pattern matching where * matches
-// any sequence of characters. Supports prefix, suffix, and middle wildcards.
-func WildcardMatch(pattern, text string) bool {
-	if pattern == "*" {
-		return true
-	}
-	if strings.HasPrefix(pattern, "*") && strings.HasSuffix(pattern, "*") {
-		middle := pattern[1 : len(pattern)-1]
-		return strings.Contains(text, middle)
-	}
-	if strings.HasPrefix(pattern, "*") {
-		suffix := pattern[1:]
-		return strings.HasSuffix(text, suffix)
-	}
-	if strings.HasSuffix(pattern, "*") {
-		prefix := pattern[:len(pattern)-1]
-		return strings.HasPrefix(text, prefix)
-	}
-	return pattern == text
-}

@@ -162,8 +162,16 @@ func (s *StepFunctionStore) DeleteStateMachine(ctx context.Context, arn string) 
 	oldPending := s.pendingTasks
 	s.pendingTasks = make(map[string]chan *ActivityTaskResult)
 	s.pendingTasksMu.Unlock()
-	for _, ch := range oldPending {
-		close(ch)
+	for token, ch := range oldPending {
+		var task ActivityTask
+		if err := s.tasksStore.Get(token, &task); err == nil {
+			taskSmName := extractStateMachineNameFromExecutionArn(task.ExecutionArn)
+			if taskSmName == smName {
+				close(ch)
+			}
+		} else {
+			close(ch)
+		}
 	}
 
 	s.activityQueuesMu.Lock()

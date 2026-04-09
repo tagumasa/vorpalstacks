@@ -433,7 +433,9 @@ func (s *SESv2Service) DeleteEmailIdentityPolicy(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	_ = store.DeleteEmailIdentityPolicy(emailIdentity, policyName)
+	if err := store.DeleteEmailIdentityPolicy(emailIdentity, policyName); err != nil {
+		return nil, err
+	}
 
 	return response.EmptyResponse(), nil
 }

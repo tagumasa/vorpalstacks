@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 
@@ -48,15 +49,12 @@ func (s *EventSourceStore) ensureIndex() {
 		if err := s.ForEach(func(key string, value []byte) error {
 			var mapping EventSourceMapping
 			if err := json.Unmarshal(value, &mapping); err != nil {
-				return err
+				return nil
 			}
 			s.indexMapping(key, &mapping)
 			return nil
 		}); err != nil {
-			s.indexByKey = make(map[string]string)
-			s.indexByFunction = make(map[string][]string)
-			s.indexPathByKey = make(map[string]string)
-			s.indexPathByFunction = make(map[string]string)
+			logs.Error("failed to build event source index", logs.String("error", err.Error()))
 		}
 	})
 }

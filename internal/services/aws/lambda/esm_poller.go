@@ -374,7 +374,9 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 		p.kinesisCPMu.Unlock()
 	}
 
-	_ = p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors.")
+	if err := p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors."); err != nil {
+		logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.String("error", err.Error()))
+	}
 }
 
 func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.EventSourceMapping) {
@@ -463,7 +465,9 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		}
 	}
 
-	_ = p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors.")
+	if err := p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors."); err != nil {
+		logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.String("error", err.Error()))
+	}
 }
 
 // sqsMessageToRecord converts an SQS store Message into an ESM SQS record

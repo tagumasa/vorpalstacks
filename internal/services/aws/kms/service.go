@@ -283,6 +283,8 @@ var (
 	ErrInvalidAliasName = errors.NewAWSError("InvalidAliasNameException", "Invalid alias name", http.StatusBadRequest)
 	// ErrDependencyTimeout is returned when a dependency operation times out.
 	ErrDependencyTimeout = errors.NewAWSError("DependencyTimeoutException", "Dependency timeout", http.StatusServiceUnavailable)
+	// ErrKMSInternal is returned for internal KMS failures.
+	ErrKMSInternal = errors.NewAWSError("KMSInternalException", "An internal error occurred", http.StatusInternalServerError)
 	// ErrMalformedPolicy is returned when the policy document is malformed.
 	ErrMalformedPolicy = errors.NewAWSError("MalformedPolicyDocumentException", "Malformed policy document", http.StatusBadRequest)
 	// ErrValidation is returned when a parameter validation fails.

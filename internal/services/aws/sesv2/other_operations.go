@@ -3,6 +3,7 @@ package sesv2
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"vorpalstacks/internal/services/aws/common/request"
@@ -11,6 +12,13 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
+
+func parseStoredTime(s string) float64 {
+	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return float64(v)
+	}
+	return float64(time.Now().UTC().Unix())
+}
 
 // CreateDedicatedIpPool creates a new dedicated IP pool.
 func (s *SESv2Service) CreateDedicatedIpPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -145,7 +153,7 @@ func (s *SESv2Service) GetSuppressedDestination(ctx context.Context, reqCtx *req
 			"EmailAddress":      dest.EmailAddress,
 			"Reason":            dest.Reason,
 			"SuppressionReason": dest.SuppressionReason,
-			"LastUpdateTime":    float64(time.Now().UTC().Unix()),
+			"LastUpdateTime":    parseStoredTime(dest.LastUpdateTime),
 		},
 	}, nil
 }
@@ -225,7 +233,7 @@ func (s *SESv2Service) ListSuppressedDestinations(ctx context.Context, reqCtx *r
 		destinations = append(destinations, map[string]interface{}{
 			"EmailAddress":   dest.EmailAddress,
 			"Reason":         dest.Reason,
-			"LastUpdateTime": float64(time.Now().UTC().Unix()),
+			"LastUpdateTime": parseStoredTime(dest.LastUpdateTime),
 		})
 	}
 

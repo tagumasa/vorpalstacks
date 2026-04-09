@@ -95,7 +95,7 @@ func (s *CertificateStore) List(marker string, maxItems int) (*CertificateListRe
 		}
 
 		if count < maxItems {
-			certs = append(certs, s.CertificateToSummary(&cert))
+			certs = append(certs, certificateToSummary(&cert))
 			count++
 			lastIncludedArn = cert.CertificateArn
 		} else {
@@ -207,7 +207,8 @@ func formatEpochSeconds(t time.Time) float64 {
 	return float64(t.Unix()) + float64(t.Nanosecond())/1e9
 }
 
-func (s *CertificateStore) CertificateToSummary(cert *Certificate) *CertificateSummary {
+// CertificateToSummary converts a Certificate to a CertificateSummary.
+func CertificateToSummary(cert *Certificate) *CertificateSummary {
 	summary := &CertificateSummary{
 		CertificateArn:                       cert.CertificateArn,
 		DomainName:                           cert.DomainName,
@@ -242,6 +243,10 @@ func (s *CertificateStore) CertificateToSummary(cert *Certificate) *CertificateS
 	}
 
 	return summary
+}
+
+func certificateToSummary(cert *Certificate) *CertificateSummary {
+	return CertificateToSummary(cert)
 }
 
 // GetTags retrieves the tags associated with an ACM certificate.

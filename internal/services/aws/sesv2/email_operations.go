@@ -364,5 +364,3 @@ func parseReplacementHeaders(headers []interface{}) []sesv2store.MessageHeader {
 
 	return result
 }
-
-var _ = time.Now

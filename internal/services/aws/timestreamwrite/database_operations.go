@@ -55,7 +55,9 @@ func (s *Service) CreateDatabase(ctx context.Context, reqCtx *request.RequestCon
 	}
 
 	if tags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"); len(tags) > 0 {
-		st.store.TagResource(db.ARN, tagutil.ToMap(tags))
+		if err := st.store.TagResource(db.ARN, tagutil.ToMap(tags)); err != nil {
+			return nil, s.mapStoreError(err)
+		}
 	}
 
 	tags, _ := st.store.ListTags(db.ARN)

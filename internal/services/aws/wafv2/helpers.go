@@ -61,6 +61,12 @@ func convertAction(m map[string]interface{}) *waf.Action {
 	if _, ok := m["Count"]; ok {
 		action.Count = &waf.CountAction{}
 	}
+	if _, ok := m["Captcha"]; ok {
+		action.Captcha = &waf.CaptchaAction{}
+	}
+	if _, ok := m["Challenge"]; ok {
+		action.Challenge = &waf.ChallengeAction{}
+	}
 	return action
 }
 

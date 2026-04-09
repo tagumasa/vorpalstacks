@@ -201,32 +201,28 @@ func (m *Matcher) matchSingleTerm(term, message string) bool {
 }
 
 func wildcardMatchSimple(pattern, text string) bool {
-	if pattern == "*" {
-		return true
-	}
-
-	starIdx := strings.Index(pattern, "*")
-	if starIdx < 0 {
+	parts := strings.Split(pattern, "*")
+	if len(parts) == 1 {
 		return pattern == text
 	}
 
-	prefix := pattern[:starIdx]
-	if !strings.HasPrefix(text, prefix) {
+	if !strings.HasPrefix(text, parts[0]) {
 		return false
 	}
+	text = text[len(parts[0]):]
 
-	text = text[len(prefix):]
-	suffix := pattern[starIdx+1:]
-
-	if suffix == "" {
-		return true
+	for i := 1; i < len(parts)-1; i++ {
+		idx := strings.Index(text, parts[i])
+		if idx < 0 {
+			return false
+		}
+		text = text[idx+len(parts[i]):]
 	}
 
-	if !strings.Contains(suffix, "*") {
-		return strings.HasSuffix(text, suffix)
+	if parts[len(parts)-1] != "" {
+		return strings.HasSuffix(text, parts[len(parts)-1])
 	}
-
-	return wildcardMatchSimple(suffix, text)
+	return true
 }
 
 // matchJSON evaluates a JSON filter pattern against a log message.
@@ -280,16 +276,23 @@ func (m *Matcher) evalJSONExpr(expr string, data map[string]any) bool {
 		return !exists
 	}
 
-	if idx := strings.Index(strings.ToUpper(expr), " IS NULL"); idx > 0 {
-		path := strings.TrimSpace(expr[:idx])
-		val, exists := getJSONValue(data, path)
-		return exists && val == nil
+	upper := strings.ToUpper(expr)
+	if idx := strings.Index(upper, " IS NULL"); idx > 0 {
+		after := idx + len(" IS NULL")
+		if after >= len(expr) || expr[after] == ' ' {
+			path := strings.TrimSpace(expr[:idx])
+			val, exists := getJSONValue(data, path)
+			return exists && val == nil
+		}
 	}
 
-	if idx := strings.Index(strings.ToUpper(expr), " IS NOT NULL"); idx > 0 {
-		path := strings.TrimSpace(expr[:idx])
-		val, exists := getJSONValue(data, path)
-		return exists && val != nil
+	if idx := strings.Index(upper, " IS NOT NULL"); idx > 0 {
+		after := idx + len(" IS NOT NULL")
+		if after >= len(expr) || expr[after] == ' ' {
+			path := strings.TrimSpace(expr[:idx])
+			val, exists := getJSONValue(data, path)
+			return exists && val != nil
+		}
 	}
 
 	if idx := strings.Index(strings.ToUpper(expr), " IS "); idx > 0 {

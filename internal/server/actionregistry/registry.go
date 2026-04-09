@@ -188,7 +188,7 @@ func (r *ActionRegistry) initDefaults() {
 		"AddPermission", "RemovePermission", "GetPolicy",
 		"TagResource", "UntagResource", "ListTags",
 		"PutFunctionConcurrency", "GetFunctionConcurrency", "DeleteFunctionConcurrency",
-		"PutProvisionedConcurrencyConcurrency", "GetProvisionedConcurrencyConfig", "DeleteProvisionedConcurrencyConcurrency", "ListProvisionedConcurrencyConfigs",
+		"PutProvisionedConcurrencyConfig", "GetProvisionedConcurrencyConfig", "DeleteProvisionedConcurrencyConfig", "ListProvisionedConcurrencyConfigs",
 		"PutFunctionEventInvokeConfig", "GetFunctionEventInvokeConfig", "DeleteFunctionEventInvokeConfig", "ListFunctionEventInvokeConfigs",
 		"CreateFunctionUrlConfig", "DeleteFunctionUrlConfig", "GetFunctionUrlConfig", "UpdateFunctionUrlConfig", "ListFunctionUrlConfigs",
 		"GetAccountSettings",

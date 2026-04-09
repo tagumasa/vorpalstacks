@@ -324,6 +324,9 @@ func (e *Executor) executeMapJSONataCatch(ctx context.Context, execCtx *Executio
 		return string(outputJSON), catchPolicy.Next, nil
 	}
 
-	errorJSON, _ := json.Marshal(errorOutput)
+	errorJSON, err := json.Marshal(errorOutput)
+	if err != nil {
+		errorJSON = []byte(`{"error":"failed to marshal error output"}`)
+	}
 	return string(errorJSON), catchPolicy.Next, nil
 }

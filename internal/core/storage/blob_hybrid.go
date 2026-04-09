@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -260,15 +259,15 @@ func (s *HybridBlobStore) deleteUnlock(bucket, key string) error {
 	storageKey := s.storageKey(bucket, key)
 
 	if err := s.storage.Bucket("blob_small").Delete([]byte(storageKey)); err != nil {
-		slog.Error("Failed to delete from blob_small", "error", err)
+		return err
 	}
 	if err := s.storage.Bucket("blob_meta").Delete([]byte(storageKey)); err != nil {
-		slog.Error("Failed to delete from blob_meta", "error", err)
+		return err
 	}
 
 	path := s.filePath(bucket, key)
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		slog.Error("Failed to remove file", "path", path, "error", err)
+		return err
 	}
 
 	return nil
