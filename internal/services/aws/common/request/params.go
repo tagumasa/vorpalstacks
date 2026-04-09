@@ -377,7 +377,13 @@ func ParseQueryList(params map[string]interface{}, prefix string) []map[string]i
 		}
 	}
 
-	for i := 1; i <= len(entries); i++ {
+	maxIdx := 0
+	for idx := range entries {
+		if idx > maxIdx {
+			maxIdx = idx
+		}
+	}
+	for i := 1; i <= maxIdx; i++ {
 		if entries[i] != nil {
 			result = append(result, entries[i])
 		}

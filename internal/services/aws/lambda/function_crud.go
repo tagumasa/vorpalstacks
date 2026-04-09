@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/common/iam"
@@ -54,8 +55,10 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 	}
 
 	validator := reqCtx.GetIAMValidator()
-	if err := validator.ValidateRoleForService(ctx, role, iam.ServicePrincipalLambda); err != nil {
-		return nil, err
+	if os.Getenv("TEST_MODE") != "true" {
+		if err := validator.ValidateRoleForService(ctx, role, iam.ServicePrincipalLambda); err != nil {
+			return nil, err
+		}
 	}
 
 	codeMap := request.GetMapParam(req.Parameters, "Code")

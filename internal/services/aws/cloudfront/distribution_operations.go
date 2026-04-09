@@ -2,9 +2,7 @@ package cloudfront
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -701,8 +699,6 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 
 	var tags []common.Tag
 	tagsMap := request.GetMapParam(req.Parameters, "Tags")
-	tagsJSON, _ := json.Marshal(tagsMap)
-	fmt.Fprintf(os.Stderr, "[DBG CreateDistWithTags] tagsMap: %s\n", string(tagsJSON))
 	if tagsMap != nil {
 		if itemsVal := tagsMap["Items"]; itemsVal != nil {
 			switch v := itemsVal.(type) {
@@ -740,14 +736,10 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 			}
 		}
 	}
-	fmt.Fprintf(os.Stderr, "[DBG CreateDistWithTags] parsed %d tags, ARN=%s\n", len(tags), distribution.ARN)
 	if len(tags) > 0 && distribution.ARN != "" {
 		if err := store.tags.TagResource(distribution.ARN, tags); err != nil {
 			return nil, fmt.Errorf("failed to tag distribution: %w", err)
 		}
-		fmt.Fprintf(os.Stderr, "[DBG CreateDistWithTags] tags saved successfully for ARN=%s\n", distribution.ARN)
-	} else {
-		fmt.Fprintf(os.Stderr, "[DBG CreateDistWithTags] SKIPPED saving tags: len(tags)=%d, ARN=%q\n", len(tags), distribution.ARN)
 	}
 
 	return map[string]interface{}{

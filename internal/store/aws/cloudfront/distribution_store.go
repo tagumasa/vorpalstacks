@@ -108,6 +108,16 @@ func (s *DistributionStore) Update(id string, config *DistributionConfig) (*Dist
 	if err != nil {
 		return nil, NewStoreError("update_distribution", err)
 	}
+	distribution.DistributionConfig = config
+	distribution.LastModifiedAt = time.Now()
+	etag, err := generateETag()
+	if err != nil {
+		return nil, NewStoreError("update_distribution", err)
+	}
+	distribution.ETag = etag
+	if err := s.BaseStore.Put(id, distribution); err != nil {
+		return nil, NewStoreError("update_distribution", err)
+	}
 	return distribution, nil
 }
 

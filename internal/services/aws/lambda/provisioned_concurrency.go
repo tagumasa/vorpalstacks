@@ -9,8 +9,8 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-// PutProvisionedConcurrencyConcurrency configures provisioned concurrency for a Lambda function alias or version.
-func (s *LambdaService) PutProvisionedConcurrencyConcurrency(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+// PutProvisionedConcurrencyConfig configures provisioned concurrency for a Lambda function alias or version.
+func (s *LambdaService) PutProvisionedConcurrencyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
 	if functionName == "" {
 		return nil, NewInvalidParameter("FunctionName", "Function name is required")
@@ -74,8 +74,8 @@ func (s *LambdaService) GetProvisionedConcurrencyConfig(ctx context.Context, req
 	return s.toProvisionedConcurrencyConfig(config), nil
 }
 
-// DeleteProvisionedConcurrencyConcurrency removes the provisioned concurrency configuration for a Lambda function alias or version.
-func (s *LambdaService) DeleteProvisionedConcurrencyConcurrency(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+// DeleteProvisionedConcurrencyConfig removes the provisioned concurrency configuration for a Lambda function alias or version.
+func (s *LambdaService) DeleteProvisionedConcurrencyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
 	if functionName == "" {
 		return nil, NewInvalidParameter("FunctionName", "Function name is required")

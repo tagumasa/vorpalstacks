@@ -258,11 +258,11 @@ func extractLambdaProvisionedConcurrencyOperation(path string, method string, r 
 		}
 		switch method {
 		case "PUT":
-			return "PutProvisionedConcurrencyConcurrency"
+			return "PutProvisionedConcurrencyConfig"
 		case "GET":
 			return "GetProvisionedConcurrencyConfig"
 		case "DELETE":
-			return "DeleteProvisionedConcurrencyConcurrency"
+			return "DeleteProvisionedConcurrencyConfig"
 		}
 	}
 

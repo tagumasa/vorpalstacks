@@ -183,8 +183,8 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			return err
 		}
 		c := desc.Certificate
-		if c.Status != types.CertificateStatusPendingValidation {
-			return fmt.Errorf("expected PENDING_VALIDATION, got %s", c.Status)
+		if c.Status != types.CertificateStatusIssued {
+			return fmt.Errorf("expected ISSUED, got %s", c.Status)
 		}
 		if c.Type != types.CertificateTypeAmazonIssued {
 			return fmt.Errorf("expected AMAZON_ISSUED, got %s", c.Type)
@@ -795,8 +795,17 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			CertificateArn:   resp.CertificateArn,
 			RevocationReason: types.RevocationReasonKeyCompromise,
 		})
-		if err := AssertErrorContains(err, "InvalidStateException"); err != nil {
+		if err != nil {
+			return fmt.Errorf("RevokeCertificate failed: %v", err)
+		}
+		desc, err := client.DescribeCertificate(ctx, &acm.DescribeCertificateInput{
+			CertificateArn: resp.CertificateArn,
+		})
+		if err != nil {
 			return err
+		}
+		if desc.Certificate.Status != types.CertificateStatusRevoked {
+			return fmt.Errorf("expected REVOKED, got %s", desc.Certificate.Status)
 		}
 		return nil
 	}))

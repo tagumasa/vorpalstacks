@@ -113,7 +113,7 @@ func (s *Service) ListBatchLoadTasks(ctx context.Context, reqCtx *request.Reques
 		return nil, s.mapStoreError(err)
 	}
 
-	var taskList []map[string]interface{}
+	taskList := make([]map[string]interface{}, 0)
 	for _, task := range tasks {
 		taskList = append(taskList, s.formatBatchLoadTask(task))
 	}

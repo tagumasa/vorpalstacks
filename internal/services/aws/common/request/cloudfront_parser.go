@@ -223,13 +223,5 @@ func extractCloudFrontPathParams(path string, params map[string]interface{}) {
 			}
 		}
 	case "tagging":
-		if resource := params["Resource"]; resource == nil {
-			if queryResource, ok := params["Resource"].(string); ok && queryResource != "" {
-				params["Resource"] = queryResource
-			}
-			if queryArn, ok := params["ResourceARN"].(string); ok && queryArn != "" {
-				params["ResourceARN"] = queryArn
-			}
-		}
 	}
 }

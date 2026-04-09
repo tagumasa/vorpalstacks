@@ -94,7 +94,7 @@ var (
 	ErrGlobalTableAlreadyExists    = NewAPIError("com.amazonaws.dynamodb.v20120810#GlobalTableAlreadyExistsException", "Global table already exists", http.StatusConflict)
 	ErrReplicaAlreadyExists        = NewAPIError("com.amazonaws.dynamodb.v20120810#ReplicaAlreadyExistsException", "Replica already exists", http.StatusConflict)
 	ErrReplicaNotFound             = NewAPIError("com.amazonaws.dynamodb.v20120810#ReplicaNotFoundException", "Replica not found", http.StatusNotFound)
-	ErrTransactionConflict         = NewAPIError("com.amazonaws.dynamodb.v20120810#TransactionConflictException", "Transaction conflict", http.StatusBadRequest)
+	ErrTransactionConflict         = NewAPIError("com.amazonaws.dynamodb.v20120810#TransactionConflictException", "TransactionConflict", http.StatusBadRequest)
 	ErrTransactionCanceled         = NewAPIError("com.amazonaws.dynamodb.v20120810#TransactionCanceledException", "Transaction canceled", http.StatusBadRequest)
 	ErrIdempotentParameterMismatch = NewAPIError("com.amazonaws.dynamodb.v20120810#IdempotentParameterMismatchException", "Idempotent parameter mismatch", http.StatusBadRequest)
 	ErrExportNotFound              = NewAPIError("com.amazonaws.dynamodb.v20120810#ExportNotFoundException", "Export not found", http.StatusNotFound)

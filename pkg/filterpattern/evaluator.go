@@ -570,7 +570,7 @@ func evalDelimitedConditionAt(cond string, fields []string, fieldMap map[string]
 		}
 		name = strings.TrimSpace(cond[:idx])
 		op = cond[idx : idx+opLen]
-		value = strings.TrimSpace(cond[idx+opLen:])
+		value = stripQuotes(strings.TrimSpace(cond[idx+opLen:]))
 	} else {
 		name = cond
 	}
@@ -703,6 +703,15 @@ func compareField(field, value, op string) bool {
 	}
 
 	return CompareValues(field, value, op)
+}
+
+func stripQuotes(s string) string {
+	if len(s) >= 2 {
+		if (s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'') {
+			return s[1 : len(s)-1]
+		}
+	}
+	return s
 }
 
 func Matches(pattern, message string) bool {

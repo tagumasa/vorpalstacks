@@ -282,9 +282,9 @@ func (s *LambdaService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("lambda", "GetFunctionConcurrency", s.GetFunctionConcurrency)
 	d.RegisterHandlerForService("lambda", "DeleteFunctionConcurrency", s.DeleteFunctionConcurrency)
 
-	d.RegisterHandlerForService("lambda", "PutProvisionedConcurrencyConcurrency", s.PutProvisionedConcurrencyConcurrency)
+	d.RegisterHandlerForService("lambda", "PutProvisionedConcurrencyConfig", s.PutProvisionedConcurrencyConfig)
 	d.RegisterHandlerForService("lambda", "GetProvisionedConcurrencyConfig", s.GetProvisionedConcurrencyConfig)
-	d.RegisterHandlerForService("lambda", "DeleteProvisionedConcurrencyConcurrency", s.DeleteProvisionedConcurrencyConcurrency)
+	d.RegisterHandlerForService("lambda", "DeleteProvisionedConcurrencyConfig", s.DeleteProvisionedConcurrencyConfig)
 	d.RegisterHandlerForService("lambda", "ListProvisionedConcurrencyConfigs", s.ListProvisionedConcurrencyConfigs)
 
 	d.RegisterHandlerForService("lambda", "PutFunctionEventInvokeConfig", s.PutFunctionEventInvokeConfig)

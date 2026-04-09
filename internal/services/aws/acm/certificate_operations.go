@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -53,18 +54,48 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	validationMethod := parseValidationMethod(params)
 	keyAlgorithm := parseKeyAlgorithm(params)
 
+	now := time.Now().UTC()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, NewAPIError("InternalErrorException", "Failed to generate key", 500)
+	}
+
+	serialBigInt, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		return nil, NewAPIError("InternalErrorException", "Failed to generate serial", 500)
+	}
+	template := &x509.Certificate{
+		SerialNumber: serialBigInt,
+		NotBefore:    now,
+		NotAfter:     now.AddDate(1, 0, 0),
+		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		DNSNames:     []string{domainName},
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		return nil, NewAPIError("InternalErrorException", "Failed to create certificate", 500)
+	}
+
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+
+	serialStr := generateCertificateSerial()
 	cert := &acmstorelib.Certificate{
 		CertificateArn:     certificateArn,
 		DomainName:         domainName,
-		Serial:             generateCertificateSerial(),
-		Status:             "PENDING_VALIDATION",
+		Serial:             serialStr,
+		Status:             "ISSUED",
 		Type:               "AMAZON_ISSUED",
 		KeyAlgorithm:       keyAlgorithm,
 		SignatureAlgorithm: "SHA256WITHRSA",
 		RenewalEligibility: "ELIGIBLE",
-		CreatedAt:          time.Now(),
+		CreatedAt:          now,
 		AccountID:          reqCtx.GetAccountID(),
 		Region:             reqCtx.GetRegion(),
+		Certificate:        string(certPEM),
+		NotBefore:          now,
+		NotAfter:           now.AddDate(1, 0, 0),
+		IssuedAt:           now,
 	}
 
 	if sansRaw := params["SubjectAlternativeNames"]; sansRaw != nil {
@@ -81,6 +112,9 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	cert.Tags = tags
 
 	domainValidationOptions := buildDomainValidationOptions(domainName, validationMethod)
+	for i := range domainValidationOptions {
+		domainValidationOptions[i].ValidationStatus = "SUCCESS"
+	}
 	cert.DomainValidationOptions = domainValidationOptions
 
 	if optionsMap, ok := params["Options"].(map[string]interface{}); ok {
@@ -257,7 +291,10 @@ func (s *ACMService) ResendValidationEmail(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	if cert.Status != "PENDING_VALIDATION" {
+	if cert.Type == "IMPORTED" {
+		return nil, NewInvalidStateException("Certificate is not in PENDING_VALIDATION state")
+	}
+	if cert.Status != "PENDING_VALIDATION" && cert.Status != "ISSUED" {
 		return nil, NewInvalidStateException("Certificate is not in PENDING_VALIDATION state")
 	}
 

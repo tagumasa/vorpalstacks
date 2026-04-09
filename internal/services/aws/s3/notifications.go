@@ -160,11 +160,7 @@ func (s *S3Service) dispatchToSNS(ctx context.Context, topicArn string, payload 
 	}
 
 	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, topicArn, "sns", "s3.amazonaws.com", "sns:Publish", topicArn)
-	if evalErr != nil {
-		fmt.Printf("[s3:notification] policy evaluation failed for SNS topic=%s: %v\n", topicArn, evalErr)
-		return
-	}
-	if !allowed {
+	if evalErr != nil || !allowed {
 		return
 	}
 
@@ -203,17 +199,12 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 
 	queue, qErr := s.sqsStore.GetQueueByName(queueName)
 	if qErr != nil {
-		fmt.Printf("[s3:notification] queue not found for SQS delivery queue=%s: %v\n", queueName, qErr)
 		return
 	}
 
 	if s.bus != nil {
 		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queue.ARN, "sqs", "s3.amazonaws.com", "sqs:SendMessage", queue.ARN)
-		if evalErr != nil {
-			fmt.Printf("[s3:notification] policy evaluation failed for SQS queue=%s: %v\n", queueArn, evalErr)
-			return
-		}
-		if !allowed {
+		if evalErr != nil || !allowed {
 			return
 		}
 	}
@@ -221,9 +212,7 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 	message := &sqsstore.Message{
 		Body: string(payload),
 	}
-	if _, err := s.sqsStore.SendMessage(queue.URL, message); err != nil {
-		fmt.Printf("[s3:notification] sqs dispatch failed queue=%s: %v\n", queueName, err)
-	}
+	s.sqsStore.SendMessage(queue.URL, message)
 }
 
 // dispatchToLambda invokes a Lambda function with the S3 event record
@@ -235,18 +224,10 @@ func (s *S3Service) dispatchToLambda(ctx context.Context, functionArn string, pa
 
 	if s.bus != nil {
 		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, functionArn, "lambda", "s3.amazonaws.com", "lambda:InvokeFunction", functionArn)
-		if evalErr != nil {
-			fmt.Printf("[s3:notification] policy evaluation failed for Lambda function=%s: %v\n", functionArn, evalErr)
-			return
-		}
-		if !allowed {
+		if evalErr != nil || !allowed {
 			return
 		}
 	}
 
-	fnName := svcarn.ExtractFunctionNameFromARN(functionArn)
-	_, _, err := s.lambdaInvoker.InvokeForGateway(ctx, functionArn, payload)
-	if err != nil {
-		fmt.Printf("[s3:notification] lambda dispatch failed function=%s: %v\n", fnName, err)
-	}
+	s.lambdaInvoker.InvokeForGateway(ctx, functionArn, payload)
 }

@@ -2,8 +2,6 @@ package cloudfront
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -476,7 +474,6 @@ func (s *CloudFrontService) ListTagsForResource(ctx context.Context, reqCtx *req
 	if !strings.HasPrefix(strings.ToLower(arn), "arn:") {
 		resourceKey = "arn:aws:cloudfront:::distribution/" + arn
 	}
-	fmt.Fprintf(os.Stderr, "[DBG ListTagsForResource] arn=%s resourceKey=%s\n", arn, resourceKey)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -486,10 +483,6 @@ func (s *CloudFrontService) ListTagsForResource(ctx context.Context, reqCtx *req
 	tags, err := store.tags.ListTagsForResource(resourceKey)
 	if err != nil {
 		return nil, NewAPIError("ListTags", err.Error(), 500)
-	}
-	fmt.Fprintf(os.Stderr, "[DBG ListTagsForResource] found %d tags for resourceKey=%s\n", len(tags), resourceKey)
-	for _, t := range tags {
-		fmt.Fprintf(os.Stderr, "[DBG ListTagsForResource]   tag: %s=%s\n", t.Key, t.Value)
 	}
 
 	tagItems := tagutil.ToResponse(tags)
