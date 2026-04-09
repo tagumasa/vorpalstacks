@@ -380,6 +380,7 @@ func (c *RequestContext) GetSQSStore() sqsstore.SQSStoreInterface {
 	return c.storeProvider.GetSQSStore()
 }
 
+// GetNeptuneStore returns the Neptune store from the store provider.
 func (c *RequestContext) GetNeptuneStore() neptunestore.NeptuneStoreInterface {
 	if c.storeProvider == nil {
 		return nil
@@ -387,14 +388,17 @@ func (c *RequestContext) GetNeptuneStore() neptunestore.NeptuneStoreInterface {
 	return c.storeProvider.GetNeptuneStore()
 }
 
+// SetGraphDBManager sets the graph database manager for NeptuneGraph queries.
 func (c *RequestContext) SetGraphDBManager(db *graphengine.DB) {
 	c.graphDBManager = db
 }
 
+// GraphReader returns the graph database reader for NeptuneGraph queries.
 func (c *RequestContext) GraphReader() graphengine.GraphReader {
 	return c.graphDBManager
 }
 
+// GraphWriter returns the graph database writer for NeptuneGraph mutations.
 func (c *RequestContext) GraphWriter() graphengine.GraphWriter {
 	return c.graphDBManager
 }

@@ -284,7 +284,11 @@ func main() {
 
 	var sqsStoreInstance *storesqs.SQSStore
 	if cfg.SQS {
-		regionalStorage, _ := server.StorageManager().GetStorage(cfg.Region)
+		regionalStorage, err := server.StorageManager().GetStorage(cfg.Region)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get SQS regional storage: %v\n", err)
+			os.Exit(1)
+		}
 		sqsStoreInstance = storesqs.NewSQSStore(regionalStorage, cfg.AccountID, cfg.Region, appconfig.BaseURL())
 		sqsService = svcsqs.NewSQSServiceWithStore(sqsStoreInstance)
 		sqsService.SetStorageManager(server.StorageManager())
@@ -295,7 +299,11 @@ func main() {
 	var kinesisStoreInstance *storekinesis.KinesisStore
 
 	if cfg.Kinesis {
-		kinesisRegionalStorage, _ := server.StorageManager().GetStorage(cfg.Region)
+		kinesisRegionalStorage, err := server.StorageManager().GetStorage(cfg.Region)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get Kinesis regional storage: %v\n", err)
+			os.Exit(1)
+		}
 		tstore, ok := kinesisRegionalStorage.(storage.TransactionalStorageWith2PC)
 		if ok {
 			kinesisStoreInstance = storekinesis.NewKinesisStore(tstore, cfg.AccountID, cfg.Region)
@@ -385,7 +393,11 @@ func main() {
 
 	var snsStoreInstance *storesns.SNSStore
 	if cfg.SNS {
-		snsRegionalStorage, _ := server.StorageManager().GetStorage(cfg.Region)
+		snsRegionalStorage, err := server.StorageManager().GetStorage(cfg.Region)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get SNS regional storage: %v\n", err)
+			os.Exit(1)
+		}
 		snsStoreInstance = storesns.NewSNSStore(snsRegionalStorage, cfg.AccountID, cfg.Region)
 		server.RegisterShutdownHook(func(ctx context.Context) {
 			snsStoreInstance.Close()
@@ -404,7 +416,11 @@ func main() {
 
 	var eventsStoreInstance *storeevents.EventsStore
 	if cfg.Events {
-		eventsRegionalStorage, _ := server.StorageManager().GetStorage(cfg.Region)
+		eventsRegionalStorage, err := server.StorageManager().GetStorage(cfg.Region)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get EventBridge regional storage: %v\n", err)
+			os.Exit(1)
+		}
 		eventsStoreInstance = storeevents.NewEventsStore(eventsRegionalStorage, cfg.AccountID, cfg.Region)
 		eventsService = svcevents.NewEventsService(server.StorageManager(), cfg.AccountID)
 		eventsService.SetEventsStore(cfg.Region, eventsStoreInstance)

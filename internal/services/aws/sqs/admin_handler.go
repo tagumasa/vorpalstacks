@@ -34,6 +34,7 @@ func (h *AdminHandler) getSQSStoreByRegion(region string) (sqsstore.SQSStoreInte
 	return h.service.GetStoreForRegion(region)
 }
 
+// ListQueues returns a paginated list of SQS queue URLs via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.ListQueuesRequest]) (*connect.Response[pb.ListQueuesResult], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getSQSStoreByRegion(region)
@@ -68,6 +69,7 @@ func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.L
 	}), nil
 }
 
+// GetQueueUrl returns the URL for the specified queue via the admin console gRPC-Web interface.
 func (h *AdminHandler) GetQueueUrl(ctx context.Context, req *connect.Request[pb.GetQueueUrlRequest]) (*connect.Response[pb.GetQueueUrlResult], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getSQSStoreByRegion(region)

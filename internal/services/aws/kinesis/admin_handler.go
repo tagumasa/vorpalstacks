@@ -13,6 +13,7 @@ import (
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
+// AdminHandler implements the Kinesis admin console gRPC-Web handler.
 type AdminHandler struct {
 	kinesisconnect.UnimplementedKinesisServiceHandler
 	storageManager *storage.RegionStorageManager
@@ -21,6 +22,7 @@ type AdminHandler struct {
 
 var _ kinesisconnect.KinesisServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new Kinesis admin handler with the given storage manager and account ID.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -40,6 +42,7 @@ func (h *AdminHandler) getKinesisStoreByRegion(region string) (*kinesisstore.Kin
 	return kinesisstore.NewKinesisStore(tstore, h.accountId, region), nil
 }
 
+// ListStreams returns a list of Kinesis stream names via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.ListStreamsInput]) (*connect.Response[pb.ListStreamsOutput], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getKinesisStoreByRegion(region)
@@ -63,6 +66,7 @@ func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
+// DescribeStream returns detailed information about a Kinesis stream via the admin console gRPC-Web interface.
 func (h *AdminHandler) DescribeStream(ctx context.Context, req *connect.Request[pb.DescribeStreamInput]) (*connect.Response[pb.DescribeStreamOutput], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getKinesisStoreByRegion(region)

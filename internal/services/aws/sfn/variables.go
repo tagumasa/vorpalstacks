@@ -14,6 +14,9 @@ const (
 	maxTotalVariableBytes = 10 * 1024 * 1024
 )
 
+// VariableScope manages a hierarchical collection of Step Functions state variables.
+// Variables defined in inner scopes shadow those in outer scopes;
+// lookups fall through to the parent when not found locally.
 type VariableScope struct {
 	mu        sync.RWMutex
 	parent    *VariableScope
@@ -21,6 +24,8 @@ type VariableScope struct {
 	totalSize int64
 }
 
+// NewVariableScope creates a new variable scope, optionally nested under a parent scope.
+// The total size is initialised from the parent to enforce aggregate limits.
 func NewVariableScope(parent *VariableScope) *VariableScope {
 	var total int64
 	if parent != nil {
@@ -35,6 +40,7 @@ func NewVariableScope(parent *VariableScope) *VariableScope {
 	}
 }
 
+// Get retrieves the value of a variable by name, searching parent scopes if not found locally.
 func (s *VariableScope) Get(name string) (interface{}, bool) {
 	s.mu.RLock()
 	if v, ok := s.variables[name]; ok {
@@ -49,6 +55,7 @@ func (s *VariableScope) Get(name string) (interface{}, bool) {
 	return nil, false
 }
 
+// GetAll returns a flattened map of all variables visible in this scope, including those from parent scopes.
 func (s *VariableScope) GetAll() map[string]interface{} {
 	s.mu.RLock()
 	result := make(map[string]interface{}, len(s.variables))
@@ -67,6 +74,7 @@ func (s *VariableScope) GetAll() map[string]interface{} {
 	return result
 }
 
+// SetAll atomically assigns multiple variables, enforcing size limits and preventing shadowing of outer scope variables.
 func (s *VariableScope) SetAll(assignments map[string]interface{}) error {
 	if len(assignments) == 0 {
 		return nil
@@ -130,10 +138,12 @@ func (s *VariableScope) isDefinedInScope(name string) bool {
 	return false
 }
 
+// NewChild creates a nested child scope that inherits lookups from this scope.
 func (s *VariableScope) NewChild() *VariableScope {
 	return NewVariableScope(s)
 }
 
+// Snapshot returns a deep copy of all variables defined directly in this scope (excluding parent).
 func (s *VariableScope) Snapshot() map[string]interface{} {
 	s.mu.RLock()
 	result := make(map[string]interface{}, len(s.variables))
@@ -144,6 +154,8 @@ func (s *VariableScope) Snapshot() map[string]interface{} {
 	return result
 }
 
+// ValidateVariableName checks that a variable name conforms to Step Functions
+// naming rules (ID_Start followed by ID_Continue characters, max 80 chars).
 func ValidateVariableName(name string) error {
 	if len(name) == 0 {
 		return fmt.Errorf("variable name must not be empty")

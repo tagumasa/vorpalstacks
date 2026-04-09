@@ -605,6 +605,7 @@ type AppSyncEventPublished struct {
 	Event   string `json:"event"`
 }
 
+// EventType returns the event bus identifier for AppSync publish events.
 func (e *AppSyncEventPublished) EventType() string { return "appsync:event-published" }
 
 // publishResult holds the outcome of a publish operation.

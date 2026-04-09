@@ -114,6 +114,7 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 	return resp, nil
 }
 
+// writeOperation represents a single write operation within a transaction.
 type writeOperation struct {
 	idx                          int
 	opType                       string
@@ -247,11 +248,13 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 	return nil, nil
 }
 
+// opParseError represents a parse error encountered during transaction operation parsing.
 type opParseError struct {
 	code string
 	err  error
 }
 
+// Error returns the underlying error message for a transaction operation parse failure.
 func (e *opParseError) Error() string {
 	return e.err.Error()
 }

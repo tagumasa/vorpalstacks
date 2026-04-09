@@ -632,6 +632,7 @@ func (s *StepFunctionStore) recoverVersionCounter(smArn string) {
 	s.versionCountersMu.Unlock()
 }
 
+// PublishStateMachineVersion publishes a new version of an existing state machine.
 func (s *StepFunctionStore) PublishStateMachineVersion(ctx context.Context, smArn string, description string) (*StateMachineVersion, error) {
 	sm, err := s.GetStateMachine(ctx, smArn)
 	if err != nil {
@@ -665,6 +666,7 @@ func (s *StepFunctionStore) PublishStateMachineVersion(ctx context.Context, smAr
 	return v, nil
 }
 
+// GetStateMachineVersion retrieves a state machine version by its ARN.
 func (s *StepFunctionStore) GetStateMachineVersion(ctx context.Context, arn string) (*StateMachineVersion, error) {
 	var v StateMachineVersion
 	if err := s.versionsStore.Get(arn, &v); err != nil {
@@ -673,6 +675,7 @@ func (s *StepFunctionStore) GetStateMachineVersion(ctx context.Context, arn stri
 	return &v, nil
 }
 
+// DeleteStateMachineVersion removes a state machine version from the store.
 func (s *StepFunctionStore) DeleteStateMachineVersion(ctx context.Context, arn string) error {
 	if !s.versionsStore.Exists(arn) {
 		return ErrStateMachineVersionNotFound
@@ -680,6 +683,7 @@ func (s *StepFunctionStore) DeleteStateMachineVersion(ctx context.Context, arn s
 	return s.versionsStore.Delete(arn)
 }
 
+// ListStateMachineVersions returns a paginated list of versions for a state machine.
 func (s *StepFunctionStore) ListStateMachineVersions(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineVersionListResult, error) {
 	opts := common.ListOptions{
 		Prefix:   smArn + ":",
@@ -698,6 +702,7 @@ func (s *StepFunctionStore) ListStateMachineVersions(ctx context.Context, smArn 
 	}, nil
 }
 
+// CreateStateMachineAlias creates a new alias for a state machine.
 func (s *StepFunctionStore) CreateStateMachineAlias(ctx context.Context, alias *StateMachineAlias) error {
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
@@ -720,6 +725,7 @@ func (s *StepFunctionStore) CreateStateMachineAlias(ctx context.Context, alias *
 	return s.aliasesStore.Put(storageKey, alias)
 }
 
+// GetStateMachineAlias retrieves a state machine alias by its ARN.
 func (s *StepFunctionStore) GetStateMachineAlias(ctx context.Context, arn string) (*StateMachineAlias, error) {
 	var alias StateMachineAlias
 	if err := s.aliasesStore.Get(arn, &alias); err != nil {
@@ -728,6 +734,7 @@ func (s *StepFunctionStore) GetStateMachineAlias(ctx context.Context, arn string
 	return &alias, nil
 }
 
+// UpdateStateMachineAlias updates an existing state machine alias.
 func (s *StepFunctionStore) UpdateStateMachineAlias(ctx context.Context, alias *StateMachineAlias) error {
 	if !s.aliasesStore.Exists(alias.StateMachineAliasArn) {
 		return ErrStateMachineAliasNotFound
@@ -736,6 +743,7 @@ func (s *StepFunctionStore) UpdateStateMachineAlias(ctx context.Context, alias *
 	return s.aliasesStore.Put(alias.StateMachineAliasArn, alias)
 }
 
+// DeleteStateMachineAlias removes a state machine alias from the store.
 func (s *StepFunctionStore) DeleteStateMachineAlias(ctx context.Context, arn string) error {
 	if !s.aliasesStore.Exists(arn) {
 		return ErrStateMachineAliasNotFound
@@ -754,6 +762,7 @@ func (s *StepFunctionStore) aliasStorageKey(arn string) string {
 	return arn
 }
 
+// ListStateMachineAliases returns a paginated list of aliases for a state machine.
 func (s *StepFunctionStore) ListStateMachineAliases(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineAliasListResult, error) {
 	opts := common.ListOptions{
 		Marker:   nextToken,
@@ -785,6 +794,7 @@ func (s *StepFunctionStore) nextMapRunSeq() int64 {
 	return atomic.AddInt64(&s.mapRunSeq, 1)
 }
 
+// NextMapRunSeq returns the next sequential identifier for a map run.
 func (s *StepFunctionStore) NextMapRunSeq() int64 {
 	return s.nextMapRunSeq()
 }

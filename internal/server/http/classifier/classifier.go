@@ -21,12 +21,19 @@ import (
 type Protocol int
 
 const (
+	// ProtocolUnknown indicates the request protocol could not be determined.
 	ProtocolUnknown Protocol = iota
+	// ProtocolJSONRPC indicates an AWS JSON-RPC style request (X-Amz-Target header).
 	ProtocolJSONRPC
+	// ProtocolQuery indicates an AWS Query protocol request (Action parameter).
 	ProtocolQuery
+	// ProtocolRESTXML indicates an AWS REST-XML protocol request.
 	ProtocolRESTXML
+	// ProtocolRESTJSON indicates an AWS REST-JSON protocol request.
 	ProtocolRESTJSON
+	// ProtocolCBOR indicates a CBOR-encoded request.
 	ProtocolCBOR
+	// ProtocolNeptune indicates a Neptune Data API request.
 	ProtocolNeptune
 )
 

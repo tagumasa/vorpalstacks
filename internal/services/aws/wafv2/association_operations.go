@@ -7,6 +7,7 @@ import (
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
+// AssociateWebACL associates a WebACL with the specified resource ARN.
 func (s *WAFv2Service) AssociateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	webACLArn := request.GetStringParam(req.Parameters, "WebACLArn")
 	if webACLArn == "" {
@@ -43,6 +44,7 @@ func (s *WAFv2Service) AssociateWebACL(ctx context.Context, reqCtx *request.Requ
 	return map[string]interface{}{}, nil
 }
 
+// DisassociateWebACL removes the WebACL association from the specified resource ARN.
 func (s *WAFv2Service) DisassociateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
 	if resourceArn == "" {
@@ -72,6 +74,7 @@ func (s *WAFv2Service) DisassociateWebACL(ctx context.Context, reqCtx *request.R
 	return map[string]interface{}{}, nil
 }
 
+// ListResourcesForWebACL returns all resource ARNs associated with the specified WebACL.
 func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	webACLArn := request.GetStringParam(req.Parameters, "WebACLArn")
 	if webACLArn == "" {
@@ -103,6 +106,7 @@ func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *reque
 	}, nil
 }
 
+// GetWebACLForResource returns the WebACL associated with the specified resource ARN.
 func (s *WAFv2Service) GetWebACLForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
 	if resourceArn == "" {

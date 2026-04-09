@@ -47,7 +47,7 @@ type Dispatcher struct {
 type Handler func(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error)
 
 // NewDispatcher creates a new Dispatcher instance with the provided configuration.
-// It initializes service stores, handlers, and sets up authorization if enabled.
+// It initialises service stores, handlers, and sets up authorisation if enabled.
 func NewDispatcher(
 	serviceStore *api.ServiceStore,
 	operationStore *api.OperationStore,
@@ -216,6 +216,7 @@ func (d *Dispatcher) DispatchWithContext(w http.ResponseWriter, r *http.Request,
 	d.Dispatch(w, r, dispatchCtx.ServiceName, nil)
 }
 
+// SetGraphDB injects the graph database instance into the dispatcher for query support.
 func (d *Dispatcher) SetGraphDB(db *graphengine.DB) {
 	d.graphDB = db
 }

@@ -12,6 +12,8 @@ import (
 	cfstore "vorpalstacks/internal/store/aws/cloudfront"
 )
 
+// DistributionServer serves requests for CloudFront distributions by proxying
+// to the configured origin and applying cache behaviour headers.
 type DistributionServer struct {
 	storageManager *storage.RegionStorageManager
 	accountID      string
@@ -19,6 +21,7 @@ type DistributionServer struct {
 	client         *http.Client
 }
 
+// NewDistributionServer creates a new DistributionServer with the given storage, account, and region.
 func NewDistributionServer(storageManager *storage.RegionStorageManager, accountID, region string) *DistributionServer {
 	return &DistributionServer{
 		storageManager: storageManager,
@@ -33,6 +36,7 @@ func NewDistributionServer(storageManager *storage.RegionStorageManager, account
 	}
 }
 
+// HandleRequest proxies an incoming request to the matching CloudFront distribution's origin.
 func (s *DistributionServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	distributionID := s.extractDistributionID(r.Host)
 	if distributionID == "" {

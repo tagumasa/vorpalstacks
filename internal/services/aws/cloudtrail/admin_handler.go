@@ -12,6 +12,7 @@ import (
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 
+// AdminHandler implements the CloudTrail admin console gRPC-Web handler.
 type AdminHandler struct {
 	cloudtrailconnect.UnimplementedCloudTrailServiceHandler
 	storageManager *storage.RegionStorageManager
@@ -20,6 +21,7 @@ type AdminHandler struct {
 
 var _ cloudtrailconnect.CloudTrailServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new CloudTrail admin handler with the given storage manager and account ID.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -36,6 +38,7 @@ func (h *AdminHandler) getCloudTrailStore(req *connect.Request[pb.ListTrailsRequ
 	return cloudtrailstore.NewCloudTrailStore(regionStorage, h.accountId, region), nil
 }
 
+// ListTrails retrieves all CloudTrail trails from the regional store.
 func (h *AdminHandler) ListTrails(ctx context.Context, req *connect.Request[pb.ListTrailsRequest]) (*connect.Response[pb.ListTrailsResponse], error) {
 	store, err := h.getCloudTrailStore(req)
 	if err != nil {

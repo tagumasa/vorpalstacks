@@ -32,6 +32,7 @@ type Config struct {
 	ShowSource bool
 }
 
+// logger is the internal implementation of the Logger interface.
 type logger struct {
 	mu       sync.Mutex
 	config   *Config
@@ -61,6 +62,7 @@ func NewLogger(cfg *Config) Logger {
 	return l
 }
 
+// logWorker asynchronously writes log entries to the persistent store.
 func (l *logger) logWorker() {
 	defer l.logWg.Done()
 	for entry := range l.logCh {
@@ -70,6 +72,7 @@ func (l *logger) logWorker() {
 	}
 }
 
+// Close stops the log worker and waits for pending entries to be flushed.
 func (l *logger) Close() {
 	l.stopOnce.Do(func() {
 		close(l.logCh)
@@ -77,6 +80,7 @@ func (l *logger) Close() {
 	l.logWg.Wait()
 }
 
+// log writes a log entry at the given level if it meets the configured threshold.
 func (l *logger) log(level Level, msg string, fields ...Field) {
 	if level < l.config.Level {
 		return
@@ -119,6 +123,7 @@ func (l *logger) log(level Level, msg string, fields ...Field) {
 	}
 }
 
+// writeToOutput formats and writes a log entry to the configured output writer.
 func (l *logger) writeToOutput(entry *LogEntry) {
 	fmt.Fprintf(l.config.Output, "[%s] %s %s",
 		entry.Timestamp.Format("2006-01-02 15:04:05.000"),
@@ -257,7 +262,7 @@ var (
 	defaultOnce   sync.Once
 )
 
-// InitDefault initializes the default logger with the given configuration.
+// InitDefault initialises the default logger with the given configuration.
 func InitDefault(cfg *Config) {
 	defaultOnce.Do(func() {
 		defaultLogger = NewLogger(cfg)

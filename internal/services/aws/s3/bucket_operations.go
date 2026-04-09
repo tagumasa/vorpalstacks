@@ -181,10 +181,12 @@ type HeadBucketInput struct {
 	Bucket string
 }
 
+// HeadBucketOutput contains the output result of the HeadBucket operation.
 type HeadBucketOutput struct {
 	BucketRegion string
 }
 
+// HeadBucket retrieves the metadata headers for an S3 bucket without listing its contents.
 func (o *BucketOperations) HeadBucket(ctx *request.RequestContext, input *HeadBucketInput) (*HeadBucketOutput, error) {
 	store, err := o.svc.store(ctx)
 	if err != nil {

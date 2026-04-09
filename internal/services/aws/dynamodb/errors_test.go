@@ -63,7 +63,7 @@ func TestDynamoDBErrors(t *testing.T) {
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#ReplicaNotFoundException: Replica not found", ErrReplicaNotFound.Error())
 		assert.Equal(t, http.StatusNotFound, ErrReplicaNotFound.GetHTTPStatusCode())
 
-		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#TransactionConflictException: Transaction conflict", ErrTransactionConflict.Error())
+		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#TransactionConflictException: TransactionConflict", ErrTransactionConflict.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrTransactionConflict.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#IdempotentParameterMismatchException: Idempotent parameter mismatch", ErrIdempotentParameterMismatch.Error())

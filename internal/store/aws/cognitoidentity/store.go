@@ -231,6 +231,7 @@ func (s *CognitoIdentityStore) GetIdentityPoolRoles(poolID string) (authRole, un
 	return pool.AuthenticatedRoleArn, pool.UnauthenticatedRoleArn, pool.RoleMappings, nil
 }
 
+// IdentityPoolIdentityKey returns the composite storage key for a Cognito identity within a pool.
 func IdentityPoolIdentityKey(poolID, identityID string) string {
 	return poolID + "#" + identityID
 }

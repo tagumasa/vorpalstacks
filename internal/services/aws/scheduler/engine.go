@@ -27,6 +27,8 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
+// schedulerTickerInterval is the interval between schedule checks.
+// Reduced to 1 second in test mode for faster test execution.
 var schedulerTickerInterval = 1 * time.Minute
 
 func init() {
@@ -52,6 +54,7 @@ type Engine struct {
 	cancel    context.CancelFunc
 }
 
+// NewEngine creates a new scheduler engine with the given store dependencies.
 func NewEngine(
 	storageManager *storage.RegionStorageManager,
 	sqsStore sqsstore.SQSStoreInterface,
@@ -69,6 +72,7 @@ func NewEngine(
 	}
 }
 
+// SetEventBus injects the event bus for publishing scheduler lifecycle events.
 func (e *Engine) SetEventBus(bus *eventbus.EventBus) {
 	e.bus = bus
 }

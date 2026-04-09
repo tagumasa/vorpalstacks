@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/services/aws/common/request"
 )
 
+// HostedUIHandler serves the Cognito hosted UI pages for login, sign-up, and OAuth2 flows.
 func (s *CognitoService) HostedUIHandler(w http.ResponseWriter, r *http.Request) {
 	if s.storageManager == nil {
 		http.Error(w, "Cognito hosted UI not available", http.StatusServiceUnavailable)

@@ -16,15 +16,20 @@ const (
 	createdIdxPrefix = "eb/idx/created/"
 )
 
+// PebbleOutboxStore implements OutboxStore backed by a Pebble key-value
+// database, using a secondary index for time-based cleanup queries.
 type PebbleOutboxStore struct {
 	db  *pebble.DB
 	log logs.Logger
 }
 
+// NewPebbleOutboxStore creates a new PebbleOutboxStore backed by the given
+// Pebble database instance.
 func NewPebbleOutboxStore(db *pebble.DB) *PebbleOutboxStore {
 	return &PebbleOutboxStore{db: db}
 }
 
+// Write persists an outbox entry and its creation-time index key.
 func (s *PebbleOutboxStore) Write(ctx context.Context, entry *OutboxEntry) error {
 	key := outboxKey(entry.EventID)
 
@@ -45,6 +50,7 @@ func (s *PebbleOutboxStore) Write(ctx context.Context, entry *OutboxEntry) error
 	return nil
 }
 
+// Read retrieves a single outbox entry by event ID.
 func (s *PebbleOutboxStore) Read(ctx context.Context, eventID string) (*OutboxEntry, error) {
 	key := outboxKey(eventID)
 	val, closer, err := s.db.Get(key)
@@ -64,6 +70,8 @@ func (s *PebbleOutboxStore) Read(ctx context.Context, eventID string) (*OutboxEn
 	return &entry, nil
 }
 
+// UpdateStatus atomically transitions an entry's status from 'from' to 'to'
+// using a compare-and-swap approach.
 func (s *PebbleOutboxStore) UpdateStatus(ctx context.Context, eventID string, from, to OutboxStatus) (bool, error) {
 	key := outboxKey(eventID)
 
@@ -103,6 +111,7 @@ func (s *PebbleOutboxStore) UpdateStatus(ctx context.Context, eventID string, fr
 	return true, nil
 }
 
+// UpdateEntry unconditionally overwrites the stored outbox entry.
 func (s *PebbleOutboxStore) UpdateEntry(ctx context.Context, entry *OutboxEntry) error {
 	key := outboxKey(entry.EventID)
 
@@ -118,6 +127,7 @@ func (s *PebbleOutboxStore) UpdateEntry(ctx context.Context, entry *OutboxEntry)
 	return nil
 }
 
+// ListPending returns up to 'limit' outbox entries with status OutboxPending.
 func (s *PebbleOutboxStore) ListPending(ctx context.Context, limit int) ([]*OutboxEntry, error) {
 	var entries []*OutboxEntry
 
@@ -157,6 +167,7 @@ func (s *PebbleOutboxStore) ListPending(ctx context.Context, limit int) ([]*Outb
 	return entries, nil
 }
 
+// Delete removes an outbox entry and its creation-time index key.
 func (s *PebbleOutboxStore) Delete(ctx context.Context, eventID string) error {
 	key := outboxKey(eventID)
 
@@ -186,6 +197,8 @@ func (s *PebbleOutboxStore) Delete(ctx context.Context, eventID string) error {
 	return nil
 }
 
+// Cleanup purges delivered and failed entries older than the given
+// retention thresholds, returning the number of entries removed.
 func (s *PebbleOutboxStore) Cleanup(ctx context.Context, deliveredBefore time.Time, failedBefore time.Time) (int, error) {
 	lower := []byte(createdIdxPrefix)
 	upper := []byte(createdIdxPrefix + "z")
@@ -266,6 +279,8 @@ func (s *PebbleOutboxStore) Cleanup(ctx context.Context, deliveredBefore time.Ti
 	return count, nil
 }
 
+// Close is a no-op for PebbleOutboxStore as the underlying database is
+// managed externally.
 func (s *PebbleOutboxStore) Close() error {
 	return nil
 }

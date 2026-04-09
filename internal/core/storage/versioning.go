@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/binary"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage/pebbledb"
@@ -14,6 +15,7 @@ import (
 type PebbleVersionedBucket struct {
 	db     *pebbledb.DB
 	prefix []byte
+	mu     sync.Mutex
 }
 
 // NewPebbleVersionedBucket creates a new versioned bucket backed by Pebble.
@@ -50,48 +52,36 @@ func (b *PebbleVersionedBucket) makeCounterKey() []byte {
 }
 
 func (b *PebbleVersionedBucket) getNextVersion() (uint64, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	counterKey := b.makeCounterKey()
 
-	for i := 0; i < DefaultVersionMaxRetries; i++ {
-		var currentVersion uint64
-		data, err := b.db.Get(counterKey)
-		if err != nil && err != pebbledb.ErrKeyNotFound {
-			return 0, err
-		}
-		if err == nil && len(data) >= 8 {
-			currentVersion = binary.BigEndian.Uint64(data)
-		}
-
-		newVersion := currentVersion + 1
-		counterData := make([]byte, 8)
-		binary.BigEndian.PutUint64(counterData, newVersion)
-
-		batch := b.db.NewBatch()
-		if err := batch.Set(counterKey, counterData); err != nil {
-			batch.Close()
-			return 0, err
-		}
-		if err := batch.Commit(pebble.Sync); err != nil {
-			batch.Close()
-			return 0, err
-		}
-		batch.Close()
-
-		verifyData, err := b.db.Get(counterKey)
-		if err != nil {
-			continue
-		}
-		if len(verifyData) < 8 {
-			continue
-		}
-		verifyVersion := binary.BigEndian.Uint64(verifyData)
-
-		if verifyVersion == newVersion {
-			return newVersion, nil
-		}
+	var currentVersion uint64
+	data, err := b.db.Get(counterKey)
+	if err != nil && err != pebbledb.ErrKeyNotFound {
+		return 0, err
+	}
+	if err == nil && len(data) >= 8 {
+		currentVersion = binary.BigEndian.Uint64(data)
 	}
 
-	return 0, &VersionConflictError{Key: counterKey}
+	newVersion := currentVersion + 1
+	counterData := make([]byte, 8)
+	binary.BigEndian.PutUint64(counterData, newVersion)
+
+	batch := b.db.NewBatch()
+	if err := batch.Set(counterKey, counterData); err != nil {
+		batch.Close()
+		return 0, err
+	}
+	if err := batch.Commit(pebble.Sync); err != nil {
+		batch.Close()
+		return 0, err
+	}
+	batch.Close()
+
+	return newVersion, nil
 }
 
 // GetVersion retrieves a specific version of a key.

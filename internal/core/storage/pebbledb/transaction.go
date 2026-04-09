@@ -214,6 +214,7 @@ func (t *Txn) NewTxnLazyIterator(start, end []byte) *TxnLazyIterator {
 	return li
 }
 
+// advance moves the iterator to the next valid (non-expired) entry.
 func (li *TxnLazyIterator) advance() {
 	for li.iter.Valid() {
 		key := li.iter.Key()
@@ -250,6 +251,7 @@ func (li *TxnLazyIterator) advance() {
 	li.value = nil
 }
 
+// Next advances the iterator to the next key-value pair, skipping expired TTL entries.
 func (li *TxnLazyIterator) Next() bool {
 	if li.err != nil || li.closed {
 		return false
@@ -264,18 +266,22 @@ func (li *TxnLazyIterator) Next() bool {
 	return li.key != nil
 }
 
+// Key returns the key at the current iterator position.
 func (li *TxnLazyIterator) Key() []byte {
 	return li.key
 }
 
+// Value returns the decrypted value at the current iterator position.
 func (li *TxnLazyIterator) Value() []byte {
 	return li.value
 }
 
+// Error returns any error encountered during iteration.
 func (li *TxnLazyIterator) Error() error {
 	return li.err
 }
 
+// Close releases resources held by the lazy iterator.
 func (li *TxnLazyIterator) Close() {
 	if li.closed {
 		return

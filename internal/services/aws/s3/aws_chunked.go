@@ -12,12 +12,14 @@ import (
 
 var errAwsChunkedInvalidFormat = errors.New("invalid aws-chunked encoding format")
 
+// awsChunkedDecoder decodes an HTTP request body encoded with Transfer-Encoding: aws-chunked.
 type awsChunkedDecoder struct {
 	reader    *bufio.Reader
 	remaining int
 	eof       bool
 }
 
+// Read decodes the next chunk from the aws-chunked transfer encoding stream.
 func (d *awsChunkedDecoder) Read(p []byte) (int, error) {
 	if d.eof {
 		return 0, io.EOF

@@ -2,6 +2,7 @@
 package secretsmanager
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -145,21 +146,30 @@ func (s *SecretStore) GetSecret(name string) (*Secret, error) {
 // GetSecretByARN retrieves a secret by its ARN from the store.
 // Returns the secret or an error if not found.
 func (s *SecretStore) GetSecretByARN(arn string) (*Secret, error) {
-	opts := common.ListOptions{MaxItems: 1000}
-	result, err := common.List[Secret](s.BaseStore, opts, func(sec *Secret) bool {
-		return sec.ARN == arn
+	var found *Secret
+	err := s.ForEach(func(key string, value []byte) error {
+		if len(key) > 0 && key[0] == '#' {
+			return nil
+		}
+		var secret Secret
+		if err := json.Unmarshal(value, &secret); err != nil {
+			return err
+		}
+		if secret.ARN == arn {
+			if secret.DeletedDate != nil || secret.ScheduledDeletionDate != nil {
+				return nil
+			}
+			found = &secret
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	if len(result.Items) == 0 {
+	if found == nil {
 		return nil, ErrSecretNotFound
 	}
-	secret := result.Items[0]
-	if secret.DeletedDate != nil || secret.ScheduledDeletionDate != nil {
-		return nil, ErrSecretNotFound
-	}
-	key := s.buildSecretKey(secret.Name)
+	key := s.buildSecretKey(found.Name)
 	tags, err := s.TagStore.ListTags(key)
 	if err != nil {
 		return nil, err
@@ -167,8 +177,8 @@ func (s *SecretStore) GetSecretByARN(arn string) (*Secret, error) {
 	if tags == nil {
 		tags = make(map[string]string)
 	}
-	secret.Tags = tags
-	return secret, nil
+	found.Tags = tags
+	return found, nil
 }
 
 // GetSecretForMetadata retrieves a secret by name including soft-deleted ones.

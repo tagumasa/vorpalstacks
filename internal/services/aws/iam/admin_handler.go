@@ -11,6 +11,7 @@ import (
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
+// AdminHandler implements the IAM admin console gRPC-Web handler.
 type AdminHandler struct {
 	iamconnect.UnimplementedIAMServiceHandler
 	store    storage.BasicStorage
@@ -19,6 +20,7 @@ type AdminHandler struct {
 
 var _ iamconnect.IAMServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new IAM admin handler with the given storage and account ID.
 func NewAdminHandler(store storage.BasicStorage, accountID string) *AdminHandler {
 	return &AdminHandler{
 		store:    store,
@@ -26,6 +28,7 @@ func NewAdminHandler(store storage.BasicStorage, accountID string) *AdminHandler
 	}
 }
 
+// ListUsers returns a paginated list of IAM users via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.ListUsersRequest]) (*connect.Response[pb.ListUsersResponse], error) {
 	maxItems := int(req.Msg.Maxitems)
 	if maxItems <= 0 {
@@ -49,6 +52,7 @@ func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.Li
 	}), nil
 }
 
+// ListRoles returns a paginated list of IAM roles via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.ListRolesRequest]) (*connect.Response[pb.ListRolesResponse], error) {
 	maxItems := int(req.Msg.Maxitems)
 	if maxItems <= 0 {
@@ -72,6 +76,7 @@ func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.Li
 	}), nil
 }
 
+// ListPolicies returns a paginated list of IAM policies via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb.ListPoliciesRequest]) (*connect.Response[pb.ListPoliciesResponse], error) {
 	maxItems := int(req.Msg.Maxitems)
 	if maxItems <= 0 {

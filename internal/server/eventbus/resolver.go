@@ -6,10 +6,15 @@ import (
 )
 
 var (
-	ErrInvalidARN        = fmt.Errorf("eventbus: invalid ARN format")
+	// ErrInvalidARN is returned when an ARN cannot be parsed.
+	ErrInvalidARN = fmt.Errorf("eventbus: invalid ARN format")
+	// ErrUnsupportedTarget is returned when an ARN refers to a service not
+	// supported by the resolver.
 	ErrUnsupportedTarget = fmt.Errorf("eventbus: unsupported target service")
 )
 
+// TargetAction describes a resolved target for event dispatch, including
+// the service type, identifier, region, and account ID.
 type TargetAction struct {
 	Type       string
 	Identifier string
@@ -17,16 +22,23 @@ type TargetAction struct {
 	AccountID  string
 }
 
+// TargetResolver defines the contract for resolving an ARN into a
+// dispatchable TargetAction.
 type TargetResolver interface {
 	Resolve(arn string) (*TargetAction, error)
 }
 
+// ARNResolver resolves AWS ARNs into TargetActions by parsing the ARN
+// components and mapping the service to the appropriate identifier format.
 type ARNResolver struct{}
 
+// NewARNResolver creates a new ARNResolver instance.
 func NewARNResolver() *ARNResolver {
 	return &ARNResolver{}
 }
 
+// Resolve parses an ARN string and returns a TargetAction for Lambda, SQS,
+// SNS, or Kinesis targets.
 func (r *ARNResolver) Resolve(arn string) (*TargetAction, error) {
 	if arn == "" {
 		return nil, ErrInvalidARN

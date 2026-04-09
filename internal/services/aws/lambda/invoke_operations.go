@@ -73,10 +73,12 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 	return &lambdaInvokeResponse{result: result}, nil
 }
 
+// lambdaInvokeResponse wraps an invocation result to satisfy the StreamableResponse interface.
 type lambdaInvokeResponse struct {
 	result *lambdastore.InvocationResult
 }
 
+// GetStream returns the invocation payload as an io.Reader.
 func (r *lambdaInvokeResponse) GetStream() io.Reader {
 	if r.result == nil || len(r.result.Payload) == 0 {
 		return bytes.NewReader(nil)
@@ -84,6 +86,7 @@ func (r *lambdaInvokeResponse) GetStream() io.Reader {
 	return bytes.NewReader(r.result.Payload)
 }
 
+// GetStreamHeaders returns the Lambda invocation response headers.
 func (r *lambdaInvokeResponse) GetStreamHeaders() http.Header {
 	h := make(http.Header)
 	if r.result != nil {
@@ -100,6 +103,7 @@ func (r *lambdaInvokeResponse) GetStreamHeaders() http.Header {
 	return h
 }
 
+// GetStreamStatusCode returns the HTTP status code for the invocation response.
 func (r *lambdaInvokeResponse) GetStreamStatusCode() int {
 	if r.result == nil {
 		return http.StatusOK
@@ -185,18 +189,22 @@ func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.Request
 	return &invokeAsyncResponse{Status: 202}, nil
 }
 
+// invokeAsyncResponse represents the response from an asynchronous Lambda invocation.
 type invokeAsyncResponse struct {
 	Status int
 }
 
+// GetStreamStatusCode returns the HTTP status code for the asynchronous invocation response.
 func (r *invokeAsyncResponse) GetStreamStatusCode() int {
 	return r.Status
 }
 
+// GetStream returns an empty reader for the asynchronous invocation response.
 func (r *invokeAsyncResponse) GetStream() io.Reader {
 	return bytes.NewReader(nil)
 }
 
+// GetStreamHeaders returns empty headers for the asynchronous invocation response.
 func (r *invokeAsyncResponse) GetStreamHeaders() http.Header {
 	return http.Header{}
 }

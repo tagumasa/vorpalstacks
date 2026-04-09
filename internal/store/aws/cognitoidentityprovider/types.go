@@ -336,6 +336,7 @@ func generateToken() string {
 	return uuid.New().String() + uuid.New().String()
 }
 
+// UserPoolDomain represents a custom domain assigned to a Cognito user pool.
 type UserPoolDomain struct {
 	Domain           string    `json:"domain"`
 	UserPoolID       string    `json:"userPoolId"`
@@ -343,6 +344,7 @@ type UserPoolDomain struct {
 	CreatedDate      time.Time `json:"createdDate"`
 }
 
+// ResourceServer represents an OAuth 2.0 resource server within a Cognito user pool.
 type ResourceServer struct {
 	UserPoolID string                `json:"userPoolId"`
 	Identifier string                `json:"identifier"`
@@ -350,11 +352,13 @@ type ResourceServer struct {
 	Scopes     []ResourceServerScope `json:"scopes,omitempty"`
 }
 
+// ResourceServerScope defines a scope within an OAuth 2.0 resource server.
 type ResourceServerScope struct {
 	ScopeName        string `json:"scopeName"`
 	ScopeDescription string `json:"scopeDescription"`
 }
 
+// IdentityProvider represents an external identity provider linked to a Cognito user pool.
 type IdentityProvider struct {
 	UserPoolID      string            `json:"userPoolId"`
 	ProviderName    string            `json:"providerName"`

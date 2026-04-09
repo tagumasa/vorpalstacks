@@ -83,6 +83,7 @@ func toGenericSlice(v interface{}) ([]interface{}, bool) {
 	return result, true
 }
 
+// EncodeCBORResponse serialises the response as CBOR and writes it to the HTTP response writer.
 func EncodeCBORResponse(w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", "application/cbor")
 	w.Header().Set("smithy-protocol", "rpc-v2-cbor")

@@ -7,6 +7,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 )
 
+// PutResourcePolicy persists a resource policy for a Kinesis stream.
 func (s *KinesisStore) PutResourcePolicy(resourceARN, policy string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -17,6 +18,7 @@ func (s *KinesisStore) PutResourcePolicy(resourceARN, policy string) error {
 	})
 }
 
+// GetResourcePolicy retrieves the resource policy for a Kinesis stream.
 func (s *KinesisStore) GetResourcePolicy(resourceARN string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -40,6 +42,7 @@ func (s *KinesisStore) GetResourcePolicy(resourceARN string) (string, error) {
 	return result, nil
 }
 
+// DeleteResourcePolicy removes the resource policy for a Kinesis stream.
 func (s *KinesisStore) DeleteResourcePolicy(resourceARN string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

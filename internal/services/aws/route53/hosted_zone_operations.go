@@ -423,6 +423,7 @@ func normalizeZoneNameForCreate(name string) string {
 	return name
 }
 
+// GetDNSSEC retrieves the DNSSEC signing status and configuration for a hosted zone.
 func (s *Route53Service) GetDNSSEC(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_, err := extractHostedZoneId(req.Parameters, "HostedZoneId")
 	if err != nil {

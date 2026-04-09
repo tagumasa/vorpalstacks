@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// IsNeptuneGraphPath returns true if the given HTTP path belongs to the NeptuneGraph API.
 func IsNeptuneGraphPath(path string) bool {
 	return strings.HasPrefix(path, "/graphs") ||
 		strings.HasPrefix(path, "/snapshots") ||
@@ -15,6 +16,7 @@ func IsNeptuneGraphPath(path string) bool {
 		strings.HasPrefix(path, "/summary")
 }
 
+// extractNeptuneGraphOperation determines the NeptuneGraph operation name from the HTTP request path and method.
 func extractNeptuneGraphOperation(r *http.Request) string {
 	path := r.URL.Path
 	method := r.Method
@@ -179,6 +181,7 @@ func extractNeptuneGraphOperation(r *http.Request) string {
 	return ""
 }
 
+// extractNeptuneGraphPathParams extracts path parameters such as graphIdentifier and snapshotIdentifier from the URL.
 func extractNeptuneGraphPathParams(path string, params map[string]interface{}) {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 

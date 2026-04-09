@@ -19,7 +19,7 @@ import (
 var tracer trace.Tracer
 var tp *sdktrace.TracerProvider
 
-// Init initializes the OpenTelemetry tracing provider.
+// Init initialises the OpenTelemetry tracing provider.
 //
 // Parameters:
 //   - serviceName: The name of the service

@@ -12,6 +12,7 @@ import (
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
+// AdminHandler implements the S3 admin console gRPC-Web handler.
 type AdminHandler struct {
 	s3connect.UnimplementedS3ServiceHandler
 	storageManager *storage.RegionStorageManager
@@ -20,6 +21,7 @@ type AdminHandler struct {
 
 var _ s3connect.S3ServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new S3 admin handler with the given storage manager and account ID.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -36,6 +38,7 @@ func (h *AdminHandler) getBucketStore(req *connect.Request[pb.ListBucketsRequest
 	return s3store.NewBucketStore(regionStorage, h.accountId, region), nil
 }
 
+// ListBuckets retrieves all S3 buckets from the regional store.
 func (h *AdminHandler) ListBuckets(ctx context.Context, req *connect.Request[pb.ListBucketsRequest]) (*connect.Response[pb.ListBucketsOutput], error) {
 	bucketStore, err := h.getBucketStore(req)
 	if err != nil {

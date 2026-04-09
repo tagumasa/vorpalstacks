@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// StateMachine represents an AWS Step Functions state machine definition and metadata.
 type StateMachine struct {
 	StateMachineArn      string                `json:"stateMachineArn"`
 	Name                 string                `json:"name"`
@@ -38,6 +39,7 @@ type CloudWatchLogsLogGroup struct {
 	LogGroupArn string `json:"logGroupArn,omitempty"`
 }
 
+// Execution represents a single execution of a Step Functions state machine.
 type Execution struct {
 	ExecutionArn    string                  `json:"executionArn"`
 	StateMachineArn string                  `json:"stateMachineArn"`
@@ -54,16 +56,20 @@ type Execution struct {
 	Cause           string                  `json:"cause,omitempty"`
 }
 
+// ExecutionInputDetails describes the input included in an execution.
 type ExecutionInputDetails struct {
 	Included bool   `json:"included"`
 	Type     string `json:"type"`
 }
 
+// ExecutionOutputDetails describes the output produced by an execution.
 type ExecutionOutputDetails struct {
 	Included bool   `json:"included"`
 	Type     string `json:"type"`
 }
 
+// ExecutionHistoryEvent represents a single event in the execution history of a
+// state machine execution.
 type ExecutionHistoryEvent struct {
 	ExecutionArn                      string                             `json:"executionArn"`
 	EventId                           int64                              `json:"eventId"`
@@ -98,11 +104,14 @@ type ExecutionHistoryEvent struct {
 	EvaluationFailedEventDetails      *EvaluationFailedEventDetails      `json:"evaluationFailedEventDetails,omitempty"`
 }
 
+// ExecutionFailedEventDetails contains error and cause information for a failed execution.
 type ExecutionFailedEventDetails struct {
 	Error string `json:"error"`
 	Cause string `json:"cause"`
 }
 
+// EvaluationFailedEventDetails contains details about a failed Choice state
+// condition evaluation.
 type EvaluationFailedEventDetails struct {
 	State    string `json:"state"`
 	Cause    string `json:"cause"`
@@ -110,22 +119,26 @@ type EvaluationFailedEventDetails struct {
 	Location string `json:"location"`
 }
 
+// TaskStartedEventDetails contains details emitted when a Task state starts execution.
 type TaskStartedEventDetails struct {
 	Resource string `json:"resource"`
 	Input    string `json:"input"`
 }
 
+// TaskSucceededEventDetails contains the output produced by a successful Task state.
 type TaskSucceededEventDetails struct {
 	Resource string `json:"resource"`
 	Output   string `json:"output"`
 }
 
+// TaskFailedEventDetails contains error and cause information for a failed Task state.
 type TaskFailedEventDetails struct {
 	Resource string `json:"resource"`
 	Error    string `json:"error"`
 	Cause    string `json:"cause"`
 }
 
+// ExecutionStartedEventDetails contains details emitted when an execution starts.
 type ExecutionStartedEventDetails struct {
 	Input           string `json:"input"`
 	RoleArn         string `json:"roleArn"`
@@ -133,31 +146,40 @@ type ExecutionStartedEventDetails struct {
 	Name            string `json:"name"`
 }
 
+// ExecutionSucceededEventDetails contains the output produced by a successful execution.
 type ExecutionSucceededEventDetails struct {
 	Output string `json:"output"`
 }
 
+// ExecutionAbortedEventDetails contains error and cause information for an aborted
+// execution.
 type ExecutionAbortedEventDetails struct {
 	Error string `json:"error"`
 	Cause string `json:"cause"`
 }
 
+// ExecutionTimedOutEventDetails contains error and cause information for a timed-out
+// execution.
 type ExecutionTimedOutEventDetails struct {
 	Error string `json:"error"`
 	Cause string `json:"cause"`
 }
 
+// ChoiceStateEnteredEventDetails contains details emitted when a Choice state is
+// entered.
 type ChoiceStateEnteredEventDetails struct {
 	Input string `json:"input"`
 	Name  string `json:"name"`
 }
 
+// ChoiceStateExitedEventDetails contains details emitted when a Choice state is exited.
 type ChoiceStateExitedEventDetails struct {
 	Output    string `json:"output"`
 	Name      string `json:"name"`
 	NextState string `json:"nextState"`
 }
 
+// WaitStateEnteredEventDetails contains details emitted when a Wait state is entered.
 type WaitStateEnteredEventDetails struct {
 	Input     string `json:"input"`
 	Name      string `json:"name"`
@@ -165,22 +187,28 @@ type WaitStateEnteredEventDetails struct {
 	Timestamp string `json:"timestamp"`
 }
 
+// WaitStateExitedEventDetails contains details emitted when a Wait state is exited.
 type WaitStateExitedEventDetails struct {
 	Output string `json:"output"`
 	Name   string `json:"name"`
 }
 
+// ParallelStateEnteredEventDetails contains details emitted when a Parallel state
+// is entered.
 type ParallelStateEnteredEventDetails struct {
 	Input    string   `json:"input"`
 	Name     string   `json:"name"`
 	Branches []string `json:"branches"`
 }
 
+// ParallelStateExitedEventDetails contains details emitted when a Parallel state is
+// exited.
 type ParallelStateExitedEventDetails struct {
 	Output string `json:"output"`
 	Name   string `json:"name"`
 }
 
+// MapStateEnteredEventDetails contains details emitted when a Map state is entered.
 type MapStateEnteredEventDetails struct {
 	Input          string `json:"input"`
 	Name           string `json:"name"`
@@ -188,6 +216,7 @@ type MapStateEnteredEventDetails struct {
 	ItemsFailed    int64  `json:"itemsFailed"`
 }
 
+// MapStateExitedEventDetails contains details emitted when a Map state is exited.
 type MapStateExitedEventDetails struct {
 	Output         string `json:"output"`
 	Name           string `json:"name"`
@@ -195,16 +224,19 @@ type MapStateExitedEventDetails struct {
 	ItemsFailed    int64  `json:"itemsFailed,omitempty"`
 }
 
+// PassStateEnteredEventDetails contains details emitted when a Pass state is entered.
 type PassStateEnteredEventDetails struct {
 	Input string `json:"input"`
 	Name  string `json:"name"`
 }
 
+// PassStateExitedEventDetails contains details emitted when a Pass state is exited.
 type PassStateExitedEventDetails struct {
 	Output string `json:"output"`
 	Name   string `json:"name"`
 }
 
+// FailStateEnteredEventDetails contains details emitted when a Fail state is entered.
 type FailStateEnteredEventDetails struct {
 	Input string `json:"input"`
 	Name  string `json:"name"`
@@ -212,17 +244,22 @@ type FailStateEnteredEventDetails struct {
 	Cause string `json:"cause"`
 }
 
+// SucceedStateEnteredEventDetails contains details emitted when a Succeed state is
+// entered.
 type SucceedStateEnteredEventDetails struct {
 	Input string `json:"input"`
 	Name  string `json:"name"`
 }
 
+// Activity represents an AWS Step Functions activity used by Task states.
 type Activity struct {
 	ActivityArn  string    `json:"activityArn"`
 	Name         string    `json:"name"`
 	CreationDate time.Time `json:"creationDate"`
 }
 
+// StateMachineDefinition represents the Amazon States Language definition of a state
+// machine.
 type StateMachineDefinition struct {
 	StartAt        string                 `json:"StartAt"`
 	States         map[string]interface{} `json:"States"`
@@ -231,6 +268,7 @@ type StateMachineDefinition struct {
 	QueryLanguage  string                 `json:"QueryLanguage,omitempty"`
 }
 
+// State defines the common interface for all state machine state types.
 type State interface {
 	GetType() string
 	GetNext() string
@@ -252,6 +290,8 @@ func getOutputPathFromInputOutput(io *InputOutput) string {
 	return io.Path
 }
 
+// PassState represents a Pass state that simply passes its input to its output,
+// optionally transforming it.
 type PassState struct {
 	Name           string                 `json:"-"`
 	Type           string                 `json:"Type"`
@@ -270,14 +310,29 @@ type PassState struct {
 	JSONataOutput  interface{}            `json:"-"`
 }
 
-func (s *PassState) GetType() string                    { return s.Type }
-func (s *PassState) GetNext() string                    { return s.Next }
-func (s *PassState) GetEnd() bool                       { return s.End }
-func (s *PassState) GetInputPath() string               { return getInputPathFromInputOutput(s.Input) }
-func (s *PassState) GetOutputPath() string              { return getOutputPathFromInputOutput(s.Output) }
-func (s *PassState) GetResultSelector() *ResultSelector { return s.ResultSelector }
-func (s *PassState) GetQueryLanguage() string           { return s.QueryLanguage }
+// GetType returns the state type identifier (e.g. "Pass").
+func (s *PassState) GetType() string { return s.Type }
 
+// GetNext returns the name of the next state to transition to.
+func (s *PassState) GetNext() string { return s.Next }
+
+// GetEnd reports whether this state is a terminal state.
+func (s *PassState) GetEnd() bool { return s.End }
+
+// GetInputPath returns the input path filter applied to the state input.
+func (s *PassState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+
+// GetOutputPath returns the output path filter applied to the state output.
+func (s *PassState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+
+// GetResultSelector returns the result selector applied to the state output.
+func (s *PassState) GetResultSelector() *ResultSelector { return s.ResultSelector }
+
+// GetQueryLanguage returns the query language used by this state.
+func (s *PassState) GetQueryLanguage() string { return s.QueryLanguage }
+
+// TaskState represents a Task state that executes a unit of work, such as calling an
+// activity or a Lambda function.
 type TaskState struct {
 	Name             string                 `json:"-"`
 	Type             string                 `json:"Type"`
@@ -301,14 +356,28 @@ type TaskState struct {
 	JSONataOutput    interface{}            `json:"-"`
 }
 
-func (s *TaskState) GetType() string                    { return s.Type }
-func (s *TaskState) GetNext() string                    { return s.Next }
-func (s *TaskState) GetEnd() bool                       { return s.End }
-func (s *TaskState) GetInputPath() string               { return getInputPathFromInputOutput(s.Input) }
-func (s *TaskState) GetOutputPath() string              { return getOutputPathFromInputOutput(s.Output) }
-func (s *TaskState) GetResultSelector() *ResultSelector { return s.ResultSelector }
-func (s *TaskState) GetQueryLanguage() string           { return s.QueryLanguage }
+// GetType returns the state type identifier (e.g. "Task").
+func (s *TaskState) GetType() string { return s.Type }
 
+// GetNext returns the name of the next state to transition to.
+func (s *TaskState) GetNext() string { return s.Next }
+
+// GetEnd reports whether this state is a terminal state.
+func (s *TaskState) GetEnd() bool { return s.End }
+
+// GetInputPath returns the input path filter applied to the state input.
+func (s *TaskState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+
+// GetOutputPath returns the output path filter applied to the state output.
+func (s *TaskState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+
+// GetResultSelector returns the result selector applied to the state output.
+func (s *TaskState) GetResultSelector() *ResultSelector { return s.ResultSelector }
+
+// GetQueryLanguage returns the query language used by this state.
+func (s *TaskState) GetQueryLanguage() string { return s.QueryLanguage }
+
+// GetTimeoutSeconds returns the timeout in seconds for the task execution.
 func (s *TaskState) GetTimeoutSeconds() int32 {
 	if s.TimeoutSeconds == nil {
 		return 0
@@ -325,6 +394,7 @@ func (s *TaskState) GetTimeoutSeconds() int32 {
 	return 0
 }
 
+// GetHeartbeatSeconds returns the heartbeat interval in seconds for the task.
 func (s *TaskState) GetHeartbeatSeconds() int32 {
 	if s.HeartbeatSeconds == nil {
 		return 0
@@ -341,6 +411,7 @@ func (s *TaskState) GetHeartbeatSeconds() int32 {
 	return 0
 }
 
+// ChoiceState represents a Choice state that adds branching logic to a state machine.
 type ChoiceState struct {
 	Name          string        `json:"-"`
 	Type          string        `json:"Type"`
@@ -352,13 +423,26 @@ type ChoiceState struct {
 	QueryLanguage string        `json:"QueryLanguage,omitempty"`
 }
 
-func (s *ChoiceState) GetType() string          { return s.Type }
-func (s *ChoiceState) GetNext() string          { return "" }
-func (s *ChoiceState) GetEnd() bool             { return false }
-func (s *ChoiceState) GetInputPath() string     { return getInputPathFromInputOutput(s.Input) }
-func (s *ChoiceState) GetOutputPath() string    { return getOutputPathFromInputOutput(s.Output) }
+// GetType returns the state type identifier (e.g. "Choice").
+func (s *ChoiceState) GetType() string { return s.Type }
+
+// GetNext always returns empty for Choice states; transitions are determined by rules.
+func (s *ChoiceState) GetNext() string { return "" }
+
+// GetEnd always returns false for Choice states.
+func (s *ChoiceState) GetEnd() bool { return false }
+
+// GetInputPath returns the input path filter applied to the state input.
+func (s *ChoiceState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+
+// GetOutputPath returns the output path filter applied to the state output.
+func (s *ChoiceState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+
+// GetQueryLanguage returns the query language used by this state.
 func (s *ChoiceState) GetQueryLanguage() string { return s.QueryLanguage }
 
+// WaitState represents a Wait state that delays the state machine from continuing for
+// a specified time.
 type WaitState struct {
 	Name          string                 `json:"-"`
 	Type          string                 `json:"Type"`
@@ -375,13 +459,25 @@ type WaitState struct {
 	Assign        map[string]interface{} `json:"Assign,omitempty"`
 }
 
-func (s *WaitState) GetType() string          { return s.Type }
-func (s *WaitState) GetNext() string          { return s.Next }
-func (s *WaitState) GetEnd() bool             { return s.End }
-func (s *WaitState) GetInputPath() string     { return getInputPathFromInputOutput(s.Input) }
-func (s *WaitState) GetOutputPath() string    { return getOutputPathFromInputOutput(s.Output) }
+// GetType returns the state type identifier (e.g. "Wait").
+func (s *WaitState) GetType() string { return s.Type }
+
+// GetNext returns the name of the next state to transition to after waiting.
+func (s *WaitState) GetNext() string { return s.Next }
+
+// GetEnd reports whether this state is a terminal state.
+func (s *WaitState) GetEnd() bool { return s.End }
+
+// GetInputPath returns the input path filter applied to the state input.
+func (s *WaitState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+
+// GetOutputPath returns the output path filter applied to the state output.
+func (s *WaitState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+
+// GetQueryLanguage returns the query language used by this state.
 func (s *WaitState) GetQueryLanguage() string { return s.QueryLanguage }
 
+// GetSeconds returns the number of seconds to wait before transitioning.
 func (s *WaitState) GetSeconds() int32 {
 	if s.Seconds == nil {
 		return 0
@@ -398,6 +494,8 @@ func (s *WaitState) GetSeconds() int32 {
 	return 0
 }
 
+// ParallelState represents a Parallel state that executes multiple branches
+// concurrently.
 type ParallelState struct {
 	Name          string                    `json:"-"`
 	Type          string                    `json:"Type"`
@@ -416,13 +514,26 @@ type ParallelState struct {
 	JSONataOutput interface{}               `json:"-"`
 }
 
-func (s *ParallelState) GetType() string          { return s.Type }
-func (s *ParallelState) GetNext() string          { return s.Next }
-func (s *ParallelState) GetEnd() bool             { return s.End }
-func (s *ParallelState) GetInputPath() string     { return getInputPathFromInputOutput(s.Input) }
-func (s *ParallelState) GetOutputPath() string    { return getOutputPathFromInputOutput(s.Output) }
+// GetType returns the state type identifier (e.g. "Parallel").
+func (s *ParallelState) GetType() string { return s.Type }
+
+// GetNext returns the name of the next state to transition to after all branches complete.
+func (s *ParallelState) GetNext() string { return s.Next }
+
+// GetEnd reports whether this state is a terminal state.
+func (s *ParallelState) GetEnd() bool { return s.End }
+
+// GetInputPath returns the input path filter applied to the state input.
+func (s *ParallelState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+
+// GetOutputPath returns the output path filter applied to the state output.
+func (s *ParallelState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+
+// GetQueryLanguage returns the query language used by this state.
 func (s *ParallelState) GetQueryLanguage() string { return s.QueryLanguage }
 
+// MapState represents a Map state that processes a collection of items by applying a
+// sub-state machine to each.
 type MapState struct {
 	Name           string                  `json:"-"`
 	Type           string                  `json:"Type"`
@@ -445,13 +556,26 @@ type MapState struct {
 	JSONataOutput  interface{}             `json:"-"`
 }
 
-func (s *MapState) GetType() string          { return s.Type }
-func (s *MapState) GetNext() string          { return s.Next }
-func (s *MapState) GetEnd() bool             { return s.End }
-func (s *MapState) GetInputPath() string     { return getInputPathFromInputOutput(s.Input) }
-func (s *MapState) GetOutputPath() string    { return getOutputPathFromInputOutput(s.Output) }
+// GetType returns the state type identifier (e.g. "Map").
+func (s *MapState) GetType() string { return s.Type }
+
+// GetNext returns the name of the next state to transition to after map processing completes.
+func (s *MapState) GetNext() string { return s.Next }
+
+// GetEnd reports whether this state is a terminal state.
+func (s *MapState) GetEnd() bool { return s.End }
+
+// GetInputPath returns the input path filter applied to the state input.
+func (s *MapState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+
+// GetOutputPath returns the output path filter applied to the state output.
+func (s *MapState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+
+// GetQueryLanguage returns the query language used by this state.
 func (s *MapState) GetQueryLanguage() string { return s.QueryLanguage }
 
+// GetIterator returns the sub-state machine definition used to process each item,
+// preferring the Iterator field and falling back to ItemProcessor.
 func (s *MapState) GetIterator() *StateMachineDefinition {
 	if s.Iterator != nil {
 		return s.Iterator
@@ -459,6 +583,7 @@ func (s *MapState) GetIterator() *StateMachineDefinition {
 	return s.ItemProcessor
 }
 
+// FailState represents a Fail state that stops the execution and marks it as failed.
 type FailState struct {
 	Name          string      `json:"-"`
 	Type          string      `json:"Type"`
@@ -468,11 +593,19 @@ type FailState struct {
 	QueryLanguage string      `json:"QueryLanguage,omitempty"`
 }
 
-func (s *FailState) GetType() string          { return s.Type }
-func (s *FailState) GetNext() string          { return "" }
-func (s *FailState) GetEnd() bool             { return true }
+// GetType returns the state type identifier (e.g. "Fail").
+func (s *FailState) GetType() string { return s.Type }
+
+// GetNext always returns empty for Fail states as they are terminal.
+func (s *FailState) GetNext() string { return "" }
+
+// GetEnd always returns true for Fail states.
+func (s *FailState) GetEnd() bool { return true }
+
+// GetQueryLanguage returns the query language used by this state.
 func (s *FailState) GetQueryLanguage() string { return s.QueryLanguage }
 
+// GetCause returns the failure cause as a string.
 func (s *FailState) GetCause() string {
 	if s.Cause == nil {
 		return ""
@@ -485,6 +618,7 @@ func (s *FailState) GetCause() string {
 	}
 }
 
+// SucceedState represents a Succeed state that stops the execution successfully.
 type SucceedState struct {
 	Name          string          `json:"-"`
 	Type          string          `json:"Type"`
@@ -496,13 +630,25 @@ type SucceedState struct {
 	JSONataOutput interface{}     `json:"-"`
 }
 
-func (s *SucceedState) GetType() string          { return s.Type }
-func (s *SucceedState) GetNext() string          { return "" }
-func (s *SucceedState) GetEnd() bool             { return true }
-func (s *SucceedState) GetInputPath() string     { return getInputPathFromInputOutput(s.Input) }
-func (s *SucceedState) GetOutputPath() string    { return getOutputPathFromInputOutput(s.Output) }
+// GetType returns the state type identifier (e.g. "Succeed").
+func (s *SucceedState) GetType() string { return s.Type }
+
+// GetNext always returns empty for Succeed states as they are terminal.
+func (s *SucceedState) GetNext() string { return "" }
+
+// GetEnd always returns true for Succeed states.
+func (s *SucceedState) GetEnd() bool { return true }
+
+// GetInputPath returns the input path filter applied to the state input.
+func (s *SucceedState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+
+// GetOutputPath returns the output path filter applied to the state output.
+func (s *SucceedState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+
+// GetQueryLanguage returns the query language used by this state.
 func (s *SucceedState) GetQueryLanguage() string { return s.QueryLanguage }
 
+// RetryPolicy defines the retry behaviour for a Task state when errors occur.
 type RetryPolicy struct {
 	ErrorEquals     []string `json:"ErrorEquals"`
 	IntervalSeconds int32    `json:"IntervalSeconds,omitempty"`
@@ -510,6 +656,7 @@ type RetryPolicy struct {
 	BackoffRate     float64  `json:"BackoffRate,omitempty"`
 }
 
+// CatchPolicy defines fallback behaviour for a Task state when an error occurs.
 type CatchPolicy struct {
 	ErrorEquals []string               `json:"ErrorEquals"`
 	ResultPath  string                 `json:"ResultPath,omitempty"`
@@ -518,6 +665,8 @@ type CatchPolicy struct {
 	Output      interface{}            `json:"Output,omitempty"`
 }
 
+// ChoiceRule defines a condition used in a Choice state to determine the next state
+// transition.
 type ChoiceRule struct {
 	Variable             string                 `json:"Variable,omitempty"`
 	Next                 string                 `json:"Next,omitempty"`
@@ -539,6 +688,8 @@ type ChoiceRule struct {
 	Assign               map[string]interface{} `json:"Assign,omitempty"`
 }
 
+// UnmarshalJSON deserialises a ChoiceRule from JSON, supporting both shorthand
+// (single-value) and longhand (variable-keyed map) operator formats.
 func (r *ChoiceRule) UnmarshalJSON(data []byte) error {
 	type Alias ChoiceRule
 	aux := &struct {
@@ -650,6 +801,8 @@ func convertToMapBool(v interface{}, variable string) map[string]bool {
 	}
 }
 
+// InputOutput represents input and output configuration for a state, supporting
+// JSONPath, Parameters, and payload template values.
 type InputOutput struct {
 	Value                interface{} `json:"-"`
 	Path                 string      `json:"Path,omitempty"`
@@ -660,6 +813,8 @@ type InputOutput struct {
 	ItemsPath            string      `json:"ItemsPath,omitempty"`
 }
 
+// UnmarshalJSON deserialises an InputOutput from JSON, accepting either a raw string
+// (payload template) or a structured object.
 func (io *InputOutput) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
@@ -670,45 +825,56 @@ func (io *InputOutput) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, (*Alias)(io))
 }
 
+// ResultSelector specifies a JSONPath filter applied to the output of a state before
+// it is passed to the next state.
 type ResultSelector struct {
 	Fields map[string]interface{} `json:"-"`
 }
 
+// UnmarshalJSON deserialises a ResultSelector from JSON into its Fields map.
 func (rs *ResultSelector) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &rs.Fields)
 }
 
+// MarshalJSON serialises a ResultSelector's Fields map to JSON.
 func (rs *ResultSelector) MarshalJSON() ([]byte, error) {
 	return json.Marshal(rs.Fields)
 }
 
+// Parameters represents a map of parameter values passed to a state's resource.
 type Parameters struct {
 	Values map[string]interface{} `json:"-"`
 }
 
+// UnmarshalJSON deserialises Parameters from JSON into its Values map.
 func (p *Parameters) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &p.Values)
 }
 
+// MarshalJSON serialises Parameters' Values map to JSON.
 func (p *Parameters) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.Values)
 }
 
+// StateMachineListResult holds a paginated list of state machines.
 type StateMachineListResult struct {
 	StateMachines []*StateMachine
 	NextToken     string
 }
 
+// ExecutionListResult holds a paginated list of state machine executions.
 type ExecutionListResult struct {
 	Executions []*Execution
 	NextToken  string
 }
 
+// ActivityListResult holds a paginated list of activities.
 type ActivityListResult struct {
 	Activities []*Activity
 	NextToken  string
 }
 
+// ActivityTask represents a single activity task dispatched to a worker.
 type ActivityTask struct {
 	TaskToken    string    `json:"taskToken"`
 	ActivityArn  string    `json:"activityArn"`
@@ -723,12 +889,16 @@ type ActivityTask struct {
 	WorkerName   string    `json:"workerName,omitempty"`
 }
 
+// ActivityTaskResult contains the outcome of an activity task, including output or
+// error.
 type ActivityTaskResult struct {
 	TaskToken string
 	Output    string
 	Error     error
 }
 
+// ActivityTaskScheduledEventDetails contains details emitted when an activity task is
+// scheduled.
 type ActivityTaskScheduledEventDetails struct {
 	Resource         string `json:"resource"`
 	Input            string `json:"input"`
@@ -736,24 +906,33 @@ type ActivityTaskScheduledEventDetails struct {
 	HeartbeatSeconds int32  `json:"heartbeatInSeconds,omitempty"`
 }
 
+// ActivityTaskStartedEventDetails contains details emitted when an activity task is
+// started by a worker.
 type ActivityTaskStartedEventDetails struct {
 	WorkerName string `json:"workerName"`
 }
 
+// ActivityTaskSucceededEventDetails contains the output of a successfully completed
+// activity task.
 type ActivityTaskSucceededEventDetails struct {
 	Output string `json:"output"`
 }
 
+// ActivityTaskFailedEventDetails contains error and cause information for a failed
+// activity task.
 type ActivityTaskFailedEventDetails struct {
 	Error string `json:"error"`
 	Cause string `json:"cause"`
 }
 
+// ActivityTaskTimedOutEventDetails contains error and cause information for a timed-out
+// activity task.
 type ActivityTaskTimedOutEventDetails struct {
 	Error string `json:"error"`
 	Cause string `json:"cause"`
 }
 
+// StateMachineVersion represents a published version of a state machine definition.
 type StateMachineVersion struct {
 	StateMachineVersionArn string    `json:"stateMachineVersionArn"`
 	StateMachineArn        string    `json:"stateMachineArn"`
@@ -764,11 +943,15 @@ type StateMachineVersion struct {
 	RevisionId             string    `json:"revisionId,omitempty"`
 }
 
+// RoutingConfiguration maps a state machine version ARN to a traffic weight for use
+// with aliases.
 type RoutingConfiguration struct {
 	StateMachineVersionArn string `json:"stateMachineVersionArn"`
 	Weight                 int32  `json:"weight"`
 }
 
+// StateMachineAlias represents an alias that routes invocations to one or more
+// versions of a state machine.
 type StateMachineAlias struct {
 	StateMachineAliasArn string                 `json:"stateMachineAliasArn"`
 	StateMachineArn      string                 `json:"stateMachineArn,omitempty"`
@@ -779,11 +962,13 @@ type StateMachineAlias struct {
 	UpdateDate           time.Time              `json:"updateDate,omitempty"`
 }
 
+// StateMachineVersionListResult holds a paginated list of state machine versions.
 type StateMachineVersionListResult struct {
 	Versions  []*StateMachineVersion
 	NextToken string
 }
 
+// StateMachineAliasListResult holds a paginated list of state machine aliases.
 type StateMachineAliasListResult struct {
 	Aliases   []*StateMachineAlias
 	NextToken string

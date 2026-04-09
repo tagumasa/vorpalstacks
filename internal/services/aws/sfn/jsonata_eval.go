@@ -18,6 +18,9 @@ import (
 	gnata "github.com/recolabs/gnata"
 )
 
+// awsCustomFuncs registers AWS-specific custom functions for JSONata evaluation.
+// These provide additional functionality beyond the standard JSONata library:
+// $partition, $range, $hash, $random, $uuid, and $parse.
 var awsCustomFuncs = map[string]gnata.CustomFunc{
 	"partition": awsPartitionFunc,
 	"range":     awsRangeFunc,
@@ -27,20 +30,24 @@ var awsCustomFuncs = map[string]gnata.CustomFunc{
 	"parse":     awsParseFunc,
 }
 
+// awsCustomEnv is the pre-built JSONata custom environment containing AWS custom functions.
 var awsCustomEnv any
 
 func init() {
 	awsCustomEnv = gnata.NewCustomEnv(awsCustomFuncs)
 }
 
+// IsExpression reports whether a string is a JSONata inline expression (wrapped in {% ... %}).
 func IsExpression(s string) bool {
 	return strings.HasPrefix(s, "{%") && strings.HasSuffix(s, "%}")
 }
 
+// UnwrapExpression strips the {% and %} delimiters from a JSONata inline expression.
 func UnwrapExpression(s string) string {
 	return strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(s, "%}"), "{%"))
 }
 
+// EvaluateJSONata compiles and evaluates a JSONata expression against the given data.
 func EvaluateJSONata(ctx context.Context, expression string, data interface{}, vars map[string]interface{}) (interface{}, error) {
 	expr, err := gnata.Compile(expression)
 	if err != nil {
@@ -61,6 +68,8 @@ func evaluateCompiled(ctx context.Context, expr *gnata.Expression, data interfac
 	return normalized, nil
 }
 
+// ResolveTemplate recursively resolves JSONata inline expressions within strings,
+// maps, and arrays against the given data.
 func ResolveTemplate(ctx context.Context, value interface{}, data interface{}, vars map[string]interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
@@ -94,6 +103,8 @@ func ResolveTemplate(ctx context.Context, value interface{}, data interface{}, v
 	}
 }
 
+// BuildStatesVar constructs the $states context object used in JSONata state path expressions.
+// Contains input, result, optional errorOutput, and optional context object.
 func BuildStatesVar(input, result, errorOutput, contextObj interface{}) map[string]interface{} {
 	states := map[string]interface{}{
 		"input":  input,
@@ -108,11 +119,14 @@ func BuildStatesVar(input, result, errorOutput, contextObj interface{}) map[stri
 	return map[string]interface{}{"states": states}
 }
 
+// IsJSONataExpressionValue reports whether a value is a JSONata inline expression string.
 func IsJSONataExpressionValue(v interface{}) bool {
 	s, ok := v.(string)
 	return ok && IsExpression(s)
 }
 
+// EvaluateExpressionValue evaluates a value; if it is a JSONata expression string,
+// it is compiled and evaluated against the given data.
 func EvaluateExpressionValue(ctx context.Context, v interface{}, data interface{}, vars map[string]interface{}) (interface{}, error) {
 	s, ok := v.(string)
 	if !ok {
@@ -124,6 +138,7 @@ func EvaluateExpressionValue(ctx context.Context, v interface{}, data interface{
 	return s, nil
 }
 
+// NormalizeResult normalises a JSONata result value using the gnata normaliser.
 func NormalizeResult(v interface{}) interface{} {
 	return gnata.NormalizeValue(v)
 }

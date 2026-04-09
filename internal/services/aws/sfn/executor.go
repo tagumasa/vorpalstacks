@@ -238,6 +238,9 @@ func (ctx *ExecutionContext) nextEventId() int64 {
 	return atomic.AddInt64(ctx.EventId, 1)
 }
 
+// GetEffectiveQueryLanguage returns the query language for a state, checking
+// the state-level override first, then the machine-level default, and
+// falling back to "JSONPath".
 func GetEffectiveQueryLanguage(state sfnstore.State, defaultLang string) string {
 	if ql := state.GetQueryLanguage(); ql != "" {
 		return ql
@@ -248,6 +251,8 @@ func GetEffectiveQueryLanguage(state sfnstore.State, defaultLang string) string 
 	return "JSONPath"
 }
 
+// IsJSONataState reports whether a state uses JSONata as its query language,
+// checking the state-level override and machine-level default.
 func IsJSONataState(state sfnstore.State, defaultLang string) bool {
 	return GetEffectiveQueryLanguage(state, defaultLang) == "JSONata"
 }

@@ -17,6 +17,7 @@ import (
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 )
 
+// AdminHandler provides gRPC-based admin console handlers for NeptuneGraph resources.
 type AdminHandler struct {
 	neptunegraphconnect.UnimplementedNeptuneGraphServiceHandler
 	service   *NeptuneGraphService
@@ -25,6 +26,7 @@ type AdminHandler struct {
 
 var _ neptunegraphconnect.NeptuneGraphServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates an AdminHandler backed by the given service and account identifier.
 func NewAdminHandler(svc *NeptuneGraphService, accountId string) *AdminHandler {
 	return &AdminHandler{service: svc, accountId: accountId}
 }
@@ -38,34 +40,42 @@ func (h *AdminHandler) getStore(header http.Header) (*ngstore.NeptuneGraphStore,
 	return store, nil
 }
 
+// ExecuteQuery handles the admin console ExecuteQuery request. Not implemented via admin console.
 func (h *AdminHandler) ExecuteQuery(ctx context.Context, req *connect.Request[pb.ExecuteQueryInput]) (*connect.Response[pb.ExecuteQueryOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// CancelQuery handles the admin console CancelQuery request with a no-op response.
 func (h *AdminHandler) CancelQuery(ctx context.Context, req *connect.Request[pb.CancelQueryInput]) (*connect.Response[pbcommon.Empty], error) {
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
+// GetQuery handles the admin console GetQuery request. Not implemented via admin console.
 func (h *AdminHandler) GetQuery(ctx context.Context, req *connect.Request[pb.GetQueryInput]) (*connect.Response[pb.GetQueryOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// ListQueries handles the admin console ListQueries request. Not implemented via admin console.
 func (h *AdminHandler) ListQueries(ctx context.Context, req *connect.Request[pb.ListQueriesInput]) (*connect.Response[pb.ListQueriesOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// GetGraphSummary handles the admin console GetGraphSummary request. Not implemented via admin console.
 func (h *AdminHandler) GetGraphSummary(ctx context.Context, req *connect.Request[pb.GetGraphSummaryInput]) (*connect.Response[pb.GetGraphSummaryOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// CreateGraph handles the admin console CreateGraph request. Not implemented via admin console.
 func (h *AdminHandler) CreateGraph(ctx context.Context, req *connect.Request[pb.CreateGraphInput]) (*connect.Response[pb.CreateGraphOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// DeleteGraph handles the admin console DeleteGraph request. Not implemented via admin console.
 func (h *AdminHandler) DeleteGraph(ctx context.Context, req *connect.Request[pb.DeleteGraphInput]) (*connect.Response[pb.DeleteGraphOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// GetGraph retrieves a graph by its identifier via the admin console.
 func (h *AdminHandler) GetGraph(ctx context.Context, req *connect.Request[pb.GetGraphInput]) (*connect.Response[pb.GetGraphOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -78,6 +88,7 @@ func (h *AdminHandler) GetGraph(ctx context.Context, req *connect.Request[pb.Get
 	return connect.NewResponse(graphToPb(graph)), nil
 }
 
+// ListGraphs returns all graph summaries via the admin console.
 func (h *AdminHandler) ListGraphs(ctx context.Context, req *connect.Request[pb.ListGraphsInput]) (*connect.Response[pb.ListGraphsOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -94,34 +105,42 @@ func (h *AdminHandler) ListGraphs(ctx context.Context, req *connect.Request[pb.L
 	return connect.NewResponse(&pb.ListGraphsOutput{Graphs: pbGraphs}), nil
 }
 
+// UpdateGraph handles the admin console UpdateGraph request. Not implemented via admin console.
 func (h *AdminHandler) UpdateGraph(ctx context.Context, req *connect.Request[pb.UpdateGraphInput]) (*connect.Response[pb.UpdateGraphOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// StartGraph handles the admin console StartGraph request. Not implemented via admin console.
 func (h *AdminHandler) StartGraph(ctx context.Context, req *connect.Request[pb.StartGraphInput]) (*connect.Response[pb.StartGraphOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// StopGraph handles the admin console StopGraph request. Not implemented via admin console.
 func (h *AdminHandler) StopGraph(ctx context.Context, req *connect.Request[pb.StopGraphInput]) (*connect.Response[pb.StopGraphOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// ResetGraph handles the admin console ResetGraph request. Not implemented via admin console.
 func (h *AdminHandler) ResetGraph(ctx context.Context, req *connect.Request[pb.ResetGraphInput]) (*connect.Response[pb.ResetGraphOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// RestoreGraphFromSnapshot handles the admin console RestoreGraphFromSnapshot request. Not implemented via admin console.
 func (h *AdminHandler) RestoreGraphFromSnapshot(ctx context.Context, req *connect.Request[pb.RestoreGraphFromSnapshotInput]) (*connect.Response[pb.RestoreGraphFromSnapshotOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// CreateGraphSnapshot handles the admin console CreateGraphSnapshot request. Not implemented via admin console.
 func (h *AdminHandler) CreateGraphSnapshot(ctx context.Context, req *connect.Request[pb.CreateGraphSnapshotInput]) (*connect.Response[pb.CreateGraphSnapshotOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// DeleteGraphSnapshot handles the admin console DeleteGraphSnapshot request. Not implemented via admin console.
 func (h *AdminHandler) DeleteGraphSnapshot(ctx context.Context, req *connect.Request[pb.DeleteGraphSnapshotInput]) (*connect.Response[pb.DeleteGraphSnapshotOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// GetGraphSnapshot retrieves a graph snapshot by its identifier via the admin console.
 func (h *AdminHandler) GetGraphSnapshot(ctx context.Context, req *connect.Request[pb.GetGraphSnapshotInput]) (*connect.Response[pb.GetGraphSnapshotOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -134,6 +153,7 @@ func (h *AdminHandler) GetGraphSnapshot(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(snapshotToPb(snapshot)), nil
 }
 
+// ListGraphSnapshots returns graph snapshots for the specified graph via the admin console.
 func (h *AdminHandler) ListGraphSnapshots(ctx context.Context, req *connect.Request[pb.ListGraphSnapshotsInput]) (*connect.Response[pb.ListGraphSnapshotsOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -150,14 +170,17 @@ func (h *AdminHandler) ListGraphSnapshots(ctx context.Context, req *connect.Requ
 	return connect.NewResponse(&pb.ListGraphSnapshotsOutput{Graphsnapshots: pbSnapshots}), nil
 }
 
+// CreatePrivateGraphEndpoint handles the admin console CreatePrivateGraphEndpoint request. Not implemented via admin console.
 func (h *AdminHandler) CreatePrivateGraphEndpoint(ctx context.Context, req *connect.Request[pb.CreatePrivateGraphEndpointInput]) (*connect.Response[pb.CreatePrivateGraphEndpointOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// DeletePrivateGraphEndpoint handles the admin console DeletePrivateGraphEndpoint request. Not implemented via admin console.
 func (h *AdminHandler) DeletePrivateGraphEndpoint(ctx context.Context, req *connect.Request[pb.DeletePrivateGraphEndpointInput]) (*connect.Response[pb.DeletePrivateGraphEndpointOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// GetPrivateGraphEndpoint retrieves a private graph endpoint via the admin console.
 func (h *AdminHandler) GetPrivateGraphEndpoint(ctx context.Context, req *connect.Request[pb.GetPrivateGraphEndpointInput]) (*connect.Response[pb.GetPrivateGraphEndpointOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -170,6 +193,7 @@ func (h *AdminHandler) GetPrivateGraphEndpoint(ctx context.Context, req *connect
 	return connect.NewResponse(endpointToPb(ep)), nil
 }
 
+// ListPrivateGraphEndpoints returns all private endpoints for a graph via the admin console.
 func (h *AdminHandler) ListPrivateGraphEndpoints(ctx context.Context, req *connect.Request[pb.ListPrivateGraphEndpointsInput]) (*connect.Response[pb.ListPrivateGraphEndpointsOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -186,6 +210,7 @@ func (h *AdminHandler) ListPrivateGraphEndpoints(ctx context.Context, req *conne
 	return connect.NewResponse(&pb.ListPrivateGraphEndpointsOutput{Privategraphendpoints: pbEndpoints}), nil
 }
 
+// ListTagsForResource returns tags for a resource via the admin console.
 func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Request[pb.ListTagsForResourceInput]) (*connect.Response[pb.ListTagsForResourceOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -198,6 +223,7 @@ func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Req
 	return connect.NewResponse(&pb.ListTagsForResourceOutput{Tags: tags}), nil
 }
 
+// TagResource adds tags to a resource via the admin console.
 func (h *AdminHandler) TagResource(ctx context.Context, req *connect.Request[pb.TagResourceInput]) (*connect.Response[pb.TagResourceOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -211,6 +237,7 @@ func (h *AdminHandler) TagResource(ctx context.Context, req *connect.Request[pb.
 	return connect.NewResponse(&pb.TagResourceOutput{}), nil
 }
 
+// UntagResource removes tag keys from a resource via the admin console.
 func (h *AdminHandler) UntagResource(ctx context.Context, req *connect.Request[pb.UntagResourceInput]) (*connect.Response[pb.UntagResourceOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -224,10 +251,12 @@ func (h *AdminHandler) UntagResource(ctx context.Context, req *connect.Request[p
 	return connect.NewResponse(&pb.UntagResourceOutput{}), nil
 }
 
+// CreateGraphUsingImportTask handles the admin console CreateGraphUsingImportTask request. Not implemented via admin console.
 func (h *AdminHandler) CreateGraphUsingImportTask(ctx context.Context, req *connect.Request[pb.CreateGraphUsingImportTaskInput]) (*connect.Response[pb.CreateGraphUsingImportTaskOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// GetImportTask retrieves an import task by its identifier via the admin console.
 func (h *AdminHandler) GetImportTask(ctx context.Context, req *connect.Request[pb.GetImportTaskInput]) (*connect.Response[pb.GetImportTaskOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -240,6 +269,7 @@ func (h *AdminHandler) GetImportTask(ctx context.Context, req *connect.Request[p
 	return connect.NewResponse(importTaskToPb(task)), nil
 }
 
+// ListImportTasks returns all import task summaries via the admin console.
 func (h *AdminHandler) ListImportTasks(ctx context.Context, req *connect.Request[pb.ListImportTasksInput]) (*connect.Response[pb.ListImportTasksOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -256,18 +286,22 @@ func (h *AdminHandler) ListImportTasks(ctx context.Context, req *connect.Request
 	return connect.NewResponse(&pb.ListImportTasksOutput{Tasks: pbTasks}), nil
 }
 
+// CancelImportTask handles the admin console CancelImportTask request. Not implemented via admin console.
 func (h *AdminHandler) CancelImportTask(ctx context.Context, req *connect.Request[pb.CancelImportTaskInput]) (*connect.Response[pb.CancelImportTaskOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// StartImportTask handles the admin console StartImportTask request. Not implemented via admin console.
 func (h *AdminHandler) StartImportTask(ctx context.Context, req *connect.Request[pb.StartImportTaskInput]) (*connect.Response[pb.StartImportTaskOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// StartExportTask handles the admin console StartExportTask request. Not implemented via admin console.
 func (h *AdminHandler) StartExportTask(ctx context.Context, req *connect.Request[pb.StartExportTaskInput]) (*connect.Response[pb.StartExportTaskOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
+// GetExportTask retrieves an export task by its identifier via the admin console.
 func (h *AdminHandler) GetExportTask(ctx context.Context, req *connect.Request[pb.GetExportTaskInput]) (*connect.Response[pb.GetExportTaskOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -280,6 +314,7 @@ func (h *AdminHandler) GetExportTask(ctx context.Context, req *connect.Request[p
 	return connect.NewResponse(exportTaskToPb(task)), nil
 }
 
+// ListExportTasks returns export task summaries via the admin console, optionally filtered by graph.
 func (h *AdminHandler) ListExportTasks(ctx context.Context, req *connect.Request[pb.ListExportTasksInput]) (*connect.Response[pb.ListExportTasksOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -296,6 +331,7 @@ func (h *AdminHandler) ListExportTasks(ctx context.Context, req *connect.Request
 	return connect.NewResponse(&pb.ListExportTasksOutput{Tasks: pbTasks}), nil
 }
 
+// CancelExportTask handles the admin console CancelExportTask request. Not implemented via admin console.
 func (h *AdminHandler) CancelExportTask(ctx context.Context, req *connect.Request[pb.CancelExportTaskInput]) (*connect.Response[pb.CancelExportTaskOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }

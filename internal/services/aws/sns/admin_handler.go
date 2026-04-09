@@ -32,6 +32,7 @@ func (h *AdminHandler) getSNSStoreByRegion(region string) (snsstore.SNSStoreInte
 	return h.service.getSNSStoreByRegion(region)
 }
 
+// ListTopics retrieves all SNS topics from the regional store with pagination.
 func (h *AdminHandler) ListTopics(ctx context.Context, req *connect.Request[pb.ListTopicsInput]) (*connect.Response[pb.ListTopicsResponse], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getSNSStoreByRegion(region)

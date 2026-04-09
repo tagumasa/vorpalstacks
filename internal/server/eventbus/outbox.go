@@ -5,15 +5,21 @@ import (
 	"time"
 )
 
+// OutboxStatus represents the lifecycle state of an outbox entry.
 type OutboxStatus int
 
 const (
+	// OutboxPending indicates the entry has been written but not yet dispatched.
 	OutboxPending OutboxStatus = iota
+	// OutboxProcessing indicates the entry is currently being dispatched.
 	OutboxProcessing
+	// OutboxDelivered indicates all handlers have processed the entry successfully.
 	OutboxDelivered
+	// OutboxFailed indicates the entry exhausted all retry attempts without success.
 	OutboxFailed
 )
 
+// String returns a human-readable label for the outbox status.
 func (s OutboxStatus) String() string {
 	switch s {
 	case OutboxPending:
@@ -29,6 +35,8 @@ func (s OutboxStatus) String() string {
 	}
 }
 
+// OutboxEntry represents a single event persisted in the outbox store,
+// tracking its serialisation, status, retry state, and per-handler results.
 type OutboxEntry struct {
 	EventID         string            `json:"event_id"`
 	EventType       string            `json:"event_type"`
@@ -43,6 +51,8 @@ type OutboxEntry struct {
 	HandlerResults  map[string]string `json:"handler_results,omitempty"`
 }
 
+// OutboxStore defines the persistence contract for the event outbox,
+// enabling durable async delivery with at-least-once semantics.
 type OutboxStore interface {
 	Write(ctx context.Context, entry *OutboxEntry) error
 	Read(ctx context.Context, eventID string) (*OutboxEntry, error)

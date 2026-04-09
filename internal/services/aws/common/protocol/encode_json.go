@@ -40,6 +40,7 @@ func sanitizeFloats(v interface{}) interface{} {
 	}
 }
 
+// EncodeJSONResponse serialises the response as JSON and writes it to the HTTP response writer with status 200.
 func EncodeJSONResponse(w http.ResponseWriter, response interface{}) error {
 	sanitized := sanitizeFloats(response)
 	converted := ConvertTimestampsToSeconds(sanitized)
@@ -60,6 +61,7 @@ func EncodeJSONResponse(w http.ResponseWriter, response interface{}) error {
 	return err
 }
 
+// EncodeJSONResponseWithStatus serialises the response as JSON and writes it with the specified HTTP status code.
 func EncodeJSONResponseWithStatus(w http.ResponseWriter, statusCode int, response interface{}) error {
 	sanitized := sanitizeFloats(response)
 	converted := ConvertTimestampsToSeconds(sanitized)
@@ -89,6 +91,7 @@ var jsonTimestampKeys = map[string]bool{
 	"LastUpdated":                        true,
 }
 
+// ConvertTimestampsToSeconds converts millisecond-precision timestamp values to seconds for JSON serialisation.
 func ConvertTimestampsToSeconds(v interface{}) interface{} {
 	switch val := v.(type) {
 	case map[string]interface{}:

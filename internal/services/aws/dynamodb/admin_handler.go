@@ -12,6 +12,7 @@ import (
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
+// AdminHandler implements the DynamoDB admin console gRPC-Web handler.
 type AdminHandler struct {
 	dynamodbconnect.UnimplementedDynamoDBServiceHandler
 	storageManager *storage.RegionStorageManager
@@ -20,6 +21,7 @@ type AdminHandler struct {
 
 var _ dynamodbconnect.DynamoDBServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new DynamoDB admin handler with the given storage manager and account ID.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -36,6 +38,7 @@ func (h *AdminHandler) getTableStore(req *connect.Request[pb.ListTablesInput]) (
 	return dynamodbstore.NewTableStore(regionStorage, h.accountId, region), nil
 }
 
+// ListTables retrieves all DynamoDB tables from the regional store with pagination.
 func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.ListTablesInput]) (*connect.Response[pb.ListTablesOutput], error) {
 	tableStore, err := h.getTableStore(req)
 	if err != nil {

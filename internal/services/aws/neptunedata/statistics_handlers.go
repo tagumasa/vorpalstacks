@@ -49,6 +49,7 @@ func (s *NeptuneDataService) GetPropertygraphStatistics(ctx context.Context, req
 	return result, nil
 }
 
+// ManagePropertygraphStatistics enables, disables, or refreshes auto-computed property graph statistics.
 func (s *NeptuneDataService) ManagePropertygraphStatistics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
 	_ = reqCtx
@@ -89,6 +90,7 @@ func (s *NeptuneDataService) ManagePropertygraphStatistics(ctx context.Context, 
 	}
 }
 
+// DeletePropertygraphStatistics clears all property graph statistics for the current region.
 func (s *NeptuneDataService) DeletePropertygraphStatistics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
 	_ = reqCtx
@@ -171,6 +173,7 @@ func (s *NeptuneDataService) GetPropertygraphSummary(ctx context.Context, reqCtx
 	}, nil
 }
 
+// GetPropertygraphStream returns an empty property graph change stream (stub implementation).
 func (s *NeptuneDataService) GetPropertygraphStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
 	_ = reqCtx

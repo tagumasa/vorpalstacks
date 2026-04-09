@@ -10,6 +10,7 @@ import (
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
+// CreateUserPoolDomain creates a new domain for a user pool.
 func (s *CognitoService) CreateUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	domain := getParam(req, "Domain")
 	userPoolID := getUserPoolID(req)
@@ -41,6 +42,7 @@ func (s *CognitoService) CreateUserPoolDomain(ctx context.Context, reqCtx *reque
 	}, nil
 }
 
+// DescribeUserPoolDomain returns information about a user pool domain.
 func (s *CognitoService) DescribeUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	domain := getParam(req, "Domain")
 	if domain == "" {
@@ -67,6 +69,7 @@ func (s *CognitoService) DescribeUserPoolDomain(ctx context.Context, reqCtx *req
 	}, nil
 }
 
+// DeleteUserPoolDomain deletes a domain from a user pool.
 func (s *CognitoService) DeleteUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	domain := getParam(req, "Domain")
 	if domain == "" {
@@ -117,6 +120,7 @@ func (s *CognitoService) UpdateUserPoolDomain(ctx context.Context, reqCtx *reque
 	}, nil
 }
 
+// CreateResourceServer creates a new resource server for a user pool.
 func (s *CognitoService) CreateResourceServer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
 	identifier := getParam(req, "Identifier")
@@ -236,6 +240,7 @@ func (s *CognitoService) DeleteResourceServer(ctx context.Context, reqCtx *reque
 	return response.EmptyResponse(), nil
 }
 
+// ListResourceServers lists all resource servers in a user pool.
 func (s *CognitoService) ListResourceServers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
 	if userPoolID == "" {
@@ -262,6 +267,7 @@ func (s *CognitoService) ListResourceServers(ctx context.Context, reqCtx *reques
 	}, nil
 }
 
+// CreateIdentityProvider adds a new identity provider to a user pool.
 func (s *CognitoService) CreateIdentityProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
 	providerName := getParam(req, "ProviderName")
@@ -388,6 +394,7 @@ func (s *CognitoService) DeleteIdentityProvider(ctx context.Context, reqCtx *req
 	return response.EmptyResponse(), nil
 }
 
+// ListIdentityProviders lists all identity providers in a user pool.
 func (s *CognitoService) ListIdentityProviders(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
 	if userPoolID == "" {
@@ -414,6 +421,7 @@ func (s *CognitoService) ListIdentityProviders(ctx context.Context, reqCtx *requ
 	}, nil
 }
 
+// GetCSVHeader returns the CSV headers for importing users into a user pool.
 func (s *CognitoService) GetCSVHeader(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
 	if userPoolID == "" {
@@ -440,6 +448,7 @@ func (s *CognitoService) GetCSVHeader(ctx context.Context, reqCtx *request.Reque
 	}, nil
 }
 
+// DescribeRiskConfiguration describes the risk configuration for a user pool.
 func (s *CognitoService) DescribeRiskConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
 	if userPoolID == "" {

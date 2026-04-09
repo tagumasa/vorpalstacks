@@ -19,6 +19,7 @@ import (
 	"math"
 	"os"
 	"sort"
+	"strconv"
 	"sync"
 )
 
@@ -747,6 +748,9 @@ func toFloat64(v interface{}) float64 {
 	case uint64:
 		return float64(f)
 	case string:
+		if val, err := strconv.ParseFloat(f, 64); err == nil {
+			return val
+		}
 		return 0
 	case bool:
 		if f {

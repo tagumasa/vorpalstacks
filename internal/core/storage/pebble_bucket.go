@@ -12,6 +12,7 @@ type PebbleBucket struct {
 	prefix []byte
 }
 
+// makeKey prepends the bucket prefix to the given key.
 func (b *PebbleBucket) makeKey(key []byte) []byte {
 	k := make([]byte, len(b.prefix)+len(key))
 	copy(k, b.prefix)
@@ -135,6 +136,7 @@ func (i *PebbleDBIterator) Close() {
 	i.lazy.Close()
 }
 
+// newPebbleDBIterator creates a new PebbleDBIterator over the given key range.
 func newPebbleDBIterator(db *pebbledb.DB, start, end []byte, prefixLen int) *PebbleDBIterator {
 	return &PebbleDBIterator{
 		lazy:      db.NewLazyIterator(start, end),
@@ -148,10 +150,12 @@ type TxnPebbleDBIterator struct {
 	prefixLen int
 }
 
+// Next advances the iterator to the next key-value pair.
 func (i *TxnPebbleDBIterator) Next() bool {
 	return i.lazy.Next()
 }
 
+// Key returns the key at the current iterator position with the bucket prefix stripped.
 func (i *TxnPebbleDBIterator) Key() []byte {
 	key := i.lazy.Key()
 	if key == nil {
@@ -165,18 +169,22 @@ func (i *TxnPebbleDBIterator) Key() []byte {
 	return key
 }
 
+// Value returns the value at the current iterator position.
 func (i *TxnPebbleDBIterator) Value() []byte {
 	return i.lazy.Value()
 }
 
+// Error returns any error encountered during iteration.
 func (i *TxnPebbleDBIterator) Error() error {
 	return i.lazy.Error()
 }
 
+// Close releases resources held by the transactional iterator.
 func (i *TxnPebbleDBIterator) Close() {
 	i.lazy.Close()
 }
 
+// newTxnPebbleDBIterator creates a new TxnPebbleDBIterator over the given transactional key range.
 func newTxnPebbleDBIterator(txn *pebbledb.Txn, start, end []byte, prefixLen int) *TxnPebbleDBIterator {
 	return &TxnPebbleDBIterator{
 		lazy:      txn.NewTxnLazyIterator(start, end),

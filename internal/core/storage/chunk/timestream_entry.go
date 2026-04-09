@@ -38,7 +38,7 @@ func (e *TimestreamEntry) Timestamp() int64 {
 	return e.Time.UnixNano()
 }
 
-// Message returns the entry's serialized data.
+// Message returns the entry's serialised data.
 func (e *TimestreamEntry) Message() []byte {
 	data, _ := json.Marshal(e)
 	return data

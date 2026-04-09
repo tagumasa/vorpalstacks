@@ -86,6 +86,7 @@ func EncodeRestXMLResponse(w http.ResponseWriter, operationName string, response
 	return nil
 }
 
+// EncodeRestXMLResponseWithNamespace writes the response as XML with the specified namespace, using REST-XML encoding.
 func EncodeRestXMLResponseWithNamespace(w http.ResponseWriter, operationName string, xmlNamespace string, response interface{}) error {
 	if response == nil {
 		w.Header().Set("Content-Type", "application/xml")

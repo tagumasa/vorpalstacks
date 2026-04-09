@@ -15,6 +15,8 @@ import (
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
+// FunctionURLServer handles incoming requests to Lambda function URLs,
+// invoking the target function and proxying the response.
 type FunctionURLServer struct {
 	storageManager *storage.RegionStorageManager
 	accountID      string
@@ -22,10 +24,12 @@ type FunctionURLServer struct {
 	lambdaInvoker  LambdaInvoker
 }
 
+// LambdaInvoker abstracts the ability to invoke a Lambda function for gateway use.
 type LambdaInvoker interface {
 	InvokeForGateway(ctx context.Context, functionName string, payload []byte) (int64, []byte, error)
 }
 
+// NewFunctionURLServer creates a new FunctionURLServer with the given storage, account, region, and invoker.
 func NewFunctionURLServer(storageManager *storage.RegionStorageManager, accountID, region string, invoker LambdaInvoker) *FunctionURLServer {
 	return &FunctionURLServer{
 		storageManager: storageManager,
@@ -35,6 +39,7 @@ func NewFunctionURLServer(storageManager *storage.RegionStorageManager, accountI
 	}
 }
 
+// HandleRequest routes an incoming request to the target Lambda function via its function URL configuration.
 func (s *FunctionURLServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	functionName := s.extractFunctionName(r.Host)
 	if functionName == "" {

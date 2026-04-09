@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// Graph represents a NeptuneGraph graph resource with its configuration and metadata.
 type Graph struct {
 	Id                        string              `json:"id"`
 	Name                      string              `json:"name"`
@@ -24,10 +25,12 @@ type Graph struct {
 	Region                    string              `json:"region,omitempty"`
 }
 
+// VectorSearchConfig holds the dimension for vector search configuration on a graph.
 type VectorSearchConfig struct {
 	Dimension int32 `json:"dimension"`
 }
 
+// GraphSnapshot represents a point-in-time snapshot of a NeptuneGraph graph.
 type GraphSnapshot struct {
 	Id                 string     `json:"id"`
 	Name               string     `json:"name"`
@@ -40,6 +43,7 @@ type GraphSnapshot struct {
 	Region             string     `json:"region,omitempty"`
 }
 
+// PrivateGraphEndpoint represents a VPC-private endpoint for accessing a NeptuneGraph graph.
 type PrivateGraphEndpoint struct {
 	GraphId       string   `json:"graphId"`
 	VpcId         string   `json:"vpcId"`
@@ -50,25 +54,30 @@ type PrivateGraphEndpoint struct {
 	Region        string   `json:"region,omitempty"`
 }
 
+// ExportFilter defines edge and vertex filters applied during a graph export task.
 type ExportFilter struct {
 	EdgeFilter   map[string]ExportFilterElement `json:"edgeFilter,omitempty"`
 	VertexFilter map[string]ExportFilterElement `json:"vertexFilter,omitempty"`
 }
 
+// ExportFilterElement defines property-level filter attributes for a single edge or vertex label.
 type ExportFilterElement struct {
 	Properties map[string]ExportFilterPropertyAttributes `json:"properties"`
 }
 
+// ExportFilterPropertyAttributes controls how individual properties are handled during export.
 type ExportFilterPropertyAttributes struct {
 	MultiValueHandling string  `json:"multiValueHandling,omitempty"`
 	OutputType         *string `json:"outputType,omitempty"`
 	SourcePropertyName *string `json:"sourcePropertyName,omitempty"`
 }
 
+// ImportOptions holds format-specific options for an import task.
 type ImportOptions struct {
 	Neptune *NeptuneImportOptions `json:"neptune,omitempty"`
 }
 
+// NeptuneImportOptions contains Neptune-specific import configuration such as S3 paths and label preservation.
 type NeptuneImportOptions struct {
 	S3ExportPath                string `json:"s3ExportPath"`
 	S3ExportKmsKeyId            string `json:"s3ExportKmsKeyId"`
@@ -76,6 +85,7 @@ type NeptuneImportOptions struct {
 	PreserveEdgeIds             *bool  `json:"preserveEdgeIds,omitempty"`
 }
 
+// GraphDataSummary contains structural statistics about a graph's nodes, edges, and properties.
 type GraphDataSummary struct {
 	NumNodes                *int64             `json:"numNodes,omitempty"`
 	NumEdges                *int64             `json:"numEdges,omitempty"`
@@ -93,17 +103,20 @@ type GraphDataSummary struct {
 	EdgeStructures          []EdgeStructure    `json:"edgeStructures,omitempty"`
 }
 
+// NodeStructure summarises the outgoing edge labels and properties for a node label group.
 type NodeStructure struct {
 	Count                      *int64   `json:"count,omitempty"`
 	DistinctOutgoingEdgeLabels []string `json:"distinctOutgoingEdgeLabels,omitempty"`
 	NodeProperties             []string `json:"nodeProperties,omitempty"`
 }
 
+// EdgeStructure summarises the properties associated with an edge label group.
 type EdgeStructure struct {
 	Count          *int64   `json:"count,omitempty"`
 	EdgeProperties []string `json:"edgeProperties,omitempty"`
 }
 
+// QueryRecord stores metadata for an executed or in-flight graph query.
 type QueryRecord struct {
 	Id          string    `json:"id"`
 	QueryString string    `json:"queryString"`
@@ -115,6 +128,7 @@ type QueryRecord struct {
 	Waited      int32     `json:"waited,omitempty"`
 }
 
+// ImportTask represents a NeptuneGraph bulk import task with its configuration and status.
 type ImportTask struct {
 	TaskId                    string              `json:"taskId"`
 	GraphId                   string              `json:"graphId,omitempty"`
@@ -140,6 +154,7 @@ type ImportTask struct {
 	StartTime                 *time.Time          `json:"startTime,omitempty"`
 }
 
+// ImportTaskDetails holds progress metrics and error information for an import task.
 type ImportTaskDetails struct {
 	ProgressPercentage   *int32     `json:"progressPercentage"`
 	StartTime            *time.Time `json:"startTime"`
@@ -151,6 +166,7 @@ type ImportTaskDetails struct {
 	Status               *string    `json:"status"`
 }
 
+// ExportTask represents a NeptuneGraph bulk export task with its configuration and status.
 type ExportTask struct {
 	TaskId            string             `json:"taskId"`
 	GraphId           string             `json:"graphId,omitempty"`
@@ -166,6 +182,7 @@ type ExportTask struct {
 	StartTime         *time.Time         `json:"startTime,omitempty"`
 }
 
+// ExportTaskDetails holds progress metrics for an export task.
 type ExportTaskDetails struct {
 	ProgressPercentage *int32     `json:"progressPercentage"`
 	StartTime          *time.Time `json:"startTime"`

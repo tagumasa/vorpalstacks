@@ -10,6 +10,8 @@ import (
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
+// WebsiteServer serves static website content from S3 buckets
+// configured with a website configuration.
 type WebsiteServer struct {
 	storageManager *storage.RegionStorageManager
 	blobStore      storage.BlobStore
@@ -17,6 +19,7 @@ type WebsiteServer struct {
 	region         string
 }
 
+// NewWebsiteServer creates a new WebsiteServer with the given storage, blob store, account, and region.
 func NewWebsiteServer(storageManager *storage.RegionStorageManager, blobStore storage.BlobStore, accountID, region string) *WebsiteServer {
 	return &WebsiteServer{
 		storageManager: storageManager,
@@ -26,6 +29,7 @@ func NewWebsiteServer(storageManager *storage.RegionStorageManager, blobStore st
 	}
 }
 
+// HandleRequest serves static website content from an S3 bucket with website configuration enabled.
 func (s *WebsiteServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	bucket := s.extractBucket(r.Host)
 	if bucket == "" {

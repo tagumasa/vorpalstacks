@@ -28,14 +28,17 @@ type graphqlResponse struct {
 	status  int
 }
 
+// GetStream returns the response body as an io.Reader for streaming.
 func (r *graphqlResponse) GetStream() io.Reader {
 	return bytes.NewReader(r.body)
 }
 
+// GetStreamHeaders returns the HTTP headers for the streamed response.
 func (r *graphqlResponse) GetStreamHeaders() http.Header {
 	return r.headers
 }
 
+// GetStreamStatusCode returns the HTTP status code for the streamed response.
 func (r *graphqlResponse) GetStreamStatusCode() int {
 	return r.status
 }

@@ -200,7 +200,7 @@ func (e *SSES3Encryptor) Decrypt(ciphertext []byte, sseMetadata *s3store.SSEObje
 	return &DecryptionResult{DecryptedData: plaintext}, nil
 }
 
-// LoadBucketKey loads a bucket key from serialized data.
+// LoadBucketKey loads a bucket key from serialised data.
 func (e *SSES3Encryptor) LoadBucketKey(bucket string, keyData []byte) error {
 	var meta sseS3KeyMetadata
 	if err := json.Unmarshal(keyData, &meta); err != nil {
@@ -210,7 +210,7 @@ func (e *SSES3Encryptor) LoadBucketKey(bucket string, keyData []byte) error {
 	return nil
 }
 
-// ExportBucketKey exports a bucket key to serialized data.
+// ExportBucketKey exports a bucket key to serialised data.
 func (e *SSES3Encryptor) ExportBucketKey(bucket string) ([]byte, error) {
 	val, ok := e.bucketKeys.Load(bucket)
 	if !ok {

@@ -88,6 +88,8 @@ func (s *HybridBlobStore) putUnlock(ctx context.Context, bucket, key string, rea
 
 	storageKey := s.storageKey(bucket, key)
 
+	s.cleanupAllTiers(storageKey, bucket, key)
+
 	if size < s.threshold {
 		if err := s.putSmallObject(storageKey, data, metadata); err != nil {
 			return nil, err
@@ -271,6 +273,12 @@ func (s *HybridBlobStore) deleteUnlock(bucket, key string) error {
 	}
 
 	return nil
+}
+
+func (s *HybridBlobStore) cleanupAllTiers(storageKey, bucket, key string) {
+	_ = s.storage.Bucket("blob_small").Delete([]byte(storageKey))
+	_ = s.storage.Bucket("blob_meta").Delete([]byte(storageKey))
+	_ = os.Remove(s.filePath(bucket, key))
 }
 
 // Exists checks if an object exists in the hybrid blob store.

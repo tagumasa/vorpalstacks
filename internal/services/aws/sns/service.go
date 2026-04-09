@@ -194,6 +194,7 @@ func parseSigningKeyFromPEM(pemData string) (*rsa.PrivateKey, error) {
 	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }
 
+// RegisterHandlers registers all SNS operation handlers with the request dispatcher.
 func (s *SNSService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	s.initSigningKey()
 	d.RegisterHandlerForService("sns", "CreateTopic", s.CreateTopic)
@@ -235,7 +236,7 @@ func (s *SNSService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("sns", "RemovePermission", s.RemovePermission)
 }
 
-// PublishToTopic publishes a message to an SNS topic.
+// PublishToTopic publishes a message to an SNS topic and delivers it to all subscriptions.
 func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topicArn, message string) error {
 	storage, err := s.storageManager.GetStorage(region)
 	if err != nil {

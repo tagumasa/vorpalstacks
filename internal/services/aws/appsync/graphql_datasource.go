@@ -403,14 +403,31 @@ type appsyncPublishEvent struct {
 	Payload     map[string]interface{} `json:"payload"`
 }
 
-func (e *appsyncPublishEvent) EventType() string                   { return "appsync:eventbridge-publish" }
-func (e *appsyncPublishEvent) EventID() string                     { return e.ID }
-func (e *appsyncPublishEvent) EventTimestamp() time.Time           { return e.Timestamp }
-func (e *appsyncPublishEvent) EventSource() string                 { return e.Source }
-func (e *appsyncPublishEvent) EventRegion() string                 { return e.Region }
-func (e *appsyncPublishEvent) EventAccountID() string              { return e.AccountID }
-func (e *appsyncPublishEvent) EventDepth() int                     { return 0 }
-func (e *appsyncPublishEvent) SetEventDepth(d int)                 {}
+// EventType returns the event type identifier for AppSync EventBridge publish events.
+func (e *appsyncPublishEvent) EventType() string { return "appsync:eventbridge-publish" }
+
+// EventID returns the unique identifier for this event.
+func (e *appsyncPublishEvent) EventID() string { return e.ID }
+
+// EventTimestamp returns the time at which this event was created.
+func (e *appsyncPublishEvent) EventTimestamp() time.Time { return e.Timestamp }
+
+// EventSource returns the source of this event (e.g. "aws.appsync").
+func (e *appsyncPublishEvent) EventSource() string { return e.Source }
+
+// EventRegion returns the AWS region associated with this event.
+func (e *appsyncPublishEvent) EventRegion() string { return e.Region }
+
+// EventAccountID returns the AWS account ID associated with this event.
+func (e *appsyncPublishEvent) EventAccountID() string { return e.AccountID }
+
+// EventDepth returns the propagation depth of this event within the bus pipeline.
+func (e *appsyncPublishEvent) EventDepth() int { return 0 }
+
+// SetEventDepth sets the propagation depth of this event within the bus pipeline.
+func (e *appsyncPublishEvent) SetEventDepth(d int) {}
+
+// EventCaller returns the caller context that produced this event.
 func (e *appsyncPublishEvent) EventCaller() eventbus.CallerContext { return eventbus.CallerContext{} }
 
 // --- DynamoDB conversion helpers ---

@@ -95,6 +95,7 @@ type PathTraversalError struct {
 	Path string
 }
 
+// Error returns a human-readable description of the path traversal error.
 func (e *PathTraversalError) Error() string {
 	return "path traversal: " + e.Path + " escapes " + e.Base
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Event defines the interface that all event bus events must implement.
 type Event interface {
 	EventType() string
 	EventID() string
@@ -20,6 +21,8 @@ type Event interface {
 	EventCaller() CallerContext
 }
 
+// CallerContext represents the IAM identity that originated the event,
+// including the invoking service principal and any assumed role.
 type CallerContext struct {
 	ServicePrincipal string `json:"service_principal"`
 	SourceARN        string `json:"source_arn"`
@@ -27,6 +30,8 @@ type CallerContext struct {
 	AccountID        string `json:"account_id"`
 }
 
+// EventBase provides a default implementation of the Event interface,
+// embedding common fields (ID, timestamp, source, region, account, depth, caller).
 type EventBase struct {
 	ID        string        `json:"id"`
 	Timestamp time.Time     `json:"timestamp"`
@@ -37,16 +42,38 @@ type EventBase struct {
 	Caller    CallerContext `json:"caller"`
 }
 
-func (e *EventBase) EventType() string          { return "" }
-func (e *EventBase) EventID() string            { return e.ID }
-func (e *EventBase) EventTimestamp() time.Time  { return e.Timestamp }
-func (e *EventBase) EventSource() string        { return e.Source }
-func (e *EventBase) EventRegion() string        { return e.Region }
-func (e *EventBase) EventAccountID() string     { return e.AccountID }
-func (e *EventBase) EventDepth() int            { return e.Depth }
-func (e *EventBase) SetEventDepth(d int)        { e.Depth = d }
+// EventType returns the event type identifier. Subtypes override this
+// to supply their specific type string (e.g. "service:invoke").
+func (e *EventBase) EventType() string { return "" }
+
+// EventID returns the unique identifier for this event.
+func (e *EventBase) EventID() string { return e.ID }
+
+// EventTimestamp returns the time at which the event was created.
+func (e *EventBase) EventTimestamp() time.Time { return e.Timestamp }
+
+// EventSource returns the service that published the event.
+func (e *EventBase) EventSource() string { return e.Source }
+
+// EventRegion returns the AWS region associated with the event.
+func (e *EventBase) EventRegion() string { return e.Region }
+
+// EventAccountID returns the AWS account ID associated with the event.
+func (e *EventBase) EventAccountID() string { return e.AccountID }
+
+// EventDepth returns the current dispatch depth, used to prevent
+// infinite event cycles.
+func (e *EventBase) EventDepth() int { return e.Depth }
+
+// SetEventDepth sets the dispatch depth for cycle prevention.
+func (e *EventBase) SetEventDepth(d int) { e.Depth = d }
+
+// EventCaller returns the IAM identity that originated the event.
 func (e *EventBase) EventCaller() CallerContext { return e.Caller }
 
+// ServiceInvokeRequest represents a synchronous service-to-service invocation
+// dispatched through the event bus, carrying a target ARN, payload, and
+// HTTP-style routing metadata.
 type ServiceInvokeRequest struct {
 	EventBase
 	TargetARN         string              `json:"target_arn"`
@@ -59,6 +86,7 @@ type ServiceInvokeRequest struct {
 	RequestContext    map[string]string   `json:"request_context,omitempty"`
 }
 
+// EventType returns "service:invoke" for this event type.
 func (e *ServiceInvokeRequest) EventType() string { return "service:invoke" }
 
 // SNSDeliveryEvent is published when an SNS message needs to be delivered
@@ -73,6 +101,7 @@ type SNSDeliveryEvent struct {
 	MessageGroupId string `json:"message_group_id,omitempty"`
 }
 
+// EventType returns "sns:deliver" for this event type.
 func (e *SNSDeliveryEvent) EventType() string { return "sns:deliver" }
 
 // EventBridgeDeliveryEvent is published when EventBridge needs to deliver
@@ -85,6 +114,7 @@ type EventBridgeDeliveryEvent struct {
 	Input     []byte `json:"input"`
 }
 
+// EventType returns "events:deliver" for this event type.
 func (e *EventBridgeDeliveryEvent) EventType() string { return "events:deliver" }
 
 // ScheduleFiredEvent is published when the Scheduler engine fires a schedule.
@@ -96,6 +126,7 @@ type ScheduleFiredEvent struct {
 	Input        string `json:"input"`
 }
 
+// EventType returns "scheduler:fired" for this event type.
 func (e *ScheduleFiredEvent) EventType() string { return "scheduler:fired" }
 
 // CloudWatchLogDeliveryEvent is published when CloudWatch Logs subscription
@@ -108,6 +139,7 @@ type CloudWatchLogDeliveryEvent struct {
 	Payload        []byte `json:"payload"`
 }
 
+// EventType returns "logs:deliver" for this event type.
 func (e *CloudWatchLogDeliveryEvent) EventType() string { return "logs:deliver" }
 
 // S3ObjectOp represents the type of S3 object operation that triggered an event.
@@ -136,6 +168,7 @@ type S3ObjectEvent struct {
 	Op        S3ObjectOp `json:"op"`
 }
 
+// EventType returns "s3:ObjectEvent" for this event type.
 func (e *S3ObjectEvent) EventType() string { return "s3:ObjectEvent" }
 
 // CloudWatchAlarmStateEvent is published when a CloudWatch alarm transitions
@@ -150,6 +183,7 @@ type CloudWatchAlarmStateEvent struct {
 	Reason        string `json:"reason"`
 }
 
+// EventType returns "cloudwatch:AlarmStateChange" for this event type.
 func (e *CloudWatchAlarmStateEvent) EventType() string { return "cloudwatch:AlarmStateChange" }
 
 // CognitoTriggerEvent is published synchronously during Cognito user pool
@@ -168,6 +202,7 @@ type CognitoTriggerEvent struct {
 	Payload       []byte `json:"payload"` // full AWS Cognito trigger payload JSON
 }
 
+// EventType returns "cognito:Trigger" for this event type.
 func (e *CognitoTriggerEvent) EventType() string { return "cognito:Trigger" }
 
 // SecretRotationEvent is published synchronously for each step of a Secrets
@@ -180,6 +215,7 @@ type SecretRotationEvent struct {
 	VersionId string `json:"version_id"`
 }
 
+// EventType returns "secretsmanager:Rotation" for this event type.
 func (e *SecretRotationEvent) EventType() string { return "secretsmanager:Rotation" }
 
 // DynamoDBRecordEvent is published when DynamoDB Streams records are available
@@ -202,6 +238,7 @@ type DynamoDBChangeRecord struct {
 	EventName      string                 `json:"event_name"`
 }
 
+// EventType returns "dynamodb:Record" for this event type.
 func (e *DynamoDBRecordEvent) EventType() string { return "dynamodb:Record" }
 
 // LogEntry carries a single CloudWatch Logs log event (timestamp + message).
@@ -226,6 +263,7 @@ type APIGatewayAccessLogEvent struct {
 	FormattedLog   string `json:"formatted_log"`
 }
 
+// EventType returns "apigateway:AccessLog" for this event type.
 func (e *APIGatewayAccessLogEvent) EventType() string { return "apigateway:AccessLog" }
 
 // CloudWatchLogsPutEvent is published when EventBridge, Scheduler, or Step
@@ -238,6 +276,7 @@ type CloudWatchLogsPutEvent struct {
 	LogEvents []LogEntry `json:"log_events"`
 }
 
+// EventType returns "logs:PutLogEvents" for this event type.
 func (e *CloudWatchLogsPutEvent) EventType() string { return "logs:PutLogEvents" }
 
 // LambdaLogWriteEvent is published by the Lambda service after a function
@@ -259,6 +298,7 @@ type LambdaLogWriteEvent struct {
 	LogEvents    []LogEntry `json:"log_events"`
 }
 
+// EventType returns "lambda:LogWrite" for this event type.
 func (e *LambdaLogWriteEvent) EventType() string { return "lambda:LogWrite" }
 
 // StepFunctionsStartExecutionEvent is published when EventBridge, Scheduler,
@@ -272,6 +312,7 @@ type StepFunctionsStartExecutionEvent struct {
 	Input           string `json:"input"`
 }
 
+// EventType returns "states:startExecution" for this event type.
 func (e *StepFunctionsStartExecutionEvent) EventType() string { return "states:startExecution" }
 
 // EventBridgePutEventsEvent is published when Scheduler or another service
@@ -283,6 +324,7 @@ type EventBridgePutEventsEvent struct {
 	Input        string `json:"input"`
 }
 
+// EventType returns "events:putEvents" for this event type.
 func (e *EventBridgePutEventsEvent) EventType() string { return "events:putEvents" }
 
 // HandlerResult is returned by event handlers. StatusCode and Payload carry the
@@ -293,23 +335,28 @@ type HandlerResult struct {
 	Error      error
 }
 
+// EventRegistry maintains a mapping of event type strings to zero-value
+// constructors, enabling deserialisation of events from persistent storage.
 type EventRegistry struct {
 	constructors map[string]func() Event
 	mu           sync.RWMutex
 }
 
+// NewEventRegistry creates an empty EventRegistry ready for use.
 func NewEventRegistry() *EventRegistry {
 	return &EventRegistry{
 		constructors: make(map[string]func() Event),
 	}
 }
 
+// Register associates an event type string with its zero-value constructor.
 func (r *EventRegistry) Register(eventType string, constructor func() Event) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.constructors[eventType] = constructor
 }
 
+// New creates a new zero-value instance of the named event type.
 func (r *EventRegistry) New(eventType string) (Event, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -320,6 +367,8 @@ func (r *EventRegistry) New(eventType string) (Event, error) {
 	return c(), nil
 }
 
+// Deserialize instantiates an event of the given type and unmarshals the
+// provided JSON bytes into it.
 func (r *EventRegistry) Deserialize(eventType string, data []byte) (Event, error) {
 	event, err := r.New(eventType)
 	if err != nil {
@@ -331,6 +380,8 @@ func (r *EventRegistry) Deserialize(eventType string, data []byte) (Event, error
 	return event, nil
 }
 
+// SerializeEvent marshals an event to JSON bytes for persistent storage
+// or outbox persistence.
 func SerializeEvent(event Event) ([]byte, error) {
 	data, err := json.Marshal(event)
 	if err != nil {
@@ -339,12 +390,16 @@ func SerializeEvent(event Event) ([]byte, error) {
 	return data, nil
 }
 
+// EventMarshaller provides a generic marshal/unmarshal pair for any Event
+// type, satisfying the outbox serialisation contract.
 type EventMarshaller[T Event] struct{}
 
+// MarshalEvent serialises the given event to JSON bytes.
 func (m *EventMarshaller[T]) MarshalEvent(ctx context.Context, event T) ([]byte, error) {
 	return SerializeEvent(event)
 }
 
+// UnmarshalEvent deserialises JSON bytes into a concrete event of type T.
 func (m *EventMarshaller[T]) UnmarshalEvent(ctx context.Context, data []byte) (T, error) {
 	var zero T
 	err := json.Unmarshal(data, &zero)

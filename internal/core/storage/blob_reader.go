@@ -19,10 +19,13 @@ func newMemoryReader(data []byte, meta *BlobMetadata) *memoryReader {
 	}
 }
 
+// Size returns the total size of the in-memory blob in bytes.
 func (r *memoryReader) Size() int64 { return r.Reader.Size() }
 
+// ETag returns the entity tag for the in-memory blob.
 func (r *memoryReader) ETag() string { return r.meta.ETag }
 
+// Close releases resources held by the memory reader (no-op for in-memory blobs).
 func (r *memoryReader) Close() error { return nil }
 
 type fileReader struct {
@@ -35,8 +38,10 @@ func newFileReader(rc io.ReadCloser, size int64, meta *BlobMetadata) *fileReader
 	return &fileReader{ReadCloser: rc, size: size, meta: meta}
 }
 
+// Size returns the total size of the file-backed blob in bytes.
 func (r *fileReader) Size() int64 { return r.size }
 
+// ETag returns the entity tag for the file-backed blob.
 func (r *fileReader) ETag() string { return r.meta.ETag }
 
 type sectionFileReader struct {
@@ -53,14 +58,18 @@ func newSectionFileReader(f *os.File, offset, length int64, meta *BlobMetadata) 
 	}
 }
 
+// Size returns the size of the section being read.
 func (r *sectionFileReader) Size() int64 { return r.SectionReader.Size() }
 
+// ETag returns the entity tag for the section's parent blob.
 func (r *sectionFileReader) ETag() string { return r.meta.ETag }
 
+// Close releases the underlying file handle for the section reader.
 func (r *sectionFileReader) Close() error {
 	return r.file.Close()
 }
 
+// openAndStat opens a file and retrieves its FileInfo, returning a descriptive error if the file does not exist.
 func openAndStat(path, notFoundMsg string) (*os.File, os.FileInfo, error) {
 	// #nosec G304
 	f, err := os.Open(path)
@@ -79,6 +88,7 @@ func openAndStat(path, notFoundMsg string) (*os.File, os.FileInfo, error) {
 	return f, info, nil
 }
 
+// clampRange constrains a byte range [offset, offset+length) to lie within [0, maxSize].
 func clampRange(offset, length, maxSize int64) (start, end int64) {
 	start = offset
 	if start < 0 {

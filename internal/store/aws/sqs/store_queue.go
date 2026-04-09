@@ -113,7 +113,9 @@ func (s *SQSStore) DeleteQueue(queueURL string) error {
 		return ErrQueueNotFound
 	}
 
-	_ = s.messagesStore.DeleteByPrefix(messagePrefix(queueURL))
+	if err := s.messagesStore.DeleteByPrefix(messagePrefix(queueURL)); err != nil {
+		return fmt.Errorf("failed to delete messages for queue %s: %w", queueURL, err)
+	}
 
 	s.TagStore.Delete(queueURL)
 

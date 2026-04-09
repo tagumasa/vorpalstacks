@@ -155,6 +155,7 @@ func NewStoreProvider(
 	}
 }
 
+// SetNeptuneStore sets the Neptune store on the provider.
 func (s *StoreProviderImpl) SetNeptuneStore(store neptunestore.NeptuneStoreInterface) {
 	s.neptuneStore = store
 }
@@ -268,6 +269,7 @@ func (s *StoreProviderImpl) GetSNSStore() snsstore.SNSStoreInterface { return s.
 // GetSQSStore returns the SQS store.
 func (s *StoreProviderImpl) GetSQSStore() sqsstore.SQSStoreInterface { return s.sqsStore }
 
+// GetNeptuneStore returns the Neptune store.
 func (s *StoreProviderImpl) GetNeptuneStore() neptunestore.NeptuneStoreInterface {
 	return s.neptuneStore
 }

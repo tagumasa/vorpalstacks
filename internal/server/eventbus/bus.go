@@ -13,74 +13,105 @@ import (
 )
 
 var (
+	// ErrBusShutdown is returned when publishing to a bus that has been shut down.
 	ErrBusShutdown = fmt.Errorf("eventbus: bus is shut down")
-	ErrNilEvent    = fmt.Errorf("eventbus: event must not be nil")
-	ErrEmptyType   = fmt.Errorf("eventbus: event type must not be empty")
-	ErrMaxDepth    = fmt.Errorf("eventbus: max event depth exceeded")
-	ErrNoOutbox    = fmt.Errorf("eventbus: outbox store is nil")
-	ErrUnknownSub  = fmt.Errorf("eventbus: subscription not found")
+	// ErrNilEvent is returned when a nil event is published.
+	ErrNilEvent = fmt.Errorf("eventbus: event must not be nil")
+	// ErrEmptyType is returned when an event with an empty type string is published.
+	ErrEmptyType = fmt.Errorf("eventbus: event type must not be empty")
+	// ErrMaxDepth is returned when an event exceeds the maximum allowed dispatch depth.
+	ErrMaxDepth = fmt.Errorf("eventbus: max event depth exceeded")
+	// ErrNoOutbox is returned when an outbox operation is attempted without a configured store.
+	ErrNoOutbox = fmt.Errorf("eventbus: outbox store is nil")
+	// ErrUnknownSub is returned when unsubscribing a non-existent subscription ID.
+	ErrUnknownSub = fmt.Errorf("eventbus: subscription not found")
 )
 
 const (
+	// DefaultGlobalConcurrency is the default limit on concurrent handler executions.
 	DefaultGlobalConcurrency = 256
-	DefaultMaxRetries        = 3
-	DefaultMaxEventDepth     = 3
-	AsyncWorkerCount         = 8
-	CleanupInterval          = 10 * time.Minute
-	DeliveredRetention       = 1 * time.Hour
-	FailedRetention          = 24 * time.Hour
+	// DefaultMaxRetries is the default number of retry attempts for failed outbox entries.
+	DefaultMaxRetries = 3
+	// DefaultMaxEventDepth is the default maximum dispatch depth before events are dropped.
+	DefaultMaxEventDepth = 3
+	// AsyncWorkerCount is the number of goroutines processing the outbox async channel.
+	AsyncWorkerCount = 8
+	// CleanupInterval is the period between outbox retention cleanups.
+	CleanupInterval = 10 * time.Minute
+	// DeliveredRetention is how long successfully delivered outbox entries are kept.
+	DeliveredRetention = 1 * time.Hour
+	// FailedRetention is how long failed outbox entries are kept before purging.
+	FailedRetention = 24 * time.Hour
 )
 
+// BusOption is a functional option used to configure an EventBus.
 type BusOption func(*EventBus)
 
+// WithOutbox configures the EventBus to use the given OutboxStore for
+// persistent delivery tracking.
 func WithOutbox(outbox OutboxStore) BusOption {
 	return func(b *EventBus) {
 		b.outbox = outbox
 	}
 }
 
+// WithEventRegistry configures the EventBus to use the given EventRegistry
+// for event deserialisation.
 func WithEventRegistry(registry *EventRegistry) BusOption {
 	return func(b *EventBus) {
 		b.registry = registry
 	}
 }
 
+// WithRoleResolver configures the EventBus to use the given RoleResolver
+// for IAM role validation at subscription time.
 func WithRoleResolver(resolver RoleResolver) BusOption {
 	return func(b *EventBus) {
 		b.roleResolver = resolver
 	}
 }
 
+// WithPolicyEvaluator configures the EventBus to use the given policy
+// evaluator for resource-based policy checks at dispatch time.
 func WithPolicyEvaluator(eval BusPolicyEvaluator) BusOption {
 	return func(b *EventBus) {
 		b.policyEval = eval
 	}
 }
 
+// WithGlobalConcurrency sets the maximum number of concurrent handler
+// executions across all subscriptions.
 func WithGlobalConcurrency(n int) BusOption {
 	return func(b *EventBus) {
 		b.globalSem = make(chan struct{}, n)
 	}
 }
 
+// WithBusMaxRetries sets the default maximum retry attempts for outbox entries.
 func WithBusMaxRetries(n int32) BusOption {
 	return func(b *EventBus) {
 		b.maxRetries = n
 	}
 }
 
+// WithMaxEventDepth sets the maximum dispatch depth before events are
+// silently dropped to prevent infinite cycles.
 func WithMaxEventDepth(n int) BusOption {
 	return func(b *EventBus) {
 		b.maxEventDepth = n
 	}
 }
 
+// WithLogger configures the EventBus to use the given structured logger.
 func WithLogger(logger logs.Logger) BusOption {
 	return func(b *EventBus) {
 		b.logger = logger
 	}
 }
 
+// Bus defines the contract for the internal service event bus, supporting
+// both synchronous and asynchronous publish, subscription management, and
+// cross-service authorisation.
 type Bus interface {
 	Publish(ctx context.Context, event Event) error
 	PublishSync(ctx context.Context, event Event) (HandlerResult, error)
@@ -94,6 +125,8 @@ type Bus interface {
 	Shutdown(ctx context.Context) error
 }
 
+// EventBus is the central implementation of the Bus interface, managing
+// subscriptions, outbox persistence, async workers, and invoker dispatch.
 type EventBus struct {
 	mu            sync.RWMutex
 	subscriptions map[string][]*subscriptionEntry
@@ -116,6 +149,8 @@ type EventBus struct {
 	asyncCh       chan *OutboxEntry
 }
 
+// NewEventBus creates a new EventBus with sensible defaults, applying all
+// provided functional options.
 func NewEventBus(opts ...BusOption) *EventBus {
 	b := &EventBus{
 		subscriptions: make(map[string][]*subscriptionEntry),
@@ -133,6 +168,7 @@ func NewEventBus(opts ...BusOption) *EventBus {
 	return b
 }
 
+// Subscribe registers a handler for events, returning a subscription ID.
 func (b *EventBus) Subscribe(handler func(ctx context.Context, event Event) HandlerResult, opts ...SubscribeOption) (string, error) {
 	if handler == nil {
 		return "", fmt.Errorf("eventbus: handler must not be nil")
@@ -149,6 +185,8 @@ func (b *EventBus) Subscribe(handler func(ctx context.Context, event Event) Hand
 	return b.subscribeInternal(cfg, handler)
 }
 
+// SubscribeTyped registers a type-safe handler that receives only events of
+// type T, automatically filtering mismatched events.
 func SubscribeTyped[T Event](bus *EventBus, handler func(ctx context.Context, event T) HandlerResult, opts ...SubscribeOption) (string, error) {
 	if handler == nil {
 		return "", fmt.Errorf("eventbus: handler must not be nil")
@@ -247,6 +285,7 @@ func (b *EventBus) subscribeInternal(cfg *subscribeConfig, handler func(ctx cont
 	return subID, nil
 }
 
+// Unsubscribe removes a previously registered subscription by its ID.
 func (b *EventBus) Unsubscribe(subscriptionID string) error {
 	if subscriptionID == "" {
 		return ErrUnknownSub
@@ -270,6 +309,8 @@ func (b *EventBus) Unsubscribe(subscriptionID string) error {
 	return ErrUnknownSub
 }
 
+// PublishSync publishes an event and dispatches it synchronously to all
+// matching subscribers, returning the first handler result or error.
 func (b *EventBus) PublishSync(ctx context.Context, event Event) (HandlerResult, error) {
 	if !b.started.Load() {
 		return HandlerResult{}, ErrBusShutdown
@@ -323,6 +364,8 @@ func (b *EventBus) PublishSync(ctx context.Context, event Event) (HandlerResult,
 	return HandlerResult{}, nil
 }
 
+// Publish enqueues an event for asynchronous delivery, persisting it to the
+// outbox store if one is configured.
 func (b *EventBus) Publish(ctx context.Context, event Event) error {
 	if !b.started.Load() {
 		return ErrBusShutdown
@@ -472,12 +515,14 @@ func (b *EventBus) EvaluateTargetPolicy(ctx context.Context, targetARN, serviceT
 	return allowed, nil
 }
 
+// RegisterInvoker registers a ServiceInvoker for the given service type.
 func (b *EventBus) RegisterInvoker(invoker ServiceInvoker) {
 	b.invokersMu.Lock()
 	defer b.invokersMu.Unlock()
 	b.invokers[invoker.ServiceType()] = invoker
 }
 
+// GetInvoker retrieves the ServiceInvoker registered for the given service type.
 func (b *EventBus) GetInvoker(serviceType string) (ServiceInvoker, bool) {
 	b.invokersMu.RLock()
 	defer b.invokersMu.RUnlock()
@@ -485,10 +530,12 @@ func (b *EventBus) GetInvoker(serviceType string) (ServiceInvoker, bool) {
 	return inv, ok
 }
 
+// RoleResolver returns the configured RoleResolver, or nil if none was set.
 func (b *EventBus) RoleResolver() RoleResolver {
 	return b.roleResolver
 }
 
+// Start recovers any pending outbox entries and launches async workers.
 func (b *EventBus) Start(ctx context.Context) error {
 	if b.outbox != nil {
 		if err := b.recover(ctx); err != nil {
@@ -510,6 +557,8 @@ func (b *EventBus) Start(ctx context.Context) error {
 	return nil
 }
 
+// Shutdown stops the bus, waits for all in-flight handlers to complete,
+// and closes the outbox store.
 func (b *EventBus) Shutdown(ctx context.Context) error {
 	b.started.Store(false)
 	close(b.stopCh)

@@ -20,6 +20,7 @@ import (
 )
 
 // jsonUnmarshal is an alias for json.Unmarshal to avoid shadowing in template methods.
+// jsonUnmarshal is an alias for json.Unmarshal to avoid shadowing in template methods.
 var jsonUnmarshal = json.Unmarshal
 
 // graphqlExecutionResult is the standard GraphQL response envelope.
@@ -35,6 +36,7 @@ type graphqlError struct {
 	Path      interface{} `json:"path,omitempty"`
 }
 
+// gqlErrLoc represents a source location within a GraphQL error.
 type gqlErrLoc struct {
 	Line   int `json:"line"`
 	Column int `json:"column"`
@@ -66,6 +68,7 @@ type busPublisherAdapter struct {
 	bus eventbus.Bus
 }
 
+// Publish dispatches an event through the underlying event bus if it satisfies the Event interface.
 func (a *busPublisherAdapter) Publish(ctx context.Context, event interface{}) error {
 	if e, ok := event.(eventbus.Event); ok {
 		return a.bus.Publish(ctx, e)

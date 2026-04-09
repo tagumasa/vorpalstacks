@@ -44,6 +44,7 @@ var (
 	tagKeyRegex       = regexp.MustCompile(tagKeyPattern)
 )
 
+// NeptuneGraphService implements NeptuneGraph API operations, managing graphs, snapshots, endpoints, and tasks.
 type NeptuneGraphService struct {
 	accountID      string
 	region         string
@@ -61,6 +62,7 @@ type engineEntry struct {
 	wg      sync.WaitGroup
 }
 
+// NewNeptuneGraphService creates a new NeptuneGraphService for the given account, region, and data path.
 func NewNeptuneGraphService(accountID, region, dataPath string) *NeptuneGraphService {
 	return &NeptuneGraphService{
 		accountID:     accountID,
@@ -70,6 +72,7 @@ func NewNeptuneGraphService(accountID, region, dataPath string) *NeptuneGraphSer
 	}
 }
 
+// Close shuts down all active graph engines and releases associated resources.
 func (s *NeptuneGraphService) Close() {
 	s.enginesMu.Lock()
 	for id, entry := range s.activeEngines {
@@ -79,6 +82,7 @@ func (s *NeptuneGraphService) Close() {
 	s.enginesMu.Unlock()
 }
 
+// RestoreEngines reopens graph engines for all AVAILABLE graphs after a service restart.
 func (s *NeptuneGraphService) RestoreEngines() {
 	store, err := s.GetStoreForRegion(s.region)
 	if err != nil {
@@ -110,10 +114,12 @@ func (s *NeptuneGraphService) RestoreEngines() {
 	}
 }
 
+// SetStorageManager injects the region storage manager used to back persistent stores.
 func (s *NeptuneGraphService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
 }
 
+// GetStoreForRegion returns a lazily-initialised NeptuneGraphStore for the given region.
 func (s *NeptuneGraphService) GetStoreForRegion(region string) (*ngstore.NeptuneGraphStore, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (*ngstore.NeptuneGraphStore, error) {
 		if s.storageManager == nil {
@@ -139,6 +145,7 @@ func (s *NeptuneGraphService) getEngine(graphID string) (*engineEntry, bool) {
 	return entry, ok
 }
 
+// RegisterHandlers registers all NeptuneGraph operation handlers with the dispatcher.
 func (s *NeptuneGraphService) RegisterHandlers(d *dispatcher.Dispatcher) {
 	d.RegisterHandlerForService("neptunegraph", "CreateGraph", s.CreateGraph)
 	d.RegisterHandlerForService("neptunegraph", "GetGraph", s.GetGraph)
@@ -190,6 +197,7 @@ func (s *NeptuneGraphService) snapshotARN(snapshotID, region string) string {
 	return fmt.Sprintf("%s:%s:%s:snapshot/%s", arnPrefix, region, s.accountID, snapshotID)
 }
 
+// CreateGraph creates a new NeptuneGraph graph resource and initialises its query engine.
 func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -266,6 +274,7 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	return graphToResponse(graph, true), nil
 }
 
+// GetGraph retrieves a graph by its identifier.
 func (s *NeptuneGraphService) GetGraph(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -288,6 +297,7 @@ func (s *NeptuneGraphService) GetGraph(ctx context.Context, reqCtx *request.Requ
 	return graphToResponse(graph, false), nil
 }
 
+// ListGraphs returns a paginated list of graph summaries.
 func (s *NeptuneGraphService) ListGraphs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -318,6 +328,7 @@ func (s *NeptuneGraphService) ListGraphs(ctx context.Context, reqCtx *request.Re
 	return result, nil
 }
 
+// UpdateGraph modifies configuration of an existing graph that is in AVAILABLE state.
 func (s *NeptuneGraphService) UpdateGraph(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -367,6 +378,7 @@ func (s *NeptuneGraphService) UpdateGraph(ctx context.Context, reqCtx *request.R
 	return graphToResponse(graph, false), nil
 }
 
+// DeleteGraph removes a graph, optionally creating an automatic snapshot, and cleans up all associated resources.
 func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -437,6 +449,7 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 	return graphToResponse(graph, false), nil
 }
 
+// StartGraph transitions a STOPPED graph to AVAILABLE by reopening its query engine.
 func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -482,6 +495,7 @@ func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.Re
 	return graphToResponse(graph, false), nil
 }
 
+// StopGraph gracefully shuts down a graph's query engine and transitions it to STOPPED state.
 func (s *NeptuneGraphService) StopGraph(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -523,6 +537,7 @@ func (s *NeptuneGraphService) StopGraph(ctx context.Context, reqCtx *request.Req
 	return graphToResponse(graph, false), nil
 }
 
+// ResetGraph clears all data from an AVAILABLE graph's engine while keeping the graph resource intact.
 func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -568,6 +583,7 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 	return graphToResponse(graph, false), nil
 }
 
+// RestoreGraphFromSnapshot creates a new graph from an existing snapshot, copying source graph data.
 func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -683,6 +699,7 @@ func copyGraphData(src, dst string) {
 	}
 }
 
+// CreateGraphSnapshot creates a point-in-time snapshot of the specified graph.
 func (s *NeptuneGraphService) CreateGraphSnapshot(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -732,6 +749,7 @@ func (s *NeptuneGraphService) CreateGraphSnapshot(ctx context.Context, reqCtx *r
 	return snapshotToResponse(snapshot), nil
 }
 
+// GetGraphSnapshot retrieves a snapshot by its identifier.
 func (s *NeptuneGraphService) GetGraphSnapshot(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -758,6 +776,7 @@ func (s *NeptuneGraphService) GetGraphSnapshot(ctx context.Context, reqCtx *requ
 	return snapshotToResponse(snapshot), nil
 }
 
+// ListGraphSnapshots returns a paginated list of graph snapshots, optionally filtered by graph.
 func (s *NeptuneGraphService) ListGraphSnapshots(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -789,6 +808,7 @@ func (s *NeptuneGraphService) ListGraphSnapshots(ctx context.Context, reqCtx *re
 	return result, nil
 }
 
+// DeleteGraphSnapshot removes a graph snapshot by its identifier.
 func (s *NeptuneGraphService) DeleteGraphSnapshot(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -820,6 +840,7 @@ func (s *NeptuneGraphService) DeleteGraphSnapshot(ctx context.Context, reqCtx *r
 	return response, nil
 }
 
+// CreatePrivateGraphEndpoint creates a VPC-private endpoint for accessing the specified graph.
 func (s *NeptuneGraphService) CreatePrivateGraphEndpoint(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -869,6 +890,7 @@ func (s *NeptuneGraphService) CreatePrivateGraphEndpoint(ctx context.Context, re
 	return endpointToResponse(ep), nil
 }
 
+// GetPrivateGraphEndpoint retrieves a private graph endpoint by graph and VPC identifiers.
 func (s *NeptuneGraphService) GetPrivateGraphEndpoint(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -889,6 +911,7 @@ func (s *NeptuneGraphService) GetPrivateGraphEndpoint(ctx context.Context, reqCt
 	return endpointToResponse(ep), nil
 }
 
+// ListPrivateGraphEndpoints returns all private endpoints for the specified graph.
 func (s *NeptuneGraphService) ListPrivateGraphEndpoints(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -915,6 +938,7 @@ func (s *NeptuneGraphService) ListPrivateGraphEndpoints(ctx context.Context, req
 	}, nil
 }
 
+// DeletePrivateGraphEndpoint removes a private graph endpoint identified by graph and VPC identifiers.
 func (s *NeptuneGraphService) DeletePrivateGraphEndpoint(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -937,6 +961,7 @@ func (s *NeptuneGraphService) DeletePrivateGraphEndpoint(ctx context.Context, re
 	return endpointToResponse(ep), nil
 }
 
+// ListTagsForResource returns all tags associated with the specified resource ARN.
 func (s *NeptuneGraphService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -958,6 +983,7 @@ func (s *NeptuneGraphService) ListTagsForResource(ctx context.Context, reqCtx *r
 	}, nil
 }
 
+// TagResource adds or updates tags on the specified resource, validating key and value constraints.
 func (s *NeptuneGraphService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -991,6 +1017,7 @@ func (s *NeptuneGraphService) TagResource(ctx context.Context, reqCtx *request.R
 	}, nil
 }
 
+// UntagResource removes the specified tag keys from a resource's tag set.
 func (s *NeptuneGraphService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1025,6 +1052,7 @@ func (s *NeptuneGraphService) UntagResource(ctx context.Context, reqCtx *request
 	}, nil
 }
 
+// ExecuteQuery runs a Cypher query against the specified graph's query engine.
 func (s *NeptuneGraphService) ExecuteQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1053,6 +1081,7 @@ func (s *NeptuneGraphService) ExecuteQuery(ctx context.Context, reqCtx *request.
 	return executeCypherQuery(ctx, s, reqCtx, req, graphID, entry, store)
 }
 
+// GetQuery retrieves the details and results of a previously executed query.
 func (s *NeptuneGraphService) GetQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1083,6 +1112,7 @@ func (s *NeptuneGraphService) GetQuery(ctx context.Context, reqCtx *request.Requ
 	return queryToResponse(query), nil
 }
 
+// ListQueries returns query records for a graph, optionally filtered by state.
 func (s *NeptuneGraphService) ListQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1121,10 +1151,12 @@ func (s *NeptuneGraphService) ListQueries(ctx context.Context, reqCtx *request.R
 	}, nil
 }
 
+// CancelQuery cancels a running query. Not yet implemented.
 func (s *NeptuneGraphService) CancelQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return nil, newHTTPError(501, "NotImplementedException", "CancelQuery is not yet implemented")
 }
 
+// GetGraphSummary returns structural statistics about the specified graph's data.
 func (s *NeptuneGraphService) GetGraphSummary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
 	if graphID == "" {
@@ -1175,6 +1207,7 @@ func (s *NeptuneGraphService) GetGraphSummary(ctx context.Context, reqCtx *reque
 	}, nil
 }
 
+// CreateGraphUsingImportTask creates a new graph and initiates a bulk import task from the specified source.
 func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1288,6 +1321,7 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 	return importTaskToResponse(task), nil
 }
 
+// GetImportTask retrieves an import task by its identifier.
 func (s *NeptuneGraphService) GetImportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1310,6 +1344,7 @@ func (s *NeptuneGraphService) GetImportTask(ctx context.Context, reqCtx *request
 	return importTaskToResponse(task), nil
 }
 
+// ListImportTasks returns a paginated list of import task summaries.
 func (s *NeptuneGraphService) ListImportTasks(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1340,6 +1375,7 @@ func (s *NeptuneGraphService) ListImportTasks(ctx context.Context, reqCtx *reque
 	return result, nil
 }
 
+// CancelImportTask cancels an in-progress import task, transitioning it to CANCELLED state.
 func (s *NeptuneGraphService) CancelImportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1373,6 +1409,7 @@ func (s *NeptuneGraphService) CancelImportTask(ctx context.Context, reqCtx *requ
 	return importTaskSummaryToResponse(task), nil
 }
 
+// StartImportTask initiates a bulk import task on an existing graph from the specified source.
 func (s *NeptuneGraphService) StartImportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1431,6 +1468,7 @@ func (s *NeptuneGraphService) StartImportTask(ctx context.Context, reqCtx *reque
 	return importTaskToResponse(task), nil
 }
 
+// StartExportTask initiates a bulk export of graph data to the specified S3 destination.
 func (s *NeptuneGraphService) StartExportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1498,6 +1536,7 @@ func (s *NeptuneGraphService) StartExportTask(ctx context.Context, reqCtx *reque
 	return exportTaskToResponse(task), nil
 }
 
+// GetExportTask retrieves an export task by its identifier.
 func (s *NeptuneGraphService) GetExportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1520,6 +1559,7 @@ func (s *NeptuneGraphService) GetExportTask(ctx context.Context, reqCtx *request
 	return exportTaskToResponse(task), nil
 }
 
+// ListExportTasks returns a paginated list of export task summaries, optionally filtered by graph.
 func (s *NeptuneGraphService) ListExportTasks(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -1551,6 +1591,7 @@ func (s *NeptuneGraphService) ListExportTasks(ctx context.Context, reqCtx *reque
 	return result, nil
 }
 
+// CancelExportTask cancels an in-progress export task, transitioning it to CANCELLED state.
 func (s *NeptuneGraphService) CancelExportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {

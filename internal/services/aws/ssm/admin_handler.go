@@ -12,6 +12,7 @@ import (
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
+// AdminHandler implements the SSM admin console gRPC-Web handler.
 type AdminHandler struct {
 	ssmconnect.UnimplementedSSMServiceHandler
 	storageManager *storage.RegionStorageManager
@@ -20,6 +21,7 @@ type AdminHandler struct {
 
 var _ ssmconnect.SSMServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new SSM admin handler with the given storage manager and account ID.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -36,6 +38,7 @@ func (h *AdminHandler) getStore(req *connect.Request[pb.DescribeParametersReques
 	return ssmstore.NewStore(regionStorage, h.accountId, region), nil
 }
 
+// DescribeParameters retrieves SSM parameters from the store, applying optional filters and pagination.
 func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Request[pb.DescribeParametersRequest]) (*connect.Response[pb.DescribeParametersResult], error) {
 	store, err := h.getStore(req)
 	if err != nil {

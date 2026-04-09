@@ -53,46 +53,57 @@ func graphqlApiBucketName(region string) string {
 	return "appsync-graphql-apis-" + region
 }
 
+// dataSourceBucketName returns the PebbleDB bucket name for data source resources.
 func dataSourceBucketName(region string) string {
 	return "appsync-datasources-" + region
 }
 
+// resolverBucketName returns the PebbleDB bucket name for resolver resources.
 func resolverBucketName(region string) string {
 	return "appsync-resolvers-" + region
 }
 
+// functionBucketName returns the PebbleDB bucket name for AppSync function resources.
 func functionBucketName(region string) string {
 	return "appsync-functions-" + region
 }
 
+// typeBucketName returns the PebbleDB bucket name for GraphQL type definition resources.
 func typeBucketName(region string) string {
 	return "appsync-types-" + region
 }
 
+// schemaStatusBucketName returns the PebbleDB bucket name for schema creation status resources.
 func schemaStatusBucketName(region string) string {
 	return "appsync-schema-statuses-" + region
 }
 
+// envVariablesBucketName returns the PebbleDB bucket name for environment variable resources.
 func envVariablesBucketName(region string) string {
 	return "appsync-env-variables-" + region
 }
 
+// apiKeyBucketName returns the PebbleDB bucket name for API key resources.
 func apiKeyBucketName(region string) string {
 	return "appsync-api-keys-" + region
 }
 
+// apiCacheBucketName returns the PebbleDB bucket name for API cache resources.
 func apiCacheBucketName(region string) string {
 	return "appsync-api-caches-" + region
 }
 
+// domainNameBucketName returns the PebbleDB bucket name for domain name resources.
 func domainNameBucketName(region string) string {
 	return "appsync-domain-names-" + region
 }
 
+// apiAssociationBucketName returns the PebbleDB bucket name for API association resources.
 func apiAssociationBucketName(region string) string {
 	return "appsync-api-associations-" + region
 }
 
+// mergedApiAssociationBucketName returns the PebbleDB bucket name for merged API association resources.
 func mergedApiAssociationBucketName(region string) string {
 	return "appsync-merged-api-associations-" + region
 }
@@ -315,6 +326,7 @@ func (s *AppSyncStore) ListAssociationsBySourceApi(sourceApiId string, opts comm
 	return result.Items, nextToken, nil
 }
 
+// CreateChannelNamespace persists a new channel namespace scoped to an Event API.
 func (s *AppSyncStore) CreateChannelNamespace(ns *ChannelNamespace) (*ChannelNamespace, error) {
 	if ns.Name == "" || ns.ApiId == "" {
 		return nil, common.NewStoreError(s.channelsStore.Service(), "create_channel_namespace", common.ErrInvalidInput)
@@ -1337,6 +1349,7 @@ func (s *AppSyncStore) CreateMergedApiAssociation(assoc *SourceApiAssociation) e
 	return s.mergedApiAssociationsStore.Put(key, assoc)
 }
 
+// GetMergedApiAssociation retrieves a merged API association by merged API ID and association ID.
 func (s *AppSyncStore) GetMergedApiAssociation(mergedApiId, associationId string) (*SourceApiAssociation, error) {
 	key := mergedApiId + "/" + associationId
 	var assoc SourceApiAssociation
@@ -1367,11 +1380,13 @@ func (s *AppSyncStore) GetMergedApiAssociationById(associationId string) (*Sourc
 	return found, nil
 }
 
+// UpdateMergedApiAssociation updates an existing merged API association.
 func (s *AppSyncStore) UpdateMergedApiAssociation(assoc *SourceApiAssociation) error {
 	key := assoc.MergedApiId + "/" + assoc.AssociationId
 	return s.mergedApiAssociationsStore.Put(key, assoc)
 }
 
+// DeleteMergedApiAssociation removes a merged API association by merged API ID and association ID.
 func (s *AppSyncStore) DeleteMergedApiAssociation(mergedApiId, associationId string) error {
 	key := mergedApiId + "/" + associationId
 	return s.mergedApiAssociationsStore.Delete(key)

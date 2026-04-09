@@ -162,6 +162,7 @@ type ClusterEndpointOps interface {
 	ListClusterEndpoints(clusterID string) ([]*DBClusterEndpoint, error)
 }
 
+// EventOps defines operations for recording and listing Neptune events.
 type EventOps interface {
 	RecordEvent(evt *Event) error
 	ListEvents(opts EventListOptions) (*EventListResult, error)
@@ -977,6 +978,7 @@ func (s *NeptuneStore) ListLoaderJobs() ([]*pb.LoaderJob, error) {
 	return jobs, err
 }
 
+// Event represents a Neptune database event with metadata.
 type Event struct {
 	EventID          string    `json:"event_id"`
 	Date             time.Time `json:"date"`
@@ -992,6 +994,7 @@ const (
 	maxEvents   = 10000
 )
 
+// RecordEvent persists a Neptune database event to the store.
 func (s *NeptuneStore) RecordEvent(evt *Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

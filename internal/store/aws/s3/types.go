@@ -327,7 +327,7 @@ type MultipartUpload struct {
 	Owner            string             `json:"owner,omitempty"`
 	Initiator        string             `json:"initiator,omitempty"`
 	Parts            []ObjectPart       `json:"parts,omitempty"`
-	partIndex        map[int]int        `json:"-"` // PartNumber -> Parts slice index (not serialized)
+	partIndex        map[int]int        `json:"-"` // PartNumber -> Parts slice index (not serialised)
 	Metadata         map[string]string  `json:"metadata,omitempty"`
 	ContentType      string             `json:"content_type,omitempty"`
 	SSEMetadata      *SSEObjectMetadata `json:"sse_metadata,omitempty"`

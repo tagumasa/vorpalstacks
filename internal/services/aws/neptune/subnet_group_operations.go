@@ -70,6 +70,7 @@ func getNeptuneParameterList(params map[string]interface{}) []neptunestore.Param
 	return parameters
 }
 
+// CreateDBSubnetGroup creates a new DB subnet group with the specified subnets.
 func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	name := request.GetStringParam(params, "DBSubnetGroupName")
@@ -119,6 +120,7 @@ func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *reques
 	}, nil
 }
 
+// DeleteDBSubnetGroup deletes the specified DB subnet group.
 func (s *NeptuneService) DeleteDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	name := request.GetStringParam(params, "DBSubnetGroupName")
@@ -138,6 +140,7 @@ func (s *NeptuneService) DeleteDBSubnetGroup(ctx context.Context, reqCtx *reques
 	return map[string]interface{}{}, nil
 }
 
+// DescribeDBSubnetGroups describes one or all DB subnet groups.
 func (s *NeptuneService) DescribeDBSubnetGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	store, err := s.store(reqCtx)
@@ -171,6 +174,7 @@ func (s *NeptuneService) DescribeDBSubnetGroups(ctx context.Context, reqCtx *req
 	}, nil
 }
 
+// ModifyDBSubnetGroup modifies the description or subnet list of an existing DB subnet group.
 func (s *NeptuneService) ModifyDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	name := request.GetStringParam(params, "DBSubnetGroupName")

@@ -9,6 +9,7 @@ import (
 	store "vorpalstacks/internal/store/aws/apigateway"
 )
 
+// TestInvokeMethod simulates an API method invocation for testing purposes.
 func (s *APIGatewayService) TestInvokeMethod(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId, resourceId := getApiIdAndResourceId(req)
 	if apiId == "" || resourceId == "" {
@@ -99,6 +100,7 @@ func (s *APIGatewayService) TestInvokeMethod(ctx context.Context, reqCtx *reques
 	return result, nil
 }
 
+// TestInvokeAuthorizer simulates an authoriser invocation for testing purposes.
 func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
 	if apiId == "" {

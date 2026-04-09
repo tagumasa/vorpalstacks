@@ -12,6 +12,7 @@ import (
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
+// AdminHandler implements the Athena admin console gRPC-Web handler.
 type AdminHandler struct {
 	athenaconnect.UnimplementedAthenaServiceHandler
 	storageManager *storage.RegionStorageManager
@@ -20,6 +21,7 @@ type AdminHandler struct {
 
 var _ athenaconnect.AthenaServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new Athena admin handler with the given storage manager and account ID.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -36,6 +38,7 @@ func (h *AdminHandler) getWorkGroupStore(req *connect.Request[pb.ListWorkGroupsI
 	return athenastore.NewWorkGroupStore(regionStorage, h.accountId, region), nil
 }
 
+// ListWorkGroups retrieves all Athena work groups from the regional store.
 func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[pb.ListWorkGroupsInput]) (*connect.Response[pb.ListWorkGroupsOutput], error) {
 	store, err := h.getWorkGroupStore(req)
 	if err != nil {

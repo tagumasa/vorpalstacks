@@ -44,7 +44,7 @@ func (e *CloudWatchMetricEntry) Timestamp() int64 {
 	return e.Time.UnixNano()
 }
 
-// Message serializes the metric entry to JSON bytes for storage.
+// Message serialises the metric entry to JSON bytes for storage.
 // This is used as the value when persisting the metric to chunk storage.
 func (e *CloudWatchMetricEntry) Message() []byte {
 	data, _ := json.Marshal(e)

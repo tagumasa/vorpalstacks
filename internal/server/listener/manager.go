@@ -23,6 +23,7 @@ type ListenerTimeouts struct {
 	IdleTimeout       time.Duration
 }
 
+// ListenerConfig defines the configuration for a secondary HTTP listener.
 type ListenerConfig struct {
 	Name        string
 	PortKey     string
@@ -38,6 +39,7 @@ type managedListener struct {
 	handler http.Handler
 }
 
+// Manager manages secondary HTTP listeners for auxiliary services.
 type Manager struct {
 	mainPort      int
 	listeners     map[string]*managedListener
@@ -45,6 +47,7 @@ type Manager struct {
 	shutdownHooks []func(context.Context) error
 }
 
+// NewManager creates a new Manager for the given main port.
 func NewManager(mainPort int) *Manager {
 	return &Manager{
 		mainPort:  mainPort,
@@ -52,6 +55,7 @@ func NewManager(mainPort int) *Manager {
 	}
 }
 
+// Register registers a secondary HTTP listener with the given configuration.
 func (m *Manager) Register(cfg ListenerConfig) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -96,6 +100,7 @@ func (m *Manager) Register(cfg ListenerConfig) {
 	}
 }
 
+// Start launches all registered secondary listeners in background goroutines.
 func (m *Manager) Start() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -111,6 +116,7 @@ func (m *Manager) Start() {
 	}
 }
 
+// Shutdown gracefully shuts down all secondary listeners and executes registered shutdown hooks.
 func (m *Manager) Shutdown(ctx context.Context) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -128,6 +134,7 @@ func (m *Manager) Shutdown(ctx context.Context) {
 	}
 }
 
+// IsRunning reports whether a listener with the given name is currently registered.
 func (m *Manager) IsRunning(name string) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
