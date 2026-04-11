@@ -16,6 +16,18 @@ import (
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
+// Compile-time interface compliance checks for StreamableResponse and StatusCodeResponse.
+var (
+	_ response.StreamableResponse = (*lambdaInvokeResponse)(nil)
+	_ response.StatusCodeResponse = (*lambdaInvokeResponse)(nil)
+
+	_ response.StreamableResponse = (*invokeWithResponseStreamResponse)(nil)
+	_ response.StatusCodeResponse = (*invokeWithResponseStreamResponse)(nil)
+
+	_ response.StreamableResponse = (*invokeAsyncResponse)(nil)
+	_ response.StatusCodeResponse = (*invokeAsyncResponse)(nil)
+)
+
 // Invoke synchronously invokes a Lambda function with the given payload.
 // Returns the function output, status code, and executed version.
 // If InvocationType is "Event", the function is invoked asynchronously and HTTP 202 is returned.
@@ -111,11 +123,6 @@ func (r *lambdaInvokeResponse) GetStreamStatusCode() int {
 	return int(r.result.StatusCode)
 }
 
-var (
-	_ response.StreamableResponse = (*lambdaInvokeResponse)(nil)
-	_ response.StatusCodeResponse = (*lambdaInvokeResponse)(nil)
-)
-
 // InvokeWithResponseStream invokes a Lambda function with response streaming.
 func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	function, ver, _, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
@@ -140,13 +147,66 @@ func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *re
 		return nil, fmt.Errorf("invocation returned nil result")
 	}
 
-	return map[string]interface{}{
-		"StatusCode":                result.StatusCode,
-		"ExecutedVersion":           result.ExecutedVersion,
-		"ResponseStreamContentType": "application/vnd.amazon.eventstream",
-		"Payload":                   result.Payload,
-		"FunctionError":             result.FunctionError,
+	pr, pw := io.Pipe()
+	go func() {
+		defer pw.Close()
+		w := NewInvokeResponseStreamWriter(pw)
+
+		if result.FunctionError != "" {
+			if err := w.WriteInvokeCompleteError(result.FunctionError, string(result.Payload)); err != nil {
+				logs.Error("InvokeWithResponseStream: failed to write error InvokeComplete event", logs.Err(err))
+			}
+			return
+		}
+
+		if len(result.Payload) > 0 {
+			if err := w.WritePayloadChunk(result.Payload); err != nil {
+				logs.Error("InvokeWithResponseStream: failed to write PayloadChunk event", logs.Err(err))
+				return
+			}
+		}
+
+		if err := w.WriteInvokeComplete(int(result.StatusCode), result.ExecutedVersion, result.LogResult); err != nil {
+			logs.Error("InvokeWithResponseStream: failed to write InvokeComplete event", logs.Err(err))
+		}
+	}()
+
+	return &invokeWithResponseStreamResponse{
+		reader:          pr,
+		executedVersion: result.ExecutedVersion,
+		statusCode:      int(result.StatusCode),
+		functionError:   result.FunctionError,
+		contentType:     "application/vnd.amazon.eventstream",
 	}, nil
+}
+
+type invokeWithResponseStreamResponse struct {
+	reader          io.Reader
+	executedVersion string
+	statusCode      int
+	functionError   string
+	contentType     string
+}
+
+func (r *invokeWithResponseStreamResponse) GetStream() io.Reader {
+	return r.reader
+}
+
+func (r *invokeWithResponseStreamResponse) GetStreamHeaders() http.Header {
+	h := make(http.Header)
+	h.Set("Content-Type", r.contentType)
+	h.Set("x-amz-executed-version", r.executedVersion)
+	if r.functionError != "" {
+		h.Set("x-amz-function-error", r.functionError)
+	}
+	return h
+}
+
+func (r *invokeWithResponseStreamResponse) GetStreamStatusCode() int {
+	if r.statusCode == 0 {
+		return http.StatusOK
+	}
+	return r.statusCode
 }
 
 // InvokeAsync asynchronously invokes a Lambda function with the given payload.
@@ -208,11 +268,6 @@ func (r *invokeAsyncResponse) GetStream() io.Reader {
 func (r *invokeAsyncResponse) GetStreamHeaders() http.Header {
 	return http.Header{}
 }
-
-var (
-	_ response.StatusCodeResponse = (*invokeAsyncResponse)(nil)
-	_ response.StreamableResponse = (*invokeAsyncResponse)(nil)
-)
 
 // PublishVersion creates a new version of the Lambda function from the current $LATEST version.
 // The new version is immutable and can be used for deployments.

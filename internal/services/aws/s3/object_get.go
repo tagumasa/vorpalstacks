@@ -3,6 +3,7 @@ package s3
 import (
 	"bytes"
 	"context"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"strings"
@@ -323,12 +324,22 @@ type GetObjectAttributesInput struct {
 
 // GetObjectAttributesOutput contains the output from the GetObjectAttributes operation.
 type GetObjectAttributesOutput struct {
+	XMLName      xml.Name                     `xml:"GetObjectAttributesOutput"`
 	ETag         string                       `xml:"ETag,omitempty"`
 	ObjectSize   int64                        `xml:"ObjectSize,omitempty"`
 	StorageClass string                       `xml:"StorageClass,omitempty"`
-	LastModified string                       `xml:"LastModified,omitempty"`
+	LastModified s3Timestamp                  `xml:"LastModified,omitempty"`
 	ObjectParts  *GetObjectAttributesParts    `xml:"ObjectParts,omitempty"`
 	Checksum     *GetObjectAttributesChecksum `xml:"Checksum,omitempty"`
+}
+
+// s3Timestamp marshals time.Time as RFC1123 for S3 XML responses that require
+// HTTP-date format (e.g. GetObjectAttributes LastModified field).
+// Implements encoding/xml.Marshaler.
+type s3Timestamp time.Time
+
+func (t s3Timestamp) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.EncodeElement(strings.Replace(time.Time(t).UTC().Format(time.RFC1123), "UTC", "GMT", 1), start)
 }
 
 // GetObjectAttributesParts contains information about the parts of an object.
@@ -381,7 +392,7 @@ func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *requ
 		ETag:         formatETag(obj.ETag),
 		ObjectSize:   obj.Size,
 		StorageClass: string(obj.StorageClass),
-		LastModified: obj.LastModified.Format(time.RFC3339),
+		LastModified: s3Timestamp(obj.LastModified),
 	}
 
 	for _, attr := range input.ObjectAttributes {

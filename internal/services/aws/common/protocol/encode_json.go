@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"time"
 
 	"vorpalstacks/internal/utils/buffer"
 )
@@ -30,6 +31,16 @@ func sanitizeFloats(v interface{}) interface{} {
 			}
 		}
 		return val
+	case []float64:
+		result := make([]interface{}, len(val))
+		for i, f := range val {
+			if math.IsNaN(f) || math.IsInf(f, 0) {
+				result[i] = nanMarker
+			} else {
+				result[i] = f
+			}
+		}
+		return result
 	case []interface{}:
 		for i, vv := range val {
 			val[i] = sanitizeFloats(vv)
@@ -92,8 +103,18 @@ var jsonTimestampKeys = map[string]bool{
 }
 
 // ConvertTimestampsToSeconds converts millisecond-precision timestamp values to seconds for JSON serialisation.
+// It also converts time.Time and []time.Time values to epoch seconds for services like CloudWatch
+// that include Timestamps as []time.Time in JSON responses.
 func ConvertTimestampsToSeconds(v interface{}) interface{} {
 	switch val := v.(type) {
+	case time.Time:
+		return float64(val.UnixMilli()) / 1000
+	case []time.Time:
+		result := make([]interface{}, len(val))
+		for i, t := range val {
+			result[i] = float64(t.UnixMilli()) / 1000
+		}
+		return result
 	case map[string]interface{}:
 		for k, vv := range val {
 			if jsonTimestampKeys[k] {
