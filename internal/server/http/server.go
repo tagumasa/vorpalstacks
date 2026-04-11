@@ -13,6 +13,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
@@ -314,10 +316,12 @@ func (s *Server) Start() error {
 
 		s.registerRoutes(r)
 
+		h2s := &http2.Server{}
+
 		s.httpServerMu.Lock()
 		s.httpServer = &http.Server{
 			Addr:              ":" + s.config.Port,
-			Handler:           r,
+			Handler:           h2c.NewHandler(r, h2s),
 			ReadHeaderTimeout: 5 * time.Second,
 			ReadTimeout:       15 * time.Second,
 			WriteTimeout:      30 * time.Second,
