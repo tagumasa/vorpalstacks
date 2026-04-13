@@ -243,7 +243,9 @@ func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topi
 		return fmt.Errorf("failed to get storage for region %s: %w", region, err)
 	}
 
-	store := snsstore.NewSNSStore(storage, accountID, region)
+	store, _ := storecommon.GetOrCreateStoreE(&s.stores, region, func() (snsstore.SNSStoreInterface, error) {
+		return snsstore.NewSNSStore(storage, accountID, region), nil
+	})
 
 	topic, err := store.GetTopic(topicArn)
 	if err != nil {

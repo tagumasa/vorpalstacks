@@ -2,6 +2,8 @@
 package apigateway
 
 import (
+	"sync"
+
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
@@ -15,11 +17,18 @@ type apiGatewayStores struct {
 }
 
 // APIGatewayService provides AWS API Gateway operations.
-type APIGatewayService struct{}
+type APIGatewayService struct {
+	accountID string
+	region    string
+	stores    sync.Map // region → *apiGatewayStores
+}
 
 // NewAPIGatewayService creates a new API Gateway service instance.
 func NewAPIGatewayService(accountID, region string) *APIGatewayService {
-	return &APIGatewayService{}
+	return &APIGatewayService{
+		accountID: accountID,
+		region:    region,
+	}
 }
 
 func (s *APIGatewayService) store(reqCtx *request.RequestContext) (*apiGatewayStores, error) {
@@ -30,15 +39,27 @@ func (s *APIGatewayService) store(reqCtx *request.RequestContext) (*apiGatewaySt
 			domains:  apiGatewayStore.DomainsRaw(),
 		}, nil
 	}
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(*apiGatewayStores); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return &apiGatewayStores{
-		restApis: apigatewaystore.NewRestApiStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()),
-		usage:    apigatewaystore.NewUsageStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()),
-		domains:  apigatewaystore.NewDomainStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()),
-	}, nil
+	stores := &apiGatewayStores{
+		restApis: apigatewaystore.NewRestApiStore(storage, s.accountID, region),
+		usage:    apigatewaystore.NewUsageStore(storage, s.accountID, region),
+		domains:  apigatewaystore.NewDomainStore(storage, s.accountID, region),
+	}
+	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		if typed, ok := actual.(*apiGatewayStores); ok {
+			return typed, nil
+		}
+	}
+	return stores, nil
 }
 
 // RegisterHandlers registers the API Gateway service handlers with the dispatcher.

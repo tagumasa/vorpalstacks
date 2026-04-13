@@ -3,6 +3,7 @@ package secretsmanager
 
 import (
 	"context"
+	"sync"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
@@ -22,6 +23,7 @@ type SecretsManagerService struct {
 	lambdaInvoker  common.LambdaInvoker
 	logger         logs.Logger
 	rotChecker     *rotationChecker
+	stores         sync.Map // region → secretsmanagerstore.SecretStoreInterface
 }
 
 // NewSecretsManagerService creates a new Secrets Manager service instance.
@@ -79,11 +81,23 @@ func (s *SecretsManagerService) store(reqCtx *request.RequestContext) (secretsma
 	if store != nil {
 		return store, nil
 	}
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(secretsmanagerstore.SecretStoreInterface); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return secretsmanagerstore.NewSecretStore(storage, s.accountID, reqCtx.GetRegion()), nil
+	store = secretsmanagerstore.NewSecretStore(storage, s.accountID, region)
+	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(secretsmanagerstore.SecretStoreInterface); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 // RegisterHandlers registers the Secrets Manager handlers with the dispatcher.

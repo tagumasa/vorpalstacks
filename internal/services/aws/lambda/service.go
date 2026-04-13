@@ -683,7 +683,7 @@ func (s *LambdaService) InvokeForGateway(ctx context.Context, functionRef string
 		}
 		functionName = svcarn.ExtractFunctionNameFromARN(functionRef)
 	}
-	store := lambdastore.NewFunctionStore(s.getRegionalStorage(region), s.accountID, region)
+	store := s.getOrCreateFunctionStore(region)
 	function, ver, _, err := s.resolveQualifier(store, functionName, "")
 	if err != nil {
 		return 0, nil, err
@@ -701,12 +701,32 @@ func (s *LambdaService) InvokeForGateway(ctx context.Context, functionRef string
 // GetFunctionStore returns a new FunctionStore for the Lambda service
 // using the constructor region.
 func (s *LambdaService) GetFunctionStore() *lambdastore.FunctionStore {
-	return lambdastore.NewFunctionStore(s.getRegionalStorage(s.region), s.accountID, s.region)
+	return s.getOrCreateFunctionStore(s.region)
 }
 
 // GetFunctionStoreForRegion returns a FunctionStore for the specified region.
 func (s *LambdaService) GetFunctionStoreForRegion(region string) *lambdastore.FunctionStore {
-	return lambdastore.NewFunctionStore(s.getRegionalStorage(region), s.accountID, region)
+	return s.getOrCreateFunctionStore(region)
+}
+
+func (s *LambdaService) getOrCreateFunctionStore(region string) *lambdastore.FunctionStore {
+	if cached, ok := s.storeCache.Load(region); ok {
+		if typed, ok := cached.(*lambdaStore); ok {
+			return typed.Functions
+		}
+	}
+	storage := s.getRegionalStorage(region)
+	newStore := &lambdaStore{
+		Functions:    lambdastore.NewFunctionStore(storage, s.accountID, region),
+		Layers:       lambdastore.NewLayerStore(storage, s.accountID, region),
+		EventSources: lambdastore.NewEventSourceStore(storage, s.accountID, region),
+	}
+	if actual, loaded := s.storeCache.LoadOrStore(region, newStore); loaded {
+		if typed, ok := actual.(*lambdaStore); ok {
+			return typed.Functions
+		}
+	}
+	return newStore.Functions
 }
 
 // GetFunctionPolicy retrieves the resource-based policy for a Lambda function.

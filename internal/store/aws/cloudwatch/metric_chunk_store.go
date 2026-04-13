@@ -19,17 +19,26 @@ func metricBucketName(region string) string {
 	return "cw_metrics-" + region
 }
 
+const metricBufferSize = 1000
+
+type metricBuffer struct {
+	entries []chunk.CloudWatchMetricEntry
+}
+
 // MetricChunkStore provides CloudWatch metric chunk storage operations.
 type MetricChunkStore struct {
 	*common.BaseStore
 	storage    storage.BasicStorage
 	region     string
 	dataPath   string
-	chunkSize  int
 	index      *chunk.PebbleIndex
 	useIndex   bool
 	chunkMu    sync.Map
 	chunkPaths sync.Map
+	buffers    map[string]*metricBuffer
+	bufferMu   sync.Mutex
+	stopCh     chan struct{}
+	closeOnce  sync.Once
 }
 
 // NewMetricChunkStore creates a new CloudWatch metric chunk store.
@@ -39,8 +48,9 @@ func NewMetricChunkStore(store storage.BasicStorage, region, dataPath string) *M
 		storage:   store,
 		region:    region,
 		dataPath:  dataPath,
-		chunkSize: 16 * 1024 * 1024,
 		useIndex:  false,
+		buffers:   make(map[string]*metricBuffer),
+		stopCh:    make(chan struct{}),
 	}
 	go s.cleanupChunkLocks()
 	return s
@@ -59,12 +69,18 @@ func NewMetricChunkStoreWithIndex(store storage.BasicStorage, region, dataPath s
 		storage:   store,
 		region:    region,
 		dataPath:  dataPath,
-		chunkSize: 16 * 1024 * 1024,
 		index:     idx,
 		useIndex:  true,
+		buffers:   make(map[string]*metricBuffer),
+		stopCh:    make(chan struct{}),
 	}
 	go s.cleanupChunkLocks()
 	return s, nil
+}
+
+// Close stops the background cleanup goroutine.
+func (s *MetricChunkStore) Close() {
+	s.closeOnce.Do(func() { close(s.stopCh) })
 }
 
 func (s *MetricChunkStore) getChunkPath(namespace, metricName string, ts time.Time) string {
@@ -85,7 +101,12 @@ func (s *MetricChunkStore) getChunkLock(chunkPath string) *sync.Mutex {
 func (s *MetricChunkStore) cleanupChunkLocks() {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
-	for range ticker.C {
+	for {
+		select {
+		case <-s.stopCh:
+			return
+		case <-ticker.C:
+		}
 		cutoff := time.Now().Add(-2 * time.Hour).Format("2006-01-02-15")
 		s.chunkMu.Range(func(key, _ interface{}) bool {
 			path := key.(string)
@@ -98,10 +119,48 @@ func (s *MetricChunkStore) cleanupChunkLocks() {
 			}
 			return true
 		})
+		s.chunkPaths.Range(func(key, _ interface{}) bool {
+			path := key.(string)
+			idx := strings.LastIndex(path, "/")
+			if idx >= 0 {
+				hour := strings.TrimSuffix(path[idx+1:], ".chunk")
+				if hour < cutoff {
+					s.chunkPaths.Delete(key)
+				}
+			}
+			return true
+		})
 	}
 }
 
 func (s *MetricChunkStore) writeChunk(chunkPath string, entry *chunk.CloudWatchMetricEntry) error {
+	s.bufferMu.Lock()
+	buf, ok := s.buffers[chunkPath]
+	if !ok {
+		buf = &metricBuffer{entries: make([]chunk.CloudWatchMetricEntry, 0, metricBufferSize)}
+		s.buffers[chunkPath] = buf
+	}
+	buf.entries = append(buf.entries, *entry)
+	shouldFlush := len(buf.entries) >= metricBufferSize
+	s.bufferMu.Unlock()
+
+	if shouldFlush {
+		return s.flushBuffer(chunkPath)
+	}
+	return nil
+}
+
+func (s *MetricChunkStore) flushBuffer(chunkPath string) error {
+	s.bufferMu.Lock()
+	buf := s.buffers[chunkPath]
+	if buf == nil || len(buf.entries) == 0 {
+		s.bufferMu.Unlock()
+		return nil
+	}
+	entries := buf.entries
+	buf.entries = make([]chunk.CloudWatchMetricEntry, 0, metricBufferSize)
+	s.bufferMu.Unlock()
+
 	mu := s.getChunkLock(chunkPath)
 	mu.Lock()
 	defer mu.Unlock()
@@ -111,31 +170,24 @@ func (s *MetricChunkStore) writeChunk(chunkPath string, entry *chunk.CloudWatchM
 		return err
 	}
 
-	var existingPath string
+	var existingEntries []chunk.CloudWatchMetricEntry
 	if v, ok := s.chunkPaths.Load(chunkPath); ok {
-		existingPath = v.(string)
-	}
-
-	var entries []chunk.CloudWatchMetricEntry
-	if existingPath != "" {
-		if readEntries, err := s.readChunkFile(existingPath); err == nil {
-			entries = readEntries
+		if readEntries, err := s.readChunkFile(v.(string)); err == nil {
+			existingEntries = readEntries
 		}
 	}
-	if entries == nil {
-		entries = []chunk.CloudWatchMetricEntry{*entry}
-	} else {
-		entries = append(entries, *entry)
-	}
 
-	chunkEntries := make([]chunk.Entry, len(entries))
-	for i := range entries {
-		chunkEntries[i] = &entries[i]
+	allEntries := make([]chunk.CloudWatchMetricEntry, 0, len(existingEntries)+len(entries))
+	allEntries = append(allEntries, existingEntries...)
+	allEntries = append(allEntries, entries...)
+
+	chunkEntries := make([]chunk.Entry, len(allEntries))
+	for i := range allEntries {
+		chunkEntries[i] = &allEntries[i]
 	}
 
 	writer := chunk.NewWriter(&chunk.WriterOptions{
 		ChunksDir:   chunkDir,
-		ChunkSize:   s.chunkSize,
 		Encoding:    chunk.EncodingZstd,
 		SyncOnWrite: true,
 	})
@@ -151,14 +203,16 @@ func (s *MetricChunkStore) writeChunk(chunkPath string, entry *chunk.CloudWatchM
 
 	s.chunkPaths.Store(chunkPath, actualChunkPath)
 
-	if existingPath != "" && existingPath != actualChunkPath {
-		os.Remove(existingPath)
+	if existingPath, ok := s.chunkPaths.Load(chunkPath); ok {
+		if existingStr, ok := existingPath.(string); ok && existingStr != "" && existingStr != actualChunkPath {
+			os.Remove(existingStr)
+		}
 	}
 
 	if s.useIndex && s.index != nil {
-		minTs := entries[0].Time.UnixNano()
-		maxTs := entries[0].Time.UnixNano()
-		for _, e := range entries {
+		minTs := allEntries[0].Time.UnixNano()
+		maxTs := allEntries[0].Time.UnixNano()
+		for _, e := range allEntries {
 			ts := e.Time.UnixNano()
 			if ts < minTs {
 				minTs = ts
@@ -173,12 +227,12 @@ func (s *MetricChunkStore) writeChunk(chunkPath string, entry *chunk.CloudWatchM
 			ChunkID:    chunkID,
 			MinTs:      minTs,
 			MaxTs:      maxTs,
-			EntryCount: len(entries),
+			EntryCount: len(allEntries),
 			ChunkPath:  actualChunkPath,
 			Tags: map[string]string{
-				"namespace":   entry.Namespace,
-				"metric_name": entry.MetricName,
-				"dimensions":  entry.BuildDimensionsKey(),
+				"namespace":   entries[0].Namespace,
+				"metric_name": entries[0].MetricName,
+				"dimensions":  entries[0].BuildDimensionsKey(),
 			},
 		}
 
@@ -187,6 +241,23 @@ func (s *MetricChunkStore) writeChunk(chunkPath string, entry *chunk.CloudWatchM
 		}
 	}
 
+	return nil
+}
+
+// FlushAllBuffers forces all buffered metric entries to be written to disk.
+func (s *MetricChunkStore) FlushAllBuffers() error {
+	s.bufferMu.Lock()
+	paths := make([]string, 0, len(s.buffers))
+	for p := range s.buffers {
+		paths = append(paths, p)
+	}
+	s.bufferMu.Unlock()
+
+	for _, p := range paths {
+		if err := s.flushBuffer(p); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -281,7 +352,7 @@ func (s *MetricChunkStore) PutMetricData(namespace string, metricData []MetricDa
 			return err
 		}
 	}
-	return nil
+	return s.FlushAllBuffers()
 }
 
 // MetricDataPoint represents a CloudWatch metric data point.

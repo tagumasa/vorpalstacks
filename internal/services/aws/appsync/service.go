@@ -20,6 +20,7 @@ type AppSyncService struct {
 	stores        sync.Map
 	lambdaInvoker awscommon.LambdaInvoker
 	bus           eventbus.Bus
+	schemaCache   sync.Map
 }
 
 // NewAppSyncService creates a new AppSync service instance scoped to the given account.

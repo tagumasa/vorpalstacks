@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/server/dispatcher"
@@ -19,8 +20,13 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
+var stsStoreKey struct{}
+var stsIAMStoreKey struct{}
+
 // STSService provides AWS Security Token Service operations.
-type STSService struct{}
+type STSService struct {
+	stores sync.Map // global — single cached instances
+}
 
 // NewSTSService creates a new STS service instance.
 func NewSTSService() *STSService {
@@ -31,20 +37,41 @@ func (s *STSService) store(reqCtx *request.RequestContext) (stsstore.SessionStor
 	if stsStore := reqCtx.GetSTSStore(); stsStore != nil {
 		return stsStore, nil
 	}
+	if cached, ok := s.stores.Load(stsStoreKey); ok {
+		if typed, ok := cached.(stsstore.SessionStoreInterface); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetGlobalStorage()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get global storage: %w", err)
 	}
-	region := reqCtx.GetRegion()
-	return stsstore.NewSessionStore(storage, region), nil
+	store := stsstore.NewSessionStore(storage, reqCtx.GetRegion())
+	if actual, loaded := s.stores.LoadOrStore(stsStoreKey, store); loaded {
+		if typed, ok := actual.(stsstore.SessionStoreInterface); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 func (s *STSService) iamStore(reqCtx *request.RequestContext) (iamstore.IAMStoreInterface, error) {
+	if cached, ok := s.stores.Load(stsIAMStoreKey); ok {
+		if typed, ok := cached.(iamstore.IAMStoreInterface); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetGlobalStorage()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get global storage: %w", err)
 	}
-	return iamstore.NewIAMStore(storage, reqCtx.GetAccountID()), nil
+	store := iamstore.NewIAMStore(storage, reqCtx.GetAccountID())
+	if actual, loaded := s.stores.LoadOrStore(stsIAMStoreKey, store); loaded {
+		if typed, ok := actual.(iamstore.IAMStoreInterface); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 // RegisterHandlers registers all STS operation handlers with the dispatcher.

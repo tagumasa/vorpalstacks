@@ -2,6 +2,8 @@
 package acm
 
 import (
+	"sync"
+
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	acmstore "vorpalstacks/internal/store/aws/acm"
@@ -14,11 +16,18 @@ type acmStores struct {
 }
 
 // ACMService provides ACM (AWS Certificate Manager) operations for managing certificates.
-type ACMService struct{}
+type ACMService struct {
+	accountID string
+	region    string
+	stores    sync.Map // region → *acmStores
+}
 
 // NewACMService creates a new ACM service instance with the given storage, account ID, and region.
 func NewACMService(accountID, region string) *ACMService {
-	return &ACMService{}
+	return &ACMService{
+		accountID: accountID,
+		region:    region,
+	}
 }
 
 func (s *ACMService) store(reqCtx *request.RequestContext) (*acmStores, error) {
@@ -28,14 +37,26 @@ func (s *ACMService) store(reqCtx *request.RequestContext) (*acmStores, error) {
 			arnBuilder:   acmstore.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()),
 		}, nil
 	}
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(*acmStores); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return &acmStores{
-		certificates: acmstore.NewCertificateStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()),
-		arnBuilder:   acmstore.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()),
-	}, nil
+	stores := &acmStores{
+		certificates: acmstore.NewCertificateStore(storage, s.accountID, region),
+		arnBuilder:   acmstore.NewARNBuilder(s.accountID, region),
+	}
+	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		if typed, ok := actual.(*acmStores); ok {
+			return typed, nil
+		}
+	}
+	return stores, nil
 }
 
 // RegisterHandlers registers all ACM operation handlers with the dispatcher.

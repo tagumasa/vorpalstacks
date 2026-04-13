@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 	"vorpalstacks/internal/server/dispatcher"
@@ -12,6 +13,8 @@ import (
 	wafstore "vorpalstacks/internal/store/aws/waf"
 	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
+
+var wafv2GlobalAssocKey struct{}
 
 type wafv2Stores struct {
 	webACLs          *wafstore.WebACLStore
@@ -24,7 +27,9 @@ type wafv2Stores struct {
 }
 
 // WAFv2Service implements the AWS WAF v2 API operations.
-type WAFv2Service struct{}
+type WAFv2Service struct {
+	stores sync.Map // region → *wafv2Stores
+}
 
 // NewWAFv2Service creates a new WAFv2Service instance.
 func NewWAFv2Service(accountID, region string) *WAFv2Service {
@@ -44,11 +49,16 @@ func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, erro
 			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), region),
 		}, nil
 	}
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(*wafv2Stores); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return &wafv2Stores{
+	stores := &wafv2Stores{
 		webACLs:          wafstore.NewWebACLStore(storage, reqCtx.GetAccountID(), region),
 		ruleGroups:       wafstore.NewRuleGroupStore(storage, reqCtx.GetAccountID(), region),
 		ipSets:           wafstore.NewIPSetStore(storage, reqCtx.GetAccountID(), region),
@@ -56,7 +66,13 @@ func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, erro
 		associations:     wafstore.NewWebACLAssociationStore(storage),
 		loggingConfigs:   wafstore.NewLoggingStore(storage),
 		arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), region),
-	}, nil
+	}
+	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		if typed, ok := actual.(*wafv2Stores); ok {
+			return typed, nil
+		}
+	}
+	return stores, nil
 }
 
 // RegisterHandlers registers all WAFv2 API operation handlers with the dispatcher.
@@ -136,11 +152,22 @@ func isCloudFrontResource(resourceArn string) bool {
 
 func (s *WAFv2Service) associationStoreFor(reqCtx *request.RequestContext, resourceArn string) (*wafstore.WebACLAssociationStore, error) {
 	if isCloudFrontResource(resourceArn) {
+		if cached, ok := s.stores.Load(wafv2GlobalAssocKey); ok {
+			if typed, ok := cached.(*wafstore.WebACLAssociationStore); ok {
+				return typed, nil
+			}
+		}
 		globalStorage, err := reqCtx.GetGlobalStorage()
 		if err != nil {
 			return nil, err
 		}
-		return wafstore.NewWebACLAssociationStore(globalStorage), nil
+		store := wafstore.NewWebACLAssociationStore(globalStorage)
+		if actual, loaded := s.stores.LoadOrStore(wafv2GlobalAssocKey, store); loaded {
+			if typed, ok := actual.(*wafstore.WebACLAssociationStore); ok {
+				return typed, nil
+			}
+		}
+		return store, nil
 	}
 	stores, err := s.store(reqCtx)
 	if err != nil {
@@ -157,7 +184,20 @@ func (s *WAFv2Service) allAssociationStores(reqCtx *request.RequestContext) ([]*
 	result := []*wafstore.WebACLAssociationStore{stores.associations}
 	globalStorage, err := reqCtx.GetGlobalStorage()
 	if err == nil {
-		result = append(result, wafstore.NewWebACLAssociationStore(globalStorage))
+		if cached, ok := s.stores.Load(wafv2GlobalAssocKey); ok {
+			if typed, ok := cached.(*wafstore.WebACLAssociationStore); ok {
+				result = append(result, typed)
+				return result, nil
+			}
+		}
+		store := wafstore.NewWebACLAssociationStore(globalStorage)
+		if actual, loaded := s.stores.LoadOrStore(wafv2GlobalAssocKey, store); loaded {
+			if typed, ok := actual.(*wafstore.WebACLAssociationStore); ok {
+				result = append(result, typed)
+				return result, nil
+			}
+		}
+		result = append(result, store)
 	}
 	return result, nil
 }

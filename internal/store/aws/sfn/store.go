@@ -399,13 +399,14 @@ func (s *StepFunctionStore) CreateActivityTask(task *ActivityTask) error {
 		queue = make(chan *ActivityTask, 100)
 		s.activityQueues[task.ActivityArn] = queue
 	}
-	s.activityQueuesMu.Unlock()
 
 	select {
 	case queue <- task:
+		s.activityQueuesMu.Unlock()
 		return nil
 	default:
 		_ = s.tasksStore.Delete(task.TaskToken)
+		s.activityQueuesMu.Unlock()
 		return ErrActivityQueueFull
 	}
 }

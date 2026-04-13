@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/timestreamquery"
 	tqtypes "github.com/aws/aws-sdk-go-v2/service/timestreamquery/types"
 	"github.com/aws/aws-sdk-go-v2/service/timestreamwrite"
@@ -32,6 +33,7 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 
 	client := timestreamwrite.NewFromConfig(cfg)
 	queryClient := timestreamquery.NewFromConfig(cfg)
+	iamClient := iam.NewFromConfig(cfg)
 	ctx := context.Background()
 
 	databaseName := fmt.Sprintf("test-db-%d", time.Now().UnixNano())
@@ -297,11 +299,11 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 	var sqARN string
 
 	createIAMRole := func(roleName string) error {
-		return IAMCreateRole(r.endpoint, roleName, `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"timestream.amazonaws.com"},"Action":"sts:AssumeRole"}]}`)
+		return IAMCreateRole(iamClient, roleName, `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"timestream.amazonaws.com"},"Action":"sts:AssumeRole"}]}`)
 	}
 
 	deleteIAMRole := func(roleName string) {
-		IAMDeleteRole(r.endpoint, roleName)
+		IAMDeleteRole(iamClient, roleName)
 	}
 
 	results = append(results, r.RunTest("timestream", "ScheduledQuery_Setup", func() error {

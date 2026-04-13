@@ -188,7 +188,22 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 		if err != nil {
 			return
 		}
-		esmStore = lambdastore.NewEventSourceStore(st, p.accountID, region)
+		if cached, ok := p.lambdaSvc.storeCache.Load(region); ok {
+			if typed, ok := cached.(*lambdaStore); ok {
+				esmStore = typed.EventSources
+			}
+		}
+		if esmStore == nil {
+			esmStore = lambdastore.NewEventSourceStore(st, p.accountID, region)
+			newStore := &lambdaStore{
+				Functions:    lambdastore.NewFunctionStore(st, p.lambdaSvc.accountID, region),
+				Layers:       lambdastore.NewLayerStore(st, p.lambdaSvc.accountID, region),
+				EventSources: esmStore,
+			}
+			if actual, loaded := p.lambdaSvc.storeCache.LoadOrStore(region, newStore); loaded {
+				esmStore = actual.(*lambdaStore).EventSources
+			}
+		}
 	}
 	if esmStore == nil {
 		return
@@ -540,7 +555,7 @@ func (p *esmPoller) invokeLambda(ctx context.Context, functionRef string, payloa
 		functionName = svcarn.ExtractFunctionNameFromARN(functionRef)
 	}
 
-	fnStore := lambdastore.NewFunctionStore(p.lambdaSvc.getRegionalStorage(region), p.accountID, region)
+	fnStore := p.lambdaSvc.getOrCreateFunctionStore(region)
 	function, ver, _, err := p.lambdaSvc.resolveQualifier(fnStore, functionName, "")
 	if err != nil {
 		return 0, nil, fmt.Errorf("esm: failed to resolve function %s: %w", functionName, err)

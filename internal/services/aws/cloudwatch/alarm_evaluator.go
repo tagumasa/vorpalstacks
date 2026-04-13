@@ -645,6 +645,12 @@ func (s *CloudWatchService) evaluatorStoresForRegion(region string) (*cwstore.Al
 		return nil, nil
 	}
 
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(*cloudwatchStores); ok {
+			return typed.alarms, typed.metrics
+		}
+	}
+
 	var storage storage.BasicStorage
 	if s.storageManager != nil {
 		var err error
@@ -661,6 +667,17 @@ func (s *CloudWatchService) evaluatorStoresForRegion(region string) (*cwstore.Al
 	metricStore, err := cwstore.NewMetricChunkStoreWithIndex(storage, region, s.dataPath)
 	if err != nil {
 		return alarmStore, nil
+	}
+
+	stores := &cloudwatchStores{
+		metrics:    metricStore,
+		alarms:     alarmStore,
+		dashboards: cwstore.NewDashboardStore(storage, s.accountID, region),
+	}
+	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		if typed, ok := actual.(*cloudwatchStores); ok {
+			return typed.alarms, typed.metrics
+		}
 	}
 
 	return alarmStore, metricStore

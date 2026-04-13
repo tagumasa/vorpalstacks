@@ -162,6 +162,7 @@ func (s *NeptuneDataService) purgeExpiredQueries() {
 	})
 
 	now := time.Now()
+	s.mu.RLock()
 	s.statsMap.Range(func(key, value any) bool {
 		st := value.(*GraphStatistics)
 		if now.Sub(st.LastAccess) > statsLastAccessTTL {
@@ -169,6 +170,7 @@ func (s *NeptuneDataService) purgeExpiredQueries() {
 		}
 		return true
 	})
+	s.mu.RUnlock()
 }
 
 // SetStorageManager injects the region storage manager for per-region store
@@ -324,8 +326,10 @@ func (s *NeptuneDataService) ExecuteFastReset(ctx context.Context, reqCtx *reque
 			gs.Clear()
 		}
 		region := reqCtx.GetRegion()
+		s.mu.Lock()
 		s.statsDisabled = false
 		s.autoComputeEnabled = true
+		s.mu.Unlock()
 		s.statsMap.Store(region, &GraphStatistics{
 			LabelCounts: make(map[string]int64),
 			RelCounts:   make(map[string]int64),

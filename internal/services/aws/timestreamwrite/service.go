@@ -2,6 +2,9 @@
 package timestreamwrite
 
 import (
+	"fmt"
+	"sync"
+
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
@@ -20,6 +23,7 @@ type Service struct {
 	accountID  string
 	serverHost string
 	dataPath   string
+	stores     sync.Map // region → *tsWriteStores
 }
 
 // NewService creates a new Timestream Write service instance.
@@ -40,23 +44,38 @@ func (s *Service) store(ctx *request.RequestContext) (*tsWriteStores, error) {
 			batchLoadStore: stores.BatchLoadTaskStore().Raw(),
 		}, nil
 	}
+
+	region := ctx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(*tsWriteStores); ok {
+			return typed, nil
+		}
+	}
+
 	storage, err := ctx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	region := ctx.GetRegion()
+
 	tsStore := tsstore.NewStore(storage, s.accountID, region)
 	tableStore := tsstore.NewTableStore(storage, tsStore, s.accountID, region)
 	recordStore, err := tsstore.NewRecordStoreWithIndex(storage, tableStore, region, s.dataPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create record store: %w", err)
 	}
-	return &tsWriteStores{
+
+	stores := &tsWriteStores{
 		store:          tsStore,
 		tableStore:     tableStore,
 		recordStore:    recordStore,
 		batchLoadStore: tsstore.NewBatchLoadTaskStore(storage, tableStore, region),
-	}, nil
+	}
+	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		if typed, ok := actual.(*tsWriteStores); ok {
+			return typed, nil
+		}
+	}
+	return stores, nil
 }
 
 // RegisterHandlers registers the Timestream Write service handlers with the dispatcher.

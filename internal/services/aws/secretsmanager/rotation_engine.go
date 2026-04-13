@@ -86,7 +86,15 @@ func (rc *rotationChecker) checkDueRotationsForRegion(ctx context.Context, regio
 		rc.logError("failed to get storage for rotation check", logs.String("region", region), logs.Err(err))
 		return
 	}
-	store := secretsmanagerstore.NewSecretStore(storage, rc.svc.accountID, region)
+	var store secretsmanagerstore.SecretStoreInterface
+	if cached, ok := rc.svc.stores.Load(region); ok {
+		store = cached.(secretsmanagerstore.SecretStoreInterface)
+	} else {
+		store = secretsmanagerstore.NewSecretStore(storage, rc.svc.accountID, region)
+		if actual, loaded := rc.svc.stores.LoadOrStore(region, store); loaded {
+			store = actual.(secretsmanagerstore.SecretStoreInterface)
+		}
+	}
 
 	opts := common.ListOptions{MaxItems: 100}
 	result, err := common.List[secretsmanagerstore.Secret](store.GetBaseStore(), opts, nil)

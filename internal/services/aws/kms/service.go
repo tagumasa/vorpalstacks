@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"net/http"
+	"sync"
 
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/errors"
@@ -27,6 +28,7 @@ type KMSService struct {
 	hsmBackend      hsm.Backend
 	policyEvaluator *policy.PolicyEvaluator
 	accountID       string
+	stores          sync.Map // region → *kmsStores
 }
 
 // NewKMSService creates a new KMS service instance.
@@ -48,16 +50,27 @@ func (s *KMSService) store(reqCtx *request.RequestContext) (*kmsStores, error) {
 		}, nil
 	}
 	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(*kmsStores); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return &kmsStores{
+	stores := &kmsStores{
 		keys:        kmsstore.NewKeyStore(storage, s.accountID, region),
 		aliases:     kmsstore.NewAliasStore(storage, s.accountID, region),
 		grants:      kmsstore.NewGrantStore(storage, s.accountID, region),
 		keyPolicies: kmsstore.NewKeyPolicyStore(storage, region),
-	}, nil
+	}
+	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		if typed, ok := actual.(*kmsStores); ok {
+			return typed, nil
+		}
+	}
+	return stores, nil
 }
 
 // RegisterHandlers registers the KMS service handlers with the dispatcher.

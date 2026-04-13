@@ -3,6 +3,7 @@ package dynamodb
 
 import (
 	"fmt"
+	"sync"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
@@ -13,6 +14,7 @@ import (
 // DynamoDBService provides DynamoDB operations for managing tables, items, and other resources.
 type DynamoDBService struct {
 	accountID string
+	stores    sync.Map // region → dynamodbstore.DynamoDBStoreInterface
 }
 
 // NewDynamoDBService creates a new DynamoDB service instance.
@@ -28,6 +30,11 @@ func (s *DynamoDBService) store(reqCtx *request.RequestContext) (dynamodbstore.D
 		return store, nil
 	}
 	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(dynamodbstore.DynamoDBStoreInterface); ok {
+			return typed, nil
+		}
+	}
 	basicStorage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get storage: %w", err)
@@ -36,7 +43,13 @@ func (s *DynamoDBService) store(reqCtx *request.RequestContext) (dynamodbstore.D
 	if !ok {
 		return nil, fmt.Errorf("storage does not implement TransactionalStorageWith2PC")
 	}
-	return dynamodbstore.NewDynamoDBStore(txnStorage, s.accountID, region), nil
+	store = dynamodbstore.NewDynamoDBStore(txnStorage, s.accountID, region)
+	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(dynamodbstore.DynamoDBStoreInterface); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 // RegisterHandlers registers all DynamoDB operation handlers with the dispatcher.

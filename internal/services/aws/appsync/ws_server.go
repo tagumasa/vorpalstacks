@@ -451,7 +451,7 @@ func (s *EventServer) handleSubscribe(ws *wsConnection, subId, channel string, a
 		"type": "subscribe_success",
 		"id":   subId,
 	})
-	ws.sendCh <- resp
+	s.sendMessage(ws, resp)
 }
 
 // handlePublish validates events and broadcasts them to matching subscribers.
@@ -486,7 +486,7 @@ func (s *EventServer) handlePublish(ws *wsConnection, pubId, channel string, eve
 		"successful": result.Successful,
 		"failed":     result.Failed,
 	})
-	ws.sendCh <- resp
+	s.sendMessage(ws, resp)
 }
 
 // handleUnsubscribe removes a subscription and stops receiving events on that channel.
@@ -513,7 +513,7 @@ func (s *EventServer) handleUnsubscribe(ws *wsConnection, subId string) {
 		"type": "unsubscribe_success",
 		"id":   subId,
 	})
-	ws.sendCh <- resp
+	s.sendMessage(ws, resp)
 }
 
 // publishEvents broadcasts events to all subscribers matching the channel path.
@@ -541,15 +541,7 @@ func (s *EventServer) publishEvents(channel string, events []string) *publishRes
 			"event": eventString,
 		})
 
-		ws.mu.RLock()
-		if !ws.closed {
-			select {
-			case ws.sendCh <- dataMsg:
-			default:
-				logs.Warn("WebSocket send buffer full, dropping message", logs.String("connId", ws.id))
-			}
-		}
-		ws.mu.RUnlock()
+		s.sendMessage(ws, dataMsg)
 	}
 
 	for i := range events {
@@ -617,6 +609,19 @@ type publishResult struct {
 	Failed []interface{} `json:"failed"`
 }
 
+func (s *EventServer) sendMessage(ws *wsConnection, msg []byte) {
+	ws.mu.RLock()
+	defer ws.mu.RUnlock()
+	if ws.closed {
+		return
+	}
+	select {
+	case ws.sendCh <- msg:
+	default:
+		logs.Warn("WebSocket send buffer full, dropping message", logs.String("connId", ws.id))
+	}
+}
+
 func (s *EventServer) sendError(ws *wsConnection, id, errorType, message string) {
 	resp, _ := json.Marshal(map[string]interface{}{
 		"type": "error",
@@ -625,11 +630,7 @@ func (s *EventServer) sendError(ws *wsConnection, id, errorType, message string)
 			{"errorType": errorType, "message": message},
 		},
 	})
-	ws.mu.RLock()
-	if !ws.closed {
-		ws.sendCh <- resp
-	}
-	ws.mu.RUnlock()
+	s.sendMessage(ws, resp)
 }
 
 func (s *EventServer) sendSubscribeError(ws *wsConnection, id, errorType, message string) {
@@ -640,11 +641,7 @@ func (s *EventServer) sendSubscribeError(ws *wsConnection, id, errorType, messag
 			{"errorType": errorType, "message": message},
 		},
 	})
-	ws.mu.RLock()
-	if !ws.closed {
-		ws.sendCh <- resp
-	}
-	ws.mu.RUnlock()
+	s.sendMessage(ws, resp)
 }
 
 func (s *EventServer) sendPublishError(ws *wsConnection, id, errorType, message string) {
@@ -655,11 +652,7 @@ func (s *EventServer) sendPublishError(ws *wsConnection, id, errorType, message 
 			{"errorType": errorType, "message": message},
 		},
 	})
-	ws.mu.RLock()
-	if !ws.closed {
-		ws.sendCh <- resp
-	}
-	ws.mu.RUnlock()
+	s.sendMessage(ws, resp)
 }
 
 func (s *EventServer) sendUnsubscribeError(ws *wsConnection, id, errorType, message string) {
@@ -670,9 +663,5 @@ func (s *EventServer) sendUnsubscribeError(ws *wsConnection, id, errorType, mess
 			{"errorType": errorType, "message": message},
 		},
 	})
-	ws.mu.RLock()
-	if !ws.closed {
-		ws.sendCh <- resp
-	}
-	ws.mu.RUnlock()
+	s.sendMessage(ws, resp)
 }

@@ -3,6 +3,7 @@ package kinesis
 
 import (
 	"fmt"
+	"sync"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
@@ -13,6 +14,7 @@ import (
 // KinesisService provides AWS Kinesis stream operations.
 type KinesisService struct {
 	accountID string
+	stores    sync.Map // region → *kinesisstore.KinesisStore
 }
 
 // NewKinesisService creates a new Kinesis service instance.
@@ -23,6 +25,12 @@ func NewKinesisService(accountID, region string) *KinesisService {
 }
 
 func (s *KinesisService) store(reqCtx *request.RequestContext) (*kinesisstore.KinesisStore, error) {
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(*kinesisstore.KinesisStore); ok {
+			return typed, nil
+		}
+	}
 	basicStore, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get storage: %w", err)
@@ -31,7 +39,13 @@ func (s *KinesisService) store(reqCtx *request.RequestContext) (*kinesisstore.Ki
 	if !ok {
 		return nil, fmt.Errorf("storage does not support TransactionalStorageWith2PC")
 	}
-	return kinesisstore.NewKinesisStore(tstore, reqCtx.GetAccountID(), reqCtx.GetRegion()), nil
+	store := kinesisstore.NewKinesisStore(tstore, reqCtx.GetAccountID(), region)
+	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(*kinesisstore.KinesisStore); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 // RegisterHandlers registers the Kinesis service handlers with the dispatcher.

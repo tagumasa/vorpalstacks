@@ -3,15 +3,19 @@ package iam
 
 import (
 	"fmt"
+	"sync"
 
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
+var iamstoreKey struct{}
+
 // IAMService provides IAM operations for managing users, groups, roles, and policies.
 type IAMService struct {
 	accountID string
+	stores    sync.Map // global — single cached instance
 }
 
 // NewIAMService creates a new IAM service instance for the given account.
@@ -22,11 +26,22 @@ func NewIAMService(accountID string) *IAMService {
 }
 
 func (s *IAMService) store(reqCtx *request.RequestContext) (*iamstore.IAMStore, error) {
+	if cached, ok := s.stores.Load(iamstoreKey); ok {
+		if typed, ok := cached.(*iamstore.IAMStore); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetGlobalStorage()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get global storage: %w", err)
 	}
-	return iamstore.NewIAMStore(storage, s.accountID), nil
+	store := iamstore.NewIAMStore(storage, s.accountID)
+	if actual, loaded := s.stores.LoadOrStore(iamstoreKey, store); loaded {
+		if typed, ok := actual.(*iamstore.IAMStore); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 // RegisterHandlers registers all IAM operation handlers with the dispatcher.

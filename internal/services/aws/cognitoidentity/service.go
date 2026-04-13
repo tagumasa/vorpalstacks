@@ -2,17 +2,26 @@
 package cognitoidentity
 
 import (
+	"sync"
+
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 )
 
 // CognitoIdentityService provides Cognito Identity service operations.
-type CognitoIdentityService struct{}
+type CognitoIdentityService struct {
+	accountID string
+	region    string
+	stores    sync.Map // region → cognitoidentitystore.CognitoIdentityStoreInterface
+}
 
 // NewCognitoIdentityService creates a new Cognito Identity service.
 func NewCognitoIdentityService(accountID, region string) *CognitoIdentityService {
-	return &CognitoIdentityService{}
+	return &CognitoIdentityService{
+		accountID: accountID,
+		region:    region,
+	}
 }
 
 // store returns the Cognito Identity store for the given request context.
@@ -20,11 +29,23 @@ func (s *CognitoIdentityService) store(reqCtx *request.RequestContext) (cognitoi
 	if store := reqCtx.GetCognitoIdentityStore(); store != nil {
 		return store, nil
 	}
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(cognitoidentitystore.CognitoIdentityStoreInterface); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return cognitoidentitystore.NewCognitoIdentityStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()), nil
+	store := cognitoidentitystore.NewCognitoIdentityStore(storage, s.accountID, region)
+	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(cognitoidentitystore.CognitoIdentityStoreInterface); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 // RegisterHandlers registers the Cognito Identity handlers with the dispatcher.

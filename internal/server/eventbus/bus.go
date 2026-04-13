@@ -340,6 +340,8 @@ func (b *EventBus) PublishSync(ctx context.Context, event Event) (HandlerResult,
 		return snapshot[i].priority > snapshot[j].priority
 	})
 
+	var lastResult HandlerResult
+
 	for _, sub := range snapshot {
 		if !sub.authorized {
 			continue
@@ -359,9 +361,10 @@ func (b *EventBus) PublishSync(ctx context.Context, event Event) (HandlerResult,
 		if result.Error != nil {
 			return result, nil
 		}
+		lastResult = result
 	}
 
-	return HandlerResult{}, nil
+	return lastResult, nil
 }
 
 // Publish enqueues an event for asynchronous delivery, persisting it to the
@@ -635,6 +638,10 @@ func (b *EventBus) asyncWorker() {
 
 func (b *EventBus) processOutboxEntry(entry *OutboxEntry) {
 	ctx := context.Background()
+
+	if entry.HandlerResults == nil {
+		entry.HandlerResults = make(map[string]string)
+	}
 
 	updated, err := b.outbox.UpdateStatus(ctx, entry.EventID, OutboxPending, OutboxProcessing)
 	if err != nil || !updated {

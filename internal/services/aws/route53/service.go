@@ -4,6 +4,7 @@ package route53
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
@@ -13,11 +14,14 @@ import (
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
 
+var route53FallbackKey struct{}
+
 // Route53Service provides AWS Route 53 DNS operations.
 type Route53Service struct {
 	accountID string
 	dnsStores *route53store.Route53Stores
 	dnsServer *dnsserver.DNSServer
+	stores    sync.Map // global — single cached instance for store() fallback
 }
 
 // NewRoute53Service creates a new Route 53 service instance.
@@ -55,18 +59,29 @@ func (s *Route53Service) store(reqCtx *request.RequestContext) (*route53store.Ro
 	if stores := reqCtx.GetRoute53Stores(); stores != nil {
 		return stores.Raw(), nil
 	}
+	if cached, ok := s.stores.Load(route53FallbackKey); ok {
+		if typed, ok := cached.(*route53store.Route53Stores); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetGlobalStorage()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get global storage: %w", err)
 	}
-	return route53store.NewRoute53Stores(
+	stores := route53store.NewRoute53Stores(
 		route53store.NewHostedZoneStore(storage, s.accountID),
 		route53store.NewHealthCheckStore(storage, s.accountID),
 		route53store.NewRecordSetStore(storage),
 		route53store.NewChangeStore(storage),
 		route53store.NewTagStore(storage),
 		route53store.NewARNBuilder(s.accountID),
-	), nil
+	)
+	if actual, loaded := s.stores.LoadOrStore(route53FallbackKey, stores); loaded {
+		if typed, ok := actual.(*route53store.Route53Stores); ok {
+			return typed, nil
+		}
+	}
+	return stores, nil
 }
 
 // HostedZoneStore returns the hosted zone store.

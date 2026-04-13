@@ -27,6 +27,8 @@ type RecordStore struct {
 	buffers    map[string]*chunkBuffer
 	bufferMu   sync.Mutex
 	bufferSize int
+	stopCh     chan struct{}
+	closeOnce  sync.Once
 }
 
 // NewRecordStore creates a new record store.
@@ -35,10 +37,11 @@ func NewRecordStore(store storage.BasicStorage, tableStore *TableStore, region, 
 		tableStore: tableStore,
 		region:     region,
 		dataPath:   dataPath,
-		chunkSize:  16 * 1024 * 1024,
+		chunkSize:  chunk.DefaultChunkSize,
 		useIndex:   false,
 		buffers:    make(map[string]*chunkBuffer),
 		bufferSize: 1000,
+		stopCh:     make(chan struct{}),
 	}
 	go s.cleanupChunkLocks()
 	return s
@@ -56,14 +59,20 @@ func NewRecordStoreWithIndex(store storage.BasicStorage, tableStore *TableStore,
 		tableStore: tableStore,
 		region:     region,
 		dataPath:   dataPath,
-		chunkSize:  16 * 1024 * 1024,
+		chunkSize:  chunk.DefaultChunkSize,
 		index:      idx,
 		useIndex:   true,
 		buffers:    make(map[string]*chunkBuffer),
 		bufferSize: 1000,
+		stopCh:     make(chan struct{}),
 	}
 	go s.cleanupChunkLocks()
 	return s, nil
+}
+
+// Close stops the background cleanup goroutine.
+func (s *RecordStore) Close() {
+	s.closeOnce.Do(func() { close(s.stopCh) })
 }
 
 func convertDimensions(dimensions []Dimension) []chunk.Dimension {
@@ -98,7 +107,12 @@ func (s *RecordStore) getChunkLock(chunkPath string) *sync.Mutex {
 func (s *RecordStore) cleanupChunkLocks() {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
-	for range ticker.C {
+	for {
+		select {
+		case <-s.stopCh:
+			return
+		case <-ticker.C:
+		}
 		cutoff := time.Now().Add(-2 * time.Hour).Format("2006-01-02-15")
 		s.chunkMu.Range(func(key, _ interface{}) bool {
 			path := key.(string)
@@ -107,6 +121,17 @@ func (s *RecordStore) cleanupChunkLocks() {
 				hour := strings.TrimSuffix(path[idx+1:], ".chunk")
 				if hour < cutoff {
 					s.chunkMu.Delete(key)
+				}
+			}
+			return true
+		})
+		s.chunkPaths.Range(func(key, _ interface{}) bool {
+			path := key.(string)
+			idx := strings.LastIndex(path, "/")
+			if idx >= 0 {
+				hour := strings.TrimSuffix(path[idx+1:], ".chunk")
+				if hour < cutoff {
+					s.chunkPaths.Delete(key)
 				}
 			}
 			return true
@@ -148,7 +173,6 @@ func (s *RecordStore) writeChunk(chunkPath string, entry *chunk.TimestreamEntry)
 
 	writer := chunk.NewWriter(&chunk.WriterOptions{
 		ChunksDir:   chunkDir,
-		ChunkSize:   s.chunkSize,
 		Encoding:    chunk.EncodingZstd,
 		SyncOnWrite: true,
 	})
@@ -427,10 +451,8 @@ func (s *RecordStore) flushBuffer(chunkPath string, buf *chunkBuffer) error {
 	}
 
 	writer := chunk.NewWriter(&chunk.WriterOptions{
-		ChunksDir:   chunkDir,
-		ChunkSize:   s.chunkSize,
-		Encoding:    chunk.EncodingZstd,
-		SyncOnWrite: false,
+		ChunksDir: chunkDir,
+		Encoding:  chunk.EncodingZstd,
 	})
 
 	if err := writer.WriteBatch(chunkEntries); err != nil {

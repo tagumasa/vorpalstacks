@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 
@@ -22,6 +23,7 @@ type FunctionURLServer struct {
 	accountID      string
 	region         string
 	lambdaInvoker  LambdaInvoker
+	storeCache     sync.Map // region → *lambdastore.FunctionStore
 }
 
 // LambdaInvoker abstracts the ability to invoke a Lambda function for gateway use.
@@ -241,7 +243,23 @@ func (s *FunctionURLServer) findFunction(functionName string) (*lambdastore.Func
 		if err != nil {
 			continue
 		}
-		fs := lambdastore.NewFunctionStore(st, s.accountID, region)
+		var fs *lambdastore.FunctionStore
+		if cached, ok := s.storeCache.Load(region); ok {
+			if typed, ok := cached.(*lambdaStore); ok {
+				fs = typed.Functions
+			}
+		}
+		if fs == nil {
+			fs = lambdastore.NewFunctionStore(st, s.accountID, region)
+			newStore := &lambdaStore{
+				Functions:    fs,
+				Layers:       lambdastore.NewLayerStore(st, s.accountID, region),
+				EventSources: lambdastore.NewEventSourceStore(st, s.accountID, region),
+			}
+			if actual, loaded := s.storeCache.LoadOrStore(region, newStore); loaded {
+				fs = actual.(*lambdaStore).Functions
+			}
+		}
 		fn, err := fs.Get(functionName)
 		if err == nil && fn != nil {
 			return fn, region

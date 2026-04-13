@@ -2,17 +2,26 @@
 package cloudtrail
 
 import (
+	"sync"
+
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 
 // CloudTrailService provides AWS CloudTrail operations.
-type CloudTrailService struct{}
+type CloudTrailService struct {
+	accountID string
+	region    string
+	stores    sync.Map // region → cloudtrailstore.CloudTrailStoreInterface
+}
 
 // NewCloudTrailService creates a new CloudTrail service instance.
 func NewCloudTrailService(accountID, region string) *CloudTrailService {
-	return &CloudTrailService{}
+	return &CloudTrailService{
+		accountID: accountID,
+		region:    region,
+	}
 }
 
 func (s *CloudTrailService) store(reqCtx *request.RequestContext) (cloudtrailstore.CloudTrailStoreInterface, error) {
@@ -20,11 +29,23 @@ func (s *CloudTrailService) store(reqCtx *request.RequestContext) (cloudtrailsto
 	if store != nil {
 		return store, nil
 	}
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(cloudtrailstore.CloudTrailStoreInterface); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return cloudtrailstore.NewCloudTrailStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()), nil
+	store = cloudtrailstore.NewCloudTrailStore(storage, s.accountID, region)
+	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(cloudtrailstore.CloudTrailStoreInterface); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 // RegisterHandlers registers the CloudTrail service handlers with the dispatcher.

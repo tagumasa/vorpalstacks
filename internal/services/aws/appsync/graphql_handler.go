@@ -78,7 +78,7 @@ func (s *AppSyncService) HandleGraphQLExecution(ctx context.Context, reqCtx *req
 		gqlReq.Variables = make(map[string]interface{})
 	}
 
-	engine := newGraphQLEngine(store, s.lambdaInvoker, wrapBus(s.bus))
+	engine := newGraphQLEngine(store, s.lambdaInvoker, wrapBus(s.bus), &s.schemaCache)
 	result := engine.Execute(ctx, reqCtx, apiId, &gqlReq)
 
 	headers := http.Header{}

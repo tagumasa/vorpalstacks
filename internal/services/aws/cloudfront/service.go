@@ -13,8 +13,6 @@ import (
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
-var managedPoliciesOnce sync.Once
-
 // cloudfrontStores holds the various CloudFront stores.
 type cloudfrontStores struct {
 	distributions           *cloudfrontstore.DistributionStore
@@ -28,7 +26,9 @@ type cloudfrontStores struct {
 
 // CloudFrontService provides AWS CloudFront operations.
 type CloudFrontService struct {
-	accountID string
+	accountID           string
+	stores              sync.Map // global (no region) — single cached instance
+	seedManagedPolicies sync.Once
 }
 
 // NewCloudFrontService creates a new CloudFront service instance.
@@ -37,6 +37,8 @@ func NewCloudFrontService(accountID string) *CloudFrontService {
 		accountID: accountID,
 	}
 }
+
+var globalStoresKey struct{}
 
 // store returns the CloudFront stores for the given request context.
 func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontStores, error) {
@@ -52,6 +54,11 @@ func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontSt
 			arnBuilder:              raw.ARNBuilder(),
 		}, nil
 	}
+	if cached, ok := s.stores.Load(globalStoresKey); ok {
+		if typed, ok := cached.(*cloudfrontStores); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetGlobalStorage()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get global storage: %w", err)
@@ -59,10 +66,10 @@ func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontSt
 	arnBuilder := cloudfrontstore.NewARNBuilder(s.accountID)
 	cacheStore := cloudfrontstore.NewCachePolicyStore(storage, s.accountID)
 	orpStore := cloudfrontstore.NewOriginRequestPolicyStore(storage, s.accountID)
-	managedPoliciesOnce.Do(func() {
+	s.seedManagedPolicies.Do(func() {
 		cloudfrontstore.SeedManagedPolicies(cacheStore, orpStore)
 	})
-	return &cloudfrontStores{
+	stores := &cloudfrontStores{
 		distributions:           cloudfrontstore.NewDistributionStore(storage, s.accountID),
 		cachePolicies:           cacheStore,
 		originRequestPolicies:   orpStore,
@@ -70,15 +77,34 @@ func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontSt
 		responseHeadersPolicies: cloudfrontstore.NewResponseHeadersPolicyStore(storage, s.accountID),
 		tags:                    cloudfrontstore.NewTagStore(storage),
 		arnBuilder:              arnBuilder,
-	}, nil
+	}
+	if actual, loaded := s.stores.LoadOrStore(globalStoresKey, stores); loaded {
+		if typed, ok := actual.(*cloudfrontStores); ok {
+			return typed, nil
+		}
+	}
+	return stores, nil
 }
 
+var globalWAFAssocKey struct{}
+
 func (s *CloudFrontService) wafAssociationStore(reqCtx *request.RequestContext) (*wafstore.WebACLAssociationStore, error) {
+	if cached, ok := s.stores.Load(globalWAFAssocKey); ok {
+		if typed, ok := cached.(*wafstore.WebACLAssociationStore); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetGlobalStorage()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get global storage for WAF association: %w", err)
 	}
-	return wafstore.NewWebACLAssociationStore(storage), nil
+	store := wafstore.NewWebACLAssociationStore(storage)
+	if actual, loaded := s.stores.LoadOrStore(globalWAFAssocKey, store); loaded {
+		if typed, ok := actual.(*wafstore.WebACLAssociationStore); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 func (s *CloudFrontService) syncWAFAssociation(reqCtx *request.RequestContext, webACLId, distributionArn string) error {

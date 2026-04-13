@@ -40,6 +40,7 @@ type Service struct {
 	asyncWg       sync.WaitGroup
 	cancelMu      sync.Mutex
 	cancelFuncs   map[string]context.CancelFunc
+	stores        sync.Map // region → *athenaStores
 }
 
 // NewService creates a new Athena service instance.
@@ -91,13 +92,19 @@ func (s *Service) store(reqCtx *request.RequestContext) (*athenaStores, error) {
 		}, nil
 	}
 
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(*athenaStores); ok {
+			return typed, nil
+		}
+	}
+
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
 
-	region := reqCtx.GetRegion()
-	return &athenaStores{
+	stores := &athenaStores{
 		workGroupStore:         athenastore.NewWorkGroupStore(storage, s.accountID, region),
 		namedQueryStore:        athenastore.NewNamedQueryStore(storage, region),
 		preparedStatementStore: athenastore.NewPreparedStatementStore(storage, region),
@@ -107,7 +114,13 @@ func (s *Service) store(reqCtx *request.RequestContext) (*athenaStores, error) {
 		databaseStore:          athenastore.NewDatabaseStore(storage, region),
 		tableStore:             athenastore.NewTableStore(storage, region),
 		tableDataStore:         athenastore.NewTableDataStore(storage, region),
-	}, nil
+	}
+	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		if typed, ok := actual.(*athenaStores); ok {
+			return typed, nil
+		}
+	}
+	return stores, nil
 }
 
 // Shutdown gracefully shuts down the Athena service by waiting for all asynchronous operations to complete.

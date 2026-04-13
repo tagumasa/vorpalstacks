@@ -2,6 +2,8 @@
 package sesv2
 
 import (
+	"sync"
+
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
@@ -10,6 +12,7 @@ import (
 // SESv2Service provides SES v2 email service operations.
 type SESv2Service struct {
 	accountID string
+	stores    sync.Map // region → sesv2store.SESv2StoreInterface
 }
 
 // NewSESv2Service creates a new SES v2 service instance.
@@ -23,11 +26,23 @@ func (s *SESv2Service) store(reqCtx *request.RequestContext) (sesv2store.SESv2St
 	if store := reqCtx.GetSESv2Store(); store != nil {
 		return store, nil
 	}
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(sesv2store.SESv2StoreInterface); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return sesv2store.NewSESv2Store(storage, s.accountID, reqCtx.GetRegion()), nil
+	store := sesv2store.NewSESv2Store(storage, s.accountID, region)
+	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(sesv2store.SESv2StoreInterface); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 // RegisterHandlers registers the SES v2 service handlers with the dispatcher.

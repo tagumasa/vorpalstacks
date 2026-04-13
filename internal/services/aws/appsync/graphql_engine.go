@@ -54,7 +54,7 @@ type graphQLEngine struct {
 	store         *appsyncstore.AppSyncStore
 	lambdaInvoker awscommon.LambdaInvoker
 	bus           BusPublisher
-	schemaCache   sync.Map
+	schemaCache   *sync.Map
 }
 
 // BusPublisher abstracts the event bus publish capability for WebSocket
@@ -77,11 +77,12 @@ func (a *busPublisherAdapter) Publish(ctx context.Context, event interface{}) er
 }
 
 // newGraphQLEngine creates a new GraphQL execution engine scoped to the given store.
-func newGraphQLEngine(store *appsyncstore.AppSyncStore, lambdaInvoker awscommon.LambdaInvoker, bus BusPublisher) *graphQLEngine {
+func newGraphQLEngine(store *appsyncstore.AppSyncStore, lambdaInvoker awscommon.LambdaInvoker, bus BusPublisher, schemaCache *sync.Map) *graphQLEngine {
 	return &graphQLEngine{
 		store:         store,
 		lambdaInvoker: lambdaInvoker,
 		bus:           bus,
+		schemaCache:   schemaCache,
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/scheduler"
 	"github.com/aws/aws-sdk-go-v2/service/scheduler/types"
 	"vorpalstacks-sdk-tests/config"
@@ -30,6 +31,7 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 	}
 
 	client := scheduler.NewFromConfig(cfg)
+	iamClient := iam.NewFromConfig(cfg)
 	ctx := context.Background()
 
 	scheduleName := fmt.Sprintf("TestSchedule-%d", time.Now().UnixNano())
@@ -37,17 +39,17 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
 
 	trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"scheduler.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
-	if err := IAMCreateRole(r.endpoint, roleName, trustPolicy); err != nil {
+	if err := IAMCreateRole(iamClient, roleName, trustPolicy); err != nil {
 		results = append(results, TestResult{Service: "scheduler", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
 		return results
 	}
-	defer IAMDeleteRoleCtx(ctx, r.endpoint, roleName)
+	defer IAMDeleteRoleCtx(ctx, iamClient, roleName)
 
 	createRole := func(rn string) {
-		IAMCreateRole(r.endpoint, rn, trustPolicy)
+		IAMCreateRole(iamClient, rn, trustPolicy)
 	}
 	deleteRole := func(rn string) {
-		IAMDeleteRole(r.endpoint, rn)
+		IAMDeleteRole(iamClient, rn)
 	}
 
 	targetInput := map[string]string{

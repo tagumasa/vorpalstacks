@@ -2,6 +2,9 @@
 package timestreamquery
 
 import (
+	"fmt"
+	"sync"
+
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -27,6 +30,7 @@ type Service struct {
 	serverHost   string
 	dataPath     string
 	preprocessor *sqlparser.Preprocessor
+	stores       sync.Map // region → *tsQueryStores
 }
 
 // NewService creates a new Timestream Query service.
@@ -57,18 +61,27 @@ func (s *Service) store(ctx *request.RequestContext) (*tsQueryStores, error) {
 			arnBuilder:             svcarn.NewARNBuilder(s.accountID, ctx.GetRegion()),
 		}, nil
 	}
+
+	region := ctx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(*tsQueryStores); ok {
+			return typed, nil
+		}
+	}
+
 	storage, err := ctx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	region := ctx.GetRegion()
+
 	dbStore := tsstore.NewStore(storage, s.accountID, region)
 	tableStore := tsstore.NewTableStore(storage, dbStore, s.accountID, region)
 	recordStore, err := tsstore.NewRecordStoreWithIndex(storage, tableStore, region, s.dataPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create record store: %w", err)
 	}
-	return &tsQueryStores{
+
+	stores := &tsQueryStores{
 		recordStore:            recordStore,
 		tableStore:             tableStore,
 		dbStore:                dbStore,
@@ -77,7 +90,13 @@ func (s *Service) store(ctx *request.RequestContext) (*tsQueryStores, error) {
 		accountSettingsStore:   tsstore.NewAccountSettingsStore(storage, s.accountID, region),
 		queryInfoStore:         storecommon.NewBaseStore(storage.Bucket("timestream-query-info-"+region), "timestream-query"),
 		arnBuilder:             svcarn.NewARNBuilder(s.accountID, region),
-	}, nil
+	}
+	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		if typed, ok := actual.(*tsQueryStores); ok {
+			return typed, nil
+		}
+	}
+	return stores, nil
 }
 
 // RegisterHandlers registers the Timestream Query service handlers with the dispatcher.

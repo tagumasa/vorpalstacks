@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"vorpalstacks-sdk-tests/config"
@@ -32,16 +33,17 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		})
 	}
 
+	client := lambda.NewFromConfig(cfg)
+	iamClient := iam.NewFromConfig(cfg)
+	ctx := context.Background()
+
 	createIAMRole := func(roleName string) error {
-		return IAMCreateRole(r.endpoint, roleName, `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`)
+		return IAMCreateRole(iamClient, roleName, `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`)
 	}
 
 	deleteIAMRole := func(roleName string) {
-		IAMDeleteRole(r.endpoint, roleName)
+		IAMDeleteRole(iamClient, roleName)
 	}
-
-	client := lambda.NewFromConfig(cfg)
-	ctx := context.Background()
 
 	functionName := fmt.Sprintf("TestFunction-%d", time.Now().UnixNano())
 	roleName := fmt.Sprintf("TestRole-%d", time.Now().UnixNano())

@@ -45,6 +45,7 @@ type Engine struct {
 	lambdaInvoker  common.LambdaInvoker
 	accountID      string
 	bus            *eventbus.EventBus
+	stores         sync.Map // region → *schedulerstore.SchedulerStore
 
 	running   bool
 	runningMu sync.RWMutex
@@ -144,6 +145,9 @@ func (e *Engine) checkSchedules() {
 			continue
 		}
 		store := schedulerstore.NewSchedulerStore(storage, e.accountID, region)
+		if actual, loaded := e.stores.LoadOrStore(region, store); loaded {
+			store = actual.(*schedulerstore.SchedulerStore)
+		}
 		schedules, err := store.GetAllEnabledSchedules(e.ctx)
 		if err != nil {
 			logs.Debug("Failed to get enabled schedules", logs.String("region", region), logs.String("error", err.Error()))
@@ -360,7 +364,15 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 				logs.String("error", err.Error()))
 			return
 		}
-		store := schedulerstore.NewSchedulerStore(storage, e.accountID, region)
+		var store *schedulerstore.SchedulerStore
+		if cached, ok := e.stores.Load(region); ok {
+			store = cached.(*schedulerstore.SchedulerStore)
+		} else {
+			store = schedulerstore.NewSchedulerStore(storage, e.accountID, region)
+			if actual, loaded := e.stores.LoadOrStore(region, store); loaded {
+				store = actual.(*schedulerstore.SchedulerStore)
+			}
+		}
 		if err := store.DeleteSchedule(ctx, schedule.GroupName, schedule.Name); err != nil {
 			logs.Debug("Failed to delete schedule after completion",
 				logs.String("schedule", schedule.Name),

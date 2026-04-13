@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
 	"github.com/aws/aws-sdk-go-v2/service/sfn/types"
 	"vorpalstacks-sdk-tests/config"
@@ -33,6 +33,7 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	}
 
 	client := sfn.NewFromConfig(cfg)
+	iamClient := iam.NewFromConfig(cfg)
 	ctx := context.Background()
 
 	stateMachineName := fmt.Sprintf("TestStateMachine-%d", time.Now().UnixNano())
@@ -41,11 +42,11 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	roleARN := fmt.Sprintf("arn:aws:iam::000000000000:role/%s", roleName)
 
 	trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"states.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
-	if err := IAMCreateRole(r.endpoint, roleName, trustPolicy); err != nil {
+	if err := IAMCreateRole(iamClient, roleName, trustPolicy); err != nil {
 		results = append(results, TestResult{Service: "stepfunctions", TestName: "Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
 		return results
 	}
-	defer IAMDeleteRoleCtx(ctx, r.endpoint, roleName)
+	defer IAMDeleteRoleCtx(ctx, iamClient, roleName)
 
 	stateMachineDefinition := map[string]interface{}{
 		"Comment": "A Hello World example",
@@ -326,31 +327,10 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	results = append(results, r.RunTest("stepfunctions", "CreateStateMachine_InvalidDefinition", func() error {
 		invalidName := fmt.Sprintf("InvalidSM-%d", time.Now().UnixNano())
 		invalidRoleName := fmt.Sprintf("InvalidRole-%d", time.Now().UnixNano())
-		invalidForm := url.Values{}
-		invalidForm.Set("Action", "CreateRole")
-		invalidForm.Set("Version", "2010-05-08")
-		invalidForm.Set("RoleName", invalidRoleName)
-		invalidForm.Set("AssumeRolePolicyDocument", trustPolicy)
-		invalidReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(invalidForm.Encode()))
-		if invalidReq != nil {
-			invalidReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			if invalidResp, err := http.DefaultClient.Do(invalidReq); err == nil {
-				invalidResp.Body.Close()
-				defer func() {
-					delForm := url.Values{}
-					delForm.Set("Action", "DeleteRole")
-					delForm.Set("Version", "2010-05-08")
-					delForm.Set("RoleName", invalidRoleName)
-					delReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(delForm.Encode()))
-					if delReq != nil {
-						delReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-						if delResp, _ := http.DefaultClient.Do(delReq); delResp != nil {
-							delResp.Body.Close()
-						}
-					}
-				}()
-			}
+		if err := IAMCreateRole(iamClient, invalidRoleName, trustPolicy); err != nil {
+			return fmt.Errorf("create role: %v", err)
 		}
+		defer IAMDeleteRole(iamClient, invalidRoleName)
 		_, err := client.CreateStateMachine(ctx, &sfn.CreateStateMachineInput{
 			Name:       aws.String(invalidName),
 			Definition: aws.String("not valid json {{{"),
@@ -374,31 +354,10 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		smName := fmt.Sprintf("VerifySM-%d", time.Now().UnixNano())
 		verifySMName = smName
 		verifyRoleName := fmt.Sprintf("VerifyRole-%d", time.Now().UnixNano())
-		verifyForm := url.Values{}
-		verifyForm.Set("Action", "CreateRole")
-		verifyForm.Set("Version", "2010-05-08")
-		verifyForm.Set("RoleName", verifyRoleName)
-		verifyForm.Set("AssumeRolePolicyDocument", trustPolicy)
-		verifyReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(verifyForm.Encode()))
-		if verifyReq != nil {
-			verifyReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			if verifyResp, err := http.DefaultClient.Do(verifyReq); err == nil {
-				verifyResp.Body.Close()
-				defer func() {
-					delForm := url.Values{}
-					delForm.Set("Action", "DeleteRole")
-					delForm.Set("Version", "2010-05-08")
-					delForm.Set("RoleName", verifyRoleName)
-					delReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(delForm.Encode()))
-					if delReq != nil {
-						delReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-						if delResp, _ := http.DefaultClient.Do(delReq); delResp != nil {
-							delResp.Body.Close()
-						}
-					}
-				}()
-			}
+		if err := IAMCreateRole(iamClient, verifyRoleName, trustPolicy); err != nil {
+			return fmt.Errorf("create role: %v", err)
 		}
+		defer IAMDeleteRole(iamClient, verifyRoleName)
 		def1 := `{"Comment":"v1","StartAt":"A","States":{"A":{"Type":"Pass","End":true}}}`
 		resp, err := client.CreateStateMachine(ctx, &sfn.CreateStateMachineInput{
 			Name:       aws.String(smName),
@@ -525,25 +484,14 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		if verifySMARN == "" {
 			return fmt.Errorf("state machine ARN not available")
 		}
-		getForm := url.Values{}
-		getForm.Set("stateMachineArn", verifySMARN)
-		getReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewBufferString(getForm.Encode()))
-		if getReq != nil {
-			getReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			getReq.Header.Set("X-Amz-Target", "AWSStepFunctions.GetStateMachine")
-			if getResp, err := http.DefaultClient.Do(getReq); err == nil {
-				defer getResp.Body.Close()
-				if getResp.StatusCode != 200 {
-					return fmt.Errorf("GetStateMachine returned status %d", getResp.StatusCode)
-				}
-				var result map[string]interface{}
-				if err := json.NewDecoder(getResp.Body).Decode(&result); err != nil {
-					return fmt.Errorf("failed to decode response: %v", err)
-				}
-				if result["stateMachineArn"] != verifySMARN {
-					return fmt.Errorf("state machine ARN mismatch")
-				}
-			}
+		resp, err := client.DescribeStateMachine(ctx, &sfn.DescribeStateMachineInput{
+			StateMachineArn: aws.String(verifySMARN),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.StateMachineArn == nil || *resp.StateMachineArn != verifySMARN {
+			return fmt.Errorf("state machine ARN mismatch")
 		}
 		return nil
 	}))
@@ -743,36 +691,23 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		}
 		latestVersion := *listResp.StateMachineVersions[0].StateMachineVersionArn
 
-		aliasBody := map[string]interface{}{
-			"name":        aliasName,
-			"description": "production alias",
-			"routingConfiguration": []map[string]interface{}{
-				{"stateMachineVersionArn": latestVersion, "weight": float64(100)},
+		aliasResp, err := client.CreateStateMachineAlias(ctx, &sfn.CreateStateMachineAliasInput{
+			Name:        aws.String(aliasName),
+			Description: aws.String("production alias"),
+			RoutingConfiguration: []types.RoutingConfigurationListItem{
+				{
+					StateMachineVersionArn: aws.String(latestVersion),
+					Weight:                 100,
+				},
 			},
+		})
+		if err != nil {
+			return err
 		}
-		bodyBytes, _ := json.Marshal(aliasBody)
-		aliasReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewReader(bodyBytes))
-		if aliasReq != nil {
-			aliasReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
-			aliasReq.Header.Set("X-Amz-Target", "AWSStepFunctions.CreateStateMachineAlias")
-			aliasResp, err := http.DefaultClient.Do(aliasReq)
-			if err != nil {
-				return err
-			}
-			defer aliasResp.Body.Close()
-			if aliasResp.StatusCode != 200 {
-				var errBody map[string]interface{}
-				json.NewDecoder(aliasResp.Body).Decode(&errBody)
-				return fmt.Errorf("status %d: %v", aliasResp.StatusCode, errBody)
-			}
-			var result map[string]interface{}
-			json.NewDecoder(aliasResp.Body).Decode(&result)
-			if arn, ok := result["stateMachineAliasArn"].(string); ok {
-				aliasARN = arn
-			} else {
-				return fmt.Errorf("alias ARN not in response")
-			}
+		if aliasResp.StateMachineAliasArn == nil {
+			return fmt.Errorf("alias ARN is nil")
 		}
+		aliasARN = *aliasResp.StateMachineAliasArn
 		return nil
 	}))
 
@@ -799,30 +734,14 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		if verifySMARN == "" {
 			return fmt.Errorf("state machine ARN not available")
 		}
-		listBody := map[string]interface{}{
-			"stateMachineArn": verifySMARN,
+		resp, err := client.ListStateMachineAliases(ctx, &sfn.ListStateMachineAliasesInput{
+			StateMachineArn: aws.String(verifySMARN),
+		})
+		if err != nil {
+			return err
 		}
-		listBytes, _ := json.Marshal(listBody)
-		listReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewReader(listBytes))
-		if listReq != nil {
-			listReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
-			listReq.Header.Set("X-Amz-Target", "AWSStepFunctions.ListStateMachineAliases")
-			listResp, err := http.DefaultClient.Do(listReq)
-			if err != nil {
-				return err
-			}
-			defer listResp.Body.Close()
-			if listResp.StatusCode != 200 {
-				var errBody map[string]interface{}
-				json.NewDecoder(listResp.Body).Decode(&errBody)
-				return fmt.Errorf("status %d: %v", listResp.StatusCode, errBody)
-			}
-			var result map[string]interface{}
-			json.NewDecoder(listResp.Body).Decode(&result)
-			aliases, _ := result["stateMachineAliases"].([]interface{})
-			if len(aliases) == 0 {
-				return fmt.Errorf("expected at least one alias, got %v (arn=%s)", result, verifySMARN)
-			}
+		if resp.StateMachineAliases == nil || len(resp.StateMachineAliases) == 0 {
+			return fmt.Errorf("expected at least one alias (arn=%s)", verifySMARN)
 		}
 		return nil
 	}))
@@ -883,38 +802,29 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		realVersionArn := *listVerResp.StateMachineVersions[0].StateMachineVersionArn
 
 		dupAliasName := fmt.Sprintf("DUP-%d", time.Now().UnixNano())
-		aliasBody := map[string]interface{}{
-			"name": dupAliasName,
-			"routingConfiguration": []map[string]interface{}{
-				{"stateMachineVersionArn": realVersionArn, "weight": float64(100)},
+		_, err = client.CreateStateMachineAlias(ctx, &sfn.CreateStateMachineAliasInput{
+			Name: aws.String(dupAliasName),
+			RoutingConfiguration: []types.RoutingConfigurationListItem{
+				{
+					StateMachineVersionArn: aws.String(realVersionArn),
+					Weight:                 100,
+				},
 			},
+		})
+		if err != nil {
+			return fmt.Errorf("first create: %v", err)
 		}
-		bodyBytes, _ := json.Marshal(aliasBody)
-		aliasReq, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewReader(bodyBytes))
-		if aliasReq != nil {
-			aliasReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
-			aliasReq.Header.Set("X-Amz-Target", "AWSStepFunctions.CreateStateMachineAlias")
-			aliasResp, err := http.DefaultClient.Do(aliasReq)
-			if err != nil {
-				return fmt.Errorf("first create: %v", err)
-			}
-			aliasResp.Body.Close()
-			if aliasResp.StatusCode != 200 {
-				return fmt.Errorf("first create returned %d", aliasResp.StatusCode)
-			}
-		}
-		aliasReq2, _ := http.NewRequestWithContext(ctx, "POST", r.endpoint, bytes.NewReader(bodyBytes))
-		if aliasReq2 != nil {
-			aliasReq2.Header.Set("Content-Type", "application/x-amz-json-1.0")
-			aliasReq2.Header.Set("X-Amz-Target", "AWSStepFunctions.CreateStateMachineAlias")
-			aliasResp2, err := http.DefaultClient.Do(aliasReq2)
-			if err != nil {
-				return fmt.Errorf("second create request: %v", err)
-			}
-			defer aliasResp2.Body.Close()
-			if aliasResp2.StatusCode == 200 {
-				return fmt.Errorf("expected error for duplicate alias")
-			}
+		_, err = client.CreateStateMachineAlias(ctx, &sfn.CreateStateMachineAliasInput{
+			Name: aws.String(dupAliasName),
+			RoutingConfiguration: []types.RoutingConfigurationListItem{
+				{
+					StateMachineVersionArn: aws.String(realVersionArn),
+					Weight:                 100,
+				},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for duplicate alias")
 		}
 		client.DeleteStateMachineAlias(ctx, &sfn.DeleteStateMachineAliasInput{
 			StateMachineAliasArn: aws.String(fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachineAlias:%s", r.region, dupAliasName)),

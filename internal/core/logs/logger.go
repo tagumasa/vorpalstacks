@@ -41,6 +41,7 @@ type logger struct {
 	logCh    chan *LogEntry
 	logWg    sync.WaitGroup
 	stopOnce sync.Once
+	closed   bool
 }
 
 // NewLogger creates a new logger with the given configuration.
@@ -75,6 +76,9 @@ func (l *logger) logWorker() {
 // Close stops the log worker and waits for pending entries to be flushed.
 func (l *logger) Close() {
 	l.stopOnce.Do(func() {
+		l.mu.Lock()
+		l.closed = true
+		l.mu.Unlock()
 		close(l.logCh)
 	})
 	l.logWg.Wait()
@@ -115,6 +119,12 @@ func (l *logger) log(level Level, msg string, fields ...Field) {
 	l.mu.Unlock()
 
 	if l.config.Store != nil {
+		l.mu.Lock()
+		closed := l.closed
+		l.mu.Unlock()
+		if closed {
+			return
+		}
 		select {
 		case l.logCh <- entry:
 		default:

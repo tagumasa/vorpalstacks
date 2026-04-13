@@ -3,6 +3,7 @@ package ssm
 
 import (
 	"context"
+	"sync"
 
 	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/services/aws/common"
@@ -14,6 +15,7 @@ import (
 type SSMService struct {
 	accountID    string
 	kmsEncryptor common.KMSEncryptor
+	stores       sync.Map // region → ssmstore.SSMStoreInterface
 }
 
 // NewSSMService creates a new SSM service instance.
@@ -35,11 +37,23 @@ func (s *SSMService) store(reqCtx *request.RequestContext) (ssmstore.SSMStoreInt
 	if ssmStore := reqCtx.GetSSMStore(); ssmStore != nil {
 		return ssmStore, nil
 	}
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(ssmstore.SSMStoreInterface); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return ssmstore.NewStore(storage, s.accountID, reqCtx.GetRegion()), nil
+	store := ssmstore.NewStore(storage, s.accountID, region)
+	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(ssmstore.SSMStoreInterface); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 func (s *SSMService) encryptValue(ctx context.Context, plaintext, keyID string) (string, error) {

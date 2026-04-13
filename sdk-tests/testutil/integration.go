@@ -14,6 +14,7 @@ import (
 	cwltypes "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	kinesistypes "github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -60,6 +61,7 @@ type integClients struct {
 	sqs       *sqs.Client
 	kinesis   *kinesis.Client
 	s3        *s3.Client
+	iam       *iam.Client
 	ctx       context.Context
 }
 
@@ -82,6 +84,7 @@ func (r *TestRunner) newIntegClients() (*integClients, error) {
 		sqs:       sqs.NewFromConfig(cfg),
 		kinesis:   kinesis.NewFromConfig(cfg),
 		s3:        s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true }),
+		iam:       iam.NewFromConfig(cfg),
 		ctx:       context.Background(),
 	}
 	return ic, nil
@@ -279,8 +282,8 @@ func (r *TestRunner) runEventBridgeToLambda(ic *integClients, ts string) TestRes
 	busName := fmt.Sprintf("integ-eb-bus-%s", ts)
 	ruleName := fmt.Sprintf("integ-eb-rule-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, lambdaTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, lambdaTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	ic.eb.CreateEventBus(ic.ctx, &eventbridge.CreateEventBusInput{Name: aws.String(busName)})
 	defer func() {
@@ -332,8 +335,8 @@ func (r *TestRunner) runEventBridgeToStepFunctions(ic *integClients, ts string) 
 	ruleName := fmt.Sprintf("integ-eb-sfn-rule-%s", ts)
 	smName := fmt.Sprintf("integ-eb-sfn-sm-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, sfnTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, sfnTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	ic.eb.CreateEventBus(ic.ctx, &eventbridge.CreateEventBusInput{Name: aws.String(busName)})
 	defer func() {
@@ -599,8 +602,8 @@ func (r *TestRunner) runESMSQSToLambda(ic *integClients, ts string) TestResult {
 	roleName := fmt.Sprintf("integ-esm-sqs-role-%s", ts)
 	queueName := fmt.Sprintf("integ-esm-sqs-q-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, lambdaTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, lambdaTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
@@ -653,8 +656,8 @@ func (r *TestRunner) runESMKinesisToLambda(ic *integClients, ts string) TestResu
 	roleName := fmt.Sprintf("integ-esm-kin-role-%s", ts)
 	streamName := fmt.Sprintf("integ-esm-kin-s-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, lambdaTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, lambdaTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
@@ -767,8 +770,8 @@ func (r *TestRunner) runAlarmToLambda(ic *integClients, ts string) TestResult {
 	roleName := fmt.Sprintf("integ-alarm-lambda-role-%s", ts)
 	alarmName := fmt.Sprintf("integ-alarm-lambda-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, lambdaTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, lambdaTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
@@ -827,8 +830,8 @@ func (r *TestRunner) runAlarmToStepFunctions(ic *integClients, ts string) TestRe
 	alarmName := fmt.Sprintf("integ-alarm-sfn-%s", ts)
 	smName := fmt.Sprintf("integ-alarm-sfn-sm-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, sfnTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, sfnTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	_, err := ic.sfn.CreateStateMachine(ic.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(smName),
@@ -897,11 +900,11 @@ func (r *TestRunner) runSchedulerToLambda(ic *integClients, ts string) TestResul
 	scheduleName := fmt.Sprintf("integ-sched-lambda-%s", ts)
 	groupName := fmt.Sprintf("integ-sched-group-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, schedulerTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, schedulerTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
-	IAMCreateRole(r.endpoint, lambdaRoleName, lambdaTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, lambdaRoleName)
+	IAMCreateRole(ic.iam, lambdaRoleName, lambdaTrustPolicy)
+	defer IAMDeleteRole(ic.iam, lambdaRoleName)
 
 	ic.scheduler.CreateScheduleGroup(ic.ctx, &scheduler.CreateScheduleGroupInput{Name: aws.String(groupName)})
 	defer func() {
@@ -948,8 +951,8 @@ func (r *TestRunner) runSchedulerToSQS(ic *integClients, ts string) TestResult {
 	groupName := fmt.Sprintf("integ-sched-sqs-group-%s", ts)
 	queueName := fmt.Sprintf("integ-sched-sqs-q-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, schedulerTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, schedulerTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	ic.scheduler.CreateScheduleGroup(ic.ctx, &scheduler.CreateScheduleGroupInput{Name: aws.String(groupName)})
 	defer func() {
@@ -1007,8 +1010,8 @@ func (r *TestRunner) runSchedulerToSNS(ic *integClients, ts string) TestResult {
 	topicName := fmt.Sprintf("integ-sched-sns-t-%s", ts)
 	queueName := fmt.Sprintf("integ-sched-sns-q-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, schedulerTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, schedulerTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	ic.scheduler.CreateScheduleGroup(ic.ctx, &scheduler.CreateScheduleGroupInput{Name: aws.String(groupName)})
 	defer func() {
@@ -1075,11 +1078,11 @@ func (r *TestRunner) runSchedulerToStepFunctions(ic *integClients, ts string) Te
 	groupName := fmt.Sprintf("integ-sched-sfn-group-%s", ts)
 	smName := fmt.Sprintf("integ-sched-sfn-sm-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, schedulerTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, schedulerTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
-	IAMCreateRole(r.endpoint, fmt.Sprintf("%s-sfn", roleName), sfnTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, fmt.Sprintf("%s-sfn", roleName))
+	IAMCreateRole(ic.iam, fmt.Sprintf("%s-sfn", roleName), sfnTrustPolicy)
+	defer IAMDeleteRole(ic.iam, fmt.Sprintf("%s-sfn", roleName))
 
 	ic.scheduler.CreateScheduleGroup(ic.ctx, &scheduler.CreateScheduleGroupInput{Name: aws.String(groupName)})
 	defer func() {
@@ -1146,11 +1149,11 @@ func (r *TestRunner) runSFNTaskLambda(ic *integClients, ts string) TestResult {
 	smName := fmt.Sprintf("integ-sfn-lambda-%s", ts)
 	fnName := fmt.Sprintf("integ-sfn-lambda-fn-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, sfnTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, sfnTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
-	IAMCreateRole(r.endpoint, lambdaRoleName, lambdaTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, lambdaRoleName)
+	IAMCreateRole(ic.iam, lambdaRoleName, lambdaTrustPolicy)
+	defer IAMDeleteRole(ic.iam, lambdaRoleName)
 
 	ic.createLambda(fnName, lambdaRoleName)
 	defer ic.deleteLambda(fnName)
@@ -1212,8 +1215,8 @@ func (r *TestRunner) runSFNTaskSQS(ic *integClients, ts string) TestResult {
 	smName := fmt.Sprintf("integ-sfn-sqs-%s", ts)
 	queueName := fmt.Sprintf("integ-sfn-sqs-q-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, sfnTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, sfnTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	queueURL, err := ic.createQueue(queueName)
 	if err != nil {
@@ -1289,8 +1292,8 @@ func (r *TestRunner) runSFNTaskSNS(ic *integClients, ts string) TestResult {
 	topicName := fmt.Sprintf("integ-sfn-sns-t-%s", ts)
 	queueName := fmt.Sprintf("integ-sfn-sns-q-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, sfnTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, sfnTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	topicARN, err := ic.createTopic(topicName)
 	if err != nil {
@@ -1376,8 +1379,8 @@ func (r *TestRunner) runS3NotificationToLambda(ic *integClients, ts string) Test
 	fnName := fmt.Sprintf("integ-s3-lambda-fn-%s", ts)
 	roleName := fmt.Sprintf("integ-s3-lambda-role-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, lambdaTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, lambdaTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
@@ -1534,8 +1537,8 @@ func (r *TestRunner) runCWLogsToLambda(ic *integClients, ts string) TestResult {
 	roleName := fmt.Sprintf("integ-cwl-role-%s", ts)
 	logGroupName := fmt.Sprintf("/integ/cwl-lambda/%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, lambdaTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, lambdaTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
@@ -1709,8 +1712,8 @@ func (r *TestRunner) runSNSToLambda(ic *integClients, ts string) TestResult {
 	fnName := fmt.Sprintf("integ-sns-lambda-fn-%s", ts)
 	roleName := fmt.Sprintf("integ-sns-lambda-role-%s", ts)
 
-	IAMCreateRole(r.endpoint, roleName, lambdaTrustPolicy)
-	defer IAMDeleteRole(r.endpoint, roleName)
+	IAMCreateRole(ic.iam, roleName, lambdaTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
 
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)

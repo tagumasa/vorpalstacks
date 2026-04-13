@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
@@ -22,6 +23,7 @@ type CognitoService struct {
 	region         string
 	bus            eventbus.Bus
 	lambdaInvoker  common.LambdaInvoker
+	stores         sync.Map // region → cognitostore.CognitoStoreInterface
 }
 
 // NewCognitoService creates a new Cognito User Pools service instance.
@@ -94,11 +96,23 @@ func (s *CognitoService) store(reqCtx *request.RequestContext) (cognitostore.Cog
 	if store := reqCtx.GetCognitoStore(); store != nil {
 		return store, nil
 	}
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(cognitostore.CognitoStoreInterface); ok {
+			return typed, nil
+		}
+	}
 	storage, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
-	return cognitostore.NewCognitoStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()), nil
+	store := cognitostore.NewCognitoStore(storage, s.accountID, region)
+	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
+		if typed, ok := actual.(cognitostore.CognitoStoreInterface); ok {
+			return typed, nil
+		}
+	}
+	return store, nil
 }
 
 // RegisterHandlers registers the Cognito handlers with the dispatcher.
