@@ -18,9 +18,9 @@ import (
 	"vorpalstacks/internal/client/mobyclient"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/request"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	"vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
@@ -236,7 +236,7 @@ func (s *LambdaService) getLogsStoreFromContext(reqCtx *request.RequestContext) 
 }
 
 // RegisterHandlers registers the Lambda service handlers with the dispatcher.
-func (s *LambdaService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *LambdaService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("lambda", "CreateFunction", s.CreateFunction)
 	d.RegisterHandlerForService("lambda", "DeleteFunction", s.DeleteFunction)
 	d.RegisterHandlerForService("lambda", "GetFunction", s.GetFunction)

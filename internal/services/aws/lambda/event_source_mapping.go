@@ -3,8 +3,8 @@ package lambda
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/pagination"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	"vorpalstacks/internal/utils/timeutils"

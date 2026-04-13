@@ -4,7 +4,7 @@ package iam
 import (
 	"net/http"
 
-	"vorpalstacks/internal/services/aws/common/errors"
+	"vorpalstacks/internal/common/errors"
 )
 
 // ErrNoSuchUser is returned when a user with the specified name cannot be found.

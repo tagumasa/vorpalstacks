@@ -194,14 +194,15 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 			}
 		}
 		if esmStore == nil {
-			esmStore = lambdastore.NewEventSourceStore(st, p.accountID, region)
 			newStore := &lambdaStore{
 				Functions:    lambdastore.NewFunctionStore(st, p.lambdaSvc.accountID, region),
 				Layers:       lambdastore.NewLayerStore(st, p.lambdaSvc.accountID, region),
-				EventSources: esmStore,
+				EventSources: lambdastore.NewEventSourceStore(st, p.accountID, region),
 			}
 			if actual, loaded := p.lambdaSvc.storeCache.LoadOrStore(region, newStore); loaded {
 				esmStore = actual.(*lambdaStore).EventSources
+			} else {
+				esmStore = newStore.EventSources
 			}
 		}
 	}
@@ -219,6 +220,7 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 		mapping *lambdastore.EventSourceMapping
 	}
 	jobs := make(chan pollJob, len(result.Items))
+	activeKinesisUUIDs := make(map[string]struct{})
 	for _, m := range result.Items {
 		if m.State != "Enabled" {
 			continue
@@ -228,9 +230,14 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 			!strings.HasPrefix(m.EventSourceArn, "arn:aws:dynamodb:") {
 			continue
 		}
+		if strings.HasPrefix(m.EventSourceArn, "arn:aws:kinesis:") {
+			activeKinesisUUIDs[m.UUID] = struct{}{}
+		}
 		jobs <- pollJob{mapping: m}
 	}
 	close(jobs)
+
+	p.purgeStaleKinesisCheckpoints(activeKinesisUUIDs)
 
 	jobCount := len(result.Items)
 	workerCount := p.workers
@@ -570,6 +577,23 @@ func (p *esmPoller) invokeLambda(ctx context.Context, functionRef string, payloa
 	}
 
 	return result.StatusCode, result.Payload, nil
+}
+
+// purgeStaleKinesisCheckpoints removes checkpoint entries for Kinesis ESM
+// mappings that no longer exist or are not in the enabled state.
+func (p *esmPoller) purgeStaleKinesisCheckpoints(activeKinesisUUIDs map[string]struct{}) {
+	p.kinesisCPMu.Lock()
+	for key := range p.kinesisCP {
+		uuidEnd := strings.IndexByte(key, ':')
+		if uuidEnd < 0 {
+			continue
+		}
+		uuid := key[:uuidEnd]
+		if _, active := activeKinesisUUIDs[uuid]; !active {
+			delete(p.kinesisCP, key)
+		}
+	}
+	p.kinesisCPMu.Unlock()
 }
 
 // log emits a structured log message if a logger is configured on the

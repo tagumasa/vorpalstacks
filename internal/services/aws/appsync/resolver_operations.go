@@ -5,7 +5,7 @@ import (
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // CreateResolver creates a new resolver for a GraphQL API type and field.

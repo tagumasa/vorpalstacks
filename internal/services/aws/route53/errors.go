@@ -5,7 +5,7 @@ import (
 	stderrors "errors"
 	"net/http"
 
-	"vorpalstacks/internal/services/aws/common/errors"
+	"vorpalstacks/internal/common/errors"
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
 

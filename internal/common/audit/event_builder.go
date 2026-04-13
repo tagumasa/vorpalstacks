@@ -4,7 +4,7 @@ package audit
 import (
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 var serviceToEventSource = map[string]string{

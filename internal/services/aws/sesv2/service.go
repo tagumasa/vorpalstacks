@@ -4,8 +4,8 @@ package sesv2
 import (
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
 
@@ -46,7 +46,7 @@ func (s *SESv2Service) store(reqCtx *request.RequestContext) (sesv2store.SESv2St
 }
 
 // RegisterHandlers registers the SES v2 service handlers with the dispatcher.
-func (s *SESv2Service) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *SESv2Service) RegisterHandlers(d handler.Registrar) {
 	// Email sending operations
 	d.RegisterHandlerForService("email", "SendEmail", s.SendEmail)
 	d.RegisterHandlerForService("email", "SendBulkEmail", s.SendBulkEmail)

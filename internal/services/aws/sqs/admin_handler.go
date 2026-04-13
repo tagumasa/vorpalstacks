@@ -9,7 +9,7 @@ import (
 
 	pb "vorpalstacks/internal/pb/aws/sqs"
 	sqsconnect "vorpalstacks/internal/pb/aws/sqs/sqsconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/store/aws/common"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )

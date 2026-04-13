@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"vorpalstacks/internal/services/aws/common/protocol"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/common/request"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
 

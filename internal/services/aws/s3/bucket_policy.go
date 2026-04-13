@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // PutBucketPolicyInput contains the request parameters for the PutBucketPolicy operation.

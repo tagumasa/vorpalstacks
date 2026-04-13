@@ -8,8 +8,8 @@ import (
 	"io"
 	"net/http"
 
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/request"
 )
 
 // graphqlRequest represents the incoming GraphQL-over-HTTP request body.

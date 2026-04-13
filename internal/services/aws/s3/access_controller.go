@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/iam/policy"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/iam/policy"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 

@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/iam/policy"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/store/aws/iam"
 )
 
@@ -45,6 +45,7 @@ type Authorizer struct {
 	maxCacheSize       int
 
 	stopCleanup chan struct{}
+	stopOnce    sync.Once
 	wg          sync.WaitGroup
 }
 
@@ -376,7 +377,7 @@ func (a *Authorizer) InvalidateAllCache() {
 
 // Stop stops the the cleanup goroutine.
 func (a *Authorizer) Stop() {
-	close(a.stopCleanup)
+	a.stopOnce.Do(func() { close(a.stopCleanup) })
 	a.wg.Wait()
 }
 

@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
+	tagutil "vorpalstacks/internal/common/tags"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 

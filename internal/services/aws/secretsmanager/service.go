@@ -7,10 +7,10 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
 
@@ -101,7 +101,7 @@ func (s *SecretsManagerService) store(reqCtx *request.RequestContext) (secretsma
 }
 
 // RegisterHandlers registers the Secrets Manager handlers with the dispatcher.
-func (s *SecretsManagerService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *SecretsManagerService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("secretsmanager", "CreateSecret", s.CreateSecret)
 	d.RegisterHandlerForService("secretsmanager", "GetSecretValue", s.GetSecretValue)
 	d.RegisterHandlerForService("secretsmanager", "UpdateSecret", s.UpdateSecret)

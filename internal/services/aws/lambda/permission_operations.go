@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 

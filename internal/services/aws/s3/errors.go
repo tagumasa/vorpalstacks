@@ -4,7 +4,7 @@ package s3
 import (
 	"net/http"
 
-	"vorpalstacks/internal/services/aws/common/errors"
+	"vorpalstacks/internal/common/errors"
 )
 
 // Predefined S3 error variables.

@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 

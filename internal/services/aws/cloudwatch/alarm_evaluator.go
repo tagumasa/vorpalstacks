@@ -11,7 +11,7 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/eventbus"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -675,6 +675,7 @@ func (s *CloudWatchService) evaluatorStoresForRegion(region string) (*cwstore.Al
 		dashboards: cwstore.NewDashboardStore(storage, s.accountID, region),
 	}
 	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		metricStore.Close()
 		if typed, ok := actual.(*cloudwatchStores); ok {
 			return typed.alarms, typed.metrics
 		}

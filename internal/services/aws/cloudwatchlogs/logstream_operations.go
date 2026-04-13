@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	"vorpalstacks/internal/utils/aws/arn"

@@ -1,7 +1,7 @@
 package dynamodb
 
 import (
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	commonstore "vorpalstacks/internal/store/aws/common"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )

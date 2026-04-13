@@ -7,8 +7,8 @@ import (
 
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
@@ -48,11 +48,15 @@ func (s *SQSService) GetStoreForRegion(region string) (sqsstore.SQSStoreInterfac
 	})
 }
 
-// NewSQSServiceWithStore creates a new SQS service instance with a pre-configured store.
+// NewSQSServiceWithStore creates a new SQS service instance with a pre-configured store
+// that is shared across the service handlers and cross-service integrations.
 func NewSQSServiceWithStore(store *sqsstore.SQSStore) *SQSService {
-	return &SQSService{
+	region := store.GetRegion()
+	s := &SQSService{
 		accountID: store.GetAccountID(),
 	}
+	s.stores.Store(region, store)
+	return s
 }
 
 func (s *SQSService) store(reqCtx *request.RequestContext) (sqsstore.SQSStoreInterface, error) {
@@ -66,7 +70,7 @@ func (s *SQSService) store(reqCtx *request.RequestContext) (sqsstore.SQSStoreInt
 }
 
 // RegisterHandlers registers all SQS operation handlers with the dispatcher.
-func (s *SQSService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *SQSService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("sqs", "CreateQueue", s.CreateQueue)
 	d.RegisterHandlerForService("sqs", "DeleteQueue", s.DeleteQueue)
 	d.RegisterHandlerForService("sqs", "GetQueueUrl", s.GetQueueUrl)

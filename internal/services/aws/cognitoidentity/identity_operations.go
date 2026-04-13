@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 
 	"github.com/google/uuid"

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
@@ -19,6 +20,8 @@ type DistributionServer struct {
 	accountID      string
 	region         string
 	client         *http.Client
+	distributionMu sync.RWMutex
+	distribution   *cfstore.DistributionStore
 }
 
 // NewDistributionServer creates a new DistributionServer with the given storage, account, and region.
@@ -34,6 +37,14 @@ func NewDistributionServer(storageManager *storage.RegionStorageManager, account
 			},
 		},
 	}
+}
+
+// SetDistributionStore injects a DistributionStore instance, typically the same
+// one used by CloudFrontService, so that both components share a single store.
+func (s *DistributionServer) SetDistributionStore(store *cfstore.DistributionStore) {
+	s.distributionMu.Lock()
+	s.distribution = store
+	s.distributionMu.Unlock()
 }
 
 // HandleRequest proxies an incoming request to the matching CloudFront distribution's origin.
@@ -184,9 +195,23 @@ func (s *DistributionServer) buildOriginURL(origin *cfstore.Origin, path, query 
 }
 
 func (s *DistributionServer) getDistributionStore() *cfstore.DistributionStore {
+	s.distributionMu.RLock()
+	if s.distribution != nil {
+		cached := s.distribution
+		s.distributionMu.RUnlock()
+		return cached
+	}
+	s.distributionMu.RUnlock()
+
+	s.distributionMu.Lock()
+	defer s.distributionMu.Unlock()
+	if s.distribution != nil {
+		return s.distribution
+	}
 	store, err := s.storageManager.GetStorage(s.region)
 	if err != nil {
 		return cfstore.NewDistributionStore(nil, s.accountID)
 	}
-	return cfstore.NewDistributionStore(store, s.accountID)
+	s.distribution = cfstore.NewDistributionStore(store, s.accountID)
+	return s.distribution
 }

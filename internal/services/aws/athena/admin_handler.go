@@ -8,7 +8,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/athena"
 	athenaconnect "vorpalstacks/internal/pb/aws/athena/athenaconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 

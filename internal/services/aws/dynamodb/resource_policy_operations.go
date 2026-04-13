@@ -3,8 +3,8 @@ package dynamodb
 
 import (
 	"context"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 

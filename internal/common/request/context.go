@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/services/aws/common/iam"
-	"vorpalstacks/internal/services/aws/common/interfaces"
+	"vorpalstacks/internal/common/iam"
+	"vorpalstacks/internal/common/interfaces"
 	acmstore "vorpalstacks/internal/store/aws/acm"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	athenastore "vorpalstacks/internal/store/aws/athena"

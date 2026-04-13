@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/request"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
 

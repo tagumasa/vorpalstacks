@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/iam"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/iam/policy"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/iam"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/iam/policy"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	stsstore "vorpalstacks/internal/store/aws/sts"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
@@ -75,7 +75,7 @@ func (s *STSService) iamStore(reqCtx *request.RequestContext) (iamstore.IAMStore
 }
 
 // RegisterHandlers registers all STS operation handlers with the dispatcher.
-func (s *STSService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *STSService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("sts", "GetCallerIdentity", s.GetCallerIdentity)
 	d.RegisterHandlerForService("sts", "AssumeRole", s.AssumeRole)
 	d.RegisterHandlerForService("sts", "GetSessionToken", s.GetSessionToken)

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 

@@ -4,7 +4,7 @@ package apigateway
 import (
 	"context"
 	"strings"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // UpdateResource updates an existing resource in API Gateway.

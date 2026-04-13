@@ -6,8 +6,8 @@ import (
 	"errors"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	store "vorpalstacks/internal/store/aws/apigateway"
 	common "vorpalstacks/internal/store/aws/common"
 )

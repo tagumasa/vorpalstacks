@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/protocol"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 )
 

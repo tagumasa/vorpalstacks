@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // HostedUIHandler serves the Cognito hosted UI pages for login, sign-up, and OAuth2 flows.

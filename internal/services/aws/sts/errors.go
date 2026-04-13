@@ -4,7 +4,7 @@ package sts
 import (
 	"net/http"
 
-	"vorpalstacks/internal/services/aws/common/errors"
+	"vorpalstacks/internal/common/errors"
 )
 
 // Duration constants for STS sessions.

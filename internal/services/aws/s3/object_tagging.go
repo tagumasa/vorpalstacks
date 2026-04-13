@@ -3,7 +3,7 @@ package s3
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // PutObjectTaggingInput contains the parameters for setting tags on an object.

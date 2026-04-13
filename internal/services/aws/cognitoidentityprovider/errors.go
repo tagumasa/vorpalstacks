@@ -3,7 +3,7 @@ package cognitoidentityprovider
 import (
 	"net/http"
 
-	"vorpalstacks/internal/services/aws/common/errors"
+	"vorpalstacks/internal/common/errors"
 )
 
 // NewCognitoError creates a new CognitoError with the specified code, message and status code.

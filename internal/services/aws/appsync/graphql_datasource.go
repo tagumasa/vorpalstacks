@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/request"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 	svcarn "vorpalstacks/internal/utils/aws/arn"

@@ -3,7 +3,7 @@ package dispatcher
 import (
 	"net/http"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 func (d *Dispatcher) buildParsedRequest(r *http.Request, dispatchCtx *DispatchContext) *request.ParsedRequest {

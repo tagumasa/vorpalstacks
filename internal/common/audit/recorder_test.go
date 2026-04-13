@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 
 	"github.com/stretchr/testify/assert"
 )

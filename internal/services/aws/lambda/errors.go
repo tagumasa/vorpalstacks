@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // LambdaError represents an error returned by the Lambda service.

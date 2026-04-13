@@ -16,10 +16,10 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
@@ -132,7 +132,9 @@ func (s *SNSService) getSNSStoreByRegion(region string) (snsstore.SNSStoreInterf
 		return nil, err
 	}
 	store := snsstore.NewSNSStore(storage, s.accountID, region)
-	s.stores.Store(region, store)
+	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
+		return actual.(snsstore.SNSStoreInterface), nil
+	}
 	return store, nil
 }
 
@@ -195,7 +197,7 @@ func parseSigningKeyFromPEM(pemData string) (*rsa.PrivateKey, error) {
 }
 
 // RegisterHandlers registers all SNS operation handlers with the request dispatcher.
-func (s *SNSService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *SNSService) RegisterHandlers(d handler.Registrar) {
 	s.initSigningKey()
 	d.RegisterHandlerForService("sns", "CreateTopic", s.CreateTopic)
 	d.RegisterHandlerForService("sns", "DeleteTopic", s.DeleteTopic)

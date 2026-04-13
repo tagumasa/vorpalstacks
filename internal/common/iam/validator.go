@@ -4,7 +4,7 @@ package iam
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/iam/policy"
+	"vorpalstacks/internal/common/iam/policy"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 

@@ -4,8 +4,8 @@ package cognitoidentity
 import (
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 )
 
@@ -49,7 +49,7 @@ func (s *CognitoIdentityService) store(reqCtx *request.RequestContext) (cognitoi
 }
 
 // RegisterHandlers registers the Cognito Identity handlers with the dispatcher.
-func (s *CognitoIdentityService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *CognitoIdentityService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cognito-identity", "CreateIdentityPool", s.CreateIdentityPool)
 	d.RegisterHandlerForService("cognito-identity", "DeleteIdentityPool", s.DeleteIdentityPool)
 	d.RegisterHandlerForService("cognito-identity", "DescribeIdentityPool", s.DescribeIdentityPool)

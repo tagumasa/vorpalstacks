@@ -3,7 +3,7 @@ package cloudwatch
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 

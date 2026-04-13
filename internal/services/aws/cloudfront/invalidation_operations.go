@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/protocol"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/common/request"
 )
 
 var (

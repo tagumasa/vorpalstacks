@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 	snsstore "vorpalstacks/internal/store/aws/sns"
@@ -153,7 +153,7 @@ func (s *SchedulerService) StopEngine() error {
 }
 
 // RegisterHandlers registers the Scheduler service handlers with the dispatcher.
-func (s *SchedulerService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *SchedulerService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("scheduler", "CreateScheduleGroup", s.CreateScheduleGroup)
 	d.RegisterHandlerForService("scheduler", "DeleteScheduleGroup", s.DeleteScheduleGroup)
 	d.RegisterHandlerForService("scheduler", "GetScheduleGroup", s.GetScheduleGroup)

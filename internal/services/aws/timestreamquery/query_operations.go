@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/pkg/sqlparser"
 
 	"github.com/google/uuid"

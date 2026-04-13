@@ -3,7 +3,7 @@ package iam
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // CreateAccountAlias sets the specified alias for the AWS account.

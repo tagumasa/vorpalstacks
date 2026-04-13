@@ -8,7 +8,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudtrail"
 	cloudtrailconnect "vorpalstacks/internal/pb/aws/cloudtrail/cloudtrailconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 

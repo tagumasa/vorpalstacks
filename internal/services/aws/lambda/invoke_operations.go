@@ -10,9 +10,9 @@ import (
 	"net/http"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/common/pagination"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -188,10 +188,14 @@ type invokeWithResponseStreamResponse struct {
 	contentType     string
 }
 
+// GetStream returns the response stream payload for a Lambda invocation
+// with response streaming enabled.
 func (r *invokeWithResponseStreamResponse) GetStream() io.Reader {
 	return r.reader
 }
 
+// GetStreamHeaders returns the HTTP headers for a Lambda invocation
+// with response streaming enabled.
 func (r *invokeWithResponseStreamResponse) GetStreamHeaders() http.Header {
 	h := make(http.Header)
 	h.Set("Content-Type", r.contentType)
@@ -202,6 +206,8 @@ func (r *invokeWithResponseStreamResponse) GetStreamHeaders() http.Header {
 	return h
 }
 
+// GetStreamStatusCode returns the HTTP status code for a Lambda invocation
+// with response streaming enabled.
 func (r *invokeWithResponseStreamResponse) GetStreamStatusCode() int {
 	if r.statusCode == 0 {
 		return http.StatusOK

@@ -1,7 +1,7 @@
 package wafv2
 
 import (
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/store/aws/waf"
 )
 

@@ -7,7 +7,7 @@ import (
 
 	pb "vorpalstacks/internal/pb/aws/sfn"
 	"vorpalstacks/internal/pb/aws/sfn/sfnconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 

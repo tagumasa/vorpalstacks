@@ -37,6 +37,13 @@ func NewAPIKeyAuthenticator(usageStore *apigatewaystore.UsageStore) *APIKeyAuthe
 	}
 }
 
+// RemoveApiKey cleans up the rate limiter associated with the given API key.
+// Call this when an API key is deleted to prevent unbounded growth of the
+// rate limiter cache.
+func (a *APIKeyAuthenticator) RemoveApiKey(apiKeyId string) {
+	a.rateLimiters.Delete(apiKeyId)
+}
+
 // Authenticate validates an API key for the given method and stage.
 func (a *APIKeyAuthenticator) Authenticate(ctx context.Context, apiKeyValue string, method *apigatewaystore.Method, restAPIID, stageName string) error {
 	if method == nil || !method.ApiKeyRequired {

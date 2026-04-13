@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/protocol"
-	"vorpalstacks/internal/services/aws/common/request"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
 

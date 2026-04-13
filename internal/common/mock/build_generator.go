@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/store/api"
 )
 

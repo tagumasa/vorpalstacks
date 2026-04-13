@@ -2,7 +2,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 )
@@ -43,6 +42,14 @@ type BootstrapConfig struct {
 	SESv2           bool
 	Scheduler       bool
 	CloudTrail      bool
+	ACM             bool
+	CloudWatch      bool
+	DynamoDB        bool
+	KMS             bool
+	S3              bool
+	SecretsManager  bool
+	STS             bool
+	IAM             bool
 	TimestreamWrite bool
 	TimestreamQuery bool
 	Athena          bool
@@ -50,11 +57,14 @@ type BootstrapConfig struct {
 	Neptune         bool
 	NeptuneData     bool
 	NeptuneGraph    bool
+	CloudFront      bool
+	WAFv2           bool
+	Route53         bool
 }
 
 // ServerHost returns the server hostname suitable for self-referencing URLs.
 func (c *BootstrapConfig) ServerHost() string {
-	return "localhost:" + c.Port
+	return "127.0.0.1:" + c.Port
 }
 
 // LoadBootstrapConfig reads all bootstrap configuration from environment variables
@@ -100,6 +110,14 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		SESv2:           envBool("SESV2_ENABLED", true),
 		Scheduler:       envBool("SCHEDULER_ENABLED", true),
 		CloudTrail:      envBool("CLOUDTRAIL_ENABLED", true),
+		ACM:             envBool("ACM_ENABLED", true),
+		CloudWatch:      envBool("CLOUDWATCH_ENABLED", true),
+		DynamoDB:        envBool("DYNAMODB_ENABLED", true),
+		KMS:             envBool("KMS_ENABLED", true),
+		S3:              envBool("S3_ENABLED", true),
+		SecretsManager:  envBool("SECRETSMANAGER_ENABLED", true),
+		STS:             envBool("STS_ENABLED", true),
+		IAM:             envBool("IAM_ENABLED", true),
 		TimestreamWrite: envBool("TIMESTREAM_WRITE_ENABLED", true),
 		TimestreamQuery: envBool("TIMESTREAM_QUERY_ENABLED", true),
 		Athena:          envBool("ATHENA_ENABLED", true),
@@ -107,6 +125,9 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		Neptune:         envBool("NEPTUNE_ENABLED", true),
 		NeptuneData:     envBool("NEPTUNE_DATA_ENABLED", true),
 		NeptuneGraph:    envBool("NEPTUNE_GRAPH_ENABLED", true),
+		CloudFront:      envBool("CLOUDFRONT_ENABLED", true),
+		WAFv2:           envBool("WAFV2_ENABLED", true),
+		Route53:         envBool("ROUTE53_ENABLED", true),
 	}
 }
 
@@ -124,31 +145,4 @@ func envBool(key string, defaultVal bool) bool {
 	}
 	b, _ := strconv.ParseBool(v)
 	return b
-}
-
-// PrintStartupBanner writes the server startup information to stdout.
-func (c *BootstrapConfig) PrintStartupBanner() {
-	fmt.Printf("Starting AWS-compatible server on :%s\n", c.Port)
-	fmt.Printf("Data path: %s\n", c.DataPath)
-	fmt.Printf("Account ID: %s\n", c.AccountID)
-	if c.UseChainGateway {
-		fmt.Printf("Gateway mode: Chain (metadata-based routing)\n")
-	} else {
-		fmt.Printf("Gateway mode: Standard (hardcoded routing)\n")
-	}
-	fmt.Printf("Services: IAM, STS, KMS, S3, Route53, CloudWatch, DynamoDB, ACM, CloudFront, WAF, SecretsManager, SNS, SQS, Events, Lambda, APIGateway, StepFunctions, Cognito, SSM, Logs, SESv2, Scheduler, Kinesis, CloudTrail, TimestreamWrite, TimestreamQuery, Athena, AppSync, Neptune, NeptuneData\n")
-	if c.Route53DNSEnabled {
-		fmt.Printf("Route53 DNS server: enabled on %s:53\n", c.Route53DNSBindAddr)
-	}
-	if c.SignatureVerification {
-		fmt.Printf("Signature verification: enabled\n")
-	} else {
-		fmt.Printf("Signature verification: disabled\n")
-	}
-	if c.AccessKeyID == "" {
-		fmt.Println("Warning: AWS_ACCESS_KEY_ID not set")
-	}
-	if c.SecretAccessKey == "" {
-		fmt.Println("Warning: AWS_SECRET_ACCESS_KEY not set")
-	}
 }

@@ -24,10 +24,11 @@ const (
 // rotationChecker periodically scans secrets for those whose NextRotationDate
 // has passed and triggers automatic rotation via the rotation engine.
 type rotationChecker struct {
-	svc    *SecretsManagerService
-	logger logs.Logger
-	stopCh chan struct{}
-	wg     sync.WaitGroup
+	svc      *SecretsManagerService
+	logger   logs.Logger
+	stopCh   chan struct{}
+	stopOnce sync.Once
+	wg       sync.WaitGroup
 }
 
 // newRotationChecker creates a new rotation checker bound to the given service.
@@ -47,7 +48,7 @@ func (rc *rotationChecker) start(ctx context.Context) {
 
 // stop signals the rotation checker to terminate and waits for it to finish.
 func (rc *rotationChecker) stop() {
-	close(rc.stopCh)
+	rc.stopOnce.Do(func() { close(rc.stopCh) })
 	rc.wg.Wait()
 }
 

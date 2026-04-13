@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 

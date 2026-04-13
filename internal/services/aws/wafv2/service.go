@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
@@ -76,7 +76,7 @@ func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, erro
 }
 
 // RegisterHandlers registers all WAFv2 API operation handlers with the dispatcher.
-func (s *WAFv2Service) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *WAFv2Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("wafv2", "CreateWebACL", s.CreateWebACL)
 	d.RegisterHandlerForService("wafv2", "GetWebACL", s.GetWebACL)
 	d.RegisterHandlerForService("wafv2", "ListWebACLs", s.ListWebACLs)

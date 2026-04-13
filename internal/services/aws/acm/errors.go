@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // NewAPIError creates a new ACM API error.

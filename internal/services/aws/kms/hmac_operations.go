@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )

@@ -3,7 +3,7 @@ package eventbridge
 import (
 	"fmt"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // Error variables provide common EventBridge error instances.

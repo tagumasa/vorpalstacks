@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/protocol"
-	"vorpalstacks/internal/services/aws/common/request"
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/common/request"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
 

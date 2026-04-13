@@ -6,9 +6,9 @@ import (
 	"context"
 	"errors"
 
-	"vorpalstacks/internal/services/aws/common/pagination"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 

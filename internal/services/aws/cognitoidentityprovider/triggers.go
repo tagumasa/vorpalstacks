@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/eventbus"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )

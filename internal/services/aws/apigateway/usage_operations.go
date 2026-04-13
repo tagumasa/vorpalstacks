@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
+	tagutil "vorpalstacks/internal/common/tags"
 	store "vorpalstacks/internal/store/aws/apigateway"
 	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/timeutils"
@@ -92,6 +92,10 @@ func (s *APIGatewayService) DeleteApiKey(ctx context.Context, reqCtx *request.Re
 	}
 	if err := stores.usage.DeleteApiKey(apiKeyId); err != nil {
 		return nil, ErrNotFoundException
+	}
+
+	if s.runtimeServer != nil {
+		s.runtimeServer.RemoveApiKey(apiKeyId)
 	}
 
 	return response.EmptyResponse(), nil

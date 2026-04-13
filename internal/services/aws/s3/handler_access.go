@@ -3,7 +3,7 @@ package s3
 import (
 	"net/http"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 func (h *S3Handler) checkAccess(ctx *request.RequestContext, r *http.Request, stores *s3Stores, action, bucket, key string) error {

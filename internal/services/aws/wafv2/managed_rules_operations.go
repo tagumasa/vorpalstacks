@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // ManagedRuleGroupSummary represents a high-level summary of an AWS-managed rule group.

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	arncommon "vorpalstacks/internal/utils/aws/arn"

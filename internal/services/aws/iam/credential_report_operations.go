@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )

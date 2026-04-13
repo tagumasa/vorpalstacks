@@ -3,7 +3,7 @@ package dispatcher
 import (
 	"errors"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/store/api"
 )
 

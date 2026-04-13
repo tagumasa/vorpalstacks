@@ -3,8 +3,8 @@ package apigateway
 
 import (
 	"context"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	store "vorpalstacks/internal/store/aws/apigateway"
 )
 

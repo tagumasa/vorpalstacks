@@ -5,10 +5,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
@@ -27,8 +29,11 @@ type cloudfrontStores struct {
 // CloudFrontService provides AWS CloudFront operations.
 type CloudFrontService struct {
 	accountID           string
+	region              string
+	storageManager      *storage.RegionStorageManager
 	stores              sync.Map // global (no region) — single cached instance
 	seedManagedPolicies sync.Once
+	distributionServer  *DistributionServer
 }
 
 // NewCloudFrontService creates a new CloudFront service instance.
@@ -36,6 +41,30 @@ func NewCloudFrontService(accountID string) *CloudFrontService {
 	return &CloudFrontService{
 		accountID: accountID,
 	}
+}
+
+// SetRegionAndStorage injects the region and storage manager needed for
+// creating the distribution server with a shared store.
+func (s *CloudFrontService) SetRegionAndStorage(region string, sm *storage.RegionStorageManager) {
+	s.region = region
+	s.storageManager = sm
+}
+
+// InitDistributionServer creates the DistributionServer owned by this service.
+// The distribution store is populated lazily on first management API call;
+// until then the server uses its own fallback store backed by the same Pebble.
+func (s *CloudFrontService) InitDistributionServer() *DistributionServer {
+	s.distributionServer = NewDistributionServer(s.storageManager, s.accountID, s.region)
+	return s.distributionServer
+}
+
+// DistributionHandler returns an http.Handler for the distribution server,
+// or nil if it has not been initialised.
+func (s *CloudFrontService) DistributionHandler() http.Handler {
+	if s.distributionServer == nil {
+		return nil
+	}
+	return http.HandlerFunc(s.distributionServer.HandleRequest)
 }
 
 var globalStoresKey struct{}
@@ -147,7 +176,7 @@ func (s *CloudFrontService) generateETag() string {
 }
 
 // RegisterHandlers registers the CloudFront handlers with the dispatcher.
-func (s *CloudFrontService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *CloudFrontService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudfront", "CreateDistribution", s.CreateDistribution)
 	d.RegisterHandlerForService("cloudfront", "CreateDistributionWithTags", s.CreateDistributionWithTags)
 	d.RegisterHandlerForService("cloudfront", "GetDistribution", s.GetDistribution)

@@ -8,7 +8,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/timestreamquery"
 	timestreamqueryconnect "vorpalstacks/internal/pb/aws/timestreamquery/timestreamqueryconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 )
 

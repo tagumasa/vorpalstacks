@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 
 	"github.com/google/uuid"

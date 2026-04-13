@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
 

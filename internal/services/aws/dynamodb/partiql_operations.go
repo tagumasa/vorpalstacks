@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 	"vorpalstacks/pkg/sqlparser"
 )

@@ -8,7 +8,7 @@ import (
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // CreateApiKey generates a new API key for a GraphQL API.

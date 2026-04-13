@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 	s3store "vorpalstacks/internal/store/aws/s3"
 

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
 

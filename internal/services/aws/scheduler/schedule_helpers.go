@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"regexp"
 
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	tagutil "vorpalstacks/internal/common/tags"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
 

@@ -5,8 +5,8 @@ package secretsmanager
 import (
 	"testing"
 
-	"vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

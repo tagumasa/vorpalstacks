@@ -9,7 +9,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/appsync"
 	appsyncconnect "vorpalstacks/internal/pb/aws/appsync/appsyncconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )

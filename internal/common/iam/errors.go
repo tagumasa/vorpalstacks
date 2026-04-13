@@ -3,7 +3,7 @@ package iam
 import (
 	"fmt"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // InvalidParameterValueError is returned when a parameter value is invalid.

@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"vorpalstacks/internal/server/http/classifier"
-	"vorpalstacks/internal/services/aws/common/auth"
+	"vorpalstacks/internal/common/auth"
 )
 
 // SignatureMiddleware returns an HTTP middleware that verifies AWS Signature

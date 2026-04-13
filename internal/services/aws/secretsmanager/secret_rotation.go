@@ -3,8 +3,8 @@ package secretsmanager
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
 

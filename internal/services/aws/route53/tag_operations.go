@@ -4,10 +4,10 @@ import (
 	"context"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/protocol"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
-	"vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/utils/aws/types"
 )
 

@@ -3,7 +3,7 @@ package cognitoidentity
 import (
 	"net/http"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 var (

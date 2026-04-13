@@ -9,7 +9,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/kinesis"
 	kinesisconnect "vorpalstacks/internal/pb/aws/kinesis/kinesisconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 

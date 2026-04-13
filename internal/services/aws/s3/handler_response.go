@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
 

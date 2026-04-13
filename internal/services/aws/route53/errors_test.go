@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"vorpalstacks/internal/services/aws/common/errors"
+	"vorpalstacks/internal/common/errors"
 )
 
 func TestRoute53Errors(t *testing.T) {

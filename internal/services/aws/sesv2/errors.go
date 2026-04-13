@@ -3,7 +3,7 @@ package sesv2
 import (
 	"net/http"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // Error variables for common SESv2 error conditions.

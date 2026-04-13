@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 const (

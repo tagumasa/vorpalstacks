@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )

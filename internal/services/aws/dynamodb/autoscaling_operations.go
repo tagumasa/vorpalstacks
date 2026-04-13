@@ -3,7 +3,7 @@ package dynamodb
 
 import (
 	"context"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // DescribeTableReplicaAutoScaling returns the auto scaling settings for table replicas.

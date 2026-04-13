@@ -8,10 +8,10 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 
@@ -127,6 +127,7 @@ func (s *CloudWatchService) store(reqCtx *request.RequestContext) (*cloudwatchSt
 		dashboards: dashboardStore,
 	}
 	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		metricStore.Close()
 		if typed, ok := actual.(*cloudwatchStores); ok {
 			return typed, nil
 		}
@@ -135,7 +136,7 @@ func (s *CloudWatchService) store(reqCtx *request.RequestContext) (*cloudwatchSt
 }
 
 // RegisterHandlers registers CloudWatch handlers with the dispatcher.
-func (s *CloudWatchService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *CloudWatchService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("monitoring", "PutMetricData", s.PutMetricData)
 	d.RegisterHandlerForService("monitoring", "GetMetricStatistics", s.GetMetricStatistics)
 	d.RegisterHandlerForService("monitoring", "ListMetrics", s.ListMetrics)

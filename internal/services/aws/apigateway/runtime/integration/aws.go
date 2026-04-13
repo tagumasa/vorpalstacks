@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common/endpoint"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/endpoint"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sns "vorpalstacks/internal/store/aws/sns"
 	sqs "vorpalstacks/internal/store/aws/sqs"

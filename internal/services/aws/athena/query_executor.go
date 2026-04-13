@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 	"vorpalstacks/pkg/sqlparser"
 )

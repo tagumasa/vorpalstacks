@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common/endpoint"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/endpoint"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	snsstore "vorpalstacks/internal/store/aws/sns"

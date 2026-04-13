@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 func TestLogsError(t *testing.T) {

@@ -1,15 +1,16 @@
 package appsync
 
 import (
+	"net/http"
 	"sync"
 
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/eventbus"
-	awscommon "vorpalstacks/internal/services/aws/common"
+	"vorpalstacks/internal/eventbus"
+	awscommon "vorpalstacks/internal/common"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 )
 
 // AppSyncService provides AWS AppSync service operations for vorpalstacks.
@@ -21,12 +22,14 @@ type AppSyncService struct {
 	lambdaInvoker awscommon.LambdaInvoker
 	bus           eventbus.Bus
 	schemaCache   sync.Map
+	eventServer   *EventServer
 }
 
 // NewAppSyncService creates a new AppSync service instance scoped to the given account.
 func NewAppSyncService(accountID string) *AppSyncService {
 	return &AppSyncService{
-		accountID: accountID,
+		accountID:   accountID,
+		eventServer: NewEventServer(),
 	}
 }
 
@@ -41,6 +44,18 @@ func (s *AppSyncService) SetLambdaInvoker(invoker awscommon.LambdaInvoker) {
 // and cross-service event delivery.
 func (s *AppSyncService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
+	s.eventServer.SetEventBus(bus)
+}
+
+// EventServerHandler returns an http.Handler for the AppSync events server
+// (WebSocket + HTTP publish), or nil if not initialised.
+func (s *AppSyncService) EventServerHandler() http.Handler {
+	return s.eventServer
+}
+
+// ShutdownEventServer closes all active WebSocket connections.
+func (s *AppSyncService) ShutdownEventServer() {
+	s.eventServer.Shutdown()
 }
 
 // GetStoreForRegion returns the cached AppSync store for the given region,
@@ -78,7 +93,7 @@ func (s *AppSyncService) store(reqCtx *request.RequestContext) (*appsyncstore.Ap
 // RegisterHandlers registers all AppSync control-plane operation handlers with the dispatcher.
 // Phase 1: Event API (v2) operations + tag operations.
 // Phase 2: GraphQL API (v1) core — data sources, resolvers, functions, types, schema.
-func (s *AppSyncService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *AppSyncService) RegisterHandlers(d handler.Registrar) {
 	// Event API (v2) operations
 	d.RegisterHandlerForService("appsync", "CreateApi", s.CreateApi)
 	d.RegisterHandlerForService("appsync", "GetApi", s.GetApi)

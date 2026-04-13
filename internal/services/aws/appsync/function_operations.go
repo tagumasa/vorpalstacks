@@ -5,7 +5,7 @@ import (
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // CreateFunction creates a new AppSync function (a reusable resolver unit).

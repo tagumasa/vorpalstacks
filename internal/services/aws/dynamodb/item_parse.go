@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 

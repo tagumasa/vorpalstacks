@@ -4,7 +4,7 @@ package dynamodb
 import (
 	"regexp"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 

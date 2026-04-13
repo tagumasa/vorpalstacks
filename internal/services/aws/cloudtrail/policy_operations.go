@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 )
 
 // GetResourcePolicy retrieves the resource policy for a CloudTrail resource.

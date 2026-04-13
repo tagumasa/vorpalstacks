@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 

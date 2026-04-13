@@ -3,8 +3,8 @@ package route53
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/protocol"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/common/request"
 )
 
 // ListReusableDelegationSets returns all reusable delegation sets in the account.

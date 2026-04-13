@@ -11,7 +11,7 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // StartLoaderJob initiates a bulk load job for loading data into the Neptune

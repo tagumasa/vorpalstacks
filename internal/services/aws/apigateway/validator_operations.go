@@ -5,9 +5,9 @@ import (
 	"context"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
+	tagutil "vorpalstacks/internal/common/tags"
 	store "vorpalstacks/internal/store/aws/apigateway"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )

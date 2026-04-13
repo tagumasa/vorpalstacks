@@ -1,12 +1,17 @@
-// Package apigateway provides API Gateway service operations for vorpalstacks.
 package apigateway
 
 import (
+	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/eventbus"
+	svcapigatewayruntime "vorpalstacks/internal/services/aws/apigateway/runtime"
+	"vorpalstacks/internal/common/request"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
+	snsstore "vorpalstacks/internal/store/aws/sns"
+	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 
 // apiGatewayStores holds the various API Gateway stores.
@@ -18,9 +23,10 @@ type apiGatewayStores struct {
 
 // APIGatewayService provides AWS API Gateway operations.
 type APIGatewayService struct {
-	accountID string
-	region    string
-	stores    sync.Map // region → *apiGatewayStores
+	accountID     string
+	region        string
+	stores        sync.Map // region → *apiGatewayStores
+	runtimeServer *svcapigatewayruntime.RuntimeServer
 }
 
 // NewAPIGatewayService creates a new API Gateway service instance.
@@ -28,6 +34,51 @@ func NewAPIGatewayService(accountID, region string) *APIGatewayService {
 	return &APIGatewayService{
 		accountID: accountID,
 		region:    region,
+	}
+}
+
+// InitRuntimeServer creates the runtime server using the same stores as the
+// management service. The runtime server is owned by this service and must be
+// initialised exactly once before use.
+func (s *APIGatewayService) InitRuntimeServer(
+	storageManager *storage.RegionStorageManager,
+	lambdaInvoker svcapigatewayruntime.LambdaInvoker,
+	sqsStore sqsstore.SQSStoreInterface,
+	snsStore snsstore.SNSStoreInterface,
+	bus *eventbus.EventBus,
+) {
+	storage, err := storageManager.GetStorage(s.region)
+	if err != nil {
+		return
+	}
+
+	restApiStore := apigatewaystore.NewRestApiStore(storage, s.accountID, s.region)
+	usageStore := apigatewaystore.NewUsageStore(storage, s.accountID, s.region)
+
+	s.runtimeServer = svcapigatewayruntime.NewRuntimeServer(restApiStore, usageStore, lambdaInvoker)
+	s.runtimeServer.SetAccountID(s.accountID)
+	if sqsStore != nil {
+		s.runtimeServer.SetSQSStore(sqsStore, s.accountID, s.region)
+	}
+	if snsStore != nil {
+		s.runtimeServer.SetSNSStore(snsStore, s.accountID, s.region)
+	}
+	s.runtimeServer.SetEventBus(bus)
+}
+
+// RuntimeHandler returns an http.Handler for the API Gateway runtime, or nil
+// if the runtime server has not been initialised.
+func (s *APIGatewayService) RuntimeHandler() http.Handler {
+	if s.runtimeServer == nil {
+		return nil
+	}
+	return http.HandlerFunc(s.runtimeServer.HandleRequest)
+}
+
+// CloseRuntimeServer stops background goroutines in the runtime server.
+func (s *APIGatewayService) CloseRuntimeServer() {
+	if s.runtimeServer != nil {
+		s.runtimeServer.Close()
 	}
 }
 
@@ -45,14 +96,14 @@ func (s *APIGatewayService) store(reqCtx *request.RequestContext) (*apiGatewaySt
 			return typed, nil
 		}
 	}
-	storage, err := reqCtx.GetStorage()
+	st, err := reqCtx.GetStorage()
 	if err != nil {
 		return nil, err
 	}
 	stores := &apiGatewayStores{
-		restApis: apigatewaystore.NewRestApiStore(storage, s.accountID, region),
-		usage:    apigatewaystore.NewUsageStore(storage, s.accountID, region),
-		domains:  apigatewaystore.NewDomainStore(storage, s.accountID, region),
+		restApis: apigatewaystore.NewRestApiStore(st, s.accountID, region),
+		usage:    apigatewaystore.NewUsageStore(st, s.accountID, region),
+		domains:  apigatewaystore.NewDomainStore(st, s.accountID, region),
 	}
 	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
 		if typed, ok := actual.(*apiGatewayStores); ok {
@@ -63,7 +114,7 @@ func (s *APIGatewayService) store(reqCtx *request.RequestContext) (*apiGatewaySt
 }
 
 // RegisterHandlers registers the API Gateway service handlers with the dispatcher.
-func (s *APIGatewayService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *APIGatewayService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("apigateway", "CreateRestApi", s.CreateRestApi)
 	d.RegisterHandlerForService("apigateway", "GetRestApi", s.GetRestApi)
 	d.RegisterHandlerForService("apigateway", "DeleteRestApi", s.DeleteRestApi)

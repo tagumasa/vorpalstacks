@@ -3,7 +3,7 @@ package acm
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	acmstore "vorpalstacks/internal/store/aws/acm"
 )
 

@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
@@ -22,6 +22,13 @@ func NewKinesisService(accountID, region string) *KinesisService {
 	return &KinesisService{
 		accountID: accountID,
 	}
+}
+
+// SetKinesisStore pre-populates the store cache for the given region so that
+// the same store instance is used by both the service handlers and
+// cross-service integrations (Lambda ESM, CloudWatch Logs).
+func (s *KinesisService) SetKinesisStore(region string, store *kinesisstore.KinesisStore) {
+	s.stores.Store(region, store)
 }
 
 func (s *KinesisService) store(reqCtx *request.RequestContext) (*kinesisstore.KinesisStore, error) {
@@ -49,7 +56,7 @@ func (s *KinesisService) store(reqCtx *request.RequestContext) (*kinesisstore.Ki
 }
 
 // RegisterHandlers registers the Kinesis service handlers with the dispatcher.
-func (s *KinesisService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *KinesisService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("kinesis", "CreateStream", s.CreateStream)
 	d.RegisterHandlerForService("kinesis", "DeleteStream", s.DeleteStream)
 	d.RegisterHandlerForService("kinesis", "DescribeStream", s.DescribeStream)

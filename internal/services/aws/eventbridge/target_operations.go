@@ -3,8 +3,8 @@ package eventbridge
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/iam"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/iam"
+	"vorpalstacks/internal/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	commonauth "vorpalstacks/internal/services/aws/common/auth"
+	commonauth "vorpalstacks/internal/common/auth"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 
 	"vorpalstacks/internal/config"
@@ -33,6 +33,13 @@ type LambdaInvokerForAuth interface {
 type authCache struct {
 	results     sync.Map
 	cleanupOnce sync.Once
+	stopCh      chan struct{}
+	stopOnce    sync.Once
+}
+
+// Close stops the background cleanup goroutine. Safe to call multiple times.
+func (ac *authCache) Close() {
+	ac.stopOnce.Do(func() { close(ac.stopCh) })
 }
 
 // NewLambdaAuthorizer creates a new Lambda authorizer instance.
@@ -40,7 +47,7 @@ func NewLambdaAuthorizer(lambdaInvoker LambdaInvokerForAuth, store *apigatewayst
 	return &LambdaAuthorizer{
 		lambdaInvoker: lambdaInvoker,
 		store:         store,
-		cache:         &authCache{},
+		cache:         &authCache{stopCh: make(chan struct{})},
 	}
 }
 
@@ -49,11 +56,16 @@ func NewLambdaAuthorizerWithConfig(lambdaInvoker LambdaInvokerForAuth, store *ap
 	return &LambdaAuthorizer{
 		lambdaInvoker: lambdaInvoker,
 		store:         store,
-		cache:         &authCache{},
+		cache:         &authCache{stopCh: make(chan struct{})},
 		accountID:     accountID,
 		region:        region,
 		sigVerifier:   commonauth.NewSignatureV4Verifier(credProvider),
 	}
+}
+
+// Close stops the background authorisation cache cleanup goroutine.
+func (la *LambdaAuthorizer) Close() {
+	la.cache.Close()
 }
 
 // LambdaAuthEvent represents the event sent to a Lambda authorizer.
@@ -478,17 +490,22 @@ func (ac *authCache) cleanupIfNeeded() {
 func (ac *authCache) cleanupLoop() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
-	for range ticker.C {
-		now := time.Now()
-		var toDelete []string
-		ac.results.Range(func(key, value interface{}) bool {
-			if cr, ok := value.(*cachedAuthResult); ok && now.After(cr.expires) {
-				toDelete = append(toDelete, key.(string))
+	for {
+		select {
+		case <-ac.stopCh:
+			return
+		case <-ticker.C:
+			now := time.Now()
+			var toDelete []string
+			ac.results.Range(func(key, value interface{}) bool {
+				if cr, ok := value.(*cachedAuthResult); ok && now.After(cr.expires) {
+					toDelete = append(toDelete, key.(string))
+				}
+				return true
+			})
+			for _, k := range toDelete {
+				ac.results.Delete(k)
 			}
-			return true
-		})
-		for _, k := range toDelete {
-			ac.results.Delete(k)
 		}
 	}
 }

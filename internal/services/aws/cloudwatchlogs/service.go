@@ -9,10 +9,10 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
@@ -204,7 +204,7 @@ func (s *LogsService) getMetricStoreByRegion(region string) (*cwstore.MetricChun
 }
 
 // RegisterHandlers registers the CloudWatch Logs service handlers with the dispatcher.
-func (s *LogsService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *LogsService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("logs", "CreateLogGroup", s.CreateLogGroup)
 	d.RegisterHandlerForService("logs", "DeleteLogGroup", s.DeleteLogGroup)
 	d.RegisterHandlerForService("logs", "DescribeLogGroups", s.DescribeLogGroups)

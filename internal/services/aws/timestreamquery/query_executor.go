@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 	"vorpalstacks/pkg/sqlparser"
 )

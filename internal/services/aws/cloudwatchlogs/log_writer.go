@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/eventbus"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 

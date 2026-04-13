@@ -9,10 +9,10 @@ import (
 	"os"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/common/iam"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/iam"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
+	tagutil "vorpalstacks/internal/common/tags"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 

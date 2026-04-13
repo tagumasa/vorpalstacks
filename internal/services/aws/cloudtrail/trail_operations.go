@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/iam"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
-	tags "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/iam"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
+	tags "vorpalstacks/internal/common/tags"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 

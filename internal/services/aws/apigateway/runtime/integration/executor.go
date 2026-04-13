@@ -5,7 +5,7 @@ import (
 	"context"
 	"net/http"
 
-	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/eventbus"
 	sns "vorpalstacks/internal/store/aws/sns"
 	sqs "vorpalstacks/internal/store/aws/sqs"
 )

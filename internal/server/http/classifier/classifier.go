@@ -13,7 +13,7 @@ import (
 
 	"vorpalstacks/internal/server/actionregistry"
 	"vorpalstacks/internal/server/http/router"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/utils/aws/authutil"
 )
 

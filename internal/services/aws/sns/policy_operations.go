@@ -3,8 +3,8 @@ package sns
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
 

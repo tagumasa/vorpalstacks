@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 

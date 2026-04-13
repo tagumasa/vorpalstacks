@@ -3,7 +3,7 @@ package appsync
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // TagResource adds or updates tags on an AppSync resource.

@@ -8,7 +8,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/dynamodb"
 	dynamodbconnect "vorpalstacks/internal/pb/aws/dynamodb/dynamodbconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 

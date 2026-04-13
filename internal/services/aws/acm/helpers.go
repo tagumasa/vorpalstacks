@@ -6,8 +6,8 @@ import (
 	"time"
 
 	acmpb "vorpalstacks/internal/pb/aws/acm"
-	"vorpalstacks/internal/services/aws/common/pagination"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/request"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
 )
 

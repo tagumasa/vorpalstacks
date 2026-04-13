@@ -2,7 +2,7 @@
 package pagination
 
 import (
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // DefaultMaxItems is the default maximum number of items to return in a list operation.

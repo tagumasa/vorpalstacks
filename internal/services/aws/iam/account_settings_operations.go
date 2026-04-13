@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // EnableOutboundWebIdentityFederation enables outbound web identity federation for the account.

@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/store/api"
 )
 

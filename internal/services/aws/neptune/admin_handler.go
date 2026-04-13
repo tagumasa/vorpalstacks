@@ -8,7 +8,7 @@ import (
 
 	pb "vorpalstacks/internal/pb/aws/neptune"
 	neptuneconnect "vorpalstacks/internal/pb/aws/neptune/neptuneconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	storeneptune "vorpalstacks/internal/store/aws/neptune"
 )
 

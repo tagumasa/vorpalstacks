@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -100,7 +100,7 @@ func (s *Service) store(ctx *request.RequestContext) (*tsQueryStores, error) {
 }
 
 // RegisterHandlers registers the Timestream Query service handlers with the dispatcher.
-func (s *Service) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("timestream-query", "DescribeEndpoints", s.DescribeEndpoints)
 	d.RegisterHandlerForService("timestream-query", "Query", s.Query)
 	d.RegisterHandlerForService("timestream-query", "CancelQuery", s.CancelQuery)

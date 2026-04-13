@@ -60,7 +60,7 @@ func EmptyBusPolicyDocument() *BusPolicyDocument {
 
 // iamPolicyEvaluatorAdapter wraps an arbitrary evaluation function to
 // satisfy the BusPolicyEvaluator interface. This avoids importing
-// internal/services/aws/iam/policy from the eventbus package.
+// internal/common/iam/policy from the eventbus package.
 type iamPolicyEvaluatorAdapter struct {
 	evaluateFn func(ctx context.Context, policy *BusPolicyDocument, principal string, action string, resource string) (bool, error)
 }

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
@@ -45,7 +45,7 @@ func (s *IAMService) store(reqCtx *request.RequestContext) (*iamstore.IAMStore, 
 }
 
 // RegisterHandlers registers all IAM operation handlers with the dispatcher.
-func (s *IAMService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *IAMService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("iam", "GetUser", s.GetUser)
 	d.RegisterHandlerForService("iam", "CreateUser", s.CreateUser)
 	d.RegisterHandlerForService("iam", "DeleteUser", s.DeleteUser)

@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // Error variables provide common Scheduler error instances.

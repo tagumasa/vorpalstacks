@@ -4,7 +4,7 @@ package iam
 import (
 	"strings"
 
-	"vorpalstacks/internal/services/aws/iam/policy"
+	"vorpalstacks/internal/common/iam/policy"
 )
 
 // BuildEvaluationContext creates an evaluation context for trust policy evaluation.

@@ -16,7 +16,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/eventbus"
 )
 
 const (
@@ -180,6 +180,29 @@ func NewEventServer() *EventServer {
 // other services (Lambda, EventBridge rules, etc.) can react to them.
 func (s *EventServer) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
+}
+
+// DisconnectByApiId closes all WebSocket connections associated with the
+// given API ID. Call this when an API is deleted to prevent stale connections
+// from receiving events for a non-existent API.
+func (s *EventServer) DisconnectByApiId(apiId string) {
+	s.connMu.RLock()
+	var toClose []*wsConnection
+	for _, ws := range s.connections {
+		if apiId == "" || ws.apiId == apiId {
+			toClose = append(toClose, ws)
+		}
+	}
+	s.connMu.RUnlock()
+
+	for _, ws := range toClose {
+		ws.conn.Close()
+	}
+}
+
+// Shutdown closes all active WebSocket connections and cleans up internal state.
+func (s *EventServer) Shutdown() {
+	s.DisconnectByApiId("")
 }
 
 // ServeHTTP routes requests to either the WebSocket upgrade handler or the HTTP publish endpoint.

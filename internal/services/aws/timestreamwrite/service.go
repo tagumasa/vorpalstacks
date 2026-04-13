@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
@@ -79,7 +79,7 @@ func (s *Service) store(ctx *request.RequestContext) (*tsWriteStores, error) {
 }
 
 // RegisterHandlers registers the Timestream Write service handlers with the dispatcher.
-func (s *Service) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("timestream-write", "DescribeEndpoints", s.DescribeEndpoints)
 	d.RegisterHandlerForService("timestream-write", "CreateDatabase", s.CreateDatabase)
 	d.RegisterHandlerForService("timestream-write", "DescribeDatabase", s.DescribeDatabase)

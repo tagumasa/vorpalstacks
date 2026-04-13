@@ -2,7 +2,7 @@
 package lambda
 
 import (
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 

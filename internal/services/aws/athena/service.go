@@ -6,8 +6,8 @@ import (
 	"io"
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -35,7 +35,6 @@ type athenaStores struct {
 // Service provides AWS Athena operations.
 type Service struct {
 	accountID     string
-	serverHost    string
 	s3ObjectStore S3ObjectStore
 	asyncWg       sync.WaitGroup
 	cancelMu      sync.Mutex
@@ -44,19 +43,17 @@ type Service struct {
 }
 
 // NewService creates a new Athena service instance.
-func NewService(accountID, serverHost string) *Service {
+func NewService(accountID string) *Service {
 	return &Service{
 		accountID:   accountID,
-		serverHost:  serverHost,
 		cancelFuncs: make(map[string]context.CancelFunc),
 	}
 }
 
 // NewServiceWithS3 creates a new Athena service with s3 object store.
-func NewServiceWithS3(accountID, serverHost string, s3ObjectStore S3ObjectStore) *Service {
+func NewServiceWithS3(accountID string, s3ObjectStore S3ObjectStore) *Service {
 	return &Service{
 		accountID:     accountID,
-		serverHost:    serverHost,
 		s3ObjectStore: s3ObjectStore,
 		asyncWg:       sync.WaitGroup{},
 		cancelFuncs:   make(map[string]context.CancelFunc),
@@ -129,7 +126,7 @@ func (s *Service) Shutdown() {
 }
 
 // RegisterHandlers registers the Athena service handlers with the dispatcher.
-func (s *Service) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("athena", "CreateWorkGroup", s.CreateWorkGroup)
 	d.RegisterHandlerForService("athena", "GetWorkGroup", s.GetWorkGroup)
 	d.RegisterHandlerForService("athena", "UpdateWorkGroup", s.UpdateWorkGroup)

@@ -3,8 +3,8 @@ package sns
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/utils/aws/types"
 )
 

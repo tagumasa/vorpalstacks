@@ -1,0 +1,398 @@
+package apps
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"os"
+
+	"vorpalstacks/internal/client/mobyclient"
+	appconfig "vorpalstacks/internal/config"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
+	svcacm "vorpalstacks/internal/services/aws/acm"
+	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
+	svccloudtrail "vorpalstacks/internal/services/aws/cloudtrail"
+	svccloudwatch "vorpalstacks/internal/services/aws/cloudwatch"
+	svclogs "vorpalstacks/internal/services/aws/cloudwatchlogs"
+	svccognitoidentity "vorpalstacks/internal/services/aws/cognitoidentity"
+	svccognito "vorpalstacks/internal/services/aws/cognitoidentityprovider"
+	svcdynamodb "vorpalstacks/internal/services/aws/dynamodb"
+	svcevents "vorpalstacks/internal/services/aws/eventbridge"
+	svciam "vorpalstacks/internal/services/aws/iam"
+	svckinesis "vorpalstacks/internal/services/aws/kinesis"
+	svckms "vorpalstacks/internal/services/aws/kms"
+	svckmshsm "vorpalstacks/internal/services/aws/kms/hsm"
+	svclambda "vorpalstacks/internal/services/aws/lambda"
+	svcs3 "vorpalstacks/internal/services/aws/s3"
+	svcscheduler "vorpalstacks/internal/services/aws/scheduler"
+	svcsecretsmanager "vorpalstacks/internal/services/aws/secretsmanager"
+	svcsesv2 "vorpalstacks/internal/services/aws/sesv2"
+	svcstepfunction "vorpalstacks/internal/services/aws/sfn"
+	svcsns "vorpalstacks/internal/services/aws/sns"
+	svcsqs "vorpalstacks/internal/services/aws/sqs"
+	svcssm "vorpalstacks/internal/services/aws/ssm"
+	svcsts "vorpalstacks/internal/services/aws/sts"
+	storeevents "vorpalstacks/internal/store/aws/eventbridge"
+	iamstore "vorpalstacks/internal/store/aws/iam"
+	storekinesis "vorpalstacks/internal/store/aws/kinesis"
+	storesns "vorpalstacks/internal/store/aws/sns"
+	storesqs "vorpalstacks/internal/store/aws/sqs"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
+)
+
+func (a *App) initAlwaysOnServices() {
+	st := a.newServiceState()
+
+	if a.cfg.ACM {
+		a.initACM(st)
+	}
+	if a.cfg.APIGateway {
+		a.initAPIGateway(st)
+	}
+	if a.cfg.CloudTrail {
+		a.initCloudTrail(st)
+	}
+	if a.cfg.CloudWatch {
+		a.initCloudWatch(st)
+	}
+	if a.cfg.CloudWatchLogs {
+		a.initCloudWatchLogs(st)
+	}
+	if a.cfg.Cognito {
+		a.initCognito(st)
+	}
+	if a.cfg.CognitoIdentity {
+		a.initCognitoIdentity(st)
+	}
+	if a.cfg.DynamoDB {
+		a.initDynamoDB(st)
+	}
+	if a.cfg.EventBridge {
+		a.initEventBridge(st)
+	}
+	if a.cfg.IAM {
+		a.initIAM(st)
+	}
+	if a.cfg.Kinesis {
+		a.initKinesis(st)
+	}
+	if a.cfg.KMS {
+		a.initKMS(st)
+	}
+	if a.cfg.Lambda {
+		a.initLambda(st)
+	}
+	if a.cfg.S3 {
+		a.initS3(st)
+	}
+	if a.cfg.Scheduler {
+		a.initScheduler(st)
+	}
+	if a.cfg.SecretsManager {
+		a.initSecretsManager(st)
+	}
+	if a.cfg.SESv2 {
+		a.initSESv2(st)
+	}
+	if a.cfg.SFN {
+		a.initSFN(st)
+	}
+	if a.cfg.SNS {
+		a.initSNS(st)
+	}
+	if a.cfg.SQS {
+		a.initSQS(st)
+	}
+	if a.cfg.SSM {
+		a.initSSM(st)
+	}
+	if a.cfg.STS {
+		a.initSTS(st)
+	}
+
+	a.state = st
+}
+
+func (a *App) newServiceState() *serviceState {
+	return &serviceState{
+		accountID: a.cfg.AccountID,
+		region:    a.cfg.Region,
+	}
+}
+
+// --- ACM ---
+
+func (a *App) initACM(st *serviceState) {
+	st.acmService = svcacm.NewACMService(st.accountID, st.region)
+	st.acmService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- APIGateway ---
+
+func (a *App) initAPIGateway(st *serviceState) {
+	st.apiGatewayService = svcapigateway.NewAPIGatewayService(st.accountID, st.region)
+	st.apiGatewayService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- CloudTrail ---
+
+func (a *App) initCloudTrail(st *serviceState) {
+	st.cloudTrailService = svccloudtrail.NewCloudTrailService(st.accountID, st.region)
+	st.cloudTrailService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- CloudWatch ---
+
+func (a *App) initCloudWatch(st *serviceState) {
+	st.cloudWatchService = svccloudwatch.NewCloudWatchService(st.accountID, st.region, a.cfg.DataPath)
+	st.cloudWatchService.SetStorageManager(a.server.StorageManager())
+	st.cloudWatchService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- CloudWatchLogs ---
+
+func (a *App) initCloudWatchLogs(st *serviceState) {
+	st.logsService = svclogs.NewLogsService(a.server.StorageManager(), st.accountID, a.cfg.DataPath)
+	st.logsService.SetEventBus(a.server.EventBus())
+	st.logsService.RegisterHandlers(a.server.Dispatcher())
+	a.addShutdown("cloudwatchlogs", func(ctx context.Context) error {
+		st.logsService.Stop()
+		return nil
+	})
+}
+
+// --- Cognito ---
+
+func (a *App) initCognito(st *serviceState) {
+	st.cognitoService = svccognito.NewCognitoService(st.accountID, st.region)
+	st.cognitoService.SetStorageManager(a.server.StorageManager())
+	st.cognitoService.SetEventBus(a.server.EventBus())
+	st.cognitoService.RegisterHandlers(a.server.Dispatcher())
+	a.server.RegisterJWKSHandler(http.HandlerFunc(st.cognitoService.JWKSHandler))
+}
+
+// --- CognitoIdentity ---
+
+func (a *App) initCognitoIdentity(st *serviceState) {
+	st.cognitoIdentityService = svccognitoidentity.NewCognitoIdentityService(st.accountID, st.region)
+	st.cognitoIdentityService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- DynamoDB ---
+
+func (a *App) initDynamoDB(st *serviceState) {
+	st.dynamoDBService = svcdynamodb.NewDynamoDBService(st.accountID)
+	st.dynamoDBService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- EventBridge ---
+
+func (a *App) initEventBridge(st *serviceState) {
+	eventsRegionalStorage, err := a.server.StorageManager().GetStorage(st.region)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get EventBridge regional storage: %v\n", err)
+		os.Exit(1)
+	}
+	st.eventsStoreInstance = storeevents.NewEventsStore(eventsRegionalStorage, st.accountID, st.region)
+	st.eventBridgeService = svcevents.NewEventsService(a.server.StorageManager(), st.accountID)
+	st.eventBridgeService.SetEventsStore(st.region, st.eventsStoreInstance)
+	st.eventBridgeService.SetEventBus(a.server.EventBus())
+	st.eventBridgeService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- IAM ---
+
+func (a *App) initIAM(st *serviceState) {
+	st.iamService = svciam.NewIAMService(st.accountID)
+	st.iamService.RegisterHandlers(a.server.Dispatcher())
+	a.addShutdown("iam", func(ctx context.Context) error {
+		svciam.ShutdownSLRoleCleanup()
+		return nil
+	})
+
+	if eb := a.server.EventBus(); eb != nil {
+		if rr, ok := eb.RoleResolver().(*eventbus.IAMRoleResolver); ok {
+			globalStore := a.server.Storage()
+			iamStoreInstance := iamstore.NewIAMStore(globalStore, st.accountID)
+			rr.SetLookup(func(ctx context.Context, roleARN string) (string, error) {
+				roleName := svcarn.ExtractRoleNameFromARN(roleARN)
+				if roleName == "" {
+					return "", fmt.Errorf("invalid role ARN format: %q", roleARN)
+				}
+				role, err := iamStoreInstance.Roles().Get(roleName)
+				if err != nil {
+					return "", err
+				}
+				return role.AssumeRolePolicyDocument, nil
+			})
+		}
+	}
+}
+
+// --- Kinesis ---
+
+func (a *App) initKinesis(st *serviceState) {
+	kinesisRegionalStorage, err := a.server.StorageManager().GetStorage(st.region)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get Kinesis regional storage: %v\n", err)
+		os.Exit(1)
+	}
+	tstore, ok := kinesisRegionalStorage.(storage.TransactionalStorageWith2PC)
+	if ok {
+		st.kinesisStoreInstance = storekinesis.NewKinesisStore(tstore, st.accountID, st.region)
+	}
+	st.kinesisService = svckinesis.NewKinesisService(st.accountID, st.region)
+	if st.kinesisStoreInstance != nil {
+		st.kinesisService.SetKinesisStore(st.region, st.kinesisStoreInstance)
+	}
+	st.kinesisService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- KMS ---
+
+func (a *App) initKMS(st *serviceState) {
+	hsmBackend, err := svckmshsm.NewPersistentBackend(a.cfg.DataPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create persistent HSM backend: %v\n", err)
+		os.Exit(1)
+	}
+	st.kmsService = svckms.NewKMSService(st.accountID, st.region, hsmBackend)
+	st.kmsService.RegisterHandlers(a.server.Dispatcher())
+
+	if err := st.kmsService.EnsureDefaultSSMKey(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: Failed to create default SSM key: %v\n", err)
+	}
+}
+
+// --- Lambda ---
+
+func (a *App) initLambda(st *serviceState) {
+	dockerCfg := mobyclient.Config{
+		Host:    a.cfg.DockerHost,
+		Version: "1.44",
+	}
+	dockerLogger := logs.NewLogger(&logs.Config{Level: logs.LevelInfo})
+	dockerClient, err := mobyclient.NewClient(dockerCfg, dockerLogger)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: Failed to create Docker client for Lambda: %v\n", err)
+	}
+
+	if dockerClient != nil {
+		st.lambdaService = svclambda.NewLambdaService(dockerClient, st.accountID, st.region, a.cfg.DataPath)
+		st.lambdaService.SetStorageManager(a.server.StorageManager())
+		st.lambdaService.SetHostEndpoint(fmt.Sprintf("http://host.docker.internal:%s", a.cfg.Port))
+		st.lambdaService.RegisterHandlers(a.server.Dispatcher())
+		st.lambdaService.StartESMPoller(context.Background())
+
+		a.addShutdown("lambda", func(ctx context.Context) error {
+			st.lambdaService.Shutdown()
+			return nil
+		})
+		a.addShutdown("lambda-esm", func(ctx context.Context) error {
+			st.lambdaService.StopESMPoller()
+			return nil
+		})
+	}
+}
+
+// --- S3 ---
+
+func (a *App) initS3(st *serviceState) {
+	s3Store := a.server.S3Store()
+	blobStore := a.server.BlobStore()
+	st.s3Service = svcs3.NewS3Service(s3Store, blobStore, st.accountID)
+	s3Handler := svcs3.NewS3Handler(st.s3Service, st.region, a.server.StorageManager())
+	a.server.RegisterS3Handler(s3Handler)
+	st.s3Service.SetEventBus(a.server.EventBus())
+
+	st.s3ObjectStore = s3Store.Objects(st.region)
+}
+
+// --- Scheduler ---
+
+func (a *App) initScheduler(st *serviceState) {
+	st.schedulerService = svcscheduler.NewSchedulerService(a.server.StorageManager(), st.accountID)
+	st.schedulerService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- SecretsManager ---
+
+func (a *App) initSecretsManager(st *serviceState) {
+	st.secretsManagerService = svcsecretsmanager.NewSecretsManagerService(st.accountID)
+	st.secretsManagerService.SetRegion(st.region)
+	st.secretsManagerService.SetStorageManager(a.server.StorageManager())
+	st.secretsManagerService.RegisterHandlers(a.server.Dispatcher())
+	st.secretsManagerService.StartRotationChecker(context.Background())
+	a.addShutdown("secretsmanager", func(ctx context.Context) error {
+		st.secretsManagerService.StopRotationChecker()
+		return nil
+	})
+}
+
+// --- SESv2 ---
+
+func (a *App) initSESv2(st *serviceState) {
+	st.sesv2Service = svcsesv2.NewSESv2Service(st.accountID)
+	st.sesv2Service.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- SFN ---
+
+func (a *App) initSFN(st *serviceState) {
+	st.stepFunctionService = svcstepfunction.NewStepFunctionService(a.server.StorageManager(), st.accountID)
+	st.stepFunctionService.SetEventBus(a.server.EventBus())
+	st.stepFunctionService.RegisterHandlers(a.server.Dispatcher())
+	a.addShutdown("sfn", func(ctx context.Context) error {
+		st.stepFunctionService.Shutdown()
+		return nil
+	})
+}
+
+// --- SNS ---
+
+func (a *App) initSNS(st *serviceState) {
+	snsRegionalStorage, err := a.server.StorageManager().GetStorage(st.region)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get SNS regional storage: %v\n", err)
+		os.Exit(1)
+	}
+	st.snsStoreInstance = storesns.NewSNSStore(snsRegionalStorage, st.accountID, st.region)
+	st.snsService = svcsns.NewSNSService(a.server.StorageManager(), st.accountID, st.region)
+	st.snsService.SetSNSStore(st.region, st.snsStoreInstance)
+	st.snsService.SetEventBus(a.server.EventBus())
+	st.snsService.RegisterHandlers(a.server.Dispatcher())
+	a.addShutdown("sns", func(ctx context.Context) error {
+		st.snsStoreInstance.Close()
+		return nil
+	})
+}
+
+// --- SQS ---
+
+func (a *App) initSQS(st *serviceState) {
+	regionalStorage, err := a.server.StorageManager().GetStorage(st.region)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get SQS regional storage: %v\n", err)
+		os.Exit(1)
+	}
+	st.sqsStoreInstance = storesqs.NewSQSStore(regionalStorage, st.accountID, st.region, appconfig.BaseURL())
+	st.sqsService = svcsqs.NewSQSServiceWithStore(st.sqsStoreInstance)
+	st.sqsService.SetStorageManager(a.server.StorageManager())
+	st.sqsService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- SSM ---
+
+func (a *App) initSSM(st *serviceState) {
+	st.ssmService = svcssm.NewSSMServiceWithKMS(st.accountID, st.kmsService)
+	st.ssmService.RegisterHandlers(a.server.Dispatcher())
+}
+
+// --- STS ---
+
+func (a *App) initSTS(st *serviceState) {
+	st.stsService = svcsts.NewSTSService()
+	st.stsService.RegisterHandlers(a.server.Dispatcher())
+}

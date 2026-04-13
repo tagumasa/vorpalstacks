@@ -7,7 +7,7 @@ import (
 
 	pb "vorpalstacks/internal/pb/aws/cloudwatchlogs"
 	cloudwatchlogsconnect "vorpalstacks/internal/pb/aws/cloudwatchlogs/cloudwatchlogsconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	cloudwatchlogsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 

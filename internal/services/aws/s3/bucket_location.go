@@ -1,7 +1,7 @@
 package s3
 
 import (
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // GetBucketLocationInput contains the input parameters for the GetBucketLocation operation.

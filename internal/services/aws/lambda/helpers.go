@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	"vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"

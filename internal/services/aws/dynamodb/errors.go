@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // APIError represents a DynamoDB API error.

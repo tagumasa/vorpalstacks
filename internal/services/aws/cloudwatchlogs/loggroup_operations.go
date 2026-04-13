@@ -3,9 +3,9 @@ package cloudwatchlogs
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
+	tagutil "vorpalstacks/internal/common/tags"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	"vorpalstacks/internal/utils/aws/arn"
 )

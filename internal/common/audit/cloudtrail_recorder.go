@@ -1,11 +1,10 @@
 package audit
 
 import (
-	"vorpalstacks/internal/services/aws/common/audit"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 
-var _ audit.Recorder = (*CloudTrailRecorder)(nil)
+var _ Recorder = (*CloudTrailRecorder)(nil)
 
 // CloudTrailRecorder records audit events to CloudTrail.
 type CloudTrailRecorder struct {
@@ -18,7 +17,7 @@ func NewCloudTrailRecorder(store *cloudtrailstore.CloudTrailStore) *CloudTrailRe
 }
 
 // RecordEvent records a CloudTrail audit event.
-func (r *CloudTrailRecorder) RecordEvent(event *audit.AuditEvent) error {
+func (r *CloudTrailRecorder) RecordEvent(event *AuditEvent) error {
 	userIdentity := &cloudtrailstore.UserIdentity{
 		Type:      "AssumedRole",
 		AccountID: event.AccountID,
@@ -48,7 +47,7 @@ func (r *CloudTrailRecorder) RecordEvent(event *audit.AuditEvent) error {
 
 // Record records an audit event if it is an AuditEvent.
 func (r *CloudTrailRecorder) Record(event interface{}) error {
-	if e, ok := event.(*audit.AuditEvent); ok {
+	if e, ok := event.(*AuditEvent); ok {
 		return r.RecordEvent(e)
 	}
 	return nil

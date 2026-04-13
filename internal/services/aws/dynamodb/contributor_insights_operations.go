@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // DescribeContributorInsights returns the contributor insights status for a table.

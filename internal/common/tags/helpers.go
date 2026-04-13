@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/utils/aws/types"
 )
 

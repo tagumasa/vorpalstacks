@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strconv"
 
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/common/response"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 

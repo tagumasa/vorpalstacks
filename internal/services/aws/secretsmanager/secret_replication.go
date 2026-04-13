@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/request"
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
 

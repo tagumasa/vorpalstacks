@@ -10,10 +10,10 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -180,7 +180,7 @@ func (s *StepFunctionService) Shutdown() {
 }
 
 // RegisterHandlers registers the Step Functions service handlers with the dispatcher.
-func (s *StepFunctionService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *StepFunctionService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("states", "CreateStateMachine", s.CreateStateMachine)
 	d.RegisterHandlerForService("states", "DeleteStateMachine", s.DeleteStateMachine)
 	d.RegisterHandlerForService("states", "DescribeStateMachine", s.DescribeStateMachine)

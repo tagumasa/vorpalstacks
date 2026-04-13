@@ -2,7 +2,7 @@ package cognitoidentityprovider
 
 import (
 	"context"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // ListUsersInGroup lists the users in a group.

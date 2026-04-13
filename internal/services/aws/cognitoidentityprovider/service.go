@@ -9,10 +9,10 @@ import (
 	"sync"
 
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
@@ -116,7 +116,7 @@ func (s *CognitoService) store(reqCtx *request.RequestContext) (cognitostore.Cog
 }
 
 // RegisterHandlers registers the Cognito handlers with the dispatcher.
-func (s *CognitoService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *CognitoService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cognito-idp", "CreateUserPool", s.CreateUserPool)
 	d.RegisterHandlerForService("cognito-idp", "DeleteUserPool", s.DeleteUserPool)
 	d.RegisterHandlerForService("cognito-idp", "DescribeUserPool", s.DescribeUserPool)

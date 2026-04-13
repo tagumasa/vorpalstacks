@@ -5,9 +5,9 @@ import (
 	"context"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/pagination"
-	"vorpalstacks/internal/services/aws/common/request"
-	tagutil "vorpalstacks/internal/services/aws/common/tags"
+	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 

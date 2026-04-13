@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
@@ -338,6 +338,8 @@ type GetObjectAttributesOutput struct {
 // Implements encoding/xml.Marshaler.
 type s3Timestamp time.Time
 
+// MarshalXML encodes the timestamp in S3's preferred format (RFC1123 with
+// GMT timezone suffix) for XML serialisation.
 func (t s3Timestamp) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeElement(strings.Replace(time.Time(t).UTC().Format(time.RFC1123), "UTC", "GMT", 1), start)
 }

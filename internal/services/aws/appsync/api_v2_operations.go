@@ -7,7 +7,7 @@ import (
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -124,6 +124,8 @@ func (s *AppSyncService) DeleteApi(ctx context.Context, reqCtx *request.RequestC
 	if err := store.DeleteApiById(apiId); err != nil {
 		return mapStoreError(err)
 	}
+
+	s.eventServer.DisconnectByApiId(apiId)
 
 	return map[string]interface{}{}, nil
 }

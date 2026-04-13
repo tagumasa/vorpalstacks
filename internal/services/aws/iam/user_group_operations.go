@@ -3,7 +3,7 @@ package iam
 
 import (
 	"context"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // AddUserToGroup adds a user to a group.

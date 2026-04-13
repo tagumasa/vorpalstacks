@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/iam/policy"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
@@ -74,7 +74,7 @@ func (s *KMSService) store(reqCtx *request.RequestContext) (*kmsStores, error) {
 }
 
 // RegisterHandlers registers the KMS service handlers with the dispatcher.
-func (s *KMSService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *KMSService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("kms", "CreateKey", s.CreateKey)
 	d.RegisterHandlerForService("kms", "DescribeKey", s.DescribeKey)
 	d.RegisterHandlerForService("kms", "ListKeys", s.ListKeys)

@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/common/protocol"
+	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/utils/aws/authutil"
 	"vorpalstacks/internal/utils/buffer"
 )

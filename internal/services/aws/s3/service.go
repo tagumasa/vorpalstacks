@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
 	"vorpalstacks/internal/utils/crypto"

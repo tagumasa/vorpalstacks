@@ -11,9 +11,9 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/server/eventbus"
-	awscommon "vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/eventbus"
+	awscommon "vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/pkg/vtl"

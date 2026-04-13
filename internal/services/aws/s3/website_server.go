@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"vorpalstacks/internal/core/storage"
 	s3store "vorpalstacks/internal/store/aws/s3"
@@ -17,6 +18,7 @@ type WebsiteServer struct {
 	blobStore      storage.BlobStore
 	accountID      string
 	region         string
+	stores         sync.Map
 }
 
 // NewWebsiteServer creates a new WebsiteServer with the given storage, blob store, account, and region.
@@ -37,17 +39,31 @@ func (s *WebsiteServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	store, err := s.storageManager.GetStorage(s.region)
-	if err != nil {
-		http.Error(w, "InternalError: storage unavailable", http.StatusInternalServerError)
-		return
+	var bucketStore *s3store.BucketStore
+	var objectStore *s3store.ObjectStore
+	if cached, ok := s.stores.Load(s.region); ok {
+		if typed, ok := cached.(*websiteStores); ok {
+			bucketStore = typed.buckets
+			objectStore = typed.objects
+		}
 	}
-
-	bucketStore := s3store.NewBucketStore(store, s.accountID, s.region)
-	objectStore, err := s3store.NewObjectStore(store, s.blobStore, bucketStore, s.accountID, s.region)
-	if err != nil {
-		http.Error(w, "InternalError: object store unavailable", http.StatusInternalServerError)
-		return
+	if bucketStore == nil {
+		store, err := s.storageManager.GetStorage(s.region)
+		if err != nil {
+			http.Error(w, "InternalError: storage unavailable", http.StatusInternalServerError)
+			return
+		}
+		bucketStore = s3store.NewBucketStore(store, s.accountID, s.region)
+		objectStore, err = s3store.NewObjectStore(store, s.blobStore, bucketStore, s.accountID, s.region)
+		if err != nil {
+			http.Error(w, "InternalError: object store unavailable", http.StatusInternalServerError)
+			return
+		}
+		newStores := &websiteStores{buckets: bucketStore, objects: objectStore}
+		if actual, loaded := s.stores.LoadOrStore(s.region, newStores); loaded {
+			bucketStore = actual.(*websiteStores).buckets
+			objectStore = actual.(*websiteStores).objects
+		}
 	}
 
 	b, err := bucketStore.Get(bucket)
@@ -223,4 +239,9 @@ func routingRuleMatches(rr *s3store.RoutingRule, key string, httpCode int) bool 
 		}
 	}
 	return true
+}
+
+type websiteStores struct {
+	buckets *s3store.BucketStore
+	objects *s3store.ObjectStore
 }

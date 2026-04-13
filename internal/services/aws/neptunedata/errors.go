@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // NewNeptuneDataError creates a NeptuneDataError with the given error code,

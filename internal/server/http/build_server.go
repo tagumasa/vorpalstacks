@@ -8,7 +8,7 @@ import (
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/http/chain"
 	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/server/listener"

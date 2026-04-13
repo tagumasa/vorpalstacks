@@ -15,8 +15,8 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 	"vorpalstacks/pkg/graphengine"
@@ -146,7 +146,7 @@ func (s *NeptuneGraphService) getEngine(graphID string) (*engineEntry, bool) {
 }
 
 // RegisterHandlers registers all NeptuneGraph operation handlers with the dispatcher.
-func (s *NeptuneGraphService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *NeptuneGraphService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("neptunegraph", "CreateGraph", s.CreateGraph)
 	d.RegisterHandlerForService("neptunegraph", "GetGraph", s.GetGraph)
 	d.RegisterHandlerForService("neptunegraph", "ListGraphs", s.ListGraphs)

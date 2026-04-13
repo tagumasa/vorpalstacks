@@ -3,8 +3,8 @@ package dispatcher
 import (
 	"net/http"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/request"
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/store/api"
 )
 

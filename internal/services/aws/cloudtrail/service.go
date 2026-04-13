@@ -4,8 +4,8 @@ package cloudtrail
 import (
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 
@@ -49,7 +49,7 @@ func (s *CloudTrailService) store(reqCtx *request.RequestContext) (cloudtrailsto
 }
 
 // RegisterHandlers registers the CloudTrail service handlers with the dispatcher.
-func (s *CloudTrailService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *CloudTrailService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudtrail", "CreateTrail", s.CreateTrail)
 	d.RegisterHandlerForService("cloudtrail", "DeleteTrail", s.DeleteTrail)
 	d.RegisterHandlerForService("cloudtrail", "UpdateTrail", s.UpdateTrail)

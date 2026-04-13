@@ -4,8 +4,8 @@ package acm
 import (
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	acmstore "vorpalstacks/internal/store/aws/acm"
 )
 
@@ -60,7 +60,7 @@ func (s *ACMService) store(reqCtx *request.RequestContext) (*acmStores, error) {
 }
 
 // RegisterHandlers registers all ACM operation handlers with the dispatcher.
-func (s *ACMService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *ACMService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("acm", "RequestCertificate", s.RequestCertificate)
 	d.RegisterHandlerForService("acm", "GetCertificate", s.GetCertificate)
 	d.RegisterHandlerForService("acm", "ListCertificates", s.ListCertificates)

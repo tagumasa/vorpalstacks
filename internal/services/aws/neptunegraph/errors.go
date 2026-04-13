@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // httpError represents a NeptuneGraph service error with HTTP status and AWS error code.

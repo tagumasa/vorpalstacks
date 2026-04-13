@@ -8,8 +8,8 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/services/aws/route53/dnsserver"
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
@@ -128,7 +128,7 @@ func (s *Route53Service) Shutdown() error {
 }
 
 // RegisterHandlers registers Route 53 operation handlers with the dispatcher.
-func (s *Route53Service) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *Route53Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("route53", "CreateHostedZone", s.CreateHostedZone)
 	d.RegisterHandlerForService("route53", "GetHostedZone", s.GetHostedZone)
 	d.RegisterHandlerForService("route53", "ListHostedZones", s.ListHostedZones)

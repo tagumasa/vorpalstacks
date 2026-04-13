@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // ListObjectsInput contains the input parameters for the ListObjects operation.

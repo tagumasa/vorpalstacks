@@ -3,7 +3,7 @@ package neptunedata
 import (
 	"net/url"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 func getPathParam(req *request.ParsedRequest, key string) string {

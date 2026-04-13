@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -53,7 +53,7 @@ func (s *DynamoDBService) store(reqCtx *request.RequestContext) (dynamodbstore.D
 }
 
 // RegisterHandlers registers all DynamoDB operation handlers with the dispatcher.
-func (s *DynamoDBService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *DynamoDBService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("dynamodb", "CreateTable", s.CreateTable)
 	d.RegisterHandlerForService("dynamodb", "DeleteTable", s.DeleteTable)
 	d.RegisterHandlerForService("dynamodb", "DescribeTable", s.DescribeTable)

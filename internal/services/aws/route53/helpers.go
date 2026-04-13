@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/protocol"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/common/request"
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
 

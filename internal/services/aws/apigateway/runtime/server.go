@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/server/eventbus"
+	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/auth"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/integration"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/validator"
@@ -77,6 +77,20 @@ func (s *RuntimeServer) SetEventBus(bus *eventbus.EventBus) {
 // SetAccountID stores the AWS account ID used for access log ARN parsing.
 func (s *RuntimeServer) SetAccountID(accountID string) {
 	s.accountID = accountID
+}
+
+// RemoveApiKey cleans up rate limiter state for a deleted API key.
+func (s *RuntimeServer) RemoveApiKey(apiKeyId string) {
+	if s.authenticator != nil {
+		s.authenticator.RemoveApiKey(apiKeyId)
+	}
+}
+
+// Close stops background goroutines in authentication components.
+func (s *RuntimeServer) Close() {
+	if s.lambdaAuthorizer != nil {
+		s.lambdaAuthorizer.Close()
+	}
 }
 
 // HandleRequest handles incoming API Gateway requests.

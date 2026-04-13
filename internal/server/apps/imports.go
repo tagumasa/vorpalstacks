@@ -1,0 +1,80 @@
+package apps
+
+import (
+	svcacm "vorpalstacks/internal/services/aws/acm"
+	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
+	svcappsync "vorpalstacks/internal/services/aws/appsync"
+	svccloudfront "vorpalstacks/internal/services/aws/cloudfront"
+	svccloudtrail "vorpalstacks/internal/services/aws/cloudtrail"
+	svccloudwatch "vorpalstacks/internal/services/aws/cloudwatch"
+	svclogs "vorpalstacks/internal/services/aws/cloudwatchlogs"
+	svccognitoidentity "vorpalstacks/internal/services/aws/cognitoidentity"
+	svccognito "vorpalstacks/internal/services/aws/cognitoidentityprovider"
+	svcdynamodb "vorpalstacks/internal/services/aws/dynamodb"
+	svcevents "vorpalstacks/internal/services/aws/eventbridge"
+	svciam "vorpalstacks/internal/services/aws/iam"
+	svckinesis "vorpalstacks/internal/services/aws/kinesis"
+	svckms "vorpalstacks/internal/services/aws/kms"
+	svclambda "vorpalstacks/internal/services/aws/lambda"
+	svcneptune "vorpalstacks/internal/services/aws/neptune"
+	svcneptunedata "vorpalstacks/internal/services/aws/neptunedata"
+	svcneptuneGraph "vorpalstacks/internal/services/aws/neptunegraph"
+	svcroute53 "vorpalstacks/internal/services/aws/route53"
+	svcs3 "vorpalstacks/internal/services/aws/s3"
+	svcscheduler "vorpalstacks/internal/services/aws/scheduler"
+	svcsecretsmanager "vorpalstacks/internal/services/aws/secretsmanager"
+	svcsesv2 "vorpalstacks/internal/services/aws/sesv2"
+	svcstepfunction "vorpalstacks/internal/services/aws/sfn"
+	svcsns "vorpalstacks/internal/services/aws/sns"
+	svcsqs "vorpalstacks/internal/services/aws/sqs"
+	svcssm "vorpalstacks/internal/services/aws/ssm"
+	svcsts "vorpalstacks/internal/services/aws/sts"
+	storeevents "vorpalstacks/internal/store/aws/eventbridge"
+	storekinesis "vorpalstacks/internal/store/aws/kinesis"
+	s3store "vorpalstacks/internal/store/aws/s3"
+	storesns "vorpalstacks/internal/store/aws/sns"
+	storesqs "vorpalstacks/internal/store/aws/sqs"
+	"vorpalstacks/pkg/graphengine"
+)
+
+type serviceState struct {
+	accountID string
+	region    string
+
+	acmService             *svcacm.ACMService
+	apiGatewayService      *svcapigateway.APIGatewayService
+	cloudFrontService      *svccloudfront.CloudFrontService
+	cloudTrailService      *svccloudtrail.CloudTrailService
+	cloudWatchService      *svccloudwatch.CloudWatchService
+	cognitoService         *svccognito.CognitoService
+	cognitoIdentityService *svccognitoidentity.CognitoIdentityService
+	dynamoDBService        *svcdynamodb.DynamoDBService
+	eventBridgeService     *svcevents.EventsService
+	iamService             *svciam.IAMService
+	kinesisService         *svckinesis.KinesisService
+	kmsService             *svckms.KMSService
+	lambdaService          *svclambda.LambdaService
+	neptuneService         *svcneptune.NeptuneService
+	neptuneDataService     *svcneptunedata.NeptuneDataService
+	neptuneGraphService    *svcneptuneGraph.NeptuneGraphService
+	route53Service         *svcroute53.Route53Service
+	s3Service              *svcs3.S3Service
+	schedulerService       *svcscheduler.SchedulerService
+	secretsManagerService  *svcsecretsmanager.SecretsManagerService
+	sesv2Service           *svcsesv2.SESv2Service
+	stepFunctionService    *svcstepfunction.StepFunctionService
+	snsService             *svcsns.SNSService
+	sqsService             *svcsqs.SQSService
+	ssmService             *svcssm.SSMService
+	stsService             *svcsts.STSService
+	logsService            *svclogs.LogsService
+	appSyncService         *svcappsync.AppSyncService
+
+	sqsStoreInstance     *storesqs.SQSStore
+	snsStoreInstance     *storesns.SNSStore
+	kinesisStoreInstance *storekinesis.KinesisStore
+	eventsStoreInstance  *storeevents.EventsStore
+	s3ObjectStore        s3store.ObjectStoreInterface
+
+	graphDB *graphengine.DB
+}

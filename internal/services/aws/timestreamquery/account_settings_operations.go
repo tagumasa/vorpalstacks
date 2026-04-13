@@ -3,7 +3,7 @@ package timestreamquery
 import (
 	"context"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // DescribeAccountSettings returns the account settings for Timestream Query.

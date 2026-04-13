@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/core/logs"
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/protocol"
-	"vorpalstacks/internal/services/aws/common/response"
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/store/api"
 )
 

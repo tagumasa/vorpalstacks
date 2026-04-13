@@ -8,7 +8,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/s3"
 	s3connect "vorpalstacks/internal/pb/aws/s3/s3connect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 

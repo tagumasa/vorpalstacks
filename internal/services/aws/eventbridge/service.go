@@ -12,10 +12,10 @@ import (
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	snsstore "vorpalstacks/internal/store/aws/sns"
@@ -335,7 +335,7 @@ func (s *EventsService) getKinesisStoreForRegion(region string) (*kinesisstore.K
 }
 
 // RegisterHandlers registers the Events service handlers with the dispatcher.
-func (s *EventsService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *EventsService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("eventbridge", "CreateEventBus", s.CreateEventBus)
 	d.RegisterHandlerForService("eventbridge", "DeleteEventBus", s.DeleteEventBus)
 	d.RegisterHandlerForService("eventbridge", "DescribeEventBus", s.DescribeEventBus)

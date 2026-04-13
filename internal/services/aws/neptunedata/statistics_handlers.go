@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // GetPropertygraphStatistics returns auto-computed property graph statistics

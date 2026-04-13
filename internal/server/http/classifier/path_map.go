@@ -3,7 +3,7 @@ package classifier
 import (
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 )
 
 // lambdaRestPrefixes lists known Lambda REST API date-based path prefixes.

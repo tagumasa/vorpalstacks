@@ -13,8 +13,8 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	"vorpalstacks/pkg/graphengine"
@@ -207,7 +207,7 @@ func (s *NeptuneDataService) store(reqCtx *request.RequestContext) (*neptunestor
 
 // RegisterHandlers registers all Neptune Data API operation handlers with the
 // dispatcher. Unsupported operations (SPARQL, ML) return HTTP 501.
-func (s *NeptuneDataService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *NeptuneDataService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("neptunedata", "GetEngineStatus", s.GetEngineStatus)
 	d.RegisterHandlerForService("neptunedata", "ExecuteGremlinQuery", s.ExecuteGremlinQuery)
 	d.RegisterHandlerForService("neptunedata", "ExecuteGremlinExplainQuery", s.ExecuteGremlinExplainQuery)

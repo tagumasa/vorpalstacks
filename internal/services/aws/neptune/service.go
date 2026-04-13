@@ -9,8 +9,8 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
@@ -110,7 +110,7 @@ func recordEvent(store neptunestore.NeptuneStoreInterface, sourceType, sourceID,
 
 // RegisterHandlers registers all Neptune Management API action handlers with
 // the given dispatcher.
-func (s *NeptuneService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *NeptuneService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("neptune", "CreateDBCluster", s.CreateDBCluster)
 	d.RegisterHandlerForService("neptune", "DeleteDBCluster", s.DeleteDBCluster)
 	d.RegisterHandlerForService("neptune", "ModifyDBCluster", s.ModifyDBCluster)

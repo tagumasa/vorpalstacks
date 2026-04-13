@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 

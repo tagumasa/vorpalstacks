@@ -1,10 +1,9 @@
 package dispatcher
 
 import (
+	"vorpalstacks/internal/common/audit"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	cloudtrailaudit "vorpalstacks/internal/services/aws/cloudtrail/audit"
-	"vorpalstacks/internal/services/aws/common/audit"
-	"vorpalstacks/internal/services/aws/common/request"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
@@ -24,7 +23,7 @@ func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.
 			return
 		}
 		ctStore := cloudtrailstore.NewCloudTrailStore(store, reqCtx.GetAccountID(), reqCtx.GetRegion())
-		recorder := cloudtrailaudit.NewCloudTrailRecorder(ctStore)
+		recorder := audit.NewCloudTrailRecorder(ctStore)
 		reqCtx.SetAuditRecorder(recorder)
 	}
 

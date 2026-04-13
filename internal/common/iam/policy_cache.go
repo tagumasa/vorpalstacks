@@ -4,7 +4,7 @@ package iam
 import (
 	"time"
 
-	"vorpalstacks/internal/services/aws/iam/policy"
+	"vorpalstacks/internal/common/iam/policy"
 
 	"github.com/dgraph-io/ristretto/v2"
 )

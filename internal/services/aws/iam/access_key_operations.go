@@ -3,8 +3,8 @@ package iam
 
 import (
 	"context"
-	"vorpalstacks/internal/services/aws/common/pagination"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/request"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )

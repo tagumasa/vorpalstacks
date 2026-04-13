@@ -5,9 +5,9 @@ import (
 	"context"
 	"sync"
 
-	"vorpalstacks/internal/server/dispatcher"
-	"vorpalstacks/internal/services/aws/common"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/request"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
@@ -71,7 +71,7 @@ func (s *SSMService) decryptValue(ctx context.Context, ciphertext, keyID string)
 }
 
 // RegisterHandlers registers all SSM operation handlers with the dispatcher.
-func (s *SSMService) RegisterHandlers(d *dispatcher.Dispatcher) {
+func (s *SSMService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("ssm", "PutParameter", s.PutParameter)
 	d.RegisterHandlerForService("ssm", "GetParameter", s.GetParameter)
 	d.RegisterHandlerForService("ssm", "GetParameters", s.GetParameters)

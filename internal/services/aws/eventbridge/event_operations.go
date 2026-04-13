@@ -13,8 +13,8 @@ import (
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/server/eventbus"
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"

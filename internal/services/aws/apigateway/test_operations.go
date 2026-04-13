@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"vorpalstacks/internal/services/aws/common/request"
+	"vorpalstacks/internal/common/request"
 	store "vorpalstacks/internal/store/aws/apigateway"
 )
 

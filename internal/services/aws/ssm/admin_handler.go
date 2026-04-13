@@ -8,7 +8,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/ssm"
 	ssmconnect "vorpalstacks/internal/pb/aws/ssm/ssmconnect"
-	svccommon "vorpalstacks/internal/services/aws/common"
+	svccommon "vorpalstacks/internal/common"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 

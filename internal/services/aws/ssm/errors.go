@@ -3,7 +3,7 @@ package ssm
 import (
 	"net/http"
 
-	"vorpalstacks/internal/services/aws/common/errors"
+	"vorpalstacks/internal/common/errors"
 )
 
 // NewSSMError creates a new SSMError with the specified code, message and status code.

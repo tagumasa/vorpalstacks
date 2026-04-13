@@ -1,7 +1,7 @@
 package sns
 
 import (
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 var (

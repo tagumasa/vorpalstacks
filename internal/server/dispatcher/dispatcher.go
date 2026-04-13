@@ -1,19 +1,19 @@
 package dispatcher
 
 import (
-	"context"
 	"net/http"
 	"os"
 	"sync"
 
+	"vorpalstacks/internal/common/audit"
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/interfaces"
+	"vorpalstacks/internal/common/mock"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/http/classifier"
-	"vorpalstacks/internal/services/aws/common/audit"
-	awserrors "vorpalstacks/internal/services/aws/common/errors"
-	"vorpalstacks/internal/services/aws/common/interfaces"
-	"vorpalstacks/internal/services/aws/common/request"
-	"vorpalstacks/internal/services/aws/mock"
 	"vorpalstacks/internal/store/api"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	"vorpalstacks/pkg/graphengine"
@@ -44,7 +44,7 @@ type Dispatcher struct {
 }
 
 // Handler processes an AWS API request and returns a response or error.
-type Handler func(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error)
+type Handler = handler.Handler
 
 // NewDispatcher creates a new Dispatcher instance with the provided configuration.
 // It initialises service stores, handlers, and sets up authorisation if enabled.
