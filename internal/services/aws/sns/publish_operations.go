@@ -19,9 +19,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
@@ -151,9 +151,9 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 				MessageGroupId: messageGroupId,
 			}
 			snsEvt.Region = region
-			s.bus.Publish(context.Background(), snsEvt)
+			_ = s.bus.Publish(context.Background(), snsEvt)
 		} else {
-			go s.deliverToSubscriptions(&msgCopy, subsCopy, region)
+			s.deliverAsync(&msgCopy, subsCopy, region)
 		}
 	}
 
@@ -341,10 +341,6 @@ func (s *SNSService) deliverToHTTP(msg *snsstore.Message, sub *snsstore.Subscrip
 	logs.Debug("HTTP notification delivered",
 		logs.String("endpoint", sub.Endpoint),
 		logs.Int("status", resp.StatusCode))
-}
-
-func (s *SNSService) buildNotificationPayload(msg *snsstore.Message, sub *snsstore.Subscription, region string) map[string]interface{} {
-	return s.buildNotificationPayloadWithMessage(msg, sub, region, msg.Message)
 }
 
 func (s *SNSService) buildNotificationPayloadWithMessage(msg *snsstore.Message, sub *snsstore.Subscription, region string, message string) map[string]interface{} {
@@ -674,9 +670,11 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 					MessageGroupId: messageGroupId,
 				}
 				snsEvt.Region = region
-				s.bus.Publish(context.Background(), snsEvt)
+				if err := s.bus.Publish(context.Background(), snsEvt); err != nil {
+					logs.Warn("Failed to publish SNS event", logs.Err(err))
+				}
 			} else {
-				go s.deliverToSubscriptions(&msgCopy, subsCopy, region)
+				s.deliverAsync(&msgCopy, subsCopy, region)
 			}
 		}
 

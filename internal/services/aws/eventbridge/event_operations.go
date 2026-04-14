@@ -12,9 +12,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
@@ -182,7 +182,9 @@ func (s *EventsService) deliverEventWithStore(ctx context.Context, region string
 					Input:     payloadBytes,
 				}
 				ebEvt.Region = region
-				s.bus.Publish(context.Background(), ebEvt)
+				if err := s.bus.Publish(context.Background(), ebEvt); err != nil {
+					logs.Warn("failed to publish event directly", logs.String("targetArn", targetCopy.ARN), logs.Err(err))
+				}
 			} else {
 				targetWg.Add(1)
 				select {
@@ -904,7 +906,8 @@ func (s *EventsService) deliverToCloudWatchLogs(ctx context.Context, region stri
 	logStream := resource
 	if idx := strings.LastIndex(resource, ":log-stream:"); idx != -1 {
 		logStream = resource[idx+12:]
-	} else {
+	}
+	if logStream == resource {
 		logStream = fmt.Sprintf("eventbridge-%s", eventID)
 	}
 

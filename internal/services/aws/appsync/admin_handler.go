@@ -6,10 +6,10 @@ import (
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/appsync"
 	appsyncconnect "vorpalstacks/internal/pb/aws/appsync/appsyncconnect"
-	svccommon "vorpalstacks/internal/common"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -125,4 +125,8 @@ func toPbGraphqlApi(a *appsyncstore.GraphqlApi) *pb.GraphqlApi {
 		Xrayenabled:  a.XrayEnabled,
 		Wafwebaclarn: a.WafWebAclArn,
 	}
+}
+
+func NewConnectHandler(svc *AppSyncService, sm *storage.RegionStorageManager) (string, http.Handler) {
+	return appsyncconnect.NewAppSyncServiceHandler(NewAdminHandler(svc, sm))
 }

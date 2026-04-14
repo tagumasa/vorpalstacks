@@ -10,10 +10,10 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	awscommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/eventbus"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/pkg/vtl"
@@ -95,7 +95,7 @@ func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestCont
 		}
 	}
 
-	doc, errs := gqlparser.LoadQuery(schema, gqlReq.Query)
+	doc, errs := gqlparser.LoadQueryWithRules(schema, gqlReq.Query, nil)
 	if errs != nil {
 		return &graphqlExecutionResult{
 			Errors: convertGqlErrors(errs),

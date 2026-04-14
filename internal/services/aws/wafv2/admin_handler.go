@@ -2,6 +2,7 @@ package wafv2
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
@@ -26,4 +27,8 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 	return connect.NewResponse(&pb.ListWebACLsResponse{
 		Webacls: []*pb.WebACLSummary{},
 	}), nil
+}
+
+func NewConnectHandler() (string, http.Handler) {
+	return wafv2connect.NewWAFV2ServiceHandler(NewAdminHandler())
 }

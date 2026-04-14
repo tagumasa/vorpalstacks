@@ -3,6 +3,7 @@ package cloudfront
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -15,6 +16,7 @@ const distributionBucketName = "cloudfront_distributions"
 type DistributionStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	mu         sync.Mutex
 }
 
 // NewDistributionStore creates a new DistributionStore instance with the specified storage and account ID.
@@ -66,6 +68,9 @@ func (s *DistributionStore) GetByCallerReference(callerRef string) (*Distributio
 func (s *DistributionStore) Create(callerReference string, config *DistributionConfig) (*Distribution, error) {
 	normalizedRef := normalizeCallerReference(callerReference)
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if existing, err := s.GetByCallerReference(callerReference); err == nil {
 		return existing, nil
 	}
@@ -104,6 +109,9 @@ func (s *DistributionStore) Create(callerReference string, config *DistributionC
 // Update updates an existing CloudFront distribution in the store.
 // Returns the updated distribution or an error if the distribution does not exist.
 func (s *DistributionStore) Update(id string, config *DistributionConfig) (*Distribution, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	distribution, err := s.Get(id)
 	if err != nil {
 		return nil, NewStoreError("update_distribution", err)
@@ -139,6 +147,9 @@ func (s *DistributionStore) UpdateWithLastModified(id string, distribution *Dist
 
 // Delete deletes a CloudFront distribution by its ID from the store.
 func (s *DistributionStore) Delete(id string) error {
+	if _, err := s.Get(id); err != nil {
+		return err
+	}
 	if err := s.BaseStore.Delete(id); err != nil {
 		return NewStoreError("delete_distribution", err)
 	}

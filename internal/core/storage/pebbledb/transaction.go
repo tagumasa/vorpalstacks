@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
+	"io"
 
 	"github.com/cockroachdb/pebble/v2"
 )
@@ -70,40 +70,33 @@ func (t *Txn) Get(key []byte) ([]byte, error) {
 		return nil, ErrTxnClosed
 	}
 	if t.readonly && t.snapshot != nil {
-		val, closer, err := t.snapshot.Get(key)
-		if err != nil {
-			if err == pebble.ErrNotFound {
-				return nil, ErrKeyNotFound
-			}
-			return nil, err
-		}
-		defer closer.Close()
-		result := make([]byte, len(val))
-		copy(result, val)
-		decrypted, err := t.db.encryptor.Decrypt(result)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decrypt value: %w", err)
-		}
-		return decrypted, nil
+		return t.getAndDecrypt(t.snapshot, key)
 	}
 	if t.batch != nil {
-		val, closer, err := t.db.db.Get(key)
-		if err != nil {
-			if err == pebble.ErrNotFound {
-				return nil, ErrKeyNotFound
-			}
-			return nil, err
-		}
-		defer closer.Close()
-		result := make([]byte, len(val))
-		copy(result, val)
-		decrypted, err := t.db.encryptor.Decrypt(result)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decrypt value: %w", err)
-		}
-		return decrypted, nil
+		return t.getAndDecrypt(t.db.db, key)
 	}
 	return nil, ErrTxnClosed
+}
+
+// getAndDecrypt retrieves a value from a pebble.Getter and decrypts it.
+func (t *Txn) getAndDecrypt(getter interface {
+	Get([]byte) ([]byte, io.Closer, error)
+}, key []byte) ([]byte, error) {
+	val, closer, err := getter.Get(key)
+	if err != nil {
+		if err == pebble.ErrNotFound {
+			return nil, ErrKeyNotFound
+		}
+		return nil, err
+	}
+	defer closer.Close()
+	result := make([]byte, len(val))
+	copy(result, val)
+	decrypted, err := t.db.encryptor.Decrypt(result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt value: %w", err)
+	}
+	return decrypted, nil
 }
 
 // Set stores a key-value pair in the transaction.
@@ -174,22 +167,11 @@ func (t *Txn) Close() error {
 	return nil
 }
 
-// TxnLazyIterator provides lazy iteration over a transaction range.
-type TxnLazyIterator struct {
-	iter      *pebble.Iterator
-	encryptor Encryptor
-	ttlOpts   *TTLOptions
-	key       []byte
-	value     []byte
-	err       error
-	closed    bool
-	first     bool
-}
-
-// NewTxnLazyIterator creates a lazy iterator for the transaction.
-func (t *Txn) NewTxnLazyIterator(start, end []byte) *TxnLazyIterator {
+// NewLazyIterator creates a lazy iterator for the transaction.
+// The returned iterator uses the same LazyIterator type as DB.NewLazyIterator.
+func (t *Txn) NewLazyIterator(start, end []byte) *LazyIterator {
 	if t.closed {
-		return &TxnLazyIterator{err: ErrTxnClosed}
+		return &LazyIterator{err: ErrTxnClosed}
 	}
 
 	iter, err := t.NewIter(&pebble.IterOptions{
@@ -197,7 +179,7 @@ func (t *Txn) NewTxnLazyIterator(start, end []byte) *TxnLazyIterator {
 		UpperBound: end,
 	})
 	if err != nil {
-		return &TxnLazyIterator{err: err}
+		return &LazyIterator{err: err}
 	}
 
 	var ttlOpts *TTLOptions
@@ -205,89 +187,10 @@ func (t *Txn) NewTxnLazyIterator(start, end []byte) *TxnLazyIterator {
 		ttlOpts = &t.db.opts.TTL
 	}
 
-	li := &TxnLazyIterator{
+	return &LazyIterator{
 		iter:      iter,
 		encryptor: t.db.encryptor,
 		ttlOpts:   ttlOpts,
-	}
-	li.first = true
-	return li
-}
-
-// advance moves the iterator to the next valid (non-expired) entry.
-func (li *TxnLazyIterator) advance() {
-	for li.iter.Valid() {
-		key := li.iter.Key()
-		val, err := li.iter.ValueAndErr()
-		if err != nil {
-			li.err = err
-			return
-		}
-
-		decrypted, err := li.encryptor.Decrypt(val)
-		if err != nil {
-			li.err = err
-			return
-		}
-
-		if li.ttlOpts != nil {
-			ttlVal, err := UnmarshalTTLValue(decrypted)
-			if err == nil && ttlVal.ExpiresAt > 0 {
-				if time.Now().Unix() > ttlVal.ExpiresAt {
-					li.iter.Next()
-					continue
-				}
-				decrypted = ttlVal.Data
-			}
-		}
-
-		keyCopy := make([]byte, len(key))
-		copy(keyCopy, key)
-		li.key = keyCopy
-		li.value = decrypted
-		return
-	}
-	li.key = nil
-	li.value = nil
-}
-
-// Next advances the iterator to the next key-value pair, skipping expired TTL entries.
-func (li *TxnLazyIterator) Next() bool {
-	if li.err != nil || li.closed {
-		return false
-	}
-	if li.first {
-		li.first = false
-		li.iter.First()
-	} else {
-		li.iter.Next()
-	}
-	li.advance()
-	return li.key != nil
-}
-
-// Key returns the key at the current iterator position.
-func (li *TxnLazyIterator) Key() []byte {
-	return li.key
-}
-
-// Value returns the decrypted value at the current iterator position.
-func (li *TxnLazyIterator) Value() []byte {
-	return li.value
-}
-
-// Error returns any error encountered during iteration.
-func (li *TxnLazyIterator) Error() error {
-	return li.err
-}
-
-// Close releases resources held by the lazy iterator.
-func (li *TxnLazyIterator) Close() {
-	if li.closed {
-		return
-	}
-	li.closed = true
-	if li.iter != nil {
-		li.iter.Close()
+		first:     true,
 	}
 }

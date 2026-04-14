@@ -16,12 +16,3 @@ func (d *Dispatcher) executeWithRecovery(w http.ResponseWriter, r *http.Request,
 	}()
 	fn()
 }
-
-func (d *Dispatcher) executeWithRecoveryAndResult(w http.ResponseWriter, r *http.Request, serviceName, opName string, fn func() (interface{}, error)) (interface{}, error) {
-	var result interface{}
-	var err error
-	d.executeWithRecovery(w, r, serviceName, opName, func() {
-		result, err = fn()
-	})
-	return result, err
-}

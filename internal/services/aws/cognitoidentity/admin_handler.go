@@ -2,9 +2,11 @@ package cognitoidentity
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cognitoidentity"
 	"vorpalstacks/internal/pb/aws/cognitoidentity/cognitoidentityconnect"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
@@ -49,4 +51,8 @@ func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(&pb.ListIdentityPoolsResponse{
 		Identitypools: descriptions,
 	}), nil
+}
+
+func NewConnectHandler(st storage.BasicStorage, accountID, region string) (string, http.Handler) {
+	return cognitoidentityconnect.NewCognitoIdentityServiceHandler(NewAdminHandler(cognitoidentitystore.NewCognitoIdentityStore(st, accountID, region)))
 }

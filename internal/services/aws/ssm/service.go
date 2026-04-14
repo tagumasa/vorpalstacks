@@ -3,11 +3,13 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
-	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
@@ -34,26 +36,13 @@ func NewSSMServiceWithKMS(accountID string, kmsEncryptor common.KMSEncryptor) *S
 }
 
 func (s *SSMService) store(reqCtx *request.RequestContext) (ssmstore.SSMStoreInterface, error) {
-	if ssmStore := reqCtx.GetSSMStore(); ssmStore != nil {
-		return ssmStore, nil
-	}
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(ssmstore.SSMStoreInterface); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (ssmstore.SSMStoreInterface, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage: %w", err)
 		}
-	}
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	store := ssmstore.NewStore(storage, s.accountID, region)
-	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(ssmstore.SSMStoreInterface); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
+		return ssmstore.NewStore(storage, s.accountID, reqCtx.GetRegion()), nil
+	})
 }
 
 func (s *SSMService) encryptValue(ctx context.Context, plaintext, keyID string) (string, error) {

@@ -8,6 +8,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 
@@ -247,13 +248,15 @@ func (s *CloudWatchService) PutMetricAlarm(ctx context.Context, reqCtx *request.
 		}
 	}
 
-	store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
+	if err := store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
 		AlarmName:       alarmName,
 		AlarmType:       cwstore.AlarmTypeMetricAlarm,
 		Timestamp:       time.Now().UTC().UnixMilli(),
 		HistoryItemType: cwstore.HistoryItemTypeConfigurationUpdate,
 		HistorySummary:  "Alarm was created or updated",
-	})
+	}); err != nil {
+		logs.Warn("failed to add alarm history", logs.String("alarm", alarmName), logs.Err(err))
+	}
 
 	return map[string]interface{}{
 		"AlarmArn": alarm.ARN,
@@ -491,13 +494,15 @@ func (s *CloudWatchService) SetAlarmState(ctx context.Context, reqCtx *request.R
 	if alarm != nil && alarm.AlarmType == cwstore.AlarmTypeCompositeAlarm {
 		alarmType = cwstore.AlarmTypeCompositeAlarm
 	}
-	store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
+	if err := store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
 		AlarmName:       alarmName,
 		AlarmType:       alarmType,
 		Timestamp:       time.Now().UTC().UnixMilli(),
 		HistoryItemType: cwstore.HistoryItemTypeStateUpdate,
 		HistorySummary:  stateReason,
-	})
+	}); err != nil {
+		logs.Warn("failed to add alarm state history", logs.String("alarm", alarmName), logs.Err(err))
+	}
 
 	return response.EmptyResponse(), nil
 }
@@ -573,13 +578,15 @@ func (s *CloudWatchService) EnableAlarmActions(ctx context.Context, reqCtx *requ
 		if alarm != nil && alarm.AlarmType == cwstore.AlarmTypeCompositeAlarm {
 			alarmType = cwstore.AlarmTypeCompositeAlarm
 		}
-		store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
+		if err := store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
 			AlarmName:       name,
 			AlarmType:       alarmType,
 			Timestamp:       time.Now().UTC().UnixMilli(),
 			HistoryItemType: cwstore.HistoryItemTypeAction,
 			HistorySummary:  "Alarm actions enabled",
-		})
+		}); err != nil {
+			logs.Warn("failed to add alarm enable history", logs.String("alarm", name), logs.Err(err))
+		}
 	}
 
 	return response.EmptyResponse(), nil
@@ -609,7 +616,7 @@ func (s *CloudWatchService) DisableAlarmActions(ctx context.Context, reqCtx *req
 		if alarm != nil && alarm.AlarmType == cwstore.AlarmTypeCompositeAlarm {
 			alarmType = cwstore.AlarmTypeCompositeAlarm
 		}
-		store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
+		_ = store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
 			AlarmName:       name,
 			AlarmType:       alarmType,
 			Timestamp:       time.Now().UTC().UnixMilli(),
@@ -711,13 +718,15 @@ func (s *CloudWatchService) PutCompositeAlarm(ctx context.Context, reqCtx *reque
 		}
 	}
 
-	store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
+	if err := store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
 		AlarmName:       alarmName,
 		AlarmType:       cwstore.AlarmTypeCompositeAlarm,
 		Timestamp:       time.Now().UTC().UnixMilli(),
 		HistoryItemType: cwstore.HistoryItemTypeConfigurationUpdate,
 		HistorySummary:  "Alarm was created or updated",
-	})
+	}); err != nil {
+		logs.Warn("Failed to add alarm history", logs.Err(err))
+	}
 
 	return map[string]interface{}{
 		"AlarmArn": alarm.ARN,

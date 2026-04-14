@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sort"
 
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -72,6 +72,9 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 		for _, gi := range getItems {
 			dbItem, err := txn.GetItem(gi.tableName, gi.key)
 			if err != nil {
+				if !dbstore.IsItemNotFound(err) {
+					return fmt.Errorf("transact get item on %s: %w", gi.tableName, err)
+				}
 				responses = append(responses, map[string]interface{}{"Item": nil})
 				continue
 			}

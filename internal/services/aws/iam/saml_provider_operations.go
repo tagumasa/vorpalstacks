@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
@@ -144,7 +145,7 @@ func (s *IAMService) DeleteSAMLProvider(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // TagSAMLProvider adds tags to a SAML provider.
@@ -168,7 +169,7 @@ func (s *IAMService) TagSAMLProvider(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UntagSAMLProvider removes tags from a SAML provider.
@@ -192,7 +193,7 @@ func (s *IAMService) UntagSAMLProvider(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListSAMLProviderTags lists the tags attached to a SAML provider.

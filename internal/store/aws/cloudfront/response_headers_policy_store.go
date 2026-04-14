@@ -2,6 +2,7 @@ package cloudfront
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -14,6 +15,7 @@ const responseHeadersPolicyBucketName = "cloudfront_response_headers_policies"
 type ResponseHeadersPolicyStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	mu         sync.Mutex
 }
 
 // NewResponseHeadersPolicyStore creates a new response headers policy store.
@@ -92,6 +94,9 @@ func (s *ResponseHeadersPolicyStore) Create(config *ResponseHeadersPolicyConfig)
 
 // Update updates an existing response headers policy.
 func (s *ResponseHeadersPolicyStore) Update(id string, config *ResponseHeadersPolicyConfig) (*ResponseHeadersPolicy, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	policy, err := s.Get(id)
 	if err != nil {
 		return nil, err
@@ -119,6 +124,9 @@ func (s *ResponseHeadersPolicyStore) Update(id string, config *ResponseHeadersPo
 
 // Delete removes a response headers policy by its ID.
 func (s *ResponseHeadersPolicyStore) Delete(id string) error {
+	if _, err := s.Get(id); err != nil {
+		return err
+	}
 	if err := s.BaseStore.Delete(id); err != nil {
 		return NewStoreError("delete_response_headers_policy", err)
 	}
@@ -144,7 +152,7 @@ func (s *ResponseHeadersPolicyStore) List(marker string, maxItems int) (*Respons
 		}
 
 		if !started {
-			if policy.ID == marker {
+			if key == marker {
 				started = true
 				return nil
 			}

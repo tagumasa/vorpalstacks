@@ -2,6 +2,7 @@ package iam
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
@@ -198,4 +199,8 @@ func toPbPolicy(policy *iamstore.Policy) *pb.Policy {
 	}
 
 	return pbPolicy
+}
+
+func NewConnectHandler(store storage.BasicStorage, accountID string) (string, http.Handler) {
+	return iamconnect.NewIAMServiceHandler(NewAdminHandler(store, accountID))
 }

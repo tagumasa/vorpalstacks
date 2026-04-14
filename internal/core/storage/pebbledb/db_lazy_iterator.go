@@ -1,8 +1,6 @@
 package pebbledb
 
 import (
-	"time"
-
 	"github.com/cockroachdb/pebble/v2"
 )
 
@@ -43,45 +41,41 @@ func (d *DB) NewLazyIterator(start, end []byte) *LazyIterator {
 		ttlOpts = &d.opts.TTL
 	}
 
-	li := &LazyIterator{
+	return &LazyIterator{
 		iter:      iter,
 		encryptor: d.encryptor,
 		ttlOpts:   ttlOpts,
+		first:     true,
 	}
-	li.first = true
-	return li
+}
+
+func (li *LazyIterator) ttlEnabled() bool {
+	return li.ttlOpts != nil
 }
 
 func (li *LazyIterator) advance() {
 	for li.iter.Valid() {
-		key := li.iter.Key()
 		val, err := li.iter.ValueAndErr()
 		if err != nil {
 			li.err = err
 			return
 		}
 
-		decrypted, err := li.encryptor.Decrypt(val)
+		data, expired, err := decryptAndUnwrapTTL(li.encryptor, val, li.ttlEnabled())
 		if err != nil {
 			li.err = err
 			return
 		}
-
-		if li.ttlOpts != nil {
-			ttlVal, err := UnmarshalTTLValue(decrypted)
-			if err == nil && ttlVal.ExpiresAt > 0 {
-				if time.Now().Unix() > ttlVal.ExpiresAt {
-					li.iter.Next()
-					continue
-				}
-				decrypted = ttlVal.Data
-			}
+		if expired {
+			li.iter.Next()
+			continue
 		}
 
+		key := li.iter.Key()
 		keyCopy := make([]byte, len(key))
 		copy(keyCopy, key)
 		li.key = keyCopy
-		li.value = decrypted
+		li.value = data
 		return
 	}
 	li.key = nil

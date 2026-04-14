@@ -74,31 +74,7 @@ func (s *Service) resultSetToCSV(resultSet *athenastore.ResultSet) []byte {
 	return buf.Bytes()
 }
 
-func (s *Service) resultSetToJSON(resultSet *athenastore.ResultSet) ([]byte, error) {
-	var results []map[string]interface{}
 
-	if len(resultSet.Rows) == 0 {
-		return json.Marshal(results)
-	}
-
-	var headers []string
-	for _, datum := range resultSet.Rows[0].Data {
-		headers = append(headers, datum.VarCharValue)
-	}
-
-	for i := 1; i < len(resultSet.Rows); i++ {
-		row := resultSet.Rows[i]
-		rowMap := make(map[string]interface{})
-		for j, datum := range row.Data {
-			if j < len(headers) {
-				rowMap[headers[j]] = datum.VarCharValue
-			}
-		}
-		results = append(results, rowMap)
-	}
-
-	return json.Marshal(results)
-}
 
 func (s *Service) readDataFromS3(ctx context.Context, location string, format string) ([]map[string]interface{}, error) {
 	if !s.hasS3Support() {

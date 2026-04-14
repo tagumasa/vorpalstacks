@@ -155,6 +155,9 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 	if input.Range != "" {
 		ranges, err := parseRangeHeader(input.Range)
 		if err != nil {
+			if obj.SSEMetadata == nil {
+				reader.Close()
+			}
 			return nil, err
 		}
 
@@ -185,6 +188,9 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		}
 
 		if offset >= totalSize {
+			if obj.SSEMetadata == nil {
+				reader.Close()
+			}
 			return nil, ErrInvalidRange
 		}
 

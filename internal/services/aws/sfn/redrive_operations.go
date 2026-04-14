@@ -48,43 +48,7 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
-
-	var failedStateName string
-	for i := len(history) - 1; i >= 0; i-- {
-		event := history[i]
-		if event.Type == "ExecutionFailed" || event.Type == "ExecutionTimedOut" {
-			for j := i - 1; j >= 0; j-- {
-				prev := history[j]
-				switch prev.Type {
-				case "TaskFailed":
-					if prev.TaskFailedEventDetails != nil {
-						failedStateName = prev.TaskFailedEventDetails.Resource
-					}
-				case "FailStateEntered":
-					if prev.FailStateEnteredEventDetails != nil {
-						failedStateName = prev.FailStateEnteredEventDetails.Name
-					}
-				}
-				if failedStateName != "" {
-					break
-				}
-			}
-			break
-		}
-	}
-
-	if failedStateName == "" {
-		failedStateName = sm.Definition
-		if err := json.Unmarshal([]byte(sm.Definition), &struct {
-			StartAt string `json:"StartAt"`
-		}{}); err == nil {
-			var def struct {
-				StartAt string `json:"StartAt"`
-			}
-			json.Unmarshal([]byte(sm.Definition), &def)
-			failedStateName = def.StartAt
-		}
-	}
+	_ = history
 
 	newExecutionArn := fmt.Sprintf("arn:aws:states:%s:%s:execution:%s:%s-redrive-%d",
 		reqCtx.GetRegion(), s.accountID,
@@ -100,13 +64,7 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	}
 
 	sqsStore := s.sqsStore
-	if sqsStore == nil {
-		sqsStore = reqCtx.GetSQSStore()
-	}
 	snsStore := s.snsStore
-	if snsStore == nil {
-		snsStore = reqCtx.GetSNSStore()
-	}
 
 	executor := NewExecutorWithStores(store, s.lambdaInvoker, sqsStore, snsStore, s.eventsStore, s.accountID, reqCtx.GetRegion())
 	executor.SetEventBus(s.bus)
@@ -170,13 +128,7 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 	}
 
 	sqsStore := s.sqsStore
-	if sqsStore == nil {
-		sqsStore = reqCtx.GetSQSStore()
-	}
 	snsStore := s.snsStore
-	if snsStore == nil {
-		snsStore = reqCtx.GetSNSStore()
-	}
 
 	executor := NewExecutorWithStores(store, s.lambdaInvoker, sqsStore, snsStore, s.eventsStore, s.accountID, reqCtx.GetRegion())
 	executor.SetEventBus(s.bus)
@@ -302,7 +254,7 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 	}
 
 	if len(execCtx.PendingAssign) > 0 && execCtx.VariableScope != nil {
-		execCtx.VariableScope.SetAll(execCtx.PendingAssign)
+		_ = execCtx.VariableScope.SetAll(execCtx.PendingAssign)
 	}
 
 	result := map[string]interface{}{

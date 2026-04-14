@@ -9,9 +9,9 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
-	"vorpalstacks/internal/common/request"
 )
 
 // StartLoaderJob initiates a bulk load job for loading data into the Neptune
@@ -158,7 +158,9 @@ func (s *NeptuneDataService) CancelLoaderJob(ctx context.Context, reqCtx *reques
 	}
 	job.Status = "CANCELLED"
 	job.EndTime = timestamppb.Now()
-	_ = store.UpdateLoaderJob(job)
+	if err := store.UpdateLoaderJob(job); err != nil {
+		logs.Warn("failed to persist loader job cancellation", logs.String("loadId", loadId), logs.Err(err))
+	}
 
 	return map[string]interface{}{
 		"status": "200",

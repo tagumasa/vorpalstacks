@@ -94,10 +94,8 @@ func (m *Manager) GenerateAccessTokenWithClaims(user JWTUser, clientID string, e
 			mergedClaims[k] = v
 		}
 	}
-	if customClaims != nil {
-		for k, v := range customClaims {
-			mergedClaims[k] = v
-		}
+	for k, v := range customClaims {
+		mergedClaims[k] = v
 	}
 
 	now := time.Now().UTC()
@@ -145,10 +143,8 @@ func (m *Manager) GenerateIDTokenWithClaims(user JWTUser, clientID string, expir
 			mergedClaims[k] = v
 		}
 	}
-	if customClaims != nil {
-		for k, v := range customClaims {
-			mergedClaims[k] = v
-		}
+	for k, v := range customClaims {
+		mergedClaims[k] = v
 	}
 
 	now := time.Now().UTC()

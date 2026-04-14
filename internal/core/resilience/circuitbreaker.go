@@ -262,12 +262,6 @@ func (cb *CircuitBreaker) transitionToLocked(newState State) {
 	}
 }
 
-func (cb *CircuitBreaker) transitionTo(newState State) {
-	cb.mu.Lock()
-	defer cb.mu.Unlock()
-	cb.transitionToLocked(newState)
-}
-
 // Reset resets the circuit breaker to the closed state.
 func (cb *CircuitBreaker) Reset() {
 	cb.mu.Lock()

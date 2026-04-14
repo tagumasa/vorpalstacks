@@ -28,8 +28,6 @@ func (d *DB) cleanExpiredKeys() {
 		return
 	}
 
-	now := time.Now().Unix()
-
 	keysToDelete := [][]byte{}
 
 	iter, err := d.db.NewIter(nil)
@@ -47,21 +45,14 @@ func (d *DB) cleanExpiredKeys() {
 			continue
 		}
 
-		decrypted, err := d.encryptor.Decrypt(val)
-		if err != nil {
+		_, expired, err := decryptAndUnwrapTTL(d.encryptor, val, d.opts.TTL.Enabled)
+		if err != nil || !expired {
 			continue
 		}
 
-		ttlVal, err := UnmarshalTTLValue(decrypted)
-		if err != nil {
-			continue
-		}
-
-		if ttlVal.ExpiresAt > 0 && ttlVal.ExpiresAt <= now {
-			keyCopy := make([]byte, len(key))
-			copy(keyCopy, key)
-			keysToDelete = append(keysToDelete, keyCopy)
-		}
+		keyCopy := make([]byte, len(key))
+		copy(keyCopy, key)
+		keysToDelete = append(keysToDelete, keyCopy)
 	}
 	d.mu.Unlock()
 

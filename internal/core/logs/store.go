@@ -2,7 +2,6 @@
 package logs
 
 import (
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,7 +12,6 @@ import (
 type LogStore struct {
 	storage storage.MaintenanceStorage
 	indexer *IndexManager
-	mu      sync.RWMutex
 }
 
 // NewLogStore creates a new LogStore with the given storage backend.

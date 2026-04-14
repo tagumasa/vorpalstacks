@@ -4,9 +4,10 @@ package iam
 import (
 	"context"
 	"errors"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -189,7 +190,7 @@ func (s *IAMService) DeleteGroup(ctx context.Context, reqCtx *request.RequestCon
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListGroups lists IAM groups.
@@ -302,7 +303,7 @@ func (s *IAMService) TagGroup(ctx context.Context, reqCtx *request.RequestContex
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UntagGroup removes tags from an IAM group.
@@ -327,7 +328,7 @@ func (s *IAMService) UntagGroup(ctx context.Context, reqCtx *request.RequestCont
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListGroupTags lists tags for an IAM group.

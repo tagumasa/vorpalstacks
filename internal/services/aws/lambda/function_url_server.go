@@ -7,23 +7,25 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/storage"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
+
+// FunctionStoreProvider abstracts access to Lambda function stores by region.
+type FunctionStoreProvider interface {
+	GetFunctionStoreForRegion(region string) *lambdastore.FunctionStore
+}
 
 // FunctionURLServer handles incoming requests to Lambda function URLs,
 // invoking the target function and proxying the response.
 type FunctionURLServer struct {
-	storageManager *storage.RegionStorageManager
-	accountID      string
-	region         string
-	lambdaInvoker  LambdaInvoker
-	storeCache     sync.Map // region → *lambdastore.FunctionStore
+	accountID     string
+	region        string
+	storeProvider FunctionStoreProvider
+	lambdaInvoker LambdaInvoker
 }
 
 // LambdaInvoker abstracts the ability to invoke a Lambda function for gateway use.
@@ -31,13 +33,14 @@ type LambdaInvoker interface {
 	InvokeForGateway(ctx context.Context, functionName string, payload []byte) (int64, []byte, error)
 }
 
-// NewFunctionURLServer creates a new FunctionURLServer with the given storage, account, region, and invoker.
-func NewFunctionURLServer(storageManager *storage.RegionStorageManager, accountID, region string, invoker LambdaInvoker) *FunctionURLServer {
+// NewFunctionURLServer creates a new FunctionURLServer backed by the shared
+// Lambda service store cache.
+func NewFunctionURLServer(storeProvider FunctionStoreProvider, accountID, region string, invoker LambdaInvoker) *FunctionURLServer {
 	return &FunctionURLServer{
-		storageManager: storageManager,
-		accountID:      accountID,
-		region:         region,
-		lambdaInvoker:  invoker,
+		storeProvider: storeProvider,
+		accountID:     accountID,
+		region:        region,
+		lambdaInvoker: invoker,
 	}
 }
 
@@ -123,7 +126,7 @@ func (s *FunctionURLServer) HandleRequest(w http.ResponseWriter, r *http.Request
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	w.Write(payload)
+	_, _ = w.Write(payload)
 }
 
 func (s *FunctionURLServer) buildFunctionURLEvent(r *http.Request, body []byte, functionName string, urlConfig *lambdastore.FunctionUrlConfig) map[string]interface{} {
@@ -229,41 +232,15 @@ func (s *FunctionURLServer) setCORSHeaders(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// findFunction searches all regions for a function by name and returns
-// the function and its region. Returns nil if not found in any region.
+// findFunction looks up a function by name in the service region.
 func (s *FunctionURLServer) findFunction(functionName string) (*lambdastore.Function, string) {
-	regions := []string{s.region}
-	if s.storageManager != nil {
-		if activeRegions := s.storageManager.GetActiveRegions(); len(activeRegions) > 0 {
-			regions = activeRegions
-		}
+	fs := s.storeProvider.GetFunctionStoreForRegion(s.region)
+	if fs == nil {
+		return nil, ""
 	}
-	for _, region := range regions {
-		st, err := s.storageManager.GetStorage(region)
-		if err != nil {
-			continue
-		}
-		var fs *lambdastore.FunctionStore
-		if cached, ok := s.storeCache.Load(region); ok {
-			if typed, ok := cached.(*lambdaStore); ok {
-				fs = typed.Functions
-			}
-		}
-		if fs == nil {
-			fs = lambdastore.NewFunctionStore(st, s.accountID, region)
-			newStore := &lambdaStore{
-				Functions:    fs,
-				Layers:       lambdastore.NewLayerStore(st, s.accountID, region),
-				EventSources: lambdastore.NewEventSourceStore(st, s.accountID, region),
-			}
-			if actual, loaded := s.storeCache.LoadOrStore(region, newStore); loaded {
-				fs = actual.(*lambdaStore).Functions
-			}
-		}
-		fn, err := fs.Get(functionName)
-		if err == nil && fn != nil {
-			return fn, region
-		}
+	fn, err := fs.Get(functionName)
+	if err == nil && fn != nil {
+		return fn, s.region
 	}
 	return nil, ""
 }

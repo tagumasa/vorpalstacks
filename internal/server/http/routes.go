@@ -22,7 +22,7 @@ func (s *Server) registerRoutes(r chi.Router) {
 			if r.URL.Path == "/.well-known/health" {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"status":"ok"}`))
+				_, _ = w.Write([]byte(`{"status":"ok"}`))
 				return
 			}
 
@@ -115,7 +115,7 @@ func (s *Server) registerServiceRoutes(r chi.Router, serviceName string) {
 			continue
 		}
 
-		routePath := "/"
+		var routePath string
 		if operation.HTTPURIPath != nil && *operation.HTTPURIPath != "" {
 			routePath = *operation.HTTPURIPath
 		} else if operation.HTTPURI != nil && *operation.HTTPURI != "" {

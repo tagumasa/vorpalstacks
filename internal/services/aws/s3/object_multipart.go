@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
@@ -372,7 +372,7 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 		if srcVersionId != "" {
 			reader, _, err = store.objects.GetWithVersion(ctx, srcBucket, srcKey, srcVersionId)
 		} else {
-			reader, srcObj, err = store.objects.Get(ctx, srcBucket, srcKey)
+			reader, _, err = store.objects.Get(ctx, srcBucket, srcKey)
 		}
 		if err != nil {
 			return nil, err

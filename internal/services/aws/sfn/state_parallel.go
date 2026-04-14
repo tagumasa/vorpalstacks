@@ -18,7 +18,9 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 
 	if isJSONata && state.Arguments != nil {
 		var inputData interface{}
-		json.Unmarshal([]byte(processedInput), &inputData)
+		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+		}
 		statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
 		argsInput, err := e.applyJSONataArguments(ctx, state.Arguments, statesVar, execCtx.VariableScope)
 		if err != nil {
@@ -108,9 +110,13 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 
 	if isJSONata {
 		var inputData interface{}
-		json.Unmarshal([]byte(processedInput), &inputData)
+		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+		}
 		var resultData interface{}
-		json.Unmarshal([]byte(output), &resultData)
+		if err := json.Unmarshal([]byte(output), &resultData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidOutput", Cause: "failed to parse output JSON"}
+		}
 		statesVar := e.buildStatesVarWithContext(execCtx, inputData, resultData, nil)
 
 		if len(state.Assign) > 0 {
@@ -167,7 +173,9 @@ func (e *Executor) executeParallelJSONataCatch(ctx context.Context, execCtx *Exe
 	}
 
 	var inputData interface{}
-	json.Unmarshal([]byte(processedInput), &inputData)
+	if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+		return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+	}
 	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, errorOutput)
 
 	if len(catchPolicy.Assign) > 0 {

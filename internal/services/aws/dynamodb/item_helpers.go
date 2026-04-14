@@ -40,9 +40,7 @@ func buildConsumedCapacityResponseWithIndex(tableName string, indexName string, 
 	return resp
 }
 
-func containsExistenceCheck(expr string) bool {
-	return strings.Contains(expr, "attribute_exists(")
-}
+
 
 func (s *DynamoDBService) extractKeyFromItem(table *dbstore.Table, item map[string]*dbstore.AttributeValue) map[string]*dbstore.AttributeValue {
 	key := make(map[string]*dbstore.AttributeValue)

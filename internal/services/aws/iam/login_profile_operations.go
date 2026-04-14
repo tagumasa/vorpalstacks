@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -161,7 +162,7 @@ func (s *IAMService) DeleteLoginProfile(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UpdateLoginProfile updates the login profile for a user.
@@ -270,5 +271,5 @@ func (s *IAMService) ChangePassword(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }

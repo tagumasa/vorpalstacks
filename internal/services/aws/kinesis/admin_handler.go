@@ -3,13 +3,14 @@ package kinesis
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/kinesis"
 	kinesisconnect "vorpalstacks/internal/pb/aws/kinesis/kinesisconnect"
-	svccommon "vorpalstacks/internal/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
@@ -233,4 +234,8 @@ func toPbMetricsName(metric string) pb.MetricsName {
 	default:
 		return pb.MetricsName_METRICS_NAME_INCOMING_BYTES
 	}
+}
+
+func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
+	return kinesisconnect.NewKinesisServiceHandler(NewAdminHandler(sm, accountID))
 }

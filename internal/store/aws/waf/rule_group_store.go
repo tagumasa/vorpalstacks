@@ -5,6 +5,7 @@ package waf
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -18,6 +19,7 @@ const ruleKeyPrefix = "rule_"
 type RuleGroupStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	mu         sync.Mutex
 }
 
 // NewRuleGroupStore creates a new Rule Group store.
@@ -82,6 +84,9 @@ func (s *RuleGroupStore) Create(id, name, description string, capacity int64, ru
 
 // Update updates an existing Rule Group.
 func (s *RuleGroupStore) Update(id, lockToken string, capacity int64, rules []*Rule, visibilityConfig *VisibilityConfig) (*RuleGroup, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	ruleGroup, err := s.Get(id)
 	if err != nil {
 		return nil, err
@@ -105,6 +110,9 @@ func (s *RuleGroupStore) Update(id, lockToken string, capacity int64, rules []*R
 
 // Delete deletes a Rule Group.
 func (s *RuleGroupStore) Delete(id, lockToken string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	ruleGroup, err := s.Get(id)
 	if err != nil {
 		return err

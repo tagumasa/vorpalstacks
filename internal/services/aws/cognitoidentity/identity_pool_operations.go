@@ -7,6 +7,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 )
 
@@ -58,7 +59,10 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "IdentityPoolTags"))
 	if len(tags) > 0 {
 		if err := store.TagResource(created.Arn, tags); err != nil {
-			_ = store.DeleteIdentityPool(created.ID)
+			logs.Error("Failed to tag identity pool, attempting cleanup", logs.String("poolId", created.ID), logs.Err(err))
+			if delErr := store.DeleteIdentityPool(created.ID); delErr != nil {
+				logs.Error("Failed to cleanup identity pool after tag failure", logs.String("poolId", created.ID), logs.Err(delErr))
+			}
 			return nil, ErrInternalError
 		}
 	}

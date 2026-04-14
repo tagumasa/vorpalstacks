@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 )
 
 // EnableOutboundWebIdentityFederation enables outbound web identity federation for the account.
@@ -51,7 +52,7 @@ func (s *IAMService) DisableOutboundWebIdentityFederation(ctx context.Context, r
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // GetOutboundWebIdentityFederationInfo retrieves the outbound web identity federation configuration for the account.
@@ -99,5 +100,5 @@ func (s *IAMService) SetSecurityTokenServicePreferences(ctx context.Context, req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }

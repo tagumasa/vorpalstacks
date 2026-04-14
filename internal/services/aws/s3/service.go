@@ -7,10 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
 	"vorpalstacks/internal/utils/crypto"
@@ -33,6 +34,7 @@ type S3Service struct {
 	bus                 eventbus.Bus
 	sqsStore            *storesqs.SQSStore
 	lambdaInvoker       common.LambdaInvoker
+	busUnsubscribe      func()
 }
 
 // NewS3Service creates a new S3Service with the given store and blob store.
@@ -73,7 +75,12 @@ func (s *S3Service) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	if bus != nil {
 		if eb, ok := bus.(*eventbus.EventBus); ok {
-			_, _ = eventbus.SubscribeTyped[*eventbus.S3ObjectEvent](eb, s.handleS3Notification, eventbus.WithAsync())
+			subID, err := eventbus.SubscribeTyped[*eventbus.S3ObjectEvent](eb, s.handleS3Notification, eventbus.WithAsync())
+			if err == nil {
+				s.busUnsubscribe = func() {
+					_ = eb.Unsubscribe(subID)
+				}
+			}
 		}
 	}
 }
@@ -120,7 +127,9 @@ func (s *S3Service) publishObjectNotification(ctx context.Context, reqCtx *reque
 		Op:        op,
 	}
 
-	_ = s.bus.Publish(context.Background(), evt)
+	if err := s.bus.Publish(context.Background(), evt); err != nil {
+		logs.Warn("s3: event bus publish failed", logs.String("bucket", bucket), logs.String("key", key), logs.Err(err))
+	}
 }
 
 func (s *S3Service) store(ctx *request.RequestContext) (*s3Stores, error) {
@@ -162,4 +171,12 @@ func (s *S3Service) store(ctx *request.RequestContext) (*s3Stores, error) {
 // AccountId returns the account ID for the S3 service.
 func (s *S3Service) AccountId() string {
 	return s.accountID
+}
+
+// Close unsubscribes from the event bus and releases resources.
+func (s *S3Service) Close() {
+	if s.busUnsubscribe != nil {
+		s.busUnsubscribe()
+		s.busUnsubscribe = nil
+	}
 }

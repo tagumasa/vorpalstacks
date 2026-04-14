@@ -5,6 +5,7 @@ package waf
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -17,6 +18,7 @@ const regexPatternSetBucketName = "waf_regex_pattern_sets"
 type RegexPatternSetStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	mu         sync.Mutex
 }
 
 // NewRegexPatternSetStore creates a new Regex Pattern Set store.
@@ -79,6 +81,9 @@ func (s *RegexPatternSetStore) Create(id, name, description string, regularPatte
 
 // Update updates an existing Regex Pattern Set.
 func (s *RegexPatternSetStore) Update(id, lockToken string, regularPatterns []string) (*RegexPatternSet, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	regexPatternSet, err := s.Get(id)
 	if err != nil {
 		return nil, err
@@ -100,6 +105,9 @@ func (s *RegexPatternSetStore) Update(id, lockToken string, regularPatterns []st
 
 // Delete deletes a Regex Pattern Set.
 func (s *RegexPatternSetStore) Delete(id, lockToken string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	regexPatternSet, err := s.Get(id)
 	if err != nil {
 		return err

@@ -117,7 +117,9 @@ func (s *SQSStore) DeleteQueue(queueURL string) error {
 		return fmt.Errorf("failed to delete messages for queue %s: %w", queueURL, err)
 	}
 
-	s.TagStore.Delete(queueURL)
+	if err := s.TagStore.Delete(queueURL); err != nil {
+		return fmt.Errorf("failed to delete tags for queue %s: %w", queueURL, err)
+	}
 
 	s.deduplicationMu.Lock()
 	s.cleanupDeduplicationCacheForQueue(queueURL)

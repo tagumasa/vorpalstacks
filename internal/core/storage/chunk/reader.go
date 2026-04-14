@@ -168,19 +168,6 @@ func readHeader(data []byte) (*Header, error) {
 	return header, nil
 }
 
-func readHeaderFromReader(r io.Reader) (*Header, error) {
-	header := &Header{}
-	if err := binary.Read(r, binary.BigEndian, header); err != nil {
-		return nil, fmt.Errorf("%w: failed to read header: %v", ErrInvalidChunkFile, err)
-	}
-
-	if !ValidateHeader(header) {
-		return nil, fmt.Errorf("%w: invalid header", ErrInvalidChunkFile)
-	}
-
-	return header, nil
-}
-
 func parseEntries(r io.Reader, entryCount uint32) ([]Entry, error) {
 	entries := make([]Entry, 0, entryCount)
 

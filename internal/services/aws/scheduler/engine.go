@@ -13,12 +13,12 @@ import (
 
 	"github.com/robfig/cron/v3"
 
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/endpoint"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 	snsstore "vorpalstacks/internal/store/aws/sns"
@@ -334,7 +334,7 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 			Input:        input,
 		}
 		schedEvt.Region = region
-		e.bus.Publish(context.Background(), schedEvt)
+		_ = e.bus.Publish(context.Background(), schedEvt)
 	} else {
 		if strings.Contains(targetArn, ":lambda:") {
 			e.invokeLambda(ctx, schedule, target)
@@ -600,7 +600,7 @@ func (e *Engine) sendToCloudWatchLogs(ctx context.Context, schedule *schedulerst
 	}
 
 	_, _, region, _, resource := svcarn.SplitARN(target.Arn)
-	logStream := resource
+	var logStream string
 	if idx := strings.LastIndex(resource, ":log-stream:"); idx != -1 {
 		logStream = resource[idx+12:]
 	} else {

@@ -14,10 +14,7 @@ type PebbleBucket struct {
 
 // makeKey prepends the bucket prefix to the given key.
 func (b *PebbleBucket) makeKey(key []byte) []byte {
-	k := make([]byte, len(b.prefix)+len(key))
-	copy(k, b.prefix)
-	copy(k[len(b.prefix):], key)
-	return k
+	return makePrefixedKey(b.prefix, key)
 }
 
 // Get retrieves a value by key from the bucket.
@@ -75,7 +72,7 @@ func (b *PebbleBucket) ScanPrefix(prefix []byte) Iterator {
 	copy(end[len(b.prefix):], prefix)
 	end[len(b.prefix)+len(prefix)] = 0xFF
 
-	return newPebbleDBIterator(b.db, start, end, len(b.prefix))
+	return newPrefixedDBIterator(b.db.NewLazyIterator(start, end), len(b.prefix))
 }
 
 // ScanRange returns an iterator for keys within the given range.
@@ -83,32 +80,26 @@ func (b *PebbleBucket) ScanRange(start, end []byte) Iterator {
 	lower := b.makeKey(start)
 	upper := b.makeKey(end)
 
-	return newPebbleDBIterator(b.db, lower, upper, len(b.prefix))
+	return newPrefixedDBIterator(b.db.NewLazyIterator(lower, upper), len(b.prefix))
 }
 
 // Count returns the number of keys in the bucket.
 func (b *PebbleBucket) Count() int {
 	start := b.makeKey(nil)
-	end := make([]byte, len(b.prefix)+1)
-	copy(end, b.prefix)
-	end[len(b.prefix)] = 0xFF
 	return b.db.CountPrefix(start)
 }
 
-// PebbleDBIterator provides an iterator implementation for pebbledb.
-type PebbleDBIterator struct {
+// prefixedDBIterator wraps a pebbledb.LazyIterator and strips the bucket prefix from keys.
+type prefixedDBIterator struct {
 	lazy      *pebbledb.LazyIterator
 	prefixLen int
 }
 
-// Next advances the iterator to the next key-value pair.
-// Returns false if there are no more items or an error occurred.
-func (i *PebbleDBIterator) Next() bool {
+func (i *prefixedDBIterator) Next() bool {
 	return i.lazy.Next()
 }
 
-// Key returns the key at the current iterator position.
-func (i *PebbleDBIterator) Key() []byte {
+func (i *prefixedDBIterator) Key() []byte {
 	key := i.lazy.Key()
 	if key == nil {
 		return nil
@@ -121,73 +112,21 @@ func (i *PebbleDBIterator) Key() []byte {
 	return key
 }
 
-// Value returns the value at the current iterator position.
-func (i *PebbleDBIterator) Value() []byte {
+func (i *prefixedDBIterator) Value() []byte {
 	return i.lazy.Value()
 }
 
-// Error returns the error that occurred during iteration, if any.
-func (i *PebbleDBIterator) Error() error {
+func (i *prefixedDBIterator) Error() error {
 	return i.lazy.Error()
 }
 
-// Close closes the iterator and releases resources.
-func (i *PebbleDBIterator) Close() {
+func (i *prefixedDBIterator) Close() {
 	i.lazy.Close()
 }
 
-// newPebbleDBIterator creates a new PebbleDBIterator over the given key range.
-func newPebbleDBIterator(db *pebbledb.DB, start, end []byte, prefixLen int) *PebbleDBIterator {
-	return &PebbleDBIterator{
-		lazy:      db.NewLazyIterator(start, end),
-		prefixLen: prefixLen,
-	}
-}
-
-// TxnPebbleDBIterator provides a lazy iterator for transactional bucket scans.
-type TxnPebbleDBIterator struct {
-	lazy      *pebbledb.TxnLazyIterator
-	prefixLen int
-}
-
-// Next advances the iterator to the next key-value pair.
-func (i *TxnPebbleDBIterator) Next() bool {
-	return i.lazy.Next()
-}
-
-// Key returns the key at the current iterator position with the bucket prefix stripped.
-func (i *TxnPebbleDBIterator) Key() []byte {
-	key := i.lazy.Key()
-	if key == nil {
-		return nil
-	}
-	if len(key) > i.prefixLen {
-		origKey := make([]byte, len(key)-i.prefixLen)
-		copy(origKey, key[i.prefixLen:])
-		return origKey
-	}
-	return key
-}
-
-// Value returns the value at the current iterator position.
-func (i *TxnPebbleDBIterator) Value() []byte {
-	return i.lazy.Value()
-}
-
-// Error returns any error encountered during iteration.
-func (i *TxnPebbleDBIterator) Error() error {
-	return i.lazy.Error()
-}
-
-// Close releases resources held by the transactional iterator.
-func (i *TxnPebbleDBIterator) Close() {
-	i.lazy.Close()
-}
-
-// newTxnPebbleDBIterator creates a new TxnPebbleDBIterator over the given transactional key range.
-func newTxnPebbleDBIterator(txn *pebbledb.Txn, start, end []byte, prefixLen int) *TxnPebbleDBIterator {
-	return &TxnPebbleDBIterator{
-		lazy:      txn.NewTxnLazyIterator(start, end),
+func newPrefixedDBIterator(lazy *pebbledb.LazyIterator, prefixLen int) *prefixedDBIterator {
+	return &prefixedDBIterator{
+		lazy:      lazy,
 		prefixLen: prefixLen,
 	}
 }

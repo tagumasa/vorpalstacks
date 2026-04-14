@@ -4,9 +4,11 @@ import (
 	"vorpalstacks/internal/common/audit"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
-	iamstore "vorpalstacks/internal/store/aws/iam"
 )
+
+// CloudTrailRecorderFactory creates a CloudTrail audit recorder for the given region and account.
+// Injected from the composition root to decouple the dispatcher from concrete store types.
+type CloudTrailRecorderFactory func(region, accountID string) request.AuditRecorder
 
 func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.RequestContext, req *request.ParsedRequest, response interface{}, err error) {
 	if !d.auditConfig.Enabled {
@@ -18,12 +20,10 @@ func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.
 	}
 
 	if !reqCtx.HasAuditRecorder() {
-		store, storeErr := reqCtx.GetStorage()
-		if storeErr != nil {
+		if d.cloudTrailRecorderFactory == nil {
 			return
 		}
-		ctStore := cloudtrailstore.NewCloudTrailStore(store, reqCtx.GetAccountID(), reqCtx.GetRegion())
-		recorder := audit.NewCloudTrailRecorder(ctStore)
+		recorder := d.cloudTrailRecorderFactory(reqCtx.GetRegion(), reqCtx.GetAccountID())
 		reqCtx.SetAuditRecorder(recorder)
 	}
 
@@ -40,17 +40,15 @@ func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.
 }
 
 func (d *Dispatcher) resolvePrincipal(reqCtx *request.RequestContext, accessKeyID string) {
-	globalStorage, err := reqCtx.GetGlobalStorage()
-	if err != nil {
+	if d.iamStore == nil {
 		return
 	}
-	iamStore := iamstore.NewIAMStore(globalStorage, reqCtx.GetAccountID())
-	accessKey, err := iamStore.AccessKeys().Get(accessKeyID)
+	accessKey, err := d.iamStore.AccessKeys().Get(accessKeyID)
 	if err != nil {
 		return
 	}
 	if accessKey != nil && accessKey.UserName != "" {
-		user, err := iamStore.Users().Get(accessKey.UserName)
+		user, err := d.iamStore.Users().Get(accessKey.UserName)
 		if err != nil || user == nil {
 			reqCtx.Principal = accessKey.UserName
 		} else {

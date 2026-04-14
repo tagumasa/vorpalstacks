@@ -2,13 +2,14 @@ package dynamodb
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/dynamodb"
 	dynamodbconnect "vorpalstacks/internal/pb/aws/dynamodb/dynamodbconnect"
-	svccommon "vorpalstacks/internal/common"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -65,4 +66,8 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 		Tablenames:             tableNames,
 		Lastevaluatedtablename: nextMarker,
 	}), nil
+}
+
+func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
+	return dynamodbconnect.NewDynamoDBServiceHandler(NewAdminHandler(sm, accountID))
 }

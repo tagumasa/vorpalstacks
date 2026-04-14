@@ -93,14 +93,6 @@ func parseMetricData(metricDataRaw interface{}) []cwstore.MetricDatum {
 	return metricData
 }
 
-func getMapKeys(m map[string]interface{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
 func parseDimensions(dimsRaw1, dimsRaw2 interface{}) []cwstore.Dimension {
 	var dimensions []cwstore.Dimension
 	if dimsList, ok := dimsRaw1.([]interface{}); ok {

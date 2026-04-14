@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/pkg/gremlinparser"
 )
 
@@ -225,7 +226,9 @@ func (s *NeptuneDataService) CancelGremlinQuery(ctx context.Context, reqCtx *req
 	}
 	qr.Status = "cancelled"
 	qr.EndTime = timestamppb.Now()
-	_ = store.UpdateQuery(qr)
+	if err := store.UpdateQuery(qr); err != nil {
+		logs.Warn("failed to persist query cancellation", logs.String("queryId", queryId), logs.Err(err))
+	}
 
 	return map[string]interface{}{
 		"status": "200 OK",

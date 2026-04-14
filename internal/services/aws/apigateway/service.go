@@ -4,12 +4,13 @@ import (
 	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	svcapigatewayruntime "vorpalstacks/internal/services/aws/apigateway/runtime"
-	"vorpalstacks/internal/common/request"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
@@ -52,10 +53,16 @@ func (s *APIGatewayService) InitRuntimeServer(
 		return
 	}
 
-	restApiStore := apigatewaystore.NewRestApiStore(storage, s.accountID, s.region)
-	usageStore := apigatewaystore.NewUsageStore(storage, s.accountID, s.region)
+	stores := &apiGatewayStores{
+		restApis: apigatewaystore.NewRestApiStore(storage, s.accountID, s.region),
+		usage:    apigatewaystore.NewUsageStore(storage, s.accountID, s.region),
+		domains:  apigatewaystore.NewDomainStore(storage, s.accountID, s.region),
+	}
+	if actual, loaded := s.stores.LoadOrStore(s.region, stores); loaded {
+		stores = actual.(*apiGatewayStores)
+	}
 
-	s.runtimeServer = svcapigatewayruntime.NewRuntimeServer(restApiStore, usageStore, lambdaInvoker)
+	s.runtimeServer = svcapigatewayruntime.NewRuntimeServer(stores.restApis, stores.usage, lambdaInvoker)
 	s.runtimeServer.SetAccountID(s.accountID)
 	if sqsStore != nil {
 		s.runtimeServer.SetSQSStore(sqsStore, s.accountID, s.region)
@@ -83,34 +90,17 @@ func (s *APIGatewayService) CloseRuntimeServer() {
 }
 
 func (s *APIGatewayService) store(reqCtx *request.RequestContext) (*apiGatewayStores, error) {
-	if apiGatewayStore := reqCtx.GetAPIGatewayStore(); apiGatewayStore != nil {
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*apiGatewayStores, error) {
+		st, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, err
+		}
 		return &apiGatewayStores{
-			restApis: apiGatewayStore.RestApisRaw(),
-			usage:    apiGatewayStore.UsageRaw(),
-			domains:  apiGatewayStore.DomainsRaw(),
+			restApis: apigatewaystore.NewRestApiStore(st, s.accountID, reqCtx.GetRegion()),
+			usage:    apigatewaystore.NewUsageStore(st, s.accountID, reqCtx.GetRegion()),
+			domains:  apigatewaystore.NewDomainStore(st, s.accountID, reqCtx.GetRegion()),
 		}, nil
-	}
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(*apiGatewayStores); ok {
-			return typed, nil
-		}
-	}
-	st, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	stores := &apiGatewayStores{
-		restApis: apigatewaystore.NewRestApiStore(st, s.accountID, region),
-		usage:    apigatewaystore.NewUsageStore(st, s.accountID, region),
-		domains:  apigatewaystore.NewDomainStore(st, s.accountID, region),
-	}
-	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
-		if typed, ok := actual.(*apiGatewayStores); ok {
-			return typed, nil
-		}
-	}
-	return stores, nil
+	})
 }
 
 // RegisterHandlers registers the API Gateway service handlers with the dispatcher.

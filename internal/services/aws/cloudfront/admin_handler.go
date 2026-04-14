@@ -2,6 +2,7 @@ package cloudfront
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
@@ -30,4 +31,8 @@ func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Reque
 			Istruncated: false,
 		},
 	}), nil
+}
+
+func NewConnectHandler() (string, http.Handler) {
+	return cloudfrontconnect.NewCloudFrontServiceHandler(NewAdminHandler())
 }

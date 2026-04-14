@@ -2,9 +2,11 @@ package cloudwatch
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudwatch"
 	cloudwatchconnect "vorpalstacks/internal/pb/aws/cloudwatch/cloudwatchconnect"
 	cloudwatchstore "vorpalstacks/internal/store/aws/cloudwatch"
@@ -160,4 +162,8 @@ func toPbStateValue(state string) pb.StateValue {
 	default:
 		return pb.StateValue_STATE_VALUE_INSUFFICIENT_DATA
 	}
+}
+
+func NewConnectHandler(st storage.BasicStorage, accountID, region, dataPath string) (string, http.Handler) {
+	return cloudwatchconnect.NewCloudWatchServiceHandler(NewAdminHandler(cloudwatchstore.NewAlarmStore(st, accountID, region), cloudwatchstore.NewMetricChunkStore(st, region, dataPath)))
 }

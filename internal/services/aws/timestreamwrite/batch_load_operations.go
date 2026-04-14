@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
@@ -66,7 +66,13 @@ func (s *Service) CreateBatchLoadTask(ctx context.Context, reqCtx *request.Reque
 		return nil, s.mapStoreError(err)
 	}
 
-	go s.simulateBatchLoad(st.batchLoadStore, taskId)
+	s.batchWg.Add(1)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+		defer s.batchWg.Done()
+		s.simulateBatchLoad(ctx, st.batchLoadStore, taskId)
+	}()
 
 	return map[string]interface{}{
 		"TaskId": task.TaskId,
@@ -152,7 +158,13 @@ func (s *Service) ResumeBatchLoadTask(ctx context.Context, reqCtx *request.Reque
 		return nil, s.mapStoreError(err)
 	}
 
-	go s.simulateBatchLoad(st.batchLoadStore, taskId)
+	s.batchWg.Add(1)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+		defer s.batchWg.Done()
+		s.simulateBatchLoad(ctx, st.batchLoadStore, taskId)
+	}()
 
 	return response.EmptyResponse(), nil
 }
@@ -178,13 +190,31 @@ func (s *Service) DeleteBatchLoadTask(ctx context.Context, reqCtx *request.Reque
 	return response.EmptyResponse(), nil
 }
 
-func (s *Service) simulateBatchLoad(store *tsstore.BatchLoadTaskStore, taskId string) {
+func (s *Service) simulateBatchLoad(ctx context.Context, store *tsstore.BatchLoadTaskStore, taskId string) {
+	select {
+	case <-ctx.Done():
+		return
+	default:
+	}
+
+	defer func() {
+		if ctx.Err() != nil {
+			_ = store.UpdateBatchLoadTaskStatus(taskId, tsstore.BatchLoadStatusFailed, "Simulation timed out")
+		}
+	}()
+
 	if err := store.UpdateBatchLoadTaskStatus(taskId, tsstore.BatchLoadStatusInProgress, ""); err != nil {
 		logs.Error("Failed to update batch load task status", logs.Err(err))
 		return
 	}
 
-	time.Sleep(2 * time.Second)
+	timer := time.NewTimer(2 * time.Second)
+	select {
+	case <-timer.C:
+	case <-ctx.Done():
+		timer.Stop()
+		return
+	}
 
 	progress := &tsstore.BatchLoadProgressReport{
 		RecordsProcessed:        1000,
@@ -198,7 +228,13 @@ func (s *Service) simulateBatchLoad(store *tsstore.BatchLoadTaskStore, taskId st
 		logs.Error("Failed to update batch load task progress", logs.Err(err))
 	}
 
-	time.Sleep(1 * time.Second)
+	timer = time.NewTimer(1 * time.Second)
+	select {
+	case <-timer.C:
+	case <-ctx.Done():
+		timer.Stop()
+		return
+	}
 
 	progress.RecordsProcessed = 2000
 	progress.RecordsIngested = 1900
@@ -207,7 +243,13 @@ func (s *Service) simulateBatchLoad(store *tsstore.BatchLoadTaskStore, taskId st
 		logs.Error("Failed to update batch load task progress", logs.Err(err))
 	}
 
-	time.Sleep(1 * time.Second)
+	timer = time.NewTimer(1 * time.Second)
+	select {
+	case <-timer.C:
+	case <-ctx.Done():
+		timer.Stop()
+		return
+	}
 
 	progress.RecordsProcessed = 3000
 	progress.RecordsIngested = 2850

@@ -131,64 +131,7 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 	}, nil
 }
 
-func (s *DynamoDBService) executePartiQLSelect(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams) (interface{}, error) {
-	tableName, whereExpr := parseSelectStatement(statement)
-	if tableName == "" {
-		return nil, ErrInvalidParameter
-	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if !store.Tables().Exists(tableName) {
-		return nil, ErrTableNotFound
-	}
-
-	table, err := store.Tables().Get(tableName)
-	if err != nil {
-		return nil, err
-	}
-
-	var items []*dbstore.Item
-
-	pkName := getPartitionKeyName(table)
-	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
-
-	if pkValue != "" {
-		err = store.Items().ScanByPartitionKey(tableName, pkValue, func(item *dbstore.Item) error {
-			items = append(items, item)
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		err = store.Items().Scan(tableName, func(item *dbstore.Item) error {
-			items = append(items, item)
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if whereExpr != nil {
-		items = filterItemsByExpr(items, whereExpr, params)
-	}
-
-	result := make([]map[string]interface{}, 0, len(items))
-	for _, item := range items {
-		result = append(result, buildItemResponse(item.Attributes))
-	}
-
-	return map[string]interface{}{
-		"Items":        result,
-		"Count":        len(result),
-		"ScannedCount": len(items),
-	}, nil
-}
 
 func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams) (interface{}, error) {
 	tableName, itemData := parseInsertStatement(statement)
@@ -419,32 +362,7 @@ func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *requ
 	}, nil
 }
 
-func applySetClause(attrs map[string]*dbstore.AttributeValue, setClause string, params *partiQLParams) {
-	assignments := strings.Split(setClause, ",")
-	paramIdx := 0
 
-	for _, assignment := range assignments {
-		parts := strings.SplitN(strings.TrimSpace(assignment), "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-
-		attrName := strings.TrimSpace(strings.Trim(parts[0], `"'`))
-		value := strings.TrimSpace(parts[1])
-
-		var attrValue *dbstore.AttributeValue
-		if value == "?" && params != nil && paramIdx < len(params.Parameters) {
-			attrValue = paramToAttributeValue(params.Parameters[paramIdx])
-			paramIdx++
-		} else {
-			attrValue = parsePartiQLValuePart(value)
-		}
-
-		if attrValue != nil {
-			attrs[attrName] = attrValue
-		}
-	}
-}
 
 func applySetAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) {
 	for _, asgn := range assignments {

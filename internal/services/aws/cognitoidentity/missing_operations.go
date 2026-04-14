@@ -2,7 +2,7 @@ package cognitoidentity
 
 import (
 	"context"
-	"strings"
+	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -127,7 +127,9 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 			identity.Logins[k] = v
 		}
 		key := cognitoidentitystore.IdentityPoolIdentityKey(identity.IdentityPoolID, identity.ID)
-		_ = store.Identities().Put(key, identity)
+		if err := store.Identities().Put(key, identity); err != nil {
+			return nil, fmt.Errorf("failed to update identity logins: %w", err)
+		}
 	}
 
 	token := uuid.New().String()
@@ -171,7 +173,9 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 		if identityID == "" {
 			identity := cognitoidentitystore.NewIdentity(poolID)
 			identityID = identity.ID
-			_ = store.CreateIdentity(identity)
+			if err := store.CreateIdentity(identity); err != nil {
+				return nil, fmt.Errorf("failed to create identity: %w", err)
+			}
 		}
 
 		di := &cognitoidentitystore.DeveloperIdentity{
@@ -180,7 +184,9 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 			IdentityPoolID:          poolID,
 			IdentityID:              identityID,
 		}
-		_ = store.LinkDeveloperIdentity(di)
+		if err := store.LinkDeveloperIdentity(di); err != nil {
+			return nil, fmt.Errorf("failed to link developer identity: %w", err)
+		}
 	}
 
 	token := uuid.New().String()
@@ -334,16 +340,23 @@ func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, r
 
 	if sourceDI.IdentityID != "" && destDI.IdentityID != "" && sourceDI.IdentityID != destDI.IdentityID {
 		sourceKey := cognitoidentitystore.IdentityPoolIdentityKey(poolID, sourceDI.IdentityID)
-		_ = store.Identities().Delete(sourceKey)
+		if err := store.Identities().Delete(sourceKey); err != nil {
+			return nil, fmt.Errorf("failed to delete source identity: %w", err)
+		}
 	}
 
-	destDI, _ = store.GetDeveloperIdentity(poolID, providerName, destUserID)
-	_ = store.LinkDeveloperIdentity(&cognitoidentitystore.DeveloperIdentity{
+	destDI, err = store.GetDeveloperIdentity(poolID, providerName, destUserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to re-fetch destination developer identity after merge: %w", err)
+	}
+	if err := store.LinkDeveloperIdentity(&cognitoidentitystore.DeveloperIdentity{
 		DeveloperUserIdentifier: sourceUserID,
 		DeveloperProviderName:   providerName,
 		IdentityPoolID:          poolID,
 		IdentityID:              destDI.IdentityID,
-	})
+	}); err != nil {
+		return nil, fmt.Errorf("failed to link merged developer identity: %w", err)
+	}
 
 	return map[string]interface{}{
 		"IdentityId": destDI.IdentityID,
@@ -411,9 +424,3 @@ func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *req
 }
 
 // GetIdentityPoolIDFromIdentityID extracts the pool ID from a full identity key.
-func getIdentityPoolIDFromIdentityID(key string) string {
-	if idx := strings.Index(key, "#"); idx >= 0 {
-		return key[:idx]
-	}
-	return ""
-}

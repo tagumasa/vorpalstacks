@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 )
 
 const (
@@ -42,7 +43,7 @@ func (s *IAMService) AttachUserPolicy(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if store.AttachedPolicies().IsAttached(PrincipalTypeUser, userName, policyArn) {
-		return nil, nil
+		return response.EmptyResponse(), nil
 	}
 
 	if err := store.AttachedPolicies().Attach(PrincipalTypeUser, userName, policyArn); err != nil {
@@ -56,7 +57,7 @@ func (s *IAMService) AttachUserPolicy(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // DetachUserPolicy detaches a policy from a user.
@@ -90,7 +91,7 @@ func (s *IAMService) DetachUserPolicy(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListAttachedUserPolicies lists the policies attached to a user.
@@ -154,7 +155,7 @@ func (s *IAMService) AttachGroupPolicy(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if store.AttachedPolicies().IsAttached(PrincipalTypeGroup, groupName, policyArn) {
-		return nil, nil
+		return response.EmptyResponse(), nil
 	}
 
 	if err := store.AttachedPolicies().Attach(PrincipalTypeGroup, groupName, policyArn); err != nil {
@@ -168,7 +169,7 @@ func (s *IAMService) AttachGroupPolicy(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // DetachGroupPolicy detaches a policy from a group.
@@ -202,7 +203,7 @@ func (s *IAMService) DetachGroupPolicy(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListAttachedGroupPolicies lists the policies attached to a group.
@@ -266,7 +267,7 @@ func (s *IAMService) AttachRolePolicy(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if store.AttachedPolicies().IsAttached(PrincipalTypeRole, roleName, policyArn) {
-		return nil, nil
+		return response.EmptyResponse(), nil
 	}
 
 	if err := store.AttachedPolicies().Attach(PrincipalTypeRole, roleName, policyArn); err != nil {
@@ -280,7 +281,7 @@ func (s *IAMService) AttachRolePolicy(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // DetachRolePolicy detaches a policy from a role.
@@ -314,7 +315,7 @@ func (s *IAMService) DetachRolePolicy(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListAttachedRolePolicies lists the policies attached to a role.

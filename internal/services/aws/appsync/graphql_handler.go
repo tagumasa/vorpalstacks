@@ -8,8 +8,8 @@ import (
 	"io"
 	"net/http"
 
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/eventbus"
 )
 
 // graphqlRequest represents the incoming GraphQL-over-HTTP request body.
@@ -85,7 +85,7 @@ func (s *AppSyncService) HandleGraphQLExecution(ctx context.Context, reqCtx *req
 	headers.Set("Content-Type", "application/graphql-response+json")
 
 	status := http.StatusOK
-	if result.Errors != nil && len(result.Errors) > 0 {
+	if len(result.Errors) > 0 {
 		for _, e := range result.Errors {
 			if e.Message == "InternalFailureException" {
 				status = http.StatusInternalServerError

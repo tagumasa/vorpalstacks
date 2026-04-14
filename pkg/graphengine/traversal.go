@@ -264,6 +264,11 @@ func (d *DB) ShortestPathWeighted(fromID, toID NodeID, weightProp string, defaul
 				}
 			}
 
+			if weight < 0 {
+				fmt.Printf("[graphengine] warning: negative edge weight %.4f skipped in Dijkstra traversal\n", weight)
+				continue
+			}
+
 			newDist := dist[current] + weight
 			if existing, ok := dist[edge.To]; !ok || newDist < existing {
 				dist[edge.To] = newDist

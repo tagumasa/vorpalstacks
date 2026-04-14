@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -60,7 +61,7 @@ func (s *IAMService) DeleteServiceSpecificCredential(ctx context.Context, reqCtx
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListServiceSpecificCredentials lists all service-specific credentials for the specified user.
@@ -163,7 +164,7 @@ func (s *IAMService) UpdateServiceSpecificCredential(ctx context.Context, reqCtx
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 func (s *IAMService) serviceSpecificCredentialToResponse(cred *iamstore.ServiceSpecificCredential, includePassword bool) map[string]interface{} {

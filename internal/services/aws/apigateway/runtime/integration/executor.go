@@ -4,6 +4,7 @@ package integration
 import (
 	"context"
 	"net/http"
+	"sync"
 
 	"vorpalstacks/internal/eventbus"
 	sns "vorpalstacks/internal/store/aws/sns"
@@ -66,6 +67,7 @@ type ExecutorFactory struct {
 	accountID     string
 	region        string
 	bus           *eventbus.EventBus
+	deliveryWg    sync.WaitGroup
 }
 
 // NewExecutorFactory creates a new executor factory.
@@ -115,7 +117,7 @@ func (f *ExecutorFactory) CreateExecutor(integrationType string) (Executor, erro
 	case "HTTP", "HTTP_PROXY":
 		return NewHTTPExecutor(), nil
 	case "AWS", "AWS_PROXY":
-		return NewAWSExecutorWithStores(f.lambdaInvoker, f.sqsStore, f.snsStore, f.accountID, f.region, f.bus), nil
+		return NewAWSExecutorWithStores(f.lambdaInvoker, f.sqsStore, f.snsStore, f.accountID, f.region, f.bus, &f.deliveryWg), nil
 	default:
 		return nil, &IntegrationError{
 			Message:  "Unsupported integration type: " + integrationType,
@@ -123,6 +125,12 @@ func (f *ExecutorFactory) CreateExecutor(integrationType string) (Executor, erro
 			HTTPCode: http.StatusBadRequest,
 		}
 	}
+}
+
+// WaitDelivery blocks until all in-flight SNS delivery goroutines created
+// by any executor from this factory have finished. Call during shutdown.
+func (f *ExecutorFactory) WaitDelivery() {
+	f.deliveryWg.Wait()
 }
 
 // IntegrationError represents an error during integration execution.

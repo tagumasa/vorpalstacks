@@ -8,10 +8,11 @@ import (
 	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
@@ -67,52 +68,28 @@ func (s *CloudFrontService) DistributionHandler() http.Handler {
 	return http.HandlerFunc(s.distributionServer.HandleRequest)
 }
 
-var globalStoresKey struct{}
-
-// store returns the CloudFront stores for the given request context.
 func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontStores, error) {
-	if stores := reqCtx.GetCloudFrontStores(); stores != nil {
-		raw := stores.Raw()
+	return storecommon.GetOrCreateStoreE(&s.stores, "global", func() (*cloudfrontStores, error) {
+		storage, err := reqCtx.GetGlobalStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get global storage: %w", err)
+		}
+		arnBuilder := cloudfrontstore.NewARNBuilder(s.accountID)
+		cacheStore := cloudfrontstore.NewCachePolicyStore(storage, s.accountID)
+		orpStore := cloudfrontstore.NewOriginRequestPolicyStore(storage, s.accountID)
+		s.seedManagedPolicies.Do(func() {
+			cloudfrontstore.SeedManagedPolicies(cacheStore, orpStore)
+		})
 		return &cloudfrontStores{
-			distributions:           raw.Distributions().Raw(),
-			cachePolicies:           raw.CachePolicies().Raw(),
-			originRequestPolicies:   raw.OriginRequestPolicies().Raw(),
-			originAccessControls:    raw.OriginAccessControls().Raw(),
-			responseHeadersPolicies: raw.ResponseHeadersPolicies().Raw(),
-			tags:                    raw.Tags().Raw(),
-			arnBuilder:              raw.ARNBuilder(),
+			distributions:           cloudfrontstore.NewDistributionStore(storage, s.accountID),
+			cachePolicies:           cacheStore,
+			originRequestPolicies:   orpStore,
+			originAccessControls:    cloudfrontstore.NewOriginAccessControlStore(storage, s.accountID),
+			responseHeadersPolicies: cloudfrontstore.NewResponseHeadersPolicyStore(storage, s.accountID),
+			tags:                    cloudfrontstore.NewTagStore(storage),
+			arnBuilder:              arnBuilder,
 		}, nil
-	}
-	if cached, ok := s.stores.Load(globalStoresKey); ok {
-		if typed, ok := cached.(*cloudfrontStores); ok {
-			return typed, nil
-		}
-	}
-	storage, err := reqCtx.GetGlobalStorage()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get global storage: %w", err)
-	}
-	arnBuilder := cloudfrontstore.NewARNBuilder(s.accountID)
-	cacheStore := cloudfrontstore.NewCachePolicyStore(storage, s.accountID)
-	orpStore := cloudfrontstore.NewOriginRequestPolicyStore(storage, s.accountID)
-	s.seedManagedPolicies.Do(func() {
-		cloudfrontstore.SeedManagedPolicies(cacheStore, orpStore)
 	})
-	stores := &cloudfrontStores{
-		distributions:           cloudfrontstore.NewDistributionStore(storage, s.accountID),
-		cachePolicies:           cacheStore,
-		originRequestPolicies:   orpStore,
-		originAccessControls:    cloudfrontstore.NewOriginAccessControlStore(storage, s.accountID),
-		responseHeadersPolicies: cloudfrontstore.NewResponseHeadersPolicyStore(storage, s.accountID),
-		tags:                    cloudfrontstore.NewTagStore(storage),
-		arnBuilder:              arnBuilder,
-	}
-	if actual, loaded := s.stores.LoadOrStore(globalStoresKey, stores); loaded {
-		if typed, ok := actual.(*cloudfrontStores); ok {
-			return typed, nil
-		}
-	}
-	return stores, nil
 }
 
 var globalWAFAssocKey struct{}

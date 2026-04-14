@@ -2,6 +2,7 @@ package acm
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
@@ -26,4 +27,8 @@ func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(&pb.ListCertificatesResponse{
 		Certificatesummarylist: []*pb.CertificateSummary{},
 	}), nil
+}
+
+func NewConnectHandler() (string, http.Handler) {
+	return acmconnect.NewACMServiceHandler(NewAdminHandler())
 }

@@ -53,13 +53,3 @@ func newConflictException(reason string) *httpError {
 func newInternalServerException(err error) *httpError {
 	return newHTTPError(http.StatusInternalServerError, "InternalServerException", err.Error())
 }
-
-// newThrottlingException creates a 429 ThrottlingException error.
-func newThrottlingException() *httpError {
-	return newHTTPError(http.StatusTooManyRequests, "ThrottlingException", "Rate exceeded")
-}
-
-// newUnprocessableException creates a 422 UnprocessableException error.
-func newUnprocessableException(reason string) *httpError {
-	return newHTTPError(http.StatusUnprocessableEntity, "UnprocessableException", reason)
-}

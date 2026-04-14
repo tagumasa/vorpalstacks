@@ -9,11 +9,12 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/endpoint"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common/endpoint"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sns "vorpalstacks/internal/store/aws/sns"
 	sqs "vorpalstacks/internal/store/aws/sqs"
@@ -39,6 +40,7 @@ type AWSExecutor struct {
 	accountID     string
 	region        string
 	bus           *eventbus.EventBus
+	deliveryWg    *sync.WaitGroup
 }
 
 // NewAWSExecutor creates a new AWSExecutor with the given Lambda invoker.
@@ -49,7 +51,7 @@ func NewAWSExecutor(lambdaInvoker LambdaInvoker) *AWSExecutor {
 }
 
 // NewAWSExecutorWithStores creates a new AWSExecutor with the given Lambda invoker and store dependencies.
-func NewAWSExecutorWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string, bus *eventbus.EventBus) *AWSExecutor {
+func NewAWSExecutorWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string, bus *eventbus.EventBus, deliveryWg *sync.WaitGroup) *AWSExecutor {
 	return &AWSExecutor{
 		lambdaInvoker: lambdaInvoker,
 		sqsStore:      sqsStore,
@@ -57,6 +59,7 @@ func NewAWSExecutorWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSStore
 		accountID:     accountID,
 		region:        region,
 		bus:           bus,
+		deliveryWg:    deliveryWg,
 	}
 }
 
@@ -187,8 +190,7 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 			}
 
 			if respConfig.StatusCode != "" {
-				if code, err := fmt.Sscanf(respConfig.StatusCode, "%d", &resp.StatusCode); err == nil && code == 1 {
-				}
+				_, _ = fmt.Sscanf(respConfig.StatusCode, "%d", &resp.StatusCode)
 			}
 		}
 	}
@@ -725,9 +727,15 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 			Subject:   req.Headers["Subject"],
 		}
 		snsEvt.Region = snsRegion
-		e.bus.Publish(context.Background(), snsEvt)
+		_ = e.bus.Publish(context.Background(), snsEvt)
 	} else {
+		if e.deliveryWg != nil {
+			e.deliveryWg.Add(1)
+		}
 		go func() {
+			if e.deliveryWg != nil {
+				defer e.deliveryWg.Done()
+			}
 			defer func() {
 				if r := recover(); r != nil {
 					logs.Error("Panic in SNS delivery goroutine",

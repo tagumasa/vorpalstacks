@@ -37,9 +37,7 @@ func NewTLSManager(storage storage.BasicStorage, certPath, keyPath, hostname str
 	}
 
 	if certPath == "auto" || keyPath == "auto" {
-		if err := storage.CreateBucket("tls"); err != nil {
-			// Bucket may already exist, ignore error
-		}
+		_ = storage.CreateBucket("tls")
 
 		if err := mgr.loadFromStorage(); err != nil {
 			if err := mgr.generateSelfSignedCert(); err != nil {
@@ -136,9 +134,7 @@ func (m *TLSManager) generateSelfSignedCert() error {
 }
 
 func (m *TLSManager) saveToStorage() error {
-	if err := m.storage.CreateBucket("tls"); err != nil {
-		// Bucket may already exist, ignore
-	}
+	_ = m.storage.CreateBucket("tls")
 
 	bucket := m.storage.Bucket("tls")
 

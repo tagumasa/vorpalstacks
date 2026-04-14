@@ -3,18 +3,16 @@ package route53
 
 import (
 	"fmt"
-	"os"
 	"sync"
 
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/services/aws/route53/dnsserver"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
-
-var route53FallbackKey struct{}
 
 // Route53Service provides AWS Route 53 DNS operations.
 type Route53Service struct {
@@ -56,32 +54,20 @@ func NewRoute53ServiceWithDNS(store storage.BasicStorage, accountID, bindAddr st
 }
 
 func (s *Route53Service) store(reqCtx *request.RequestContext) (*route53store.Route53Stores, error) {
-	if stores := reqCtx.GetRoute53Stores(); stores != nil {
-		return stores.Raw(), nil
-	}
-	if cached, ok := s.stores.Load(route53FallbackKey); ok {
-		if typed, ok := cached.(*route53store.Route53Stores); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.stores, "global", func() (*route53store.Route53Stores, error) {
+		storage, err := reqCtx.GetGlobalStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get global storage: %w", err)
 		}
-	}
-	storage, err := reqCtx.GetGlobalStorage()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get global storage: %w", err)
-	}
-	stores := route53store.NewRoute53Stores(
-		route53store.NewHostedZoneStore(storage, s.accountID),
-		route53store.NewHealthCheckStore(storage, s.accountID),
-		route53store.NewRecordSetStore(storage),
-		route53store.NewChangeStore(storage),
-		route53store.NewTagStore(storage),
-		route53store.NewARNBuilder(s.accountID),
-	)
-	if actual, loaded := s.stores.LoadOrStore(route53FallbackKey, stores); loaded {
-		if typed, ok := actual.(*route53store.Route53Stores); ok {
-			return typed, nil
-		}
-	}
-	return stores, nil
+		return route53store.NewRoute53Stores(
+			route53store.NewHostedZoneStore(storage, s.accountID),
+			route53store.NewHealthCheckStore(storage, s.accountID),
+			route53store.NewRecordSetStore(storage),
+			route53store.NewChangeStore(storage),
+			route53store.NewTagStore(storage),
+			route53store.NewARNBuilder(s.accountID),
+		), nil
+	})
 }
 
 // HostedZoneStore returns the hosted zone store.
@@ -149,11 +135,4 @@ func (s *Route53Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("route53", "ListTagsForResource", s.ListTagsForResource)
 	d.RegisterHandlerForService("route53", "ListReusableDelegationSets", s.ListReusableDelegationSets)
 	d.RegisterHandlerForService("route53", "GetDNSSEC", s.GetDNSSEC)
-}
-
-func getEnvOrDefault(key, defaultVal string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
-	}
-	return defaultVal
 }

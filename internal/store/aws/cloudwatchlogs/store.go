@@ -37,8 +37,7 @@ type Store struct {
 }
 
 type activeChunk struct {
-	entries   []LogEntry
-	chunkPath string
+	entries []LogEntry
 }
 
 // NewStore creates a new CloudWatch Logs store.

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"sync"
 
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
@@ -32,27 +33,17 @@ func (s *KinesisService) SetKinesisStore(region string, store *kinesisstore.Kine
 }
 
 func (s *KinesisService) store(reqCtx *request.RequestContext) (*kinesisstore.KinesisStore, error) {
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(*kinesisstore.KinesisStore); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*kinesisstore.KinesisStore, error) {
+		basicStore, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage: %w", err)
 		}
-	}
-	basicStore, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get storage: %w", err)
-	}
-	tstore, ok := basicStore.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		return nil, fmt.Errorf("storage does not support TransactionalStorageWith2PC")
-	}
-	store := kinesisstore.NewKinesisStore(tstore, reqCtx.GetAccountID(), region)
-	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(*kinesisstore.KinesisStore); ok {
-			return typed, nil
+		tstore, ok := basicStore.(storage.TransactionalStorageWith2PC)
+		if !ok {
+			return nil, fmt.Errorf("storage does not support TransactionalStorageWith2PC")
 		}
-	}
-	return store, nil
+		return kinesisstore.NewKinesisStore(tstore, reqCtx.GetAccountID(), reqCtx.GetRegion()), nil
+	})
 }
 
 // RegisterHandlers registers the Kinesis service handlers with the dispatcher.

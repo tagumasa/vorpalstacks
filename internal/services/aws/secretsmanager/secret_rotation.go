@@ -2,6 +2,7 @@ package secretsmanager
 
 import (
 	"context"
+	"fmt"
 
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
@@ -139,10 +140,14 @@ func (s *SecretsManagerService) executeMetadataOnlyRotation(store secretsmanager
 				prevStages = append(prevStages, st)
 			}
 		}
-		_ = store.UpdateSecretVersionStage(secret.Name, oldPrevious.VersionId, prevStages)
+		if err := store.UpdateSecretVersionStage(secret.Name, oldPrevious.VersionId, prevStages); err != nil {
+			return "", fmt.Errorf("failed to clean AWSPREVIOUS from old previous version: %w", err)
+		}
 	}
 
-	_ = store.UpdateSecretVersionStage(secret.Name, secret.CurrentVersion, []string{"AWSPREVIOUS"})
+	if err := store.UpdateSecretVersionStage(secret.Name, secret.CurrentVersion, []string{"AWSPREVIOUS"}); err != nil {
+		return "", fmt.Errorf("failed to demote current version to AWSPREVIOUS: %w", err)
+	}
 
 	secret.VersionIDs = append(secret.VersionIDs, newVersion.VersionId)
 	secret.CurrentVersion = newVersion.VersionId
@@ -179,7 +184,9 @@ func (s *SecretsManagerService) CancelRotateSecret(ctx context.Context, reqCtx *
 				newStages = append(newStages, st)
 			}
 		}
-		_ = store.UpdateSecretVersionStage(secret.Name, pendingVer.VersionId, newStages)
+		if err := store.UpdateSecretVersionStage(secret.Name, pendingVer.VersionId, newStages); err != nil {
+			return nil, fmt.Errorf("failed to remove AWSPENDING stage during cancel: %w", err)
+		}
 	}
 
 	if err := store.CancelRotation(secret.Name); err != nil {

@@ -240,28 +240,6 @@ func evaluateAssign(ctx context.Context, assign map[string]interface{}, statesVa
 	return evaluated, nil
 }
 
-func (e *Executor) applyAssign(ctx context.Context, assign map[string]interface{}, statesVar interface{}, scope *VariableScope) error {
-	if len(assign) == 0 {
-		return nil
-	}
-
-	vars := buildVarsMap(statesVar, scope)
-
-	evaluated := make(map[string]interface{}, len(assign))
-	for name, value := range assign {
-		resolved, err := ResolveTemplate(ctx, value, nil, vars)
-		if err != nil {
-			return err
-		}
-		evaluated[strings.TrimPrefix(name, "$")] = resolved
-	}
-
-	if scope != nil {
-		return scope.SetAll(evaluated)
-	}
-	return nil
-}
-
 func (e *Executor) applyJSONataOutput(ctx context.Context, output interface{}, statesVar interface{}, scope *VariableScope) (interface{}, error) {
 	if output == nil {
 		return nil, nil

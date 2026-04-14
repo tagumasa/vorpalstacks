@@ -2,13 +2,14 @@ package sesv2
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/sesv2"
 	sesv2connect "vorpalstacks/internal/pb/aws/sesv2/sesv2connect"
-	svccommon "vorpalstacks/internal/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
@@ -81,4 +82,8 @@ func (h *AdminHandler) ListEmailIdentities(ctx context.Context, req *connect.Req
 		Emailidentities: identities,
 		Nexttoken:       result.NextMarker,
 	}), nil
+}
+
+func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
+	return sesv2connect.NewSESv2ServiceHandler(NewAdminHandler(sm, accountID))
 }

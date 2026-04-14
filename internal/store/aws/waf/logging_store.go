@@ -2,6 +2,7 @@ package waf
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -13,6 +14,7 @@ const loggingConfigBucketName = "waf_logging_configs"
 // LoggingStore provides storage for WAF logging configurations.
 type LoggingStore struct {
 	*common.BaseStore
+	mu sync.Mutex
 }
 
 // NewLoggingStore creates a new logging configuration store.
@@ -62,6 +64,9 @@ func (s *LoggingStore) Get(resourceArn string) (*LoggingConfiguration, error) {
 
 // Update updates an existing logging configuration.
 func (s *LoggingStore) Update(resourceArn string, logDestinationConfigs []string, logScope, logType string, loggingFilter *LoggingFilter, managedByFirewallManager bool, redactedFields []*FieldToMatch) (*LoggingConfiguration, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	config, err := s.Get(resourceArn)
 	if err != nil {
 		return nil, err

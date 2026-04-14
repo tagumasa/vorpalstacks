@@ -44,48 +44,46 @@ func (d *awsChunkedDecoder) Read(p []byte) (int, error) {
 		return n, nil
 	}
 
-	for {
-		line, err := d.reader.ReadString('\n')
-		if err != nil {
-			d.eof = true
-			return 0, err
-		}
-
-		line = strings.TrimRight(line, "\r\n")
-		semicolonIdx := strings.IndexByte(line, ';')
-		var sizeStr string
-		if semicolonIdx >= 0 {
-			sizeStr = line[:semicolonIdx]
-		} else {
-			sizeStr = line
-		}
-
-		size, err := strconv.ParseInt(sizeStr, 16, 64)
-		if err != nil {
-			d.eof = true
-			return 0, fmt.Errorf("%w: failed to parse chunk size %q: %v", errAwsChunkedInvalidFormat, sizeStr, err)
-		}
-
-		if size == 0 {
-			d.eof = true
-			d.reader.ReadString('\n')
-			return 0, io.EOF
-		}
-
-		d.remaining = int(size)
-		n, err := d.reader.Read(p)
-		if n > d.remaining {
-			n = d.remaining
-		}
-		d.remaining -= n
-		if d.remaining > 0 {
-			return n, err
-		}
-		if _, discardErr := d.reader.ReadString('\n'); discardErr != nil {
-			d.eof = true
-		}
-		return n, err
+	line, err := d.reader.ReadString('\n')
+	if err != nil {
+		d.eof = true
+		return 0, err
 	}
+
+	line = strings.TrimRight(line, "\r\n")
+	semicolonIdx := strings.IndexByte(line, ';')
+	var sizeStr string
+	if semicolonIdx >= 0 {
+		sizeStr = line[:semicolonIdx]
+	} else {
+		sizeStr = line
+	}
+
+	size, parseErr := strconv.ParseInt(sizeStr, 16, 64)
+	if parseErr != nil {
+		d.eof = true
+		return 0, fmt.Errorf("%w: failed to parse chunk size %q: %v", errAwsChunkedInvalidFormat, sizeStr, parseErr)
+	}
+
+	if size == 0 {
+		d.eof = true
+		_, _ = d.reader.ReadString('\n')
+		return 0, io.EOF
+	}
+
+	d.remaining = int(size)
+	n, readErr := d.reader.Read(p)
+	if n > d.remaining {
+		n = d.remaining
+	}
+	d.remaining -= n
+	if d.remaining > 0 {
+		return n, readErr
+	}
+	if _, discardErr := d.reader.ReadString('\n'); discardErr != nil {
+		d.eof = true
+	}
+	return n, readErr
 }
 
 func newAwsChunkedDecoder(r io.Reader) io.Reader {

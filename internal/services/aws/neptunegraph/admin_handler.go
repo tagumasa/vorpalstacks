@@ -9,10 +9,10 @@ import (
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/neptunegraph"
 	neptunegraphconnect "vorpalstacks/internal/pb/aws/neptunegraph/neptunegraphconnect"
-	svccommon "vorpalstacks/internal/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 )
@@ -723,4 +723,8 @@ func exportFilterElementToPb(e ngstore.ExportFilterElement) *pb.ExportFilterElem
 		}
 	}
 	return pbElem
+}
+
+func NewConnectHandler(svc *NeptuneGraphService, accountID string) (string, http.Handler) {
+	return neptunegraphconnect.NewNeptuneGraphServiceHandler(NewAdminHandler(svc, accountID))
 }

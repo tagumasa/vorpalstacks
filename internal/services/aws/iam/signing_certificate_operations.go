@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -94,7 +95,7 @@ func (s *IAMService) UpdateSigningCertificate(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // DeleteSigningCertificate deletes a signing certificate associated with the specified IAM user.
@@ -123,7 +124,7 @@ func (s *IAMService) DeleteSigningCertificate(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 func (s *IAMService) signingCertificateToResponse(cert *iamstore.SigningCertificate) map[string]interface{} {

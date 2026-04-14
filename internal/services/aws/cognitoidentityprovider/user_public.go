@@ -2,8 +2,10 @@ package cognitoidentityprovider
 
 import (
 	"context"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 
 	"golang.org/x/crypto/bcrypt"
@@ -64,9 +66,13 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 
 	if preSignUpResult.AutoConfirmUser {
 		attrs := userAttributesMap(user)
-		invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, attrs)
+		if err := invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, attrs); err != nil {
+			logs.Warn("PostConfirmation trigger failed", logs.Err(err))
+		}
 	} else {
-		invokeCustomMessage(ctx, s, CustomMessageSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, "####", userAttributesMap(user))
+		if _, err := invokeCustomMessage(ctx, s, CustomMessageSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, "####", userAttributesMap(user)); err != nil {
+			logs.Warn("CustomMessage trigger failed", logs.Err(err))
+		}
 	}
 
 	return map[string]interface{}{
@@ -110,7 +116,9 @@ func (s *CognitoService) ConfirmSignUp(ctx context.Context, reqCtx *request.Requ
 	}
 
 	attrs := userAttributesMap(user)
-	invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, attrs)
+	if err := invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, attrs); err != nil {
+		logs.Warn("PostConfirmation trigger failed", logs.Err(err))
+	}
 
 	return response.EmptyResponse(), nil
 }

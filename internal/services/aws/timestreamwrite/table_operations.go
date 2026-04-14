@@ -49,7 +49,7 @@ func (s *Service) CreateTable(ctx context.Context, reqCtx *request.RequestContex
 	}
 
 	if tags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"); len(tags) > 0 {
-		st.store.TagResource(table.ARN, tagutil.ToMap(tags))
+		_ = st.store.TagResource(table.ARN, tagutil.ToMap(tags))
 	}
 
 	tags, _ := st.store.ListTags(table.ARN)

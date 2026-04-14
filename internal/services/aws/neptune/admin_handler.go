@@ -6,9 +6,9 @@ import (
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/neptune"
 	neptuneconnect "vorpalstacks/internal/pb/aws/neptune/neptuneconnect"
-	svccommon "vorpalstacks/internal/common"
 	storeneptune "vorpalstacks/internal/store/aws/neptune"
 )
 
@@ -763,4 +763,8 @@ func clusterEndpointToPb(ep *storeneptune.DBClusterEndpoint) *pb.DBClusterEndpoi
 		Staticmembers:               ep.StaticMembers,
 		Dbclusterendpointarn:        ep.DBClusterEndpointArn,
 	}
+}
+
+func NewConnectHandler(svc *NeptuneService, accountID string) (string, http.Handler) {
+	return neptuneconnect.NewNeptuneServiceHandler(NewAdminHandler(svc, accountID))
 }

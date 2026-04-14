@@ -7,22 +7,44 @@ import (
 	"os"
 	"time"
 
-	appconfig "vorpalstacks/internal/config"
+	"vorpalstacks/internal/common/audit"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/grpcweb"
 	"vorpalstacks/internal/server/listener"
+	svcacm "vorpalstacks/internal/services/aws/acm"
+	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
 	svcappsync "vorpalstacks/internal/services/aws/appsync"
 	svcathena "vorpalstacks/internal/services/aws/athena"
 	svccloudfront "vorpalstacks/internal/services/aws/cloudfront"
+	svccloudtrail "vorpalstacks/internal/services/aws/cloudtrail"
+	svccloudwatch "vorpalstacks/internal/services/aws/cloudwatch"
+	svclogs "vorpalstacks/internal/services/aws/cloudwatchlogs"
+	svccognitoidentity "vorpalstacks/internal/services/aws/cognitoidentity"
+	svccognito "vorpalstacks/internal/services/aws/cognitoidentityprovider"
+	svcdynamodb "vorpalstacks/internal/services/aws/dynamodb"
+	svcevents "vorpalstacks/internal/services/aws/eventbridge"
+	svciam "vorpalstacks/internal/services/aws/iam"
+	svckinesis "vorpalstacks/internal/services/aws/kinesis"
+	svckms "vorpalstacks/internal/services/aws/kms"
 	svclambda "vorpalstacks/internal/services/aws/lambda"
 	svcneptune "vorpalstacks/internal/services/aws/neptune"
 	svcneptunedata "vorpalstacks/internal/services/aws/neptunedata"
 	svcneptuneGraph "vorpalstacks/internal/services/aws/neptunegraph"
 	svcroute53 "vorpalstacks/internal/services/aws/route53"
 	svcs3 "vorpalstacks/internal/services/aws/s3"
+	svcscheduler "vorpalstacks/internal/services/aws/scheduler"
+	svcsecretsmanager "vorpalstacks/internal/services/aws/secretsmanager"
+	svcsesv2 "vorpalstacks/internal/services/aws/sesv2"
+	svcstepfunction "vorpalstacks/internal/services/aws/sfn"
+	svcsns "vorpalstacks/internal/services/aws/sns"
+	svcsqs "vorpalstacks/internal/services/aws/sqs"
+	svcssm "vorpalstacks/internal/services/aws/ssm"
+	svcsts "vorpalstacks/internal/services/aws/sts"
 	svctimestreamquery "vorpalstacks/internal/services/aws/timestreamquery"
 	svctimestreamwrite "vorpalstacks/internal/services/aws/timestreamwrite"
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
+	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/pkg/graphengine"
 )
@@ -60,6 +82,8 @@ func (a *App) initOptionalServices() {
 	if a.cfg.Athena {
 		a.initAthena(st)
 	}
+
+	a.initCloudTrailRecorderFactory(st)
 }
 
 // --- Athena (optional) ---
@@ -158,6 +182,11 @@ func (a *App) initTimestreamQuery(st *serviceState) {
 func (a *App) initTimestreamWrite(st *serviceState) {
 	timestreamWriteService := svctimestreamwrite.NewService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
 	timestreamWriteService.RegisterHandlers(a.server.Dispatcher())
+	st.timestreamWriteService = timestreamWriteService
+	a.addShutdown("timestreamwrite", func(ctx context.Context) error {
+		st.timestreamWriteService.Close()
+		return nil
+	})
 }
 
 // --- WAFv2 (optional) ---
@@ -189,22 +218,85 @@ func (a *App) initGraphDB() {
 func (a *App) initGRPCWebAdmin() {
 	st := a.state
 	grpcWebServer := grpcweb.NewServer(&grpcweb.Config{Port: a.cfg.GRPCWebPort, BindAddr: a.cfg.GRPCWebBindAddr})
-	grpcweb.RegisterAllAdminHandlers(grpcWebServer, grpcweb.AdminDeps{
-		Server:            a.server,
-		AccountID:         st.accountID,
-		Region:            st.region,
-		DataPath:          a.cfg.DataPath,
-		BaseURL:           appconfig.BaseURL(),
-		NeptuneDataAdmin:  st.neptuneDataService,
-		NeptuneAdmin:      st.neptuneService,
-		NeptuneGraphAdmin: st.neptuneGraphService,
-		AppSyncAdmin:      st.appSyncService,
-		LogsAdmin:         st.logsService,
-		EventsAdmin:       st.eventBridgeService,
-		SFNAdmin:          st.stepFunctionService,
-		SNSAdmin:          st.snsService,
-		SQSAdmin:          st.sqsService,
-	})
+
+	aid := st.accountID
+	reg := st.region
+	dp := a.cfg.DataPath
+	sm := a.server.StorageManager()
+
+	handlers := make([]grpcweb.HandlerRegistration, 0, 32)
+
+	var p string
+	var h http.Handler
+
+	p, h = svcacm.NewConnectHandler()
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcapigateway.NewConnectHandler()
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svccloudfront.NewConnectHandler()
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcroute53.NewConnectHandler()
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcsecretsmanager.NewConnectHandler()
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcsts.NewConnectHandler(aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcwafv2.NewConnectHandler()
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcscheduler.NewConnectHandler()
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcdynamodb.NewConnectHandler(sm, aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svckinesis.NewConnectHandler(sm, aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svclambda.NewConnectHandler(sm, aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcs3.NewConnectHandler(a.server.S3Store(), aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcstepfunction.NewConnectHandler(st.stepFunctionService)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcsqs.NewConnectHandler(st.sqsService)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcevents.NewConnectHandler(st.eventBridgeService, sm)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svclogs.NewConnectHandler(st.logsService)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcsns.NewConnectHandler(st.snsService)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svciam.NewConnectHandler(a.server.Storage(), aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svckms.NewConnectHandler(a.server.Storage(), aid, reg)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svccloudwatch.NewConnectHandler(a.server.Storage(), aid, reg, dp)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svccognito.NewConnectHandler(a.server.Storage(), aid, reg)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svccognitoidentity.NewConnectHandler(a.server.Storage(), aid, reg)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcathena.NewConnectHandler(sm, aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svccloudtrail.NewConnectHandler(sm, aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcsesv2.NewConnectHandler(sm, aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcssm.NewConnectHandler(sm, aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svctimestreamquery.NewConnectHandler(sm, aid, dp)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svctimestreamwrite.NewConnectHandler(sm, aid, dp)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcneptune.NewConnectHandler(st.neptuneService, aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	p, h = svcneptuneGraph.NewConnectHandler(st.neptuneGraphService, aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	if st.neptuneDataService != nil {
+		p, h = svcneptunedata.NewConnectHandler(st.neptuneDataService)
+		handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+	}
+	p, h = svcappsync.NewConnectHandler(st.appSyncService, sm)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
+
+	grpcweb.RegisterAdminHandlers(grpcWebServer, a.server.Storage(), aid, reg, dp, handlers)
 	a.grpcWeb = grpcWebServer
 	a.addShutdown("grpcweb", func(ctx context.Context) error {
 		return grpcWebServer.Shutdown(ctx)
@@ -294,7 +386,7 @@ func (a *App) registerListeners() {
 		PortKey:     "ports.s3_website",
 		DefaultPort: 8081,
 		Handler: http.HandlerFunc(svcs3.NewWebsiteServer(
-			a.server.StorageManager(), a.server.BlobStore(), st.accountID, st.region,
+			a.server.S3Store(), st.accountID, st.region,
 		).HandleRequest),
 	})
 
@@ -310,7 +402,7 @@ func (a *App) registerListeners() {
 	}
 
 	if st.lambdaService != nil {
-		lambdaUrlServer := svclambda.NewFunctionURLServer(a.server.StorageManager(), st.accountID, st.region, st.lambdaService)
+		lambdaUrlServer := svclambda.NewFunctionURLServer(st.lambdaService, st.accountID, st.region, st.lambdaService)
 		a.registerListener(listener.ListenerConfig{
 			Name:        "lambda_url",
 			PortKey:     "ports.lambda_url",
@@ -365,6 +457,19 @@ func (a *App) registerListeners() {
 			},
 		})
 	}
+}
+
+// --- CloudTrail Audit Recorder ---
+
+func (a *App) initCloudTrailRecorderFactory(st *serviceState) {
+	a.server.Dispatcher().SetCloudTrailRecorderFactory(func(region, accountID string) request.AuditRecorder {
+		regionalStorage, err := a.server.StorageManager().GetStorage(region)
+		if err != nil {
+			return nil
+		}
+		ctStore := cloudtrailstore.NewCloudTrailStore(regionalStorage, accountID, region)
+		return audit.NewCloudTrailRecorder(ctStore)
+	})
 }
 
 func (a *App) registerListener(cfg listener.ListenerConfig) {

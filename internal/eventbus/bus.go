@@ -142,6 +142,7 @@ type EventBus struct {
 	logger        logs.Logger
 	wg            sync.WaitGroup
 	started       atomic.Bool
+	stopOnce      sync.Once
 	stopCh        chan struct{}
 	invokers      map[string]ServiceInvoker
 	invokersMu    sync.RWMutex
@@ -564,7 +565,7 @@ func (b *EventBus) Start(ctx context.Context) error {
 // and closes the outbox store.
 func (b *EventBus) Shutdown(ctx context.Context) error {
 	b.started.Store(false)
-	close(b.stopCh)
+	b.stopOnce.Do(func() { close(b.stopCh) })
 
 	done := make(chan struct{})
 	go func() {
@@ -595,7 +596,9 @@ func (b *EventBus) recover(ctx context.Context) error {
 		if entry.Depth >= b.maxEventDepth {
 			entry.Status = OutboxFailed
 			entry.LastError = "max depth exceeded on recovery"
-			_ = b.outbox.UpdateEntry(ctx, entry)
+			if err := b.outbox.UpdateEntry(ctx, entry); err != nil {
+				b.logWarn("failed to update outbox entry (max depth)", "event_id", entry.EventID, "error", err)
+			}
 			continue
 		}
 
@@ -605,7 +608,9 @@ func (b *EventBus) recover(ctx context.Context) error {
 				b.logWarn("failed to deserialize outbox entry on recovery", "event_id", entry.EventID, "error", err)
 				entry.Status = OutboxFailed
 				entry.LastError = err.Error()
-				_ = b.outbox.UpdateEntry(ctx, entry)
+				if updateErr := b.outbox.UpdateEntry(ctx, entry); updateErr != nil {
+					b.logWarn("failed to update outbox entry (deser fail)", "event_id", entry.EventID, "error", updateErr)
+				}
 				continue
 			}
 			_ = event
@@ -688,7 +693,7 @@ func (b *EventBus) processOutboxEntry(entry *OutboxEntry) {
 		entry.Status = OutboxDelivered
 		now := time.Now().UTC()
 		entry.DeliveredAt = &now
-		_ = b.outbox.UpdateEntry(ctx, entry)
+		b.persistEntry(ctx, entry)
 		return
 	}
 
@@ -704,10 +709,10 @@ func (b *EventBus) processOutboxEntry(entry *OutboxEntry) {
 		entry.RetryCount++
 		if entry.RetryCount >= entry.MaxRetries {
 			entry.Status = OutboxFailed
-			_ = b.outbox.UpdateEntry(ctx, entry)
+			b.persistEntry(ctx, entry)
 		} else {
 			entry.Status = OutboxPending
-			_ = b.outbox.UpdateEntry(ctx, entry)
+			b.persistEntry(ctx, entry)
 			select {
 			case b.asyncCh <- entry:
 			default:
@@ -717,14 +722,22 @@ func (b *EventBus) processOutboxEntry(entry *OutboxEntry) {
 		now := time.Now().UTC()
 		entry.Status = OutboxDelivered
 		entry.DeliveredAt = &now
-		_ = b.outbox.UpdateEntry(ctx, entry)
+		b.persistEntry(ctx, entry)
 	}
 }
 
 func (b *EventBus) failEntry(ctx context.Context, entry *OutboxEntry, reason string) {
 	entry.Status = OutboxFailed
 	entry.LastError = reason
-	_ = b.outbox.UpdateEntry(ctx, entry)
+	if err := b.outbox.UpdateEntry(ctx, entry); err != nil {
+		b.logWarn("failed to update outbox entry (fail)", "event_id", entry.EventID, "error", err)
+	}
+}
+
+func (b *EventBus) persistEntry(ctx context.Context, entry *OutboxEntry) {
+	if err := b.outbox.UpdateEntry(ctx, entry); err != nil {
+		b.logWarn("failed to persist outbox entry", "event_id", entry.EventID, "status", entry.Status, "error", err)
+	}
 }
 
 func (b *EventBus) deserializeEntry(entry *OutboxEntry) (Event, error) {

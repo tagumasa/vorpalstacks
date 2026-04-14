@@ -12,15 +12,15 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/iam"
-	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/iam/policy"
+	"vorpalstacks/internal/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	stsstore "vorpalstacks/internal/store/aws/sts"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-var stsStoreKey struct{}
 var stsIAMStoreKey struct{}
 
 // STSService provides AWS Security Token Service operations.
@@ -34,25 +34,13 @@ func NewSTSService() *STSService {
 }
 
 func (s *STSService) store(reqCtx *request.RequestContext) (stsstore.SessionStoreInterface, error) {
-	if stsStore := reqCtx.GetSTSStore(); stsStore != nil {
-		return stsStore, nil
-	}
-	if cached, ok := s.stores.Load(stsStoreKey); ok {
-		if typed, ok := cached.(stsstore.SessionStoreInterface); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.stores, "global", func() (stsstore.SessionStoreInterface, error) {
+		storage, err := reqCtx.GetGlobalStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get global storage: %w", err)
 		}
-	}
-	storage, err := reqCtx.GetGlobalStorage()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get global storage: %w", err)
-	}
-	store := stsstore.NewSessionStore(storage, reqCtx.GetRegion())
-	if actual, loaded := s.stores.LoadOrStore(stsStoreKey, store); loaded {
-		if typed, ok := actual.(stsstore.SessionStoreInterface); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
+		return stsstore.NewSessionStore(storage, reqCtx.GetRegion()), nil
+	})
 }
 
 func (s *STSService) iamStore(reqCtx *request.RequestContext) (iamstore.IAMStoreInterface, error) {
@@ -614,7 +602,7 @@ func (s *STSService) GetFederationToken(ctx context.Context, reqCtx *request.Req
 		callerArn = "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
 	}
 	if callerName == "" {
-		callerName = reqCtx.GetAccountID()
+		_ = reqCtx.GetAccountID()
 	}
 
 	store, err := s.store(reqCtx)

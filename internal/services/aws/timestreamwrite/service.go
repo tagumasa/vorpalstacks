@@ -7,6 +7,7 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
@@ -24,6 +25,7 @@ type Service struct {
 	serverHost string
 	dataPath   string
 	stores     sync.Map // region → *tsWriteStores
+	batchWg    sync.WaitGroup
 }
 
 // NewService creates a new Timestream Write service instance.
@@ -36,46 +38,24 @@ func NewService(accountID, serverHost, dataPath string) *Service {
 }
 
 func (s *Service) store(ctx *request.RequestContext) (*tsWriteStores, error) {
-	if stores := ctx.GetTimestreamStores(); stores != nil {
+	return storecommon.GetOrCreateStoreE(&s.stores, ctx.GetRegion(), func() (*tsWriteStores, error) {
+		storage, err := ctx.GetStorage()
+		if err != nil {
+			return nil, err
+		}
+		tsStore := tsstore.NewStore(storage, s.accountID, ctx.GetRegion())
+		tableStore := tsstore.NewTableStore(storage, tsStore, s.accountID, ctx.GetRegion())
+		recordStore, err := tsstore.NewRecordStoreWithIndex(storage, tableStore, ctx.GetRegion(), s.dataPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create record store: %w", err)
+		}
 		return &tsWriteStores{
-			store:          stores.DatabaseStore().Raw(),
-			tableStore:     stores.TableStore().Raw(),
-			recordStore:    stores.RecordStore().Raw(),
-			batchLoadStore: stores.BatchLoadTaskStore().Raw(),
+			store:          tsStore,
+			tableStore:     tableStore,
+			recordStore:    recordStore,
+			batchLoadStore: tsstore.NewBatchLoadTaskStore(storage, tableStore, ctx.GetRegion()),
 		}, nil
-	}
-
-	region := ctx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(*tsWriteStores); ok {
-			return typed, nil
-		}
-	}
-
-	storage, err := ctx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-
-	tsStore := tsstore.NewStore(storage, s.accountID, region)
-	tableStore := tsstore.NewTableStore(storage, tsStore, s.accountID, region)
-	recordStore, err := tsstore.NewRecordStoreWithIndex(storage, tableStore, region, s.dataPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create record store: %w", err)
-	}
-
-	stores := &tsWriteStores{
-		store:          tsStore,
-		tableStore:     tableStore,
-		recordStore:    recordStore,
-		batchLoadStore: tsstore.NewBatchLoadTaskStore(storage, tableStore, region),
-	}
-	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
-		if typed, ok := actual.(*tsWriteStores); ok {
-			return typed, nil
-		}
-	}
-	return stores, nil
+	})
 }
 
 // RegisterHandlers registers the Timestream Write service handlers with the dispatcher.
@@ -124,4 +104,9 @@ func (s *Service) mapStoreError(err error) error {
 	default:
 		return ErrInternalServer
 	}
+}
+
+// Close waits for any in-flight batch load simulation goroutines to finish.
+func (s *Service) Close() {
+	s.batchWg.Wait()
 }

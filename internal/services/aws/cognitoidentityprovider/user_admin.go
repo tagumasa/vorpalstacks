@@ -3,8 +3,10 @@ package cognitoidentityprovider
 import (
 	"context"
 	"errors"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 
 	"golang.org/x/crypto/bcrypt"
@@ -75,9 +77,13 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 
 	attrs := userAttributesMap(user)
 	if preSignUpResult.AutoConfirmUser || getParam(req, "MessageAction") == "SUPPRESS" {
-		invokePostConfirmation(ctx, s, PostConfirmationAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, attrs)
+		if err := invokePostConfirmation(ctx, s, PostConfirmationAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, attrs); err != nil {
+			logs.Warn("PostConfirmation trigger failed", logs.Err(err))
+		}
 	} else {
-		invokeCustomMessage(ctx, s, CustomMessageAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, "####", attrs)
+		if _, err := invokeCustomMessage(ctx, s, CustomMessageAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, "####", attrs); err != nil {
+			logs.Warn("CustomMessage trigger failed", logs.Err(err))
+		}
 	}
 
 	return map[string]interface{}{

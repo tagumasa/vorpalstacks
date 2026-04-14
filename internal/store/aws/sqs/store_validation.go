@@ -105,13 +105,6 @@ func validateReceiveMessageWaitTimeSeconds(value int32) error {
 	return nil
 }
 
-func validateMaxNumberOfMessages(value int32) error {
-	if value < minMaxNumberOfMessages || value > maxMaxNumberOfMessages {
-		return ErrInvalidParameterValue
-	}
-	return nil
-}
-
 func validateMessageBodySize(body string) error {
 	if len(body) > maxMessageBodySize {
 		return ErrMessageTooLarge

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"vorpalstacks/internal/core/logs"
+
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
@@ -55,17 +57,21 @@ func (s *AppSyncService) StartSchemaCreation(ctx context.Context, reqCtx *reques
 		return nil, ErrInternalFailureException
 	}
 
-	// Capture the decoded definition in a closure variable to avoid
-	// re-reading from the store, which introduces a race condition.
 	defStr := string(decodedDef)
+	s.schemaWg.Add(1)
 	go func() {
+		defer s.schemaWg.Done()
 		completed := &appsyncstore.SchemaCreationStatus{
 			ApiId:      apiId,
 			Status:     "SUCCESS",
 			Details:    "The schema was successfully created.",
 			Definition: defStr,
 		}
-		_ = store.SaveSchemaCreationStatus(apiId, completed)
+		if err := store.SaveSchemaCreationStatus(apiId, completed); err != nil {
+			logs.Warn("failed to persist schema creation status",
+				logs.String("apiId", apiId),
+				logs.Err(err))
+		}
 	}()
 
 	return map[string]interface{}{

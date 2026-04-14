@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -82,7 +83,9 @@ var namespaceToDisplayName = map[string]string{
 // generateJobID produces a unique 32-character lowercase hex identifier for a report job.
 func generateJobID() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%032x", time.Now().UnixNano())
+	}
 	return strings.ToLower(hex.EncodeToString(b))
 }
 
@@ -265,14 +268,11 @@ func (s *IAMService) GenerateServiceLastAccessedDetails(_ context.Context, reqCt
 		return nil, err
 	}
 
-	ctStore := reqCtx.GetCloudTrailStore()
-	if ctStore == nil {
-		regionStorage, err := reqCtx.GetStorage()
-		if err != nil {
-			return nil, errors.NewAWSError("InternalFailure", "Failed to access CloudTrail storage", http.StatusInternalServerError)
-		}
-		ctStore = cloudtrailstore.NewCloudTrailStore(regionStorage, s.accountID, reqCtx.GetRegion())
+	regionStorage, err := reqCtx.GetStorage()
+	if err != nil {
+		return nil, errors.NewAWSError("InternalFailure", "Failed to access CloudTrail storage", http.StatusInternalServerError)
 	}
+	ctStore := cloudtrailstore.NewCloudTrailStore(regionStorage, s.accountID, reqCtx.GetRegion())
 
 	job := s.generateLastAccessedReport(arn, granularity, "SERVICE_LAST_ACCESSED", ctStore)
 

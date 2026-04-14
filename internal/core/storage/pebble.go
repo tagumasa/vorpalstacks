@@ -22,6 +22,14 @@ type PebbleStorage struct {
 	lockManager      *PebbleLockManager
 }
 
+// makePrefixedKey prepends a prefix to a key, returning a new slice.
+func makePrefixedKey(prefix, key []byte) []byte {
+	k := make([]byte, len(prefix)+len(key))
+	copy(k, prefix)
+	copy(k[len(prefix):], key)
+	return k
+}
+
 // NewPebbleStorage creates a new PebbleStorage instance with the given configuration.
 // If cfg is nil, default configuration is used. The storage path defaults to "./data".
 func NewPebbleStorage(cfg *Config) (*PebbleStorage, error) {
@@ -174,10 +182,7 @@ type PebbleDBTransactionBucket struct {
 }
 
 func (b *PebbleDBTransactionBucket) makeKey(key []byte) []byte {
-	k := make([]byte, len(b.prefix)+len(key))
-	copy(k, b.prefix)
-	copy(k[len(b.prefix):], key)
-	return k
+	return makePrefixedKey(b.prefix, key)
 }
 
 // Get retrieves a value by key from the transaction bucket.
@@ -249,7 +254,7 @@ func (b *PebbleDBTransactionBucket) ScanPrefix(prefix []byte) Iterator {
 	copy(end[len(b.prefix):], prefix)
 	end[len(b.prefix)+len(prefix)] = 0xFF
 
-	return newTxnPebbleDBIterator(b.txn, start, end, b.prefixL)
+	return newPrefixedDBIterator(b.txn.NewLazyIterator(start, end), b.prefixL)
 }
 
 // ScanRange returns an iterator for keys within the given range in the transaction bucket.
@@ -257,7 +262,7 @@ func (b *PebbleDBTransactionBucket) ScanRange(start, end []byte) Iterator {
 	lower := b.makeKey(start)
 	upper := b.makeKey(end)
 
-	return newTxnPebbleDBIterator(b.txn, lower, upper, b.prefixL)
+	return newPrefixedDBIterator(b.txn.NewLazyIterator(lower, upper), b.prefixL)
 }
 
 // Count returns the number of keys in the transaction bucket.

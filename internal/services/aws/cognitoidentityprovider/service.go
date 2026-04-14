@@ -5,15 +5,17 @@ package cognitoidentityprovider
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/common/handler"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // CognitoService provides operations for AWS Cognito User Pools.
@@ -64,7 +66,7 @@ func (s *CognitoService) SetLambdaInvoker(invoker common.LambdaInvoker) {
 func (s *CognitoService) JWKSHandler(w http.ResponseWriter, r *http.Request) {
 	if s.storageManager == nil {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
 		return
 	}
 	ctx := context.Background()
@@ -78,41 +80,27 @@ func (s *CognitoService) JWKSHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if userPoolID == "" {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
 		return
 	}
 	jwks, err := s.GetJWKS(reqCtx, userPoolID)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(jwks)
+	_ = json.NewEncoder(w).Encode(jwks)
 }
 
-// store returns the Cognito store for the given request context.
 func (s *CognitoService) store(reqCtx *request.RequestContext) (cognitostore.CognitoStoreInterface, error) {
-	if store := reqCtx.GetCognitoStore(); store != nil {
-		return store, nil
-	}
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(cognitostore.CognitoStoreInterface); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (cognitostore.CognitoStoreInterface, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage: %w", err)
 		}
-	}
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	store := cognitostore.NewCognitoStore(storage, s.accountID, region)
-	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(cognitostore.CognitoStoreInterface); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
+		return cognitostore.NewCognitoStore(storage, s.accountID, reqCtx.GetRegion()), nil
+	})
 }
 
 // RegisterHandlers registers the Cognito handlers with the dispatcher.

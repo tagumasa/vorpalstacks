@@ -27,6 +27,7 @@ type SNSStore struct {
 	topicSubscriptionsStore   *common.BaseStore
 	platformApplicationsStore *common.BaseStore
 	platformEndpointsStore    *common.BaseStore
+	platformAppEndpointsIndex storage.Bucket
 	*common.TagStore
 	arnBuilder         *svcarn.ARNBuilder
 	accountID          string
@@ -57,6 +58,7 @@ func NewSNSStore(store storage.BasicStorage, accountID, region string) *SNSStore
 		topicSubscriptionsStore:   common.NewBaseStore(store.Bucket("sns-subscriptions-"+region), "sns-subscriptions"),
 		platformApplicationsStore: common.NewBaseStore(store.Bucket("sns-platform-apps-"+region), "sns-platform-apps"),
 		platformEndpointsStore:    common.NewBaseStore(store.Bucket("sns-platform-endpoints-"+region), "sns-platform-endpoints"),
+		platformAppEndpointsIndex: store.Bucket("sns-app-endpoints-index-" + region),
 		TagStore:                  common.NewTagStoreWithRegion(store, "sns", region),
 		arnBuilder:                svcarn.NewARNBuilder(accountID, region),
 		accountID:                 accountID,
@@ -68,7 +70,32 @@ func NewSNSStore(store storage.BasicStorage, accountID, region string) *SNSStore
 	}
 	s.wg.Add(1)
 	go s.cleanupExpiredDeduplicationEntries()
+	s.rebuildEndpointIndex()
 	return s
+}
+
+// rebuildEndpointIndex populates the reverse index from existing endpoint data.
+// This handles migration for data created before the index existed.
+func (s *SNSStore) rebuildEndpointIndex() {
+	if s.platformAppEndpointsIndex.Count() > 0 {
+		return
+	}
+	if s.platformEndpointsStore.Count() == 0 {
+		return
+	}
+	s.platformEndpointMu.Lock()
+	defer s.platformEndpointMu.Unlock()
+	_ = s.platformEndpointsStore.ForEach(func(key string, value []byte) error {
+		var ep PlatformEndpoint
+		if err := json.Unmarshal(value, &ep); err != nil {
+			return nil
+		}
+		if ep.PlatformApplicationArn != "" {
+			idxKey := ep.PlatformApplicationArn + "\x00" + ep.EndpointArn
+			_ = s.platformAppEndpointsIndex.Put([]byte(idxKey), []byte("1"))
+		}
+		return nil
+	})
 }
 
 // cleanupExpiredDeduplicationEntries periodically removes expired deduplication cache and stale sequence counter entries.
@@ -632,9 +659,7 @@ func (s *SNSStore) buildPlatformApplicationArn(platform, name string) string {
 	return s.arnBuilder.SNS().PlatformApplication(platform, name)
 }
 
-func (s *SNSStore) buildEndpointArn(platform, appName, id string) string {
-	return s.arnBuilder.SNS().PlatformEndpoint(platform, appName, id)
-}
+
 
 // CreatePlatformApplication creates a new SNS platform application.
 func (s *SNSStore) CreatePlatformApplication(app *PlatformApplication) (*PlatformApplication, error) {
@@ -684,19 +709,22 @@ func (s *SNSStore) DeletePlatformApplication(arn string) error {
 		return ErrPlatformApplicationNotFound
 	}
 
-	s.platformEndpointsStore.ScanPrefix("", func(key string, value []byte) error {
-		var ep PlatformEndpoint
-		if err := json.Unmarshal(value, &ep); err != nil {
-			logs.Warn("failed to unmarshal platform endpoint during deletion",
-				logs.String("key", key),
-				logs.Err(err))
-			return nil
+	s.platformEndpointMu.Lock()
+	defer s.platformEndpointMu.Unlock()
+
+	prefix := []byte(arn + "\x00")
+	iter := s.platformAppEndpointsIndex.ScanPrefix(prefix)
+	for iter.Next() {
+		epArn := string(iter.Key()[len(prefix):])
+		if delErr := s.platformEndpointsStore.Delete(epArn); delErr != nil {
+			logs.Warn("sns: failed to delete endpoint during application deletion",
+				logs.String("endpointArn", epArn), logs.Err(delErr))
 		}
-		if ep.PlatformApplicationArn == arn {
-			return s.platformEndpointsStore.Delete(key)
+		if idxErr := s.platformAppEndpointsIndex.Delete(iter.Key()); idxErr != nil {
+			logs.Warn("sns: failed to delete endpoint index entry",
+				logs.String("endpointArn", epArn), logs.Err(idxErr))
 		}
-		return nil
-	})
+	}
 
 	if err := s.TagStore.Delete(arn); err != nil {
 		return fmt.Errorf("deleting platform application tags: %w", err)
@@ -806,6 +834,12 @@ func (s *SNSStore) CreatePlatformEndpoint(endpoint *PlatformEndpoint) (*Platform
 		return nil, err
 	}
 
+	idxKey := endpoint.PlatformApplicationArn + "\x00" + endpoint.EndpointArn
+	if err := s.platformAppEndpointsIndex.Put([]byte(idxKey), []byte("1")); err != nil {
+		logs.Warn("sns: failed to write endpoint index entry",
+			logs.String("endpointArn", endpoint.EndpointArn), logs.Err(err))
+	}
+
 	return endpoint, nil
 }
 
@@ -825,6 +859,15 @@ func (s *SNSStore) DeleteEndpoint(arn string) error {
 
 	if !s.platformEndpointsStore.Exists(arn) {
 		return ErrEndpointNotFound
+	}
+
+	var endpoint PlatformEndpoint
+	if err := s.platformEndpointsStore.Get(arn, &endpoint); err == nil {
+		idxKey := endpoint.PlatformApplicationArn + "\x00" + arn
+		if idxErr := s.platformAppEndpointsIndex.Delete([]byte(idxKey)); idxErr != nil {
+			logs.Warn("sns: failed to delete endpoint index entry",
+				logs.String("endpointArn", arn), logs.Err(idxErr))
+		}
 	}
 
 	return s.platformEndpointsStore.Delete(arn)
@@ -867,8 +910,67 @@ func (s *SNSStore) SetEndpointAttributes(arn string, attributes map[string]strin
 }
 
 // ListEndpointsByPlatformApplication returns all endpoints for an SNS platform application.
+// Uses the reverse index bucket for O(k) lookup where k is the number of endpoints
+// for this application, instead of scanning all endpoints.
 func (s *SNSStore) ListEndpointsByPlatformApplication(platformAppArn string, opts common.ListOptions) (*common.ListResult[PlatformEndpoint], error) {
-	return common.List[PlatformEndpoint](s.platformEndpointsStore, opts, func(ep *PlatformEndpoint) bool {
-		return ep.PlatformApplicationArn == platformAppArn
-	})
+	if opts.MaxItems <= 0 {
+		opts.MaxItems = common.DefaultMaxItems
+	}
+	if opts.MaxItems > common.AbsoluteMaxItems {
+		opts.MaxItems = common.AbsoluteMaxItems
+	}
+
+	prefix := []byte(platformAppArn + "\x00")
+	var items []*PlatformEndpoint
+	var lastEpArn string
+	count := 0
+	hasMore := false
+	started := opts.Marker == ""
+
+	iter := s.platformAppEndpointsIndex.ScanPrefix(prefix)
+	for iter.Next() {
+		epArn := string(iter.Key()[len(prefix):])
+
+		if !started {
+			if epArn == opts.Marker {
+				started = true
+			} else if epArn > opts.Marker {
+				started = true
+			}
+			if !started {
+				continue
+			}
+		}
+
+		if count >= opts.MaxItems {
+			hasMore = true
+			break
+		}
+
+		var ep PlatformEndpoint
+		if err := s.platformEndpointsStore.Get(epArn, &ep); err != nil {
+			logs.Warn("sns: stale endpoint index entry, cleaning up",
+				logs.String("endpointArn", epArn),
+				logs.String("appArn", platformAppArn))
+			_ = s.platformAppEndpointsIndex.Delete(iter.Key())
+			continue
+		}
+
+		items = append(items, &ep)
+		lastEpArn = epArn
+		count++
+	}
+
+	nextMarker := ""
+	isTruncated := false
+	if hasMore {
+		nextMarker = lastEpArn
+		isTruncated = true
+	}
+
+	return &common.ListResult[PlatformEndpoint]{
+		Items:       items,
+		NextMarker:  nextMarker,
+		IsTruncated: isTruncated,
+	}, nil
 }

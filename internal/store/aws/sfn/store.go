@@ -77,9 +77,7 @@ func (s *StepFunctionStore) buildStateMachineARN(name string) string {
 	return s.arnBuilder.StepFunctions().StateMachine(name)
 }
 
-func (s *StepFunctionStore) buildExecutionARN(stateMachineName, executionName string) string {
-	return s.arnBuilder.StepFunctions().Execution(stateMachineName, executionName)
-}
+
 
 func (s *StepFunctionStore) buildActivityARN(name string) string {
 	return s.arnBuilder.StepFunctions().Activity(name)
@@ -752,16 +750,7 @@ func (s *StepFunctionStore) DeleteStateMachineAlias(ctx context.Context, arn str
 	return s.aliasesStore.Delete(arn)
 }
 
-func (s *StepFunctionStore) aliasStorageKey(arn string) string {
-	parts := strings.Split(arn, ":")
-	for i, p := range parts {
-		if p == "stateMachineAlias" && i+1 < len(parts) {
-			smPrefix := strings.Join(parts[:i-1], ":")
-			return smPrefix + ":stateMachine:" + parts[i+1]
-		}
-	}
-	return arn
-}
+
 
 // ListStateMachineAliases returns a paginated list of aliases for a state machine.
 func (s *StepFunctionStore) ListStateMachineAliases(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineAliasListResult, error) {

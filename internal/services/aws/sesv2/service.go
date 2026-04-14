@@ -2,10 +2,12 @@
 package sesv2
 
 import (
+	"fmt"
 	"sync"
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
 
@@ -23,26 +25,13 @@ func NewSESv2Service(accountID string) *SESv2Service {
 }
 
 func (s *SESv2Service) store(reqCtx *request.RequestContext) (sesv2store.SESv2StoreInterface, error) {
-	if store := reqCtx.GetSESv2Store(); store != nil {
-		return store, nil
-	}
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(sesv2store.SESv2StoreInterface); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (sesv2store.SESv2StoreInterface, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage: %w", err)
 		}
-	}
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	store := sesv2store.NewSESv2Store(storage, s.accountID, region)
-	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(sesv2store.SESv2StoreInterface); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
+		return sesv2store.NewSESv2Store(storage, s.accountID, reqCtx.GetRegion()), nil
+	})
 }
 
 // RegisterHandlers registers the SES v2 service handlers with the dispatcher.

@@ -5,8 +5,6 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 )
 
-const cloudfrontTagBucketName = "cloudfront_tags"
-
 // TagStore provides tag storage operations for CloudFront resources.
 type TagStore struct {
 	*common.TagStore

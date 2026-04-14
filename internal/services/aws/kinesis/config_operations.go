@@ -7,6 +7,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
@@ -359,7 +360,9 @@ func (s *KinesisService) DeleteResourcePolicy(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	store.DeleteResourcePolicy(resourceARN)
+	if err := store.DeleteResourcePolicy(resourceARN); err != nil {
+		logs.Warn("Failed to delete resource policy", logs.Err(err))
+	}
 
 	return response.EmptyResponse(), nil
 }

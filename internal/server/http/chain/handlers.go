@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/utils/aws/authutil"
 	"vorpalstacks/internal/utils/buffer"
 )
@@ -233,11 +233,7 @@ func HandleServiceError(ctx *RequestContext, err error) error {
 		errorBody["message"] = awsErr.GetMessage()
 	}
 
-	ctx.StatusCode = statusCode
-	ctx.ResponseBody = errorBody
-
-	writeJSONResponse(ctx.Response, statusCode, errorBody)
-	ctx.SetHandled()
+	writeErrorResponse(ctx, statusCode, errorBody)
 
 	return nil
 }
@@ -258,13 +254,16 @@ func HandleInternalFailure(ctx *RequestContext, err error) error {
 		"message": "An internal error occurred",
 	}
 
-	ctx.StatusCode = statusCode
-	ctx.ResponseBody = errorBody
-
-	writeJSONResponse(ctx.Response, statusCode, errorBody)
-	ctx.SetHandled()
+	writeErrorResponse(ctx, statusCode, errorBody)
 
 	return nil
+}
+
+func writeErrorResponse(ctx *RequestContext, statusCode int, errorBody map[string]interface{}) {
+	ctx.StatusCode = statusCode
+	ctx.ResponseBody = errorBody
+	encodeAndWriteJSON(ctx.Response, statusCode, errorBody)
+	ctx.SetHandled()
 }
 
 // SerializeResponse serialises the response body to the appropriate format (JSON or XML).
@@ -363,10 +362,6 @@ func SetCloseConnectionHeader(ctx *RequestContext) {
 	if strings.ToLower(connection) == "close" {
 		ctx.Response.Header().Set("Connection", "close")
 	}
-}
-
-func writeJSONResponse(w http.ResponseWriter, statusCode int, body interface{}) {
-	encodeAndWriteJSON(w, statusCode, body)
 }
 
 func encodeAndWriteJSON(w http.ResponseWriter, statusCode int, v interface{}) {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -74,7 +75,7 @@ func (s *IAMService) DeleteAccessKey(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListAccessKeys lists the access keys for the specified user.
@@ -189,7 +190,7 @@ func (s *IAMService) UpdateAccessKey(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 func (s *IAMService) accessKeyToMetadata(key *iamstore.AccessKey) map[string]interface{} {

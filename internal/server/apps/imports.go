@@ -29,12 +29,12 @@ import (
 	svcsqs "vorpalstacks/internal/services/aws/sqs"
 	svcssm "vorpalstacks/internal/services/aws/ssm"
 	svcsts "vorpalstacks/internal/services/aws/sts"
+	svctimestreamwrite "vorpalstacks/internal/services/aws/timestreamwrite"
 	storeevents "vorpalstacks/internal/store/aws/eventbridge"
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
-	"vorpalstacks/pkg/graphengine"
 )
 
 type serviceState struct {
@@ -69,12 +69,11 @@ type serviceState struct {
 	stsService             *svcsts.STSService
 	logsService            *svclogs.LogsService
 	appSyncService         *svcappsync.AppSyncService
+	timestreamWriteService *svctimestreamwrite.Service
 
 	sqsStoreInstance     *storesqs.SQSStore
 	snsStoreInstance     *storesns.SNSStore
 	kinesisStoreInstance *storekinesis.KinesisStore
 	eventsStoreInstance  *storeevents.EventsStore
 	s3ObjectStore        s3store.ObjectStoreInterface
-
-	graphDB *graphengine.DB
 }

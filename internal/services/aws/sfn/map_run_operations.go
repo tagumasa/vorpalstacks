@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
-	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	arncommon "vorpalstacks/internal/utils/aws/arn"
 )
@@ -64,21 +63,8 @@ func (s *StepFunctionService) StartSyncExecution(ctx context.Context, reqCtx *re
 	}
 
 	sqsStore := s.sqsStore
-	if sqsStore == nil {
-		sqsStore = reqCtx.GetSQSStore()
-	}
 	snsStore := s.snsStore
-	if snsStore == nil {
-		snsStore = reqCtx.GetSNSStore()
-	}
 	eventsStore := s.eventsStore
-	if eventsStore == nil {
-		if ebStore := reqCtx.GetEventBridgeStore(); ebStore != nil {
-			if concrete, ok := ebStore.(*eventsstore.EventsStore); ok {
-				eventsStore = concrete
-			}
-		}
-	}
 
 	executor := NewExecutorWithStores(store, s.lambdaInvoker, sqsStore, snsStore, eventsStore, s.accountID, reqCtx.GetRegion())
 	executor.SetEventBus(s.bus)

@@ -13,12 +13,6 @@ import (
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-const (
-	bucketNameSuffix = "" // placeholder - functions below add region
-)
-
-var errStopIteration = fmt.Errorf("stop iteration")
-
 func workGroupBucketName(region string) string         { return "athena_workgroups-" + region }
 func namedQueryBucketName(region string) string        { return "athena_named_queries-" + region }
 func preparedStatementBucketName(region string) string { return "athena_prepared_statements-" + region }
@@ -177,11 +171,16 @@ func (s *NamedQueryStore) CreateNamedQuery(nq *NamedQuery) error {
 		return ErrNamedQueryAlreadyExists
 	}
 
-	if err := s.PutProto(nq.NamedQueryId, NamedQueryToProto(nq)); err != nil {
+	if err := s.Put(nameKey, []byte(nq.NamedQueryId)); err != nil {
 		return err
 	}
 
-	return s.Put(nameKey, []byte(nq.NamedQueryId))
+	if err := s.PutProto(nq.NamedQueryId, NamedQueryToProto(nq)); err != nil {
+		_ = s.BaseStore.Delete(nameKey)
+		return err
+	}
+
+	return nil
 }
 
 // GetNamedQuery retrieves an Athena named query by ID.
@@ -204,12 +203,13 @@ func (s *NamedQueryStore) UpdateNamedQuery(id string, nq *NamedQuery) error {
 		return err
 	}
 
-	if err := s.PutProto(id, NamedQueryToProto(nq)); err != nil {
+	newNameKey := s.namedQueryByNameKey(nq.WorkGroup, nq.Name)
+	if err := s.Put(newNameKey, []byte(nq.NamedQueryId)); err != nil {
 		return err
 	}
 
-	newNameKey := s.namedQueryByNameKey(nq.WorkGroup, nq.Name)
-	if err := s.Put(newNameKey, []byte(nq.NamedQueryId)); err != nil {
+	if err := s.PutProto(id, NamedQueryToProto(nq)); err != nil {
+		_ = s.BaseStore.Delete(newNameKey)
 		return err
 	}
 
@@ -235,7 +235,12 @@ func (s *NamedQueryStore) DeleteNamedQuery(id string) error {
 		return err
 	}
 
-	return s.BaseStore.Delete(id)
+	if err := s.BaseStore.Delete(id); err != nil {
+		_ = s.Put(nameKey, []byte(nq.NamedQueryId))
+		return err
+	}
+
+	return nil
 }
 
 // ListNamedQueries returns all Athena named queries for a work group.
@@ -389,6 +394,9 @@ func (s *QueryExecutionStore) UpdateQueryExecution(qe *QueryExecution) error {
 
 // DeleteQueryExecution deletes an Athena query execution by ID.
 func (s *QueryExecutionStore) DeleteQueryExecution(id string) error {
+	if _, err := s.GetQueryExecution(id); err != nil {
+		return err
+	}
 	return s.BaseStore.Delete(id)
 }
 
@@ -435,6 +443,9 @@ func (s *ResultStore) GetResult(queryExecutionId string) (*QueryResult, error) {
 
 // DeleteResult deletes an Athena query result by execution ID.
 func (s *ResultStore) DeleteResult(queryExecutionId string) error {
+	if _, err := s.GetResult(queryExecutionId); err != nil {
+		return err
+	}
 	return s.BaseStore.Delete(queryExecutionId)
 }
 
@@ -650,7 +661,11 @@ func (s *TableDataStore) tableDataKey(catalog, database, table string) string {
 // StoreTableData stores data for an Athena table.
 func (s *TableDataStore) StoreTableData(catalog, database, table string, storedTable *StoredTable) error {
 	key := s.tableDataKey(catalog, database, table)
-	return s.PutProto(key, StoredTableToProto(storedTable))
+	proto, err := StoredTableToProto(storedTable)
+	if err != nil {
+		return fmt.Errorf("store table data: %w", err)
+	}
+	return s.PutProto(key, proto)
 }
 
 // GetTableData retrieves data for an Athena table.

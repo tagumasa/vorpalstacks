@@ -5,6 +5,7 @@ package waf
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -17,6 +18,7 @@ const webACLBucketName = "waf_web_acls"
 type WebACLStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	mu         sync.Mutex
 }
 
 // NewWebACLStore creates a new WebACLStore instance with the specified storage, account ID, and region.
@@ -87,6 +89,9 @@ func (s *WebACLStore) Create(id, name, description, scope string, capacity int64
 // Update updates an existing WAF Web ACL in the store.
 // Returns the updated Web ACL or an error if the Web ACL does not exist or lock token is invalid.
 func (s *WebACLStore) Update(id, lockToken string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig, description string) (*WebACL, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	webACL, err := s.Get(id)
 	if err != nil {
 		return nil, err
@@ -115,6 +120,9 @@ func (s *WebACLStore) Update(id, lockToken string, capacity int64, rules []*Rule
 // Delete deletes a WAF Web ACL by its ID from the store.
 // Returns an error if the Web ACL does not exist or lock token is invalid.
 func (s *WebACLStore) Delete(id, lockToken string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	webACL, err := s.Get(id)
 	if err != nil {
 		return err

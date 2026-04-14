@@ -7,14 +7,15 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common"
-	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
@@ -75,29 +76,17 @@ func (s *LogsService) SetEventBus(bus *eventbus.EventBus) {
 }
 
 func (s *LogsService) store(reqCtx *request.RequestContext) (*logsstore.Store, error) {
-	if store := reqCtx.GetCloudWatchLogsStore(); store != nil {
-		return store.Raw(), nil
-	}
-	region := reqCtx.GetRegion()
-	if cached, ok := s.logsStores.Load(region); ok {
-		if typed, ok := cached.(*logsstore.Store); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.logsStores, reqCtx.GetRegion(), func() (*logsstore.Store, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, err
 		}
-	}
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	store, err := logsstore.NewStore(storage.Bucket("logs-"+region), s.accountID, region, s.dataPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create CloudWatch Logs store: %w", err)
-	}
-	if actual, loaded := s.logsStores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(*logsstore.Store); ok {
-			return typed, nil
+		store, err := logsstore.NewStore(storage.Bucket("logs-"+reqCtx.GetRegion()), s.accountID, reqCtx.GetRegion(), s.dataPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create CloudWatch Logs store: %w", err)
 		}
-	}
-	return store, nil
+		return store, nil
+	})
 }
 
 // getLogsStoreByRegion resolves the CloudWatch Logs store for the given region.

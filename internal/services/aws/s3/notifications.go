@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
@@ -181,7 +182,9 @@ func (s *S3Service) dispatchToSNS(ctx context.Context, topicArn string, payload 
 		MessageID: messageID,
 		Message:   string(payload),
 	}
-	_ = s.bus.Publish(ctx, snsEvt)
+	if err := s.bus.Publish(ctx, snsEvt); err != nil {
+		logs.Warn("s3: failed to publish notification to SNS", logs.String("topicArn", topicArn), logs.Err(err))
+	}
 }
 
 // dispatchToSQS sends the S3 event record directly to an SQS queue.
@@ -212,7 +215,9 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 	message := &sqsstore.Message{
 		Body: string(payload),
 	}
-	s.sqsStore.SendMessage(queue.URL, message)
+	if _, err := s.sqsStore.SendMessage(queue.URL, message); err != nil {
+		logs.Warn("Failed to send S3 event to SQS queue", logs.String("queue", queue.URL), logs.Err(err))
+	}
 }
 
 // dispatchToLambda invokes a Lambda function with the S3 event record
@@ -229,5 +234,7 @@ func (s *S3Service) dispatchToLambda(ctx context.Context, functionArn string, pa
 		}
 	}
 
-	s.lambdaInvoker.InvokeForGateway(ctx, functionArn, payload)
+	if _, _, err := s.lambdaInvoker.InvokeForGateway(ctx, functionArn, payload); err != nil {
+		logs.Warn("Failed to invoke Lambda for S3 event", logs.String("function", functionArn), logs.Err(err))
+	}
 }

@@ -2,12 +2,13 @@ package sns
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/sns"
 	snsconnect "vorpalstacks/internal/pb/aws/sns/snsconnect"
-	svccommon "vorpalstacks/internal/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
@@ -61,4 +62,8 @@ func (h *AdminHandler) ListTopics(ctx context.Context, req *connect.Request[pb.L
 		Topics:    topics,
 		Nexttoken: result.NextMarker,
 	}), nil
+}
+
+func NewConnectHandler(svc *SNSService) (string, http.Handler) {
+	return snsconnect.NewSNSServiceHandler(NewAdminHandler(svc))
 }

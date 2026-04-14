@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
 
@@ -110,7 +110,9 @@ func (s *SecretsManagerService) ReplicateSecretToRegions(ctx context.Context, re
 						replicaVersion.SecretString = srcVersion.SecretString
 						replicaVersion.SecretBinary = srcVersion.SecretBinary
 						replicaVersion.VersionStages = srcVersion.VersionStages
-						replicaStore.CreateVersionDirect(secret.Name, replicaVersion)
+						if err := replicaStore.CreateVersionDirect(secret.Name, replicaVersion); err != nil {
+							logs.Warn("Failed to create version on replica", logs.String("region", replicaRegion.Region), logs.Err(err))
+						}
 					}
 				}
 			}
@@ -187,7 +189,9 @@ func (s *SecretsManagerService) RemoveRegionsFromReplication(ctx context.Context
 				regionStorage, storeErr := s.storageManager.GetStorage(rs.Region)
 				if storeErr == nil {
 					replicaStore := secretsmanagerstore.NewSecretStore(regionStorage, s.accountID, rs.Region)
-					replicaStore.DeleteSecret(secret.Name)
+					if err := replicaStore.DeleteSecret(secret.Name); err != nil {
+						logs.Warn("Failed to delete replica secret", logs.String("region", rs.Region), logs.Err(err))
+					}
 				}
 				break
 			}

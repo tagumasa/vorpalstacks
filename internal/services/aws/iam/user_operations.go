@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
@@ -140,7 +141,7 @@ func (s *IAMService) DeleteUser(ctx context.Context, reqCtx *request.RequestCont
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UpdateUser updates the path and/or name of an IAM user.
@@ -294,7 +295,7 @@ func (s *IAMService) TagUser(ctx context.Context, reqCtx *request.RequestContext
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UntagUser removes tags from an IAM user.
@@ -321,7 +322,7 @@ func (s *IAMService) UntagUser(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListUserTags lists the tags attached to an IAM user.
@@ -383,7 +384,7 @@ func (s *IAMService) PutUserPermissionsBoundary(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // DeleteUserPermissionsBoundary removes the permissions boundary from an IAM user.
@@ -409,7 +410,7 @@ func (s *IAMService) DeleteUserPermissionsBoundary(ctx context.Context, reqCtx *
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // GetAccountAuthorizationDetails retrieves information about all IAM users, groups, roles, and policies in the account, including their relationships.

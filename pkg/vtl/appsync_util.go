@@ -227,9 +227,7 @@ func (e *Engine) processUtilQr(templateStr string) string {
 		if strings.HasPrefix(inner, "$") && strings.Contains(inner, "=") {
 			parts := strings.SplitN(inner, "=", 2)
 			varName := strings.TrimSpace(parts[0])
-			if strings.HasPrefix(varName, "$") {
-				varName = varName[1:]
-			}
+			varName = strings.TrimPrefix(varName, "$")
 			valueExpr := strings.TrimSpace(parts[1])
 			value := e.resolveValue(valueExpr)
 			if e.context != nil && e.context.Context != nil {

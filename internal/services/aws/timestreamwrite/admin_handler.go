@@ -2,13 +2,14 @@ package timestreamwrite
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/timestreamwrite"
 	timestreamwriteconnect "vorpalstacks/internal/pb/aws/timestreamwrite/timestreamwriteconnect"
-	svccommon "vorpalstacks/internal/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 )
@@ -132,4 +133,8 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 		Tables:    tables,
 		Nexttoken: result.NextMarker,
 	}), nil
+}
+
+func NewConnectHandler(sm *storage.RegionStorageManager, accountID, dataPath string) (string, http.Handler) {
+	return timestreamwriteconnect.NewTimestreamWriteServiceHandler(NewAdminHandler(sm, accountID, dataPath))
 }

@@ -207,7 +207,21 @@ func DetectPatternType(pattern string) PatternType {
 		return PatternTypeJSON
 	}
 	if strings.HasPrefix(pattern, "[") && strings.Contains(pattern, "]") {
-		return PatternTypeDelimited
+		depth := 0
+		balanced := false
+		for _, r := range pattern {
+			if r == '[' {
+				depth++
+			} else if r == ']' {
+				depth--
+			}
+			if depth == 0 {
+				balanced = true
+			}
+		}
+		if balanced && depth == 0 {
+			return PatternTypeDelimited
+		}
 	}
 	return PatternTypeUnstructured
 }

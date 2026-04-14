@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	snsstore "vorpalstacks/internal/store/aws/sns"
@@ -378,7 +378,9 @@ func (e *Executor) buildContextObject(execCtx *ExecutionContext) map[string]inte
 	if execCtx.Execution != nil {
 		var execInput interface{}
 		if execCtx.Execution.Input != "" {
-			json.Unmarshal([]byte(execCtx.Execution.Input), &execInput)
+			if err := json.Unmarshal([]byte(execCtx.Execution.Input), &execInput); err != nil {
+				execInput = nil
+			}
 		}
 		ctx["Execution"] = map[string]interface{}{
 			"Id":        execCtx.Execution.ExecutionArn,

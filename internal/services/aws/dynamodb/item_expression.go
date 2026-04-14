@@ -335,68 +335,7 @@ func normalizeNumber(r *big.Rat) string {
 	return quotient.String() + "." + decimalStr
 }
 
-func applyDeleteAction(attrs map[string]*dbstore.AttributeValue, attrName string, value *dbstore.AttributeValue) {
-	existing, exists := attrs[attrName]
-	if !exists {
-		return
-	}
 
-	if value.SS != nil && existing.SS != nil {
-		toDelete := make(map[string]bool)
-		for _, s := range value.SS {
-			toDelete[s] = true
-		}
-		var newSS []string
-		for _, s := range existing.SS {
-			if !toDelete[s] {
-				newSS = append(newSS, s)
-			}
-		}
-		if len(newSS) == 0 {
-			delete(attrs, attrName)
-		} else {
-			existing.SS = newSS
-		}
-		return
-	}
-
-	if value.NS != nil && existing.NS != nil {
-		toDelete := make(map[string]bool)
-		for _, n := range value.NS {
-			toDelete[normalizeNumberString(n)] = true
-		}
-		var newNS []string
-		for _, n := range existing.NS {
-			if !toDelete[normalizeNumberString(n)] {
-				newNS = append(newNS, n)
-			}
-		}
-		if len(newNS) == 0 {
-			delete(attrs, attrName)
-		} else {
-			existing.NS = newNS
-		}
-		return
-	}
-
-	if value.BS != nil && existing.BS != nil {
-		toDelete := make(map[string]bool)
-		for _, b := range value.BS {
-			toDelete[string(b)] = true
-		}
-		var newBS [][]byte
-		for _, b := range existing.BS {
-			if !toDelete[string(b)] {
-				newBS = append(newBS, b)
-			}
-		}
-		if len(newBS) == 0 {
-			delete(attrs, attrName)
-		} else {
-			existing.BS = newBS
-		}
-	}
-}
 
 func applyAddActionWithTracking(attrs map[string]*dbstore.AttributeValue, attrName string, value *dbstore.AttributeValue) (bool, error) {
 	existing, exists := attrs[attrName]

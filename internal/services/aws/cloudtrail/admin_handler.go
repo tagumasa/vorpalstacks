@@ -2,13 +2,14 @@ package cloudtrail
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudtrail"
 	cloudtrailconnect "vorpalstacks/internal/pb/aws/cloudtrail/cloudtrailconnect"
-	svccommon "vorpalstacks/internal/common"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 
@@ -62,4 +63,8 @@ func (h *AdminHandler) ListTrails(ctx context.Context, req *connect.Request[pb.L
 	return connect.NewResponse(&pb.ListTrailsResponse{
 		Trails: trailInfos,
 	}), nil
+}
+
+func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
+	return cloudtrailconnect.NewCloudTrailServiceHandler(NewAdminHandler(sm, accountID))
 }

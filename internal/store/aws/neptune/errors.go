@@ -1,19 +1,12 @@
-// Package neptune provides the storage layer for AWS Neptune Management API resources.
 package neptune
 
 import (
 	"errors"
-	"fmt"
+
+	"vorpalstacks/internal/store/aws/common"
 )
 
-// NewStoreError wraps a storage operation error with the operation name.
-// Returns nil if the provided error is nil.
-func NewStoreError(op string, err error) error {
-	if err == nil {
-		return nil
-	}
-	return fmt.Errorf("neptune store: %s: %w", op, err)
-}
+type StoreError = common.StoreError
 
 var (
 	// ErrDBClusterNotFound is returned when a DB cluster cannot be found by its identifier.
@@ -66,7 +59,8 @@ func IsNotFound(err error) bool {
 		errors.Is(err, ErrDBSubnetGroupNotFound) ||
 		errors.Is(err, ErrGlobalClusterNotFound) ||
 		errors.Is(err, ErrEventSubscriptionNotFound) ||
-		errors.Is(err, ErrDBClusterEndpointNotFound)
+		errors.Is(err, ErrDBClusterEndpointNotFound) ||
+		common.IsNotFound(err)
 }
 
 // IsAlreadyExists checks if the error indicates a Neptune resource already exists.
@@ -79,5 +73,6 @@ func IsAlreadyExists(err error) bool {
 		errors.Is(err, ErrDBSubnetGroupAlreadyExists) ||
 		errors.Is(err, ErrGlobalClusterAlreadyExists) ||
 		errors.Is(err, ErrEventSubscriptionAlreadyExists) ||
-		errors.Is(err, ErrDBClusterEndpointAlreadyExists)
+		errors.Is(err, ErrDBClusterEndpointAlreadyExists) ||
+		common.IsAlreadyExists(err)
 }

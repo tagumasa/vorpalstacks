@@ -143,6 +143,8 @@ func (s *AppSyncService) DeleteGraphqlApi(ctx context.Context, reqCtx *request.R
 		return mapStoreError(err)
 	}
 
+	s.schemaCache.Delete(apiId)
+
 	return map[string]interface{}{}, nil
 }
 

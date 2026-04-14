@@ -9,11 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/common/handler"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 	snsstore "vorpalstacks/internal/store/aws/sns"
@@ -108,7 +109,9 @@ func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.
 				Message:   message,
 			}
 			snsEvt.Region = evt.Region
-			s.engine.bus.Publish(context.Background(), snsEvt)
+			if err := s.engine.bus.Publish(context.Background(), snsEvt); err != nil {
+				logs.Warn("Failed to publish SNS event from scheduler", logs.Err(err))
+			}
 		} else {
 			s.engine.publishToSNS(ctx, schedule, target)
 		}
@@ -124,9 +127,6 @@ func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.
 }
 
 func (s *SchedulerService) store(ctx *request.RequestContext) (*schedulerstore.SchedulerStore, error) {
-	if store := ctx.GetSchedulerStore(); store != nil {
-		return store.Raw(), nil
-	}
 	return storecommon.GetOrCreateStoreE(&s.stores, ctx.GetRegion(), func() (*schedulerstore.SchedulerStore, error) {
 		st, err := s.storageManager.GetStorage(ctx.GetRegion())
 		if err != nil {

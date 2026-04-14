@@ -4,12 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 	"vorpalstacks/pkg/cypherparser"
 	"vorpalstacks/pkg/graphengine"
@@ -294,7 +293,7 @@ func (pd *procedureDispatcher) execTopKByNode(call *cypherparser.CypherCall, bin
 		}
 		srcNode, _ := pd.db.GetNode(srcID)
 
-		results, err := pd.db.Embeddings.TopK(srcEmb, k, nil)
+		results, err := pd.db.Embeddings.TopK(srcEmb, k, "", nil)
 		if err != nil {
 			return nil, err
 		}
@@ -364,7 +363,7 @@ func (pd *procedureDispatcher) execTopKByEmbedding(call *cypherparser.CypherCall
 		}
 	}
 
-	results, err := pd.db.Embeddings.TopK(queryEmb, k, filterFn)
+	results, err := pd.db.Embeddings.TopK(queryEmb, k, "", filterFn)
 	if err != nil {
 		return nil, err
 	}
@@ -742,14 +741,4 @@ func executeCallQuery(call *cypherparser.CypherCall, entry *engineEntry, store *
 	}
 
 	return map[string]interface{}{"results": result}, nil
-}
-
-// validateEmbedding checks that a float slice does not contain INF or NaN.
-func validateEmbedding(emb []float64) error {
-	for _, v := range emb {
-		if math.IsInf(v, 0) || math.IsNaN(v) {
-			return fmt.Errorf("embedding contains invalid float value (INF or NaN)")
-		}
-	}
-	return nil
 }

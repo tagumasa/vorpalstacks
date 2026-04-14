@@ -114,6 +114,4 @@ func escapeKeyPart(s string) string {
 	return strings.ReplaceAll(s, "#", "\\#")
 }
 
-func unescapeKeyPart(s string) string {
-	return strings.ReplaceAll(s, "\\#", "#")
-}
+

@@ -329,3 +329,11 @@ func (s *CertificateStore) PutAccountConfiguration(accountID, region string, con
 	accountConfigurations[key] = config
 	return nil
 }
+
+// DeleteAccountConfiguration removes the account configuration for ACM certificates.
+func (s *CertificateStore) DeleteAccountConfiguration(accountID, region string) {
+	accountConfigMutex.Lock()
+	defer accountConfigMutex.Unlock()
+
+	delete(accountConfigurations, accountConfigKey(accountID, region))
+}

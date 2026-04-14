@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	"net/http"
+
 	schedulerconnect "vorpalstacks/internal/pb/aws/scheduler/schedulerconnect"
 )
 
@@ -13,4 +15,8 @@ type AdminHandler struct {
 // NewAdminHandler creates a new EventBridge Scheduler AdminHandler.
 func NewAdminHandler() *AdminHandler {
 	return &AdminHandler{}
+}
+
+func NewConnectHandler() (string, http.Handler) {
+	return schedulerconnect.NewSchedulerServiceHandler(NewAdminHandler())
 }

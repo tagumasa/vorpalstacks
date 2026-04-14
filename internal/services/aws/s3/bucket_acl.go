@@ -2,7 +2,6 @@ package s3
 
 import (
 	"fmt"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
@@ -155,54 +154,4 @@ func cannedACLToPolicy(cannedACL string, owner *s3store.ACLOwner) (*s3store.Acce
 	}
 
 	return &s3store.AccessControlPolicy{Owner: owner, Grants: grants}, nil
-}
-
-func parseGrantHeaders(grantFullControl, grantRead, grantReadACP, grantWrite, grantWriteACP string) []*s3store.Grant {
-	var grants []*s3store.Grant
-
-	parseGrantees := func(header string, permission s3store.Permission) {
-		if header == "" {
-			return
-		}
-		grantees := strings.Split(header, ",")
-		for _, g := range grantees {
-			g = strings.TrimSpace(g)
-			if g == "" {
-				continue
-			}
-			grantee := parseGrantee(g)
-			if grantee != nil {
-				grants = append(grants, &s3store.Grant{Grantee: grantee, Permission: permission})
-			}
-		}
-	}
-
-	parseGrantees(grantFullControl, s3store.PermissionFullControl)
-	parseGrantees(grantRead, s3store.PermissionRead)
-	parseGrantees(grantReadACP, s3store.PermissionReadACP)
-	parseGrantees(grantWrite, s3store.PermissionWrite)
-	parseGrantees(grantWriteACP, s3store.PermissionWriteACP)
-
-	return grants
-}
-
-func parseGrantee(s string) *s3store.Grantee {
-	parts := strings.SplitN(s, "=", 2)
-	if len(parts) != 2 {
-		return nil
-	}
-
-	grantType := strings.TrimSpace(parts[0])
-	id := strings.Trim(strings.TrimSpace(parts[1]), `"`)
-
-	switch grantType {
-	case "id":
-		return &s3store.Grantee{Type: s3store.GranteeTypeCanonicalUser, ID: id, DisplayName: "owner"}
-	case "uri":
-		return &s3store.Grantee{Type: s3store.GranteeTypeGroup, URI: id}
-	case "emailAddress":
-		return &s3store.Grantee{Type: s3store.GranteeTypeAmazonCustomerByEmail, Email: id}
-	default:
-		return nil
-	}
 }

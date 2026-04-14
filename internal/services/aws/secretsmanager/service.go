@@ -3,14 +3,16 @@ package secretsmanager
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common"
-	"vorpalstacks/internal/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
 
@@ -75,29 +77,14 @@ func (s *SecretsManagerService) StopRotationChecker() {
 	}
 }
 
-// store returns the Secrets Manager store for the given request context.
 func (s *SecretsManagerService) store(reqCtx *request.RequestContext) (secretsmanagerstore.SecretStoreInterface, error) {
-	store := reqCtx.GetSecretsManagerStore()
-	if store != nil {
-		return store, nil
-	}
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(secretsmanagerstore.SecretStoreInterface); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (secretsmanagerstore.SecretStoreInterface, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage: %w", err)
 		}
-	}
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	store = secretsmanagerstore.NewSecretStore(storage, s.accountID, region)
-	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(secretsmanagerstore.SecretStoreInterface); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
+		return secretsmanagerstore.NewSecretStore(storage, s.accountID, reqCtx.GetRegion()), nil
+	})
 }
 
 // RegisterHandlers registers the Secrets Manager handlers with the dispatcher.

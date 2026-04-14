@@ -17,7 +17,9 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 
 	if isJSONata && state.Arguments != nil {
 		var inputData interface{}
-		json.Unmarshal([]byte(processedInput), &inputData)
+		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+		}
 		statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
 		argsInput, err := e.applyJSONataArguments(ctx, state.Arguments, statesVar, execCtx.VariableScope)
 		if err != nil {
@@ -34,7 +36,9 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 
 	if isJSONata {
 		var inputData interface{}
-		json.Unmarshal([]byte(processedInput), &inputData)
+		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+		}
 		statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
 		vars := buildVarsMap(statesVar, execCtx.VariableScope)
 
@@ -219,9 +223,13 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 		}
 
 		var resultData interface{}
-		json.Unmarshal([]byte(output), &resultData)
+		if err := json.Unmarshal([]byte(output), &resultData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidOutput", Cause: "failed to parse output JSON"}
+		}
 		var inputData interface{}
-		json.Unmarshal([]byte(processedInput), &inputData)
+		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+		}
 		statesVar := e.buildStatesVarWithContext(execCtx, inputData, resultData, nil)
 
 		if len(state.Assign) > 0 {
@@ -272,7 +280,9 @@ func (e *Executor) executeTaskJSONataCatch(ctx context.Context, execCtx *Executi
 	}
 
 	var inputData interface{}
-	json.Unmarshal([]byte(processedInput), &inputData)
+	if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+		return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+	}
 	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, errorOutput)
 
 	if len(catchPolicy.Assign) > 0 {

@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/core/logs"
+
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
@@ -168,7 +170,12 @@ func (s *AppSyncService) StartSchemaMerge(ctx context.Context, reqCtx *request.R
 	}
 
 	assoc.SourceApiAssociationStatus = "MERGE_SUCCESS"
-	_ = store.UpdateMergedApiAssociation(assoc)
+	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
+		logs.Warn("failed to persist merged API SUCCESS status",
+			logs.String("mergedApiId", mergedApiId),
+			logs.String("associationId", associationId),
+			logs.Err(err))
+	}
 
 	return map[string]interface{}{"sourceApiAssociationStatus": "MERGE_SUCCESS"}, nil
 }

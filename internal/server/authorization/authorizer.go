@@ -1,4 +1,4 @@
-package dispatcher
+package authorization
 
 import (
 	"context"
@@ -12,27 +12,17 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/iam/policy"
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/iam"
 )
-
-// AuthorizationResult contains the result of an authorization decision.
-// It indicates whether the request is allowed, denied, or has no opinion.
-// The Reason field provides additional context for the decision.
-type AuthorizationResult struct {
-	Allowed  bool
-	Denied   bool
-	Reason   string
-	Decision *policy.Decision
-}
 
 // Authorizer handles IAM-based authorization for AWS service requests.
 // It evaluates IAM policies to determine whether a request should be allowed or denied.
 // The authoriser uses a policy cache to improve performance for repeated requests.
 type Authorizer struct {
-	iamStore          *iam.IAMStore
+	iamStore          iam.IAMStoreInterface
 	policyEvaluator   *policy.PolicyEvaluator
 	resourceExtractor *ResourceExtractor
 	actionMapper      *ActionMapper
@@ -62,7 +52,7 @@ type cachedPolicies struct {
 // - AUTHORIZATION_FAILURE_MODE: "permissive" (default) or "strict" - how to handle policy fetch errors
 // - AUTHORIZATION_CACHE_TTL_SECONDS: Cache TTL in seconds (default 300)
 // - AUTHORIZATION_CACHE_MAX_SIZE: Maximum number of cached entries (default 1000)
-func NewAuthorizer(iamStore *iam.IAMStore) *Authorizer {
+func NewAuthorizer(iamStore iam.IAMStoreInterface) *Authorizer {
 	rootKeys := make(map[string]bool)
 	if keys := os.Getenv("AUTHORIZATION_ROOT_ACCESS_KEYS"); keys != "" {
 		for _, key := range strings.Split(keys, ",") {
@@ -111,14 +101,13 @@ func NewAuthorizer(iamStore *iam.IAMStore) *Authorizer {
 
 // Authorize evaluates IAM policies to determine whether a request should be allowed.
 // It checks the access key ID against IAM users and their attached policies.
-// The method returns an AuthorizationResult indicating whether the request is allowed or denied.
 func (a *Authorizer) Authorize(
 	ctx context.Context,
 	reqCtx *request.RequestContext,
 	parsedReq *request.ParsedRequest,
 	serviceName string,
 	r *http.Request,
-) (*AuthorizationResult, error) {
+) (bool, error) {
 	accessKeyID := parsedReq.AccessKeyID
 
 	if accessKeyID == "" && os.Getenv("TEST_MODE") == "true" && r != nil {
@@ -138,36 +127,21 @@ func (a *Authorizer) Authorize(
 			reqCtx.PrincipalID = accessKeyID
 			reqCtx.PrincipalType = request.PrincipalTypeUser
 		}
-		return &AuthorizationResult{
-			Allowed: true,
-			Reason:  "Root access key",
-		}, nil
+		return true, nil
 	}
 
 	accessKey, err := a.iamStore.AccessKeys().Get(accessKeyID)
 	if err != nil {
-		return &AuthorizationResult{
-			Allowed: false,
-			Denied:  true,
-			Reason:  "Invalid access key",
-		}, nil
+		return false, nil
 	}
 
 	if accessKey.Status != iam.AccessKeyStatusActive {
-		return &AuthorizationResult{
-			Allowed: false,
-			Denied:  true,
-			Reason:  "Access key is inactive",
-		}, nil
+		return false, nil
 	}
 
 	user, err := a.iamStore.Users().Get(accessKey.UserName)
 	if err != nil {
-		return &AuthorizationResult{
-			Allowed: false,
-			Denied:  true,
-			Reason:  "User not found",
-		}, nil
+		return false, nil
 	}
 
 	reqCtx.Principal = user.UserName
@@ -177,20 +151,13 @@ func (a *Authorizer) Authorize(
 	policies, err := a.getEffectivePolicies(ctx, user.UserName)
 	if err != nil {
 		if a.failureMode == "strict" {
-			return nil, fmt.Errorf("failed to get effective policies: %w", err)
+			return false, fmt.Errorf("failed to get effective policies: %w", err)
 		}
-		return &AuthorizationResult{
-			Allowed: true,
-			Reason:  "Policy fetch error (permissive mode)",
-		}, nil
+		return true, nil
 	}
 
 	if len(policies) == 0 {
-		return &AuthorizationResult{
-			Allowed: false,
-			Denied:  false,
-			Reason:  "No policies attached to user",
-		}, nil
+		return false, nil
 	}
 
 	evalCtx := a.buildEvaluationContext(parsedReq, serviceName, user, r)
@@ -208,25 +175,11 @@ func (a *Authorizer) Authorize(
 
 	switch decision.Effect {
 	case policy.DecisionEffectAllow:
-		return &AuthorizationResult{
-			Allowed:  true,
-			Reason:   decision.Reason,
-			Decision: decision,
-		}, nil
+		return true, nil
 	case policy.DecisionEffectDeny:
-		return &AuthorizationResult{
-			Allowed:  false,
-			Denied:   true,
-			Reason:   decision.Reason,
-			Decision: decision,
-		}, nil
+		return false, nil
 	default:
-		return &AuthorizationResult{
-			Allowed:  false,
-			Denied:   false,
-			Reason:   decision.Reason,
-			Decision: decision,
-		}, nil
+		return false, nil
 	}
 }
 

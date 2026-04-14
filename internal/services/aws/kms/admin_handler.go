@@ -2,9 +2,11 @@ package kms
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/kms"
 	"vorpalstacks/internal/pb/aws/kms/kmsconnect"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
@@ -43,4 +45,8 @@ func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.Lis
 		Nextmarker: result.NextMarker,
 		Truncated:  result.IsTruncated,
 	}), nil
+}
+
+func NewConnectHandler(st storage.BasicStorage, accountID, region string) (string, http.Handler) {
+	return kmsconnect.NewKMSServiceHandler(NewAdminHandler(kmsstore.NewKeyStore(st, accountID, region)))
 }

@@ -2,9 +2,11 @@ package athena
 
 import (
 	"context"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
@@ -126,7 +128,9 @@ func (s *Service) CreateDataCatalog(ctx context.Context, reqCtx *request.Request
 	}
 
 	if len(tags) > 0 {
-		_ = stores.dataCatalogStore.TagResource(name, tags)
+		if err := stores.dataCatalogStore.TagResource(name, tags); err != nil {
+			logs.Warn("failed to tag data catalog", logs.String("catalog", name), logs.Err(err))
+		}
 	}
 
 	return map[string]interface{}{

@@ -3,13 +3,14 @@ package sqs
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/sqs"
 	sqsconnect "vorpalstacks/internal/pb/aws/sqs/sqsconnect"
-	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/store/aws/common"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
@@ -89,4 +90,8 @@ func (h *AdminHandler) GetQueueUrl(ctx context.Context, req *connect.Request[pb.
 	return connect.NewResponse(&pb.GetQueueUrlResult{
 		Queueurl: queue.URL,
 	}), nil
+}
+
+func NewConnectHandler(svc *SQSService) (string, http.Handler) {
+	return sqsconnect.NewSQSServiceHandler(NewAdminHandler(svc))
 }

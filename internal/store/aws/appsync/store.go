@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/aws/arn"
@@ -271,7 +272,7 @@ func (s *AppSyncStore) UpdateApiById(apiId string, update *Api) (*Api, error) {
 
 	// If the name changed, remove the old entry before saving under the new key.
 	if oldName != existing.Name {
-		s.apisStore.Delete(oldName)
+		_ = s.apisStore.Delete(oldName)
 	}
 
 	if err := s.apisStore.Put(existing.Name, existing); err != nil {
@@ -566,7 +567,7 @@ func (s *AppSyncStore) UpdateGraphqlApiById(apiId string, update *GraphqlApi) (*
 	existing.XrayEnabled = update.XrayEnabled
 
 	if oldName != existing.Name {
-		s.graphqlApisStore.Delete(oldName)
+		_ = s.graphqlApisStore.Delete(oldName)
 	}
 
 	if err := s.graphqlApisStore.Put(existing.Name, existing); err != nil {
@@ -591,16 +592,36 @@ func (s *AppSyncStore) DeleteGraphqlApiById(apiId string) error {
 	prefix := apiId + "/"
 
 	// Remove all prefix-scoped child resources.
-	_ = s.dataSourcesStore.DeleteByPrefix(prefix)
-	_ = s.resolversStore.DeleteByPrefix(prefix)
-	_ = s.functionsStore.DeleteByPrefix(prefix)
-	_ = s.typesStore.DeleteByPrefix(prefix)
-	_ = s.apiKeysStore.DeleteByPrefix(prefix)
+	for _, op := range []struct {
+		name string
+		fn   func(string) error
+	}{
+		{"dataSources", s.dataSourcesStore.DeleteByPrefix},
+		{"resolvers", s.resolversStore.DeleteByPrefix},
+		{"functions", s.functionsStore.DeleteByPrefix},
+		{"types", s.typesStore.DeleteByPrefix},
+		{"apiKeys", s.apiKeysStore.DeleteByPrefix},
+	} {
+		if err := op.fn(prefix); err != nil {
+			logs.Warn("failed to delete child resources during API deletion",
+				logs.String("apiId", apiId), logs.String("resource", op.name), logs.Err(err))
+		}
+	}
 
 	// Remove exact-key resources.
-	_ = s.schemaStatusesStore.Delete(apiId)
-	_ = s.envVariablesStore.Delete(apiId)
-	_ = s.apiCachesStore.Delete(apiId)
+	for _, op := range []struct {
+		name string
+		fn   func(string) error
+	}{
+		{"schemaStatuses", s.schemaStatusesStore.Delete},
+		{"envVariables", s.envVariablesStore.Delete},
+		{"apiCaches", s.apiCachesStore.Delete},
+	} {
+		if err := op.fn(apiId); err != nil {
+			logs.Warn("failed to delete resource during API deletion",
+				logs.String("apiId", apiId), logs.String("resource", op.name), logs.Err(err))
+		}
+	}
 
 	// Remove merged API associations referencing this API as source or merged.
 	var assocKeys []string
@@ -614,7 +635,10 @@ func (s *AppSyncStore) DeleteGraphqlApiById(apiId string) error {
 		return nil
 	})
 	for _, k := range assocKeys {
-		_ = s.mergedApiAssociationsStore.Delete(k)
+		if err := s.mergedApiAssociationsStore.Delete(k); err != nil {
+			logs.Warn("failed to delete merged API association during API deletion",
+				logs.String("apiId", apiId), logs.String("assocKey", k), logs.Err(err))
+		}
 	}
 
 	return s.graphqlApisStore.Delete(existing.Name)

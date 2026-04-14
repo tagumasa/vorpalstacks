@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/utils/aws/arn"
 )
@@ -30,7 +31,10 @@ func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.Cloud
 			return eventbus.HandlerResult{}
 		}
 
-		_, _, _ = invoker.InvokeForGateway(context.Background(), evt.DestinationArn, payloadBytes)
+		_, _, invokeErr := invoker.InvokeForGateway(context.Background(), evt.DestinationArn, payloadBytes)
+		if invokeErr != nil {
+			logs.Warn("failed to invoke Lambda from subscription filter", logs.Err(invokeErr), logs.String("destinationArn", evt.DestinationArn))
+		}
 	} else if arn.IsKinesisARN(evt.DestinationArn) {
 		kinesisStore, ok := s.getKinesisStore(evt.Region)
 		if !ok {
@@ -64,7 +68,9 @@ func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.Cloud
 		}
 
 		if activeShardID != "" {
-			_, _ = kinesisStore.PutRecord(streamName, activeShardID, partitionKey, base64.StdEncoding.EncodeToString(encodedData))
+			if _, putErr := kinesisStore.PutRecord(streamName, activeShardID, partitionKey, base64.StdEncoding.EncodeToString(encodedData)); putErr != nil {
+				logs.Warn("failed to deliver subscription filter log events to Kinesis", logs.Err(putErr), logs.String("streamName", streamName))
+			}
 		}
 	}
 

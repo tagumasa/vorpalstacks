@@ -2,13 +2,14 @@ package athena
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/athena"
 	athenaconnect "vorpalstacks/internal/pb/aws/athena/athenaconnect"
-	svccommon "vorpalstacks/internal/common"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
@@ -72,4 +73,8 @@ func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(&pb.ListWorkGroupsOutput{
 		Workgroups: summaries,
 	}), nil
+}
+
+func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
+	return athenaconnect.NewAthenaServiceHandler(NewAdminHandler(sm, accountID))
 }

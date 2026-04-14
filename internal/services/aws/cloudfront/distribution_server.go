@@ -127,7 +127,9 @@ func (s *DistributionServer) HandleRequest(w http.ResponseWriter, r *http.Reques
 	w.Header().Del("Transfer-Encoding")
 
 	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
+	if _, err := io.Copy(w, resp.Body); err != nil {
+		logs.Warn("cloudfront distribution proxy copy error", logs.String("distributionId", distributionID), logs.Err(err))
+	}
 }
 
 func (s *DistributionServer) extractDistributionID(host string) string {

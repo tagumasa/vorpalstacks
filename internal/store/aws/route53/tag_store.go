@@ -5,8 +5,6 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 )
 
-const tagBucketName = "route53_tags"
-
 // TagStore manages Route 53 resource tags.
 type TagStore struct {
 	*common.TagStore

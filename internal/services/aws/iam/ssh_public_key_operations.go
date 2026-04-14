@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -99,7 +100,7 @@ func (s *IAMService) UpdateSSHPublicKey(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListSSHPublicKeys returns information about the SSH public keys associated with the specified IAM user.
@@ -159,7 +160,7 @@ func (s *IAMService) DeleteSSHPublicKey(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 func (s *IAMService) sshPublicKeyToResponse(key *iamstore.SSHPublicKey, includeBody bool) map[string]interface{} {

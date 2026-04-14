@@ -2,6 +2,7 @@ package apigateway
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
@@ -26,4 +27,8 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 	return connect.NewResponse(&pb.RestApis{
 		Items: []*pb.RestApi{},
 	}), nil
+}
+
+func NewConnectHandler() (string, http.Handler) {
+	return apigatewayconnect.NewAPIGatewayServiceHandler(NewAdminHandler())
 }

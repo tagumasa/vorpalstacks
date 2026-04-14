@@ -3,6 +3,7 @@ package cloudfront
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
@@ -19,6 +20,7 @@ const (
 type CachePolicyStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	mu         sync.Mutex
 }
 
 // NewCachePolicyStore creates a new CachePolicyStore instance.
@@ -76,6 +78,9 @@ func (s *CachePolicyStore) Create(name, comment string, config *CachePolicyConfi
 
 // Update updates an existing cache policy.
 func (s *CachePolicyStore) Update(id string, config *CachePolicyConfig) (*CachePolicy, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	cachePolicy, err := s.Get(id)
 	if err != nil {
 		return nil, err
@@ -97,6 +102,9 @@ func (s *CachePolicyStore) Update(id string, config *CachePolicyConfig) (*CacheP
 
 // Delete removes a cache policy by its ID.
 func (s *CachePolicyStore) Delete(id string) error {
+	if _, err := s.Get(id); err != nil {
+		return err
+	}
 	if err := s.BaseStore.Delete(id); err != nil {
 		return NewStoreError("delete_cache_policy", err)
 	}
@@ -164,6 +172,7 @@ func (s *CachePolicyStore) List(marker string, maxItems int) (*CachePolicyListRe
 type OriginRequestPolicyStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	mu         sync.Mutex
 }
 
 // NewOriginRequestPolicyStore creates a new OriginRequestPolicyStore instance.
@@ -221,6 +230,9 @@ func (s *OriginRequestPolicyStore) Create(name, comment string, config *OriginRe
 
 // Update updates an existing origin request policy.
 func (s *OriginRequestPolicyStore) Update(id string, config *OriginRequestPolicyConfig) (*OriginRequestPolicy, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	originRequestPolicy, err := s.Get(id)
 	if err != nil {
 		return nil, err
@@ -242,6 +254,9 @@ func (s *OriginRequestPolicyStore) Update(id string, config *OriginRequestPolicy
 
 // Delete removes an origin request policy by its ID.
 func (s *OriginRequestPolicyStore) Delete(id string) error {
+	if _, err := s.Get(id); err != nil {
+		return err
+	}
 	if err := s.BaseStore.Delete(id); err != nil {
 		return NewStoreError("delete_origin_request_policy", err)
 	}

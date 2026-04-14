@@ -2,7 +2,6 @@
 package s3
 
 import (
-	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -218,9 +217,4 @@ func (e *SSES3Encryptor) ExportBucketKey(bucket string) ([]byte, error) {
 	}
 	meta := val.(*sseS3KeyMetadata)
 	return json.Marshal(meta)
-}
-
-func computeMD5(data []byte) []byte {
-	hash := md5.Sum(data)
-	return hash[:]
 }

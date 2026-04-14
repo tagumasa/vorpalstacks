@@ -2,10 +2,28 @@ package kinesis
 
 import (
 	"context"
+
+	storecommon "vorpalstacks/internal/store/aws/common"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 )
+
+func formatTagsAsResponse(tagSlice []storecommon.Tag, includeHasMore bool) map[string]interface{} {
+	var formatted []map[string]interface{}
+	for _, t := range tagSlice {
+		formatted = append(formatted, map[string]interface{}{
+			"Key":   t.Key,
+			"Value": t.Value,
+		})
+	}
+	result := map[string]interface{}{"Tags": formatted}
+	if includeHasMore {
+		result["HasMoreTags"] = false
+	}
+	return result
+}
 
 // AddTagsToStream adds tags to a Kinesis stream.
 // Populates a tag map from the request parameters and calls the store to tag the stream.
@@ -103,18 +121,7 @@ func (s *KinesisService) ListTagsForStream(ctx context.Context, reqCtx *request.
 		return nil, s.mapStoreError(err)
 	}
 
-	var formattedTags []map[string]interface{}
-	for _, t := range tagSlice {
-		formattedTags = append(formattedTags, map[string]interface{}{
-			"Key":   t.Key,
-			"Value": t.Value,
-		})
-	}
-
-	return map[string]interface{}{
-		"Tags":        formattedTags,
-		"HasMoreTags": false,
-	}, nil
+	return formatTagsAsResponse(tagSlice, true), nil
 }
 
 // TagResource adds tags to a Kinesis stream specified by ARN.
@@ -201,15 +208,5 @@ func (s *KinesisService) ListTagsForResource(ctx context.Context, reqCtx *reques
 		return nil, s.mapStoreError(err)
 	}
 
-	var formattedTags []map[string]interface{}
-	for _, t := range tagSlice {
-		formattedTags = append(formattedTags, map[string]interface{}{
-			"Key":   t.Key,
-			"Value": t.Value,
-		})
-	}
-
-	return map[string]interface{}{
-		"Tags": formattedTags,
-	}, nil
+	return formatTagsAsResponse(tagSlice, false), nil
 }

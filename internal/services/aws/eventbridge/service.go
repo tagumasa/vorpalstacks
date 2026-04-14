@@ -9,13 +9,14 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common"
-	"vorpalstacks/internal/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	snsstore "vorpalstacks/internal/store/aws/sns"
@@ -229,40 +230,13 @@ func (s *EventsService) handlePutEventsEvent(ctx context.Context, evt *eventbus.
 }
 
 func (s *EventsService) store(ctx *request.RequestContext) (*eventsstore.EventsStore, error) {
-	region := ctx.GetRegion()
-	if cached, ok := s.eventsStores.Load(region); ok {
-		if typed, ok := cached.(*eventsstore.EventsStore); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.eventsStores, ctx.GetRegion(), func() (*eventsstore.EventsStore, error) {
+		storage, err := ctx.GetStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage: %w", err)
 		}
-	}
-	if store := ctx.GetEventBridgeStore(); store != nil {
-		es := store.(*eventsstore.EventsStore)
-		if actual, loaded := s.eventsStores.LoadOrStore(region, es); loaded {
-			if typed, ok := actual.(*eventsstore.EventsStore); ok {
-				return typed, nil
-			}
-		}
-		return es, nil
-	}
-	storage, err := ctx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	es := eventsstore.NewEventsStore(storage, s.accountID, region)
-	if actual, loaded := s.eventsStores.LoadOrStore(region, es); loaded {
-		if typed, ok := actual.(*eventsstore.EventsStore); ok {
-			return typed, nil
-		}
-	}
-	return es, nil
-}
-
-func (s *EventsService) getSQSStore(ctx *request.RequestContext) (sqsstore.SQSStoreInterface, error) {
-	if store := ctx.GetSQSStore(); store != nil {
-		return store, nil
-	}
-	region := ctx.GetRegion()
-	return s.getSQSStoreForRegion(region)
+		return eventsstore.NewEventsStore(storage, s.accountID, ctx.GetRegion()), nil
+	})
 }
 
 func (s *EventsService) getSQSStoreForRegion(region string) (sqsstore.SQSStoreInterface, error) {
@@ -278,33 +252,6 @@ func (s *EventsService) getSQSStoreForRegion(region string) (sqsstore.SQSStoreIn
 	store := sqsstore.NewSQSStore(storage, s.accountID, region, appconfig.BaseURL())
 	if actual, loaded := s.sqsStores.LoadOrStore(region, store); loaded {
 		if typed, ok := actual.(sqsstore.SQSStoreInterface); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
-}
-
-func (s *EventsService) getSNSStore(ctx *request.RequestContext) (snsstore.SNSStoreInterface, error) {
-	if store := ctx.GetSNSStore(); store != nil {
-		return store, nil
-	}
-	region := ctx.GetRegion()
-	return s.getSNSStoreForRegion(region)
-}
-
-func (s *EventsService) getSNSStoreForRegion(region string) (snsstore.SNSStoreInterface, error) {
-	if cached, ok := s.snsStores.Load(region); ok {
-		if typed, ok := cached.(snsstore.SNSStoreInterface); ok {
-			return typed, nil
-		}
-	}
-	storage, err := s.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	store := snsstore.NewSNSStore(storage, s.accountID, region)
-	if actual, loaded := s.snsStores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(snsstore.SNSStoreInterface); ok {
 			return typed, nil
 		}
 	}

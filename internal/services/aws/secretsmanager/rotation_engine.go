@@ -220,14 +220,20 @@ func (s *SecretsManagerService) finishRotation(store secretsmanagerstore.SecretS
 				cleanedStages = append(cleanedStages, st)
 			}
 		}
-		_ = store.UpdateSecretVersionStage(secret.Name, oldPrevious.VersionId, cleanedStages)
+		if err := store.UpdateSecretVersionStage(secret.Name, oldPrevious.VersionId, cleanedStages); err != nil {
+			return fmt.Errorf("failed to clean AWSPREVIOUS from old previous version during rotation: %w", err)
+		}
 	}
 
 	if oldCurrentID != "" && oldCurrentID != pendingVersionID {
-		_ = store.UpdateSecretVersionStage(secret.Name, oldCurrentID, []string{"AWSPREVIOUS"})
+		if err := store.UpdateSecretVersionStage(secret.Name, oldCurrentID, []string{"AWSPREVIOUS"}); err != nil {
+			return fmt.Errorf("failed to demote current version to AWSPREVIOUS during rotation: %w", err)
+		}
 	}
 
-	_ = store.UpdateSecretVersionStage(secret.Name, pendingVersionID, []string{"AWSCURRENT"})
+	if err := store.UpdateSecretVersionStage(secret.Name, pendingVersionID, []string{"AWSCURRENT"}); err != nil {
+		return fmt.Errorf("failed to promote pending version to AWSCURRENT during rotation: %w", err)
+	}
 
 	secret.CurrentVersion = pendingVersionID
 	secret.LastRotatedDate = storeClock()

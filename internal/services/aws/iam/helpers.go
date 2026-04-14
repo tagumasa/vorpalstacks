@@ -42,9 +42,7 @@ func tagsToResponse(t []types.Tag) []map[string]interface{} {
 }
 
 // applyTags merges new tags into existing tags.
-func applyTags(existing []types.Tag, newTags []types.Tag) []types.Tag {
-	return tags.Apply(existing, newTags)
-}
+
 
 // removeTags removes tags with specified keys from a tag slice.
 func removeTags(t []types.Tag, keysToRemove map[string]bool) []types.Tag {

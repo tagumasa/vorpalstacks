@@ -784,10 +784,11 @@ func decodeBase64PEM(s string) string {
 	if err != nil {
 		return s
 	}
-	return string(decoded)
+	return strings.TrimSpace(string(decoded))
 }
 
 func pemFixNewlines(pemStr string) string {
+	pemStr = strings.TrimSpace(pemStr)
 	if strings.Contains(pemStr, "\n") {
 		return pemStr
 	}

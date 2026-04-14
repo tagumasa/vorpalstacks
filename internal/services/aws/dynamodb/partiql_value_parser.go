@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"strings"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 	"vorpalstacks/pkg/sqlparser"
@@ -72,142 +71,6 @@ func tupleToAttributeList(tuple sqlparser.ValTuple) []*dbstore.AttributeValue {
 	return result
 }
 
-func parsePartiQLValue(valueStr string) map[string]*dbstore.AttributeValue {
-	result := make(map[string]*dbstore.AttributeValue)
-
-	valueStr = strings.TrimSpace(valueStr)
-	if !strings.HasPrefix(valueStr, "{") || !strings.HasSuffix(valueStr, "}") {
-		return result
-	}
-	valueStr = strings.Trim(valueStr, "{}")
-
-	pairs := splitPartiQLPairs(valueStr)
-	for _, pair := range pairs {
-		parts := strings.SplitN(pair, ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		key := strings.TrimSpace(strings.Trim(parts[0], `"'`))
-		value := strings.TrimSpace(parts[1])
-
-		result[key] = parsePartiQLValuePart(value)
-	}
-
-	return result
-}
-
-func splitPartiQLPairs(s string) []string {
-	var pairs []string
-	depth := 0
-	current := ""
-	for _, ch := range s {
-		switch ch {
-		case '{', '[', '(':
-			depth++
-			current += string(ch)
-		case '}', ']', ')':
-			depth--
-			current += string(ch)
-		case ',':
-			if depth == 0 {
-				pairs = append(pairs, strings.TrimSpace(current))
-				current = ""
-			} else {
-				current += string(ch)
-			}
-		default:
-			current += string(ch)
-		}
-	}
-	if strings.TrimSpace(current) != "" {
-		pairs = append(pairs, strings.TrimSpace(current))
-	}
-	return pairs
-}
-
-func parsePartiQLValuePart(value string) *dbstore.AttributeValue {
-	value = strings.TrimSpace(value)
-
-	if value == "null" {
-		return &dbstore.AttributeValue{NULL: ptrBool(true)}
-	}
-
-	if value == "true" || value == "false" {
-		b := value == "true"
-		return &dbstore.AttributeValue{BOOL: &b}
-	}
-
-	if strings.HasPrefix(value, `'`) && strings.HasSuffix(value, `'`) {
-		s := strings.Trim(value, `'`)
-		return &dbstore.AttributeValue{S: &s}
-	}
-
-	if strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`) {
-		s := strings.Trim(value, `"`)
-		return &dbstore.AttributeValue{S: &s}
-	}
-
-	if _, err := strconv.ParseInt(value, 10, 64); err == nil {
-		return &dbstore.AttributeValue{N: &value}
-	}
-
-	if _, err := strconv.ParseFloat(value, 64); err == nil {
-		return &dbstore.AttributeValue{N: &value}
-	}
-
-	if strings.HasPrefix(value, "{") {
-		nested := parsePartiQLValue(value)
-		return &dbstore.AttributeValue{M: nested}
-	}
-
-	if strings.HasPrefix(value, "[") {
-		list := parsePartiQLList(value)
-		return &dbstore.AttributeValue{L: list}
-	}
-
-	return &dbstore.AttributeValue{S: &value}
-}
-
-func parsePartiQLList(value string) []*dbstore.AttributeValue {
-	value = strings.TrimSpace(value)
-	if !strings.HasPrefix(value, "[") || !strings.HasSuffix(value, "]") {
-		return nil
-	}
-	value = strings.Trim(value, "[]")
-
-	if strings.TrimSpace(value) == "" {
-		return nil
-	}
-
-	var result []*dbstore.AttributeValue
-	depth := 0
-	current := ""
-	for _, ch := range value {
-		switch ch {
-		case '{', '[', '(':
-			depth++
-			current += string(ch)
-		case '}', ']', ')':
-			depth--
-			current += string(ch)
-		case ',':
-			if depth == 0 {
-				result = append(result, parsePartiQLValuePart(strings.TrimSpace(current)))
-				current = ""
-			} else {
-				current += string(ch)
-			}
-		default:
-			current += string(ch)
-		}
-	}
-	if strings.TrimSpace(current) != "" {
-		result = append(result, parsePartiQLValuePart(strings.TrimSpace(current)))
-	}
-
-	return result
-}
-
 func paramToAttributeValue(param interface{}) *dbstore.AttributeValue {
 	switch v := param.(type) {
 	case map[string]interface{}:
@@ -253,8 +116,4 @@ func compareNumberStrings(a, b string) int {
 		return 0
 	}
 	return numA.Cmp(numB)
-}
-
-func numbersEqual(a, b string) bool {
-	return compareNumberStrings(a, b) == 0
 }

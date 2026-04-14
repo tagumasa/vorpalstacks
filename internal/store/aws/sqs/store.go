@@ -95,6 +95,7 @@ func NewSQSStore(store storage.BasicStorage, accountID, region, baseURL string) 
 		storage:            store,
 		purgeInProgress:    make(map[string]time.Time),
 		deduplicationCache: make(map[string]*deduplicationEntry),
+		sequenceCounter:    time.Now().UnixNano(),
 	}
 }
 
@@ -160,12 +161,6 @@ func (s *SQSStore) cleanupDeduplicationCacheForQueue(queueURL string) {
 			delete(s.deduplicationCache, key)
 		}
 	}
-}
-
-func (s *SQSStore) cleanupDeduplicationCacheForQueueLocked(queueURL string) {
-	s.deduplicationMu.Lock()
-	defer s.deduplicationMu.Unlock()
-	s.cleanupDeduplicationCacheForQueue(queueURL)
 }
 
 func generateReceiptHandle() string {
@@ -308,7 +303,7 @@ func (s *SQSStore) GetMessageCounts(queueURL string) (visible, notVisible, delay
 	defer s.msgMutex.RUnlock()
 
 	now := time.Now().UTC()
-	opts := common.ListOptions{Prefix: messagePrefix(queueURL), MaxItems: 10000}
+	opts := common.ListOptions{Prefix: messagePrefix(queueURL), MaxItems: 10000} // scan limit — counts may be incomplete for queues exceeding 10,000 messages
 
 	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
 		return true

@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common/endpoint"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/eventbus"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	snsstore "vorpalstacks/internal/store/aws/sns"
@@ -210,7 +211,9 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 			evtRegion = e.region
 		}
 		snsEvt.Region = evtRegion
-		e.bus.Publish(context.Background(), snsEvt)
+		if err := e.bus.Publish(context.Background(), snsEvt); err != nil {
+			logs.Warn("failed to publish SNS event from Step Functions", logs.Err(err))
+		}
 	}
 
 	result := map[string]interface{}{
@@ -333,7 +336,9 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 					Input:     eventJSON,
 				}
 				ebEvt.Region = eventsRegion
-				e.bus.Publish(context.Background(), ebEvt)
+				if err := e.bus.Publish(context.Background(), ebEvt); err != nil {
+					logs.Warn("failed to publish EventBridge event from Step Functions", logs.Err(err))
+				}
 			}
 		}
 

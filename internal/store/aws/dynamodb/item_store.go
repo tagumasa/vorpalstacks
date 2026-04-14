@@ -268,8 +268,12 @@ func (s *ItemStore) Count(tableName string) (int64, error) {
 }
 
 // DeleteAllForTable removes all items from a DynamoDB table.
+// Items are deleted first; GSI/LSI indexes are cleaned afterwards.
+// If index cleanup fails, orphan index entries may remain, but this is
+// preferable to losing GSI/LSI data while items still exist.
 func (s *ItemStore) DeleteAllForTable(tableName string) error {
 	prefix := tableName + "#"
+
 	const batchSize = 1000
 	var keysBatch []string
 

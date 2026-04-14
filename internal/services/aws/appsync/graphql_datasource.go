@@ -11,9 +11,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -107,10 +108,15 @@ func (e *graphQLEngine) dispatchDynamoDB(
 	ds *appsyncstore.DataSource,
 	payload interface{},
 ) (interface{}, error) {
-	dynamoDBStore := reqCtx.GetDynamoDBStore()
-	if dynamoDBStore == nil {
-		return nil, fmt.Errorf("DynamoDB store not available")
+	basicStorage, err := reqCtx.GetStorage()
+	if err != nil {
+		return nil, fmt.Errorf("DynamoDB storage not available: %w", err)
 	}
+	txnStorage, ok := basicStorage.(storage.TransactionalStorageWith2PC)
+	if !ok {
+		return nil, fmt.Errorf("DynamoDB storage does not support transactions")
+	}
+	dynamoDBStore := dynamodbstore.NewDynamoDBStore(txnStorage, reqCtx.GetAccountID(), reqCtx.GetRegion())
 
 	payloadMap, ok := toMap(payload)
 	if !ok {

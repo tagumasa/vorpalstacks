@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -241,7 +242,9 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 
 	imp, err := store.Imports().Create(table.ARN, "")
 	if err != nil {
-		_ = store.Tables().Delete(tableName)
+		if delErr := store.Tables().Delete(tableName); delErr != nil {
+			logs.Error("Failed to rollback table creation during import", logs.Err(delErr), logs.String("tableName", tableName))
+		}
 		return nil, err
 	}
 
@@ -255,7 +258,9 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 	}
 	imp.EndTime = time.Now()
 	if err := store.Imports().Put(imp); err != nil {
-		_ = store.Tables().Delete(tableName)
+		if delErr := store.Tables().Delete(tableName); delErr != nil {
+			logs.Error("Failed to rollback table creation during import Put", logs.Err(delErr), logs.String("tableName", tableName))
+		}
 		return nil, err
 	}
 

@@ -10,6 +10,7 @@ import (
 
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
@@ -107,7 +108,7 @@ func (s *IAMService) DeletePolicy(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListPolicies lists managed policies.
@@ -265,7 +266,7 @@ func (s *IAMService) DeletePolicyVersion(ctx context.Context, reqCtx *request.Re
 		return nil, NewNoSuchPolicyVersionError(versionId)
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListPolicyVersions lists all versions of a managed policy.
@@ -333,7 +334,7 @@ func (s *IAMService) SetDefaultPolicyVersion(ctx context.Context, reqCtx *reques
 		return nil, NewNoSuchPolicyVersionError(versionId)
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // TagPolicy adds tags to a managed policy.
@@ -360,7 +361,7 @@ func (s *IAMService) TagPolicy(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UntagPolicy removes tags from a managed policy.
@@ -387,7 +388,7 @@ func (s *IAMService) UntagPolicy(ctx context.Context, reqCtx *request.RequestCon
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListPolicyTags lists the tags attached to a managed policy.

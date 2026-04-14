@@ -2,6 +2,7 @@ package route53
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
@@ -26,4 +27,8 @@ func (h *AdminHandler) ListHostedZones(ctx context.Context, req *connect.Request
 	return connect.NewResponse(&pb.ListHostedZonesResponse{
 		Hostedzones: []*pb.HostedZone{},
 	}), nil
+}
+
+func NewConnectHandler() (string, http.Handler) {
+	return route53connect.NewRoute53ServiceHandler(NewAdminHandler())
 }

@@ -16,13 +16,13 @@ import (
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/client/mobyclient"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common/request"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
-	"vorpalstacks/internal/store/aws/common"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	s3store "vorpalstacks/internal/store/aws/s3"
@@ -57,46 +57,17 @@ type LambdaService struct {
 }
 
 func (s *LambdaService) store(reqCtx *request.RequestContext) (*lambdaStore, error) {
-	region := reqCtx.GetRegion()
-	if cached, ok := s.storeCache.Load(region); ok {
-		if typed, ok := cached.(*lambdaStore); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.storeCache, reqCtx.GetRegion(), func() (*lambdaStore, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage: %w", err)
 		}
-	}
-
-	if injectedStore := reqCtx.GetLambdaStore(); injectedStore != nil {
-		if ls, ok := injectedStore.(*lambdastore.LambdaStore); ok {
-			newStore := &lambdaStore{
-				Functions:    ls.FunctionsRaw(),
-				Layers:       ls.LayersRaw(),
-				EventSources: ls.EventSourcesRaw(),
-			}
-			if actual, loaded := s.storeCache.LoadOrStore(region, newStore); loaded {
-				if typed, ok := actual.(*lambdaStore); ok {
-					return typed, nil
-				}
-			}
-			return newStore, nil
-		}
-	}
-
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get storage: %w", err)
-	}
-
-	newStore := &lambdaStore{
-		Functions:    lambdastore.NewFunctionStore(storage, s.accountID, region),
-		Layers:       lambdastore.NewLayerStore(storage, s.accountID, region),
-		EventSources: lambdastore.NewEventSourceStore(storage, s.accountID, region),
-	}
-
-	if actual, loaded := s.storeCache.LoadOrStore(region, newStore); loaded {
-		if typed, ok := actual.(*lambdaStore); ok {
-			return typed, nil
-		}
-	}
-	return newStore, nil
+		return &lambdaStore{
+			Functions:    lambdastore.NewFunctionStore(storage, s.accountID, reqCtx.GetRegion()),
+			Layers:       lambdastore.NewLayerStore(storage, s.accountID, reqCtx.GetRegion()),
+			EventSources: lambdastore.NewEventSourceStore(storage, s.accountID, reqCtx.GetRegion()),
+		}, nil
+	})
 }
 
 // NewLambdaService creates a new Lambda service instance.
@@ -224,15 +195,6 @@ func (s *LambdaService) getLogsStore(region string) (*logsstore.Store, error) {
 		}
 	}
 	return store, nil
-}
-
-func (s *LambdaService) getLogsStoreFromContext(reqCtx *request.RequestContext) (*logsstore.Store, error) {
-	if store := reqCtx.GetCloudWatchLogsStore(); store != nil {
-		if concrete, ok := store.(*logsstore.Store); ok {
-			return concrete, nil
-		}
-	}
-	return s.getLogsStore(reqCtx.GetRegion())
 }
 
 // RegisterHandlers registers the Lambda service handlers with the dispatcher.
@@ -631,7 +593,9 @@ func (s *LambdaService) writeLambdaLogs(functionName, version, stdout, stderr, r
 			LogEvents:    busEvents,
 		}
 		logEvt.Region = region
-		s.bus.Publish(context.Background(), logEvt)
+		if err := s.bus.Publish(context.Background(), logEvt); err != nil {
+			logs.Warn("failed to publish lambda log event", logs.Err(err))
+		}
 		return
 	}
 
@@ -741,7 +705,7 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.Functions.List(common.ListOptions{MaxItems: 1000})
+	result, err := store.Functions.List(storecommon.ListOptions{MaxItems: 1000})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list functions: %w", err)
 	}

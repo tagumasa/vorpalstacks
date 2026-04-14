@@ -3,6 +3,7 @@ package sts
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"connectrpc.com/connect"
 
@@ -35,4 +36,8 @@ func (h *AdminHandler) GetCallerIdentity(ctx context.Context, req *connect.Reque
 		Arn:     fmt.Sprintf("arn:aws:iam::%s:root", accountID),
 		Userid:  accountID,
 	}), nil
+}
+
+func NewConnectHandler(accountID string) (string, http.Handler) {
+	return stsconnect.NewSTSServiceHandler(NewAdminHandler(accountID))
 }

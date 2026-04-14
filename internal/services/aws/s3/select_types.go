@@ -174,9 +174,3 @@ type ContinuationEvent struct{}
 
 // EndEvent indicates the end of the S3 Select query response.
 type EndEvent struct{}
-
-// SelectObjectContentHandler handles the SelectObjectContent event stream.
-type SelectObjectContentHandler struct {
-	input  *SelectObjectContentInput
-	object io.ReadCloser
-}

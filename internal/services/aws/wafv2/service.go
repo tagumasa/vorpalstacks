@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
@@ -37,42 +38,21 @@ func NewWAFv2Service(accountID, region string) *WAFv2Service {
 }
 
 func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, error) {
-	region := reqCtx.GetRegion()
-	if stores := reqCtx.GetWAFStores(); stores != nil {
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*wafv2Stores, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, err
+		}
 		return &wafv2Stores{
-			webACLs:          stores.WebACLStore().Raw(),
-			ruleGroups:       stores.RuleGroupStore().Raw(),
-			ipSets:           stores.IPSetStore().Raw(),
-			regexPatternSets: stores.RegexPatternSetStore().Raw(),
-			associations:     stores.AssociationStore().Raw(),
-			loggingConfigs:   stores.LoggingStore().Raw(),
-			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), region),
+			webACLs:          wafstore.NewWebACLStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()),
+			ruleGroups:       wafstore.NewRuleGroupStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()),
+			ipSets:           wafstore.NewIPSetStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()),
+			regexPatternSets: wafstore.NewRegexPatternSetStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()),
+			associations:     wafstore.NewWebACLAssociationStore(storage),
+			loggingConfigs:   wafstore.NewLoggingStore(storage),
+			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()),
 		}, nil
-	}
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(*wafv2Stores); ok {
-			return typed, nil
-		}
-	}
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	stores := &wafv2Stores{
-		webACLs:          wafstore.NewWebACLStore(storage, reqCtx.GetAccountID(), region),
-		ruleGroups:       wafstore.NewRuleGroupStore(storage, reqCtx.GetAccountID(), region),
-		ipSets:           wafstore.NewIPSetStore(storage, reqCtx.GetAccountID(), region),
-		regexPatternSets: wafstore.NewRegexPatternSetStore(storage, reqCtx.GetAccountID(), region),
-		associations:     wafstore.NewWebACLAssociationStore(storage),
-		loggingConfigs:   wafstore.NewLoggingStore(storage),
-		arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), region),
-	}
-	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
-		if typed, ok := actual.(*wafv2Stores); ok {
-			return typed, nil
-		}
-	}
-	return stores, nil
+	})
 }
 
 // RegisterHandlers registers all WAFv2 API operation handlers with the dispatcher.

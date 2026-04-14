@@ -78,7 +78,9 @@ func (e *Executor) executeChoice(ctx context.Context, execCtx *ExecutionContext,
 func (e *Executor) executeChoiceJSONata(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.ChoiceState) (string, error) {
 	var inputData interface{}
 	if execCtx.Input != "" {
-		json.Unmarshal([]byte(execCtx.Input), &inputData)
+		if err := json.Unmarshal([]byte(execCtx.Input), &inputData); err != nil {
+			return "", e.newQueryEvalError(ctx, execCtx, "Input", "failed to parse input JSON")
+		}
 	}
 	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
 

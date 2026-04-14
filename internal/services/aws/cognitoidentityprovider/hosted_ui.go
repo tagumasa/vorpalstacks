@@ -148,7 +148,10 @@ func (s *CognitoService) handleTokenEndpoint(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, `{"error":"invalid_request"}`, http.StatusBadRequest)
+		return
+	}
 	grantType := r.FormValue("grant_type")
 
 	if grantType != "authorization_code" && grantType != "client_credentials" && grantType != "refresh_token" {

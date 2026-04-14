@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 
@@ -33,7 +34,9 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	if isJSONata {
 		var inputData interface{}
-		json.Unmarshal([]byte(processedInput), &inputData)
+		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+		}
 		statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
 
 		if state.Items != nil {
@@ -110,11 +113,13 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 		ItemsFailedCount:    0,
 		ItemsCancelledCount: 0,
 	}
-	e.store.CreateMapRun(ctx, mapRunRecord)
+	if err := e.store.CreateMapRun(ctx, mapRunRecord); err != nil {
+		logs.Warn("failed to create map run record", logs.Err(err))
+	}
 
 	defer func() {
 		mapRunRecord.StopDate = time.Now().UTC().Unix()
-		e.store.UpdateMapRun(ctx, mapRunRecord)
+		_ = e.store.UpdateMapRun(ctx, mapRunRecord)
 	}()
 
 	var wg sync.WaitGroup
@@ -152,7 +157,7 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	sem := make(chan struct{}, maxConcurrency)
 
-	for i, _ := range processedItems {
+	for i := range processedItems {
 		wg.Add(1)
 		go func(idx int, itemValue interface{}, originalItem interface{}) {
 			defer wg.Done()
@@ -205,7 +210,9 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	mapRunRecord.ItemsProcessedCount = itemsProcessed
 	mapRunRecord.ItemsFailedCount = itemsFailed
-	e.store.UpdateMapRun(ctx, mapRunRecord)
+	if err := e.store.UpdateMapRun(ctx, mapRunRecord); err != nil {
+		logs.Warn("failed to update map run after completion", logs.Err(err))
+	}
 
 	var firstError error
 	for _, err := range errors {
@@ -217,7 +224,9 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	if firstError != nil {
 		mapRunRecord.Status = "FAILED"
-		e.store.UpdateMapRun(ctx, mapRunRecord)
+		if err := e.store.UpdateMapRun(ctx, mapRunRecord); err != nil {
+			logs.Warn("failed to update map run to FAILED", logs.Err(err))
+		}
 
 		if len(state.Catch) > 0 {
 			catchPolicy := e.findMatchingCatchPolicy(state.Catch, "States.IteratorFailed")
@@ -234,15 +243,21 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 	}
 
 	mapRunRecord.Status = "SUCCEEDED"
-	e.store.UpdateMapRun(ctx, mapRunRecord)
+	if err := e.store.UpdateMapRun(ctx, mapRunRecord); err != nil {
+		logs.Warn("Failed to update map run status", logs.Err(err))
+	}
 
 	output := fmt.Sprintf(`[%s]`, strings.Join(results, ","))
 
 	if isJSONata {
 		var inputData interface{}
-		json.Unmarshal([]byte(processedInput), &inputData)
+		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+		}
 		var resultData interface{}
-		json.Unmarshal([]byte(output), &resultData)
+		if err := json.Unmarshal([]byte(output), &resultData); err != nil {
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidOutput", Cause: "failed to parse output JSON"}
+		}
 		statesVar := e.buildStatesVarWithContext(execCtx, inputData, resultData, nil)
 
 		if len(state.Assign) > 0 {
@@ -301,7 +316,9 @@ func (e *Executor) executeMapJSONataCatch(ctx context.Context, execCtx *Executio
 	}
 
 	var inputData interface{}
-	json.Unmarshal([]byte(processedInput), &inputData)
+	if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+		return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+	}
 	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, errorOutput)
 
 	if len(catchPolicy.Assign) > 0 {

@@ -73,9 +73,7 @@ func (s *SESv2Store) BuildTemplateArn(name string) string {
 	return s.arnBuilder.Build("ses", "template/"+name)
 }
 
-func (s *SESv2Store) buildEmailArn(messageId string) string {
-	return s.arnBuilder.Build("ses", "email/"+messageId)
-}
+
 
 // DkimAttributes represents DKIM attributes for an email identity.
 type DkimAttributes struct {

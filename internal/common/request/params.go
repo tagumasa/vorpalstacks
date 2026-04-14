@@ -128,6 +128,14 @@ func GetBoolParam(params map[string]interface{}, key string) bool {
 			return strings.ToLower(s) == "true"
 		}
 	}
+	if v, ok := params[strings.ToLower(key)]; ok {
+		if b, ok := v.(bool); ok {
+			return b
+		}
+		if s, ok := v.(string); ok {
+			return strings.ToLower(s) == "true"
+		}
+	}
 	return false
 }
 

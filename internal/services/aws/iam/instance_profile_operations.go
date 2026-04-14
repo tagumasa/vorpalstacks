@@ -4,6 +4,7 @@ package iam
 import (
 	"context"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
@@ -86,7 +87,7 @@ func (s *IAMService) DeleteInstanceProfile(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListInstanceProfiles lists the instance profiles in the account.
@@ -159,7 +160,7 @@ func (s *IAMService) AddRoleToInstanceProfile(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // RemoveRoleFromInstanceProfile removes a role from an instance profile.
@@ -191,7 +192,7 @@ func (s *IAMService) RemoveRoleFromInstanceProfile(ctx context.Context, reqCtx *
 		return nil, NewRoleNotInInstanceProfileError(roleName, instanceProfileName)
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListInstanceProfileTags lists the tags attached to an instance profile.
@@ -238,7 +239,7 @@ func (s *IAMService) TagInstanceProfile(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UntagInstanceProfile removes tags from an instance profile.
@@ -263,7 +264,7 @@ func (s *IAMService) UntagInstanceProfile(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 func (s *IAMService) instanceProfileToResponse(reqCtx *request.RequestContext, profile *iamstore.InstanceProfile) map[string]interface{} {

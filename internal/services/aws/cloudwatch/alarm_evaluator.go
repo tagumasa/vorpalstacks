@@ -369,13 +369,15 @@ func (s *CloudWatchService) handleAlarmStateTransition(ctx context.Context, resu
 		return
 	}
 
-	alarmStore.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
+	if err := alarmStore.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
 		AlarmName:       alarm.Name,
 		AlarmType:       cwstore.AlarmTypeMetricAlarm,
 		Timestamp:       time.Now().UTC().UnixMilli(),
 		HistoryItemType: cwstore.HistoryItemTypeStateUpdate,
 		HistorySummary:  result.reason,
-	})
+	}); err != nil {
+		s.log("failed to add alarm history", "alarm", alarm.Name, "error", err)
+	}
 
 	if !alarm.ActionsEnabled {
 		return
@@ -416,7 +418,9 @@ func (s *CloudWatchService) publishAlarmStateEvent(ctx context.Context, result *
 		Reason:        result.reason,
 	}
 
-	_ = s.bus.Publish(ctx, evt)
+	if err := s.bus.Publish(ctx, evt); err != nil {
+		logs.Warn("failed to publish alarm state change event", logs.String("alarmName", result.alarm.Name), logs.Err(err))
+	}
 }
 
 // dispatchAlarmActions iterates over the action ARNs for the new state and
@@ -476,7 +480,9 @@ func (s *CloudWatchService) dispatchAlarmToSNS(ctx context.Context, topicArn str
 	}
 	snsEvt.Region = region
 
-	_ = s.bus.Publish(ctx, snsEvt)
+	if err := s.bus.Publish(ctx, snsEvt); err != nil {
+		logs.Warn("failed to publish alarm SNS notification", logs.String("alarmName", result.alarm.Name), logs.Err(err))
+	}
 }
 
 // dispatchAlarmToLambda invokes a Lambda function with the alarm state
@@ -528,7 +534,9 @@ func (s *CloudWatchService) dispatchAlarmToStepFunctions(ctx context.Context, st
 	evt.Region = smRegion
 	evt.AccountID = s.accountID
 
-	_ = s.bus.Publish(ctx, evt)
+	if err := s.bus.Publish(ctx, evt); err != nil {
+		logs.Warn("failed to publish alarm Step Function event", logs.String("alarmName", result.alarm.Name), logs.Err(err))
+	}
 }
 
 // operatorPhrase returns a human-readable phrase describing the comparison
@@ -629,13 +637,6 @@ func buildAlarmConfiguration(alarm *cwstore.Alarm) map[string]interface{} {
 	}
 
 	return config
-}
-
-// evaluatorStores returns the alarm store and metric store for the
-// constructor region. These stores are used for background alarm
-// evaluation outside of any request context.
-func (s *CloudWatchService) evaluatorStores() (*cwstore.AlarmStore, *cwstore.MetricChunkStore) {
-	return s.evaluatorStoresForRegion(s.region)
 }
 
 // evaluatorStoresForRegion returns the alarm store and metric store for

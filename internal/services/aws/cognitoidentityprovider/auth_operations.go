@@ -10,6 +10,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 
 	"golang.org/x/crypto/bcrypt"
@@ -144,13 +145,17 @@ func (s *CognitoService) handleUserPasswordAuth(ctx context.Context, reqCtx *req
 	}
 
 	attrs := userAttributesMap(user)
-	invokePreAuthentication(ctx, s, userPool.ID, username, getClientId(req), userPool.LambdaConfig, attrs)
+	if err := invokePreAuthentication(ctx, s, userPool.ID, username, getClientId(req), userPool.LambdaConfig, attrs); err != nil {
+		logs.Warn("PreAuthentication trigger failed", logs.String("userPoolId", userPool.ID), logs.String("username", username), logs.Err(err))
+	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return nil, ErrIncorrectPassword
 	}
 
-	invokePostAuthentication(ctx, s, userPool.ID, username, getClientId(req), userPool.LambdaConfig, attrs)
+	if err := invokePostAuthentication(ctx, s, userPool.ID, username, getClientId(req), userPool.LambdaConfig, attrs); err != nil {
+		logs.Warn("PostAuthentication trigger failed", logs.String("userPoolId", userPool.ID), logs.String("username", username), logs.Err(err))
+	}
 
 	accessToken, idToken, refreshToken, expiresIn := s.CreateTokens(reqCtx, userPool.ID, user.ID, getClientId(req))
 
@@ -205,7 +210,9 @@ func (s *CognitoService) handleRefreshTokenAuth(ctx context.Context, reqCtx *req
 	}
 
 	attrs := userAttributesMap(user)
-	invokePostAuthentication(ctx, s, userPool.ID, user.Username, rt.ClientID, nil, attrs)
+	if err := invokePostAuthentication(ctx, s, userPool.ID, user.Username, rt.ClientID, nil, attrs); err != nil {
+		logs.Warn("PostAuthentication trigger failed for refresh token auth", logs.String("userPoolId", userPool.ID), logs.String("username", user.Username), logs.Err(err))
+	}
 
 	accessToken, idToken, _, expiresIn := s.CreateTokens(reqCtx, userPool.ID, user.ID, rt.ClientID)
 
@@ -641,13 +648,17 @@ func (s *CognitoService) handleAdminNoSrpAuth(reqCtx *request.RequestContext, re
 	}
 
 	attrs := userAttributesMap(user)
-	invokePreAuthentication(reqCtx, s, userPoolID, username, clientID, nil, attrs)
+	if err := invokePreAuthentication(reqCtx, s, userPoolID, username, clientID, nil, attrs); err != nil {
+		logs.Warn("PreAuthentication trigger failed", logs.Err(err))
+	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return nil, ErrIncorrectPassword
 	}
 
-	invokePostAuthentication(reqCtx, s, userPoolID, username, clientID, nil, attrs)
+	if err := invokePostAuthentication(reqCtx, s, userPoolID, username, clientID, nil, attrs); err != nil {
+		logs.Warn("PostAuthentication trigger failed", logs.Err(err))
+	}
 
 	accessToken, idToken, refreshToken, expiresIn := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID)
 
@@ -694,7 +705,9 @@ func (s *CognitoService) handleAdminRefreshTokenAuth(reqCtx *request.RequestCont
 	}
 
 	attrs := userAttributesMap(user)
-	invokePostAuthentication(reqCtx, s, userPoolID, user.Username, rt.ClientID, nil, attrs)
+	if err := invokePostAuthentication(reqCtx, s, userPoolID, user.Username, rt.ClientID, nil, attrs); err != nil {
+		logs.Warn("PostAuthentication trigger failed", logs.Err(err))
+	}
 
 	accessToken, idToken, _, expiresIn := s.CreateTokens(reqCtx, userPoolID, user.ID, rt.ClientID)
 

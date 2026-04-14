@@ -10,11 +10,11 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
-	"vorpalstacks/internal/common/handler"
-	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	"vorpalstacks/pkg/graphengine"
@@ -42,11 +42,6 @@ type NeptuneDataService struct {
 	storageManager     *storage.RegionStorageManager
 	stores             sync.Map
 	cancelCleanup      context.CancelFunc
-}
-
-// elapsedMs returns the elapsed time between two Unix-millisecond timestamps.
-func elapsedMs(startMs, endMs int64) int64 {
-	return endMs - startMs
 }
 
 // GraphStatistics holds cached graph-level statistics for the property graph.
@@ -323,7 +318,9 @@ func (s *NeptuneDataService) ExecuteFastReset(ctx context.Context, reqCtx *reque
 		s.fastTokens.Delete(params.Token)
 
 		if gs, ok := reqCtx.GraphWriter().(graphengine.GraphStore); ok {
-			gs.Clear()
+			if err := gs.Clear(); err != nil {
+				logs.Warn("failed to clear graph store during fast reset", logs.Err(err))
+			}
 		}
 		region := reqCtx.GetRegion()
 		s.mu.Lock()
@@ -337,11 +334,15 @@ func (s *NeptuneDataService) ExecuteFastReset(ctx context.Context, reqCtx *reque
 		if resetStore, err := s.GetStoreForRegion(region); err == nil {
 			queries, _ := resetStore.ListQueries()
 			for _, q := range queries {
-				resetStore.DeleteQuery(q.GetQueryId())
+				if err := resetStore.DeleteQuery(q.GetQueryId()); err != nil {
+					logs.Warn("failed to delete query during reset", logs.String("queryId", q.GetQueryId()), logs.Err(err))
+				}
 			}
 			jobs, _ := resetStore.ListLoaderJobs()
 			for _, j := range jobs {
-				resetStore.DeleteLoaderJob(j.GetLoadId())
+				if err := resetStore.DeleteLoaderJob(j.GetLoadId()); err != nil {
+					logs.Warn("failed to delete loader job during reset", logs.String("loadId", j.GetLoadId()), logs.Err(err))
+				}
 			}
 		}
 		return map[string]interface{}{

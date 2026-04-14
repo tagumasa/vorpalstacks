@@ -14,12 +14,12 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common"
-	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
@@ -35,6 +35,7 @@ type SNSService struct {
 	httpClient     *http.Client
 	bus            *eventbus.EventBus
 	stores         sync.Map
+	deliveryWg     sync.WaitGroup
 
 	signingKeyOnce sync.Once
 	signingKey     *rsa.PrivateKey
@@ -86,6 +87,20 @@ func (s *SNSService) SetSNSStore(region string, snsStore *snsstore.SNSStore) {
 func (s *SNSService) SetEventBus(bus *eventbus.EventBus) {
 	s.bus = bus
 	_, _ = eventbus.SubscribeTyped[*eventbus.SNSDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
+}
+
+// Close waits for all in-flight delivery goroutines to complete.
+func (s *SNSService) Close() {
+	s.deliveryWg.Wait()
+}
+
+// deliverAsync spawns a tracked goroutine to deliver a message to subscriptions.
+func (s *SNSService) deliverAsync(msg *snsstore.Message, subs []*snsstore.Subscription, region string) {
+	s.deliveryWg.Add(1)
+	go func() {
+		defer s.deliveryWg.Done()
+		s.deliverToSubscriptions(msg, subs, region)
+	}()
 }
 
 func (s *SNSService) handleBusDelivery(ctx context.Context, evt *eventbus.SNSDeliveryEvent) eventbus.HandlerResult {
@@ -183,8 +198,8 @@ func (s *SNSService) initSigningKey() {
 		certBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
 		s.signingCertPEM = certBytes
 
-		bucket.Put([]byte("signing_key"), keyBytes)
-		bucket.Put([]byte("signing_cert"), certBytes)
+		_ = bucket.Put([]byte("signing_key"), keyBytes)
+		_ = bucket.Put([]byte("signing_cert"), certBytes)
 	})
 }
 
@@ -275,7 +290,9 @@ func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topi
 				Message:   message,
 			}
 			snsEvt.Region = region
-			s.bus.Publish(context.Background(), snsEvt)
+			if err := s.bus.Publish(context.Background(), snsEvt); err != nil {
+				logs.Warn("Failed to publish SNS event", logs.Err(err))
+			}
 		} else {
 			subsCopy := make([]*snsstore.Subscription, len(subscriptions.Items))
 			for i, sub := range subscriptions.Items {
@@ -283,7 +300,7 @@ func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topi
 				subsCopy[i] = &subCopy
 			}
 
-			go s.deliverToSubscriptions(msg, subsCopy, region)
+			s.deliverAsync(msg, subsCopy, region)
 		}
 	}
 

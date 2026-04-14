@@ -9,7 +9,7 @@ import (
 func IsNeptuneGraphPath(path string) bool {
 	return strings.HasPrefix(path, "/graphs") ||
 		strings.HasPrefix(path, "/snapshots") ||
-		strings.HasPrefix(path, "/tags/arn:aws:neptune-graph") ||
+		strings.HasPrefix(path, "/tags/arn:aws:neptune-graph:") ||
 		strings.HasPrefix(path, "/importtasks") ||
 		strings.HasPrefix(path, "/exporttasks") ||
 		strings.HasPrefix(path, "/queries") ||

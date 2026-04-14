@@ -1,6 +1,7 @@
 package dispatcher
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"sync"
@@ -8,39 +9,44 @@ import (
 	"vorpalstacks/internal/common/audit"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
-	"vorpalstacks/internal/common/interfaces"
 	"vorpalstacks/internal/common/mock"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/store/api"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/pkg/graphengine"
 )
+
+// Authorizer evaluates IAM policies to determine whether a request should be allowed.
+type Authorizer interface {
+	Authorize(ctx context.Context, reqCtx *request.RequestContext, parsedReq *request.ParsedRequest, serviceName string, r *http.Request) (bool, error)
+}
 
 // Dispatcher routes incoming AWS API requests to appropriate handlers.
 // It manages service operations, authentication, and response formatting.
 type Dispatcher struct {
-	serviceStore         *api.ServiceStore
-	operationStore       *api.OperationStore
-	shapeStore           *api.ShapeStore
-	memberStore          *api.MemberStore
-	configStore          *api.ConfigStore
-	builder              *resilience.OperationResilienceBuilder
-	handlers             map[string]Handler
-	storageManager       *storage.RegionStorageManager
-	storeProvider        interfaces.StoreProvider
-	auditConfig          *audit.AuditConfig
-	serviceModeCache     map[string]api.ServiceMode
-	serviceModeCacheMu   sync.RWMutex
-	handlersMu           sync.RWMutex
-	handlerExists        map[string]bool
-	mockGenerator        *mock.Generator
-	authorizer           *Authorizer
-	authorizationEnabled bool
-	accountID            string
-	graphDB              *graphengine.DB
+	serviceStore              *api.ServiceStore
+	operationStore            *api.OperationStore
+	shapeStore                *api.ShapeStore
+	memberStore               *api.MemberStore
+	configStore               *api.ConfigStore
+	builder                   *resilience.OperationResilienceBuilder
+	handlers                  map[string]Handler
+	storageManager            *storage.RegionStorageManager
+	iamStore                  iamstore.IAMStoreInterface
+	auditConfig               *audit.AuditConfig
+	serviceModeCache          map[string]api.ServiceMode
+	serviceModeCacheMu        sync.RWMutex
+	handlersMu                sync.RWMutex
+	handlerExists             map[string]bool
+	mockGenerator             *mock.Generator
+	authorizer                Authorizer
+	authorizationEnabled      bool
+	accountID                 string
+	graphDB                   *graphengine.DB
+	cloudTrailRecorderFactory CloudTrailRecorderFactory
 }
 
 // Handler processes an AWS API request and returns a response or error.
@@ -56,8 +62,8 @@ func NewDispatcher(
 	configStore *api.ConfigStore,
 	resilienceConfig *resilience.ServiceResilienceConfig,
 	storageMgr *storage.RegionStorageManager,
-	storeProvider interfaces.StoreProvider,
-	authorizer *Authorizer,
+	iamStore iamstore.IAMStoreInterface,
+	authorizer Authorizer,
 	accountID string,
 ) *Dispatcher {
 	authEnabled := os.Getenv("AUTHORIZATION_ENABLED") == "true"
@@ -71,7 +77,7 @@ func NewDispatcher(
 		builder:              resilience.NewOperationResilienceBuilder(resilienceConfig),
 		handlers:             make(map[string]Handler),
 		storageManager:       storageMgr,
-		storeProvider:        storeProvider,
+		iamStore:             iamStore,
 		auditConfig:          audit.DefaultConfig(),
 		serviceModeCache:     make(map[string]api.ServiceMode),
 		handlerExists:        make(map[string]bool),
@@ -90,7 +96,7 @@ func NewDispatcher(
 func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serviceName, opName string, parsedReq *request.ParsedRequest, handler Handler) {
 	httpCtx := r.Context()
 	reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
-	reqCtx.SetStoreProvider(d.storeProvider)
+	reqCtx.SetIAMStore(d.iamStore)
 	reqCtx.SetGraphDBManager(d.graphDB)
 
 	if d.authorizationEnabled && d.authorizer != nil {
@@ -99,7 +105,7 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 			d.handleErrorForRequest(w, r, err)
 			return
 		}
-		if !authzResult.Allowed {
+		if !authzResult {
 			d.handleErrorForRequest(w, r, awserrors.ErrAccessDenied)
 			return
 		}
@@ -115,6 +121,22 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 		return
 	}
 	d.writeResponseWithOpName(w, r, serviceName, opName, result)
+}
+
+// tryExecuteHandler looks up the handler for the given service/operation and
+// executes it with recovery if found. Returns true if the handler was executed.
+func (d *Dispatcher) tryExecuteHandler(w http.ResponseWriter, r *http.Request, serviceName, opName string, parsedReq *request.ParsedRequest) bool {
+	if opName == "" {
+		return false
+	}
+	h, exists := d.getHandler(serviceName, opName)
+	if !exists || h == nil {
+		return false
+	}
+	d.executeWithRecovery(w, r, serviceName, opName, func() {
+		d.executeHandler(w, r, serviceName, opName, parsedReq, h)
+	})
+	return true
 }
 
 // dispatchByServiceMode resolves the service mode and dispatches to the
@@ -171,13 +193,8 @@ func (d *Dispatcher) Dispatch(w http.ResponseWriter, r *http.Request, serviceNam
 		opName = parsedReq.Operation
 	}
 
-	if parseErr == nil && opName != "" {
-		if handler, exists := d.getHandler(serviceName, opName); exists && handler != nil {
-			d.executeWithRecovery(w, r, serviceName, opName, func() {
-				d.executeHandler(w, r, serviceName, opName, parsedReq, handler)
-			})
-			return
-		}
+	if parseErr == nil && d.tryExecuteHandler(w, r, serviceName, opName, parsedReq) {
+		return
 	}
 
 	if serviceName == "" {
@@ -203,14 +220,9 @@ func (d *Dispatcher) DispatchWithContext(w http.ResponseWriter, r *http.Request,
 		dispatchCtx = &DispatchContext{}
 	}
 
-	if dispatchCtx.Operation != "" {
-		if handler, exists := d.getHandler(dispatchCtx.ServiceName, dispatchCtx.Operation); exists && handler != nil {
-			d.executeWithRecovery(w, r, dispatchCtx.ServiceName, dispatchCtx.Operation, func() {
-				parsedReq := d.buildParsedRequest(r, dispatchCtx)
-				d.executeHandler(w, r, dispatchCtx.ServiceName, dispatchCtx.Operation, parsedReq, handler)
-			})
-			return
-		}
+	parsedReq := d.buildParsedRequest(r, dispatchCtx)
+	if d.tryExecuteHandler(w, r, dispatchCtx.ServiceName, dispatchCtx.Operation, parsedReq) {
+		return
 	}
 
 	d.Dispatch(w, r, dispatchCtx.ServiceName, nil)
@@ -221,13 +233,6 @@ func (d *Dispatcher) SetGraphDB(db *graphengine.DB) {
 	d.graphDB = db
 }
 
-// SetNeptuneStore sets the Neptune store on the underlying store provider.
-func (d *Dispatcher) SetNeptuneStore(store neptunestore.NeptuneStoreInterface) {
-	if sp, ok := d.storeProvider.(*interfaces.StoreProviderImpl); ok {
-		sp.SetNeptuneStore(store)
-	}
-}
-
 // DispatchClassified handles an incoming HTTP request that has already been
 // classified by the request classifier. It converts the ClassifiedRequest to
 // a ParsedRequest and routes it through the standard dispatch pipeline,
@@ -235,15 +240,8 @@ func (d *Dispatcher) SetNeptuneStore(store neptunestore.NeptuneStoreInterface) {
 func (d *Dispatcher) DispatchClassified(w http.ResponseWriter, r *http.Request, cr *classifier.ClassifiedRequest) {
 	parsedReq := classifiedToParsed(cr)
 
-	opName := parsedReq.Operation
-
-	if opName != "" {
-		if handler, exists := d.getHandler(cr.ServiceName, opName); exists && handler != nil {
-			d.executeWithRecovery(w, r, cr.ServiceName, opName, func() {
-				d.executeHandler(w, r, cr.ServiceName, opName, parsedReq, handler)
-			})
-			return
-		}
+	if d.tryExecuteHandler(w, r, cr.ServiceName, parsedReq.Operation, parsedReq) {
+		return
 	}
 
 	if cr.ServiceName == "" {
@@ -252,7 +250,7 @@ func (d *Dispatcher) DispatchClassified(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	d.dispatchByServiceMode(w, r, cr.ServiceName, opName, nil, parsedReq)
+	d.dispatchByServiceMode(w, r, cr.ServiceName, parsedReq.Operation, nil, parsedReq)
 }
 
 // classifiedToParsed converts a ClassifiedRequest into a ParsedRequest
@@ -289,4 +287,9 @@ func classifiedToParsed(cr *classifier.ClassifiedRequest) *request.ParsedRequest
 	}
 
 	return parsed
+}
+
+// SetCloudTrailRecorderFactory sets the factory function for creating CloudTrail audit recorders.
+func (d *Dispatcher) SetCloudTrailRecorderFactory(factory CloudTrailRecorderFactory) {
+	d.cloudTrailRecorderFactory = factory
 }

@@ -9,13 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
+	"vorpalstacks/internal/core/logs"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	arncommon "vorpalstacks/internal/utils/aws/arn"
 )
@@ -336,21 +335,8 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 	}
 
 	sqsStore := s.sqsStore
-	if sqsStore == nil {
-		sqsStore = reqCtx.GetSQSStore()
-	}
 	snsStore := s.snsStore
-	if snsStore == nil {
-		snsStore = reqCtx.GetSNSStore()
-	}
 	eventsStore := s.eventsStore
-	if eventsStore == nil {
-		if ebStore := reqCtx.GetEventBridgeStore(); ebStore != nil {
-			if concrete, ok := ebStore.(*eventsstore.EventsStore); ok {
-				eventsStore = concrete
-			}
-		}
-	}
 
 	executor := NewExecutorWithStores(store, s.lambdaInvoker, sqsStore, snsStore, eventsStore, s.accountID, reqCtx.GetRegion())
 	executor.SetEventBus(s.bus)
@@ -365,7 +351,9 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 				logs.Error("sfn: panic in execution", logs.String("arn", executionArn), logs.Any("panic", r))
 			}
 		}()
-		_ = executor.ExecuteStateMachine(execCtx, exec)
+		if err := executor.ExecuteStateMachine(execCtx, exec); err != nil {
+			logs.Error("sfn: execution error", logs.String("arn", executionArn), logs.Err(err))
+		}
 	}()
 
 	return map[string]interface{}{

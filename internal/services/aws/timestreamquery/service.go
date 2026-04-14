@@ -44,59 +44,28 @@ func NewService(accountID, serverHost, dataPath string) *Service {
 }
 
 func (s *Service) store(ctx *request.RequestContext) (*tsQueryStores, error) {
-	if stores := ctx.GetTimestreamStores(); stores != nil {
+	return storecommon.GetOrCreateStoreE(&s.stores, ctx.GetRegion(), func() (*tsQueryStores, error) {
 		storage, err := ctx.GetStorage()
 		if err != nil {
 			return nil, err
 		}
-		region := ctx.GetRegion()
+		dbStore := tsstore.NewStore(storage, s.accountID, ctx.GetRegion())
+		tableStore := tsstore.NewTableStore(storage, dbStore, s.accountID, ctx.GetRegion())
+		recordStore, err := tsstore.NewRecordStoreWithIndex(storage, tableStore, ctx.GetRegion(), s.dataPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create record store: %w", err)
+		}
 		return &tsQueryStores{
-			recordStore:            stores.RecordStore().Raw(),
-			tableStore:             stores.TableStore().Raw(),
-			dbStore:                stores.DatabaseStore().Raw(),
-			scheduledQueryStore:    stores.ScheduledQueryStore().Raw(),
-			scheduledQueryRunStore: stores.ScheduledQueryRunStore().Raw(),
-			accountSettingsStore:   stores.AccountSettingsStore().Raw(),
-			queryInfoStore:         storecommon.NewBaseStore(storage.Bucket("timestream-query-info-"+region), "timestream-query"),
+			recordStore:            recordStore,
+			tableStore:             tableStore,
+			dbStore:                dbStore,
+			scheduledQueryStore:    tsstore.NewScheduledQueryStore(storage, s.accountID, ctx.GetRegion()),
+			scheduledQueryRunStore: tsstore.NewScheduledQueryRunStore(storage, ctx.GetRegion()),
+			accountSettingsStore:   tsstore.NewAccountSettingsStore(storage, s.accountID, ctx.GetRegion()),
+			queryInfoStore:         storecommon.NewBaseStore(storage.Bucket("timestream-query-info-"+ctx.GetRegion()), "timestream-query"),
 			arnBuilder:             svcarn.NewARNBuilder(s.accountID, ctx.GetRegion()),
 		}, nil
-	}
-
-	region := ctx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(*tsQueryStores); ok {
-			return typed, nil
-		}
-	}
-
-	storage, err := ctx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-
-	dbStore := tsstore.NewStore(storage, s.accountID, region)
-	tableStore := tsstore.NewTableStore(storage, dbStore, s.accountID, region)
-	recordStore, err := tsstore.NewRecordStoreWithIndex(storage, tableStore, region, s.dataPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create record store: %w", err)
-	}
-
-	stores := &tsQueryStores{
-		recordStore:            recordStore,
-		tableStore:             tableStore,
-		dbStore:                dbStore,
-		scheduledQueryStore:    tsstore.NewScheduledQueryStore(storage, s.accountID, region),
-		scheduledQueryRunStore: tsstore.NewScheduledQueryRunStore(storage, region),
-		accountSettingsStore:   tsstore.NewAccountSettingsStore(storage, s.accountID, region),
-		queryInfoStore:         storecommon.NewBaseStore(storage.Bucket("timestream-query-info-"+region), "timestream-query"),
-		arnBuilder:             svcarn.NewARNBuilder(s.accountID, region),
-	}
-	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
-		if typed, ok := actual.(*tsQueryStores); ok {
-			return typed, nil
-		}
-	}
-	return stores, nil
+	})
 }
 
 // RegisterHandlers registers the Timestream Query service handlers with the dispatcher.

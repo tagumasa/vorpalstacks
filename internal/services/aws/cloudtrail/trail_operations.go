@@ -209,10 +209,6 @@ func (s *CloudTrailService) DescribeTrails(ctx context.Context, reqCtx *request.
 
 	var trails []*cloudtrailstore.Trail
 
-	trailNameListParam := getParam(req, "TrailNameList")
-	if trailNameListParam == "" {
-		trailNameListParam = getParam(req, "trailNameList")
-	}
 	trailNameListRaw := req.Parameters["TrailNameList"]
 	if trailNameListRaw == nil {
 		trailNameListRaw = req.Parameters["trailNameList"]

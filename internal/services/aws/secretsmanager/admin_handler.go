@@ -2,6 +2,7 @@ package secretsmanager
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
@@ -26,4 +27,8 @@ func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.
 	return connect.NewResponse(&pb.ListSecretsResponse{
 		Secretlist: []*pb.SecretListEntry{},
 	}), nil
+}
+
+func NewConnectHandler() (string, http.Handler) {
+	return secretsmanagerconnect.NewSecretsManagerServiceHandler(NewAdminHandler())
 }

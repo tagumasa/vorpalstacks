@@ -2,13 +2,14 @@ package ssm
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/ssm"
 	ssmconnect "vorpalstacks/internal/pb/aws/ssm/ssmconnect"
-	svccommon "vorpalstacks/internal/common"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
@@ -105,4 +106,8 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 		Parameters: metadataList,
 		Nexttoken:  nextToken,
 	}), nil
+}
+
+func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
+	return ssmconnect.NewSSMServiceHandler(NewAdminHandler(sm, accountID))
 }

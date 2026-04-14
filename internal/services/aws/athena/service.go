@@ -8,7 +8,8 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
-	athenastore "vorpalstacks/internal/store/aws/athena"
+	"vorpalstacks/internal/store/aws/athena"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
@@ -21,15 +22,15 @@ type S3ObjectStore interface {
 
 // athenaStores holds the various Athena stores.
 type athenaStores struct {
-	workGroupStore         *athenastore.WorkGroupStore
-	namedQueryStore        *athenastore.NamedQueryStore
-	preparedStatementStore *athenastore.PreparedStatementStore
-	queryExecutionStore    *athenastore.QueryExecutionStore
-	resultStore            *athenastore.ResultStore
-	dataCatalogStore       *athenastore.DataCatalogStore
-	databaseStore          *athenastore.DatabaseStore
-	tableStore             *athenastore.TableStore
-	tableDataStore         *athenastore.TableDataStore
+	workGroupStore         *athena.WorkGroupStore
+	namedQueryStore        *athena.NamedQueryStore
+	preparedStatementStore *athena.PreparedStatementStore
+	queryExecutionStore    *athena.QueryExecutionStore
+	resultStore            *athena.ResultStore
+	dataCatalogStore       *athena.DataCatalogStore
+	databaseStore          *athena.DatabaseStore
+	tableStore             *athena.TableStore
+	tableDataStore         *athena.TableDataStore
 }
 
 // Service provides AWS Athena operations.
@@ -75,49 +76,23 @@ func (s *Service) getAndRemoveCancelFunc(id string) (context.CancelFunc, bool) {
 }
 
 func (s *Service) store(reqCtx *request.RequestContext) (*athenaStores, error) {
-	if athenaStore := reqCtx.GetAthenaStore(); athenaStore != nil {
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*athenaStores, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, err
+		}
 		return &athenaStores{
-			workGroupStore:         athenaStore.WorkGroupStoreRaw(),
-			namedQueryStore:        athenaStore.NamedQueryStoreRaw(),
-			preparedStatementStore: athenaStore.PreparedStatementStoreRaw(),
-			queryExecutionStore:    athenaStore.QueryExecutionStoreRaw(),
-			resultStore:            athenaStore.ResultStoreRaw(),
-			dataCatalogStore:       athenaStore.DataCatalogStoreRaw(),
-			databaseStore:          athenaStore.DatabaseStoreRaw(),
-			tableStore:             athenaStore.TableStoreRaw(),
-			tableDataStore:         athenaStore.TableDataStoreRaw(),
+			workGroupStore:         athena.NewWorkGroupStore(storage, s.accountID, reqCtx.GetRegion()),
+			namedQueryStore:        athena.NewNamedQueryStore(storage, reqCtx.GetRegion()),
+			preparedStatementStore: athena.NewPreparedStatementStore(storage, reqCtx.GetRegion()),
+			queryExecutionStore:    athena.NewQueryExecutionStore(storage, reqCtx.GetRegion()),
+			resultStore:            athena.NewResultStore(storage, reqCtx.GetRegion()),
+			dataCatalogStore:       athena.NewDataCatalogStore(storage, reqCtx.GetRegion()),
+			databaseStore:          athena.NewDatabaseStore(storage, reqCtx.GetRegion()),
+			tableStore:             athena.NewTableStore(storage, reqCtx.GetRegion()),
+			tableDataStore:         athena.NewTableDataStore(storage, reqCtx.GetRegion()),
 		}, nil
-	}
-
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(*athenaStores); ok {
-			return typed, nil
-		}
-	}
-
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-
-	stores := &athenaStores{
-		workGroupStore:         athenastore.NewWorkGroupStore(storage, s.accountID, region),
-		namedQueryStore:        athenastore.NewNamedQueryStore(storage, region),
-		preparedStatementStore: athenastore.NewPreparedStatementStore(storage, region),
-		queryExecutionStore:    athenastore.NewQueryExecutionStore(storage, region),
-		resultStore:            athenastore.NewResultStore(storage, region),
-		dataCatalogStore:       athenastore.NewDataCatalogStore(storage, region),
-		databaseStore:          athenastore.NewDatabaseStore(storage, region),
-		tableStore:             athenastore.NewTableStore(storage, region),
-		tableDataStore:         athenastore.NewTableDataStore(storage, region),
-	}
-	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
-		if typed, ok := actual.(*athenaStores); ok {
-			return typed, nil
-		}
-	}
-	return stores, nil
+	})
 }
 
 // Shutdown gracefully shuts down the Athena service by waiting for all asynchronous operations to complete.

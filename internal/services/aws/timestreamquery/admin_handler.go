@@ -2,13 +2,14 @@ package timestreamquery
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/timestreamquery"
 	timestreamqueryconnect "vorpalstacks/internal/pb/aws/timestreamquery/timestreamqueryconnect"
-	svccommon "vorpalstacks/internal/common"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 )
 
@@ -75,4 +76,8 @@ func (h *AdminHandler) ListScheduledQueries(ctx context.Context, req *connect.Re
 	return connect.NewResponse(&pb.ListScheduledQueriesResponse{
 		Scheduledqueries: summaries,
 	}), nil
+}
+
+func NewConnectHandler(sm *storage.RegionStorageManager, accountID, dataPath string) (string, http.Handler) {
+	return timestreamqueryconnect.NewTimestreamQueryServiceHandler(NewAdminHandler(sm, accountID, dataPath))
 }

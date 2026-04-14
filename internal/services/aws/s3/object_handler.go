@@ -31,15 +31,7 @@ func clampInt(val, min, max int) int {
 	return val
 }
 
-func clampInt64(val, min, max int64) int64 {
-	if val < min {
-		return min
-	}
-	if val > max {
-		return max
-	}
-	return val
-}
+
 
 // HandleRequest processes HTTP requests for object-level operations such as
 // get, put, delete, copy, multipart uploads, tagging, ACL, and legal hold.

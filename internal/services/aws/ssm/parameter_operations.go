@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
@@ -99,7 +100,9 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 
 	if !overwrite {
 		if tags := tagutil.GetTags(req.Parameters, tagutil.StandardConfig); len(tags) > 0 {
-			store.AddTagsToResource(name, tagutil.ToMap(tags))
+			if err := store.AddTagsToResource(name, tagutil.ToMap(tags)); err != nil {
+				logs.Warn("Failed to add tags to parameter", logs.String("name", name), logs.Err(err))
+			}
 		}
 	}
 
@@ -133,7 +136,7 @@ func (s *SSMService) GetParameter(ctx context.Context, reqCtx *request.RequestCo
 	if selector == "" {
 		param, err = store.GetParameter(baseName, false)
 		usedSelector = ""
-	} else if version, err := strconv.ParseInt(selector, 10, 64); err == nil {
+	} else if version, parseErr := strconv.ParseInt(selector, 10, 64); parseErr == nil {
 		param, err = store.GetParameterByVersion(baseName, version)
 		usedSelector = name
 	} else {

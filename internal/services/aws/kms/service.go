@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/iam/policy"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/services/aws/kms/hsm"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
@@ -41,36 +42,18 @@ func NewKMSService(accountID, region string, hsmBackend hsm.Backend) *KMSService
 }
 
 func (s *KMSService) store(reqCtx *request.RequestContext) (*kmsStores, error) {
-	if stores := reqCtx.GetKMSStores(); stores != nil {
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*kmsStores, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, err
+		}
 		return &kmsStores{
-			keys:        stores.KeyStore().Raw(),
-			aliases:     stores.AliasStore().Raw(),
-			grants:      stores.GrantStore().Raw(),
-			keyPolicies: stores.KeyPolicyStore().Raw(),
+			keys:        kmsstore.NewKeyStore(storage, s.accountID, reqCtx.GetRegion()),
+			aliases:     kmsstore.NewAliasStore(storage, s.accountID, reqCtx.GetRegion()),
+			grants:      kmsstore.NewGrantStore(storage, s.accountID, reqCtx.GetRegion()),
+			keyPolicies: kmsstore.NewKeyPolicyStore(storage, reqCtx.GetRegion()),
 		}, nil
-	}
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(*kmsStores); ok {
-			return typed, nil
-		}
-	}
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	stores := &kmsStores{
-		keys:        kmsstore.NewKeyStore(storage, s.accountID, region),
-		aliases:     kmsstore.NewAliasStore(storage, s.accountID, region),
-		grants:      kmsstore.NewGrantStore(storage, s.accountID, region),
-		keyPolicies: kmsstore.NewKeyPolicyStore(storage, region),
-	}
-	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
-		if typed, ok := actual.(*kmsStores); ok {
-			return typed, nil
-		}
-	}
-	return stores, nil
+	})
 }
 
 // RegisterHandlers registers the KMS service handlers with the dispatcher.

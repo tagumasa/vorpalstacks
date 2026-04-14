@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	acmstore "vorpalstacks/internal/store/aws/acm"
 )
 
@@ -57,5 +58,5 @@ func (s *ACMService) PutAccountConfiguration(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }

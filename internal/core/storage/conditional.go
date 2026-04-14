@@ -24,10 +24,7 @@ func NewConditionalPebbleBucket(db *pebbledb.DB, prefix []byte) *ConditionalPebb
 }
 
 func (b *ConditionalPebbleBucket) makeKey(key []byte) []byte {
-	k := make([]byte, len(b.prefix)+len(key))
-	copy(k, b.prefix)
-	copy(k[len(b.prefix):], key)
-	return k
+	return makePrefixedKey(b.prefix, key)
 }
 
 // PutIf atomically checks a condition before writing a value.

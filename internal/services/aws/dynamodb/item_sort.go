@@ -7,61 +7,9 @@ import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
-func sortItemsBySortKey(table *dbstore.Table, items []*dbstore.Item) {
-	var sortKeyName string
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == dbstore.KeyTypeRange {
-			sortKeyName = ks.AttributeName
-			break
-		}
-	}
-	if sortKeyName == "" {
-		return
-	}
 
-	sort.Slice(items, func(i, j int) bool {
-		avI := items[i].Attributes[sortKeyName]
-		avJ := items[j].Attributes[sortKeyName]
-		if avI == nil || avJ == nil {
-			return false
-		}
-		if avI.N != nil && avJ.N != nil {
-			return compareNumberStrings(*avI.N, *avJ.N) < 0
-		}
-		if avI.S != nil && avJ.S != nil {
-			return *avI.S < *avJ.S
-		}
-		return false
-	})
-}
 
-func sortItemsReverseBySortKey(table *dbstore.Table, items []*dbstore.Item) {
-	var sortKeyName string
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == dbstore.KeyTypeRange {
-			sortKeyName = ks.AttributeName
-			break
-		}
-	}
-	if sortKeyName == "" {
-		return
-	}
 
-	sort.Slice(items, func(i, j int) bool {
-		avI := items[i].Attributes[sortKeyName]
-		avJ := items[j].Attributes[sortKeyName]
-		if avI == nil || avJ == nil {
-			return false
-		}
-		if avI.N != nil && avJ.N != nil {
-			return compareNumberStrings(*avI.N, *avJ.N) > 0
-		}
-		if avI.S != nil && avJ.S != nil {
-			return *avI.S > *avJ.S
-		}
-		return false
-	})
-}
 
 func getSortKeyName(table *dbstore.Table, indexName string) string {
 	if indexName == "" {

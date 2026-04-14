@@ -37,6 +37,10 @@ const (
 	// sqsReceiveMessageMax is the maximum number of messages that can be
 	// returned by a single SQS ReceiveMessage call.
 	sqsReceiveMessageMax = int32(10)
+
+	// esmCheckpointBucket is the Pebble bucket name used to persist
+	// Kinesis ESM checkpoint data across server restarts.
+	esmCheckpointBucket = "lambda-esm-checkpoints"
 )
 
 // esmSQSRecord represents a single SQS message formatted as an ESM event
@@ -124,6 +128,8 @@ func (p *esmPoller) Start(ctx context.Context) {
 	p.running = true
 	ctx, p.cancel = context.WithCancel(ctx)
 	p.mu.Unlock()
+
+	p.loadKinesisCheckpoints()
 
 	p.wg.Add(1)
 	go p.pollLoop(ctx)
@@ -394,6 +400,10 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 		p.kinesisCPMu.Lock()
 		p.kinesisCP[cpKey] = latestSeq
 		p.kinesisCPMu.Unlock()
+		if err := p.persistKinesisCheckpoint(cpKey, latestSeq); err != nil {
+			logs.Warn("esm: failed to persist Kinesis checkpoint, in-memory state may diverge on restart",
+				logs.String("key", cpKey), logs.Err(err))
+		}
 	}
 
 	if err := p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors."); err != nil {
@@ -591,9 +601,55 @@ func (p *esmPoller) purgeStaleKinesisCheckpoints(activeKinesisUUIDs map[string]s
 		uuid := key[:uuidEnd]
 		if _, active := activeKinesisUUIDs[uuid]; !active {
 			delete(p.kinesisCP, key)
+			if err := p.deleteKinesisCheckpoint(key); err != nil {
+				logs.Warn("esm: failed to delete stale Kinesis checkpoint from persistence",
+					logs.String("key", key), logs.Err(err))
+			}
 		}
 	}
 	p.kinesisCPMu.Unlock()
+}
+
+func (p *esmPoller) loadKinesisCheckpoints() {
+	bucket := p.checkpointBucket()
+	if bucket == nil {
+		return
+	}
+	p.kinesisCPMu.Lock()
+	if err := bucket.ForEach(func(k, v []byte) error {
+		p.kinesisCP[string(k)] = string(v)
+		return nil
+	}); err != nil {
+		logs.Error("esm: failed to load Kinesis checkpoints from persistence", logs.Err(err))
+	}
+	p.kinesisCPMu.Unlock()
+}
+
+func (p *esmPoller) persistKinesisCheckpoint(cpKey, seqNum string) error {
+	bucket := p.checkpointBucket()
+	if bucket == nil {
+		return fmt.Errorf("checkpoint bucket unavailable")
+	}
+	return bucket.Put([]byte(cpKey), []byte(seqNum))
+}
+
+func (p *esmPoller) deleteKinesisCheckpoint(cpKey string) error {
+	bucket := p.checkpointBucket()
+	if bucket == nil {
+		return fmt.Errorf("checkpoint bucket unavailable")
+	}
+	return bucket.Delete([]byte(cpKey))
+}
+
+func (p *esmPoller) checkpointBucket() storage.Bucket {
+	if p.storageManager == nil {
+		return nil
+	}
+	st, err := p.storageManager.GetStorage(p.region)
+	if err != nil {
+		return nil
+	}
+	return st.Bucket(esmCheckpointBucket)
 }
 
 // log emits a structured log message if a logger is configured on the

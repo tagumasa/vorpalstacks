@@ -94,7 +94,10 @@ func (s *SESv2Store) DeleteContactList(name string) error {
 	result, err := common.List[Contact](s.contactStore, common.ListOptions{Prefix: prefix, MaxItems: 10000}, nil)
 	if err == nil {
 		for _, c := range result.Items {
-			_ = s.contactStore.Delete("contact#" + c.ContactListName + "#" + c.EmailAddress)
+			if delErr := s.contactStore.Delete("contact#" + c.ContactListName + "#" + c.EmailAddress); delErr != nil {
+				logs.Warn("failed to delete contact during contact list deletion",
+					logs.String("email", c.EmailAddress), logs.Err(delErr))
+			}
 		}
 	}
 	arn := s.arnBuilder.Build("ses", "contact-list/"+name)

@@ -2,13 +2,14 @@ package lambda
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/lambda"
 	lambdaconnect "vorpalstacks/internal/pb/aws/lambda/lambdaconnect"
-	svccommon "vorpalstacks/internal/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
@@ -91,4 +92,8 @@ func (h *AdminHandler) ListFunctions(ctx context.Context, req *connect.Request[p
 		resp.Nextmarker = result.NextMarker
 	}
 	return connect.NewResponse(resp), nil
+}
+
+func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
+	return lambdaconnect.NewLambdaServiceHandler(NewAdminHandler(sm, accountID))
 }

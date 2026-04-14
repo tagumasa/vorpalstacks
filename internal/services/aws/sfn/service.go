@@ -8,12 +8,12 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common"
-	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -142,12 +142,6 @@ func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt
 }
 
 func (s *StepFunctionService) store(reqCtx *request.RequestContext) (*sfnstore.StepFunctionStore, error) {
-	if sfnStore := reqCtx.GetSFNStore(); sfnStore != nil {
-		if concrete, ok := sfnStore.(*sfnstore.StepFunctionStore); ok {
-			return concrete, nil
-		}
-	}
-
 	region := reqCtx.GetRegion()
 	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (*sfnstore.StepFunctionStore, error) {
 		storage, err := reqCtx.GetStorage()

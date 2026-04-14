@@ -2,23 +2,10 @@ package dynamodb
 
 import (
 	"bytes"
-	"encoding/base64"
 	"strings"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
-
-func skipToKey(items []*dbstore.Item, exclusiveStartKey string) []*dbstore.Item {
-	for i, item := range items {
-		if itemKeyToString(item) == exclusiveStartKey {
-			if i+1 < len(items) {
-				return items[i+1:]
-			}
-			return nil
-		}
-	}
-	return nil
-}
 
 func skipToKeyMap(items []*dbstore.Item, exclusiveStartKey map[string]*dbstore.AttributeValue, table *dbstore.Table, indexName string) []*dbstore.Item {
 	if exclusiveStartKey == nil {
@@ -123,23 +110,6 @@ func itemKeyMatches(itemKey, searchKey map[string]*dbstore.AttributeValue) bool 
 		}
 	}
 	return true
-}
-
-func itemKeyToString(item *dbstore.Item) string {
-	if item == nil || item.Key == nil {
-		return ""
-	}
-	result := ""
-	for k, v := range item.Key {
-		if v.S != nil {
-			result += k + "=" + *v.S + ";"
-		} else if v.N != nil {
-			result += k + "=" + *v.N + ";"
-		} else if v.B != nil {
-			result += k + "=" + base64.StdEncoding.EncodeToString(v.B) + ";"
-		}
-	}
-	return result
 }
 
 func evaluateConditionExpression(item *dbstore.Item, conditionExpr string, exprAttrNames map[string]string, exprAttrValues map[string]*dbstore.AttributeValue) (bool, error) {

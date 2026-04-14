@@ -4,6 +4,7 @@ package iam
 import (
 	"context"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 )
 
 // AddUserToGroup adds a user to a group.
@@ -38,7 +39,7 @@ func (s *IAMService) AddUserToGroup(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // RemoveUserFromGroup removes a user from a group.
@@ -73,5 +74,5 @@ func (s *IAMService) RemoveUserFromGroup(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }

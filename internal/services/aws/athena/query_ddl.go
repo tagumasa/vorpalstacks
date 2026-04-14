@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
@@ -121,7 +122,9 @@ func (s *Service) executeCreateTable(reqCtx *request.RequestContext, queryString
 			Columns:      columns,
 			Rows:         []*athenastore.StoredRow{},
 		}
-		_ = stores.tableDataStore.StoreTableData(catalog, database, tableName, storedTable)
+		if err := stores.tableDataStore.StoreTableData(catalog, database, tableName, storedTable); err != nil {
+			logs.Warn("failed to store table data after CREATE TABLE", logs.String("table", tableName), logs.Err(err))
+		}
 	}
 
 	return &athenastore.ResultSet{
@@ -159,7 +162,9 @@ func (s *Service) executeDropTable(reqCtx *request.RequestContext, queryString s
 		return nil, nil, fmt.Errorf("failed to drop table: %w", err)
 	}
 
-	_ = stores.tableDataStore.DeleteTableData(catalog, database, tableName)
+	if err := stores.tableDataStore.DeleteTableData(catalog, database, tableName); err != nil {
+		logs.Warn("failed to delete table data after DROP TABLE", logs.String("table", tableName), logs.Err(err))
+	}
 
 	return &athenastore.ResultSet{
 			Rows:              []athenastore.Row{},

@@ -7,6 +7,7 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	acmstore "vorpalstacks/internal/store/aws/acm"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // acmStores holds the various ACM stores.
@@ -31,32 +32,16 @@ func NewACMService(accountID, region string) *ACMService {
 }
 
 func (s *ACMService) store(reqCtx *request.RequestContext) (*acmStores, error) {
-	if certStore := reqCtx.GetACMStore(); certStore != nil {
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*acmStores, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, err
+		}
 		return &acmStores{
-			certificates: certStore,
-			arnBuilder:   acmstore.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()),
+			certificates: acmstore.NewCertificateStore(storage, s.accountID, reqCtx.GetRegion()),
+			arnBuilder:   acmstore.NewARNBuilder(s.accountID, reqCtx.GetRegion()),
 		}, nil
-	}
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(*acmStores); ok {
-			return typed, nil
-		}
-	}
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	stores := &acmStores{
-		certificates: acmstore.NewCertificateStore(storage, s.accountID, region),
-		arnBuilder:   acmstore.NewARNBuilder(s.accountID, region),
-	}
-	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
-		if typed, ok := actual.(*acmStores); ok {
-			return typed, nil
-		}
-	}
-	return stores, nil
+	})
 }
 
 // RegisterHandlers registers all ACM operation handlers with the dispatcher.

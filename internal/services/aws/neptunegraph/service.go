@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 	"vorpalstacks/pkg/graphengine"
@@ -25,8 +25,6 @@ import (
 const (
 	graphNamePattern     = `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
 	snapshotNamePattern  = `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
-	graphIDPattern       = `^g-[a-z0-9]{10}$`
-	snapshotIDPattern    = `^gs-[a-z0-9]{10}$`
 	graphDataDirPrefix   = "neptunegraph/graphs"
 	arnPrefix            = "arn:aws:neptune-graph"
 	minProvisionedMemory = 16
@@ -39,8 +37,6 @@ const (
 var (
 	graphNameRegex    = regexp.MustCompile(graphNamePattern)
 	snapshotNameRegex = regexp.MustCompile(snapshotNamePattern)
-	graphIDRegex      = regexp.MustCompile(graphIDPattern)
-	snapshotIDRegex   = regexp.MustCompile(snapshotIDPattern)
 	tagKeyRegex       = regexp.MustCompile(tagKeyPattern)
 )
 
@@ -53,6 +49,7 @@ type NeptuneGraphService struct {
 	stores         sync.Map
 	activeEngines  map[string]*engineEntry
 	enginesMu      sync.RWMutex
+	taskWg         sync.WaitGroup
 }
 
 type engineEntry struct {
@@ -80,6 +77,7 @@ func (s *NeptuneGraphService) Close() {
 		delete(s.activeEngines, id)
 	}
 	s.enginesMu.Unlock()
+	s.taskWg.Wait()
 }
 
 // RestoreEngines reopens graph engines for all AVAILABLE graphs after a service restart.
@@ -136,13 +134,6 @@ func (s *NeptuneGraphService) GetStoreForRegion(region string) (*ngstore.Neptune
 func (s *NeptuneGraphService) store(reqCtx *request.RequestContext) (*ngstore.NeptuneGraphStore, error) {
 	region := reqCtx.GetRegion()
 	return s.GetStoreForRegion(region)
-}
-
-func (s *NeptuneGraphService) getEngine(graphID string) (*engineEntry, bool) {
-	s.enginesMu.RLock()
-	defer s.enginesMu.RUnlock()
-	entry, ok := s.activeEngines[graphID]
-	return entry, ok
 }
 
 // RegisterHandlers registers all NeptuneGraph operation handlers with the dispatcher.
@@ -373,7 +364,9 @@ func (s *NeptuneGraphService) UpdateGraph(ctx context.Context, reqCtx *request.R
 	}
 
 	graph.Status = "AVAILABLE"
-	store.UpdateGraph(graph)
+	if err := store.UpdateGraph(graph); err != nil {
+		logs.Warn("failed to update graph status to AVAILABLE", logs.String("graphId", graph.Id), logs.Err(err))
+	}
 
 	return graphToResponse(graph, false), nil
 }
@@ -417,11 +410,15 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 			AccountID:          s.accountID,
 			Region:             graph.Region,
 		}
-		store.CreateSnapshot(snapshot)
+		if err := store.CreateSnapshot(snapshot); err != nil {
+			logs.Warn("failed to create auto snapshot during graph deletion", logs.String("graphId", graphID), logs.Err(err))
+		}
 	}
 
 	graph.Status = "DELETING"
-	store.UpdateGraph(graph)
+	if err := store.UpdateGraph(graph); err != nil {
+		logs.Warn("failed to update graph status to DELETING", logs.String("graphId", graphID), logs.Err(err))
+	}
 
 	if graph.Arn != "" {
 		existingTags, _ := store.GetTags(graph.Arn)
@@ -430,7 +427,9 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 			for k := range existingTags {
 				keys = append(keys, k)
 			}
-			store.RemoveTags(graph.Arn, keys)
+			if err := store.RemoveTags(graph.Arn, keys); err != nil {
+				logs.Warn("failed to remove tags during graph deletion", logs.String("arn", graph.Arn), logs.Err(err))
+			}
 		}
 	}
 
@@ -444,7 +443,9 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 	graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, graphID)
 	os.RemoveAll(graphDir)
 
-	store.DeleteGraph(graphID)
+	if err := store.DeleteGraph(graphID); err != nil {
+		logs.Warn("failed to delete graph", logs.String("graphId", graphID), logs.Err(err))
+	}
 
 	return graphToResponse(graph, false), nil
 }
@@ -474,14 +475,16 @@ func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.Re
 	}
 
 	graph.Status = "STARTING"
-	store.UpdateGraph(graph)
+	if err := store.UpdateGraph(graph); err != nil {
+		logs.Warn("failed to update graph status to STARTING", logs.String("graphId", graphID), logs.Err(err))
+	}
 
 	graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, graphID)
 	db, err := graphengine.Open(graphDir, graphengine.DefaultOptions())
 	if err != nil {
 		graph.Status = "FAILED"
 		graph.StatusReason = err.Error()
-		store.UpdateGraph(graph)
+		_ = store.UpdateGraph(graph)
 		return nil, newInternalServerException(err)
 	}
 
@@ -490,7 +493,9 @@ func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.Re
 	s.enginesMu.Unlock()
 
 	graph.Status = "AVAILABLE"
-	store.UpdateGraph(graph)
+	if err := store.UpdateGraph(graph); err != nil {
+		logs.Warn("Failed to update graph status to AVAILABLE", logs.Err(err))
+	}
 
 	return graphToResponse(graph, false), nil
 }
@@ -520,7 +525,9 @@ func (s *NeptuneGraphService) StopGraph(ctx context.Context, reqCtx *request.Req
 	}
 
 	graph.Status = "STOPPING"
-	store.UpdateGraph(graph)
+	if err := store.UpdateGraph(graph); err != nil {
+		logs.Warn("Failed to update graph status to STOPPING", logs.Err(err))
+	}
 
 	s.enginesMu.Lock()
 	if entry, ok := s.activeEngines[graphID]; ok {
@@ -532,7 +539,9 @@ func (s *NeptuneGraphService) StopGraph(ctx context.Context, reqCtx *request.Req
 	s.enginesMu.Unlock()
 
 	graph.Status = "STOPPED"
-	store.UpdateGraph(graph)
+	if err := store.UpdateGraph(graph); err != nil {
+		logs.Warn("Failed to update graph status to STOPPED", logs.Err(err))
+	}
 
 	return graphToResponse(graph, false), nil
 }
@@ -562,7 +571,9 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 	}
 
 	graph.Status = "RESETTING"
-	store.UpdateGraph(graph)
+	if err := store.UpdateGraph(graph); err != nil {
+		logs.Warn("Failed to update graph status to RESETTING", logs.Err(err))
+	}
 
 	s.enginesMu.RLock()
 	entry, ok := s.activeEngines[graphID]
@@ -572,13 +583,15 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 		if err := entry.db.Clear(); err != nil {
 			graph.Status = "FAILED"
 			graph.StatusReason = err.Error()
-			store.UpdateGraph(graph)
+			_ = store.UpdateGraph(graph)
 			return nil, newInternalServerException(err)
 		}
 	}
 
 	graph.Status = "AVAILABLE"
-	store.UpdateGraph(graph)
+	if err := store.UpdateGraph(graph); err != nil {
+		logs.Warn("Failed to update graph status to AVAILABLE", logs.Err(err))
+	}
 
 	return graphToResponse(graph, false), nil
 }
@@ -659,7 +672,7 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 
 	srcDir := filepath.Join(s.dataPath, graphDataDirPrefix, snapshot.SourceGraphId)
 	if _, err := os.Stat(srcDir); err == nil {
-		copyGraphData(srcDir, graphDir)
+		_ = copyGraphData(srcDir, graphDir)
 	}
 
 	db, err := graphengine.Open(graphDir, graphengine.DefaultOptions())
@@ -672,18 +685,24 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 	}
 
 	graph.Status = "AVAILABLE"
-	store.UpdateGraph(graph)
+	if err := store.UpdateGraph(graph); err != nil {
+		logs.Warn("Failed to update restored graph status", logs.Err(err))
+	}
 
 	return graphToResponse(graph, true), nil
 }
 
-func copyGraphData(src, dst string) {
-	os.MkdirAll(dst, 0755)
+func copyGraphData(src, dst string) error {
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return err
+	}
 	srcGraph := filepath.Join(src, "graph")
 	dstGraph := filepath.Join(dst, "graph")
 	if _, err := os.Stat(srcGraph); err == nil {
-		os.MkdirAll(dstGraph, 0755)
-		filepath.Walk(srcGraph, func(path string, info os.FileInfo, err error) error {
+		if err := os.MkdirAll(dstGraph, 0755); err != nil {
+			return err
+		}
+		if err := filepath.Walk(srcGraph, func(path string, info os.FileInfo, err error) error {
 			if err != nil || info.IsDir() {
 				return nil
 			}
@@ -693,10 +712,15 @@ func copyGraphData(src, dst string) {
 			if err != nil {
 				return nil
 			}
-			os.WriteFile(destPath, data, 0644)
+			if err := os.WriteFile(destPath, data, 0644); err != nil {
+				logs.Warn("failed to copy graph data file", logs.String("path", destPath), logs.Err(err))
+			}
 			return nil
-		})
+		}); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // CreateGraphSnapshot creates a point-in-time snapshot of the specified graph.
@@ -956,7 +980,9 @@ func (s *NeptuneGraphService) DeletePrivateGraphEndpoint(ctx context.Context, re
 		return nil, err
 	}
 
-	store.DeleteEndpoint(graphID, vpcID)
+	if err := store.DeleteEndpoint(graphID, vpcID); err != nil {
+		logs.Warn("failed to delete endpoint", logs.String("graphId", graphID), logs.String("vpcId", vpcID), logs.Err(err))
+	}
 
 	return endpointToResponse(ep), nil
 }
@@ -1067,13 +1093,15 @@ func (s *NeptuneGraphService) ExecuteQuery(ctx context.Context, reqCtx *request.
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
 	}
 
-	s.enginesMu.RLock()
+	s.enginesMu.Lock()
 	entry, ok := s.activeEngines[graphID]
-	s.enginesMu.RUnlock()
-
 	if !ok || entry.stopped {
+		s.enginesMu.Unlock()
 		return nil, newValidationException("UNSUPPORTED_OPERATION", "graph is not available")
 	}
+	entry.wg.Add(1)
+	s.enginesMu.Unlock()
+	defer entry.wg.Done()
 
 	entry.mu.RLock()
 	defer entry.mu.RUnlock()
@@ -1166,13 +1194,19 @@ func (s *NeptuneGraphService) GetGraphSummary(ctx context.Context, reqCtx *reque
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
 	}
 
-	s.enginesMu.RLock()
+	s.enginesMu.Lock()
 	entry, ok := s.activeEngines[graphID]
-	s.enginesMu.RUnlock()
-
 	if !ok {
+		s.enginesMu.Unlock()
 		return nil, newResourceNotFoundException("graph", graphID)
 	}
+	if entry.stopped {
+		s.enginesMu.Unlock()
+		return nil, newResourceNotFoundException("graph", graphID)
+	}
+	entry.wg.Add(1)
+	s.enginesMu.Unlock()
+	defer entry.wg.Done()
 
 	stats := entry.db.Stats()
 	now := time.Now().UTC()
@@ -1316,6 +1350,7 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 		return nil, err
 	}
 
+	s.taskWg.Add(1)
 	go s.advanceImportTask(store, taskID, graphID)
 
 	return importTaskToResponse(task), nil
@@ -1400,11 +1435,15 @@ func (s *NeptuneGraphService) CancelImportTask(ctx context.Context, reqCtx *requ
 	}
 
 	task.Status = "CANCELLING"
-	store.UpdateImportTask(task)
+	if err := store.UpdateImportTask(task); err != nil {
+		logs.Warn("failed to update import task status to CANCELLING", logs.String("taskId", taskID), logs.Err(err))
+	}
 
 	task.Status = "CANCELLED"
 	task.StatusReason = "Cancelled by user"
-	store.UpdateImportTask(task)
+	if err := store.UpdateImportTask(task); err != nil {
+		logs.Warn("failed to update import task status to CANCELLED", logs.String("taskId", taskID), logs.Err(err))
+	}
 
 	return importTaskSummaryToResponse(task), nil
 }
@@ -1463,6 +1502,7 @@ func (s *NeptuneGraphService) StartImportTask(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
+	s.taskWg.Add(1)
 	go s.advanceImportTask(store, taskID, graphID)
 
 	return importTaskToResponse(task), nil
@@ -1531,6 +1571,7 @@ func (s *NeptuneGraphService) StartExportTask(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
+	s.taskWg.Add(1)
 	go s.advanceExportTask(store, taskID)
 
 	return exportTaskToResponse(task), nil
@@ -1616,16 +1657,21 @@ func (s *NeptuneGraphService) CancelExportTask(ctx context.Context, reqCtx *requ
 	}
 
 	task.Status = "CANCELLING"
-	store.UpdateExportTask(task)
+	if err := store.UpdateExportTask(task); err != nil {
+		logs.Warn("failed to update export task status to CANCELLING", logs.String("taskId", taskID), logs.Err(err))
+	}
 
 	task.Status = "CANCELLED"
 	task.StatusReason = "Cancelled by user"
-	store.UpdateExportTask(task)
+	if err := store.UpdateExportTask(task); err != nil {
+		logs.Warn("failed to update export task status to CANCELLED", logs.String("taskId", taskID), logs.Err(err))
+	}
 
 	return exportTaskSummaryToResponse(task), nil
 }
 
 func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore, taskID, graphID string) {
+	defer s.taskWg.Done()
 	time.Sleep(100 * time.Millisecond)
 
 	err := store.TryAdvanceImportTask(taskID, "INITIALIZING", func(task *ngstore.ImportTask) {
@@ -1650,11 +1696,16 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 	graph, err := store.GetGraph(graphID)
 	if err == nil && graph.Status == "IMPORTING" {
 		graph.Status = "AVAILABLE"
-		store.UpdateGraph(graph)
+		if err := store.UpdateGraph(graph); err != nil {
+			logs.Warn("Failed to update graph status to AVAILABLE", logs.Err(err))
+		}
+
+		return
 	}
 }
 
 func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore, taskID string) {
+	defer s.taskWg.Done()
 	time.Sleep(50 * time.Millisecond)
 
 	err := store.TryAdvanceExportTask(taskID, "INITIALIZING", func(task *ngstore.ExportTask) {

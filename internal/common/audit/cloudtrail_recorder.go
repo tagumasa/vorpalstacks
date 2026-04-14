@@ -8,11 +8,11 @@ var _ Recorder = (*CloudTrailRecorder)(nil)
 
 // CloudTrailRecorder records audit events to CloudTrail.
 type CloudTrailRecorder struct {
-	store *cloudtrailstore.CloudTrailStore
+	store cloudtrailstore.CloudTrailStoreInterface
 }
 
 // NewCloudTrailRecorder creates a new CloudTrail recorder backed by the given store.
-func NewCloudTrailRecorder(store *cloudtrailstore.CloudTrailStore) *CloudTrailRecorder {
+func NewCloudTrailRecorder(store cloudtrailstore.CloudTrailStoreInterface) *CloudTrailRecorder {
 	return &CloudTrailRecorder{store: store}
 }
 

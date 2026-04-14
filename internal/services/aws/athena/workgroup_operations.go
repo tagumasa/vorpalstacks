@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
@@ -534,7 +534,9 @@ func (s *Service) GetDefaultWorkGroup(reqCtx *request.RequestContext) (*athenast
 			},
 			State: athenastore.WorkGroupStateEnabled,
 		}
-		_ = stores.workGroupStore.CreateWorkGroup(defaultWg)
+		if err := stores.workGroupStore.CreateWorkGroup(defaultWg); err != nil {
+			logs.Warn("failed to create default primary workgroup", logs.Err(err))
+		}
 		return defaultWg, nil
 	}
 

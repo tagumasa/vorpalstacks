@@ -48,7 +48,15 @@ func (s *IAMService) GenerateCredentialReport(_ context.Context, reqCtx *request
 
 	credentialReportState = "STARTED"
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		credentialReportState = ""
+		return nil, fmt.Errorf("failed to get store: %w", err)
+	}
+
+	s.reportWg.Add(1)
 	go func() {
+		defer s.reportWg.Done()
 		time.Sleep(500 * time.Millisecond)
 
 		credentialReportMu.Lock()
@@ -56,7 +64,7 @@ func (s *IAMService) GenerateCredentialReport(_ context.Context, reqCtx *request
 
 		credentialReportState = "COMPLETE"
 		credentialReportTime = time.Now().UTC()
-		credentialReportData = generateReportContent(s, reqCtx)
+		credentialReportData = generateReportContentFromStore(store)
 	}()
 
 	return map[string]interface{}{
@@ -93,12 +101,7 @@ func (s *IAMService) GetCredentialReport(_ context.Context, reqCtx *request.Requ
 	}, nil
 }
 
-func generateReportContent(s *IAMService, reqCtx *request.RequestContext) string {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return ""
-	}
-
+func generateReportContentFromStore(store *iamstore.IAMStore) string {
 	var allUsers []*iamstore.User
 	marker := ""
 	for {

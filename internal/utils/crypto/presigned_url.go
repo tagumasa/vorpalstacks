@@ -9,28 +9,7 @@ import (
 	"time"
 )
 
-func buildPresignedCanonicalRequest(method, path string, query url.Values, bucket, region, contentType, signedHeaders string) string {
-	canonicalQueryString := buildCanonicalQueryStringForPresigned(query)
 
-	host := bucket + ".s3." + region + ".amazonaws.com"
-	if strings.Contains(bucket, ".") {
-		host = "s3." + region + ".amazonaws.com"
-	}
-
-	canonicalHeaders := "host:" + host + "\n"
-	if contentType != "" && strings.Contains(signedHeaders, "content-type") {
-		canonicalHeaders += "content-type:" + contentType + "\n"
-	}
-
-	payloadHash := "UNSIGNED-PAYLOAD"
-
-	return method + "\n" +
-		path + "\n" +
-		canonicalQueryString + "\n" +
-		canonicalHeaders + "\n" +
-		signedHeaders + "\n" +
-		payloadHash
-}
 
 func buildCanonicalQueryStringForPresigned(query url.Values) string {
 	if len(query) == 0 {

@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 
 	"github.com/google/uuid"
@@ -77,7 +77,9 @@ func (s *Service) CreateScheduledQuery(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if tagMap := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")); len(tagMap) > 0 {
-		_ = st.scheduledQueryStore.TagResource(sq.ARN, tagMap)
+		if tagErr := st.scheduledQueryStore.TagResource(sq.ARN, tagMap); tagErr != nil {
+			logs.Warn("failed to tag scheduled query", logs.Err(tagErr), logs.String("arn", sq.ARN))
+		}
 	}
 
 	tags, _ := st.scheduledQueryStore.ListTags(sq.ARN)

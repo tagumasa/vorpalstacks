@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 )
 
 // CreateAccountAlias sets the specified alias for the AWS account.
@@ -21,7 +22,7 @@ func (s *IAMService) CreateAccountAlias(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // DeleteAccountAlias removes the account alias for the AWS account.
@@ -34,7 +35,7 @@ func (s *IAMService) DeleteAccountAlias(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListAccountAliases lists the account alias associated with the AWS account.

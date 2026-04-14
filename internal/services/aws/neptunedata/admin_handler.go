@@ -9,10 +9,10 @@ import (
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/neptunedata"
 	neptunedataconnect "vorpalstacks/internal/pb/aws/neptunedata/neptunedataconnect"
-	svccommon "vorpalstacks/internal/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
 
@@ -394,4 +394,8 @@ func (h *AdminHandler) GetSparqlStream(ctx context.Context, req *connect.Request
 // Not yet implemented; returns HTTP 501.
 func (h *AdminHandler) GetPropertygraphStream(ctx context.Context, req *connect.Request[pb.GetPropertygraphStreamInput]) (*connect.Response[pb.GetPropertygraphStreamOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("streaming operations return HTTP 501"))
+}
+
+func NewConnectHandler(svc *NeptuneDataService) (string, http.Handler) {
+	return neptunedataconnect.NewNeptunedataServiceHandler(NewAdminHandler(svc))
 }

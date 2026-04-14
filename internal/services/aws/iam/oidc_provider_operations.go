@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
@@ -121,7 +122,7 @@ func (s *IAMService) UpdateOpenIDConnectProviderThumbprint(ctx context.Context, 
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // AddClientIDToOpenIDConnectProvider adds a new client ID to the list of client IDs for the specified OpenID Connect (OIDC) provider.
@@ -155,7 +156,7 @@ func (s *IAMService) AddClientIDToOpenIDConnectProvider(ctx context.Context, req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // RemoveClientIDFromOpenIDConnectProvider removes the specified client ID from the list of client IDs for the specified OpenID Connect (OIDC) provider.
@@ -197,7 +198,7 @@ func (s *IAMService) RemoveClientIDFromOpenIDConnectProvider(ctx context.Context
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // DeleteOpenIDConnectProvider deletes an OpenID Connect (OIDC) identity provider.
@@ -218,7 +219,7 @@ func (s *IAMService) DeleteOpenIDConnectProvider(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // TagOpenIDConnectProvider adds tags to an OpenID Connect (OIDC) provider.
@@ -242,7 +243,7 @@ func (s *IAMService) TagOpenIDConnectProvider(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UntagOpenIDConnectProvider removes tags from an OpenID Connect (OIDC) provider.
@@ -266,7 +267,7 @@ func (s *IAMService) UntagOpenIDConnectProvider(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListOpenIDConnectProviderTags lists the tags attached to an OpenID Connect (OIDC) provider.

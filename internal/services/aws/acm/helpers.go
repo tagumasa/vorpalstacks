@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	acmpb "vorpalstacks/internal/pb/aws/acm"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
@@ -57,61 +56,6 @@ func parseCertificateTransparencyLoggingPreference(params map[string]interface{}
 		return "ENABLED"
 	}
 	return pref
-}
-
-func certificateStatusToString(status int32) string {
-	switch status {
-	case int32(acmpb.CertificateStatus_CERTIFICATE_STATUS_PENDING_VALIDATION):
-		return "PENDING_VALIDATION"
-	case int32(acmpb.CertificateStatus_CERTIFICATE_STATUS_ISSUED):
-		return "ISSUED"
-	case int32(acmpb.CertificateStatus_CERTIFICATE_STATUS_INACTIVE):
-		return "INACTIVE"
-	case int32(acmpb.CertificateStatus_CERTIFICATE_STATUS_EXPIRED):
-		return "EXPIRED"
-	case int32(acmpb.CertificateStatus_CERTIFICATE_STATUS_VALIDATION_TIMED_OUT):
-		return "VALIDATION_TIMED_OUT"
-	case int32(acmpb.CertificateStatus_CERTIFICATE_STATUS_REVOKED):
-		return "REVOKED"
-	case int32(acmpb.CertificateStatus_CERTIFICATE_STATUS_FAILED):
-		return "FAILED"
-	default:
-		return "PENDING_VALIDATION"
-	}
-}
-
-func keyAlgorithmToString(algo int32) string {
-	switch algo {
-	case int32(acmpb.KeyAlgorithm_KEY_ALGORITHM_RSA_1024):
-		return "RSA_1024"
-	case int32(acmpb.KeyAlgorithm_KEY_ALGORITHM_RSA_2048):
-		return "RSA_2048"
-	case int32(acmpb.KeyAlgorithm_KEY_ALGORITHM_RSA_3072):
-		return "RSA_3072"
-	case int32(acmpb.KeyAlgorithm_KEY_ALGORITHM_RSA_4096):
-		return "RSA_4096"
-	case int32(acmpb.KeyAlgorithm_KEY_ALGORITHM_EC_PRIME256V1):
-		return "EC_prime256v1"
-	case int32(acmpb.KeyAlgorithm_KEY_ALGORITHM_EC_SECP384R1):
-		return "EC_secp384r1"
-	case int32(acmpb.KeyAlgorithm_KEY_ALGORITHM_EC_SECP521R1):
-		return "EC_secp521r1"
-	default:
-		return "RSA_2048"
-	}
-}
-
-func certificateTypeToString(certType int32) string {
-	switch certType {
-	case int32(acmpb.CertificateType_CERTIFICATE_TYPE_IMPORTED):
-		return "IMPORTED"
-	case int32(acmpb.CertificateType_CERTIFICATE_TYPE_AMAZON_ISSUED):
-		return "AMAZON_ISSUED"
-	case int32(acmpb.CertificateType_CERTIFICATE_TYPE_PRIVATE):
-		return "PRIVATE"
-	default:
-		return "AMAZON_ISSUED"
-	}
 }
 
 func certificateOptionsToResponse(opts *acmstorelib.CertificateOptions) map[string]interface{} {

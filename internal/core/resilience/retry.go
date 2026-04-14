@@ -210,7 +210,7 @@ func (rp *RetryPolicy) Do(ctx context.Context, fn func(ctx context.Context) erro
 
 			if rp.logger != nil {
 				rp.logger.Debug("Retrying operation",
-					logs.Int("attempt", attempt),
+					logs.Int("retry", attempt),
 					logs.Any("delay", delay),
 					logs.Err(lastErr),
 				)

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/pkg/sqlparser"
 
 	"github.com/google/uuid"
@@ -96,7 +97,9 @@ func (s *Service) Query(ctx context.Context, reqCtx *request.RequestContext, req
 		Cancelled:   false,
 	}
 
-	stores.queryInfoStore.Put(queryID, queryInfo)
+	if err := stores.queryInfoStore.Put(queryID, queryInfo); err != nil {
+		logs.Warn("Failed to store query info", logs.Err(err))
+	}
 
 	result, execErr := s.executeSQLQuery(ctx, reqCtx, queryString)
 
@@ -111,7 +114,7 @@ func (s *Service) Query(ctx context.Context, reqCtx *request.RequestContext, req
 		queryInfo.Status = QueryStatusFailed
 		queryInfo.Error = execErr.Error()
 		queryInfo.CompletionTime = time.Now().UTC()
-		stores.queryInfoStore.Put(queryID, queryInfo)
+		_ = stores.queryInfoStore.Put(queryID, queryInfo)
 		return nil, execErr
 	}
 
@@ -119,7 +122,9 @@ func (s *Service) Query(ctx context.Context, reqCtx *request.RequestContext, req
 	queryInfo.CompletionTime = time.Now().UTC()
 	queryInfo.CachedResult = result
 	queryInfo.CachedRows = result.Rows
-	stores.queryInfoStore.Put(queryID, queryInfo)
+	if err := stores.queryInfoStore.Put(queryID, queryInfo); err != nil {
+		logs.Warn("Failed to update query info", logs.Err(err))
+	}
 
 	maxRows := 100
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxRows"); maxStr != "" {
@@ -181,7 +186,9 @@ func (s *Service) CancelQuery(ctx context.Context, reqCtx *request.RequestContex
 	queryInfo.Cancelled = true
 	queryInfo.Status = QueryStatusCancelled
 	queryInfo.CompletionTime = time.Now().UTC()
-	stores.queryInfoStore.Put(queryID, &queryInfo)
+	if err := stores.queryInfoStore.Put(queryID, &queryInfo); err != nil {
+		logs.Warn("Failed to update cancelled query info", logs.Err(err))
+	}
 
 	return map[string]interface{}{
 		"CancellationMessage": "Query has been cancelled",

@@ -40,10 +40,7 @@ func NewPebbleLockManager(db *pebbledb.DB) *PebbleLockManager {
 }
 
 func (m *PebbleLockManager) makeKey(key []byte) []byte {
-	k := make([]byte, len(m.prefix)+len(key))
-	copy(k, m.prefix)
-	copy(k[len(m.prefix):], key)
-	return k
+	return makePrefixedKey(m.prefix, key)
 }
 
 func (m *PebbleLockManager) generateToken() (string, error) {
@@ -82,10 +79,12 @@ func (m *PebbleLockManager) tryAcquire(key []byte, mode LockMode, ttl time.Durat
 		var existingVersion uint64
 		if existing != nil {
 			if existing.ExpiresAt > 0 && time.Now().Unix() > existing.ExpiresAt {
-				_ = m.db.Delete(fullKey)
+				if delErr := m.db.Delete(fullKey); delErr != nil {
+					fmt.Printf("[WARN] failed to delete expired lock entry: %v\n", delErr)
+				}
 				continue
 			}
-			existingVersion = existing.Version
+			_ = existing.Version
 			return nil, &LockConflictError{
 				Key: key,
 				ExistingHandle: &LockHandle{

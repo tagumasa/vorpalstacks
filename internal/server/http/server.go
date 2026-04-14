@@ -19,39 +19,15 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/server/authorization"
+	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/server/http/chain"
 	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/server/http/router"
-	"vorpalstacks/internal/common/interfaces"
 	"vorpalstacks/internal/store/api"
-	acmstore "vorpalstacks/internal/store/aws/acm"
-	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
-	athenastore "vorpalstacks/internal/store/aws/athena"
-	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
-	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
-	cloudwatchstore "vorpalstacks/internal/store/aws/cloudwatch"
-	cloudwatchlogsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
-	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
-	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
-	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
-	eventbridgestore "vorpalstacks/internal/store/aws/eventbridge"
 	"vorpalstacks/internal/store/aws/iam"
-	kmsstore "vorpalstacks/internal/store/aws/kms"
-	lambdastore "vorpalstacks/internal/store/aws/lambda"
-	route53store "vorpalstacks/internal/store/aws/route53"
 	s3store "vorpalstacks/internal/store/aws/s3"
-	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
-	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
-	sesv2store "vorpalstacks/internal/store/aws/sesv2"
-	sfnstore "vorpalstacks/internal/store/aws/sfn"
-	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
-	ssmstore "vorpalstacks/internal/store/aws/ssm"
-	stsstore "vorpalstacks/internal/store/aws/sts"
-	timestreamstore "vorpalstacks/internal/store/aws/timestream"
-	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
 // NewServer creates and configures a new HTTP server with all required components.
@@ -123,70 +99,10 @@ func NewServer(cfg *Config) (*Server, error) {
 	// Create S3 store
 	s3Store := s3store.NewS3Store(storageMgr, blobStore, cfg.AccountID)
 
-	// Create DynamoDB store (lazy initialization per region in service layer)
-	// Note: DynamoDB store needs TransactionalStorageWith2PC which is obtained per-region
-	// We pass nil here and let the service create it per-request for now
-	// This will be refactored to use a factory pattern similar to S3
-	var acmStore acmstore.CertificateStoreInterface
-	var ssmStore ssmstore.SSMStoreInterface
-	var stsStore stsstore.SessionStoreInterface
-	var dynamoDBStore dynamodbstore.DynamoDBStoreInterface
-	var lambdaStore lambdastore.LambdaStoreInterface
-	var eventBridgeStore eventbridgestore.EventsStoreInterface
-	var cloudWatchAlarmStore cloudwatchstore.AlarmStoreInterface
-	var cloudWatchMetricStore cloudwatchstore.MetricChunkStoreInterface
-	var cloudWatchLogsStore cloudwatchlogsstore.CloudWatchLogsStoreInterface
-	var apiGatewayStore apigatewaystore.APIGatewayStoresInterface
-	var sfnStore sfnstore.StepFunctionStoreInterface
-	var athenaStore athenastore.AthenaStoresInterface
-	var cognitoStore cognitostore.CognitoStoreInterface
-	var timestreamStores timestreamstore.TimestreamStoresInterface
-	var wafStores wafstore.WAFStoresInterface
-	var kmsStores kmsstore.KMSStoresInterface
-	var sesv2Store sesv2store.SESv2StoreInterface
-	var schedulerStore schedulerstore.SchedulerStoreInterface
-	var route53Stores route53store.Route53StoresInterface
-	var cognitoIdentityStore cognitoidentitystore.CognitoIdentityStoreInterface
-	var cloudFrontStores cloudfrontstore.CloudFrontStoresInterface
-	var cloudTrailStore cloudtrailstore.CloudTrailStoreInterface
-	var secretsManagerStore secretsmanagerstore.SecretStoreInterface
-	var snsStore snsstore.SNSStoreInterface
-	var sqsStore sqsstore.SQSStoreInterface
-
-	storeProvider := interfaces.NewStoreProvider(
-		iamStore,
-		acmStore,
-		s3Store,
-		ssmStore,
-		stsStore,
-		dynamoDBStore,
-		lambdaStore,
-		eventBridgeStore,
-		cloudWatchAlarmStore,
-		cloudWatchMetricStore,
-		cloudWatchLogsStore,
-		apiGatewayStore,
-		sfnStore,
-		athenaStore,
-		cognitoStore,
-		timestreamStores,
-		wafStores,
-		kmsStores,
-		sesv2Store,
-		schedulerStore,
-		route53Stores,
-		cognitoIdentityStore,
-		cloudFrontStores,
-		cloudTrailStore,
-		secretsManagerStore,
-		snsStore,
-		sqsStore,
-	)
-
-	var authorizer *dispatcher.Authorizer
+	var authorizer dispatcher.Authorizer
 	authEnabled := os.Getenv("AUTHORIZATION_ENABLED") == "true"
 	if authEnabled {
-		authorizer = dispatcher.NewAuthorizer(iamStore)
+		authorizer = authorization.NewAuthorizer(iamStore)
 	}
 
 	disp := dispatcher.NewDispatcher(
@@ -197,7 +113,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		configStore,
 		resilienceConfig,
 		storageMgr,
-		storeProvider,
+		iamStore,
 		authorizer,
 		cfg.AccountID,
 	)

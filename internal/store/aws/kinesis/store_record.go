@@ -2,6 +2,7 @@ package kinesis
 
 import (
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -193,8 +194,25 @@ func (s *KinesisStore) GetRecords(streamName, shardID, startingSeqNum string, li
 	return allRecords, lastSeqNum, nil
 }
 
+// cleanExpiredIterators removes shard iterators that have passed their expiry time.
+func (s *KinesisStore) cleanExpiredIterators() {
+	now := time.Now().UTC()
+	_ = s.iteratorsStore.ForEach(func(key string, value []byte) error {
+		var it ShardIterator
+		if err := json.Unmarshal(value, &it); err != nil {
+			return nil
+		}
+		if now.After(it.ExpiresAt) {
+			_ = s.iteratorsStore.Delete(key)
+		}
+		return nil
+	})
+}
+
 // CreateShardIterator creates a shard iterator for reading from a Kinesis stream.
 func (s *KinesisStore) CreateShardIterator(streamName, shardID, iteratorType, seqNum string, timestamp *time.Time) (*ShardIterator, error) {
+	s.cleanExpiredIterators()
+
 	shard, err := s.GetShard(streamName, shardID)
 	if err != nil {
 		return nil, err

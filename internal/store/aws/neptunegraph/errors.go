@@ -2,16 +2,11 @@ package neptunegraph
 
 import (
 	"errors"
-	"fmt"
+
+	"vorpalstacks/internal/store/aws/common"
 )
 
-// NewStoreError wraps an underlying storage error with operation context.
-func NewStoreError(op string, err error) error {
-	if err == nil {
-		return nil
-	}
-	return fmt.Errorf("neptunegraph store: %s: %w", op, err)
-}
+type StoreError = common.StoreError
 
 var (
 	// ErrGraphNotFound is returned when a requested graph does not exist.
@@ -45,7 +40,8 @@ func IsNotFound(err error) bool {
 		errors.Is(err, ErrEndpointNotFound) ||
 		errors.Is(err, ErrImportTaskNotFound) ||
 		errors.Is(err, ErrExportTaskNotFound) ||
-		errors.Is(err, ErrQueryNotFound)
+		errors.Is(err, ErrQueryNotFound) ||
+		common.IsNotFound(err)
 }
 
 // IsAlreadyExists reports whether the error indicates a resource already exists.
@@ -54,5 +50,6 @@ func IsAlreadyExists(err error) bool {
 		errors.Is(err, ErrSnapshotAlreadyExists) ||
 		errors.Is(err, ErrEndpointAlreadyExists) ||
 		errors.Is(err, ErrImportTaskAlreadyExists) ||
-		errors.Is(err, ErrExportTaskAlreadyExists)
+		errors.Is(err, ErrExportTaskAlreadyExists) ||
+		common.IsAlreadyExists(err)
 }

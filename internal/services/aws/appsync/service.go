@@ -1,16 +1,17 @@
 package appsync
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	awscommon "vorpalstacks/internal/common"
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
-
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
+	appsyncstore "vorpalstacks/internal/store/aws/appsync"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AppSyncService provides AWS AppSync service operations for vorpalstacks.
@@ -22,6 +23,7 @@ type AppSyncService struct {
 	lambdaInvoker awscommon.LambdaInvoker
 	bus           eventbus.Bus
 	schemaCache   sync.Map
+	schemaWg      sync.WaitGroup
 	eventServer   *EventServer
 }
 
@@ -53,9 +55,11 @@ func (s *AppSyncService) EventServerHandler() http.Handler {
 	return s.eventServer
 }
 
-// ShutdownEventServer closes all active WebSocket connections.
+// ShutdownEventServer closes all active WebSocket connections and waits
+// for in-flight schema creation goroutines to finish.
 func (s *AppSyncService) ShutdownEventServer() {
 	s.eventServer.Shutdown()
+	s.schemaWg.Wait()
 }
 
 // GetStoreForRegion returns the cached AppSync store for the given region,
@@ -71,23 +75,14 @@ func (s *AppSyncService) GetStoreForRegion(region string, rs storage.BasicStorag
 	return actual.(*appsyncstore.AppSyncStore)
 }
 
-// store resolves the AppSync store for the current request context.
-// Uses sync.Map for per-region caching of store instances.
 func (s *AppSyncService) store(reqCtx *request.RequestContext) (*appsyncstore.AppSyncStore, error) {
-	region := reqCtx.GetRegion()
-	key := region
-	if cached, ok := s.stores.Load(key); ok {
-		return cached.(*appsyncstore.AppSyncStore), nil
-	}
-
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-
-	store := appsyncstore.NewAppSyncStore(storage, s.accountID, region)
-	actual, _ := s.stores.LoadOrStore(key, store)
-	return actual.(*appsyncstore.AppSyncStore), nil
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*appsyncstore.AppSyncStore, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage: %w", err)
+		}
+		return appsyncstore.NewAppSyncStore(storage, s.accountID, reqCtx.GetRegion()), nil
+	})
 }
 
 // RegisterHandlers registers all AppSync control-plane operation handlers with the dispatcher.

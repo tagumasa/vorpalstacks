@@ -263,11 +263,15 @@ func (es *EmbeddingStore) Size() int {
 	return len(es.cache)
 }
 
-// TopK performs brute-force topK search using L2Squared distance.
-// If filterFn is non-nil, only nodes passing the filter are considered.
-func (es *EmbeddingStore) TopK(query []float64, k int, filterFn func(NodeID) bool) ([]TopKResult, error) {
+// TopK performs brute-force topK search using the specified distance metric.
+// If metric is empty, L2Squared is used. If filterFn is non-nil, only nodes
+// passing the filter are considered.
+func (es *EmbeddingStore) TopK(query []float64, k int, metric DistanceMetric, filterFn func(NodeID) bool) ([]TopKResult, error) {
 	if k <= 0 {
 		k = 10
+	}
+	if metric == "" {
+		metric = L2Squared
 	}
 
 	es.mu.RLock()
@@ -284,7 +288,11 @@ func (es *EmbeddingStore) TopK(query []float64, k int, filterFn func(NodeID) boo
 		if len(emb) != len(query) {
 			continue
 		}
-		candidates = append(candidates, scored{id: id, score: l2Squared(query, emb)})
+		dist, err := ComputeDistance(query, emb, metric)
+		if err != nil {
+			continue
+		}
+		candidates = append(candidates, scored{id: id, score: dist})
 	}
 	es.mu.RUnlock()
 

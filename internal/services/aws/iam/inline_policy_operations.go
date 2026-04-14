@@ -4,6 +4,7 @@ package iam
 import (
 	"context"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 )
 
 // PutUserPolicy creates or updates an inline policy for a user.
@@ -34,7 +35,7 @@ func (s *IAMService) PutUserPolicy(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // GetUserPolicy retrieves an inline policy for a user.
@@ -93,7 +94,7 @@ func (s *IAMService) DeleteUserPolicy(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListUserPolicies lists inline policies for a user.
@@ -150,7 +151,7 @@ func (s *IAMService) PutGroupPolicy(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // GetGroupPolicy retrieves an inline policy for a group.
@@ -209,7 +210,7 @@ func (s *IAMService) DeleteGroupPolicy(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListGroupPolicies lists inline policies for a group.
@@ -266,7 +267,7 @@ func (s *IAMService) PutRolePolicy(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // GetRolePolicy retrieves an inline policy for a role.
@@ -325,7 +326,7 @@ func (s *IAMService) DeleteRolePolicy(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListRolePolicies lists inline policies for a role.

@@ -64,7 +64,9 @@ func (e *Executor) executePass(ctx context.Context, execCtx *ExecutionContext, s
 func (e *Executor) executePassJSONata(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.PassState) (string, string, error) {
 	var inputData interface{}
 	if execCtx.Input != "" {
-		json.Unmarshal([]byte(execCtx.Input), &inputData)
+		if err := json.Unmarshal([]byte(execCtx.Input), &inputData); err != nil {
+			return "", "", e.newQueryEvalError(ctx, execCtx, "Input", "failed to parse input JSON")
+		}
 	}
 
 	if state.JSONataOutput == nil && len(state.OutputRaw) > 0 {
@@ -198,7 +200,9 @@ func (e *Executor) executeWait(ctx context.Context, execCtx *ExecutionContext, s
 func (e *Executor) executeWaitJSONata(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.WaitState) (string, string, error) {
 	var inputData interface{}
 	if execCtx.Input != "" {
-		json.Unmarshal([]byte(execCtx.Input), &inputData)
+		if err := json.Unmarshal([]byte(execCtx.Input), &inputData); err != nil {
+			return "", "", e.newQueryEvalError(ctx, execCtx, "Input", "failed to parse input JSON")
+		}
 	}
 
 	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
@@ -273,13 +277,15 @@ func (e *Executor) executeFail(ctx context.Context, execCtx *ExecutionContext, s
 		if s, ok := state.Cause.(string); ok && IsExpression(s) {
 			var inputData interface{}
 			if execCtx.Input != "" {
-				json.Unmarshal([]byte(execCtx.Input), &inputData)
+				if err := json.Unmarshal([]byte(execCtx.Input), &inputData); err != nil {
+					return e.newQueryEvalError(ctx, execCtx, "Input", "failed to parse input JSON")
+				}
 			}
 			statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
 			vars := buildVarsMap(statesVar, execCtx.VariableScope)
 			result, err := EvaluateJSONata(ctx, UnwrapExpression(s), nil, vars)
 			if err != nil {
-				e.newQueryEvalError(ctx, execCtx, "Cause", err.Error())
+				_ = e.newQueryEvalError(ctx, execCtx, "Cause", err.Error())
 				cause = fmt.Sprintf("QueryEvaluationError: %s", err.Error())
 			} else {
 				switch v := result.(type) {
@@ -325,7 +331,9 @@ func (e *Executor) executeSucceed(ctx context.Context, execCtx *ExecutionContext
 		if state.JSONataOutput != nil {
 			var inputData interface{}
 			if execCtx.Input != "" {
-				json.Unmarshal([]byte(execCtx.Input), &inputData)
+				if err := json.Unmarshal([]byte(execCtx.Input), &inputData); err != nil {
+					return "", "", e.newQueryEvalError(ctx, execCtx, "Input", "failed to parse input JSON")
+				}
 			}
 			statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
 

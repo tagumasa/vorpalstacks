@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"sync"
 
+	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/common"
-	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // cloudwatchStores holds the stores for CloudWatch resources.
@@ -96,43 +97,21 @@ func (s *CloudWatchService) StopEvaluator() {
 
 // store returns the CloudWatch stores for a given request context.
 func (s *CloudWatchService) store(reqCtx *request.RequestContext) (*cloudwatchStores, error) {
-	if reqCtx.GetCloudWatchMetricStore() != nil {
-		if ms, ok := reqCtx.GetCloudWatchMetricStore().(*cwstore.MetricChunkStore); ok {
-			return &cloudwatchStores{metrics: ms}, nil
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*cloudwatchStores, error) {
+		storage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, err
 		}
-	}
-
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(*cloudwatchStores); ok {
-			return typed, nil
+		metricStore, err := cwstore.NewMetricChunkStoreWithIndex(storage, reqCtx.GetRegion(), s.dataPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create metric store: %w", err)
 		}
-	}
-
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-
-	metricStore, err := cwstore.NewMetricChunkStoreWithIndex(storage, region, s.dataPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create metric store: %w", err)
-	}
-	alarmStore := cwstore.NewAlarmStore(storage, s.accountID, region)
-	dashboardStore := cwstore.NewDashboardStore(storage, s.accountID, region)
-
-	stores := &cloudwatchStores{
-		metrics:    metricStore,
-		alarms:     alarmStore,
-		dashboards: dashboardStore,
-	}
-	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
-		metricStore.Close()
-		if typed, ok := actual.(*cloudwatchStores); ok {
-			return typed, nil
-		}
-	}
-	return stores, nil
+		return &cloudwatchStores{
+			metrics:    metricStore,
+			alarms:     cwstore.NewAlarmStore(storage, s.accountID, reqCtx.GetRegion()),
+			dashboards: cwstore.NewDashboardStore(storage, s.accountID, reqCtx.GetRegion()),
+		}, nil
+	})
 }
 
 // RegisterHandlers registers CloudWatch handlers with the dispatcher.

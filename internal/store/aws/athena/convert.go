@@ -2,6 +2,7 @@ package athena
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"vorpalstacks/internal/core/logs"
@@ -703,14 +704,17 @@ func ProtoToColumn(p *pb.Column) Column {
 }
 
 // StoredRowToProto converts a StoredRow to its protobuf representation.
-func StoredRowToProto(sr *StoredRow) *pb.StoredRow {
+func StoredRowToProto(sr *StoredRow) (*pb.StoredRow, error) {
 	if sr == nil {
-		return nil
+		return nil, nil
 	}
-	jsonBytes, _ := json.Marshal(sr.Values)
+	jsonBytes, err := json.Marshal(sr.Values)
+	if err != nil {
+		return nil, fmt.Errorf("marshal stored row values: %w", err)
+	}
 	return &pb.StoredRow{
 		ValuesJson: jsonBytes,
-	}
+	}, nil
 }
 
 // ProtoToStoredRow converts a protobuf StoredRow to its internal representation.
@@ -730,9 +734,9 @@ func ProtoToStoredRow(p *pb.StoredRow) *StoredRow {
 }
 
 // StoredTableToProto converts a StoredTable to its protobuf representation.
-func StoredTableToProto(st *StoredTable) *pb.StoredTable {
+func StoredTableToProto(st *StoredTable) (*pb.StoredTable, error) {
 	if st == nil {
-		return nil
+		return nil, nil
 	}
 	columns := make([]*pb.Column, len(st.Columns))
 	for i, c := range st.Columns {
@@ -740,14 +744,18 @@ func StoredTableToProto(st *StoredTable) *pb.StoredTable {
 	}
 	rows := make([]*pb.StoredRow, len(st.Rows))
 	for i, r := range st.Rows {
-		rows[i] = StoredRowToProto(r)
+		row, err := StoredRowToProto(r)
+		if err != nil {
+			return nil, fmt.Errorf("marshal row %d: %w", i, err)
+		}
+		rows[i] = row
 	}
 	return &pb.StoredTable{
 		DatabaseName: st.DatabaseName,
 		TableName:    st.TableName,
 		Columns:      columns,
 		Rows:         rows,
-	}
+	}, nil
 }
 
 // ProtoToStoredTable converts a protobuf StoredTable to its internal representation.

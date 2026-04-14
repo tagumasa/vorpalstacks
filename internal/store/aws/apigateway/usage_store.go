@@ -102,7 +102,9 @@ func (s *UsageStore) DeleteApiKey(apiKeyId string) error {
 	if !s.Exists("apikey#" + apiKeyId) {
 		return ErrApiKeyNotFound
 	}
-	s.BaseStore.DeleteByPrefix("usage##" + apiKeyId + "#")
+	if err := s.BaseStore.DeleteByPrefix("usage##" + apiKeyId + "#"); err != nil {
+		logs.Warn("failed to delete usage records for API key", logs.String("apiKeyId", apiKeyId), logs.Err(err))
+	}
 	return s.BaseStore.Delete("apikey#" + apiKeyId)
 }
 
@@ -173,7 +175,9 @@ func (s *UsageStore) DeleteUsagePlan(usagePlanId string) error {
 		}
 	}
 
-	s.BaseStore.DeleteByPrefix("usage#" + usagePlanId + "#")
+	if err := s.BaseStore.DeleteByPrefix("usage#" + usagePlanId + "#"); err != nil {
+		logs.Warn("failed to delete usage records for usage plan", logs.String("usagePlanId", usagePlanId), logs.Err(err))
+	}
 	return s.BaseStore.Delete("usageplan#" + usagePlanId)
 }
 
@@ -229,7 +233,9 @@ func (s *UsageStore) DeleteUsagePlanKey(usagePlanId, keyId string) error {
 	if !s.Exists(keyKey) {
 		return ErrUsagePlanKeyNotFound
 	}
-	s.BaseStore.DeleteByPrefix("usage#" + usagePlanId + "#" + keyId + "#")
+	if err := s.BaseStore.DeleteByPrefix("usage#" + usagePlanId + "#" + keyId + "#"); err != nil {
+		logs.Warn("failed to delete usage records for usage plan key", logs.String("usagePlanId", usagePlanId), logs.String("keyId", keyId), logs.Err(err))
+	}
 	return s.BaseStore.Delete(keyKey)
 }
 

@@ -7,10 +7,10 @@ import (
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchevents"
 	cloudwatcheventsconnect "vorpalstacks/internal/pb/aws/cloudwatchevents/cloudwatcheventsconnect"
-	svccommon "vorpalstacks/internal/common"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
@@ -135,4 +135,8 @@ func toPbRuleState(state eventsstore.RuleState) pb.RuleState {
 	default:
 		return pb.RuleState_RULE_STATE_DISABLED
 	}
+}
+
+func NewConnectHandler(svc *EventsService, sm *storage.RegionStorageManager) (string, http.Handler) {
+	return cloudwatcheventsconnect.NewCloudWatchEventsServiceHandler(NewAdminHandler(svc, sm))
 }

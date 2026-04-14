@@ -285,14 +285,14 @@ func (s *EventServer) handleHTTPPublish(w http.ResponseWriter, r *http.Request) 
 	result := s.publishEvents(req.Channel, req.Events)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 // writeHTTPError writes a JSON error response to the HTTP client.
 func (s *EventServer) writeHTTPError(w http.ResponseWriter, status int, format string, args ...interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]string{
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"message": fmt.Sprintf(format, args...),
 	})
 }
@@ -380,10 +380,10 @@ func (s *EventServer) writePump(ws *wsConnection) {
 		select {
 		case msg, ok := <-ws.sendCh:
 			if !ok {
-				ws.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = ws.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-			ws.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			_ = ws.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 				return
 			}
@@ -396,7 +396,7 @@ func (s *EventServer) writePump(ws *wsConnection) {
 			ws.mu.RUnlock()
 
 			ka, _ := json.Marshal(map[string]string{"type": "ka"})
-			ws.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			_ = ws.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := ws.conn.WriteMessage(websocket.TextMessage, ka); err != nil {
 				return
 			}

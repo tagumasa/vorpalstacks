@@ -2,10 +2,38 @@ package pebbledb
 
 import (
 	"errors"
-	"time"
 
 	"github.com/cockroachdb/pebble/v2"
 )
+
+// iterateWithDecrypt iterates a pebble iterator, decrypting each value and
+// skipping expired TTL entries. The caller must call iter.Close().
+func (d *DB) iterateWithDecrypt(iter *pebble.Iterator, fn func(k, v []byte) error) error {
+	for iter.First(); iter.Valid(); iter.Next() {
+		val, err := iter.ValueAndErr()
+		if err != nil {
+			return err
+		}
+
+		data, expired, err := decryptAndUnwrapTTL(d.encryptor, val, d.opts.TTL.Enabled)
+		if err != nil {
+			return err
+		}
+		if expired {
+			continue
+		}
+
+		key := iter.Key()
+		keyCopy := make([]byte, len(key))
+		copy(keyCopy, key)
+
+		if err := fn(keyCopy, data); err != nil {
+			return err
+		}
+	}
+
+	return iter.Error()
+}
 
 // ForEach iterates over all key-value pairs in the database.
 // The iteration stops if the callback returns an error.
@@ -16,37 +44,7 @@ func (d *DB) ForEach(fn func(k, v []byte) error) error {
 	}
 	defer iter.Close()
 
-	for iter.First(); iter.Valid(); iter.Next() {
-		key := iter.Key()
-		val, err := iter.ValueAndErr()
-		if err != nil {
-			return err
-		}
-
-		decrypted, err := d.encryptor.Decrypt(val)
-		if err != nil {
-			return err
-		}
-
-		if d.opts.TTL.Enabled {
-			ttlVal, err := UnmarshalTTLValue(decrypted)
-			if err == nil && ttlVal.ExpiresAt > 0 {
-				if time.Now().Unix() > ttlVal.ExpiresAt {
-					continue
-				}
-				decrypted = ttlVal.Data
-			}
-		}
-
-		keyCopy := make([]byte, len(key))
-		copy(keyCopy, key)
-
-		if err := fn(keyCopy, decrypted); err != nil {
-			return err
-		}
-	}
-
-	return iter.Error()
+	return d.iterateWithDecrypt(iter, fn)
 }
 
 // ScanPrefix iterates over all key-value pairs with the given prefix.
@@ -65,37 +63,7 @@ func (d *DB) ScanPrefix(prefix []byte, fn func(k, v []byte) error) error {
 	}
 	defer iter.Close()
 
-	for iter.First(); iter.Valid(); iter.Next() {
-		key := iter.Key()
-		val, err := iter.ValueAndErr()
-		if err != nil {
-			return err
-		}
-
-		decrypted, err := d.encryptor.Decrypt(val)
-		if err != nil {
-			return err
-		}
-
-		if d.opts.TTL.Enabled {
-			ttlVal, err := UnmarshalTTLValue(decrypted)
-			if err == nil && ttlVal.ExpiresAt > 0 {
-				if time.Now().Unix() > ttlVal.ExpiresAt {
-					continue
-				}
-				decrypted = ttlVal.Data
-			}
-		}
-
-		keyCopy := make([]byte, len(key))
-		copy(keyCopy, key)
-
-		if err := fn(keyCopy, decrypted); err != nil {
-			return err
-		}
-	}
-
-	return iter.Error()
+	return d.iterateWithDecrypt(iter, fn)
 }
 
 // ScanRange iterates over all key-value pairs in the range [start, end).
@@ -110,37 +78,7 @@ func (d *DB) ScanRange(start, end []byte, fn func(k, v []byte) error) error {
 	}
 	defer iter.Close()
 
-	for iter.First(); iter.Valid(); iter.Next() {
-		key := iter.Key()
-		val, err := iter.ValueAndErr()
-		if err != nil {
-			return err
-		}
-
-		decrypted, err := d.encryptor.Decrypt(val)
-		if err != nil {
-			return err
-		}
-
-		if d.opts.TTL.Enabled {
-			ttlVal, err := UnmarshalTTLValue(decrypted)
-			if err == nil && ttlVal.ExpiresAt > 0 {
-				if time.Now().Unix() > ttlVal.ExpiresAt {
-					continue
-				}
-				decrypted = ttlVal.Data
-			}
-		}
-
-		keyCopy := make([]byte, len(key))
-		copy(keyCopy, key)
-
-		if err := fn(keyCopy, decrypted); err != nil {
-			return err
-		}
-	}
-
-	return iter.Error()
+	return d.iterateWithDecrypt(iter, fn)
 }
 
 // Count returns the number of keys in the database.

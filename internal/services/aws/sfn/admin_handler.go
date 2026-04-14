@@ -2,12 +2,13 @@ package sfn
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/sfn"
 	"vorpalstacks/internal/pb/aws/sfn/sfnconnect"
-	svccommon "vorpalstacks/internal/common"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 
@@ -71,4 +72,8 @@ func toPbStateMachineType(typ string) pb.StateMachineType {
 	default:
 		return pb.StateMachineType_STATE_MACHINE_TYPE_STANDARD
 	}
+}
+
+func NewConnectHandler(svc *StepFunctionService) (string, http.Handler) {
+	return sfnconnect.NewSFNServiceHandler(NewAdminHandler(svc))
 }

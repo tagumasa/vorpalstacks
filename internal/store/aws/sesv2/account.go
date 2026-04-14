@@ -1,6 +1,7 @@
 package sesv2
 
 import (
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/common"
 )
 
@@ -72,7 +73,9 @@ func (s *SESv2Store) GetAccount() (*Account, error) {
 	var account Account
 	if err := s.accountStore.Get("account", &account); err != nil {
 		account = *DefaultAccount()
-		_ = s.accountStore.Put("account", &account)
+		if putErr := s.accountStore.Put("account", &account); putErr != nil {
+			logs.Warn("failed to persist default account configuration", logs.Err(putErr))
+		}
 		return &account, nil
 	}
 	return &account, nil
@@ -145,7 +148,9 @@ func (s *SESv2Store) getAccountLocked() (*Account, error) {
 	var account Account
 	if err := s.accountStore.Get("account", &account); err != nil {
 		account = *DefaultAccount()
-		_ = s.accountStore.Put("account", &account)
+		if putErr := s.accountStore.Put("account", &account); putErr != nil {
+			logs.Warn("failed to persist default account configuration", logs.Err(putErr))
+		}
 		return &account, nil
 	}
 	return &account, nil

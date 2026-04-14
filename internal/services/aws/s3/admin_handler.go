@@ -2,47 +2,44 @@ package s3
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/core/storage"
+	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/s3"
 	s3connect "vorpalstacks/internal/pb/aws/s3/s3connect"
-	svccommon "vorpalstacks/internal/common"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // AdminHandler implements the S3 admin console gRPC-Web handler.
 type AdminHandler struct {
 	s3connect.UnimplementedS3ServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	s3Store   S3StoreProvider
+	accountId string
 }
 
 var _ s3connect.S3ServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new S3 admin handler with the given storage manager and account ID.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
+// NewAdminHandler creates a new S3 admin handler backed by the shared S3 store.
+func NewAdminHandler(s3Store S3StoreProvider, accountId string) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
+		s3Store:   s3Store,
+		accountId: accountId,
 	}
 }
 
-func (h *AdminHandler) getBucketStore(req *connect.Request[pb.ListBucketsRequest]) (*s3store.BucketStore, error) {
+func (h *AdminHandler) getBucketStore(req *connect.Request[pb.ListBucketsRequest]) s3store.BucketStoreInterface {
 	region := svccommon.GetRegionFromHeader(req.Header())
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return s3store.NewBucketStore(regionStorage, h.accountId, region), nil
+	return h.s3Store.Buckets(region)
 }
 
 // ListBuckets retrieves all S3 buckets from the regional store.
 func (h *AdminHandler) ListBuckets(ctx context.Context, req *connect.Request[pb.ListBucketsRequest]) (*connect.Response[pb.ListBucketsOutput], error) {
-	bucketStore, err := h.getBucketStore(req)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+	bucketStore := h.getBucketStore(req)
+	if bucketStore == nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("storage unavailable"))
 	}
 
 	buckets, err := bucketStore.List()
@@ -61,4 +58,8 @@ func (h *AdminHandler) ListBuckets(ctx context.Context, req *connect.Request[pb.
 	return connect.NewResponse(&pb.ListBucketsOutput{
 		Buckets: bucketInfos,
 	}), nil
+}
+
+func NewConnectHandler(s3Store S3StoreProvider, accountID string) (string, http.Handler) {
+	return s3connect.NewS3ServiceHandler(NewAdminHandler(s3Store, accountID))
 }

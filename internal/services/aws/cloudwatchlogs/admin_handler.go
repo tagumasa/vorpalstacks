@@ -2,12 +2,13 @@ package cloudwatchlogs
 
 import (
 	"context"
+	"net/http"
 
 	"connectrpc.com/connect"
 
+	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchlogs"
 	cloudwatchlogsconnect "vorpalstacks/internal/pb/aws/cloudwatchlogs/cloudwatchlogsconnect"
-	svccommon "vorpalstacks/internal/common"
 	cloudwatchlogsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
@@ -99,4 +100,8 @@ func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Requ
 		Logstreams: pbStreams,
 		Nexttoken:  nextToken,
 	}), nil
+}
+
+func NewConnectHandler(svc *LogsService) (string, http.Handler) {
+	return cloudwatchlogsconnect.NewCloudWatchLogsServiceHandler(NewAdminHandler(svc))
 }

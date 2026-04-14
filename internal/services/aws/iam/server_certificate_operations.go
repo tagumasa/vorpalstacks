@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
@@ -92,7 +93,7 @@ func (s *IAMService) UpdateServerCertificate(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // DeleteServerCertificate deletes a server certificate.
@@ -113,7 +114,7 @@ func (s *IAMService) DeleteServerCertificate(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListServerCertificates lists the server certificates in the account.
@@ -169,7 +170,7 @@ func (s *IAMService) TagServerCertificate(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UntagServerCertificate removes tags from a server certificate.
@@ -193,7 +194,7 @@ func (s *IAMService) UntagServerCertificate(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListServerCertificateTags lists the tags attached to a server certificate.

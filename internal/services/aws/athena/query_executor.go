@@ -48,7 +48,7 @@ func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenast
 		case <-ctx.Done():
 			qe.Status.State = athenastore.QueryExecutionStateCancelled
 			qe.Status.CompletionDateTime = time.Now().UTC()
-			st.queryExecutionStore.UpdateQueryExecution(qe)
+			_ = st.queryExecutionStore.UpdateQueryExecution(qe)
 			return
 		case <-time.After(200 * time.Millisecond):
 		}

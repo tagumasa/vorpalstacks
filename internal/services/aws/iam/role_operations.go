@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
@@ -206,7 +207,7 @@ func (s *IAMService) DeleteRole(ctx context.Context, reqCtx *request.RequestCont
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListRoles lists IAM roles.
@@ -271,7 +272,7 @@ func (s *IAMService) UpdateAssumeRolePolicy(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // TagRole adds tags to an IAM role.
@@ -298,7 +299,7 @@ func (s *IAMService) TagRole(ctx context.Context, reqCtx *request.RequestContext
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UntagRole removes tags from an IAM role.
@@ -325,7 +326,7 @@ func (s *IAMService) UntagRole(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListRoleTags lists the tags attached to an IAM role.
@@ -472,7 +473,7 @@ func (s *IAMService) PutRolePermissionsBoundary(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // DeleteRolePermissionsBoundary removes the permissions boundary from an IAM role.
@@ -498,5 +499,5 @@ func (s *IAMService) DeleteRolePermissionsBoundary(ctx context.Context, reqCtx *
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }

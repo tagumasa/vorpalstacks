@@ -35,7 +35,6 @@ import (
 	svcssm "vorpalstacks/internal/services/aws/ssm"
 	svcsts "vorpalstacks/internal/services/aws/sts"
 	storeevents "vorpalstacks/internal/store/aws/eventbridge"
-	iamstore "vorpalstacks/internal/store/aws/iam"
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
@@ -208,20 +207,20 @@ func (a *App) initIAM(st *serviceState) {
 	st.iamService = svciam.NewIAMService(st.accountID)
 	st.iamService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("iam", func(ctx context.Context) error {
+		st.iamService.WaitForReport()
 		svciam.ShutdownSLRoleCleanup()
 		return nil
 	})
 
 	if eb := a.server.EventBus(); eb != nil {
 		if rr, ok := eb.RoleResolver().(*eventbus.IAMRoleResolver); ok {
-			globalStore := a.server.Storage()
-			iamStoreInstance := iamstore.NewIAMStore(globalStore, st.accountID)
+			iamStore := a.server.IAMStore()
 			rr.SetLookup(func(ctx context.Context, roleARN string) (string, error) {
 				roleName := svcarn.ExtractRoleNameFromARN(roleARN)
 				if roleName == "" {
 					return "", fmt.Errorf("invalid role ARN format: %q", roleARN)
 				}
-				role, err := iamStoreInstance.Roles().Get(roleName)
+				role, err := iamStore.Roles().Get(roleName)
 				if err != nil {
 					return "", err
 				}
@@ -364,6 +363,7 @@ func (a *App) initSNS(st *serviceState) {
 	st.snsService.SetEventBus(a.server.EventBus())
 	st.snsService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("sns", func(ctx context.Context) error {
+		st.snsService.Close()
 		st.snsStoreInstance.Close()
 		return nil
 	})

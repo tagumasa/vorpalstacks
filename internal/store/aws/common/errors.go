@@ -35,6 +35,9 @@ type StoreError struct {
 
 // Error returns the error message.
 func (e *StoreError) Error() string {
+	if e == nil {
+		return "nil store error"
+	}
 	if e.Key != "" {
 		return fmt.Sprintf("%s store %s %s: %v", e.Service, e.Op, e.Key, e.Err)
 	}
@@ -43,6 +46,9 @@ func (e *StoreError) Error() string {
 
 // Unwrap returns the underlying error.
 func (e *StoreError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
 	return e.Err
 }
 

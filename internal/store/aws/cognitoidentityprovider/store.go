@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -266,7 +267,9 @@ func (s *CognitoStore) DeleteUser(userPoolID, username string) error {
 			}
 		}
 		group.Members = newMembers
-		s.groupsStore.Put(userPoolGroupKey(userPoolID, groupName), group)
+		if err := s.groupsStore.Put(userPoolGroupKey(userPoolID, groupName), group); err != nil {
+			logs.Warn("failed to update group after user deletion", logs.String("group", groupName), logs.Err(err))
+		}
 	}
 	return s.usersStore.Delete(key)
 }
@@ -353,7 +356,9 @@ func (s *CognitoStore) DeleteGroup(userPoolID, groupName string) error {
 			}
 		}
 		user.Groups = newGroups
-		s.usersStore.Put(userPoolUserKey(userPoolID, member), user)
+		if err := s.usersStore.Put(userPoolUserKey(userPoolID, member), user); err != nil {
+			logs.Warn("failed to update user after group deletion", logs.String("user", member), logs.Err(err))
+		}
 	}
 	return s.groupsStore.Delete(key)
 }

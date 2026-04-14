@@ -86,10 +86,14 @@ func (s *RuntimeServer) RemoveApiKey(apiKeyId string) {
 	}
 }
 
-// Close stops background goroutines in authentication components.
+// Close stops background goroutines in authentication components and
+// waits for in-flight SNS delivery goroutines to finish.
 func (s *RuntimeServer) Close() {
 	if s.lambdaAuthorizer != nil {
 		s.lambdaAuthorizer.Close()
+	}
+	if s.executorFactory != nil {
+		s.executorFactory.WaitDelivery()
 	}
 }
 
@@ -412,7 +416,9 @@ func (s *RuntimeServer) writeAccessLog(r *http.Request, stage *apigatewaystore.S
 	evt.Region = region
 	evt.AccountID = s.accountID
 
-	_ = s.bus.Publish(context.Background(), evt)
+	if pubErr := s.bus.Publish(context.Background(), evt); pubErr != nil {
+		logs.Warn("failed to publish API Gateway access log event", logs.Err(pubErr))
+	}
 }
 
 func (s *RuntimeServer) formatAccessLog(format string, r *http.Request, restApiID, stageName, resourcePath string, statusCode int, latency time.Duration) string {

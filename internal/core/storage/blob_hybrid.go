@@ -276,9 +276,18 @@ func (s *HybridBlobStore) deleteUnlock(bucket, key string) error {
 }
 
 func (s *HybridBlobStore) cleanupAllTiers(storageKey, bucket, key string) {
-	_ = s.storage.Bucket("blob_small").Delete([]byte(storageKey))
-	_ = s.storage.Bucket("blob_meta").Delete([]byte(storageKey))
-	_ = os.Remove(s.filePath(bucket, key))
+	for _, op := range []struct {
+		name string
+		fn   func() error
+	}{
+		{"blob_small", func() error { return s.storage.Bucket("blob_small").Delete([]byte(storageKey)) }},
+		{"blob_meta", func() error { return s.storage.Bucket("blob_meta").Delete([]byte(storageKey)) }},
+		{"file", func() error { return os.Remove(s.filePath(bucket, key)) }},
+	} {
+		if err := op.fn(); err != nil {
+			fmt.Printf("[WARN] blob cleanup failed: tier=%s err=%v\n", op.name, err)
+		}
+	}
 }
 
 // Exists checks if an object exists in the hybrid blob store.
@@ -409,25 +418,24 @@ func (s *HybridBlobStore) storageKeyWithVersion(bucket, key, versionId string) s
 	return bucket + "#" + key + "#" + versionId
 }
 
-func (s *HybridBlobStore) filePath(bucket, key string) string {
+func (s *HybridBlobStore) sanitizeKey(key string) string {
 	sanitized := strings.ReplaceAll(key, "/", string(os.PathSeparator))
 	sanitized = filepath.Clean(sanitized)
 	if strings.Contains(sanitized, "..") {
 		sanitized = filepath.Base(sanitized)
 	}
-	return filepath.Join(s.dataDir, "blobs", bucket, sanitized)
+	return sanitized
+}
+
+func (s *HybridBlobStore) filePath(bucket, key string) string {
+	return filepath.Join(s.dataDir, "blobs", bucket, s.sanitizeKey(key))
 }
 
 func (s *HybridBlobStore) filePathWithVersion(bucket, key, versionId string) string {
 	if versionId == "" {
 		versionId = "null"
 	}
-	sanitized := strings.ReplaceAll(key, "/", string(os.PathSeparator))
-	sanitized = filepath.Clean(sanitized)
-	if strings.Contains(sanitized, "..") {
-		sanitized = filepath.Base(sanitized)
-	}
-	return filepath.Join(s.dataDir, "blobs", bucket, sanitized+"#"+versionId)
+	return filepath.Join(s.dataDir, "blobs", bucket, s.sanitizeKey(key)+"#"+versionId)
 }
 
 func (s *HybridBlobStore) uploadDir(uploadID string) string {

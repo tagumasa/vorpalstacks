@@ -184,7 +184,7 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 			return nil, translateStoreError(err)
 		}
 		if err := store.DeleteCluster(oldID); err != nil {
-			store.DeleteCluster(v)
+			_ = store.DeleteCluster(v)
 			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{

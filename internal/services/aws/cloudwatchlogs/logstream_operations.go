@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/eventbus"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	"vorpalstacks/internal/utils/aws/arn"
@@ -392,13 +392,6 @@ func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestC
 	}, nil
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // FilterLogEvents filters log events from the specified CloudWatch Logs log group.
 func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
@@ -497,7 +490,9 @@ func (s *LogsService) applySubscriptionFilters(reqCtx *request.RequestContext, l
 				Payload:        compressed,
 			}
 			evt.Region = region
-			s.bus.Publish(context.Background(), evt)
+			if err := s.bus.Publish(context.Background(), evt); err != nil {
+				logs.Warn("Failed to publish log delivery event", logs.Err(err))
+			}
 		} else {
 			s.deliverToDestination(reqCtx, filter, logGroupName, logStreamName, matchedEvents)
 		}
@@ -545,7 +540,7 @@ func (s *LogsService) applySubscriptionFiltersByRegion(region, logGroupName, log
 			}
 			compressed := buf.Bytes()
 
-			s.bus.Publish(context.Background(), func() *eventbus.CloudWatchLogDeliveryEvent {
+			if err := s.bus.Publish(context.Background(), func() *eventbus.CloudWatchLogDeliveryEvent {
 				evt := &eventbus.CloudWatchLogDeliveryEvent{
 					LogGroup:       logGroupName,
 					LogStream:      logStreamName,
@@ -554,7 +549,9 @@ func (s *LogsService) applySubscriptionFiltersByRegion(region, logGroupName, log
 				}
 				evt.Region = region
 				return evt
-			}())
+			}()); err != nil {
+				logs.Warn("Failed to publish log delivery event", logs.Err(err))
+			}
 		}
 	}
 }

@@ -200,35 +200,28 @@ func (d *DB) Get(key []byte) ([]byte, error) {
 	result := make([]byte, len(val))
 	copy(result, val)
 
-	decrypted, err := d.encryptor.Decrypt(result)
+	data, expired, err := decryptAndUnwrapTTL(d.encryptor, result, d.opts.TTL.Enabled)
 	if err != nil {
 		d.mu.RUnlock()
 		return nil, fmt.Errorf("failed to decrypt value: %w", err)
 	}
 
-	if d.opts.TTL.Enabled {
-		ttlVal, err := UnmarshalTTLValue(decrypted)
-		if err == nil {
-			if ttlVal.ExpiresAt > 0 && time.Now().Unix() > ttlVal.ExpiresAt {
-				d.mu.RUnlock()
-				d.mu.Lock()
-				if !d.closed {
-					d.pendingDeletes.Add(1)
-					go func() {
-						defer d.pendingDeletes.Done()
-						_ = d.Delete(key)
-					}()
-				}
-				d.mu.Unlock()
-				return nil, ErrKeyNotFound
-			}
-			d.mu.RUnlock()
-			return ttlVal.Data, nil
+	if expired {
+		d.mu.RUnlock()
+		d.mu.Lock()
+		if !d.closed {
+			d.pendingDeletes.Add(1)
+			go func() {
+				defer d.pendingDeletes.Done()
+				_ = d.Delete(key)
+			}()
 		}
+		d.mu.Unlock()
+		return nil, ErrKeyNotFound
 	}
 
 	d.mu.RUnlock()
-	return decrypted, nil
+	return data, nil
 }
 
 // Set stores a key-value pair in the database with no expiration.
@@ -412,6 +405,28 @@ func (d *DB) SetJSONWithTTL(key []byte, value any, ttl time.Duration) error {
 	}
 
 	return d.SetWithTTL(key, data, ttl)
+}
+
+// decryptAndUnwrapTTL decrypts a value and, if TTL is enabled, unwraps the TTL
+// envelope. Returns (data, expired, err). If expired is true, the caller should
+// skip or delete the entry. If the value is not a TTL value, the raw decrypted
+// bytes are returned with expired=false.
+func decryptAndUnwrapTTL(encryptor Encryptor, raw []byte, ttlEnabled bool) ([]byte, bool, error) {
+	decrypted, err := encryptor.Decrypt(raw)
+	if err != nil {
+		return nil, false, err
+	}
+	if !ttlEnabled {
+		return decrypted, false, nil
+	}
+	ttlVal, err := UnmarshalTTLValue(decrypted)
+	if err != nil {
+		return decrypted, false, nil
+	}
+	if ttlVal.ExpiresAt > 0 && time.Now().Unix() > ttlVal.ExpiresAt {
+		return nil, true, nil
+	}
+	return ttlVal.Data, false, nil
 }
 
 // DB returns the underlying Pebble database instance.

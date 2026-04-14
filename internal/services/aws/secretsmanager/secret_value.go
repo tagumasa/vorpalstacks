@@ -67,7 +67,9 @@ func (s *SecretsManagerService) PutSecretValue(ctx context.Context, reqCtx *requ
 			}
 		}
 		customStages = append(customStages, "AWSCURRENT")
-		_ = store.UpdateSecretVersionStage(updated.Name, updated.CurrentVersion, customStages)
+		if err := store.UpdateSecretVersionStage(updated.Name, updated.CurrentVersion, customStages); err != nil {
+			return nil, fmt.Errorf("failed to apply version stages: %w", err)
+		}
 		version.VersionStages = customStages
 	}
 

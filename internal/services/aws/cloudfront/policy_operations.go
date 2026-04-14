@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -558,7 +558,7 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 		logs.Debug("CloudFront TagResource: no tags parsed", logs.String("arn", arn), logs.String("param_keys", strings.Join(keys, ",")))
 		parsedTags := tagutil.ParseTags(req.Parameters, "Tags")
 		for _, t := range parsedTags {
-			tags = append(tags, common.Tag{Key: t.Key, Value: t.Value})
+			tags = append(tags, common.Tag(t))
 		}
 	}
 

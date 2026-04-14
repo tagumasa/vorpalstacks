@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/crypto"
@@ -64,7 +65,7 @@ func (s *IAMService) DeleteVirtualMFADevice(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // EnableMFADevice enables an MFA device for a user.
@@ -115,7 +116,7 @@ func (s *IAMService) EnableMFADevice(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // DeactivateMFADevice deactivates an MFA device for a user.
@@ -152,7 +153,7 @@ func (s *IAMService) DeactivateMFADevice(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListMFADevices lists MFA devices.
@@ -301,7 +302,7 @@ func (s *IAMService) ResyncMFADevice(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // GetAccountPasswordPolicy retrieves the account password policy.
@@ -420,7 +421,7 @@ func (s *IAMService) DeleteAccountPasswordPolicy(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // TagMFADevice adds tags to a virtual MFA device.
@@ -447,7 +448,7 @@ func (s *IAMService) TagMFADevice(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // UntagMFADevice removes tags from a virtual MFA device.
@@ -474,7 +475,7 @@ func (s *IAMService) UntagMFADevice(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	return nil, nil
+	return response.EmptyResponse(), nil
 }
 
 // ListMFADeviceTags lists the tags attached to a virtual MFA device.

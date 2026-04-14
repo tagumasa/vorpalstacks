@@ -276,29 +276,6 @@ func extractServiceInfo(traits map[string]interface{}) (sdkID, arnNamespace, clo
 	return
 }
 
-// extractServiceVersion extracts the service version from a trait map.
-// The version is specified in the aws.api#version trait.
-func extractServiceVersion(traits map[string]interface{}) string {
-	if traits == nil {
-		return ""
-	}
-
-	versionTrait, ok := traits["aws.api#version"]
-	if !ok {
-		return ""
-	}
-
-	if v, ok := versionTrait.(string); ok {
-		return v
-	}
-
-	if m, ok := versionTrait.(map[string]interface{}); ok {
-		return extractStringTrait(m, "value")
-	}
-
-	return ""
-}
-
 // extractDocumentation extracts documentation text from a trait map.
 // Documentation can be provided via either the "docs" or "documentation" trait.
 func extractDocumentation(traits map[string]interface{}) string {

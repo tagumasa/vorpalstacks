@@ -3,6 +3,8 @@ package apps
 import (
 	"context"
 	"fmt"
+
+	"vorpalstacks/internal/core/logs"
 )
 
 func (a *App) wireCrossServiceDeps() {
@@ -91,7 +93,9 @@ func (a *App) wireCrossServiceDeps() {
 		}
 		st.schedulerService.BuildEngine()
 		st.schedulerService.SetEventBus(a.server.EventBus())
-		st.schedulerService.StartEngine()
+		if err := st.schedulerService.StartEngine(); err != nil {
+			logs.Warn("failed to start scheduler engine", logs.Err(err))
+		}
 		a.addShutdown("scheduler", func(ctx context.Context) error {
 			if err := st.schedulerService.StopEngine(); err != nil {
 				return fmt.Errorf("scheduler shutdown: %w", err)

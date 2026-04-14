@@ -276,7 +276,7 @@ func encodeStructToXML(builder *strings.Builder, rv reflect.Value) {
 		if omitempty && fv.IsZero() {
 			continue
 		}
-		xmlKey := toPascalCase(key)
+		xmlKey := toTitleCase(key)
 		builder.WriteString("<" + xmlKey + ">")
 		encodeValueToXML(builder, fv.Interface())
 		builder.WriteString("</" + xmlKey + ">")
@@ -296,7 +296,7 @@ func encodeReflectMapToXML(builder *strings.Builder, rv reflect.Value) {
 		if !isValidXMLName(rawKey) {
 			continue
 		}
-		xmlKey := toPascalCase(rawKey)
+		xmlKey := toTitleCase(rawKey)
 		builder.WriteString("<" + xmlKey + ">")
 		encodeValueToXML(builder, rv.MapIndex(k).Interface())
 		builder.WriteString("</" + xmlKey + ">")
@@ -330,7 +330,7 @@ func encodeMapToXML(builder *strings.Builder, data map[string]interface{}) {
 		if !isValidXMLName(key) {
 			continue
 		}
-		xmlKey := toPascalCase(key)
+		xmlKey := toTitleCase(key)
 		builder.WriteString("<" + xmlKey + ">")
 
 		switch v := value.(type) {
@@ -442,7 +442,7 @@ func isValidXMLName(s string) bool {
 	return true
 }
 
-func toPascalCase(s string) string {
+func toTitleCase(s string) string {
 	if s == "" {
 		return s
 	}
@@ -484,8 +484,4 @@ func numberToString(v interface{}) string {
 
 func intToString(n int64) string {
 	return strconv.FormatInt(n, 10)
-}
-
-func floatToString(n float64) string {
-	return strconv.FormatFloat(n, 'f', -1, 64)
 }

@@ -154,7 +154,7 @@ func (s *NeptuneService) ModifyGlobalCluster(ctx context.Context, reqCtx *reques
 			return nil, translateStoreError(err)
 		}
 		if err := store.DeleteGlobalCluster(oldID); err != nil {
-			store.DeleteGlobalCluster(v)
+			_ = store.DeleteGlobalCluster(v)
 			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{

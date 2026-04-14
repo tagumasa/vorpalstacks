@@ -5,6 +5,7 @@ package waf
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -17,6 +18,7 @@ const ipSetBucketName = "waf_ip_sets"
 type IPSetStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	mu         sync.Mutex
 }
 
 // NewIPSetStore creates a new IP Set store.
@@ -80,6 +82,9 @@ func (s *IPSetStore) Create(id, name, description, ipAddressVersion string, addr
 
 // Update updates an existing IP Set.
 func (s *IPSetStore) Update(id, lockToken string, addresses []string) (*IPSet, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	ipSet, err := s.Get(id)
 	if err != nil {
 		return nil, err
@@ -101,6 +106,9 @@ func (s *IPSetStore) Update(id, lockToken string, addresses []string) (*IPSet, e
 
 // Delete deletes an IP Set.
 func (s *IPSetStore) Delete(id, lockToken string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	ipSet, err := s.Get(id)
 	if err != nil {
 		return err

@@ -3,6 +3,7 @@ package cloudfront
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -15,6 +16,7 @@ const originAccessControlBucketName = "cloudfront_origin_access_controls"
 type OriginAccessControlStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	mu         sync.Mutex
 }
 
 // NewOriginAccessControlStore creates a new OriginAccessControlStore instance.
@@ -91,6 +93,9 @@ func (s *OriginAccessControlStore) Create(config *OriginAccessControlConfig) (*O
 
 // Update updates an existing origin access control.
 func (s *OriginAccessControlStore) Update(id string, config *OriginAccessControlConfig) (*OriginAccessControl, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	oac, err := s.Get(id)
 	if err != nil {
 		return nil, err
@@ -116,6 +121,9 @@ func (s *OriginAccessControlStore) Update(id string, config *OriginAccessControl
 
 // Delete removes an origin access control by its ID.
 func (s *OriginAccessControlStore) Delete(id string) error {
+	if _, err := s.Get(id); err != nil {
+		return err
+	}
 	if err := s.BaseStore.Delete(id); err != nil {
 		return NewStoreError("delete_origin_access_control", err)
 	}

@@ -19,6 +19,7 @@ type CertificateStoreInterface interface {
 	RemoveTags(arn string, tagKeys []string) error
 	GetAccountConfiguration(accountID, region string) (*AccountConfiguration, error)
 	PutAccountConfiguration(accountID, region string, config *AccountConfiguration) error
+	DeleteAccountConfiguration(accountID, region string)
 }
 
 var _ CertificateStoreInterface = (*CertificateStore)(nil)

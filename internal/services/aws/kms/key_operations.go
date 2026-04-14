@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 	"vorpalstacks/internal/utils/aws/arn"
@@ -93,7 +93,9 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 	}
 
 	if err := s.hsmBackend.GenerateKey(keyID, hsm.KeySpec(keySpec)); err != nil {
-		_ = stores.keys.Delete(keyID)
+		if delErr := stores.keys.Delete(keyID); delErr != nil {
+			logs.Error("Failed to delete key during rollback after HSM GenerateKey failure", logs.Err(delErr), logs.String("keyId", keyID))
+		}
 		return nil, err
 	}
 

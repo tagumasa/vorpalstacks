@@ -41,10 +41,9 @@ type managedListener struct {
 
 // Manager manages secondary HTTP listeners for auxiliary services.
 type Manager struct {
-	mainPort      int
-	listeners     map[string]*managedListener
-	mu            sync.Mutex
-	shutdownHooks []func(context.Context) error
+	mainPort  int
+	listeners map[string]*managedListener
+	mu        sync.Mutex
 }
 
 // NewManager creates a new Manager for the given main port.
@@ -116,7 +115,7 @@ func (m *Manager) Start() {
 	}
 }
 
-// Shutdown gracefully shuts down all secondary listeners and executes registered shutdown hooks.
+// Shutdown gracefully shuts down all secondary listeners.
 func (m *Manager) Shutdown(ctx context.Context) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -124,12 +123,6 @@ func (m *Manager) Shutdown(ctx context.Context) {
 	for name, l := range m.listeners {
 		if err := l.server.Shutdown(ctx); err != nil {
 			logs.Error("Secondary listener shutdown error", logs.String("name", name), logs.Err(err))
-		}
-	}
-
-	for i := len(m.shutdownHooks) - 1; i >= 0; i-- {
-		if err := m.shutdownHooks[i](ctx); err != nil {
-			logs.Error("Listener shutdown hook error", logs.Err(err))
 		}
 	}
 }

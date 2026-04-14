@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"sync"
 
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -25,31 +26,17 @@ func NewDynamoDBService(accountID string) *DynamoDBService {
 }
 
 func (s *DynamoDBService) store(reqCtx *request.RequestContext) (dynamodbstore.DynamoDBStoreInterface, error) {
-	store := reqCtx.GetDynamoDBStore()
-	if store != nil {
-		return store, nil
-	}
-	region := reqCtx.GetRegion()
-	if cached, ok := s.stores.Load(region); ok {
-		if typed, ok := cached.(dynamodbstore.DynamoDBStoreInterface); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (dynamodbstore.DynamoDBStoreInterface, error) {
+		basicStorage, err := reqCtx.GetStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage: %w", err)
 		}
-	}
-	basicStorage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get storage: %w", err)
-	}
-	txnStorage, ok := basicStorage.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		return nil, fmt.Errorf("storage does not implement TransactionalStorageWith2PC")
-	}
-	store = dynamodbstore.NewDynamoDBStore(txnStorage, s.accountID, region)
-	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(dynamodbstore.DynamoDBStoreInterface); ok {
-			return typed, nil
+		txnStorage, ok := basicStorage.(storage.TransactionalStorageWith2PC)
+		if !ok {
+			return nil, fmt.Errorf("storage does not implement TransactionalStorageWith2PC")
 		}
-	}
-	return store, nil
+		return dynamodbstore.NewDynamoDBStore(txnStorage, s.accountID, reqCtx.GetRegion()), nil
+	})
 }
 
 // RegisterHandlers registers all DynamoDB operation handlers with the dispatcher.
