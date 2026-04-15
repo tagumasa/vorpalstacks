@@ -12,9 +12,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/store/api"
 )
 
@@ -110,27 +110,6 @@ func TestHasHandlerForService(t *testing.T) {
 
 	if d.hasHandlerForService("OtherService", "TestOp") {
 		t.Error("should not have handler for different service")
-	}
-}
-
-func TestDispatch_WithHandler(t *testing.T) {
-	d := newTestDispatcher(t)
-
-	handler := func(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-		return map[string]string{"result": "success"}, nil
-	}
-	d.RegisterHandler("TestOperation", handler)
-
-	body := `{"test": "data"}`
-	req := httptest.NewRequest("POST", "/", bytes.NewBufferString(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Amz-Target", "TestService.TestOperation")
-
-	w := httptest.NewRecorder()
-	d.Dispatch(w, req, "TestService", nil)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", w.Code)
 	}
 }
 

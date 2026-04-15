@@ -176,7 +176,7 @@ func TestTTL(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, value, got)
 
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 
 	db.cleanExpiredKeys()
 
