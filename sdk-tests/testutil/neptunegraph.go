@@ -3,7 +3,6 @@ package testutil
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -665,11 +664,8 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 			GraphIdentifier: aws.String(graphID),
 			QueryId:         aws.String("q-fake123456"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for CancelQuery (501)")
-		}
-		if !strings.Contains(err.Error(), "NotImplementedException") {
-			return fmt.Errorf("expected NotImplementedException, got: %v", err)
+		if err := AssertErrorContains(err, "NotImplementedException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -716,11 +712,8 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 			GraphIdentifier: aws.String(graphID),
 			QueryId:         aws.String("q-nonexist00"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent query")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -832,11 +825,8 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 		_, err := client.GetGraphSnapshot(ctx, &neptunegraph.GetGraphSnapshotInput{
 			SnapshotIdentifier: aws.String(snapshotID),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleted snapshot")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -847,11 +837,8 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 		_, err := client.GetGraph(ctx, &neptunegraph.GetGraphInput{
 			GraphIdentifier: aws.String("g-nonexist00"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent graph")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -861,11 +848,8 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 			GraphIdentifier: aws.String("g-nonexist00"),
 			SkipSnapshot:    aws.Bool(true),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent graph")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -901,11 +885,8 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 		_, err := client.GetGraph(ctx, &neptunegraph.GetGraphInput{
 			GraphIdentifier: aws.String(graphID),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleted graph")
-		}
-		if !strings.Contains(err.Error(), "ResourceNotFoundException") {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))

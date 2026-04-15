@@ -9,6 +9,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/pkg/graphengine"
 	"vorpalstacks/pkg/gremlinparser"
 )
 
@@ -35,8 +36,8 @@ func (s *NeptuneDataService) ExecuteGremlinQuery(ctx context.Context, reqCtx *re
 
 	s.trackQuery(store, qid, params.Gremlin, "gremlin")
 
-	reader := reqCtx.GraphReader()
-	writer := reqCtx.GraphWriter()
+	reader := reqCtx.GraphReader().(graphengine.GraphReader)
+	writer := reqCtx.GraphWriter().(graphengine.GraphWriter)
 	parsed, err := gremlinparser.Parse(params.Gremlin)
 	if err != nil {
 		s.resolveQuery(store, qid, nil, err)

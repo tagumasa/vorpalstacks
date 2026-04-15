@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -303,5 +304,45 @@ func TestCircuitBreaker_DefaultConfig(t *testing.T) {
 	stats := cb.Stats()
 	if stats.Failures != 0 {
 		t.Fatalf("expected 0 failures, got %d", stats.Failures)
+	}
+}
+
+func TestState_String(t *testing.T) {
+	tests := []struct {
+		state State
+		want  string
+	}{
+		{StateClosed, "Closed"},
+		{StateOpen, "Open"},
+		{StateHalfOpen, "HalfOpen"},
+		{State(99), "Unknown"},
+	}
+	for _, tt := range tests {
+		if got := tt.state.String(); got != tt.want {
+			t.Fatalf("State(%d).String() = %q, want %q", tt.state, got, tt.want)
+		}
+	}
+}
+
+func TestStats_String(t *testing.T) {
+	s := Stats{
+		State:         StateOpen,
+		Failures:      5,
+		Successes:     10,
+		HalfOpenCalls: 2,
+		OpenDuration:  3 * time.Second,
+	}
+	got := s.String()
+	if !strings.Contains(got, "Open") {
+		t.Fatalf("Stats.String() should contain state, got %q", got)
+	}
+	if !strings.Contains(got, "Failures: 5") {
+		t.Fatalf("Stats.String() should contain Failures: 5, got %q", got)
+	}
+	if !strings.Contains(got, "Successes: 10") {
+		t.Fatalf("Stats.String() should contain Successes: 10, got %q", got)
+	}
+	if !strings.Contains(got, "HalfOpenCalls: 2") {
+		t.Fatalf("Stats.String() should contain HalfOpenCalls: 2, got %q", got)
 	}
 }

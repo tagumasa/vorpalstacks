@@ -396,6 +396,7 @@ func (h *AdminHandler) GetPropertygraphStream(ctx context.Context, req *connect.
 	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("streaming operations return HTTP 501"))
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the NeptuneData admin console.
 func NewConnectHandler(svc *NeptuneDataService) (string, http.Handler) {
 	return neptunedataconnect.NewNeptunedataServiceHandler(NewAdminHandler(svc))
 }

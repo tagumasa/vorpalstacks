@@ -6,6 +6,7 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 )
 
+// StoreError is an alias for the common store error type.
 type StoreError = common.StoreError
 
 var (

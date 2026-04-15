@@ -36,7 +36,7 @@ type StepFunctionService struct {
 	eventsStore    *eventsstore.EventsStore
 	accountID      string
 	storageManager *storage.RegionStorageManager
-	bus            *eventbus.EventBus
+	bus            eventbus.Bus
 	stores         sync.Map
 	asyncWg        sync.WaitGroup
 }
@@ -75,7 +75,7 @@ func (s *StepFunctionService) SetEventsStore(store *eventsstore.EventsStore) {
 
 // SetEventBus injects the event bus and subscribes to cross-service start
 // execution events from EventBridge, Scheduler, and CloudWatch Alarms.
-func (s *StepFunctionService) SetEventBus(bus *eventbus.EventBus) {
+func (s *StepFunctionService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	_, _ = eventbus.SubscribeTyped[*eventbus.StepFunctionsStartExecutionEvent](bus, s.handleStartExecutionEvent, eventbus.WithAsync())
 }

@@ -27,7 +27,7 @@ type Executor struct {
 	eventsStore         *eventsstore.EventsStore
 	accountID           string
 	region              string
-	bus                 *eventbus.EventBus
+	bus                 eventbus.Bus
 	currentRoleArn      string
 	currentExecution    *sfnstore.Execution
 	currentStateMachine *sfnstore.StateMachine
@@ -57,7 +57,7 @@ func NewExecutorWithStores(store *sfnstore.StepFunctionStore, lambdaInvoker comm
 // SetEventBus injects the event bus. When set, SNS publish and EventBridge
 // PutEvents task integrations route through the bus, fixing fan-out and rule
 // matching bugs that exist in the direct store access path.
-func (e *Executor) SetEventBus(bus *eventbus.EventBus) {
+func (e *Executor) SetEventBus(bus eventbus.Bus) {
 	e.bus = bus
 }
 

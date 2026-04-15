@@ -65,6 +65,7 @@ func (h *AdminHandler) ListTrails(ctx context.Context, req *connect.Request[pb.L
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the CloudTrail admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return cloudtrailconnect.NewCloudTrailServiceHandler(NewAdminHandler(sm, accountID))
 }

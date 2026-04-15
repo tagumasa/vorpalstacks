@@ -60,6 +60,7 @@ func (h *AdminHandler) ListBuckets(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the S3 admin console.
 func NewConnectHandler(s3Store S3StoreProvider, accountID string) (string, http.Handler) {
 	return s3connect.NewS3ServiceHandler(NewAdminHandler(s3Store, accountID))
 }

@@ -1,7 +1,5 @@
 package sns
 
-// Package sns provides SNS (Simple Notification Service) operations for vorpalstacks.
-
 import (
 	"bytes"
 	"context"
@@ -151,7 +149,12 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 				MessageGroupId: messageGroupId,
 			}
 			snsEvt.Region = region
-			_ = s.bus.Publish(context.Background(), snsEvt)
+			if err := s.bus.Publish(context.Background(), snsEvt); err != nil {
+				logs.Warn("Failed to publish SNS delivery event to event bus; message is stored but subscribers may not be notified",
+					logs.String("topicArn", topicArn),
+					logs.String("messageId", messageId),
+					logs.Err(err))
+			}
 		} else {
 			s.deliverAsync(&msgCopy, subsCopy, region)
 		}

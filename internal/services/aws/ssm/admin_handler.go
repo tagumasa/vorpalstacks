@@ -108,6 +108,7 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Ssm admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return ssmconnect.NewSSMServiceHandler(NewAdminHandler(sm, accountID))
 }

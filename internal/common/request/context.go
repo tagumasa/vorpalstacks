@@ -5,8 +5,6 @@ import (
 
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/core/storage"
-	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/pkg/graphengine"
 )
 
 // AuditRecorder records audit events for CloudTrail.
@@ -30,7 +28,8 @@ const (
 type RequestContext struct {
 	context.Context
 	storageManager *storage.RegionStorageManager
-	iamStore       iamstore.IAMStoreInterface
+	iamStore       any
+	iamRoles       iam.RolePolicyProvider
 	iamValidator   *iam.IAMValidator
 	AccountID      string
 	Region         string
@@ -40,7 +39,8 @@ type RequestContext struct {
 	SourceIP       string
 	UserAgent      string
 	auditRecorder  AuditRecorder
-	graphDBManager *graphengine.DB
+	graphReader    any
+	graphWriter    any
 }
 
 // NewRequestContext creates a new RequestContext with the given parameters.
@@ -116,41 +116,44 @@ func (c *RequestContext) HasAuditRecorder() bool {
 	return c.auditRecorder != nil
 }
 
-// SetIAMStore sets the IAM store for the request context.
-func (c *RequestContext) SetIAMStore(store iamstore.IAMStoreInterface) {
+// SetIAMStore sets the IAM store and role provider for the request context.
+// The store is retained as-is for services that need direct store access.
+// The roles provider is used internally by GetIAMValidator for policy evaluation.
+func (c *RequestContext) SetIAMStore(store any, roles iam.RolePolicyProvider) {
 	c.iamStore = store
+	c.iamRoles = roles
 }
 
-// GetIAMStore returns the IAM store.
-func (c *RequestContext) GetIAMStore() iamstore.IAMStoreInterface {
+// GetIAMStore returns the IAM store. Callers should type-assert to the
+// concrete IAMStoreInterface from store/aws/iam.
+func (c *RequestContext) GetIAMStore() any {
 	return c.iamStore
 }
 
 // GetIAMValidator returns the IAM validator for the request context.
 func (c *RequestContext) GetIAMValidator() *iam.IAMValidator {
-	if c.iamValidator == nil && c.iamStore != nil {
-		c.iamValidator = iam.NewIAMValidator(c.iamStore.Roles(), c.AccountID)
+	if c.iamValidator == nil && c.iamRoles != nil {
+		c.iamValidator = iam.NewIAMValidator(c.iamRoles, c.AccountID)
 	}
 	return c.iamValidator
 }
 
-// SetGraphDBManager sets the graph database manager for NeptuneGraph queries.
-func (c *RequestContext) SetGraphDBManager(db *graphengine.DB) {
-	c.graphDBManager = db
+// SetGraphDBManager sets the graph database reader and writer for
+// NeptuneGraph queries. The caller (dispatcher) extracts these from
+// the concrete *graphengine.DB at injection time.
+func (c *RequestContext) SetGraphDBManager(reader, writer any) {
+	c.graphReader = reader
+	c.graphWriter = writer
 }
 
 // GraphReader returns the graph database reader for NeptuneGraph queries.
-func (c *RequestContext) GraphReader() graphengine.GraphReader {
-	if c.graphDBManager == nil {
-		return nil
-	}
-	return c.graphDBManager
+// Callers should type-assert to graphengine.GraphReader.
+func (c *RequestContext) GraphReader() any {
+	return c.graphReader
 }
 
 // GraphWriter returns the graph database writer for NeptuneGraph mutations.
-func (c *RequestContext) GraphWriter() graphengine.GraphWriter {
-	if c.graphDBManager == nil {
-		return nil
-	}
-	return c.graphDBManager
+// Callers should type-assert to graphengine.GraphWriter or graphengine.GraphStore.
+func (c *RequestContext) GraphWriter() any {
+	return c.graphWriter
 }

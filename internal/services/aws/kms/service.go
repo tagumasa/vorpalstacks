@@ -13,6 +13,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	storecommon "vorpalstacks/internal/store/aws/common"
+	iamstore "vorpalstacks/internal/store/aws/iam"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
@@ -196,8 +197,12 @@ func (s *KMSService) resolveCallerPrincipal(reqCtx *request.RequestContext, req 
 	if accessKeyId == "" {
 		return "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
 	}
-	iamStore := reqCtx.GetIAMStore()
-	if iamStore == nil {
+	iamStoreAny := reqCtx.GetIAMStore()
+	if iamStoreAny == nil {
+		return "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+	}
+	iamStore, ok := iamStoreAny.(iamstore.IAMStoreInterface)
+	if !ok {
 		return "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
 	}
 	accessKey, err := iamStore.AccessKeys().Get(accessKeyId)

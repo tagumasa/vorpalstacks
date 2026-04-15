@@ -64,6 +64,7 @@ func (h *AdminHandler) ListTopics(ctx context.Context, req *connect.Request[pb.L
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Sns admin console.
 func NewConnectHandler(svc *SNSService) (string, http.Handler) {
 	return snsconnect.NewSNSServiceHandler(NewAdminHandler(svc))
 }

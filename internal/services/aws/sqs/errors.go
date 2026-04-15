@@ -31,7 +31,7 @@ var (
 	ErrMessageNotInflight = awserrors.NewAWSError("MessageNotInflight", "The message referred to is not in flight.", 400)
 	// ErrPurgeQueueInProgress is returned when a purge queue operation is already running.
 	ErrPurgeQueueInProgress = awserrors.NewAWSError("PurgeQueueInProgress", "There is already a purge queue operation running.", 403)
-	// ErrMessageTooLarge is returned when the message contents are invalid.
+	// ErrMessageTooLarge is returned when the message body exceeds the maximum allowed size.
 	ErrMessageTooLarge = awserrors.NewAWSError("InvalidMessageContents", "The message contains invalid message contents.", 400)
 	// ErrTooManyTags is returned when too many tags are provided for a queue.
 	ErrTooManyTags = awserrors.NewAWSError("InvalidParameterValue", "Too many tags for queue.", 400)

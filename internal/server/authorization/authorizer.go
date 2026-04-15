@@ -207,6 +207,8 @@ func (a *Authorizer) getEffectivePolicies(ctx context.Context, userName string) 
 		cachedAt: time.Now(),
 	})
 
+	a.enforceCacheSize()
+
 	return policies, nil
 }
 
@@ -378,6 +380,20 @@ func (a *Authorizer) cleanupExpiredEntries() {
 	if count > a.maxCacheSize {
 		a.evictOldestEntries(count - a.maxCacheSize)
 	}
+}
+
+func (a *Authorizer) enforceCacheSize() {
+	var count int
+	a.policyCache.Range(func(_, _ interface{}) bool {
+		count++
+		return true
+	})
+
+	if count <= a.maxCacheSize {
+		return
+	}
+
+	a.evictOldestEntries(count - a.maxCacheSize)
 }
 
 func (a *Authorizer) evictOldestEntries(toEvict int) {

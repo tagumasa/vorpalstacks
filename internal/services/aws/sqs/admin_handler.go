@@ -92,6 +92,7 @@ func (h *AdminHandler) GetQueueUrl(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Sqs admin console.
 func NewConnectHandler(svc *SQSService) (string, http.Handler) {
 	return sqsconnect.NewSQSServiceHandler(NewAdminHandler(svc))
 }

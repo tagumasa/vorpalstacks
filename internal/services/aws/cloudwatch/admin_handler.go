@@ -164,6 +164,7 @@ func toPbStateValue(state string) pb.StateValue {
 	}
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the CloudWatch admin console.
 func NewConnectHandler(st storage.BasicStorage, accountID, region, dataPath string) (string, http.Handler) {
 	return cloudwatchconnect.NewCloudWatchServiceHandler(NewAdminHandler(cloudwatchstore.NewAlarmStore(st, accountID, region), cloudwatchstore.NewMetricChunkStore(st, region, dataPath)))
 }

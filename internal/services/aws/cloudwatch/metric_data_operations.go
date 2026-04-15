@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"context"
+	"encoding/json"
 
 	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
@@ -63,7 +64,12 @@ func (s *CloudWatchService) GetMetricWidgetImage(ctx context.Context, reqCtx *re
 	if widgetDefinition == "" {
 		widgetDefinition = request.GetStringParam(req.Parameters, "MetricWidget")
 	}
-	_ = widgetDefinition
+	if widgetDefinition == "" {
+		return nil, ErrInvalidParameter
+	}
+	if !json.Valid([]byte(widgetDefinition)) {
+		return nil, ErrInvalidParameter
+	}
 
 	format := request.GetStringParam(req.Parameters, "outputFormat")
 	if format == "" {

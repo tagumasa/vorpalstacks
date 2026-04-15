@@ -84,6 +84,7 @@ func (h *AdminHandler) ListEmailIdentities(ctx context.Context, req *connect.Req
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Sesv2 admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return sesv2connect.NewSESv2ServiceHandler(NewAdminHandler(sm, accountID))
 }

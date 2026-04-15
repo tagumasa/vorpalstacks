@@ -202,48 +202,18 @@ func (s *SecretsManagerService) executeRotation(ctx context.Context, store secre
 }
 
 // finishRotation promotes the AWSPENDING version to AWSCURRENT and demotes
-// the current AWSCURRENT to AWSPREVIOUS. This is the local counterpart of
-// the AWS finishSecret step.
+// the current AWSCURRENT to AWSPREVIOUS.  Delegates to the store's atomic
+// FinishRotation method so that all stage transitions and metadata updates
+// execute under a single lock.
 func (s *SecretsManagerService) finishRotation(store secretsmanagerstore.SecretStoreInterface, secret *secretsmanagerstore.Secret, pendingVersionID string) error {
-	_, err := store.GetSecretVersion(secret.Name, pendingVersionID)
-	if err != nil {
-		return fmt.Errorf("AWSPENDING version %s not found: %w", pendingVersionID, err)
-	}
-
-	oldCurrentID := secret.CurrentVersion
-
-	oldPrevious, prevErr := store.GetSecretVersionByStage(secret.Name, "AWSPREVIOUS")
-	if prevErr == nil && oldPrevious.VersionId != pendingVersionID {
-		cleanedStages := []string{}
-		for _, st := range oldPrevious.VersionStages {
-			if st != "AWSPREVIOUS" {
-				cleanedStages = append(cleanedStages, st)
-			}
-		}
-		if err := store.UpdateSecretVersionStage(secret.Name, oldPrevious.VersionId, cleanedStages); err != nil {
-			return fmt.Errorf("failed to clean AWSPREVIOUS from old previous version during rotation: %w", err)
-		}
-	}
-
-	if oldCurrentID != "" && oldCurrentID != pendingVersionID {
-		if err := store.UpdateSecretVersionStage(secret.Name, oldCurrentID, []string{"AWSPREVIOUS"}); err != nil {
-			return fmt.Errorf("failed to demote current version to AWSPREVIOUS during rotation: %w", err)
-		}
-	}
-
-	if err := store.UpdateSecretVersionStage(secret.Name, pendingVersionID, []string{"AWSCURRENT"}); err != nil {
-		return fmt.Errorf("failed to promote pending version to AWSCURRENT during rotation: %w", err)
-	}
-
-	secret.CurrentVersion = pendingVersionID
 	secret.LastRotatedDate = storeClock()
 
 	if secret.RotationRules != nil && secret.RotationRules.AutomaticallyAfterDays > 0 {
 		secret.NextRotationDate = secret.LastRotatedDate.AddDate(0, 0, secret.RotationRules.AutomaticallyAfterDays)
 	}
 
-	if err := store.UpdateSecretMetadata(secret); err != nil {
-		return fmt.Errorf("failed to update secret metadata after rotation: %w", err)
+	if err := store.FinishRotation(secret, pendingVersionID); err != nil {
+		return err
 	}
 
 	s.logRotation(secret.Name, pendingVersionID)

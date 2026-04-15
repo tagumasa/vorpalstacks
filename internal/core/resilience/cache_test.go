@@ -105,5 +105,74 @@ func TestCacheEviction(t *testing.T) {
 
 	cache.Set("key4", "value4")
 
-	time.Sleep(10 * time.Millisecond)
+	assert.Equal(t, 3, cache.Size())
+
+	_, ok = cache.Get("key1")
+	assert.False(t, ok, "oldest key should be evicted")
+
+	val, ok = cache.Get("key4")
+	assert.True(t, ok, "newest key should exist")
+	assert.Equal(t, "value4", val)
+}
+
+func TestCache_SizeAndKeys(t *testing.T) {
+	cache := NewCache(&CacheConfig{
+		TTL:             time.Minute,
+		MaxSize:         100,
+		CleanupInterval: time.Hour,
+	})
+	defer cache.Stop()
+
+	assert.Equal(t, 0, cache.Size())
+	assert.Empty(t, cache.Keys())
+
+	cache.Set("a", 1)
+	cache.Set("b", 2)
+	cache.Set("c", 3)
+
+	assert.Equal(t, 3, cache.Size())
+
+	keys := cache.Keys()
+	assert.Len(t, keys, 3)
+	assert.ElementsMatch(t, []string{"a", "b", "c"}, keys)
+
+	cache.Delete("a")
+	assert.Equal(t, 2, cache.Size())
+	assert.Len(t, cache.Keys(), 2)
+}
+
+func TestCache_Stats(t *testing.T) {
+	cache := NewCache(&CacheConfig{
+		TTL:             time.Minute,
+		MaxSize:         100,
+		CleanupInterval: time.Hour,
+	})
+	defer cache.Stop()
+
+	cache.Set("fresh", "value")
+	expired := &CacheItem{
+		Value:      "old",
+		Expiration: time.Now().Add(-time.Hour),
+	}
+	cache.mu.Lock()
+	cache.items["expired"] = expired
+	cache.mu.Unlock()
+
+	stats := cache.Stats()
+	assert.Equal(t, 2, stats.Size)
+	assert.Equal(t, 100, stats.MaxSize)
+	assert.Equal(t, 1, stats.ExpiredCount)
+	assert.Equal(t, time.Minute, stats.TTL)
+}
+
+func TestCacheStats_String(t *testing.T) {
+	s := CacheStats{
+		Size:         50,
+		MaxSize:      100,
+		ExpiredCount: 5,
+		TTL:          5 * time.Minute,
+	}
+	got := s.String()
+	assert.Contains(t, got, "50/100")
+	assert.Contains(t, got, "Expired: 5")
 }

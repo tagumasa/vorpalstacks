@@ -94,6 +94,7 @@ func (h *AdminHandler) ListFunctions(ctx context.Context, req *connect.Request[p
 	return connect.NewResponse(resp), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Lambda admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return lambdaconnect.NewLambdaServiceHandler(NewAdminHandler(sm, accountID))
 }

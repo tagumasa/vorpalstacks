@@ -725,6 +725,7 @@ func exportFilterElementToPb(e ngstore.ExportFilterElement) *pb.ExportFilterElem
 	return pbElem
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the NeptuneGraph admin console.
 func NewConnectHandler(svc *NeptuneGraphService, accountID string) (string, http.Handler) {
 	return neptunegraphconnect.NewNeptuneGraphServiceHandler(NewAdminHandler(svc, accountID))
 }

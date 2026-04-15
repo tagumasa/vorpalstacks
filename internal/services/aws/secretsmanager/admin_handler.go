@@ -29,6 +29,7 @@ func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Secrets Manager admin console.
 func NewConnectHandler() (string, http.Handler) {
 	return secretsmanagerconnect.NewSecretsManagerServiceHandler(NewAdminHandler())
 }

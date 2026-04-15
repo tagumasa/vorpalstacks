@@ -3,6 +3,7 @@ package resilience
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -293,5 +294,50 @@ func TestAdaptiveTimeout_DefaultConfig(t *testing.T) {
 	timeout := at.GetTimeout()
 	if timeout != 30*time.Second {
 		t.Fatalf("expected default 30s, got %v", timeout)
+	}
+}
+
+func TestAdaptiveTimeout_Close(t *testing.T) {
+	config := &AdaptiveTimeoutConfig{
+		Name:             "test-close",
+		InitialTimeout:   1 * time.Second,
+		MinTimeout:       100 * time.Millisecond,
+		MaxTimeout:       5 * time.Second,
+		SuccessThreshold: 2,
+		FailureThreshold: 2,
+		AdjustmentFactor: 1.5,
+	}
+	at := NewAdaptiveTimeout(config)
+
+	err := at.Close()
+	if err != nil {
+		t.Fatalf("Close() returned error: %v", err)
+	}
+
+	err = at.Close()
+	if err != nil {
+		t.Fatalf("double Close() returned error: %v", err)
+	}
+}
+
+func TestAdaptiveTimeoutStats_String(t *testing.T) {
+	s := AdaptiveTimeoutStats{
+		Name:                 "test",
+		CurrentTimeout:       3 * time.Second,
+		ConsecutiveSuccesses: 5,
+		ConsecutiveFailures:  1,
+	}
+	got := s.String()
+	if !strings.Contains(got, "test") {
+		t.Fatalf("AdaptiveTimeoutStats.String() should contain name, got %q", got)
+	}
+	if !strings.Contains(got, "Timeout=") {
+		t.Fatalf("AdaptiveTimeoutStats.String() should contain Timeout, got %q", got)
+	}
+	if !strings.Contains(got, "Successes=5") {
+		t.Fatalf("AdaptiveTimeoutStats.String() should contain Successes=5, got %q", got)
+	}
+	if !strings.Contains(got, "Failures=1") {
+		t.Fatalf("AdaptiveTimeoutStats.String() should contain Failures=1, got %q", got)
 	}
 }

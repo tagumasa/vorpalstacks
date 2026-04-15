@@ -75,6 +75,7 @@ func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Athena admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return athenaconnect.NewAthenaServiceHandler(NewAdminHandler(sm, accountID))
 }

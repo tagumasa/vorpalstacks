@@ -1,7 +1,5 @@
 package sns
 
-// Package sns provides SNS (Simple Notification Service) operations for vorpalstacks.
-
 import (
 	"context"
 	"crypto/subtle"

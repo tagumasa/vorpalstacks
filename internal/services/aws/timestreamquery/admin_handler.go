@@ -78,6 +78,7 @@ func (h *AdminHandler) ListScheduledQueries(ctx context.Context, req *connect.Re
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Timestream Query admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID, dataPath string) (string, http.Handler) {
 	return timestreamqueryconnect.NewTimestreamQueryServiceHandler(NewAdminHandler(sm, accountID, dataPath))
 }

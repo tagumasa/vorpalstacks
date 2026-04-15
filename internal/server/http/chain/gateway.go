@@ -43,10 +43,10 @@ func (g *Gateway) buildChain() *HandlerChain {
 	c.AddExceptionHandler(HandleInternalFailure)
 
 	c.AddResponseHandler(AddCORSResponseHeaders)
+	c.AddResponseHandler(SetCloseConnectionHeader)
 	c.AddResponseHandler(SerializeResponse)
 	c.AddResponseHandler(LogResponse)
 
-	c.AddFinalizer(SetCloseConnectionHeader)
 	c.AddFinalizer(g.finalizer)
 
 	return c

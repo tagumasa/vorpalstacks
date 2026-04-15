@@ -68,6 +68,7 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Dynamodb admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return dynamodbconnect.NewDynamoDBServiceHandler(NewAdminHandler(sm, accountID))
 }

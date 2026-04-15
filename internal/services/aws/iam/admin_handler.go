@@ -201,6 +201,7 @@ func toPbPolicy(policy *iamstore.Policy) *pb.Policy {
 	return pbPolicy
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Iam admin console.
 func NewConnectHandler(store storage.BasicStorage, accountID string) (string, http.Handler) {
 	return iamconnect.NewIAMServiceHandler(NewAdminHandler(store, accountID))
 }

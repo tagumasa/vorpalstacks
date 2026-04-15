@@ -38,6 +38,7 @@ func (h *AdminHandler) GetCallerIdentity(ctx context.Context, req *connect.Reque
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Sts admin console.
 func NewConnectHandler(accountID string) (string, http.Handler) {
 	return stsconnect.NewSTSServiceHandler(NewAdminHandler(accountID))
 }

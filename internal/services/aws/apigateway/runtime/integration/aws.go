@@ -39,7 +39,7 @@ type AWSExecutor struct {
 	snsStore      sns.SNSStoreInterface
 	accountID     string
 	region        string
-	bus           *eventbus.EventBus
+	bus           eventbus.Bus
 	deliveryWg    *sync.WaitGroup
 }
 
@@ -51,7 +51,7 @@ func NewAWSExecutor(lambdaInvoker LambdaInvoker) *AWSExecutor {
 }
 
 // NewAWSExecutorWithStores creates a new AWSExecutor with the given Lambda invoker and store dependencies.
-func NewAWSExecutorWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string, bus *eventbus.EventBus, deliveryWg *sync.WaitGroup) *AWSExecutor {
+func NewAWSExecutorWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string, bus eventbus.Bus, deliveryWg *sync.WaitGroup) *AWSExecutor {
 	return &AWSExecutor{
 		lambdaInvoker: lambdaInvoker,
 		sqsStore:      sqsStore,
@@ -727,7 +727,12 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 			Subject:   req.Headers["Subject"],
 		}
 		snsEvt.Region = snsRegion
-		_ = e.bus.Publish(context.Background(), snsEvt)
+		if err := e.bus.Publish(context.Background(), snsEvt); err != nil {
+			logs.Warn("Failed to publish SNS delivery event to event bus; message is stored but subscribers may not be notified",
+				logs.String("topicArn", topicArn),
+				logs.String("messageId", messageID),
+				logs.Err(err))
+		}
 	} else {
 		if e.deliveryWg != nil {
 			e.deliveryWg.Add(1)

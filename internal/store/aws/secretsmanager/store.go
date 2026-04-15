@@ -515,6 +515,94 @@ func (s *SecretStore) UpdateSecretMetadata(secret *Secret) error {
 	return s.Put(key, secret)
 }
 
+// FinishRotation atomically promotes AWSPENDING to AWSCURRENT and demotes the
+// old AWSCURRENT to AWSPREVIOUS.  All stage-transition writes and the metadata
+// update execute under a single mutex lock so that a crash mid-rotation cannot
+// leave no version carrying the AWSCURRENT stage.
+func (s *SecretStore) FinishRotation(secret *Secret, pendingVersionID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	versionKey := s.buildVersionKey(secret.Name, pendingVersionID)
+	var pendingVersion SecretVersion
+	if err := s.versionsStore.Get(versionKey, &pendingVersion); err != nil {
+		return fmt.Errorf("AWSPENDING version %s not found: %w", pendingVersionID, err)
+	}
+
+	oldPrevious, prevErr := s.getSecretVersionByStageLocked(secret.Name, "AWSPREVIOUS")
+	if prevErr == nil && oldPrevious.VersionId != pendingVersionID {
+		cleanedStages := make([]string, 0, len(oldPrevious.VersionStages))
+		for _, st := range oldPrevious.VersionStages {
+			if st != "AWSPREVIOUS" {
+				cleanedStages = append(cleanedStages, st)
+			}
+		}
+		prevKey := s.buildVersionKey(secret.Name, oldPrevious.VersionId)
+		oldPrevious.VersionStages = cleanedStages
+		if err := s.versionsStore.Put(prevKey, &oldPrevious); err != nil {
+			return fmt.Errorf("failed to clean AWSPREVIOUS from old previous version during rotation: %w", err)
+		}
+	}
+
+	oldCurrentID := secret.CurrentVersion
+	if oldCurrentID != "" && oldCurrentID != pendingVersionID {
+		currentKey := s.buildVersionKey(secret.Name, oldCurrentID)
+		var currentVersion SecretVersion
+		if err := s.versionsStore.Get(currentKey, &currentVersion); err != nil {
+			return fmt.Errorf("failed to read current version during rotation: %w", err)
+		}
+		currentVersion.VersionStages = []string{"AWSPREVIOUS"}
+		if err := s.versionsStore.Put(currentKey, &currentVersion); err != nil {
+			return fmt.Errorf("failed to demote current version to AWSPREVIOUS during rotation: %w", err)
+		}
+	}
+
+	pendingVersion.VersionStages = []string{"AWSCURRENT"}
+	if err := s.versionsStore.Put(versionKey, &pendingVersion); err != nil {
+		return fmt.Errorf("failed to promote pending version to AWSCURRENT during rotation: %w", err)
+	}
+
+	secret.CurrentVersion = pendingVersionID
+	secretKey := s.buildSecretKey(secret.Name)
+	if err := s.Put(secretKey, secret); err != nil {
+		return fmt.Errorf("failed to update secret metadata after rotation: %w", err)
+	}
+
+	return nil
+}
+
+// getSecretVersionByStageLocked reads a version by stage without acquiring the
+// mutex (caller must already hold s.mu).
+func (s *SecretStore) getSecretVersionByStageLocked(name, stage string) (*SecretVersion, error) {
+	secret, err := s.getSecretForMetadataLocked(name)
+	if err != nil {
+		return nil, err
+	}
+	for _, versionId := range secret.VersionIDs {
+		key := s.buildVersionKey(name, versionId)
+		var version SecretVersion
+		if err := s.versionsStore.Get(key, &version); err != nil {
+			continue
+		}
+		for _, st := range version.VersionStages {
+			if st == stage {
+				return &version, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("no version with stage %s", stage)
+}
+
+// getSecretForMetadataLocked reads secret metadata without acquiring the mutex.
+func (s *SecretStore) getSecretForMetadataLocked(name string) (*Secret, error) {
+	key := s.buildSecretKey(name)
+	var secret Secret
+	if err := s.Get(key, &secret); err != nil {
+		return nil, err
+	}
+	return &secret, nil
+}
+
 // CreateVersionDirect creates a secret version with a specific version ID (used for replication).
 func (s *SecretStore) CreateVersionDirect(secretName string, version *SecretVersion) error {
 	if version.VersionId == "" {

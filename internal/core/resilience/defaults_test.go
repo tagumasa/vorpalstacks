@@ -15,9 +15,9 @@ func TestDefaultRetryValues(t *testing.T) {
 }
 
 func TestDefaultCircuitBreakerValues(t *testing.T) {
-	assert.Equal(t, 5, DefaultCircuitBreakerMaxFailures)
+	assert.Equal(t, 9, DefaultCircuitBreakerMaxFailures)
 	assert.Equal(t, 60*time.Second, DefaultCircuitBreakerResetTimeout)
-	assert.Equal(t, 3, DefaultCircuitBreakerHalfOpenRequests)
+	assert.Equal(t, 5, DefaultCircuitBreakerHalfOpenRequests)
 	assert.Equal(t, 2, DefaultCircuitBreakerSuccessThreshold)
 }
 

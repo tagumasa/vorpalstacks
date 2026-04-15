@@ -680,8 +680,8 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 			StreamName: aws.String(dupStreamName),
 			ShardCount: aws.Int32(1),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate stream name")
+		if err := AssertErrorContains(err, "ResourceInUseException"); err != nil {
+			return err
 		}
 		return nil
 	}))

@@ -159,5 +159,6 @@ func (m *TLSManager) GetTLSConfig() (*tls.Config, error) {
 	return &tls.Config{
 		MinVersion:   tls.VersionTLS12,
 		Certificates: []tls.Certificate{cert},
+		NextProtos:   []string{"h2", "http/1.1"},
 	}, nil
 }

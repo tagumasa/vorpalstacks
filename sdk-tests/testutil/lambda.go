@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -420,12 +419,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		_, err := client.GetFunction(ctx, &lambda.GetFunctionInput{
 			FunctionName: aws.String("NoSuchFunction_xyz_12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent function")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -434,12 +429,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		_, err := client.Invoke(ctx, &lambda.InvokeInput{
 			FunctionName: aws.String("NoSuchFunction_xyz_12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent function")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -449,12 +440,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 			FunctionName: aws.String("NoSuchFunction_xyz_12345"),
 			ZipFile:      []byte("code"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent function")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -463,12 +450,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		_, err := client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
 			FunctionName: aws.String("NoSuchFunction_xyz_12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent function")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -501,12 +484,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 			Handler:      aws.String("index.handler"),
 			Code:         &types.FunctionCode{ZipFile: dupCode},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate function name")
-		}
-		var riu *types.ResourceConflictException
-		if !errors.As(err, &riu) {
-			return fmt.Errorf("expected ResourceConflictException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "ResourceConflictException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -721,12 +700,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 			Name:            aws.String("prod"),
 			FunctionVersion: aws.String("$LATEST"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate alias name")
-		}
-		var riu *types.ResourceConflictException
-		if !errors.As(err, &riu) {
-			return fmt.Errorf("expected ResourceConflictException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "ResourceConflictException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -985,12 +960,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 				_, err := client.GetEventSourceMapping(ctx, &lambda.GetEventSourceMappingInput{
 					UUID: aws.String("00000000-0000-0000-0000-000000000000"),
 				})
-				if err == nil {
-					return fmt.Errorf("expected error for non-existent event source mapping")
-				}
-				var rnf *types.ResourceNotFoundException
-				if !errors.As(err, &rnf) {
-					return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+				if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+					return err
 				}
 				return nil
 			}))
@@ -1086,12 +1057,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 						FunctionName: aws.String(pcFuncName),
 						Qualifier:    aws.String(pcVersion),
 					})
-					if err == nil {
-						return fmt.Errorf("expected error for deleted provisioned concurrency config")
-					}
-					var rnf *types.ResourceNotFoundException
-					if !errors.As(err, &rnf) {
-						return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+					if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+						return err
 					}
 					return nil
 				}))
@@ -1344,13 +1311,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 			Handler:      aws.String("index.handler"),
 			Code:         &types.FunctionCode{ZipFile: []byte("code")},
 		})
-		if err == nil {
-			client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(invRtFuncName)})
-			return fmt.Errorf("expected error for invalid runtime")
-		}
-		var ipve *types.InvalidParameterValueException
-		if !errors.As(err, &ipve) {
-			return fmt.Errorf("expected InvalidParameterValueException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1360,12 +1322,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 			FunctionName: aws.String(functionName),
 			Name:         aws.String("nonexistent-alias-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent alias")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1375,12 +1333,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 			LayerName:     aws.String("nonexistent-layer-xyz"),
 			VersionNumber: aws.Int64(999),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent layer version")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1408,12 +1362,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		_, err = client.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
 			FunctionName: aws.String(nofcFuncName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error when no URL config set")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1423,12 +1373,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 			FunctionName:             aws.String("nonexistent-func-xyz-123"),
 			MaximumEventAgeInSeconds: aws.Int32(3600),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent function")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))

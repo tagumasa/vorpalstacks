@@ -112,7 +112,7 @@ func (c *HandlerChain) AddFinalizer(finalizer Finalizer) *HandlerChain {
 
 // Execute runs the handler chain for the given request and response.
 func (c *HandlerChain) Execute(w http.ResponseWriter, r *http.Request) {
-	ctx := NewRequestContext(context.Background(), w, r)
+	ctx := NewRequestContext(r.Context(), w, r)
 
 	defer func() {
 		for _, finalizer := range c.finalizers {

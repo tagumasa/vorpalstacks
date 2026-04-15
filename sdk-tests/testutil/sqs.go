@@ -1251,6 +1251,94 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sqs", "DeleteQueue_NonExistent", func() error {
+		_, err := client.DeleteQueue(ctx, &sqs.DeleteQueueInput{
+			QueueUrl: aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
+		})
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "PurgeQueue_NonExistent", func() error {
+		_, err := client.PurgeQueue(ctx, &sqs.PurgeQueueInput{
+			QueueUrl: aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
+		})
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "GetQueueAttributes_NonExistent", func() error {
+		_, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl: aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
+		})
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "SendMessage_NonExistent", func() error {
+		_, err := client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:    aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
+			MessageBody: aws.String("test"),
+		})
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ReceiveMessage_NonExistent", func() error {
+		_, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl: aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
+		})
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "SetQueueAttributes_NonExistent", func() error {
+		_, err := client.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+			QueueUrl: aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
+			Attributes: map[string]string{
+				"DelaySeconds": "10",
+			},
+		})
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "TagQueue_NonExistent", func() error {
+		_, err := client.TagQueue(ctx, &sqs.TagQueueInput{
+			QueueUrl: aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
+			Tags: map[string]string{
+				"env": "test",
+			},
+		})
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "RemovePermission_NonExistent", func() error {
+		_, err := client.RemovePermission(ctx, &sqs.RemovePermissionInput{
+			QueueUrl: aws.String("https://queue.amazonaws.com/000000000000/nonexistent"),
+			Label:    aws.String("nonexistent-label"),
+		})
+		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "CreateQueue_DuplicateName", func() error {
 		dupQName := fmt.Sprintf("DupQueue-%d", time.Now().UnixNano())
 		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{

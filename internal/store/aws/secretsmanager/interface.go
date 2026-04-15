@@ -33,6 +33,7 @@ type SecretStoreInterface interface {
 	ListSecretVersions(name string) ([]SecretVersion, error)
 	UpdateSecretVersionStage(name, versionId string, stages []string) error
 	UpdateSecretMetadata(secret *Secret) error
+	FinishRotation(secret *Secret, pendingVersionID string) error
 	CreateVersionDirect(secretName string, version *SecretVersion) error
 }
 

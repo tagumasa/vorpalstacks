@@ -102,6 +102,7 @@ func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Requ
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the CloudWatch Logs admin console.
 func NewConnectHandler(svc *LogsService) (string, http.Handler) {
 	return cloudwatchlogsconnect.NewCloudWatchLogsServiceHandler(NewAdminHandler(svc))
 }

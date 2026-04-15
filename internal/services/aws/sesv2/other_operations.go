@@ -145,6 +145,9 @@ func (s *SESv2Service) GetSuppressedDestination(ctx context.Context, reqCtx *req
 
 	dest, err := store.GetSuppressedDestination(emailAddress)
 	if err != nil {
+		if common.IsNotFound(err) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 

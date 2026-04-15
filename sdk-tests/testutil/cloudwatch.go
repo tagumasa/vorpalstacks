@@ -133,6 +133,16 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("cloudwatch", "GetMetricWidgetImage_InvalidWidget", func() error {
+		_, err := client.GetMetricWidgetImage(ctx, &cloudwatch.GetMetricWidgetImageInput{
+			MetricWidget: aws.String("invalid-json"),
+		})
+		if err := AssertErrorContains(err, "InvalidParameter"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("cloudwatch", "PutMetricData_GetMetricStatistics_Roundtrip", func() error {
 		testNS := fmt.Sprintf("RoundtripNS-%d", time.Now().UnixNano())
 		testMetric := fmt.Sprintf("RoundtripMetric-%d", time.Now().UnixNano())
@@ -771,6 +781,32 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
 			AlarmNames: []string{alarmName},
 		})
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cloudwatch", "DeleteAlarms_NonExistent", func() error {
+		_, err := client.DeleteAlarms(ctx, &cloudwatch.DeleteAlarmsInput{
+			AlarmNames: []string{fmt.Sprintf("NonExistentAlarm-%d", time.Now().UnixNano())},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFound"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cloudwatch", "PutMetricData_InvalidNamespace", func() error {
+		_, err := client.PutMetricData(ctx, &cloudwatch.PutMetricDataInput{
+			Namespace: aws.String(""),
+			MetricData: []types.MetricDatum{
+				{
+					MetricName: aws.String("TestMetric"),
+					Value:      aws.Float64(1.0),
+				},
+			},
+		})
+		if err := AssertErrorContains(err, "InvalidParameter"); err != nil {
+			return err
+		}
 		return nil
 	}))
 

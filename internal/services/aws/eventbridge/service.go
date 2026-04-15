@@ -38,7 +38,7 @@ type EventsService struct {
 	snsPublisher    SNSPublisher
 	lambdaInvoker   common.LambdaInvoker
 	accountID       string
-	bus             *eventbus.EventBus
+	bus             eventbus.Bus
 	targetSemaphore chan struct{}
 	replayCancels   sync.Map // replayName → context.CancelFunc
 }
@@ -91,7 +91,7 @@ func (s *EventsService) SetLambdaInvoker(invoker common.LambdaInvoker) {
 // SetEventBus injects the event bus and registers the EventBridge delivery handler.
 // When the bus is set, deliverToTarget() routes through the bus instead of
 // spawning goroutines directly.
-func (s *EventsService) SetEventBus(bus *eventbus.EventBus) {
+func (s *EventsService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	_, _ = eventbus.SubscribeTyped[*eventbus.EventBridgeDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
 	_, _ = eventbus.SubscribeTyped[*eventbus.EventBridgePutEventsEvent](bus, s.handlePutEventsEvent, eventbus.WithAsync())

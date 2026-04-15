@@ -29,6 +29,7 @@ func (h *AdminHandler) ListHostedZones(ctx context.Context, req *connect.Request
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Route53 admin console.
 func NewConnectHandler() (string, http.Handler) {
 	return route53connect.NewRoute53ServiceHandler(NewAdminHandler())
 }

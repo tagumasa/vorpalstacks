@@ -47,6 +47,7 @@ func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.Lis
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Kms admin console.
 func NewConnectHandler(st storage.BasicStorage, accountID, region string) (string, http.Handler) {
 	return kmsconnect.NewKMSServiceHandler(NewAdminHandler(kmsstore.NewKeyStore(st, accountID, region)))
 }

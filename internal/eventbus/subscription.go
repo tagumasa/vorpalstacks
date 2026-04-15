@@ -129,3 +129,12 @@ func WithMaxRetries(n int32) SubscribeOption {
 		c.maxRetries = n
 	}
 }
+
+// WithEventType sets the event type string for subscription routing.
+// When set, the subscription is stored under the specific event type key
+// for efficient dispatch lookup.
+func WithEventType(eventType string) SubscribeOption {
+	return func(c *subscribeConfig) {
+		c.eventType = eventType
+	}
+}

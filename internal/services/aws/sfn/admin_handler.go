@@ -74,6 +74,7 @@ func toPbStateMachineType(typ string) pb.StateMachineType {
 	}
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Sfn admin console.
 func NewConnectHandler(svc *StepFunctionService) (string, http.Handler) {
 	return sfnconnect.NewSFNServiceHandler(NewAdminHandler(svc))
 }

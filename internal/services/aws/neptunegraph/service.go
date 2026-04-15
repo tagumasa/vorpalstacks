@@ -607,9 +607,14 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 	if ok {
 		if err := entry.db.Clear(); err != nil {
 			s.enginesMu.RUnlock()
+
 			graph.Status = "FAILED"
 			graph.StatusReason = err.Error()
-			_ = store.UpdateGraph(graph)
+			if storeErr := store.UpdateGraph(graph); storeErr != nil {
+				logs.Warn("Failed to update graph status to FAILED after Clear error",
+					logs.String("graphId", graphID),
+					logs.Err(storeErr))
+			}
 			return nil, newInternalServerException(err)
 		}
 	}
@@ -699,7 +704,12 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 
 	srcDir := filepath.Join(s.dataPath, graphDataDirPrefix, snapshot.SourceGraphId)
 	if _, err := os.Stat(srcDir); err == nil {
-		_ = copyGraphData(srcDir, graphDir)
+		if err := copyGraphData(srcDir, graphDir); err != nil {
+			logs.Warn("Failed to copy graph data during restore from snapshot",
+				logs.String("graphId", graphID),
+				logs.String("srcDir", srcDir),
+				logs.Err(err))
+		}
 	}
 
 	db, err := graphengine.Open(graphDir, s.engineOptions())

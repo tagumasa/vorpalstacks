@@ -15,6 +15,9 @@ func (s *CloudWatchService) PutMetricData(ctx context.Context, reqCtx *request.R
 	if namespace == "" {
 		namespace = request.GetStringParam(req.Parameters, "namespace")
 	}
+	if namespace == "" {
+		return nil, ErrInvalidParameter
+	}
 
 	var metricDataRaw interface{}
 	if md, ok := req.Parameters["MetricData"]; ok {

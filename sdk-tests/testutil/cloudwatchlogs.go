@@ -191,8 +191,8 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 		_, err = client.CreateLogGroup(ctx, &cloudwatchlogs.CreateLogGroupInput{
 			LogGroupName: aws.String(dupGroupName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate log group")
+		if err := AssertErrorContains(err, "ResourceAlreadyExistsException"); err != nil {
+			return err
 		}
 		return nil
 	}))

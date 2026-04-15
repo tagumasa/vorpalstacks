@@ -44,7 +44,7 @@ type Engine struct {
 	snsStore       snsstore.SNSStoreInterface
 	lambdaInvoker  common.LambdaInvoker
 	accountID      string
-	bus            *eventbus.EventBus
+	bus            eventbus.Bus
 	stores         sync.Map // region → *schedulerstore.SchedulerStore
 
 	running   bool
@@ -74,7 +74,7 @@ func NewEngine(
 }
 
 // SetEventBus injects the event bus for publishing scheduler lifecycle events.
-func (e *Engine) SetEventBus(bus *eventbus.EventBus) {
+func (e *Engine) SetEventBus(bus eventbus.Bus) {
 	e.bus = bus
 }
 
@@ -334,7 +334,13 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 			Input:        input,
 		}
 		schedEvt.Region = region
-		_ = e.bus.Publish(context.Background(), schedEvt)
+		if err := e.bus.Publish(context.Background(), schedEvt); err != nil {
+			logs.Warn("Failed to publish schedule fired event to event bus",
+				logs.String("schedule", schedule.Name),
+				logs.String("target", targetArn),
+				logs.Err(err))
+			return
+		}
 	} else {
 		if strings.Contains(targetArn, ":lambda:") {
 			e.invokeLambda(ctx, schedule, target)

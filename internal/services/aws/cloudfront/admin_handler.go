@@ -33,6 +33,7 @@ func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Reque
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Cloudfront admin console.
 func NewConnectHandler() (string, http.Handler) {
 	return cloudfrontconnect.NewCloudFrontServiceHandler(NewAdminHandler())
 }

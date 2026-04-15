@@ -236,6 +236,7 @@ func toPbMetricsName(metric string) pb.MetricsName {
 	}
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Kinesis admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return kinesisconnect.NewKinesisServiceHandler(NewAdminHandler(sm, accountID))
 }

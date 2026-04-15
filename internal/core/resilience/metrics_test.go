@@ -238,4 +238,6 @@ func TestGlobalMetrics(t *testing.T) {
 	if count != 1 {
 		t.Fatalf("expected 1, got %d", count)
 	}
+
+	GlobalMetrics.Reset()
 }

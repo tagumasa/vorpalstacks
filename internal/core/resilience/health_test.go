@@ -92,3 +92,12 @@ func TestCheckDependency(t *testing.T) {
 		assert.Contains(t, err.Error(), "test-dep-fail")
 	})
 }
+
+func TestHealthChecker_SetMetrics(t *testing.T) {
+	hc := NewHealthChecker(nil)
+	m := NewMetrics()
+	hc.SetMetrics(m)
+	hc.CheckDependency(context.Background(), "metric-check", func() error { return nil })
+
+	assert.Equal(t, int64(1), m.GetHealthCheckSuccesses("metric-check"))
+}

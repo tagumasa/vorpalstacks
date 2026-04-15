@@ -416,8 +416,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 				MetricName:               aws.String("bad-metric"),
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for stale lock token")
+		if err := AssertErrorContains(err, "WAFInvalidLockTokenException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -619,8 +619,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 				MetricName:               aws.String("bad-metric"),
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for stale lock token")
+		if err := AssertErrorContains(err, "WAFInvalidLockTokenException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -724,8 +724,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 		_, err := client.GetLoggingConfiguration(ctx, &wafv2.GetLoggingConfigurationInput{
 			ResourceArn: aws.String(webACLARN),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error after deleting logging config")
+		if err := AssertErrorContains(err, "WAFNonexistentItemException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -792,8 +792,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 		_, err := client.GetWebACLForResource(ctx, &wafv2.GetWebACLForResourceInput{
 			ResourceArn: aws.String(fakeResourceARN),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error after disassociation")
+		if err := AssertErrorContains(err, "WAFNonexistentItemException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -898,8 +898,8 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 			LockToken: aws.String("stale-token-should-fail"),
 			Addresses: []string{"192.168.0.0/16"},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for stale lock token")
+		if err := AssertErrorContains(err, "WAFInvalidLockTokenException"); err != nil {
+			return err
 		}
 		return nil
 	}))

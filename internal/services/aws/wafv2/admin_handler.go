@@ -29,6 +29,7 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Wafv2 admin console.
 func NewConnectHandler() (string, http.Handler) {
 	return wafv2connect.NewWAFV2ServiceHandler(NewAdminHandler())
 }

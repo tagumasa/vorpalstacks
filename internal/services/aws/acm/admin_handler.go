@@ -29,6 +29,7 @@ func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Reques
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Acm admin console.
 func NewConnectHandler() (string, http.Handler) {
 	return acmconnect.NewACMServiceHandler(NewAdminHandler())
 }

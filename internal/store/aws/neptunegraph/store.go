@@ -7,6 +7,7 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_neptunegraph"
 
 	"google.golang.org/protobuf/proto"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -169,9 +170,15 @@ func (s *NeptuneGraphStore) DeleteGraph(id string) error {
 	if err := s.graphs.Delete(id); err != nil {
 		return err
 	}
-	_ = s.queries.DeleteByPrefix(id + "/")
-	_ = s.snapshotsByGraph.DeleteByPrefix(id + "/")
-	_ = s.exportTasksByGraph.DeleteByPrefix(id + "/")
+	if err := s.queries.DeleteByPrefix(id + "/"); err != nil {
+		logs.Warn("Failed to delete queries for graph", logs.String("graphId", id), logs.Err(err))
+	}
+	if err := s.snapshotsByGraph.DeleteByPrefix(id + "/"); err != nil {
+		logs.Warn("Failed to delete snapshots for graph", logs.String("graphId", id), logs.Err(err))
+	}
+	if err := s.exportTasksByGraph.DeleteByPrefix(id + "/"); err != nil {
+		logs.Warn("Failed to delete export tasks for graph", logs.String("graphId", id), logs.Err(err))
+	}
 	return nil
 }
 

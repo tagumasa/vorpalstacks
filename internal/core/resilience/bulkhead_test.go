@@ -2,6 +2,7 @@ package resilience
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -289,5 +290,24 @@ func TestBulkhead_ConcurrentLimit(t *testing.T) {
 
 	if maxObserved > 2 {
 		t.Fatalf("expected max 2 concurrent, observed %d", maxObserved)
+	}
+}
+
+func TestBulkheadStats_String(t *testing.T) {
+	s := BulkheadStats{
+		Name:           "test",
+		MaxConcurrent:  10,
+		ActiveCount:    3,
+		AvailableSlots: 7,
+	}
+	got := s.String()
+	if !strings.Contains(got, "test") {
+		t.Fatalf("BulkheadStats.String() should contain name, got %q", got)
+	}
+	if !strings.Contains(got, "MaxConcurrent: 10") {
+		t.Fatalf("BulkheadStats.String() should contain MaxConcurrent: 10, got %q", got)
+	}
+	if !strings.Contains(got, "ActiveCount: 3") {
+		t.Fatalf("BulkheadStats.String() should contain ActiveCount: 3, got %q", got)
 	}
 }

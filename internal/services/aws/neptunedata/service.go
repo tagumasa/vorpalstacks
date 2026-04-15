@@ -415,10 +415,11 @@ func (s *NeptuneDataService) refreshStatistics(reqCtx *request.RequestContext) {
 	if reqCtx == nil {
 		return
 	}
-	reader := reqCtx.GraphReader()
-	if reader == nil {
+	readerAny := reqCtx.GraphReader()
+	if readerAny == nil {
 		return
 	}
+	reader := readerAny.(graphengine.GraphReader)
 	region := reqCtx.GetRegion()
 	stats := s.getStats(region)
 	stats.NodeCount = reader.CountNodes()

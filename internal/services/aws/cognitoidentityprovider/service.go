@@ -47,11 +47,9 @@ func (s *CognitoService) SetStorageManager(sm *storage.RegionStorageManager) {
 func (s *CognitoService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	if bus != nil {
-		if eb, ok := bus.(*eventbus.EventBus); ok {
-			_, _ = eventbus.SubscribeTyped[*eventbus.CognitoTriggerEvent](eb, s.handleCognitoTrigger,
-				eventbus.WithCallerPrincipal("cognito-idp.amazonaws.com"),
-			)
-		}
+		_, _ = eventbus.SubscribeTyped[*eventbus.CognitoTriggerEvent](bus, s.handleCognitoTrigger,
+			eventbus.WithCallerPrincipal("cognito-idp.amazonaws.com"),
+		)
 	}
 }
 

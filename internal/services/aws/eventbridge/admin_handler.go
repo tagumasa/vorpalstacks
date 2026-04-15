@@ -137,6 +137,7 @@ func toPbRuleState(state eventsstore.RuleState) pb.RuleState {
 	}
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the EventBridge admin console.
 func NewConnectHandler(svc *EventsService, sm *storage.RegionStorageManager) (string, http.Handler) {
 	return cloudwatcheventsconnect.NewCloudWatchEventsServiceHandler(NewAdminHandler(svc, sm))
 }

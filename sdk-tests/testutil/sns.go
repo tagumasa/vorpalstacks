@@ -237,8 +237,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		_, err := client.GetTopicAttributes(ctx, &sns.GetTopicAttributesInput{
 			TopicArn: aws.String(delTopicArn),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleted topic")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -284,8 +284,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		_, err := client.GetSubscriptionAttributes(ctx, &sns.GetSubscriptionAttributesInput{
 			SubscriptionArn: aws.String(unsubSubArn),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for unsubscribed subscription")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -979,8 +979,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		_, err = client.GetEndpointAttributes(ctx, &sns.GetEndpointAttributesInput{
 			EndpointArn: aws.String(cascadeEndpointArn),
 		})
-		if err == nil {
-			return fmt.Errorf("endpoint should be deleted when platform application is deleted")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1019,8 +1019,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		_, err = client.GetEndpointAttributes(ctx, &sns.GetEndpointAttributesInput{
 			EndpointArn: epResp.EndpointArn,
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleted endpoint")
+		if err := AssertErrorContains(err, "NotFound"); err != nil {
+			return err
 		}
 		return nil
 	}))

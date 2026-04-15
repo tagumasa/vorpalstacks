@@ -127,6 +127,7 @@ func toPbGraphqlApi(a *appsyncstore.GraphqlApi) *pb.GraphqlApi {
 	}
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Appsync admin console.
 func NewConnectHandler(svc *AppSyncService, sm *storage.RegionStorageManager) (string, http.Handler) {
 	return appsyncconnect.NewAppSyncServiceHandler(NewAdminHandler(svc, sm))
 }

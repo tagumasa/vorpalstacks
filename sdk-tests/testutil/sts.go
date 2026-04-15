@@ -150,8 +150,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 			RoleArn:         aws.String("arn:aws:iam::000000000000:role/NonExistentRole"),
 			RoleSessionName: aws.String("TestSession"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent role")
+		if err := AssertErrorContains(err, "NoSuchEntity"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -276,8 +276,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 			RoleSessionName: aws.String("DurationSession"),
 			DurationSeconds: aws.Int32(100),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duration < 900")
+		if err := AssertErrorContains(err, "InvalidDuration"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -288,8 +288,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 			RoleArn:         aws.String(roleARN),
 			RoleSessionName: aws.String(""),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for empty session name")
+		if err := AssertErrorContains(err, "ValidationError"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -368,8 +368,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 			PrincipalArn:  aws.String("arn:aws:iam::000000000000:saml-provider/TestProvider"),
 			SAMLAssertion: aws.String(""),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for empty SAML assertion")
+		if err := AssertErrorContains(err, "InvalidSAMLAssertion"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -380,8 +380,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 			PrincipalArn:  aws.String("arn:aws:iam::000000000000:saml-provider/TestProvider"),
 			SAMLAssertion: aws.String("VGhpcyBpcyBhIGR1bW15IFNBTUwgYXNzZXJ0aW9u"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent role")
+		if err := AssertErrorContains(err, "NoSuchEntity"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -461,8 +461,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 			WebIdentityToken: aws.String(""),
 			ProviderId:       aws.String("example.com"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for empty web identity token")
+		if err := AssertErrorContains(err, "InvalidIdentityToken"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -474,8 +474,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 			WebIdentityToken: aws.String("dummy-token"),
 			ProviderId:       aws.String("example.com"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent role")
+		if err := AssertErrorContains(err, "NoSuchEntity"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -516,8 +516,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 		_, err := client.DecodeAuthorizationMessage(ctx, &sts.DecodeAuthorizationMessageInput{
 			EncodedMessage: aws.String("not-valid-base64!!!"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid base64")
+		if err := AssertErrorContains(err, "InvalidEncodedMessage"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -526,8 +526,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 		_, err := client.DecodeAuthorizationMessage(ctx, &sts.DecodeAuthorizationMessageInput{
 			EncodedMessage: aws.String(""),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for empty encoded message")
+		if err := AssertErrorContains(err, "InvalidEncodedMessage"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -577,8 +577,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 		_, err := client.GetAccessKeyInfo(ctx, &sts.GetAccessKeyInfoInput{
 			AccessKeyId: aws.String(""),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for empty access key")
+		if err := AssertErrorContains(err, "InvalidAccessKeyId"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -651,8 +651,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 		_, err := client.GetFederationToken(ctx, &sts.GetFederationTokenInput{
 			Name: aws.String(""),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for empty name")
+		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -662,8 +662,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 			Name:   aws.String("FederatedBadPolicy"),
 			Policy: aws.String("not-valid-json"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for malformed policy")
+		if err := AssertErrorContains(err, "MalformedPolicyDocument"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -673,8 +673,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 			Name:            aws.String("FederatedBadDuration"),
 			DurationSeconds: aws.Int32(100),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duration < 900")
+		if err := AssertErrorContains(err, "InvalidDuration"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -720,8 +720,8 @@ func (r *TestRunner) RunSTSTests() []TestResult {
 		_, err := client.GetDelegatedAccessToken(ctx, &sts.GetDelegatedAccessTokenInput{
 			TradeInToken: aws.String(""),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for empty trade-in token")
+		if err := AssertErrorContains(err, "InvalidToken"); err != nil {
+			return err
 		}
 		return nil
 	}))

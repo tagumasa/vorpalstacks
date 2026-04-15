@@ -19,12 +19,17 @@ func sanitizeForLog(s string) string {
 }
 
 // LoggingMiddleware logs HTTP requests and responses with timing information.
+// It also propagates the request ID as X-Amzn-RequestId for AWS SDK compatibility.
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
 		ww := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		next.ServeHTTP(ww, r)
+
+		if requestID := r.Header.Get("X-Request-Id"); requestID != "" {
+			ww.Header().Set("X-Amzn-RequestId", requestID)
+		}
 
 		duration := time.Since(start)
 		logs.Info("HTTP request",

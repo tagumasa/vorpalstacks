@@ -28,7 +28,7 @@ type LogsService struct {
 	metricStores   sync.Map // region → *cwstore.MetricChunkStore
 	lambdaStores   sync.Map // region → common.LambdaInvoker
 	kinesisStores  sync.Map // region → kinesisstore.KinesisStoreInterface
-	bus            *eventbus.EventBus
+	bus            eventbus.Bus
 	ctx            context.Context
 	cancel         context.CancelFunc
 	wg             sync.WaitGroup
@@ -67,7 +67,7 @@ func (s *LogsService) SetKinesisStore(region string, store kinesisstore.KinesisS
 // SetEventBus injects the event bus and registers handlers for CloudWatch Logs
 // delivery, Lambda log writes, API Gateway access logs, and direct log event
 // ingestion from EventBridge/Scheduler targets.
-func (s *LogsService) SetEventBus(bus *eventbus.EventBus) {
+func (s *LogsService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	_, _ = eventbus.SubscribeTyped[*eventbus.CloudWatchLogDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
 	_, _ = eventbus.SubscribeTyped[*eventbus.LambdaLogWriteEvent](bus, s.handleLambdaLogWrite, eventbus.WithAsync())

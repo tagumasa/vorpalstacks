@@ -36,7 +36,7 @@ type RuntimeServer struct {
 	validator        *validator.Validator
 	authenticator    *auth.APIKeyAuthenticator
 	lambdaAuthorizer *auth.LambdaAuthorizer
-	bus              *eventbus.EventBus
+	bus              eventbus.Bus
 	accountID        string
 }
 
@@ -69,7 +69,7 @@ func (s *RuntimeServer) SetSNSStore(store snsstore.SNSStoreInterface, accountID,
 }
 
 // SetEventBus injects the event bus for SNS fan-out and cross-service delivery.
-func (s *RuntimeServer) SetEventBus(bus *eventbus.EventBus) {
+func (s *RuntimeServer) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	s.executorFactory.SetEventBus(bus)
 }

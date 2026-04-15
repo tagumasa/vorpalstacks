@@ -66,7 +66,7 @@ type ExecutorFactory struct {
 	snsStore      sns.SNSStoreInterface
 	accountID     string
 	region        string
-	bus           *eventbus.EventBus
+	bus           eventbus.Bus
 	deliveryWg    sync.WaitGroup
 }
 
@@ -89,7 +89,7 @@ func NewExecutorFactoryWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSS
 }
 
 // SetEventBus sets the event bus for SNS fan-out bug fix.
-func (f *ExecutorFactory) SetEventBus(bus *eventbus.EventBus) {
+func (f *ExecutorFactory) SetEventBus(bus eventbus.Bus) {
 	f.bus = bus
 }
 

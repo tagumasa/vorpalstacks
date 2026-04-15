@@ -43,7 +43,7 @@ type LambdaService struct {
 	storageManager *storage.RegionStorageManager
 	s3Objects      map[string]s3store.ObjectStoreInterface
 	dockerClient   *mobyclient.Client
-	bus            *eventbus.EventBus
+	bus            eventbus.Bus
 	logsStores     sync.Map // region → *logsstore.Store
 	storeCache     sync.Map // region → *lambdaStore
 	accountID      string
@@ -115,7 +115,7 @@ func (s *LambdaService) SetHostEndpoint(endpoint string) {
 // writeLambdaLogs publishes a LambdaLogWriteEvent instead of calling
 // the logsStore directly, enabling metric filter and subscription filter
 // evaluation on Lambda-produced logs.
-func (s *LambdaService) SetEventBus(bus *eventbus.EventBus) {
+func (s *LambdaService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 }
 

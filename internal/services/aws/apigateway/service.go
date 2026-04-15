@@ -46,7 +46,7 @@ func (s *APIGatewayService) InitRuntimeServer(
 	lambdaInvoker svcapigatewayruntime.LambdaInvoker,
 	sqsStore sqsstore.SQSStoreInterface,
 	snsStore snsstore.SNSStoreInterface,
-	bus *eventbus.EventBus,
+	bus eventbus.Bus,
 ) {
 	storage, err := storageManager.GetStorage(s.region)
 	if err != nil {

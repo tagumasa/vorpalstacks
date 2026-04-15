@@ -451,6 +451,9 @@ func (s *CloudWatchService) DeleteAlarms(ctx context.Context, reqCtx *request.Re
 
 	for _, name := range alarmNames {
 		if err := store.alarms.DeleteAlarm(name); err != nil {
+			if errors.Is(err, cwstore.ErrAlarmNotFound) {
+				return nil, ErrAlarmNotFound
+			}
 			return nil, err
 		}
 	}

@@ -272,11 +272,23 @@ func TestRetryPolicy_SetName(t *testing.T) {
 func TestFullJitter(t *testing.T) {
 	jitter := &FullJitter{}
 
-	for i := 0; i < 100; i++ {
-		result := jitter.Apply(100 * time.Millisecond)
-		if result <= 0 || result > 150*time.Millisecond {
-			t.Fatalf("expected result between 0 and 150ms, got %v", result)
+	var min, max time.Duration
+	delay := 100 * time.Millisecond
+	for i := 0; i < 1000; i++ {
+		result := jitter.Apply(delay)
+		if result < 0 || result >= delay {
+			t.Fatalf("expected result in [0, %v), got %v", delay, result)
 		}
+		if i == 0 || result < min {
+			min = result
+		}
+		if i == 0 || result > max {
+			max = result
+		}
+	}
+
+	if min == max {
+		t.Fatalf("expected variance in jitter output, all values were %v", min)
 	}
 }
 
@@ -308,8 +320,9 @@ func TestNewRetryPolicyWithBackoff(t *testing.T) {
 	}
 	policy := NewRetryPolicyWithBackoff(backoff)
 
-	if policy.backoff != backoff {
-		t.Fatal("backoff not set correctly")
+	got := policy.GetBackoff()
+	if got != backoff {
+		t.Fatal("GetBackoff() should return the same backoff instance that was passed to constructor")
 	}
 }
 
@@ -335,5 +348,32 @@ func TestRetryPolicy_ConcurrentCalls(t *testing.T) {
 
 	if callCount != 10 {
 		t.Fatalf("expected 10 total calls, got %d", callCount)
+	}
+}
+
+func TestRetryPolicy_GetBackoff(t *testing.T) {
+	policy := NewRetryPolicyWithBackoff(&ExponentialBackoff{Multiplier: 2.0})
+
+	backoff := policy.GetBackoff()
+	if backoff == nil {
+		t.Fatal("expected non-nil backoff")
+	}
+	eb, ok := backoff.(*ExponentialBackoff)
+	if !ok {
+		t.Fatal("expected ExponentialBackoff")
+	}
+	if eb.Multiplier != 2.0 {
+		t.Fatalf("expected multiplier 2.0, got %v", eb.Multiplier)
+	}
+}
+
+func TestRetryPolicy_GetJitter(t *testing.T) {
+	policy := NewRetryPolicy()
+	fj := &FullJitter{}
+	policy.SetJitter(fj)
+
+	jitter := policy.GetJitter()
+	if jitter != fj {
+		t.Fatal("expected FullJitter")
 	}
 }

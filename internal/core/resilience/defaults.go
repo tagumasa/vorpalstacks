@@ -15,11 +15,11 @@ const (
 	DefaultRetryBackoffMultiplier = 2.0
 
 	// DefaultCircuitBreakerMaxFailures is the default maximum number of failures before opening the circuit.
-	DefaultCircuitBreakerMaxFailures = 5
+	DefaultCircuitBreakerMaxFailures = 9
 	// DefaultCircuitBreakerResetTimeout is the default timeout before attempting to close the circuit.
 	DefaultCircuitBreakerResetTimeout = 60 * time.Second
 	// DefaultCircuitBreakerHalfOpenRequests is the default number of requests in half-open state.
-	DefaultCircuitBreakerHalfOpenRequests = 3
+	DefaultCircuitBreakerHalfOpenRequests = 5
 	// DefaultCircuitBreakerSuccessThreshold is the default number of successes required to close the circuit.
 	DefaultCircuitBreakerSuccessThreshold = 2
 

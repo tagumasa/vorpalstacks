@@ -517,8 +517,8 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 			},
 			ScheduledQueryExecutionRoleArn: aws.String(fmt.Sprintf("arn:aws:iam::000000000000:role/%s", sqRoleName)),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate scheduled query")
+		if err := AssertErrorContains(err, "ResourceAlreadyExistsException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -601,8 +601,8 @@ func (r *TestRunner) RunTimestreamTests() []TestResult {
 		_, err = client.CreateDatabase(ctx, &timestreamwrite.CreateDatabaseInput{
 			DatabaseName: aws.String(dupDBName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate database")
+		if err := AssertErrorContains(err, "ResourceAlreadyExistsException"); err != nil {
+			return err
 		}
 		return nil
 	}))

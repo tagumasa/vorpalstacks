@@ -60,6 +60,7 @@ func (h *AdminHandler) ListUserPools(ctx context.Context, req *connect.Request[p
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Cognito Identity Provider admin console.
 func NewConnectHandler(st storage.BasicStorage, accountID, region string) (string, http.Handler) {
 	return cognitoidentityproviderconnect.NewCognitoIdentityProviderServiceHandler(NewAdminHandler(cognitostore.NewCognitoStore(st, accountID, region)))
 }

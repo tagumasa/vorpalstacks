@@ -1433,8 +1433,8 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 		_, err := client.DescribeUserPool(ctx, &cognitoidentityprovider.DescribeUserPoolInput{
 			UserPoolId: aws.String("us-east-1_nonexistentpool"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent user pool")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1443,8 +1443,8 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 		_, err := client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
 			UserPoolId: aws.String("us-east-1_nonexistentpool"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent user pool")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1465,8 +1465,8 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 			UserPoolId: createResp.UserPool.Id,
 			Username:   aws.String("nonexistent-user-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent user")
+		if err := AssertErrorContains(err, "UserNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1642,8 +1642,8 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 			GroupName:  aws.String("nonexistent-group-xyz"),
 			UserPoolId: createResp.UserPool.Id,
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent group")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1663,8 +1663,8 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 			UserPoolId:   createResp.UserPool.Id,
 			ProviderName: aws.String("nonexistent-idp-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent identity provider")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1684,8 +1684,8 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 			UserPoolId: createResp.UserPool.Id,
 			Identifier: aws.String("nonexistent-rs-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent resource server")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1705,8 +1705,8 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 			UserPoolId:   createResp.UserPool.Id,
 			ProviderName: aws.String("nonexistent-idp-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent identity provider")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1726,8 +1726,8 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 			UserPoolId: createResp.UserPool.Id,
 			Identifier: aws.String("nonexistent-rs-xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent resource server")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))

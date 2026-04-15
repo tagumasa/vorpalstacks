@@ -765,6 +765,7 @@ func clusterEndpointToPb(ep *storeneptune.DBClusterEndpoint) *pb.DBClusterEndpoi
 	}
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Neptune admin console.
 func NewConnectHandler(svc *NeptuneService, accountID string) (string, http.Handler) {
 	return neptuneconnect.NewNeptuneServiceHandler(NewAdminHandler(svc, accountID))
 }

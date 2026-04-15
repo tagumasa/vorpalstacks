@@ -135,6 +135,7 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Timestream Write admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID, dataPath string) (string, http.Handler) {
 	return timestreamwriteconnect.NewTimestreamWriteServiceHandler(NewAdminHandler(sm, accountID, dataPath))
 }

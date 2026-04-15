@@ -8,7 +8,7 @@ import (
 	"vorpalstacks/internal/common/response"
 )
 
-// AddPermission adds permission to an SQS queue.
+// AddPermission adds a permission to an SQS queue.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_AddPermission.html
 func (s *SQSService) AddPermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueURL := request.GetParamCaseInsensitive(req.Parameters, "QueueUrl")
@@ -64,7 +64,7 @@ func (s *SQSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 	return response.EmptyResponse(), nil
 }
 
-// RemovePermission removes permission from an SQS queue.
+// RemovePermission removes a permission from an SQS queue.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_RemovePermission.html
 func (s *SQSService) RemovePermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueURL := request.GetParamCaseInsensitive(req.Parameters, "QueueUrl")

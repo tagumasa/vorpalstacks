@@ -275,8 +275,8 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 				Mode: types.FlexibleTimeWindowModeOff,
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate schedule name")
+		if err := AssertErrorContains(err, "ConflictException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -400,8 +400,8 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		_, err = client.CreateScheduleGroup(ctx, &scheduler.CreateScheduleGroupInput{
 			Name: aws.String(dupGroupName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate group name")
+		if err := AssertErrorContains(err, "ConflictException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -654,8 +654,8 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 				Mode: types.FlexibleTimeWindowModeOff,
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid schedule expression")
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -689,8 +689,8 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		_, err = client.GetScheduleGroup(ctx, &scheduler.GetScheduleGroupInput{
 			Name: aws.String(delGroupName),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error after deleting group")
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))

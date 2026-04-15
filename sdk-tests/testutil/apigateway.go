@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -1578,12 +1577,8 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		_, err := client.GetRestApi(ctx, &apigateway.GetRestApiInput{
 			RestApiId: aws.String("nonexistent_xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent API")
-		}
-		var nf *types.NotFoundException
-		if !errors.As(err, &nf) {
-			return fmt.Errorf("expected NotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1592,12 +1587,8 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		_, err := client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{
 			RestApiId: aws.String("nonexistent_xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent API")
-		}
-		var nf *types.NotFoundException
-		if !errors.As(err, &nf) {
-			return fmt.Errorf("expected NotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1616,12 +1607,8 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 			RestApiId: createResp.Id,
 			StageName: aws.String("nonexistent_stage"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent stage")
-		}
-		var nf *types.NotFoundException
-		if !errors.As(err, &nf) {
-			return fmt.Errorf("expected NotFoundException, got: %T: %v", err, err)
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))

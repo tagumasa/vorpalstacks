@@ -103,12 +103,10 @@ func (s *S3Service) RestoreSSE3Keys() {
 func (s *S3Service) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	if bus != nil {
-		if eb, ok := bus.(*eventbus.EventBus); ok {
-			subID, err := eventbus.SubscribeTyped[*eventbus.S3ObjectEvent](eb, s.handleS3Notification, eventbus.WithAsync())
-			if err == nil {
-				s.busUnsubscribe = func() {
-					_ = eb.Unsubscribe(subID)
-				}
+		subID, err := eventbus.SubscribeTyped[*eventbus.S3ObjectEvent](bus, s.handleS3Notification, eventbus.WithAsync())
+		if err == nil {
+			s.busUnsubscribe = func() {
+				_ = bus.Unsubscribe(subID)
 			}
 		}
 	}

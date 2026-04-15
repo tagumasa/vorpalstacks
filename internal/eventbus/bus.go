@@ -44,6 +44,12 @@ const (
 	FailedRetention = 24 * time.Hour
 )
 
+type directDispatch struct {
+	sub   *subscriptionEntry
+	event Event
+	ctx   context.Context
+}
+
 // BusOption is a functional option used to configure an EventBus.
 type BusOption func(*EventBus)
 
@@ -148,6 +154,7 @@ type EventBus struct {
 	invokersMu    sync.RWMutex
 	nextSubID     atomic.Int64
 	asyncCh       chan *OutboxEntry
+	directCh      chan *directDispatch
 }
 
 // NewEventBus creates a new EventBus with sensible defaults, applying all
@@ -161,6 +168,7 @@ func NewEventBus(opts ...BusOption) *EventBus {
 		stopCh:        make(chan struct{}),
 		invokers:      make(map[string]ServiceInvoker),
 		asyncCh:       make(chan *OutboxEntry, 1024),
+		directCh:      make(chan *directDispatch, 1024),
 		policyFuncs:   make(map[string]ResourcePolicyFunc),
 	}
 	for _, opt := range opts {
@@ -188,20 +196,15 @@ func (b *EventBus) Subscribe(handler func(ctx context.Context, event Event) Hand
 
 // SubscribeTyped registers a type-safe handler that receives only events of
 // type T, automatically filtering mismatched events.
-func SubscribeTyped[T Event](bus *EventBus, handler func(ctx context.Context, event T) HandlerResult, opts ...SubscribeOption) (string, error) {
+func SubscribeTyped[T Event](bus Bus, handler func(ctx context.Context, event T) HandlerResult, opts ...SubscribeOption) (string, error) {
 	if handler == nil {
 		return "", fmt.Errorf("eventbus: handler must not be nil")
 	}
 
 	var zero T
-	cfg := &subscribeConfig{
-		authzMode: AuthzNone,
-		async:     false,
-		eventType: zero.EventType(),
-	}
-	for _, opt := range opts {
-		opt(cfg)
-	}
+	allOpts := make([]SubscribeOption, 0, len(opts)+2)
+	allOpts = append(allOpts, WithEventType(zero.EventType()))
+	allOpts = append(allOpts, opts...)
 
 	wrappedHandler := func(ctx context.Context, event Event) HandlerResult {
 		typed, ok := event.(T)
@@ -211,7 +214,7 @@ func SubscribeTyped[T Event](bus *EventBus, handler func(ctx context.Context, ev
 		return handler(ctx, typed)
 	}
 
-	return bus.subscribeInternal(cfg, wrappedHandler)
+	return bus.Subscribe(wrappedHandler, allOpts...)
 }
 
 func (b *EventBus) subscribeInternal(cfg *subscribeConfig, handler func(ctx context.Context, event Event) HandlerResult) (string, error) {
@@ -446,14 +449,11 @@ func (b *EventBus) dispatchAsyncDirect(ctx context.Context, event Event) error {
 			continue
 		}
 		b.wg.Add(1)
-		go func(s *subscriptionEntry) {
-			defer b.wg.Done()
-			if !b.acquireSemaphores(s) {
-				return
-			}
-			b.dispatchHandler(ctx, s, event)
-			b.releaseSemaphores(s)
-		}(sub)
+		select {
+		case b.directCh <- &directDispatch{sub: sub, event: event, ctx: ctx}:
+		case <-b.stopCh:
+			b.wg.Done()
+		}
 	}
 
 	return nil
@@ -552,6 +552,11 @@ func (b *EventBus) Start(ctx context.Context) error {
 		go b.asyncWorker()
 	}
 
+	for i := 0; i < AsyncWorkerCount; i++ {
+		b.wg.Add(1)
+		go b.directWorker()
+	}
+
 	if b.outbox != nil {
 		b.wg.Add(1)
 		go b.cleanupLoop()
@@ -637,6 +642,24 @@ func (b *EventBus) asyncWorker() {
 				continue
 			}
 			b.processOutboxEntry(entry)
+		}
+	}
+}
+
+func (b *EventBus) directWorker() {
+	defer b.wg.Done()
+	for {
+		select {
+		case <-b.stopCh:
+			return
+		case d := <-b.directCh:
+			if !b.acquireSemaphores(d.sub) {
+				b.wg.Done()
+				continue
+			}
+			b.dispatchHandler(d.ctx, d.sub, d.event)
+			b.releaseSemaphores(d.sub)
+			b.wg.Done()
 		}
 	}
 }

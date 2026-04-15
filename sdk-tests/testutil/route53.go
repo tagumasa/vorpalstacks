@@ -920,8 +920,8 @@ func (r *TestRunner) RunRoute53Tests() []TestResult {
 			Name:            aws.String("invalid name with spaces"),
 			CallerReference: aws.String(fmt.Sprintf("badref-%d", time.Now().UnixNano())),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid zone name")
+		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -947,8 +947,8 @@ func (r *TestRunner) RunRoute53Tests() []TestResult {
 				VPCRegion: types.VPCRegionUsEast1,
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error when associating VPC with public zone")
+		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -989,8 +989,8 @@ func (r *TestRunner) RunRoute53Tests() []TestResult {
 		_, err = client.DeleteHostedZone(ctx, &route53.DeleteHostedZoneInput{
 			Id: aws.String(neZoneID),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error when deleting non-empty zone")
+		if err := AssertErrorContains(err, "HostedZoneNotEmpty"); err != nil {
+			return err
 		}
 		return nil
 	}))

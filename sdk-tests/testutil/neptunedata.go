@@ -616,16 +616,16 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 
 	results = append(results, r.RunTest("neptunedata", "GetSparqlStatistics_Unsupported", func() error {
 		_, err := client.GetSparqlStatistics(ctx, &neptunedata.GetSparqlStatisticsInput{})
-		if err == nil {
-			return fmt.Errorf("expected error for unsupported SPARQL statistics")
+		if err := AssertErrorContains(err, "UnsupportedOperationException"); err != nil {
+			return err
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "GetRDFGraphSummary_Unsupported", func() error {
 		_, err := client.GetRDFGraphSummary(ctx, &neptunedata.GetRDFGraphSummaryInput{})
-		if err == nil {
-			return fmt.Errorf("expected error for unsupported RDF graph summary")
+		if err := AssertErrorContains(err, "UnsupportedOperationException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -635,8 +635,8 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 			InputDataS3Location:     aws.String("s3://test/ml-input"),
 			ProcessedDataS3Location: aws.String("s3://test/ml-output"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for unsupported ML data processing job")
+		if err := AssertErrorContains(err, "UnsupportedOperationException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1512,8 +1512,8 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 		_, err := client.CancelGremlinQuery(ctx, &neptunedata.CancelGremlinQueryInput{
 			QueryId: aws.String("nonexistent-query-id"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for cancelling non-existent query")
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1592,8 +1592,8 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 		_, err := client.ExecuteOpenCypherQuery(ctx, &neptunedata.ExecuteOpenCypherQueryInput{
 			OpenCypherQuery: aws.String("INVALID CYPHER QUERY"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid cypher syntax")
+		if err := AssertErrorContains(err, "MalformedQueryException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1602,8 +1602,8 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 		_, err := client.ExecuteGremlinQuery(ctx, &neptunedata.ExecuteGremlinQueryInput{
 			GremlinQuery: aws.String("g.INVALID_STEP()"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid gremlin syntax")
+		if err := AssertErrorContains(err, "MalformedQueryException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1613,8 +1613,8 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 			Action: types.ActionPerformReset,
 			Token:  aws.String("invalid-token-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid fast reset token")
+		if err := AssertErrorContains(err, "PreconditionsFailedException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1623,8 +1623,8 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 		_, err := client.GetLoaderJobStatus(ctx, &neptunedata.GetLoaderJobStatusInput{
 			LoadId: aws.String("nonexistent-load-id"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent loader job")
+		if err := AssertErrorContains(err, "BulkLoadIdNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1633,8 +1633,8 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 		_, err := client.CancelLoaderJob(ctx, &neptunedata.CancelLoaderJobInput{
 			LoadId: aws.String("nonexistent-load-id"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for cancel non-existent loader job")
+		if err := AssertErrorContains(err, "BulkLoadIdNotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1643,8 +1643,8 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 		_, err := client.ExecuteOpenCypherQuery(ctx, &neptunedata.ExecuteOpenCypherQueryInput{
 			OpenCypherQuery: aws.String(""),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for empty cypher query")
+		if err := AssertErrorContains(err, "MissingParameterException"); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -1653,8 +1653,8 @@ func (r *TestRunner) RunNeptunedataTests() []TestResult {
 		_, err := client.ExecuteGremlinQuery(ctx, &neptunedata.ExecuteGremlinQueryInput{
 			GremlinQuery: aws.String(""),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for empty gremlin query")
+		if err := AssertErrorContains(err, "MissingParameterException"); err != nil {
+			return err
 		}
 		return nil
 	}))

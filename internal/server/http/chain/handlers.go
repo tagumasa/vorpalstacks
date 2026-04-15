@@ -352,16 +352,19 @@ func LogResponse(ctx *RequestContext) error {
 	return nil
 }
 
-// SetCloseConnectionHeader adds a Connection: close header to the response if requested by the client.
-func SetCloseConnectionHeader(ctx *RequestContext) {
+// SetCloseConnectionHeader adds a Connection: close header to the response if
+// requested by the client.  Must run as a response handler (before WriteHeader)
+// rather than a finaliser.
+func SetCloseConnectionHeader(ctx *RequestContext) error {
 	if ctx.Request == nil {
-		return
+		return nil
 	}
 
 	connection := ctx.Request.Header.Get("Connection")
 	if strings.ToLower(connection) == "close" {
 		ctx.Response.Header().Set("Connection", "close")
 	}
+	return nil
 }
 
 func encodeAndWriteJSON(w http.ResponseWriter, statusCode int, v interface{}) {

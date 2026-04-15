@@ -90,15 +90,18 @@ func (b *PebbleBucket) Count() int {
 }
 
 // prefixedDBIterator wraps a pebbledb.LazyIterator and strips the bucket prefix from keys.
+// It implements the Iterator interface.
 type prefixedDBIterator struct {
 	lazy      *pebbledb.LazyIterator
 	prefixLen int
 }
 
+// Next advances the iterator to the next key-value pair.
 func (i *prefixedDBIterator) Next() bool {
 	return i.lazy.Next()
 }
 
+// Key returns the current key with the bucket prefix stripped.
 func (i *prefixedDBIterator) Key() []byte {
 	key := i.lazy.Key()
 	if key == nil {
@@ -112,14 +115,17 @@ func (i *prefixedDBIterator) Key() []byte {
 	return key
 }
 
+// Value returns the current value.
 func (i *prefixedDBIterator) Value() []byte {
 	return i.lazy.Value()
 }
 
+// Error returns any accumulated error from the iterator.
 func (i *prefixedDBIterator) Error() error {
 	return i.lazy.Error()
 }
 
+// Close releases resources held by the iterator.
 func (i *prefixedDBIterator) Close() {
 	i.lazy.Close()
 }

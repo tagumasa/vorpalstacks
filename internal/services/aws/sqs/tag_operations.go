@@ -15,12 +15,16 @@ func (s *SQSService) TagQueue(ctx context.Context, reqCtx *request.RequestContex
 		return nil, ErrMissingParameter
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := store.GetQueue(queueURL); err != nil {
+		return nil, convertStoreError(err)
+	}
+
 	tags := tagutil.GetTags(req.Parameters, tagutil.SQSConfig)
 	if len(tags) > 0 {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
 		if err := store.TagQueue(queueURL, tagutil.ToMap(tags)); err != nil {
 			return nil, convertStoreError(err)
 		}

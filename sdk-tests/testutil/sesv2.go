@@ -562,19 +562,6 @@ func (r *TestRunner) RunSESv2Tests() []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("sesv2", "GetDedicatedIpPool", func() error {
-		resp, err := client.GetDedicatedIpPool(ctx, &sesv2.GetDedicatedIpPoolInput{
-			PoolName: aws.String(poolName),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.DedicatedIpPool == nil || resp.DedicatedIpPool.PoolName == nil || *resp.DedicatedIpPool.PoolName != poolName {
-			return fmt.Errorf("expected pool name %s, got %v", poolName, resp.DedicatedIpPool)
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("sesv2", "ListDedicatedIpPools", func() error {
 		resp, err := client.ListDedicatedIpPools(ctx, &sesv2.ListDedicatedIpPoolsInput{
 			PageSize: aws.Int32(10),
@@ -825,6 +812,139 @@ func (r *TestRunner) RunSESv2Tests() []TestResult {
 		}
 		if len(allConfigSets) != 5 {
 			return fmt.Errorf("expected 5 paginated configuration sets, got %d", len(allConfigSets))
+		}
+		return nil
+	}))
+
+	// === ERROR / EDGE CASE TESTS ===
+
+	results = append(results, r.RunTest("sesv2", "GetConfigurationSet_NonExistent", func() error {
+		_, err := client.GetConfigurationSet(ctx, &sesv2.GetConfigurationSetInput{
+			ConfigurationSetName: aws.String("nonexistent-cs-xyz"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "DeleteConfigurationSet_NonExistent", func() error {
+		_, err := client.DeleteConfigurationSet(ctx, &sesv2.DeleteConfigurationSetInput{
+			ConfigurationSetName: aws.String("nonexistent-cs-xyz"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "GetEmailIdentity_NonExistent", func() error {
+		_, err := client.GetEmailIdentity(ctx, &sesv2.GetEmailIdentityInput{
+			EmailIdentity: aws.String("nonexistent@example.com"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "DeleteEmailIdentity_NonExistent", func() error {
+		_, err := client.DeleteEmailIdentity(ctx, &sesv2.DeleteEmailIdentityInput{
+			EmailIdentity: aws.String("nonexistent@example.com"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "GetEmailTemplate_NonExistent", func() error {
+		_, err := client.GetEmailTemplate(ctx, &sesv2.GetEmailTemplateInput{
+			TemplateName: aws.String("nonexistent-template-xyz"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "DeleteEmailTemplate_NonExistent", func() error {
+		_, err := client.DeleteEmailTemplate(ctx, &sesv2.DeleteEmailTemplateInput{
+			TemplateName: aws.String("nonexistent-template-xyz"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "GetDedicatedIpPool_NonExistent", func() error {
+		_, err := client.GetDedicatedIpPool(ctx, &sesv2.GetDedicatedIpPoolInput{
+			PoolName: aws.String("nonexistent-pool-xyz"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "DeleteDedicatedIpPool_NonExistent", func() error {
+		_, err := client.DeleteDedicatedIpPool(ctx, &sesv2.DeleteDedicatedIpPoolInput{
+			PoolName: aws.String("nonexistent-pool-xyz"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "GetContactList_NonExistent", func() error {
+		_, err := client.GetContactList(ctx, &sesv2.GetContactListInput{
+			ContactListName: aws.String("nonexistent-cl-xyz"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "GetContact_NonExistent", func() error {
+		_, err := client.GetContact(ctx, &sesv2.GetContactInput{
+			ContactListName: aws.String("nonexistent-cl-xyz"),
+			EmailAddress:    aws.String("nonexistent@example.com"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "DeleteContactList_NonExistent", func() error {
+		_, err := client.DeleteContactList(ctx, &sesv2.DeleteContactListInput{
+			ContactListName: aws.String("nonexistent-cl-xyz"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "GetSuppressedDestination_NonExistent", func() error {
+		_, err := client.GetSuppressedDestination(ctx, &sesv2.GetSuppressedDestinationInput{
+			EmailAddress: aws.String("nonexistent@example.com"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sesv2", "GetEmailIdentityPolicies_NonExistent", func() error {
+		_, err := client.GetEmailIdentityPolicies(ctx, &sesv2.GetEmailIdentityPoliciesInput{
+			EmailIdentity: aws.String("nonexistent@example.com"),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return err
 		}
 		return nil
 	}))

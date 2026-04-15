@@ -29,6 +29,7 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the API Gateway admin console.
 func NewConnectHandler() (string, http.Handler) {
 	return apigatewayconnect.NewAPIGatewayServiceHandler(NewAdminHandler())
 }

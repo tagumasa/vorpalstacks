@@ -17,6 +17,7 @@ func NewAdminHandler() *AdminHandler {
 	return &AdminHandler{}
 }
 
+// NewConnectHandler creates a gRPC-Web connect handler for the Scheduler admin console.
 func NewConnectHandler() (string, http.Handler) {
 	return schedulerconnect.NewSchedulerServiceHandler(NewAdminHandler())
 }
