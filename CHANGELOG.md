@@ -4,6 +4,51 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.8] - 2026-04-09
+
+### Added
+- Neptune Graph (Neptune Analytics) service with graph store, RDF/SPARQL support, vector embeddings, topK search, and query procedures (`neptunegraph/`, 2265+ lines)
+- Neptune Graph SDK tests (895 tests) with host prefix middleware workaround
+- Graph engine vector embedding storage with in-memory cache, cosine/Euclidean/inner-product distance functions, and brute-force topK search (`pkg/graphengine/vector.go`, 771 lines)
+- Lambda AWS Event Stream binary encoding support (`lambda/eventstream.go`) for streaming invoke responses
+- Test helper scripts: `run_tests.sh`, `setup_test_credentials.sh`, `cleanup_test_resources.sh`, `test_authorization.sh`
+- NeptuneGraph request parser (`internal/common/request/neptunegraph_parser.go`)
+- App wiring layer (`internal/server/apps/`) for modular service initialization and dependency injection
+- Authorization module extracted from dispatcher (`internal/server/authorization/`) with enhanced resource extraction for NeptuneGraph
+- `internal/common/request/context.go` as shared request context (replaces per-service copy)
+- Unit tests for endpoint builder, error factories, handler registrar, tags operations, resilience (adaptive timeout, bulkhead, circuit breaker, retry, cache, health, metrics), PebbleDB, auth credentials, eventstream encoder, and validators
+
+### Changed
+- Common packages moved from `internal/services/aws/common/` to `internal/common/` (auth, endpoint, errors, iam, kms, lambda, mock, pagination, protocol, region, request, response, tags, types, audit)
+- Event bus moved from `internal/server/eventbus/` to `internal/eventbus/`
+- All 26+ service implementations updated to import from new `internal/common/` paths
+- `main.go` restructured: service initialization delegated to apps wiring layer (675-line refactor)
+- All services now receive dependencies via setter injection (removing direct storage manager coupling)
+- DynamoDB error constants expanded with comprehensive godoc documentation; removed unused expression files (`item_condition.go`, `item_expression.go`, `item_sort.go`, `partiql_expression.go`, `partiql_value_parser.go`, `input_output.go`)
+- Neptune service expanded: cluster, instance, snapshot, parameter group, and subnet group operations with pagination support
+- Neptune Data service enhanced with query status tracking, statistics management, and improved error handling
+- S3 SSE-S3 encryption support, enhanced access control, and updated chunked upload handling
+- Lambda invoke operations enhanced with response streaming and event stream support
+- Cypher parser extended with CALL statement support and pipeline execution
+- Gremlin parser enhanced with additional filter and source step operations
+- AppSync GraphQL datasource simplified, WebSocket server improved
+- CloudFront distribution server and policy operations enhanced
+- CloudWatch alarm evaluator multi-region support with configurable tick intervals
+- Scheduler engine enhanced with Step Functions target and configurable intervals
+- Step Functions enhanced with JSONata evaluation, Map state processor, and redrive operations
+- EventBridge refactored to multi-region store model with improved archive and replay operations
+- PebbleDB transaction handling, iterator, TTL, and bucket operations improved
+- Graph engine store and traversal implementations optimized
+- Filter pattern evaluator and parser improved
+- SDK tests updated for CloudWatch, Cognito, Lambda, NeptuneData, SESv2, SNS, SQS, StepFunctions, STS, Timestream, WAFv2; added NeptuneGraph test registration
+- Updated documentation: architecture, configuration, services, Terraform guide, LocalStack comparison, README files
+- Dependabot: bumped AWS SDK v2 dependencies (lambda, cloudwatchlogs, kinesis, s3, eventstream, OpenTelemetry)
+
+### Fixed
+- CloudTrail recorder import path corrected after audit package relocation
+- SNS publish ARN resolution for event bus delivery
+- Various store interface and type consistency fixes across services
+
 ## [0.0.7] - 2026-04-05
 
 ### Added
