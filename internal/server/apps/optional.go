@@ -142,19 +142,6 @@ func (a *App) initNeptuneData(st *serviceState) {
 	})
 }
 
-// --- NeptuneGraph (optional) ---
-
-func (a *App) initNeptuneGraph(st *serviceState) {
-	st.neptuneGraphService = svcneptuneGraph.NewNeptuneGraphService(st.accountID, st.region, a.cfg.DataPath)
-	st.neptuneGraphService.SetStorageManager(a.server.StorageManager())
-	st.neptuneGraphService.RegisterHandlers(a.server.Dispatcher())
-	st.neptuneGraphService.RestoreEngines()
-	a.addShutdown("neptunegraph", func(ctx context.Context) error {
-		st.neptuneGraphService.Close()
-		return nil
-	})
-}
-
 // --- Route53 (optional) ---
 
 func (a *App) initRoute53(st *serviceState) {
@@ -209,6 +196,22 @@ func (a *App) initGraphDB() {
 	a.graphDB = graphDB
 	a.addShutdown("graphdb", func(ctx context.Context) error {
 		graphDB.Close()
+		return nil
+	})
+}
+
+// --- NeptuneGraph (optional) ---
+
+func (a *App) initNeptuneGraph(st *serviceState) {
+	graphCache := graphengine.NewSharedCache(graphengine.DefaultCacheSize)
+	st.neptuneGraphService = svcneptuneGraph.NewNeptuneGraphService(st.accountID, st.region, a.cfg.DataPath)
+	st.neptuneGraphService.SetStorageManager(a.server.StorageManager())
+	st.neptuneGraphService.SetGraphCache(graphCache)
+	st.neptuneGraphService.RegisterHandlers(a.server.Dispatcher())
+	st.neptuneGraphService.RestoreEngines()
+	a.addShutdown("neptunegraph", func(ctx context.Context) error {
+		st.neptuneGraphService.Close()
+		graphCache.Release()
 		return nil
 	})
 }

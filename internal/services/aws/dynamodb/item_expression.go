@@ -335,8 +335,6 @@ func normalizeNumber(r *big.Rat) string {
 	return quotient.String() + "." + decimalStr
 }
 
-
-
 func applyAddActionWithTracking(attrs map[string]*dbstore.AttributeValue, attrName string, value *dbstore.AttributeValue) (bool, error) {
 	existing, exists := attrs[attrName]
 	if !exists {

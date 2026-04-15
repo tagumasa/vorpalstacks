@@ -53,12 +53,35 @@ var (
 	idxPropPrefix  = []byte("idx_prop/")
 )
 
+// Cache is a shared Pebble block cache that can be reused across multiple DB
+// instances. Create one with NewSharedCache and pass it via Options.SharedCache.
+// When no longer needed, call Release to free the underlying memory.
+type Cache struct {
+	cache *pebble.Cache
+}
+
+// NewSharedCache creates a shared cache with the given size in bytes.
+func NewSharedCache(size int64) *Cache {
+	return &Cache{cache: pebble.NewCache(size)}
+}
+
+// Release frees the shared cache. It must be called after all DB instances
+// using this cache have been closed.
+func (c *Cache) Release() {
+	c.cache.Unref()
+}
+
 // Options configures the graph database. SyncMode and Logger are reserved for
 // future use when configurable durability guarantees are introduced.
+//
+// If SharedCache is set it is used directly instead of allocating a new
+// per-DB cache. The caller retains ownership and must call Cache.Release
+// after all DB instances using it have been closed.
 type Options struct {
-	CacheSize int64
-	SyncMode  SyncMode
-	Logger    interface{ Printf(string, ...interface{}) }
+	CacheSize   int64
+	SyncMode    SyncMode
+	Logger      interface{ Printf(string, ...interface{}) }
+	SharedCache *Cache
 }
 
 type SyncMode int
@@ -68,9 +91,11 @@ const (
 	SyncNone
 )
 
+const DefaultCacheSize int64 = 8 << 20
+
 func DefaultOptions() Options {
 	return Options{
-		CacheSize: 64 << 20,
+		CacheSize: DefaultCacheSize,
 		SyncMode:  SyncNone,
 	}
 }
@@ -82,6 +107,7 @@ type DB struct {
 	db         *pebble.DB
 	dir        string
 	cache      *pebble.Cache
+	ownsCache  bool
 	nextNodeID atomic.Uint64
 	nextEdgeID atomic.Uint64
 	nodeCount  atomic.Uint64
@@ -98,28 +124,44 @@ func Open(dir string, opts Options) (*DB, error) {
 		return nil, fmt.Errorf("graphengine: failed to create directory %s: %w", dir, err)
 	}
 
-	cache := pebble.NewCache(opts.CacheSize)
+	var pebbleCache *pebble.Cache
+	ownsCache := opts.SharedCache == nil
+	if ownsCache {
+		pebbleCache = pebble.NewCache(opts.CacheSize)
+	} else {
+		opts.SharedCache.cache.Ref()
+		pebbleCache = opts.SharedCache.cache
+	}
 
 	pebbleOpts := &pebble.Options{
-		Cache:        cache,
+		Cache:        pebbleCache,
 		MemTableSize: 4 << 20,
 	}
 
 	pdb, err := pebble.Open(filepath.Join(dir, "graph"), pebbleOpts)
 	if err != nil {
-		cache.Unref()
+		if ownsCache {
+			pebbleCache.Unref()
+		} else {
+			opts.SharedCache.cache.Unref()
+		}
 		return nil, fmt.Errorf("graphengine: failed to open pebble at %s: %w", dir, err)
 	}
 
 	d := &DB{
-		db:    pdb,
-		dir:   dir,
-		cache: cache,
+		db:        pdb,
+		dir:       dir,
+		cache:     pebbleCache,
+		ownsCache: ownsCache,
 	}
 
 	if err := d.loadCounters(); err != nil {
 		pdb.Close()
-		cache.Unref()
+		if ownsCache {
+			pebbleCache.Unref()
+		} else {
+			opts.SharedCache.cache.Unref()
+		}
 		return nil, err
 	}
 
@@ -355,10 +397,10 @@ func (d *DB) persistCounters() error {
 	batch := d.db.NewBatch()
 	defer batch.Close()
 
-	batch.Set(keyNextNodeID, encodeUint64(d.nextNodeID.Load()), nil)
-	batch.Set(keyNextEdgeID, encodeUint64(d.nextEdgeID.Load()), nil)
-	batch.Set(keyNodeCount, encodeUint64(d.nodeCount.Load()), nil)
-	batch.Set(keyEdgeCount, encodeUint64(d.edgeCount.Load()), nil)
+	_ = batch.Set(keyNextNodeID, encodeUint64(d.nextNodeID.Load()), nil)
+	_ = batch.Set(keyNextEdgeID, encodeUint64(d.nextEdgeID.Load()), nil)
+	_ = batch.Set(keyNodeCount, encodeUint64(d.nodeCount.Load()), nil)
+	_ = batch.Set(keyEdgeCount, encodeUint64(d.edgeCount.Load()), nil)
 
 	return d.db.Apply(batch, pebble.Sync)
 }
@@ -531,14 +573,14 @@ func (d *DB) AddNode(labels []string, props Props) (NodeID, error) {
 	if err != nil {
 		return 0, err
 	}
-	batch.Set(nodeKey(id), data, nil)
+	_ = batch.Set(nodeKey(id), data, nil)
 
 	for _, label := range labels {
-		batch.Set(idxLabelKey(label, id), nil, nil)
+		_ = batch.Set(idxLabelKey(label, id), nil, nil)
 	}
 
 	for k, v := range props {
-		batch.Set(idxPropKey(k, propIndexValue(v), id), nil, nil)
+		_ = batch.Set(idxPropKey(k, propIndexValue(v), id), nil, nil)
 	}
 
 	d.writeUniqueConstraintEntries(batch, labels, props, id)
@@ -600,14 +642,14 @@ func (d *DB) AddNodeBatch(items []struct {
 		if err != nil {
 			return nil, err
 		}
-		batch.Set(nodeKey(id), data, nil)
+		_ = batch.Set(nodeKey(id), data, nil)
 
 		for _, label := range item.Labels {
-			batch.Set(idxLabelKey(label, id), nil, nil)
+			_ = batch.Set(idxLabelKey(label, id), nil, nil)
 		}
 
 		for k, v := range item.Props {
-			batch.Set(idxPropKey(k, propIndexValue(v), id), nil, nil)
+			_ = batch.Set(idxPropKey(k, propIndexValue(v), id), nil, nil)
 		}
 
 		d.writeUniqueConstraintEntries(batch, item.Labels, item.Props, id)
@@ -684,29 +726,29 @@ func (d *DB) UpdateNode(id NodeID, props Props) error {
 
 	for k, v := range props {
 		if oldVal, ok := existingProps[k]; ok && propIndexValue(oldVal) != propIndexValue(v) {
-			batch.Delete(idxPropKey(k, propIndexValue(oldVal), id), nil)
+			_ = batch.Delete(idxPropKey(k, propIndexValue(oldVal), id), nil)
 			if constraintLabels, isConstrained := ucProps[k]; isConstrained {
 				for _, cl := range constraintLabels {
-					batch.Delete(ucKey(cl, k, oldVal), nil)
-					batch.Set(ucKey(cl, k, v), encodeNodeID(id), nil)
+					_ = batch.Delete(ucKey(cl, k, oldVal), nil)
+					_ = batch.Set(ucKey(cl, k, v), encodeNodeID(id), nil)
 				}
 			}
 		} else if _, ok := existingProps[k]; !ok {
 			if constraintLabels, isConstrained := ucProps[k]; isConstrained {
 				for _, cl := range constraintLabels {
-					batch.Set(ucKey(cl, k, v), encodeNodeID(id), nil)
+					_ = batch.Set(ucKey(cl, k, v), encodeNodeID(id), nil)
 				}
 			}
 		}
 		existingProps[k] = v
-		batch.Set(idxPropKey(k, propIndexValue(v), id), nil, nil)
+		_ = batch.Set(idxPropKey(k, propIndexValue(v), id), nil, nil)
 	}
 
 	data, err := encodeNodeData(labels, existingProps)
 	if err != nil {
 		return fmt.Errorf("graphengine: failed to encode updated node %d: %w", id, err)
 	}
-	batch.Set(nodeKey(id), data, nil)
+	_ = batch.Set(nodeKey(id), data, nil)
 
 	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
 		return fmt.Errorf("graphengine: failed to update node %d: %w", id, err)
@@ -721,7 +763,7 @@ func (d *DB) getConstrainedProps(labels []string) map[string][]string {
 	for _, l := range labels {
 		labelSet[l] = true
 	}
-	d.forEachUniqueConstraint(func(label, prop string) error {
+	_ = d.forEachUniqueConstraint(func(label, prop string) error {
 		if labelSet[label] {
 			result[prop] = append(result[prop], label)
 		}
@@ -752,22 +794,22 @@ func (d *DB) DeleteNode(id NodeID) error {
 	defer batch.Close()
 
 	for _, e := range edges {
-		batch.Delete(edgeKey(e.ID), nil)
-		batch.Delete(adjOutKey(e.From, e.ID), nil)
-		batch.Delete(adjInKey(e.To, e.ID), nil)
+		_ = batch.Delete(edgeKey(e.ID), nil)
+		_ = batch.Delete(adjOutKey(e.From, e.ID), nil)
+		_ = batch.Delete(adjInKey(e.To, e.ID), nil)
 		if e.Label != "" {
-			batch.Delete(idxEtypeKey(e.Label, e.ID), nil)
+			_ = batch.Delete(idxEtypeKey(e.Label, e.ID), nil)
 		}
 	}
 
-	batch.Delete(nodeKey(id), nil)
+	_ = batch.Delete(nodeKey(id), nil)
 
 	for _, label := range node.Labels {
-		batch.Delete(idxLabelKey(label, id), nil)
+		_ = batch.Delete(idxLabelKey(label, id), nil)
 	}
 
 	for k, v := range node.Props {
-		batch.Delete(idxPropKey(k, propIndexValue(v), id), nil)
+		_ = batch.Delete(idxPropKey(k, propIndexValue(v), id), nil)
 	}
 
 	d.deleteUniqueConstraintEntries(batch, node.Labels, node.Props)
@@ -838,11 +880,11 @@ func (d *DB) AddEdge(from, to NodeID, label string, props Props) (EdgeID, error)
 	if err != nil {
 		return 0, err
 	}
-	batch.Set(edgeKey(id), edgeData, nil)
-	batch.Set(adjOutKey(from, id), encodeAdjValue(to, label), nil)
-	batch.Set(adjInKey(to, id), encodeAdjValue(from, label), nil)
+	_ = batch.Set(edgeKey(id), edgeData, nil)
+	_ = batch.Set(adjOutKey(from, id), encodeAdjValue(to, label), nil)
+	_ = batch.Set(adjInKey(to, id), encodeAdjValue(from, label), nil)
 	if label != "" {
-		batch.Set(idxEtypeKey(label, id), nil, nil)
+		_ = batch.Set(idxEtypeKey(label, id), nil, nil)
 	}
 
 	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
@@ -878,11 +920,11 @@ func (d *DB) AddEdgeBatch(edges []Edge) ([]EdgeID, error) {
 		if err != nil {
 			return nil, err
 		}
-		batch.Set(edgeKey(id), edgeData, nil)
-		batch.Set(adjOutKey(edge.From, id), encodeAdjValue(edge.To, edge.Label), nil)
-		batch.Set(adjInKey(edge.To, id), encodeAdjValue(edge.From, edge.Label), nil)
+		_ = batch.Set(edgeKey(id), edgeData, nil)
+		_ = batch.Set(adjOutKey(edge.From, id), encodeAdjValue(edge.To, edge.Label), nil)
+		_ = batch.Set(adjInKey(edge.To, id), encodeAdjValue(edge.From, edge.Label), nil)
 		if edge.Label != "" {
-			batch.Set(idxEtypeKey(edge.Label, id), nil, nil)
+			_ = batch.Set(idxEtypeKey(edge.Label, id), nil, nil)
 		}
 	}
 
@@ -924,11 +966,11 @@ func (d *DB) DeleteEdge(id EdgeID) error {
 	batch := d.db.NewBatch()
 	defer batch.Close()
 
-	batch.Delete(edgeKey(id), nil)
-	batch.Delete(adjOutKey(edge.From, id), nil)
-	batch.Delete(adjInKey(edge.To, id), nil)
+	_ = batch.Delete(edgeKey(id), nil)
+	_ = batch.Delete(adjOutKey(edge.From, id), nil)
+	_ = batch.Delete(adjInKey(edge.To, id), nil)
 	if edge.Label != "" {
-		batch.Delete(idxEtypeKey(edge.Label, id), nil)
+		_ = batch.Delete(idxEtypeKey(edge.Label, id), nil)
 	}
 
 	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
@@ -1245,13 +1287,13 @@ func (d *DB) RemoveLabel(id NodeID, label string) error {
 	if err != nil {
 		return fmt.Errorf("graphengine: failed to encode node after removing label: %w", err)
 	}
-	batch.Set(nodeKey(id), nodeData, nil)
-	batch.Delete(idxLabelKey(label, id), nil)
+	_ = batch.Set(nodeKey(id), nodeData, nil)
+	_ = batch.Delete(idxLabelKey(label, id), nil)
 
-	d.forEachUniqueConstraint(func(ucLabel, prop string) error {
+	_ = d.forEachUniqueConstraint(func(ucLabel, prop string) error {
 		if ucLabel == label {
 			if val, ok := props[prop]; ok {
-				batch.Delete(ucKey(label, prop, val), nil)
+				_ = batch.Delete(ucKey(label, prop, val), nil)
 			}
 		}
 		return nil
@@ -1310,7 +1352,7 @@ func (d *DB) AddLabel(id NodeID, label string) error {
 					} else if err == nil {
 						existingCloser.Close()
 					}
-					batch.Set(ucKey(label, prop, val), encodeNodeID(id), nil)
+					_ = batch.Set(ucKey(label, prop, val), encodeNodeID(id), nil)
 				}
 			}
 		}
@@ -1320,8 +1362,8 @@ func (d *DB) AddLabel(id NodeID, label string) error {
 	if err != nil {
 		return fmt.Errorf("graphengine: failed to encode node after adding label: %w", err)
 	}
-	batch.Set(nodeKey(id), nodeData, nil)
-	batch.Set(idxLabelKey(label, id), nil, nil)
+	_ = batch.Set(nodeKey(id), nodeData, nil)
+	_ = batch.Set(idxLabelKey(label, id), nil, nil)
 
 	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
 		return fmt.Errorf("graphengine: failed to add label to node %d: %w", id, err)
@@ -1365,12 +1407,12 @@ func (d *DB) RemoveProperty(id NodeID, key string) error {
 	if err != nil {
 		return fmt.Errorf("graphengine: failed to encode node after removing property: %w", err)
 	}
-	batch.Set(nodeKey(id), nodeData, nil)
-	batch.Delete(idxPropKey(key, propIndexValue(oldValue), id), nil)
+	_ = batch.Set(nodeKey(id), nodeData, nil)
+	_ = batch.Delete(idxPropKey(key, propIndexValue(oldValue), id), nil)
 
 	if constraintLabels, isConstrained := ucProps[key]; isConstrained {
 		for _, cl := range constraintLabels {
-			batch.Delete(ucKey(cl, key, oldValue), nil)
+			_ = batch.Delete(ucKey(cl, key, oldValue), nil)
 		}
 	}
 
@@ -1548,7 +1590,7 @@ func (d *DB) writeUniqueConstraintEntries(batch *pebble.Batch, labels []string, 
 		labelSet[l] = true
 	}
 
-	d.forEachUniqueConstraint(func(label, prop string) error {
+	_ = d.forEachUniqueConstraint(func(label, prop string) error {
 		if !labelSet[label] {
 			return nil
 		}
@@ -1559,7 +1601,7 @@ func (d *DB) writeUniqueConstraintEntries(batch *pebble.Batch, labels []string, 
 		}
 
 		key := ucKey(label, prop, val)
-		batch.Set(key, encodeNodeID(id), nil)
+		_ = batch.Set(key, encodeNodeID(id), nil)
 		return nil
 	})
 }
@@ -1570,7 +1612,7 @@ func (d *DB) deleteUniqueConstraintEntries(batch *pebble.Batch, labels []string,
 		labelSet[l] = true
 	}
 
-	d.forEachUniqueConstraint(func(label, prop string) error {
+	_ = d.forEachUniqueConstraint(func(label, prop string) error {
 		if !labelSet[label] {
 			return nil
 		}
@@ -1581,7 +1623,7 @@ func (d *DB) deleteUniqueConstraintEntries(batch *pebble.Batch, labels []string,
 		}
 
 		key := ucKey(label, prop, val)
-		batch.Delete(key, nil)
+		_ = batch.Delete(key, nil)
 		return nil
 	})
 }
@@ -1613,7 +1655,7 @@ func (d *DB) Clear() error {
 	for _, prefix := range clearPrefixes {
 		end := append([]byte(nil), prefix...)
 		end = append(end, 0xFF)
-		batch.DeleteRange(prefix, end, nil)
+		_ = batch.DeleteRange(prefix, end, nil)
 	}
 
 	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
@@ -1626,7 +1668,7 @@ func (d *DB) Clear() error {
 	d.nextEdgeID.Store(1)
 
 	if d.Embeddings != nil {
-		d.Embeddings.Clear()
+		_ = d.Embeddings.Clear()
 	}
 
 	if err := d.persistCounters(); err != nil {
@@ -1688,7 +1730,7 @@ func (d *DB) CreateUniqueConstraint(label, prop string) error {
 			}
 			continue
 		}
-		batch.Set(ucKey, encodeNodeID(id), nil)
+		_ = batch.Set(ucKey, encodeNodeID(id), nil)
 	}
 
 	if err := d.db.Apply(batch, pebble.NoSync); err != nil {

@@ -422,5 +422,3 @@ func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *req
 
 	return response.EmptyResponse(), nil
 }
-
-// GetIdentityPoolIDFromIdentityID extracts the pool ID from a full identity key.

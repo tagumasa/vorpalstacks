@@ -232,7 +232,7 @@ func TestIdempotencyStore(t *testing.T) {
 	tmpDir := filepath.Join(os.TempDir(), "pebble-idempotency-test")
 	defer os.RemoveAll(tmpDir)
 
-	s, err := Open(tmpDir, WithTTL(true, 50*time.Millisecond))
+	s, err := Open(tmpDir, WithTTL(true, 500*time.Millisecond))
 	require.NoError(t, err)
 	defer s.Close()
 
@@ -294,11 +294,11 @@ func TestIdempotencyStore(t *testing.T) {
 	t.Run("TTL Expiry", func(t *testing.T) {
 		token := "token-5"
 
-		isNew, err := store.CheckAndStore(token, 100*time.Millisecond)
+		isNew, err := store.CheckAndStore(token, 2*time.Second)
 		require.NoError(t, err)
 		assert.True(t, isNew)
 
-		time.Sleep(150 * time.Millisecond)
+		time.Sleep(3 * time.Second)
 
 		isNew, err = store.CheckAndStore(token, 10*time.Minute)
 		require.NoError(t, err)

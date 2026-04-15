@@ -85,6 +85,7 @@ func ClusterToProto(c *DBCluster) *pb.DBCluster {
 		ServerlessV2ScalingConfiguration: scalingConfigToProto(c.ServerlessV2ScalingConfiguration),
 		AccountId:                        c.AccountID,
 		Region:                           c.Region,
+		DbClusterArn:                     c.DBClusterArn,
 	}
 	if c.ClusterCreateTime != nil {
 		p.ClusterCreateTime = timestamppb.New(*c.ClusterCreateTime)
@@ -134,6 +135,7 @@ func ProtoToCluster(p *pb.DBCluster) *DBCluster {
 		ServerlessV2ScalingConfiguration: protoToScalingConfig(p.GetServerlessV2ScalingConfiguration()),
 		AccountID:                        p.GetAccountId(),
 		Region:                           p.GetRegion(),
+		DBClusterArn:                     p.GetDbClusterArn(),
 	}
 	if p.ClusterCreateTime != nil {
 		t := p.ClusterCreateTime.AsTime()
@@ -178,6 +180,7 @@ func InstanceToProto(i *DBInstance) *pb.DBInstance {
 		CopyTagsToSnapshot:              i.CopyTagsToSnapshot,
 		AccountId:                       i.AccountID,
 		Region:                          i.Region,
+		DbInstanceArn:                   i.DBInstanceArn,
 	}
 	if i.InstanceCreateTime != nil {
 		p.InstanceCreateTime = timestamppb.New(*i.InstanceCreateTime)
@@ -210,6 +213,7 @@ func ProtoToInstance(p *pb.DBInstance) *DBInstance {
 		CopyTagsToSnapshot:              p.GetCopyTagsToSnapshot(),
 		AccountID:                       p.GetAccountId(),
 		Region:                          p.GetRegion(),
+		DBInstanceArn:                   p.GetDbInstanceArn(),
 	}
 	if p.InstanceCreateTime != nil {
 		t := p.InstanceCreateTime.AsTime()

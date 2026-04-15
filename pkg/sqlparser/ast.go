@@ -2516,10 +2516,6 @@ func (node *ObjectProperty) walkSubtree(visit Visit) error {
 	)
 }
 
-func (node *ObjectProperty) replace(from, to Expr) bool {
-	return replaceExprs(from, to, &node.Key) || replaceExprs(from, to, &node.Value)
-}
-
 // Subquery represents a subquery.
 type Subquery struct {
 	Select SelectStatement

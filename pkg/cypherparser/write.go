@@ -1058,10 +1058,6 @@ func resolveNodePropsDirect(props map[string]any, params map[string]any) error {
 
 func collectMultiHopBindings(ctx context.Context, reader graphengine.GraphReader, q *CypherQuery, pat Pattern) ([]map[string]any, error) {
 	firstPat := pat.Nodes[0]
-	aVar := firstPat.Variable
-	if aVar == "" {
-		aVar = "_a"
-	}
 
 	candidates, err := findCandidates(reader, firstPat)
 	if err != nil {

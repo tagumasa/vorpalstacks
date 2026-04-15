@@ -1014,5 +1014,3 @@ func ProtoToAccountSettings(p *pb.AccountSettings) *AccountSettings {
 		QueryComputeType:        p.QueryComputeType,
 	}
 }
-
-// Helper functions for zero time checks

@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-
-
 func buildCanonicalQueryStringForPresigned(query url.Values) string {
 	if len(query) == 0 {
 		return ""

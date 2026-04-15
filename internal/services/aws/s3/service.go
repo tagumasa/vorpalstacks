@@ -26,6 +26,7 @@ type s3Stores struct {
 type S3Service struct {
 	s3Store             s3store.S3StoreInterface
 	blobStore           storage.BlobStore
+	storageManager      *storage.RegionStorageManager
 	accountID           string
 	accessController    *AccessController
 	credentialsProvider crypto.CredentialsProvider
@@ -66,6 +67,34 @@ func (s *S3Service) SetCredentialsProvider(provider crypto.CredentialsProvider) 
 // SetKMSClient sets the KMS client for server-side encryption.
 func (s *S3Service) SetKMSClient(kmsClient KMSClient) {
 	s.encryptionManager = NewEncryptionManagerWithKMS(kmsClient)
+}
+
+// SetStorageManager sets the storage manager for persisting SSE-S3 bucket keys.
+func (s *S3Service) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
+// RestoreSSE3Keys restores persisted SSE-S3 bucket keys from storage.
+func (s *S3Service) RestoreSSE3Keys() {
+	if s.storageManager == nil {
+		return
+	}
+	rs, err := s.storageManager.GetStorage(s.accountID)
+	if err != nil {
+		logs.Warn("failed to get storage for SSE-S3 key restore", logs.Err(err))
+		return
+	}
+	bucket := rs.Bucket("s3_sse_keys")
+	prefix := []byte("bucket:")
+	iter := bucket.ScanPrefix(prefix)
+	for iter.Next() {
+		bucketName := string(iter.Key()[len(prefix):])
+		data := iter.Value()
+		if err := s.encryptionManager.LoadSSE3BucketKey(bucketName, data); err != nil {
+			logs.Warn("failed to restore SSE-S3 bucket key", logs.String("bucket", bucketName), logs.Err(err))
+		}
+	}
+	iter.Close()
 }
 
 // SetEventBus sets the event bus and registers the S3 notification handler.
@@ -173,10 +202,28 @@ func (s *S3Service) AccountId() string {
 	return s.accountID
 }
 
-// Close unsubscribes from the event bus and releases resources.
+// Close unsubscribes from the event bus, persists SSE-S3 bucket keys, and releases resources.
 func (s *S3Service) Close() {
 	if s.busUnsubscribe != nil {
 		s.busUnsubscribe()
 		s.busUnsubscribe = nil
 	}
+	s.persistSSE3Keys()
+}
+
+func (s *S3Service) persistSSE3Keys() {
+	if s.storageManager == nil {
+		return
+	}
+	rs, err := s.storageManager.GetStorage(s.accountID)
+	if err != nil {
+		logs.Warn("failed to get storage for SSE-S3 key persistence", logs.Err(err))
+		return
+	}
+	bucket := rs.Bucket("s3_sse_keys")
+	s.encryptionManager.ForEachSSE3BucketKey(func(bucketName string, keyData []byte) {
+		if err := bucket.Put([]byte("bucket:"+bucketName), keyData); err != nil {
+			logs.Warn("failed to persist SSE-S3 bucket key", logs.String("bucket", bucketName), logs.Err(err))
+		}
+	})
 }

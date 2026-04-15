@@ -50,6 +50,7 @@ type NeptuneGraphService struct {
 	activeEngines  map[string]*engineEntry
 	enginesMu      sync.RWMutex
 	taskWg         sync.WaitGroup
+	graphCache     *graphengine.Cache
 }
 
 type engineEntry struct {
@@ -73,6 +74,8 @@ func NewNeptuneGraphService(accountID, region, dataPath string) *NeptuneGraphSer
 func (s *NeptuneGraphService) Close() {
 	s.enginesMu.Lock()
 	for id, entry := range s.activeEngines {
+		entry.stopped = true
+		entry.wg.Wait()
 		entry.db.Close()
 		delete(s.activeEngines, id)
 	}
@@ -102,7 +105,7 @@ func (s *NeptuneGraphService) RestoreEngines() {
 			continue
 		}
 		graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, g.Id)
-		db, err := graphengine.Open(graphDir, graphengine.DefaultOptions())
+		db, err := graphengine.Open(graphDir, s.engineOptions())
 		if err != nil {
 			logs.Warn("failed to restore graph engine", logs.String("graphId", g.Id), logs.Err(err))
 			continue
@@ -115,6 +118,20 @@ func (s *NeptuneGraphService) RestoreEngines() {
 // SetStorageManager injects the region storage manager used to back persistent stores.
 func (s *NeptuneGraphService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// SetGraphCache injects a shared Pebble block cache for all graph engine
+// instances. Must be called before RestoreEngines or any graph creation.
+func (s *NeptuneGraphService) SetGraphCache(cache *graphengine.Cache) {
+	s.graphCache = cache
+}
+
+func (s *NeptuneGraphService) engineOptions() graphengine.Options {
+	opts := graphengine.DefaultOptions()
+	if s.graphCache != nil {
+		opts.SharedCache = s.graphCache
+	}
+	return opts
 }
 
 // GetStoreForRegion returns a lazily-initialised NeptuneGraphStore for the given region.
@@ -242,14 +259,19 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	}
 
 	graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, graphID)
-	db, err := graphengine.Open(graphDir, graphengine.DefaultOptions())
+	db, err := graphengine.Open(graphDir, s.engineOptions())
 	if err != nil {
 		logs.Warn("failed to open graph engine", logs.String("graphId", graphID), logs.Err(err))
-	} else {
-		s.enginesMu.Lock()
-		s.activeEngines[graphID] = &engineEntry{db: db}
-		s.enginesMu.Unlock()
+		graph.Status = "FAILED"
+		graph.StatusReason = fmt.Sprintf("failed to open graph engine: %v", err)
+		if updateErr := store.UpdateGraph(graph); updateErr != nil {
+			logs.Warn("failed to update graph status to FAILED", logs.String("graphId", graphID), logs.Err(updateErr))
+		}
+		return graphToResponse(graph, true), nil
 	}
+	s.enginesMu.Lock()
+	s.activeEngines[graphID] = &engineEntry{db: db}
+	s.enginesMu.Unlock()
 
 	graph.Status = "AVAILABLE"
 	if err := store.UpdateGraph(graph); err != nil {
@@ -435,6 +457,8 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 
 	s.enginesMu.Lock()
 	if entry, ok := s.activeEngines[graphID]; ok {
+		entry.stopped = true
+		entry.wg.Wait()
 		entry.db.Close()
 		delete(s.activeEngines, graphID)
 	}
@@ -480,11 +504,13 @@ func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.Re
 	}
 
 	graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, graphID)
-	db, err := graphengine.Open(graphDir, graphengine.DefaultOptions())
+	db, err := graphengine.Open(graphDir, s.engineOptions())
 	if err != nil {
 		graph.Status = "FAILED"
 		graph.StatusReason = err.Error()
-		_ = store.UpdateGraph(graph)
+		if updateErr := store.UpdateGraph(graph); updateErr != nil {
+			logs.Error("failed to update graph status to FAILED after engine open failure", logs.String("graphId", graphID), logs.Err(updateErr))
+		}
 		return nil, newInternalServerException(err)
 	}
 
@@ -577,16 +603,17 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 
 	s.enginesMu.RLock()
 	entry, ok := s.activeEngines[graphID]
-	s.enginesMu.RUnlock()
 
 	if ok {
 		if err := entry.db.Clear(); err != nil {
+			s.enginesMu.RUnlock()
 			graph.Status = "FAILED"
 			graph.StatusReason = err.Error()
 			_ = store.UpdateGraph(graph)
 			return nil, newInternalServerException(err)
 		}
 	}
+	s.enginesMu.RUnlock()
 
 	graph.Status = "AVAILABLE"
 	if err := store.UpdateGraph(graph); err != nil {
@@ -675,7 +702,7 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 		_ = copyGraphData(srcDir, graphDir)
 	}
 
-	db, err := graphengine.Open(graphDir, graphengine.DefaultOptions())
+	db, err := graphengine.Open(graphDir, s.engineOptions())
 	if err != nil {
 		logs.Warn("failed to open graph engine for restored graph", logs.String("graphId", graphID), logs.Err(err))
 	} else {
@@ -1303,7 +1330,7 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 	}
 
 	graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, graphID)
-	db, err := graphengine.Open(graphDir, graphengine.DefaultOptions())
+	db, err := graphengine.Open(graphDir, s.engineOptions())
 	if err != nil {
 		logs.Warn("failed to open graph engine", logs.String("graphId", graphID), logs.Err(err))
 	} else {

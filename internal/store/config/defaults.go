@@ -231,6 +231,15 @@ func loadDefaults() map[string]ConfigEntry {
 			EnvVar:      "VS_PORT_APPSYNC_EVENTS",
 			Category:    CategoryPorts,
 		},
+		"ports.neptune": {
+			Key:         "ports.neptune",
+			Value:       getEnvInt("VS_PORT_NEPTUNE", 8087),
+			Type:        ConfigTypePort,
+			Description: "Neptune DB cluster default port",
+			ReadOnly:    false,
+			EnvVar:      "VS_PORT_NEPTUNE",
+			Category:    CategoryPorts,
+		},
 	}
 }
 

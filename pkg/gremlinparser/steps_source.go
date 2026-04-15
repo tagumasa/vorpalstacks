@@ -565,19 +565,6 @@ func isSlice(val any) bool {
 	return kind == reflect.Slice || kind == reflect.Array
 }
 
-// asSlice converts a slice or array value to []any. Returns nil for non-slice types.
-func asSlice(val any) []any {
-	v := reflect.ValueOf(val)
-	if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
-		result := make([]any, v.Len())
-		for i := 0; i < v.Len(); i++ {
-			result[i] = v.Index(i).Interface()
-		}
-		return result
-	}
-	return nil
-}
-
 // execValueMap projects element properties as a map. Property values are wrapped in lists
 // (Gremlin convention). Includes ~id and ~label metadata.
 func execValueMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
@@ -1325,11 +1312,6 @@ func toString(val any) (string, bool) {
 	default:
 		return "", false
 	}
-}
-
-// containsStr is a convenience wrapper around strings.Contains.
-func containsStr(s, substr string) bool {
-	return strings.Contains(s, substr)
 }
 
 // execKeys projects the property keys of each traverser's element.

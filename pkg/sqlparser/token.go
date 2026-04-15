@@ -642,9 +642,9 @@ func (tkn *Tokenizer) skipBlank() {
 
 func (tkn *Tokenizer) scanIdentifier(firstByte byte, isDbSystemVariable bool) (int, []byte) {
 	buffer := &bytes2.Buffer{}
-	buffer.WriteByte(firstByte)
+	_ = buffer.WriteByte(firstByte)
 	for isLetter(tkn.lastChar) || isDigit(tkn.lastChar) || (isDbSystemVariable && isCarat(tkn.lastChar)) {
-		buffer.WriteByte(byte(tkn.lastChar))
+		_ = buffer.WriteByte(byte(tkn.lastChar))
 		tkn.next()
 	}
 	lowered := bytes.ToLower(buffer.Bytes())
@@ -691,7 +691,7 @@ func (tkn *Tokenizer) scanLiteralIdentifier() (int, []byte) {
 				break
 			}
 			backTickSeen = false
-			buffer.WriteByte('`')
+			_ = buffer.WriteByte('`')
 			tkn.next()
 			continue
 		}
@@ -742,26 +742,6 @@ func (tkn *Tokenizer) scanLiteralIdentifierDoubleQuote() (int, []byte) {
 		return LEX_ERROR, buffer.Bytes()
 	}
 	return ID, buffer.Bytes()
-}
-
-func (tkn *Tokenizer) scanBindVar() (int, []byte) {
-	buffer := &bytes2.Buffer{}
-	buffer.WriteByte(byte(tkn.lastChar))
-	token := VALUE_ARG
-	tkn.next()
-	if tkn.lastChar == ':' {
-		token = LIST_ARG
-		buffer.WriteByte(byte(tkn.lastChar))
-		tkn.next()
-	}
-	if !isLetter(tkn.lastChar) {
-		return LEX_ERROR, buffer.Bytes()
-	}
-	for isLetter(tkn.lastChar) || isDigit(tkn.lastChar) || tkn.lastChar == '.' {
-		buffer.WriteByte(byte(tkn.lastChar))
-		tkn.next()
-	}
-	return token, buffer.Bytes()
 }
 
 func (tkn *Tokenizer) scanBindVarOrColon() (int, []byte) {
@@ -839,7 +819,7 @@ exit:
 }
 
 func (tkn *Tokenizer) scanString(delim uint16, typ int) (int, []byte) {
-	var buffer bytes2.Buffer
+	buffer := &bytes2.Buffer{}
 	for {
 		ch := tkn.lastChar
 		if ch == eofChar {

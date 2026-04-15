@@ -20,8 +20,6 @@ func tableBucketName(region string) string {
 	return "timestream_tables-" + region
 }
 
-
-
 func scheduledQueryBucketName(region string) string {
 	return "timestream_scheduled_queries-" + region
 }

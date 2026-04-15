@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-
-
 // GenerateLockToken generates a unique lock token for WAF resource optimistic concurrency control.
 func GenerateLockToken() string {
 	bytes := make([]byte, 16)

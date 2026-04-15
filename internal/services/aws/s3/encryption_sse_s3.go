@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sync"
 
+	"vorpalstacks/internal/core/logs"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	"vorpalstacks/internal/utils/crypto"
 )
@@ -35,6 +36,27 @@ func (e *SSES3Encryptor) GetEncryptionType() EncryptionType {
 // DeleteBucketKey removes the cached S3-managed key for a bucket.
 func (e *SSES3Encryptor) DeleteBucketKey(bucket string) {
 	e.bucketKeys.Delete(bucket)
+}
+
+// ForEachBucketKey iterates over all cached bucket keys, calling fn for each.
+func (e *SSES3Encryptor) ForEachBucketKey(fn func(bucketName string, keyData []byte)) {
+	e.bucketKeys.Range(func(key, value any) bool {
+		bucketName, ok := key.(string)
+		if !ok {
+			return true
+		}
+		meta, ok := value.(*sseS3KeyMetadata)
+		if !ok {
+			return true
+		}
+		data, err := json.Marshal(meta)
+		if err != nil {
+			logs.Warn("failed to marshal SSE-S3 bucket key metadata, skipping persistence", logs.String("bucket", bucketName), logs.Err(err))
+			return true
+		}
+		fn(bucketName, data)
+		return true
+	})
 }
 
 func (e *SSES3Encryptor) getOrCreateBucketKey(bucket string) ([]byte, string, error) {

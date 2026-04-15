@@ -41,9 +41,6 @@ func tagsToResponse(t []types.Tag) []map[string]interface{} {
 	return tags.ToResponse(t)
 }
 
-// applyTags merges new tags into existing tags.
-
-
 // removeTags removes tags with specified keys from a tag slice.
 func removeTags(t []types.Tag, keysToRemove map[string]bool) []types.Tag {
 	return tags.Remove(t, keysToRemove)

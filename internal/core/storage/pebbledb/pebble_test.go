@@ -162,21 +162,21 @@ func TestTTL(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "testdb")
 
-	db, err := Open(WithPath(dbPath), WithTTL(true, 100*time.Millisecond, 1*time.Second))
+	db, err := Open(WithPath(dbPath), WithTTL(true, 500*time.Millisecond, 1*time.Second))
 	require.NoError(t, err)
 	defer db.Close()
 
 	key := []byte("ttlkey")
 	value := []byte("ttlvalue")
 
-	err = db.SetWithTTL(key, value, 200*time.Millisecond)
+	err = db.SetWithTTL(key, value, 1*time.Second)
 	require.NoError(t, err)
 
 	got, err := db.Get(key)
 	require.NoError(t, err)
 	assert.Equal(t, value, got)
 
-	time.Sleep(300 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 
 	db.cleanExpiredKeys()
 

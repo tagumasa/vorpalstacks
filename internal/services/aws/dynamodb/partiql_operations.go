@@ -131,8 +131,6 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 	}, nil
 }
 
-
-
 func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams) (interface{}, error) {
 	tableName, itemData := parseInsertStatement(statement)
 	if tableName == "" || itemData == nil {
@@ -361,8 +359,6 @@ func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *requ
 		"ScannedCount": scannedCount,
 	}, nil
 }
-
-
 
 func applySetAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) {
 	for _, asgn := range assignments {

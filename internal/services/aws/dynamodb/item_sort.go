@@ -7,10 +7,6 @@ import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
-
-
-
-
 func getSortKeyName(table *dbstore.Table, indexName string) string {
 	if indexName == "" {
 		for _, ks := range table.KeySchema {

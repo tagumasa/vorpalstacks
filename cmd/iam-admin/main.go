@@ -96,7 +96,7 @@ func createUserCmd(store *iamstore.UserStore, accountId string, args []string) {
 	fs := flag.NewFlagSet("create-user", flag.ExitOnError)
 	userName := fs.String("user", "", "User name")
 	path := fs.String("path", "/", "User path")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	if *userName == "" {
 		fmt.Fprintln(os.Stderr, "Error: -user is required")
@@ -119,7 +119,7 @@ func createUserCmd(store *iamstore.UserStore, accountId string, args []string) {
 func deleteUserCmd(store *iamstore.UserStore, args []string) {
 	fs := flag.NewFlagSet("delete-user", flag.ExitOnError)
 	userName := fs.String("user", "", "User name")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	if *userName == "" {
 		fmt.Fprintln(os.Stderr, "Error: -user is required")
@@ -137,7 +137,7 @@ func deleteUserCmd(store *iamstore.UserStore, args []string) {
 func listUsersCmd(store *iamstore.UserStore, args []string) {
 	fs := flag.NewFlagSet("list-users", flag.ExitOnError)
 	pathPrefix := fs.String("path-prefix", "", "Path prefix")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	result, err := store.List(*pathPrefix, "", 1000)
 	if err != nil {
@@ -154,7 +154,7 @@ func listUsersCmd(store *iamstore.UserStore, args []string) {
 func getUserCmd(store *iamstore.UserStore, args []string) {
 	fs := flag.NewFlagSet("get-user", flag.ExitOnError)
 	userName := fs.String("user", "", "User name")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	if *userName == "" {
 		fmt.Fprintln(os.Stderr, "Error: -user is required")
@@ -174,7 +174,7 @@ func getUserCmd(store *iamstore.UserStore, args []string) {
 func createAccessKeyCmd(store *iamstore.AccessKeyStore, userStore *iamstore.UserStore, args []string) {
 	fs := flag.NewFlagSet("create-access-key", flag.ExitOnError)
 	userName := fs.String("user", "", "User name")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	if *userName == "" {
 		fmt.Fprintln(os.Stderr, "Error: -user is required")
@@ -202,7 +202,7 @@ func createAccessKeyCmd(store *iamstore.AccessKeyStore, userStore *iamstore.User
 func listAccessKeysCmd(store *iamstore.AccessKeyStore, userStore *iamstore.UserStore, args []string) {
 	fs := flag.NewFlagSet("list-access-keys", flag.ExitOnError)
 	userName := fs.String("user", "", "User name")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	if *userName == "" {
 		fmt.Fprintln(os.Stderr, "Error: -user is required")
@@ -229,7 +229,7 @@ func listAccessKeysCmd(store *iamstore.AccessKeyStore, userStore *iamstore.UserS
 func deleteAccessKeyCmd(store *iamstore.AccessKeyStore, userStore *iamstore.UserStore, args []string) {
 	fs := flag.NewFlagSet("delete-access-key", flag.ExitOnError)
 	accessKeyId := fs.String("access-key-id", "", "Access Key ID")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	if *accessKeyId == "" {
 		fmt.Fprintln(os.Stderr, "Error: -access-key-id is required")
@@ -249,7 +249,7 @@ func createLoginProfileCmd(store *iamstore.LoginProfileStore, userStore *iamstor
 	userName := fs.String("user", "", "User name")
 	password := fs.String("password", "", "Password")
 	passwordResetRequired := fs.Bool("password-reset-required", false, "Password reset required")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	if *userName == "" || *password == "" {
 		fmt.Fprintln(os.Stderr, "Error: -user and -password are required")
@@ -275,7 +275,7 @@ func createLoginProfileCmd(store *iamstore.LoginProfileStore, userStore *iamstor
 func deleteLoginProfileCmd(store *iamstore.LoginProfileStore, userStore *iamstore.UserStore, args []string) {
 	fs := flag.NewFlagSet("delete-login-profile", flag.ExitOnError)
 	userName := fs.String("user", "", "User name")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	if *userName == "" {
 		fmt.Fprintln(os.Stderr, "Error: -user is required")
@@ -294,7 +294,7 @@ func setConfigCmd(store *api.ConfigStore, args []string) {
 	fs := flag.NewFlagSet("set-config", flag.ExitOnError)
 	serviceName := fs.String("service", "", "Service name")
 	mode := fs.String("mode", "", "Service mode (IMPLEMENTED, MOCK_SUCCESS, MOCK_ERROR)")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	if *serviceName == "" || *mode == "" {
 		fmt.Fprintln(os.Stderr, "Error: -service and -mode are required")
@@ -317,7 +317,7 @@ func setConfigCmd(store *api.ConfigStore, args []string) {
 func getConfigCmd(store *api.ConfigStore, args []string) {
 	fs := flag.NewFlagSet("get-config", flag.ExitOnError)
 	serviceName := fs.String("service", "", "Service name")
-	fs.Parse(args) // #nosec G104
+	_ = fs.Parse(args)
 
 	if *serviceName == "" {
 		fmt.Fprintln(os.Stderr, "Error: -service is required")

@@ -63,11 +63,11 @@ func (s *Service) parseRecords(data interface{}) []tsstore.Record {
 
 		record := tsstore.Record{
 			Dimensions:       s.parseDimensions(itemMap["Dimensions"]),
-			MeasureName:      getStringFromMap(itemMap, "MeasureName"),
-			MeasureValue:     getStringFromMap(itemMap, "MeasureValue"),
-			MeasureValueType: tsstore.MeasureValueType(getStringFromMap(itemMap, "MeasureValueType")),
-			Time:             getStringFromMap(itemMap, "Time"),
-			TimeUnit:         tsstore.TimeUnit(getStringFromMap(itemMap, "TimeUnit")),
+			MeasureName:      request.GetStringParam(itemMap, "MeasureName"),
+			MeasureValue:     request.GetStringParam(itemMap, "MeasureValue"),
+			MeasureValueType: tsstore.MeasureValueType(request.GetStringParam(itemMap, "MeasureValueType")),
+			Time:             request.GetStringParam(itemMap, "Time"),
+			TimeUnit:         tsstore.TimeUnit(request.GetStringParam(itemMap, "TimeUnit")),
 			Version:          getIntFromMap(itemMap, "Version"),
 		}
 
@@ -94,9 +94,9 @@ func (s *Service) parseDimensions(data interface{}) []tsstore.Dimension {
 		}
 
 		dim := tsstore.Dimension{
-			Name:               getStringFromMap(itemMap, "Name"),
-			Value:              getStringFromMap(itemMap, "Value"),
-			DimensionValueType: tsstore.DimensionValueType(getStringFromMap(itemMap, "DimensionValueType")),
+			Name:               request.GetStringParam(itemMap, "Name"),
+			Value:              request.GetStringParam(itemMap, "Value"),
+			DimensionValueType: tsstore.DimensionValueType(request.GetStringParam(itemMap, "DimensionValueType")),
 		}
 		if dim.DimensionValueType == "" {
 			dim.DimensionValueType = tsstore.DimensionValueTypeVarchar
@@ -123,9 +123,9 @@ func (s *Service) parseMeasureValues(data interface{}) []tsstore.MeasureValue {
 		}
 
 		mv := tsstore.MeasureValue{
-			Name:  getStringFromMap(itemMap, "Name"),
-			Value: getStringFromMap(itemMap, "Value"),
-			Type:  tsstore.MeasureValueType(getStringFromMap(itemMap, "Type")),
+			Name:  request.GetStringParam(itemMap, "Name"),
+			Value: request.GetStringParam(itemMap, "Value"),
+			Type:  tsstore.MeasureValueType(request.GetStringParam(itemMap, "Type")),
 		}
 
 		measureValues = append(measureValues, mv)
@@ -220,15 +220,6 @@ func (s *Service) ListTagsForResource(ctx context.Context, reqCtx *request.Reque
 	return map[string]interface{}{
 		"Tags": tagList,
 	}, nil
-}
-
-func getStringFromMap(m map[string]interface{}, key string) string {
-	if v, ok := m[key]; ok {
-		if s, ok := v.(string); ok {
-			return s
-		}
-	}
-	return ""
 }
 
 func getIntFromMap(m map[string]interface{}, key string) int64 {

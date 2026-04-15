@@ -123,8 +123,8 @@ func (e *graphQLEngine) dispatchDynamoDB(
 		return nil, fmt.Errorf("DynamoDB payload must be a JSON object")
 	}
 
-	operation := getStringFromMap(payloadMap, "operation")
-	tableName := getStringFromMap(payloadMap, "table")
+	operation := request.GetStringParam(payloadMap, "operation")
+	tableName := request.GetStringParam(payloadMap, "table")
 	if tableName == "" && ds.DynamodbConfig != nil {
 		tableName = ds.DynamodbConfig.TableName
 	}
@@ -185,7 +185,7 @@ func (e *graphQLEngine) dispatchDynamoDB(
 		if keyMap == nil {
 			return nil, fmt.Errorf("DynamoDB Query requires 'key'")
 		}
-		pkVal := getStringFromMap(keyMap, "id")
+		pkVal := request.GetStringParam(keyMap, "id")
 		if pkVal == "" {
 			for _, v := range keyMap {
 				pkVal = fmt.Sprintf("%v", v)
@@ -580,15 +580,6 @@ func toMap(v interface{}) (map[string]interface{}, bool) {
 		return m, true
 	}
 	return nil, false
-}
-
-func getStringFromMap(m map[string]interface{}, key string) string {
-	if v, ok := m[key]; ok {
-		if s, ok := v.(string); ok {
-			return s
-		}
-	}
-	return ""
 }
 
 func getMapFromMap(m map[string]interface{}, key string) map[string]interface{} {

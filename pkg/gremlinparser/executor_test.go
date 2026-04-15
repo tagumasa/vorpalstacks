@@ -108,16 +108,6 @@ func toInt64(val any) int64 {
 	}
 }
 
-func toStringVal(t *testing.T, result any) string {
-	t.Helper()
-	switch v := result.(type) {
-	case string:
-		return v
-	default:
-		return fmt.Sprintf("%v", v)
-	}
-}
-
 func containsAll(haystack []string, needles ...string) bool {
 	haySet := make(map[string]bool)
 	for _, h := range haystack {

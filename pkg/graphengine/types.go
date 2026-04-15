@@ -355,25 +355,3 @@ func decodeAdjValue(data []byte) (NodeID, string) {
 	label := string(data[8:])
 	return targetID, label
 }
-
-// --- Index key helpers ---
-//
-// Used to construct label and property index entries. Kept for Phase 2+
-// when index-backed lookups are fully implemented.
-
-func encodeIndexKey(prefix string, id uint64) []byte {
-	prefixBytes := []byte(prefix)
-	buf := make([]byte, len(prefixBytes)+1+8)
-	copy(buf, prefixBytes)
-	buf[len(prefixBytes)] = 0x00
-	binary.BigEndian.PutUint64(buf[len(prefixBytes)+1:], id)
-	return buf
-}
-
-func encodeIndexPrefix(prefix string) []byte {
-	prefixBytes := []byte(prefix)
-	buf := make([]byte, len(prefixBytes)+1)
-	copy(buf, prefixBytes)
-	buf[len(prefixBytes)] = 0x00
-	return buf
-}

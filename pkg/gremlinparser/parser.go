@@ -83,16 +83,6 @@ func (p *Parser) match(kind TokenKind) (Token, bool) {
 	return Token{}, false
 }
 
-// matchIdent advances if the current token is an identifier with the given text.
-func (p *Parser) matchIdent(text string) bool {
-	t := p.cur()
-	if t.Kind == tokIdentifier && t.Text == text {
-		p.advance()
-		return true
-	}
-	return false
-}
-
 // isIdent returns true if the current token is an identifier with the given text.
 func (p *Parser) isIdent(text string) bool {
 	t := p.cur()

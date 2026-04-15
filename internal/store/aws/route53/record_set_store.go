@@ -113,5 +113,3 @@ func recordSetKey(hostedZoneId, name, recordType, setIdentifier string) string {
 func escapeKeyPart(s string) string {
 	return strings.ReplaceAll(s, "#", "\\#")
 }
-
-

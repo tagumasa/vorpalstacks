@@ -198,8 +198,12 @@ func (s *SNSService) initSigningKey() {
 		certBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
 		s.signingCertPEM = certBytes
 
-		_ = bucket.Put([]byte("signing_key"), keyBytes)
-		_ = bucket.Put([]byte("signing_cert"), certBytes)
+		if err := bucket.Put([]byte("signing_key"), keyBytes); err != nil {
+			logs.Warn("failed to persist SNS signing key; key regenerated on restart will invalidate existing message signatures", logs.Err(err))
+		}
+		if err := bucket.Put([]byte("signing_cert"), certBytes); err != nil {
+			logs.Warn("failed to persist SNS signing certificate; certificate regenerated on restart will invalidate existing message signatures", logs.Err(err))
+		}
 	})
 }
 

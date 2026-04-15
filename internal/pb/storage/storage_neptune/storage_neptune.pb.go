@@ -167,6 +167,7 @@ type DBCluster struct {
 	ServerlessV2ScalingConfiguration *ServerlessV2ScalingConfiguration `protobuf:"bytes,29,opt,name=serverless_v2_scaling_configuration,json=serverlessV2ScalingConfiguration,proto3" json:"serverless_v2_scaling_configuration,omitempty"`
 	AccountId                        string                            `protobuf:"bytes,30,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 	Region                           string                            `protobuf:"bytes,31,opt,name=region,proto3" json:"region,omitempty"`
+	DbClusterArn                     string                            `protobuf:"bytes,32,opt,name=db_cluster_arn,json=dbClusterArn,proto3" json:"db_cluster_arn,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -418,6 +419,13 @@ func (x *DBCluster) GetRegion() string {
 	return ""
 }
 
+func (x *DBCluster) GetDbClusterArn() string {
+	if x != nil {
+		return x.DbClusterArn
+	}
+	return ""
+}
+
 type DBInstance struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
 	DbInstanceIdentifier            string                 `protobuf:"bytes,1,opt,name=db_instance_identifier,json=dbInstanceIdentifier,proto3" json:"db_instance_identifier,omitempty"`
@@ -440,6 +448,7 @@ type DBInstance struct {
 	CopyTagsToSnapshot              bool                   `protobuf:"varint,18,opt,name=copy_tags_to_snapshot,json=copyTagsToSnapshot,proto3" json:"copy_tags_to_snapshot,omitempty"`
 	AccountId                       string                 `protobuf:"bytes,19,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 	Region                          string                 `protobuf:"bytes,20,opt,name=region,proto3" json:"region,omitempty"`
+	DbInstanceArn                   string                 `protobuf:"bytes,21,opt,name=db_instance_arn,json=dbInstanceArn,proto3" json:"db_instance_arn,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -610,6 +619,13 @@ func (x *DBInstance) GetAccountId() string {
 func (x *DBInstance) GetRegion() string {
 	if x != nil {
 		return x.Region
+	}
+	return ""
+}
+
+func (x *DBInstance) GetDbInstanceArn() string {
+	if x != nil {
+		return x.DbInstanceArn
 	}
 	return ""
 }
@@ -2037,7 +2053,7 @@ const file_storage_neptune_proto_rawDesc = "" +
 	"\rDBClusterRole\x12\x19\n" +
 	"\brole_arn\x18\x01 \x01(\tR\aroleArn\x12!\n" +
 	"\ffeature_name\x18\x02 \x01(\tR\vfeatureName\x12\x16\n" +
-	"\x06status\x18\x03 \x01(\tR\x06status\"\xfd\f\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\"\xa3\r\n" +
 	"\tDBCluster\x122\n" +
 	"\x15db_cluster_identifier\x18\x01 \x01(\tR\x13dbClusterIdentifier\x12\x16\n" +
 	"\x06engine\x18\x02 \x01(\tR\x06engine\x12%\n" +
@@ -2072,7 +2088,8 @@ const file_storage_neptune_proto_rawDesc = "" +
 	"#serverless_v2_scaling_configuration\x18\x1d \x01(\v21.storage.neptune.ServerlessV2ScalingConfigurationR serverlessV2ScalingConfiguration\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x1e \x01(\tR\taccountId\x12\x16\n" +
-	"\x06region\x18\x1f \x01(\tR\x06region\"\xeb\a\n" +
+	"\x06region\x18\x1f \x01(\tR\x06region\x12$\n" +
+	"\x0edb_cluster_arn\x18  \x01(\tR\fdbClusterArn\"\x93\b\n" +
 	"\n" +
 	"DBInstance\x124\n" +
 	"\x16db_instance_identifier\x18\x01 \x01(\tR\x14dbInstanceIdentifier\x122\n" +
@@ -2096,7 +2113,8 @@ const file_storage_neptune_proto_rawDesc = "" +
 	"\x15copy_tags_to_snapshot\x18\x12 \x01(\bR\x12copyTagsToSnapshot\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x13 \x01(\tR\taccountId\x12\x16\n" +
-	"\x06region\x18\x14 \x01(\tR\x06region\"\x8c\x05\n" +
+	"\x06region\x18\x14 \x01(\tR\x06region\x12&\n" +
+	"\x0fdb_instance_arn\x18\x15 \x01(\tR\rdbInstanceArn\"\x8c\x05\n" +
 	"\x11DBClusterSnapshot\x12C\n" +
 	"\x1edb_cluster_snapshot_identifier\x18\x01 \x01(\tR\x1bdbClusterSnapshotIdentifier\x122\n" +
 	"\x15db_cluster_identifier\x18\x02 \x01(\tR\x13dbClusterIdentifier\x12L\n" +

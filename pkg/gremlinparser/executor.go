@@ -294,11 +294,3 @@ func argStrings(args []Argument) []string {
 	}
 	return result
 }
-
-// resolveEnum returns the enum value string if the argument is an enum, otherwise the raw string.
-func resolveEnum(arg Argument) string {
-	if arg.Kind == ArgEnum && arg.Enum != nil {
-		return arg.Enum.Value
-	}
-	return arg.Str
-}

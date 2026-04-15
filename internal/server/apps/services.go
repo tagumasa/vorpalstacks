@@ -302,6 +302,8 @@ func (a *App) initS3(st *serviceState) {
 	s3Store := a.server.S3Store()
 	blobStore := a.server.BlobStore()
 	st.s3Service = svcs3.NewS3Service(s3Store, blobStore, st.accountID)
+	st.s3Service.SetStorageManager(a.server.StorageManager())
+	st.s3Service.RestoreSSE3Keys()
 	s3Handler := svcs3.NewS3Handler(st.s3Service, st.region, a.server.StorageManager())
 	a.server.RegisterS3Handler(s3Handler)
 	st.s3Service.SetEventBus(a.server.EventBus())

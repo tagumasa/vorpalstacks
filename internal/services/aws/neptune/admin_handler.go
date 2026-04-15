@@ -594,7 +594,7 @@ func clusterToPb(c *storeneptune.DBCluster, accountId string) *pb.DBCluster {
 		Deletionprotection:               c.DeletionProtection,
 		Enabledcloudwatchlogsexports:     c.EnableCloudwatchLogsExports,
 		Iamdatabaseauthenticationenabled: c.EnableIAMDatabaseAuthentication,
-		Dbclusterarn:                     c.ARN(accountId, c.Region),
+		Dbclusterarn:                     c.DBClusterArn,
 		Replicationsourceidentifier:      c.ReplicationSourceIdentifier,
 		Globalclusteridentifier:          c.GlobalClusterIdentifier,
 		Storagetype:                      c.StorageType,
@@ -641,7 +641,7 @@ func instanceToPb(i *storeneptune.DBInstance, accountId string) *pb.DBInstance {
 		Publiclyaccessible:               i.PubliclyAccessible,
 		Autominorversionupgrade:          i.AutoMinorVersionUpgrade,
 		Copytagstosnapshot:               i.CopyTagsToSnapshot,
-		Dbinstancearn:                    i.ARN(accountId, i.Region),
+		Dbinstancearn:                    i.DBInstanceArn,
 	}
 	if i.InstanceCreateTime != nil {
 		p.Instancecreatetime = i.InstanceCreateTime.Format("2006-01-02T15:04:05.000Z")

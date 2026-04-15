@@ -277,8 +277,6 @@ func (ac *AccessController) extractAccountFromPrincipal(principal string) string
 	return ""
 }
 
-
-
 func buildResource(accountID, region, bucket, key string) string {
 	if key != "" {
 		return "arn:aws:s3:::" + bucket + "/" + key

@@ -213,3 +213,13 @@ func (m *EncryptionManager) ParseCustomerKey(encodedKey, encodedMD5 string) ([]b
 func (m *EncryptionManager) DeleteBucketKey(bucket string) {
 	m.sseS3Encryptor.DeleteBucketKey(bucket)
 }
+
+// LoadSSE3BucketKey restores a persisted SSE-S3 bucket key.
+func (m *EncryptionManager) LoadSSE3BucketKey(bucket string, keyData []byte) error {
+	return m.sseS3Encryptor.LoadBucketKey(bucket, keyData)
+}
+
+// ForEachSSE3BucketKey iterates over all cached SSE-S3 bucket keys.
+func (m *EncryptionManager) ForEachSSE3BucketKey(fn func(bucketName string, keyData []byte)) {
+	m.sseS3Encryptor.ForEachBucketKey(fn)
+}

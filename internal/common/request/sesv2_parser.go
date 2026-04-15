@@ -113,6 +113,8 @@ func extractSESv2Operation(r *http.Request) string {
 						switch method {
 						case http.MethodGet:
 							return "GetEmailIdentityPolicies"
+						case http.MethodPost:
+							return "CreateEmailIdentityPolicy"
 						case http.MethodPut:
 							return "UpdateEmailIdentityPolicy"
 						case http.MethodDelete:

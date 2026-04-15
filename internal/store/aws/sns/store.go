@@ -659,8 +659,6 @@ func (s *SNSStore) buildPlatformApplicationArn(platform, name string) string {
 	return s.arnBuilder.SNS().PlatformApplication(platform, name)
 }
 
-
-
 // CreatePlatformApplication creates a new SNS platform application.
 func (s *SNSStore) CreatePlatformApplication(app *PlatformApplication) (*PlatformApplication, error) {
 	if app.Name == "" {

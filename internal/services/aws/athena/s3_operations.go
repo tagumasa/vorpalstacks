@@ -74,8 +74,6 @@ func (s *Service) resultSetToCSV(resultSet *athenastore.ResultSet) []byte {
 	return buf.Bytes()
 }
 
-
-
 func (s *Service) readDataFromS3(ctx context.Context, location string, format string) ([]map[string]interface{}, error) {
 	if !s.hasS3Support() {
 		return nil, fmt.Errorf("S3 integration not available")

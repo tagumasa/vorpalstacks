@@ -31,8 +31,6 @@ func clampInt(val, min, max int) int {
 	return val
 }
 
-
-
 // HandleRequest processes HTTP requests for object-level operations such as
 // get, put, delete, copy, multipart uploads, tagging, ACL, and legal hold.
 func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.RequestContext, r *http.Request, bucket, key string) (interface{}, http.Header, int, error) {

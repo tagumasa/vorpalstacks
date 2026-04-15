@@ -59,10 +59,10 @@ func (d *awsChunkedDecoder) Read(p []byte) (int, error) {
 		sizeStr = line
 	}
 
-	size, parseErr := strconv.ParseInt(sizeStr, 16, 64)
-	if parseErr != nil {
+	size, err := strconv.ParseInt(sizeStr, 16, 64)
+	if err != nil {
 		d.eof = true
-		return 0, fmt.Errorf("%w: failed to parse chunk size %q: %v", errAwsChunkedInvalidFormat, sizeStr, parseErr)
+		return 0, fmt.Errorf("%w: failed to parse chunk size %q: %v", errAwsChunkedInvalidFormat, sizeStr, err)
 	}
 
 	if size == 0 {
@@ -72,18 +72,18 @@ func (d *awsChunkedDecoder) Read(p []byte) (int, error) {
 	}
 
 	d.remaining = int(size)
-	n, readErr := d.reader.Read(p)
+	n, err := d.reader.Read(p)
 	if n > d.remaining {
 		n = d.remaining
 	}
 	d.remaining -= n
 	if d.remaining > 0 {
-		return n, readErr
+		return n, err
 	}
 	if _, discardErr := d.reader.ReadString('\n'); discardErr != nil {
 		d.eof = true
 	}
-	return n, readErr
+	return n, err
 }
 
 func newAwsChunkedDecoder(r io.Reader) io.Reader {

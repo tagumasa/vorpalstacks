@@ -1836,10 +1836,6 @@ func executeMultiMatch(ctx context.Context, reader graphengine.GraphReader, q *C
 func execMultiHopMatch(ctx context.Context, reader graphengine.GraphReader, q *CypherQuery) (*CypherResult, error) {
 	pat := q.Match.Pattern
 	firstPat := pat.Nodes[0]
-	aVar := firstPat.Variable
-	if aVar == "" {
-		aVar = "_a"
-	}
 
 	candidates, err := findCandidates(reader, firstPat)
 	if err != nil {

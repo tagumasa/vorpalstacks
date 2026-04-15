@@ -1066,7 +1066,7 @@ func execMergeV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 
 	if searchLabel != "" && len(props) > 0 {
 		var existingIDs []graphengine.NodeID
-		ec.Reader.ForEachNode(func(n *graphengine.Node) error {
+		_ = ec.Reader.ForEachNode(func(n *graphengine.Node) error {
 			if !matchLabels(n.Labels, []string{searchLabel}) {
 				return nil
 			}

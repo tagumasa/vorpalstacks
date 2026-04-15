@@ -137,8 +137,6 @@ func (e *eventStreamEncoder) writeProgressEvent(progress *Progress) error {
 	return e.encodeEvent("progress", []byte(progressXML), headers)
 }
 
-
-
 func (e *eventStreamEncoder) writeEndEvent() error {
 	headers := []eventStreamHeader{
 		{eventMessageTypeHeader, eventMessageTypeEvent},

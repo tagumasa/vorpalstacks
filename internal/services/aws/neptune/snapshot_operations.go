@@ -9,6 +9,7 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	appconfig "vorpalstacks/internal/config"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
 
@@ -54,7 +55,7 @@ func (s *NeptuneService) CreateDBClusterSnapshot(ctx context.Context, reqCtx *re
 		return nil, translateStoreError(err)
 	}
 
-	recordEvent(store, "db-snapshot", snapshotID, snapshot.ARN(reqCtx.GetAccountID(), reqCtx.GetRegion()),
+	recordEvent(store, "db-snapshot", snapshotID, snapshot.DBSnapshotArn,
 		fmt.Sprintf("DB cluster snapshot %s created", snapshotID), []string{"creation"})
 
 	return map[string]interface{}{
@@ -84,7 +85,7 @@ func (s *NeptuneService) DeleteDBClusterSnapshot(ctx context.Context, reqCtx *re
 		return nil, translateStoreError(err)
 	}
 
-	recordEvent(store, "db-snapshot", snapshotID, snapshot.ARN(reqCtx.GetAccountID(), reqCtx.GetRegion()),
+	recordEvent(store, "db-snapshot", snapshotID, snapshot.DBSnapshotArn,
 		fmt.Sprintf("DB cluster snapshot %s deleted", snapshotID), []string{"deletion"})
 
 	return map[string]interface{}{
@@ -171,7 +172,7 @@ func (s *NeptuneService) CopyDBClusterSnapshot(ctx context.Context, reqCtx *requ
 		ct := *source.ClusterCreateTime
 		copy.ClusterCreateTime = &ct
 	}
-	copy.DBSnapshotArn = copy.ARN(reqCtx.GetAccountID(), reqCtx.GetRegion())
+	copy.DBSnapshotArn = fmt.Sprintf("arn:aws:rds:%s:%s:cluster-snapshot:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), targetID)
 
 	if err := store.CreateSnapshot(&copy); err != nil {
 		return nil, translateStoreError(err)
@@ -211,10 +212,12 @@ func (s *NeptuneService) DescribeDBClusterSnapshotAttributes(ctx context.Context
 	}
 
 	return map[string]interface{}{
-		"DBClusterSnapshotIdentifier": snapshotID,
-		"DBClusterSnapshotAttributes": protocol.XMLElements{ElementName: "DBClusterSnapshotAttribute", Items: []interface{}{
-			map[string]interface{}{"AttributeName": "restore", "AttributeValues": protocol.XMLElements{ElementName: "AttributeValue", Items: attrItems}},
-		}},
+		"DBClusterSnapshotAttributesResult": map[string]interface{}{
+			"DBClusterSnapshotIdentifier": snapshotID,
+			"DBClusterSnapshotAttributes": protocol.XMLElements{ElementName: "DBClusterSnapshotAttribute", Items: []interface{}{
+				map[string]interface{}{"AttributeName": "restore", "AttributeValues": protocol.XMLElements{ElementName: "AttributeValue", Items: attrItems}},
+			}},
+		},
 	}, nil
 }
 
@@ -273,10 +276,12 @@ func (s *NeptuneService) ModifyDBClusterSnapshotAttribute(ctx context.Context, r
 	}
 
 	return map[string]interface{}{
-		"DBClusterSnapshotIdentifier": snapshotID,
-		"DBClusterSnapshotAttributes": protocol.XMLElements{ElementName: "DBClusterSnapshotAttribute", Items: []interface{}{
-			map[string]interface{}{"AttributeName": attrName, "AttributeValues": protocol.XMLElements{ElementName: "AttributeValue", Items: attrItems}},
-		}},
+		"DBClusterSnapshotAttributesResult": map[string]interface{}{
+			"DBClusterSnapshotIdentifier": snapshotID,
+			"DBClusterSnapshotAttributes": protocol.XMLElements{ElementName: "DBClusterSnapshotAttribute", Items: []interface{}{
+				map[string]interface{}{"AttributeName": attrName, "AttributeValues": protocol.XMLElements{ElementName: "AttributeValue", Items: attrItems}},
+			}},
+		},
 	}, nil
 }
 
@@ -307,13 +312,21 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 	}
 
 	now := time.Now()
+	port := request.GetIntParam(params, "Port")
+	if port == 0 {
+		port, _ = appconfig.GetResourcePort("ports.neptune", clusterID)
+	}
+	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
+	if backupRetention == 0 {
+		backupRetention = 1
+	}
 	cluster := &neptunestore.DBCluster{
 		DBClusterIdentifier:         clusterID,
 		Engine:                      engine,
 		EngineVersion:               snapshot.EngineVersion,
 		Status:                      "available",
-		Port:                        request.GetIntParam(params, "Port"),
-		BackupRetentionPeriod:       request.GetIntParam(params, "BackupRetentionPeriod"),
+		Port:                        port,
+		BackupRetentionPeriod:       backupRetention,
 		DBClusterParameterGroupName: request.GetStringParam(params, "DBClusterParameterGroupName"),
 		DBSubnetGroupName:           request.GetStringParam(params, "DBSubnetGroupName"),
 		StorageEncrypted:            request.GetBoolParam(params, "StorageEncrypted"),
@@ -323,6 +336,7 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 		LatestRestorableTime:        &now,
 		AccountID:                   reqCtx.GetAccountID(),
 		Region:                      reqCtx.GetRegion(),
+		DBClusterArn:                fmt.Sprintf("arn:aws:rds:%s:%s:cluster:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), clusterID),
 	}
 
 	if err := store.CreateCluster(cluster); err != nil {
@@ -358,13 +372,21 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 	}
 
 	now := time.Now()
+	port := request.GetIntParam(params, "Port")
+	if port == 0 {
+		port, _ = appconfig.GetResourcePort("ports.neptune", clusterID)
+	}
+	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
+	if backupRetention == 0 {
+		backupRetention = 1
+	}
 	cluster := &neptunestore.DBCluster{
 		DBClusterIdentifier:         clusterID,
 		Engine:                      source.Engine,
 		EngineVersion:               source.EngineVersion,
 		Status:                      "available",
-		Port:                        request.GetIntParam(params, "Port"),
-		BackupRetentionPeriod:       request.GetIntParam(params, "BackupRetentionPeriod"),
+		Port:                        port,
+		BackupRetentionPeriod:       backupRetention,
 		DBClusterParameterGroupName: request.GetStringParam(params, "DBClusterParameterGroupName"),
 		DBSubnetGroupName:           request.GetStringParam(params, "DBSubnetGroupName"),
 		StorageEncrypted:            source.StorageEncrypted,
@@ -374,6 +396,7 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 		LatestRestorableTime:        &now,
 		AccountID:                   reqCtx.GetAccountID(),
 		Region:                      reqCtx.GetRegion(),
+		DBClusterArn:                fmt.Sprintf("arn:aws:rds:%s:%s:cluster:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), clusterID),
 	}
 
 	if err := store.CreateCluster(cluster); err != nil {

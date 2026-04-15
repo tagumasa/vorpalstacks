@@ -219,6 +219,7 @@ func (s *NeptuneService) ModifyDBClusterEndpoint(ctx context.Context, reqCtx *re
 		"Endpoint":                    ep.Endpoint,
 		"EndpointType":                ep.EndpointType,
 		"Status":                      "modifying",
+		"DBClusterEndpointArn":        ep.DBClusterEndpointArn,
 	}, nil
 }
 
@@ -235,6 +236,12 @@ func (s *NeptuneService) DeleteDBClusterEndpoint(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
+	ep, err := store.GetClusterEndpoint(epID)
+	if err != nil {
+		return nil, err
+	}
+	epArn := ep.DBClusterEndpointArn
+
 	if err := store.DeleteClusterEndpoint(epID); err != nil {
 		return nil, err
 	}
@@ -242,6 +249,7 @@ func (s *NeptuneService) DeleteDBClusterEndpoint(ctx context.Context, reqCtx *re
 	return map[string]interface{}{
 		"DBClusterEndpointIdentifier": epID,
 		"Status":                      "deleting",
+		"DBClusterEndpointArn":        epArn,
 	}, nil
 }
 

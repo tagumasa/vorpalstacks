@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	"vorpalstacks/internal/utils/aws/arn"
 )
@@ -201,16 +201,16 @@ func (s *EventsService) replayEventToBus(ctx context.Context, region string, arc
 	eventMap := archivedEvent.Event
 
 	event := &eventsstore.Event{
-		ID:           getStringFromMap(eventMap, "id"),
-		Version:      getStringFromMap(eventMap, "version"),
-		DetailType:   getStringFromMap(eventMap, "detail-type"),
-		Source:       getStringFromMap(eventMap, "source"),
-		Account:      getStringFromMap(eventMap, "account"),
-		Region:       getStringFromMap(eventMap, "region"),
+		ID:           request.GetStringParam(eventMap, "id"),
+		Version:      request.GetStringParam(eventMap, "version"),
+		DetailType:   request.GetStringParam(eventMap, "detail-type"),
+		Source:       request.GetStringParam(eventMap, "source"),
+		Account:      request.GetStringParam(eventMap, "account"),
+		Region:       request.GetStringParam(eventMap, "region"),
 		EventBusName: destEventBusName,
 	}
 
-	if timeStr := getStringFromMap(eventMap, "time"); timeStr != "" {
+	if timeStr := request.GetStringParam(eventMap, "time"); timeStr != "" {
 		if t, err := time.Parse(time.RFC3339, timeStr); err == nil {
 			event.Time = t
 		}
@@ -229,15 +229,6 @@ func (s *EventsService) replayEventToBus(ctx context.Context, region string, arc
 	}
 
 	return s.deliverEventWithStore(ctx, region, event, destEventBusName, store)
-}
-
-func getStringFromMap(m map[string]interface{}, key string) string {
-	if v, ok := m[key]; ok {
-		if s, ok := v.(string); ok {
-			return s
-		}
-	}
-	return ""
 }
 
 // DescribeReplay returns information about a replay.

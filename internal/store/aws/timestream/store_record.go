@@ -139,8 +139,6 @@ func (s *RecordStore) cleanupChunkLocks() {
 	}
 }
 
-
-
 func (s *RecordStore) readChunk(chunkPath string) ([]chunk.TimestreamEntry, error) {
 	if v, ok := s.chunkPaths.Load(chunkPath); ok {
 		return s.readChunkFile(v.(string))

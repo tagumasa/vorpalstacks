@@ -1622,11 +1622,7 @@ func (p *parser) parseMergeQuery() (*CypherMerge, error) {
 	if len(node.Labels) == 0 {
 		return nil, fmt.Errorf("cypher parser: MERGE node must have at least one label at position %d", p.cur().Pos)
 	}
-	m.Pattern = MergePattern{
-		Variable: node.Variable,
-		Labels:   node.Labels,
-		Props:    node.Props,
-	}
+	m.Pattern = MergePattern(node)
 
 	for p.is(tokOn) {
 		p.advance()
@@ -1734,7 +1730,9 @@ func (p *parser) parseDDLCreate() (*ParsedCypher, error) {
 			if err != nil {
 				return nil, fmt.Errorf("cypher parser: expected property name")
 			}
-			p.expect(tokRParen)
+			if _, expectErr := p.expect(tokRParen); expectErr != nil {
+				return nil, fmt.Errorf("cypher parser: expected ')' after property name")
+			}
 		}
 		if !p.is(tokEOF) {
 			return nil, fmt.Errorf("cypher parser: unexpected token after CREATE INDEX")
@@ -1752,12 +1750,16 @@ func (p *parser) parseDDLCreate() (*ParsedCypher, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cypher parser: expected label name after CREATE CONSTRAINT")
 		}
-		p.expect(tokLParen)
+		if _, expectErr := p.expect(tokLParen); expectErr != nil {
+			return nil, fmt.Errorf("cypher parser: expected '(' after constraint label")
+		}
 		propTok, err := p.expectIdentOrKeyword()
 		if err != nil {
 			return nil, fmt.Errorf("cypher parser: expected property name")
 		}
-		p.expect(tokRParen)
+		if _, expectErr := p.expect(tokRParen); expectErr != nil {
+			return nil, fmt.Errorf("cypher parser: expected ')' after constraint property")
+		}
 		if !p.is(tokEOF) {
 			return nil, fmt.Errorf("cypher parser: unexpected token after CREATE CONSTRAINT")
 		}

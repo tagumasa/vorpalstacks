@@ -49,13 +49,14 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 		InstanceCreateTime:              &now,
 		AccountID:                       reqCtx.GetAccountID(),
 		Region:                          reqCtx.GetRegion(),
+		DBInstanceArn:                   fmt.Sprintf("arn:aws:rds:%s:%s:db:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), id),
 	}
 
 	if err := store.CreateInstance(instance); err != nil {
 		return nil, translateStoreError(err)
 	}
 
-	recordEvent(store, "db-instance", id, instance.ARN(reqCtx.GetAccountID(), reqCtx.GetRegion()),
+	recordEvent(store, "db-instance", id, instance.DBInstanceArn,
 		fmt.Sprintf("DB instance %s created", id), []string{"creation"})
 
 	return map[string]interface{}{
@@ -87,7 +88,7 @@ func (s *NeptuneService) DeleteDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, translateStoreError(err)
 	}
 
-	recordEvent(store, "db-instance", id, instance.ARN(reqCtx.GetAccountID(), reqCtx.GetRegion()),
+	recordEvent(store, "db-instance", id, instance.DBInstanceArn,
 		fmt.Sprintf("DB instance %s deleted", id), []string{"deletion"})
 
 	return map[string]interface{}{

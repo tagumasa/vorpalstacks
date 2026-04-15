@@ -40,11 +40,7 @@ type DBCluster struct {
 	ServerlessV2ScalingConfiguration *ServerlessV2ScalingConfiguration `json:"ServerlessV2ScalingConfiguration,omitempty"`
 	AccountID                        string                            `json:"AccountId,omitempty"`
 	Region                           string                            `json:"Region,omitempty"`
-}
-
-// ARN returns the Amazon Resource Name for this DB cluster.
-func (c *DBCluster) ARN(accountID, region string) string {
-	return fmt.Sprintf("arn:aws:rds:%s:%s:cluster:%s", region, accountID, c.DBClusterIdentifier)
+	DBClusterArn                     string                            `json:"DBClusterArn,omitempty"`
 }
 
 // ServerlessV2ScalingConfiguration defines the minimum and maximum capacity for
@@ -83,11 +79,7 @@ type DBInstance struct {
 	CopyTagsToSnapshot              bool       `json:"CopyTagsToSnapshot"`
 	AccountID                       string     `json:"AccountId,omitempty"`
 	Region                          string     `json:"Region,omitempty"`
-}
-
-// ARN returns the Amazon Resource Name for this DB instance.
-func (i *DBInstance) ARN(accountID, region string) string {
-	return fmt.Sprintf("arn:aws:rds:%s:%s:db:%s", region, accountID, i.DBInstanceIdentifier)
+	DBInstanceArn                   string     `json:"DBInstanceArn,omitempty"`
 }
 
 // DBClusterSnapshot represents a point-in-time backup of a Neptune DB cluster.
@@ -103,15 +95,10 @@ type DBClusterSnapshot struct {
 	ClusterCreateTime           *time.Time `json:"ClusterCreateTime,omitempty"`
 	StorageEncrypted            bool       `json:"StorageEncrypted"`
 	KmsKeyId                    string     `json:"KmsKeyId,omitempty"`
-	DBSnapshotArn               string     `json:"DBSnapshotArn,omitempty"`
+	DBSnapshotArn               string     `json:"DBClusterSnapshotArn,omitempty"`
 	RestoreAttributeValues      []string   `json:"RestoreAttributeValues,omitempty"`
 	AccountID                   string     `json:"AccountId,omitempty"`
 	Region                      string     `json:"Region,omitempty"`
-}
-
-// ARN returns the Amazon Resource Name for this cluster snapshot.
-func (s *DBClusterSnapshot) ARN(accountID, region string) string {
-	return fmt.Sprintf("arn:aws:rds:%s:%s:cluster-snapshot:%s", region, accountID, s.DBClusterSnapshotIdentifier)
 }
 
 // DBClusterParameterGroup defines a set of engine configuration parameters

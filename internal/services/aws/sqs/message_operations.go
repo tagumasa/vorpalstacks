@@ -95,7 +95,7 @@ func (s *SQSService) SendMessage(ctx context.Context, reqCtx *request.RequestCon
 				continue
 			}
 			attrValue := &sqsstore.MessageAttributeValue{
-				DataType: getStringFromMap(attrMap, "DataType"),
+				DataType: request.GetStringParam(attrMap, "DataType"),
 			}
 			if sv, ok := attrMap["StringValue"].(string); ok && sv != "" {
 				attrValue.StringValue = &sv
@@ -682,8 +682,8 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 				continue
 			}
 
-			id := getStringFromMap(entryMap, "Id")
-			receiptHandle := getStringFromMap(entryMap, "ReceiptHandle")
+			id := request.GetStringParam(entryMap, "Id")
+			receiptHandle := request.GetStringParam(entryMap, "ReceiptHandle")
 			if id == "" {
 				continue
 			}
@@ -813,11 +813,4 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 		"Successful": successEntries,
 		"Failed":     failedEntries,
 	}, nil
-}
-
-func getStringFromMap(m map[string]interface{}, key string) string {
-	if val, ok := m[key].(string); ok {
-		return val
-	}
-	return ""
 }

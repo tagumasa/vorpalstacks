@@ -202,8 +202,6 @@ func buildItemsResponse(items []*dbstore.Item) []map[string]interface{} {
 	return result
 }
 
-
-
 func buildLastEvaluatedKeyWithIndex(item *dbstore.Item, table *dbstore.Table, indexName string) map[string]interface{} {
 	if item == nil || item.Key == nil {
 		return nil
