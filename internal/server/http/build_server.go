@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"sync"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/server/dispatcher"
 	"vorpalstacks/internal/server/http/chain"
 	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/server/listener"
@@ -134,7 +135,10 @@ func (s *Server) Dispatcher() *dispatcher.Dispatcher {
 // Returns:
 //   - storage.BasicStorage: The global storage
 func (s *Server) Storage() storage.BasicStorage {
-	globalStore, _ := s.storageManager.GetGlobalStorage()
+	globalStore, err := s.storageManager.GetGlobalStorage()
+	if err != nil {
+		logs.Warn("Failed to get global storage", logs.String("error", err.Error()))
+	}
 	return globalStore
 }
 

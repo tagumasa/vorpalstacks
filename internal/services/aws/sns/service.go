@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"math/big"
@@ -130,6 +131,13 @@ func (s *SNSService) handleBusDelivery(ctx context.Context, evt *eventbus.SNSDel
 		PublishedTimestamp: evt.EventTimestamp(),
 		ReceivedTimestamp:  evt.EventTimestamp(),
 		MessageAttributes:  make(map[string]*snsstore.MessageAttribute),
+	}
+	// Deserialise message attributes from raw JSON transport format.
+	for k, raw := range evt.MessageAttributes {
+		attr := &snsstore.MessageAttribute{}
+		if json.Unmarshal(raw, attr) == nil {
+			msg.MessageAttributes[k] = attr
+		}
 	}
 
 	s.deliverToSubscriptions(msg, subsCopy, evt.Region)

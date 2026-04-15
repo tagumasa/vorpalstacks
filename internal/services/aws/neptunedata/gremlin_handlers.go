@@ -36,8 +36,14 @@ func (s *NeptuneDataService) ExecuteGremlinQuery(ctx context.Context, reqCtx *re
 
 	s.trackQuery(store, qid, params.Gremlin, "gremlin")
 
-	reader := reqCtx.GraphReader().(graphengine.GraphReader)
-	writer := reqCtx.GraphWriter().(graphengine.GraphWriter)
+	reader, ok := reqCtx.GraphReader().(graphengine.GraphReader)
+	if !ok {
+		return nil, internalFailure("graph reader not available")
+	}
+	writer, ok := reqCtx.GraphWriter().(graphengine.GraphWriter)
+	if !ok {
+		return nil, internalFailure("graph writer not available")
+	}
 	parsed, err := gremlinparser.Parse(params.Gremlin)
 	if err != nil {
 		s.resolveQuery(store, qid, nil, err)

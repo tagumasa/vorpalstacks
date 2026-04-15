@@ -116,9 +116,13 @@ func (d *DB) ListKeys(prefix []byte) ([][]byte, error) {
 
 	var keys [][]byte
 
+	upperBound := make([]byte, len(prefix)+1)
+	copy(upperBound, prefix)
+	upperBound[len(prefix)] = 0xFF
+
 	iter, err := d.db.NewIter(&pebble.IterOptions{
 		LowerBound: prefix,
-		UpperBound: append(prefix, 0xFF),
+		UpperBound: upperBound,
 	})
 	if err != nil {
 		return nil, err

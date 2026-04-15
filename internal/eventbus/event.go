@@ -90,15 +90,16 @@ type ServiceInvokeRequest struct {
 func (e *ServiceInvokeRequest) EventType() string { return "service:invoke" }
 
 // SNSDeliveryEvent is published when an SNS message needs to be delivered
-// to topic subscribers. The handler looks up subscriptions, applies
-// protocol-specific envelope formatting, and dispatches via invoker.
+// to topic subscribers. MessageAttributes are serialised as raw JSON to
+// avoid coupling the eventbus package to store-layer types.
 type SNSDeliveryEvent struct {
 	EventBase
-	TopicARN       string `json:"topic_arn"`
-	MessageID      string `json:"message_id"`
-	Message        string `json:"message"`
-	Subject        string `json:"subject,omitempty"`
-	MessageGroupId string `json:"message_group_id,omitempty"`
+	TopicARN          string                     `json:"topic_arn"`
+	MessageID         string                     `json:"message_id"`
+	Message           string                     `json:"message"`
+	Subject           string                     `json:"subject,omitempty"`
+	MessageGroupId    string                     `json:"message_group_id,omitempty"`
+	MessageAttributes map[string]json.RawMessage `json:"message_attributes,omitempty"`
 }
 
 // EventType returns "sns:deliver" for this event type.

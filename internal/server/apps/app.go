@@ -243,9 +243,14 @@ func New(cfg *Config) (*App, error) {
 		server: srv,
 	}
 
-	a.initAlwaysOnServices()
+	if err := a.initAlwaysOnServices(); err != nil {
+		return nil, err
+	}
 	a.wireCrossServiceDeps()
-	a.initOptionalServices()
+	if err := a.initOptionalServices(); err != nil {
+		a.Shutdown(context.Background())
+		return nil, err
+	}
 	a.initGraphDB()
 	a.initGRPCWebAdmin()
 	a.initEventBusPolicies()

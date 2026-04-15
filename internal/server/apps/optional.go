@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"vorpalstacks/internal/common/audit"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/grpcweb"
 	"vorpalstacks/internal/server/listener"
@@ -49,57 +49,62 @@ import (
 	"vorpalstacks/pkg/graphengine"
 )
 
-func (a *App) initOptionalServices() {
+// initOptionalServices initialises optional services. Returns an error on the
+// first failure; the caller should invoke Shutdown to clean up services that
+// were already initialised.
+func (a *App) initOptionalServices() error {
 	st := a.state
 
-	if a.cfg.CloudFront {
-		a.initCloudFront(st)
+	initers := []struct {
+		enabled bool
+		name    string
+		fn      func(*serviceState) error
+	}{
+		{a.cfg.CloudFront, "CloudFront", a.initCloudFront},
+		{a.cfg.WAFv2, "WAFv2", a.initWAFv2},
+		{a.cfg.Route53, "Route53", a.initRoute53},
+		{a.cfg.Neptune, "Neptune", a.initNeptune},
+		{a.cfg.NeptuneData, "NeptuneData", a.initNeptuneData},
+		{a.cfg.NeptuneGraph, "NeptuneGraph", a.initNeptuneGraph},
+		{a.cfg.AppSync, "AppSync", a.initAppSync},
+		{a.cfg.TimestreamWrite, "TimestreamWrite", a.initTimestreamWrite},
+		{a.cfg.TimestreamQuery, "TimestreamQuery", a.initTimestreamQuery},
+		{a.cfg.Athena, "Athena", a.initAthena},
 	}
-	if a.cfg.WAFv2 {
-		a.initWAFv2(st)
-	}
-	if a.cfg.Route53 {
-		a.initRoute53(st)
-	}
-	if a.cfg.Neptune {
-		a.initNeptune(st)
-	}
-	if a.cfg.NeptuneData {
-		a.initNeptuneData(st)
-	}
-	if a.cfg.NeptuneGraph {
-		a.initNeptuneGraph(st)
-	}
-	if a.cfg.AppSync {
-		a.initAppSync(st)
-	}
-	if a.cfg.TimestreamWrite {
-		a.initTimestreamWrite(st)
-	}
-	if a.cfg.TimestreamQuery {
-		a.initTimestreamQuery(st)
-	}
-	if a.cfg.Athena {
-		a.initAthena(st)
+
+	for _, init := range initers {
+		if init.enabled {
+			if err := init.fn(st); err != nil {
+				return fmt.Errorf("failed to initialise %s: %w", init.name, err)
+			}
+		}
 	}
 
 	a.initCloudTrailRecorderFactory(st)
+	return nil
 }
 
 // --- Athena (optional) ---
 
-func (a *App) initAthena(st *serviceState) {
+// initAthena creates the Athena service. Skipped with a warning if S3 is not
+// enabled, because Athena requires S3 for query result storage.
+func (a *App) initAthena(st *serviceState) error {
+	if st.s3ObjectStore == nil {
+		logs.Warn("Athena skipped: S3 not enabled")
+		return nil
+	}
 	athenaService := svcathena.NewServiceWithS3(st.accountID, st.s3ObjectStore)
 	athenaService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("athena", func(ctx context.Context) error {
 		athenaService.Shutdown()
 		return nil
 	})
+	return nil
 }
 
 // --- AppSync (optional) ---
 
-func (a *App) initAppSync(st *serviceState) {
+func (a *App) initAppSync(st *serviceState) error {
 	st.appSyncService = svcappsync.NewAppSyncService(st.accountID)
 	st.appSyncService.SetEventBus(a.server.EventBus())
 	st.appSyncService.RegisterHandlers(a.server.Dispatcher())
@@ -107,20 +112,22 @@ func (a *App) initAppSync(st *serviceState) {
 		st.appSyncService.ShutdownEventServer()
 		return nil
 	})
+	return nil
 }
 
 // --- CloudFront (optional) ---
 
-func (a *App) initCloudFront(st *serviceState) {
+func (a *App) initCloudFront(st *serviceState) error {
 	st.cloudFrontService = svccloudfront.NewCloudFrontService(st.accountID)
 	st.cloudFrontService.SetRegionAndStorage(st.region, a.server.StorageManager())
 	st.cloudFrontService.RegisterHandlers(a.server.Dispatcher())
 	st.cloudFrontService.InitDistributionServer()
+	return nil
 }
 
 // --- Neptune (optional) ---
 
-func (a *App) initNeptune(st *serviceState) {
+func (a *App) initNeptune(st *serviceState) error {
 	st.neptuneService = svcneptune.NewNeptuneService(st.accountID, st.region)
 	st.neptuneService.SetStorageManager(a.server.StorageManager())
 	st.neptuneService.RegisterHandlers(a.server.Dispatcher())
@@ -128,11 +135,12 @@ func (a *App) initNeptune(st *serviceState) {
 		st.neptuneService.Close()
 		return nil
 	})
+	return nil
 }
 
 // --- NeptuneData (optional) ---
 
-func (a *App) initNeptuneData(st *serviceState) {
+func (a *App) initNeptuneData(st *serviceState) error {
 	st.neptuneDataService = svcneptunedata.NewNeptuneDataService()
 	st.neptuneDataService.SetStorageManager(a.server.StorageManager())
 	st.neptuneDataService.RegisterHandlers(a.server.Dispatcher())
@@ -140,33 +148,35 @@ func (a *App) initNeptuneData(st *serviceState) {
 		st.neptuneDataService.Close()
 		return nil
 	})
+	return nil
 }
 
 // --- Route53 (optional) ---
 
-func (a *App) initRoute53(st *serviceState) {
+func (a *App) initRoute53(st *serviceState) error {
 	route53Service, err := svcroute53.NewRoute53ServiceWithDNS(a.server.Storage(), st.accountID, a.cfg.Route53DNSBindAddr, a.cfg.Route53DNSEnabled)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create Route53 service: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to create Route53 service: %w", err)
 	}
 	st.route53Service = route53Service
 	st.route53Service.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("route53", func(ctx context.Context) error {
 		return st.route53Service.Shutdown()
 	})
+	return nil
 }
 
 // --- TimestreamQuery (optional) ---
 
-func (a *App) initTimestreamQuery(st *serviceState) {
+func (a *App) initTimestreamQuery(st *serviceState) error {
 	timestreamQueryService := svctimestreamquery.NewService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
 	timestreamQueryService.RegisterHandlers(a.server.Dispatcher())
+	return nil
 }
 
 // --- TimestreamWrite (optional) ---
 
-func (a *App) initTimestreamWrite(st *serviceState) {
+func (a *App) initTimestreamWrite(st *serviceState) error {
 	timestreamWriteService := svctimestreamwrite.NewService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
 	timestreamWriteService.RegisterHandlers(a.server.Dispatcher())
 	st.timestreamWriteService = timestreamWriteService
@@ -174,13 +184,15 @@ func (a *App) initTimestreamWrite(st *serviceState) {
 		st.timestreamWriteService.Close()
 		return nil
 	})
+	return nil
 }
 
 // --- WAFv2 (optional) ---
 
-func (a *App) initWAFv2(st *serviceState) {
+func (a *App) initWAFv2(st *serviceState) error {
 	wafv2Service := svcwafv2.NewWAFv2Service(st.accountID, st.region)
 	wafv2Service.RegisterHandlers(a.server.Dispatcher())
+	return nil
 }
 
 // --- GraphDB ---
@@ -189,7 +201,10 @@ func (a *App) initGraphDB() {
 	graphDir := a.cfg.DataPath + "/graph"
 	graphDB, err := graphengine.Open(graphDir, graphengine.DefaultOptions())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to open graph DB at %s: %v\n", graphDir, err)
+		logs.Warn("Failed to open graph DB",
+			logs.String("path", graphDir),
+			logs.String("error", err.Error()),
+		)
 		return
 	}
 	a.server.Dispatcher().SetGraphDB(graphDB)
@@ -202,7 +217,7 @@ func (a *App) initGraphDB() {
 
 // --- NeptuneGraph (optional) ---
 
-func (a *App) initNeptuneGraph(st *serviceState) {
+func (a *App) initNeptuneGraph(st *serviceState) error {
 	graphCache := graphengine.NewSharedCache(graphengine.DefaultCacheSize)
 	st.neptuneGraphService = svcneptuneGraph.NewNeptuneGraphService(st.accountID, st.region, a.cfg.DataPath)
 	st.neptuneGraphService.SetStorageManager(a.server.StorageManager())
@@ -214,6 +229,7 @@ func (a *App) initNeptuneGraph(st *serviceState) {
 		graphCache.Release()
 		return nil
 	})
+	return nil
 }
 
 // --- gRPC-Web Admin ---

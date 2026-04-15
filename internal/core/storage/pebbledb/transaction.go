@@ -78,7 +78,8 @@ func (t *Txn) Get(key []byte) ([]byte, error) {
 	return nil, ErrTxnClosed
 }
 
-// getAndDecrypt retrieves a value from a pebble.Getter and decrypts it.
+// getAndDecrypt retrieves a value from a pebble.Getter, decrypts it, and
+// unwraps the TTL envelope if TTL is enabled.
 func (t *Txn) getAndDecrypt(getter interface {
 	Get([]byte) ([]byte, io.Closer, error)
 }, key []byte) ([]byte, error) {
@@ -92,11 +93,14 @@ func (t *Txn) getAndDecrypt(getter interface {
 	defer closer.Close()
 	result := make([]byte, len(val))
 	copy(result, val)
-	decrypted, err := t.db.encryptor.Decrypt(result)
+	data, expired, err := decryptAndUnwrapTTL(t.db.encryptor, result, t.db.opts.TTL.Enabled)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt value: %w", err)
 	}
-	return decrypted, nil
+	if expired {
+		return nil, ErrKeyNotFound
+	}
+	return data, nil
 }
 
 // Set stores a key-value pair in the transaction.
@@ -137,7 +141,9 @@ func (t *Txn) DeleteRange(start, end []byte) error {
 
 // NewIter returns an iterator over the transaction.
 // For read-only transactions, it iterates over the snapshot.
-// For read-write transactions, it iterates over the batch.
+// For read-write transactions, it iterates over the database state at the
+// time the transaction began. Uncommitted batch writes are not visible
+// through the iterator; this matches Pebble's transactional semantics.
 func (t *Txn) NewIter(opts *pebble.IterOptions) (*pebble.Iterator, error) {
 	if t.closed {
 		return nil, ErrTxnClosed

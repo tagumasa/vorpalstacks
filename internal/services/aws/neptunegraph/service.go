@@ -1245,7 +1245,9 @@ func (s *NeptuneGraphService) GetGraphSummary(ctx context.Context, reqCtx *reque
 	s.enginesMu.Unlock()
 	defer entry.wg.Done()
 
+	entry.mu.RLock()
 	stats := entry.db.Stats()
+	entry.mu.RUnlock()
 	now := time.Now().UTC()
 
 	summary := &ngstore.GraphDataSummary{

@@ -61,8 +61,14 @@ func (s *NeptuneDataService) ExecuteOpenCypherQuery(ctx context.Context, reqCtx 
 		return nil, malformedQuery(err.Error())
 	}
 
-	reader := reqCtx.GraphReader().(graphengine.GraphReader)
-	writer := reqCtx.GraphWriter().(graphengine.GraphWriter)
+	reader, ok := reqCtx.GraphReader().(graphengine.GraphReader)
+	if !ok {
+		return nil, internalFailure("graph reader not available")
+	}
+	writer, ok := reqCtx.GraphWriter().(graphengine.GraphWriter)
+	if !ok {
+		return nil, internalFailure("graph writer not available")
+	}
 
 	var result *cypherparser.CypherResult
 	switch {
@@ -115,7 +121,11 @@ func (s *NeptuneDataService) ExecuteOpenCypherExplainQuery(ctx context.Context, 
 		return nil, badRequest("EXPLAIN is only supported for read queries")
 	}
 
-	plan := cypherparser.BuildExplainPlan(parsed.Read, reqCtx.GraphReader().(graphengine.GraphReader))
+	reader, ok := reqCtx.GraphReader().(graphengine.GraphReader)
+	if !ok {
+		return nil, internalFailure("graph reader not available")
+	}
+	plan := cypherparser.BuildExplainPlan(parsed.Read, reader)
 	return map[string]interface{}{
 		"explain": plan,
 	}, nil

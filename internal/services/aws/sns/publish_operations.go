@@ -141,12 +141,25 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 		region := reqCtx.GetRegion()
 
 		if s.bus != nil {
+			// Serialise message attributes to raw JSON for transport through
+			// the event bus (which must not depend on store-layer types).
+			var msgAttrs map[string]json.RawMessage
+			if len(msg.MessageAttributes) > 0 {
+				msgAttrs = make(map[string]json.RawMessage, len(msg.MessageAttributes))
+				for k, v := range msg.MessageAttributes {
+					raw, err := json.Marshal(v)
+					if err == nil {
+						msgAttrs[k] = raw
+					}
+				}
+			}
 			snsEvt := &eventbus.SNSDeliveryEvent{
-				TopicARN:       topicArn,
-				MessageID:      messageId,
-				Message:        message,
-				Subject:        subject,
-				MessageGroupId: messageGroupId,
+				TopicARN:          topicArn,
+				MessageID:         messageId,
+				Message:           message,
+				Subject:           subject,
+				MessageGroupId:    messageGroupId,
+				MessageAttributes: msgAttrs,
 			}
 			snsEvt.Region = region
 			if err := s.bus.Publish(context.Background(), snsEvt); err != nil {
