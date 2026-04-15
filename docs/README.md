@@ -41,7 +41,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 
 ```bash
 go build -o vorpalstacks .
-SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./tmp/data ./vorpalstacks
+SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ```
 
 ## AWS CLI Usage

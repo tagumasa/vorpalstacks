@@ -117,7 +117,7 @@ All services can be enabled/disabled individually via environment variables. Set
 
 ```bash
 SIGNATURE_VERIFICATION_ENABLED=false \
-DATA_PATH=./tmp/data \
+DATA_PATH=./data \
 ./vorpalstacks
 ```
 
@@ -138,7 +138,7 @@ CLOUDTRAIL_ENABLED=false \
 LOGS_ENABLED=false \
 # ... disable all other services ...
 SIGNATURE_VERIFICATION_ENABLED=false \
-DATA_PATH=./tmp/data \
+DATA_PATH=./data \
 ./vorpalstacks
 ```
 
