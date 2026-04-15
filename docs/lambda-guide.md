@@ -127,6 +127,7 @@ Vorpalstacks uses dedicated ports for invoke-style endpoints:
 | S3 Website | 8081 | `VS_PORT_S3_WEBSITE` | Static website hosting |
 | CloudFront | 8084 | `VS_PORT_CLOUDFRONT` | Distribution edge |
 | Cognito Hosted UI | 8083 | `VS_PORT_COGNITO_HOSTED` | Authentication UI |
+| AppSync Events | 8086 | `VS_PORT_APPSYNC_EVENTS` | WebSocket + HTTP publish |
 
 If a secondary port is set to the same value as the main server port, the listener is skipped and the main router handles requests instead.
 

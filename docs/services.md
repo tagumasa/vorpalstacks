@@ -1,8 +1,8 @@
 # Implemented Services
 
-**Last Updated**: 2026-03-31
-**Total**: 30 service APIs (26 AWS services)
-**SDK Tests**: 1034/1034 (100%)
+**Last Updated**: 2026-04-15
+**Total**: 32 AWS services
+**SDK Tests**: 2054 (1944 SDK + 75 integration + 35 WebSocket)
 
 ---
 
@@ -16,16 +16,16 @@
 
 ## AWS Services
 
+### Required Services (22, default: enabled)
+
 | Service | Coverage | Notes |
 |---------|----------|-------|
 | ACM | Full | |
 | API Gateway | Broad | No client certificates, documentation, or SDK generation |
-| Athena | Broad | No capacity reservations or notebook sessions |
-| CloudFront | Selective | No actual edge traffic distribution |
 | CloudTrail | Broad | No event data stores or SQL queries |
-| CloudWatch Logs | Selective | No Logs Insights queries or export |
 | CloudWatch Metrics | Broad | No metric streams or anomaly detection |
-| Cognito IDP | Selective | No external IdP, no hosted UI |
+| CloudWatch Logs | Selective | No Logs Insights queries or export |
+| Cognito IDP | Selective | No external IdP |
 | Cognito Identity | Selective | Basic identity pool support |
 | DynamoDB | Full | |
 | EventBridge | Broad | No global endpoints or partner event sources |
@@ -33,19 +33,29 @@
 | Kinesis | Full | |
 | KMS | Full | |
 | Lambda | Broad | No durable functions or code signing |
-| Route53 | Selective | DNS record management only |
-| Neptune | Full | Property graph + RDF, openCypher/Gremlin, bulk loader, management API |
 | S3 | Broad | No analytics, inventory, or S3 Express |
 | Scheduler | Full | |
 | Secrets Manager | Full | |
 | SESv2 | Broad | No deliverability testing or multi-tenancy |
+| SFN (Step Functions) | Full | |
 | SNS | Broad | SMS sending not supported |
 | SQS | Full | |
 | SSM | Selective | Parameter Store only |
 | STS | Full | |
-| Step Functions | Full | |
-| Timestream | Full | |
-| WAF | Selective | No managed rule groups or logging configuration |
+
+### Optional Services (10, default: enabled)
+
+| Service | Coverage | Notes |
+|---------|----------|-------|
+| Athena | Broad | No capacity reservations or notebook sessions |
+| AppSync | Broad | GraphQL API with VTL resolvers, real-time subscriptions |
+| CloudFront | Selective | No actual edge traffic distribution |
+| Neptune | Full | Property graph + RDF, openCypher/Gremlin, bulk loader, management API |
+| NeptuneData | Broad | Gremlin/SPARQL query endpoint |
+| NeptuneGraph | Broad | Graph engine with graph/SPARQL/neptune-analytics APIs |
+| Route53 | Selective | DNS record management only |
+| Timestream Query | Broad | SQL query engine |
+| Timestream Write | Broad | Time-series data ingestion |
 | WAFv2 | Broad | |
 
 ### Service Scope
@@ -63,8 +73,9 @@
 | Scheduler | Lambda, SQS, SNS | Scheduled invocation |
 | SNS | Lambda, SQS | Pub/Sub fanout |
 | Step Functions | Lambda, SQS, SNS | Workflow orchestration |
-| API Gateway | Lambda | HTTP-to-Lambda proxy |
+| API Gateway | Lambda, SQS, SNS | HTTP-to-service proxy |
 | Lambda | CloudWatch Logs | Automatic log streaming |
+| Lambda | SQS | Event source mapping (polling) |
 | KMS | SSM, DynamoDB, S3 | Encryption key provider |
 
 ### Cross-Cutting Features

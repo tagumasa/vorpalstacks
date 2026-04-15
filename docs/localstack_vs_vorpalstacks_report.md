@@ -46,7 +46,7 @@ LocalStack (30 service APIs)
 
 | Aspect | Details |
 |--------|---------|
-| **Language** | Go 1.25.8 |
+| **Language** | Go 1.25+ |
 | **Deployment** | Single binary (~138 MB) |
 | **Core Dependencies** | Pebble v2.1.4 (CockroachDB KV store), Moby client v0.3.0 (Docker) |
 | **Service Implementation** | Custom implementation (all services) |
@@ -54,7 +54,7 @@ LocalStack (30 service APIs)
 
 **Architecture:**
 ```
-Vorpalstacks (30 service APIs, 26 AWS services)
+Vorpalstacks (32 AWS services)
 ├── All Custom Implementation (1,081 operations)
 │   ├── IAM (156), API Gateway (80), S3 (71),
 │   ├── SESv2 incl. SESv1 (58), Cognito User Pools (51),
@@ -67,10 +67,12 @@ Vorpalstacks (30 service APIs, 26 AWS services)
 │   ├── Timestream Write (19), SNS (27), SQS (20),
 │   ├── ACM (16), Cognito Identity (13),
 │   ├── Timestream Query (13), SSM (12), Scheduler (12),
+│   ├── Neptune, NeptuneData, NeptuneGraph, AppSync,
 │   └── STS (7)
 ├── Pebble Storage (persistent KV store)
 │   ├── Region-specific (us-east-1, us-west-2, etc.)
-│   └── Global (IAM, Route53, CloudFront, STS)
+│   ├── Global (IAM, Route53, CloudFront, STS)
+│   └── Graph (NeptuneGraph)
 ├── gRPC Internal Protocol
 ├── Docker Runtime (Lambda execution)
 └── Service Integration
@@ -83,6 +85,7 @@ Vorpalstacks (30 service APIs, 26 AWS services)
 - WAFv2 only (WAF v1 removed)
 - Cognito Identity + Cognito User Pools are separate service APIs
 - Timestream Write + Timestream Query are separate service APIs
+- Neptune + NeptuneData + NeptuneGraph are separate service APIs
 
 ---
 
@@ -234,8 +237,9 @@ case "lambda":
 | **Timestream** | Not implemented | Pebble (persistent) |
 | **Cognito** | Not implemented | Pebble (persistent) |
 | **CloudFront** | Not implemented | Pebble (persistent) |
-| **WAF** | Not implemented | Pebble (persistent) |
+| **WAFv2** | Not implemented | Pebble (persistent) |
 | **Neptune** | Not implemented | Pebble (persistent) |
+| **AppSync** | Not implemented | Pebble (persistent) |
 | **EC2** | Custom + Moto fallback | Not implemented |
 | **OpenSearch / ES** | Custom + native binary | Not implemented |
 | **Firehose** | Custom (pure) | Not implemented |
@@ -253,8 +257,8 @@ case "lambda":
 | CloudFormation | Cognito (Identity + User Pools) |
 | Redshift | CloudFront |
 | Config | WAFv2 |
-| S3 Control | Neptune (Data + Management) |
-| Route53 Resolver | |
+| S3 Control | Neptune (Data + Graph + Management) |
+| Route53 Resolver | AppSync |
 | SWF | |
 | Resource Groups | |
 | Transcribe | |
@@ -299,14 +303,14 @@ func (s *BaseStore) Get(key string, dest interface{}) error {
 }
 ```
 
-**Service Integration Pattern** (main.go):
+**Service Integration Pattern** (`internal/server/apps/services.go`):
 ```go
-lambdaService = lambda.NewLambdaServiceWithLogs(store, dockerClient, logsStore, ...)
-snsService = sns.NewSNSServiceWithClients(..., lambdaService)
-eventsService = events.NewEventsServiceWithClients(..., lambdaService)
+lambdaService = lambda.NewLambdaService(dockerClient, accountID, region, dataPath)
+snsService = sns.NewSNSService(storageManager, accountID, region)
+eventsService = events.NewEventsService(storageManager, accountID)
 ```
 
-All 30 service APIs use custom Go implementation with Pebble storage. Services communicate internally via gRPC, with dependency injection for cross-service integration (e.g., EventBridge invoking Lambda).
+All 32 service APIs use custom Go implementation with Pebble storage. Services communicate internally via gRPC, with dependency injection for cross-service integration (e.g., EventBridge invoking Lambda).
 
 ---
 
@@ -324,12 +328,12 @@ All 30 service APIs use custom Go implementation with Pebble storage. Services c
 
 | Aspect | Detail |
 |--------|--------|
-| **Service APIs** | 30 (covering 26 AWS services) |
+| **Service APIs** | 32 AWS services |
 | **Implemented Operations** | 1,081 |
 | **Storage** | Pebble v2.1.4 (persistent KV store, all services) |
 | **Lambda Execution** | Docker containers via Moby client |
 | **Service Integration** | EventBridge → Lambda, SNS → Lambda, SQS → Lambda, etc. |
-| **SDK Test Coverage** | 594 tests across 25 services (100% pass rate) |
+| **SDK Test Coverage** | 2,054 tests (1944 SDK + 75 integration + 35 WebSocket) |
 | **Implementation** | Custom Go code for all services |
 
 ---
@@ -346,7 +350,7 @@ All 30 service APIs use custom Go implementation with Pebble storage. Services c
 
 ### Appendix: Vorpalstacks Benchmark Results (Reference)
 
-**Platform**: AMD Ryzen 7 5700U (16 cores), Linux, Go 1.25.8, Pebble v2.1.4
+**Platform**: AMD Ryzen 7 5700U (16 cores), Linux, Go 1.25+, Pebble v2.1.4
 **Date**: 2026-03-27, 5 iterations per benchmark
 
 > **Note**: These figures are environment-dependent and provided for reference only. Direct comparison with other systems is not meaningful without identical hardware, configuration, and workload.
@@ -394,19 +398,19 @@ All 30 service APIs use custom Go implementation with Pebble storage. Services c
 | **Primary Use Case** | Development and testing | Edge and on-premises deployment |
 | **Deployment Model** | Docker container (required) | Single binary |
 | **Language** | Python | Go |
-| **Service APIs** | 30 | 30 |
+| **Service APIs** | 30 | 32 |
 | **Implementation** | Hybrid (Custom + Moto + External) | All custom |
 | **Data Persistence** | Mixed (in-memory + file) | Pebble (persistent, all services) |
 | **Lambda Execution** | Docker (real) | Docker (real) |
-| **SDK Test Coverage** | Not publicly documented | 594/594 (100%) |
+| **SDK Test Coverage** | Not publicly documented | 2,054 tests (100% pass rate) |
 | **License** | Apache 2.0 | FSL-1.1-MIT / Apache 2.0 (pkg/)¹ |
 | **External Dependencies** | Docker + Java + kinesis-mock | Docker (Lambda only) |
 
-Neither project is a superset of the other. LocalStack covers infrastructure services (EC2, CloudFormation, OpenSearch, Firehose) not present in Vorpalstacks, while Vorpalstacks covers observability and analytics services (CloudTrail, Athena, Timestream, CloudFront, WAF, Cognito) not present in LocalStack.
+Neither project is a superset of the other. LocalStack covers infrastructure services (EC2, CloudFormation, OpenSearch, Firehose) not present in Vorpalstacks, while Vorpalstacks covers observability and analytics services (CloudTrail, Athena, Timestream, CloudFront, WAFv2, Cognito, Neptune, AppSync) not present in LocalStack.
 
 ---
 
 ¹ The root licence is planned to be changed to MIT once the project reaches production stability after the initial bug-fix phase.
 
-*Analysis Date: 2026-03-27*
+*Analysis Date: 2026-03-27 (updated 2026-04-15)*
 *Information Source: Source code analysis of LocalStack v4.14.0 and Vorpalstacks (main branch)*

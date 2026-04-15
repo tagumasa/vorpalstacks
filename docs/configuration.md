@@ -15,7 +15,6 @@ This document describes configuration options for Vorpalstacks.
 | `AWS_ACCESS_KEY_ID` | - | Default access key ID |
 | `AWS_SECRET_ACCESS_KEY` | - | Default secret access key |
 | `SIGNATURE_VERIFICATION_ENABLED` | `true` | Enable AWS Signature V4 verification |
-| `METADATA_PATH` | (empty) | Path to Smithy API metadata (loaded into Pebble DB at startup) |
 | `USE_CHAIN_GATEWAY` | `false` | Enable chain gateway mode |
 
 ### TLS Settings
@@ -55,30 +54,49 @@ This document describes configuration options for Vorpalstacks.
 
 ### Service Enablement
 
-The following services can be enabled/disabled individually. Set to `false` to disable:
+All services can be enabled/disabled individually via environment variables. Set to `false` to disable a service.
+
+#### Required Services (default: `true`)
 
 | Variable | Default | Service |
 |----------|---------|---------|
-| `SNS_ENABLED` | `true` | Simple Notification Service |
-| `SQS_ENABLED` | `true` | Simple Queue Service |
-| `LAMBDA_ENABLED` | `true` | Lambda |
-| `EVENTS_ENABLED` | `true` | EventBridge |
-| `STEPFUNCTIONS_ENABLED` | `true` | Step Functions |
+| `ACM_ENABLED` | `true` | AWS Certificate Manager |
 | `APIGATEWAY_ENABLED` | `true` | API Gateway |
-| `SSM_ENABLED` | `true` | Systems Manager |
+| `CLOUDTRAIL_ENABLED` | `true` | CloudTrail |
+| `CLOUDWATCH_ENABLED` | `true` | CloudWatch |
 | `LOGS_ENABLED` | `true` | CloudWatch Logs |
 | `COGNITO_ENABLED` | `true` | Cognito IDP |
 | `COGNITO_IDENTITY_ENABLED` | `true` | Cognito Identity |
-| `SCHEDULER_ENABLED` | `true` | EventBridge Scheduler |
+| `DYNAMODB_ENABLED` | `true` | DynamoDB |
+| `EVENTS_ENABLED` | `true` | EventBridge |
 | `KINESIS_ENABLED` | `true` | Kinesis |
-| `CLOUDTRAIL_ENABLED` | `true` | CloudTrail |
+| `KMS_ENABLED` | `true` | Key Management Service |
+| `LAMBDA_ENABLED` | `true` | Lambda |
+| `S3_ENABLED` | `true` | Simple Storage Service |
+| `SCHEDULER_ENABLED` | `true` | EventBridge Scheduler |
+| `SECRETSMANAGER_ENABLED` | `true` | Secrets Manager |
 | `SESV2_ENABLED` | `true` | Simple Email Service v2 |
-| `TIMESTREAM_WRITE_ENABLED` | `true` | Timestream Write |
-| `TIMESTREAM_QUERY_ENABLED` | `true` | Timestream Query |
-| `ATHENA_ENABLED` | `true` | Athena |
-| `ROUTE53_DNS_ENABLED` | `false` | Route53 DNS Server |
+| `STEPFUNCTIONS_ENABLED` | `true` | Step Functions |
+| `SNS_ENABLED` | `true` | Simple Notification Service |
+| `SQS_ENABLED` | `true` | Simple Queue Service |
+| `SSM_ENABLED` | `true` | Systems Manager Parameter Store |
+| `STS_ENABLED` | `true` | Security Token Service |
+| `IAM_ENABLED` | `true` | Identity and Access Management |
 
-The following services are **always enabled** (no toggle): IAM, STS, KMS, S3, Route53, CloudFront, ACM, CloudWatch, DynamoDB, SecretsManager, WAF, WAFv2
+#### Optional Services (default: `true`)
+
+| Variable | Default | Service |
+|----------|---------|---------|
+| `ATHENA_ENABLED` | `true` | Athena |
+| `APPSYNC_ENABLED` | `true` | AppSync |
+| `CLOUDFRONT_ENABLED` | `true` | CloudFront |
+| `NEPTUNE_ENABLED` | `true` | Neptune |
+| `NEPTUNE_DATA_ENABLED` | `true` | Neptune Data (Gremlin/SPARQL) |
+| `NEPTUNE_GRAPH_ENABLED` | `true` | Neptune Graph |
+| `ROUTE53_ENABLED` | `true` | Route53 |
+| `TIMESTREAM_QUERY_ENABLED` | `true` | Timestream Query |
+| `TIMESTREAM_WRITE_ENABLED` | `true` | Timestream Write |
+| `WAFV2_ENABLED` | `true` | WAFv2 |
 
 ### Route53 DNS Server
 
@@ -103,11 +121,22 @@ DATA_PATH=./tmp/data \
 ./vorpalstacks
 ```
 
-### Minimal (SQS + SNS)
+### Minimal (SQS + SNS only)
 
 ```bash
 SNS_ENABLED=true \
 SQS_ENABLED=true \
+IAM_ENABLED=false \
+STS_ENABLED=false \
+KMS_ENABLED=false \
+S3_ENABLED=false \
+DYNAMODB_ENABLED=false \
+SECRETSMANAGER_ENABLED=false \
+ACM_ENABLED=false \
+CLOUDWATCH_ENABLED=false \
+CLOUDTRAIL_ENABLED=false \
+LOGS_ENABLED=false \
+# ... disable all other services ...
 SIGNATURE_VERIFICATION_ENABLED=false \
 DATA_PATH=./tmp/data \
 ./vorpalstacks
@@ -196,24 +225,45 @@ AWS_REGION=us-east-1
 AWS_ACCOUNT_ID=123456789012
 SIGNATURE_VERIFICATION_ENABLED=false
 
-# Services
-SNS_ENABLED=true
-SQS_ENABLED=true
-LAMBDA_ENABLED=true
-EVENTS_ENABLED=true
-STEPFUNCTIONS_ENABLED=true
-APIGATEWAY_ENABLED=true
-LOGS_ENABLED=true
-COGNITO_ENABLED=true
-COGNITO_IDENTITY_ENABLED=true
-SCHEDULER_ENABLED=true
-KINESIS_ENABLED=true
-CLOUDTRAIL_ENABLED=true
-SESV2_ENABLED=true
-TIMESTREAM_WRITE_ENABLED=true
-TIMESTREAM_QUERY_ENABLED=true
-ATHENA_ENABLED=true
-SSM_ENABLED=true
+# Required Services (all default to true, listed for reference)
+# ACM_ENABLED=true
+# APIGATEWAY_ENABLED=true
+# CLOUDTRAIL_ENABLED=true
+# CLOUDWATCH_ENABLED=true
+# LOGS_ENABLED=true
+# COGNITO_ENABLED=true
+# COGNITO_IDENTITY_ENABLED=true
+# DYNAMODB_ENABLED=true
+# EVENTS_ENABLED=true
+# KINESIS_ENABLED=true
+# KMS_ENABLED=true
+# LAMBDA_ENABLED=true
+# S3_ENABLED=true
+# SCHEDULER_ENABLED=true
+# SECRETSMANAGER_ENABLED=true
+# SESV2_ENABLED=true
+# STEPFUNCTIONS_ENABLED=true
+# SNS_ENABLED=true
+# SQS_ENABLED=true
+# SSM_ENABLED=true
+# STS_ENABLED=true
+# IAM_ENABLED=true
+
+# Optional Services (all default to true, listed for reference)
+# ATHENA_ENABLED=true
+# APPSYNC_ENABLED=true
+# CLOUDFRONT_ENABLED=true
+# NEPTUNE_ENABLED=true
+# NEPTUNE_DATA_ENABLED=true
+# NEPTUNE_GRAPH_ENABLED=true
+# ROUTE53_ENABLED=true
+# TIMESTREAM_QUERY_ENABLED=true
+# TIMESTREAM_WRITE_ENABLED=true
+# WAFV2_ENABLED=true
+
+# Route53 DNS (default: false)
+# ROUTE53_DNS_ENABLED=false
+# ROUTE53_DNS_BIND_ADDR=127.0.0.1
 
 # gRPC-Web Admin
 GRPC_WEB_PORT=9090

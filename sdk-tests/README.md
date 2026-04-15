@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 32 AWS services with 2003 test cases (1962 SDK + 24 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests for 32 AWS services with 2026 test cases (1985 SDK + 24 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -16,39 +16,39 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | Service | Tests | Pass Rate | Status |
 |---------|--------|-----------|--------|
 | ACM | 37 | 100% | ✅ Perfect |
-| API Gateway | 91 | 100% | ✅ Perfect |
-| AppSync | 131 | 100% | ✅ Perfect |
-| Athena | 64 | 100% | ✅ Perfect |
-| CloudFront | 52 | 100% | ✅ Perfect |
+| API Gateway | 92 | 100% | ✅ Perfect |
+| AppSync | 123 | 100% | ✅ Perfect |
+| Athena | 65 | 100% | ✅ Perfect |
+| CloudFront | 53 | 100% | ✅ Perfect |
 | CloudTrail | 58 | 100% | ✅ Perfect |
-| CloudWatch | 21 | 100% | ✅ Perfect |
+| CloudWatch | 24 | 100% | ✅ Perfect |
 | CloudWatch Logs | 42 | 100% | ✅ Perfect |
-| Cognito | 66 | 100% | ✅ Perfect |
-| Cognito Identity | 40 | 100% | ✅ Perfect |
-| DynamoDB | 96 | 100% | ✅ Perfect |
-| EventBridge | 55 | 100% | ✅ Perfect |
-| IAM | 114 | 100% | ✅ Perfect |
-| Kinesis | 50 | 100% | ✅ Perfect |
-| KMS | 91 | 100% | ✅ Perfect |
-| Lambda | 68 | 100% | ✅ Perfect |
+| Cognito | 67 | 100% | ✅ Perfect |
+| Cognito Identity | 41 | 100% | ✅ Perfect |
+| DynamoDB | 98 | 100% | ✅ Perfect |
+| EventBridge | 56 | 100% | ✅ Perfect |
+| IAM | 117 | 100% | ✅ Perfect |
+| Kinesis | 51 | 100% | ✅ Perfect |
+| KMS | 92 | 100% | ✅ Perfect |
+| Lambda | 69 | 100% | ✅ Perfect |
 | Neptune | 74 | 100% | ✅ Perfect |
 | NeptuneData | 168 | 100% | ✅ Perfect |
 | NeptuneGraph | 46 | 100% | ✅ Perfect |
-| Route53 | 38 | 100% | ✅ Perfect |
-| S3 | 100 | 100% | ✅ Perfect |
-| Scheduler | 29 | 100% | ✅ Perfect |
-| SecretsManager | 42 | 100% | ✅ Perfect |
-| SESv2 | 65 | 100% | ✅ Perfect |
-| SNS | 62 | 100% | ✅ Perfect |
-| SQS | 40 | 100% | ✅ Perfect |
-| SSM | 29 | 100% | ✅ Perfect |
+| Route53 | 39 | 100% | ✅ Perfect |
+| S3 | 101 | 100% | ✅ Perfect |
+| Scheduler | 30 | 100% | ✅ Perfect |
+| SecretsManager | 43 | 100% | ✅ Perfect |
+| SESv2 | 78 | 100% | ✅ Perfect |
+| SNS | 63 | 100% | ✅ Perfect |
+| SQS | 49 | 100% | ✅ Perfect |
+| SSM | 30 | 100% | ✅ Perfect |
 | STS | 39 | 100% | ✅ Perfect |
-| StepFunctions | 42 | 100% | ✅ Perfect |
-| Timestream | 44 | 100% | ✅ Perfect |
+| StepFunctions | 43 | 100% | ✅ Perfect |
+| Timestream | 45 | 100% | ✅ Perfect |
 | WAF | Removed | No longer a supported service |
-| WAFv2 | 51 | 100% | ✅ Perfect |
+| WAFv2 | 52 | 100% | ✅ Perfect |
 
-**Overall: 2003/2003 tests passing (100%) — 1962 SDK + 24 integration + 17 WebSocket**
+**Overall: 2026/2026 tests passing (100%) — 1985 SDK + 24 integration + 17 WebSocket**
 
 ## Prerequisites
 

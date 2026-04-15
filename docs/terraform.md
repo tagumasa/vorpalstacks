@@ -56,8 +56,9 @@ provider "aws" {
     cloudtrail   = "http://localhost:8080"
     sesv2        = "http://localhost:8080"
     apigateway   = "http://localhost:8080"
-    waf          = "http://localhost:8080"
     wafv2        = "http://localhost:8080"
+    neptune      = "http://localhost:8080"
+    appsync      = "http://localhost:8080"
     cognitoidp   = "http://localhost:8080"
     cognitoidentity = "http://localhost:8080"
     timestreamwrite = "http://localhost:8080"
@@ -135,7 +136,6 @@ The following services have been verified to work with the full Terraform cycle 
 | Cognito | `aws_cognito_user_pool`, `aws_cognito_user_pool_client` |
 | STS | Data source only |
 | Timestream Write | `aws_timestreamwrite_database`, `aws_timestreamwrite_table` |
-| WAF | `aws_waf_ipset`, `aws_waf_rule`, `aws_waf_web_acl`, `aws_waf_regex_pattern_set` |
 | WAFv2 | `aws_wafv2_ip_set`, `aws_wafv2_regex_pattern_set`, `aws_wafv2_rule_group`, `aws_wafv2_web_acl` |
 
 ## Tips

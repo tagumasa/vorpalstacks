@@ -10,9 +10,9 @@ This document describes the architecture of Vorpalstacks.
 │                 :8080 (configurable)                            │
 └────────────────────────────┬────────────────────────────────────┘
                              │
-              ┌──────────────┴──────────────┐
-              │                             │
-              ▼                             ▼
+               ┌──────────────┴──────────────┐
+               │                             │
+               ▼                             ▼
 ┌───────────────────────────┐   ┌───────────────────────────┐
 │    AWS Service Handler    │   │   API Gateway Runtime     │
 │   (Standard endpoints)    │   │   (REST API execution)    │
@@ -45,7 +45,7 @@ This document describes the architecture of Vorpalstacks.
 │              gRPC-Web Admin Server (Connect-RPC)                │
 │                 :9090 (configurable)                            │
 │                                                                 │
-│  Admin handlers for all 30 services (admin_handler.go)          │
+│  Admin handlers for all 32 services (admin_handler.go)          │
 │  Runtime config, service status, port mapping                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -90,7 +90,7 @@ Shared utilities:
 ### HTTP API Path
 
 1. **HTTP Request** arrives at Chi router (`:8080`)
-2. **Dispatcher** extracts service and operation via Action Registry
+2. **Classifier** (`internal/server/http/classifier/`) detects protocol and extracts service/operation
 3. **Signature Verification** (if enabled) validates AWS SigV4
 4. **IAM Authorization** (if enabled) evaluates policies
 5. **Service Handler** processes the request
@@ -133,11 +133,11 @@ Request → Extract Access Key → Gather Policies → Evaluate → Allow/Deny
 
 | Protocol | Content-Type | Services |
 |----------|-------------|----------|
-| AWS JSON 1.1 | `application/x-amz-json-1.1` | IAM, API Gateway, SESv2, Lambda, Cognito, KMS, Athena, WAF, EventBridge, CloudTrail, Step Functions, CloudWatch Logs, Route53, SecretsManager, ACM, CloudWatch, Scheduler, SSM, STS, Timestream, Kinesis |
+| AWS JSON 1.1 | `application/x-amz-json-1.1` | IAM, API Gateway, SESv2, Lambda, Cognito, KMS, Athena, WAFv2, EventBridge, CloudTrail, Step Functions, CloudWatch Logs, Route53, SecretsManager, ACM, CloudWatch, Scheduler, SSM, STS, Timestream, Kinesis |
 | AWS JSON 1.0 | `application/x-amz-json-1.0` | DynamoDB |
 | REST-XML | XML over HTTP | S3, CloudFront |
 | AWS Query | `application/x-www-form-urlencoded` | SQS |
-| Connect-RPC | `application/connect+proto` | All 30 services (admin API on :9090) |
+| Connect-RPC | `application/connect+proto` | All 32 services (admin API on :9090) |
 
 ## Service Integration Patterns
 
@@ -190,7 +190,8 @@ CloudTrail Audit ──logging──▶ All API operations
 DATA_PATH/
 ├── us-east-1/     → PebbleDB, Lambda code, CloudWatch Logs
 ├── us-west-2/     → PebbleDB, Lambda code, CloudWatch Logs
-└── global/        → PebbleDB (IAM, Route53, CloudFront, STS)
+├── global/        → PebbleDB (IAM, Route53, CloudFront, STS)
+└── graph/         → GraphDB (NeptuneGraph)
 ```
 
 ### StorageManager

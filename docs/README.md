@@ -14,7 +14,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 ## Key Features
 
 - **AWS API Compatible**: Works with existing AWS SDKs and CLI
-- **30 AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, Kinesis, KMS, Neptune, and more
+- **32 AWS Services**: S3, SQS, SNS, Lambda, DynamoDB, Kinesis, KMS, Neptune, NeptuneData, NeptuneGraph, AppSync, and more
 - **IAM Authorization**: Full policy-based access control
 - **gRPC-Web Admin API**: Connect-RPC admin interface for all services
 - **Lightweight**: Single binary, minimal dependencies
@@ -28,12 +28,14 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 | Document | Description |
 |----------|-------------|
 | [Architecture](architecture.md) | System architecture, request flow, storage |
-| [Services](services.md) | Implemented AWS services (30 APIs, 26 AWS services) |
+| [Services](services.md) | Implemented AWS services (32 services) |
 | [Configuration](configuration.md) | Environment variables, TLS, gRPC-Web, IAM Auth |
 | [Integration](integration.md) | Service-to-service communication patterns |
 | [Lambda Guide](lambda-guide.md) | Lambda runtime, Docker containers, endpoint injection |
 | [New Service Guide](new-service-guide.md) | Step-by-step guide for adding a new AWS service |
 | [Terraform](terraform.md) | Terraform provider usage guide |
+| [AWS DB Architecture](aws_db_architecture.md) | Storage patterns and key formats |
+| [LocalStack Comparison](localstack_vs_vorpalstacks_report.md) | Technical comparison with LocalStack |
 
 ## Quick Start
 
