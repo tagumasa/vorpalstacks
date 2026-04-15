@@ -84,13 +84,15 @@ go build -o vorpalstacks .
 ### Run (Development Mode)
 
 ```bash
-SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./tmp/data ./vorpalstacks
+SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ```
 
 ### Run with Docker (for Lambda)
 
+Docker must be installed and running. Lambda functions execute in Docker containers.
+
 ```bash
-SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./tmp/data ./vorpalstacks
+SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/run/docker.sock ./vorpalstacks
 ```
 
 ### Use with AWS CLI
@@ -114,9 +116,9 @@ make test
 ### SDK Tests (AWS Go SDK v2)
 
 ```bash
-SIGNATURE_VERIFICATION_ENABLED=false TEST_MODE=true DATA_PATH=./data-test ./vorpalstacks &
-
-cd sdk-tests && ./sdk-tests-test -service all -v
+cd sdk-tests
+go build -o sdk-tests-all .
+./sdk-tests-all -service all -endpoint http://127.0.0.1:8080 -v
 ```
 
 ### CLI Integration Tests
@@ -142,6 +144,7 @@ cd scripts/services && bash test_iam.sh
 | `GRPC_WEB_PORT` | `9090` | gRPC-Web admin server port |
 | `TLS_ENABLED` | `false` | Enable TLS |
 | `AUTHORIZATION_ENABLED` | `false` | Enable IAM policy evaluation |
+| `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker daemon socket for Lambda |
 
 See [Configuration](docs/configuration.md) for the complete list.
 

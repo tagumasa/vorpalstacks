@@ -83,13 +83,13 @@ go build -o vorpalstacks .
 ### 実行（開発モード）
 
 ```bash
-SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./tmp/data ./vorpalstacks
+SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ```
 
 ### Dockerで実行（Lambda用）
 
 ```bash
-SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./tmp/data ./vorpalstacks
+SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ```
 
 ### AWS CLIでの使用
@@ -113,9 +113,9 @@ make test
 ### SDKテスト（AWS Go SDK v2）
 
 ```bash
-SIGNATURE_VERIFICATION_ENABLED=false TEST_MODE=true DATA_PATH=./data-test ./vorpalstacks &
-
-cd sdk-tests && ./sdk-tests-test -service all -v
+cd sdk-tests
+go build -o sdk-tests-all .
+./sdk-tests-all -service all -endpoint http://127.0.0.1:8080 -v
 ```
 
 ### CLI統合テスト
