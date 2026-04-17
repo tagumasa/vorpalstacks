@@ -111,7 +111,7 @@ func (s *DistributionServer) HandleRequest(w http.ResponseWriter, r *http.Reques
 	resp, err := s.client.Do(originReq)
 	if err != nil {
 		logs.Error("CloudFront origin request failed", logs.String("url", targetURL), logs.Err(err))
-		http.Error(w, fmt.Sprintf(`{"message":"Origin request failed: %s"}`, err.Error()), http.StatusBadGateway)
+		http.Error(w, `{"message":"Origin request failed"}`, http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()

@@ -34,6 +34,9 @@ func (s *KinesisStore) CreateStream(streamName string, shardCount int32, streamM
 		return nil, err
 	}
 
+	arnBucket := s.storage.Bucket("kinesis-streams-arn-" + s.region)
+	_ = arnBucket.Put([]byte("arn#"+stream.StreamARN), []byte(stream.StreamName))
+
 	for i := 0; i < int(shardCount); i++ {
 		shardID := fmt.Sprintf("shardId-%012d", i)
 		startingHashKey := uint64(i) * (math.MaxUint64 / uint64(shardCount))
@@ -94,12 +97,23 @@ func (s *KinesisStore) updateStreamInTxn(txn storage.Transaction, stream *Stream
 func (s *KinesisStore) GetStreamByARN(streamARN string) (*Stream, error) {
 	normalizedARN := normalizeARN(streamARN, s.accountID)
 
+	arnBucket := s.storage.Bucket("kinesis-streams-arn-" + s.region)
+	arnKey := []byte("arn#" + normalizedARN)
+	if data, err := arnBucket.Get(arnKey); err == nil && data != nil {
+		streamName := string(data)
+		stream, err := s.GetStream(streamName)
+		if err == nil {
+			return stream, nil
+		}
+	}
+
 	streams, err := s.ListStreams()
 	if err != nil {
 		return nil, err
 	}
 	for _, stream := range streams {
 		if normalizeARN(stream.StreamARN, s.accountID) == normalizedARN {
+			_ = arnBucket.Put(arnKey, []byte(stream.StreamName))
 			return stream, nil
 		}
 	}
@@ -119,6 +133,11 @@ func (s *KinesisStore) DeleteStream(streamName string) error {
 
 	if !s.Exists(streamName) {
 		return ErrStreamNotFound
+	}
+
+	stream, err := s.GetStream(streamName)
+	if err != nil {
+		return err
 	}
 
 	shards, err := s.ListShards(streamName, nil, "", 0)
@@ -150,6 +169,9 @@ func (s *KinesisStore) DeleteStream(streamName string) error {
 	if err := s.TagStore.Delete(streamName); err != nil {
 		return fmt.Errorf("failed to delete tags: %w", err)
 	}
+
+	arnBucket := s.storage.Bucket("kinesis-streams-arn-" + s.region)
+	_ = arnBucket.Delete([]byte("arn#" + normalizeARN(stream.StreamARN, s.accountID)))
 
 	return s.BaseStore.Delete(streamName)
 }

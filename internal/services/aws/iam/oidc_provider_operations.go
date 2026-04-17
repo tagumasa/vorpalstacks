@@ -71,7 +71,7 @@ func (s *IAMService) GetOpenIDConnectProvider(ctx context.Context, reqCtx *reque
 		resp["LastModifiedDate"] = provider.LastModifiedDate.Format(timeutils.ISO8601SimpleFormat)
 	}
 	if provider.Tags != nil {
-		resp["Tags"] = tagsToResponse(provider.Tags)
+		resp["Tags"] = tags.ToResponse(provider.Tags)
 	}
 
 	return resp, nil
@@ -262,7 +262,7 @@ func (s *IAMService) UntagOpenIDConnectProvider(ctx context.Context, reqCtx *req
 		return nil, NewNoSuchEntityError("OpenID Connect provider", providerArn)
 	}
 
-	provider.Tags = removeTags(provider.Tags, parseTagKeys(req.Parameters))
+	provider.Tags = tags.RemoveByTagKeys(provider.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
 	if err := store.OpenIDConnectProviders().Put(provider); err != nil {
 		return nil, err
 	}
@@ -287,7 +287,7 @@ func (s *IAMService) ListOpenIDConnectProviderTags(ctx context.Context, reqCtx *
 	}
 
 	return map[string]interface{}{
-		"Tags":        tagsToResponse(provider.Tags),
+		"Tags":        tags.ToResponse(provider.Tags),
 		"IsTruncated": false,
 	}, nil
 }

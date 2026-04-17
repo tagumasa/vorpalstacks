@@ -36,8 +36,18 @@ var (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
-	CheckOrigin:     func(r *http.Request) bool { return true },
-	Subprotocols:    []string{wsSubprotocol},
+	CheckOrigin: func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true
+		}
+		host := r.Host
+		if host == "" {
+			host = r.URL.Host
+		}
+		return origin == "http://"+host || origin == "https://"+host
+	},
+	Subprotocols: []string{wsSubprotocol},
 }
 
 // wsConnection represents a single WebSocket connection to the Event API.

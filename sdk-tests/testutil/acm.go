@@ -124,7 +124,7 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			return err
 		}
 		if desc.Certificate.Options == nil {
-			return fmt.Errorf("Options is nil")
+			return fmt.Errorf("options is nil")
 		}
 		if desc.Certificate.Options.CertificateTransparencyLoggingPreference != types.CertificateTransparencyLoggingPreferenceDisabled {
 			return fmt.Errorf("expected DISABLED, got %s", desc.Certificate.Options.CertificateTransparencyLoggingPreference)
@@ -305,7 +305,7 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			return err
 		}
 		if aws.ToString(getResp.Certificate) == "" {
-			return fmt.Errorf("Certificate is empty")
+			return fmt.Errorf("certificate is empty")
 		}
 		if aws.ToString(getResp.CertificateChain) == "" {
 			return fmt.Errorf("CertificateChain is empty")
@@ -462,7 +462,7 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 				return nil
 			}
 		}
-		return fmt.Errorf("Env tag not found")
+		return fmt.Errorf("env tag not found")
 	}))
 
 	results = append(results, r.RunTest("acm", "AddTagsToCertificate_VerifyContent", func() error {
@@ -624,7 +624,7 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			return err
 		}
 		if desc.Certificate.Options == nil {
-			return fmt.Errorf("Options is nil after update")
+			return fmt.Errorf("options is nil after update")
 		}
 		if desc.Certificate.Options.CertificateTransparencyLoggingPreference != types.CertificateTransparencyLoggingPreferenceDisabled {
 			return fmt.Errorf("expected DISABLED, got %s", desc.Certificate.Options.CertificateTransparencyLoggingPreference)
@@ -877,7 +877,7 @@ BnRlc3RjYTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwK0j6f8C6hJ7u8P
 			return err
 		}
 		if aws.ToString(exportResp.Certificate) == "" {
-			return fmt.Errorf("Certificate is empty")
+			return fmt.Errorf("certificate is empty")
 		}
 		if exportResp.PrivateKey == nil || aws.ToString(exportResp.PrivateKey) == "" {
 			return fmt.Errorf("PrivateKey is empty")

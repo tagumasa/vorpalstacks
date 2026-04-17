@@ -308,7 +308,7 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 			if resp.Tags == nil {
 				return fmt.Errorf("tags is nil")
 			}
-			if resp.Tags.Items == nil || len(resp.Tags.Items) < 2 {
+			if len(resp.Tags.Items) < 2 {
 				return fmt.Errorf("expected at least 2 tags, got %d", len(resp.Tags.Items))
 			}
 			return nil

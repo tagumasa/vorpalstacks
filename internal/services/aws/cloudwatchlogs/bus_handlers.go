@@ -61,7 +61,7 @@ func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.Cloud
 
 		var activeShardID string
 		for _, shard := range shards {
-			if shard.SequenceNumberRange.EndingSequenceNumber == "" {
+			if shard.SequenceNumberRange != nil && shard.SequenceNumberRange.EndingSequenceNumber == "" {
 				activeShardID = shard.ShardID
 				break
 			}

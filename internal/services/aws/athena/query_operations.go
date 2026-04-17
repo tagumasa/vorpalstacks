@@ -18,7 +18,7 @@ const (
 )
 
 // StartQueryExecution starts a new query execution in Athena.
-func (s *Service) StartQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
 	if queryString == "" {
 		return nil, ErrInvalidRequestException
@@ -111,7 +111,7 @@ func (s *Service) StartQueryExecution(ctx context.Context, reqCtx *request.Reque
 }
 
 // GetQueryExecution retrieves the details of a query execution.
-func (s *Service) GetQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) GetQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryExecutionId := request.GetParamCaseInsensitive(req.Parameters, "QueryExecutionId")
 	if queryExecutionId == "" {
 		return nil, ErrInvalidRequestException
@@ -136,7 +136,7 @@ func (s *Service) GetQueryExecution(ctx context.Context, reqCtx *request.Request
 }
 
 // StopQueryExecution stops a running or queued query execution.
-func (s *Service) StopQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) StopQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryExecutionId := request.GetParamCaseInsensitive(req.Parameters, "QueryExecutionId")
 	if queryExecutionId == "" {
 		return nil, ErrInvalidRequestException
@@ -173,7 +173,7 @@ func (s *Service) StopQueryExecution(ctx context.Context, reqCtx *request.Reques
 }
 
 // ListQueryExecutions returns a list of query executions.
-func (s *Service) ListQueryExecutions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) ListQueryExecutions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
 
 	maxResults := 50
@@ -223,12 +223,12 @@ func (s *Service) ListQueryExecutions(ctx context.Context, reqCtx *request.Reque
 }
 
 // ListQueryExecutionsWithPagination returns a list of query executions with pagination support.
-func (s *Service) ListQueryExecutionsWithPagination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) ListQueryExecutionsWithPagination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return s.ListQueryExecutions(ctx, reqCtx, req)
 }
 
 // BatchGetQueryExecution retrieves details for multiple query executions in a single call.
-func (s *Service) BatchGetQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) BatchGetQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryExecutionIdsRaw := request.GetArrayParam(req.Parameters, "QueryExecutionIds")
 	if len(queryExecutionIdsRaw) == 0 {
 		return nil, ErrInvalidRequestException
@@ -271,7 +271,7 @@ func (s *Service) BatchGetQueryExecution(ctx context.Context, reqCtx *request.Re
 }
 
 // GetQueryResults retrieves the results of a completed query execution.
-func (s *Service) GetQueryResults(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryExecutionId := request.GetParamCaseInsensitive(req.Parameters, "QueryExecutionId")
 	if queryExecutionId == "" {
 		return nil, ErrInvalidRequestException
@@ -381,7 +381,7 @@ func (s *Service) GetQueryResults(ctx context.Context, reqCtx *request.RequestCo
 }
 
 // GetQueryRuntimeStatistics retrieves runtime statistics for a query execution.
-func (s *Service) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryExecutionId := request.GetParamCaseInsensitive(req.Parameters, "QueryExecutionId")
 	if queryExecutionId == "" {
 		return nil, ErrInvalidRequestException

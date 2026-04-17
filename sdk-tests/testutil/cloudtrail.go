@@ -680,7 +680,7 @@ func (r *TestRunner) RunCloudTrailTests() []TestResult {
 		}
 		_, err = base64.StdEncoding.DecodeString(base64.StdEncoding.EncodeToString(pk.Value))
 		if err != nil {
-			return fmt.Errorf("Value should be base64-decodable DER bytes")
+			return fmt.Errorf("value should be base64-decodable DER bytes")
 		}
 		if pk.ValidityStartTime == nil || pk.ValidityStartTime.IsZero() {
 			return fmt.Errorf("expected ValidityStartTime to be set")

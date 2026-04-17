@@ -378,14 +378,17 @@ func (a *Authorizer) cleanupExpiredEntries() {
 	}
 
 	if count > a.maxCacheSize {
-		a.evictOldestEntries(count - a.maxCacheSize)
+		a.evictOldestEntries(count-a.maxCacheSize, count)
 	}
 }
 
 func (a *Authorizer) enforceCacheSize() {
-	var count int
+	count := 0
 	a.policyCache.Range(func(_, _ interface{}) bool {
 		count++
+		if count > a.maxCacheSize*2 {
+			return false
+		}
 		return true
 	})
 
@@ -393,19 +396,22 @@ func (a *Authorizer) enforceCacheSize() {
 		return
 	}
 
-	a.evictOldestEntries(count - a.maxCacheSize)
+	a.evictOldestEntries(count-a.maxCacheSize, count)
 }
 
-func (a *Authorizer) evictOldestEntries(toEvict int) {
+func (a *Authorizer) evictOldestEntries(toEvict int, maxScan int) {
 	type entry struct {
 		key      string
 		cachedAt time.Time
 	}
 
-	var entries []entry
+	entries := make([]entry, 0, toEvict)
 	a.policyCache.Range(func(key, value interface{}) bool {
 		if cp, ok := value.(*cachedPolicies); ok {
 			entries = append(entries, entry{key: key.(string), cachedAt: cp.cachedAt})
+		}
+		if len(entries) >= maxScan {
+			return false
 		}
 		return true
 	})

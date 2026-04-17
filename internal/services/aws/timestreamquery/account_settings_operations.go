@@ -7,7 +7,7 @@ import (
 )
 
 // DescribeAccountSettings returns the account settings for Timestream Query.
-func (s *Service) DescribeAccountSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) DescribeAccountSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (s *Service) DescribeAccountSettings(ctx context.Context, reqCtx *request.R
 }
 
 // UpdateAccountSettings updates the account settings for Timestream Query.
-func (s *Service) UpdateAccountSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) UpdateAccountSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	var maxQueryTCU *int64
 	if val := request.GetIntParam(req.Parameters, "MaxQueryTCU"); val > 0 {
 		tcu := int64(val)

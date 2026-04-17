@@ -4,6 +4,7 @@ package iam
 import (
 	"context"
 	"errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -197,7 +198,7 @@ func (s *IAMService) DeleteGroup(ctx context.Context, reqCtx *request.RequestCon
 func (s *IAMService) ListGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	pathPrefix := request.GetStringParam(req.Parameters, "PathPrefix")
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -274,7 +275,7 @@ func (s *IAMService) groupToResponse(reqCtx *request.RequestContext, group *iams
 		}
 	}
 
-	if tags := tagsToResponse(group.Tags); tags != nil {
+	if tags := tags.ToResponse(group.Tags); tags != nil {
 		resp["Tags"] = tags
 	}
 
@@ -322,7 +323,7 @@ func (s *IAMService) UntagGroup(ctx context.Context, reqCtx *request.RequestCont
 		return nil, NewNoSuchGroupError(groupName)
 	}
 
-	group.Tags = removeTags(group.Tags, parseTagKeys(req.Parameters))
+	group.Tags = tags.RemoveByTagKeys(group.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
 
 	if err := store.Groups().Put(group); err != nil {
 		return nil, err
@@ -348,7 +349,7 @@ func (s *IAMService) ListGroupTags(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	return map[string]interface{}{
-		"Tags":        tagsToResponse(group.Tags),
+		"Tags":        tags.ToResponse(group.Tags),
 		"IsTruncated": false,
 	}, nil
 }

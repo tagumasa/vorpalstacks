@@ -116,15 +116,14 @@ func (m *PebbleLockManager) tryAcquire(key []byte, mode LockMode, ttl time.Durat
 		}
 
 		batch := m.db.NewBatch()
-		if err := batch.Set(fullKey, entryData); err != nil {
-			batch.Close()
-			return nil, err
-		}
-		if err := batch.Commit(pebble.Sync); err != nil {
-			batch.Close()
-			return nil, err
+		writeErr := batch.Set(fullKey, entryData)
+		if writeErr == nil {
+			writeErr = batch.Commit(pebble.Sync)
 		}
 		batch.Close()
+		if writeErr != nil {
+			return nil, writeErr
+		}
 
 		verifyEntry, err := m.getLockEntry(fullKey)
 		if err != nil {
@@ -204,15 +203,14 @@ func (m *PebbleLockManager) Unlock(handle *LockHandle) error {
 		}
 
 		batch := m.db.NewBatch()
-		if err := batch.Delete(fullKey); err != nil {
-			batch.Close()
-			return err
-		}
-		if err := batch.Commit(pebble.Sync); err != nil {
-			batch.Close()
-			return err
+		writeErr := batch.Delete(fullKey)
+		if writeErr == nil {
+			writeErr = batch.Commit(pebble.Sync)
 		}
 		batch.Close()
+		if writeErr != nil {
+			return writeErr
+		}
 
 		verifyEntry, err := m.getLockEntry(fullKey)
 		if err != nil {
@@ -222,7 +220,7 @@ func (m *PebbleLockManager) Unlock(handle *LockHandle) error {
 			return nil
 		}
 		if verifyEntry.Token != handle.Token {
-			return nil
+			return &LockTokenMismatchError{Key: handle.Key}
 		}
 	}
 
@@ -261,15 +259,14 @@ func (m *PebbleLockManager) Extend(handle *LockHandle, ttl time.Duration) error 
 		}
 
 		batch := m.db.NewBatch()
-		if err := batch.Set(fullKey, entryData); err != nil {
-			batch.Close()
-			return err
-		}
-		if err := batch.Commit(pebble.Sync); err != nil {
-			batch.Close()
-			return err
+		writeErr := batch.Set(fullKey, entryData)
+		if writeErr == nil {
+			writeErr = batch.Commit(pebble.Sync)
 		}
 		batch.Close()
+		if writeErr != nil {
+			return writeErr
+		}
 
 		verifyEntry, err := m.getLockEntry(fullKey)
 		if err != nil {

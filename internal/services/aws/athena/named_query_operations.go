@@ -10,7 +10,7 @@ import (
 )
 
 // CreateNamedQuery creates a new named query in the Athena workgroup.
-func (s *Service) CreateNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) CreateNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name == "" {
 		return nil, ErrInvalidRequestException
@@ -63,7 +63,7 @@ func (s *Service) CreateNamedQuery(ctx context.Context, reqCtx *request.RequestC
 }
 
 // GetNamedQuery retrieves the specified named query.
-func (s *Service) GetNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) GetNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namedQueryId := request.GetParamCaseInsensitive(req.Parameters, "NamedQueryId")
 	if namedQueryId == "" {
 		return nil, ErrInvalidRequestException
@@ -87,7 +87,7 @@ func (s *Service) GetNamedQuery(ctx context.Context, reqCtx *request.RequestCont
 }
 
 // DeleteNamedQuery deletes the specified named query.
-func (s *Service) DeleteNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) DeleteNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namedQueryId := request.GetParamCaseInsensitive(req.Parameters, "NamedQueryId")
 	if namedQueryId == "" {
 		return nil, ErrInvalidRequestException
@@ -108,7 +108,7 @@ func (s *Service) DeleteNamedQuery(ctx context.Context, reqCtx *request.RequestC
 }
 
 // ListNamedQueries retrieves a list of named queries in the specified workgroup.
-func (s *Service) ListNamedQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) ListNamedQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
 	if workGroup == "" {
 		workGroup = "primary"
@@ -160,7 +160,7 @@ func (s *Service) ListNamedQueries(ctx context.Context, reqCtx *request.RequestC
 }
 
 // UpdateNamedQuery updates the specified named query.
-func (s *Service) UpdateNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) UpdateNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namedQueryId := request.GetParamCaseInsensitive(req.Parameters, "NamedQueryId")
 	if namedQueryId == "" {
 		return nil, ErrInvalidRequestException
@@ -204,7 +204,7 @@ func (s *Service) UpdateNamedQuery(ctx context.Context, reqCtx *request.RequestC
 }
 
 // BatchGetNamedQuery retrieves multiple named queries in a single request.
-func (s *Service) BatchGetNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) BatchGetNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namedQueryIdsRaw := request.GetArrayParam(req.Parameters, "NamedQueryIds")
 	if len(namedQueryIdsRaw) == 0 {
 		return nil, ErrInvalidRequestException
@@ -245,7 +245,7 @@ func (s *Service) BatchGetNamedQuery(ctx context.Context, reqCtx *request.Reques
 	}, nil
 }
 
-func (s *Service) namedQueryToResponse(nq *athenastore.NamedQuery) map[string]interface{} {
+func (s *AthenaService) namedQueryToResponse(nq *athenastore.NamedQuery) map[string]interface{} {
 	return map[string]interface{}{
 		"Name":         nq.Name,
 		"Description":  nq.Description,

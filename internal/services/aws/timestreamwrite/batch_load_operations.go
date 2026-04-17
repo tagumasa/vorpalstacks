@@ -15,7 +15,7 @@ import (
 )
 
 // CreateBatchLoadTask creates a new batch load task.
-func (s *Service) CreateBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	targetDatabaseName := request.GetParamCaseInsensitive(req.Parameters, "TargetDatabaseName")
 	if targetDatabaseName == "" {
 		return nil, ErrInvalidParameter
@@ -80,7 +80,7 @@ func (s *Service) CreateBatchLoadTask(ctx context.Context, reqCtx *request.Reque
 }
 
 // DescribeBatchLoadTask returns information about a batch load task.
-func (s *Service) DescribeBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) DescribeBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskId := request.GetParamCaseInsensitive(req.Parameters, "TaskId")
 	if taskId == "" {
 		return nil, ErrInvalidParameter
@@ -104,7 +104,7 @@ func (s *Service) DescribeBatchLoadTask(ctx context.Context, reqCtx *request.Req
 }
 
 // ListBatchLoadTasks returns a list of batch load tasks.
-func (s *Service) ListBatchLoadTasks(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) ListBatchLoadTasks(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	var taskStatus tsstore.BatchLoadStatus
 	if status := request.GetParamCaseInsensitive(req.Parameters, "TaskStatus"); status != "" {
 		taskStatus = tsstore.BatchLoadStatus(status)
@@ -132,7 +132,7 @@ func (s *Service) ListBatchLoadTasks(ctx context.Context, reqCtx *request.Reques
 }
 
 // ResumeBatchLoadTask resumes a stopped batch load task.
-func (s *Service) ResumeBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) ResumeBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskId := request.GetParamCaseInsensitive(req.Parameters, "TaskId")
 	if taskId == "" {
 		return nil, ErrInvalidParameter
@@ -170,7 +170,7 @@ func (s *Service) ResumeBatchLoadTask(ctx context.Context, reqCtx *request.Reque
 }
 
 // DeleteBatchLoadTask deletes a batch load task.
-func (s *Service) DeleteBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) DeleteBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskId := request.GetParamCaseInsensitive(req.Parameters, "TaskId")
 	if taskId == "" {
 		return nil, ErrInvalidParameter
@@ -190,7 +190,7 @@ func (s *Service) DeleteBatchLoadTask(ctx context.Context, reqCtx *request.Reque
 	return response.EmptyResponse(), nil
 }
 
-func (s *Service) simulateBatchLoad(ctx context.Context, store *tsstore.BatchLoadTaskStore, taskId string) {
+func (s *TimestreamWriteService) simulateBatchLoad(ctx context.Context, store *tsstore.BatchLoadTaskStore, taskId string) {
 	select {
 	case <-ctx.Done():
 		return
@@ -263,7 +263,7 @@ func (s *Service) simulateBatchLoad(ctx context.Context, store *tsstore.BatchLoa
 	}
 }
 
-func (s *Service) formatBatchLoadTask(task *tsstore.BatchLoadTask) map[string]interface{} {
+func (s *TimestreamWriteService) formatBatchLoadTask(task *tsstore.BatchLoadTask) map[string]interface{} {
 	response := map[string]interface{}{
 		"TaskId":             task.TaskId,
 		"TaskStatus":         string(task.TaskStatus),
@@ -284,7 +284,7 @@ func (s *Service) formatBatchLoadTask(task *tsstore.BatchLoadTask) map[string]in
 	return response
 }
 
-func (s *Service) formatBatchLoadTaskDescription(task *tsstore.BatchLoadTaskDescription) map[string]interface{} {
+func (s *TimestreamWriteService) formatBatchLoadTaskDescription(task *tsstore.BatchLoadTaskDescription) map[string]interface{} {
 	response := map[string]interface{}{
 		"TaskId":             task.TaskId,
 		"TargetDatabaseName": task.TargetDatabaseName,

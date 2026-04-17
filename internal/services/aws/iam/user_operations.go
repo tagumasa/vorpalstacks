@@ -4,6 +4,7 @@ package iam
 import (
 	"context"
 	"errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -243,7 +244,7 @@ func (s *IAMService) UpdateUser(ctx context.Context, reqCtx *request.RequestCont
 func (s *IAMService) ListUsers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	pathPrefix := request.GetStringParam(req.Parameters, "PathPrefix")
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -316,7 +317,7 @@ func (s *IAMService) UntagUser(ctx context.Context, reqCtx *request.RequestConte
 		return nil, NewNoSuchUserError(userName)
 	}
 
-	user.Tags = removeTags(user.Tags, parseTagKeys(req.Parameters))
+	user.Tags = tags.RemoveByTagKeys(user.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
 
 	if err := store.Users().Put(user); err != nil {
 		return nil, err
@@ -343,7 +344,7 @@ func (s *IAMService) ListUserTags(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	return map[string]interface{}{
-		"Tags":        tagsToResponse(user.Tags),
+		"Tags":        tags.ToResponse(user.Tags),
 		"IsTruncated": false,
 	}, nil
 }
@@ -614,7 +615,7 @@ func (s *IAMService) userToResponse(reqCtx *request.RequestContext, user *iamsto
 		}
 	}
 
-	if tags := tagsToResponse(user.Tags); tags != nil {
+	if tags := tags.ToResponse(user.Tags); tags != nil {
 		resp["Tags"] = tags
 	}
 

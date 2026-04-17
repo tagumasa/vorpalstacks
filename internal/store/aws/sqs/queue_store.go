@@ -1,6 +1,7 @@
 package sqs
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -124,6 +125,40 @@ func (s *SQSStore) DeleteQueue(queueURL string) error {
 	s.deduplicationMu.Lock()
 	s.cleanupDeduplicationCacheForQueue(queueURL)
 	s.deduplicationMu.Unlock()
+
+	if s.storage != nil {
+		msgPrefix := messagePrefix(queueURL)
+		prefixBytes := []byte(msgPrefix)
+
+		receiptsBucket := s.storage.Bucket("sqs-receipts-" + s.region)
+		var receiptKeys [][]byte
+		_ = receiptsBucket.ForEach(func(k, v []byte) error {
+			if bytes.HasPrefix(v, prefixBytes) {
+				keyCopy := make([]byte, len(k))
+				copy(keyCopy, k)
+				receiptKeys = append(receiptKeys, keyCopy)
+			}
+			return nil
+		})
+		for _, k := range receiptKeys {
+			_ = receiptsBucket.Delete(k)
+		}
+
+		dedupBucket := s.storage.Bucket("sqs-dedup-" + s.region)
+		dedupPrefix := queueURL + "#"
+		var dedupKeys [][]byte
+		_ = dedupBucket.ForEach(func(k, v []byte) error {
+			if bytes.HasPrefix(k, []byte(dedupPrefix)) {
+				keyCopy := make([]byte, len(k))
+				copy(keyCopy, k)
+				dedupKeys = append(dedupKeys, keyCopy)
+			}
+			return nil
+		})
+		for _, k := range dedupKeys {
+			_ = dedupBucket.Delete(k)
+		}
+	}
 
 	return s.BaseStore.Delete(queueURL)
 }

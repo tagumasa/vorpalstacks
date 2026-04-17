@@ -34,7 +34,7 @@ type athenaStores struct {
 }
 
 // Service provides AWS Athena operations.
-type Service struct {
+type AthenaService struct {
 	accountID     string
 	s3ObjectStore S3ObjectStore
 	asyncWg       sync.WaitGroup
@@ -44,16 +44,16 @@ type Service struct {
 }
 
 // NewService creates a new Athena service instance.
-func NewService(accountID string) *Service {
-	return &Service{
+func NewAthenaService(accountID string) *AthenaService {
+	return &AthenaService{
 		accountID:   accountID,
 		cancelFuncs: make(map[string]context.CancelFunc),
 	}
 }
 
 // NewServiceWithS3 creates a new Athena service with s3 object store.
-func NewServiceWithS3(accountID string, s3ObjectStore S3ObjectStore) *Service {
-	return &Service{
+func NewAthenaServiceWithS3(accountID string, s3ObjectStore S3ObjectStore) *AthenaService {
+	return &AthenaService{
 		accountID:     accountID,
 		s3ObjectStore: s3ObjectStore,
 		asyncWg:       sync.WaitGroup{},
@@ -61,13 +61,13 @@ func NewServiceWithS3(accountID string, s3ObjectStore S3ObjectStore) *Service {
 	}
 }
 
-func (s *Service) setCancelFunc(id string, fn context.CancelFunc) {
+func (s *AthenaService) setCancelFunc(id string, fn context.CancelFunc) {
 	s.cancelMu.Lock()
 	s.cancelFuncs[id] = fn
 	s.cancelMu.Unlock()
 }
 
-func (s *Service) getAndRemoveCancelFunc(id string) (context.CancelFunc, bool) {
+func (s *AthenaService) getAndRemoveCancelFunc(id string) (context.CancelFunc, bool) {
 	s.cancelMu.Lock()
 	fn, ok := s.cancelFuncs[id]
 	delete(s.cancelFuncs, id)
@@ -75,7 +75,7 @@ func (s *Service) getAndRemoveCancelFunc(id string) (context.CancelFunc, bool) {
 	return fn, ok
 }
 
-func (s *Service) store(reqCtx *request.RequestContext) (*athenaStores, error) {
+func (s *AthenaService) store(reqCtx *request.RequestContext) (*athenaStores, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*athenaStores, error) {
 		storage, err := reqCtx.GetStorage()
 		if err != nil {
@@ -96,12 +96,12 @@ func (s *Service) store(reqCtx *request.RequestContext) (*athenaStores, error) {
 }
 
 // Shutdown gracefully shuts down the Athena service by waiting for all asynchronous operations to complete.
-func (s *Service) Shutdown() {
+func (s *AthenaService) Shutdown() {
 	s.asyncWg.Wait()
 }
 
 // RegisterHandlers registers the Athena service handlers with the dispatcher.
-func (s *Service) RegisterHandlers(d handler.Registrar) {
+func (s *AthenaService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("athena", "CreateWorkGroup", s.CreateWorkGroup)
 	d.RegisterHandlerForService("athena", "GetWorkGroup", s.GetWorkGroup)
 	d.RegisterHandlerForService("athena", "UpdateWorkGroup", s.UpdateWorkGroup)

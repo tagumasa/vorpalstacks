@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (s *Service) formatRowsForResponse(rows []map[string]interface{}, columnInfo []ColumnInfo) []map[string]interface{} {
+func (s *TimestreamQueryService) formatRowsForResponse(rows []map[string]interface{}, columnInfo []ColumnInfo) []map[string]interface{} {
 	var result []map[string]interface{}
 	for _, row := range rows {
 		var data []map[string]interface{}

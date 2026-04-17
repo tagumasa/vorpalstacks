@@ -822,6 +822,11 @@ func (d *DB) DeleteNode(id NodeID) error {
 	if len(edges) > 0 {
 		d.edgeCount.Add(^uint64(uint64(len(edges) - 1)))
 	}
+
+	if d.Embeddings != nil {
+		_, _ = d.Embeddings.Remove(id)
+	}
+
 	return nil
 }
 

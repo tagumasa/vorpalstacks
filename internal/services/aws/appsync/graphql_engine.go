@@ -151,7 +151,7 @@ func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestCont
 func (e *graphQLEngine) loadSchema(ctx context.Context, reqCtx *request.RequestContext, apiId string) (*ast.Schema, error) {
 	sdl := collectSchemaSDL(e.store, apiId)
 	if sdl == "" {
-		return nil, fmt.Errorf("No schema found for API %s", apiId)
+		return nil, fmt.Errorf("no schema found for API %s", apiId)
 	}
 
 	if cached, ok := e.schemaCache.Load(apiId); ok {
@@ -166,7 +166,7 @@ func (e *graphQLEngine) loadSchema(ctx context.Context, reqCtx *request.RequestC
 		Input: sdl,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Schema parsing failed: %w", err)
+		return nil, fmt.Errorf("schema parsing failed: %w", err)
 	}
 
 	injectIntrospectionTypes(schema)

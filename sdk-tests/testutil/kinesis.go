@@ -130,7 +130,7 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 			return err
 		}
 		if resp.Records == nil {
-			return fmt.Errorf("Records is nil")
+			return fmt.Errorf("records is nil")
 		}
 		for i, rec := range resp.Records {
 			if rec.SequenceNumber == nil {
@@ -174,7 +174,7 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 			return err
 		}
 		if resp.Shards == nil {
-			return fmt.Errorf("Shards is nil")
+			return fmt.Errorf("shards is nil")
 		}
 		return nil
 	}))
@@ -216,7 +216,7 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 				return err
 			}
 			if resp.Records == nil {
-				return fmt.Errorf("Records is nil")
+				return fmt.Errorf("records is nil")
 			}
 			return nil
 		}))
@@ -276,7 +276,7 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 			return err
 		}
 		if resp.Tags == nil {
-			return fmt.Errorf("Tags is nil")
+			return fmt.Errorf("tags is nil")
 		}
 		return nil
 	}))
@@ -356,7 +356,7 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 			return err
 		}
 		if resp.Consumer == nil {
-			return fmt.Errorf("Consumer is nil")
+			return fmt.Errorf("consumer is nil")
 		}
 		return nil
 	}))
@@ -388,7 +388,7 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 			return err
 		}
 		if resp.Consumers == nil {
-			return fmt.Errorf("Consumers is nil")
+			return fmt.Errorf("consumers is nil")
 		}
 		return nil
 	}))
@@ -633,7 +633,7 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 			return err
 		}
 		if resp.Shards == nil {
-			return fmt.Errorf("Shards is nil")
+			return fmt.Errorf("shards is nil")
 		}
 		client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
 			StreamName: aws.String(streamName3),

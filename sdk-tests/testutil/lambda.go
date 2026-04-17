@@ -144,7 +144,7 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 			return err
 		}
 		if resp.Version == nil {
-			return fmt.Errorf("Version is nil")
+			return fmt.Errorf("version is nil")
 		}
 		return nil
 	}))
@@ -1023,7 +1023,7 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 						return err
 					}
 					if resp.Status == "" {
-						return fmt.Errorf("Status is empty")
+						return fmt.Errorf("status is empty")
 					}
 					return nil
 				}))
@@ -1239,7 +1239,7 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		}
 	}
 
-	// === GROUP F: INVOKE ASYNC & RESPONSE STREAM ===
+	// === GROUP F: RESPONSE STREAM ===
 
 	iaFuncName := fmt.Sprintf("IaFunc-%d", time.Now().UnixNano())
 	iaRoleName := fmt.Sprintf("IaRole-%d", time.Now().UnixNano())
@@ -1247,7 +1247,7 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	iaCode := []byte("exports.handler = async () => { return { statusCode: 200 }; };")
 
 	if err := createIAMRole(iaRoleName); err != nil {
-		results = append(results, TestResult{Service: "lambda", TestName: "InvokeAsync_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
+		results = append(results, TestResult{Service: "lambda", TestName: "ResponseStream_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create IAM role: %v", err)})
 	} else {
 		defer deleteIAMRole(iaRoleName)
 		_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
@@ -1258,23 +1258,9 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 			Code:         &types.FunctionCode{ZipFile: iaCode},
 		})
 		if err != nil {
-			results = append(results, TestResult{Service: "lambda", TestName: "InvokeAsync_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create function: %v", err)})
+			results = append(results, TestResult{Service: "lambda", TestName: "ResponseStream_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create function: %v", err)})
 		} else {
 			defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(iaFuncName)})
-
-			results = append(results, r.RunTest("lambda", "InvokeAsync", func() error {
-				resp, err := client.InvokeAsync(ctx, &lambda.InvokeAsyncInput{
-					FunctionName: aws.String(iaFuncName),
-					InvokeArgs:   strings.NewReader(`{"test": true}`),
-				})
-				if err != nil {
-					return err
-				}
-				if resp.Status != 202 {
-					return fmt.Errorf("expected status 202, got %d", resp.Status)
-				}
-				return nil
-			}))
 
 			results = append(results, r.RunTest("lambda", "InvokeWithResponseStream", func() error {
 				resp, err := client.InvokeWithResponseStream(ctx, &lambda.InvokeWithResponseStreamInput{

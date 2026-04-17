@@ -11,7 +11,7 @@ import (
 )
 
 // CreateTable creates a new Timestream table.
-func (s *Service) CreateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) CreateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
 		return nil, ErrInvalidParameter
@@ -60,7 +60,7 @@ func (s *Service) CreateTable(ctx context.Context, reqCtx *request.RequestContex
 }
 
 // DescribeTable returns information about a Timestream table.
-func (s *Service) DescribeTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) DescribeTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
 		return nil, ErrInvalidParameter
@@ -91,7 +91,7 @@ func (s *Service) DescribeTable(ctx context.Context, reqCtx *request.RequestCont
 }
 
 // ListTables returns a list of Timestream tables in a database.
-func (s *Service) ListTables(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) ListTables(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
@@ -129,7 +129,7 @@ func (s *Service) ListTables(ctx context.Context, reqCtx *request.RequestContext
 }
 
 // UpdateTable modifies the retention properties or schema of a Timestream table.
-func (s *Service) UpdateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) UpdateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
 		return nil, ErrInvalidParameter
@@ -163,7 +163,7 @@ func (s *Service) UpdateTable(ctx context.Context, reqCtx *request.RequestContex
 }
 
 // DeleteTable deletes a Timestream table.
-func (s *Service) DeleteTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) DeleteTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
 		return nil, ErrInvalidParameter
@@ -189,7 +189,7 @@ func (s *Service) DeleteTable(ctx context.Context, reqCtx *request.RequestContex
 	return response.EmptyResponse(), nil
 }
 
-func (s *Service) parseRetentionProperties(data interface{}) *tsstore.RetentionProperties {
+func (s *TimestreamWriteService) parseRetentionProperties(data interface{}) *tsstore.RetentionProperties {
 	if data == nil {
 		return nil
 	}
@@ -227,7 +227,7 @@ func (s *Service) parseRetentionProperties(data interface{}) *tsstore.RetentionP
 	return props
 }
 
-func (s *Service) parseSchema(data interface{}) *tsstore.Schema {
+func (s *TimestreamWriteService) parseSchema(data interface{}) *tsstore.Schema {
 	if data == nil {
 		return nil
 	}
@@ -272,7 +272,7 @@ func (s *Service) parseSchema(data interface{}) *tsstore.Schema {
 	return schema
 }
 
-func (s *Service) formatTableResponse(table *tsstore.Table, tags map[string]string) map[string]interface{} {
+func (s *TimestreamWriteService) formatTableResponse(table *tsstore.Table, tags map[string]string) map[string]interface{} {
 	response := map[string]interface{}{
 		"Arn":             table.ARN,
 		"TableName":       table.TableName,

@@ -2,6 +2,7 @@
 package dynamodb
 
 import (
+	"errors"
 	"fmt"
 
 	"google.golang.org/protobuf/proto"
@@ -9,6 +10,8 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
 	"vorpalstacks/internal/store/aws/common"
 )
+
+var errScanLimitReached = errors.New("scan limit reached")
 
 func itemBucketName(region string) string {
 	return "dynamodb_items-" + region
@@ -173,7 +176,7 @@ func (s *ItemStore) List(tableName string, marker string, limit int) ([]*Item, s
 		}
 		if limit > 0 && len(items) >= limit {
 			lastKey = key
-			return nil
+			return errScanLimitReached
 		}
 
 		var pbItem pb.Item
@@ -189,7 +192,7 @@ func (s *ItemStore) List(tableName string, marker string, limit int) ([]*Item, s
 		return nil
 	})
 
-	if err != nil {
+	if err != nil && !errors.Is(err, errScanLimitReached) {
 		return nil, "", err
 	}
 	return items, lastKey, nil

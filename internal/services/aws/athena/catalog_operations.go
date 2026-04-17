@@ -11,7 +11,7 @@ import (
 )
 
 // ListEngineVersions retrieves the list of available Athena engine versions.
-func (s *Service) ListEngineVersions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) ListEngineVersions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return map[string]interface{}{
 		"EngineVersions": []map[string]interface{}{
 			{
@@ -32,7 +32,7 @@ func (s *Service) ListEngineVersions(ctx context.Context, reqCtx *request.Reques
 }
 
 // ListDataCatalogs retrieves a list of all data catalogs in the Athena workgroup.
-func (s *Service) ListDataCatalogs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) ListDataCatalogs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (s *Service) ListDataCatalogs(ctx context.Context, reqCtx *request.RequestC
 }
 
 // GetDataCatalog retrieves metadata for the specified data catalog.
-func (s *Service) GetDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) GetDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name == "" {
 		return nil, ErrInvalidRequestException
@@ -92,7 +92,7 @@ func (s *Service) GetDataCatalog(ctx context.Context, reqCtx *request.RequestCon
 }
 
 // CreateDataCatalog creates a new data catalog in the Athena workgroup.
-func (s *Service) CreateDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) CreateDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name == "" {
 		return nil, ErrInvalidRequestException
@@ -139,7 +139,7 @@ func (s *Service) CreateDataCatalog(ctx context.Context, reqCtx *request.Request
 }
 
 // DeleteDataCatalog deletes the specified data catalog.
-func (s *Service) DeleteDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) DeleteDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name == "" {
 		return nil, ErrInvalidRequestException
@@ -164,7 +164,7 @@ func (s *Service) DeleteDataCatalog(ctx context.Context, reqCtx *request.Request
 }
 
 // UpdateDataCatalog updates the specified data catalog with new metadata.
-func (s *Service) UpdateDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) UpdateDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name == "" {
 		return nil, ErrInvalidRequestException
@@ -206,7 +206,7 @@ func (s *Service) UpdateDataCatalog(ctx context.Context, reqCtx *request.Request
 }
 
 // ListDatabases retrieves a list of databases in the specified data catalog.
-func (s *Service) ListDatabases(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) ListDatabases(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	catalogName := request.GetParamCaseInsensitive(req.Parameters, "CatalogName")
 	if catalogName == "" {
 		catalogName = "AwsDataCatalog"
@@ -243,7 +243,7 @@ func (s *Service) ListDatabases(ctx context.Context, reqCtx *request.RequestCont
 }
 
 // GetDatabase retrieves metadata for the specified database.
-func (s *Service) GetDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) GetDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	catalogName := request.GetParamCaseInsensitive(req.Parameters, "CatalogName")
 	if catalogName == "" {
 		catalogName = "AwsDataCatalog"
@@ -288,7 +288,7 @@ func (s *Service) GetDatabase(ctx context.Context, reqCtx *request.RequestContex
 }
 
 // ListTableMetadata retrieves metadata for all tables in the specified database.
-func (s *Service) ListTableMetadata(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) ListTableMetadata(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	catalogName := request.GetParamCaseInsensitive(req.Parameters, "CatalogName")
 	if catalogName == "" {
 		catalogName = "AwsDataCatalog"
@@ -324,7 +324,7 @@ func (s *Service) ListTableMetadata(ctx context.Context, reqCtx *request.Request
 }
 
 // GetTableMetadata retrieves metadata for the specified table.
-func (s *Service) GetTableMetadata(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) GetTableMetadata(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	catalogName := request.GetParamCaseInsensitive(req.Parameters, "CatalogName")
 	if catalogName == "" {
 		catalogName = "AwsDataCatalog"
@@ -357,7 +357,7 @@ func (s *Service) GetTableMetadata(ctx context.Context, reqCtx *request.RequestC
 	}, nil
 }
 
-func (s *Service) dataCatalogToResponse(dc *athenastore.DataCatalog) map[string]interface{} {
+func (s *AthenaService) dataCatalogToResponse(dc *athenastore.DataCatalog) map[string]interface{} {
 	return map[string]interface{}{
 		"Name":        dc.Name,
 		"Description": dc.Description,
@@ -366,7 +366,7 @@ func (s *Service) dataCatalogToResponse(dc *athenastore.DataCatalog) map[string]
 	}
 }
 
-func (s *Service) tableMetadataToResponse(t *athenastore.TableMetadata) map[string]interface{} {
+func (s *AthenaService) tableMetadataToResponse(t *athenastore.TableMetadata) map[string]interface{} {
 	var columns []map[string]interface{}
 	for _, c := range t.Columns {
 		columns = append(columns, map[string]interface{}{

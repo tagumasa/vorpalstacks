@@ -198,7 +198,7 @@ func (r *TestRunner) RunRoute53Tests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.DelegationSets != nil && len(resp.DelegationSets) != 0 {
+		if len(resp.DelegationSets) != 0 {
 			return fmt.Errorf("expected no delegation sets, got %d", len(resp.DelegationSets))
 		}
 		return nil

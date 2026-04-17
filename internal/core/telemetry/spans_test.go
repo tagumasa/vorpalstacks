@@ -9,7 +9,7 @@ import (
 
 func TestServiceSpan(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := ServiceSpan(ctx, "test-service", "test-operation")
+	_, span := ServiceSpan(ctx, "test-service", "test-operation")
 	defer span.End()
 
 	if span == nil {
@@ -19,7 +19,7 @@ func TestServiceSpan(t *testing.T) {
 
 func TestServiceSpan_WithAttributes(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := ServiceSpan(ctx, "test-service", "test-operation",
+	_, span := ServiceSpan(ctx, "test-service", "test-operation",
 		attribute.String("key", "value"))
 	defer span.End()
 
@@ -30,7 +30,7 @@ func TestServiceSpan_WithAttributes(t *testing.T) {
 
 func TestS3Span(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := S3Span(ctx, "GetObject", "test-bucket", "test-key")
+	_, span := S3Span(ctx, "GetObject", "test-bucket", "test-key")
 	defer span.End()
 
 	if span == nil {
@@ -40,7 +40,7 @@ func TestS3Span(t *testing.T) {
 
 func TestS3Span_EmptyBucket(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := S3Span(ctx, "ListBuckets", "", "")
+	_, span := S3Span(ctx, "ListBuckets", "", "")
 	defer span.End()
 
 	if span == nil {
@@ -50,7 +50,7 @@ func TestS3Span_EmptyBucket(t *testing.T) {
 
 func TestLambdaSpan(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := LambdaSpan(ctx, "Invoke", "test-function")
+	_, span := LambdaSpan(ctx, "Invoke", "test-function")
 	defer span.End()
 
 	if span == nil {
@@ -60,7 +60,7 @@ func TestLambdaSpan(t *testing.T) {
 
 func TestLambdaSpan_EmptyFunction(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := LambdaSpan(ctx, "ListFunctions", "")
+	_, span := LambdaSpan(ctx, "ListFunctions", "")
 	defer span.End()
 
 	if span == nil {
@@ -70,7 +70,7 @@ func TestLambdaSpan_EmptyFunction(t *testing.T) {
 
 func TestDynamoDBSpan(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := DynamoDBSpan(ctx, "GetItem", "test-table")
+	_, span := DynamoDBSpan(ctx, "GetItem", "test-table")
 	defer span.End()
 
 	if span == nil {
@@ -80,7 +80,7 @@ func TestDynamoDBSpan(t *testing.T) {
 
 func TestDynamoDBSpan_EmptyTable(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := DynamoDBSpan(ctx, "ListTables", "")
+	_, span := DynamoDBSpan(ctx, "ListTables", "")
 	defer span.End()
 
 	if span == nil {
@@ -90,7 +90,7 @@ func TestDynamoDBSpan_EmptyTable(t *testing.T) {
 
 func TestSNSSpan(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := SNSSpan(ctx, "Publish", "arn:aws:sns:us-east-1:123456789012:test-topic")
+	_, span := SNSSpan(ctx, "Publish", "arn:aws:sns:us-east-1:123456789012:test-topic")
 	defer span.End()
 
 	if span == nil {
@@ -100,7 +100,7 @@ func TestSNSSpan(t *testing.T) {
 
 func TestSNSSpan_EmptyTopic(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := SNSSpan(ctx, "ListTopics", "")
+	_, span := SNSSpan(ctx, "ListTopics", "")
 	defer span.End()
 
 	if span == nil {
@@ -110,7 +110,7 @@ func TestSNSSpan_EmptyTopic(t *testing.T) {
 
 func TestSQSSpan(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := SQSSpan(ctx, "SendMessage", "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue")
+	_, span := SQSSpan(ctx, "SendMessage", "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue")
 	defer span.End()
 
 	if span == nil {
@@ -120,7 +120,7 @@ func TestSQSSpan(t *testing.T) {
 
 func TestSQSSpan_EmptyQueue(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := SQSSpan(ctx, "ListQueues", "")
+	_, span := SQSSpan(ctx, "ListQueues", "")
 	defer span.End()
 
 	if span == nil {

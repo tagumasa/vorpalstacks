@@ -12,7 +12,7 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *Service) executeSQLQuery(ctx context.Context, reqCtx *request.RequestContext, queryString string) (*QueryResult, error) {
+func (s *TimestreamQueryService) executeSQLQuery(ctx context.Context, reqCtx *request.RequestContext, queryString string) (*QueryResult, error) {
 	processedSQL := queryString
 
 	if strings.Contains(queryString, "::") {
@@ -61,7 +61,7 @@ func (s *Service) executeSQLQuery(ctx context.Context, reqCtx *request.RequestCo
 	}, nil
 }
 
-func (s *Service) convertCastOperator(sql string) string {
+func (s *TimestreamQueryService) convertCastOperator(sql string) string {
 	var result strings.Builder
 	inString := false
 	i := 0
@@ -98,7 +98,7 @@ func (s *Service) convertCastOperator(sql string) string {
 	return result.String()
 }
 
-func (s *Service) extractTableInfo(selectStmt *sqlparser.Select) (databaseName, tableName string, err error) {
+func (s *TimestreamQueryService) extractTableInfo(selectStmt *sqlparser.Select) (databaseName, tableName string, err error) {
 	if len(selectStmt.From) == 0 {
 		return "", "", fmt.Errorf("no table specified in FROM clause")
 	}
@@ -121,7 +121,7 @@ func (s *Service) extractTableInfo(selectStmt *sqlparser.Select) (databaseName, 
 	return databaseName, tableName, nil
 }
 
-func (s *Service) buildColumnInfo(selectStmt *sqlparser.Select, records []*tsstore.StoredRecord) []ColumnInfo {
+func (s *TimestreamQueryService) buildColumnInfo(selectStmt *sqlparser.Select, records []*tsstore.StoredRecord) []ColumnInfo {
 	var columns []ColumnInfo
 
 	if len(selectStmt.SelectExprs) == 1 {
@@ -170,7 +170,7 @@ func (s *Service) buildColumnInfo(selectStmt *sqlparser.Select, records []*tssto
 	return columns
 }
 
-func (s *Service) extractColumnName(expr sqlparser.Expr) string {
+func (s *TimestreamQueryService) extractColumnName(expr sqlparser.Expr) string {
 	switch e := expr.(type) {
 	case *sqlparser.ColName:
 		return e.Name.String()
@@ -189,7 +189,7 @@ func (s *Service) extractColumnName(expr sqlparser.Expr) string {
 	}
 }
 
-func (s *Service) applyQuery(selectStmt *sqlparser.Select, records []*tsstore.StoredRecord) []map[string]interface{} {
+func (s *TimestreamQueryService) applyQuery(selectStmt *sqlparser.Select, records []*tsstore.StoredRecord) []map[string]interface{} {
 	var rows []map[string]interface{}
 
 	for _, record := range records {
@@ -213,7 +213,7 @@ func (s *Service) applyQuery(selectStmt *sqlparser.Select, records []*tsstore.St
 	return s.projectColumns(rows, selectStmt.SelectExprs)
 }
 
-func (s *Service) recordToRow(record *tsstore.StoredRecord) map[string]interface{} {
+func (s *TimestreamQueryService) recordToRow(record *tsstore.StoredRecord) map[string]interface{} {
 	row := map[string]interface{}{
 		"time":         record.Timestamp.Format(time.RFC3339),
 		"measure_name": record.MeasureName,

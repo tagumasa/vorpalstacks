@@ -86,7 +86,8 @@ type DB struct {
 	closed         bool
 	mu             sync.RWMutex
 	ttlStop        chan struct{}
-	pendingDeletes sync.WaitGroup
+	expireDeleters chan []byte
+	expireDone     chan struct{}
 }
 
 type pebbleLogger struct{}
@@ -143,11 +144,14 @@ func Open(opts ...Option) (*DB, error) {
 	}
 
 	pdb := &DB{
-		db:        db,
-		encryptor: encryptor,
-		opts:      options,
-		ttlStop:   make(chan struct{}),
+		db:             db,
+		encryptor:      encryptor,
+		opts:           options,
+		ttlStop:        make(chan struct{}),
+		expireDeleters: make(chan []byte, 16),
+		expireDone:     make(chan struct{}),
 	}
+	go pdb.expireDeleteWorker()
 
 	if options.TTL.Enabled {
 		go pdb.ttlGC()
@@ -171,10 +175,22 @@ func (d *DB) Close() error {
 	if d.ttlStop != nil {
 		close(d.ttlStop)
 	}
+	if d.expireDeleters != nil {
+		close(d.expireDeleters)
+	}
 
 	d.mu.Unlock()
-	d.pendingDeletes.Wait()
+	if d.expireDone != nil {
+		<-d.expireDone
+	}
 	return d.db.Close()
+}
+
+func (d *DB) expireDeleteWorker() {
+	defer close(d.expireDone)
+	for key := range d.expireDeleters {
+		_ = d.Delete(key)
+	}
 }
 
 // Get retrieves the value associated with the given key.
@@ -207,16 +223,15 @@ func (d *DB) Get(key []byte) ([]byte, error) {
 	}
 
 	if expired {
-		d.mu.RUnlock()
-		d.mu.Lock()
-		if !d.closed {
-			d.pendingDeletes.Add(1)
-			go func() {
-				defer d.pendingDeletes.Done()
-				_ = d.Delete(key)
-			}()
+		if d.expireDeleters != nil {
+			keyCopy := make([]byte, len(key))
+			copy(keyCopy, key)
+			select {
+			case d.expireDeleters <- keyCopy:
+			default:
+			}
 		}
-		d.mu.Unlock()
+		d.mu.RUnlock()
 		return nil, ErrKeyNotFound
 	}
 

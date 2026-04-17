@@ -3,6 +3,7 @@ package storage
 
 import (
 	"encoding/json"
+	"errors"
 	"sync"
 	"time"
 
@@ -34,7 +35,10 @@ func NewPebbleIdempotencyStore(db *pebbledb.DB) *PebbleIdempotencyStore {
 }
 
 func (s *PebbleIdempotencyStore) makeKey(token string) []byte {
-	return append(s.prefix, []byte(token)...)
+	key := make([]byte, 0, len(s.prefix)+len(token))
+	key = append(key, s.prefix...)
+	key = append(key, token...)
+	return key
 }
 
 // CheckAndStore checks if an idempotency token exists and stores it if not.
@@ -46,7 +50,7 @@ func (s *PebbleIdempotencyStore) CheckAndStore(token string, ttl time.Duration) 
 	key := s.makeKey(token)
 
 	data, err := s.db.Get(key)
-	if err != nil && err != pebbledb.ErrKeyNotFound {
+	if err != nil && !errors.Is(err, pebbledb.ErrKeyNotFound) {
 		return false, err
 	}
 
@@ -115,7 +119,7 @@ func (s *PebbleIdempotencyStore) GetResult(token string) ([]byte, bool, error) {
 
 	data, err := s.db.Get(key)
 	if err != nil {
-		if err == pebbledb.ErrKeyNotFound {
+		if errors.Is(err, pebbledb.ErrKeyNotFound) {
 			return nil, false, nil
 		}
 		return nil, false, err

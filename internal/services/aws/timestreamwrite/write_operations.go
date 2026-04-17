@@ -10,7 +10,7 @@ import (
 )
 
 // WriteRecords writes time-series records to a Timestream table.
-func (s *Service) WriteRecords(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) WriteRecords(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
 		return nil, ErrInvalidParameter
@@ -47,7 +47,7 @@ func (s *Service) WriteRecords(ctx context.Context, reqCtx *request.RequestConte
 	return response, nil
 }
 
-func (s *Service) parseRecords(data interface{}) []tsstore.Record {
+func (s *TimestreamWriteService) parseRecords(data interface{}) []tsstore.Record {
 	var records []tsstore.Record
 
 	recordsList, ok := data.([]interface{})
@@ -79,7 +79,7 @@ func (s *Service) parseRecords(data interface{}) []tsstore.Record {
 	return records
 }
 
-func (s *Service) parseDimensions(data interface{}) []tsstore.Dimension {
+func (s *TimestreamWriteService) parseDimensions(data interface{}) []tsstore.Dimension {
 	var dimensions []tsstore.Dimension
 
 	dimsList, ok := data.([]interface{})
@@ -108,7 +108,7 @@ func (s *Service) parseDimensions(data interface{}) []tsstore.Dimension {
 	return dimensions
 }
 
-func (s *Service) parseMeasureValues(data interface{}) []tsstore.MeasureValue {
+func (s *TimestreamWriteService) parseMeasureValues(data interface{}) []tsstore.MeasureValue {
 	var measureValues []tsstore.MeasureValue
 
 	mvList, ok := data.([]interface{})
@@ -134,7 +134,7 @@ func (s *Service) parseMeasureValues(data interface{}) []tsstore.MeasureValue {
 	return measureValues
 }
 
-func (s *Service) formatRejectedRecords(records []tsstore.RejectedRecord) []map[string]interface{} {
+func (s *TimestreamWriteService) formatRejectedRecords(records []tsstore.RejectedRecord) []map[string]interface{} {
 	var result []map[string]interface{}
 	for _, r := range records {
 		result = append(result, map[string]interface{}{
@@ -147,7 +147,7 @@ func (s *Service) formatRejectedRecords(records []tsstore.RejectedRecord) []map[
 }
 
 // TagResource adds tags to a Timestream resource.
-func (s *Service) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceARN == "" {
 		return nil, ErrInvalidParameter
@@ -171,7 +171,7 @@ func (s *Service) TagResource(ctx context.Context, reqCtx *request.RequestContex
 }
 
 // UntagResource removes tags from a Timestream resource.
-func (s *Service) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceARN == "" {
 		return nil, ErrInvalidParameter
@@ -194,7 +194,7 @@ func (s *Service) UntagResource(ctx context.Context, reqCtx *request.RequestCont
 }
 
 // ListTagsForResource returns the tags for a Timestream resource.
-func (s *Service) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceARN == "" {
 		return nil, ErrInvalidParameter

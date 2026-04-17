@@ -43,9 +43,10 @@ func TestPublishSyncDepthExceeded(t *testing.T) {
 	defer bus.Shutdown(context.Background())
 
 	evt := &ServiceInvokeRequest{
-		EventBase: EventBase{ID: "depth-test", Timestamp: time.Now().UTC(), Source: "test", Region: "us-east-1", Depth: 1},
+		EventBase: EventBase{ID: "depth-test", Timestamp: time.Now().UTC(), Source: "test", Region: "us-east-1"},
 		TargetARN: "arn:aws:lambda:us-east-1:123456789012:function:test",
 	}
+	evt.EventBase.SetEventDepth(1)
 
 	_, err := bus.PublishSync(context.Background(), evt)
 	if err != ErrMaxDepth {
@@ -259,7 +260,6 @@ func TestEventSerialization(t *testing.T) {
 			Timestamp: time.Now().UTC(),
 			Source:    "test",
 			Region:    "us-east-1",
-			Depth:     0,
 			Caller:    CallerContext{ServicePrincipal: "test.amazonaws.com"},
 		},
 		TargetARN: "arn:aws:lambda:us-east-1:123456789012:function:fn",

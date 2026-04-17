@@ -35,7 +35,7 @@ func (e *graphQLEngine) dispatchDataSource(
 
 	ds, err := e.store.GetDataSource(apiId, dataSourceName)
 	if err != nil {
-		return nil, fmt.Errorf("Data source %q not found: %w", dataSourceName, err)
+		return nil, fmt.Errorf("data source %q not found: %w", dataSourceName, err)
 	}
 
 	switch ds.Type {
@@ -56,7 +56,7 @@ func (e *graphQLEngine) dispatchDataSource(
 	case "RELATIONAL_DATABASE":
 		return e.dispatchRDS(ctx, reqCtx, ds, payload)
 	default:
-		return nil, fmt.Errorf("Unsupported data source type: %s", ds.Type)
+		return nil, fmt.Errorf("unsupported data source type: %s", ds.Type)
 	}
 }
 
@@ -69,16 +69,16 @@ func (e *graphQLEngine) dispatchLambda(
 	payload interface{},
 ) (interface{}, error) {
 	if e.lambdaInvoker == nil {
-		return nil, fmt.Errorf("Lambda invoker not configured")
+		return nil, fmt.Errorf("lambda invoker not configured")
 	}
 
 	if ds.LambdaConfig == nil || ds.LambdaConfig.LambdaFunctionArn == "" {
-		return nil, fmt.Errorf("Lambda data source has no function ARN configured")
+		return nil, fmt.Errorf("lambda data source has no function ARN configured")
 	}
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal Lambda payload: %w", err)
+		return nil, fmt.Errorf("failed to marshal Lambda payload: %w", err)
 	}
 
 	// Use the shared ARN utility instead of a local duplicate
@@ -89,7 +89,7 @@ func (e *graphQLEngine) dispatchLambda(
 
 	_, responseBytes, err := e.lambdaInvoker.InvokeForGateway(ctx, functionName, payloadBytes)
 	if err != nil {
-		return nil, fmt.Errorf("Lambda invocation failed: %w", err)
+		return nil, fmt.Errorf("lambda invocation failed: %w", err)
 	}
 
 	var result interface{}
@@ -215,7 +215,7 @@ func (e *graphQLEngine) dispatchDynamoDB(
 		return map[string]interface{}{}, nil
 
 	default:
-		return nil, fmt.Errorf("Unsupported DynamoDB operation: %s", operation)
+		return nil, fmt.Errorf("unsupported DynamoDB operation: %s", operation)
 	}
 }
 
@@ -237,7 +237,7 @@ func (e *graphQLEngine) dispatchHTTP(
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal HTTP payload: %w", err)
+		return nil, fmt.Errorf("failed to marshal HTTP payload: %w", err)
 	}
 
 	httpCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -245,7 +245,7 @@ func (e *graphQLEngine) dispatchHTTP(
 
 	httpReq, err := http.NewRequestWithContext(httpCtx, http.MethodPost, endpoint, strings.NewReader(string(payloadBytes)))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create HTTP request: %w", err)
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
@@ -258,7 +258,7 @@ func (e *graphQLEngine) dispatchHTTP(
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 6*1024*1024))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read HTTP response: %w", err)
+		return nil, fmt.Errorf("failed to read HTTP response: %w", err)
 	}
 
 	var result interface{}
@@ -284,7 +284,7 @@ func (e *graphQLEngine) dispatchEventBridge(
 	}
 
 	if e.bus == nil {
-		return nil, fmt.Errorf("Event bus not configured")
+		return nil, fmt.Errorf("event bus not configured")
 	}
 
 	eventBusArn := ""
@@ -326,7 +326,7 @@ func (e *graphQLEngine) dispatchNeptune(
 	ds *appsyncstore.DataSource,
 	payload interface{},
 ) (interface{}, error) {
-	return nil, fmt.Errorf("Neptune data source not yet implemented")
+	return nil, fmt.Errorf("neptune data source not yet implemented")
 }
 
 // dispatchNone returns null for NONE data sources. These are used for
@@ -354,7 +354,7 @@ func (e *graphQLEngine) dispatchOpenSearch(
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal OpenSearch payload: %w", err)
+		return nil, fmt.Errorf("failed to marshal OpenSearch payload: %w", err)
 	}
 
 	httpCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -362,7 +362,7 @@ func (e *graphQLEngine) dispatchOpenSearch(
 
 	httpReq, err := http.NewRequestWithContext(httpCtx, http.MethodPost, endpoint, strings.NewReader(string(payloadBytes)))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create OpenSearch request: %w", err)
+		return nil, fmt.Errorf("failed to create OpenSearch request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
@@ -375,7 +375,7 @@ func (e *graphQLEngine) dispatchOpenSearch(
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 6*1024*1024))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read OpenSearch response: %w", err)
+		return nil, fmt.Errorf("failed to read OpenSearch response: %w", err)
 	}
 
 	var result interface{}

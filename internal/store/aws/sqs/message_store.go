@@ -1,12 +1,16 @@
 package sqs
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_sqs"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -34,13 +38,9 @@ func (s *SQSStore) SendMessage(queueURL string, message *Message) (*Message, err
 
 		dedupKey := s.buildDeduplicationKey(queueURL, message)
 		if dedupKey != "" {
-			s.deduplicationMu.RLock()
-			entry, exists := s.deduplicationCache[dedupKey]
-			s.deduplicationMu.RUnlock()
-
-			if exists && time.Now().Before(entry.expiresAt) {
+			if msgID, ok := s.getDeduplicationMessageID(dedupKey); ok {
 				var existingMsgPb pb.Message
-				if err := s.messagesStore.GetProto(entry.messageID, &existingMsgPb); err == nil {
+				if err := s.messagesStore.GetProto(msgID, &existingMsgPb); err == nil {
 					return ProtoToMessage(&existingMsgPb), nil
 				}
 			}
@@ -87,15 +87,7 @@ func (s *SQSStore) SendMessage(queueURL string, message *Message) (*Message, err
 	if queue.FifoQueue {
 		dedupKey := s.buildDeduplicationKey(queueURL, message)
 		if dedupKey != "" {
-			s.deduplicationMu.Lock()
-			s.deduplicationCache[dedupKey] = &deduplicationEntry{
-				messageID: messageKey(queueURL, message.ID),
-				expiresAt: time.Now().Add(deduplicationWindow),
-			}
-			if len(s.deduplicationCache) > deduplicationCacheMaxSize {
-				s.cleanupDeduplicationCache()
-			}
-			s.deduplicationMu.Unlock()
+			s.putDeduplicationEntry(dedupKey, messageKey(queueURL, message.ID))
 		}
 	}
 
@@ -191,6 +183,13 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 			continue
 		}
 
+		if s.storage != nil {
+			_ = s.storage.Bucket("sqs-receipts-"+s.region).Put(
+				[]byte(msg.ReceiptHandle),
+				[]byte(messageKey(queueURL, msg.ID)),
+			)
+		}
+
 		messages = append(messages, msg)
 	}
 
@@ -202,6 +201,22 @@ func (s *SQSStore) DeleteMessage(queueURL, receiptHandle string) error {
 	s.msgMutex.Lock()
 	defer s.msgMutex.Unlock()
 
+	if s.storage != nil {
+		receiptsBucket := s.storage.Bucket("sqs-receipts-" + s.region)
+		msgKeyBytes, err := receiptsBucket.Get([]byte(receiptHandle))
+		if err != nil || len(msgKeyBytes) == 0 {
+			return ErrInvalidReceiptHandle
+		}
+		messagesBucket := "sqs-messages-" + s.region
+		err = s.storage.Update(context.Background(), func(txn storage.Transaction) error {
+			if err := txn.Bucket(messagesBucket).Delete(msgKeyBytes); err != nil {
+				return err
+			}
+			return txn.Bucket("sqs-receipts-" + s.region).Delete([]byte(receiptHandle))
+		})
+		return err
+	}
+
 	opts := common.ListOptions{Prefix: messagePrefix(queueURL), MaxItems: 1000}
 	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
 		return m.ReceiptHandle == receiptHandle
@@ -209,11 +224,9 @@ func (s *SQSStore) DeleteMessage(queueURL, receiptHandle string) error {
 	if err != nil {
 		return err
 	}
-
 	if len(result.Items) == 0 {
 		return ErrInvalidReceiptHandle
 	}
-
 	return s.messagesStore.Delete(messageKey(queueURL, result.Items[0].Id))
 }
 
@@ -225,6 +238,40 @@ func (s *SQSStore) ChangeMessageVisibility(queueURL, receiptHandle string, visib
 
 	s.msgMutex.Lock()
 	defer s.msgMutex.Unlock()
+
+	if s.storage != nil {
+		receiptsBucket := s.storage.Bucket("sqs-receipts-" + s.region)
+		msgKeyBytes, err := receiptsBucket.Get([]byte(receiptHandle))
+		if err != nil || len(msgKeyBytes) == 0 {
+			return ErrInvalidReceiptHandle
+		}
+
+		var msgPb pb.Message
+		if err := s.messagesStore.GetProto(string(msgKeyBytes), &msgPb); err != nil {
+			return ErrInvalidReceiptHandle
+		}
+
+		msg := ProtoToMessage(&msgPb)
+		msg.VisibilityTimeout = visibilityTimeout
+		msg.ReceivedAt = time.Now()
+
+		if visibilityTimeout == 0 {
+			msg.ReceiptHandle = ""
+			messagesBucket := "sqs-messages-" + s.region
+			msgData, marshalErr := proto.Marshal(MessageToProto(msg))
+			if marshalErr != nil {
+				return marshalErr
+			}
+			return s.storage.Update(context.Background(), func(txn storage.Transaction) error {
+				if err := txn.Bucket(messagesBucket).Put(msgKeyBytes, msgData); err != nil {
+					return err
+				}
+				return txn.Bucket("sqs-receipts-" + s.region).Delete([]byte(receiptHandle))
+			})
+		}
+
+		return s.messagesStore.PutProto(string(msgKeyBytes), MessageToProto(msg))
+	}
 
 	opts := common.ListOptions{Prefix: messagePrefix(queueURL), MaxItems: 1000}
 	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
@@ -279,5 +326,30 @@ func (s *SQSStore) PurgeQueue(queueURL string) error {
 		s.purgeMutex.Unlock()
 	}()
 
-	return s.messagesStore.DeleteByPrefix(messagePrefix(queueURL))
+	s.msgMutex.Lock()
+	defer s.msgMutex.Unlock()
+
+	err := s.messagesStore.DeleteByPrefix(messagePrefix(queueURL))
+	if err != nil {
+		return err
+	}
+
+	if s.storage != nil {
+		receiptsBucket := s.storage.Bucket("sqs-receipts-" + s.region)
+		prefix := []byte(messagePrefix(queueURL))
+		var toDelete [][]byte
+		_ = receiptsBucket.ForEach(func(k, v []byte) error {
+			if bytes.HasPrefix(v, prefix) {
+				keyCopy := make([]byte, len(k))
+				copy(keyCopy, k)
+				toDelete = append(toDelete, keyCopy)
+			}
+			return nil
+		})
+		for _, k := range toDelete {
+			_ = receiptsBucket.Delete(k)
+		}
+	}
+
+	return nil
 }

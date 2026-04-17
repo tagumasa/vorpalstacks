@@ -51,7 +51,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return err
 		}
 		if resp.Topics == nil {
-			return fmt.Errorf("Topics is nil")
+			return fmt.Errorf("topics is nil")
 		}
 		return nil
 	}))
@@ -64,7 +64,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return err
 		}
 		if resp.Attributes == nil {
-			return fmt.Errorf("Attributes is nil")
+			return fmt.Errorf("attributes is nil")
 		}
 		return nil
 	}))
@@ -134,7 +134,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return err
 		}
 		if resp.Subscriptions == nil {
-			return fmt.Errorf("Subscriptions is nil")
+			return fmt.Errorf("subscriptions is nil")
 		}
 		return nil
 	}))
@@ -157,7 +157,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return err
 		}
 		if resp.Tags == nil {
-			return fmt.Errorf("Tags is nil")
+			return fmt.Errorf("tags is nil")
 		}
 		return nil
 	}))
@@ -188,7 +188,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return err
 		}
 		if resp.Successful == nil {
-			return fmt.Errorf("Successful is nil")
+			return fmt.Errorf("successful is nil")
 		}
 		if len(resp.Successful) == 0 {
 			return fmt.Errorf("expected at least one successful publish, got 0")
@@ -332,13 +332,13 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return err
 		}
 		if resp.Attributes == nil {
-			return fmt.Errorf("Attributes is nil")
+			return fmt.Errorf("attributes is nil")
 		}
 		if resp.Attributes["SubscriptionArn"] != sqsSubArn {
-			return fmt.Errorf("SubscriptionArn mismatch: got %q", resp.Attributes["SubscriptionArn"])
+			return fmt.Errorf("subscriptionArn mismatch: got %q", resp.Attributes["SubscriptionArn"])
 		}
 		if resp.Attributes["Protocol"] != "sqs" {
-			return fmt.Errorf("Protocol mismatch: got %q", resp.Attributes["Protocol"])
+			return fmt.Errorf("protocol mismatch: got %q", resp.Attributes["Protocol"])
 		}
 		return nil
 	}))
@@ -834,7 +834,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return err
 		}
 		if resp.Attributes == nil {
-			return fmt.Errorf("Attributes is nil")
+			return fmt.Errorf("attributes is nil")
 		}
 		if resp.Attributes["PlatformCredential"] != "fake-credential" {
 			return fmt.Errorf("PlatformCredential mismatch: got %q", resp.Attributes["PlatformCredential"])
@@ -892,7 +892,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return err
 		}
 		if resp.Endpoints == nil {
-			return fmt.Errorf("Endpoints is nil")
+			return fmt.Errorf("endpoints is nil")
 		}
 		if len(resp.Endpoints) == 0 {
 			return fmt.Errorf("expected at least one endpoint")
@@ -908,13 +908,13 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return err
 		}
 		if resp.Attributes == nil {
-			return fmt.Errorf("Attributes is nil")
+			return fmt.Errorf("attributes is nil")
 		}
 		if resp.Attributes["Token"] != "fake-device-token-12345" {
-			return fmt.Errorf("Token mismatch: got %q", resp.Attributes["Token"])
+			return fmt.Errorf("token mismatch: got %q", resp.Attributes["Token"])
 		}
 		if resp.Attributes["Enabled"] != "true" {
-			return fmt.Errorf("Enabled should be true by default, got %q", resp.Attributes["Enabled"])
+			return fmt.Errorf("enabled should be true by default, got %q", resp.Attributes["Enabled"])
 		}
 		return nil
 	}))
@@ -941,7 +941,7 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return fmt.Errorf("CustomUserData mismatch: got %q", getResp.Attributes["CustomUserData"])
 		}
 		if getResp.Attributes["Enabled"] != "false" {
-			return fmt.Errorf("Enabled should be false, got %q", getResp.Attributes["Enabled"])
+			return fmt.Errorf("enabled should be false, got %q", getResp.Attributes["Enabled"])
 		}
 		return nil
 	}))
@@ -1301,10 +1301,10 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 			return fmt.Errorf("default Policy should be set")
 		}
 		if !strings.Contains(policy, "Version") {
-			return fmt.Errorf("Policy should contain Version, got: %s", policy)
+			return fmt.Errorf("policy should contain Version, got: %s", policy)
 		}
 		if !strings.Contains(*tResp.TopicArn, policyTopicName) {
-			return fmt.Errorf("Policy should reference topic ARN")
+			return fmt.Errorf("policy should reference topic ARN")
 		}
 		return nil
 	}))

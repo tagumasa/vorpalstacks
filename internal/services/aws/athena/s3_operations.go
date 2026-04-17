@@ -17,11 +17,11 @@ import (
 	"github.com/parquet-go/parquet-go"
 )
 
-func (s *Service) hasS3Support() bool {
+func (s *AthenaService) hasS3Support() bool {
 	return s.s3ObjectStore != nil
 }
 
-func (s *Service) parseS3Location(location string) (bucket, prefix string, err error) {
+func (s *AthenaService) parseS3Location(location string) (bucket, prefix string, err error) {
 	if !strings.HasPrefix(location, "s3://") {
 		return "", "", fmt.Errorf("invalid S3 location format: %s", location)
 	}
@@ -34,7 +34,7 @@ func (s *Service) parseS3Location(location string) (bucket, prefix string, err e
 	return rest[:idx], rest[idx+1:], nil
 }
 
-func (s *Service) writeQueryResultsToS3(ctx context.Context, queryExecutionId string, result *athenastore.QueryResult, outputLocation string) error {
+func (s *AthenaService) writeQueryResultsToS3(ctx context.Context, queryExecutionId string, result *athenastore.QueryResult, outputLocation string) error {
 	if !s.hasS3Support() {
 		return nil
 	}
@@ -56,7 +56,7 @@ func (s *Service) writeQueryResultsToS3(ctx context.Context, queryExecutionId st
 	return err
 }
 
-func (s *Service) resultSetToCSV(resultSet *athenastore.ResultSet) []byte {
+func (s *AthenaService) resultSetToCSV(resultSet *athenastore.ResultSet) []byte {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
@@ -74,7 +74,7 @@ func (s *Service) resultSetToCSV(resultSet *athenastore.ResultSet) []byte {
 	return buf.Bytes()
 }
 
-func (s *Service) readDataFromS3(ctx context.Context, location string, format string) ([]map[string]interface{}, error) {
+func (s *AthenaService) readDataFromS3(ctx context.Context, location string, format string) ([]map[string]interface{}, error) {
 	if !s.hasS3Support() {
 		return nil, fmt.Errorf("S3 integration not available")
 	}
@@ -130,7 +130,7 @@ func (s *Service) readDataFromS3(ctx context.Context, location string, format st
 	return allData, nil
 }
 
-func (s *Service) detectFileFormat(key string, data []byte) string {
+func (s *AthenaService) detectFileFormat(key string, data []byte) string {
 	lowerKey := strings.ToLower(key)
 	if strings.HasSuffix(lowerKey, ".parquet") || strings.HasSuffix(lowerKey, ".par") {
 		return "parquet"
@@ -157,7 +157,7 @@ func (s *Service) detectFileFormat(key string, data []byte) string {
 	return "csv"
 }
 
-func (s *Service) parseCSVData(data []byte) ([]map[string]interface{}, error) {
+func (s *AthenaService) parseCSVData(data []byte) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 
 	reader := csv.NewReader(bytes.NewReader(data))
@@ -184,7 +184,7 @@ func (s *Service) parseCSVData(data []byte) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func (s *Service) parseJSONData(data []byte) ([]map[string]interface{}, error) {
+func (s *AthenaService) parseJSONData(data []byte) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 
 	trimmed := bytes.TrimSpace(data)
@@ -207,7 +207,7 @@ func (s *Service) parseJSONData(data []byte) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func (s *Service) parseParquetData(data []byte) ([]map[string]interface{}, error) {
+func (s *AthenaService) parseParquetData(data []byte) ([]map[string]interface{}, error) {
 	reader := parquet.NewReader(bytes.NewReader(data))
 	defer reader.Close()
 
@@ -227,7 +227,7 @@ func (s *Service) parseParquetData(data []byte) ([]map[string]interface{}, error
 	return results, nil
 }
 
-func (s *Service) loadExternalTableData(reqCtx *request.RequestContext, catalog, database, tableName string) ([]map[string]interface{}, error) {
+func (s *AthenaService) loadExternalTableData(reqCtx *request.RequestContext, catalog, database, tableName string) ([]map[string]interface{}, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -253,7 +253,7 @@ func (s *Service) loadExternalTableData(reqCtx *request.RequestContext, catalog,
 	return s.readDataFromS3(reqCtx, location, format)
 }
 
-func (s *Service) convertS3DataToStoredTable(data []map[string]interface{}, columns []athenastore.Column) *athenastore.StoredTable {
+func (s *AthenaService) convertS3DataToStoredTable(data []map[string]interface{}, columns []athenastore.Column) *athenastore.StoredTable {
 	storedTable := &athenastore.StoredTable{
 		Columns: columns,
 		Rows:    []*athenastore.StoredRow{},

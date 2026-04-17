@@ -76,7 +76,7 @@ func (s *FunctionURLServer) HandleRequest(w http.ResponseWriter, r *http.Request
 
 	s.setCORSHeaders(w, r, urlConfig)
 
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, 6*1024*1024))
 	if err != nil {
 		http.Error(w, `{"message":"Failed to read request body"}`, http.StatusBadRequest)
 		return

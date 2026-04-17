@@ -9,7 +9,7 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *Service) evaluateWhere(expr sqlparser.Expr, row map[string]interface{}) bool {
+func (s *AthenaService) evaluateWhere(expr sqlparser.Expr, row map[string]interface{}) bool {
 	switch e := expr.(type) {
 	case *sqlparser.ComparisonExpr:
 		return s.evaluateComparison(e, row)
@@ -25,7 +25,7 @@ func (s *Service) evaluateWhere(expr sqlparser.Expr, row map[string]interface{})
 	return true
 }
 
-func (s *Service) evaluateComparison(expr *sqlparser.ComparisonExpr, row map[string]interface{}) bool {
+func (s *AthenaService) evaluateComparison(expr *sqlparser.ComparisonExpr, row map[string]interface{}) bool {
 	leftVal := s.getExprValue(expr.Left, row)
 	rightVal := s.getExprValue(expr.Right, row)
 
@@ -50,7 +50,7 @@ func (s *Service) evaluateComparison(expr *sqlparser.ComparisonExpr, row map[str
 	return false
 }
 
-func (s *Service) compareValues(left, right interface{}) int {
+func (s *AthenaService) compareValues(left, right interface{}) int {
 	leftFloat, leftErr := s.toFloat(left)
 	rightFloat, rightErr := s.toFloat(right)
 
@@ -73,7 +73,7 @@ func (s *Service) compareValues(left, right interface{}) int {
 	return 0
 }
 
-func (s *Service) evaluateIs(expr *sqlparser.IsExpr, row map[string]interface{}) bool {
+func (s *AthenaService) evaluateIs(expr *sqlparser.IsExpr, row map[string]interface{}) bool {
 	val := s.getExprValue(expr.Expr, row)
 	isNull := val == nil
 	switch expr.Operator {
@@ -85,7 +85,7 @@ func (s *Service) evaluateIs(expr *sqlparser.IsExpr, row map[string]interface{})
 	return false
 }
 
-func (s *Service) getExprValue(expr sqlparser.Expr, row map[string]interface{}) interface{} {
+func (s *AthenaService) getExprValue(expr sqlparser.Expr, row map[string]interface{}) interface{} {
 	switch e := expr.(type) {
 	case *sqlparser.ColName:
 		colName := e.Name.String()
@@ -109,7 +109,7 @@ func (s *Service) getExprValue(expr sqlparser.Expr, row map[string]interface{}) 
 	return nil
 }
 
-func (s *Service) matchLike(value, pattern string) bool {
+func (s *AthenaService) matchLike(value, pattern string) bool {
 	pattern = strings.Trim(pattern, "'")
 	pattern = strings.ToLower(pattern)
 	value = strings.ToLower(value)
@@ -119,7 +119,7 @@ func (s *Service) matchLike(value, pattern string) bool {
 	return matched
 }
 
-func (s *Service) likePatternToRegex(pattern string) string {
+func (s *AthenaService) likePatternToRegex(pattern string) string {
 	var result strings.Builder
 	escaped := false
 

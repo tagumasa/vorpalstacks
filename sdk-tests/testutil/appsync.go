@@ -64,7 +64,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return err
 		}
 		if resp.Api == nil {
-			return fmt.Errorf("Api is nil")
+			return fmt.Errorf("api is nil")
 		}
 		if resp.Api.ApiId == nil || *resp.Api.ApiId == "" {
 			return fmt.Errorf("ApiId is empty")
@@ -117,7 +117,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return err
 		}
 		if resp.Api == nil {
-			return fmt.Errorf("Api is nil")
+			return fmt.Errorf("api is nil")
 		}
 		if *resp.Api.ApiId != apiId {
 			return fmt.Errorf("expected ApiId %s, got %s", apiId, *resp.Api.ApiId)
@@ -135,7 +135,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return fmt.Errorf("invalid ARN format: %s", *resp.Api.ApiArn)
 		}
 		if resp.Api.Created == nil {
-			return fmt.Errorf("Created timestamp is nil")
+			return fmt.Errorf("created timestamp is nil")
 		}
 		return nil
 	}))
@@ -240,7 +240,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return fmt.Errorf("ChannelNamespaceArn is nil")
 		}
 		if resp.ChannelNamespace.Created == nil {
-			return fmt.Errorf("Created timestamp is nil")
+			return fmt.Errorf("created timestamp is nil")
 		}
 		return nil
 	}))
@@ -341,7 +341,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return err
 		}
 		if resp.Tags == nil {
-			return fmt.Errorf("Tags is nil")
+			return fmt.Errorf("tags is nil")
 		}
 		if resp.Tags["key1"] != "value1" {
 			return fmt.Errorf("expected key1=value1, got: %v", resp.Tags)
@@ -467,7 +467,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return fmt.Errorf("expected API_KEY auth type, got %s", resp.GraphqlApi.AuthenticationType)
 		}
 		if resp.GraphqlApi.Arn == nil {
-			return fmt.Errorf("Arn is nil")
+			return fmt.Errorf("arn is nil")
 		}
 		if !strings.HasPrefix(*resp.GraphqlApi.Arn, "arn:aws:appsync:") {
 			return fmt.Errorf("invalid ARN format: %s", *resp.GraphqlApi.Arn)
@@ -486,7 +486,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return err
 		}
 		if resp.GraphqlApi == nil || resp.GraphqlApi.Tags == nil {
-			return fmt.Errorf("Tags not returned")
+			return fmt.Errorf("tags not returned")
 		}
 		if resp.GraphqlApi.Tags["env"] != "dev" {
 			return fmt.Errorf("tag not persisted: %v", resp.GraphqlApi.Tags)
@@ -733,7 +733,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return err
 		}
 		if resp.Type == nil {
-			return fmt.Errorf("Type is nil")
+			return fmt.Errorf("type is nil")
 		}
 		if resp.Type.Name == nil || *resp.Type.Name != "Post" {
 			return fmt.Errorf("expected name Post, got %v", resp.Type.Name)
@@ -800,7 +800,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return err
 		}
 		if resp.Type == nil {
-			return fmt.Errorf("Type is nil")
+			return fmt.Errorf("type is nil")
 		}
 		if resp.Type.Definition == nil || !strings.Contains(*resp.Type.Definition, "content") {
 			return fmt.Errorf("definition not updated: %v", resp.Type.Definition)
@@ -852,7 +852,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return err
 		}
 		if resp.Resolver == nil {
-			return fmt.Errorf("Resolver is nil")
+			return fmt.Errorf("resolver is nil")
 		}
 		if *resp.Resolver.FieldName != "getPost" {
 			return fmt.Errorf("expected fieldName getPost, got %s", *resp.Resolver.FieldName)
@@ -915,7 +915,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return err
 		}
 		if resp.Resolver == nil {
-			return fmt.Errorf("Resolver is nil")
+			return fmt.Errorf("resolver is nil")
 		}
 		if resp.Resolver.RequestMappingTemplate == nil || *resp.Resolver.RequestMappingTemplate == "" {
 			return fmt.Errorf("requestMappingTemplate not updated")
@@ -1177,7 +1177,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 		}
 		schemaStr := string(resp.Schema)
 		if len(schemaStr) == 0 {
-			return fmt.Errorf("Schema is empty")
+			return fmt.Errorf("schema is empty")
 		}
 		for _, expected := range []string{"type Query", "type Mutation", "type Post"} {
 			if !strings.Contains(schemaStr, expected) {
@@ -1265,13 +1265,13 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return fmt.Errorf("ApiKey is nil")
 		}
 		if resp.ApiKey.Id == nil || *resp.ApiKey.Id == "" {
-			return fmt.Errorf("Id is empty")
+			return fmt.Errorf("id is empty")
 		}
 		if resp.ApiKey.Expires == 0 {
-			return fmt.Errorf("Expires should be set (default 365 days)")
+			return fmt.Errorf("expires should be set (default 365 days)")
 		}
 		if resp.ApiKey.Deletes == 0 {
-			return fmt.Errorf("Deletes should be set (same as Expires)")
+			return fmt.Errorf("deletes should be set (same as Expires)")
 		}
 		apiKeyId = *resp.ApiKey.Id
 		return nil
@@ -1554,7 +1554,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			return err
 		}
 		if resp.DomainNameConfig == nil || resp.DomainNameConfig.Tags == nil {
-			return fmt.Errorf("Tags not returned")
+			return fmt.Errorf("tags not returned")
 		}
 		if resp.DomainNameConfig.Tags["env"] != "prod" {
 			return fmt.Errorf("tag not persisted: %v", resp.DomainNameConfig.Tags)
@@ -2047,7 +2047,6 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 	// === PAGINATION FOLLOW-UP TESTS ===
 
 	results = append(results, r.RunTest("appsync", "ListApis_NextTokenFollowUp", func() error {
-		var allApis []string
 		nextToken := ""
 		pageCount := 0
 		for {
@@ -2060,10 +2059,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 				return fmt.Errorf("list apis page: %v", err)
 			}
 			pageCount++
-			for _, api := range resp.Apis {
-				if api.Name != nil {
-					allApis = append(allApis, *api.Name)
-				}
+			for range resp.Apis {
 			}
 			if resp.NextToken != nil && *resp.NextToken != "" {
 				nextToken = *resp.NextToken

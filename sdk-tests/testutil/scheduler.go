@@ -194,7 +194,7 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 			return fmt.Errorf("LastModificationDate is nil")
 		}
 		if getResp.Target == nil {
-			return fmt.Errorf("Target is nil")
+			return fmt.Errorf("target is nil")
 		}
 		if getResp.FlexibleTimeWindow == nil || getResp.FlexibleTimeWindow.Mode != types.FlexibleTimeWindowModeOff {
 			return fmt.Errorf("FlexibleTimeWindow mode mismatch")

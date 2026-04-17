@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -38,7 +39,7 @@ type EventBase struct {
 	Source    string        `json:"source"`
 	Region    string        `json:"region"`
 	AccountID string        `json:"account_id"`
-	Depth     int           `json:"depth"`
+	depth     atomic.Int32  `json:"-"`
 	Caller    CallerContext `json:"caller"`
 }
 
@@ -63,10 +64,11 @@ func (e *EventBase) EventAccountID() string { return e.AccountID }
 
 // EventDepth returns the current dispatch depth, used to prevent
 // infinite event cycles.
-func (e *EventBase) EventDepth() int { return e.Depth }
+func (e *EventBase) EventDepth() int { return int(e.depth.Load()) }
 
-// SetEventDepth sets the dispatch depth for cycle prevention.
-func (e *EventBase) SetEventDepth(d int) { e.Depth = d }
+func (e *EventBase) SetEventDepth(d int) { e.depth.Store(int32(d)) }
+
+func (e *EventBase) getEventBase() *EventBase { return e }
 
 // EventCaller returns the IAM identity that originated the event.
 func (e *EventBase) EventCaller() CallerContext { return e.Caller }

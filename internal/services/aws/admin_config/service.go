@@ -25,7 +25,7 @@ type ConfigStore interface {
 }
 
 // Service provides admin configuration management operations.
-type Service struct {
+type AdminConfigService struct {
 	configStore ConfigStore
 }
 
@@ -35,9 +35,9 @@ type Service struct {
 //   - configStore: The configuration store instance
 //
 // Returns:
-//   - *Service: A new admin config service instance
-func NewService(configStore ConfigStore) *Service {
-	return &Service{
+//   - *AdminConfigService: A new admin config service instance
+func NewAdminConfigService(configStore ConfigStore) *AdminConfigService {
+	return &AdminConfigService{
 		configStore: configStore,
 	}
 }
@@ -51,7 +51,7 @@ func NewService(configStore ConfigStore) *Service {
 // Returns:
 //   - *connect.Response[pb.GetConfigResponse]: The configuration entry if found
 //   - error: An error if the key is not found or operation fails
-func (s *Service) GetConfig(ctx context.Context, req *connect.Request[pb.GetConfigRequest]) (*connect.Response[pb.GetConfigResponse], error) {
+func (s *AdminConfigService) GetConfig(ctx context.Context, req *connect.Request[pb.GetConfigRequest]) (*connect.Response[pb.GetConfigResponse], error) {
 	entry, err := s.configStore.Get(req.Msg.Key)
 	if err != nil {
 		if err == storeconfig.ErrConfigNotFound {
@@ -74,7 +74,7 @@ func (s *Service) GetConfig(ctx context.Context, req *connect.Request[pb.GetConf
 // Returns:
 //   - *connect.Response[pb.ListConfigResponse]: The list of configuration entries
 //   - error: An error if the operation fails
-func (s *Service) ListConfig(ctx context.Context, req *connect.Request[pb.ListConfigRequest]) (*connect.Response[pb.ListConfigResponse], error) {
+func (s *AdminConfigService) ListConfig(ctx context.Context, req *connect.Request[pb.ListConfigRequest]) (*connect.Response[pb.ListConfigResponse], error) {
 	var entries []*storeconfig.ConfigEntry
 	var err error
 
@@ -107,7 +107,7 @@ func (s *Service) ListConfig(ctx context.Context, req *connect.Request[pb.ListCo
 // Returns:
 //   - *connect.Response[pb.ConfigEntry]: The updated configuration entry
 //   - error: An error if the update fails
-func (s *Service) UpdateConfig(ctx context.Context, req *connect.Request[pb.UpdateConfigRequest]) (*connect.Response[pb.ConfigEntry], error) {
+func (s *AdminConfigService) UpdateConfig(ctx context.Context, req *connect.Request[pb.UpdateConfigRequest]) (*connect.Response[pb.ConfigEntry], error) {
 	var value interface{}
 	if err := json.Unmarshal([]byte(req.Msg.Value), &value); err != nil {
 		value = req.Msg.Value
@@ -140,7 +140,7 @@ func (s *Service) UpdateConfig(ctx context.Context, req *connect.Request[pb.Upda
 // Returns:
 //   - *connect.Response[pb.ConfigEntry]: The reset configuration entry
 //   - error: An error if the key is not found or reset fails
-func (s *Service) ResetConfig(ctx context.Context, req *connect.Request[pb.ResetConfigRequest]) (*connect.Response[pb.ConfigEntry], error) {
+func (s *AdminConfigService) ResetConfig(ctx context.Context, req *connect.Request[pb.ResetConfigRequest]) (*connect.Response[pb.ConfigEntry], error) {
 	entry, err := s.configStore.Reset(req.Msg.Key)
 	if err != nil {
 		if err == storeconfig.ErrConfigNotFound {
@@ -161,7 +161,7 @@ func (s *Service) ResetConfig(ctx context.Context, req *connect.Request[pb.Reset
 // Returns:
 //   - *connect.Response[pb.ListServicesResponse]: The list of available services
 //   - error: An error if the operation fails
-func (s *Service) ListServices(ctx context.Context, req *connect.Request[pb.ListServicesRequest]) (*connect.Response[pb.ListServicesResponse], error) {
+func (s *AdminConfigService) ListServices(ctx context.Context, req *connect.Request[pb.ListServicesRequest]) (*connect.Response[pb.ListServicesResponse], error) {
 	return connect.NewResponse(&pb.ListServicesResponse{
 		Services: []*pb.ServiceInfo{},
 	}), nil
@@ -176,7 +176,7 @@ func (s *Service) ListServices(ctx context.Context, req *connect.Request[pb.List
 // Returns:
 //   - *connect.Response[pb.ServiceStatus]: The service status if found
 //   - error: An error if the service is not found
-func (s *Service) GetServiceStatus(ctx context.Context, req *connect.Request[pb.GetServiceStatusRequest]) (*connect.Response[pb.ServiceStatus], error) {
+func (s *AdminConfigService) GetServiceStatus(ctx context.Context, req *connect.Request[pb.GetServiceStatusRequest]) (*connect.Response[pb.ServiceStatus], error) {
 	return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("service not found: %s", req.Msg.Name))
 }
 
@@ -189,7 +189,7 @@ func (s *Service) GetServiceStatus(ctx context.Context, req *connect.Request[pb.
 // Returns:
 //   - *connect.Response[pb.GetResourcePortResponse]: The resource port information
 //   - error: An error if the port configuration is not found
-func (s *Service) GetResourcePort(ctx context.Context, req *connect.Request[pb.GetResourcePortRequest]) (*connect.Response[pb.GetResourcePortResponse], error) {
+func (s *AdminConfigService) GetResourcePort(ctx context.Context, req *connect.Request[pb.GetResourcePortRequest]) (*connect.Response[pb.GetResourcePortResponse], error) {
 	port, err := s.configStore.GetResourcePort(req.Msg.ServicePortKey, req.Msg.ResourceId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("port configuration not found"))
@@ -216,7 +216,7 @@ func (s *Service) GetResourcePort(ctx context.Context, req *connect.Request[pb.G
 // Returns:
 //   - *connect.Response[common.Empty]: An empty response on success
 //   - error: An error if the operation fails
-func (s *Service) SetResourcePort(ctx context.Context, req *connect.Request[pb.SetResourcePortRequest]) (*connect.Response[common.Empty], error) {
+func (s *AdminConfigService) SetResourcePort(ctx context.Context, req *connect.Request[pb.SetResourcePortRequest]) (*connect.Response[common.Empty], error) {
 	if err := s.configStore.SetResourcePort(req.Msg.ServicePortKey, req.Msg.ResourceId, int(req.Msg.Port)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

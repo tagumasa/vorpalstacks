@@ -8,7 +8,7 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *Service) applyOrderBy(rows []map[string]interface{}, orderBy sqlparser.OrderBy) {
+func (s *TimestreamQueryService) applyOrderBy(rows []map[string]interface{}, orderBy sqlparser.OrderBy) {
 	sort.Slice(rows, func(i, j int) bool {
 		for _, order := range orderBy {
 			colName := s.extractColumnName(order.Expr)
@@ -32,7 +32,7 @@ func (s *Service) applyOrderBy(rows []map[string]interface{}, orderBy sqlparser.
 	})
 }
 
-func (s *Service) applyLimit(rows []map[string]interface{}, limit *sqlparser.Limit) []map[string]interface{} {
+func (s *TimestreamQueryService) applyLimit(rows []map[string]interface{}, limit *sqlparser.Limit) []map[string]interface{} {
 	count := 0
 	if rowcount := limit.Rowcount; rowcount != nil {
 		if sqlVal, ok := rowcount.(*sqlparser.SQLVal); ok {
@@ -61,7 +61,7 @@ func (s *Service) applyLimit(rows []map[string]interface{}, limit *sqlparser.Lim
 	return rows[offset:end]
 }
 
-func (s *Service) projectColumns(rows []map[string]interface{}, selectExprs sqlparser.SelectExprs) []map[string]interface{} {
+func (s *TimestreamQueryService) projectColumns(rows []map[string]interface{}, selectExprs sqlparser.SelectExprs) []map[string]interface{} {
 	if len(selectExprs) == 1 {
 		if _, isStar := selectExprs[0].(*sqlparser.StarExpr); isStar {
 			return rows
@@ -90,6 +90,6 @@ func (s *Service) projectColumns(rows []map[string]interface{}, selectExprs sqlp
 	return result
 }
 
-func (s *Service) getOutputName(expr sqlparser.Expr) string {
+func (s *TimestreamQueryService) getOutputName(expr sqlparser.Expr) string {
 	return sqlparser.String(expr)
 }

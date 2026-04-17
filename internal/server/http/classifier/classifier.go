@@ -11,9 +11,9 @@ import (
 
 	"github.com/fxamacker/cbor/v2"
 
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/server/actionregistry"
 	"vorpalstacks/internal/server/http/router"
-	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/utils/aws/authutil"
 )
 
@@ -106,7 +106,7 @@ func (c *Classifier) readBody(r *http.Request) ([]byte, error) {
 	if r.Body == nil {
 		return nil, nil
 	}
-	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 64*1024*1024))
+	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 10*1024*1024))
 	if err != nil {
 		return nil, err
 	}

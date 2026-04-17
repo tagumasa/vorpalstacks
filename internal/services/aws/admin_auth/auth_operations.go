@@ -11,7 +11,7 @@ import (
 )
 
 // Login authenticates a user with username and password and returns tokens.
-func (s *Service) Login(
+func (s *AdminAuthService) Login(
 	ctx context.Context,
 	req *connect.Request[pb.LoginRequest],
 ) (*connect.Response[pb.LoginResponse], error) {
@@ -76,7 +76,7 @@ func (s *Service) Login(
 }
 
 // RefreshToken refreshes access and ID tokens using a refresh token.
-func (s *Service) RefreshToken(
+func (s *AdminAuthService) RefreshToken(
 	ctx context.Context,
 	req *connect.Request[pb.RefreshTokenRequest],
 ) (*connect.Response[pb.LoginResponse], error) {
@@ -139,7 +139,7 @@ func (s *Service) RefreshToken(
 }
 
 // Logout invalidates the given access token.
-func (s *Service) Logout(
+func (s *AdminAuthService) Logout(
 	ctx context.Context,
 	req *connect.Request[pb.LogoutRequest],
 ) (*connect.Response[common.Empty], error) {
@@ -157,7 +157,7 @@ func (s *Service) Logout(
 }
 
 // GetCurrentUser returns the current user information based on the access token.
-func (s *Service) GetCurrentUser(
+func (s *AdminAuthService) GetCurrentUser(
 	ctx context.Context,
 	req *connect.Request[pb.GetCurrentUserRequest],
 ) (*connect.Response[pb.GetCurrentUserResponse], error) {

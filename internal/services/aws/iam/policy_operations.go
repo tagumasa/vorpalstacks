@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -124,7 +125,7 @@ func (s *IAMService) ListPolicies(ctx context.Context, reqCtx *request.RequestCo
 	pathPrefix := request.GetStringParam(req.Parameters, "PathPrefix")
 	onlyAttached := request.GetBoolParam(req.Parameters, "OnlyAttached")
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -287,7 +288,7 @@ func (s *IAMService) ListPolicyVersions(ctx context.Context, reqCtx *request.Req
 	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	result, err := store.Policies().ListVersions(policyArn, marker, maxItems)
 	if err != nil {
@@ -382,7 +383,7 @@ func (s *IAMService) UntagPolicy(ctx context.Context, reqCtx *request.RequestCon
 		return nil, NewNoSuchPolicyError(policyArn)
 	}
 
-	policy.Tags = removeTags(policy.Tags, parseTagKeys(req.Parameters))
+	policy.Tags = tags.RemoveByTagKeys(policy.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
 
 	if err := store.Policies().Put(policy); err != nil {
 		return nil, err
@@ -409,7 +410,7 @@ func (s *IAMService) ListPolicyTags(ctx context.Context, reqCtx *request.Request
 	}
 
 	return map[string]interface{}{
-		"Tags":        tagsToResponse(policy.Tags),
+		"Tags":        tags.ToResponse(policy.Tags),
 		"IsTruncated": false,
 	}, nil
 }
@@ -504,7 +505,7 @@ func (s *IAMService) policyToResponse(reqCtx *request.RequestContext, policy *ia
 	if policy.Description != "" {
 		resp["Description"] = policy.Description
 	}
-	if tags := tagsToResponse(policy.Tags); tags != nil {
+	if tags := tags.ToResponse(policy.Tags); tags != nil {
 		resp["Tags"] = tags
 	}
 	return resp

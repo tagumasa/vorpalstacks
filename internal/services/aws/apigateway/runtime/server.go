@@ -197,7 +197,7 @@ func (s *RuntimeServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, 10*1024*1024))
 	if err != nil {
 		s.sendError(w, http.StatusBadRequest, fmt.Sprintf("Failed to read request body: %v", err))
 		return

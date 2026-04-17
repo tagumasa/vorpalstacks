@@ -9,7 +9,7 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *Service) applyOrderBy(rows []*athenastore.StoredRow, orderBy sqlparser.OrderBy) {
+func (s *AthenaService) applyOrderBy(rows []*athenastore.StoredRow, orderBy sqlparser.OrderBy) {
 	sort.Slice(rows, func(i, j int) bool {
 		for _, order := range orderBy {
 			colName := s.extractColumnName(order.Expr)
@@ -33,7 +33,7 @@ func (s *Service) applyOrderBy(rows []*athenastore.StoredRow, orderBy sqlparser.
 	})
 }
 
-func (s *Service) applyLimit(rows []*athenastore.StoredRow, limit *sqlparser.Limit) []*athenastore.StoredRow {
+func (s *AthenaService) applyLimit(rows []*athenastore.StoredRow, limit *sqlparser.Limit) []*athenastore.StoredRow {
 	count := 0
 	if rowcount := limit.Rowcount; rowcount != nil {
 		if sqlVal, ok := rowcount.(*sqlparser.SQLVal); ok {
@@ -62,7 +62,7 @@ func (s *Service) applyLimit(rows []*athenastore.StoredRow, limit *sqlparser.Lim
 	return rows[offset:end]
 }
 
-func (s *Service) projectColumns(rows []*athenastore.StoredRow, selectExprs sqlparser.SelectExprs) []*athenastore.StoredRow {
+func (s *AthenaService) projectColumns(rows []*athenastore.StoredRow, selectExprs sqlparser.SelectExprs) []*athenastore.StoredRow {
 	if len(selectExprs) == 1 {
 		if _, isStar := selectExprs[0].(*sqlparser.StarExpr); isStar {
 			return rows
@@ -89,7 +89,7 @@ func (s *Service) projectColumns(rows []*athenastore.StoredRow, selectExprs sqlp
 	return result
 }
 
-func (s *Service) extractColumnName(expr sqlparser.Expr) string {
+func (s *AthenaService) extractColumnName(expr sqlparser.Expr) string {
 	switch e := expr.(type) {
 	case *sqlparser.ColName:
 		return e.Name.String()
@@ -102,7 +102,7 @@ func (s *Service) extractColumnName(expr sqlparser.Expr) string {
 	}
 }
 
-func (s *Service) buildColumnInfoFromSelect(selectStmt *sqlparser.Select) []athenastore.ColumnInfo {
+func (s *AthenaService) buildColumnInfoFromSelect(selectStmt *sqlparser.Select) []athenastore.ColumnInfo {
 	var columns []athenastore.ColumnInfo
 
 	if len(selectStmt.SelectExprs) == 1 {

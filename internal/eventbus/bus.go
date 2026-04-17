@@ -329,7 +329,7 @@ func (b *EventBus) PublishSync(ctx context.Context, event Event) (HandlerResult,
 
 	base := getEventBase(event)
 	if base != nil {
-		base.Depth++
+		base.depth.Add(1)
 	} else {
 		event.SetEventDepth(event.EventDepth() + 1)
 	}
@@ -387,7 +387,7 @@ func (b *EventBus) Publish(ctx context.Context, event Event) error {
 
 	base := getEventBase(event)
 	if base != nil {
-		base.Depth++
+		base.depth.Add(1)
 	} else {
 		event.SetEventDepth(event.EventDepth() + 1)
 	}

@@ -25,7 +25,7 @@ type tsQueryStores struct {
 }
 
 // Service represents the Timestream Query service.
-type Service struct {
+type TimestreamQueryService struct {
 	accountID    string
 	serverHost   string
 	dataPath     string
@@ -34,8 +34,8 @@ type Service struct {
 }
 
 // NewService creates a new Timestream Query service.
-func NewService(accountID, serverHost, dataPath string) *Service {
-	return &Service{
+func NewTimestreamQueryService(accountID, serverHost, dataPath string) *TimestreamQueryService {
+	return &TimestreamQueryService{
 		accountID:    accountID,
 		serverHost:   serverHost,
 		dataPath:     dataPath,
@@ -43,7 +43,7 @@ func NewService(accountID, serverHost, dataPath string) *Service {
 	}
 }
 
-func (s *Service) store(ctx *request.RequestContext) (*tsQueryStores, error) {
+func (s *TimestreamQueryService) store(ctx *request.RequestContext) (*tsQueryStores, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, ctx.GetRegion(), func() (*tsQueryStores, error) {
 		storage, err := ctx.GetStorage()
 		if err != nil {
@@ -69,7 +69,7 @@ func (s *Service) store(ctx *request.RequestContext) (*tsQueryStores, error) {
 }
 
 // RegisterHandlers registers the Timestream Query service handlers with the dispatcher.
-func (s *Service) RegisterHandlers(d handler.Registrar) {
+func (s *TimestreamQueryService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("timestream-query", "DescribeEndpoints", s.DescribeEndpoints)
 	d.RegisterHandlerForService("timestream-query", "Query", s.Query)
 	d.RegisterHandlerForService("timestream-query", "CancelQuery", s.CancelQuery)

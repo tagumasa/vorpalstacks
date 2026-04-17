@@ -93,7 +93,7 @@ func (a *App) initAthena(st *serviceState) error {
 		logs.Warn("Athena skipped: S3 not enabled")
 		return nil
 	}
-	athenaService := svcathena.NewServiceWithS3(st.accountID, st.s3ObjectStore)
+	athenaService := svcathena.NewAthenaServiceWithS3(st.accountID, st.s3ObjectStore)
 	athenaService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("athena", func(ctx context.Context) error {
 		athenaService.Shutdown()
@@ -169,7 +169,7 @@ func (a *App) initRoute53(st *serviceState) error {
 // --- TimestreamQuery (optional) ---
 
 func (a *App) initTimestreamQuery(st *serviceState) error {
-	timestreamQueryService := svctimestreamquery.NewService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
+	timestreamQueryService := svctimestreamquery.NewTimestreamQueryService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
 	timestreamQueryService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }
@@ -177,7 +177,7 @@ func (a *App) initTimestreamQuery(st *serviceState) error {
 // --- TimestreamWrite (optional) ---
 
 func (a *App) initTimestreamWrite(st *serviceState) error {
-	timestreamWriteService := svctimestreamwrite.NewService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
+	timestreamWriteService := svctimestreamwrite.NewTimestreamWriteService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
 	timestreamWriteService.RegisterHandlers(a.server.Dispatcher())
 	st.timestreamWriteService = timestreamWriteService
 	a.addShutdown("timestreamwrite", func(ctx context.Context) error {

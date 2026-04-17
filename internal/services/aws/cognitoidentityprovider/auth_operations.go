@@ -284,6 +284,10 @@ func (s *CognitoService) handleRespondNewPasswordChallenge(reqCtx *request.Reque
 	if challengeSession.Username != username {
 		return nil, ErrNotAuthorized
 	}
+	if !challengeSession.ExpiresAt.IsZero() && time.Now().UTC().After(challengeSession.ExpiresAt) {
+		_ = store.DeleteChallengeSession(session)
+		return nil, ErrNotAuthorized
+	}
 
 	userPool, err := store.GetUserPool(userPoolID)
 	if err != nil {
@@ -778,6 +782,10 @@ func (s *CognitoService) handleNewPasswordChallenge(reqCtx *request.RequestConte
 		return nil, ErrNotAuthorized
 	}
 	if challengeSession.Username != username {
+		return nil, ErrNotAuthorized
+	}
+	if !challengeSession.ExpiresAt.IsZero() && time.Now().UTC().After(challengeSession.ExpiresAt) {
+		_ = store.DeleteChallengeSession(session)
 		return nil, ErrNotAuthorized
 	}
 

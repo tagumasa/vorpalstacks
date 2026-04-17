@@ -9,7 +9,7 @@ import (
 )
 
 // CreatePreparedStatement creates a new prepared statement in the Athena workgroup.
-func (s *Service) CreatePreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) CreatePreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	statementName := request.GetParamCaseInsensitive(req.Parameters, "StatementName")
 	if statementName == "" {
 		return nil, ErrInvalidRequestException
@@ -57,7 +57,7 @@ func (s *Service) CreatePreparedStatement(ctx context.Context, reqCtx *request.R
 }
 
 // GetPreparedStatement retrieves the specified prepared statement.
-func (s *Service) GetPreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) GetPreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	statementName := request.GetParamCaseInsensitive(req.Parameters, "StatementName")
 	if statementName == "" {
 		return nil, ErrInvalidRequestException
@@ -87,7 +87,7 @@ func (s *Service) GetPreparedStatement(ctx context.Context, reqCtx *request.Requ
 }
 
 // DeletePreparedStatement deletes the specified prepared statement.
-func (s *Service) DeletePreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) DeletePreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	statementName := request.GetParamCaseInsensitive(req.Parameters, "StatementName")
 	if statementName == "" {
 		return nil, ErrInvalidRequestException
@@ -114,7 +114,7 @@ func (s *Service) DeletePreparedStatement(ctx context.Context, reqCtx *request.R
 }
 
 // ListPreparedStatements retrieves a list of prepared statements in the specified workgroup.
-func (s *Service) ListPreparedStatements(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) ListPreparedStatements(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
 	if workGroup == "" {
 		workGroup = "primary"
@@ -145,7 +145,7 @@ func (s *Service) ListPreparedStatements(ctx context.Context, reqCtx *request.Re
 }
 
 // UpdatePreparedStatement updates the specified prepared statement.
-func (s *Service) UpdatePreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) UpdatePreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	statementName := request.GetParamCaseInsensitive(req.Parameters, "StatementName")
 	if statementName == "" {
 		return nil, ErrInvalidRequestException
@@ -187,7 +187,7 @@ func (s *Service) UpdatePreparedStatement(ctx context.Context, reqCtx *request.R
 }
 
 // BatchGetPreparedStatement retrieves multiple prepared statements in a single request.
-func (s *Service) BatchGetPreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) BatchGetPreparedStatement(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	preparedStatementsRaw := request.GetArrayParam(req.Parameters, "PreparedStatementNames")
 	if len(preparedStatementsRaw) == 0 {
 		return nil, ErrInvalidRequestException
@@ -232,7 +232,7 @@ func (s *Service) BatchGetPreparedStatement(ctx context.Context, reqCtx *request
 	}, nil
 }
 
-func (s *Service) preparedStatementToResponse(ps *athenastore.PreparedStatement) map[string]interface{} {
+func (s *AthenaService) preparedStatementToResponse(ps *athenastore.PreparedStatement) map[string]interface{} {
 	return map[string]interface{}{
 		"StatementName":    ps.StatementName,
 		"QueryStatement":   ps.QueryStatement,

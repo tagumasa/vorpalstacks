@@ -20,7 +20,7 @@ type tsWriteStores struct {
 }
 
 // Service provides AWS Timestream Write operations.
-type Service struct {
+type TimestreamWriteService struct {
 	accountID  string
 	serverHost string
 	dataPath   string
@@ -29,15 +29,15 @@ type Service struct {
 }
 
 // NewService creates a new Timestream Write service instance.
-func NewService(accountID, serverHost, dataPath string) *Service {
-	return &Service{
+func NewTimestreamWriteService(accountID, serverHost, dataPath string) *TimestreamWriteService {
+	return &TimestreamWriteService{
 		accountID:  accountID,
 		serverHost: serverHost,
 		dataPath:   dataPath,
 	}
 }
 
-func (s *Service) store(ctx *request.RequestContext) (*tsWriteStores, error) {
+func (s *TimestreamWriteService) store(ctx *request.RequestContext) (*tsWriteStores, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, ctx.GetRegion(), func() (*tsWriteStores, error) {
 		storage, err := ctx.GetStorage()
 		if err != nil {
@@ -59,7 +59,7 @@ func (s *Service) store(ctx *request.RequestContext) (*tsWriteStores, error) {
 }
 
 // RegisterHandlers registers the Timestream Write service handlers with the dispatcher.
-func (s *Service) RegisterHandlers(d handler.Registrar) {
+func (s *TimestreamWriteService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("timestream-write", "DescribeEndpoints", s.DescribeEndpoints)
 	d.RegisterHandlerForService("timestream-write", "CreateDatabase", s.CreateDatabase)
 	d.RegisterHandlerForService("timestream-write", "DescribeDatabase", s.DescribeDatabase)
@@ -82,7 +82,7 @@ func (s *Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("timestream-write", "DeleteBatchLoadTask", s.DeleteBatchLoadTask)
 }
 
-func (s *Service) mapStoreError(err error) error {
+func (s *TimestreamWriteService) mapStoreError(err error) error {
 	if err == nil {
 		return nil
 	}
@@ -107,6 +107,6 @@ func (s *Service) mapStoreError(err error) error {
 }
 
 // Close waits for any in-flight batch load simulation goroutines to finish.
-func (s *Service) Close() {
+func (s *TimestreamWriteService) Close() {
 	s.batchWg.Wait()
 }

@@ -73,7 +73,7 @@ func TestHandlerChain_NewHandlerChain(t *testing.T) {
 	hc := NewHandlerChain()
 
 	if hc == nil {
-		t.Error("handler chain should not be nil")
+		t.Fatal("handler chain should not be nil")
 	}
 	if hc.requestHandlers == nil {
 		t.Error("request handlers should be initialized")

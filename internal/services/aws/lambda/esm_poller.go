@@ -393,7 +393,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 		if invokeErr != nil {
 			p.log("lambda invocation failed for Kinesis ESM", "function", fnName, "stream", streamName, "error", invokeErr)
 			_ = p.esmStore.SetState(mapping.UUID, "Enabled", fmt.Sprintf("Last processing result: %s", invokeErr.Error()))
-			return
+			continue
 		}
 
 		latestSeq := records[len(records)-1].SequenceNumber

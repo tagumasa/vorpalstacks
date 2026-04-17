@@ -59,7 +59,7 @@ func TestTracer_Default(t *testing.T) {
 
 func TestStartSpan(t *testing.T) {
 	ctx := context.Background()
-	ctx, span := StartSpan(ctx, "test-span")
+	_, span := StartSpan(ctx, "test-span")
 	defer span.End()
 
 	if span == nil {

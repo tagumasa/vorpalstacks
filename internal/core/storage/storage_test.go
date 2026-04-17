@@ -3,8 +3,6 @@ package storage
 import (
 	"context"
 	"errors"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -13,8 +11,7 @@ import (
 )
 
 func TestPebbleStorage(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "pebble-test")
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	s, err := Open(tmpDir)
 	require.NoError(t, err)
@@ -151,8 +148,7 @@ func TestPebbleStorage(t *testing.T) {
 
 func TestOpenBackend(t *testing.T) {
 	t.Run("Pebble Backend", func(t *testing.T) {
-		tmpDir := filepath.Join(os.TempDir(), "pebble-backend-test")
-		defer os.RemoveAll(tmpDir)
+		tmpDir := t.TempDir()
 
 		s, err := OpenBackend(BackendPebble, tmpDir)
 		require.NoError(t, err)
@@ -168,8 +164,7 @@ func TestOpenBackend(t *testing.T) {
 }
 
 func TestConditionalBucket(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "pebble-conditional-test")
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	s, err := Open(tmpDir)
 	require.NoError(t, err)
@@ -229,8 +224,7 @@ func TestConditionalBucket(t *testing.T) {
 }
 
 func TestIdempotencyStore(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "pebble-idempotency-test")
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	s, err := Open(tmpDir, WithTTL(true, 500*time.Millisecond))
 	require.NoError(t, err)
@@ -307,8 +301,7 @@ func TestIdempotencyStore(t *testing.T) {
 }
 
 func TestTwoPhaseTransaction(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "pebble-twophase-test")
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	s, err := Open(tmpDir)
 	require.NoError(t, err)
@@ -429,8 +422,7 @@ func TestTwoPhaseTransaction(t *testing.T) {
 }
 
 func TestMultiItemTransaction(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "pebble-multiitem-test")
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	s, err := Open(tmpDir)
 	require.NoError(t, err)
@@ -502,8 +494,7 @@ func TestMultiItemTransaction(t *testing.T) {
 }
 
 func TestVersionedBucket(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "pebble-versioning-test")
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	s, err := Open(tmpDir)
 	require.NoError(t, err)
@@ -585,8 +576,7 @@ func TestVersionedBucket(t *testing.T) {
 }
 
 func TestLockManager(t *testing.T) {
-	tmpDir := filepath.Join(os.TempDir(), "pebble-lock-test")
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	s, err := Open(tmpDir)
 	require.NoError(t, err)

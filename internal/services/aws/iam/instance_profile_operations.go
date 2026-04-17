@@ -3,6 +3,7 @@ package iam
 
 import (
 	"context"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -95,7 +96,7 @@ func (s *IAMService) DeleteInstanceProfile(ctx context.Context, reqCtx *request.
 func (s *IAMService) ListInstanceProfiles(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	pathPrefix := request.GetStringParam(req.Parameters, "PathPrefix")
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -212,7 +213,7 @@ func (s *IAMService) ListInstanceProfileTags(ctx context.Context, reqCtx *reques
 	}
 
 	return map[string]interface{}{
-		"Tags":        tagsToResponse(profile.Tags),
+		"Tags":        tags.ToResponse(profile.Tags),
 		"IsTruncated": false,
 	}, nil
 }
@@ -258,7 +259,7 @@ func (s *IAMService) UntagInstanceProfile(ctx context.Context, reqCtx *request.R
 		return nil, NewNoSuchInstanceProfileError(instanceProfileName)
 	}
 
-	profile.Tags = removeTags(profile.Tags, parseTagKeys(req.Parameters))
+	profile.Tags = tags.RemoveByTagKeys(profile.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
 
 	if err := store.InstanceProfiles().Put(profile); err != nil {
 		return nil, err
@@ -276,7 +277,7 @@ func (s *IAMService) instanceProfileToResponse(reqCtx *request.RequestContext, p
 		"CreateDate":          profile.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 	}
 
-	if tags := tagsToResponse(profile.Tags); tags != nil {
+	if tags := tags.ToResponse(profile.Tags); tags != nil {
 		resp["Tags"] = tags
 	}
 

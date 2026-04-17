@@ -160,10 +160,6 @@ func (ic *integClients) describeStream(name string) (*kinesis.DescribeStreamOutp
 	return ic.kinesis.DescribeStream(ic.ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(name)})
 }
 
-func (ic *integClients) createIterator(streamName, shardID string) (string, error) {
-	return ic.createIteratorWithType(streamName, shardID, kinesistypes.ShardIteratorTypeLatest)
-}
-
 func (ic *integClients) createIteratorFromHorizon(streamName, shardID string) (string, error) {
 	return ic.createIteratorWithType(streamName, shardID, kinesistypes.ShardIteratorTypeTrimHorizon)
 }
@@ -190,22 +186,12 @@ func (ic *integClients) verifyLambdaInvoked(fnName string) error {
 		LogGroupName: aws.String(logGroupName),
 	})
 	if err != nil {
-		return fmt.Errorf("Lambda %s was not invoked (no CW Logs at %s): %w", fnName, logGroupName, err)
+		return fmt.Errorf("lambda %s was not invoked (no CW Logs at %s): %w", fnName, logGroupName, err)
 	}
 	if len(resp.LogStreams) == 0 {
-		return fmt.Errorf("Lambda %s was not invoked (no log streams in %s)", fnName, logGroupName)
+		return fmt.Errorf("lambda %s was not invoked (no log streams in %s)", fnName, logGroupName)
 	}
 	return nil
-}
-
-func (ic *integClients) putMetricData(namespace, metricName string, value float64) error {
-	_, err := ic.cw.PutMetricData(ic.ctx, &cloudwatch.PutMetricDataInput{
-		Namespace: aws.String(namespace),
-		MetricData: []cloudwatchtypes.MetricDatum{
-			{MetricName: aws.String(metricName), Value: aws.Float64(value)},
-		},
-	})
-	return err
 }
 
 func (ic *integClients) createBucket(name string) error {

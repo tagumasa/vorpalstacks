@@ -68,7 +68,7 @@ func (s *IAMService) GetSAMLProvider(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if provider.Tags != nil {
-		resp["Tags"] = tagsToResponse(provider.Tags)
+		resp["Tags"] = tags.ToResponse(provider.Tags)
 	}
 
 	return resp, nil
@@ -188,7 +188,7 @@ func (s *IAMService) UntagSAMLProvider(ctx context.Context, reqCtx *request.Requ
 		return nil, NewNoSuchEntityError("SAML provider", providerArn)
 	}
 
-	provider.Tags = removeTags(provider.Tags, parseTagKeys(req.Parameters))
+	provider.Tags = tags.RemoveByTagKeys(provider.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
 	if err := store.SAMLProviders().Put(provider); err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (s *IAMService) ListSAMLProviderTags(ctx context.Context, reqCtx *request.R
 	}
 
 	return map[string]interface{}{
-		"Tags":        tagsToResponse(provider.Tags),
+		"Tags":        tags.ToResponse(provider.Tags),
 		"IsTruncated": false,
 	}, nil
 }

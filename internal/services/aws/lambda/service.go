@@ -316,7 +316,7 @@ func (s *LambdaService) fetchCodeFromS3(ctx context.Context, bucket, key, region
 		return nil, fmt.Errorf("failed to get object from S3: s3://%s/%s: %w", bucket, key, err)
 	}
 	defer reader.Close()
-	return io.ReadAll(reader)
+	return io.ReadAll(io.LimitReader(reader, 250*1024*1024))
 }
 
 func (s *LambdaService) loadCode(functionName, version string, region string) ([]byte, error) {

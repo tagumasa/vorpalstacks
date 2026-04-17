@@ -10,7 +10,7 @@ import (
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
-func (s *Service) executeCreateDatabase(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+func (s *AthenaService) executeCreateDatabase(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	catalog := "AwsDataCatalog"
 	if context != nil && context.Catalog != "" {
 		catalog = context.Catalog
@@ -45,7 +45,7 @@ func (s *Service) executeCreateDatabase(reqCtx *request.RequestContext, queryStr
 		}, nil
 }
 
-func (s *Service) executeDropDatabase(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+func (s *AthenaService) executeDropDatabase(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	catalog := "AwsDataCatalog"
 	if context != nil && context.Catalog != "" {
 		catalog = context.Catalog
@@ -74,7 +74,7 @@ func (s *Service) executeDropDatabase(reqCtx *request.RequestContext, queryStrin
 		}, nil
 }
 
-func (s *Service) executeCreateTable(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+func (s *AthenaService) executeCreateTable(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	catalog := "AwsDataCatalog"
 	database := "default"
 	if context != nil {
@@ -136,7 +136,7 @@ func (s *Service) executeCreateTable(reqCtx *request.RequestContext, queryString
 		}, nil
 }
 
-func (s *Service) executeDropTable(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+func (s *AthenaService) executeDropTable(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	catalog := "AwsDataCatalog"
 	database := "default"
 	if context != nil {
@@ -175,7 +175,7 @@ func (s *Service) executeDropTable(reqCtx *request.RequestContext, queryString s
 		}, nil
 }
 
-func (s *Service) executeInsert(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+func (s *AthenaService) executeInsert(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	catalog := "AwsDataCatalog"
 	database := "default"
 	if context != nil {
@@ -240,7 +240,7 @@ func (s *Service) executeInsert(reqCtx *request.RequestContext, queryString stri
 		}, nil
 }
 
-func (s *Service) executeShowDatabases(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+func (s *AthenaService) executeShowDatabases(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	catalog := "AwsDataCatalog"
 	if context != nil && context.Catalog != "" {
 		catalog = context.Catalog
@@ -280,7 +280,7 @@ func (s *Service) executeShowDatabases(reqCtx *request.RequestContext, queryStri
 		}, nil
 }
 
-func (s *Service) executeShowTables(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+func (s *AthenaService) executeShowTables(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	catalog := "AwsDataCatalog"
 	database := "default"
 	if context != nil {
@@ -322,7 +322,7 @@ func (s *Service) executeShowTables(reqCtx *request.RequestContext, queryString 
 		}, nil
 }
 
-func (s *Service) executeDescribe(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+func (s *AthenaService) executeDescribe(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	catalog := "AwsDataCatalog"
 	database := "default"
 	if context != nil {

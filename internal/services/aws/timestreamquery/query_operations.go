@@ -63,7 +63,7 @@ type ColumnTypeInfo struct {
 }
 
 // DescribeEndpoints returns the endpoints for the Timestream Query service.
-func (s *Service) DescribeEndpoints(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) DescribeEndpoints(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return map[string]interface{}{
 		"Endpoints": []map[string]interface{}{
 			{
@@ -75,7 +75,7 @@ func (s *Service) DescribeEndpoints(ctx context.Context, reqCtx *request.Request
 }
 
 // Query executes a query and returns the results.
-func (s *Service) Query(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
 	if queryString == "" {
 		return nil, ErrValidationException
@@ -167,7 +167,7 @@ func (s *Service) Query(ctx context.Context, reqCtx *request.RequestContext, req
 }
 
 // CancelQuery cancels a running query.
-func (s *Service) CancelQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) CancelQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryID := request.GetParamCaseInsensitive(req.Parameters, "QueryId")
 	if queryID == "" {
 		return nil, ErrValidationException
@@ -196,7 +196,7 @@ func (s *Service) CancelQuery(ctx context.Context, reqCtx *request.RequestContex
 }
 
 // PrepareQuery prepares a query for execution and validates its syntax.
-func (s *Service) PrepareQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) PrepareQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
 	if queryString == "" {
 		return nil, ErrValidationException
@@ -222,7 +222,7 @@ func (s *Service) PrepareQuery(ctx context.Context, reqCtx *request.RequestConte
 	}, nil
 }
 
-func (s *Service) extractParameters(queryString string) []map[string]interface{} {
+func (s *TimestreamQueryService) extractParameters(queryString string) []map[string]interface{} {
 	var params []map[string]interface{}
 
 	for i := 0; i < len(queryString); i++ {
@@ -244,7 +244,7 @@ func (s *Service) extractParameters(queryString string) []map[string]interface{}
 }
 
 // GetQueryStatus returns the status of a query.
-func (s *Service) GetQueryStatus(ctx context.Context, reqCtx *request.RequestContext, queryID string) (*QueryInfo, error) {
+func (s *TimestreamQueryService) GetQueryStatus(ctx context.Context, reqCtx *request.RequestContext, queryID string) (*QueryInfo, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -259,7 +259,7 @@ func (s *Service) GetQueryStatus(ctx context.Context, reqCtx *request.RequestCon
 }
 
 // ListQueryResults returns the results of a completed query.
-func (s *Service) ListQueryResults(ctx context.Context, reqCtx *request.RequestContext, queryID string) (*QueryResult, error) {
+func (s *TimestreamQueryService) ListQueryResults(ctx context.Context, reqCtx *request.RequestContext, queryID string) (*QueryResult, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

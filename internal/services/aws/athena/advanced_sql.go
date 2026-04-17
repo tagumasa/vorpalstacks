@@ -13,11 +13,11 @@ import (
 type tableResolver struct {
 	catalog  string
 	database string
-	service  *Service
+	service  *AthenaService
 	ctx      *request.RequestContext
 }
 
-func (s *Service) executeAdvancedSelect(reqCtx *request.RequestContext, selectStmt *sqlparser.Select, context *athenastore.QueryExecutionContext) (*athenastore.StoredTable, error) {
+func (s *AthenaService) executeAdvancedSelect(reqCtx *request.RequestContext, selectStmt *sqlparser.Select, context *athenastore.QueryExecutionContext) (*athenastore.StoredTable, error) {
 	catalog := "AwsDataCatalog"
 	database := "default"
 	if context != nil {
@@ -162,7 +162,7 @@ type joinInfo struct {
 	onExpr   sqlparser.Expr
 }
 
-func (s *Service) executeJoin(selectStmt *sqlparser.Select, tables []resolvedTable) ([]*athenastore.StoredRow, error) {
+func (s *AthenaService) executeJoin(selectStmt *sqlparser.Select, tables []resolvedTable) ([]*athenastore.StoredRow, error) {
 	if len(tables) < 2 {
 		return tables[0].Data.Rows, nil
 	}
@@ -177,7 +177,7 @@ func (s *Service) executeJoin(selectStmt *sqlparser.Select, tables []resolvedTab
 	return result, nil
 }
 
-func (s *Service) buildJoinTree(from sqlparser.TableExprs, tables []resolvedTable) *joinInfo {
+func (s *AthenaService) buildJoinTree(from sqlparser.TableExprs, tables []resolvedTable) *joinInfo {
 	if len(from) == 0 || len(tables) == 0 {
 		return nil
 	}
@@ -232,7 +232,7 @@ func (s *Service) buildJoinTree(from sqlparser.TableExprs, tables []resolvedTabl
 	return result
 }
 
-func (s *Service) executeJoinTree(ji *joinInfo, where *sqlparser.Where) []*athenastore.StoredRow {
+func (s *AthenaService) executeJoinTree(ji *joinInfo, where *sqlparser.Where) []*athenastore.StoredRow {
 	if ji == nil {
 		return nil
 	}
@@ -275,7 +275,7 @@ func (s *Service) executeJoinTree(ji *joinInfo, where *sqlparser.Where) []*athen
 	return result
 }
 
-func (s *Service) getJoinTableName(ji *joinInfo) string {
+func (s *AthenaService) getJoinTableName(ji *joinInfo) string {
 	if ji == nil {
 		return ""
 	}
@@ -285,7 +285,7 @@ func (s *Service) getJoinTableName(ji *joinInfo) string {
 	return "joined"
 }
 
-func (s *Service) innerJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) []*athenastore.StoredRow {
+func (s *AthenaService) innerJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) []*athenastore.StoredRow {
 	var result []*athenastore.StoredRow
 
 	for _, leftRow := range leftRows {
@@ -300,7 +300,7 @@ func (s *Service) innerJoin(leftRows, rightRows []*athenastore.StoredRow, leftNa
 	return result
 }
 
-func (s *Service) leftJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) []*athenastore.StoredRow {
+func (s *AthenaService) leftJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) []*athenastore.StoredRow {
 	var result []*athenastore.StoredRow
 
 	for _, leftRow := range leftRows {
@@ -321,7 +321,7 @@ func (s *Service) leftJoin(leftRows, rightRows []*athenastore.StoredRow, leftNam
 	return result
 }
 
-func (s *Service) rightJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) []*athenastore.StoredRow {
+func (s *AthenaService) rightJoin(leftRows, rightRows []*athenastore.StoredRow, leftName, rightName string, onExpr sqlparser.Expr) []*athenastore.StoredRow {
 	var result []*athenastore.StoredRow
 
 	for _, rightRow := range rightRows {
@@ -342,7 +342,7 @@ func (s *Service) rightJoin(leftRows, rightRows []*athenastore.StoredRow, leftNa
 	return result
 }
 
-func (s *Service) mergeRows(leftRow, rightRow *athenastore.StoredRow, leftName, rightName string) *athenastore.StoredRow {
+func (s *AthenaService) mergeRows(leftRow, rightRow *athenastore.StoredRow, leftName, rightName string) *athenastore.StoredRow {
 	combined := &athenastore.StoredRow{Values: make(map[string]interface{})}
 
 	for k, v := range leftRow.Values {
@@ -359,7 +359,7 @@ func (s *Service) mergeRows(leftRow, rightRow *athenastore.StoredRow, leftName, 
 	return combined
 }
 
-func (s *Service) mergeRowsWithNullRight(leftRow *athenastore.StoredRow, rightName string) *athenastore.StoredRow {
+func (s *AthenaService) mergeRowsWithNullRight(leftRow *athenastore.StoredRow, rightName string) *athenastore.StoredRow {
 	combined := &athenastore.StoredRow{Values: make(map[string]interface{})}
 
 	for k, v := range leftRow.Values {
@@ -369,7 +369,7 @@ func (s *Service) mergeRowsWithNullRight(leftRow *athenastore.StoredRow, rightNa
 	return combined
 }
 
-func (s *Service) mergeRowsWithNullLeft(rightRow *athenastore.StoredRow, leftName string) *athenastore.StoredRow {
+func (s *AthenaService) mergeRowsWithNullLeft(rightRow *athenastore.StoredRow, leftName string) *athenastore.StoredRow {
 	combined := &athenastore.StoredRow{Values: make(map[string]interface{})}
 
 	for k, v := range rightRow.Values {
@@ -379,7 +379,7 @@ func (s *Service) mergeRowsWithNullLeft(rightRow *athenastore.StoredRow, leftNam
 	return combined
 }
 
-func (s *Service) hasAggregateFunctions(exprs sqlparser.SelectExprs) bool {
+func (s *AthenaService) hasAggregateFunctions(exprs sqlparser.SelectExprs) bool {
 	for _, expr := range exprs {
 		if aliased, ok := expr.(*sqlparser.AliasedExpr); ok {
 			if fn, ok := aliased.Expr.(*sqlparser.FuncExpr); ok {
@@ -392,7 +392,7 @@ func (s *Service) hasAggregateFunctions(exprs sqlparser.SelectExprs) bool {
 	return false
 }
 
-func (s *Service) executeGroupBy(selectStmt *sqlparser.Select, rows []*athenastore.StoredRow) []*athenastore.StoredRow {
+func (s *AthenaService) executeGroupBy(selectStmt *sqlparser.Select, rows []*athenastore.StoredRow) []*athenastore.StoredRow {
 	if len(selectStmt.GroupBy) == 0 {
 		return s.executeAggregateWithoutGroup(selectStmt, rows)
 	}
@@ -414,7 +414,7 @@ func (s *Service) executeGroupBy(selectStmt *sqlparser.Select, rows []*athenasto
 	return result
 }
 
-func (s *Service) buildGroupKey(groupBy sqlparser.GroupBy, row map[string]interface{}) string {
+func (s *AthenaService) buildGroupKey(groupBy sqlparser.GroupBy, row map[string]interface{}) string {
 	var keyParts []string
 	for _, expr := range groupBy {
 		colName := s.extractColumnName(expr)
@@ -427,12 +427,12 @@ func (s *Service) buildGroupKey(groupBy sqlparser.GroupBy, row map[string]interf
 	return strings.Join(keyParts, "|")
 }
 
-func (s *Service) executeAggregateWithoutGroup(selectStmt *sqlparser.Select, rows []*athenastore.StoredRow) []*athenastore.StoredRow {
+func (s *AthenaService) executeAggregateWithoutGroup(selectStmt *sqlparser.Select, rows []*athenastore.StoredRow) []*athenastore.StoredRow {
 	aggregatedRow := s.aggregateGroup(selectStmt, rows)
 	return []*athenastore.StoredRow{aggregatedRow}
 }
 
-func (s *Service) aggregateGroup(selectStmt *sqlparser.Select, rows []*athenastore.StoredRow) *athenastore.StoredRow {
+func (s *AthenaService) aggregateGroup(selectStmt *sqlparser.Select, rows []*athenastore.StoredRow) *athenastore.StoredRow {
 	result := &athenastore.StoredRow{Values: make(map[string]interface{})}
 
 	if len(rows) > 0 {
@@ -459,7 +459,7 @@ func (s *Service) aggregateGroup(selectStmt *sqlparser.Select, rows []*athenasto
 	return result
 }
 
-func (s *Service) computeAggregate(fn *sqlparser.FuncExpr, rows []*athenastore.StoredRow) interface{} {
+func (s *AthenaService) computeAggregate(fn *sqlparser.FuncExpr, rows []*athenastore.StoredRow) interface{} {
 	funcName := strings.ToUpper(fn.Name.String())
 
 	switch funcName {
@@ -505,7 +505,7 @@ func (s *Service) computeAggregate(fn *sqlparser.FuncExpr, rows []*athenastore.S
 	}
 }
 
-func (s *Service) aggregateNumeric(fn *sqlparser.FuncExpr, rows []*athenastore.StoredRow, op string) interface{} {
+func (s *AthenaService) aggregateNumeric(fn *sqlparser.FuncExpr, rows []*athenastore.StoredRow, op string) interface{} {
 	if len(fn.Exprs) == 0 {
 		return nil
 	}
@@ -566,7 +566,7 @@ func (s *Service) aggregateNumeric(fn *sqlparser.FuncExpr, rows []*athenastore.S
 	return nil
 }
 
-func (s *Service) toFloat(val interface{}) (float64, error) {
+func (s *AthenaService) toFloat(val interface{}) (float64, error) {
 	switch v := val.(type) {
 	case int:
 		return float64(v), nil
@@ -583,7 +583,7 @@ func (s *Service) toFloat(val interface{}) (float64, error) {
 	}
 }
 
-func (s *Service) applyHaving(rows []*athenastore.StoredRow, expr sqlparser.Expr) []*athenastore.StoredRow {
+func (s *AthenaService) applyHaving(rows []*athenastore.StoredRow, expr sqlparser.Expr) []*athenastore.StoredRow {
 	var result []*athenastore.StoredRow
 
 	for _, row := range rows {
@@ -595,7 +595,7 @@ func (s *Service) applyHaving(rows []*athenastore.StoredRow, expr sqlparser.Expr
 	return result
 }
 
-func (s *Service) evaluateHaving(expr sqlparser.Expr, row map[string]interface{}) bool {
+func (s *AthenaService) evaluateHaving(expr sqlparser.Expr, row map[string]interface{}) bool {
 	switch e := expr.(type) {
 	case *sqlparser.ComparisonExpr:
 		return s.evaluateHavingComparison(e, row)
@@ -609,7 +609,7 @@ func (s *Service) evaluateHaving(expr sqlparser.Expr, row map[string]interface{}
 	return true
 }
 
-func (s *Service) evaluateHavingComparison(expr *sqlparser.ComparisonExpr, row map[string]interface{}) bool {
+func (s *AthenaService) evaluateHavingComparison(expr *sqlparser.ComparisonExpr, row map[string]interface{}) bool {
 	leftVal := s.getHavingExprValue(expr.Left, row)
 	rightVal := s.getHavingExprValue(expr.Right, row)
 
@@ -633,7 +633,7 @@ func (s *Service) evaluateHavingComparison(expr *sqlparser.ComparisonExpr, row m
 	return false
 }
 
-func (s *Service) getHavingExprValue(expr sqlparser.Expr, row map[string]interface{}) interface{} {
+func (s *AthenaService) getHavingExprValue(expr sqlparser.Expr, row map[string]interface{}) interface{} {
 	switch e := expr.(type) {
 	case *sqlparser.ColName:
 		colName := e.Name.String()
@@ -658,7 +658,7 @@ func (s *Service) getHavingExprValue(expr sqlparser.Expr, row map[string]interfa
 	}
 }
 
-func (s *Service) compareNumeric(left, right interface{}) int {
+func (s *AthenaService) compareNumeric(left, right interface{}) int {
 	leftFloat, leftErr := s.toFloat(left)
 	rightFloat, rightErr := s.toFloat(right)
 

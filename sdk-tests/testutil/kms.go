@@ -232,7 +232,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.CiphertextBlob == nil || len(resp.CiphertextBlob) == 0 {
+		if len(resp.CiphertextBlob) == 0 {
 			return fmt.Errorf("ciphertext blob is nil or empty")
 		}
 		if resp.Plaintext == nil || len(resp.Plaintext) != 32 {
@@ -252,7 +252,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.CiphertextBlob == nil || len(resp.CiphertextBlob) == 0 {
+		if len(resp.CiphertextBlob) == 0 {
 			return fmt.Errorf("ciphertext blob is nil or empty")
 		}
 		return nil
@@ -340,7 +340,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		granteePrincipal := fmt.Sprintf("arn:aws:iam::000000000000:user/TestUser")
+		granteePrincipal := "arn:aws:iam::000000000000:user/TestUser"
 		resp, err := client.CreateGrant(ctx, &kms.CreateGrantInput{
 			KeyId:            aws.String(keyID),
 			GranteePrincipal: aws.String(granteePrincipal),
@@ -376,7 +376,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 
 	results = append(results, r.RunTest("kms", "ListRetirableGrants", func() error {
 		resp, err := client.ListRetirableGrants(ctx, &kms.ListRetirableGrantsInput{
-			RetiringPrincipal: aws.String(fmt.Sprintf("arn:aws:iam::000000000000:user/TestUser")),
+			RetiringPrincipal: aws.String("arn:aws:iam::000000000000:user/TestUser"),
 		})
 		if err != nil {
 			return err
@@ -859,7 +859,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 			return fmt.Errorf("KeyId is nil or empty")
 		}
 		if m.Arn == nil || *m.Arn == "" {
-			return fmt.Errorf("Arn is nil or empty")
+			return fmt.Errorf("arn is nil or empty")
 		}
 		if m.KeyState != types.KeyStateEnabled {
 			return fmt.Errorf("expected KeyState=Enabled, got %s", m.KeyState)
@@ -880,9 +880,9 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 			return fmt.Errorf("expected KeyManager=CUSTOMER, got %s", m.KeyManager)
 		}
 		if m.Description == nil || *m.Description != desc {
-			return fmt.Errorf("Description mismatch")
+			return fmt.Errorf("description mismatch")
 		}
-		if m.EncryptionAlgorithms == nil || len(m.EncryptionAlgorithms) == 0 {
+		if len(m.EncryptionAlgorithms) == 0 {
 			return fmt.Errorf("EncryptionAlgorithms is empty")
 		}
 		defer client.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
@@ -1040,7 +1040,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.PublicKey == nil || len(resp.PublicKey) == 0 {
+		if len(resp.PublicKey) == 0 {
 			return fmt.Errorf("public key is nil or empty")
 		}
 		if resp.KeySpec != types.KeySpecRsa2048 {
@@ -1049,7 +1049,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if resp.KeyUsage != types.KeyUsageTypeSignVerify {
 			return fmt.Errorf("expected KeyUsage=SIGN_VERIFY, got %s", resp.KeyUsage)
 		}
-		if resp.SigningAlgorithms == nil || len(resp.SigningAlgorithms) == 0 {
+		if len(resp.SigningAlgorithms) == 0 {
 			return fmt.Errorf("SigningAlgorithms is nil or empty")
 		}
 		return nil
@@ -1070,7 +1070,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Signature == nil || len(resp.Signature) == 0 {
+		if len(resp.Signature) == 0 {
 			return fmt.Errorf("signature is nil or empty")
 		}
 		signature = resp.Signature
@@ -1183,7 +1183,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Mac == nil || len(resp.Mac) == 0 {
+		if len(resp.Mac) == 0 {
 			return fmt.Errorf("MAC is nil or empty")
 		}
 		macValue = resp.Mac
@@ -1249,13 +1249,13 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.PrivateKeyCiphertextBlob == nil || len(resp.PrivateKeyCiphertextBlob) == 0 {
+		if len(resp.PrivateKeyCiphertextBlob) == 0 {
 			return fmt.Errorf("private key ciphertext is nil or empty")
 		}
-		if resp.PrivateKeyPlaintext == nil || len(resp.PrivateKeyPlaintext) == 0 {
+		if len(resp.PrivateKeyPlaintext) == 0 {
 			return fmt.Errorf("private key plaintext is nil or empty")
 		}
-		if resp.PublicKey == nil || len(resp.PublicKey) == 0 {
+		if len(resp.PublicKey) == 0 {
 			return fmt.Errorf("public key is nil or empty")
 		}
 		if resp.KeyPairSpec != types.DataKeyPairSpecRsa2048 {
@@ -1276,10 +1276,10 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.PrivateKeyCiphertextBlob == nil || len(resp.PrivateKeyCiphertextBlob) == 0 {
+		if len(resp.PrivateKeyCiphertextBlob) == 0 {
 			return fmt.Errorf("private key ciphertext is nil or empty")
 		}
-		if resp.PublicKey == nil || len(resp.PublicKey) == 0 {
+		if len(resp.PublicKey) == 0 {
 			return fmt.Errorf("public key is nil or empty")
 		}
 		return nil
@@ -1335,7 +1335,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		granteePrincipal := fmt.Sprintf("arn:aws:iam::000000000000:user/RetireUser")
+		granteePrincipal := "arn:aws:iam::000000000000:user/RetireUser"
 		createResp, err := client.CreateGrant(ctx, &kms.CreateGrantInput{
 			KeyId:            aws.String(keyID),
 			GranteePrincipal: aws.String(granteePrincipal),
@@ -1361,7 +1361,7 @@ func (r *TestRunner) RunKMSTests() []TestResult {
 		if keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		granteePrincipal := fmt.Sprintf("arn:aws:iam::000000000000:user/RevokeUser")
+		granteePrincipal := "arn:aws:iam::000000000000:user/RevokeUser"
 		createResp, err := client.CreateGrant(ctx, &kms.CreateGrantInput{
 			KeyId:            aws.String(keyID),
 			GranteePrincipal: aws.String(granteePrincipal),

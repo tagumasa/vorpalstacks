@@ -184,7 +184,11 @@ func (s *ObjectStore) GetMetadata(bucket, key string) (*Object, error) {
 	var obj pb.Object
 	var err error
 
-	if s.isVersioningEnabled(bucket) {
+	b, bucketErr := s.bucketStore.Get(bucket)
+	versioningEnabled := bucketErr == nil && b.VersioningStatus == BucketVersioningEnabled
+	versioningSuspended := bucketErr == nil && b.VersioningStatus == "Suspended"
+
+	if versioningEnabled {
 		storageKey := s.latestKeyStorageKey(bucket, key)
 		if err = s.BaseStore.GetProto(storageKey, &obj); err != nil {
 			return nil, err
@@ -192,7 +196,7 @@ func (s *ObjectStore) GetMetadata(bucket, key string) (*Object, error) {
 		if obj.IsDeleteMarker {
 			return nil, ErrObjectNotFound
 		}
-	} else if s.isVersioningSuspended(bucket) {
+	} else if versioningSuspended {
 		latestKey := s.latestKeyStorageKey(bucket, key)
 		if err = s.BaseStore.GetProto(latestKey, &obj); err != nil {
 			storageKey := s.storageKey(bucket, key)

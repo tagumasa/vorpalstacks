@@ -28,7 +28,7 @@ type HandlerRegistration struct {
 // admin auth are created internally (they are grpcweb-owned concerns).
 func RegisterAdminHandlers(s *Server, st storage.BasicStorage, accountID, region, dataPath string, handlers []HandlerRegistration) {
 	configStore := config.NewStore(st)
-	adminConfigService := svcadminconfig.NewService(configStore)
+	adminConfigService := svcadminconfig.NewAdminConfigService(configStore)
 	path, handler := adminconfigconnect.NewAdminConfigServiceHandler(adminConfigService)
 	s.Handle(path, handler)
 
@@ -41,7 +41,7 @@ func RegisterAdminHandlers(s *Server, st storage.BasicStorage, accountID, region
 		fmt.Fprintf(os.Stderr, "Warning: Failed to initialise admin auth JWT key: %v\n", err)
 	} else {
 		jwtManager := vsjwt.NewManager(adminAuthKey, "admin-auth-key", "vorpalstacks/admin-auth")
-		adminAuthService := svcadminauth.NewService(st, jwtManager, accountID)
+		adminAuthService := svcadminauth.NewAdminAuthService(st, jwtManager, accountID)
 		s.Handle(adminauthconnect.NewAdminAuthServiceHandler(adminAuthService))
 	}
 }

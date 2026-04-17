@@ -10,7 +10,7 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *Service) evaluateWhere(expr sqlparser.Expr, row map[string]interface{}) bool {
+func (s *TimestreamQueryService) evaluateWhere(expr sqlparser.Expr, row map[string]interface{}) bool {
 	switch e := expr.(type) {
 	case *sqlparser.ComparisonExpr:
 		return s.evaluateComparison(e, row)
@@ -26,7 +26,7 @@ func (s *Service) evaluateWhere(expr sqlparser.Expr, row map[string]interface{})
 	return true
 }
 
-func (s *Service) evaluateComparison(expr *sqlparser.ComparisonExpr, row map[string]interface{}) bool {
+func (s *TimestreamQueryService) evaluateComparison(expr *sqlparser.ComparisonExpr, row map[string]interface{}) bool {
 	leftVal := s.getExprValue(expr.Left, row)
 	rightVal := s.getExprValue(expr.Right, row)
 
@@ -61,7 +61,7 @@ func (s *Service) evaluateComparison(expr *sqlparser.ComparisonExpr, row map[str
 	return false
 }
 
-func (s *Service) parseTimestampValue(v string) (time.Time, error) {
+func (s *TimestreamQueryService) parseTimestampValue(v string) (time.Time, error) {
 	if ts, err := time.Parse(time.RFC3339, v); err == nil {
 		return ts, nil
 	}
@@ -77,7 +77,7 @@ func (s *Service) parseTimestampValue(v string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("not a timestamp")
 }
 
-func (s *Service) evaluateIs(expr *sqlparser.IsExpr, row map[string]interface{}) bool {
+func (s *TimestreamQueryService) evaluateIs(expr *sqlparser.IsExpr, row map[string]interface{}) bool {
 	val := s.getExprValue(expr.Expr, row)
 	isNull := val == nil
 	switch expr.Operator {
@@ -89,7 +89,7 @@ func (s *Service) evaluateIs(expr *sqlparser.IsExpr, row map[string]interface{})
 	return false
 }
 
-func (s *Service) getExprValue(expr sqlparser.Expr, row map[string]interface{}) interface{} {
+func (s *TimestreamQueryService) getExprValue(expr sqlparser.Expr, row map[string]interface{}) interface{} {
 	switch e := expr.(type) {
 	case *sqlparser.ColName:
 		colName := e.Name.String()
@@ -113,7 +113,7 @@ func (s *Service) getExprValue(expr sqlparser.Expr, row map[string]interface{}) 
 	return nil
 }
 
-func (s *Service) matchLike(value, pattern string) bool {
+func (s *TimestreamQueryService) matchLike(value, pattern string) bool {
 	regexPattern := regexp.QuoteMeta(pattern)
 	regexPattern = strings.ReplaceAll(regexPattern, `\%`, `.*`)
 	regexPattern = strings.ReplaceAll(regexPattern, `\_`, `.`)

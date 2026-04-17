@@ -16,7 +16,7 @@ import (
 )
 
 // CreateScheduledQuery creates a new scheduled query.
-func (s *Service) CreateScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) CreateScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name == "" {
 		return nil, ErrValidationException
@@ -88,7 +88,7 @@ func (s *Service) CreateScheduledQuery(ctx context.Context, reqCtx *request.Requ
 }
 
 // TagResource adds tags to a Timestream resource.
-func (s *Service) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceARN == "" {
 		return nil, ErrValidationException
@@ -125,7 +125,7 @@ func (s *Service) TagResource(ctx context.Context, reqCtx *request.RequestContex
 }
 
 // UntagResource removes tags from a Timestream resource.
-func (s *Service) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceARN == "" {
 		return nil, ErrValidationException
@@ -162,7 +162,7 @@ func (s *Service) UntagResource(ctx context.Context, reqCtx *request.RequestCont
 }
 
 // DeleteScheduledQuery deletes a scheduled query.
-func (s *Service) DeleteScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) DeleteScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetParamCaseInsensitive(req.Parameters, "ScheduledQueryArn")
 	if arn == "" {
 		return nil, ErrValidationException
@@ -189,7 +189,7 @@ func (s *Service) DeleteScheduledQuery(ctx context.Context, reqCtx *request.Requ
 }
 
 // DescribeScheduledQuery returns the details of a scheduled query.
-func (s *Service) DescribeScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) DescribeScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetParamCaseInsensitive(req.Parameters, "ScheduledQueryArn")
 	if arn == "" {
 		return nil, ErrValidationException
@@ -220,7 +220,7 @@ func (s *Service) DescribeScheduledQuery(ctx context.Context, reqCtx *request.Re
 }
 
 // ListScheduledQueries returns a list of scheduled queries.
-func (s *Service) ListScheduledQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) ListScheduledQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -268,7 +268,7 @@ func (s *Service) ListScheduledQueries(ctx context.Context, reqCtx *request.Requ
 }
 
 // UpdateScheduledQuery updates an existing scheduled query.
-func (s *Service) UpdateScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) UpdateScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetParamCaseInsensitive(req.Parameters, "ScheduledQueryArn")
 	if arn == "" {
 		return nil, ErrValidationException
@@ -310,7 +310,7 @@ func (s *Service) UpdateScheduledQuery(ctx context.Context, reqCtx *request.Requ
 }
 
 // ExecuteScheduledQuery executes a scheduled query immediately.
-func (s *Service) ExecuteScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) ExecuteScheduledQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	arn := request.GetParamCaseInsensitive(req.Parameters, "ScheduledQueryArn")
 	if arn == "" {
 		return nil, ErrValidationException
@@ -370,7 +370,7 @@ func (s *Service) ExecuteScheduledQuery(ctx context.Context, reqCtx *request.Req
 	}, nil
 }
 
-func (s *Service) parseScheduleConfiguration(params map[string]interface{}) *tsstore.ScheduleConfiguration {
+func (s *TimestreamQueryService) parseScheduleConfiguration(params map[string]interface{}) *tsstore.ScheduleConfiguration {
 	scheduleConfigRaw := request.GetMapParamCaseInsensitive(params, "ScheduleConfiguration")
 	if scheduleConfigRaw == nil {
 		return nil
@@ -385,7 +385,7 @@ func (s *Service) parseScheduleConfiguration(params map[string]interface{}) *tss
 	}
 }
 
-func (s *Service) parseNotificationConfiguration(params map[string]interface{}) *tsstore.NotificationConfiguration {
+func (s *TimestreamQueryService) parseNotificationConfiguration(params map[string]interface{}) *tsstore.NotificationConfiguration {
 	notifConfigRaw := request.GetMapParamCaseInsensitive(params, "NotificationConfiguration")
 	if notifConfigRaw == nil {
 		return nil
@@ -406,7 +406,7 @@ func (s *Service) parseNotificationConfiguration(params map[string]interface{}) 
 	}
 }
 
-func (s *Service) parseErrorReportConfiguration(params map[string]interface{}) *tsstore.ErrorReportConfiguration {
+func (s *TimestreamQueryService) parseErrorReportConfiguration(params map[string]interface{}) *tsstore.ErrorReportConfiguration {
 	errorReportRaw := request.GetMapParamCaseInsensitive(params, "ErrorReportConfiguration")
 	if errorReportRaw == nil {
 		return nil
@@ -429,7 +429,7 @@ func (s *Service) parseErrorReportConfiguration(params map[string]interface{}) *
 	}
 }
 
-func (s *Service) parseTargetConfiguration(params map[string]interface{}) *tsstore.TargetConfiguration {
+func (s *TimestreamQueryService) parseTargetConfiguration(params map[string]interface{}) *tsstore.TargetConfiguration {
 	targetConfigRaw := request.GetMapParamCaseInsensitive(params, "TargetConfiguration")
 	if targetConfigRaw == nil {
 		return nil
@@ -455,7 +455,7 @@ func (s *Service) parseTargetConfiguration(params map[string]interface{}) *tssto
 }
 
 // ListTagsForResource returns the tags for a scheduled query.
-func (s *Service) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamQueryService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceARN == "" {
 		return nil, ErrValidationException
@@ -489,7 +489,7 @@ func epochFloat(t time.Time) float64 {
 	return float64(t.UnixNano()) / 1e9
 }
 
-func (s *Service) formatScheduledQueryResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
+func (s *TimestreamQueryService) formatScheduledQueryResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
 	response := map[string]interface{}{
 		"Arn":          sq.ARN,
 		"Name":         sq.Name,
@@ -531,7 +531,7 @@ func (s *Service) formatScheduledQueryResponse(sq *tsstore.ScheduledQuery, tags 
 	return response
 }
 
-func (s *Service) formatScheduledQueryDescriptionResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
+func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
 	response := map[string]interface{}{
 		"Arn":          sq.ARN,
 		"Name":         sq.Name,

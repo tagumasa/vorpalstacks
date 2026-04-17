@@ -444,7 +444,7 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 			return err
 		}
 		if resp.RandomPassword == nil || len(*resp.RandomPassword) != 32 {
-			return fmt.Errorf("expected default password length 32, got %d", aws.ToString(resp.RandomPassword))
+			return fmt.Errorf("expected default password length 32, got %s", aws.ToString(resp.RandomPassword))
 		}
 		return nil
 	}))
@@ -704,7 +704,7 @@ func (r *TestRunner) RunSecretsManagerTests() []TestResult {
 			}
 		}
 		if !found {
-			return fmt.Errorf("Owner tag not found in DescribeSecret")
+			return fmt.Errorf("owner tag not found in DescribeSecret")
 		}
 		return nil
 	}))

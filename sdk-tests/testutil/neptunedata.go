@@ -30,10 +30,6 @@ func marshalDoc(v interface{}) string {
 	return string(data)
 }
 
-func containsDoc(v interface{}, substr string) bool {
-	return strings.Contains(marshalDoc(v), substr)
-}
-
 func (r *TestRunner) RunNeptunedataTests() []TestResult {
 	var results []TestResult
 

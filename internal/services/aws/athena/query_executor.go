@@ -12,7 +12,7 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenastore.QueryExecution) {
+func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *athenastore.QueryExecution) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.setCancelFunc(qe.QueryExecutionId, cancel)
 	defer cancel()
@@ -113,7 +113,7 @@ func (s *Service) executeQueryAsync(reqCtx *request.RequestContext, qe *athenast
 	}
 }
 
-func (s *Service) executeSQLQuery(reqCtx *request.RequestContext, ctx context.Context, queryString string, context *athenastore.QueryExecutionContext) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+func (s *AthenaService) executeSQLQuery(reqCtx *request.RequestContext, ctx context.Context, queryString string, context *athenastore.QueryExecutionContext) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	startTime := time.Now().UTC()
 
 	upperQuery := strings.ToUpper(strings.TrimSpace(queryString))
@@ -249,7 +249,7 @@ func (s *Service) executeSQLQuery(reqCtx *request.RequestContext, ctx context.Co
 	}, stats, nil
 }
 
-func (s *Service) getTableData(reqCtx *request.RequestContext, catalog, database, tableName string) (*athenastore.StoredTable, error) {
+func (s *AthenaService) getTableData(reqCtx *request.RequestContext, catalog, database, tableName string) (*athenastore.StoredTable, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -276,7 +276,7 @@ func (s *Service) getTableData(reqCtx *request.RequestContext, catalog, database
 	return stores.tableDataStore.GetTableData(catalog, database, tableName)
 }
 
-func (s *Service) extractTableName(selectStmt *sqlparser.Select) (string, error) {
+func (s *AthenaService) extractTableName(selectStmt *sqlparser.Select) (string, error) {
 	if len(selectStmt.From) == 0 {
 		return "", fmt.Errorf("no table specified in FROM clause")
 	}
@@ -294,7 +294,7 @@ func (s *Service) extractTableName(selectStmt *sqlparser.Select) (string, error)
 	return tableNameExpr.Name.String(), nil
 }
 
-func (s *Service) applyQuery(selectStmt *sqlparser.Select, tableData *athenastore.StoredTable) []*athenastore.StoredRow {
+func (s *AthenaService) applyQuery(selectStmt *sqlparser.Select, tableData *athenastore.StoredTable) []*athenastore.StoredRow {
 	var rows []*athenastore.StoredRow
 
 	for _, row := range tableData.Rows {

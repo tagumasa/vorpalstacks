@@ -259,20 +259,21 @@ func (s *HybridBlobStore) Delete(ctx context.Context, bucket, key string) error 
 
 func (s *HybridBlobStore) deleteUnlock(bucket, key string) error {
 	storageKey := s.storageKey(bucket, key)
+	var firstErr error
 
 	if err := s.storage.Bucket("blob_small").Delete([]byte(storageKey)); err != nil {
-		return err
+		firstErr = err
 	}
-	if err := s.storage.Bucket("blob_meta").Delete([]byte(storageKey)); err != nil {
-		return err
+	if err := s.storage.Bucket("blob_meta").Delete([]byte(storageKey)); err != nil && firstErr == nil {
+		firstErr = err
 	}
 
 	path := s.filePath(bucket, key)
-	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		return err
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) && firstErr == nil {
+		firstErr = err
 	}
 
-	return nil
+	return firstErr
 }
 
 func (s *HybridBlobStore) cleanupAllTiers(storageKey, bucket, key string) {
@@ -360,13 +361,52 @@ func (s *HybridBlobStore) Head(ctx context.Context, bucket, key string) (*BlobMe
 //   - *BlobMetadata: The destination object metadata
 //   - error: An error if the operation fails
 func (s *HybridBlobStore) Copy(ctx context.Context, srcBucket, srcKey, dstBucket, dstKey string) (*BlobMetadata, error) {
-	reader, meta, err := s.Get(ctx, srcBucket, srcKey)
-	if err != nil {
-		return nil, err
-	}
-	defer reader.Close()
+	storageKey := s.storageKey(srcBucket, srcKey)
 
-	return s.Put(ctx, dstBucket, dstKey, reader, meta)
+	s.mu.RLock()
+
+	var objData []byte
+	var meta *BlobMetadata
+	var readErr error
+
+	raw, err := s.storage.Bucket("blob_small").Get([]byte(storageKey))
+	if err == nil && raw != nil {
+		var obj smallObject
+		if err := json.Unmarshal(raw, &obj); err == nil {
+			objData = obj.Data
+			meta = obj.Metadata
+		}
+	}
+
+	if objData == nil {
+		path := s.filePath(srcBucket, srcKey)
+		f, info, fileErr := openAndStat(path, srcBucket+"/"+srcKey)
+		if fileErr != nil {
+			s.mu.RUnlock()
+			return nil, fileErr
+		}
+		objData, readErr = io.ReadAll(f)
+		f.Close()
+		if readErr != nil {
+			s.mu.RUnlock()
+			return nil, fmt.Errorf("failed to read source file: %w", readErr)
+		}
+		meta, _ = s.getMetadata(storageKey)
+		if meta == nil {
+			meta = &BlobMetadata{
+				Key:          srcKey,
+				Size:         info.Size(),
+				LastModified: info.ModTime().UTC(),
+			}
+		}
+	}
+
+	s.mu.RUnlock()
+
+	s.mu.Lock()
+	result, putErr := s.putUnlock(ctx, dstBucket, dstKey, bytes.NewReader(objData), meta)
+	s.mu.Unlock()
+	return result, putErr
 }
 
 // CreateBucket creates a new bucket in the hybrid blob store.

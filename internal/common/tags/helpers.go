@@ -231,6 +231,15 @@ func Remove(tags []types.Tag, keysToRemove map[string]bool) []types.Tag {
 	return result
 }
 
+// RemoveByTagKeys removes tags whose keys appear in the provided slice.
+func RemoveByTagKeys(t []types.Tag, keys []string) []types.Tag {
+	m := make(map[string]bool, len(keys))
+	for _, k := range keys {
+		m[k] = true
+	}
+	return Remove(t, m)
+}
+
 // ToMap converts a slice of tags to a map.
 func ToMap(tags []types.Tag) map[string]string {
 	result := make(map[string]string)

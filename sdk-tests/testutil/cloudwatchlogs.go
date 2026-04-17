@@ -438,27 +438,28 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 			LogGroupName: aws.String(tlgName),
 		})
 
-		_, err = client.TagLogGroup(ctx, &cloudwatchlogs.TagLogGroupInput{
-			LogGroupName: aws.String(tlgName),
+		resourceARN := fmt.Sprintf("arn:aws:logs:%s:000000000000:log-group:%s", r.region, tlgName)
+		_, err = client.TagResource(ctx, &cloudwatchlogs.TagResourceInput{
+			ResourceArn: &resourceARN,
 			Tags: map[string]string{
-				"DeprecatedTag": "yes",
+				"TestTag": "yes",
 			},
 		})
 		if err != nil {
-			return fmt.Errorf("tag log group: %v", err)
+			return fmt.Errorf("tag resource: %v", err)
 		}
 
-		tagResp, err := client.ListTagsLogGroup(ctx, &cloudwatchlogs.ListTagsLogGroupInput{
-			LogGroupName: aws.String(tlgName),
+		tagResp, err := client.ListTagsForResource(ctx, &cloudwatchlogs.ListTagsForResourceInput{
+			ResourceArn: &resourceARN,
 		})
 		if err != nil {
-			return fmt.Errorf("list tags log group: %v", err)
+			return fmt.Errorf("list tags resource: %v", err)
 		}
 		if tagResp.Tags == nil {
 			return fmt.Errorf("tags is nil")
 		}
-		if tagResp.Tags["DeprecatedTag"] != "yes" {
-			return fmt.Errorf("DeprecatedTag mismatch: got %q", tagResp.Tags["DeprecatedTag"])
+		if tagResp.Tags["TestTag"] != "yes" {
+			return fmt.Errorf("TestTag mismatch: got %q", tagResp.Tags["TestTag"])
 		}
 		return nil
 	}))
@@ -480,8 +481,9 @@ func (r *TestRunner) RunCloudWatchLogsTests() []TestResult {
 			LogGroupName: aws.String(cwtName),
 		})
 
-		tagResp, err := client.ListTagsLogGroup(ctx, &cloudwatchlogs.ListTagsLogGroupInput{
-			LogGroupName: aws.String(cwtName),
+		resourceARN := fmt.Sprintf("arn:aws:logs:%s:000000000000:log-group:%s", r.region, cwtName)
+		tagResp, err := client.ListTagsForResource(ctx, &cloudwatchlogs.ListTagsForResourceInput{
+			ResourceArn: &resourceARN,
 		})
 		if err != nil {
 			return fmt.Errorf("list tags: %v", err)

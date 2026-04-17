@@ -417,7 +417,7 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.QueueUrls == nil || len(resp.QueueUrls) < 2 {
+		if len(resp.QueueUrls) < 2 {
 			return fmt.Errorf("expected at least 2 queues with prefix %q, got %d", prefix, len(resp.QueueUrls))
 		}
 		for _, u := range resp.QueueUrls {
@@ -535,7 +535,7 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if tagResp.Tags == nil || len(tagResp.Tags) == 0 {
+		if len(tagResp.Tags) == 0 {
 			return fmt.Errorf("ListQueueTags returned nil or empty Tags (expected Environment=Test)")
 		}
 		return nil
@@ -919,7 +919,7 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if dlqResp.QueueUrls != nil && len(dlqResp.QueueUrls) != 0 {
+		if len(dlqResp.QueueUrls) != 0 {
 			return fmt.Errorf("expected empty queue URLs for new DLQ, got %d", len(dlqResp.QueueUrls))
 		}
 		return nil
@@ -1138,7 +1138,7 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("list tasks: %v", err)
 		}
-		if listResp.Results == nil || len(listResp.Results) == 0 {
+		if len(listResp.Results) == 0 {
 			return fmt.Errorf("ListMessageMoveTasks returned empty Results")
 		}
 		return nil

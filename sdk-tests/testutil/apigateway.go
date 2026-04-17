@@ -566,7 +566,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Items == nil || len(resp.Items) == 0 {
+		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 deployment")
 		}
 		return nil
@@ -618,7 +618,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Item == nil || len(resp.Item) == 0 {
+		if len(resp.Item) == 0 {
 			return fmt.Errorf("expected at least 1 stage")
 		}
 		return nil
@@ -749,7 +749,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Items == nil || len(resp.Items) == 0 {
+		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 validator")
 		}
 		return nil
@@ -844,7 +844,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Items == nil || len(resp.Items) == 0 {
+		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 model")
 		}
 		return nil
@@ -939,7 +939,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Items == nil || len(resp.Items) == 0 {
+		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 authorizer")
 		}
 		return nil
@@ -1064,7 +1064,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Items == nil || len(resp.Items) == 0 {
+		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 api key")
 		}
 		for _, item := range resp.Items {
@@ -1171,7 +1171,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Items == nil || len(resp.Items) == 0 {
+		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 usage plan")
 		}
 		for _, item := range resp.Items {
@@ -1283,7 +1283,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("get usage plan keys: %v", err)
 		}
-		if keysResp.Items == nil || len(keysResp.Items) == 0 {
+		if len(keysResp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 usage plan key")
 		}
 
@@ -1352,7 +1352,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Items == nil || len(resp.Items) == 0 {
+		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 domain name")
 		}
 		domainName = *resp.Items[0].DomainName
@@ -1431,7 +1431,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Items == nil || len(resp.Items) == 0 {
+		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 base path mapping")
 		}
 		return nil

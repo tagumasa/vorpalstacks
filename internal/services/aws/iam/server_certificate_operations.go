@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -121,7 +122,7 @@ func (s *IAMService) DeleteServerCertificate(ctx context.Context, reqCtx *reques
 func (s *IAMService) ListServerCertificates(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	pathPrefix := request.GetStringParam(req.Parameters, "PathPrefix")
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -189,7 +190,7 @@ func (s *IAMService) UntagServerCertificate(ctx context.Context, reqCtx *request
 		return nil, NewNoSuchEntityError("server certificate", name)
 	}
 
-	cert.Tags = removeTags(cert.Tags, parseTagKeys(req.Parameters))
+	cert.Tags = tags.RemoveByTagKeys(cert.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
 	if err := store.ServerCertificates().Put(cert); err != nil {
 		return nil, err
 	}
@@ -214,7 +215,7 @@ func (s *IAMService) ListServerCertificateTags(ctx context.Context, reqCtx *requ
 	}
 
 	return map[string]interface{}{
-		"Tags":        tagsToResponse(cert.Tags),
+		"Tags":        tags.ToResponse(cert.Tags),
 		"IsTruncated": false,
 	}, nil
 }

@@ -5,9 +5,7 @@ package cognitoidentityprovider
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"strings"
 	"time"
 
@@ -36,38 +34,6 @@ type CognitoStore struct {
 	region     string
 	groupMu    sync.Mutex
 	createMu   sync.Mutex
-}
-
-func userPoolBucketName(region string) string {
-	return "cognito-userpools-" + region
-}
-
-func userBucketName(region string) string {
-	return "cognito-users-" + region
-}
-
-func groupBucketName(region string) string {
-	return "cognito-groups-" + region
-}
-
-func clientBucketName(region string) string {
-	return "cognito-clients-" + region
-}
-
-func refreshTokenBucketName(region string) string {
-	return "cognito-refreshtokens-" + region
-}
-
-func idTokenBucketName(region string) string {
-	return "cognito-idtokens-" + region
-}
-
-func accessTokenBucketName(region string) string {
-	return "cognito-accesstokens-" + region
-}
-
-func challengeSessionBucketName(region string) string {
-	return "cognito-challengesessions-" + region
 }
 
 // NewCognitoStore creates a new Cognito identity provider store.
@@ -607,7 +573,6 @@ func (s *CognitoStore) ListUsersInGroup(userPoolID, groupName string) ([]*User, 
 }
 
 // CreateRefreshToken creates a new Cognito refresh token.
-// CreateRefreshToken creates a new Cognito refresh token.
 func (s *CognitoStore) CreateRefreshToken(token *RefreshToken) error {
 	key := refreshTokenKey(token.UserPoolID, token.UserID, token.Token)
 	return s.refreshTokensStore.Put(key, token)
@@ -666,13 +631,11 @@ func (s *CognitoStore) DeleteAllRefreshTokensForUser(userPoolID, userID string) 
 }
 
 // CreateIDToken creates a new Cognito ID token.
-// CreateIDToken creates a new Cognito ID token.
 func (s *CognitoStore) CreateIDToken(token *IDToken) error {
 	key := idTokenKey(token.UserPoolID, token.UserID, token.Token)
 	return s.idTokensStore.Put(key, token)
 }
 
-// GetIDToken retrieves a Cognito ID token.
 // GetIDToken retrieves a Cognito ID token.
 func (s *CognitoStore) GetIDToken(userPoolID, userID, token string) (*IDToken, error) {
 	key := idTokenKey(userPoolID, userID, token)
@@ -686,7 +649,6 @@ func (s *CognitoStore) GetIDToken(userPoolID, userID, token string) (*IDToken, e
 	return &it, nil
 }
 
-// GetIDTokenByValue retrieves a Cognito ID token by its token value.
 // GetIDTokenByValue retrieves a Cognito ID token by its token value.
 func (s *CognitoStore) GetIDTokenByValue(token string) (*IDToken, error) {
 	var found *IDToken
@@ -719,13 +681,11 @@ func (s *CognitoStore) DeleteIDToken(userPoolID, userID, token string) error {
 }
 
 // CreateAccessToken creates a new Cognito access token.
-// CreateAccessToken creates a new Cognito access token.
 func (s *CognitoStore) CreateAccessToken(token *AccessToken) error {
 	key := accessTokenKey(token.UserPoolID, token.UserID, token.Token)
 	return s.accessTokensStore.Put(key, token)
 }
 
-// GetAccessToken retrieves a Cognito access token.
 // GetAccessToken retrieves a Cognito access token.
 func (s *CognitoStore) GetAccessToken(userPoolID, userID, token string) (*AccessToken, error) {
 	key := accessTokenKey(userPoolID, userID, token)
@@ -739,7 +699,6 @@ func (s *CognitoStore) GetAccessToken(userPoolID, userID, token string) (*Access
 	return &at, nil
 }
 
-// GetAccessTokenByValue retrieves a Cognito access token by its token value.
 // GetAccessTokenByValue retrieves a Cognito access token by its token value.
 func (s *CognitoStore) GetAccessTokenByValue(token string) (*AccessToken, error) {
 	var found *AccessToken
@@ -771,52 +730,6 @@ func (s *CognitoStore) DeleteAccessToken(userPoolID, userID, token string) error
 	return s.accessTokensStore.Delete(key)
 }
 
-func userPoolUserKey(userPoolID, username string) string {
-	return userPoolID + "#" + username
-}
-
-func userPoolGroupKey(userPoolID, groupName string) string {
-	return userPoolID + "#" + groupName
-}
-
-func userPoolClientKey(userPoolID, clientID string) string {
-	return userPoolID + "#" + clientID
-}
-
-func refreshTokenKey(userPoolID, userID, token string) string {
-	return userPoolID + "#" + userID + "#" + token
-}
-
-func idTokenKey(userPoolID, userID, token string) string {
-	return userPoolID + "#" + userID + "#" + token
-}
-
-func accessTokenKey(userPoolID, userID, token string) string {
-	return userPoolID + "#" + userID + "#" + token
-}
-
-func encodePrivateKeyToPEM(key *rsa.PrivateKey) string {
-	der := x509.MarshalPKCS1PrivateKey(key)
-	block := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: der,
-	}
-	return string(pem.EncodeToMemory(block))
-}
-
-func encodePublicKeyToPEM(key *rsa.PublicKey) string {
-	der, err := x509.MarshalPKIXPublicKey(key)
-	if err != nil {
-		return ""
-	}
-	block := &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: der,
-	}
-	return string(pem.EncodeToMemory(block))
-}
-
-// DeleteUserTokens deletes all tokens for a user.
 // DeleteUserTokens deletes all tokens for a user.
 func (s *CognitoStore) DeleteUserTokens(userPoolID, userID string) error {
 	prefix := userPoolID + "#" + userID + "#"
@@ -844,12 +757,10 @@ func (s *CognitoStore) DeleteUserTokens(userPoolID, userID string) error {
 }
 
 // SaveChallengeSession saves a challenge session.
-// SaveChallengeSession saves a challenge session.
 func (s *CognitoStore) SaveChallengeSession(session *ChallengeSession) error {
 	return s.challengeSessionsStore.Put(session.SessionID, session)
 }
 
-// GetChallengeSession retrieves a challenge session by ID.
 // GetChallengeSession retrieves a challenge session by ID.
 func (s *CognitoStore) GetChallengeSession(sessionID string) (*ChallengeSession, error) {
 	var session ChallengeSession
@@ -903,13 +814,11 @@ func (s *CognitoStore) GetResourceServer(userPoolID, identifier string) (*Resour
 }
 
 // UpdateResourceServer updates an existing resource server in the store.
-// UpdateResourceServer updates an existing resource server in the store.
 func (s *CognitoStore) UpdateResourceServer(rs *ResourceServer) error {
 	key := resourceServerKey(rs.UserPoolID, rs.Identifier)
 	return s.BaseStore.Put(key, rs)
 }
 
-// DeleteResourceServer removes a resource server from the store by user pool ID and identifier.
 // DeleteResourceServer removes a resource server from the store by user pool ID and identifier.
 func (s *CognitoStore) DeleteResourceServer(userPoolID, identifier string) error {
 	key := resourceServerKey(userPoolID, identifier)
@@ -957,13 +866,11 @@ func (s *CognitoStore) GetIdentityProvider(userPoolID, providerName string) (*Id
 }
 
 // UpdateIdentityProvider updates an existing identity provider in the store.
-// UpdateIdentityProvider updates an existing identity provider in the store.
 func (s *CognitoStore) UpdateIdentityProvider(ip *IdentityProvider) error {
 	key := identityProviderKey(ip.UserPoolID, ip.ProviderName)
 	return s.BaseStore.Put(key, ip)
 }
 
-// DeleteIdentityProvider removes an identity provider from the store by user pool ID and provider name.
 // DeleteIdentityProvider removes an identity provider from the store by user pool ID and provider name.
 func (s *CognitoStore) DeleteIdentityProvider(userPoolID, providerName string) error {
 	key := identityProviderKey(userPoolID, providerName)
@@ -989,24 +896,4 @@ func (s *CognitoStore) ListIdentityProviders(userPoolID string) ([]*IdentityProv
 		return nil, err
 	}
 	return providers, nil
-}
-
-func resourceServerKey(userPoolID, identifier string) string {
-	return "resourceserver:" + userPoolID + "#" + identifier
-}
-
-func resourceServerPrefix(userPoolID string) string {
-	return "resourceserver:" + userPoolID + "#"
-}
-
-func identityProviderKey(userPoolID, providerName string) string {
-	return "identityprovider:" + userPoolID + "#" + providerName
-}
-
-func identityProviderPrefix(userPoolID string) string {
-	return "identityprovider:" + userPoolID + "#"
-}
-
-func domainKey(domain string) string {
-	return "domain:" + domain
 }

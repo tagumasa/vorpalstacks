@@ -11,7 +11,6 @@ import (
 
 type testOutputWriter struct {
 	records [][]byte
-	stats   *Stats
 }
 
 func (w *testOutputWriter) WriteRecords(data []byte) error {

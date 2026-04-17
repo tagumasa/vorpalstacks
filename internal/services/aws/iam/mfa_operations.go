@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -162,7 +163,7 @@ func (s *IAMService) DeactivateMFADevice(ctx context.Context, reqCtx *request.Re
 func (s *IAMService) ListMFADevices(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -198,7 +199,7 @@ func (s *IAMService) ListMFADevices(ctx context.Context, reqCtx *request.Request
 // Supports pagination via Marker and MaxItems.
 func (s *IAMService) ListVirtualMFADevices(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -469,7 +470,7 @@ func (s *IAMService) UntagMFADevice(ctx context.Context, reqCtx *request.Request
 		return nil, NewNoSuchMFADeviceError(serialNumber)
 	}
 
-	device.Tags = removeTags(device.Tags, parseTagKeys(req.Parameters))
+	device.Tags = tags.RemoveByTagKeys(device.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
 
 	if err := store.MFADevices().Put(device); err != nil {
 		return nil, err
@@ -496,7 +497,7 @@ func (s *IAMService) ListMFADeviceTags(ctx context.Context, reqCtx *request.Requ
 	}
 
 	return map[string]interface{}{
-		"Tags":        tagsToResponse(device.Tags),
+		"Tags":        tags.ToResponse(device.Tags),
 		"IsTruncated": false,
 	}, nil
 }
@@ -529,7 +530,7 @@ func (s *IAMService) mfaDeviceToResponse(reqCtx *request.RequestContext, device 
 		}
 	}
 
-	if tags := tagsToResponse(device.Tags); tags != nil {
+	if tags := tags.ToResponse(device.Tags); tags != nil {
 		resp["Tags"] = tags
 	}
 

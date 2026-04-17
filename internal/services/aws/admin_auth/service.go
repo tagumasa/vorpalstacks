@@ -23,7 +23,7 @@ const (
 )
 
 // Service provides admin authentication operations.
-type Service struct {
+type AdminAuthService struct {
 	passwordVerifier  PasswordVerifier
 	userReader        UserReader
 	groupReader       GroupMembershipReader
@@ -41,13 +41,13 @@ type Service struct {
 //   - accountID: The AWS account ID
 //
 // Returns:
-//   - *Service: A new admin auth service instance
-func NewService(
+//   - *AdminAuthService: A new admin auth service instance
+func NewAdminAuthService(
 	store storage.BasicStorage,
 	jwtManager *vsjwt.Manager,
 	accountID string,
-) *Service {
-	return &Service{
+) *AdminAuthService {
+	return &AdminAuthService{
 		passwordVerifier:  iamstore.NewLoginProfileStore(store),
 		userReader:        iamstore.NewUserStore(store, accountID),
 		groupReader:       iamstore.NewUserGroupStore(store),
@@ -58,7 +58,7 @@ func NewService(
 	}
 }
 
-func (s *Service) saveRefreshToken(token, username string) error {
+func (s *AdminAuthService) saveRefreshToken(token, username string) error {
 	rt := &adminauthstore.RefreshToken{
 		Token:     token,
 		Username:  username,
@@ -69,10 +69,10 @@ func (s *Service) saveRefreshToken(token, username string) error {
 	return s.refreshTokenStore.Create(rt)
 }
 
-func (s *Service) getRefreshToken(token string) (*adminauthstore.RefreshToken, error) {
+func (s *AdminAuthService) getRefreshToken(token string) (*adminauthstore.RefreshToken, error) {
 	return s.refreshTokenStore.Get(token)
 }
 
-func (s *Service) deleteRefreshToken(token string) error {
+func (s *AdminAuthService) deleteRefreshToken(token string) error {
 	return s.refreshTokenStore.Delete(token)
 }

@@ -615,7 +615,7 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.StateMachineVersions == nil || len(resp.StateMachineVersions) == 0 {
+		if len(resp.StateMachineVersions) == 0 {
 			return fmt.Errorf("expected at least one version")
 		}
 		return nil
@@ -740,7 +740,7 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.StateMachineAliases == nil || len(resp.StateMachineAliases) == 0 {
+		if len(resp.StateMachineAliases) == 0 {
 			return fmt.Errorf("expected at least one alias (arn=%s)", verifySMARN)
 		}
 		return nil

@@ -97,7 +97,9 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 	httpCtx := r.Context()
 	reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
 	reqCtx.SetIAMStore(d.iamStore, d.iamStore.Roles())
-	reqCtx.SetGraphDBManager(d.graphDB, d.graphDB)
+	if d.graphDB != nil {
+		reqCtx.SetGraphDBManager(d.graphDB, d.graphDB)
+	}
 
 	if d.authorizationEnabled && d.authorizer != nil {
 		authzResult, err := d.authorizer.Authorize(httpCtx, reqCtx, parsedReq, serviceName, r)

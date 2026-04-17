@@ -70,7 +70,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			return err
 		}
 		if resp.Location == nil {
-			return fmt.Errorf("Location is nil")
+			return fmt.Errorf("location is nil")
 		}
 		return nil
 	}))
@@ -214,7 +214,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			return err
 		}
 		if resp.Contents == nil {
-			return fmt.Errorf("Contents is nil")
+			return fmt.Errorf("contents is nil")
 		}
 		return nil
 	}))
@@ -502,7 +502,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			return err
 		}
 		if resp.Owner == nil {
-			return fmt.Errorf("Owner is nil")
+			return fmt.Errorf("owner is nil")
 		}
 		return nil
 	}))
@@ -526,7 +526,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			return err
 		}
 		if resp.Policy == nil {
-			return fmt.Errorf("Policy is nil")
+			return fmt.Errorf("policy is nil")
 		}
 		if !strings.Contains(*resp.Policy, "Allow") {
 			return fmt.Errorf("policy missing expected content")
@@ -1129,7 +1129,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			return err
 		}
 		if resp.Owner == nil {
-			return fmt.Errorf("Owner is nil")
+			return fmt.Errorf("owner is nil")
 		}
 		return nil
 	}))
@@ -1209,7 +1209,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			return err
 		}
 		if resp.Retention == nil {
-			return fmt.Errorf("Retention is nil")
+			return fmt.Errorf("retention is nil")
 		}
 		if resp.Retention.Mode != types.ObjectLockRetentionModeGovernance {
 			return fmt.Errorf("expected GOVERNANCE, got %s", resp.Retention.Mode)
@@ -1343,7 +1343,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			return err
 		}
 		if resp.Location == nil {
-			return fmt.Errorf("Location is nil")
+			return fmt.Errorf("location is nil")
 		}
 		if resp.ETag == nil {
 			return fmt.Errorf("ETag is nil")
@@ -1747,7 +1747,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			}
 		}
 		if !found {
-			return fmt.Errorf("Japanese key not found in ListObjectsV2 results")
+			return fmt.Errorf("japanese key not found in ListObjectsV2 results")
 		}
 
 		resp2, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
@@ -1765,7 +1765,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			}
 		}
 		if !found2 {
-			return fmt.Errorf("Simplified Chinese key not found in ListObjectsV2 results")
+			return fmt.Errorf("simplified Chinese key not found in ListObjectsV2 results")
 		}
 
 		resp3, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
@@ -1783,7 +1783,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			}
 		}
 		if !found3 {
-			return fmt.Errorf("Traditional Chinese key not found in ListObjectsV2 results")
+			return fmt.Errorf("traditional Chinese key not found in ListObjectsV2 results")
 		}
 		return nil
 	}))
@@ -2033,7 +2033,6 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			return fmt.Errorf("create bucket: %v", err)
 		}
 
-		var pagKeys []string
 		for i := 0; i < 5; i++ {
 			key := fmt.Sprintf("pag/object-%d.txt", i)
 			_, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -2045,7 +2044,6 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 				s3CleanupBucket(ctx, client, pagBucket)
 				return fmt.Errorf("put object %s: %v", key, err)
 			}
-			pagKeys = append(pagKeys, key)
 		}
 
 		var allKeys []string

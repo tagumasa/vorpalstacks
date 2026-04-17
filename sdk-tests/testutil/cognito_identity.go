@@ -215,7 +215,7 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 			return fmt.Errorf("expected identity ID %s, got %s", identityID, *resp.IdentityId)
 		}
 		if resp.Credentials == nil {
-			return fmt.Errorf("Credentials is nil")
+			return fmt.Errorf("credentials is nil")
 		}
 		if resp.Credentials.AccessKeyId == nil || *resp.Credentials.AccessKeyId == "" {
 			return fmt.Errorf("AccessKeyId is nil or empty")
@@ -245,7 +245,7 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 			return err
 		}
 		if resp.Roles == nil {
-			return fmt.Errorf("Roles is nil")
+			return fmt.Errorf("roles is nil")
 		}
 		if resp.Roles["authenticated"] != "arn:aws:iam::123456789012:role/auth-role" {
 			return fmt.Errorf("unexpected authenticated role: %v", resp.Roles["authenticated"])
@@ -317,7 +317,7 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 			return err
 		}
 		if resp.Tags == nil {
-			return fmt.Errorf("Tags is nil")
+			return fmt.Errorf("tags is nil")
 		}
 		if resp.Tags["Environment"] != "test" {
 			return fmt.Errorf("expected Environment=test, got %s", resp.Tags["Environment"])
@@ -344,7 +344,7 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 			return err
 		}
 		if _, ok := resp.Tags["Team"]; ok {
-			return fmt.Errorf("Team tag should have been removed")
+			return fmt.Errorf("team tag should have been removed")
 		}
 		return nil
 	}))
@@ -411,7 +411,7 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 			return fmt.Errorf("expected identity ID %s, got %s", identityID, *resp.IdentityId)
 		}
 		if resp.Token == nil || *resp.Token == "" {
-			return fmt.Errorf("Token is nil or empty")
+			return fmt.Errorf("token is nil or empty")
 		}
 		return nil
 	}))
@@ -427,7 +427,7 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 			return err
 		}
 		if resp.Token == nil || *resp.Token == "" {
-			return fmt.Errorf("Token is nil or empty")
+			return fmt.Errorf("token is nil or empty")
 		}
 		return nil
 	}))
@@ -496,7 +496,7 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 			return fmt.Errorf("IdentityId is nil or empty")
 		}
 		if resp.Token == nil || *resp.Token == "" {
-			return fmt.Errorf("Token is nil or empty")
+			return fmt.Errorf("token is nil or empty")
 		}
 		return nil
 	}))

@@ -94,7 +94,7 @@ func (s *IAMService) ListAccessKeys(ctx context.Context, reqCtx *request.Request
 	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	keys, err := store.AccessKeys().ListByUserName(userName)
 	if err != nil {

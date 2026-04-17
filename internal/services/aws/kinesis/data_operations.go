@@ -40,7 +40,7 @@ func (s *KinesisService) PutRecord(ctx context.Context, reqCtx *request.RequestC
 
 	var activeShards []*kinesisstore.Shard
 	for _, shard := range shards {
-		if shard.SequenceNumberRange.EndingSequenceNumber == "" {
+		if shard.SequenceNumberRange != nil && shard.SequenceNumberRange.EndingSequenceNumber == "" {
 			activeShards = append(activeShards, shard)
 		}
 	}

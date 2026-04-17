@@ -9,7 +9,7 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *Service) convertCastOperator(sql string) string {
+func (s *AthenaService) convertCastOperator(sql string) string {
 	var result strings.Builder
 	inString := false
 	i := 0
@@ -50,7 +50,7 @@ func isAlphaNum(c byte) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 }
 
-func (s *Service) detectStatementType(query string) athenastore.StatementType {
+func (s *AthenaService) detectStatementType(query string) athenastore.StatementType {
 	upperQuery := strings.ToUpper(strings.TrimSpace(query))
 	if strings.HasPrefix(upperQuery, "SELECT") || strings.HasPrefix(upperQuery, "WITH") {
 		return athenastore.StatementTypeDML
@@ -67,7 +67,7 @@ func (s *Service) detectStatementType(query string) athenastore.StatementType {
 	return athenastore.StatementTypeUtility
 }
 
-func (s *Service) queryExecutionToResponse(qe *athenastore.QueryExecution) map[string]interface{} {
+func (s *AthenaService) queryExecutionToResponse(qe *athenastore.QueryExecution) map[string]interface{} {
 	response := map[string]interface{}{
 		"QueryExecutionId": qe.QueryExecutionId,
 		"Query":            qe.Query,
@@ -143,7 +143,7 @@ func (s *Service) queryExecutionToResponse(qe *athenastore.QueryExecution) map[s
 	return response
 }
 
-func (s *Service) parseResultConfiguration(resultConfigMap map[string]interface{}) *athenastore.ResultConfiguration {
+func (s *AthenaService) parseResultConfiguration(resultConfigMap map[string]interface{}) *athenastore.ResultConfiguration {
 	resultConfiguration := &athenastore.ResultConfiguration{}
 
 	if outputLocation, ok := resultConfigMap["OutputLocation"].(string); ok {
@@ -167,7 +167,7 @@ func (s *Service) parseResultConfiguration(resultConfigMap map[string]interface{
 	return resultConfiguration
 }
 
-func (s *Service) hasJoin(selectStmt *sqlparser.Select) bool {
+func (s *AthenaService) hasJoin(selectStmt *sqlparser.Select) bool {
 	for _, tableExpr := range selectStmt.From {
 		if _, ok := tableExpr.(*sqlparser.JoinTableExpr); ok {
 			return true
@@ -176,7 +176,7 @@ func (s *Service) hasJoin(selectStmt *sqlparser.Select) bool {
 	return false
 }
 
-func (s *Service) buildResultSetFromStoredTable(tableData *athenastore.StoredTable, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+func (s *AthenaService) buildResultSetFromStoredTable(tableData *athenastore.StoredTable, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	var columnInfo []athenastore.ColumnInfo
 	for _, col := range tableData.Columns {
 		columnInfo = append(columnInfo, athenastore.ColumnInfo{

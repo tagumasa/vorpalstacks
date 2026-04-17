@@ -38,7 +38,7 @@ func validateWorkGroupName(name string) error {
 
 // CreateWorkGroup creates a new workgroup in Athena.
 // The workgroup is a container for queries and query results.
-func (s *Service) CreateWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) CreateWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
 	if name == "" {
 		return nil, ErrInvalidRequestException
@@ -95,7 +95,7 @@ func (s *Service) CreateWorkGroup(ctx context.Context, reqCtx *request.RequestCo
 }
 
 // GetWorkGroup retrieves the details of a specific workgroup.
-func (s *Service) GetWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) GetWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
 	if name == "" {
 		return nil, ErrInvalidRequestException
@@ -119,7 +119,7 @@ func (s *Service) GetWorkGroup(ctx context.Context, reqCtx *request.RequestConte
 }
 
 // UpdateWorkGroup updates an existing workgroup's configuration.
-func (s *Service) UpdateWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) UpdateWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
 	if name == "" {
 		return nil, ErrInvalidRequestException
@@ -160,7 +160,7 @@ func (s *Service) UpdateWorkGroup(ctx context.Context, reqCtx *request.RequestCo
 }
 
 // DeleteWorkGroup deletes a workgroup from Athena.
-func (s *Service) DeleteWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) DeleteWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
 	if name == "" {
 		return nil, ErrInvalidRequestException
@@ -185,7 +185,7 @@ func (s *Service) DeleteWorkGroup(ctx context.Context, reqCtx *request.RequestCo
 }
 
 // ListWorkGroups returns a list of workgroups in the account.
-func (s *Service) ListWorkGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) ListWorkGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -236,7 +236,7 @@ func (s *Service) ListWorkGroups(ctx context.Context, reqCtx *request.RequestCon
 	return result, nil
 }
 
-func (s *Service) validateResourceExists(stores *athenaStores, resourceType, resourceName string) error {
+func (s *AthenaService) validateResourceExists(stores *athenaStores, resourceType, resourceName string) error {
 	switch resourceType {
 	case "workgroup":
 		_, err := stores.workGroupStore.GetWorkGroup(resourceName)
@@ -255,7 +255,7 @@ func (s *Service) validateResourceExists(stores *athenaStores, resourceType, res
 }
 
 // TagResource adds tags to an Athena resource.
-func (s *Service) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceArn == "" {
 		return nil, ErrInvalidRequestException
@@ -301,7 +301,7 @@ func (s *Service) TagResource(ctx context.Context, reqCtx *request.RequestContex
 }
 
 // UntagResource removes tags from an Athena resource.
-func (s *Service) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceArn == "" {
 		return nil, ErrInvalidRequestException
@@ -335,7 +335,7 @@ func (s *Service) UntagResource(ctx context.Context, reqCtx *request.RequestCont
 }
 
 // ListTagsForResource lists the tags associated with an Athena resource.
-func (s *Service) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *AthenaService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
 	if resourceArn == "" {
 		return nil, ErrInvalidRequestException
@@ -376,7 +376,7 @@ func (s *Service) ListTagsForResource(ctx context.Context, reqCtx *request.Reque
 	}, nil
 }
 
-func (s *Service) parseWorkGroupConfiguration(config map[string]interface{}) *athenastore.WorkGroupConfiguration {
+func (s *AthenaService) parseWorkGroupConfiguration(config map[string]interface{}) *athenastore.WorkGroupConfiguration {
 	cfg := &athenastore.WorkGroupConfiguration{}
 
 	if resultConfigRaw, ok := config["ResultConfiguration"]; ok {
@@ -410,7 +410,7 @@ func (s *Service) parseWorkGroupConfiguration(config map[string]interface{}) *at
 	return cfg
 }
 
-func (s *Service) parseEngineVersion(engineVersion map[string]interface{}) *athenastore.EngineVersion {
+func (s *AthenaService) parseEngineVersion(engineVersion map[string]interface{}) *athenastore.EngineVersion {
 	ev := &athenastore.EngineVersion{}
 	if selected, ok := engineVersion["SelectedEngineVersion"].(string); ok {
 		ev.SelectedEngineVersion = selected
@@ -427,7 +427,7 @@ func (s *Service) parseEngineVersion(engineVersion map[string]interface{}) *athe
 	return ev
 }
 
-func (s *Service) applyConfigurationUpdates(workGroup *athenastore.WorkGroup, updates map[string]interface{}) {
+func (s *AthenaService) applyConfigurationUpdates(workGroup *athenastore.WorkGroup, updates map[string]interface{}) {
 	if workGroup.Configuration == nil {
 		workGroup.Configuration = &athenastore.WorkGroupConfiguration{}
 	}
@@ -456,7 +456,7 @@ func (s *Service) applyConfigurationUpdates(workGroup *athenastore.WorkGroup, up
 	}
 }
 
-func (s *Service) workGroupToResponse(wg *athenastore.WorkGroup) map[string]interface{} {
+func (s *AthenaService) workGroupToResponse(wg *athenastore.WorkGroup) map[string]interface{} {
 	response := map[string]interface{}{
 		"Name":         wg.Name,
 		"State":        wg.State,
@@ -471,7 +471,7 @@ func (s *Service) workGroupToResponse(wg *athenastore.WorkGroup) map[string]inte
 	return response
 }
 
-func (s *Service) configurationToResponse(cfg *athenastore.WorkGroupConfiguration) map[string]interface{} {
+func (s *AthenaService) configurationToResponse(cfg *athenastore.WorkGroupConfiguration) map[string]interface{} {
 	response := map[string]interface{}{
 		"EnforceWorkGroupConfiguration":   cfg.EnforceWorkGroupConfiguration,
 		"PublishCloudWatchMetricsEnabled": cfg.PublishCloudWatchMetricsEnabled,
@@ -509,7 +509,7 @@ func (s *Service) configurationToResponse(cfg *athenastore.WorkGroupConfiguratio
 }
 
 // GetDefaultWorkGroup returns the default primary workgroup, creating it if it does not exist.
-func (s *Service) GetDefaultWorkGroup(reqCtx *request.RequestContext) (*athenastore.WorkGroup, error) {
+func (s *AthenaService) GetDefaultWorkGroup(reqCtx *request.RequestContext) (*athenastore.WorkGroup, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

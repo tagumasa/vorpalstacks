@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-func (s *Service) compareEqual(left, right interface{}) bool {
+func (s *TimestreamQueryService) compareEqual(left, right interface{}) bool {
 	switch lv := left.(type) {
 	case int64:
 		if rv, ok := right.(int64); ok {
@@ -34,7 +34,7 @@ func (s *Service) compareEqual(left, right interface{}) bool {
 	return fmt.Sprintf("%v", left) == fmt.Sprintf("%v", right)
 }
 
-func (s *Service) compareLess(left, right interface{}, leftStr, rightStr string) bool {
+func (s *TimestreamQueryService) compareLess(left, right interface{}, leftStr, rightStr string) bool {
 	switch lv := left.(type) {
 	case int64:
 		if rv, ok := right.(int64); ok {
@@ -68,7 +68,7 @@ func (s *Service) compareLess(left, right interface{}, leftStr, rightStr string)
 	return leftStr < rightStr
 }
 
-func (s *Service) compareGreater(left, right interface{}, leftStr, rightStr string) bool {
+func (s *TimestreamQueryService) compareGreater(left, right interface{}, leftStr, rightStr string) bool {
 	switch lv := left.(type) {
 	case int64:
 		if rv, ok := right.(int64); ok {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"regexp"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -216,7 +217,7 @@ func (s *IAMService) DeleteRole(ctx context.Context, reqCtx *request.RequestCont
 func (s *IAMService) ListRoles(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	pathPrefix := request.GetStringParam(req.Parameters, "PathPrefix")
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -320,7 +321,7 @@ func (s *IAMService) UntagRole(ctx context.Context, reqCtx *request.RequestConte
 		return nil, NewNoSuchRoleError(roleName)
 	}
 
-	role.Tags = removeTags(role.Tags, parseTagKeys(req.Parameters))
+	role.Tags = tags.RemoveByTagKeys(role.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
 
 	if err := store.Roles().Put(role); err != nil {
 		return nil, err
@@ -347,7 +348,7 @@ func (s *IAMService) ListRoleTags(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	return map[string]interface{}{
-		"Tags":        tagsToResponse(role.Tags),
+		"Tags":        tags.ToResponse(role.Tags),
 		"IsTruncated": false,
 	}, nil
 }
@@ -377,7 +378,7 @@ func (s *IAMService) roleToResponse(reqCtx *request.RequestContext, role *iamsto
 		}
 	}
 
-	if tags := tagsToResponse(role.Tags); tags != nil {
+	if tags := tags.ToResponse(role.Tags); tags != nil {
 		resp["Tags"] = tags
 	}
 
@@ -413,7 +414,7 @@ func (s *IAMService) ListInstanceProfilesForRole(ctx context.Context, reqCtx *re
 	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := getMaxItems(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	result, err := store.InstanceProfiles().ListForRole(roleName, marker, maxItems)
 	if err != nil {

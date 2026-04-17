@@ -121,9 +121,11 @@ func (m *Manager) Shutdown(ctx context.Context) {
 	defer m.mu.Unlock()
 
 	for name, l := range m.listeners {
-		if err := l.server.Shutdown(ctx); err != nil {
+		shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		if err := l.server.Shutdown(shutdownCtx); err != nil {
 			logs.Error("Secondary listener shutdown error", logs.String("name", name), logs.Err(err))
 		}
+		cancel()
 	}
 }
 

@@ -2,6 +2,7 @@ package pebbledb
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -26,7 +27,7 @@ func (m *TTLManager) SetWithExpiry(key, value []byte, ttl time.Duration) error {
 func (m *TTLManager) Get(key []byte) ([]byte, bool, error) {
 	val, err := m.db.Get(key)
 	if err != nil {
-		if err == ErrKeyNotFound {
+		if errors.Is(err, ErrKeyNotFound) {
 			return nil, false, nil
 		}
 		return nil, false, err

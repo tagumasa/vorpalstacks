@@ -7,7 +7,7 @@ import (
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
-func (s *Service) extractDatabaseNameFromDDL(query, prefix1, prefix2 string) string {
+func (s *AthenaService) extractDatabaseNameFromDDL(query, prefix1, prefix2 string) string {
 	upperQuery := strings.ToUpper(query)
 
 	var dbName string
@@ -34,7 +34,7 @@ func (s *Service) extractDatabaseNameFromDDL(query, prefix1, prefix2 string) str
 	return dbName
 }
 
-func (s *Service) extractTableNameFromDrop(query string) string {
+func (s *AthenaService) extractTableNameFromDrop(query string) string {
 	upperQuery := strings.ToUpper(query)
 	if !strings.HasPrefix(upperQuery, "DROP TABLE") {
 		return ""
@@ -58,7 +58,7 @@ func (s *Service) extractTableNameFromDrop(query string) string {
 	return ""
 }
 
-func (s *Service) parseCreateTableStatement(query string) (string, []athenastore.Column) {
+func (s *AthenaService) parseCreateTableStatement(query string) (string, []athenastore.Column) {
 	upperQuery := strings.ToUpper(query)
 
 	createIdx := strings.Index(upperQuery, "CREATE EXTERNAL TABLE")
@@ -76,7 +76,7 @@ func (s *Service) parseCreateTableStatement(query string) (string, []athenastore
 	return s.parseCreateTableRest(rest)
 }
 
-func (s *Service) parseCreateTableRest(rest string) (string, []athenastore.Column) {
+func (s *AthenaService) parseCreateTableRest(rest string) (string, []athenastore.Column) {
 	rest = strings.TrimSpace(rest)
 
 	if strings.HasPrefix(strings.ToUpper(rest), "IF NOT EXISTS") {
@@ -147,7 +147,7 @@ func (s *Service) parseCreateTableRest(rest string) (string, []athenastore.Colum
 	return tableName, columns
 }
 
-func (s *Service) parseCreateTableStatementWithLocation(query string) (string, []athenastore.Column, string, string) {
+func (s *AthenaService) parseCreateTableStatementWithLocation(query string) (string, []athenastore.Column, string, string) {
 	tableName, columns := s.parseCreateTableStatement(query)
 
 	var location string
@@ -197,7 +197,7 @@ func (s *Service) parseCreateTableStatementWithLocation(query string) (string, [
 	return tableName, columns, location, format
 }
 
-func (s *Service) splitColumnDefinitions(columnsPart string) []string {
+func (s *AthenaService) splitColumnDefinitions(columnsPart string) []string {
 	var result []string
 	var current strings.Builder
 	parenDepth := 0
@@ -229,7 +229,7 @@ func (s *Service) splitColumnDefinitions(columnsPart string) []string {
 	return result
 }
 
-func (s *Service) parseInsertStatement(query string) (string, []string, []interface{}) {
+func (s *AthenaService) parseInsertStatement(query string) (string, []string, []interface{}) {
 	upperQuery := strings.ToUpper(query)
 
 	insertIdx := strings.Index(upperQuery, "INSERT INTO")
@@ -294,7 +294,7 @@ func (s *Service) parseInsertStatement(query string) (string, []string, []interf
 	return tableName, columnNames, values
 }
 
-func (s *Service) parseValueSets(valuesPart string) []string {
+func (s *AthenaService) parseValueSets(valuesPart string) []string {
 	var sets []string
 	var current strings.Builder
 	parenDepth := 0
@@ -354,7 +354,7 @@ func (s *Service) parseValueSets(valuesPart string) []string {
 	return sets
 }
 
-func (s *Service) parseValues(valuesPart string) []interface{} {
+func (s *AthenaService) parseValues(valuesPart string) []interface{} {
 	var values []interface{}
 	var current strings.Builder
 	inString := false
@@ -402,7 +402,7 @@ func (s *Service) parseValues(valuesPart string) []interface{} {
 	return values
 }
 
-func (s *Service) parseValue(val string) interface{} {
+func (s *AthenaService) parseValue(val string) interface{} {
 	val = strings.TrimSpace(val)
 
 	if strings.HasPrefix(val, "'") && strings.HasSuffix(val, "'") {

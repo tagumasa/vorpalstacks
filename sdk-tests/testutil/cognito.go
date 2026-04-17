@@ -187,7 +187,7 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				return fmt.Errorf("UserPoolId mismatch: got %v, want %s", resp.DomainDescription.UserPoolId, userPoolID)
 			}
 			if resp.DomainDescription.Domain == nil || *resp.DomainDescription.Domain != domainName {
-				return fmt.Errorf("Domain mismatch: got %v, want %s", resp.DomainDescription.Domain, domainName)
+				return fmt.Errorf("domain mismatch: got %v, want %s", resp.DomainDescription.Domain, domainName)
 			}
 			return nil
 		}))
@@ -229,7 +229,7 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				return err
 			}
 			if resp.Group == nil {
-				return fmt.Errorf("Group is nil")
+				return fmt.Errorf("group is nil")
 			}
 			if resp.Group.GroupName == nil || *resp.Group.GroupName != groupName {
 				return fmt.Errorf("GroupName mismatch: got %v, want %s", resp.Group.GroupName, groupName)
@@ -265,10 +265,10 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				return err
 			}
 			if resp.User == nil {
-				return fmt.Errorf("User is nil")
+				return fmt.Errorf("user is nil")
 			}
 			if resp.User.Username == nil || *resp.User.Username != username {
-				return fmt.Errorf("Username mismatch: got %v, want %s", resp.User.Username, username)
+				return fmt.Errorf("username mismatch: got %v, want %s", resp.User.Username, username)
 			}
 			if resp.User.UserStatus != types.UserStatusTypeForceChangePassword {
 				return fmt.Errorf("expected UserStatus FORCE_CHANGE_PASSWORD, got %v", resp.User.UserStatus)
@@ -285,7 +285,7 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				return err
 			}
 			if resp.Username == nil || *resp.Username != username {
-				return fmt.Errorf("Username mismatch: got %v, want %s", resp.Username, username)
+				return fmt.Errorf("username mismatch: got %v, want %s", resp.Username, username)
 			}
 			if !resp.Enabled {
 				return fmt.Errorf("expected user to be enabled")
@@ -320,13 +320,13 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				return fmt.Errorf("ResourceServer is nil")
 			}
 			if resp.ResourceServer.Identifier == nil || *resp.ResourceServer.Identifier != identifier {
-				return fmt.Errorf("Identifier mismatch: got %v, want %s", resp.ResourceServer.Identifier, identifier)
+				return fmt.Errorf("identifier mismatch: got %v, want %s", resp.ResourceServer.Identifier, identifier)
 			}
 			if resp.ResourceServer.Name == nil || *resp.ResourceServer.Name != "Test Resource Server" {
-				return fmt.Errorf("Name mismatch: got %v, want Test Resource Server", resp.ResourceServer.Name)
+				return fmt.Errorf("name mismatch: got %v, want Test Resource Server", resp.ResourceServer.Name)
 			}
 			if len(resp.ResourceServer.Scopes) != 0 {
-				return fmt.Errorf("Scopes should be empty when no scopes specified")
+				return fmt.Errorf("scopes should be empty when no scopes specified")
 			}
 			return nil
 		}))
@@ -605,10 +605,10 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				return fmt.Errorf("ResourceServer is nil")
 			}
 			if resp.ResourceServer.Identifier == nil || *resp.ResourceServer.Identifier != identifier {
-				return fmt.Errorf("Identifier mismatch: got %v", resp.ResourceServer.Identifier)
+				return fmt.Errorf("identifier mismatch: got %v", resp.ResourceServer.Identifier)
 			}
 			if resp.ResourceServer.Name == nil || *resp.ResourceServer.Name != "Test Resource Server" {
-				return fmt.Errorf("Name mismatch: got %v", resp.ResourceServer.Name)
+				return fmt.Errorf("name mismatch: got %v", resp.ResourceServer.Name)
 			}
 			return nil
 		}))
@@ -629,7 +629,7 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				return fmt.Errorf("ResourceServer is nil")
 			}
 			if resp.ResourceServer.Name == nil || *resp.ResourceServer.Name != "Updated Resource Server" {
-				return fmt.Errorf("Name not updated: got %v", resp.ResourceServer.Name)
+				return fmt.Errorf("name not updated: got %v", resp.ResourceServer.Name)
 			}
 			return nil
 		}))
@@ -710,7 +710,7 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				return fmt.Errorf("GetGroup failed: %v", err)
 			}
 			if resp.Group == nil {
-				return fmt.Errorf("Group is nil")
+				return fmt.Errorf("group is nil")
 			}
 			if resp.Group.GroupName == nil || *resp.Group.GroupName != newGroupName {
 				return fmt.Errorf("GroupName mismatch: got %v", resp.Group.GroupName)
@@ -752,7 +752,7 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				return fmt.Errorf("GetGroup after update failed: %v", err)
 			}
 			if resp.Group.Description == nil || *resp.Group.Description != "Updated description" {
-				return fmt.Errorf("Description not updated: got %v", resp.Group.Description)
+				return fmt.Errorf("description not updated: got %v", resp.Group.Description)
 			}
 			return nil
 		}))
@@ -1317,7 +1317,7 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
 					UserPoolId: newPool.UserPool.Id,
 				})
-				return fmt.Errorf("Tags is nil after tagging")
+				return fmt.Errorf("tags is nil after tagging")
 			}
 			if listResp.Tags["Environment"] != "test" {
 				client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
@@ -1364,7 +1364,7 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 				client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
 					UserPoolId: newPool.UserPool.Id,
 				})
-				return fmt.Errorf("Tags is nil")
+				return fmt.Errorf("tags is nil")
 			}
 			if resp.Tags["Test"] != "value" {
 				client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{

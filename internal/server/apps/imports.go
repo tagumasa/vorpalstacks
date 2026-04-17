@@ -69,7 +69,7 @@ type serviceState struct {
 	stsService             *svcsts.STSService
 	logsService            *svclogs.LogsService
 	appSyncService         *svcappsync.AppSyncService
-	timestreamWriteService *svctimestreamwrite.Service
+	timestreamWriteService *svctimestreamwrite.TimestreamWriteService
 
 	sqsStoreInstance     *storesqs.SQSStore
 	snsStoreInstance     *storesns.SNSStore

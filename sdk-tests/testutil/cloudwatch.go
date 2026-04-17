@@ -127,7 +127,7 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.DashboardEntries != nil && len(resp.DashboardEntries) != 0 {
+		if len(resp.DashboardEntries) != 0 {
 			return fmt.Errorf("expected no dashboards, got %d", len(resp.DashboardEntries))
 		}
 		return nil
@@ -576,7 +576,7 @@ func (r *TestRunner) RunCloudWatchTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("get metric widget image: %v", err)
 		}
-		if resp.MetricWidgetImage == nil || len(resp.MetricWidgetImage) == 0 {
+		if len(resp.MetricWidgetImage) == 0 {
 			return fmt.Errorf("expected non-empty image")
 		}
 		return nil

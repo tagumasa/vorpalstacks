@@ -18,7 +18,7 @@ func isValidTimestreamName(name string) bool {
 }
 
 // DescribeEndpoints returns information about the Timestream Write endpoints.
-func (s *Service) DescribeEndpoints(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) DescribeEndpoints(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return map[string]interface{}{
 		"Endpoints": []map[string]interface{}{
 			{
@@ -30,7 +30,7 @@ func (s *Service) DescribeEndpoints(ctx context.Context, reqCtx *request.Request
 }
 
 // CreateDatabase creates a new Timestream database.
-func (s *Service) CreateDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) CreateDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
 		return nil, ErrInvalidParameter
@@ -68,7 +68,7 @@ func (s *Service) CreateDatabase(ctx context.Context, reqCtx *request.RequestCon
 }
 
 // DescribeDatabase returns information about a Timestream database.
-func (s *Service) DescribeDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) DescribeDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
 		return nil, ErrInvalidParameter
@@ -94,7 +94,7 @@ func (s *Service) DescribeDatabase(ctx context.Context, reqCtx *request.RequestC
 }
 
 // ListDatabases returns a list of Timestream databases.
-func (s *Service) ListDatabases(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) ListDatabases(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
 	if maxResults <= 0 {
@@ -131,7 +131,7 @@ func (s *Service) ListDatabases(ctx context.Context, reqCtx *request.RequestCont
 }
 
 // UpdateDatabase modifies the KMS key for a Timestream database.
-func (s *Service) UpdateDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) UpdateDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
 		return nil, ErrInvalidParameter
@@ -159,7 +159,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, reqCtx *request.RequestCon
 }
 
 // DeleteDatabase deletes a Timestream database.
-func (s *Service) DeleteDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+func (s *TimestreamWriteService) DeleteDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
 		return nil, ErrInvalidParameter
@@ -180,7 +180,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, reqCtx *request.RequestCon
 	return response.EmptyResponse(), nil
 }
 
-func (s *Service) formatDatabaseResponse(db *tsstore.Database, tags map[string]string) map[string]interface{} {
+func (s *TimestreamWriteService) formatDatabaseResponse(db *tsstore.Database, tags map[string]string) map[string]interface{} {
 	response := map[string]interface{}{
 		"Arn":             db.ARN,
 		"DatabaseName":    db.DatabaseName,

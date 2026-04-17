@@ -2,14 +2,17 @@ package sqs
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
 
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_sqs"
@@ -68,7 +71,7 @@ type SQSStore struct {
 	purgeMutex         sync.Mutex
 	queueMutex         sync.RWMutex
 	purgeInProgress    map[string]time.Time
-	storage            storage.BasicStorage
+	storage            storage.TransactionalStorage
 	deduplicationCache map[string]*deduplicationEntry
 	deduplicationMu    sync.RWMutex
 	sequenceCounter    int64
@@ -82,6 +85,7 @@ type deduplicationEntry struct {
 
 // NewSQSStore creates a new SQS store with the specified storage, account ID, region, and base URL.
 func NewSQSStore(store storage.BasicStorage, accountID, region, baseURL string) *SQSStore {
+	ts, _ := store.(storage.TransactionalStorage)
 	regionSuffix := "-" + region
 	return &SQSStore{
 		BaseStore:          common.NewBaseStore(store.Bucket("sqs-queues"+regionSuffix), "sqs-queues"),
@@ -92,7 +96,7 @@ func NewSQSStore(store storage.BasicStorage, accountID, region, baseURL string) 
 		accountID:          accountID,
 		region:             region,
 		baseURL:            baseURL,
-		storage:            store,
+		storage:            ts,
 		purgeInProgress:    make(map[string]time.Time),
 		deduplicationCache: make(map[string]*deduplicationEntry),
 		sequenceCounter:    time.Now().UnixNano(),
@@ -137,6 +141,64 @@ func (s *SQSStore) buildDeduplicationKey(queueURL string, message *Message) stri
 		return queueURL + "#" + message.MessageDeduplicationID
 	}
 	return queueURL + "#" + calculateMD5(message.Body)
+}
+
+func (s *SQSStore) getDeduplicationMessageID(dedupKey string) (string, bool) {
+	s.deduplicationMu.RLock()
+	entry, exists := s.deduplicationCache[dedupKey]
+	s.deduplicationMu.RUnlock()
+
+	if exists && time.Now().Before(entry.expiresAt) {
+		return entry.messageID, true
+	}
+
+	if s.storage != nil {
+		data, err := s.storage.Bucket("sqs-dedup-" + s.region).Get([]byte(dedupKey))
+		if err == nil && data != nil {
+			idx := bytes.IndexByte(data, '\x01')
+			if idx > 0 {
+				msgKey := string(data[:idx])
+				expiryStr := string(data[idx+1:])
+				if expiryMs, err := strconv.ParseInt(expiryStr, 10, 64); err == nil {
+					if time.Now().UnixMilli() >= expiryMs {
+						_ = s.storage.Bucket("sqs-dedup-" + s.region).Delete([]byte(dedupKey))
+						s.deduplicationMu.Lock()
+						delete(s.deduplicationCache, dedupKey)
+						s.deduplicationMu.Unlock()
+						return "", false
+					}
+				}
+				s.deduplicationMu.Lock()
+				s.deduplicationCache[dedupKey] = &deduplicationEntry{
+					messageID: msgKey,
+					expiresAt: time.Now().Add(deduplicationWindow),
+				}
+				s.deduplicationMu.Unlock()
+				return msgKey, true
+			}
+		}
+	}
+
+	return "", false
+}
+
+func (s *SQSStore) putDeduplicationEntry(dedupKey, messageID string) {
+	s.deduplicationMu.Lock()
+	s.deduplicationCache[dedupKey] = &deduplicationEntry{
+		messageID: messageID,
+		expiresAt: time.Now().Add(deduplicationWindow),
+	}
+	if len(s.deduplicationCache) > deduplicationCacheMaxSize {
+		s.cleanupDeduplicationCache()
+	}
+	s.deduplicationMu.Unlock()
+
+	if s.storage != nil {
+		expiry := time.Now().Add(deduplicationWindow).UnixMilli()
+		val := append([]byte(messageID), '\x01')
+		val = append(val, []byte(strconv.FormatInt(expiry, 10))...)
+		_ = s.storage.Bucket("sqs-dedup-"+s.region).Put([]byte(dedupKey), val)
+	}
 }
 
 func (s *SQSStore) cleanupDeduplicationCache() {
@@ -191,14 +253,36 @@ func (s *SQSStore) moveToDLQ(msg *Message, dlqARN string) error {
 	newMsg.Attributes["SenderId"] = s.accountID
 	newMsg.Attributes["SentTimestamp"] = fmt.Sprintf("%d", newMsg.SentTimestamp.UnixMilli())
 
+	if s.storage != nil {
+		dlqKey := messageKey(dlqURL, newMsg.ID)
+		srcKey := messageKey(msg.QueueURL, msg.ID)
+		dlqData, marshalErr := proto.Marshal(MessageToProto(newMsg))
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal DLQ message: %w", marshalErr)
+		}
+		messagesBucket := "sqs-messages-" + s.region
+		receiptsBucket := "sqs-receipts-" + s.region
+		err := s.storage.Update(context.Background(), func(txn storage.Transaction) error {
+			if err := txn.Bucket(messagesBucket).Put([]byte(dlqKey), dlqData); err != nil {
+				return err
+			}
+			if err := txn.Bucket(messagesBucket).Delete([]byte(srcKey)); err != nil {
+				return err
+			}
+			if msg.ReceiptHandle != "" {
+				_ = txn.Bucket(receiptsBucket).Delete([]byte(msg.ReceiptHandle))
+			}
+			return nil
+		})
+		return err
+	}
+
 	if err := s.messagesStore.PutProto(messageKey(dlqURL, newMsg.ID), MessageToProto(newMsg)); err != nil {
 		return fmt.Errorf("failed to put message to DLQ: %w", err)
 	}
-
 	if err := s.messagesStore.Delete(messageKey(msg.QueueURL, msg.ID)); err != nil {
 		return fmt.Errorf("failed to delete original message after DLQ move: %w", err)
 	}
-
 	return nil
 }
 
