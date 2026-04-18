@@ -13,7 +13,7 @@ import (
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
-	svcarn "vorpalstacks/internal/utils/aws/arn"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 const (
@@ -295,7 +295,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 		return
 	}
 
-	_, _, streamRegion, _, resource := svcarn.SplitARN(mapping.EventSourceArn)
+	_, _, streamRegion, _, resource := arnutil.SplitARN(mapping.EventSourceArn)
 	if streamRegion == "" {
 		p.log("failed to parse Kinesis event source ARN", "arn", mapping.EventSourceArn)
 		return
@@ -370,7 +370,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 				"eventID":           fmt.Sprintf("%s:%s:%s", shard.ShardID, rec.SequenceNumber, mapping.UUID),
 				"awsRegion":         streamRegion,
 				"eventName":         "aws:kinesis:record",
-				"invokeIdentityArn": fmt.Sprintf("arn:aws:iam::%s:role/vorpalstacks-lambda", p.accountID),
+				"invokeIdentityArn": arnutil.NewARNBuilder(p.accountID, "").IAM().Role("vorpalstacks-lambda"),
 			})
 		}
 
@@ -383,7 +383,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 			continue
 		}
 
-		fnName := svcarn.ExtractFunctionNameFromARN(mapping.FunctionArn)
+		fnName := arnutil.ExtractFunctionNameFromARN(mapping.FunctionArn)
 		if fnName == "" {
 			p.log("failed to extract function name from ARN", "arn", mapping.FunctionArn)
 			continue
@@ -416,13 +416,13 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		return
 	}
 
-	_, _, region, accountID, _ := svcarn.SplitARN(mapping.EventSourceArn)
+	_, _, region, accountID, _ := arnutil.SplitARN(mapping.EventSourceArn)
 	if region == "" || accountID == "" {
 		p.log("failed to parse event source ARN", "arn", mapping.EventSourceArn)
 		return
 	}
 
-	queueName := svcarn.ExtractQueueNameFromARN(mapping.EventSourceArn)
+	queueName := arnutil.ExtractQueueNameFromARN(mapping.EventSourceArn)
 	if queueName == "" {
 		p.log("failed to extract queue name from ARN", "arn", mapping.EventSourceArn)
 		return
@@ -477,7 +477,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		return
 	}
 
-	fnName := svcarn.ExtractFunctionNameFromARN(mapping.FunctionArn)
+	fnName := arnutil.ExtractFunctionNameFromARN(mapping.FunctionArn)
 	if fnName == "" {
 		p.log("failed to extract function name from ARN", "arn", mapping.FunctionArn)
 		return
@@ -566,10 +566,10 @@ func (p *esmPoller) invokeLambda(ctx context.Context, functionRef string, payloa
 	region := p.region
 	functionName := functionRef
 	if strings.HasPrefix(functionRef, "arn:") {
-		if _, _, arnRegion, _, _ := svcarn.SplitARN(functionRef); arnRegion != "" {
+		if _, _, arnRegion, _, _ := arnutil.SplitARN(functionRef); arnRegion != "" {
 			region = arnRegion
 		}
-		functionName = svcarn.ExtractFunctionNameFromARN(functionRef)
+		functionName = arnutil.ExtractFunctionNameFromARN(functionRef)
 	}
 
 	fnStore := p.lambdaSvc.getOrCreateFunctionStore(region)

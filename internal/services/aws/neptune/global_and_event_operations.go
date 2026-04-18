@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateGlobalCluster creates a new Neptune global cluster.
@@ -32,7 +33,7 @@ func (s *NeptuneService) CreateGlobalCluster(ctx context.Context, reqCtx *reques
 	gc := &neptunestore.GlobalCluster{
 		GlobalClusterIdentifier: id,
 		GlobalClusterResourceId: fmt.Sprintf("cluster-%s", id),
-		GlobalClusterArn:        fmt.Sprintf("arn:aws:rds:%s:%s:global-cluster:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), id),
+		GlobalClusterArn:        arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().GlobalCluster(id),
 		Engine:                  engine,
 		EngineVersion:           request.GetStringParam(params, "EngineVersion"),
 		Status:                  "available",

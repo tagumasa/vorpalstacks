@@ -74,12 +74,6 @@ type ParameterMetadata struct {
 	ARN              string        `json:"arn"`
 }
 
-// Tag represents a tag for an SSM parameter.
-type Tag struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
 // NewParameter creates a new Parameter with the specified name, value, and type.
 func NewParameter(name, value string, paramType ParameterType) *Parameter {
 	return &Parameter{

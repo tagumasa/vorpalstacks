@@ -6,15 +6,15 @@ import (
 	"net/http"
 	"sync"
 
+	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/eventbus"
 	sns "vorpalstacks/internal/store/aws/sns"
 	sqs "vorpalstacks/internal/store/aws/sqs"
 )
 
 // LambdaInvoker invokes Lambda functions for API Gateway integrations.
-type LambdaInvoker interface {
-	InvokeForGateway(ctx context.Context, functionName string, payload []byte) (int64, []byte, error)
-}
+// Deprecated: use common.LambdaInvoker instead.
+type LambdaInvoker = common.LambdaInvoker
 
 // IntegrationRequest represents an API Gateway integration request.
 type IntegrationRequest struct {

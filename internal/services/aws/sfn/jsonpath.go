@@ -10,6 +10,7 @@ import (
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 
 	"vorpalstacks/internal/config"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 func getJSONPathValueRaw(data map[string]interface{}, path string) (interface{}, bool) {
@@ -128,9 +129,9 @@ func (e *Executor) extractExecutionRoleArn() string {
 		return e.currentRoleArn
 	}
 	if e.accountID != "" {
-		return fmt.Sprintf("arn:aws:iam::%s:role/StepFunctionsExecutionRole", e.accountID)
+		return arnutil.NewARNBuilder(e.accountID, "").IAM().Role("StepFunctionsExecutionRole")
 	}
-	return fmt.Sprintf("arn:aws:iam::%s:role/StepFunctionsExecutionRole", config.AWSAccountID())
+	return arnutil.NewARNBuilder(config.AWSAccountID(), "").IAM().Role("StepFunctionsExecutionRole")
 }
 
 func (e *Executor) extractStateMachineId() string {

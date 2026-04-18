@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const samlProviderBucketName = "iam_saml_providers"
@@ -14,6 +15,7 @@ const samlProviderBucketName = "iam_saml_providers"
 type SAMLProviderStore struct {
 	bucket     storage.Bucket
 	arnBuilder *ARNBuilder
+	kl         common.KeyLocker
 }
 
 // NewSAMLProviderStore creates a new SAMLProviderStore instance.
@@ -94,17 +96,19 @@ func (s *SAMLProviderStore) Create(name, metadataDocument string, validUntil *ti
 
 // Update modifies the metadata document and validity period of an existing SAML provider.
 func (s *SAMLProviderStore) Update(arn, metadataDocument string, validUntil *time.Time) error {
-	provider, err := s.Get(arn)
-	if err != nil {
-		return err
-	}
-	if metadataDocument != "" {
-		provider.SAMLMetadataDocument = metadataDocument
-	}
-	if validUntil != nil {
-		provider.ValidUntil = validUntil
-	}
-	return s.Put(provider)
+	return s.kl.WithLock(arn, func() error {
+		provider, err := s.Get(arn)
+		if err != nil {
+			return err
+		}
+		if metadataDocument != "" {
+			provider.SAMLMetadataDocument = metadataDocument
+		}
+		if validUntil != nil {
+			provider.ValidUntil = validUntil
+		}
+		return s.Put(provider)
+	})
 }
 
 // List returns all SAML providers.

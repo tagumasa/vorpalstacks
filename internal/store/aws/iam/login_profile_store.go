@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const loginProfileBucketName = "iam_login_profiles"
@@ -19,6 +20,7 @@ const bcryptCost = 12
 // LoginProfileStore manages IAM login profile data in persistent storage.
 type LoginProfileStore struct {
 	bucket storage.Bucket
+	kl     common.KeyLocker
 }
 
 // NewLoginProfileStore creates a new store for IAM login profiles.
@@ -100,31 +102,35 @@ func (s *LoginProfileStore) Create(userName, password string, passwordResetRequi
 
 // UpdatePassword changes the password for a login profile.
 func (s *LoginProfileStore) UpdatePassword(userName, password string) error {
-	profile, err := s.Get(userName)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(userName, func() error {
+		profile, err := s.Get(userName)
+		if err != nil {
+			return err
+		}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
-	if err != nil {
-		return NewStoreError("update_password", err)
-	}
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+		if err != nil {
+			return NewStoreError("update_password", err)
+		}
 
-	profile.PasswordHash = string(passwordHash)
-	profile.PasswordResetRequired = false
+		profile.PasswordHash = string(passwordHash)
+		profile.PasswordResetRequired = false
 
-	return s.Put(profile)
+		return s.Put(profile)
+	})
 }
 
 // UpdatePasswordResetRequired changes the password reset requirement flag.
 func (s *LoginProfileStore) UpdatePasswordResetRequired(userName string, required bool) error {
-	profile, err := s.Get(userName)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(userName, func() error {
+		profile, err := s.Get(userName)
+		if err != nil {
+			return err
+		}
 
-	profile.PasswordResetRequired = required
-	return s.Put(profile)
+		profile.PasswordResetRequired = required
+		return s.Put(profile)
+	})
 }
 
 // VerifyPassword validates a password against the stored hash.

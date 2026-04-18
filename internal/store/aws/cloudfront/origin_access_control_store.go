@@ -2,7 +2,6 @@
 package cloudfront
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -38,25 +37,7 @@ func (s *OriginAccessControlStore) Get(id string) (*OriginAccessControl, error) 
 
 // GetByName retrieves an origin access control by its name.
 func (s *OriginAccessControlStore) GetByName(name string) (*OriginAccessControl, error) {
-	var found *OriginAccessControl
-	err := s.ForEach(func(key string, value []byte) error {
-		var oac OriginAccessControl
-		if err := json.Unmarshal(value, &oac); err != nil {
-			return err
-		}
-		if oac.Name == name {
-			found = &oac
-			return nil
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_origin_access_control_by_name", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_origin_access_control_by_name", ErrNotFound)
-	}
-	return found, nil
+	return common.FindFirst[OriginAccessControl](s.BaseStore, func(o *OriginAccessControl) bool { return o.Name == name })
 }
 
 // Create creates a new origin access control.
@@ -132,53 +113,15 @@ func (s *OriginAccessControlStore) Delete(id string) error {
 
 // List returns a paginated list of origin access controls.
 func (s *OriginAccessControlStore) List(marker string, maxItems int) (*OriginAccessControlListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var oacs []*OriginAccessControl
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var oac OriginAccessControl
-		if err := json.Unmarshal(value, &oac); err != nil {
-			return err
-		}
-
-		if !started {
-			if oac.ID == marker {
-				started = true
-				return nil
-			}
-			return nil
-		}
-
-		if count < maxItems {
-			oacs = append(oacs, &oac)
-			lastKey = key
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[OriginAccessControl](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_origin_access_controls", err)
 	}
 
-	var nextMarker string
-	if hasMore {
-		nextMarker = lastKey
-	}
-
 	return &OriginAccessControlListResult{
-		OriginAccessControls: oacs,
-		IsTruncated:          hasMore,
-		NextMarker:           nextMarker,
+		OriginAccessControls: result.Items,
+		IsTruncated:          result.IsTruncated,
+		NextMarker:           result.NextMarker,
 	}, nil
 }
 

@@ -12,14 +12,10 @@ import (
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 
-func getParam(req *request.ParsedRequest, key string) string {
-	return request.GetParamLowerFirst(req.Parameters, key)
-}
-
 // CreateTrail creates a new CloudTrail trail.
 func (s *CloudTrailService) CreateTrail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
-	s3BucketName := getParam(req, "S3BucketName")
+	name := req.GetParam("Name")
+	s3BucketName := req.GetParam("S3BucketName")
 
 	if name == "" {
 		return nil, ErrInvalidParameter
@@ -27,54 +23,54 @@ func (s *CloudTrailService) CreateTrail(ctx context.Context, reqCtx *request.Req
 
 	trail := cloudtrailstore.NewTrail(name, s3BucketName, reqCtx.GetRegion())
 
-	if s3KeyPrefix := getParam(req, "S3KeyPrefix"); s3KeyPrefix != "" {
+	if s3KeyPrefix := req.GetParam("S3KeyPrefix"); s3KeyPrefix != "" {
 		trail.S3KeyPrefix = s3KeyPrefix
 	}
-	if snsTopicName := getParam(req, "SnsTopicName"); snsTopicName != "" {
+	if snsTopicName := req.GetParam("SnsTopicName"); snsTopicName != "" {
 		trail.SnsTopicName = snsTopicName
 	}
-	if snsTopicARN := getParam(req, "SnsTopicArn"); snsTopicARN != "" {
+	if snsTopicARN := req.GetParam("SnsTopicArn"); snsTopicARN != "" {
 		trail.SnsTopicARN = snsTopicARN
 	}
 	if v := req.Parameters["IncludeGlobalServiceEvents"]; v != nil {
 		if b, ok := v.(bool); ok {
 			trail.IncludeGlobalServiceEvents = b
-		} else if s := getParam(req, "IncludeGlobalServiceEvents"); s == "false" {
+		} else if s := req.GetParam("IncludeGlobalServiceEvents"); s == "false" {
 			trail.IncludeGlobalServiceEvents = false
 		}
 	}
 	if v := req.Parameters["IsMultiRegionTrail"]; v != nil {
 		if b, ok := v.(bool); ok {
 			trail.IsMultiRegionTrail = b
-		} else if s := getParam(req, "IsMultiRegionTrail"); s == "true" {
+		} else if s := req.GetParam("IsMultiRegionTrail"); s == "true" {
 			trail.IsMultiRegionTrail = true
 		}
 	}
 	if v := req.Parameters["IsOrganizationTrail"]; v != nil {
 		if b, ok := v.(bool); ok {
 			trail.IsOrganizationTrail = b
-		} else if s := getParam(req, "IsOrganizationTrail"); s == "true" {
+		} else if s := req.GetParam("IsOrganizationTrail"); s == "true" {
 			trail.IsOrganizationTrail = true
 		}
 	}
 	if v := req.Parameters["EnableLogFileValidation"]; v != nil {
 		if b, ok := v.(bool); ok {
 			trail.LogFileValidationEnabled = b
-		} else if s := getParam(req, "EnableLogFileValidation"); s == "true" {
+		} else if s := req.GetParam("EnableLogFileValidation"); s == "true" {
 			trail.LogFileValidationEnabled = true
 		}
 	}
-	if cwLogGroupARN := getParam(req, "CloudWatchLogsLogGroupArn"); cwLogGroupARN != "" {
+	if cwLogGroupARN := req.GetParam("CloudWatchLogsLogGroupArn"); cwLogGroupARN != "" {
 		trail.CloudWatchLogsLogGroupARN = cwLogGroupARN
 	}
-	if cwRoleARN := getParam(req, "CloudWatchLogsRoleArn"); cwRoleARN != "" {
+	if cwRoleARN := req.GetParam("CloudWatchLogsRoleArn"); cwRoleARN != "" {
 		validator := reqCtx.GetIAMValidator()
 		if err := validator.ValidateRoleForService(ctx, cwRoleARN, iam.ServicePrincipalCloudTrail); err != nil {
 			return nil, err
 		}
 		trail.CloudWatchLogsRoleARN = cwRoleARN
 	}
-	if kmsKeyID := getParam(req, "KmsKeyId"); kmsKeyID != "" {
+	if kmsKeyID := req.GetParam("KmsKeyId"); kmsKeyID != "" {
 		trail.KMSKeyID = kmsKeyID
 	}
 
@@ -103,7 +99,7 @@ func (s *CloudTrailService) CreateTrail(ctx context.Context, reqCtx *request.Req
 
 // DeleteTrail deletes the specified CloudTrail trail.
 func (s *CloudTrailService) DeleteTrail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 
 	if name == "" {
 		return nil, ErrInvalidParameter
@@ -123,7 +119,7 @@ func (s *CloudTrailService) DeleteTrail(ctx context.Context, reqCtx *request.Req
 
 // UpdateTrail updates the settings for a CloudTrail trail.
 func (s *CloudTrailService) UpdateTrail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 
 	if name == "" {
 		return nil, ErrInvalidParameter
@@ -139,57 +135,57 @@ func (s *CloudTrailService) UpdateTrail(ctx context.Context, reqCtx *request.Req
 		return nil, s.mapStoreError(err)
 	}
 
-	if s3BucketName := getParam(req, "S3BucketName"); s3BucketName != "" {
+	if s3BucketName := req.GetParam("S3BucketName"); s3BucketName != "" {
 		trail.S3BucketName = s3BucketName
 	}
-	if s3KeyPrefix := getParam(req, "S3KeyPrefix"); s3KeyPrefix != "" {
+	if s3KeyPrefix := req.GetParam("S3KeyPrefix"); s3KeyPrefix != "" {
 		trail.S3KeyPrefix = s3KeyPrefix
 	}
-	if snsTopicName := getParam(req, "SnsTopicName"); snsTopicName != "" {
+	if snsTopicName := req.GetParam("SnsTopicName"); snsTopicName != "" {
 		trail.SnsTopicName = snsTopicName
 	}
-	if snsTopicARN := getParam(req, "SnsTopicArn"); snsTopicARN != "" {
+	if snsTopicARN := req.GetParam("SnsTopicArn"); snsTopicARN != "" {
 		trail.SnsTopicARN = snsTopicARN
 	}
 	if v := req.Parameters["IncludeGlobalServiceEvents"]; v != nil {
 		if b, ok := v.(bool); ok {
 			trail.IncludeGlobalServiceEvents = b
-		} else if s := getParam(req, "IncludeGlobalServiceEvents"); s != "" {
+		} else if s := req.GetParam("IncludeGlobalServiceEvents"); s != "" {
 			trail.IncludeGlobalServiceEvents = s == "true"
 		}
 	}
 	if v := req.Parameters["IsMultiRegionTrail"]; v != nil {
 		if b, ok := v.(bool); ok {
 			trail.IsMultiRegionTrail = b
-		} else if s := getParam(req, "IsMultiRegionTrail"); s != "" {
+		} else if s := req.GetParam("IsMultiRegionTrail"); s != "" {
 			trail.IsMultiRegionTrail = s == "true"
 		}
 	}
 	if v := req.Parameters["IsOrganizationTrail"]; v != nil {
 		if b, ok := v.(bool); ok {
 			trail.IsOrganizationTrail = b
-		} else if s := getParam(req, "IsOrganizationTrail"); s != "" {
+		} else if s := req.GetParam("IsOrganizationTrail"); s != "" {
 			trail.IsOrganizationTrail = s == "true"
 		}
 	}
 	if v := req.Parameters["EnableLogFileValidation"]; v != nil {
 		if b, ok := v.(bool); ok {
 			trail.LogFileValidationEnabled = b
-		} else if s := getParam(req, "EnableLogFileValidation"); s != "" {
+		} else if s := req.GetParam("EnableLogFileValidation"); s != "" {
 			trail.LogFileValidationEnabled = s == "true"
 		}
 	}
-	if cwLogGroupARN := getParam(req, "CloudWatchLogsLogGroupArn"); cwLogGroupARN != "" {
+	if cwLogGroupARN := req.GetParam("CloudWatchLogsLogGroupArn"); cwLogGroupARN != "" {
 		trail.CloudWatchLogsLogGroupARN = cwLogGroupARN
 	}
-	if cwRoleARN := getParam(req, "CloudWatchLogsRoleArn"); cwRoleARN != "" {
+	if cwRoleARN := req.GetParam("CloudWatchLogsRoleArn"); cwRoleARN != "" {
 		validator := reqCtx.GetIAMValidator()
 		if err := validator.ValidateRoleForService(ctx, cwRoleARN, iam.ServicePrincipalCloudTrail); err != nil {
 			return nil, err
 		}
 		trail.CloudWatchLogsRoleARN = cwRoleARN
 	}
-	if kmsKeyID := getParam(req, "KmsKeyId"); kmsKeyID != "" {
+	if kmsKeyID := req.GetParam("KmsKeyId"); kmsKeyID != "" {
 		trail.KMSKeyID = kmsKeyID
 	}
 
@@ -251,7 +247,7 @@ func (s *CloudTrailService) DescribeTrails(ctx context.Context, reqCtx *request.
 
 // GetTrail retrieves the settings for the specified CloudTrail trail.
 func (s *CloudTrailService) GetTrail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 
 	if name == "" {
 		return nil, ErrInvalidParameter
@@ -279,7 +275,7 @@ func (s *CloudTrailService) GetTrail(ctx context.Context, reqCtx *request.Reques
 
 // GetTrailStatus retrieves the status of the specified CloudTrail trail.
 func (s *CloudTrailService) GetTrailStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 
 	if name == "" {
 		return nil, ErrInvalidParameter
@@ -331,7 +327,7 @@ func (s *CloudTrailService) ListTrails(ctx context.Context, reqCtx *request.Requ
 	}
 
 	resumeAfter := ""
-	if nextToken := getParam(req, "NextToken"); nextToken != "" {
+	if nextToken := req.GetParam("NextToken"); nextToken != "" {
 		resumeAfter = nextToken
 	}
 
@@ -369,7 +365,7 @@ func (s *CloudTrailService) ListTrails(ctx context.Context, reqCtx *request.Requ
 
 // StartLogging starts recording AWS API calls for a trail.
 func (s *CloudTrailService) StartLogging(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 
 	if name == "" {
 		return nil, ErrInvalidParameter
@@ -389,7 +385,7 @@ func (s *CloudTrailService) StartLogging(ctx context.Context, reqCtx *request.Re
 
 // StopLogging stops recording AWS API calls for a trail.
 func (s *CloudTrailService) StopLogging(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 
 	if name == "" {
 		return nil, ErrInvalidParameter

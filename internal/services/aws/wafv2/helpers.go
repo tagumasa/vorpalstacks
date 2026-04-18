@@ -5,22 +5,6 @@ import (
 	"vorpalstacks/internal/store/aws/waf"
 )
 
-func parseTags(tagsRaw interface{}) []waf.Tag {
-	var tags []waf.Tag
-	switch v := tagsRaw.(type) {
-	case []interface{}:
-		for _, t := range v {
-			if m, ok := t.(map[string]interface{}); ok {
-				tags = append(tags, waf.Tag{
-					Key:   request.GetStringParam(m, "Key"),
-					Value: request.GetStringParam(m, "Value"),
-				})
-			}
-		}
-	}
-	return tags
-}
-
 func convertVisibilityConfig(m map[string]interface{}) *waf.VisibilityConfig {
 	if m == nil {
 		return &waf.VisibilityConfig{

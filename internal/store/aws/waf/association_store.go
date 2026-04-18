@@ -48,24 +48,7 @@ func (s *WebACLAssociationStore) Disassociate(webACLArn, resourceArn string) err
 
 // GetByResourceArn retrieves a Web ACL association by resource ARN.
 func (s *WebACLAssociationStore) GetByResourceArn(resourceArn string) (*WebACLAssociation, error) {
-	var found *WebACLAssociation
-	err := s.ForEach(func(key string, value []byte) error {
-		var assoc WebACLAssociation
-		if err := json.Unmarshal(value, &assoc); err != nil {
-			return err
-		}
-		if assoc.ResourceArn == resourceArn {
-			found = &assoc
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_web_acl_association", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_web_acl_association", ErrNotFound)
-	}
-	return found, nil
+	return common.FindFirst[WebACLAssociation](s.BaseStore, func(a *WebACLAssociation) bool { return a.ResourceArn == resourceArn })
 }
 
 // GetByWebACLArn retrieves all associations for a Web ACL.
@@ -89,17 +72,5 @@ func (s *WebACLAssociationStore) GetByWebACLArn(webACLArn string) ([]*WebACLAsso
 
 // List returns all Web ACL associations.
 func (s *WebACLAssociationStore) List() ([]*WebACLAssociation, error) {
-	var associations []*WebACLAssociation
-	err := s.ForEach(func(key string, value []byte) error {
-		var assoc WebACLAssociation
-		if err := json.Unmarshal(value, &assoc); err != nil {
-			return err
-		}
-		associations = append(associations, &assoc)
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("list_web_acl_associations", err)
-	}
-	return associations, nil
+	return common.ListAll[WebACLAssociation](s.BaseStore)
 }

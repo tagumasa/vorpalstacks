@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
@@ -127,7 +128,7 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	region := cfg.Region
 	if region == "" {
-		region = "us-east-1"
+		region = request.DefaultRegion
 	}
 
 	regionStorage, err := storageMgr.GetStorage(region)

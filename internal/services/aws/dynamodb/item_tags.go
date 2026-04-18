@@ -92,15 +92,7 @@ func (s *DynamoDBService) ListTagsForResource(ctx context.Context, reqCtx *reque
 		return nil, ErrResourceNotFound
 	}
 
-	tags := make([]map[string]string, len(table.Tags))
-	for i, t := range table.Tags {
-		tags[i] = map[string]string{
-			"Key":   t.Key,
-			"Value": t.Value,
-		}
-	}
-
 	return map[string]interface{}{
-		"Tags": tags,
+		"Tags": tagutil.ConvertToMapSlice(table.Tags),
 	}, nil
 }

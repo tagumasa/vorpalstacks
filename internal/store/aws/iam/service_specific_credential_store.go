@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const serviceSpecificCredentialBucketName = "iam_service_credentials"
@@ -17,6 +20,7 @@ const serviceSpecificCredentialBucketName = "iam_service_credentials"
 type ServiceSpecificCredentialStore struct {
 	bucket    storage.Bucket
 	accountID string
+	kl        common.KeyLocker
 }
 
 // NewServiceSpecificCredentialStore creates a new ServiceSpecificCredentialStore instance.
@@ -85,7 +89,7 @@ func (s *ServiceSpecificCredentialStore) Create(userName, serviceName string) (*
 		ServiceName:                   serviceName,
 		UserName:                      userName,
 		ServicePassword:               password,
-		ServiceSpecificCredentialArn:  fmt.Sprintf("arn:aws:iam:%s:user/%s", s.accountID, userName),
+		ServiceSpecificCredentialArn:  arnutil.NewARNBuilder(s.accountID, "").IAM().User(userName),
 		CreateDate:                    time.Now().UTC(),
 		Status:                        "Active",
 	}
@@ -97,12 +101,14 @@ func (s *ServiceSpecificCredentialStore) Create(userName, serviceName string) (*
 
 // UpdateStatus changes the status of a service-specific credential (e.g. Active/Inactive).
 func (s *ServiceSpecificCredentialStore) UpdateStatus(credentialId, status string) error {
-	cred, err := s.Get(credentialId)
-	if err != nil {
-		return err
-	}
-	cred.Status = status
-	return s.Put(cred)
+	return s.kl.WithLock(credentialId, func() error {
+		cred, err := s.Get(credentialId)
+		if err != nil {
+			return err
+		}
+		cred.Status = status
+		return s.Put(cred)
+	})
 }
 
 // ListByUserName returns all service-specific credentials for the given user.

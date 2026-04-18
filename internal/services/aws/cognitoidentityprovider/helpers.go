@@ -10,10 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func getParam(req *request.ParsedRequest, key string) string {
-	return request.GetParamLowerFirst(req.Parameters, key)
-}
-
 func getBoolParam(req *request.ParsedRequest, key string) bool {
 	lowerKey := strings.ToLower(key[:1]) + key[1:]
 
@@ -95,39 +91,39 @@ func getIntParamOK(req *request.ParsedRequest, key string) (int, bool) {
 }
 
 func getUserPoolID(req *request.ParsedRequest) string {
-	return getParam(req, "UserPoolId")
+	return req.GetParam("UserPoolId")
 }
 
 func getUsername(req *request.ParsedRequest) string {
-	return getParam(req, "Username")
+	return req.GetParam("Username")
 }
 
 func getGroupName(req *request.ParsedRequest) string {
-	return getParam(req, "GroupName")
+	return req.GetParam("GroupName")
 }
 
 func getPassword(req *request.ParsedRequest) string {
-	return getParam(req, "Password")
+	return req.GetParam("Password")
 }
 
 func getNewPassword(req *request.ParsedRequest) string {
-	return getParam(req, "NewPassword")
+	return req.GetParam("NewPassword")
 }
 
 func getPreviousPassword(req *request.ParsedRequest) string {
-	return getParam(req, "PreviousPassword")
+	return req.GetParam("PreviousPassword")
 }
 
 func getAccessToken(req *request.ParsedRequest) string {
-	return getParam(req, "AccessToken")
+	return req.GetParam("AccessToken")
 }
 
 func getConfirmationCode(req *request.ParsedRequest) string {
-	return getParam(req, "ConfirmationCode")
+	return req.GetParam("ConfirmationCode")
 }
 
 func getClientId(req *request.ParsedRequest) string {
-	return getParam(req, "ClientId")
+	return req.GetParam("ClientId")
 }
 
 func parseUserAttributes(req *request.ParsedRequest) map[string]string {
@@ -150,11 +146,11 @@ func parseUserAttributes(req *request.ParsedRequest) map[string]string {
 		idx := strconv.Itoa(i)
 		nameKey := "UserAttributes." + idx + ".Name"
 		valueKey := "UserAttributes." + idx + ".Value"
-		name := getParam(req, nameKey)
+		name := req.GetParam(nameKey)
 		if name == "" {
 			break
 		}
-		value := getParam(req, valueKey)
+		value := req.GetParam(valueKey)
 		attributes[name] = value
 	}
 	return attributes
@@ -230,27 +226,27 @@ func parsePasswordPolicy(req *request.ParsedRequest) *cognitostore.PasswordPolic
 		}
 	}
 
-	if val := getParam(req, "Policies.PasswordPolicy.MinimumLength"); val != "" {
+	if val := req.GetParam("Policies.PasswordPolicy.MinimumLength"); val != "" {
 		policy.MinimumLength = parseInt(val)
 		hasPolicy = true
 	}
-	if val := getParam(req, "Policies.PasswordPolicy.RequireUppercase"); val != "" {
+	if val := req.GetParam("Policies.PasswordPolicy.RequireUppercase"); val != "" {
 		policy.RequireUppercase = strings.ToLower(val) == "true"
 		hasPolicy = true
 	}
-	if val := getParam(req, "Policies.PasswordPolicy.RequireLowercase"); val != "" {
+	if val := req.GetParam("Policies.PasswordPolicy.RequireLowercase"); val != "" {
 		policy.RequireLowercase = strings.ToLower(val) == "true"
 		hasPolicy = true
 	}
-	if val := getParam(req, "Policies.PasswordPolicy.RequireNumbers"); val != "" {
+	if val := req.GetParam("Policies.PasswordPolicy.RequireNumbers"); val != "" {
 		policy.RequireNumbers = strings.ToLower(val) == "true"
 		hasPolicy = true
 	}
-	if val := getParam(req, "Policies.PasswordPolicy.RequireSymbols"); val != "" {
+	if val := req.GetParam("Policies.PasswordPolicy.RequireSymbols"); val != "" {
 		policy.RequireSymbols = strings.ToLower(val) == "true"
 		hasPolicy = true
 	}
-	if val := getParam(req, "Policies.PasswordPolicy.TemporaryPasswordValidityDays"); val != "" {
+	if val := req.GetParam("Policies.PasswordPolicy.TemporaryPasswordValidityDays"); val != "" {
 		policy.TemporaryPasswordValidityDays = parseInt(val)
 		hasPolicy = true
 	}
@@ -324,7 +320,7 @@ func parseLambdaConfig(req *request.ParsedRequest) *cognitostore.LambdaConfig {
 		{"LambdaConfig.UserMigration", &config.UserMigration},
 	}
 	for _, f := range fields {
-		if val := getParam(req, f.param); val != "" {
+		if val := req.GetParam(f.param); val != "" {
 			*f.field = val
 			hasConfig = true
 		}

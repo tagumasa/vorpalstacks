@@ -1,7 +1,10 @@
 // Package arn provides utilities for parsing and constructing Amazon Resource Names (ARNs).
 package arn
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // CloudWatchBuilder provides methods for constructing CloudWatch ARNs.
 type CloudWatchBuilder struct{ *ARNBuilder }
@@ -11,6 +14,11 @@ func (b *ARNBuilder) CloudWatch() *CloudWatchBuilder { return &CloudWatchBuilder
 
 // LogGroup constructs an ARN for a CloudWatch Logs log group.
 func (b *CloudWatchBuilder) LogGroup(name string) string { return b.Build("logs", "log-group:"+name) }
+
+// MetricFilter constructs an ARN for a CloudWatch Logs metric filter.
+func (b *CloudWatchBuilder) MetricFilter(logGroup, name string) string {
+	return b.Build("logs", fmt.Sprintf("log-group:%s:metric-filter:%s", logGroup, name))
+}
 
 // LogStream constructs an ARN for a CloudWatch Logs log stream.
 func (b *CloudWatchBuilder) LogStream(group, stream string) string {

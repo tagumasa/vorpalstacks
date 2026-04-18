@@ -4,7 +4,6 @@ package waf
 // for vorpalstacks.
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -40,24 +39,7 @@ func (s *IPSetStore) Get(id string) (*IPSet, error) {
 
 // GetByARN retrieves an IP Set by its ARN.
 func (s *IPSetStore) GetByARN(arn string) (*IPSet, error) {
-	var found *IPSet
-	err := s.ForEach(func(key string, value []byte) error {
-		var ipSet IPSet
-		if err := json.Unmarshal(value, &ipSet); err != nil {
-			return err
-		}
-		if ipSet.ARN == arn {
-			found = &ipSet
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_ip_set_by_arn", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_ip_set_by_arn", ErrNotFound)
-	}
-	return found, nil
+	return common.FindFirst[IPSet](s.BaseStore, func(i *IPSet) bool { return i.ARN == arn })
 }
 
 // Create creates a new IP Set.
@@ -126,51 +108,13 @@ func (s *IPSetStore) Delete(id, lockToken string) error {
 
 // List returns a paginated list of IP Sets.
 func (s *IPSetStore) List(marker string, maxItems int) (*IPSetListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var ipSets []*IPSet
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var ipSet IPSet
-		if err := json.Unmarshal(value, &ipSet); err != nil {
-			return err
-		}
-
-		if !started {
-			if ipSet.ID == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if count < maxItems {
-			ipSets = append(ipSets, &ipSet)
-			lastKey = key
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[IPSet](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_ip_sets", err)
 	}
-
-	var nextMarker string
-	if hasMore {
-		nextMarker = lastKey
-	}
-
 	return &IPSetListResult{
-		IPSets:      ipSets,
-		IsTruncated: hasMore,
-		NextMarker:  nextMarker,
+		IPSets:      result.Items,
+		IsTruncated: result.IsTruncated,
+		NextMarker:  result.NextMarker,
 	}, nil
 }

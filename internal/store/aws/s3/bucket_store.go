@@ -32,7 +32,7 @@ type BucketStore struct {
 	arnBuilder         *svcarn.S3Builder
 	createMu           sync.Mutex
 	callbackMu         sync.RWMutex
-	bucketMu           sync.Map
+	keyLocker          common.KeyLocker
 	region             string
 	onVersioningChange func(bucket string, enabled bool)
 	onDelete           func(bucket string)
@@ -94,7 +94,7 @@ func (s *BucketStore) Delete(name string) error {
 	if callback != nil {
 		callback(name)
 	}
-	s.bucketMu.Delete(name)
+	s.keyLocker.Delete(name)
 	return s.BaseStore.Delete(name)
 }
 
@@ -103,9 +103,19 @@ func (s *BucketStore) Exists(name string) bool {
 	return s.BaseStore.Exists(name)
 }
 
-func (s *BucketStore) getBucketLock(name string) *sync.Mutex {
-	v, _ := s.bucketMu.LoadOrStore(name, &sync.Mutex{})
-	return v.(*sync.Mutex)
+// atomicUpdate performs a locked Get-Modify-Put cycle on a bucket.
+// The modify function receives the bucket and may return an error to abort the update.
+func (s *BucketStore) atomicUpdate(name string, modify func(*Bucket) error) error {
+	return s.keyLocker.WithLock(name, func() error {
+		bucket, err := s.Get(name)
+		if err != nil {
+			return err
+		}
+		if err := modify(bucket); err != nil {
+			return err
+		}
+		return s.Put(bucket)
+	})
 }
 
 // List returns a list of all buckets in the store.
@@ -123,24 +133,23 @@ func (s *BucketStore) List() ([]*Bucket, error) {
 
 // SetVersioning sets the versioning status for a bucket.
 func (s *BucketStore) SetVersioning(name string, status BucketVersioningStatus) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.VersioningStatus = status
-	if err := s.Put(bucket); err != nil {
-		return err
-	}
-	s.callbackMu.RLock()
-	callback := s.onVersioningChange
-	s.callbackMu.RUnlock()
-	if callback != nil {
-		callback(name, status == BucketVersioningEnabled)
-	}
-	return nil
+	return s.keyLocker.WithLock(name, func() error {
+		bucket, err := s.Get(name)
+		if err != nil {
+			return err
+		}
+		bucket.VersioningStatus = status
+		if err := s.Put(bucket); err != nil {
+			return err
+		}
+		s.callbackMu.RLock()
+		callback := s.onVersioningChange
+		s.callbackMu.RUnlock()
+		if callback != nil {
+			callback(name, status == BucketVersioningEnabled)
+		}
+		return nil
+	})
 }
 
 // SetVersioningCallback sets a callback function that is invoked when
@@ -161,15 +170,7 @@ func (s *BucketStore) SetOnDeleteCallback(fn func(bucket string)) {
 
 // SetEncryption sets the encryption configuration for a bucket.
 func (s *BucketStore) SetEncryption(name string, config *EncryptionConfig) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.EncryptionConfig = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.EncryptionConfig = config; return nil })
 }
 
 // GetEncryptionConfiguration retrieves the encryption configuration for a bucket.
@@ -183,67 +184,27 @@ func (s *BucketStore) GetEncryptionConfiguration(name string) (*EncryptionConfig
 
 // SetPolicy sets the bucket policy for a bucket.
 func (s *BucketStore) SetPolicy(name, policy string) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.Policy = policy
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.Policy = policy; return nil })
 }
 
 // SetCORS sets the CORS configuration for a bucket.
 func (s *BucketStore) SetCORS(name string, config *CORSConfiguration) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.CORSConfiguration = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.CORSConfiguration = config; return nil })
 }
 
 // SetPublicAccessBlock sets the public access block configuration for a bucket.
 func (s *BucketStore) SetPublicAccessBlock(name string, config *PublicAccessBlockConfig) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.PublicAccessBlock = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.PublicAccessBlock = config; return nil })
 }
 
 // SetTags sets the tags for a bucket.
 func (s *BucketStore) SetTags(name string, tags []common.Tag) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.Tags = tags
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.Tags = tags; return nil })
 }
 
 // SetLifecycleConfiguration sets the lifecycle configuration for a bucket.
 func (s *BucketStore) SetLifecycleConfiguration(name string, config *LifecycleConfiguration) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.LifecycleConfiguration = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.LifecycleConfiguration = config; return nil })
 }
 
 // ARNBuilder returns the S3 ARN builder for this bucket store.
@@ -253,15 +214,7 @@ func (s *BucketStore) ARNBuilder() *svcarn.S3Builder {
 
 // SetACL sets the access control list for a bucket.
 func (s *BucketStore) SetACL(name string, acp *AccessControlPolicy) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.ACL = acp
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.ACL = acp; return nil })
 }
 
 // GetPublicAccessBlock retrieves the public access block configuration for a bucket.
@@ -275,41 +228,17 @@ func (s *BucketStore) GetPublicAccessBlock(name string) (*PublicAccessBlockConfi
 
 // SetWebsiteConfiguration sets the website configuration for a bucket.
 func (s *BucketStore) SetWebsiteConfiguration(name string, config *WebsiteConfiguration) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.WebsiteConfiguration = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.WebsiteConfiguration = config; return nil })
 }
 
 // SetObjectLockConfiguration sets the object lock configuration for a bucket.
 func (s *BucketStore) SetObjectLockConfiguration(name string, config *ObjectLockConfiguration) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.ObjectLockConfig = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.ObjectLockConfig = config; return nil })
 }
 
 // SetNotificationConfiguration sets the notification configuration for a bucket.
 func (s *BucketStore) SetNotificationConfiguration(name string, config *NotificationConfiguration) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.NotificationConfiguration = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.NotificationConfiguration = config; return nil })
 }
 
 // GetNotificationConfiguration retrieves the notification configuration for a bucket.
@@ -323,15 +252,7 @@ func (s *BucketStore) GetNotificationConfiguration(name string) (*NotificationCo
 
 // SetLoggingConfiguration sets the logging configuration for a bucket.
 func (s *BucketStore) SetLoggingConfiguration(name string, config *LoggingConfiguration) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.LoggingConfiguration = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.LoggingConfiguration = config; return nil })
 }
 
 // GetLoggingConfiguration retrieves the logging configuration for a bucket.
@@ -345,15 +266,7 @@ func (s *BucketStore) GetLoggingConfiguration(name string) (*LoggingConfiguratio
 
 // SetOwnershipControls sets the ownership controls for a bucket.
 func (s *BucketStore) SetOwnershipControls(name string, config *OwnershipControls) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.OwnershipControls = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.OwnershipControls = config; return nil })
 }
 
 // GetOwnershipControls retrieves the ownership controls for a bucket.
@@ -367,15 +280,7 @@ func (s *BucketStore) GetOwnershipControls(name string) (*OwnershipControls, err
 
 // SetRequestPayment sets the request payment configuration for a bucket.
 func (s *BucketStore) SetRequestPayment(name string, config *RequestPaymentConfiguration) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.RequestPayment = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.RequestPayment = config; return nil })
 }
 
 // GetRequestPayment retrieves the request payment configuration for a bucket.
@@ -389,15 +294,7 @@ func (s *BucketStore) GetRequestPayment(name string) (*RequestPaymentConfigurati
 
 // SetAccelerateConfiguration sets the transfer acceleration configuration for a bucket.
 func (s *BucketStore) SetAccelerateConfiguration(name string, config *AccelerateConfiguration) error {
-	mu := s.getBucketLock(name)
-	mu.Lock()
-	defer mu.Unlock()
-	bucket, err := s.Get(name)
-	if err != nil {
-		return err
-	}
-	bucket.AccelerateConfiguration = config
-	return s.Put(bucket)
+	return s.atomicUpdate(name, func(b *Bucket) error { b.AccelerateConfiguration = config; return nil })
 }
 
 // GetAccelerateConfiguration retrieves the transfer acceleration configuration for a bucket.

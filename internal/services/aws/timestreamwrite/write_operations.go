@@ -209,16 +209,8 @@ func (s *TimestreamWriteService) ListTagsForResource(ctx context.Context, reqCtx
 		return nil, s.mapStoreError(err)
 	}
 
-	var tagList []map[string]string
-	for k, v := range tagMap {
-		tagList = append(tagList, map[string]string{
-			"Key":   k,
-			"Value": v,
-		})
-	}
-
 	return map[string]interface{}{
-		"Tags": tagList,
+		"Tags": tagutil.MapToResponse(tagMap),
 	}, nil
 }
 

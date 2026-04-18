@@ -51,7 +51,7 @@ func (s *CognitoIdentityService) DeleteIdentities(ctx context.Context, reqCtx *r
 
 // ListIdentities lists the identities in an identity pool.
 func (s *CognitoIdentityService) ListIdentities(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getParam(req, "IdentityPoolId")
+	poolID := req.GetParam("IdentityPoolId")
 	if poolID == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -103,7 +103,7 @@ func (s *CognitoIdentityService) ListIdentities(ctx context.Context, reqCtx *req
 
 // GetOpenIdToken gets an OpenID token for a Cognito identity.
 func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	identityID := getParam(req, "IdentityId")
+	identityID := req.GetParam("IdentityId")
 	if identityID == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -142,7 +142,7 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 
 // GetOpenIdTokenForDeveloperIdentity registers (or retrieves) a developer identity and returns an OpenID token.
 func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getParam(req, "IdentityPoolId")
+	poolID := req.GetParam("IdentityPoolId")
 	if poolID == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -161,7 +161,7 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 		return nil, ErrResourceNotFound
 	}
 
-	identityID := getParam(req, "IdentityId")
+	identityID := req.GetParam("IdentityId")
 
 	for providerName, devUserID := range logins {
 		existing, err := store.GetDeveloperIdentity(poolID, providerName, devUserID)
@@ -199,11 +199,11 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 
 // GetPrincipalTagAttributeMap retrieves the principal tag attribute map for an identity provider.
 func (s *CognitoIdentityService) GetPrincipalTagAttributeMap(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getParam(req, "IdentityPoolId")
+	poolID := req.GetParam("IdentityPoolId")
 	if poolID == "" {
 		return nil, ErrInvalidParameter
 	}
-	providerName := getParam(req, "IdentityProviderName")
+	providerName := req.GetParam("IdentityProviderName")
 	if providerName == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -233,11 +233,11 @@ func (s *CognitoIdentityService) GetPrincipalTagAttributeMap(ctx context.Context
 
 // SetPrincipalTagAttributeMap sets the principal tag attribute map for an identity provider.
 func (s *CognitoIdentityService) SetPrincipalTagAttributeMap(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getParam(req, "IdentityPoolId")
+	poolID := req.GetParam("IdentityPoolId")
 	if poolID == "" {
 		return nil, ErrInvalidParameter
 	}
-	providerName := getParam(req, "IdentityProviderName")
+	providerName := req.GetParam("IdentityProviderName")
 	if providerName == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -268,7 +268,7 @@ func (s *CognitoIdentityService) SetPrincipalTagAttributeMap(ctx context.Context
 
 // LookupDeveloperIdentity looks up a developer identity identifier and returns the mapped identity IDs.
 func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getParam(req, "IdentityPoolId")
+	poolID := req.GetParam("IdentityPoolId")
 	if poolID == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -282,8 +282,8 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 		return nil, ErrResourceNotFound
 	}
 
-	identityID := getParam(req, "IdentityId")
-	devUserID := getParam(req, "DeveloperUserIdentifier")
+	identityID := req.GetParam("IdentityId")
+	devUserID := req.GetParam("DeveloperUserIdentifier")
 	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
 	if maxResults <= 0 {
 		maxResults = 60
@@ -307,19 +307,19 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 
 // MergeDeveloperIdentities merges two developer user identities.
 func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getParam(req, "IdentityPoolId")
+	poolID := req.GetParam("IdentityPoolId")
 	if poolID == "" {
 		return nil, ErrInvalidParameter
 	}
-	sourceUserID := getParam(req, "SourceUserIdentifier")
+	sourceUserID := req.GetParam("SourceUserIdentifier")
 	if sourceUserID == "" {
 		return nil, ErrInvalidParameter
 	}
-	destUserID := getParam(req, "DestinationUserIdentifier")
+	destUserID := req.GetParam("DestinationUserIdentifier")
 	if destUserID == "" {
 		return nil, ErrInvalidParameter
 	}
-	providerName := getParam(req, "DeveloperProviderName")
+	providerName := req.GetParam("DeveloperProviderName")
 	if providerName == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -365,19 +365,19 @@ func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, r
 
 // UnlinkDeveloperIdentity unlinks a developer identity from a Cognito identity.
 func (s *CognitoIdentityService) UnlinkDeveloperIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	identityID := getParam(req, "IdentityId")
+	identityID := req.GetParam("IdentityId")
 	if identityID == "" {
 		return nil, ErrInvalidParameter
 	}
-	poolID := getParam(req, "IdentityPoolId")
+	poolID := req.GetParam("IdentityPoolId")
 	if poolID == "" {
 		return nil, ErrInvalidParameter
 	}
-	providerName := getParam(req, "DeveloperProviderName")
+	providerName := req.GetParam("DeveloperProviderName")
 	if providerName == "" {
 		return nil, ErrInvalidParameter
 	}
-	devUserID := getParam(req, "DeveloperUserIdentifier")
+	devUserID := req.GetParam("DeveloperUserIdentifier")
 	if devUserID == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -396,7 +396,7 @@ func (s *CognitoIdentityService) UnlinkDeveloperIdentity(ctx context.Context, re
 
 // UnlinkIdentity unlinks login providers from a Cognito identity.
 func (s *CognitoIdentityService) UnlinkIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	identityID := getParam(req, "IdentityId")
+	identityID := req.GetParam("IdentityId")
 	if identityID == "" {
 		return nil, ErrInvalidParameter
 	}

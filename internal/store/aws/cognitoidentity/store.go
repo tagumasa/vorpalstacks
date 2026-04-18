@@ -136,19 +136,7 @@ func (s *CognitoIdentityStore) DeleteIdentityPool(id string) error {
 // ListIdentityPools returns a list of all Identity Pools.
 // Returns the list of Identity Pools or an error if the operation fails.
 func (s *CognitoIdentityStore) ListIdentityPools() ([]*IdentityPool, error) {
-	var pools []*IdentityPool
-	err := s.ForEach(func(key string, value []byte) error {
-		var pool IdentityPool
-		if err := json.Unmarshal(value, &pool); err != nil {
-			return err
-		}
-		pools = append(pools, &pool)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return pools, nil
+	return common.ListAll[IdentityPool](s.BaseStore)
 }
 
 // CreateIdentity creates a new Identity in the specified Identity Pool.
@@ -261,39 +249,21 @@ func (s *CognitoIdentityStore) GetIdentityByID(identityID string) (*Identity, er
 
 // ListIdentitiesByPool retrieves identities for a given pool with pagination support.
 func (s *CognitoIdentityStore) ListIdentitiesByPool(poolID string, maxResults int, nextToken string) ([]*Identity, string, error) {
-	var identities []*Identity
-	prefix := poolID + "#"
-	count := 0
-	started := nextToken == ""
-
-	err := s.identitiesStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		if !started {
-			if key == nextToken {
-				started = true
-			}
-			return nil
-		}
-		if count >= maxResults {
-			return nil
-		}
-		var identity Identity
-		if err := json.Unmarshal(value, &identity); err != nil {
-			return err
-		}
-		identities = append(identities, &identity)
-		count++
-		return nil
-	})
+	result, err := common.List[Identity](s.identitiesStore, common.ListOptions{
+		Prefix:   poolID + "#",
+		Marker:   nextToken,
+		MaxItems: maxResults,
+	}, nil)
 	if err != nil {
 		return nil, "", err
 	}
 
-	token := ""
-	if count >= maxResults && len(identities) > 0 {
-		token = IdentityPoolIdentityKey(poolID, identities[len(identities)-1].ID)
+	var token string
+	if result.IsTruncated {
+		token = result.NextMarker
 	}
 
-	return identities, token, nil
+	return result.Items, token, nil
 }
 
 // DeleteIdentitiesBatch deletes multiple identities and returns any that could not be deleted.

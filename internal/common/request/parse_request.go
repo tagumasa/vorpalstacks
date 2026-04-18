@@ -35,6 +35,12 @@ func (r *ParsedRequest) GetRegion() string {
 	return DefaultRegion
 }
 
+// GetParam returns a parameter value, trying the original key first
+// then the lower-first variant.
+func (r *ParsedRequest) GetParam(key string) string {
+	return GetParamLowerFirst(r.Parameters, key)
+}
+
 // ParseAWSRequest parses an AWS HTTP request into a ParsedRequest.
 func ParseAWSRequest(r *http.Request) (*ParsedRequest, error) {
 	req := &ParsedRequest{

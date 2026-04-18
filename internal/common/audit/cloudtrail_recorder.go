@@ -1,6 +1,8 @@
 package audit
 
 import (
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 
@@ -29,10 +31,10 @@ func (r *CloudTrailRecorder) RecordEvent(event *AuditEvent) error {
 		} else {
 			userIdentity.PrincipalID = "AIDAI" + event.AccessKeyID
 		}
-		userIdentity.ARN = "arn:aws:sts::" + event.AccountID + ":assumed-role/vorpalstacks/" + event.AccessKeyID
+		userIdentity.ARN = arnutil.NewARNBuilder(event.AccountID, "").STS().AssumedRole("vorpalstacks", event.AccessKeyID)
 	} else {
 		userIdentity.PrincipalID = "vorpalstacks:vorpalstacks"
-		userIdentity.ARN = "arn:aws:sts::" + event.AccountID + ":assumed-role/vorpalstacks/vorpalstacks"
+		userIdentity.ARN = arnutil.NewARNBuilder(event.AccountID, "").STS().AssumedRole("vorpalstacks", "vorpalstacks")
 	}
 
 	return r.store.RecordServiceEvent(

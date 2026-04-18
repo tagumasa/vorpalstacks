@@ -3,6 +3,7 @@ package common
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"sync"
 
@@ -148,18 +149,6 @@ func (s *BaseStore) DeleteByPrefix(prefix string) error {
 		}
 	}
 	return nil
-}
-
-// ScanRange iterates over items within a key range.
-func (s *BaseStore) ScanRange(start, end string, fn func(key string, value []byte) error) error {
-	iter := s.bucket.ScanRange([]byte(start), []byte(end))
-	defer iter.Close()
-	for iter.Next() {
-		if err := fn(string(iter.Key()), iter.Value()); err != nil {
-			return err
-		}
-	}
-	return iter.Error()
 }
 
 // ListResult represents the result of a list operation.
@@ -324,6 +313,51 @@ func List[T any](store *BaseStore, opts ListOptions, filter FilterFunc[T]) (*Lis
 		NextMarker:  nextMarker,
 		IsTruncated: isTruncated,
 	}, nil
+}
+
+// errFound is a sentinel error used by FindFirst to short-circuit ForEach
+// once the first matching item has been found.
+var errFound = errors.New("found")
+
+// FindFirst iterates all items in the store and returns the first item for
+// which match returns true. It returns ErrNotFound if no item matches.
+func FindFirst[T any](store *BaseStore, match func(*T) bool) (*T, error) {
+	var found *T
+	err := store.ForEach(func(key string, value []byte) error {
+		var item T
+		if err := json.Unmarshal(value, &item); err != nil {
+			return err
+		}
+		if match(&item) {
+			found = &item
+			return errFound
+		}
+		return nil
+	})
+	if err != nil && err != errFound {
+		return nil, NewStoreError(store.service, "find_first", err)
+	}
+	if found == nil {
+		return nil, NewStoreError(store.service, "find_first", ErrNotFound)
+	}
+	return found, nil
+}
+
+// ListAll iterates all items in the store and returns them as a slice.
+func ListAll[T any](store *BaseStore) ([]*T, error) {
+	var items []*T
+	err := store.ForEach(func(key string, value []byte) error {
+		var item T
+		if err := json.Unmarshal(value, &item); err != nil {
+			return err
+		}
+		items = append(items, &item)
+		return nil
+	})
+	if err != nil {
+		return nil, NewStoreError(store.service, "list_all", err)
+	}
+	return items, nil
 }
 
 // GetOrCreateStore retrieves a cached store or creates a new one using the provided function.

@@ -13,7 +13,7 @@ import (
 
 // CreateIdentityPool creates a new Cognito identity pool.
 func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolName := getParam(req, "IdentityPoolName")
+	poolName := req.GetParam("IdentityPoolName")
 	if poolName == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -30,7 +30,7 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 	if providers := parseCognitoIdentityProviders(req); len(providers) > 0 {
 		pool.CognitoIdentityProviders = providers
 	}
-	if providerName := getParam(req, "DeveloperProviderName"); providerName != "" {
+	if providerName := req.GetParam("DeveloperProviderName"); providerName != "" {
 		pool.DeveloperProviderName = providerName
 	}
 	if loginProviders := parseSupportedLoginProviders(req); len(loginProviders) > 0 {
@@ -180,7 +180,7 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 		return nil, ErrResourceNotFound
 	}
 
-	if poolName := getParam(req, "IdentityPoolName"); poolName != "" {
+	if poolName := req.GetParam("IdentityPoolName"); poolName != "" {
 		pool.Name = poolName
 	}
 	if allowUnauth, ok := req.Parameters["AllowUnauthenticatedIdentities"]; ok {
@@ -193,7 +193,7 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 			pool.AllowClassicFlow = b
 		}
 	}
-	if providerName := getParam(req, "DeveloperProviderName"); providerName != "" {
+	if providerName := req.GetParam("DeveloperProviderName"); providerName != "" {
 		pool.DeveloperProviderName = providerName
 	}
 	if providers := parseCognitoIdentityProviders(req); len(providers) > 0 {
@@ -289,5 +289,5 @@ func (s *CognitoIdentityService) SetIdentityPoolRoles(ctx context.Context, reqCt
 }
 
 func getIdentityPoolID(req *request.ParsedRequest) string {
-	return getParam(req, "IdentityPoolId")
+	return req.GetParam("IdentityPoolId")
 }

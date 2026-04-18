@@ -322,17 +322,12 @@ func (s *KMSService) resolveKeyByKeyID(stores *kmsStores, keyID string) (*kmssto
 }
 
 func parseEncryptionContextForPrefix(params map[string]interface{}, prefix string) map[string]string {
-	ctx := make(map[string]string)
 	if ec, ok := params[prefix]; ok {
 		if ecMap, ok := ec.(map[string]interface{}); ok {
-			for k, v := range ecMap {
-				if vs, ok := v.(string); ok {
-					ctx[k] = vs
-				}
-			}
+			return request.CopyStringMap(ecMap)
 		}
 	}
-	return ctx
+	return nil
 }
 
 // GenerateDataKeyPair generates an asymmetric key pair and encrypts the private key with the KMS key.

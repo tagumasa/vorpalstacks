@@ -135,7 +135,7 @@ func (s *Route53Service) ListTagsForResource(ctx context.Context, reqCtx *reques
 		return nil, NewAPIError("ListTags", err.Error(), 500)
 	}
 
-	var tagItems []interface{}
+	tagItems := make([]interface{}, 0, len(tags))
 	for _, t := range tags {
 		tagItems = append(tagItems, map[string]interface{}{
 			"Key":   t.Key,

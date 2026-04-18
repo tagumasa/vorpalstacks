@@ -11,14 +11,7 @@ import (
 )
 
 func formatTagsAsResponse(tagSlice []storecommon.Tag, includeHasMore bool) map[string]interface{} {
-	var formatted []map[string]interface{}
-	for _, t := range tagSlice {
-		formatted = append(formatted, map[string]interface{}{
-			"Key":   t.Key,
-			"Value": t.Value,
-		})
-	}
-	result := map[string]interface{}{"Tags": formatted}
+	result := map[string]interface{}{"Tags": tags.ToResponse(tagSlice)}
 	if includeHasMore {
 		result["HasMoreTags"] = false
 	}
@@ -49,10 +42,7 @@ func (s *KinesisService) AddTagsToStream(ctx context.Context, reqCtx *request.Re
 	}
 
 	tagList := tags.ParseTags(req.Parameters, "Tags")
-	tagMap := make(map[string]string)
-	for _, t := range tagList {
-		tagMap[t.Key] = t.Value
-	}
+	tagMap := tags.ToMap(tagList)
 
 	if err := store.TagResource(streamName, tagMap); err != nil {
 		return nil, s.mapStoreError(err)
@@ -144,10 +134,7 @@ func (s *KinesisService) TagResource(ctx context.Context, reqCtx *request.Reques
 	}
 
 	tagList := tags.ParseTags(req.Parameters, "Tags")
-	tagMap := make(map[string]string)
-	for _, t := range tagList {
-		tagMap[t.Key] = t.Value
-	}
+	tagMap := tags.ToMap(tagList)
 
 	if err := store.TagResource(stream.StreamName, tagMap); err != nil {
 		return nil, s.mapStoreError(err)

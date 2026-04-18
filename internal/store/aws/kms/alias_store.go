@@ -16,6 +16,7 @@ import (
 type AliasStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	kl         common.KeyLocker
 }
 
 func aliasBucketName(region string) string {
@@ -46,21 +47,25 @@ func (s *AliasStore) Create(aliasName, targetKeyID string) (*Alias, error) {
 		return nil, ErrInvalidAliasName
 	}
 
-	if s.Exists(aliasName) {
-		return nil, ErrAliasAlreadyExists
-	}
+	var alias *Alias
+	err := s.kl.WithLock(aliasName, func() error {
+		if s.Exists(aliasName) {
+			return ErrAliasAlreadyExists
+		}
 
-	now := time.Now()
-	alias := &Alias{
-		AliasName:       aliasName,
-		AliasArn:        s.arnBuilder.AliasArn(aliasName),
-		TargetKeyID:     targetKeyID,
-		TargetKeyArn:    s.arnBuilder.KeyArn(targetKeyID),
-		CreationDate:    now,
-		LastUpdatedDate: now,
-	}
+		now := time.Now()
+		alias = &Alias{
+			AliasName:       aliasName,
+			AliasArn:        s.arnBuilder.AliasArn(aliasName),
+			TargetKeyID:     targetKeyID,
+			TargetKeyArn:    s.arnBuilder.KeyArn(targetKeyID),
+			CreationDate:    now,
+			LastUpdatedDate: now,
+		}
 
-	if err := s.save(alias); err != nil {
+		return s.save(alias)
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -85,7 +90,9 @@ func (s *AliasStore) save(alias *Alias) error {
 // Delete removes an alias.
 func (s *AliasStore) Delete(aliasName string) error {
 	aliasName = s.normalizeAliasName(aliasName)
-	return s.BaseStore.Delete(aliasName)
+	return s.kl.WithLock(aliasName, func() error {
+		return s.BaseStore.Delete(aliasName)
+	})
 }
 
 // Exists checks whether an alias exists.
@@ -96,68 +103,35 @@ func (s *AliasStore) Exists(aliasName string) bool {
 
 // UpdateTarget updates the target key for an alias.
 func (s *AliasStore) UpdateTarget(aliasName, targetKeyID string) error {
-	alias, err := s.Get(aliasName)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(aliasName, func() error {
+		alias, err := s.Get(aliasName)
+		if err != nil {
+			return err
+		}
 
-	alias.TargetKeyID = targetKeyID
-	alias.TargetKeyArn = s.arnBuilder.KeyArn(targetKeyID)
-	alias.LastUpdatedDate = time.Now()
+		alias.TargetKeyID = targetKeyID
+		alias.TargetKeyArn = s.arnBuilder.KeyArn(targetKeyID)
+		alias.LastUpdatedDate = time.Now()
 
-	return s.save(alias)
+		return s.save(alias)
+	})
 }
 
 // List returns a list of aliases with optional filtering by key ID.
 func (s *AliasStore) List(marker string, maxItems int, keyID string) (*AliasListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
+	var filter common.FilterFunc[Alias]
+	if keyID != "" {
+		filter = func(a *Alias) bool { return a.TargetKeyID == keyID }
 	}
-
-	var aliases []*Alias
-	count := 0
-	started := marker == ""
-	var lastAliasName string
-	hasMore := false
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var alias Alias
-		if err := json.Unmarshal(value, &alias); err != nil {
-			return err
-		}
-
-		if !started {
-			if alias.AliasName == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if keyID == "" || alias.TargetKeyID == keyID {
-			if count < maxItems {
-				aliases = append(aliases, &alias)
-				count++
-				lastAliasName = alias.AliasName
-			} else {
-				hasMore = true
-			}
-		}
-		return nil
-	})
-
+	result, err := common.List[Alias](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
-		return nil, NewStoreError("list_aliases", err)
+		return nil, err
 	}
-
-	result := &AliasListResult{
-		Aliases:     aliases,
-		IsTruncated: hasMore,
-	}
-	if result.IsTruncated {
-		result.NextMarker = lastAliasName
-	}
-
-	return result, nil
+	return &AliasListResult{
+		Aliases:     result.Items,
+		IsTruncated: result.IsTruncated,
+		NextMarker:  result.NextMarker,
+	}, nil
 }
 
 // ListForKeyID returns aliases that target a specific key.

@@ -132,7 +132,7 @@ func buildS3EventRecord(event *eventbus.S3ObjectEvent) []byte {
 			"configurationId": "",
 			"bucket": map[string]interface{}{
 				"name": event.Bucket,
-				"arn":  fmt.Sprintf("arn:aws:s3:::%s", event.Bucket),
+				"arn":  svcarn.NewARNBuilder("", "").S3().Bucket(event.Bucket),
 				"ownerIdentity": map[string]string{
 					"principalId": event.EventAccountID(),
 				},

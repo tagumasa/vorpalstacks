@@ -29,16 +29,7 @@ func (e *ApiGatewayError) ToJSON() string {
 	return e.AWSError.ToJSONWithFormat("rest-json")
 }
 
-// As attempts to cast the error to an AWSError pointer.
-func (e *ApiGatewayError) As(target interface{}) bool {
-	if t, ok := target.(**awserrors.AWSError); ok {
-		*t = e.AWSError
-		return true
-	}
-	return false
-}
-
-// ErrNotFoundException is returned when the requested resource is not found.
+// GetApiGatewayError converts a generic error to an ApiGatewayError.
 var (
 	ErrNotFoundException        = NewApiGatewayError("NotFoundException", "The resource specified in the request does not exist.", http.StatusNotFound)
 	ErrBadRequestException      = NewApiGatewayError("BadRequestException", "The request is not valid.", http.StatusBadRequest)

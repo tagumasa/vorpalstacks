@@ -33,7 +33,7 @@ type MetricChunkStore struct {
 	dataPath   string
 	index      *chunk.PebbleIndex
 	useIndex   bool
-	chunkMu    sync.Map
+	keyLocker  common.KeyLocker
 	chunkPaths sync.Map
 	buffers    map[string]*metricBuffer
 	bufferMu   sync.Mutex
@@ -90,14 +90,6 @@ func (s *MetricChunkStore) getChunkPath(namespace, metricName string, ts time.Ti
 	return fmt.Sprintf("%s/%s/cw_metric_chunks/%s/%s/%s.chunk", s.dataPath, s.region, safeNS, safeMetric, hour)
 }
 
-func (s *MetricChunkStore) getChunkLock(chunkPath string) *sync.Mutex {
-	mu, _ := s.chunkMu.LoadOrStore(chunkPath, &sync.Mutex{})
-	if typed, ok := mu.(*sync.Mutex); ok {
-		return typed
-	}
-	return &sync.Mutex{}
-}
-
 func (s *MetricChunkStore) cleanupChunkLocks() {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
@@ -108,13 +100,12 @@ func (s *MetricChunkStore) cleanupChunkLocks() {
 		case <-ticker.C:
 		}
 		cutoff := time.Now().Add(-2 * time.Hour).Format("2006-01-02-15")
-		s.chunkMu.Range(func(key, _ interface{}) bool {
-			path := key.(string)
+		s.keyLocker.Range(func(path string) bool {
 			idx := strings.LastIndex(path, "/")
 			if idx >= 0 {
 				hour := strings.TrimSuffix(path[idx+1:], ".chunk")
 				if hour < cutoff {
-					s.chunkMu.Delete(key)
+					s.keyLocker.Delete(path)
 				}
 			}
 			return true
@@ -161,9 +152,8 @@ func (s *MetricChunkStore) flushBuffer(chunkPath string) error {
 	buf.entries = make([]chunk.CloudWatchMetricEntry, 0, metricBufferSize)
 	s.bufferMu.Unlock()
 
-	mu := s.getChunkLock(chunkPath)
-	mu.Lock()
-	defer mu.Unlock()
+	s.keyLocker.Lock(chunkPath)
+	defer s.keyLocker.Unlock(chunkPath)
 
 	chunkDir := filepath.Dir(chunkPath)
 	if err := os.MkdirAll(chunkDir, 0755); err != nil {

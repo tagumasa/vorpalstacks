@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 
@@ -144,7 +145,7 @@ func (s *RestApiStore) GetTags(apiId string) ([]common.Tag, error) {
 }
 
 // TagResource adds tags to a REST API.
-func (s *RestApiStore) TagResource(apiId string, tags map[string]string) error {
+func (s *RestApiStore) TagResource(apiId string, inputTags map[string]string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -157,19 +158,7 @@ func (s *RestApiStore) TagResource(apiId string, tags map[string]string) error {
 		api.Tags = []common.Tag{}
 	}
 
-	for k, v := range tags {
-		found := false
-		for i, t := range api.Tags {
-			if t.Key == k {
-				api.Tags[i].Value = v
-				found = true
-				break
-			}
-		}
-		if !found {
-			api.Tags = append(api.Tags, common.Tag{Key: k, Value: v})
-		}
-	}
+	api.Tags = tags.Apply(api.Tags, tags.MapToTags(inputTags))
 
 	return s.Update(api)
 }
@@ -181,26 +170,13 @@ func (s *RestApiStore) UntagResource(apiId string, tagKeys []string) error {
 		return err
 	}
 
-	newTags := []common.Tag{}
-	for _, t := range api.Tags {
-		keep := true
-		for _, key := range tagKeys {
-			if t.Key == key {
-				keep = false
-				break
-			}
-		}
-		if keep {
-			newTags = append(newTags, t)
-		}
-	}
-	api.Tags = newTags
+	api.Tags = tags.RemoveByTagKeys(api.Tags, tagKeys)
 
 	return s.Update(api)
 }
 
 // TagStage adds or updates tags on a specific stage of a REST API.
-func (s *RestApiStore) TagStage(apiId, stageName string, tags map[string]string) error {
+func (s *RestApiStore) TagStage(apiId, stageName string, inputTags map[string]string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -218,19 +194,7 @@ func (s *RestApiStore) TagStage(apiId, stageName string, tags map[string]string)
 		stage.Tags = []common.Tag{}
 	}
 
-	for k, v := range tags {
-		found := false
-		for i, t := range stage.Tags {
-			if t.Key == k {
-				stage.Tags[i].Value = v
-				found = true
-				break
-			}
-		}
-		if !found {
-			stage.Tags = append(stage.Tags, common.Tag{Key: k, Value: v})
-		}
-	}
+	stage.Tags = tags.Apply(stage.Tags, tags.MapToTags(inputTags))
 
 	return s.Update(api)
 }
@@ -250,20 +214,7 @@ func (s *RestApiStore) UntagStage(apiId, stageName string, tagKeys []string) err
 		return ErrStageNotFound
 	}
 
-	newTags := []common.Tag{}
-	for _, t := range stage.Tags {
-		keep := true
-		for _, key := range tagKeys {
-			if t.Key == key {
-				keep = false
-				break
-			}
-		}
-		if keep {
-			newTags = append(newTags, t)
-		}
-	}
-	stage.Tags = newTags
+	stage.Tags = tags.RemoveByTagKeys(stage.Tags, tagKeys)
 
 	return s.Update(api)
 }

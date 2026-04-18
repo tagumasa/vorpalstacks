@@ -1,11 +1,7 @@
 package crypto
 
-// Package crypto provides cryptographic utilities for vorpalstacks, including
-// random byte generation for secure operations.
-
 import (
 	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"io"
 )
@@ -21,20 +17,6 @@ func RandomBytes(length int) ([]byte, error) {
 		return nil, ErrRandomGeneration
 	}
 	return bytes, nil
-}
-
-// RandomHex generates a random hex string of the specified length.
-func RandomHex(length int) (string, error) {
-	bytes, err := RandomBytes(length)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
-}
-
-// RandomIV generates a random initialization vector (IV) of the specified length.
-func RandomIV(length int) ([]byte, error) {
-	return RandomBytes(length)
 }
 
 // RandomKey generates a random encryption key of the specified length.

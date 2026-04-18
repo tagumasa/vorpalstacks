@@ -46,25 +46,7 @@ func (s *CertificateStore) Get(arn string) (*Certificate, error) {
 func (s *CertificateStore) GetByDomain(domain string) (*Certificate, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
-	var found *Certificate
-	err := s.ForEach(func(key string, value []byte) error {
-		var cert Certificate
-		if err := json.Unmarshal(value, &cert); err != nil {
-			return err
-		}
-		if strings.EqualFold(cert.DomainName, domain) && found == nil {
-			found = &cert
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_certificate_by_domain", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_certificate_by_domain", ErrCertificateNotFound)
-	}
-	return found, nil
+	return common.FindFirst[Certificate](s.BaseStore, func(c *Certificate) bool { return strings.EqualFold(c.DomainName, domain) })
 }
 
 // List returns a list of ACM certificates from the store with pagination support.
@@ -122,19 +104,7 @@ func (s *CertificateStore) List(marker string, maxItems int) (*CertificateListRe
 
 // ListAll returns all ACM certificates from the store.
 func (s *CertificateStore) ListAll() ([]*Certificate, error) {
-	var certs []*Certificate
-	err := s.ForEach(func(key string, value []byte) error {
-		var cert Certificate
-		if err := json.Unmarshal(value, &cert); err != nil {
-			return err
-		}
-		certs = append(certs, &cert)
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("list_all_certificates", err)
-	}
-	return certs, nil
+	return common.ListAll[Certificate](s.BaseStore)
 }
 
 // Create creates a new ACM certificate in the store.

@@ -3,8 +3,9 @@ package wafv2
 import (
 	"context"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
@@ -50,7 +51,7 @@ func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	if tags := parseTags(req.Parameters["Tags"]); len(tags) > 0 {
+	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
 		rps.Tags = tags
 		if err := stores.regexPatternSets.Put(rps.ID, rps); err != nil {
 			logs.Warn("failed to persist tags for RegexPatternSet", logs.String("id", rps.ID), logs.Err(err))

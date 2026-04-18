@@ -7,16 +7,22 @@ import (
 	"vorpalstacks/internal/common/tags"
 )
 
-// AddTags adds tags to a CloudTrail trail.
-func (s *CloudTrailService) AddTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := getParam(req, "ResourceId")
-	if resourceARN == "" {
-		if resourceIdList, ok := req.Parameters["ResourceIdList"].([]interface{}); ok && len(resourceIdList) > 0 {
-			if id, ok := resourceIdList[0].(string); ok {
-				resourceARN = id
-			}
+func resolveTrailResourceID(req *request.ParsedRequest) string {
+	id := req.GetParam("ResourceId")
+	if id != "" {
+		return id
+	}
+	if resourceIdList, ok := req.Parameters["ResourceIdList"].([]interface{}); ok && len(resourceIdList) > 0 {
+		if v, ok := resourceIdList[0].(string); ok {
+			return v
 		}
 	}
+	return ""
+}
+
+// AddTags adds tags to a CloudTrail trail.
+func (s *CloudTrailService) AddTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	resourceARN := resolveTrailResourceID(req)
 
 	if resourceARN == "" {
 		return nil, ErrInvalidParameter
@@ -32,11 +38,7 @@ func (s *CloudTrailService) AddTags(ctx context.Context, reqCtx *request.Request
 		return nil, s.mapStoreError(err)
 	}
 
-	tagList := tags.ParseTags(req.Parameters, "TagsList")
-	tagMap := make(map[string]string)
-	for _, t := range tagList {
-		tagMap[t.Key] = t.Value
-	}
+	tagMap := tags.ToMap(tags.ParseTags(req.Parameters, "TagsList"))
 
 	if err := store.TagResource(trail.Name, tagMap); err != nil {
 		return nil, s.mapStoreError(err)
@@ -47,14 +49,7 @@ func (s *CloudTrailService) AddTags(ctx context.Context, reqCtx *request.Request
 
 // RemoveTags removes tags from a CloudTrail trail.
 func (s *CloudTrailService) RemoveTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := getParam(req, "ResourceId")
-	if resourceARN == "" {
-		if resourceIdList, ok := req.Parameters["ResourceIdList"].([]interface{}); ok && len(resourceIdList) > 0 {
-			if id, ok := resourceIdList[0].(string); ok {
-				resourceARN = id
-			}
-		}
-	}
+	resourceARN := resolveTrailResourceID(req)
 
 	if resourceARN == "" {
 		return nil, ErrInvalidParameter
@@ -71,19 +66,8 @@ func (s *CloudTrailService) RemoveTags(ctx context.Context, reqCtx *request.Requ
 	}
 
 	tagKeys := tags.ParseTagKeysAsSlice(req.Parameters, "TagKeyList")
-
 	if len(tagKeys) == 0 {
-		if tagsListRaw := req.Parameters["TagsList"]; tagsListRaw != nil {
-			if arr, ok := tagsListRaw.([]interface{}); ok {
-				for _, item := range arr {
-					if tagMap, ok := item.(map[string]interface{}); ok {
-						if key, ok := tagMap["Key"].(string); ok && key != "" {
-							tagKeys = append(tagKeys, key)
-						}
-					}
-				}
-			}
-		}
+		tagKeys = tags.ParseTagKeysWithKeyName(req.Parameters, "TagsList", "Key")
 	}
 
 	if len(tagKeys) == 0 {
@@ -99,14 +83,7 @@ func (s *CloudTrailService) RemoveTags(ctx context.Context, reqCtx *request.Requ
 
 // ListTags retrieves the tags associated with a CloudTrail trail.
 func (s *CloudTrailService) ListTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := getParam(req, "ResourceId")
-	if resourceARN == "" {
-		if resourceIdList, ok := req.Parameters["ResourceIdList"].([]interface{}); ok && len(resourceIdList) > 0 {
-			if id, ok := resourceIdList[0].(string); ok {
-				resourceARN = id
-			}
-		}
-	}
+	resourceARN := resolveTrailResourceID(req)
 
 	if resourceARN == "" {
 		return nil, ErrInvalidParameter
@@ -127,13 +104,7 @@ func (s *CloudTrailService) ListTags(ctx context.Context, reqCtx *request.Reques
 		return nil, s.mapStoreError(err)
 	}
 
-	formattedTags := make([]map[string]interface{}, 0, len(tagSlice))
-	for _, t := range tagSlice {
-		formattedTags = append(formattedTags, map[string]interface{}{
-			"Key":   t.Key,
-			"Value": t.Value,
-		})
-	}
+	formattedTags := tags.ToResponse(tagSlice)
 
 	return map[string]interface{}{
 		"ResourceTagList": []map[string]interface{}{

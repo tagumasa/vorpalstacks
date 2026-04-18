@@ -12,6 +12,7 @@ import (
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateDBCluster creates a new Neptune DB cluster with the specified configuration.
@@ -76,7 +77,7 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		StorageType:                     request.GetStringParam(params, "StorageType"),
 		AccountID:                       reqCtx.GetAccountID(),
 		Region:                          reqCtx.GetRegion(),
-		DBClusterArn:                    fmt.Sprintf("arn:aws:rds:%s:%s:cluster:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), id),
+		DBClusterArn:                    arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Cluster(id),
 	}
 
 	if azList := request.GetStringList(params, "AvailabilityZones"); len(azList) > 0 {
@@ -146,7 +147,7 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 			Port:                        cluster.Port,
 			StorageEncrypted:            cluster.StorageEncrypted,
 			KmsKeyId:                    cluster.KmsKeyId,
-			DBSnapshotArn:               fmt.Sprintf("arn:aws:rds:%s:%s:cluster-snapshot:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), finalSnapshotID),
+			DBSnapshotArn:               arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().ClusterSnapshot(finalSnapshotID),
 			AccountID:                   reqCtx.GetAccountID(),
 			Region:                      reqCtx.GetRegion(),
 		}

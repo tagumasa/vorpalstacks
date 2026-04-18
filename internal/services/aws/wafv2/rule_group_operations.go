@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
@@ -46,7 +47,7 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	if tags := parseTags(req.Parameters["Tags"]); len(tags) > 0 && ruleGroup.ARN != "" {
+	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 && ruleGroup.ARN != "" {
 		ruleGroup.Tags = tags
 		if err := stores.ruleGroups.Put(ruleGroup.ID, ruleGroup); err != nil {
 			logs.Warn("failed to persist tags for RuleGroup", logs.String("id", ruleGroup.ID), logs.Err(err))

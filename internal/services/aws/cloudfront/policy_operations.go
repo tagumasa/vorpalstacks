@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -515,7 +517,7 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 
 	resourceKey := arn
 	if !strings.HasPrefix(strings.ToLower(arn), "arn:") {
-		resourceKey = "arn:aws:cloudfront:::distribution/" + arn
+		resourceKey = arnutil.NewARNBuilder("", "").CloudFront().Distribution(arn)
 	}
 
 	var tags []common.Tag
@@ -587,7 +589,7 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 
 	resourceKey := arn
 	if !strings.HasPrefix(strings.ToLower(arn), "arn:") {
-		resourceKey = "arn:aws:cloudfront:::distribution/" + arn
+		resourceKey = arnutil.NewARNBuilder("", "").CloudFront().Distribution(arn)
 	}
 
 	tagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys")

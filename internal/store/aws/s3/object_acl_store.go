@@ -7,11 +7,10 @@ import (
 // SetTags sets the tags for an object.
 func (s *ObjectStore) SetTags(bucket, key string, tags []common.Tag) error {
 	lockKey := bucket + "#" + key
-	mutex := s.getVersionLock(lockKey)
-	mutex.Lock()
+	s.keyLocker.Lock(lockKey)
 	defer func() {
-		mutex.Unlock()
-		s.versionMutex.Delete(lockKey)
+		s.keyLocker.Unlock(lockKey)
+		s.keyLocker.Delete(lockKey)
 	}()
 
 	obj, err := s.GetMetadata(bucket, key)
@@ -35,11 +34,10 @@ func (s *ObjectStore) SetTags(bucket, key string, tags []common.Tag) error {
 // SetACL sets the access control list for an object.
 func (s *ObjectStore) SetACL(bucket, key string, acp *AccessControlPolicy) error {
 	lockKey := bucket + "#" + key
-	mutex := s.getVersionLock(lockKey)
-	mutex.Lock()
+	s.keyLocker.Lock(lockKey)
 	defer func() {
-		mutex.Unlock()
-		s.versionMutex.Delete(lockKey)
+		s.keyLocker.Unlock(lockKey)
+		s.keyLocker.Delete(lockKey)
 	}()
 
 	obj, err := s.GetMetadata(bucket, key)

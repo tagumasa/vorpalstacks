@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/utils/aws/types"
 )
 
@@ -162,152 +161,6 @@ type UntagResourceHandler func(resourceKey string, tagKeys []string) error
 // ListTagsHandler is a function that lists tags for a resource.
 type ListTagsHandler func(resourceKey string) ([]types.Tag, error)
 
-// ListTagsMapHandler is a function that lists tags for a resource as a map.
-type ListTagsMapHandler func(resourceKey string) (map[string]string, error)
-
-// TagOperationFuncs holds the handler functions for tag operations.
-type TagOperationFuncs struct {
-	Tag     TagResourceHandler
-	Untag   UntagResourceHandler
-	List    ListTagsHandler
-	ListMap ListTagsMapHandler
-}
-
-// HandleTag processes a TagResource request using the configured handlers.
-func (f *TagOperationFuncs) HandleTag(
-	ctx context.Context,
-	params map[string]interface{},
-	config TagOperationConfig,
-	onError func(msg string) error,
-) (interface{}, error) {
-	resourceKey := GetResourceKey(params, config)
-	if resourceKey == "" && config.RequireResource {
-		return nil, onError(config.ResourceParam + " is required")
-	}
-
-	tags := GetTags(params, config)
-	if len(tags) == 0 && config.RequireTags {
-		return nil, onError(config.TagsParam + " is required")
-	}
-
-	if len(tags) == 0 {
-		return response.EmptyResponse(), nil
-	}
-
-	if err := f.Tag(resourceKey, tags); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
-}
-
-// HandleUntag processes an UntagResource request using the configured handlers.
-func (f *TagOperationFuncs) HandleUntag(
-	ctx context.Context,
-	params map[string]interface{},
-	config TagOperationConfig,
-	onError func(msg string) error,
-) (interface{}, error) {
-	resourceKey := GetResourceKey(params, config)
-	if resourceKey == "" && config.RequireResource {
-		return nil, onError(config.ResourceParam + " is required")
-	}
-
-	tagKeys := GetTagKeys(params, config)
-	if len(tagKeys) == 0 && config.RequireTagKeys {
-		return nil, onError(config.TagKeysParam + " is required")
-	}
-
-	if len(tagKeys) == 0 {
-		return response.EmptyResponse(), nil
-	}
-
-	if err := f.Untag(resourceKey, tagKeys); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
-}
-
-// HandleList processes a ListTags request using the configured handlers.
-func (f *TagOperationFuncs) HandleList(
-	ctx context.Context,
-	params map[string]interface{},
-	config TagOperationConfig,
-	onError func(msg string) error,
-) (interface{}, error) {
-	resourceKey := GetResourceKey(params, config)
-	if resourceKey == "" && config.RequireResource {
-		return nil, onError(config.ResourceParam + " is required")
-	}
-
-	if f.ListMap != nil {
-		tags, err := f.ListMap(resourceKey)
-		if err != nil {
-			return nil, err
-		}
-		return map[string]interface{}{
-			"Tags": tags,
-		}, nil
-	}
-
-	tags, err := f.List(resourceKey)
-	if err != nil {
-		return nil, err
-	}
-
-	var tagResponse []map[string]interface{}
-	if config.TagKeyName == "Key" && config.TagValueName == "Value" {
-		tagResponse = ToResponse(tags)
-	} else {
-		tagResponse = ToResponseWithKeyNames(tags, config.TagKeyName, config.TagValueName)
-	}
-
-	return map[string]interface{}{
-		config.TagsParam: tagResponse,
-	}, nil
-}
-
-// HandleTagSimple processes a simple TagResource request without full error handling.
-func HandleTagSimple(
-	ctx context.Context,
-	params map[string]interface{},
-	config TagOperationConfig,
-	resourceKey string,
-	tagFunc TagResourceHandler,
-) (interface{}, error) {
-	tags := GetTags(params, config)
-	if len(tags) == 0 {
-		return response.EmptyResponse(), nil
-	}
-
-	if err := tagFunc(resourceKey, tags); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
-}
-
-// HandleUntagSimple processes a simple UntagResource request without full error handling.
-func HandleUntagSimple(
-	ctx context.Context,
-	params map[string]interface{},
-	config TagOperationConfig,
-	resourceKey string,
-	untagFunc UntagResourceHandler,
-) (interface{}, error) {
-	tagKeys := GetTagKeys(params, config)
-	if len(tagKeys) == 0 {
-		return response.EmptyResponse(), nil
-	}
-
-	if err := untagFunc(resourceKey, tagKeys); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
-}
-
 // HandleListSimple processes a simple ListTags request without full error handling.
 func HandleListSimple(
 	ctx context.Context,
@@ -329,20 +182,5 @@ func HandleListSimple(
 
 	return map[string]interface{}{
 		config.TagsParam: tagResponse,
-	}, nil
-}
-
-// HandleListMapSimple processes a simple ListTags request and returns tags as a map.
-func HandleListMapSimple(
-	resourceKey string,
-	listFunc ListTagsMapHandler,
-) (interface{}, error) {
-	tags, err := listFunc(resourceKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"Tags": tags,
 	}, nil
 }

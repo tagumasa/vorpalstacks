@@ -433,8 +433,8 @@ func ConvertToMapSlice(tags []types.Tag) []map[string]string {
 	result := make([]map[string]string, len(tags))
 	for i, tag := range tags {
 		result[i] = map[string]string{
-			"key":   tag.Key,
-			"value": tag.Value,
+			"Key":   tag.Key,
+			"Value": tag.Value,
 		}
 	}
 	return result

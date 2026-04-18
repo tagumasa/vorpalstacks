@@ -2,7 +2,6 @@ package tags
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -292,8 +291,8 @@ func TestConvertToMapSlice(t *testing.T) {
 	tags := []types.Tag{{Key: "k", Value: "v"}}
 	result := ConvertToMapSlice(tags)
 	require.Len(t, result, 1)
-	assert.Equal(t, "k", result[0]["key"])
-	assert.Equal(t, "v", result[0]["value"])
+	assert.Equal(t, "k", result[0]["Key"])
+	assert.Equal(t, "v", result[0]["Value"])
 
 	assert.Nil(t, ConvertToMapSlice(nil))
 }
@@ -379,142 +378,6 @@ func TestGetResourceKey(t *testing.T) {
 	})
 }
 
-func TestTagOperationFuncs_HandleTag(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		f := &TagOperationFuncs{
-			Tag: func(key string, tags []types.Tag) error { return nil },
-		}
-		params := map[string]interface{}{
-			"ResourceArn": "arn:aws:sqs:us-east-1:123:my-queue",
-			"Tags": []interface{}{
-				map[string]interface{}{"Key": "k", "Value": "v"},
-			},
-		}
-		result, err := f.HandleTag(context.Background(), params, StandardConfig, errors.New)
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-	})
-
-	t.Run("missing resource", func(t *testing.T) {
-		f := &TagOperationFuncs{}
-		_, err := f.HandleTag(context.Background(), map[string]interface{}{}, StandardConfig, errors.New)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "required")
-	})
-
-	t.Run("missing tags", func(t *testing.T) {
-		f := &TagOperationFuncs{}
-		params := map[string]interface{}{
-			"ResourceArn": "arn",
-		}
-		_, err := f.HandleTag(context.Background(), params, StandardConfig, errors.New)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "required")
-	})
-
-	t.Run("tag handler error", func(t *testing.T) {
-		f := &TagOperationFuncs{
-			Tag: func(key string, tags []types.Tag) error { return errors.New("tag failed") },
-		}
-		params := map[string]interface{}{
-			"ResourceArn": "arn",
-			"Tags":        []interface{}{map[string]interface{}{"Key": "k", "Value": "v"}},
-		}
-		_, err := f.HandleTag(context.Background(), params, StandardConfig, errors.New)
-		require.Error(t, err)
-		assert.Equal(t, "tag failed", err.Error())
-	})
-}
-
-func TestTagOperationFuncs_HandleUntag(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		f := &TagOperationFuncs{
-			Untag: func(key string, keys []string) error { return nil },
-		}
-		params := map[string]interface{}{
-			"ResourceArn": "arn",
-			"TagKeys":     []interface{}{"k1"},
-		}
-		result, err := f.HandleUntag(context.Background(), params, StandardConfig, errors.New)
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-	})
-
-	t.Run("missing resource", func(t *testing.T) {
-		f := &TagOperationFuncs{}
-		_, err := f.HandleUntag(context.Background(), map[string]interface{}{}, StandardConfig, errors.New)
-		require.Error(t, err)
-	})
-}
-
-func TestTagOperationFuncs_HandleList(t *testing.T) {
-	t.Run("with List handler", func(t *testing.T) {
-		f := &TagOperationFuncs{
-			List: func(key string) ([]types.Tag, error) {
-				return []types.Tag{{Key: "k", Value: "v"}}, nil
-			},
-		}
-		params := map[string]interface{}{"ResourceArn": "arn"}
-		result, err := f.HandleList(context.Background(), params, StandardConfig, errors.New)
-		require.NoError(t, err)
-		m := result.(map[string]interface{})
-		tags := m["Tags"].([]map[string]interface{})
-		assert.Len(t, tags, 1)
-	})
-
-	t.Run("with ListMap handler", func(t *testing.T) {
-		f := &TagOperationFuncs{
-			ListMap: func(key string) (map[string]string, error) {
-				return map[string]string{"k": "v"}, nil
-			},
-		}
-		params := map[string]interface{}{"ResourceArn": "arn"}
-		result, err := f.HandleList(context.Background(), params, StandardConfig, errors.New)
-		require.NoError(t, err)
-		m := result.(map[string]interface{})
-		tags := m["Tags"].(map[string]string)
-		assert.Equal(t, "v", tags["k"])
-	})
-
-	t.Run("custom key names", func(t *testing.T) {
-		f := &TagOperationFuncs{
-			List: func(key string) ([]types.Tag, error) {
-				return []types.Tag{{Key: "k", Value: "v"}}, nil
-			},
-		}
-		params := map[string]interface{}{"KeyId": "key-1"}
-		result, err := f.HandleList(context.Background(), params, KMSConfig, errors.New)
-		require.NoError(t, err)
-		m := result.(map[string]interface{})
-		tags := m["Tags"].([]map[string]interface{})
-		assert.Equal(t, "k", tags[0]["TagKey"])
-	})
-}
-
-func TestHandleTagSimple(t *testing.T) {
-	called := false
-	f := func(key string, tags []types.Tag) error { called = true; return nil }
-	params := map[string]interface{}{
-		"Tags": []interface{}{map[string]interface{}{"Key": "k", "Value": "v"}},
-	}
-	result, err := HandleTagSimple(context.Background(), params, StandardConfig, "res", f)
-	require.NoError(t, err)
-	assert.True(t, called)
-	assert.NotNil(t, result)
-}
-
-func TestHandleUntagSimple(t *testing.T) {
-	called := false
-	f := func(key string, keys []string) error { called = true; return nil }
-	params := map[string]interface{}{
-		"TagKeys": []interface{}{"k1"},
-	}
-	result, err := HandleUntagSimple(context.Background(), params, StandardConfig, "res", f)
-	require.NoError(t, err)
-	assert.True(t, called)
-	assert.NotNil(t, result)
-}
-
 func TestHandleListSimple(t *testing.T) {
 	f := func(key string) ([]types.Tag, error) {
 		return []types.Tag{{Key: "k", Value: "v"}}, nil
@@ -524,15 +387,4 @@ func TestHandleListSimple(t *testing.T) {
 	m := result.(map[string]interface{})
 	tags := m["Tags"].([]map[string]interface{})
 	assert.Len(t, tags, 1)
-}
-
-func TestHandleListMapSimple(t *testing.T) {
-	f := func(key string) (map[string]string, error) {
-		return map[string]string{"k": "v"}, nil
-	}
-	result, err := HandleListMapSimple("res", f)
-	require.NoError(t, err)
-	m := result.(map[string]interface{})
-	tags := m["Tags"].(map[string]string)
-	assert.Equal(t, "v", tags["k"])
 }

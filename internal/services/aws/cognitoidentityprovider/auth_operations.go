@@ -34,7 +34,7 @@ func generateConfirmationCode() (string, error) {
 // InitiateAuth initiates the authentication flow.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_InitiateAuth.html
 func (s *CognitoService) InitiateAuth(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	authFlow := getParam(req, "AuthFlow")
+	authFlow := req.GetParam("AuthFlow")
 	clientID := getClientId(req)
 
 	if authFlow == "" || clientID == "" {
@@ -231,8 +231,8 @@ func (s *CognitoService) handleRefreshTokenAuth(ctx context.Context, reqCtx *req
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_RespondToAuthChallenge.html
 func (s *CognitoService) RespondToAuthChallenge(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	clientID := getClientId(req)
-	challengeName := getParam(req, "ChallengeName")
-	session := getParam(req, "Session")
+	challengeName := req.GetParam("ChallengeName")
+	session := req.GetParam("Session")
 
 	if clientID == "" || challengeName == "" {
 		return nil, ErrInvalidParameter
@@ -540,7 +540,7 @@ func (s *CognitoService) ConfirmForgotPassword(ctx context.Context, reqCtx *requ
 func (s *CognitoService) AdminInitiateAuth(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
 	clientID := getClientId(req)
-	authFlow := getParam(req, "AuthFlow")
+	authFlow := req.GetParam("AuthFlow")
 
 	if userPoolID == "" || clientID == "" || authFlow == "" {
 		return nil, ErrInvalidParameter
@@ -731,8 +731,8 @@ func (s *CognitoService) handleAdminRefreshTokenAuth(reqCtx *request.RequestCont
 func (s *CognitoService) AdminRespondToAuthChallenge(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
 	clientID := getClientId(req)
-	challengeName := getParam(req, "ChallengeName")
-	session := getParam(req, "Session")
+	challengeName := req.GetParam("ChallengeName")
+	session := req.GetParam("Session")
 
 	if userPoolID == "" || clientID == "" || challengeName == "" {
 		return nil, ErrInvalidParameter

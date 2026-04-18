@@ -9,15 +9,17 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common"
 	commonauth "vorpalstacks/internal/common/auth"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 
 	"vorpalstacks/internal/config"
 )
 
 // LambdaAuthorizer handles Lambda-based authorizer for API Gateway.
 type LambdaAuthorizer struct {
-	lambdaInvoker LambdaInvokerForAuth
+	lambdaInvoker common.LambdaInvoker
 	store         *apigatewaystore.RestApiStore
 	cache         *authCache
 	accountID     string
@@ -25,9 +27,13 @@ type LambdaAuthorizer struct {
 	sigVerifier   *commonauth.SignatureV4Verifier
 }
 
-// LambdaInvokerForAuth defines the interface for invoking Lambda functions during authorization.
-type LambdaInvokerForAuth interface {
-	InvokeForGateway(ctx context.Context, functionName string, payload []byte) (int64, []byte, error)
+// NewLambdaAuthorizer creates a new Lambda authorizer instance.
+func NewLambdaAuthorizer(lambdaInvoker common.LambdaInvoker, store *apigatewaystore.RestApiStore) *LambdaAuthorizer {
+	return &LambdaAuthorizer{
+		lambdaInvoker: lambdaInvoker,
+		store:         store,
+		cache:         &authCache{stopCh: make(chan struct{})},
+	}
 }
 
 type authCache struct {
@@ -42,17 +48,8 @@ func (ac *authCache) Close() {
 	ac.stopOnce.Do(func() { close(ac.stopCh) })
 }
 
-// NewLambdaAuthorizer creates a new Lambda authorizer instance.
-func NewLambdaAuthorizer(lambdaInvoker LambdaInvokerForAuth, store *apigatewaystore.RestApiStore) *LambdaAuthorizer {
-	return &LambdaAuthorizer{
-		lambdaInvoker: lambdaInvoker,
-		store:         store,
-		cache:         &authCache{stopCh: make(chan struct{})},
-	}
-}
-
 // NewLambdaAuthorizerWithConfig creates a new Lambda authorizer with account ID and region configuration.
-func NewLambdaAuthorizerWithConfig(lambdaInvoker LambdaInvokerForAuth, store *apigatewaystore.RestApiStore, accountID, region string, credProvider commonauth.CredentialsProvider) *LambdaAuthorizer {
+func NewLambdaAuthorizerWithConfig(lambdaInvoker common.LambdaInvoker, store *apigatewaystore.RestApiStore, accountID, region string, credProvider commonauth.CredentialsProvider) *LambdaAuthorizer {
 	return &LambdaAuthorizer{
 		lambdaInvoker: lambdaInvoker,
 		store:         store,
@@ -203,8 +200,7 @@ func (la *LambdaAuthorizer) buildMethodArn(req *AuthRequest) string {
 	if accountID == "" {
 		accountID = config.AWSAccountID()
 	}
-	return fmt.Sprintf("arn:aws:execute-api:%s:%s:%s/%s/%s%s",
-		region, accountID, req.RestApiId, req.StageName, req.Method, req.Resource)
+	return arnutil.NewARNBuilder(accountID, region).APIGateway().ExecuteApi(req.RestApiId, req.StageName, req.Method, req.Resource)
 }
 
 func (la *LambdaAuthorizer) authorizeToken(ctx context.Context, authorizer *apigatewaystore.Authorizer, method *apigatewaystore.Method, req *AuthRequest) (*AuthResult, error) {

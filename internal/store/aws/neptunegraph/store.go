@@ -26,14 +26,14 @@ const (
 
 // NeptuneGraphStore provides persistent storage for NeptuneGraph resources using underlying key-value buckets.
 type NeptuneGraphStore struct {
-	graphs             *common.BaseStore
+	graphs             *common.ProtoStore[Graph]
 	snapshots          *common.BaseStore
 	snapshotsByGraph   *common.BaseStore
 	endpoints          *common.BaseStore
 	tags               *common.BaseStore
 	queries            *common.BaseStore
-	importTasks        *common.BaseStore
-	exportTasks        *common.BaseStore
+	importTasks        *common.ProtoStore[ImportTask]
+	exportTasks        *common.ProtoStore[ExportTask]
 	exportTasksByGraph *common.BaseStore
 	mu                 sync.RWMutex
 }
@@ -41,14 +41,38 @@ type NeptuneGraphStore struct {
 // NewNeptuneGraphStore creates a new NeptuneGraphStore backed by the given storage.
 func NewNeptuneGraphStore(store storage.BasicStorage) *NeptuneGraphStore {
 	return &NeptuneGraphStore{
-		graphs:             common.NewBaseStore(store.Bucket(graphsBucket), "neptunegraph"),
-		snapshots:          common.NewBaseStore(store.Bucket(snapshotsBucket), "neptunegraph"),
-		snapshotsByGraph:   common.NewBaseStore(store.Bucket(snapshotsByGraphBucket), "neptunegraph"),
-		endpoints:          common.NewBaseStore(store.Bucket(endpointsBucket), "neptunegraph"),
-		tags:               common.NewBaseStore(store.Bucket(tagsBucket), "neptunegraph"),
-		queries:            common.NewBaseStore(store.Bucket(queriesBucket), "neptunegraph"),
-		importTasks:        common.NewBaseStore(store.Bucket(importTasksBucket), "neptunegraph"),
-		exportTasks:        common.NewBaseStore(store.Bucket(exportTasksBucket), "neptunegraph"),
+		graphs: common.NewProtoStore(common.ProtoStoreConfig[Graph]{
+			Store:        common.NewBaseStore(store.Bucket(graphsBucket), "neptunegraph"),
+			NewProto:     func() proto.Message { return &pb.Graph{} },
+			ToDomain:     func(m proto.Message) *Graph { return protoToGraph(m.(*pb.Graph)) },
+			ToProto:      func(d *Graph) proto.Message { return graphToProto(d) },
+			IDFunc:       func(d *Graph) string { return d.Id },
+			NotFoundErr:  ErrGraphNotFound,
+			AlreadyExist: ErrGraphAlreadyExists,
+		}),
+		snapshots:        common.NewBaseStore(store.Bucket(snapshotsBucket), "neptunegraph"),
+		snapshotsByGraph: common.NewBaseStore(store.Bucket(snapshotsByGraphBucket), "neptunegraph"),
+		endpoints:        common.NewBaseStore(store.Bucket(endpointsBucket), "neptunegraph"),
+		tags:             common.NewBaseStore(store.Bucket(tagsBucket), "neptunegraph"),
+		queries:          common.NewBaseStore(store.Bucket(queriesBucket), "neptunegraph"),
+		importTasks: common.NewProtoStore(common.ProtoStoreConfig[ImportTask]{
+			Store:        common.NewBaseStore(store.Bucket(importTasksBucket), "neptunegraph"),
+			NewProto:     func() proto.Message { return &pb.ImportTaskRecord{} },
+			ToDomain:     func(m proto.Message) *ImportTask { return protoToImportTask(m.(*pb.ImportTaskRecord)) },
+			ToProto:      func(d *ImportTask) proto.Message { return importTaskToProto(d) },
+			IDFunc:       func(d *ImportTask) string { return d.TaskId },
+			NotFoundErr:  ErrImportTaskNotFound,
+			AlreadyExist: ErrImportTaskAlreadyExists,
+		}),
+		exportTasks: common.NewProtoStore(common.ProtoStoreConfig[ExportTask]{
+			Store:        common.NewBaseStore(store.Bucket(exportTasksBucket), "neptunegraph"),
+			NewProto:     func() proto.Message { return &pb.ExportTaskRecord{} },
+			ToDomain:     func(m proto.Message) *ExportTask { return protoToExportTask(m.(*pb.ExportTaskRecord)) },
+			ToProto:      func(d *ExportTask) proto.Message { return exportTaskToProto(d) },
+			IDFunc:       func(d *ExportTask) string { return d.TaskId },
+			NotFoundErr:  ErrExportTaskNotFound,
+			AlreadyExist: ErrExportTaskAlreadyExists,
+		}),
 		exportTasksByGraph: common.NewBaseStore(store.Bucket(exportTasksByGraphBucket), "neptunegraph"),
 	}
 }
@@ -57,32 +81,19 @@ func NewNeptuneGraphStore(store storage.BasicStorage) *NeptuneGraphStore {
 func (s *NeptuneGraphStore) CreateGraph(graph *Graph) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.graphs.Exists(graph.Id) {
-		return ErrGraphAlreadyExists
-	}
-	return s.graphs.PutProto(graph.Id, graphToProto(graph))
+	return s.graphs.Create(graph)
 }
 
 // GetGraph retrieves a graph by its identifier.
 func (s *NeptuneGraphStore) GetGraph(id string) (*Graph, error) {
-	var p pb.Graph
-	if err := s.graphs.GetProto(id, &p); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrGraphNotFound
-		}
-		return nil, err
-	}
-	return protoToGraph(&p), nil
+	return s.graphs.Get(id)
 }
 
 // UpdateGraph persists updated graph properties.
 func (s *NeptuneGraphStore) UpdateGraph(graph *Graph) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.graphs.Exists(graph.Id) {
-		return ErrGraphNotFound
-	}
-	return s.graphs.PutProto(graph.Id, graphToProto(graph))
+	return s.graphs.Update(graph)
 }
 
 // DeleteGraph removes a graph and all associated queries, snapshots, and export task indices.
@@ -92,7 +103,7 @@ func (s *NeptuneGraphStore) DeleteGraph(id string) error {
 	if !s.graphs.Exists(id) {
 		return ErrGraphNotFound
 	}
-	if err := s.graphs.Delete(id); err != nil {
+	if err := s.graphs.Store().Delete(id); err != nil {
 		return err
 	}
 	if err := s.queries.DeleteByPrefix(id + "/"); err != nil {
@@ -109,7 +120,7 @@ func (s *NeptuneGraphStore) DeleteGraph(id string) error {
 
 // ListGraphs returns a paginated list of graphs.
 func (s *NeptuneGraphStore) ListGraphs(opts common.ListOptions) ([]*Graph, string, bool, error) {
-	result, err := common.ListProto[*pb.Graph](s.graphs, opts, func() *pb.Graph { return &pb.Graph{} }, nil)
+	result, err := common.ListProto[*pb.Graph](s.graphs.Store(), opts, func() *pb.Graph { return &pb.Graph{} }, nil)
 	if err != nil {
 		return nil, "", false, err
 	}
@@ -391,44 +402,31 @@ func (s *NeptuneGraphStore) ListQueries(graphId string, maxResults int) ([]*Quer
 func (s *NeptuneGraphStore) CreateImportTask(t *ImportTask) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.importTasks.Exists(t.TaskId) {
-		return ErrImportTaskAlreadyExists
-	}
-	return s.importTasks.PutProto(t.TaskId, importTaskToProto(t))
+	return s.importTasks.Create(t)
 }
 
 // GetImportTask retrieves an import task by its identifier.
 func (s *NeptuneGraphStore) GetImportTask(id string) (*ImportTask, error) {
-	var p pb.ImportTaskRecord
-	if err := s.importTasks.GetProto(id, &p); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrImportTaskNotFound
-		}
-		return nil, err
-	}
-	return protoToImportTask(&p), nil
+	return s.importTasks.Get(id)
 }
 
 // UpdateImportTask persists updated import task properties.
 func (s *NeptuneGraphStore) UpdateImportTask(t *ImportTask) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.importTasks.PutProto(t.TaskId, importTaskToProto(t))
+	return s.importTasks.UpdateDirect(t)
 }
 
 // DeleteImportTask removes an import task by its identifier.
 func (s *NeptuneGraphStore) DeleteImportTask(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.importTasks.Exists(id) {
-		return ErrImportTaskNotFound
-	}
-	return s.importTasks.Delete(id)
+	return s.importTasks.DeleteIfExists(id)
 }
 
 // ListImportTasks returns a paginated list of import tasks.
 func (s *NeptuneGraphStore) ListImportTasks(opts common.ListOptions) ([]*ImportTask, string, bool, error) {
-	result, err := common.ListProto[*pb.ImportTaskRecord](s.importTasks, opts, func() *pb.ImportTaskRecord { return &pb.ImportTaskRecord{} }, nil)
+	result, err := common.ListProto[*pb.ImportTaskRecord](s.importTasks.Store(), opts, func() *pb.ImportTaskRecord { return &pb.ImportTaskRecord{} }, nil)
 	if err != nil {
 		return nil, "", false, err
 	}
@@ -443,10 +441,10 @@ func (s *NeptuneGraphStore) ListImportTasks(opts common.ListOptions) ([]*ImportT
 func (s *NeptuneGraphStore) CreateExportTask(t *ExportTask) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.exportTasks.Exists(t.TaskId) {
+	if s.exportTasks.Store().Exists(t.TaskId) {
 		return ErrExportTaskAlreadyExists
 	}
-	if err := s.exportTasks.PutProto(t.TaskId, exportTaskToProto(t)); err != nil {
+	if err := s.exportTasks.Store().PutProto(t.TaskId, exportTaskToProto(t)); err != nil {
 		return err
 	}
 	if t.GraphId != "" {
@@ -458,31 +456,21 @@ func (s *NeptuneGraphStore) CreateExportTask(t *ExportTask) error {
 
 // GetExportTask retrieves an export task by its identifier.
 func (s *NeptuneGraphStore) GetExportTask(id string) (*ExportTask, error) {
-	var p pb.ExportTaskRecord
-	if err := s.exportTasks.GetProto(id, &p); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrExportTaskNotFound
-		}
-		return nil, err
-	}
-	return protoToExportTask(&p), nil
+	return s.exportTasks.Get(id)
 }
 
 // UpdateExportTask persists updated export task properties.
 func (s *NeptuneGraphStore) UpdateExportTask(t *ExportTask) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.exportTasks.PutProto(t.TaskId, exportTaskToProto(t))
+	return s.exportTasks.UpdateDirect(t)
 }
 
 // DeleteExportTask removes an export task by its identifier.
 func (s *NeptuneGraphStore) DeleteExportTask(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.exportTasks.Exists(id) {
-		return ErrExportTaskNotFound
-	}
-	return s.exportTasks.Delete(id)
+	return s.exportTasks.DeleteIfExists(id)
 }
 
 // ListExportTasks returns a paginated list of export tasks, optionally filtered by graph identifier.
@@ -536,7 +524,7 @@ func (s *NeptuneGraphStore) ListExportTasks(opts common.ListOptions, graphId str
 		}
 		return tasks, nextToken, truncated, nil
 	}
-	result, err := common.ListProto[*pb.ExportTaskRecord](s.exportTasks, opts, func() *pb.ExportTaskRecord { return &pb.ExportTaskRecord{} }, nil)
+	result, err := common.ListProto[*pb.ExportTaskRecord](s.exportTasks.Store(), opts, func() *pb.ExportTaskRecord { return &pb.ExportTaskRecord{} }, nil)
 	if err != nil {
 		return nil, "", false, err
 	}
@@ -552,7 +540,7 @@ func (s *NeptuneGraphStore) TryAdvanceImportTask(id string, expectedStatus strin
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var p pb.ImportTaskRecord
-	if err := s.importTasks.GetProto(id, &p); err != nil {
+	if err := s.importTasks.Store().GetProto(id, &p); err != nil {
 		if common.IsNotFound(err) {
 			return ErrImportTaskNotFound
 		}
@@ -565,7 +553,7 @@ func (s *NeptuneGraphStore) TryAdvanceImportTask(id string, expectedStatus strin
 	if apply != nil {
 		apply(task)
 	}
-	return s.importTasks.PutProto(id, importTaskToProto(task))
+	return s.importTasks.Store().PutProto(id, importTaskToProto(task))
 }
 
 // TryAdvanceExportTask atomically advances an export task status if it matches the expected current status.
@@ -573,7 +561,7 @@ func (s *NeptuneGraphStore) TryAdvanceExportTask(id string, expectedStatus strin
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var p pb.ExportTaskRecord
-	if err := s.exportTasks.GetProto(id, &p); err != nil {
+	if err := s.exportTasks.Store().GetProto(id, &p); err != nil {
 		if common.IsNotFound(err) {
 			return ErrExportTaskNotFound
 		}
@@ -586,5 +574,5 @@ func (s *NeptuneGraphStore) TryAdvanceExportTask(id string, expectedStatus strin
 	if apply != nil {
 		apply(task)
 	}
-	return s.exportTasks.PutProto(id, exportTaskToProto(task))
+	return s.exportTasks.Store().PutProto(id, exportTaskToProto(task))
 }

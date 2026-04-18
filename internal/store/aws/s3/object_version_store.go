@@ -14,11 +14,10 @@ import (
 
 func (s *ObjectStore) putVersionedObject(bucket, key, versionId string, obj *Object) error {
 	lockKey := bucket + "#" + key
-	mutex := s.getVersionLock(lockKey)
-	mutex.Lock()
+	s.keyLocker.Lock(lockKey)
 	defer func() {
-		mutex.Unlock()
-		s.versionMutex.Delete(lockKey)
+		s.keyLocker.Unlock(lockKey)
+		s.keyLocker.Delete(lockKey)
 	}()
 
 	latestKey := s.latestKeyStorageKey(bucket, key)
@@ -136,11 +135,10 @@ func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string,
 		}
 	} else {
 		lockKey := bucket + "#" + key
-		mutex := s.getVersionLock(lockKey)
-		mutex.Lock()
+		s.keyLocker.Lock(lockKey)
 		defer func() {
-			mutex.Unlock()
-			s.versionMutex.Delete(lockKey)
+			s.keyLocker.Unlock(lockKey)
+			s.keyLocker.Delete(lockKey)
 		}()
 
 		storageKey := s.storageKey(bucket, key)
@@ -159,11 +157,10 @@ func (s *ObjectStore) DeleteWithVersion(ctx context.Context, bucket, key, versio
 	if versionId != "" {
 		if s.isVersioningEnabled(bucket) {
 			lockKey := bucket + "#" + key
-			mutex := s.getVersionLock(lockKey)
-			mutex.Lock()
+			s.keyLocker.Lock(lockKey)
 			defer func() {
-				mutex.Unlock()
-				s.versionMutex.Delete(lockKey)
+				s.keyLocker.Unlock(lockKey)
+				s.keyLocker.Delete(lockKey)
 			}()
 
 			latestKey := s.latestKeyStorageKey(bucket, key)
@@ -373,11 +370,10 @@ func (s *ObjectStore) GetRangeWithVersion(ctx context.Context, bucket, key, vers
 // SetACLWithVersion sets the access control list for a specific version of an object.
 func (s *ObjectStore) SetACLWithVersion(bucket, key, versionId string, acp *AccessControlPolicy) error {
 	lockKey := bucket + "#" + key
-	mutex := s.getVersionLock(lockKey)
-	mutex.Lock()
+	s.keyLocker.Lock(lockKey)
 	defer func() {
-		mutex.Unlock()
-		s.versionMutex.Delete(lockKey)
+		s.keyLocker.Unlock(lockKey)
+		s.keyLocker.Delete(lockKey)
 	}()
 
 	var pbObj pb.Object

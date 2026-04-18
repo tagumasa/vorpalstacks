@@ -1,6 +1,7 @@
 package pebbledb
 
 import (
+	"bytes"
 	"log/slog"
 	"time"
 
@@ -21,9 +22,6 @@ func (d *DB) ttlGC() {
 	}
 }
 
-// cleanExpiredKeys scans for expired TTL entries using a snapshot and
-// deletes them in a single batch. The write lock is held only during the
-// batch commit, not during the full scan.
 func (d *DB) cleanExpiredKeys() {
 	d.mu.RLock()
 	if d.closed {
@@ -31,13 +29,53 @@ func (d *DB) cleanExpiredKeys() {
 		return
 	}
 
+	now := time.Now().Unix()
+	lower := []byte(ttlIndexPrefix)
+
 	snap := d.db.NewSnapshot()
+
+	var keysToDelete [][]byte
+	var indexKeysToDelete [][]byte
+
+	iter, err := snap.NewIter(&pebble.IterOptions{
+		LowerBound: lower,
+	})
+	if err != nil {
+		snap.Close()
+		d.mu.RUnlock()
+		return
+	}
+
+	for iter.First(); iter.Valid(); iter.Next() {
+		k := iter.Key()
+		if !bytes.HasPrefix(k, lower) {
+			break
+		}
+		expiresAt, dataKey, ok := parseTTLIndexKey(k)
+		if !ok {
+			continue
+		}
+		if expiresAt >= now {
+			break
+		}
+		idxCopy := make([]byte, len(k))
+		copy(idxCopy, k)
+		indexKeysToDelete = append(indexKeysToDelete, idxCopy)
+		dataCopy := make([]byte, len(dataKey))
+		copy(dataCopy, dataKey)
+		keysToDelete = append(keysToDelete, dataCopy)
+	}
+	iterErr := iter.Error()
+	iter.Close()
+	snap.Close()
 	d.mu.RUnlock()
 
-	keysToDelete := d.collectExpiredKeys(snap)
-	snap.Close()
+	if iterErr != nil {
+		slog.Warn("TTL GC index scan failed", "error", iterErr)
+		return
+	}
 
-	if len(keysToDelete) == 0 {
+	if len(indexKeysToDelete) == 0 {
 		return
 	}
 
@@ -54,39 +92,11 @@ func (d *DB) cleanExpiredKeys() {
 	for _, key := range keysToDelete {
 		_ = batch.Delete(key, nil)
 	}
+	for _, key := range indexKeysToDelete {
+		_ = batch.Delete(key, nil)
+	}
 
 	if err := batch.Commit(d.syncFlag()); err != nil {
 		slog.Warn("failed to commit batch deletion of expired keys", "error", err, "count", len(keysToDelete))
 	}
-}
-
-// collectExpiredKeys iterates a snapshot and returns keys whose TTL
-// values have expired. The caller is responsible for closing the snapshot.
-func (d *DB) collectExpiredKeys(snap *pebble.Snapshot) [][]byte {
-	iter, err := snap.NewIter(nil)
-	if err != nil {
-		return nil
-	}
-	defer iter.Close()
-
-	var keys [][]byte
-	for iter.First(); iter.Valid(); iter.Next() {
-		key := iter.Key()
-
-		val, err := iter.ValueAndErr()
-		if err != nil {
-			continue
-		}
-
-		_, expired, err := decryptAndUnwrapTTL(d.encryptor, val, d.opts.TTL.Enabled)
-		if err != nil || !expired {
-			continue
-		}
-
-		keyCopy := make([]byte, len(key))
-		copy(keyCopy, key)
-		keys = append(keys, keyCopy)
-	}
-
-	return keys
 }

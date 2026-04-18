@@ -14,7 +14,7 @@ import (
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateUserPoolClient.html
 func (s *CognitoService) CreateUserPoolClient(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	clientName := getParam(req, "ClientName")
+	clientName := req.GetParam("ClientName")
 	if userPoolID == "" || clientName == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -84,7 +84,7 @@ func (s *CognitoService) UpdateUserPoolClient(ctx context.Context, reqCtx *reque
 		return nil, ErrClientNotFound
 	}
 
-	if clientName := getParam(req, "ClientName"); clientName != "" {
+	if clientName := req.GetParam("ClientName"); clientName != "" {
 		client.ClientName = clientName
 	}
 	applyUserPoolClientParams(req, client)
@@ -120,7 +120,7 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 	if urls := getStringSliceParam(req, "LogoutURLs"); len(urls) > 0 {
 		client.LogoutURLs = urls
 	}
-	if uri := getParam(req, "DefaultRedirectURI"); uri != "" {
+	if uri := req.GetParam("DefaultRedirectURI"); uri != "" {
 		client.DefaultRedirectURI = uri
 	}
 	if providers := getStringSliceParam(req, "SupportedIdentityProviders"); len(providers) > 0 {
@@ -183,7 +183,7 @@ func getStringSliceParam(req *request.ParsedRequest, key string) []string {
 	for i := 1; ; i++ {
 		idx := strconv.Itoa(i)
 		itemKey := key + "." + idx
-		item := getParam(req, itemKey)
+		item := req.GetParam(itemKey)
 		if item == "" {
 			break
 		}

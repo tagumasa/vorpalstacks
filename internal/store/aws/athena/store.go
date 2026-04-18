@@ -56,6 +56,7 @@ type WorkGroupStore struct {
 	arnBuilder *svcarn.ARNBuilder
 	accountID  string
 	region     string
+	kl         common.KeyLocker
 }
 
 // NewWorkGroupStore creates a new Athena work group store.
@@ -72,31 +73,36 @@ func NewWorkGroupStore(store storage.BasicStorage, accountID, region string) *Wo
 }
 
 func (s *WorkGroupStore) ensurePrimaryWorkGroup() {
-	if !s.Exists("primary") {
-		primaryWg := &WorkGroup{
-			Name:        "primary",
-			Description: "The primary workgroup",
-			State:       WorkGroupStateEnabled,
-			CreatedTime: time.Now().UTC(),
+	s.kl.WithLock("primary", func() error {
+		if !s.Exists("primary") {
+			primaryWg := &WorkGroup{
+				Name:        "primary",
+				Description: "The primary workgroup",
+				State:       WorkGroupStateEnabled,
+				CreatedTime: time.Now().UTC(),
+			}
+			if err := s.PutProto("primary", WorkGroupToProto(primaryWg)); err != nil {
+				logs.Error("Failed to create primary workgroup", logs.Err(err))
+			}
 		}
-		if err := s.PutProto("primary", WorkGroupToProto(primaryWg)); err != nil {
-			logs.Error("Failed to create primary workgroup", logs.Err(err))
-		}
-	}
+		return nil
+	})
 }
 
 // CreateWorkGroup creates a new Athena work group.
 func (s *WorkGroupStore) CreateWorkGroup(wg *WorkGroup) error {
-	if s.Exists(wg.Name) {
-		return ErrWorkGroupAlreadyExists
-	}
+	return s.kl.WithLock(wg.Name, func() error {
+		if s.Exists(wg.Name) {
+			return ErrWorkGroupAlreadyExists
+		}
 
-	wg.CreatedTime = time.Now().UTC()
-	if wg.State == "" {
-		wg.State = WorkGroupStateEnabled
-	}
+		wg.CreatedTime = time.Now().UTC()
+		if wg.State == "" {
+			wg.State = WorkGroupStateEnabled
+		}
 
-	return s.PutProto(wg.Name, WorkGroupToProto(wg))
+		return s.PutProto(wg.Name, WorkGroupToProto(wg))
+	})
 }
 
 // GetWorkGroup retrieves an Athena work group by name.
@@ -110,18 +116,22 @@ func (s *WorkGroupStore) GetWorkGroup(name string) (*WorkGroup, error) {
 
 // UpdateWorkGroup updates an existing Athena work group.
 func (s *WorkGroupStore) UpdateWorkGroup(wg *WorkGroup) error {
-	if !s.Exists(wg.Name) {
-		return ErrWorkGroupNotFound
-	}
-	return s.PutProto(wg.Name, WorkGroupToProto(wg))
+	return s.kl.WithLock(wg.Name, func() error {
+		if !s.Exists(wg.Name) {
+			return ErrWorkGroupNotFound
+		}
+		return s.PutProto(wg.Name, WorkGroupToProto(wg))
+	})
 }
 
 // DeleteWorkGroup deletes an Athena work group by name.
 func (s *WorkGroupStore) DeleteWorkGroup(name string) error {
-	if !s.Exists(name) {
-		return ErrWorkGroupNotFound
-	}
-	return s.BaseStore.Delete(name)
+	return s.kl.WithLock(name, func() error {
+		if !s.Exists(name) {
+			return ErrWorkGroupNotFound
+		}
+		return s.BaseStore.Delete(name)
+	})
 }
 
 // ListWorkGroups returns all Athena work groups.
@@ -145,6 +155,7 @@ func (s *WorkGroupStore) GetARN(name string) string {
 // NamedQueryStore provides Athena named query storage operations.
 type NamedQueryStore struct {
 	*common.BaseStore
+	kl common.KeyLocker
 }
 
 // NewNamedQueryStore creates a new Athena named query store.
@@ -163,24 +174,26 @@ func (s *NamedQueryStore) CreateNamedQuery(nq *NamedQuery) error {
 	if nq.NamedQueryId == "" {
 		nq.NamedQueryId = fmt.Sprintf("%d", time.Now().UnixNano())
 	}
-	nq.CreatedTime = time.Now().UTC()
+	return s.kl.WithLock(nq.NamedQueryId, func() error {
+		nq.CreatedTime = time.Now().UTC()
 
-	nameKey := s.namedQueryByNameKey(nq.WorkGroup, nq.Name)
+		nameKey := s.namedQueryByNameKey(nq.WorkGroup, nq.Name)
 
-	if s.Exists(nameKey) {
-		return ErrNamedQueryAlreadyExists
-	}
+		if s.Exists(nameKey) {
+			return ErrNamedQueryAlreadyExists
+		}
 
-	if err := s.Put(nameKey, []byte(nq.NamedQueryId)); err != nil {
-		return err
-	}
+		if err := s.Put(nameKey, []byte(nq.NamedQueryId)); err != nil {
+			return err
+		}
 
-	if err := s.PutProto(nq.NamedQueryId, NamedQueryToProto(nq)); err != nil {
-		_ = s.BaseStore.Delete(nameKey)
-		return err
-	}
+		if err := s.PutProto(nq.NamedQueryId, NamedQueryToProto(nq)); err != nil {
+			_ = s.BaseStore.Delete(nameKey)
+			return err
+		}
 
-	return nil
+		return nil
+	})
 }
 
 // GetNamedQuery retrieves an Athena named query by ID.
@@ -194,53 +207,57 @@ func (s *NamedQueryStore) GetNamedQuery(id string) (*NamedQuery, error) {
 
 // UpdateNamedQuery updates an existing named query.
 func (s *NamedQueryStore) UpdateNamedQuery(id string, nq *NamedQuery) error {
-	if !s.Exists(id) {
-		return ErrNamedQueryNotFound
-	}
+	return s.kl.WithLock(id, func() error {
+		if !s.Exists(id) {
+			return ErrNamedQueryNotFound
+		}
 
-	oldNq, err := s.GetNamedQuery(id)
-	if err != nil {
-		return err
-	}
-
-	newNameKey := s.namedQueryByNameKey(nq.WorkGroup, nq.Name)
-	if err := s.Put(newNameKey, []byte(nq.NamedQueryId)); err != nil {
-		return err
-	}
-
-	if err := s.PutProto(id, NamedQueryToProto(nq)); err != nil {
-		_ = s.BaseStore.Delete(newNameKey)
-		return err
-	}
-
-	if oldNq.Name != nq.Name || oldNq.WorkGroup != nq.WorkGroup {
-		oldNameKey := s.namedQueryByNameKey(oldNq.WorkGroup, oldNq.Name)
-		if err := s.BaseStore.Delete(oldNameKey); err != nil {
+		oldNq, err := s.GetNamedQuery(id)
+		if err != nil {
 			return err
 		}
-	}
 
-	return nil
+		newNameKey := s.namedQueryByNameKey(nq.WorkGroup, nq.Name)
+		if err := s.Put(newNameKey, []byte(nq.NamedQueryId)); err != nil {
+			return err
+		}
+
+		if err := s.PutProto(id, NamedQueryToProto(nq)); err != nil {
+			_ = s.BaseStore.Delete(newNameKey)
+			return err
+		}
+
+		if oldNq.Name != nq.Name || oldNq.WorkGroup != nq.WorkGroup {
+			oldNameKey := s.namedQueryByNameKey(oldNq.WorkGroup, oldNq.Name)
+			if err := s.BaseStore.Delete(oldNameKey); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 // DeleteNamedQuery deletes an Athena named query by ID.
 func (s *NamedQueryStore) DeleteNamedQuery(id string) error {
-	nq, err := s.GetNamedQuery(id)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(id, func() error {
+		nq, err := s.GetNamedQuery(id)
+		if err != nil {
+			return err
+		}
 
-	nameKey := s.namedQueryByNameKey(nq.WorkGroup, nq.Name)
-	if err := s.BaseStore.Delete(nameKey); err != nil {
-		return err
-	}
+		nameKey := s.namedQueryByNameKey(nq.WorkGroup, nq.Name)
+		if err := s.BaseStore.Delete(nameKey); err != nil {
+			return err
+		}
 
-	if err := s.BaseStore.Delete(id); err != nil {
-		_ = s.Put(nameKey, []byte(nq.NamedQueryId))
-		return err
-	}
+		if err := s.BaseStore.Delete(id); err != nil {
+			_ = s.Put(nameKey, []byte(nq.NamedQueryId))
+			return err
+		}
 
-	return nil
+		return nil
+	})
 }
 
 // ListNamedQueries returns all Athena named queries for a work group.
@@ -268,6 +285,7 @@ func (s *NamedQueryStore) ListNamedQueries(workGroup string) ([]*NamedQuery, err
 // PreparedStatementStore provides Athena prepared statement storage operations.
 type PreparedStatementStore struct {
 	*common.BaseStore
+	kl common.KeyLocker
 }
 
 // NewPreparedStatementStore creates a new Athena prepared statement store.
@@ -310,26 +328,28 @@ func (s *PreparedStatementStore) GetPreparedStatement(workGroup, name string) (*
 func (s *PreparedStatementStore) UpdatePreparedStatement(ps *PreparedStatement) error {
 	key := s.preparedStatementKey(ps.WorkGroupName, ps.StatementName)
 
-	existing, err := s.GetPreparedStatement(ps.WorkGroupName, ps.StatementName)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(key, func() error {
+		existing, err := s.GetPreparedStatement(ps.WorkGroupName, ps.StatementName)
+		if err != nil {
+			return err
+		}
 
-	ps.CreatedTime = existing.CreatedTime
-	ps.LastModifiedTime = time.Now().UTC()
+		ps.CreatedTime = existing.CreatedTime
+		ps.LastModifiedTime = time.Now().UTC()
 
-	return s.PutProto(key, PreparedStatementToProto(ps))
+		return s.PutProto(key, PreparedStatementToProto(ps))
+	})
 }
 
 // DeletePreparedStatement deletes an Athena prepared statement.
 func (s *PreparedStatementStore) DeletePreparedStatement(workGroup, name string) error {
 	key := s.preparedStatementKey(workGroup, name)
-
-	if !s.Exists(key) {
-		return ErrPreparedStatementNotFound
-	}
-
-	return s.BaseStore.Delete(key)
+	return s.kl.WithLock(key, func() error {
+		if !s.Exists(key) {
+			return ErrPreparedStatementNotFound
+		}
+		return s.BaseStore.Delete(key)
+	})
 }
 
 // ListPreparedStatements returns all Athena prepared statements for a work group.
@@ -453,6 +473,7 @@ func (s *ResultStore) DeleteResult(queryExecutionId string) error {
 type DataCatalogStore struct {
 	*common.BaseStore
 	*common.TagStore
+	kl common.KeyLocker
 }
 
 // NewDataCatalogStore creates a new Athena data catalog store.
@@ -465,10 +486,12 @@ func NewDataCatalogStore(store storage.BasicStorage, region string) *DataCatalog
 
 // CreateDataCatalog creates a new Athena data catalog.
 func (s *DataCatalogStore) CreateDataCatalog(dc *DataCatalog) error {
-	if s.Exists(dc.Name) {
-		return ErrDataCatalogAlreadyExists
-	}
-	return s.PutProto(dc.Name, DataCatalogToProto(dc))
+	return s.kl.WithLock(dc.Name, func() error {
+		if s.Exists(dc.Name) {
+			return ErrDataCatalogAlreadyExists
+		}
+		return s.PutProto(dc.Name, DataCatalogToProto(dc))
+	})
 }
 
 // GetDataCatalog retrieves an Athena data catalog by name.
@@ -482,18 +505,22 @@ func (s *DataCatalogStore) GetDataCatalog(name string) (*DataCatalog, error) {
 
 // UpdateDataCatalog updates an existing Athena data catalog.
 func (s *DataCatalogStore) UpdateDataCatalog(dc *DataCatalog) error {
-	if !s.Exists(dc.Name) {
-		return ErrDataCatalogNotFound
-	}
-	return s.PutProto(dc.Name, DataCatalogToProto(dc))
+	return s.kl.WithLock(dc.Name, func() error {
+		if !s.Exists(dc.Name) {
+			return ErrDataCatalogNotFound
+		}
+		return s.PutProto(dc.Name, DataCatalogToProto(dc))
+	})
 }
 
 // DeleteDataCatalog deletes an Athena data catalog by name.
 func (s *DataCatalogStore) DeleteDataCatalog(name string) error {
-	if !s.Exists(name) {
-		return ErrDataCatalogNotFound
-	}
-	return s.BaseStore.Delete(name)
+	return s.kl.WithLock(name, func() error {
+		if !s.Exists(name) {
+			return ErrDataCatalogNotFound
+		}
+		return s.BaseStore.Delete(name)
+	})
 }
 
 // ListDataCatalogs returns all Athena data catalogs.

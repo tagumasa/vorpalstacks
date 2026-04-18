@@ -94,7 +94,7 @@ func (s *STSService) GetCallerIdentity(ctx context.Context, reqCtx *request.Requ
 			switch session.PrincipalType {
 			case "AssumedRole":
 				roleName := arnutil.ExtractRoleNameFromARN(session.RoleArn)
-				arn = "arn:aws:sts::" + reqCtx.GetAccountID() + ":assumed-role/" + roleName + "/" + session.RoleSessionName
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.RoleSessionName)
 			case "SAML":
 				arn = session.RoleArn + "/saml/" + session.PrincipalName
 			case "WebIdentity":
@@ -102,7 +102,7 @@ func (s *STSService) GetCallerIdentity(ctx context.Context, reqCtx *request.Requ
 			case "FederatedUser":
 				arn = session.PrincipalArn + ":" + session.PrincipalName
 			case "Root":
-				arn = "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 			default:
 				arn = session.PrincipalArn
 			}
@@ -117,7 +117,7 @@ func (s *STSService) GetCallerIdentity(ctx context.Context, reqCtx *request.Requ
 				accessKey, err := iamStore.AccessKeys().Get(accessKeyId)
 				if err == nil && accessKey != nil {
 					userId = accessKey.UserName
-					arn = "arn:aws:iam::" + reqCtx.GetAccountID() + ":user/" + accessKey.UserName
+					arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(accessKey.UserName)
 				}
 			}
 		}
@@ -128,7 +128,7 @@ func (s *STSService) GetCallerIdentity(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if arn == "" {
-		arn = "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+		arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
 
 	return map[string]interface{}{
@@ -184,7 +184,7 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 
 	callerArn, _ := s.resolveCallerIdentity(reqCtx, req)
 	if callerArn == "" {
-		callerArn = "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
 
 	evalCtx := iam.BuildEvaluationContext(reqCtx.GetAccountID(), callerArn)
@@ -210,7 +210,7 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 		},
 		"AssumedRoleUser": map[string]interface{}{
 			"AssumedRoleId": session.AccessKeyId + ":" + roleSessionName,
-			"Arn":           "arn:aws:sts::" + reqCtx.GetAccountID() + ":assumed-role/" + roleName + "/" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
 		},
 		"PackedPolicySize": computePackedPolicySize(sessionPolicy, req.Parameters),
 		"SourceIdentity":   sourceIdentity,
@@ -241,13 +241,13 @@ func (s *STSService) GetSessionToken(ctx context.Context, reqCtx *request.Reques
 		accessKey, err := iamStore.AccessKeys().Get(accessKeyId)
 		if err == nil && accessKey != nil {
 			callerName = accessKey.UserName
-			callerArn = "arn:aws:iam::" + reqCtx.GetAccountID() + ":user/" + callerName
+			callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(callerName)
 		}
 	}
 
 	if callerArn == "" {
 		callerName = reqCtx.GetAccountID()
-		callerArn = "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
 
 	store, err := s.store(reqCtx)
@@ -315,7 +315,7 @@ func (s *STSService) resolveCallerIdentity(reqCtx *request.RequestContext, req *
 	if err != nil || accessKey == nil {
 		return "", ""
 	}
-	return "arn:aws:iam::" + reqCtx.GetAccountID() + ":user/" + accessKey.UserName, accessKey.UserName
+	return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(accessKey.UserName), accessKey.UserName
 }
 
 func validateDurationSecondsExtended(durationSeconds int) (int, error) {
@@ -404,7 +404,7 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 		},
 		"AssumedRoleUser": map[string]interface{}{
 			"AssumedRoleId": session.AccessKeyId + ":" + roleSessionName,
-			"Arn":           "arn:aws:sts::" + reqCtx.GetAccountID() + ":assumed-role/" + roleName + "/" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
 		},
 		"Subject":          principalArn,
 		"SubjectType":      "persistent",
@@ -467,7 +467,7 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 
 	federatedPrincipal := ""
 	if providerId != "" {
-		federatedPrincipal = "arn:aws:iam::" + reqCtx.GetAccountID() + ":oidc-provider/" + providerId
+		federatedPrincipal = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().OIDCProvider(providerId)
 	}
 
 	evalCtx := iam.BuildEvaluationContext(reqCtx.GetAccountID(), federatedPrincipal)
@@ -493,7 +493,7 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 		},
 		"AssumedRoleUser": map[string]interface{}{
 			"AssumedRoleId": session.AccessKeyId + ":" + roleSessionName,
-			"Arn":           "arn:aws:sts::" + reqCtx.GetAccountID() + ":assumed-role/" + roleName + "/" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
 		},
 		"Provider":                    providerId,
 		"SubjectFromWebIdentityToken": roleSessionName,
@@ -517,7 +517,7 @@ func (s *STSService) AssumeRoot(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
-	session, err := store.Create("Root", "root", "arn:aws:iam::"+reqCtx.GetAccountID()+":root", "", targetPrincipal, validDuration)
+	session, err := store.Create("Root", "root", arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root(), "", targetPrincipal, validDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -599,7 +599,7 @@ func (s *STSService) GetFederationToken(ctx context.Context, reqCtx *request.Req
 
 	callerArn, callerName := s.resolveCallerIdentity(reqCtx, req)
 	if callerArn == "" {
-		callerArn = "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
 	if callerName == "" {
 		_ = reqCtx.GetAccountID()
@@ -646,7 +646,7 @@ func (s *STSService) GetDelegatedAccessToken(ctx context.Context, reqCtx *reques
 
 	principalArn, principalName := s.resolveCallerIdentity(reqCtx, req)
 	if principalArn == "" {
-		principalArn = "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+		principalArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
 	if principalName == "" {
 		principalName = reqCtx.GetAccountID()

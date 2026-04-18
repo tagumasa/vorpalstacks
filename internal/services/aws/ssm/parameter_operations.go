@@ -14,10 +14,6 @@ import (
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
-func getParam(req *request.ParsedRequest, key string) string {
-	return request.GetParamLowerFirst(req.Parameters, key)
-}
-
 func getIntParam(req *request.ParsedRequest, key string) int32 {
 	return int32(request.GetIntParam(req.Parameters, key))
 }
@@ -52,18 +48,18 @@ func parameterToResponse(p *ssmstore.Parameter, selector string) map[string]inte
 
 // PutParameter adds or updates a parameter in the Parameter Store.
 func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 	if name == "" {
 		return nil, ErrInvalidParameterName
 	}
 
-	value := getParam(req, "Value")
-	paramType := getParam(req, "Type")
+	value := req.GetParam("Value")
+	paramType := req.GetParam("Type")
 	if paramType == "" {
 		paramType = "String"
 	}
 
-	keyID := getParam(req, "KeyId")
+	keyID := req.GetParam("KeyId")
 
 	if paramType == "SecureString" && s.kmsEncryptor != nil {
 		encryptedValue, err := s.encryptValue(ctx, value, keyID)
@@ -74,15 +70,15 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	param := ssmstore.NewParameter(name, value, ssmstore.ParameterType(paramType))
-	param.Description = getParam(req, "Description")
+	param.Description = req.GetParam("Description")
 	param.KeyID = keyID
-	param.AllowedPattern = getParam(req, "AllowedPattern")
-	param.DataType = getParam(req, "DataType")
+	param.AllowedPattern = req.GetParam("AllowedPattern")
+	param.DataType = req.GetParam("DataType")
 	if param.DataType == "" {
 		param.DataType = "text"
 	}
 
-	tier := getParam(req, "Tier")
+	tier := req.GetParam("Tier")
 	if tier != "" {
 		param.Tier = ssmstore.ParameterTier(tier)
 	}
@@ -114,7 +110,7 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 
 // GetParameter retrieves a parameter from the Parameter Store.
 func (s *SSMService) GetParameter(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 	if name == "" {
 		return nil, ErrInvalidParameterName
 	}
@@ -174,7 +170,7 @@ func (s *SSMService) GetParameters(ctx context.Context, reqCtx *request.RequestC
 		}
 	} else {
 		for i := 1; ; i++ {
-			name := getParam(req, "Names."+strconv.Itoa(i))
+			name := req.GetParam("Names." + strconv.Itoa(i))
 			if name == "" {
 				break
 			}
@@ -216,7 +212,7 @@ func (s *SSMService) GetParameters(ctx context.Context, reqCtx *request.RequestC
 
 // GetParametersByPath retrieves parameters under a specified path.
 func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	path := getParam(req, "Path")
+	path := req.GetParam("Path")
 	if path == "" {
 		return nil, ErrInvalidParameterName
 	}
@@ -224,7 +220,7 @@ func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.Re
 	recursive := getBoolParam(req, "Recursive")
 	withDecryption := getBoolParam(req, "WithDecryption")
 	maxResults := getIntParam(req, "MaxResults")
-	nextToken := getParam(req, "NextToken")
+	nextToken := req.GetParam("NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -259,7 +255,7 @@ func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.Re
 
 // DeleteParameter removes a parameter from the Parameter Store.
 func (s *SSMService) DeleteParameter(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 	if name == "" {
 		return nil, ErrInvalidParameterName
 	}
@@ -289,7 +285,7 @@ func (s *SSMService) DeleteParameters(ctx context.Context, reqCtx *request.Reque
 		}
 	} else {
 		for i := 1; ; i++ {
-			name := getParam(req, "Names."+strconv.Itoa(i))
+			name := req.GetParam("Names." + strconv.Itoa(i))
 			if name == "" {
 				break
 			}
@@ -312,7 +308,7 @@ func (s *SSMService) DeleteParameters(ctx context.Context, reqCtx *request.Reque
 // DescribeParameters returns information about all parameters in the Parameter Store.
 func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	maxResults := getIntParam(req, "MaxResults")
-	nextToken := getParam(req, "NextToken")
+	nextToken := req.GetParam("NextToken")
 
 	filters := make(map[string]string)
 
@@ -336,18 +332,18 @@ func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.Req
 
 	if len(filters) == 0 {
 		for i := 1; ; i++ {
-			filterKey := getParam(req, "ParameterFilters.member."+strconv.Itoa(i)+".Key")
+			filterKey := req.GetParam("ParameterFilters.member." + strconv.Itoa(i) + ".Key")
 			if filterKey == "" {
 				break
 			}
-			filterValue := getParam(req, "ParameterFilters.member."+strconv.Itoa(i)+".Values.member.1")
+			filterValue := req.GetParam("ParameterFilters.member." + strconv.Itoa(i) + ".Values.member.1")
 			if filterValue == "" {
-				filterValue = getParam(req, "Filters."+strconv.Itoa(i)+".Key")
+				filterValue = req.GetParam("Filters." + strconv.Itoa(i) + ".Key")
 				if filterValue == "" {
 					break
 				}
 				filterKey = filterValue
-				filterValue = getParam(req, "Filters."+strconv.Itoa(i)+".Value")
+				filterValue = req.GetParam("Filters." + strconv.Itoa(i) + ".Value")
 			}
 			filters[filterKey] = filterValue
 		}
@@ -391,14 +387,14 @@ func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.Req
 
 // GetParameterHistory retrieves the history of a parameter's versions.
 func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 	if name == "" {
 		return nil, ErrInvalidParameterName
 	}
 
 	maxResults := getIntParam(req, "MaxResults")
 	withDecryption := getBoolParam(req, "WithDecryption")
-	nextToken := getParam(req, "NextToken")
+	nextToken := req.GetParam("NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -448,7 +444,7 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 
 // LabelParameterVersion attaches labels to a specific version of a parameter.
 func (s *SSMService) LabelParameterVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := getParam(req, "Name")
+	name := req.GetParam("Name")
 	if name == "" {
 		return nil, ErrInvalidParameterName
 	}
@@ -467,7 +463,7 @@ func (s *SSMService) LabelParameterVersion(ctx context.Context, reqCtx *request.
 		}
 	} else {
 		for i := 1; ; i++ {
-			label := getParam(req, "Labels.member."+strconv.Itoa(i))
+			label := req.GetParam("Labels.member." + strconv.Itoa(i))
 			if label == "" {
 				break
 			}

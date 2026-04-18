@@ -14,14 +14,14 @@ import (
 func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	query := cloudtrailstore.NewEventQuery()
 
-	if startTime := getParam(req, "StartTime"); startTime != "" {
+	if startTime := req.GetParam("StartTime"); startTime != "" {
 		t, err := time.Parse(time.RFC3339, startTime)
 		if err != nil {
 			return nil, ErrInvalidParameter
 		}
 		query.StartTime = &t
 	}
-	if endTime := getParam(req, "EndTime"); endTime != "" {
+	if endTime := req.GetParam("EndTime"); endTime != "" {
 		t, err := time.Parse(time.RFC3339, endTime)
 		if err != nil {
 			return nil, ErrInvalidParameter
@@ -29,7 +29,7 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 		query.EndTime = &t
 	}
 
-	if nextToken := getParam(req, "NextToken"); nextToken != "" {
+	if nextToken := req.GetParam("NextToken"); nextToken != "" {
 		query.NextToken = nextToken
 	}
 
@@ -64,7 +64,7 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
-	if username := getParam(req, "Username"); username != "" {
+	if username := req.GetParam("Username"); username != "" {
 		query.Username = username
 	}
 
@@ -105,7 +105,7 @@ func (s *CloudTrailService) ListPublicKeys(ctx context.Context, reqCtx *request.
 	// Accept both RFC3339 string and Unix timestamp (float64) formats
 	// for StartTime/EndTime, as the AWS SDK serialises time.Time as
 	// a Unix timestamp number in JSON-RPC 1.1.
-	if st := getParam(req, "StartTime"); st != "" {
+	if st := req.GetParam("StartTime"); st != "" {
 		t, err := time.Parse(time.RFC3339, st)
 		if err != nil {
 			return nil, ErrInvalidParameter
@@ -117,7 +117,7 @@ func (s *CloudTrailService) ListPublicKeys(ctx context.Context, reqCtx *request.
 			startTime = &t
 		}
 	}
-	if et := getParam(req, "EndTime"); et != "" {
+	if et := req.GetParam("EndTime"); et != "" {
 		t, err := time.Parse(time.RFC3339, et)
 		if err != nil {
 			return nil, ErrInvalidParameter
@@ -156,7 +156,7 @@ func (s *CloudTrailService) ListPublicKeys(ctx context.Context, reqCtx *request.
 		"PublicKeyList": publicKeyList,
 	}
 
-	if nextToken := getParam(req, "NextToken"); nextToken != "" {
+	if nextToken := req.GetParam("NextToken"); nextToken != "" {
 		result["NextToken"] = nextToken
 	}
 
@@ -165,9 +165,9 @@ func (s *CloudTrailService) ListPublicKeys(ctx context.Context, reqCtx *request.
 
 // GetEventSelectors retrieves the event selectors for a trail.
 func (s *CloudTrailService) GetEventSelectors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	trailName := getParam(req, "TrailName")
+	trailName := req.GetParam("TrailName")
 	if trailName == "" {
-		trailName = getParam(req, "TrailArn")
+		trailName = req.GetParam("TrailArn")
 	}
 
 	if trailName == "" {
@@ -207,9 +207,9 @@ func (s *CloudTrailService) GetEventSelectors(ctx context.Context, reqCtx *reque
 
 // PutEventSelectors configures event selectors for a trail.
 func (s *CloudTrailService) PutEventSelectors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	trailName := getParam(req, "TrailName")
+	trailName := req.GetParam("TrailName")
 	if trailName == "" {
-		trailName = getParam(req, "TrailArn")
+		trailName = req.GetParam("TrailArn")
 	}
 
 	if trailName == "" {
@@ -300,9 +300,9 @@ func (s *CloudTrailService) PutEventSelectors(ctx context.Context, reqCtx *reque
 
 // GetInsightSelectors retrieves the insight selectors for a trail.
 func (s *CloudTrailService) GetInsightSelectors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	trailName := getParam(req, "TrailName")
+	trailName := req.GetParam("TrailName")
 	if trailName == "" {
-		trailName = getParam(req, "TrailArn")
+		trailName = req.GetParam("TrailArn")
 	}
 
 	if trailName == "" {
@@ -339,9 +339,9 @@ func (s *CloudTrailService) GetInsightSelectors(ctx context.Context, reqCtx *req
 
 // PutInsightSelectors configures insight selectors for a trail.
 func (s *CloudTrailService) PutInsightSelectors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	trailName := getParam(req, "TrailName")
+	trailName := req.GetParam("TrailName")
 	if trailName == "" {
-		trailName = getParam(req, "TrailArn")
+		trailName = req.GetParam("TrailArn")
 	}
 
 	if trailName == "" {

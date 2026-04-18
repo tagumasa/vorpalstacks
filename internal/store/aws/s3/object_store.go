@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -40,7 +39,7 @@ type ObjectStore struct {
 	blobStore       storage.BlobStore
 	arnBuilder      *svcarn.S3Builder
 	bucketStore     *BucketStore
-	versionMutex    sync.Map
+	keyLocker       common.KeyLocker
 	versioningCache *VersioningCache
 	region          string
 }
@@ -71,7 +70,7 @@ func NewObjectStore(store storage.BasicStorage, blobStore storage.BlobStore, buc
 
 	bucketStore.SetOnDeleteCallback(func(bucket string) {
 		cache.Delete(bucket)
-		os.cleanupVersionMutex(bucket)
+		os.keyLocker.DeleteByPrefix(bucket + "#")
 	})
 
 	return os, nil
@@ -82,26 +81,6 @@ func (s *ObjectStore) Close() {
 	if s.versioningCache != nil {
 		s.versioningCache.Close()
 	}
-}
-
-func (s *ObjectStore) getVersionLock(key string) *sync.Mutex {
-	v, _ := s.versionMutex.LoadOrStore(key, &sync.Mutex{})
-	if typed, ok := v.(*sync.Mutex); ok {
-		return typed
-	}
-	return &sync.Mutex{}
-}
-
-func (s *ObjectStore) cleanupVersionMutex(bucket string) {
-	prefix := bucket + "#"
-	s.versionMutex.Range(func(key, value interface{}) bool {
-		if k, ok := key.(string); ok {
-			if len(k) > len(prefix) && k[:len(prefix)] == prefix {
-				s.versionMutex.Delete(key)
-			}
-		}
-		return true
-	})
 }
 
 func (s *ObjectStore) storageKey(bucket, key string) string {

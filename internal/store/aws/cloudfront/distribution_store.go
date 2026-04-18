@@ -2,7 +2,6 @@
 package cloudfront
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -41,25 +40,7 @@ func (s *DistributionStore) Get(id string) (*Distribution, error) {
 // Returns the distribution or ErrDistributionNotFound if not found.
 func (s *DistributionStore) GetByCallerReference(callerRef string) (*Distribution, error) {
 	normalizedRef := normalizeCallerReference(callerRef)
-	var found *Distribution
-	err := s.ForEach(func(key string, value []byte) error {
-		var dist Distribution
-		if err := json.Unmarshal(value, &dist); err != nil {
-			return err
-		}
-		if dist.CallerReference == normalizedRef {
-			found = &dist
-			return nil
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_by_caller_reference", err)
-	}
-	if found == nil {
-		return nil, ErrDistributionNotFound
-	}
-	return found, nil
+	return common.FindFirst[Distribution](s.BaseStore, func(d *Distribution) bool { return d.CallerReference == normalizedRef })
 }
 
 // Create creates a new CloudFront distribution in the store.
@@ -156,59 +137,18 @@ func (s *DistributionStore) Delete(id string) error {
 	return nil
 }
 
-// List returns a list of CloudFront distributions from the store with pagination support.
+// List returns a list of CloudFront distributions from the store with
+// pagination support.
 func (s *DistributionStore) List(marker string, maxItems int) (*DistributionListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var distributions []*Distribution
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var dist Distribution
-		if err := json.Unmarshal(value, &dist); err != nil {
-			return err
-		}
-
-		if !started {
-			if dist.ID == marker || dist.ID > marker {
-				started = true
-			}
-			if !started {
-				return nil
-			}
-			if dist.ID == marker {
-				return nil
-			}
-		}
-
-		if count < maxItems {
-			distributions = append(distributions, &dist)
-			lastKey = key
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[Distribution](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_distributions", err)
 	}
 
-	var nextMarker string
-	if hasMore {
-		nextMarker = lastKey
-	}
-
 	return &DistributionListResult{
-		Distributions: distributions,
-		IsTruncated:   hasMore,
-		NextMarker:    nextMarker,
+		Distributions: result.Items,
+		IsTruncated:   result.IsTruncated,
+		NextMarker:    result.NextMarker,
 	}, nil
 }
 

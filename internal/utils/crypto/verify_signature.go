@@ -1,14 +1,10 @@
 package crypto
 
-// Package crypto provides cryptographic utilities for vorpalstacks, including
-// AWS signature version 4 verification functions.
-
 import (
-	"crypto/subtle"
 	"errors"
-	"io"
-	"net/http"
 	"strings"
+
+	"vorpalstacks/internal/common/auth"
 )
 
 // Constants for AWS Signature Version 4.
@@ -18,6 +14,17 @@ const (
 	// ServicePrefix is the AWS Signature Version 4 service prefix.
 	ServicePrefix = "aws4_request"
 )
+
+// CredentialsProvider is an alias for auth.CredentialsProvider.
+type CredentialsProvider = auth.CredentialsProvider
+
+// AuthorizationHeader represents the components of an AWS authorization header.
+type AuthorizationHeader struct {
+	Algorithm     string
+	Credential    string
+	SignedHeaders string
+	Signature     string
+}
 
 // Error variables for signature verification.
 var (
@@ -33,99 +40,14 @@ var (
 	ErrSignatureMismatch = errors.New("signature mismatch")
 )
 
-// SignatureV4Verifier verifies AWS Signature Version 4 requests.
-type SignatureV4Verifier struct {
-	credentialsProvider CredentialsProvider
-}
-
-// NewSignatureV4Verifier creates a new Signature V4 verifier.
-//
-// Parameters:
-//   - provider: The credentials provider
-//
-// Returns:
-//   - *SignatureV4Verifier: A new verifier instance
-//
-// Example:
-//
-//	verifier := NewSignatureV4Verifier(credentialsProvider)
-func NewSignatureV4Verifier(provider CredentialsProvider) *SignatureV4Verifier {
-	return &SignatureV4Verifier{
-		credentialsProvider: provider,
-	}
-}
-
-// VerifyRequest verifies an incoming HTTP request using AWS Signature Version 4.
-// It validates the Authorization header against the computed signature.
-//
-// Parameters:
-//   - r: The HTTP request to verify
-//   - service: The AWS service name (e.g., "s3", "lambda")
-//   - region: The AWS region
-//
-// Returns:
-//   - error: An error if verification fails, nil if successful
-//
-// Example:
-//
-//	err := verifier.VerifyRequest(r, "s3", "us-east-1")
-func (v *SignatureV4Verifier) VerifyRequest(r *http.Request, service, region string) error {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return ErrMissingAuthorizationHeader
-	}
-
-	if !strings.HasPrefix(authHeader, Algorithm+" ") {
-		return ErrInvalidAlgorithm
-	}
-
-	authHeader = strings.TrimPrefix(authHeader, Algorithm+" ")
-
-	parsed, err := parseAuthorizationHeader(authHeader)
-	if err != nil {
-		return err
-	}
-
-	if parsed.Credential == "" || parsed.SignedHeaders == "" || parsed.Signature == "" {
-		return ErrMissingRequiredFields
-	}
-
-	amzDate := r.Header.Get("X-Amz-Date")
-	if amzDate == "" {
-		return ErrMissingAmzDate
-	}
-
-	var bodyBytes []byte
-	if r.Body != nil {
-		bodyBytes, err = io.ReadAll(r.Body)
-		if err != nil {
-			return err
-		}
-		r.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
-	}
-
-	canonicalRequest := BuildCanonicalRequest(r, parsed.SignedHeaders, bodyBytes)
-
-	stringToSign, err := BuildStringToSign(amzDate, parsed.Credential, canonicalRequest)
-	if err != nil {
-		return err
-	}
-
-	credentials, err := v.credentialsProvider.GetCredentials()
-	if err != nil {
-		return err
-	}
-
-	calculatedSignature, err := CalculateSignature(amzDate, credentials.Region, service, stringToSign, credentials.SecretAccessKey)
-	if err != nil {
-		return err
-	}
-
-	if subtle.ConstantTimeCompare([]byte(calculatedSignature), []byte(parsed.Signature)) != 1 {
-		return ErrSignatureMismatch
-	}
-
-	return nil
+// DeriveSigningKey derives the signing key for AWS Signature Version 4.
+// The signing key is derived from the secret key, date, region, and service.
+func DeriveSigningKey(secretKey, dateStr, region, service string) []byte {
+	kDate := HMACSHA256String([]byte("AWS4"+secretKey), dateStr)
+	kRegion := HMACSHA256String(kDate, region)
+	kService := HMACSHA256String(kRegion, service)
+	kSigning := HMACSHA256String(kService, ServicePrefix)
+	return kSigning
 }
 
 func parseAuthorizationHeader(authHeader string) (*AuthorizationHeader, error) {

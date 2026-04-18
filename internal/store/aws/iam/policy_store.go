@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const policyBucketName = "iam_policies"
@@ -18,8 +18,9 @@ const policyVersionBucketName = "iam_policy_versions"
 type PolicyStore struct {
 	bucket        storage.Bucket
 	versionBucket storage.Bucket
+	baseStore     *common.BaseStore
 	arnBuilder    *ARNBuilder
-	attachMutex   sync.Mutex
+	kl            common.KeyLocker
 }
 
 // NewPolicyStore creates a new PolicyStore.
@@ -27,6 +28,7 @@ func NewPolicyStore(store storage.BasicStorage, accountId string) *PolicyStore {
 	return &PolicyStore{
 		bucket:        store.Bucket(policyBucketName),
 		versionBucket: store.Bucket(policyVersionBucketName),
+		baseStore:     common.NewBaseStore(store.Bucket(policyBucketName), "iam"),
 		arnBuilder:    NewARNBuilder(accountId),
 	}
 }
@@ -72,72 +74,41 @@ func (s *PolicyStore) GetByPathAndName(path, policyName string) (*Policy, error)
 
 // List retrieves policies with optional filtering by scope, path prefix, and attachment status.
 func (s *PolicyStore) List(scope, pathPrefix string, onlyAttached bool, marker string, maxItems int) (*PolicyListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
+	var filter common.FilterFunc[Policy]
 	if scope == "AWS" {
-		return s.listWithFilter(pathPrefix, onlyAttached, marker, maxItems, func(p *Policy) bool {
-			return p.AccountId == "aws"
-		})
-	}
-
-	return s.listWithFilter(pathPrefix, onlyAttached, marker, maxItems, nil)
-}
-
-func (s *PolicyStore) listWithFilter(pathPrefix string, onlyAttached bool, marker string, maxItems int, extraFilter func(*Policy) bool) (*PolicyListResult, error) {
-	var policies []*Policy
-	count := 0
-	started := marker == ""
-	hasMore := false
-
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		var policy Policy
-		if err := json.Unmarshal(v, &policy); err != nil {
-			return err
-		}
-
-		if !started {
-			if policy.Arn == marker {
-				started = true
+		filter = func(p *Policy) bool {
+			if p.AccountId != "aws" {
+				return false
 			}
-			return nil
+			if pathPrefix != "" && !strings.HasPrefix(p.Path, pathPrefix) {
+				return false
+			}
+			if onlyAttached && p.AttachmentCount == 0 {
+				return false
+			}
+			return true
 		}
-
-		if pathPrefix != "" && !strings.HasPrefix(policy.Path, pathPrefix) {
-			return nil
+	} else {
+		filter = func(p *Policy) bool {
+			if pathPrefix != "" && !strings.HasPrefix(p.Path, pathPrefix) {
+				return false
+			}
+			if onlyAttached && p.AttachmentCount == 0 {
+				return false
+			}
+			return true
 		}
+	}
 
-		if onlyAttached && policy.AttachmentCount == 0 {
-			return nil
-		}
-
-		if extraFilter != nil && !extraFilter(&policy) {
-			return nil
-		}
-
-		if count < maxItems {
-			policies = append(policies, &policy)
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[Policy](s.baseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
-		return nil, NewStoreError("list_policies", err)
+		return nil, err
 	}
-
-	result := &PolicyListResult{
-		Policies:    policies,
-		IsTruncated: hasMore,
-	}
-	if len(policies) > 0 {
-		result.Marker = policies[len(policies)-1].Arn
-	}
-
-	return result, nil
+	return &PolicyListResult{
+		Policies:    result.Items,
+		IsTruncated: result.IsTruncated,
+		Marker:      result.NextMarker,
+	}, nil
 }
 
 // Put stores a policy.
@@ -224,28 +195,28 @@ func (s *PolicyStore) Create(policyName, path, accountId, document, description 
 
 // IncrementAttachmentCount increments the attachment count for a policy.
 func (s *PolicyStore) IncrementAttachmentCount(policyArn string) error {
-	s.attachMutex.Lock()
-	defer s.attachMutex.Unlock()
-	policy, err := s.Get(policyArn)
-	if err != nil {
-		return err
-	}
-	policy.AttachmentCount++
-	return s.Put(policy)
+	return s.kl.WithLock(policyArn, func() error {
+		policy, err := s.Get(policyArn)
+		if err != nil {
+			return err
+		}
+		policy.AttachmentCount++
+		return s.Put(policy)
+	})
 }
 
 // DecrementAttachmentCount decrements the attachment count for a policy.
 func (s *PolicyStore) DecrementAttachmentCount(policyArn string) error {
-	s.attachMutex.Lock()
-	defer s.attachMutex.Unlock()
-	policy, err := s.Get(policyArn)
-	if err != nil {
-		return err
-	}
-	if policy.AttachmentCount > 0 {
-		policy.AttachmentCount--
-	}
-	return s.Put(policy)
+	return s.kl.WithLock(policyArn, func() error {
+		policy, err := s.Get(policyArn)
+		if err != nil {
+			return err
+		}
+		if policy.AttachmentCount > 0 {
+			policy.AttachmentCount--
+		}
+		return s.Put(policy)
+	})
 }
 
 // Count returns the total number of policies.
@@ -362,33 +333,32 @@ func (s *PolicyStore) GetDefaultVersion(policyArn string) (*PolicyVersion, error
 
 // SetDefaultVersion sets the default version for a policy.
 func (s *PolicyStore) SetDefaultVersion(policyArn, versionId string) error {
-	s.attachMutex.Lock()
-	defer s.attachMutex.Unlock()
-
-	policy, err := s.Get(policyArn)
-	if err != nil {
-		return err
-	}
-
-	oldDefault, err := s.GetVersion(policyArn, policy.DefaultVersionId)
-	if err == nil {
-		oldDefault.IsDefaultVersion = false
-		if err := s.PutVersion(oldDefault); err != nil {
+	return s.kl.WithLock(policyArn, func() error {
+		policy, err := s.Get(policyArn)
+		if err != nil {
 			return err
 		}
-	}
 
-	newDefault, err := s.GetVersion(policyArn, versionId)
-	if err != nil {
-		return err
-	}
-	newDefault.IsDefaultVersion = true
-	if err := s.PutVersion(newDefault); err != nil {
-		return err
-	}
+		oldDefault, err := s.GetVersion(policyArn, policy.DefaultVersionId)
+		if err == nil {
+			oldDefault.IsDefaultVersion = false
+			if err := s.PutVersion(oldDefault); err != nil {
+				return err
+			}
+		}
 
-	policy.DefaultVersionId = versionId
-	return s.Put(policy)
+		newDefault, err := s.GetVersion(policyArn, versionId)
+		if err != nil {
+			return err
+		}
+		newDefault.IsDefaultVersion = true
+		if err := s.PutVersion(newDefault); err != nil {
+			return err
+		}
+
+		policy.DefaultVersionId = versionId
+		return s.Put(policy)
+	})
 }
 
 func extractVersionNumber(versionId string) int {

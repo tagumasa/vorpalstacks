@@ -16,7 +16,7 @@ type UsageStore struct {
 	arnBuilder *ARNBuilder
 	accountId  string
 	region     string
-	usageMutex sync.Map
+	keyLocker  common.KeyLocker
 	mu         sync.Mutex
 }
 
@@ -33,14 +33,6 @@ func NewUsageStore(store storage.BasicStorage, accountId, region string) *UsageS
 		accountId:  accountId,
 		region:     region,
 	}
-}
-
-func (s *UsageStore) getUsageLock(key string) *sync.Mutex {
-	v, _ := s.usageMutex.LoadOrStore(key, &sync.Mutex{})
-	if typed, ok := v.(*sync.Mutex); ok {
-		return typed
-	}
-	return &sync.Mutex{}
 }
 
 // CreateApiKey creates a new API key.
@@ -340,11 +332,10 @@ func (s *UsageStore) GetUsage(usagePlanId, apiKeyId, date string) (*UsageRecord,
 func (s *UsageStore) RecordUsage(record *UsageRecord) error {
 	key := "usage#" + record.UsagePlanID + "#" + record.APIKeyID + "#" + record.Date
 
-	mutex := s.getUsageLock(key)
-	mutex.Lock()
+	s.keyLocker.Lock(key)
 	defer func() {
-		mutex.Unlock()
-		s.usageMutex.Delete(key)
+		s.keyLocker.Unlock(key)
+		s.keyLocker.Delete(key)
 	}()
 
 	existing, err := s.GetUsage(record.UsagePlanID, record.APIKeyID, record.Date)

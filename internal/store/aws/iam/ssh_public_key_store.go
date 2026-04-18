@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const sshPublicKeyBucketName = "iam_ssh_public_keys"
@@ -16,6 +17,7 @@ const sshPublicKeyBucketName = "iam_ssh_public_keys"
 // SSHPublicKeyStore provides storage operations for IAM SSH public keys.
 type SSHPublicKeyStore struct {
 	bucket storage.Bucket
+	kl     common.KeyLocker
 }
 
 // NewSSHPublicKeyStore creates a new SSHPublicKeyStore instance.
@@ -89,12 +91,14 @@ func (s *SSHPublicKeyStore) Upload(userName, sshPublicKeyBody string) (*SSHPubli
 
 // UpdateStatus changes the status of an SSH public key (e.g. Active/Inactive).
 func (s *SSHPublicKeyStore) UpdateStatus(keyId, status string) error {
-	key, err := s.Get(keyId)
-	if err != nil {
-		return err
-	}
-	key.Status = status
-	return s.Put(key)
+	return s.kl.WithLock(keyId, func() error {
+		key, err := s.Get(keyId)
+		if err != nil {
+			return err
+		}
+		key.Status = status
+		return s.Put(key)
+	})
 }
 
 // ListByUserName returns all SSH public keys belonging to the given user.

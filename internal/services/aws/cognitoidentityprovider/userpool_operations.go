@@ -11,7 +11,7 @@ import (
 // CreateUserPool creates a new Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateUserPool.html
 func (s *CognitoService) CreateUserPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolName := getParam(req, "PoolName")
+	poolName := req.GetParam("PoolName")
 	if poolName == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -212,7 +212,7 @@ func (s *CognitoService) SetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 		return nil, ErrResourceNotFound
 	}
 
-	if mfaConfig := getParam(req, "MfaConfiguration"); mfaConfig != "" {
+	if mfaConfig := req.GetParam("MfaConfiguration"); mfaConfig != "" {
 		userPool.MfaConfiguration = mfaConfig
 	}
 

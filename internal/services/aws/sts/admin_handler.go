@@ -2,7 +2,6 @@ package sts
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -10,6 +9,7 @@ import (
 	"vorpalstacks/internal/config"
 	pb "vorpalstacks/internal/pb/aws/sts"
 	stsconnect "vorpalstacks/internal/pb/aws/sts/stsconnect"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // AdminHandler implements the STS admin console gRPC-Web handler.
@@ -33,7 +33,7 @@ func (h *AdminHandler) GetCallerIdentity(ctx context.Context, req *connect.Reque
 	}
 	return connect.NewResponse(&pb.GetCallerIdentityResponse{
 		Account: accountID,
-		Arn:     fmt.Sprintf("arn:aws:iam::%s:root", accountID),
+		Arn:     arnutil.NewARNBuilder(accountID, "").IAM().Root(),
 		Userid:  accountID,
 	}), nil
 }

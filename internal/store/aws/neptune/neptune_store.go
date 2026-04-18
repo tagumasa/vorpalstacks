@@ -1,6 +1,3 @@
-// Package neptune provides the Pebble-backed storage layer for AWS Neptune
-// Management API resources. All data is serialised via protobuf for
-// persistence in the underlying Pebble key-value store.
 package neptune
 
 import (
@@ -15,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 const (
@@ -37,19 +35,19 @@ const (
 // Management API resources. Each resource type is stored in its own bucket with
 // protobuf serialisation. A single RWMutex guards all write operations.
 type NeptuneStore struct {
-	clusters           *common.BaseStore
-	instances          *common.BaseStore
-	snapshots          *common.BaseStore
-	clusterParamGroups *common.BaseStore
-	paramGroups        *common.BaseStore
-	subnetGroups       *common.BaseStore
-	globalClusters     *common.BaseStore
-	eventSubs          *common.BaseStore
+	clusters           *common.ProtoStore[DBCluster]
+	instances          *common.ProtoStore[DBInstance]
+	snapshots          *common.ProtoStore[DBClusterSnapshot]
+	clusterParamGroups *common.ProtoStore[DBClusterParameterGroup]
+	paramGroups        *common.ProtoStore[DBParameterGroup]
+	subnetGroups       *common.ProtoStore[DBSubnetGroup]
+	globalClusters     *common.ProtoStore[GlobalCluster]
+	eventSubs          *common.ProtoStore[EventSubscription]
+	clusterEndpoints   *common.ProtoStore[DBClusterEndpoint]
+	queries            *common.RawProtoStore[*pb.QueryState]
+	loaderJobs         *common.RawProtoStore[*pb.LoaderJob]
 	events             *common.BaseStore
 	tags               *common.BaseStore
-	clusterEndpoints   *common.BaseStore
-	queries            *common.BaseStore
-	loaderJobs         *common.BaseStore
 	mu                 sync.RWMutex
 }
 
@@ -57,19 +55,101 @@ type NeptuneStore struct {
 // Each bucket is allocated a separate BaseStore for the neptune service namespace.
 func NewNeptuneStore(store storage.BasicStorage) *NeptuneStore {
 	return &NeptuneStore{
-		clusters:           common.NewBaseStore(store.Bucket(clusterBucket), "neptune"),
-		instances:          common.NewBaseStore(store.Bucket(instanceBucket), "neptune"),
-		snapshots:          common.NewBaseStore(store.Bucket(snapshotBucket), "neptune"),
-		clusterParamGroups: common.NewBaseStore(store.Bucket(clusterParamGroupBucket), "neptune"),
-		paramGroups:        common.NewBaseStore(store.Bucket(paramGroupBucket), "neptune"),
-		subnetGroups:       common.NewBaseStore(store.Bucket(subnetGroupBucket), "neptune"),
-		globalClusters:     common.NewBaseStore(store.Bucket(globalClusterBucket), "neptune"),
-		eventSubs:          common.NewBaseStore(store.Bucket(eventSubBucket), "neptune"),
-		events:             common.NewBaseStore(store.Bucket(eventsBucket), "neptune"),
-		tags:               common.NewBaseStore(store.Bucket(tagsBucket), "neptune"),
-		clusterEndpoints:   common.NewBaseStore(store.Bucket(clusterEndpointBucket), "neptune"),
-		queries:            common.NewBaseStore(store.Bucket(queryStateBucket), "neptunedata"),
-		loaderJobs:         common.NewBaseStore(store.Bucket(loaderJobBucket), "neptunedata"),
+		clusters: common.NewProtoStore(common.ProtoStoreConfig[DBCluster]{
+			Store:        common.NewBaseStore(store.Bucket(clusterBucket), "neptune"),
+			NewProto:     func() proto.Message { return &pb.DBCluster{} },
+			ToDomain:     func(m proto.Message) *DBCluster { return ProtoToCluster(m.(*pb.DBCluster)) },
+			ToProto:      func(d *DBCluster) proto.Message { return ClusterToProto(d) },
+			IDFunc:       func(d *DBCluster) string { return d.DBClusterIdentifier },
+			NotFoundErr:  ErrDBClusterNotFound,
+			AlreadyExist: ErrDBClusterAlreadyExists,
+		}),
+		instances: common.NewProtoStore(common.ProtoStoreConfig[DBInstance]{
+			Store:        common.NewBaseStore(store.Bucket(instanceBucket), "neptune"),
+			NewProto:     func() proto.Message { return &pb.DBInstance{} },
+			ToDomain:     func(m proto.Message) *DBInstance { return ProtoToInstance(m.(*pb.DBInstance)) },
+			ToProto:      func(d *DBInstance) proto.Message { return InstanceToProto(d) },
+			IDFunc:       func(d *DBInstance) string { return d.DBInstanceIdentifier },
+			NotFoundErr:  ErrDBInstanceNotFound,
+			AlreadyExist: ErrDBInstanceAlreadyExists,
+		}),
+		snapshots: common.NewProtoStore(common.ProtoStoreConfig[DBClusterSnapshot]{
+			Store:        common.NewBaseStore(store.Bucket(snapshotBucket), "neptune"),
+			NewProto:     func() proto.Message { return &pb.DBClusterSnapshot{} },
+			ToDomain:     func(m proto.Message) *DBClusterSnapshot { return ProtoToSnapshot(m.(*pb.DBClusterSnapshot)) },
+			ToProto:      func(d *DBClusterSnapshot) proto.Message { return SnapshotToProto(d) },
+			IDFunc:       func(d *DBClusterSnapshot) string { return d.DBClusterSnapshotIdentifier },
+			NotFoundErr:  ErrDBClusterSnapshotNotFound,
+			AlreadyExist: ErrDBClusterSnapshotAlreadyExists,
+		}),
+		clusterParamGroups: common.NewProtoStore(common.ProtoStoreConfig[DBClusterParameterGroup]{
+			Store:    common.NewBaseStore(store.Bucket(clusterParamGroupBucket), "neptune"),
+			NewProto: func() proto.Message { return &pb.DBClusterParameterGroup{} },
+			ToDomain: func(m proto.Message) *DBClusterParameterGroup {
+				return ProtoToClusterParameterGroup(m.(*pb.DBClusterParameterGroup))
+			},
+			ToProto:      func(d *DBClusterParameterGroup) proto.Message { return ClusterParameterGroupToProto(d) },
+			IDFunc:       func(d *DBClusterParameterGroup) string { return d.DBClusterParameterGroupName },
+			NotFoundErr:  ErrDBClusterParameterGroupNotFound,
+			AlreadyExist: ErrDBClusterParameterGroupAlreadyExists,
+		}),
+		paramGroups: common.NewProtoStore(common.ProtoStoreConfig[DBParameterGroup]{
+			Store:        common.NewBaseStore(store.Bucket(paramGroupBucket), "neptune"),
+			NewProto:     func() proto.Message { return &pb.DBParameterGroup{} },
+			ToDomain:     func(m proto.Message) *DBParameterGroup { return ProtoToParameterGroup(m.(*pb.DBParameterGroup)) },
+			ToProto:      func(d *DBParameterGroup) proto.Message { return ParameterGroupToProto(d) },
+			IDFunc:       func(d *DBParameterGroup) string { return d.DBParameterGroupName },
+			NotFoundErr:  ErrDBParameterGroupNotFound,
+			AlreadyExist: ErrDBParameterGroupAlreadyExists,
+		}),
+		subnetGroups: common.NewProtoStore(common.ProtoStoreConfig[DBSubnetGroup]{
+			Store:        common.NewBaseStore(store.Bucket(subnetGroupBucket), "neptune"),
+			NewProto:     func() proto.Message { return &pb.DBSubnetGroup{} },
+			ToDomain:     func(m proto.Message) *DBSubnetGroup { return ProtoToSubnetGroup(m.(*pb.DBSubnetGroup)) },
+			ToProto:      func(d *DBSubnetGroup) proto.Message { return SubnetGroupToProto(d) },
+			IDFunc:       func(d *DBSubnetGroup) string { return d.DBSubnetGroupName },
+			NotFoundErr:  ErrDBSubnetGroupNotFound,
+			AlreadyExist: ErrDBSubnetGroupAlreadyExists,
+		}),
+		globalClusters: common.NewProtoStore(common.ProtoStoreConfig[GlobalCluster]{
+			Store:        common.NewBaseStore(store.Bucket(globalClusterBucket), "neptune"),
+			NewProto:     func() proto.Message { return &pb.GlobalCluster{} },
+			ToDomain:     func(m proto.Message) *GlobalCluster { return ProtoToGlobalCluster(m.(*pb.GlobalCluster)) },
+			ToProto:      func(d *GlobalCluster) proto.Message { return GlobalClusterToProto(d) },
+			IDFunc:       func(d *GlobalCluster) string { return d.GlobalClusterIdentifier },
+			NotFoundErr:  ErrGlobalClusterNotFound,
+			AlreadyExist: ErrGlobalClusterAlreadyExists,
+		}),
+		eventSubs: common.NewProtoStore(common.ProtoStoreConfig[EventSubscription]{
+			Store:        common.NewBaseStore(store.Bucket(eventSubBucket), "neptune"),
+			NewProto:     func() proto.Message { return &pb.EventSubscription{} },
+			ToDomain:     func(m proto.Message) *EventSubscription { return ProtoToEventSubscription(m.(*pb.EventSubscription)) },
+			ToProto:      func(d *EventSubscription) proto.Message { return EventSubscriptionToProto(d) },
+			IDFunc:       func(d *EventSubscription) string { return d.CustSubscriptionId },
+			NotFoundErr:  ErrEventSubscriptionNotFound,
+			AlreadyExist: ErrEventSubscriptionAlreadyExists,
+		}),
+		clusterEndpoints: common.NewProtoStore(common.ProtoStoreConfig[DBClusterEndpoint]{
+			Store:        common.NewBaseStore(store.Bucket(clusterEndpointBucket), "neptune"),
+			NewProto:     func() proto.Message { return &pb.DBClusterEndpoint{} },
+			ToDomain:     func(m proto.Message) *DBClusterEndpoint { return ProtoToClusterEndpoint(m.(*pb.DBClusterEndpoint)) },
+			ToProto:      func(d *DBClusterEndpoint) proto.Message { return ClusterEndpointToProto(d) },
+			IDFunc:       func(d *DBClusterEndpoint) string { return d.DBClusterEndpointIdentifier },
+			NotFoundErr:  ErrDBClusterEndpointNotFound,
+			AlreadyExist: ErrDBClusterEndpointAlreadyExists,
+		}),
+		queries: common.NewRawProtoStore(common.RawProtoStoreConfig[*pb.QueryState]{
+			Store:    common.NewBaseStore(store.Bucket(queryStateBucket), "neptunedata"),
+			NewProto: func() *pb.QueryState { return &pb.QueryState{} },
+			IDFunc:   func(p *pb.QueryState) string { return p.GetQueryId() },
+		}),
+		loaderJobs: common.NewRawProtoStore(common.RawProtoStoreConfig[*pb.LoaderJob]{
+			Store:    common.NewBaseStore(store.Bucket(loaderJobBucket), "neptunedata"),
+			NewProto: func() *pb.LoaderJob { return &pb.LoaderJob{} },
+			IDFunc:   func(p *pb.LoaderJob) string { return p.GetLoadId() },
+		}),
+		events: common.NewBaseStore(store.Bucket(eventsBucket), "neptune"),
+		tags:   common.NewBaseStore(store.Bucket(tagsBucket), "neptune"),
 	}
 }
 
@@ -77,33 +157,20 @@ func NewNeptuneStore(store storage.BasicStorage) *NeptuneStore {
 func (s *NeptuneStore) CreateCluster(cluster *DBCluster) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.clusters.Exists(cluster.DBClusterIdentifier) {
-		return ErrDBClusterAlreadyExists
-	}
-	return s.clusters.PutProto(cluster.DBClusterIdentifier, ClusterToProto(cluster))
+	return s.clusters.Create(cluster)
 }
 
 // GetCluster retrieves a DB cluster by its identifier. Returns
 // ErrDBClusterNotFound if the cluster does not exist.
 func (s *NeptuneStore) GetCluster(id string) (*DBCluster, error) {
-	var pbCluster pb.DBCluster
-	if err := s.clusters.GetProto(id, &pbCluster); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrDBClusterNotFound
-		}
-		return nil, err
-	}
-	return ProtoToCluster(&pbCluster), nil
+	return s.clusters.Get(id)
 }
 
 // UpdateCluster replaces the persisted state of an existing DB cluster.
 func (s *NeptuneStore) UpdateCluster(cluster *DBCluster) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.clusters.Exists(cluster.DBClusterIdentifier) {
-		return ErrDBClusterNotFound
-	}
-	return s.clusters.PutProto(cluster.DBClusterIdentifier, ClusterToProto(cluster))
+	return s.clusters.Update(cluster)
 }
 
 // DeleteCluster removes a DB cluster from the store.
@@ -115,49 +182,27 @@ func (s *NeptuneStore) DeleteCluster(id string) error {
 
 // ListClusters returns all DB clusters in the store.
 func (s *NeptuneStore) ListClusters() ([]*DBCluster, error) {
-	var clusters []*DBCluster
-	err := s.clusters.ForEach(func(key string, value []byte) error {
-		var pbCluster pb.DBCluster
-		if err := proto.Unmarshal(value, &pbCluster); err != nil {
-			return err
-		}
-		clusters = append(clusters, ProtoToCluster(&pbCluster))
-		return nil
-	})
-	return clusters, err
+	return s.clusters.List()
 }
 
 // CreateInstance persists a new DB instance to the store.
 func (s *NeptuneStore) CreateInstance(instance *DBInstance) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.instances.Exists(instance.DBInstanceIdentifier) {
-		return ErrDBInstanceAlreadyExists
-	}
-	return s.instances.PutProto(instance.DBInstanceIdentifier, InstanceToProto(instance))
+	return s.instances.Create(instance)
 }
 
 // GetInstance retrieves a DB instance by its identifier. Returns
 // ErrDBInstanceNotFound if the instance does not exist.
 func (s *NeptuneStore) GetInstance(id string) (*DBInstance, error) {
-	var pbInstance pb.DBInstance
-	if err := s.instances.GetProto(id, &pbInstance); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrDBInstanceNotFound
-		}
-		return nil, err
-	}
-	return ProtoToInstance(&pbInstance), nil
+	return s.instances.Get(id)
 }
 
 // UpdateInstance replaces the persisted state of an existing DB instance.
 func (s *NeptuneStore) UpdateInstance(instance *DBInstance) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.instances.Exists(instance.DBInstanceIdentifier) {
-		return ErrDBInstanceNotFound
-	}
-	return s.instances.PutProto(instance.DBInstanceIdentifier, InstanceToProto(instance))
+	return s.instances.Update(instance)
 }
 
 // DeleteInstance removes a DB instance from the store.
@@ -169,38 +214,19 @@ func (s *NeptuneStore) DeleteInstance(id string) error {
 
 // ListInstances returns all DB instances in the store.
 func (s *NeptuneStore) ListInstances() ([]*DBInstance, error) {
-	var instances []*DBInstance
-	err := s.instances.ForEach(func(key string, value []byte) error {
-		var pbInst pb.DBInstance
-		if err := proto.Unmarshal(value, &pbInst); err != nil {
-			return err
-		}
-		instances = append(instances, ProtoToInstance(&pbInst))
-		return nil
-	})
-	return instances, err
+	return s.instances.List()
 }
 
 // CreateSnapshot persists a new cluster snapshot to the store.
 func (s *NeptuneStore) CreateSnapshot(snapshot *DBClusterSnapshot) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.snapshots.Exists(snapshot.DBClusterSnapshotIdentifier) {
-		return ErrDBClusterSnapshotAlreadyExists
-	}
-	return s.snapshots.PutProto(snapshot.DBClusterSnapshotIdentifier, SnapshotToProto(snapshot))
+	return s.snapshots.Create(snapshot)
 }
 
 // GetSnapshot retrieves a cluster snapshot by its identifier.
 func (s *NeptuneStore) GetSnapshot(id string) (*DBClusterSnapshot, error) {
-	var pbSnap pb.DBClusterSnapshot
-	if err := s.snapshots.GetProto(id, &pbSnap); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrDBClusterSnapshotNotFound
-		}
-		return nil, err
-	}
-	return ProtoToSnapshot(&pbSnap), nil
+	return s.snapshots.Get(id)
 }
 
 // DeleteSnapshot removes a cluster snapshot from the store.
@@ -214,46 +240,24 @@ func (s *NeptuneStore) DeleteSnapshot(id string) error {
 func (s *NeptuneStore) UpdateSnapshot(snapshot *DBClusterSnapshot) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.snapshots.Exists(snapshot.DBClusterSnapshotIdentifier) {
-		return ErrDBClusterSnapshotNotFound
-	}
-	return s.snapshots.PutProto(snapshot.DBClusterSnapshotIdentifier, SnapshotToProto(snapshot))
+	return s.snapshots.Update(snapshot)
 }
 
 // ListSnapshots returns all cluster snapshots in the store.
 func (s *NeptuneStore) ListSnapshots() ([]*DBClusterSnapshot, error) {
-	var snapshots []*DBClusterSnapshot
-	err := s.snapshots.ForEach(func(key string, value []byte) error {
-		var pbSnap pb.DBClusterSnapshot
-		if err := proto.Unmarshal(value, &pbSnap); err != nil {
-			return err
-		}
-		snapshots = append(snapshots, ProtoToSnapshot(&pbSnap))
-		return nil
-	})
-	return snapshots, err
+	return s.snapshots.List()
 }
 
 // CreateClusterParameterGroup persists a new cluster parameter group.
 func (s *NeptuneStore) CreateClusterParameterGroup(pg *DBClusterParameterGroup) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.clusterParamGroups.Exists(pg.DBClusterParameterGroupName) {
-		return ErrDBClusterParameterGroupAlreadyExists
-	}
-	return s.clusterParamGroups.PutProto(pg.DBClusterParameterGroupName, ClusterParameterGroupToProto(pg))
+	return s.clusterParamGroups.Create(pg)
 }
 
 // GetClusterParameterGroup retrieves a cluster parameter group by name.
 func (s *NeptuneStore) GetClusterParameterGroup(name string) (*DBClusterParameterGroup, error) {
-	var pbPG pb.DBClusterParameterGroup
-	if err := s.clusterParamGroups.GetProto(name, &pbPG); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrDBClusterParameterGroupNotFound
-		}
-		return nil, err
-	}
-	return ProtoToClusterParameterGroup(&pbPG), nil
+	return s.clusterParamGroups.Get(name)
 }
 
 // DeleteClusterParameterGroup removes a cluster parameter group.
@@ -267,46 +271,24 @@ func (s *NeptuneStore) DeleteClusterParameterGroup(name string) error {
 func (s *NeptuneStore) UpdateClusterParameterGroup(pg *DBClusterParameterGroup) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.clusterParamGroups.Exists(pg.DBClusterParameterGroupName) {
-		return ErrDBClusterParameterGroupNotFound
-	}
-	return s.clusterParamGroups.PutProto(pg.DBClusterParameterGroupName, ClusterParameterGroupToProto(pg))
+	return s.clusterParamGroups.Update(pg)
 }
 
 // ListClusterParameterGroups returns all cluster parameter groups.
 func (s *NeptuneStore) ListClusterParameterGroups() ([]*DBClusterParameterGroup, error) {
-	var groups []*DBClusterParameterGroup
-	err := s.clusterParamGroups.ForEach(func(key string, value []byte) error {
-		var pbPG pb.DBClusterParameterGroup
-		if err := proto.Unmarshal(value, &pbPG); err != nil {
-			return err
-		}
-		groups = append(groups, ProtoToClusterParameterGroup(&pbPG))
-		return nil
-	})
-	return groups, err
+	return s.clusterParamGroups.List()
 }
 
 // CreateParameterGroup persists a new DB parameter group.
 func (s *NeptuneStore) CreateParameterGroup(pg *DBParameterGroup) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.paramGroups.Exists(pg.DBParameterGroupName) {
-		return ErrDBParameterGroupAlreadyExists
-	}
-	return s.paramGroups.PutProto(pg.DBParameterGroupName, ParameterGroupToProto(pg))
+	return s.paramGroups.Create(pg)
 }
 
 // GetParameterGroup retrieves a DB parameter group by name.
 func (s *NeptuneStore) GetParameterGroup(name string) (*DBParameterGroup, error) {
-	var pbPG pb.DBParameterGroup
-	if err := s.paramGroups.GetProto(name, &pbPG); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrDBParameterGroupNotFound
-		}
-		return nil, err
-	}
-	return ProtoToParameterGroup(&pbPG), nil
+	return s.paramGroups.Get(name)
 }
 
 // DeleteParameterGroup removes a DB parameter group.
@@ -320,56 +302,31 @@ func (s *NeptuneStore) DeleteParameterGroup(name string) error {
 func (s *NeptuneStore) UpdateParameterGroup(pg *DBParameterGroup) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.paramGroups.Exists(pg.DBParameterGroupName) {
-		return ErrDBParameterGroupNotFound
-	}
-	return s.paramGroups.PutProto(pg.DBParameterGroupName, ParameterGroupToProto(pg))
+	return s.paramGroups.Update(pg)
 }
 
 // ListParameterGroups returns all DB parameter groups.
 func (s *NeptuneStore) ListParameterGroups() ([]*DBParameterGroup, error) {
-	var groups []*DBParameterGroup
-	err := s.paramGroups.ForEach(func(key string, value []byte) error {
-		var pbPG pb.DBParameterGroup
-		if err := proto.Unmarshal(value, &pbPG); err != nil {
-			return err
-		}
-		groups = append(groups, ProtoToParameterGroup(&pbPG))
-		return nil
-	})
-	return groups, err
+	return s.paramGroups.List()
 }
 
 // CreateSubnetGroup persists a new DB subnet group.
 func (s *NeptuneStore) CreateSubnetGroup(sg *DBSubnetGroup) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.subnetGroups.Exists(sg.DBSubnetGroupName) {
-		return ErrDBSubnetGroupAlreadyExists
-	}
-	return s.subnetGroups.PutProto(sg.DBSubnetGroupName, SubnetGroupToProto(sg))
+	return s.subnetGroups.Create(sg)
 }
 
 // GetSubnetGroup retrieves a DB subnet group by name.
 func (s *NeptuneStore) GetSubnetGroup(name string) (*DBSubnetGroup, error) {
-	var pbSG pb.DBSubnetGroup
-	if err := s.subnetGroups.GetProto(name, &pbSG); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrDBSubnetGroupNotFound
-		}
-		return nil, err
-	}
-	return ProtoToSubnetGroup(&pbSG), nil
+	return s.subnetGroups.Get(name)
 }
 
 // UpdateSubnetGroup replaces the persisted state of an existing subnet group.
 func (s *NeptuneStore) UpdateSubnetGroup(sg *DBSubnetGroup) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.subnetGroups.Exists(sg.DBSubnetGroupName) {
-		return ErrDBSubnetGroupNotFound
-	}
-	return s.subnetGroups.PutProto(sg.DBSubnetGroupName, SubnetGroupToProto(sg))
+	return s.subnetGroups.Update(sg)
 }
 
 // DeleteSubnetGroup removes a DB subnet group.
@@ -381,48 +338,26 @@ func (s *NeptuneStore) DeleteSubnetGroup(name string) error {
 
 // ListSubnetGroups returns all DB subnet groups.
 func (s *NeptuneStore) ListSubnetGroups() ([]*DBSubnetGroup, error) {
-	var groups []*DBSubnetGroup
-	err := s.subnetGroups.ForEach(func(key string, value []byte) error {
-		var pbSG pb.DBSubnetGroup
-		if err := proto.Unmarshal(value, &pbSG); err != nil {
-			return err
-		}
-		groups = append(groups, ProtoToSubnetGroup(&pbSG))
-		return nil
-	})
-	return groups, err
+	return s.subnetGroups.List()
 }
 
 // CreateGlobalCluster persists a new global cluster.
 func (s *NeptuneStore) CreateGlobalCluster(gc *GlobalCluster) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.globalClusters.Exists(gc.GlobalClusterIdentifier) {
-		return ErrGlobalClusterAlreadyExists
-	}
-	return s.globalClusters.PutProto(gc.GlobalClusterIdentifier, GlobalClusterToProto(gc))
+	return s.globalClusters.Create(gc)
 }
 
 // GetGlobalCluster retrieves a global cluster by its identifier.
 func (s *NeptuneStore) GetGlobalCluster(id string) (*GlobalCluster, error) {
-	var pbGC pb.GlobalCluster
-	if err := s.globalClusters.GetProto(id, &pbGC); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrGlobalClusterNotFound
-		}
-		return nil, err
-	}
-	return ProtoToGlobalCluster(&pbGC), nil
+	return s.globalClusters.Get(id)
 }
 
 // UpdateGlobalCluster replaces the persisted state of an existing global cluster.
 func (s *NeptuneStore) UpdateGlobalCluster(gc *GlobalCluster) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.globalClusters.Exists(gc.GlobalClusterIdentifier) {
-		return ErrGlobalClusterNotFound
-	}
-	return s.globalClusters.PutProto(gc.GlobalClusterIdentifier, GlobalClusterToProto(gc))
+	return s.globalClusters.Update(gc)
 }
 
 // DeleteGlobalCluster removes a global cluster from the store.
@@ -434,48 +369,26 @@ func (s *NeptuneStore) DeleteGlobalCluster(id string) error {
 
 // ListGlobalClusters returns all global clusters in the store.
 func (s *NeptuneStore) ListGlobalClusters() ([]*GlobalCluster, error) {
-	var clusters []*GlobalCluster
-	err := s.globalClusters.ForEach(func(key string, value []byte) error {
-		var pbGC pb.GlobalCluster
-		if err := proto.Unmarshal(value, &pbGC); err != nil {
-			return err
-		}
-		clusters = append(clusters, ProtoToGlobalCluster(&pbGC))
-		return nil
-	})
-	return clusters, err
+	return s.globalClusters.List()
 }
 
 // CreateEventSubscription persists a new event subscription.
 func (s *NeptuneStore) CreateEventSubscription(sub *EventSubscription) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.eventSubs.Exists(sub.CustSubscriptionId) {
-		return ErrEventSubscriptionAlreadyExists
-	}
-	return s.eventSubs.PutProto(sub.CustSubscriptionId, EventSubscriptionToProto(sub))
+	return s.eventSubs.Create(sub)
 }
 
 // GetEventSubscription retrieves an event subscription by its subscription ID.
 func (s *NeptuneStore) GetEventSubscription(name string) (*EventSubscription, error) {
-	var pbSub pb.EventSubscription
-	if err := s.eventSubs.GetProto(name, &pbSub); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrEventSubscriptionNotFound
-		}
-		return nil, err
-	}
-	return ProtoToEventSubscription(&pbSub), nil
+	return s.eventSubs.Get(name)
 }
 
 // UpdateEventSubscription replaces the persisted state of an event subscription.
 func (s *NeptuneStore) UpdateEventSubscription(sub *EventSubscription) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.eventSubs.Exists(sub.CustSubscriptionId) {
-		return ErrEventSubscriptionNotFound
-	}
-	return s.eventSubs.PutProto(sub.CustSubscriptionId, EventSubscriptionToProto(sub))
+	return s.eventSubs.Update(sub)
 }
 
 // DeleteEventSubscription removes an event subscription.
@@ -487,21 +400,12 @@ func (s *NeptuneStore) DeleteEventSubscription(name string) error {
 
 // ListEventSubscriptions returns all event subscriptions.
 func (s *NeptuneStore) ListEventSubscriptions() ([]*EventSubscription, error) {
-	var subs []*EventSubscription
-	err := s.eventSubs.ForEach(func(key string, value []byte) error {
-		var pbSub pb.EventSubscription
-		if err := proto.Unmarshal(value, &pbSub); err != nil {
-			return err
-		}
-		subs = append(subs, ProtoToEventSubscription(&pbSub))
-		return nil
-	})
-	return subs, err
+	return s.eventSubs.List()
 }
 
 // AddTags merges the given tags into the existing tags for a resource. Tags
 // with the same key are overwritten.
-func (s *NeptuneStore) AddTags(resourceArn string, tags []Tag) error {
+func (s *NeptuneStore) AddTags(resourceArn string, tags []types.Tag) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	existing, err := s.getTagsUnlocked(resourceArn)
@@ -515,15 +419,15 @@ func (s *NeptuneStore) AddTags(resourceArn string, tags []Tag) error {
 	for _, t := range tags {
 		tagMap[t.Key] = t.Value
 	}
-	merged := make([]Tag, 0, len(tagMap))
+	merged := make([]types.Tag, 0, len(tagMap))
 	for k, v := range tagMap {
-		merged = append(merged, Tag{Key: k, Value: v})
+		merged = append(merged, types.Tag{Key: k, Value: v})
 	}
 	return s.tags.PutProto(resourceArn, &pb.TagList{Tags: TagsToProto(merged)})
 }
 
 // GetTags returns the tags associated with a resource ARN.
-func (s *NeptuneStore) GetTags(resourceArn string) ([]Tag, error) {
+func (s *NeptuneStore) GetTags(resourceArn string) ([]types.Tag, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.getTagsUnlocked(resourceArn)
@@ -531,11 +435,11 @@ func (s *NeptuneStore) GetTags(resourceArn string) ([]Tag, error) {
 
 // getTagsUnlocked retrieves tags without acquiring the lock. Caller must hold
 // at least a read lock.
-func (s *NeptuneStore) getTagsUnlocked(resourceArn string) ([]Tag, error) {
+func (s *NeptuneStore) getTagsUnlocked(resourceArn string) ([]types.Tag, error) {
 	var pbTags pb.TagList
 	if err := s.tags.GetProto(resourceArn, &pbTags); err != nil {
 		if common.IsNotFound(err) {
-			return []Tag{}, nil
+			return []types.Tag{}, nil
 		}
 		return nil, err
 	}
@@ -554,7 +458,7 @@ func (s *NeptuneStore) RemoveTags(resourceArn string, keys []string) error {
 	for _, k := range keys {
 		removeSet[k] = true
 	}
-	filtered := make([]Tag, 0, len(existing))
+	filtered := make([]types.Tag, 0, len(existing))
 	for _, t := range existing {
 		if !removeSet[t.Key] {
 			filtered = append(filtered, t)
@@ -570,85 +474,53 @@ func (s *NeptuneStore) RemoveTags(resourceArn string, keys []string) error {
 func (s *NeptuneStore) CreateClusterEndpoint(ep *DBClusterEndpoint) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.clusterEndpoints.Exists(ep.DBClusterEndpointIdentifier) {
-		return ErrDBClusterEndpointAlreadyExists
-	}
-	return s.clusterEndpoints.PutProto(ep.DBClusterEndpointIdentifier, ClusterEndpointToProto(ep))
+	return s.clusterEndpoints.Create(ep)
 }
 
 // GetClusterEndpoint retrieves a cluster endpoint by its identifier.
 func (s *NeptuneStore) GetClusterEndpoint(id string) (*DBClusterEndpoint, error) {
-	var pbEP pb.DBClusterEndpoint
-	if err := s.clusterEndpoints.GetProto(id, &pbEP); err != nil {
-		if common.IsNotFound(err) {
-			return nil, ErrDBClusterEndpointNotFound
-		}
-		return nil, err
-	}
-	return ProtoToClusterEndpoint(&pbEP), nil
+	return s.clusterEndpoints.Get(id)
 }
 
 // UpdateClusterEndpoint replaces the persisted state of a cluster endpoint.
 func (s *NeptuneStore) UpdateClusterEndpoint(ep *DBClusterEndpoint) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.clusterEndpoints.Exists(ep.DBClusterEndpointIdentifier) {
-		return ErrDBClusterEndpointNotFound
-	}
-	return s.clusterEndpoints.PutProto(ep.DBClusterEndpointIdentifier, ClusterEndpointToProto(ep))
+	return s.clusterEndpoints.Update(ep)
 }
 
 // DeleteClusterEndpoint removes a cluster endpoint from the store.
 func (s *NeptuneStore) DeleteClusterEndpoint(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.clusterEndpoints.Exists(id) {
-		return ErrDBClusterEndpointNotFound
-	}
-	return s.clusterEndpoints.Delete(id)
+	return s.clusterEndpoints.DeleteIfExists(id)
 }
 
 // ListClusterEndpoints returns all cluster endpoints, optionally filtered by
 // the parent cluster ID. An empty clusterID returns all endpoints.
 func (s *NeptuneStore) ListClusterEndpoints(clusterID string) ([]*DBClusterEndpoint, error) {
-	var endpoints []*DBClusterEndpoint
-	err := s.clusterEndpoints.ForEach(func(key string, value []byte) error {
-		var pbEP pb.DBClusterEndpoint
-		if err := proto.Unmarshal(value, &pbEP); err != nil {
-			return err
-		}
-		if clusterID == "" || pbEP.GetDbClusterIdentifier() == clusterID {
-			endpoints = append(endpoints, ProtoToClusterEndpoint(&pbEP))
-		}
-		return nil
+	return s.clusterEndpoints.ListFiltered(func(ep *DBClusterEndpoint) bool {
+		return clusterID == "" || ep.DBClusterIdentifier == clusterID
 	})
-	return endpoints, err
 }
 
 // CreateQuery persists a new Neptune Data API query state.
 func (s *NeptuneStore) CreateQuery(q *pb.QueryState) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.queries.PutProto(q.GetQueryId(), q)
+	return s.queries.Create(q)
 }
 
 // GetQuery retrieves a Neptune Data API query state by ID.
 func (s *NeptuneStore) GetQuery(id string) (*pb.QueryState, error) {
-	var q pb.QueryState
-	if err := s.queries.GetProto(id, &q); err != nil {
-		if common.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &q, nil
+	return s.queries.Get(id)
 }
 
 // UpdateQuery replaces the persisted state of a Neptune Data API query.
 func (s *NeptuneStore) UpdateQuery(q *pb.QueryState) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.queries.PutProto(q.GetQueryId(), q)
+	return s.queries.Update(q)
 }
 
 // DeleteQuery removes a Neptune Data API query state.
@@ -660,42 +532,26 @@ func (s *NeptuneStore) DeleteQuery(id string) error {
 
 // ListQueries returns all Neptune Data API query states.
 func (s *NeptuneStore) ListQueries() ([]*pb.QueryState, error) {
-	var queries []*pb.QueryState
-	err := s.queries.ForEach(func(key string, value []byte) error {
-		var q pb.QueryState
-		if err := proto.Unmarshal(value, &q); err != nil {
-			return err
-		}
-		queries = append(queries, &q)
-		return nil
-	})
-	return queries, err
+	return s.queries.List()
 }
 
 // CreateLoaderJob persists a new Neptune Data API bulk loader job.
 func (s *NeptuneStore) CreateLoaderJob(job *pb.LoaderJob) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.loaderJobs.PutProto(job.GetLoadId(), job)
+	return s.loaderJobs.Create(job)
 }
 
 // GetLoaderJob retrieves a Neptune Data API bulk loader job by ID.
 func (s *NeptuneStore) GetLoaderJob(id string) (*pb.LoaderJob, error) {
-	var job pb.LoaderJob
-	if err := s.loaderJobs.GetProto(id, &job); err != nil {
-		if common.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &job, nil
+	return s.loaderJobs.Get(id)
 }
 
 // UpdateLoaderJob replaces the persisted state of a Neptune Data API bulk loader job.
 func (s *NeptuneStore) UpdateLoaderJob(job *pb.LoaderJob) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.loaderJobs.PutProto(job.GetLoadId(), job)
+	return s.loaderJobs.Update(job)
 }
 
 // DeleteLoaderJob removes a Neptune Data API bulk loader job.
@@ -707,16 +563,7 @@ func (s *NeptuneStore) DeleteLoaderJob(id string) error {
 
 // ListLoaderJobs returns all Neptune Data API bulk loader jobs.
 func (s *NeptuneStore) ListLoaderJobs() ([]*pb.LoaderJob, error) {
-	var jobs []*pb.LoaderJob
-	err := s.loaderJobs.ForEach(func(key string, value []byte) error {
-		var job pb.LoaderJob
-		if err := proto.Unmarshal(value, &job); err != nil {
-			return err
-		}
-		jobs = append(jobs, &job)
-		return nil
-	})
-	return jobs, err
+	return s.loaderJobs.List()
 }
 
 const (

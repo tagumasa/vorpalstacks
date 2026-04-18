@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // RedriveExecution restarts an unsuccessful execution from the failed state.
@@ -50,10 +52,8 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	}
 	_ = history
 
-	newExecutionArn := fmt.Sprintf("arn:aws:states:%s:%s:execution:%s:%s-redrive-%d",
-		reqCtx.GetRegion(), s.accountID,
-		extractStateMachineName(sm.StateMachineArn), exec.Name,
-		time.Now().UnixNano())
+	newExecutionArn := arnutil.NewARNBuilder(s.accountID, reqCtx.GetRegion()).StepFunctions().Execution(
+		extractStateMachineName(sm.StateMachineArn), exec.Name+"-redrive-"+strconv.FormatInt(time.Now().UnixNano(), 10))
 
 	newExec := sfnstore.NewExecution(exec.StateMachineArn, exec.Name+"-redrive", exec.Input, "")
 	newExec.ExecutionArn = newExecutionArn

@@ -1,7 +1,6 @@
 package waf
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -99,52 +98,14 @@ func (s *LoggingStore) Delete(resourceArn string) error {
 
 // List returns a paginated list of logging configurations.
 func (s *LoggingStore) List(scope string, marker string, maxItems int) (*LoggingConfigurationListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var configs []*LoggingConfiguration
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var config LoggingConfiguration
-		if err := json.Unmarshal(value, &config); err != nil {
-			return err
-		}
-
-		if !started {
-			if config.ResourceArn == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if count < maxItems {
-			configs = append(configs, &config)
-			lastKey = key
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[LoggingConfiguration](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_logging_configurations", err)
 	}
-
-	var nextMarker string
-	if hasMore {
-		nextMarker = lastKey
-	}
-
 	return &LoggingConfigurationListResult{
-		LoggingConfigurations: configs,
-		IsTruncated:           hasMore,
-		NextMarker:            nextMarker,
+		LoggingConfigurations: result.Items,
+		IsTruncated:           result.IsTruncated,
+		NextMarker:            result.NextMarker,
 	}, nil
 }
 

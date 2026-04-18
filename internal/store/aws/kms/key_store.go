@@ -16,6 +16,7 @@ import (
 type KeyStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	kl         common.KeyLocker
 }
 
 func keyBucketName(region string) string {
@@ -133,7 +134,9 @@ func (s *KeyStore) Update(key *Key) error {
 // Returns an error if the key does not exist.
 func (s *KeyStore) Delete(keyID string) error {
 	keyID = s.arnBuilder.ParseKeyID(keyID)
-	return s.BaseStore.Delete(keyID)
+	return s.kl.WithLock(keyID, func() error {
+		return s.BaseStore.Delete(keyID)
+	})
 }
 
 // Exists checks whether a KMS key exists in the store.
@@ -144,88 +147,63 @@ func (s *KeyStore) Exists(keyID string) bool {
 
 // List returns a list of KMS keys from the store with pagination support.
 func (s *KeyStore) List(marker string, maxItems int) (*KeyListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
+	result, err := common.List[Key](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, func(k *Key) bool {
+		return k.KeyState != KeyStatePendingDeletion
+	})
+	if err != nil {
+		return nil, err
 	}
+	items := make([]*KeyListItem, len(result.Items))
+	for i, k := range result.Items {
+		items[i] = &KeyListItem{
+			KeyID:    k.KeyID,
+			KeyArn:   k.Arn,
+			Enabled:  k.Enabled,
+			KeyState: k.KeyState,
+		}
+	}
+	return &KeyListResult{
+		Keys:        items,
+		IsTruncated: result.IsTruncated,
+		NextMarker:  result.NextMarker,
+	}, nil
+}
 
-	var keys []*KeyListItem
-	count := 0
-	started := marker == ""
-	var lastKeyID string
-	hasMore := false
-
-	err := s.ForEach(func(k string, v []byte) error {
-		var key Key
-		if err := json.Unmarshal(v, &key); err != nil {
+// atomicUpdate performs an unlocked Get-Modify-Update cycle on a KMS key.
+// The modify function receives the key and may return an error to abort the update.
+func (s *KeyStore) atomicUpdate(keyID string, modify func(*Key) error) error {
+	return s.kl.WithLock(keyID, func() error {
+		key, err := s.Get(keyID)
+		if err != nil {
 			return err
 		}
-
-		if !started {
-			if key.KeyID == marker {
-				started = true
-			}
-			return nil
+		if err := modify(key); err != nil {
+			return err
 		}
-
-		if key.KeyState != KeyStatePendingDeletion {
-			if count < maxItems {
-				keys = append(keys, &KeyListItem{
-					KeyID:    key.KeyID,
-					KeyArn:   key.Arn,
-					Enabled:  key.Enabled,
-					KeyState: key.KeyState,
-				})
-				count++
-				lastKeyID = key.KeyID
-			} else {
-				hasMore = true
-			}
-		}
-		return nil
+		return s.Update(key)
 	})
-
-	if err != nil {
-		return nil, NewStoreError("list_keys", err)
-	}
-
-	result := &KeyListResult{
-		Keys:        keys,
-		IsTruncated: hasMore,
-	}
-	if result.IsTruncated {
-		result.NextMarker = lastKeyID
-	}
-
-	return result, nil
 }
 
 // Enable enables a KMS key.
 // Returns an error if the key is pending deletion.
 func (s *KeyStore) Enable(keyID string) error {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
-
-	if key.KeyState == KeyStatePendingDeletion {
-		return ErrKeyPendingDeletion
-	}
-
-	key.Enabled = true
-	key.KeyState = KeyStateEnabled
-	return s.Update(key)
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		if key.KeyState == KeyStatePendingDeletion {
+			return ErrKeyPendingDeletion
+		}
+		key.Enabled = true
+		key.KeyState = KeyStateEnabled
+		return nil
+	})
 }
 
 // Disable disables a KMS key.
 func (s *KeyStore) Disable(keyID string) error {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
-
-	key.Enabled = false
-	key.KeyState = KeyStateDisabled
-	return s.Update(key)
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		key.Enabled = false
+		key.KeyState = KeyStateDisabled
+		return nil
+	})
 }
 
 // ScheduleDeletion schedules a KMS key for deletion after the specified pending window.
@@ -233,111 +211,81 @@ func (s *KeyStore) ScheduleDeletion(keyID string, pendingWindowInDays int) error
 	if pendingWindowInDays < 7 || pendingWindowInDays > 30 {
 		return ErrInvalidPendingWindowDays
 	}
-
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
-
-	deletionDate := time.Now().AddDate(0, 0, pendingWindowInDays)
-	key.DeletionDate = &deletionDate
-	key.PendingWindowInDays = pendingWindowInDays
-	origEnabled := key.Enabled
-	key.PreDeletionEnabled = &origEnabled
-	key.KeyState = KeyStatePendingDeletion
-	key.Enabled = false
-
-	return s.Update(key)
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		deletionDate := time.Now().AddDate(0, 0, pendingWindowInDays)
+		key.DeletionDate = &deletionDate
+		key.PendingWindowInDays = pendingWindowInDays
+		origEnabled := key.Enabled
+		key.PreDeletionEnabled = &origEnabled
+		key.KeyState = KeyStatePendingDeletion
+		key.Enabled = false
+		return nil
+	})
 }
 
 // CancelDeletion cancels a pending deletion for a KMS key.
 func (s *KeyStore) CancelDeletion(keyID string) error {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
-
-	if key.KeyState != KeyStatePendingDeletion {
-		return ErrInvalidKeyState
-	}
-
-	key.DeletionDate = nil
-	key.PendingWindowInDays = 0
-	if key.PreDeletionEnabled != nil && !*key.PreDeletionEnabled {
-		key.KeyState = KeyStateDisabled
-		key.Enabled = false
-	} else {
-		key.KeyState = KeyStateEnabled
-		key.Enabled = true
-	}
-
-	return s.Update(key)
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		if key.KeyState != KeyStatePendingDeletion {
+			return ErrInvalidKeyState
+		}
+		key.DeletionDate = nil
+		key.PendingWindowInDays = 0
+		if key.PreDeletionEnabled != nil && !*key.PreDeletionEnabled {
+			key.KeyState = KeyStateDisabled
+			key.Enabled = false
+		} else {
+			key.KeyState = KeyStateEnabled
+			key.Enabled = true
+		}
+		return nil
+	})
 }
 
 // UpdateDescription updates the description of a KMS key.
 func (s *KeyStore) UpdateDescription(keyID, description string) error {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
-	key.Description = description
-	return s.Update(key)
+	return s.atomicUpdate(keyID, func(key *Key) error { key.Description = description; return nil })
 }
 
 // SetKeyRotation enables or disables automatic key rotation for a KMS key.
 func (s *KeyStore) SetKeyRotation(keyID string, enabled bool) error {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
-	key.KeyRotationEnabled = enabled
-	return s.Update(key)
+	return s.atomicUpdate(keyID, func(key *Key) error { key.KeyRotationEnabled = enabled; return nil })
 }
 
 // AddTags adds tags to a KMS key.
 func (s *KeyStore) AddTags(keyID string, tags []common.Tag) error {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
-
-	tagMap := make(map[string]string)
-	for _, t := range key.Tags {
-		tagMap[t.Key] = t.Value
-	}
-	for _, t := range tags {
-		tagMap[t.Key] = t.Value
-	}
-
-	key.Tags = make([]common.Tag, 0, len(tagMap))
-	for k, v := range tagMap {
-		key.Tags = append(key.Tags, common.Tag{Key: k, Value: v})
-	}
-
-	return s.Update(key)
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		tagMap := make(map[string]string)
+		for _, t := range key.Tags {
+			tagMap[t.Key] = t.Value
+		}
+		for _, t := range tags {
+			tagMap[t.Key] = t.Value
+		}
+		key.Tags = make([]common.Tag, 0, len(tagMap))
+		for k, v := range tagMap {
+			key.Tags = append(key.Tags, common.Tag{Key: k, Value: v})
+		}
+		return nil
+	})
 }
 
 // RemoveTags removes tags from a KMS key.
 func (s *KeyStore) RemoveTags(keyID string, tagKeys []string) error {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
-
-	keysToRemove := make(map[string]bool)
-	for _, k := range tagKeys {
-		keysToRemove[k] = true
-	}
-
-	var newTags []common.Tag
-	for _, t := range key.Tags {
-		if !keysToRemove[t.Key] {
-			newTags = append(newTags, t)
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		keysToRemove := make(map[string]bool)
+		for _, k := range tagKeys {
+			keysToRemove[k] = true
 		}
-	}
-	key.Tags = newTags
-
-	return s.Update(key)
+		var newTags []common.Tag
+		for _, t := range key.Tags {
+			if !keysToRemove[t.Key] {
+				newTags = append(newTags, t)
+			}
+		}
+		key.Tags = newTags
+		return nil
+	})
 }
 
 // ListTags retrieves the tags associated with a KMS key.
@@ -372,59 +320,26 @@ func (s *KeyStore) ARNBuilder() *ARNBuilder {
 
 // ListByKeyUsage returns a list of KMS keys filtered by key usage.
 func (s *KeyStore) ListByKeyUsage(keyUsage KeyUsage, marker string, maxItems int) (*KeyListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var keys []*KeyListItem
-	count := 0
-	started := marker == ""
-	var lastKeyID string
-	hasMore := false
-
-	err := s.ForEach(func(k string, v []byte) error {
-		var key Key
-		if err := json.Unmarshal(v, &key); err != nil {
-			return err
-		}
-
-		if !started {
-			if key.KeyID == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if key.KeyUsage == keyUsage && key.KeyState != KeyStatePendingDeletion {
-			if count < maxItems {
-				keys = append(keys, &KeyListItem{
-					KeyID:    key.KeyID,
-					KeyArn:   key.Arn,
-					Enabled:  key.Enabled,
-					KeyState: key.KeyState,
-				})
-				count++
-				lastKeyID = key.KeyID
-			} else {
-				hasMore = true
-			}
-		}
-		return nil
+	result, err := common.List[Key](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, func(k *Key) bool {
+		return k.KeyUsage == keyUsage && k.KeyState != KeyStatePendingDeletion
 	})
-
 	if err != nil {
-		return nil, NewStoreError("list_keys_by_usage", err)
+		return nil, err
 	}
-
-	result := &KeyListResult{
-		Keys:        keys,
-		IsTruncated: hasMore,
+	items := make([]*KeyListItem, len(result.Items))
+	for i, k := range result.Items {
+		items[i] = &KeyListItem{
+			KeyID:    k.KeyID,
+			KeyArn:   k.Arn,
+			Enabled:  k.Enabled,
+			KeyState: k.KeyState,
+		}
 	}
-	if result.IsTruncated {
-		result.NextMarker = lastKeyID
-	}
-
-	return result, nil
+	return &KeyListResult{
+		Keys:        items,
+		IsTruncated: result.IsTruncated,
+		NextMarker:  result.NextMarker,
+	}, nil
 }
 
 // KeyMatchesSpec checks if a KMS key matches the given key spec.
@@ -484,38 +399,28 @@ func (s *KeyStore) GetParametersForImport(keyID string, wrappingKeySpec string) 
 // ImportKeyMaterial imports key material into a KMS key.
 // The key must have an external origin.
 func (s *KeyStore) ImportKeyMaterial(keyID string, importToken string, encryptedKeyMaterial []byte, validTo *time.Time) error {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
-
-	if key.Origin != OriginTypeExternal {
-		return ErrInvalidKeyOrigin
-	}
-
-	key.KeyState = KeyStateEnabled
-	key.Enabled = true
-	key.ValidTo = validTo
-
-	return s.Update(key)
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		if key.Origin != OriginTypeExternal {
+			return ErrInvalidKeyOrigin
+		}
+		key.KeyState = KeyStateEnabled
+		key.Enabled = true
+		key.ValidTo = validTo
+		return nil
+	})
 }
 
 // DeleteImportedKeyMaterial deletes imported key material from a KMS key.
 func (s *KeyStore) DeleteImportedKeyMaterial(keyID string) error {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
-
-	if key.Origin != OriginTypeExternal {
-		return ErrInvalidKeyOrigin
-	}
-
-	key.KeyState = KeyStatePendingImport
-	key.Enabled = false
-	key.ValidTo = nil
-
-	return s.Update(key)
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		if key.Origin != OriginTypeExternal {
+			return ErrInvalidKeyOrigin
+		}
+		key.KeyState = KeyStatePendingImport
+		key.Enabled = false
+		key.ValidTo = nil
+		return nil
+	})
 }
 
 // GeneratePublicKey generates a public key for key material wrapping.
@@ -529,84 +434,93 @@ func GeneratePublicKey(wrappingKeySpec string) (string, error) {
 
 // ReplicateKey replicates a multi-region KMS key to another region.
 func (s *KeyStore) ReplicateKey(keyID string, replicaRegion string, replicaKeyID string) (*Key, error) {
-	key, err := s.Get(keyID)
+	var replicaKey *Key
+	err := s.kl.WithLock(keyID, func() error {
+		key, err := s.Get(keyID)
+		if err != nil {
+			return err
+		}
+
+		if !key.MultiRegion {
+			return ErrNotMultiRegionKey
+		}
+
+		replicaKey = &Key{
+			KeyID:              replicaKeyID,
+			Arn:                s.arnBuilder.KeyArn(replicaKeyID),
+			KeyState:           KeyStateEnabled,
+			KeyUsage:           key.KeyUsage,
+			KeySpec:            key.KeySpec,
+			Description:        key.Description,
+			Enabled:            true,
+			CreationDate:       time.Now(),
+			Origin:             key.Origin,
+			KeyManager:         key.KeyManager,
+			KeyRotationEnabled: key.KeyRotationEnabled,
+			MultiRegion:        true,
+			MultiRegionConfiguration: &MultiRegionConfiguration{
+				MultiRegionKeyType: "REPLICA",
+				PrimaryKey: &PrimaryKeyInfo{
+					Arn:    key.Arn,
+					Region: s.arnBuilder.Region(),
+				},
+				ReplicaKeys: nil,
+			},
+			Tags: key.Tags,
+		}
+
+		if key.MultiRegionConfiguration == nil {
+			key.MultiRegionConfiguration = &MultiRegionConfiguration{
+				MultiRegionKeyType: "PRIMARY",
+				PrimaryKey: &PrimaryKeyInfo{
+					Arn:    key.Arn,
+					Region: s.arnBuilder.Region(),
+				},
+			}
+		}
+
+		key.MultiRegionConfiguration.ReplicaKeys = append(key.MultiRegionConfiguration.ReplicaKeys, ReplicaKeyInfo{
+			Arn:    replicaKey.Arn,
+			Region: replicaRegion,
+		})
+
+		if err := s.Update(key); err != nil {
+			return err
+		}
+
+		if err := s.save(replicaKey); err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	if !key.MultiRegion {
-		return nil, ErrNotMultiRegionKey
-	}
-
-	replicaKey := &Key{
-		KeyID:              replicaKeyID,
-		Arn:                s.arnBuilder.KeyArn(replicaKeyID),
-		KeyState:           KeyStateEnabled,
-		KeyUsage:           key.KeyUsage,
-		KeySpec:            key.KeySpec,
-		Description:        key.Description,
-		Enabled:            true,
-		CreationDate:       time.Now(),
-		Origin:             key.Origin,
-		KeyManager:         key.KeyManager,
-		KeyRotationEnabled: key.KeyRotationEnabled,
-		MultiRegion:        true,
-		MultiRegionConfiguration: &MultiRegionConfiguration{
-			MultiRegionKeyType: "REPLICA",
-			PrimaryKey: &PrimaryKeyInfo{
-				Arn:    key.Arn,
-				Region: s.arnBuilder.Region(),
-			},
-			ReplicaKeys: nil,
-		},
-		Tags: key.Tags,
-	}
-
-	if key.MultiRegionConfiguration == nil {
-		key.MultiRegionConfiguration = &MultiRegionConfiguration{
-			MultiRegionKeyType: "PRIMARY",
-			PrimaryKey: &PrimaryKeyInfo{
-				Arn:    key.Arn,
-				Region: s.arnBuilder.Region(),
-			},
-		}
-	}
-
-	key.MultiRegionConfiguration.ReplicaKeys = append(key.MultiRegionConfiguration.ReplicaKeys, ReplicaKeyInfo{
-		Arn:    replicaKey.Arn,
-		Region: replicaRegion,
-	})
-
-	if err := s.Update(key); err != nil {
-		return nil, err
-	}
-
-	if err := s.save(replicaKey); err != nil {
-		return nil, err
-	}
-
 	return replicaKey, nil
 }
 
 // UpdatePrimaryRegion updates the primary region of a multi-region KMS key.
 func (s *KeyStore) UpdatePrimaryRegion(keyID string, primaryRegion string) error {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(keyID, func() error {
+		key, err := s.Get(keyID)
+		if err != nil {
+			return err
+		}
 
-	if !key.MultiRegion {
-		return ErrNotMultiRegionKey
-	}
+		if !key.MultiRegion {
+			return ErrNotMultiRegionKey
+		}
 
-	if key.MultiRegionConfiguration == nil {
-		return ErrNotMultiRegionKey
-	}
+		if key.MultiRegionConfiguration == nil {
+			return ErrNotMultiRegionKey
+		}
 
-	key.MultiRegionConfiguration.PrimaryKey = &PrimaryKeyInfo{
-		Arn:    key.Arn,
-		Region: primaryRegion,
-	}
+		key.MultiRegionConfiguration.PrimaryKey = &PrimaryKeyInfo{
+			Arn:    key.Arn,
+			Region: primaryRegion,
+		}
 
-	return s.Update(key)
+		return s.Update(key)
+	})
 }

@@ -13,59 +13,69 @@ type APIGatewayBuilder struct{ *ARNBuilder }
 func (b *ARNBuilder) APIGateway() *APIGatewayBuilder { return &APIGatewayBuilder{b} }
 
 // RestApi constructs an ARN for an API Gateway REST API.
-func (b *APIGatewayBuilder) RestApi(id string) string { return b.Build("apigateway", "/restapis/"+id) }
+func (b *APIGatewayBuilder) RestApi(id string) string {
+	return b.BuildNoAccount("apigateway", "/restapis/"+id)
+}
+
+// ExecuteApi constructs an ARN for an API Gateway HTTP API execution.
+// The resource path is typically of the form {stage}/{method}{resourcePath}.
+func (b *APIGatewayBuilder) ExecuteApi(apiId, stage, method, resourcePath string) string {
+	return b.Build("execute-api", fmt.Sprintf("%s/%s/%s%s", apiId, stage, method, resourcePath))
+}
 
 // Resource constructs an ARN for an API Gateway resource.
 func (b *APIGatewayBuilder) Resource(apiId, resId string) string {
-	return b.Build("apigateway", fmt.Sprintf("/restapis/%s/resources/%s", apiId, resId))
+	return b.BuildNoAccount("apigateway", fmt.Sprintf("/restapis/%s/resources/%s", apiId, resId))
 }
 
 // Method constructs an ARN for an API Gateway method.
 func (b *APIGatewayBuilder) Method(apiId, resId, method string) string {
-	return b.Build("apigateway", fmt.Sprintf("/restapis/%s/resources/%s/methods/%s", apiId, resId, method))
+	return b.BuildNoAccount("apigateway", fmt.Sprintf("/restapis/%s/resources/%s/methods/%s", apiId, resId, method))
 }
 
 // Deployment constructs an ARN for an API Gateway deployment.
 func (b *APIGatewayBuilder) Deployment(apiId, depId string) string {
-	return b.Build("apigateway", fmt.Sprintf("/restapis/%s/deployments/%s", apiId, depId))
+	return b.BuildNoAccount("apigateway", fmt.Sprintf("/restapis/%s/deployments/%s", apiId, depId))
 }
 
 // Stage constructs an ARN for an API Gateway stage.
 func (b *APIGatewayBuilder) Stage(apiId, name string) string {
-	return b.Build("apigateway", fmt.Sprintf("/restapis/%s/stages/%s", apiId, name))
+	return b.BuildNoAccount("apigateway", fmt.Sprintf("/restapis/%s/stages/%s", apiId, name))
 }
 
 // ApiKey constructs an ARN for an API Gateway API key.
-func (b *APIGatewayBuilder) ApiKey(id string) string { return b.Build("apigateway", "/apikeys/"+id) }
+func (b *APIGatewayBuilder) ApiKey(id string) string {
+	return b.BuildNoAccount("apigateway", "/apikeys/"+id)
+}
 
 // UsagePlan constructs an ARN for an API Gateway usage plan.
 func (b *APIGatewayBuilder) UsagePlan(id string) string {
-	return b.Build("apigateway", "/usageplans/"+id)
+	return b.BuildNoAccount("apigateway", "/usageplans/"+id)
 }
 
 // Model constructs an ARN for an API Gateway model.
 func (b *APIGatewayBuilder) Model(apiId, name string) string {
-	return b.Build("apigateway", fmt.Sprintf("/restapis/%s/models/%s", apiId, name))
+	return b.BuildNoAccount("apigateway", fmt.Sprintf("/restapis/%s/models/%s", apiId, name))
 }
 
 // Authorizer constructs an ARN for an API Gateway authorizer.
 func (b *APIGatewayBuilder) Authorizer(apiId, id string) string {
-	return b.Build("apigateway", fmt.Sprintf("/restapis/%s/authorizers/%s", apiId, id))
+	return b.BuildNoAccount("apigateway", fmt.Sprintf("/restapis/%s/authorizers/%s", apiId, id))
 }
 
 // DomainName constructs an ARN for an API Gateway domain name.
 func (b *APIGatewayBuilder) DomainName(name string) string {
-	return b.Build("apigateway", "/domainnames/"+name)
+	return b.BuildNoAccount("apigateway", "/domainnames/"+name)
 }
 
 // RequestValidator constructs an ARN for an API Gateway request validator.
 func (b *APIGatewayBuilder) RequestValidator(apiId, id string) string {
-	return b.Build("apigateway", fmt.Sprintf("/restapis/%s/requestvalidators/%s", apiId, id))
+	return b.BuildNoAccount("apigateway", fmt.Sprintf("/restapis/%s/requestvalidators/%s", apiId, id))
 }
 
 // BasePathMapping constructs an ARN for an API Gateway base path mapping.
 func (b *APIGatewayBuilder) BasePathMapping(domainName, basePath string) string {
-	return b.Build("apigateway", fmt.Sprintf("/domainnames/%s/basepathmappings/%s", domainName, basePath))
+	return b.BuildNoAccount("apigateway", fmt.Sprintf("/domainnames/%s/basepathmappings/%s", domainName, basePath))
 }
 
 // CognitoBuilder provides methods for constructing Cognito ARNs.
@@ -192,4 +202,21 @@ func (b *AppSyncBuilder) Type(apiId, typeName string) string {
 // ApiCache constructs an ARN for an AppSync API cache.
 func (b *AppSyncBuilder) ApiCache(apiId string) string {
 	return b.Build("appsync", fmt.Sprintf("apis/%s/ApiCaches", apiId))
+}
+
+// MergedApi constructs an ARN for an AppSync merged API.
+func (b *AppSyncBuilder) MergedApi(id string) string {
+	return b.Build("appsync", "mergedApis/"+id)
+}
+
+// SourceApiAssociation constructs an ARN for an AppSync source API association
+// where the given API is the merged (target) API.
+func (b *AppSyncBuilder) SourceApiAssociation(mergedApiId, uuid string) string {
+	return b.Build("appsync", fmt.Sprintf("mergedApis/%s/sourceApiAssociations/%s", mergedApiId, uuid))
+}
+
+// MergedApiAssociation constructs an ARN for an AppSync merged API association
+// where the given API is the source API.
+func (b *AppSyncBuilder) MergedApiAssociation(sourceApiId, uuid string) string {
+	return b.Build("appsync", fmt.Sprintf("sourceApis/%s/mergedApiAssociations/%s", sourceApiId, uuid))
 }

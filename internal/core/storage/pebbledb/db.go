@@ -1,6 +1,7 @@
 package pebbledb
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
@@ -10,6 +11,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -29,6 +31,8 @@ const (
 	ttlMagicPrefix = 0x54
 	ttlMetaSize    = 9
 	ttlMetaVersion = 1
+
+	ttlIndexPrefix = "__ttl_idx__:"
 )
 
 // TTLValue represents a value with a time-to-live expiration.
@@ -68,6 +72,31 @@ func UnmarshalTTLValue(data []byte) (*TTLValue, error) {
 		ExpiresAt: int64(u),
 		Data:      data[9:],
 	}, nil
+}
+
+func buildTTLIndexKey(expiresAt int64, key []byte) []byte {
+	buf := make([]byte, 0, len(ttlIndexPrefix)+20+len(key))
+	buf = append(buf, ttlIndexPrefix...)
+	buf = strconv.AppendInt(buf, expiresAt, 10)
+	buf = append(buf, ':')
+	buf = append(buf, key...)
+	return buf
+}
+
+func parseTTLIndexKey(idxKey []byte) (expiresAt int64, dataKey []byte, ok bool) {
+	if !bytes.HasPrefix(idxKey, []byte(ttlIndexPrefix)) {
+		return 0, nil, false
+	}
+	rest := idxKey[len(ttlIndexPrefix):]
+	colon := bytes.IndexByte(rest, ':')
+	if colon < 0 {
+		return 0, nil, false
+	}
+	ts, err := strconv.ParseInt(string(rest[:colon]), 10, 64)
+	if err != nil {
+		return 0, nil, false
+	}
+	return ts, rest[colon+1:], true
 }
 
 // TTLKeyMeta contains metadata for a TTL-encoded key.
@@ -257,8 +286,9 @@ func (d *DB) SetWithTTL(key, value []byte, ttl time.Duration) error {
 	}
 
 	var data []byte
+	var expiresAt int64
 	if ttl > 0 && d.opts.TTL.Enabled {
-		expiresAt := time.Now().Add(ttl).Unix()
+		expiresAt = time.Now().Add(ttl).Unix()
 		ttlValue := &TTLValue{
 			ExpiresAt: expiresAt,
 			Data:      value,
@@ -277,11 +307,21 @@ func (d *DB) SetWithTTL(key, value []byte, ttl time.Duration) error {
 		return fmt.Errorf("failed to encrypt value: %w", err)
 	}
 
-	return d.db.Set(key, encrypted, d.syncFlag())
+	if err := d.db.Set(key, encrypted, d.syncFlag()); err != nil {
+		return err
+	}
+
+	if expiresAt > 0 {
+		_ = d.db.Set(buildTTLIndexKey(expiresAt, key), nil, d.syncFlag())
+	}
+
+	return nil
 }
 
 // Delete removes the specified key from the database.
 // Returns nil if the key did not exist.
+// Note: any associated TTL index entry is not removed immediately;
+// it will be cleaned up by the next TTL GC cycle.
 func (d *DB) Delete(key []byte) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()

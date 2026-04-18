@@ -11,36 +11,31 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const mfaDeviceBucketName = "iam_mfa_devices"
 
 // MFADeviceStore manages IAM MFA device data in persistent storage.
 type MFADeviceStore struct {
-	bucket     storage.Bucket
+	*common.BaseStore
 	arnBuilder *ARNBuilder
+	kl         common.KeyLocker
 }
 
 // NewMFADeviceStore creates a new store for IAM MFA devices.
 func NewMFADeviceStore(store storage.BasicStorage, accountId string) *MFADeviceStore {
 	return &MFADeviceStore{
-		bucket:     store.Bucket(mfaDeviceBucketName),
+		BaseStore:  common.NewBaseStore(store.Bucket(mfaDeviceBucketName), "iam"),
 		arnBuilder: NewARNBuilder(accountId),
 	}
 }
 
 // Get retrieves an MFA device by its serial number.
 func (s *MFADeviceStore) Get(serialNumber string) (*VirtualMFADevice, error) {
-	data, err := s.bucket.Get([]byte(serialNumber))
-	if err != nil {
-		return nil, NewStoreError("get_mfa_device", err)
-	}
-	if data == nil {
-		return nil, NewStoreError("get_mfa_device", ErrMFADeviceNotFound)
-	}
 	var device VirtualMFADevice
-	if err := json.Unmarshal(data, &device); err != nil {
-		return nil, NewStoreError("get_mfa_device", err)
+	if err := s.BaseStore.Get(serialNumber, &device); err != nil {
+		return nil, err
 	}
 	return &device, nil
 }
@@ -50,29 +45,17 @@ func (s *MFADeviceStore) Put(device *VirtualMFADevice) error {
 	if device.Tags == nil {
 		device.Tags = []Tag{}
 	}
-
-	data, err := json.Marshal(device)
-	if err != nil {
-		return NewStoreError("put_mfa_device", err)
-	}
-
-	if err := s.bucket.Put([]byte(device.SerialNumber), data); err != nil {
-		return NewStoreError("put_mfa_device", err)
-	}
-	return nil
+	return s.BaseStore.Put(device.SerialNumber, device)
 }
 
 // Delete removes an MFA device by its serial number.
 func (s *MFADeviceStore) Delete(serialNumber string) error {
-	if err := s.bucket.Delete([]byte(serialNumber)); err != nil {
-		return NewStoreError("delete_mfa_device", err)
-	}
-	return nil
+	return s.BaseStore.Delete(serialNumber)
 }
 
 // Exists checks whether an MFA device exists.
 func (s *MFADeviceStore) Exists(serialNumber string) bool {
-	return s.bucket.Has([]byte(serialNumber))
+	return s.BaseStore.Exists(serialNumber)
 }
 
 // Create creates a new virtual MFA device.
@@ -103,152 +86,87 @@ func (s *MFADeviceStore) Create(accountId string, tags []Tag) (*VirtualMFADevice
 
 // EnableForUser assigns an MFA device to a user.
 func (s *MFADeviceStore) EnableForUser(serialNumber, userName string) error {
-	device, err := s.Get(serialNumber)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(serialNumber, func() error {
+		device, err := s.Get(serialNumber)
+		if err != nil {
+			return err
+		}
 
-	now := time.Now().UTC()
-	device.UserAssignment = &MFAUserAssignment{
-		UserName:   userName,
-		EnableDate: now,
-	}
-	device.EnableDate = &now
+		now := time.Now().UTC()
+		device.UserAssignment = &MFAUserAssignment{
+			UserName:   userName,
+			EnableDate: now,
+		}
+		device.EnableDate = &now
 
-	return s.Put(device)
+		return s.Put(device)
+	})
 }
 
 // Deactivate removes the user assignment from an MFA device.
 func (s *MFADeviceStore) Deactivate(serialNumber string) error {
-	device, err := s.Get(serialNumber)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(serialNumber, func() error {
+		device, err := s.Get(serialNumber)
+		if err != nil {
+			return err
+		}
 
-	device.UserAssignment = nil
-	device.EnableDate = nil
+		device.UserAssignment = nil
+		device.EnableDate = nil
 
-	return s.Put(device)
+		return s.Put(device)
+	})
 }
 
 // ListForUser returns all MFA devices assigned to a user.
 func (s *MFADeviceStore) ListForUser(userName string, marker string, maxItems int) (*MFADeviceListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
+	filter := func(d *VirtualMFADevice) bool {
+		return d.UserAssignment != nil && d.UserAssignment.UserName == userName
 	}
-
-	var devices []*VirtualMFADevice
-	count := 0
-	started := marker == ""
-	hasMore := false
-
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		var device VirtualMFADevice
-		if err := json.Unmarshal(v, &device); err != nil {
-			return err
-		}
-
-		if device.UserAssignment == nil || device.UserAssignment.UserName != userName {
-			return nil
-		}
-
-		if !started {
-			if device.SerialNumber == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if count < maxItems {
-			devices = append(devices, &device)
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[VirtualMFADevice](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
-		return nil, NewStoreError("list_mfa_devices", err)
+		return nil, err
 	}
-
-	result := &MFADeviceListResult{
-		MFADevices:  devices,
-		IsTruncated: hasMore,
-	}
-	if len(devices) > 0 {
-		result.Marker = devices[len(devices)-1].SerialNumber
-	}
-
-	return result, nil
+	return &MFADeviceListResult{
+		MFADevices:  result.Items,
+		IsTruncated: result.IsTruncated,
+		Marker:      result.NextMarker,
+	}, nil
 }
 
 // ListVirtual returns all virtual MFA devices.
 func (s *MFADeviceStore) ListVirtual(marker string, maxItems int) (*MFADeviceListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var devices []*VirtualMFADevice
-	count := 0
-	started := marker == ""
-	hasMore := false
-
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		var device VirtualMFADevice
-		if err := json.Unmarshal(v, &device); err != nil {
-			return err
-		}
-
-		if !started {
-			if device.SerialNumber == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if count < maxItems {
-			devices = append(devices, &device)
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[VirtualMFADevice](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
-		return nil, NewStoreError("list_virtual_mfa_devices", err)
+		return nil, err
 	}
-
-	result := &MFADeviceListResult{
-		MFADevices:  devices,
-		IsTruncated: hasMore,
-	}
-	if len(devices) > 0 {
-		result.Marker = devices[len(devices)-1].SerialNumber
-	}
-
-	return result, nil
+	return &MFADeviceListResult{
+		MFADevices:  result.Items,
+		IsTruncated: result.IsTruncated,
+		Marker:      result.NextMarker,
+	}, nil
 }
 
 // Resync regenerates the base32 seed for an MFA device.
 func (s *MFADeviceStore) Resync(serialNumber string) error {
-	device, err := s.Get(serialNumber)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(serialNumber, func() error {
+		device, err := s.Get(serialNumber)
+		if err != nil {
+			return err
+		}
 
-	base32Seed, err := GenerateBase32Seed()
-	if err != nil {
-		return err
-	}
-	device.Base32StringSeed = base32Seed
-	return s.Put(device)
+		base32Seed, err := GenerateBase32Seed()
+		if err != nil {
+			return err
+		}
+		device.Base32StringSeed = base32Seed
+		return s.Put(device)
+	})
 }
 
 // Count returns the total number of MFA devices.
 func (s *MFADeviceStore) Count() int {
-	return s.bucket.Count()
+	return s.BaseStore.Count()
 }
 
 // GenerateMFADeviceSerialNumber generates a unique serial number for an MFA device.
@@ -274,40 +192,43 @@ func GenerateBase32Seed() (string, error) {
 
 // MigrateUser reassigns all MFA devices from one user to another.
 func (s *MFADeviceStore) MigrateUser(oldUserName, newUserName string) error {
-	var devicesToUpdate []*VirtualMFADevice
+	lockKey := "migrate:" + oldUserName
+	return s.kl.WithLock(lockKey, func() error {
+		var devicesToUpdate []*VirtualMFADevice
 
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		var device VirtualMFADevice
-		if err := json.Unmarshal(v, &device); err != nil {
-			return err
-		}
+		err := s.ForEach(func(key string, value []byte) error {
+			var device VirtualMFADevice
+			if err := json.Unmarshal(value, &device); err != nil {
+				return err
+			}
 
-		if device.UserAssignment != nil && device.UserAssignment.UserName == oldUserName {
-			devicesToUpdate = append(devicesToUpdate, &device)
-		}
-		return nil
-	})
+			if device.UserAssignment != nil && device.UserAssignment.UserName == oldUserName {
+				devicesToUpdate = append(devicesToUpdate, &device)
+			}
+			return nil
+		})
 
-	if err != nil {
-		return NewStoreError("migrate_user_mfa", err)
-	}
-
-	for _, device := range devicesToUpdate {
-		device.UserAssignment.UserName = newUserName
-		if err := s.Put(device); err != nil {
+		if err != nil {
 			return NewStoreError("migrate_user_mfa", err)
 		}
-	}
 
-	return nil
+		for _, device := range devicesToUpdate {
+			device.UserAssignment.UserName = newUserName
+			if err := s.Put(device); err != nil {
+				return NewStoreError("migrate_user_mfa", err)
+			}
+		}
+
+		return nil
+	})
 }
 
 // CountForUser returns the number of MFA devices assigned to a user.
 func (s *MFADeviceStore) CountForUser(userName string) (int, error) {
 	count := 0
-	err := s.bucket.ForEach(func(k, v []byte) error {
+	err := s.ForEach(func(key string, value []byte) error {
 		var device VirtualMFADevice
-		if err := json.Unmarshal(v, &device); err != nil {
+		if err := json.Unmarshal(value, &device); err != nil {
 			return err
 		}
 

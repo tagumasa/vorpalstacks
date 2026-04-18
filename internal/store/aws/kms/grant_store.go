@@ -8,15 +8,19 @@ import (
 	"errors"
 	"time"
 
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 var errStopIteration = errors.New("stop iteration")
 
 // GrantStore manages KMS grants.
 type GrantStore struct {
-	bucket     storage.Bucket
+	*common.BaseStore
 	arnBuilder *ARNBuilder
+	kl         common.KeyLocker
 }
 
 func grantBucketName(region string) string {
@@ -26,7 +30,7 @@ func grantBucketName(region string) string {
 // NewGrantStore creates a new GrantStore.
 func NewGrantStore(store storage.BasicStorage, accountId, region string) *GrantStore {
 	return &GrantStore{
-		bucket:     store.Bucket(grantBucketName(region)),
+		BaseStore:  common.NewBaseStore(store.Bucket(grantBucketName(region)), "kms"),
 		arnBuilder: NewARNBuilder(accountId, region),
 	}
 }
@@ -45,7 +49,7 @@ func (s *GrantStore) Create(keyID, granteePrincipal, retiringPrincipal string, o
 		RetiringPrincipal: retiringPrincipal,
 		Operations:        operations,
 		Name:              name,
-		IssuingAccount:    "arn:aws:iam::" + s.arnBuilder.AccountId() + ":root",
+		IssuingAccount:    arnutil.NewARNBuilder(s.arnBuilder.AccountId(), "").IAM().Root(),
 		CreationDate:      time.Now(),
 		Constraints:       constraints,
 	}
@@ -59,12 +63,17 @@ func (s *GrantStore) Create(keyID, granteePrincipal, retiringPrincipal string, o
 
 // CreateWithToken creates a new grant with a pre-generated token.
 func (s *GrantStore) CreateWithToken(keyID, granteePrincipal, retiringPrincipal string, operations []string, name string, constraints *GrantConstraints, token string) (*Grant, error) {
-	grant, err := s.Create(keyID, granteePrincipal, retiringPrincipal, operations, name, constraints)
+	var grant *Grant
+	err := s.kl.WithLock(keyID, func() error {
+		var err error
+		grant, err = s.Create(keyID, granteePrincipal, retiringPrincipal, operations, name, constraints)
+		if err != nil {
+			return err
+		}
+		grant.GrantToken = token
+		return s.save(grant)
+	})
 	if err != nil {
-		return nil, err
-	}
-	grant.GrantToken = token
-	if err := s.save(grant); err != nil {
 		return nil, err
 	}
 	return grant, nil
@@ -73,9 +82,9 @@ func (s *GrantStore) CreateWithToken(keyID, granteePrincipal, retiringPrincipal 
 // GetByToken retrieves a grant by its token.
 func (s *GrantStore) GetByToken(token string) (*Grant, error) {
 	var found *Grant
-	err := s.bucket.ForEach(func(k, v []byte) error {
+	err := s.ForEach(func(key string, value []byte) error {
 		var grant Grant
-		if err := json.Unmarshal(v, &grant); err != nil {
+		if err := json.Unmarshal(value, &grant); err != nil {
 			return err
 		}
 		if grant.GrantToken == token {
@@ -95,175 +104,92 @@ func (s *GrantStore) GetByToken(token string) (*Grant, error) {
 
 // Get retrieves a grant by its ID.
 func (s *GrantStore) Get(grantID string) (*Grant, error) {
-	data, err := s.bucket.Get([]byte(grantID))
-	if err != nil {
-		return nil, NewStoreError("get_grant", err)
-	}
-	if data == nil {
-		return nil, NewStoreError("get_grant", ErrGrantNotFound)
-	}
-
 	var grant Grant
-	if err := json.Unmarshal(data, &grant); err != nil {
-		return nil, NewStoreError("get_grant", err)
+	if err := s.BaseStore.Get(grantID, &grant); err != nil {
+		return nil, err
 	}
 	return &grant, nil
 }
 
 func (s *GrantStore) save(grant *Grant) error {
-	data, err := json.Marshal(grant)
-	if err != nil {
-		return NewStoreError("save_grant", err)
-	}
-	return s.bucket.Put([]byte(grant.GrantID), data)
+	return s.BaseStore.Put(grant.GrantID, grant)
 }
 
 // Delete removes a grant by its ID.
 func (s *GrantStore) Delete(grantID string) error {
-	return s.bucket.Delete([]byte(grantID))
+	return s.kl.WithLock(grantID, func() error {
+		return s.BaseStore.Delete(grantID)
+	})
 }
 
 // List returns grants with optional filtering by key ID and grantee principal.
 func (s *GrantStore) List(keyID string, granteePrincipal string, marker string, maxItems int) (*GrantListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
+	filter := func(g *Grant) bool {
+		keyMatch := keyID == "" || g.KeyID == keyID
+		principalMatch := granteePrincipal == "" || g.GranteePrincipal == granteePrincipal
+		return keyMatch && principalMatch
 	}
-
-	var grants []*Grant
-	count := 0
-	started := marker == ""
-	var lastGrantID string
-	hasMore := false
-
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		var grant Grant
-		if err := json.Unmarshal(v, &grant); err != nil {
-			return err
-		}
-
-		if !started {
-			if grant.GrantID == marker {
-				started = true
-			}
-			return nil
-		}
-
-		keyMatch := keyID == "" || grant.KeyID == keyID
-		principalMatch := granteePrincipal == "" || grant.GranteePrincipal == granteePrincipal
-
-		if keyMatch && principalMatch {
-			if count < maxItems {
-				grants = append(grants, &grant)
-				count++
-				lastGrantID = grant.GrantID
-			} else {
-				hasMore = true
-			}
-		}
-		return nil
-	})
-
+	result, err := common.List[Grant](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
-		return nil, NewStoreError("list_grants", err)
+		return nil, err
 	}
-
-	result := &GrantListResult{
-		Grants:      grants,
-		IsTruncated: hasMore,
-	}
-	if result.IsTruncated {
-		result.NextMarker = lastGrantID
-	}
-
-	return result, nil
+	return &GrantListResult{
+		Grants:      result.Items,
+		IsTruncated: result.IsTruncated,
+		NextMarker:  result.NextMarker,
+	}, nil
 }
 
 // ListByRetiringPrincipal returns grants that can be retired by a specific principal.
 func (s *GrantStore) ListByRetiringPrincipal(principal string, marker string, maxItems int) (*GrantListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var grants []*Grant
-	count := 0
-	started := marker == ""
-	var lastGrantID string
-	hasMore := false
-
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		var grant Grant
-		if err := json.Unmarshal(v, &grant); err != nil {
-			return err
-		}
-
-		if !started {
-			if grant.GrantID == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if grant.RetiringPrincipal == principal {
-			if count < maxItems {
-				grants = append(grants, &grant)
-				count++
-				lastGrantID = grant.GrantID
-			} else {
-				hasMore = true
-			}
-		}
-		return nil
-	})
-
+	filter := func(g *Grant) bool { return g.RetiringPrincipal == principal }
+	result, err := common.List[Grant](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
-		return nil, NewStoreError("list_retirable_grants", err)
+		return nil, err
 	}
-
-	result := &GrantListResult{
-		Grants:      grants,
-		IsTruncated: hasMore,
-	}
-	if result.IsTruncated {
-		result.NextMarker = lastGrantID
-	}
-
-	return result, nil
+	return &GrantListResult{
+		Grants:      result.Items,
+		IsTruncated: result.IsTruncated,
+		NextMarker:  result.NextMarker,
+	}, nil
 }
 
 // DeleteByKeyID removes all grants for a specific key.
 func (s *GrantStore) DeleteByKeyID(keyID string) error {
-	var grantIDs []string
+	return s.kl.WithLock(keyID, func() error {
+		var grantIDs []string
 
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		var grant Grant
-		if err := json.Unmarshal(v, &grant); err != nil {
-			return err
+		err := s.ForEach(func(key string, value []byte) error {
+			var grant Grant
+			if err := json.Unmarshal(value, &grant); err != nil {
+				return err
+			}
+			if grant.KeyID == keyID {
+				grantIDs = append(grantIDs, grant.GrantID)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return NewStoreError("delete_grants_by_key", err)
 		}
-		if grant.KeyID == keyID {
-			grantIDs = append(grantIDs, grant.GrantID)
+
+		for _, id := range grantIDs {
+			if err := s.BaseStore.Delete(id); err != nil {
+				return NewStoreError("delete_grants_by_key", err)
+			}
 		}
+
 		return nil
 	})
-
-	if err != nil {
-		return NewStoreError("delete_grants_by_key", err)
-	}
-
-	for _, id := range grantIDs {
-		if err := s.Delete(id); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // Count returns the number of grants for a key.
 func (s *GrantStore) Count(keyID string) (int, error) {
 	count := 0
-	err := s.bucket.ForEach(func(k, v []byte) error {
+	err := s.ForEach(func(key string, value []byte) error {
 		var grant Grant
-		if err := json.Unmarshal(v, &grant); err != nil {
+		if err := json.Unmarshal(value, &grant); err != nil {
 			return err
 		}
 		if keyID == "" || grant.KeyID == keyID {

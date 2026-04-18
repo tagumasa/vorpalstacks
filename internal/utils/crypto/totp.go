@@ -17,34 +17,6 @@ const (
 	totpWindowSize = 1
 )
 
-// ValidateTOTP validates a TOTP code against a secret.
-func ValidateTOTP(secret string, code string) error {
-	if secret == "" {
-		return fmt.Errorf("secret is empty")
-	}
-	if len(code) != totpDigits {
-		return fmt.Errorf("invalid code length: expected %d, got %d", totpDigits, len(code))
-	}
-
-	secret = strings.ToUpper(strings.ReplaceAll(secret, " ", ""))
-	decoded, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(secret)
-	if err != nil {
-		return fmt.Errorf("failed to decode base32 secret: %w", err)
-	}
-
-	now := time.Now().Unix()
-	timeStep := now / totpTimeStep
-
-	for offset := -totpWindowSize; offset <= totpWindowSize; offset++ {
-		expectedCode := generateTOTP(decoded, timeStep+int64(offset))
-		if expectedCode == code {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("invalid TOTP code")
-}
-
 // ValidateConsecutiveTOTPCodes validates two consecutive TOTP codes.
 func ValidateConsecutiveTOTPCodes(secret string, code1, code2 string) error {
 	if secret == "" {

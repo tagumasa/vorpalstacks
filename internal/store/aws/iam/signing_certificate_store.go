@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const signingCertificateBucketName = "iam_signing_certificates"
@@ -12,6 +13,7 @@ const signingCertificateBucketName = "iam_signing_certificates"
 // SigningCertificateStore provides storage operations for IAM signing certificates.
 type SigningCertificateStore struct {
 	bucket storage.Bucket
+	kl     common.KeyLocker
 }
 
 // NewSigningCertificateStore creates a new SigningCertificateStore instance.
@@ -83,12 +85,14 @@ func (s *SigningCertificateStore) Upload(userName, certificateBody string) (*Sig
 
 // UpdateStatus changes the status of a signing certificate (e.g. Active/Inactive).
 func (s *SigningCertificateStore) UpdateStatus(certificateId, status string) error {
-	cert, err := s.Get(certificateId)
-	if err != nil {
-		return err
-	}
-	cert.Status = status
-	return s.Put(cert)
+	return s.kl.WithLock(certificateId, func() error {
+		cert, err := s.Get(certificateId)
+		if err != nil {
+			return err
+		}
+		cert.Status = status
+		return s.Put(cert)
+	})
 }
 
 // ListByUserName returns all signing certificates belonging to the given user.

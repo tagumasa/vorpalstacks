@@ -2,7 +2,6 @@
 package cloudfront
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -113,58 +112,15 @@ func (s *CachePolicyStore) Delete(id string) error {
 
 // List returns a paginated list of cache policies.
 func (s *CachePolicyStore) List(marker string, maxItems int) (*CachePolicyListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var cachePolicies []*CachePolicy
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var cp CachePolicy
-		if err := json.Unmarshal(value, &cp); err != nil {
-			return err
-		}
-
-		if !started {
-			if cp.ID == marker {
-				started = true
-				return nil
-			}
-			if cp.ID > marker {
-				started = true
-			}
-			if !started {
-				return nil
-			}
-		}
-
-		if count < maxItems {
-			cachePolicies = append(cachePolicies, &cp)
-			lastKey = key
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[CachePolicy](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_cache_policies", err)
 	}
 
-	var nextMarker string
-	if hasMore {
-		nextMarker = lastKey
-	}
-
 	return &CachePolicyListResult{
-		CachePolicies: cachePolicies,
-		IsTruncated:   hasMore,
-		NextMarker:    nextMarker,
+		CachePolicies: result.Items,
+		IsTruncated:   result.IsTruncated,
+		NextMarker:    result.NextMarker,
 	}, nil
 }
 
@@ -265,58 +221,15 @@ func (s *OriginRequestPolicyStore) Delete(id string) error {
 
 // List returns a paginated list of origin request policies.
 func (s *OriginRequestPolicyStore) List(marker string, maxItems int) (*OriginRequestPolicyListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var originRequestPolicies []*OriginRequestPolicy
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var orp OriginRequestPolicy
-		if err := json.Unmarshal(value, &orp); err != nil {
-			return err
-		}
-
-		if !started {
-			if orp.ID == marker {
-				started = true
-				return nil
-			}
-			if orp.ID > marker {
-				started = true
-			}
-			if !started {
-				return nil
-			}
-		}
-
-		if count < maxItems {
-			originRequestPolicies = append(originRequestPolicies, &orp)
-			lastKey = key
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[OriginRequestPolicy](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_origin_request_policies", err)
 	}
 
-	var nextMarker string
-	if hasMore {
-		nextMarker = lastKey
-	}
-
 	return &OriginRequestPolicyListResult{
-		OriginRequestPolicies: originRequestPolicies,
-		IsTruncated:           hasMore,
-		NextMarker:            nextMarker,
+		OriginRequestPolicies: result.Items,
+		IsTruncated:           result.IsTruncated,
+		NextMarker:            result.NextMarker,
 	}, nil
 }
 

@@ -511,47 +511,89 @@ func (s *CloudTrailStore) GetEventByID(eventID string) (*Event, error) {
 }
 
 func (s *CloudTrailStore) lookupEventsScan(query EventQuery) ([]*Event, string, error) {
-	var events []*Event
-	var lastKey string
-	hasMore := false
-	started := query.NextToken == ""
-	count := int32(0)
-
-	err := s.eventsStore.ForEach(func(key string, value []byte) error {
-		if !started {
-			if key == query.NextToken {
-				started = true
-			}
-			return nil
-		}
-
-		if count >= query.MaxResults {
-			hasMore = true
-			return nil
-		}
-
-		var p pb.Event
-		if err := proto.Unmarshal(value, &p); err != nil {
-			return err
-		}
-		event := ProtoToEvent(&p)
-
-		if s.eventMatchesQuery(event, query) {
-			events = append(events, event)
-			lastKey = key
-			count++
-		}
-		return nil
+	opts := common.ListOptions{
+		Marker:   query.NextToken,
+		MaxItems: int(query.MaxResults),
+	}
+	result, err := common.ListProto[*pb.Event](s.eventsStore, opts, func() *pb.Event { return &pb.Event{} }, func(e *pb.Event) bool {
+		return protoMatchesQuery(e, query)
 	})
-
 	if err != nil {
 		return nil, "", err
 	}
-
-	if hasMore {
-		return events, lastKey, nil
+	events := make([]*Event, len(result.Items))
+	for i, p := range result.Items {
+		events[i] = ProtoToEvent(p)
 	}
-	return events, "", nil
+	return events, result.NextMarker, nil
+}
+
+func protoMatchesQuery(event *pb.Event, query EventQuery) bool {
+	eventTime := time.UnixMilli(event.GetEventTime())
+	if query.StartTime != nil && eventTime.Before(*query.StartTime) {
+		return false
+	}
+	if query.EndTime != nil && eventTime.After(*query.EndTime) {
+		return false
+	}
+
+	if len(query.EventNames) > 0 {
+		found := false
+		for _, name := range query.EventNames {
+			if event.GetEventName() == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	if query.Username != "" {
+		if event.GetUserIdentity() == nil || event.GetUserIdentity().GetUserName() != query.Username {
+			return false
+		}
+	}
+
+	if len(query.ResourceNames) > 0 {
+		if len(event.GetResources()) == 0 {
+			return false
+		}
+		found := false
+		for _, rn := range query.ResourceNames {
+			for _, res := range event.GetResources() {
+				if res.GetResourceName() == rn {
+					found = true
+					break
+				}
+			}
+			if found {
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	if query.ResourceType != "" {
+		if len(event.GetResources()) == 0 {
+			return false
+		}
+		found := false
+		for _, res := range event.GetResources() {
+			if res.GetResourceType() == query.ResourceType {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (s *CloudTrailStore) eventMatchesQuery(event *Event, query EventQuery) bool {

@@ -8,6 +8,8 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // AddTagsToResource adds metadata tags to the specified Neptune resource.
@@ -24,12 +26,12 @@ func (s *NeptuneService) AddTagsToResource(ctx context.Context, reqCtx *request.
 	}
 
 	tags := getNeptuneTagList(params)
-	storeTags := make([]neptunestore.Tag, 0, len(tags))
+	storeTags := make([]types.Tag, 0, len(tags))
 	for _, t := range tags {
 		key, _ := t["Key"].(string)
 		value, _ := t["Value"].(string)
 		if key != "" {
-			storeTags = append(storeTags, neptunestore.Tag{Key: key, Value: value})
+			storeTags = append(storeTags, types.Tag{Key: key, Value: value})
 		}
 	}
 
@@ -129,7 +131,7 @@ func (s *NeptuneService) CreateDBClusterEndpoint(ctx context.Context, reqCtx *re
 		EndpointType:                epType,
 		ExcludedMembers:             excludedMembers,
 		StaticMembers:               staticMembers,
-		DBClusterEndpointArn:        fmt.Sprintf("arn:aws:rds:%s:%s:cluster-endpoint:%s", region, accountID, epID),
+		DBClusterEndpointArn:        arnutil.NewARNBuilder(accountID, region).RDS().ClusterEndpoint(epID),
 	}
 
 	if err := store.CreateClusterEndpoint(ep); err != nil {

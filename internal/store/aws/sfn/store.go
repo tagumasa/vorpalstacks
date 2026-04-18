@@ -598,7 +598,7 @@ func (s *StepFunctionStore) buildVersionARN(smArn string, version int64) string 
 func (s *StepFunctionStore) buildAliasARN(smArn, aliasName string) string {
 	parts := strings.Split(smArn, ":")
 	if len(parts) >= 5 {
-		return fmt.Sprintf("arn:aws:states:%s:%s:stateMachineAlias:%s", parts[3], parts[4], aliasName)
+		return svcarn.NewARNBuilder(parts[4], parts[3]).StepFunctions().StateMachineAlias(aliasName)
 	}
 	return smArn + ":" + aliasName
 }

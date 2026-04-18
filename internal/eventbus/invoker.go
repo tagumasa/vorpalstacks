@@ -1,6 +1,10 @@
 package eventbus
 
-import "context"
+import (
+	"context"
+
+	"vorpalstacks/internal/common"
+)
 
 // ServiceInvoker defines the contract for invoking a target service as
 // part of event dispatch.
@@ -16,9 +20,8 @@ type LambdaInvokerAdapter struct {
 
 // LambdaInvoker invokes a Lambda function by name and returns the status
 // code and response payload.
-type LambdaInvoker interface {
-	InvokeForGateway(ctx context.Context, functionName string, payload []byte) (int64, []byte, error)
-}
+// Deprecated: use common.LambdaInvoker instead.
+type LambdaInvoker = common.LambdaInvoker
 
 // Invoke dispatches a Lambda invocation via the underlying LambdaInvoker.
 func (a *LambdaInvokerAdapter) Invoke(ctx context.Context, action *TargetAction, payload []byte) HandlerResult {

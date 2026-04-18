@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // DefaultKeyPolicyName is the name of the default key policy.
@@ -36,6 +37,7 @@ var DefaultKeyPolicy = `{
 // KeyPolicyStore manages KMS key policies.
 type KeyPolicyStore struct {
 	bucket storage.Bucket
+	kl     common.KeyLocker
 }
 
 // NewKeyPolicyStore creates a new KeyPolicyStore.
@@ -103,16 +105,18 @@ func (s *KeyPolicyStore) Put(keyID, policyName, policyDocument string) error {
 		policyName = DefaultKeyPolicyName
 	}
 
-	key := keyPolicyKey(keyID, policyName)
+	return s.kl.WithLock(keyID, func() error {
+		key := keyPolicyKey(keyID, policyName)
 
-	existing, err := s.Get(keyID, policyName)
-	if err != nil {
-		_, err = s.Create(keyID, policyName, policyDocument)
-		return err
-	}
+		existing, err := s.Get(keyID, policyName)
+		if err != nil {
+			_, err = s.Create(keyID, policyName, policyDocument)
+			return err
+		}
 
-	existing.PolicyDocument = policyDocument
-	return s.save(key, existing)
+		existing.PolicyDocument = policyDocument
+		return s.save(key, existing)
+	})
 }
 
 // Delete removes a key policy.
@@ -125,7 +129,9 @@ func (s *KeyPolicyStore) Delete(keyID, policyName string) error {
 	if !s.bucket.Has([]byte(key)) {
 		return NewStoreError("delete_key_policy", ErrKeyPolicyNotFound)
 	}
-	return s.bucket.Delete([]byte(key))
+	return s.kl.WithLock(keyID, func() error {
+		return s.bucket.Delete([]byte(key))
+	})
 }
 
 // List returns the policy names for a key.
@@ -155,18 +161,20 @@ func (s *KeyPolicyStore) List(keyID string) ([]string, error) {
 
 // DeleteAllForKey removes all policies for a key.
 func (s *KeyPolicyStore) DeleteAllForKey(keyID string) error {
-	policies, err := s.List(keyID)
-	if err != nil {
-		return err
-	}
-
-	for _, name := range policies {
-		if err := s.Delete(keyID, name); err != nil {
+	return s.kl.WithLock(keyID, func() error {
+		policies, err := s.List(keyID)
+		if err != nil {
 			return err
 		}
-	}
 
-	return nil
+		for _, name := range policies {
+			if err := s.Delete(keyID, name); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 // GetDefault retrieves the default policy for a key.

@@ -8,11 +8,10 @@ import (
 // SetObjectLegalHold sets the legal hold status for an object version.
 func (s *ObjectStore) SetObjectLegalHold(ctx context.Context, bucket, key, versionId string, legalHold *ObjectLockLegalHold) error {
 	lockKey := bucket + "#" + key
-	mutex := s.getVersionLock(lockKey)
-	mutex.Lock()
+	s.keyLocker.Lock(lockKey)
 	defer func() {
-		mutex.Unlock()
-		s.versionMutex.Delete(lockKey)
+		s.keyLocker.Unlock(lockKey)
+		s.keyLocker.Delete(lockKey)
 	}()
 
 	_, obj, err := s.GetWithVersion(ctx, bucket, key, versionId)
@@ -66,11 +65,10 @@ func (s *ObjectStore) GetObjectLegalHold(ctx context.Context, bucket, key, versi
 // SetObjectRetention sets the retention policy for an object version.
 func (s *ObjectStore) SetObjectRetention(ctx context.Context, bucket, key, versionId string, retention *ObjectLockRetention) error {
 	lockKey := bucket + "#" + key
-	mutex := s.getVersionLock(lockKey)
-	mutex.Lock()
+	s.keyLocker.Lock(lockKey)
 	defer func() {
-		mutex.Unlock()
-		s.versionMutex.Delete(lockKey)
+		s.keyLocker.Unlock(lockKey)
+		s.keyLocker.Delete(lockKey)
 	}()
 
 	_, obj, err := s.GetWithVersion(ctx, bucket, key, versionId)

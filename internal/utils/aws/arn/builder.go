@@ -37,6 +37,16 @@ func (b *ARNBuilder) Build(service, resource string) string {
 	return "arn:" + b.partition + ":" + service + ":" + b.region + ":" + b.accountID + ":" + resource
 }
 
+// BuildNoRegion constructs an ARN without a region field for the given service and resource.
+func (b *ARNBuilder) BuildNoRegion(service, resource string) string {
+	return "arn:" + b.partition + ":" + service + "::" + b.accountID + ":" + resource
+}
+
+// BuildNoAccount constructs an ARN without an account field for the given service and resource.
+func (b *ARNBuilder) BuildNoAccount(service, resource string) string {
+	return "arn:" + b.partition + ":" + service + ":" + b.region + "::" + resource
+}
+
 // BuildGlobal constructs a global ARN (without region) for the given service and resource.
 func (b *ARNBuilder) BuildGlobal(service, resource string) string {
 	return "arn:" + b.partition + ":" + service + ":::" + resource

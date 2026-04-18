@@ -15,11 +15,6 @@ func MD5Hash(data []byte) []byte {
 	return hash[:]
 }
 
-// MD5HashString computes the MD5 hash of the given string and returns it as a hex string.
-func MD5HashString(data string) string {
-	return hex.EncodeToString(MD5Hash([]byte(data)))
-}
-
 // SHA256Hash computes the SHA-256 hash of the given data and returns it as a hex string.
 func SHA256Hash(data []byte) string {
 	hash := sha256.Sum256(data)

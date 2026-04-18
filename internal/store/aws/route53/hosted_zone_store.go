@@ -3,7 +3,7 @@ package route53
 // Package route53 provides Route 53 data store implementations for vorpalstacks.
 
 import (
-	"encoding/json"
+	"sort"
 	"strings"
 	"time"
 
@@ -41,97 +41,33 @@ func (s *HostedZoneStore) Get(id string) (*HostedZone, error) {
 // Returns the hosted zone or an error if not found.
 func (s *HostedZoneStore) GetByName(name string) (*HostedZone, error) {
 	name = normalizeZoneName(name)
-	var found *HostedZone
-	err := s.ForEach(func(key string, value []byte) error {
-		var zone HostedZone
-		if err := json.Unmarshal(value, &zone); err != nil {
-			return err
-		}
-		if normalizeZoneName(zone.Name) == name && found == nil {
-			found = &zone
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_hosted_zone_by_name", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_hosted_zone_by_name", common.ErrNotFound)
-	}
-	return found, nil
+	return common.FindFirst[HostedZone](s.BaseStore, func(z *HostedZone) bool { return normalizeZoneName(z.Name) == name })
 }
 
 // List returns a list of hosted zones from the store with pagination support.
 func (s *HostedZoneStore) List(marker string, maxItems int) (*HostedZoneListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var zones []*HostedZone
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var zone HostedZone
-		if err := json.Unmarshal(value, &zone); err != nil {
-			return err
-		}
-
-		if !started {
-			if zone.ID == marker || zone.ID > marker {
-				started = true
-			}
-			if !started {
-				return nil
-			}
-		}
-
-		if count < maxItems {
-			zones = append(zones, &zone)
-			count++
-			lastKey = zone.ID
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[HostedZone](s.BaseStore, common.ListOptions{
+		Marker:   marker,
+		MaxItems: maxItems,
+	}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_hosted_zones", err)
 	}
 
 	return &HostedZoneListResult{
-		HostedZones: zones,
-		IsTruncated: hasMore,
-		Marker:      lastKey,
+		HostedZones: result.Items,
+		IsTruncated: result.IsTruncated,
+		Marker:      result.NextMarker,
 	}, nil
 }
 
 // ListByName returns a list of hosted zones sorted by name.
 func (s *HostedZoneStore) ListByName() ([]*HostedZone, error) {
-	var zones []*HostedZone
-	err := s.ForEach(func(key string, value []byte) error {
-		var zone HostedZone
-		if err := json.Unmarshal(value, &zone); err != nil {
-			return err
-		}
-		zones = append(zones, &zone)
-		return nil
-	})
+	zones, err := common.ListAll[HostedZone](s.BaseStore)
 	if err != nil {
-		return nil, NewStoreError("list_hosted_zones_by_name", err)
+		return nil, err
 	}
-
-	for i := 0; i < len(zones)-1; i++ {
-		for j := i + 1; j < len(zones); j++ {
-			if strings.Compare(zones[i].Name, zones[j].Name) > 0 {
-				zones[i], zones[j] = zones[j], zones[i]
-			}
-		}
-	}
-
+	sort.Slice(zones, func(i, j int) bool { return strings.Compare(zones[i].Name, zones[j].Name) < 0 })
 	return zones, nil
 }
 

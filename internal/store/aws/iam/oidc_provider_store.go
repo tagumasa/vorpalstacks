@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const oidcProviderBucketName = "iam_oidc_providers"
@@ -14,6 +15,7 @@ const oidcProviderBucketName = "iam_oidc_providers"
 type OpenIDConnectProviderStore struct {
 	bucket     storage.Bucket
 	arnBuilder *ARNBuilder
+	kl         common.KeyLocker
 }
 
 // NewOpenIDConnectProviderStore creates a new OpenIDConnectProviderStore instance.
@@ -95,19 +97,21 @@ func (s *OpenIDConnectProviderStore) Create(url string, thumbprintList, clientId
 
 // Update modifies the thumbprint list and client ID list of an existing OpenID Connect provider.
 func (s *OpenIDConnectProviderStore) Update(arn string, thumbprintList, clientIdList []string) error {
-	provider, err := s.Get(arn)
-	if err != nil {
-		return err
-	}
-	if thumbprintList != nil {
-		provider.ThumbprintList = thumbprintList
-	}
-	if clientIdList != nil {
-		provider.ClientIDList = clientIdList
-	}
-	now := time.Now().UTC()
-	provider.LastModifiedDate = &now
-	return s.Put(provider)
+	return s.kl.WithLock(arn, func() error {
+		provider, err := s.Get(arn)
+		if err != nil {
+			return err
+		}
+		if thumbprintList != nil {
+			provider.ThumbprintList = thumbprintList
+		}
+		if clientIdList != nil {
+			provider.ClientIDList = clientIdList
+		}
+		now := time.Now().UTC()
+		provider.LastModifiedDate = &now
+		return s.Put(provider)
+	})
 }
 
 // List returns all OpenID Connect providers.

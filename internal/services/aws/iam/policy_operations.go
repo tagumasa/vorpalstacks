@@ -14,6 +14,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -338,81 +339,33 @@ func (s *IAMService) SetDefaultPolicyVersion(ctx context.Context, reqCtx *reques
 	return response.EmptyResponse(), nil
 }
 
+var policyTagOps = tagOps[*iamstore.Policy]{
+	paramName:  "PolicyArn",
+	emptyErr:   ErrNoSuchPolicy,
+	notFoundFn: func(n string) error { return NewNoSuchPolicyError(n) },
+	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.Policy, error) { return s.Policies().Get(n) },
+	putFn:      func(s *iamstore.IAMStore, r *iamstore.Policy) error { return s.Policies().Put(r) },
+	tagsFn:     func(r *iamstore.Policy) *[]types.Tag { return &r.Tags },
+}
+
 // TagPolicy adds tags to a managed policy.
 // PolicyArn is required.
 // Tags are provided as a list of key-value pairs.
 func (s *IAMService) TagPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
-	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	policy, err := store.Policies().Get(policyArn)
-	if err != nil {
-		return nil, NewNoSuchPolicyError(policyArn)
-	}
-
-	policy.Tags = tags.Apply(policy.Tags, tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-
-	if err := store.Policies().Put(policy); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagResource(ctx, s, reqCtx, req, policyTagOps)
 }
 
 // UntagPolicy removes tags from a managed policy.
 // PolicyArn is required.
 // TagKeys specifies which tags to remove.
 func (s *IAMService) UntagPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
-	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	policy, err := store.Policies().Get(policyArn)
-	if err != nil {
-		return nil, NewNoSuchPolicyError(policyArn)
-	}
-
-	policy.Tags = tags.RemoveByTagKeys(policy.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
-
-	if err := store.Policies().Put(policy); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return untagResource(ctx, s, reqCtx, req, policyTagOps)
 }
 
 // ListPolicyTags lists the tags attached to a managed policy.
 // PolicyArn is required.
 func (s *IAMService) ListPolicyTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
-	if policyArn == "" {
-		return nil, ErrNoSuchPolicy
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	policy, err := store.Policies().Get(policyArn)
-	if err != nil {
-		return nil, NewNoSuchPolicyError(policyArn)
-	}
-
-	return map[string]interface{}{
-		"Tags":        tags.ToResponse(policy.Tags),
-		"IsTruncated": false,
-	}, nil
+	return listResourceTags(ctx, s, reqCtx, req, policyTagOps)
 }
 
 // ListEntitiesForPolicy lists all IAM users, groups, and roles that the specified managed policy is attached to.

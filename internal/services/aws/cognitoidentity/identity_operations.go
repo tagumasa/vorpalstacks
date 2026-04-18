@@ -12,7 +12,7 @@ import (
 
 // GetId obtains a unique identity ID for a Cognito identity pool.
 func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getParam(req, "IdentityPoolId")
+	poolID := req.GetParam("IdentityPoolId")
 	if poolID == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -43,7 +43,7 @@ func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.Requ
 
 // GetCredentialsForIdentity returns temporary credentials for an identity.
 func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	identityID := getParam(req, "IdentityId")
+	identityID := req.GetParam("IdentityId")
 	if identityID == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -76,7 +76,7 @@ func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, 
 
 // DescribeIdentity returns information about a Cognito identity.
 func (s *CognitoIdentityService) DescribeIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	identityID := getParam(req, "IdentityId")
+	identityID := req.GetParam("IdentityId")
 	if identityID == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -107,13 +107,7 @@ func (s *CognitoIdentityService) DescribeIdentity(ctx context.Context, reqCtx *r
 func parseLogins(req *request.ParsedRequest) map[string]string {
 	if val, ok := req.Parameters["Logins"]; ok {
 		if m, ok := val.(map[string]interface{}); ok {
-			result := make(map[string]string)
-			for k, v := range m {
-				if s, ok := v.(string); ok {
-					result[k] = s
-				}
-			}
-			return result
+			return request.CopyStringMap(m)
 		}
 	}
 	return nil

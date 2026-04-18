@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
@@ -52,7 +53,7 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	if tags := parseTags(req.Parameters["Tags"]); len(tags) > 0 {
+	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
 		webACL.Tags = tags
 		if err := stores.webACLs.Put(webACL.ID, webACL); err != nil {
 			logs.Warn("failed to persist tags for WebACL", logs.String("id", webACL.ID), logs.Err(err))

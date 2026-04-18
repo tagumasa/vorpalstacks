@@ -432,3 +432,18 @@ func GetListParamLowerFirst(params map[string]interface{}, key string) []map[str
 	}
 	return nil
 }
+
+// CopyStringMap copies a map[string]interface{} into a new map[string]string,
+// keeping only entries whose values are strings.
+func CopyStringMap(m map[string]interface{}) map[string]string {
+	if m == nil {
+		return nil
+	}
+	result := make(map[string]string, len(m))
+	for k, v := range m {
+		if vs, ok := v.(string); ok {
+			result[k] = vs
+		}
+	}
+	return result
+}

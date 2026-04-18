@@ -28,8 +28,8 @@ func (s *CognitoService) CreateGroup(ctx context.Context, reqCtx *request.Reques
 	}
 
 	group := cognitostore.NewGroup(userPoolID, groupName)
-	group.Description = getParam(req, "Description")
-	group.RoleArn = getParam(req, "RoleArn")
+	group.Description = req.GetParam("Description")
+	group.RoleArn = req.GetParam("RoleArn")
 	if precedence, ok := getIntParamOK(req, "Precedence"); ok {
 		group.Precedence = precedence
 	}
@@ -146,10 +146,10 @@ func (s *CognitoService) UpdateGroup(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrGroupNotFound
 	}
 
-	if description := getParam(req, "Description"); description != "" {
+	if description := req.GetParam("Description"); description != "" {
 		group.Description = description
 	}
-	if roleArn := getParam(req, "RoleArn"); roleArn != "" {
+	if roleArn := req.GetParam("RoleArn"); roleArn != "" {
 		validator := reqCtx.GetIAMValidator()
 		if err := validator.ValidateRoleForServiceWithErrors(ctx, roleArn, iam.ServicePrincipalCognito, &iam.RoleErrorFactories{
 			RoleNotFoundError:        iam.NewCognitoRoleError,

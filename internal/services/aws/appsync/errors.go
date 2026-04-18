@@ -30,15 +30,6 @@ func (e *AppSyncError) ToJSON() string {
 	return e.AWSError.ToJSONWithFormat("rest-json")
 }
 
-// As attempts to cast the target to the underlying AWSError pointer.
-func (e *AppSyncError) As(target interface{}) bool {
-	if t, ok := target.(**awserrors.AWSError); ok {
-		*t = e.AWSError
-		return true
-	}
-	return false
-}
-
 // Pre-defined sentinel errors matching the AppSync error types.
 var (
 	ErrNotFoundException                  = NewAppSyncError("NotFoundException", "Resource not found.", http.StatusNotFound)
@@ -69,13 +60,4 @@ func NewBadRequestException(message string) *AppSyncError {
 // NewConflictException creates a ConflictException with a custom message.
 func NewConflictException(message string) *AppSyncError {
 	return NewAppSyncError("ConflictException", message, http.StatusConflict)
-}
-
-// GetAppSyncError converts a generic error to an AppSyncError.
-// Returns InternalFailureException as the default fallback for unrecognised errors.
-func GetAppSyncError(err error) *AppSyncError {
-	if apiErr, ok := err.(*AppSyncError); ok {
-		return apiErr
-	}
-	return ErrInternalFailureException
 }

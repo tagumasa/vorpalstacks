@@ -6,8 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/request"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+
 	"vorpalstacks/internal/common/iam/policy"
+	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
@@ -279,7 +281,7 @@ func (ac *AccessController) extractAccountFromPrincipal(principal string) string
 
 func buildResource(accountID, region, bucket, key string) string {
 	if key != "" {
-		return "arn:aws:s3:::" + bucket + "/" + key
+		return arnutil.NewARNBuilder("", "").S3().Object(bucket, key)
 	}
-	return "arn:aws:s3:::" + bucket
+	return arnutil.NewARNBuilder("", "").S3().Bucket(bucket)
 }

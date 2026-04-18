@@ -75,11 +75,10 @@ func (s *ObjectStore) GetMultipartUpload(uploadId string) (*MultipartUpload, err
 // UploadPart uploads a part of a multipart upload.
 func (s *ObjectStore) UploadPart(ctx context.Context, bucket, key, uploadId string, partNumber int, reader io.Reader, encryptedSize int64, contentNonce, dataKey []byte) (*ObjectPart, error) {
 	lockKey := "multipart#" + uploadId
-	mutex := s.getVersionLock(lockKey)
-	mutex.Lock()
+	s.keyLocker.Lock(lockKey)
 	defer func() {
-		mutex.Unlock()
-		s.versionMutex.Delete(lockKey)
+		s.keyLocker.Unlock(lockKey)
+		s.keyLocker.Delete(lockKey)
 	}()
 
 	upload, err := s.GetMultipartUpload(uploadId)

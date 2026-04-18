@@ -19,7 +19,7 @@ import (
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
-	arncommon "vorpalstacks/internal/utils/aws/arn"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ExecutorInterface defines the interface for executing state machines.
@@ -104,9 +104,7 @@ func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt
 	}
 
 	name := fmt.Sprintf("bus-%s", uuid.New().String())
-	executionArn := fmt.Sprintf("arn:aws:states:%s:%s:execution:%s:%s",
-		region, s.accountID,
-		arncommon.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
+	executionArn := arnutil.NewARNBuilder(s.accountID, region).StepFunctions().Execution(arnutil.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
 
 	exec := sfnstore.NewExecution(sm.StateMachineArn, name, evt.Input, "")
 	exec.ExecutionArn = executionArn

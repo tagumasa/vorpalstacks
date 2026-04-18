@@ -15,6 +15,7 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // kmsStores holds the various KMS stores.
@@ -195,21 +196,21 @@ func (s *KMSService) resolveCallerPrincipal(reqCtx *request.RequestContext, req 
 		accessKeyId = req.Headers.Get("X-Amz-Access-Key")
 	}
 	if accessKeyId == "" {
-		return "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
 	iamStoreAny := reqCtx.GetIAMStore()
 	if iamStoreAny == nil {
-		return "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
 	iamStore, ok := iamStoreAny.(iamstore.IAMStoreInterface)
 	if !ok {
-		return "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
 	accessKey, err := iamStore.AccessKeys().Get(accessKeyId)
 	if err != nil || accessKey == nil {
-		return "arn:aws:iam::" + reqCtx.GetAccountID() + ":root"
+		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
-	return "arn:aws:iam::" + reqCtx.GetAccountID() + ":user/" + accessKey.UserName
+	return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(accessKey.UserName)
 }
 
 func (s *KMSService) resolveAndAuthorizeKey(reqCtx *request.RequestContext, req *request.ParsedRequest, stores *kmsStores, action string, encryptionContext map[string]string) (*kmsstore.Key, error) {
@@ -238,17 +239,12 @@ func getEncryptionContextKeys(ctx map[string]string) string {
 }
 
 func parseEncryptionContext(params map[string]interface{}) map[string]string {
-	ctx := make(map[string]string)
 	if ec, ok := params["EncryptionContext"]; ok {
 		if ecMap, ok := ec.(map[string]interface{}); ok {
-			for k, v := range ecMap {
-				if vs, ok := v.(string); ok {
-					ctx[k] = vs
-				}
-			}
+			return request.CopyStringMap(ecMap)
 		}
 	}
-	return ctx
+	return nil
 }
 
 // ErrKeyNotFound is returned when a requested key does not exist.

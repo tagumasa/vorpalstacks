@@ -4,7 +4,6 @@ package waf
 // for vorpalstacks.
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -40,24 +39,7 @@ func (s *RegexPatternSetStore) Get(id string) (*RegexPatternSet, error) {
 
 // GetByARN retrieves a Regex Pattern Set by its ARN.
 func (s *RegexPatternSetStore) GetByARN(arn string) (*RegexPatternSet, error) {
-	var found *RegexPatternSet
-	err := s.ForEach(func(key string, value []byte) error {
-		var rps RegexPatternSet
-		if err := json.Unmarshal(value, &rps); err != nil {
-			return err
-		}
-		if rps.ARN == arn {
-			found = &rps
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_regex_pattern_set_by_arn", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_regex_pattern_set_by_arn", ErrNotFound)
-	}
-	return found, nil
+	return common.FindFirst[RegexPatternSet](s.BaseStore, func(r *RegexPatternSet) bool { return r.ARN == arn })
 }
 
 // Create creates a new Regex Pattern Set.
@@ -125,51 +107,13 @@ func (s *RegexPatternSetStore) Delete(id, lockToken string) error {
 
 // List returns a paginated list of Regex Pattern Sets.
 func (s *RegexPatternSetStore) List(marker string, maxItems int) (*RegexPatternSetListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var regexPatternSets []*RegexPatternSet
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var rps RegexPatternSet
-		if err := json.Unmarshal(value, &rps); err != nil {
-			return err
-		}
-
-		if !started {
-			if rps.ID == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if count < maxItems {
-			regexPatternSets = append(regexPatternSets, &rps)
-			lastKey = key
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[RegexPatternSet](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_regex_pattern_sets", err)
 	}
-
-	var nextMarker string
-	if hasMore {
-		nextMarker = lastKey
-	}
-
 	return &RegexPatternSetListResult{
-		RegexPatternSets: regexPatternSets,
-		IsTruncated:      hasMore,
-		NextMarker:       nextMarker,
+		RegexPatternSets: result.Items,
+		IsTruncated:      result.IsTruncated,
+		NextMarker:       result.NextMarker,
 	}, nil
 }

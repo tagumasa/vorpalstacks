@@ -40,7 +40,7 @@ func (s *SNSService) CreateTopic(ctx context.Context, reqCtx *request.RequestCon
 
 	topic.Tags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
 
-	topic.Attributes = parseTopicAttributes(req.Parameters)
+	topic.Attributes = parseAttributes(req.Parameters)
 
 	if isFifo {
 		if topic.Attributes == nil {
@@ -207,7 +207,7 @@ func (s *SNSService) ListTopics(ctx context.Context, reqCtx *request.RequestCont
 	return pagination.BuildListResponse("Topics", topics, nextToken), nil
 }
 
-func parseTopicAttributes(params map[string]interface{}) map[string]string {
+func parseAttributes(params map[string]interface{}) map[string]string {
 	result := make(map[string]string)
 
 	if attrs, ok := params["Attributes"].(map[string]interface{}); ok {

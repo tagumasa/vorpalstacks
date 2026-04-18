@@ -12,8 +12,8 @@ import (
 
 // AddTagsToResource adds tags to an SSM resource.
 func (s *SSMService) AddTagsToResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	_ = getParam(req, "ResourceType")
-	resourceID := getParam(req, "ResourceId")
+	_ = req.GetParam("ResourceType")
+	resourceID := req.GetParam("ResourceId")
 	if resourceID == "" {
 		return nil, ErrInvalidParameterName
 	}
@@ -37,8 +37,8 @@ func (s *SSMService) AddTagsToResource(ctx context.Context, reqCtx *request.Requ
 
 // RemoveTagsFromResource removes tags from an SSM resource.
 func (s *SSMService) RemoveTagsFromResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	_ = getParam(req, "ResourceType")
-	resourceID := getParam(req, "ResourceId")
+	_ = req.GetParam("ResourceType")
+	resourceID := req.GetParam("ResourceId")
 	if resourceID == "" {
 		return nil, ErrInvalidParameterName
 	}
@@ -62,8 +62,8 @@ func (s *SSMService) RemoveTagsFromResource(ctx context.Context, reqCtx *request
 
 // ListTagsForResource lists tags for an SSM resource.
 func (s *SSMService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	_ = getParam(req, "ResourceType")
-	resourceID := getParam(req, "ResourceId")
+	_ = req.GetParam("ResourceType")
+	resourceID := req.GetParam("ResourceId")
 	if resourceID == "" {
 		return nil, ErrInvalidParameterName
 	}

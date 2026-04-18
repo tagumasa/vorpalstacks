@@ -18,7 +18,7 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sns "vorpalstacks/internal/store/aws/sns"
 	sqs "vorpalstacks/internal/store/aws/sqs"
-	svcarn "vorpalstacks/internal/utils/aws/arn"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/pkg/vtl"
 )
 
@@ -654,7 +654,7 @@ func (e *AWSExecutor) executeSNS(ctx context.Context, req *IntegrationRequest) (
 	if topicRegion == "" {
 		topicRegion = e.region
 	}
-	topicArn := fmt.Sprintf("arn:aws:sns:%s:%s:%s", topicRegion, e.accountID, topicName)
+	topicArn := arnutil.NewARNBuilder(e.accountID, topicRegion).SNS().Topic(topicName)
 
 	action := req.QueryParams["Action"]
 	if action == "" {
@@ -716,7 +716,7 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 	}
 
 	if e.bus != nil {
-		_, _, snsRegion, _, _ := svcarn.SplitARN(topicArn)
+		_, _, snsRegion, _, _ := arnutil.SplitARN(topicArn)
 		if snsRegion == "" {
 			snsRegion = e.region
 		}

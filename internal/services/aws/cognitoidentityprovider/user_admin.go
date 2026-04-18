@@ -48,7 +48,7 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 	user.Attributes = userAttrs
 	user.UserStatus = "FORCE_CHANGE_PASSWORD"
 
-	tempPassword := getParam(req, "TemporaryPassword")
+	tempPassword := req.GetParam("TemporaryPassword")
 	if tempPassword != "" {
 		if err := validatePassword(tempPassword, userPool.PasswordPolicy); err != nil {
 			return nil, ErrPasswordPolicyViolation
@@ -60,7 +60,7 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 		user.PasswordHash = string(hash)
 	}
 
-	if messageAction := getParam(req, "MessageAction"); messageAction == "SUPPRESS" {
+	if messageAction := req.GetParam("MessageAction"); messageAction == "SUPPRESS" {
 		user.UserStatus = "FORCE_CHANGE_PASSWORD"
 	}
 
@@ -76,7 +76,7 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 	}
 
 	attrs := userAttributesMap(user)
-	if preSignUpResult.AutoConfirmUser || getParam(req, "MessageAction") == "SUPPRESS" {
+	if preSignUpResult.AutoConfirmUser || req.GetParam("MessageAction") == "SUPPRESS" {
 		if err := invokePostConfirmation(ctx, s, PostConfirmationAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, attrs); err != nil {
 			logs.Warn("PostConfirmation trigger failed", logs.Err(err))
 		}

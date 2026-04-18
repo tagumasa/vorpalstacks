@@ -1,7 +1,7 @@
 package eventbridge
 
 import (
-	"fmt"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 
 	awserrors "vorpalstacks/internal/common/errors"
 )
@@ -40,5 +40,5 @@ func NewInvalidParameterException(message string) *awserrors.AWSError {
 
 // BuildEventBusARN constructs an ARN for an EventBridge event bus.
 func BuildEventBusARN(accountID, region, name string) string {
-	return fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", region, accountID, name)
+	return arnutil.NewARNBuilder(accountID, region).Events().EventBus(name)
 }

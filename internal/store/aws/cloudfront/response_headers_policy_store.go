@@ -1,7 +1,6 @@
 package cloudfront
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -37,25 +36,7 @@ func (s *ResponseHeadersPolicyStore) Get(id string) (*ResponseHeadersPolicy, err
 
 // GetByName retrieves a response headers policy by its name.
 func (s *ResponseHeadersPolicyStore) GetByName(name string) (*ResponseHeadersPolicy, error) {
-	var found *ResponseHeadersPolicy
-	err := s.ForEach(func(key string, value []byte) error {
-		var policy ResponseHeadersPolicy
-		if err := json.Unmarshal(value, &policy); err != nil {
-			return err
-		}
-		if policy.Name == name {
-			found = &policy
-			return nil
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_response_headers_policy_by_name", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_response_headers_policy_by_name", ErrNotFound)
-	}
-	return found, nil
+	return common.FindFirst[ResponseHeadersPolicy](s.BaseStore, func(p *ResponseHeadersPolicy) bool { return p.Name == name })
 }
 
 // Create creates a new response headers policy.
@@ -135,53 +116,15 @@ func (s *ResponseHeadersPolicyStore) Delete(id string) error {
 
 // List returns a paginated list of response headers policies.
 func (s *ResponseHeadersPolicyStore) List(marker string, maxItems int) (*ResponseHeadersPolicyListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var policies []*ResponseHeadersPolicy
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var policy ResponseHeadersPolicy
-		if err := json.Unmarshal(value, &policy); err != nil {
-			return err
-		}
-
-		if !started {
-			if key == marker {
-				started = true
-				return nil
-			}
-			return nil
-		}
-
-		if count < maxItems {
-			policies = append(policies, &policy)
-			lastKey = key
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[ResponseHeadersPolicy](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_response_headers_policies", err)
 	}
 
-	var nextMarker string
-	if hasMore {
-		nextMarker = lastKey
-	}
-
 	return &ResponseHeadersPolicyListResult{
-		ResponseHeadersPolicies: policies,
-		IsTruncated:             hasMore,
-		NextMarker:              nextMarker,
+		ResponseHeadersPolicies: result.Items,
+		IsTruncated:             result.IsTruncated,
+		NextMarker:              result.NextMarker,
 	}, nil
 }
 

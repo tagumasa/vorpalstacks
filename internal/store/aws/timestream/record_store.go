@@ -11,6 +11,7 @@ import (
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/chunk"
+	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/naming"
 )
 
@@ -22,7 +23,7 @@ type RecordStore struct {
 	chunkSize  int
 	index      *chunk.PebbleIndex
 	useIndex   bool
-	chunkMu    sync.Map
+	keyLocker  common.KeyLocker
 	chunkPaths sync.Map
 	buffers    map[string]*chunkBuffer
 	bufferMu   sync.Mutex
@@ -96,14 +97,6 @@ func (s *RecordStore) getChunkPath(databaseName, tableName string, ts time.Time)
 	return fmt.Sprintf("%s/timestream_chunks/%s/%s/%s/%s.chunk", s.dataPath, s.region, naming.SanitizePathComponent(databaseName), naming.SanitizePathComponent(tableName), hour)
 }
 
-func (s *RecordStore) getChunkLock(chunkPath string) *sync.Mutex {
-	mu, _ := s.chunkMu.LoadOrStore(chunkPath, &sync.Mutex{})
-	if typed, ok := mu.(*sync.Mutex); ok {
-		return typed
-	}
-	return &sync.Mutex{}
-}
-
 func (s *RecordStore) cleanupChunkLocks() {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
@@ -114,13 +107,12 @@ func (s *RecordStore) cleanupChunkLocks() {
 		case <-ticker.C:
 		}
 		cutoff := time.Now().Add(-2 * time.Hour).Format("2006-01-02-15")
-		s.chunkMu.Range(func(key, _ interface{}) bool {
-			path := key.(string)
+		s.keyLocker.Range(func(path string) bool {
 			idx := strings.LastIndex(path, "/")
 			if idx >= 0 {
 				hour := strings.TrimSuffix(path[idx+1:], ".chunk")
 				if hour < cutoff {
-					s.chunkMu.Delete(key)
+					s.keyLocker.Delete(path)
 				}
 			}
 			return true
@@ -295,9 +287,8 @@ func (s *RecordStore) WriteRecords(databaseName, tableName string, records []Rec
 }
 
 func (s *RecordStore) writeChunkBatch(chunkPath string, newEntries []*chunk.TimestreamEntry) error {
-	mu := s.getChunkLock(chunkPath)
-	mu.Lock()
-	defer mu.Unlock()
+	s.keyLocker.Lock(chunkPath)
+	defer s.keyLocker.Unlock(chunkPath)
 
 	s.bufferMu.Lock()
 	buf, ok := s.buffers[chunkPath]

@@ -8,6 +8,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -148,72 +149,26 @@ func (s *IAMService) DeleteSAMLProvider(ctx context.Context, reqCtx *request.Req
 	return response.EmptyResponse(), nil
 }
 
+var samlProviderTagOps = tagOps[*iamstore.SAMLProvider]{
+	paramName:  "SAMLProviderArn",
+	emptyErr:   NewValidationError("SAMLProviderArn"),
+	notFoundFn: func(n string) error { return NewNoSuchEntityError("SAML provider", n) },
+	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.SAMLProvider, error) { return s.SAMLProviders().Get(n) },
+	putFn:      func(s *iamstore.IAMStore, r *iamstore.SAMLProvider) error { return s.SAMLProviders().Put(r) },
+	tagsFn:     func(r *iamstore.SAMLProvider) *[]types.Tag { return &r.Tags },
+}
+
 // TagSAMLProvider adds tags to a SAML provider.
 func (s *IAMService) TagSAMLProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	providerArn := request.GetStringParam(req.Parameters, "SAMLProviderArn")
-	if providerArn == "" {
-		return nil, NewValidationError("SAMLProviderArn")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	provider, err := store.SAMLProviders().Get(providerArn)
-	if err != nil {
-		return nil, NewNoSuchEntityError("SAML provider", providerArn)
-	}
-
-	provider.Tags = tags.Apply(provider.Tags, tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-	if err := store.SAMLProviders().Put(provider); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagResource(ctx, s, reqCtx, req, samlProviderTagOps)
 }
 
 // UntagSAMLProvider removes tags from a SAML provider.
 func (s *IAMService) UntagSAMLProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	providerArn := request.GetStringParam(req.Parameters, "SAMLProviderArn")
-	if providerArn == "" {
-		return nil, NewValidationError("SAMLProviderArn")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	provider, err := store.SAMLProviders().Get(providerArn)
-	if err != nil {
-		return nil, NewNoSuchEntityError("SAML provider", providerArn)
-	}
-
-	provider.Tags = tags.RemoveByTagKeys(provider.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
-	if err := store.SAMLProviders().Put(provider); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return untagResource(ctx, s, reqCtx, req, samlProviderTagOps)
 }
 
 // ListSAMLProviderTags lists the tags attached to a SAML provider.
 func (s *IAMService) ListSAMLProviderTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	providerArn := request.GetStringParam(req.Parameters, "SAMLProviderArn")
-	if providerArn == "" {
-		return nil, NewValidationError("SAMLProviderArn")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	provider, err := store.SAMLProviders().Get(providerArn)
-	if err != nil {
-		return nil, NewNoSuchEntityError("SAML provider", providerArn)
-	}
-
-	return map[string]interface{}{
-		"Tags":        tags.ToResponse(provider.Tags),
-		"IsTruncated": false,
-	}, nil
+	return listResourceTags(ctx, s, reqCtx, req, samlProviderTagOps)
 }

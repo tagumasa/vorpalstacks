@@ -14,6 +14,7 @@ const accessKeyBucketName = "iam_access_keys"
 // AccessKeyStore manages IAM access key data in persistent storage.
 type AccessKeyStore struct {
 	*common.BaseStore
+	kl common.KeyLocker
 }
 
 // NewAccessKeyStore creates a new store for IAM access keys.
@@ -109,32 +110,36 @@ func (s *AccessKeyStore) Delete(accessKeyId string) error {
 
 // UpdateStatus changes the status of an access key.
 func (s *AccessKeyStore) UpdateStatus(accessKeyId string, status AccessKeyStatus) error {
-	key, err := s.Get(accessKeyId)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(accessKeyId, func() error {
+		key, err := s.Get(accessKeyId)
+		if err != nil {
+			return err
+		}
 
-	if status != AccessKeyStatusActive && status != AccessKeyStatusInactive {
-		return NewStoreError("update_access_key_status", ErrInvalidAccessKeyStatus)
-	}
+		if status != AccessKeyStatusActive && status != AccessKeyStatusInactive {
+			return NewStoreError("update_access_key_status", ErrInvalidAccessKeyStatus)
+		}
 
-	key.Status = status
-	return s.Put(key)
+		key.Status = status
+		return s.Put(key)
+	})
 }
 
 // UpdateLastUsed updates the last used timestamp and location for an access key.
 func (s *AccessKeyStore) UpdateLastUsed(accessKeyId, region, service string) error {
-	key, err := s.Get(accessKeyId)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(accessKeyId, func() error {
+		key, err := s.Get(accessKeyId)
+		if err != nil {
+			return err
+		}
 
-	now := time.Now().UTC()
-	key.LastUsedDate = &now
-	key.LastUsedRegion = region
-	key.LastUsedService = service
+		now := time.Now().UTC()
+		key.LastUsedDate = &now
+		key.LastUsedRegion = region
+		key.LastUsedService = service
 
-	return s.Put(key)
+		return s.Put(key)
+	})
 }
 
 // Create generates a new access key for a user.

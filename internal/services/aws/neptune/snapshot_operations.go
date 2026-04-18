@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	appconfig "vorpalstacks/internal/config"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateDBClusterSnapshot creates a new snapshot of the specified DB cluster.
@@ -46,7 +47,7 @@ func (s *NeptuneService) CreateDBClusterSnapshot(ctx context.Context, reqCtx *re
 		Port:                        cluster.Port,
 		StorageEncrypted:            cluster.StorageEncrypted,
 		KmsKeyId:                    cluster.KmsKeyId,
-		DBSnapshotArn:               fmt.Sprintf("arn:aws:rds:%s:%s:cluster-snapshot:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), snapshotID),
+		DBSnapshotArn:               arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().ClusterSnapshot(snapshotID),
 		AccountID:                   reqCtx.GetAccountID(),
 		Region:                      reqCtx.GetRegion(),
 	}
@@ -172,7 +173,7 @@ func (s *NeptuneService) CopyDBClusterSnapshot(ctx context.Context, reqCtx *requ
 		ct := *source.ClusterCreateTime
 		copy.ClusterCreateTime = &ct
 	}
-	copy.DBSnapshotArn = fmt.Sprintf("arn:aws:rds:%s:%s:cluster-snapshot:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), targetID)
+	copy.DBSnapshotArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().ClusterSnapshot(targetID)
 
 	if err := store.CreateSnapshot(&copy); err != nil {
 		return nil, translateStoreError(err)
@@ -336,7 +337,7 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 		LatestRestorableTime:        &now,
 		AccountID:                   reqCtx.GetAccountID(),
 		Region:                      reqCtx.GetRegion(),
-		DBClusterArn:                fmt.Sprintf("arn:aws:rds:%s:%s:cluster:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), clusterID),
+		DBClusterArn:                arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Cluster(clusterID),
 	}
 
 	if err := store.CreateCluster(cluster); err != nil {
@@ -396,7 +397,7 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 		LatestRestorableTime:        &now,
 		AccountID:                   reqCtx.GetAccountID(),
 		Region:                      reqCtx.GetRegion(),
-		DBClusterArn:                fmt.Sprintf("arn:aws:rds:%s:%s:cluster:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), clusterID),
+		DBClusterArn:                arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Cluster(clusterID),
 	}
 
 	if err := store.CreateCluster(cluster); err != nil {

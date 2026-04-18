@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -150,74 +151,30 @@ func (s *IAMService) ListServerCertificates(ctx context.Context, reqCtx *request
 	return response, nil
 }
 
+var serverCertificateTagOps = tagOps[*iamstore.ServerCertificate]{
+	paramName:  "ServerCertificateName",
+	emptyErr:   NewValidationError("ServerCertificateName"),
+	notFoundFn: func(n string) error { return NewNoSuchEntityError("server certificate", n) },
+	getFn: func(s *iamstore.IAMStore, n string) (*iamstore.ServerCertificate, error) {
+		return s.ServerCertificates().Get(n)
+	},
+	putFn:  func(s *iamstore.IAMStore, r *iamstore.ServerCertificate) error { return s.ServerCertificates().Put(r) },
+	tagsFn: func(r *iamstore.ServerCertificate) *[]types.Tag { return &r.Tags },
+}
+
 // TagServerCertificate adds tags to a server certificate.
 func (s *IAMService) TagServerCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "ServerCertificateName")
-	if name == "" {
-		return nil, NewValidationError("ServerCertificateName")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	cert, err := store.ServerCertificates().Get(name)
-	if err != nil {
-		return nil, NewNoSuchEntityError("server certificate", name)
-	}
-
-	cert.Tags = tags.Apply(cert.Tags, tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-	if err := store.ServerCertificates().Put(cert); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagResource(ctx, s, reqCtx, req, serverCertificateTagOps)
 }
 
 // UntagServerCertificate removes tags from a server certificate.
 func (s *IAMService) UntagServerCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "ServerCertificateName")
-	if name == "" {
-		return nil, NewValidationError("ServerCertificateName")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	cert, err := store.ServerCertificates().Get(name)
-	if err != nil {
-		return nil, NewNoSuchEntityError("server certificate", name)
-	}
-
-	cert.Tags = tags.RemoveByTagKeys(cert.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
-	if err := store.ServerCertificates().Put(cert); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return untagResource(ctx, s, reqCtx, req, serverCertificateTagOps)
 }
 
 // ListServerCertificateTags lists the tags attached to a server certificate.
 func (s *IAMService) ListServerCertificateTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "ServerCertificateName")
-	if name == "" {
-		return nil, NewValidationError("ServerCertificateName")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	cert, err := store.ServerCertificates().Get(name)
-	if err != nil {
-		return nil, NewNoSuchEntityError("server certificate", name)
-	}
-
-	return map[string]interface{}{
-		"Tags":        tags.ToResponse(cert.Tags),
-		"IsTruncated": false,
-	}, nil
+	return listResourceTags(ctx, s, reqCtx, req, serverCertificateTagOps)
 }
 
 func (s *IAMService) serverCertificateMetadataToResponse(cert *iamstore.ServerCertificate) map[string]interface{} {

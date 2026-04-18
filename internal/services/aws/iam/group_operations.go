@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -282,74 +283,26 @@ func (s *IAMService) groupToResponse(reqCtx *request.RequestContext, group *iams
 	return resp
 }
 
+var groupTagOps = tagOps[*iamstore.Group]{
+	paramName:  "GroupName",
+	emptyErr:   ErrNoSuchGroup,
+	notFoundFn: func(n string) error { return NewNoSuchGroupError(n) },
+	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.Group, error) { return s.Groups().Get(n) },
+	putFn:      func(s *iamstore.IAMStore, r *iamstore.Group) error { return s.Groups().Put(r) },
+	tagsFn:     func(r *iamstore.Group) *[]types.Tag { return &r.Tags },
+}
+
 // TagGroup adds tags to an IAM group.
 func (s *IAMService) TagGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		return nil, ErrNoSuchGroup
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	group, err := store.Groups().Get(groupName)
-	if err != nil {
-		return nil, NewNoSuchGroupError(groupName)
-	}
-
-	group.Tags = tags.Apply(group.Tags, tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-
-	if err := store.Groups().Put(group); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagResource(ctx, s, reqCtx, req, groupTagOps)
 }
 
 // UntagGroup removes tags from an IAM group.
 func (s *IAMService) UntagGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		return nil, ErrNoSuchGroup
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	group, err := store.Groups().Get(groupName)
-	if err != nil {
-		return nil, NewNoSuchGroupError(groupName)
-	}
-
-	group.Tags = tags.RemoveByTagKeys(group.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
-
-	if err := store.Groups().Put(group); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return untagResource(ctx, s, reqCtx, req, groupTagOps)
 }
 
 // ListGroupTags lists tags for an IAM group.
 func (s *IAMService) ListGroupTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		return nil, ErrNoSuchGroup
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	group, err := store.Groups().Get(groupName)
-	if err != nil {
-		return nil, NewNoSuchGroupError(groupName)
-	}
-
-	return map[string]interface{}{
-		"Tags":        tags.ToResponse(group.Tags),
-		"IsTruncated": false,
-	}, nil
+	return listResourceTags(ctx, s, reqCtx, req, groupTagOps)
 }

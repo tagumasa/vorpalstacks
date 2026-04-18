@@ -4,6 +4,7 @@ import (
 	"time"
 
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // NeptuneStoreInterface aggregates all Neptune Management API resource CRUD
@@ -121,8 +122,8 @@ type EventSubscriptionOps interface {
 
 // TagOps defines operations for managing resource tags.
 type TagOps interface {
-	AddTags(resourceArn string, tags []Tag) error
-	GetTags(resourceArn string) ([]Tag, error)
+	AddTags(resourceArn string, tags []types.Tag) error
+	GetTags(resourceArn string) ([]types.Tag, error)
 	RemoveTags(resourceArn string, keys []string) error
 }
 

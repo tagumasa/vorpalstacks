@@ -63,54 +63,19 @@ func (s *RoleStore) GetByID(roleID string) (*Role, error) {
 
 // List returns a list of IAM roles from the store with pagination support.
 func (s *RoleStore) List(pathPrefix string, marker string, maxItems int) (*RoleListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
+	var filter common.FilterFunc[Role]
+	if pathPrefix != "" {
+		filter = func(r *Role) bool { return strings.HasPrefix(r.Path, pathPrefix) }
 	}
-
-	var roles []*Role
-	count := 0
-	started := marker == ""
-	hasMore := false
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var role Role
-		if err := json.Unmarshal(value, &role); err != nil {
-			return err
-		}
-
-		if !started {
-			if role.RoleName == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if pathPrefix != "" && !strings.HasPrefix(role.Path, pathPrefix) {
-			return nil
-		}
-
-		if count < maxItems {
-			roles = append(roles, &role)
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[Role](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
-		return nil, NewStoreError("list_roles", err)
+		return nil, err
 	}
-
-	result := &RoleListResult{
-		Roles:       roles,
-		IsTruncated: hasMore,
-	}
-	if len(roles) > 0 {
-		result.Marker = roles[len(roles)-1].RoleName
-	}
-
-	return result, nil
+	return &RoleListResult{
+		Roles:       result.Items,
+		IsTruncated: result.IsTruncated,
+		Marker:      result.NextMarker,
+	}, nil
 }
 
 // Put creates or updates an IAM role in the store.

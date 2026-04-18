@@ -4,6 +4,8 @@ package config
 import (
 	"os"
 	"strconv"
+
+	"vorpalstacks/internal/common/request"
 )
 
 // BootstrapConfig holds all configuration values read from environment variables
@@ -82,7 +84,7 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		GRPCWebBindAddr:       envOr("GRPC_WEB_BIND_ADDR", "127.0.0.1"),
 		DataPath:              envOr("DATA_PATH", "./data"),
 		AccountID:             accountId,
-		Region:                envOr("AWS_REGION", "us-east-1"),
+		Region:                envOr("AWS_REGION", request.DefaultRegion),
 		AccessKeyID:           os.Getenv("AWS_ACCESS_KEY_ID"),
 		SecretAccessKey:       os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		SignatureVerification: envBool("SIGNATURE_VERIFICATION_ENABLED", true),

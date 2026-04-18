@@ -1,7 +1,6 @@
 package lambda
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/logs"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
@@ -25,17 +25,12 @@ type FunctionURLServer struct {
 	accountID     string
 	region        string
 	storeProvider FunctionStoreProvider
-	lambdaInvoker LambdaInvoker
-}
-
-// LambdaInvoker abstracts the ability to invoke a Lambda function for gateway use.
-type LambdaInvoker interface {
-	InvokeForGateway(ctx context.Context, functionName string, payload []byte) (int64, []byte, error)
+	lambdaInvoker common.LambdaInvoker
 }
 
 // NewFunctionURLServer creates a new FunctionURLServer backed by the shared
 // Lambda service store cache.
-func NewFunctionURLServer(storeProvider FunctionStoreProvider, accountID, region string, invoker LambdaInvoker) *FunctionURLServer {
+func NewFunctionURLServer(storeProvider FunctionStoreProvider, accountID, region string, invoker common.LambdaInvoker) *FunctionURLServer {
 	return &FunctionURLServer{
 		storeProvider: storeProvider,
 		accountID:     accountID,

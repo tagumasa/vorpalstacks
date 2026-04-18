@@ -4,7 +4,6 @@ package waf
 // for vorpalstacks.
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -42,24 +41,7 @@ func (s *WebACLStore) Get(id string) (*WebACL, error) {
 // GetByARN retrieves a WAF Web ACL by its ARN from the store.
 // Returns the Web ACL or an error if not found.
 func (s *WebACLStore) GetByARN(arn string) (*WebACL, error) {
-	var found *WebACL
-	err := s.ForEach(func(key string, value []byte) error {
-		var webACL WebACL
-		if err := json.Unmarshal(value, &webACL); err != nil {
-			return err
-		}
-		if webACL.ARN == arn {
-			found = &webACL
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_web_acl_by_arn", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_web_acl_by_arn", ErrNotFound)
-	}
-	return found, nil
+	return common.FindFirst[WebACL](s.BaseStore, func(w *WebACL) bool { return w.ARN == arn })
 }
 
 // Create creates a new WAF Web ACL in the store.
@@ -138,53 +120,16 @@ func (s *WebACLStore) Delete(id, lockToken string) error {
 	return nil
 }
 
-// List returns a list of WAF Web ACLs from the store with pagination support.
+// List returns a list of WAF Web ACLs from the store with pagination
+// support.
 func (s *WebACLStore) List(marker string, maxItems int) (*WebACLListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var webACLs []*WebACL
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var webACL WebACL
-		if err := json.Unmarshal(value, &webACL); err != nil {
-			return err
-		}
-
-		if !started {
-			if webACL.ID == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if count < maxItems {
-			webACLs = append(webACLs, &webACL)
-			lastKey = key
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[WebACL](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_web_acls", err)
 	}
-
-	var nextMarker string
-	if hasMore {
-		nextMarker = lastKey
-	}
-
 	return &WebACLListResult{
-		WebACLs:     webACLs,
-		IsTruncated: hasMore,
-		NextMarker:  nextMarker,
+		WebACLs:     result.Items,
+		IsTruncated: result.IsTruncated,
+		NextMarker:  result.NextMarker,
 	}, nil
 }

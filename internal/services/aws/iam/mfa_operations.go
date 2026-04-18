@@ -12,6 +12,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/crypto"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -425,81 +426,33 @@ func (s *IAMService) DeleteAccountPasswordPolicy(ctx context.Context, reqCtx *re
 	return response.EmptyResponse(), nil
 }
 
+var mfaDeviceTagOps = tagOps[*iamstore.VirtualMFADevice]{
+	paramName:  "SerialNumber",
+	emptyErr:   ErrNoSuchMFADevice,
+	notFoundFn: func(n string) error { return NewNoSuchMFADeviceError(n) },
+	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.VirtualMFADevice, error) { return s.MFADevices().Get(n) },
+	putFn:      func(s *iamstore.IAMStore, r *iamstore.VirtualMFADevice) error { return s.MFADevices().Put(r) },
+	tagsFn:     func(r *iamstore.VirtualMFADevice) *[]types.Tag { return &r.Tags },
+}
+
 // TagMFADevice adds tags to a virtual MFA device.
 // SerialNumber is required.
 // Tags are provided as a list of key-value pairs.
 func (s *IAMService) TagMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
-	if serialNumber == "" {
-		return nil, ErrNoSuchMFADevice
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	device, err := store.MFADevices().Get(serialNumber)
-	if err != nil {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
-	}
-
-	device.Tags = tags.Apply(device.Tags, tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-
-	if err := store.MFADevices().Put(device); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagResource(ctx, s, reqCtx, req, mfaDeviceTagOps)
 }
 
 // UntagMFADevice removes tags from a virtual MFA device.
 // SerialNumber is required.
 // TagKeys specifies which tags to remove.
 func (s *IAMService) UntagMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
-	if serialNumber == "" {
-		return nil, ErrNoSuchMFADevice
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	device, err := store.MFADevices().Get(serialNumber)
-	if err != nil {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
-	}
-
-	device.Tags = tags.RemoveByTagKeys(device.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
-
-	if err := store.MFADevices().Put(device); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return untagResource(ctx, s, reqCtx, req, mfaDeviceTagOps)
 }
 
 // ListMFADeviceTags lists the tags attached to a virtual MFA device.
 // SerialNumber is required.
 func (s *IAMService) ListMFADeviceTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
-	if serialNumber == "" {
-		return nil, ErrNoSuchMFADevice
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	device, err := store.MFADevices().Get(serialNumber)
-	if err != nil {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
-	}
-
-	return map[string]interface{}{
-		"Tags":        tags.ToResponse(device.Tags),
-		"IsTruncated": false,
-	}, nil
+	return listResourceTags(ctx, s, reqCtx, req, mfaDeviceTagOps)
 }
 
 func (s *IAMService) mfaDeviceToResponse(reqCtx *request.RequestContext, device *iamstore.VirtualMFADevice, includeSecret bool) map[string]interface{} {

@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -272,81 +273,33 @@ func (s *IAMService) ListUsers(ctx context.Context, reqCtx *request.RequestConte
 	return response, nil
 }
 
+var userTagOps = tagOps[*iamstore.User]{
+	paramName:  "UserName",
+	emptyErr:   NewValidationError("UserName"),
+	notFoundFn: func(n string) error { return NewNoSuchUserError(n) },
+	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.User, error) { return s.Users().Get(n) },
+	putFn:      func(s *iamstore.IAMStore, r *iamstore.User) error { return s.Users().Put(r) },
+	tagsFn:     func(r *iamstore.User) *[]types.Tag { return &r.Tags },
+}
+
 // TagUser adds tags to an IAM user.
 // UserName is required.
 // Tags are provided as a list of key-value pairs.
 func (s *IAMService) TagUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	user, err := store.Users().Get(userName)
-	if err != nil {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	user.Tags = tags.Apply(user.Tags, tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-
-	if err := store.Users().Put(user); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagResource(ctx, s, reqCtx, req, userTagOps)
 }
 
 // UntagUser removes tags from an IAM user.
 // UserName is required.
 // TagKeys specifies which tags to remove.
 func (s *IAMService) UntagUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	user, err := store.Users().Get(userName)
-	if err != nil {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	user.Tags = tags.RemoveByTagKeys(user.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
-
-	if err := store.Users().Put(user); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return untagResource(ctx, s, reqCtx, req, userTagOps)
 }
 
 // ListUserTags lists the tags attached to an IAM user.
 // UserName is required.
 func (s *IAMService) ListUserTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	user, err := store.Users().Get(userName)
-	if err != nil {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	return map[string]interface{}{
-		"Tags":        tags.ToResponse(user.Tags),
-		"IsTruncated": false,
-	}, nil
+	return listResourceTags(ctx, s, reqCtx, req, userTagOps)
 }
 
 // PutUserPermissionsBoundary sets the permissions boundary for an IAM user.

@@ -77,6 +77,33 @@ func (b *LambdaBuilder) ParseLayerVersion(arn string) int64 {
 // StepFunctionsBuilder provides methods for constructing Step Functions ARNs.
 type StepFunctionsBuilder struct{ *ARNBuilder }
 
+// RDSBuilder provides methods for constructing RDS (including Neptune) ARNs.
+type RDSBuilder struct{ *ARNBuilder }
+
+// RDS returns an RDSBuilder for constructing RDS/Neptune ARNs.
+func (b *ARNBuilder) RDS() *RDSBuilder { return &RDSBuilder{b} }
+
+// Cluster constructs an ARN for an RDS/Neptune DB cluster.
+func (b *RDSBuilder) Cluster(id string) string { return b.Build("rds", "cluster/"+id) }
+
+// ClusterSnapshot constructs an ARN for an RDS/Neptune DB cluster snapshot.
+func (b *RDSBuilder) ClusterSnapshot(id string) string {
+	return b.Build("rds", "cluster-snapshot/"+id)
+}
+
+// DBInstance constructs an ARN for an RDS/Neptune DB instance.
+func (b *RDSBuilder) DBInstance(id string) string { return b.Build("rds", "db/"+id) }
+
+// ClusterEndpoint constructs an ARN for an RDS/Neptune DB cluster endpoint.
+func (b *RDSBuilder) ClusterEndpoint(id string) string {
+	return b.Build("rds", "cluster-endpoint:"+id)
+}
+
+// GlobalCluster constructs an ARN for an RDS/Neptune global cluster.
+func (b *RDSBuilder) GlobalCluster(id string) string {
+	return b.Build("rds", "global-cluster/"+id)
+}
+
 // StepFunctions returns a StepFunctionsBuilder for constructing Step Functions ARNs.
 func (b *ARNBuilder) StepFunctions() *StepFunctionsBuilder { return &StepFunctionsBuilder{b} }
 
@@ -93,6 +120,11 @@ func (b *StepFunctionsBuilder) Execution(smName, execName string) string {
 // Activity constructs an ARN for a Step Functions activity.
 func (b *StepFunctionsBuilder) Activity(name string) string {
 	return b.Build("states", "activity:"+name)
+}
+
+// StateMachineAlias constructs an ARN for a Step Functions state machine alias.
+func (b *StepFunctionsBuilder) StateMachineAlias(name string) string {
+	return b.Build("states", "stateMachineAlias:"+name)
 }
 
 // ParseStateMachineName extracts the state machine name from a Step Functions ARN.

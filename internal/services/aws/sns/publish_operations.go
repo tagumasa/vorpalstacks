@@ -454,7 +454,7 @@ func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscr
 	if s.bus != nil {
 		functionARN := sub.Endpoint
 		if !strings.HasPrefix(functionARN, "arn:") {
-			functionARN = fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", s.accountID, region, sub.Endpoint)
+			functionARN = arnutil.NewARNBuilder(s.accountID, region).Lambda().Function(sub.Endpoint)
 		}
 		allowed, evalErr := s.bus.EvaluateTargetPolicy(context.Background(), functionARN, "lambda", "sns.amazonaws.com", "lambda:InvokeFunction", functionARN)
 		if evalErr != nil {

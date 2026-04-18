@@ -1,9 +1,10 @@
 package authorization
 
 import (
-	"fmt"
 	"net/url"
 	"strings"
+
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ResourceExtractorFunc is a function that extracts the resource ARN from request parameters.
@@ -72,6 +73,122 @@ func (e *ResourceExtractor) registerDefaults() {
 	e.registerNeptuneGraphExtractors()
 }
 
+func s3BucketArn(accountID, region string, bucket string) string {
+	return arnutil.NewARNBuilder(accountID, region).S3().Bucket(bucket)
+}
+
+func s3ObjectArn(accountID, region string, bucket, key string) string {
+	return arnutil.NewARNBuilder(accountID, region).S3().Object(bucket, key)
+}
+
+func sqsQueueArn(accountID, region string, queueName string) string {
+	return arnutil.NewARNBuilder(accountID, region).SQS().Queue(queueName)
+}
+
+func dynamodbTableArn(accountID, region string, tableName string) string {
+	return arnutil.NewARNBuilder(accountID, region).DynamoDB().Table(tableName)
+}
+
+func kmsKeyArn(accountID, region string, keyID string) string {
+	return arnutil.NewARNBuilder(accountID, region).KMS().Key(keyID)
+}
+
+func kmsAliasArn(accountID, region string, aliasName string) string {
+	return arnutil.NewARNBuilder(accountID, region).KMS().Alias(aliasName)
+}
+
+func lambdaFunctionArn(accountID, region string, functionName string) string {
+	return arnutil.NewARNBuilder(accountID, region).Lambda().Function(functionName)
+}
+
+func snsTopicArn(accountID, region string, topicName string) string {
+	return arnutil.NewARNBuilder(accountID, region).SNS().Topic(topicName)
+}
+
+func eventsEventBusArn(accountID, region string, busName string) string {
+	return arnutil.NewARNBuilder(accountID, region).Events().EventBus(busName)
+}
+
+func iamUserArn(accountID, region string, userName string) string {
+	return arnutil.NewARNBuilder(accountID, region).IAM().User(userName)
+}
+
+func iamRoleArn(accountID, region string, roleName string) string {
+	return arnutil.NewARNBuilder(accountID, region).IAM().Role(roleName)
+}
+
+func iamPolicyArn(accountID, region string, policyName string) string {
+	return arnutil.NewARNBuilder(accountID, region).IAM().Policy(policyName)
+}
+
+func kinesisStreamArn(accountID, region string, streamName string) string {
+	return arnutil.NewARNBuilder(accountID, region).Kinesis().Stream(streamName)
+}
+
+func logsLogGroupArn(accountID, region string, logGroupName string) string {
+	return arnutil.NewARNBuilder(accountID, region).CloudWatch().LogGroup(logGroupName)
+}
+
+func statesStateMachineArn(accountID, region string, name string) string {
+	return arnutil.NewARNBuilder(accountID, region).StepFunctions().StateMachine(name)
+}
+
+func secretsManagerSecretArn(accountID, region string, secretID string) string {
+	return arnutil.NewARNBuilder(accountID, region).SecretsManager().Secret(secretID)
+}
+
+func athenaWorkGroupArn(accountID, region string, workGroup string) string {
+	return arnutil.NewARNBuilder(accountID, region).Athena().WorkGroup(workGroup)
+}
+
+func appsyncApiArn(accountID, region string, apiId string) string {
+	return arnutil.NewARNBuilder(accountID, region).AppSync().Api(apiId)
+}
+
+func neptuneClusterArn(accountID, region string, clusterId string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune", "cluster/"+clusterId)
+}
+
+func neptuneClusterSnapshotArn(accountID, region string, snapshotId string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune", "cluster-snapshot/"+snapshotId)
+}
+
+func neptuneParamGroupArn(accountID, region string, groupName string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune", "cluster-pg/"+groupName)
+}
+
+func neptuneSubnetGroupArn(accountID, region string, groupName string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune", "subnet-group/"+groupName)
+}
+
+func neptuneInstanceArn(accountID, region string, instanceId string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune", "db/"+instanceId)
+}
+
+func neptuneGlobalClusterArn(accountID, region string, clusterId string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune", "global-cluster/"+clusterId)
+}
+
+func neptuneEventSubscriptionArn(accountID, region string, subName string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune", "event-subscription/"+subName)
+}
+
+func neptuneGraphArn(accountID, region string, graphId string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune-graph", "graph/"+graphId)
+}
+
+func neptuneGraphSnapshotArn(accountID, region string, snapshotId string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune-graph", "snapshot/"+snapshotId)
+}
+
+func neptuneGraphImportTaskArn(accountID, region string, taskId string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune-graph", "import-task/"+taskId)
+}
+
+func neptuneGraphExportTaskArn(accountID, region string, taskId string) string {
+	return arnutil.NewARNBuilder(accountID, region).Build("neptune-graph", "export-task/"+taskId)
+}
+
 func (e *ResourceExtractor) registerS3Extractors() {
 	s3Extractor := func(params map[string]interface{}, accountID, region string) string {
 		bucket, _ := params["Bucket"].(string)
@@ -80,9 +197,9 @@ func (e *ResourceExtractor) registerS3Extractors() {
 		}
 		key, _ := params["Key"].(string)
 		if key == "" {
-			return fmt.Sprintf("arn:aws:s3:::%s", bucket)
+			return s3BucketArn(accountID, region, bucket)
 		}
-		return fmt.Sprintf("arn:aws:s3:::%s/%s", bucket, key)
+		return s3ObjectArn(accountID, region, bucket, key)
 	}
 
 	services := []string{"s3"}
@@ -97,61 +214,20 @@ func (e *ResourceExtractor) registerS3Extractors() {
 		}
 	}
 
-	e.Register("s3", "ListBucket", func(params map[string]interface{}, accountID, region string) string {
+	s3BucketExtractor := func(params map[string]interface{}, accountID, region string) string {
 		bucket, _ := params["Bucket"].(string)
 		if bucket == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:s3:::%s", bucket)
-	})
+		return s3BucketArn(accountID, region, bucket)
+	}
 
-	e.Register("s3", "CreateBucket", func(params map[string]interface{}, accountID, region string) string {
-		bucket, _ := params["Bucket"].(string)
-		if bucket == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:s3:::%s", bucket)
-	})
-
-	e.Register("s3", "DeleteBucket", func(params map[string]interface{}, accountID, region string) string {
-		bucket, _ := params["Bucket"].(string)
-		if bucket == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:s3:::%s", bucket)
-	})
-
-	e.Register("s3", "GetBucketLocation", func(params map[string]interface{}, accountID, region string) string {
-		bucket, _ := params["Bucket"].(string)
-		if bucket == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:s3:::%s", bucket)
-	})
-
-	e.Register("s3", "PutBucketPolicy", func(params map[string]interface{}, accountID, region string) string {
-		bucket, _ := params["Bucket"].(string)
-		if bucket == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:s3:::%s", bucket)
-	})
-
-	e.Register("s3", "GetBucketPolicy", func(params map[string]interface{}, accountID, region string) string {
-		bucket, _ := params["Bucket"].(string)
-		if bucket == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:s3:::%s", bucket)
-	})
-
-	e.Register("s3", "DeleteBucketPolicy", func(params map[string]interface{}, accountID, region string) string {
-		bucket, _ := params["Bucket"].(string)
-		if bucket == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:s3:::%s", bucket)
-	})
+	for _, op := range []string{
+		"ListBucket", "CreateBucket", "DeleteBucket", "GetBucketLocation",
+		"PutBucketPolicy", "GetBucketPolicy", "DeleteBucketPolicy",
+	} {
+		e.Register("s3", op, s3BucketExtractor)
+	}
 }
 
 func (e *ResourceExtractor) registerSQSExtractors() {
@@ -161,7 +237,7 @@ func (e *ResourceExtractor) registerSQSExtractors() {
 			return "*"
 		}
 		queueName := extractQueueNameFromURL(queueURL)
-		return fmt.Sprintf("arn:aws:sqs:%s:%s:%s", region, accountID, queueName)
+		return sqsQueueArn(accountID, region, queueName)
 	}
 
 	operations := []string{
@@ -178,7 +254,7 @@ func (e *ResourceExtractor) registerSQSExtractors() {
 		if queueName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:sqs:%s:%s:%s", region, accountID, queueName)
+		return sqsQueueArn(accountID, region, queueName)
 	})
 
 	e.Register("sqs", "DeleteQueue", func(params map[string]interface{}, accountID, region string) string {
@@ -187,11 +263,11 @@ func (e *ResourceExtractor) registerSQSExtractors() {
 			return "*"
 		}
 		queueName := extractQueueNameFromURL(queueURL)
-		return fmt.Sprintf("arn:aws:sqs:%s:%s:%s", region, accountID, queueName)
+		return sqsQueueArn(accountID, region, queueName)
 	})
 
 	e.Register("sqs", "ListQueues", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:sqs:%s:%s:*", region, accountID)
+		return sqsQueueArn(accountID, region, "*")
 	})
 }
 
@@ -201,7 +277,7 @@ func (e *ResourceExtractor) registerDynamoDBExtractors() {
 		if tableName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s", region, accountID, tableName)
+		return dynamodbTableArn(accountID, region, tableName)
 	}
 
 	operations := []string{
@@ -218,11 +294,11 @@ func (e *ResourceExtractor) registerDynamoDBExtractors() {
 		if tableName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s", region, accountID, tableName)
+		return dynamodbTableArn(accountID, region, tableName)
 	})
 
 	e.Register("dynamodb", "ListTables", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/*", region, accountID)
+		return dynamodbTableArn(accountID, region, "*")
 	})
 }
 
@@ -235,13 +311,7 @@ func (e *ResourceExtractor) registerKMSExtractors() {
 		if strings.HasPrefix(keyID, "arn:") {
 			return keyID
 		}
-		if strings.HasPrefix(keyID, "mrk-") {
-			return fmt.Sprintf("arn:aws:kms:%s:%s:key/%s", region, accountID, keyID)
-		}
-		if len(keyID) == 36 && strings.Contains(keyID, "-") {
-			return fmt.Sprintf("arn:aws:kms:%s:%s:key/%s", region, accountID, keyID)
-		}
-		return fmt.Sprintf("arn:aws:kms:%s:%s:key/%s", region, accountID, keyID)
+		return kmsKeyArn(accountID, region, keyID)
 	}
 
 	operations := []string{
@@ -253,35 +323,31 @@ func (e *ResourceExtractor) registerKMSExtractors() {
 	}
 
 	e.Register("kms", "CreateKey", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:kms:%s:%s:key/*", region, accountID)
+		return kmsKeyArn(accountID, region, "*")
 	})
 
-	e.Register("kms", "DescribeKey", kmsExtractor)
-	e.Register("kms", "ScheduleKeyDeletion", kmsExtractor)
-	e.Register("kms", "CancelKeyDeletion", kmsExtractor)
-	e.Register("kms", "EnableKey", kmsExtractor)
-	e.Register("kms", "DisableKey", kmsExtractor)
-	e.Register("kms", "GetKeyPolicy", kmsExtractor)
-	e.Register("kms", "PutKeyPolicy", kmsExtractor)
+	for _, op := range []string{
+		"DescribeKey", "ScheduleKeyDeletion", "CancelKeyDeletion",
+		"EnableKey", "DisableKey", "GetKeyPolicy", "PutKeyPolicy",
+	} {
+		e.Register("kms", op, kmsExtractor)
+	}
+
 	e.Register("kms", "ListKeys", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:kms:%s:%s:key/*", region, accountID)
+		return kmsKeyArn(accountID, region, "*")
 	})
 
-	e.Register("kms", "CreateAlias", func(params map[string]interface{}, accountID, region string) string {
+	kmsAliasExtractor := func(params map[string]interface{}, accountID, region string) string {
 		aliasName, _ := params["AliasName"].(string)
 		if aliasName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:kms:%s:%s:%s", region, accountID, aliasName)
-	})
+		return kmsAliasArn(accountID, region, aliasName)
+	}
 
-	e.Register("kms", "DeleteAlias", func(params map[string]interface{}, accountID, region string) string {
-		aliasName, _ := params["AliasName"].(string)
-		if aliasName == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:kms:%s:%s:%s", region, accountID, aliasName)
-	})
+	for _, op := range []string{"CreateAlias", "DeleteAlias"} {
+		e.Register("kms", op, kmsAliasExtractor)
+	}
 }
 
 func (e *ResourceExtractor) registerLambdaExtractors() {
@@ -293,7 +359,7 @@ func (e *ResourceExtractor) registerLambdaExtractors() {
 		if strings.HasPrefix(functionName, "arn:") {
 			return functionName
 		}
-		return fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", region, accountID, functionName)
+		return lambdaFunctionArn(accountID, region, functionName)
 	}
 
 	operations := []string{
@@ -310,19 +376,19 @@ func (e *ResourceExtractor) registerLambdaExtractors() {
 		if functionName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", region, accountID, functionName)
+		return lambdaFunctionArn(accountID, region, functionName)
 	})
 
 	e.Register("lambda", "ListFunctions", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:lambda:%s:%s:function:*", region, accountID)
+		return arnutil.NewARNBuilder(accountID, region).Build("lambda", "function:*")
 	})
 
 	e.Register("lambda", "CreateEventSourceMapping", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:lambda:%s:%s:event-source-mapping:*", region, accountID)
+		return arnutil.NewARNBuilder(accountID, region).Build("lambda", "event-source-mapping:*")
 	})
 
 	e.Register("lambda", "ListEventSourceMappings", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:lambda:%s:%s:event-source-mapping:*", region, accountID)
+		return arnutil.NewARNBuilder(accountID, region).Build("lambda", "event-source-mapping:*")
 	})
 }
 
@@ -352,11 +418,11 @@ func (e *ResourceExtractor) registerSNExtractors() {
 		if name == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:sns:%s:%s:%s", region, accountID, name)
+		return snsTopicArn(accountID, region, name)
 	})
 
 	e.Register("sns", "ListTopics", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:sns:%s:%s:*", region, accountID)
+		return snsTopicArn(accountID, region, "*")
 	})
 
 	e.Register("sns", "Subscribe", func(params map[string]interface{}, accountID, region string) string {
@@ -378,7 +444,7 @@ func (e *ResourceExtractor) registerEventBridgeExtractors() {
 		if eventBusName == "" {
 			eventBusName = "default"
 		}
-		return fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", region, accountID, eventBusName)
+		return eventsEventBusArn(accountID, region, eventBusName)
 	}
 
 	operations := []string{
@@ -389,83 +455,57 @@ func (e *ResourceExtractor) registerEventBridgeExtractors() {
 		e.Register("events", op, eventsExtractor)
 	}
 
-	e.Register("events", "CreateEventBus", func(params map[string]interface{}, accountID, region string) string {
+	eventsBusExtractor := func(params map[string]interface{}, accountID, region string) string {
 		name, _ := params["Name"].(string)
 		if name == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", region, accountID, name)
-	})
+		return eventsEventBusArn(accountID, region, name)
+	}
 
-	e.Register("events", "DeleteEventBus", func(params map[string]interface{}, accountID, region string) string {
-		name, _ := params["Name"].(string)
-		if name == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", region, accountID, name)
-	})
+	for _, op := range []string{"CreateEventBus", "DeleteEventBus"} {
+		e.Register("events", op, eventsBusExtractor)
+	}
 
 	e.Register("events", "ListEventBuses", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:events:%s:%s:event-bus/*", region, accountID)
+		return eventsEventBusArn(accountID, region, "*")
 	})
 }
 
 func (e *ResourceExtractor) registerIAMExtractors() {
-	e.Register("iam", "CreateUser", func(params map[string]interface{}, accountID, region string) string {
+	iamUserExtractor := func(params map[string]interface{}, accountID, region string) string {
 		userName, _ := params["UserName"].(string)
 		if userName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:iam::%s:user/%s", accountID, userName)
-	})
+		return iamUserArn(accountID, region, userName)
+	}
 
-	e.Register("iam", "GetUser", func(params map[string]interface{}, accountID, region string) string {
-		userName, _ := params["UserName"].(string)
-		if userName == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:iam::%s:user/%s", accountID, userName)
-	})
+	for _, op := range []string{"CreateUser", "GetUser", "DeleteUser", "CreateAccessKey"} {
+		e.Register("iam", op, iamUserExtractor)
+	}
 
-	e.Register("iam", "DeleteUser", func(params map[string]interface{}, accountID, region string) string {
-		userName, _ := params["UserName"].(string)
-		if userName == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:iam::%s:user/%s", accountID, userName)
-	})
-
-	e.Register("iam", "CreateRole", func(params map[string]interface{}, accountID, region string) string {
+	iamRoleExtractor := func(params map[string]interface{}, accountID, region string) string {
 		roleName, _ := params["RoleName"].(string)
 		if roleName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
-	})
+		return iamRoleArn(accountID, region, roleName)
+	}
 
-	e.Register("iam", "GetRole", func(params map[string]interface{}, accountID, region string) string {
-		roleName, _ := params["RoleName"].(string)
-		if roleName == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
-	})
+	for _, op := range []string{"CreateRole", "GetRole", "DeleteRole"} {
+		e.Register("iam", op, iamRoleExtractor)
+	}
 
-	e.Register("iam", "DeleteRole", func(params map[string]interface{}, accountID, region string) string {
-		roleName, _ := params["RoleName"].(string)
-		if roleName == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
-	})
-
-	e.Register("iam", "CreatePolicy", func(params map[string]interface{}, accountID, region string) string {
+	iamPolicyExtractor := func(params map[string]interface{}, accountID, region string) string {
 		policyName, _ := params["PolicyName"].(string)
 		if policyName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:iam::%s:policy/%s", accountID, policyName)
-	})
+		return iamPolicyArn(accountID, region, policyName)
+	}
+
+	e.Register("iam", "CreatePolicy", iamPolicyExtractor)
 
 	e.Register("iam", "GetPolicy", func(params map[string]interface{}, accountID, region string) string {
 		policyArn, _ := params["PolicyArn"].(string)
@@ -475,24 +515,14 @@ func (e *ResourceExtractor) registerIAMExtractors() {
 		return policyArn
 	})
 
-	e.Register("iam", "CreateAccessKey", func(params map[string]interface{}, accountID, region string) string {
-		userName, _ := params["UserName"].(string)
-		if userName == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:iam::%s:user/%s", accountID, userName)
-	})
-
 	e.Register("iam", "ListUsers", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:iam::%s:user/*", accountID)
+		return arnutil.NewARNBuilder(accountID, "").Build("iam", "user/*")
 	})
-
 	e.Register("iam", "ListRoles", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:iam::%s:role/*", accountID)
+		return arnutil.NewARNBuilder(accountID, "").Build("iam", "role/*")
 	})
-
 	e.Register("iam", "ListPolicies", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:iam::%s:policy/*", accountID)
+		return arnutil.NewARNBuilder(accountID, "").Build("iam", "policy/*")
 	})
 }
 
@@ -502,7 +532,7 @@ func (e *ResourceExtractor) registerKinesisExtractors() {
 		if streamName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/%s", region, accountID, streamName)
+		return kinesisStreamArn(accountID, region, streamName)
 	}
 
 	operations := []string{
@@ -519,7 +549,7 @@ func (e *ResourceExtractor) registerKinesisExtractors() {
 		if streamName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/%s", region, accountID, streamName)
+		return kinesisStreamArn(accountID, region, streamName)
 	})
 
 	e.Register("kinesis", "DeleteStream", func(params map[string]interface{}, accountID, region string) string {
@@ -527,11 +557,11 @@ func (e *ResourceExtractor) registerKinesisExtractors() {
 		if streamName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/%s", region, accountID, streamName)
+		return kinesisStreamArn(accountID, region, streamName)
 	})
 
 	e.Register("kinesis", "ListStreams", func(params map[string]interface{}, accountID, region string) string {
-		return fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/*", region, accountID)
+		return kinesisStreamArn(accountID, region, "*")
 	})
 }
 
@@ -541,7 +571,7 @@ func (e *ResourceExtractor) registerCloudWatchExtractors() {
 		if logGroupName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:logs:%s:%s:log-group:%s", region, accountID, logGroupName)
+		return logsLogGroupArn(accountID, region, logGroupName)
 	})
 
 	e.Register("cloudwatch", "*", func(params map[string]interface{}, accountID, region string) string {
@@ -549,7 +579,7 @@ func (e *ResourceExtractor) registerCloudWatchExtractors() {
 		if namespace == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:cloudwatch:%s:%s:%s", region, accountID, namespace)
+		return arnutil.NewARNBuilder(accountID, region).Build("cloudwatch", namespace)
 	})
 }
 
@@ -576,7 +606,7 @@ func (e *ResourceExtractor) registerStepFunctionsExtractors() {
 		if name == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:states:%s:%s:stateMachine:%s", region, accountID, name)
+		return statesStateMachineArn(accountID, region, name)
 	})
 }
 
@@ -586,7 +616,7 @@ func (e *ResourceExtractor) registerAPIGatewayExtractors() {
 		if restApiId == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:apigateway:%s::/restapis/%s", region, restApiId)
+		return arnutil.NewARNBuilder(accountID, region).APIGateway().RestApi(restApiId)
 	})
 }
 
@@ -596,7 +626,7 @@ func (e *ResourceExtractor) registerAthenaExtractors() {
 		if workGroup == "" {
 			workGroup = "primary"
 		}
-		return fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", region, accountID, workGroup)
+		return athenaWorkGroupArn(accountID, region, workGroup)
 	})
 }
 
@@ -609,7 +639,7 @@ func (e *ResourceExtractor) registerSecretsManagerExtractors() {
 		if strings.HasPrefix(secretId, "arn:") {
 			return secretId
 		}
-		return fmt.Sprintf("arn:aws:secretsmanager:%s:%s:secret:%s", region, accountID, secretId)
+		return secretsManagerSecretArn(accountID, region, secretId)
 	})
 }
 
@@ -681,7 +711,7 @@ func (e *ResourceExtractor) registerAppSyncExtractors() {
 		if apiId == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:appsync:%s:%s:apis/%s", region, accountID, apiId)
+		return appsyncApiArn(accountID, region, apiId)
 	})
 }
 
@@ -694,7 +724,7 @@ func (e *ResourceExtractor) registerNeptuneExtractors() {
 		if clusterId == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune:%s:%s:cluster/%s", region, accountID, clusterId)
+		return neptuneClusterArn(accountID, region, clusterId)
 	}
 
 	for _, op := range []string{
@@ -714,7 +744,7 @@ func (e *ResourceExtractor) registerNeptuneExtractors() {
 		if snapshotId == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune:%s:%s:cluster-snapshot/%s", region, accountID, snapshotId)
+		return neptuneClusterSnapshotArn(accountID, region, snapshotId)
 	}
 
 	for _, op := range []string{
@@ -733,7 +763,7 @@ func (e *ResourceExtractor) registerNeptuneExtractors() {
 		if groupName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune:%s:%s:cluster-pg/%s", region, accountID, groupName)
+		return neptuneParamGroupArn(accountID, region, groupName)
 	}
 
 	for _, op := range []string{
@@ -754,7 +784,7 @@ func (e *ResourceExtractor) registerNeptuneExtractors() {
 		if groupName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune:%s:%s:subnet-group/%s", region, accountID, groupName)
+		return neptuneSubnetGroupArn(accountID, region, groupName)
 	}
 
 	for _, op := range []string{
@@ -769,7 +799,7 @@ func (e *ResourceExtractor) registerNeptuneExtractors() {
 		if instanceId == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune:%s:%s:db/%s", region, accountID, instanceId)
+		return neptuneInstanceArn(accountID, region, instanceId)
 	}
 
 	for _, op := range []string{
@@ -784,7 +814,7 @@ func (e *ResourceExtractor) registerNeptuneExtractors() {
 		if clusterId == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune:%s:%s:global-cluster/%s", region, accountID, clusterId)
+		return neptuneGlobalClusterArn(accountID, region, clusterId)
 	}
 
 	for _, op := range []string{
@@ -799,7 +829,7 @@ func (e *ResourceExtractor) registerNeptuneExtractors() {
 		if subName == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune:%s:%s:event-subscription/%s", region, accountID, subName)
+		return neptuneEventSubscriptionArn(accountID, region, subName)
 	}
 
 	for _, op := range []string{
@@ -831,7 +861,7 @@ func (e *ResourceExtractor) registerNeptuneGraphExtractors() {
 		if graphId == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune-graph:%s:%s:graph/%s", region, accountID, graphId)
+		return neptuneGraphArn(accountID, region, graphId)
 	}
 
 	for _, op := range []string{
@@ -850,7 +880,7 @@ func (e *ResourceExtractor) registerNeptuneGraphExtractors() {
 		if snapshotId == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune-graph:%s:%s:snapshot/%s", region, accountID, snapshotId)
+		return neptuneGraphSnapshotArn(accountID, region, snapshotId)
 	}
 
 	for _, op := range []string{
@@ -864,7 +894,7 @@ func (e *ResourceExtractor) registerNeptuneGraphExtractors() {
 		if taskId == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune-graph:%s:%s:import-task/%s", region, accountID, taskId)
+		return neptuneGraphImportTaskArn(accountID, region, taskId)
 	}
 
 	for _, op := range []string{
@@ -879,7 +909,7 @@ func (e *ResourceExtractor) registerNeptuneGraphExtractors() {
 		if taskId == "" {
 			return "*"
 		}
-		return fmt.Sprintf("arn:aws:neptune-graph:%s:%s:export-task/%s", region, accountID, taskId)
+		return neptuneGraphExportTaskArn(accountID, region, taskId)
 	}
 
 	for _, op := range []string{
@@ -902,17 +932,9 @@ func (e *ResourceExtractor) registerNeptuneGraphExtractors() {
 		e.Register("neptunegraph", op, ngTagExtractor)
 	}
 
-	queryExtractor := func(params map[string]interface{}, accountID, region string) string {
-		graphId, _ := params["graphIdentifier"].(string)
-		if graphId == "" {
-			return "*"
-		}
-		return fmt.Sprintf("arn:aws:neptune-graph:%s:%s:graph/%s", region, accountID, graphId)
-	}
-
 	for _, op := range []string{
 		"GetQuery", "ListQueries", "CancelQuery",
 	} {
-		e.Register("neptunegraph", op, queryExtractor)
+		e.Register("neptunegraph", op, graphExtractor)
 	}
 }

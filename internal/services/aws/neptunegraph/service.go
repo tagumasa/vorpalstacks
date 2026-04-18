@@ -15,10 +15,12 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
+	"vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/pkg/graphengine"
 )
 
@@ -26,7 +28,6 @@ const (
 	graphNamePattern     = `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
 	snapshotNamePattern  = `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
 	graphDataDirPrefix   = "neptunegraph/graphs"
-	arnPrefix            = "arn:aws:neptune-graph"
 	minProvisionedMemory = 16
 	maxProvisionedMemory = 24576
 	maxReplicaCount      = 2
@@ -51,6 +52,7 @@ type NeptuneGraphService struct {
 	enginesMu      sync.RWMutex
 	taskWg         sync.WaitGroup
 	graphCache     *graphengine.Cache
+	arnBuilder     *arn.ARNBuilder
 }
 
 type engineEntry struct {
@@ -67,6 +69,7 @@ func NewNeptuneGraphService(accountID, region, dataPath string) *NeptuneGraphSer
 		region:        region,
 		dataPath:      dataPath,
 		activeEngines: make(map[string]*engineEntry),
+		arnBuilder:    arn.NewARNBuilder(accountID, region),
 	}
 }
 
@@ -197,14 +200,6 @@ func generateID(prefix string) string {
 	return prefix + hex.EncodeToString(b)
 }
 
-func (s *NeptuneGraphService) graphARN(graphID, region string) string {
-	return fmt.Sprintf("%s:%s:%s:graph/%s", arnPrefix, region, s.accountID, graphID)
-}
-
-func (s *NeptuneGraphService) snapshotARN(snapshotID, region string) string {
-	return fmt.Sprintf("%s:%s:%s:snapshot/%s", arnPrefix, region, s.accountID, snapshotID)
-}
-
 // CreateGraph creates a new NeptuneGraph graph resource and initialises its query engine.
 func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
@@ -234,7 +229,7 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	graph := &ngstore.Graph{
 		Id:                 graphID,
 		Name:               graphName,
-		Arn:                s.graphARN(graphID, region),
+		Arn:                s.arnBuilder.NeptuneGraph().Graph(graphID),
 		Status:             "CREATING",
 		ProvisionedMemory:  int32Ptr(int32(mem)),
 		ReplicaCount:       int32Ptr(int32(replicaCount)),
@@ -425,7 +420,7 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 		snapshot := &ngstore.GraphSnapshot{
 			Id:                 snapshotID,
 			Name:               graph.Name + "-auto-snapshot",
-			Arn:                s.snapshotARN(snapshotID, graph.Region),
+			Arn:                s.arnBuilder.NeptuneGraph().Snapshot(snapshotID),
 			Status:             "AVAILABLE",
 			SourceGraphId:      graphID,
 			SnapshotCreateTime: &now,
@@ -660,7 +655,7 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 	graph := &ngstore.Graph{
 		Id:                 graphID,
 		Name:               graphName,
-		Arn:                s.graphARN(graphID, region),
+		Arn:                s.arnBuilder.NeptuneGraph().Graph(graphID),
 		Status:             "CREATING",
 		ProvisionedMemory:  int32Ptr(128),
 		ReplicaCount:       int32Ptr(1),
@@ -792,7 +787,7 @@ func (s *NeptuneGraphService) CreateGraphSnapshot(ctx context.Context, reqCtx *r
 	snapshot := &ngstore.GraphSnapshot{
 		Id:                 snapshotID,
 		Name:               snapshotName,
-		Arn:                s.snapshotARN(snapshotID, region),
+		Arn:                s.arnBuilder.NeptuneGraph().Snapshot(snapshotID),
 		Status:             "AVAILABLE",
 		SourceGraphId:      graphID,
 		SnapshotCreateTime: &now,
@@ -1092,18 +1087,7 @@ func (s *NeptuneGraphService) UntagResource(ctx context.Context, reqCtx *request
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "resourceArn")
 	}
 
-	var tagKeys []string
-	if v, ok := req.Parameters["tagKeys"]; ok {
-		if arr, ok := v.([]interface{}); ok {
-			for _, item := range arr {
-				if str, ok := item.(string); ok {
-					tagKeys = append(tagKeys, str)
-				}
-			}
-		} else if str, ok := v.(string); ok {
-			tagKeys = append(tagKeys, str)
-		}
-	}
+	tagKeys := tags.ParseTagKeysAsSlice(req.Parameters, "tagKeys")
 
 	if err := store.RemoveTags(resourceArn, tagKeys); err != nil {
 		return nil, err
@@ -1310,7 +1294,7 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 	graph := &ngstore.Graph{
 		Id:                 graphID,
 		Name:               graphName,
-		Arn:                s.graphARN(graphID, region),
+		Arn:                s.arnBuilder.NeptuneGraph().Graph(graphID),
 		Status:             "IMPORTING",
 		ProvisionedMemory:  int32Ptr(128),
 		ReplicaCount:       int32Ptr(1),

@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -276,81 +277,33 @@ func (s *IAMService) UpdateAssumeRolePolicy(ctx context.Context, reqCtx *request
 	return response.EmptyResponse(), nil
 }
 
+var roleTagOps = tagOps[*iamstore.Role]{
+	paramName:  "RoleName",
+	emptyErr:   ErrNoSuchRole,
+	notFoundFn: func(n string) error { return NewNoSuchRoleError(n) },
+	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.Role, error) { return s.Roles().Get(n) },
+	putFn:      func(s *iamstore.IAMStore, r *iamstore.Role) error { return s.Roles().Put(r) },
+	tagsFn:     func(r *iamstore.Role) *[]types.Tag { return &r.Tags },
+}
+
 // TagRole adds tags to an IAM role.
 // RoleName is required.
 // Tags are provided as a list of key-value pairs.
 func (s *IAMService) TagRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, ErrNoSuchRole
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	role, err := store.Roles().Get(roleName)
-	if err != nil {
-		return nil, NewNoSuchRoleError(roleName)
-	}
-
-	role.Tags = tags.Apply(role.Tags, tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-
-	if err := store.Roles().Put(role); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagResource(ctx, s, reqCtx, req, roleTagOps)
 }
 
 // UntagRole removes tags from an IAM role.
 // RoleName is required.
 // TagKeys specifies which tags to remove.
 func (s *IAMService) UntagRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, ErrNoSuchRole
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	role, err := store.Roles().Get(roleName)
-	if err != nil {
-		return nil, NewNoSuchRoleError(roleName)
-	}
-
-	role.Tags = tags.RemoveByTagKeys(role.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
-
-	if err := store.Roles().Put(role); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return untagResource(ctx, s, reqCtx, req, roleTagOps)
 }
 
 // ListRoleTags lists the tags attached to an IAM role.
 // RoleName is required.
 func (s *IAMService) ListRoleTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, ErrNoSuchRole
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	role, err := store.Roles().Get(roleName)
-	if err != nil {
-		return nil, NewNoSuchRoleError(roleName)
-	}
-
-	return map[string]interface{}{
-		"Tags":        tags.ToResponse(role.Tags),
-		"IsTruncated": false,
-	}, nil
+	return listResourceTags(ctx, s, reqCtx, req, roleTagOps)
 }
 
 func (s *IAMService) roleToResponse(reqCtx *request.RequestContext, role *iamstore.Role) map[string]interface{} {

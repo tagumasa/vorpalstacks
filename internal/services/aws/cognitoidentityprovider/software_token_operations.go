@@ -56,8 +56,8 @@ func validateTOTPCode(secret, code string) bool {
 
 // AssociateSoftwareToken generates a TOTP secret and associates it with the user for MFA setup.
 func (s *CognitoService) AssociateSoftwareToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	accessToken := getParam(req, "AccessToken")
-	session := getParam(req, "Session")
+	accessToken := req.GetParam("AccessToken")
+	session := req.GetParam("Session")
 
 	if accessToken == "" && session == "" {
 		return nil, ErrInvalidParameter
@@ -100,9 +100,9 @@ func (s *CognitoService) AssociateSoftwareToken(ctx context.Context, reqCtx *req
 
 // VerifySoftwareToken verifies a TOTP code provided by the user during MFA setup.
 func (s *CognitoService) VerifySoftwareToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	accessToken := getParam(req, "AccessToken")
-	userCode := getParam(req, "UserCode")
-	session := getParam(req, "Session")
+	accessToken := req.GetParam("AccessToken")
+	userCode := req.GetParam("UserCode")
+	session := req.GetParam("Session")
 
 	if accessToken == "" {
 		return nil, ErrInvalidParameter

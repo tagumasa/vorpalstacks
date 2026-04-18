@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const userGroupBucketName = "iam_user_groups"
@@ -15,6 +16,7 @@ const userGroupBucketName = "iam_user_groups"
 // UserGroupStore manages user-group membership.
 type UserGroupStore struct {
 	bucket storage.Bucket
+	kl     common.KeyLocker
 }
 
 // NewUserGroupStore creates a new UserGroupStore.
@@ -30,37 +32,43 @@ func (s *UserGroupStore) membershipKey(userName, groupName string) []byte {
 
 // AddUserToGroup adds a user to a group.
 func (s *UserGroupStore) AddUserToGroup(userName, groupName string) error {
-	if s.IsUserInGroup(userName, groupName) {
-		return NewStoreError("add_user_to_group", ErrUserAlreadyInGroup)
-	}
+	lockKey := userName + ":" + groupName
+	return s.kl.WithLock(lockKey, func() error {
+		if s.IsUserInGroup(userName, groupName) {
+			return NewStoreError("add_user_to_group", ErrUserAlreadyInGroup)
+		}
 
-	membership := &UserGroupMembership{
-		UserName:  userName,
-		GroupName: groupName,
-		JoinDate:  time.Now().UTC(),
-	}
+		membership := &UserGroupMembership{
+			UserName:  userName,
+			GroupName: groupName,
+			JoinDate:  time.Now().UTC(),
+		}
 
-	data, err := json.Marshal(membership)
-	if err != nil {
-		return NewStoreError("add_user_to_group", err)
-	}
+		data, err := json.Marshal(membership)
+		if err != nil {
+			return NewStoreError("add_user_to_group", err)
+		}
 
-	if err := s.bucket.Put(s.membershipKey(userName, groupName), data); err != nil {
-		return NewStoreError("add_user_to_group", err)
-	}
-	return nil
+		if err := s.bucket.Put(s.membershipKey(userName, groupName), data); err != nil {
+			return NewStoreError("add_user_to_group", err)
+		}
+		return nil
+	})
 }
 
 // RemoveUserFromGroup removes a user from a group.
 func (s *UserGroupStore) RemoveUserFromGroup(userName, groupName string) error {
-	if !s.IsUserInGroup(userName, groupName) {
-		return NewStoreError("remove_user_from_group", ErrUserNotInGroup)
-	}
+	lockKey := userName + ":" + groupName
+	return s.kl.WithLock(lockKey, func() error {
+		if !s.IsUserInGroup(userName, groupName) {
+			return NewStoreError("remove_user_from_group", ErrUserNotInGroup)
+		}
 
-	if err := s.bucket.Delete(s.membershipKey(userName, groupName)); err != nil {
-		return NewStoreError("remove_user_from_group", err)
-	}
-	return nil
+		if err := s.bucket.Delete(s.membershipKey(userName, groupName)); err != nil {
+			return NewStoreError("remove_user_from_group", err)
+		}
+		return nil
+	})
 }
 
 // IsUserInGroup checks whether a user is in a group.
@@ -108,52 +116,58 @@ func (s *UserGroupStore) ListUsersInGroup(groupName string) ([]string, error) {
 
 // RemoveAllGroupsForUser removes a user from all groups.
 func (s *UserGroupStore) RemoveAllGroupsForUser(userName string) error {
-	prefix := userName + ":"
-	var keysToDelete [][]byte
+	lockKey := "removeall:" + userName
+	return s.kl.WithLock(lockKey, func() error {
+		prefix := userName + ":"
+		var keysToDelete [][]byte
 
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		key := string(k)
-		if len(key) > len(prefix) && key[:len(prefix)] == prefix {
-			keysToDelete = append(keysToDelete, k)
+		err := s.bucket.ForEach(func(k, v []byte) error {
+			key := string(k)
+			if len(key) > len(prefix) && key[:len(prefix)] == prefix {
+				keysToDelete = append(keysToDelete, k)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return NewStoreError("remove_all_groups_for_user", err)
+		}
+
+		for _, key := range keysToDelete {
+			if err := s.bucket.Delete(key); err != nil {
+				return NewStoreError("remove_all_groups_for_user", err)
+			}
 		}
 		return nil
 	})
-
-	if err != nil {
-		return NewStoreError("remove_all_groups_for_user", err)
-	}
-
-	for _, key := range keysToDelete {
-		if err := s.bucket.Delete(key); err != nil {
-			return NewStoreError("remove_all_groups_for_user", err)
-		}
-	}
-	return nil
 }
 
 // RemoveAllUsersFromGroup removes all users from a group.
 func (s *UserGroupStore) RemoveAllUsersFromGroup(groupName string) error {
-	suffix := ":" + groupName
-	var keysToDelete [][]byte
+	lockKey := "removeall:" + groupName
+	return s.kl.WithLock(lockKey, func() error {
+		suffix := ":" + groupName
+		var keysToDelete [][]byte
 
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		key := string(k)
-		if len(key) > len(suffix) && key[len(key)-len(suffix):] == suffix {
-			keysToDelete = append(keysToDelete, k)
+		err := s.bucket.ForEach(func(k, v []byte) error {
+			key := string(k)
+			if len(key) > len(suffix) && key[len(key)-len(suffix):] == suffix {
+				keysToDelete = append(keysToDelete, k)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return NewStoreError("remove_all_users_from_group", err)
+		}
+
+		for _, key := range keysToDelete {
+			if err := s.bucket.Delete(key); err != nil {
+				return NewStoreError("remove_all_users_from_group", err)
+			}
 		}
 		return nil
 	})
-
-	if err != nil {
-		return NewStoreError("remove_all_users_from_group", err)
-	}
-
-	for _, key := range keysToDelete {
-		if err := s.bucket.Delete(key); err != nil {
-			return NewStoreError("remove_all_users_from_group", err)
-		}
-	}
-	return nil
 }
 
 // CountUsersInGroup returns the number of users in a group.
@@ -164,38 +178,41 @@ func (s *UserGroupStore) CountUsersInGroup(groupName string) int {
 
 // MigrateUser moves user memberships to a new user name.
 func (s *UserGroupStore) MigrateUser(oldUserName, newUserName string) error {
-	prefix := oldUserName + ":"
-	var memberships []UserGroupMembership
+	lockKey := "migrate:" + oldUserName
+	return s.kl.WithLock(lockKey, func() error {
+		prefix := oldUserName + ":"
+		var memberships []UserGroupMembership
 
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		key := string(k)
-		if len(key) > len(prefix) && key[:len(prefix)] == prefix {
-			var membership UserGroupMembership
-			if err := json.Unmarshal(v, &membership); err != nil {
-				return err
+		err := s.bucket.ForEach(func(k, v []byte) error {
+			key := string(k)
+			if len(key) > len(prefix) && key[:len(prefix)] == prefix {
+				var membership UserGroupMembership
+				if err := json.Unmarshal(v, &membership); err != nil {
+					return err
+				}
+				memberships = append(memberships, membership)
 			}
-			memberships = append(memberships, membership)
-		}
-		return nil
-	})
+			return nil
+		})
 
-	if err != nil {
-		return NewStoreError("migrate_user", err)
-	}
-
-	for _, membership := range memberships {
-		if err := s.bucket.Delete(s.membershipKey(oldUserName, membership.GroupName)); err != nil {
-			return NewStoreError("migrate_user", err)
-		}
-		membership.UserName = newUserName
-		data, err := json.Marshal(membership)
 		if err != nil {
 			return NewStoreError("migrate_user", err)
 		}
-		if err := s.bucket.Put(s.membershipKey(newUserName, membership.GroupName), data); err != nil {
-			return NewStoreError("migrate_user", err)
-		}
-	}
 
-	return nil
+		for _, membership := range memberships {
+			if err := s.bucket.Delete(s.membershipKey(oldUserName, membership.GroupName)); err != nil {
+				return NewStoreError("migrate_user", err)
+			}
+			membership.UserName = newUserName
+			data, err := json.Marshal(membership)
+			if err != nil {
+				return NewStoreError("migrate_user", err)
+			}
+			if err := s.bucket.Put(s.membershipKey(newUserName, membership.GroupName), data); err != nil {
+				return NewStoreError("migrate_user", err)
+			}
+		}
+
+		return nil
+	})
 }

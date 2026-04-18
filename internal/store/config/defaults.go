@@ -1,6 +1,10 @@
 package config
 
-import "os"
+import (
+	"os"
+
+	"vorpalstacks/internal/common/request"
+)
 
 func loadDefaults() map[string]ConfigEntry {
 	return map[string]ConfigEntry{
@@ -81,7 +85,7 @@ func loadDefaults() map[string]ConfigEntry {
 		},
 		"aws.region": {
 			Key:         "aws.region",
-			Value:       getEnvString("AWS_REGION", "us-east-1"),
+			Value:       getEnvString("AWS_REGION", request.DefaultRegion),
 			Type:        ConfigTypeString,
 			Description: "Default AWS region",
 			ReadOnly:    true,

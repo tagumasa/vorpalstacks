@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	"vorpalstacks/internal/utils/crypto"
@@ -76,7 +78,7 @@ func (e *SSEKMSEncryptor) GetEncryptionType() EncryptionType {
 
 func (e *SSEKMSEncryptor) buildEncryptionContext(bucket, key string) map[string]string {
 	return map[string]string{
-		"aws:s3:arn": fmt.Sprintf("arn:aws:s3:::%s/%s", bucket, key),
+		"aws:s3:arn": arnutil.NewARNBuilder("", "").S3().Object(bucket, key),
 	}
 }
 

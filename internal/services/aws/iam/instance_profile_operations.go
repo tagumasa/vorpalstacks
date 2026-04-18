@@ -8,6 +8,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -196,76 +197,30 @@ func (s *IAMService) RemoveRoleFromInstanceProfile(ctx context.Context, reqCtx *
 	return response.EmptyResponse(), nil
 }
 
+var instanceProfileTagOps = tagOps[*iamstore.InstanceProfile]{
+	paramName:  "InstanceProfileName",
+	emptyErr:   ErrNoSuchInstanceProfile,
+	notFoundFn: func(n string) error { return NewNoSuchInstanceProfileError(n) },
+	getFn: func(s *iamstore.IAMStore, n string) (*iamstore.InstanceProfile, error) {
+		return s.InstanceProfiles().Get(n)
+	},
+	putFn:  func(s *iamstore.IAMStore, r *iamstore.InstanceProfile) error { return s.InstanceProfiles().Put(r) },
+	tagsFn: func(r *iamstore.InstanceProfile) *[]types.Tag { return &r.Tags },
+}
+
 // ListInstanceProfileTags lists the tags attached to an instance profile.
 func (s *IAMService) ListInstanceProfileTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
-	if instanceProfileName == "" {
-		return nil, ErrNoSuchInstanceProfile
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	profile, err := store.InstanceProfiles().Get(instanceProfileName)
-	if err != nil {
-		return nil, NewNoSuchInstanceProfileError(instanceProfileName)
-	}
-
-	return map[string]interface{}{
-		"Tags":        tags.ToResponse(profile.Tags),
-		"IsTruncated": false,
-	}, nil
+	return listResourceTags(ctx, s, reqCtx, req, instanceProfileTagOps)
 }
 
 // TagInstanceProfile adds tags to an instance profile.
 func (s *IAMService) TagInstanceProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
-	if instanceProfileName == "" {
-		return nil, ErrNoSuchInstanceProfile
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	profile, err := store.InstanceProfiles().Get(instanceProfileName)
-	if err != nil {
-		return nil, NewNoSuchInstanceProfileError(instanceProfileName)
-	}
-
-	profile.Tags = tags.Apply(profile.Tags, tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-
-	if err := store.InstanceProfiles().Put(profile); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagResource(ctx, s, reqCtx, req, instanceProfileTagOps)
 }
 
 // UntagInstanceProfile removes tags from an instance profile.
 func (s *IAMService) UntagInstanceProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
-	if instanceProfileName == "" {
-		return nil, ErrNoSuchInstanceProfile
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	profile, err := store.InstanceProfiles().Get(instanceProfileName)
-	if err != nil {
-		return nil, NewNoSuchInstanceProfileError(instanceProfileName)
-	}
-
-	profile.Tags = tags.RemoveByTagKeys(profile.Tags, tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"))
-
-	if err := store.InstanceProfiles().Put(profile); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return untagResource(ctx, s, reqCtx, req, instanceProfileTagOps)
 }
 
 func (s *IAMService) instanceProfileToResponse(reqCtx *request.RequestContext, profile *iamstore.InstanceProfile) map[string]interface{} {

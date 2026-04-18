@@ -1,6 +1,8 @@
 // Package auth provides AWS authentication utilities for vorpalstacks.
 package auth
 
+import "time"
+
 // Credentials represents AWS credentials for authentication.
 type Credentials struct {
 	AccessKeyID     string
@@ -8,6 +10,7 @@ type Credentials struct {
 	SessionToken    string // #nosec G117
 	Region          string
 	Service         string
+	Expiration      *time.Time
 }
 
 // CredentialsProvider defines the interface for providing AWS credentials.

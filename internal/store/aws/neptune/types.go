@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // DBCluster represents a Neptune database cluster, including its configuration,
@@ -191,12 +193,6 @@ type Parameter struct {
 	ApplyMethod          string `json:"ApplyMethod,omitempty"`
 }
 
-// Tag represents a key-value pair attached to a Neptune resource.
-type Tag struct {
-	Key   string `json:"Key"`
-	Value string `json:"Value"`
-}
-
 // DBClusterEndpoint represents a custom endpoint for connecting to a Neptune DB
 // cluster with optional member filtering.
 type DBClusterEndpoint struct {
@@ -212,22 +208,22 @@ type DBClusterEndpoint struct {
 
 // ClusterParameterGroupARN returns the ARN for a DB cluster parameter group.
 func ClusterParameterGroupARN(accountID, region, name string) string {
-	return fmt.Sprintf("arn:aws:rds:%s:%s:cluster-pg:%s", region, accountID, name)
+	return arnutil.NewARNBuilder(accountID, region).Build("rds", "cluster-pg:"+name)
 }
 
 // ParameterGroupARN returns the ARN for a DB parameter group.
 func ParameterGroupARN(accountID, region, name string) string {
-	return fmt.Sprintf("arn:aws:rds:%s:%s:pg:%s", region, accountID, name)
+	return arnutil.NewARNBuilder(accountID, region).Build("rds", "pg:"+name)
 }
 
 // SubnetGroupARN returns the ARN for a DB subnet group.
 func SubnetGroupARN(accountID, region, name string) string {
-	return fmt.Sprintf("arn:aws:rds:%s:%s:subgrp:%s", region, accountID, name)
+	return arnutil.NewARNBuilder(accountID, region).Build("rds", "subgrp:"+name)
 }
 
 // EventSubscriptionARN returns the ARN for an event subscription.
 func EventSubscriptionARN(accountID, region, name string) string {
-	return fmt.Sprintf("arn:aws:rds:%s:%s:es:%s", region, accountID, name)
+	return arnutil.NewARNBuilder(accountID, region).Build("rds", "es:"+name)
 }
 
 // ResourceTagKey returns the storage key used to persist tags for a given resource ARN.

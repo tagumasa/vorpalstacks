@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateDBInstance creates a new Neptune DB instance within a cluster.
@@ -49,7 +50,7 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 		InstanceCreateTime:              &now,
 		AccountID:                       reqCtx.GetAccountID(),
 		Region:                          reqCtx.GetRegion(),
-		DBInstanceArn:                   fmt.Sprintf("arn:aws:rds:%s:%s:db:%s", reqCtx.GetRegion(), reqCtx.GetAccountID(), id),
+		DBInstanceArn:                   arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().DBInstance(id),
 	}
 
 	if err := store.CreateInstance(instance); err != nil {

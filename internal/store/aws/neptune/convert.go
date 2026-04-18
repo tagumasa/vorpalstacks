@@ -2,6 +2,7 @@ package neptune
 
 import (
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
+	"vorpalstacks/internal/utils/aws/types"
 
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -566,7 +567,7 @@ func ProtoToParameter(p *pb.Parameter) *Parameter {
 }
 
 // TagToProto converts a Tag to its protobuf representation.
-func TagToProto(t *Tag) *pb.Tag {
+func TagToProto(t *types.Tag) *pb.Tag {
 	if t == nil {
 		return nil
 	}
@@ -577,18 +578,18 @@ func TagToProto(t *Tag) *pb.Tag {
 }
 
 // ProtoToTag converts a protobuf Tag to its domain representation.
-func ProtoToTag(t *pb.Tag) *Tag {
+func ProtoToTag(t *pb.Tag) *types.Tag {
 	if t == nil {
 		return nil
 	}
-	return &Tag{
+	return &types.Tag{
 		Key:   t.GetKey(),
 		Value: t.GetValue(),
 	}
 }
 
 // TagsToProto converts a slice of Tags to a slice of protobuf Tags.
-func TagsToProto(tags []Tag) []*pb.Tag {
+func TagsToProto(tags []types.Tag) []*pb.Tag {
 	if tags == nil {
 		return nil
 	}
@@ -600,11 +601,11 @@ func TagsToProto(tags []Tag) []*pb.Tag {
 }
 
 // ProtoToTags converts a slice of protobuf Tags to a slice of domain Tags.
-func ProtoToTags(tags []*pb.Tag) []Tag {
+func ProtoToTags(tags []*pb.Tag) []types.Tag {
 	if tags == nil {
 		return nil
 	}
-	result := make([]Tag, 0, len(tags))
+	result := make([]types.Tag, 0, len(tags))
 	for _, t := range tags {
 		result = append(result, *ProtoToTag(t))
 	}

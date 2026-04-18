@@ -5,6 +5,7 @@ package waf
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 	"time"
 
@@ -41,24 +42,7 @@ func (s *RuleGroupStore) Get(id string) (*RuleGroup, error) {
 
 // GetByARN retrieves a Rule Group by its ARN.
 func (s *RuleGroupStore) GetByARN(arn string) (*RuleGroup, error) {
-	var found *RuleGroup
-	err := s.ForEach(func(key string, value []byte) error {
-		var rg RuleGroup
-		if err := json.Unmarshal(value, &rg); err != nil {
-			return err
-		}
-		if rg.ARN == arn {
-			found = &rg
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_rule_group_by_arn", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_rule_group_by_arn", ErrNotFound)
-	}
-	return found, nil
+	return common.FindFirst[RuleGroup](s.BaseStore, func(r *RuleGroup) bool { return r.ARN == arn })
 }
 
 // Create creates a new Rule Group.
@@ -141,7 +125,7 @@ func (s *RuleGroupStore) List(marker string, maxItems int) (*RuleGroupListResult
 	var lastKey string
 
 	err := s.ForEach(func(key string, value []byte) error {
-		if len(key) > len(ruleKeyPrefix) && key[:len(ruleKeyPrefix)] == ruleKeyPrefix {
+		if strings.HasPrefix(key, ruleKeyPrefix) {
 			return nil
 		}
 		var rg RuleGroup
@@ -150,10 +134,12 @@ func (s *RuleGroupStore) List(marker string, maxItems int) (*RuleGroupListResult
 		}
 
 		if !started {
-			if rg.ID == marker {
+			if key == marker || key > marker {
 				started = true
 			}
-			return nil
+			if !started {
+				return nil
+			}
 		}
 
 		if count < maxItems {
@@ -204,30 +190,13 @@ func (s *RuleGroupStore) DeleteRule(id string) error {
 	return s.BaseStore.Delete(ruleKeyPrefix + id)
 }
 
-// ListRules returns all standalone WAF Rules.
 func (s *RuleGroupStore) ListRules(limit int) ([]*Rule, error) {
 	if limit <= 0 {
 		limit = 100
 	}
-	var rules []*Rule
-	count := 0
-	err := s.ForEach(func(key string, value []byte) error {
-		if len(key) <= len(ruleKeyPrefix) || key[:len(ruleKeyPrefix)] != ruleKeyPrefix {
-			return nil
-		}
-		if count >= limit {
-			return nil
-		}
-		var rule Rule
-		if err := json.Unmarshal(value, &rule); err != nil {
-			return err
-		}
-		rules = append(rules, &rule)
-		count++
-		return nil
-	})
+	result, err := common.List[Rule](s.BaseStore, common.ListOptions{Prefix: ruleKeyPrefix, MaxItems: limit}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_rules", err)
 	}
-	return rules, nil
+	return result.Items, nil
 }

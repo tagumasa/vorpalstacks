@@ -66,6 +66,7 @@ func (e *EventBase) EventAccountID() string { return e.AccountID }
 // infinite event cycles.
 func (e *EventBase) EventDepth() int { return int(e.depth.Load()) }
 
+// SetEventDepth sets the dispatch depth for cycle prevention.
 func (e *EventBase) SetEventDepth(d int) { e.depth.Store(int32(d)) }
 
 func (e *EventBase) getEventBase() *EventBase { return e }

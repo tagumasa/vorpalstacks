@@ -5,10 +5,6 @@ import (
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 )
 
-func getParam(req *request.ParsedRequest, key string) string {
-	return request.GetParamLowerFirst(req.Parameters, key)
-}
-
 func getBoolParam(req *request.ParsedRequest, key string) bool {
 	return request.GetBoolParam(req.Parameters, key)
 }
@@ -59,13 +55,7 @@ func parseCognitoIdentityProviders(req *request.ParsedRequest) []cognitoidentity
 func parseSupportedLoginProviders(req *request.ParsedRequest) map[string]string {
 	if val, ok := req.Parameters["SupportedLoginProviders"]; ok {
 		if m, ok := val.(map[string]interface{}); ok {
-			result := make(map[string]string)
-			for k, v := range m {
-				if s, ok := v.(string); ok {
-					result[k] = s
-				}
-			}
-			return result
+			return request.CopyStringMap(m)
 		}
 	}
 	return nil
@@ -74,13 +64,7 @@ func parseSupportedLoginProviders(req *request.ParsedRequest) map[string]string 
 func parseMapParam(req *request.ParsedRequest, key string) map[string]string {
 	if val, ok := req.Parameters[key]; ok {
 		if m, ok := val.(map[string]interface{}); ok {
-			result := make(map[string]string)
-			for k, v := range m {
-				if s, ok := v.(string); ok {
-					result[k] = s
-				}
-			}
-			return result
+			return request.CopyStringMap(m)
 		}
 	}
 	return nil

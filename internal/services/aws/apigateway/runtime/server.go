@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/auth"
@@ -22,9 +23,8 @@ import (
 )
 
 // LambdaInvoker invokes Lambda functions for API Gateway integrations.
-type LambdaInvoker interface {
-	InvokeForGateway(ctx context.Context, functionName string, payload []byte) (int64, []byte, error)
-}
+// Deprecated: use common.LambdaInvoker instead.
+type LambdaInvoker = common.LambdaInvoker
 
 // RuntimeServer handles API Gateway runtime requests.
 type RuntimeServer struct {

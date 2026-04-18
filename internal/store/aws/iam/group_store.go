@@ -1,7 +1,6 @@
 package iam
 
 import (
-	"encoding/json"
 	"strings"
 	"time"
 
@@ -83,54 +82,19 @@ func (s *GroupStore) Exists(groupName string) bool {
 
 // List returns a paginated list of groups.
 func (s *GroupStore) List(pathPrefix, marker string, maxItems int) (*GroupListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
+	var filter common.FilterFunc[Group]
+	if pathPrefix != "" {
+		filter = func(g *Group) bool { return strings.HasPrefix(g.Path, pathPrefix) }
 	}
-
-	var groups []*Group
-	count := 0
-	started := marker == ""
-	hasMore := false
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var group Group
-		if err := json.Unmarshal(value, &group); err != nil {
-			return err
-		}
-
-		if !started {
-			if group.GroupName == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if pathPrefix != "" && !strings.HasPrefix(group.Path, pathPrefix) {
-			return nil
-		}
-
-		if count < maxItems {
-			groups = append(groups, &group)
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[Group](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
-		return nil, NewStoreError("list_groups", err)
+		return nil, err
 	}
-
-	result := &GroupListResult{
-		Groups:      groups,
-		IsTruncated: hasMore,
-	}
-	if len(groups) > 0 {
-		result.Marker = groups[len(groups)-1].GroupName
-	}
-
-	return result, nil
+	return &GroupListResult{
+		Groups:      result.Items,
+		IsTruncated: result.IsTruncated,
+		Marker:      result.NextMarker,
+	}, nil
 }
 
 // Create creates a new IAM group.

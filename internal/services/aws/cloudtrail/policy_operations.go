@@ -10,7 +10,7 @@ import (
 
 // GetResourcePolicy retrieves the resource policy for a CloudTrail resource.
 func (s *CloudTrailService) GetResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := getParam(req, "ResourceArn")
+	resourceARN := req.GetParam("ResourceArn")
 
 	if resourceARN == "" {
 		return nil, ErrInvalidParameter
@@ -42,8 +42,8 @@ func (s *CloudTrailService) GetResourcePolicy(ctx context.Context, reqCtx *reque
 
 // PutResourcePolicy attaches a resource policy to a CloudTrail resource.
 func (s *CloudTrailService) PutResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := getParam(req, "ResourceArn")
-	policy := getParam(req, "ResourcePolicy")
+	resourceARN := req.GetParam("ResourceArn")
+	policy := req.GetParam("ResourcePolicy")
 
 	if resourceARN == "" {
 		return nil, ErrInvalidParameter
@@ -71,7 +71,7 @@ func (s *CloudTrailService) PutResourcePolicy(ctx context.Context, reqCtx *reque
 
 // DeleteResourcePolicy removes the resource policy from a CloudTrail resource.
 func (s *CloudTrailService) DeleteResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := getParam(req, "ResourceArn")
+	resourceARN := req.GetParam("ResourceArn")
 
 	if resourceARN == "" {
 		return nil, ErrInvalidParameter

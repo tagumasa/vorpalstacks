@@ -4,12 +4,12 @@
 package cloudwatchlogs
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
-	"google.golang.org/protobuf/proto"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+
 	pb "vorpalstacks/internal/pb/storage/storage_cloudwatchlogs"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const metricFilterPrefix = "metric-filter:"
@@ -58,41 +58,26 @@ func (s *Store) ListMetricFilters(logGroupName, filterNamePrefix string, nextTok
 		prefix = prefix + filterNamePrefix
 	}
 
-	var filters []*MetricFilter
-	count := 0
-	var lastKey string
-
-	err := s.BaseStore.ForEach(func(key string, value []byte) error {
-		if !strings.HasPrefix(key, prefix) {
-			return nil
-		}
-
-		if nextToken != "" && key <= nextToken {
-			return nil
-		}
-
-		if count >= maxItems {
-			return fmt.Errorf("stop")
-		}
-
-		var p pb.MetricFilter
-		if err := proto.Unmarshal(value, &p); err != nil {
-			return nil
-		}
-		filters = append(filters, ProtoToMetricFilter(&p))
-		count++
-		lastKey = key
-		return nil
-	})
-
-	if err != nil && err.Error() != "stop" {
+	result, err := common.ListProto(s.BaseStore, common.ListOptions{
+		Prefix:   prefix,
+		Marker:   nextToken,
+		MaxItems: maxItems,
+	}, func() *pb.MetricFilter { return new(pb.MetricFilter) }, nil)
+	if err != nil {
 		return nil, "", err
 	}
 
-	if count >= maxItems {
-		return filters, lastKey, nil
+	filters := make([]*MetricFilter, len(result.Items))
+	for i := range result.Items {
+		filters[i] = ProtoToMetricFilter(result.Items[i])
 	}
-	return filters, "", nil
+
+	var token string
+	if result.IsTruncated {
+		token = result.NextMarker
+	}
+
+	return filters, token, nil
 }
 
 // NewMetricFilter creates a new metric filter.
@@ -108,6 +93,5 @@ func NewMetricFilter(logGroupName, filterName, filterPattern string, transformat
 
 // ARN returns the ARN of the metric filter.
 func (f *MetricFilter) ARN(accountID, region string) string {
-	return fmt.Sprintf("arn:aws:logs:%s:%s:log-group:%s:metric-filter:%s",
-		region, accountID, f.LogGroupName, f.Name)
+	return arnutil.NewARNBuilder(accountID, region).CloudWatch().MetricFilter(f.LogGroupName, f.Name)
 }

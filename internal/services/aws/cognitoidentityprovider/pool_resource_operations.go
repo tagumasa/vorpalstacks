@@ -12,7 +12,7 @@ import (
 
 // CreateUserPoolDomain creates a new domain for a user pool.
 func (s *CognitoService) CreateUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domain := getParam(req, "Domain")
+	domain := req.GetParam("Domain")
 	userPoolID := getUserPoolID(req)
 	if domain == "" || userPoolID == "" {
 		return nil, ErrInvalidParameter
@@ -44,7 +44,7 @@ func (s *CognitoService) CreateUserPoolDomain(ctx context.Context, reqCtx *reque
 
 // DescribeUserPoolDomain returns information about a user pool domain.
 func (s *CognitoService) DescribeUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domain := getParam(req, "Domain")
+	domain := req.GetParam("Domain")
 	if domain == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -71,7 +71,7 @@ func (s *CognitoService) DescribeUserPoolDomain(ctx context.Context, reqCtx *req
 
 // DeleteUserPoolDomain deletes a domain from a user pool.
 func (s *CognitoService) DeleteUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domain := getParam(req, "Domain")
+	domain := req.GetParam("Domain")
 	if domain == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -90,7 +90,7 @@ func (s *CognitoService) DeleteUserPoolDomain(ctx context.Context, reqCtx *reque
 
 // UpdateUserPoolDomain updates the configuration for a user pool domain.
 func (s *CognitoService) UpdateUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domain := getParam(req, "Domain")
+	domain := req.GetParam("Domain")
 	userPoolID := getUserPoolID(req)
 	if domain == "" || userPoolID == "" {
 		return nil, ErrInvalidParameter
@@ -123,8 +123,8 @@ func (s *CognitoService) UpdateUserPoolDomain(ctx context.Context, reqCtx *reque
 // CreateResourceServer creates a new resource server for a user pool.
 func (s *CognitoService) CreateResourceServer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	identifier := getParam(req, "Identifier")
-	name := getParam(req, "Name")
+	identifier := req.GetParam("Identifier")
+	name := req.GetParam("Name")
 	if userPoolID == "" || identifier == "" || name == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -156,7 +156,7 @@ func (s *CognitoService) CreateResourceServer(ctx context.Context, reqCtx *reque
 // DescribeResourceServer returns details of a specified resource server in a user pool.
 func (s *CognitoService) DescribeResourceServer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	identifier := getParam(req, "Identifier")
+	identifier := req.GetParam("Identifier")
 	if userPoolID == "" || identifier == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -179,7 +179,7 @@ func (s *CognitoService) DescribeResourceServer(ctx context.Context, reqCtx *req
 // UpdateResourceServer updates the name and scopes of a specified resource server in a user pool.
 func (s *CognitoService) UpdateResourceServer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	identifier := getParam(req, "Identifier")
+	identifier := req.GetParam("Identifier")
 	if userPoolID == "" || identifier == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -194,7 +194,7 @@ func (s *CognitoService) UpdateResourceServer(ctx context.Context, reqCtx *reque
 		return nil, ErrResourceNotFound
 	}
 
-	if name := getParam(req, "Name"); name != "" {
+	if name := req.GetParam("Name"); name != "" {
 		rs.Name = name
 	}
 
@@ -223,7 +223,7 @@ func (s *CognitoService) UpdateResourceServer(ctx context.Context, reqCtx *reque
 // DeleteResourceServer deletes a specified resource server from a user pool.
 func (s *CognitoService) DeleteResourceServer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	identifier := getParam(req, "Identifier")
+	identifier := req.GetParam("Identifier")
 	if userPoolID == "" || identifier == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -270,8 +270,8 @@ func (s *CognitoService) ListResourceServers(ctx context.Context, reqCtx *reques
 // CreateIdentityProvider adds a new identity provider to a user pool.
 func (s *CognitoService) CreateIdentityProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	providerName := getParam(req, "ProviderName")
-	providerType := getParam(req, "ProviderType")
+	providerName := req.GetParam("ProviderName")
+	providerType := req.GetParam("ProviderType")
 	if userPoolID == "" || providerName == "" || providerType == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -313,7 +313,7 @@ func (s *CognitoService) CreateIdentityProvider(ctx context.Context, reqCtx *req
 // DescribeIdentityProvider returns details of a specified identity provider in a user pool.
 func (s *CognitoService) DescribeIdentityProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	providerName := getParam(req, "ProviderName")
+	providerName := req.GetParam("ProviderName")
 	if userPoolID == "" || providerName == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -336,7 +336,7 @@ func (s *CognitoService) DescribeIdentityProvider(ctx context.Context, reqCtx *r
 // UpdateIdentityProvider updates the configuration of a specified identity provider in a user pool.
 func (s *CognitoService) UpdateIdentityProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	providerName := getParam(req, "ProviderName")
+	providerName := req.GetParam("ProviderName")
 	if userPoolID == "" || providerName == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -351,7 +351,7 @@ func (s *CognitoService) UpdateIdentityProvider(ctx context.Context, reqCtx *req
 		return nil, ErrResourceNotFound
 	}
 
-	if providerType := getParam(req, "ProviderType"); providerType != "" {
+	if providerType := req.GetParam("ProviderType"); providerType != "" {
 		ip.ProviderType = providerType
 	}
 
@@ -377,7 +377,7 @@ func (s *CognitoService) UpdateIdentityProvider(ctx context.Context, reqCtx *req
 // DeleteIdentityProvider deletes a specified identity provider from a user pool.
 func (s *CognitoService) DeleteIdentityProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	providerName := getParam(req, "ProviderName")
+	providerName := req.GetParam("ProviderName")
 	if userPoolID == "" || providerName == "" {
 		return nil, ErrInvalidParameter
 	}

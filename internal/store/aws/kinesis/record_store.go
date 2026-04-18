@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -177,10 +176,6 @@ func (s *KinesisStore) GetRecords(streamName, shardID, startingSeqNum string, li
 	if err != nil {
 		return nil, "", err
 	}
-
-	sort.Slice(allRecords, func(i, j int) bool {
-		return allRecords[i].SequenceNumber < allRecords[j].SequenceNumber
-	})
 
 	if int32(len(allRecords)) > limit {
 		allRecords = allRecords[:limit]

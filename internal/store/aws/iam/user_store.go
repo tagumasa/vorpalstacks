@@ -16,6 +16,7 @@ const userBucketName = "iam_users"
 type UserStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
+	kl         common.KeyLocker
 }
 
 // NewUserStore creates a new UserStore.
@@ -59,54 +60,19 @@ func (s *UserStore) GetByID(userID string) (*User, error) {
 
 // List returns a list of users with optional filtering by path prefix.
 func (s *UserStore) List(pathPrefix string, marker string, maxItems int) (*UserListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
+	var filter common.FilterFunc[User]
+	if pathPrefix != "" {
+		filter = func(u *User) bool { return strings.HasPrefix(u.Path, pathPrefix) }
 	}
-
-	var users []*User
-	count := 0
-	started := marker == ""
-	hasMore := false
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var user User
-		if err := json.Unmarshal(value, &user); err != nil {
-			return err
-		}
-
-		if !started {
-			if user.UserName == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if pathPrefix != "" && !strings.HasPrefix(user.Path, pathPrefix) {
-			return nil
-		}
-
-		if count < maxItems {
-			users = append(users, &user)
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[User](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
-		return nil, NewStoreError("list_users", err)
+		return nil, err
 	}
-
-	result := &UserListResult{
-		Users:       users,
-		IsTruncated: hasMore,
-	}
-	if len(users) > 0 {
-		result.Marker = users[len(users)-1].UserName
-	}
-
-	return result, nil
+	return &UserListResult{
+		Users:       result.Items,
+		IsTruncated: result.IsTruncated,
+		Marker:      result.NextMarker,
+	}, nil
 }
 
 // Put stores a user.
@@ -159,15 +125,17 @@ func (s *UserStore) Create(userName, path, accountId string, tags []Tag) (*User,
 
 // UpdatePasswordLastUsed updates the password last used timestamp.
 func (s *UserStore) UpdatePasswordLastUsed(userName string) error {
-	user, err := s.Get(userName)
-	if err != nil {
-		return err
-	}
+	return s.kl.WithLock(userName, func() error {
+		user, err := s.Get(userName)
+		if err != nil {
+			return err
+		}
 
-	now := time.Now().UTC()
-	user.PasswordLastUsed = &now
+		now := time.Now().UTC()
+		user.PasswordLastUsed = &now
 
-	return s.Put(user)
+		return s.Put(user)
+	})
 }
 
 // Count returns the total number of users.

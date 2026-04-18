@@ -2,7 +2,6 @@ package sns
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
 	"vorpalstacks/internal/common/pagination"
@@ -11,74 +10,6 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
-
-func parsePlatformAttributes(params map[string]interface{}) map[string]string {
-	result := make(map[string]string)
-
-	if attrs, ok := params["Attributes"].(map[string]interface{}); ok {
-		for k, v := range attrs {
-			if vs, ok := v.(string); ok {
-				result[k] = vs
-			}
-		}
-	}
-	if attrs, ok := params["attributes"].(map[string]interface{}); ok {
-		for k, v := range attrs {
-			if vs, ok := v.(string); ok {
-				result[k] = vs
-			}
-		}
-	}
-
-	for i := 1; ; i++ {
-		keyKey := "Attributes.entry." + strconv.Itoa(i) + ".key"
-		valueKey := "Attributes.entry." + strconv.Itoa(i) + ".value"
-
-		key := request.GetStringParam(params, keyKey)
-		if key == "" {
-			break
-		}
-
-		value := request.GetStringParam(params, valueKey)
-		result[key] = value
-	}
-
-	return result
-}
-
-func parseEndpointAttributes(params map[string]interface{}) map[string]string {
-	result := make(map[string]string)
-
-	if attrs, ok := params["Attributes"].(map[string]interface{}); ok {
-		for k, v := range attrs {
-			if vs, ok := v.(string); ok {
-				result[k] = vs
-			}
-		}
-	}
-	if attrs, ok := params["attributes"].(map[string]interface{}); ok {
-		for k, v := range attrs {
-			if vs, ok := v.(string); ok {
-				result[k] = vs
-			}
-		}
-	}
-
-	for i := 1; ; i++ {
-		keyKey := "Attributes.entry." + strconv.Itoa(i) + ".key"
-		valueKey := "Attributes.entry." + strconv.Itoa(i) + ".value"
-
-		key := request.GetStringParam(params, keyKey)
-		if key == "" {
-			break
-		}
-
-		value := request.GetStringParam(params, valueKey)
-		result[key] = value
-	}
-
-	return result
-}
 
 // CreatePlatformApplication creates a platform application for push notifications.
 func (s *SNSService) CreatePlatformApplication(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -100,7 +31,7 @@ func (s *SNSService) CreatePlatformApplication(ctx context.Context, reqCtx *requ
 	app := &snsstore.PlatformApplication{
 		Name:       name,
 		Platform:   strings.ToUpper(platform),
-		Attributes: parsePlatformAttributes(req.Parameters),
+		Attributes: parseAttributes(req.Parameters),
 	}
 
 	created, err := store.CreatePlatformApplication(app)
@@ -168,7 +99,7 @@ func (s *SNSService) SetPlatformApplicationAttributes(ctx context.Context, reqCt
 		return nil, NewInvalidParameterException("PlatformApplicationArn is required")
 	}
 
-	attrs := parsePlatformAttributes(req.Parameters)
+	attrs := parseAttributes(req.Parameters)
 	if len(attrs) == 0 {
 		return nil, NewInvalidParameterException("Attributes is required")
 	}
@@ -237,7 +168,7 @@ func (s *SNSService) CreatePlatformEndpoint(ctx context.Context, reqCtx *request
 		PlatformApplicationArn: platformApplicationArn,
 		Token:                  token,
 		CustomUserData:         customUserData,
-		Attributes:             parseEndpointAttributes(req.Parameters),
+		Attributes:             parseAttributes(req.Parameters),
 	}
 
 	created, err := store.CreatePlatformEndpoint(endpoint)
@@ -305,7 +236,7 @@ func (s *SNSService) SetEndpointAttributes(ctx context.Context, reqCtx *request.
 		return nil, NewInvalidParameterException("EndpointArn is required")
 	}
 
-	attrs := parseEndpointAttributes(req.Parameters)
+	attrs := parseAttributes(req.Parameters)
 	if len(attrs) == 0 {
 		return nil, NewInvalidParameterException("Attributes is required")
 	}

@@ -14,7 +14,7 @@ import (
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
-	svcarn "vorpalstacks/internal/utils/aws/arn"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 func (e *Executor) executeLambdaTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string) (string, error) {
@@ -161,11 +161,11 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 			topicName = "default-topic"
 		}
 
-		_, _, topicRegion, _, _ := svcarn.SplitARN(state.Resource)
+		_, _, topicRegion, _, _ := arnutil.SplitARN(state.Resource)
 		if topicRegion == "" {
 			topicRegion = e.region
 		}
-		topicArn = fmt.Sprintf("arn:aws:sns:%s:%s:%s", topicRegion, e.accountID, topicName)
+		topicArn = arnutil.NewARNBuilder(e.accountID, topicRegion).SNS().Topic(topicName)
 	}
 
 	message := input
@@ -206,7 +206,7 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 			Message:   message,
 			Subject:   subject,
 		}
-		_, _, evtRegion, _, _ := svcarn.SplitARN(topicArn)
+		_, _, evtRegion, _, _ := arnutil.SplitARN(topicArn)
 		if evtRegion == "" {
 			evtRegion = e.region
 		}
@@ -251,7 +251,7 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 		inputData = map[string]interface{}{"Entries": []interface{}{}}
 	}
 
-	_, _, eventsRegion, _, _ := svcarn.SplitARN(state.Resource)
+	_, _, eventsRegion, _, _ := arnutil.SplitARN(state.Resource)
 	if eventsRegion == "" {
 		eventsRegion = e.region
 	}
@@ -332,7 +332,7 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 			eventJSON, err := json.Marshal(event)
 			if err == nil {
 				ebEvt := &eventbus.EventBridgeDeliveryEvent{
-					TargetARN: fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", eventsRegion, e.accountID, eventBusName),
+					TargetARN: arnutil.NewARNBuilder(e.accountID, eventsRegion).Events().EventBus(eventBusName),
 					Input:     eventJSON,
 				}
 				ebEvt.Region = eventsRegion
@@ -373,7 +373,7 @@ func (e *Executor) executeActivityTask(ctx context.Context, execCtx *ExecutionCo
 	}
 
 	activityName := parts[6]
-	activityArn := fmt.Sprintf("arn:aws:states:%s:%s:activity:%s", e.region, e.accountID, activityName)
+	activityArn := arnutil.NewARNBuilder(e.accountID, e.region).StepFunctions().Activity(activityName)
 
 	_, err := e.store.GetActivity(ctx, activityArn)
 	if err != nil {

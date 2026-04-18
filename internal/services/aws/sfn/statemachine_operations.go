@@ -16,7 +16,7 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
-	arncommon "vorpalstacks/internal/utils/aws/arn"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateStateMachine creates a new state machine.
@@ -323,9 +323,7 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 		name = generateExecutionName()
 	}
 
-	executionArn := fmt.Sprintf("arn:aws:states:%s:%s:execution:%s:%s",
-		reqCtx.GetRegion(), s.accountID,
-		arncommon.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
+	executionArn := arnutil.NewARNBuilder(s.accountID, reqCtx.GetRegion()).StepFunctions().Execution(arnutil.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
 
 	exec := sfnstore.NewExecution(sm.StateMachineArn, name, input, traceHeader)
 	exec.ExecutionArn = executionArn
@@ -708,7 +706,7 @@ func sfnRoleNotFoundError(roleArn string) error {
 }
 
 func sfnRoleCannotBeAssumedError(roleArn string) error {
-	return awserrors.NewAWSError("AccessDeniedException", fmt.Sprintf("Role %s is invalid or cannot be assumed.", roleArn), 400)
+	return awserrors.NewAWSError("AccessDeniedException", fmt.Sprintf("Role %s is invalid or cannot be assumed.", roleArn), 403)
 }
 
 func sfnInvalidRoleArnError(roleArn string) error {

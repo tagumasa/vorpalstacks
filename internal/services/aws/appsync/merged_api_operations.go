@@ -2,7 +2,6 @@ package appsync
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 
@@ -11,6 +10,7 @@ import (
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // AssociateSourceGraphqlApi links a source GraphQL API to a merged API.
@@ -40,9 +40,9 @@ func (s *AppSyncService) AssociateSourceGraphqlApi(ctx context.Context, reqCtx *
 		AssociationId:              uuid.New().String(),
 		MergedApiId:                mergedApiId,
 		SourceApiId:                sourceApiId,
-		MergedApiArn:               fmt.Sprintf("arn:aws:appsync:%s:%s:apis/%s", store.GetRegion(), store.GetAccountID(), mergedApiId),
-		SourceApiArn:               fmt.Sprintf("arn:aws:appsync:%s:%s:apis/%s", store.GetRegion(), store.GetAccountID(), sourceApiId),
-		AssociationArn:             fmt.Sprintf("arn:aws:appsync:%s:%s:mergedApis/%s/sourceApiAssociations/%s", store.GetRegion(), store.GetAccountID(), mergedApiId, uuid.New().String()),
+		MergedApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(mergedApiId),
+		SourceApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(sourceApiId),
+		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().SourceApiAssociation(mergedApiId, uuid.New().String()),
 		SourceApiAssociationStatus: "MERGE_SCHEDULED",
 		Description:                description,
 	}
@@ -207,9 +207,9 @@ func (s *AppSyncService) AssociateMergedGraphqlApi(ctx context.Context, reqCtx *
 		AssociationId:              uuid.New().String(),
 		MergedApiId:                mergedApiId,
 		SourceApiId:                sourceApiId,
-		MergedApiArn:               fmt.Sprintf("arn:aws:appsync:%s:%s:apis/%s", store.GetRegion(), store.GetAccountID(), mergedApiId),
-		SourceApiArn:               fmt.Sprintf("arn:aws:appsync:%s:%s:apis/%s", store.GetRegion(), store.GetAccountID(), sourceApiId),
-		AssociationArn:             fmt.Sprintf("arn:aws:appsync:%s:%s:sourceApis/%s/mergedApiAssociations/%s", store.GetRegion(), store.GetAccountID(), sourceApiId, uuid.New().String()),
+		MergedApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(mergedApiId),
+		SourceApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(sourceApiId),
+		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().MergedApiAssociation(sourceApiId, uuid.New().String()),
 		SourceApiAssociationStatus: "MERGE_SCHEDULED",
 		Description:                description,
 	}

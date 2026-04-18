@@ -9,36 +9,31 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const instanceProfileBucketName = "iam_instance_profiles"
 
 // InstanceProfileStore manages IAM instance profile data in persistent storage.
 type InstanceProfileStore struct {
-	bucket     storage.Bucket
+	*common.BaseStore
 	arnBuilder *ARNBuilder
+	kl         common.KeyLocker
 }
 
 // NewInstanceProfileStore creates a new store for IAM instance profiles.
 func NewInstanceProfileStore(store storage.BasicStorage, accountId string) *InstanceProfileStore {
 	return &InstanceProfileStore{
-		bucket:     store.Bucket(instanceProfileBucketName),
+		BaseStore:  common.NewBaseStore(store.Bucket(instanceProfileBucketName), "iam"),
 		arnBuilder: NewARNBuilder(accountId),
 	}
 }
 
 // Get retrieves an instance profile by its name.
 func (s *InstanceProfileStore) Get(instanceProfileName string) (*InstanceProfile, error) {
-	data, err := s.bucket.Get([]byte(instanceProfileName))
-	if err != nil {
-		return nil, NewStoreError("get_instance_profile", err)
-	}
-	if data == nil {
-		return nil, NewStoreError("get_instance_profile", ErrInstanceProfileNotFound)
-	}
 	var profile InstanceProfile
-	if err := json.Unmarshal(data, &profile); err != nil {
-		return nil, NewStoreError("get_instance_profile", err)
+	if err := s.BaseStore.Get(instanceProfileName, &profile); err != nil {
+		return nil, err
 	}
 	return &profile, nil
 }
@@ -46,14 +41,13 @@ func (s *InstanceProfileStore) Get(instanceProfileName string) (*InstanceProfile
 // GetByID retrieves an instance profile by its ID.
 func (s *InstanceProfileStore) GetByID(instanceProfileID string) (*InstanceProfile, error) {
 	var found *InstanceProfile
-	err := s.bucket.ForEach(func(k, v []byte) error {
+	err := s.ForEach(func(key string, value []byte) error {
 		var profile InstanceProfile
-		if err := json.Unmarshal(v, &profile); err != nil {
+		if err := json.Unmarshal(value, &profile); err != nil {
 			return err
 		}
-		if profile.ID == instanceProfileID {
+		if profile.ID == instanceProfileID && found == nil {
 			found = &profile
-			return nil
 		}
 		return nil
 	})
@@ -68,54 +62,19 @@ func (s *InstanceProfileStore) GetByID(instanceProfileID string) (*InstanceProfi
 
 // List returns a paginated list of instance profiles.
 func (s *InstanceProfileStore) List(pathPrefix string, marker string, maxItems int) (*InstanceProfileListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
+	var filter common.FilterFunc[InstanceProfile]
+	if pathPrefix != "" {
+		filter = func(p *InstanceProfile) bool { return strings.HasPrefix(p.Path, pathPrefix) }
 	}
-
-	var profiles []*InstanceProfile
-	count := 0
-	started := marker == ""
-	var hasMore bool
-
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		var profile InstanceProfile
-		if err := json.Unmarshal(v, &profile); err != nil {
-			return err
-		}
-
-		if !started {
-			if profile.InstanceProfileName == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if pathPrefix != "" && !strings.HasPrefix(profile.Path, pathPrefix) {
-			return nil
-		}
-
-		if count < maxItems {
-			profiles = append(profiles, &profile)
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[InstanceProfile](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
-		return nil, NewStoreError("list_instance_profiles", err)
+		return nil, err
 	}
-
-	result := &InstanceProfileListResult{
-		InstanceProfiles: profiles,
-		IsTruncated:      hasMore,
-	}
-	if len(profiles) > 0 {
-		result.Marker = profiles[len(profiles)-1].InstanceProfileName
-	}
-
-	return result, nil
+	return &InstanceProfileListResult{
+		InstanceProfiles: result.Items,
+		IsTruncated:      result.IsTruncated,
+		Marker:           result.NextMarker,
+	}, nil
 }
 
 // Put stores an instance profile.
@@ -126,29 +85,17 @@ func (s *InstanceProfileStore) Put(profile *InstanceProfile) error {
 	if profile.Path == "" {
 		profile.Path = "/"
 	}
-
-	data, err := json.Marshal(profile)
-	if err != nil {
-		return NewStoreError("put_instance_profile", err)
-	}
-
-	if err := s.bucket.Put([]byte(profile.InstanceProfileName), data); err != nil {
-		return NewStoreError("put_instance_profile", err)
-	}
-	return nil
+	return s.BaseStore.Put(profile.InstanceProfileName, profile)
 }
 
 // Delete removes an instance profile by its name.
 func (s *InstanceProfileStore) Delete(instanceProfileName string) error {
-	if err := s.bucket.Delete([]byte(instanceProfileName)); err != nil {
-		return NewStoreError("delete_instance_profile", err)
-	}
-	return nil
+	return s.BaseStore.Delete(instanceProfileName)
 }
 
 // Exists checks whether an instance profile exists.
 func (s *InstanceProfileStore) Exists(instanceProfileName string) bool {
-	return s.bucket.Has([]byte(instanceProfileName))
+	return s.BaseStore.Exists(instanceProfileName)
 }
 
 // Create creates a new IAM instance profile.
@@ -181,44 +128,48 @@ func (s *InstanceProfileStore) Create(instanceProfileName, path, accountId strin
 
 // AddRole adds a role to an instance profile.
 func (s *InstanceProfileStore) AddRole(instanceProfileName, roleName string) error {
-	profile, err := s.Get(instanceProfileName)
-	if err != nil {
-		return err
-	}
-
-	for _, r := range profile.Roles {
-		if r == roleName {
-			return NewStoreError("add_role_to_instance_profile", ErrRoleAlreadyInInstanceProfile)
+	return s.kl.WithLock(instanceProfileName, func() error {
+		profile, err := s.Get(instanceProfileName)
+		if err != nil {
+			return err
 		}
-	}
 
-	profile.Roles = append(profile.Roles, roleName)
-	return s.Put(profile)
+		for _, r := range profile.Roles {
+			if r == roleName {
+				return NewStoreError("add_role_to_instance_profile", ErrRoleAlreadyInInstanceProfile)
+			}
+		}
+
+		profile.Roles = append(profile.Roles, roleName)
+		return s.Put(profile)
+	})
 }
 
 // RemoveRole removes a role from an instance profile.
 func (s *InstanceProfileStore) RemoveRole(instanceProfileName, roleName string) error {
-	profile, err := s.Get(instanceProfileName)
-	if err != nil {
-		return err
-	}
-
-	found := false
-	newRoles := []string{}
-	for _, r := range profile.Roles {
-		if r == roleName {
-			found = true
-		} else {
-			newRoles = append(newRoles, r)
+	return s.kl.WithLock(instanceProfileName, func() error {
+		profile, err := s.Get(instanceProfileName)
+		if err != nil {
+			return err
 		}
-	}
 
-	if !found {
-		return NewStoreError("remove_role_from_instance_profile", ErrRoleNotInInstanceProfile)
-	}
+		found := false
+		newRoles := []string{}
+		for _, r := range profile.Roles {
+			if r == roleName {
+				found = true
+			} else {
+				newRoles = append(newRoles, r)
+			}
+		}
 
-	profile.Roles = newRoles
-	return s.Put(profile)
+		if !found {
+			return NewStoreError("remove_role_from_instance_profile", ErrRoleNotInInstanceProfile)
+		}
+
+		profile.Roles = newRoles
+		return s.Put(profile)
+	})
 }
 
 // HasRole checks whether a role is attached to an instance profile.
@@ -238,64 +189,26 @@ func (s *InstanceProfileStore) HasRole(instanceProfileName, roleName string) (bo
 
 // Count returns the total number of instance profiles.
 func (s *InstanceProfileStore) Count() int {
-	return s.bucket.Count()
+	return s.BaseStore.Count()
 }
 
 // ListForRole returns all instance profiles that contain a specific role.
 func (s *InstanceProfileStore) ListForRole(roleName string, marker string, maxItems int) (*InstanceProfileListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var profiles []*InstanceProfile
-	count := 0
-	started := marker == ""
-	var hasMore bool
-
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		var profile InstanceProfile
-		if err := json.Unmarshal(v, &profile); err != nil {
-			return err
-		}
-
-		hasRole := false
-		for _, r := range profile.Roles {
+	filter := func(p *InstanceProfile) bool {
+		for _, r := range p.Roles {
 			if r == roleName {
-				hasRole = true
-				break
+				return true
 			}
 		}
-		if !hasRole {
-			return nil
-		}
-
-		if !started {
-			if profile.InstanceProfileName == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if count < maxItems {
-			profiles = append(profiles, &profile)
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+		return false
+	}
+	result, err := common.List[InstanceProfile](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
-		return nil, NewStoreError("list_instance_profiles_for_role", err)
+		return nil, err
 	}
-
-	result := &InstanceProfileListResult{
-		InstanceProfiles: profiles,
-		IsTruncated:      hasMore,
-	}
-	if len(profiles) > 0 {
-		result.Marker = profiles[len(profiles)-1].InstanceProfileName
-	}
-
-	return result, nil
+	return &InstanceProfileListResult{
+		InstanceProfiles: result.Items,
+		IsTruncated:      result.IsTruncated,
+		Marker:           result.NextMarker,
+	}, nil
 }

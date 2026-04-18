@@ -8,12 +8,12 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
-	arncommon "vorpalstacks/internal/utils/aws/arn"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 func generateMapRunArn(store *sfnstore.StepFunctionStore, region, accountID, executionArn, stateName string) string {
-	return fmt.Sprintf("arn:aws:states:%s:%s:mapRun:%s/%s/%s",
-		region, accountID, arncommon.ExtractStateMachineNameFromARN(executionArn), stateName, generateMapRunID(store))
+	return arnutil.NewARNBuilder(accountID, region).Build("states", fmt.Sprintf("mapRun:%s/%s/%s",
+		arnutil.ExtractStateMachineNameFromARN(executionArn), stateName, generateMapRunID(store)))
 }
 
 func generateMapRunID(store *sfnstore.StepFunctionStore) string {
@@ -51,9 +51,7 @@ func (s *StepFunctionService) StartSyncExecution(ctx context.Context, reqCtx *re
 		name = generateExecutionName()
 	}
 
-	executionArn := fmt.Sprintf("arn:aws:states:%s:%s:execution:%s:%s",
-		reqCtx.GetRegion(), s.accountID,
-		arncommon.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
+	executionArn := arnutil.NewARNBuilder(s.accountID, reqCtx.GetRegion()).StepFunctions().Execution(arnutil.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
 
 	exec := sfnstore.NewExecution(sm.StateMachineArn, name, input, "")
 	exec.ExecutionArn = executionArn
