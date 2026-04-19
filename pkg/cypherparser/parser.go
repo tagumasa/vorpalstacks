@@ -53,6 +53,7 @@ type parser struct {
 	pos    int
 }
 
+// ParsedCypher holds the result of parsing a Cypher query string. Exactly one of Read, Write, Merge, Call, or DDL is non-nil.
 type ParsedCypher struct {
 	Read  *CypherQuery
 	Write *CypherWrite

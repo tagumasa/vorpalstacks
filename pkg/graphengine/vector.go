@@ -28,6 +28,7 @@ var vecPrefix = []byte("vec/")
 // DistanceMetric enumerates the supported distance functions for vector search.
 type DistanceMetric string
 
+// Distance metric constants.
 const (
 	L2Squared        DistanceMetric = "L2Squared"
 	L2               DistanceMetric = "L2"
@@ -115,6 +116,7 @@ type TopKResult struct {
 	Score  float64
 }
 
+// EmbeddingStore manages in-memory vector embeddings backed by Pebble persistence.
 type EmbeddingStore struct {
 	db    pebbleDB
 	cache map[NodeID][]float64
@@ -365,6 +367,7 @@ type filterAndAll struct {
 	children []VertexFilter
 }
 
+// Evaluate implements the VertexFilter interface.
 func (f *filterAndAll) Evaluate(node *Node) bool {
 	for _, c := range f.children {
 		if !c.Evaluate(node) {
@@ -378,6 +381,7 @@ type filterOrAll struct {
 	children []VertexFilter
 }
 
+// Evaluate implements the VertexFilter interface.
 func (f *filterOrAll) Evaluate(node *Node) bool {
 	for _, c := range f.children {
 		if c.Evaluate(node) {
@@ -392,6 +396,7 @@ type filterEquals struct {
 	value    interface{}
 }
 
+// Evaluate implements the VertexFilter interface.
 func (f *filterEquals) Evaluate(node *Node) bool {
 	if f.property == "~label" {
 		for _, l := range node.Labels {
@@ -413,6 +418,7 @@ type filterNotEquals struct {
 	value    interface{}
 }
 
+// Evaluate implements the VertexFilter interface.
 func (f *filterNotEquals) Evaluate(node *Node) bool {
 	if f.property == "~label" {
 		for _, l := range node.Labels {
@@ -435,6 +441,7 @@ type filterComparison struct {
 	op       string
 }
 
+// Evaluate implements the VertexFilter interface.
 func (f *filterComparison) Evaluate(node *Node) bool {
 	v, ok := node.Props[f.property]
 	if !ok {
@@ -459,6 +466,7 @@ type filterIn struct {
 	values   []interface{}
 }
 
+// Evaluate implements the VertexFilter interface.
 func (f *filterIn) Evaluate(node *Node) bool {
 	v, ok := node.Props[f.property]
 	if !ok {
@@ -477,6 +485,7 @@ type filterNotIn struct {
 	values   []interface{}
 }
 
+// Evaluate implements the VertexFilter interface.
 func (f *filterNotIn) Evaluate(node *Node) bool {
 	v, ok := node.Props[f.property]
 	if !ok {
@@ -495,6 +504,7 @@ type filterStartsWith struct {
 	value    string
 }
 
+// Evaluate implements the VertexFilter interface.
 func (f *filterStartsWith) Evaluate(node *Node) bool {
 	v, ok := node.Props[f.property]
 	if !ok {
@@ -512,6 +522,7 @@ type filterStringContains struct {
 	value    string
 }
 
+// Evaluate implements the VertexFilter interface.
 func (f *filterStringContains) Evaluate(node *Node) bool {
 	v, ok := node.Props[f.property]
 	if !ok {

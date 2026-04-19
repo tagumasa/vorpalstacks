@@ -150,6 +150,7 @@ type Token struct {
 	Pos  int
 }
 
+// String returns a human-readable representation of the token.
 func (t Token) String() string {
 	return fmt.Sprintf("%s(%q)@%d", tokenKindName(t.Kind), t.Text, t.Pos)
 }

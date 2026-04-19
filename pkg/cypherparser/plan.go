@@ -30,8 +30,10 @@ import (
 	"vorpalstacks/pkg/graphengine"
 )
 
+// PlanOperator identifies a type of operator in a query execution plan.
 type PlanOperator string
 
+// Plan operator constants.
 const (
 	OpAllNodesScan  PlanOperator = "AllNodesScan"
 	OpLabelScan     PlanOperator = "NodeByLabelScan"
@@ -47,6 +49,7 @@ const (
 	OpWith          PlanOperator = "With"
 )
 
+// PlanNode represents a single node in a query execution plan tree.
 type PlanNode struct {
 	Operator   PlanOperator   `json:"operator"`
 	Details    string         `json:"details,omitempty"`
@@ -56,12 +59,14 @@ type PlanNode struct {
 	Children   []*PlanNode    `json:"children,omitempty"`
 }
 
+// QueryPlan holds the root of a query execution plan and, for PROFILE queries, the query result.
 type QueryPlan struct {
 	Root    *PlanNode     `json:"root"`
 	Profile bool          `json:"profile"`
 	Result  *CypherResult `json:"result,omitempty"`
 }
 
+// String returns a human-readable tree representation of the query plan.
 func (qp *QueryPlan) String() string {
 	var sb strings.Builder
 	if qp.Profile {
@@ -349,6 +354,7 @@ func formatExprBrief(e Expression) string {
 	}
 }
 
+// BuildExplainPlan builds a query plan without executing the query (EXPLAIN mode).
 func BuildExplainPlan(q *CypherQuery, reader graphengine.GraphReader) *QueryPlan {
 	return &QueryPlan{
 		Root:    buildPlan(q, reader),
@@ -356,6 +362,7 @@ func BuildExplainPlan(q *CypherQuery, reader graphengine.GraphReader) *QueryPlan
 	}
 }
 
+// BuildProfilePlan builds a query plan with the query result attached (PROFILE mode).
 func BuildProfilePlan(q *CypherQuery, reader graphengine.GraphReader, result *CypherResult) *QueryPlan {
 	return &QueryPlan{
 		Root:    buildPlan(q, reader),

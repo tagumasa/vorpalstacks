@@ -95,6 +95,7 @@ type Edge struct {
 	Props Props  `json:"props,omitempty"`
 }
 
+// String returns a human-readable representation of the edge.
 func (e *Edge) String() string {
 	return fmt.Sprintf("(%d)--%s-->(%d)", e.From, e.Label, e.To)
 }
@@ -117,8 +118,10 @@ type PathResult struct {
 	Cost  float64
 }
 
+// EdgeFilter is a function that returns true if an edge should be included in a traversal.
 type EdgeFilter func(*Edge) bool
 
+// Visitor is a callback invoked for each node discovered during a BFS traversal. Returning false stops the traversal early.
 type Visitor func(result *TraversalResult) bool
 
 // GraphStats holds high-level statistics about the graph.

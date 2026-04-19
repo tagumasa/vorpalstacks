@@ -33,6 +33,7 @@ import (
 	"github.com/cockroachdb/pebble/v2"
 )
 
+// ErrNotFound is returned when a node, edge, or unique constraint entry is not found.
 var (
 	idxEtypePrefix = []byte("idx_etype/")
 	ucPrefix       = []byte("uc/")
@@ -84,15 +85,20 @@ type Options struct {
 	SharedCache *Cache
 }
 
+// SyncMode controls durability guarantees for write operations.
 type SyncMode int
 
 const (
+	// SyncNormal writes are synchronised to disk.
 	SyncNormal SyncMode = iota
+	// SyncNone writes are acknowledged without waiting for disk sync.
 	SyncNone
 )
 
+// DefaultCacheSize is the default Pebble block cache size (8 MiB).
 const DefaultCacheSize int64 = 8 << 20
 
+// DefaultOptions returns an Options value with the default cache size and no sync.
 func DefaultOptions() Options {
 	return Options{
 		CacheSize: DefaultCacheSize,
@@ -187,10 +193,12 @@ func (d *DB) Close() error {
 	return err
 }
 
+// Dir returns the directory path of the graph database.
 func (d *DB) Dir() string {
 	return d.dir
 }
 
+// Stats returns high-level statistics about the graph.
 func (d *DB) Stats() *GraphStats {
 	labelCounts, _ := d.GetLabelCounts()
 	relCounts, _ := d.GetRelCounts()
@@ -203,14 +211,17 @@ func (d *DB) Stats() *GraphStats {
 	}
 }
 
+// CountNodes returns the total number of nodes in the graph.
 func (d *DB) CountNodes() int64 {
 	return int64(d.nodeCount.Load())
 }
 
+// CountEdges returns the total number of edges in the graph.
 func (d *DB) CountEdges() int64 {
 	return int64(d.edgeCount.Load())
 }
 
+// GetLabelCounts returns a map of label name to node count for every label in the graph.
 func (d *DB) GetLabelCounts() (map[string]int64, error) {
 	counts := make(map[string]int64)
 	lower := append([]byte(nil), idxLabelPrefix...)
@@ -242,6 +253,7 @@ func (d *DB) GetLabelCounts() (map[string]int64, error) {
 	return counts, nil
 }
 
+// GetRelCounts returns a map of relationship label to edge count.
 func (d *DB) GetRelCounts() (map[string]int64, error) {
 	counts := make(map[string]int64)
 	lower := append([]byte(nil), idxEtypePrefix...)
@@ -663,6 +675,7 @@ func (d *DB) AddNodeBatch(items []struct {
 	return ids, nil
 }
 
+// GetNode retrieves a node by its ID. Returns an error if the node does not exist.
 func (d *DB) GetNode(id NodeID) (*Node, error) {
 	if d.closed.Load() {
 		return nil, fmt.Errorf("graphengine: database is closed")
@@ -830,6 +843,7 @@ func (d *DB) DeleteNode(id NodeID) error {
 	return nil
 }
 
+// NodeExists reports whether a node with the given ID exists.
 func (d *DB) NodeExists(id NodeID) (bool, error) {
 	if d.closed.Load() {
 		return false, fmt.Errorf("graphengine: database is closed")
@@ -941,6 +955,7 @@ func (d *DB) AddEdgeBatch(edges []Edge) ([]EdgeID, error) {
 	return ids, nil
 }
 
+// GetEdge retrieves an edge by its ID. Returns an error if the edge does not exist.
 func (d *DB) GetEdge(id EdgeID) (*Edge, error) {
 	if d.closed.Load() {
 		return nil, fmt.Errorf("graphengine: database is closed")
@@ -958,6 +973,7 @@ func (d *DB) GetEdge(id EdgeID) (*Edge, error) {
 	return decodeEdgeData(id, val)
 }
 
+// DeleteEdge removes an edge and its adjacency and index entries.
 func (d *DB) DeleteEdge(id EdgeID) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -1069,22 +1085,27 @@ func (d *DB) getEdgesForNode(id NodeID, dir Direction, loadProps bool, labelFilt
 	return edges, nil
 }
 
+// OutEdges returns all outgoing edges of the given node.
 func (d *DB) OutEdges(id NodeID) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Outgoing, true, "")
 }
 
+// InEdges returns all incoming edges of the given node.
 func (d *DB) InEdges(id NodeID) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Incoming, true, "")
 }
 
+// OutEdgesByLabel returns outgoing edges of the given node filtered by label.
 func (d *DB) OutEdgesByLabel(id NodeID, label string) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Outgoing, true, label)
 }
 
+// InEdgesByLabel returns incoming edges of the given node filtered by label.
 func (d *DB) InEdgesByLabel(id NodeID, label string) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Incoming, true, label)
 }
 
+// GetEdges returns edges of the given node in the specified direction, optionally filtered by label.
 func (d *DB) GetEdges(nodeID NodeID, dir Direction, labelFilter string) ([]*Edge, error) {
 	return d.getEdgesForNode(nodeID, dir, true, labelFilter)
 }
@@ -1094,10 +1115,12 @@ func (d *DB) GetEdges(nodeID NodeID, dir Direction, labelFilter string) ([]*Edge
 // contribute their To node and incoming edges contribute their From node.
 // When labelFilter is non-empty, only edges with a matching label are
 // considered.
+// GetAdjacentNodes returns the deduplicated set of adjacent nodes in the specified direction.
 func (d *DB) GetAdjacentNodes(nodeID NodeID, dir Direction) ([]*Node, error) {
 	return d.getAdjacentNodesFiltered(nodeID, dir, "")
 }
 
+// GetAdjacentNodesByLabel returns adjacent nodes filtered by edge label.
 func (d *DB) GetAdjacentNodesByLabel(nodeID NodeID, dir Direction, label string) ([]*Node, error) {
 	return d.getAdjacentNodesFiltered(nodeID, dir, label)
 }
@@ -1222,6 +1245,7 @@ func (d *DB) CreateIndex(propName string) error {
 	return nil
 }
 
+// UpdateEdge merges properties into an existing edge.
 func (d *DB) UpdateEdge(id EdgeID, props Props) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -1259,6 +1283,7 @@ func (d *DB) UpdateEdge(id EdgeID, props Props) error {
 	return nil
 }
 
+// RemoveLabel removes a label from a node.
 func (d *DB) RemoveLabel(id NodeID, label string) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -1311,6 +1336,7 @@ func (d *DB) RemoveLabel(id NodeID, label string) error {
 	return nil
 }
 
+// AddLabel adds a label to a node, enforcing unique constraints.
 func (d *DB) AddLabel(id NodeID, label string) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -1377,6 +1403,7 @@ func (d *DB) AddLabel(id NodeID, label string) error {
 	return nil
 }
 
+// RemoveProperty removes a property from a node.
 func (d *DB) RemoveProperty(id NodeID, key string) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -1428,6 +1455,7 @@ func (d *DB) RemoveProperty(id NodeID, key string) error {
 	return nil
 }
 
+// RemoveEdgeProperty removes a property from an edge.
 func (d *DB) RemoveEdgeProperty(id EdgeID, key string) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -1464,6 +1492,7 @@ func (d *DB) RemoveEdgeProperty(id EdgeID, key string) error {
 	return nil
 }
 
+// ForEachEdge iterates over every edge in the graph, calling fn for each.
 func (d *DB) ForEachEdge(fn func(*Edge) error) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -1649,6 +1678,7 @@ var clearPrefixes = [][]byte{
 	[]byte("meta/"),
 }
 
+// Clear removes all data from the graph database.
 func (d *DB) Clear() error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -1683,6 +1713,7 @@ func (d *DB) Clear() error {
 	return nil
 }
 
+// CreateUniqueConstraint creates a unique constraint for a label-property pair and backfills the index.
 func (d *DB) CreateUniqueConstraint(label, prop string) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -1745,6 +1776,7 @@ func (d *DB) CreateUniqueConstraint(label, prop string) error {
 	return nil
 }
 
+// HasUniqueConstraint reports whether a unique constraint exists for the given label and property.
 func (d *DB) HasUniqueConstraint(label, prop string) bool {
 	key := append(append([]byte(nil), ucPrefix...), []byte(label)...)
 	key = append(key, 0x00)
@@ -1758,6 +1790,7 @@ func (d *DB) HasUniqueConstraint(label, prop string) bool {
 	return true
 }
 
+// FindByUniqueConstraint returns the node ID matching a unique constraint, or ErrNotFound.
 func (d *DB) FindByUniqueConstraint(label, prop string, value interface{}) (NodeID, error) {
 	prefix := ucKey(label, prop, value)
 
@@ -1846,6 +1879,7 @@ func (d *DB) ScanEdgesByType(label string, fn func(edge *Edge, src, dst *Node) e
 
 // FindByProperty returns all node IDs matching the given property name and
 // value, using the property index.
+// FindByProperty returns all node IDs matching the given property name and value.
 func (d *DB) FindByProperty(propName string, value interface{}) ([]NodeID, error) {
 	valueStr := propIndexValue(value)
 	prefix := idxPropPrefixKey(propName, valueStr)

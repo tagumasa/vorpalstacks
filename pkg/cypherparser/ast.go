@@ -103,10 +103,13 @@ type RemoveItem struct {
 	Property string
 }
 
+// RemoveKind identifies the kind of REMOVE operation.
 type RemoveKind int
 
 const (
+	// RemoveLabel indicates a label removal (REMOVE n:Label).
 	RemoveLabel RemoveKind = iota
+	// RemoveProperty indicates a property removal (REMOVE n.prop).
 	RemoveProperty
 )
 
@@ -198,8 +201,11 @@ type OrderItem struct {
 //   - ArithAdd, ArithSub, ArithMul, ArithDiv, ArithMod
 // ---------------------------------------------------------------------------
 
+// ExprKind identifies the type of a Cypher expression.
 type ExprKind int
 
+// Expression kind constants. The first group mirrors goraphdb; the remaining
+// groups are our additions for extended openCypher support.
 const (
 	ExprLiteral ExprKind = iota
 	ExprVarRef
@@ -243,8 +249,10 @@ const (
 	ExprProperties
 )
 
+// CompOp identifies a comparison operator.
 type CompOp int
 
+// Comparison operator constants.
 const (
 	OpEq CompOp = iota
 	OpNeq
@@ -254,8 +262,10 @@ const (
 	OpGte
 )
 
+// AggFunc identifies an aggregation function.
 type AggFunc int
 
+// Aggregation function constants.
 const (
 	AggCount AggFunc = iota
 	AggSum
@@ -549,6 +559,7 @@ func derefInt(p *int) int {
 	return *p
 }
 
+// DDLStatement represents a data definition language statement (CREATE INDEX, CREATE CONSTRAINT, SHOW).
 type DDLStatement struct {
 	Kind       string
 	Label      string

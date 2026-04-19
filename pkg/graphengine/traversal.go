@@ -296,6 +296,7 @@ func (d *DB) ShortestPathWeighted(fromID, toID NodeID, weightProp string, defaul
 	return d.buildPathResult(fromID, pathEdges, dist[toID])
 }
 
+// HasPath reports whether a path exists between two nodes.
 func (d *DB) HasPath(fromID, toID NodeID) (bool, error) {
 	path, err := d.ShortestPath(fromID, toID)
 	if err != nil {
@@ -455,14 +456,18 @@ type pqItem struct {
 
 type priorityQueue []*pqItem
 
-func (pq priorityQueue) Len() int           { return len(pq) }
+// Len implements heap.Interface.
+func (pq priorityQueue) Len() int { return len(pq) }
+// Less implements heap.Interface.
 func (pq priorityQueue) Less(i, j int) bool { return pq[i].cost < pq[j].cost }
+// Swap implements heap.Interface.
 func (pq priorityQueue) Swap(i, j int) {
 	pq[i], pq[j] = pq[j], pq[i]
 	pq[i].index = i
 	pq[j].index = j
 }
 
+// Push implements heap.Interface.
 func (pq *priorityQueue) Push(x interface{}) {
 	n := len(*pq)
 	item := x.(*pqItem)
@@ -470,6 +475,7 @@ func (pq *priorityQueue) Push(x interface{}) {
 	*pq = append(*pq, item)
 }
 
+// Pop implements heap.Interface.
 func (pq *priorityQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)

@@ -717,6 +717,7 @@ func stripQuotes(s string) string {
 	return s
 }
 
+// Matches is a convenience function that creates a Matcher and tests the pattern against the message.
 func Matches(pattern, message string) bool {
 	return NewMatcher().Matches(pattern, message)
 }
