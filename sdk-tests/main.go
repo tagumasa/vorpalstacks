@@ -10,12 +10,13 @@ import (
 )
 
 var (
-	endpoint = flag.String("endpoint", "http://localhost:8080", "VorpalStacks endpoint")
-	region   = flag.String("region", "us-east-1", "AWS region")
-	services = flag.String("service", "", "Comma-separated list of services to test (or 'all')")
-	testType = flag.String("type", "all", "Test type to run: all, sdk, ws, integration")
-	format   = flag.String("format", "table", "Output format: table, json")
-	verbose  = flag.Bool("v", false, "Verbose output")
+	endpoint   = flag.String("endpoint", "http://localhost:8080", "VorpalStacks endpoint")
+	region     = flag.String("region", "us-east-1", "AWS region")
+	services   = flag.String("service", "", "Comma-separated list of services to test (or 'all')")
+	testType   = flag.String("type", "all", "Test type to run: all, sdk, ws, integration")
+	format     = flag.String("format", "table", "Output format: table, json")
+	verbose    = flag.Bool("v", false, "Verbose output")
+	parallelism = flag.Int("parallel", 4, "Max number of services to run in parallel (1 = sequential)")
 )
 
 func main() {
@@ -40,13 +41,17 @@ func main() {
 	}
 
 	allResults := make(map[string][]testutil.TestResult)
-	for _, svc := range targetServices {
-		svc = strings.TrimSpace(svc)
-		if svc == "" {
-			continue
+	if *parallelism > 1 && len(targetServices) > 1 {
+		allResults = tester.RunServicesParallel(targetServices, *parallelism)
+	} else {
+		for _, svc := range targetServices {
+			svc = strings.TrimSpace(svc)
+			if svc == "" {
+				continue
+			}
+			results := tester.RunServiceTests(svc)
+			allResults[svc] = results
 		}
-		results := tester.RunServiceTests(svc)
-		allResults[svc] = results
 	}
 
 	tester.PrintReport(allResults, *format)

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	cfstore "vorpalstacks/internal/store/aws/cloudfront"
@@ -180,12 +181,12 @@ func (s *DistributionServer) buildOriginURL(origin *cfstore.Origin, path, query 
 
 	host := origin.DomainName
 	if strings.Contains(host, "s3-website") || strings.Contains(host, ".s3-website.") {
-		host = "localhost:8081"
+		host = fmt.Sprintf("localhost:%d", config.GetInt("ports.s3_website"))
 	} else if strings.Contains(host, "localhost") || strings.Contains(host, "127.0.0.1") {
 	} else if strings.Contains(host, "lambda-url") {
-		host = "localhost:8085"
+		host = fmt.Sprintf("localhost:%d", config.GetInt("ports.lambda_url"))
 	} else if strings.Contains(host, "s3.") && !strings.Contains(host, "website") {
-		host = "localhost:8080"
+		host = fmt.Sprintf("localhost:%d", config.ServerPort())
 	}
 
 	originPath := strings.TrimSuffix(origin.OriginPath, "/")

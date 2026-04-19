@@ -13,6 +13,11 @@ import (
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
 
+type delegationSetResponse struct {
+	ID         string              `json:"id"`
+	NameServers protocol.XMLElements `json:"nameServers"`
+}
+
 // CreateHostedZone creates a new hosted zone in Route 53.
 func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "Name")
@@ -47,6 +52,13 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		}
 	}
 
+	nameServers := generateNameServers(4)
+
+	delegationSetID := ""
+	if dsID := request.GetStringParam(req.Parameters, "DelegationSetId"); dsID != "" {
+		delegationSetID = strings.TrimPrefix(dsID, "/delegationset/")
+	}
+
 	zone := &route53store.HostedZone{
 		ID:                     generateHostedZoneId(),
 		Name:                   normalizeZoneNameForCreate(name),
@@ -55,7 +67,8 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		ResourceRecordSetCount: 0,
 		Private:                privateZone,
 		VPCs:                   vpcs,
-		DelegationSetID:        generateDelegationSetId(),
+		DelegationSetID:        delegationSetID,
+		NameServers:            nameServers,
 		Region:                 reqCtx.GetRegion(),
 		AccountID:              s.accountID,
 	}
@@ -69,13 +82,6 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 			return nil, NewAPIError("HostedZoneAlreadyExists", fmt.Sprintf("Hosted zone already exists: %s", name), 400)
 		}
 		return nil, mapStoreError(err)
-	}
-
-	nameServers := []string{
-		"ns-1.awsdns.com.",
-		"ns-2.awsdns.net.",
-		"ns-3.awsdns.org.",
-		"ns-4.awsdns.co.uk.",
 	}
 
 	nsRecords := make([]*route53store.ResourceRecord, len(nameServers))
@@ -96,7 +102,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		Type: "SOA",
 		TTL:  900,
 		ResourceRecords: []*route53store.ResourceRecord{
-			{Value: fmt.Sprintf("%s ns-1.awsdns.com. 1 7200 900 1209600 86400", zone.Name)},
+			{Value: fmt.Sprintf("%s %s 1 7200 900 1209600 86400", zone.Name, nameServers[0])},
 		},
 	}); err != nil {
 		return nil, mapStoreError(err)
@@ -125,6 +131,21 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		return nil, mapStoreError(err)
 	}
 
+	nsItems := make([]interface{}, len(nameServers))
+	for i, ns := range nameServers {
+		nsItems[i] = ns
+	}
+
+	dsResp := delegationSetResponse{
+		NameServers: protocol.XMLElements{
+			ElementName: "NameServer",
+			Items:       nsItems,
+		},
+	}
+	if zone.DelegationSetID != "" {
+		dsResp.ID = "/delegationset/" + zone.DelegationSetID
+	}
+
 	return map[string]interface{}{
 		"HostedZone": s.hostedZoneToResponse(zone),
 		"ChangeInfo": map[string]interface{}{
@@ -132,20 +153,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 			"Status":      "INSYNC",
 			"SubmittedAt": now.Format(time.RFC3339),
 		},
-		"DelegationSet": map[string]interface{}{
-			"Id":              "/delegationset/" + zone.DelegationSetID,
-			"CallerReference": callerRef,
-			"NameServers": protocol.XMLElements{
-				ElementName: "NameServer",
-				Items: func() []interface{} {
-					items := make([]interface{}, len(nameServers))
-					for i, ns := range nameServers {
-						items[i] = ns
-					}
-					return items
-				}(),
-			},
-		},
+		"DelegationSet": dsResp,
 	}, nil
 }
 
@@ -163,21 +171,23 @@ func (s *Route53Service) GetHostedZone(ctx context.Context, reqCtx *request.Requ
 
 	result := map[string]interface{}{
 		"HostedZone": s.hostedZoneToResponse(zone),
-		"DelegationSet": map[string]interface{}{
-			"NameServers": protocol.XMLElements{
-				ElementName: "NameServer",
-				Items: []interface{}{
-					"ns-1.awsdns.com.",
-					"ns-2.awsdns.net.",
-					"ns-3.awsdns.org.",
-					"ns-4.awsdns.co.uk.",
-				},
-			},
-		},
 	}
 
-	if zone.DelegationSetID != "" {
-		result["DelegationSet"].(map[string]interface{})["Id"] = "/delegationset/" + zone.DelegationSetID
+	if len(zone.NameServers) > 0 {
+		nsItems := make([]interface{}, len(zone.NameServers))
+		for i, ns := range zone.NameServers {
+			nsItems[i] = ns
+		}
+		dsResp := delegationSetResponse{
+			NameServers: protocol.XMLElements{
+				ElementName: "NameServer",
+				Items:       nsItems,
+			},
+		}
+		if zone.DelegationSetID != "" {
+			dsResp.ID = "/delegationset/" + zone.DelegationSetID
+		}
+		result["DelegationSet"] = dsResp
 	}
 
 	if len(zone.VPCs) > 0 {

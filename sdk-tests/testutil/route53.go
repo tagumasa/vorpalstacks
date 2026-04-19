@@ -896,21 +896,21 @@ func (r *TestRunner) RunRoute53Tests() []TestResult {
 
 		defer client.DeleteHostedZone(ctx, &route53.DeleteHostedZoneInput{Id: aws.String(dsZoneID)})
 
-		createDSID := aws.ToString(createResp.DelegationSet.Id)
-		if createDSID == "" {
-			return fmt.Errorf("delegation set ID is empty in create response")
+		createNS := createResp.DelegationSet.NameServers
+		if len(createNS) == 0 {
+			return fmt.Errorf("name servers empty in create response")
 		}
 
 		getResp, err := client.GetHostedZone(ctx, &route53.GetHostedZoneInput{Id: aws.String(dsZoneID)})
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
-		getDSID := aws.ToString(getResp.DelegationSet.Id)
-		if getDSID == "" {
-			return fmt.Errorf("delegation set ID is empty in get response")
+		getNS := getResp.DelegationSet.NameServers
+		if len(getNS) == 0 {
+			return fmt.Errorf("name servers empty in get response")
 		}
-		if createDSID != getDSID {
-			return fmt.Errorf("delegation set ID mismatch: create=%q, get=%q", createDSID, getDSID)
+		if len(createNS) != len(getNS) {
+			return fmt.Errorf("name server count mismatch: create=%d, get=%d", len(createNS), len(getNS))
 		}
 		return nil
 	}))

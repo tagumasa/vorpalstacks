@@ -9,12 +9,11 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/common"
 	commonauth "vorpalstacks/internal/common/auth"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
-
-	"vorpalstacks/internal/config"
 )
 
 // LambdaAuthorizer handles Lambda-based authorizer for API Gateway.
@@ -178,7 +177,9 @@ func (la *LambdaAuthorizer) authorizeIAM(ctx context.Context, req *AuthRequest) 
 }
 
 func (la *LambdaAuthorizer) buildHTTPRequest(ctx context.Context, req *AuthRequest) (*http.Request, error) {
-	httpReq, err := http.NewRequestWithContext(ctx, req.Method, "https://apigateway."+la.region+".amazonaws.com/"+req.RestApiId+"/"+req.StageName+req.Resource, nil)
+	apigwSuffix := config.GetString("endpoints.apigateway_suffix")
+	apiGwHost := strings.Replace(apigwSuffix, "{region}", la.region, 1)
+	httpReq, err := http.NewRequestWithContext(ctx, req.Method, "https://"+apiGwHost+"/"+req.RestApiId+"/"+req.StageName+req.Resource, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +195,7 @@ func (la *LambdaAuthorizer) buildHTTPRequest(ctx context.Context, req *AuthReque
 func (la *LambdaAuthorizer) buildMethodArn(req *AuthRequest) string {
 	region := la.region
 	if region == "" {
-		region = "us-east-1"
+		region = config.AWSRegion()
 	}
 	accountID := la.accountID
 	if accountID == "" {

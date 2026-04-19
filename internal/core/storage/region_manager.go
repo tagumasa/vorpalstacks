@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+const defaultRegion = "us-east-1"
+
 // RegionStorageManager manages storage instances for different AWS regions.
 type RegionStorageManager struct {
 	baseDir  string
@@ -44,7 +46,7 @@ func NewRegionStorageManager(cfg *Config) (*RegionStorageManager, error) {
 //   - error: An error if retrieval or creation fails
 func (m *RegionStorageManager) GetStorage(region string) (Storage, error) {
 	if region == "" {
-		region = "us-east-1"
+		region = defaultRegion
 	}
 
 	m.mu.RLock()
@@ -122,7 +124,7 @@ func (m *RegionStorageManager) GetActiveRegions() []string {
 	m.mu.RUnlock()
 
 	if len(regions) == 0 {
-		return []string{"us-east-1"}
+		return []string{defaultRegion}
 	}
 	return regions
 }

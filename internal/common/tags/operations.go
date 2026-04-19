@@ -15,6 +15,7 @@ type TagOperationConfig struct {
 	TagKeyName         string
 	TagValueName       string
 	ResourceParamAlt   string
+	ResourceParamAlt2  string
 	RequireTags        bool
 	RequireTagKeys     bool
 	RequireResource    bool
@@ -90,16 +91,17 @@ var SQSConfig = TagOperationConfig{
 
 // KinesisStreamConfig is the tag operation configuration for Kinesis streams.
 var KinesisStreamConfig = TagOperationConfig{
-	ResourceParam:    "StreamName",
-	ResourceParamAlt: "StreamARN",
-	TagsParam:        "Tags",
-	TagKeysParam:     "TagKeys",
-	TagKeyName:       "Key",
-	TagValueName:     "Value",
-	RequireTags:      true,
-	RequireTagKeys:   true,
-	RequireResource:  true,
-	UseQueryFallback: false,
+	ResourceParam:     "StreamName",
+	ResourceParamAlt:  "StreamARN",
+	ResourceParamAlt2: "ResourceARN",
+	TagsParam:         "Tags",
+	TagKeysParam:      "TagKeys",
+	TagKeyName:        "Key",
+	TagValueName:      "Value",
+	RequireTags:       true,
+	RequireTagKeys:    true,
+	RequireResource:   true,
+	UseQueryFallback:  false,
 }
 
 // CloudTrailConfig is the tag operation configuration for CloudTrail trails.
@@ -125,8 +127,15 @@ func GetResourceKey(params map[string]interface{}, config TagOperationConfig) st
 	if key == "" && config.ResourceParamAlt != "" {
 		if altList, ok := params[config.ResourceParamAlt].([]interface{}); ok && len(altList) > 0 {
 			if s, ok := altList[0].(string); ok {
-				return s
+				key = s
 			}
+		} else if altStr, ok := request.GetParamLowerFirst(params, config.ResourceParamAlt), true; ok && altStr != "" {
+			key = altStr
+		}
+	}
+	if key == "" && config.ResourceParamAlt2 != "" {
+		if altStr, ok := request.GetParamLowerFirst(params, config.ResourceParamAlt2), true; ok && altStr != "" {
+			key = altStr
 		}
 	}
 	return key

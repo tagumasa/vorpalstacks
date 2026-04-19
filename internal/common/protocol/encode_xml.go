@@ -174,11 +174,11 @@ func EncodeQueryXMLResponse(w http.ResponseWriter, operationName string, respons
 	xmlBuilder.WriteString("</" + resultName + ">")
 	xmlBuilder.WriteString("<ResponseMetadata><RequestId>example-request-id</RequestId></ResponseMetadata>")
 	xmlBuilder.WriteString("</" + rootName + ">")
-
 	w.Header().Set("Content-Type", "application/xml")
 	if _, err := w.Write([]byte(xmlBuilder.String())); err != nil {
 		return fmt.Errorf("write response: %w", err)
 	}
+
 	return nil
 }
 

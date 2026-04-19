@@ -24,8 +24,8 @@ type DBCluster struct {
 	AvailabilityZones                []string                          `json:"AvailabilityZones,omitempty"`
 	MultiAZ                          bool                              `json:"MultiAZ"`
 	VpcSecurityGroupIds              []string                          `json:"VpcSecurityGroupIds,omitempty"`
-	DBSubnetGroupName                string                            `json:"DBSubnetGroupName,omitempty"`
-	DBClusterParameterGroupName      string                            `json:"DBClusterParameterGroupName,omitempty"`
+	DBSubnetGroupName                string                            `json:"DBSubnetGroup,omitempty"`
+	DBClusterParameterGroupName      string                            `json:"DBClusterParameterGroup,omitempty"`
 	StorageEncrypted                 bool                              `json:"StorageEncrypted"`
 	KmsKeyId                         string                            `json:"KmsKeyId,omitempty"`
 	CopyTagsToSnapshot               bool                              `json:"CopyTagsToSnapshot"`

@@ -131,7 +131,7 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 				err = protocol.EncodeRestXMLResponseWithNamespace(w, opName, "https://cloudfront.amazonaws.com/doc/2020-05-31/", resp)
 			}
 		} else if strings.HasPrefix(r.URL.Path, "/2013-04-01/") {
-			err = protocol.EncodeRestXMLResponse(w, opName, resp)
+			err = protocol.EncodeRestXMLResponseWithNamespace(w, opName, "https://route53.amazonaws.com/doc/2013-04-01/", resp)
 		} else {
 			err = protocol.EncodeRestXMLResponse(w, opName, resp)
 		}

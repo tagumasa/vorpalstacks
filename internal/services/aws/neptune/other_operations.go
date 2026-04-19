@@ -7,88 +7,91 @@ import (
 
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/tags"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
 )
 
+func (s *NeptuneService) neptuneTagConfig(store neptunestore.NeptuneStoreInterface) tags.TagHandlerConfig {
+	return tags.TagHandlerConfig{
+		Param: tags.TagOperationConfig{
+			ResourceParam:  "ResourceName",
+			TagsParam:      "Tags",
+			TagKeysParam:   "TagKeys",
+			TagKeyName:     "Key",
+			TagValueName:   "Value",
+			RequireTags:    false,
+			RequireTagKeys: false,
+			RequireResource: true,
+		},
+		ParseTags: func(params map[string]interface{}) []types.Tag {
+			rawTags := getNeptuneTagList(params)
+			result := make([]types.Tag, 0, len(rawTags))
+			for _, t := range rawTags {
+				key, _ := t["Key"].(string)
+				value, _ := t["Value"].(string)
+				if key != "" {
+					result = append(result, types.Tag{Key: key, Value: value})
+				}
+			}
+			return result
+		},
+		ParseTagKeys: func(params map[string]interface{}) []string {
+			return request.GetStringList(params, "TagKeys")
+		},
+		TagFunc: func(ctx context.Context, resourceKey string, tagList []types.Tag) error {
+			return store.AddTags(resourceKey, tagList)
+		},
+		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
+			return store.RemoveTags(resourceKey, tagKeys)
+		},
+		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+			return store.GetTags(resourceKey)
+		},
+		FormatResponse: func(tagList []types.Tag, _ string) (interface{}, error) {
+			items := make([]interface{}, 0, len(tagList))
+			for _, t := range tagList {
+				items = append(items, map[string]interface{}{"Key": t.Key, "Value": t.Value})
+			}
+			return map[string]interface{}{
+				"TagList": protocol.XMLElements{ElementName: "Tag", Items: items},
+			}, nil
+		},
+		EmptyResponse: func() (interface{}, error) {
+			return map[string]interface{}{}, nil
+		},
+		MapError: func(err error) error {
+			return err
+		},
+	}
+}
+
 // AddTagsToResource adds metadata tags to the specified Neptune resource.
 func (s *NeptuneService) AddTagsToResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	resourceName := request.GetStringParam(params, "ResourceName")
-	if resourceName == "" {
-		return nil, fmt.Errorf("neptune: ResourceName is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	tags := getNeptuneTagList(params)
-	storeTags := make([]types.Tag, 0, len(tags))
-	for _, t := range tags {
-		key, _ := t["Key"].(string)
-		value, _ := t["Value"].(string)
-		if key != "" {
-			storeTags = append(storeTags, types.Tag{Key: key, Value: value})
-		}
-	}
-
-	if err := store.AddTags(resourceName, storeTags); err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{}, nil
+	return tags.HandleTag(ctx, req, s.neptuneTagConfig(store))
 }
 
 // ListTagsForResource returns the tags attached to the specified Neptune resource.
 func (s *NeptuneService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	resourceName := request.GetStringParam(params, "ResourceName")
-	if resourceName == "" {
-		return nil, fmt.Errorf("neptune: ResourceName is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	tags, err := store.GetTags(resourceName)
-	if err != nil {
-		return nil, err
-	}
-
-	items := make([]interface{}, 0, len(tags))
-	for _, t := range tags {
-		items = append(items, map[string]interface{}{"Key": t.Key, "Value": t.Value})
-	}
-
-	return map[string]interface{}{
-		"TagList": protocol.XMLElements{ElementName: "Tag", Items: items},
-	}, nil
+	return tags.HandleList(ctx, req, s.neptuneTagConfig(store))
 }
 
 // RemoveTagsFromResource removes metadata tags from the specified Neptune resource.
 func (s *NeptuneService) RemoveTagsFromResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	resourceName := request.GetStringParam(params, "ResourceName")
-	if resourceName == "" {
-		return nil, fmt.Errorf("neptune: ResourceName is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	tagKeys := request.GetStringList(params, "TagKeys")
-	if err := store.RemoveTags(resourceName, tagKeys); err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{}, nil
+	return tags.HandleUntag(ctx, req, s.neptuneTagConfig(store))
 }
 
 // CreateDBClusterEndpoint creates a new custom endpoint for the specified DB

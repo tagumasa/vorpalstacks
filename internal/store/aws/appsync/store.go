@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
@@ -208,9 +209,10 @@ func (s *AppSyncStore) CreateApi(api *Api) (*Api, error) {
 	api.Arn = s.BuildApiARN(api.ApiId)
 	api.Created = time.Now().UTC()
 	if api.Dns == nil {
+		eventsPort := config.GetInt("ports.appsync_events")
 		api.Dns = map[string]string{
-			"HTTP":     "http://127.0.0.1:8086/event",
-			"REALTIME": "ws://127.0.0.1:8086/event/realtime",
+			"HTTP":     fmt.Sprintf("http://127.0.0.1:%d/event", eventsPort),
+			"REALTIME": fmt.Sprintf("ws://127.0.0.1:%d/event/realtime", eventsPort),
 		}
 	}
 
@@ -471,15 +473,19 @@ func (s *AppSyncStore) CreateGraphqlApi(api *GraphqlApi) (*GraphqlApi, error) {
 		api.ApiType = "GRAPHQL"
 	}
 	if api.Uris == nil {
+		baseURL := config.BaseURL()
+		wsBase := strings.Replace(baseURL, "http://", "ws://", 1)
 		api.Uris = map[string]string{
-			"GRAPHQL":  "http://127.0.0.1:8080/v1/apis/" + api.ApiId + "/graphql",
-			"REALTIME": "ws://127.0.0.1:8080/v1/apis/" + api.ApiId + "/realtime",
+			"GRAPHQL":  fmt.Sprintf("%s/v1/apis/%s/graphql", baseURL, api.ApiId),
+			"REALTIME": fmt.Sprintf("%s/v1/apis/%s/realtime", wsBase, api.ApiId),
 		}
 	}
 	if api.Dns == nil {
+		baseURL := config.BaseURL()
+		wsBase := strings.Replace(baseURL, "http://", "ws://", 1)
 		api.Dns = map[string]string{
-			"GRAPHQL":  "http://127.0.0.1:8080/v1/apis/" + api.ApiId + "/graphql",
-			"REALTIME": "ws://127.0.0.1:8080/v1/apis/" + api.ApiId + "/realtime",
+			"GRAPHQL":  fmt.Sprintf("%s/v1/apis/%s/graphql", baseURL, api.ApiId),
+			"REALTIME": fmt.Sprintf("%s/v1/apis/%s/realtime", wsBase, api.ApiId),
 		}
 	}
 

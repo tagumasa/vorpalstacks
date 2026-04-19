@@ -13,6 +13,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -165,6 +166,22 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType string
 			continue
 		}
 
+		eventRegion := request.DefaultRegion
+		if event.UserIdentity != nil && event.UserIdentity.ARN != "" {
+			if _, _, r, _, _ := arnutil.SplitARN(event.UserIdentity.ARN); r != "" {
+				eventRegion = r
+			}
+		} else if len(event.Resources) > 0 {
+			for _, res := range event.Resources {
+				if res.ARN != "" {
+					if _, _, r, _, _ := arnutil.SplitARN(res.ARN); r != "" {
+						eventRegion = r
+						break
+					}
+				}
+			}
+		}
+
 		serviceNamespace := eventSourceToServiceNamespace[event.EventSource]
 		if serviceNamespace == "" {
 			parts := strings.SplitN(event.EventSource, ".", 2)
@@ -193,7 +210,7 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType string
 		if svc.LastAuthenticated == nil || event.EventTime.After(svc.LastAuthenticated.UTC()) {
 			t := event.EventTime
 			svc.LastAuthenticated = &t
-			svc.LastAuthenticatedRegion = "us-east-1"
+			svc.LastAuthenticatedRegion = eventRegion
 		}
 
 		actionKey := serviceNamespace + ":" + event.EventName
@@ -210,7 +227,7 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType string
 		if action.LastAccessedDate == nil || event.EventTime.After(action.LastAccessedDate.UTC()) {
 			t := event.EventTime
 			action.LastAccessedDate = &t
-			action.LastAccessedRegion = "us-east-1"
+			action.LastAccessedRegion = eventRegion
 		}
 	}
 

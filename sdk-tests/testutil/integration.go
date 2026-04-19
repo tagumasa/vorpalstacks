@@ -40,6 +40,10 @@ const (
 	schedulerTrustPolicy = `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"scheduler.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
 
 	echoHandlerCode = `exports.handler = async (event) => { return JSON.stringify(event); };`
+
+	pollInterval = 300 * time.Millisecond
+	defaultPollTimeout = 10 * time.Second
+	schedulerPollTimeout = 15 * time.Second
 )
 
 func intTimestamp() string {
@@ -212,6 +216,50 @@ func (ic *integClients) putObject(bucket, key string, data []byte) error {
 	return err
 }
 
+func (r *TestRunner) pollVerify(testName string, timeout time.Duration, verify func() error) TestResult {
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		if err := verify(); err == nil {
+			return TestResult{
+				Service:  integSvc,
+				TestName: testName,
+				Status:   "PASS",
+				Duration: timeout - time.Until(deadline),
+			}
+		} else {
+			lastErr = err
+		}
+		time.Sleep(pollInterval)
+	}
+	errMsg := "timeout waiting for condition"
+	if lastErr != nil {
+		errMsg = lastErr.Error()
+	}
+	return TestResult{
+		Service:  integSvc,
+		TestName: testName,
+		Status:   "FAIL",
+		Error:    errMsg,
+		Duration: timeout,
+	}
+}
+
+func (ic *integClients) pollStreamActive(streamName string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		desc, err := ic.describeStream(streamName)
+		if err != nil {
+			return err
+		}
+		if desc.StreamDescription.StreamStatus == kinesistypes.StreamStatusActive {
+			return nil
+		}
+		time.Sleep(pollInterval)
+	}
+	return fmt.Errorf("stream %s not active after %v", streamName, timeout)
+}
+
 func (r *TestRunner) RunIntegrationTests() []TestResult {
 	var results []TestResult
 
@@ -306,9 +354,7 @@ func (r *TestRunner) runEventBridgeToLambda(ic *integClients, ts string) TestRes
 		}},
 	})
 
-	time.Sleep(5 * time.Second)
-
-	return r.RunTest(integSvc, "EventBridge_Lambda", func() error {
+	return r.pollVerify("EventBridge_Lambda", defaultPollTimeout, func() error {
 		return ic.verifyLambdaInvoked(fnName)
 	})
 }
@@ -366,9 +412,7 @@ func (r *TestRunner) runEventBridgeToStepFunctions(ic *integClients, ts string) 
 		}},
 	})
 
-	time.Sleep(3 * time.Second)
-
-	return r.RunTest(integSvc, "EventBridge_StepFunctions", func() error {
+	return r.pollVerify("EventBridge_StepFunctions", defaultPollTimeout, func() error {
 		resp, err := ic.sfn.ListExecutions(ic.ctx, &sfn.ListExecutionsInput{
 			StateMachineArn: aws.String(smARN),
 		})
@@ -426,9 +470,7 @@ func (r *TestRunner) runEventBridgeToSQS(ic *integClients, ts string) TestResult
 		}},
 	})
 
-	time.Sleep(2 * time.Second)
-
-	return r.RunTest(integSvc, "EventBridge_SQS", func() error {
+	return r.pollVerify("EventBridge_SQS", defaultPollTimeout, func() error {
 		msgs, err := ic.receiveMessages(queueURL, 5, 3)
 		if err != nil {
 			return err
@@ -495,9 +537,7 @@ func (r *TestRunner) runEventBridgeToSNS(ic *integClients, ts string) TestResult
 		}},
 	})
 
-	time.Sleep(3 * time.Second)
-
-	return r.RunTest(integSvc, "EventBridge_SNS", func() error {
+	return r.pollVerify("EventBridge_SNS", defaultPollTimeout, func() error {
 		msgs, err := ic.receiveMessages(queueURL, 5, 3)
 		if err != nil {
 			return err
@@ -522,7 +562,9 @@ func (r *TestRunner) runEventBridgeToKinesis(ic *integClients, ts string) TestRe
 	}
 	defer ic.deleteStream(streamName)
 
-	time.Sleep(1 * time.Second)
+	if err := ic.pollStreamActive(streamName, defaultPollTimeout); err != nil {
+		return r.RunTest(integSvc, "EventBridge_Kinesis", func() error { return fmt.Errorf("stream not active: %w", err) })
+	}
 
 	streamARN := fmt.Sprintf("arn:aws:kinesis:us-east-1:000000000000:stream/%s", streamName)
 
@@ -555,9 +597,7 @@ func (r *TestRunner) runEventBridgeToKinesis(ic *integClients, ts string) TestRe
 		}},
 	})
 
-	time.Sleep(3 * time.Second)
-
-	return r.RunTest(integSvc, "EventBridge_Kinesis", func() error {
+	return r.pollVerify("EventBridge_Kinesis", defaultPollTimeout, func() error {
 		streamDesc, err := ic.describeStream(streamName)
 		if err != nil {
 			return fmt.Errorf("describe stream: %w", err)
@@ -615,9 +655,7 @@ func (r *TestRunner) runESMSQSToLambda(ic *integClients, ts string) TestResult {
 		MessageBody: aws.String(`{"test":"esm-sqs"}`),
 	})
 
-	time.Sleep(5 * time.Second)
-
-	return r.RunTest(integSvc, "ESM_SQS_Lambda", func() error {
+	return r.pollVerify("ESM_SQS_Lambda", defaultPollTimeout, func() error {
 		msgs, err := ic.receiveMessages(queueURL, 10, 1)
 		if err != nil {
 			return err
@@ -654,7 +692,9 @@ func (r *TestRunner) runESMKinesisToLambda(ic *integClients, ts string) TestResu
 	}
 	defer ic.deleteStream(streamName)
 
-	time.Sleep(1 * time.Second)
+	if err := ic.pollStreamActive(streamName, defaultPollTimeout); err != nil {
+		return r.RunTest(integSvc, "ESM_Kinesis_Lambda", func() error { return fmt.Errorf("stream not active: %w", err) })
+	}
 
 	esmResp, err := ic.lambda.CreateEventSourceMapping(ic.ctx, &lambda.CreateEventSourceMappingInput{
 		FunctionName:     aws.String(fnName),
@@ -677,9 +717,7 @@ func (r *TestRunner) runESMKinesisToLambda(ic *integClients, ts string) TestResu
 		Data:         []byte(`{"test":"esm-kinesis"}`),
 	})
 
-	time.Sleep(8 * time.Second)
-
-	return r.RunTest(integSvc, "ESM_Kinesis_Lambda", func() error {
+	return r.pollVerify("ESM_Kinesis_Lambda", defaultPollTimeout, func() error {
 		return ic.verifyLambdaInvoked(fnName)
 	})
 }
@@ -735,9 +773,7 @@ func (r *TestRunner) runAlarmToSNS(ic *integClients, ts string) TestResult {
 		}},
 	})
 
-	time.Sleep(3 * time.Second)
-
-	return r.RunTest(integSvc, "CWAlarm_SNS", func() error {
+	return r.pollVerify("CWAlarm_SNS", defaultPollTimeout, func() error {
 		msgs, err := ic.receiveMessages(queueURL, 5, 3)
 		if err != nil {
 			return err
@@ -790,9 +826,7 @@ func (r *TestRunner) runAlarmToLambda(ic *integClients, ts string) TestResult {
 		}},
 	})
 
-	time.Sleep(5 * time.Second)
-
-	return r.RunTest(integSvc, "CWAlarm_Lambda", func() error {
+	return r.pollVerify("CWAlarm_Lambda", defaultPollTimeout, func() error {
 		alarmResp, err := ic.cw.DescribeAlarms(ic.ctx, &cloudwatch.DescribeAlarmsInput{
 			AlarmNames: []string{alarmName},
 		})
@@ -861,9 +895,7 @@ func (r *TestRunner) runAlarmToStepFunctions(ic *integClients, ts string) TestRe
 		}},
 	})
 
-	time.Sleep(3 * time.Second)
-
-	return r.RunTest(integSvc, "CWAlarm_StepFunctions", func() error {
+	return r.pollVerify("CWAlarm_StepFunctions", defaultPollTimeout, func() error {
 		resp, err := ic.sfn.ListExecutions(ic.ctx, &sfn.ListExecutionsInput{
 			StateMachineArn: aws.String(smARN),
 		})
@@ -922,9 +954,7 @@ func (r *TestRunner) runSchedulerToLambda(ic *integClients, ts string) TestResul
 		})
 	}()
 
-	time.Sleep(8 * time.Second)
-
-	return r.RunTest(integSvc, "Scheduler_Lambda", func() error {
+	return r.pollVerify("Scheduler_Lambda", schedulerPollTimeout, func() error {
 		return ic.verifyLambdaInvoked(fnName)
 	})
 }
@@ -973,9 +1003,7 @@ func (r *TestRunner) runSchedulerToSQS(ic *integClients, ts string) TestResult {
 		})
 	}()
 
-	time.Sleep(5 * time.Second)
-
-	return r.RunTest(integSvc, "Scheduler_SQS", func() error {
+	return r.pollVerify("Scheduler_SQS", schedulerPollTimeout, func() error {
 		msgs, err := ic.receiveMessages(queueURL, 5, 3)
 		if err != nil {
 			return err
@@ -1042,9 +1070,7 @@ func (r *TestRunner) runSchedulerToSNS(ic *integClients, ts string) TestResult {
 		})
 	}()
 
-	time.Sleep(5 * time.Second)
-
-	return r.RunTest(integSvc, "Scheduler_SNS", func() error {
+	return r.pollVerify("Scheduler_SNS", schedulerPollTimeout, func() error {
 		msgs, err := ic.receiveMessages(queueURL, 5, 3)
 		if err != nil {
 			return err
@@ -1111,9 +1137,7 @@ func (r *TestRunner) runSchedulerToStepFunctions(ic *integClients, ts string) Te
 		})
 	}()
 
-	time.Sleep(5 * time.Second)
-
-	return r.RunTest(integSvc, "Scheduler_StepFunctions", func() error {
+	return r.pollVerify("Scheduler_StepFunctions", schedulerPollTimeout, func() error {
 		resp, err := ic.sfn.ListExecutions(ic.ctx, &sfn.ListExecutionsInput{
 			StateMachineArn: aws.String(smARN),
 		})
@@ -1178,9 +1202,7 @@ func (r *TestRunner) runSFNTaskLambda(ic *integClients, ts string) TestResult {
 		return r.RunTest(integSvc, "SFN_Task_Lambda", func() error { return fmt.Errorf("start execution: %w", err) })
 	}
 
-	time.Sleep(3 * time.Second)
-
-	return r.RunTest(integSvc, "SFN_Task_Lambda", func() error {
+	return r.pollVerify("SFN_Task_Lambda", defaultPollTimeout, func() error {
 		descResp, err := ic.sfn.DescribeExecution(ic.ctx, &sfn.DescribeExecutionInput{
 			ExecutionArn: execResp.ExecutionArn,
 		})
@@ -1247,9 +1269,7 @@ func (r *TestRunner) runSFNTaskSQS(ic *integClients, ts string) TestResult {
 		return r.RunTest(integSvc, "SFN_Task_SQS", func() error { return fmt.Errorf("start execution: %w", err) })
 	}
 
-	time.Sleep(3 * time.Second)
-
-	return r.RunTest(integSvc, "SFN_Task_SQS", func() error {
+	return r.pollVerify("SFN_Task_SQS", defaultPollTimeout, func() error {
 		descResp, err := ic.sfn.DescribeExecution(ic.ctx, &sfn.DescribeExecutionInput{
 			ExecutionArn: startResp.ExecutionArn,
 		})
@@ -1335,9 +1355,7 @@ func (r *TestRunner) runSFNTaskSNS(ic *integClients, ts string) TestResult {
 		return r.RunTest(integSvc, "SFN_Task_SNS", func() error { return fmt.Errorf("start execution: %w", err) })
 	}
 
-	time.Sleep(3 * time.Second)
-
-	return r.RunTest(integSvc, "SFN_Task_SNS", func() error {
+	return r.pollVerify("SFN_Task_SNS", defaultPollTimeout, func() error {
 		descResp, err := ic.sfn.DescribeExecution(ic.ctx, &sfn.DescribeExecutionInput{
 			ExecutionArn: startResp.ExecutionArn,
 		})
@@ -1396,9 +1414,7 @@ func (r *TestRunner) runS3NotificationToLambda(ic *integClients, ts string) Test
 
 	ic.putObject(bucketName, "test-key.txt", []byte("test-data"))
 
-	time.Sleep(5 * time.Second)
-
-	return r.RunTest(integSvc, "S3_Notification_Lambda", func() error {
+	return r.pollVerify("S3_Notification_Lambda", defaultPollTimeout, func() error {
 		return ic.verifyLambdaInvoked(fnName)
 	})
 }
@@ -1440,9 +1456,7 @@ func (r *TestRunner) runS3NotificationToSQS(ic *integClients, ts string) TestRes
 
 	ic.putObject(bucketName, "test-key.txt", []byte("test-data"))
 
-	time.Sleep(2 * time.Second)
-
-	return r.RunTest(integSvc, "S3_Notification_SQS", func() error {
+	return r.pollVerify("S3_Notification_SQS", defaultPollTimeout, func() error {
 		msgs, err := ic.receiveMessages(queueURL, 5, 3)
 		if err != nil {
 			return err
@@ -1502,9 +1516,7 @@ func (r *TestRunner) runS3NotificationToSNS(ic *integClients, ts string) TestRes
 
 	ic.putObject(bucketName, "test-key.txt", []byte("test-data"))
 
-	time.Sleep(3 * time.Second)
-
-	return r.RunTest(integSvc, "S3_Notification_SNS", func() error {
+	return r.pollVerify("S3_Notification_SNS", defaultPollTimeout, func() error {
 		msgs, err := ic.receiveMessages(queueURL, 5, 3)
 		if err != nil {
 			return err
@@ -1559,9 +1571,7 @@ func (r *TestRunner) runCWLogsToLambda(ic *integClients, ts string) TestResult {
 		},
 	})
 
-	time.Sleep(5 * time.Second)
-
-	return r.RunTest(integSvc, "CWLogs_Lambda", func() error {
+	return r.pollVerify("CWLogs_Lambda", defaultPollTimeout, func() error {
 		return ic.verifyLambdaInvoked(fnName)
 	})
 }
@@ -1578,7 +1588,9 @@ func (r *TestRunner) runCWLogsToKinesis(ic *integClients, ts string) TestResult 
 	}
 	defer ic.deleteStream(streamName)
 
-	time.Sleep(1 * time.Second)
+	if err := ic.pollStreamActive(streamName, defaultPollTimeout); err != nil {
+		return r.RunTest(integSvc, "CWLogs_Kinesis", func() error { return fmt.Errorf("stream not active: %w", err) })
+	}
 
 	streamARN := fmt.Sprintf("arn:aws:kinesis:us-east-1:000000000000:stream/%s", streamName)
 
@@ -1610,9 +1622,7 @@ func (r *TestRunner) runCWLogsToKinesis(ic *integClients, ts string) TestResult 
 		},
 	})
 
-	time.Sleep(3 * time.Second)
-
-	return r.RunTest(integSvc, "CWLogs_Kinesis", func() error {
+	return r.pollVerify("CWLogs_Kinesis", defaultPollTimeout, func() error {
 		streamDesc, err := ic.describeStream(streamName)
 		if err != nil {
 			return fmt.Errorf("describe stream: %w", err)
@@ -1677,9 +1687,7 @@ func (r *TestRunner) runSNSToSQS(ic *integClients, ts string) TestResult {
 		return r.RunTest(integSvc, "SNS_SQS", func() error { return fmt.Errorf("publish: %w", err) })
 	}
 
-	time.Sleep(2 * time.Second)
-
-	return r.RunTest(integSvc, "SNS_SQS", func() error {
+	return r.pollVerify("SNS_SQS", defaultPollTimeout, func() error {
 		msgs, err := ic.receiveMessages(queueURL, 5, 3)
 		if err != nil {
 			return err
@@ -1729,9 +1737,7 @@ func (r *TestRunner) runSNSToLambda(ic *integClients, ts string) TestResult {
 		return r.RunTest(integSvc, "SNS_Lambda", func() error { return fmt.Errorf("publish: %w", err) })
 	}
 
-	time.Sleep(5 * time.Second)
-
-	return r.RunTest(integSvc, "SNS_Lambda", func() error {
+	return r.pollVerify("SNS_Lambda", defaultPollTimeout, func() error {
 		return ic.verifyLambdaInvoked(fnName)
 	})
 }

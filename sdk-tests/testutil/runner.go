@@ -9,6 +9,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -131,13 +132,86 @@ func (r *TestRunner) RunServiceTests(service string) []TestResult {
 	return entry.factory(r)
 }
 
+var iamDependentServices = map[string]bool{
+	"lambda":         true,
+	"stepfunctions":  true,
+	"scheduler":      true,
+	"timestream":     true,
+	"logs":           true,
+	"sts":            true,
+}
+
+func (r *TestRunner) RunServicesParallel(services []string, parallelism int) map[string][]TestResult {
+	if parallelism <= 1 {
+		results := make(map[string][]TestResult)
+		for _, svc := range services {
+			results[svc] = r.RunServiceTests(svc)
+		}
+		return results
+	}
+
+	var phase1, phase2, phase3 []string
+	for _, svc := range services {
+		switch {
+		case svc == "iam":
+			phase1 = append(phase1, svc)
+		case svc == "integration":
+			phase3 = append(phase3, svc)
+		default:
+			phase2 = append(phase2, svc)
+		}
+	}
+
+	results := make(map[string][]TestResult)
+	var mu sync.Mutex
+
+	runPhase := func(svcs []string) {
+		if len(svcs) == 0 {
+			return
+		}
+		sem := make(chan struct{}, parallelism)
+		var wg sync.WaitGroup
+		for _, svc := range svcs {
+			wg.Add(1)
+			go func(s string) {
+				defer wg.Done()
+				sem <- struct{}{}
+				defer func() { <-sem }()
+				res := r.RunServiceTests(s)
+				mu.Lock()
+				results[s] = res
+				mu.Unlock()
+			}(svc)
+		}
+		wg.Wait()
+	}
+
+	for _, phase := range [][]string{phase1, phase2, phase3} {
+		runPhase(phase)
+	}
+
+	return results
+}
+
+const perTestTimeout = 60 * time.Second
+
 func (r *TestRunner) RunTest(service, testName string, testFunc func() error) TestResult {
 	if r.verbose {
 		fmt.Printf("  Running: %s...\n", testName)
 	}
 
 	start := time.Now()
-	err := testFunc()
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- testFunc()
+	}()
+
+	var err error
+	select {
+	case err = <-errCh:
+	case <-time.After(perTestTimeout):
+		err = fmt.Errorf("test timed out after %v", perTestTimeout)
+	}
 	duration := time.Since(start)
 
 	result := TestResult{

@@ -3,8 +3,10 @@ package cognitoidentityprovider
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
@@ -26,7 +28,8 @@ func (s *CognitoService) CreateUserPoolDomain(ctx context.Context, reqCtx *reque
 		return nil, ErrResourceNotFound
 	}
 
-	cfDomain := fmt.Sprintf("%s.auth.%s.amazoncognito.com", domain, reqCtx.GetRegion())
+	cognitoSuffix := config.GetString("endpoints.cognito_suffix")
+	cfDomain := fmt.Sprintf("%s.auth.%s", domain, strings.Replace(cognitoSuffix, "{region}", reqCtx.GetRegion(), 1))
 	domainEntry := &cognitostore.UserPoolDomain{
 		Domain:           domain,
 		UserPoolID:       userPoolID,
@@ -104,7 +107,8 @@ func (s *CognitoService) UpdateUserPoolDomain(ctx context.Context, reqCtx *reque
 		return nil, ErrResourceNotFound
 	}
 
-	cfDomain := fmt.Sprintf("%s.auth.%s.amazoncognito.com", domain, reqCtx.GetRegion())
+	cognitoSuffix := config.GetString("endpoints.cognito_suffix")
+	cfDomain := fmt.Sprintf("%s.auth.%s", domain, strings.Replace(cognitoSuffix, "{region}", reqCtx.GetRegion(), 1))
 	domainEntry := &cognitostore.UserPoolDomain{
 		Domain:           domain,
 		UserPoolID:       userPoolID,

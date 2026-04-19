@@ -19,9 +19,91 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
+	"vorpalstacks/internal/utils/aws/types"
 
 	"golang.org/x/crypto/pbkdf2"
 )
+
+func (s *ACMService) acmTagConfig(stores *acmStores, req *request.ParsedRequest) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.TagOperationConfig{
+			ResourceParam:  "CertificateArn",
+			TagsParam:      "Tags",
+			TagKeysParam:   "Tags",
+			TagKeyName:     "Key",
+			TagValueName:   "Value",
+			RequireTags:    true,
+			RequireTagKeys: true,
+			RequireResource: true,
+			UseQueryFallback: true,
+		},
+		ResourceKey: func(rawKey string) string {
+			arn, _ := parseCertificateArn(req.Parameters, "CertificateArn")
+			return arn
+		},
+		ValidateResource: func(ctx context.Context, rawKey string) error {
+			arn, _ := parseCertificateArn(req.Parameters, "CertificateArn")
+			_, err := stores.certificates.Get(arn)
+			if err != nil {
+				if acmstorelib.IsNotFound(err) {
+					return NewResourceNotFoundError("certificate", arn)
+				}
+				return err
+			}
+			return nil
+		},
+		TagFunc: func(ctx context.Context, resourceKey string, tagList []types.Tag) error {
+			cert, err := stores.certificates.Get(resourceKey)
+			if err != nil {
+				return err
+			}
+			cert.Tags = tagutil.Apply(cert.Tags, tagList)
+			return stores.certificates.Update(cert)
+		},
+		ParseTagKeys: func(params map[string]interface{}) []string {
+			tagsToRemove := tagutil.ParseTagsWithQueryFallback(params, "Tags")
+			keys := make([]string, 0, len(tagsToRemove))
+			for _, t := range tagsToRemove {
+				keys = append(keys, t.Key)
+			}
+			return keys
+		},
+		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
+			cert, err := stores.certificates.Get(resourceKey)
+			if err != nil {
+				return err
+			}
+			removeTags := make([]types.Tag, len(tagKeys))
+			for i, k := range tagKeys {
+				removeTags[i] = types.Tag{Key: k}
+			}
+			tagKeySet := make(map[string]bool)
+			for _, t := range removeTags {
+				tagKeySet[t.Key] = true
+			}
+			cert.Tags = tagutil.Remove(cert.Tags, tagKeySet)
+			return stores.certificates.Update(cert)
+		},
+		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+			cert, err := stores.certificates.Get(resourceKey)
+			if err != nil {
+				return nil, err
+			}
+			return cert.Tags, nil
+		},
+		FormatResponse: func(tagList []types.Tag, _ string) (interface{}, error) {
+			return map[string]interface{}{
+				"Tags": tagutil.ToResponse(tagList),
+			}, nil
+		},
+		EmptyResponse: func() (interface{}, error) {
+			return response.EmptyResponse(), nil
+		},
+		MapError: func(err error) error {
+			return err
+		},
+	}
+}
 
 func generateCertificateId() string {
 	return acmstorelib.GenerateCertificateId()
@@ -306,99 +388,29 @@ func (s *ACMService) ResendValidationEmail(ctx context.Context, reqCtx *request.
 
 // AddTagsToCertificate adds one or more tags to a certificate.
 func (s *ACMService) AddTagsToCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	arn, err := parseCertificateArn(params, "CertificateArn")
-	if err != nil {
-		return nil, err
-	}
-
-	newTags := tagutil.ParseTagsWithQueryFallback(params, "Tags")
-	if len(newTags) == 0 {
-		return nil, NewValidationException("Tags are required")
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	cert, err := stores.certificates.Get(arn)
-	if err != nil {
-		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
-		}
-		return nil, err
-	}
-
-	cert.Tags = tagutil.Apply(cert.Tags, newTags)
-	if err := stores.certificates.Update(cert); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleTag(ctx, req, s.acmTagConfig(stores, req))
 }
 
 // RemoveTagsFromCertificate removes one or more tags from a certificate.
 func (s *ACMService) RemoveTagsFromCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	arn, err := parseCertificateArn(params, "CertificateArn")
-	if err != nil {
-		return nil, err
-	}
-
-	tagsToRemove := tagutil.ParseTagsWithQueryFallback(params, "Tags")
-	if len(tagsToRemove) == 0 {
-		return nil, NewValidationException("Tags are required")
-	}
-
-	tagKeys := make(map[string]bool)
-	for _, t := range tagsToRemove {
-		tagKeys[t.Key] = true
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	cert, err := stores.certificates.Get(arn)
-	if err != nil {
-		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
-		}
-		return nil, err
-	}
-
-	cert.Tags = tagutil.Remove(cert.Tags, tagKeys)
-
-	if err := stores.certificates.Update(cert); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleUntag(ctx, req, s.acmTagConfig(stores, req))
 }
 
 // ListTagsForCertificate lists the tags associated with a certificate.
 func (s *ACMService) ListTagsForCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	arn, err := parseCertificateArn(params, "CertificateArn")
-	if err != nil {
-		return nil, err
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	cert, err := stores.certificates.Get(arn)
-	if err != nil {
-		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
-		}
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"Tags": tagutil.ToResponse(cert.Tags),
-	}, nil
+	return tagutil.HandleList(ctx, req, s.acmTagConfig(stores, req))
 }
 
 // ImportCertificate imports a certificate into ACM.

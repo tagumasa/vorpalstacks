@@ -2,6 +2,7 @@ package neptune
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,7 +14,33 @@ import (
 	"vorpalstacks/internal/core/logs"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 )
+
+func clusterToResponseMap(cluster *neptunestore.DBCluster) map[string]interface{} {
+	data, _ := json.Marshal(cluster)
+	var m map[string]interface{}
+	json.Unmarshal(data, &m)
+	for k, v := range m {
+		if v == nil {
+			delete(m, k)
+		}
+	}
+	return m
+}
+
+func enrichClusterWithTags(store neptunestore.NeptuneStoreInterface, cluster *neptunestore.DBCluster) map[string]interface{} {
+	m := clusterToResponseMap(cluster)
+	tags, _ := store.GetTags(cluster.DBClusterArn)
+	if len(tags) > 0 {
+		tagItems := make([]interface{}, 0, len(tags))
+		for _, t := range tags {
+			tagItems = append(tagItems, map[string]interface{}{"Key": t.Key, "Value": t.Value})
+		}
+		m["TagList"] = protocol.XMLElements{ElementName: "Tag", Items: tagItems}
+	}
+	return m
+}
 
 // CreateDBCluster creates a new Neptune DB cluster with the specified configuration.
 func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -94,11 +121,25 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		return nil, translateStoreError(err)
 	}
 
+	if tagList := getNeptuneTagList(params); len(tagList) > 0 {
+		storeTags := make([]types.Tag, 0, len(tagList))
+		for _, t := range tagList {
+			key, _ := t["Key"].(string)
+			value, _ := t["Value"].(string)
+			if key != "" {
+				storeTags = append(storeTags, types.Tag{Key: key, Value: value})
+			}
+		}
+		if err := store.AddTags(cluster.DBClusterArn, storeTags); err != nil {
+			logs.Warn("failed to tag cluster on create", logs.String("cluster", id), logs.Err(err))
+		}
+	}
+
 	recordEvent(store, "db-cluster", id, cluster.DBClusterArn,
 		fmt.Sprintf("DB cluster %s created", id), []string{"creation"})
 
 	return map[string]interface{}{
-		"DBCluster": cluster,
+		"DBCluster": enrichClusterWithTags(store, cluster),
 	}, nil
 }
 
@@ -261,7 +302,7 @@ func (s *NeptuneService) DescribeDBClusters(ctx context.Context, reqCtx *request
 			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{
-			"DBClusters": protocol.XMLElements{ElementName: "DBCluster", Items: []interface{}{cluster}},
+			"DBClusters": protocol.XMLElements{ElementName: "DBCluster", Items: []interface{}{enrichClusterWithTags(store, cluster)}},
 		}, nil
 	}
 
@@ -272,13 +313,18 @@ func (s *NeptuneService) DescribeDBClusters(ctx context.Context, reqCtx *request
 
 	items := make([]interface{}, 0, len(clusters))
 	for _, c := range clusters {
-		items = append(items, c)
+		items = append(items, enrichClusterWithTags(store, c))
 	}
 
 	marker := request.GetStringParam(params, "Marker")
 	maxRecords := request.GetIntParam(params, "MaxRecords")
 	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
-		return item.(*neptunestore.DBCluster).DBClusterIdentifier
+		if m, ok := item.(map[string]interface{}); ok {
+			if v, ok := m["DBClusterIdentifier"].(string); ok {
+				return v
+			}
+		}
+		return ""
 	})
 
 	result := map[string]interface{}{

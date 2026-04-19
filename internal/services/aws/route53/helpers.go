@@ -199,6 +199,14 @@ func applyHealthCheckConfigUpdates(config *route53store.HealthCheckConfig, updat
 	}
 }
 
+func generateNameServers(count int) []string {
+	servers := make([]string, count)
+	for i := 0; i < count; i++ {
+		servers[i] = fmt.Sprintf("ns-%d.vorpalstacks.local.", i+1)
+	}
+	return servers
+}
+
 func parseVPC(vpcMap map[string]interface{}) *route53store.VPC {
 	if vpcMap == nil {
 		return nil
