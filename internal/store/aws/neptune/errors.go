@@ -1,13 +1,6 @@
 package neptune
 
-import (
-	"errors"
-
-	"vorpalstacks/internal/store/aws/common"
-)
-
-// StoreError is an alias for the common store error type.
-type StoreError = common.StoreError
+import "errors"
 
 var (
 	// ErrDBClusterNotFound is returned when a DB cluster cannot be found by its identifier.
@@ -49,31 +42,3 @@ var (
 	// ErrInvalidParameterGroupState is returned when a parameter group is not in a valid state for the requested operation.
 	ErrInvalidParameterGroupState = errors.New("neptune: InvalidDBClusterParameterGroupState")
 )
-
-// IsNotFound checks if the error indicates a Neptune resource was not found.
-func IsNotFound(err error) bool {
-	return errors.Is(err, ErrDBClusterNotFound) ||
-		errors.Is(err, ErrDBInstanceNotFound) ||
-		errors.Is(err, ErrDBClusterSnapshotNotFound) ||
-		errors.Is(err, ErrDBClusterParameterGroupNotFound) ||
-		errors.Is(err, ErrDBParameterGroupNotFound) ||
-		errors.Is(err, ErrDBSubnetGroupNotFound) ||
-		errors.Is(err, ErrGlobalClusterNotFound) ||
-		errors.Is(err, ErrEventSubscriptionNotFound) ||
-		errors.Is(err, ErrDBClusterEndpointNotFound) ||
-		common.IsNotFound(err)
-}
-
-// IsAlreadyExists checks if the error indicates a Neptune resource already exists.
-func IsAlreadyExists(err error) bool {
-	return errors.Is(err, ErrDBClusterAlreadyExists) ||
-		errors.Is(err, ErrDBInstanceAlreadyExists) ||
-		errors.Is(err, ErrDBClusterSnapshotAlreadyExists) ||
-		errors.Is(err, ErrDBClusterParameterGroupAlreadyExists) ||
-		errors.Is(err, ErrDBParameterGroupAlreadyExists) ||
-		errors.Is(err, ErrDBSubnetGroupAlreadyExists) ||
-		errors.Is(err, ErrGlobalClusterAlreadyExists) ||
-		errors.Is(err, ErrEventSubscriptionAlreadyExists) ||
-		errors.Is(err, ErrDBClusterEndpointAlreadyExists) ||
-		common.IsAlreadyExists(err)
-}

@@ -16,6 +16,8 @@ const (
 	eventEventTypeHeader        = ":event-type"
 	eventContentTypeOctetStream = "application/octet-stream"
 	eventMessageTypeEvent       = "event"
+	// preludeSize is the size of the event stream prelude header (total length + headers length).
+	preludeSize = 8
 )
 
 var eventTypeNames = map[string]string{
@@ -52,7 +54,7 @@ func (e *eventStreamEncoder) encodeEvent(eventType string, payload []byte, heade
 
 	totalLen := 4 + 4 + 4 + headersLen + payloadLen + 4
 
-	prelude := make([]byte, 8)
+	prelude := make([]byte, preludeSize)
 	binary.BigEndian.PutUint32(prelude[0:4], uint32(totalLen))
 	binary.BigEndian.PutUint32(prelude[4:8], uint32(headersLen))
 	preludeCrc := crc32.ChecksumIEEE(prelude)

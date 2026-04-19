@@ -125,8 +125,6 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 		rule.RoleARN = roleArn
 	}
 
-	rule.Tags = tagutil.ParseTags(req.Parameters, "Tags")
-
 	if err := store.CreateRule(ctx, rule); err != nil {
 		if err == eventsstore.ErrRuleAlreadyExists {
 			existingRule, _ := store.GetRule(ctx, eventBusName, name)
@@ -136,9 +134,13 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 				existingRule.ScheduleExpression = rule.ScheduleExpression
 				existingRule.RoleARN = rule.RoleARN
 				existingRule.State = rule.State
-				existingRule.Tags = rule.Tags
 				if err := store.UpdateRule(ctx, existingRule); err != nil {
 					return nil, err
+				}
+				if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
+					if err := store.TagStore.TagFromSlice(existingRule.ARN, tags); err != nil {
+						return nil, err
+					}
 				}
 				return map[string]interface{}{
 					"RuleArn": existingRule.ARN,
@@ -147,6 +149,12 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 			return nil, NewResourceAlreadyExistsException("Rule already exists: " + name)
 		}
 		return nil, err
+	}
+
+	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
+		if err := store.TagStore.TagFromSlice(rule.ARN, tags); err != nil {
+			return nil, err
+		}
 	}
 
 	return map[string]interface{}{
@@ -172,6 +180,14 @@ func (s *EventsService) DeleteRule(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
+	rule, err := store.GetRule(ctx, eventBusName, name)
+	if err != nil {
+		if err == eventsstore.ErrRuleNotFound {
+			return nil, NewResourceNotFoundException("Rule '" + name + "' does not exist on event bus '" + eventBusName + "'")
+		}
+		return nil, err
+	}
+
 	// Check if rule has targets
 	targetsResult, err := store.ListTargetsByRule(ctx, eventBusName, name, 1, "")
 	if err != nil {
@@ -182,11 +198,10 @@ func (s *EventsService) DeleteRule(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	if err := store.DeleteRule(ctx, eventBusName, name); err != nil {
-		if err == eventsstore.ErrRuleNotFound {
-			return nil, NewResourceNotFoundException("Rule '" + name + "' does not exist on event bus '" + eventBusName + "'")
-		}
 		return nil, err
 	}
+
+	store.TagStore.Delete(rule.ARN)
 
 	return response.EmptyResponse(), nil
 }

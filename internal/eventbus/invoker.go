@@ -15,13 +15,8 @@ type ServiceInvoker interface {
 
 // LambdaInvokerAdapter adapts a LambdaInvoker to the ServiceInvoker interface.
 type LambdaInvokerAdapter struct {
-	Invoker LambdaInvoker
+	Invoker common.LambdaInvoker
 }
-
-// LambdaInvoker invokes a Lambda function by name and returns the status
-// code and response payload.
-// Deprecated: use common.LambdaInvoker instead.
-type LambdaInvoker = common.LambdaInvoker
 
 // Invoke dispatches a Lambda invocation via the underlying LambdaInvoker.
 func (a *LambdaInvokerAdapter) Invoke(ctx context.Context, action *TargetAction, payload []byte) HandlerResult {

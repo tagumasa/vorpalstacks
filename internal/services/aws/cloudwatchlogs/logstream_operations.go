@@ -21,6 +21,11 @@ import (
 	"vorpalstacks/pkg/filterpattern"
 )
 
+const (
+	logEventIDSize   = 16
+	partitionKeySize = 8
+)
+
 func logEventToResponse(e *logsstore.OutputLogEvent) map[string]interface{} {
 	resp := map[string]interface{}{
 		"timestamp":     e.Timestamp,
@@ -672,7 +677,7 @@ func (s *LogsService) deliverToKinesis(reqCtx *request.RequestContext, destArn s
 }
 
 func generateEventID() string {
-	b := make([]byte, 16)
+	b := make([]byte, logEventIDSize)
 	if _, err := rand.Read(b); err != nil {
 		b = []byte(fmt.Sprintf("%d", time.Now().UnixNano()))
 	}
@@ -680,7 +685,7 @@ func generateEventID() string {
 }
 
 func generatePartitionKey() string {
-	b := make([]byte, 8)
+	b := make([]byte, partitionKeySize)
 	if _, err := rand.Read(b); err != nil {
 		b = []byte(fmt.Sprintf("%d", time.Now().UnixNano()))
 	}

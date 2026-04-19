@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 func TestEventBus(t *testing.T) {
@@ -13,7 +13,7 @@ func TestEventBus(t *testing.T) {
 		ARN:       "arn:aws:events:us-east-1:123456789012:event-bus/my-event-bus",
 		Region:    "us-east-1",
 		AccountID: "123456789012",
-		Tags: []common.Tag{
+		Tags: []types.Tag{
 			{Key: "env", Value: "prod"},
 		},
 	}

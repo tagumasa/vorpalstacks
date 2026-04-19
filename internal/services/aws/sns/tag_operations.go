@@ -5,70 +5,66 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
+	snsstore "vorpalstacks/internal/store/aws/sns"
 	"vorpalstacks/internal/utils/aws/types"
 )
 
-// TagResource adds tags to an SNS topic.
+func snsMapError(err error) error {
+	switch e := err.(type) {
+	case *tagutil.MissingResourceError:
+		return NewInvalidParameterException(e.Param + " is required")
+	case *tagutil.MissingTagsError:
+		return NewInvalidParameterException(e.Param + " is required")
+	case *tagutil.MissingTagKeysError:
+		return NewInvalidParameterException(e.Param + " is required")
+	}
+	return err
+}
+
+func snsTagConfig(store snsstore.SNSStoreInterface) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.StandardConfig,
+		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+			return store.Tag(resourceKey, tags)
+		},
+		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
+			return store.Untag(resourceKey, tagKeys)
+		},
+		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+			return store.ListTagsForResource(resourceKey)
+		},
+		TagResponse: func(ctx context.Context, resourceKey string) (interface{}, error) {
+			return tagutil.HandleListSimple(ctx, tagutil.StandardConfig, resourceKey,
+				func(key string) ([]types.Tag, error) { return store.ListTagsForResource(key) },
+			)
+		},
+		MapError: snsMapError,
+	}
+}
+
+// TagResource adds or overwrites tags on an SNS topic.
 func (s *SNSService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, NewInvalidParameterException("ResourceArn is required")
-	}
-
-	tags := tagutil.GetTags(req.Parameters, tagutil.StandardConfig)
-	if len(tags) == 0 {
-		return nil, NewInvalidParameterException("Tags is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.TagResource(resourceArn, tags); err != nil {
-		return nil, err
-	}
-
-	return tagutil.HandleListSimple(ctx, tagutil.StandardConfig, resourceArn,
-		func(key string) ([]types.Tag, error) { return store.ListTagsForResource(key) },
-	)
+	return tagutil.HandleTag(ctx, req, snsTagConfig(store))
 }
 
-// UntagResource removes tags from an SNS topic.
+// UntagResource removes the specified tags from an SNS topic.
 func (s *SNSService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, NewInvalidParameterException("ResourceArn is required")
-	}
-
-	tagKeys := tagutil.GetTagKeys(req.Parameters, tagutil.StandardConfig)
-	if len(tagKeys) == 0 {
-		return nil, NewInvalidParameterException("TagKeys is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.UntagResource(resourceArn, tagKeys); err != nil {
-		return nil, err
-	}
-
-	return nil, nil
+	return tagutil.HandleUntag(ctx, req, snsTagConfig(store))
 }
 
-// ListTagsForResource lists tags for an SNS topic.
+// ListTagsForResource lists all tags assigned to an SNS topic.
 func (s *SNSService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, NewInvalidParameterException("ResourceArn is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	return tagutil.HandleListSimple(ctx, tagutil.StandardConfig, resourceArn,
-		func(key string) ([]types.Tag, error) { return store.ListTagsForResource(key) },
-	)
+	return tagutil.HandleList(ctx, req, snsTagConfig(store))
 }

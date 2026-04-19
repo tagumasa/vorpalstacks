@@ -11,6 +11,11 @@ import (
 	"vorpalstacks/internal/core/logs"
 )
 
+const (
+	validationTokenLength = 56
+	randomBytesPoolSize   = 256
+)
+
 var certificateCounter uint64 = 0
 
 // GenerateCertificateId generates a unique certificate ID.
@@ -31,8 +36,8 @@ func generateValidationToken() string {
 	const letters = "abcdefghijklmnopqrstuvwxyz"
 	const lettersLen = byte(len(letters))
 	const maxByte = byte(256 - (256 % uint32(lettersLen)))
-	b := make([]byte, 56)
-	randBytes := make([]byte, 256)
+	b := make([]byte, validationTokenLength)
+	randBytes := make([]byte, randomBytesPoolSize)
 
 	if _, err := cryptorand.Read(randBytes); err != nil {
 		logs.Warn("crypto/rand.Read failed in generateValidationToken, using fallback", logs.Err(err))

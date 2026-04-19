@@ -11,7 +11,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 func newCloudFrontError(typeName, message string, statusCode int) *awserrors.AWSError {
@@ -697,7 +697,7 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 		return nil, fmt.Errorf("failed to sync WAF association: %w", err)
 	}
 
-	var tags []common.Tag
+	var tags []types.Tag
 	tagsMap := request.GetMapParam(req.Parameters, "Tags")
 	if tagsMap != nil {
 		if itemsVal := tagsMap["Items"]; itemsVal != nil {
@@ -705,7 +705,7 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 			case []interface{}:
 				for _, t := range v {
 					if m, ok := t.(map[string]interface{}); ok {
-						tags = append(tags, common.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
+						tags = append(tags, types.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
 					}
 				}
 			case map[string]interface{}:
@@ -714,11 +714,11 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 					case []interface{}:
 						for _, t := range tv {
 							if m, ok := t.(map[string]interface{}); ok {
-								tags = append(tags, common.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
+								tags = append(tags, types.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
 							}
 						}
 					case map[string]interface{}:
-						tags = append(tags, common.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
+						tags = append(tags, types.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
 					}
 				}
 			}
@@ -728,16 +728,16 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 			case []interface{}:
 				for _, t := range v {
 					if m, ok := t.(map[string]interface{}); ok {
-						tags = append(tags, common.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
+						tags = append(tags, types.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
 					}
 				}
 			case map[string]interface{}:
-				tags = append(tags, common.Tag{Key: request.GetStringParam(v, "Key"), Value: request.GetStringParam(v, "Value")})
+				tags = append(tags, types.Tag{Key: request.GetStringParam(v, "Key"), Value: request.GetStringParam(v, "Value")})
 			}
 		}
 	}
 	if len(tags) > 0 && distribution.ARN != "" {
-		if err := store.tags.TagResource(distribution.ARN, tags); err != nil {
+		if err := store.tags.Tag(distribution.ARN, tags); err != nil {
 			return nil, fmt.Errorf("failed to tag distribution: %w", err)
 		}
 	}

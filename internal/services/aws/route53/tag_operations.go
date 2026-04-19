@@ -83,17 +83,17 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 	}
 
 	if len(addTags) > 0 {
-		if err := st.Tags().TagResource(resourceKey, addTags); err != nil {
+		if err := st.Tags().Tag(resourceKey, addTags); err != nil {
 			return nil, NewAPIError("TagResource", err.Error(), 500)
 		}
 	}
 
 	if len(removeTagKeys) > 0 {
-		if err := st.Tags().Raw().UntagResource(resourceKey, removeTagKeys); err != nil {
+		if err := st.Tags().Raw().Untag(resourceKey, removeTagKeys); err != nil {
 			return nil, NewAPIError("UntagResource", err.Error(), 500)
 		}
 		if len(addTags) > 0 {
-			if err := st.Tags().TagResource(resourceKey, addTags); err != nil {
+			if err := st.Tags().Tag(resourceKey, addTags); err != nil {
 				return nil, NewAPIError("TagResource", err.Error(), 500)
 			}
 		}

@@ -38,6 +38,11 @@ func (b *ARNBuilder) WithPartition(partition string) *ARNBuilder {
 	return b
 }
 
+// AccountID returns the AWS account ID for this builder.
+func (b *ARNBuilder) AccountID() string {
+	return b.accountId
+}
+
 // UserARN constructs an ARN for an IAM user.
 func (b *ARNBuilder) UserARN(path, userName string) string {
 	fullPath := b.normalizePath(path)

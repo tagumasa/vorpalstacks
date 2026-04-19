@@ -53,7 +53,7 @@ func (s *KinesisService) CreateStream(ctx context.Context, reqCtx *request.Reque
 		for _, t := range tagList {
 			tagMap[t.Key] = t.Value
 		}
-		if err := store.TagResource(streamName, tagMap); err != nil {
+		if err := store.Tag(streamName, tagMap); err != nil {
 			return nil, s.mapStoreError(err)
 		}
 	}

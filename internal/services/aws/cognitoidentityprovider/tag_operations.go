@@ -6,71 +6,73 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
-// TagResource adds tags to a Cognito User Pool or User Pool Client resource.
+func cognitoIdpMapError(err error) error {
+	switch err.(type) {
+	case *tagutil.MissingResourceError, *tagutil.MissingTagsError, *tagutil.MissingTagKeysError:
+		return ErrInvalidParameter
+	}
+	return err
+}
+
+func cognitoIdpTagConfig(store cognitostore.CognitoStoreInterface) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.StandardConfig,
+		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+			if err := store.Tag(resourceKey, tagutil.ToMap(tags)); err != nil {
+				return ErrInternalError
+			}
+			return nil
+		},
+		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
+			if err := store.Untag(resourceKey, tagKeys); err != nil {
+				return ErrInternalError
+			}
+			return nil
+		},
+		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+			tags, err := store.ListAsSlice(resourceKey)
+			if err != nil {
+				return nil, ErrInternalError
+			}
+			return tags, nil
+		},
+		FormatResponse: func(tags []types.Tag, _ string) (interface{}, error) {
+			return map[string]interface{}{"Tags": tagutil.ToMap(tags)}, nil
+		},
+		EmptyResponse: func() (interface{}, error) {
+			return response.EmptyResponse(), nil
+		},
+		MapError: cognitoIdpMapError,
+	}
+}
+
+// TagResource adds or overwrites tags on a Cognito IdP resource.
 func (s *CognitoService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	tags := tagutil.GetTags(req.Parameters, tagutil.StandardConfig)
-	if len(tags) == 0 {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.TagResource(resourceArn, tagutil.ToMap(tags)); err != nil {
-		return nil, ErrInternalError
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleTag(ctx, req, cognitoIdpTagConfig(store))
 }
 
-// UntagResource removes tags from a Cognito User Pool or User Pool Client resource.
+// UntagResource removes the specified tags from a Cognito IdP resource.
 func (s *CognitoService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	tagKeys := tagutil.GetTagKeys(req.Parameters, tagutil.StandardConfig)
-	if len(tagKeys) == 0 {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.UntagResource(resourceArn, tagKeys); err != nil {
-		return nil, ErrInternalError
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleUntag(ctx, req, cognitoIdpTagConfig(store))
 }
 
-// ListTagsForResource lists tags for a Cognito User Pool or User Pool Client resource.
+// ListTagsForResource lists all tags assigned to a Cognito IdP resource.
 func (s *CognitoService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	tags, err := store.ListTagsAsSlice(resourceArn)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	return map[string]interface{}{
-		"Tags": tagutil.ToMap(tags),
-	}, nil
+	return tagutil.HandleList(ctx, req, cognitoIdpTagConfig(store))
 }

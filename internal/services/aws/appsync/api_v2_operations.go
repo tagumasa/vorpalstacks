@@ -44,6 +44,16 @@ func (s *AppSyncService) CreateApi(ctx context.Context, reqCtx *request.RequestC
 		return mapStoreError(err)
 	}
 
+	if len(api.Tags) > 0 {
+		tagMap := make(map[string]string, len(api.Tags))
+		for k, v := range api.Tags {
+			tagMap[k] = v
+		}
+		if err := store.TagStore.Tag(created.Arn, tagMap); err != nil {
+			return nil, err
+		}
+	}
+
 	return map[string]interface{}{
 		"api": apiToMap(created),
 	}, nil
@@ -67,8 +77,13 @@ func (s *AppSyncService) GetApi(ctx context.Context, reqCtx *request.RequestCont
 		return mapStoreError(err)
 	}
 
+	result := apiToMap(api)
+	if tagsFromStore, err := store.TagStore.List(api.Arn); err == nil && len(tagsFromStore) > 0 {
+		result["tags"] = tagsFromStore
+	}
+
 	return map[string]interface{}{
-		"api": apiToMap(api),
+		"api": result,
 	}, nil
 }
 
@@ -121,9 +136,16 @@ func (s *AppSyncService) DeleteApi(ctx context.Context, reqCtx *request.RequestC
 		return nil, NewBadRequestException("apiId is required")
 	}
 
+	api, err := store.GetApiById(apiId)
+	if err != nil {
+		return mapStoreError(err)
+	}
+
 	if err := store.DeleteApiById(apiId); err != nil {
 		return mapStoreError(err)
 	}
+
+	store.TagStore.Delete(api.Arn)
 
 	s.eventServer.DisconnectByApiId(apiId)
 
@@ -362,285 +384,4 @@ func resolveResourceFromArn(resourceArn string) (resourceType string, region str
 	}
 
 	return "", "", "", "", fmt.Errorf("unsupported ARN resource type: %s", resource)
-}
-
-// tagResource applies tag operations to either an API or a channel namespace.
-func (s *AppSyncService) tagResource(store *appsyncstore.AppSyncStore, resourceArn string, newTags map[string]string) error {
-	resourceType, _, apiId, name, err := resolveResourceFromArn(resourceArn)
-	if err != nil {
-		return NewNotFoundException(resourceArn)
-	}
-
-	switch resourceType {
-	case "api":
-		if err := s.tagApi(store, apiId, newTags); err == nil {
-			return nil
-		}
-		return s.tagGraphqlApi(store, apiId, newTags)
-	case "channelNamespace":
-		return s.tagChannelNamespace(store, apiId, name, newTags)
-	case "dataSource":
-		return s.tagDataSource(store, apiId, name, newTags)
-	default:
-		return NewNotFoundException(resourceArn)
-	}
-}
-
-// untagResource removes tag keys from a resource identified by ARN.
-func (s *AppSyncService) untagResource(store *appsyncstore.AppSyncStore, resourceArn string, keysToRemove []string) error {
-	resourceType, _, apiId, name, err := resolveResourceFromArn(resourceArn)
-	if err != nil {
-		return NewNotFoundException(resourceArn)
-	}
-
-	switch resourceType {
-	case "api":
-		if err := s.untagApi(store, apiId, keysToRemove); err == nil {
-			return nil
-		}
-		return s.untagGraphqlApi(store, apiId, keysToRemove)
-	case "channelNamespace":
-		return s.untagChannelNamespace(store, apiId, name, keysToRemove)
-	case "dataSource":
-		return s.untagDataSource(store, apiId, name, keysToRemove)
-	default:
-		return NewNotFoundException(resourceArn)
-	}
-}
-
-// listResourceTags returns the tags for a resource identified by ARN.
-func (s *AppSyncService) listResourceTags(store *appsyncstore.AppSyncStore, resourceArn string) (map[string]string, error) {
-	resourceType, _, apiId, name, err := resolveResourceFromArn(resourceArn)
-	if err != nil {
-		return nil, NewNotFoundException(resourceArn)
-	}
-
-	switch resourceType {
-	case "api":
-		tags, err := s.listApiTags(store, apiId)
-		if err == nil {
-			return tags, nil
-		}
-		return s.listGraphqlApiTags(store, apiId)
-	case "channelNamespace":
-		return s.listChannelNamespaceTags(store, apiId, name)
-	case "dataSource":
-		return s.listDataSourceTags(store, apiId, name)
-	default:
-		return nil, NewNotFoundException(resourceArn)
-	}
-}
-
-// tagApi merges new tags into an existing Event API's tag set.
-func (s *AppSyncService) tagApi(store *appsyncstore.AppSyncStore, apiId string, newTags map[string]string) error {
-	api, err := store.GetApiById(apiId)
-	if err != nil {
-		if err == appsyncstore.ErrApiNotFound {
-			return NewNotFoundException(fmt.Sprintf("API with ID %s", apiId))
-		}
-		return ErrInternalFailureException
-	}
-
-	if api.Tags == nil {
-		api.Tags = make(map[string]string)
-	}
-	for k, v := range newTags {
-		api.Tags[k] = v
-	}
-
-	_, err = store.UpdateApiById(apiId, api)
-	return err
-}
-
-// untagApi removes specified keys from an Event API's tag set.
-func (s *AppSyncService) untagApi(store *appsyncstore.AppSyncStore, apiId string, keysToRemove []string) error {
-	api, err := store.GetApiById(apiId)
-	if err != nil {
-		if err == appsyncstore.ErrApiNotFound {
-			return NewNotFoundException(fmt.Sprintf("API with ID %s", apiId))
-		}
-		return ErrInternalFailureException
-	}
-
-	if api.Tags == nil {
-		return nil
-	}
-	for _, key := range keysToRemove {
-		delete(api.Tags, key)
-	}
-
-	_, err = store.UpdateApiById(apiId, api)
-	return err
-}
-
-// listApiTags returns the tag map for an Event API.
-func (s *AppSyncService) listApiTags(store *appsyncstore.AppSyncStore, apiId string) (map[string]string, error) {
-	api, err := store.GetApiById(apiId)
-	if err != nil {
-		if err == appsyncstore.ErrApiNotFound {
-			return nil, NewNotFoundException(fmt.Sprintf("API with ID %s", apiId))
-		}
-		return nil, ErrInternalFailureException
-	}
-
-	if api.Tags == nil {
-		return map[string]string{}, nil
-	}
-	return api.Tags, nil
-}
-
-// tagChannelNamespace merges new tags into an existing channel namespace.
-func (s *AppSyncService) tagChannelNamespace(store *appsyncstore.AppSyncStore, apiId, name string, newTags map[string]string) error {
-	return store.UpdateChannelNamespaceTags(apiId, name, func(tags map[string]string) map[string]string {
-		if tags == nil {
-			tags = make(map[string]string)
-		}
-		for k, v := range newTags {
-			tags[k] = v
-		}
-		return tags
-	})
-}
-
-// untagChannelNamespace removes specified keys from a channel namespace's tags.
-func (s *AppSyncService) untagChannelNamespace(store *appsyncstore.AppSyncStore, apiId, name string, keysToRemove []string) error {
-	return store.UpdateChannelNamespaceTags(apiId, name, func(tags map[string]string) map[string]string {
-		if tags == nil {
-			return nil
-		}
-		for _, key := range keysToRemove {
-			delete(tags, key)
-		}
-		return tags
-	})
-}
-
-// listChannelNamespaceTags returns the tag map for a channel namespace.
-func (s *AppSyncService) listChannelNamespaceTags(store *appsyncstore.AppSyncStore, apiId, name string) (map[string]string, error) {
-	ns, err := store.GetChannelNamespace(apiId, name)
-	if err != nil {
-		if err == appsyncstore.ErrChannelNamespaceNotFound {
-			return nil, NewNotFoundException(fmt.Sprintf("Channel namespace %s", name))
-		}
-		return nil, ErrInternalFailureException
-	}
-	if ns.Tags == nil {
-		return map[string]string{}, nil
-	}
-	return ns.Tags, nil
-}
-
-// tagGraphqlApi merges new tags into an existing GraphQL API's tag set.
-func (s *AppSyncService) tagGraphqlApi(store *appsyncstore.AppSyncStore, apiId string, newTags map[string]string) error {
-	api, err := store.GetGraphqlApiById(apiId)
-	if err != nil {
-		if err == appsyncstore.ErrGraphqlApiNotFound {
-			return NewNotFoundException(fmt.Sprintf("GraphQL API with ID %s", apiId))
-		}
-		return ErrInternalFailureException
-	}
-
-	if api.Tags == nil {
-		api.Tags = make(map[string]string)
-	}
-	for k, v := range newTags {
-		api.Tags[k] = v
-	}
-
-	_, err = store.UpdateGraphqlApiById(apiId, api)
-	return err
-}
-
-// untagGraphqlApi removes specified keys from a GraphQL API's tag set.
-func (s *AppSyncService) untagGraphqlApi(store *appsyncstore.AppSyncStore, apiId string, keysToRemove []string) error {
-	api, err := store.GetGraphqlApiById(apiId)
-	if err != nil {
-		if err == appsyncstore.ErrGraphqlApiNotFound {
-			return NewNotFoundException(fmt.Sprintf("GraphQL API with ID %s", apiId))
-		}
-		return ErrInternalFailureException
-	}
-
-	if api.Tags == nil {
-		return nil
-	}
-	for _, key := range keysToRemove {
-		delete(api.Tags, key)
-	}
-
-	_, err = store.UpdateGraphqlApiById(apiId, api)
-	return err
-}
-
-// listGraphqlApiTags returns the tag map for a GraphQL API.
-func (s *AppSyncService) listGraphqlApiTags(store *appsyncstore.AppSyncStore, apiId string) (map[string]string, error) {
-	api, err := store.GetGraphqlApiById(apiId)
-	if err != nil {
-		if err == appsyncstore.ErrGraphqlApiNotFound {
-			return nil, NewNotFoundException(fmt.Sprintf("GraphQL API with ID %s", apiId))
-		}
-		return nil, ErrInternalFailureException
-	}
-
-	if api.Tags == nil {
-		return map[string]string{}, nil
-	}
-	return api.Tags, nil
-}
-
-// tagDataSource merges new tags into an existing data source's tag set.
-func (s *AppSyncService) tagDataSource(store *appsyncstore.AppSyncStore, apiId, name string, newTags map[string]string) error {
-	ds, err := store.GetDataSource(apiId, name)
-	if err != nil {
-		if err == appsyncstore.ErrDataSourceNotFound {
-			return NewNotFoundException(fmt.Sprintf("Data source %s", name))
-		}
-		return ErrInternalFailureException
-	}
-
-	if ds.Tags == nil {
-		ds.Tags = make(map[string]string)
-	}
-	for k, v := range newTags {
-		ds.Tags[k] = v
-	}
-
-	_, err = store.UpdateDataSource(ds)
-	return err
-}
-
-// untagDataSource removes specified keys from a data source's tag set.
-func (s *AppSyncService) untagDataSource(store *appsyncstore.AppSyncStore, apiId, name string, keysToRemove []string) error {
-	ds, err := store.GetDataSource(apiId, name)
-	if err != nil {
-		if err == appsyncstore.ErrDataSourceNotFound {
-			return NewNotFoundException(fmt.Sprintf("Data source %s", name))
-		}
-		return ErrInternalFailureException
-	}
-
-	if ds.Tags == nil {
-		return nil
-	}
-	for _, key := range keysToRemove {
-		delete(ds.Tags, key)
-	}
-
-	_, err = store.UpdateDataSource(ds)
-	return err
-}
-
-// listDataSourceTags returns the tag map for a data source.
-func (s *AppSyncService) listDataSourceTags(store *appsyncstore.AppSyncStore, apiId, name string) (map[string]string, error) {
-	ds, err := store.GetDataSource(apiId, name)
-	if err != nil {
-		if err == appsyncstore.ErrDataSourceNotFound {
-			return nil, NewNotFoundException(fmt.Sprintf("Data source %s", name))
-		}
-		return nil, ErrInternalFailureException
-	}
-	if ds.Tags == nil {
-		return map[string]string{}, nil
-	}
-	return ds.Tags, nil
 }

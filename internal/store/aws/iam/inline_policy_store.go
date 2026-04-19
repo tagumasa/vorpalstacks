@@ -1,134 +1,83 @@
 package iam
 
-// Package iam provides IAM (Identity and Access Management) data store implementations
-// for vorpalstacks.
-
 import (
-	"encoding/json"
-
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 )
 
 const inlinePolicyBucketName = "iam_inline_policies"
 
-// InlinePolicyStore manages IAM inline policy data in persistent storage.
+// InlinePolicyStore manages IAM inline policies attached to principals.
 type InlinePolicyStore struct {
-	bucket storage.Bucket
-	kl     common.KeyLocker
+	pk principalKeyed[InlinePolicy]
 }
 
 // NewInlinePolicyStore creates a new store for IAM inline policies.
 func NewInlinePolicyStore(store storage.BasicStorage) *InlinePolicyStore {
+	bs := common.NewBaseStore(store.Bucket(inlinePolicyBucketName), "iam")
 	return &InlinePolicyStore{
-		bucket: store.Bucket(inlinePolicyBucketName),
+		pk: newPrincipalKeyed[InlinePolicy](bs,
+			func(p *InlinePolicy) string { return p.PolicyName },
+			func(p *InlinePolicy, newName string) { p.PrincipalName = newName },
+		),
 	}
 }
 
-func (s *InlinePolicyStore) policyKey(principalType, principalName, policyName string) []byte {
-	return []byte(principalType + ":" + principalName + ":" + policyName)
+func (s *InlinePolicyStore) policyKey(principalType, principalName, policyName string) string {
+	return s.pk.buildPrefix(principalType, principalName) + policyName
 }
 
-// Put stores an inline policy for a principal.
+// Put stores an inline policy for the specified principal.
 func (s *InlinePolicyStore) Put(principalType, principalName, policyName, document string) error {
-	lockKey := principalType + ":" + principalName + ":" + policyName
-	return s.kl.WithLock(lockKey, func() error {
+	lockKey := s.policyKey(principalType, principalName, policyName)
+	return s.pk.kl.WithLock(lockKey, func() error {
 		policy := &InlinePolicy{
 			PrincipalType:  principalType,
 			PrincipalName:  principalName,
 			PolicyName:     policyName,
 			PolicyDocument: document,
 		}
-
-		data, err := json.Marshal(policy)
-		if err != nil {
-			return NewStoreError("put_inline_policy", err)
-		}
-
-		if err := s.bucket.Put(s.policyKey(principalType, principalName, policyName), data); err != nil {
-			return NewStoreError("put_inline_policy", err)
-		}
-		return nil
+		return s.pk.BaseStore.Put(s.policyKey(principalType, principalName, policyName), policy)
 	})
 }
 
-// Get retrieves an inline policy for a principal.
+// Get retrieves an inline policy by principal type, name, and policy name.
 func (s *InlinePolicyStore) Get(principalType, principalName, policyName string) (*InlinePolicy, error) {
-	data, err := s.bucket.Get(s.policyKey(principalType, principalName, policyName))
-	if err != nil {
-		return nil, NewStoreError("get_inline_policy", err)
-	}
-	if data == nil {
-		return nil, NewStoreError("get_inline_policy", ErrPolicyNotFound)
-	}
 	var policy InlinePolicy
-	if err := json.Unmarshal(data, &policy); err != nil {
+	if err := s.pk.BaseStore.Get(s.policyKey(principalType, principalName, policyName), &policy); err != nil {
+		if common.IsNotFound(err) {
+			return nil, NewStoreError("get_inline_policy", ErrPolicyNotFound)
+		}
 		return nil, NewStoreError("get_inline_policy", err)
 	}
 	return &policy, nil
 }
 
-// Delete removes an inline policy from a principal.
+// Delete removes an inline policy.
 func (s *InlinePolicyStore) Delete(principalType, principalName, policyName string) error {
-	lockKey := principalType + ":" + principalName + ":" + policyName
-	return s.kl.WithLock(lockKey, func() error {
-		if err := s.bucket.Delete(s.policyKey(principalType, principalName, policyName)); err != nil {
-			return NewStoreError("delete_inline_policy", err)
-		}
-		return nil
+	lockKey := s.policyKey(principalType, principalName, policyName)
+	return s.pk.kl.WithLock(lockKey, func() error {
+		return s.pk.BaseStore.Delete(s.policyKey(principalType, principalName, policyName))
 	})
 }
 
-// Exists checks whether an inline policy exists for a principal.
+// Exists checks whether an inline policy exists.
 func (s *InlinePolicyStore) Exists(principalType, principalName, policyName string) bool {
-	return s.bucket.Has(s.policyKey(principalType, principalName, policyName))
+	return s.pk.BaseStore.Exists(s.policyKey(principalType, principalName, policyName))
 }
 
 // List returns all inline policy names for a principal.
 func (s *InlinePolicyStore) List(principalType, principalName string) ([]string, error) {
-	var policyNames []string
-	prefix := principalType + ":" + principalName + ":"
-
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		key := string(k)
-		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
-			policyNames = append(policyNames, key[len(prefix):])
-		}
-		return nil
-	})
-
+	names, err := s.pk.listByPrincipal(principalType, principalName)
 	if err != nil {
 		return nil, NewStoreError("list_inline_policies", err)
 	}
-	return policyNames, nil
+	return names, nil
 }
 
 // DeleteAllForPrincipal removes all inline policies for a principal.
 func (s *InlinePolicyStore) DeleteAllForPrincipal(principalType, principalName string) error {
-	lockKey := "removeall:" + principalType + ":" + principalName
-	return s.kl.WithLock(lockKey, func() error {
-		prefix := principalType + ":" + principalName + ":"
-		var keysToDelete [][]byte
-
-		err := s.bucket.ForEach(func(k, v []byte) error {
-			key := string(k)
-			if len(key) > len(prefix) && key[:len(prefix)] == prefix {
-				keysToDelete = append(keysToDelete, k)
-			}
-			return nil
-		})
-
-		if err != nil {
-			return NewStoreError("delete_all_inline_policies", err)
-		}
-
-		for _, key := range keysToDelete {
-			if err := s.bucket.Delete(key); err != nil {
-				return NewStoreError("delete_all_inline_policies", err)
-			}
-		}
-		return nil
-	})
+	return s.pk.deleteAllForPrincipal(principalType, principalName, "delete_all_inline_policies")
 }
 
 // Count returns the number of inline policies for a principal.
@@ -137,43 +86,7 @@ func (s *InlinePolicyStore) Count(principalType, principalName string) int {
 	return len(policyNames)
 }
 
-// MigratePrincipal moves all inline policies from one principal name to another.
+// MigratePrincipal re-keys all inline policies when a principal is renamed.
 func (s *InlinePolicyStore) MigratePrincipal(oldName, newName, principalType string) error {
-	lockKey := "migrate:" + principalType + ":" + oldName
-	return s.kl.WithLock(lockKey, func() error {
-		prefix := principalType + ":" + oldName + ":"
-		var policies []InlinePolicy
-
-		err := s.bucket.ForEach(func(k, v []byte) error {
-			key := string(k)
-			if len(key) > len(prefix) && key[:len(prefix)] == prefix {
-				var policy InlinePolicy
-				if err := json.Unmarshal(v, &policy); err != nil {
-					return err
-				}
-				policies = append(policies, policy)
-			}
-			return nil
-		})
-
-		if err != nil {
-			return NewStoreError("migrate_principal", err)
-		}
-
-		for _, policy := range policies {
-			if err := s.bucket.Delete(s.policyKey(principalType, oldName, policy.PolicyName)); err != nil {
-				return NewStoreError("migrate_principal", err)
-			}
-			policy.PrincipalName = newName
-			data, err := json.Marshal(policy)
-			if err != nil {
-				return NewStoreError("migrate_principal", err)
-			}
-			if err := s.bucket.Put(s.policyKey(principalType, newName, policy.PolicyName), data); err != nil {
-				return NewStoreError("migrate_principal", err)
-			}
-		}
-
-		return nil
-	})
+	return s.pk.migratePrincipal(oldName, newName, principalType, "migrate_principal")
 }

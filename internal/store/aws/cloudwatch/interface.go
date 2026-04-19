@@ -11,9 +11,9 @@ type AlarmStoreInterface interface {
 	SetAlarmActionsEnabled(name string, enabled bool) error
 	AddAlarmHistory(entry *AlarmHistoryEntry) error
 	ListAlarmHistory(alarmName string, historyItemType string) ([]*AlarmHistoryEntry, error)
-	TagResource(arn string, tags map[string]string) error
-	ListTags(resourceKey string) (map[string]string, error)
-	UntagResource(resourceKey string, tagKeys []string) error
+	Tag(arn string, tags map[string]string) error
+	List(resourceKey string) (map[string]string, error)
+	Untag(resourceKey string, tagKeys []string) error
 }
 
 // MetricChunkStoreInterface defines operations for managing CloudWatch metric data.

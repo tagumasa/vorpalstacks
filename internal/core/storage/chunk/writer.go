@@ -159,7 +159,7 @@ func (w *Writer) Flush() (string, error) {
 
 	if err != nil {
 		w.buffer = append(entries, w.buffer...)
-		return "", fmt.Errorf("%w: %v", ErrWriteFailed, err)
+		return "", fmt.Errorf("%w: %w", ErrWriteFailed, err)
 	}
 
 	w.chunkPath = chunkPath

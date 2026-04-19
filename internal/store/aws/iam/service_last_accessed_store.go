@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const serviceLastAccessedBucketName = "iam_service_last_accessed_jobs"
@@ -44,19 +45,19 @@ type ServiceLastAccessed struct {
 
 // ServiceLastAccessedDetailsJobStore provides persistent storage for Service Last Accessed Details jobs.
 type ServiceLastAccessedDetailsJobStore struct {
-	bucket storage.Bucket
+	*common.BaseStore
 }
 
 // NewServiceLastAccessedDetailsJobStore creates a new store backed by the given storage.
 func NewServiceLastAccessedDetailsJobStore(store storage.BasicStorage) *ServiceLastAccessedDetailsJobStore {
 	return &ServiceLastAccessedDetailsJobStore{
-		bucket: store.Bucket(serviceLastAccessedBucketName),
+		BaseStore: common.NewBaseStore(store.Bucket(serviceLastAccessedBucketName), "iam"),
 	}
 }
 
 // Get retrieves a job by its ID. Returns nil if no job exists with the given ID.
 func (s *ServiceLastAccessedDetailsJobStore) Get(jobID string) (*ServiceLastAccessedJob, error) {
-	data, err := s.bucket.Get([]byte(jobID))
+	data, err := s.Bucket().Get([]byte(jobID))
 	if err != nil {
 		return nil, NewStoreError("get_service_last_accessed_job", err)
 	}
@@ -72,12 +73,5 @@ func (s *ServiceLastAccessedDetailsJobStore) Get(jobID string) (*ServiceLastAcce
 
 // Put persists a job to storage keyed by its JobID.
 func (s *ServiceLastAccessedDetailsJobStore) Put(job *ServiceLastAccessedJob) error {
-	data, err := json.Marshal(job)
-	if err != nil {
-		return NewStoreError("put_service_last_accessed_job", err)
-	}
-	if err := s.bucket.Put([]byte(job.JobID), data); err != nil {
-		return NewStoreError("put_service_last_accessed_job", err)
-	}
-	return nil
+	return s.BaseStore.Put(job.JobID, job)
 }

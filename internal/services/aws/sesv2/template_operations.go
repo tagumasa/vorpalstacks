@@ -47,7 +47,7 @@ func (s *SESv2Service) CreateEmailTemplate(ctx context.Context, reqCtx *request.
 
 	if len(parsedTags) > 0 {
 		arn := store.BuildTemplateArn(templateName)
-		if err := store.TagResourceFromSlice(arn, parsedTags); err != nil {
+		if err := store.TagFromSlice(arn, parsedTags); err != nil {
 			return nil, err
 		}
 	}

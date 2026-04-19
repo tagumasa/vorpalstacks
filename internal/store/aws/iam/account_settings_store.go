@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const accountSettingsBucketName = "iam_account_settings"
@@ -17,19 +18,19 @@ type AccountSettings struct {
 
 // AccountSettingsStore provides storage operations for IAM account settings.
 type AccountSettingsStore struct {
-	bucket storage.Bucket
+	*common.BaseStore
 }
 
 // NewAccountSettingsStore creates a new AccountSettingsStore instance.
 func NewAccountSettingsStore(store storage.BasicStorage) *AccountSettingsStore {
 	return &AccountSettingsStore{
-		bucket: store.Bucket(accountSettingsBucketName),
+		BaseStore: common.NewBaseStore(store.Bucket(accountSettingsBucketName), "iam"),
 	}
 }
 
 // Get retrieves the current account settings, returning defaults if none are stored.
 func (s *AccountSettingsStore) Get() (*AccountSettings, error) {
-	data, err := s.bucket.Get([]byte("settings"))
+	data, err := s.Bucket().Get([]byte("settings"))
 	if err != nil {
 		return nil, NewStoreError("get_account_settings", err)
 	}
@@ -49,12 +50,5 @@ func (s *AccountSettingsStore) Get() (*AccountSettings, error) {
 
 // Put stores the account settings.
 func (s *AccountSettingsStore) Put(settings *AccountSettings) error {
-	data, err := json.Marshal(settings)
-	if err != nil {
-		return NewStoreError("put_account_settings", err)
-	}
-	if err := s.bucket.Put([]byte("settings"), data); err != nil {
-		return NewStoreError("put_account_settings", err)
-	}
-	return nil
+	return s.BaseStore.Put("settings", settings)
 }

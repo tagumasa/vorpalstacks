@@ -54,8 +54,7 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 	}
 
 	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
-		webACL.Tags = tags
-		if err := stores.webACLs.Put(webACL.ID, webACL); err != nil {
+		if err := stores.tags.TagFromSlice(webACL.ARN, tags); err != nil {
 			logs.Warn("failed to persist tags for WebACL", logs.String("id", webACL.ID), logs.Err(err))
 		}
 	}
@@ -232,15 +231,22 @@ func (s *WAFv2Service) DeleteWebACL(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	if err := stores.webACLs.Delete(id, lockToken); err != nil {
-		if wafstore.IsLockTokenMismatch(err) {
-			return nil, lockTokenError()
-		}
+	webACL, err := stores.webACLs.Get(id)
+	if err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("WebACL")
 		}
 		return nil, err
 	}
+
+	if err := stores.webACLs.Delete(id, lockToken); err != nil {
+		if wafstore.IsLockTokenMismatch(err) {
+			return nil, lockTokenError()
+		}
+		return nil, err
+	}
+
+	stores.tags.Delete(webACL.ARN)
 
 	return response.EmptyResponse(), nil
 }

@@ -312,7 +312,9 @@ func (d *DB) SetWithTTL(key, value []byte, ttl time.Duration) error {
 	}
 
 	if expiresAt > 0 {
-		_ = d.db.Set(buildTTLIndexKey(expiresAt, key), nil, d.syncFlag())
+		if err := d.db.Set(buildTTLIndexKey(expiresAt, key), nil, d.syncFlag()); err != nil {
+			slog.Warn("pebbledb: failed to set TTL index key", "key", key, "error", err)
+		}
 	}
 
 	return nil

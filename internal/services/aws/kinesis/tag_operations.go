@@ -3,40 +3,44 @@ package kinesis
 import (
 	"context"
 
-	storecommon "vorpalstacks/internal/store/aws/common"
-
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
+	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
-func formatTagsAsResponse(tagSlice []storecommon.Tag, includeHasMore bool) map[string]interface{} {
-	result := map[string]interface{}{"Tags": tags.ToResponse(tagSlice)}
-	if includeHasMore {
-		result["HasMoreTags"] = false
+func (s *KinesisService) resolveStreamName(store *kinesisstore.KinesisStore, req *request.ParsedRequest) (string, error) {
+	name := request.GetParamLowerFirst(req.Parameters, "StreamName")
+	if name != "" {
+		return name, nil
 	}
-	return result
+
+	arn := request.GetParamLowerFirst(req.Parameters, "StreamARN")
+	if arn == "" {
+		arn = request.GetParamLowerFirst(req.Parameters, "ResourceARN")
+	}
+	if arn == "" {
+		return "", nil
+	}
+
+	stream, err := store.GetStreamByARN(arn)
+	if err != nil {
+		return "", s.mapStoreError(err)
+	}
+	return stream.StreamName, nil
 }
 
-// AddTagsToStream adds tags to a Kinesis stream.
-// Populates a tag map from the request parameters and calls the store to tag the stream.
+// AddTagsToStream adds or overwrites tags on a Kinesis data stream.
 func (s *KinesisService) AddTagsToStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
+	streamName, err := s.resolveStreamName(store, req)
+	if err != nil {
+		return nil, err
 	}
-
 	if streamName == "" {
 		return nil, ErrInvalidArgument
 	}
@@ -44,78 +48,64 @@ func (s *KinesisService) AddTagsToStream(ctx context.Context, reqCtx *request.Re
 	tagList := tags.ParseTags(req.Parameters, "Tags")
 	tagMap := tags.ToMap(tagList)
 
-	if err := store.TagResource(streamName, tagMap); err != nil {
+	if err := store.Tag(streamName, tagMap); err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
 }
 
-// RemoveTagsFromStream removes tags from a Kinesis stream.
-// Extracts tag keys from the request and calls the store to untag the stream.
+// RemoveTagsFromStream removes the specified tags from a Kinesis data stream.
 func (s *KinesisService) RemoveTagsFromStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
+	streamName, err := s.resolveStreamName(store, req)
+	if err != nil {
+		return nil, err
 	}
-
 	if streamName == "" {
 		return nil, ErrInvalidArgument
 	}
 
 	tagKeys := tags.ParseTagKeysAsSlice(req.Parameters, "TagKeys")
 
-	if err := store.UntagResource(streamName, tagKeys); err != nil {
+	if err := store.Untag(streamName, tagKeys); err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
 }
 
-// ListTagsForStream lists the tags for a Kinesis stream.
-// Retrieves tags from the store and returns them as a formatted slice.
+// ListTagsForStream lists all tags assigned to a Kinesis data stream.
 func (s *KinesisService) ListTagsForStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
+	streamName, err := s.resolveStreamName(store, req)
+	if err != nil {
+		return nil, err
 	}
-
 	if streamName == "" {
 		return nil, ErrInvalidArgument
 	}
 
-	tagSlice, err := store.ListTagsAsSlice(streamName)
+	tagSlice, err := store.ListAsSlice(streamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
-	return formatTagsAsResponse(tagSlice, true), nil
+	return map[string]interface{}{
+		"Tags":        tags.ToResponse(tagSlice),
+		"HasMoreTags": false,
+	}, nil
 }
 
-// TagResource adds tags to a Kinesis stream specified by ARN.
-// Extracts the resource ARN and tag list from the request.
+// TagResource adds or overwrites tags on a Kinesis resource identified by ARN.
 func (s *KinesisService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
 
@@ -136,15 +126,14 @@ func (s *KinesisService) TagResource(ctx context.Context, reqCtx *request.Reques
 	tagList := tags.ParseTags(req.Parameters, "Tags")
 	tagMap := tags.ToMap(tagList)
 
-	if err := store.TagResource(stream.StreamName, tagMap); err != nil {
+	if err := store.Tag(stream.StreamName, tagMap); err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
 }
 
-// UntagResource removes tags from a Kinesis stream specified by ARN.
-// Extracts the resource ARN and tag keys from the request.
+// UntagResource removes the specified tags from a Kinesis resource identified by ARN.
 func (s *KinesisService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
 
@@ -164,15 +153,14 @@ func (s *KinesisService) UntagResource(ctx context.Context, reqCtx *request.Requ
 
 	tagKeys := tags.ParseTagKeysAsSlice(req.Parameters, "TagKeys")
 
-	if err := store.UntagResource(stream.StreamName, tagKeys); err != nil {
+	if err := store.Untag(stream.StreamName, tagKeys); err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
 }
 
-// ListTagsForResource lists the tags for a Kinesis stream specified by ARN.
-// Retrieves tags from the store using the stream ARN and returns them as a formatted slice.
+// ListTagsForResource lists all tags assigned to a Kinesis resource identified by ARN.
 func (s *KinesisService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
 
@@ -190,10 +178,13 @@ func (s *KinesisService) ListTagsForResource(ctx context.Context, reqCtx *reques
 		return nil, s.mapStoreError(err)
 	}
 
-	tagSlice, err := store.ListTagsAsSlice(stream.StreamName)
+	tagSlice, err := store.ListAsSlice(stream.StreamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
-	return formatTagsAsResponse(tagSlice, false), nil
+	return map[string]interface{}{
+		"Tags":        tags.ToResponse(tagSlice),
+		"HasMoreTags": false,
+	}, nil
 }

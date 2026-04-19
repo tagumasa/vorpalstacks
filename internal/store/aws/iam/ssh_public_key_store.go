@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
@@ -16,28 +15,24 @@ const sshPublicKeyBucketName = "iam_ssh_public_keys"
 
 // SSHPublicKeyStore provides storage operations for IAM SSH public keys.
 type SSHPublicKeyStore struct {
-	bucket storage.Bucket
-	kl     common.KeyLocker
+	*common.BaseStore
+	kl common.KeyLocker
 }
 
 // NewSSHPublicKeyStore creates a new SSHPublicKeyStore instance.
 func NewSSHPublicKeyStore(store storage.BasicStorage) *SSHPublicKeyStore {
 	return &SSHPublicKeyStore{
-		bucket: store.Bucket(sshPublicKeyBucketName),
+		BaseStore: common.NewBaseStore(store.Bucket(sshPublicKeyBucketName), "iam"),
 	}
 }
 
 // Get retrieves an SSH public key by its key ID.
 func (s *SSHPublicKeyStore) Get(keyId string) (*SSHPublicKey, error) {
-	data, err := s.bucket.Get([]byte(keyId))
-	if err != nil {
-		return nil, NewStoreError("get_ssh_public_key", err)
-	}
-	if data == nil {
-		return nil, NewStoreError("get_ssh_public_key", ErrSSHPublicKeyNotFound)
-	}
 	var key SSHPublicKey
-	if err := json.Unmarshal(data, &key); err != nil {
+	if err := s.BaseStore.Get(keyId, &key); err != nil {
+		if common.IsNotFound(err) {
+			return nil, NewStoreError("get_ssh_public_key", ErrSSHPublicKeyNotFound)
+		}
 		return nil, NewStoreError("get_ssh_public_key", err)
 	}
 	return &key, nil
@@ -45,27 +40,17 @@ func (s *SSHPublicKeyStore) Get(keyId string) (*SSHPublicKey, error) {
 
 // Put stores an SSH public key, keyed by its key ID.
 func (s *SSHPublicKeyStore) Put(key *SSHPublicKey) error {
-	data, err := json.Marshal(key)
-	if err != nil {
-		return NewStoreError("put_ssh_public_key", err)
-	}
-	if err := s.bucket.Put([]byte(key.SSHPublicKeyId), data); err != nil {
-		return NewStoreError("put_ssh_public_key", err)
-	}
-	return nil
+	return s.BaseStore.Put(key.SSHPublicKeyId, key)
 }
 
 // Delete removes an SSH public key by its key ID.
 func (s *SSHPublicKeyStore) Delete(keyId string) error {
-	if err := s.bucket.Delete([]byte(keyId)); err != nil {
-		return NewStoreError("delete_ssh_public_key", err)
-	}
-	return nil
+	return s.BaseStore.Delete(keyId)
 }
 
 // Exists reports whether an SSH public key exists with the given key ID.
 func (s *SSHPublicKeyStore) Exists(keyId string) bool {
-	return s.bucket.Has([]byte(keyId))
+	return s.BaseStore.Exists(keyId)
 }
 
 // Upload uploads a new SSH public key for the given user.
@@ -104,7 +89,7 @@ func (s *SSHPublicKeyStore) UpdateStatus(keyId, status string) error {
 // ListByUserName returns all SSH public keys belonging to the given user.
 func (s *SSHPublicKeyStore) ListByUserName(userName string) ([]*SSHPublicKey, error) {
 	var keys []*SSHPublicKey
-	err := s.bucket.ForEach(func(k, v []byte) error {
+	err := s.ForEach(func(k string, v []byte) error {
 		var key SSHPublicKey
 		if err := json.Unmarshal(v, &key); err != nil {
 			return err
@@ -123,7 +108,7 @@ func (s *SSHPublicKeyStore) ListByUserName(userName string) ([]*SSHPublicKey, er
 // DeleteAllForUser removes all SSH public keys belonging to the given user.
 func (s *SSHPublicKeyStore) DeleteAllForUser(userName string) error {
 	var toDelete []string
-	err := s.bucket.ForEach(func(k, v []byte) error {
+	err := s.ForEach(func(k string, v []byte) error {
 		var key SSHPublicKey
 		if err := json.Unmarshal(v, &key); err != nil {
 			return err
@@ -146,13 +131,13 @@ func (s *SSHPublicKeyStore) DeleteAllForUser(userName string) error {
 
 // Count returns the total number of SSH public keys.
 func (s *SSHPublicKeyStore) Count() int {
-	return s.bucket.Count()
+	return s.BaseStore.Count()
 }
 
 // CountByUserName returns the number of SSH public keys belonging to the given user.
 func (s *SSHPublicKeyStore) CountByUserName(userName string) (int, error) {
 	count := 0
-	err := s.bucket.ForEach(func(k, v []byte) error {
+	err := s.ForEach(func(k string, v []byte) error {
 		var key SSHPublicKey
 		if err := json.Unmarshal(v, &key); err != nil {
 			return err
@@ -185,17 +170,9 @@ func computeFingerprint(publicKeyBody string) string {
 }
 
 func generateSSHPublicKeyID() (string, error) {
-	id, err := GenerateServerCertificateID()
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("APKA%s", id[4:]), nil
+	return generateID("APKA")
 }
 
 func generateSigningCertificateID() (string, error) {
-	id, err := GenerateServerCertificateID()
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("CERT%s", id[4:]), nil
+	return generateID("CERT")
 }

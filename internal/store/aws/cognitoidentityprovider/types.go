@@ -4,7 +4,7 @@ package cognitoidentityprovider
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 
 	"github.com/google/uuid"
 )
@@ -24,7 +24,7 @@ type UserPool struct {
 	MfaConfiguration       string          `json:"mfaConfiguration,omitempty"`
 	PasswordPolicy         *PasswordPolicy `json:"passwordPolicy,omitempty"`
 	LambdaConfig           *LambdaConfig   `json:"lambdaConfig,omitempty"`
-	Tags                   []common.Tag    `json:"tags,omitempty"`
+	Tags                   []types.Tag     `json:"tags,omitempty"`
 	EstimatedNumberOfUsers int64           `json:"estimatedNumberOfUsers,omitempty"`
 	JwtPrivateKey          string          `json:"jwtPrivateKey,omitempty"`
 	JwtPublicKey           string          `json:"jwtPublicKey,omitempty"`
@@ -211,7 +211,7 @@ func NewUserPool(name string, region string) *UserPool {
 		AutoVerifiedAttributes: []string{},
 		Schema:                 "{}",
 		MfaConfiguration:       "OFF",
-		Tags:                   []common.Tag{},
+		Tags:                   []types.Tag{},
 	}
 }
 

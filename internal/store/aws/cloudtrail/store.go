@@ -149,7 +149,7 @@ func (s *CloudTrailStore) CreateTrail(trail *Trail) (*Trail, error) {
 		}
 
 		if len(trail.Tags) > 0 {
-			if err := s.TagStore.TagResource(trail.Name, trail.Tags); err != nil {
+			if err := s.TagStore.Tag(trail.Name, trail.Tags); err != nil {
 				return nil, err
 			}
 		}
@@ -174,7 +174,7 @@ func (s *CloudTrailStore) CreateTrail(trail *Trail) (*Trail, error) {
 	}
 
 	if len(trail.Tags) > 0 {
-		if err := s.TagStore.TagResource(trail.Name, trail.Tags); err != nil {
+		if err := s.TagStore.Tag(trail.Name, trail.Tags); err != nil {
 			return nil, err
 		}
 	}

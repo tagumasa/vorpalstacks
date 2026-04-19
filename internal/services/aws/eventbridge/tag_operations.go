@@ -30,18 +30,24 @@ func (s *EventsService) TagResource(ctx context.Context, reqCtx *request.Request
 	}
 
 	if strings.HasPrefix(resource, "rule/") {
-		if rule, err := s.getRuleByArn(ctx, reqCtx, resourceArn); err == nil {
-			rule.Tags = tagutil.Apply(rule.Tags, newTags)
-			if err := store.UpdateRule(ctx, rule); err != nil {
+		if _, err := s.getRuleByArn(ctx, reqCtx, resourceArn); err == nil {
+			tagMap := make(map[string]string, len(newTags))
+			for _, t := range newTags {
+				tagMap[t.Key] = t.Value
+			}
+			if err := store.TagStore.Tag(resourceArn, tagMap); err != nil {
 				return nil, err
 			}
 			return response.EmptyResponse(), nil
 		}
 	}
 
-	if eventBus, err := s.getEventBusByArn(ctx, reqCtx, resourceArn); err == nil {
-		eventBus.Tags = tagutil.Apply(eventBus.Tags, newTags)
-		if err := store.UpdateEventBus(ctx, eventBus); err != nil {
+	if _, err := s.getEventBusByArn(ctx, reqCtx, resourceArn); err == nil {
+		tagMap := make(map[string]string, len(newTags))
+		for _, t := range newTags {
+			tagMap[t.Key] = t.Value
+		}
+		if err := store.TagStore.Tag(resourceArn, tagMap); err != nil {
 			return nil, err
 		}
 		return response.EmptyResponse(), nil
@@ -72,18 +78,24 @@ func (s *EventsService) UntagResource(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if strings.HasPrefix(resource, "rule/") {
-		if rule, err := s.getRuleByArn(ctx, reqCtx, resourceArn); err == nil {
-			rule.Tags = tagutil.Remove(rule.Tags, tagKeysMap)
-			if err := store.UpdateRule(ctx, rule); err != nil {
+		if _, err := s.getRuleByArn(ctx, reqCtx, resourceArn); err == nil {
+			keys := make([]string, 0, len(tagKeysMap))
+			for k := range tagKeysMap {
+				keys = append(keys, k)
+			}
+			if err := store.TagStore.Untag(resourceArn, keys); err != nil {
 				return nil, err
 			}
 			return response.EmptyResponse(), nil
 		}
 	}
 
-	if eventBus, err := s.getEventBusByArn(ctx, reqCtx, resourceArn); err == nil {
-		eventBus.Tags = tagutil.Remove(eventBus.Tags, tagKeysMap)
-		if err := store.UpdateEventBus(ctx, eventBus); err != nil {
+	if _, err := s.getEventBusByArn(ctx, reqCtx, resourceArn); err == nil {
+		keys := make([]string, 0, len(tagKeysMap))
+		for k := range tagKeysMap {
+			keys = append(keys, k)
+		}
+		if err := store.TagStore.Untag(resourceArn, keys); err != nil {
 			return nil, err
 		}
 		return response.EmptyResponse(), nil
@@ -99,34 +111,35 @@ func (s *EventsService) ListTagsForResource(ctx context.Context, reqCtx *request
 		return nil, NewValidationException("ResourceARN is required")
 	}
 
-	var tags []map[string]string
-
 	_, _, _, _, resource := svcarn.SplitARN(resourceArn)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
 
-	if strings.HasPrefix(resource, "rule/") {
-		rule, err := s.getRuleByArn(ctx, reqCtx, resourceArn)
-		if err == nil {
-			for _, t := range rule.Tags {
-				tags = append(tags, map[string]string{
-					"Key":   t.Key,
-					"Value": t.Value,
-				})
-			}
-			return map[string]interface{}{"Tags": tags}, nil
+	isRule := strings.HasPrefix(resource, "rule/")
+	if isRule {
+		if _, err := s.getRuleByArn(ctx, reqCtx, resourceArn); err != nil {
+			return nil, NewResourceNotFoundException("Resource not found: " + resourceArn)
+		}
+	} else {
+		if _, err := s.getEventBusByArn(ctx, reqCtx, resourceArn); err != nil {
+			return nil, NewResourceNotFoundException("Resource not found: " + resourceArn)
 		}
 	}
 
-	if eventBus, err := s.getEventBusByArn(ctx, reqCtx, resourceArn); err == nil {
-		for _, t := range eventBus.Tags {
-			tags = append(tags, map[string]string{
-				"Key":   t.Key,
-				"Value": t.Value,
-			})
-		}
-		return map[string]interface{}{"Tags": tags}, nil
+	tagSlice, err := store.TagStore.ListAsSlice(resourceArn)
+	if err != nil {
+		return nil, err
 	}
-
-	return nil, NewResourceNotFoundException("Resource not found: " + resourceArn)
+	tagMaps := make([]map[string]string, 0, len(tagSlice))
+	for _, t := range tagSlice {
+		tagMaps = append(tagMaps, map[string]string{
+			"Key":   t.Key,
+			"Value": t.Value,
+		})
+	}
+	return map[string]interface{}{"Tags": tagMaps}, nil
 }
 
 func (s *EventsService) getEventBusByArn(ctx context.Context, reqCtx *request.RequestContext, arnStr string) (*eventsstore.EventBus, error) {

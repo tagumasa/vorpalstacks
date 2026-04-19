@@ -1,61 +1,40 @@
 package iam
 
 import (
-	"strings"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 const serverCertificateBucketName = "iam_server_certificates"
 
 // ServerCertificateStore provides storage operations for IAM server certificates.
 type ServerCertificateStore struct {
-	*common.BaseStore
+	entityStore[ServerCertificate]
 	arnBuilder *ARNBuilder
-	kl         common.KeyLocker
 }
 
 // NewServerCertificateStore creates a new ServerCertificateStore instance.
 func NewServerCertificateStore(store storage.BasicStorage, accountID string) *ServerCertificateStore {
 	return &ServerCertificateStore{
-		BaseStore:  common.NewBaseStore(store.Bucket(serverCertificateBucketName), "iam"),
-		arnBuilder: NewARNBuilder(accountID),
+		entityStore: newEntityStore[ServerCertificate](store, serverCertificateBucketName),
+		arnBuilder:  NewARNBuilder(accountID),
 	}
-}
-
-// Get retrieves a server certificate by name.
-func (s *ServerCertificateStore) Get(name string) (*ServerCertificate, error) {
-	var cert ServerCertificate
-	if err := s.BaseStore.Get(name, &cert); err != nil {
-		return nil, err
-	}
-	return &cert, nil
 }
 
 // Put stores a server certificate, keyed by its name.
 func (s *ServerCertificateStore) Put(cert *ServerCertificate) error {
 	if cert.Tags == nil {
-		cert.Tags = []Tag{}
+		cert.Tags = []types.Tag{}
 	}
 	return s.BaseStore.Put(cert.ServerCertificateName, cert)
 }
 
-// Delete removes a server certificate by name.
-func (s *ServerCertificateStore) Delete(name string) error {
-	return s.BaseStore.Delete(name)
-}
-
-// Exists reports whether a server certificate exists with the given name.
-func (s *ServerCertificateStore) Exists(name string) bool {
-	return s.BaseStore.Exists(name)
-}
-
 // Create creates a new server certificate with the given name, path, certificate body, and chain.
-func (s *ServerCertificateStore) Create(name, path, certificateBody, certificateChain string, tags []Tag) (*ServerCertificate, error) {
+func (s *ServerCertificateStore) Create(name, path, certificateBody, certificateChain string, tags []types.Tag) (*ServerCertificate, error) {
 	if s.Exists(name) {
-		return nil, ErrServerCertificateAlreadyExists
+		return nil, NewStoreError("create_server_certificate", ErrServerCertificateAlreadyExists)
 	}
 	id, err := GenerateServerCertificateID()
 	if err != nil {
@@ -66,6 +45,7 @@ func (s *ServerCertificateStore) Create(name, path, certificateBody, certificate
 		Path:                  path,
 		ServerCertificateName: name,
 		Arn:                   s.arnBuilder.ServerCertificateARN(name),
+		AccountId:             s.arnBuilder.AccountID(),
 		CreateDate:            time.Now().UTC(),
 		CertificateBody:       certificateBody,
 		CertificateChain:      certificateChain,
@@ -99,22 +79,13 @@ func (s *ServerCertificateStore) Update(name, newPath, newCertificateBody, newCe
 
 // List returns server certificates matching the given path prefix, with pagination support.
 func (s *ServerCertificateStore) List(pathPrefix, marker string, maxItems int) (*ServerCertificateListResult, error) {
-	var filter common.FilterFunc[ServerCertificate]
-	if pathPrefix != "" {
-		filter = func(c *ServerCertificate) bool { return strings.HasPrefix(c.Path, pathPrefix) }
-	}
-	result, err := common.List[ServerCertificate](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
+	items, truncated, nextMarker, err := listEntitiesWithPathPrefix(s.BaseStore, pathPrefix, marker, maxItems, func(c *ServerCertificate) string { return c.Path })
 	if err != nil {
 		return nil, err
 	}
 	return &ServerCertificateListResult{
-		ServerCertificateMetadataList: result.Items,
-		IsTruncated:                   result.IsTruncated,
-		Marker:                        result.NextMarker,
+		ServerCertificateMetadataList: items,
+		IsTruncated:                   truncated,
+		Marker:                        nextMarker,
 	}, nil
-}
-
-// Count returns the total number of server certificates.
-func (s *ServerCertificateStore) Count() int {
-	return s.BaseStore.Count()
 }

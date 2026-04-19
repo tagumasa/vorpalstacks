@@ -112,21 +112,6 @@ func SQSQueueURL(accountID, queueName string) string {
 	return GetBuilder().SQSQueueURL(accountID, queueName)
 }
 
-// S3WebsiteURL constructs the URL for an S3 bucket website using the default builder.
-func S3WebsiteURL(bucket, region string) string {
-	return GetBuilder().S3WebsiteURL(bucket, region)
-}
-
-// APIGatewayInvokeURL constructs the invoke URL for an API Gateway using the default builder.
-func APIGatewayInvokeURL(apiID, stage, region string) string {
-	return GetBuilder().APIGatewayInvokeURL(apiID, stage, region)
-}
-
-// CognitoHostedUIURL constructs the URL for a Cognito hosted UI using the default builder.
-func CognitoHostedUIURL(userPoolDomain, region string) string {
-	return GetBuilder().CognitoHostedUIURL(userPoolDomain, region)
-}
-
 // CloudFrontURL constructs the URL for a CloudFront distribution using the default builder.
 func CloudFrontURL(distributionID string) string {
 	return GetBuilder().CloudFrontURL(distributionID)

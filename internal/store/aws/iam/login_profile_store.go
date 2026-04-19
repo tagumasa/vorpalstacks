@@ -1,10 +1,6 @@
 package iam
 
-// Package iam provides IAM (Identity and Access Management) data store implementations
-// for vorpalstacks.
-
 import (
-	"encoding/json"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -19,28 +15,24 @@ const bcryptCost = 12
 
 // LoginProfileStore manages IAM login profile data in persistent storage.
 type LoginProfileStore struct {
-	bucket storage.Bucket
-	kl     common.KeyLocker
+	*common.BaseStore
+	kl common.KeyLocker
 }
 
 // NewLoginProfileStore creates a new store for IAM login profiles.
 func NewLoginProfileStore(store storage.BasicStorage) *LoginProfileStore {
 	return &LoginProfileStore{
-		bucket: store.Bucket(loginProfileBucketName),
+		BaseStore: common.NewBaseStore(store.Bucket(loginProfileBucketName), "iam"),
 	}
 }
 
 // Get retrieves a login profile by username.
 func (s *LoginProfileStore) Get(userName string) (*LoginProfile, error) {
-	data, err := s.bucket.Get([]byte(userName))
-	if err != nil {
-		return nil, NewStoreError("get_login_profile", err)
-	}
-	if data == nil {
-		return nil, NewStoreError("get_login_profile", ErrLoginProfileNotFound)
-	}
 	var profile LoginProfile
-	if err := json.Unmarshal(data, &profile); err != nil {
+	if err := s.BaseStore.Get(userName, &profile); err != nil {
+		if common.IsNotFound(err) {
+			return nil, NewStoreError("get_login_profile", ErrLoginProfileNotFound)
+		}
 		return nil, NewStoreError("get_login_profile", err)
 	}
 	return &profile, nil
@@ -51,29 +43,17 @@ func (s *LoginProfileStore) Put(profile *LoginProfile) error {
 	if profile.CreateDate.IsZero() {
 		profile.CreateDate = time.Now().UTC()
 	}
-
-	data, err := json.Marshal(profile)
-	if err != nil {
-		return NewStoreError("put_login_profile", err)
-	}
-
-	if err := s.bucket.Put([]byte(profile.UserName), data); err != nil {
-		return NewStoreError("put_login_profile", err)
-	}
-	return nil
+	return s.BaseStore.Put(profile.UserName, profile)
 }
 
 // Delete removes a login profile by username.
 func (s *LoginProfileStore) Delete(userName string) error {
-	if err := s.bucket.Delete([]byte(userName)); err != nil {
-		return NewStoreError("delete_login_profile", err)
-	}
-	return nil
+	return s.BaseStore.Delete(userName)
 }
 
 // Exists checks whether a login profile exists for a user.
 func (s *LoginProfileStore) Exists(userName string) bool {
-	return s.bucket.Has([]byte(userName))
+	return s.BaseStore.Exists(userName)
 }
 
 // Create creates a new login profile for a user.
@@ -152,5 +132,5 @@ func (s *LoginProfileStore) VerifyPassword(userName, password string) (bool, err
 
 // Count returns the total number of login profiles.
 func (s *LoginProfileStore) Count() int {
-	return s.bucket.Count()
+	return s.BaseStore.Count()
 }

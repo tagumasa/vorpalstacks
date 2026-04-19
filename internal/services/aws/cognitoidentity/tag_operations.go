@@ -6,71 +6,73 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
-// TagResource adds tags to a Cognito identity pool resource.
+func cognitoIdentityMapError(err error) error {
+	switch err.(type) {
+	case *tagutil.MissingResourceError, *tagutil.MissingTagsError, *tagutil.MissingTagKeysError:
+		return ErrInvalidParameter
+	}
+	return err
+}
+
+func cognitoIdentityTagConfig(store cognitoidentitystore.CognitoIdentityStoreInterface) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.StandardConfig,
+		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+			if err := store.Tag(resourceKey, tagutil.ToMap(tags)); err != nil {
+				return ErrInternalError
+			}
+			return nil
+		},
+		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
+			if err := store.Untag(resourceKey, tagKeys); err != nil {
+				return ErrInternalError
+			}
+			return nil
+		},
+		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+			m, err := store.List(resourceKey)
+			if err != nil {
+				return nil, ErrInternalError
+			}
+			return tagutil.MapToTags(m), nil
+		},
+		FormatResponse: func(tags []types.Tag, _ string) (interface{}, error) {
+			return map[string]interface{}{"Tags": tagutil.ToMap(tags)}, nil
+		},
+		EmptyResponse: func() (interface{}, error) {
+			return response.EmptyResponse(), nil
+		},
+		MapError: cognitoIdentityMapError,
+	}
+}
+
+// TagResource adds or overwrites tags on a Cognito Identity pool.
 func (s *CognitoIdentityService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	tags := tagutil.GetTags(req.Parameters, tagutil.StandardConfig)
-	if len(tags) == 0 {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.TagResource(resourceArn, tagutil.ToMap(tags)); err != nil {
-		return nil, ErrInternalError
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleTag(ctx, req, cognitoIdentityTagConfig(store))
 }
 
-// UntagResource removes tags from a Cognito identity pool resource.
+// UntagResource removes the specified tags from a Cognito Identity pool.
 func (s *CognitoIdentityService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	tagKeys := tagutil.GetTagKeys(req.Parameters, tagutil.StandardConfig)
-	if len(tagKeys) == 0 {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.UntagResource(resourceArn, tagKeys); err != nil {
-		return nil, ErrInternalError
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleUntag(ctx, req, cognitoIdentityTagConfig(store))
 }
 
-// ListTagsForResource lists tags for a Cognito identity pool resource.
+// ListTagsForResource lists all tags assigned to a Cognito Identity pool.
 func (s *CognitoIdentityService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	tags, err := store.ListTags(resourceArn)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	return map[string]interface{}{
-		"Tags": tags,
-	}, nil
+	return tagutil.HandleList(ctx, req, cognitoIdentityTagConfig(store))
 }

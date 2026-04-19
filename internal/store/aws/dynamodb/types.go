@@ -4,7 +4,7 @@ package dynamodb
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // TableStatus represents the status of a DynamoDB table.
@@ -215,7 +215,7 @@ type Table struct {
 	SSEDescription                *SSEDescription                 `json:"sse_description,omitempty"`
 	TableSizeBytes                int64                           `json:"table_size_bytes"`
 	ItemCount                     int64                           `json:"item_count"`
-	Tags                          []common.Tag                    `json:"tags,omitempty"`
+	Tags                          []types.Tag                     `json:"tags,omitempty"`
 	DeletionProtectionEnabled     bool                            `json:"deletion_protection_enabled,omitempty"`
 	StreamArn                     string                          `json:"stream_arn,omitempty"`
 	LatestStreamLabel             string                          `json:"latest_stream_label,omitempty"`

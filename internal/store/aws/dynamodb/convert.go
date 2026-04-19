@@ -3,7 +3,7 @@ package dynamodb
 import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // GlobalTable conversion
@@ -615,7 +615,7 @@ func protoToSSEType(s pb.SSEType) SSEType {
 	}
 }
 
-func tagsToProto(t []common.Tag) []*pb.Tag {
+func tagsToProto(t []types.Tag) []*pb.Tag {
 	if t == nil {
 		return nil
 	}
@@ -629,13 +629,13 @@ func tagsToProto(t []common.Tag) []*pb.Tag {
 	return result
 }
 
-func protoToTags(t []*pb.Tag) []common.Tag {
+func protoToTags(t []*pb.Tag) []types.Tag {
 	if t == nil {
 		return nil
 	}
-	result := make([]common.Tag, len(t))
+	result := make([]types.Tag, len(t))
 	for i, tag := range t {
-		result[i] = common.Tag{
+		result[i] = types.Tag{
 			Key:   tag.Key,
 			Value: tag.Value,
 		}

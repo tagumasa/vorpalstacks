@@ -1,45 +1,34 @@
 package waf
 
-// Package waf provides WAF (Web Application Firewall) data store implementations
-// for vorpalstacks.
-
 import (
-	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 const ipSetBucketName = "waf_ip_sets"
 
+var ipSetAccessor = wafResourceAccessor[IPSet]{
+	getIDFn:        func(r *IPSet) string { return r.ID },
+	getARNFn:       func(r *IPSet) string { return r.ARN },
+	setARNFn:       func(r *IPSet, arn string) { r.ARN = arn },
+	getLockTokenFn: func(r *IPSet) string { return r.LockToken },
+	setLockTokenFn: func(r *IPSet, lt string) { r.LockToken = lt },
+	setModifiedFn:  func(r *IPSet) { r.ModifiedAt = time.Now() },
+}
+
 // IPSetStore provides storage for WAF IP Sets.
 type IPSetStore struct {
-	*common.BaseStore
-	arnBuilder *ARNBuilder
-	mu         sync.Mutex
+	*ResourceStore[IPSet]
 }
 
 // NewIPSetStore creates a new IP Set store.
 func NewIPSetStore(store storage.BasicStorage, accountId, region string) *IPSetStore {
 	return &IPSetStore{
-		BaseStore:  common.NewBaseStore(store.Bucket(ipSetBucketName), "waf"),
-		arnBuilder: NewARNBuilder(accountId, region),
+		ResourceStore: NewResourceStore[IPSet](store, ipSetBucketName, NewARNBuilder(accountId, region), ipSetAccessor),
 	}
-}
-
-// Get retrieves an IP Set by its ID.
-func (s *IPSetStore) Get(id string) (*IPSet, error) {
-	var ipSet IPSet
-	if err := s.BaseStore.Get(id, &ipSet); err != nil {
-		return nil, NewStoreError("get_ip_set", err)
-	}
-	return &ipSet, nil
-}
-
-// GetByARN retrieves an IP Set by its ARN.
-func (s *IPSetStore) GetByARN(arn string) (*IPSet, error) {
-	return common.FindFirst[IPSet](s.BaseStore, func(i *IPSet) bool { return i.ARN == arn })
 }
 
 // Create creates a new IP Set.
@@ -50,60 +39,24 @@ func (s *IPSetStore) Create(id, name, description, ipAddressVersion string, addr
 		Description:      description,
 		IPAddressVersion: ipAddressVersion,
 		Addresses:        addresses,
-		ARN:              s.arnBuilder.BuildIPSetARN(id),
-		LockToken:        GenerateLockToken(),
+		Tags:             []types.Tag{},
 		CreatedAt:        time.Now(),
 		ModifiedAt:       time.Now(),
 	}
-
-	if err := s.BaseStore.Put(id, ipSet); err != nil {
-		return nil, NewStoreError("create_ip_set", err)
+	ipSet.ARN = s.arnBuilder.BuildIPSetARN(id)
+	SetTimestamps(&ipSetAccessor, ipSet)
+	if err := s.Put(id, ipSet, "create_ip_set"); err != nil {
+		return nil, err
 	}
 	return ipSet, nil
 }
 
 // Update updates an existing IP Set.
 func (s *IPSetStore) Update(id, lockToken string, addresses []string) (*IPSet, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	ipSet, err := s.Get(id)
-	if err != nil {
-		return nil, err
-	}
-
-	if ipSet.LockToken != lockToken {
-		return nil, NewStoreError("update_ip_set", ErrLockTokenMismatch)
-	}
-
-	ipSet.Addresses = addresses
-	ipSet.ModifiedAt = time.Now()
-	ipSet.LockToken = GenerateLockToken()
-
-	if err := s.BaseStore.Put(id, ipSet); err != nil {
-		return nil, NewStoreError("update_ip_set", err)
-	}
-	return ipSet, nil
-}
-
-// Delete deletes an IP Set.
-func (s *IPSetStore) Delete(id, lockToken string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	ipSet, err := s.Get(id)
-	if err != nil {
-		return err
-	}
-
-	if lockToken != "" && ipSet.LockToken != lockToken {
-		return NewStoreError("delete_ip_set", ErrLockTokenMismatch)
-	}
-
-	if err := s.BaseStore.Delete(id); err != nil {
-		return NewStoreError("delete_ip_set", err)
-	}
-	return nil
+	return s.UpdateWithLockToken(id, lockToken, func(ipSet *IPSet) error {
+		ipSet.Addresses = addresses
+		return nil
+	}, "update_ip_set")
 }
 
 // List returns a paginated list of IP Sets.

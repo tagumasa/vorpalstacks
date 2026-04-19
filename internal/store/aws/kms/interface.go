@@ -1,10 +1,8 @@
 package kms
 
-import "vorpalstacks/internal/store/aws/common"
-
 // KeyStoreInterface defines operations for managing KMS keys.
 type KeyStoreInterface interface {
-	Create(keyID string, keyUsage KeyUsage, keySpec KeySpec, description string, origin OriginType, multiRegion bool, tags []common.Tag) (*Key, error)
+	Create(keyID string, keyUsage KeyUsage, keySpec KeySpec, description string, origin OriginType, multiRegion bool) (*Key, error)
 	Get(keyID string) (*Key, error)
 	Update(key *Key) error
 	Delete(keyID string) error

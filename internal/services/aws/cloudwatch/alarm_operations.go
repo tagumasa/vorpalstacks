@@ -10,6 +10,7 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 func getAlarmStringParam(params map[string]interface{}, keys ...string) string {
@@ -243,7 +244,7 @@ func (s *CloudWatchService) PutMetricAlarm(ctx context.Context, reqCtx *request.
 	}
 
 	if len(alarm.Tags) > 0 {
-		if err := store.alarms.TagResource(alarm.ARN, alarm.Tags); err != nil {
+		if err := store.alarms.Tag(alarm.ARN, alarm.Tags); err != nil {
 			return nil, err
 		}
 	}
@@ -510,51 +511,47 @@ func (s *CloudWatchService) SetAlarmState(ctx context.Context, reqCtx *request.R
 	return response.EmptyResponse(), nil
 }
 
+func cwAlarmTagConfig(s *CloudWatchService, reqCtx *request.RequestContext) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.StandardARNConfig,
+		TagFunc: func(_ context.Context, resourceKey string, tags []types.Tag) error {
+			store, err := s.store(reqCtx)
+			if err != nil {
+				return err
+			}
+			return store.alarms.TagFromSlice(resourceKey, tags)
+		},
+		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
+			store, err := s.store(reqCtx)
+			if err != nil {
+				return err
+			}
+			return store.alarms.Untag(resourceKey, tagKeys)
+		},
+		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+			store, err := s.store(reqCtx)
+			if err != nil {
+				return nil, err
+			}
+			return store.alarms.ListAsSlice(resourceKey)
+		},
+		EmptyResponse: func() (interface{}, error) { return response.EmptyResponse(), nil },
+	}
+}
+
 // TagResource adds tags to a CloudWatch alarm.
 func (s *CloudWatchService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := request.GetStringParam(req.Parameters, "ResourceARN")
-	if resourceARN == "" {
-		return nil, ErrInvalidParameter
-	}
-	tags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")
-	if len(tags) == 0 {
-		return nil, ErrInvalidParameter
-	}
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	return response.EmptyResponse(), store.alarms.TagResource(resourceARN, tagutil.ToMap(tags))
+	return tagutil.HandleTag(ctx, req, cwAlarmTagConfig(s, reqCtx))
 }
 
 // UntagResource removes tags from a CloudWatch alarm.
 func (s *CloudWatchService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := request.GetStringParam(req.Parameters, "ResourceARN")
-	if resourceARN == "" {
-		return nil, ErrInvalidParameter
-	}
-	tagKeys := request.GetStringList(req.Parameters, "TagKeys")
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	return response.EmptyResponse(), store.alarms.UntagResource(resourceARN, tagKeys)
+	return tagutil.HandleUntag(ctx, req, cwAlarmTagConfig(s, reqCtx))
 }
 
 // ListTagsForResource lists tags for a CloudWatch alarm.
 func (s *CloudWatchService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := request.GetStringParam(req.Parameters, "ResourceARN")
-	if resourceARN == "" {
-		return nil, ErrInvalidParameter
-	}
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	tags, _ := store.alarms.ListTags(resourceARN)
-	return map[string]interface{}{
-		"Tags": tagutil.MapToResponse(tags),
-	}, nil
+	return tagutil.HandleList(ctx, req, cwAlarmTagConfig(s, reqCtx))
 }
 
 // EnableAlarmActions enables actions for the specified alarms.
@@ -619,13 +616,16 @@ func (s *CloudWatchService) DisableAlarmActions(ctx context.Context, reqCtx *req
 		if alarm != nil && alarm.AlarmType == cwstore.AlarmTypeCompositeAlarm {
 			alarmType = cwstore.AlarmTypeCompositeAlarm
 		}
-		_ = store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
+		if err := store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
 			AlarmName:       name,
 			AlarmType:       alarmType,
 			Timestamp:       time.Now().UTC().UnixMilli(),
 			HistoryItemType: cwstore.HistoryItemTypeAction,
 			HistorySummary:  "Alarm actions disabled",
-		})
+		}); err != nil {
+			logs.Error("Failed to add alarm history entry on DisableAlarmActions",
+				logs.String("alarmName", name), logs.Err(err))
+		}
 	}
 
 	return response.EmptyResponse(), nil
@@ -716,7 +716,7 @@ func (s *CloudWatchService) PutCompositeAlarm(ctx context.Context, reqCtx *reque
 	}
 
 	if len(alarm.Tags) > 0 {
-		if err := store.alarms.TagResource(alarm.ARN, alarm.Tags); err != nil {
+		if err := store.alarms.Tag(alarm.ARN, alarm.Tags); err != nil {
 			return nil, err
 		}
 	}

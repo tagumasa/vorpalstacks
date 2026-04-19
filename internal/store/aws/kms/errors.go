@@ -88,19 +88,9 @@ var (
 	ErrAliasNameReserved = errors.New("alias name cannot begin with alias/aws/")
 )
 
-// StoreError represents a KMS store error.
-type StoreError = common.StoreError
-
 // NewStoreError creates a new KMS store error with the given operation and error.
-func NewStoreError(op string, err error) *StoreError {
+func NewStoreError(op string, err error) *common.StoreError {
 	return common.NewStoreError("kms", op, err)
-}
-
-// NewStoreErrorWithKey creates a new KMS store error with the given operation,
-// key identifier, and error. This is used when the error relates to a specific
-// KMS key or alias.
-func NewStoreErrorWithKey(op, key string, err error) *StoreError {
-	return common.NewStoreErrorWithKey("kms", op, key, err)
 }
 
 // IsNotFound checks if the given error is a "not found" type error for any

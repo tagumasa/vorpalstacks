@@ -81,7 +81,7 @@ func (s *LogsService) store(reqCtx *request.RequestContext) (*logsstore.Store, e
 		if err != nil {
 			return nil, err
 		}
-		store, err := logsstore.NewStore(storage.Bucket("logs-"+reqCtx.GetRegion()), s.accountID, reqCtx.GetRegion(), s.dataPath)
+		store, err := logsstore.NewStore(storage, storage.Bucket("logs-"+reqCtx.GetRegion()), s.accountID, reqCtx.GetRegion(), s.dataPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create CloudWatch Logs store: %w", err)
 		}
@@ -101,7 +101,7 @@ func (s *LogsService) getLogsStoreByRegion(region string) (*logsstore.Store, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to get storage for region %q: %w", region, err)
 	}
-	store, err := logsstore.NewStore(regionStorage.Bucket("logs-"+region), s.accountID, region, s.dataPath)
+	store, err := logsstore.NewStore(regionStorage, regionStorage.Bucket("logs-"+region), s.accountID, region, s.dataPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CloudWatch Logs store: %w", err)
 	}

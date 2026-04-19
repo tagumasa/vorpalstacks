@@ -174,12 +174,6 @@ func IsEventBridgeARN(arn string) bool { return strings.Contains(arn, ":events:"
 // IsStateMachineARN returns true if the ARN is for a Step Functions state machine.
 func IsStateMachineARN(arn string) bool { return strings.Contains(arn, ":states:") }
 
-// ParseLogGroupARN extracts the log group name from a CloudWatch Logs log group ARN.
-// This is an alias for ExtractLogGroupNameFromARN for backward compatibility.
-func ParseLogGroupARN(arn string) string {
-	return ExtractLogGroupNameFromARN(arn)
-}
-
 // ParseTableARN extracts the table name from a DynamoDB table ARN.
 func ParseTableARN(arn string) string {
 	_, _, _, _, resource := SplitARN(arn)

@@ -89,7 +89,7 @@ func (s *CloudTrailService) CreateTrail(ctx context.Context, reqCtx *request.Req
 		for _, t := range tagList {
 			tagMap[t.Key] = t.Value
 		}
-		if err := store.TagResource(created.Name, tagMap); err != nil {
+		if err := store.Tag(created.Name, tagMap); err != nil {
 			return nil, s.mapStoreError(err)
 		}
 	}

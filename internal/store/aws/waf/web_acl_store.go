@@ -1,47 +1,34 @@
 package waf
 
-// Package waf provides WAF (Web Application Firewall) data store implementations
-// for vorpalstacks.
-
 import (
-	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 const webACLBucketName = "waf_web_acls"
 
+var webACLAccessor = wafResourceAccessor[WebACL]{
+	getIDFn:        func(r *WebACL) string { return r.ID },
+	getARNFn:       func(r *WebACL) string { return r.ARN },
+	setARNFn:       func(r *WebACL, arn string) { r.ARN = arn },
+	getLockTokenFn: func(r *WebACL) string { return r.LockToken },
+	setLockTokenFn: func(r *WebACL, lt string) { r.LockToken = lt },
+	setModifiedFn:  func(r *WebACL) { r.ModifiedAt = time.Now() },
+}
+
 // WebACLStore provides storage for WAF Web ACLs.
 type WebACLStore struct {
-	*common.BaseStore
-	arnBuilder *ARNBuilder
-	mu         sync.Mutex
+	*ResourceStore[WebACL]
 }
 
 // NewWebACLStore creates a new WebACLStore instance with the specified storage, account ID, and region.
 func NewWebACLStore(store storage.BasicStorage, accountId, region string) *WebACLStore {
 	return &WebACLStore{
-		BaseStore:  common.NewBaseStore(store.Bucket(webACLBucketName), "waf"),
-		arnBuilder: NewARNBuilder(accountId, region),
+		ResourceStore: NewResourceStore[WebACL](store, webACLBucketName, NewARNBuilder(accountId, region), webACLAccessor),
 	}
-}
-
-// Get retrieves a WAF Web ACL by its ID from the store.
-// Returns the Web ACL or an error if not found.
-func (s *WebACLStore) Get(id string) (*WebACL, error) {
-	var webACL WebACL
-	if err := s.BaseStore.Get(id, &webACL); err != nil {
-		return nil, NewStoreError("get_web_acl", err)
-	}
-	return &webACL, nil
-}
-
-// GetByARN retrieves a WAF Web ACL by its ARN from the store.
-// Returns the Web ACL or an error if not found.
-func (s *WebACLStore) GetByARN(arn string) (*WebACL, error) {
-	return common.FindFirst[WebACL](s.BaseStore, func(w *WebACL) bool { return w.ARN == arn })
 }
 
 // Create creates a new WAF Web ACL in the store.
@@ -56,14 +43,14 @@ func (s *WebACLStore) Create(id, name, description, scope string, capacity int64
 		Rules:            rules,
 		DefaultAction:    defaultAction,
 		VisibilityConfig: visibilityConfig,
-		ARN:              s.arnBuilder.BuildWebACLARN(id, scope),
-		LockToken:        GenerateLockToken(),
+		Tags:             []types.Tag{},
 		CreatedAt:        time.Now(),
 		ModifiedAt:       time.Now(),
 	}
-
-	if err := s.BaseStore.Put(id, webACL); err != nil {
-		return nil, NewStoreError("create_web_acl", err)
+	webACL.ARN = s.arnBuilder.BuildWebACLARN(id, scope)
+	SetTimestamps(&webACLAccessor, webACL)
+	if err := s.Put(id, webACL, "create_web_acl"); err != nil {
+		return nil, err
 	}
 	return webACL, nil
 }
@@ -71,53 +58,16 @@ func (s *WebACLStore) Create(id, name, description, scope string, capacity int64
 // Update updates an existing WAF Web ACL in the store.
 // Returns the updated Web ACL or an error if the Web ACL does not exist or lock token is invalid.
 func (s *WebACLStore) Update(id, lockToken string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig, description string) (*WebACL, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	webACL, err := s.Get(id)
-	if err != nil {
-		return nil, err
-	}
-
-	if webACL.LockToken != lockToken {
-		return nil, NewStoreError("update_web_acl", ErrLockTokenMismatch)
-	}
-
-	webACL.Capacity = capacity
-	webACL.Rules = rules
-	webACL.DefaultAction = defaultAction
-	webACL.VisibilityConfig = visibilityConfig
-	if description != "" {
-		webACL.Description = description
-	}
-	webACL.ModifiedAt = time.Now()
-	webACL.LockToken = GenerateLockToken()
-
-	if err := s.BaseStore.Put(id, webACL); err != nil {
-		return nil, NewStoreError("update_web_acl", err)
-	}
-	return webACL, nil
-}
-
-// Delete deletes a WAF Web ACL by its ID from the store.
-// Returns an error if the Web ACL does not exist or lock token is invalid.
-func (s *WebACLStore) Delete(id, lockToken string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	webACL, err := s.Get(id)
-	if err != nil {
-		return err
-	}
-
-	if lockToken != "" && webACL.LockToken != lockToken {
-		return NewStoreError("delete_web_acl", ErrLockTokenMismatch)
-	}
-
-	if err := s.BaseStore.Delete(id); err != nil {
-		return NewStoreError("delete_web_acl", err)
-	}
-	return nil
+	return s.UpdateWithLockToken(id, lockToken, func(webACL *WebACL) error {
+		webACL.Capacity = capacity
+		webACL.Rules = rules
+		webACL.DefaultAction = defaultAction
+		webACL.VisibilityConfig = visibilityConfig
+		if description != "" {
+			webACL.Description = description
+		}
+		return nil
+	}, "update_web_acl")
 }
 
 // List returns a list of WAF Web ACLs from the store with pagination

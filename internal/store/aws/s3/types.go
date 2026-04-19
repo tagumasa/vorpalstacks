@@ -6,7 +6,7 @@ package s3
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // BucketCannedACL represents a canned ACL for an S3 bucket.
@@ -128,7 +128,7 @@ type Bucket struct {
 	CORSConfiguration         *CORSConfiguration           `json:"cors_configuration,omitempty"`
 	Policy                    string                       `json:"policy,omitempty"`
 	PublicAccessBlock         *PublicAccessBlockConfig     `json:"public_access_block,omitempty"`
-	Tags                      []common.Tag                 `json:"tags,omitempty"`
+	Tags                      []types.Tag                  `json:"tags,omitempty"`
 	NotificationConfiguration *NotificationConfiguration   `json:"notification_configuration,omitempty"`
 	LoggingConfiguration      *LoggingConfiguration        `json:"logging_configuration,omitempty"`
 	OwnershipControls         *OwnershipControls           `json:"ownership_controls,omitempty"`
@@ -166,15 +166,15 @@ type LifecycleRuleFilter struct {
 	ObjectSizeGreaterThan *int64                    `json:"object_size_greater_than,omitempty"`
 	ObjectSizeLessThan    *int64                    `json:"object_size_less_than,omitempty"`
 	And                   *LifecycleRuleAndOperator `json:"and,omitempty"`
-	Tag                   *common.Tag               `json:"tag,omitempty"`
+	Tag                   *types.Tag                `json:"tag,omitempty"`
 }
 
 // LifecycleRuleAndOperator represents a logical AND operator for lifecycle rule filters.
 type LifecycleRuleAndOperator struct {
-	Prefix                string       `json:"prefix,omitempty"`
-	Tags                  []common.Tag `json:"tags,omitempty"`
-	ObjectSizeGreaterThan *int64       `json:"object_size_greater_than,omitempty"`
-	ObjectSizeLessThan    *int64       `json:"object_size_less_than,omitempty"`
+	Prefix                string      `json:"prefix,omitempty"`
+	Tags                  []types.Tag `json:"tags,omitempty"`
+	ObjectSizeGreaterThan *int64      `json:"object_size_greater_than,omitempty"`
+	ObjectSizeLessThan    *int64      `json:"object_size_less_than,omitempty"`
 }
 
 // LifecycleExpiration represents the expiration configuration for a lifecycle rule.
@@ -298,7 +298,7 @@ type Object struct {
 	VersionID            string               `json:"version_id,omitempty"`
 	IsLatest             bool                 `json:"is_latest"`
 	IsDeleteMarker       bool                 `json:"is_delete_marker"`
-	Tags                 []common.Tag         `json:"tags,omitempty"`
+	Tags                 []types.Tag          `json:"tags,omitempty"`
 	ACL                  *AccessControlPolicy `json:"acl,omitempty"`
 	Owner                *ACLOwner            `json:"owner,omitempty"`
 	ObjectLockLegalHold  *ObjectLockLegalHold `json:"object_lock_legal_hold,omitempty"`

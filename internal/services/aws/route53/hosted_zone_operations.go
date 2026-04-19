@@ -109,7 +109,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 
 	if tags := tagutil.ParseTags(req.Parameters, "HostedZoneTags"); len(tags) > 0 {
 		resourceKey := "hostedzone/" + zone.ID
-		if err := st.Tags().TagResource(resourceKey, tags); err != nil {
+		if err := st.Tags().Tag(resourceKey, tags); err != nil {
 			return nil, NewAPIError("TagResource", err.Error(), 500)
 		}
 	}

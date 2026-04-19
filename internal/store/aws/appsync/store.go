@@ -33,6 +33,7 @@ type AppSyncStore struct {
 	domainNamesStore           *common.BaseStore
 	apiAssociationsStore       *common.BaseStore
 	mergedApiAssociationsStore *common.BaseStore
+	TagStore                   *common.TagStore
 	arnBuilder                 *arn.ARNBuilder
 	accountId                  string
 	region                     string
@@ -127,6 +128,7 @@ func NewAppSyncStore(store storage.BasicStorage, accountId, region string) *AppS
 		domainNamesStore:           common.NewBaseStore(store.Bucket(domainNameBucketName(region)), "appsync-domain-names"),
 		apiAssociationsStore:       common.NewBaseStore(store.Bucket(apiAssociationBucketName(region)), "appsync-api-associations"),
 		mergedApiAssociationsStore: common.NewBaseStore(store.Bucket(mergedApiAssociationBucketName(region)), "appsync-merged-api-associations"),
+		TagStore:                   common.NewTagStoreWithRegion(store, "appsync", region),
 		arnBuilder:                 b,
 		accountId:                  accountId,
 		region:                     region,
@@ -266,9 +268,6 @@ func (s *AppSyncStore) UpdateApiById(apiId string, update *Api) (*Api, error) {
 	}
 	existing.WafWebAclArn = update.WafWebAclArn
 	existing.XrayEnabled = update.XrayEnabled
-	if update.Tags != nil {
-		existing.Tags = update.Tags
-	}
 
 	// If the name changed, remove the old entry before saving under the new key.
 	if oldName != existing.Name {
@@ -432,10 +431,19 @@ func (s *AppSyncStore) UpdateChannelNamespaceTags(apiId, name string, mergeFn fu
 		return ErrChannelNamespaceNotFound
 	}
 
-	ns.Tags = mergeFn(ns.Tags)
+	mergedTags := mergeFn(ns.Tags)
+	ns.Tags = mergedTags
 	ns.LastModified = time.Now().UTC()
 
-	return s.channelsStore.Put(key, ns)
+	if err := s.channelsStore.Put(key, ns); err != nil {
+		return err
+	}
+
+	if len(mergedTags) > 0 {
+		_ = s.TagStore.Tag(ns.ChannelNamespaceArn, mergedTags)
+	}
+
+	return nil
 }
 
 // --- GraphQL API (v1) ---
@@ -553,9 +561,6 @@ func (s *AppSyncStore) UpdateGraphqlApiById(apiId string, update *GraphqlApi) (*
 	}
 	if update.ResolverCountLimit > 0 {
 		existing.ResolverCountLimit = update.ResolverCountLimit
-	}
-	if update.Tags != nil {
-		existing.Tags = update.Tags
 	}
 	if update.UserPoolConfig != nil {
 		existing.UserPoolConfig = update.UserPoolConfig

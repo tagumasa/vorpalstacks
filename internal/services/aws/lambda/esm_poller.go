@@ -10,6 +10,7 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
@@ -216,7 +217,7 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 		return
 	}
 
-	result, err := esmStore.List(lambdastore.ListOptions{MaxItems: 1000})
+	result, err := esmStore.List(storecommon.ListOptions{MaxItems: 1000})
 	if err != nil {
 		p.log("failed to list event source mappings", "error", err)
 		return
@@ -392,7 +393,10 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 		_, _, invokeErr := p.invokeLambda(ctx, mapping.FunctionArn, payload)
 		if invokeErr != nil {
 			p.log("lambda invocation failed for Kinesis ESM", "function", fnName, "stream", streamName, "error", invokeErr)
-			_ = p.esmStore.SetState(mapping.UUID, "Enabled", fmt.Sprintf("Last processing result: %s", invokeErr.Error()))
+			if err := p.esmStore.SetState(mapping.UUID, "Enabled", fmt.Sprintf("Last processing result: %s", invokeErr.Error())); err != nil {
+				logs.Warn("esm: failed to set state after Kinesis invocation error",
+					logs.String("mapping", mapping.UUID), logs.Err(err))
+			}
 			continue
 		}
 
@@ -487,7 +491,10 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 
 	if invokeErr != nil {
 		p.log("lambda invocation failed", "function", fnName, "queue", queueName, "error", invokeErr)
-		_ = p.esmStore.SetState(mapping.UUID, "Enabled", fmt.Sprintf("Last processing result: %s", invokeErr.Error()))
+		if err := p.esmStore.SetState(mapping.UUID, "Enabled", fmt.Sprintf("Last processing result: %s", invokeErr.Error())); err != nil {
+			logs.Warn("esm: failed to set state after SQS invocation error",
+				logs.String("mapping", mapping.UUID), logs.Err(err))
+		}
 		return
 	}
 

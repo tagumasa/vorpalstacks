@@ -52,6 +52,16 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 		return mapStoreError(err)
 	}
 
+	if len(api.Tags) > 0 {
+		tagMap := make(map[string]string, len(api.Tags))
+		for k, v := range api.Tags {
+			tagMap[k] = v
+		}
+		if err := store.TagStore.Tag(created.Arn, tagMap); err != nil {
+			return nil, err
+		}
+	}
+
 	return map[string]interface{}{
 		"graphqlApi": graphqlApiToMap(created),
 	}, nil
@@ -75,8 +85,13 @@ func (s *AppSyncService) GetGraphqlApi(ctx context.Context, reqCtx *request.Requ
 		return mapStoreError(err)
 	}
 
+	result := graphqlApiToMap(api)
+	if tagsFromStore, err := store.TagStore.List(api.Arn); err == nil && len(tagsFromStore) > 0 {
+		result["tags"] = tagsFromStore
+	}
+
 	return map[string]interface{}{
-		"graphqlApi": graphqlApiToMap(api),
+		"graphqlApi": result,
 	}, nil
 }
 
@@ -139,9 +154,16 @@ func (s *AppSyncService) DeleteGraphqlApi(ctx context.Context, reqCtx *request.R
 		return nil, NewBadRequestException("apiId is required")
 	}
 
+	api, err := store.GetGraphqlApiById(apiId)
+	if err != nil {
+		return mapStoreError(err)
+	}
+
 	if err := store.DeleteGraphqlApiById(apiId); err != nil {
 		return mapStoreError(err)
 	}
+
+	store.TagStore.Delete(api.Arn)
 
 	s.schemaCache.Delete(apiId)
 

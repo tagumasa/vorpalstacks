@@ -114,7 +114,9 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 		queryInfo.Status = QueryStatusFailed
 		queryInfo.Error = execErr.Error()
 		queryInfo.CompletionTime = time.Now().UTC()
-		_ = stores.queryInfoStore.Put(queryID, queryInfo)
+		if err := stores.queryInfoStore.Put(queryID, queryInfo); err != nil {
+			logs.Warn("Failed to persist failed query info", logs.String("queryId", queryID), logs.Err(err))
+		}
 		return nil, execErr
 	}
 

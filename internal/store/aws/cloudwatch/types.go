@@ -4,7 +4,7 @@ package cloudwatch
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 const (
@@ -34,7 +34,7 @@ type LogGroup struct {
 	LogGroupClass     LogGroupClass `json:"logGroupClass,omitempty"`
 	MetricFilterCount int32         `json:"metricFilterCount,omitempty"`
 	KMSKeyID          string        `json:"kmsKeyId,omitempty"`
-	Tags              []common.Tag  `json:"tags,omitempty"`
+	Tags              []types.Tag   `json:"tags,omitempty"`
 }
 
 // LogStream represents a CloudWatch log stream within a log group.

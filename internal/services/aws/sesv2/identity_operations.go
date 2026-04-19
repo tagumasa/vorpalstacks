@@ -36,7 +36,7 @@ func (s *SESv2Service) CreateEmailIdentity(ctx context.Context, reqCtx *request.
 
 	if len(parsedTags) > 0 {
 		arn := store.BuildIdentityArn(emailIdentity)
-		if err := store.TagResourceFromSlice(arn, parsedTags); err != nil {
+		if err := store.TagFromSlice(arn, parsedTags); err != nil {
 			return nil, err
 		}
 	}

@@ -1,11 +1,7 @@
 // Package cloudfront provides CloudFront storage functionality for vorpalstacks.
 package cloudfront
 
-import (
-	"time"
-
-	"vorpalstacks/internal/store/aws/common"
-)
+import "time"
 
 // Distribution represents an Amazon CloudFront distribution.
 type Distribution struct {
@@ -310,9 +306,6 @@ type QueryStringsConfig struct {
 	QueryStringBehavior string        `json:"queryStringBehavior"`
 	QueryStrings        *QueryStrings `json:"queryStrings"`
 }
-
-// Tag represents a tag for a CloudFront resource.
-type Tag = common.Tag
 
 // DistributionListResult represents the result of listing CloudFront distributions.
 type DistributionListResult struct {

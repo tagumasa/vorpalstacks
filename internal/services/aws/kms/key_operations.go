@@ -86,15 +86,23 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 		description,
 		kmsstore.OriginType(origin),
 		multiRegion,
-		tagList,
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	if len(tagList) > 0 {
+		if err := stores.keys.TagStore.Tag(keyID, tagutil.ToMap(tagList)); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := s.hsmBackend.GenerateKey(keyID, hsm.KeySpec(keySpec)); err != nil {
 		if delErr := stores.keys.Delete(keyID); delErr != nil {
 			logs.Error("Failed to delete key during rollback after HSM GenerateKey failure", logs.Err(delErr), logs.String("keyId", keyID))
+		}
+		if delErr := stores.keys.TagStore.Delete(keyID); delErr != nil {
+			logs.Error("Failed to delete tags during rollback after HSM GenerateKey failure", logs.Err(delErr), logs.String("keyId", keyID))
 		}
 		return nil, err
 	}
@@ -109,6 +117,9 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 		}
 		if delErr := s.hsmBackend.DeleteKey(keyID); delErr != nil {
 			logs.Error("Failed to delete HSM key during rollback", logs.Err(delErr))
+		}
+		if delErr := stores.keys.TagStore.Delete(keyID); delErr != nil {
+			logs.Error("Failed to delete tags during rollback", logs.Err(delErr))
 		}
 		return nil, err
 	}

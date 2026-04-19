@@ -16,8 +16,10 @@ import (
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
+const totpSecretSize = 20
+
 func generateTOTPSecret() (string, error) {
-	secret := make([]byte, 20)
+	secret := make([]byte, totpSecretSize)
 	if _, err := rand.Read(secret); err != nil {
 		return "", fmt.Errorf("failed to generate TOTP secret: %w", err)
 	}

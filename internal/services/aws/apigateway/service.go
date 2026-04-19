@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sync"
 
+	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
@@ -43,7 +44,7 @@ func NewAPIGatewayService(accountID, region string) *APIGatewayService {
 // initialised exactly once before use.
 func (s *APIGatewayService) InitRuntimeServer(
 	storageManager *storage.RegionStorageManager,
-	lambdaInvoker svcapigatewayruntime.LambdaInvoker,
+	lambdaInvoker common.LambdaInvoker,
 	sqsStore sqsstore.SQSStoreInterface,
 	snsStore snsstore.SNSStoreInterface,
 	bus eventbus.Bus,

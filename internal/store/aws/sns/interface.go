@@ -2,6 +2,7 @@ package sns
 
 import (
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // SNSStoreInterface defines operations for managing SNS topics and subscriptions.
@@ -25,9 +26,9 @@ type SNSStoreInterface interface {
 	SetSubscriptionAttributes(subscriptionArn string, attributes map[string]string) error
 	GetSubscriptionAttributes(subscriptionArn string) (map[string]string, error)
 
-	ListTagsForResource(resourceArn string) ([]common.Tag, error)
-	TagResource(resourceArn string, tags []common.Tag) error
-	UntagResource(resourceArn string, tagKeys []string) error
+	ListTagsForResource(resourceArn string) ([]types.Tag, error)
+	Tag(resourceArn string, tags []types.Tag) error
+	Untag(resourceArn string, tagKeys []string) error
 
 	CheckDeduplication(topicArn, messageDeduplicationId string) (string, bool)
 	RecordDeduplication(topicArn, messageDeduplicationId, messageID string)

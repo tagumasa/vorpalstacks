@@ -62,7 +62,7 @@ func (d *awsChunkedDecoder) Read(p []byte) (int, error) {
 	size, err := strconv.ParseInt(sizeStr, 16, 64)
 	if err != nil {
 		d.eof = true
-		return 0, fmt.Errorf("%w: failed to parse chunk size %q: %v", errAwsChunkedInvalidFormat, sizeStr, err)
+		return 0, fmt.Errorf("%w: failed to parse chunk size %q: %w", errAwsChunkedInvalidFormat, sizeStr, err)
 	}
 
 	if size == 0 {

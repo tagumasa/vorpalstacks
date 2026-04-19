@@ -1,7 +1,7 @@
 package route53
 
 import (
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // HostedZoneStoreInterface defines operations for managing Route 53 hosted zones.
@@ -51,8 +51,8 @@ type ChangeStoreInterface interface {
 
 // TagStoreInterface defines operations for managing Route 53 tags.
 type TagStoreInterface interface {
-	ListTagsForResource(resourceKey string) ([]common.Tag, error)
-	TagResource(resourceKey string, tags []common.Tag) error
+	ListTagsForResource(resourceKey string) ([]types.Tag, error)
+	Tag(resourceKey string, tags []types.Tag) error
 	// Raw returns the underlying tag store.
 	Raw() *TagStore
 }

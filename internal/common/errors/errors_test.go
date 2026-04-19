@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
 
 func TestAWSError(t *testing.T) {
@@ -119,7 +121,7 @@ func TestWriteAWSError(t *testing.T) {
 
 func TestXMLErrorResponse(t *testing.T) {
 	t.Run("Structure exists", func(t *testing.T) {
-		resp := XMLErrorResponse{}
+		resp := awserrors.XMLErrorResponse{}
 		resp.Error.Type = "Sender"
 		resp.Error.Code = "AccessDenied"
 		resp.Error.Message = "Access denied"

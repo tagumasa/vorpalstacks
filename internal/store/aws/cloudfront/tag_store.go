@@ -3,6 +3,7 @@ package cloudfront
 import (
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // TagStore provides tag storage operations for CloudFront resources.
@@ -18,13 +19,13 @@ func NewTagStore(store storage.BasicStorage) *TagStore {
 }
 
 // ListTagsForResource returns the tags for a CloudFront resource.
-func (s *TagStore) ListTagsForResource(resourceKey string) ([]common.Tag, error) {
-	return s.TagStore.ListTagsAsSlice(resourceKey)
+func (s *TagStore) ListTagsForResource(resourceKey string) ([]types.Tag, error) {
+	return s.TagStore.ListAsSlice(resourceKey)
 }
 
 // TagResource adds tags to a CloudFront resource.
-func (s *TagStore) TagResource(resourceKey string, tags []common.Tag) error {
-	return s.TagStore.TagResourceFromSlice(resourceKey, tags)
+func (s *TagStore) Tag(resourceKey string, tags []types.Tag) error {
+	return s.TagStore.TagFromSlice(resourceKey, tags)
 }
 
 // Raw returns the underlying tag store.

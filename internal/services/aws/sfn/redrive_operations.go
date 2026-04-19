@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -74,7 +75,9 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	go func() {
 		defer s.asyncWg.Done()
 		defer store.UnregisterExecution(newExecutionArn)
-		_ = executor.ExecuteStateMachine(execCtx, newExec)
+		if err := executor.ExecuteStateMachine(execCtx, newExec); err != nil {
+			logs.Error("sfn: redrive execution failed", logs.String("arn", newExecutionArn), logs.Err(err))
+		}
 	}()
 
 	redriveDate := time.Now().UTC()
@@ -254,7 +257,9 @@ func (s *StepFunctionService) TestState(ctx context.Context, reqCtx *request.Req
 	}
 
 	if len(execCtx.PendingAssign) > 0 && execCtx.VariableScope != nil {
-		_ = execCtx.VariableScope.SetAll(execCtx.PendingAssign)
+		if err := execCtx.VariableScope.SetAll(execCtx.PendingAssign); err != nil {
+			logs.Error("sfn: failed to set variables", logs.Err(err))
+		}
 	}
 
 	result := map[string]interface{}{

@@ -199,7 +199,9 @@ func TestMapToResponse(t *testing.T) {
 	})
 
 	t.Run("empty", func(t *testing.T) {
-		assert.Nil(t, MapToResponse(map[string]string{}))
+		result := MapToResponse(map[string]string{})
+		assert.NotNil(t, result)
+		assert.Empty(t, result)
 	})
 }
 
@@ -294,7 +296,9 @@ func TestConvertToMapSlice(t *testing.T) {
 	assert.Equal(t, "k", result[0]["Key"])
 	assert.Equal(t, "v", result[0]["Value"])
 
-	assert.Nil(t, ConvertToMapSlice(nil))
+	empty := ConvertToMapSlice(nil)
+	assert.NotNil(t, empty)
+	assert.Empty(t, empty)
 }
 
 func TestParseMessageTags(t *testing.T) {

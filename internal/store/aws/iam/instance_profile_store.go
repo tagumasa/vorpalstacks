@@ -1,79 +1,44 @@
 package iam
 
-// Package iam provides IAM (Identity and Access Management) data store implementations
-// for vorpalstacks.
-
 import (
-	"encoding/json"
-	"strings"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 const instanceProfileBucketName = "iam_instance_profiles"
 
 // InstanceProfileStore manages IAM instance profile data in persistent storage.
 type InstanceProfileStore struct {
-	*common.BaseStore
+	entityStore[InstanceProfile]
 	arnBuilder *ARNBuilder
-	kl         common.KeyLocker
 }
 
 // NewInstanceProfileStore creates a new store for IAM instance profiles.
 func NewInstanceProfileStore(store storage.BasicStorage, accountId string) *InstanceProfileStore {
 	return &InstanceProfileStore{
-		BaseStore:  common.NewBaseStore(store.Bucket(instanceProfileBucketName), "iam"),
-		arnBuilder: NewARNBuilder(accountId),
+		entityStore: newEntityStore[InstanceProfile](store, instanceProfileBucketName),
+		arnBuilder:  NewARNBuilder(accountId),
 	}
-}
-
-// Get retrieves an instance profile by its name.
-func (s *InstanceProfileStore) Get(instanceProfileName string) (*InstanceProfile, error) {
-	var profile InstanceProfile
-	if err := s.BaseStore.Get(instanceProfileName, &profile); err != nil {
-		return nil, err
-	}
-	return &profile, nil
 }
 
 // GetByID retrieves an instance profile by its ID.
 func (s *InstanceProfileStore) GetByID(instanceProfileID string) (*InstanceProfile, error) {
-	var found *InstanceProfile
-	err := s.ForEach(func(key string, value []byte) error {
-		var profile InstanceProfile
-		if err := json.Unmarshal(value, &profile); err != nil {
-			return err
-		}
-		if profile.ID == instanceProfileID && found == nil {
-			found = &profile
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("get_instance_profile_by_id", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_instance_profile_by_id", ErrInstanceProfileNotFound)
-	}
-	return found, nil
+	return getEntityByID(s.BaseStore, instanceProfileID, func(p *InstanceProfile) string { return p.ID }, "get_instance_profile_by_id", ErrInstanceProfileNotFound)
 }
 
 // List returns a paginated list of instance profiles.
 func (s *InstanceProfileStore) List(pathPrefix string, marker string, maxItems int) (*InstanceProfileListResult, error) {
-	var filter common.FilterFunc[InstanceProfile]
-	if pathPrefix != "" {
-		filter = func(p *InstanceProfile) bool { return strings.HasPrefix(p.Path, pathPrefix) }
-	}
-	result, err := common.List[InstanceProfile](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
+	items, truncated, nextMarker, err := listEntitiesWithPathPrefix(s.BaseStore, pathPrefix, marker, maxItems, func(p *InstanceProfile) string { return p.Path })
 	if err != nil {
 		return nil, err
 	}
 	return &InstanceProfileListResult{
-		InstanceProfiles: result.Items,
-		IsTruncated:      result.IsTruncated,
-		Marker:           result.NextMarker,
+		InstanceProfiles: items,
+		IsTruncated:      truncated,
+		Marker:           nextMarker,
 	}, nil
 }
 
@@ -88,18 +53,8 @@ func (s *InstanceProfileStore) Put(profile *InstanceProfile) error {
 	return s.BaseStore.Put(profile.InstanceProfileName, profile)
 }
 
-// Delete removes an instance profile by its name.
-func (s *InstanceProfileStore) Delete(instanceProfileName string) error {
-	return s.BaseStore.Delete(instanceProfileName)
-}
-
-// Exists checks whether an instance profile exists.
-func (s *InstanceProfileStore) Exists(instanceProfileName string) bool {
-	return s.BaseStore.Exists(instanceProfileName)
-}
-
 // Create creates a new IAM instance profile.
-func (s *InstanceProfileStore) Create(instanceProfileName, path, accountId string, tags []Tag) (*InstanceProfile, error) {
+func (s *InstanceProfileStore) Create(instanceProfileName, path, accountId string, tags []types.Tag) (*InstanceProfile, error) {
 	if s.Exists(instanceProfileName) {
 		return nil, NewStoreError("create_instance_profile", ErrInstanceProfileAlreadyExists)
 	}
@@ -185,11 +140,6 @@ func (s *InstanceProfileStore) HasRole(instanceProfileName, roleName string) (bo
 		}
 	}
 	return false, nil
-}
-
-// Count returns the total number of instance profiles.
-func (s *InstanceProfileStore) Count() int {
-	return s.BaseStore.Count()
 }
 
 // ListForRole returns all instance profiles that contain a specific role.

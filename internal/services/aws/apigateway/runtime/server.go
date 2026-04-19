@@ -22,17 +22,13 @@ import (
 	"vorpalstacks/internal/utils/aws/arn"
 )
 
-// LambdaInvoker invokes Lambda functions for API Gateway integrations.
-// Deprecated: use common.LambdaInvoker instead.
-type LambdaInvoker = common.LambdaInvoker
-
 // RuntimeServer handles API Gateway runtime requests.
 type RuntimeServer struct {
 	store            *apigatewaystore.RestApiStore
 	usageStore       *apigatewaystore.UsageStore
 	router           *RuntimeRouter
 	executorFactory  *integration.ExecutorFactory
-	lambdaInvoker    LambdaInvoker
+	lambdaInvoker    common.LambdaInvoker
 	validator        *validator.Validator
 	authenticator    *auth.APIKeyAuthenticator
 	lambdaAuthorizer *auth.LambdaAuthorizer
@@ -43,7 +39,7 @@ type RuntimeServer struct {
 // NewRuntimeServer creates a new API Gateway runtime server.
 // Optional SQS/SNS stores for integration targets should be injected via
 // setter methods after construction.
-func NewRuntimeServer(store *apigatewaystore.RestApiStore, usageStore *apigatewaystore.UsageStore, lambdaInvoker LambdaInvoker) *RuntimeServer {
+func NewRuntimeServer(store *apigatewaystore.RestApiStore, usageStore *apigatewaystore.UsageStore, lambdaInvoker common.LambdaInvoker) *RuntimeServer {
 	return &RuntimeServer{
 		store:            store,
 		usageStore:       usageStore,

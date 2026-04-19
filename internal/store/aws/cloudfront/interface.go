@@ -1,6 +1,8 @@
 package cloudfront
 
-import "vorpalstacks/internal/store/aws/common"
+import (
+	"vorpalstacks/internal/utils/aws/types"
+)
 
 // DistributionStoreInterface defines operations for managing CloudFront distributions.
 type DistributionStoreInterface interface {
@@ -35,9 +37,9 @@ type ResponseHeadersPolicyStoreInterface interface {
 
 // TagStoreInterface defines operations for managing CloudFront tags.
 type TagStoreInterface interface {
-	ListTagsForResource(arn string) ([]common.Tag, error)
-	TagResource(arn string, tags []common.Tag) error
-	UntagResource(arn string, tagKeys []string) error
+	ListTagsForResource(arn string) ([]types.Tag, error)
+	Tag(arn string, tags []types.Tag) error
+	Untag(arn string, tagKeys []string) error
 	Raw() *TagStore
 }
 

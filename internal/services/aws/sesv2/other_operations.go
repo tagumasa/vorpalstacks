@@ -284,7 +284,7 @@ func (s *SESv2Service) CreateContactList(ctx context.Context, reqCtx *request.Re
 	}
 
 	if len(parsedTags) > 0 {
-		if err := store.TagResourceFromSlice("ses:contact-list/"+contactListName, parsedTags); err != nil {
+		if err := store.TagFromSlice("ses:contact-list/"+contactListName, parsedTags); err != nil {
 			return nil, err
 		}
 	}

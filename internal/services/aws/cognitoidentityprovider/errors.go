@@ -3,12 +3,12 @@ package cognitoidentityprovider
 import (
 	"net/http"
 
-	"vorpalstacks/internal/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // NewCognitoError creates a new CognitoError with the specified code, message and status code.
-func NewCognitoError(code, message string, statusCode int) *errors.AWSError {
-	return errors.NewAWSError(code, message, statusCode)
+func NewCognitoError(code, message string, statusCode int) *awserrors.AWSError {
+	return awserrors.NewAWSError(code, message, statusCode)
 }
 
 var (

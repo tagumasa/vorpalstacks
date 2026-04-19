@@ -55,12 +55,12 @@ func (s *TimestreamWriteService) CreateDatabase(ctx context.Context, reqCtx *req
 	}
 
 	if tags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"); len(tags) > 0 {
-		if err := st.store.TagResource(db.ARN, tagutil.ToMap(tags)); err != nil {
+		if err := st.store.Tag(db.ARN, tagutil.ToMap(tags)); err != nil {
 			return nil, s.mapStoreError(err)
 		}
 	}
 
-	tags, _ := st.store.ListTags(db.ARN)
+	tags, _ := st.store.List(db.ARN)
 
 	return map[string]interface{}{
 		"Database": s.formatDatabaseResponse(db, tags),
@@ -86,7 +86,7 @@ func (s *TimestreamWriteService) DescribeDatabase(ctx context.Context, reqCtx *r
 		return nil, s.mapStoreError(err)
 	}
 
-	tags, _ := st.store.ListTags(db.ARN)
+	tags, _ := st.store.List(db.ARN)
 
 	return map[string]interface{}{
 		"Database": s.formatDatabaseResponse(db, tags),
@@ -117,7 +117,7 @@ func (s *TimestreamWriteService) ListDatabases(ctx context.Context, reqCtx *requ
 
 	dbList := make([]map[string]interface{}, 0)
 	for _, db := range result.Items {
-		tags, _ := st.store.ListTags(db.ARN)
+		tags, _ := st.store.List(db.ARN)
 		dbList = append(dbList, s.formatDatabaseResponse(db, tags))
 	}
 
@@ -151,7 +151,7 @@ func (s *TimestreamWriteService) UpdateDatabase(ctx context.Context, reqCtx *req
 		return nil, s.mapStoreError(err)
 	}
 
-	tags, _ := st.store.ListTags(db.ARN)
+	tags, _ := st.store.List(db.ARN)
 
 	return map[string]interface{}{
 		"Database": s.formatDatabaseResponse(db, tags),

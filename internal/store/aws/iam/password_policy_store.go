@@ -1,39 +1,31 @@
 package iam
 
-// Package iam provides IAM (Identity and Access Management) data store implementations
-// for vorpalstacks.
-
 import (
-	"encoding/json"
-
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const passwordPolicyBucketName = "iam_password_policy"
 
 // PasswordPolicyStore manages account password policies.
 type PasswordPolicyStore struct {
-	bucket storage.Bucket
+	*common.BaseStore
 }
 
 // NewPasswordPolicyStore creates a new PasswordPolicyStore.
 func NewPasswordPolicyStore(store storage.BasicStorage) *PasswordPolicyStore {
 	return &PasswordPolicyStore{
-		bucket: store.Bucket(passwordPolicyBucketName),
+		BaseStore: common.NewBaseStore(store.Bucket(passwordPolicyBucketName), "iam"),
 	}
 }
 
 // Get retrieves the account password policy.
 func (s *PasswordPolicyStore) Get() (*AccountPasswordPolicy, error) {
-	data, err := s.bucket.Get([]byte("default"))
-	if err != nil {
-		return nil, NewStoreError("get_password_policy", err)
-	}
-	if data == nil {
-		return nil, NewStoreError("get_password_policy", ErrPasswordPolicyNotFound)
-	}
 	var policy AccountPasswordPolicy
-	if err := json.Unmarshal(data, &policy); err != nil {
+	if err := s.BaseStore.Get("default", &policy); err != nil {
+		if common.IsNotFound(err) {
+			return nil, NewStoreError("get_password_policy", ErrPasswordPolicyNotFound)
+		}
 		return nil, NewStoreError("get_password_policy", err)
 	}
 	return &policy, nil
@@ -41,28 +33,17 @@ func (s *PasswordPolicyStore) Get() (*AccountPasswordPolicy, error) {
 
 // Put stores the account password policy.
 func (s *PasswordPolicyStore) Put(policy *AccountPasswordPolicy) error {
-	data, err := json.Marshal(policy)
-	if err != nil {
-		return NewStoreError("put_password_policy", err)
-	}
-
-	if err := s.bucket.Put([]byte("default"), data); err != nil {
-		return NewStoreError("put_password_policy", err)
-	}
-	return nil
+	return s.BaseStore.Put("default", policy)
 }
 
 // Delete removes the account password policy.
 func (s *PasswordPolicyStore) Delete() error {
-	if err := s.bucket.Delete([]byte("default")); err != nil {
-		return NewStoreError("delete_password_policy", err)
-	}
-	return nil
+	return s.BaseStore.Delete("default")
 }
 
 // Exists checks whether a password policy exists.
 func (s *PasswordPolicyStore) Exists() bool {
-	return s.bucket.Has([]byte("default"))
+	return s.BaseStore.Exists("default")
 }
 
 // GetOrDefault returns the password policy or the default if not found.

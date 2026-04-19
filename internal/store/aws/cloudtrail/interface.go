@@ -3,7 +3,7 @@ package cloudtrail
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CloudTrailStoreInterface defines operations for managing CloudTrail trails and events.
@@ -30,9 +30,9 @@ type CloudTrailStoreInterface interface {
 	GetResourcePolicy(resourceARN string) (*ResourcePolicy, error)
 	PutResourcePolicy(resourceARN string, policy string) error
 	DeleteResourcePolicy(resourceARN string) error
-	TagResource(trailName string, tags map[string]string) error
-	UntagResource(trailName string, tagKeys []string) error
-	ListTagsAsSlice(trailName string) ([]common.Tag, error)
+	Tag(trailName string, tags map[string]string) error
+	Untag(trailName string, tagKeys []string) error
+	ListAsSlice(trailName string) ([]types.Tag, error)
 	ListPublicKeys(startTime, endTime *time.Time) ([]*PublicKey, error)
 	GenerateAndStorePublicKey(trailName string) (*PublicKey, error)
 }

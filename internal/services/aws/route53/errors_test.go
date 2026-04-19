@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"testing"
 
-	"vorpalstacks/internal/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 func TestRoute53Errors(t *testing.T) {
 	tests := []struct {
 		name         string
-		err          *errors.AWSError
+		err          *awserrors.AWSError
 		wantCode     string
 		wantMsg      string
 		wantHTTPCode int

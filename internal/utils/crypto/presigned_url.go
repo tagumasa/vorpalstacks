@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"vorpalstacks/internal/common/auth"
 )
 
 func buildCanonicalQueryStringForPresigned(query url.Values) string {
@@ -50,7 +52,7 @@ func buildPresignedStringToSign(amzDate, credentialScope, canonicalRequest strin
 
 // PresignedURLVerifier verifies S3 presigned URL requests.
 type PresignedURLVerifier struct {
-	credentialsProvider CredentialsProvider
+	credentialsProvider auth.CredentialsProvider
 }
 
 // NewPresignedURLVerifier creates a new presigned URL verifier.
@@ -64,7 +66,7 @@ type PresignedURLVerifier struct {
 // Example:
 //
 //	verifier := NewPresignedURLVerifier(credentialsProvider)
-func NewPresignedURLVerifier(provider CredentialsProvider) *PresignedURLVerifier {
+func NewPresignedURLVerifier(provider auth.CredentialsProvider) *PresignedURLVerifier {
 	return &PresignedURLVerifier{
 		credentialsProvider: provider,
 	}

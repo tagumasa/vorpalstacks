@@ -177,7 +177,7 @@ func ParseTagKeysAsSlice(params map[string]interface{}, key string) []string {
 // ToResponse converts tags to response format.
 func ToResponse(tags []types.Tag) []map[string]interface{} {
 	if len(tags) == 0 {
-		return nil
+		return []map[string]interface{}{}
 	}
 	result := make([]map[string]interface{}, len(tags))
 	for i, tag := range tags {
@@ -192,7 +192,7 @@ func ToResponse(tags []types.Tag) []map[string]interface{} {
 // ToResponseWithKeyNames converts tags to response format with custom key names.
 func ToResponseWithKeyNames(tags []types.Tag, keyName, valueName string) []map[string]interface{} {
 	if len(tags) == 0 {
-		return nil
+		return []map[string]interface{}{}
 	}
 	result := make([]map[string]interface{}, len(tags))
 	for i, tag := range tags {
@@ -277,9 +277,6 @@ func MapInterfaceToTags(m map[string]interface{}) []types.Tag {
 
 // MapToResponse converts a tag map to response format.
 func MapToResponse(m map[string]string) []map[string]interface{} {
-	if len(m) == 0 {
-		return nil
-	}
 	result := make([]map[string]interface{}, 0, len(m))
 	for k, v := range m {
 		result = append(result, map[string]interface{}{
@@ -427,15 +424,12 @@ func ParseTagKeysWithKeyName(params map[string]interface{}, listKey, keyName str
 
 // ConvertToMapSlice converts a slice of tags to a slice of string maps.
 func ConvertToMapSlice(tags []types.Tag) []map[string]string {
-	if len(tags) == 0 {
-		return nil
-	}
-	result := make([]map[string]string, len(tags))
-	for i, tag := range tags {
-		result[i] = map[string]string{
+	result := make([]map[string]string, 0, len(tags))
+	for _, tag := range tags {
+		result = append(result, map[string]string{
 			"Key":   tag.Key,
 			"Value": tag.Value,
-		}
+		})
 	}
 	return result
 }

@@ -7,6 +7,8 @@ import (
 	"math/big"
 )
 
+const iamSecretAccessKeyLength = 40
+
 // GenerateIAMSecretAccessKey generates an IAM secret access key.
 //
 // Returns:
@@ -14,7 +16,7 @@ import (
 //   - error: An error if generation fails
 func GenerateIAMSecretAccessKey() (string, error) {
 	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-	result := make([]byte, 40)
+	result := make([]byte, iamSecretAccessKeyLength)
 	for i := range result {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
 		if err != nil {

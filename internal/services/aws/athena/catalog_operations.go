@@ -128,7 +128,7 @@ func (s *AthenaService) CreateDataCatalog(ctx context.Context, reqCtx *request.R
 	}
 
 	if len(tags) > 0 {
-		if err := stores.dataCatalogStore.TagResource(name, tags); err != nil {
+		if err := stores.dataCatalogStore.Tag(name, tags); err != nil {
 			logs.Warn("failed to tag data catalog", logs.String("catalog", name), logs.Err(err))
 		}
 	}

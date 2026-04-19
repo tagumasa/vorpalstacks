@@ -9,7 +9,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	store "vorpalstacks/internal/store/aws/apigateway"
-	storecommon "vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateRequestValidator creates a new request validator in API Gateway.
@@ -342,7 +342,7 @@ func (s *APIGatewayService) TagResource(ctx context.Context, reqCtx *request.Req
 		}
 	}
 
-	if err := stores.restApis.TagResource(apiId, tags); err != nil {
+	if err := stores.restApis.Tag(apiId, tags); err != nil {
 		return nil, err
 	}
 
@@ -380,7 +380,7 @@ func (s *APIGatewayService) UntagResource(ctx context.Context, reqCtx *request.R
 		}
 	}
 
-	if err := stores.restApis.UntagResource(apiId, keys); err != nil {
+	if err := stores.restApis.Untag(apiId, keys); err != nil {
 		return nil, err
 	}
 
@@ -401,7 +401,7 @@ func (s *APIGatewayService) ListTagsForResource(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	var tags []storecommon.Tag
+	var tags []types.Tag
 	if strings.Contains(arnStr, "/stages/") {
 		stageName := extractResourceFromArn(arnStr, "/stages/")
 		if stageName != "" {

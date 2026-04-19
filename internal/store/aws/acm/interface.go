@@ -1,7 +1,7 @@
 package acm
 
 import (
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CertificateStoreInterface defines operations for managing ACM certificates.
@@ -14,8 +14,8 @@ type CertificateStoreInterface interface {
 	Update(cert *Certificate) error
 	Delete(arn string) error
 	Exists(arn string) bool
-	GetTags(arn string) ([]common.Tag, error)
-	AddTags(arn string, tags []common.Tag) error
+	GetTags(arn string) ([]types.Tag, error)
+	AddTags(arn string, tags []types.Tag) error
 	RemoveTags(arn string, tagKeys []string) error
 	GetAccountConfiguration(accountID, region string) (*AccountConfiguration, error)
 	PutAccountConfiguration(accountID, region string, config *AccountConfiguration) error

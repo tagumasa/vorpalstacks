@@ -7,6 +7,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // WriteRecords writes time-series records to a Timestream table.
@@ -146,72 +147,65 @@ func (s *TimestreamWriteService) formatRejectedRecords(records []tsstore.Rejecte
 	return result
 }
 
+func (s *TimestreamWriteService) tagHandlerConfig(st *tsWriteStores) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.TagOperationConfig{
+			ResourceParam:      "ResourceARN",
+			TagsParam:          "Tags",
+			TagKeysParam:       "TagKeys",
+			TagKeyName:         "Key",
+			TagValueName:       "Value",
+			RequireTags:        true,
+			RequireTagKeys:     true,
+			RequireResource:    true,
+			CaseInsensitiveRes: true,
+		},
+		TagFunc: func(_ context.Context, resourceKey string, tagSlice []types.Tag) error {
+			return st.store.TagFromSlice(resourceKey, tagSlice)
+		},
+		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
+			return st.store.Untag(resourceKey, tagKeys)
+		},
+		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+			return st.store.ListAsSlice(resourceKey)
+		},
+		FormatResponse: func(tagSlice []types.Tag, _ string) (interface{}, error) {
+			return map[string]interface{}{
+				"Tags": tagutil.MapToResponse(tagutil.ToMap(tagSlice)),
+			}, nil
+		},
+		EmptyResponse: func() (interface{}, error) {
+			return response.EmptyResponse(), nil
+		},
+		MapError: s.mapStoreError,
+	}
+}
+
 // TagResource adds tags to a Timestream resource.
 func (s *TimestreamWriteService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
-	if resourceARN == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	parsedTags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")
-	tagMap := tagutil.ToMap(parsedTags)
-	if len(tagMap) == 0 {
-		return nil, ErrInvalidParameter
-	}
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := st.store.TagResource(resourceARN, tagMap); err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleTag(ctx, req, s.tagHandlerConfig(st))
 }
 
 // UntagResource removes tags from a Timestream resource.
 func (s *TimestreamWriteService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
-	if resourceARN == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	tagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys")
-	if len(tagKeys) == 0 {
-		return nil, ErrInvalidParameter
-	}
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := st.store.UntagResource(resourceARN, tagKeys); err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleUntag(ctx, req, s.tagHandlerConfig(st))
 }
 
 // ListTagsForResource returns the tags for a Timestream resource.
 func (s *TimestreamWriteService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
-	if resourceARN == "" {
-		return nil, ErrInvalidParameter
-	}
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	tagMap, err := st.store.ListTags(resourceARN)
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"Tags": tagutil.MapToResponse(tagMap),
-	}, nil
+	return tagutil.HandleList(ctx, req, s.tagHandlerConfig(st))
 }
 
 func getIntFromMap(m map[string]interface{}, key string) int64 {

@@ -125,39 +125,8 @@ var (
 	ErrServiceSpecificCredentialNotFound = errors.New("service-specific credential not found")
 )
 
-// StoreError represents an IAM store operation error, extending the common
-// store error type with IAM-specific context.
-type StoreError = common.StoreError
-
 // NewStoreError creates a new IAM store error with the given operation and error.
 // This is a convenience constructor that wraps the common store error functionality.
-func NewStoreError(op string, err error) *StoreError {
+func NewStoreError(op string, err error) *common.StoreError {
 	return common.NewStoreError("iam", op, err)
-}
-
-// NewStoreErrorWithKey creates a new IAM store error with the given operation,
-// key identifier, and error. This is used when the error relates to a specific
-// IAM resource identifier.
-func NewStoreErrorWithKey(op, key string, err error) *StoreError {
-	return common.NewStoreErrorWithKey("iam", op, key, err)
-}
-
-// IsNotFound checks if the given error is a "not found" type error for any
-// IAM resource type. This includes user, access key, group, role, policy,
-// and instance profile not found errors.
-func IsNotFound(err error) bool {
-	return common.IsNotFound(err) ||
-		errors.Is(err, ErrUserNotFound) ||
-		errors.Is(err, ErrAccessKeyNotFound) ||
-		errors.Is(err, ErrGroupNotFound) ||
-		errors.Is(err, ErrRoleNotFound) ||
-		errors.Is(err, ErrPolicyNotFound) ||
-		errors.Is(err, ErrInstanceProfileNotFound) ||
-		errors.Is(err, ErrMFADeviceNotFound) ||
-		errors.Is(err, ErrServerCertificateNotFound) ||
-		errors.Is(err, ErrSAMLProviderNotFound) ||
-		errors.Is(err, ErrOpenIDConnectProviderNotFound) ||
-		errors.Is(err, ErrSigningCertificateNotFound) ||
-		errors.Is(err, ErrSSHPublicKeyNotFound) ||
-		errors.Is(err, ErrServiceSpecificCredentialNotFound)
 }

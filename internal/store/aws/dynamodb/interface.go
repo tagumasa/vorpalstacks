@@ -6,6 +6,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // TableStoreInterface defines operations for managing DynamoDB tables.
@@ -20,7 +21,7 @@ type TableStoreInterface interface {
 		gsi []*GlobalSecondaryIndex,
 		lsi []*LocalSecondaryIndex,
 		streamSpec *StreamSpecification,
-		tags []common.Tag,
+		tags []types.Tag,
 		deletionProtectionEnabled bool,
 	) (*Table, error)
 	Put(table *Table) error
@@ -29,7 +30,7 @@ type TableStoreInterface interface {
 	List(marker string, limit int) ([]*Table, string, error)
 	UpdateItemCount(name string, delta int64) error
 	UpdateTableSize(name string, delta int64) error
-	SetTags(name string, tags []common.Tag) error
+	Tags() *common.TagStore
 	ARNBuilder() *svcarn.DynamoDBBuilder
 	GetPartitionKey(table *Table) string
 	GetSortKey(table *Table) string

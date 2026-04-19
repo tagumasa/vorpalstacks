@@ -4,7 +4,6 @@ package lambda
 import (
 	"context"
 	"vorpalstacks/internal/common/request"
-	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/common"
 )
 
@@ -22,6 +21,12 @@ func (s *LambdaService) GetFunction(ctx context.Context, reqCtx *request.Request
 		config = s.toFunctionConfiguration(function)
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	tags, _ := store.Functions.TagStore.List(function.FunctionName)
+
 	return map[string]interface{}{
 		"Configuration": config,
 		"Code": map[string]interface{}{
@@ -29,7 +34,7 @@ func (s *LambdaService) GetFunction(ctx context.Context, reqCtx *request.Request
 			"RepositoryType": "S3",
 			"ImageUri":       function.ImageUri,
 		},
-		"Tags": tagutil.ToMap(function.Tags),
+		"Tags": tags,
 	}, nil
 }
 

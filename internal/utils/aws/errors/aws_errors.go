@@ -58,7 +58,9 @@ func (e *AWSError) ToXML() string {
 	buf.WriteString(xml.Header)
 	enc := xml.NewEncoder(&buf)
 	enc.Indent("", "  ")
-	_ = enc.Encode(resp)
+	if err := enc.Encode(resp); err != nil {
+		logs.Error("Failed to encode XML error response", logs.String("code", e.Code), logs.Err(err))
+	}
 	return buf.String()
 }
 
@@ -223,27 +225,6 @@ func WriteCustomJSONError(w http.ResponseWriter, err CustomJSONMarshaler, conten
 	w.WriteHeader(err.GetHTTPStatusCode())
 	if _, writeErr := w.Write([]byte(err.ToJSON())); writeErr != nil {
 		logs.Error("Failed to write JSON error response", logs.Err(writeErr))
-	}
-}
-
-// WriteError writes an AWS error to the response writer with JSON format.
-func WriteError(w http.ResponseWriter, err *AWSError, jsonFormat bool) {
-	if contentType := w.Header().Get("Content-Type"); contentType == "application/xml" || contentType == "text/xml" || contentType == "application/x-www-form-urlencoded" {
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(err.HTTPStatus)
-		if _, writeErr := w.Write([]byte(err.ToXML())); writeErr != nil {
-			logs.Error("Failed to write XML error response", logs.Err(writeErr))
-		}
-	} else {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(err.HTTPStatus)
-		format := ""
-		if jsonFormat {
-			format = "formatted"
-		}
-		if _, writeErr := w.Write([]byte(err.ToJSONWithFormat(format))); writeErr != nil {
-			logs.Error("Failed to write JSON error response", logs.Err(writeErr))
-		}
 	}
 }
 

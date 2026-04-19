@@ -6,7 +6,6 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
-	"hash"
 )
 
 // MD5Hash computes the MD5 hash of the given data.
@@ -24,17 +23,6 @@ func SHA256Hash(data []byte) string {
 // SHA256HashString computes the SHA-256 hash of the given string and returns it as a hex string.
 func SHA256HashString(data string) string {
 	return SHA256Hash([]byte(data))
-}
-
-// SHA256HashRaw computes the SHA-256 hash of the given data and returns the raw bytes.
-func SHA256HashRaw(data []byte) []byte {
-	hash := sha256.Sum256(data)
-	return hash[:]
-}
-
-// NewSHA256Hash creates a new SHA-256 hash writer.
-func NewSHA256Hash() hash.Hash {
-	return sha256.New()
 }
 
 // HMACSHA256 computes the HMAC-SHA256 of the given data using the provided key.

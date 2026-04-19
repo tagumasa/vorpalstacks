@@ -18,6 +18,8 @@ import (
 	gnata "github.com/recolabs/gnata"
 )
 
+const uuidSize = 16
+
 // awsCustomFuncs registers AWS-specific custom functions for JSONata evaluation.
 // These provide additional functionality beyond the standard JSONata library:
 // $partition, $range, $hash, $random, $uuid, and $parse.
@@ -144,7 +146,7 @@ func NormalizeResult(v interface{}) interface{} {
 }
 
 func awsUUIDFunc(args []interface{}, focus interface{}) (interface{}, error) {
-	uuid := make([]byte, 16)
+	uuid := make([]byte, uuidSize)
 	if _, err := rand.Read(uuid); err != nil {
 		return nil, err
 	}

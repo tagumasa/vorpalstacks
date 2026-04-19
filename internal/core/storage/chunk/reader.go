@@ -64,7 +64,7 @@ func ReadHeader(chunkPath string) (*Header, error) {
 	if isZstdCompressed(data) {
 		decompressed, err := decompressZstd(data)
 		if err != nil {
-			return nil, fmt.Errorf("%w: zstd decompression failed: %v", ErrCorruptChunk, err)
+			return nil, fmt.Errorf("%w: zstd decompression failed: %w", ErrCorruptChunk, err)
 		}
 		data = decompressed
 	}
@@ -92,7 +92,7 @@ func (r *Reader) Read(chunkPath string) ([]Entry, error) {
 
 	entries, err := Decode(data)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrCorruptChunk, err)
+		return nil, fmt.Errorf("%w: %w", ErrCorruptChunk, err)
 	}
 
 	return entries, nil
@@ -104,7 +104,7 @@ func Decode(data []byte) ([]Entry, error) {
 	if fileFullyCompressed {
 		decompressed, err := decompressZstd(data)
 		if err != nil {
-			return nil, fmt.Errorf("%w: zstd decompression failed: %v", ErrCorruptChunk, err)
+			return nil, fmt.Errorf("%w: zstd decompression failed: %w", ErrCorruptChunk, err)
 		}
 		data = decompressed
 	}
@@ -131,13 +131,13 @@ func Decode(data []byte) ([]Entry, error) {
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("%w: decompression failed: %v", ErrCorruptChunk, err)
+			return nil, fmt.Errorf("%w: decompression failed: %w", ErrCorruptChunk, err)
 		}
 	}
 
 	entries, err := parseEntries(bytes.NewReader(decompressed), header.EntryCount)
 	if err != nil {
-		return nil, fmt.Errorf("%w: parse failed: %v", ErrCorruptChunk, err)
+		return nil, fmt.Errorf("%w: parse failed: %w", ErrCorruptChunk, err)
 	}
 
 	return entries, nil
@@ -158,7 +158,7 @@ func readHeader(data []byte) (*Header, error) {
 	header := &Header{}
 	buf := bytes.NewReader(data[:HeaderSize()])
 	if err := binary.Read(buf, binary.BigEndian, header); err != nil {
-		return nil, fmt.Errorf("%w: failed to read header: %v", ErrInvalidChunkFile, err)
+		return nil, fmt.Errorf("%w: failed to read header: %w", ErrInvalidChunkFile, err)
 	}
 
 	if !ValidateHeader(header) {

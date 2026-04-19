@@ -4,7 +4,7 @@ package apigateway
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // RestApi represents an API Gateway REST API.
@@ -20,7 +20,7 @@ type RestApi struct {
 	ApiKeySource           string                       `json:"api_key_source,omitempty"`
 	EndpointConfiguration  *EndpointConfiguration       `json:"endpoint_configuration,omitempty"`
 	Policy                 string                       `json:"policy,omitempty"`
-	Tags                   []common.Tag                 `json:"tags,omitempty"`
+	Tags                   []types.Tag                  `json:"tags,omitempty"`
 	Resources              map[string]*Resource         `json:"resources,omitempty"`
 	Deployments            map[string]*Deployment       `json:"deployments,omitempty"`
 	Stages                 map[string]*Stage            `json:"stages,omitempty"`
@@ -131,7 +131,7 @@ type Stage struct {
 	CreatedDate          time.Time                 `json:"created_date"`
 	LastUpdatedDate      time.Time                 `json:"last_updated_date"`
 	WebAclArn            string                    `json:"web_acl_arn,omitempty"`
-	Tags                 []common.Tag              `json:"tags,omitempty"`
+	Tags                 []types.Tag               `json:"tags,omitempty"`
 }
 
 // MethodSetting defines the method-level settings for caching and throttling.
@@ -198,28 +198,28 @@ type Authorizer struct {
 
 // ApiKey represents an API key for API Gateway.
 type ApiKey struct {
-	Id              string       `json:"id"`
-	Value           string       `json:"value"`
-	Name            string       `json:"name"`
-	Description     string       `json:"description,omitempty"`
-	Enabled         bool         `json:"enabled"`
-	CreatedDate     time.Time    `json:"created_date"`
-	LastUpdatedDate time.Time    `json:"last_updated_date"`
-	StageKeys       []string     `json:"stage_keys,omitempty"`
-	Tags            []common.Tag `json:"tags,omitempty"`
-	CustomerId      string       `json:"customer_id,omitempty"`
+	Id              string      `json:"id"`
+	Value           string      `json:"value"`
+	Name            string      `json:"name"`
+	Description     string      `json:"description,omitempty"`
+	Enabled         bool        `json:"enabled"`
+	CreatedDate     time.Time   `json:"created_date"`
+	LastUpdatedDate time.Time   `json:"last_updated_date"`
+	StageKeys       []string    `json:"stage_keys,omitempty"`
+	Tags            []types.Tag `json:"tags,omitempty"`
+	CustomerId      string      `json:"customer_id,omitempty"`
 }
 
 // UsagePlan defines a usage plan for API keys.
 type UsagePlan struct {
-	Id          string       `json:"id"`
-	Name        string       `json:"name"`
-	Description string       `json:"description,omitempty"`
-	ApiStages   []ApiStage   `json:"api_stages,omitempty"`
-	Quota       *Quota       `json:"quota,omitempty"`
-	Throttle    *Throttle    `json:"throttle,omitempty"`
-	Tags        []common.Tag `json:"tags,omitempty"`
-	ProductCode string       `json:"product_code,omitempty"`
+	Id          string      `json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description,omitempty"`
+	ApiStages   []ApiStage  `json:"api_stages,omitempty"`
+	Quota       *Quota      `json:"quota,omitempty"`
+	Throttle    *Throttle   `json:"throttle,omitempty"`
+	Tags        []types.Tag `json:"tags,omitempty"`
+	ProductCode string      `json:"product_code,omitempty"`
 }
 
 // ApiStage defines an API stage within a usage plan.
@@ -268,7 +268,7 @@ type DomainName struct {
 	DomainNameStatus         string                 `json:"domain_name_status,omitempty"`
 	DomainNameStatusMessage  string                 `json:"domain_name_status_message,omitempty"`
 	SecurityPolicy           string                 `json:"security_policy,omitempty"`
-	Tags                     []common.Tag           `json:"tags,omitempty"`
+	Tags                     []types.Tag            `json:"tags,omitempty"`
 }
 
 // BasePathMapping maps a base path to an API Gateway API.

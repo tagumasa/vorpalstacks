@@ -22,11 +22,8 @@ var (
 	ErrInvalidState = errors.New("invalid state")
 )
 
-// StoreError represents an error in the ACM store.
-type StoreError = common.StoreError
-
 // NewStoreError creates a new store error for ACM operations.
-func NewStoreError(op string, err error) *StoreError {
+func NewStoreError(op string, err error) *common.StoreError {
 	return common.NewStoreError("acm", op, err)
 }
 

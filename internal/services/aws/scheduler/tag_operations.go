@@ -3,91 +3,75 @@ package scheduler
 import (
 	"context"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
+	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
-// TagResource adds tags to an EventBridge Scheduler schedule.
-func (s *SchedulerService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		if name := request.GetStringParam(req.Parameters, "Name"); name != "" {
-			store, err := s.store(reqCtx)
-			if err != nil {
-				return nil, err
+func schedulerMapError(err error) error {
+	switch err.(type) {
+	case *tagutil.MissingResourceError, *tagutil.MissingTagsError, *tagutil.MissingTagKeysError:
+		return ErrValidation
+	}
+	return err
+}
+
+func schedulerTagConfig(store *schedulerstore.SchedulerStore) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.StandardConfig,
+		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+			if err := store.TagFromSlice(resourceKey, tags); err != nil {
+				logs.Debug("Failed to tag resource", logs.String("arn", resourceKey), logs.String("error", err.Error()))
+				return ErrInternalServer
 			}
-			resourceArn = store.BuildScheduleARNFromName(name)
-		}
+			return nil
+		},
+		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
+			if err := store.Untag(resourceKey, tagKeys); err != nil {
+				logs.Debug("Failed to untag resource", logs.String("arn", resourceKey), logs.String("error", err.Error()))
+				return ErrInternalServer
+			}
+			return nil
+		},
+		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+			tags, err := store.ListAsSlice(resourceKey)
+			if err != nil {
+				logs.Debug("Failed to list tags", logs.String("arn", resourceKey), logs.String("error", err.Error()))
+				return nil, ErrInternalServer
+			}
+			return tags, nil
+		},
+		EmptyResponse: func() (interface{}, error) { return response.EmptyResponse(), nil },
+		MapError:      schedulerMapError,
 	}
+}
 
-	if resourceArn == "" {
-		return nil, ErrValidation
-	}
-
-	tags := tagutil.GetTags(req.Parameters, tagutil.StandardConfig)
-	if len(tags) == 0 {
-		return nil, ErrValidation
-	}
-
+// TagResource adds or overwrites tags on an EventBridge Scheduler schedule.
+func (s *SchedulerService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := store.TagResourceFromSlice(resourceArn, tags); err != nil {
-		logs.Debug("Failed to tag resource", logs.String("arn", resourceArn), logs.String("error", err.Error()))
-		return nil, ErrInternalServer
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleTag(ctx, req, schedulerTagConfig(store))
 }
 
-// UntagResource removes tags from an EventBridge Scheduler schedule.
+// UntagResource removes the specified tags from an EventBridge Scheduler schedule.
 func (s *SchedulerService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, ErrValidation
-	}
-
-	tagKeys := tagutil.GetTagKeys(req.Parameters, tagutil.StandardConfig)
-	if len(tagKeys) == 0 {
-		return nil, ErrValidation
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := store.UntagResource(resourceArn, tagKeys); err != nil {
-		logs.Debug("Failed to untag resource", logs.String("arn", resourceArn), logs.String("error", err.Error()))
-		return nil, ErrInternalServer
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleUntag(ctx, req, schedulerTagConfig(store))
 }
 
-// ListTagsForResource lists tags for an EventBridge Scheduler schedule.
+// ListTagsForResource lists all tags assigned to an EventBridge Scheduler schedule.
 func (s *SchedulerService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := tagutil.GetResourceKey(req.Parameters, tagutil.StandardConfig)
-	if resourceArn == "" {
-		return nil, ErrValidation
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	tagList, err := store.ListTagsAsSlice(resourceArn)
-	if err != nil {
-		logs.Debug("Failed to list tags", logs.String("arn", resourceArn), logs.String("error", err.Error()))
-		return nil, ErrInternalServer
-	}
-
-	return map[string]interface{}{
-		"Tags": tagutil.ToResponse(tagList),
-	}, nil
+	return tagutil.HandleList(ctx, req, schedulerTagConfig(store))
 }

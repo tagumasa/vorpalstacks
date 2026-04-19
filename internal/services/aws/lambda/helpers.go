@@ -8,7 +8,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	"vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 var functionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`)
@@ -265,11 +264,6 @@ func deepCopyFunction(fn *lambdastore.Function) *lambdastore.Function {
 	if len(fn.Layers) > 0 {
 		result.Layers = make([]lambdastore.LayerReference, len(fn.Layers))
 		copy(result.Layers, fn.Layers)
-	}
-
-	if len(fn.Tags) > 0 {
-		result.Tags = make([]types.Tag, len(fn.Tags))
-		copy(result.Tags, fn.Tags)
 	}
 
 	if fn.SnapStart != nil {

@@ -12,10 +12,6 @@ import (
 	sqs "vorpalstacks/internal/store/aws/sqs"
 )
 
-// LambdaInvoker invokes Lambda functions for API Gateway integrations.
-// Deprecated: use common.LambdaInvoker instead.
-type LambdaInvoker = common.LambdaInvoker
-
 // IntegrationRequest represents an API Gateway integration request.
 type IntegrationRequest struct {
 	Method                      string
@@ -61,7 +57,7 @@ type Executor interface {
 
 // ExecutorFactory creates integration executors.
 type ExecutorFactory struct {
-	lambdaInvoker LambdaInvoker
+	lambdaInvoker common.LambdaInvoker
 	sqsStore      sqs.SQSStoreInterface
 	snsStore      sns.SNSStoreInterface
 	accountID     string
@@ -71,14 +67,14 @@ type ExecutorFactory struct {
 }
 
 // NewExecutorFactory creates a new executor factory.
-func NewExecutorFactory(lambdaInvoker LambdaInvoker) *ExecutorFactory {
+func NewExecutorFactory(lambdaInvoker common.LambdaInvoker) *ExecutorFactory {
 	return &ExecutorFactory{
 		lambdaInvoker: lambdaInvoker,
 	}
 }
 
 // NewExecutorFactoryWithStores creates a new executor factory with SQS and SNS stores.
-func NewExecutorFactoryWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string) *ExecutorFactory {
+func NewExecutorFactoryWithStores(lambdaInvoker common.LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string) *ExecutorFactory {
 	return &ExecutorFactory{
 		lambdaInvoker: lambdaInvoker,
 		sqsStore:      sqsStore,

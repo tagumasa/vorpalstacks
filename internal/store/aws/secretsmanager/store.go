@@ -113,7 +113,7 @@ func (s *SecretStore) CreateSecret(secret *Secret) (*Secret, error) {
 	}
 
 	if len(secret.Tags) > 0 {
-		if err := s.TagStore.TagResource(key, secret.Tags); err != nil {
+		if err := s.TagStore.Tag(key, secret.Tags); err != nil {
 			return nil, err
 		}
 	}
@@ -132,7 +132,7 @@ func (s *SecretStore) GetSecret(name string) (*Secret, error) {
 	if secret.DeletedDate != nil || secret.ScheduledDeletionDate != nil {
 		return nil, ErrSecretNotFound
 	}
-	tags, err := s.TagStore.ListTags(key)
+	tags, err := s.TagStore.List(key)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (s *SecretStore) GetSecretByARN(arn string) (*Secret, error) {
 		return nil, ErrSecretNotFound
 	}
 	key := s.buildSecretKey(found.Name)
-	tags, err := s.TagStore.ListTags(key)
+	tags, err := s.TagStore.List(key)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func (s *SecretStore) GetSecretForMetadata(name string) (*Secret, error) {
 	if err := s.BaseStore.Get(key, &secret); err != nil {
 		return nil, ErrSecretNotFound
 	}
-	tags, err := s.TagStore.ListTags(key)
+	tags, err := s.TagStore.List(key)
 	if err != nil {
 		return nil, err
 	}
@@ -352,19 +352,19 @@ func (s *SecretStore) GetSecretVersionByStage(name, stage string) (*SecretVersio
 // ListSecretTags retrieves the tags associated with a secret.
 func (s *SecretStore) ListSecretTags(name string) (map[string]string, error) {
 	key := s.buildSecretKey(name)
-	return s.TagStore.ListTags(key)
+	return s.TagStore.List(key)
 }
 
 // TagSecret adds tags to a secret.
 func (s *SecretStore) TagSecret(name string, tags map[string]string) error {
 	key := s.buildSecretKey(name)
-	return s.TagStore.TagResource(key, tags)
+	return s.TagStore.Tag(key, tags)
 }
 
 // UntagSecret removes tags from a secret.
 func (s *SecretStore) UntagSecret(name string, tagKeys []string) error {
 	key := s.buildSecretKey(name)
-	return s.TagStore.UntagResource(key, tagKeys)
+	return s.TagStore.Untag(key, tagKeys)
 }
 
 func generateVersionId() string {

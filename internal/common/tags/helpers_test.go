@@ -3,7 +3,7 @@ package tags
 import (
 	"testing"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +13,7 @@ func TestParseTags(t *testing.T) {
 		name     string
 		params   map[string]interface{}
 		key      string
-		expected []common.Tag
+		expected []types.Tag
 	}{
 		{
 			name: "single tag",
@@ -26,7 +26,7 @@ func TestParseTags(t *testing.T) {
 				},
 			},
 			key: "Tags",
-			expected: []common.Tag{
+			expected: []types.Tag{
 				{Key: "Environment", Value: "Production"},
 			},
 		},
@@ -45,7 +45,7 @@ func TestParseTags(t *testing.T) {
 				},
 			},
 			key: "Tags",
-			expected: []common.Tag{
+			expected: []types.Tag{
 				{Key: "Environment", Value: "Production"},
 				{Key: "Team", Value: "Backend"},
 			},
@@ -75,7 +75,7 @@ func TestParseTags(t *testing.T) {
 				},
 			},
 			key: "Tags",
-			expected: []common.Tag{
+			expected: []types.Tag{
 				{Key: "EmptyKey", Value: ""},
 			},
 		},
@@ -90,7 +90,7 @@ func TestParseTags(t *testing.T) {
 				},
 			},
 			key: "ResourceTags",
-			expected: []common.Tag{
+			expected: []types.Tag{
 				{Key: "Key1", Value: "Value1"},
 			},
 		},
@@ -180,12 +180,12 @@ func TestParseTagKeys(t *testing.T) {
 func TestToResponse(t *testing.T) {
 	tests := []struct {
 		name     string
-		tags     []common.Tag
+		tags     []types.Tag
 		expected []map[string]interface{}
 	}{
 		{
 			name: "single tag",
-			tags: []common.Tag{
+			tags: []types.Tag{
 				{Key: "Environment", Value: "Production"},
 			},
 			expected: []map[string]interface{}{
@@ -194,17 +194,17 @@ func TestToResponse(t *testing.T) {
 		},
 		{
 			name:     "empty tags",
-			tags:     []common.Tag{},
-			expected: nil,
+			tags:     []types.Tag{},
+			expected: []map[string]interface{}{},
 		},
 		{
 			name:     "nil tags",
 			tags:     nil,
-			expected: nil,
+			expected: []map[string]interface{}{},
 		},
 		{
 			name: "multiple tags",
-			tags: []common.Tag{
+			tags: []types.Tag{
 				{Key: "Environment", Value: "Production"},
 				{Key: "Team", Value: "Backend"},
 			},
@@ -226,39 +226,39 @@ func TestToResponse(t *testing.T) {
 func TestApply(t *testing.T) {
 	tests := []struct {
 		name     string
-		existing []common.Tag
-		newTags  []common.Tag
-		expected []common.Tag
+		existing []types.Tag
+		newTags  []types.Tag
+		expected []types.Tag
 	}{
 		{
 			name:     "add new tags",
-			existing: []common.Tag{{Key: "Env", Value: "Prod"}},
-			newTags:  []common.Tag{{Key: "Team", Value: "Backend"}},
-			expected: []common.Tag{{Key: "Env", Value: "Prod"}, {Key: "Team", Value: "Backend"}},
+			existing: []types.Tag{{Key: "Env", Value: "Prod"}},
+			newTags:  []types.Tag{{Key: "Team", Value: "Backend"}},
+			expected: []types.Tag{{Key: "Env", Value: "Prod"}, {Key: "Team", Value: "Backend"}},
 		},
 		{
 			name:     "override existing tag",
-			existing: []common.Tag{{Key: "Env", Value: "Prod"}},
-			newTags:  []common.Tag{{Key: "Env", Value: "Dev"}},
-			expected: []common.Tag{{Key: "Env", Value: "Dev"}},
+			existing: []types.Tag{{Key: "Env", Value: "Prod"}},
+			newTags:  []types.Tag{{Key: "Env", Value: "Dev"}},
+			expected: []types.Tag{{Key: "Env", Value: "Dev"}},
 		},
 		{
 			name:     "empty existing tags",
-			existing: []common.Tag{},
-			newTags:  []common.Tag{{Key: "Env", Value: "Prod"}},
-			expected: []common.Tag{{Key: "Env", Value: "Prod"}},
+			existing: []types.Tag{},
+			newTags:  []types.Tag{{Key: "Env", Value: "Prod"}},
+			expected: []types.Tag{{Key: "Env", Value: "Prod"}},
 		},
 		{
 			name:     "empty new tags",
-			existing: []common.Tag{{Key: "Env", Value: "Prod"}},
-			newTags:  []common.Tag{},
-			expected: []common.Tag{{Key: "Env", Value: "Prod"}},
+			existing: []types.Tag{{Key: "Env", Value: "Prod"}},
+			newTags:  []types.Tag{},
+			expected: []types.Tag{{Key: "Env", Value: "Prod"}},
 		},
 		{
 			name:     "both empty",
-			existing: []common.Tag{},
-			newTags:  []common.Tag{},
-			expected: []common.Tag{},
+			existing: []types.Tag{},
+			newTags:  []types.Tag{},
+			expected: []types.Tag{},
 		},
 	}
 
@@ -283,56 +283,56 @@ func TestApply(t *testing.T) {
 func TestRemove(t *testing.T) {
 	tests := []struct {
 		name         string
-		tags         []common.Tag
+		tags         []types.Tag
 		keysToRemove map[string]bool
-		expected     []common.Tag
+		expected     []types.Tag
 	}{
 		{
 			name: "remove single tag",
-			tags: []common.Tag{
+			tags: []types.Tag{
 				{Key: "Env", Value: "Prod"},
 				{Key: "Team", Value: "Backend"},
 			},
 			keysToRemove: map[string]bool{"Env": true},
-			expected: []common.Tag{
+			expected: []types.Tag{
 				{Key: "Team", Value: "Backend"},
 			},
 		},
 		{
 			name: "remove multiple tags",
-			tags: []common.Tag{
+			tags: []types.Tag{
 				{Key: "Env", Value: "Prod"},
 				{Key: "Team", Value: "Backend"},
 				{Key: "Project", Value: "Alpha"},
 			},
 			keysToRemove: map[string]bool{"Env": true, "Project": true},
-			expected: []common.Tag{
+			expected: []types.Tag{
 				{Key: "Team", Value: "Backend"},
 			},
 		},
 		{
 			name: "remove non-existent tag",
-			tags: []common.Tag{
+			tags: []types.Tag{
 				{Key: "Env", Value: "Prod"},
 			},
 			keysToRemove: map[string]bool{"NonExistent": true},
-			expected: []common.Tag{
+			expected: []types.Tag{
 				{Key: "Env", Value: "Prod"},
 			},
 		},
 		{
 			name:         "empty tags",
-			tags:         []common.Tag{},
+			tags:         []types.Tag{},
 			keysToRemove: map[string]bool{"Env": true},
-			expected:     []common.Tag{},
+			expected:     []types.Tag{},
 		},
 		{
 			name: "empty keys to remove",
-			tags: []common.Tag{
+			tags: []types.Tag{
 				{Key: "Env", Value: "Prod"},
 			},
 			keysToRemove: map[string]bool{},
-			expected: []common.Tag{
+			expected: []types.Tag{
 				{Key: "Env", Value: "Prod"},
 			},
 		},

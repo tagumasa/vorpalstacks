@@ -18,7 +18,7 @@ const serviceSpecificCredentialBucketName = "iam_service_credentials"
 
 // ServiceSpecificCredentialStore provides storage operations for IAM service-specific credentials.
 type ServiceSpecificCredentialStore struct {
-	bucket    storage.Bucket
+	*common.BaseStore
 	accountID string
 	kl        common.KeyLocker
 }
@@ -26,22 +26,18 @@ type ServiceSpecificCredentialStore struct {
 // NewServiceSpecificCredentialStore creates a new ServiceSpecificCredentialStore instance.
 func NewServiceSpecificCredentialStore(store storage.BasicStorage, accountID string) *ServiceSpecificCredentialStore {
 	return &ServiceSpecificCredentialStore{
-		bucket:    store.Bucket(serviceSpecificCredentialBucketName),
+		BaseStore: common.NewBaseStore(store.Bucket(serviceSpecificCredentialBucketName), "iam"),
 		accountID: accountID,
 	}
 }
 
 // Get retrieves a service-specific credential by its ID.
 func (s *ServiceSpecificCredentialStore) Get(credentialId string) (*ServiceSpecificCredential, error) {
-	data, err := s.bucket.Get([]byte(credentialId))
-	if err != nil {
-		return nil, NewStoreError("get_service_specific_credential", err)
-	}
-	if data == nil {
-		return nil, NewStoreError("get_service_specific_credential", ErrServiceSpecificCredentialNotFound)
-	}
 	var cred ServiceSpecificCredential
-	if err := json.Unmarshal(data, &cred); err != nil {
+	if err := s.BaseStore.Get(credentialId, &cred); err != nil {
+		if common.IsNotFound(err) {
+			return nil, NewStoreError("get_service_specific_credential", ErrServiceSpecificCredentialNotFound)
+		}
 		return nil, NewStoreError("get_service_specific_credential", err)
 	}
 	return &cred, nil
@@ -49,27 +45,17 @@ func (s *ServiceSpecificCredentialStore) Get(credentialId string) (*ServiceSpeci
 
 // Put stores a service-specific credential, keyed by its ID.
 func (s *ServiceSpecificCredentialStore) Put(cred *ServiceSpecificCredential) error {
-	data, err := json.Marshal(cred)
-	if err != nil {
-		return NewStoreError("put_service_specific_credential", err)
-	}
-	if err := s.bucket.Put([]byte(cred.ServiceSpecificCredentialId), data); err != nil {
-		return NewStoreError("put_service_specific_credential", err)
-	}
-	return nil
+	return s.BaseStore.Put(cred.ServiceSpecificCredentialId, cred)
 }
 
 // Delete removes a service-specific credential by its ID.
 func (s *ServiceSpecificCredentialStore) Delete(credentialId string) error {
-	if err := s.bucket.Delete([]byte(credentialId)); err != nil {
-		return NewStoreError("delete_service_specific_credential", err)
-	}
-	return nil
+	return s.BaseStore.Delete(credentialId)
 }
 
 // Exists reports whether a service-specific credential exists with the given ID.
 func (s *ServiceSpecificCredentialStore) Exists(credentialId string) bool {
-	return s.bucket.Has([]byte(credentialId))
+	return s.BaseStore.Exists(credentialId)
 }
 
 // Create generates a new service-specific credential for the given user and service.
@@ -114,7 +100,7 @@ func (s *ServiceSpecificCredentialStore) UpdateStatus(credentialId, status strin
 // ListByUserName returns all service-specific credentials for the given user.
 func (s *ServiceSpecificCredentialStore) ListByUserName(userName string) ([]*ServiceSpecificCredential, error) {
 	var creds []*ServiceSpecificCredential
-	err := s.bucket.ForEach(func(k, v []byte) error {
+	err := s.ForEach(func(k string, v []byte) error {
 		var cred ServiceSpecificCredential
 		if err := json.Unmarshal(v, &cred); err != nil {
 			return err
@@ -133,7 +119,7 @@ func (s *ServiceSpecificCredentialStore) ListByUserName(userName string) ([]*Ser
 // DeleteAllForUser removes all service-specific credentials belonging to the given user.
 func (s *ServiceSpecificCredentialStore) DeleteAllForUser(userName string) error {
 	var toDelete []string
-	err := s.bucket.ForEach(func(k, v []byte) error {
+	err := s.ForEach(func(k string, v []byte) error {
 		var cred ServiceSpecificCredential
 		if err := json.Unmarshal(v, &cred); err != nil {
 			return err
@@ -156,7 +142,7 @@ func (s *ServiceSpecificCredentialStore) DeleteAllForUser(userName string) error
 
 // Count returns the total number of service-specific credentials.
 func (s *ServiceSpecificCredentialStore) Count() int {
-	return s.bucket.Count()
+	return s.BaseStore.Count()
 }
 
 func generateServiceCredentialID() (string, error) {

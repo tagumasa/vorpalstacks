@@ -33,10 +33,6 @@ type FunctionStoreInterface interface {
 	SetReservedConcurrency(functionName string, concurrency *int64) error
 	GetReservedConcurrency(functionName string) (*int64, error)
 
-	SetTags(functionName string, tags []common.Tag) error
-	AddTags(functionName string, newTags []common.Tag) error
-	GetTags(functionName string) ([]common.Tag, error)
-
 	SetContainerInfo(functionName, containerID, containerImageID string) error
 
 	SetFunctionUrlConfig(functionName string, config *FunctionUrlConfig) error

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/endpoint"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
@@ -34,7 +35,7 @@ var (
 
 // AWSExecutor executes AWS integration requests for API Gateway.
 type AWSExecutor struct {
-	lambdaInvoker LambdaInvoker
+	lambdaInvoker common.LambdaInvoker
 	sqsStore      sqs.SQSStoreInterface
 	snsStore      sns.SNSStoreInterface
 	accountID     string
@@ -44,14 +45,14 @@ type AWSExecutor struct {
 }
 
 // NewAWSExecutor creates a new AWSExecutor with the given Lambda invoker.
-func NewAWSExecutor(lambdaInvoker LambdaInvoker) *AWSExecutor {
+func NewAWSExecutor(lambdaInvoker common.LambdaInvoker) *AWSExecutor {
 	return &AWSExecutor{
 		lambdaInvoker: lambdaInvoker,
 	}
 }
 
 // NewAWSExecutorWithStores creates a new AWSExecutor with the given Lambda invoker and store dependencies.
-func NewAWSExecutorWithStores(lambdaInvoker LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string, bus eventbus.Bus, deliveryWg *sync.WaitGroup) *AWSExecutor {
+func NewAWSExecutorWithStores(lambdaInvoker common.LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string, bus eventbus.Bus, deliveryWg *sync.WaitGroup) *AWSExecutor {
 	return &AWSExecutor{
 		lambdaInvoker: lambdaInvoker,
 		sqsStore:      sqsStore,
@@ -893,5 +894,7 @@ func (e *AWSExecutor) deliverToLambdaSubscriber(functionArn string, notification
 
 	eventJSON, _ := json.Marshal(event)
 	ctx := context.Background()
-	_, _, _ = e.lambdaInvoker.InvokeForGateway(ctx, functionArn, eventJSON)
+	if _, _, err := e.lambdaInvoker.InvokeForGateway(ctx, functionArn, eventJSON); err != nil {
+		logs.Error("apigateway: SNS-to-Lambda invocation failed", logs.String("function", functionArn), logs.Err(err))
+	}
 }

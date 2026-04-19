@@ -71,7 +71,10 @@ func (s *LogsService) writeSingleLogMessage(region, logGroup, logStream, account
 	if logsStore == nil {
 		return
 	}
-	_ = s.writeLogEvents(logsStore, logGroup, logStream, []logsstore.LogEntry{
+	if !s.writeLogEvents(logsStore, logGroup, logStream, []logsstore.LogEntry{
 		{Timestamp: time.Now().UnixMilli(), Message: message},
-	})
+	}) {
+		logs.Error("Failed to write log event",
+			logs.String("logGroup", logGroup), logs.String("logStream", logStream))
+	}
 }

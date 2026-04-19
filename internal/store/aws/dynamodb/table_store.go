@@ -8,6 +8,7 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 func tableBucketName(region string) string {
@@ -17,6 +18,7 @@ func tableBucketName(region string) string {
 // TableStore manages DynamoDB table metadata in persistent storage.
 type TableStore struct {
 	*common.BaseStore
+	TagStore   *common.TagStore
 	arnBuilder *svcarn.DynamoDBBuilder
 	keyLocker  common.KeyLocker
 	region     string
@@ -26,6 +28,7 @@ type TableStore struct {
 func NewTableStore(store storage.BasicStorage, accountId, region string) *TableStore {
 	return &TableStore{
 		BaseStore:  common.NewBaseStore(store.Bucket(tableBucketName(region)), "dynamodb"),
+		TagStore:   common.NewTagStoreWithRegion(store, "dynamodb", region),
 		arnBuilder: svcarn.NewARNBuilder(accountId, region).DynamoDB(),
 		region:     region,
 	}
@@ -50,7 +53,7 @@ func (s *TableStore) Create(
 	gsi []*GlobalSecondaryIndex,
 	lsi []*LocalSecondaryIndex,
 	streamSpec *StreamSpecification,
-	tags []common.Tag,
+	tags []types.Tag,
 	deletionProtectionEnabled bool,
 ) (*Table, error) {
 	s.keyLocker.Lock(name)
@@ -162,21 +165,14 @@ func (s *TableStore) UpdateTableSize(name string, delta int64) error {
 	})
 }
 
-// SetTags sets the tags for a DynamoDB table.
-func (s *TableStore) SetTags(name string, tags []common.Tag) error {
-	return s.keyLocker.WithLock(name, func() error {
-		table, err := s.Get(name)
-		if err != nil {
-			return err
-		}
-		table.Tags = tags
-		return s.Put(table)
-	})
-}
-
 // ARNBuilder returns the ARN builder for DynamoDB tables.
 func (s *TableStore) ARNBuilder() *svcarn.DynamoDBBuilder {
 	return s.arnBuilder
+}
+
+// Tags returns the tag store for DynamoDB tables.
+func (s *TableStore) Tags() *common.TagStore {
+	return s.TagStore
 }
 
 // GetPartitionKey returns the partition key attribute name for a table.

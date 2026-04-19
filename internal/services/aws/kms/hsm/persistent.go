@@ -1,30 +1,20 @@
 package hsm
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
-	"crypto/sha512"
 	"crypto/x509"
-	"encoding/asn1"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
 // PersistentBackend provides persistent HSM-backed key storage.
 type PersistentBackend struct {
-	mu        sync.RWMutex
-	keys      map[string]*memoryKey
+	cryptoOps
 	masterKey [32]byte
 	dataPath  string
 }
@@ -43,9 +33,9 @@ func NewPersistentBackend(dataPath string) (*PersistentBackend, error) {
 	}
 
 	b := &PersistentBackend{
-		keys:     make(map[string]*memoryKey),
 		dataPath: dataPath,
 	}
+	b.initKeys()
 
 	masterKeyPath := filepath.Join(dataPath, "hsm", "master.key")
 	if _, err := os.Stat(masterKeyPath); os.IsNotExist(err) {
@@ -191,72 +181,9 @@ func (b *PersistentBackend) GenerateKey(keyID string, keySpec KeySpec) error {
 		return ErrKeyAlreadyExists
 	}
 
-	key := &memoryKey{keySpec: keySpec}
-
-	switch keySpec {
-	case KeySpecSymmetricDefault:
-		key.symmetric = make([]byte, 32)
-		if _, err := rand.Read(key.symmetric); err != nil {
-			return fmt.Errorf("generating symmetric key: %w", err)
-		}
-	case KeySpecHMAC224:
-		key.symmetric = make([]byte, 28)
-		if _, err := rand.Read(key.symmetric); err != nil {
-			return fmt.Errorf("generating HMAC-224 key: %w", err)
-		}
-	case KeySpecHMAC256:
-		key.symmetric = make([]byte, 32)
-		if _, err := rand.Read(key.symmetric); err != nil {
-			return fmt.Errorf("generating HMAC-256 key: %w", err)
-		}
-	case KeySpecHMAC384:
-		key.symmetric = make([]byte, 48)
-		if _, err := rand.Read(key.symmetric); err != nil {
-			return fmt.Errorf("generating HMAC-384 key: %w", err)
-		}
-	case KeySpecHMAC512:
-		key.symmetric = make([]byte, 64)
-		if _, err := rand.Read(key.symmetric); err != nil {
-			return fmt.Errorf("generating HMAC-512 key: %w", err)
-		}
-	case KeySpecRSA2048:
-		rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
-		if err != nil {
-			return fmt.Errorf("generating RSA-2048 key pair: %w", err)
-		}
-		key.rsaKey = rsaKey
-	case KeySpecRSA3072:
-		rsaKey, err := rsa.GenerateKey(rand.Reader, 3072)
-		if err != nil {
-			return fmt.Errorf("generating RSA-3072 key pair: %w", err)
-		}
-		key.rsaKey = rsaKey
-	case KeySpecRSA4096:
-		rsaKey, err := rsa.GenerateKey(rand.Reader, 4096)
-		if err != nil {
-			return fmt.Errorf("generating RSA-4096 key pair: %w", err)
-		}
-		key.rsaKey = rsaKey
-	case KeySpecECCNISTP256, KeySpecECCSECPP256R1:
-		ecdsaKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			return fmt.Errorf("generating ECDSA P-256 key pair: %w", err)
-		}
-		key.ecdsaKey = ecdsaKey
-	case KeySpecECCNISTP384:
-		ecdsaKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-		if err != nil {
-			return fmt.Errorf("generating ECDSA P-384 key pair: %w", err)
-		}
-		key.ecdsaKey = ecdsaKey
-	case KeySpecECCNISTP521:
-		ecdsaKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
-		if err != nil {
-			return fmt.Errorf("generating ECDSA P-521 key pair: %w", err)
-		}
-		key.ecdsaKey = ecdsaKey
-	default:
-		return ErrInvalidKeySpec
+	key, err := b.generateKeyMaterial(keySpec)
+	if err != nil {
+		return fmt.Errorf("generating %s key: %w", keySpec, err)
 	}
 
 	b.keys[keyID] = key
@@ -268,17 +195,9 @@ func (b *PersistentBackend) ImportKey(keyID string, keyMaterial []byte, keySpec 
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if _, exists := b.keys[keyID]; exists {
-		return ErrKeyAlreadyExists
-	}
-
-	key := &memoryKey{keySpec: keySpec}
-	switch keySpec {
-	case KeySpecSymmetricDefault, KeySpecHMAC256:
-		key.symmetric = make([]byte, len(keyMaterial))
-		copy(key.symmetric, keyMaterial)
-	default:
-		return ErrInvalidKeySpec
+	key, err := b.importKeyMaterial(keyID, keyMaterial, keySpec)
+	if err != nil {
+		return err
 	}
 
 	b.keys[keyID] = key
@@ -302,88 +221,61 @@ func (b *PersistentBackend) DeleteKey(keyID string) error {
 func (b *PersistentBackend) Encrypt(keyID string, plaintext []byte, context map[string]string) (*EncryptResult, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-
-	key, exists := b.keys[keyID]
-	if !exists {
-		return nil, ErrKeyNotFound
-	}
-
-	if key.symmetric == nil {
-		return nil, ErrEncryptFailed
-	}
-
-	ciphertext, err := aesEncrypt(key.symmetric, plaintext, serializeEncryptionContext(context))
+	result, err := b.encrypt(keyID, plaintext, context)
 	if err != nil {
 		return nil, fmt.Errorf("encrypting plaintext: %w", err)
 	}
-
-	ciphertextWithKeyID := prependKeyIDToCiphertext(keyID, ciphertext)
-
-	return &EncryptResult{
-		Ciphertext:      ciphertextWithKeyID,
-		CiphertextCRC32: computeCRC32(ciphertextWithKeyID),
-	}, nil
+	return result, nil
 }
 
 // Decrypt decrypts ciphertext using an HSM key.
 func (b *PersistentBackend) Decrypt(keyID string, ciphertext []byte, context map[string]string) (*DecryptResult, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-
-	extractedKeyID, actualCiphertext, err := extractKeyIDFromCiphertext(ciphertext)
-	if err == nil && extractedKeyID != "" {
-		keyID = extractedKeyID
-		ciphertext = actualCiphertext
-	}
-
-	key, exists := b.keys[keyID]
-	if !exists {
-		return nil, ErrKeyNotFound
-	}
-
-	if key.symmetric == nil {
-		return nil, ErrDecryptFailed
-	}
-
-	plaintext, err := aesDecrypt(key.symmetric, ciphertext, serializeEncryptionContext(context))
+	result, err := b.decrypt(keyID, ciphertext, context)
 	if err != nil {
 		return nil, fmt.Errorf("decrypting ciphertext: %w", err)
 	}
-
-	return &DecryptResult{
-		Plaintext:      plaintext,
-		PlaintextCRC32: computeCRC32(plaintext),
-	}, nil
+	return result, nil
 }
 
 // DecryptWithoutKeyID decrypts ciphertext without specifying a key ID.
 func (b *PersistentBackend) DecryptWithoutKeyID(ciphertext []byte, context map[string]string) (*DecryptResult, string, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-
-	keyID, actualCiphertext, err := extractKeyIDFromCiphertext(ciphertext)
-	if err != nil {
-		return nil, "", fmt.Errorf("extracting key ID from ciphertext: %w", err)
-	}
-
-	key, exists := b.keys[keyID]
-	if !exists {
-		return nil, "", ErrKeyNotFound
-	}
-
-	if key.symmetric == nil {
-		return nil, "", ErrDecryptFailed
-	}
-
-	plaintext, err := aesDecrypt(key.symmetric, actualCiphertext, serializeEncryptionContext(context))
+	result, keyID, err := b.decryptWithoutKeyID(ciphertext, context)
 	if err != nil {
 		return nil, "", fmt.Errorf("decrypting ciphertext: %w", err)
 	}
+	return result, keyID, nil
+}
 
-	return &DecryptResult{
-		Plaintext:      plaintext,
-		PlaintextCRC32: computeCRC32(plaintext),
-	}, keyID, nil
+// Sign signs a message using an HSM key.
+func (b *PersistentBackend) Sign(keyID string, message []byte, algorithm SigningAlgorithm) (*SignResult, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.sign(keyID, message, algorithm)
+}
+
+// Verify verifies a signature using an HSM key.
+func (b *PersistentBackend) Verify(keyID string, message, signature []byte, algorithm SigningAlgorithm) (bool, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.verify(keyID, message, signature, algorithm)
+}
+
+// GenerateMAC generates a message authentication code using an HSM key.
+func (b *PersistentBackend) GenerateMAC(keyID string, message []byte, algorithm MACAlgorithm) ([]byte, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.generateMAC(keyID, message, algorithm)
+}
+
+// VerifyMAC verifies a message authentication code using an HSM key.
+func (b *PersistentBackend) VerifyMAC(keyID string, message, macValue []byte, algorithm MACAlgorithm) (bool, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.verifyMAC(keyID, message, macValue, algorithm)
 }
 
 // GenerateDataKey generates a data key for envelope encryption.
@@ -396,22 +288,12 @@ func (b *PersistentBackend) GenerateDataKey(keyID string, keySpec string, number
 		return nil, ErrKeyNotFound
 	}
 
-	var keyBytes int
-	if numberOfBytes > 0 {
-		keyBytes = numberOfBytes
-	} else {
-		switch keySpec {
-		case "AES_128":
-			keyBytes = 16
-		case "AES_256":
-			keyBytes = 32
-		default:
-			keyBytes = 32
-		}
+	if key.symmetric == nil {
+		return nil, ErrEncryptFailed
 	}
 
-	plaintext := make([]byte, keyBytes)
-	if _, err := rand.Read(plaintext); err != nil {
+	plaintext, err := b.generateDataKeyBytes(keySpec, numberOfBytes)
+	if err != nil {
 		return nil, err
 	}
 
@@ -430,208 +312,23 @@ func (b *PersistentBackend) GenerateDataKey(keyID string, keySpec string, number
 	}, nil
 }
 
-// KeyExists checks if a key exists in the HSM.
-func (b *PersistentBackend) KeyExists(keyID string) bool {
+// GetPublicKey retrieves the public key from an HSM key.
+func (b *PersistentBackend) GetPublicKey(keyID string) ([]byte, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-
-	_, exists := b.keys[keyID]
-	return exists
+	return b.getPublicKey(keyID)
 }
 
 // IsKeyAvailable checks if a key is available in the HSM.
 func (b *PersistentBackend) IsKeyAvailable(keyID string) bool {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-
-	key, exists := b.keys[keyID]
-	if !exists {
-		return false
-	}
-
-	return key.symmetric != nil || key.rsaKey != nil || key.ecdsaKey != nil
+	return b.isKeyAvailable(keyID)
 }
 
-// Sign signs a message using an HSM key.
-func (b *PersistentBackend) Sign(keyID string, message []byte, algorithm SigningAlgorithm) (*SignResult, error) {
+// KeyExists checks if a key exists in the HSM.
+func (b *PersistentBackend) KeyExists(keyID string) bool {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-
-	key, exists := b.keys[keyID]
-	if !exists {
-		return nil, ErrKeyNotFound
-	}
-
-	var signature []byte
-	var err error
-
-	if key.rsaKey != nil {
-		hash := hashForAlgorithm(algorithm, message)
-		switch algorithm {
-		case SigningAlgorithmRSAPKCS1SHA256, SigningAlgorithmRSAPKCS1SHA384, SigningAlgorithmRSAPKCS1SHA512:
-			signature, err = rsa.SignPKCS1v15(rand.Reader, key.rsaKey, hashAlgorithm(algorithm), hash)
-		case SigningAlgorithmRSAPSSSHA256, SigningAlgorithmRSAPSSSHA384, SigningAlgorithmRSAPSSSHA512:
-			signature, err = rsa.SignPSS(rand.Reader, key.rsaKey, hashAlgorithm(algorithm), hash, nil)
-		default:
-			return nil, ErrInvalidAlgorithm
-		}
-	} else if key.ecdsaKey != nil {
-		hash := hashForAlgorithm(algorithm, message)
-		var r, s *big.Int
-		r, s, err = ecdsa.Sign(rand.Reader, key.ecdsaKey, hash)
-		if err != nil {
-			return nil, ErrSignFailed
-		}
-		signature, err = asn1.Marshal(struct {
-			R, S *big.Int
-		}{r, s})
-	} else {
-		return nil, ErrInvalidKeySpec
-	}
-
-	if err != nil {
-		return nil, ErrSignFailed
-	}
-
-	return &SignResult{
-		Signature:      signature,
-		SignatureCRC32: computeCRC32(signature),
-	}, nil
-}
-
-// Verify verifies a signature using an HSM key.
-func (b *PersistentBackend) Verify(keyID string, message, signature []byte, algorithm SigningAlgorithm) (bool, error) {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-
-	key, exists := b.keys[keyID]
-	if !exists {
-		return false, ErrKeyNotFound
-	}
-
-	if key.rsaKey != nil {
-		hash := hashForAlgorithm(algorithm, message)
-		switch algorithm {
-		case SigningAlgorithmRSAPKCS1SHA256, SigningAlgorithmRSAPKCS1SHA384, SigningAlgorithmRSAPKCS1SHA512:
-			err := rsa.VerifyPKCS1v15(&key.rsaKey.PublicKey, hashAlgorithm(algorithm), hash, signature)
-			return err == nil, nil
-		case SigningAlgorithmRSAPSSSHA256, SigningAlgorithmRSAPSSSHA384, SigningAlgorithmRSAPSSSHA512:
-			err := rsa.VerifyPSS(&key.rsaKey.PublicKey, hashAlgorithm(algorithm), hash, signature, nil)
-			return err == nil, nil
-		default:
-			return false, ErrInvalidAlgorithm
-		}
-	} else if key.ecdsaKey != nil {
-		hash := hashForAlgorithm(algorithm, message)
-		var sig struct {
-			R, S *big.Int
-		}
-		if _, err := asn1.Unmarshal(signature, &sig); err != nil {
-			return false, err
-		}
-		return ecdsa.Verify(&key.ecdsaKey.PublicKey, hash, sig.R, sig.S), nil
-	}
-
-	return false, ErrInvalidKeySpec
-}
-
-// GenerateMAC generates a message authentication code using an HSM key.
-func (b *PersistentBackend) GenerateMAC(keyID string, message []byte, algorithm MACAlgorithm) ([]byte, error) {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-
-	key, exists := b.keys[keyID]
-	if !exists {
-		return nil, ErrKeyNotFound
-	}
-
-	if key.symmetric == nil {
-		return nil, ErrInvalidKeySpec
-	}
-
-	var hmacHash []byte
-	switch algorithm {
-	case MACAlgorithmHMACSHA224:
-		h := hmac.New(sha256.New224, key.symmetric)
-		h.Write(message)
-		hmacHash = h.Sum(nil)
-	case MACAlgorithmHMACSHA256:
-		h := hmac.New(sha256.New, key.symmetric)
-		h.Write(message)
-		hmacHash = h.Sum(nil)
-	case MACAlgorithmHMACSHA384:
-		h := hmac.New(sha512.New384, key.symmetric)
-		h.Write(message)
-		hmacHash = h.Sum(nil)
-	case MACAlgorithmHMACSHA512:
-		h := hmac.New(sha512.New, key.symmetric)
-		h.Write(message)
-		hmacHash = h.Sum(nil)
-	default:
-		return nil, ErrInvalidAlgorithm
-	}
-
-	return hmacHash, nil
-}
-
-// VerifyMAC verifies a message authentication code using an HSM key.
-func (b *PersistentBackend) VerifyMAC(keyID string, message, macValue []byte, algorithm MACAlgorithm) (bool, error) {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-
-	key, exists := b.keys[keyID]
-	if !exists {
-		return false, ErrKeyNotFound
-	}
-
-	if key.symmetric == nil {
-		return false, ErrInvalidKeySpec
-	}
-
-	var expectedMAC []byte
-	switch algorithm {
-	case MACAlgorithmHMACSHA224:
-		h := hmac.New(sha256.New224, key.symmetric)
-		h.Write(message)
-		expectedMAC = h.Sum(nil)
-	case MACAlgorithmHMACSHA256:
-		h := hmac.New(sha256.New, key.symmetric)
-		h.Write(message)
-		expectedMAC = h.Sum(nil)
-	case MACAlgorithmHMACSHA384:
-		h := hmac.New(sha512.New384, key.symmetric)
-		h.Write(message)
-		expectedMAC = h.Sum(nil)
-	case MACAlgorithmHMACSHA512:
-		h := hmac.New(sha512.New, key.symmetric)
-		h.Write(message)
-		expectedMAC = h.Sum(nil)
-	default:
-		return false, ErrInvalidAlgorithm
-	}
-
-	if len(macValue) != len(expectedMAC) {
-		return false, nil
-	}
-
-	return hmac.Equal(macValue, expectedMAC), nil
-}
-
-// GetPublicKey retrieves the public key from an HSM key.
-func (b *PersistentBackend) GetPublicKey(keyID string) ([]byte, error) {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-
-	key, exists := b.keys[keyID]
-	if !exists {
-		return nil, ErrKeyNotFound
-	}
-
-	if key.rsaKey != nil {
-		return encodePublicKey(&key.rsaKey.PublicKey)
-	} else if key.ecdsaKey != nil {
-		return encodePublicKey(&key.ecdsaKey.PublicKey)
-	}
-
-	return nil, ErrInvalidKeySpec
+	return b.keyExists(keyID)
 }

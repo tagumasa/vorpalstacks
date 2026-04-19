@@ -96,6 +96,10 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
+	if len(tagList) > 0 {
+		store.Tables().Tags().Tag(tableName, tagutil.ToMap(tagList))
+	}
+
 	return map[string]interface{}{
 		"TableDescription": s.buildTableDescription(table),
 	}, nil
@@ -126,6 +130,8 @@ func (s *DynamoDBService) DeleteTable(ctx context.Context, reqCtx *request.Reque
 	if err := store.Tables().Delete(tableName); err != nil {
 		return nil, err
 	}
+
+	store.Tables().Tags().Delete(tableName)
 
 	return map[string]interface{}{
 		"TableDescription": s.buildTableDescription(table),

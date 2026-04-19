@@ -9,6 +9,7 @@ import (
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CertificateStore provides storage operations for ACM certificates.
@@ -220,7 +221,7 @@ func certificateToSummary(cert *Certificate) *CertificateSummary {
 }
 
 // GetTags retrieves the tags associated with an ACM certificate.
-func (s *CertificateStore) GetTags(arn string) ([]common.Tag, error) {
+func (s *CertificateStore) GetTags(arn string) ([]types.Tag, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -232,7 +233,7 @@ func (s *CertificateStore) GetTags(arn string) ([]common.Tag, error) {
 }
 
 // AddTags adds tags to an ACM certificate.
-func (s *CertificateStore) AddTags(arn string, tags []common.Tag) error {
+func (s *CertificateStore) AddTags(arn string, tags []types.Tag) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -257,7 +258,7 @@ func (s *CertificateStore) RemoveTags(arn string, tagKeys []string) error {
 	for _, k := range tagKeys {
 		keySet[k] = true
 	}
-	var remaining []common.Tag
+	var remaining []types.Tag
 	for _, t := range cert.Tags {
 		if !keySet[t.Key] {
 			remaining = append(remaining, t)

@@ -1,7 +1,5 @@
 package kms
 
-// Package kms provides KMS (Key Management Service) operations for vorpalstacks.
-
 import (
 	"context"
 	"vorpalstacks/internal/common/pagination"
@@ -31,7 +29,7 @@ func (s *KMSService) TagResource(ctx context.Context, reqCtx *request.RequestCon
 		return response.EmptyResponse(), nil
 	}
 
-	if err := stores.keys.AddTags(key.KeyID, tagList); err != nil {
+	if err := stores.keys.TagStore.Tag(key.KeyID, tagutil.ToMap(tagList)); err != nil {
 		return nil, err
 	}
 
@@ -57,7 +55,7 @@ func (s *KMSService) UntagResource(ctx context.Context, reqCtx *request.RequestC
 		return response.EmptyResponse(), nil
 	}
 
-	if err := stores.keys.RemoveTags(key.KeyID, tagKeys); err != nil {
+	if err := stores.keys.TagStore.Untag(key.KeyID, tagKeys); err != nil {
 		return nil, err
 	}
 
@@ -79,7 +77,7 @@ func (s *KMSService) ListResourceTags(ctx context.Context, reqCtx *request.Reque
 	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "ListResourceTags", key.KeyID, nil); err != nil {
 		return nil, err
 	}
-	tags, err := stores.keys.ListTags(key.KeyID)
+	tags, err := stores.keys.TagStore.ListAsSlice(key.KeyID)
 	if err != nil {
 		return nil, err
 	}

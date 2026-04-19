@@ -7,7 +7,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
-	"vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateLogGroup creates a new CloudWatch Logs log group.
@@ -17,12 +17,9 @@ func (s *LogsService) CreateLogGroup(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrMissingParameter
 	}
 
-	lg := logsstore.NewLogGroup(logGroupName, reqCtx.GetRegion(), s.accountID)
-
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-	if len(tags) > 0 {
-		lg.Tags = tags
-	}
+
+	lg := logsstore.NewLogGroup(logGroupName, reqCtx.GetRegion(), s.accountID)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -31,6 +28,12 @@ func (s *LogsService) CreateLogGroup(ctx context.Context, reqCtx *request.Reques
 
 	if err := store.CreateLogGroup(lg); err != nil {
 		return nil, mapStoreError(err)
+	}
+
+	if len(tags) > 0 {
+		if err := store.Tags().Tag(lg.ARN, tags); err != nil {
+			return nil, mapStoreError(err)
+		}
 	}
 
 	return response.EmptyResponse(), nil
@@ -160,101 +163,75 @@ func (s *LogsService) DeleteRetentionPolicy(ctx context.Context, reqCtx *request
 }
 
 // TagResource adds tags to a CloudWatch Logs resource.
-func (s *LogsService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
-	if resourceARN == "" {
-		return nil, ErrMissingParameter
+func (s *LogsService) tagHandlerConfig(store *logsstore.Store) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.TagOperationConfig{
+			ResourceParam:      "ResourceArn",
+			TagsParam:          "Tags",
+			TagKeysParam:       "TagKeys",
+			TagKeyName:         "Key",
+			TagValueName:       "Value",
+			RequireTags:        false,
+			RequireTagKeys:     false,
+			RequireResource:    true,
+			CaseInsensitiveRes: true,
+		},
+		ParseTags: func(params map[string]interface{}) []types.Tag {
+			return tagutil.MapToTags(tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(params, "Tags")))
+		},
+		ParseTagKeys: func(params map[string]interface{}) []string {
+			return request.GetStringList(params, "TagKeys")
+		},
+		TagFunc: func(_ context.Context, resourceKey string, tagSlice []types.Tag) error {
+			return store.Tags().TagFromSlice(resourceKey, tagSlice)
+		},
+		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
+			return store.Tags().Untag(resourceKey, tagKeys)
+		},
+		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+			return store.Tags().ListAsSlice(resourceKey)
+		},
+		FormatResponse: func(tagSlice []types.Tag, _ string) (interface{}, error) {
+			m := tagutil.ToMap(tagSlice)
+			if m == nil {
+				m = make(map[string]string)
+			}
+			return map[string]interface{}{
+				"tags": m,
+			}, nil
+		},
+		EmptyResponse: func() (interface{}, error) {
+			return response.EmptyResponse(), nil
+		},
+		MapError: mapStoreError,
 	}
+}
 
-	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-
-	logGroupName := arn.ExtractLogGroupNameFromARN(resourceARN)
-
+// TagResource adds tags to a CloudWatch Logs log group.
+func (s *LogsService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	lg, err := store.GetLogGroup(logGroupName)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if lg.Tags == nil {
-		lg.Tags = make(map[string]string)
-	}
-	for k, v := range tags {
-		lg.Tags[k] = v
-	}
-
-	if err := store.PutLogGroup(lg); err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleTag(ctx, req, s.tagHandlerConfig(store))
 }
 
 // UntagResource removes tags from a CloudWatch Logs resource.
 func (s *LogsService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
-	if resourceARN == "" {
-		return nil, ErrMissingParameter
-	}
-
-	tagKeys := request.GetStringList(req.Parameters, "TagKeys")
-
-	logGroupName := arn.ExtractLogGroupNameFromARN(resourceARN)
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	lg, err := store.GetLogGroup(logGroupName)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if lg.Tags == nil {
-		lg.Tags = make(map[string]string)
-	}
-	for _, k := range tagKeys {
-		delete(lg.Tags, k)
-	}
-
-	if err := store.PutLogGroup(lg); err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleUntag(ctx, req, s.tagHandlerConfig(store))
 }
 
 // ListTagsForResource lists the tags for a CloudWatch Logs resource.
 func (s *LogsService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceARN := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
-	if resourceARN == "" {
-		return nil, ErrMissingParameter
-	}
-
-	logGroupName := arn.ExtractLogGroupNameFromARN(resourceARN)
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	lg, err := store.GetLogGroup(logGroupName)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	tags := lg.Tags
-	if tags == nil {
-		tags = make(map[string]string)
-	}
-	return map[string]interface{}{
-		"tags": tags,
-	}, nil
+	return tagutil.HandleList(ctx, req, s.tagHandlerConfig(store))
 }
 
 // TagLogGroup adds tags to the specified CloudWatch Logs log group.
@@ -276,14 +253,7 @@ func (s *LogsService) TagLogGroup(ctx context.Context, reqCtx *request.RequestCo
 		return nil, mapStoreError(err)
 	}
 
-	if lg.Tags == nil {
-		lg.Tags = make(map[string]string)
-	}
-	for k, v := range tags {
-		lg.Tags[k] = v
-	}
-
-	if err := store.PutLogGroup(lg); err != nil {
+	if err := store.Tags().Tag(lg.ARN, tags); err != nil {
 		return nil, mapStoreError(err)
 	}
 
@@ -307,7 +277,11 @@ func (s *LogsService) ListTagsLogGroup(ctx context.Context, reqCtx *request.Requ
 		return nil, mapStoreError(err)
 	}
 
+	tags, err := store.Tags().List(lg.ARN)
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
 	return map[string]interface{}{
-		"tags": lg.Tags,
+		"tags": tags,
 	}, nil
 }

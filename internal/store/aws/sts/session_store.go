@@ -14,6 +14,12 @@ import (
 	"vorpalstacks/internal/core/storage"
 )
 
+const (
+	stsSessionTokenSize    = 32
+	stsAccessKeyIDSize     = 16
+	stsSecretAccessKeySize = 30
+)
+
 // SessionStore manages STS session tokens.
 type SessionStore struct {
 	bucket storage.Bucket
@@ -103,7 +109,7 @@ func (s *SessionStore) Delete(sessionToken string) error {
 }
 
 func generateSessionToken() (string, error) {
-	bytes := make([]byte, 32)
+	bytes := make([]byte, stsSessionTokenSize)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
@@ -111,7 +117,7 @@ func generateSessionToken() (string, error) {
 }
 
 func generateAccessKeyId() (string, error) {
-	bytes := make([]byte, 16)
+	bytes := make([]byte, stsAccessKeyIDSize)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
@@ -119,7 +125,7 @@ func generateAccessKeyId() (string, error) {
 }
 
 func generateSecretAccessKey() (string, error) {
-	bytes := make([]byte, 30)
+	bytes := make([]byte, stsSecretAccessKeySize)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}

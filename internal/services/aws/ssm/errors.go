@@ -3,12 +3,12 @@ package ssm
 import (
 	"net/http"
 
-	"vorpalstacks/internal/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // NewSSMError creates a new SSMError with the specified code, message and status code.
-func NewSSMError(code, message string, statusCode int) *errors.AWSError {
-	return errors.NewAWSError(code, message, statusCode)
+func NewSSMError(code, message string, statusCode int) *awserrors.AWSError {
+	return awserrors.NewAWSError(code, message, statusCode)
 }
 
 var (

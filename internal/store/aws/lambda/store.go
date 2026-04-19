@@ -2,7 +2,6 @@ package lambda
 
 import (
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/store/aws/common"
 )
 
 // LambdaStore provides access to all Lambda stores.
@@ -116,9 +115,3 @@ func (f *LambdaStoreFactory) CreateLayerStore(region string) *LayerStore {
 func (f *LambdaStoreFactory) CreateEventSourceStore(region string) *EventSourceStore {
 	return NewEventSourceStore(f.storage, f.accountID, region)
 }
-
-// ListOptions defines pagination options for listing resources.
-type ListOptions = common.ListOptions
-
-// ListResult defines the result of a list operation with pagination information.
-type ListResult[T any] = common.ListResult[T]

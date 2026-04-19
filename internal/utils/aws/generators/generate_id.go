@@ -8,8 +8,10 @@ import (
 	"fmt"
 )
 
+const randomIDSize = 16
+
 func generateIDWithPrefix(prefix string, suffixLen int) (string, error) {
-	b := make([]byte, 16)
+	b := make([]byte, randomIDSize)
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("failed to generate random bytes: %w", err)
 	}
@@ -21,7 +23,7 @@ func generateIDWithPrefix(prefix string, suffixLen int) (string, error) {
 }
 
 func generateHexID() (string, error) {
-	b := make([]byte, 16)
+	b := make([]byte, randomIDSize)
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("failed to generate random bytes: %w", err)
 	}

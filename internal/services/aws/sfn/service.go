@@ -129,7 +129,9 @@ func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt
 				logs.Error("sfn: panic in bus-triggered execution", logs.String("arn", executionArn), logs.Any("panic", r))
 			}
 		}()
-		_ = executor.ExecuteStateMachine(execCtx, exec)
+		if err := executor.ExecuteStateMachine(execCtx, exec); err != nil {
+			logs.Error("sfn: bus-triggered execution failed", logs.String("arn", executionArn), logs.Err(err))
+		}
 	}()
 
 	logs.Debug("sfn: started execution from bus event",

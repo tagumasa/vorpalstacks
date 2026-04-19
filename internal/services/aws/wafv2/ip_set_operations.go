@@ -54,8 +54,7 @@ func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
-		ipSet.Tags = tags
-		if err := stores.ipSets.Put(ipSet.ID, ipSet); err != nil {
+		if err := stores.tags.TagFromSlice(ipSet.ARN, tags); err != nil {
 			logs.Warn("failed to persist tags for IPSet", logs.String("id", ipSet.ID), logs.Err(err))
 		}
 	}
@@ -200,15 +199,22 @@ func (s *WAFv2Service) DeleteIPSet(ctx context.Context, reqCtx *request.RequestC
 		return nil, validationError("LockToken is required")
 	}
 
-	if err := stores.ipSets.Delete(id, lockToken); err != nil {
-		if wafstore.IsLockTokenMismatch(err) {
-			return nil, lockTokenError()
-		}
+	ipSet, err := stores.ipSets.Get(id)
+	if err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("IPSet")
 		}
 		return nil, err
 	}
+
+	if err := stores.ipSets.Delete(id, lockToken); err != nil {
+		if wafstore.IsLockTokenMismatch(err) {
+			return nil, lockTokenError()
+		}
+		return nil, err
+	}
+
+	stores.tags.Delete(ipSet.ARN)
 
 	return map[string]interface{}{}, nil
 }

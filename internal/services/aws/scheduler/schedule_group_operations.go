@@ -38,7 +38,7 @@ func (s *SchedulerService) CreateScheduleGroup(ctx context.Context, reqCtx *requ
 	parsedTags := tags.ParseTags(req.Parameters, "Tags")
 	if len(parsedTags) > 0 {
 		arn := group.ARN
-		if err := store.TagResourceFromSlice(arn, parsedTags); err != nil {
+		if err := store.TagFromSlice(arn, parsedTags); err != nil {
 			logs.Debug("Failed to tag schedule group", logs.String("arn", arn), logs.String("error", err.Error()))
 		}
 	}

@@ -2,7 +2,7 @@ package s3
 
 import (
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
-	common "vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 func objectStorageClassToProto(s ObjectStorageClass) pb.ObjectStorageClass {
@@ -139,7 +139,7 @@ func protoToObjectLockLegalHoldStatus(p pb.ObjectLockLegalHoldStatus) ObjectLock
 	}
 }
 
-func tagsToProto(t []common.Tag) []*pb.Tag {
+func tagsToProto(t []types.Tag) []*pb.Tag {
 	if t == nil {
 		return nil
 	}
@@ -150,29 +150,29 @@ func tagsToProto(t []common.Tag) []*pb.Tag {
 	return result
 }
 
-func protoToTags(p []*pb.Tag) []common.Tag {
+func protoToTags(p []*pb.Tag) []types.Tag {
 	if p == nil {
 		return nil
 	}
-	result := make([]common.Tag, len(p))
+	result := make([]types.Tag, len(p))
 	for i, tag := range p {
-		result[i] = common.Tag{Key: tag.Key, Value: tag.Value}
+		result[i] = types.Tag{Key: tag.Key, Value: tag.Value}
 	}
 	return result
 }
 
-func tagToProtoPtr(t *common.Tag) *pb.Tag {
+func tagToProtoPtr(t *types.Tag) *pb.Tag {
 	if t == nil {
 		return nil
 	}
 	return &pb.Tag{Key: t.Key, Value: t.Value}
 }
 
-func protoToTagPtr(p *pb.Tag) *common.Tag {
+func protoToTagPtr(p *pb.Tag) *types.Tag {
 	if p == nil {
 		return nil
 	}
-	return &common.Tag{Key: p.Key, Value: p.Value}
+	return &types.Tag{Key: p.Key, Value: p.Value}
 }
 
 func int32PtrToInt32(p *int) int32 {

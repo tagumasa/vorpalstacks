@@ -1,5 +1,9 @@
 package iam
 
+import (
+	"vorpalstacks/internal/utils/aws/types"
+)
+
 // RoleStoreInterface defines operations for managing IAM roles.
 type RoleStoreInterface interface {
 	Get(roleName string) (*Role, error)
@@ -8,7 +12,7 @@ type RoleStoreInterface interface {
 	Put(role *Role) error
 	Delete(roleName string) error
 	Exists(roleName string) bool
-	Create(roleName, path, accountId, assumeRolePolicyDocument, description string, maxSessionDuration int, tags []Tag) (*Role, error)
+	Create(roleName, path, accountId, assumeRolePolicyDocument, description string, maxSessionDuration int, tags []types.Tag) (*Role, error)
 	Update(role *Role) error
 	Count() int
 	GetAssumeRolePolicyDocument(roleName string) (string, error)
@@ -53,7 +57,7 @@ type UserStoreInterface interface {
 	Put(user *User) error
 	Delete(userName string) error
 	Exists(userName string) bool
-	Create(userName, path, accountId string, tags []Tag) (*User, error)
+	Create(userName, path, accountId string, tags []types.Tag) (*User, error)
 	UpdatePasswordLastUsed(userName string) error
 	Count() int
 }
@@ -106,7 +110,7 @@ type InstanceProfileStoreInterface interface {
 	Put(profile *InstanceProfile) error
 	Delete(instanceProfileName string) error
 	Exists(instanceProfileName string) bool
-	Create(instanceProfileName, path, accountId string, tags []Tag) (*InstanceProfile, error)
+	Create(instanceProfileName, path, accountId string, tags []types.Tag) (*InstanceProfile, error)
 	AddRole(instanceProfileName, roleName string) error
 	RemoveRole(instanceProfileName, roleName string) error
 	HasRole(instanceProfileName, roleName string) (bool, error)
@@ -122,7 +126,7 @@ type PolicyStoreInterface interface {
 	Put(policy *Policy) error
 	Delete(policyArn string) error
 	Exists(policyArn string) bool
-	Create(policyName, path, accountId, document, description string, tags []Tag) (*Policy, error)
+	Create(policyName, path, accountId, document, description string, tags []types.Tag) (*Policy, error)
 	Count() int
 	PutVersion(version *PolicyVersion) error
 	GetVersion(policyArn, versionId string) (*PolicyVersion, error)
@@ -155,7 +159,7 @@ type MFADeviceStoreInterface interface {
 	Put(device *VirtualMFADevice) error
 	Delete(serialNumber string) error
 	Exists(serialNumber string) bool
-	Create(accountId string, tags []Tag) (*VirtualMFADevice, error)
+	Create(accountId string, tags []types.Tag) (*VirtualMFADevice, error)
 	EnableForUser(serialNumber, userName string) error
 	Deactivate(serialNumber string) error
 	ListForUser(userName string, marker string, maxItems int) (*MFADeviceListResult, error)

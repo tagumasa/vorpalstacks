@@ -6,7 +6,7 @@ package kms
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // KeyState represents the state of a KMS key.
@@ -94,7 +94,7 @@ type Key struct {
 	EncryptionAlgorithms           []string                  `json:"encryption_algorithms,omitempty"`
 	SigningAlgorithms              []string                  `json:"signing_algorithms,omitempty"`
 	PreDeletionEnabled             *bool                     `json:"pre_deletion_enabled,omitempty"`
-	Tags                           []common.Tag              `json:"tags,omitempty"`
+	Tags                           []types.Tag               `json:"tags,omitempty"`
 }
 
 // MultiRegionConfiguration represents the configuration for a multi-region KMS key.

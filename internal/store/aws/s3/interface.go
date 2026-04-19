@@ -8,10 +8,8 @@ import (
 	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 )
-
-// Tag represents an S3 tag.
-type Tag = storecommon.Tag
 
 // BucketStoreInterface defines operations for managing S3 buckets.
 type BucketStoreInterface interface {
@@ -29,7 +27,7 @@ type BucketStoreInterface interface {
 	SetPolicy(name, policy string) error
 	SetCORS(name string, config *CORSConfiguration) error
 	SetPublicAccessBlock(name string, config *PublicAccessBlockConfig) error
-	SetTags(name string, tags []Tag) error
+	SetTags(name string, tags []types.Tag) error
 	SetLifecycleConfiguration(name string, config *LifecycleConfiguration) error
 	SetWebsiteConfiguration(name string, config *WebsiteConfiguration) error
 	SetObjectLockConfiguration(name string, config *ObjectLockConfiguration) error
@@ -87,7 +85,7 @@ type ObjectStoreInterface interface {
 	SetObjectRetention(ctx context.Context, bucket, key, versionId string, retention *ObjectLockRetention) error
 	GetObjectRetention(ctx context.Context, bucket, key, versionId string) (*ObjectLockRetention, error)
 	GetRange(ctx context.Context, bucket, key string, offset, length int64) (io.ReadCloser, *Object, error)
-	SetTags(bucket, key string, tags []Tag) error
+	SetTags(bucket, key string, tags []types.Tag) error
 	SetACL(bucket, key string, acp *AccessControlPolicy) error
 	GetACL(bucket, key string) (*AccessControlPolicy, error)
 }

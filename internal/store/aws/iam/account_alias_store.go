@@ -5,25 +5,26 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 const accountAliasBucketName = "iam_account_alias"
 
 // AccountAliasStore provides storage operations for the IAM account alias.
 type AccountAliasStore struct {
-	bucket storage.Bucket
+	*common.BaseStore
 }
 
 // NewAccountAliasStore creates a new AccountAliasStore instance.
 func NewAccountAliasStore(store storage.BasicStorage) *AccountAliasStore {
 	return &AccountAliasStore{
-		bucket: store.Bucket(accountAliasBucketName),
+		BaseStore: common.NewBaseStore(store.Bucket(accountAliasBucketName), "iam"),
 	}
 }
 
 // Get retrieves the current account alias.
 func (s *AccountAliasStore) Get() (*AccountAlias, error) {
-	data, err := s.bucket.Get([]byte("alias"))
+	data, err := s.Bucket().Get([]byte("alias"))
 	if err != nil {
 		return nil, NewStoreError("get_account_alias", err)
 	}
@@ -43,25 +44,15 @@ func (s *AccountAliasStore) Put(accountAlias string) error {
 		AccountAlias: accountAlias,
 		CreateDate:   time.Now().UTC(),
 	}
-	data, err := json.Marshal(alias)
-	if err != nil {
-		return NewStoreError("put_account_alias", err)
-	}
-	if err := s.bucket.Put([]byte("alias"), data); err != nil {
-		return NewStoreError("put_account_alias", err)
-	}
-	return nil
+	return s.BaseStore.Put("alias", alias)
 }
 
 // Delete removes the account alias.
 func (s *AccountAliasStore) Delete() error {
-	if err := s.bucket.Delete([]byte("alias")); err != nil {
-		return NewStoreError("delete_account_alias", err)
-	}
-	return nil
+	return s.BaseStore.Delete("alias")
 }
 
 // Exists reports whether an account alias is set.
 func (s *AccountAliasStore) Exists() bool {
-	return s.bucket.Has([]byte("alias"))
+	return s.BaseStore.Exists("alias")
 }

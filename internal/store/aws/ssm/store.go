@@ -100,7 +100,7 @@ func (s *Store) PutParameter(param *Parameter, overwrite bool) (int64, error) {
 	}
 
 	if len(param.Tags) > 0 {
-		if err := s.TagStore.TagResource(param.Name, param.Tags); err != nil {
+		if err := s.TagStore.Tag(param.Name, param.Tags); err != nil {
 			return 0, err
 		}
 	}
@@ -368,7 +368,7 @@ func (s *Store) AddTagsToResource(name string, tags map[string]string) error {
 	if _, err := s.GetParameter(name, false); err != nil {
 		return err
 	}
-	return s.TagStore.TagResource(name, tags)
+	return s.TagStore.Tag(name, tags)
 }
 
 // RemoveTagsFromResource removes tags from a parameter.
@@ -376,7 +376,7 @@ func (s *Store) RemoveTagsFromResource(name string, tagKeys []string) error {
 	if _, err := s.GetParameter(name, false); err != nil {
 		return err
 	}
-	return s.TagStore.UntagResource(name, tagKeys)
+	return s.TagStore.Untag(name, tagKeys)
 }
 
 // ListTagsForResource retrieves tags for a parameter.
@@ -384,7 +384,7 @@ func (s *Store) ListTagsForResource(name string) (map[string]string, error) {
 	if _, err := s.GetParameter(name, false); err != nil {
 		return nil, err
 	}
-	return s.TagStore.ListTags(name)
+	return s.TagStore.List(name)
 }
 
 var parameterNameRegex = regexp.MustCompile(`^/([a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_.-]+$|^[a-zA-Z0-9_.-]+$`)

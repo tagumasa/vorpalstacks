@@ -3,7 +3,7 @@ package scheduler
 import (
 	"context"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // SchedulerStoreInterface defines operations for managing EventBridge Scheduler schedules.
@@ -23,9 +23,9 @@ type SchedulerStoreInterface interface {
 	ListSchedules(ctx context.Context, groupName, namePrefix string, state ScheduleState, limit int32, nextToken string) (*ScheduleListResult, error)
 	GetAllEnabledSchedules(ctx context.Context) ([]*Schedule, error)
 	EnsureDefaultGroup(ctx context.Context) error
-	TagResourceFromSlice(arn string, tags []common.Tag) error
-	UntagResource(arn string, tagKeys []string) error
-	ListTagsAsSlice(arn string) ([]common.Tag, error)
+	TagFromSlice(arn string, tags []types.Tag) error
+	Untag(arn string, tagKeys []string) error
+	ListAsSlice(arn string) ([]types.Tag, error)
 	Raw() *SchedulerStore
 }
 

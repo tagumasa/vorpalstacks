@@ -9,9 +9,11 @@ import (
 	"fmt"
 )
 
+const uuidSize = 16
+
 // GenerateKeyID generates a new KMS key ID.
 func GenerateKeyID() (string, error) {
-	uuid := make([]byte, 16)
+	uuid := make([]byte, uuidSize)
 	if _, err := rand.Read(uuid); err != nil {
 		return "", err
 	}
@@ -23,7 +25,7 @@ func GenerateKeyID() (string, error) {
 
 // GenerateGrantID generates a new KMS grant ID.
 func GenerateGrantID() (string, error) {
-	uuid := make([]byte, 16)
+	uuid := make([]byte, uuidSize)
 	if _, err := rand.Read(uuid); err != nil {
 		return "", err
 	}

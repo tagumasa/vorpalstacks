@@ -3,8 +3,6 @@ package crypto
 import (
 	"errors"
 	"strings"
-
-	"vorpalstacks/internal/common/auth"
 )
 
 // Constants for AWS Signature Version 4.
@@ -14,9 +12,6 @@ const (
 	// ServicePrefix is the AWS Signature Version 4 service prefix.
 	ServicePrefix = "aws4_request"
 )
-
-// CredentialsProvider is an alias for auth.CredentialsProvider.
-type CredentialsProvider = auth.CredentialsProvider
 
 // AuthorizationHeader represents the components of an AWS authorization header.
 type AuthorizationHeader struct {

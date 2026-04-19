@@ -29,7 +29,9 @@ import (
 // Store provides CloudWatch Logs storage operations.
 type Store struct {
 	*common.BaseStore
+	tagStore     *common.TagStore
 	arnBuilder   *svcarn.ARNBuilder
+	region       string
 	chunksDir    string
 	chunkMutex   sync.Mutex
 	activeChunks map[string]*activeChunk
@@ -41,7 +43,7 @@ type activeChunk struct {
 }
 
 // NewStore creates a new CloudWatch Logs store.
-func NewStore(bucket storage.Bucket, accountID, region, dataPath string) (*Store, error) {
+func NewStore(store storage.BasicStorage, bucket storage.Bucket, accountID, region, dataPath string) (*Store, error) {
 	baseStore := common.NewBaseStore(bucket, "logs")
 	chunksDir := filepath.Join(dataPath, "logs-chunks")
 	if err := os.MkdirAll(chunksDir, 0755); err != nil {
@@ -50,7 +52,9 @@ func NewStore(bucket storage.Bucket, accountID, region, dataPath string) (*Store
 
 	return &Store{
 		BaseStore:    baseStore,
+		tagStore:     common.NewTagStoreWithRegion(store, "cloudwatchlogs", region),
 		arnBuilder:   svcarn.NewARNBuilder(accountID, region),
+		region:       region,
 		chunksDir:    chunksDir,
 		activeChunks: make(map[string]*activeChunk),
 	}, nil
@@ -59,6 +63,11 @@ func NewStore(bucket storage.Bucket, accountID, region, dataPath string) (*Store
 // ARNBuilder returns the ARN builder for the store.
 func (s *Store) ARNBuilder() *svcarn.ARNBuilder {
 	return s.arnBuilder
+}
+
+// Tags returns the tag store for CloudWatch Logs log groups.
+func (s *Store) Tags() *common.TagStore {
+	return s.tagStore
 }
 
 func (s *Store) safeChunkPath(chunkPath string) (string, error) {
@@ -127,6 +136,10 @@ func (s *Store) DeleteLogGroup(name string) error {
 		if err := s.Delete(s.subscriptionFilterKey(name, sf.FilterName)); err != nil {
 			logs.Error("Failed to delete subscription filter", logs.String("name", sf.FilterName), logs.Err(err))
 		}
+	}
+	arn := s.arnBuilder.CloudWatch().LogGroup(name)
+	if err := s.tagStore.Delete(arn); err != nil {
+		logs.Error("Failed to delete tags for log group", logs.String("name", name), logs.Err(err))
 	}
 	key := s.logGroupKey(name)
 	return s.Delete(key)

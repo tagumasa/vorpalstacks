@@ -185,7 +185,7 @@ func (s *LambdaService) getLogsStore(region string) (*logsstore.Store, error) {
 	if regionalStore == nil {
 		return nil, fmt.Errorf("lambda: no regional storage available for %s", region)
 	}
-	store, err := logsstore.NewStore(regionalStore.Bucket("logs-"+region), s.accountID, region, s.dataDir)
+	store, err := logsstore.NewStore(regionalStore, regionalStore.Bucket("logs-"+region), s.accountID, region, s.dataDir)
 	if err != nil {
 		return nil, err
 	}

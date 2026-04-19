@@ -6,7 +6,7 @@ package waf
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // WebACL represents a WAF Web Access Control List.
@@ -22,7 +22,7 @@ type WebACL struct {
 	Scope            string            `json:"scope"`
 	Description      string            `json:"description"`
 	LockToken        string            `json:"lockToken"`
-	Tags             []Tag             `json:"tags"`
+	Tags             []types.Tag       `json:"tags"`
 	CreatedAt        time.Time         `json:"createdAt"`
 	ModifiedAt       time.Time         `json:"modifiedAt"`
 }
@@ -39,7 +39,7 @@ type Rule struct {
 	Statement        *Statement        `json:"statement"`
 	OverrideAction   *Action           `json:"overrideAction"`
 	VisibilityConfig *VisibilityConfig `json:"visibilityConfig"`
-	Tags             []Tag             `json:"tags"`
+	Tags             []types.Tag       `json:"tags"`
 }
 
 // Statement represents a WAF rule statement.
@@ -208,7 +208,7 @@ type RuleGroup struct {
 	VisibilityConfig *VisibilityConfig `json:"visibilityConfig"`
 	Description      string            `json:"description"`
 	LockToken        string            `json:"lockToken"`
-	Tags             []Tag             `json:"tags"`
+	Tags             []types.Tag       `json:"tags"`
 	CreatedAt        time.Time         `json:"createdAt"`
 	ModifiedAt       time.Time         `json:"modifiedAt"`
 }
@@ -223,23 +223,23 @@ type IPSet struct {
 	Addresses        []string      `json:"addresses"`
 	IPSetDescriptors []interface{} `json:"ipSetDescriptors"`
 	LockToken        string        `json:"lockToken"`
-	Tags             []Tag         `json:"tags"`
+	Tags             []types.Tag   `json:"tags"`
 	CreatedAt        time.Time     `json:"createdAt"`
 	ModifiedAt       time.Time     `json:"modifiedAt"`
 }
 
 // RegexPatternSet represents a WAF regular expression pattern set.
 type RegexPatternSet struct {
-	ID                  string    `json:"id"`
-	Name                string    `json:"name"`
-	ARN                 string    `json:"arn"`
-	Description         string    `json:"description"`
-	RegularPatterns     []string  `json:"regularPatterns"`
-	RegexPatternStrings []string  `json:"regexPatternStrings"`
-	LockToken           string    `json:"lockToken"`
-	Tags                []Tag     `json:"tags"`
-	CreatedAt           time.Time `json:"createdAt"`
-	ModifiedAt          time.Time `json:"modifiedAt"`
+	ID                  string      `json:"id"`
+	Name                string      `json:"name"`
+	ARN                 string      `json:"arn"`
+	Description         string      `json:"description"`
+	RegularPatterns     []string    `json:"regularPatterns"`
+	RegexPatternStrings []string    `json:"regexPatternStrings"`
+	LockToken           string      `json:"lockToken"`
+	Tags                []types.Tag `json:"tags"`
+	CreatedAt           time.Time   `json:"createdAt"`
+	ModifiedAt          time.Time   `json:"modifiedAt"`
 }
 
 // WebACLAssociation represents an association between a web ACL and a resource.
@@ -247,9 +247,6 @@ type WebACLAssociation struct {
 	WebACLArn   string `json:"webAclArn"`
 	ResourceArn string `json:"resourceArn"`
 }
-
-// Tag represents a WAF tag.
-type Tag = common.Tag
 
 // WebACLListResult represents the result of listing web ACLs.
 type WebACLListResult struct {

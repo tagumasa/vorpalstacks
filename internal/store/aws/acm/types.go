@@ -4,7 +4,7 @@ package acm
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // Certificate represents an ACM certificate.
@@ -38,7 +38,7 @@ type Certificate struct {
 	Certificate             string              `json:"certificate,omitempty"`
 	CertificateChain        string              `json:"certificateChain,omitempty"`
 	PrivateKey              string              `json:"privateKey,omitempty"`
-	Tags                    []common.Tag        `json:"tags,omitempty"`
+	Tags                    []types.Tag         `json:"tags,omitempty"`
 	AccountID               string              `json:"accountId"`
 	Region                  string              `json:"region"`
 }

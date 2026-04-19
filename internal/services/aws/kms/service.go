@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/common/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/common/request"
@@ -249,53 +249,53 @@ func parseEncryptionContext(params map[string]interface{}) map[string]string {
 
 // ErrKeyNotFound is returned when a requested key does not exist.
 var (
-	ErrKeyNotFound = errors.NewAWSError("NotFoundException", "Key not found", http.StatusNotFound)
+	ErrKeyNotFound = awserrors.NewAWSError("NotFoundException", "Key not found", http.StatusNotFound)
 	// ErrKeyAlreadyExists is returned when attempting to create a key that already exists.
-	ErrKeyAlreadyExists = errors.NewAWSError("AlreadyExistsException", "Key already exists", http.StatusConflict)
+	ErrKeyAlreadyExists = awserrors.NewAWSError("AlreadyExistsException", "Key already exists", http.StatusConflict)
 	// ErrAliasNotFound is returned when a requested alias does not exist.
-	ErrAliasNotFound = errors.NewAWSError("NotFoundException", "Alias not found", http.StatusNotFound)
+	ErrAliasNotFound = awserrors.NewAWSError("NotFoundException", "Alias not found", http.StatusNotFound)
 	// ErrAliasAlreadyExists is returned when attempting to create an alias that already exists.
-	ErrAliasAlreadyExists = errors.NewAWSError("AlreadyExistsException", "Alias already exists", http.StatusConflict)
+	ErrAliasAlreadyExists = awserrors.NewAWSError("AlreadyExistsException", "Alias already exists", http.StatusConflict)
 	// ErrGrantNotFound is returned when a requested grant does not exist.
-	ErrGrantNotFound = errors.NewAWSError("NotFoundException", "Grant not found", http.StatusNotFound)
+	ErrGrantNotFound = awserrors.NewAWSError("NotFoundException", "Grant not found", http.StatusNotFound)
 	// ErrKeyDisabled is returned when attempting to use a disabled key.
-	ErrKeyDisabled = errors.NewAWSError("DisabledException", "Key is disabled", http.StatusBadRequest)
+	ErrKeyDisabled = awserrors.NewAWSError("DisabledException", "Key is disabled", http.StatusBadRequest)
 	// ErrKeyPendingDeletion is returned when the key is pending deletion.
-	ErrKeyPendingDeletion = errors.NewAWSError("KMSInvalidStateException", "Key is pending deletion", http.StatusBadRequest)
+	ErrKeyPendingDeletion = awserrors.NewAWSError("KMSInvalidStateException", "Key is pending deletion", http.StatusBadRequest)
 	// ErrKeyPendingImport is returned when the key is pending import of key material.
-	ErrKeyPendingImport = errors.NewAWSError("KMSInvalidStateException", "Key is pending import", http.StatusBadRequest)
+	ErrKeyPendingImport = awserrors.NewAWSError("KMSInvalidStateException", "Key is pending import", http.StatusBadRequest)
 	// ErrInvalidKeyUsage is returned when the key usage is invalid for the operation.
-	ErrInvalidKeyUsage = errors.NewAWSError("InvalidKeyUsageException", "Invalid key usage", http.StatusBadRequest)
+	ErrInvalidKeyUsage = awserrors.NewAWSError("InvalidKeyUsageException", "Invalid key usage", http.StatusBadRequest)
 	// ErrInvalidKeySpec is returned when the key spec is invalid.
-	ErrInvalidKeySpec = errors.NewAWSError("InvalidKeySpecException", "Invalid key spec", http.StatusBadRequest)
+	ErrInvalidKeySpec = awserrors.NewAWSError("InvalidKeySpecException", "Invalid key spec", http.StatusBadRequest)
 	// ErrInvalidAlgorithm is returned when the algorithm is invalid.
-	ErrInvalidAlgorithm = errors.NewAWSError("InvalidAlgorithmException", "Invalid algorithm", http.StatusBadRequest)
+	ErrInvalidAlgorithm = awserrors.NewAWSError("InvalidAlgorithmException", "Invalid algorithm", http.StatusBadRequest)
 	// ErrAccessDenied is returned when access is denied.
-	ErrAccessDenied = errors.NewAWSError("AccessDeniedException", "Access denied", http.StatusForbidden)
+	ErrAccessDenied = awserrors.NewAWSError("AccessDeniedException", "Access denied", http.StatusForbidden)
 	// ErrInvalidCiphertext is returned when the ciphertext is invalid.
-	ErrInvalidCiphertext = errors.NewAWSError("InvalidCiphertextException", "Invalid ciphertext", http.StatusBadRequest)
+	ErrInvalidCiphertext = awserrors.NewAWSError("InvalidCiphertextException", "Invalid ciphertext", http.StatusBadRequest)
 	// ErrInvalidGrantToken is returned when the grant token is invalid.
-	ErrInvalidGrantToken = errors.NewAWSError("InvalidGrantTokenException", "Invalid grant token", http.StatusBadRequest)
+	ErrInvalidGrantToken = awserrors.NewAWSError("InvalidGrantTokenException", "Invalid grant token", http.StatusBadRequest)
 	// ErrInvalidAliasName is returned when the alias name is invalid.
-	ErrInvalidAliasName = errors.NewAWSError("InvalidAliasNameException", "Invalid alias name", http.StatusBadRequest)
+	ErrInvalidAliasName = awserrors.NewAWSError("InvalidAliasNameException", "Invalid alias name", http.StatusBadRequest)
 	// ErrDependencyTimeout is returned when a dependency operation times out.
-	ErrDependencyTimeout = errors.NewAWSError("DependencyTimeoutException", "Dependency timeout", http.StatusServiceUnavailable)
+	ErrDependencyTimeout = awserrors.NewAWSError("DependencyTimeoutException", "Dependency timeout", http.StatusServiceUnavailable)
 	// ErrKMSInternal is returned for internal KMS failures.
-	ErrKMSInternal = errors.NewAWSError("KMSInternalException", "An internal error occurred", http.StatusInternalServerError)
+	ErrKMSInternal = awserrors.NewAWSError("KMSInternalException", "An internal error occurred", http.StatusInternalServerError)
 	// ErrMalformedPolicy is returned when the policy document is malformed.
-	ErrMalformedPolicy = errors.NewAWSError("MalformedPolicyDocumentException", "Malformed policy document", http.StatusBadRequest)
+	ErrMalformedPolicy = awserrors.NewAWSError("MalformedPolicyDocumentException", "Malformed policy document", http.StatusBadRequest)
 	// ErrValidation is returned when a parameter validation fails.
-	ErrValidation = errors.NewAWSError("ValidationException", "Invalid parameter", http.StatusBadRequest)
+	ErrValidation = awserrors.NewAWSError("ValidationException", "Invalid parameter", http.StatusBadRequest)
 )
 
 // NewKeyNotFoundError creates a new key not found error.
-func NewKeyNotFoundError(keyID string) *errors.AWSError {
-	return errors.NewAWSError("NotFoundException", "Key '"+keyID+"' does not exist", http.StatusNotFound)
+func NewKeyNotFoundError(keyID string) *awserrors.AWSError {
+	return awserrors.NewAWSError("NotFoundException", "Key '"+keyID+"' does not exist", http.StatusNotFound)
 }
 
 // NewAliasNotFoundError creates a new alias not found error.
-func NewAliasNotFoundError(aliasName string) *errors.AWSError {
-	return errors.NewAWSError("NotFoundException", "Alias '"+aliasName+"' does not exist", http.StatusNotFound)
+func NewAliasNotFoundError(aliasName string) *awserrors.AWSError {
+	return awserrors.NewAWSError("NotFoundException", "Alias '"+aliasName+"' does not exist", http.StatusNotFound)
 }
 
 // EncryptString encrypts a plaintext string using the specified key.

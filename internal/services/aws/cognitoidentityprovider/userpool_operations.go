@@ -31,7 +31,7 @@ func (s *CognitoService) CreateUserPool(ctx context.Context, reqCtx *request.Req
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "UserPoolTags"))
 	if len(tags) > 0 {
-		if err := store.TagResource(created.Arn, tags); err != nil {
+		if err := store.Tag(created.Arn, tags); err != nil {
 			return nil, ErrInternalError
 		}
 	}
@@ -58,7 +58,7 @@ func (s *CognitoService) DescribeUserPool(ctx context.Context, reqCtx *request.R
 		return nil, ErrResourceNotFound
 	}
 
-	tags, _ := store.ListTagsAsSlice(userPool.Arn)
+	tags, _ := store.ListAsSlice(userPool.Arn)
 	userPool.Tags = tags
 
 	return map[string]interface{}{

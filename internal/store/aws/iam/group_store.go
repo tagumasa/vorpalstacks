@@ -5,32 +5,22 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/store/aws/common"
 )
 
 const groupBucketName = "iam_groups"
 
 // GroupStore manages IAM group data in persistent storage.
 type GroupStore struct {
-	*common.BaseStore
+	entityStore[Group]
 	arnBuilder *ARNBuilder
 }
 
 // NewGroupStore creates a new store for IAM groups.
 func NewGroupStore(store storage.BasicStorage, accountId string) *GroupStore {
 	return &GroupStore{
-		BaseStore:  common.NewBaseStore(store.Bucket(groupBucketName), "iam"),
-		arnBuilder: NewARNBuilder(accountId),
+		entityStore: newEntityStore[Group](store, groupBucketName),
+		arnBuilder:  NewARNBuilder(accountId),
 	}
-}
-
-// Get retrieves a group by its name.
-func (s *GroupStore) Get(groupName string) (*Group, error) {
-	var group Group
-	if err := s.BaseStore.Get(groupName, &group); err != nil {
-		return nil, err
-	}
-	return &group, nil
 }
 
 // GetByArn retrieves a group by its ARN.
@@ -44,7 +34,7 @@ func (s *GroupStore) GetByArn(arn string) (*Group, error) {
 			return g, nil
 		}
 	}
-	return nil, ErrGroupNotFound
+	return nil, NewStoreError("get_group_by_arn", ErrGroupNotFound)
 }
 
 // GetByPath retrieves all groups with a given path prefix.
@@ -70,30 +60,16 @@ func (s *GroupStore) Put(group *Group) error {
 	return s.BaseStore.Put(group.GroupName, group)
 }
 
-// Delete removes a group by its name.
-func (s *GroupStore) Delete(groupName string) error {
-	return s.BaseStore.Delete(groupName)
-}
-
-// Exists checks whether a group exists.
-func (s *GroupStore) Exists(groupName string) bool {
-	return s.BaseStore.Exists(groupName)
-}
-
 // List returns a paginated list of groups.
 func (s *GroupStore) List(pathPrefix, marker string, maxItems int) (*GroupListResult, error) {
-	var filter common.FilterFunc[Group]
-	if pathPrefix != "" {
-		filter = func(g *Group) bool { return strings.HasPrefix(g.Path, pathPrefix) }
-	}
-	result, err := common.List[Group](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
+	items, truncated, nextMarker, err := listEntitiesWithPathPrefix(s.BaseStore, pathPrefix, marker, maxItems, func(g *Group) string { return g.Path })
 	if err != nil {
 		return nil, err
 	}
 	return &GroupListResult{
-		Groups:      result.Items,
-		IsTruncated: result.IsTruncated,
-		Marker:      result.NextMarker,
+		Groups:      items,
+		IsTruncated: truncated,
+		Marker:      nextMarker,
 	}, nil
 }
 
@@ -126,9 +102,4 @@ func (s *GroupStore) Create(groupName, path, accountId string) (*Group, error) {
 // Update updates an existing group.
 func (s *GroupStore) Update(group *Group) error {
 	return s.Put(group)
-}
-
-// Count returns the total number of groups.
-func (s *GroupStore) Count() int {
-	return s.BaseStore.Count()
 }

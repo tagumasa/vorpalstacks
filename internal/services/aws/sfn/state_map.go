@@ -119,7 +119,9 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	defer func() {
 		mapRunRecord.StopDate = time.Now().UTC().Unix()
-		_ = e.store.UpdateMapRun(ctx, mapRunRecord)
+		if err := e.store.UpdateMapRun(ctx, mapRunRecord); err != nil {
+			logs.Error("sfn: failed to update map run status", logs.Err(err))
+		}
 	}()
 
 	var wg sync.WaitGroup

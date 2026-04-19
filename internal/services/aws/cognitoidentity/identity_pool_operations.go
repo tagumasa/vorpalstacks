@@ -58,7 +58,7 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "IdentityPoolTags"))
 	if len(tags) > 0 {
-		if err := store.TagResource(created.Arn, tags); err != nil {
+		if err := store.Tag(created.Arn, tags); err != nil {
 			logs.Error("Failed to tag identity pool, attempting cleanup", logs.String("poolId", created.ID), logs.Err(err))
 			if delErr := store.DeleteIdentityPool(created.ID); delErr != nil {
 				logs.Error("Failed to cleanup identity pool after tag failure", logs.String("poolId", created.ID), logs.Err(delErr))
@@ -90,7 +90,7 @@ func (s *CognitoIdentityService) DescribeIdentityPool(ctx context.Context, reqCt
 		return nil, ErrResourceNotFound
 	}
 
-	tags, _ := store.ListTags(pool.Arn)
+	tags, _ := store.List(pool.Arn)
 	if len(tags) > 0 {
 		return formatIdentityPoolWithTags(pool, tags), nil
 	}

@@ -6,6 +6,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
@@ -49,10 +50,12 @@ func (s *TimestreamWriteService) CreateTable(ctx context.Context, reqCtx *reques
 	}
 
 	if tags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"); len(tags) > 0 {
-		_ = st.store.TagResource(table.ARN, tagutil.ToMap(tags))
+		if err := st.store.Tag(table.ARN, tagutil.ToMap(tags)); err != nil {
+			logs.Warn("Failed to tag newly created table", logs.String("tableArn", table.ARN), logs.Err(err))
+		}
 	}
 
-	tags, _ := st.store.ListTags(table.ARN)
+	tags, _ := st.store.List(table.ARN)
 
 	return map[string]interface{}{
 		"Table": s.formatTableResponse(table, tags),
@@ -83,7 +86,7 @@ func (s *TimestreamWriteService) DescribeTable(ctx context.Context, reqCtx *requ
 		return nil, s.mapStoreError(err)
 	}
 
-	tags, _ := st.store.ListTags(table.ARN)
+	tags, _ := st.store.List(table.ARN)
 
 	return map[string]interface{}{
 		"Table": s.formatTableResponse(table, tags),
@@ -115,7 +118,7 @@ func (s *TimestreamWriteService) ListTables(ctx context.Context, reqCtx *request
 
 	tableList := make([]map[string]interface{}, 0)
 	for _, table := range result.Items {
-		tags, _ := st.store.ListTags(table.ARN)
+		tags, _ := st.store.List(table.ARN)
 		tableList = append(tableList, s.formatTableResponse(table, tags))
 	}
 
@@ -155,7 +158,7 @@ func (s *TimestreamWriteService) UpdateTable(ctx context.Context, reqCtx *reques
 		return nil, s.mapStoreError(err)
 	}
 
-	tags, _ := st.store.ListTags(table.ARN)
+	tags, _ := st.store.List(table.ARN)
 
 	return map[string]interface{}{
 		"Table": s.formatTableResponse(table, tags),

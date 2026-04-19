@@ -4,7 +4,7 @@ package eventbridge
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // EventBusState represents the state of an EventBridge event bus.
@@ -73,33 +73,33 @@ const (
 
 // EventBus represents an EventBridge event bus.
 type EventBus struct {
-	Name           string       `json:"name"`
-	ARN            string       `json:"arn"`
-	Region         string       `json:"region"`
-	AccountID      string       `json:"accountId"`
-	Description    string       `json:"description,omitempty"`
-	Policy         string       `json:"policy,omitempty"`
-	Tags           []common.Tag `json:"tags,omitempty"`
-	CreatedAt      time.Time    `json:"createdAt"`
-	LastModifiedAt time.Time    `json:"lastModifiedAt,omitempty"`
+	Name           string      `json:"name"`
+	ARN            string      `json:"arn"`
+	Region         string      `json:"region"`
+	AccountID      string      `json:"accountId"`
+	Description    string      `json:"description,omitempty"`
+	Policy         string      `json:"policy,omitempty"`
+	Tags           []types.Tag `json:"tags,omitempty"`
+	CreatedAt      time.Time   `json:"createdAt"`
+	LastModifiedAt time.Time   `json:"lastModifiedAt,omitempty"`
 }
 
 // Rule represents an EventBridge rule.
 type Rule struct {
-	Name               string       `json:"name"`
-	ARN                string       `json:"arn"`
-	Region             string       `json:"region"`
-	AccountID          string       `json:"accountId"`
-	EventBusName       string       `json:"eventBusName"`
-	Description        string       `json:"description,omitempty"`
-	EventPattern       string       `json:"eventPattern,omitempty"`
-	ScheduleExpression string       `json:"scheduleExpression,omitempty"`
-	State              RuleState    `json:"state"`
-	ManagedBy          string       `json:"managedBy,omitempty"`
-	RoleARN            string       `json:"roleArn,omitempty"`
-	Tags               []common.Tag `json:"tags,omitempty"`
-	CreatedAt          time.Time    `json:"createdAt"`
-	LastModifiedAt     time.Time    `json:"lastModifiedAt"`
+	Name               string      `json:"name"`
+	ARN                string      `json:"arn"`
+	Region             string      `json:"region"`
+	AccountID          string      `json:"accountId"`
+	EventBusName       string      `json:"eventBusName"`
+	Description        string      `json:"description,omitempty"`
+	EventPattern       string      `json:"eventPattern,omitempty"`
+	ScheduleExpression string      `json:"scheduleExpression,omitempty"`
+	State              RuleState   `json:"state"`
+	ManagedBy          string      `json:"managedBy,omitempty"`
+	RoleARN            string      `json:"roleArn,omitempty"`
+	Tags               []types.Tag `json:"tags,omitempty"`
+	CreatedAt          time.Time   `json:"createdAt"`
+	LastModifiedAt     time.Time   `json:"lastModifiedAt"`
 }
 
 // Target represents an EventBridge target.
@@ -175,7 +175,7 @@ type Connection struct {
 	AuthorizationType string          `json:"authorizationType"`
 	State             ConnectionState `json:"state"`
 	StateReason       string          `json:"stateReason,omitempty"`
-	Tags              []common.Tag    `json:"tags,omitempty"`
+	Tags              []types.Tag     `json:"tags,omitempty"`
 	CreatedAt         time.Time       `json:"createdAt"`
 	LastModifiedAt    time.Time       `json:"lastModifiedAt,omitempty"`
 	LastAuthorizedAt  time.Time       `json:"lastAuthorizedAt,omitempty"`
@@ -193,7 +193,7 @@ type ApiDestination struct {
 	InvocationEndpoint           string              `json:"invocationEndpoint"`
 	InvocationRateLimitPerSecond int32               `json:"invocationRateLimitPerSecond,omitempty"`
 	State                        ApiDestinationState `json:"state"`
-	Tags                         []common.Tag        `json:"tags,omitempty"`
+	Tags                         []types.Tag         `json:"tags,omitempty"`
 	CreatedAt                    time.Time           `json:"createdAt"`
 	LastModifiedAt               time.Time           `json:"lastModifiedAt,omitempty"`
 }

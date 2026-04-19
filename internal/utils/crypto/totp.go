@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	totpTimeStep   = 30
-	totpDigits     = 6
-	totpWindowSize = 1
+	totpTimeStep    = 30
+	totpDigits      = 6
+	totpWindowSize  = 1
+	hotpCounterSize = 8
 )
 
 // ValidateConsecutiveTOTPCodes validates two consecutive TOTP codes.
@@ -58,7 +59,7 @@ func ValidateConsecutiveTOTPCodes(secret string, code1, code2 string) error {
 }
 
 func generateTOTP(secret []byte, timeStep int64) string {
-	counter := make([]byte, 8)
+	counter := make([]byte, hotpCounterSize)
 	binary.BigEndian.PutUint64(counter, uint64(timeStep))
 
 	h := hmac.New(sha1.New, secret)

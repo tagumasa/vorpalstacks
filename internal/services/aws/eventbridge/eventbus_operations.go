@@ -23,8 +23,6 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 		Name: name,
 	}
 
-	eventBus.Tags = tagutil.ParseTags(req.Parameters, "Tags")
-
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		eventBus.Description = desc
 	}
@@ -42,6 +40,12 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 			return nil, NewResourceAlreadyExistsException("Event bus '" + name + "' already exists")
 		}
 		return nil, err
+	}
+
+	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
+		if err := store.TagStore.TagFromSlice(eventBus.ARN, tags); err != nil {
+			return nil, err
+		}
 	}
 
 	return map[string]interface{}{
@@ -63,12 +67,18 @@ func (s *EventsService) DeleteEventBus(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	if err := store.DeleteEventBus(ctx, name); err != nil {
+	eventBus, err := store.GetEventBus(ctx, name)
+	if err != nil {
 		if err == eventsstore.ErrEventBusNotFound {
 			return nil, NewResourceNotFoundException("Event bus '" + name + "' does not exist")
 		}
 		return nil, err
 	}
+	if err := store.DeleteEventBus(ctx, name); err != nil {
+		return nil, err
+	}
+
+	store.TagStore.Delete(eventBus.ARN)
 
 	return response.EmptyResponse(), nil
 }

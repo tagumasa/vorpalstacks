@@ -2,11 +2,7 @@ package route53
 
 // Package route53 provides Route 53 data store implementations for vorpalstacks.
 
-import (
-	"time"
-
-	"vorpalstacks/internal/store/aws/common"
-)
+import "time"
 
 // HostedZone represents a Route 53 hosted zone.
 type HostedZone struct {
@@ -140,9 +136,6 @@ type ChangeBatch struct {
 	Comment string    `json:"comment,omitempty"`
 	Changes []*Change `json:"changes"`
 }
-
-// Tag represents a Route 53 resource tag.
-type Tag = common.Tag
 
 // HostedZoneListResult represents the result of listing hosted zones.
 type HostedZoneListResult struct {

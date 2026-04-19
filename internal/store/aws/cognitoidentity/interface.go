@@ -18,9 +18,9 @@ type CognitoIdentityStoreInterface interface {
 	GetIdentityPoolRoles(poolID string) (authRole, unauthRole string, mappings map[string]RoleMapping, err error)
 	GetIdentityByID(identityID string) (*Identity, error)
 	Exists(id string) bool
-	ListTags(resourceKey string) (map[string]string, error)
-	TagResource(resourceKey string, tags map[string]string) error
-	UntagResource(resourceKey string, tagKeys []string) error
+	List(resourceKey string) (map[string]string, error)
+	Tag(resourceKey string, tags map[string]string) error
+	Untag(resourceKey string, tagKeys []string) error
 	Raw() *CognitoIdentityStore
 	Identities() *common.BaseStore
 	ListIdentitiesByPool(poolID string, maxResults int, nextToken string) ([]*Identity, string, error)

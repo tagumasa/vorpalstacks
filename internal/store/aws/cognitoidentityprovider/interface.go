@@ -1,6 +1,8 @@
 package cognitoidentityprovider
 
-import "vorpalstacks/internal/store/aws/common"
+import (
+	"vorpalstacks/internal/utils/aws/types"
+)
 
 // CognitoStoreInterface defines operations for managing Cognito User Pools.
 type CognitoStoreInterface interface {
@@ -90,10 +92,10 @@ type ChallengeOperations interface {
 
 // TagOperations defines operations for managing tags.
 type TagOperations interface {
-	ListTags(resourceArn string) (map[string]string, error)
-	ListTagsAsSlice(resourceArn string) ([]common.Tag, error)
-	TagResource(resourceArn string, tags map[string]string) error
-	UntagResource(resourceArn string, tagKeys []string) error
+	List(resourceArn string) (map[string]string, error)
+	ListAsSlice(resourceArn string) ([]types.Tag, error)
+	Tag(resourceArn string, tags map[string]string) error
+	Untag(resourceArn string, tagKeys []string) error
 }
 
 // Raw returns the underlying Cognito store.

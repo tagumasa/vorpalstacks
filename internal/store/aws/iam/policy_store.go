@@ -9,6 +9,7 @@ import (
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 const policyBucketName = "iam_policies"
@@ -16,34 +17,28 @@ const policyVersionBucketName = "iam_policy_versions"
 
 // PolicyStore manages IAM policies.
 type PolicyStore struct {
-	bucket        storage.Bucket
-	versionBucket storage.Bucket
-	baseStore     *common.BaseStore
-	arnBuilder    *ARNBuilder
-	kl            common.KeyLocker
+	*common.BaseStore
+	versionStore *common.BaseStore
+	arnBuilder   *ARNBuilder
+	kl           common.KeyLocker
 }
 
 // NewPolicyStore creates a new PolicyStore.
 func NewPolicyStore(store storage.BasicStorage, accountId string) *PolicyStore {
 	return &PolicyStore{
-		bucket:        store.Bucket(policyBucketName),
-		versionBucket: store.Bucket(policyVersionBucketName),
-		baseStore:     common.NewBaseStore(store.Bucket(policyBucketName), "iam"),
-		arnBuilder:    NewARNBuilder(accountId),
+		BaseStore:    common.NewBaseStore(store.Bucket(policyBucketName), "iam"),
+		versionStore: common.NewBaseStore(store.Bucket(policyVersionBucketName), "iam"),
+		arnBuilder:   NewARNBuilder(accountId),
 	}
 }
 
 // Get retrieves a policy by its ARN.
 func (s *PolicyStore) Get(policyArn string) (*Policy, error) {
-	data, err := s.bucket.Get([]byte(policyArn))
-	if err != nil {
-		return nil, NewStoreError("get_policy", err)
-	}
-	if data == nil {
-		return nil, NewStoreError("get_policy", ErrPolicyNotFound)
-	}
 	var policy Policy
-	if err := json.Unmarshal(data, &policy); err != nil {
+	if err := s.BaseStore.Get(policyArn, &policy); err != nil {
+		if common.IsNotFound(err) {
+			return nil, NewStoreError("get_policy", ErrPolicyNotFound)
+		}
 		return nil, NewStoreError("get_policy", err)
 	}
 	return &policy, nil
@@ -51,23 +46,11 @@ func (s *PolicyStore) Get(policyArn string) (*Policy, error) {
 
 // GetByPathAndName retrieves a policy by its path and name.
 func (s *PolicyStore) GetByPathAndName(path, policyName string) (*Policy, error) {
-	var found *Policy
-	err := s.bucket.ForEach(func(k, v []byte) error {
-		var policy Policy
-		if err := json.Unmarshal(v, &policy); err != nil {
-			return err
-		}
-		if policy.Path == path && policy.PolicyName == policyName {
-			found = &policy
-			return nil
-		}
-		return nil
+	found, err := common.FindFirst[Policy](s.BaseStore, func(p *Policy) bool {
+		return p.Path == path && p.PolicyName == policyName
 	})
 	if err != nil {
 		return nil, NewStoreError("get_policy_by_name", err)
-	}
-	if found == nil {
-		return nil, NewStoreError("get_policy_by_name", ErrPolicyNotFound)
 	}
 	return found, nil
 }
@@ -100,7 +83,7 @@ func (s *PolicyStore) List(scope, pathPrefix string, onlyAttached bool, marker s
 		}
 	}
 
-	result, err := common.List[Policy](s.baseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
+	result, err := common.List[Policy](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -125,32 +108,21 @@ func (s *PolicyStore) Put(policy *Policy) error {
 	}
 	policy.IsAttachable = true
 
-	data, err := json.Marshal(policy)
-	if err != nil {
-		return NewStoreError("put_policy", err)
-	}
-
-	if err := s.bucket.Put([]byte(policy.Arn), data); err != nil {
-		return NewStoreError("put_policy", err)
-	}
-	return nil
+	return s.BaseStore.Put(policy.Arn, policy)
 }
 
 // Delete removes a policy by its ARN.
 func (s *PolicyStore) Delete(policyArn string) error {
-	if err := s.bucket.Delete([]byte(policyArn)); err != nil {
-		return NewStoreError("delete_policy", err)
-	}
-	return nil
+	return s.BaseStore.Delete(policyArn)
 }
 
 // Exists checks whether a policy exists.
 func (s *PolicyStore) Exists(policyArn string) bool {
-	return s.bucket.Has([]byte(policyArn))
+	return s.BaseStore.Exists(policyArn)
 }
 
 // Create creates a new policy.
-func (s *PolicyStore) Create(policyName, path, accountId, document, description string, tags []Tag) (*Policy, error) {
+func (s *PolicyStore) Create(policyName, path, accountId, document, description string, tags []types.Tag) (*Policy, error) {
 	arn := s.arnBuilder.PolicyARN(path, policyName)
 	if s.Exists(arn) {
 		return nil, NewStoreError("create_policy", ErrPolicyAlreadyExists)
@@ -221,7 +193,7 @@ func (s *PolicyStore) DecrementAttachmentCount(policyArn string) error {
 
 // Count returns the total number of policies.
 func (s *PolicyStore) Count() int {
-	return s.bucket.Count()
+	return s.BaseStore.Count()
 }
 
 // PutVersion stores a policy version.
@@ -229,31 +201,18 @@ func (s *PolicyStore) PutVersion(version *PolicyVersion) error {
 	if version.CreateDate.IsZero() {
 		version.CreateDate = time.Now().UTC()
 	}
-
-	key := []byte(version.PolicyArn + ":" + version.VersionId)
-	data, err := json.Marshal(version)
-	if err != nil {
-		return NewStoreError("put_policy_version", err)
-	}
-
-	if err := s.versionBucket.Put(key, data); err != nil {
-		return NewStoreError("put_policy_version", err)
-	}
-	return nil
+	key := version.PolicyArn + ":" + version.VersionId
+	return s.versionStore.Put(key, version)
 }
 
 // GetVersion retrieves a specific version of a policy.
 func (s *PolicyStore) GetVersion(policyArn, versionId string) (*PolicyVersion, error) {
-	key := []byte(policyArn + ":" + versionId)
-	data, err := s.versionBucket.Get(key)
-	if err != nil {
-		return nil, NewStoreError("get_policy_version", err)
-	}
-	if data == nil {
-		return nil, NewStoreError("get_policy_version", ErrPolicyNotFound)
-	}
+	key := policyArn + ":" + versionId
 	var version PolicyVersion
-	if err := json.Unmarshal(data, &version); err != nil {
+	if err := s.versionStore.Get(key, &version); err != nil {
+		if common.IsNotFound(err) {
+			return nil, NewStoreError("get_policy_version", ErrPolicyNotFound)
+		}
 		return nil, NewStoreError("get_policy_version", err)
 	}
 	return &version, nil
@@ -261,11 +220,8 @@ func (s *PolicyStore) GetVersion(policyArn, versionId string) (*PolicyVersion, e
 
 // DeleteVersion removes a specific version of a policy.
 func (s *PolicyStore) DeleteVersion(policyArn, versionId string) error {
-	key := []byte(policyArn + ":" + versionId)
-	if err := s.versionBucket.Delete(key); err != nil {
-		return NewStoreError("delete_policy_version", err)
-	}
-	return nil
+	key := policyArn + ":" + versionId
+	return s.versionStore.Delete(key)
 }
 
 // ListVersions retrieves all versions of a policy.
@@ -280,9 +236,8 @@ func (s *PolicyStore) ListVersions(policyArn string, marker string, maxItems int
 	hasMore := false
 	prefix := policyArn + ":"
 
-	err := s.versionBucket.ForEach(func(k, v []byte) error {
-		key := string(k)
-		if !strings.HasPrefix(key, prefix) {
+	err := s.versionStore.ForEach(func(k string, v []byte) error {
+		if !strings.HasPrefix(k, prefix) {
 			return nil
 		}
 
@@ -379,9 +334,9 @@ func extractVersionNumber(versionId string) int {
 func (s *PolicyStore) GetMaxVersion(policyArn string) (int, error) {
 	prefix := policyArn + ":"
 	maxVersion := 0
-	err := s.versionBucket.ForEach(func(k, v []byte) error {
-		if strings.HasPrefix(string(k), prefix) {
-			versionId := strings.TrimPrefix(string(k), prefix)
+	err := s.versionStore.ForEach(func(k string, v []byte) error {
+		if strings.HasPrefix(k, prefix) {
+			versionId := strings.TrimPrefix(k, prefix)
 			vnum := extractVersionNumber(versionId)
 			if vnum > maxVersion {
 				maxVersion = vnum
@@ -399,8 +354,8 @@ func (s *PolicyStore) GetMaxVersion(policyArn string) (int, error) {
 func (s *PolicyStore) CountVersions(policyArn string) (int, error) {
 	prefix := policyArn + ":"
 	count := 0
-	err := s.versionBucket.ForEach(func(k, v []byte) error {
-		if strings.HasPrefix(string(k), prefix) {
+	err := s.versionStore.ForEach(func(k string, v []byte) error {
+		if strings.HasPrefix(k, prefix) {
 			count++
 		}
 		return nil
@@ -414,10 +369,10 @@ func (s *PolicyStore) CountVersions(policyArn string) (int, error) {
 // DeleteAllVersions removes all versions of a policy.
 func (s *PolicyStore) DeleteAllVersions(policyArn string) error {
 	prefix := policyArn + ":"
-	var keysToDelete [][]byte
+	var keysToDelete []string
 
-	if err := s.versionBucket.ForEach(func(k, v []byte) error {
-		if strings.HasPrefix(string(k), prefix) {
+	if err := s.versionStore.ForEach(func(k string, v []byte) error {
+		if strings.HasPrefix(k, prefix) {
 			keysToDelete = append(keysToDelete, k)
 		}
 		return nil
@@ -426,7 +381,7 @@ func (s *PolicyStore) DeleteAllVersions(policyArn string) error {
 	}
 
 	for _, key := range keysToDelete {
-		if err := s.versionBucket.Delete(key); err != nil {
+		if err := s.versionStore.Delete(key); err != nil {
 			return err
 		}
 	}
@@ -463,12 +418,7 @@ func (s *PolicyStore) CreateAWSManagedPolicy(def AWSManagedPolicy) error {
 		Description:      def.Description,
 	}
 
-	data, err := json.Marshal(policy)
-	if err != nil {
-		return NewStoreError("create_aws_managed_policy", err)
-	}
-
-	if err := s.bucket.Put([]byte(def.ARN), data); err != nil {
+	if err := s.BaseStore.Put(def.ARN, policy); err != nil {
 		return NewStoreError("create_aws_managed_policy", err)
 	}
 

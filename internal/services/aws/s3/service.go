@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
-	"vorpalstacks/internal/utils/crypto"
 )
 
 type s3Stores struct {
@@ -29,7 +29,7 @@ type S3Service struct {
 	storageManager      *storage.RegionStorageManager
 	accountID           string
 	accessController    *AccessController
-	credentialsProvider crypto.CredentialsProvider
+	credentialsProvider auth.CredentialsProvider
 	encryptionManager   *EncryptionManager
 	fallbackCache       sync.Map
 	bus                 eventbus.Bus
@@ -60,7 +60,7 @@ func NewS3ServiceWithStorage(blobStore storage.BlobStore, accountID string) *S3S
 }
 
 // SetCredentialsProvider sets the credentials provider for the S3 service.
-func (s *S3Service) SetCredentialsProvider(provider crypto.CredentialsProvider) {
+func (s *S3Service) SetCredentialsProvider(provider auth.CredentialsProvider) {
 	s.credentialsProvider = provider
 }
 

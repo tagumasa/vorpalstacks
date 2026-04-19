@@ -15,6 +15,8 @@ import (
 	"github.com/cockroachdb/pebble/v2"
 )
 
+const lockTokenSize = 16
+
 type lockEntry struct {
 	Token     string `json:"token"`
 	Mode      int    `json:"mode"`
@@ -44,7 +46,7 @@ func (m *PebbleLockManager) makeKey(key []byte) []byte {
 }
 
 func (m *PebbleLockManager) generateToken() (string, error) {
-	b := make([]byte, 16)
+	b := make([]byte, lockTokenSize)
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("crypto/rand failed: %w", err)
 	}

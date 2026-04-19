@@ -199,7 +199,9 @@ func (s *TimestreamWriteService) simulateBatchLoad(ctx context.Context, store *t
 
 	defer func() {
 		if ctx.Err() != nil {
-			_ = store.UpdateBatchLoadTaskStatus(taskId, tsstore.BatchLoadStatusFailed, "Simulation timed out")
+			if err := store.UpdateBatchLoadTaskStatus(taskId, tsstore.BatchLoadStatusFailed, "Simulation timed out"); err != nil {
+				logs.Error("Failed to update batch load task status to FAILED", logs.String("taskId", taskId), logs.Err(err))
+			}
 		}
 	}()
 

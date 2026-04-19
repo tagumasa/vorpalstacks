@@ -24,6 +24,7 @@ type wafv2Stores struct {
 	regexPatternSets *wafstore.RegexPatternSetStore
 	associations     *wafstore.WebACLAssociationStore
 	loggingConfigs   *wafstore.LoggingStore
+	tags             *storecommon.TagStore
 	arnBuilder       *wafstore.ARNBuilder
 }
 
@@ -50,6 +51,7 @@ func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, erro
 			regexPatternSets: wafstore.NewRegexPatternSetStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()),
 			associations:     wafstore.NewWebACLAssociationStore(storage),
 			loggingConfigs:   wafstore.NewLoggingStore(storage),
+			tags:             storecommon.NewTagStoreWithRegion(storage, "wafv2", reqCtx.GetRegion()),
 			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()),
 		}, nil
 	})

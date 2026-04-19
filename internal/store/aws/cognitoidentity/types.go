@@ -4,8 +4,6 @@ package cognitoidentity
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
-
 	"github.com/google/uuid"
 )
 
@@ -120,6 +118,3 @@ func generateIdentityPoolID(region string) string {
 func generateIdentityID() string {
 	return uuid.New().String()
 }
-
-// Tag represents a tag for an Amazon Cognito Identity Pool.
-type Tag = common.Tag

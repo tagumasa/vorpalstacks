@@ -1,11 +1,11 @@
 package s3
 
 import (
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // SetTags sets the tags for an object.
-func (s *ObjectStore) SetTags(bucket, key string, tags []common.Tag) error {
+func (s *ObjectStore) SetTags(bucket, key string, tags []types.Tag) error {
 	lockKey := bucket + "#" + key
 	s.keyLocker.Lock(lockKey)
 	defer func() {

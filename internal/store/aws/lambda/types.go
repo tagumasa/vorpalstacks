@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // Runtime represents the Lambda function runtime environment.
@@ -92,7 +92,7 @@ type Function struct {
 	DeadLetterConfig         *DeadLetterConfig  `json:"dead_letter_config,omitempty"`
 	TracingConfig            *TracingConfig     `json:"tracing_config,omitempty"`
 	Layers                   []LayerReference   `json:"layers,omitempty"`
-	Tags                     []common.Tag       `json:"tags,omitempty"`
+	Tags                     []types.Tag        `json:"tags,omitempty"`
 	SnapStart                *SnapStart         `json:"snap_start,omitempty"`
 	PackageType              string             `json:"package_type"`
 	SigningProfileVersionArn string             `json:"signing_profile_version_arn,omitempty"`

@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"os"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -180,8 +180,9 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		function.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
 	}
 
-	if tagsMap, ok := req.Parameters["Tags"].(map[string]interface{}); ok {
-		function.Tags = tagutil.MapInterfaceToTags(tagsMap)
+	var tagsMap map[string]interface{}
+	if tm, ok := req.Parameters["Tags"].(map[string]interface{}); ok {
+		tagsMap = tm
 	}
 
 	if layers, ok := req.Parameters["Layers"].([]interface{}); ok {
@@ -217,6 +218,13 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 			return nil, NewResourceConflict(fmt.Sprintf("Function already exist: %s", function.FunctionName))
 		}
 		return nil, err
+	}
+
+	if len(tagsMap) > 0 {
+		tags := tagutil.MapInterfaceToTags(tagsMap)
+		if err := store.Functions.TagStore.Tag(functionName, tagutil.ToMap(tags)); err != nil {
+			return nil, err
+		}
 	}
 
 	if function.Publish {
@@ -267,6 +275,8 @@ func (s *LambdaService) DeleteFunction(ctx context.Context, reqCtx *request.Requ
 	if err := store.Functions.Delete(function.FunctionName); err != nil {
 		return nil, err
 	}
+
+	store.Functions.TagStore.Delete(function.FunctionName)
 
 	return response.EmptyResponse(), nil
 }

@@ -10,6 +10,8 @@ import (
 	"github.com/cockroachdb/pebble/v2"
 )
 
+const uint64Size = 8
+
 // PebbleVersionedBucket provides a versioned key-value bucket implementation
 // that automatically manages version numbers for each key.
 type PebbleVersionedBucket struct {
@@ -67,7 +69,7 @@ func (b *PebbleVersionedBucket) getNextVersion() (uint64, error) {
 	}
 
 	newVersion := currentVersion + 1
-	counterData := make([]byte, 8)
+	counterData := make([]byte, uint64Size)
 	binary.BigEndian.PutUint64(counterData, newVersion)
 
 	batch := b.db.NewBatch()
@@ -144,7 +146,7 @@ func (b *PebbleVersionedBucket) PutWithVersion(key, value []byte) (*VersionedVal
 	}
 
 	metaKey := b.makeMetaKey(key)
-	metaData := make([]byte, 8)
+	metaData := make([]byte, uint64Size)
 	binary.BigEndian.PutUint64(metaData, version)
 	if err := batch.Set(metaKey, metaData); err != nil {
 		return nil, err
@@ -184,7 +186,7 @@ func (b *PebbleVersionedBucket) DeleteWithVersion(key []byte) (*VersionedValue, 
 	}
 
 	metaKey := b.makeMetaKey(key)
-	metaData := make([]byte, 8)
+	metaData := make([]byte, uint64Size)
 	binary.BigEndian.PutUint64(metaData, version)
 	if err := batch.Set(metaKey, metaData); err != nil {
 		return nil, err

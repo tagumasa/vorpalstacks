@@ -1,6 +1,9 @@
 package sesv2
 
-import "vorpalstacks/internal/store/aws/common"
+import (
+	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
+)
 
 // SESv2StoreInterface defines operations for managing SESv2 resources.
 type SESv2StoreInterface interface {
@@ -67,9 +70,9 @@ type SESv2StoreInterface interface {
 	UpdateContact(c *Contact) error
 	ListContacts(contactListName string, opts common.ListOptions) (*common.ListResult[Contact], error)
 
-	TagResourceFromSlice(resourceKey string, tags []common.Tag) error
-	UntagResource(resourceKey string, tagKeys []string) error
-	ListTagsAsSlice(resourceKey string) ([]common.Tag, error)
+	TagFromSlice(resourceKey string, tags []types.Tag) error
+	Untag(resourceKey string, tagKeys []string) error
+	ListAsSlice(resourceKey string) ([]types.Tag, error)
 
 	Raw() *SESv2Store
 }

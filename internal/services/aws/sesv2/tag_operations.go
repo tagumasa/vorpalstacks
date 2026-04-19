@@ -6,71 +6,48 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
-// TagResource adds tags to an SESv2 configuration set or dedicated pool.
+func sesv2TagConfig(s *SESv2Service, reqCtx *request.RequestContext) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.StandardConfig,
+		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+			store, err := s.store(reqCtx)
+			if err != nil {
+				return err
+			}
+			return store.TagFromSlice(resourceKey, tags)
+		},
+		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
+			store, err := s.store(reqCtx)
+			if err != nil {
+				return err
+			}
+			return store.Untag(resourceKey, tagKeys)
+		},
+		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+			store, err := s.store(reqCtx)
+			if err != nil {
+				return nil, err
+			}
+			return store.ListAsSlice(resourceKey)
+		},
+		EmptyResponse: func() (interface{}, error) { return response.EmptyResponse(), nil },
+	}
+}
+
+// TagResource adds tags to an SESv2 resource.
 func (s *SESv2Service) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, ErrMissingParameter
-	}
-
-	tags := tagutil.GetTags(req.Parameters, tagutil.StandardConfig)
-	if len(tags) == 0 {
-		return nil, ErrMissingParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	if err := store.TagResourceFromSlice(resourceArn, tags); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleTag(ctx, req, sesv2TagConfig(s, reqCtx))
 }
 
-// UntagResource removes tags from an SESv2 configuration set or dedicated pool.
+// UntagResource removes tags from an SESv2 resource.
 func (s *SESv2Service) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, ErrMissingParameter
-	}
-
-	tagKeys := tagutil.GetTagKeys(req.Parameters, tagutil.StandardConfig)
-	if len(tagKeys) == 0 {
-		return nil, ErrMissingParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	if err := store.UntagResource(resourceArn, tagKeys); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleUntag(ctx, req, sesv2TagConfig(s, reqCtx))
 }
 
-// ListTagsForResource lists tags for an SESv2 configuration set or dedicated pool.
+// ListTagsForResource lists tags for an SESv2 resource.
 func (s *SESv2Service) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, ErrMissingParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	tagList, err := store.ListTagsAsSlice(resourceArn)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"Tags": tagutil.ToResponse(tagList),
-	}, nil
+	return tagutil.HandleList(ctx, req, sesv2TagConfig(s, reqCtx))
 }

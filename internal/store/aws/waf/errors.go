@@ -30,11 +30,8 @@ var (
 	ErrInternalError = errors.New("internal error")
 )
 
-// StoreError represents an error that occurs during WAF store operations.
-type StoreError = common.StoreError
-
 // NewStoreError creates a new WAF store error with the given operation and error.
-func NewStoreError(operation string, err error) *StoreError {
+func NewStoreError(operation string, err error) *common.StoreError {
 	return common.NewStoreError("waf", operation, err)
 }
 

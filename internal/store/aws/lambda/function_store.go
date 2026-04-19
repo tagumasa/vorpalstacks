@@ -17,6 +17,7 @@ import (
 // FunctionStore provides Lambda function storage functionality.
 type FunctionStore struct {
 	*common.BaseStore
+	TagStore   *common.TagStore
 	arnBuilder *ARNBuilder
 	accountId  string
 	region     string
@@ -28,6 +29,7 @@ func NewFunctionStore(store storage.BasicStorage, accountId, region string) *Fun
 	bucket := store.Bucket("lambda-functions-" + region)
 	return &FunctionStore{
 		BaseStore:  common.NewBaseStore(bucket, "lambda-functions"),
+		TagStore:   common.NewTagStoreWithRegion(store, "lambda", region),
 		arnBuilder: NewARNBuilder(accountId, region),
 		accountId:  accountId,
 		region:     region,
@@ -579,55 +581,6 @@ func (s *FunctionStore) GetReservedConcurrency(functionName string) (*int64, err
 		return nil, err
 	}
 	return function.ReservedConcurrency, nil
-}
-
-// SetTags sets the tags for a Lambda function.
-func (s *FunctionStore) SetTags(functionName string, tags []common.Tag) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	var function Function
-	if err := s.BaseStore.Get(functionName, &function); err != nil {
-		return ErrFunctionNotFound
-	}
-	function.Tags = tags
-	return s.updateInternal(&function)
-}
-
-// AddTags adds tags to a Lambda function.
-func (s *FunctionStore) AddTags(functionName string, newTags []common.Tag) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	var function Function
-	if err := s.BaseStore.Get(functionName, &function); err != nil {
-		return ErrFunctionNotFound
-	}
-
-	existingTagMap := make(map[string]string)
-	for _, t := range function.Tags {
-		existingTagMap[t.Key] = t.Value
-	}
-
-	for _, t := range newTags {
-		existingTagMap[t.Key] = t.Value
-	}
-
-	mergedTags := make([]common.Tag, 0, len(existingTagMap))
-	for k, v := range existingTagMap {
-		mergedTags = append(mergedTags, common.Tag{Key: k, Value: v})
-	}
-	function.Tags = mergedTags
-	return s.updateInternal(&function)
-}
-
-// GetTags retrieves the tags for a Lambda function.
-func (s *FunctionStore) GetTags(functionName string) ([]common.Tag, error) {
-	function, err := s.Get(functionName)
-	if err != nil {
-		return nil, err
-	}
-	return function.Tags, nil
 }
 
 // SetContainerInfo sets the container information for a Lambda function.

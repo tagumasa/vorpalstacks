@@ -11,6 +11,7 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 func bucketBucketName(region string) string {
@@ -198,7 +199,7 @@ func (s *BucketStore) SetPublicAccessBlock(name string, config *PublicAccessBloc
 }
 
 // SetTags sets the tags for a bucket.
-func (s *BucketStore) SetTags(name string, tags []common.Tag) error {
+func (s *BucketStore) SetTags(name string, tags []types.Tag) error {
 	return s.atomicUpdate(name, func(b *Bucket) error { b.Tags = tags; return nil })
 }
 

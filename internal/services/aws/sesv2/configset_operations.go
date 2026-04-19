@@ -58,7 +58,7 @@ func (s *SESv2Service) CreateConfigurationSet(ctx context.Context, reqCtx *reque
 
 	if len(parsedTags) > 0 {
 		arn := store.BuildConfigSetArn(configSetName)
-		if err := store.TagResourceFromSlice(arn, parsedTags); err != nil {
+		if err := store.TagFromSlice(arn, parsedTags); err != nil {
 			return nil, err
 		}
 	}

@@ -4,7 +4,7 @@ package iam
 import (
 	"time"
 
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // AccessKeyStatus represents the status of an IAM access key.
@@ -27,7 +27,7 @@ type User struct {
 	CreateDate          time.Time            `json:"create_date"`
 	PasswordLastUsed    *time.Time           `json:"password_last_used,omitempty"`
 	PermissionsBoundary *PermissionsBoundary `json:"permissions_boundary,omitempty"`
-	Tags                []common.Tag         `json:"tags,omitempty"`
+	Tags                []types.Tag          `json:"tags,omitempty"`
 }
 
 // AccessKey represents an IAM access key.
@@ -56,9 +56,6 @@ type PermissionsBoundary struct {
 	PermissionsBoundaryArn  string `json:"permissions_boundary_arn"`
 }
 
-// Tag represents a tag for an IAM resource.
-type Tag = common.Tag
-
 // UserListResult represents the result of listing IAM users.
 type UserListResult struct {
 	Users       []*User
@@ -82,7 +79,7 @@ type Group struct {
 	AccountId           string               `json:"account_id"`
 	CreateDate          time.Time            `json:"create_date"`
 	PermissionsBoundary *PermissionsBoundary `json:"permissions_boundary,omitempty"`
-	Tags                []common.Tag         `json:"tags,omitempty"`
+	Tags                []types.Tag          `json:"tags,omitempty"`
 }
 
 // GroupListResult represents the result of listing IAM groups.
@@ -111,7 +108,7 @@ type Role struct {
 	Description              string               `json:"description,omitempty"`
 	MaxSessionDuration       int                  `json:"max_session_duration,omitempty"`
 	PermissionsBoundary      *PermissionsBoundary `json:"permissions_boundary,omitempty"`
-	Tags                     []common.Tag         `json:"tags,omitempty"`
+	Tags                     []types.Tag          `json:"tags,omitempty"`
 	RoleLastUsed             *RoleLastUsed        `json:"role_last_used,omitempty"`
 }
 
@@ -130,14 +127,14 @@ type RoleListResult struct {
 
 // InstanceProfile represents an IAM instance profile.
 type InstanceProfile struct {
-	ID                  string       `json:"id"`
-	Path                string       `json:"path"`
-	InstanceProfileName string       `json:"instance_profile_name"`
-	Arn                 string       `json:"arn"`
-	AccountId           string       `json:"account_id"`
-	CreateDate          time.Time    `json:"create_date"`
-	Roles               []string     `json:"roles,omitempty"`
-	Tags                []common.Tag `json:"tags,omitempty"`
+	ID                  string      `json:"id"`
+	Path                string      `json:"path"`
+	InstanceProfileName string      `json:"instance_profile_name"`
+	Arn                 string      `json:"arn"`
+	AccountId           string      `json:"account_id"`
+	CreateDate          time.Time   `json:"create_date"`
+	Roles               []string    `json:"roles,omitempty"`
+	Tags                []types.Tag `json:"tags,omitempty"`
 }
 
 // InstanceProfileListResult represents the result of listing IAM instance profiles.
@@ -162,18 +159,18 @@ type AttachedPolicy struct {
 
 // Policy represents an IAM managed policy.
 type Policy struct {
-	ID               string       `json:"id"`
-	Path             string       `json:"path"`
-	PolicyName       string       `json:"policy_name"`
-	Arn              string       `json:"arn"`
-	AccountId        string       `json:"account_id"`
-	CreateDate       time.Time    `json:"create_date"`
-	UpdateDate       time.Time    `json:"update_date"`
-	DefaultVersionId string       `json:"default_version_id"`
-	AttachmentCount  int          `json:"attachment_count"`
-	IsAttachable     bool         `json:"is_attachable"`
-	Description      string       `json:"description,omitempty"`
-	Tags             []common.Tag `json:"tags,omitempty"`
+	ID               string      `json:"id"`
+	Path             string      `json:"path"`
+	PolicyName       string      `json:"policy_name"`
+	Arn              string      `json:"arn"`
+	AccountId        string      `json:"account_id"`
+	CreateDate       time.Time   `json:"create_date"`
+	UpdateDate       time.Time   `json:"update_date"`
+	DefaultVersionId string      `json:"default_version_id"`
+	AttachmentCount  int         `json:"attachment_count"`
+	IsAttachable     bool        `json:"is_attachable"`
+	Description      string      `json:"description,omitempty"`
+	Tags             []types.Tag `json:"tags,omitempty"`
 }
 
 // PolicyVersion represents a version of an IAM managed policy.
@@ -222,7 +219,7 @@ type VirtualMFADevice struct {
 	QRCodePNG        []byte             `json:"qr_code_png,omitempty"`
 	EnableDate       *time.Time         `json:"enable_date,omitempty"`
 	UserAssignment   *MFAUserAssignment `json:"user_assignment,omitempty"`
-	Tags             []common.Tag       `json:"tags,omitempty"`
+	Tags             []types.Tag        `json:"tags,omitempty"`
 }
 
 // MFAUserAssignment represents assignment of a user to a virtual MFA device.
@@ -260,16 +257,16 @@ type AccountAlias struct {
 
 // ServerCertificate represents an IAM server certificate.
 type ServerCertificate struct {
-	ID                    string       `json:"id"`
-	Path                  string       `json:"path"`
-	ServerCertificateName string       `json:"server_certificate_name"`
-	Arn                   string       `json:"arn"`
-	AccountId             string       `json:"account_id"`
-	CreateDate            time.Time    `json:"create_date"`
-	Expiration            *time.Time   `json:"expiration,omitempty"`
-	CertificateBody       string       `json:"certificate_body,omitempty"`
-	CertificateChain      string       `json:"certificate_chain,omitempty"`
-	Tags                  []common.Tag `json:"tags,omitempty"`
+	ID                    string      `json:"id"`
+	Path                  string      `json:"path"`
+	ServerCertificateName string      `json:"server_certificate_name"`
+	Arn                   string      `json:"arn"`
+	AccountId             string      `json:"account_id"`
+	CreateDate            time.Time   `json:"create_date"`
+	Expiration            *time.Time  `json:"expiration,omitempty"`
+	CertificateBody       string      `json:"certificate_body,omitempty"`
+	CertificateChain      string      `json:"certificate_chain,omitempty"`
+	Tags                  []types.Tag `json:"tags,omitempty"`
 }
 
 // ServerCertificateListResult represents the result of listing server certificates.
@@ -312,12 +309,12 @@ type ServiceSpecificCredential struct {
 
 // SAMLProvider represents an IAM SAML provider.
 type SAMLProvider struct {
-	Arn                  string       `json:"arn"`
-	AccountId            string       `json:"account_id"`
-	SAMLMetadataDocument string       `json:"saml_metadata_document,omitempty"`
-	ValidUntil           *time.Time   `json:"valid_until,omitempty"`
-	CreateDate           time.Time    `json:"create_date"`
-	Tags                 []common.Tag `json:"tags,omitempty"`
+	Arn                  string      `json:"arn"`
+	AccountId            string      `json:"account_id"`
+	SAMLMetadataDocument string      `json:"saml_metadata_document,omitempty"`
+	ValidUntil           *time.Time  `json:"valid_until,omitempty"`
+	CreateDate           time.Time   `json:"create_date"`
+	Tags                 []types.Tag `json:"tags,omitempty"`
 }
 
 // SAMLProviderListResult represents the result of listing SAML providers.
@@ -327,14 +324,14 @@ type SAMLProviderListResult struct {
 
 // OpenIDConnectProvider represents an IAM OIDC provider.
 type OpenIDConnectProvider struct {
-	Arn              string       `json:"arn"`
-	AccountId        string       `json:"account_id"`
-	URL              string       `json:"url"`
-	ThumbprintList   []string     `json:"thumbprint_list"`
-	ClientIDList     []string     `json:"client_id_list"`
-	CreateDate       time.Time    `json:"create_date"`
-	LastModifiedDate *time.Time   `json:"last_modified_date,omitempty"`
-	Tags             []common.Tag `json:"tags,omitempty"`
+	Arn              string      `json:"arn"`
+	AccountId        string      `json:"account_id"`
+	URL              string      `json:"url"`
+	ThumbprintList   []string    `json:"thumbprint_list"`
+	ClientIDList     []string    `json:"client_id_list"`
+	CreateDate       time.Time   `json:"create_date"`
+	LastModifiedDate *time.Time  `json:"last_modified_date,omitempty"`
+	Tags             []types.Tag `json:"tags,omitempty"`
 }
 
 // OpenIDConnectProviderListResult represents the result of listing OIDC providers.

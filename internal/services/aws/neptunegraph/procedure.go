@@ -98,13 +98,13 @@ func (pd *procedureDispatcher) execUpsert(call *cypherparser.CypherCall, binding
 
 	emb, err := pd.resolveFloatList(call.Args[1], bindings)
 	if err != nil {
-		return nil, fmt.Errorf("ValidationException: embedding must be a list of floats: %v", err)
+		return nil, fmt.Errorf("ValidationException: embedding must be a list of floats: %w", err)
 	}
 
 	rows := make([]map[string]interface{}, 0, len(nodeIDs))
 	for _, id := range nodeIDs {
 		if err := pd.db.Embeddings.Upsert(id, emb, pd.dim); err != nil {
-			return nil, fmt.Errorf("ValidationException: %v", err)
+			return nil, fmt.Errorf("ValidationException: %w", err)
 		}
 		node, err := pd.db.GetNode(id)
 		if err != nil {
@@ -231,7 +231,7 @@ func (pd *procedureDispatcher) execDistanceByEmbedding(call *cypherparser.Cypher
 	}
 	queryEmb, err := toFloat64Slice(queryEmbRaw)
 	if err != nil {
-		return nil, fmt.Errorf("ValidationException: embedding must be a list of floats: %v", err)
+		return nil, fmt.Errorf("ValidationException: embedding must be a list of floats: %w", err)
 	}
 
 	metric := graphengine.L2Squared
@@ -333,7 +333,7 @@ func (pd *procedureDispatcher) execTopKByEmbedding(call *cypherparser.CypherCall
 	}
 	queryEmb, err := toFloat64Slice(queryEmbRaw)
 	if err != nil {
-		return nil, fmt.Errorf("ValidationException: embedding must be a list of floats: %v", err)
+		return nil, fmt.Errorf("ValidationException: embedding must be a list of floats: %w", err)
 	}
 
 	k := 10
@@ -348,7 +348,7 @@ func (pd *procedureDispatcher) execTopKByEmbedding(call *cypherparser.CypherCall
 	if vfStr, ok := opts["vertexFilter"].(string); ok && vfStr != "" {
 		filter, err = graphengine.ParseVertexFilter(vfStr)
 		if err != nil {
-			return nil, fmt.Errorf("ValidationException: invalid vertexFilter: %v", err)
+			return nil, fmt.Errorf("ValidationException: invalid vertexFilter: %w", err)
 		}
 	}
 
@@ -462,7 +462,7 @@ func (pd *procedureDispatcher) nodeIDsFromValue(val interface{}) ([]graphengine.
 func (pd *procedureDispatcher) lookupNodeByID(idStr string) ([]graphengine.NodeID, error) {
 	id, err := parseNodeIDString(idStr)
 	if err != nil {
-		return nil, fmt.Errorf("ValidationException: invalid node id '%s': %v", idStr, err)
+		return nil, fmt.Errorf("ValidationException: invalid node id '%s': %w", idStr, err)
 	}
 	if exists, _ := pd.db.NodeExists(id); !exists {
 		return nil, fmt.Errorf("ResourceNotFoundException: node with id %s not found", idStr)

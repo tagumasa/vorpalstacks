@@ -42,6 +42,16 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 		return mapStoreError(err)
 	}
 
+	if len(ns.Tags) > 0 {
+		tagMap := make(map[string]string, len(ns.Tags))
+		for k, v := range ns.Tags {
+			tagMap[k] = v
+		}
+		if err := store.TagStore.Tag(created.ChannelNamespaceArn, tagMap); err != nil {
+			return nil, err
+		}
+	}
+
 	return map[string]interface{}{
 		"channelNamespace": channelNamespaceToMap(created),
 	}, nil
@@ -66,8 +76,13 @@ func (s *AppSyncService) GetChannelNamespace(ctx context.Context, reqCtx *reques
 		return mapStoreError(err)
 	}
 
+	result := channelNamespaceToMap(ns)
+	if tagsFromStore, err := store.TagStore.List(ns.ChannelNamespaceArn); err == nil && len(tagsFromStore) > 0 {
+		result["tags"] = tagsFromStore
+	}
+
 	return map[string]interface{}{
-		"channelNamespace": channelNamespaceToMap(ns),
+		"channelNamespace": result,
 	}, nil
 }
 
@@ -118,9 +133,16 @@ func (s *AppSyncService) DeleteChannelNamespace(ctx context.Context, reqCtx *req
 		return nil, NewBadRequestException("apiId and name are required")
 	}
 
+	ns, err := store.GetChannelNamespace(apiId, name)
+	if err != nil {
+		return mapStoreError(err)
+	}
+
 	if err := store.DeleteChannelNamespace(apiId, name); err != nil {
 		return mapStoreError(err)
 	}
+
+	store.TagStore.Delete(ns.ChannelNamespaceArn)
 
 	return map[string]interface{}{}, nil
 }

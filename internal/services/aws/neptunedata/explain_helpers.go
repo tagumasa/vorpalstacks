@@ -12,7 +12,7 @@ import (
 func explainGremlinQuery(query string) (map[string]interface{}, error) {
 	parsed, err := gremlinparser.Parse(query)
 	if err != nil {
-		return nil, fmt.Errorf("parse error: %v", err)
+		return nil, fmt.Errorf("parse error: %w", err)
 	}
 
 	steps := []map[string]interface{}{}

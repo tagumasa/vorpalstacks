@@ -41,12 +41,8 @@ var (
 	ErrInvalidInput = errors.New("invalid input")
 )
 
-// StoreError represents an error that occurs during Route 53 store operations.
-// It encapsulates the service name, operation, and underlying error.
-type StoreError = common.StoreError
-
 // NewStoreError creates a new Route 53 store error with the given operation and error.
-func NewStoreError(op string, err error) *StoreError {
+func NewStoreError(op string, err error) *common.StoreError {
 	return common.NewStoreError("route53", op, err)
 }
 

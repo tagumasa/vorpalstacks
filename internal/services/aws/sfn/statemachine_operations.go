@@ -17,6 +17,7 @@ import (
 	"vorpalstacks/internal/core/logs"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateStateMachine creates a new state machine.
@@ -77,6 +78,12 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
+	if len(tags) > 0 {
+		if err := store.Tag(sm.StateMachineArn, tags); err != nil {
+			return nil, err
+		}
+	}
+
 	return map[string]interface{}{
 		"stateMachineArn": sm.StateMachineArn,
 		"creationDate":    sm.CreationDate.Unix(),
@@ -97,6 +104,8 @@ func (s *StepFunctionService) DeleteStateMachine(ctx context.Context, reqCtx *re
 		}
 		return nil, err
 	}
+
+	store.TagStore.Delete(arn)
 
 	return response.EmptyResponse(), nil
 }
@@ -162,8 +171,9 @@ func (s *StepFunctionService) DescribeStateMachine(ctx context.Context, reqCtx *
 	}
 
 	response := stateMachineToResponse(sm)
-	if sm.Tags != nil {
-		response["tags"] = sm.Tags
+	tagsMap, _ := store.ListAsSlice(sm.StateMachineArn)
+	if len(tagsMap) > 0 {
+		response["tags"] = tagsMap
 	}
 	refs := extractVariableReferences(sm.Definition)
 	if len(refs) > 0 {
@@ -199,8 +209,9 @@ func (s *StepFunctionService) DescribeStateMachineForExecution(ctx context.Conte
 	}
 
 	response := stateMachineToResponse(sm)
-	if sm.Tags != nil {
-		response["tags"] = sm.Tags
+	tagsMap, _ := store.ListAsSlice(sm.StateMachineArn)
+	if len(tagsMap) > 0 {
+		response["tags"] = tagsMap
 	}
 
 	return response, nil
@@ -599,93 +610,80 @@ func (s *StepFunctionService) ListActivities(ctx context.Context, reqCtx *reques
 	return response, nil
 }
 
+func (s *StepFunctionService) tagHandlerConfig(store *sfnstore.StepFunctionStore) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.TagOperationConfig{
+			ResourceParam:   "resourceArn",
+			TagsParam:       "tags",
+			TagKeysParam:    "tagKeys",
+			RequireTags:     true,
+			RequireTagKeys:  true,
+			RequireResource: true,
+		},
+		ResourceKey: func(rawKey string) string { return rawKey },
+		ValidateResource: func(ctx context.Context, arn string) error {
+			if !strings.Contains(arn, ":stateMachine:") {
+				return nil
+			}
+			if _, err := store.GetStateMachine(ctx, arn); err != nil {
+				if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
+					return NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
+				}
+				return err
+			}
+			return nil
+		},
+		ParseTags: func(params map[string]interface{}) []types.Tag {
+			return tagutil.MapToTags(tagutil.ToMap(tagutil.ParseTags(params, "tags")))
+		},
+		ParseTagKeys: func(params map[string]interface{}) []string {
+			return tagutil.ParseTagKeysAsSlice(params, "tagKeys")
+		},
+		TagFunc: func(_ context.Context, resourceKey string, tagSlice []types.Tag) error {
+			return store.TagFromSlice(resourceKey, tagSlice)
+		},
+		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
+			return store.Untag(resourceKey, tagKeys)
+		},
+		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+			return store.ListAsSlice(resourceKey)
+		},
+		FormatResponse: func(tagSlice []types.Tag, _ string) (interface{}, error) {
+			return map[string]interface{}{
+				"tags": tagutil.ToResponse(tagSlice),
+			}, nil
+		},
+		EmptyResponse: func() (interface{}, error) {
+			return response.EmptyResponse(), nil
+		},
+	}
+}
+
 // TagResource adds tags to a state machine.
 func (s *StepFunctionService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	arn := request.GetParamLowerFirst(req.Parameters, "resourceArn")
-	tags := tagutil.ParseTags(req.Parameters, "tags")
-
-	if strings.Contains(arn, ":stateMachine:") {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		sm, err := store.GetStateMachine(ctx, arn)
-		if err != nil {
-			if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
-				return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
-			}
-			return nil, err
-		}
-		if sm.Tags == nil {
-			sm.Tags = make(map[string]string)
-		}
-		for k, v := range tagutil.ToMap(tags) {
-			sm.Tags[k] = v
-		}
-		if err := store.UpdateStateMachine(ctx, sm); err != nil {
-			return nil, err
-		}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleTag(ctx, req, s.tagHandlerConfig(store))
 }
 
 // UntagResource removes tags from a state machine.
 func (s *StepFunctionService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	arn := request.GetParamLowerFirst(req.Parameters, "resourceArn")
-	tagKeys := tagutil.ParseTagKeysAsSlice(req.Parameters, "tagKeys")
-
-	if strings.Contains(arn, ":stateMachine:") {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		sm, err := store.GetStateMachine(ctx, arn)
-		if err != nil {
-			if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
-				return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
-			}
-			return nil, err
-		}
-		if sm.Tags != nil {
-			for _, k := range tagKeys {
-				delete(sm.Tags, k)
-			}
-		}
-		if err := store.UpdateStateMachine(ctx, sm); err != nil {
-			return nil, err
-		}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleUntag(ctx, req, s.tagHandlerConfig(store))
 }
 
 // ListTagsForResource returns the tags for a state machine.
 func (s *StepFunctionService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	arn := request.GetParamLowerFirst(req.Parameters, "resourceArn")
-
-	tags := make([]map[string]string, 0)
-
-	if strings.Contains(arn, ":stateMachine:") {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		sm, err := store.GetStateMachine(ctx, arn)
-		if err != nil {
-			if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
-				return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
-			}
-			return nil, err
-		}
-		if sm.Tags != nil {
-			tags = tagutil.ConvertToMapSlice(tagutil.MapToTags(sm.Tags))
-		}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
-
-	return map[string]interface{}{
-		"tags": tags,
-	}, nil
+	return tagutil.HandleList(ctx, req, s.tagHandlerConfig(store))
 }
 
 func generateExecutionName() string {

@@ -188,7 +188,10 @@ func (s *NamedQueryStore) CreateNamedQuery(nq *NamedQuery) error {
 		}
 
 		if err := s.PutProto(nq.NamedQueryId, NamedQueryToProto(nq)); err != nil {
-			_ = s.BaseStore.Delete(nameKey)
+			if delErr := s.BaseStore.Delete(nameKey); delErr != nil {
+				logs.Warn("NamedQuery: failed to rollback name index on PutProto error",
+					logs.String("nameKey", nameKey), logs.Err(delErr))
+			}
 			return err
 		}
 
@@ -223,7 +226,10 @@ func (s *NamedQueryStore) UpdateNamedQuery(id string, nq *NamedQuery) error {
 		}
 
 		if err := s.PutProto(id, NamedQueryToProto(nq)); err != nil {
-			_ = s.BaseStore.Delete(newNameKey)
+			if delErr := s.BaseStore.Delete(newNameKey); delErr != nil {
+				logs.Warn("NamedQuery: failed to rollback new name index on PutProto error",
+					logs.String("newNameKey", newNameKey), logs.Err(delErr))
+			}
 			return err
 		}
 
@@ -252,7 +258,10 @@ func (s *NamedQueryStore) DeleteNamedQuery(id string) error {
 		}
 
 		if err := s.BaseStore.Delete(id); err != nil {
-			_ = s.Put(nameKey, []byte(nq.NamedQueryId))
+			if putErr := s.Put(nameKey, []byte(nq.NamedQueryId)); putErr != nil {
+				logs.Warn("NamedQuery: failed to restore name index on Delete error",
+					logs.String("nameKey", nameKey), logs.Err(putErr))
+			}
 			return err
 		}
 

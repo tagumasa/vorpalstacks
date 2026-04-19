@@ -15,6 +15,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 
 	"github.com/google/uuid"
 )
@@ -176,11 +177,11 @@ func (s *SNSStore) CreateTopic(topic *Topic) (*Topic, error) {
 	}
 
 	if len(topic.Tags) > 0 {
-		tagSlice := make([]common.Tag, 0, len(topic.Tags))
+		tagSlice := make([]types.Tag, 0, len(topic.Tags))
 		for k, v := range topic.Tags {
-			tagSlice = append(tagSlice, common.Tag{Key: k, Value: v})
+			tagSlice = append(tagSlice, types.Tag{Key: k, Value: v})
 		}
-		if err := s.TagStore.TagResourceFromSlice(topicArn, tagSlice); err != nil {
+		if err := s.TagStore.TagFromSlice(topicArn, tagSlice); err != nil {
 			return nil, err
 		}
 	}
@@ -511,18 +512,18 @@ func (s *SNSStore) GetSubscriptionAttributes(subscriptionArn string) (map[string
 }
 
 // ListTagsForResource retrieves the tags associated with an SNS resource.
-func (s *SNSStore) ListTagsForResource(resourceArn string) ([]common.Tag, error) {
-	return s.TagStore.ListTagsAsSlice(resourceArn)
+func (s *SNSStore) ListTagsForResource(resourceArn string) ([]types.Tag, error) {
+	return s.TagStore.ListAsSlice(resourceArn)
 }
 
 // TagResource adds tags to an SNS resource.
-func (s *SNSStore) TagResource(resourceArn string, tags []common.Tag) error {
-	return s.TagStore.TagResourceFromSlice(resourceArn, tags)
+func (s *SNSStore) Tag(resourceArn string, tags []types.Tag) error {
+	return s.TagStore.TagFromSlice(resourceArn, tags)
 }
 
 // UntagResource removes tags from an SNS resource.
-func (s *SNSStore) UntagResource(resourceArn string, tagKeys []string) error {
-	return s.TagStore.UntagResource(resourceArn, tagKeys)
+func (s *SNSStore) Untag(resourceArn string, tagKeys []string) error {
+	return s.TagStore.Untag(resourceArn, tagKeys)
 }
 
 // CheckDeduplication checks if a message with the given deduplication ID was recently published.

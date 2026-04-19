@@ -86,7 +86,7 @@ func (s *AthenaService) CreateWorkGroup(ctx context.Context, reqCtx *request.Req
 
 	if len(tags) > 0 {
 		arn := stores.workGroupStore.GetARN(name)
-		if err := stores.workGroupStore.TagResource(arn, tags); err != nil {
+		if err := stores.workGroupStore.Tag(arn, tags); err != nil {
 			logs.Warn("Failed to tag workgroup", logs.String("workgroup", name), logs.Err(err))
 		}
 	}
@@ -285,11 +285,11 @@ func (s *AthenaService) TagResource(ctx context.Context, reqCtx *request.Request
 	if len(tags) > 0 {
 		switch resourceType {
 		case "workgroup":
-			if err := stores.workGroupStore.TagResource(resourceArn, tags); err != nil {
+			if err := stores.workGroupStore.Tag(resourceArn, tags); err != nil {
 				return nil, err
 			}
 		case "datacatalog":
-			if err := stores.dataCatalogStore.TagResource(resourceArn, tags); err != nil {
+			if err := stores.dataCatalogStore.Tag(resourceArn, tags); err != nil {
 				return nil, err
 			}
 		default:
@@ -326,7 +326,7 @@ func (s *AthenaService) UntagResource(ctx context.Context, reqCtx *request.Reque
 	resourceArn = normalizeAthenaARN(resourceArn, s.accountID)
 
 	if len(tagKeys) > 0 {
-		if err := stores.workGroupStore.UntagResource(resourceArn, tagKeys); err != nil {
+		if err := stores.workGroupStore.Untag(resourceArn, tagKeys); err != nil {
 			return nil, err
 		}
 	}
@@ -360,9 +360,9 @@ func (s *AthenaService) ListTagsForResource(ctx context.Context, reqCtx *request
 	var tags map[string]string
 	switch matches[1] {
 	case "workgroup":
-		tags, err = stores.workGroupStore.ListTags(resourceArn)
+		tags, err = stores.workGroupStore.List(resourceArn)
 	case "datacatalog":
-		tags, err = stores.dataCatalogStore.ListTags(resourceArn)
+		tags, err = stores.dataCatalogStore.List(resourceArn)
 	default:
 		return nil, ErrInvalidRequestException
 	}

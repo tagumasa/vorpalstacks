@@ -15,6 +15,7 @@ import (
 // KeyStore provides KMS key storage and retrieval operations.
 type KeyStore struct {
 	*common.BaseStore
+	TagStore   *common.TagStore
 	arnBuilder *ARNBuilder
 	kl         common.KeyLocker
 }
@@ -27,13 +28,14 @@ func keyBucketName(region string) string {
 func NewKeyStore(store storage.BasicStorage, accountId, region string) *KeyStore {
 	return &KeyStore{
 		BaseStore:  common.NewBaseStore(store.Bucket(keyBucketName(region)), "kms"),
+		TagStore:   common.NewTagStoreWithRegion(store, "kms", region),
 		arnBuilder: NewARNBuilder(accountId, region),
 	}
 }
 
 // Create creates a new KMS key with the specified parameters.
 // Returns the created key or an error.
-func (s *KeyStore) Create(keyID string, keyUsage KeyUsage, keySpec KeySpec, description string, origin OriginType, multiRegion bool, tags []common.Tag) (*Key, error) {
+func (s *KeyStore) Create(keyID string, keyUsage KeyUsage, keySpec KeySpec, description string, origin OriginType, multiRegion bool) (*Key, error) {
 	key := &Key{
 		KeyID:              keyID,
 		Arn:                s.arnBuilder.KeyArn(keyID),
@@ -47,7 +49,6 @@ func (s *KeyStore) Create(keyID string, keyUsage KeyUsage, keySpec KeySpec, desc
 		KeyManager:         KeyManagerTypeCustomer,
 		KeyRotationEnabled: false,
 		MultiRegion:        multiRegion,
-		Tags:               tags,
 	}
 
 	switch keyUsage {
@@ -252,51 +253,6 @@ func (s *KeyStore) SetKeyRotation(keyID string, enabled bool) error {
 	return s.atomicUpdate(keyID, func(key *Key) error { key.KeyRotationEnabled = enabled; return nil })
 }
 
-// AddTags adds tags to a KMS key.
-func (s *KeyStore) AddTags(keyID string, tags []common.Tag) error {
-	return s.atomicUpdate(keyID, func(key *Key) error {
-		tagMap := make(map[string]string)
-		for _, t := range key.Tags {
-			tagMap[t.Key] = t.Value
-		}
-		for _, t := range tags {
-			tagMap[t.Key] = t.Value
-		}
-		key.Tags = make([]common.Tag, 0, len(tagMap))
-		for k, v := range tagMap {
-			key.Tags = append(key.Tags, common.Tag{Key: k, Value: v})
-		}
-		return nil
-	})
-}
-
-// RemoveTags removes tags from a KMS key.
-func (s *KeyStore) RemoveTags(keyID string, tagKeys []string) error {
-	return s.atomicUpdate(keyID, func(key *Key) error {
-		keysToRemove := make(map[string]bool)
-		for _, k := range tagKeys {
-			keysToRemove[k] = true
-		}
-		var newTags []common.Tag
-		for _, t := range key.Tags {
-			if !keysToRemove[t.Key] {
-				newTags = append(newTags, t)
-			}
-		}
-		key.Tags = newTags
-		return nil
-	})
-}
-
-// ListTags retrieves the tags associated with a KMS key.
-func (s *KeyStore) ListTags(keyID string) ([]common.Tag, error) {
-	key, err := s.Get(keyID)
-	if err != nil {
-		return nil, err
-	}
-	return key.Tags, nil
-}
-
 // Count returns the number of KMS keys in the store (excluding keys pending deletion).
 func (s *KeyStore) Count() (int, error) {
 	count := 0
@@ -466,7 +422,6 @@ func (s *KeyStore) ReplicateKey(keyID string, replicaRegion string, replicaKeyID
 				},
 				ReplicaKeys: nil,
 			},
-			Tags: key.Tags,
 		}
 
 		if key.MultiRegionConfiguration == nil {
@@ -490,6 +445,16 @@ func (s *KeyStore) ReplicateKey(keyID string, replicaRegion string, replicaKeyID
 
 		if err := s.save(replicaKey); err != nil {
 			return err
+		}
+
+		sourceTags, err := s.TagStore.ListAsSlice(keyID)
+		if err != nil {
+			return err
+		}
+		if len(sourceTags) > 0 {
+			if err := s.TagStore.TagFromSlice(replicaKeyID, sourceTags); err != nil {
+				return err
+			}
 		}
 
 		return nil

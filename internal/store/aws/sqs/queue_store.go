@@ -75,7 +75,7 @@ func (s *SQSStore) CreateQueue(queue *Queue) (*Queue, error) {
 	}
 
 	if len(queue.Tags) > 0 {
-		if err := s.TagStore.TagResource(queueURL, queue.Tags); err != nil {
+		if err := s.TagStore.Tag(queueURL, queue.Tags); err != nil {
 			return nil, err
 		}
 	}
@@ -292,7 +292,7 @@ func (s *SQSStore) RemovePermission(queueURL, label string) error {
 
 // ListQueueTags lists all tags for a queue.
 func (s *SQSStore) ListQueueTags(queueURL string) (map[string]string, error) {
-	return s.TagStore.ListTags(queueURL)
+	return s.TagStore.List(queueURL)
 }
 
 // TagQueue adds tags to a queue.
@@ -300,10 +300,10 @@ func (s *SQSStore) TagQueue(queueURL string, tags map[string]string) error {
 	if err := validateTags(tags); err != nil {
 		return fmt.Errorf("validating tags: %w", err)
 	}
-	return s.TagStore.TagResource(queueURL, tags)
+	return s.TagStore.Tag(queueURL, tags)
 }
 
 // UntagQueue removes tags from a queue.
 func (s *SQSStore) UntagQueue(queueURL string, tagKeys []string) error {
-	return s.TagStore.UntagResource(queueURL, tagKeys)
+	return s.TagStore.Untag(queueURL, tagKeys)
 }

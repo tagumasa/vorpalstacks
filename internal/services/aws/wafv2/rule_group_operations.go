@@ -48,8 +48,7 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 && ruleGroup.ARN != "" {
-		ruleGroup.Tags = tags
-		if err := stores.ruleGroups.Put(ruleGroup.ID, ruleGroup); err != nil {
+		if err := stores.tags.TagFromSlice(ruleGroup.ARN, tags); err != nil {
 			logs.Warn("failed to persist tags for RuleGroup", logs.String("id", ruleGroup.ID), logs.Err(err))
 		}
 	}
@@ -190,16 +189,23 @@ func (s *WAFv2Service) DeleteRuleGroup(ctx context.Context, reqCtx *request.Requ
 		return nil, validationError("LockToken is required")
 	}
 
-	err = stores.ruleGroups.Delete(id, lockToken)
+	ruleGroup, err := stores.ruleGroups.Get(id)
 	if err != nil {
-		if wafstore.IsLockTokenMismatch(err) {
-			return nil, lockTokenError()
-		}
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("RuleGroup")
 		}
 		return nil, err
 	}
+
+	err = stores.ruleGroups.Delete(id, lockToken)
+	if err != nil {
+		if wafstore.IsLockTokenMismatch(err) {
+			return nil, lockTokenError()
+		}
+		return nil, err
+	}
+
+	stores.tags.Delete(ruleGroup.ARN)
 
 	return response.EmptyResponse(), nil
 }

@@ -13,7 +13,7 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
-	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateCachePolicy creates a cache policy.
@@ -520,7 +520,7 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 		resourceKey = arnutil.NewARNBuilder("", "").CloudFront().Distribution(arn)
 	}
 
-	var tags []common.Tag
+	var tags []types.Tag
 	tagsMap := request.GetMapParam(req.Parameters, "Tags")
 	if tagsMap != nil {
 		if tagInner, ok := tagsMap["Tag"]; ok {
@@ -528,11 +528,11 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 			case []interface{}:
 				for _, t := range tv {
 					if m, ok := t.(map[string]interface{}); ok {
-						tags = append(tags, common.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
+						tags = append(tags, types.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
 					}
 				}
 			case map[string]interface{}:
-				tags = append(tags, common.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
+				tags = append(tags, types.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
 			}
 		} else if items := tagsMap["Items"]; items != nil {
 			switch v := items.(type) {
@@ -542,11 +542,11 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 					case []interface{}:
 						for _, t := range tv {
 							if m, ok := t.(map[string]interface{}); ok {
-								tags = append(tags, common.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
+								tags = append(tags, types.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
 							}
 						}
 					case map[string]interface{}:
-						tags = append(tags, common.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
+						tags = append(tags, types.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
 					}
 				}
 			}
@@ -560,7 +560,7 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 		logs.Debug("CloudFront TagResource: no tags parsed", logs.String("arn", arn), logs.String("param_keys", strings.Join(keys, ",")))
 		parsedTags := tagutil.ParseTags(req.Parameters, "Tags")
 		for _, t := range parsedTags {
-			tags = append(tags, common.Tag(t))
+			tags = append(tags, types.Tag(t))
 		}
 	}
 
@@ -569,7 +569,7 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	if err := store.tags.TagResource(resourceKey, tags); err != nil {
+	if err := store.tags.Tag(resourceKey, tags); err != nil {
 		return nil, NewAPIError("TagResource", err.Error(), 500)
 	}
 
@@ -648,7 +648,7 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 	}
 
 	if len(tagKeys) > 0 {
-		if err := store.tags.UntagResource(resourceKey, tagKeys); err != nil {
+		if err := store.tags.Untag(resourceKey, tagKeys); err != nil {
 			return nil, NewAPIError("UntagResource", err.Error(), 500)
 		}
 	}

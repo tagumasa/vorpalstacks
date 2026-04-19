@@ -1,48 +1,35 @@
 package waf
 
-// Package waf provides WAF (Web Application Firewall) data store implementations
-// for vorpalstacks.
-
 import (
-	"encoding/json"
-	"strings"
-	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 const ruleGroupBucketName = "waf_rule_groups"
 const ruleKeyPrefix = "rule_"
 
+var ruleGroupAccessor = wafResourceAccessor[RuleGroup]{
+	getIDFn:        func(r *RuleGroup) string { return r.ID },
+	getARNFn:       func(r *RuleGroup) string { return r.ARN },
+	setARNFn:       func(r *RuleGroup, arn string) { r.ARN = arn },
+	getLockTokenFn: func(r *RuleGroup) string { return r.LockToken },
+	setLockTokenFn: func(r *RuleGroup, lt string) { r.LockToken = lt },
+	setModifiedFn:  func(r *RuleGroup) { r.ModifiedAt = time.Now() },
+}
+
 // RuleGroupStore provides storage for WAF Rule Groups.
 type RuleGroupStore struct {
-	*common.BaseStore
-	arnBuilder *ARNBuilder
-	mu         sync.Mutex
+	*ResourceStore[RuleGroup]
 }
 
 // NewRuleGroupStore creates a new Rule Group store.
 func NewRuleGroupStore(store storage.BasicStorage, accountId, region string) *RuleGroupStore {
 	return &RuleGroupStore{
-		BaseStore:  common.NewBaseStore(store.Bucket(ruleGroupBucketName), "waf"),
-		arnBuilder: NewARNBuilder(accountId, region),
+		ResourceStore: NewResourceStore[RuleGroup](store, ruleGroupBucketName, NewARNBuilder(accountId, region), ruleGroupAccessor),
 	}
-}
-
-// Get retrieves a Rule Group by its ID.
-func (s *RuleGroupStore) Get(id string) (*RuleGroup, error) {
-	var ruleGroup RuleGroup
-	if err := s.BaseStore.Get(id, &ruleGroup); err != nil {
-		return nil, NewStoreError("get_rule_group", err)
-	}
-	return &ruleGroup, nil
-}
-
-// GetByARN retrieves a Rule Group by its ARN.
-func (s *RuleGroupStore) GetByARN(arn string) (*RuleGroup, error) {
-	return common.FindFirst[RuleGroup](s.BaseStore, func(r *RuleGroup) bool { return r.ARN == arn })
 }
 
 // Create creates a new Rule Group.
@@ -54,117 +41,38 @@ func (s *RuleGroupStore) Create(id, name, description string, capacity int64, ru
 		Capacity:         capacity,
 		Rules:            rules,
 		VisibilityConfig: visibilityConfig,
-		ARN:              s.arnBuilder.BuildRuleGroupARN(id),
-		LockToken:        GenerateLockToken(),
+		Tags:             []types.Tag{},
 		CreatedAt:        time.Now(),
 		ModifiedAt:       time.Now(),
 	}
-
-	if err := s.BaseStore.Put(id, ruleGroup); err != nil {
-		return nil, NewStoreError("create_rule_group", err)
+	ruleGroup.ARN = s.arnBuilder.BuildRuleGroupARN(id)
+	SetTimestamps(&ruleGroupAccessor, ruleGroup)
+	if err := s.Put(id, ruleGroup, "create_rule_group"); err != nil {
+		return nil, err
 	}
 	return ruleGroup, nil
 }
 
 // Update updates an existing Rule Group.
 func (s *RuleGroupStore) Update(id, lockToken string, capacity int64, rules []*Rule, visibilityConfig *VisibilityConfig) (*RuleGroup, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	ruleGroup, err := s.Get(id)
-	if err != nil {
-		return nil, err
-	}
-
-	if lockToken != "" && ruleGroup.LockToken != lockToken {
-		return nil, NewStoreError("delete_rule_group", ErrLockTokenMismatch)
-	}
-
-	ruleGroup.Capacity = capacity
-	ruleGroup.Rules = rules
-	ruleGroup.VisibilityConfig = visibilityConfig
-	ruleGroup.ModifiedAt = time.Now()
-	ruleGroup.LockToken = GenerateLockToken()
-
-	if err := s.BaseStore.Put(id, ruleGroup); err != nil {
-		return nil, NewStoreError("update_rule_group", err)
-	}
-	return ruleGroup, nil
-}
-
-// Delete deletes a Rule Group.
-func (s *RuleGroupStore) Delete(id, lockToken string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	ruleGroup, err := s.Get(id)
-	if err != nil {
-		return err
-	}
-
-	if ruleGroup.LockToken != lockToken {
-		return NewStoreError("delete_rule_group", ErrLockTokenMismatch)
-	}
-
-	if err := s.BaseStore.Delete(id); err != nil {
-		return NewStoreError("delete_rule_group", err)
-	}
-	return nil
+	return s.UpdateWithLockToken(id, lockToken, func(ruleGroup *RuleGroup) error {
+		ruleGroup.Capacity = capacity
+		ruleGroup.Rules = rules
+		ruleGroup.VisibilityConfig = visibilityConfig
+		return nil
+	}, "update_rule_group")
 }
 
 // List returns a paginated list of Rule Groups.
 func (s *RuleGroupStore) List(marker string, maxItems int) (*RuleGroupListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-
-	var ruleGroups []*RuleGroup
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastKey string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		if strings.HasPrefix(key, ruleKeyPrefix) {
-			return nil
-		}
-		var rg RuleGroup
-		if err := json.Unmarshal(value, &rg); err != nil {
-			return err
-		}
-
-		if !started {
-			if key == marker || key > marker {
-				started = true
-			}
-			if !started {
-				return nil
-			}
-		}
-
-		if count < maxItems {
-			ruleGroups = append(ruleGroups, &rg)
-			lastKey = key
-			count++
-		} else {
-			hasMore = true
-		}
-		return nil
-	})
-
+	result, err := common.List[RuleGroup](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, nil)
 	if err != nil {
 		return nil, NewStoreError("list_rule_groups", err)
 	}
-
-	var nextMarker string
-	if hasMore {
-		nextMarker = lastKey
-	}
-
 	return &RuleGroupListResult{
-		RuleGroups:  ruleGroups,
-		IsTruncated: hasMore,
-		NextMarker:  nextMarker,
+		RuleGroups:  result.Items,
+		IsTruncated: result.IsTruncated,
+		NextMarker:  result.NextMarker,
 	}, nil
 }
 
@@ -190,6 +98,7 @@ func (s *RuleGroupStore) DeleteRule(id string) error {
 	return s.BaseStore.Delete(ruleKeyPrefix + id)
 }
 
+// ListRules returns a list of standalone WAF rules stored in the Rule Group bucket.
 func (s *RuleGroupStore) ListRules(limit int) ([]*Rule, error) {
 	if limit <= 0 {
 		limit = 100

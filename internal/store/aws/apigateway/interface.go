@@ -2,6 +2,7 @@ package apigateway
 
 import (
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // RestApiStoreInterface defines operations for managing REST APIs.
@@ -11,9 +12,9 @@ type RestApiStoreInterface interface {
 	Update(api *RestApi) error
 	Delete(apiId string) error
 	List(opts common.ListOptions) (*common.ListResult[RestApi], error)
-	GetTags(apiId string) ([]common.Tag, error)
-	TagResource(apiId string, tags map[string]string) error
-	UntagResource(apiId string, tagKeys []string) error
+	GetTags(apiId string) ([]types.Tag, error)
+	Tag(apiId string, tags map[string]string) error
+	Untag(apiId string, tagKeys []string) error
 	GenerateRevisionId() string
 	CreateRequestValidator(apiId string, validator *RequestValidator) (*RequestValidator, error)
 	GetRequestValidator(apiId, validatorId string) (*RequestValidator, error)

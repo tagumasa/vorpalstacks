@@ -6,72 +6,80 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	sqsstore "vorpalstacks/internal/store/aws/sqs"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
-// TagQueue adds tags to an SQS queue.
+func sqsMapError(err error) error {
+	switch err.(type) {
+	case *tagutil.MissingResourceError:
+		return ErrMissingParameter
+	case *tagutil.MissingTagsError:
+		return ErrMissingParameter
+	case *tagutil.MissingTagKeysError:
+		return ErrMissingParameter
+	}
+	return convertStoreError(err)
+}
+
+func sqsTagConfig(store sqsstore.SQSStoreInterface) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.SQSConfig,
+		ValidateResource: func(ctx context.Context, rawKey string) error {
+			_, err := store.GetQueue(rawKey)
+			if err != nil {
+				return convertStoreError(err)
+			}
+			return nil
+		},
+		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+			return store.TagQueue(resourceKey, tagutil.ToMap(tags))
+		},
+		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
+			return store.UntagQueue(resourceKey, tagKeys)
+		},
+		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+			m, err := store.ListQueueTags(resourceKey)
+			if err != nil {
+				return nil, err
+			}
+			return tagutil.MapToTags(m), nil
+		},
+		FormatResponse: func(tags []types.Tag, rawResourceKey string) (interface{}, error) {
+			return map[string]interface{}{
+				"Tags": tagutil.ToMap(tags),
+			}, nil
+		},
+		EmptyResponse: func() (interface{}, error) {
+			return response.EmptyResponse(), nil
+		},
+		MapError: sqsMapError,
+	}
+}
+
+// TagQueue adds or overwrites tags on an SQS queue.
 func (s *SQSService) TagQueue(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queueURL := tagutil.GetResourceKey(req.Parameters, tagutil.SQSConfig)
-	if queueURL == "" {
-		return nil, ErrMissingParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := store.GetQueue(queueURL); err != nil {
-		return nil, convertStoreError(err)
-	}
-
-	tags := tagutil.GetTags(req.Parameters, tagutil.SQSConfig)
-	if len(tags) > 0 {
-		if err := store.TagQueue(queueURL, tagutil.ToMap(tags)); err != nil {
-			return nil, convertStoreError(err)
-		}
-	}
-
-	return response.EmptyResponse(), nil
+	return tagutil.HandleTag(ctx, req, sqsTagConfig(store))
 }
 
-// UntagQueue removes tags from an SQS queue.
+// UntagQueue removes the specified tags from an SQS queue.
 func (s *SQSService) UntagQueue(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queueURL := tagutil.GetResourceKey(req.Parameters, tagutil.SQSConfig)
-	if queueURL == "" {
-		return nil, ErrMissingParameter
-	}
-
-	tagKeys := tagutil.GetTagKeys(req.Parameters, tagutil.SQSConfig)
-	if len(tagKeys) > 0 {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		if err := store.UntagQueue(queueURL, tagKeys); err != nil {
-			return nil, convertStoreError(err)
-		}
-	}
-
-	return response.EmptyResponse(), nil
-}
-
-// ListQueueTags lists tags for an SQS queue.
-func (s *SQSService) ListQueueTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queueURL := tagutil.GetResourceKey(req.Parameters, tagutil.SQSConfig)
-	if queueURL == "" {
-		return nil, ErrMissingParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+	return tagutil.HandleUntag(ctx, req, sqsTagConfig(store))
+}
 
-	tags, err := store.ListQueueTags(queueURL)
+// ListQueueTags lists all tags assigned to an SQS queue.
+func (s *SQSService) ListQueueTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, convertStoreError(err)
+		return nil, err
 	}
-
-	return map[string]interface{}{
-		"Tags": tags,
-	}, nil
+	return tagutil.HandleList(ctx, req, sqsTagConfig(store))
 }

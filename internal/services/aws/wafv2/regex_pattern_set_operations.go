@@ -52,8 +52,7 @@ func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *reques
 	}
 
 	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
-		rps.Tags = tags
-		if err := stores.regexPatternSets.Put(rps.ID, rps); err != nil {
+		if err := stores.tags.TagFromSlice(rps.ARN, tags); err != nil {
 			logs.Warn("failed to persist tags for RegexPatternSet", logs.String("id", rps.ID), logs.Err(err))
 		}
 	}
@@ -206,15 +205,22 @@ func (s *WAFv2Service) DeleteRegexPatternSet(ctx context.Context, reqCtx *reques
 		return nil, validationError("LockToken is required")
 	}
 
-	if err := stores.regexPatternSets.Delete(id, lockToken); err != nil {
-		if wafstore.IsLockTokenMismatch(err) {
-			return nil, lockTokenError()
-		}
+	rps, err := stores.regexPatternSets.Get(id)
+	if err != nil {
 		if wafstore.IsNotFound(err) {
 			return nil, notFoundError("RegexPatternSet")
 		}
 		return nil, err
 	}
+
+	if err := stores.regexPatternSets.Delete(id, lockToken); err != nil {
+		if wafstore.IsLockTokenMismatch(err) {
+			return nil, lockTokenError()
+		}
+		return nil, err
+	}
+
+	stores.tags.Delete(rps.ARN)
 
 	return map[string]interface{}{}, nil
 }

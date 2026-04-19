@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 	"vorpalstacks/pkg/sqlparser"
 )
@@ -48,7 +48,9 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *at
 		case <-ctx.Done():
 			qe.Status.State = athenastore.QueryExecutionStateCancelled
 			qe.Status.CompletionDateTime = time.Now().UTC()
-			_ = st.queryExecutionStore.UpdateQueryExecution(qe)
+			if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {
+				logs.Error("Failed to update query execution to CANCELLED", logs.String("id", qe.QueryExecutionId), logs.Err(err))
+			}
 			return
 		case <-time.After(200 * time.Millisecond):
 		}

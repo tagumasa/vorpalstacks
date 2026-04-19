@@ -3,6 +3,7 @@ package route53
 import (
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // TagStore manages Route 53 resource tags.
@@ -18,11 +19,11 @@ func NewTagStore(store storage.BasicStorage) *TagStore {
 }
 
 // ListTagsForResource returns tags for a resource.
-func (s *TagStore) ListTagsForResource(resourceKey string) ([]common.Tag, error) {
-	return s.TagStore.ListTagsAsSlice(resourceKey)
+func (s *TagStore) ListTagsForResource(resourceKey string) ([]types.Tag, error) {
+	return s.TagStore.ListAsSlice(resourceKey)
 }
 
 // TagResource adds or updates tags for a Route 53 resource.
-func (s *TagStore) TagResource(resourceKey string, tags []common.Tag) error {
-	return s.TagStore.TagResourceFromSlice(resourceKey, tags)
+func (s *TagStore) Tag(resourceKey string, tags []types.Tag) error {
+	return s.TagStore.TagFromSlice(resourceKey, tags)
 }
