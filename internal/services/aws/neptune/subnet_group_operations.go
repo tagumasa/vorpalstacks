@@ -70,6 +70,67 @@ func getNeptuneParameterList(params map[string]interface{}) []neptunestore.Param
 	return parameters
 }
 
+// resolveSubnets queries the EC2 service via the event bus to resolve each
+// subnet ID to its VPC ID and availability zone. Returns the resolved subnet
+// slice and the common VPC ID (all subnets must belong to the same VPC).
+func (s *NeptuneService) resolveSubnets(ctx context.Context, region string, subnetIds []string) ([]neptunestore.Subnet, string, error) {
+	if s.eventBus == nil {
+		return nil, "", fmt.Errorf("neptune: event bus not available for EC2 subnet lookup")
+	}
+	ec2 := s.eventBus.EC2Invoker()
+	if ec2 == nil {
+		return nil, "", fmt.Errorf("neptune: EC2 service not available for subnet lookup")
+	}
+
+	subnets := make([]neptunestore.Subnet, 0, len(subnetIds))
+	var vpcId string
+
+	for _, subnetId := range subnetIds {
+		subnetVpcId, az, err := ec2.LookupSubnet(ctx, region, subnetId)
+		if err != nil {
+			return nil, "", fmt.Errorf("neptune: failed to resolve subnet %s: %w", subnetId, err)
+		}
+		if vpcId == "" {
+			vpcId = subnetVpcId
+		} else if subnetVpcId != vpcId {
+			return nil, "", fmt.Errorf("neptune: all subnets must belong to the same VPC (expected %s, got %s)", vpcId, subnetVpcId)
+		}
+		subnets = append(subnets, neptunestore.Subnet{
+			SubnetIdentifier:       subnetId,
+			SubnetAvailabilityZone: az,
+			SubnetStatus:           "Active",
+		})
+	}
+	return subnets, vpcId, nil
+}
+
+// resolveSecurityGroups validates that each security group ID exists via the
+// EC2 invoker and returns the common VPC ID. All security groups must belong
+// to the same VPC.
+func (s *NeptuneService) resolveSecurityGroups(ctx context.Context, region string, sgIds []string) (string, error) {
+	if s.eventBus == nil {
+		return "", fmt.Errorf("neptune: event bus not available for EC2 security group lookup")
+	}
+	ec2 := s.eventBus.EC2Invoker()
+	if ec2 == nil {
+		return "", fmt.Errorf("neptune: EC2 service not available for security group lookup")
+	}
+
+	var vpcId string
+	for _, sgId := range sgIds {
+		sgVpcId, err := ec2.LookupSecurityGroup(ctx, region, sgId)
+		if err != nil {
+			return "", fmt.Errorf("neptune: failed to resolve security group %s: %w", sgId, err)
+		}
+		if vpcId == "" {
+			vpcId = sgVpcId
+		} else if sgVpcId != vpcId {
+			return "", fmt.Errorf("neptune: all security groups must belong to the same VPC (expected %s, got %s)", vpcId, sgVpcId)
+		}
+	}
+	return vpcId, nil
+}
+
 // CreateDBSubnetGroup creates a new DB subnet group with the specified subnets.
 func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
@@ -91,21 +152,17 @@ func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *reques
 	if len(subnetIds) > 26 {
 		return nil, fmt.Errorf("neptune: cannot assign more than 26 subnets to a DB subnet group")
 	}
-	subnets := make([]neptunestore.Subnet, 0, len(subnetIds))
+
 	region := reqCtx.GetRegion()
-	for i, id := range subnetIds {
-		az := fmt.Sprintf("%s%c", region, 'a'+byte(i))
-		subnets = append(subnets, neptunestore.Subnet{
-			SubnetIdentifier:       id,
-			SubnetAvailabilityZone: az,
-			SubnetStatus:           "Active",
-		})
+	subnets, vpcId, err := s.resolveSubnets(ctx, region, subnetIds)
+	if err != nil {
+		return nil, err
 	}
 
 	sg := &neptunestore.DBSubnetGroup{
 		DBSubnetGroupName:        name,
 		DBSubnetGroupDescription: desc,
-		VpcId:                    fmt.Sprintf("vpc-%s", region),
+		VpcId:                    vpcId,
 		SubnetGroupStatus:        "Complete",
 		Subnets:                  subnets,
 		ARN:                      neptunestore.SubnetGroupARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name),
@@ -199,17 +256,13 @@ func (s *NeptuneService) ModifyDBSubnetGroup(ctx context.Context, reqCtx *reques
 		if len(subnetIds) > 26 {
 			return nil, fmt.Errorf("neptune: cannot assign more than 26 subnets to a DB subnet group")
 		}
-		subnets := make([]neptunestore.Subnet, 0, len(subnetIds))
 		region := reqCtx.GetRegion()
-		for i, id := range subnetIds {
-			az := fmt.Sprintf("%s%c", region, 'a'+byte(i))
-			subnets = append(subnets, neptunestore.Subnet{
-				SubnetIdentifier:       id,
-				SubnetAvailabilityZone: az,
-				SubnetStatus:           "Active",
-			})
+		subnets, vpcId, err := s.resolveSubnets(ctx, region, subnetIds)
+		if err != nil {
+			return nil, err
 		}
 		sg.Subnets = subnets
+		sg.VpcId = vpcId
 	}
 
 	if err := store.UpdateSubnetGroup(sg); err != nil {

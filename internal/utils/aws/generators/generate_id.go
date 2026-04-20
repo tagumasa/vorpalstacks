@@ -10,6 +10,13 @@ import (
 
 const randomIDSize = 16
 
+// GenerateIDWithPrefix generates a random URL-safe ID with the given prefix
+// and suffix length. For example, GenerateIDWithPrefix("queue-", 12) returns
+// a string like "queue-abcDEF123ghi".
+func GenerateIDWithPrefix(prefix string, suffixLen int) (string, error) {
+	return generateIDWithPrefix(prefix, suffixLen)
+}
+
 func generateIDWithPrefix(prefix string, suffixLen int) (string, error) {
 	b := make([]byte, randomIDSize)
 	if _, err := rand.Read(b); err != nil {

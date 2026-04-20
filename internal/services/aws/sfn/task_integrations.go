@@ -13,12 +13,11 @@ import (
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 func (e *Executor) executeLambdaTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string) (string, error) {
-	if e.lambdaInvoker == nil {
+	if e.bus == nil || e.bus.LambdaInvoker() == nil {
 		return "", fmt.Errorf("lambda invoker not configured")
 	}
 
@@ -27,7 +26,7 @@ func (e *Executor) executeLambdaTask(ctx context.Context, execCtx *ExecutionCont
 		return "", fmt.Errorf("invalid Lambda ARN: %s", state.Resource)
 	}
 
-	statusCode, payload, err := e.lambdaInvoker.InvokeForGateway(ctx, state.Resource, []byte(input))
+	statusCode, payload, err := e.bus.LambdaInvoker().InvokeForGateway(ctx, state.Resource, []byte(input))
 	if err != nil {
 		return "", fmt.Errorf("failed to invoke Lambda function: %w", err)
 	}
@@ -40,8 +39,8 @@ func (e *Executor) executeLambdaTask(ctx context.Context, execCtx *ExecutionCont
 }
 
 func (e *Executor) executeSQSTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string) (string, error) {
-	if e.sqsStore == nil {
-		return "", fmt.Errorf("SQS store not configured")
+	if e.bus == nil || e.bus.SQSInvoker() == nil {
+		return "", fmt.Errorf("SQS invoker not configured")
 	}
 
 	resourceParts := strings.Split(state.Resource, ":")
@@ -82,8 +81,8 @@ func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *Execution
 			queueName = "default-queue"
 		}
 
-		if q, qErr := e.sqsStore.GetQueueByName(queueName); qErr == nil {
-			queueURL = q.URL
+		if qURL, qErr := e.bus.SQSInvoker().GetQueueByName(ctx, queueName); qErr == nil {
+			queueURL = qURL
 		} else {
 			queueURL = endpoint.SQSQueueURL(e.accountID, queueName)
 		}
@@ -100,20 +99,14 @@ func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *Execution
 		}
 	}
 
-	msg := &sqsstore.Message{
-		Body:              messageBody,
-		MessageAttributes: make(map[string]*sqsstore.MessageAttributeValue),
-		Attributes:        make(map[string]string),
-	}
-
-	sentMsg, err := e.sqsStore.SendMessage(queueURL, msg)
+	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, messageBody, 0, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to send SQS message: %w", err)
 	}
 
 	result := map[string]interface{}{
-		"MessageId":        sentMsg.ID,
-		"MD5OfMessageBody": sentMsg.MD5OfBody,
+		"MessageId":        messageID,
+		"MD5OfMessageBody": md5OfBody,
 	}
 
 	resultJSON, err := json.Marshal(result)
@@ -124,8 +117,8 @@ func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *Execution
 }
 
 func (e *Executor) executeSNSTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string) (string, error) {
-	if e.snsStore == nil {
-		return "", fmt.Errorf("SNS store not configured")
+	if e.bus == nil || e.bus.SNSInvoker() == nil {
+		return "", fmt.Errorf("SNS invoker not configured")
 	}
 
 	resourceParts := strings.Split(state.Resource, ":")
@@ -195,7 +188,7 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 	msg.PublishedTimestamp = time.Now().UTC()
 	msg.ReceivedTimestamp = time.Now().UTC()
 
-	if err := e.snsStore.Put(topicArn+":messages:"+msg.MessageId, msg); err != nil {
+	if err := e.bus.SNSInvoker().StoreMessage(ctx, topicArn+":messages:"+msg.MessageId, msg); err != nil {
 		return "", fmt.Errorf("failed to store SNS message: %w", err)
 	}
 
@@ -228,8 +221,8 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 }
 
 func (e *Executor) executeEventsTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string) (string, error) {
-	if e.eventsStore == nil {
-		return "", fmt.Errorf("events store not configured")
+	if e.bus == nil || e.bus.EventsInvoker() == nil {
+		return "", fmt.Errorf("events invoker not configured")
 	}
 
 	resourceParts := strings.Split(state.Resource, ":")
@@ -324,7 +317,7 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 		}
 
 		key := fmt.Sprintf("events:%s:%s", eventBusName, event.ID)
-		if err := e.eventsStore.Put(key, event); err != nil {
+		if err := e.bus.EventsInvoker().PutEvent(ctx, key, event); err != nil {
 			return "", fmt.Errorf("failed to store event: %w", err)
 		}
 

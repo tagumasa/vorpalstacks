@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -95,11 +96,8 @@ func (s *TimestreamWriteService) DescribeDatabase(ctx context.Context, reqCtx *r
 
 // ListDatabases returns a list of Timestream databases.
 func (s *TimestreamWriteService) ListDatabases(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 {
-		maxResults = 20
-	}
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
+	maxResults := pagination.GetMaxItems(req.Parameters, 20, "MaxResults")
 
 	opts := common.ListOptions{MaxItems: maxResults}
 	if nextToken != "" {
@@ -124,9 +122,7 @@ func (s *TimestreamWriteService) ListDatabases(ctx context.Context, reqCtx *requ
 	response := map[string]interface{}{
 		"Databases": dbList,
 	}
-	if result.NextMarker != "" {
-		response["NextToken"] = result.NextMarker
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextMarker)
 	return response, nil
 }
 

@@ -49,27 +49,3 @@ func NewAlreadyExistsException(resource string) *awserrors.AWSError {
 	return awserrors.NewResourceAlreadyExistsException(resource)
 }
 
-// NewNotFoundException creates a new NotFoundException error.
-func NewNotFoundException(resource string) *awserrors.AWSError {
-	return awserrors.NewNotFoundException(resource)
-}
-
-// NewBadRequestException creates a new BadRequestException error.
-func NewBadRequestException(message string) *awserrors.AWSError {
-	return awserrors.NewBadRequestException(message)
-}
-
-// NewMessageRejectedException creates a new MessageRejectedException error.
-func NewMessageRejectedException(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("MessageRejected", message, http.StatusBadRequest)
-}
-
-// NewLimitExceededException creates a new LimitExceededException error.
-func NewLimitExceededException(message string) *awserrors.AWSError {
-	return awserrors.NewLimitExceededException(message)
-}
-
-// NewInvalidParameterException creates a new InvalidParameterException error.
-func NewInvalidParameterException(message string) *awserrors.AWSError {
-	return awserrors.NewBadRequestException(message)
-}

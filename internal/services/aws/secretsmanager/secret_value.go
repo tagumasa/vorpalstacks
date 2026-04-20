@@ -10,6 +10,7 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	pagination "vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/store/aws/common"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
@@ -84,11 +85,8 @@ func (s *SecretsManagerService) PutSecretValue(ctx context.Context, reqCtx *requ
 // ListSecrets lists the secrets in AWS Secrets Manager.
 // https://docs.aws.amazon.com/secretsmanager/latest/userguide/API_ListSecrets.html
 func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 {
-		maxResults = 100
-	}
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
+	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
 	includePlannedDeletion := request.GetBoolParam(req.Parameters, "IncludePlannedDeletion")
 	sortBy := request.GetStringParam(req.Parameters, "SortBy")
 	sortOrder := request.GetStringParam(req.Parameters, "SortOrder")
@@ -169,7 +167,7 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 		"SecretList": secretList,
 	}
 	if isTruncated {
-		response["NextToken"] = fmt.Sprintf("%d", skipCount+maxResults)
+		pagination.SetNextToken(response, "NextToken", fmt.Sprintf("%d", skipCount+maxResults))
 	}
 	return response, nil
 }

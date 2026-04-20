@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
@@ -24,7 +23,6 @@ type CognitoService struct {
 	accountID      string
 	region         string
 	bus            eventbus.Bus
-	lambdaInvoker  common.LambdaInvoker
 	stores         sync.Map // region → cognitostore.CognitoStoreInterface
 }
 
@@ -51,12 +49,6 @@ func (s *CognitoService) SetEventBus(bus eventbus.Bus) {
 			eventbus.WithCallerPrincipal("cognito-idp.amazonaws.com"),
 		)
 	}
-}
-
-// SetLambdaInjector sets the Lambda invoker used for Cognito trigger
-// Lambda functions. This must be called before any trigger can fire.
-func (s *CognitoService) SetLambdaInvoker(invoker common.LambdaInvoker) {
-	s.lambdaInvoker = invoker
 }
 
 // JWKSHandler serves the JSON Web Key Set for a Cognito User Pool.

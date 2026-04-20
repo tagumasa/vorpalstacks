@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/iam"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
@@ -33,6 +34,10 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 	}
 	if target == nil {
 		return nil, ErrInvalidTarget
+	}
+
+	if err := s.validateVpcConfig(ctx, reqCtx, target); err != nil {
+		return nil, err
 	}
 
 	if target.RoleArn != "" {
@@ -231,6 +236,9 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 	if target, err := parseTarget(req.Parameters); err != nil {
 		return nil, err
 	} else if target != nil {
+		if err := s.validateVpcConfig(ctx, reqCtx, target); err != nil {
+			return nil, err
+		}
 		if target.RoleArn != "" {
 			validator := reqCtx.GetIAMValidator()
 			if err := validator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
@@ -299,7 +307,7 @@ func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.Re
 	}
 	namePrefix := request.GetStringParam(req.Parameters, "NamePrefix")
 	stateFilter := schedulerstore.ScheduleState(request.GetStringParam(req.Parameters, "State"))
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	maxResults := int32(100)
 	if mr := request.GetStringParam(req.Parameters, "MaxResults"); mr != "" {
 		if parsed, err := strconv.Atoi(mr); err == nil {
@@ -345,9 +353,7 @@ func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.Re
 	response := map[string]interface{}{
 		"Schedules": schedules,
 	}
-	if result.NextToken != "" {
-		response["NextToken"] = result.NextToken
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextToken)
 
 	return response, nil
 }

@@ -9,16 +9,11 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/endpoint"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	storecommon "vorpalstacks/internal/store/aws/common"
-	sns "vorpalstacks/internal/store/aws/sns"
-	sqs "vorpalstacks/internal/store/aws/sqs"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/pkg/vtl"
 )
@@ -29,38 +24,22 @@ var (
 	sqsActionRegex      = regexp.MustCompile(`sqs:action/[^/]+/([^/]+)`)
 	snsPathRegex        = regexp.MustCompile(`sns:path/[^/]+/([^/]+)`)
 	snsActionRegex      = regexp.MustCompile(`sns:action/[^/]+/([^/]+)`)
-
-	snsDeliverySem = make(chan struct{}, 10)
 )
 
 // AWSExecutor executes AWS integration requests for API Gateway.
 type AWSExecutor struct {
-	lambdaInvoker common.LambdaInvoker
-	sqsStore      sqs.SQSStoreInterface
-	snsStore      sns.SNSStoreInterface
-	accountID     string
-	region        string
-	bus           eventbus.Bus
-	deliveryWg    *sync.WaitGroup
+	accountID string
+	region    string
+	bus       eventbus.Bus
 }
 
-// NewAWSExecutor creates a new AWSExecutor with the given Lambda invoker.
-func NewAWSExecutor(lambdaInvoker common.LambdaInvoker) *AWSExecutor {
+// NewAWSExecutor creates a new AWSExecutor using the event bus for
+// cross-service invocations.
+func NewAWSExecutor(bus eventbus.Bus, accountID, region string) *AWSExecutor {
 	return &AWSExecutor{
-		lambdaInvoker: lambdaInvoker,
-	}
-}
-
-// NewAWSExecutorWithStores creates a new AWSExecutor with the given Lambda invoker and store dependencies.
-func NewAWSExecutorWithStores(lambdaInvoker common.LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string, bus eventbus.Bus, deliveryWg *sync.WaitGroup) *AWSExecutor {
-	return &AWSExecutor{
-		lambdaInvoker: lambdaInvoker,
-		sqsStore:      sqsStore,
-		snsStore:      snsStore,
-		accountID:     accountID,
-		region:        region,
-		bus:           bus,
-		deliveryWg:    deliveryWg,
+		accountID: accountID,
+		region:    region,
+		bus:       bus,
 	}
 }
 
@@ -86,7 +65,7 @@ func (e *AWSExecutor) Execute(ctx context.Context, req *IntegrationRequest) (*In
 }
 
 func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest) (*IntegrationResponse, error) {
-	if e.lambdaInvoker == nil {
+	if e.bus == nil || e.bus.LambdaInvoker() == nil {
 		return nil, &IntegrationError{
 			Message:  "Lambda client not configured",
 			Type:     "InternalServerError",
@@ -138,7 +117,7 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 		}
 	}
 
-	statusCode, payload, err := e.lambdaInvoker.InvokeForGateway(ctx, functionRef, eventJSON)
+	statusCode, payload, err := e.bus.LambdaInvoker().InvokeForGateway(ctx, functionRef, eventJSON)
 	if err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Lambda invocation failed: %v", err),
@@ -409,7 +388,7 @@ type SQSIntegrationRequest struct {
 }
 
 func (e *AWSExecutor) executeSQS(ctx context.Context, req *IntegrationRequest) (*IntegrationResponse, error) {
-	if e.sqsStore == nil {
+	if e.bus == nil || e.bus.SQSInvoker() == nil {
 		return nil, &IntegrationError{
 			Message:  "SQS store not configured",
 			Type:     "InternalServerError",
@@ -451,17 +430,14 @@ func (e *AWSExecutor) executeSQS(ctx context.Context, req *IntegrationRequest) (
 }
 
 func (e *AWSExecutor) executeSQSSendMessage(ctx context.Context, queueURL string, req *IntegrationRequest) (*IntegrationResponse, error) {
-	message := &sqs.Message{
-		Body: string(req.Body),
+	messageBody := string(req.Body)
+	if messageBody == "" {
+		messageBody = req.Headers["MessageBody"]
 	}
 
-	if message.Body == "" {
-		message.Body = req.Headers["MessageBody"]
-	}
+	messageAttributes := convertToSQSInvokerAttrs(extractSQSMessageAttributes(req.Headers, req.QueryParams, req.Body))
 
-	message.MessageAttributes = extractSQSMessageAttributes(req.Headers, req.QueryParams, req.Body)
-
-	_, err := e.sqsStore.SendMessage(queueURL, message)
+	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, messageBody, 0, messageAttributes)
 	if err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Failed to send SQS message: %v", err),
@@ -473,9 +449,9 @@ func (e *AWSExecutor) executeSQSSendMessage(ctx context.Context, queueURL string
 	response := map[string]interface{}{
 		"SendMessageResponse": map[string]interface{}{
 			"SendMessageResult": map[string]string{
-				"MD5OfMessageBody":       message.MD5OfBody,
-				"MessageId":              message.ID,
-				"MD5OfMessageAttributes": message.MD5OfMessageAttributes,
+				"MD5OfMessageBody":       md5OfBody,
+				"MessageId":              messageID,
+				"MD5OfMessageAttributes": "",
 			},
 			"ResponseMetadata": map[string]string{
 				"RequestId": fmt.Sprintf("%x", time.Now().UnixNano()),
@@ -492,8 +468,14 @@ func (e *AWSExecutor) executeSQSSendMessage(ctx context.Context, queueURL string
 	}, nil
 }
 
-func extractSQSMessageAttributes(headers, queryParams map[string]string, body []byte) map[string]*sqs.MessageAttributeValue {
-	attrs := make(map[string]*sqs.MessageAttributeValue)
+func extractSQSMessageAttributes(headers, queryParams map[string]string, body []byte) map[string]struct {
+	StringValue string
+	DataType    string
+} {
+	attrs := make(map[string]struct {
+		StringValue string
+		DataType    string
+	})
 	attrNames := make(map[int]string)
 	attrValues := make(map[int]struct {
 		StringValue string
@@ -544,14 +526,27 @@ func extractSQSMessageAttributes(headers, queryParams map[string]string, body []
 	for idx, name := range attrNames {
 		val := attrValues[idx]
 		if name != "" && val.DataType != "" {
-			attrs[name] = &sqs.MessageAttributeValue{
-				DataType:    val.DataType,
-				StringValue: &val.StringValue,
-			}
+			attrs[name] = val
 		}
 	}
 
 	return attrs
+}
+
+func convertToSQSInvokerAttrs(attrs map[string]struct {
+	StringValue string
+	DataType    string
+}) map[string]string {
+	if attrs == nil {
+		return nil
+	}
+	result := make(map[string]string, len(attrs))
+	for k, v := range attrs {
+		if v.DataType == "String" {
+			result[k] = v.StringValue
+		}
+	}
+	return result
 }
 
 func parseFormData(data string) map[string]string {
@@ -586,7 +581,7 @@ func (e *AWSExecutor) executeSQSReceiveMessage(ctx context.Context, queueURL str
 		_, _ = fmt.Sscanf(val, "%d", &visibilityTimeout)
 	}
 
-	messages, err := e.sqsStore.ReceiveMessage(queueURL, maxMessages, &visibilityTimeout, waitTime)
+	messages, err := e.bus.SQSInvoker().ReceiveMessage(ctx, queueURL, maxMessages, &visibilityTimeout, waitTime)
 	if err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Failed to receive SQS messages: %v", err),
@@ -626,6 +621,14 @@ func extractQueueNameFromURI(uri string) (string, error) {
 	return matches[1], nil
 }
 
+type snsNotification struct {
+	MessageId          string    `json:"messageId"`
+	TopicArn           string    `json:"topicArn"`
+	Subject            string    `json:"subject,omitempty"`
+	Message            string    `json:"message"`
+	PublishedTimestamp time.Time `json:"publishedTimestamp"`
+}
+
 // SNSPublishRequest represents a request for SNS integration in API Gateway.
 type SNSPublishRequest struct {
 	Message   string `json:"Message"`
@@ -635,7 +638,7 @@ type SNSPublishRequest struct {
 }
 
 func (e *AWSExecutor) executeSNS(ctx context.Context, req *IntegrationRequest) (*IntegrationResponse, error) {
-	if e.snsStore == nil {
+	if e.bus == nil || e.bus.SNSInvoker() == nil {
 		return nil, &IntegrationError{
 			Message:  "SNS store not configured",
 			Type:     "InternalServerError",
@@ -683,7 +686,7 @@ func (e *AWSExecutor) executeSNS(ctx context.Context, req *IntegrationRequest) (
 }
 
 func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, req *IntegrationRequest) (*IntegrationResponse, error) {
-	topic, err := e.snsStore.GetTopic(topicArn)
+	_, err := e.bus.SNSInvoker().GetTopic(ctx, topicArn)
 	if err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("SNS topic not found: %s", topicArn),
@@ -700,7 +703,7 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 	messageID := fmt.Sprintf("%x", time.Now().UnixNano())
 
 	now := time.Now().UTC()
-	notification := &sns.Message{
+	notification := &snsNotification{
 		MessageId:          messageID,
 		TopicArn:           topicArn,
 		Subject:            req.Headers["Subject"],
@@ -708,7 +711,7 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 		PublishedTimestamp: now,
 	}
 
-	if err := e.snsStore.Put(topicArn+":messages:"+messageID, notification); err != nil {
+	if err := e.bus.SNSInvoker().StoreMessage(ctx, topicArn+":messages:"+messageID, notification); err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Failed to store SNS message: %v", err),
 			Type:     "InternalServerError",
@@ -734,28 +737,7 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 				logs.String("messageId", messageID),
 				logs.Err(err))
 		}
-	} else {
-		if e.deliveryWg != nil {
-			e.deliveryWg.Add(1)
-		}
-		go func() {
-			if e.deliveryWg != nil {
-				defer e.deliveryWg.Done()
-			}
-			defer func() {
-				if r := recover(); r != nil {
-					logs.Error("Panic in SNS delivery goroutine",
-						logs.String("topicArn", topicArn),
-						logs.Any("panic", r))
-				}
-			}()
-			snsDeliverySem <- struct{}{}
-			defer func() { <-snsDeliverySem }()
-			e.deliverToSNSSubscribers(topicArn, notification)
-		}()
 	}
-
-	_ = topic
 
 	response := map[string]interface{}{
 		"PublishResponse": map[string]interface{}{
@@ -788,8 +770,8 @@ func extractTopicFromURI(uri string) (topicName, region string, err error) {
 	return matches[1], "", nil
 }
 
-func (e *AWSExecutor) deliverToSNSSubscribers(topicArn string, notification *sns.Message) {
-	result, err := e.snsStore.ListSubscriptionsByTopic(topicArn, storecommon.ListOptions{})
+func (e *AWSExecutor) deliverToSNSSubscribers(topicArn string, notification *snsNotification) {
+	subs, err := e.bus.SNSInvoker().ListSubscriptionsByTopic(context.Background(), topicArn)
 	if err != nil {
 		logs.Warn("failed to list SNS subscribers",
 			logs.String("topicArn", topicArn),
@@ -798,31 +780,27 @@ func (e *AWSExecutor) deliverToSNSSubscribers(topicArn string, notification *sns
 		return
 	}
 
-	for _, sub := range result.Items {
+	for _, sub := range subs {
 		if sub.PendingConfirmation {
 			continue
 		}
 
-		switch {
-		case strings.HasPrefix(sub.Endpoint, "arn:aws:sqs"):
-			e.deliverToSQSSubscriber(sub.Endpoint, notification)
-		case strings.HasPrefix(sub.Endpoint, "arn:aws:lambda"):
-			e.deliverToLambdaSubscriber(sub.Endpoint, notification)
-		}
+	switch {
+	case arnutil.IsSQSARN(sub.Endpoint):
+		e.deliverToSQSSubscriber(sub.Endpoint, notification)
+	case arnutil.IsLambdaARN(sub.Endpoint):
+		e.deliverToLambdaSubscriber(sub.Endpoint, notification)
+	}
 	}
 }
 
-func (e *AWSExecutor) deliverToSQSSubscriber(queueArn string, notification *sns.Message) {
-	if e.sqsStore == nil {
+func (e *AWSExecutor) deliverToSQSSubscriber(queueArn string, notification *snsNotification) {
+	if e.bus == nil || e.bus.SQSInvoker() == nil {
 		return
 	}
 
-	parts := strings.Split(queueArn, ":")
-	if len(parts) < 6 {
-		return
-	}
-	queueName := parts[5]
-	queueRegion := parts[3]
+	_, _, queueRegion, _, _ := arnutil.SplitARN(queueArn)
+	queueName := arnutil.ExtractQueueNameFromARN(queueArn)
 	if queueRegion == "" {
 		queueRegion = e.region
 	}
@@ -840,37 +818,13 @@ func (e *AWSExecutor) deliverToSQSSubscriber(queueArn string, notification *sns.
 		return
 	}
 
-	msg := &sqs.Message{
-		Body:              string(body),
-		MessageAttributes: convertSNSAttrsToSQS(notification.MessageAttributes),
-	}
-	if _, err := e.sqsStore.SendMessage(queueURL, msg); err != nil {
+	if _, _, err := e.bus.SQSInvoker().SendMessage(context.Background(), queueURL, string(body), 0, nil); err != nil {
 		logs.Error("Failed to send SQS message to subscriber", logs.String("queue", queueURL), logs.Err(err))
 	}
 }
 
-func convertSNSAttrsToSQS(snsAttrs map[string]*sns.MessageAttribute) map[string]*sqs.MessageAttributeValue {
-	if snsAttrs == nil {
-		return nil
-	}
-	sqsAttrs := make(map[string]*sqs.MessageAttributeValue)
-	for k, v := range snsAttrs {
-		attr := &sqs.MessageAttributeValue{
-			DataType: v.Type,
-		}
-		if v.StringValue != "" {
-			attr.StringValue = &v.StringValue
-		}
-		if v.BinaryValue != nil {
-			attr.BinaryValue = v.BinaryValue
-		}
-		sqsAttrs[k] = attr
-	}
-	return sqsAttrs
-}
-
-func (e *AWSExecutor) deliverToLambdaSubscriber(functionArn string, notification *sns.Message) {
-	if e.lambdaInvoker == nil {
+func (e *AWSExecutor) deliverToLambdaSubscriber(functionArn string, notification *snsNotification) {
+	if e.bus == nil || e.bus.LambdaInvoker() == nil {
 		return
 	}
 
@@ -894,7 +848,7 @@ func (e *AWSExecutor) deliverToLambdaSubscriber(functionArn string, notification
 
 	eventJSON, _ := json.Marshal(event)
 	ctx := context.Background()
-	if _, _, err := e.lambdaInvoker.InvokeForGateway(ctx, functionArn, eventJSON); err != nil {
+	if _, _, err := e.bus.LambdaInvoker().InvokeForGateway(ctx, functionArn, eventJSON); err != nil {
 		logs.Error("apigateway: SNS-to-Lambda invocation failed", logs.String("function", functionArn), logs.Err(err))
 	}
 }

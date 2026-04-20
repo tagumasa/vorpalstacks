@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -27,7 +28,7 @@ func (s *LogsService) PutSubscriptionFilter(ctx context.Context, reqCtx *request
 		if s.bus != nil {
 			if rr := s.bus.RoleResolver(); rr != nil {
 				if err := rr.ValidateRole(ctx, roleArn); err != nil {
-					return nil, NewLogsError("InvalidParameterException", fmt.Sprintf("Invalid role ARN: %s", roleArn), 400)
+					return nil, awserrors.NewAWSError("InvalidParameterException", fmt.Sprintf("Invalid role ARN: %s", roleArn), 400)
 				}
 			}
 		}

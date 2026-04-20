@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -23,14 +22,11 @@ import (
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 
 // SNSService provides SNS topic and subscription operations.
 type SNSService struct {
 	storageManager *storage.RegionStorageManager
-	sqsStore       sqsstore.SQSStoreInterface
-	lambdaInvoker  common.LambdaInvoker
 	accountID      string
 	defaultRegion  string
 	httpClient     *http.Client
@@ -54,8 +50,8 @@ func (s *SNSService) store(reqCtx *request.RequestContext) (snsstore.SNSStoreInt
 }
 
 // NewSNSService creates a new SNS service instance.
-// Optional cross-service dependencies (SQS store, Lambda invoker) should be
-// injected via setter methods before registering handlers.
+// Cross-service delivery is routed through the event bus, which must be
+// injected via SetEventBus before registering handlers.
 func NewSNSService(storageMgr *storage.RegionStorageManager, accountID, region string) *SNSService {
 	return &SNSService{
 		storageManager: storageMgr,
@@ -63,16 +59,6 @@ func NewSNSService(storageMgr *storage.RegionStorageManager, accountID, region s
 		defaultRegion:  region,
 		httpClient:     &http.Client{Timeout: 30 * time.Second},
 	}
-}
-
-// SetSQSStore injects an SQS store for cross-service topic-to-queue delivery.
-func (s *SNSService) SetSQSStore(store sqsstore.SQSStoreInterface) {
-	s.sqsStore = store
-}
-
-// SetLambdaInvoker injects a Lambda invoker for cross-service topic-to-function delivery.
-func (s *SNSService) SetLambdaInvoker(invoker common.LambdaInvoker) {
-	s.lambdaInvoker = invoker
 }
 
 // SetSNSStore pre-populates the regional store cache with an existing SNS store instance.

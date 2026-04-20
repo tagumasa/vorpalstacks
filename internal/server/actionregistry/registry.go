@@ -219,6 +219,14 @@ func (r *ActionRegistry) initDefaults() {
 		"RestoreDBClusterFromSnapshot", "RestoreDBClusterToPointInTime", "PromoteReadReplicaDBCluster",
 		"AddRoleToDBCluster", "RemoveRoleFromDBCluster",
 	})
+
+	r.Register("ec2", []string{
+		"CreateVpc", "DescribeVpcs", "DeleteVpc",
+		"CreateSubnet", "DescribeSubnets", "DeleteSubnet",
+		"CreateSecurityGroup", "DescribeSecurityGroups", "DeleteSecurityGroup",
+		"AuthorizeSecurityGroupIngress", "AuthorizeSecurityGroupEgress",
+		"RevokeSecurityGroupIngress", "RevokeSecurityGroupEgress",
+	})
 }
 
 // LookupServiceByAction returns the service name for a given action using the global registry.

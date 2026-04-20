@@ -1,4 +1,3 @@
-// Package request provides HTTP request parsing and context handling for vorpalstacks.
 package request
 
 import (
@@ -27,7 +26,7 @@ type ParsedRequest struct {
 	AccessKeyID string
 }
 
-// GetRegion returns the request region, defaulting to DefaultRegion if not set.
+// GetRegion returns the request region, defaulting to DefaultRegion if unset.
 func (r *ParsedRequest) GetRegion() string {
 	if r.Region != "" {
 		return r.Region
@@ -42,6 +41,8 @@ func (r *ParsedRequest) GetParam(key string) string {
 }
 
 // ParseAWSRequest parses an AWS HTTP request into a ParsedRequest.
+// Body parsing is driven by Content-Type; operation name and path
+// parameters are extracted via registered REST service parsers.
 func ParseAWSRequest(r *http.Request) (*ParsedRequest, error) {
 	req := &ParsedRequest{
 		Headers:     r.Header,
@@ -127,46 +128,18 @@ func ParseAWSRequest(r *http.Request) (*ParsedRequest, error) {
 	}
 	req.AccessKeyID = ExtractAccessKeyIDFromAuth(authHeader)
 
-	if strings.HasPrefix(r.URL.Path, "/20") {
-		extractLambdaPathParams(r.URL.Path, req.Parameters)
-		extractLambdaHeaders(r, req.Parameters)
-	}
-
-	if isApiGatewayPath(r.URL.Path) {
-		extractApiGatewayPathParams(r.URL.Path, req.Parameters)
-	}
-
-	if strings.HasPrefix(r.URL.Path, "/schedule-groups") || strings.HasPrefix(r.URL.Path, "/schedules") {
-		extractSchedulerPathParams(r.URL.Path, r.Method, req.Parameters)
-	}
-
-	if strings.HasPrefix(r.URL.Path, "/v2/email/") {
-		extractSESv2PathParams(r.URL.Path, req.Parameters)
-	}
-
-	if strings.HasPrefix(r.URL.Path, "/2013-04-01/") {
-		extractRoute53PathParams(r.URL.Path, req.Parameters)
-	}
-
-	if strings.HasPrefix(r.URL.Path, "/2020-05-31/") {
-		extractCloudFrontPathParams(r.URL.Path, req.Parameters)
-	}
-
-	if IsNeptunedataPath(r.URL.Path) {
-		extractNeptunedataPathParams(r.URL.Path, req.Parameters)
-	}
-
-	if IsNeptuneGraphPath(r.URL.Path) {
-		extractNeptuneGraphPathParams(r.URL.Path, req.Parameters)
-	}
-
-	if graphId := r.Header.Get("Graphidentifier"); graphId != "" {
-		req.Parameters["graphIdentifier"] = graphId
+	for _, p := range restParsers {
+		if p.MatchPath(r.URL.Path) {
+			p.ExtractPathParams(r, req.Parameters)
+		}
 	}
 
 	return req, nil
 }
 
+// extractOperation determines the operation name from the request.
+// Universal protocol headers (X-Amz-Target, Action) take precedence,
+// followed by registered REST service parsers.
 func extractOperation(r *http.Request, bodyBytes []byte) string {
 	xAmzTarget := r.Header.Get("X-Amz-Target")
 	if xAmzTarget != "" {
@@ -200,54 +173,40 @@ func extractOperation(r *http.Request, bodyBytes []byte) string {
 		}
 	}
 
-	if op := extractLambdaOperation(r); op != "" {
-		return op
-	}
-
-	if op := extractApiGatewayOperation(r); op != "" {
-		return op
-	}
-
-	if op := extractSchedulerOperation(r); op != "" {
-		return op
-	}
-
-	if op := extractSESv2Operation(r); op != "" {
-		return op
-	}
-
-	if op := extractRoute53Operation(r); op != "" {
-		return op
-	}
-
-	if op := extractCloudFrontOperation(r); op != "" {
-		if op == "CreateDistribution" && r.Method == "POST" && r.Body != nil {
-			buf, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBodySize))
-			if err == nil {
-				r.Body = io.NopCloser(bytes.NewReader(buf))
-				if bytes.Contains(buf, []byte("DistributionConfigWithTags")) {
+	for _, p := range restParsers {
+		if op := p.ExtractOperation(r); op != "" {
+			if op == "CreateDistribution" && r.Method == "POST" {
+				if inspectCloudFrontBodyForTags(r, bodyBytes) {
 					return "CreateDistributionWithTags"
 				}
 			}
+			return op
 		}
-		return op
-	}
-
-	if op := extractNeptunedataOperation(r); op != "" {
-		return op
-	}
-
-	if op := extractAppSyncOperation(r); op != "" {
-		return op
-	}
-
-	if op := extractNeptuneGraphOperation(r); op != "" {
-		return op
 	}
 
 	return ""
 }
 
+// inspectCloudFrontBodyForTags checks whether a CloudFront CreateDistribution
+// request body contains a DistributionConfigWithTags wrapper element.
+func inspectCloudFrontBodyForTags(r *http.Request, bodyBytes []byte) bool {
+	if len(bodyBytes) > 0 {
+		if bytes.Contains(bodyBytes, []byte("DistributionConfigWithTags")) {
+			return true
+		}
+	}
+	if r.Body != nil {
+		buf, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBodySize))
+		if err == nil {
+			r.Body = io.NopCloser(bytes.NewReader(buf))
+			return bytes.Contains(buf, []byte("DistributionConfigWithTags"))
+		}
+	}
+	return false
+}
+
+// convertCBORMapToStringMap recursively converts CBOR-decoded maps
+// with interface{} keys to string-keyed maps.
 func convertCBORMapToStringMap(v interface{}) interface{} {
 	switch val := v.(type) {
 	case map[interface{}]interface{}:
@@ -272,80 +231,28 @@ func convertCBORMapToStringMap(v interface{}) interface{} {
 }
 
 // ExtractRESTOperation determines the operation for REST protocol services.
-// Dispatches to lambda, apigateway, scheduler, sesv2, route53, cloudfront, neptunedata extractors.
-// bodyBytes is used for CloudFront CreateDistributionWithTags detection.
+// Delegates to extractOperation which checks all registered REST parsers.
 func ExtractRESTOperation(r *http.Request, bodyBytes []byte) string {
-	if op := extractLambdaOperation(r); op != "" {
-		return op
-	}
-	if op := extractApiGatewayOperation(r); op != "" {
-		return op
-	}
-	if op := extractSchedulerOperation(r); op != "" {
-		return op
-	}
-	if op := extractSESv2Operation(r); op != "" {
-		return op
-	}
-	if op := extractRoute53Operation(r); op != "" {
-		return op
-	}
-	if op := extractCloudFrontOperation(r); op != "" {
-		if op == "CreateDistribution" && r.Method == "POST" && len(bodyBytes) > 0 {
-			if bytes.Contains(bodyBytes, []byte("DistributionConfigWithTags")) {
-				return "CreateDistributionWithTags"
-			}
+	return extractOperation(r, bodyBytes)
+}
+
+// ExtractRESTPathParams extracts path parameters for REST protocol services
+// by iterating over all registered parsers and invoking those whose path
+// predicate matches the request URL.
+func ExtractRESTPathParams(r *http.Request, params map[string]interface{}) {
+	for _, p := range restParsers {
+		if p.MatchPath(r.URL.Path) {
+			p.ExtractPathParams(r, params)
 		}
-		return op
-	}
-	if op := extractNeptunedataOperation(r); op != "" {
-		return op
-	}
-	if op := extractAppSyncOperation(r); op != "" {
-		return op
-	}
-	if op := extractNeptuneGraphOperation(r); op != "" {
-		return op
-	}
-	return ""
-}
-
-// ExtractRESTPathParams extracts path parameters for REST protocol services.
-func ExtractRESTPathParams(path string, method string, params map[string]interface{}) {
-	if strings.HasPrefix(path, "/20") {
-		extractLambdaPathParams(path, params)
-	}
-	if isApiGatewayPath(path) {
-		extractApiGatewayPathParams(path, params)
-	}
-	if strings.HasPrefix(path, "/schedule-groups") || strings.HasPrefix(path, "/schedules") {
-		extractSchedulerPathParams(path, method, params)
-	}
-	if strings.HasPrefix(path, "/v2/email/") {
-		extractSESv2PathParams(path, params)
-	}
-	if strings.HasPrefix(path, "/2013-04-01/") {
-		extractRoute53PathParams(path, params)
-	}
-	if strings.HasPrefix(path, "/2020-05-31/") {
-		extractCloudFrontPathParams(path, params)
-	}
-	if IsNeptunedataPath(path) {
-		extractNeptunedataPathParams(path, params)
-	}
-	if isAppSyncPath(path) {
-		extractAppSyncPathParams(path, params)
-	}
-	if IsNeptuneGraphPath(path) {
-		extractNeptuneGraphPathParams(path, params)
 	}
 }
 
-// ParseXMLBody parses XML body bytes into params map.
+// ParseXMLBody parses XML body bytes into the given params map.
 func ParseXMLBody(bodyBytes []byte, params map[string]interface{}) {
 	parseXMLBody(bodyBytes, params)
 }
 
+// toString converts common types to their string representation.
 func toString(v interface{}) string {
 	switch val := v.(type) {
 	case string:

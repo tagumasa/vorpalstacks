@@ -485,3 +485,22 @@ func extractLambdaHeaders(r *http.Request, params map[string]interface{}) {
 		}
 	}
 }
+
+// lambdaRESTParser implements RESTServiceParser for AWS Lambda.
+type lambdaRESTParser struct{}
+
+// MatchPath returns true for Lambda function paths (prefixed with /20).
+func (p *lambdaRESTParser) MatchPath(path string) bool {
+	return strings.HasPrefix(path, "/20")
+}
+
+// ExtractOperation returns the Lambda operation name, or empty if the path does not match.
+func (p *lambdaRESTParser) ExtractOperation(r *http.Request) string {
+	return extractLambdaOperation(r)
+}
+
+// ExtractPathParams extracts URI-bound parameters and Lambda-specific headers.
+func (p *lambdaRESTParser) ExtractPathParams(r *http.Request, params map[string]interface{}) {
+	extractLambdaPathParams(r.URL.Path, params)
+	extractLambdaHeaders(r, params)
+}

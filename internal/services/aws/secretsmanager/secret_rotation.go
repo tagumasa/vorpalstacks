@@ -79,7 +79,7 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 
 	var versionId string
 
-	if secret.RotationLambdaARN != "" && s.lambdaInvoker != nil {
+	if secret.RotationLambdaARN != "" && s.bus != nil {
 		if rotErr := s.executeRotation(ctx, store, secret); rotErr != nil {
 			return nil, errors.NewAWSError("InvalidRequestException",
 				rotErr.Error(), 400)

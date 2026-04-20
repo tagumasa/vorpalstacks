@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
+	pagination "vorpalstacks/internal/common/pagination"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
@@ -220,7 +221,7 @@ func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.Re
 	recursive := getBoolParam(req, "Recursive")
 	withDecryption := getBoolParam(req, "WithDecryption")
 	maxResults := getIntParam(req, "MaxResults")
-	nextToken := req.GetParam("NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -246,9 +247,7 @@ func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.Re
 	response := map[string]interface{}{
 		"Parameters": params,
 	}
-	if nextMarker != "" {
-		response["NextToken"] = nextMarker
-	}
+	pagination.SetNextToken(response, "NextToken", nextMarker)
 
 	return response, nil
 }
@@ -308,7 +307,7 @@ func (s *SSMService) DeleteParameters(ctx context.Context, reqCtx *request.Reque
 // DescribeParameters returns information about all parameters in the Parameter Store.
 func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	maxResults := getIntParam(req, "MaxResults")
-	nextToken := req.GetParam("NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	filters := make(map[string]string)
 
@@ -378,9 +377,7 @@ func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.Req
 	response := map[string]interface{}{
 		"Parameters": params,
 	}
-	if nextMarker != "" {
-		response["NextToken"] = nextMarker
-	}
+	pagination.SetNextToken(response, "NextToken", nextMarker)
 
 	return response, nil
 }
@@ -394,7 +391,7 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 
 	maxResults := getIntParam(req, "MaxResults")
 	withDecryption := getBoolParam(req, "WithDecryption")
-	nextToken := req.GetParam("NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -436,10 +433,11 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 		respNextToken = nextMarker
 	}
 
-	return map[string]interface{}{
-		"NextToken":  respNextToken,
+	resp := map[string]interface{}{
 		"Parameters": versions,
-	}, nil
+	}
+	pagination.SetNextToken(resp, "NextToken", respNextToken)
+	return resp, nil
 }
 
 // LabelParameterVersion attaches labels to a specific version of a parameter.

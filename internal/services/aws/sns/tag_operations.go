@@ -3,6 +3,7 @@ package sns
 import (
 	"context"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	snsstore "vorpalstacks/internal/store/aws/sns"
@@ -12,11 +13,11 @@ import (
 func snsMapError(err error) error {
 	switch e := err.(type) {
 	case *tagutil.MissingResourceError:
-		return NewInvalidParameterException(e.Param + " is required")
+		return awserrors.NewInvalidParameterException(e.Param + " is required")
 	case *tagutil.MissingTagsError:
-		return NewInvalidParameterException(e.Param + " is required")
+		return awserrors.NewInvalidParameterException(e.Param + " is required")
 	case *tagutil.MissingTagKeysError:
-		return NewInvalidParameterException(e.Param + " is required")
+		return awserrors.NewInvalidParameterException(e.Param + " is required")
 	}
 	return err
 }

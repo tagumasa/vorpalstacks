@@ -223,6 +223,7 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 
 	go func() {
 		defer pw.Close()
+		defer func() { recover() }()
 
 		writer := NewSubscribeToShardEventStreamWriter(pw)
 

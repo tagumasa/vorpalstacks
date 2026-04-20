@@ -225,3 +225,21 @@ func extractCloudFrontPathParams(path string, params map[string]interface{}) {
 	case "tagging":
 	}
 }
+
+// cloudFrontRESTParser implements RESTServiceParser for Amazon CloudFront.
+type cloudFrontRESTParser struct{}
+
+// MatchPath returns true if the path belongs to CloudFront.
+func (p *cloudFrontRESTParser) MatchPath(path string) bool {
+	return strings.HasPrefix(path, "/2020-05-31/")
+}
+
+// ExtractOperation returns the CloudFront operation name, or empty if the path does not match.
+func (p *cloudFrontRESTParser) ExtractOperation(r *http.Request) string {
+	return extractCloudFrontOperation(r)
+}
+
+// ExtractPathParams extracts URI-bound parameters from the CloudFront request path.
+func (p *cloudFrontRESTParser) ExtractPathParams(r *http.Request, params map[string]interface{}) {
+	extractCloudFrontPathParams(r.URL.Path, params)
+}

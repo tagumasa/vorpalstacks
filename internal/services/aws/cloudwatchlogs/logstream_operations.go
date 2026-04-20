@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
@@ -155,7 +156,7 @@ func (s *LogsService) PutLogEvents(ctx context.Context, reqCtx *request.RequestC
 			return nil, mapStoreError(err)
 		}
 		if ls.UploadSequenceToken != sequenceToken {
-			return nil, NewLogsError("InvalidSequenceTokenException",
+			return nil, awserrors.NewAWSError("InvalidSequenceTokenException",
 				fmt.Sprintf("The sequence token is not valid. Expected: %s, Received: %s", ls.UploadSequenceToken, sequenceToken), 400)
 		}
 	}
@@ -611,12 +612,7 @@ func (s *LogsService) buildSubscriptionPayload(
 }
 
 func (s *LogsService) deliverToLambda(reqCtx *request.RequestContext, destArn string, compressedData []byte) {
-	_, _, region, _, _ := arn.SplitARN(destArn)
-	invoker := s.getLambdaInvoker(region)
-	if invoker == nil {
-		invoker = s.getLambdaInvoker(reqCtx.GetRegion())
-	}
-	if invoker == nil {
+	if s.bus == nil {
 		return
 	}
 
@@ -633,34 +629,31 @@ func (s *LogsService) deliverToLambda(reqCtx *request.RequestContext, destArn st
 		return
 	}
 
-	_, _, err = invoker.InvokeForGateway(context.Background(), functionName, payloadBytes)
+	_, _, err = s.bus.LambdaInvoker().InvokeForGateway(context.Background(), functionName, payloadBytes)
 	if err != nil {
 		return
 	}
 }
 
+// deliverToKinesis delivers subscription filter log events to a Kinesis stream
+// by wrapping the compressed data in the awslogs JSON envelope.
 func (s *LogsService) deliverToKinesis(reqCtx *request.RequestContext, destArn string, compressedData []byte) {
-	_, _, region, _, _ := arn.SplitARN(destArn)
-	kinesisStore, ok := s.getKinesisStore(region)
-	if !ok {
-		kinesisStore, ok = s.getKinesisStore(reqCtx.GetRegion())
-		if !ok {
-			return
-		}
+	if s.bus == nil {
+		return
 	}
 
 	streamName := arn.ExtractStreamNameFromARN(destArn)
-	partitionKey := generatePartitionKey()
 	encodedData := base64.StdEncoding.EncodeToString(compressedData)
 
-	shards, err := kinesisStore.ListShards(streamName, nil, "", 0)
+	ctx := context.Background()
+	shards, err := s.bus.KinesisInvoker().ListShards(ctx, streamName)
 	if err != nil || len(shards) == 0 {
 		return
 	}
 
 	var activeShardID string
 	for _, shard := range shards {
-		if shard.SequenceNumberRange.EndingSequenceNumber == "" {
+		if shard.SequenceNumberRangeEnd == "" {
 			activeShardID = shard.ShardID
 			break
 		}
@@ -670,7 +663,18 @@ func (s *LogsService) deliverToKinesis(reqCtx *request.RequestContext, destArn s
 		return
 	}
 
-	_, err = kinesisStore.PutRecord(streamName, activeShardID, partitionKey, encodedData)
+	envelope := map[string]interface{}{
+		"awslogs": map[string]interface{}{
+			"data": encodedData,
+		},
+	}
+	envelopeBytes, marshalErr := json.Marshal(envelope)
+	if marshalErr != nil {
+		return
+	}
+
+	b64Envelope := base64.StdEncoding.EncodeToString(envelopeBytes)
+	_, err = s.bus.KinesisInvoker().PutRecord(ctx, streamName, activeShardID, []byte(b64Envelope))
 	if err != nil {
 		return
 	}

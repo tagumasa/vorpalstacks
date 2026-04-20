@@ -9,37 +9,23 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
-	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
-	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
-	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
-
-// SNSPublisher defines the interface for publishing to SNS topics.
-type SNSPublisher interface {
-	PublishToTopic(ctx context.Context, accountID, region, topicArn, message string) error
-}
 
 // EventsService provides AWS EventBridge operations.
 type EventsService struct {
 	storageManager  *storage.RegionStorageManager
 	eventsStores    sync.Map // region → *eventsstore.EventsStore
-	sqsStores       sync.Map // region → *sqsstore.SQSStore
-	snsStores       sync.Map // region → *snsstore.SNSStore
-	kinesisStores   sync.Map // region → *kinesisstore.KinesisStore
-	snsPublisher    SNSPublisher
-	lambdaInvoker   common.LambdaInvoker
 	accountID       string
 	bus             eventbus.Bus
 	targetSemaphore chan struct{}
+	replayWg        sync.WaitGroup
 	replayCancels   sync.Map // replayName → context.CancelFunc
 }
 
@@ -56,6 +42,19 @@ func NewEventsService(storageMgr *storage.RegionStorageManager, accountID string
 	}
 }
 
+// Close waits for all in-flight replay goroutines to finish, then cancels
+// any remaining replay contexts.
+func (s *EventsService) Close() {
+	s.replayWg.Wait()
+	s.replayCancels.Range(func(key, value any) bool {
+		if cancel, ok := value.(context.CancelFunc); ok {
+			cancel()
+		}
+		s.replayCancels.Delete(key)
+		return true
+	})
+}
+
 // SetEventsStore sets a pre-built events store for the given region,
 // bypassing per-request store creation.
 func (s *EventsService) SetEventsStore(region string, store *eventsstore.EventsStore) {
@@ -64,33 +63,7 @@ func (s *EventsService) SetEventsStore(region string, store *eventsstore.EventsS
 	}
 }
 
-// SetSQSStore registers an SQS store for a given region for cross-service event delivery.
-func (s *EventsService) SetSQSStore(region string, store sqsstore.SQSStoreInterface) {
-	if store != nil {
-		s.sqsStores.Store(region, store)
-	}
-}
-
-// SetSNSStore registers an SNS store for a given region for cross-service event delivery.
-func (s *EventsService) SetSNSStore(region string, store snsstore.SNSStoreInterface) {
-	if store != nil {
-		s.snsStores.Store(region, store)
-	}
-}
-
-// SetSNSPublisher injects an SNS publisher for cross-service event-to-topic delivery.
-func (s *EventsService) SetSNSPublisher(publisher SNSPublisher) {
-	s.snsPublisher = publisher
-}
-
-// SetLambdaInvoker injects a Lambda invoker for cross-service event-to-function delivery.
-func (s *EventsService) SetLambdaInvoker(invoker common.LambdaInvoker) {
-	s.lambdaInvoker = invoker
-}
-
 // SetEventBus injects the event bus and registers the EventBridge delivery handler.
-// When the bus is set, deliverToTarget() routes through the bus instead of
-// spawning goroutines directly.
 func (s *EventsService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	_, _ = eventbus.SubscribeTyped[*eventbus.EventBridgeDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
@@ -237,48 +210,6 @@ func (s *EventsService) store(ctx *request.RequestContext) (*eventsstore.EventsS
 		}
 		return eventsstore.NewEventsStore(storage, s.accountID, ctx.GetRegion()), nil
 	})
-}
-
-func (s *EventsService) getSQSStoreForRegion(region string) (sqsstore.SQSStoreInterface, error) {
-	if cached, ok := s.sqsStores.Load(region); ok {
-		if typed, ok := cached.(sqsstore.SQSStoreInterface); ok {
-			return typed, nil
-		}
-	}
-	storage, err := s.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	store := sqsstore.NewSQSStore(storage, s.accountID, region, appconfig.BaseURL())
-	if actual, loaded := s.sqsStores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(sqsstore.SQSStoreInterface); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
-}
-
-func (s *EventsService) getKinesisStoreForRegion(region string) (*kinesisstore.KinesisStore, error) {
-	if cached, ok := s.kinesisStores.Load(region); ok {
-		if typed, ok := cached.(*kinesisstore.KinesisStore); ok {
-			return typed, nil
-		}
-	}
-	st, err := s.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	tstore, ok := st.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		return nil, fmt.Errorf("storage for region %s does not support TransactionalStorageWith2PC", region)
-	}
-	store := kinesisstore.NewKinesisStore(tstore, s.accountID, region)
-	if actual, loaded := s.kinesisStores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(*kinesisstore.KinesisStore); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
 }
 
 // RegisterHandlers registers the Events service handlers with the dispatcher.

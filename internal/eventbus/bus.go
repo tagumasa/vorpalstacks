@@ -129,6 +129,22 @@ type Bus interface {
 	RoleResolver() RoleResolver
 	Start(ctx context.Context) error
 	Shutdown(ctx context.Context) error
+
+	LambdaInvoker() LambdaInvoker
+	SQSInvoker() SQSInvoker
+	SNSInvoker() SNSInvoker
+	KinesisInvoker() KinesisInvoker
+	EventsInvoker() EventsInvoker
+
+	SetLambdaInvoker(invoker LambdaInvoker)
+	SetSQSInvoker(invoker SQSInvoker)
+	SetSNSInvoker(invoker SNSInvoker)
+	SetKinesisInvoker(invoker KinesisInvoker)
+	EC2Invoker() EC2Invoker
+
+	SetEC2Invoker(invoker EC2Invoker)
+
+	SetEventsInvoker(invoker EventsInvoker)
 }
 
 // EventBus is the central implementation of the Bus interface, managing
@@ -152,6 +168,13 @@ type EventBus struct {
 	stopCh        chan struct{}
 	invokers      map[string]ServiceInvoker
 	invokersMu    sync.RWMutex
+
+	lambdaInvoker  LambdaInvoker
+	sqsInvoker     SQSInvoker
+	snsInvoker     SNSInvoker
+	kinesisInvoker KinesisInvoker
+	eventsInvoker  EventsInvoker
+	ec2Invoker     EC2Invoker
 	nextSubID     atomic.Int64
 	asyncCh       chan *OutboxEntry
 	directCh      chan *directDispatch
@@ -533,6 +556,48 @@ func (b *EventBus) GetInvoker(serviceType string) (ServiceInvoker, bool) {
 	inv, ok := b.invokers[serviceType]
 	return inv, ok
 }
+
+// SetLambdaInjector sets the Lambda invoker used for dispatching Lambda function
+// invocations from bus events.
+func (b *EventBus) SetLambdaInvoker(invoker LambdaInvoker)  { b.lambdaInvoker = invoker }
+
+// LambdaInvoker returns the configured Lambda invoker.
+func (b *EventBus) LambdaInvoker() LambdaInvoker              { return b.lambdaInvoker }
+
+// SetSQSInvoker sets the SQS invoker used for dispatching SQS SendMessage calls
+// from bus events.
+func (b *EventBus) SetSQSInvoker(invoker SQSInvoker)          { b.sqsInvoker = invoker }
+
+// SQSInvoker returns the configured SQS invoker.
+func (b *EventBus) SQSInvoker() SQSInvoker                    { return b.sqsInvoker }
+
+// SetSNSInvoker sets the SNS invoker used for dispatching SNS Publish calls
+// from bus events.
+func (b *EventBus) SetSNSInvoker(invoker SNSInvoker)          { b.snsInvoker = invoker }
+
+// SNSInvoker returns the configured SNS invoker.
+func (b *EventBus) SNSInvoker() SNSInvoker                    { return b.snsInvoker }
+
+// SetKinesisInvoker sets the Kinesis invoker used for dispatching Kinesis
+// PutRecord calls from bus events.
+func (b *EventBus) SetKinesisInvoker(invoker KinesisInvoker)  { b.kinesisInvoker = invoker }
+
+// KinesisInvoker returns the configured Kinesis invoker.
+func (b *EventBus) KinesisInvoker() KinesisInvoker            { return b.kinesisInvoker }
+
+// SetEventsInvoker sets the EventBridge invoker used for dispatching
+// EventBridge PutEvents calls from bus events.
+func (b *EventBus) SetEventsInvoker(invoker EventsInvoker)    { b.eventsInvoker = invoker }
+
+// EventsInvoker returns the configured EventBridge invoker.
+func (b *EventBus) EventsInvoker() EventsInvoker              { return b.eventsInvoker }
+
+// SetEC2Invoker sets the EC2 invoker used for dispatching EC2 API calls
+// from bus events.
+func (b *EventBus) SetEC2Invoker(invoker EC2Invoker)    { b.ec2Invoker = invoker }
+
+// EC2Invoker returns the configured EC2 invoker.
+func (b *EventBus) EC2Invoker() EC2Invoker              { return b.ec2Invoker }
 
 // RoleResolver returns the configured RoleResolver, or nil if none was set.
 func (b *EventBus) RoleResolver() RoleResolver {

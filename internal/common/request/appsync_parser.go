@@ -80,3 +80,21 @@ func extractAppSyncPathParams(path string, params map[string]interface{}) {
 		extractAppSyncIntrospectionPathParams(path, params)
 	}
 }
+
+// appSyncRESTParser implements RESTServiceParser for AWS AppSync.
+type appSyncRESTParser struct{}
+
+// MatchPath returns true if the path belongs to AppSync.
+func (p *appSyncRESTParser) MatchPath(path string) bool {
+	return isAppSyncPath(path)
+}
+
+// ExtractOperation returns the AppSync operation name, or empty if the path does not match.
+func (p *appSyncRESTParser) ExtractOperation(r *http.Request) string {
+	return extractAppSyncOperation(r)
+}
+
+// ExtractPathParams extracts URI-bound parameters from the AppSync request path.
+func (p *appSyncRESTParser) ExtractPathParams(r *http.Request, params map[string]interface{}) {
+	extractAppSyncPathParams(r.URL.Path, params)
+}

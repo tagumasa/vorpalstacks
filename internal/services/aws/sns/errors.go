@@ -39,11 +39,6 @@ var (
 	ErrTooManyEntriesInBatch = awserrors.NewAWSError("TooManyEntriesInBatchRequest", "Maximum number of entries per request are 10", 400)
 )
 
-// NewInvalidParameterException creates a new AWSError for invalid parameter errors.
-func NewInvalidParameterException(message string) *awserrors.AWSError {
-	return awserrors.NewInvalidParameterException(message)
-}
-
 // NewTopicNotFoundException creates a new AWSError for non-existent topic errors.
 func NewTopicNotFoundException() *awserrors.AWSError {
 	return awserrors.NewAWSError("NotFound", "Topic does not exist", 404)
@@ -54,32 +49,4 @@ func NewNotFoundException(resource string) *awserrors.AWSError {
 	return awserrors.NewAWSError("NotFound", resource+" not found", 404)
 }
 
-// NewAuthorizationErrorException creates a new AWSError for authorization errors.
-func NewAuthorizationErrorException(message string) *awserrors.AWSError {
-	return awserrors.NewAccessDeniedException(message)
-}
 
-// NewInternalErrorException creates a new AWSError for internal errors.
-func NewInternalErrorException(message string) *awserrors.AWSError {
-	return awserrors.NewInternalErrorException(message)
-}
-
-// NewEndpointDisabledException creates a new AWSError for endpoint disabled errors.
-func NewEndpointDisabledException(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("EndpointDisabled", message, 400)
-}
-
-// NewFilterLimitExceededException creates a new AWSError for filter limit exceeded errors.
-func NewFilterLimitExceededException(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("FilterLimitExceeded", message, 400)
-}
-
-// NewThrottledException creates a new AWSError for throttled errors.
-func NewThrottledException(message string) *awserrors.AWSError {
-	return awserrors.NewThrottlingException(message)
-}
-
-// NewValidationException creates a new AWSError for validation errors.
-func NewValidationException(message string) *awserrors.AWSError {
-	return awserrors.NewValidationException(message)
-}

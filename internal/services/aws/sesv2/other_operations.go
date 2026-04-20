@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
+	pagination "vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -81,7 +83,7 @@ func (s *SESv2Service) GetDedicatedIpPool(ctx context.Context, reqCtx *request.R
 
 	pool, err := store.GetDedicatedIpPool(poolName)
 	if err != nil {
-		return nil, NewNotFoundException("Dedicated IP pool not found")
+		return nil, awserrors.NewNotFoundException("Dedicated IP pool not found")
 	}
 
 	return map[string]interface{}{
@@ -94,11 +96,8 @@ func (s *SESv2Service) GetDedicatedIpPool(ctx context.Context, reqCtx *request.R
 
 // ListDedicatedIpPools returns a list of dedicated IP pools.
 func (s *SESv2Service) ListDedicatedIpPools(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	pageSize := request.GetIntParam(req.Parameters, "PageSize")
-	if pageSize == 0 {
-		pageSize = 100
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	pageSize := pagination.GetMaxItems(req.Parameters, 100, "PageSize")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	opts := common.ListOptions{
 		MaxItems: pageSize,
@@ -124,9 +123,7 @@ func (s *SESv2Service) ListDedicatedIpPools(ctx context.Context, reqCtx *request
 		"DedicatedIpPools": pools,
 	}
 
-	if result.IsTruncated {
-		response["NextToken"] = result.NextMarker
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextMarker)
 
 	return response, nil
 }
@@ -210,11 +207,8 @@ func (s *SESv2Service) DeleteSuppressedDestination(ctx context.Context, reqCtx *
 
 // ListSuppressedDestinations returns a list of suppressed destinations.
 func (s *SESv2Service) ListSuppressedDestinations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	pageSize := request.GetIntParam(req.Parameters, "PageSize")
-	if pageSize == 0 {
-		pageSize = 100
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	pageSize := pagination.GetMaxItems(req.Parameters, 100, "PageSize")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	opts := common.ListOptions{
 		MaxItems: pageSize,
@@ -244,9 +238,7 @@ func (s *SESv2Service) ListSuppressedDestinations(ctx context.Context, reqCtx *r
 		"SuppressedDestinationSummaries": destinations,
 	}
 
-	if result.IsTruncated {
-		response["NextToken"] = result.NextMarker
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextMarker)
 
 	return response, nil
 }
@@ -308,7 +300,7 @@ func (s *SESv2Service) GetContactList(ctx context.Context, reqCtx *request.Reque
 
 	cl, err := store.GetContactList(contactListName)
 	if err != nil {
-		return nil, NewNotFoundException("Contact list not found")
+		return nil, awserrors.NewNotFoundException("Contact list not found")
 	}
 
 	result := map[string]interface{}{
@@ -346,7 +338,7 @@ func (s *SESv2Service) DeleteContactList(ctx context.Context, reqCtx *request.Re
 	}
 
 	if err := store.DeleteContactList(contactListName); err != nil {
-		return nil, NewNotFoundException("Contact list not found")
+		return nil, awserrors.NewNotFoundException("Contact list not found")
 	}
 
 	return response.EmptyResponse(), nil
@@ -359,11 +351,8 @@ func (s *SESv2Service) ListContactLists(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	pageSize := request.GetIntParam(req.Parameters, "PageSize")
-	if pageSize == 0 {
-		pageSize = 100
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	pageSize := pagination.GetMaxItems(req.Parameters, 100, "PageSize")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	opts := common.ListOptions{
 		MaxItems: pageSize,
@@ -387,9 +376,7 @@ func (s *SESv2Service) ListContactLists(ctx context.Context, reqCtx *request.Req
 		"ContactLists": contactLists,
 	}
 
-	if result.IsTruncated {
-		resp["NextToken"] = result.NextMarker
-	}
+	pagination.SetNextToken(resp, "NextToken", result.NextMarker)
 
 	return resp, nil
 }
@@ -408,7 +395,7 @@ func (s *SESv2Service) UpdateContactList(ctx context.Context, reqCtx *request.Re
 
 	cl, err := store.GetContactList(contactListName)
 	if err != nil {
-		return nil, NewNotFoundException("Contact list not found")
+		return nil, awserrors.NewNotFoundException("Contact list not found")
 	}
 
 	if description := request.GetStringParam(req.Parameters, "Description"); description != "" {
@@ -489,7 +476,7 @@ func (s *SESv2Service) GetContact(ctx context.Context, reqCtx *request.RequestCo
 
 	contact, err := store.GetContact(contactListName, emailAddress)
 	if err != nil {
-		return nil, NewNotFoundException("Contact not found")
+		return nil, awserrors.NewNotFoundException("Contact not found")
 	}
 
 	result := map[string]interface{}{
@@ -531,7 +518,7 @@ func (s *SESv2Service) DeleteContact(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if err := store.DeleteContact(contactListName, emailAddress); err != nil {
-		return nil, NewNotFoundException("Contact not found")
+		return nil, awserrors.NewNotFoundException("Contact not found")
 	}
 
 	return response.EmptyResponse(), nil
@@ -549,11 +536,8 @@ func (s *SESv2Service) ListContacts(ctx context.Context, reqCtx *request.Request
 		return nil, ErrMissingParameter
 	}
 
-	pageSize := request.GetIntParam(req.Parameters, "PageSize")
-	if pageSize == 0 {
-		pageSize = 100
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	pageSize := pagination.GetMaxItems(req.Parameters, 100, "PageSize")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	opts := common.ListOptions{
 		MaxItems: pageSize,
@@ -578,9 +562,7 @@ func (s *SESv2Service) ListContacts(ctx context.Context, reqCtx *request.Request
 		"Contacts": contacts,
 	}
 
-	if result.IsTruncated {
-		resp["NextToken"] = result.NextMarker
-	}
+	pagination.SetNextToken(resp, "NextToken", result.NextMarker)
 
 	return resp, nil
 }
@@ -601,7 +583,7 @@ func (s *SESv2Service) UpdateContact(ctx context.Context, reqCtx *request.Reques
 
 	contact, err := store.GetContact(contactListName, emailAddress)
 	if err != nil {
-		return nil, NewNotFoundException("Contact not found")
+		return nil, awserrors.NewNotFoundException("Contact not found")
 	}
 
 	if attrs := request.GetStringParam(req.Parameters, "AttributesData"); attrs != "" {

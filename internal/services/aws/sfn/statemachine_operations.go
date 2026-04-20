@@ -343,12 +343,7 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	sqsStore := s.sqsStore
-	snsStore := s.snsStore
-	eventsStore := s.eventsStore
-
-	executor := NewExecutorWithStores(store, s.lambdaInvoker, sqsStore, snsStore, eventsStore, s.accountID, reqCtx.GetRegion())
-	executor.SetEventBus(s.bus)
+	executor := NewExecutorWithStores(store, s.bus, s.accountID, reqCtx.GetRegion())
 	execCtx, cancel := context.WithCancel(context.Background())
 	store.RegisterExecution(executionArn, cancel)
 	s.asyncWg.Add(1)

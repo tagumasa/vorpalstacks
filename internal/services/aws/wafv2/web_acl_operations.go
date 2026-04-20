@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -109,12 +110,8 @@ func (s *WAFv2Service) GetWebACL(ctx context.Context, reqCtx *request.RequestCon
 
 // ListWebACLs returns a paginated list of all web ACLs.
 func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxItems := request.GetIntParam(req.Parameters, "Limit")
-	if maxItems == 0 {
-		maxItems = 100
-	}
-
-	nextMarker := request.GetStringParam(req.Parameters, "NextMarker")
+	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
+	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
@@ -139,9 +136,7 @@ func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestC
 	resp := map[string]interface{}{
 		"WebACLs": webACLs,
 	}
-	if result.NextMarker != "" {
-		resp["NextMarker"] = result.NextMarker
-	}
+	pagination.SetNextToken(resp, "NextMarker", result.NextMarker)
 	return resp, nil
 }
 

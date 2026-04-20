@@ -146,3 +146,21 @@ func extractRoute53PathParams(path string, params map[string]interface{}) {
 		}
 	}
 }
+
+// route53RESTParser implements RESTServiceParser for Amazon Route 53.
+type route53RESTParser struct{}
+
+// MatchPath returns true if the path belongs to Route 53.
+func (p *route53RESTParser) MatchPath(path string) bool {
+	return strings.HasPrefix(path, "/2013-04-01/")
+}
+
+// ExtractOperation returns the Route 53 operation name, or empty if the path does not match.
+func (p *route53RESTParser) ExtractOperation(r *http.Request) string {
+	return extractRoute53Operation(r)
+}
+
+// ExtractPathParams extracts URI-bound parameters from the Route 53 request path.
+func (p *route53RESTParser) ExtractPathParams(r *http.Request, params map[string]interface{}) {
+	extractRoute53PathParams(r.URL.Path, params)
+}

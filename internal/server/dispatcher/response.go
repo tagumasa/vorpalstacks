@@ -148,6 +148,10 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 
 func (d *Dispatcher) writeResponseWithOpName(w http.ResponseWriter, r *http.Request, serviceName, opName string, response interface{}) {
 	op, _ := d.operationStore.Get(serviceName, opName)
+	if serviceName == "ec2" {
+		protocol.EncodeEC2QueryXMLResponse(w, opName, response)
+		return
+	}
 	d.writeResponse(w, r, op, opName, response)
 }
 

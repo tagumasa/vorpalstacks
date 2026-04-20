@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/subtle"
 
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/store/aws/common"
@@ -18,13 +20,13 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 	endpoint := request.GetParamLowerFirst(req.Parameters, "Endpoint")
 
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("TopicArn is required")
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
 	if protocol == "" {
-		return nil, NewInvalidParameterException("Protocol is required")
+		return nil, awserrors.NewInvalidParameterException("Protocol is required")
 	}
 	if endpoint == "" {
-		return nil, NewInvalidParameterException("Endpoint is required")
+		return nil, awserrors.NewInvalidParameterException("Endpoint is required")
 	}
 
 	subscription := &snsstore.Subscription{
@@ -81,7 +83,7 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 func (s *SNSService) Unsubscribe(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	subscriptionArn := request.GetParamLowerFirst(req.Parameters, "SubscriptionArn")
 	if subscriptionArn == "" {
-		return nil, NewInvalidParameterException("SubscriptionArn is required")
+		return nil, awserrors.NewInvalidParameterException("SubscriptionArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -105,10 +107,10 @@ func (s *SNSService) ConfirmSubscription(ctx context.Context, reqCtx *request.Re
 	token := request.GetParamLowerFirst(req.Parameters, "Token")
 
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("TopicArn is required")
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
 	if token == "" {
-		return nil, NewInvalidParameterException("Token is required")
+		return nil, awserrors.NewInvalidParameterException("Token is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -132,7 +134,7 @@ func (s *SNSService) ConfirmSubscription(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
-	return nil, NewInvalidParameterException("Subscription not found for token")
+	return nil, awserrors.NewInvalidParameterException("Subscription not found for token")
 }
 
 // GetSubscriptionAttributes returns the attributes of a subscription.
@@ -140,7 +142,7 @@ func (s *SNSService) ConfirmSubscription(ctx context.Context, reqCtx *request.Re
 func (s *SNSService) GetSubscriptionAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	subscriptionArn := request.GetParamLowerFirst(req.Parameters, "SubscriptionArn")
 	if subscriptionArn == "" {
-		return nil, NewInvalidParameterException("SubscriptionArn is required")
+		return nil, awserrors.NewInvalidParameterException("SubscriptionArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -168,10 +170,10 @@ func (s *SNSService) SetSubscriptionAttributes(ctx context.Context, reqCtx *requ
 	attributeValue := request.GetParamLowerFirst(req.Parameters, "AttributeValue")
 
 	if subscriptionArn == "" {
-		return nil, NewInvalidParameterException("SubscriptionArn is required")
+		return nil, awserrors.NewInvalidParameterException("SubscriptionArn is required")
 	}
 	if attributeName == "" {
-		return nil, NewInvalidParameterException("AttributeName is required")
+		return nil, awserrors.NewInvalidParameterException("AttributeName is required")
 	}
 
 	attrs := map[string]string{attributeName: attributeValue}
@@ -197,7 +199,7 @@ func (s *SNSService) ListSubscriptions(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	result, err := store.ListSubscriptions(common.ListOptions{Marker: nextToken})
 	if err != nil {
 		return nil, err
@@ -214,15 +216,11 @@ func (s *SNSService) ListSubscriptions(ctx context.Context, reqCtx *request.Requ
 		})
 	}
 
-	response := map[string]interface{}{
-		"Subscriptions": subscriptions,
-	}
-
+	nextToken = ""
 	if result.IsTruncated && result.NextMarker != "" {
-		response["NextToken"] = result.NextMarker
+		nextToken = result.NextMarker
 	}
-
-	return response, nil
+	return pagination.BuildListResponse("Subscriptions", subscriptions, nextToken), nil
 }
 
 // ListSubscriptionsByTopic lists the subscriptions by topic.
@@ -230,7 +228,7 @@ func (s *SNSService) ListSubscriptions(ctx context.Context, reqCtx *request.Requ
 func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("TopicArn is required")
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -238,7 +236,7 @@ func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	result, err := store.ListSubscriptionsByTopic(topicArn, common.ListOptions{Marker: nextToken})
 	if err != nil {
 		return nil, err

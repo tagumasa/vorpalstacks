@@ -572,3 +572,21 @@ func extractDomainNamePathParams(path string, params map[string]interface{}) {
 		}
 	}
 }
+
+// apiGatewayRESTParser implements RESTServiceParser for Amazon API Gateway.
+type apiGatewayRESTParser struct{}
+
+// MatchPath returns true if the path belongs to API Gateway.
+func (p *apiGatewayRESTParser) MatchPath(path string) bool {
+	return isApiGatewayPath(path)
+}
+
+// ExtractOperation returns the API Gateway operation name, or empty if the path does not match.
+func (p *apiGatewayRESTParser) ExtractOperation(r *http.Request) string {
+	return extractApiGatewayOperation(r)
+}
+
+// ExtractPathParams extracts URI-bound parameters from the API Gateway request path.
+func (p *apiGatewayRESTParser) ExtractPathParams(r *http.Request, params map[string]interface{}) {
+	extractApiGatewayPathParams(r.URL.Path, params)
+}

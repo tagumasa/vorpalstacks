@@ -1,9 +1,12 @@
 package scheduler
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 
+	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
@@ -376,4 +379,41 @@ func parseFlexibleTimeWindow(params map[string]interface{}) (*schedulerstore.Fle
 	}
 
 	return ftw, nil
+}
+
+// validateVpcConfig validates the AwsVpcConfiguration subnets and security
+// groups against the EC2 service via the event bus. All resources must exist
+// and belong to the same VPC.
+func (s *SchedulerService) validateVpcConfig(ctx context.Context, reqCtx *request.RequestContext, target *schedulerstore.Target) error {
+	if s.engine == nil || s.engine.bus == nil {
+		return nil
+	}
+	if target == nil || target.EcsParameters == nil || target.EcsParameters.NetworkConfiguration == nil {
+		return nil
+	}
+	vpc := target.EcsParameters.NetworkConfiguration.AwsVpcConfiguration
+	if vpc == nil || (len(vpc.Subnets) == 0 && len(vpc.SecurityGroups) == 0) {
+		return nil
+	}
+
+	ec2 := s.engine.bus.EC2Invoker()
+	if ec2 == nil {
+		return fmt.Errorf("scheduler: EC2 service not available for VPC configuration validation")
+	}
+
+	region := reqCtx.GetRegion()
+
+	for _, subnetId := range vpc.Subnets {
+		if _, _, err := ec2.LookupSubnet(ctx, region, subnetId); err != nil {
+			return fmt.Errorf("scheduler: subnet %s not found: %v", subnetId, err)
+		}
+	}
+
+	for _, sgId := range vpc.SecurityGroups {
+		if _, err := ec2.LookupSecurityGroup(ctx, region, sgId); err != nil {
+			return fmt.Errorf("scheduler: security group %s not found: %v", sgId, err)
+		}
+	}
+
+	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -22,14 +23,14 @@ type delegationSetResponse struct {
 func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewAPIError("InvalidInput", "Name is required", 400)
+		return nil, awserrors.NewAWSError("InvalidInput", "Name is required", 400)
 	}
 	name = strings.ToLower(name)
 	if !strings.HasSuffix(name, ".") {
 		name = name + "."
 	}
 	if strings.Contains(name, " ") || len(name) < 2 {
-		return nil, NewAPIError("InvalidInput", "Invalid hosted zone name", 400)
+		return nil, awserrors.NewAWSError("InvalidInput", "Invalid hosted zone name", 400)
 	}
 
 	callerRef := request.GetStringParam(req.Parameters, "CallerReference")
@@ -79,7 +80,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 	}
 	if err := st.HostedZones().Create(zone); err != nil {
 		if route53store.IsAlreadyExists(err) {
-			return nil, NewAPIError("HostedZoneAlreadyExists", fmt.Sprintf("Hosted zone already exists: %s", name), 400)
+			return nil, awserrors.NewAWSError("HostedZoneAlreadyExists", fmt.Sprintf("Hosted zone already exists: %s", name), 400)
 		}
 		return nil, mapStoreError(err)
 	}
@@ -116,7 +117,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 	if tags := tagutil.ParseTags(req.Parameters, "HostedZoneTags"); len(tags) > 0 {
 		resourceKey := "hostedzone/" + zone.ID
 		if err := st.Tags().Tag(resourceKey, tags); err != nil {
-			return nil, NewAPIError("TagResource", err.Error(), 500)
+			return nil, awserrors.NewAWSError("TagResource", err.Error(), 500)
 		}
 	}
 
@@ -332,7 +333,7 @@ func (s *Route53Service) DeleteHostedZone(ctx context.Context, reqCtx *request.R
 			}
 		}
 		if userRecords > 0 {
-			return nil, NewAPIError("HostedZoneNotEmpty", "The hosted zone must be empty before it can be deleted.", 400)
+			return nil, awserrors.NewAWSError("HostedZoneNotEmpty", "The hosted zone must be empty before it can be deleted.", 400)
 		}
 	}
 

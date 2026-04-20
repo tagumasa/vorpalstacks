@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -20,12 +21,12 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 	}
 
 	if resourceType == "" || resourceId == "" {
-		return nil, NewAPIError("InvalidParameter", "ResourceType and ResourceId are required", 400)
+		return nil, awserrors.NewAWSError("InvalidParameter", "ResourceType and ResourceId are required", 400)
 	}
 
 	normalizedType := strings.ToLower(resourceType)
 	if normalizedType != "hostedzone" && normalizedType != "healthcheck" {
-		return nil, NewAPIError("InvalidParameter", "ResourceType must be 'hostedzone' or 'healthcheck'", 400)
+		return nil, awserrors.NewAWSError("InvalidParameter", "ResourceType must be 'hostedzone' or 'healthcheck'", 400)
 	}
 
 	resourceId = strings.TrimPrefix(resourceId, "/hostedzone/")
@@ -84,17 +85,17 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 
 	if len(addTags) > 0 {
 		if err := st.Tags().Tag(resourceKey, addTags); err != nil {
-			return nil, NewAPIError("TagResource", err.Error(), 500)
+			return nil, awserrors.NewAWSError("TagResource", err.Error(), 500)
 		}
 	}
 
 	if len(removeTagKeys) > 0 {
 		if err := st.Tags().Raw().Untag(resourceKey, removeTagKeys); err != nil {
-			return nil, NewAPIError("UntagResource", err.Error(), 500)
+			return nil, awserrors.NewAWSError("UntagResource", err.Error(), 500)
 		}
 		if len(addTags) > 0 {
 			if err := st.Tags().Tag(resourceKey, addTags); err != nil {
-				return nil, NewAPIError("TagResource", err.Error(), 500)
+				return nil, awserrors.NewAWSError("TagResource", err.Error(), 500)
 			}
 		}
 		return response.EmptyResponse(), nil
@@ -112,12 +113,12 @@ func (s *Route53Service) ListTagsForResource(ctx context.Context, reqCtx *reques
 	}
 
 	if resourceType == "" || resourceId == "" {
-		return nil, NewAPIError("InvalidParameter", "ResourceType and ResourceId are required", 400)
+		return nil, awserrors.NewAWSError("InvalidParameter", "ResourceType and ResourceId are required", 400)
 	}
 
 	normalizedResourceType := strings.ToLower(resourceType)
 	if normalizedResourceType != "hostedzone" && normalizedResourceType != "healthcheck" {
-		return nil, NewAPIError("InvalidParameter", "ResourceType must be 'hostedzone' or 'healthcheck'", 400)
+		return nil, awserrors.NewAWSError("InvalidParameter", "ResourceType must be 'hostedzone' or 'healthcheck'", 400)
 	}
 
 	resourceId = strings.TrimPrefix(resourceId, "/hostedzone/")
@@ -132,7 +133,7 @@ func (s *Route53Service) ListTagsForResource(ctx context.Context, reqCtx *reques
 
 	tags, err := st.Tags().ListTagsForResource(resourceKey)
 	if err != nil {
-		return nil, NewAPIError("ListTags", err.Error(), 500)
+		return nil, awserrors.NewAWSError("ListTags", err.Error(), 500)
 	}
 
 	tagItems := make([]interface{}, 0, len(tags))

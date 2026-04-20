@@ -41,6 +41,7 @@ type NeptuneDataService struct {
 	startTime          time.Time
 	storageManager     *storage.RegionStorageManager
 	stores             sync.Map
+	loaderWg           sync.WaitGroup
 	cancelCleanup      context.CancelFunc
 }
 
@@ -74,6 +75,7 @@ func (s *NeptuneDataService) Close() {
 	if s.cancelCleanup != nil {
 		s.cancelCleanup()
 	}
+	s.loaderWg.Wait()
 }
 
 // cleanupExpiredQueries periodically scans all per-region stores and deletes

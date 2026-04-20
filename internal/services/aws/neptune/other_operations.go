@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
@@ -282,8 +283,8 @@ func (s *NeptuneService) DescribeEvents(ctx context.Context, reqCtx *request.Req
 		SourceIdentifier: request.GetStringParam(params, "SourceIdentifier"),
 		StartTime:        startTime,
 		EndTime:          endTime,
-		Marker:           request.GetStringParam(params, "Marker"),
-		MaxRecords:       request.GetIntParam(params, "MaxRecords"),
+		Marker:           pagination.GetMarker(req.Parameters, "Marker"),
+		MaxRecords:       pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems),
 	}
 
 	result, err := store.ListEvents(opts)
@@ -306,9 +307,7 @@ func (s *NeptuneService) DescribeEvents(ctx context.Context, reqCtx *request.Req
 	resp := map[string]interface{}{
 		"Events": protocol.XMLElements{ElementName: "Event", Items: filtered},
 	}
-	if result.IsTruncated {
-		resp["Marker"] = result.Marker
-	}
+	pagination.SetNextToken(resp, "Marker", result.Marker)
 	return resp, nil
 }
 

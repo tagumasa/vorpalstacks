@@ -2,25 +2,23 @@ package audit
 
 import (
 	arnutil "vorpalstacks/internal/utils/aws/arn"
-
-	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 
 var _ Recorder = (*CloudTrailRecorder)(nil)
 
 // CloudTrailRecorder records audit events to CloudTrail.
 type CloudTrailRecorder struct {
-	store cloudtrailstore.CloudTrailStoreInterface
+	store EventStore
 }
 
 // NewCloudTrailRecorder creates a new CloudTrail recorder backed by the given store.
-func NewCloudTrailRecorder(store cloudtrailstore.CloudTrailStoreInterface) *CloudTrailRecorder {
+func NewCloudTrailRecorder(store EventStore) *CloudTrailRecorder {
 	return &CloudTrailRecorder{store: store}
 }
 
 // RecordEvent records a CloudTrail audit event.
 func (r *CloudTrailRecorder) RecordEvent(event *AuditEvent) error {
-	userIdentity := &cloudtrailstore.UserIdentity{
+	userIdentity := &UserIdentity{
 		Type:      "AssumedRole",
 		AccountID: event.AccountID,
 		UserName:  event.PrincipalName,

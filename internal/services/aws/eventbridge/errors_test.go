@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 func TestEventsErrors(t *testing.T) {
 	t.Run("EventsError has no Unwrap", func(t *testing.T) {
-		err := NewValidationException("test")
+		err := awserrors.NewValidationException("test")
 		assert.Equal(t, "ValidationException: test", err.Error())
 	})
 
@@ -27,7 +29,7 @@ func TestEventsErrors(t *testing.T) {
 	})
 
 	t.Run("NewValidationException", func(t *testing.T) {
-		err := NewValidationException("invalid rule name")
+		err := awserrors.NewValidationException("invalid rule name")
 		assert.Equal(t, "ValidationException: invalid rule name", err.Error())
 		assert.Equal(t, 400, err.GetHTTPStatusCode())
 	})
@@ -39,16 +41,12 @@ func TestEventsErrors(t *testing.T) {
 	})
 
 	t.Run("NewResourceAlreadyExistsException", func(t *testing.T) {
-		err := NewResourceAlreadyExistsException("rule")
+		err := awserrors.NewResourceAlreadyExistsException("rule")
 		assert.Equal(t, "ResourceAlreadyExistsException: rule already exists", err.Error())
 		assert.Equal(t, 409, err.GetHTTPStatusCode())
 	})
 
-	t.Run("NewInvalidParameterException", func(t *testing.T) {
-		err := NewInvalidParameterException("invalid parameter value")
-		assert.Equal(t, "InvalidParameterException: invalid parameter value", err.Error())
-		assert.Equal(t, 400, err.GetHTTPStatusCode())
-	})
+
 }
 
 func TestBuildEventBusARN(t *testing.T) {

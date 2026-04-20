@@ -81,8 +81,8 @@ func TestRoute53Errors(t *testing.T) {
 	}
 }
 
-func TestNewAPIError(t *testing.T) {
-	err := NewAPIError("TestCode", "Test message", http.StatusBadRequest)
+func TestNewAWSError(t *testing.T) {
+	err := awserrors.NewAWSError("TestCode", "Test message", http.StatusBadRequest)
 
 	if err.Code != "TestCode" {
 		t.Errorf("Code = %v, want TestCode", err.Code)

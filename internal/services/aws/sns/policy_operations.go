@@ -3,6 +3,7 @@ package sns
 import (
 	"context"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	snsstore "vorpalstacks/internal/store/aws/sns"
@@ -15,7 +16,7 @@ func (s *SNSService) GetDataProtectionPolicy(ctx context.Context, reqCtx *reques
 		topicArn = request.GetParamLowerFirst(req.Parameters, "TopicArn")
 	}
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("ResourceArn is required")
+		return nil, awserrors.NewInvalidParameterException("ResourceArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -43,12 +44,12 @@ func (s *SNSService) PutDataProtectionPolicy(ctx context.Context, reqCtx *reques
 		topicArn = request.GetParamLowerFirst(req.Parameters, "TopicArn")
 	}
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("ResourceArn is required")
+		return nil, awserrors.NewInvalidParameterException("ResourceArn is required")
 	}
 
 	policy := request.GetParamLowerFirst(req.Parameters, "DataProtectionPolicy")
 	if policy == "" {
-		return nil, NewInvalidParameterException("DataProtectionPolicy is required")
+		return nil, awserrors.NewInvalidParameterException("DataProtectionPolicy is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -70,12 +71,12 @@ func (s *SNSService) PutDataProtectionPolicy(ctx context.Context, reqCtx *reques
 func (s *SNSService) AddPermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("TopicArn is required")
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
 
 	label := request.GetParamLowerFirst(req.Parameters, "Label")
 	if label == "" {
-		return nil, NewInvalidParameterException("Label is required")
+		return nil, awserrors.NewInvalidParameterException("Label is required")
 	}
 
 	awsAccountIdsRaw := request.GetListParamLowerFirst(req.Parameters, "AWSAccountId")
@@ -100,10 +101,10 @@ func (s *SNSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	if len(awsAccountIds) == 0 {
-		return nil, NewInvalidParameterException("AwsAccountId is required")
+		return nil, awserrors.NewInvalidParameterException("AwsAccountId is required")
 	}
 	if len(actionNames) == 0 {
-		return nil, NewInvalidParameterException("ActionName is required")
+		return nil, awserrors.NewInvalidParameterException("ActionName is required")
 	}
 
 	permission := &snsstore.Permission{
@@ -131,12 +132,12 @@ func (s *SNSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 func (s *SNSService) RemovePermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("TopicArn is required")
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
 
 	label := request.GetParamLowerFirst(req.Parameters, "Label")
 	if label == "" {
-		return nil, NewInvalidParameterException("Label is required")
+		return nil, awserrors.NewInvalidParameterException("Label is required")
 	}
 
 	store, err := s.store(reqCtx)

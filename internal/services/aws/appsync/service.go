@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"sync"
 
-	awscommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
@@ -20,7 +19,6 @@ import (
 type AppSyncService struct {
 	accountID     string
 	stores        sync.Map
-	lambdaInvoker awscommon.LambdaInvoker
 	bus           eventbus.Bus
 	schemaCache   sync.Map
 	schemaWg      sync.WaitGroup
@@ -33,13 +31,6 @@ func NewAppSyncService(accountID string) *AppSyncService {
 		accountID:   accountID,
 		eventServer: NewEventServer(),
 	}
-}
-
-// SetLambdaInvoker injects a Lambda invoker for Lambda DataSource calls
-// within GraphQL resolvers. Follows the same pattern as Step Functions,
-// EventBridge, SNS, and other services that invoke Lambda.
-func (s *AppSyncService) SetLambdaInvoker(invoker awscommon.LambdaInvoker) {
-	s.lambdaInvoker = invoker
 }
 
 // SetEventBus injects the global event bus for WebSocket pub/sub fan-out

@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -15,12 +16,12 @@ import (
 func (s *EventsService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
 	if resourceArn == "" {
-		return nil, NewValidationException("ResourceARN is required")
+		return nil, awserrors.NewValidationException("ResourceARN is required")
 	}
 
 	newTags := tagutil.ParseTags(req.Parameters, "Tags")
 	if len(newTags) == 0 {
-		return nil, NewValidationException("Tags are required")
+		return nil, awserrors.NewValidationException("Tags are required")
 	}
 
 	_, _, _, _, resource := svcarn.SplitARN(resourceArn)
@@ -60,7 +61,7 @@ func (s *EventsService) TagResource(ctx context.Context, reqCtx *request.Request
 func (s *EventsService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
 	if resourceArn == "" {
-		return nil, NewValidationException("ResourceARN is required")
+		return nil, awserrors.NewValidationException("ResourceARN is required")
 	}
 
 	tagKeysMap := tagutil.ParseTagKeys(req.Parameters, "TagKeys")
@@ -68,7 +69,7 @@ func (s *EventsService) UntagResource(ctx context.Context, reqCtx *request.Reque
 		tagKeysMap = tagutil.ParseTagKeys(req.Parameters, "tagKeys")
 	}
 	if len(tagKeysMap) == 0 {
-		return nil, NewValidationException("TagKeys are required")
+		return nil, awserrors.NewValidationException("TagKeys are required")
 	}
 
 	_, _, _, _, resource := svcarn.SplitARN(resourceArn)
@@ -108,7 +109,7 @@ func (s *EventsService) UntagResource(ctx context.Context, reqCtx *request.Reque
 func (s *EventsService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
 	if resourceArn == "" {
-		return nil, NewValidationException("ResourceARN is required")
+		return nil, awserrors.NewValidationException("ResourceARN is required")
 	}
 
 	_, _, _, _, resource := svcarn.SplitARN(resourceArn)

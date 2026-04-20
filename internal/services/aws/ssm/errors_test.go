@@ -68,7 +68,7 @@ func TestSSMError(t *testing.T) {
 }
 
 func TestNewSSMError(t *testing.T) {
-	err := NewSSMError("TestCode", "Test message", http.StatusBadRequest)
+	err := awserrors.NewAWSError("TestCode", "Test message", http.StatusBadRequest)
 
 	if err.Code != "TestCode" {
 		t.Errorf("Code = %v, want TestCode", err.Code)

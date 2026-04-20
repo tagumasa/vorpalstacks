@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -107,7 +108,7 @@ func (s *SchedulerService) GetScheduleGroup(ctx context.Context, reqCtx *request
 // ListScheduleGroups lists schedule groups in EventBridge Scheduler.
 func (s *SchedulerService) ListScheduleGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namePrefix := request.GetStringParam(req.Parameters, "NamePrefix")
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	maxResults := int32(100)
 	if mr := request.GetStringParam(req.Parameters, "MaxResults"); mr != "" {
 		if parsed, err := strconv.Atoi(mr); err == nil {
@@ -148,9 +149,7 @@ func (s *SchedulerService) ListScheduleGroups(ctx context.Context, reqCtx *reque
 	response := map[string]interface{}{
 		"ScheduleGroups": groups,
 	}
-	if result.NextToken != "" {
-		response["NextToken"] = result.NextToken
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextToken)
 
 	return response, nil
 }

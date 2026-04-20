@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/neptunegraph"
 	"github.com/aws/aws-sdk-go-v2/service/neptunegraph/types"
 	"github.com/aws/smithy-go/middleware"
@@ -312,22 +313,62 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 		return fmt.Errorf("snapshot not found when filtering by graph")
 	}))
 
+	// === EC2 VPC + Subnet setup for PrivateGraphEndpoint tests ===
+
+	var endpointVpcID string
+	var endpointSubnetIDs []string
+
+	results = append(results, r.RunTest("neptunegraph", "SetupVpcForEndpoint", func() error {
+		ec2Cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   r.region,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to load EC2 config: %v", err)
+		}
+		ec2Client := ec2.NewFromConfig(ec2Cfg)
+
+		vpcResp, err := ec2Client.CreateVpc(ctx, &ec2.CreateVpcInput{
+			CidrBlock: aws.String("10.99.0.0/16"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create VPC: %v", err)
+		}
+		endpointVpcID = *vpcResp.Vpc.VpcId
+
+		for _, cidr := range []string{"10.99.1.0/24", "10.99.2.0/24"} {
+			subResp, err := ec2Client.CreateSubnet(ctx, &ec2.CreateSubnetInput{
+				VpcId:            aws.String(endpointVpcID),
+				CidrBlock:        aws.String(cidr),
+				AvailabilityZone: aws.String(r.region + "a"),
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create subnet %s: %v", cidr, err)
+			}
+			endpointSubnetIDs = append(endpointSubnetIDs, *subResp.Subnet.SubnetId)
+		}
+		return nil
+	}))
+
 	// === Private Graph Endpoints ===
 
 	results = append(results, r.RunTest("neptunegraph", "CreatePrivateGraphEndpoint", func() error {
 		if graphID == "" {
 			return fmt.Errorf("no graph ID")
 		}
+		if endpointVpcID == "" || len(endpointSubnetIDs) == 0 {
+			return fmt.Errorf("VPC/subnet setup failed")
+		}
 		resp, err := client.CreatePrivateGraphEndpoint(ctx, &neptunegraph.CreatePrivateGraphEndpointInput{
 			GraphIdentifier: aws.String(graphID),
-			VpcId:           aws.String("vpc-test123"),
-			SubnetIds:       []string{"subnet-aaa111", "subnet-bbb222"},
+			VpcId:           aws.String(endpointVpcID),
+			SubnetIds:       endpointSubnetIDs,
 		})
 		if err != nil {
 			return err
 		}
-		if resp.VpcId == nil || *resp.VpcId != "vpc-test123" {
-			return fmt.Errorf("expected vpcId=vpc-test123, got %v", resp.VpcId)
+		if resp.VpcId == nil || *resp.VpcId != endpointVpcID {
+			return fmt.Errorf("expected vpcId=%s, got %v", endpointVpcID, resp.VpcId)
 		}
 		if resp.Status == "" {
 			return fmt.Errorf("expected non-nil endpoint status")
@@ -339,15 +380,18 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 		if graphID == "" {
 			return fmt.Errorf("no graph ID")
 		}
+		if endpointVpcID == "" {
+			return fmt.Errorf("VPC setup failed")
+		}
 		resp, err := client.GetPrivateGraphEndpoint(ctx, &neptunegraph.GetPrivateGraphEndpointInput{
 			GraphIdentifier: aws.String(graphID),
-			VpcId:           aws.String("vpc-test123"),
+			VpcId:           aws.String(endpointVpcID),
 		})
 		if err != nil {
 			return err
 		}
-		if resp.VpcId == nil || *resp.VpcId != "vpc-test123" {
-			return fmt.Errorf("expected vpcId=vpc-test123, got %v", resp.VpcId)
+		if resp.VpcId == nil || *resp.VpcId != endpointVpcID {
+			return fmt.Errorf("expected vpcId=%s, got %v", endpointVpcID, resp.VpcId)
 		}
 		return nil
 	}))
@@ -375,9 +419,12 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 		if graphID == "" {
 			return fmt.Errorf("no graph ID")
 		}
+		if endpointVpcID == "" {
+			return fmt.Errorf("VPC setup failed")
+		}
 		_, err := client.DeletePrivateGraphEndpoint(ctx, &neptunegraph.DeletePrivateGraphEndpointInput{
 			GraphIdentifier: aws.String(graphID),
-			VpcId:           aws.String("vpc-test123"),
+			VpcId:           aws.String(endpointVpcID),
 		})
 		return err
 	}))

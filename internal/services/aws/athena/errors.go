@@ -25,17 +25,4 @@ var (
 	ErrInvalidConfigurationException = awserrors.NewBadRequestException("The configuration is invalid.")
 )
 
-// NewValidationError creates a validation error.
-func NewValidationError(message string) *awserrors.AWSError {
-	return awserrors.NewBadRequestException(message)
-}
 
-// NewResourceNotFoundError creates a resource not found error.
-func NewResourceNotFoundError(message string) *awserrors.AWSError {
-	return awserrors.NewNotFoundException(message)
-}
-
-// NewResourceAlreadyExistsError creates a resource already exists error.
-func NewResourceAlreadyExistsError(message string) *awserrors.AWSError {
-	return awserrors.NewResourceAlreadyExistsException(message)
-}

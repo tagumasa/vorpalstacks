@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
@@ -15,17 +16,17 @@ import (
 func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	replayName := request.GetParamLowerFirst(req.Parameters, "ReplayName")
 	if replayName == "" {
-		return nil, NewValidationException("ReplayName is required")
+		return nil, awserrors.NewValidationException("ReplayName is required")
 	}
 
 	eventSourceArn := request.GetParamLowerFirst(req.Parameters, "EventSourceArn")
 	if eventSourceArn == "" {
-		return nil, NewValidationException("EventSourceArn is required")
+		return nil, awserrors.NewValidationException("EventSourceArn is required")
 	}
 
 	archiveName := arn.ExtractArchiveNameFromARN(eventSourceArn)
 	if archiveName == "" {
-		return nil, NewValidationException("Invalid EventSourceArn")
+		return nil, awserrors.NewValidationException("Invalid EventSourceArn")
 	}
 
 	store, err := s.store(reqCtx)
@@ -56,12 +57,12 @@ func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.Request
 		}
 	}
 	if destination == nil || destination.Arn == "" {
-		return nil, NewValidationException("Destination.Arn is required")
+		return nil, awserrors.NewValidationException("Destination.Arn is required")
 	}
 
 	destEventBusName := arn.ExtractEventBusNameFromARN(destination.Arn)
 	if destEventBusName == "" {
-		return nil, NewValidationException("Invalid Destination.Arn")
+		return nil, awserrors.NewValidationException("Invalid Destination.Arn")
 	}
 
 	var eventStartTime, eventEndTime time.Time
@@ -91,7 +92,7 @@ func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.Request
 	}
 
 	if eventStartTime.IsZero() || eventEndTime.IsZero() {
-		return nil, NewValidationException("EventStartTime and EventEndTime are required")
+		return nil, awserrors.NewValidationException("EventStartTime and EventEndTime are required")
 	}
 
 	replay := &eventsstore.Replay{
@@ -109,14 +110,19 @@ func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.Request
 
 	if err := store.CreateReplay(ctx, replay); err != nil {
 		if err == eventsstore.ErrReplayAlreadyExists {
-			return nil, NewResourceAlreadyExistsException("Replay '" + replayName + "' already exists")
+			return nil, awserrors.NewResourceAlreadyExistsException("Replay '" + replayName + "' already exists")
 		}
 		return nil, err
 	}
 
 	replayCtx, cancel := context.WithCancel(context.Background())
 	s.replayCancels.Store(replayName, cancel)
-	go s.executeReplay(replayCtx, reqCtx.GetRegion(), replay, archive, destEventBusName, store)
+	s.replayWg.Add(1)
+	go func() {
+		defer func() { recover() }()
+		defer s.replayWg.Done()
+		s.executeReplay(replayCtx, reqCtx.GetRegion(), replay, archive, destEventBusName, store)
+	}()
 
 	result := map[string]interface{}{
 		"ReplayArn":      replay.ARN,
@@ -235,7 +241,7 @@ func (s *EventsService) replayEventToBus(ctx context.Context, region string, arc
 func (s *EventsService) DescribeReplay(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	replayName := request.GetParamLowerFirst(req.Parameters, "ReplayName")
 	if replayName == "" {
-		return nil, NewValidationException("ReplayName is required")
+		return nil, awserrors.NewValidationException("ReplayName is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -299,7 +305,7 @@ func (s *EventsService) ListReplays(ctx context.Context, reqCtx *request.Request
 		limit = 50
 	}
 	if limit > 100 {
-		return nil, NewValidationException("Limit must be between 1 and 100")
+		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
 	}
 
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
@@ -347,7 +353,7 @@ func (s *EventsService) ListReplays(ctx context.Context, reqCtx *request.Request
 func (s *EventsService) CancelReplay(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	replayName := request.GetParamLowerFirst(req.Parameters, "ReplayName")
 	if replayName == "" {
-		return nil, NewValidationException("ReplayName is required")
+		return nil, awserrors.NewValidationException("ReplayName is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -364,7 +370,7 @@ func (s *EventsService) CancelReplay(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if replay.State != eventsstore.ReplayStateRunning && replay.State != eventsstore.ReplayStateStarting {
-		return nil, NewValidationException("Replay cannot be cancelled in state: " + string(replay.State))
+		return nil, awserrors.NewValidationException("Replay cannot be cancelled in state: " + string(replay.State))
 	}
 
 	replay.State = eventsstore.ReplayStateCancelled

@@ -429,11 +429,12 @@ func (s *CloudWatchService) publishAlarmStateEvent(ctx context.Context, result *
 // from each action ARN to support cross-region alarm actions.
 func (s *CloudWatchService) dispatchAlarmActions(ctx context.Context, result *alarmEvalResult) {
 	for _, actionArn := range result.actionsToFire {
-		if strings.HasPrefix(actionArn, "arn:aws:sns:") {
+		switch svcarn.GetServiceFromARN(actionArn) {
+		case "sns":
 			s.dispatchAlarmToSNS(ctx, actionArn, result)
-		} else if strings.HasPrefix(actionArn, "arn:aws:lambda:") {
+		case "lambda":
 			s.dispatchAlarmToLambda(ctx, actionArn, result)
-		} else if strings.HasPrefix(actionArn, "arn:aws:states:") {
+		case "states":
 			s.dispatchAlarmToStepFunctions(ctx, actionArn, result)
 		}
 	}
@@ -489,26 +490,24 @@ func (s *CloudWatchService) dispatchAlarmToSNS(ctx context.Context, topicArn str
 // change notification payload. The function name is extracted from the
 // function ARN.
 func (s *CloudWatchService) dispatchAlarmToLambda(ctx context.Context, functionArn string, result *alarmEvalResult) {
-	if s.lambdaInvoker == nil {
+	if s.bus == nil {
 		return
 	}
 
-	if s.bus != nil {
-		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, functionArn, "lambda", "cloudwatch.amazonaws.com", "lambda:InvokeFunction", functionArn)
-		if evalErr != nil {
-			s.log("resource policy evaluation failed for alarm Lambda delivery, dropping notification", "functionArn", functionArn, "error", evalErr)
-			return
-		}
-		if !allowed {
-			return
-		}
+	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, functionArn, "lambda", "cloudwatch.amazonaws.com", "lambda:InvokeFunction", functionArn)
+	if evalErr != nil {
+		s.log("resource policy evaluation failed for alarm Lambda delivery, dropping notification", "functionArn", functionArn, "error", evalErr)
+		return
+	}
+	if !allowed {
+		return
 	}
 
 	fnName := svcarn.ExtractFunctionNameFromARN(functionArn)
 	payload := buildAlarmNotificationPayload(result)
 	payloadBytes, _ := json.Marshal(payload)
 
-	_, _, err := s.lambdaInvoker.InvokeForGateway(ctx, functionArn, payloadBytes)
+	_, _, err := s.bus.LambdaInvoker().InvokeForGateway(ctx, functionArn, payloadBytes)
 	if err != nil {
 		s.log("lambda dispatch failed for alarm action", "alarm", result.alarm.Name, "function", fnName, "error", err)
 	}

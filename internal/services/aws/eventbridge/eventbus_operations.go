@@ -3,6 +3,8 @@ package eventbridge
 import (
 	"context"
 
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -13,10 +15,10 @@ import (
 func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Event bus name is required")
+		return nil, awserrors.NewValidationException("Event bus name is required")
 	}
 	if name == "default" {
-		return nil, NewValidationException("Cannot create event bus named 'default'")
+		return nil, awserrors.NewValidationException("Cannot create event bus named 'default'")
 	}
 
 	eventBus := &eventsstore.EventBus{
@@ -37,7 +39,7 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 	}
 	if err := store.CreateEventBus(ctx, eventBus); err != nil {
 		if err == eventsstore.ErrEventBusAlreadyExists {
-			return nil, NewResourceAlreadyExistsException("Event bus '" + name + "' already exists")
+			return nil, awserrors.NewResourceAlreadyExistsException("Event bus '" + name + "' already exists")
 		}
 		return nil, err
 	}
@@ -57,10 +59,10 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 func (s *EventsService) DeleteEventBus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Event bus name is required")
+		return nil, awserrors.NewValidationException("Event bus name is required")
 	}
 	if name == "default" {
-		return nil, NewValidationException("Cannot delete event bus 'default'")
+		return nil, awserrors.NewValidationException("Cannot delete event bus 'default'")
 	}
 
 	store, err := s.store(reqCtx)
@@ -123,13 +125,13 @@ func (s *EventsService) DescribeEventBus(ctx context.Context, reqCtx *request.Re
 func (s *EventsService) ListEventBuses(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namePrefix := request.GetParamLowerFirst(req.Parameters, "NamePrefix")
 	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	if limit == 0 {
 		limit = 100
 	}
 	if limit < 1 || limit > 100 {
-		return nil, NewValidationException("Limit must be between 1 and 100")
+		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
 	}
 
 	store, err := s.store(reqCtx)
@@ -161,9 +163,7 @@ func (s *EventsService) ListEventBuses(ctx context.Context, reqCtx *request.Requ
 		"EventBuses": eventBuses,
 	}
 
-	if result.NextToken != "" {
-		response["NextToken"] = result.NextToken
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextToken)
 
 	return response, nil
 }
@@ -172,7 +172,7 @@ func (s *EventsService) ListEventBuses(ctx context.Context, reqCtx *request.Requ
 func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Event bus name is required")
+		return nil, awserrors.NewValidationException("Event bus name is required")
 	}
 
 	store, err := s.store(reqCtx)

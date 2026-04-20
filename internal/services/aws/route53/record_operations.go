@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
@@ -34,7 +35,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 
 	changeBatch := request.GetMapParam(req.Parameters, "ChangeBatch")
 	if changeBatch == nil {
-		return nil, NewAPIError("InvalidInput", "ChangeBatch is required", 400)
+		return nil, awserrors.NewAWSError("InvalidInput", "ChangeBatch is required", 400)
 	}
 
 	var changesList []interface{}
@@ -48,11 +49,11 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 			changesList = []interface{}{changeMap}
 		}
 	default:
-		return nil, NewAPIError("InvalidInput", "Changes must be an array", 400)
+		return nil, awserrors.NewAWSError("InvalidInput", "Changes must be an array", 400)
 	}
 
 	if len(changesList) == 0 {
-		return nil, NewAPIError("InvalidInput", "Changes are required", 400)
+		return nil, awserrors.NewAWSError("InvalidInput", "Changes are required", 400)
 	}
 
 	changeId := generateChangeId()
@@ -70,7 +71,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 	if err := st.Changes().Create(change); err != nil {
-		return nil, NewAPIError("CreateChange", fmt.Sprintf("Failed to create change: %v", err), 500)
+		return nil, awserrors.NewAWSError("CreateChange", fmt.Sprintf("Failed to create change: %v", err), 500)
 	}
 
 	var appliedChanges []*route53store.ResourceRecordSet
@@ -83,7 +84,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 
 		action, _ := changeMap["Action"].(string)
 		if action != "CREATE" && action != "UPSERT" && action != "DELETE" {
-			return nil, NewAPIError("InvalidInput", fmt.Sprintf("Invalid action: %s. Must be CREATE, UPSERT, or DELETE", action), 400)
+			return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Invalid action: %s. Must be CREATE, UPSERT, or DELETE", action), 400)
 		}
 		rrsRaw, _ := changeMap["ResourceRecordSet"].(map[string]interface{})
 		if rrsRaw == nil {
@@ -165,7 +166,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 						logs.Error("Failed to rollback record", logs.String("name", ac.Name), logs.Err(delErr))
 					}
 				}
-				return nil, NewAPIError("InvalidChangeBatch", fmt.Sprintf("Failed to create resource record set %s: %v", rrs.Name, err), 400)
+				return nil, awserrors.NewAWSError("InvalidChangeBatch", fmt.Sprintf("Failed to create resource record set %s: %v", rrs.Name, err), 400)
 			}
 			appliedChanges = append(appliedChanges, rrs)
 		case "UPSERT":
@@ -182,7 +183,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 					}
 				}
 				logs.Error("UPSERT record failed", logs.Err(err))
-				return nil, NewAPIError("InvalidChangeBatch", fmt.Sprintf("Failed to upsert resource record set %s: %v", rrs.Name, err), 400)
+				return nil, awserrors.NewAWSError("InvalidChangeBatch", fmt.Sprintf("Failed to upsert resource record set %s: %v", rrs.Name, err), 400)
 			}
 			appliedChanges = append(appliedChanges, rrs)
 		case "DELETE":
@@ -199,23 +200,23 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 					}
 				}
 				logs.Error("DELETE record failed", logs.Err(err))
-				return nil, NewAPIError("InvalidChangeBatch", fmt.Sprintf("Failed to delete resource record set %s: %v", rrs.Name, err), 400)
+				return nil, awserrors.NewAWSError("InvalidChangeBatch", fmt.Sprintf("Failed to delete resource record set %s: %v", rrs.Name, err), 400)
 			}
 		}
 	}
 
 	if err := st.Changes().UpdateStatus(changeId, "INSYNC"); err != nil {
-		return nil, NewAPIError("UpdateChange", fmt.Sprintf("Failed to update change status: %v", err), 500)
+		return nil, awserrors.NewAWSError("UpdateChange", fmt.Sprintf("Failed to update change status: %v", err), 500)
 	}
 	change.Status = "INSYNC"
 
 	recordSets, err := st.RecordSets().List(hostedZoneId)
 	if err != nil {
-		return nil, NewAPIError("ListRecordSets", fmt.Sprintf("Failed to list record sets: %v", err), 500)
+		return nil, awserrors.NewAWSError("ListRecordSets", fmt.Sprintf("Failed to list record sets: %v", err), 500)
 	}
 	zone.ResourceRecordSetCount = len(recordSets)
 	if err := st.HostedZones().Update(zone); err != nil {
-		return nil, NewAPIError("UpdateHostedZone", fmt.Sprintf("Failed to update hosted zone: %v", err), 500)
+		return nil, awserrors.NewAWSError("UpdateHostedZone", fmt.Sprintf("Failed to update hosted zone: %v", err), 500)
 	}
 
 	return map[string]interface{}{

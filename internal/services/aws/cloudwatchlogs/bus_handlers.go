@@ -14,8 +14,7 @@ import (
 // delivering matched log events to Lambda or Kinesis destinations.
 func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.CloudWatchLogDeliveryEvent) eventbus.HandlerResult {
 	if arn.IsLambdaARN(evt.DestinationArn) {
-		invoker := s.getLambdaInvoker(evt.Region)
-		if invoker == nil {
+		if s.bus == nil {
 			return eventbus.HandlerResult{}
 		}
 
@@ -31,44 +30,44 @@ func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.Cloud
 			return eventbus.HandlerResult{}
 		}
 
-		_, _, invokeErr := invoker.InvokeForGateway(context.Background(), evt.DestinationArn, payloadBytes)
+		_, _, invokeErr := s.bus.LambdaInvoker().InvokeForGateway(context.Background(), evt.DestinationArn, payloadBytes)
 		if invokeErr != nil {
 			logs.Warn("failed to invoke Lambda from subscription filter", logs.Err(invokeErr), logs.String("destinationArn", evt.DestinationArn))
 		}
 	} else if arn.IsKinesisARN(evt.DestinationArn) {
-		kinesisStore, ok := s.getKinesisStore(evt.Region)
-		if !ok {
+		if s.bus == nil {
 			return eventbus.HandlerResult{}
 		}
 
 		streamName := arn.ExtractStreamNameFromARN(evt.DestinationArn)
-		partitionKey := generatePartitionKey()
 
-		payload := map[string]interface{}{
-			"awslogs": map[string]interface{}{
-				"data": base64.StdEncoding.EncodeToString(evt.Payload),
-			},
-		}
-		encodedData, err := json.Marshal(payload)
-		if err != nil {
-			return eventbus.HandlerResult{}
-		}
+		encodedData := base64.StdEncoding.EncodeToString(evt.Payload)
 
-		shards, err := kinesisStore.ListShards(streamName, nil, "", 0)
+		shards, err := s.bus.KinesisInvoker().ListShards(context.Background(), streamName)
 		if err != nil || len(shards) == 0 {
 			return eventbus.HandlerResult{}
 		}
 
 		var activeShardID string
 		for _, shard := range shards {
-			if shard.SequenceNumberRange != nil && shard.SequenceNumberRange.EndingSequenceNumber == "" {
+			if shard.SequenceNumberRangeEnd == "" {
 				activeShardID = shard.ShardID
 				break
 			}
 		}
 
 		if activeShardID != "" {
-			if _, putErr := kinesisStore.PutRecord(streamName, activeShardID, partitionKey, base64.StdEncoding.EncodeToString(encodedData)); putErr != nil {
+			envelope := map[string]interface{}{
+				"awslogs": map[string]interface{}{
+					"data": encodedData,
+				},
+			}
+			envelopeBytes, marshalErr := json.Marshal(envelope)
+			if marshalErr != nil {
+				return eventbus.HandlerResult{}
+			}
+			b64Envelope := base64.StdEncoding.EncodeToString(envelopeBytes)
+			if _, putErr := s.bus.KinesisInvoker().PutRecord(context.Background(), streamName, activeShardID, []byte(b64Envelope)); putErr != nil {
 				logs.Warn("failed to deliver subscription filter log events to Kinesis", logs.Err(putErr), logs.String("streamName", streamName))
 			}
 		}

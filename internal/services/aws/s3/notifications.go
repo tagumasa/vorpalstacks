@@ -11,7 +11,6 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -191,7 +190,12 @@ func (s *S3Service) dispatchToSNS(ctx context.Context, topicArn string, payload 
 // Region and account ID are extracted from the queue ARN so that the
 // correct queue URL is constructed for the target region.
 func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload []byte) {
-	if s.sqsStore == nil {
+	if s.bus == nil {
+		return
+	}
+
+	sqsInvoker := s.bus.SQSInvoker()
+	if sqsInvoker == nil {
 		return
 	}
 
@@ -200,41 +204,44 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 		return
 	}
 
-	queue, qErr := s.sqsStore.GetQueueByName(queueName)
+	queueURL, qErr := sqsInvoker.GetQueueByName(ctx, queueName)
 	if qErr != nil {
 		return
 	}
 
-	if s.bus != nil {
-		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queue.ARN, "sqs", "s3.amazonaws.com", "sqs:SendMessage", queue.ARN)
-		if evalErr != nil || !allowed {
-			return
-		}
+	queueARN, arnErr := sqsInvoker.GetQueueARN(ctx, queueURL)
+	if arnErr != nil {
+		return
 	}
 
-	message := &sqsstore.Message{
-		Body: string(payload),
+	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queueARN, "sqs", "s3.amazonaws.com", "sqs:SendMessage", queueARN)
+	if evalErr != nil || !allowed {
+		return
 	}
-	if _, err := s.sqsStore.SendMessage(queue.URL, message); err != nil {
-		logs.Warn("Failed to send S3 event to SQS queue", logs.String("queue", queue.URL), logs.Err(err))
+
+	if _, _, err := sqsInvoker.SendMessage(ctx, queueURL, string(payload), 0, nil); err != nil {
+		logs.Warn("Failed to send S3 event to SQS queue", logs.String("queue", queueURL), logs.Err(err))
 	}
 }
 
 // dispatchToLambda invokes a Lambda function with the S3 event record
 // as payload. The function name is extracted from the function ARN.
 func (s *S3Service) dispatchToLambda(ctx context.Context, functionArn string, payload []byte) {
-	if s.lambdaInvoker == nil {
+	if s.bus == nil {
 		return
 	}
 
-	if s.bus != nil {
-		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, functionArn, "lambda", "s3.amazonaws.com", "lambda:InvokeFunction", functionArn)
-		if evalErr != nil || !allowed {
-			return
-		}
+	lambdaInvoker := s.bus.LambdaInvoker()
+	if lambdaInvoker == nil {
+		return
 	}
 
-	if _, _, err := s.lambdaInvoker.InvokeForGateway(ctx, functionArn, payload); err != nil {
+	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, functionArn, "lambda", "s3.amazonaws.com", "lambda:InvokeFunction", functionArn)
+	if evalErr != nil || !allowed {
+		return
+	}
+
+	if _, _, err := lambdaInvoker.InvokeForGateway(ctx, functionArn, payload); err != nil {
 		logs.Warn("Failed to invoke Lambda for S3 event", logs.String("function", functionArn), logs.Err(err))
 	}
 }

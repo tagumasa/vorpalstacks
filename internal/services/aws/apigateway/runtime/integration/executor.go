@@ -4,12 +4,8 @@ package integration
 import (
 	"context"
 	"net/http"
-	"sync"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/eventbus"
-	sns "vorpalstacks/internal/store/aws/sns"
-	sqs "vorpalstacks/internal/store/aws/sqs"
 )
 
 // IntegrationRequest represents an API Gateway integration request.
@@ -57,46 +53,21 @@ type Executor interface {
 
 // ExecutorFactory creates integration executors.
 type ExecutorFactory struct {
-	lambdaInvoker common.LambdaInvoker
-	sqsStore      sqs.SQSStoreInterface
-	snsStore      sns.SNSStoreInterface
-	accountID     string
-	region        string
-	bus           eventbus.Bus
-	deliveryWg    sync.WaitGroup
+	bus       eventbus.Bus
+	accountID string
+	region    string
 }
 
 // NewExecutorFactory creates a new executor factory.
-func NewExecutorFactory(lambdaInvoker common.LambdaInvoker) *ExecutorFactory {
+func NewExecutorFactory(bus eventbus.Bus) *ExecutorFactory {
 	return &ExecutorFactory{
-		lambdaInvoker: lambdaInvoker,
+		bus: bus,
 	}
 }
 
-// NewExecutorFactoryWithStores creates a new executor factory with SQS and SNS stores.
-func NewExecutorFactoryWithStores(lambdaInvoker common.LambdaInvoker, sqsStore sqs.SQSStoreInterface, snsStore sns.SNSStoreInterface, accountID, region string) *ExecutorFactory {
-	return &ExecutorFactory{
-		lambdaInvoker: lambdaInvoker,
-		sqsStore:      sqsStore,
-		snsStore:      snsStore,
-		accountID:     accountID,
-		region:        region,
-	}
-}
-
-// SetEventBus sets the event bus for SNS fan-out bug fix.
+// SetEventBus sets the event bus for cross-service delivery.
 func (f *ExecutorFactory) SetEventBus(bus eventbus.Bus) {
 	f.bus = bus
-}
-
-// SetSQSStore sets the SQS store for SQS integration targets.
-func (f *ExecutorFactory) SetSQSStore(store sqs.SQSStoreInterface) {
-	f.sqsStore = store
-}
-
-// SetSNSStore sets the SNS store for SNS integration targets.
-func (f *ExecutorFactory) SetSNSStore(store sns.SNSStoreInterface) {
-	f.snsStore = store
 }
 
 // SetAccountAndRegion sets the account ID and region for ARN construction.
@@ -113,7 +84,7 @@ func (f *ExecutorFactory) CreateExecutor(integrationType string) (Executor, erro
 	case "HTTP", "HTTP_PROXY":
 		return NewHTTPExecutor(), nil
 	case "AWS", "AWS_PROXY":
-		return NewAWSExecutorWithStores(f.lambdaInvoker, f.sqsStore, f.snsStore, f.accountID, f.region, f.bus, &f.deliveryWg), nil
+		return NewAWSExecutor(f.bus, f.accountID, f.region), nil
 	default:
 		return nil, &IntegrationError{
 			Message:  "Unsupported integration type: " + integrationType,
@@ -121,12 +92,6 @@ func (f *ExecutorFactory) CreateExecutor(integrationType string) (Executor, erro
 			HTTPCode: http.StatusBadRequest,
 		}
 	}
-}
-
-// WaitDelivery blocks until all in-flight SNS delivery goroutines created
-// by any executor from this factory have finished. Call during shutdown.
-func (f *ExecutorFactory) WaitDelivery() {
-	f.deliveryWg.Wait()
 }
 
 // IntegrationError represents an error during integration execution.

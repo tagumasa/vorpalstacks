@@ -10,7 +10,6 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
-	awscommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
@@ -51,10 +50,9 @@ type schemaCacheEntry struct {
 // graphQLEngine orchestrates GraphQL query execution against a stored schema,
 // dispatching field resolution to AppSync resolvers (unit or pipeline).
 type graphQLEngine struct {
-	store         *appsyncstore.AppSyncStore
-	lambdaInvoker awscommon.LambdaInvoker
-	bus           BusPublisher
-	schemaCache   *sync.Map
+	store       *appsyncstore.AppSyncStore
+	bus         BusPublisher
+	schemaCache *sync.Map
 }
 
 // BusPublisher abstracts the event bus publish capability for WebSocket
@@ -77,12 +75,11 @@ func (a *busPublisherAdapter) Publish(ctx context.Context, event interface{}) er
 }
 
 // newGraphQLEngine creates a new GraphQL execution engine scoped to the given store.
-func newGraphQLEngine(store *appsyncstore.AppSyncStore, lambdaInvoker awscommon.LambdaInvoker, bus BusPublisher, schemaCache *sync.Map) *graphQLEngine {
+func newGraphQLEngine(store *appsyncstore.AppSyncStore, bus BusPublisher, schemaCache *sync.Map) *graphQLEngine {
 	return &graphQLEngine{
-		store:         store,
-		lambdaInvoker: lambdaInvoker,
-		bus:           bus,
-		schemaCache:   schemaCache,
+		store:       store,
+		bus:         bus,
+		schemaCache: schemaCache,
 	}
 }
 

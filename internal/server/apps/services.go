@@ -18,6 +18,7 @@ import (
 	svccognitoidentity "vorpalstacks/internal/services/aws/cognitoidentity"
 	svccognito "vorpalstacks/internal/services/aws/cognitoidentityprovider"
 	svcdynamodb "vorpalstacks/internal/services/aws/dynamodb"
+	svcec2 "vorpalstacks/internal/services/aws/ec2"
 	svcevents "vorpalstacks/internal/services/aws/eventbridge"
 	svciam "vorpalstacks/internal/services/aws/iam"
 	svckinesis "vorpalstacks/internal/services/aws/kinesis"
@@ -59,6 +60,7 @@ func (a *App) initAlwaysOnServices() error {
 		{a.cfg.Cognito, "Cognito", a.initCognito},
 		{a.cfg.CognitoIdentity, "CognitoIdentity", a.initCognitoIdentity},
 		{a.cfg.DynamoDB, "DynamoDB", a.initDynamoDB},
+		{a.cfg.EC2, "EC2", a.initEC2},
 		{a.cfg.EventBridge, "EventBridge", a.initEventBridge},
 		{a.cfg.IAM, "IAM", a.initIAM},
 		{a.cfg.Kinesis, "Kinesis", a.initKinesis},
@@ -167,6 +169,19 @@ func (a *App) initDynamoDB(st *serviceState) error {
 	return nil
 }
 
+// --- EC2 ---
+
+func (a *App) initEC2(st *serviceState) error {
+	st.ec2Service = svcec2.NewEC2Service(st.accountID, st.region)
+	st.ec2Service.SetStorageManager(a.server.StorageManager())
+	st.ec2Service.RegisterHandlers(a.server.Dispatcher())
+	if eb := a.server.EventBus(); eb != nil {
+		eb.RegisterInvoker(&eventbus.EC2InvokerAdapter{Lookup: st.ec2Service})
+		eb.SetEC2Invoker(st.ec2Service)
+	}
+	return nil
+}
+
 // --- EventBridge ---
 
 func (a *App) initEventBridge(st *serviceState) error {
@@ -269,14 +284,9 @@ func (a *App) initLambda(st *serviceState) error {
 		st.lambdaService.SetStorageManager(a.server.StorageManager())
 		st.lambdaService.SetHostEndpoint(fmt.Sprintf("http://host.docker.internal:%s", a.cfg.Port))
 		st.lambdaService.RegisterHandlers(a.server.Dispatcher())
-		st.lambdaService.StartESMPoller(context.Background())
 
 		a.addShutdown("lambda", func(ctx context.Context) error {
 			st.lambdaService.Shutdown()
-			return nil
-		})
-		a.addShutdown("lambda-esm", func(ctx context.Context) error {
-			st.lambdaService.StopESMPoller()
 			return nil
 		})
 	}

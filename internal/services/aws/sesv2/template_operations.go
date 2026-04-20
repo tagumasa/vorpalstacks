@@ -8,6 +8,8 @@ import (
 	"strings"
 	"text/template"
 
+	awserrors "vorpalstacks/internal/common/errors"
+	pagination "vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
@@ -137,11 +139,8 @@ func (s *SESv2Service) DeleteEmailTemplate(ctx context.Context, reqCtx *request.
 
 // ListEmailTemplates returns a list of email templates.
 func (s *SESv2Service) ListEmailTemplates(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	pageSize := request.GetIntParam(req.Parameters, "PageSize")
-	if pageSize == 0 {
-		pageSize = 100
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	pageSize := pagination.GetMaxItems(req.Parameters, 100, "PageSize")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	opts := common.ListOptions{
 		MaxItems: pageSize,
@@ -168,9 +167,7 @@ func (s *SESv2Service) ListEmailTemplates(ctx context.Context, reqCtx *request.R
 		"TemplatesMetadata": templates,
 	}
 
-	if result.IsTruncated {
-		response["NextToken"] = result.NextMarker
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextMarker)
 
 	return response, nil
 }
@@ -194,29 +191,29 @@ func (s *SESv2Service) TestRenderEmailTemplate(ctx context.Context, reqCtx *requ
 	}
 
 	if tmpl.TemplateContent == nil {
-		return nil, NewBadRequestException("Template has no content")
+		return nil, awserrors.NewBadRequestException("Template has no content")
 	}
 
 	data := make(map[string]interface{})
 	if tmplData != "" {
 		if err := json.Unmarshal([]byte(tmplData), &data); err != nil {
-			return nil, NewBadRequestException("Invalid TemplateData JSON")
+			return nil, awserrors.NewBadRequestException("Invalid TemplateData JSON")
 		}
 	}
 
 	renderedSubject, err := renderTemplateContent(tmpl.TemplateContent.Subject, data)
 	if err != nil {
-		return nil, NewBadRequestException("Failed to render subject: " + err.Error())
+		return nil, awserrors.NewBadRequestException("Failed to render subject: " + err.Error())
 	}
 
 	renderedHtml, err := renderTemplateContent(tmpl.TemplateContent.Html, data)
 	if err != nil {
-		return nil, NewBadRequestException("Failed to render HTML: " + err.Error())
+		return nil, awserrors.NewBadRequestException("Failed to render HTML: " + err.Error())
 	}
 
 	renderedText, err := renderTemplateContent(tmpl.TemplateContent.Text, data)
 	if err != nil {
-		return nil, NewBadRequestException("Failed to render text: " + err.Error())
+		return nil, awserrors.NewBadRequestException("Failed to render text: " + err.Error())
 	}
 
 	returnedHtml := renderedHtml

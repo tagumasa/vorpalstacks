@@ -7,10 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
@@ -21,6 +22,7 @@ type NeptuneService struct {
 	region         string
 	storageManager *storage.RegionStorageManager
 	stores         sync.Map
+	eventBus       *eventbus.EventBus
 	cancelCleanup  context.CancelFunc
 }
 
@@ -69,6 +71,12 @@ func (s *NeptuneService) cleanupOldEvents(ctx context.Context) {
 // caching and admin console access.
 func (s *NeptuneService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// SetEventBus injects the event bus for cross-service invocations such as
+// EC2 subnet lookups.
+func (s *NeptuneService) SetEventBus(bus *eventbus.EventBus) {
+	s.eventBus = bus
 }
 
 // GetStoreForRegion returns the cached Neptune store for the given region,

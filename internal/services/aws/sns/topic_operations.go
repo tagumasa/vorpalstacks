@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -18,10 +19,10 @@ import (
 func (s *SNSService) CreateTopic(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewInvalidParameterException("Topic name is required")
+		return nil, awserrors.NewInvalidParameterException("Topic name is required")
 	}
 	if len(name) > 256 {
-		return nil, NewInvalidParameterException("Topic name must not exceed 256 characters")
+		return nil, awserrors.NewInvalidParameterException("Topic name must not exceed 256 characters")
 	}
 	isFifo := strings.HasSuffix(name, ".fifo")
 	baseName := name
@@ -30,7 +31,7 @@ func (s *SNSService) CreateTopic(ctx context.Context, reqCtx *request.RequestCon
 	}
 	for _, c := range baseName {
 		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
-			return nil, NewInvalidParameterException("Topic name can only contain alphanumeric characters, hyphens, and underscores")
+			return nil, awserrors.NewInvalidParameterException("Topic name can only contain alphanumeric characters, hyphens, and underscores")
 		}
 	}
 
@@ -81,7 +82,7 @@ func (s *SNSService) CreateTopic(ctx context.Context, reqCtx *request.RequestCon
 func (s *SNSService) DeleteTopic(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("TopicArn is required")
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -103,7 +104,7 @@ func (s *SNSService) DeleteTopic(ctx context.Context, reqCtx *request.RequestCon
 func (s *SNSService) GetTopicAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("TopicArn is required")
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -158,10 +159,10 @@ func (s *SNSService) SetTopicAttributes(ctx context.Context, reqCtx *request.Req
 	attributeValue := request.GetParamLowerFirst(req.Parameters, "AttributeValue")
 
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("TopicArn is required")
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
 	if attributeName == "" {
-		return nil, NewInvalidParameterException("AttributeName is required")
+		return nil, awserrors.NewInvalidParameterException("AttributeName is required")
 	}
 
 	attrs := map[string]string{attributeName: attributeValue}
@@ -187,7 +188,7 @@ func (s *SNSService) ListTopics(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	result, err := store.ListTopics(common.ListOptions{Marker: nextToken})
 	if err != nil {
 		return nil, err

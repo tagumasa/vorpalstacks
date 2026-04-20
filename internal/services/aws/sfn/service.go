@@ -8,17 +8,13 @@ import (
 
 	"github.com/google/uuid"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
-	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -30,10 +26,6 @@ type ExecutorInterface interface {
 // StepFunctionService provides AWS Step Functions operations.
 type StepFunctionService struct {
 	executor       ExecutorInterface
-	lambdaInvoker  common.LambdaInvoker
-	sqsStore       sqsstore.SQSStoreInterface
-	snsStore       snsstore.SNSStoreInterface
-	eventsStore    *eventsstore.EventsStore
 	accountID      string
 	storageManager *storage.RegionStorageManager
 	bus            eventbus.Bus
@@ -49,28 +41,8 @@ func NewStepFunctionService(storageMgr *storage.RegionStorageManager, accountID 
 		accountID:      accountID,
 		storageManager: storageMgr,
 	}
-	s.executor = NewExecutor(nil, s.lambdaInvoker)
+	s.executor = NewExecutor(nil, nil)
 	return s
-}
-
-// SetLambdaInvoker injects a Lambda invoker for AWS SDK and Lambda integration states.
-func (s *StepFunctionService) SetLambdaInvoker(invoker common.LambdaInvoker) {
-	s.lambdaInvoker = invoker
-}
-
-// SetSQSStore injects an SQS store for cross-service SQS integration states.
-func (s *StepFunctionService) SetSQSStore(store sqsstore.SQSStoreInterface) {
-	s.sqsStore = store
-}
-
-// SetSNSStore injects an SNS store for cross-service SNS integration states.
-func (s *StepFunctionService) SetSNSStore(store snsstore.SNSStoreInterface) {
-	s.snsStore = store
-}
-
-// SetEventsStore injects an EventBridge store for cross-service EventBridge integration states.
-func (s *StepFunctionService) SetEventsStore(store *eventsstore.EventsStore) {
-	s.eventsStore = store
 }
 
 // SetEventBus injects the event bus and subscribes to cross-service start
@@ -116,8 +88,7 @@ func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt
 		return eventbus.HandlerResult{}
 	}
 
-	executor := NewExecutorWithStores(store, s.lambdaInvoker, s.sqsStore, s.snsStore, s.eventsStore, s.accountID, region)
-	executor.SetEventBus(s.bus)
+	executor := NewExecutorWithStores(store, s.bus, s.accountID, region)
 	execCtx, cancel := context.WithCancel(context.Background())
 	store.RegisterExecution(executionArn, cancel)
 	s.asyncWg.Add(1)

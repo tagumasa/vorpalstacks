@@ -7,14 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
-	storesqs "vorpalstacks/internal/store/aws/sqs"
 )
 
 type s3Stores struct {
@@ -33,8 +31,6 @@ type S3Service struct {
 	encryptionManager   *EncryptionManager
 	fallbackCache       sync.Map
 	bus                 eventbus.Bus
-	sqsStore            *storesqs.SQSStore
-	lambdaInvoker       common.LambdaInvoker
 	busUnsubscribe      func()
 }
 
@@ -112,17 +108,6 @@ func (s *S3Service) SetEventBus(bus eventbus.Bus) {
 	}
 }
 
-// SetSQSStore sets the SQS store used for dispatching S3 event notifications
-// to SQS queue destinations.
-func (s *S3Service) SetSQSStore(store *storesqs.SQSStore) {
-	s.sqsStore = store
-}
-
-// SetLambdaInvoker sets the Lambda invoker used for dispatching S3 event
-// notifications to Lambda function destinations.
-func (s *S3Service) SetLambdaInvoker(invoker common.LambdaInvoker) {
-	s.lambdaInvoker = invoker
-}
 
 // publishObjectNotification publishes an S3ObjectEvent to the event bus after
 // a successful object operation. The event region is taken from the request

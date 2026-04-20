@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	athenastore "vorpalstacks/internal/store/aws/athena"
@@ -166,7 +167,7 @@ func (s *AthenaService) StopQueryExecution(ctx context.Context, reqCtx *request.
 			return nil, err
 		}
 	} else if queryExecution.Status.State != athenastore.QueryExecutionStateCancelled {
-		return nil, NewValidationError("Query execution is not in a cancellable state")
+		return nil, awserrors.NewBadRequestException("Query execution is not in a cancellable state")
 	}
 
 	return response.EmptyResponse(), nil

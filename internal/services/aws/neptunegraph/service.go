@@ -18,6 +18,7 @@ import (
 	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 	"vorpalstacks/internal/utils/aws/arn"
@@ -53,6 +54,7 @@ type NeptuneGraphService struct {
 	taskWg         sync.WaitGroup
 	graphCache     *graphengine.Cache
 	arnBuilder     *arn.ARNBuilder
+	eventBus       *eventbus.EventBus
 }
 
 type engineEntry struct {
@@ -84,6 +86,12 @@ func (s *NeptuneGraphService) Close() {
 	}
 	s.enginesMu.Unlock()
 	s.taskWg.Wait()
+}
+
+// SetEventBus injects the shared event bus for cross-service invocations
+// such as EC2 subnet lookups.
+func (s *NeptuneGraphService) SetEventBus(bus *eventbus.EventBus) {
+	s.eventBus = bus
 }
 
 // RestoreEngines reopens graph engines for all AVAILABLE graphs after a service restart.
@@ -918,22 +926,49 @@ func (s *NeptuneGraphService) CreatePrivateGraphEndpoint(ctx context.Context, re
 
 	vpcID := request.GetStringParam(req.Parameters, "vpcId")
 
-	ep := &ngstore.PrivateGraphEndpoint{
-		GraphId:   graphID,
-		VpcId:     vpcID,
-		Status:    "AVAILABLE",
-		AccountID: s.accountID,
-		Region:    reqCtx.GetRegion(),
+	if vpcID == "" {
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "vpcId")
 	}
 
+	var subnetIds []string
 	if v, ok := req.Parameters["subnetIds"]; ok {
 		if arr, ok := v.([]interface{}); ok {
 			for _, item := range arr {
 				if str, ok := item.(string); ok {
-					ep.SubnetIds = append(ep.SubnetIds, str)
+					subnetIds = append(subnetIds, str)
 				}
 			}
 		}
+	}
+
+	if len(subnetIds) == 0 {
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "subnetIds must not be empty")
+	}
+
+	if s.eventBus == nil {
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "EC2 service not available for VPC/Subnet validation")
+	}
+	ec2 := s.eventBus.EC2Invoker()
+	if ec2 == nil {
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "EC2 service not available for VPC/Subnet validation")
+	}
+	for _, subnetId := range subnetIds {
+		subnetVpcId, _, err := ec2.LookupSubnet(ctx, reqCtx.GetRegion(), subnetId)
+		if err != nil {
+			return nil, newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("subnet %s not found: %v", subnetId, err))
+		}
+		if subnetVpcId != vpcID {
+			return nil, newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("subnet %s belongs to VPC %s, not %s", subnetId, subnetVpcId, vpcID))
+		}
+	}
+
+	ep := &ngstore.PrivateGraphEndpoint{
+		GraphId:   graphID,
+		VpcId:     vpcID,
+		SubnetIds: subnetIds,
+		Status:    "AVAILABLE",
+		AccountID: s.accountID,
+		Region:    reqCtx.GetRegion(),
 	}
 
 	if err := store.CreateEndpoint(ep); err != nil {

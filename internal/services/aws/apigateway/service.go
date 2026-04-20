@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"sync"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
@@ -12,8 +11,6 @@ import (
 	svcapigatewayruntime "vorpalstacks/internal/services/aws/apigateway/runtime"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 
 // apiGatewayStores holds the various API Gateway stores.
@@ -44,9 +41,6 @@ func NewAPIGatewayService(accountID, region string) *APIGatewayService {
 // initialised exactly once before use.
 func (s *APIGatewayService) InitRuntimeServer(
 	storageManager *storage.RegionStorageManager,
-	lambdaInvoker common.LambdaInvoker,
-	sqsStore sqsstore.SQSStoreInterface,
-	snsStore snsstore.SNSStoreInterface,
 	bus eventbus.Bus,
 ) {
 	storage, err := storageManager.GetStorage(s.region)
@@ -63,15 +57,8 @@ func (s *APIGatewayService) InitRuntimeServer(
 		stores = actual.(*apiGatewayStores)
 	}
 
-	s.runtimeServer = svcapigatewayruntime.NewRuntimeServer(stores.restApis, stores.usage, lambdaInvoker)
+	s.runtimeServer = svcapigatewayruntime.NewRuntimeServer(stores.restApis, stores.usage, bus)
 	s.runtimeServer.SetAccountID(s.accountID)
-	if sqsStore != nil {
-		s.runtimeServer.SetSQSStore(sqsStore, s.accountID, s.region)
-	}
-	if snsStore != nil {
-		s.runtimeServer.SetSNSStore(snsStore, s.accountID, s.region)
-	}
-	s.runtimeServer.SetEventBus(bus)
 }
 
 // RuntimeHandler returns an http.Handler for the API Gateway runtime, or nil

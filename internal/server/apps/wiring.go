@@ -9,13 +9,34 @@ import (
 
 func (a *App) wireCrossServiceDeps() {
 	st := a.state
+	eb := a.server.EventBus()
 
-	// --- CloudWatch ---
-	if st.cloudWatchService != nil {
-		st.cloudWatchService.SetEventBus(a.server.EventBus())
-		if st.lambdaService != nil {
-			st.cloudWatchService.SetLambdaInvoker(st.lambdaService)
+	if eb == nil {
+		return
+	}
+
+	if st.lambdaService != nil {
+		eb.SetLambdaInvoker(st.lambdaService)
+	}
+	if st.sqsStoreInstance != nil {
+		eb.SetSQSInvoker(&sqsInvokerAdapter{store: st.sqsStoreInstance})
+	}
+	if st.snsStoreInstance != nil {
+		var pub snsPublisher
+		if st.snsService != nil {
+			pub = st.snsService
 		}
+		eb.SetSNSInvoker(&snsInvokerAdapter{store: st.snsStoreInstance, publisher: pub})
+	}
+	if st.kinesisStoreInstance != nil {
+		eb.SetKinesisInvoker(&kinesisInvokerAdapter{store: st.kinesisStoreInstance})
+	}
+	if st.eventsStoreInstance != nil {
+		eb.SetEventsInvoker(&eventsInvokerAdapter{putFn: st.eventsStoreInstance.Put})
+	}
+
+	if st.cloudWatchService != nil {
+		st.cloudWatchService.SetEventBus(eb)
 		st.cloudWatchService.StartEvaluator(context.Background())
 		a.addShutdown("cloudwatch", func(ctx context.Context) error {
 			st.cloudWatchService.StopEvaluator()
@@ -23,76 +44,37 @@ func (a *App) wireCrossServiceDeps() {
 		})
 	}
 
-	// --- CloudWatchLogs ---
 	if st.logsService != nil {
-		if st.lambdaService != nil {
-			st.logsService.SetLambdaInvoker(st.region, st.lambdaService)
-		}
-		if st.kinesisStoreInstance != nil {
-			st.logsService.SetKinesisStore(st.region, st.kinesisStoreInstance)
-		}
+		st.logsService.SetEventBus(eb)
 	}
 
-	// --- Cognito ---
 	if st.cognitoService != nil {
-		if st.lambdaService != nil {
-			st.cognitoService.SetLambdaInvoker(st.lambdaService)
-		}
+		st.cognitoService.SetEventBus(eb)
 	}
 
-	// --- EventBridge ---
 	if st.eventBridgeService != nil {
-		if st.sqsStoreInstance != nil {
-			st.eventBridgeService.SetSQSStore(st.region, st.sqsStoreInstance)
-		}
-		if st.snsStoreInstance != nil {
-			st.eventBridgeService.SetSNSStore(st.region, st.snsStoreInstance)
-		}
-		if st.snsService != nil {
-			st.eventBridgeService.SetSNSPublisher(st.snsService)
-		}
-		if st.lambdaService != nil {
-			st.eventBridgeService.SetLambdaInvoker(st.lambdaService)
-		}
+		st.eventBridgeService.SetEventBus(eb)
 	}
 
-	// --- Lambda ---
 	if st.lambdaService != nil {
 		if st.s3ObjectStore != nil {
 			st.lambdaService.SetS3ObjectStore(st.region, st.s3ObjectStore)
 		}
-		if st.sqsStoreInstance != nil {
-			st.lambdaService.SetSQSStore(st.sqsStoreInstance)
-		}
-		if st.kinesisStoreInstance != nil {
-			st.lambdaService.SetKinesisStore(st.kinesisStoreInstance)
-		}
-		st.lambdaService.SetEventBus(a.server.EventBus())
+		st.lambdaService.SetEventBus(eb)
+		st.lambdaService.StartESMPoller(context.Background())
+		a.addShutdown("lambda-esm", func(ctx context.Context) error {
+			st.lambdaService.StopESMPoller()
+			return nil
+		})
 	}
 
-	// --- S3 ---
 	if st.s3Service != nil {
-		if st.sqsStoreInstance != nil {
-			st.s3Service.SetSQSStore(st.sqsStoreInstance)
-		}
-		if st.lambdaService != nil {
-			st.s3Service.SetLambdaInvoker(st.lambdaService)
-		}
+		st.s3Service.SetEventBus(eb)
 	}
 
-	// --- Scheduler ---
 	if st.schedulerService != nil {
-		if st.sqsStoreInstance != nil {
-			st.schedulerService.SetSQSStore(st.sqsStoreInstance)
-		}
-		if st.snsStoreInstance != nil {
-			st.schedulerService.SetSNSStore(st.snsStoreInstance)
-		}
-		if st.lambdaService != nil {
-			st.schedulerService.SetLambdaInvoker(st.lambdaService)
-		}
 		st.schedulerService.BuildEngine()
-		st.schedulerService.SetEventBus(a.server.EventBus())
+		st.schedulerService.SetEventBus(eb)
 		if err := st.schedulerService.StartEngine(); err != nil {
 			logs.Warn("failed to start scheduler engine", logs.Err(err))
 		}
@@ -104,43 +86,19 @@ func (a *App) wireCrossServiceDeps() {
 		})
 	}
 
-	// --- SecretsManager ---
 	if st.secretsManagerService != nil {
-		if st.lambdaService != nil {
-			st.secretsManagerService.SetLambdaInvoker(st.lambdaService)
-		}
+		st.secretsManagerService.SetEventBus(eb)
 	}
 
-	// --- SFN ---
 	if st.stepFunctionService != nil {
-		if st.lambdaService != nil {
-			st.stepFunctionService.SetLambdaInvoker(st.lambdaService)
-		}
-		if st.sqsStoreInstance != nil {
-			st.stepFunctionService.SetSQSStore(st.sqsStoreInstance)
-		}
-		if st.snsStoreInstance != nil {
-			st.stepFunctionService.SetSNSStore(st.snsStoreInstance)
-		}
-		if st.eventsStoreInstance != nil {
-			st.stepFunctionService.SetEventsStore(st.eventsStoreInstance)
-		}
+		st.stepFunctionService.SetEventBus(eb)
 	}
 
-	// --- SNS ---
 	if st.snsService != nil {
-		if st.sqsStoreInstance != nil {
-			st.snsService.SetSQSStore(st.sqsStoreInstance)
-		}
-		if st.lambdaService != nil {
-			st.snsService.SetLambdaInvoker(st.lambdaService)
-		}
+		st.snsService.SetEventBus(eb)
 	}
 
-	// --- AppSync ---
 	if st.appSyncService != nil {
-		if st.lambdaService != nil {
-			st.appSyncService.SetLambdaInvoker(st.lambdaService)
-		}
+		st.appSyncService.SetEventBus(eb)
 	}
 }

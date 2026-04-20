@@ -12,12 +12,11 @@ import (
 
 	"github.com/google/uuid"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
-	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -32,10 +31,10 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 		entries, ok = req.Parameters["entries"].([]interface{})
 	}
 	if !ok || len(entries) == 0 {
-		return nil, NewValidationException("Entries are required")
+		return nil, awserrors.NewValidationException("Entries are required")
 	}
 	if len(entries) > maxPutEventsEntries {
-		return nil, NewValidationException("Maximum 10 entries allowed per request")
+		return nil, awserrors.NewValidationException("Maximum 10 entries allowed per request")
 	}
 
 	resultEntries := make([]map[string]interface{}, 0)
@@ -657,7 +656,7 @@ func (s *EventsService) parseTargetType(arnStr string) string {
 }
 
 func (s *EventsService) deliverToLambda(ctx context.Context, region string, eventID string, targetArn string, payload []byte) {
-	if s.lambdaInvoker == nil {
+	if s.bus == nil || s.bus.LambdaInvoker() == nil {
 		logs.Warn("lambda invoker not configured, skipping Lambda delivery",
 			logs.String("eventId", eventID),
 			logs.String("targetArn", targetArn))
@@ -685,7 +684,7 @@ func (s *EventsService) deliverToLambda(ctx context.Context, region string, even
 		return
 	}
 
-	statusCode, result, err := s.lambdaInvoker.InvokeForGateway(ctx, targetArn, payload)
+	statusCode, result, err := s.bus.LambdaInvoker().InvokeForGateway(ctx, targetArn, payload)
 	if err != nil {
 		logs.Error("failed to invoke Lambda function",
 			logs.String("eventId", eventID),
@@ -796,11 +795,9 @@ func (s *EventsService) extractValueByPath(payload map[string]interface{}, path 
 }
 
 func (s *EventsService) deliverToSQS(ctx context.Context, region string, arnStr string, payload []byte) {
-	sqsStore, err := s.getSQSStoreForRegion(region)
-	if err != nil {
-		logs.Warn("SQS store not available, skipping SQS delivery",
-			logs.String("arn", arnStr),
-			logs.Err(err))
+	if s.bus == nil || s.bus.SQSInvoker() == nil {
+		logs.Warn("SQS invoker not configured, skipping SQS delivery",
+			logs.String("arn", arnStr))
 		return
 	}
 
@@ -811,7 +808,7 @@ func (s *EventsService) deliverToSQS(ctx context.Context, region string, arnStr 
 		return
 	}
 
-	queue, qErr := sqsStore.GetQueueByName(queueName)
+	queueURL, qErr := s.bus.SQSInvoker().GetQueueByName(ctx, queueName)
 	if qErr != nil {
 		logs.Warn("queue not found for SQS delivery",
 			logs.String("arn", arnStr),
@@ -820,23 +817,26 @@ func (s *EventsService) deliverToSQS(ctx context.Context, region string, arnStr 
 		return
 	}
 
-	if s.bus != nil {
-		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queue.ARN, "sqs", "events.amazonaws.com", "sqs:SendMessage", queue.ARN)
-		if evalErr != nil {
-			logs.Warn("resource policy evaluation failed for SQS target, dropping delivery",
-				logs.String("targetArn", arnStr),
-				logs.String("error", evalErr.Error()))
-			return
-		}
-		if !allowed {
-			return
-		}
+	queueARN, arnErr := s.bus.SQSInvoker().GetQueueARN(ctx, queueURL)
+	if arnErr != nil {
+		logs.Warn("failed to get queue ARN for policy evaluation",
+			logs.String("arn", arnStr),
+			logs.String("error", arnErr.Error()))
+		return
 	}
 
-	message := &sqsstore.Message{
-		Body: string(payload),
+	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queueARN, "sqs", "events.amazonaws.com", "sqs:SendMessage", queueARN)
+	if evalErr != nil {
+		logs.Warn("resource policy evaluation failed for SQS target, dropping delivery",
+			logs.String("targetArn", arnStr),
+			logs.String("error", evalErr.Error()))
+		return
 	}
-	if _, err := sqsStore.SendMessage(queue.URL, message); err != nil {
+	if !allowed {
+		return
+	}
+
+	if _, _, err := s.bus.SQSInvoker().SendMessage(ctx, queueURL, string(payload), 0, nil); err != nil {
 		logs.Error("Failed to deliver event to SQS",
 			logs.String("queue", queueName),
 			logs.String("error", err.Error()))
@@ -847,22 +847,20 @@ func (s *EventsService) deliverToSQS(ctx context.Context, region string, arnStr 
 }
 
 func (s *EventsService) deliverToSNS(ctx context.Context, region string, arnStr string, payload []byte) {
-	if s.bus != nil {
-		allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, arnStr, "sns", "events.amazonaws.com", "sns:Publish", arnStr)
-		if evalErr != nil {
-			logs.Warn("resource policy evaluation failed for SNS target, dropping delivery",
-				logs.String("targetArn", arnStr),
-				logs.String("error", evalErr.Error()))
-			return
-		}
-		if !allowed {
-			return
-		}
+	if s.bus == nil || s.bus.SNSInvoker() == nil {
+		logs.Warn("SNS invoker not configured, skipping SNS delivery",
+			logs.String("arn", arnStr))
+		return
 	}
 
-	if s.snsPublisher == nil {
-		logs.Warn("SNS publisher not configured, skipping SNS delivery",
-			logs.String("arn", arnStr))
+	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, arnStr, "sns", "events.amazonaws.com", "sns:Publish", arnStr)
+	if evalErr != nil {
+		logs.Warn("resource policy evaluation failed for SNS target, dropping delivery",
+			logs.String("targetArn", arnStr),
+			logs.String("error", evalErr.Error()))
+		return
+	}
+	if !allowed {
 		return
 	}
 
@@ -875,7 +873,7 @@ func (s *EventsService) deliverToSNS(ctx context.Context, region string, arnStr 
 
 	topicName := strings.TrimPrefix(resource, "topic/")
 
-	err := s.snsPublisher.PublishToTopic(ctx, s.accountID, region, arnStr, string(payload))
+	_, err := s.bus.SNSInvoker().PublishToTopic(ctx, arnStr, string(payload), "", nil)
 	if err != nil {
 		logs.Error("Failed to deliver event to SNS",
 			logs.String("arn", arnStr),
@@ -963,6 +961,12 @@ func (s *EventsService) deliverToStepFunctions(ctx context.Context, region strin
 }
 
 func (s *EventsService) deliverToKinesis(ctx context.Context, region string, targetArn string, payload []byte) {
+	if s.bus == nil || s.bus.KinesisInvoker() == nil {
+		logs.Warn("Kinesis invoker not configured, skipping Kinesis delivery",
+			logs.String("arn", targetArn))
+		return
+	}
+
 	_, _, kRegion, _, resource := arnutil.SplitARN(targetArn)
 	if kRegion == "" {
 		kRegion = region
@@ -973,54 +977,18 @@ func (s *EventsService) deliverToKinesis(ctx context.Context, region string, tar
 		streamName = resource[idx+len("stream/"):]
 	}
 
-	kinesisStore, err := s.getKinesisStoreForRegion(kRegion)
-	if err != nil {
-		logs.Warn("Kinesis store not available, skipping Kinesis delivery",
-			logs.String("arn", targetArn),
-			logs.Err(err))
-		return
-	}
-
-	shards, err := kinesisStore.ListShards(streamName, nil, "", 100)
-	if err != nil {
-		logs.Error("failed to list shards for Kinesis delivery",
-			logs.String("stream", streamName),
-			logs.Err(err))
-		return
-	}
-
-	if len(shards) == 0 {
-		logs.Error("no shards found in Kinesis stream",
-			logs.String("stream", streamName))
-		return
-	}
-
-	var openShard *kinesisstore.Shard
-	for _, shard := range shards {
-		if shard.SequenceNumberRange == nil || shard.SequenceNumberRange.EndingSequenceNumber == "" {
-			openShard = shard
-			break
-		}
-	}
-	if openShard == nil {
-		logs.Warn("all shards are closed in Kinesis stream, writing to last shard",
-			logs.String("stream", streamName))
-		openShard = shards[len(shards)-1]
-	}
-
 	partitionKey := fmt.Sprintf("eventbridge-%s", generateEventID())
-	_, err = kinesisStore.PutRecord(streamName, openShard.ShardID, partitionKey, base64.StdEncoding.EncodeToString(payload))
+	encodedPayload := base64.StdEncoding.EncodeToString(payload)
+	_, err := s.bus.KinesisInvoker().PutRecord(ctx, streamName, partitionKey, []byte(encodedPayload))
 	if err != nil {
 		logs.Error("failed to put record to Kinesis stream",
 			logs.String("stream", streamName),
-			logs.String("shard", openShard.ShardID),
 			logs.Err(err))
 		return
 	}
 
 	logs.Debug("event delivered to Kinesis successfully",
-		logs.String("stream", streamName),
-		logs.String("shard", openShard.ShardID))
+		logs.String("stream", streamName))
 }
 
 func (s *EventsService) deliverToFirehose(ctx context.Context, region string, targetArn string, payload []byte) {
@@ -1041,18 +1009,18 @@ func (s *EventsService) TestEventPattern(ctx context.Context, reqCtx *request.Re
 	eventStr := request.GetStringParam(req.Parameters, "Event")
 
 	if patternStr == "" {
-		return nil, NewValidationException("Parameter EventPattern is required")
+		return nil, awserrors.NewValidationException("Parameter EventPattern is required")
 	}
 	if eventStr == "" {
-		return nil, NewValidationException("Parameter Event is required")
+		return nil, awserrors.NewValidationException("Parameter Event is required")
 	}
 
 	var patternMap, eventMap map[string]interface{}
 	if err := json.Unmarshal([]byte(patternStr), &patternMap); err != nil {
-		return nil, NewValidationException(fmt.Sprintf("EventPattern is not valid JSON: %s", err))
+		return nil, awserrors.NewValidationException(fmt.Sprintf("EventPattern is not valid JSON: %s", err))
 	}
 	if err := json.Unmarshal([]byte(eventStr), &eventMap); err != nil {
-		return nil, NewValidationException(fmt.Sprintf("Event is not valid JSON: %s", err))
+		return nil, awserrors.NewValidationException(fmt.Sprintf("Event is not valid JSON: %s", err))
 	}
 
 	result := true

@@ -150,6 +150,7 @@ func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *re
 	pr, pw := io.Pipe()
 	go func() {
 		defer pw.Close()
+		defer func() { recover() }()
 		w := NewInvokeResponseStreamWriter(pw)
 
 		if result.FunctionError != "" {

@@ -114,6 +114,9 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 
 	if vpcMap := request.GetMapParam(req.Parameters, "VpcConfig"); vpcMap != nil {
 		function.VpcConfig = parseVpcConfig(req.Parameters)
+		if function.VpcConfig != nil && len(function.VpcConfig.SubnetIds) > 0 {
+			s.resolveVpcConfig(ctx, function.VpcConfig)
+		}
 	}
 
 	if envMap := request.GetMapParam(req.Parameters, "Environment"); envMap != nil {

@@ -2,19 +2,20 @@
 package lambda
 
 import (
+	"context"
 	"regexp"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
-	"vorpalstacks/internal/utils/aws/arn"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 var functionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`)
 
 func extractFunctionName(arnOrName string) string {
 	if strings.HasPrefix(arnOrName, "arn:") {
-		if name := arn.ExtractFunctionNameFromARN(arnOrName); name != "" {
+		if name := arnutil.ExtractFunctionNameFromARN(arnOrName); name != "" {
 			return name
 		}
 	}
@@ -35,10 +36,10 @@ func isValidLayerARN(arnStr string) bool {
 	if arnStr == "" {
 		return false
 	}
-	if !strings.HasPrefix(arnStr, "arn:aws:lambda:") {
+	if 	_, service, _, _, _ := arnutil.SplitARN(arnStr); service != "lambda" {
 		return false
 	}
-	resource := arn.ExtractResourceFromARN(arnStr)
+	resource := arnutil.ExtractResourceFromARN(arnStr)
 	if resource == "" {
 		return false
 	}
@@ -118,6 +119,23 @@ func parseVpcConfig(params map[string]interface{}) *lambdastore.VpcConfig {
 	return vpcConfig
 }
 
+// resolveVpcConfig uses the EC2 invoker to derive the VPC ID from the first
+// subnet. AWS Lambda derives the VPC from the subnets automatically.
+func (s *LambdaService) resolveVpcConfig(ctx context.Context, vpcConfig *lambdastore.VpcConfig) {
+	if s.bus == nil || len(vpcConfig.SubnetIds) == 0 {
+		return
+	}
+	ec2 := s.bus.EC2Invoker()
+	if ec2 == nil {
+		return
+	}
+	vpcId, _, err := ec2.LookupSubnet(ctx, s.region, vpcConfig.SubnetIds[0])
+	if err != nil {
+		return
+	}
+	vpcConfig.VpcId = vpcId
+}
+
 func parseEnvironment(params map[string]interface{}) *lambdastore.Environment {
 	envMap := request.GetMapParam(params, "Environment")
 	if envMap == nil {
@@ -157,7 +175,8 @@ func parseDeadLetterConfig(params map[string]interface{}) (*lambdastore.DeadLett
 }
 
 func isValidDeadLetterTargetArn(arn string) bool {
-	return strings.HasPrefix(arn, "arn:aws:sqs:") || strings.HasPrefix(arn, "arn:aws:sns:")
+	svc := arnutil.GetServiceFromARN(arn)
+	return svc == "sqs" || svc == "sns"
 }
 
 func parseTracingConfig(params map[string]interface{}) (*lambdastore.TracingConfig, error) {

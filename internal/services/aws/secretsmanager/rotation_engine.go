@@ -158,8 +158,8 @@ type rotationLambdaResponse struct {
 // Steps 1-3 invoke the rotation Lambda; step 4 is handled locally by the
 // service after all Lambda invocations succeed.
 func (s *SecretsManagerService) executeRotation(ctx context.Context, store secretsmanagerstore.SecretStoreInterface, secret *secretsmanagerstore.Secret) error {
-	if s.lambdaInvoker == nil {
-		return fmt.Errorf("lambda invoker not configured for secret rotation")
+	if s.bus == nil {
+		return fmt.Errorf("event bus not configured for secret rotation")
 	}
 
 	clientToken := uuid.New().String()[:32]
@@ -177,7 +177,7 @@ func (s *SecretsManagerService) executeRotation(ctx context.Context, store secre
 			return fmt.Errorf("failed to marshal rotation payload for step %s: %w", step, err)
 		}
 
-		statusCode, respBytes, invokeErr := s.lambdaInvoker.InvokeForGateway(ctx, secret.RotationLambdaARN, payloadBytes)
+		statusCode, respBytes, invokeErr := s.bus.LambdaInvoker().InvokeForGateway(ctx, secret.RotationLambdaARN, payloadBytes)
 		if invokeErr != nil {
 			return fmt.Errorf("rotation Lambda invocation failed at step %s: %w", step, invokeErr)
 		}

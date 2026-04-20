@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
@@ -21,7 +22,7 @@ func getMaxItems(params map[string]interface{}) int {
 func parseCertificateArn(params map[string]interface{}, paramName string) (string, error) {
 	arn := request.GetStringParam(params, paramName)
 	if arn == "" {
-		return "", NewValidationException(paramName + " is required")
+		return "", awserrors.NewValidationException(paramName + " is required")
 	}
 	return arn, nil
 }
@@ -29,7 +30,7 @@ func parseCertificateArn(params map[string]interface{}, paramName string) (strin
 func parseDomainName(params map[string]interface{}) (string, error) {
 	domain := request.GetStringParam(params, "DomainName")
 	if domain == "" {
-		return "", NewValidationException("DomainName is required")
+		return "", awserrors.NewValidationException("DomainName is required")
 	}
 	return strings.ToLower(domain), nil
 }

@@ -34,17 +34,4 @@ var (
 	ErrInternalServer = awserrors.NewInternalErrorException("Internal server error")
 )
 
-// NewValidationException creates a validation error.
-func NewValidationException(message string) *awserrors.AWSError {
-	return awserrors.NewValidationException(message)
-}
 
-// NewResourceNotFoundException creates a resource not found error.
-func NewResourceNotFoundException(resource string) *awserrors.AWSError {
-	return awserrors.NewNotFoundException(resource)
-}
-
-// NewConflictException creates a conflict error.
-func NewConflictException(message string) *awserrors.AWSError {
-	return awserrors.NewConflictException(message)
-}

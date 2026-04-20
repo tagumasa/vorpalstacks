@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
@@ -30,12 +32,12 @@ var validHttpMethods = map[string]bool{
 func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "ArchiveName")
 	if name == "" {
-		return nil, NewValidationException("Archive name is required")
+		return nil, awserrors.NewValidationException("Archive name is required")
 	}
 
 	eventSourceArn := request.GetParamLowerFirst(req.Parameters, "EventSourceArn")
 	if eventSourceArn == "" {
-		return nil, NewValidationException("EventSourceArn is required")
+		return nil, awserrors.NewValidationException("EventSourceArn is required")
 	}
 
 	eventBusName := arn.ExtractEventBusNameFromARN(eventSourceArn)
@@ -65,7 +67,7 @@ func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.Reque
 
 	if pattern, ok := req.Parameters["EventPattern"].(string); ok {
 		if !isValidEventPattern(pattern) {
-			return nil, NewValidationException("EventPattern must be a valid JSON object")
+			return nil, awserrors.NewValidationException("EventPattern must be a valid JSON object")
 		}
 		archive.EventPattern = pattern
 	}
@@ -89,7 +91,7 @@ func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.Reque
 func (s *EventsService) DeleteArchive(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "ArchiveName")
 	if name == "" {
-		return nil, NewValidationException("Archive name is required")
+		return nil, awserrors.NewValidationException("Archive name is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -110,7 +112,7 @@ func (s *EventsService) DeleteArchive(ctx context.Context, reqCtx *request.Reque
 func (s *EventsService) DescribeArchive(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "ArchiveName")
 	if name == "" {
-		return nil, NewValidationException("Archive name is required")
+		return nil, awserrors.NewValidationException("Archive name is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -158,10 +160,10 @@ func (s *EventsService) ListArchives(ctx context.Context, reqCtx *request.Reques
 		limit = 50
 	}
 	if limit > 100 {
-		return nil, NewValidationException("Limit must be between 1 and 100")
+		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
 	}
 
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -199,9 +201,7 @@ func (s *EventsService) ListArchives(ctx context.Context, reqCtx *request.Reques
 	response := map[string]interface{}{
 		"Archives": archives,
 	}
-	if result.NextToken != "" {
-		response["NextToken"] = result.NextToken
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextToken)
 
 	return response, nil
 }
@@ -210,7 +210,7 @@ func (s *EventsService) ListArchives(ctx context.Context, reqCtx *request.Reques
 func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "ArchiveName")
 	if name == "" {
-		return nil, NewValidationException("Archive name is required")
+		return nil, awserrors.NewValidationException("Archive name is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -231,7 +231,7 @@ func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.Reque
 	}
 	if pattern, ok := req.Parameters["EventPattern"].(string); ok {
 		if pattern != "" && !isValidEventPattern(pattern) {
-			return nil, NewValidationException("EventPattern must be a valid JSON object")
+			return nil, awserrors.NewValidationException("EventPattern must be a valid JSON object")
 		}
 		archive.EventPattern = pattern
 	}
@@ -258,7 +258,7 @@ func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.Reque
 func (s *EventsService) UpdateConnection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Connection name is required")
+		return nil, awserrors.NewValidationException("Connection name is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -279,7 +279,7 @@ func (s *EventsService) UpdateConnection(ctx context.Context, reqCtx *request.Re
 	}
 	if authType, ok := req.Parameters["AuthorizationType"].(string); ok && authType != "" {
 		if !validAuthTypes[authType] {
-			return nil, NewValidationException("AuthorizationType must be one of: API_KEY, BASIC, OAUTH_CLIENT_CREDENTIALS")
+			return nil, awserrors.NewValidationException("AuthorizationType must be one of: API_KEY, BASIC, OAUTH_CLIENT_CREDENTIALS")
 		}
 		connection.AuthorizationType = authType
 	}
@@ -303,7 +303,7 @@ func (s *EventsService) UpdateConnection(ctx context.Context, reqCtx *request.Re
 func (s *EventsService) DeauthorizeConnection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Connection name is required")
+		return nil, awserrors.NewValidationException("Connection name is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -334,7 +334,7 @@ func (s *EventsService) DeauthorizeConnection(ctx context.Context, reqCtx *reque
 func (s *EventsService) UpdateApiDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Api destination name is required")
+		return nil, awserrors.NewValidationException("Api destination name is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -355,7 +355,7 @@ func (s *EventsService) UpdateApiDestination(ctx context.Context, reqCtx *reques
 	}
 	if httpMethod, ok := req.Parameters["HttpMethod"].(string); ok && httpMethod != "" {
 		if !validHttpMethods[httpMethod] {
-			return nil, NewValidationException("HttpMethod must be one of: GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH")
+			return nil, awserrors.NewValidationException("HttpMethod must be one of: GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH")
 		}
 		apiDest.HttpMethod = httpMethod
 	}
@@ -390,15 +390,15 @@ func (s *EventsService) UpdateApiDestination(ctx context.Context, reqCtx *reques
 func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Connection name is required")
+		return nil, awserrors.NewValidationException("Connection name is required")
 	}
 
 	authType := request.GetParamLowerFirst(req.Parameters, "AuthorizationType")
 	if authType == "" {
-		return nil, NewValidationException("AuthorizationType is required")
+		return nil, awserrors.NewValidationException("AuthorizationType is required")
 	}
 	if !validAuthTypes[authType] {
-		return nil, NewValidationException("AuthorizationType must be one of: API_KEY, BASIC, OAUTH_CLIENT_CREDENTIALS")
+		return nil, awserrors.NewValidationException("AuthorizationType must be one of: API_KEY, BASIC, OAUTH_CLIENT_CREDENTIALS")
 	}
 
 	connection := &eventsstore.Connection{
@@ -429,7 +429,7 @@ func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.Re
 func (s *EventsService) DeleteConnection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Connection name is required")
+		return nil, awserrors.NewValidationException("Connection name is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -450,7 +450,7 @@ func (s *EventsService) DeleteConnection(ctx context.Context, reqCtx *request.Re
 func (s *EventsService) DescribeConnection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Connection name is required")
+		return nil, awserrors.NewValidationException("Connection name is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -493,12 +493,12 @@ func (s *EventsService) DescribeConnection(ctx context.Context, reqCtx *request.
 func (s *EventsService) CreateApiDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Api destination name is required")
+		return nil, awserrors.NewValidationException("Api destination name is required")
 	}
 
 	connectionArn := request.GetParamLowerFirst(req.Parameters, "ConnectionArn")
 	if connectionArn == "" {
-		return nil, NewValidationException("ConnectionArn is required")
+		return nil, awserrors.NewValidationException("ConnectionArn is required")
 	}
 
 	httpMethod := request.GetParamLowerFirst(req.Parameters, "HttpMethod")
@@ -506,12 +506,12 @@ func (s *EventsService) CreateApiDestination(ctx context.Context, reqCtx *reques
 		httpMethod = "POST"
 	}
 	if !validHttpMethods[httpMethod] {
-		return nil, NewValidationException("HttpMethod must be one of: GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH")
+		return nil, awserrors.NewValidationException("HttpMethod must be one of: GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH")
 	}
 
 	invocationEndpoint := request.GetParamLowerFirst(req.Parameters, "InvocationEndpoint")
 	if invocationEndpoint == "" {
-		return nil, NewValidationException("InvocationEndpoint is required")
+		return nil, awserrors.NewValidationException("InvocationEndpoint is required")
 	}
 
 	apiDest := &eventsstore.ApiDestination{
@@ -551,7 +551,7 @@ func (s *EventsService) CreateApiDestination(ctx context.Context, reqCtx *reques
 func (s *EventsService) DeleteApiDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Api destination name is required")
+		return nil, awserrors.NewValidationException("Api destination name is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -572,7 +572,7 @@ func (s *EventsService) DeleteApiDestination(ctx context.Context, reqCtx *reques
 func (s *EventsService) DescribeApiDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
 	if name == "" {
-		return nil, NewValidationException("Api destination name is required")
+		return nil, awserrors.NewValidationException("Api destination name is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -620,10 +620,10 @@ func (s *EventsService) ListConnections(ctx context.Context, reqCtx *request.Req
 		limit = 50
 	}
 	if limit > 100 {
-		return nil, NewValidationException("Limit must be between 1 and 100")
+		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
 	}
 
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -659,9 +659,7 @@ func (s *EventsService) ListConnections(ctx context.Context, reqCtx *request.Req
 	response := map[string]interface{}{
 		"Connections": connections,
 	}
-	if result.NextToken != "" {
-		response["NextToken"] = result.NextToken
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextToken)
 
 	return response, nil
 }
@@ -675,10 +673,10 @@ func (s *EventsService) ListApiDestinations(ctx context.Context, reqCtx *request
 		limit = 50
 	}
 	if limit > 100 {
-		return nil, NewValidationException("Limit must be between 1 and 100")
+		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
 	}
 
-	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -714,9 +712,7 @@ func (s *EventsService) ListApiDestinations(ctx context.Context, reqCtx *request
 	response := map[string]interface{}{
 		"ApiDestinations": destinations,
 	}
-	if result.NextToken != "" {
-		response["NextToken"] = result.NextToken
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextToken)
 
 	return response, nil
 }

@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 func TestSNSErrors(t *testing.T) {
@@ -58,7 +60,7 @@ func TestSNSErrors(t *testing.T) {
 	})
 
 	t.Run("NewInvalidParameterException", func(t *testing.T) {
-		err := NewInvalidParameterException("invalid parameter value")
+		err := awserrors.NewInvalidParameterException("invalid parameter value")
 		assert.Equal(t, "InvalidParameterException: invalid parameter value", err.Error())
 		assert.Equal(t, 400, err.GetHTTPStatusCode())
 	})
@@ -67,41 +69,5 @@ func TestSNSErrors(t *testing.T) {
 		err := NewNotFoundException("topic")
 		assert.Equal(t, "NotFound: topic not found", err.Error())
 		assert.Equal(t, 404, err.GetHTTPStatusCode())
-	})
-
-	t.Run("NewAuthorizationErrorException", func(t *testing.T) {
-		err := NewAuthorizationErrorException("not authorized")
-		assert.Equal(t, "AccessDeniedException: not authorized", err.Error())
-		assert.Equal(t, 403, err.GetHTTPStatusCode())
-	})
-
-	t.Run("NewInternalErrorException", func(t *testing.T) {
-		err := NewInternalErrorException("service error")
-		assert.Equal(t, "InternalError: service error", err.Error())
-		assert.Equal(t, 500, err.GetHTTPStatusCode())
-	})
-
-	t.Run("NewEndpointDisabledException", func(t *testing.T) {
-		err := NewEndpointDisabledException("endpoint disabled for push")
-		assert.Equal(t, "EndpointDisabled: endpoint disabled for push", err.Error())
-		assert.Equal(t, 400, err.GetHTTPStatusCode())
-	})
-
-	t.Run("NewFilterLimitExceededException", func(t *testing.T) {
-		err := NewFilterLimitExceededException("filter policy limit")
-		assert.Equal(t, "FilterLimitExceeded: filter policy limit", err.Error())
-		assert.Equal(t, 400, err.GetHTTPStatusCode())
-	})
-
-	t.Run("NewThrottledException", func(t *testing.T) {
-		err := NewThrottledException("too many requests")
-		assert.Equal(t, "ThrottlingException: too many requests", err.Error())
-		assert.Equal(t, 429, err.GetHTTPStatusCode())
-	})
-
-	t.Run("NewValidationException", func(t *testing.T) {
-		err := NewValidationException("validation failed")
-		assert.Equal(t, "ValidationException: validation failed", err.Error())
-		assert.Equal(t, 400, err.GetHTTPStatusCode())
 	})
 }

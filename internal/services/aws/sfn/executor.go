@@ -8,23 +8,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
-	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 	"vorpalstacks/internal/utils/aws/arn"
 )
 
 // Executor manages the execution of Step Functions state machines.
 type Executor struct {
 	store               *sfnstore.StepFunctionStore
-	lambdaInvoker       common.LambdaInvoker
-	sqsStore            sqsstore.SQSStoreInterface
-	snsStore            snsstore.SNSStoreInterface
-	eventsStore         *eventsstore.EventsStore
 	accountID           string
 	region              string
 	bus                 eventbus.Bus
@@ -33,32 +25,22 @@ type Executor struct {
 	currentStateMachine *sfnstore.StateMachine
 }
 
-// NewExecutor creates a new Step Functions executor with the given store and Lambda invoker.
-func NewExecutor(store *sfnstore.StepFunctionStore, lambdaInvoker common.LambdaInvoker) *Executor {
+// NewExecutor creates a new Step Functions executor with the given store and event bus.
+func NewExecutor(store *sfnstore.StepFunctionStore, bus eventbus.Bus) *Executor {
 	return &Executor{
-		store:         store,
-		lambdaInvoker: lambdaInvoker,
+		store: store,
+		bus:   bus,
 	}
 }
 
-// NewExecutorWithStores creates a new Step Functions executor with all store dependencies.
-func NewExecutorWithStores(store *sfnstore.StepFunctionStore, lambdaInvoker common.LambdaInvoker, sqsStore sqsstore.SQSStoreInterface, snsStore snsstore.SNSStoreInterface, eventsStore *eventsstore.EventsStore, accountID, region string) *Executor {
+// NewExecutorWithStores creates a new Step Functions executor with all dependencies.
+func NewExecutorWithStores(store *sfnstore.StepFunctionStore, bus eventbus.Bus, accountID, region string) *Executor {
 	return &Executor{
-		store:         store,
-		lambdaInvoker: lambdaInvoker,
-		sqsStore:      sqsStore,
-		snsStore:      snsStore,
-		eventsStore:   eventsStore,
-		accountID:     accountID,
-		region:        region,
+		store:     store,
+		bus:       bus,
+		accountID: accountID,
+		region:    region,
 	}
-}
-
-// SetEventBus injects the event bus. When set, SNS publish and EventBridge
-// PutEvents task integrations route through the bus, fixing fan-out and rule
-// matching bugs that exist in the direct store access path.
-func (e *Executor) SetEventBus(bus eventbus.Bus) {
-	e.bus = bus
 }
 
 // ExecuteStateMachine executes a state machine with the given execution context.

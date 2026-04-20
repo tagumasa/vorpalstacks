@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -46,7 +47,7 @@ func (s *ACMService) acmTagConfig(stores *acmStores, req *request.ParsedRequest)
 			_, err := stores.certificates.Get(arn)
 			if err != nil {
 				if acmstorelib.IsNotFound(err) {
-					return NewResourceNotFoundError("certificate", arn)
+					return awserrors.NewResourceNotFoundException("certificate", arn)
 				}
 				return err
 			}
@@ -142,12 +143,12 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	now := time.Now().UTC()
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return nil, NewAPIError("InternalErrorException", "Failed to generate key", 500)
+		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to generate key", 500)
 	}
 
 	serialBigInt, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
-		return nil, NewAPIError("InternalErrorException", "Failed to generate serial", 500)
+		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to generate serial", 500)
 	}
 	template := &x509.Certificate{
 		SerialNumber: serialBigInt,
@@ -159,7 +160,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 
 	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
 	if err != nil {
-		return nil, NewAPIError("InternalErrorException", "Failed to create certificate", 500)
+		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to create certificate", 500)
 	}
 
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
@@ -216,7 +217,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 
 	if err := stores.certificates.Create(cert); err != nil {
 		if acmstorelib.IsAlreadyExists(err) {
-			return nil, NewAPIError("ResourceConflictException", "Certificate already exists", 409)
+			return nil, awserrors.NewAWSError("ResourceConflictException", "Certificate already exists", 409)
 		}
 		return nil, err
 	}
@@ -241,7 +242,7 @@ func (s *ACMService) GetCertificate(ctx context.Context, reqCtx *request.Request
 	cert, err := stores.certificates.Get(arn)
 	if err != nil {
 		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
+			return nil, awserrors.NewResourceNotFoundException("certificate", arn)
 		}
 		return nil, err
 	}
@@ -315,7 +316,7 @@ func (s *ACMService) DeleteCertificate(ctx context.Context, reqCtx *request.Requ
 	cert, err := stores.certificates.Get(arn)
 	if err != nil {
 		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
+			return nil, awserrors.NewResourceNotFoundException("certificate", arn)
 		}
 		return nil, err
 	}
@@ -346,7 +347,7 @@ func (s *ACMService) DescribeCertificate(ctx context.Context, reqCtx *request.Re
 	cert, err := stores.certificates.Get(arn)
 	if err != nil {
 		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
+			return nil, awserrors.NewResourceNotFoundException("certificate", arn)
 		}
 		return nil, err
 	}
@@ -371,7 +372,7 @@ func (s *ACMService) ResendValidationEmail(ctx context.Context, reqCtx *request.
 	cert, err := stores.certificates.Get(arn)
 	if err != nil {
 		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
+			return nil, awserrors.NewResourceNotFoundException("certificate", arn)
 		}
 		return nil, err
 	}
@@ -418,7 +419,7 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 	params := req.Parameters
 	certificate := request.GetStringParam(params, "Certificate")
 	if certificate == "" {
-		return nil, NewValidationException("Certificate is required")
+		return nil, awserrors.NewValidationException("Certificate is required")
 	}
 	certificate = decodeBase64PEM(certificate)
 
@@ -470,7 +471,7 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 
 	if err := stores.certificates.Create(cert); err != nil {
 		if acmstorelib.IsAlreadyExists(err) {
-			return nil, NewAPIError("ResourceConflictException", "Certificate already exists", 409)
+			return nil, awserrors.NewAWSError("ResourceConflictException", "Certificate already exists", 409)
 		}
 		return nil, err
 	}
@@ -495,14 +496,14 @@ func (s *ACMService) UpdateCertificateOptions(ctx context.Context, reqCtx *reque
 	cert, err := stores.certificates.Get(arn)
 	if err != nil {
 		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
+			return nil, awserrors.NewResourceNotFoundException("certificate", arn)
 		}
 		return nil, err
 	}
 
 	optionsMap, ok := params["Options"].(map[string]interface{})
 	if !ok {
-		return nil, NewValidationException("Options are required")
+		return nil, awserrors.NewValidationException("Options are required")
 	}
 
 	cert.Options = &acmstorelib.CertificateOptions{
@@ -531,13 +532,13 @@ func (s *ACMService) RenewCertificate(ctx context.Context, reqCtx *request.Reque
 	cert, err := stores.certificates.Get(arn)
 	if err != nil {
 		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
+			return nil, awserrors.NewResourceNotFoundException("certificate", arn)
 		}
 		return nil, err
 	}
 
 	if cert.Type != "AMAZON_ISSUED" {
-		return nil, NewValidationException("Certificate type is not supported. Only Amazon-issued certificates can be renewed.")
+		return nil, awserrors.NewValidationException("Certificate type is not supported. Only Amazon-issued certificates can be renewed.")
 	}
 
 	if cert.Status != "ISSUED" && cert.Status != "EXPIRED" {
@@ -578,23 +579,23 @@ func (s *ACMService) ExportCertificate(ctx context.Context, reqCtx *request.Requ
 	cert, err := stores.certificates.Get(arn)
 	if err != nil {
 		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
+			return nil, awserrors.NewResourceNotFoundException("certificate", arn)
 		}
 		return nil, err
 	}
 
 	if cert.PrivateKey == "" {
-		return nil, NewValidationException("Certificate does not have an exportable private key. Only imported certificates with private keys can be exported.")
+		return nil, awserrors.NewValidationException("Certificate does not have an exportable private key. Only imported certificates with private keys can be exported.")
 	}
 
 	passphrase := request.GetStringParam(params, "Passphrase")
 	if passphrase == "" {
-		return nil, NewValidationException("Passphrase is required")
+		return nil, awserrors.NewValidationException("Passphrase is required")
 	}
 
 	encryptedKey, err := encryptPrivateKey(cert.PrivateKey, passphrase)
 	if err != nil {
-		return nil, NewValidationException("Failed to encrypt private key")
+		return nil, awserrors.NewValidationException("Failed to encrypt private key")
 	}
 
 	return map[string]interface{}{
@@ -618,13 +619,13 @@ func (s *ACMService) RevokeCertificate(ctx context.Context, reqCtx *request.Requ
 	cert, err := stores.certificates.Get(arn)
 	if err != nil {
 		if acmstorelib.IsNotFound(err) {
-			return nil, NewResourceNotFoundError("certificate", arn)
+			return nil, awserrors.NewResourceNotFoundException("certificate", arn)
 		}
 		return nil, err
 	}
 
 	if cert.Status == "REVOKED" {
-		return nil, NewResourceNotFoundError("certificate", arn)
+		return nil, awserrors.NewResourceNotFoundException("certificate", arn)
 	}
 
 	if cert.Status != "ISSUED" {

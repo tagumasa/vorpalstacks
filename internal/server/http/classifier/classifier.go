@@ -93,7 +93,7 @@ func (c *Classifier) Classify(r *http.Request) (*ClassifiedRequest, error) {
 
 	c.mergeQueryParams(cr)
 
-	request.ExtractRESTPathParams(r.URL.Path, r.Method, cr.Parameters)
+	request.ExtractRESTPathParams(r, cr.Parameters)
 
 	if cr.Region == "" {
 		cr.Region = request.DefaultRegion

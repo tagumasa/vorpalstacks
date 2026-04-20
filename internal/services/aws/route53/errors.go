@@ -26,11 +26,6 @@ var (
 	ErrInvalidInput = errors.NewAWSError("InvalidInput", "The input is invalid.", http.StatusBadRequest)
 )
 
-// NewAPIError creates a new AWS error with the specified code, message and status.
-func NewAPIError(code string, message string, status int) *errors.AWSError {
-	return errors.NewAWSError(code, message, status)
-}
-
 // NewNoSuchHostedZoneError creates a new error for a hosted zone that does not exist.
 func NewNoSuchHostedZoneError(id string) *errors.AWSError {
 	return errors.NewAWSError("NoSuchHostedZone", "No hosted zone found with id: "+id, http.StatusNotFound)
@@ -74,10 +69,10 @@ func mapStoreError(err error) error {
 		return NewHealthCheckAlreadyExistsError()
 	}
 	if stderrors.Is(err, route53store.ErrRecordSetNotFound) {
-		return NewAPIError("InvalidChangeBatch", "The resource record set does not exist.", http.StatusBadRequest)
+		return errors.NewAWSError("InvalidChangeBatch", "The resource record set does not exist.", http.StatusBadRequest)
 	}
 	if stderrors.Is(err, route53store.ErrRecordSetExists) {
-		return NewAPIError("InvalidChangeBatch", "The resource record set already exists.", http.StatusBadRequest)
+		return errors.NewAWSError("InvalidChangeBatch", "The resource record set already exists.", http.StatusBadRequest)
 	}
 	return err
 }

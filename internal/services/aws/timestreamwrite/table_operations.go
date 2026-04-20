@@ -3,6 +3,7 @@ package timestreamwrite
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -96,11 +97,8 @@ func (s *TimestreamWriteService) DescribeTable(ctx context.Context, reqCtx *requ
 // ListTables returns a list of Timestream tables in a database.
 func (s *TimestreamWriteService) ListTables(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 {
-		maxResults = 20
-	}
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
+	maxResults := pagination.GetMaxItems(req.Parameters, 20, "MaxResults")
 
 	opts := common.ListOptions{MaxItems: maxResults}
 	if nextToken != "" {
@@ -125,9 +123,7 @@ func (s *TimestreamWriteService) ListTables(ctx context.Context, reqCtx *request
 	response := map[string]interface{}{
 		"Tables": tableList,
 	}
-	if result.NextMarker != "" {
-		response["NextToken"] = result.NextMarker
-	}
+	pagination.SetNextToken(response, "NextToken", result.NextMarker)
 	return response, nil
 }
 

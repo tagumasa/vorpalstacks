@@ -130,6 +130,7 @@ func (a *App) initCloudFront(st *serviceState) error {
 func (a *App) initNeptune(st *serviceState) error {
 	st.neptuneService = svcneptune.NewNeptuneService(st.accountID, st.region)
 	st.neptuneService.SetStorageManager(a.server.StorageManager())
+	st.neptuneService.SetEventBus(a.server.EventBus())
 	st.neptuneService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("neptune", func(ctx context.Context) error {
 		st.neptuneService.Close()
@@ -222,6 +223,7 @@ func (a *App) initNeptuneGraph(st *serviceState) error {
 	st.neptuneGraphService = svcneptuneGraph.NewNeptuneGraphService(st.accountID, st.region, a.cfg.DataPath)
 	st.neptuneGraphService.SetStorageManager(a.server.StorageManager())
 	st.neptuneGraphService.SetGraphCache(graphCache)
+	st.neptuneGraphService.SetEventBus(a.server.EventBus())
 	st.neptuneGraphService.RegisterHandlers(a.server.Dispatcher())
 	st.neptuneGraphService.RestoreEngines()
 	a.addShutdown("neptunegraph", func(ctx context.Context) error {
@@ -433,9 +435,6 @@ func (a *App) registerListeners() {
 	if st.apiGatewayService != nil && st.lambdaService != nil {
 		st.apiGatewayService.InitRuntimeServer(
 			a.server.StorageManager(),
-			st.lambdaService,
-			st.sqsStoreInstance,
-			st.snsStoreInstance,
 			a.server.EventBus(),
 		)
 		if handler := st.apiGatewayService.RuntimeHandler(); handler != nil {
@@ -487,8 +486,26 @@ func (a *App) initCloudTrailRecorderFactory(st *serviceState) {
 			return nil
 		}
 		ctStore := cloudtrailstore.NewCloudTrailStore(regionalStorage, accountID, region)
-		return audit.NewCloudTrailRecorder(ctStore)
+		return audit.NewCloudTrailRecorder(&cloudTrailStoreAdapter{store: ctStore})
 	})
+}
+
+// cloudTrailStoreAdapter adapts a CloudTrailStoreInterface to the audit.EventStore interface,
+// bridging the audit package's UserIdentity type to the store package's concrete UserIdentity type.
+type cloudTrailStoreAdapter struct {
+	store cloudtrailstore.CloudTrailStoreInterface
+}
+
+// RecordServiceEvent translates an audit UserIdentity to a cloudtrailstore UserIdentity and
+// delegates to the underlying CloudTrail store.
+func (a *cloudTrailStoreAdapter) RecordServiceEvent(eventName, eventSource string, userIdentity *audit.UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}) error {
+	return a.store.RecordServiceEvent(eventName, eventSource, &cloudtrailstore.UserIdentity{
+		Type:        userIdentity.Type,
+		PrincipalID: userIdentity.PrincipalID,
+		ARN:         userIdentity.ARN,
+		AccountID:   userIdentity.AccountID,
+		UserName:    userIdentity.UserName,
+	}, sourceIP, requestParams, responseElements)
 }
 
 func (a *App) registerListener(cfg listener.ListenerConfig) {

@@ -11,6 +11,7 @@ import (
 	svccognitoidentity "vorpalstacks/internal/services/aws/cognitoidentity"
 	svccognito "vorpalstacks/internal/services/aws/cognitoidentityprovider"
 	svcdynamodb "vorpalstacks/internal/services/aws/dynamodb"
+	svcec2 "vorpalstacks/internal/services/aws/ec2"
 	svcevents "vorpalstacks/internal/services/aws/eventbridge"
 	svciam "vorpalstacks/internal/services/aws/iam"
 	svckinesis "vorpalstacks/internal/services/aws/kinesis"
@@ -49,6 +50,7 @@ type serviceState struct {
 	cognitoService         *svccognito.CognitoService
 	cognitoIdentityService *svccognitoidentity.CognitoIdentityService
 	dynamoDBService        *svcdynamodb.DynamoDBService
+	ec2Service             *svcec2.EC2Service
 	eventBridgeService     *svcevents.EventsService
 	iamService             *svciam.IAMService
 	kinesisService         *svckinesis.KinesisService

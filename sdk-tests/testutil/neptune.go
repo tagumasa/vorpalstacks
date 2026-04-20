@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
 	"github.com/aws/aws-sdk-go-v2/service/neptune/types"
 	"vorpalstacks-sdk-tests/config"
@@ -127,56 +128,123 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 	// where validation requires TargetDBClusterParameterGroupDescription but the
 	// field is not present on the input struct.
 
-	// === DB Subnet Groups ===
+	// === EC2 VPC + Subnet setup for DB Subnet Group tests ===
 
-	results = append(results, r.RunTest("neptune", "CreateDBSubnetGroup", func() error {
-		_, err := client.CreateDBSubnetGroup(ctx, &neptune.CreateDBSubnetGroupInput{
-			DBSubnetGroupName:        aws.String(subnetGroupName),
-			DBSubnetGroupDescription: aws.String("Test subnet group"),
-			SubnetIds:                []string{"subnet-aaa111", "subnet-bbb222"},
+	ec2Client := ec2.NewFromConfig(cfg)
+
+	createVpcResp, err := ec2Client.CreateVpc(ctx, &ec2.CreateVpcInput{
+		CidrBlock: aws.String("10.0.0.0/16"),
+	})
+	if err != nil {
+		results = append(results, TestResult{
+			Service: "neptune", TestName: "SetupVPC", Status: "FAIL",
+			Error: fmt.Sprintf("Failed to create VPC for subnet group tests: %v", err),
 		})
-		return err
-	}))
+	} else {
+		vpcID := createVpcResp.Vpc.VpcId
 
-	results = append(results, r.RunTest("neptune", "DescribeDBSubnetGroups", func() error {
-		resp, err := client.DescribeDBSubnetGroups(ctx, &neptune.DescribeDBSubnetGroupsInput{})
+		createSubnet1, err := ec2Client.CreateSubnet(ctx, &ec2.CreateSubnetInput{
+			VpcId:            vpcID,
+			CidrBlock:        aws.String("10.0.1.0/24"),
+			AvailabilityZone: aws.String(r.region + "a"),
+		})
 		if err != nil {
-			return err
+			results = append(results, TestResult{
+				Service: "neptune", TestName: "SetupSubnet1", Status: "FAIL",
+				Error: fmt.Sprintf("Failed to create subnet 1: %v", err),
+			})
 		}
-		found := false
-		for _, sg := range resp.DBSubnetGroups {
-			if sg.DBSubnetGroupName != nil && *sg.DBSubnetGroupName == subnetGroupName {
-				found = true
-				break
+
+		createSubnet2, err := ec2Client.CreateSubnet(ctx, &ec2.CreateSubnetInput{
+			VpcId:            vpcID,
+			CidrBlock:        aws.String("10.0.2.0/24"),
+			AvailabilityZone: aws.String(r.region + "b"),
+		})
+		if err != nil {
+			results = append(results, TestResult{
+				Service: "neptune", TestName: "SetupSubnet2", Status: "FAIL",
+				Error: fmt.Sprintf("Failed to create subnet 2: %v", err),
+			})
+		}
+
+		createSubnet3, err := ec2Client.CreateSubnet(ctx, &ec2.CreateSubnetInput{
+			VpcId:            vpcID,
+			CidrBlock:        aws.String("10.0.3.0/24"),
+			AvailabilityZone: aws.String(r.region + "c"),
+		})
+		if err != nil {
+			results = append(results, TestResult{
+				Service: "neptune", TestName: "SetupSubnet3", Status: "FAIL",
+				Error: fmt.Sprintf("Failed to create subnet 3: %v", err),
+			})
+		}
+
+		var subnetIds []string
+		if createSubnet1 != nil && createSubnet1.Subnet != nil && createSubnet1.Subnet.SubnetId != nil {
+			subnetIds = append(subnetIds, *createSubnet1.Subnet.SubnetId)
+		}
+		if createSubnet2 != nil && createSubnet2.Subnet != nil && createSubnet2.Subnet.SubnetId != nil {
+			subnetIds = append(subnetIds, *createSubnet2.Subnet.SubnetId)
+		}
+
+		var allSubnetIds []string
+		if createSubnet3 != nil && createSubnet3.Subnet != nil && createSubnet3.Subnet.SubnetId != nil {
+			allSubnetIds = append(subnetIds, *createSubnet3.Subnet.SubnetId)
+		} else {
+			allSubnetIds = subnetIds
+		}
+
+		// === DB Subnet Groups ===
+
+		results = append(results, r.RunTest("neptune", "CreateDBSubnetGroup", func() error {
+			_, err := client.CreateDBSubnetGroup(ctx, &neptune.CreateDBSubnetGroupInput{
+				DBSubnetGroupName:        aws.String(subnetGroupName),
+				DBSubnetGroupDescription: aws.String("Test subnet group"),
+				SubnetIds:                subnetIds,
+			})
+			return err
+		}))
+
+		results = append(results, r.RunTest("neptune", "DescribeDBSubnetGroups", func() error {
+			resp, err := client.DescribeDBSubnetGroups(ctx, &neptune.DescribeDBSubnetGroupsInput{})
+			if err != nil {
+				return err
 			}
-		}
-		if !found {
-			return fmt.Errorf("created subnet group not found in list")
-		}
-		return nil
-	}))
+			found := false
+			for _, sg := range resp.DBSubnetGroups {
+				if sg.DBSubnetGroupName != nil && *sg.DBSubnetGroupName == subnetGroupName {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("created subnet group not found in list")
+			}
+			return nil
+		}))
 
-	results = append(results, r.RunTest("neptune", "ModifyDBSubnetGroup", func() error {
-		_, err := client.ModifyDBSubnetGroup(ctx, &neptune.ModifyDBSubnetGroupInput{
-			DBSubnetGroupName:        aws.String(subnetGroupName),
-			DBSubnetGroupDescription: aws.String("Modified test subnet group"),
-			SubnetIds:                []string{"subnet-aaa111", "subnet-bbb222", "subnet-ccc333"},
-		})
-		return err
-	}))
-
-	results = append(results, r.RunTest("neptune", "DescribeDBSubnetGroups_FilterByName", func() error {
-		resp, err := client.DescribeDBSubnetGroups(ctx, &neptune.DescribeDBSubnetGroupsInput{
-			DBSubnetGroupName: aws.String(subnetGroupName),
-		})
-		if err != nil {
+		results = append(results, r.RunTest("neptune", "ModifyDBSubnetGroup", func() error {
+			_, err := client.ModifyDBSubnetGroup(ctx, &neptune.ModifyDBSubnetGroupInput{
+				DBSubnetGroupName:        aws.String(subnetGroupName),
+				DBSubnetGroupDescription: aws.String("Modified test subnet group"),
+				SubnetIds:                allSubnetIds,
+			})
 			return err
-		}
-		if len(resp.DBSubnetGroups) != 1 {
-			return fmt.Errorf("expected 1 subnet group, got %d", len(resp.DBSubnetGroups))
-		}
-		return nil
-	}))
+		}))
+
+		results = append(results, r.RunTest("neptune", "DescribeDBSubnetGroups_FilterByName", func() error {
+			resp, err := client.DescribeDBSubnetGroups(ctx, &neptune.DescribeDBSubnetGroupsInput{
+				DBSubnetGroupName: aws.String(subnetGroupName),
+			})
+			if err != nil {
+				return err
+			}
+			if len(resp.DBSubnetGroups) != 1 {
+				return fmt.Errorf("expected 1 subnet group, got %d", len(resp.DBSubnetGroups))
+			}
+			return nil
+		}))
+	}
 
 	// === DB Clusters (CRUD lifecycle) ===
 

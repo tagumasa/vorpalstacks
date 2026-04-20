@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -22,7 +21,6 @@ type SecretsManagerService struct {
 	region         string
 	storageManager *storage.RegionStorageManager
 	bus            eventbus.Bus
-	lambdaInvoker  common.LambdaInvoker
 	logger         logs.Logger
 	rotChecker     *rotationChecker
 	stores         sync.Map // region → secretsmanagerstore.SecretStoreInterface
@@ -48,11 +46,6 @@ func (s *SecretsManagerService) SetStorageManager(sm *storage.RegionStorageManag
 // SetEventBus registers the Secrets Manager rotation handler on the event bus.
 func (s *SecretsManagerService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
-}
-
-// SetLambdaInvoker injects the Lambda invoker for rotation Lambda calls.
-func (s *SecretsManagerService) SetLambdaInvoker(invoker common.LambdaInvoker) {
-	s.lambdaInvoker = invoker
 }
 
 // SetLogger injects a structured logger for rotation diagnostics.

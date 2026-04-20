@@ -3,7 +3,6 @@ package s3
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	arnutil "vorpalstacks/internal/utils/aws/arn"
@@ -270,11 +269,8 @@ func (ac *AccessController) extractAccountFromPrincipal(principal string) string
 		return ""
 	}
 
-	if strings.HasPrefix(principal, "arn:aws:iam::") {
-		parts := strings.Split(principal, ":")
-		if len(parts) >= 5 {
-			return parts[4]
-		}
+	if _, service, _, accountID, _ := arnutil.SplitARN(principal); service == "iam" {
+		return accountID
 	}
 	return ""
 }

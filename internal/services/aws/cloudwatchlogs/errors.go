@@ -59,17 +59,17 @@ func mapStoreError(err error) error {
 	case errors.Is(err, logsstore.ErrMetricFilterNotFound):
 		return ErrMetricFilterNotFound
 	case errors.Is(err, logsstore.ErrMetricFilterAlreadyExists):
-		return NewLogsError("ResourceAlreadyExistsException", "metric filter already exists", http.StatusConflict)
+		return awserrors.NewAWSError("ResourceAlreadyExistsException", "metric filter already exists", http.StatusConflict)
 	case errors.Is(err, logsstore.ErrResourceNotFound):
-		return NewLogsError("ResourceNotFoundException", "resource not found", http.StatusNotFound)
+		return awserrors.NewAWSError("ResourceNotFoundException", "resource not found", http.StatusNotFound)
 	case errors.Is(err, logsstore.ErrResourceAlreadyExists):
-		return NewLogsError("ResourceAlreadyExistsException", "resource already exists", http.StatusConflict)
+		return awserrors.NewAWSError("ResourceAlreadyExistsException", "resource already exists", http.StatusConflict)
 	case errors.Is(err, logsstore.ErrDataAlreadyAccepted):
-		return NewLogsError("DataAlreadyAcceptedException", "data already accepted", http.StatusBadRequest)
+		return awserrors.NewAWSError("DataAlreadyAcceptedException", "data already accepted", http.StatusBadRequest)
 	case errors.Is(err, logsstore.ErrInvalidSequenceToken):
-		return NewLogsError("InvalidSequenceTokenException", "invalid sequence token", http.StatusBadRequest)
+		return awserrors.NewAWSError("InvalidSequenceTokenException", "invalid sequence token", http.StatusBadRequest)
 	case errors.Is(err, logsstore.ErrSubscriptionFilterNotFound):
-		return NewLogsError("ResourceNotFoundException", "subscription filter not found", http.StatusNotFound)
+		return awserrors.NewAWSError("ResourceNotFoundException", "subscription filter not found", http.StatusNotFound)
 	case errors.Is(err, logsstore.ErrDestinationNotFound):
 		return ErrDestinationNotFound
 	case errors.Is(err, logsstore.ErrDestinationAlreadyExists):

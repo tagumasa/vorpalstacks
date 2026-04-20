@@ -89,6 +89,7 @@ func (h *S3Handler) handleSelectObjectContent(ctx *request.RequestContext, r *ht
 
 	go func() {
 		defer pw.Close()
+		defer func() { recover() }()
 		writer := NewSelectEventStreamWriter(pw, input.RequestProgress)
 		if err := engine.Execute(ctx, dataReader, writer); err != nil {
 			pw.CloseWithError(err)

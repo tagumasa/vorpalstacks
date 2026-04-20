@@ -17,12 +17,12 @@ import (
 
 	"github.com/google/uuid"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -38,10 +38,10 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 	messageDeduplicationId := request.GetParamLowerFirst(req.Parameters, "MessageDeduplicationId")
 
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("TopicArn is required")
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
 	if message == "" {
-		return nil, NewInvalidParameterException("Message is required")
+		return nil, awserrors.NewInvalidParameterException("Message is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -58,7 +58,7 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 
 	if topic.FifoTopic {
 		if messageGroupId == "" {
-			return nil, NewInvalidParameterException("MessageGroupId is required for FIFO topics")
+			return nil, awserrors.NewInvalidParameterException("MessageGroupId is required for FIFO topics")
 		}
 
 		if messageDeduplicationId != "" {
@@ -68,7 +68,7 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 				}, nil
 			}
 		} else if !topic.ContentBasedDeduplication {
-			return nil, NewInvalidParameterException("MessageDeduplicationId is required when ContentBasedDeduplication is false")
+			return nil, awserrors.NewInvalidParameterException("MessageDeduplicationId is required when ContentBasedDeduplication is false")
 		} else {
 			messageDeduplicationId = generateContentBasedDeduplicationId(message)
 			if existingMsgID, isDuplicate := store.CheckDeduplication(topicArn, messageDeduplicationId); isDuplicate {
@@ -224,7 +224,12 @@ func (s *SNSService) deliverToSubscriptions(msg *snsstore.Message, subscriptions
 }
 
 func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscription) {
-	if s.sqsStore == nil {
+	if s.bus == nil {
+		return
+	}
+
+	sqsInvoker := s.bus.SQSInvoker()
+	if sqsInvoker == nil {
 		return
 	}
 
@@ -232,26 +237,24 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 	if strings.HasPrefix(queueURL, "arn:") {
 		queueName := arnutil.ExtractQueueNameFromARN(queueURL)
 		if queueName != "" {
-			if q, err := s.sqsStore.GetQueueByName(queueName); err == nil {
-				queueURL = q.URL
+			if resolvedURL, err := sqsInvoker.GetQueueByName(context.Background(), queueName); err == nil {
+				queueURL = resolvedURL
 			}
 		}
 	}
 
-	if s.bus != nil {
-		queue, qErr := s.sqsStore.GetQueue(queueURL)
-		if qErr == nil && queue.ARN != "" {
-			allowed, evalErr := s.bus.EvaluateTargetPolicy(context.Background(), queue.ARN, "sqs", "sns.amazonaws.com", "sqs:SendMessage", queue.ARN)
-			if evalErr != nil {
-				logs.Warn("resource policy evaluation failed for SQS delivery, dropping message",
-					logs.String("queueArn", queue.ARN),
-					logs.String("topicArn", msg.TopicArn),
-					logs.String("error", evalErr.Error()))
-				return
-			}
-			if !allowed {
-				return
-			}
+	queueARN, qErr := sqsInvoker.GetQueueARN(context.Background(), queueURL)
+	if qErr == nil && queueARN != "" {
+		allowed, evalErr := s.bus.EvaluateTargetPolicy(context.Background(), queueARN, "sqs", "sns.amazonaws.com", "sqs:SendMessage", queueARN)
+		if evalErr != nil {
+			logs.Warn("resource policy evaluation failed for SQS delivery, dropping message",
+				logs.String("queueArn", queueARN),
+				logs.String("topicArn", msg.TopicArn),
+				logs.String("error", evalErr.Error()))
+			return
+		}
+		if !allowed {
+			return
 		}
 	}
 
@@ -288,27 +291,19 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 		}
 		body = string(jsonData)
 	}
-	sqsMsg := &sqsstore.Message{
-		Body:              body,
-		MessageAttributes: make(map[string]*sqsstore.MessageAttributeValue),
-		Attributes:        make(map[string]string),
-	}
 
-	if msg.MessageGroupId != "" {
-		sqsMsg.Attributes["MessageGroupId"] = msg.MessageGroupId
-	}
-	if msg.MessageDeduplicationId != "" {
-		sqsMsg.Attributes["MessageDeduplicationId"] = msg.MessageDeduplicationId
-	}
-
+	msgAttrs := make(map[string]string)
 	for k, v := range msg.MessageAttributes {
-		sqsMsg.MessageAttributes[k] = &sqsstore.MessageAttributeValue{
-			DataType:    v.Type,
-			StringValue: &v.StringValue,
-		}
+		msgAttrs[k] = v.StringValue
 	}
 
-	if _, err := s.sqsStore.SendMessage(queueURL, sqsMsg); err != nil {
+	if msg.MessageGroupId != "" || msg.MessageDeduplicationId != "" {
+		logs.Warn("SNS to SQS FIFO delivery: MessageGroupId/MessageDeduplicationId not supported by SQSInvoker; attributes will be dropped",
+			logs.String("topicArn", msg.TopicArn),
+			logs.String("messageId", msg.MessageId))
+	}
+
+	if _, _, err := sqsInvoker.SendMessage(context.Background(), queueURL, body, 0, msgAttrs); err != nil {
 		logs.Error("Failed to deliver SNS message to SQS queue — message may be permanently lost",
 			logs.String("queueURL", queueURL),
 			logs.String("messageId", msg.MessageId),
@@ -443,7 +438,12 @@ func (s *SNSService) signPayload(payload map[string]interface{}, region string) 
 }
 
 func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscription, region string) {
-	if s.lambdaInvoker == nil {
+	if s.bus == nil {
+		return
+	}
+
+	lambdaInvoker := s.bus.LambdaInvoker()
+	if lambdaInvoker == nil {
 		return
 	}
 
@@ -451,22 +451,20 @@ func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscr
 		region = request.DefaultRegion
 	}
 
-	if s.bus != nil {
-		functionARN := sub.Endpoint
-		if !strings.HasPrefix(functionARN, "arn:") {
-			functionARN = arnutil.NewARNBuilder(s.accountID, region).Lambda().Function(sub.Endpoint)
-		}
-		allowed, evalErr := s.bus.EvaluateTargetPolicy(context.Background(), functionARN, "lambda", "sns.amazonaws.com", "lambda:InvokeFunction", functionARN)
-		if evalErr != nil {
-			logs.Warn("resource policy evaluation failed for Lambda delivery, dropping message",
-				logs.String("functionArn", functionARN),
-				logs.String("topicArn", msg.TopicArn),
-				logs.String("error", evalErr.Error()))
-			return
-		}
-		if !allowed {
-			return
-		}
+	functionARN := sub.Endpoint
+	if !strings.HasPrefix(functionARN, "arn:") {
+		functionARN = arnutil.NewARNBuilder(s.accountID, region).Lambda().Function(sub.Endpoint)
+	}
+	allowed, evalErr := s.bus.EvaluateTargetPolicy(context.Background(), functionARN, "lambda", "sns.amazonaws.com", "lambda:InvokeFunction", functionARN)
+	if evalErr != nil {
+		logs.Warn("resource policy evaluation failed for Lambda delivery, dropping message",
+			logs.String("functionArn", functionARN),
+			logs.String("topicArn", msg.TopicArn),
+			logs.String("error", evalErr.Error()))
+		return
+	}
+	if !allowed {
+		return
 	}
 
 	protocolMessage := extractProtocolMessage(msg, "lambda")
@@ -518,7 +516,7 @@ func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscr
 	defer cancel()
 
 	functionName := sub.Endpoint
-	_, _, err = s.lambdaInvoker.InvokeForGateway(ctx, functionName, jsonData)
+	_, _, err = lambdaInvoker.InvokeForGateway(ctx, functionName, jsonData)
 	if err != nil {
 		logs.Warn("Lambda invocation failed", logs.String("function", functionName), logs.String("error", err.Error()))
 	}
@@ -529,7 +527,7 @@ func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscr
 func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
 	if topicArn == "" {
-		return nil, NewInvalidParameterException("TopicArn is required")
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -546,10 +544,10 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 
 	entryMaps := request.GetListParam(req.Parameters, "PublishBatchRequestEntries")
 	if len(entryMaps) == 0 {
-		return nil, NewInvalidParameterException("PublishBatchRequestEntries is required")
+		return nil, awserrors.NewInvalidParameterException("PublishBatchRequestEntries is required")
 	}
 	if len(entryMaps) > 10 {
-		return nil, NewInvalidParameterException("PublishBatchRequestEntries cannot exceed 10 entries")
+		return nil, awserrors.NewInvalidParameterException("PublishBatchRequestEntries cannot exceed 10 entries")
 	}
 
 	successful := make([]map[string]interface{}, 0)

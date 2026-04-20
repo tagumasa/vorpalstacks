@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	route53store "vorpalstacks/internal/store/aws/route53"
@@ -60,7 +61,7 @@ func generateId() string {
 func extractHostedZoneId(params map[string]interface{}, paramName string) (string, error) {
 	id := request.GetStringParam(params, paramName)
 	if id == "" {
-		return "", NewAPIError("InvalidInput", fmt.Sprintf("%s is required", paramName), 400)
+		return "", awserrors.NewAWSError("InvalidInput", fmt.Sprintf("%s is required", paramName), 400)
 	}
 	return strings.TrimPrefix(id, "/hostedzone/"), nil
 }
@@ -68,7 +69,7 @@ func extractHostedZoneId(params map[string]interface{}, paramName string) (strin
 func extractHealthCheckId(params map[string]interface{}, paramName string) (string, error) {
 	id := request.GetStringParam(params, paramName)
 	if id == "" {
-		return "", NewAPIError("InvalidInput", fmt.Sprintf("%s is required", paramName), 400)
+		return "", awserrors.NewAWSError("InvalidInput", fmt.Sprintf("%s is required", paramName), 400)
 	}
 	return strings.TrimPrefix(id, "/healthcheck/"), nil
 }
@@ -76,7 +77,7 @@ func extractHealthCheckId(params map[string]interface{}, paramName string) (stri
 func extractChangeId(params map[string]interface{}, paramName string) (string, error) {
 	id := request.GetStringParam(params, paramName)
 	if id == "" {
-		return "", NewAPIError("InvalidInput", fmt.Sprintf("%s is required", paramName), 400)
+		return "", awserrors.NewAWSError("InvalidInput", fmt.Sprintf("%s is required", paramName), 400)
 	}
 	return strings.TrimPrefix(id, "/change/"), nil
 }

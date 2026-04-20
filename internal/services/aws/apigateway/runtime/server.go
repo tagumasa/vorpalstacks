@@ -10,15 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/auth"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/integration"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/validator"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
-	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 	"vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -28,7 +25,6 @@ type RuntimeServer struct {
 	usageStore       *apigatewaystore.UsageStore
 	router           *RuntimeRouter
 	executorFactory  *integration.ExecutorFactory
-	lambdaInvoker    common.LambdaInvoker
 	validator        *validator.Validator
 	authenticator    *auth.APIKeyAuthenticator
 	lambdaAuthorizer *auth.LambdaAuthorizer
@@ -37,34 +33,19 @@ type RuntimeServer struct {
 }
 
 // NewRuntimeServer creates a new API Gateway runtime server.
-// Optional SQS/SNS stores for integration targets should be injected via
-// setter methods after construction.
-func NewRuntimeServer(store *apigatewaystore.RestApiStore, usageStore *apigatewaystore.UsageStore, lambdaInvoker common.LambdaInvoker) *RuntimeServer {
+func NewRuntimeServer(store *apigatewaystore.RestApiStore, usageStore *apigatewaystore.UsageStore, bus eventbus.Bus) *RuntimeServer {
 	return &RuntimeServer{
 		store:            store,
 		usageStore:       usageStore,
 		router:           NewRuntimeRouter(),
-		executorFactory:  integration.NewExecutorFactory(lambdaInvoker),
-		lambdaInvoker:    lambdaInvoker,
+		executorFactory:  integration.NewExecutorFactory(bus),
 		validator:        validator.NewValidator(),
 		authenticator:    auth.NewAPIKeyAuthenticator(usageStore),
-		lambdaAuthorizer: auth.NewLambdaAuthorizer(lambdaInvoker, store),
+		lambdaAuthorizer: auth.NewLambdaAuthorizer(bus, store),
 	}
 }
 
-// SetSQSStore injects an SQS store into the executor factory for SQS integration targets.
-func (s *RuntimeServer) SetSQSStore(store sqsstore.SQSStoreInterface, accountID, region string) {
-	s.executorFactory.SetSQSStore(store)
-	s.executorFactory.SetAccountAndRegion(accountID, region)
-}
-
-// SetSNSStore injects an SNS store into the executor factory for SNS integration targets.
-func (s *RuntimeServer) SetSNSStore(store snsstore.SNSStoreInterface, accountID, region string) {
-	s.executorFactory.SetSNSStore(store)
-	s.executorFactory.SetAccountAndRegion(accountID, region)
-}
-
-// SetEventBus injects the event bus for SNS fan-out and cross-service delivery.
+// SetEventBus injects the event bus for cross-service delivery.
 func (s *RuntimeServer) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	s.executorFactory.SetEventBus(bus)
@@ -82,14 +63,10 @@ func (s *RuntimeServer) RemoveApiKey(apiKeyId string) {
 	}
 }
 
-// Close stops background goroutines in authentication components and
-// waits for in-flight SNS delivery goroutines to finish.
+// Close stops background goroutines in authentication components.
 func (s *RuntimeServer) Close() {
 	if s.lambdaAuthorizer != nil {
 		s.lambdaAuthorizer.Close()
-	}
-	if s.executorFactory != nil {
-		s.executorFactory.WaitDelivery()
 	}
 }
 

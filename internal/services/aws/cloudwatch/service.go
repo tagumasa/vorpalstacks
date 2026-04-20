@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"sync"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // cloudwatchStores holds the stores for CloudWatch resources.
@@ -30,7 +28,6 @@ type CloudWatchService struct {
 	region         string
 	dataPath       string
 	bus            eventbus.Bus
-	lambdaInvoker  common.LambdaInvoker
 	evaluator      *alarmEvaluator
 	logger         logs.Logger
 	stores         sync.Map // region → *cloudwatchStores
@@ -60,12 +57,6 @@ func (s *CloudWatchService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 }
 
-// SetLambdaInvoker sets the Lambda invoker used for dispatching alarm
-// actions to Lambda function targets.
-func (s *CloudWatchService) SetLambdaInvoker(invoker common.LambdaInvoker) {
-	s.lambdaInvoker = invoker
-}
-
 // SetStorageManager injects the region storage manager for multi-region
 // alarm evaluation.
 func (s *CloudWatchService) SetStorageManager(sm *storage.RegionStorageManager) {
@@ -80,7 +71,7 @@ func (s *CloudWatchService) SetLogger(logger logs.Logger) {
 
 // StartEvaluator creates and starts the background alarm evaluation loop.
 // This should be called once during server initialisation after SetEventBus
-// and SetLambdaInvoker have been wired.
+// has been wired.
 func (s *CloudWatchService) StartEvaluator(ctx context.Context) {
 	s.evaluator = newAlarmEvaluator(0, 0, s.logger)
 	s.evaluator.Start(ctx, s)
@@ -97,21 +88,32 @@ func (s *CloudWatchService) StopEvaluator() {
 
 // store returns the CloudWatch stores for a given request context.
 func (s *CloudWatchService) store(reqCtx *request.RequestContext) (*cloudwatchStores, error) {
-	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*cloudwatchStores, error) {
-		storage, err := reqCtx.GetStorage()
-		if err != nil {
-			return nil, err
+	region := reqCtx.GetRegion()
+	if cached, ok := s.stores.Load(region); ok {
+		if typed, ok := cached.(*cloudwatchStores); ok {
+			return typed, nil
 		}
-		metricStore, err := cwstore.NewMetricChunkStoreWithIndex(storage, reqCtx.GetRegion(), s.dataPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create metric store: %w", err)
+	}
+	storage, err := reqCtx.GetStorage()
+	if err != nil {
+		return nil, err
+	}
+	metricStore, err := cwstore.NewMetricChunkStoreWithIndex(storage, region, s.dataPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metric store: %w", err)
+	}
+	stores := &cloudwatchStores{
+		metrics:    metricStore,
+		alarms:     cwstore.NewAlarmStore(storage, s.accountID, region),
+		dashboards: cwstore.NewDashboardStore(storage, s.accountID, region),
+	}
+	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		metricStore.Close()
+		if typed, ok := actual.(*cloudwatchStores); ok {
+			return typed, nil
 		}
-		return &cloudwatchStores{
-			metrics:    metricStore,
-			alarms:     cwstore.NewAlarmStore(storage, s.accountID, reqCtx.GetRegion()),
-			dashboards: cwstore.NewDashboardStore(storage, s.accountID, reqCtx.GetRegion()),
-		}, nil
-	})
+	}
+	return stores, nil
 }
 
 // RegisterHandlers registers CloudWatch handlers with the dispatcher.

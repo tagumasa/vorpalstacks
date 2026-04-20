@@ -62,6 +62,7 @@ type BootstrapConfig struct {
 	CloudFront      bool
 	WAFv2           bool
 	Route53         bool
+	EC2             bool
 }
 
 // ServerHost returns the server hostname suitable for self-referencing URLs.
@@ -130,6 +131,7 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		CloudFront:      envBool("CLOUDFRONT_ENABLED", true),
 		WAFv2:           envBool("WAFV2_ENABLED", true),
 		Route53:         envBool("ROUTE53_ENABLED", true),
+		EC2:             envBool("EC2_ENABLED", true),
 	}
 }
 

@@ -111,6 +111,9 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		cluster.AvailabilityZones = azList
 	}
 	if sgList := request.GetStringList(params, "VpcSecurityGroupIds"); len(sgList) > 0 {
+		if _, err := s.resolveSecurityGroups(ctx, reqCtx.GetRegion(), sgList); err != nil {
+			return nil, translateStoreError(err)
+		}
 		cluster.VpcSecurityGroupIds = sgList
 	}
 	if logExports := request.GetStringList(params, "EnableCloudwatchLogsExports"); len(logExports) > 0 {
@@ -271,7 +274,13 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		cluster.EnableIAMDatabaseAuthentication = request.GetBoolParam(params, "EnableIAMDatabaseAuthentication")
 	}
 	if request.HasParam(params, "VpcSecurityGroupIds") {
-		cluster.VpcSecurityGroupIds = request.GetStringList(params, "VpcSecurityGroupIds")
+		sgList := request.GetStringList(params, "VpcSecurityGroupIds")
+		if len(sgList) > 0 {
+			if _, err := s.resolveSecurityGroups(ctx, reqCtx.GetRegion(), sgList); err != nil {
+				return nil, translateStoreError(err)
+			}
+		}
+		cluster.VpcSecurityGroupIds = sgList
 	}
 	if request.HasParam(params, "EnableCloudwatchLogsExports") {
 		cluster.EnableCloudwatchLogsExports = request.GetStringList(params, "EnableCloudwatchLogsExports")

@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
@@ -48,6 +49,7 @@ type Config struct {
 	Cognito         bool
 	CognitoIdentity bool
 	DynamoDB        bool
+	EC2             bool
 	EventBridge     bool
 	Kinesis         bool
 	KMS             bool
@@ -103,6 +105,7 @@ func FromBootstrap(bc *appconfig.BootstrapConfig) *Config {
 		Cognito:               bc.Cognito,
 		CognitoIdentity:       bc.CognitoIdentity,
 		DynamoDB:              bc.DynamoDB,
+		EC2:                   bc.EC2,
 		EventBridge:           bc.Events,
 		Kinesis:               bc.Kinesis,
 		KMS:                   bc.KMS,
@@ -272,13 +275,24 @@ func (a *App) Run() error {
 	a.cfg.PrintStartupBanner()
 
 	go func() {
+		defer func() { recover() }()
 		fmt.Printf("Starting gRPC-Web admin server on :%s\n", a.cfg.GRPCWebPort)
 		if err := a.grpcWeb.Start(); err != nil {
 			fmt.Fprintf(os.Stderr, "gRPC-Web server error: %v\n", err)
 		}
 	}()
 
-	return a.server.Start()
+	err := a.server.Start()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	a.Shutdown(ctx)
+
+	if a.grpcWeb != nil {
+		a.grpcWeb.Shutdown(ctx)
+	}
+
+	return err
 }
 
 // Shutdown performs a graceful shutdown of all services, the gRPC-Web server,

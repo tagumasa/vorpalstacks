@@ -23,10 +23,8 @@ import (
 	"vorpalstacks/internal/eventbus"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	s3store "vorpalstacks/internal/store/aws/s3"
-	storesqs "vorpalstacks/internal/store/aws/sqs"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/naming"
 )
@@ -119,24 +117,6 @@ func (s *LambdaService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 }
 
-// SetSQSStore injects the SQS store used by the ESM poller to receive
-// messages from source queues. Must be called before StartESMPoller.
-func (s *LambdaService) SetSQSStore(sqss *storesqs.SQSStore) {
-	if s.esmPoller == nil {
-		s.esmPoller = newESMPoller(0, 0, nil)
-	}
-	s.esmPoller.sqsStore = sqss
-}
-
-// SetKinesisStore injects a Kinesis store used by the ESM poller to read
-// records from source streams. Must be called before StartESMPoller.
-func (s *LambdaService) SetKinesisStore(ks kinesisstore.KinesisStoreInterface) {
-	if s.esmPoller == nil {
-		s.esmPoller = newESMPoller(0, 0, nil)
-	}
-	s.esmPoller.kinesisStore = ks
-}
-
 // StartESMPoller starts the background ESM polling goroutine. It creates
 // an EventSourceStore for each configured region and begins polling all
 // enabled SQS event source mappings. Safe to call multiple times.
@@ -149,6 +129,7 @@ func (s *LambdaService) StartESMPoller(ctx context.Context) {
 	s.esmPoller.accountID = s.accountID
 	s.esmPoller.region = s.region
 	s.esmPoller.storageManager = s.storageManager
+	s.esmPoller.bus = s.bus
 	s.esmPoller.Start(ctx)
 }
 
@@ -725,7 +706,13 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 
 // Shutdown gracefully shuts down the Lambda service by waiting for all asynchronous operations to complete.
 func (s *LambdaService) Shutdown() {
+	s.StopESMPoller()
 	s.asyncWg.Wait()
+	if s.dockerClient != nil {
+		if err := s.dockerClient.Close(); err != nil {
+			logs.Warn("Error closing Docker client", logs.Err(err))
+		}
+	}
 }
 
 func sanitizeForContainerName(s string) string {

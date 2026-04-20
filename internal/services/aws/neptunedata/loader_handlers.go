@@ -55,7 +55,12 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 	}
 
 	region := reqCtx.GetRegion()
-	go s.runLoaderJob(region, loadId, params.Source, params.Format)
+	s.loaderWg.Add(1)
+	go func() {
+		defer func() { recover() }()
+		defer s.loaderWg.Done()
+		s.runLoaderJob(region, loadId, params.Source, params.Format)
+	}()
 
 	return map[string]interface{}{
 		"status": "200",

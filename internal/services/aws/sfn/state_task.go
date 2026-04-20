@@ -8,6 +8,7 @@ import (
 	"time"
 
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState) (string, string, *ExecutionError) {
@@ -104,7 +105,7 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 			taskCtx, cancel = context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
 		}
 
-		if strings.HasPrefix(state.Resource, "arn:aws:lambda:") {
+		if arnutil.IsLambdaARN(state.Resource) {
 			output, taskErr = e.executeLambdaTask(taskCtx, execCtx, state, processedInput)
 		} else if e.isActivityResource(state.Resource) {
 			var next string

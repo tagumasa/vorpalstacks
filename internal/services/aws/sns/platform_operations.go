@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -17,10 +18,10 @@ func (s *SNSService) CreatePlatformApplication(ctx context.Context, reqCtx *requ
 	platform := request.GetStringParam(req.Parameters, "Platform")
 
 	if name == "" {
-		return nil, NewInvalidParameterException("Name is required")
+		return nil, awserrors.NewInvalidParameterException("Name is required")
 	}
 	if platform == "" {
-		return nil, NewInvalidParameterException("Platform is required")
+		return nil, awserrors.NewInvalidParameterException("Platform is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -37,7 +38,7 @@ func (s *SNSService) CreatePlatformApplication(ctx context.Context, reqCtx *requ
 	created, err := store.CreatePlatformApplication(app)
 	if err != nil {
 		if err == snsstore.ErrPlatformApplicationAlreadyExists {
-			return nil, NewInvalidParameterException("Platform application already exists with the same name")
+			return nil, awserrors.NewInvalidParameterException("Platform application already exists with the same name")
 		}
 		return nil, err
 	}
@@ -51,7 +52,7 @@ func (s *SNSService) CreatePlatformApplication(ctx context.Context, reqCtx *requ
 func (s *SNSService) DeletePlatformApplication(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	platformApplicationArn := request.GetStringParam(req.Parameters, "PlatformApplicationArn")
 	if platformApplicationArn == "" {
-		return nil, NewInvalidParameterException("PlatformApplicationArn is required")
+		return nil, awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -72,7 +73,7 @@ func (s *SNSService) DeletePlatformApplication(ctx context.Context, reqCtx *requ
 func (s *SNSService) GetPlatformApplicationAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	platformApplicationArn := request.GetStringParam(req.Parameters, "PlatformApplicationArn")
 	if platformApplicationArn == "" {
-		return nil, NewInvalidParameterException("PlatformApplicationArn is required")
+		return nil, awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -96,12 +97,12 @@ func (s *SNSService) GetPlatformApplicationAttributes(ctx context.Context, reqCt
 func (s *SNSService) SetPlatformApplicationAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	platformApplicationArn := request.GetStringParam(req.Parameters, "PlatformApplicationArn")
 	if platformApplicationArn == "" {
-		return nil, NewInvalidParameterException("PlatformApplicationArn is required")
+		return nil, awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
 	}
 
 	attrs := parseAttributes(req.Parameters)
 	if len(attrs) == 0 {
-		return nil, NewInvalidParameterException("Attributes is required")
+		return nil, awserrors.NewInvalidParameterException("Attributes is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -125,7 +126,7 @@ func (s *SNSService) ListPlatformApplications(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	result, err := store.ListPlatformApplications(common.ListOptions{Marker: nextToken})
 	if err != nil {
 		return nil, err
@@ -153,10 +154,10 @@ func (s *SNSService) CreatePlatformEndpoint(ctx context.Context, reqCtx *request
 	customUserData := request.GetStringParam(req.Parameters, "CustomUserData")
 
 	if platformApplicationArn == "" {
-		return nil, NewInvalidParameterException("PlatformApplicationArn is required")
+		return nil, awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
 	}
 	if token == "" {
-		return nil, NewInvalidParameterException("Token is required")
+		return nil, awserrors.NewInvalidParameterException("Token is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -188,7 +189,7 @@ func (s *SNSService) CreatePlatformEndpoint(ctx context.Context, reqCtx *request
 func (s *SNSService) DeleteEndpoint(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	endpointArn := request.GetStringParam(req.Parameters, "EndpointArn")
 	if endpointArn == "" {
-		return nil, NewInvalidParameterException("EndpointArn is required")
+		return nil, awserrors.NewInvalidParameterException("EndpointArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -209,7 +210,7 @@ func (s *SNSService) DeleteEndpoint(ctx context.Context, reqCtx *request.Request
 func (s *SNSService) GetEndpointAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	endpointArn := request.GetStringParam(req.Parameters, "EndpointArn")
 	if endpointArn == "" {
-		return nil, NewInvalidParameterException("EndpointArn is required")
+		return nil, awserrors.NewInvalidParameterException("EndpointArn is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -233,12 +234,12 @@ func (s *SNSService) GetEndpointAttributes(ctx context.Context, reqCtx *request.
 func (s *SNSService) SetEndpointAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	endpointArn := request.GetStringParam(req.Parameters, "EndpointArn")
 	if endpointArn == "" {
-		return nil, NewInvalidParameterException("EndpointArn is required")
+		return nil, awserrors.NewInvalidParameterException("EndpointArn is required")
 	}
 
 	attrs := parseAttributes(req.Parameters)
 	if len(attrs) == 0 {
-		return nil, NewInvalidParameterException("Attributes is required")
+		return nil, awserrors.NewInvalidParameterException("Attributes is required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -259,7 +260,7 @@ func (s *SNSService) SetEndpointAttributes(ctx context.Context, reqCtx *request.
 func (s *SNSService) ListEndpointsByPlatformApplication(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	platformApplicationArn := request.GetStringParam(req.Parameters, "PlatformApplicationArn")
 	if platformApplicationArn == "" {
-		return nil, NewInvalidParameterException("PlatformApplicationArn is required")
+		return nil, awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
 	}
 
 	store, err := s.store(reqCtx)

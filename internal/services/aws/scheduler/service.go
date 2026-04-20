@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -17,16 +16,11 @@ import (
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
-	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 
 // SchedulerService provides EventBridge Scheduler operations.
 type SchedulerService struct {
 	storageManager *storage.RegionStorageManager
-	sqsStore       sqsstore.SQSStoreInterface
-	snsStore       snsstore.SNSStoreInterface
-	lambdaInvoker  common.LambdaInvoker
 	accountID      string
 	engine         *Engine
 	stores         sync.Map
@@ -41,25 +35,10 @@ func NewSchedulerService(storageManager *storage.RegionStorageManager, accountID
 	}
 }
 
-// SetSQSStore injects an SQS store for target resolution.
-func (s *SchedulerService) SetSQSStore(store sqsstore.SQSStoreInterface) {
-	s.sqsStore = store
-}
-
-// SetSNSStore injects an SNS store for target resolution.
-func (s *SchedulerService) SetSNSStore(store snsstore.SNSStoreInterface) {
-	s.snsStore = store
-}
-
-// SetLambdaInvoker injects a Lambda invoker for target resolution.
-func (s *SchedulerService) SetLambdaInvoker(invoker common.LambdaInvoker) {
-	s.lambdaInvoker = invoker
-}
-
 // BuildEngine constructs the scheduling engine from the currently injected dependencies.
 // Must be called after all setter methods and before StartEngine.
 func (s *SchedulerService) BuildEngine() {
-	s.engine = NewEngine(s.storageManager, s.sqsStore, s.snsStore, s.lambdaInvoker, s.accountID)
+	s.engine = NewEngine(s.storageManager, s.accountID)
 }
 
 // SetEventBus injects the event bus into the scheduler engine and registers

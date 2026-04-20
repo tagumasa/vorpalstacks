@@ -18,24 +18,9 @@ var (
 	ErrInvalidParameter = awserrors.NewInvalidParameterException("Invalid parameter")
 )
 
-// NewValidationException creates a validation error.
-func NewValidationException(message string) *awserrors.AWSError {
-	return awserrors.NewValidationException(message)
-}
-
 // NewResourceNotFoundException creates a resource not found error.
 func NewResourceNotFoundException(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("ResourceNotFoundException", message, 404)
-}
-
-// NewResourceAlreadyExistsException creates a resource already exists error.
-func NewResourceAlreadyExistsException(message string) *awserrors.AWSError {
-	return awserrors.NewResourceAlreadyExistsException(message)
-}
-
-// NewInvalidParameterException creates an invalid parameter error.
-func NewInvalidParameterException(message string) *awserrors.AWSError {
-	return awserrors.NewInvalidParameterException(message)
 }
 
 // BuildEventBusARN constructs an ARN for an EventBridge event bus.

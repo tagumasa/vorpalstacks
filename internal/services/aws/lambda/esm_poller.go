@@ -11,9 +11,8 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
+	"vorpalstacks/internal/eventbus"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -88,8 +87,7 @@ type esmPoller struct {
 	interval       time.Duration
 	workers        int
 	logger         logs.Logger
-	sqsStore       *sqsstore.SQSStore
-	kinesisStore   kinesisstore.KinesisStoreInterface
+	bus            eventbus.Bus
 	esmStore       *lambdastore.EventSourceStore
 	lambdaSvc      *LambdaService
 	accountID      string
@@ -232,12 +230,11 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 		if m.State != "Enabled" {
 			continue
 		}
-		if !strings.HasPrefix(m.EventSourceArn, "arn:aws:sqs:") &&
-			!strings.HasPrefix(m.EventSourceArn, "arn:aws:kinesis:") &&
-			!strings.HasPrefix(m.EventSourceArn, "arn:aws:dynamodb:") {
+		_, esmService, _, _, _ := arnutil.SplitARN(m.EventSourceArn)
+		if esmService != "sqs" && esmService != "kinesis" && esmService != "dynamodb" {
 			continue
 		}
-		if strings.HasPrefix(m.EventSourceArn, "arn:aws:kinesis:") {
+		if esmService == "kinesis" {
 			activeKinesisUUIDs[m.UUID] = struct{}{}
 		}
 		jobs <- pollJob{mapping: m}
@@ -278,11 +275,12 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 // the mapped function, and deletes successfully processed messages from
 // the queue.
 func (p *esmPoller) processMapping(ctx context.Context, mapping *lambdastore.EventSourceMapping) {
-	if strings.HasPrefix(mapping.EventSourceArn, "arn:aws:kinesis:") {
+	esmService := arnutil.GetServiceFromARN(mapping.EventSourceArn)
+	if esmService == "kinesis" {
 		p.processKinesisMapping(ctx, mapping)
 		return
 	}
-	if strings.HasPrefix(mapping.EventSourceArn, "arn:aws:dynamodb:") {
+	if esmService == "dynamodb" {
 		p.log("DynamoDB Streams ESM not yet implemented, skipping mapping",
 			"eventSourceArn", mapping.EventSourceArn,
 			"functionArn", mapping.FunctionArn)
@@ -292,7 +290,7 @@ func (p *esmPoller) processMapping(ctx context.Context, mapping *lambdastore.Eve
 }
 
 func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdastore.EventSourceMapping) {
-	if p.kinesisStore == nil {
+	if p.bus == nil {
 		return
 	}
 
@@ -307,7 +305,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 		streamName = resource[idx+len("stream/"):]
 	}
 
-	shards, err := p.kinesisStore.ListShards(streamName, nil, "", 100)
+	shards, err := p.bus.KinesisInvoker().ListShards(ctx, streamName)
 	if err != nil {
 		p.log("failed to list shards for Kinesis ESM", "stream", streamName, "error", err)
 		return
@@ -322,7 +320,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 	}
 
 	for _, shard := range shards {
-		if shard.SequenceNumberRange != nil && shard.SequenceNumberRange.EndingSequenceNumber != "" {
+		if shard.SequenceNumberRangeEnd != "" {
 			continue
 		}
 
@@ -340,13 +338,13 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 			iteratorType = "TRIM_HORIZON"
 		}
 
-		iterator, err := p.kinesisStore.CreateShardIterator(streamName, shard.ShardID, iteratorType, iteratorSeqNum, nil)
+		iteratorSeq, err := p.bus.KinesisInvoker().CreateShardIterator(ctx, streamName, shard.ShardID, iteratorType, iteratorSeqNum)
 		if err != nil {
 			p.log("failed to create shard iterator", "stream", streamName, "shard", shard.ShardID, "error", err)
 			continue
 		}
 
-		records, _, err := p.kinesisStore.GetRecords(streamName, shard.ShardID, iterator.SequenceNumber, batchSize, true)
+		records, _, err := p.bus.KinesisInvoker().GetRecords(ctx, streamName, shard.ShardID, iteratorSeq, batchSize)
 		if err != nil {
 			p.log("failed to get records from Kinesis", "stream", streamName, "shard", shard.ShardID, "error", err)
 			continue
@@ -363,7 +361,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 					"kinesisSchemaVersion":        "1.0",
 					"partitionKey":                rec.PartitionKey,
 					"sequenceNumber":              rec.SequenceNumber,
-					"data":                        rec.Data,
+					"data":                        string(rec.Data),
 					"approximateArrivalTimestamp": rec.ApproximateArrivalTimestamp.Format("2006-01-02T15:04:05.000Z"),
 				},
 				"eventSource":       "aws:kinesis",
@@ -416,7 +414,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 }
 
 func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.EventSourceMapping) {
-	if p.sqsStore == nil {
+	if p.bus == nil {
 		return
 	}
 
@@ -432,12 +430,11 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		return
 	}
 
-	queue, err := p.sqsStore.GetQueueByName(queueName)
+	queueURL, err := p.bus.SQSInvoker().GetQueueByName(ctx, queueName)
 	if err != nil {
 		p.log("sqs queue not found by name", "queue", queueName, "mapping", mapping.UUID, "error", err)
 		return
 	}
-	queueURL := queue.URL
 
 	batchSize := mapping.BatchSize
 	if batchSize <= 0 {
@@ -457,7 +454,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		waitTime = mapping.MaximumBatchingWindowInSeconds
 	}
 
-	messages, err := p.sqsStore.ReceiveMessage(queueURL, maxMessages, nil, waitTime)
+	messages, err := p.bus.SQSInvoker().ReceiveMessage(ctx, queueURL, maxMessages, nil, waitTime)
 	if err != nil {
 		p.log("sqs receive failed", "queue", queueName, "mapping", mapping.UUID, "error", err)
 		return
@@ -470,7 +467,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 	records := make([]esmSQSRecord, 0, len(messages))
 	receiptHandles := make([]string, 0, len(messages))
 	for _, msg := range messages {
-		records = append(records, sqsMessageToRecord(msg, mapping.EventSourceArn, region))
+		records = append(records, receivedSQSMessageToRecord(msg, mapping.EventSourceArn, region))
 		receiptHandles = append(receiptHandles, msg.ReceiptHandle)
 	}
 
@@ -499,7 +496,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 	}
 
 	for _, handle := range receiptHandles {
-		if err := p.sqsStore.DeleteMessage(queueURL, handle); err != nil {
+		if err := p.bus.SQSInvoker().DeleteMessage(ctx, queueURL, handle); err != nil {
 			p.log("failed to delete message", "queue", queueName, "error", err)
 		}
 	}
@@ -509,14 +506,15 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 	}
 }
 
-// sqsMessageToRecord converts an SQS store Message into an ESM SQS record
-// matching the Lambda event format.
-func sqsMessageToRecord(msg *sqsstore.Message, eventSourceArn, region string) esmSQSRecord {
+// receivedSQSMessageToRecord converts an eventbus.ReceivedSQSMessage into an
+// ESM SQS record matching the Lambda event format.
+func receivedSQSMessageToRecord(msg eventbus.ReceivedSQSMessage, eventSourceArn, region string) esmSQSRecord {
 	record := esmSQSRecord{
-		MessageID:               msg.ID,
+		MessageID:               msg.MessageID,
 		ReceiptHandle:           msg.ReceiptHandle,
 		Body:                    msg.Body,
 		MD5OfBody:               msg.MD5OfBody,
+		MD5OfMessageAttributes:  msg.MD5OfMessageAttributes,
 		EventSourceARN:          eventSourceArn,
 		EventSource:             "aws:sqs",
 		AWSRegion:               region,
@@ -531,11 +529,12 @@ func sqsMessageToRecord(msg *sqsstore.Message, eventSourceArn, region string) es
 	}
 
 	if msg.SequenceNumber != "" {
-		record.MessageAttributes = map[string]interface{}{
-			"SequenceNumber": map[string]string{
-				"stringValue": msg.SequenceNumber,
-				"dataType":    "String",
-			},
+		if record.MessageAttributes == nil {
+			record.MessageAttributes = make(map[string]interface{})
+		}
+		record.MessageAttributes["SequenceNumber"] = map[string]string{
+			"stringValue": msg.SequenceNumber,
+			"dataType":    "String",
 		}
 	}
 

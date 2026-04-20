@@ -104,3 +104,21 @@ func extractSchedulerPathParams(path string, method string, params map[string]in
 		}
 	}
 }
+
+// schedulerRESTParser implements RESTServiceParser for Amazon EventBridge Scheduler.
+type schedulerRESTParser struct{}
+
+// MatchPath returns true if the path belongs to EventBridge Scheduler.
+func (p *schedulerRESTParser) MatchPath(path string) bool {
+	return strings.HasPrefix(path, "/schedule-groups") || strings.HasPrefix(path, "/schedules")
+}
+
+// ExtractOperation returns the Scheduler operation name, or empty if the path does not match.
+func (p *schedulerRESTParser) ExtractOperation(r *http.Request) string {
+	return extractSchedulerOperation(r)
+}
+
+// ExtractPathParams extracts URI-bound parameters from the Scheduler request path.
+func (p *schedulerRESTParser) ExtractPathParams(r *http.Request, params map[string]interface{}) {
+	extractSchedulerPathParams(r.URL.Path, r.Method, params)
+}

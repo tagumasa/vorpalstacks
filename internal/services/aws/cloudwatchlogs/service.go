@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -16,7 +15,6 @@ import (
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
 // LogsService provides CloudWatch Logs service operations.
@@ -26,8 +24,6 @@ type LogsService struct {
 	dataPath       string
 	logsStores     sync.Map // region → *logsstore.Store
 	metricStores   sync.Map // region → *cwstore.MetricChunkStore
-	lambdaStores   sync.Map // region → common.LambdaInvoker
-	kinesisStores  sync.Map // region → kinesisstore.KinesisStoreInterface
 	bus            eventbus.Bus
 	ctx            context.Context
 	cancel         context.CancelFunc
@@ -48,20 +44,6 @@ func NewLogsService(storageMgr *storage.RegionStorageManager, accountID, dataPat
 	}
 	s.startRetentionPurger()
 	return s
-}
-
-// SetLambdaInvoker registers a Lambda invoker for a given region for subscription filter delivery.
-func (s *LogsService) SetLambdaInvoker(region string, invoker common.LambdaInvoker) {
-	if invoker != nil {
-		s.lambdaStores.Store(region, invoker)
-	}
-}
-
-// SetKinesisStore registers a Kinesis store for a given region for subscription filter delivery.
-func (s *LogsService) SetKinesisStore(region string, store kinesisstore.KinesisStoreInterface) {
-	if store != nil {
-		s.kinesisStores.Store(region, store)
-	}
 }
 
 // SetEventBus injects the event bus and registers handlers for CloudWatch Logs
@@ -113,38 +95,6 @@ func (s *LogsService) getLogsStoreByRegion(region string) (*logsstore.Store, err
 	return store, nil
 }
 
-func (s *LogsService) getLambdaInvoker(region string) common.LambdaInvoker {
-	if cached, ok := s.lambdaStores.Load(region); ok {
-		if typed, ok := cached.(common.LambdaInvoker); ok {
-			return typed
-		}
-	}
-	return nil
-}
-
-func (s *LogsService) getKinesisStore(region string) (kinesisstore.KinesisStoreInterface, bool) {
-	if cached, ok := s.kinesisStores.Load(region); ok {
-		if typed, ok := cached.(kinesisstore.KinesisStoreInterface); ok {
-			return typed, true
-		}
-	}
-	regionStorage, err := s.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, false
-	}
-	tstore, ok := regionStorage.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		return nil, false
-	}
-	store := kinesisstore.NewKinesisStore(tstore, s.accountID, region)
-	if actual, loaded := s.kinesisStores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(*kinesisstore.KinesisStore); ok {
-			return typed, true
-		}
-	}
-	return store, true
-}
-
 func (s *LogsService) getMetricStore(reqCtx *request.RequestContext) (*cwstore.MetricChunkStore, error) {
 	region := reqCtx.GetRegion()
 	if cached, ok := s.metricStores.Load(region); ok {
@@ -161,6 +111,7 @@ func (s *LogsService) getMetricStore(reqCtx *request.RequestContext) (*cwstore.M
 		return nil, err
 	}
 	if actual, loaded := s.metricStores.LoadOrStore(region, store); loaded {
+		store.Close()
 		if typed, ok := actual.(*cwstore.MetricChunkStore); ok {
 			return typed, nil
 		}
@@ -168,8 +119,6 @@ func (s *LogsService) getMetricStore(reqCtx *request.RequestContext) (*cwstore.M
 	return store, nil
 }
 
-// getMetricStoreByRegion resolves the CloudWatch metric store for the given region.
-// Used by bus handlers that operate outside of an HTTP request context.
 func (s *LogsService) getMetricStoreByRegion(region string) (*cwstore.MetricChunkStore, error) {
 	if cached, ok := s.metricStores.Load(region); ok {
 		if typed, ok := cached.(*cwstore.MetricChunkStore); ok {
@@ -185,6 +134,7 @@ func (s *LogsService) getMetricStoreByRegion(region string) (*cwstore.MetricChun
 		return nil, err
 	}
 	if actual, loaded := s.metricStores.LoadOrStore(region, store); loaded {
+		store.Close()
 		if typed, ok := actual.(*cwstore.MetricChunkStore); ok {
 			return typed, nil
 		}

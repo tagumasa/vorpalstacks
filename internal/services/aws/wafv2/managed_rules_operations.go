@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 )
 
@@ -35,12 +36,8 @@ func (s *WAFv2Service) ListAvailableManagedRuleGroups(ctx context.Context, reqCt
 	scope := request.GetStringParam(req.Parameters, "Scope")
 	_ = scope
 
-	limit := 100
-	if limitParam := request.GetIntParam(req.Parameters, "Limit"); limitParam > 0 {
-		limit = limitParam
-	}
-
-	nextMarker := request.GetStringParam(req.Parameters, "NextMarker")
+	limit := pagination.GetMaxItems(req.Parameters, 100, "Limit")
+	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
 	startIdx := 0
 	if nextMarker != "" {
@@ -63,9 +60,11 @@ func (s *WAFv2Service) ListAvailableManagedRuleGroups(ctx context.Context, reqCt
 	resp := map[string]interface{}{
 		"ManagedRuleGroups": awsManagedRuleGroups[startIdx:endIdx],
 	}
+	var nextMarkerVal string
 	if respNextMarker != nil {
-		resp["NextMarker"] = respNextMarker
+		nextMarkerVal = *respNextMarker
 	}
+	pagination.SetNextToken(resp, "NextMarker", nextMarkerVal)
 	return resp, nil
 }
 

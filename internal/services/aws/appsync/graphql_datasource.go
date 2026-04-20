@@ -60,7 +60,7 @@ func (e *graphQLEngine) dispatchDataSource(
 	}
 }
 
-// dispatchLambda invokes a Lambda function via the injected LambdaInvoker.
+// dispatchLambda invokes a Lambda function via the event bus LambdaInvoker.
 // The payload is passed as the Lambda event payload.
 func (e *graphQLEngine) dispatchLambda(
 	ctx context.Context,
@@ -68,8 +68,8 @@ func (e *graphQLEngine) dispatchLambda(
 	ds *appsyncstore.DataSource,
 	payload interface{},
 ) (interface{}, error) {
-	if e.lambdaInvoker == nil {
-		return nil, fmt.Errorf("lambda invoker not configured")
+	if e.bus == nil {
+		return nil, fmt.Errorf("event bus not configured for Lambda invocation")
 	}
 
 	if ds.LambdaConfig == nil || ds.LambdaConfig.LambdaFunctionArn == "" {
@@ -87,7 +87,12 @@ func (e *graphQLEngine) dispatchLambda(
 		functionName = ds.LambdaConfig.LambdaFunctionArn
 	}
 
-	_, responseBytes, err := e.lambdaInvoker.InvokeForGateway(ctx, functionName, payloadBytes)
+	busImpl, ok := e.bus.(*busPublisherAdapter)
+	if !ok || busImpl == nil {
+		return nil, fmt.Errorf("event bus adapter not available for Lambda invocation")
+	}
+
+	_, responseBytes, err := busImpl.bus.LambdaInvoker().InvokeForGateway(ctx, functionName, payloadBytes)
 	if err != nil {
 		return nil, fmt.Errorf("lambda invocation failed: %w", err)
 	}

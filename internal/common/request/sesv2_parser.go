@@ -395,3 +395,21 @@ func extractSESv2PathParams(path string, params map[string]interface{}) {
 		}
 	}
 }
+
+// sesv2RESTParser implements RESTServiceParser for Amazon SES v2.
+type sesv2RESTParser struct{}
+
+// MatchPath returns true if the path belongs to SES v2.
+func (p *sesv2RESTParser) MatchPath(path string) bool {
+	return strings.HasPrefix(path, "/v2/email/")
+}
+
+// ExtractOperation returns the SES v2 operation name, or empty if the path does not match.
+func (p *sesv2RESTParser) ExtractOperation(r *http.Request) string {
+	return extractSESv2Operation(r)
+}
+
+// ExtractPathParams extracts URI-bound parameters from the SES v2 request path.
+func (p *sesv2RESTParser) ExtractPathParams(r *http.Request, params map[string]interface{}) {
+	extractSESv2PathParams(r.URL.Path, params)
+}

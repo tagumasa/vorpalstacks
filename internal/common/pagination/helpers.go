@@ -11,10 +11,23 @@ const DefaultMaxItems = 100
 // AbsoluteMaxItems is the hard upper limit for any pagination parameter.
 const AbsoluteMaxItems = 1000
 
-// GetMaxItems extracts the MaxItems parameter from the given params map.
-func GetMaxItems(params map[string]interface{}, defaultVal int) int {
+// GetMaxItems extracts a pagination limit parameter from the given params map.
+// It checks paramName first, then falls back to "MaxItems" for backward compatibility.
+func GetMaxItems(params map[string]interface{}, defaultVal int, paramName ...string) int {
 	if defaultVal <= 0 {
 		defaultVal = DefaultMaxItems
+	}
+	if len(paramName) > 0 {
+		maxItems := request.GetIntParam(params, paramName[0])
+		if maxItems <= 0 {
+			maxItems = request.GetIntParam(params, "MaxItems")
+		}
+		if maxItems > 0 {
+			if maxItems > AbsoluteMaxItems {
+				return AbsoluteMaxItems
+			}
+			return maxItems
+		}
 	}
 	maxItems := request.GetIntParam(params, "MaxItems")
 	if maxItems <= 0 {
@@ -26,24 +39,22 @@ func GetMaxItems(params map[string]interface{}, defaultVal int) int {
 	return maxItems
 }
 
-// GetMarker extracts the Marker parameter from the given params map.
-func GetMarker(params map[string]interface{}) string {
+// GetMarker extracts a pagination marker/nextToken parameter from the given params map.
+// It checks paramName first, then falls back to "Marker" for backward compatibility.
+func GetMarker(params map[string]interface{}, paramName ...string) string {
+	if len(paramName) > 0 {
+		if m := request.GetStringParam(params, paramName[0]); m != "" {
+			return m
+		}
+	}
 	return request.GetStringParam(params, "Marker")
 }
 
-// ListResult represents the result of a list operation with pagination support.
-type ListResult struct {
-	Items       interface{}
-	IsTruncated bool
-	NextMarker  string
-}
-
-// BuildNextMarker builds the next marker for pagination based on the count and last key.
-func BuildNextMarker(count, maxItems int, lastKey string) (string, bool) {
-	if count >= maxItems && lastKey != "" {
-		return lastKey, true
+// SetNextToken sets a pagination token in the response map under the given key.
+func SetNextToken(response map[string]interface{}, key string, value string) {
+	if value != "" {
+		response[key] = value
 	}
-	return "", false
 }
 
 // BuildListResponse builds a list response map with the given items and next token.

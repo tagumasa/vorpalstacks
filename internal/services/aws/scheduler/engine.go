@@ -13,16 +13,12 @@ import (
 
 	"github.com/robfig/cron/v3"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/endpoint"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
-	snsstore "vorpalstacks/internal/store/aws/sns"
-	sqsstore "vorpalstacks/internal/store/aws/sqs"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -40,9 +36,6 @@ func init() {
 // Engine manages scheduled task execution for EventBridge Scheduler.
 type Engine struct {
 	storageManager *storage.RegionStorageManager
-	sqsStore       sqsstore.SQSStoreInterface
-	snsStore       snsstore.SNSStoreInterface
-	lambdaInvoker  common.LambdaInvoker
 	accountID      string
 	bus            eventbus.Bus
 	stores         sync.Map // region → *schedulerstore.SchedulerStore
@@ -58,16 +51,10 @@ type Engine struct {
 // NewEngine creates a new scheduler engine with the given store dependencies.
 func NewEngine(
 	storageManager *storage.RegionStorageManager,
-	sqsStore sqsstore.SQSStoreInterface,
-	snsStore snsstore.SNSStoreInterface,
-	lambdaInvoker common.LambdaInvoker,
 	accountID string,
 ) *Engine {
 	return &Engine{
 		storageManager: storageManager,
-		sqsStore:       sqsStore,
-		snsStore:       snsStore,
-		lambdaInvoker:  lambdaInvoker,
 		accountID:      accountID,
 		stopChan:       make(chan struct{}),
 	}
@@ -388,8 +375,8 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 }
 
 func (e *Engine) invokeLambda(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) {
-	if e.lambdaInvoker == nil {
-		logs.Debug("Lambda invoker not configured", logs.String("schedule", schedule.Name))
+	if e.bus == nil {
+		logs.Debug("event bus not configured for Lambda invocation", logs.String("schedule", schedule.Name))
 		return
 	}
 
@@ -410,7 +397,7 @@ func (e *Engine) invokeLambda(ctx context.Context, schedule *schedulerstore.Sche
 		logs.String("schedule", schedule.Name),
 		logs.String("function", functionName))
 
-	statusCode, _, err := e.lambdaInvoker.InvokeForGateway(ctx, target.Arn, []byte(input))
+	statusCode, _, err := e.bus.LambdaInvoker().InvokeForGateway(ctx, target.Arn, []byte(input))
 	if err != nil {
 		logs.Debug("Failed to invoke Lambda",
 			logs.String("schedule", schedule.Name),
@@ -426,8 +413,8 @@ func (e *Engine) invokeLambda(ctx context.Context, schedule *schedulerstore.Sche
 }
 
 func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) {
-	if e.sqsStore == nil {
-		logs.Debug("SQS store not configured", logs.String("schedule", schedule.Name))
+	if e.bus == nil {
+		logs.Debug("event bus not configured for SQS delivery", logs.String("schedule", schedule.Name))
 		return
 	}
 
@@ -448,11 +435,7 @@ func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedul
 		logs.String("schedule", schedule.Name),
 		logs.String("queue", queueName))
 
-	message := &sqsstore.Message{
-		Body: messageBody,
-	}
-
-	_, err := e.sqsStore.SendMessage(queueURL, message)
+	_, _, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, messageBody, 0, nil)
 	if err != nil {
 		logs.Debug("Failed to send to SQS",
 			logs.String("schedule", schedule.Name),
@@ -462,8 +445,8 @@ func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedul
 }
 
 func (e *Engine) publishToSNS(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) {
-	if e.snsStore == nil {
-		logs.Debug("SNS store not configured", logs.String("schedule", schedule.Name))
+	if e.bus == nil {
+		logs.Debug("event bus not configured for SNS delivery", logs.String("schedule", schedule.Name))
 		return
 	}
 
@@ -490,7 +473,7 @@ func (e *Engine) publishToSNS(ctx context.Context, schedule *schedulerstore.Sche
 		message = string(msgBytes)
 	}
 
-	result, err := e.snsStore.ListSubscriptionsByTopic(topicArn, storecommon.ListOptions{})
+	result, err := e.bus.SNSInvoker().ListSubscriptionsByTopic(ctx, topicArn)
 	if err != nil {
 		logs.Debug("Failed to list SNS subscriptions",
 			logs.String("schedule", schedule.Name),
@@ -499,13 +482,13 @@ func (e *Engine) publishToSNS(ctx context.Context, schedule *schedulerstore.Sche
 		return
 	}
 
-	for _, sub := range result.Items {
+	for _, sub := range result {
 		if sub.PendingConfirmation {
 			continue
 		}
 		switch sub.Protocol {
 		case "sqs":
-			e.deliverSNSToSQS(schedule, sub, message)
+			e.deliverSNSToSQS(ctx, schedule, sub, message)
 		case "lambda":
 			e.deliverSNSToLambda(ctx, schedule, sub, message)
 		default:
@@ -518,11 +501,11 @@ func (e *Engine) publishToSNS(ctx context.Context, schedule *schedulerstore.Sche
 	logs.Debug("SNS delivery completed",
 		logs.String("schedule", schedule.Name),
 		logs.String("topic", topicArn),
-		logs.Int("subscriptions", len(result.Items)))
+		logs.Int("subscriptions", len(result)))
 }
 
-func (e *Engine) deliverSNSToSQS(schedule *schedulerstore.Schedule, sub *snsstore.Subscription, message string) {
-	if e.sqsStore == nil {
+func (e *Engine) deliverSNSToSQS(ctx context.Context, schedule *schedulerstore.Schedule, sub eventbus.SubscriptionInfo, message string) {
+	if e.bus == nil {
 		return
 	}
 
@@ -533,11 +516,7 @@ func (e *Engine) deliverSNSToSQS(schedule *schedulerstore.Schedule, sub *snsstor
 	queueName := endpointParts[5]
 	queueURL := endpoint.SQSQueueURL(e.accountID, queueName)
 
-	msg := &sqsstore.Message{
-		Body: message,
-	}
-
-	_, err := e.sqsStore.SendMessage(queueURL, msg)
+	_, _, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, message, 0, nil)
 	if err != nil {
 		logs.Debug("Failed to deliver SNS to SQS",
 			logs.String("schedule", schedule.Name),
@@ -546,8 +525,8 @@ func (e *Engine) deliverSNSToSQS(schedule *schedulerstore.Schedule, sub *snsstor
 	}
 }
 
-func (e *Engine) deliverSNSToLambda(ctx context.Context, schedule *schedulerstore.Schedule, sub *snsstore.Subscription, message string) {
-	if e.lambdaInvoker == nil {
+func (e *Engine) deliverSNSToLambda(ctx context.Context, schedule *schedulerstore.Schedule, sub eventbus.SubscriptionInfo, message string) {
+	if e.bus == nil {
 		return
 	}
 
@@ -561,11 +540,11 @@ func (e *Engine) deliverSNSToLambda(ctx context.Context, schedule *schedulerstor
 			{
 				"EventSource":          "aws:sns",
 				"EventVersion":         "1.0",
-				"EventSubscriptionArn": sub.SubscriptionArn,
+				"EventSubscriptionArn": sub.SubscriptionARN,
 				"Sns": map[string]interface{}{
 					"Type":      "Notification",
 					"MessageId": fmt.Sprintf("%d", time.Now().UnixNano()),
-					"TopicArn":  sub.TopicArn,
+					"TopicArn":  sub.TopicARN,
 					"Message":   message,
 					"Timestamp": time.Now().UTC().Format(time.RFC3339),
 				},
@@ -581,7 +560,7 @@ func (e *Engine) deliverSNSToLambda(ctx context.Context, schedule *schedulerstor
 		return
 	}
 
-	_, _, err = e.lambdaInvoker.InvokeForGateway(ctx, sub.Endpoint, payloadBytes)
+	_, _, err = e.bus.LambdaInvoker().InvokeForGateway(ctx, sub.Endpoint, payloadBytes)
 	if err != nil {
 		logs.Debug("Failed to deliver SNS to Lambda",
 			logs.String("schedule", schedule.Name),

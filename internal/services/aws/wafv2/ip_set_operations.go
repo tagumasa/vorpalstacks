@@ -3,6 +3,7 @@ package wafv2
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
@@ -108,12 +109,8 @@ func (s *WAFv2Service) ListIPSets(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	maxItems := request.GetIntParam(req.Parameters, "Limit")
-	if maxItems == 0 {
-		maxItems = 100
-	}
-
-	nextMarker := request.GetStringParam(req.Parameters, "NextMarker")
+	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
+	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
 	result, err := stores.ipSets.List(nextMarker, maxItems)
 	if err != nil {
@@ -134,9 +131,7 @@ func (s *WAFv2Service) ListIPSets(ctx context.Context, reqCtx *request.RequestCo
 	resp := map[string]interface{}{
 		"IPSets": ipSets,
 	}
-	if result.NextMarker != "" {
-		resp["NextMarker"] = result.NextMarker
-	}
+	pagination.SetNextToken(resp, "NextMarker", result.NextMarker)
 	return resp, nil
 }
 

@@ -230,3 +230,26 @@ func extractNeptuneGraphPathParams(path string, params map[string]interface{}) {
 		return
 	}
 }
+
+// neptuneGraphRESTParser implements RESTServiceParser for Amazon Neptune Graph.
+type neptuneGraphRESTParser struct{}
+
+// MatchPath returns true if the path belongs to Neptune Graph.
+func (p *neptuneGraphRESTParser) MatchPath(path string) bool {
+	return IsNeptuneGraphPath(path)
+}
+
+// ExtractOperation returns the Neptune Graph operation name, or empty if the path does not match.
+func (p *neptuneGraphRESTParser) ExtractOperation(r *http.Request) string {
+	return extractNeptuneGraphOperation(r)
+}
+
+// ExtractPathParams extracts URI-bound parameters and injects the GraphIdentifier header.
+func (p *neptuneGraphRESTParser) ExtractPathParams(r *http.Request, params map[string]interface{}) {
+	if IsNeptuneGraphPath(r.URL.Path) {
+		extractNeptuneGraphPathParams(r.URL.Path, params)
+	}
+	if graphId := r.Header.Get("Graphidentifier"); graphId != "" {
+		params["graphIdentifier"] = graphId
+	}
+}

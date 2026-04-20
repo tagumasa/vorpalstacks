@@ -485,3 +485,28 @@ func numberToString(v interface{}) string {
 func intToString(n int64) string {
 	return strconv.FormatInt(n, 10)
 }
+
+// EncodeEC2QueryXMLResponse encodes a response in the EC2 Query protocol XML
+// format. Unlike standard AWS Query, EC2 uses a flat structure without an
+// {Operation}Result wrapper, and places requestId as a direct child of the
+// response root element.
+func EncodeEC2QueryXMLResponse(w http.ResponseWriter, operationName string, response interface{}) error {
+	rootName := operationName + "Response"
+
+	var xmlBuilder strings.Builder
+	xmlBuilder.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+	xmlBuilder.WriteString("<" + rootName + ">")
+
+	if response != nil {
+		encodeValueToXML(&xmlBuilder, response)
+	}
+
+	xmlBuilder.WriteString("<requestId>example-request-id</requestId>")
+	xmlBuilder.WriteString("</" + rootName + ">")
+	w.Header().Set("Content-Type", "application/xml")
+	if _, err := w.Write([]byte(xmlBuilder.String())); err != nil {
+		return fmt.Errorf("write response: %w", err)
+	}
+
+	return nil
+}

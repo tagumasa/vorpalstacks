@@ -10,28 +10,28 @@ import (
 	"time"
 
 	"vorpalstacks/internal/config"
-	"vorpalstacks/internal/common"
 	commonauth "vorpalstacks/internal/common/auth"
+	"vorpalstacks/internal/eventbus"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // LambdaAuthorizer handles Lambda-based authorizer for API Gateway.
 type LambdaAuthorizer struct {
-	lambdaInvoker common.LambdaInvoker
-	store         *apigatewaystore.RestApiStore
-	cache         *authCache
-	accountID     string
-	region        string
-	sigVerifier   *commonauth.SignatureV4Verifier
+	bus         eventbus.Bus
+	store       *apigatewaystore.RestApiStore
+	cache       *authCache
+	accountID   string
+	region      string
+	sigVerifier *commonauth.SignatureV4Verifier
 }
 
 // NewLambdaAuthorizer creates a new Lambda authorizer instance.
-func NewLambdaAuthorizer(lambdaInvoker common.LambdaInvoker, store *apigatewaystore.RestApiStore) *LambdaAuthorizer {
+func NewLambdaAuthorizer(bus eventbus.Bus, store *apigatewaystore.RestApiStore) *LambdaAuthorizer {
 	return &LambdaAuthorizer{
-		lambdaInvoker: lambdaInvoker,
-		store:         store,
-		cache:         &authCache{stopCh: make(chan struct{})},
+		bus:   bus,
+		store: store,
+		cache: &authCache{stopCh: make(chan struct{})},
 	}
 }
 
@@ -48,14 +48,14 @@ func (ac *authCache) Close() {
 }
 
 // NewLambdaAuthorizerWithConfig creates a new Lambda authorizer with account ID and region configuration.
-func NewLambdaAuthorizerWithConfig(lambdaInvoker common.LambdaInvoker, store *apigatewaystore.RestApiStore, accountID, region string, credProvider commonauth.CredentialsProvider) *LambdaAuthorizer {
+func NewLambdaAuthorizerWithConfig(bus eventbus.Bus, store *apigatewaystore.RestApiStore, accountID, region string, credProvider commonauth.CredentialsProvider) *LambdaAuthorizer {
 	return &LambdaAuthorizer{
-		lambdaInvoker: lambdaInvoker,
-		store:         store,
-		cache:         &authCache{stopCh: make(chan struct{})},
-		accountID:     accountID,
-		region:        region,
-		sigVerifier:   commonauth.NewSignatureV4Verifier(credProvider),
+		bus:         bus,
+		store:       store,
+		cache:       &authCache{stopCh: make(chan struct{})},
+		accountID:   accountID,
+		region:      region,
+		sigVerifier: commonauth.NewSignatureV4Verifier(credProvider),
 	}
 }
 
@@ -306,7 +306,7 @@ func (la *LambdaAuthorizer) authorizeRequest(ctx context.Context, authorizer *ap
 }
 
 func (la *LambdaAuthorizer) invokeAuthorizer(ctx context.Context, functionName string, event LambdaAuthEvent) (*AuthResult, error) {
-	if la.lambdaInvoker == nil {
+	if la.bus == nil || la.bus.LambdaInvoker() == nil {
 		return nil, &AuthError{
 			Message:  "Lambda invoker not configured",
 			Type:     "InternalServerError",
@@ -323,7 +323,7 @@ func (la *LambdaAuthorizer) invokeAuthorizer(ctx context.Context, functionName s
 		}
 	}
 
-	_, payload, err := la.lambdaInvoker.InvokeForGateway(ctx, functionName, eventJSON)
+	_, payload, err := la.bus.LambdaInvoker().InvokeForGateway(ctx, functionName, eventJSON)
 	if err != nil {
 		return nil, &AuthError{
 			Message:  fmt.Sprintf("Authorizer invocation failed: %v", err),

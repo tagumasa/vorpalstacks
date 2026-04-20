@@ -3,6 +3,7 @@ package eventbridge
 import (
 	"context"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
@@ -32,7 +33,7 @@ func isValidTargetARN(arn string) bool {
 func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	ruleName := request.GetParamLowerFirst(req.Parameters, "Rule")
 	if ruleName == "" {
-		return nil, NewValidationException("Rule name is required")
+		return nil, awserrors.NewValidationException("Rule name is required")
 	}
 
 	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
@@ -66,7 +67,7 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 		targets, ok = req.Parameters["targets"].([]interface{})
 	}
 	if !ok || len(targets) == 0 {
-		return nil, NewValidationException("Targets are required")
+		return nil, awserrors.NewValidationException("Targets are required")
 	}
 
 	// Check for duplicate target IDs
@@ -78,7 +79,7 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 		}
 		targetID, _ := targetMap["Id"].(string)
 		if targetID != "" && seenIDs[targetID] {
-			return nil, NewValidationException("Duplicate target ID: " + targetID)
+			return nil, awserrors.NewValidationException("Duplicate target ID: " + targetID)
 		}
 		seenIDs[targetID] = true
 	}
@@ -246,7 +247,7 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 func (s *EventsService) RemoveTargets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	ruleName := request.GetParamLowerFirst(req.Parameters, "Rule")
 	if ruleName == "" {
-		return nil, NewValidationException("Rule name is required")
+		return nil, awserrors.NewValidationException("Rule name is required")
 	}
 
 	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
@@ -271,7 +272,7 @@ func (s *EventsService) RemoveTargets(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if len(targetIDs) == 0 {
-		return nil, NewValidationException("Target IDs are required")
+		return nil, awserrors.NewValidationException("Target IDs are required")
 	}
 
 	store, err := s.store(reqCtx)
@@ -303,7 +304,7 @@ func (s *EventsService) RemoveTargets(ctx context.Context, reqCtx *request.Reque
 func (s *EventsService) ListTargetsByRule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	ruleName := request.GetParamLowerFirst(req.Parameters, "Rule")
 	if ruleName == "" {
-		return nil, NewValidationException("Rule name is required")
+		return nil, awserrors.NewValidationException("Rule name is required")
 	}
 
 	eventBusName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
@@ -317,7 +318,7 @@ func (s *EventsService) ListTargetsByRule(ctx context.Context, reqCtx *request.R
 		limit = 100
 	}
 	if limit < 1 || limit > 100 {
-		return nil, NewValidationException("Limit must be between 1 and 100")
+		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
 	}
 
 	store, err := s.store(reqCtx)

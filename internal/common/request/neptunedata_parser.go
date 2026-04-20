@@ -173,3 +173,21 @@ func extractNeptunedataPathParams(path string, params map[string]interface{}) {
 		params["id"] = strings.TrimPrefix(path, "/ml/modeltransform/")
 	}
 }
+
+// neptunedataRESTParser implements RESTServiceParser for Amazon Neptune Data.
+type neptunedataRESTParser struct{}
+
+// MatchPath returns true if the path belongs to Neptune Data (ML or query APIs).
+func (p *neptunedataRESTParser) MatchPath(path string) bool {
+	return IsNeptunedataPath(path)
+}
+
+// ExtractOperation returns the Neptune Data operation name, or empty if the path does not match.
+func (p *neptunedataRESTParser) ExtractOperation(r *http.Request) string {
+	return extractNeptunedataOperation(r)
+}
+
+// ExtractPathParams extracts URI-bound parameters from the Neptune Data request path.
+func (p *neptunedataRESTParser) ExtractPathParams(r *http.Request, params map[string]interface{}) {
+	extractNeptunedataPathParams(r.URL.Path, params)
+}

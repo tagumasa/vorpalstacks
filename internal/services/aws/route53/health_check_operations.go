@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	route53store "vorpalstacks/internal/store/aws/route53"
@@ -20,7 +21,7 @@ func (s *Route53Service) CreateHealthCheck(ctx context.Context, reqCtx *request.
 
 	healthCheckConfigMap := request.GetMapParam(req.Parameters, "HealthCheckConfig")
 	if healthCheckConfigMap == nil {
-		return nil, NewAPIError("InvalidInput", "HealthCheckConfig is required", 400)
+		return nil, awserrors.NewAWSError("InvalidInput", "HealthCheckConfig is required", 400)
 	}
 
 	config := parseHealthCheckConfig(healthCheckConfigMap)
@@ -198,7 +199,7 @@ func (s *Route53Service) AssociateVPCWithHostedZone(ctx context.Context, reqCtx 
 
 	vpcMap := request.GetMapParam(req.Parameters, "VPC")
 	if vpcMap == nil {
-		return nil, NewAPIError("InvalidInput", "VPC is required", 400)
+		return nil, awserrors.NewAWSError("InvalidInput", "VPC is required", 400)
 	}
 
 	zone, err := s.getHostedZoneById(reqCtx, hostedZoneId)
@@ -207,13 +208,13 @@ func (s *Route53Service) AssociateVPCWithHostedZone(ctx context.Context, reqCtx 
 	}
 
 	if !zone.Private {
-		return nil, NewAPIError("InvalidInput", "Cannot associate VPC with a public hosted zone", 400)
+		return nil, awserrors.NewAWSError("InvalidInput", "Cannot associate VPC with a public hosted zone", 400)
 	}
 
 	vpc := parseVPC(vpcMap)
 	for _, existing := range zone.VPCs {
 		if existing.VPCID == vpc.VPCID && existing.VPCRegion == vpc.VPCRegion {
-			return nil, NewAPIError("VPCAlreadyAssociated", "VPC is already associated with the hosted zone", 400)
+			return nil, awserrors.NewAWSError("VPCAlreadyAssociated", "VPC is already associated with the hosted zone", 400)
 		}
 	}
 	zone.VPCs = append(zone.VPCs, vpc)
@@ -244,7 +245,7 @@ func (s *Route53Service) DisassociateVPCFromHostedZone(ctx context.Context, reqC
 
 	vpcMap := request.GetMapParam(req.Parameters, "VPC")
 	if vpcMap == nil {
-		return nil, NewAPIError("InvalidInput", "VPC is required", 400)
+		return nil, awserrors.NewAWSError("InvalidInput", "VPC is required", 400)
 	}
 
 	zone, err := s.getHostedZoneById(reqCtx, hostedZoneId)
@@ -263,7 +264,7 @@ func (s *Route53Service) DisassociateVPCFromHostedZone(ctx context.Context, reqC
 	}
 
 	if len(newVPCs) == len(zone.VPCs) {
-		return nil, NewAPIError("InvalidInput", "VPC is not associated with the hosted zone", 400)
+		return nil, awserrors.NewAWSError("InvalidInput", "VPC is not associated with the hosted zone", 400)
 	}
 
 	zone.VPCs = newVPCs

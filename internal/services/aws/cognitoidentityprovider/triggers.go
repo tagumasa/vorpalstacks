@@ -100,11 +100,11 @@ func defaultTriggerARNResolver(lambdaARN string) string {
 // extracts the function name from the Lambda ARN and invokes the Lambda
 // function with the full AWS Cognito trigger payload.
 func (s *CognitoService) handleCognitoTrigger(ctx context.Context, event *eventbus.CognitoTriggerEvent) eventbus.HandlerResult {
-	if s.lambdaInvoker == nil || event.LambdaARN == "" {
+	if s.bus == nil || event.LambdaARN == "" {
 		return eventbus.HandlerResult{StatusCode: 200}
 	}
 
-	_, payload, err := s.lambdaInvoker.InvokeForGateway(ctx, event.LambdaARN, event.Payload)
+	_, payload, err := s.bus.LambdaInvoker().InvokeForGateway(ctx, event.LambdaARN, event.Payload)
 	if err != nil {
 		logs.Error("cognito trigger Lambda invocation failed",
 			logs.String("trigger_source", event.TriggerSource),

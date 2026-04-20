@@ -16,6 +16,21 @@ type AuditEvent struct {
 	PrincipalName     string
 }
 
+// UserIdentity represents the identity information for an audit event.
+type UserIdentity struct {
+	Type        string // identity type, e.g. "AssumedRole"
+	PrincipalID string // unique identifier for the principal
+	ARN         string // ARN of the identity
+	AccountID   string // AWS account ID
+	UserName    string // user or role name
+}
+
+// EventStore defines the interface for recording events to a backend store,
+// decoupling the audit package from concrete store implementations.
+type EventStore interface {
+	RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}) error
+}
+
 // Recorder defines the interface for recording audit events.
 type Recorder interface {
 	RecordEvent(event *AuditEvent) error
