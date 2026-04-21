@@ -112,7 +112,6 @@ func (at *AdaptiveTimeout) Execute(ctx context.Context, fn func(context.Context)
 			logs.String("elapsed", time.Since(t0).String()))
 		at.recordResult(timeoutCtx.Err())
 		return NewTimeout("operation timed out")
-		return NewTimeout("operation timed out")
 	case <-ctx.Done():
 		return ctx.Err()
 	}
