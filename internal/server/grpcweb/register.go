@@ -26,9 +26,9 @@ type HandlerRegistration struct {
 // RegisterAdminHandlers registers Connect RPC handlers for the admin console.
 // Service-specific handlers are provided by the caller; only admin config and
 // admin auth are created internally (they are grpcweb-owned concerns).
-func RegisterAdminHandlers(s *Server, st storage.BasicStorage, accountID, region, dataPath string, handlers []HandlerRegistration) {
+func RegisterAdminHandlers(s *Server, st storage.BasicStorage, accountID, region, dataPath string, handlers []HandlerRegistration, shutdownFunc func()) {
 	configStore := config.NewStore(st)
-	adminConfigService := svcadminconfig.NewAdminConfigService(configStore)
+	adminConfigService := svcadminconfig.NewAdminConfigService(configStore, shutdownFunc)
 	path, handler := adminconfigconnect.NewAdminConfigServiceHandler(adminConfigService)
 	s.Handle(path, handler)
 

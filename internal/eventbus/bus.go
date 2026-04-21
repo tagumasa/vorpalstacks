@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 )
 
 var (
@@ -135,16 +136,16 @@ type Bus interface {
 	SNSInvoker() SNSInvoker
 	KinesisInvoker() KinesisInvoker
 	EventsInvoker() EventsInvoker
+	EC2Invoker() EC2Invoker
+	DynamoDBInvoker() DynamoDBInvoker
 
 	SetLambdaInvoker(invoker LambdaInvoker)
 	SetSQSInvoker(invoker SQSInvoker)
 	SetSNSInvoker(invoker SNSInvoker)
 	SetKinesisInvoker(invoker KinesisInvoker)
-	EC2Invoker() EC2Invoker
-
 	SetEC2Invoker(invoker EC2Invoker)
-
 	SetEventsInvoker(invoker EventsInvoker)
+	SetDynamoDBInvoker(invoker DynamoDBInvoker)
 }
 
 // EventBus is the central implementation of the Bus interface, managing
@@ -175,6 +176,7 @@ type EventBus struct {
 	kinesisInvoker KinesisInvoker
 	eventsInvoker  EventsInvoker
 	ec2Invoker     EC2Invoker
+	dynamoDBInvoker DynamoDBInvoker
 	nextSubID     atomic.Int64
 	asyncCh       chan *OutboxEntry
 	directCh      chan *directDispatch
@@ -599,6 +601,13 @@ func (b *EventBus) SetEC2Invoker(invoker EC2Invoker)    { b.ec2Invoker = invoker
 // EC2Invoker returns the configured EC2 invoker.
 func (b *EventBus) EC2Invoker() EC2Invoker              { return b.ec2Invoker }
 
+// SetDynamoDBInvoker sets the DynamoDB invoker used for dispatching DynamoDB
+// item operations from bus events (e.g. AppSync GraphQL resolvers).
+func (b *EventBus) SetDynamoDBInvoker(invoker DynamoDBInvoker) { b.dynamoDBInvoker = invoker }
+
+// DynamoDBInvoker returns the configured DynamoDB invoker.
+func (b *EventBus) DynamoDBInvoker() DynamoDBInvoker           { return b.dynamoDBInvoker }
+
 // RoleResolver returns the configured RoleResolver, or nil if none was set.
 func (b *EventBus) RoleResolver() RoleResolver {
 	return b.roleResolver
@@ -698,6 +707,7 @@ func (b *EventBus) recover(ctx context.Context) error {
 
 func (b *EventBus) asyncWorker() {
 	defer b.wg.Done()
+	defer func() { resilience.RecoverAndRestart("eventbus asyncWorker", &b.wg, b.asyncWorker) }()
 	for {
 		select {
 		case <-b.stopCh:
@@ -713,6 +723,7 @@ func (b *EventBus) asyncWorker() {
 
 func (b *EventBus) directWorker() {
 	defer b.wg.Done()
+	defer func() { resilience.RecoverAndRestart("eventbus directWorker", &b.wg, b.directWorker) }()
 	for {
 		select {
 		case <-b.stopCh:
@@ -895,6 +906,7 @@ func (b *EventBus) releaseSemaphores(sub *subscriptionEntry) {
 
 func (b *EventBus) cleanupLoop() {
 	defer b.wg.Done()
+	defer func() { resilience.RecoverAndRestart("eventbus cleanupLoop", &b.wg, b.cleanupLoop) }()
 	ticker := time.NewTicker(CleanupInterval)
 	defer ticker.Stop()
 

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/common/protocol"
+	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/utils/aws/authutil"
 	"vorpalstacks/internal/utils/buffer"
@@ -143,6 +144,32 @@ func AddRegionFromHeader(ctx *RequestContext) error {
 }
 
 // EnforceCORS adds CORS headers to the response and handles OPTIONS preflight requests.
+// resolveCORSOrigin determines the value for the Access-Control-Allow-Origin
+// header based on the configured allowed origins and the request's Origin.
+// When the configuration contains a single "*" all origins are permitted.
+// When the configuration contains a comma-separated list of origins, the
+// request Origin is matched against the list and only a matching single
+// origin is returned.  If no match is found the returned allowOrigin is empty
+// and the caller should omit the header entirely.
+func resolveCORSOrigin(allowedOrigins, requestOrigin string) string {
+	if allowedOrigins == "" {
+		allowedOrigins = "*"
+	}
+
+	if allowedOrigins == "*" {
+		return "*"
+	}
+
+	for _, o := range strings.Split(allowedOrigins, ",") {
+		if strings.TrimSpace(o) == requestOrigin {
+			return requestOrigin
+		}
+	}
+
+	return ""
+}
+
+// EnforceCORS adds CORS headers to the response based on the request origin.
 func EnforceCORS(ctx *RequestContext) error {
 	if ctx.Request == nil {
 		return nil
@@ -153,9 +180,18 @@ func EnforceCORS(ctx *RequestContext) error {
 		return nil
 	}
 
-	ctx.Response.Header().Set("Access-Control-Allow-Origin", "*")
-	ctx.Response.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD")
-	ctx.Response.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Amz-Target, X-Amz-Date, X-Amz-Content-Sha256")
+	allowOrigin := resolveCORSOrigin(config.CORSAllowedOrigins(), origin)
+	if allowOrigin == "" {
+		return nil
+	}
+
+	ctx.Response.Header().Set("Access-Control-Allow-Origin", allowOrigin)
+	ctx.Response.Header().Set("Access-Control-Allow-Methods", config.CORSAllowedMethods())
+	ctx.Response.Header().Set("Access-Control-Allow-Headers", config.CORSAllowedHeaders())
+
+	if allowOrigin != "*" {
+		ctx.Response.Header().Add("Vary", "Origin")
+	}
 
 	if ctx.Request.Method == http.MethodOptions {
 		ctx.SetHandled()
@@ -328,15 +364,28 @@ func serializeXML(ctx *RequestContext) error {
 
 // AddCORSResponseHeaders adds CORS headers to the response for cross-origin requests.
 func AddCORSResponseHeaders(ctx *RequestContext) error {
+	if ctx.Request == nil {
+		return nil
+	}
+
 	origin := ctx.Request.Header.Get("Origin")
 	if origin == "" {
 		return nil
 	}
 
-	ctx.Response.Header().Set("Access-Control-Allow-Origin", "*")
-	ctx.Response.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD")
-	ctx.Response.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Amz-Target, X-Amz-Date, X-Amz-Content-Sha256")
-	ctx.Response.Header().Set("Access-Control-Expose-Headers", "x-amzn-RequestId, x-amzn-ErrorType, x-amzn-ErrorMessage")
+	allowOrigin := resolveCORSOrigin(config.CORSAllowedOrigins(), origin)
+	if allowOrigin == "" {
+		return nil
+	}
+
+	ctx.Response.Header().Set("Access-Control-Allow-Origin", allowOrigin)
+	ctx.Response.Header().Set("Access-Control-Allow-Methods", config.CORSAllowedMethods())
+	ctx.Response.Header().Set("Access-Control-Allow-Headers", config.CORSAllowedHeaders())
+	ctx.Response.Header().Set("Access-Control-Expose-Headers", config.CORSExposeHeaders())
+
+	if allowOrigin != "*" {
+		ctx.Response.Header().Add("Vary", "Origin")
+	}
 
 	return nil
 }

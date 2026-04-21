@@ -14,8 +14,11 @@ import (
 
 // DynamoDBService provides DynamoDB operations for managing tables, items, and other resources.
 type DynamoDBService struct {
-	accountID string
-	stores    sync.Map // region → dynamodbstore.DynamoDBStoreInterface
+	accountID       string
+	stores          sync.Map // region → dynamodbstore.DynamoDBStoreInterface
+	storageManager  *storage.RegionStorageManager
+	busStoreFactory *dynamodbstore.DynamoDBStoreFactory
+	busStoreMu      sync.Mutex
 }
 
 // NewDynamoDBService creates a new DynamoDB service instance.
@@ -23,6 +26,22 @@ func NewDynamoDBService(accountID string) *DynamoDBService {
 	return &DynamoDBService{
 		accountID: accountID,
 	}
+}
+
+// SetStorageManager sets the storage manager for cross-service store access
+// (e.g. from the EventBus DynamoDBInvoker).
+func (s *DynamoDBService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+	s.busStoreFactory = dynamodbstore.NewDynamoDBStoreFactory(sm, s.accountID)
+}
+
+// GetStoreForRegion returns the DynamoDB store for the given region.
+// This is used by the DynamoDBInvoker adapter for cross-service access.
+func (s *DynamoDBService) GetStoreForRegion(region string) (dynamodbstore.DynamoDBStoreInterface, error) {
+	if s.busStoreFactory == nil {
+		return nil, fmt.Errorf("storage manager not configured for DynamoDB service")
+	}
+	return s.busStoreFactory.GetStore(region)
 }
 
 func (s *DynamoDBService) store(reqCtx *request.RequestContext) (dynamodbstore.DynamoDBStoreInterface, error) {

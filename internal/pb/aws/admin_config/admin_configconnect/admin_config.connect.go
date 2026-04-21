@@ -58,6 +58,9 @@ const (
 	// AdminConfigServiceSetResourcePortProcedure is the fully-qualified name of the
 	// AdminConfigService's SetResourcePort RPC.
 	AdminConfigServiceSetResourcePortProcedure = "/admin_config.AdminConfigService/SetResourcePort"
+	// AdminConfigServiceShutdownServerProcedure is the fully-qualified name of the AdminConfigService's
+	// ShutdownServer RPC.
+	AdminConfigServiceShutdownServerProcedure = "/admin_config.AdminConfigService/ShutdownServer"
 )
 
 // AdminConfigServiceClient is a client for the admin_config.AdminConfigService service.
@@ -73,6 +76,8 @@ type AdminConfigServiceClient interface {
 	// Port mappings for resources
 	GetResourcePort(context.Context, *connect.Request[admin_config.GetResourcePortRequest]) (*connect.Response[admin_config.GetResourcePortResponse], error)
 	SetResourcePort(context.Context, *connect.Request[admin_config.SetResourcePortRequest]) (*connect.Response[common.Empty], error)
+	// Server control
+	ShutdownServer(context.Context, *connect.Request[admin_config.ShutdownServerRequest]) (*connect.Response[admin_config.ShutdownServerResponse], error)
 }
 
 // NewAdminConfigServiceClient constructs a client for the admin_config.AdminConfigService service.
@@ -134,6 +139,12 @@ func NewAdminConfigServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(adminConfigServiceMethods.ByName("SetResourcePort")),
 			connect.WithClientOptions(opts...),
 		),
+		shutdownServer: connect.NewClient[admin_config.ShutdownServerRequest, admin_config.ShutdownServerResponse](
+			httpClient,
+			baseURL+AdminConfigServiceShutdownServerProcedure,
+			connect.WithSchema(adminConfigServiceMethods.ByName("ShutdownServer")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -147,6 +158,7 @@ type adminConfigServiceClient struct {
 	getServiceStatus *connect.Client[admin_config.GetServiceStatusRequest, admin_config.ServiceStatus]
 	getResourcePort  *connect.Client[admin_config.GetResourcePortRequest, admin_config.GetResourcePortResponse]
 	setResourcePort  *connect.Client[admin_config.SetResourcePortRequest, common.Empty]
+	shutdownServer   *connect.Client[admin_config.ShutdownServerRequest, admin_config.ShutdownServerResponse]
 }
 
 // GetConfig calls admin_config.AdminConfigService.GetConfig.
@@ -189,6 +201,11 @@ func (c *adminConfigServiceClient) SetResourcePort(ctx context.Context, req *con
 	return c.setResourcePort.CallUnary(ctx, req)
 }
 
+// ShutdownServer calls admin_config.AdminConfigService.ShutdownServer.
+func (c *adminConfigServiceClient) ShutdownServer(ctx context.Context, req *connect.Request[admin_config.ShutdownServerRequest]) (*connect.Response[admin_config.ShutdownServerResponse], error) {
+	return c.shutdownServer.CallUnary(ctx, req)
+}
+
 // AdminConfigServiceHandler is an implementation of the admin_config.AdminConfigService service.
 type AdminConfigServiceHandler interface {
 	// Configuration management (full CRUD)
@@ -202,6 +219,8 @@ type AdminConfigServiceHandler interface {
 	// Port mappings for resources
 	GetResourcePort(context.Context, *connect.Request[admin_config.GetResourcePortRequest]) (*connect.Response[admin_config.GetResourcePortResponse], error)
 	SetResourcePort(context.Context, *connect.Request[admin_config.SetResourcePortRequest]) (*connect.Response[common.Empty], error)
+	// Server control
+	ShutdownServer(context.Context, *connect.Request[admin_config.ShutdownServerRequest]) (*connect.Response[admin_config.ShutdownServerResponse], error)
 }
 
 // NewAdminConfigServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -259,6 +278,12 @@ func NewAdminConfigServiceHandler(svc AdminConfigServiceHandler, opts ...connect
 		connect.WithSchema(adminConfigServiceMethods.ByName("SetResourcePort")),
 		connect.WithHandlerOptions(opts...),
 	)
+	adminConfigServiceShutdownServerHandler := connect.NewUnaryHandler(
+		AdminConfigServiceShutdownServerProcedure,
+		svc.ShutdownServer,
+		connect.WithSchema(adminConfigServiceMethods.ByName("ShutdownServer")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/admin_config.AdminConfigService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AdminConfigServiceGetConfigProcedure:
@@ -277,6 +302,8 @@ func NewAdminConfigServiceHandler(svc AdminConfigServiceHandler, opts ...connect
 			adminConfigServiceGetResourcePortHandler.ServeHTTP(w, r)
 		case AdminConfigServiceSetResourcePortProcedure:
 			adminConfigServiceSetResourcePortHandler.ServeHTTP(w, r)
+		case AdminConfigServiceShutdownServerProcedure:
+			adminConfigServiceShutdownServerHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -316,4 +343,8 @@ func (UnimplementedAdminConfigServiceHandler) GetResourcePort(context.Context, *
 
 func (UnimplementedAdminConfigServiceHandler) SetResourcePort(context.Context, *connect.Request[admin_config.SetResourcePortRequest]) (*connect.Response[common.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_config.AdminConfigService.SetResourcePort is not implemented"))
+}
+
+func (UnimplementedAdminConfigServiceHandler) ShutdownServer(context.Context, *connect.Request[admin_config.ShutdownServerRequest]) (*connect.Response[admin_config.ShutdownServerResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_config.AdminConfigService.ShutdownServer is not implemented"))
 }

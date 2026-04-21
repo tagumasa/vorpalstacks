@@ -244,6 +244,44 @@ func loadDefaults() map[string]ConfigEntry {
 			EnvVar:      "VS_PORT_NEPTUNE",
 			Category:    CategoryPorts,
 		},
+
+		// HTTP Configuration (CORS)
+		"http.cors_allowed_origins": {
+			Key:         "http.cors_allowed_origins",
+			Value:       getEnvString("VS_CORS_ALLOWED_ORIGINS", "*"),
+			Type:        ConfigTypeString,
+			Description: "Comma-separated list of allowed CORS origins ('*' allows all)",
+			ReadOnly:    false,
+			EnvVar:      "VS_CORS_ALLOWED_ORIGINS",
+			Category:    CategoryHTTP,
+		},
+		"http.cors_allowed_methods": {
+			Key:         "http.cors_allowed_methods",
+			Value:       getEnvString("VS_CORS_ALLOWED_METHODS", "GET, POST, PUT, DELETE, OPTIONS, HEAD"),
+			Type:        ConfigTypeString,
+			Description: "Comma-separated list of allowed CORS methods",
+			ReadOnly:    false,
+			EnvVar:      "VS_CORS_ALLOWED_METHODS",
+			Category:    CategoryHTTP,
+		},
+		"http.cors_allowed_headers": {
+			Key:         "http.cors_allowed_headers",
+			Value:       getEnvString("VS_CORS_ALLOWED_HEADERS", "Authorization, Content-Type, X-Amz-Target, X-Amz-Date, X-Amz-Content-Sha256"),
+			Type:        ConfigTypeString,
+			Description: "Comma-separated list of allowed CORS request headers",
+			ReadOnly:    false,
+			EnvVar:      "VS_CORS_ALLOWED_HEADERS",
+			Category:    CategoryHTTP,
+		},
+		"http.cors_expose_headers": {
+			Key:         "http.cors_expose_headers",
+			Value:       getEnvString("VS_CORS_EXPOSE_HEADERS", "x-amzn-RequestId, x-amzn-ErrorType, x-amzn-ErrorMessage"),
+			Type:        ConfigTypeString,
+			Description: "Comma-separated list of CORS headers exposed to the client",
+			ReadOnly:    false,
+			EnvVar:      "VS_CORS_EXPOSE_HEADERS",
+			Category:    CategoryHTTP,
+		},
 	}
 }
 

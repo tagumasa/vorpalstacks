@@ -25,15 +25,44 @@ import (
 // Regular expressions for matching VTL control flow directives.
 // These patterns are used to identify and parse various control structures.
 var (
-	ifStartRe      = regexp.MustCompile(`#if\s*\((.+?)\)\s*`)
-	elseifRe       = regexp.MustCompile(`#elseif\s*\((.+?)\)\s*`)
+	ifStartRe      = regexp.MustCompile(`#if\s*\(`)
+	elseifRe       = regexp.MustCompile(`#elseif\s*\(`)
 	elseRe         = regexp.MustCompile(`#else`)
 	endifRe        = regexp.MustCompile(`#end\s*`)
-	foreachStartRe = regexp.MustCompile(`#foreach\s*\(\s*\$(\w+)\s+in\s+(.+?)\)\s*`)
+	foreachStartRe = regexp.MustCompile(`#foreach\s*\(\s*\$(\w+)\s+in\s*`)
 	endforeachRe   = regexp.MustCompile(`#end\s*`)
-	setRe          = regexp.MustCompile(`#set\s*\(\s*\$(\w+)\s*=\s*(.+?)\s*\)`)
+	setRe          = regexp.MustCompile(`#set\s*\(\s*\$(\w+)\s*=\s*`)
 	commentRe      = regexp.MustCompile(`#\*.*?\*#`)
 )
+
+//go:noinline — required: Go 1.25 inliner produces incorrect code when this
+// function is inlined into findMatchingEndImpl (loop body yields wrong results).
+func findBalancedCloseParen(s string, startIdx int) (closeParenIdx int, content string) {
+	depth := 1
+	inString := false
+	stringChar := byte(0)
+	for i := startIdx; i < len(s); i++ {
+		ch := s[i]
+		if inString {
+			if ch == stringChar && (i == 0 || s[i-1] != '\\') {
+				inString = false
+			}
+			continue
+		}
+		if ch == '"' || ch == '\'' {
+			inString = true
+			stringChar = ch
+		} else if ch == '(' {
+			depth++
+		} else if ch == ')' {
+			depth--
+			if depth == 0 {
+				return i, strings.TrimSpace(s[startIdx:i])
+			}
+		}
+	}
+	return -1, ""
+}
 
 // processControlFlow is the main entry point for processing all control flow
 // directives in a template. It handles comment removal first, then iteratively
@@ -80,9 +109,13 @@ func (e *Engine) processForeachBlock(template string) (string, bool) {
 	}
 
 	varName := template[matches[2]:matches[3]]
-	iterExpr := strings.TrimSpace(template[matches[4]:matches[5]])
+	closeIdx, iterExpr := findBalancedCloseParen(template, matches[1])
+	if closeIdx == -1 {
+		return template, false
+	}
+
 	blockStart := matches[0]
-	tagEnd := matches[1]
+	tagEnd := closeIdx + 1
 
 	endIdx := findMatchingEnd(template, tagEnd, "foreach")
 	if endIdx == -1 {
@@ -153,14 +186,19 @@ func (e *Engine) processForeachBlock(template string) (string, bool) {
 // It evaluates conditions and processes the body of the first branch
 // whose condition evaluates to true.
 func (e *Engine) processIfBlock(template string) (string, bool) {
-	matches := ifStartRe.FindStringSubmatchIndex(template)
+	matches := ifStartRe.FindStringIndex(template)
 	if matches == nil {
 		return template, false
 	}
 
-	condition := strings.TrimSpace(template[matches[2]:matches[3]])
+	closeIdx, condition := findBalancedCloseParen(template, matches[1])
+	if closeIdx == -1 {
+		return template, false
+	}
+
+	condition = strings.TrimSpace(condition)
 	blockStart := matches[0]
-	tagEnd := matches[1]
+	tagEnd := closeIdx + 1
 
 	endIdx := findMatchingEnd(template, tagEnd, "if")
 	if endIdx == -1 {
@@ -204,7 +242,12 @@ func (e *Engine) parseIfBranches(body, firstCondition string) []ifBranch {
 		if elseifPos >= 0 && (elsePos < 0 || elseifPos < elsePos) {
 			branches[len(branches)-1].body = remaining[:elseifPos]
 			elseifTag := elseifRe.FindString(remaining[elseifPos:])
-			remaining = remaining[elseifPos+len(elseifTag):]
+			closeIdx, _ := findBalancedCloseParen(remaining, elseifPos+len(elseifTag))
+			if closeIdx != -1 {
+				remaining = remaining[closeIdx+1:]
+			} else {
+				remaining = remaining[elseifPos+len(elseifTag):]
+			}
 			branches = append(branches, ifBranch{condition: elseifCond, body: ""})
 		} else if elsePos >= 0 {
 			branches[len(branches)-1].body = remaining[:elsePos]
@@ -229,13 +272,12 @@ func findElseif(body string) (int, string) {
 	idx := 0
 	for idx < len(body) {
 		ifMatch := ifStartRe.FindStringIndex(body[idx:])
-		elseifMatch := elseifRe.FindStringSubmatchIndex(body[idx:])
+		elseifMatch := elseifRe.FindStringIndex(body[idx:])
 		elseMatch := elseRe.FindStringIndex(body[idx:])
 		endifMatch := endifRe.FindStringIndex(body[idx:])
 
 		var nextPos int = len(body) + 1
 		var nextType string = ""
-		var condEnd int
 
 		if endifMatch != nil && endifMatch[0] < nextPos {
 			nextPos = endifMatch[0]
@@ -248,7 +290,6 @@ func findElseif(body string) (int, string) {
 		if elseifMatch != nil && elseifMatch[0] < nextPos {
 			nextPos = elseifMatch[0]
 			nextType = "elseif"
-			condEnd = elseifMatch[3]
 		}
 		if elseMatch != nil && elseMatch[0] < nextPos {
 			nextPos = elseMatch[0]
@@ -262,7 +303,12 @@ func findElseif(body string) (int, string) {
 		switch nextType {
 		case "if":
 			depth++
-			idx += ifMatch[1]
+			closeIdx, _ := findBalancedCloseParen(body, idx+ifMatch[1])
+			if closeIdx != -1 {
+				idx += closeIdx + 1
+			} else {
+				idx += ifMatch[1]
+			}
 		case "endif":
 			if depth == 0 {
 				return -1, ""
@@ -270,14 +316,16 @@ func findElseif(body string) (int, string) {
 			depth--
 			idx += endifMatch[1]
 		case "elseif":
+			contentStart := idx + elseifMatch[1]
+			closeIdx, cond := findBalancedCloseParen(body, contentStart)
+			if closeIdx == -1 {
+				idx += elseifMatch[1]
+				continue
+			}
 			if depth == 0 {
-				cond := ""
-				if len(elseifMatch) >= 4 {
-					cond = strings.TrimSpace(body[idx+elseifMatch[2] : idx+condEnd])
-				}
 				return idx + nextPos, cond
 			}
-			idx += elseifMatch[1]
+			idx += closeIdx + 1
 		case "else":
 			if depth == 0 {
 				return idx + nextPos, ""
@@ -328,7 +376,12 @@ func findElse(body string) int {
 		switch nextType {
 		case "if":
 			depth++
-			idx += ifMatch[1]
+			closeIdx, _ := findBalancedCloseParen(body, idx+ifMatch[1])
+			if closeIdx != -1 {
+				idx += closeIdx + 1
+			} else {
+				idx += ifMatch[1]
+			}
 		case "endif":
 			if depth == 0 {
 				return -1
@@ -336,7 +389,12 @@ func findElse(body string) int {
 			depth--
 			idx += endifMatch[1]
 		case "elseif":
-			idx += elseifMatch[1]
+			closeIdx, _ := findBalancedCloseParen(body, idx+elseifMatch[1])
+			if closeIdx != -1 {
+				idx += closeIdx + 1
+			} else {
+				idx += elseifMatch[1]
+			}
 		case "else":
 			if depth == 0 {
 				return idx + nextPos
@@ -358,19 +416,24 @@ func (e *Engine) processSetBlock(template string) (string, bool) {
 	}
 
 	varName := template[matches[2]:matches[3]]
-	valueExpr := strings.TrimSpace(template[matches[4]:matches[5]])
+	closeIdx, valueExpr := findBalancedCloseParen(template, matches[1])
+	if closeIdx == -1 {
+		return template, false
+	}
 
 	value := e.resolveValue(valueExpr)
 	e.context.Context[varName] = value
 
-	return template[:matches[0]] + template[matches[1]:], true
+	return template[:matches[0]] + template[closeIdx+1:], true
 }
 
 // findMatchingEnd finds the matching #end tag for a block starting at the
 // given index. It properly handles nested control structures by tracking
 // the nesting depth. Returns the position of the matching #end or -1 if
 // no matching end is found.
-func findMatchingEnd(template string, startIdx int, blockType string) int {
+//go:noinline — required: Go 1.25 inliner produces incorrect code for this
+// function (identical logic inlined at call sites returns -1; direct call works).
+func findMatchingEndImpl(template string, startIdx int) int {
 	depth := 1
 	idx := startIdx
 	for idx < len(template) && depth > 0 {
@@ -409,14 +472,28 @@ func findMatchingEnd(template string, startIdx int, blockType string) int {
 		} else {
 			depth++
 			if nextIf < nextForeach {
-				idx += ifMatch[1]
+				closeIdx, _ := findBalancedCloseParen(template, idx+ifMatch[1])
+				if closeIdx != -1 {
+					idx = closeIdx + 1
+				} else {
+					idx += ifMatch[1]
+				}
 			} else {
-				idx += foreachMatch[1]
+				closeIdx, _ := findBalancedCloseParen(template, idx+foreachMatch[1])
+				if closeIdx != -1 {
+					idx = closeIdx + 1
+				} else {
+					idx += foreachMatch[1]
+				}
 			}
 		}
 	}
 
 	return -1
+}
+
+func findMatchingEnd(template string, startIdx int, blockType string) int {
+	return findMatchingEndImpl(template, startIdx)
 }
 
 // resolveIterable resolves an expression to an iterable value (array or slice).
@@ -449,6 +526,12 @@ func (e *Engine) resolveValue(expr string) interface{} {
 		val := e.getVariableByPath(path)
 		if val != nil {
 			return val
+		}
+		if strings.HasPrefix(path, "util.") {
+			resolved := e.processAppSyncUtil(expr)
+			if resolved != expr {
+				return resolved
+			}
 		}
 		return ""
 	}

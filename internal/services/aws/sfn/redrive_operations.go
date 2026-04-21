@@ -10,6 +10,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -70,6 +71,7 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	s.asyncWg.Add(1)
 	go func() {
 		defer s.asyncWg.Done()
+		defer func() { resilience.RecoverPanic("SFN redrive execution") }()
 		defer store.UnregisterExecution(newExecutionArn)
 		if err := executor.ExecuteStateMachine(execCtx, newExec); err != nil {
 			logs.Error("sfn: redrive execution failed", logs.String("arn", newExecutionArn), logs.Err(err))

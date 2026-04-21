@@ -15,37 +15,35 @@ func (s *NeptuneDataService) GetPropertygraphStatistics(ctx context.Context, req
 	_ = ctx
 	_ = req
 
-	s.mu.Lock()
-	if !s.statsDisabled {
+	s.mu.RLock()
+	statsDisabled := s.statsDisabled
+	autoCompute := s.autoComputeEnabled
+	s.mu.RUnlock()
+
+	if !statsDisabled {
 		s.refreshStatistics(reqCtx)
 	}
 	stats := s.getStats(reqCtx.GetRegion())
+	nodeCount, _, labelCounts, relCounts := stats.snapshot()
 
-	sigCount := 0
-	for range stats.LabelCounts {
-		sigCount++
-	}
-	predCount := 0
-	for range stats.RelCounts {
-		predCount++
-	}
+	sigCount := int64(len(labelCounts))
+	predCount := int64(len(relCounts))
 
 	result := map[string]interface{}{
 		"status": "200",
 		"payload": map[string]interface{}{
-			"active":       !s.statsDisabled,
-			"autoCompute":  s.autoComputeEnabled,
+			"active":       !statsDisabled,
+			"autoCompute":  autoCompute,
 			"date":         time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
 			"note":         "Automatically computed",
 			"statisticsId": "auto-statistics",
 			"signatureInfo": map[string]interface{}{
-				"signatureCount": int64(sigCount),
-				"instanceCount":  stats.NodeCount,
-				"predicateCount": int64(predCount),
+				"signatureCount": sigCount,
+				"instanceCount":  nodeCount,
+				"predicateCount": predCount,
 			},
 		},
 	}
-	s.mu.Unlock()
 	return result, nil
 }
 
@@ -79,8 +77,8 @@ func (s *NeptuneDataService) ManagePropertygraphStatistics(ctx context.Context, 
 	case "refresh":
 		s.mu.Lock()
 		s.statsDisabled = false
-		s.refreshStatistics(reqCtx)
 		s.mu.Unlock()
+		s.refreshStatistics(reqCtx)
 		return map[string]interface{}{
 			"status":  "200",
 			"payload": map[string]interface{}{"statisticsId": generateQueryID()},
@@ -112,25 +110,29 @@ func (s *NeptuneDataService) GetPropertygraphSummary(ctx context.Context, reqCtx
 	_ = ctx
 	mode := getPathParam(req, "mode")
 
-	s.mu.Lock()
-	if !s.statsDisabled {
+	s.mu.RLock()
+	statsDisabled := s.statsDisabled
+	s.mu.RUnlock()
+
+	if !statsDisabled {
 		s.refreshStatistics(reqCtx)
 	}
 	stats := s.getStats(reqCtx.GetRegion())
+	nodeCount, edgeCount, labelCounts, relCounts := stats.snapshot()
 
-	nodeLabels := make([]string, 0, len(stats.LabelCounts))
-	for label := range stats.LabelCounts {
+	nodeLabels := make([]string, 0, len(labelCounts))
+	for label := range labelCounts {
 		nodeLabels = append(nodeLabels, label)
 	}
 
-	edgeLabels := make([]string, 0, len(stats.RelCounts))
-	for label := range stats.RelCounts {
+	edgeLabels := make([]string, 0, len(relCounts))
+	for label := range relCounts {
 		edgeLabels = append(edgeLabels, label)
 	}
 
 	summary := map[string]interface{}{
-		"numNodes":      stats.NodeCount,
-		"numEdges":      stats.EdgeCount,
+		"numNodes":      nodeCount,
+		"numEdges":      edgeCount,
 		"numNodeLabels": int64(len(nodeLabels)),
 		"numEdgeLabels": int64(len(edgeLabels)),
 	}
@@ -148,7 +150,7 @@ func (s *NeptuneDataService) GetPropertygraphSummary(ctx context.Context, reqCtx
 		for _, label := range nodeLabels {
 			nodeStructures = append(nodeStructures, map[string]interface{}{
 				"label": label,
-				"count": stats.LabelCounts[label],
+				"count": labelCounts[label],
 			})
 		}
 		summary["nodeStructures"] = nodeStructures
@@ -156,13 +158,11 @@ func (s *NeptuneDataService) GetPropertygraphSummary(ctx context.Context, reqCtx
 		for _, label := range edgeLabels {
 			edgeStructures = append(edgeStructures, map[string]interface{}{
 				"label": label,
-				"count": stats.RelCounts[label],
+				"count": relCounts[label],
 			})
 		}
 		summary["edgeStructures"] = edgeStructures
 	}
-
-	s.mu.Unlock()
 
 	return map[string]interface{}{
 		"payload": map[string]interface{}{

@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -66,6 +67,11 @@ func NewLogger(cfg *Config) Logger {
 // logWorker asynchronously writes log entries to the persistent store.
 func (l *logger) logWorker() {
 	defer l.logWg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("PANIC in logWorker: %v\n%s", r, debug.Stack())
+		}
+	}()
 	for entry := range l.logCh {
 		if err := l.config.Store.Write(entry); err != nil {
 			log.Printf("Failed to write log entry to store: %v", err)

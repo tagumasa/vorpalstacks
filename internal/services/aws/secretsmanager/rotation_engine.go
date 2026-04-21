@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/store/aws/common"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
@@ -55,6 +56,7 @@ func (rc *rotationChecker) stop() {
 // loop ticks at rotationCheckInterval and checks for secrets due for rotation.
 func (rc *rotationChecker) loop(ctx context.Context) {
 	defer rc.wg.Done()
+	defer func() { resilience.RecoverAndRestart("secret rotation checker", &rc.wg, func() { rc.loop(ctx) }) }()
 	ticker := time.NewTicker(rotationCheckInterval)
 	defer ticker.Stop()
 

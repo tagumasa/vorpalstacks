@@ -73,13 +73,7 @@ func NewAdaptiveTimeout(config *AdaptiveTimeoutConfig) *AdaptiveTimeout {
 //   - error: Any error returned by the function or timeout
 func (at *AdaptiveTimeout) Execute(ctx context.Context, fn func(context.Context) error) error {
 	timeout := at.GetTimeout()
-
-	if at.config.Logger != nil {
-		at.config.Logger.Debug("AdaptiveTimeout Execute starting",
-			logs.String("name", at.config.Name),
-			logs.Any("timeout", timeout),
-		)
-	}
+	t0 := time.Now()
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -88,53 +82,39 @@ func (at *AdaptiveTimeout) Execute(ctx context.Context, fn func(context.Context)
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				resultChan <- fmt.Errorf("panic: %v", r)
+				select {
+				case resultChan <- fmt.Errorf("panic: %v", r):
+				case <-at.done:
+				}
 			}
-			close(resultChan)
 		}()
-		select {
-		case resultChan <- fn(timeoutCtx):
-		case <-at.done:
-		case <-timeoutCtx.Done():
-		}
+		resultChan <- fn(timeoutCtx)
 	}()
 
 	select {
-	case err, ok := <-resultChan:
-		if !ok {
-			if at.config.Logger != nil {
-				at.config.Logger.Error("adaptive timeout: result channel closed without result", logs.String("name", at.config.Name))
-			}
-			return NewTimeout("operation timed out")
-		}
+	case err := <-resultChan:
+		logs.Info("adaptive_timeout: completed",
+			logs.String("name", at.config.Name),
+			logs.String("timeout", timeout.String()),
+			logs.String("actual", time.Since(t0).String()),
+			logs.Bool("success", err == nil))
 		at.recordResult(err)
 		return err
+	case <-at.done:
+		logs.Info("adaptive_timeout: closed",
+			logs.String("name", at.config.Name),
+			logs.String("elapsed", time.Since(t0).String()))
+		return NewTimeout("adaptive timeout closed")
 	case <-timeoutCtx.Done():
-		if at.config.Logger != nil {
-			at.config.Logger.Warn("adaptive timeout exceeded",
-				logs.String("name", at.config.Name),
-				logs.Any("timeout", timeout),
-			)
-		}
-		select {
-		case err, ok := <-resultChan:
-			if ok {
-				at.recordResult(err)
-			}
-		default:
-			at.recordResult(timeoutCtx.Err())
-		}
+		logs.Warn("adaptive_timeout: TIMEOUT",
+			logs.String("name", at.config.Name),
+			logs.String("timeout", timeout.String()),
+			logs.String("elapsed", time.Since(t0).String()))
+		at.recordResult(timeoutCtx.Err())
+		return NewTimeout("operation timed out")
 		return NewTimeout("operation timed out")
 	case <-ctx.Done():
-		select {
-		case err, ok := <-resultChan:
-			if !ok {
-				return ctx.Err()
-			}
-			return err
-		default:
-			return ctx.Err()
-		}
+		return ctx.Err()
 	}
 }
 

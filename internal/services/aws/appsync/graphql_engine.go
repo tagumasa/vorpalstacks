@@ -2,6 +2,7 @@ package appsync
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -41,10 +42,16 @@ type gqlErrLoc struct {
 	Column int `json:"column"`
 }
 
-// schemaCacheEntry holds a parsed and validated GraphQL schema for a given API.
+// schemaCacheEntry holds a parsed schema and resolver map for a given API.
 type schemaCacheEntry struct {
-	schema *ast.Schema
-	sdl    string
+	schema      *ast.Schema
+	sdl         string
+	hash        [32]byte
+	resolverMap map[string]map[string]*appsyncstore.Resolver
+}
+
+func schemaHash(sdl string) [32]byte {
+	return sha256.Sum256([]byte(sdl))
 }
 
 // graphQLEngine orchestrates GraphQL query execution against a stored schema,
@@ -85,12 +92,13 @@ func newGraphQLEngine(store *appsyncstore.AppSyncStore, bus BusPublisher, schema
 
 // Execute processes a GraphQL request and returns the execution result.
 func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestContext, apiId string, gqlReq *graphqlRequest) *graphqlExecutionResult {
-	schema, err := e.loadSchema(ctx, reqCtx, apiId)
+	entry, err := e.loadSchema(ctx, reqCtx, apiId)
 	if err != nil {
 		return &graphqlExecutionResult{
 			Errors: []graphqlError{{Message: err.Error()}},
 		}
 	}
+	schema := entry.schema
 
 	doc, errs := gqlparser.LoadQueryWithRules(schema, gqlReq.Query, nil)
 	if errs != nil {
@@ -126,14 +134,7 @@ func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestCont
 		}
 	}
 
-	resolverMap, err := e.buildResolverMap(apiId)
-	if err != nil {
-		return &graphqlExecutionResult{
-			Errors: []graphqlError{{Message: fmt.Sprintf("Failed to build resolver map: %v", err)}},
-		}
-	}
-
-	data, execErrs := e.executeOperation(ctx, reqCtx, apiId, schema, op, gqlReq.Variables, resolverMap, doc.Fragments)
+	data, execErrs := e.executeOperation(ctx, reqCtx, apiId, schema, op, gqlReq.Variables, entry.resolverMap, doc.Fragments)
 
 	result := &graphqlExecutionResult{Data: data}
 	if len(execErrs) > 0 {
@@ -145,16 +146,19 @@ func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestCont
 // loadSchema retrieves the SDL from the store, parses it with gqlparser,
 // and caches the result. The cache is invalidated on each call by comparing
 // the stored SDL with the cached version.
-func (e *graphQLEngine) loadSchema(ctx context.Context, reqCtx *request.RequestContext, apiId string) (*ast.Schema, error) {
+func (e *graphQLEngine) loadSchema(ctx context.Context, reqCtx *request.RequestContext, apiId string) (*schemaCacheEntry, error) {
 	sdl := collectSchemaSDL(e.store, apiId)
+
 	if sdl == "" {
 		return nil, fmt.Errorf("no schema found for API %s", apiId)
 	}
 
+	h := schemaHash(sdl)
+
 	if cached, ok := e.schemaCache.Load(apiId); ok {
 		entry := cached.(*schemaCacheEntry)
-		if entry.sdl == sdl {
-			return entry.schema, nil
+		if entry.hash == h && entry.resolverMap != nil {
+			return entry, nil
 		}
 	}
 
@@ -168,8 +172,14 @@ func (e *graphQLEngine) loadSchema(ctx context.Context, reqCtx *request.RequestC
 
 	injectIntrospectionTypes(schema)
 
-	e.schemaCache.Store(apiId, &schemaCacheEntry{schema: schema, sdl: sdl})
-	return schema, nil
+	rMap, err := e.buildResolverMap(apiId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build resolver map: %w", err)
+	}
+
+	entry := &schemaCacheEntry{schema: schema, sdl: sdl, hash: h, resolverMap: rMap}
+	e.schemaCache.Store(apiId, entry)
+	return entry, nil
 }
 
 // buildResolverMap scans all resolvers for the given API and builds a
@@ -255,7 +265,15 @@ func (e *graphQLEngine) resolveSelectionSet(
 				continue
 			}
 
-			fieldDef := schema.Types[parentTypeName].Fields.ForName(fieldName)
+			parentType := schema.Types[parentTypeName]
+			if parentType == nil || parentType.Fields == nil {
+				logs.Warn("GraphQL type not found in schema",
+					logs.String("type", parentTypeName),
+					logs.String("field", fieldName))
+				continue
+			}
+
+			fieldDef := parentType.Fields.ForName(fieldName)
 			if fieldDef == nil {
 				logs.Warn("GraphQL field not found in schema",
 					logs.String("type", parentTypeName),

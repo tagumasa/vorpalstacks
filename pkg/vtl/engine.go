@@ -38,6 +38,7 @@ func (e *Engine) Transform(templateStr string) (string, error) {
 	result = e.processInput(result)
 	result = e.processUtil(result)
 	result = e.processAppSyncContext(result)
+	result = e.processUtilToJsonFinal(result)
 	result = e.processContext(result)
 	result = e.processStageVariables(result)
 

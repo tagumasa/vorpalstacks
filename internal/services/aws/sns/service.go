@@ -18,6 +18,7 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -86,6 +87,7 @@ func (s *SNSService) deliverAsync(msg *snsstore.Message, subs []*snsstore.Subscr
 	s.deliveryWg.Add(1)
 	go func() {
 		defer s.deliveryWg.Done()
+		defer func() { resilience.RecoverPanic("SNS deliverAsync") }()
 		s.deliverToSubscriptions(msg, subs, region)
 	}()
 }

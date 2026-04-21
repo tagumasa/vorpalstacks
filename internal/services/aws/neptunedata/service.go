@@ -48,6 +48,7 @@ type NeptuneDataService struct {
 // GraphStatistics holds cached graph-level statistics for the property graph.
 // Refreshed on demand when statistics or summary endpoints are called.
 type GraphStatistics struct {
+	mu          sync.Mutex
 	NodeCount   int64            `json:"numNodes"`
 	EdgeCount   int64            `json:"numEdges"`
 	LabelCounts map[string]int64 `json:"-"`
@@ -90,6 +91,7 @@ func (s *NeptuneDataService) cleanupExpiredQueries(ctx context.Context) {
 			return
 		case <-ticker.C:
 			s.purgeExpiredQueries()
+			s.purgeExpiredFastTokens()
 		}
 	}
 }
@@ -159,15 +161,26 @@ func (s *NeptuneDataService) purgeExpiredQueries() {
 	})
 
 	now := time.Now()
-	s.mu.RLock()
 	s.statsMap.Range(func(key, value any) bool {
 		st := value.(*GraphStatistics)
-		if now.Sub(st.LastAccess) > statsLastAccessTTL {
+		st.mu.Lock()
+		expired := now.Sub(st.LastAccess) > statsLastAccessTTL
+		st.mu.Unlock()
+		if expired {
 			s.statsMap.Delete(key)
 		}
 		return true
 	})
-	s.mu.RUnlock()
+}
+
+func (s *NeptuneDataService) purgeExpiredFastTokens() {
+	now := time.Now()
+	s.fastTokens.Range(func(key, value any) bool {
+		if now.After(value.(time.Time)) {
+			s.fastTokens.Delete(key)
+		}
+		return true
+	})
 }
 
 // SetStorageManager injects the region storage manager for per-region store
@@ -409,7 +422,9 @@ func (s *NeptuneDataService) getStats(region string) *GraphStatistics {
 		LastRefresh: time.Now(),
 	})
 	st := val.(*GraphStatistics)
+	st.mu.Lock()
 	st.LastAccess = time.Now()
+	st.mu.Unlock()
 	return st
 }
 
@@ -424,11 +439,33 @@ func (s *NeptuneDataService) refreshStatistics(reqCtx *request.RequestContext) {
 	reader := readerAny.(graphengine.GraphReader)
 	region := reqCtx.GetRegion()
 	stats := s.getStats(region)
-	stats.NodeCount = reader.CountNodes()
-	stats.EdgeCount = reader.CountEdges()
-	stats.LabelCounts, _ = reader.GetLabelCounts()
-	stats.RelCounts, _ = reader.GetRelCounts()
+	nodeCount := reader.CountNodes()
+	edgeCount := reader.CountEdges()
+	labelCounts, _ := reader.GetLabelCounts()
+	relCounts, _ := reader.GetRelCounts()
+	stats.mu.Lock()
+	stats.NodeCount = nodeCount
+	stats.EdgeCount = edgeCount
+	stats.LabelCounts = labelCounts
+	stats.RelCounts = relCounts
 	stats.LastRefresh = time.Now()
+	stats.mu.Unlock()
+}
+
+func (st *GraphStatistics) snapshot() (nodeCount, edgeCount int64, labelCounts, relCounts map[string]int64) {
+	st.mu.Lock()
+	nodeCount = st.NodeCount
+	edgeCount = st.EdgeCount
+	labelCounts = make(map[string]int64, len(st.LabelCounts))
+	for k, v := range st.LabelCounts {
+		labelCounts[k] = v
+	}
+	relCounts = make(map[string]int64, len(st.RelCounts))
+	for k, v := range st.RelCounts {
+		relCounts[k] = v
+	}
+	st.mu.Unlock()
+	return
 }
 
 var queryCounter int64

@@ -317,7 +317,7 @@ func (a *App) initGRPCWebAdmin() {
 	p, h = svcappsync.NewConnectHandler(st.appSyncService, sm)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 
-	grpcweb.RegisterAdminHandlers(grpcWebServer, a.server.Storage(), aid, reg, dp, handlers)
+	grpcweb.RegisterAdminHandlers(grpcWebServer, a.server.Storage(), aid, reg, dp, handlers, a.server.TriggerShutdown)
 	a.grpcWeb = grpcWebServer
 	a.addShutdown("grpcweb", func(ctx context.Context) error {
 		return grpcWebServer.Shutdown(ctx)

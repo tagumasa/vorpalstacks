@@ -267,32 +267,31 @@ func (h *AdminHandler) GetPropertygraphStatistics(ctx context.Context, req *conn
 	s := h.service
 	region := svccommon.GetRegionFromHeader(req.Header())
 
-	s.mu.Lock()
-	if !s.statsDisabled {
+	s.mu.RLock()
+	statsDisabled := s.statsDisabled
+	autoCompute := s.autoComputeEnabled
+	s.mu.RUnlock()
+
+	if !statsDisabled {
 		s.refreshStatistics(nil)
 	}
 	st := s.getStats(region)
-	sigCount := 0
-	for range st.LabelCounts {
-		sigCount++
-	}
-	predCount := 0
-	for range st.RelCounts {
-		predCount++
-	}
+	nodeCount, _, labelCounts, relCounts := st.snapshot()
+	sigCount := int64(len(labelCounts))
+	predCount := int64(len(relCounts))
+
 	stats := &pb.Statistics{
-		Active:       fmt.Sprintf("%t", !s.statsDisabled),
-		Autocompute:  fmt.Sprintf("%t", s.autoComputeEnabled),
+		Active:       fmt.Sprintf("%t", !statsDisabled),
+		Autocompute:  fmt.Sprintf("%t", autoCompute),
 		Date:         time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
 		Note:         "Automatically computed",
 		Statisticsid: "auto-statistics",
 		Signatureinfo: &pb.StatisticsSummary{
-			Signaturecount: fmt.Sprintf("%d", int64(sigCount)),
-			Instancecount:  fmt.Sprintf("%d", st.NodeCount),
-			Predicatecount: fmt.Sprintf("%d", int64(predCount)),
+			Signaturecount: fmt.Sprintf("%d", sigCount),
+			Instancecount:  fmt.Sprintf("%d", nodeCount),
+			Predicatecount: fmt.Sprintf("%d", predCount),
 		},
 	}
-	s.mu.Unlock()
 
 	return connect.NewResponse(&pb.GetPropertygraphStatisticsOutput{
 		Status:  "200 OK",
@@ -305,18 +304,22 @@ func (h *AdminHandler) GetPropertygraphSummary(ctx context.Context, req *connect
 	s := h.service
 	region := svccommon.GetRegionFromHeader(req.Header())
 
-	s.mu.Lock()
-	if !s.statsDisabled {
+	s.mu.RLock()
+	statsDisabled := s.statsDisabled
+	s.mu.RUnlock()
+
+	if !statsDisabled {
 		s.refreshStatistics(nil)
 	}
 	st := s.getStats(region)
+	nodeCount, edgeCount, _, _ := st.snapshot()
+
 	summaryMap := &pb.PropertygraphSummaryValueMap{
 		Graphsummary: &pb.PropertygraphSummary{
-			Numnodes: fmt.Sprintf("%d", st.NodeCount),
-			Numedges: fmt.Sprintf("%d", st.EdgeCount),
+			Numnodes: fmt.Sprintf("%d", nodeCount),
+			Numedges: fmt.Sprintf("%d", edgeCount),
 		},
 	}
-	s.mu.Unlock()
 
 	return connect.NewResponse(&pb.GetPropertygraphSummaryOutput{
 		Statuscode: "200 OK",

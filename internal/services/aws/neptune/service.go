@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -44,6 +45,7 @@ func (s *NeptuneService) Close() {
 
 // cleanupOldEvents periodically purges events older than the retention period.
 func (s *NeptuneService) cleanupOldEvents(ctx context.Context) {
+	defer func() { resilience.RecoverPanic("Neptune cleanupOldEvents") }()
 	ticker := time.NewTicker(10 * time.Minute)
 	defer ticker.Stop()
 	for {

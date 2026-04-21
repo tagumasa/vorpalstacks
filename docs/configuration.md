@@ -215,6 +215,172 @@ aws --endpoint-url=http://localhost:8080 \
     sns list-topics
 ```
 
+## Admin Config System
+
+In addition to environment variables, runtime configuration can be managed through the **admin config system** backed by PebbleDB (`app_config` bucket). Settings are readable via the gRPC-Web Admin API and the `vstacks` CLI.
+
+Priority order: **Store (persistent) > Environment variable > Default**
+
+### app_config Keys
+
+#### Server
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `server.port` | PORT | `8080` | Main HTTP server port |
+| `server.grpc_web_port` | PORT | `9090` | gRPC-Web admin port |
+| `server.bind_addr` | STRING | `127.0.0.1` | Server bind address |
+| `server.tls_enabled` | BOOL | `false` | Enable TLS for HTTPS server |
+| `server.tls_port` | PORT | `8443` | HTTPS server port |
+| `server.tls_cert_path` | STRING | `auto` | TLS certificate path |
+| `server.tls_key_path` | STRING | `auto` | TLS private key path |
+
+#### AWS Identity (read-only)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `aws.account_id` | STRING | (empty) | AWS account ID |
+| `aws.region` | STRING | `us-east-1` | Default AWS region |
+
+#### Storage
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `storage.data_path` | STRING | `./data` | Data storage path |
+| `storage.metadata_path` | STRING | (empty) | Metadata path (defaults to data_path) |
+
+#### Features
+
+| Key | Type | Default | Env Var | Description |
+|-----|------|---------|---------|-------------|
+| `features.audit_enabled` | BOOL | `false` | `VS_AUDIT_ENABLED` | CloudTrail audit logging |
+| `features.signature_verification` | BOOL | `true` | `SIGNATURE_VERIFICATION_ENABLED` | AWS signature verification |
+| `features.route53_dns` | BOOL | `false` | `ROUTE53_DNS_ENABLED` | Route53 DNS server |
+
+#### Endpoints
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `endpoints.base_url` | URL | `http://localhost:8080` | Base URL for generated endpoints |
+| `endpoints.s3_website_suffix` | STRING | `s3-website.{region}.amazonaws.com` | S3 website domain suffix |
+| `endpoints.cognito_suffix` | STRING | `auth.{region}.amazoncognito.com` | Cognito hosted UI suffix |
+| `endpoints.apigateway_suffix` | STRING | `execute-api.{region}.amazonaws.com` | API Gateway suffix |
+
+#### Ports
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `ports.s3_website` | PORT | `8081` | S3 website default port |
+| `ports.apigateway` | PORT | `8082` | API Gateway invoke URL port |
+| `ports.cognito_hosted` | PORT | `8083` | Cognito Hosted UI port |
+| `ports.cloudfront` | PORT | `8084` | CloudFront distribution port |
+| `ports.lambda_url` | PORT | `8085` | Lambda Function URL port |
+| `ports.appsync_events` | PORT | `8086` | AppSync Events port |
+| `ports.neptune` | PORT | `8087` | Neptune DB cluster default port |
+
+#### HTTP / CORS
+
+| Key | Type | Default | Env Var | Description |
+|-----|------|---------|---------|-------------|
+| `http.cors_allowed_origins` | STRING | `*` | `VS_CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins (`*` = all) |
+| `http.cors_allowed_methods` | STRING | `GET, POST, PUT, DELETE, OPTIONS, HEAD` | `VS_CORS_ALLOWED_METHODS` | Allowed CORS methods |
+| `http.cors_allowed_headers` | STRING | `Authorization, Content-Type, X-Amz-Target, X-Amz-Date, X-Amz-Content-Sha256` | `VS_CORS_ALLOWED_HEADERS` | Allowed CORS request headers |
+| `http.cors_expose_headers` | STRING | `x-amzn-RequestId, x-amzn-ErrorType, x-amzn-ErrorMessage` | `VS_CORS_EXPOSE_HEADERS` | CORS headers exposed to the client |
+
+When `http.cors_allowed_origins` contains a comma-separated list (e.g. `http://localhost:3000,https://app.example.com`), the server matches the request `Origin` header against the list and responds with only the matching single origin. If no match is found, the `Access-Control-Allow-Origin` header is omitted entirely. The `Vary: Origin` header is added automatically for non-wildcard configurations.
+
+## vstacks CLI
+
+The `vstacks` command-line tool provides server control, IAM management, configuration, service mode control, and backup operations. It communicates with the server via gRPC-Web (server control) or reads PebbleDB directly (IAM, config, service, backup).
+
+```
+vstacks [options] <group> <command> [args]
+```
+
+### Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-data <path>` | `./data` | Path to data directory |
+| `-account-id <id>` | `123456789012` | AWS Account ID |
+| `-endpoint <url>` | `http://127.0.0.1:9090` | gRPC-Web admin endpoint |
+| `-http-endpoint <url>` | `http://127.0.0.1:8080` | HTTP server endpoint |
+
+### server — Server Control
+
+| Command | Description |
+|---------|-------------|
+| `vstacks server status` | Check if the server is running (health endpoint) |
+| `vstacks server stop` | Trigger graceful shutdown via gRPC-Web |
+
+### iam — IAM User Management
+
+| Command | Description |
+|---------|-------------|
+| `vstacks iam create-user -user <name> [-path <path>]` | Create an IAM user |
+| `vstacks iam delete-user -user <name>` | Delete an IAM user |
+| `vstacks iam list-users [-path-prefix <prefix>]` | List IAM users |
+| `vstacks iam get-user -user <name>` | Get IAM user details |
+| `vstacks iam create-access-key -user <name>` | Create an access key |
+| `vstacks iam list-access-keys -user <name>` | List access keys |
+| `vstacks iam delete-access-key -access-key-id <id>` | Delete an access key |
+| `vstacks iam create-login-profile -user <name> -password <pw>` | Create a login profile |
+| `vstacks iam delete-login-profile -user <name>` | Delete a login profile |
+
+### config — Application Configuration (app_config)
+
+| Command | Description |
+|---------|-------------|
+| `vstacks config get <key>` | Get a config value |
+| `vstacks config set <key> <value>` | Set a config value |
+| `vstacks config reset <key>` | Reset a config value to its default |
+| `vstacks config list [-category <cat>]` | List all config entries |
+| `vstacks config schema` | Show the full config schema |
+
+### service — Service Mode Configuration (service_config)
+
+| Command | Description |
+|---------|-------------|
+| `vstacks service get <name>` | Get a service's configuration |
+| `vstacks service set-mode <name> -mode <MODE>` | Set service mode (`IMPLEMENTED`, `FALLBACK`, `ERROR_INJECTION`) |
+| `vstacks service enable <name>` | Enable a service |
+| `vstacks service disable <name>` | Disable a service |
+| `vstacks service list` | List all services |
+
+### backup — Data Backup and Restore
+
+| Command | Description |
+|---------|-------------|
+| `vstacks backup create [-output <path>]` | Create a zip backup of the data directory |
+| `vstacks backup list` | List existing backups |
+| `vstacks backup restore <file>` | Restore from a backup (current data archived) |
+| `vstacks backup info <file>` | Show backup contents and size |
+
+### Examples
+
+```bash
+# Check server status
+vstacks server status
+
+# View current CORS configuration
+vstacks config get http.cors_allowed_origins
+
+# Restrict CORS to specific origins
+vstacks config set http.cors_allowed_origins "http://localhost:3000,https://app.example.com"
+
+# Reset CORS to default (allow all)
+vstacks config reset http.cors_allowed_origins
+
+# Set a service to fallback mode
+vstacks service set-mode dynamodb -mode FALLBACK
+
+# Create a backup
+vstacks backup create -output /tmp/my-backup.zip
+
+# Graceful shutdown
+vstacks server stop
+```
+
 ## Sample .env File
 
 ```env
@@ -267,6 +433,12 @@ SIGNATURE_VERIFICATION_ENABLED=false
 
 # gRPC-Web Admin
 GRPC_WEB_PORT=9090
+
+# CORS (override defaults; omitted = allow all origins)
+# VS_CORS_ALLOWED_ORIGINS=*
+# VS_CORS_ALLOWED_METHODS=GET, POST, PUT, DELETE, OPTIONS, HEAD
+# VS_CORS_ALLOWED_HEADERS=Authorization, Content-Type, X-Amz-Target, X-Amz-Date, X-Amz-Content-Sha256
+# VS_CORS_EXPOSE_HEADERS=x-amzn-RequestId, x-amzn-ErrorType, x-amzn-ErrorMessage
 
 # Lambda
 DOCKER_HOST=unix:///var/run/docker.sock

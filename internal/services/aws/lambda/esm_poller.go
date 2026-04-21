@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
@@ -154,9 +155,9 @@ func (p *esmPoller) Stop() {
 // and dispatches each SQS mapping to a worker goroutine for polling.
 func (p *esmPoller) pollLoop(ctx context.Context) {
 	defer p.wg.Done()
+	defer func() { resilience.RecoverAndRestart("ESM pollLoop", &p.wg, func() { p.pollLoop(ctx) }) }()
 	ticker := time.NewTicker(p.interval)
 	defer ticker.Stop()
-
 	for {
 		select {
 		case <-ctx.Done():

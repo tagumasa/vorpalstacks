@@ -3,8 +3,10 @@ package neptune
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
@@ -214,7 +216,7 @@ func (s *NeptuneService) ModifyDBClusterEndpoint(ctx context.Context, reqCtx *re
 		ep.EndpointType = newType
 	}
 
-	ep.Status = "modifying"
+	ep.Status = "available"
 	if err := store.UpdateClusterEndpoint(ep); err != nil {
 		return nil, err
 	}
@@ -224,7 +226,7 @@ func (s *NeptuneService) ModifyDBClusterEndpoint(ctx context.Context, reqCtx *re
 		"DBClusterIdentifier":         ep.DBClusterIdentifier,
 		"Endpoint":                    ep.Endpoint,
 		"EndpointType":                ep.EndpointType,
-		"Status":                      "modifying",
+		"Status":                      "available",
 		"DBClusterEndpointArn":        ep.DBClusterEndpointArn,
 	}, nil
 }
@@ -269,13 +271,23 @@ func (s *NeptuneService) DescribeEvents(ctx context.Context, reqCtx *request.Req
 
 	var startTime time.Time
 	if stStr := request.GetStringParam(params, "StartTime"); stStr != "" {
-		startTime, _ = time.Parse(time.RFC3339, stStr)
+		var err error
+		startTime, err = time.Parse(time.RFC3339, stStr)
+		if err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", "Invalid StartTime format: use RFC3339", http.StatusBadRequest)
+		}
 	}
 
 	duration := request.GetIntParam(params, "Duration")
 	var endTime time.Time
 	if duration > 0 && !startTime.IsZero() {
 		endTime = startTime.Add(time.Duration(duration) * time.Minute)
+	} else if etStr := request.GetStringParam(params, "EndTime"); etStr != "" {
+		var err error
+		endTime, err = time.Parse(time.RFC3339, etStr)
+		if err != nil {
+			return nil, awserrors.NewAWSError("InvalidParameterValue", "Invalid EndTime format: use RFC3339", http.StatusBadRequest)
+		}
 	}
 
 	opts := neptunestore.EventListOptions{

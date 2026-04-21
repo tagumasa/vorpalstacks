@@ -101,3 +101,19 @@ type EC2Invoker interface {
 	LookupSubnet(ctx context.Context, region string, subnetId string) (vpcId string, availabilityZone string, err error)
 	LookupSecurityGroup(ctx context.Context, region string, groupId string) (vpcId string, err error)
 }
+
+// DynamoDBInvoker provides DynamoDB item operations for cross-service
+// consumers (e.g. AppSync GraphQL resolvers). Consumers call these methods
+// instead of holding a direct reference to the DynamoDB store.
+//
+// Keys and attribute values use map[string]interface{} where each value is
+// one of: string, float64, bool, nil ([]byte and number-as-string are
+// represented as strings). This avoids a dependency on the store package.
+type DynamoDBInvoker interface {
+	GetItem(ctx context.Context, region, tableName string, key map[string]interface{}) (map[string]interface{}, error)
+	PutItem(ctx context.Context, region, tableName string, key map[string]interface{}, attributes map[string]interface{}) (map[string]interface{}, error)
+	DeleteItem(ctx context.Context, region, tableName string, key map[string]interface{}) error
+	Scan(ctx context.Context, region, tableName string, limit int) ([]map[string]interface{}, error)
+	Query(ctx context.Context, region, tableName, partitionKeyValue string, limit int) ([]map[string]interface{}, error)
+	UpdateItem(ctx context.Context, region, tableName string, key map[string]interface{}, attributes map[string]interface{}) error
+}

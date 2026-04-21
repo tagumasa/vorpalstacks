@@ -826,6 +826,86 @@ func (x *SetResourcePortRequest) GetPort() int32 {
 	return 0
 }
 
+type ShutdownServerRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShutdownServerRequest) Reset() {
+	*x = ShutdownServerRequest{}
+	mi := &file_admin_config_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShutdownServerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShutdownServerRequest) ProtoMessage() {}
+
+func (x *ShutdownServerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_config_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShutdownServerRequest.ProtoReflect.Descriptor instead.
+func (*ShutdownServerRequest) Descriptor() ([]byte, []int) {
+	return file_admin_config_proto_rawDescGZIP(), []int{15}
+}
+
+type ShutdownServerResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShutdownServerResponse) Reset() {
+	*x = ShutdownServerResponse{}
+	mi := &file_admin_config_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShutdownServerResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShutdownServerResponse) ProtoMessage() {}
+
+func (x *ShutdownServerResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_config_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShutdownServerResponse.ProtoReflect.Descriptor instead.
+func (*ShutdownServerResponse) Descriptor() ([]byte, []int) {
+	return file_admin_config_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ShutdownServerResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 var File_admin_config_proto protoreflect.FileDescriptor
 
 const file_admin_config_proto_rawDesc = "" +
@@ -881,7 +961,10 @@ const file_admin_config_proto_rawDesc = "" +
 	"\x10service_port_key\x18\x01 \x01(\tR\x0eservicePortKey\x12\x1f\n" +
 	"\vresource_id\x18\x02 \x01(\tR\n" +
 	"resourceId\x12\x12\n" +
-	"\x04port\x18\x03 \x01(\x05R\x04port2\xa4\x05\n" +
+	"\x04port\x18\x03 \x01(\x05R\x04port\"\x17\n" +
+	"\x15ShutdownServerRequest\"2\n" +
+	"\x16ShutdownServerResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage2\x81\x06\n" +
 	"\x12AdminConfigService\x12L\n" +
 	"\tGetConfig\x12\x1e.admin_config.GetConfigRequest\x1a\x1f.admin_config.GetConfigResponse\x12O\n" +
 	"\n" +
@@ -891,7 +974,8 @@ const file_admin_config_proto_rawDesc = "" +
 	"\fListServices\x12!.admin_config.ListServicesRequest\x1a\".admin_config.ListServicesResponse\x12V\n" +
 	"\x10GetServiceStatus\x12%.admin_config.GetServiceStatusRequest\x1a\x1b.admin_config.ServiceStatus\x12^\n" +
 	"\x0fGetResourcePort\x12$.admin_config.GetResourcePortRequest\x1a%.admin_config.GetResourcePortResponse\x12F\n" +
-	"\x0fSetResourcePort\x12$.admin_config.SetResourcePortRequest\x1a\r.common.EmptyB+Z)vorpalstacks/internal/pb/aws/admin_configb\x06proto3"
+	"\x0fSetResourcePort\x12$.admin_config.SetResourcePortRequest\x1a\r.common.Empty\x12[\n" +
+	"\x0eShutdownServer\x12#.admin_config.ShutdownServerRequest\x1a$.admin_config.ShutdownServerResponseB+Z)vorpalstacks/internal/pb/aws/admin_configb\x06proto3"
 
 var (
 	file_admin_config_proto_rawDescOnce sync.Once
@@ -905,7 +989,7 @@ func file_admin_config_proto_rawDescGZIP() []byte {
 	return file_admin_config_proto_rawDescData
 }
 
-var file_admin_config_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_admin_config_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_admin_config_proto_goTypes = []any{
 	(*ConfigEntry)(nil),             // 0: admin_config.ConfigEntry
 	(*GetConfigRequest)(nil),        // 1: admin_config.GetConfigRequest
@@ -922,7 +1006,9 @@ var file_admin_config_proto_goTypes = []any{
 	(*GetResourcePortRequest)(nil),  // 12: admin_config.GetResourcePortRequest
 	(*GetResourcePortResponse)(nil), // 13: admin_config.GetResourcePortResponse
 	(*SetResourcePortRequest)(nil),  // 14: admin_config.SetResourcePortRequest
-	(*common.Empty)(nil),            // 15: common.Empty
+	(*ShutdownServerRequest)(nil),   // 15: admin_config.ShutdownServerRequest
+	(*ShutdownServerResponse)(nil),  // 16: admin_config.ShutdownServerResponse
+	(*common.Empty)(nil),            // 17: common.Empty
 }
 var file_admin_config_proto_depIdxs = []int32{
 	0,  // 0: admin_config.GetConfigResponse.entry:type_name -> admin_config.ConfigEntry
@@ -936,16 +1022,18 @@ var file_admin_config_proto_depIdxs = []int32{
 	10, // 8: admin_config.AdminConfigService.GetServiceStatus:input_type -> admin_config.GetServiceStatusRequest
 	12, // 9: admin_config.AdminConfigService.GetResourcePort:input_type -> admin_config.GetResourcePortRequest
 	14, // 10: admin_config.AdminConfigService.SetResourcePort:input_type -> admin_config.SetResourcePortRequest
-	2,  // 11: admin_config.AdminConfigService.GetConfig:output_type -> admin_config.GetConfigResponse
-	4,  // 12: admin_config.AdminConfigService.ListConfig:output_type -> admin_config.ListConfigResponse
-	0,  // 13: admin_config.AdminConfigService.UpdateConfig:output_type -> admin_config.ConfigEntry
-	0,  // 14: admin_config.AdminConfigService.ResetConfig:output_type -> admin_config.ConfigEntry
-	8,  // 15: admin_config.AdminConfigService.ListServices:output_type -> admin_config.ListServicesResponse
-	11, // 16: admin_config.AdminConfigService.GetServiceStatus:output_type -> admin_config.ServiceStatus
-	13, // 17: admin_config.AdminConfigService.GetResourcePort:output_type -> admin_config.GetResourcePortResponse
-	15, // 18: admin_config.AdminConfigService.SetResourcePort:output_type -> common.Empty
-	11, // [11:19] is the sub-list for method output_type
-	3,  // [3:11] is the sub-list for method input_type
+	15, // 11: admin_config.AdminConfigService.ShutdownServer:input_type -> admin_config.ShutdownServerRequest
+	2,  // 12: admin_config.AdminConfigService.GetConfig:output_type -> admin_config.GetConfigResponse
+	4,  // 13: admin_config.AdminConfigService.ListConfig:output_type -> admin_config.ListConfigResponse
+	0,  // 14: admin_config.AdminConfigService.UpdateConfig:output_type -> admin_config.ConfigEntry
+	0,  // 15: admin_config.AdminConfigService.ResetConfig:output_type -> admin_config.ConfigEntry
+	8,  // 16: admin_config.AdminConfigService.ListServices:output_type -> admin_config.ListServicesResponse
+	11, // 17: admin_config.AdminConfigService.GetServiceStatus:output_type -> admin_config.ServiceStatus
+	13, // 18: admin_config.AdminConfigService.GetResourcePort:output_type -> admin_config.GetResourcePortResponse
+	17, // 19: admin_config.AdminConfigService.SetResourcePort:output_type -> common.Empty
+	16, // 20: admin_config.AdminConfigService.ShutdownServer:output_type -> admin_config.ShutdownServerResponse
+	12, // [12:21] is the sub-list for method output_type
+	3,  // [3:12] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -962,7 +1050,7 @@ func file_admin_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_config_proto_rawDesc), len(file_admin_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

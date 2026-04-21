@@ -2,6 +2,7 @@ package vtl
 
 import (
 	"encoding/json"
+	"reflect"
 	"regexp"
 	"strings"
 )
@@ -269,7 +270,7 @@ func (e *Engine) resolveFromMap(m map[string]interface{}, key string) string {
 			return "null"
 		}
 	}
-	return e.formatValue(current)
+	return e.formatAppSyncValue(current)
 }
 
 func (e *Engine) resolveFromInterface(obj interface{}, key string) string {
@@ -288,5 +289,22 @@ func (e *Engine) resolveFromInterface(obj interface{}, key string) string {
 			return "null"
 		}
 	}
-	return e.formatValue(current)
+	return e.formatAppSyncValue(current)
+}
+
+func (e *Engine) formatAppSyncValue(val interface{}) string {
+	if val == nil {
+		return "null"
+	}
+	rv := reflect.ValueOf(val)
+	switch rv.Kind() {
+	case reflect.String:
+		b, _ := json.Marshal(val)
+		return string(b[1 : len(b)-1])
+	case reflect.Map, reflect.Slice, reflect.Array:
+		b, _ := json.Marshal(val)
+		return string(b)
+	default:
+		return e.formatValue(val)
+	}
 }

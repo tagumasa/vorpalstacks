@@ -18,9 +18,14 @@ import (
 )
 
 func clusterToResponseMap(cluster *neptunestore.DBCluster) map[string]interface{} {
-	data, _ := json.Marshal(cluster)
+	data, err := json.Marshal(cluster)
+	if err != nil {
+		return map[string]interface{}{"error": err.Error()}
+	}
 	var m map[string]interface{}
-	json.Unmarshal(data, &m)
+	if err := json.Unmarshal(data, &m); err != nil {
+		return map[string]interface{}{"error": err.Error()}
+	}
 	for k, v := range m {
 		if v == nil {
 			delete(m, k)
@@ -232,20 +237,6 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		return nil, translateStoreError(err)
 	}
 
-	if v := request.GetStringParam(params, "NewDBClusterIdentifier"); v != "" {
-		oldID := cluster.DBClusterIdentifier
-		cluster.DBClusterIdentifier = v
-		if err := store.CreateCluster(cluster); err != nil {
-			return nil, translateStoreError(err)
-		}
-		if err := store.DeleteCluster(oldID); err != nil {
-			_ = store.DeleteCluster(v)
-			return nil, translateStoreError(err)
-		}
-		return map[string]interface{}{
-			"DBCluster": cluster,
-		}, nil
-	}
 	if v := request.GetStringParam(params, "EngineVersion"); v != "" {
 		cluster.EngineVersion = v
 	}
@@ -288,6 +279,20 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 
 	if err := store.UpdateCluster(cluster); err != nil {
 		return nil, translateStoreError(err)
+	}
+
+	newID := request.GetStringParam(params, "NewDBClusterIdentifier")
+	if newID != "" && newID != id {
+		oldID := cluster.DBClusterIdentifier
+		cluster.DBClusterIdentifier = newID
+		cluster.DBClusterArn = arnutil.NewARNBuilder(cluster.AccountID, cluster.Region).RDS().Cluster(newID)
+		if err := store.CreateCluster(cluster); err != nil {
+			return nil, translateStoreError(err)
+		}
+		if err := store.DeleteCluster(oldID); err != nil {
+			_ = store.DeleteCluster(newID)
+			return nil, translateStoreError(err)
+		}
 	}
 
 	return map[string]interface{}{
@@ -427,11 +432,6 @@ func (s *NeptuneService) FailoverDBCluster(ctx context.Context, reqCtx *request.
 		return nil, translateStoreError(err)
 	}
 
-	cluster.Status = "failing-over"
-	if err := store.UpdateCluster(cluster); err != nil {
-		return nil, translateStoreError(err)
-	}
-
 	cluster.Status = "available"
 	if err := store.UpdateCluster(cluster); err != nil {
 		return nil, translateStoreError(err)
@@ -504,11 +504,17 @@ func (s *NeptuneService) RemoveRoleFromDBCluster(ctx context.Context, reqCtx *re
 		return nil, translateStoreError(err)
 	}
 
+	found := false
 	filtered := make([]neptunestore.DBClusterRole, 0, len(cluster.AssociatedRoles))
 	for _, r := range cluster.AssociatedRoles {
-		if r.RoleArn != roleArn {
-			filtered = append(filtered, r)
+		if r.RoleArn == roleArn {
+			found = true
+			continue
 		}
+		filtered = append(filtered, r)
+	}
+	if !found {
+		return nil, awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("role %s is not associated with cluster %s", roleArn, id), http.StatusBadRequest)
 	}
 	cluster.AssociatedRoles = filtered
 	if err := store.UpdateCluster(cluster); err != nil {

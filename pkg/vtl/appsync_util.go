@@ -106,9 +106,9 @@ func (e *Engine) processUtilDefaultIfNull(templateStr string) string {
 		val := strings.TrimSpace(appSyncUtilDefaultIfNullRegex.FindStringSubmatch(match)[1])
 		def := strings.TrimSpace(appSyncUtilDefaultIfNullRegex.FindStringSubmatch(match)[2])
 		if isNullLiteral(val) {
-			return e.formatValue(e.resolveValue(def))
+			return e.formatAppSyncValue(e.resolveValue(def))
 		}
-		return e.formatValue(e.resolveValue(val))
+		return e.formatAppSyncValue(e.resolveValue(val))
 	})
 }
 
@@ -195,8 +195,22 @@ func (e *Engine) processUtilUnauthorized(templateStr string) string {
 }
 
 func (e *Engine) processUtilToJson(templateStr string) string {
+	return e.processUtilToJsonPass(templateStr, false)
+}
+
+func (e *Engine) processUtilToJsonFinal(templateStr string) string {
+	return e.processUtilToJsonPass(templateStr, true)
+}
+
+func (e *Engine) processUtilToJsonPass(templateStr string, finalPass bool) string {
 	return appSyncUtilToJsonRegex.ReplaceAllStringFunc(templateStr, func(match string) string {
 		arg := strings.TrimSpace(appSyncUtilToJsonRegex.FindStringSubmatch(match)[1])
+		if !finalPass && strings.Contains(arg, "$ctx.") {
+			return match
+		}
+		if !finalPass && strings.Contains(arg, "$util.") {
+			return match
+		}
 		if isNullLiteral(arg) {
 			return "null"
 		}

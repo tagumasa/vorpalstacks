@@ -2,6 +2,7 @@ package neptune
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -37,7 +38,11 @@ func (h *AdminHandler) getStore(header http.Header) (*storeneptune.NeptuneStore,
 	if err != nil {
 		return nil, err
 	}
-	return store.(*storeneptune.NeptuneStore), nil
+	s, ok := store.(*storeneptune.NeptuneStore)
+	if !ok {
+		return nil, fmt.Errorf("unexpected store type: %T", store)
+	}
+	return s, nil
 }
 
 // DescribeDBClusters returns information about DB clusters, optionally filtered

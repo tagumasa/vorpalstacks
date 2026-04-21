@@ -17,6 +17,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -204,7 +205,9 @@ func (s *NeptuneGraphService) RegisterHandlers(d handler.Registrar) {
 
 func generateID(prefix string) string {
 	b := make([]byte, 5)
-	_, _ = rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic(fmt.Sprintf("crypto/rand.Read failed: %v", err))
+	}
 	return prefix + hex.EncodeToString(b)
 }
 
@@ -1216,17 +1219,34 @@ func (s *NeptuneGraphService) ListQueries(ctx context.Context, reqCtx *request.R
 		maxResults = 100
 	}
 
+	stateFilter := request.GetStringParam(req.Parameters, "state")
+	if stateFilter != "" && stateFilter != "ALL" {
+		allQueries, err := store.ListQueries(graphID, maxResults*3)
+		if err != nil {
+			return nil, err
+		}
+		items := make([]interface{}, 0, maxResults)
+		for _, q := range allQueries {
+			if q.State != stateFilter {
+				continue
+			}
+			items = append(items, queryToResponse(q))
+			if len(items) >= maxResults {
+				break
+			}
+		}
+		return map[string]interface{}{
+			"queries": items,
+		}, nil
+	}
+
 	queries, err := store.ListQueries(graphID, maxResults)
 	if err != nil {
 		return nil, err
 	}
 
-	stateFilter := request.GetStringParam(req.Parameters, "state")
 	items := make([]interface{}, 0, len(queries))
 	for _, q := range queries {
-		if stateFilter != "" && stateFilter != "ALL" && q.State != stateFilter {
-			continue
-		}
 		items = append(items, queryToResponse(q))
 	}
 
@@ -1730,6 +1750,7 @@ func (s *NeptuneGraphService) CancelExportTask(ctx context.Context, reqCtx *requ
 
 func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore, taskID, graphID string) {
 	defer s.taskWg.Done()
+	defer func() { resilience.RecoverPanic("NeptuneGraph advanceImportTask") }()
 	time.Sleep(100 * time.Millisecond)
 
 	err := store.TryAdvanceImportTask(taskID, "INITIALIZING", func(task *ngstore.ImportTask) {
@@ -1764,6 +1785,7 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 
 func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore, taskID string) {
 	defer s.taskWg.Done()
+	defer func() { resilience.RecoverPanic("NeptuneGraph advanceExportTask") }()
 	time.Sleep(50 * time.Millisecond)
 
 	err := store.TryAdvanceExportTask(taskID, "INITIALIZING", func(task *ngstore.ExportTask) {

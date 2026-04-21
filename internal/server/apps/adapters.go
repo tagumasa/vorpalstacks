@@ -10,6 +10,7 @@ import (
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
+	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 // sqsInvokerAdapter adapts the SQS concrete store to the eventbus.SQSInvoker
@@ -268,6 +269,234 @@ func selectOpenShard(shards []*storekinesis.Shard) *storekinesis.Shard {
 	}
 	if len(shards) > 0 {
 		return shards[len(shards)-1]
+	}
+	return nil
+}
+
+// dynamoDBStoreProvider is a minimal interface for obtaining a DynamoDB store
+// by region, satisfied by DynamoDBService.
+type dynamoDBStoreProvider interface {
+	GetStoreForRegion(region string) (dynamodbstore.DynamoDBStoreInterface, error)
+}
+
+// dynamoDBInvokerAdapter adapts the DynamoDB store to the eventbus.DynamoDBInvoker
+// interface, so that cross-service consumers (e.g. AppSync GraphQL resolvers)
+// perform item operations through the bus instead of holding a direct store reference.
+type dynamoDBInvokerAdapter struct {
+	provider dynamoDBStoreProvider
+}
+
+func (a *dynamoDBInvokerAdapter) store(ctx context.Context, region string) (dynamodbstore.DynamoDBStoreInterface, error) {
+	return a.provider.GetStoreForRegion(region)
+}
+
+// GetItem retrieves a single item from DynamoDB by key.
+func (a *dynamoDBInvokerAdapter) GetItem(ctx context.Context, region, tableName string, key map[string]interface{}) (map[string]interface{}, error) {
+	s, err := a.store(ctx, region)
+	if err != nil {
+		return nil, err
+	}
+	dynamoKey := dynamoMapToKey(key)
+	item, err := s.Items().Get(tableName, dynamoKey)
+	if err != nil {
+		return map[string]interface{}{}, nil
+	}
+	return dynamoItemToPlainMap(item), nil
+}
+
+// PutItem creates or replaces an item in DynamoDB.
+func (a *dynamoDBInvokerAdapter) PutItem(ctx context.Context, region, tableName string, key, attributes map[string]interface{}) (map[string]interface{}, error) {
+	s, err := a.store(ctx, region)
+	if err != nil {
+		return nil, err
+	}
+	dynamoKey := dynamoMapToKey(key)
+	dynamoAttrs := dynamoMapToAttrs(attributes)
+	item, err := s.Items().Put(tableName, dynamoKey, dynamoAttrs)
+	if err != nil {
+		return nil, err
+	}
+	result := dynamoItemToPlainMap(item)
+	if result == nil {
+		result = map[string]interface{}{}
+	}
+	return result, nil
+}
+
+// DeleteItem removes an item from DynamoDB by key.
+func (a *dynamoDBInvokerAdapter) DeleteItem(ctx context.Context, region, tableName string, key map[string]interface{}) error {
+	s, err := a.store(ctx, region)
+	if err != nil {
+		return err
+	}
+	dynamoKey := dynamoMapToKey(key)
+	return s.Items().Delete(tableName, dynamoKey)
+}
+
+// Scan scans all items in a DynamoDB table up to the given limit.
+func (a *dynamoDBInvokerAdapter) Scan(ctx context.Context, region, tableName string, limit int) ([]map[string]interface{}, error) {
+	s, err := a.store(ctx, region)
+	if err != nil {
+		return nil, err
+	}
+	if limit <= 0 {
+		limit = 1000
+	}
+	var results []map[string]interface{}
+	count := 0
+	scanErr := s.Items().Scan(tableName, func(item *dynamodbstore.Item) error {
+		if count >= limit {
+			return fmt.Errorf("scan limit reached")
+		}
+		results = append(results, dynamoItemToPlainMap(item))
+		count++
+		return nil
+	})
+	if scanErr != nil && count >= limit {
+		scanErr = nil
+	}
+	return results, scanErr
+}
+
+// Query retrieves items from a DynamoDB table by partition key value.
+func (a *dynamoDBInvokerAdapter) Query(ctx context.Context, region, tableName, partitionKeyValue string, limit int) ([]map[string]interface{}, error) {
+	s, err := a.store(ctx, region)
+	if err != nil {
+		return nil, err
+	}
+	if limit <= 0 {
+		limit = 1000
+	}
+	var results []map[string]interface{}
+	count := 0
+	queryErr := s.Items().ScanByPartitionKey(tableName, partitionKeyValue, func(item *dynamodbstore.Item) error {
+		if count >= limit {
+			return fmt.Errorf("query limit reached")
+		}
+		results = append(results, dynamoItemToPlainMap(item))
+		count++
+		return nil
+	})
+	if queryErr != nil && count >= limit {
+		queryErr = nil
+	}
+	return results, queryErr
+}
+
+// UpdateItem replaces the attributes of an existing item in DynamoDB.
+func (a *dynamoDBInvokerAdapter) UpdateItem(ctx context.Context, region, tableName string, key, attributes map[string]interface{}) error {
+	s, err := a.store(ctx, region)
+	if err != nil {
+		return err
+	}
+	dynamoKey := dynamoMapToKey(key)
+	dynamoAttrs := dynamoMapToAttrs(attributes)
+	_, err = s.Items().Put(tableName, dynamoKey, dynamoAttrs)
+	return err
+}
+
+func dynamoMapToKey(m map[string]interface{}) map[string]*dynamodbstore.AttributeValue {
+	if m == nil {
+		return nil
+	}
+	out := make(map[string]*dynamodbstore.AttributeValue, len(m))
+	for k, v := range m {
+		out[k] = dynamoInterfaceToAV(v)
+	}
+	return out
+}
+
+func dynamoMapToAttrs(m map[string]interface{}) map[string]*dynamodbstore.AttributeValue {
+	return dynamoMapToKey(m)
+}
+
+func dynamoInterfaceToAV(v interface{}) *dynamodbstore.AttributeValue {
+	if v == nil {
+		null := true
+		return &dynamodbstore.AttributeValue{NULL: &null}
+	}
+	switch val := v.(type) {
+	case string:
+		return &dynamodbstore.AttributeValue{S: &val}
+	case float64:
+		s := fmt.Sprintf("%g", val)
+		return &dynamodbstore.AttributeValue{N: &s}
+	case int:
+		s := fmt.Sprintf("%d", val)
+		return &dynamodbstore.AttributeValue{N: &s}
+	case int64:
+		s := fmt.Sprintf("%d", val)
+		return &dynamodbstore.AttributeValue{N: &s}
+	case bool:
+		return &dynamodbstore.AttributeValue{BOOL: &val}
+	case map[string]interface{}:
+		m := make(map[string]*dynamodbstore.AttributeValue)
+		for mk, mv := range val {
+			m[mk] = dynamoInterfaceToAV(mv)
+		}
+		return &dynamodbstore.AttributeValue{M: m}
+	case []interface{}:
+		l := make([]*dynamodbstore.AttributeValue, len(val))
+		for i, item := range val {
+			l[i] = dynamoInterfaceToAV(item)
+		}
+		return &dynamodbstore.AttributeValue{L: l}
+	default:
+		s := fmt.Sprintf("%v", val)
+		return &dynamodbstore.AttributeValue{S: &s}
+	}
+}
+
+func dynamoItemToPlainMap(item *dynamodbstore.Item) map[string]interface{} {
+	if item == nil {
+		return nil
+	}
+	result := make(map[string]interface{})
+	if item.Key != nil {
+		for k, v := range item.Key {
+			result[k] = dynamoAVToInterface(v)
+		}
+	}
+	if item.Attributes != nil {
+		for k, v := range item.Attributes {
+			result[k] = dynamoAVToInterface(v)
+		}
+	}
+	return result
+}
+
+func dynamoAVToInterface(av *dynamodbstore.AttributeValue) interface{} {
+	if av == nil {
+		return nil
+	}
+	if av.NULL != nil && *av.NULL {
+		return nil
+	}
+	if av.S != nil {
+		return *av.S
+	}
+	if av.N != nil {
+		return *av.N
+	}
+	if av.BOOL != nil {
+		return *av.BOOL
+	}
+	if av.M != nil {
+		m := make(map[string]interface{})
+		for k, v := range av.M {
+			m[k] = dynamoAVToInterface(v)
+		}
+		return m
+	}
+	if av.L != nil {
+		l := make([]interface{}, len(av.L))
+		for i, v := range av.L {
+			l[i] = dynamoAVToInterface(v)
+		}
+		return l
+	}
+	if av.B != nil {
+		return string(av.B)
 	}
 	return nil
 }

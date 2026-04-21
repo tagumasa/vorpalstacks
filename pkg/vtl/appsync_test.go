@@ -440,6 +440,75 @@ func TestUtilAutoIdUnique(t *testing.T) {
 	}
 }
 
+func TestUtilAutoIdInSet(t *testing.T) {
+	engine := NewEngine()
+	engine.AppSyncCtx = &AppSyncContext{}
+
+	template := `#set($postId = $util.autoId())$postId`
+	result, err := engine.Transform(template)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if len(result) != 36 {
+		t.Errorf("autoId inside #set should return UUID (36 chars), got %q (%d chars)", result, len(result))
+	}
+	if result[8] != '-' || result[13] != '-' || result[18] != '-' || result[23] != '-' {
+		t.Errorf("autoId inside #set should return UUID format, got %q", result)
+	}
+}
+
+func TestUtilAutoIdInSetUsedInPayload(t *testing.T) {
+	engine := NewEngine()
+	engine.AppSyncCtx = &AppSyncContext{
+		Args: map[string]interface{}{
+			"title": "Test Post",
+		},
+	}
+
+	template := `#set($postId = $util.autoId()){"key":{"id":{"S":"$postId"}},"attributeValues":{"id":{"S":"$postId"},"title":{"S":"$ctx.args.title"}}}`
+	result, err := engine.Transform(template)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if !strings.Contains(result, `"S":"`) {
+		t.Errorf("Expected DynamoDB JSON format, got %q", result)
+	}
+	if strings.Contains(result, "$postId") {
+		t.Errorf("Variable $postId should be resolved, got %q", result)
+	}
+	if !strings.Contains(result, "Test Post") {
+		t.Errorf("Expected $ctx.args.title resolved, got %q", result)
+	}
+}
+
+func TestUtilTimeNowInSet(t *testing.T) {
+	engine := NewEngine()
+	engine.AppSyncCtx = &AppSyncContext{}
+
+	template := `#set($now = $util.time.nowISO8601())$now`
+	result, err := engine.Transform(template)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if len(result) != 24 {
+		t.Errorf("time.nowISO8601 inside #set should return 24 chars, got %q (%d)", result, len(result))
+	}
+}
+
+func TestUtilEpochSecondsInSet(t *testing.T) {
+	engine := NewEngine()
+	engine.AppSyncCtx = &AppSyncContext{}
+
+	template := `#set($ts = $util.time.nowEpochSeconds())$ts`
+	result, err := engine.Transform(template)
+	if err != nil {
+		t.Fatalf("Transform error: %v", err)
+	}
+	if len(result) < 9 {
+		t.Errorf("time.nowEpochSeconds inside #set should return ~10 digits, got %q", result)
+	}
+}
+
 func TestUtilError(t *testing.T) {
 	engine := NewEngine()
 	engine.AppSyncCtx = &AppSyncContext{}

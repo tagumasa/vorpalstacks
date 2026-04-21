@@ -34,6 +34,9 @@ func (a *App) wireCrossServiceDeps() {
 	if st.eventsStoreInstance != nil {
 		eb.SetEventsInvoker(&eventsInvokerAdapter{putFn: st.eventsStoreInstance.Put})
 	}
+	if st.dynamoDBService != nil {
+		eb.SetDynamoDBInvoker(&dynamoDBInvokerAdapter{provider: st.dynamoDBService})
+	}
 
 	if st.cloudWatchService != nil {
 		st.cloudWatchService.SetEventBus(eb)

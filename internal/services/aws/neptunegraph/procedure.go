@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -169,6 +170,14 @@ func (pd *procedureDispatcher) execDistanceByNode(call *cypherparser.CypherCall,
 		return nil, err
 	}
 
+	const maxPairSize = 1000
+	if len(sourceIDs) > maxPairSize {
+		sourceIDs = sourceIDs[:maxPairSize]
+	}
+	if len(targetIDs) > maxPairSize {
+		targetIDs = targetIDs[:maxPairSize]
+	}
+
 	metric := graphengine.L2Squared
 	if len(call.Args) >= 3 {
 		opts, err := pd.resolveMap(call.Args[2], bindings)
@@ -270,6 +279,11 @@ func (pd *procedureDispatcher) execTopKByNode(call *cypherparser.CypherCall, bin
 	nodeIDs, err := pd.resolveNodeIDs(call.Args[0], bindings)
 	if err != nil {
 		return nil, err
+	}
+
+	const maxSourceNodes = 1000
+	if len(nodeIDs) > maxSourceNodes {
+		nodeIDs = nodeIDs[:maxSourceNodes]
 	}
 
 	k := 10
@@ -474,7 +488,11 @@ func parseNodeIDString(s string) (graphengine.NodeID, error) {
 	var id uint64
 	for _, c := range s {
 		if c >= '0' && c <= '9' {
-			id = id*10 + uint64(c-'0')
+			d := uint64(c - '0')
+			if id > (math.MaxUint64-d)/10 {
+				return 0, fmt.Errorf("node id overflows uint64")
+			}
+			id = id*10 + d
 		} else {
 			return 0, fmt.Errorf("not a valid numeric node id")
 		}

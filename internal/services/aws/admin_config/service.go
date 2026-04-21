@@ -24,21 +24,24 @@ type ConfigStore interface {
 	SetResourcePort(servicePortKey, resourceID string, port int) error
 }
 
-// Service provides admin configuration management operations.
+// AdminConfigService provides admin configuration management and server control.
 type AdminConfigService struct {
-	configStore ConfigStore
+	configStore  ConfigStore
+	shutdownFunc func()
 }
 
-// NewService creates a new admin config service instance.
+// NewAdminConfigService creates a new admin config service instance.
 //
 // Parameters:
 //   - configStore: The configuration store instance
+//   - shutdownFunc: Optional function to trigger graceful server shutdown (may be nil)
 //
 // Returns:
 //   - *AdminConfigService: A new admin config service instance
-func NewAdminConfigService(configStore ConfigStore) *AdminConfigService {
+func NewAdminConfigService(configStore ConfigStore, shutdownFunc func()) *AdminConfigService {
 	return &AdminConfigService{
-		configStore: configStore,
+		configStore:  configStore,
+		shutdownFunc: shutdownFunc,
 	}
 }
 
@@ -222,6 +225,20 @@ func (s *AdminConfigService) SetResourcePort(ctx context.Context, req *connect.R
 	}
 
 	return connect.NewResponse(&common.Empty{}), nil
+}
+
+// ShutdownServer triggers a graceful server shutdown. The response is sent
+// immediately; the actual shutdown happens asynchronously in a goroutine.
+func (s *AdminConfigService) ShutdownServer(ctx context.Context, req *connect.Request[pb.ShutdownServerRequest]) (*connect.Response[pb.ShutdownServerResponse], error) {
+	resp := connect.NewResponse(&pb.ShutdownServerResponse{
+		Message: "Server is shutting down",
+	})
+
+	if s.shutdownFunc != nil {
+		go s.shutdownFunc()
+	}
+
+	return resp, nil
 }
 
 func toPbEntry(entry *storeconfig.ConfigEntry) *pb.ConfigEntry {

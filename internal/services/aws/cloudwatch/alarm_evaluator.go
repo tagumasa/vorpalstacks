@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
@@ -116,6 +117,7 @@ func (e *alarmEvaluator) Stop() {
 // but do not halt the loop.
 func (e *alarmEvaluator) evalLoop(ctx context.Context, s *CloudWatchService) {
 	defer e.wg.Done()
+	defer func() { resilience.RecoverAndRestart("alarm evalLoop", &e.wg, func() { e.evalLoop(ctx, s) }) }()
 	ticker := time.NewTicker(e.interval)
 	defer ticker.Stop()
 

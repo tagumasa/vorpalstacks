@@ -273,7 +273,10 @@ func (s *AppSyncStore) UpdateApiById(apiId string, update *Api) (*Api, error) {
 
 	// If the name changed, remove the old entry before saving under the new key.
 	if oldName != existing.Name {
-		_ = s.apisStore.Delete(oldName)
+		if err := s.apisStore.Delete(oldName); err != nil {
+			logs.Warn("failed to delete stale Event API name during rename",
+				logs.String("apiId", existing.ApiId), logs.String("oldName", oldName), logs.Err(err))
+		}
 	}
 
 	if err := s.apisStore.Put(existing.Name, existing); err != nil {
@@ -294,7 +297,10 @@ func (s *AppSyncStore) DeleteApiById(apiId string) error {
 	defer s.createMu.Unlock()
 
 	// Remove all channel namespaces for this Event API.
-	_ = s.channelsStore.DeleteByPrefix(apiId + "/")
+	if err := s.channelsStore.DeleteByPrefix(apiId + "/"); err != nil {
+		logs.Warn("failed to delete channel namespaces during Event API deletion",
+			logs.String("apiId", apiId), logs.Err(err))
+	}
 
 	return s.apisStore.Delete(existing.Name)
 }
@@ -442,7 +448,10 @@ func (s *AppSyncStore) UpdateChannelNamespaceTags(apiId, name string, mergeFn fu
 	}
 
 	if len(mergedTags) > 0 {
-		_ = s.TagStore.Tag(ns.ChannelNamespaceArn, mergedTags)
+		if err := s.TagStore.Tag(ns.ChannelNamespaceArn, mergedTags); err != nil {
+			logs.Warn("failed to update tags for channel namespace",
+				logs.String("arn", ns.ChannelNamespaceArn), logs.Err(err))
+		}
 	}
 
 	return nil

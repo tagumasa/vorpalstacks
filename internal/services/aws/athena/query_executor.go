@@ -8,11 +8,23 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 	"vorpalstacks/pkg/sqlparser"
 )
 
 func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *athenastore.QueryExecution) {
+	defer func() {
+		if r := resilience.RecoverPanic("executeQueryAsync"); r != nil {
+			qe.Status.State = athenastore.QueryExecutionStateFailed
+			qe.Status.StateChangeReason = fmt.Sprintf("internal panic: %v", r)
+			qe.Status.CompletionDateTime = time.Now().UTC()
+			st, _ := s.store(reqCtx)
+			if st != nil {
+				_ = st.queryExecutionStore.UpdateQueryExecution(qe)
+			}
+		}
+	}()
 	ctx, cancel := context.WithCancel(context.Background())
 	s.setCancelFunc(qe.QueryExecutionId, cancel)
 	defer cancel()

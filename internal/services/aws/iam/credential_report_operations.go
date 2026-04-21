@@ -12,6 +12,7 @@ import (
 
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/resilience"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -57,6 +58,7 @@ func (s *IAMService) GenerateCredentialReport(_ context.Context, reqCtx *request
 	s.reportWg.Add(1)
 	go func() {
 		defer s.reportWg.Done()
+		defer func() { resilience.RecoverPanic("IAM credential report generation") }()
 		time.Sleep(500 * time.Millisecond)
 
 		credentialReportMu.Lock()

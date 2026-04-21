@@ -216,11 +216,6 @@ func (s *NeptuneService) RebootDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, awserrors.NewAWSError("InvalidDBInstanceStateFault", fmt.Sprintf("instance %s is not in available state", id), http.StatusBadRequest)
 	}
 
-	instance.Status = "rebooting"
-	if err := store.UpdateInstance(instance); err != nil {
-		return nil, translateStoreError(err)
-	}
-
 	instance.Status = "available"
 	if err := store.UpdateInstance(instance); err != nil {
 		return nil, translateStoreError(err)

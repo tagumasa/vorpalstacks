@@ -36,13 +36,14 @@ func (s *AppSyncService) AssociateSourceGraphqlApi(ctx context.Context, reqCtx *
 
 	description := request.GetStringParam(req.Parameters, "description")
 
+	assocID := uuid.New().String()
 	assoc := &appsyncstore.SourceApiAssociation{
-		AssociationId:              uuid.New().String(),
+		AssociationId:              assocID,
 		MergedApiId:                mergedApiId,
 		SourceApiId:                sourceApiId,
 		MergedApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(mergedApiId),
 		SourceApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(sourceApiId),
-		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().SourceApiAssociation(mergedApiId, uuid.New().String()),
+		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().SourceApiAssociation(mergedApiId, assocID),
 		SourceApiAssociationStatus: "MERGE_SCHEDULED",
 		Description:                description,
 	}
@@ -203,13 +204,14 @@ func (s *AppSyncService) AssociateMergedGraphqlApi(ctx context.Context, reqCtx *
 
 	description := request.GetStringParam(req.Parameters, "description")
 
+	assocID := uuid.New().String()
 	assoc := &appsyncstore.SourceApiAssociation{
-		AssociationId:              uuid.New().String(),
+		AssociationId:              assocID,
 		MergedApiId:                mergedApiId,
 		SourceApiId:                sourceApiId,
 		MergedApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(mergedApiId),
 		SourceApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(sourceApiId),
-		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().MergedApiAssociation(sourceApiId, uuid.New().String()),
+		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().MergedApiAssociation(sourceApiId, assocID),
 		SourceApiAssociationStatus: "MERGE_SCHEDULED",
 		Description:                description,
 	}

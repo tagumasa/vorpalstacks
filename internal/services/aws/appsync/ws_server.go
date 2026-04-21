@@ -206,7 +206,12 @@ func (s *EventServer) DisconnectByApiId(apiId string) {
 	s.connMu.RUnlock()
 
 	for _, ws := range toClose {
-		ws.conn.Close()
+		ws.mu.Lock()
+		if !ws.closed {
+			ws.closed = true
+			close(ws.sendCh)
+		}
+		ws.mu.Unlock()
 	}
 }
 
@@ -344,8 +349,10 @@ func (s *EventServer) extractApiId(r *http.Request) string {
 func (s *EventServer) readPump(ws *wsConnection) {
 	defer func() {
 		ws.mu.Lock()
-		ws.closed = true
-		close(ws.sendCh)
+		if !ws.closed {
+			ws.closed = true
+			close(ws.sendCh)
+		}
 		ws.mu.Unlock()
 
 		s.channels.removeConnection(ws.id)
@@ -366,7 +373,6 @@ func (s *EventServer) readPump(ws *wsConnection) {
 		"connectionTimeoutMs": connectionTimeoutMs,
 	})
 	ws.sendCh <- ack
-
 	for {
 		_, message, err := ws.conn.ReadMessage()
 		if err != nil {
@@ -484,7 +490,7 @@ func (s *EventServer) handleSubscribe(ws *wsConnection, subId, channel string, a
 		"type": "subscribe_success",
 		"id":   subId,
 	})
-	s.sendMessage(ws, resp)
+	s.sendControlMessage(ws, resp)
 }
 
 // handlePublish validates events and broadcasts them to matching subscribers.
@@ -519,7 +525,7 @@ func (s *EventServer) handlePublish(ws *wsConnection, pubId, channel string, eve
 		"successful": result.Successful,
 		"failed":     result.Failed,
 	})
-	s.sendMessage(ws, resp)
+	s.sendControlMessage(ws, resp)
 }
 
 // handleUnsubscribe removes a subscription and stops receiving events on that channel.
@@ -546,7 +552,7 @@ func (s *EventServer) handleUnsubscribe(ws *wsConnection, subId string) {
 		"type": "unsubscribe_success",
 		"id":   subId,
 	})
-	s.sendMessage(ws, resp)
+	s.sendControlMessage(ws, resp)
 }
 
 // publishEvents broadcasts events to all subscribers matching the channel path.
@@ -643,9 +649,21 @@ type publishResult struct {
 }
 
 func (s *EventServer) sendMessage(ws *wsConnection, msg []byte) {
+	s.sendMessageInternal(ws, msg, false)
+}
+
+func (s *EventServer) sendControlMessage(ws *wsConnection, msg []byte) {
+	s.sendMessageInternal(ws, msg, true)
+}
+
+func (s *EventServer) sendMessageInternal(ws *wsConnection, msg []byte, block bool) {
 	ws.mu.RLock()
 	defer ws.mu.RUnlock()
 	if ws.closed {
+		return
+	}
+	if block {
+		ws.sendCh <- msg
 		return
 	}
 	select {
@@ -663,7 +681,7 @@ func (s *EventServer) sendError(ws *wsConnection, id, errorType, message string)
 			{"errorType": errorType, "message": message},
 		},
 	})
-	s.sendMessage(ws, resp)
+	s.sendControlMessage(ws, resp)
 }
 
 func (s *EventServer) sendSubscribeError(ws *wsConnection, id, errorType, message string) {
@@ -674,7 +692,7 @@ func (s *EventServer) sendSubscribeError(ws *wsConnection, id, errorType, messag
 			{"errorType": errorType, "message": message},
 		},
 	})
-	s.sendMessage(ws, resp)
+	s.sendControlMessage(ws, resp)
 }
 
 func (s *EventServer) sendPublishError(ws *wsConnection, id, errorType, message string) {
@@ -685,7 +703,7 @@ func (s *EventServer) sendPublishError(ws *wsConnection, id, errorType, message 
 			{"errorType": errorType, "message": message},
 		},
 	})
-	s.sendMessage(ws, resp)
+	s.sendControlMessage(ws, resp)
 }
 
 func (s *EventServer) sendUnsubscribeError(ws *wsConnection, id, errorType, message string) {
@@ -696,5 +714,5 @@ func (s *EventServer) sendUnsubscribeError(ws *wsConnection, id, errorType, mess
 			{"errorType": errorType, "message": message},
 		},
 	})
-	s.sendMessage(ws, resp)
+	s.sendControlMessage(ws, resp)
 }

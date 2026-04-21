@@ -148,20 +148,6 @@ func (s *NeptuneService) ModifyGlobalCluster(ctx context.Context, reqCtx *reques
 		return nil, translateStoreError(err)
 	}
 
-	if v := request.GetStringParam(params, "NewGlobalClusterIdentifier"); v != "" {
-		oldID := gc.GlobalClusterIdentifier
-		gc.GlobalClusterIdentifier = v
-		if err := store.CreateGlobalCluster(gc); err != nil {
-			return nil, translateStoreError(err)
-		}
-		if err := store.DeleteGlobalCluster(oldID); err != nil {
-			_ = store.DeleteGlobalCluster(v)
-			return nil, translateStoreError(err)
-		}
-		return map[string]interface{}{
-			"GlobalCluster": gc,
-		}, nil
-	}
 	if v := request.GetStringParam(params, "EngineVersion"); v != "" {
 		gc.EngineVersion = v
 	}
@@ -171,6 +157,20 @@ func (s *NeptuneService) ModifyGlobalCluster(ctx context.Context, reqCtx *reques
 
 	if err := store.UpdateGlobalCluster(gc); err != nil {
 		return nil, translateStoreError(err)
+	}
+
+	newID := request.GetStringParam(params, "NewGlobalClusterIdentifier")
+	if newID != "" && newID != id {
+		oldID := gc.GlobalClusterIdentifier
+		gc.GlobalClusterIdentifier = newID
+		gc.GlobalClusterArn = arnutil.NewARNBuilder(gc.AccountID, gc.Region).RDS().GlobalCluster(newID)
+		if err := store.CreateGlobalCluster(gc); err != nil {
+			return nil, translateStoreError(err)
+		}
+		if err := store.DeleteGlobalCluster(oldID); err != nil {
+			_ = store.DeleteGlobalCluster(newID)
+			return nil, translateStoreError(err)
+		}
 	}
 
 	return map[string]interface{}{
@@ -193,11 +193,6 @@ func (s *NeptuneService) FailoverGlobalCluster(ctx context.Context, reqCtx *requ
 
 	gc, err := store.GetGlobalCluster(id)
 	if err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	gc.Status = "failing-over"
-	if err := store.UpdateGlobalCluster(gc); err != nil {
 		return nil, translateStoreError(err)
 	}
 

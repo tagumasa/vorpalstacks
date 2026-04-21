@@ -234,11 +234,13 @@ High-performance IAM role validation with caching:
 
 Supported services: Lambda, Step Functions, EventBridge, Scheduler, CloudTrail
 
-### KMS Backend (`internal/services/aws/kms`)
+### KMS Backend (`internal/services/aws/kms/hsm`)
 
-Key management with pluggable backends:
-- **Memory Backend**: In-memory keys with AES-GCM encryption
-- **Persistent Backend**: Keys encrypted with ChaCha20-Poly1305 and persisted to disk
+Key management with HSM-backed cryptographic operations:
+- **HSM Interface**: Pluggable backend (`hsm.Backend` interface)
+- **Persistent Backend**: AES-256-GCM encrypted keys persisted to disk
+- **Memory Backend**: In-memory keys (testing only)
+- Supported operations: Encrypt, Decrypt, Sign, Verify, GenerateMAC, VerifyMAC, GenerateDataKey, asymmetric key pairs (RSA, ECC)
 
 ## Scalability Considerations
 

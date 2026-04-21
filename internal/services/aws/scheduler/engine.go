@@ -16,6 +16,7 @@ import (
 	"vorpalstacks/internal/common/endpoint"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
@@ -103,6 +104,7 @@ func (e *Engine) Stop() error {
 
 func (e *Engine) run() {
 	defer e.wg.Done()
+	defer func() { resilience.RecoverAndRestart("scheduler engine", &e.wg, e.run) }()
 
 	ticker := time.NewTicker(schedulerTickerInterval)
 	defer ticker.Stop()

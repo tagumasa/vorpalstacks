@@ -226,9 +226,9 @@ Platform: AMD Ryzen 7 5700U (16 cores), Linux, Go 1.25.8, Pebble v2.1.4
 
 | Service | Operation | Avg Latency | ops/sec |
 |---------|-----------|-------------|---------|
-| DynamoDB | GetItem | 0.38ms | ~2,630 |
-| S3 | GetObject (1KB) | 0.27ms | ~3,700 |
-| SQS | SendMessage | 0.67ms | ~1,490 |
+| DynamoDB | GetItem | 0.87ms | ~1,150 |
+| S3 | GetObject | 0.96ms | ~1,040 |
+| SQS | SendMessage | 0.82ms | ~1,220 |
 
 ## License
 

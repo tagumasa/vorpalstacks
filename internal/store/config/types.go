@@ -49,6 +49,8 @@ const (
 	CategoryEndpoints ConfigCategory = "endpoints"
 	// CategoryPorts contains port configuration keys.
 	CategoryPorts ConfigCategory = "ports"
+	// CategoryHTTP contains HTTP-related configuration keys (e.g. CORS).
+	CategoryHTTP ConfigCategory = "http"
 )
 
 // ConfigEntry represents a single configuration entry.

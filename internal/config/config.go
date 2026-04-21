@@ -278,3 +278,37 @@ func SignatureVerificationEnabled() bool {
 func Route53DNSEnabled() bool {
 	return GetBool("features.route53_dns")
 }
+
+// CORSAllowedOrigins returns the comma-separated list of allowed CORS origins.
+//
+// Returns:
+//   - string: The allowed origins, or "*" if not configured
+func CORSAllowedOrigins() string {
+	return GetString("http.cors_allowed_origins")
+}
+
+// CORSAllowedMethods returns the comma-separated list of allowed CORS methods.
+//
+// Returns:
+//   - string: The allowed methods
+func CORSAllowedMethods() string {
+	return GetString("http.cors_allowed_methods")
+}
+
+// CORSAllowedHeaders returns the comma-separated list of allowed CORS request headers.
+//
+// Returns:
+//   - string: The allowed request headers
+func CORSAllowedHeaders() string {
+	return GetString("http.cors_allowed_headers")
+}
+
+// CORSExposeHeaders returns the comma-separated list of CORS headers exposed to the client.
+//
+// Returns:
+//   - string: The exposed response headers
+func CORSExposeHeaders() string {
+	return GetString("http.cors_expose_headers")
+}
+
+

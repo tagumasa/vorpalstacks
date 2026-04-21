@@ -13,10 +13,8 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
-	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -113,15 +111,21 @@ func (e *graphQLEngine) dispatchDynamoDB(
 	ds *appsyncstore.DataSource,
 	payload interface{},
 ) (interface{}, error) {
-	basicStorage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, fmt.Errorf("DynamoDB storage not available: %w", err)
+	if e.bus == nil {
+		return nil, fmt.Errorf("event bus not configured for DynamoDB invocation")
 	}
-	txnStorage, ok := basicStorage.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		return nil, fmt.Errorf("DynamoDB storage does not support transactions")
+
+	busImpl, ok := e.bus.(*busPublisherAdapter)
+	if !ok || busImpl == nil {
+		return nil, fmt.Errorf("event bus adapter not available for DynamoDB invocation")
 	}
-	dynamoDBStore := dynamodbstore.NewDynamoDBStore(txnStorage, reqCtx.GetAccountID(), reqCtx.GetRegion())
+
+	invoker := busImpl.bus.DynamoDBInvoker()
+	if invoker == nil {
+		return nil, fmt.Errorf("DynamoDB invoker not configured on event bus")
+	}
+
+	region := reqCtx.GetRegion()
 
 	payloadMap, ok := toMap(payload)
 	if !ok {
@@ -139,48 +143,46 @@ func (e *graphQLEngine) dispatchDynamoDB(
 
 	keyMap := getMapFromMap(payloadMap, "key")
 	itemMap := getMapFromMap(payloadMap, "item")
+	if itemMap == nil {
+		itemMap = getMapFromMap(payloadMap, "attributeValues")
+	}
 
 	switch operation {
 	case "GetItem":
 		if keyMap == nil {
 			return nil, fmt.Errorf("DynamoDB GetItem requires 'key'")
 		}
-		dynamoKey := convertToDynamoKey(keyMap)
-		item, err := dynamoDBStore.Items().Get(tableName, dynamoKey)
-		if err != nil {
-			return map[string]interface{}{}, nil
-		}
-		return dynamoItemToMap(item), nil
+		return invoker.GetItem(ctx, region, tableName, keyMap)
 
 	case "PutItem":
 		if keyMap == nil && itemMap == nil {
 			return nil, fmt.Errorf("DynamoDB PutItem requires 'key' or 'item'")
 		}
-		dynamoKey := convertToDynamoKey(keyMap)
-		attrs := convertToDynamoAttrs(itemMap)
-		_, err := dynamoDBStore.Items().Put(tableName, dynamoKey, attrs)
-		if err != nil {
-			return nil, fmt.Errorf("DynamoDB PutItem failed: %w", err)
+		if keyMap == nil {
+			keyMap = make(map[string]interface{})
 		}
-		return map[string]interface{}{}, nil
+		if itemMap == nil {
+			itemMap = make(map[string]interface{})
+		}
+		if idVal, ok := keyMap["id"]; ok && idVal == "" {
+			newID := uuid.New().String()
+			keyMap["id"] = newID
+			itemMap["id"] = newID
+		}
+		return invoker.PutItem(ctx, region, tableName, keyMap, itemMap)
 
 	case "DeleteItem":
 		if keyMap == nil {
 			return nil, fmt.Errorf("DynamoDB DeleteItem requires 'key'")
 		}
-		dynamoKey := convertToDynamoKey(keyMap)
-		err := dynamoDBStore.Items().Delete(tableName, dynamoKey)
+		err := invoker.DeleteItem(ctx, region, tableName, keyMap)
 		if err != nil {
 			return nil, fmt.Errorf("DynamoDB DeleteItem failed: %w", err)
 		}
 		return map[string]interface{}{}, nil
 
 	case "Scan":
-		var items []interface{}
-		err := dynamoDBStore.Items().Scan(tableName, func(item *dynamodbstore.Item) error {
-			items = append(items, dynamoItemToMap(item))
-			return nil
-		})
+		items, err := invoker.Scan(ctx, region, tableName, 1000)
 		if err != nil {
 			return nil, fmt.Errorf("DynamoDB Scan failed: %w", err)
 		}
@@ -197,11 +199,7 @@ func (e *graphQLEngine) dispatchDynamoDB(
 				break
 			}
 		}
-		var items []interface{}
-		err := dynamoDBStore.Items().ScanByPartitionKey(tableName, pkVal, func(item *dynamodbstore.Item) error {
-			items = append(items, dynamoItemToMap(item))
-			return nil
-		})
+		items, err := invoker.Query(ctx, region, tableName, pkVal, 1000)
 		if err != nil {
 			return nil, fmt.Errorf("DynamoDB Query failed: %w", err)
 		}
@@ -211,9 +209,7 @@ func (e *graphQLEngine) dispatchDynamoDB(
 		if keyMap == nil {
 			return nil, fmt.Errorf("DynamoDB UpdateItem requires 'key'")
 		}
-		dynamoKey := convertToDynamoKey(keyMap)
-		attrs := convertToDynamoAttrs(itemMap)
-		_, err := dynamoDBStore.Items().Put(tableName, dynamoKey, attrs)
+		err := invoker.UpdateItem(ctx, region, tableName, keyMap, itemMap)
 		if err != nil {
 			return nil, fmt.Errorf("DynamoDB UpdateItem failed: %w", err)
 		}
@@ -305,7 +301,7 @@ func (e *graphQLEngine) dispatchEventBridge(
 	for _, ev := range events {
 		if evMap, ok := ev.(map[string]interface{}); ok {
 			publishEvent := &appsyncPublishEvent{
-				ID:          generateUUID(),
+				ID:          uuid.New().String(),
 				Timestamp:   time.Now().UTC(),
 				Source:      "aws.appsync",
 				Region:      e.store.GetRegion(),
@@ -440,143 +436,6 @@ func (e *appsyncPublishEvent) SetEventDepth(d int) {}
 
 // EventCaller returns the caller context that produced this event.
 func (e *appsyncPublishEvent) EventCaller() eventbus.CallerContext { return eventbus.CallerContext{} }
-
-// --- DynamoDB conversion helpers ---
-
-// convertToDynamoKey converts a map[string]interface{} to a DynamoDB key
-// format using the store's AttributeValue type.
-func convertToDynamoKey(keyMap map[string]interface{}) map[string]*dynamodbstore.AttributeValue {
-	if keyMap == nil {
-		return nil
-	}
-	result := make(map[string]*dynamodbstore.AttributeValue)
-	for k, v := range keyMap {
-		result[k] = interfaceToAttributeValue(v)
-	}
-	return result
-}
-
-// convertToDynamoAttrs converts a flat map to DynamoDB attribute format
-// using the store's AttributeValue type.
-func convertToDynamoAttrs(itemMap map[string]interface{}) map[string]*dynamodbstore.AttributeValue {
-	if itemMap == nil {
-		return nil
-	}
-	result := make(map[string]*dynamodbstore.AttributeValue)
-	for k, v := range itemMap {
-		result[k] = interfaceToAttributeValue(v)
-	}
-	return result
-}
-
-// interfaceToAttributeValue converts a Go interface{} value to a DynamoDB AttributeValue.
-func interfaceToAttributeValue(v interface{}) *dynamodbstore.AttributeValue {
-	if v == nil {
-		null := true
-		return &dynamodbstore.AttributeValue{NULL: &null}
-	}
-	switch val := v.(type) {
-	case string:
-		return &dynamodbstore.AttributeValue{S: &val}
-	case float64:
-		s := fmt.Sprintf("%g", val)
-		return &dynamodbstore.AttributeValue{N: &s}
-	case int:
-		s := fmt.Sprintf("%d", val)
-		return &dynamodbstore.AttributeValue{N: &s}
-	case int64:
-		s := fmt.Sprintf("%d", val)
-		return &dynamodbstore.AttributeValue{N: &s}
-	case bool:
-		return &dynamodbstore.AttributeValue{BOOL: &val}
-	case map[string]interface{}:
-		m := make(map[string]*dynamodbstore.AttributeValue)
-		for mk, mv := range val {
-			m[mk] = interfaceToAttributeValue(mv)
-		}
-		return &dynamodbstore.AttributeValue{M: m}
-	case []interface{}:
-		l := make([]*dynamodbstore.AttributeValue, len(val))
-		for i, item := range val {
-			l[i] = interfaceToAttributeValue(item)
-		}
-		return &dynamodbstore.AttributeValue{L: l}
-	case *dynamodbstore.AttributeValue:
-		return val
-	default:
-		s := fmt.Sprintf("%v", val)
-		return &dynamodbstore.AttributeValue{S: &s}
-	}
-}
-
-// dynamoItemToMap converts a DynamoDB Item to a plain map[string]interface{}
-// suitable for JSON serialisation in the GraphQL response.
-func dynamoItemToMap(item *dynamodbstore.Item) map[string]interface{} {
-	if item == nil {
-		return nil
-	}
-	result := make(map[string]interface{})
-	if item.Key != nil {
-		for k, v := range item.Key {
-			result[k] = attributeValueToInterface(v)
-		}
-	}
-	if item.Attributes != nil {
-		for k, v := range item.Attributes {
-			result[k] = attributeValueToInterface(v)
-		}
-	}
-	return result
-}
-
-// attributeValueToInterface converts a DynamoDB AttributeValue back to a
-// plain Go interface{} for JSON serialisation.
-func attributeValueToInterface(av *dynamodbstore.AttributeValue) interface{} {
-	if av == nil {
-		return nil
-	}
-	if av.NULL != nil && *av.NULL {
-		return nil
-	}
-	if av.S != nil {
-		return *av.S
-	}
-	if av.N != nil {
-		return *av.N
-	}
-	if av.BOOL != nil {
-		return *av.BOOL
-	}
-	if av.M != nil {
-		m := make(map[string]interface{})
-		for k, v := range av.M {
-			m[k] = attributeValueToInterface(v)
-		}
-		return m
-	}
-	if av.L != nil {
-		l := make([]interface{}, len(av.L))
-		for i, v := range av.L {
-			l[i] = attributeValueToInterface(v)
-		}
-		return l
-	}
-	if av.SS != nil {
-		return av.SS
-	}
-	if av.NS != nil {
-		return av.NS
-	}
-	if av.B != nil {
-		return string(av.B)
-	}
-	return nil
-}
-
-// generateUUID generates a new UUID string.
-func generateUUID() string {
-	return uuid.New().String()
-}
 
 // --- Generic map access helpers ---
 

@@ -28,6 +28,7 @@ const (
 	AdminConfigService_GetServiceStatus_FullMethodName = "/admin_config.AdminConfigService/GetServiceStatus"
 	AdminConfigService_GetResourcePort_FullMethodName  = "/admin_config.AdminConfigService/GetResourcePort"
 	AdminConfigService_SetResourcePort_FullMethodName  = "/admin_config.AdminConfigService/SetResourcePort"
+	AdminConfigService_ShutdownServer_FullMethodName   = "/admin_config.AdminConfigService/ShutdownServer"
 )
 
 // AdminConfigServiceClient is the client API for AdminConfigService service.
@@ -45,6 +46,8 @@ type AdminConfigServiceClient interface {
 	// Port mappings for resources
 	GetResourcePort(ctx context.Context, in *GetResourcePortRequest, opts ...grpc.CallOption) (*GetResourcePortResponse, error)
 	SetResourcePort(ctx context.Context, in *SetResourcePortRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Server control
+	ShutdownServer(ctx context.Context, in *ShutdownServerRequest, opts ...grpc.CallOption) (*ShutdownServerResponse, error)
 }
 
 type adminConfigServiceClient struct {
@@ -135,6 +138,16 @@ func (c *adminConfigServiceClient) SetResourcePort(ctx context.Context, in *SetR
 	return out, nil
 }
 
+func (c *adminConfigServiceClient) ShutdownServer(ctx context.Context, in *ShutdownServerRequest, opts ...grpc.CallOption) (*ShutdownServerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ShutdownServerResponse)
+	err := c.cc.Invoke(ctx, AdminConfigService_ShutdownServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminConfigServiceServer is the server API for AdminConfigService service.
 // All implementations must embed UnimplementedAdminConfigServiceServer
 // for forward compatibility.
@@ -150,6 +163,8 @@ type AdminConfigServiceServer interface {
 	// Port mappings for resources
 	GetResourcePort(context.Context, *GetResourcePortRequest) (*GetResourcePortResponse, error)
 	SetResourcePort(context.Context, *SetResourcePortRequest) (*common.Empty, error)
+	// Server control
+	ShutdownServer(context.Context, *ShutdownServerRequest) (*ShutdownServerResponse, error)
 	mustEmbedUnimplementedAdminConfigServiceServer()
 }
 
@@ -183,6 +198,9 @@ func (UnimplementedAdminConfigServiceServer) GetResourcePort(context.Context, *G
 }
 func (UnimplementedAdminConfigServiceServer) SetResourcePort(context.Context, *SetResourcePortRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetResourcePort not implemented")
+}
+func (UnimplementedAdminConfigServiceServer) ShutdownServer(context.Context, *ShutdownServerRequest) (*ShutdownServerResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ShutdownServer not implemented")
 }
 func (UnimplementedAdminConfigServiceServer) mustEmbedUnimplementedAdminConfigServiceServer() {}
 func (UnimplementedAdminConfigServiceServer) testEmbeddedByValue()                            {}
@@ -349,6 +367,24 @@ func _AdminConfigService_SetResourcePort_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminConfigService_ShutdownServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShutdownServerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminConfigServiceServer).ShutdownServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminConfigService_ShutdownServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminConfigServiceServer).ShutdownServer(ctx, req.(*ShutdownServerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminConfigService_ServiceDesc is the grpc.ServiceDesc for AdminConfigService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -387,6 +423,10 @@ var AdminConfigService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetResourcePort",
 			Handler:    _AdminConfigService_SetResourcePort_Handler,
+		},
+		{
+			MethodName: "ShutdownServer",
+			Handler:    _AdminConfigService_ShutdownServer_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

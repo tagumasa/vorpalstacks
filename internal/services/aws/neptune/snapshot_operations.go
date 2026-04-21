@@ -438,11 +438,6 @@ func (s *NeptuneService) PromoteReadReplicaDBCluster(ctx context.Context, reqCtx
 
 	cluster.ReplicationSourceIdentifier = ""
 	cluster.GlobalClusterIdentifier = ""
-	cluster.Status = "promoting"
-	if err := store.UpdateCluster(cluster); err != nil {
-		return nil, translateStoreError(err)
-	}
-
 	cluster.Status = "available"
 	if err := store.UpdateCluster(cluster); err != nil {
 		return nil, translateStoreError(err)

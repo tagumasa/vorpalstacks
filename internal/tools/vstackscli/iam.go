@@ -1,5 +1,4 @@
-// Command iam-admin provides IAM administration utilities for vorpalstacks.
-package main
+package vstackscli
 
 import (
 	"encoding/json"
@@ -9,39 +8,32 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/store/api"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
-func main() {
-	dataPath := flag.String("data", "./data", "Path to data directory")
-	accountId := flag.String("account-id", "123456789012", "AWS Account ID")
-	flag.Parse()
-
-	args := flag.Args()
+// RunIAM dispatches IAM administration commands (user, access-key, login-profile
+// CRUD) against the PebbleDB-backed IAM stores.
+//
+// Parameters:
+//   - store: The underlying PebbleDB storage
+//   - accountId: The AWS account ID used when creating users
+//   - args: Command-line arguments (sub-command and flags)
+func RunIAM(store storage.BasicStorage, accountId string, args []string) {
 	if len(args) == 0 {
-		printUsage()
+		printIAMUsage()
 		os.Exit(1)
 	}
 
-	store, err := storage.NewPebbleStorage(&storage.Config{Path: *dataPath})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to open storage: %v\n", err)
-		os.Exit(1)
-	}
-	defer store.Close()
-
-	userStore := iamstore.NewUserStore(store, *accountId)
+	userStore := iamstore.NewUserStore(store, accountId)
 	accessKeyStore := iamstore.NewAccessKeyStore(store)
 	loginProfileStore := iamstore.NewLoginProfileStore(store)
-	configStore := api.NewConfigStore(store)
 
 	cmd := args[0]
 	cmdArgs := args[1:]
 
 	switch cmd {
 	case "create-user":
-		createUserCmd(userStore, *accountId, cmdArgs)
+		createUserCmd(userStore, accountId, cmdArgs)
 	case "delete-user":
 		deleteUserCmd(userStore, cmdArgs)
 	case "list-users":
@@ -58,38 +50,24 @@ func main() {
 		createLoginProfileCmd(loginProfileStore, userStore, cmdArgs)
 	case "delete-login-profile":
 		deleteLoginProfileCmd(loginProfileStore, userStore, cmdArgs)
-	case "set-config":
-		setConfigCmd(configStore, cmdArgs)
-	case "get-config":
-		getConfigCmd(configStore, cmdArgs)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", cmd)
-		printUsage()
+		printIAMUsage()
 		os.Exit(1)
 	}
 }
 
-func printUsage() {
-	fmt.Println("IAM Admin CLI")
-	fmt.Println()
-	fmt.Println("Usage: iam-admin [options] <command> [command-args]")
-	fmt.Println()
-	fmt.Println("Options:")
-	fmt.Println("  -data <path>       Path to data directory (default: ./data)")
-	fmt.Println("  -account-id <id>   AWS Account ID (default: 123456789012)")
-	fmt.Println()
-	fmt.Println("Commands:")
-	fmt.Println("  create-user -user <name> [-path <path>]")
-	fmt.Println("  delete-user -user <name>")
-	fmt.Println("  list-users [-path-prefix <prefix>]")
-	fmt.Println("  get-user -user <name>")
-	fmt.Println("  create-access-key -user <name>")
-	fmt.Println("  list-access-keys -user <name>")
-	fmt.Println("  delete-access-key -access-key-id <id>")
-	fmt.Println("  create-login-profile -user <name> -password <password>")
-	fmt.Println("  delete-login-profile -user <name>")
-	fmt.Println("  set-config -service <name> -mode <IMPLEMENTED|MOCK_SUCCESS|MOCK_ERROR>")
-	fmt.Println("  get-config -service <name>")
+func printIAMUsage() {
+	fmt.Println("IAM Commands:")
+	fmt.Println("  vstacks iam create-user -user <name> [-path <path>]")
+	fmt.Println("  vstacks iam delete-user -user <name>")
+	fmt.Println("  vstacks iam list-users [-path-prefix <prefix>]")
+	fmt.Println("  vstacks iam get-user -user <name>")
+	fmt.Println("  vstacks iam create-access-key -user <name>")
+	fmt.Println("  vstacks iam list-access-keys -user <name>")
+	fmt.Println("  vstacks iam delete-access-key -access-key-id <id>")
+	fmt.Println("  vstacks iam create-login-profile -user <name> -password <password>")
+	fmt.Println("  vstacks iam delete-login-profile -user <name>")
 }
 
 func createUserCmd(store *iamstore.UserStore, accountId string, args []string) {
@@ -136,7 +114,7 @@ func deleteUserCmd(store *iamstore.UserStore, args []string) {
 
 func listUsersCmd(store *iamstore.UserStore, args []string) {
 	fs := flag.NewFlagSet("list-users", flag.ExitOnError)
-	pathPrefix := fs.String("path-prefix", "", "Path prefix")
+	pathPrefix := fs.String("path-prefix", "", "User path prefix")
 	_ = fs.Parse(args)
 
 	result, err := store.List(*pathPrefix, "", 1000)
@@ -248,7 +226,6 @@ func createLoginProfileCmd(store *iamstore.LoginProfileStore, userStore *iamstor
 	fs := flag.NewFlagSet("create-login-profile", flag.ExitOnError)
 	userName := fs.String("user", "", "User name")
 	password := fs.String("password", "", "Password")
-	passwordResetRequired := fs.Bool("password-reset-required", false, "Password reset required")
 	_ = fs.Parse(args)
 
 	if *userName == "" || *password == "" {
@@ -261,7 +238,7 @@ func createLoginProfileCmd(store *iamstore.LoginProfileStore, userStore *iamstor
 		os.Exit(1)
 	}
 
-	profile, err := store.Create(*userName, *password, *passwordResetRequired)
+	profile, err := store.Create(*userName, *password, false)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create login profile: %v\n", err)
 		os.Exit(1)
@@ -290,46 +267,28 @@ func deleteLoginProfileCmd(store *iamstore.LoginProfileStore, userStore *iamstor
 	fmt.Printf("Login Profile for '%s' deleted\n", *userName)
 }
 
-func setConfigCmd(store *api.ConfigStore, args []string) {
-	fs := flag.NewFlagSet("set-config", flag.ExitOnError)
-	serviceName := fs.String("service", "", "Service name")
-	mode := fs.String("mode", "", "Service mode (IMPLEMENTED, MOCK_SUCCESS, MOCK_ERROR)")
-	_ = fs.Parse(args)
-
-	if *serviceName == "" || *mode == "" {
-		fmt.Fprintln(os.Stderr, "Error: -service and -mode are required")
-		os.Exit(1)
+func formatMode(mode int) string {
+	switch mode {
+	case 0:
+		return "IMPLEMENTED"
+	case 1:
+		return "FALLBACK"
+	case 2:
+		return "ERROR_INJECTION"
+	default:
+		return fmt.Sprintf("UNKNOWN(%d)", mode)
 	}
-
-	serviceMode := api.ParseServiceMode(strings.ToUpper(*mode))
-	cfg := api.NewServiceConfig(*serviceName, serviceMode)
-
-	if err := store.Put(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to set config: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Config set:\n")
-	fmt.Printf("  Service: %s\n", *serviceName)
-	fmt.Printf("  Mode: %s\n", serviceMode)
 }
 
-func getConfigCmd(store *api.ConfigStore, args []string) {
-	fs := flag.NewFlagSet("get-config", flag.ExitOnError)
-	serviceName := fs.String("service", "", "Service name")
-	_ = fs.Parse(args)
-
-	if *serviceName == "" {
-		fmt.Fprintln(os.Stderr, "Error: -service is required")
-		os.Exit(1)
+func parseMode(s string) int {
+	switch strings.ToUpper(s) {
+	case "IMPLEMENTED":
+		return 0
+	case "FALLBACK":
+		return 1
+	case "ERROR_INJECTION":
+		return 2
+	default:
+		return 1
 	}
-
-	cfg, err := store.Get(*serviceName)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to get config: %v\n", err)
-		os.Exit(1)
-	}
-
-	data, _ := json.MarshalIndent(cfg, "", "  ")
-	fmt.Println(string(data))
 }

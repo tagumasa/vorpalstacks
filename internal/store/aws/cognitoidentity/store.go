@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -126,9 +127,16 @@ func (s *CognitoIdentityStore) DeleteIdentityPool(id string) error {
 	}
 
 	prefix := id + "#"
-	_ = s.identitiesStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		return s.identitiesStore.Delete(key)
-	})
+	if err := s.identitiesStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		if err := s.identitiesStore.Delete(key); err != nil {
+			logs.Warn("failed to delete identity during pool deletion",
+				logs.String("identityKey", key), logs.String("poolId", id), logs.Err(err))
+		}
+		return nil
+	}); err != nil {
+		logs.Warn("failed to scan identities during pool deletion",
+			logs.String("poolId", id), logs.Err(err))
+	}
 
 	return s.BaseStore.Delete(id)
 }

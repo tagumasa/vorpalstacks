@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
@@ -184,6 +185,7 @@ func (s *LogsService) startRetentionPurger() {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
+		defer func() { resilience.RecoverAndRestart("retention purger", &s.wg, s.startRetentionPurger) }()
 		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
 

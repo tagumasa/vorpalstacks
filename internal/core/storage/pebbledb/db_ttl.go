@@ -3,12 +3,18 @@ package pebbledb
 import (
 	"bytes"
 	"log/slog"
+	"runtime/debug"
 	"time"
 
 	"github.com/cockroachdb/pebble/v2"
 )
 
 func (d *DB) ttlGC() {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("PANIC in TTL GC", "panic", r, "stack", string(debug.Stack()))
+		}
+	}()
 	ticker := time.NewTicker(d.opts.TTL.CheckInterval)
 	defer ticker.Stop()
 

@@ -252,3 +252,11 @@ func (s *Server) SetListenerManager(m *listener.Manager) {
 func (s *Server) ListenerManager() *listener.Manager {
 	return s.listenerManager
 }
+
+// TriggerShutdown initiates a graceful server shutdown. It is safe to call
+// multiple times; subsequent calls are no-ops.
+func (s *Server) TriggerShutdown() {
+	if s.shutdownCancel != nil {
+		s.shutdownCancel()
+	}
+}

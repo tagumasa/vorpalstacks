@@ -165,6 +165,7 @@ func (a *App) initCognitoIdentity(st *serviceState) error {
 
 func (a *App) initDynamoDB(st *serviceState) error {
 	st.dynamoDBService = svcdynamodb.NewDynamoDBService(st.accountID)
+	st.dynamoDBService.SetStorageManager(a.server.StorageManager())
 	st.dynamoDBService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }

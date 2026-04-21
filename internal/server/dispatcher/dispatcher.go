@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"vorpalstacks/internal/common/audit"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/mock"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/http/classifier"
@@ -114,9 +116,18 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 	}
 
 	wrapper := d.builder.BuildWrapper(serviceName, opName)
+	t0 := time.Now()
 	result, err := wrapper.ExecuteWithResult(httpCtx, func() (interface{}, error) {
 		return handler(httpCtx, reqCtx, parsedReq)
 	})
+	elapsed := time.Since(t0)
+	if elapsed > 100*time.Millisecond {
+		logs.Warn("executeHandler slow",
+			logs.String("service", serviceName),
+			logs.String("op", opName),
+			logs.String("elapsed", elapsed.String()),
+			logs.Bool("err", err != nil))
+	}
 	d.recordAudit(serviceName, opName, reqCtx, parsedReq, result, err)
 	if err != nil {
 		d.handleErrorForRequest(w, r, err)
