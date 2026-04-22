@@ -185,12 +185,6 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 	if req.IntegrationResponses != nil {
 		respConfig := matchIntegrationResponse(req.IntegrationResponses, string(payload), int(statusCode))
 		if respConfig != nil {
-			if respConfig.ResponseHeaders != nil {
-				for k, v := range respConfig.ResponseHeaders {
-					resp.Headers[k] = v
-				}
-			}
-
 			if respConfig.ResponseTemplates != nil {
 				contentType := "application/json"
 				if tmpl, ok := respConfig.ResponseTemplates[contentType]; ok && tmpl != "" {
