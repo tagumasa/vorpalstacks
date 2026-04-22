@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 
+	"github.com/moby/moby/api/types/volume"
 	"github.com/moby/moby/client"
 )
 
@@ -73,19 +74,7 @@ func (c *Client) ListVolumes(ctx context.Context) ([]VolumeInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list volumes: %w", err)
 	}
-
-	volumes := result.Items
-	volumeList := make([]VolumeInfo, 0, len(volumes))
-	for _, vol := range volumes {
-		volumeList = append(volumeList, VolumeInfo{
-			Name:       vol.Name,
-			Driver:     vol.Driver,
-			Mountpoint: vol.Mountpoint,
-			CreatedAt:  parseTime(vol.CreatedAt),
-		})
-	}
-
-	return volumeList, nil
+	return convertVolumeList(result.Items), nil
 }
 
 // ListVolumesWithFilters lists volumes with filters.
@@ -98,19 +87,7 @@ func (c *Client) ListVolumesWithFilters(ctx context.Context, filters client.Filt
 	if err != nil {
 		return nil, fmt.Errorf("failed to list volumes with filters: %w", err)
 	}
-
-	volumes := result.Items
-	volumeList := make([]VolumeInfo, 0, len(volumes))
-	for _, vol := range volumes {
-		volumeList = append(volumeList, VolumeInfo{
-			Name:       vol.Name,
-			Driver:     vol.Driver,
-			Mountpoint: vol.Mountpoint,
-			CreatedAt:  parseTime(vol.CreatedAt),
-		})
-	}
-
-	return volumeList, nil
+	return convertVolumeList(result.Items), nil
 }
 
 // InspectVolume inspects a volume.
@@ -119,17 +96,11 @@ func (c *Client) InspectVolume(ctx context.Context, volumeID string) (*VolumeInf
 
 	result, err := c.cli.VolumeInspect(ctx, volumeID, options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to inspect volume: %w", err)
+		return nil, wrapVolumeErr(volumeID, "inspect", err)
 	}
 
 	vol := result.Volume
-
-	return &VolumeInfo{
-		Name:       vol.Name,
-		Driver:     vol.Driver,
-		Mountpoint: vol.Mountpoint,
-		CreatedAt:  parseTime(vol.CreatedAt),
-	}, nil
+	return convertVolumeToInfo(&vol), nil
 }
 
 // PruneVolumes removes unused volumes.
@@ -154,7 +125,27 @@ func (c *Client) PruneVolumes(ctx context.Context, filters client.Filters) (int6
 	return spaceReclaimed, nil
 }
 
-// Helper function to parse time string
+// convertVolumeList maps a slice of moby Volume objects to our VolumeInfo representations.
+func convertVolumeList(items []volume.Volume) []VolumeInfo {
+	volumeList := make([]VolumeInfo, 0, len(items))
+	for i := range items {
+		volumeList = append(volumeList, *convertVolumeToInfo(&items[i]))
+	}
+	return volumeList
+}
+
+// convertVolumeToInfo maps a single moby Volume to our VolumeInfo representation.
+func convertVolumeToInfo(vol *volume.Volume) *VolumeInfo {
+	return &VolumeInfo{
+		Name:       vol.Name,
+		Driver:     vol.Driver,
+		Mountpoint: vol.Mountpoint,
+		CreatedAt:  parseTime(vol.CreatedAt),
+	}
+}
+
+// parseTime attempts to parse an RFC 3339 timestamp string, returning the
+// zero time on failure or when the input is empty.
 func parseTime(timeStr string) time.Time {
 	if timeStr == "" {
 		return time.Time{}

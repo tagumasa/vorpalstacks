@@ -1,3 +1,6 @@
+// Package appsync implements AWS AppSync API operations including GraphQL API
+// management, data sources, resolvers, schema, real-time subscriptions, and
+// code/mapping template evaluation.
 package appsync
 
 import (

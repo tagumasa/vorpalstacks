@@ -149,28 +149,7 @@ func (c *Client) ListNetworks(ctx context.Context) ([]NetworkInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list networks: %w", err)
 	}
-
-	networks := result.Items
-	networkList := make([]NetworkInfo, 0, len(networks))
-	for _, net := range networks {
-		subnets := make([]SubnetInfo, 0, len(net.IPAM.Config))
-		for _, ipam := range net.IPAM.Config {
-			subnets = append(subnets, SubnetInfo{
-				Subnet:  ipam.Subnet.String(),
-				Gateway: ipam.Gateway.String(),
-			})
-		}
-
-		networkList = append(networkList, NetworkInfo{
-			ID:      net.ID,
-			Name:    net.Name,
-			Driver:  net.Driver,
-			Scope:   net.Scope,
-			Subnets: subnets,
-		})
-	}
-
-	return networkList, nil
+	return convertNetworkList(result.Items), nil
 }
 
 // ListNetworksWithFilters lists networks with filters.
@@ -183,28 +162,7 @@ func (c *Client) ListNetworksWithFilters(ctx context.Context, filters client.Fil
 	if err != nil {
 		return nil, fmt.Errorf("failed to list networks with filters: %w", err)
 	}
-
-	networks := result.Items
-	networkList := make([]NetworkInfo, 0, len(networks))
-	for _, net := range networks {
-		subnets := make([]SubnetInfo, 0, len(net.IPAM.Config))
-		for _, ipam := range net.IPAM.Config {
-			subnets = append(subnets, SubnetInfo{
-				Subnet:  ipam.Subnet.String(),
-				Gateway: ipam.Gateway.String(),
-			})
-		}
-
-		networkList = append(networkList, NetworkInfo{
-			ID:      net.ID,
-			Name:    net.Name,
-			Driver:  net.Driver,
-			Scope:   net.Scope,
-			Subnets: subnets,
-		})
-	}
-
-	return networkList, nil
+	return convertNetworkList(result.Items), nil
 }
 
 // InspectNetwork inspects a network.
@@ -213,11 +171,10 @@ func (c *Client) InspectNetwork(ctx context.Context, networkID string) (*Network
 
 	result, err := c.cli.NetworkInspect(ctx, networkID, options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to inspect network: %w", err)
+		return nil, wrapNetworkErr(networkID, "inspect", err)
 	}
 
 	net := result.Network
-
 	subnets := make([]SubnetInfo, 0, len(net.IPAM.Config))
 	for _, ipam := range net.IPAM.Config {
 		subnets = append(subnets, SubnetInfo{
@@ -225,7 +182,6 @@ func (c *Client) InspectNetwork(ctx context.Context, networkID string) (*Network
 			Gateway: ipam.Gateway.String(),
 		})
 	}
-
 	return &NetworkInfo{
 		ID:      net.ID,
 		Name:    net.Name,
@@ -253,4 +209,33 @@ func (c *Client) PruneNetworks(ctx context.Context, filters client.Filters) (int
 	)
 
 	return 0, nil
+}
+
+// convertNetworkList maps a slice of moby network summaries to our
+// NetworkInfo representations.
+func convertNetworkList(items []network.Summary) []NetworkInfo {
+	networkList := make([]NetworkInfo, 0, len(items))
+	for i := range items {
+		networkList = append(networkList, convertNetworkSummaryToInfo(&items[i]))
+	}
+	return networkList
+}
+
+// convertNetworkSummaryToInfo maps a single moby network summary to our
+// NetworkInfo representation, including IPAM subnets.
+func convertNetworkSummaryToInfo(net *network.Summary) NetworkInfo {
+	subnets := make([]SubnetInfo, 0, len(net.IPAM.Config))
+	for _, ipam := range net.IPAM.Config {
+		subnets = append(subnets, SubnetInfo{
+			Subnet:  ipam.Subnet.String(),
+			Gateway: ipam.Gateway.String(),
+		})
+	}
+	return NetworkInfo{
+		ID:      net.ID,
+		Name:    net.Name,
+		Driver:  net.Driver,
+		Scope:   net.Scope,
+		Subnets: subnets,
+	}
 }

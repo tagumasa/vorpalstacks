@@ -1,3 +1,5 @@
+// Package neptunegraph implements AWS NeptuneGraph API operations for managing
+// graph resources, snapshots, import/export tasks, and query execution.
 package neptunegraph
 
 import (

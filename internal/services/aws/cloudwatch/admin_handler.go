@@ -1,3 +1,5 @@
+// Package cloudwatch implements AWS CloudWatch API operations including
+// alarms, metrics, dashboards, log groups, and metric widget image rendering.
 package cloudwatch
 
 import (

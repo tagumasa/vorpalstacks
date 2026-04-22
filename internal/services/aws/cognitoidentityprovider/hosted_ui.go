@@ -2,11 +2,14 @@ package cognitoidentityprovider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // HostedUIHandler serves the Cognito hosted UI pages for login, sign-up, and OAuth2 flows.
@@ -144,30 +147,171 @@ button:hover { background: #1274A3; }
 
 func (s *CognitoService) handleTokenEndpoint(w http.ResponseWriter, r *http.Request, poolID string) {
 	if r.Method != http.MethodPost {
-		http.Error(w, `{"error":"invalid_request"}`, http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":             "invalid_request",
+			"error_description": "Method not allowed",
+		})
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, `{"error":"invalid_request"}`, http.StatusBadRequest)
-		return
-	}
-	grantType := r.FormValue("grant_type")
-
-	if grantType != "authorization_code" && grantType != "client_credentials" && grantType != "refresh_token" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, `{"error":"unsupported_grant_type","error_description":"Grant type '%s' is not supported in mock mode"}`, grantType)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":             "invalid_request",
+			"error_description": "Could not parse form data",
+		})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{
-"access_token":"mock-access-token-%s",
-"token_type":"Bearer",
-"expires_in":3600,
-"id_token":"mock-id-token-%s",
-"refresh_token":"mock-refresh-token-%s"
-}`, poolID, poolID, poolID)
+	grantType := r.FormValue("grant_type")
+	clientID := r.FormValue("client_id")
+
+	switch grantType {
+	case "authorization_code", "password":
+		username := r.FormValue("username")
+		password := r.FormValue("password")
+		if username == "" || password == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "invalid_request",
+				"error_description": "Missing username or password",
+			})
+			return
+		}
+
+		ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
+		store, err := s.store(ctx)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "server_error",
+				"error_description": "Internal error",
+			})
+			return
+		}
+
+		user, err := store.GetUser(poolID, username)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "invalid_grant",
+				"error_description": "Incorrect username or password.",
+			})
+			return
+		}
+
+		if !user.Enabled {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "invalid_grant",
+				"error_description": "Incorrect username or password.",
+			})
+			return
+		}
+
+		if user.UserStatus != "CONFIRMED" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "invalid_grant",
+				"error_description": "User is not confirmed.",
+			})
+			return
+		}
+
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "invalid_grant",
+				"error_description": "Incorrect username or password.",
+			})
+			return
+		}
+
+		accessToken, idToken, refreshToken, expiresIn := s.CreateTokens(ctx, poolID, user.ID, clientID)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token":  accessToken,
+			"token_type":    "Bearer",
+			"expires_in":    expiresIn,
+			"id_token":      idToken,
+			"refresh_token": refreshToken,
+		})
+
+	case "refresh_token":
+		refreshToken := r.FormValue("refresh_token")
+		if refreshToken == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "invalid_request",
+				"error_description": "Missing refresh_token",
+			})
+			return
+		}
+
+		ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
+		store, err := s.store(ctx)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "server_error",
+				"error_description": "Internal error",
+			})
+			return
+		}
+
+		storedToken, err := store.GetRefreshTokenByValue(refreshToken)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "invalid_grant",
+				"error_description": "Invalid refresh token.",
+			})
+			return
+		}
+
+		user, err := store.GetUserByID(storedToken.UserID)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "invalid_grant",
+				"error_description": "Invalid refresh token.",
+			})
+			return
+		}
+
+		accessToken, idToken, _, expiresIn := s.CreateTokens(ctx, poolID, user.ID, clientID)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token":  accessToken,
+			"token_type":    "Bearer",
+			"expires_in":    expiresIn,
+			"id_token":      idToken,
+			"refresh_token": refreshToken,
+		})
+
+	default:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":             "unsupported_grant_type",
+			"error_description": fmt.Sprintf("Grant type '%s' is not supported", grantType),
+		})
+	}
 }

@@ -22,6 +22,7 @@ func (s *RestApiStore) CreateDeployment(apiId string, deployment *Deployment) (*
 	if deployment.ApiSummary == nil {
 		deployment.ApiSummary = make(map[string]interface{})
 	}
+	deployment.Snapshot = CloneSnapshot(api)
 
 	if api.Deployments == nil {
 		api.Deployments = make(map[string]*Deployment)

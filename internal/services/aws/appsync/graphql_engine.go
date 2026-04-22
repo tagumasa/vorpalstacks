@@ -20,7 +20,6 @@ import (
 )
 
 // jsonUnmarshal is an alias for json.Unmarshal to avoid shadowing in template methods.
-// jsonUnmarshal is an alias for json.Unmarshal to avoid shadowing in template methods.
 var jsonUnmarshal = json.Unmarshal
 
 // graphqlExecutionResult is the standard GraphQL response envelope.

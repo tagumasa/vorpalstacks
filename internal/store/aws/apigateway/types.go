@@ -2,6 +2,7 @@
 package apigateway
 
 import (
+	"encoding/json"
 	"time"
 
 	"vorpalstacks/internal/utils/aws/types"
@@ -104,6 +105,17 @@ type TlsConfig struct {
 	InsecureSkipVerification bool `json:"insecure_skip_verification"`
 }
 
+// DeploymentSnapshot captures the API configuration state at deployment
+// creation time. This ensures that requests to a stage always use the
+// configuration that was active when the deployment was created, not the
+// live configuration.
+type DeploymentSnapshot struct {
+	Resources         map[string]*Resource         `json:"resources,omitempty"`
+	Authorizers       map[string]*Authorizer       `json:"authorizers,omitempty"`
+	RequestValidators map[string]*RequestValidator `json:"request_validators,omitempty"`
+	Models            map[string]*Model            `json:"models,omitempty"`
+}
+
 // Deployment represents an API Gateway deployment.
 type Deployment struct {
 	Id          string                 `json:"id"`
@@ -111,6 +123,78 @@ type Deployment struct {
 	Description string                 `json:"description,omitempty"`
 	CreatedDate time.Time              `json:"created_date"`
 	ApiSummary  map[string]interface{} `json:"api_summary,omitempty"`
+	Snapshot    *DeploymentSnapshot    `json:"snapshot,omitempty"`
+}
+
+// CloneSnapshot creates a deep copy of the API configuration suitable for
+// storing as a deployment snapshot.
+func CloneSnapshot(api *RestApi) *DeploymentSnapshot {
+	if api == nil {
+		return nil
+	}
+	snap := &DeploymentSnapshot{
+		Resources:         deepCopyResources(api.Resources),
+		Authorizers:       deepCopyAuthorizers(api.Authorizers),
+		RequestValidators: deepCopyRequestValidators(api.RequestValidators),
+		Models:            deepCopyModels(api.Models),
+	}
+	return snap
+}
+
+func deepCopyResources(src map[string]*Resource) map[string]*Resource {
+	if src == nil {
+		return nil
+	}
+	dst := make(map[string]*Resource, len(src))
+	for k, v := range src {
+		data, _ := json.Marshal(v)
+		copy := &Resource{}
+		_ = json.Unmarshal(data, copy)
+		dst[k] = copy
+	}
+	return dst
+}
+
+func deepCopyAuthorizers(src map[string]*Authorizer) map[string]*Authorizer {
+	if src == nil {
+		return nil
+	}
+	dst := make(map[string]*Authorizer, len(src))
+	for k, v := range src {
+		data, _ := json.Marshal(v)
+		copy := &Authorizer{}
+		_ = json.Unmarshal(data, copy)
+		dst[k] = copy
+	}
+	return dst
+}
+
+func deepCopyRequestValidators(src map[string]*RequestValidator) map[string]*RequestValidator {
+	if src == nil {
+		return nil
+	}
+	dst := make(map[string]*RequestValidator, len(src))
+	for k, v := range src {
+		data, _ := json.Marshal(v)
+		copy := &RequestValidator{}
+		_ = json.Unmarshal(data, copy)
+		dst[k] = copy
+	}
+	return dst
+}
+
+func deepCopyModels(src map[string]*Model) map[string]*Model {
+	if src == nil {
+		return nil
+	}
+	dst := make(map[string]*Model, len(src))
+	for k, v := range src {
+		data, _ := json.Marshal(v)
+		copy := &Model{}
+		_ = json.Unmarshal(data, copy)
+		dst[k] = copy
+	}
+	return dst
 }
 
 // Stage represents an API Gateway stage.

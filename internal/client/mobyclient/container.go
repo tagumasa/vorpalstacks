@@ -67,7 +67,7 @@ func (c *Client) CreateContainer(ctx context.Context, cfg ContainerConfig) (stri
 
 	resp, err := c.cli.ContainerCreate(ctx, options)
 	if err != nil {
-		return "", fmt.Errorf("failed to create container: %w", err)
+		return "", wrapContainerErr(cfg.Name, "create", err)
 	}
 
 	c.logger.Info("Container created",
@@ -84,7 +84,7 @@ func (c *Client) StartContainer(ctx context.Context, containerID string) error {
 
 	_, err := c.cli.ContainerStart(ctx, containerID, client.ContainerStartOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to start container: %w", err)
+		return wrapContainerErr(containerID, "start", err)
 	}
 
 	c.logger.Info("Container started", logs.String("id", containerID))
@@ -99,7 +99,7 @@ func (c *Client) StartContainerWithCheckpoint(ctx context.Context, containerID, 
 	}
 	_, err := c.cli.ContainerStart(ctx, containerID, options)
 	if err != nil {
-		return fmt.Errorf("failed to start container with checkpoint: %w", err)
+		return wrapContainerErr(containerID, "start with checkpoint", err)
 	}
 	return nil
 }
@@ -118,7 +118,7 @@ func (c *Client) StopContainer(ctx context.Context, containerID string, timeout 
 	}
 	_, err := c.cli.ContainerStop(ctx, containerID, options)
 	if err != nil {
-		return fmt.Errorf("failed to stop container: %w", err)
+		return wrapContainerErr(containerID, "stop", err)
 	}
 
 	c.logger.Info("Container stopped", logs.String("id", containerID))
@@ -133,7 +133,7 @@ func (c *Client) StopContainerForce(ctx context.Context, containerID string) err
 	}
 	_, err := c.cli.ContainerStop(ctx, containerID, options)
 	if err != nil {
-		return fmt.Errorf("failed to stop container force: %w", err)
+		return wrapContainerErr(containerID, "force stop", err)
 	}
 	return nil
 }
@@ -152,7 +152,7 @@ func (c *Client) RestartContainer(ctx context.Context, containerID string, timeo
 	}
 	_, err := c.cli.ContainerRestart(ctx, containerID, options)
 	if err != nil {
-		return fmt.Errorf("failed to restart container: %w", err)
+		return wrapContainerErr(containerID, "restart", err)
 	}
 
 	c.logger.Info("Container restarted", logs.String("id", containerID))
@@ -170,7 +170,7 @@ func (c *Client) RemoveContainer(ctx context.Context, containerID string, force 
 
 	_, err := c.cli.ContainerRemove(ctx, containerID, opts)
 	if err != nil {
-		return fmt.Errorf("failed to remove container: %w", err)
+		return wrapContainerErr(containerID, "remove", err)
 	}
 
 	c.logger.Info("Container removed", logs.String("id", containerID))
@@ -181,7 +181,7 @@ func (c *Client) RemoveContainer(ctx context.Context, containerID string, force 
 func (c *Client) GetContainer(ctx context.Context, containerID string) (*ContainerInfo, error) {
 	result, err := c.cli.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to inspect container: %w", err)
+		return nil, wrapContainerErr(containerID, "get", err)
 	}
 
 	inspect := result.Container
@@ -217,36 +217,7 @@ func (c *Client) ListContainers(ctx context.Context, all bool) ([]ContainerInfo,
 		return nil, fmt.Errorf("failed to list containers: %w", err)
 	}
 
-	containers := result.Items
-	containersList := make([]ContainerInfo, 0, len(containers))
-	for _, ctr := range containers {
-		ports := make([]Port, 0, len(ctr.Ports))
-		for _, p := range ctr.Ports {
-			ports = append(ports, Port{
-				IP:          p.IP.String(),
-				PrivatePort: p.PrivatePort,
-				PublicPort:  p.PublicPort,
-				Protocol:    PortProtocolTCP,
-			})
-		}
-
-		name := ""
-		if len(ctr.Names) > 0 {
-			name = ctr.Names[0]
-		}
-		containersList = append(containersList, ContainerInfo{
-			ID:      ctr.ID,
-			Name:    name,
-			Image:   ctr.Image,
-			State:   string(ctr.State),
-			Status:  ctr.Status,
-			Created: time.Unix(ctr.Created, 0),
-			Ports:   ports,
-			Labels:  ctr.Labels,
-		})
-	}
-
-	return containersList, nil
+	return convertContainerList(result.Items), nil
 }
 
 // ListContainersWithFilter lists containers with filters.
@@ -261,36 +232,7 @@ func (c *Client) ListContainersWithFilter(ctx context.Context, all bool, filterA
 		return nil, fmt.Errorf("failed to list containers with filter: %w", err)
 	}
 
-	containers := result.Items
-	containersList := make([]ContainerInfo, 0, len(containers))
-	for _, ctr := range containers {
-		ports := make([]Port, 0, len(ctr.Ports))
-		for _, p := range ctr.Ports {
-			ports = append(ports, Port{
-				IP:          p.IP.String(),
-				PrivatePort: p.PrivatePort,
-				PublicPort:  p.PublicPort,
-				Protocol:    PortProtocolTCP,
-			})
-		}
-
-		name2 := ""
-		if len(ctr.Names) > 0 {
-			name2 = ctr.Names[0]
-		}
-		containersList = append(containersList, ContainerInfo{
-			ID:      ctr.ID,
-			Name:    name2,
-			Image:   ctr.Image,
-			State:   string(ctr.State),
-			Status:  ctr.Status,
-			Created: time.Unix(ctr.Created, 0),
-			Ports:   ports,
-			Labels:  ctr.Labels,
-		})
-	}
-
-	return containersList, nil
+	return convertContainerList(result.Items), nil
 }
 
 // WaitContainer waits for a container to stop.
@@ -300,7 +242,7 @@ func (c *Client) WaitContainer(ctx context.Context, containerID string) (int64, 
 	select {
 	case err := <-result.Error:
 		if err != nil {
-			return 0, fmt.Errorf("error waiting for container: %w", err)
+			return 0, wrapContainerErr(containerID, "wait", err)
 		}
 	case status := <-result.Result:
 		return status.StatusCode, nil
@@ -321,7 +263,7 @@ func (c *Client) KillContainer(ctx context.Context, containerID string, signal s
 	}
 	_, err := c.cli.ContainerKill(ctx, containerID, options)
 	if err != nil {
-		return fmt.Errorf("failed to kill container: %w", err)
+		return wrapContainerErr(containerID, "kill", err)
 	}
 
 	c.logger.Info("Container killed",
@@ -442,7 +384,7 @@ func (c *Client) CreateContainerFromConfig(ctx context.Context, cfg AdvancedCont
 
 	resp, err := c.cli.ContainerCreate(ctx, options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create container: %w", err)
+		return nil, wrapContainerErr(cfg.Name, "create from config", err)
 	}
 
 	c.logger.Info("Container created from config",
@@ -460,12 +402,12 @@ func (c *Client) CreateContainerFromConfig(ctx context.Context, cfg AdvancedCont
 func (c *Client) GetContainerIPForNetwork(ctx context.Context, containerID string, networkName string) (string, error) {
 	result, err := c.cli.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	if err != nil {
-		return "", fmt.Errorf("failed to inspect container: %w", err)
+		return "", wrapContainerErr(containerID, "get IP for network", err)
 	}
 
 	inspect := result.Container
 	if inspect.NetworkSettings == nil || inspect.NetworkSettings.Networks == nil {
-		return "", fmt.Errorf("container has no network settings")
+		return "", fmt.Errorf("%w: container has no network settings", ErrInvalidConfig)
 	}
 
 	netSettings, ok := inspect.NetworkSettings.Networks[networkName]
@@ -482,7 +424,7 @@ func (c *Client) PauseContainer(ctx context.Context, containerID string) error {
 
 	_, err := c.cli.ContainerPause(ctx, containerID, client.ContainerPauseOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to pause container: %w", err)
+		return wrapContainerErr(containerID, "pause", err)
 	}
 
 	c.logger.Info("Container paused", logs.String("id", containerID))
@@ -495,7 +437,7 @@ func (c *Client) UnpauseContainer(ctx context.Context, containerID string) error
 
 	_, err := c.cli.ContainerUnpause(ctx, containerID, client.ContainerUnpauseOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to unpause container: %w", err)
+		return wrapContainerErr(containerID, "unpause", err)
 	}
 
 	c.logger.Info("Container unpaused", logs.String("id", containerID))
@@ -506,7 +448,7 @@ func (c *Client) UnpauseContainer(ctx context.Context, containerID string) error
 func (c *Client) GetContainerStatus(ctx context.Context, containerID string) (ContainerStatus, error) {
 	result, err := c.cli.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	if err != nil {
-		return "", fmt.Errorf("failed to inspect container: %w", err)
+		return "", wrapContainerErr(containerID, "get status", err)
 	}
 
 	return ContainerStatus(string(result.Container.State.Status)), nil
@@ -516,7 +458,7 @@ func (c *Client) GetContainerStatus(ctx context.Context, containerID string) (Co
 func (c *Client) InspectContainer(ctx context.Context, containerID string) (*DetailedContainerInfo, error) {
 	result, err := c.cli.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to inspect container: %w", err)
+		return nil, wrapContainerErr(containerID, "inspect", err)
 	}
 
 	inspect := result.Container
@@ -616,7 +558,7 @@ func (c *Client) Commit(ctx context.Context, containerID string, opts CommitCont
 
 	resp, err := c.cli.ContainerCommit(ctx, containerID, options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to commit container: %w", err)
+		return nil, wrapContainerErr(containerID, "commit", err)
 	}
 
 	c.logger.Info("Container committed",
@@ -631,6 +573,7 @@ func (c *Client) Commit(ctx context.Context, containerID string, opts CommitCont
 
 // Helper functions
 
+// convertMounts translates our Mount slice into moby mount.Mount values.
 func convertMounts(mounts []Mount) []mount.Mount {
 	if mounts == nil {
 		return nil
@@ -647,6 +590,8 @@ func convertMounts(mounts []Mount) []mount.Mount {
 	return result
 }
 
+// convertEnvMap serialises a key-value map into the "KEY=VALUE" slice format
+// expected by the moby container API.
 func convertEnvMap(env map[string]string) []string {
 	if env == nil {
 		return nil
@@ -658,6 +603,8 @@ func convertEnvMap(env map[string]string) []string {
 	return result
 }
 
+// convertDNSAddresses parses DNS address strings into netip.Addr values,
+// silently skipping any malformed entries.
 func convertDNSAddresses(dns []string) []netip.Addr {
 	if dns == nil {
 		return nil
@@ -672,6 +619,8 @@ func convertDNSAddresses(dns []string) []netip.Addr {
 	return result
 }
 
+// convertPortBindings builds a network.PortMap from explicit port mappings and
+// an optional auto-assign map of container-to-host port pairs.
 func convertPortBindings(portMappings []PortMapping, hostPorts map[uint16]uint16) network.PortMap {
 	portMap := make(network.PortMap)
 
@@ -706,6 +655,8 @@ func convertPortBindings(portMappings []PortMapping, hostPorts map[uint16]uint16
 	return portMap
 }
 
+// convertExposedPorts builds a network.PortSet from explicit port mappings and
+// an optional auto-assign map of container-to-host port pairs.
 func convertExposedPorts(portMappings []PortMapping, hostPorts map[uint16]uint16) network.PortSet {
 	portSet := make(network.PortSet)
 
@@ -722,6 +673,8 @@ func convertExposedPorts(portMappings []PortMapping, hostPorts map[uint16]uint16
 	return portSet
 }
 
+// convertAdvancedMounts merges bind, volume, and tmpfs mount specifications into
+// a single moby mount slice suitable for container creation.
 func convertAdvancedMounts(bindMounts []BindMount, volumeMounts []VolumeMount, tmpfsMounts []TmpfsMount) []mount.Mount {
 	var result []mount.Mount
 
@@ -756,6 +709,7 @@ func convertAdvancedMounts(bindMounts []BindMount, volumeMounts []VolumeMount, t
 	return result
 }
 
+// convertDeviceRequests maps our DeviceRequest values to moby container.DeviceRequest values.
 func convertDeviceRequests(deviceRequests []DeviceRequest) []container.DeviceRequest {
 	if deviceRequests == nil {
 		return nil
@@ -772,6 +726,7 @@ func convertDeviceRequests(deviceRequests []DeviceRequest) []container.DeviceReq
 	return result
 }
 
+// convertUlimits maps our Ulimit values to moby container.Ulimit pointers.
 func convertUlimits(ulimits []Ulimit) []*container.Ulimit {
 	if ulimits == nil {
 		return nil
@@ -787,6 +742,7 @@ func convertUlimits(ulimits []Ulimit) []*container.Ulimit {
 	return result
 }
 
+// convertEvent translates a moby events.Message into our ContainerEvent type.
 func convertEvent(e events.Message) ContainerEvent {
 	return ContainerEvent{
 		Type:   string(e.Type),
@@ -801,4 +757,37 @@ func convertEvent(e events.Message) ContainerEvent {
 		Time:     e.Time,
 		TimeNano: e.TimeNano,
 	}
+}
+
+// convertContainerList maps a slice of moby container summaries to our
+// ContainerInfo representations, converting port bindings and timestamps.
+func convertContainerList(items []container.Summary) []ContainerInfo {
+	containersList := make([]ContainerInfo, 0, len(items))
+	for _, ctr := range items {
+		ports := make([]Port, 0, len(ctr.Ports))
+		for _, p := range ctr.Ports {
+			ports = append(ports, Port{
+				IP:          p.IP.String(),
+				PrivatePort: p.PrivatePort,
+				PublicPort:  p.PublicPort,
+				Protocol:    PortProtocolTCP,
+			})
+		}
+
+		name := ""
+		if len(ctr.Names) > 0 {
+			name = ctr.Names[0]
+		}
+		containersList = append(containersList, ContainerInfo{
+			ID:      ctr.ID,
+			Name:    name,
+			Image:   ctr.Image,
+			State:   string(ctr.State),
+			Status:  ctr.Status,
+			Created: time.Unix(ctr.Created, 0),
+			Ports:   ports,
+			Labels:  ctr.Labels,
+		})
+	}
+	return containersList
 }

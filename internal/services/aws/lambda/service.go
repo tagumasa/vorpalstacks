@@ -40,7 +40,7 @@ type lambdaStore struct {
 type LambdaService struct {
 	storageManager *storage.RegionStorageManager
 	s3Objects      map[string]s3store.ObjectStoreInterface
-	dockerClient   *mobyclient.Client
+	dockerClient   mobyclient.ContainerLifecycle
 	bus            eventbus.Bus
 	logsStores     sync.Map // region → *logsstore.Store
 	storeCache     sync.Map // region → *lambdaStore
@@ -71,7 +71,7 @@ func (s *LambdaService) store(reqCtx *request.RequestContext) (*lambdaStore, err
 // NewLambdaService creates a new Lambda service instance.
 // Optional dependencies (logs store, S3 object store) should be injected via
 // setter methods before registering handlers.
-func NewLambdaService(dockerClient *mobyclient.Client, accountID, region, dataDir string) *LambdaService {
+func NewLambdaService(dockerClient mobyclient.ContainerLifecycle, accountID, region, dataDir string) *LambdaService {
 	return &LambdaService{
 		s3Objects:    make(map[string]s3store.ObjectStoreInterface),
 		dockerClient: dockerClient,
@@ -708,11 +708,6 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 func (s *LambdaService) Shutdown() {
 	s.StopESMPoller()
 	s.asyncWg.Wait()
-	if s.dockerClient != nil {
-		if err := s.dockerClient.Close(); err != nil {
-			logs.Warn("Error closing Docker client", logs.Err(err))
-		}
-	}
 }
 
 func sanitizeForContainerName(s string) string {

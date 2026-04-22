@@ -47,6 +47,23 @@ import (
 func (a *App) initAlwaysOnServices() error {
 	st := a.newServiceState()
 
+	if a.cfg.Lambda {
+		dockerCfg := mobyclient.DefaultConfig()
+		dockerCfg.Host = a.cfg.DockerHost
+		dockerLogger := logs.NewLogger(&logs.Config{Level: logs.LevelInfo})
+		dockerCli, err := mobyclient.NewClient(dockerCfg, dockerLogger)
+		if err != nil {
+			logs.Warn("Failed to create Docker client",
+				logs.String("error", err.Error()),
+			)
+		} else {
+			st.dockerClient = dockerCli
+			a.addShutdown("docker", func(ctx context.Context) error {
+				return dockerCli.Close()
+			})
+		}
+	}
+
 	initers := []struct {
 		enabled bool
 		name    string
@@ -268,29 +285,19 @@ func (a *App) initKMS(st *serviceState) error {
 // --- Lambda ---
 
 func (a *App) initLambda(st *serviceState) error {
-	dockerCfg := mobyclient.Config{
-		Host:    a.cfg.DockerHost,
-		Version: "1.44",
-	}
-	dockerLogger := logs.NewLogger(&logs.Config{Level: logs.LevelInfo})
-	dockerClient, err := mobyclient.NewClient(dockerCfg, dockerLogger)
-	if err != nil {
-		logs.Warn("Failed to create Docker client for Lambda",
-			logs.String("error", err.Error()),
-		)
+	if st.dockerClient == nil {
+		return nil
 	}
 
-	if dockerClient != nil {
-		st.lambdaService = svclambda.NewLambdaService(dockerClient, st.accountID, st.region, a.cfg.DataPath)
-		st.lambdaService.SetStorageManager(a.server.StorageManager())
-		st.lambdaService.SetHostEndpoint(fmt.Sprintf("http://host.docker.internal:%s", a.cfg.Port))
-		st.lambdaService.RegisterHandlers(a.server.Dispatcher())
+	st.lambdaService = svclambda.NewLambdaService(st.dockerClient, st.accountID, st.region, a.cfg.DataPath)
+	st.lambdaService.SetStorageManager(a.server.StorageManager())
+	st.lambdaService.SetHostEndpoint(fmt.Sprintf("http://host.docker.internal:%s", a.cfg.Port))
+	st.lambdaService.RegisterHandlers(a.server.Dispatcher())
 
-		a.addShutdown("lambda", func(ctx context.Context) error {
-			st.lambdaService.Shutdown()
-			return nil
-		})
-	}
+	a.addShutdown("lambda", func(ctx context.Context) error {
+		st.lambdaService.Shutdown()
+		return nil
+	})
 	return nil
 }
 

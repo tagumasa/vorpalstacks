@@ -1,3 +1,6 @@
+// Package graphengine provides an embedded property graph database backed by
+// Pebble key-value storage, with support for nodes, edges, labels, property
+// indexing, Cypher/Gremlin query traversal, and batch import/export.
 package graphengine
 
 // GraphReader provides read-only access to graph data, decoupled from the

@@ -1,3 +1,6 @@
+// Package neptunedata implements AWS Neptune Data API operations including
+// property graph queries (OpenCypher, Gremlin), bulk loading, statistics,
+// and streaming.
 package neptunedata
 
 import (

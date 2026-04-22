@@ -105,8 +105,16 @@ func (s *RuntimeServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resourceInfos := make([]ResourceInfo, 0, len(restAPI.Resources))
-	for _, res := range restAPI.Resources {
+	var activeResources map[string]*apigatewaystore.Resource
+	deployment := restAPI.Deployments[stage.DeploymentId]
+	if deployment != nil && deployment.Snapshot != nil && len(deployment.Snapshot.Resources) > 0 {
+		activeResources = deployment.Snapshot.Resources
+	} else {
+		activeResources = restAPI.Resources
+	}
+
+	resourceInfos := make([]ResourceInfo, 0, len(activeResources))
+	for _, res := range activeResources {
 		resourceInfos = append(resourceInfos, ResourceInfo{
 			Id:              res.Id,
 			Path:            res.Path,

@@ -15,6 +15,20 @@ const (
 	ContainerSockDir = "/var/opt/socket"
 )
 
+// ContainerLifecycle abstracts the Docker container operations required by
+// services that manage their own containers (Lambda, RDS, etc.).  Defining an
+// interface decouples consumers from the concrete mobyclient.Client and allows
+// testing without a running Docker daemon.
+type ContainerLifecycle interface {
+	GetContainerStatus(ctx context.Context, containerID string) (ContainerStatus, error)
+	CreateContainerFromConfig(ctx context.Context, cfg AdvancedContainerConfig) (*CreateContainerResult, error)
+	StartContainer(ctx context.Context, containerID string) error
+	RemoveContainer(ctx context.Context, containerID string, force bool) error
+	CreateFileInContainer(ctx context.Context, containerID string, path string, content []byte) error
+	Exec(ctx context.Context, containerID string, cfg ExecConfig) (*ExecResult, error)
+	Close() error
+}
+
 // Client provides Docker/Moby API operations.
 type Client struct {
 	cli    *client.Client
@@ -94,19 +108,4 @@ func (c *Client) Version(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return v.Version, nil
-}
-
-// GetClient returns the underlying Docker client.
-func (c *Client) GetClient() *client.Client {
-	return c.cli
-}
-
-// GetLogger returns the logger.
-func (c *Client) GetLogger() logs.Logger {
-	return c.logger
-}
-
-// GetConfig returns the client configuration.
-func (c *Client) GetConfig() Config {
-	return c.config
 }

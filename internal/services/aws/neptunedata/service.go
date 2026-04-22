@@ -43,6 +43,7 @@ type NeptuneDataService struct {
 	stores             sync.Map
 	loaderWg           sync.WaitGroup
 	cancelCleanup      context.CancelFunc
+	graphDB            *graphengine.DB
 }
 
 // GraphStatistics holds cached graph-level statistics for the property graph.
@@ -187,6 +188,12 @@ func (s *NeptuneDataService) purgeExpiredFastTokens() {
 // caching and admin console access.
 func (s *NeptuneDataService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// SetGraphDB injects the graph database instance for bulk loader jobs
+// that run outside of a request context.
+func (s *NeptuneDataService) SetGraphDB(db *graphengine.DB) {
+	s.graphDB = db
 }
 
 // GetStoreForRegion returns the cached Neptune store for the given region,

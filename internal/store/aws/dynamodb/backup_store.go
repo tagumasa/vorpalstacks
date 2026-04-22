@@ -46,7 +46,6 @@ func extractBackupNameFromARN(backupArn string) string {
 }
 
 // GetByName retrieves a backup by its name.
-// GetByName retrieves a backup by its name.
 func (s *BackupStore) GetByName(backupName string) (*Backup, error) {
 	var backup Backup
 	if err := s.BaseStore.Get(backupName, &backup); err != nil {

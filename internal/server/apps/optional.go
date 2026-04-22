@@ -210,6 +210,9 @@ func (a *App) initGraphDB() {
 	}
 	a.server.Dispatcher().SetGraphDB(graphDB)
 	a.graphDB = graphDB
+	if a.state.neptuneDataService != nil {
+		a.state.neptuneDataService.SetGraphDB(graphDB)
+	}
 	a.addShutdown("graphdb", func(ctx context.Context) error {
 		graphDB.Close()
 		return nil

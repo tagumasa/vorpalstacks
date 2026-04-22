@@ -30,7 +30,6 @@ func NewGlobalTableStore(store storage.BasicStorage, accountId, region string) *
 }
 
 // Get retrieves a global table by name.
-// Get retrieves a global table by name.
 func (s *GlobalTableStore) Get(name string) (*GlobalTable, error) {
 	var globalTable GlobalTable
 	if err := s.BaseStore.Get(name, &globalTable); err != nil {
@@ -39,7 +38,6 @@ func (s *GlobalTableStore) Get(name string) (*GlobalTable, error) {
 	return &globalTable, nil
 }
 
-// Create creates a new global table.
 // Create creates a new global table.
 func (s *GlobalTableStore) Create(name string, replicationGroup []*Replica) (*GlobalTable, error) {
 	s.mu.Lock()

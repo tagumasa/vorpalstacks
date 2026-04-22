@@ -36,11 +36,13 @@ import (
 	s3store "vorpalstacks/internal/store/aws/s3"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
+	"vorpalstacks/internal/client/mobyclient"
 )
 
 type serviceState struct {
-	accountID string
-	region    string
+	accountID    string
+	region       string
+	dockerClient mobyclient.ContainerLifecycle
 
 	acmService             *svcacm.ACMService
 	apiGatewayService      *svcapigateway.APIGatewayService

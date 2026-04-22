@@ -1,3 +1,6 @@
+// Package apigateway implements AWS API Gateway REST API operations including
+// REST APIs, resources, methods, integrations, deployments, authorisers, and
+// usage plans.
 package apigateway
 
 import (

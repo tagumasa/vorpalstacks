@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/pkg/graphengine"
 )
 
 // GetPropertygraphStatistics returns auto-computed property graph statistics
@@ -173,19 +174,114 @@ func (s *NeptuneDataService) GetPropertygraphSummary(ctx context.Context, reqCtx
 	}, nil
 }
 
-// GetPropertygraphStream returns an empty property graph change stream (stub implementation).
+// GetPropertygraphStream returns the property graph change stream by enumerating
+// all current nodes and edges from the graph store and presenting them as PG_JSON
+// ADD records (snapshot-as-stream approach).
 func (s *NeptuneDataService) GetPropertygraphStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
-	_ = request.GetIntParam(req.Parameters, "commitNum")
-	_ = request.GetStringParam(req.Parameters, "iteratorType")
-	_ = request.GetIntParam(req.Parameters, "limit")
-	_ = request.GetIntParam(req.Parameters, "opNum")
+
+	limit := request.GetIntParam(req.Parameters, "limit")
+	if limit <= 0 {
+		limit = 1000
+	}
+
+	reader, ok := reqCtx.GraphReader().(graphengine.GraphReader)
+	if !ok {
+		return nil, internalFailure("graph reader not available")
+	}
+
+	commitNum := request.GetIntParam(req.Parameters, "commitNum")
+	opNum := request.GetIntParam(req.Parameters, "opNum")
+	iteratorType := request.GetStringParam(req.Parameters, "iteratorType")
+
+	var records []interface{}
+	remaining := limit
+
+	records, remaining = appendNodeRecords(reader, records, remaining)
+	records, remaining = appendEdgeRecords(reader, records, remaining)
+
+	totalRecords := len(records)
+
+	now := time.Now().UnixMilli()
+
+	lastEventID := map[string]interface{}{}
+	if commitNum > 0 {
+		lastEventID["commitNum"] = commitNum
+	}
+	if opNum > 0 {
+		lastEventID["opNum"] = opNum
+	}
+	if iteratorType != "" {
+		lastEventID["iteratorType"] = iteratorType
+	}
+
 	return map[string]interface{}{
 		"format":                   "PG_JSON",
-		"lastEventId":              map[string]string{},
-		"totalRecords":             0,
-		"records":                  []interface{}{},
-		"lastTrxTimestampInMillis": int64(0),
+		"lastEventId":              lastEventID,
+		"totalRecords":             totalRecords,
+		"records":                  records,
+		"lastTrxTimestampInMillis": now,
 	}, nil
+}
+
+func appendNodeRecords(reader graphengine.GraphReader, records []interface{}, remaining int) ([]interface{}, int) {
+	if remaining <= 0 {
+		return records, remaining
+	}
+	_ = reader.ForEachNode(func(node *graphengine.Node) error {
+		if remaining <= 0 {
+			return fmt.Errorf("limit reached")
+		}
+		label := ""
+		if len(node.Labels) > 0 {
+			label = node.Labels[0]
+		}
+		value := map[string]interface{}{
+			"~id":    fmt.Sprintf("%d", node.ID),
+			"~label": label,
+		}
+		for k, v := range node.Props {
+			value[k] = v
+		}
+		records = append(records, map[string]interface{}{
+			"id":    fmt.Sprintf("%d", node.ID),
+			"type":  "vl",
+			"key":   label,
+			"value": value,
+			"op":    "ADD",
+		})
+		remaining--
+		return nil
+	})
+	return records, remaining
+}
+
+func appendEdgeRecords(reader graphengine.GraphReader, records []interface{}, remaining int) ([]interface{}, int) {
+	if remaining <= 0 {
+		return records, remaining
+	}
+	_ = reader.ForEachEdge(func(edge *graphengine.Edge) error {
+		if remaining <= 0 {
+			return fmt.Errorf("limit reached")
+		}
+		value := map[string]interface{}{
+			"~id":    fmt.Sprintf("%d", edge.ID),
+			"~type":  edge.Label,
+			"~from":  fmt.Sprintf("%d", edge.From),
+			"~to":    fmt.Sprintf("%d", edge.To),
+		}
+		for k, v := range edge.Props {
+			value[k] = v
+		}
+		records = append(records, map[string]interface{}{
+			"id":    fmt.Sprintf("%d", edge.ID),
+			"type":  "el",
+			"key":   edge.Label,
+			"value": value,
+			"op":    "ADD",
+		})
+		remaining--
+		return nil
+	})
+	return records, remaining
 }

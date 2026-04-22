@@ -4,7 +4,73 @@ package mobyclient
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
+
+// wrapContainerErr annotates a moby API error with an operation description and
+// optionally maps known moby error patterns to sentinel errors defined in this
+// package so that consumers can use errors.Is for type-safe checks.
+func wrapContainerErr(containerID, operation string, err error) error {
+	if err == nil {
+		return nil
+	}
+	msg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(msg, "no such container"):
+		return &ContainerError{ContainerID: containerID, Operation: operation, Err: fmt.Errorf("%w: %w", ErrContainerNotFound, err)}
+	case strings.Contains(msg, "container already exists"):
+		return &ContainerError{ContainerID: containerID, Operation: operation, Err: fmt.Errorf("%w: %w", ErrContainerAlreadyExists, err)}
+	case strings.Contains(msg, "container is running"):
+		return &ContainerError{ContainerID: containerID, Operation: operation, Err: fmt.Errorf("%w: %w", ErrContainerRunning, err)}
+	case strings.Contains(msg, "container is not running"):
+		return &ContainerError{ContainerID: containerID, Operation: operation, Err: fmt.Errorf("%w: %w", ErrContainerStopped, err)}
+	case strings.Contains(msg, "connection refused"), strings.Contains(msg, "dial unix"):
+		return &ContainerError{ContainerID: containerID, Operation: operation, Err: fmt.Errorf("%w: %w", ErrConnectionFailed, err)}
+	}
+	return &ContainerError{ContainerID: containerID, Operation: operation, Err: err}
+}
+
+// wrapImageErr annotates an image operation error, mapping known patterns to
+// sentinel errors.
+func wrapImageErr(imageName, operation string, err error) error {
+	if err == nil {
+		return nil
+	}
+	msg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(msg, "no such image"):
+		return &ImageError{ImageName: imageName, Operation: operation, Err: fmt.Errorf("%w: %w", ErrImageNotFound, err)}
+	case strings.Contains(msg, "image already exists"):
+		return &ImageError{ImageName: imageName, Operation: operation, Err: fmt.Errorf("%w: %w", ErrImageAlreadyExists, err)}
+	}
+	return &ImageError{ImageName: imageName, Operation: operation, Err: err}
+}
+
+// wrapNetworkErr annotates a network operation error.
+func wrapNetworkErr(networkID, operation string, err error) error {
+	if err == nil {
+		return nil
+	}
+	msg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(msg, "no such network"):
+		return &NetworkError{NetworkID: networkID, Operation: operation, Err: fmt.Errorf("%w: %w", ErrNetworkNotFound, err)}
+	}
+	return &NetworkError{NetworkID: networkID, Operation: operation, Err: err}
+}
+
+// wrapVolumeErr annotates a volume operation error.
+func wrapVolumeErr(volumeName, operation string, err error) error {
+	if err == nil {
+		return nil
+	}
+	msg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(msg, "no such volume"):
+		return &VolumeError{VolumeName: volumeName, Operation: operation, Err: fmt.Errorf("%w: %w", ErrVolumeNotFound, err)}
+	}
+	return &VolumeError{VolumeName: volumeName, Operation: operation, Err: err}
+}
 
 // Error variables for container operations.
 var (
