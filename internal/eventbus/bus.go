@@ -170,16 +170,16 @@ type EventBus struct {
 	invokers      map[string]ServiceInvoker
 	invokersMu    sync.RWMutex
 
-	lambdaInvoker  LambdaInvoker
-	sqsInvoker     SQSInvoker
-	snsInvoker     SNSInvoker
-	kinesisInvoker KinesisInvoker
-	eventsInvoker  EventsInvoker
-	ec2Invoker     EC2Invoker
+	lambdaInvoker   LambdaInvoker
+	sqsInvoker      SQSInvoker
+	snsInvoker      SNSInvoker
+	kinesisInvoker  KinesisInvoker
+	eventsInvoker   EventsInvoker
+	ec2Invoker      EC2Invoker
 	dynamoDBInvoker DynamoDBInvoker
-	nextSubID     atomic.Int64
-	asyncCh       chan *OutboxEntry
-	directCh      chan *directDispatch
+	nextSubID       atomic.Int64
+	asyncCh         chan *OutboxEntry
+	directCh        chan *directDispatch
 }
 
 // NewEventBus creates a new EventBus with sensible defaults, applying all
@@ -561,52 +561,52 @@ func (b *EventBus) GetInvoker(serviceType string) (ServiceInvoker, bool) {
 
 // SetLambdaInjector sets the Lambda invoker used for dispatching Lambda function
 // invocations from bus events.
-func (b *EventBus) SetLambdaInvoker(invoker LambdaInvoker)  { b.lambdaInvoker = invoker }
+func (b *EventBus) SetLambdaInvoker(invoker LambdaInvoker) { b.lambdaInvoker = invoker }
 
 // LambdaInvoker returns the configured Lambda invoker.
-func (b *EventBus) LambdaInvoker() LambdaInvoker              { return b.lambdaInvoker }
+func (b *EventBus) LambdaInvoker() LambdaInvoker { return b.lambdaInvoker }
 
 // SetSQSInvoker sets the SQS invoker used for dispatching SQS SendMessage calls
 // from bus events.
-func (b *EventBus) SetSQSInvoker(invoker SQSInvoker)          { b.sqsInvoker = invoker }
+func (b *EventBus) SetSQSInvoker(invoker SQSInvoker) { b.sqsInvoker = invoker }
 
 // SQSInvoker returns the configured SQS invoker.
-func (b *EventBus) SQSInvoker() SQSInvoker                    { return b.sqsInvoker }
+func (b *EventBus) SQSInvoker() SQSInvoker { return b.sqsInvoker }
 
 // SetSNSInvoker sets the SNS invoker used for dispatching SNS Publish calls
 // from bus events.
-func (b *EventBus) SetSNSInvoker(invoker SNSInvoker)          { b.snsInvoker = invoker }
+func (b *EventBus) SetSNSInvoker(invoker SNSInvoker) { b.snsInvoker = invoker }
 
 // SNSInvoker returns the configured SNS invoker.
-func (b *EventBus) SNSInvoker() SNSInvoker                    { return b.snsInvoker }
+func (b *EventBus) SNSInvoker() SNSInvoker { return b.snsInvoker }
 
 // SetKinesisInvoker sets the Kinesis invoker used for dispatching Kinesis
 // PutRecord calls from bus events.
-func (b *EventBus) SetKinesisInvoker(invoker KinesisInvoker)  { b.kinesisInvoker = invoker }
+func (b *EventBus) SetKinesisInvoker(invoker KinesisInvoker) { b.kinesisInvoker = invoker }
 
 // KinesisInvoker returns the configured Kinesis invoker.
-func (b *EventBus) KinesisInvoker() KinesisInvoker            { return b.kinesisInvoker }
+func (b *EventBus) KinesisInvoker() KinesisInvoker { return b.kinesisInvoker }
 
 // SetEventsInvoker sets the EventBridge invoker used for dispatching
 // EventBridge PutEvents calls from bus events.
-func (b *EventBus) SetEventsInvoker(invoker EventsInvoker)    { b.eventsInvoker = invoker }
+func (b *EventBus) SetEventsInvoker(invoker EventsInvoker) { b.eventsInvoker = invoker }
 
 // EventsInvoker returns the configured EventBridge invoker.
-func (b *EventBus) EventsInvoker() EventsInvoker              { return b.eventsInvoker }
+func (b *EventBus) EventsInvoker() EventsInvoker { return b.eventsInvoker }
 
 // SetEC2Invoker sets the EC2 invoker used for dispatching EC2 API calls
 // from bus events.
-func (b *EventBus) SetEC2Invoker(invoker EC2Invoker)    { b.ec2Invoker = invoker }
+func (b *EventBus) SetEC2Invoker(invoker EC2Invoker) { b.ec2Invoker = invoker }
 
 // EC2Invoker returns the configured EC2 invoker.
-func (b *EventBus) EC2Invoker() EC2Invoker              { return b.ec2Invoker }
+func (b *EventBus) EC2Invoker() EC2Invoker { return b.ec2Invoker }
 
 // SetDynamoDBInvoker sets the DynamoDB invoker used for dispatching DynamoDB
 // item operations from bus events (e.g. AppSync GraphQL resolvers).
 func (b *EventBus) SetDynamoDBInvoker(invoker DynamoDBInvoker) { b.dynamoDBInvoker = invoker }
 
 // DynamoDBInvoker returns the configured DynamoDB invoker.
-func (b *EventBus) DynamoDBInvoker() DynamoDBInvoker           { return b.dynamoDBInvoker }
+func (b *EventBus) DynamoDBInvoker() DynamoDBInvoker { return b.dynamoDBInvoker }
 
 // RoleResolver returns the configured RoleResolver, or nil if none was set.
 func (b *EventBus) RoleResolver() RoleResolver {

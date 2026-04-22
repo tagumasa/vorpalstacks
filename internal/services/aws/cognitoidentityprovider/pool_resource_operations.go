@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/config"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 

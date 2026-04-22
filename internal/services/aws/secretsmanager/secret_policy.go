@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 )
 
 // GetResourcePolicy returns the resource policy for a secret.

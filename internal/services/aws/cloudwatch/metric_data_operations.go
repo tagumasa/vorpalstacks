@@ -232,9 +232,6 @@ func parseMetricArrayEntry(entry []interface{}, def *widgetDef) widgetMetric {
 		}
 	}
 	if len(entry) >= 4 {
-		if dims, ok := entry[2].([]interface{}); ok && len(dims) > 0 {
-			// entry[3] could be additional params
-		}
 		if label, ok := entry[3].(string); ok && len(entry) < 5 {
 			wm.Label = label
 		}
@@ -280,10 +277,10 @@ func parseMetricMapEntry(entry map[string]interface{}, def *widgetDef) widgetMet
 }
 
 type chartSeries struct {
-	Label string
-	Times []time.Time
+	Label  string
+	Times  []time.Time
 	Values []float64
-	Color color.Color
+	Color  color.Color
 }
 
 func (s *CloudWatchService) queryWidgetMetrics(ctx context.Context, reqCtx *request.RequestContext, def *widgetDef) ([]chartSeries, error) {

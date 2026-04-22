@@ -2,7 +2,6 @@ package crypto
 
 import (
 	"errors"
-	"strings"
 )
 
 // Constants for AWS Signature Version 4.
@@ -43,24 +42,4 @@ func DeriveSigningKey(secretKey, dateStr, region, service string) []byte {
 	kService := HMACSHA256String(kRegion, service)
 	kSigning := HMACSHA256String(kService, ServicePrefix)
 	return kSigning
-}
-
-func parseAuthorizationHeader(authHeader string) (*AuthorizationHeader, error) {
-	result := &AuthorizationHeader{
-		Algorithm: Algorithm,
-	}
-
-	parts := strings.Split(authHeader, ",")
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if strings.HasPrefix(part, "Credential=") {
-			result.Credential = strings.TrimPrefix(part, "Credential=")
-		} else if strings.HasPrefix(part, "SignedHeaders=") {
-			result.SignedHeaders = strings.TrimPrefix(part, "SignedHeaders=")
-		} else if strings.HasPrefix(part, "Signature=") {
-			result.Signature = strings.TrimPrefix(part, "Signature=")
-		}
-	}
-
-	return result, nil
 }

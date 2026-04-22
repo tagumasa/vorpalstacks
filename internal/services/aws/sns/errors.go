@@ -48,5 +48,3 @@ func NewTopicNotFoundException() *awserrors.AWSError {
 func NewNotFoundException(resource string) *awserrors.AWSError {
 	return awserrors.NewAWSError("NotFound", resource+" not found", 404)
 }
-
-

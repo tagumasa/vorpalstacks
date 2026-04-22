@@ -142,14 +142,6 @@ func (s *ObjectStore) Get(ctx context.Context, bucket, key string) (io.ReadClose
 	return s.GetWithVersion(ctx, bucket, key, "")
 }
 
-func (s *ObjectStore) isVersioningSuspended(bucket string) bool {
-	b, err := s.bucketStore.Get(bucket)
-	if err != nil {
-		return false
-	}
-	return b.VersioningStatus == "Suspended"
-}
-
 func (s *ObjectStore) wasVersioned(bucket string) bool {
 	b, err := s.bucketStore.Get(bucket)
 	if err != nil {

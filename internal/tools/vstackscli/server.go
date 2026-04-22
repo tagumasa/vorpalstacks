@@ -58,5 +58,3 @@ func RunServerStatus(httpEndpoint string) {
 		fmt.Printf("Server returned status %d\n", resp.StatusCode)
 	}
 }
-
-

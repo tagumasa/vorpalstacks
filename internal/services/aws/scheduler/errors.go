@@ -33,5 +33,3 @@ var (
 	// ErrInternalServer is returned when an internal server error occurs.
 	ErrInternalServer = awserrors.NewInternalErrorException("Internal server error")
 )
-
-

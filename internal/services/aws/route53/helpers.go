@@ -44,20 +44,6 @@ func generateChangeId() string {
 	return fmt.Sprintf("%X", hash)[:8]
 }
 
-func generateDelegationSetId() string {
-	return fmt.Sprintf("N%s", generateId())
-}
-
-func generateId() string {
-	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	b := make([]byte, 12)
-	for i := range b {
-		n, _ := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(len(letters))))
-		b[i] = letters[n.Int64()]
-	}
-	return string(b)
-}
-
 func extractHostedZoneId(params map[string]interface{}, paramName string) (string, error) {
 	id := request.GetStringParam(params, paramName)
 	if id == "" {

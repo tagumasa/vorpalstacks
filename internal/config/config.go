@@ -310,5 +310,3 @@ func CORSAllowedHeaders() string {
 func CORSExposeHeaders() string {
 	return GetString("http.cors_expose_headers")
 }
-
-

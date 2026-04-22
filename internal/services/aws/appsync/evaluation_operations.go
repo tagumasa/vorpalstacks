@@ -41,8 +41,8 @@ func (s *AppSyncService) EvaluateCode(ctx context.Context, reqCtx *request.Reque
 		Context  json.RawMessage `json:"context"`
 		Function string          `json:"function"`
 		Runtime  struct {
-			Name            string `json:"runtimeName"`
-			RuntimeVersion  string `json:"runtimeVersion"`
+			Name           string `json:"runtimeName"`
+			RuntimeVersion string `json:"runtimeVersion"`
 		} `json:"runtime"`
 	}
 	if err := json.Unmarshal(req.Body, &body); err != nil {
@@ -156,7 +156,7 @@ func (s *AppSyncService) EvaluateCode(ctx context.Context, reqCtx *request.Reque
 		fnName = "handler"
 	}
 
-	if handlerFn := vm.Get(fnName); handlerFn != nil && goja.IsNull(handlerFn) == false && goja.IsUndefined(handlerFn) == false {
+	if handlerFn := vm.Get(fnName); handlerFn != nil && !goja.IsNull(handlerFn) && !goja.IsUndefined(handlerFn) {
 		if fn, ok := goja.AssertFunction(handlerFn); ok {
 			ret, err := fn(goja.Undefined(), ctxObj)
 			if err != nil {
@@ -176,7 +176,7 @@ func (s *AppSyncService) EvaluateCode(ctx context.Context, reqCtx *request.Reque
 					"stash":            extractStashFromVM(vm, ctxObj),
 				}, nil
 			}
-			if ret != nil && goja.IsUndefined(ret) == false && goja.IsNull(ret) == false {
+			if ret != nil && !goja.IsUndefined(ret) && !goja.IsNull(ret) {
 				evalResult = ret.Export()
 			}
 		}

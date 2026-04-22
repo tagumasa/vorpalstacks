@@ -38,5 +38,3 @@ func NewRequestInProgressException(message string) *awserrors.AWSError {
 func NewInvalidStateException(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("InvalidStateException", message, http.StatusBadRequest)
 }
-
-

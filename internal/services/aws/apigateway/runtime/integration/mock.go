@@ -34,11 +34,11 @@ func NewMockExecutor() *MockExecutor {
 //
 // Resolution order:
 //   - Body:   req.RequestTemplates["application/json"] (VTL template), or
-//             req.RequestTemplates["*/*"] as fallback, or default JSON.
+//     req.RequestTemplates["*/*"] as fallback, or default JSON.
 //   - Status: matched integration response StatusCode, or default 200.
 //   - Headers: matched integration response ResponseHeaders, or default Content-Type.
 //   - Response template: if the matched integration response has a response
-//             template, it is applied to the body after initial template expansion.
+//     template, it is applied to the body after initial template expansion.
 func (e *MockExecutor) Execute(ctx context.Context, req *IntegrationRequest) (*IntegrationResponse, error) {
 	bodyTemplate := req.RequestTemplates["application/json"]
 	if bodyTemplate == "" {

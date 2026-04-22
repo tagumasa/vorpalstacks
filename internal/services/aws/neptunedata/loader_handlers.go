@@ -343,8 +343,8 @@ func (s *NeptuneDataService) loadCSV(f *os.File, writer graphengine.GraphWriter,
 func (s *NeptuneDataService) loadCSVNodes(r *csv.Reader, writer graphengine.GraphWriter, stats *loaderStats, idIdx, labelIdx int, propIndices map[int]string) string {
 	idMap := make(map[string]graphengine.NodeID)
 	type batchEntry struct {
-		Labels  []string
-		Props   graphengine.Props
+		Labels []string
+		Props  graphengine.Props
 		OrigID string
 	}
 	var batch []batchEntry

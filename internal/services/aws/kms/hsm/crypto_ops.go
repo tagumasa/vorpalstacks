@@ -360,11 +360,6 @@ func (c *cryptoOps) keyExists(keyID string) bool {
 	return exists
 }
 
-func (c *cryptoOps) getKey(keyID string) (*memoryKey, bool) {
-	key, exists := c.keys[keyID]
-	return key, exists
-}
-
 func hashForAlgorithm(algorithm SigningAlgorithm, message []byte) []byte {
 	switch algorithm {
 	case SigningAlgorithmRSAPKCS1SHA256, SigningAlgorithmRSAPSSSHA256, SigningAlgorithmECDSASHA256:

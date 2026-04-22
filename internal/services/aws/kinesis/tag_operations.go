@@ -10,27 +10,6 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 )
 
-func (s *KinesisService) resolveStreamName(store *kinesisstore.KinesisStore, req *request.ParsedRequest) (string, error) {
-	name := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	if name != "" {
-		return name, nil
-	}
-
-	arn := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	if arn == "" {
-		arn = request.GetParamLowerFirst(req.Parameters, "ResourceARN")
-	}
-	if arn == "" {
-		return "", nil
-	}
-
-	stream, err := store.GetStreamByARN(arn)
-	if err != nil {
-		return "", s.mapStoreError(err)
-	}
-	return stream.StreamName, nil
-}
-
 func (s *KinesisService) kinesisTagConfig(store *kinesisstore.KinesisStore, req *request.ParsedRequest) tags.TagHandlerConfig {
 	return tags.TagHandlerConfig{
 		Param: tags.KinesisStreamConfig,

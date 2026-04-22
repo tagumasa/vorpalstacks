@@ -28,14 +28,14 @@ import (
 func (s *ACMService) acmTagConfig(stores *acmStores, req *request.ParsedRequest) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.TagOperationConfig{
-			ResourceParam:  "CertificateArn",
-			TagsParam:      "Tags",
-			TagKeysParam:   "Tags",
-			TagKeyName:     "Key",
-			TagValueName:   "Value",
-			RequireTags:    true,
-			RequireTagKeys: true,
-			RequireResource: true,
+			ResourceParam:    "CertificateArn",
+			TagsParam:        "Tags",
+			TagKeysParam:     "Tags",
+			TagKeyName:       "Key",
+			TagValueName:     "Value",
+			RequireTags:      true,
+			RequireTagKeys:   true,
+			RequireResource:  true,
 			UseQueryFallback: true,
 		},
 		ResourceKey: func(rawKey string) string {

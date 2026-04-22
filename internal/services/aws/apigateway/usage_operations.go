@@ -5,10 +5,10 @@ import (
 	"context"
 	"strings"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	store "vorpalstacks/internal/store/aws/apigateway"
 	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/timeutils"

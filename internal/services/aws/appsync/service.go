@@ -17,12 +17,12 @@ import (
 // Implements control-plane CRUD for Event APIs (v2), GraphQL APIs (v1),
 // channel namespaces, data sources, resolvers, GraphQL execution, and tag operations.
 type AppSyncService struct {
-	accountID     string
-	stores        sync.Map
-	bus           eventbus.Bus
-	schemaCache   sync.Map
-	schemaWg      sync.WaitGroup
-	eventServer   *EventServer
+	accountID   string
+	stores      sync.Map
+	bus         eventbus.Bus
+	schemaCache sync.Map
+	schemaWg    sync.WaitGroup
+	eventServer *EventServer
 }
 
 // NewAppSyncService creates a new AppSync service instance scoped to the given account.

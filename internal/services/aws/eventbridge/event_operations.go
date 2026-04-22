@@ -967,10 +967,7 @@ func (s *EventsService) deliverToKinesis(ctx context.Context, region string, tar
 		return
 	}
 
-	_, _, kRegion, _, resource := arnutil.SplitARN(targetArn)
-	if kRegion == "" {
-		kRegion = region
-	}
+	_, _, _, _, resource := arnutil.SplitARN(targetArn)
 
 	streamName := resource
 	if idx := strings.Index(resource, "stream/"); idx != -1 {

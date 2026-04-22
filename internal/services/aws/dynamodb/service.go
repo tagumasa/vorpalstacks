@@ -18,7 +18,6 @@ type DynamoDBService struct {
 	stores          sync.Map // region → dynamodbstore.DynamoDBStoreInterface
 	storageManager  *storage.RegionStorageManager
 	busStoreFactory *dynamodbstore.DynamoDBStoreFactory
-	busStoreMu      sync.Mutex
 }
 
 // NewDynamoDBService creates a new DynamoDB service instance.

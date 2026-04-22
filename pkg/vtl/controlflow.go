@@ -35,8 +35,9 @@ var (
 	commentRe      = regexp.MustCompile(`#\*.*?\*#`)
 )
 
-//go:noinline — required: Go 1.25 inliner produces incorrect code when this
 // function is inlined into findMatchingEndImpl (loop body yields wrong results).
+//
+//go:noinline — required: Go 1.25 inliner produces incorrect code when this
 func findBalancedCloseParen(s string, startIdx int) (closeParenIdx int, content string) {
 	depth := 1
 	inString := false
@@ -431,8 +432,9 @@ func (e *Engine) processSetBlock(template string) (string, bool) {
 // given index. It properly handles nested control structures by tracking
 // the nesting depth. Returns the position of the matching #end or -1 if
 // no matching end is found.
-//go:noinline — required: Go 1.25 inliner produces incorrect code for this
 // function (identical logic inlined at call sites returns -1; direct call works).
+//
+//go:noinline — required: Go 1.25 inliner produces incorrect code for this
 func findMatchingEndImpl(template string, startIdx int) int {
 	depth := 1
 	idx := startIdx

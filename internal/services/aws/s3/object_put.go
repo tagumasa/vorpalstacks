@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/config"
 	commonauth "vorpalstacks/internal/common/auth"
+	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/eventbus"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	arnutil "vorpalstacks/internal/utils/aws/arn"

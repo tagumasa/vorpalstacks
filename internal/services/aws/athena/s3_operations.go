@@ -9,8 +9,8 @@ import (
 	"io"
 	"strings"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 	s3store "vorpalstacks/internal/store/aws/s3"
 

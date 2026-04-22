@@ -27,18 +27,18 @@ type SQSInvoker interface {
 // ReceivedSQSMessage carries the fields of an SQS message returned by
 // ReceiveMessage that cross-service consumers need.
 type ReceivedSQSMessage struct {
-	MessageID                     string            `json:"messageId"`
-	ReceiptHandle                 string            `json:"receiptHandle"`
-	Body                          string            `json:"body"`
-	MD5OfBody                     string            `json:"md5OfBody"`
-	MessageAttributes             map[string]string `json:"messageAttributes,omitempty"`
-	MD5OfMessageAttributes        string            `json:"md5OfMessageAttributes,omitempty"`
-	SentTimestamp                 time.Time         `json:"sentTimestamp,omitempty"`
-	ApproximateReceiveCount       int32             `json:"approximateReceiveCount,omitempty"`
-	ApproximateFirstReceiveTimestamp time.Time       `json:"approximateFirstReceiveTimestamp,omitempty"`
-	SequenceNumber                string            `json:"sequenceNumber,omitempty"`
-	MessageDeduplicationID        string            `json:"messageDeduplicationId,omitempty"`
-	MessageGroupID                string            `json:"messageGroupId,omitempty"`
+	MessageID                        string            `json:"messageId"`
+	ReceiptHandle                    string            `json:"receiptHandle"`
+	Body                             string            `json:"body"`
+	MD5OfBody                        string            `json:"md5OfBody"`
+	MessageAttributes                map[string]string `json:"messageAttributes,omitempty"`
+	MD5OfMessageAttributes           string            `json:"md5OfMessageAttributes,omitempty"`
+	SentTimestamp                    time.Time         `json:"sentTimestamp,omitempty"`
+	ApproximateReceiveCount          int32             `json:"approximateReceiveCount,omitempty"`
+	ApproximateFirstReceiveTimestamp time.Time         `json:"approximateFirstReceiveTimestamp,omitempty"`
+	SequenceNumber                   string            `json:"sequenceNumber,omitempty"`
+	MessageDeduplicationID           string            `json:"messageDeduplicationId,omitempty"`
+	MessageGroupID                   string            `json:"messageGroupId,omitempty"`
 }
 
 // SNSInvoker provides SNS operations for cross-service consumers.
@@ -74,8 +74,8 @@ type KinesisInvoker interface {
 // ShardInfo carries the fields of a Kinesis shard that cross-service
 // consumers need.
 type ShardInfo struct {
-	ShardID                       string
-	SequenceNumberRangeEnd        string
+	ShardID                string
+	SequenceNumberRangeEnd string
 }
 
 // KinesisRecord carries the fields of a Kinesis record that cross-service

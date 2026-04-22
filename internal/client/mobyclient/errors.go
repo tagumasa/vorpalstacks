@@ -30,22 +30,6 @@ func wrapContainerErr(containerID, operation string, err error) error {
 	return &ContainerError{ContainerID: containerID, Operation: operation, Err: err}
 }
 
-// wrapImageErr annotates an image operation error, mapping known patterns to
-// sentinel errors.
-func wrapImageErr(imageName, operation string, err error) error {
-	if err == nil {
-		return nil
-	}
-	msg := strings.ToLower(err.Error())
-	switch {
-	case strings.Contains(msg, "no such image"):
-		return &ImageError{ImageName: imageName, Operation: operation, Err: fmt.Errorf("%w: %w", ErrImageNotFound, err)}
-	case strings.Contains(msg, "image already exists"):
-		return &ImageError{ImageName: imageName, Operation: operation, Err: fmt.Errorf("%w: %w", ErrImageAlreadyExists, err)}
-	}
-	return &ImageError{ImageName: imageName, Operation: operation, Err: err}
-}
-
 // wrapNetworkErr annotates a network operation error.
 func wrapNetworkErr(networkID, operation string, err error) error {
 	if err == nil {

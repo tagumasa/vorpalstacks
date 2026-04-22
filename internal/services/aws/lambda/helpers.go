@@ -36,7 +36,7 @@ func isValidLayerARN(arnStr string) bool {
 	if arnStr == "" {
 		return false
 	}
-	if 	_, service, _, _, _ := arnutil.SplitARN(arnStr); service != "lambda" {
+	if _, service, _, _, _ := arnutil.SplitARN(arnStr); service != "lambda" {
 		return false
 	}
 	resource := arnutil.ExtractResourceFromARN(arnStr)

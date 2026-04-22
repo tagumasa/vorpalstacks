@@ -24,5 +24,3 @@ var (
 	// ErrInvalidConfigurationException is returned when the configuration is invalid.
 	ErrInvalidConfigurationException = awserrors.NewBadRequestException("The configuration is invalid.")
 )
-
-

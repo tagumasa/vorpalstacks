@@ -4,11 +4,11 @@ import (
 	"context"
 	"strconv"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
 

@@ -19,13 +19,13 @@ import (
 func (s *NeptuneService) neptuneTagConfig(store neptunestore.NeptuneStoreInterface) tags.TagHandlerConfig {
 	return tags.TagHandlerConfig{
 		Param: tags.TagOperationConfig{
-			ResourceParam:  "ResourceName",
-			TagsParam:      "Tags",
-			TagKeysParam:   "TagKeys",
-			TagKeyName:     "Key",
-			TagValueName:   "Value",
-			RequireTags:    false,
-			RequireTagKeys: false,
+			ResourceParam:   "ResourceName",
+			TagsParam:       "Tags",
+			TagKeysParam:    "TagKeys",
+			TagKeyName:      "Key",
+			TagValueName:    "Value",
+			RequireTags:     false,
+			RequireTagKeys:  false,
 			RequireResource: true,
 		},
 		ParseTags: func(params map[string]interface{}) []types.Tag {

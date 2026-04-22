@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"vorpalstacks/internal/client/mobyclient"
 	svcacm "vorpalstacks/internal/services/aws/acm"
 	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
 	svcappsync "vorpalstacks/internal/services/aws/appsync"
@@ -36,7 +37,6 @@ import (
 	s3store "vorpalstacks/internal/store/aws/s3"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
-	"vorpalstacks/internal/client/mobyclient"
 )
 
 type serviceState struct {

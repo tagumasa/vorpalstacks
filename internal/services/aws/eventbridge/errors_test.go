@@ -46,7 +46,6 @@ func TestEventsErrors(t *testing.T) {
 		assert.Equal(t, 409, err.GetHTTPStatusCode())
 	})
 
-
 }
 
 func TestBuildEventBusARN(t *testing.T) {

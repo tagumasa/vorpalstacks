@@ -386,10 +386,7 @@ func (a *Authorizer) enforceCacheSize() {
 	count := 0
 	a.policyCache.Range(func(_, _ interface{}) bool {
 		count++
-		if count > a.maxCacheSize*2 {
-			return false
-		}
-		return true
+		return count <= a.maxCacheSize*2
 	})
 
 	if count <= a.maxCacheSize {

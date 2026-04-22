@@ -180,12 +180,6 @@ func printConfigEntry(entry *storeconfig.ConfigEntry) {
 	}
 }
 
-func printServiceConfig(cfg *serviceConfigInfo) {
-	fmt.Printf("  Service:  %s\n", cfg.ServiceName)
-	fmt.Printf("  Mode:     %s\n", cfg.Mode)
-	fmt.Printf("  Enabled:  %v\n", cfg.Enabled)
-}
-
 type serviceConfigInfo struct {
 	ServiceName string `json:"service_name"`
 	Mode        string `json:"mode"`

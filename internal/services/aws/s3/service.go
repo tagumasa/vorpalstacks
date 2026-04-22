@@ -108,7 +108,6 @@ func (s *S3Service) SetEventBus(bus eventbus.Bus) {
 	}
 }
 
-
 // publishObjectNotification publishes an S3ObjectEvent to the event bus after
 // a successful object operation. The event region is taken from the request
 // context to support multi-region buckets.

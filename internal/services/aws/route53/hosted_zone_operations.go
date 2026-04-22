@@ -15,7 +15,7 @@ import (
 )
 
 type delegationSetResponse struct {
-	ID         string              `json:"id"`
+	ID          string               `json:"id"`
 	NameServers protocol.XMLElements `json:"nameServers"`
 }
 

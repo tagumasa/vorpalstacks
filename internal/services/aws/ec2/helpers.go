@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	vpcIDPrefix       = "vpc-"
-	subnetIDPrefix    = "subnet-"
+	vpcIDPrefix         = "vpc-"
+	subnetIDPrefix      = "subnet-"
 	securityGroupPrefix = "sg-"
-	ec2IDSuffixLen    = 17
+	ec2IDSuffixLen      = 17
 )
 
 // GenerateVpcID creates a new VPC ID in the format vpc-<hex>.

@@ -458,8 +458,10 @@ type priorityQueue []*pqItem
 
 // Len implements heap.Interface.
 func (pq priorityQueue) Len() int { return len(pq) }
+
 // Less implements heap.Interface.
 func (pq priorityQueue) Less(i, j int) bool { return pq[i].cost < pq[j].cost }
+
 // Swap implements heap.Interface.
 func (pq priorityQueue) Swap(i, j int) {
 	pq[i], pq[j] = pq[j], pq[i]

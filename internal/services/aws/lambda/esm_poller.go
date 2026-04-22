@@ -11,9 +11,9 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
-	"vorpalstacks/internal/eventbus"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 

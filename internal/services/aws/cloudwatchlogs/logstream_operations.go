@@ -687,11 +687,3 @@ func generateEventID() string {
 	}
 	return fmt.Sprintf("%x%x", time.Now().UnixNano(), b)
 }
-
-func generatePartitionKey() string {
-	b := make([]byte, partitionKeySize)
-	if _, err := rand.Read(b); err != nil {
-		b = []byte(fmt.Sprintf("%d", time.Now().UnixNano()))
-	}
-	return fmt.Sprintf("%x", b)
-}

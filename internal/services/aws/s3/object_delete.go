@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/eventbus"
 )
 
 // DeleteObjectInput contains the input parameters for the DeleteObject operation.

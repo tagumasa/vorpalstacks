@@ -48,4 +48,3 @@ var (
 func NewAlreadyExistsException(resource string) *awserrors.AWSError {
 	return awserrors.NewResourceAlreadyExistsException(resource)
 }
-

@@ -197,8 +197,8 @@ func (s *NeptuneDataService) GetPropertygraphStream(ctx context.Context, reqCtx 
 	var records []interface{}
 	remaining := limit
 
-	records, remaining = appendNodeRecords(reader, records, remaining)
-	records, remaining = appendEdgeRecords(reader, records, remaining)
+	records, _ = appendNodeRecords(reader, records, remaining)
+	records, _ = appendEdgeRecords(reader, records, remaining)
 
 	totalRecords := len(records)
 
@@ -265,10 +265,10 @@ func appendEdgeRecords(reader graphengine.GraphReader, records []interface{}, re
 			return fmt.Errorf("limit reached")
 		}
 		value := map[string]interface{}{
-			"~id":    fmt.Sprintf("%d", edge.ID),
-			"~type":  edge.Label,
-			"~from":  fmt.Sprintf("%d", edge.From),
-			"~to":    fmt.Sprintf("%d", edge.To),
+			"~id":   fmt.Sprintf("%d", edge.ID),
+			"~type": edge.Label,
+			"~from": fmt.Sprintf("%d", edge.From),
+			"~to":   fmt.Sprintf("%d", edge.To),
 		}
 		for k, v := range edge.Props {
 			value[k] = v

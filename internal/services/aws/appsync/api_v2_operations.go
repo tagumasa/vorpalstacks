@@ -2,13 +2,10 @@ package appsync
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -341,47 +338,4 @@ func authModesToMap(modes []appsyncstore.AuthMode) []map[string]interface{} {
 		})
 	}
 	return result
-}
-
-// resolveResourceFromArn determines the resource type and ID from an ARN.
-// Supports Event API (apis/), GraphQL API (apis/), ChannelNamespace, and DataSource ARNs.
-// Since both v1 and v2 use apis/{apiId} format, the caller must check both stores.
-func resolveResourceFromArn(resourceArn string) (resourceType string, region string, apiId string, name string, err error) {
-	_, _, region, _, resource := arn.SplitARN(resourceArn)
-	if resource == "" {
-		return "", "", "", "", fmt.Errorf("invalid ARN: %s", resourceArn)
-	}
-
-	// Channel namespace ARN: .../apis/{apiId}/channelNamespaces/{name}
-	if strings.Contains(resource, "/channelNamespaces/") {
-		parts := strings.SplitN(resource, "/", 4)
-		if len(parts) < 4 {
-			return "", "", "", "", fmt.Errorf("cannot parse channel namespace ARN: %s", resourceArn)
-		}
-		return "channelNamespace", region, parts[1], parts[3], nil
-	}
-
-	// DataSource ARN: .../apis/{apiId}/datasources/{name}
-	if strings.Contains(resource, "/datasources/") {
-		parts := strings.SplitN(resource, "/", 4)
-		if len(parts) < 4 {
-			return "", "", "", "", fmt.Errorf("cannot parse data source ARN: %s", resourceArn)
-		}
-		return "dataSource", region, parts[1], parts[3], nil
-	}
-
-	// Event API and GraphQL API ARN: .../apis/{apiId}
-	// Both v1 and v2 use the same format; try v2 first, then v1.
-	if strings.HasPrefix(resource, "apis/") {
-		id := strings.TrimPrefix(resource, "apis/")
-		if idx := strings.Index(id, "/"); idx >= 0 {
-			id = id[:idx]
-		}
-		if id == "" {
-			return "", "", "", "", fmt.Errorf("cannot extract ID from ARN: %s", resourceArn)
-		}
-		return "api", region, id, "", nil
-	}
-
-	return "", "", "", "", fmt.Errorf("unsupported ARN resource type: %s", resource)
 }

@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 

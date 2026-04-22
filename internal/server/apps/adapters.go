@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	storecommon "vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/eventbus"
+	storecommon "vorpalstacks/internal/store/aws/common"
+	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
-	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 // sqsInvokerAdapter adapts the SQS concrete store to the eventbus.SQSInvoker
@@ -61,17 +61,17 @@ func (a *sqsInvokerAdapter) ReceiveMessage(_ context.Context, queueURL string, m
 	out := make([]eventbus.ReceivedSQSMessage, len(msgs))
 	for i, m := range msgs {
 		out[i] = eventbus.ReceivedSQSMessage{
-			MessageID:                       m.ID,
-			ReceiptHandle:                   m.ReceiptHandle,
-			Body:                            m.Body,
-			MD5OfBody:                       m.MD5OfBody,
-			MD5OfMessageAttributes:          m.MD5OfMessageAttributes,
-			SentTimestamp:                   m.SentTimestamp,
-			ApproximateReceiveCount:         m.ApproximateReceiveCount,
+			MessageID:                        m.ID,
+			ReceiptHandle:                    m.ReceiptHandle,
+			Body:                             m.Body,
+			MD5OfBody:                        m.MD5OfBody,
+			MD5OfMessageAttributes:           m.MD5OfMessageAttributes,
+			SentTimestamp:                    m.SentTimestamp,
+			ApproximateReceiveCount:          m.ApproximateReceiveCount,
 			ApproximateFirstReceiveTimestamp: m.ApproximateFirstReceiveTimestamp,
-			SequenceNumber:                  m.SequenceNumber,
-			MessageDeduplicationID:          m.MessageDeduplicationID,
-			MessageGroupID:                  m.MessageGroupID,
+			SequenceNumber:                   m.SequenceNumber,
+			MessageDeduplicationID:           m.MessageDeduplicationID,
+			MessageGroupID:                   m.MessageGroupID,
 		}
 		if m.MessageAttributes != nil {
 			out[i].MessageAttributes = convertFromSQSMessageAttributes(m.MessageAttributes)
@@ -139,7 +139,7 @@ func (a *snsInvokerAdapter) PublishToTopic(ctx context.Context, topicARN string,
 	if err := a.publisher.PublishToTopic(ctx, accountID, region, topicARN, message); err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s", topicARN), nil
+	return topicARN, nil
 }
 
 // StoreMessage persists arbitrary data keyed by the given key.
