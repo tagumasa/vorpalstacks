@@ -186,6 +186,13 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 			return fmt.Errorf("body is nil")
 		}
 		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("read body: %v", err)
+		}
+		if string(body) != "Hello, World!" {
+			return fmt.Errorf("content mismatch: got %q, want %q", string(body), "Hello, World!")
+		}
 		return nil
 	}))
 
@@ -197,8 +204,8 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.ContentLength == nil {
-			return fmt.Errorf("ContentLength is nil")
+		if resp.ContentLength == nil || *resp.ContentLength != 13 {
+			return fmt.Errorf("ContentLength mismatch: got %v, want 13", resp.ContentLength)
 		}
 		if resp.ETag == nil {
 			return fmt.Errorf("ETag is nil")
@@ -1062,11 +1069,13 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 
 	// ========== OBJECT TAGGING ==========
 
-	_, _ = client.PutObject(ctx, &s3.PutObjectInput{
+	if _, err := client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String("tagged-obj.txt"),
 		Body:   strings.NewReader("tag me"),
-	})
+	}); err != nil {
+		return append(results, TestResult{Service: "s3", TestName: "Setup_ObjectTagging", Status: "FAIL", Error: fmt.Sprintf("put tagged-obj: %v", err)})
+	}
 
 	results = append(results, r.RunTest("s3", "PutObjectTagging", func() error {
 		_, err := client.PutObjectTagging(ctx, &s3.PutObjectTaggingInput{
@@ -1145,11 +1154,13 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 
 	// ========== OBJECT LEGAL HOLD ==========
 
-	_, _ = client.PutObject(ctx, &s3.PutObjectInput{
+	if _, err := client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(lockBucket),
 		Key:    aws.String("legal-hold-obj.txt"),
 		Body:   strings.NewReader("legal hold test"),
-	})
+	}); err != nil {
+		return append(results, TestResult{Service: "s3", TestName: "Setup_LegalHold", Status: "FAIL", Error: fmt.Sprintf("put legal-hold-obj: %v", err)})
+	}
 
 	results = append(results, r.RunTest("s3", "PutObjectLegalHold", func() error {
 		_, err := client.PutObjectLegalHold(ctx, &s3.PutObjectLegalHoldInput{
@@ -1181,11 +1192,13 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 
 	// ========== OBJECT RETENTION ==========
 
-	_, _ = client.PutObject(ctx, &s3.PutObjectInput{
+	if _, err := client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(lockBucket),
 		Key:    aws.String("retention-obj.txt"),
 		Body:   strings.NewReader("retention test"),
-	})
+	}); err != nil {
+		return append(results, TestResult{Service: "s3", TestName: "Setup_Retention", Status: "FAIL", Error: fmt.Sprintf("put retention-obj: %v", err)})
+	}
 
 	retainUntil := time.Now().Add(24 * time.Hour)
 	results = append(results, r.RunTest("s3", "PutObjectRetention", func() error {
@@ -1219,11 +1232,13 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 
 	// ========== GET OBJECT ATTRIBUTES ==========
 
-	_, _ = client.PutObject(ctx, &s3.PutObjectInput{
+	if _, err := client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String("attrs-obj.txt"),
 		Body:   strings.NewReader("object attributes test content"),
-	})
+	}); err != nil {
+		return append(results, TestResult{Service: "s3", TestName: "Setup_GetObjectAttributes", Status: "FAIL", Error: fmt.Sprintf("put attrs-obj: %v", err)})
+	}
 
 	results = append(results, r.RunTest("s3", "GetObjectAttributes", func() error {
 		resp, err := client.GetObjectAttributes(ctx, &s3.GetObjectAttributesInput{
@@ -1483,11 +1498,13 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 
 	// ========== SELECT OBJECT CONTENT ==========
 
-	_, _ = client.PutObject(ctx, &s3.PutObjectInput{
+	if _, err := client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String("select-data.csv"),
 		Body:   strings.NewReader("name,age\nAlice,30\nBob,25\n"),
-	})
+	}); err != nil {
+		return append(results, TestResult{Service: "s3", TestName: "Setup_SelectObjectContent", Status: "FAIL", Error: fmt.Sprintf("put select-data: %v", err)})
+	}
 
 	results = append(results, r.RunTest("s3", "SelectObjectContent", func() error {
 		resp, err := client.SelectObjectContent(ctx, &s3.SelectObjectContentInput{

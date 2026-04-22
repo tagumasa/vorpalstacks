@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -52,6 +53,18 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		if resp.TableDescription == nil {
 			return fmt.Errorf("TableDescription is nil")
 		}
+		if resp.TableDescription.TableName == nil || *resp.TableDescription.TableName != tableName {
+			return fmt.Errorf("TableName mismatch: got %v", resp.TableDescription.TableName)
+		}
+		if len(resp.TableDescription.KeySchema) != 1 || *resp.TableDescription.KeySchema[0].AttributeName != "id" {
+			return fmt.Errorf("KeySchema mismatch")
+		}
+		if len(resp.TableDescription.AttributeDefinitions) != 1 || *resp.TableDescription.AttributeDefinitions[0].AttributeName != "id" {
+			return fmt.Errorf("AttributeDefinitions mismatch")
+		}
+		if resp.TableDescription.TableArn == nil {
+			return fmt.Errorf("TableArn is nil")
+		}
 		return nil
 	}))
 
@@ -64,6 +77,12 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		}
 		if resp.Table == nil {
 			return fmt.Errorf("table not found")
+		}
+		if *resp.Table.TableName != tableName {
+			return fmt.Errorf("TableName mismatch: got %v, want %s", resp.Table.TableName, tableName)
+		}
+		if resp.Table.TableStatus != types.TableStatusActive {
+			return fmt.Errorf("expected Active, got %s", resp.Table.TableStatus)
 		}
 		return nil
 	}))
@@ -138,6 +157,10 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		if resp.Attributes == nil {
 			return fmt.Errorf("attributes not found")
 		}
+		updatedName, ok := resp.Attributes["name"].(*types.AttributeValueMemberS)
+		if !ok || updatedName.Value != "Updated" {
+			return fmt.Errorf("name mismatch after update: got %v", updatedName)
+		}
 		return nil
 	}))
 
@@ -154,6 +177,9 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		}
 		if resp.Count == 0 {
 			return fmt.Errorf("no items found")
+		}
+		if resp.Count != 1 {
+			return fmt.Errorf("expected 1 item, got %d", resp.Count)
 		}
 		return nil
 	}))
@@ -219,6 +245,10 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		}
 		if len(resp.Responses) == 0 {
 			return fmt.Errorf("no responses")
+		}
+		items, ok := resp.Responses[tableName]
+		if !ok || len(items) != 2 {
+			return fmt.Errorf("expected 2 items from BatchGetItem, got %d", len(items))
 		}
 		return nil
 	}))
@@ -969,10 +999,12 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		{"pk": &types.AttributeValueMemberS{Value: "user2"}, "sk": &types.AttributeValueMemberS{Value: "meta"}, "name": &types.AttributeValueMemberS{Value: "Bob"}, "age": &types.AttributeValueMemberN{Value: "25"}, "active": &types.AttributeValueMemberBOOL{Value: false}},
 		{"pk": &types.AttributeValueMemberS{Value: "user2"}, "sk": &types.AttributeValueMemberS{Value: "order1"}, "amount": &types.AttributeValueMemberN{Value: "300"}, "status": &types.AttributeValueMemberS{Value: "shipped"}},
 	} {
-		client.PutItem(ctx, &dynamodb.PutItemInput{
+		if _, err := client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(compTableName),
 			Item:      item,
-		})
+		}); err != nil {
+			return append(results, TestResult{Service: "dynamodb", TestName: "CompositeKeySetup", Status: "FAIL", Error: fmt.Sprintf("put composite item: %v", err)})
+		}
 	}
 
 	// === PUT ITEM EDGE CASES ===
@@ -3169,6 +3201,436 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		}
 		if pageCount < 2 {
 			return fmt.Errorf("expected at least 2 pages, got %d", pageCount)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "PutItem_GetItem_AllScalarTypes", func() error {
+		allTypesTable := fmt.Sprintf("AllTypes-%d", time.Now().UnixNano())
+		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(allTypesTable),
+			AttributeDefinitions: []types.AttributeDefinition{
+				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(allTypesTable)})
+
+		binaryData := []byte("\x00\x01\x02\xff\xfe")
+		putItem := map[string]types.AttributeValue{
+			"id":      &types.AttributeValueMemberS{Value: "alltypes1"},
+			"str_val": &types.AttributeValueMemberS{Value: "hello"},
+			"num_val": &types.AttributeValueMemberN{Value: "3.14"},
+			"bin_val": &types.AttributeValueMemberB{Value: binaryData},
+			"bool_val": &types.AttributeValueMemberBOOL{Value: true},
+			"null_val": &types.AttributeValueMemberNULL{Value: true},
+		}
+		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(allTypesTable),
+			Item:      putItem,
+		})
+		if err != nil {
+			return fmt.Errorf("put: %v", err)
+		}
+
+		resp, err := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(allTypesTable),
+			Key: map[string]types.AttributeValue{
+				"id": &types.AttributeValueMemberS{Value: "alltypes1"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("get: %v", err)
+		}
+		if resp.Item == nil {
+			return fmt.Errorf("item is nil")
+		}
+
+		s, ok := resp.Item["str_val"].(*types.AttributeValueMemberS)
+		if !ok || s.Value != "hello" {
+			return fmt.Errorf("str_val mismatch: got %v", resp.Item["str_val"])
+		}
+		n, ok := resp.Item["num_val"].(*types.AttributeValueMemberN)
+		if !ok || n.Value != "3.14" {
+			return fmt.Errorf("num_val mismatch: got %v", resp.Item["num_val"])
+		}
+		b, ok := resp.Item["bin_val"].(*types.AttributeValueMemberB)
+		if !ok || !bytes.Equal(b.Value, binaryData) {
+			return fmt.Errorf("bin_val mismatch: got %v", resp.Item["bin_val"])
+		}
+		bo, ok := resp.Item["bool_val"].(*types.AttributeValueMemberBOOL)
+		if !ok || bo.Value != true {
+			return fmt.Errorf("bool_val mismatch: got %v", resp.Item["bool_val"])
+		}
+		nu, ok := resp.Item["null_val"].(*types.AttributeValueMemberNULL)
+		if !ok || nu.Value != true {
+			return fmt.Errorf("null_val mismatch: got %v", resp.Item["null_val"])
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "PutItem_GetItem_SetTypes", func() error {
+		setTable := fmt.Sprintf("SetTypes-%d", time.Now().UnixNano())
+		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(setTable),
+			AttributeDefinitions: []types.AttributeDefinition{
+				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(setTable)})
+
+		nsItem := map[string]types.AttributeValue{
+			"id":    &types.AttributeValueMemberS{Value: "setitem1"},
+			"nums":  &types.AttributeValueMemberNS{Value: []string{"1", "2.5", "-10"}},
+			"strs":  &types.AttributeValueMemberSS{Value: []string{"alpha", "beta"}},
+			"bins":  &types.AttributeValueMemberBS{Value: [][]byte{{0xCA, 0xFE}, {0xDE, 0xAD}}},
+			"map_v": &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
+				"inner_str": &types.AttributeValueMemberS{Value: "deep"},
+				"inner_num": &types.AttributeValueMemberN{Value: "42"},
+			}},
+			"list_v": &types.AttributeValueMemberL{Value: []types.AttributeValue{
+				&types.AttributeValueMemberN{Value: "1"},
+				&types.AttributeValueMemberS{Value: "two"},
+				&types.AttributeValueMemberBOOL{Value: false},
+			}},
+		}
+		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(setTable),
+			Item:      nsItem,
+		})
+		if err != nil {
+			return fmt.Errorf("put: %v", err)
+		}
+
+		resp, err := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(setTable),
+			Key: map[string]types.AttributeValue{
+				"id": &types.AttributeValueMemberS{Value: "setitem1"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("get: %v", err)
+		}
+		if resp.Item == nil {
+			return fmt.Errorf("item is nil")
+		}
+
+		ns, ok := resp.Item["nums"].(*types.AttributeValueMemberNS)
+		if !ok {
+			return fmt.Errorf("nums: expected NS, got %T", resp.Item["nums"])
+		}
+		nsSet := make(map[string]bool)
+		for _, v := range ns.Value {
+			nsSet[v] = true
+		}
+		for _, expected := range []string{"1", "2.5", "-10"} {
+			if !nsSet[expected] {
+				return fmt.Errorf("nums missing %q: got %v", expected, ns.Value)
+			}
+		}
+
+		ss, ok := resp.Item["strs"].(*types.AttributeValueMemberSS)
+		if !ok {
+			return fmt.Errorf("strs: expected SS, got %T", resp.Item["strs"])
+		}
+		ssSet := make(map[string]bool)
+		for _, v := range ss.Value {
+			ssSet[v] = true
+		}
+		for _, expected := range []string{"alpha", "beta"} {
+			if !ssSet[expected] {
+				return fmt.Errorf("strs missing %q: got %v", expected, ss.Value)
+			}
+		}
+
+		bs, ok := resp.Item["bins"].(*types.AttributeValueMemberBS)
+		if !ok {
+			return fmt.Errorf("bins: expected BS, got %T", resp.Item["bins"])
+		}
+		if len(bs.Value) != 2 {
+			return fmt.Errorf("bins: expected 2 elements, got %d", len(bs.Value))
+		}
+
+		m, ok := resp.Item["map_v"].(*types.AttributeValueMemberM)
+		if !ok {
+			return fmt.Errorf("map_v: expected M, got %T", resp.Item["map_v"])
+		}
+		innerS, ok := m.Value["inner_str"].(*types.AttributeValueMemberS)
+		if !ok || innerS.Value != "deep" {
+			return fmt.Errorf("map_v.inner_str mismatch: got %v", m.Value["inner_str"])
+		}
+		innerN, ok := m.Value["inner_num"].(*types.AttributeValueMemberN)
+		if !ok || innerN.Value != "42" {
+			return fmt.Errorf("map_v.inner_num mismatch: got %v", m.Value["inner_num"])
+		}
+
+		l, ok := resp.Item["list_v"].(*types.AttributeValueMemberL)
+		if !ok || len(l.Value) != 3 {
+			return fmt.Errorf("list_v: expected 3 elements, got %d", len(l.Value))
+		}
+		ln, ok := l.Value[0].(*types.AttributeValueMemberN)
+		if !ok || ln.Value != "1" {
+			return fmt.Errorf("list_v[0] mismatch: got %v", l.Value[0])
+		}
+		ls, ok := l.Value[1].(*types.AttributeValueMemberS)
+		if !ok || ls.Value != "two" {
+			return fmt.Errorf("list_v[1] mismatch: got %v", l.Value[1])
+		}
+		lb, ok := l.Value[2].(*types.AttributeValueMemberBOOL)
+		if !ok || lb.Value != false {
+			return fmt.Errorf("list_v[2] mismatch: got %v", l.Value[2])
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "Query_Scan_NestedTypes", func() error {
+		nestedTable := fmt.Sprintf("NestedTypes-%d", time.Now().UnixNano())
+		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(nestedTable),
+			AttributeDefinitions: []types.AttributeDefinition{
+				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(nestedTable)})
+
+		mapItem := map[string]types.AttributeValue{
+			"pk": &types.AttributeValueMemberS{Value: "nested1"},
+			"config": &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
+				"ttl":   &types.AttributeValueMemberN{Value: "3600"},
+				"flags": &types.AttributeValueMemberL{Value: []types.AttributeValue{
+					&types.AttributeValueMemberS{Value: "enabled"},
+					&types.AttributeValueMemberBOOL{Value: true},
+				}},
+				"metadata": &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
+					"version": &types.AttributeValueMemberS{Value: "1.0"},
+					"hash":    &types.AttributeValueMemberB{Value: []byte{0xAB, 0xCD}},
+				}},
+			}},
+		}
+		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(nestedTable),
+			Item:      mapItem,
+		})
+		if err != nil {
+			return fmt.Errorf("put: %v", err)
+		}
+
+		queryResp, err := client.Query(ctx, &dynamodb.QueryInput{
+			TableName: aws.String(nestedTable),
+			KeyConditionExpression: aws.String("pk = :pk"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":pk": &types.AttributeValueMemberS{Value: "nested1"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("query: %v", err)
+		}
+		if queryResp.Count != 1 {
+			return fmt.Errorf("query count: expected 1, got %d", queryResp.Count)
+		}
+		item := queryResp.Items[0]
+		config, ok := item["config"].(*types.AttributeValueMemberM)
+		if !ok {
+			return fmt.Errorf("config: expected M, got %T", item["config"])
+		}
+		ttl, ok := config.Value["ttl"].(*types.AttributeValueMemberN)
+		if !ok || ttl.Value != "3600" {
+			return fmt.Errorf("config.ttl mismatch: got %v", config.Value["ttl"])
+		}
+		meta, ok := config.Value["metadata"].(*types.AttributeValueMemberM)
+		if !ok {
+			return fmt.Errorf("config.metadata: expected M, got %T", config.Value["metadata"])
+		}
+		hashVal, ok := meta.Value["hash"].(*types.AttributeValueMemberB)
+		if !ok || !bytes.Equal(hashVal.Value, []byte{0xAB, 0xCD}) {
+			return fmt.Errorf("config.metadata.hash mismatch: got %v", meta.Value["hash"])
+		}
+
+		scanResp, err := client.Scan(ctx, &dynamodb.ScanInput{
+			TableName: aws.String(nestedTable),
+		})
+		if err != nil {
+			return fmt.Errorf("scan: %v", err)
+		}
+		if scanResp.Count < 1 {
+			return fmt.Errorf("scan count: expected >= 1, got %d", scanResp.Count)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "GSI_Query_Scan", func() error {
+		gsiTestTable := fmt.Sprintf("GSIQuery-%d", time.Now().UnixNano())
+		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(gsiTestTable),
+			AttributeDefinitions: []types.AttributeDefinition{
+				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
+				{AttributeName: aws.String("sk"), AttributeType: types.ScalarAttributeTypeS},
+				{AttributeName: aws.String("gsi_pk"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+				{AttributeName: aws.String("sk"), KeyType: types.KeyTypeRange},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+			GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
+				{
+					IndexName: aws.String("gsi1"),
+					KeySchema: []types.KeySchemaElement{
+						{AttributeName: aws.String("gsi_pk"), KeyType: types.KeyTypeHash},
+					},
+					Projection: &types.Projection{
+						ProjectionType: types.ProjectionTypeAll,
+					},
+				},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(gsiTestTable)})
+
+		for _, item := range []map[string]types.AttributeValue{
+			{"pk": &types.AttributeValueMemberS{Value: "user1"}, "sk": &types.AttributeValueMemberS{Value: "a"}, "gsi_pk": &types.AttributeValueMemberS{Value: "cat_a"}, "data": &types.AttributeValueMemberS{Value: "first"}},
+			{"pk": &types.AttributeValueMemberS{Value: "user1"}, "sk": &types.AttributeValueMemberS{Value: "b"}, "gsi_pk": &types.AttributeValueMemberS{Value: "cat_b"}, "data": &types.AttributeValueMemberS{Value: "second"}},
+			{"pk": &types.AttributeValueMemberS{Value: "user2"}, "sk": &types.AttributeValueMemberS{Value: "c"}, "gsi_pk": &types.AttributeValueMemberS{Value: "cat_a"}, "data": &types.AttributeValueMemberS{Value: "third"}},
+		} {
+			if _, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(gsiTestTable),
+				Item:      item,
+			}); err != nil {
+				return fmt.Errorf("put item: %v", err)
+			}
+		}
+
+		gsiQueryResp, err := client.Query(ctx, &dynamodb.QueryInput{
+			TableName:              aws.String(gsiTestTable),
+			IndexName:              aws.String("gsi1"),
+			KeyConditionExpression: aws.String("gsi_pk = :gpk"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":gpk": &types.AttributeValueMemberS{Value: "cat_a"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("GSI query: %v", err)
+		}
+		if gsiQueryResp.Count != 2 {
+			return fmt.Errorf("GSI query count: expected 2, got %d", gsiQueryResp.Count)
+		}
+		dataSet := make(map[string]bool)
+		for _, item := range gsiQueryResp.Items {
+			d, ok := item["data"].(*types.AttributeValueMemberS)
+			if !ok {
+				return fmt.Errorf("GSI query item: data is not S")
+			}
+			dataSet[d.Value] = true
+		}
+		if !dataSet["first"] || !dataSet["third"] {
+			return fmt.Errorf("GSI query items: expected 'first' and 'third', got %v", dataSet)
+		}
+
+		gsiScanResp, err := client.Scan(ctx, &dynamodb.ScanInput{
+			TableName: aws.String(gsiTestTable),
+			IndexName: aws.String("gsi1"),
+		})
+		if err != nil {
+			return fmt.Errorf("GSI scan: %v", err)
+		}
+		if gsiScanResp.Count != 3 {
+			return fmt.Errorf("GSI scan count: expected 3, got %d", gsiScanResp.Count)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "LSI_Query", func() error {
+		lsiTable := fmt.Sprintf("LSIQuery-%d", time.Now().UnixNano())
+		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(lsiTable),
+			AttributeDefinitions: []types.AttributeDefinition{
+				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
+				{AttributeName: aws.String("sk"), AttributeType: types.ScalarAttributeTypeS},
+				{AttributeName: aws.String("lsi_sk"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+				{AttributeName: aws.String("sk"), KeyType: types.KeyTypeRange},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+			LocalSecondaryIndexes: []types.LocalSecondaryIndex{
+				{
+					IndexName: aws.String("lsi1"),
+					KeySchema: []types.KeySchemaElement{
+						{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+						{AttributeName: aws.String("lsi_sk"), KeyType: types.KeyTypeRange},
+					},
+					Projection: &types.Projection{
+						ProjectionType: types.ProjectionTypeAll,
+					},
+				},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(lsiTable)})
+
+		for _, item := range []map[string]types.AttributeValue{
+			{"pk": &types.AttributeValueMemberS{Value: "p1"}, "sk": &types.AttributeValueMemberS{Value: "main_a"}, "lsi_sk": &types.AttributeValueMemberS{Value: "lsi_x"}, "val": &types.AttributeValueMemberS{Value: "item_x"}},
+			{"pk": &types.AttributeValueMemberS{Value: "p1"}, "sk": &types.AttributeValueMemberS{Value: "main_b"}, "lsi_sk": &types.AttributeValueMemberS{Value: "lsi_x"}, "val": &types.AttributeValueMemberS{Value: "item_y"}},
+			{"pk": &types.AttributeValueMemberS{Value: "p1"}, "sk": &types.AttributeValueMemberS{Value: "main_c"}, "lsi_sk": &types.AttributeValueMemberS{Value: "lsi_z"}, "val": &types.AttributeValueMemberS{Value: "item_z"}},
+		} {
+			if _, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(lsiTable),
+				Item:      item,
+			}); err != nil {
+				return fmt.Errorf("put item: %v", err)
+			}
+		}
+
+		lsiQueryResp, err := client.Query(ctx, &dynamodb.QueryInput{
+			TableName:              aws.String(lsiTable),
+			IndexName:              aws.String("lsi1"),
+			KeyConditionExpression: aws.String("pk = :pk AND lsi_sk = :lsk"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":pk":  &types.AttributeValueMemberS{Value: "p1"},
+				":lsk": &types.AttributeValueMemberS{Value: "lsi_x"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("LSI query: %v", err)
+		}
+		if lsiQueryResp.Count != 2 {
+			return fmt.Errorf("LSI query count: expected 2, got %d", lsiQueryResp.Count)
+		}
+		valSet := make(map[string]bool)
+		for _, item := range lsiQueryResp.Items {
+			v, ok := item["val"].(*types.AttributeValueMemberS)
+			if !ok {
+				return fmt.Errorf("LSI query item: val is not S")
+			}
+			valSet[v.Value] = true
+		}
+		if !valSet["item_x"] || !valSet["item_y"] {
+			return fmt.Errorf("LSI query items: expected 'item_x' and 'item_y', got %v", valSet)
 		}
 		return nil
 	}))

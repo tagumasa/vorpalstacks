@@ -380,7 +380,7 @@ func (r *TestRunner) CheckServerHealth() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

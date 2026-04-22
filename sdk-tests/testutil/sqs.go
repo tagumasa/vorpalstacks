@@ -75,6 +75,9 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if attrResp.Attributes == nil {
 			return fmt.Errorf("GetQueueAttributes returned nil Attributes")
 		}
+		if attrResp.Attributes[string(types.QueueAttributeNameVisibilityTimeout)] == "" {
+			return fmt.Errorf("VisibilityTimeout is empty")
+		}
 		return nil
 	}))
 
@@ -391,6 +394,16 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		if resp.QueueUrls == nil {
 			return fmt.Errorf("ListQueues returned nil QueueUrls")
 		}
+		found := false
+		for _, u := range resp.QueueUrls {
+			if strings.Contains(u, queueName) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("created queue %s not found in ListQueues", queueName)
+		}
 		return nil
 	}))
 
@@ -537,6 +550,9 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		}
 		if len(tagResp.Tags) == 0 {
 			return fmt.Errorf("ListQueueTags returned nil or empty Tags (expected Environment=Test)")
+		}
+		if tagResp.Tags["Environment"] != "Test" {
+			return fmt.Errorf("expected tag Environment=Test, got %v", tagResp.Tags["Environment"])
 		}
 		return nil
 	}))

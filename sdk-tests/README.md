@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 32 AWS services with 2026 test cases (1985 SDK + 24 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests for 32 AWS services with 2031 test cases (1990 SDK + 24 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -25,7 +25,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | CloudWatch Logs | 42 | 100% | ✅ Perfect |
 | Cognito | 67 | 100% | ✅ Perfect |
 | Cognito Identity | 41 | 100% | ✅ Perfect |
-| DynamoDB | 98 | 100% | ✅ Perfect |
+| DynamoDB | 103 | 100% | ✅ Perfect |
 | EventBridge | 56 | 100% | ✅ Perfect |
 | IAM | 117 | 100% | ✅ Perfect |
 | Kinesis | 51 | 100% | ✅ Perfect |
@@ -48,7 +48,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | WAF | Removed | No longer a supported service |
 | WAFv2 | 52 | 100% | ✅ Perfect |
 
-**Overall: 2026/2026 tests passing (100%) — 1985 SDK + 24 integration + 17 WebSocket**
+**Overall: 2031/2031 tests passing (100%) — 1990 SDK + 24 integration + 17 WebSocket**
 
 ## Prerequisites
 

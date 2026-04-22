@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -103,6 +104,16 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		if resp.Functions == nil {
 			return fmt.Errorf("functions list is nil")
 		}
+		found := false
+		for _, f := range resp.Functions {
+			if f.FunctionName != nil && *f.FunctionName == functionName {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("created function %s not found in ListFunctions", functionName)
+		}
 		return nil
 	}))
 
@@ -158,6 +169,16 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		}
 		if resp.Versions == nil {
 			return fmt.Errorf("versions list is nil")
+		}
+		hasLatest := false
+		for _, v := range resp.Versions {
+			if v.Version != nil && *v.Version == "$LATEST" {
+				hasLatest = true
+				break
+			}
+		}
+		if !hasLatest {
+			return fmt.Errorf("$LATEST version not found in ListVersionsByFunction")
 		}
 		return nil
 	}))
@@ -226,8 +247,8 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.StatusCode == 0 {
-			return fmt.Errorf("status code is zero")
+		if resp.StatusCode != 200 {
+			return fmt.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 		return nil
 	}))
@@ -350,6 +371,9 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		}
 		if resp.Tags == nil {
 			return fmt.Errorf("tags is nil")
+		}
+		if resp.Tags["Project"] != "sdk-tests" {
+			return fmt.Errorf("expected tag Project=sdk-tests, got %v", resp.Tags["Project"])
 		}
 		return nil
 	}))
@@ -529,6 +553,24 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		}
 		if string(payload) == "" {
 			return fmt.Errorf("payload should not be empty")
+		}
+		var lambdaResult map[string]interface{}
+		if err := json.Unmarshal(payload, &lambdaResult); err != nil {
+			return fmt.Errorf("parse payload JSON: %v (payload: %s)", err, string(payload))
+		}
+		if lambdaResult["statusCode"] != float64(200) {
+			return fmt.Errorf("expected statusCode 200, got %v", lambdaResult["statusCode"])
+		}
+		bodyStr, ok := lambdaResult["body"].(string)
+		if !ok || bodyStr == "" {
+			return fmt.Errorf("expected non-empty body string in payload, got %v", lambdaResult["body"])
+		}
+		var body map[string]interface{}
+		if err := json.Unmarshal([]byte(bodyStr), &body); err != nil {
+			return fmt.Errorf("parse body JSON: %v", err)
+		}
+		if body["result"] != "ok" {
+			return fmt.Errorf("body result mismatch: got %v", body["result"])
 		}
 		return nil
 	}))
