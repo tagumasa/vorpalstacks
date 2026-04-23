@@ -703,7 +703,7 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("neptunegraph", "CancelQuery_NotImplemented", func() error {
+	results = append(results, r.RunTest("neptunegraph", "CancelQuery_NonExistentQuery", func() error {
 		if graphID == "" {
 			return fmt.Errorf("no graph ID")
 		}
@@ -711,7 +711,7 @@ func (r *TestRunner) RunNeptunegraphTests() []TestResult {
 			GraphIdentifier: aws.String(graphID),
 			QueryId:         aws.String("q-fake123456"),
 		})
-		if err := AssertErrorContains(err, "NotImplementedException"); err != nil {
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil

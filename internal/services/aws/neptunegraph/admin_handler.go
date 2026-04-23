@@ -47,9 +47,9 @@ func (h *AdminHandler) ExecuteQuery(ctx context.Context, req *connect.Request[pb
 	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
-// CancelQuery handles the admin console CancelQuery request with a no-op response.
+// CancelQuery handles the admin console CancelQuery request. Not implemented via admin console.
 func (h *AdminHandler) CancelQuery(ctx context.Context, req *connect.Request[pb.CancelQueryInput]) (*connect.Response[pbcommon.Empty], error) {
-	return connect.NewResponse(&pbcommon.Empty{}), nil
+	return nil, connect.NewError(connect.CodeUnimplemented, errNotImplemented())
 }
 
 // GetQuery handles the admin console GetQuery request. Not implemented via admin console.

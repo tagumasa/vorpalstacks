@@ -273,15 +273,7 @@ func (e *graphQLEngine) buildTypeObjectVisited(schema *ast.Schema, def *ast.Defi
 	return result
 }
 
-// buildTypeRefObject constructs a __Type representation from an ast.Type reference.
-// This handles wrapper types (NonNull, List) by recursing.
-// A visited set prevents infinite recursion through circular type references
-// (e.g. __Field.type → __Type → fields → __Field.type → ...).
-func (e *graphQLEngine) buildTypeRefObject(schema *ast.Schema, t *ast.Type) map[string]interface{} {
-	visited := make(map[string]bool)
-	return e.buildTypeRefObjectVisited(schema, t, visited)
-}
-
+// buildTypeRefObjectVisited constructs a __Type representation from an ast.Type reference.
 func (e *graphQLEngine) buildTypeRefObjectVisited(schema *ast.Schema, t *ast.Type, visited map[string]bool) map[string]interface{} {
 	if t == nil {
 		return nil
@@ -324,11 +316,6 @@ func (e *graphQLEngine) buildTypeRefObjectVisited(schema *ast.Schema, t *ast.Typ
 	return result
 }
 
-// buildFields constructs __Field objects from an ast.FieldList.
-func (e *graphQLEngine) buildFields(schema *ast.Schema, fields ast.FieldList, includeDeprecated bool) []interface{} {
-	return e.buildFieldsVisited(schema, fields, includeDeprecated, make(map[string]bool))
-}
-
 func (e *graphQLEngine) buildFieldsVisited(schema *ast.Schema, fields ast.FieldList, includeDeprecated bool, visited map[string]bool) []interface{} {
 	result := make([]interface{}, 0, len(fields))
 	for _, f := range fields {
@@ -359,11 +346,6 @@ func (e *graphQLEngine) buildFieldsVisited(schema *ast.Schema, fields ast.FieldL
 	return result
 }
 
-// buildInputValues constructs __InputValue objects from an ast.ArgumentDefinitionList.
-func (e *graphQLEngine) buildInputValues(schema *ast.Schema, args ast.ArgumentDefinitionList) []interface{} {
-	return e.buildInputValuesVisited(schema, args, make(map[string]bool))
-}
-
 func (e *graphQLEngine) buildInputValuesVisited(schema *ast.Schema, args ast.ArgumentDefinitionList, visited map[string]bool) []interface{} {
 	result := make([]interface{}, 0, len(args))
 	for _, arg := range args {
@@ -380,11 +362,6 @@ func (e *graphQLEngine) buildInputValuesVisited(schema *ast.Schema, args ast.Arg
 		result = append(result, iv)
 	}
 	return result
-}
-
-// buildInputFields constructs __InputValue objects from an ast.FieldList (used for InputObject fields).
-func (e *graphQLEngine) buildInputFields(schema *ast.Schema, fields ast.FieldList) []interface{} {
-	return e.buildInputFieldsVisited(schema, fields, make(map[string]bool))
 }
 
 func (e *graphQLEngine) buildInputFieldsVisited(schema *ast.Schema, fields ast.FieldList, visited map[string]bool) []interface{} {
@@ -419,11 +396,6 @@ func (e *graphQLEngine) buildEnumValues(values ast.EnumValueList, includeDepreca
 		result = append(result, ev)
 	}
 	return result
-}
-
-// buildDirectives constructs __Directive objects from the schema's directive list.
-func (e *graphQLEngine) buildDirectives(schema *ast.Schema) []interface{} {
-	return e.buildDirectivesVisited(schema, make(map[string]bool))
 }
 
 func (e *graphQLEngine) buildDirectivesVisited(schema *ast.Schema, visited map[string]bool) []interface{} {

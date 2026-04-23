@@ -117,3 +117,10 @@ type DynamoDBInvoker interface {
 	Query(ctx context.Context, region, tableName, partitionKeyValue string, limit int) ([]map[string]interface{}, error)
 	UpdateItem(ctx context.Context, region, tableName string, key map[string]interface{}, attributes map[string]interface{}) error
 }
+
+// NeptuneGraphInvoker provides NeptuneGraph query execution for cross-service
+// consumers (e.g. AppSync GraphQL resolvers). Consumers call these methods
+// instead of holding a direct reference to the NeptuneGraph service.
+type NeptuneGraphInvoker interface {
+	ExecuteQueryOnGraph(ctx context.Context, graphID string, query string, language string, parameters map[string]interface{}) (interface{}, error)
+}

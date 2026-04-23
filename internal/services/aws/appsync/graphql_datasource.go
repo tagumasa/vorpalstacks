@@ -320,14 +320,53 @@ func (e *graphQLEngine) dispatchEventBridge(
 	return map[string]interface{}{"success": true}, nil
 }
 
-// dispatchNeptune forwards queries to the Neptune data service via the graph DB manager.
+// dispatchNeptune forwards queries to the NeptuneGraph service via the event bus.
 func (e *graphQLEngine) dispatchNeptune(
 	ctx context.Context,
 	reqCtx *request.RequestContext,
 	ds *appsyncstore.DataSource,
 	payload interface{},
 ) (interface{}, error) {
-	return nil, fmt.Errorf("neptune data source not yet implemented")
+	if e.bus == nil {
+		return nil, fmt.Errorf("event bus not configured for Neptune invocation")
+	}
+
+	busImpl, ok := e.bus.(*busPublisherAdapter)
+	if !ok || busImpl == nil {
+		return nil, fmt.Errorf("event bus adapter not available for Neptune invocation")
+	}
+
+	invoker := busImpl.bus.NeptuneGraphInvoker()
+	if invoker == nil {
+		return nil, fmt.Errorf("NeptuneGraph invoker not configured on event bus")
+	}
+
+	graphID := ""
+	if ds.NeptuneConfig != nil {
+		graphID = ds.NeptuneConfig.GraphID
+	}
+	if graphID == "" {
+		return nil, fmt.Errorf("neptune data source has no graphId configured")
+	}
+
+	payloadMap, ok := toMap(payload)
+	if !ok {
+		return nil, fmt.Errorf("neptune payload must be a JSON object")
+	}
+
+	query := request.GetStringParam(payloadMap, "query")
+	if query == "" {
+		return nil, fmt.Errorf("neptune query is required")
+	}
+
+	language := request.GetStringParam(payloadMap, "language")
+	if language == "" {
+		language = "CYPHER"
+	}
+
+	parameters := getMapFromMap(payloadMap, "parameters")
+
+	return invoker.ExecuteQueryOnGraph(ctx, graphID, query, language, parameters)
 }
 
 // dispatchNone returns null for NONE data sources. These are used for

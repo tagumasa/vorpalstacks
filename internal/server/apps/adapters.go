@@ -500,3 +500,13 @@ func dynamoAVToInterface(av *dynamodbstore.AttributeValue) interface{} {
 	}
 	return nil
 }
+
+type neptuneGraphInvokerAdapter struct {
+	service interface {
+		ExecuteQueryOnGraph(ctx context.Context, graphID string, query string, language string, parameters map[string]interface{}) (interface{}, error)
+	}
+}
+
+func (a *neptuneGraphInvokerAdapter) ExecuteQueryOnGraph(ctx context.Context, graphID string, query string, language string, parameters map[string]interface{}) (interface{}, error) {
+	return a.service.ExecuteQueryOnGraph(ctx, graphID, query, language, parameters)
+}

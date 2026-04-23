@@ -138,6 +138,7 @@ type Bus interface {
 	EventsInvoker() EventsInvoker
 	EC2Invoker() EC2Invoker
 	DynamoDBInvoker() DynamoDBInvoker
+	NeptuneGraphInvoker() NeptuneGraphInvoker
 
 	SetLambdaInvoker(invoker LambdaInvoker)
 	SetSQSInvoker(invoker SQSInvoker)
@@ -146,6 +147,7 @@ type Bus interface {
 	SetEC2Invoker(invoker EC2Invoker)
 	SetEventsInvoker(invoker EventsInvoker)
 	SetDynamoDBInvoker(invoker DynamoDBInvoker)
+	SetNeptuneGraphInvoker(invoker NeptuneGraphInvoker)
 }
 
 // EventBus is the central implementation of the Bus interface, managing
@@ -170,16 +172,17 @@ type EventBus struct {
 	invokers      map[string]ServiceInvoker
 	invokersMu    sync.RWMutex
 
-	lambdaInvoker   LambdaInvoker
-	sqsInvoker      SQSInvoker
-	snsInvoker      SNSInvoker
-	kinesisInvoker  KinesisInvoker
-	eventsInvoker   EventsInvoker
-	ec2Invoker      EC2Invoker
-	dynamoDBInvoker DynamoDBInvoker
-	nextSubID       atomic.Int64
-	asyncCh         chan *OutboxEntry
-	directCh        chan *directDispatch
+	lambdaInvoker       LambdaInvoker
+	sqsInvoker          SQSInvoker
+	snsInvoker          SNSInvoker
+	kinesisInvoker      KinesisInvoker
+	eventsInvoker       EventsInvoker
+	ec2Invoker          EC2Invoker
+	dynamoDBInvoker     DynamoDBInvoker
+	neptuneGraphInvoker NeptuneGraphInvoker
+	nextSubID           atomic.Int64
+	asyncCh             chan *OutboxEntry
+	directCh            chan *directDispatch
 }
 
 // NewEventBus creates a new EventBus with sensible defaults, applying all
@@ -607,6 +610,15 @@ func (b *EventBus) SetDynamoDBInvoker(invoker DynamoDBInvoker) { b.dynamoDBInvok
 
 // DynamoDBInvoker returns the configured DynamoDB invoker.
 func (b *EventBus) DynamoDBInvoker() DynamoDBInvoker { return b.dynamoDBInvoker }
+
+// SetNeptuneGraphInvoker sets the NeptuneGraph invoker used for dispatching
+// graph queries from bus consumers (e.g. AppSync GraphQL resolvers).
+func (b *EventBus) SetNeptuneGraphInvoker(invoker NeptuneGraphInvoker) {
+	b.neptuneGraphInvoker = invoker
+}
+
+// NeptuneGraphInvoker returns the configured NeptuneGraph invoker.
+func (b *EventBus) NeptuneGraphInvoker() NeptuneGraphInvoker { return b.neptuneGraphInvoker }
 
 // RoleResolver returns the configured RoleResolver, or nil if none was set.
 func (b *EventBus) RoleResolver() RoleResolver {

@@ -37,6 +37,9 @@ func (a *App) wireCrossServiceDeps() {
 	if st.dynamoDBService != nil {
 		eb.SetDynamoDBInvoker(&dynamoDBInvokerAdapter{provider: st.dynamoDBService})
 	}
+	if st.neptuneGraphService != nil {
+		eb.SetNeptuneGraphInvoker(&neptuneGraphInvokerAdapter{service: st.neptuneGraphService})
+	}
 
 	if st.cloudWatchService != nil {
 		st.cloudWatchService.SetEventBus(eb)

@@ -198,6 +198,7 @@ type DataSource struct {
 	HttpConfig               *HttpDataSourceConfig               `json:"httpConfig,omitempty"`
 	LambdaConfig             *LambdaDataSourceConfig             `json:"lambdaConfig,omitempty"`
 	MetricsConfig            string                              `json:"metricsConfig,omitempty"`
+	NeptuneConfig            *NeptuneDataSourceConfig            `json:"neptuneConfig,omitempty"`
 	OpenSearchServiceConfig  *OpenSearchServiceDataSourceConfig  `json:"openSearchServiceConfig,omitempty"`
 	RelationalDatabaseConfig *RelationalDatabaseDataSourceConfig `json:"relationalDatabaseConfig,omitempty"`
 	Tags                     map[string]string                   `json:"tags,omitempty"`
@@ -252,6 +253,11 @@ type ElasticsearchDataSourceConfig struct {
 type OpenSearchServiceDataSourceConfig struct {
 	AwsRegion string `json:"awsRegion"`
 	Endpoint  string `json:"endpoint"`
+}
+
+// NeptuneDataSourceConfig specifies an Amazon Neptune graph database as a data source.
+type NeptuneDataSourceConfig struct {
+	GraphID string `json:"graphId,omitempty"`
 }
 
 // EventBridgeDataSourceConfig specifies an Amazon EventBridge event bus as a data source.

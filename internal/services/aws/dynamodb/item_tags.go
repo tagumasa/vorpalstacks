@@ -5,7 +5,6 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/common/tags"
 	tagutil "vorpalstacks/internal/common/tags"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -14,19 +13,19 @@ import (
 
 func dynamodbMapError(err error) error {
 	switch err.(type) {
-	case *tags.MissingResourceError:
+	case *tagutil.MissingResourceError:
 		return ErrInvalidParameter
-	case *tags.MissingTagsError:
+	case *tagutil.MissingTagsError:
 		return ErrInvalidParameter
-	case *tags.MissingTagKeysError:
+	case *tagutil.MissingTagKeysError:
 		return ErrInvalidParameter
 	}
 	return err
 }
 
-func dynamodbTagConfig(store dynamodbstore.DynamoDBStoreInterface) tags.TagHandlerConfig {
-	return tags.TagHandlerConfig{
-		Param: tags.TagOperationConfig{
+func dynamodbTagConfig(store dynamodbstore.DynamoDBStoreInterface) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: tagutil.TagOperationConfig{
 			ResourceParam: "ResourceArn",
 			TagsParam:     "Tags",
 			TagKeysParam:  "TagKeys",
@@ -84,7 +83,7 @@ func (s *DynamoDBService) TagResource(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	return tags.HandleTag(ctx, req, dynamodbTagConfig(store))
+	return tagutil.HandleTag(ctx, req, dynamodbTagConfig(store))
 }
 
 // UntagResource removes the specified tags from a DynamoDB table.
@@ -93,7 +92,7 @@ func (s *DynamoDBService) UntagResource(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	return tags.HandleUntag(ctx, req, dynamodbTagConfig(store))
+	return tagutil.HandleUntag(ctx, req, dynamodbTagConfig(store))
 }
 
 // ListTagsForResource lists all tags assigned to a DynamoDB table.
@@ -102,5 +101,5 @@ func (s *DynamoDBService) ListTagsForResource(ctx context.Context, reqCtx *reque
 	if err != nil {
 		return nil, err
 	}
-	return tags.HandleList(ctx, req, dynamodbTagConfig(store))
+	return tagutil.HandleList(ctx, req, dynamodbTagConfig(store))
 }

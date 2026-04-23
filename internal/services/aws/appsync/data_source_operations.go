@@ -43,6 +43,7 @@ func (s *AppSyncService) CreateDataSource(ctx context.Context, reqCtx *request.R
 		HttpConfig:               parseHttpConfig(req.Parameters),
 		LambdaConfig:             parseLambdaDataSourceConfig(req.Parameters),
 		MetricsConfig:            request.GetStringParam(req.Parameters, "metricsConfig"),
+		NeptuneConfig:            parseNeptuneConfig(req.Parameters),
 		OpenSearchServiceConfig:  parseOpenSearchServiceConfig(req.Parameters),
 		RelationalDatabaseConfig: parseRelationalDatabaseConfig(req.Parameters),
 	}
@@ -112,6 +113,7 @@ func (s *AppSyncService) UpdateDataSource(ctx context.Context, reqCtx *request.R
 		HttpConfig:               parseHttpConfig(req.Parameters),
 		LambdaConfig:             parseLambdaDataSourceConfig(req.Parameters),
 		MetricsConfig:            request.GetStringParam(req.Parameters, "metricsConfig"),
+		NeptuneConfig:            parseNeptuneConfig(req.Parameters),
 		OpenSearchServiceConfig:  parseOpenSearchServiceConfig(req.Parameters),
 		RelationalDatabaseConfig: parseRelationalDatabaseConfig(req.Parameters),
 	}
@@ -211,6 +213,9 @@ func dataSourceToMap(ds *appsyncstore.DataSource) map[string]interface{} {
 	}
 	if ds.MetricsConfig != "" {
 		m["metricsConfig"] = ds.MetricsConfig
+	}
+	if ds.NeptuneConfig != nil {
+		m["neptuneConfig"] = neptuneConfigToMap(ds.NeptuneConfig)
 	}
 	if ds.OpenSearchServiceConfig != nil {
 		m["openSearchServiceConfig"] = openSearchServiceConfigToMap(ds.OpenSearchServiceConfig)
@@ -444,6 +449,26 @@ func relationalDatabaseConfigToMap(c *appsyncstore.RelationalDatabaseDataSourceC
 			rds["schema"] = c.RdsHttpEndpointConfig.Schema
 		}
 		m["rdsHttpEndpointConfig"] = rds
+	}
+	return m
+}
+
+// parseNeptuneConfig parses a Neptune data source config from request parameters.
+func parseNeptuneConfig(params map[string]interface{}) *appsyncstore.NeptuneDataSourceConfig {
+	raw := request.GetMapParam(params, "neptuneConfig")
+	if raw == nil {
+		return nil
+	}
+	return &appsyncstore.NeptuneDataSourceConfig{
+		GraphID: request.GetStringParam(raw, "graphId"),
+	}
+}
+
+// neptuneConfigToMap converts a NeptuneDataSourceConfig to a wire-format map.
+func neptuneConfigToMap(c *appsyncstore.NeptuneDataSourceConfig) map[string]interface{} {
+	m := map[string]interface{}{}
+	if c.GraphID != "" {
+		m["graphId"] = c.GraphID
 	}
 	return m
 }
