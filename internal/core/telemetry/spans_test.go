@@ -128,28 +128,3 @@ func TestSQSSpan_EmptyQueue(t *testing.T) {
 	}
 }
 
-func TestSetSpanError(t *testing.T) {
-	ctx := context.Background()
-	_, span := StartSpan(ctx, "test-span")
-	defer span.End()
-
-	SetSpanError(span, nil)
-
-	SetSpanError(span, &testError{msg: "test error"})
-}
-
-type testError struct {
-	msg string
-}
-
-func (e *testError) Error() string {
-	return e.msg
-}
-
-func TestSetSpanSuccess(t *testing.T) {
-	ctx := context.Background()
-	_, span := StartSpan(ctx, "test-span")
-	defer span.End()
-
-	SetSpanSuccess(span)
-}

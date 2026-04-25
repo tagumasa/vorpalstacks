@@ -2,6 +2,7 @@ package eventbus
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -301,13 +302,16 @@ func TestPebbleOutboxConcurrentWrites(t *testing.T) {
 	db := newTestDB(t)
 	store := NewPebbleOutboxStore(db)
 
-	done := make(chan struct{})
 	const n = 100
+	type result struct {
+		id  int
+		err error
+	}
+	results := make(chan result, n)
 	for i := 0; i < n; i++ {
 		go func(id int) {
-			defer func() { done <- struct{}{} }()
 			entry := &OutboxEntry{
-				EventID:         string(rune('0' + id)),
+				EventID:         fmt.Sprintf("concurrent-%d", id),
 				EventType:       "service:invoke",
 				Depth:           0,
 				SerializedEvent: []byte(`{}`),
@@ -316,12 +320,28 @@ func TestPebbleOutboxConcurrentWrites(t *testing.T) {
 				MaxRetries:      3,
 				HandlerResults:  map[string]string{},
 			}
-			_ = store.Write(context.Background(), entry)
+			results <- result{id: id, err: store.Write(context.Background(), entry)}
 		}(i)
 	}
 
+	writeErrors := 0
 	for i := 0; i < n; i++ {
-		<-done
+		r := <-results
+		if r.err != nil {
+			t.Errorf("concurrent write %d failed: %v", r.id, r.err)
+			writeErrors++
+		}
+	}
+	if writeErrors > 0 {
+		t.Fatalf("%d/%d concurrent writes failed", writeErrors, n)
+	}
+
+	pending, err := store.ListPending(context.Background(), n+10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pending) != n {
+		t.Fatalf("expected %d pending entries after concurrent writes, got %d", n, len(pending))
 	}
 }
 

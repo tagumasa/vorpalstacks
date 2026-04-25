@@ -138,8 +138,10 @@ func TestHandlerChain_AddFinalizer(t *testing.T) {
 
 func TestHandlerChain_Execute_Success(t *testing.T) {
 	hc := NewHandlerChain()
+	handlerCalled := false
 
 	hc.AddRequestHandler(func(ctx *RequestContext) error {
+		handlerCalled = true
 		return nil
 	})
 
@@ -147,6 +149,10 @@ func TestHandlerChain_Execute_Success(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 
 	hc.Execute(w, r)
+
+	if !handlerCalled {
+		t.Error("request handler should be called")
+	}
 }
 
 func TestHandlerChain_Execute_WithError(t *testing.T) {
@@ -208,14 +214,20 @@ func TestHandlerChain_Execute_Handled(t *testing.T) {
 
 func TestHandlerChain_Execute_FinalizerCalled(t *testing.T) {
 	hc := NewHandlerChain()
+	finalizerCalled := false
 
 	hc.AddFinalizer(func(ctx *RequestContext) {
+		finalizerCalled = true
 	})
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 
 	hc.Execute(w, r)
+
+	if !finalizerCalled {
+		t.Error("finalizer should be called after Execute")
+	}
 }
 
 func TestHandlerChain_Clone(t *testing.T) {

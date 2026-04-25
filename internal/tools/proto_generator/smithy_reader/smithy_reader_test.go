@@ -102,15 +102,19 @@ func TestStableEnumIndex(t *testing.T) {
 }
 
 func TestStableEnumIndexUniqueness(t *testing.T) {
-	names := []string{"ACTIVE", "INACTIVE", "PENDING", "DELETED", "UNKNOWN", "PENDING", "RUNNING"}
+	names := []string{"ACTIVE", "INACTIVE", "PENDING", "DELETED", "UNKNOWN", "RUNNING", "STOPPED"}
 	indices := make(map[int]string)
 
 	for _, name := range names {
 		idx := stableEnumIndex(name, 0)
 		if existing, ok := indices[idx]; ok {
-			t.Logf("Collision: %q and %q both produce %d", existing, name, idx)
+			t.Errorf("collision: %q and %q both produce %d", existing, name, idx)
 		}
 		indices[idx] = name
+	}
+
+	if len(indices) != len(names) {
+		t.Errorf("expected %d unique indices, got %d", len(names), len(indices))
 	}
 }
 

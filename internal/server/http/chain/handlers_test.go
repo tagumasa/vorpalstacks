@@ -331,12 +331,20 @@ func TestLogResponse(t *testing.T) {
 }
 
 func TestSetCloseConnectionHeader_NoConnection(t *testing.T) {
+	w := httptest.NewRecorder()
 	rc := &RequestContext{
 		Request:  httptest.NewRequest(http.MethodGet, "/test", nil),
-		Response: httptest.NewRecorder(),
+		Response: w,
 	}
 
-	SetCloseConnectionHeader(rc)
+	err := SetCloseConnectionHeader(rc)
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	if w.Header().Get("Connection") != "" {
+		t.Errorf("expected no Connection header, got %q", w.Header().Get("Connection"))
+	}
 }
 
 func TestSetCloseConnectionHeader_WithClose(t *testing.T) {

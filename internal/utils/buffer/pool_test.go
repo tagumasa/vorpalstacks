@@ -55,6 +55,11 @@ func TestPoolReset(t *testing.T) {
 
 func TestPoolPutNil(t *testing.T) {
 	pool := NewPool()
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Put(nil) panicked: %v", r)
+		}
+	}()
 	pool.Put(nil)
 }
 
@@ -71,13 +76,22 @@ func TestGlobalPool(t *testing.T) {
 func TestPoolConcurrent(t *testing.T) {
 	pool := NewPool()
 	var wg sync.WaitGroup
+	const goroutines = 100
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < goroutines; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			buf := pool.Get(1024)
+			if buf == nil {
+				t.Error("expected non-nil buffer from pool")
+				return
+			}
 			buf.WriteString("test")
+			if buf.Len() != 4 {
+				t.Errorf("expected buffer len 4, got %d", buf.Len())
+				return
+			}
 			pool.Put(buf)
 		}()
 	}
