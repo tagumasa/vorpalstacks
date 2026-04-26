@@ -4,6 +4,47 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.9] - 2026-04-26
+
+### Added
+- **EC2 resource stubs** (new): VPC, Subnet, Security Group data models and store layer for cross-service resource references (`internal/services/aws/ec2/`, `internal/store/aws/ec2/`) — not a functional compute service
+- **vstacks CLI** (`cmd/vstacks/`): management tool for server control, IAM, config, service, and backup operations
+- **PebbleDB batch operations**: `CommitSync` method for atomic writes; batch interface (`internal/core/storage/batch.go`, `pebble_batch.go`)
+- **Goroutine pool** (`internal/core/resilience/goroutine.go`): bounded goroutine execution for resilience
+- Unit tests: AppSync schema operations & WebSocket server, DynamoDB item condition/expression/key condition/table updater, Neptune pagination & global/event operations, store tag tests (362 lines)
+
+### Changed
+- **Neptune/NeptuneGraph enhanced**: graph engine moved from `pkg/graphengine/` to `internal/core/storage/graphengine/` with expanded KV-backend store (845+ lines tests); service handler split (`service.go` → export/import/queries/snapshots/tags/responses); admin operations refactored (cluster, subnet group, error handling); Cypher parser DDL support (CREATE/DROP index) and modularization into ~10 files; Gremlin parser modularized into 5 step files + helpers; N-Triples serialization added (`internal/utils/ntriples/`); EventBus NeptuneGraph invoker; NeptuneGraph parser and error handling improved
+- **Request parsing refactored** (`internal/common/request/`): monolithic parser simplified via registry pattern; per-service parsers added; `interfaces.go` removed
+- **Tag handling refactored** (`internal/common/tags/`): operations extracted into dedicated handler with `UntagResource` by keys; removed `internal/common/types/tag.go`
+- **Service handler file splits**: API Gateway integration (`aws.go` → `aws_dynamodb.go` + `aws_sns.go` + `mapping.go`), S3 (`handler_bucket.go` → put/get/delete/response)
+- **Lambda ESM poller and tag operations refactored**: improved stream polling and streamlined tag management
+- **AppSync refactored**: evaluation operations expanded (+507 lines), datasource simplified (−300 lines), tag operations enhanced (+180 lines)
+- **EventBus concurrency handling enhanced** (`bus.go`, `invoker.go`)
+- **PebbleDB improvements**: TTL handling, transaction management, iterator, and lock mechanisms
+- **Blob storage refactored** (`blob_hybrid.go`)
+- **Docker (Moby) client refactored** (`internal/client/mobyclient/`): container, network, and volume operations with dedicated error types (`errors.go`)
+- **Server wiring refactored** (`internal/server/apps/`): adapters, optional services, and service initialization streamlined
+- **Resource extractor refactored** (`internal/server/authorization/resource_extractor.go`)
+- Pagination helpers cleaned up, XML encoding improved, region handling simplified
+- **SDK tests enhanced**: expanded coverage for SNS, SQS, Secrets Manager, Step Functions (+1661/-527 lines)
+
+### Fixed
+- Adaptive timeout redundant return statement (`internal/core/resilience/adaptive_timeout.go`)
+- Error handling and unused code cleanup across multiple services (AppSync, NeptuneGraph, KMS, S3, SESv2, Route53, WAF, etc.)
+- Lambda redundant response header handling
+
+### Removed
+- **Utility package consolidation** (~4270 lines): deleted `internal/utils/archiver/`, `internal/utils/naming/`, `internal/utils/netutils/`, `internal/utils/timeutils/`, `internal/utils/aws/conditions/`, `internal/utils/aws/helpers/`, `internal/utils/aws/parsers/`, `internal/utils/crypto/` (consolidated into core packages)
+- Deleted `internal/common/types/tag.go`, `internal/common/request/interfaces.go`, `internal/store/aws/common/types.go` (absorbed into other packages)
+- Deleted service-specific operation files absorbed by refactoring: Cognito user operations, Lambda function operations, Secrets Manager secret operations
+
+### Documentation
+- Updated README (English, Japanese, Chinese) with latency metrics and standardized `DATA_PATH`
+- Updated configuration reference (`docs/configuration.md`)
+- Updated architecture and services documentation
+- Updated LocalStack comparison report
+
 ## [0.0.8] - 2026-04-09
 
 ### Added
