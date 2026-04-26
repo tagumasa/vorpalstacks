@@ -42,9 +42,9 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 		return mapStoreError(err)
 	}
 
-	if len(ns.Tags) > 0 {
-		tagMap := make(map[string]string, len(ns.Tags))
-		for k, v := range ns.Tags {
+	if len(created.Tags) > 0 {
+		tagMap := make(map[string]string, len(created.Tags))
+		for k, v := range created.Tags {
 			tagMap[k] = v
 		}
 		if err := store.TagStore.Tag(created.ChannelNamespaceArn, tagMap); err != nil {

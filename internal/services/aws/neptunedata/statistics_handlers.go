@@ -197,7 +197,7 @@ func (s *NeptuneDataService) GetPropertygraphStream(ctx context.Context, reqCtx 
 	var records []interface{}
 	remaining := limit
 
-	records, _ = appendNodeRecords(reader, records, remaining)
+	records, remaining = appendNodeRecords(reader, records, remaining)
 	records, _ = appendEdgeRecords(reader, records, remaining)
 
 	totalRecords := len(records)

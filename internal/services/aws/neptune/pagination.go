@@ -14,11 +14,16 @@ func paginateItems(items []interface{}, marker string, maxRecords int, keyFn fun
 
 	startIdx := 0
 	if marker != "" {
+		found := false
 		for i, item := range items {
 			if keyFn(item) == marker {
 				startIdx = i + 1
+				found = true
 				break
 			}
+		}
+		if !found {
+			return []interface{}{}, "", false
 		}
 	}
 

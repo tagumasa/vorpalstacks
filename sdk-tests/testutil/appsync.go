@@ -580,10 +580,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			Name:               aws.String("noop"),
 			AuthenticationType: types.AuthenticationTypeApiKey,
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent GraphQL API")
-		}
-		return nil
+		return AssertErrorContains(err, "NotFoundException")
 	}))
 
 	// ================================================================
@@ -712,10 +709,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			ApiId: aws.String(gqlApiId),
 			Name:  aws.String("already-deleted"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent data source")
-		}
-		return nil
+		return AssertErrorContains(err, "NotFoundException")
 	}))
 
 	// ================================================================
@@ -832,8 +826,49 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			ApiId:    aws.String(gqlApiId),
 			TypeName: aws.String("already-deleted"),
 		})
+		return AssertErrorContains(err, "NotFoundException")
+	}))
+
+	// --- Bug 2: StartSchemaCreation rejects invalid SDL (async) ---
+	results = append(results, r.RunTest("appsync", "StartSchemaCreation_InvalidSDL", func() error {
+		_, err := client.StartSchemaCreation(ctx, &appsync.StartSchemaCreationInput{
+			ApiId:      aws.String(gqlApiId),
+			Definition: []byte("THIS IS NOT VALID GRAPHQL {{{!!!"),
+		})
+		if err != nil {
+			return err
+		}
+		time.Sleep(500 * time.Millisecond)
+		statusResp, err := client.GetSchemaCreationStatus(ctx, &appsync.GetSchemaCreationStatusInput{
+			ApiId: aws.String(gqlApiId),
+		})
+		if err != nil {
+			return err
+		}
+		if statusResp.Status != types.SchemaStatusFailed {
+			return fmt.Errorf("expected FAILED status for invalid SDL, got %s", statusResp.Status)
+		}
+		return nil
+	}))
+
+	// --- Bug 4: SDL type duplication check ---
+	dupSDL := `type User { id: ID! name: String! }`
+	results = append(results, r.RunTest("appsync", "CreateType_DuplicateType", func() error {
+		_, err := client.CreateType(ctx, &appsync.CreateTypeInput{
+			ApiId:      aws.String(gqlApiId),
+			Definition: aws.String(dupSDL),
+			Format:     types.TypeDefinitionFormatSdl,
+		})
+		if err != nil {
+			return err
+		}
+		_, err = client.CreateType(ctx, &appsync.CreateTypeInput{
+			ApiId:      aws.String(gqlApiId),
+			Definition: aws.String(dupSDL),
+			Format:     types.TypeDefinitionFormatSdl,
+		})
 		if err == nil {
-			return fmt.Errorf("expected error for non-existent type")
+			return fmt.Errorf("expected error when creating duplicate type User")
 		}
 		return nil
 	}))
@@ -949,10 +984,7 @@ func (r *TestRunner) RunAppSyncTests() []TestResult {
 			TypeName:  aws.String("Query"),
 			FieldName: aws.String("already-deleted"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent resolver")
-		}
-		return nil
+		return AssertErrorContains(err, "NotFoundException")
 	}))
 
 	// ================================================================

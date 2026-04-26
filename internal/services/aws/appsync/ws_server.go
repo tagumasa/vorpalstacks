@@ -71,38 +71,52 @@ type subscription struct {
 // channelManager tracks all active subscriptions across connections,
 // enabling efficient fan-out when events are published.
 type channelManager struct {
-	// channel -> set of (connId, subId) pairs
-	channels map[string]map[string]string
+	channels map[string]map[string]bool
+	connSubs map[string]map[string]string
 	mu       sync.RWMutex
 }
 
 func newChannelManager() *channelManager {
 	return &channelManager{
-		channels: make(map[string]map[string]string),
+		channels: make(map[string]map[string]bool),
+		connSubs: make(map[string]map[string]string),
 	}
 }
 
-// subscribe registers a subscription for broadcasting.
-// Returns the set of concrete channel paths that match (expanding wildcards).
 func (cm *channelManager) subscribe(channel string, connId, subId string) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
+	compositeKey := connId + ":" + subId
+
 	if cm.channels[channel] == nil {
-		cm.channels[channel] = make(map[string]string)
+		cm.channels[channel] = make(map[string]bool)
 	}
-	cm.channels[channel][connId] = subId
+	cm.channels[channel][compositeKey] = true
+
+	if cm.connSubs[connId] == nil {
+		cm.connSubs[connId] = make(map[string]string)
+	}
+	cm.connSubs[connId][subId] = channel
 }
 
-// unsubscribe removes a subscription from broadcasting.
-func (cm *channelManager) unsubscribe(channel string, connId string) {
+func (cm *channelManager) unsubscribe(channel string, connId string, subId string) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
+	compositeKey := connId + ":" + subId
+
 	if subs, ok := cm.channels[channel]; ok {
-		delete(subs, connId)
+		delete(subs, compositeKey)
 		if len(subs) == 0 {
 			delete(cm.channels, channel)
+		}
+	}
+
+	if subMap, ok := cm.connSubs[connId]; ok {
+		delete(subMap, subId)
+		if len(subMap) == 0 {
+			delete(cm.connSubs, connId)
 		}
 	}
 }
@@ -112,12 +126,20 @@ func (cm *channelManager) removeConnection(connId string) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	for ch, subs := range cm.channels {
-		delete(subs, connId)
-		if len(subs) == 0 {
-			delete(cm.channels, ch)
+	subMap, ok := cm.connSubs[connId]
+	if !ok {
+		return
+	}
+	for subId, channel := range subMap {
+		compositeKey := connId + ":" + subId
+		if subs, ok := cm.channels[channel]; ok {
+			delete(subs, compositeKey)
+			if len(subs) == 0 {
+				delete(cm.channels, channel)
+			}
 		}
 	}
+	delete(cm.connSubs, connId)
 }
 
 // matchSubscriptions returns all (connId, subId) pairs whose subscribed channel
@@ -137,11 +159,15 @@ func (cm *channelManager) matchSubscriptions(publishedChannel string) []struct {
 
 	for ch, subs := range cm.channels {
 		if channelMatches(ch, publishedChannel) {
-			for connId, subId := range subs {
+			for compositeKey := range subs {
+				parts := strings.SplitN(compositeKey, ":", 2)
+				if len(parts) != 2 {
+					continue
+				}
 				matches = append(matches, struct {
 					connId string
 					subId  string
-				}{connId: connId, subId: subId})
+				}{connId: parts[0], subId: parts[1]})
 			}
 		}
 	}
@@ -546,7 +572,7 @@ func (s *EventServer) handleUnsubscribe(ws *wsConnection, subId string) {
 	delete(ws.subscriptions, subId)
 	ws.mu.Unlock()
 
-	s.channels.unsubscribe(sub.channel, ws.id)
+	s.channels.unsubscribe(sub.channel, ws.id, subId)
 
 	resp, _ := json.Marshal(map[string]string{
 		"type": "unsubscribe_success",

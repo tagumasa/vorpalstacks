@@ -44,6 +44,8 @@ type NeptuneDataService struct {
 	loaderWg           sync.WaitGroup
 	cancelCleanup      context.CancelFunc
 	graphDB            *graphengine.DB
+	nodeIDMap          map[string]graphengine.NodeID
+	loaderCancelCh     chan struct{}
 }
 
 // GraphStatistics holds cached graph-level statistics for the property graph.
@@ -443,18 +445,26 @@ func (s *NeptuneDataService) getStats(region string) *GraphStatistics {
 }
 
 func (s *NeptuneDataService) refreshStatistics(reqCtx *request.RequestContext) {
-	if reqCtx == nil {
+	var reader graphengine.GraphReader
+	var region string
+
+	if reqCtx != nil {
+		if readerAny := reqCtx.GraphReader(); readerAny != nil {
+			if r, ok := readerAny.(graphengine.GraphReader); ok {
+				reader = r
+			}
+		}
+		region = reqCtx.GetRegion()
+	}
+
+	if reader == nil && s.graphDB != nil {
+		reader = s.graphDB
+	}
+
+	if reader == nil {
 		return
 	}
-	readerAny := reqCtx.GraphReader()
-	if readerAny == nil {
-		return
-	}
-	reader, ok := readerAny.(graphengine.GraphReader)
-	if !ok {
-		return
-	}
-	region := reqCtx.GetRegion()
+
 	stats := s.getStats(region)
 	nodeCount := reader.CountNodes()
 	edgeCount := reader.CountEdges()

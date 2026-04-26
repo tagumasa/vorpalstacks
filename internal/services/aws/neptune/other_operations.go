@@ -159,10 +159,30 @@ func (s *NeptuneService) CreateDBClusterEndpoint(ctx context.Context, reqCtx *re
 func (s *NeptuneService) DescribeDBClusterEndpoints(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
+	endpointID := request.GetStringParam(params, "DBClusterEndpointIdentifier")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	if endpointID != "" {
+		ep, err := store.GetClusterEndpoint(endpointID)
+		if err != nil {
+			return nil, translateStoreError(err)
+		}
+		return map[string]interface{}{
+			"DBClusterEndpoints": protocol.XMLElements{ElementName: "DBClusterEndpointList", Items: []interface{}{
+				map[string]interface{}{
+					"DBClusterEndpointIdentifier": ep.DBClusterEndpointIdentifier,
+					"DBClusterIdentifier":         ep.DBClusterIdentifier,
+					"Endpoint":                    ep.Endpoint,
+					"Status":                      ep.Status,
+					"EndpointType":                ep.EndpointType,
+					"DBClusterEndpointArn":        ep.DBClusterEndpointArn,
+				},
+			}},
+		}, nil
 	}
 
 	endpoints, err := store.ListClusterEndpoints(clusterID)

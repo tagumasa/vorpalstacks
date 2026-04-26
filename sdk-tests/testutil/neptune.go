@@ -249,7 +249,7 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 	// === DB Clusters (CRUD lifecycle) ===
 
 	results = append(results, r.RunTest("neptune", "CreateDBCluster", func() error {
-		_, err := client.CreateDBCluster(ctx, &neptune.CreateDBClusterInput{
+		resp, err := client.CreateDBCluster(ctx, &neptune.CreateDBClusterInput{
 			DBClusterIdentifier:         aws.String(clusterID),
 			Engine:                      aws.String("neptune"),
 			MasterUsername:              aws.String("admin"),
@@ -260,7 +260,16 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 			BackupRetentionPeriod:       aws.Int32(7),
 			DeletionProtection:          aws.Bool(false),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DBCluster == nil {
+			return fmt.Errorf("expected DBCluster in response")
+		}
+		if resp.DBCluster.DBClusterIdentifier == nil || *resp.DBCluster.DBClusterIdentifier != clusterID {
+			return fmt.Errorf("expected DBClusterIdentifier=%s, got %v", clusterID, resp.DBCluster.DBClusterIdentifier)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusters", func() error {
@@ -318,12 +327,18 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyDBCluster", func() error {
-		_, err := client.ModifyDBCluster(ctx, &neptune.ModifyDBClusterInput{
+		resp, err := client.ModifyDBCluster(ctx, &neptune.ModifyDBClusterInput{
 			DBClusterIdentifier:   aws.String(clusterID),
 			BackupRetentionPeriod: aws.Int32(14),
 			Port:                  aws.Int32(8183),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DBCluster == nil {
+			return fmt.Errorf("expected DBCluster in ModifyDBCluster response")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyDBCluster_Verify", func() error {
@@ -362,27 +377,48 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "StopDBCluster", func() error {
-		_, err := client.StopDBCluster(ctx, &neptune.StopDBClusterInput{
+		resp, err := client.StopDBCluster(ctx, &neptune.StopDBClusterInput{
 			DBClusterIdentifier: aws.String(clusterID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DBCluster == nil {
+			return fmt.Errorf("expected DBCluster in StopDBCluster response")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "StartDBCluster", func() error {
-		_, err := client.StartDBCluster(ctx, &neptune.StartDBClusterInput{
+		resp, err := client.StartDBCluster(ctx, &neptune.StartDBClusterInput{
 			DBClusterIdentifier: aws.String(clusterID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DBCluster == nil {
+			return fmt.Errorf("expected DBCluster in StartDBCluster response")
+		}
+		return nil
 	}))
 
 	// === Snapshots ===
 
 	results = append(results, r.RunTest("neptune", "CreateDBClusterSnapshot", func() error {
-		_, err := client.CreateDBClusterSnapshot(ctx, &neptune.CreateDBClusterSnapshotInput{
+		resp, err := client.CreateDBClusterSnapshot(ctx, &neptune.CreateDBClusterSnapshotInput{
 			DBClusterSnapshotIdentifier: aws.String(snapshotID),
 			DBClusterIdentifier:         aws.String(clusterID),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DBClusterSnapshot == nil {
+			return fmt.Errorf("expected DBClusterSnapshot in response")
+		}
+		if resp.DBClusterSnapshot.DBClusterSnapshotIdentifier == nil || *resp.DBClusterSnapshot.DBClusterSnapshotIdentifier != snapshotID {
+			return fmt.Errorf("expected snapshot ID=%s, got %v", snapshotID, resp.DBClusterSnapshot.DBClusterSnapshotIdentifier)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusterSnapshots", func() error {
@@ -490,13 +526,22 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 	// === DB Instances ===
 
 	results = append(results, r.RunTest("neptune", "CreateDBInstance", func() error {
-		_, err := client.CreateDBInstance(ctx, &neptune.CreateDBInstanceInput{
+		resp, err := client.CreateDBInstance(ctx, &neptune.CreateDBInstanceInput{
 			DBInstanceIdentifier: aws.String(instanceID),
 			DBClusterIdentifier:  aws.String(clusterID),
 			Engine:               aws.String("neptune"),
 			DBInstanceClass:      aws.String("db.r5.large"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DBInstance == nil {
+			return fmt.Errorf("expected DBInstance in CreateDBInstance response")
+		}
+		if resp.DBInstance.DBInstanceIdentifier == nil || *resp.DBInstance.DBInstanceIdentifier != instanceID {
+			return fmt.Errorf("expected DBInstanceIdentifier=%s, got %v", instanceID, resp.DBInstance.DBInstanceIdentifier)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBInstances", func() error {
@@ -594,12 +639,49 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("neptune", "DescribeGlobalClusters_ContentVerify", func() error {
+		resp, err := client.DescribeGlobalClusters(ctx, &neptune.DescribeGlobalClustersInput{
+			GlobalClusterIdentifier: aws.String(globalClusterID),
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.GlobalClusters) != 1 {
+			return fmt.Errorf("expected 1 global cluster, got %d", len(resp.GlobalClusters))
+		}
+		gc := resp.GlobalClusters[0]
+		if gc.Engine == nil || *gc.Engine != "neptune" {
+			return fmt.Errorf("expected engine=neptune, got %v", gc.Engine)
+		}
+		if gc.GlobalClusterIdentifier == nil || *gc.GlobalClusterIdentifier != globalClusterID {
+			return fmt.Errorf("expected globalClusterId=%s, got %v", globalClusterID, gc.GlobalClusterIdentifier)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("neptune", "ModifyGlobalCluster", func() error {
 		_, err := client.ModifyGlobalCluster(ctx, &neptune.ModifyGlobalClusterInput{
 			GlobalClusterIdentifier: aws.String(globalClusterID),
 			EngineVersion:           aws.String("1.3.2.0"),
 		})
 		return err
+	}))
+
+	results = append(results, r.RunTest("neptune", "ModifyGlobalCluster_Verify", func() error {
+		resp, err := client.DescribeGlobalClusters(ctx, &neptune.DescribeGlobalClustersInput{
+			GlobalClusterIdentifier: aws.String(globalClusterID),
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.GlobalClusters) != 1 {
+			return fmt.Errorf("expected 1 global cluster, got %d", len(resp.GlobalClusters))
+		}
+		gc := resp.GlobalClusters[0]
+		if gc.EngineVersion == nil || *gc.EngineVersion != "1.3.2.0" {
+			return fmt.Errorf("expected engineVersion=1.3.2.0 after modify, got %v", gc.EngineVersion)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "DeleteGlobalCluster", func() error {
@@ -675,32 +757,79 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 	// === Descriptive Operations ===
 
 	results = append(results, r.RunTest("neptune", "DescribeEventCategories", func() error {
-		_, err := client.DescribeEventCategories(ctx, &neptune.DescribeEventCategoriesInput{})
-		return err
+		resp, err := client.DescribeEventCategories(ctx, &neptune.DescribeEventCategoriesInput{})
+		if err != nil {
+			return err
+		}
+		if len(resp.EventCategoriesMapList) == 0 {
+			return fmt.Errorf("expected at least one event category map entry")
+		}
+		found := false
+		for _, m := range resp.EventCategoriesMapList {
+			if m.SourceType != nil && *m.SourceType == "db-instance" {
+				found = true
+				if len(m.EventCategories) == 0 {
+					return fmt.Errorf("expected non-empty EventCategories for db-instance")
+				}
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("expected db-instance event category in response")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeEvents", func() error {
-		_, err := client.DescribeEvents(ctx, &neptune.DescribeEventsInput{})
-		return err
+		resp, err := client.DescribeEvents(ctx, &neptune.DescribeEventsInput{})
+		if err != nil {
+			return err
+		}
+		if resp.Events == nil {
+			return fmt.Errorf("Events field is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribePendingMaintenanceActions", func() error {
-		_, err := client.DescribePendingMaintenanceActions(ctx, &neptune.DescribePendingMaintenanceActionsInput{})
-		return err
+		resp, err := client.DescribePendingMaintenanceActions(ctx, &neptune.DescribePendingMaintenanceActionsInput{})
+		if err != nil {
+			return err
+		}
+		if resp.PendingMaintenanceActions == nil {
+			return fmt.Errorf("PendingMaintenanceActions field is nil")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeOrderableDBInstanceOptions", func() error {
-		_, err := client.DescribeOrderableDBInstanceOptions(ctx, &neptune.DescribeOrderableDBInstanceOptionsInput{
+		resp, err := client.DescribeOrderableDBInstanceOptions(ctx, &neptune.DescribeOrderableDBInstanceOptionsInput{
 			Engine: aws.String("neptune"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if len(resp.OrderableDBInstanceOptions) == 0 {
+			return fmt.Errorf("expected at least one orderable DB instance option")
+		}
+		opt := resp.OrderableDBInstanceOptions[0]
+		if opt.Engine == nil || *opt.Engine != "neptune" {
+			return fmt.Errorf("expected engine=neptune in orderable options, got %v", opt.Engine)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeEngineDefaultParameters", func() error {
-		_, err := client.DescribeEngineDefaultParameters(ctx, &neptune.DescribeEngineDefaultParametersInput{
+		resp, err := client.DescribeEngineDefaultParameters(ctx, &neptune.DescribeEngineDefaultParametersInput{
 			DBParameterGroupFamily: aws.String("neptune1"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.EngineDefaults.Parameters == nil || len(resp.EngineDefaults.Parameters) == 0 {
+			return fmt.Errorf("expected non-empty default parameters list")
+		}
+		return nil
 	}))
 
 	// === Tags ===
@@ -904,6 +1033,60 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 		return err
 	}))
 
+	// --- Bug M2: invalid pagination marker returns first page instead of empty ---
+	results = append(results, r.RunTest("neptune", "DescribeGlobalClusters_InvalidMarker", func() error {
+		resp, err := client.DescribeGlobalClusters(ctx, &neptune.DescribeGlobalClustersInput{
+			Marker: aws.String("invalid-nonexistent-marker-xyz"),
+		})
+		if err != nil {
+			return fmt.Errorf("invalid marker should return empty results, not error: %v", err)
+		}
+		if len(resp.GlobalClusters) != 0 {
+			return fmt.Errorf("expected 0 global clusters for invalid marker, got %d", len(resp.GlobalClusters))
+		}
+		return nil
+	}))
+
+	// --- Bug M4: DescribeDBClusterEndpoints endpoint ID filter ---
+	endpointID2 := fmt.Sprintf("test-ep2-%d", ts)
+	results = append(results, r.RunTest("neptune", "DescribeDBClusterEndpoints_FilterByEndpointID", func() error {
+		resp, err := client.CreateDBClusterEndpoint(ctx, &neptune.CreateDBClusterEndpointInput{
+			DBClusterEndpointIdentifier: aws.String(endpointID2),
+			DBClusterIdentifier:         aws.String(clusterID),
+			EndpointType:                aws.String("ANY"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.DBClusterEndpointIdentifier == nil || *resp.DBClusterEndpointIdentifier != endpointID2 {
+			return fmt.Errorf("endpoint ID mismatch")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("neptune", "DescribeDBClusterEndpoints_ByEndpointID", func() error {
+		resp, err := client.DescribeDBClusterEndpoints(ctx, &neptune.DescribeDBClusterEndpointsInput{
+			DBClusterEndpointIdentifier: aws.String(endpointID2),
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.DBClusterEndpoints) != 1 {
+			return fmt.Errorf("expected 1 endpoint when filtering by ID, got %d", len(resp.DBClusterEndpoints))
+		}
+		if resp.DBClusterEndpoints[0].DBClusterEndpointIdentifier == nil || *resp.DBClusterEndpoints[0].DBClusterEndpointIdentifier != endpointID2 {
+			return fmt.Errorf("endpoint ID mismatch")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("neptune", "DeleteDBClusterEndpoint2", func() error {
+		_, err := client.DeleteDBClusterEndpoint(ctx, &neptune.DeleteDBClusterEndpointInput{
+			DBClusterEndpointIdentifier: aws.String(endpointID2),
+		})
+		return err
+	}))
+
 	// === Error / Edge Case Tests ===
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusters_NonExistent", func() error {
@@ -935,6 +1118,9 @@ func (r *TestRunner) RunNeptuneTests() []TestResult {
 		})
 		if err == nil {
 			return fmt.Errorf("expected error for duplicate cluster creation")
+		}
+		if err := AssertErrorContains(err, "DBClusterAlreadyExistsFault"); err != nil {
+			return fmt.Errorf("expected DBClusterAlreadyExistsFault, got: %v", err)
 		}
 		return nil
 	}))

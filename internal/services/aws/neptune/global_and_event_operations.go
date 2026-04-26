@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -12,6 +13,16 @@ import (
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
+
+func clusterIDFromARN(arn string) string {
+	parts := strings.Split(arn, ":")
+	for i, p := range parts {
+		if p == "cluster" && i+1 < len(parts) {
+			return parts[i+1]
+		}
+	}
+	return arn
+}
 
 // CreateGlobalCluster creates a new Neptune global cluster.
 func (s *NeptuneService) CreateGlobalCluster(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -234,7 +245,7 @@ func (s *NeptuneService) SwitchoverGlobalCluster(ctx context.Context, reqCtx *re
 		if gc.GlobalClusterMembers[i].IsWriter {
 			gc.GlobalClusterMembers[i].IsWriter = false
 		}
-		if gc.GlobalClusterMembers[i].DBClusterArn == targetID || gc.GlobalClusterMembers[i].GlobalClusterIdentifier == targetID {
+		if clusterIDFromARN(gc.GlobalClusterMembers[i].DBClusterArn) == targetID || gc.GlobalClusterMembers[i].DBClusterArn == targetID || gc.GlobalClusterMembers[i].GlobalClusterIdentifier == targetID {
 			gc.GlobalClusterMembers[i].IsWriter = true
 			found = true
 		}
@@ -276,7 +287,7 @@ func (s *NeptuneService) RemoveFromGlobalCluster(ctx context.Context, reqCtx *re
 	}
 	found := false
 	for _, m := range gc.GlobalClusterMembers {
-		if m.DBClusterArn == clusterID || m.GlobalClusterIdentifier == clusterID {
+		if clusterIDFromARN(m.DBClusterArn) == clusterID || m.DBClusterArn == clusterID || m.GlobalClusterIdentifier == clusterID {
 			if m.IsWriter {
 				return nil, fmt.Errorf("neptune: cannot remove the writer member from global cluster")
 			}

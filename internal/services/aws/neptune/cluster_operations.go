@@ -36,7 +36,10 @@ func clusterToResponseMap(cluster *neptunestore.DBCluster) map[string]interface{
 
 func enrichClusterWithTags(store neptunestore.NeptuneStoreInterface, cluster *neptunestore.DBCluster) map[string]interface{} {
 	m := clusterToResponseMap(cluster)
-	tags, _ := store.GetTags(cluster.DBClusterArn)
+	tags, err := store.GetTags(cluster.DBClusterArn)
+	if err != nil {
+		logs.Warn("failed to get tags for cluster", logs.String("cluster", cluster.DBClusterIdentifier), logs.Err(err))
+	}
 	if len(tags) > 0 {
 		tagItems := make([]interface{}, 0, len(tags))
 		for _, t := range tags {
@@ -533,21 +536,21 @@ func cascadeDeleteClusterResources(store neptunestore.NeptuneStoreInterface, clu
 	instances, err := store.ListInstances()
 	if err != nil {
 		logs.Warn("cascade: failed to list instances", logs.Err(err))
-		return
-	}
-	for _, inst := range instances {
-		if inst.DBClusterIdentifier == clusterID {
-			if delErr := store.DeleteInstance(inst.DBInstanceIdentifier); delErr != nil {
-				logs.Warn("cascade: failed to delete instance", logs.String("instance", inst.DBInstanceIdentifier), logs.Err(delErr))
-			} else {
-				tags, _ := store.GetTags(inst.DBInstanceArn)
-				if len(tags) > 0 {
-					keys := make([]string, len(tags))
-					for i, t := range tags {
-						keys[i] = t.Key
-					}
-					if tagErr := store.RemoveTags(inst.DBInstanceArn, keys); tagErr != nil {
-						logs.Warn("cascade: failed to remove instance tags", logs.String("instance", inst.DBInstanceIdentifier), logs.Err(tagErr))
+	} else {
+		for _, inst := range instances {
+			if inst.DBClusterIdentifier == clusterID {
+				if delErr := store.DeleteInstance(inst.DBInstanceIdentifier); delErr != nil {
+					logs.Warn("cascade: failed to delete instance", logs.String("instance", inst.DBInstanceIdentifier), logs.Err(delErr))
+				} else {
+					tags, _ := store.GetTags(inst.DBInstanceArn)
+					if len(tags) > 0 {
+						keys := make([]string, len(tags))
+						for i, t := range tags {
+							keys[i] = t.Key
+						}
+						if tagErr := store.RemoveTags(inst.DBInstanceArn, keys); tagErr != nil {
+							logs.Warn("cascade: failed to remove instance tags", logs.String("instance", inst.DBInstanceIdentifier), logs.Err(tagErr))
+						}
 					}
 				}
 			}
@@ -557,11 +560,11 @@ func cascadeDeleteClusterResources(store neptunestore.NeptuneStoreInterface, clu
 	endpoints, err := store.ListClusterEndpoints(clusterID)
 	if err != nil {
 		logs.Warn("cascade: failed to list cluster endpoints", logs.Err(err))
-		return
-	}
-	for _, ep := range endpoints {
-		if delErr := store.DeleteClusterEndpoint(ep.DBClusterEndpointIdentifier); delErr != nil {
-			logs.Warn("cascade: failed to delete cluster endpoint", logs.String("endpoint", ep.DBClusterEndpointIdentifier), logs.Err(delErr))
+	} else {
+		for _, ep := range endpoints {
+			if delErr := store.DeleteClusterEndpoint(ep.DBClusterEndpointIdentifier); delErr != nil {
+				logs.Warn("cascade: failed to delete cluster endpoint", logs.String("endpoint", ep.DBClusterEndpointIdentifier), logs.Err(delErr))
+			}
 		}
 	}
 

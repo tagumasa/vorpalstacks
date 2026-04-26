@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -71,7 +72,10 @@ func (e *TransactionCanceledError) ToJSON() string {
 		CancellationReasons: reasons,
 	}
 
-	b, _ := json.Marshal(resp)
+	b, err := json.Marshal(resp)
+	if err != nil {
+		return fmt.Sprintf(`{"__type":"%s","message":"%s"}`, e.APIError.AWSError.Code, e.APIError.AWSError.Message)
+	}
 	return string(b)
 }
 

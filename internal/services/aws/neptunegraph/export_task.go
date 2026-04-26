@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -166,15 +167,13 @@ func (s *NeptuneGraphService) CancelExportTask(ctx context.Context, reqCtx *requ
 		return exportTaskSummaryToResponse(task), nil
 	}
 
-	task.Status = "CANCELLING"
-	if err := store.UpdateExportTask(task); err != nil {
-		logs.Warn("failed to update export task status to CANCELLING", logs.String("taskId", taskID), logs.Err(err))
-	}
-
 	task.Status = "CANCELLED"
 	task.StatusReason = "Cancelled by user"
-	if err := store.UpdateExportTask(task); err != nil {
-		logs.Warn("failed to update export task status to CANCELLED", logs.String("taskId", taskID), logs.Err(err))
+	if err := store.TryAdvanceExportTask(taskID, task.Status, func(t *ngstore.ExportTask) {
+		t.Status = "CANCELLED"
+		t.StatusReason = "Cancelled by user"
+	}); err != nil {
+		logs.Warn("failed to cancel export task", logs.String("taskId", taskID), logs.Err(err))
 	}
 
 	return exportTaskSummaryToResponse(task), nil
@@ -314,8 +313,39 @@ func exportGraphCSV(db *graphengine.DB, filePath string) (int64, int64, error) {
 
 	var propKeys []string
 
+	allPropKeys := make(map[string]bool)
+	_ = db.ForEachNode(func(node *graphengine.Node) error {
+		for k := range node.Props {
+			allPropKeys[k] = true
+		}
+		return nil
+	})
+	_ = db.ForEachEdge(func(edge *graphengine.Edge) error {
+		for k := range edge.Props {
+			allPropKeys[k] = true
+		}
+		return nil
+	})
+	for k := range allPropKeys {
+		propKeys = append(propKeys, k)
+	}
+	sort.Strings(propKeys)
+
+	nodeHeader := make([]string, 0, 2+len(propKeys))
+	nodeHeader = append(nodeHeader, "~id", "~label")
+	nodeHeader = append(nodeHeader, propKeys...)
+	if err := nodeW.Write(nodeHeader); err != nil {
+		return 0, 0, fmt.Errorf("failed to write node header: %w", err)
+	}
+
+	edgeHeader := make([]string, 0, 4+len(propKeys))
+	edgeHeader = append(edgeHeader, "~id", "~label", "~from", "~to")
+	edgeHeader = append(edgeHeader, propKeys...)
+	if err := edgeW.Write(edgeHeader); err != nil {
+		return 0, 0, fmt.Errorf("failed to write edge header: %w", err)
+	}
+
 	err = db.ForEachNode(func(node *graphengine.Node) error {
-		propKeys = sortedPropKeys(node.Props)
 		record := make([]string, 0, 2+len(propKeys))
 		record = append(record, fmt.Sprintf("%d", node.ID))
 		record = append(record, strings.Join(node.Labels, ";"))
@@ -333,7 +363,6 @@ func exportGraphCSV(db *graphengine.DB, filePath string) (int64, int64, error) {
 	}
 
 	err = db.ForEachEdge(func(edge *graphengine.Edge) error {
-		propKeys = sortedPropKeys(edge.Props)
 		record := make([]string, 0, 4+len(propKeys))
 		record = append(record, fmt.Sprintf("%d", edge.ID))
 		record = append(record, edge.Label)

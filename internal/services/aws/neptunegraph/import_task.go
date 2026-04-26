@@ -215,15 +215,13 @@ func (s *NeptuneGraphService) CancelImportTask(ctx context.Context, reqCtx *requ
 		return importTaskSummaryToResponse(task), nil
 	}
 
-	task.Status = "CANCELLING"
-	if err := store.UpdateImportTask(task); err != nil {
-		logs.Warn("failed to update import task status to CANCELLING", logs.String("taskId", taskID), logs.Err(err))
-	}
-
 	task.Status = "CANCELLED"
 	task.StatusReason = "Cancelled by user"
-	if err := store.UpdateImportTask(task); err != nil {
-		logs.Warn("failed to update import task status to CANCELLED", logs.String("taskId", taskID), logs.Err(err))
+	if err := store.TryAdvanceImportTask(taskID, task.Status, func(t *ngstore.ImportTask) {
+		t.Status = "CANCELLED"
+		t.StatusReason = "Cancelled by user"
+	}); err != nil {
+		logs.Warn("failed to cancel import task", logs.String("taskId", taskID), logs.Err(err))
 	}
 
 	return importTaskSummaryToResponse(task), nil
@@ -411,6 +409,15 @@ func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore
 			graph.Status = "AVAILABLE"
 			if err := store.UpdateGraph(graph); err != nil {
 				logs.Warn("Failed to update graph status to AVAILABLE", logs.Err(err))
+			}
+		}
+	} else if finalStatus == "FAILED" {
+		graph, err := store.GetGraph(graphID)
+		if err == nil && graph.Status == "IMPORTING" {
+			graph.Status = "AVAILABLE"
+			graph.StatusReason = "Import failed"
+			if err := store.UpdateGraph(graph); err != nil {
+				logs.Warn("Failed to update graph status after failed import", logs.Err(err))
 			}
 		}
 	}

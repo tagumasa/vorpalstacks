@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/vektah/gqlparser/v2"
+	"github.com/vektah/gqlparser/v2/ast"
+
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 
@@ -63,6 +66,28 @@ func (s *AppSyncService) StartSchemaCreation(ctx context.Context, reqCtx *reques
 	go func() {
 		defer s.schemaWg.Done()
 		defer func() { resilience.RecoverPanic("appsync schema creation") }()
+
+		_, parseErr := gqlparser.LoadSchema(&ast.Source{
+			Name:  "schema.graphql",
+			Input: defStr,
+		})
+
+		if parseErr != nil {
+			errMsg := parseErr.Error()
+			completed := &appsyncstore.SchemaCreationStatus{
+				ApiId:      apiId,
+				Status:     "FAILED",
+				Details:    errMsg,
+				Definition: defStr,
+			}
+			if err := store.SaveSchemaCreationStatus(apiId, completed); err != nil {
+				logs.Warn("failed to persist schema creation status",
+					logs.String("apiId", apiId),
+					logs.Err(err))
+			}
+			return
+		}
+
 		completed := &appsyncstore.SchemaCreationStatus{
 			ApiId:      apiId,
 			Status:     "SUCCESS",
@@ -168,12 +193,43 @@ func collectSchemaSDL(store *appsyncstore.AppSyncStore, apiId string) string {
 	}
 
 	for _, t := range types {
-		if t.Definition != "" && !strings.Contains(sdl, t.Definition) {
+		if t.Definition != "" && !typeDefInSDL(sdl, t.Definition) {
 			sdl += "\n\n" + t.Definition
 		}
 	}
 
 	return sdl
+}
+
+var typeNamePrefixes = []string{"type ", "input ", "enum ", "interface ", "union ", "scalar "}
+
+func typeDefInSDL(sdl, def string) bool {
+	typeName := extractTypeName(def)
+	if typeName == "" {
+		return strings.Contains(sdl, def)
+	}
+	for _, prefix := range typeNamePrefixes {
+		if strings.Contains(def, prefix) {
+			return strings.Contains(sdl, prefix+typeName+" ") ||
+				strings.Contains(sdl, prefix+typeName+"{") ||
+				strings.Contains(sdl, prefix+typeName+"\n")
+		}
+	}
+	return strings.Contains(sdl, def)
+}
+
+func extractTypeName(def string) string {
+	for _, prefix := range typeNamePrefixes {
+		if idx := strings.Index(def, prefix); idx != -1 {
+			rest := def[idx+len(prefix):]
+			rest = strings.TrimLeft(rest, " ")
+			end := strings.IndexAny(rest, " \t\n{(")
+			if end > 0 {
+				return rest[:end]
+			}
+		}
+	}
+	return ""
 }
 
 // buildIntrospectionSchema generates a default introspection SDL.

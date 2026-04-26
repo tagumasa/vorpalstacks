@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +18,9 @@ import (
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
+
+var sharedHTTPClient = &http.Client{Timeout: 30 * time.Second}
+var sharedHTTPClientOnce sync.Once
 
 // dispatchDataSource routes a resolver payload to the appropriate data source
 // based on the data source type (DynamoDB, Lambda, HTTP, EventBridge, Neptune, None, etc.).
@@ -250,7 +254,7 @@ func (e *graphQLEngine) dispatchHTTP(
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := sharedHTTPClient
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
@@ -406,7 +410,7 @@ func (e *graphQLEngine) dispatchOpenSearch(
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := sharedHTTPClient
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("OpenSearch request failed: %w", err)

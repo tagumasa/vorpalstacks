@@ -67,7 +67,35 @@ func parseInsertStatement(statement string) (tableName string, itemData map[stri
 		return "", nil
 	}
 
-	itemData = objectLiteralToAttributes(obj)
+	itemData = objectLiteralToAttributesWithParams(obj, nil)
+	return tableName, itemData
+}
+
+func parseInsertStatementWithParams(statement string, params *partiQLParams) (tableName string, itemData map[string]*dbstore.AttributeValue) {
+	stmt, err := sqlparser.ParseWithOptions(statement, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
+	if err != nil {
+		return "", nil
+	}
+
+	ins, ok := stmt.(*sqlparser.Insert)
+	if !ok {
+		return "", nil
+	}
+
+	tableName = sqlparser.String(ins.Table)
+	tableName = trimQuotes(tableName)
+
+	values, ok := ins.Rows.(sqlparser.Values)
+	if !ok || len(values) != 1 || len(values[0]) != 1 {
+		return "", nil
+	}
+
+	obj, ok := values[0][0].(*sqlparser.ObjectLiteral)
+	if !ok {
+		return "", nil
+	}
+
+	itemData = objectLiteralToAttributesWithParams(obj, params)
 	return tableName, itemData
 }
 

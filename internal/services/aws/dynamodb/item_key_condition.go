@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"encoding/base64"
 	"strings"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -36,7 +37,7 @@ func extractPrimaryKeyCondition(table *dbstore.Table, expr string, names map[str
 			} else if val != nil && val.N != nil {
 				hashKeyValue = *val.N
 			} else if val != nil && val.B != nil {
-				hashKeyValue = string(val.B)
+				hashKeyValue = base64.StdEncoding.EncodeToString(val.B)
 			}
 			i += 2
 		} else if strings.HasPrefix(strings.ToLower(tokens[i]), "begins_with(") {
@@ -141,7 +142,7 @@ func extractIndexKeyCondition(table *dbstore.Table, indexName, expr string, name
 			} else if val != nil && val.N != nil {
 				hashKeyValue = *val.N
 			} else if val != nil && val.B != nil {
-				hashKeyValue = string(val.B)
+				hashKeyValue = base64.StdEncoding.EncodeToString(val.B)
 			}
 			i += 2
 		} else if strings.HasPrefix(strings.ToLower(tokens[i]), "begins_with(") {

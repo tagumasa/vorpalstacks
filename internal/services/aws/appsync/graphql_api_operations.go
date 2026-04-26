@@ -52,9 +52,9 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 		return mapStoreError(err)
 	}
 
-	if len(api.Tags) > 0 {
-		tagMap := make(map[string]string, len(api.Tags))
-		for k, v := range api.Tags {
+	if len(created.Tags) > 0 {
+		tagMap := make(map[string]string, len(created.Tags))
+		for k, v := range created.Tags {
 			tagMap[k] = v
 		}
 		if err := store.TagStore.Tag(created.Arn, tagMap); err != nil {

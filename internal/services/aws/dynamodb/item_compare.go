@@ -80,7 +80,10 @@ func evaluateFilterExpression(item *dbstore.Item, expr string, names map[string]
 		return true
 	}
 
-	result, _ := evaluateConditionExpr(item, expr, names, values)
+	result, err := evaluateConditionExpr(item, expr, names, values)
+	if err != nil {
+		return false
+	}
 	return result
 }
 

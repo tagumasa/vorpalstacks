@@ -189,10 +189,11 @@ func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	// Check if table is in ACTIVE state
 	if table.Status != dbstore.TableStatusActive {
 		return nil, ErrTableNotActive
 	}
+
+	table = deepCopyTable(table)
 
 	if billingMode := request.GetStringParam(req.Parameters, "BillingMode"); billingMode != "" {
 		table.BillingMode = dbstore.BillingMode(billingMode)

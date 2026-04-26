@@ -298,9 +298,7 @@ func (e *graphQLEngine) resolveSelectionSet(
 				)
 			}
 
-			if resolved != nil {
-				result[alias] = resolved
-			}
+			result[alias] = resolved
 
 		case *ast.FragmentSpread:
 			fragDef := fragments.ForName(s.Name)
@@ -318,6 +316,13 @@ func (e *graphQLEngine) resolveSelectionSet(
 
 		case *ast.InlineFragment:
 			if s.TypeCondition != "" {
+				if parentSource != nil {
+					if srcMap, ok := parentSource.(map[string]interface{}); ok {
+						if typename, ok := srcMap["__typename"].(string); ok && typename != "" && typename != s.TypeCondition {
+							continue
+						}
+					}
+				}
 				fragResult, fragErrs := e.resolveSelectionSet(
 					ctx, reqCtx, apiId, schema,
 					s.TypeCondition, parentSource,

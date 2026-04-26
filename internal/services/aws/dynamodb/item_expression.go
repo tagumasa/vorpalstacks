@@ -590,7 +590,7 @@ func resolveValueWithIfNotExists(token string, values map[string]*dbstore.Attrib
 	}
 
 	if strings.HasPrefix(token, "list_append(") {
-		closeParen := strings.Index(token, ")")
+		closeParen := findMatchingCloseParen(token, 11)
 		if closeParen != -1 {
 			inner := token[12:closeParen]
 			parts := splitListAppendArgs(inner)
@@ -728,6 +728,22 @@ func splitArithmeticExpression(expr string) []string {
 	}
 
 	return parts
+}
+
+func findMatchingCloseParen(s string, openPos int) int {
+	depth := 0
+	for i := openPos; i < len(s); i++ {
+		switch s[i] {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return i
+			}
+		}
+	}
+	return -1
 }
 
 func splitListAppendArgs(s string) []string {

@@ -113,6 +113,19 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		if resp == nil {
 			return fmt.Errorf("PutItem response is nil")
 		}
+		verifyResp, verifyErr := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(tableName),
+			Key:       map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "test1"}},
+		})
+		if verifyErr != nil {
+			return fmt.Errorf("PutItem verification GetItem failed: %w", verifyErr)
+		}
+		if verifyResp.Item == nil {
+			return fmt.Errorf("PutItem verification: item not found after PutItem")
+		}
+		if count, ok := verifyResp.Item["count"].(*types.AttributeValueMemberN); !ok || count.Value != "42" {
+			return fmt.Errorf("PutItem verification: count mismatch, expected 42")
+		}
 		return nil
 	}))
 
@@ -226,6 +239,22 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		if resp.UnprocessedItems == nil {
 			return fmt.Errorf("UnprocessedItems is nil")
 		}
+		verifyResp, verifyErr := client.BatchGetItem(ctx, &dynamodb.BatchGetItemInput{
+			RequestItems: map[string]types.KeysAndAttributes{
+				tableName: {
+					Keys: []map[string]types.AttributeValue{
+						{"id": &types.AttributeValueMemberS{Value: "batch1"}},
+						{"id": &types.AttributeValueMemberS{Value: "batch2"}},
+					},
+				},
+			},
+		})
+		if verifyErr != nil {
+			return fmt.Errorf("BatchWriteItem verification BatchGetItem failed: %w", verifyErr)
+		}
+		if items, ok := verifyResp.Responses[tableName]; !ok || len(items) != 2 {
+			return fmt.Errorf("BatchWriteItem verification: expected 2 items, got %d", len(items))
+		}
 		return nil
 	}))
 
@@ -260,7 +289,20 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 				"id": &types.AttributeValueMemberS{Value: "test1"},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		verifyResp, verifyErr := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(tableName),
+			Key:       map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "test1"}},
+		})
+		if verifyErr != nil {
+			return fmt.Errorf("DeleteItem verification GetItem failed: %w", verifyErr)
+		}
+		if verifyResp.Item != nil && len(verifyResp.Item) > 0 {
+			return fmt.Errorf("DeleteItem verification: item still exists after deletion")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "TagResource", func() error {
@@ -499,6 +541,179 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		}
 		if resp.TableDescription == nil {
 			return fmt.Errorf("TableDescription is nil")
+		}
+		return nil
+	}))
+
+	// --- Bug 1: UpdateTable mutates shared object (deepCopyTable) ---
+	results = append(results, r.RunTest("dynamodb", "UpdateTable_DoesNotCorruptOriginal", func() error {
+		descResp, err := client.DescribeTable(ctx, &dynamodb.DescribeTableInput{
+			TableName: aws.String(tableName),
+		})
+		if err != nil {
+			return err
+		}
+		originalName := *descResp.Table.TableName
+		_, err = client.UpdateTable(ctx, &dynamodb.UpdateTableInput{
+			TableName: aws.String(tableName),
+		})
+		if err != nil {
+			return err
+		}
+		descResp2, err := client.DescribeTable(ctx, &dynamodb.DescribeTableInput{
+			TableName: aws.String(tableName),
+		})
+		if err != nil {
+			return err
+		}
+		if descResp2.Table.TableName == nil || *descResp2.Table.TableName != originalName {
+			return fmt.Errorf("UpdateTable corrupted table name: expected %s, got %v", originalName, descResp2.Table.TableName)
+		}
+		return nil
+	}))
+
+	// --- Bug 2: PartiQL INSERT with parameterised values ---
+	results = append(results, r.RunTest("dynamodb", "ExecuteStatement_InsertWithParams", func() error {
+		paramTable := fmt.Sprintf("ParamInsert-%d", time.Now().UnixNano())
+		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(paramTable),
+			AttributeDefinitions: []types.AttributeDefinition{
+				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(paramTable)})
+
+		_, err = client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement: aws.String("INSERT INTO \"" + paramTable + "\" VALUE {'id': ?, 'name': ?}"),
+			Parameters: []types.AttributeValue{
+				&types.AttributeValueMemberS{Value: "param1"},
+				&types.AttributeValueMemberS{Value: "Parametrised Item"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("parametrised INSERT failed: %v", err)
+		}
+		getResp, err := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(paramTable),
+			Key: map[string]types.AttributeValue{
+				"id": &types.AttributeValueMemberS{Value: "param1"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("get after param insert: %v", err)
+		}
+		if getResp.Item == nil {
+			return fmt.Errorf("item not found after parametrised INSERT")
+		}
+		name, ok := getResp.Item["name"].(*types.AttributeValueMemberS)
+		if !ok || name.Value != "Parametrised Item" {
+			return fmt.Errorf("expected name='Parametrised Item', got %v", getResp.Item["name"])
+		}
+		return nil
+	}))
+
+	// --- Bug 8: list_append nested parenthesis ---
+	results = append(results, r.RunTest("dynamodb", "UpdateItem_ListAppendNested", func() error {
+		listTable := fmt.Sprintf("ListAppend-%d", time.Now().UnixNano())
+		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(listTable),
+			AttributeDefinitions: []types.AttributeDefinition{
+				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(listTable)})
+
+		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(listTable),
+			Item: map[string]types.AttributeValue{
+				"id":    &types.AttributeValueMemberS{Value: "la1"},
+				"items": &types.AttributeValueMemberL{Value: []types.AttributeValue{&types.AttributeValueMemberS{Value: "a"}}},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("put: %v", err)
+		}
+
+		resp, err := client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+			TableName: aws.String(listTable),
+			Key: map[string]types.AttributeValue{
+				"id": &types.AttributeValueMemberS{Value: "la1"},
+			},
+			UpdateExpression: aws.String("SET items = list_append(items, :new)"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":new": &types.AttributeValueMemberL{Value: []types.AttributeValue{&types.AttributeValueMemberS{Value: "b"}}},
+			},
+			ReturnValues: types.ReturnValueAllNew,
+		})
+		if err != nil {
+			return fmt.Errorf("list_append update failed: %v", err)
+		}
+		items, ok := resp.Attributes["items"].(*types.AttributeValueMemberL)
+		if !ok {
+			return fmt.Errorf("expected list for items, got %T", resp.Attributes["items"])
+		}
+		if len(items.Value) != 2 {
+			return fmt.Errorf("expected 2 items after list_append, got %d", len(items.Value))
+		}
+		return nil
+	}))
+
+	// --- Bug 9: NOT operator case insensitivity ---
+	results = append(results, r.RunTest("dynamodb", "Query_ConditionNot_CaseInsensitive", func() error {
+		notTable := fmt.Sprintf("NotCase-%d", time.Now().UnixNano())
+		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(notTable),
+			AttributeDefinitions: []types.AttributeDefinition{
+				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			KeySchema: []types.KeySchemaElement{
+				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(notTable)})
+
+		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(notTable),
+			Item: map[string]types.AttributeValue{
+				"id":    &types.AttributeValueMemberS{Value: "not1"},
+				"val":   &types.AttributeValueMemberS{Value: "active"},
+				"count": &types.AttributeValueMemberN{Value: "5"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("put: %v", err)
+		}
+
+		scanResp, err := client.Scan(ctx, &dynamodb.ScanInput{
+			TableName:        aws.String(notTable),
+			FilterExpression: aws.String("Not(val = :inactive)"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":inactive": &types.AttributeValueMemberS{Value: "inactive"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("scan with lowercase 'Not' failed: %v", err)
+		}
+		if scanResp.Count != 1 {
+			return fmt.Errorf("expected 1 item with NOT filter, got %d", scanResp.Count)
 		}
 		return nil
 	}))

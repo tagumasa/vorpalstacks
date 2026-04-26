@@ -126,7 +126,7 @@ func evaluateConditionExpr(item *dbstore.Item, expr string, names map[string]str
 		return true, nil
 	}
 
-	if strings.HasPrefix(expr, "NOT ") || strings.HasPrefix(expr, "not ") {
+	if len(expr) > 4 && strings.EqualFold(expr[:4], "NOT ") {
 		inner := strings.TrimSpace(expr[4:])
 		result, err := evaluateConditionExpr(item, inner, names, values)
 		if err != nil {

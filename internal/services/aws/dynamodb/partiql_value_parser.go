@@ -4,21 +4,38 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 	"vorpalstacks/pkg/sqlparser"
 )
 
 func objectLiteralToAttributes(obj *sqlparser.ObjectLiteral) map[string]*dbstore.AttributeValue {
+	return objectLiteralToAttributesWithParams(obj, nil)
+}
+
+func objectLiteralToAttributesWithParams(obj *sqlparser.ObjectLiteral, params *partiQLParams) map[string]*dbstore.AttributeValue {
 	result := make(map[string]*dbstore.AttributeValue)
 	for _, prop := range obj.Properties {
 		key := extractPropertyKey(prop)
 		if key == "" {
 			continue
 		}
-		result[key] = exprToAttributeValue(prop.Value)
+		result[key] = exprToAttributeValueWithParams(prop.Value, params)
 	}
 	return result
+}
+
+func exprToAttributeValueWithParams(expr sqlparser.Expr, params *partiQLParams) *dbstore.AttributeValue {
+	if e, ok := expr.(*sqlparser.SQLVal); ok && e.Type == sqlparser.ValArg && params != nil {
+		if strings.HasPrefix(string(e.Val), ":") {
+			idxStr := strings.TrimPrefix(string(e.Val), ":v")
+			if idx, err := strconv.Atoi(idxStr); err == nil && idx > 0 && idx <= len(params.Parameters) {
+				return paramToAttributeValue(params.Parameters[idx-1])
+			}
+		}
+	}
+	return exprToAttributeValue(expr)
 }
 
 func extractPropertyKey(prop *sqlparser.ObjectProperty) string {

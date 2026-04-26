@@ -1,10 +1,12 @@
 package dynamodb
 
 import (
+	"encoding/json"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 func TestDynamoDBErrors(t *testing.T) {
@@ -77,5 +79,53 @@ func TestDynamoDBErrors(t *testing.T) {
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#PolicyNotFoundException: Policy not found", ErrPolicyNotFound.Error())
 		assert.Equal(t, http.StatusNotFound, ErrPolicyNotFound.GetHTTPStatusCode())
+	})
+}
+
+func TestTransactionCanceledError_ToJSON(t *testing.T) {
+	t.Run("normal serialisation", func(t *testing.T) {
+		err := &TransactionCanceledError{
+			APIError: &APIError{awserrors.NewAWSError("TransactionCanceledException", "Transaction cancelled", http.StatusBadRequest)},
+			CancellationReasons: []CancellationReason{
+				{Code: "ConditionalCheckFailed"},
+				{Code: "None"},
+			},
+		}
+		jsonStr := err.ToJSON()
+
+		var parsed map[string]interface{}
+		assert.NoError(t, json.Unmarshal([]byte(jsonStr), &parsed))
+		assert.Equal(t, "TransactionCanceledException", parsed["__type"])
+		assert.Equal(t, "Transaction cancelled", parsed["message"])
+
+		reasons, ok := parsed["CancellationReasons"].([]interface{})
+		assert.True(t, ok)
+		assert.Equal(t, 2, len(reasons))
+	})
+
+	t.Run("with item data", func(t *testing.T) {
+		err := &TransactionCanceledError{
+			APIError: &APIError{awserrors.NewAWSError("TransactionCanceledException", "msg", http.StatusBadRequest)},
+			CancellationReasons: []CancellationReason{
+				{Code: "ConditionalCheckFailed", Item: map[string]interface{}{"id": "test"}},
+			},
+		}
+		jsonStr := err.ToJSON()
+
+		var parsed map[string]interface{}
+		assert.NoError(t, json.Unmarshal([]byte(jsonStr), &parsed))
+		reasons := parsed["CancellationReasons"].([]interface{})
+		reason := reasons[0].(map[string]interface{})
+		assert.Equal(t, "ConditionalCheckFailed", reason["Code"])
+		assert.NotNil(t, reason["Item"])
+	})
+
+	t.Run("fallback on marshal failure (Bug D-7)", func(t *testing.T) {
+		err := &TransactionCanceledError{
+			APIError: &APIError{awserrors.NewAWSError("TestCode", "TestMsg", 400)},
+		}
+		jsonStr := err.ToJSON()
+		assert.Contains(t, jsonStr, "TestCode")
+		assert.Contains(t, jsonStr, "TestMsg")
 	})
 }

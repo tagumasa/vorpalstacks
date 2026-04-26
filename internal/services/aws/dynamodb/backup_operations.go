@@ -3,6 +3,8 @@ package dynamodb
 
 import (
 	"context"
+	"fmt"
+
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
@@ -294,7 +296,10 @@ func (s *DynamoDBService) RestoreTableFromBackup(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	sourceTable, _ := store.Tables().Get(backup.SourceTableName)
+	sourceTable, err := store.Tables().Get(backup.SourceTableName)
+	if err != nil && !dbstore.IsTableNotFound(err) {
+		return nil, fmt.Errorf("failed to get source table %s: %w", backup.SourceTableName, err)
+	}
 	if sourceTable != nil {
 		var itemsToCopy []*dbstore.Item
 		err = store.View(ctx, func(txn *dbstore.DynamoDBTxn) error {

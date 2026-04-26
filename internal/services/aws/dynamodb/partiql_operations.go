@@ -132,7 +132,7 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 }
 
 func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams) (interface{}, error) {
-	tableName, itemData := parseInsertStatement(statement)
+	tableName, itemData := parseInsertStatementWithParams(statement, params)
 	if tableName == "" || itemData == nil {
 		return nil, ErrInvalidParameter
 	}

@@ -4,6 +4,7 @@ package dynamodb
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -208,7 +209,12 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 
 		key, err := extractOperationKey(s, store, opType, opMap, tableName)
 		if err != nil {
-			cancellationReasons[idx] = CancellationReason{Code: err.(*opParseError).code}
+			code := "ValidationError"
+			var opErr *opParseError
+			if errors.As(err, &opErr) {
+				code = opErr.code
+			}
+			cancellationReasons[idx] = CancellationReason{Code: code}
 			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
 		}
 

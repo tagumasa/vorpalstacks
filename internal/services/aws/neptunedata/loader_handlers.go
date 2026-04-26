@@ -208,6 +208,13 @@ func (s *NeptuneDataService) CancelLoaderJob(ctx context.Context, reqCtx *reques
 		logs.Warn("failed to persist loader job cancellation", logs.String("loadId", loadId), logs.Err(err))
 	}
 
+	s.mu.Lock()
+	if s.loaderCancelCh != nil {
+		close(s.loaderCancelCh)
+		s.loaderCancelCh = nil
+	}
+	s.mu.Unlock()
+
 	return map[string]interface{}{
 		"status": "200",
 	}, nil
@@ -234,6 +241,10 @@ func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string)
 	if job.GetStatus() == "CANCELLED" {
 		return
 	}
+
+	s.mu.Lock()
+	s.loaderCancelCh = make(chan struct{})
+	s.mu.Unlock()
 
 	stats := &loaderStats{}
 	var loadErr string
@@ -340,7 +351,7 @@ func (s *NeptuneDataService) loadCSV(f *os.File, writer graphengine.GraphWriter,
 	}
 
 	if hasFromTo {
-		return s.loadCSVEdges(r, writer, stats, idIdx, labelIdx, fromIdx, toIdx, propIndices)
+		return s.loadCSVEdges(r, writer, stats, idIdx, labelIdx, fromIdx, toIdx, propIndices, s.nodeIDMap)
 	}
 	return s.loadCSVNodes(r, writer, stats, idIdx, labelIdx, propIndices)
 }
@@ -356,6 +367,12 @@ func (s *NeptuneDataService) loadCSVNodes(r *csv.Reader, writer graphengine.Grap
 	batchSize := 500
 
 	for {
+		select {
+		case <-s.loaderCancelCh:
+			return "loader job cancelled"
+		default:
+		}
+
 		record, err := r.Read()
 		if err == io.EOF {
 			break
@@ -447,10 +464,11 @@ func (s *NeptuneDataService) loadCSVNodes(r *csv.Reader, writer graphengine.Grap
 		}
 	}
 
+	s.nodeIDMap = idMap
 	return ""
 }
 
-func (s *NeptuneDataService) loadCSVEdges(r *csv.Reader, writer graphengine.GraphWriter, stats *loaderStats, idIdx, labelIdx, fromIdx, toIdx int, propIndices map[int]string) string {
+func (s *NeptuneDataService) loadCSVEdges(r *csv.Reader, writer graphengine.GraphWriter, stats *loaderStats, idIdx, labelIdx, fromIdx, toIdx int, propIndices map[int]string, idMap map[string]graphengine.NodeID) string {
 	if fromIdx < 0 || toIdx < 0 {
 		return "edge CSV requires ~from and ~to columns"
 	}
@@ -459,6 +477,12 @@ func (s *NeptuneDataService) loadCSVEdges(r *csv.Reader, writer graphengine.Grap
 	batchSize := 500
 
 	for {
+		select {
+		case <-s.loaderCancelCh:
+			return "loader job cancelled"
+		default:
+		}
+
 		record, err := r.Read()
 		if err == io.EOF {
 			break
@@ -502,11 +526,23 @@ func (s *NeptuneDataService) loadCSVEdges(r *csv.Reader, writer graphengine.Grap
 		}
 
 		fromNodeID := graphengine.NodeID(0)
-		if n, err := strconv.ParseUint(fromStr, 10, 64); err == nil {
+		if idMap != nil {
+			if nid, ok := idMap[fromStr]; ok {
+				fromNodeID = nid
+			} else if n, err := strconv.ParseUint(fromStr, 10, 64); err == nil {
+				fromNodeID = graphengine.NodeID(n)
+			}
+		} else if n, err := strconv.ParseUint(fromStr, 10, 64); err == nil {
 			fromNodeID = graphengine.NodeID(n)
 		}
 		toNodeID := graphengine.NodeID(0)
-		if n, err := strconv.ParseUint(toStr, 10, 64); err == nil {
+		if idMap != nil {
+			if nid, ok := idMap[toStr]; ok {
+				toNodeID = nid
+			} else if n, err := strconv.ParseUint(toStr, 10, 64); err == nil {
+				toNodeID = graphengine.NodeID(n)
+			}
+		} else if n, err := strconv.ParseUint(toStr, 10, 64); err == nil {
 			toNodeID = graphengine.NodeID(n)
 		}
 
