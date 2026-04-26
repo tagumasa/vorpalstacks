@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
@@ -61,6 +62,7 @@ func (s *AppSyncService) StartSchemaCreation(ctx context.Context, reqCtx *reques
 	s.schemaWg.Add(1)
 	go func() {
 		defer s.schemaWg.Done()
+		defer func() { resilience.RecoverPanic("appsync schema creation") }()
 		completed := &appsyncstore.SchemaCreationStatus{
 			ApiId:      apiId,
 			Status:     "SUCCESS",

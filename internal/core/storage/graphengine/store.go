@@ -69,16 +69,16 @@ func DefaultOptions() Options {
 }
 
 type DB struct {
-	backend     kvBackend
-	dir         string
-	cache       *pebble.Cache
-	ownsCache   bool
-	nextNodeID  atomic.Uint64
-	nextEdgeID  atomic.Uint64
-	nodeCount   atomic.Uint64
-	edgeCount   atomic.Uint64
-	closed      atomic.Bool
-	Embeddings  *EmbeddingStore
+	backend    kvBackend
+	dir        string
+	cache      *pebble.Cache
+	ownsCache  bool
+	nextNodeID atomic.Uint64
+	nextEdgeID atomic.Uint64
+	nodeCount  atomic.Uint64
+	edgeCount  atomic.Uint64
+	closed     atomic.Bool
+	Embeddings *EmbeddingStore
 }
 
 // Open creates a graph engine backed by an independent Pebble database.
@@ -161,6 +161,12 @@ func (d *DB) Dir() string {
 func (d *DB) Stats() *GraphStats {
 	labelCounts, _ := d.GetLabelCounts()
 	relCounts, _ := d.GetRelCounts()
+	if labelCounts == nil {
+		labelCounts = make(map[string]int64)
+	}
+	if relCounts == nil {
+		relCounts = make(map[string]int64)
+	}
 	return &GraphStats{
 		NodeCount:     int64(d.nodeCount.Load()),
 		EdgeCount:     int64(d.edgeCount.Load()),

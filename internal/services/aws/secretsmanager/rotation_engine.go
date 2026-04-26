@@ -91,11 +91,20 @@ func (rc *rotationChecker) checkDueRotationsForRegion(ctx context.Context, regio
 	}
 	var store secretsmanagerstore.SecretStoreInterface
 	if cached, ok := rc.svc.stores.Load(region); ok {
-		store = cached.(secretsmanagerstore.SecretStoreInterface)
+		store, ok = cached.(secretsmanagerstore.SecretStoreInterface)
+		if !ok {
+			rc.logError("cached store has unexpected type", logs.String("region", region))
+			return
+		}
 	} else {
 		store = secretsmanagerstore.NewSecretStore(storage, rc.svc.accountID, region)
 		if actual, loaded := rc.svc.stores.LoadOrStore(region, store); loaded {
-			store = actual.(secretsmanagerstore.SecretStoreInterface)
+			var ok2 bool
+			store, ok2 = actual.(secretsmanagerstore.SecretStoreInterface)
+			if !ok2 {
+				rc.logError("LoadOrStore returned unexpected type", logs.String("region", region))
+				return
+			}
 		}
 	}
 

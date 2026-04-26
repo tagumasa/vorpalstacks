@@ -258,6 +258,7 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			defer func() { resilience.RecoverPanic("lambda esm worker") }()
 			for job := range jobs {
 				select {
 				case <-ctx.Done():

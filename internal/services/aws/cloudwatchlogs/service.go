@@ -202,7 +202,10 @@ func (s *LogsService) startRetentionPurger() {
 
 func (s *LogsService) purgeAllRegions() {
 	s.logsStores.Range(func(key, value interface{}) bool {
-		store := value.(*logsstore.Store)
+		store, ok := value.(*logsstore.Store)
+		if !ok {
+			return true
+		}
 		if err := store.PurgeAllExpiredChunks(); err != nil {
 			logs.Error("Failed to purge expired chunks", logs.Err(err))
 		}

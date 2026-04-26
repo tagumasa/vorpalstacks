@@ -11,6 +11,7 @@ import (
 	athenastore "vorpalstacks/internal/store/aws/athena"
 
 	"github.com/google/uuid"
+	"vorpalstacks/internal/core/resilience"
 )
 
 const (
@@ -103,6 +104,7 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 	s.asyncWg.Add(1)
 	go func() {
 		defer s.asyncWg.Done()
+		defer func() { resilience.RecoverPanic("athena async query") }()
 		s.executeQueryAsync(reqCtx, queryExecution)
 	}()
 

@@ -10,8 +10,8 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/pkg/cypherparser"
 	"vorpalstacks/internal/core/storage/graphengine"
+	"vorpalstacks/pkg/cypherparser"
 )
 
 // ExecuteOpenCypherQuery parses and executes an OpenCypher query against the

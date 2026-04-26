@@ -7,21 +7,13 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/resilience"
+	"vorpalstacks/internal/core/logs"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
-)
-
-var (
-	credentialReportMu    sync.RWMutex
-	credentialReportState string
-	credentialReportData  string
-	credentialReportTime  time.Time
 )
 
 const reportExpiry = 4 * time.Hour
@@ -35,38 +27,45 @@ var (
 
 // GenerateCredentialReport generates a credential report for the account.
 func (s *IAMService) GenerateCredentialReport(_ context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	credentialReportMu.Lock()
-	defer credentialReportMu.Unlock()
+	s.credentialReportMu.Lock()
+	defer s.credentialReportMu.Unlock()
 
 	now := time.Now().UTC()
 
-	if credentialReportState == "COMPLETE" && credentialReportTime.Add(reportExpiry).After(now) {
+	if s.credentialReportState == "COMPLETE" && s.credentialReportTime.Add(reportExpiry).After(now) {
 		return map[string]interface{}{
 			"Description": "No report exists. Starting a new report generation task",
 			"State":       "COMPLETE",
 		}, nil
 	}
 
-	credentialReportState = "STARTED"
+	s.credentialReportState = "STARTED"
 
 	store, err := s.store(reqCtx)
 	if err != nil {
-		credentialReportState = ""
+		s.credentialReportState = ""
 		return nil, fmt.Errorf("failed to get store: %w", err)
 	}
 
 	s.reportWg.Add(1)
 	go func() {
 		defer s.reportWg.Done()
-		defer func() { resilience.RecoverPanic("IAM credential report generation") }()
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("PANIC in IAM credential report generation", logs.Any("panic", r))
+				s.credentialReportMu.Lock()
+				s.credentialReportState = ""
+				s.credentialReportMu.Unlock()
+			}
+		}()
 		time.Sleep(500 * time.Millisecond)
 
-		credentialReportMu.Lock()
-		defer credentialReportMu.Unlock()
+		s.credentialReportMu.Lock()
+		defer s.credentialReportMu.Unlock()
 
-		credentialReportState = "COMPLETE"
-		credentialReportTime = time.Now().UTC()
-		credentialReportData = generateReportContentFromStore(store)
+		s.credentialReportState = "COMPLETE"
+		s.credentialReportTime = time.Now().UTC()
+		s.credentialReportData = generateReportContentFromStore(store)
 	}()
 
 	return map[string]interface{}{
@@ -77,11 +76,11 @@ func (s *IAMService) GenerateCredentialReport(_ context.Context, reqCtx *request
 
 // GetCredentialReport retrieves the most recently generated credential report for the account.
 func (s *IAMService) GetCredentialReport(_ context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	credentialReportMu.RLock()
-	state := credentialReportState
-	data := credentialReportData
-	genTime := credentialReportTime
-	credentialReportMu.RUnlock()
+	s.credentialReportMu.RLock()
+	state := s.credentialReportState
+	data := s.credentialReportData
+	genTime := s.credentialReportTime
+	s.credentialReportMu.RUnlock()
 
 	switch state {
 	case "":
@@ -134,13 +133,19 @@ func generateReportContentFromStore(store *iamstore.IAMStore) string {
 		csvEscape("cert_2_active") + "," + csvEscape("cert_2_last_rotated") + "\n")
 
 	for _, user := range allUsers {
-		mfaCount, _ := store.MFADevices().CountForUser(user.UserName)
+		mfaCount, err := store.MFADevices().CountForUser(user.UserName)
+		if err != nil {
+			logs.Warn("failed to count MFA devices for credential report", logs.String("user", user.UserName), logs.Err(err))
+		}
 		mfaActive := "FALSE"
 		if mfaCount > 0 {
 			mfaActive = "TRUE"
 		}
 
-		keys, _ := store.AccessKeys().ListByUserName(user.UserName)
+		keys, err := store.AccessKeys().ListByUserName(user.UserName)
+		if err != nil {
+			logs.Warn("failed to list access keys for credential report", logs.String("user", user.UserName), logs.Err(err))
+		}
 
 		ak1Active := "FALSE"
 		ak1LastRotated := "N/A"

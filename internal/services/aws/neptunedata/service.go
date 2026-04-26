@@ -14,10 +14,10 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/core/storage/graphengine"
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
-	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 const (
@@ -163,7 +163,10 @@ func (s *NeptuneDataService) purgeExpiredQueries() {
 
 	now := time.Now()
 	s.statsMap.Range(func(key, value any) bool {
-		st := value.(*GraphStatistics)
+		st, ok := value.(*GraphStatistics)
+		if !ok {
+			return true
+		}
 		st.mu.Lock()
 		expired := now.Sub(st.LastAccess) > statsLastAccessTTL
 		st.mu.Unlock()
@@ -177,7 +180,11 @@ func (s *NeptuneDataService) purgeExpiredQueries() {
 func (s *NeptuneDataService) purgeExpiredFastTokens() {
 	now := time.Now()
 	s.fastTokens.Range(func(key, value any) bool {
-		if now.After(value.(time.Time)) {
+		t, ok := value.(time.Time)
+		if !ok {
+			return true
+		}
+		if now.After(t) {
 			s.fastTokens.Delete(key)
 		}
 		return true

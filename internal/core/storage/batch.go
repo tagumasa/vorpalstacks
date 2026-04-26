@@ -8,6 +8,7 @@ type Batch interface {
 	Delete(key []byte) error
 	DeleteRange(start, end []byte) error
 	Commit() error
+	CommitSync() error
 	Close() error
 }
 

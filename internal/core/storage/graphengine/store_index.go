@@ -113,7 +113,10 @@ func (d *DB) CreateIndex(label, prop string) error {
 	}
 
 	meta := map[string]string{"label": label, "property": prop}
-	data, _ := json.Marshal(meta)
+	data, err := json.Marshal(meta)
+	if err != nil {
+		return fmt.Errorf("graphengine: failed to marshal index meta for %s.%s: %w", label, prop, err)
+	}
 	if err := d.backend.set(key, data); err != nil {
 		return fmt.Errorf("graphengine: failed to create index for %s.%s: %w", label, prop, err)
 	}
@@ -242,14 +245,16 @@ func (d *DB) RemoveLabel(id NodeID, label string) error {
 	batch.put(nodeKey(id), nodeData)
 	batch.del(idxLabelKey(label, id))
 
-	_ = d.forEachUniqueConstraint(func(ucLabel, prop string) error {
+	if err := d.forEachUniqueConstraint(func(ucLabel, prop string) error {
 		if ucLabel == label {
 			if val, ok := props[prop]; ok {
 				batch.del(ucKey(label, prop, val))
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("graphengine: failed to iterate unique constraints when removing label from node %d: %w", id, err)
+	}
 
 	if err := batch.commit(); err != nil {
 		return fmt.Errorf("graphengine: failed to remove label from node %d: %w", id, err)
@@ -526,13 +531,13 @@ func (d *DB) enforceUniqueConstraints(labels []string, props Props, excludeID No
 	})
 }
 
-func (d *DB) writeUniqueConstraintEntries(batch kvBatch, labels []string, props Props, id NodeID) {
+func (d *DB) writeUniqueConstraintEntries(batch kvBatch, labels []string, props Props, id NodeID) error {
 	labelSet := make(map[string]bool, len(labels))
 	for _, l := range labels {
 		labelSet[l] = true
 	}
 
-	_ = d.forEachUniqueConstraint(func(label, prop string) error {
+	return d.forEachUniqueConstraint(func(label, prop string) error {
 		if !labelSet[label] {
 			return nil
 		}
@@ -548,13 +553,13 @@ func (d *DB) writeUniqueConstraintEntries(batch kvBatch, labels []string, props 
 	})
 }
 
-func (d *DB) deleteUniqueConstraintEntries(batch kvBatch, labels []string, props Props) {
+func (d *DB) deleteUniqueConstraintEntries(batch kvBatch, labels []string, props Props) error {
 	labelSet := make(map[string]bool, len(labels))
 	for _, l := range labels {
 		labelSet[l] = true
 	}
 
-	_ = d.forEachUniqueConstraint(func(label, prop string) error {
+	return d.forEachUniqueConstraint(func(label, prop string) error {
 		if !labelSet[label] {
 			return nil
 		}
@@ -608,7 +613,9 @@ func (d *DB) Clear() error {
 	d.nextEdgeID.Store(1)
 
 	if d.Embeddings != nil {
-		_ = d.Embeddings.Clear()
+		if err := d.Embeddings.Clear(); err != nil {
+			return fmt.Errorf("graphengine: failed to clear embeddings: %w", err)
+		}
 	}
 
 	if err := d.persistCounters(); err != nil {

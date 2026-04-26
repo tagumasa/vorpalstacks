@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
+
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 
@@ -165,6 +167,16 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
+
+			defer func() {
+				if r := recover(); r != nil {
+					logs.Error("sfn: panic in map worker", logs.Int("index", idx), logs.Any("panic", r), logs.String("stack", string(debug.Stack())))
+					mu.Lock()
+					errors[idx] = fmt.Errorf("internal panic: %v", r)
+					itemsFailed++
+					mu.Unlock()
+				}
+			}()
 
 			itemJSON, err := json.Marshal(itemValue)
 			if err != nil {

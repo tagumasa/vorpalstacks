@@ -98,24 +98,24 @@ type pebbleBatchWrap struct {
 	batch *pebble.Batch
 }
 
-func (w *pebbleBatchWrap) put(key, value []byte)      { _ = w.batch.Set(key, value, nil) }
-func (w *pebbleBatchWrap) del(key []byte)              { _ = w.batch.Delete(key, nil) }
-func (w *pebbleBatchWrap) deleteRange(s, e []byte)     { _ = w.batch.DeleteRange(s, e, nil) }
-func (w *pebbleBatchWrap) commit() error               { return w.batch.Commit(pebble.NoSync) }
-func (w *pebbleBatchWrap) commitSync() error           { return w.batch.Commit(pebble.Sync) }
-func (w *pebbleBatchWrap) close()                      { w.batch.Close() }
+func (w *pebbleBatchWrap) put(key, value []byte)   { _ = w.batch.Set(key, value, nil) }
+func (w *pebbleBatchWrap) del(key []byte)          { _ = w.batch.Delete(key, nil) }
+func (w *pebbleBatchWrap) deleteRange(s, e []byte) { _ = w.batch.DeleteRange(s, e, nil) }
+func (w *pebbleBatchWrap) commit() error           { return w.batch.Commit(pebble.NoSync) }
+func (w *pebbleBatchWrap) commitSync() error       { return w.batch.Commit(pebble.Sync) }
+func (w *pebbleBatchWrap) close()                  { w.batch.Close() }
 
 type pebbleIterWrap struct {
 	iter *pebble.Iterator
 }
 
-func (w *pebbleIterWrap) first()          { w.iter.First() }
-func (w *pebbleIterWrap) valid() bool     { return w.iter.Valid() }
-func (w *pebbleIterWrap) next()           { w.iter.Next() }
-func (w *pebbleIterWrap) key() []byte     { return w.iter.Key() }
-func (w *pebbleIterWrap) value() []byte   { return w.iter.Value() }
-func (w *pebbleIterWrap) err() error      { return w.iter.Error() }
-func (w *pebbleIterWrap) close()          { w.iter.Close() }
+func (w *pebbleIterWrap) first()        { w.iter.First() }
+func (w *pebbleIterWrap) valid() bool   { return w.iter.Valid() }
+func (w *pebbleIterWrap) next()         { w.iter.Next() }
+func (w *pebbleIterWrap) key() []byte   { return w.iter.Key() }
+func (w *pebbleIterWrap) value() []byte { return w.iter.Value() }
+func (w *pebbleIterWrap) err() error    { return w.iter.Error() }
+func (w *pebbleIterWrap) close()        { w.iter.Close() }
 
 // --- bucketBackend: wraps storage.BatchBucket (shared storage) ---
 
@@ -159,12 +159,12 @@ type bucketBatchWrap struct {
 	batch storage.Batch
 }
 
-func (w *bucketBatchWrap) put(key, value []byte)  { _ = w.batch.Put(key, value) }
-func (w *bucketBatchWrap) del(key []byte)         { _ = w.batch.Delete(key) }
+func (w *bucketBatchWrap) put(key, value []byte)   { _ = w.batch.Put(key, value) }
+func (w *bucketBatchWrap) del(key []byte)          { _ = w.batch.Delete(key) }
 func (w *bucketBatchWrap) deleteRange(s, e []byte) { _ = w.batch.DeleteRange(s, e) }
-func (w *bucketBatchWrap) commit() error          { return w.batch.Commit() }
-func (w *bucketBatchWrap) commitSync() error      { return w.batch.Commit() }
-func (w *bucketBatchWrap) close()                 { w.batch.Close() }
+func (w *bucketBatchWrap) commit() error           { return w.batch.Commit() }
+func (w *bucketBatchWrap) commitSync() error       { return w.batch.CommitSync() }
+func (w *bucketBatchWrap) close()                  { w.batch.Close() }
 
 type bucketIterWrap struct {
 	iter  storage.Iterator

@@ -12,9 +12,9 @@ import (
 
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage/graphengine"
 	chihttp "vorpalstacks/internal/server/http"
 	"vorpalstacks/internal/server/listener"
-	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // Config holds all configuration for service initialisation and wiring.

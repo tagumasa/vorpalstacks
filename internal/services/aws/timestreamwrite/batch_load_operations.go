@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
@@ -71,6 +72,7 @@ func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 		defer s.batchWg.Done()
+		defer func() { resilience.RecoverPanic("timestreamwrite batch load") }()
 		s.simulateBatchLoad(ctx, st.batchLoadStore, taskId)
 	}()
 
@@ -163,6 +165,7 @@ func (s *TimestreamWriteService) ResumeBatchLoadTask(ctx context.Context, reqCtx
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 		defer s.batchWg.Done()
+		defer func() { resilience.RecoverPanic("timestreamwrite batch load resume") }()
 		s.simulateBatchLoad(ctx, st.batchLoadStore, taskId)
 	}()
 

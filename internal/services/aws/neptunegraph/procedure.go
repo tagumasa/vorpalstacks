@@ -10,9 +10,9 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage/graphengine"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 	"vorpalstacks/pkg/cypherparser"
-	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // procedureDispatcher handles execution of vector procedure CALL statements

@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/common/audit"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage/graphengine"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/grpcweb"
 	"vorpalstacks/internal/server/listener"
@@ -46,7 +47,6 @@ import (
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // initOptionalServices initialises optional services. Returns an error on the

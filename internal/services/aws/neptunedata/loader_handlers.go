@@ -16,9 +16,9 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/utils/ntriples"
-	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 	"vorpalstacks/internal/core/storage/graphengine"
+	pb "vorpalstacks/internal/pb/storage/storage_neptune"
+	"vorpalstacks/internal/utils/ntriples"
 )
 
 type loaderStats struct {

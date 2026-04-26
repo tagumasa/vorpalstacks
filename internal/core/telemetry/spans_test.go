@@ -127,4 +127,3 @@ func TestSQSSpan_EmptyQueue(t *testing.T) {
 		t.Error("span should not be nil")
 	}
 }
-

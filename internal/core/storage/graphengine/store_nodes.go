@@ -36,7 +36,9 @@ func (d *DB) AddNode(labels []string, props Props) (NodeID, error) {
 		batch.put(idxPropKey(k, propIndexValue(v), id), nil)
 	}
 
-	d.writeUniqueConstraintEntries(batch, labels, props, id)
+	if err := d.writeUniqueConstraintEntries(batch, labels, props, id); err != nil {
+		return 0, fmt.Errorf("graphengine: failed to write unique constraint entries for new node: %w", err)
+	}
 
 	if err := batch.commit(); err != nil {
 		return 0, fmt.Errorf("graphengine: failed to add node: %w", err)
@@ -102,7 +104,9 @@ func (d *DB) AddNodeBatch(items []struct {
 			batch.put(idxPropKey(k, propIndexValue(v), id), nil)
 		}
 
-		d.writeUniqueConstraintEntries(batch, item.Labels, item.Props, id)
+		if err := d.writeUniqueConstraintEntries(batch, item.Labels, item.Props, id); err != nil {
+			return nil, fmt.Errorf("graphengine: failed to write unique constraint entries in batch: %w", err)
+		}
 	}
 
 	if err := batch.commit(); err != nil {
@@ -208,12 +212,14 @@ func (d *DB) getConstrainedProps(labels []string) map[string][]string {
 	for _, l := range labels {
 		labelSet[l] = true
 	}
-	_ = d.forEachUniqueConstraint(func(label, prop string) error {
+	if err := d.forEachUniqueConstraint(func(label, prop string) error {
 		if labelSet[label] {
 			result[prop] = append(result[prop], label)
 		}
 		return nil
-	})
+	}); err != nil {
+		return nil
+	}
 	return result
 }
 
@@ -254,7 +260,9 @@ func (d *DB) DeleteNode(id NodeID) error {
 		batch.del(idxPropKey(k, propIndexValue(v), id))
 	}
 
-	d.deleteUniqueConstraintEntries(batch, node.Labels, node.Props)
+	if err := d.deleteUniqueConstraintEntries(batch, node.Labels, node.Props); err != nil {
+		return fmt.Errorf("graphengine: failed to delete unique constraint entries for node %d: %w", id, err)
+	}
 
 	if err := batch.commit(); err != nil {
 		return fmt.Errorf("graphengine: failed to delete node %d: %w", id, err)
@@ -266,7 +274,9 @@ func (d *DB) DeleteNode(id NodeID) error {
 	}
 
 	if d.Embeddings != nil {
-		_, _ = d.Embeddings.Remove(id)
+		if _, err := d.Embeddings.Remove(id); err != nil {
+			return fmt.Errorf("graphengine: failed to remove embedding for node %d: %w", id, err)
+		}
 	}
 
 	return nil

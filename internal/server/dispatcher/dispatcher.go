@@ -15,10 +15,10 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/core/storage/graphengine"
 	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/store/api"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // Authorizer evaluates IAM policies to determine whether a request should be allowed.

@@ -39,6 +39,10 @@ func (b *PebbleBatch) Commit() error {
 	return b.batch.Commit(pebble.NoSync)
 }
 
+func (b *PebbleBatch) CommitSync() error {
+	return b.batch.Commit(pebble.Sync)
+}
+
 func (b *PebbleBatch) Close() error {
 	return b.batch.Close()
 }

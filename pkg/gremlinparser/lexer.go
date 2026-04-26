@@ -72,7 +72,9 @@ type Lexer struct {
 func Tokenize(input string) ([]Token, error) {
 	l := &Lexer{input: []byte(input), pos: 0}
 	for l.pos < len(l.input) {
-		l.skipWhitespaceAndComments()
+		if err := l.skipWhitespaceAndComments(); err != nil {
+			return nil, err
+		}
 		if l.pos >= len(l.input) {
 			break
 		}
@@ -85,7 +87,7 @@ func Tokenize(input string) ([]Token, error) {
 }
 
 // skipWhitespaceAndComments skips whitespace, line comments (//), and block comments (/* */).
-func (l *Lexer) skipWhitespaceAndComments() {
+func (l *Lexer) skipWhitespaceAndComments() error {
 	for l.pos < len(l.input) {
 		ch := l.input[l.pos]
 		if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
@@ -108,12 +110,13 @@ func (l *Lexer) skipWhitespaceAndComments() {
 				l.pos++
 			}
 			if !found {
-				panic(fmt.Sprintf("gremlin: unterminated block comment starting at position %d", commentStart))
+				return fmt.Errorf("gremlin: unterminated block comment starting at position %d", commentStart)
 			}
 		} else {
 			break
 		}
 	}
+	return nil
 }
 
 // nextToken scans the next token from the current position.

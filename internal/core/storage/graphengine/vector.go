@@ -174,7 +174,7 @@ func (es *EmbeddingStore) loadCache() {
 	defer es.mu.Unlock()
 
 	es.cache = make(map[NodeID][]float64)
-	_ = es.db.iteratePrefix(vecPrefix, func(key, value []byte) error {
+	if err := es.db.iteratePrefix(vecPrefix, func(key, value []byte) error {
 		nodeID := decodeNodeID(key[len(vecPrefix):])
 		emb, err := decodeEmbedding(value)
 		if err != nil {
@@ -183,7 +183,9 @@ func (es *EmbeddingStore) loadCache() {
 		}
 		es.cache[nodeID] = emb
 		return nil
-	})
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "graphengine: error loading embedding cache: %v\n", err)
+	}
 }
 
 // Get retrieves the embedding for a node. Returns nil if not found.

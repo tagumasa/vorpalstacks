@@ -4,6 +4,7 @@ package iam
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
@@ -13,9 +14,13 @@ import (
 
 // IAMService provides IAM operations for managing users, groups, roles, and policies.
 type IAMService struct {
-	accountID string
-	stores    sync.Map // global — single cached instance
-	reportWg  sync.WaitGroup
+	accountID             string
+	stores                sync.Map // global — single cached instance
+	reportWg              sync.WaitGroup
+	credentialReportMu    sync.RWMutex
+	credentialReportState string
+	credentialReportData  string
+	credentialReportTime  time.Time
 }
 
 // NewIAMService creates a new IAM service instance for the given account.

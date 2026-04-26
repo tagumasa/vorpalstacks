@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
 
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
+
+	"vorpalstacks/internal/core/logs"
 )
 
 func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.ParallelState) (string, string, *ExecutionError) {
@@ -53,6 +56,14 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 		wg.Add(1)
 		go func(idx int, b *sfnstore.StateMachineDefinition) {
 			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					logs.Error("sfn: panic in parallel branch worker", logs.Int("index", idx), logs.Any("panic", r), logs.String("stack", string(debug.Stack())))
+					mu.Lock()
+					errors[idx] = fmt.Errorf("internal panic: %v", r)
+					mu.Unlock()
+				}
+			}()
 			branchStates, err := e.extractStatesFromDefinition(b)
 			if err != nil {
 				mu.Lock()

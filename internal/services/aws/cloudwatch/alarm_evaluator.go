@@ -177,6 +177,7 @@ func (e *alarmEvaluator) evaluateAllForRegion(ctx context.Context, s *CloudWatch
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			defer func() { resilience.RecoverPanic("cloudwatch alarm evaluator worker") }()
 			for job := range jobs {
 				result := evaluateAlarm(job.alarm, metricStore)
 				if result == nil {

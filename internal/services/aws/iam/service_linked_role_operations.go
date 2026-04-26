@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/resilience"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
@@ -24,6 +25,7 @@ func init() {
 		ctx, cancel := context.WithCancel(context.Background())
 		slRoleCleanupCancel = cancel
 		go func() {
+			defer func() { resilience.RecoverPanic("IAM service-linked role cleanup") }()
 			ticker := time.NewTicker(30 * time.Minute)
 			defer ticker.Stop()
 			for {
@@ -33,7 +35,10 @@ func init() {
 				case <-ticker.C:
 					now := time.Now()
 					slRoleDeletionTasks.Range(func(key, value interface{}) bool {
-						task := value.(*serviceLinkedRoleDeletionTask)
+						task, ok := value.(*serviceLinkedRoleDeletionTask)
+						if !ok {
+							return true
+						}
 						if task.CreatedAt.Add(1 * time.Hour).Before(now) {
 							slRoleDeletionTasks.Delete(key)
 						}
