@@ -9,7 +9,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 	"vorpalstacks/pkg/gremlinparser"
 )
 

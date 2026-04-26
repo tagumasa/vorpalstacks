@@ -12,7 +12,7 @@ import (
 	"vorpalstacks/internal/core/logs"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 	"vorpalstacks/pkg/cypherparser"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // procedureDispatcher handles execution of vector procedure CALL statements
@@ -653,6 +653,13 @@ func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *req
 		return nil, newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("unsupported language: %s", lang))
 	}
 
+	var cypherParams map[string]any
+	if len(params.Parameters) > 0 && strings.TrimSpace(params.Parameters) != "" {
+		if err := json.Unmarshal([]byte(params.Parameters), &cypherParams); err != nil {
+			return nil, newValidationException("BAD_REQUEST", fmt.Sprintf("invalid parameters: %v", err))
+		}
+	}
+
 	queryID := generateID("q-")
 	now := time.Now().UTC()
 
@@ -694,28 +701,34 @@ func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *req
 	switch {
 	case parsed.Call != nil:
 		result, execErr = executeCallQuery(parsed.Call, entry, store, graphID)
+	case parsed.DDL != nil:
+		var r *cypherparser.CypherResult
+		r, execErr = cypherparser.ExecuteDDL(ctx, entry.db, parsed.DDL)
+		if r != nil {
+			result = map[string]interface{}{"results": r}
+		}
 	case parsed.Write != nil:
 		var r *cypherparser.CypherResult
-		r, execErr = cypherparser.ExecuteWrite(ctx, entry.db, entry.db, parsed.Write, nil)
+		r, execErr = cypherparser.ExecuteWrite(ctx, entry.db, entry.db, parsed.Write, cypherParams)
 		if r != nil {
 			result = map[string]interface{}{"results": r}
 		}
 	case parsed.Merge != nil:
 		var r *cypherparser.CypherResult
-		r, execErr = cypherparser.ExecuteMerge(ctx, entry.db, entry.db, parsed.Merge, nil)
+		r, execErr = cypherparser.ExecuteMerge(ctx, entry.db, entry.db, parsed.Merge, cypherParams)
 		if r != nil {
 			result = map[string]interface{}{"results": r}
 		}
 	case parsed.Read != nil:
 		if len(parsed.Read.Set) > 0 || len(parsed.Read.Delete) > 0 || len(parsed.Read.Remove) > 0 || parsed.Read.Create != nil {
 			var r *cypherparser.CypherResult
-			r, execErr = cypherparser.ExecuteQueryWrite(ctx, entry.db, entry.db, parsed.Read, nil)
+			r, execErr = cypherparser.ExecuteQueryWrite(ctx, entry.db, entry.db, parsed.Read, cypherParams)
 			if r != nil {
 				result = map[string]interface{}{"results": r}
 			}
 		} else {
 			var r *cypherparser.CypherResult
-			r, execErr = cypherparser.Execute(ctx, entry.db, parsed.Read, nil)
+			r, execErr = cypherparser.Execute(ctx, entry.db, parsed.Read, cypherParams)
 			if r != nil {
 				result = map[string]interface{}{"results": r}
 			}

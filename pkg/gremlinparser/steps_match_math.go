@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // execMatch implements the match() step: evaluates multiple traversal patterns

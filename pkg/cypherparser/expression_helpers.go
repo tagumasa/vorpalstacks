@@ -15,7 +15,7 @@ import (
 	"unicode/utf8"
 
 	guuid "github.com/google/uuid"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 func toFloat64(v any) (float64, bool) {

@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // WriteStats tracks what was mutated by a write query.
@@ -823,10 +823,20 @@ func applyDelete(reader graphengine.GraphReader, writer graphengine.GraphWriter,
 
 		switch e := entity.(type) {
 		case *graphengine.Node:
+			edges, err := reader.GetEdges(e.ID, graphengine.Both, "")
+			if err != nil {
+				return fmt.Errorf("cypher exec: failed to check edges for node %d: %w", e.ID, err)
+			}
+			if !detach && len(edges) > 0 {
+				return fmt.Errorf("cypher exec: cannot DELETE node %d because it still has %d relationships. Use DETACH DELETE to remove them", e.ID, len(edges))
+			}
 			if err := writer.DeleteNode(e.ID); err != nil {
 				return fmt.Errorf("cypher exec: DELETE node %d failed: %w", e.ID, err)
 			}
 			stats.NodesDeleted++
+			if detach {
+				stats.EdgesDeleted += len(edges)
+			}
 		case *graphengine.Edge:
 			if err := writer.DeleteEdge(e.ID); err != nil {
 				return fmt.Errorf("cypher exec: DELETE edge %d failed: %w", e.ID, err)

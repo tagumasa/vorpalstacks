@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 func init() {

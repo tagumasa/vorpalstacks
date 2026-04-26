@@ -10,7 +10,7 @@
 
 package cypherparser
 
-import "vorpalstacks/pkg/graphengine"
+import "vorpalstacks/internal/core/storage/graphengine"
 
 // ExplainMode controls whether the query is explained, profiled, or executed normally.
 // Based on goraphdb ExplainMode.

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // GetPropertygraphStatistics returns auto-computed property graph statistics
@@ -25,7 +25,7 @@ func (s *NeptuneDataService) GetPropertygraphStatistics(ctx context.Context, req
 		s.refreshStatistics(reqCtx)
 	}
 	stats := s.getStats(reqCtx.GetRegion())
-	nodeCount, _, labelCounts, relCounts := stats.snapshot()
+	nodeCount, edgeCount, labelCounts, relCounts := stats.snapshot()
 
 	sigCount := int64(len(labelCounts))
 	predCount := int64(len(relCounts))
@@ -39,9 +39,10 @@ func (s *NeptuneDataService) GetPropertygraphStatistics(ctx context.Context, req
 			"note":         "Automatically computed",
 			"statisticsId": "auto-statistics",
 			"signatureInfo": map[string]interface{}{
-				"signatureCount": sigCount,
+				"edgeCount":      edgeCount,
 				"instanceCount":  nodeCount,
 				"predicateCount": predCount,
+				"signatureCount": sigCount,
 			},
 		},
 	}
@@ -92,7 +93,6 @@ func (s *NeptuneDataService) ManagePropertygraphStatistics(ctx context.Context, 
 // DeletePropertygraphStatistics clears all property graph statistics for the current region.
 func (s *NeptuneDataService) DeletePropertygraphStatistics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
 	_ = req
 	s.mu.Lock()
 	s.statsDisabled = true

@@ -30,6 +30,7 @@ var (
 	adjInPrefix    = []byte("adj_in/")
 	idxLabelPrefix = []byte("idx_label/")
 	idxPropPrefix  = []byte("idx_prop/")
+	idxMetaPrefix  = []byte("idx_meta/")
 )
 
 type Cache struct {
@@ -68,18 +69,20 @@ func DefaultOptions() Options {
 }
 
 type DB struct {
-	db         *pebble.DB
-	dir        string
-	cache      *pebble.Cache
-	ownsCache  bool
-	nextNodeID atomic.Uint64
-	nextEdgeID atomic.Uint64
-	nodeCount  atomic.Uint64
-	edgeCount  atomic.Uint64
-	closed     atomic.Bool
-	Embeddings *EmbeddingStore
+	backend     kvBackend
+	dir         string
+	cache       *pebble.Cache
+	ownsCache   bool
+	nextNodeID  atomic.Uint64
+	nextEdgeID  atomic.Uint64
+	nodeCount   atomic.Uint64
+	edgeCount   atomic.Uint64
+	closed      atomic.Bool
+	Embeddings  *EmbeddingStore
 }
 
+// Open creates a graph engine backed by an independent Pebble database.
+// Deprecated: use New(bucket, opts) for shared storage via RegionStorageManager.
 func Open(dir string, opts Options) (*DB, error) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, fmt.Errorf("graphengine: failed to create directory %s: %w", dir, err)
@@ -109,8 +112,10 @@ func Open(dir string, opts Options) (*DB, error) {
 		return nil, fmt.Errorf("graphengine: failed to open pebble at %s: %w", dir, err)
 	}
 
+	backend := &pebbleBackend{db: pdb, cache: pebbleCache}
+
 	d := &DB{
-		db:        pdb,
+		backend:   backend,
 		dir:       dir,
 		cache:     pebbleCache,
 		ownsCache: ownsCache,
@@ -126,8 +131,7 @@ func Open(dir string, opts Options) (*DB, error) {
 		return nil, err
 	}
 
-	d.Embeddings = NewEmbeddingStore(d)
-
+	d.Embeddings = newEmbeddingStore(d)
 	return d, nil
 }
 
@@ -137,12 +141,16 @@ func (d *DB) Close() error {
 	}
 	var err error
 	if err = d.persistCounters(); err != nil {
-		d.db.Close()
-		d.cache.Unref()
+		d.backend.close()
+		if d.cache != nil {
+			d.cache.Unref()
+		}
 		return err
 	}
-	err = d.db.Close()
-	d.cache.Unref()
+	err = d.backend.close()
+	if d.cache != nil {
+		d.cache.Unref()
+	}
 	return err
 }
 
@@ -158,7 +166,7 @@ func (d *DB) Stats() *GraphStats {
 		EdgeCount:     int64(d.edgeCount.Load()),
 		LabelCounts:   labelCounts,
 		RelCounts:     relCounts,
-		DiskSizeBytes: int64(d.db.Metrics().DiskSpaceUsage()),
+		DiskSizeBytes: d.backend.diskSize(),
 	}
 }
 
@@ -175,16 +183,15 @@ func (d *DB) GetLabelCounts() (map[string]int64, error) {
 	lower := append([]byte(nil), idxLabelPrefix...)
 	upper := append([]byte(nil), idxLabelPrefix...)
 	upper = append(upper, 0xff)
-	iter, err := d.db.NewIter(&pebble.IterOptions{
-		LowerBound: lower,
-		UpperBound: upper,
-	})
+
+	it, err := d.backend.newIter(lower, upper)
 	if err != nil {
 		return counts, fmt.Errorf("graphengine: GetLabelCounts iterator creation failed: %w", err)
 	}
-	defer iter.Close()
-	for iter.First(); iter.Valid(); iter.Next() {
-		key := iter.Key()
+	defer it.close()
+
+	for it.first(); it.valid(); it.next() {
+		key := it.key()
 		rest := key[len(idxLabelPrefix):]
 		idx := 0
 		for idx < len(rest) && rest[idx] != 0x00 {
@@ -195,7 +202,7 @@ func (d *DB) GetLabelCounts() (map[string]int64, error) {
 			counts[label]++
 		}
 	}
-	if err := iter.Error(); err != nil {
+	if err := it.err(); err != nil {
 		return nil, fmt.Errorf("graphengine: GetLabelCounts iteration error: %w", err)
 	}
 	return counts, nil
@@ -206,16 +213,15 @@ func (d *DB) GetRelCounts() (map[string]int64, error) {
 	lower := append([]byte(nil), idxEtypePrefix...)
 	upper := append([]byte(nil), idxEtypePrefix...)
 	upper = append(upper, 0xff)
-	iter, err := d.db.NewIter(&pebble.IterOptions{
-		LowerBound: lower,
-		UpperBound: upper,
-	})
+
+	it, err := d.backend.newIter(lower, upper)
 	if err != nil {
 		return counts, fmt.Errorf("graphengine: GetRelCounts iterator creation failed: %w", err)
 	}
-	defer iter.Close()
-	for iter.First(); iter.Valid(); iter.Next() {
-		key := iter.Key()
+	defer it.close()
+
+	for it.first(); it.valid(); it.next() {
+		key := it.key()
 		rest := key[len(idxEtypePrefix):]
 		idx := 0
 		for idx < len(rest) && rest[idx] != 0x00 {
@@ -226,7 +232,7 @@ func (d *DB) GetRelCounts() (map[string]int64, error) {
 			counts[label]++
 		}
 	}
-	if err := iter.Error(); err != nil {
+	if err := it.err(); err != nil {
 		return nil, fmt.Errorf("graphengine: GetRelCounts iteration error: %w", err)
 	}
 	return counts, nil
@@ -236,44 +242,40 @@ func (d *DB) loadCounters() error {
 	var loadedNodeID, loadedEdgeID uint64
 	var nodeIDLoaded, edgeIDLoaded bool
 
-	val, closer, err := d.db.Get(keyNextNodeID)
-	if err != nil && err != pebble.ErrNotFound {
+	val, err := d.backend.get(keyNextNodeID)
+	if err != nil {
 		return err
 	}
-	if err == nil {
+	if val != nil {
 		loadedNodeID = decodeUint64(val)
 		d.nextNodeID.Store(loadedNodeID)
 		nodeIDLoaded = true
-		closer.Close()
 	}
 
-	val, closer, err = d.db.Get(keyNextEdgeID)
-	if err != nil && err != pebble.ErrNotFound {
+	val, err = d.backend.get(keyNextEdgeID)
+	if err != nil {
 		return err
 	}
-	if err == nil {
+	if val != nil {
 		loadedEdgeID = decodeUint64(val)
 		d.nextEdgeID.Store(loadedEdgeID)
 		edgeIDLoaded = true
-		closer.Close()
 	}
 
-	val, closer, err = d.db.Get(keyNodeCount)
-	if err != nil && err != pebble.ErrNotFound {
+	val, err = d.backend.get(keyNodeCount)
+	if err != nil {
 		return err
 	}
-	if err == nil {
+	if val != nil {
 		d.nodeCount.Store(decodeUint64(val))
-		closer.Close()
 	}
 
-	val, closer, err = d.db.Get(keyEdgeCount)
-	if err != nil && err != pebble.ErrNotFound {
+	val, err = d.backend.get(keyEdgeCount)
+	if err != nil {
 		return err
 	}
-	if err == nil {
+	if val != nil {
 		d.edgeCount.Store(decodeUint64(val))
-		closer.Close()
 	}
 
 	d.selfHealCounters()
@@ -290,49 +292,43 @@ func (d *DB) loadCounters() error {
 func (d *DB) selfHealCounters() {
 	var maxNodeID, maxEdgeID, nodeCt, edgeCt uint64
 
-	iter, err := d.db.NewIter(&pebble.IterOptions{
-		LowerBound: nodePrefix,
-		UpperBound: nodeEndKey(),
-	})
+	it, err := d.backend.newIter(nodePrefix, nodeEndKey())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphengine: failed to create iterator for selfHealCounters (nodes): %v\n", err)
 		return
 	}
-	for iter.First(); iter.Valid(); iter.Next() {
+	for it.first(); it.valid(); it.next() {
 		nodeCt++
-		id := NodeID(decodeUint64(iter.Key()[len(nodePrefix):]))
+		id := NodeID(decodeUint64(it.key()[len(nodePrefix):]))
 		if uint64(id) > maxNodeID {
 			maxNodeID = uint64(id)
 		}
 	}
-	if err := iter.Error(); err != nil {
+	if err := it.err(); err != nil {
 		fmt.Fprintf(os.Stderr, "graphengine: selfHealCounters node iteration error: %v\n", err)
-		iter.Close()
+		it.close()
 		return
 	}
-	iter.Close()
+	it.close()
 
-	iter2, err := d.db.NewIter(&pebble.IterOptions{
-		LowerBound: edgePrefix,
-		UpperBound: edgeEndKey(),
-	})
+	it2, err := d.backend.newIter(edgePrefix, edgeEndKey())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphengine: failed to create iterator for selfHealCounters (edges): %v\n", err)
 		return
 	}
-	for iter2.First(); iter2.Valid(); iter2.Next() {
+	for it2.first(); it2.valid(); it2.next() {
 		edgeCt++
-		id := EdgeID(decodeUint64(iter2.Key()[len(edgePrefix):]))
+		id := EdgeID(decodeUint64(it2.key()[len(edgePrefix):]))
 		if uint64(id) > maxEdgeID {
 			maxEdgeID = uint64(id)
 		}
 	}
-	if err := iter2.Error(); err != nil {
+	if err := it2.err(); err != nil {
 		fmt.Fprintf(os.Stderr, "graphengine: selfHealCounters edge iteration error: %v\n", err)
-		iter2.Close()
+		it2.close()
 		return
 	}
-	iter2.Close()
+	it2.close()
 
 	d.nodeCount.Store(nodeCt)
 	d.edgeCount.Store(edgeCt)
@@ -345,15 +341,15 @@ func (d *DB) selfHealCounters() {
 }
 
 func (d *DB) persistCounters() error {
-	batch := d.db.NewBatch()
-	defer batch.Close()
+	batch := d.backend.newBatch()
+	defer batch.close()
 
-	_ = batch.Set(keyNextNodeID, encodeUint64(d.nextNodeID.Load()), nil)
-	_ = batch.Set(keyNextEdgeID, encodeUint64(d.nextEdgeID.Load()), nil)
-	_ = batch.Set(keyNodeCount, encodeUint64(d.nodeCount.Load()), nil)
-	_ = batch.Set(keyEdgeCount, encodeUint64(d.edgeCount.Load()), nil)
+	batch.put(keyNextNodeID, encodeUint64(d.nextNodeID.Load()))
+	batch.put(keyNextEdgeID, encodeUint64(d.nextEdgeID.Load()))
+	batch.put(keyNodeCount, encodeUint64(d.nodeCount.Load()))
+	batch.put(keyEdgeCount, encodeUint64(d.edgeCount.Load()))
 
-	return d.db.Apply(batch, pebble.Sync)
+	return batch.commitSync()
 }
 
 func nodeKey(id NodeID) []byte {

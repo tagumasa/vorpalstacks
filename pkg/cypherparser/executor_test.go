@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 func tempDir(t *testing.T) string {

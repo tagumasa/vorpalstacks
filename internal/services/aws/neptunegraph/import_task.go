@@ -7,16 +7,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
+	"vorpalstacks/internal/core/storage/graphengine"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/utils/ntriples"
 )
 
 // CreateGraphUsingImportTask creates a new graph and initiates a bulk import task from the specified source.
@@ -80,8 +80,11 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 		return nil, err
 	}
 
-	graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, graphID)
-	db, err := graphengine.Open(graphDir, s.engineOptions())
+	bucket, err := s.graphBucket(graphID)
+	if err != nil {
+		return nil, newInternalServerException(err)
+	}
+	db, err := graphengine.New(bucket, s.engineOptions())
 	if err != nil {
 		logs.Warn("failed to open graph engine", logs.String("graphId", graphID), logs.Err(err))
 	} else {
@@ -842,7 +845,7 @@ func (s *NeptuneGraphService) importRDF(db *graphengine.DB, filePath string) (st
 			continue
 		}
 
-		subject, predicate, obj, ok := parseNTriplesLine(line)
+		subject, predicate, obj, ok := ntriples.ParseLine(line)
 		if !ok {
 			errorCount++
 			continue
@@ -857,7 +860,7 @@ func (s *NeptuneGraphService) importRDF(db *graphengine.DB, filePath string) (st
 			objURI := strings.Trim(obj, "<>")
 			objID := ensureNode(objURI)
 
-			predLabel := extractLocalName(predicate)
+			predLabel := ntriples.ExtractLocalName(predicate)
 
 			edgeBatch = append(edgeBatch, graphengine.Edge{
 				From:  subjID,
@@ -865,7 +868,7 @@ func (s *NeptuneGraphService) importRDF(db *graphengine.DB, filePath string) (st
 				Label: predLabel,
 			})
 		} else {
-			predKey := extractLocalName(predicate)
+			predKey := ntriples.ExtractLocalName(predicate)
 
 			node, err := db.GetNode(subjID)
 			if err == nil && node != nil {
@@ -892,112 +895,6 @@ func (s *NeptuneGraphService) importRDF(db *graphengine.DB, filePath string) (st
 	flushNodes()
 	flushEdges()
 	return
-}
-
-func parseNTriplesLine(line string) (subject, predicate, object string, ok bool) {
-	line = strings.TrimSpace(line)
-	if len(line) == 0 {
-		return "", "", "", false
-	}
-	if line[len(line)-1] == '.' {
-		line = strings.TrimSpace(line[:len(line)-1])
-	}
-
-	var pos int
-
-	subject, pos, ok = parseNTerm(line, pos)
-	if !ok {
-		return "", "", "", false
-	}
-	for pos < len(line) && line[pos] == ' ' {
-		pos++
-	}
-
-	predicate, pos, ok = parseNTerm(line, pos)
-	if !ok {
-		return "", "", "", false
-	}
-	for pos < len(line) && line[pos] == ' ' {
-		pos++
-	}
-
-	object, _, ok = parseNTerm(line, pos)
-	if !ok {
-		return "", "", "", false
-	}
-
-	return subject, predicate, object, true
-}
-
-func parseNTerm(s string, pos int) (string, int, bool) {
-	if pos >= len(s) {
-		return "", pos, false
-	}
-
-	if s[pos] == '<' {
-		end := strings.IndexByte(s[pos+1:], '>')
-		if end < 0 {
-			return "", pos, false
-		}
-		return s[pos : pos+end+2], pos + end + 2, true
-	}
-
-	if s[pos] == '"' {
-		i := pos + 1
-		for i < len(s) {
-			if s[i] == '\\' && i+1 < len(s) {
-				i += 2
-				continue
-			}
-			if s[i] == '"' {
-				break
-			}
-			i++
-		}
-		if i >= len(s) {
-			return "", pos, false
-		}
-		end := i + 1
-		if end < len(s) && s[end] == '@' {
-			j := end + 1
-			for j < len(s) && isNTAlphaNumHyphen(s[j]) {
-				j++
-			}
-			return s[pos:j], j, true
-		}
-		if end+1 < len(s) && s[end] == '^' && end+2 < len(s) && s[end+1] == '^' && end+2 < len(s) && s[end+2] == '<' {
-			close := strings.IndexByte(s[end+2:], '>')
-			if close >= 0 {
-				return s[pos : end+2+close+1], end + 2 + close + 1, true
-			}
-		}
-		return s[pos:end], end, true
-	}
-
-	if strings.HasPrefix(s[pos:], "_:") {
-		i := pos + 2
-		for i < len(s) && s[i] != ' ' && s[i] != '\t' && s[i] != '.' {
-			i++
-		}
-		return s[pos:i], i, true
-	}
-
-	return "", pos, false
-}
-
-func isNTAlphaNumHyphen(c byte) bool {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-'
-}
-
-func extractLocalName(uri string) string {
-	uri = strings.Trim(uri, "<>")
-	if idx := strings.LastIndex(uri, "/"); idx >= 0 {
-		return uri[idx+1:]
-	}
-	if idx := strings.LastIndex(uri, "#"); idx >= 0 {
-		return uri[idx+1:]
-	}
-	return uri
 }
 
 func parseImportOptions(params map[string]interface{}) *ngstore.ImportOptions {

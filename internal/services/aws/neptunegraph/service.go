@@ -6,8 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -21,7 +19,7 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 	"vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 const (
@@ -153,8 +151,12 @@ func (s *NeptuneGraphService) RestoreEngines() {
 		if g.Status != "AVAILABLE" {
 			continue
 		}
-		graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, g.Id)
-		db, err := graphengine.Open(graphDir, s.engineOptions())
+		bucket, err := s.graphBucket(g.Id)
+		if err != nil {
+			logs.Warn("failed to get graph bucket", logs.String("graphId", g.Id), logs.Err(err))
+			continue
+		}
+		db, err := graphengine.New(bucket, s.engineOptions())
 		if err != nil {
 			logs.Warn("failed to restore graph engine", logs.String("graphId", g.Id), logs.Err(err))
 			continue
@@ -167,6 +169,22 @@ func (s *NeptuneGraphService) RestoreEngines() {
 // SetStorageManager injects the region storage manager used to back persistent stores.
 func (s *NeptuneGraphService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+func (s *NeptuneGraphService) graphBucket(graphID string) (storage.BatchBucket, error) {
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("storage manager not set")
+	}
+	rs, err := s.storageManager.GetStorage(s.region)
+	if err != nil {
+		return nil, err
+	}
+	bkt := rs.Bucket("neptunegraph:graph:" + graphID)
+	bb, ok := bkt.(storage.BatchBucket)
+	if !ok {
+		return nil, fmt.Errorf("storage bucket does not support batch operations")
+	}
+	return bb, nil
 }
 
 // SetGraphCache injects a shared Pebble block cache for all graph engine
@@ -301,8 +319,11 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, graphID)
-	db, err := graphengine.Open(graphDir, s.engineOptions())
+	bucket, err := s.graphBucket(graphID)
+	if err != nil {
+		return nil, newInternalServerException(err)
+	}
+	db, err := graphengine.New(bucket, s.engineOptions())
 	if err != nil {
 		logs.Warn("failed to open graph engine", logs.String("graphId", graphID), logs.Err(err))
 		graph.Status = "FAILED"
@@ -462,8 +483,9 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 
 	skipSnapshot := request.GetBoolParam(req.Parameters, "skipSnapshot")
 
+	var snapshotID string
 	if !skipSnapshot {
-		snapshotID := generateID("gs-")
+		snapshotID = generateID("gs-")
 		now := time.Now().UTC()
 		snapshot := &ngstore.GraphSnapshot{
 			Id:                 snapshotID,
@@ -507,8 +529,20 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 	}
 	s.enginesMu.Unlock()
 
-	graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, graphID)
-	os.RemoveAll(graphDir)
+	if snapshotID != "" {
+		srcBkt, srcErr := s.graphBucket(graphID)
+		dstBkt, dstErr := s.graphBucket("snapshot:" + snapshotID)
+		if srcErr == nil && dstErr == nil {
+			if err := copyGraphBucket(srcBkt, dstBkt); err != nil {
+				logs.Warn("failed to copy graph data to snapshot bucket during deletion",
+					logs.String("graphId", graphID), logs.String("snapshotId", snapshotID), logs.Err(err))
+			}
+		}
+	}
+
+	if rs, err := s.storageManager.GetStorage(s.region); err == nil {
+		rs.DeleteBucket("neptunegraph:graph:" + graphID)
+	}
 
 	if err := store.DeleteGraph(graphID); err != nil {
 		logs.Warn("failed to delete graph", logs.String("graphId", graphID), logs.Err(err))
@@ -546,8 +580,11 @@ func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.Re
 		logs.Warn("failed to update graph status to STARTING", logs.String("graphId", graphID), logs.Err(err))
 	}
 
-	graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, graphID)
-	db, err := graphengine.Open(graphDir, s.engineOptions())
+	bucket, err := s.graphBucket(graphID)
+	if err != nil {
+		return nil, newInternalServerException(err)
+	}
+	db, err := graphengine.New(bucket, s.engineOptions())
 	if err != nil {
 		graph.Status = "FAILED"
 		graph.StatusReason = err.Error()
@@ -688,7 +725,7 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphName")
 	}
 
-	snapshot, err := store.GetSnapshot(snapshotID)
+	_, err = store.GetSnapshot(snapshotID)
 	if err != nil {
 		if ngstore.IsNotFound(err) {
 			return nil, newResourceNotFoundException("snapshot", snapshotID)
@@ -743,19 +780,18 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 		}
 	}
 
-	graphDir := filepath.Join(s.dataPath, graphDataDirPrefix, graphID)
-
-	srcDir := filepath.Join(s.dataPath, graphDataDirPrefix, snapshot.SourceGraphId)
-	if _, err := os.Stat(srcDir); err == nil {
-		if err := copyGraphData(srcDir, graphDir); err != nil {
+	srcBucket, srcErr := s.graphBucket("snapshot:" + snapshotID)
+	dstBucket, dstErr := s.graphBucket(graphID)
+	if srcErr == nil && dstErr == nil {
+		if err := copyGraphBucket(srcBucket, dstBucket); err != nil {
 			logs.Warn("Failed to copy graph data during restore from snapshot",
 				logs.String("graphId", graphID),
-				logs.String("srcDir", srcDir),
+				logs.String("snapshotId", snapshotID),
 				logs.Err(err))
 		}
 	}
 
-	db, err := graphengine.Open(graphDir, s.engineOptions())
+	db, err := graphengine.New(dstBucket, s.engineOptions())
 	if err != nil {
 		logs.Warn("failed to open graph engine for restored graph", logs.String("graphId", graphID), logs.Err(err))
 	} else {
@@ -772,35 +808,10 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 	return graphToResponse(graph, true), nil
 }
 
-func copyGraphData(src, dst string) error {
-	if err := os.MkdirAll(dst, 0755); err != nil {
-		return err
-	}
-	srcGraph := filepath.Join(src, "graph")
-	dstGraph := filepath.Join(dst, "graph")
-	if _, err := os.Stat(srcGraph); err == nil {
-		if err := os.MkdirAll(dstGraph, 0755); err != nil {
-			return err
-		}
-		if err := filepath.Walk(srcGraph, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() {
-				return nil
-			}
-			rel, _ := filepath.Rel(srcGraph, path)
-			destPath := filepath.Join(dstGraph, rel)
-			data, err := os.ReadFile(path)
-			if err != nil {
-				return nil
-			}
-			if err := os.WriteFile(destPath, data, 0644); err != nil {
-				logs.Warn("failed to copy graph data file", logs.String("path", destPath), logs.Err(err))
-			}
-			return nil
-		}); err != nil {
-			return err
-		}
-	}
-	return nil
+func copyGraphBucket(src, dst storage.BatchBucket) error {
+	return src.ForEach(func(k, v []byte) error {
+		return dst.Put(k, v)
+	})
 }
 
 func parseVectorSearchConfig(params map[string]interface{}) *ngstore.VectorSearchConfig {

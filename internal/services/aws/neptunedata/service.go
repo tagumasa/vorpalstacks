@@ -17,7 +17,7 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 const (
@@ -443,7 +443,10 @@ func (s *NeptuneDataService) refreshStatistics(reqCtx *request.RequestContext) {
 	if readerAny == nil {
 		return
 	}
-	reader := readerAny.(graphengine.GraphReader)
+	reader, ok := readerAny.(graphengine.GraphReader)
+	if !ok {
+		return
+	}
 	region := reqCtx.GetRegion()
 	stats := s.getStats(region)
 	nodeCount := reader.CountNodes()

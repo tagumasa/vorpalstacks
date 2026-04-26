@@ -25,7 +25,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // CypherResult holds the result of a Cypher query execution.

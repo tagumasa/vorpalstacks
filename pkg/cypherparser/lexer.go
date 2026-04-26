@@ -76,6 +76,7 @@ const (
 	tokConstraints
 	tokCall
 	tokYield
+	tokDrop
 
 	// Pipeline keywords (our addition beyond goraphdb)
 	tokWith
@@ -238,6 +239,8 @@ func tokenKindName(k TokenKind) string {
 		return "CALL"
 	case tokYield:
 		return "YIELD"
+	case tokDrop:
+		return "DROP"
 	case tokWith:
 		return "WITH"
 	case tokUnwind:
@@ -384,6 +387,7 @@ var keywords = map[string]TokenKind{
 	"CONSTRAINTS": tokConstraints,
 	"CALL":        tokCall,
 	"YIELD":       tokYield,
+	"DROP":        tokDrop,
 	"WITH":        tokWith,
 	"UNWIND":      tokUnwind,
 	"DISTINCT":    tokDistinct,

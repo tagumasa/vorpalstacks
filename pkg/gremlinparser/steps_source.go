@@ -9,7 +9,7 @@ package gremlinparser
 import (
 	"fmt"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 func init() {

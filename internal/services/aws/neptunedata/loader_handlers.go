@@ -16,8 +16,9 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/utils/ntriples"
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 type loaderStats struct {
@@ -71,7 +72,11 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 	region := reqCtx.GetRegion()
 	s.loaderWg.Add(1)
 	go func() {
-		defer func() { recover() }()
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("loader goroutine panicked", logs.Any("panic", r))
+			}
+		}()
 		defer s.loaderWg.Done()
 		s.runLoaderJob(region, loadId, params.Source, params.Format)
 	}()
@@ -644,7 +649,7 @@ func (s *NeptuneDataService) loadNTriples(f *os.File, writer graphengine.GraphWr
 			continue
 		}
 
-		subj, pred, obj, ok := parseNTriplesLine(line)
+		subj, pred, obj, ok := ntriples.ParseLine(line)
 		if !ok {
 			stats.failed++
 			stats.totalRecords++
@@ -668,7 +673,7 @@ func (s *NeptuneDataService) loadNTriples(f *os.File, writer graphengine.GraphWr
 		}
 		ensureNode(obj, objLabels)
 
-		predLabel := extractLocalName(pred)
+		predLabel := ntriples.ExtractLocalName(pred)
 		pendingEdges = append(pendingEdges, pendingEdgeEntry{
 			fromExt: subj,
 			toExt:   obj,
@@ -680,112 +685,6 @@ func (s *NeptuneDataService) loadNTriples(f *os.File, writer graphengine.GraphWr
 	flushEdges()
 
 	return ""
-}
-
-func parseNTriplesLine(line string) (subject, predicate, object string, ok bool) {
-	line = strings.TrimSpace(line)
-	if len(line) == 0 {
-		return "", "", "", false
-	}
-	if line[len(line)-1] == '.' {
-		line = strings.TrimSpace(line[:len(line)-1])
-	}
-
-	var pos int
-
-	subject, pos, ok = parseNTriplesTerm(line, pos)
-	if !ok {
-		return "", "", "", false
-	}
-	for pos < len(line) && line[pos] == ' ' {
-		pos++
-	}
-
-	predicate, pos, ok = parseNTriplesTerm(line, pos)
-	if !ok {
-		return "", "", "", false
-	}
-	for pos < len(line) && line[pos] == ' ' {
-		pos++
-	}
-
-	object, _, ok = parseNTriplesTerm(line, pos)
-	if !ok {
-		return "", "", "", false
-	}
-
-	return subject, predicate, object, true
-}
-
-func parseNTriplesTerm(s string, pos int) (string, int, bool) {
-	if pos >= len(s) {
-		return "", pos, false
-	}
-
-	if s[pos] == '<' {
-		end := strings.IndexByte(s[pos+1:], '>')
-		if end < 0 {
-			return "", pos, false
-		}
-		return s[pos : pos+end+2], pos + end + 2, true
-	}
-
-	if s[pos] == '"' {
-		i := pos + 1
-		for i < len(s) {
-			if s[i] == '\\' && i+1 < len(s) {
-				i += 2
-				continue
-			}
-			if s[i] == '"' {
-				break
-			}
-			i++
-		}
-		if i >= len(s) {
-			return "", pos, false
-		}
-		end := i + 1
-		if end < len(s) && s[end] == '@' {
-			j := end + 1
-			for j < len(s) && isNTAlphaNumHyphen(s[j]) {
-				j++
-			}
-			return s[pos:j], j, true
-		}
-		if end+1 < len(s) && s[end] == '^' && end+2 < len(s) && s[end+1] == '^' && end+2 < len(s) && s[end+2] == '<' {
-			close := strings.IndexByte(s[end+2:], '>')
-			if close >= 0 {
-				return s[pos : end+2+close+1], end + 2 + close + 1, true
-			}
-		}
-		return s[pos:end], end, true
-	}
-
-	if strings.HasPrefix(s[pos:], "_:") {
-		i := pos + 2
-		for i < len(s) && s[i] != ' ' && s[i] != '\t' && s[i] != '.' {
-			i++
-		}
-		return s[pos:i], i, true
-	}
-
-	return "", pos, false
-}
-
-func isNTAlphaNumHyphen(c byte) bool {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-'
-}
-
-func extractLocalName(uri string) string {
-	uri = strings.Trim(uri, "<>")
-	if idx := strings.LastIndex(uri, "/"); idx >= 0 {
-		return uri[idx+1:]
-	}
-	if idx := strings.LastIndex(uri, "#"); idx >= 0 {
-		return uri[idx+1:]
-	}
-	return uri
 }
 
 func parseCSVValue(val string) interface{} {

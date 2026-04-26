@@ -29,7 +29,7 @@ import (
 	"sort"
 	"strings"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // ExecutePipeline runs a multi-segment CypherPipeline.

@@ -11,7 +11,7 @@ import (
 	"context"
 	"fmt"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 func executeFullQuery(ctx context.Context, reader graphengine.GraphReader, q *CypherQuery) (*CypherResult, error) {

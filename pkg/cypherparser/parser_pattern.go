@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // ---------------------------------------------------------------------------

@@ -2,19 +2,12 @@ package graphengine
 
 import (
 	"fmt"
-
-	"github.com/cockroachdb/pebble/v2"
 )
 
 func (d *DB) allocNodeID() NodeID {
 	return NodeID(d.nextNodeID.Add(1))
 }
 
-// AddNode creates a new node with the given labels and properties, allocates
-// a monotonically increasing ID, and updates the label index. If the Pebble
-// write fails the ID is consumed (a gap in the sequence); this is acceptable
-// as IDs carry no semantic meaning. Unique constraints are checked and
-// enforced before the write.
 func (d *DB) AddNode(labels []string, props Props) (NodeID, error) {
 	if d.closed.Load() {
 		return 0, fmt.Errorf("graphengine: database is closed")
@@ -26,26 +19,26 @@ func (d *DB) AddNode(labels []string, props Props) (NodeID, error) {
 
 	id := d.allocNodeID()
 
-	batch := d.db.NewBatch()
-	defer batch.Close()
+	batch := d.backend.newBatch()
+	defer batch.close()
 
 	data, err := encodeNodeData(labels, props)
 	if err != nil {
 		return 0, err
 	}
-	_ = batch.Set(nodeKey(id), data, nil)
+	batch.put(nodeKey(id), data)
 
 	for _, label := range labels {
-		_ = batch.Set(idxLabelKey(label, id), nil, nil)
+		batch.put(idxLabelKey(label, id), nil)
 	}
 
 	for k, v := range props {
-		_ = batch.Set(idxPropKey(k, propIndexValue(v), id), nil, nil)
+		batch.put(idxPropKey(k, propIndexValue(v), id), nil)
 	}
 
 	d.writeUniqueConstraintEntries(batch, labels, props, id)
 
-	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
+	if err := batch.commit(); err != nil {
 		return 0, fmt.Errorf("graphengine: failed to add node: %w", err)
 	}
 
@@ -53,9 +46,6 @@ func (d *DB) AddNode(labels []string, props Props) (NodeID, error) {
 	return id, nil
 }
 
-// AddNodeBatch creates multiple nodes in a single Pebble batch. IDs are
-// allocated atomically before the batch is applied; on failure the allocated
-// IDs are consumed but not stored, leaving a harmless gap.
 func (d *DB) AddNodeBatch(items []struct {
 	Labels []string
 	Props  Props
@@ -65,8 +55,8 @@ func (d *DB) AddNodeBatch(items []struct {
 	}
 
 	ids := make([]NodeID, len(items))
-	batch := d.db.NewBatch()
-	defer batch.Close()
+	batch := d.backend.newBatch()
+	defer batch.close()
 
 	seenUC := make(map[string]struct{})
 
@@ -102,20 +92,20 @@ func (d *DB) AddNodeBatch(items []struct {
 		if err != nil {
 			return nil, err
 		}
-		_ = batch.Set(nodeKey(id), data, nil)
+		batch.put(nodeKey(id), data)
 
 		for _, label := range item.Labels {
-			_ = batch.Set(idxLabelKey(label, id), nil, nil)
+			batch.put(idxLabelKey(label, id), nil)
 		}
 
 		for k, v := range item.Props {
-			_ = batch.Set(idxPropKey(k, propIndexValue(v), id), nil, nil)
+			batch.put(idxPropKey(k, propIndexValue(v), id), nil)
 		}
 
 		d.writeUniqueConstraintEntries(batch, item.Labels, item.Props, id)
 	}
 
-	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
+	if err := batch.commit(); err != nil {
 		return nil, fmt.Errorf("graphengine: batch add failed: %w", err)
 	}
 
@@ -123,20 +113,18 @@ func (d *DB) AddNodeBatch(items []struct {
 	return ids, nil
 }
 
-// GetNode retrieves a node by its ID. Returns an error if the node does not exist.
 func (d *DB) GetNode(id NodeID) (*Node, error) {
 	if d.closed.Load() {
 		return nil, fmt.Errorf("graphengine: database is closed")
 	}
 
-	val, closer, err := d.db.Get(nodeKey(id))
+	val, err := d.backend.get(nodeKey(id))
 	if err != nil {
-		if err == pebble.ErrNotFound {
-			return nil, fmt.Errorf("graphengine: node %d not found", id)
-		}
 		return nil, fmt.Errorf("graphengine: failed to get node %d: %w", id, err)
 	}
-	defer closer.Close()
+	if val == nil {
+		return nil, fmt.Errorf("graphengine: node %d not found", id)
+	}
 
 	labels, props, err := decodeNodeData(val)
 	if err != nil {
@@ -150,22 +138,18 @@ func (d *DB) GetNode(id NodeID) (*Node, error) {
 	}, nil
 }
 
-// UpdateNode merges the given properties into the existing node. Existing
-// keys are overwritten; new keys are added. Labels are preserved unchanged.
-// Unique constraint index entries are updated for changed property values.
 func (d *DB) UpdateNode(id NodeID, props Props) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
 	}
 
-	val, closer, err := d.db.Get(nodeKey(id))
+	val, err := d.backend.get(nodeKey(id))
 	if err != nil {
-		if err == pebble.ErrNotFound {
-			return fmt.Errorf("graphengine: node %d not found", id)
-		}
 		return fmt.Errorf("graphengine: failed to get node %d: %w", id, err)
 	}
-	closer.Close()
+	if val == nil {
+		return fmt.Errorf("graphengine: node %d not found", id)
+	}
 
 	labels, existingProps, err := decodeNodeData(val)
 	if err != nil {
@@ -182,36 +166,36 @@ func (d *DB) UpdateNode(id NodeID, props Props) error {
 		return err
 	}
 
-	batch := d.db.NewBatch()
-	defer batch.Close()
+	batch := d.backend.newBatch()
+	defer batch.close()
 
 	for k, v := range props {
 		if oldVal, ok := existingProps[k]; ok && propIndexValue(oldVal) != propIndexValue(v) {
-			_ = batch.Delete(idxPropKey(k, propIndexValue(oldVal), id), nil)
+			batch.del(idxPropKey(k, propIndexValue(oldVal), id))
 			if constraintLabels, isConstrained := ucProps[k]; isConstrained {
 				for _, cl := range constraintLabels {
-					_ = batch.Delete(ucKey(cl, k, oldVal), nil)
-					_ = batch.Set(ucKey(cl, k, v), encodeNodeID(id), nil)
+					batch.del(ucKey(cl, k, oldVal))
+					batch.put(ucKey(cl, k, v), encodeNodeID(id))
 				}
 			}
 		} else if _, ok := existingProps[k]; !ok {
 			if constraintLabels, isConstrained := ucProps[k]; isConstrained {
 				for _, cl := range constraintLabels {
-					_ = batch.Set(ucKey(cl, k, v), encodeNodeID(id), nil)
+					batch.put(ucKey(cl, k, v), encodeNodeID(id))
 				}
 			}
 		}
 		existingProps[k] = v
-		_ = batch.Set(idxPropKey(k, propIndexValue(v), id), nil, nil)
+		batch.put(idxPropKey(k, propIndexValue(v), id), nil)
 	}
 
 	data, err := encodeNodeData(labels, existingProps)
 	if err != nil {
 		return fmt.Errorf("graphengine: failed to encode updated node %d: %w", id, err)
 	}
-	_ = batch.Set(nodeKey(id), data, nil)
+	batch.put(nodeKey(id), data)
 
-	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
+	if err := batch.commit(); err != nil {
 		return fmt.Errorf("graphengine: failed to update node %d: %w", id, err)
 	}
 
@@ -233,9 +217,6 @@ func (d *DB) getConstrainedProps(labels []string) map[string][]string {
 	return result
 }
 
-// DeleteNode removes a node and all of its incident edges (both outgoing and
-// incoming), along with their adjacency entries and label index entries. The
-// in-memory counters are decremented accordingly.
 func (d *DB) DeleteNode(id NodeID) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -251,31 +232,31 @@ func (d *DB) DeleteNode(id NodeID) error {
 		return err
 	}
 
-	batch := d.db.NewBatch()
-	defer batch.Close()
+	batch := d.backend.newBatch()
+	defer batch.close()
 
 	for _, e := range edges {
-		_ = batch.Delete(edgeKey(e.ID), nil)
-		_ = batch.Delete(adjOutKey(e.From, e.ID), nil)
-		_ = batch.Delete(adjInKey(e.To, e.ID), nil)
+		batch.del(edgeKey(e.ID))
+		batch.del(adjOutKey(e.From, e.ID))
+		batch.del(adjInKey(e.To, e.ID))
 		if e.Label != "" {
-			_ = batch.Delete(idxEtypeKey(e.Label, e.ID), nil)
+			batch.del(idxEtypeKey(e.Label, e.ID))
 		}
 	}
 
-	_ = batch.Delete(nodeKey(id), nil)
+	batch.del(nodeKey(id))
 
 	for _, label := range node.Labels {
-		_ = batch.Delete(idxLabelKey(label, id), nil)
+		batch.del(idxLabelKey(label, id))
 	}
 
 	for k, v := range node.Props {
-		_ = batch.Delete(idxPropKey(k, propIndexValue(v), id), nil)
+		batch.del(idxPropKey(k, propIndexValue(v), id))
 	}
 
 	d.deleteUniqueConstraintEntries(batch, node.Labels, node.Props)
 
-	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
+	if err := batch.commit(); err != nil {
 		return fmt.Errorf("graphengine: failed to delete node %d: %w", id, err)
 	}
 
@@ -291,19 +272,14 @@ func (d *DB) DeleteNode(id NodeID) error {
 	return nil
 }
 
-// NodeExists reports whether a node with the given ID exists.
 func (d *DB) NodeExists(id NodeID) (bool, error) {
 	if d.closed.Load() {
 		return false, fmt.Errorf("graphengine: database is closed")
 	}
 
-	_, closer, err := d.db.Get(nodeKey(id))
+	val, err := d.backend.get(nodeKey(id))
 	if err != nil {
-		if err == pebble.ErrNotFound {
-			return false, nil
-		}
 		return false, err
 	}
-	closer.Close()
-	return true, nil
+	return val != nil, nil
 }

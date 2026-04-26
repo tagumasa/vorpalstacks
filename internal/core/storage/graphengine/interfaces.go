@@ -56,3 +56,15 @@ type GraphStore interface {
 	Close() error
 	Dir() string
 }
+
+// GraphDDL provides data definition language operations for managing
+// indexes and constraints. The concrete *DB type satisfies this interface.
+type GraphDDL interface {
+	CreateIndex(label, prop string) error
+	ShowIndexes() ([]IndexInfo, error)
+	DropIndex(label, prop string) error
+	CreateUniqueConstraint(label, prop string) error
+	ShowConstraints() ([]ConstraintInfo, error)
+	DropUniqueConstraint(label, prop string) error
+	HasUniqueConstraint(label, prop string) bool
+}

@@ -11,7 +11,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/pkg/cypherparser"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // ExecuteOpenCypherQuery parses and executes an OpenCypher query against the
@@ -72,6 +72,13 @@ func (s *NeptuneDataService) ExecuteOpenCypherQuery(ctx context.Context, reqCtx 
 
 	var result *cypherparser.CypherResult
 	switch {
+	case parsed.DDL != nil:
+		ddl, ok := reqCtx.GraphReader().(graphengine.GraphDDL)
+		if !ok {
+			s.resolveQuery(store, qid, nil, fmt.Errorf("DDL not available"))
+			return nil, internalFailure("DDL interface not available")
+		}
+		result, err = cypherparser.ExecuteDDL(ctx, ddl, parsed.DDL)
 	case parsed.Write != nil:
 		result, err = cypherparser.ExecuteWrite(ctx, reader, writer, parsed.Write, cypherParams)
 	case parsed.Merge != nil:

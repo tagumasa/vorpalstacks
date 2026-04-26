@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	pebblev2 "github.com/cockroachdb/pebble/v2"
 )
 
 func tempDir(t *testing.T) string {
@@ -766,15 +764,15 @@ func BenchmarkPebbleBatchRaw(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		batch := db.db.NewBatch()
+		batch := db.backend.newBatch()
 		for j := 0; j < 300; j++ {
 			key := make([]byte, 20)
 			val := make([]byte, 50)
 			binary.BigEndian.PutUint64(key[:8], uint64(j))
-			batch.Set(key, val, nil)
+			batch.put(key, val)
 		}
-		batch.Apply(batch, pebblev2.NoSync)
-		batch.Close()
+		batch.commit()
+		batch.close()
 	}
 }
 
@@ -833,15 +831,15 @@ func BenchmarkPOCStyleEdgeBatch(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		batch := db.db.NewBatch()
+		batch := db.backend.newBatch()
 		for j := range edges {
 			edges[j].ID = EdgeID(j + 1)
 			edgeJSON, _ := json.Marshal(&edges[j])
-			batch.Set(edgeKey(edges[j].ID), edgeJSON, nil)
-			batch.Set(adjOutKey(edges[j].From, edges[j].ID), encodeAdjValue(edges[j].To, edges[j].Label), nil)
-			batch.Set(adjInKey(edges[j].To, edges[j].ID), encodeAdjValue(edges[j].From, edges[j].Label), nil)
+			batch.put(edgeKey(edges[j].ID), edgeJSON)
+			batch.put(adjOutKey(edges[j].From, edges[j].ID), encodeAdjValue(edges[j].To, edges[j].Label))
+			batch.put(adjInKey(edges[j].To, edges[j].ID), encodeAdjValue(edges[j].From, edges[j].Label))
 		}
-		batch.Apply(batch, pebblev2.NoSync)
-		batch.Close()
+		batch.commit()
+		batch.close()
 	}
 }

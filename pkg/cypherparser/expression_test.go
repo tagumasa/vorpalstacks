@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 func ep(e Expression) *Expression { return &e }

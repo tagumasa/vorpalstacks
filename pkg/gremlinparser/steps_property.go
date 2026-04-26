@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // execHas filters traversers by property value, id, label, or predicate.

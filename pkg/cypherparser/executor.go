@@ -23,7 +23,7 @@ import (
 	"context"
 	"errors"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 var (

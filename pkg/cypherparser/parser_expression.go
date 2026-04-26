@@ -1060,6 +1060,67 @@ func (p *parser) parseDDLCreate() (*ParsedCypher, error) {
 	return nil, fmt.Errorf("cypher parser: expected INDEX or CONSTRAINT after CREATE")
 }
 
+func (p *parser) parseDDLDrop() (*ParsedCypher, error) {
+	if _, err := p.expect(tokDrop); err != nil {
+		return nil, err
+	}
+	if p.is(tokIndex) {
+		p.advance()
+		if p.is(tokOn) {
+			p.advance()
+		}
+		labelTok, err := p.expectIdentOrKeyword()
+		if err != nil {
+			return nil, fmt.Errorf("cypher parser: expected label name after DROP INDEX")
+		}
+		var propTok Token
+		if p.match(tokLParen) {
+			propTok, err = p.expectIdentOrKeyword()
+			if err != nil {
+				return nil, fmt.Errorf("cypher parser: expected property name")
+			}
+			if _, expectErr := p.expect(tokRParen); expectErr != nil {
+				return nil, fmt.Errorf("cypher parser: expected ')' after property name")
+			}
+		}
+		if !p.is(tokEOF) {
+			return nil, fmt.Errorf("cypher parser: unexpected token after DROP INDEX")
+		}
+		return &ParsedCypher{DDL: &DDLStatement{
+			Kind:     "DROP_INDEX",
+			Label:    labelTok.Text,
+			Property: propTok.Text,
+		}}, nil
+	}
+	if p.is(tokConstraint) {
+		p.advance()
+		p.match(tokOn)
+		labelTok, err := p.expectIdentOrKeyword()
+		if err != nil {
+			return nil, fmt.Errorf("cypher parser: expected label name after DROP CONSTRAINT")
+		}
+		if _, expectErr := p.expect(tokLParen); expectErr != nil {
+			return nil, fmt.Errorf("cypher parser: expected '(' after constraint label")
+		}
+		propTok, err := p.expectIdentOrKeyword()
+		if err != nil {
+			return nil, fmt.Errorf("cypher parser: expected property name")
+		}
+		if _, expectErr := p.expect(tokRParen); expectErr != nil {
+			return nil, fmt.Errorf("cypher parser: expected ')' after constraint property")
+		}
+		if !p.is(tokEOF) {
+			return nil, fmt.Errorf("cypher parser: unexpected token after DROP CONSTRAINT")
+		}
+		return &ParsedCypher{DDL: &DDLStatement{
+			Kind:     "DROP_CONSTRAINT",
+			Label:    labelTok.Text,
+			Property: propTok.Text,
+		}}, nil
+	}
+	return nil, fmt.Errorf("cypher parser: expected INDEX or CONSTRAINT after DROP")
+}
+
 func (p *parser) parseShow() (*ParsedCypher, error) {
 	if _, err := p.expect(tokShow); err != nil {
 		return nil, err

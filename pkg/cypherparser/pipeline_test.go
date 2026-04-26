@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 func setupSocialGraph(t *testing.T) *testGraph {

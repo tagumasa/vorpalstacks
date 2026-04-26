@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 func execTail(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {

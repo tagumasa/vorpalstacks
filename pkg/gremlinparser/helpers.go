@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // matchHasStep evaluates a has() step's arguments against a traverser.

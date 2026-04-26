@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"strings"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 func evalIn(left, right any) (any, error) {

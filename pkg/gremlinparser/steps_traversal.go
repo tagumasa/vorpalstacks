@@ -5,7 +5,7 @@ package gremlinparser
 import (
 	"fmt"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // execOut traverses outgoing edges to adjacent vertices, filtered by optional edge labels.

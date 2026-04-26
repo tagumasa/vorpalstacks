@@ -27,7 +27,7 @@ import (
 	"fmt"
 	"strings"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // PlanOperator identifies a type of operator in a query execution plan.

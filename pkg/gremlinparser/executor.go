@@ -17,7 +17,7 @@ import (
 	"context"
 	"fmt"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // Traverser carries an element through the traversal pipeline along with

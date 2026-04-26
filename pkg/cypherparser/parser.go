@@ -87,6 +87,10 @@ func Parse(input string) (*ParsedCypher, error) {
 		return p.parseShow()
 	}
 
+	if p.is(tokDrop) {
+		return p.parseDDLDrop()
+	}
+
 	if p.is(tokMerge) {
 		m, err := p.parseMergeQuery()
 		if err != nil {

@@ -2,18 +2,12 @@ package graphengine
 
 import (
 	"fmt"
-
-	"github.com/cockroachdb/pebble/v2"
 )
 
 func (d *DB) allocEdgeID() EdgeID {
 	return EdgeID(d.nextEdgeID.Add(1))
 }
 
-// AddEdge creates a directed edge from one node to another. Both source and
-// target nodes must exist; otherwise an error is returned. Three Pebble keys
-// are written atomically: the edge data, an outgoing adjacency entry, and an
-// incoming adjacency entry.
 func (d *DB) AddEdge(from, to NodeID, label string, props Props) (EdgeID, error) {
 	if d.closed.Load() {
 		return 0, fmt.Errorf("graphengine: database is closed")
@@ -40,8 +34,8 @@ func (d *DB) AddEdge(from, to NodeID, label string, props Props) (EdgeID, error)
 		Props: props,
 	}
 
-	batch := d.db.NewBatch()
-	defer batch.Close()
+	batch := d.backend.newBatch()
+	defer batch.close()
 
 	propsBytes := marshalProps(props)
 
@@ -49,14 +43,14 @@ func (d *DB) AddEdge(from, to NodeID, label string, props Props) (EdgeID, error)
 	if err != nil {
 		return 0, err
 	}
-	_ = batch.Set(edgeKey(id), edgeData, nil)
-	_ = batch.Set(adjOutKey(from, id), encodeAdjValue(to, label), nil)
-	_ = batch.Set(adjInKey(to, id), encodeAdjValue(from, label), nil)
+	batch.put(edgeKey(id), edgeData)
+	batch.put(adjOutKey(from, id), encodeAdjValue(to, label))
+	batch.put(adjInKey(to, id), encodeAdjValue(from, label))
 	if label != "" {
-		_ = batch.Set(idxEtypeKey(label, id), nil, nil)
+		batch.put(idxEtypeKey(label, id), nil)
 	}
 
-	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
+	if err := batch.commit(); err != nil {
 		return 0, fmt.Errorf("graphengine: failed to add edge: %w", err)
 	}
 
@@ -64,17 +58,14 @@ func (d *DB) AddEdge(from, to NodeID, label string, props Props) (EdgeID, error)
 	return id, nil
 }
 
-// AddEdgeBatch adds multiple edges in a single batch. Caller must ensure all
-// source and target nodes exist; no existence checks are performed to avoid
-// per-edge read overhead within the batch.
 func (d *DB) AddEdgeBatch(edges []Edge) ([]EdgeID, error) {
 	if d.closed.Load() {
 		return nil, fmt.Errorf("graphengine: database is closed")
 	}
 
 	ids := make([]EdgeID, len(edges))
-	batch := d.db.NewBatch()
-	defer batch.Close()
+	batch := d.backend.newBatch()
+	defer batch.close()
 
 	for i := range edges {
 		id := d.allocEdgeID()
@@ -89,15 +80,15 @@ func (d *DB) AddEdgeBatch(edges []Edge) ([]EdgeID, error) {
 		if err != nil {
 			return nil, err
 		}
-		_ = batch.Set(edgeKey(id), edgeData, nil)
-		_ = batch.Set(adjOutKey(edge.From, id), encodeAdjValue(edge.To, edge.Label), nil)
-		_ = batch.Set(adjInKey(edge.To, id), encodeAdjValue(edge.From, edge.Label), nil)
+		batch.put(edgeKey(id), edgeData)
+		batch.put(adjOutKey(edge.From, id), encodeAdjValue(edge.To, edge.Label))
+		batch.put(adjInKey(edge.To, id), encodeAdjValue(edge.From, edge.Label))
 		if edge.Label != "" {
-			_ = batch.Set(idxEtypeKey(edge.Label, id), nil, nil)
+			batch.put(idxEtypeKey(edge.Label, id), nil)
 		}
 	}
 
-	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
+	if err := batch.commit(); err != nil {
 		return nil, fmt.Errorf("graphengine: batch edge add failed: %w", err)
 	}
 
@@ -105,25 +96,22 @@ func (d *DB) AddEdgeBatch(edges []Edge) ([]EdgeID, error) {
 	return ids, nil
 }
 
-// GetEdge retrieves an edge by its ID. Returns an error if the edge does not exist.
 func (d *DB) GetEdge(id EdgeID) (*Edge, error) {
 	if d.closed.Load() {
 		return nil, fmt.Errorf("graphengine: database is closed")
 	}
 
-	val, closer, err := d.db.Get(edgeKey(id))
+	val, err := d.backend.get(edgeKey(id))
 	if err != nil {
-		if err == pebble.ErrNotFound {
-			return nil, fmt.Errorf("graphengine: edge %d not found", id)
-		}
 		return nil, fmt.Errorf("graphengine: failed to get edge %d: %w", id, err)
 	}
-	defer closer.Close()
+	if val == nil {
+		return nil, fmt.Errorf("graphengine: edge %d not found", id)
+	}
 
 	return decodeEdgeData(id, val)
 }
 
-// DeleteEdge removes an edge and its adjacency and index entries.
 func (d *DB) DeleteEdge(id EdgeID) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -134,17 +122,17 @@ func (d *DB) DeleteEdge(id EdgeID) error {
 		return err
 	}
 
-	batch := d.db.NewBatch()
-	defer batch.Close()
+	batch := d.backend.newBatch()
+	defer batch.close()
 
-	_ = batch.Delete(edgeKey(id), nil)
-	_ = batch.Delete(adjOutKey(edge.From, id), nil)
-	_ = batch.Delete(adjInKey(edge.To, id), nil)
+	batch.del(edgeKey(id))
+	batch.del(adjOutKey(edge.From, id))
+	batch.del(adjInKey(edge.To, id))
 	if edge.Label != "" {
-		_ = batch.Delete(idxEtypeKey(edge.Label, id), nil)
+		batch.del(idxEtypeKey(edge.Label, id))
 	}
 
-	if err := d.db.Apply(batch, pebble.NoSync); err != nil {
+	if err := batch.commit(); err != nil {
 		return fmt.Errorf("graphengine: failed to delete edge %d: %w", id, err)
 	}
 
@@ -152,28 +140,19 @@ func (d *DB) DeleteEdge(id EdgeID) error {
 	return nil
 }
 
-// getEdgesForNode retrieves edges for a node in the given direction. When
-// loadProps is false, only the peer node ID and label are populated (from the
-// adjacency value), avoiding N+1 GetEdge reads during traversals. When true,
-// the full edge data is loaded via a separate GetEdge call. When labelFilter
-// is non-empty, only edges with a matching label are returned. Self-loop
-// edges are deduplicated when dir is Both.
 func (d *DB) getEdgesForNode(id NodeID, dir Direction, loadProps bool, labelFilter string) ([]*Edge, error) {
 	var edges []*Edge
 	seenSelfLoops := make(map[EdgeID]bool)
 
 	if dir == Outgoing || dir == Both {
-		iter, err := d.db.NewIter(&pebble.IterOptions{
-			LowerBound: adjOutPrefixKey(id),
-			UpperBound: adjOutEndKey(id),
-		})
+		it, err := d.backend.newIter(adjOutPrefixKey(id), adjOutEndKey(id))
 		if err != nil {
 			return nil, fmt.Errorf("graphengine: failed to create iterator for outgoing edges of node %d: %w", id, err)
 		}
 
-		for iter.First(); iter.Valid(); iter.Next() {
-			_, edgeID := decodeAdjKey(iter.Key()[len(adjOutPrefix):])
-			targetID, label := decodeAdjValue(iter.Value())
+		for it.first(); it.valid(); it.next() {
+			_, edgeID := decodeAdjKey(it.key()[len(adjOutPrefix):])
+			targetID, label := decodeAdjValue(it.value())
 			if labelFilter != "" && label != labelFilter {
 				continue
 			}
@@ -184,34 +163,32 @@ func (d *DB) getEdgesForNode(id NodeID, dir Direction, loadProps bool, labelFilt
 			if loadProps {
 				full, err := d.GetEdge(edgeID)
 				if err != nil {
+					it.close()
 					return nil, fmt.Errorf("graphengine: failed to load edge %d props: %w", edgeID, err)
 				}
 				edge = full
 			}
 			edges = append(edges, edge)
 		}
-		if err := iter.Error(); err != nil {
-			iter.Close()
+		if err := it.err(); err != nil {
+			it.close()
 			return nil, fmt.Errorf("graphengine: outgoing edge iteration error for node %d: %w", id, err)
 		}
-		iter.Close()
+		it.close()
 	}
 
 	if dir == Incoming || dir == Both {
-		iter, err := d.db.NewIter(&pebble.IterOptions{
-			LowerBound: adjInPrefixKey(id),
-			UpperBound: adjInEndKey(id),
-		})
+		it, err := d.backend.newIter(adjInPrefixKey(id), adjInEndKey(id))
 		if err != nil {
 			return nil, fmt.Errorf("graphengine: failed to create iterator for incoming edges of node %d: %w", id, err)
 		}
 
-		for iter.First(); iter.Valid(); iter.Next() {
-			_, edgeID := decodeAdjKey(iter.Key()[len(adjInPrefix):])
+		for it.first(); it.valid(); it.next() {
+			_, edgeID := decodeAdjKey(it.key()[len(adjInPrefix):])
 			if dir == Both && seenSelfLoops[edgeID] {
 				continue
 			}
-			sourceID, label := decodeAdjValue(iter.Value())
+			sourceID, label := decodeAdjValue(it.value())
 			if labelFilter != "" && label != labelFilter {
 				continue
 			}
@@ -219,58 +196,47 @@ func (d *DB) getEdgesForNode(id NodeID, dir Direction, loadProps bool, labelFilt
 			if loadProps {
 				full, err := d.GetEdge(edgeID)
 				if err != nil {
+					it.close()
 					return nil, fmt.Errorf("graphengine: failed to load edge %d props: %w", edgeID, err)
 				}
 				edge = full
 			}
 			edges = append(edges, edge)
 		}
-		if err := iter.Error(); err != nil {
-			iter.Close()
+		if err := it.err(); err != nil {
+			it.close()
 			return nil, fmt.Errorf("graphengine: incoming edge iteration error for node %d: %w", id, err)
 		}
-		iter.Close()
+		it.close()
 	}
 
 	return edges, nil
 }
 
-// OutEdges returns all outgoing edges of the given node.
 func (d *DB) OutEdges(id NodeID) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Outgoing, true, "")
 }
 
-// InEdges returns all incoming edges of the given node.
 func (d *DB) InEdges(id NodeID) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Incoming, true, "")
 }
 
-// OutEdgesByLabel returns outgoing edges of the given node filtered by label.
 func (d *DB) OutEdgesByLabel(id NodeID, label string) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Outgoing, true, label)
 }
 
-// InEdgesByLabel returns incoming edges of the given node filtered by label.
 func (d *DB) InEdgesByLabel(id NodeID, label string) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Incoming, true, label)
 }
 
-// GetEdges returns edges of the given node in the specified direction, optionally filtered by label.
 func (d *DB) GetEdges(nodeID NodeID, dir Direction, labelFilter string) ([]*Edge, error) {
 	return d.getEdgesForNode(nodeID, dir, true, labelFilter)
 }
 
-// GetAdjacentNodes returns the deduplicated set of nodes adjacent to the
-// given node in the specified direction. For Both direction, outgoing edges
-// contribute their To node and incoming edges contribute their From node.
-// When labelFilter is non-empty, only edges with a matching label are
-// considered.
-// GetAdjacentNodes returns the deduplicated set of adjacent nodes in the specified direction.
 func (d *DB) GetAdjacentNodes(nodeID NodeID, dir Direction) ([]*Node, error) {
 	return d.getAdjacentNodesFiltered(nodeID, dir, "")
 }
 
-// GetAdjacentNodesByLabel returns adjacent nodes filtered by edge label.
 func (d *DB) GetAdjacentNodesByLabel(nodeID NodeID, dir Direction, label string) ([]*Node, error) {
 	return d.getAdjacentNodesFiltered(nodeID, dir, label)
 }

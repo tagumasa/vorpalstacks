@@ -15,7 +15,7 @@ import (
 	"vorpalstacks/internal/core/resilience"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // StartExportTask initiates a bulk export of graph data to the specified S3 destination.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 func setupTestDB(t *testing.T) (graphengine.GraphReader, graphengine.GraphWriter, func()) {
@@ -370,7 +370,7 @@ func TestWrite_MatchDeleteWithEdges(t *testing.T) {
 		t.Fatalf("execute seed: %v", err)
 	}
 
-	parsed, err := Parse(`MATCH (n:Person {name: "Alice"}) DELETE n`)
+	parsed, err := Parse(`MATCH (n:Person {name: "Alice"}) DETACH DELETE n`)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -385,6 +385,30 @@ func TestWrite_MatchDeleteWithEdges(t *testing.T) {
 	}
 	if r.Stats().NodeCount != 1 {
 		t.Fatalf("expected 1 node (Bob) remaining, got %d", r.Stats().NodeCount)
+	}
+}
+
+func TestWrite_DeleteNodeWithEdgesFails(t *testing.T) {
+	r, w, close := setupTestDB(t)
+	defer close()
+
+	seedParsed, err := Parse(`CREATE (a:Person {name: "Alice"})-[:KNOWS]->(b:Person {name: "Bob"})`)
+	if err != nil {
+		t.Fatalf("parse seed: %v", err)
+	}
+	_, err = ExecuteWrite(context.Background(), r, w, seedParsed.Write, nil)
+	if err != nil {
+		t.Fatalf("execute seed: %v", err)
+	}
+
+	parsed, err := Parse(`MATCH (n:Person {name: "Alice"}) DELETE n`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	_, err = ExecuteQueryWrite(context.Background(), r, w, parsed.Read, nil)
+	if err == nil {
+		t.Fatalf("expected error when deleting node with edges without DETACH")
 	}
 }
 

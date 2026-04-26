@@ -14,7 +14,7 @@ import (
 	"vorpalstacks/internal/core/logs"
 	chihttp "vorpalstacks/internal/server/http"
 	"vorpalstacks/internal/server/listener"
-	"vorpalstacks/pkg/graphengine"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
 
 // Config holds all configuration for service initialisation and wiring.
