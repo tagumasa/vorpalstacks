@@ -2,7 +2,6 @@ package sqs
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -240,9 +239,9 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 				valid = true
 			}
 		case "RedrivePolicy":
-			var rdp RedrivePolicy
-			if err := json.Unmarshal([]byte(v), &rdp); err == nil {
-				queue.RedrivePolicy = &rdp
+			rdp, err := ParseRedrivePolicy(v)
+			if err == nil {
+				queue.RedrivePolicy = rdp
 				valid = true
 			}
 		default:

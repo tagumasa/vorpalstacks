@@ -115,6 +115,15 @@ message SSEObjectMetadata {
   string encryption_context = 5;
   string unencrypted_md5 = 6;
   int64 unencrypted_size = 7;
+  repeated PartEncryptionInfo part_encryption_infos = 8;
+}
+
+// PartEncryptionInfo stores per-part encryption metadata for multipart uploads.
+message PartEncryptionInfo {
+  int64 encrypted_size = 1;
+  int64 plain_size = 2;
+  bytes content_nonce = 3;
+  bytes data_key = 4;
 }
 
 // ObjectLockLegalHold represents the legal hold status for an S3 object.

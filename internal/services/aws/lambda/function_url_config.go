@@ -31,7 +31,7 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 		Qualifier:  qualifier,
 	}
 
-	if corsMap := request.GetMapParam(req.Parameters, "CorsConfiguration"); corsMap != nil {
+	if corsMap := request.GetMapParam(req.Parameters, "Cors"); corsMap != nil {
 		config.Cors = parseCorsConfig(corsMap)
 	}
 
@@ -58,7 +58,7 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 		result["Qualifier"] = config.Qualifier
 	}
 	if config.Cors != nil {
-		result["CorsConfiguration"] = toCorsConfig(config.Cors)
+		result["Cors"] = toCorsConfig(config.Cors)
 	}
 
 	return result, nil
@@ -117,7 +117,7 @@ func (s *LambdaService) UpdateFunctionUrlConfig(ctx context.Context, reqCtx *req
 	if invokeMode := request.GetStringParam(req.Parameters, "InvokeMode"); invokeMode != "" {
 		function.UrlConfig.InvokeMode = invokeMode
 	}
-	if corsMap := request.GetMapParam(req.Parameters, "CorsConfiguration"); corsMap != nil {
+	if corsMap := request.GetMapParam(req.Parameters, "Cors"); corsMap != nil {
 		if function.UrlConfig.Cors == nil {
 			function.UrlConfig.Cors = &lambdastore.CorsConfig{}
 		}
@@ -182,7 +182,7 @@ func (s *LambdaService) toFunctionUrlConfig(c *lambdastore.FunctionUrlConfig) ma
 	}
 
 	if c.Cors != nil {
-		result["CorsConfiguration"] = toCorsConfig(c.Cors)
+		result["Cors"] = toCorsConfig(c.Cors)
 	}
 
 	return result

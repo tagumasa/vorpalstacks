@@ -43,7 +43,7 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 	wg, err := st.workGroupStore.GetWorkGroup(workGroup)
 	if err != nil {
 		if err == athenastore.ErrWorkGroupNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, workGroupNotFound(workGroup)
 		}
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (s *AthenaService) GetQueryExecution(ctx context.Context, reqCtx *request.R
 	queryExecution, err := st.queryExecutionStore.GetQueryExecution(queryExecutionId)
 	if err != nil {
 		if err == athenastore.ErrQueryExecutionNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, queryExecutionNotFound(queryExecutionId)
 		}
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (s *AthenaService) StopQueryExecution(ctx context.Context, reqCtx *request.
 	queryExecution, err := st.queryExecutionStore.GetQueryExecution(queryExecutionId)
 	if err != nil {
 		if err == athenastore.ErrQueryExecutionNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, queryExecutionNotFound(queryExecutionId)
 		}
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.Req
 	queryExecution, err := st.queryExecutionStore.GetQueryExecution(queryExecutionId)
 	if err != nil {
 		if err == athenastore.ErrQueryExecutionNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, queryExecutionNotFound(queryExecutionId)
 		}
 		return nil, err
 	}
@@ -324,7 +324,6 @@ func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.Req
 				"ResultSetMetadata": map[string]interface{}{"ColumnInfo": []interface{}{}},
 			},
 			"QueryExecutionId": queryExecutionId,
-			"NextToken":        "",
 		}, nil
 	}
 
@@ -370,7 +369,7 @@ func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.Req
 		}
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"UpdateCount": 0,
 		"ResultSet": map[string]interface{}{
 			"Rows": rows,
@@ -379,8 +378,11 @@ func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.Req
 			},
 		},
 		"QueryExecutionId": queryExecutionId,
-		"NextToken":        responseNextToken,
-	}, nil
+	}
+	if responseNextToken != "" {
+		resp["NextToken"] = responseNextToken
+	}
+	return resp, nil
 }
 
 // GetQueryRuntimeStatistics retrieves runtime statistics for a query execution.
@@ -398,7 +400,7 @@ func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *r
 	queryExecution, err := st.queryExecutionStore.GetQueryExecution(queryExecutionId)
 	if err != nil {
 		if err == athenastore.ErrQueryExecutionNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, queryExecutionNotFound(queryExecutionId)
 		}
 		return nil, err
 	}

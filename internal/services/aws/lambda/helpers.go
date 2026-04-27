@@ -43,7 +43,7 @@ func isValidLayerARN(arnStr string) bool {
 	if resource == "" {
 		return false
 	}
-	return strings.HasPrefix(resource, "layer/")
+	return strings.HasPrefix(resource, "layer:")
 }
 
 func validateTimeout(timeout int32) error {

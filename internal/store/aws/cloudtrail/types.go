@@ -3,6 +3,7 @@ package cloudtrail
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -181,11 +182,12 @@ func NewTrail(name, s3BucketName, region string) *Trail {
 
 // NewEvent creates a new CloudTrail event.
 func NewEvent(eventName, eventSource string, userIdentity *UserIdentity) *Event {
+	now := time.Now().UTC()
 	return &Event{
 		EventID:      generateEventID(),
 		EventName:    eventName,
 		EventSource:  eventSource,
-		EventTime:    time.Now().UTC(),
+		EventTime:    now,
 		EventType:    "AwsApiCall",
 		EventVersion: "1.08",
 		UserIdentity: userIdentity,
@@ -211,4 +213,19 @@ func NewReadOnlyEvent(eventName, eventSource string, userIdentity *UserIdentity)
 
 func generateEventID() string {
 	return uuid.NewString()
+}
+
+// generateCloudTrailEvent populates the CloudTrailEvent field with a JSON
+// representation of the event, matching the AWS API response format.
+func (e *Event) generateCloudTrailEvent() {
+	if e.CloudTrailEvent != "" {
+		return
+	}
+	clone := *e
+	clone.CloudTrailEvent = ""
+	b, err := json.Marshal(clone)
+	if err != nil {
+		return
+	}
+	e.CloudTrailEvent = string(b)
 }

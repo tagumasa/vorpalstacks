@@ -237,6 +237,18 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 				fn.TracingConfig.Mode = mode
 			}
 		}
+
+		if layers, ok := req.Parameters["Layers"].([]interface{}); ok {
+			fn.Layers = make([]lambdastore.LayerReference, 0, len(layers))
+			for _, l := range layers {
+				if ls, ok := l.(string); ok {
+					if !isValidLayerARN(ls) {
+						return NewInvalidParameter("Layers", "Invalid layer ARN format: "+ls)
+					}
+					fn.Layers = append(fn.Layers, lambdastore.LayerReference{Arn: ls})
+				}
+			}
+		}
 		return nil
 	})
 	if err != nil {

@@ -49,6 +49,7 @@ message DBCluster {
   ServerlessV2ScalingConfiguration serverless_v2_scaling_configuration = 29;
   string account_id = 30;
   string region = 31;
+  string db_cluster_arn = 32;
 }
 
 message DBInstance {
@@ -72,6 +73,7 @@ message DBInstance {
   bool copy_tags_to_snapshot = 18;
   string account_id = 19;
   string region = 20;
+  string db_instance_arn = 21;
 }
 
 message DBClusterSnapshot {

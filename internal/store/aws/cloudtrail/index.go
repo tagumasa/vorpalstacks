@@ -32,7 +32,9 @@ type EventIndexKey struct {
 	EventID   string
 }
 
-// EncodePrefix encodes the index key as a prefix string.
+// EncodePrefix encodes the index key as a bucket prefix string.
+// Segment2 (timestamp) is intentionally excluded from the bucket name so that
+// queries using only Segment1 resolve to the same bucket as writes.
 func (k *EventIndexKey) EncodePrefix() string {
 	var prefix string
 	switch k.IndexType {
@@ -44,9 +46,6 @@ func (k *EventIndexKey) EncodePrefix() string {
 		prefix = "ct_idx_user"
 	case IndexByEventSource:
 		prefix = "ct_idx_source"
-	}
-	if k.Segment2 != "" {
-		return fmt.Sprintf("%s:%s:%s:%s:%s", prefix, k.AccountID, k.Region, k.Segment1, k.Segment2)
 	}
 	if k.Segment1 != "" {
 		return fmt.Sprintf("%s:%s:%s:%s", prefix, k.AccountID, k.Region, k.Segment1)
@@ -191,12 +190,12 @@ func (m *EventIndexManager) RemoveIndex(event *Event) error {
 
 func (m *EventIndexManager) putIndex(key *EventIndexKey) error {
 	bucket := m.storage.Bucket(key.EncodePrefix())
-	return bucket.Put([]byte(key.EventID), []byte{1})
+	return bucket.Put(indexStorageKey(key), []byte{1})
 }
 
 func (m *EventIndexManager) deleteIndex(key *EventIndexKey) error {
 	bucket := m.storage.Bucket(key.EncodePrefix())
-	return bucket.Delete([]byte(key.EventID))
+	return bucket.Delete(indexStorageKey(key))
 }
 
 // QueryByTime queries events by time range.
@@ -399,5 +398,15 @@ func (m *EventIndexManager) AddIndexInTxn(txn storage.Transaction, event *Event)
 
 func (m *EventIndexManager) putIndexInTxn(txn storage.Transaction, key *EventIndexKey) error {
 	bucket := txn.Bucket(key.EncodePrefix())
-	return bucket.Put([]byte(key.EventID), []byte{1})
+	return bucket.Put(indexStorageKey(key), []byte{1})
+}
+
+// indexStorageKey returns the storage key for an index entry.
+// When Segment2 (timestamp) is present, it is prepended to the EventID
+// to maintain time-ordered iteration within the bucket.
+func indexStorageKey(key *EventIndexKey) []byte {
+	if key.Segment2 != "" {
+		return []byte(key.Segment2 + ":" + key.EventID)
+	}
+	return []byte(key.EventID)
 }

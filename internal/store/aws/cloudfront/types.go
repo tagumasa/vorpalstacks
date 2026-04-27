@@ -227,16 +227,16 @@ type CachePolicyConfig struct {
 	DefaultTTL                               int64                 `json:"defaultTTL"`
 	MaxTTL                                   int64                 `json:"maxTTL"`
 	MinTTL                                   int64                 `json:"minTTL"`
-	ParametersInCacheKeyParametersInCacheKey *ParametersInCacheKey `json:"parametersInCacheKey"`
+	ParametersInCacheKeyParametersInCacheKey *ParametersInCacheKey `json:"ParametersInCacheKeyAndForwardedToOrigin"`
 }
 
 // ParametersInCacheKey specifies the parameters in the cache key that CloudFront uses to cache objects.
 type ParametersInCacheKey struct {
 	EnableAcceptEncodingGzip   bool               `json:"enableAcceptEncodingGzip"`
 	EnableAcceptEncodingBrotli bool               `json:"enableAcceptEncodingBrotli"`
-	QueryStringConfig          *QueryStringConfig `json:"queryStringConfig"`
-	CookieConfig               *CookieConfig      `json:"cookieConfig"`
-	HeaderConfig               *HeaderConfig      `json:"headerConfig"`
+	QueryStringsConfig         *QueryStringConfig `json:"queryStringsConfig"`
+	CookiesConfig              *CookieConfig      `json:"cookiesConfig"`
+	HeadersConfig              *HeaderConfig      `json:"headersConfig"`
 }
 
 // QueryStringConfig specifies the query string parameters included in the cache key.

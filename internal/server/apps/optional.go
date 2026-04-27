@@ -81,6 +81,7 @@ func (a *App) initOptionalServices() error {
 	}
 
 	a.initCloudTrailRecorderFactory(st)
+	a.injectS3AuditRecorder(st)
 	return nil
 }
 
@@ -488,7 +489,10 @@ func (a *App) initCloudTrailRecorderFactory(st *serviceState) {
 		if err != nil {
 			return nil
 		}
-		ctStore := cloudtrailstore.NewCloudTrailStore(regionalStorage, accountID, region)
+		ctStore := st.cloudTrailService.GetEventStore(regionalStorage, region)
+		if ctStore == nil {
+			return nil
+		}
 		return audit.NewCloudTrailRecorder(&cloudTrailStoreAdapter{store: ctStore})
 	})
 }
@@ -513,4 +517,24 @@ func (a *cloudTrailStoreAdapter) RecordServiceEvent(eventName, eventSource strin
 
 func (a *App) registerListener(cfg listener.ListenerConfig) {
 	a.lm.Register(cfg)
+}
+
+// injectS3AuditRecorder creates a CloudTrail audit recorder for the S3 handler.
+// This is needed because S3 bypasses the Dispatcher and handles requests via ServeHTTP.
+func (a *App) injectS3AuditRecorder(st *serviceState) {
+	if a.server.S3Handler() == nil || st.cloudTrailService == nil {
+		return
+	}
+	regionalStorage, err := a.server.StorageManager().GetStorage(st.region)
+	if err != nil {
+		return
+	}
+	ctStore := st.cloudTrailService.GetEventStore(regionalStorage, st.region)
+	if ctStore == nil {
+		return
+	}
+	recorder := audit.NewCloudTrailRecorder(&cloudTrailStoreAdapter{store: ctStore})
+	if handler, ok := a.server.S3Handler().(*svcs3.S3Handler); ok {
+		handler.SetAuditRecorder(recorder)
+	}
 }

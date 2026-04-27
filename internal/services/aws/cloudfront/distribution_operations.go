@@ -363,6 +363,8 @@ func parseAliases(m map[string]interface{}) *cloudfrontstore.Aliases {
 				aliases.Items = append(aliases.Items, s)
 			}
 		}
+	} else if itemsMap, ok := m["Items"].(map[string]interface{}); ok {
+		xmlStringItemsToSlice(itemsMap, "CNAME", &aliases.Items)
 	}
 	if len(aliases.Items) > 0 && aliases.Quantity == 0 {
 		aliases.Quantity = len(aliases.Items)
@@ -509,6 +511,18 @@ func xmlItemsToSlice(items interface{}, elemName string) []map[string]interface{
 		}
 	}
 	return nil
+}
+
+func xmlStringItemsToSlice(itemsMap map[string]interface{}, elemName string, out *[]string) {
+	if arr, ok := itemsMap[elemName].([]interface{}); ok {
+		for _, v := range arr {
+			if s, ok := v.(string); ok {
+				*out = append(*out, s)
+			}
+		}
+	} else if s, ok := itemsMap[elemName].(string); ok {
+		*out = append(*out, s)
+	}
 }
 
 func parseOrigins(originsMap map[string]interface{}) cloudfrontstore.Origins {

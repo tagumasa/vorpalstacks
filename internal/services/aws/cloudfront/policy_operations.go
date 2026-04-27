@@ -30,11 +30,12 @@ func (s *CloudFrontService) CreateCachePolicy(ctx context.Context, reqCtx *reque
 	}
 
 	config := &cloudfrontstore.CachePolicyConfig{
-		Name:       name,
-		Comment:    request.GetStringParam(configMap, "Comment"),
-		DefaultTTL: int64(request.GetIntParam(configMap, "DefaultTTL")),
-		MaxTTL:     int64(request.GetIntParam(configMap, "MaxTTL")),
-		MinTTL:     int64(request.GetIntParam(configMap, "MinTTL")),
+		Name:                                     name,
+		Comment:                                  request.GetStringParam(configMap, "Comment"),
+		DefaultTTL:                               int64(request.GetIntParam(configMap, "DefaultTTL")),
+		MaxTTL:                                   int64(request.GetIntParam(configMap, "MaxTTL")),
+		MinTTL:                                   int64(request.GetIntParam(configMap, "MinTTL")),
+		ParametersInCacheKeyParametersInCacheKey: parseParametersInCacheKey(request.GetMapParam(configMap, "ParametersInCacheKeyAndForwardedToOrigin")),
 	}
 
 	store, err := s.store(reqCtx)
@@ -47,6 +48,7 @@ func (s *CloudFrontService) CreateCachePolicy(ctx context.Context, reqCtx *reque
 	}
 
 	return map[string]interface{}{
+		"ETag": cachePolicy.ETag,
 		"CachePolicy": map[string]interface{}{
 			"Id":                cachePolicy.ID,
 			"ARN":               cachePolicy.ARN,
@@ -78,6 +80,7 @@ func (s *CloudFrontService) GetCachePolicy(ctx context.Context, reqCtx *request.
 	}
 
 	return map[string]interface{}{
+		"ETag": cachePolicy.ETag,
 		"CachePolicy": map[string]interface{}{
 			"Id":                cachePolicy.ID,
 			"ARN":               cachePolicy.ARN,
@@ -257,8 +260,11 @@ func (s *CloudFrontService) CreateOriginRequestPolicy(ctx context.Context, reqCt
 	}
 
 	config := &cloudfrontstore.OriginRequestPolicyConfig{
-		Name:    name,
-		Comment: request.GetStringParam(configMap, "Comment"),
+		Name:               name,
+		Comment:            request.GetStringParam(configMap, "Comment"),
+		CookiesConfig:      parseCookiesConfig(request.GetMapParam(configMap, "CookiesConfig")),
+		HeadersConfig:      parseORPHeadersConfig(request.GetMapParam(configMap, "HeadersConfig")),
+		QueryStringsConfig: parseORPQueryStringsConfig(request.GetMapParam(configMap, "QueryStringsConfig")),
 	}
 
 	store, err := s.store(reqCtx)
@@ -271,6 +277,7 @@ func (s *CloudFrontService) CreateOriginRequestPolicy(ctx context.Context, reqCt
 	}
 
 	return map[string]interface{}{
+		"ETag": policy.ETag,
 		"OriginRequestPolicy": map[string]interface{}{
 			"Id":                        policy.ID,
 			"ARN":                       policy.ARN,
@@ -302,6 +309,7 @@ func (s *CloudFrontService) GetOriginRequestPolicy(ctx context.Context, reqCtx *
 	}
 
 	return map[string]interface{}{
+		"ETag": policy.ETag,
 		"OriginRequestPolicy": map[string]interface{}{
 			"Id":                        policy.ID,
 			"ARN":                       policy.ARN,
@@ -654,4 +662,136 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 	}
 
 	return response.EmptyResponse(), nil
+}
+
+func parseParametersInCacheKey(m map[string]interface{}) *cloudfrontstore.ParametersInCacheKey {
+	if m == nil {
+		return nil
+	}
+	return &cloudfrontstore.ParametersInCacheKey{
+		EnableAcceptEncodingGzip:   request.GetBoolParam(m, "EnableAcceptEncodingGzip"),
+		EnableAcceptEncodingBrotli: request.GetBoolParam(m, "EnableAcceptEncodingBrotli"),
+		QueryStringsConfig:         parseCachePolicyQueryStringConfig(request.GetMapParam(m, "QueryStringsConfig")),
+		CookiesConfig:              parseCachePolicyCookieConfig(request.GetMapParam(m, "CookiesConfig")),
+		HeadersConfig:              parseCachePolicyHeaderConfig(request.GetMapParam(m, "HeadersConfig")),
+	}
+}
+
+func parseCachePolicyQueryStringConfig(m map[string]interface{}) *cloudfrontstore.QueryStringConfig {
+	if m == nil {
+		return nil
+	}
+	cfg := &cloudfrontstore.QueryStringConfig{
+		QueryStringBehavior: request.GetStringParam(m, "QueryStringBehavior"),
+	}
+	if qsMap := request.GetMapParam(m, "QueryStrings"); qsMap != nil {
+		cfg.QueryStrings = &cloudfrontstore.QueryStrings{
+			Quantity: request.GetIntParam(qsMap, "Quantity"),
+		}
+		parseStringItems(qsMap, "Items", &cfg.QueryStrings.Items)
+	}
+	return cfg
+}
+
+func parseCachePolicyCookieConfig(m map[string]interface{}) *cloudfrontstore.CookieConfig {
+	if m == nil {
+		return nil
+	}
+	cfg := &cloudfrontstore.CookieConfig{
+		CookieBehavior: request.GetStringParam(m, "CookieBehavior"),
+	}
+	if cMap := request.GetMapParam(m, "Cookies"); cMap != nil {
+		cfg.Cookies = &cloudfrontstore.Cookies{
+			Quantity: request.GetIntParam(cMap, "Quantity"),
+		}
+		parseStringItems(cMap, "Items", &cfg.Cookies.Items)
+	}
+	return cfg
+}
+
+func parseCachePolicyHeaderConfig(m map[string]interface{}) *cloudfrontstore.HeaderConfig {
+	if m == nil {
+		return nil
+	}
+	cfg := &cloudfrontstore.HeaderConfig{
+		HeaderBehavior: request.GetStringParam(m, "HeaderBehavior"),
+	}
+	if hMap := request.GetMapParam(m, "Headers"); hMap != nil {
+		cfg.Headers = &cloudfrontstore.Headers{
+			Quantity: request.GetIntParam(hMap, "Quantity"),
+		}
+		parseStringItems(hMap, "Items", &cfg.Headers.Items)
+	}
+	return cfg
+}
+
+func parseCookiesConfig(m map[string]interface{}) *cloudfrontstore.CookiesConfig {
+	if m == nil {
+		return nil
+	}
+	cfg := &cloudfrontstore.CookiesConfig{
+		CookieBehavior: request.GetStringParam(m, "CookieBehavior"),
+	}
+	if cMap := request.GetMapParam(m, "Cookies"); cMap != nil {
+		cfg.Cookies = &cloudfrontstore.Cookies{
+			Quantity: request.GetIntParam(cMap, "Quantity"),
+		}
+		parseStringItems(cMap, "Items", &cfg.Cookies.Items)
+	}
+	return cfg
+}
+
+func parseORPHeadersConfig(m map[string]interface{}) *cloudfrontstore.HeadersConfig {
+	if m == nil {
+		return nil
+	}
+	cfg := &cloudfrontstore.HeadersConfig{
+		HeaderBehavior: request.GetStringParam(m, "HeaderBehavior"),
+	}
+	if hMap := request.GetMapParam(m, "Headers"); hMap != nil {
+		cfg.Headers = &cloudfrontstore.Headers{
+			Quantity: request.GetIntParam(hMap, "Quantity"),
+		}
+		parseStringItems(hMap, "Items", &cfg.Headers.Items)
+	}
+	return cfg
+}
+
+func parseORPQueryStringsConfig(m map[string]interface{}) *cloudfrontstore.QueryStringsConfig {
+	if m == nil {
+		return nil
+	}
+	cfg := &cloudfrontstore.QueryStringsConfig{
+		QueryStringBehavior: request.GetStringParam(m, "QueryStringBehavior"),
+	}
+	if qsMap := request.GetMapParam(m, "QueryStrings"); qsMap != nil {
+		cfg.QueryStrings = &cloudfrontstore.QueryStrings{
+			Quantity: request.GetIntParam(qsMap, "Quantity"),
+		}
+		parseStringItems(qsMap, "Items", &cfg.QueryStrings.Items)
+	}
+	return cfg
+}
+
+func parseStringItems(m map[string]interface{}, key string, out *[]string) {
+	switch v := m[key].(type) {
+	case []interface{}:
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				*out = append(*out, s)
+			}
+		}
+	case map[string]interface{}:
+		for _, val := range v {
+			if arr, ok := val.([]interface{}); ok {
+				for _, item := range arr {
+					if s, ok := item.(string); ok {
+						*out = append(*out, s)
+					}
+				}
+			} else if s, ok := val.(string); ok {
+				*out = append(*out, s)
+			}
+		}
+	}
 }

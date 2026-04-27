@@ -49,5 +49,5 @@ func (b *ARNBuilder) BuildNoAccount(service, resource string) string {
 
 // BuildGlobal constructs a global ARN (without region) for the given service and resource.
 func (b *ARNBuilder) BuildGlobal(service, resource string) string {
-	return "arn:" + b.partition + ":" + service + ":::" + resource
+	return "arn:" + b.partition + ":" + service + "::" + b.accountID + ":" + resource
 }

@@ -466,6 +466,10 @@ func (s *SQSService) ReceiveMessage(ctx context.Context, reqCtx *request.Request
 		messageList = append(messageList, msgMap)
 	}
 
+	if len(messageList) == 0 {
+		return map[string]interface{}{}, nil
+	}
+
 	return map[string]interface{}{
 		"Messages": messageList,
 	}, nil

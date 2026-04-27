@@ -205,7 +205,11 @@ func (s *AthenaService) executeSQLQuery(reqCtx *request.RequestContext, ctx cont
 
 	tableName, err := s.extractTableName(selectStmt)
 	if err != nil {
-		return nil, nil, err
+		return s.executeSelectWithoutFrom(selectStmt, startTime)
+	}
+
+	if tableName == "dual" {
+		return s.executeSelectWithoutFrom(selectStmt, startTime)
 	}
 
 	tableData, err := s.getTableData(reqCtx, catalog, database, tableName)
@@ -288,6 +292,64 @@ func (s *AthenaService) getTableData(reqCtx *request.RequestContext, catalog, da
 	}
 
 	return stores.tableDataStore.GetTableData(catalog, database, tableName)
+}
+
+// executeSelectWithoutFrom handles SELECT statements without a FROM clause (e.g. SELECT 1, SELECT 1+2).
+func (s *AthenaService) executeSelectWithoutFrom(selectStmt *sqlparser.Select, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
+	var columns []athenastore.ColumnInfo
+	var headerData []athenastore.Datum
+	var rowData []athenastore.Datum
+
+	for _, expr := range selectStmt.SelectExprs {
+		aliased, ok := expr.(*sqlparser.AliasedExpr)
+		if !ok {
+			continue
+		}
+
+		colName := s.extractColumnName(aliased.Expr)
+		outputName := colName
+		if !aliased.As.IsEmpty() {
+			outputName = aliased.As.String()
+		}
+		if outputName == "" {
+			outputName = "_col0"
+		}
+
+		columns = append(columns, athenastore.ColumnInfo{
+			Name:  outputName,
+			Label: outputName,
+			Type:  "integer",
+		})
+		headerData = append(headerData, athenastore.Datum{VarCharValue: outputName})
+
+		val := s.evaluateExpr(aliased.Expr)
+		rowData = append(rowData, athenastore.Datum{VarCharValue: val})
+	}
+
+	rows := []athenastore.Row{
+		{Data: headerData},
+		{Data: rowData},
+	}
+
+	return &athenastore.ResultSet{
+			Rows:              rows,
+			ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: columns},
+		}, &athenastore.QueryExecutionStatistics{
+			QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
+			DataScannedInBytes:        0,
+		}, nil
+}
+
+// evaluateExpr evaluates a simple SQL expression to a string value.
+func (s *AthenaService) evaluateExpr(expr sqlparser.Expr) string {
+	switch e := expr.(type) {
+	case *sqlparser.SQLVal:
+		return string(e.Val)
+	case *sqlparser.ColName:
+		return e.Name.String()
+	default:
+		return sqlparser.String(expr)
+	}
 }
 
 func (s *AthenaService) extractTableName(selectStmt *sqlparser.Select) (string, error) {

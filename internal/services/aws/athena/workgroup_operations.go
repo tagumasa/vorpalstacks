@@ -108,7 +108,7 @@ func (s *AthenaService) GetWorkGroup(ctx context.Context, reqCtx *request.Reques
 	workGroup, err := stores.workGroupStore.GetWorkGroup(name)
 	if err != nil {
 		if err == athenastore.ErrWorkGroupNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, workGroupNotFound(name)
 		}
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (s *AthenaService) UpdateWorkGroup(ctx context.Context, reqCtx *request.Req
 	workGroup, err := stores.workGroupStore.GetWorkGroup(name)
 	if err != nil {
 		if err == athenastore.ErrWorkGroupNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, workGroupNotFound(name)
 		}
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (s *AthenaService) DeleteWorkGroup(ctx context.Context, reqCtx *request.Req
 	}
 	if err := stores.workGroupStore.DeleteWorkGroup(name); err != nil {
 		if err == athenastore.ErrWorkGroupNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, workGroupNotFound(name)
 		}
 		return nil, err
 	}
@@ -241,12 +241,12 @@ func (s *AthenaService) validateResourceExists(stores *athenaStores, resourceTyp
 	case "workgroup":
 		_, err := stores.workGroupStore.GetWorkGroup(resourceName)
 		if err != nil {
-			return ErrResourceNotFoundException
+			return workGroupNotFound(resourceName)
 		}
 	case "datacatalog":
 		_, err := stores.dataCatalogStore.GetDataCatalog(resourceName)
 		if err != nil {
-			return ErrResourceNotFoundException
+			return dataCatalogNotFound(resourceName)
 		}
 	default:
 		return ErrInvalidRequestException
@@ -371,8 +371,7 @@ func (s *AthenaService) ListTagsForResource(ctx context.Context, reqCtx *request
 	}
 
 	return map[string]interface{}{
-		"Tags":      tagutil.MapToResponse(tags),
-		"NextToken": "",
+		"Tags": tagutil.MapToResponse(tags),
 	}, nil
 }
 

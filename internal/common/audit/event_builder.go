@@ -34,6 +34,12 @@ var serviceToEventSource = map[string]string{
 	"ses":              "email.amazonaws.com",
 	"sesv2":            "email.amazonaws.com",
 	"timestream-query": "timestream.amazonaws.com",
+	"neptune":          "rds.amazonaws.com",
+	"neptunedata":      "rds.amazonaws.com",
+	"neptunegraph":     "neptune-graph.amazonaws.com",
+	"appsync":          "appsync.amazonaws.com",
+	"wafv2":            "wafv2.amazonaws.com",
+	"ec2":              "ec2.amazonaws.com",
 }
 
 // GetEventSource returns the event source for a given service name.

@@ -3,6 +3,8 @@ package sqs
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
+	"strconv"
 	"time"
 )
 
@@ -40,6 +42,40 @@ type Permission struct {
 type RedrivePolicy struct {
 	DeadLetterTargetARN string `json:"deadLetterTargetArn"`
 	MaxReceiveCount     int32  `json:"maxReceiveCount"`
+}
+
+// ParseRedrivePolicy parses a RedrivePolicy JSON string, accepting both
+// string and integer formats for maxReceiveCount per AWS convention.
+func ParseRedrivePolicy(data string) (*RedrivePolicy, error) {
+	var raw struct {
+		DeadLetterTargetARN string          `json:"deadLetterTargetArn"`
+		MaxReceiveCount     json.RawMessage `json:"maxReceiveCount"`
+	}
+	if err := json.Unmarshal([]byte(data), &raw); err != nil {
+		return nil, err
+	}
+	var count int32
+	if len(raw.MaxReceiveCount) > 0 {
+		trimmed := string(raw.MaxReceiveCount)
+		if trimmed[0] == '"' {
+			unquoted := trimmed[1 : len(trimmed)-1]
+			v, err := strconv.ParseInt(unquoted, 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			count = int32(v)
+		} else {
+			v, err := strconv.ParseInt(trimmed, 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			count = int32(v)
+		}
+	}
+	return &RedrivePolicy{
+		DeadLetterTargetARN: raw.DeadLetterTargetARN,
+		MaxReceiveCount:     count,
+	}, nil
 }
 
 // Message represents an SQS message.

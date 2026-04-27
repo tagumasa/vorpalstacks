@@ -58,7 +58,7 @@ func (s *AthenaService) extractTableNameFromDrop(query string) string {
 	return ""
 }
 
-func (s *AthenaService) parseCreateTableStatement(query string) (string, []athenastore.Column) {
+func (s *AthenaService) parseCreateTableStatement(query string) (string, string, []athenastore.Column) {
 	upperQuery := strings.ToUpper(query)
 
 	createIdx := strings.Index(upperQuery, "CREATE EXTERNAL TABLE")
@@ -69,14 +69,14 @@ func (s *AthenaService) parseCreateTableStatement(query string) (string, []athen
 
 	createIdx = strings.Index(upperQuery, "CREATE TABLE")
 	if createIdx == -1 {
-		return "", nil
+		return "", "", nil
 	}
 
 	rest := query[createIdx+len("CREATE TABLE"):]
 	return s.parseCreateTableRest(rest)
 }
 
-func (s *AthenaService) parseCreateTableRest(rest string) (string, []athenastore.Column) {
+func (s *AthenaService) parseCreateTableRest(rest string) (string, string, []athenastore.Column) {
 	rest = strings.TrimSpace(rest)
 
 	if strings.HasPrefix(strings.ToUpper(rest), "IF NOT EXISTS") {
@@ -85,17 +85,21 @@ func (s *AthenaService) parseCreateTableRest(rest string) (string, []athenastore
 
 	var tableName string
 	if strings.HasPrefix(rest, "(") {
-		return "", nil
+		return "", "", nil
 	}
 
 	parenIdx := strings.Index(rest, "(")
 	if parenIdx == -1 {
-		return "", nil
+		return "", "", nil
 	}
 
 	tablePart := strings.TrimSpace(rest[:parenIdx])
+	var dbName string
 	if strings.Contains(tablePart, ".") {
 		parts := strings.Split(tablePart, ".")
+		if len(parts) == 2 {
+			dbName = strings.Trim(parts[0], "`\"';")
+		}
 		tablePart = parts[len(parts)-1]
 	}
 	tableName = strings.Trim(tablePart, "`\"';")
@@ -104,7 +108,7 @@ func (s *AthenaService) parseCreateTableRest(rest string) (string, []athenastore
 
 	endParen := strings.LastIndex(columnsPart, ")")
 	if endParen == -1 {
-		return tableName, nil
+		return tableName, dbName, nil
 	}
 
 	columnsPart = columnsPart[:endParen]
@@ -144,11 +148,11 @@ func (s *AthenaService) parseCreateTableRest(rest string) (string, []athenastore
 		}
 	}
 
-	return tableName, columns
+	return tableName, dbName, columns
 }
 
-func (s *AthenaService) parseCreateTableStatementWithLocation(query string) (string, []athenastore.Column, string, string) {
-	tableName, columns := s.parseCreateTableStatement(query)
+func (s *AthenaService) parseCreateTableStatementWithLocation(query string) (string, string, []athenastore.Column, string, string) {
+	tableName, dbName, columns := s.parseCreateTableStatement(query)
 
 	var location string
 	var format string
@@ -194,7 +198,7 @@ func (s *AthenaService) parseCreateTableStatementWithLocation(query string) (str
 		}
 	}
 
-	return tableName, columns, location, format
+	return tableName, dbName, columns, location, format
 }
 
 func (s *AthenaService) splitColumnDefinitions(columnsPart string) []string {

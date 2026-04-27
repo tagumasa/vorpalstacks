@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/audit"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/utils/crypto"
@@ -20,6 +21,7 @@ type S3Handler struct {
 	objectOps      *ObjectOperations
 	region         string
 	storageManager *storage.RegionStorageManager
+	auditRecorder  request.AuditRecorder
 }
 
 // NewS3Handler creates a new S3Handler for the given service, region, and storage manager.
@@ -45,6 +47,11 @@ func (h *S3Handler) newRequestContext(r *http.Request) *request.RequestContext {
 	ctx.PrincipalID = h.svc.accountID
 	ctx.PrincipalType = request.PrincipalTypeUser
 	return ctx
+}
+
+// SetAuditRecorder sets the audit recorder for CloudTrail event logging.
+func (h *S3Handler) SetAuditRecorder(recorder request.AuditRecorder) {
+	h.auditRecorder = recorder
 }
 
 func extractSourceIP(r *http.Request) string {
@@ -100,6 +107,7 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
+		h.recordAudit(determineS3EventName(r, bucket, key), reqCtx, r, nil, err)
 		h.writeError(w, err, bucket, key)
 		return
 	}
@@ -108,6 +116,7 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header()[k] = v
 	}
 
+	h.recordAudit(determineS3EventName(r, bucket, key), reqCtx, r, result, nil)
 	h.writeResult(w, result, statusCode)
 }
 
@@ -137,4 +146,15 @@ func (h *S3Handler) verifyPresignedURL(r *http.Request, bucket string) error {
 	}
 	verifier := crypto.NewPresignedURLVerifier(h.svc.credentialsProvider)
 	return verifier.VerifyPresignedURL(r, bucket, h.region)
+}
+
+func (h *S3Handler) recordAudit(eventName string, reqCtx *request.RequestContext, r *http.Request, response interface{}, err error) {
+	if h.auditRecorder == nil {
+		return
+	}
+	builder := audit.NewEventBuilder("s3", eventName, reqCtx, nil)
+	event := builder.Build(response, err)
+	if recorder, ok := h.auditRecorder.(audit.Recorder); ok {
+		_ = recorder.RecordEvent(event)
+	}
 }

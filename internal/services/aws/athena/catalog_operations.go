@@ -3,6 +3,7 @@ package athena
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -27,7 +28,6 @@ func (s *AthenaService) ListEngineVersions(ctx context.Context, reqCtx *request.
 				"EffectiveEngineVersion": "Athena engine version 2",
 			},
 		},
-		"NextToken": "",
 	}, nil
 }
 
@@ -57,10 +57,13 @@ func (s *AthenaService) ListDataCatalogs(ctx context.Context, reqCtx *request.Re
 		},
 	}, summaries...)
 
-	return map[string]interface{}{
-		"DataCatalogsSummary": summaries,
-		"NextToken":           "",
-	}, nil
+	maxResults := pagination.GetMaxItems(req.Parameters, 50, "MaxResults")
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	pageResult := pagination.PaginateSlice(summaries, marker, maxResults, func(item map[string]interface{}) string {
+		return item["CatalogName"].(string)
+	})
+
+	return pagination.BuildListResponse("DataCatalogsSummary", pageResult.Items, pageResult.NextMarker), nil
 }
 
 // GetDataCatalog retrieves metadata for the specified data catalog.
@@ -81,7 +84,7 @@ func (s *AthenaService) GetDataCatalog(ctx context.Context, reqCtx *request.Requ
 	catalog, err := stores.dataCatalogStore.GetDataCatalog(name)
 	if err != nil {
 		if err == athenastore.ErrDataCatalogNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, dataCatalogNotFound(name)
 		}
 		return nil, err
 	}
@@ -155,7 +158,7 @@ func (s *AthenaService) DeleteDataCatalog(ctx context.Context, reqCtx *request.R
 	}
 	if err := stores.dataCatalogStore.DeleteDataCatalog(name); err != nil {
 		if err == athenastore.ErrDataCatalogNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, dataCatalogNotFound(name)
 		}
 		return nil, err
 	}
@@ -181,7 +184,7 @@ func (s *AthenaService) UpdateDataCatalog(ctx context.Context, reqCtx *request.R
 	catalog, err := stores.dataCatalogStore.GetDataCatalog(name)
 	if err != nil {
 		if err == athenastore.ErrDataCatalogNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, dataCatalogNotFound(name)
 		}
 		return nil, err
 	}
@@ -229,16 +232,24 @@ func (s *AthenaService) ListDatabases(ctx context.Context, reqCtx *request.Reque
 		})
 	}
 
-	if catalogName == "AwsDataCatalog" && len(dbList) == 0 {
-		dbList = append(dbList, map[string]interface{}{
-			"Name":        "default",
-			"Description": "Default database",
-		})
+	if catalogName == "AwsDataCatalog" {
+		hasDefault := false
+		for _, db := range dbList {
+			if db["Name"] == "default" {
+				hasDefault = true
+				break
+			}
+		}
+		if !hasDefault {
+			dbList = append(dbList, map[string]interface{}{
+				"Name":        "default",
+				"Description": "Default database",
+			})
+		}
 	}
 
 	return map[string]interface{}{
 		"DatabaseList": dbList,
-		"NextToken":    "",
 	}, nil
 }
 
@@ -273,7 +284,7 @@ func (s *AthenaService) GetDatabase(ctx context.Context, reqCtx *request.Request
 	db, err := stores.databaseStore.GetDatabase(catalogName, databaseName)
 	if err != nil {
 		if err == athenastore.ErrDatabaseNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, dataCatalogNotFound(catalogName)
 		}
 		return nil, err
 	}
@@ -317,10 +328,13 @@ func (s *AthenaService) ListTableMetadata(ctx context.Context, reqCtx *request.R
 		})
 	}
 
-	return map[string]interface{}{
-		"TableMetadataList": tableList,
-		"NextToken":         "",
-	}, nil
+	maxResults := pagination.GetMaxItems(req.Parameters, 50, "MaxResults")
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	pageResult := pagination.PaginateSlice(tableList, marker, maxResults, func(item map[string]interface{}) string {
+		return item["Name"].(string)
+	})
+
+	return pagination.BuildListResponse("TableMetadataList", pageResult.Items, pageResult.NextMarker), nil
 }
 
 // GetTableMetadata retrieves metadata for the specified table.

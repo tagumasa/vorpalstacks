@@ -20,6 +20,9 @@ service AdminConfigService {
   // Port mappings for resources
   rpc GetResourcePort(GetResourcePortRequest) returns (GetResourcePortResponse);
   rpc SetResourcePort(SetResourcePortRequest) returns (common.Empty);
+
+  // Server control
+  rpc ShutdownServer(ShutdownServerRequest) returns (ShutdownServerResponse);
 }
 
 message ConfigEntry {
@@ -97,4 +100,10 @@ message SetResourcePortRequest {
   string service_port_key = 1;
   string resource_id = 2;
   int32 port = 3;
+}
+
+message ShutdownServerRequest {}
+
+message ShutdownServerResponse {
+  string message = 1;
 }

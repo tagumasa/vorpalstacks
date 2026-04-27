@@ -2,7 +2,6 @@ package sqs
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -123,9 +122,9 @@ func (s *SQSService) CreateQueue(ctx context.Context, reqCtx *request.RequestCon
 		case "Policy":
 			queue.Policy = attrValue
 		case "RedrivePolicy":
-			var rdp sqsstore.RedrivePolicy
-			if err := json.Unmarshal([]byte(attrValue), &rdp); err == nil {
-				queue.RedrivePolicy = &rdp
+			rdp, err := sqsstore.ParseRedrivePolicy(attrValue)
+			if err == nil {
+				queue.RedrivePolicy = rdp
 			}
 		}
 	}

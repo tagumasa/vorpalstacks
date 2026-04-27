@@ -20,19 +20,19 @@ func TestEventIndexKey_EncodePrefix(t *testing.T) {
 	t.Run("Event name index with segment2", func(t *testing.T) {
 		key := NewEventNameIndexKey("acc123", "us-east-1", "CreateTrail", 1708867200, "evt456")
 		prefix := key.EncodePrefix()
-		assert.Equal(t, "ct_idx_event:acc123:us-east-1:CreateTrail:1708867200", prefix)
+		assert.Equal(t, "ct_idx_event:acc123:us-east-1:CreateTrail", prefix)
 	})
 
 	t.Run("Username index", func(t *testing.T) {
 		key := NewUsernameIndexKey("acc123", "ap-northeast-1", "testuser", 1708867200, "evt456")
 		prefix := key.EncodePrefix()
-		assert.Equal(t, "ct_idx_user:acc123:ap-northeast-1:testuser:1708867200", prefix)
+		assert.Equal(t, "ct_idx_user:acc123:ap-northeast-1:testuser", prefix)
 	})
 
 	t.Run("Event source index", func(t *testing.T) {
 		key := NewEventSourceIndexKey("acc123", "eu-west-1", "cloudtrail.amazonaws.com", 1708867200, "evt456")
 		prefix := key.EncodePrefix()
-		assert.Equal(t, "ct_idx_source:acc123:eu-west-1:cloudtrail.amazonaws.com:1708867200", prefix)
+		assert.Equal(t, "ct_idx_source:acc123:eu-west-1:cloudtrail.amazonaws.com", prefix)
 	})
 
 	t.Run("Prefix only without segment1", func(t *testing.T) {

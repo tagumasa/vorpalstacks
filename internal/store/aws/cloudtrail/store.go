@@ -670,6 +670,7 @@ func (s *CloudTrailStore) RecordServiceEvent(eventName, eventSource string, user
 	event.ResponseElements = responseElements
 	event.SourceIPAddress = sourceIP
 	event.UserAgent = "vorpalstacks-internal"
+	event.generateCloudTrailEvent()
 	return s.PutEvent(event)
 }
 

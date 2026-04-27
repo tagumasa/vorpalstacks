@@ -3,6 +3,7 @@ package athena
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	athenastore "vorpalstacks/internal/store/aws/athena"
@@ -138,10 +139,13 @@ func (s *AthenaService) ListPreparedStatements(ctx context.Context, reqCtx *requ
 		})
 	}
 
-	return map[string]interface{}{
-		"PreparedStatements": summaries,
-		"NextToken":          "",
-	}, nil
+	maxResults := pagination.GetMaxItems(req.Parameters, 50, "MaxResults")
+	marker := pagination.GetMarker(req.Parameters, "NextToken")
+	pageResult := pagination.PaginateSlice(summaries, marker, maxResults, func(item map[string]interface{}) string {
+		return item["StatementName"].(string)
+	})
+
+	return pagination.BuildListResponse("PreparedStatements", pageResult.Items, pageResult.NextMarker), nil
 }
 
 // UpdatePreparedStatement updates the specified prepared statement.
@@ -164,7 +168,7 @@ func (s *AthenaService) UpdatePreparedStatement(ctx context.Context, reqCtx *req
 	preparedStatement, err := stores.preparedStatementStore.GetPreparedStatement(workGroup, statementName)
 	if err != nil {
 		if err == athenastore.ErrPreparedStatementNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, preparedStatementNotFound(statementName)
 		}
 		return nil, err
 	}

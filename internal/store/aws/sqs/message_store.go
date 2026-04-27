@@ -156,7 +156,7 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 		msg := ProtoToMessage(msgPb)
 		msg.ApproximateReceiveCount++
 
-		if queue.RedrivePolicy != nil && msg.ApproximateReceiveCount > queue.RedrivePolicy.MaxReceiveCount {
+		if queue.RedrivePolicy != nil && msg.ApproximateReceiveCount >= queue.RedrivePolicy.MaxReceiveCount {
 			if err := s.moveToDLQ(msg, queue.RedrivePolicy.DeadLetterTargetARN); err != nil {
 				logs.Warn("Failed to move message to DLQ", logs.String("messageId", msg.ID), logs.Err(err))
 			}

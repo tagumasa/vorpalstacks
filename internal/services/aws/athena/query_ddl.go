@@ -86,9 +86,13 @@ func (s *AthenaService) executeCreateTable(reqCtx *request.RequestContext, query
 		}
 	}
 
-	tableName, columns, location, format := s.parseCreateTableStatementWithLocation(queryString)
+	tableName, parsedDB, columns, location, format := s.parseCreateTableStatementWithLocation(queryString)
 	if tableName == "" {
 		return nil, nil, fmt.Errorf("table name not specified")
+	}
+
+	if parsedDB != "" {
+		database = parsedDB
 	}
 
 	table := &athenastore.TableMetadata{

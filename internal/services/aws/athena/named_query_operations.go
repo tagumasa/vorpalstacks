@@ -76,7 +76,7 @@ func (s *AthenaService) GetNamedQuery(ctx context.Context, reqCtx *request.Reque
 	namedQuery, err := stores.namedQueryStore.GetNamedQuery(namedQueryId)
 	if err != nil {
 		if err == athenastore.ErrNamedQueryNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, namedQueryNotFound(namedQueryId)
 		}
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (s *AthenaService) DeleteNamedQuery(ctx context.Context, reqCtx *request.Re
 	}
 	if err := stores.namedQueryStore.DeleteNamedQuery(namedQueryId); err != nil {
 		if err == athenastore.ErrNamedQueryNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, namedQueryNotFound(namedQueryId)
 		}
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (s *AthenaService) UpdateNamedQuery(ctx context.Context, reqCtx *request.Re
 	namedQuery, err := stores.namedQueryStore.GetNamedQuery(namedQueryId)
 	if err != nil {
 		if err == athenastore.ErrNamedQueryNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, namedQueryNotFound(namedQueryId)
 		}
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (s *AthenaService) UpdateNamedQuery(ctx context.Context, reqCtx *request.Re
 
 	if err := stores.namedQueryStore.UpdateNamedQuery(namedQueryId, namedQuery); err != nil {
 		if err == athenastore.ErrNamedQueryNotFound {
-			return nil, ErrResourceNotFoundException
+			return nil, namedQueryNotFound(namedQueryId)
 		}
 		return nil, err
 	}

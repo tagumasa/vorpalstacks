@@ -131,9 +131,7 @@ func (s *SQSStore) arnToQueueURL(arn string) string {
 	if len(parts) < 6 {
 		return ""
 	}
-	accountID := parts[4]
-	queueName := parts[5]
-	return fmt.Sprintf("https://sqs.%s.amazonaws.com/%s/%s", s.region, accountID, queueName)
+	return s.buildQueueURL(parts[5])
 }
 
 func (s *SQSStore) buildDeduplicationKey(queueURL string, message *Message) string {
