@@ -129,8 +129,10 @@ func formatDestination(d *logsstore.Destination) map[string]interface{} {
 		"arn":             d.ARN,
 		"roleArn":         d.RoleArn,
 		"targetArn":       d.TargetArn,
-		"accessPolicy":    d.AccessPolicy,
 		"creationTime":    d.CreationTime,
+	}
+	if d.AccessPolicy != "" {
+		result["accessPolicy"] = d.AccessPolicy
 	}
 	return result
 }

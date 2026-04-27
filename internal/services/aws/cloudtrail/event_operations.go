@@ -3,6 +3,7 @@ package cloudtrail
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -48,6 +49,10 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 						query.ResourceNames = append(query.ResourceNames, value)
 					case "ResourceType":
 						query.ResourceType = value
+					case "EventSource":
+						query.EventSource = value
+					case "AccessKeyId":
+						query.AccessKeyID = value
 					}
 				}
 			}
@@ -401,13 +406,14 @@ func (s *CloudTrailService) PutInsightSelectors(ctx context.Context, reqCtx *req
 
 func (s *CloudTrailService) formatEvent(e *cloudtrailstore.Event) map[string]interface{} {
 	result := map[string]interface{}{
-		"EventId":      e.EventID,
-		"EventName":    e.EventName,
-		"EventSource":  e.EventSource,
-		"EventTime":    e.EventTime.Unix(),
-		"ReadOnly":     e.ReadOnly,
-		"EventVersion": e.EventVersion,
-		"EventType":    e.EventType,
+		"EventId":       e.EventID,
+		"EventName":     e.EventName,
+		"EventSource":   e.EventSource,
+		"EventTime":     e.EventTime.Unix(),
+		"ReadOnly":      e.ReadOnly,
+		"EventVersion":  e.EventVersion,
+		"EventType":     e.EventType,
+		"EventCategory": e.EventCategory,
 	}
 
 	if e.AccessKeyId != "" {
@@ -436,6 +442,12 @@ func (s *CloudTrailService) formatEvent(e *cloudtrailstore.Event) map[string]int
 	}
 	if e.CloudTrailEvent != "" {
 		result["CloudTrailEvent"] = e.CloudTrailEvent
+		var parsed map[string]interface{}
+		if json.Unmarshal([]byte(e.CloudTrailEvent), &parsed) == nil {
+			if ec, ok := parsed["eventCategory"].(string); ok && ec != "" {
+				result["EventCategory"] = ec
+			}
+		}
 	}
 
 	if len(e.Resources) > 0 {

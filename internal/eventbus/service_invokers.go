@@ -140,3 +140,10 @@ type KMSDataKeyResult struct {
 	Plaintext      []byte
 	CiphertextBlob []byte
 }
+
+// IAMPrincipalResolver resolves an access key ID to a username for audit
+// logging. Consumers call this instead of holding a direct reference to the
+// IAM store.
+type IAMPrincipalResolver interface {
+	ResolvePrincipal(ctx context.Context, accessKeyID string) (username string, err error)
+}

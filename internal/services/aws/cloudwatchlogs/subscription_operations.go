@@ -145,9 +145,11 @@ func formatSubscriptionFilter(f *logsstore.SubscriptionFilter) map[string]interf
 		"logGroupName":   f.LogGroupName,
 		"filterPattern":  f.FilterPattern,
 		"destinationArn": f.DestinationArn,
-		"roleArn":        f.RoleArn,
 		"distribution":   f.Distribution,
 		"creationTime":   f.CreationTime.UnixMilli(),
+	}
+	if f.RoleArn != "" {
+		result["roleArn"] = f.RoleArn
 	}
 	return result
 }

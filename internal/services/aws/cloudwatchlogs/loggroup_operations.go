@@ -79,17 +79,18 @@ func (s *LogsService) DescribeLogGroups(ctx context.Context, reqCtx *request.Req
 
 	logGroups := make([]map[string]interface{}, 0)
 	for _, lg := range groups {
-		logGroups = append(logGroups, map[string]interface{}{
-			"logGroupName":         lg.Name,
-			"arn":                  lg.ARN + ":*",
-			"creationTime":         lg.CreatedAt.UnixMilli(),
-			"retentionInDays":      lg.RetentionInDays,
-			"metricFilterCount":    lg.MetricFilterCount,
-			"storedBytes":          lg.StoredBytes,
-			"logGroupArn":          lg.ARN,
-			"kmsKeyId":             "",
-			"dataProtectionStatus": "",
-		})
+		entry := map[string]interface{}{
+			"logGroupName":      lg.Name,
+			"arn":               lg.ARN + ":*",
+			"creationTime":      lg.CreatedAt.UnixMilli(),
+			"metricFilterCount": lg.MetricFilterCount,
+			"storedBytes":       lg.StoredBytes,
+			"logGroupArn":       lg.ARN,
+		}
+		if lg.RetentionInDays > 0 {
+			entry["retentionInDays"] = lg.RetentionInDays
+		}
+		logGroups = append(logGroups, entry)
 	}
 
 	response := map[string]interface{}{

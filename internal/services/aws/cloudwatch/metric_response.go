@@ -1,22 +1,48 @@
 package cloudwatch
 
 import (
+	"strings"
 	"time"
 
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 
-func buildDatapointResponse(stats []*cwstore.MetricStatistics) []map[string]interface{} {
+func buildDatapointResponse(stats []*cwstore.MetricStatistics, requestedStats []string) []map[string]interface{} {
+	requested := make(map[string]bool, len(requestedStats))
+	for _, s := range requestedStats {
+		requested[strings.ToLower(s)] = true
+	}
+	allRequested := len(requested) == 0
+
 	datapoints := make([]map[string]interface{}, len(stats))
 	for i, dp := range stats {
 		point := map[string]interface{}{
 			"Timestamp": dp.Timestamp.UnixMilli(),
 		}
-		point["SampleCount"] = dp.SampleCount
-		point["Average"] = dp.Average
-		point["Sum"] = dp.Sum
-		point["Minimum"] = dp.Minimum
-		point["Maximum"] = dp.Maximum
+		for stat, include := range requested {
+			if !include && !allRequested {
+				continue
+			}
+			switch stat {
+			case "samplecount":
+				point["SampleCount"] = dp.SampleCount
+			case "average":
+				point["Average"] = dp.Average
+			case "sum":
+				point["Sum"] = dp.Sum
+			case "minimum":
+				point["Minimum"] = dp.Minimum
+			case "maximum":
+				point["Maximum"] = dp.Maximum
+			}
+		}
+		if allRequested {
+			point["SampleCount"] = dp.SampleCount
+			point["Average"] = dp.Average
+			point["Sum"] = dp.Sum
+			point["Minimum"] = dp.Minimum
+			point["Maximum"] = dp.Maximum
+		}
 		if dp.Unit != "" {
 			point["Unit"] = string(dp.Unit)
 		}

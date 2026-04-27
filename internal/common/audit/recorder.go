@@ -14,6 +14,7 @@ type AuditEvent struct {
 	AccountID         string
 	AccessKeyID       string
 	PrincipalName     string
+	ResourceTypes     map[string]string
 }
 
 // UserIdentity represents the identity information for an audit event.
@@ -28,7 +29,13 @@ type UserIdentity struct {
 // EventStore defines the interface for recording events to a backend store,
 // decoupling the audit package from concrete store implementations.
 type EventStore interface {
-	RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}) error
+	RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}, resources []ResourceEntry) error
+}
+
+// ResourceEntry carries resource information for an audit event.
+type ResourceEntry struct {
+	ResourceType string
+	ResourceName string
 }
 
 // Recorder defines the interface for recording audit events.

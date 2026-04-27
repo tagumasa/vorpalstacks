@@ -140,6 +140,9 @@ func ConvertTimestampsToSeconds(v interface{}) interface{} {
 		}
 		return val
 	default:
+		if _, ok := v.([]byte); ok {
+			return v
+		}
 		if m, ok := toGenericSlice(v); ok {
 			result := make([]interface{}, len(m))
 			for i, vv := range m {

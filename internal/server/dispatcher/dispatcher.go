@@ -16,6 +16,7 @@ import (
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/graphengine"
+	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/store/api"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -49,6 +50,7 @@ type Dispatcher struct {
 	accountID                 string
 	graphDB                   *graphengine.DB
 	cloudTrailRecorderFactory CloudTrailRecorderFactory
+	principalResolver         eventbus.IAMPrincipalResolver
 }
 
 // Handler processes an AWS API request and returns a response or error.
@@ -305,4 +307,9 @@ func classifiedToParsed(cr *classifier.ClassifiedRequest) *request.ParsedRequest
 // SetCloudTrailRecorderFactory sets the factory function for creating CloudTrail audit recorders.
 func (d *Dispatcher) SetCloudTrailRecorderFactory(factory CloudTrailRecorderFactory) {
 	d.cloudTrailRecorderFactory = factory
+}
+
+// SetPrincipalResolver sets the IAM principal resolver for audit logging.
+func (d *Dispatcher) SetPrincipalResolver(resolver eventbus.IAMPrincipalResolver) {
+	d.principalResolver = resolver
 }

@@ -386,9 +386,13 @@ func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestC
 		outputEvents = append(outputEvents, logEventToResponse(e))
 	}
 
-	nextBackwardToken := ""
-	if len(events) > 0 && startIndex > 0 {
-		nextBackwardToken = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", startIndex)))
+	nextBackwardToken := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("b-%d", startIndex)))
+	if startIndex == 0 {
+		nextBackwardToken = base64.StdEncoding.EncodeToString([]byte("b-0"))
+	}
+
+	if nextForwardToken == "" {
+		nextForwardToken = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("f-%d", startIndex+len(events))))
 	}
 
 	return map[string]interface{}{

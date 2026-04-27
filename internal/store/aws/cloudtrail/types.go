@@ -78,6 +78,7 @@ type Event struct {
 	UserAgent         string                 `json:"userAgent,omitempty"`
 	ErrorCode         string                 `json:"errorCode,omitempty"`
 	ErrorMessage      string                 `json:"errorMessage,omitempty"`
+	EventCategory     string                 `json:"eventCategory,omitempty"`
 	Tags              map[string]string      `json:"tags,omitempty"`
 }
 
@@ -184,30 +185,32 @@ func NewTrail(name, s3BucketName, region string) *Trail {
 func NewEvent(eventName, eventSource string, userIdentity *UserIdentity) *Event {
 	now := time.Now().UTC()
 	return &Event{
-		EventID:      generateEventID(),
-		EventName:    eventName,
-		EventSource:  eventSource,
-		EventTime:    now,
-		EventType:    "AwsApiCall",
-		EventVersion: "1.08",
-		UserIdentity: userIdentity,
-		Resources:    []Resource{},
-		ReadOnly:     "false",
+		EventID:       generateEventID(),
+		EventName:     eventName,
+		EventSource:   eventSource,
+		EventTime:     now,
+		EventType:     "AwsApiCall",
+		EventVersion:  "1.08",
+		EventCategory: "Management",
+		UserIdentity:  userIdentity,
+		Resources:     []Resource{},
+		ReadOnly:      "false",
 	}
 }
 
 // NewReadOnlyEvent creates a new read-only CloudTrail event.
 func NewReadOnlyEvent(eventName, eventSource string, userIdentity *UserIdentity) *Event {
 	return &Event{
-		EventID:      generateEventID(),
-		EventName:    eventName,
-		EventSource:  eventSource,
-		EventTime:    time.Now().UTC(),
-		EventType:    "AwsApiCall",
-		EventVersion: "1.08",
-		UserIdentity: userIdentity,
-		Resources:    []Resource{},
-		ReadOnly:     "true",
+		EventID:       generateEventID(),
+		EventName:     eventName,
+		EventSource:   eventSource,
+		EventTime:     time.Now().UTC(),
+		EventType:     "AwsApiCall",
+		EventVersion:  "1.08",
+		EventCategory: "Management",
+		UserIdentity:  userIdentity,
+		Resources:     []Resource{},
+		ReadOnly:      "true",
 	}
 }
 

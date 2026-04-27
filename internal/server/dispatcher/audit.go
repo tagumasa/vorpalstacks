@@ -40,21 +40,14 @@ func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.
 }
 
 func (d *Dispatcher) resolvePrincipal(reqCtx *request.RequestContext, accessKeyID string) {
-	if d.iamStore == nil {
+	if d.principalResolver == nil {
+		reqCtx.Principal = accessKeyID
 		return
 	}
-	accessKey, err := d.iamStore.AccessKeys().Get(accessKeyID)
-	if err != nil {
+	username, err := d.principalResolver.ResolvePrincipal(reqCtx, accessKeyID)
+	if err != nil || username == "" {
+		reqCtx.Principal = accessKeyID
 		return
 	}
-	if accessKey != nil && accessKey.UserName != "" {
-		user, err := d.iamStore.Users().Get(accessKey.UserName)
-		if err != nil || user == nil {
-			reqCtx.Principal = accessKey.UserName
-		} else {
-			reqCtx.Principal = user.UserName
-			reqCtx.PrincipalID = user.ID
-			reqCtx.PrincipalType = request.PrincipalTypeUser
-		}
-	}
+	reqCtx.Principal = username
 }

@@ -93,7 +93,7 @@ func (s *CloudWatchService) GetMetricStatistics(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	datapoints := buildDatapointResponse(stats)
+	datapoints := buildDatapointResponse(stats, statistics)
 	if datapoints == nil {
 		datapoints = []map[string]interface{}{}
 	}

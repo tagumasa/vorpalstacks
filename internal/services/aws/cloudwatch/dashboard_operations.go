@@ -49,6 +49,7 @@ func (s *CloudWatchService) GetDashboard(ctx context.Context, reqCtx *request.Re
 	return map[string]interface{}{
 		"DashboardArn":  dashboard.ARN,
 		"DashboardBody": dashboard.Body,
+		"DashboardName": dashboard.Name,
 		"LastModified":  dashboard.UpdatedAt,
 	}, nil
 }

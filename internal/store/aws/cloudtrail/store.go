@@ -469,6 +469,8 @@ func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, erro
 		eventIDs, err = s.indexer.QueryByEventName(query.EventNames, query.MaxResults)
 	case query.Username != "" && s.indexer != nil:
 		eventIDs, err = s.indexer.QueryByUsername(query.Username, query.MaxResults)
+	case query.EventSource != "" && s.indexer != nil:
+		eventIDs, err = s.indexer.QueryByEventSource(query.EventSource, query.MaxResults)
 	case (query.StartTime != nil || query.EndTime != nil) && s.indexer != nil:
 		eventIDs, err = s.indexer.QueryByTime(query.StartTime, query.EndTime, query.MaxResults)
 	default:
@@ -496,11 +498,32 @@ func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, erro
 	return events, "", nil
 }
 
+func (s *CloudTrailStore) eventIDIndexBucket() storage.Bucket {
+	if s.storage != nil {
+		return s.storage.(storage.BasicStorage).Bucket(eventIDIndexBucketName(s.region))
+	}
+	return nil
+}
+
 // GetEventByID retrieves a CloudTrail event by ID.
 func (s *CloudTrailStore) GetEventByID(eventID string) (*Event, error) {
 	var fullKey string
-	if err := s.eventIDIndexStore.Get(eventID, &fullKey); err != nil {
+	if bucket := s.eventIDIndexBucket(); bucket != nil {
+		fullKeyBytes, err := bucket.Get([]byte(eventID))
+		if err != nil || fullKeyBytes == nil {
+			return nil, ErrEventNotFound
+		}
+		fullKey = string(fullKeyBytes)
+	} else if err := s.eventIDIndexStore.Get(eventID, &fullKey); err != nil {
 		return nil, ErrEventNotFound
+	}
+
+	if s.storage != nil {
+		var p pb.Event
+		if err := s.eventsStore.GetProto(fullKey, &p); err != nil {
+			return nil, ErrEventNotFound
+		}
+		return ProtoToEvent(&p), nil
 	}
 
 	var event Event
@@ -593,6 +616,14 @@ func protoMatchesQuery(event *pb.Event, query EventQuery) bool {
 		}
 	}
 
+	if query.EventSource != "" && event.GetEventSource() != query.EventSource {
+		return false
+	}
+
+	if query.AccessKeyID != "" && event.GetAccessKeyId() != query.AccessKeyID {
+		return false
+	}
+
 	return true
 }
 
@@ -660,16 +691,27 @@ func (s *CloudTrailStore) eventMatchesQuery(event *Event, query EventQuery) bool
 		}
 	}
 
+	if query.EventSource != "" && event.EventSource != query.EventSource {
+		return false
+	}
+
+	if query.AccessKeyID != "" && event.AccessKeyId != query.AccessKeyID {
+		return false
+	}
+
 	return true
 }
 
 // RecordServiceEvent records a service event to CloudTrail.
-func (s *CloudTrailStore) RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}) error {
+func (s *CloudTrailStore) RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}, resources []Resource) error {
 	event := NewEvent(eventName, eventSource, userIdentity)
 	event.RequestParameters = requestParams
 	event.ResponseElements = responseElements
 	event.SourceIPAddress = sourceIP
 	event.UserAgent = "vorpalstacks-internal"
+	for _, r := range resources {
+		event.Resources = append(event.Resources, Resource{ResourceType: r.ResourceType, ResourceName: r.ResourceName})
+	}
 	event.generateCloudTrailEvent()
 	return s.PutEvent(event)
 }
@@ -682,6 +724,8 @@ type EventQuery struct {
 	Username      string
 	ResourceNames []string
 	ResourceType  string
+	EventSource   string
+	AccessKeyID   string
 	MaxResults    int32
 	NextToken     string
 }

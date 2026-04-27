@@ -191,12 +191,17 @@ func (s *MetricChunkStore) flushBuffer(chunkPath string) error {
 		return err
 	}
 
+	var oldChunkPath string
+	if v, ok := s.chunkPaths.Load(chunkPath); ok {
+		if s, ok := v.(string); ok && s != "" && s != actualChunkPath {
+			oldChunkPath = s
+		}
+	}
+
 	s.chunkPaths.Store(chunkPath, actualChunkPath)
 
-	if existingPath, ok := s.chunkPaths.Load(chunkPath); ok {
-		if existingStr, ok := existingPath.(string); ok && existingStr != "" && existingStr != actualChunkPath {
-			os.Remove(existingStr)
-		}
+	if oldChunkPath != "" {
+		os.Remove(oldChunkPath)
 	}
 
 	if s.useIndex && s.index != nil {
@@ -395,9 +400,6 @@ func (s *MetricChunkStore) GetMetricStatistics(query MetricQuery) ([]*MetricStat
 			if query.MetricName != "" && meta.Tags["metric_name"] != query.MetricName {
 				continue
 			}
-			if len(query.Dimensions) > 0 && meta.Tags["dimensions"] != dimsKey {
-				continue
-			}
 
 			entries, err := s.readChunkFile(meta.ChunkPath)
 			if err != nil {
@@ -405,6 +407,9 @@ func (s *MetricChunkStore) GetMetricStatistics(query MetricQuery) ([]*MetricStat
 			}
 
 			for _, entry := range entries {
+				if len(query.Dimensions) > 0 && entry.BuildDimensionsKey() != dimsKey {
+					continue
+				}
 				if (entry.Time.Equal(query.StartTime) || entry.Time.After(query.StartTime)) &&
 					(entry.Time.Equal(query.EndTime) || entry.Time.Before(query.EndTime)) {
 					dataPoints = append(dataPoints, &MetricDataPoint{

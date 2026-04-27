@@ -42,7 +42,19 @@ func (r *CloudTrailRecorder) RecordEvent(event *AuditEvent) error {
 		event.SourceIP,
 		event.RequestParameters,
 		event.ResponseElements,
+		buildResources(event),
 	)
+}
+
+func buildResources(event *AuditEvent) []ResourceEntry {
+	if len(event.ResourceTypes) == 0 {
+		return nil
+	}
+	var entries []ResourceEntry
+	for name, typ := range event.ResourceTypes {
+		entries = append(entries, ResourceEntry{ResourceType: typ, ResourceName: name})
+	}
+	return entries
 }
 
 // Record records an audit event if it is an AuditEvent.

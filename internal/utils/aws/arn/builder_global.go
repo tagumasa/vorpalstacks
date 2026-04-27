@@ -27,27 +27,27 @@ func (b *ARNBuilder) CloudFront() *CloudFrontBuilder { return &CloudFrontBuilder
 
 // Distribution constructs an ARN for a CloudFront distribution.
 func (b *CloudFrontBuilder) Distribution(id string) string {
-	return b.BuildGlobal("cloudfront", "distribution/"+id)
+	return b.BuildNoRegion("cloudfront", "distribution/"+id)
 }
 
 // CachePolicy constructs an ARN for a CloudFront cache policy.
 func (b *CloudFrontBuilder) CachePolicy(id string) string {
-	return b.BuildGlobal("cloudfront", "cache-policy/"+id)
+	return b.BuildNoRegion("cloudfront", "cache-policy/"+id)
 }
 
 // OriginRequestPolicy constructs an ARN for a CloudFront origin request policy.
 func (b *CloudFrontBuilder) OriginRequestPolicy(id string) string {
-	return b.BuildGlobal("cloudfront", "origin-request-policy/"+id)
+	return b.BuildNoRegion("cloudfront", "origin-request-policy/"+id)
 }
 
 // OriginAccessControl constructs an ARN for a CloudFront origin access control.
 func (b *CloudFrontBuilder) OriginAccessControl(id string) string {
-	return b.BuildGlobal("cloudfront", "origin-access-control/"+id)
+	return b.BuildNoRegion("cloudfront", "origin-access-control/"+id)
 }
 
 // ResponseHeadersPolicy constructs an ARN for a CloudFront response headers policy.
 func (b *CloudFrontBuilder) ResponseHeadersPolicy(id string) string {
-	return b.BuildGlobal("cloudfront", "response-headers-policy/"+id)
+	return b.BuildNoRegion("cloudfront", "response-headers-policy/"+id)
 }
 
 // WAFBuilder provides methods for constructing WAF ARNs.

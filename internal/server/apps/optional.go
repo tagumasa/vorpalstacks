@@ -46,6 +46,7 @@ import (
 	svctimestreamwrite "vorpalstacks/internal/services/aws/timestreamwrite"
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
+	iamstore "vorpalstacks/internal/store/aws/iam"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -82,6 +83,7 @@ func (a *App) initOptionalServices() error {
 
 	a.initCloudTrailRecorderFactory(st)
 	a.injectS3AuditRecorder(st)
+	a.initPrincipalResolver()
 	return nil
 }
 
@@ -505,14 +507,38 @@ type cloudTrailStoreAdapter struct {
 
 // RecordServiceEvent translates an audit UserIdentity to a cloudtrailstore UserIdentity and
 // delegates to the underlying CloudTrail store.
-func (a *cloudTrailStoreAdapter) RecordServiceEvent(eventName, eventSource string, userIdentity *audit.UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}) error {
+func (a *cloudTrailStoreAdapter) RecordServiceEvent(eventName, eventSource string, userIdentity *audit.UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}, resources []audit.ResourceEntry) error {
+	var storeResources []cloudtrailstore.Resource
+	for _, r := range resources {
+		storeResources = append(storeResources, cloudtrailstore.Resource{ResourceType: r.ResourceType, ResourceName: r.ResourceName})
+	}
 	return a.store.RecordServiceEvent(eventName, eventSource, &cloudtrailstore.UserIdentity{
 		Type:        userIdentity.Type,
 		PrincipalID: userIdentity.PrincipalID,
 		ARN:         userIdentity.ARN,
 		AccountID:   userIdentity.AccountID,
 		UserName:    userIdentity.UserName,
-	}, sourceIP, requestParams, responseElements)
+	}, sourceIP, requestParams, responseElements, storeResources)
+}
+
+func (a *App) initPrincipalResolver() {
+	iamStore := a.server.IAMStore()
+	if iamStore == nil {
+		return
+	}
+	a.server.Dispatcher().SetPrincipalResolver(&iamPrincipalResolverAdapter{store: iamStore})
+}
+
+type iamPrincipalResolverAdapter struct {
+	store iamstore.IAMStoreInterface
+}
+
+func (r *iamPrincipalResolverAdapter) ResolvePrincipal(ctx context.Context, accessKeyID string) (string, error) {
+	accessKey, err := r.store.AccessKeys().Get(accessKeyID)
+	if err != nil || accessKey == nil || accessKey.UserName == "" {
+		return "", nil
+	}
+	return accessKey.UserName, nil
 }
 
 func (a *App) registerListener(cfg listener.ListenerConfig) {

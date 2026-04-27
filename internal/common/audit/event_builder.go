@@ -176,6 +176,18 @@ func (b *EventBuilder) isReadOnlyOperation() bool {
 	readOnlyPrefixes := []string{
 		"Get", "List", "Describe", "Lookup", "Search",
 		"BatchGet", "Query", "Scan", "Head",
+		"Simulate", "Generate",
+	}
+
+	writeExceptions := []string{
+		"GetFederationToken",
+		"GetSessionToken",
+	}
+
+	for _, exc := range writeExceptions {
+		if b.operation == exc {
+			return false
+		}
 	}
 
 	for _, prefix := range readOnlyPrefixes {

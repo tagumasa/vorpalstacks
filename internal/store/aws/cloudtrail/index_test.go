@@ -1,6 +1,7 @@
 package cloudtrail
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -327,5 +328,53 @@ func TestEventIndexManager_EventWithoutOptionalFields(t *testing.T) {
 		ids, err := manager.QueryByTime(&start, &end, 10)
 		require.NoError(t, err)
 		assert.Contains(t, ids, "evt-minimal")
+	})
+}
+
+func TestEventIndexManager_AddIndexInTxn(t *testing.T) {
+	tmpDir := "./tmp/cloudtrail-txn-index-test"
+	defer os.RemoveAll(tmpDir)
+
+	s, err := storage.Open(tmpDir)
+	require.NoError(t, err)
+	defer s.Close()
+
+	tstore, ok := s.(storage.TransactionalStorageWith2PC)
+	require.True(t, ok, "storage must support transactions")
+
+	manager := NewEventIndexManager(s, "acc123", "us-east-1")
+
+	event := &Event{
+		EventID:     "evt-txn-001",
+		EventName:   "CreateTrail",
+		EventSource: "cloudtrail.amazonaws.com",
+		EventTime:   time.Date(2024, 2, 25, 10, 30, 0, 0, time.UTC),
+		UserIdentity: &UserIdentity{
+			Type:     "IAMUser",
+			UserName: "testuser",
+		},
+	}
+
+	err = tstore.Update(context.Background(), func(txn storage.Transaction) error {
+		return manager.AddIndexInTxn(txn, event)
+	})
+	require.NoError(t, err)
+
+	t.Run("Transaction-committed event index is visible via QueryByEventName", func(t *testing.T) {
+		ids, err := manager.QueryByEventName([]string{"CreateTrail"}, 10)
+		require.NoError(t, err)
+		assert.Contains(t, ids, "evt-txn-001")
+	})
+
+	t.Run("Transaction-committed event index is visible via QueryByUsername", func(t *testing.T) {
+		ids, err := manager.QueryByUsername("testuser", 10)
+		require.NoError(t, err)
+		assert.Contains(t, ids, "evt-txn-001")
+	})
+
+	t.Run("Transaction-committed event index is visible via QueryByEventSource", func(t *testing.T) {
+		ids, err := manager.QueryByEventSource("cloudtrail.amazonaws.com", 10)
+		require.NoError(t, err)
+		assert.Contains(t, ids, "evt-txn-001")
 	})
 }
