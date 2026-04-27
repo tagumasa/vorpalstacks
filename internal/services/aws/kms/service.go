@@ -4,6 +4,7 @@ package kms
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -11,6 +12,7 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -359,4 +361,47 @@ func (s *KMSService) EnsureDefaultSSMKey() error {
 	}
 
 	return nil
+}
+
+// kmsBusAdapter adapts KMSService to satisfy eventbus.KMSInvoker without
+// conflicting with the existing GenerateDataKey/Decrypt handler methods.
+type kmsBusAdapter struct {
+	*KMSService
+}
+
+func (a *kmsBusAdapter) GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string) (*eventbus.KMSDataKeyResult, error) {
+	if a.hsmBackend == nil {
+		return nil, fmt.Errorf("KMS HSM backend not configured")
+	}
+	result, err := a.hsmBackend.GenerateDataKey(keyID, keySpec, 0, encryptionContext)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate data key: %w", err)
+	}
+	return &eventbus.KMSDataKeyResult{
+		Plaintext:      result.Plaintext,
+		CiphertextBlob: result.Ciphertext,
+	}, nil
+}
+
+func (a *kmsBusAdapter) Decrypt(ctx context.Context, keyID string, ciphertext []byte, encryptionContext map[string]string) ([]byte, error) {
+	if a.hsmBackend == nil {
+		return nil, fmt.Errorf("KMS HSM backend not configured")
+	}
+	result, err := a.hsmBackend.Decrypt(keyID, ciphertext, encryptionContext)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt: %w", err)
+	}
+	return result.Plaintext, nil
+}
+
+func (a *kmsBusAdapter) KeyExists(ctx context.Context, keyID string) bool {
+	if a.hsmBackend == nil {
+		return false
+	}
+	return a.hsmBackend.KeyExists(keyID)
+}
+
+// KMSBusInvoker returns an eventbus.KMSInvoker backed by this service.
+func (s *KMSService) KMSBusInvoker() eventbus.KMSInvoker {
+	return &kmsBusAdapter{s}
 }

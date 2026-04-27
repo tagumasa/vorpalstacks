@@ -307,14 +307,22 @@ type Object struct {
 }
 
 // SSEObjectMetadata represents the server-side encryption metadata for an S3 object.
+type PartEncryptionInfo struct {
+	EncryptedSize int64  `json:"encrypted_size,omitempty"`
+	PlainSize     int64  `json:"plain_size,omitempty"`
+	ContentNonce  []byte `json:"content_nonce,omitempty"`
+	DataKey       []byte `json:"data_key,omitempty"`
+}
+
 type SSEObjectMetadata struct {
-	EncryptionType    SSEType `json:"encryption_type"`
-	EncryptedDataKey  []byte  `json:"encrypted_data_key,omitempty"`
-	ContentNonce      []byte  `json:"content_nonce,omitempty"`
-	KMSKeyID          string  `json:"kms_key_id,omitempty"`
-	EncryptionContext string  `json:"encryption_context,omitempty"`
-	UnencryptedMD5    string  `json:"unencrypted_md5,omitempty"`
-	UnencryptedSize   int64   `json:"unencrypted_size,omitempty"`
+	EncryptionType      SSEType              `json:"encryption_type"`
+	EncryptedDataKey    []byte               `json:"encrypted_data_key,omitempty"`
+	ContentNonce        []byte               `json:"content_nonce,omitempty"`
+	KMSKeyID            string               `json:"kms_key_id,omitempty"`
+	EncryptionContext   string               `json:"encryption_context,omitempty"`
+	UnencryptedMD5      string               `json:"unencrypted_md5,omitempty"`
+	UnencryptedSize     int64                `json:"unencrypted_size,omitempty"`
+	PartEncryptionInfos []PartEncryptionInfo `json:"part_encryption_infos,omitempty"`
 }
 
 // MultipartUpload represents a multipart upload to S3.

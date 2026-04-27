@@ -162,7 +162,13 @@ func (s *ObjectStore) GetMetadata(bucket, key string) (*Object, error) {
 	if versioningEnabled {
 		storageKey := s.latestKeyStorageKey(bucket, key)
 		if err = s.BaseStore.GetProto(storageKey, &obj); err != nil {
-			return nil, err
+			storageKey = s.versionedStorageKey(bucket, key, "null")
+			if err = s.BaseStore.GetProto(storageKey, &obj); err != nil {
+				storageKey = s.storageKey(bucket, key)
+				if err = s.BaseStore.GetProto(storageKey, &obj); err != nil {
+					return nil, err
+				}
+			}
 		}
 		if obj.IsDeleteMarker {
 			return nil, ErrObjectNotFound
@@ -189,7 +195,7 @@ func (s *ObjectStore) GetMetadata(bucket, key string) (*Object, error) {
 
 // Put stores an object in the store.
 func (s *ObjectStore) Put(ctx context.Context, bucket, key string, reader io.Reader, contentType string, metadata map[string]string) (*Object, error) {
-	return s.PutWithVersioning(ctx, bucket, key, reader, contentType, metadata, false)
+	return s.PutWithVersioning(ctx, bucket, key, reader, contentType, metadata, false, StorageClassStandard)
 }
 
 // Delete removes an object from the store.
@@ -208,7 +214,11 @@ func (s *ObjectStore) Head(ctx context.Context, bucket, key string) (*Object, er
 	return s.HeadWithVersion(ctx, bucket, key, "")
 }
 
-func newObject(key, bucket, contentType string, metadata map[string]string, versionId string, isDeleteMarker bool) *Object {
+func newObject(key, bucket, contentType string, metadata map[string]string, versionId string, isDeleteMarker bool, storageClass ObjectStorageClass) *Object {
+	sc := storageClass
+	if sc == "" {
+		sc = StorageClassStandard
+	}
 	return &Object{
 		Key:            key,
 		BucketName:     bucket,
@@ -217,7 +227,7 @@ func newObject(key, bucket, contentType string, metadata map[string]string, vers
 		LastModified:   time.Now().UTC(),
 		ContentType:    contentType,
 		Metadata:       metadata,
-		StorageClass:   StorageClassStandard,
+		StorageClass:   sc,
 		IsLatest:       true,
 		IsDeleteMarker: isDeleteMarker,
 		VersionID:      versionId,

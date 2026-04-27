@@ -95,7 +95,7 @@ func (s *ObjectStore) GetWithVersion(ctx context.Context, bucket, key, versionId
 }
 
 // PutWithVersioning stores an object with versioning support.
-func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string, reader io.Reader, contentType string, metadata map[string]string, isDeleteMarker bool) (*Object, error) {
+func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string, reader io.Reader, contentType string, metadata map[string]string, isDeleteMarker bool, storageClass ObjectStorageClass) (*Object, error) {
 	versionId := "null"
 	isVersioned := s.isVersioningEnabled(bucket)
 
@@ -121,7 +121,7 @@ func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string,
 		}
 	}
 
-	obj := newObject(key, bucket, contentType, metadata, versionId, isDeleteMarker)
+	obj := newObject(key, bucket, contentType, metadata, versionId, isDeleteMarker, storageClass)
 
 	if blobMetaResult != nil {
 		obj.Size = blobMetaResult.Size
@@ -234,7 +234,7 @@ func (s *ObjectStore) DeleteWithVersion(ctx context.Context, bucket, key, versio
 	}
 
 	if s.isVersioningEnabled(bucket) {
-		deleteMarker, err := s.PutWithVersioning(ctx, bucket, key, nil, "", nil, true)
+		deleteMarker, err := s.PutWithVersioning(ctx, bucket, key, nil, "", nil, true, StorageClassStandard)
 		if err != nil {
 			return nil, err
 		}
@@ -268,7 +268,13 @@ func (s *ObjectStore) HeadWithVersion(ctx context.Context, bucket, key, versionI
 			storageKey = s.latestKeyStorageKey(bucket, key)
 		}
 		if err = s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
-			return nil, ErrObjectNotFound
+			nullKey := s.versionedStorageKey(bucket, key, "null")
+			if err = s.BaseStore.GetProto(nullKey, &pbObj); err != nil {
+				fallbackKey := s.storageKey(bucket, key)
+				if err = s.BaseStore.GetProto(fallbackKey, &pbObj); err != nil {
+					return nil, ErrObjectNotFound
+				}
+			}
 		}
 	} else {
 		storageKey := s.storageKey(bucket, key)

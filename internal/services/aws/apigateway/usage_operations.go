@@ -26,6 +26,7 @@ func (s *APIGatewayService) CreateApiKey(ctx context.Context, reqCtx *request.Re
 		Description: request.GetStringParam(req.Parameters, "description"),
 		Enabled:     request.GetBoolParam(req.Parameters, "enabled"),
 		CustomerId:  request.GetStringParam(req.Parameters, "customerId"),
+		Value:       request.GetStringParam(req.Parameters, "value"),
 	}
 
 	if stageKeys, ok := req.Parameters["stageKeys"].([]interface{}); ok {
@@ -261,6 +262,29 @@ func (s *APIGatewayService) CreateUsagePlan(ctx context.Context, reqCtx *request
 				if stageName, ok := asMap["stage"].(string); ok {
 					stage.Stage = stageName
 				}
+				if throttleMap, ok := asMap["throttle"].(map[string]interface{}); ok {
+					stage.Throttle = make(map[string]*store.Throttle)
+					for k, v := range throttleMap {
+						if ts, ok := v.(map[string]interface{}); ok {
+							t := &store.Throttle{}
+							if bl, ok := ts["burstLimit"]; ok {
+								switch bv := bl.(type) {
+								case int:
+									t.BurstLimit = int64(bv)
+								case float64:
+									t.BurstLimit = int64(bv)
+								}
+							}
+							if rl, ok := ts["rateLimit"]; ok {
+								switch rv := rl.(type) {
+								case float64:
+									t.RateLimit = rv
+								}
+							}
+							stage.Throttle[k] = t
+						}
+					}
+				}
 				usagePlan.ApiStages = append(usagePlan.ApiStages, stage)
 			}
 		}
@@ -477,7 +501,25 @@ func (s *APIGatewayService) toUsagePlanResponse(p *store.UsagePlan) map[string]i
 		response["description"] = p.Description
 	}
 	if len(p.ApiStages) > 0 {
-		response["apiStages"] = p.ApiStages
+		apiStages := make([]interface{}, 0, len(p.ApiStages))
+		for _, as := range p.ApiStages {
+			stageMap := map[string]interface{}{
+				"apiId": as.ApiId,
+				"stage": as.Stage,
+			}
+			if len(as.Throttle) > 0 {
+				throttleMap := make(map[string]interface{}, len(as.Throttle))
+				for k, v := range as.Throttle {
+					throttleMap[k] = map[string]interface{}{
+						"burstLimit": v.BurstLimit,
+						"rateLimit":  v.RateLimit,
+					}
+				}
+				stageMap["throttle"] = throttleMap
+			}
+			apiStages = append(apiStages, stageMap)
+		}
+		response["apiStages"] = apiStages
 	}
 	if p.Quota != nil {
 		response["quota"] = map[string]interface{}{

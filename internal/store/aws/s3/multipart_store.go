@@ -73,7 +73,7 @@ func (s *ObjectStore) GetMultipartUpload(uploadId string) (*MultipartUpload, err
 }
 
 // UploadPart uploads a part of a multipart upload.
-func (s *ObjectStore) UploadPart(ctx context.Context, bucket, key, uploadId string, partNumber int, reader io.Reader, encryptedSize int64, contentNonce, dataKey []byte) (*ObjectPart, error) {
+func (s *ObjectStore) UploadPart(ctx context.Context, bucket, key, uploadId string, partNumber int, reader io.Reader, encryptedSize int64, plainSize int64, contentNonce, dataKey []byte) (*ObjectPart, error) {
 	lockKey := "multipart#" + uploadId
 	s.keyLocker.Lock(lockKey)
 	defer func() {
@@ -98,6 +98,7 @@ func (s *ObjectStore) UploadPart(ctx context.Context, bucket, key, uploadId stri
 	part := &ObjectPart{
 		PartNumber:    partNumber,
 		ETag:          etag,
+		Size:          plainSize,
 		LastModified:  time.Now().UTC(),
 		EncryptedSize: encryptedSize,
 		ContentNonce:  contentNonce,
@@ -182,7 +183,17 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 		})
 	}
 
-	blobMeta, err := s.blobStore.CompleteMultipartUpload(ctx, bucket, key, uploadId, blobParts)
+	versionId := "null"
+	if s.isVersioningEnabled(bucket) {
+		versionId = s.generateVersionId()
+	}
+
+	blobKey := key
+	if versionId != "null" {
+		blobKey = key + "#" + versionId
+	}
+
+	blobMeta, err := s.blobStore.CompleteMultipartUpload(ctx, bucket, blobKey, uploadId, blobParts)
 	if err != nil {
 		return nil, err
 	}
@@ -191,12 +202,7 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 		logs.Error("Failed to cleanup multipart upload after complete", logs.Err(err))
 	}
 
-	versionId := "null"
-	if s.isVersioningEnabled(bucket) {
-		versionId = s.generateVersionId()
-	}
-
-	obj := newObject(key, bucket, upload.ContentType, upload.Metadata, versionId, false)
+	obj := newObject(key, bucket, upload.ContentType, upload.Metadata, versionId, false, StorageClassStandard)
 	obj.Size = blobMeta.Size
 	obj.ETag = blobMeta.ETag
 	obj.LastModified = blobMeta.LastModified
@@ -218,6 +224,26 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 				KMSKeyID:       upload.KMSKeyID,
 			}
 		}
+
+		var partInfos []PartEncryptionInfo
+		for _, p := range upload.Parts {
+			if p.EncryptedSize > 0 || p.DataKey != nil {
+				partInfos = append(partInfos, PartEncryptionInfo{
+					EncryptedSize: p.EncryptedSize,
+					PlainSize:     p.Size,
+					ContentNonce:  p.ContentNonce,
+					DataKey:       p.DataKey,
+				})
+			}
+		}
+		sseMetadata.PartEncryptionInfos = partInfos
+
+		var totalPlain int64
+		for _, p := range upload.Parts {
+			totalPlain += p.Size
+		}
+		sseMetadata.UnencryptedSize = totalPlain
+
 		obj.SSEMetadata = sseMetadata
 	}
 

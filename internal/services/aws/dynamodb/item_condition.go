@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -243,7 +244,7 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 
 	if len(tokens) == 1 {
 		token := tokens[0]
-		for _, funcName := range []string{"attribute_exists", "attribute_not_exists", "begins_with", "contains"} {
+		for _, funcName := range []string{"attribute_exists", "attribute_not_exists", "attribute_type", "begins_with", "contains"} {
 			prefix := funcName + "("
 			if strings.HasPrefix(token, prefix) && strings.HasSuffix(token, ")") {
 				argStr := token[len(prefix) : len(token)-1]
@@ -260,6 +261,9 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 						}
 						return !exists, nil
 					}
+				}
+				if funcName == "attribute_type" {
+					return evaluateAttributeType(item, args, names, values)
 				}
 				if funcName == "begins_with" || funcName == "contains" {
 					return evaluateFunctionCondition(item, []string{funcName, "(" + argStr + ")"}, names, values)
@@ -289,6 +293,23 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 	}
 
 	if len(tokens) >= 3 {
+		if strings.HasPrefix(tokens[0], "size(") && strings.HasSuffix(tokens[0], ")") {
+			pathStr := tokens[0][5 : len(tokens[0])-1]
+			attrName := resolveName(pathStr, names)
+			attr, exists := item.Attributes[attrName]
+			if !exists {
+				return false, nil
+			}
+			size, ok := computeAttributeSize(attr)
+			if !ok {
+				return false, nil
+			}
+			sizeStr := strconv.Itoa(size)
+			sizeAttr := &dbstore.AttributeValue{N: &sizeStr}
+			value := resolveValue(tokens[2], values, names)
+			return compareAttributeValues(sizeAttr, tokens[1], value), nil
+		}
+
 		attrName := resolveName(tokens[0], names)
 		op := tokens[1]
 		value := resolveValue(tokens[2], values, names)
@@ -371,7 +392,92 @@ func evaluateFunctionCondition(item *dbstore.Item, tokens []string, names map[st
 			}
 			return false, nil
 		}
+		if attr.L != nil {
+			return listContainsValue(attr.L, checkValue), nil
+		}
 	}
 
 	return false, nil
+}
+
+func evaluateAttributeType(item *dbstore.Item, args []string, names map[string]string, values map[string]*dbstore.AttributeValue) (bool, error) {
+	if len(args) < 2 {
+		return false, nil
+	}
+
+	path := strings.TrimSpace(args[0])
+	typeToken := strings.TrimSpace(args[1])
+
+	attrName := resolveName(path, names)
+	attr, exists := item.Attributes[attrName]
+	if !exists {
+		return false, nil
+	}
+
+	var typeStr string
+	if strings.HasPrefix(typeToken, ":") {
+		checkValue := resolveValue(typeToken, values, names)
+		if checkValue != nil && checkValue.S != nil {
+			typeStr = *checkValue.S
+		}
+	} else {
+		typeStr = strings.Trim(typeToken, "'")
+	}
+
+	return getAttributeTypeName(attr) == typeStr, nil
+}
+
+func getAttributeTypeName(attr *dbstore.AttributeValue) string {
+	switch {
+	case attr.S != nil:
+		return "S"
+	case attr.SS != nil:
+		return "SS"
+	case attr.N != nil:
+		return "N"
+	case attr.NS != nil:
+		return "NS"
+	case attr.B != nil:
+		return "B"
+	case attr.BS != nil:
+		return "BS"
+	case attr.BOOL != nil:
+		return "BOOL"
+	case attr.NULL != nil:
+		return "NULL"
+	case attr.L != nil:
+		return "L"
+	case attr.M != nil:
+		return "M"
+	}
+	return ""
+}
+
+func computeAttributeSize(attr *dbstore.AttributeValue) (int, bool) {
+	switch {
+	case attr.S != nil:
+		return len(*attr.S), true
+	case attr.B != nil:
+		return len(attr.B), true
+	case attr.SS != nil:
+		return len(attr.SS), true
+	case attr.NS != nil:
+		return len(attr.NS), true
+	case attr.BS != nil:
+		return len(attr.BS), true
+	case attr.L != nil:
+		return len(attr.L), true
+	case attr.M != nil:
+		return len(attr.M), true
+	}
+	return 0, false
+}
+
+func listContainsValue(list []*dbstore.AttributeValue, target *dbstore.AttributeValue) bool {
+	for _, elem := range list {
+		if attributeValuesEqual(elem, target) {
+			return true
+		}
+	}
+	return false
 }

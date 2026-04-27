@@ -3,6 +3,7 @@ package apigateway
 import (
 	"context"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -171,15 +172,20 @@ func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.R
 					api.Policy = value
 				}
 				if strings.HasPrefix(path, "/binaryMediaTypes/") {
-					mediaType := strings.TrimPrefix(path, "/binaryMediaTypes/")
 					if opMap["op"] == "add" {
-						if !containsMediaType(api.BinaryMediaTypes, mediaType) {
-							api.BinaryMediaTypes = append(api.BinaryMediaTypes, mediaType)
+						if !containsMediaType(api.BinaryMediaTypes, value) {
+							api.BinaryMediaTypes = append(api.BinaryMediaTypes, value)
 						}
 					} else if opMap["op"] == "remove" {
+						mediaType := strings.TrimPrefix(path, "/binaryMediaTypes/")
+						target := mediaType
+						idx, err := strconv.Atoi(mediaType)
+						if err == nil && idx < len(api.BinaryMediaTypes) {
+							target = api.BinaryMediaTypes[idx]
+						}
 						newTypes := []string{}
 						for _, t := range api.BinaryMediaTypes {
-							if t != mediaType {
+							if t != target {
 								newTypes = append(newTypes, t)
 							}
 						}
@@ -254,6 +260,10 @@ func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]int
 	if api.EndpointConfiguration != nil {
 		response["endpointConfiguration"] = map[string]interface{}{
 			"types": api.EndpointConfiguration.Types,
+		}
+	} else {
+		response["endpointConfiguration"] = map[string]interface{}{
+			"types": []string{"EDGE"},
 		}
 	}
 	if len(api.Tags) > 0 {

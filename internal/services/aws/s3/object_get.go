@@ -141,11 +141,18 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 			unencryptedSize = encObj.SSEMetadata.UnencryptedSize
 			output.SSECustomerAlgorithm = "AES256"
 		} else {
-			decResult, err := o.svc.encryptionManager.Decrypt(encryptedData, encObj.SSEMetadata, input.Bucket, input.Key)
-			if err != nil {
-				return nil, fmt.Errorf("failed to decrypt data: %w", err)
+			if len(encObj.SSEMetadata.PartEncryptionInfos) > 0 {
+				decryptedData, err = o.decryptMultipartParts(encryptedData, encObj.SSEMetadata, input.Bucket, input.Key)
+				if err != nil {
+					return nil, fmt.Errorf("failed to decrypt multipart data: %w", err)
+				}
+			} else {
+				decResult, err := o.svc.encryptionManager.Decrypt(encryptedData, encObj.SSEMetadata, input.Bucket, input.Key)
+				if err != nil {
+					return nil, fmt.Errorf("failed to decrypt data: %w", err)
+				}
+				decryptedData = decResult.DecryptedData
 			}
-			decryptedData = decResult.DecryptedData
 			unencryptedSize = encObj.SSEMetadata.UnencryptedSize
 			output.ServerSideEncryption = string(encObj.SSEMetadata.EncryptionType)
 			output.SSEKMSKeyId = encObj.SSEMetadata.KMSKeyID
@@ -432,4 +439,45 @@ func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *requ
 	}
 
 	return output, nil
+}
+
+func (o *ObjectOperations) decryptMultipartParts(combinedEncrypted []byte, sseMeta *s3store.SSEObjectMetadata, bucket, key string) ([]byte, error) {
+	var result bytes.Buffer
+	offset := int64(0)
+
+	for _, partInfo := range sseMeta.PartEncryptionInfos {
+		encSize := partInfo.EncryptedSize
+		if encSize == 0 {
+			continue
+		}
+		if offset+encSize > int64(len(combinedEncrypted)) {
+			return nil, fmt.Errorf("encrypted data truncated at part boundary")
+		}
+		partEncData := combinedEncrypted[offset : offset+encSize]
+		offset += encSize
+
+		partMeta := &s3store.SSEObjectMetadata{
+			EncryptionType:   sseMeta.EncryptionType,
+			EncryptedDataKey: partInfo.DataKey,
+			ContentNonce:     partInfo.ContentNonce,
+			KMSKeyID:         sseMeta.KMSKeyID,
+		}
+
+		decResult, err := o.svc.encryptionManager.Decrypt(partEncData, partMeta, bucket, key)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt part at offset %d: %w", offset-encSize, err)
+		}
+		result.Write(decResult.DecryptedData)
+	}
+
+	if offset < int64(len(combinedEncrypted)) {
+		remaining := combinedEncrypted[offset:]
+		decResult, err := o.svc.encryptionManager.Decrypt(remaining, sseMeta, bucket, key)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt trailing data: %w", err)
+		}
+		result.Write(decResult.DecryptedData)
+	}
+
+	return result.Bytes(), nil
 }

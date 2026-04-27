@@ -31,20 +31,23 @@ func (e *SSECEncryptor) ParseCustomerKey(encodedKey, encodedMD5 string) ([]byte,
 		return nil, fmt.Errorf("invalid customer key encoding: %w", err)
 	}
 
-	if len(key) != 32 {
-		return nil, fmt.Errorf("customer key must be 32 bytes (AES-256)")
-	}
-
 	if encodedMD5 != "" {
 		expectedMD5, err := base64.StdEncoding.DecodeString(encodedMD5)
 		if err != nil {
 			return nil, fmt.Errorf("invalid customer key MD5 encoding: %w", err)
 		}
-
 		actualMD5 := md5.Sum(key)
 		if !equalBytes(expectedMD5, actualMD5[:]) {
 			return nil, fmt.Errorf("customer key MD5 mismatch")
 		}
+	}
+
+	if len(key) != 32 {
+		secondKey, err2 := base64.StdEncoding.DecodeString(string(key))
+		if err2 != nil || len(secondKey) != 32 {
+			return nil, fmt.Errorf("customer key must be 32 bytes (AES-256)")
+		}
+		key = secondKey
 	}
 
 	return key, nil

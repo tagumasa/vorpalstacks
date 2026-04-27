@@ -195,6 +195,7 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 
 	var reader io.Reader = input.Body
 	var encryptedSize int64
+	var plainSize int64
 	var contentNonce, dataKey []byte
 
 	if upload.SSEType != "" {
@@ -202,6 +203,7 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 		if err != nil {
 			return nil, err
 		}
+		plainSize = int64(len(data))
 
 		var encResult *EncryptionResult
 		switch upload.SSEType {
@@ -242,7 +244,7 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
-	part, err := store.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, contentNonce, dataKey)
+	part, err := store.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, plainSize, contentNonce, dataKey)
 	if err != nil {
 		return nil, err
 	}
@@ -386,6 +388,7 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 
 	var reader io.Reader = bytes.NewReader(data)
 	var encryptedSize int64
+	var plainSize int64 = int64(len(data))
 	var contentNonce, dataKey []byte
 
 	if upload.SSEType != "" {
@@ -428,7 +431,7 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 		}
 	}
 
-	part, err := store.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, contentNonce, dataKey)
+	part, err := store.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, plainSize, contentNonce, dataKey)
 	if err != nil {
 		return nil, err
 	}

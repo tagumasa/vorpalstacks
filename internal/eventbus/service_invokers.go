@@ -124,3 +124,19 @@ type DynamoDBInvoker interface {
 type NeptuneGraphInvoker interface {
 	ExecuteQueryOnGraph(ctx context.Context, graphID string, query string, language string, parameters map[string]interface{}) (interface{}, error)
 }
+
+// KMSInvoker provides KMS encryption operations for cross-service consumers
+// (e.g. S3 SSE-KMS envelope encryption). Consumers call these methods instead
+// of holding a direct reference to the KMS store or HSM backend.
+type KMSInvoker interface {
+	GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string) (*KMSDataKeyResult, error)
+	Decrypt(ctx context.Context, keyID string, ciphertext []byte, encryptionContext map[string]string) ([]byte, error)
+	KeyExists(ctx context.Context, keyID string) bool
+}
+
+// KMSDataKeyResult carries the plaintext and encrypted data key returned by
+// GenerateDataKey.
+type KMSDataKeyResult struct {
+	Plaintext      []byte
+	CiphertextBlob []byte
+}

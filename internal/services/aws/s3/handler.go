@@ -132,6 +132,9 @@ func (h *S3Handler) isPresignedURLRequest(query url.Values) bool {
 }
 
 func (h *S3Handler) verifyPresignedURL(r *http.Request, bucket string) error {
+	if h.svc.credentialsProvider == nil {
+		return nil
+	}
 	verifier := crypto.NewPresignedURLVerifier(h.svc.credentialsProvider)
 	return verifier.VerifyPresignedURL(r, bucket, h.region)
 }

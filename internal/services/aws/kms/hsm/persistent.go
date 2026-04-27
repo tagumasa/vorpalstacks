@@ -279,7 +279,7 @@ func (b *PersistentBackend) VerifyMAC(keyID string, message, macValue []byte, al
 }
 
 // GenerateDataKey generates a data key for envelope encryption.
-func (b *PersistentBackend) GenerateDataKey(keyID string, keySpec string, numberOfBytes int) (*GenerateDataKeyResult, error) {
+func (b *PersistentBackend) GenerateDataKey(keyID string, keySpec string, numberOfBytes int, encryptionContext map[string]string) (*GenerateDataKeyResult, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -297,7 +297,7 @@ func (b *PersistentBackend) GenerateDataKey(keyID string, keySpec string, number
 		return nil, err
 	}
 
-	ciphertext, err := aesEncrypt(key.symmetric, plaintext, nil)
+	ciphertext, err := aesEncrypt(key.symmetric, plaintext, serializeEncryptionContext(encryptionContext))
 	if err != nil {
 		return nil, err
 	}

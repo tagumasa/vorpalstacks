@@ -9,10 +9,16 @@ func (s *TimestreamQueryService) formatRowsForResponse(rows []map[string]interfa
 	for _, row := range rows {
 		var data []map[string]interface{}
 		for _, col := range columnInfo {
-			val := row[col.Name]
-			data = append(data, map[string]interface{}{
-				"ScalarValue": fmt.Sprintf("%v", val),
-			})
+			val, exists := row[col.Name]
+			if !exists || val == nil {
+				data = append(data, map[string]interface{}{
+					"NullValue": true,
+				})
+			} else {
+				data = append(data, map[string]interface{}{
+					"ScalarValue": fmt.Sprintf("%v", val),
+				})
+			}
 		}
 		result = append(result, map[string]interface{}{
 			"Data": data,

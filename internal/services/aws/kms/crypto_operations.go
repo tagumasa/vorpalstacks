@@ -238,7 +238,7 @@ func (s *KMSService) GenerateDataKey(ctx context.Context, reqCtx *request.Reques
 		keySpec = "AES_256"
 	}
 
-	result, err := s.hsmBackend.GenerateDataKey(key.KeyID, keySpec, numberOfBytes)
+	result, err := s.hsmBackend.GenerateDataKey(key.KeyID, keySpec, numberOfBytes, encryptionContext)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +274,7 @@ func (s *KMSService) GenerateDataKeyWithoutPlaintext(ctx context.Context, reqCtx
 		keySpec = "AES_256"
 	}
 
-	result, err := s.hsmBackend.GenerateDataKey(key.KeyID, keySpec, numberOfBytes)
+	result, err := s.hsmBackend.GenerateDataKey(key.KeyID, keySpec, numberOfBytes, encryptionContext)
 	if err != nil {
 		return nil, err
 	}

@@ -358,9 +358,8 @@ func buildNestedValue(parts []projPathPart, leaf *dbstore.AttributeValue) *dbsto
 	}
 	part := parts[0]
 	if part.isIndex {
-		l := make([]*dbstore.AttributeValue, part.index+1)
-		l[part.index] = buildNestedValue(parts[1:], leaf)
-		return &dbstore.AttributeValue{L: l}
+		child := buildNestedValue(parts[1:], leaf)
+		return &dbstore.AttributeValue{L: []*dbstore.AttributeValue{child}}
 	}
 	m := map[string]*dbstore.AttributeValue{
 		part.name: buildNestedValue(parts[1:], leaf),
@@ -374,13 +373,15 @@ func mergeNestedValues(existing *dbstore.AttributeValue, nested *dbstore.Attribu
 	}
 	part := parts[0]
 	if part.isIndex {
-		if existing.L == nil || part.index >= len(existing.L) {
+		if existing.L == nil {
 			return
 		}
-		if existing.L[part.index] == nil {
-			existing.L[part.index] = nested.L[part.index]
-		} else if len(parts) > 1 {
-			mergeNestedValues(existing.L[part.index], nested.L[part.index], parts[1:])
+		if nested.L == nil || len(nested.L) == 0 {
+			return
+		}
+		existing.L = append(existing.L, nested.L[0])
+		if len(parts) > 1 && existing.L[len(existing.L)-1] != nil {
+			mergeNestedValues(existing.L[len(existing.L)-1], nested.L[0], parts[1:])
 		}
 	} else {
 		if existing.M == nil || nested.M == nil {

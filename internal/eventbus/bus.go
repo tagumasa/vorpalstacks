@@ -139,6 +139,7 @@ type Bus interface {
 	EC2Invoker() EC2Invoker
 	DynamoDBInvoker() DynamoDBInvoker
 	NeptuneGraphInvoker() NeptuneGraphInvoker
+	KMSInvoker() KMSInvoker
 
 	SetLambdaInvoker(invoker LambdaInvoker)
 	SetSQSInvoker(invoker SQSInvoker)
@@ -148,6 +149,7 @@ type Bus interface {
 	SetEventsInvoker(invoker EventsInvoker)
 	SetDynamoDBInvoker(invoker DynamoDBInvoker)
 	SetNeptuneGraphInvoker(invoker NeptuneGraphInvoker)
+	SetKMSInvoker(invoker KMSInvoker)
 }
 
 // EventBus is the central implementation of the Bus interface, managing
@@ -180,6 +182,7 @@ type EventBus struct {
 	ec2Invoker          EC2Invoker
 	dynamoDBInvoker     DynamoDBInvoker
 	neptuneGraphInvoker NeptuneGraphInvoker
+	kmsInvoker          KMSInvoker
 	nextSubID           atomic.Int64
 	asyncCh             chan *OutboxEntry
 	directCh            chan *directDispatch
@@ -619,6 +622,12 @@ func (b *EventBus) SetNeptuneGraphInvoker(invoker NeptuneGraphInvoker) {
 
 // NeptuneGraphInvoker returns the configured NeptuneGraph invoker.
 func (b *EventBus) NeptuneGraphInvoker() NeptuneGraphInvoker { return b.neptuneGraphInvoker }
+
+// SetKMSInvoker sets the KMS invoker used for encryption key operations.
+func (b *EventBus) SetKMSInvoker(invoker KMSInvoker) { b.kmsInvoker = invoker }
+
+// KMSInvoker returns the configured KMS invoker.
+func (b *EventBus) KMSInvoker() KMSInvoker { return b.kmsInvoker }
 
 // RoleResolver returns the configured RoleResolver, or nil if none was set.
 func (b *EventBus) RoleResolver() RoleResolver {

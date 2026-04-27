@@ -37,6 +37,30 @@ func (s *HybridBlobStore) GetWithVersion(ctx context.Context, bucket, key, versi
 	path := s.filePathWithVersion(bucket, key, versionId)
 	f, info, err := openAndStat(path, fmt.Sprintf("%s/%s (version %s)", bucket, key, versionId))
 	if err != nil {
+		if versionId == "null" {
+			fallbackKey := s.storageKey(bucket, key)
+			data, err2 := s.storage.Bucket("blob_small").Get([]byte(fallbackKey))
+			if err2 == nil && data != nil {
+				var obj smallObject
+				if jsonErr := json.Unmarshal(data, &obj); jsonErr == nil {
+					return newMemoryReader(obj.Data, obj.Metadata), obj.Metadata, nil
+				}
+			}
+			fallbackPath := s.filePath(bucket, key)
+			f2, info2, err3 := openAndStat(fallbackPath, fmt.Sprintf("%s/%s", bucket, key))
+			if err3 != nil {
+				return nil, nil, err
+			}
+			meta, metaErr := s.getMetadata(fallbackKey)
+			if metaErr != nil {
+				meta = &BlobMetadata{
+					Key:          key,
+					Size:         info2.Size(),
+					LastModified: info2.ModTime().UTC(),
+				}
+			}
+			return newFileReader(f2, info2.Size(), meta), meta, nil
+		}
 		return nil, nil, err
 	}
 

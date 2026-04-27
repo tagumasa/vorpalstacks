@@ -41,8 +41,8 @@ const (
 
 	echoHandlerCode = `exports.handler = async (event) => { return JSON.stringify(event); };`
 
-	pollInterval = 300 * time.Millisecond
-	defaultPollTimeout = 10 * time.Second
+	pollInterval         = 300 * time.Millisecond
+	defaultPollTimeout   = 10 * time.Second
 	schedulerPollTimeout = 15 * time.Second
 )
 

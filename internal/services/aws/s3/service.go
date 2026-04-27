@@ -60,14 +60,44 @@ func (s *S3Service) SetCredentialsProvider(provider auth.CredentialsProvider) {
 	s.credentialsProvider = provider
 }
 
-// SetKMSClient sets the KMS client for server-side encryption.
-func (s *S3Service) SetKMSClient(kmsClient KMSClient) {
-	s.encryptionManager = NewEncryptionManagerWithKMS(kmsClient)
-}
-
 // SetStorageManager sets the storage manager for persisting SSE-S3 bucket keys.
 func (s *S3Service) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+type busKMSClient struct {
+	bus eventbus.Bus
+}
+
+func (c *busKMSClient) GenerateDataKey(keyID string, keySpec string, encContext map[string]string) (*GenerateDataKeyResult, error) {
+	invoker := c.bus.KMSInvoker()
+	if invoker == nil {
+		return nil, fmt.Errorf("KMS invoker not available on event bus")
+	}
+	result, err := invoker.GenerateDataKey(context.Background(), keyID, keySpec, encContext)
+	if err != nil {
+		return nil, err
+	}
+	return &GenerateDataKeyResult{
+		Plaintext:  result.Plaintext,
+		Ciphertext: result.CiphertextBlob,
+	}, nil
+}
+
+func (c *busKMSClient) Decrypt(keyID string, ciphertext []byte, encContext map[string]string) ([]byte, error) {
+	invoker := c.bus.KMSInvoker()
+	if invoker == nil {
+		return nil, fmt.Errorf("KMS invoker not available on event bus")
+	}
+	return invoker.Decrypt(context.Background(), keyID, ciphertext, encContext)
+}
+
+func (c *busKMSClient) KeyExists(keyID string) bool {
+	invoker := c.bus.KMSInvoker()
+	if invoker == nil {
+		return false
+	}
+	return invoker.KeyExists(context.Background(), keyID)
 }
 
 // RestoreSSE3Keys restores persisted SSE-S3 bucket keys from storage.
@@ -99,6 +129,9 @@ func (s *S3Service) RestoreSSE3Keys() {
 func (s *S3Service) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	if bus != nil {
+		if bus.KMSInvoker() != nil {
+			s.encryptionManager = NewEncryptionManagerWithKMS(&busKMSClient{bus: bus})
+		}
 		subID, err := eventbus.SubscribeTyped[*eventbus.S3ObjectEvent](bus, s.handleS3Notification, eventbus.WithAsync())
 		if err == nil {
 			s.busUnsubscribe = func() {

@@ -273,6 +273,7 @@ func (a *App) initKMS(st *serviceState) error {
 	}
 	st.kmsService = svckms.NewKMSService(st.accountID, st.region, hsmBackend)
 	st.kmsService.RegisterHandlers(a.server.Dispatcher())
+	a.server.EventBus().SetKMSInvoker(st.kmsService.KMSBusInvoker())
 
 	if err := st.kmsService.EnsureDefaultSSMKey(); err != nil {
 		logs.Warn("Failed to create default SSM key",

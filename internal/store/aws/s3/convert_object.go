@@ -219,14 +219,24 @@ func sseObjectMetadataToProto(m *SSEObjectMetadata) *pb.SSEObjectMetadata {
 	if m == nil {
 		return nil
 	}
+	var partInfos []*pb.PartEncryptionInfo
+	for _, pi := range m.PartEncryptionInfos {
+		partInfos = append(partInfos, &pb.PartEncryptionInfo{
+			EncryptedSize: pi.EncryptedSize,
+			PlainSize:     pi.PlainSize,
+			ContentNonce:  pi.ContentNonce,
+			DataKey:       pi.DataKey,
+		})
+	}
 	return &pb.SSEObjectMetadata{
-		EncryptionType:    sseTypeToProto(m.EncryptionType),
-		EncryptedDataKey:  m.EncryptedDataKey,
-		ContentNonce:      m.ContentNonce,
-		KmsKeyId:          m.KMSKeyID,
-		EncryptionContext: m.EncryptionContext,
-		UnencryptedMd5:    m.UnencryptedMD5,
-		UnencryptedSize:   m.UnencryptedSize,
+		EncryptionType:      sseTypeToProto(m.EncryptionType),
+		EncryptedDataKey:    m.EncryptedDataKey,
+		ContentNonce:        m.ContentNonce,
+		KmsKeyId:            m.KMSKeyID,
+		EncryptionContext:   m.EncryptionContext,
+		UnencryptedMd5:      m.UnencryptedMD5,
+		UnencryptedSize:     m.UnencryptedSize,
+		PartEncryptionInfos: partInfos,
 	}
 }
 
@@ -234,14 +244,24 @@ func protoToSSEObjectMetadata(p *pb.SSEObjectMetadata) *SSEObjectMetadata {
 	if p == nil {
 		return nil
 	}
+	var partInfos []PartEncryptionInfo
+	for _, pi := range p.PartEncryptionInfos {
+		partInfos = append(partInfos, PartEncryptionInfo{
+			EncryptedSize: pi.EncryptedSize,
+			PlainSize:     pi.PlainSize,
+			ContentNonce:  pi.ContentNonce,
+			DataKey:       pi.DataKey,
+		})
+	}
 	return &SSEObjectMetadata{
-		EncryptionType:    protoToSSEType(p.EncryptionType),
-		EncryptedDataKey:  p.EncryptedDataKey,
-		ContentNonce:      p.ContentNonce,
-		KMSKeyID:          p.KmsKeyId,
-		EncryptionContext: p.EncryptionContext,
-		UnencryptedMD5:    p.UnencryptedMd5,
-		UnencryptedSize:   p.UnencryptedSize,
+		EncryptionType:      protoToSSEType(p.EncryptionType),
+		EncryptedDataKey:    p.EncryptedDataKey,
+		ContentNonce:        p.ContentNonce,
+		KMSKeyID:            p.KmsKeyId,
+		EncryptionContext:   p.EncryptionContext,
+		UnencryptedMD5:      p.UnencryptedMd5,
+		UnencryptedSize:     p.UnencryptedSize,
+		PartEncryptionInfos: partInfos,
 	}
 }
 

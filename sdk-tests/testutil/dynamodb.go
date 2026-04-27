@@ -3439,10 +3439,10 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 
 		binaryData := []byte("\x00\x01\x02\xff\xfe")
 		putItem := map[string]types.AttributeValue{
-			"id":      &types.AttributeValueMemberS{Value: "alltypes1"},
-			"str_val": &types.AttributeValueMemberS{Value: "hello"},
-			"num_val": &types.AttributeValueMemberN{Value: "3.14"},
-			"bin_val": &types.AttributeValueMemberB{Value: binaryData},
+			"id":       &types.AttributeValueMemberS{Value: "alltypes1"},
+			"str_val":  &types.AttributeValueMemberS{Value: "hello"},
+			"num_val":  &types.AttributeValueMemberN{Value: "3.14"},
+			"bin_val":  &types.AttributeValueMemberB{Value: binaryData},
 			"bool_val": &types.AttributeValueMemberBOOL{Value: true},
 			"null_val": &types.AttributeValueMemberNULL{Value: true},
 		}
@@ -3508,10 +3508,10 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(setTable)})
 
 		nsItem := map[string]types.AttributeValue{
-			"id":    &types.AttributeValueMemberS{Value: "setitem1"},
-			"nums":  &types.AttributeValueMemberNS{Value: []string{"1", "2.5", "-10"}},
-			"strs":  &types.AttributeValueMemberSS{Value: []string{"alpha", "beta"}},
-			"bins":  &types.AttributeValueMemberBS{Value: [][]byte{{0xCA, 0xFE}, {0xDE, 0xAD}}},
+			"id":   &types.AttributeValueMemberS{Value: "setitem1"},
+			"nums": &types.AttributeValueMemberNS{Value: []string{"1", "2.5", "-10"}},
+			"strs": &types.AttributeValueMemberSS{Value: []string{"alpha", "beta"}},
+			"bins": &types.AttributeValueMemberBS{Value: [][]byte{{0xCA, 0xFE}, {0xDE, 0xAD}}},
 			"map_v": &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
 				"inner_str": &types.AttributeValueMemberS{Value: "deep"},
 				"inner_num": &types.AttributeValueMemberN{Value: "42"},
@@ -3631,7 +3631,7 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		mapItem := map[string]types.AttributeValue{
 			"pk": &types.AttributeValueMemberS{Value: "nested1"},
 			"config": &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
-				"ttl":   &types.AttributeValueMemberN{Value: "3600"},
+				"ttl": &types.AttributeValueMemberN{Value: "3600"},
 				"flags": &types.AttributeValueMemberL{Value: []types.AttributeValue{
 					&types.AttributeValueMemberS{Value: "enabled"},
 					&types.AttributeValueMemberBOOL{Value: true},
@@ -3651,7 +3651,7 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 		}
 
 		queryResp, err := client.Query(ctx, &dynamodb.QueryInput{
-			TableName: aws.String(nestedTable),
+			TableName:              aws.String(nestedTable),
 			KeyConditionExpression: aws.String("pk = :pk"),
 			ExpressionAttributeValues: map[string]types.AttributeValue{
 				":pk": &types.AttributeValueMemberS{Value: "nested1"},

@@ -518,6 +518,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			ContentLength:        contentLength,
 			ContentType:          contentType,
 			Metadata:             metadata,
+			StorageClass:         r.Header.Get("x-amz-storage-class"),
 			IfMatch:              r.Header.Get("If-Match"),
 			IfNoneMatch:          r.Header.Get("If-None-Match"),
 			ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),

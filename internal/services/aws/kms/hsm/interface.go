@@ -131,7 +131,7 @@ type Backend interface {
 	GenerateMAC(keyID string, message []byte, algorithm MACAlgorithm) ([]byte, error)
 	VerifyMAC(keyID string, message, mac []byte, algorithm MACAlgorithm) (bool, error)
 
-	GenerateDataKey(keyID string, keySpec string, numberOfBytes int) (*GenerateDataKeyResult, error)
+	GenerateDataKey(keyID string, keySpec string, numberOfBytes int, encryptionContext map[string]string) (*GenerateDataKeyResult, error)
 
 	GetPublicKey(keyID string) ([]byte, error)
 	IsKeyAvailable(keyID string) bool

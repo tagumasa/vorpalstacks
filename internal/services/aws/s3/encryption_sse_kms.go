@@ -37,7 +37,7 @@ func NewHSMKMSClient(backend hsm.Backend) *HSMKMSClient {
 
 // GenerateDataKey generates a new data key using KMS.
 func (c *HSMKMSClient) GenerateDataKey(keyID string, keySpec string, context map[string]string) (*GenerateDataKeyResult, error) {
-	result, err := c.hsmBackend.GenerateDataKey(keyID, keySpec, 0)
+	result, err := c.hsmBackend.GenerateDataKey(keyID, keySpec, 0, context)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate data key: %w", err)
 	}

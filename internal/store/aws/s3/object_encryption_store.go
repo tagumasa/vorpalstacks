@@ -12,12 +12,12 @@ import (
 )
 
 // PutEncrypted stores encrypted data for an object.
-func (s *ObjectStore) PutEncrypted(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata) (*Object, error) {
-	return s.PutEncryptedWithVersioning(ctx, bucket, key, encryptedData, contentType, metadata, sseMetadata, false)
+func (s *ObjectStore) PutEncrypted(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, storageClass ObjectStorageClass) (*Object, error) {
+	return s.PutEncryptedWithVersioning(ctx, bucket, key, encryptedData, contentType, metadata, sseMetadata, false, storageClass)
 }
 
 // PutEncryptedWithVersioning stores encrypted data for an object with versioning support.
-func (s *ObjectStore) PutEncryptedWithVersioning(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, isDeleteMarker bool) (*Object, error) {
+func (s *ObjectStore) PutEncryptedWithVersioning(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, isDeleteMarker bool, storageClass ObjectStorageClass) (*Object, error) {
 	versionId := "null"
 	isVersioned := s.isVersioningEnabled(bucket)
 
@@ -45,15 +45,23 @@ func (s *ObjectStore) PutEncryptedWithVersioning(ctx context.Context, bucket, ke
 	}
 
 	now := time.Now().UTC()
+	size := int64(len(encryptedData))
+	if sseMetadata != nil && sseMetadata.UnencryptedSize > 0 {
+		size = sseMetadata.UnencryptedSize
+	}
+	sc := storageClass
+	if sc == "" {
+		sc = StorageClassStandard
+	}
 	obj := &Object{
 		Key:            key,
 		BucketName:     bucket,
-		Size:           int64(len(encryptedData)),
+		Size:           size,
 		ETag:           "",
 		LastModified:   now,
 		ContentType:    contentType,
 		Metadata:       metadata,
-		StorageClass:   StorageClassStandard,
+		StorageClass:   sc,
 		IsLatest:       true,
 		IsDeleteMarker: isDeleteMarker,
 		VersionID:      versionId,

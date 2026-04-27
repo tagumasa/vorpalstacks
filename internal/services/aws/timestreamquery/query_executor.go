@@ -154,11 +154,19 @@ func (s *TimestreamQueryService) buildColumnInfo(selectStmt *sqlparser.Select, r
 	for _, expr := range selectStmt.SelectExprs {
 		if aliased, ok := expr.(*sqlparser.AliasedExpr); ok {
 			colName := s.extractColumnName(aliased.Expr)
+			if !aliased.As.IsEmpty() {
+				colName = aliased.As.String()
+			}
 			scalarType := "VARCHAR"
 			if strings.Contains(strings.ToLower(colName), "time") {
 				scalarType = "TIMESTAMP"
 			} else if strings.Contains(colName, "measure_value") {
 				scalarType = "DOUBLE"
+			}
+			if _, isFunc := aliased.Expr.(*sqlparser.FuncExpr); isFunc {
+				if fn, ok := aliased.Expr.(*sqlparser.FuncExpr); ok && fn.IsAggregate() {
+					scalarType = "DOUBLE"
+				}
 			}
 			columns = append(columns, ColumnInfo{
 				Name: colName,
@@ -200,6 +208,18 @@ func (s *TimestreamQueryService) applyQuery(selectStmt *sqlparser.Select, record
 			}
 		}
 		rows = append(rows, row)
+	}
+
+	if s.hasAggregate(selectStmt) {
+		rows = s.applyGroupBy(rows, selectStmt)
+
+		if len(selectStmt.OrderBy) > 0 {
+			s.applyOrderBy(rows, selectStmt.OrderBy)
+		}
+		if selectStmt.Limit != nil {
+			rows = s.applyLimit(rows, selectStmt.Limit)
+		}
+		return s.projectAggregateColumns(rows, selectStmt)
 	}
 
 	if len(selectStmt.OrderBy) > 0 {

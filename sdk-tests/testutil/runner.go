@@ -133,12 +133,12 @@ func (r *TestRunner) RunServiceTests(service string) []TestResult {
 }
 
 var iamDependentServices = map[string]bool{
-	"lambda":         true,
-	"stepfunctions":  true,
-	"scheduler":      true,
-	"timestream":     true,
-	"logs":           true,
-	"sts":            true,
+	"lambda":        true,
+	"stepfunctions": true,
+	"scheduler":     true,
+	"timestream":    true,
+	"logs":          true,
+	"sts":           true,
 }
 
 func (r *TestRunner) RunServicesParallel(services []string, parallelism int) map[string][]TestResult {

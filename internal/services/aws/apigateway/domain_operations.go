@@ -362,30 +362,45 @@ func (s *APIGatewayService) UpdateBasePathMapping(ctx context.Context, reqCtx *r
 	}
 
 	patchOps, ok := req.Parameters["patchOperations"].([]interface{})
+	renamed := false
 	if ok {
 		for _, op := range patchOps {
 			if opMap, ok := op.(map[string]interface{}); ok {
-				path := ""
+				patchPath := ""
 				value := ""
 				if p, ok := opMap["path"].(string); ok {
-					path = p
+					patchPath = p
 				}
 				if v, ok := opMap["value"].(string); ok {
 					value = v
 				}
 
-				switch path {
+				switch patchPath {
 				case "/restApiId":
 					mapping.RestApiId = value
 				case "/stage":
 					mapping.Stage = value
+				case "/basePath":
+					oldPath := basePath
+					basePath = value
+					mapping.BasePath = value
+					renamed = true
+					if err := stores.domains.DeleteBasePathMapping(domainName, oldPath); err != nil {
+						return nil, err
+					}
 				}
 			}
 		}
 	}
 
-	if err := stores.domains.UpdateBasePathMapping(domainName, basePath, mapping); err != nil {
-		return nil, err
+	if renamed {
+		if _, err := stores.domains.CreateBasePathMapping(domainName, mapping); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := stores.domains.UpdateBasePathMapping(domainName, basePath, mapping); err != nil {
+			return nil, err
+		}
 	}
 
 	return s.toBasePathMappingResponse(mapping), nil
