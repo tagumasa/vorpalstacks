@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 
-	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/defaults"
 )
 
 func loadDefaults() map[string]ConfigEntry {
@@ -85,7 +85,7 @@ func loadDefaults() map[string]ConfigEntry {
 		},
 		"aws.region": {
 			Key:         "aws.region",
-			Value:       getEnvString("AWS_REGION", request.DefaultRegion),
+			Value:       getEnvString("AWS_REGION", defaults.DefaultRegion),
 			Type:        ConfigTypeString,
 			Description: "Default AWS region",
 			ReadOnly:    true,
@@ -242,6 +242,24 @@ func loadDefaults() map[string]ConfigEntry {
 			Description: "Neptune DB cluster default port",
 			ReadOnly:    false,
 			EnvVar:      "VS_PORT_NEPTUNE",
+			Category:    CategoryPorts,
+		},
+		"ports.route53_dns": {
+			Key:         "ports.route53_dns",
+			Value:       getEnvInt("VS_PORT_ROUTE53_DNS", 8088),
+			Type:        ConfigTypePort,
+			Description: "Route53 DNS server port",
+			ReadOnly:    false,
+			EnvVar:      "VS_PORT_ROUTE53_DNS",
+			Category:    CategoryPorts,
+		},
+		"ports.route53_healthcheck": {
+			Key:         "ports.route53_healthcheck",
+			Value:       getEnvInt("VS_PORT_ROUTE53_HEALTHCHECK", 8089),
+			Type:        ConfigTypePort,
+			Description: "Route53 health check default endpoint port",
+			ReadOnly:    false,
+			EnvVar:      "VS_PORT_ROUTE53_HEALTHCHECK",
 			Category:    CategoryPorts,
 		},
 

@@ -148,6 +148,17 @@ func (s *CognitoService) CreateResourceServer(ctx context.Context, reqCtx *reque
 		Scopes:     []cognitostore.ResourceServerScope{},
 	}
 
+	if scopes, ok := req.Parameters["Scopes"].([]interface{}); ok {
+		for _, sc := range scopes {
+			if m, ok := sc.(map[string]interface{}); ok {
+				rs.Scopes = append(rs.Scopes, cognitostore.ResourceServerScope{
+					ScopeName:        fmt.Sprintf("%v", m["ScopeName"]),
+					ScopeDescription: fmt.Sprintf("%v", m["ScopeDescription"]),
+				})
+			}
+		}
+	}
+
 	if err := store.CreateResourceServer(rs); err != nil {
 		return nil, err
 	}

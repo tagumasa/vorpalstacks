@@ -73,6 +73,15 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 	tagList := tagutil.ParseTags(req.Parameters, "Tags")
 	deletionProtectionEnabled := request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
 
+	var sseDesc *dbstore.SSEDescription
+	if sseSpec, ok := req.Parameters["SSESpecification"].(map[string]interface{}); ok {
+		var err error
+		sseDesc, err = parseSSESpecification(sseSpec)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -96,6 +105,20 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
+	if sseDesc != nil {
+		table.SSEDescription = sseDesc
+		if err := store.Tables().Put(table); err != nil {
+			return nil, err
+		}
+	}
+
+	if tableClass := request.GetStringParam(req.Parameters, "TableClass"); tableClass != "" {
+		table.TableClass = tableClass
+		if err := store.Tables().Put(table); err != nil {
+			return nil, err
+		}
+	}
+
 	if len(tagList) > 0 {
 		store.Tables().Tags().Tag(tableName, tagutil.ToMap(tagList))
 	}
@@ -105,8 +128,6 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 	}, nil
 }
 
-// DeleteTable deletes a DynamoDB table.
-// https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DeleteTable.html
 func (s *DynamoDBService) DeleteTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
 	if err != nil {
@@ -133,13 +154,13 @@ func (s *DynamoDBService) DeleteTable(ctx context.Context, reqCtx *request.Reque
 
 	store.Tables().Tags().Delete(tableName)
 
+	table.Status = dbstore.TableStatusArchived
+
 	return map[string]interface{}{
 		"TableDescription": s.buildTableDescription(table),
 	}, nil
 }
 
-// DescribeTable returns information about a DynamoDB table.
-// https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DescribeTable.html
 func (s *DynamoDBService) DescribeTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
 	if err != nil {
@@ -233,6 +254,10 @@ func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.Reque
 
 	if _, ok := req.Parameters["DeletionProtectionEnabled"]; ok {
 		table.DeletionProtectionEnabled = request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
+	}
+
+	if tableClass := request.GetStringParam(req.Parameters, "TableClass"); tableClass != "" {
+		table.TableClass = tableClass
 	}
 
 	table.LastUpdatedDateTime = time.Now().UTC()

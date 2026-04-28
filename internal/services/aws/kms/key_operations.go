@@ -308,18 +308,18 @@ func (s *KMSService) UpdateKeyDescription(ctx context.Context, reqCtx *request.R
 func (s *KMSService) buildKeyMetadata(key *kmsstore.Key) map[string]interface{} {
 	_, _, _, accountID, _ := arn.SplitARN(key.Arn)
 	metadata := map[string]interface{}{
-		"AWSAccountId":       accountID,
-		"KeyId":              key.KeyID,
-		"Arn":                key.Arn,
-		"KeyState":           key.KeyState,
-		"Enabled":            key.Enabled,
-		"KeyUsage":           key.KeyUsage,
-		"KeySpec":            key.KeySpec,
-		"CreationDate":       key.CreationDate.Unix(),
-		"Origin":             key.Origin,
-		"KeyManager":         key.KeyManager,
-		"KeyRotationEnabled": key.KeyRotationEnabled,
-		"MultiRegion":        key.MultiRegion,
+		"AWSAccountId":          accountID,
+		"KeyId":                 key.KeyID,
+		"Arn":                   key.Arn,
+		"KeyState":              key.KeyState,
+		"Enabled":               key.Enabled,
+		"KeyUsage":              key.KeyUsage,
+		"KeySpec":               key.KeySpec,
+		"CustomerMasterKeySpec": key.KeySpec,
+		"CreationDate":          key.CreationDate.Unix(),
+		"Origin":                key.Origin,
+		"KeyManager":            key.KeyManager,
+		"MultiRegion":           key.MultiRegion,
 	}
 
 	if key.Description != "" {
@@ -339,6 +339,9 @@ func (s *KMSService) buildKeyMetadata(key *kmsstore.Key) map[string]interface{} 
 	}
 	if len(key.SigningAlgorithms) > 0 {
 		metadata["SigningAlgorithms"] = key.SigningAlgorithms
+	}
+	if len(key.MacAlgorithms) > 0 {
+		metadata["MacAlgorithms"] = key.MacAlgorithms
 	}
 	if key.MultiRegion {
 		_, _, region, _, _ := arn.SplitARN(key.Arn)
@@ -378,11 +381,13 @@ func (s *KMSService) GetParametersForImport(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
+	validTo := time.Now().Add(24 * time.Hour)
+
 	return map[string]interface{}{
-		"KeyId":           keyID,
-		"ImportToken":     importToken,
-		"PublicKey":       publicKey,
-		"ParametersValid": true,
+		"KeyId":             keyID,
+		"ImportToken":       importToken,
+		"PublicKey":         publicKey,
+		"ParametersValidTo": validTo.Unix(),
 	}, nil
 }
 

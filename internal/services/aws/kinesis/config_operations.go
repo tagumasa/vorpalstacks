@@ -155,7 +155,17 @@ func (s *KinesisService) EnableEnhancedMonitoring(ctx context.Context, reqCtx *r
 		return nil, s.mapStoreError(err)
 	}
 
-	desiredMetrics := []string{"IncomingBytes", "IncomingRecords", "OutgoingBytes", "OutgoingRecords"}
+	requestedMetrics := request.GetStringList(req.Parameters, "ShardLevelMetrics")
+
+	var currentMetrics []string
+	if len(stream.EnhancedMonitoring) > 0 {
+		currentMetrics = stream.EnhancedMonitoring[0].ShardLevelMetrics
+	}
+	if currentMetrics == nil {
+		currentMetrics = []string{}
+	}
+
+	desiredMetrics := mergeMetrics(currentMetrics, requestedMetrics)
 
 	stream.EnhancedMonitoring = []kinesisstore.EnhancedMonitoring{
 		{ShardLevelMetrics: desiredMetrics},
@@ -166,7 +176,7 @@ func (s *KinesisService) EnableEnhancedMonitoring(ctx context.Context, reqCtx *r
 
 	return map[string]interface{}{
 		"StreamName":               streamName,
-		"CurrentShardLevelMetrics": desiredMetrics,
+		"CurrentShardLevelMetrics": currentMetrics,
 		"DesiredShardLevelMetrics": desiredMetrics,
 		"StreamARN":                stream.StreamARN,
 	}, nil
@@ -202,7 +212,17 @@ func (s *KinesisService) DisableEnhancedMonitoring(ctx context.Context, reqCtx *
 		return nil, s.mapStoreError(err)
 	}
 
-	desiredMetrics := []string{}
+	requestedMetrics := request.GetStringList(req.Parameters, "ShardLevelMetrics")
+
+	var currentMetrics []string
+	if len(stream.EnhancedMonitoring) > 0 {
+		currentMetrics = stream.EnhancedMonitoring[0].ShardLevelMetrics
+	}
+	if currentMetrics == nil {
+		currentMetrics = []string{}
+	}
+
+	desiredMetrics := subtractMetrics(currentMetrics, requestedMetrics)
 
 	stream.EnhancedMonitoring = []kinesisstore.EnhancedMonitoring{
 		{ShardLevelMetrics: desiredMetrics},
@@ -213,7 +233,7 @@ func (s *KinesisService) DisableEnhancedMonitoring(ctx context.Context, reqCtx *
 
 	return map[string]interface{}{
 		"StreamName":               streamName,
-		"CurrentShardLevelMetrics": desiredMetrics,
+		"CurrentShardLevelMetrics": currentMetrics,
 		"DesiredShardLevelMetrics": desiredMetrics,
 		"StreamARN":                stream.StreamARN,
 	}, nil

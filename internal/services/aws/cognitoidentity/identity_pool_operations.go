@@ -269,10 +269,14 @@ func (s *CognitoIdentityService) SetIdentityPoolRoles(ctx context.Context, reqCt
 	authRole, unauthRole := "", ""
 	if roles, ok := req.Parameters["Roles"]; ok {
 		if m, ok := roles.(map[string]interface{}); ok {
-			if v, ok := m["authenticated"].(string); ok {
+			if v, ok := m["Authenticated"].(string); ok {
+				authRole = v
+			} else if v, ok := m["authenticated"].(string); ok {
 				authRole = v
 			}
-			if v, ok := m["unauthenticated"].(string); ok {
+			if v, ok := m["Unauthenticated"].(string); ok {
+				unauthRole = v
+			} else if v, ok := m["unauthenticated"].(string); ok {
 				unauthRole = v
 			}
 		}

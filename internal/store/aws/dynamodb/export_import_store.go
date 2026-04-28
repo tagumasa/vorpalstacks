@@ -67,11 +67,14 @@ func (s *ExportStore) Put(export *ExportDescription) error {
 	return s.BaseStore.PutProto(export.ExportArn, ExportDescriptionToProto(export))
 }
 
-// List returns all exports, optionally filtered by table ARN.
-func (s *ExportStore) List(tableArn string) ([]*ExportDescription, error) {
+// List returns exports, optionally filtered by table ARN, with pagination.
+func (s *ExportStore) List(tableArn, marker string, maxItems int) ([]*ExportDescription, string, error) {
+	if maxItems <= 0 {
+		maxItems = 100
+	}
 	opts := common.ListOptions{
-		Marker:   "",
-		MaxItems: 100,
+		Marker:   marker,
+		MaxItems: maxItems,
 	}
 
 	filter := func(e *pb.ExportDescription) bool {
@@ -83,14 +86,19 @@ func (s *ExportStore) List(tableArn string) ([]*ExportDescription, error) {
 
 	result, err := common.ListProto[*pb.ExportDescription](s.BaseStore, opts, func() *pb.ExportDescription { return &pb.ExportDescription{} }, filter)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	exports := make([]*ExportDescription, len(result.Items))
 	for i, e := range result.Items {
 		exports[i] = ProtoToExportDescription(e)
 	}
-	return exports, nil
+
+	nextToken := ""
+	if result.IsTruncated {
+		nextToken = result.NextMarker
+	}
+	return exports, nextToken, nil
 }
 
 // ImportStore manages DynamoDB table imports from S3.
@@ -141,11 +149,14 @@ func (s *ImportStore) Put(imp *ImportTableDescription) error {
 	return s.BaseStore.PutProto(imp.ImportArn, ImportTableDescriptionToProto(imp))
 }
 
-// List returns all imports, optionally filtered by table ARN.
-func (s *ImportStore) List(tableArn string) ([]*ImportTableDescription, error) {
+// List returns imports, optionally filtered by table ARN, with pagination.
+func (s *ImportStore) List(tableArn, marker string, maxItems int) ([]*ImportTableDescription, string, error) {
+	if maxItems <= 0 {
+		maxItems = 100
+	}
 	opts := common.ListOptions{
-		Marker:   "",
-		MaxItems: 100,
+		Marker:   marker,
+		MaxItems: maxItems,
 	}
 
 	filter := func(i *pb.ImportTableDescription) bool {
@@ -157,7 +168,7 @@ func (s *ImportStore) List(tableArn string) ([]*ImportTableDescription, error) {
 
 	result, err := common.ListProto[*pb.ImportTableDescription](s.BaseStore, opts, func() *pb.ImportTableDescription { return &pb.ImportTableDescription{} }, filter)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	imports := make([]*ImportTableDescription, len(result.Items))
@@ -165,5 +176,9 @@ func (s *ImportStore) List(tableArn string) ([]*ImportTableDescription, error) {
 		imports[i] = ProtoToImportTableDescription(imp)
 	}
 
-	return imports, nil
+	nextToken := ""
+	if result.IsTruncated {
+		nextToken = result.NextMarker
+	}
+	return imports, nextToken, nil
 }

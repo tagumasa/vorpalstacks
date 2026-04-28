@@ -54,6 +54,7 @@ message Stream {
   int32 consumer_count = 10;
   google.protobuf.Timestamp created_at = 11;
   google.protobuf.Timestamp last_modified_at = 12;
+  int32 max_record_size_in_kib = 13;
 }
 
 // StreamSummary represents a summary of a Kinesis stream.

@@ -22,22 +22,24 @@ type DNSServer struct {
 	udpServer  *dns.Server
 	tcpServer  *dns.Server
 	bindAddr   string
+	port       int
 	started    bool
 	mu         sync.RWMutex
 	shutdownCh chan struct{}
 }
 
 // NewDNSServer creates a new DNSServer with the given stores and bind address.
-func NewDNSServer(hostedZoneStore *route53store.HostedZoneStore, recordSetStore *route53store.RecordSetStore, bindAddr string) *DNSServer {
+func NewDNSServer(hostedZoneStore *route53store.HostedZoneStore, recordSetStore *route53store.RecordSetStore, bindAddr string, port int) *DNSServer {
 	return &DNSServer{
 		store:      hostedZoneStore,
 		recordSets: recordSetStore,
 		bindAddr:   bindAddr,
+		port:       port,
 		shutdownCh: make(chan struct{}),
 	}
 }
 
-// Start starts the DNS server on UDP and TCP port 53.
+// Start starts the DNS server on the configured UDP and TCP port.
 func (s *DNSServer) Start() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -51,14 +53,16 @@ func (s *DNSServer) Start() error {
 	handler := dns.NewServeMux()
 	handler.HandleFunc(".", s.handleDNSRequest)
 
+	addr := fmt.Sprintf("%s:%d", s.bindAddr, s.port)
+
 	s.udpServer = &dns.Server{
-		Addr:    s.bindAddr + ":53",
+		Addr:    addr,
 		Net:     "udp",
 		Handler: handler,
 	}
 
 	s.tcpServer = &dns.Server{
-		Addr:    s.bindAddr + ":53",
+		Addr:    addr,
 		Net:     "tcp",
 		Handler: handler,
 	}
@@ -84,7 +88,7 @@ func (s *DNSServer) Start() error {
 	}()
 
 	s.started = true
-	logs.Info("DNS server started", logs.String("address", s.bindAddr+":53"))
+	logs.Info("DNS server started", logs.String("address", fmt.Sprintf("%s:%d", s.bindAddr, s.port)))
 	return nil
 }
 

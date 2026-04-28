@@ -16,10 +16,11 @@ import (
 
 // Route53Service provides AWS Route 53 DNS operations.
 type Route53Service struct {
-	accountID string
-	dnsStores *route53store.Route53Stores
-	dnsServer *dnsserver.DNSServer
-	stores    sync.Map // global — single cached instance for store() fallback
+	accountID     string
+	defaultHCPort int64
+	dnsStores     *route53store.Route53Stores
+	dnsServer     *dnsserver.DNSServer
+	stores        sync.Map // global — single cached instance for store() fallback
 }
 
 // NewRoute53Service creates a new Route 53 service instance.
@@ -33,24 +34,30 @@ func NewRoute53Service(store storage.BasicStorage, accountID string) *Route53Ser
 			route53store.NewTagStore(store),
 			route53store.NewARNBuilder(accountID),
 		),
-		accountID: accountID,
+		accountID:     accountID,
+		defaultHCPort: 8089,
 	}
 }
 
 // NewRoute53ServiceWithDNS creates a new Route 53 service with DNS server enabled.
-func NewRoute53ServiceWithDNS(store storage.BasicStorage, accountID, bindAddr string, enableDNS bool) (*Route53Service, error) {
+func NewRoute53ServiceWithDNS(store storage.BasicStorage, accountID, bindAddr string, dnsPort int, enableDNS bool) (*Route53Service, error) {
 	svc := NewRoute53Service(store, accountID)
 
 	if enableDNS {
-		dnsServer := dnsserver.NewDNSServer(svc.dnsStores.HostedZones().Raw(), svc.dnsStores.RecordSets().Raw(), bindAddr)
+		dnsServer := dnsserver.NewDNSServer(svc.dnsStores.HostedZones().Raw(), svc.dnsStores.RecordSets().Raw(), bindAddr, dnsPort)
 		if err := dnsServer.Start(); err != nil {
 			return nil, fmt.Errorf("failed to start DNS server: %w", err)
 		}
 		svc.dnsServer = dnsServer
-		logs.Info("Route53 DNS server enabled", logs.String("address", bindAddr+":53"))
+		logs.Info("Route53 DNS server enabled", logs.String("address", fmt.Sprintf("%s:%d", bindAddr, dnsPort)))
 	}
 
 	return svc, nil
+}
+
+// SetDefaultHCPort sets the default health check port for new health checks.
+func (s *Route53Service) SetDefaultHCPort(port int) {
+	s.defaultHCPort = int64(port)
 }
 
 func (s *Route53Service) store(reqCtx *request.RequestContext) (*route53store.Route53Stores, error) {

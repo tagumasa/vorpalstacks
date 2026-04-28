@@ -30,8 +30,8 @@ type DBCluster struct {
 	KmsKeyId                         string                            `json:"KmsKeyId,omitempty"`
 	CopyTagsToSnapshot               bool                              `json:"CopyTagsToSnapshot"`
 	DeletionProtection               bool                              `json:"DeletionProtection"`
-	EnableCloudwatchLogsExports      []string                          `json:"EnableCloudwatchLogsExports,omitempty"`
-	EnableIAMDatabaseAuthentication  bool                              `json:"EnableIAMDatabaseAuthentication"`
+	EnabledCloudwatchLogsExports     []string                          `json:"EnabledCloudwatchLogsExports,omitempty"`
+	IAMDatabaseAuthenticationEnabled bool                              `json:"IAMDatabaseAuthenticationEnabled"`
 	ClusterCreateTime                *time.Time                        `json:"ClusterCreateTime,omitempty"`
 	EarliestRestorableTime           *time.Time                        `json:"EarliestRestorableTime,omitempty"`
 	LatestRestorableTime             *time.Time                        `json:"LatestRestorableTime,omitempty"`
@@ -61,27 +61,27 @@ type DBClusterRole struct {
 
 // DBInstance represents a Neptune database instance within a cluster.
 type DBInstance struct {
-	DBInstanceIdentifier            string     `json:"DBInstanceIdentifier"`
-	DBClusterIdentifier             string     `json:"DBClusterIdentifier"`
-	Engine                          string     `json:"Engine"`
-	EngineVersion                   string     `json:"EngineVersion,omitempty"`
-	DBInstanceClass                 string     `json:"DBInstanceClass"`
-	Status                          string     `json:"Status"`
-	AvailabilityZone                string     `json:"AvailabilityZone,omitempty"`
-	PreferredMaintenanceWindow      string     `json:"PreferredMaintenanceWindow,omitempty"`
-	DBParameterGroupName            string     `json:"DBParameterGroupName,omitempty"`
-	DBSecurityGroups                []string   `json:"DBSecurityGroups,omitempty"`
-	VpcSecurityGroupIds             []string   `json:"VpcSecurityGroupIds,omitempty"`
-	DBSubnetGroupName               string     `json:"DBSubnetGroupName,omitempty"`
-	EnableCloudwatchLogsExports     []string   `json:"EnableCloudwatchLogsExports,omitempty"`
-	EnableIAMDatabaseAuthentication bool       `json:"EnableIAMDatabaseAuthentication"`
-	PubliclyAccessible              bool       `json:"PubliclyAccessible"`
-	AutoMinorVersionUpgrade         bool       `json:"AutoMinorVersionUpgrade"`
-	InstanceCreateTime              *time.Time `json:"InstanceCreateTime,omitempty"`
-	CopyTagsToSnapshot              bool       `json:"CopyTagsToSnapshot"`
-	AccountID                       string     `json:"AccountId,omitempty"`
-	Region                          string     `json:"Region,omitempty"`
-	DBInstanceArn                   string     `json:"DBInstanceArn,omitempty"`
+	DBInstanceIdentifier             string     `json:"DBInstanceIdentifier"`
+	DBClusterIdentifier              string     `json:"DBClusterIdentifier"`
+	Engine                           string     `json:"Engine"`
+	EngineVersion                    string     `json:"EngineVersion,omitempty"`
+	DBInstanceClass                  string     `json:"DBInstanceClass"`
+	DBInstanceStatus                 string     `json:"DBInstanceStatus"`
+	AvailabilityZone                 string     `json:"AvailabilityZone,omitempty"`
+	PreferredMaintenanceWindow       string     `json:"PreferredMaintenanceWindow,omitempty"`
+	DBParameterGroupName             string     `json:"DBParameterGroupName,omitempty"`
+	DBSecurityGroups                 []string   `json:"DBSecurityGroups,omitempty"`
+	VpcSecurityGroupIds              []string   `json:"VpcSecurityGroupIds,omitempty"`
+	DBSubnetGroupName                string     `json:"DBSubnetGroupName,omitempty"`
+	EnabledCloudwatchLogsExports     []string   `json:"EnabledCloudwatchLogsExports,omitempty"`
+	IAMDatabaseAuthenticationEnabled bool       `json:"IAMDatabaseAuthenticationEnabled"`
+	PubliclyAccessible               bool       `json:"PubliclyAccessible"`
+	AutoMinorVersionUpgrade          bool       `json:"AutoMinorVersionUpgrade"`
+	InstanceCreateTime               *time.Time `json:"InstanceCreateTime,omitempty"`
+	CopyTagsToSnapshot               bool       `json:"CopyTagsToSnapshot"`
+	AccountID                        string     `json:"AccountId,omitempty"`
+	Region                           string     `json:"Region,omitempty"`
+	DBInstanceArn                    string     `json:"DBInstanceArn,omitempty"`
 }
 
 // DBClusterSnapshot represents a point-in-time backup of a Neptune DB cluster.

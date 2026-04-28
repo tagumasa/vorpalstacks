@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
-)
 
-const defaultRegion = "us-east-1"
+	"vorpalstacks/internal/common/defaults"
+)
 
 // RegionStorageManager manages storage instances for different AWS regions.
 type RegionStorageManager struct {
@@ -46,7 +46,7 @@ func NewRegionStorageManager(cfg *Config) (*RegionStorageManager, error) {
 //   - error: An error if retrieval or creation fails
 func (m *RegionStorageManager) GetStorage(region string) (Storage, error) {
 	if region == "" {
-		region = defaultRegion
+		region = defaults.DefaultRegion
 	}
 
 	m.mu.RLock()
@@ -124,7 +124,7 @@ func (m *RegionStorageManager) GetActiveRegions() []string {
 	m.mu.RUnlock()
 
 	if len(regions) == 0 {
-		return []string{defaultRegion}
+		return []string{defaults.DefaultRegion}
 	}
 	return regions
 }

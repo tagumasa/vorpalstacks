@@ -70,14 +70,16 @@ func (s *CognitoService) AssociateSoftwareToken(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	token, err := store.GetAccessTokenByValue(accessToken)
-	if err != nil {
-		return nil, ErrNotAuthorized
-	}
-
-	user, err := store.GetUserByID(token.UserID)
-	if err != nil {
-		return nil, ErrNotAuthorized
+	var user *cognitostore.User
+	if accessToken != "" {
+		userID, err := s.ValidateAccessToken(reqCtx, accessToken)
+		if err != nil {
+			return nil, ErrNotAuthorized
+		}
+		user, err = store.GetUserByID(userID)
+		if err != nil {
+			return nil, ErrNotAuthorized
+		}
 	}
 
 	secret, err := generateTOTPSecret()
@@ -118,12 +120,12 @@ func (s *CognitoService) VerifySoftwareToken(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	token, err := store.GetAccessTokenByValue(accessToken)
+	userID, err := s.ValidateAccessToken(reqCtx, accessToken)
 	if err != nil {
 		return nil, ErrNotAuthorized
 	}
 
-	user, err := store.GetUserByID(token.UserID)
+	user, err := store.GetUserByID(userID)
 	if err != nil {
 		return nil, ErrNotAuthorized
 	}

@@ -284,7 +284,9 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	}
 
 	replicaCount := request.GetIntParam(req.Parameters, "replicaCount")
-	if replicaCount < 0 || replicaCount > maxReplicaCount {
+	if !request.HasParam(req.Parameters, "replicaCount") {
+		replicaCount = 1
+	} else if replicaCount < 0 || replicaCount > maxReplicaCount {
 		replicaCount = 1
 	}
 

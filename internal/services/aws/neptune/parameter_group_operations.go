@@ -140,10 +140,26 @@ func (s *NeptuneService) DescribeDBClusterParameters(ctx context.Context, reqCtx
 	for _, p := range defaultParams {
 		name := p["ParameterName"].(string)
 		if mod, ok := userMods[name]; ok {
+			desc := mod.Description
+			if desc == "" {
+				desc = p["Description"].(string)
+			}
+			source := mod.Source
+			if source == "" {
+				source = "user"
+			}
+			applyType := mod.ApplyType
+			if applyType == "" {
+				applyType = p["ApplyType"].(string)
+			}
+			dataType := mod.DataType
+			if dataType == "" {
+				dataType = p["DataType"].(string)
+			}
 			items = append(items, map[string]interface{}{
 				"ParameterName": mod.ParameterName, "ParameterValue": mod.ParameterValue,
-				"Description": mod.Description, "Source": mod.Source, "ApplyType": mod.ApplyType,
-				"DataType": mod.DataType, "IsModifiable": mod.IsModifiable,
+				"Description": desc, "Source": source, "ApplyType": applyType,
+				"DataType": dataType, "IsModifiable": mod.IsModifiable,
 			})
 			delete(userMods, name)
 		} else {
@@ -151,6 +167,9 @@ func (s *NeptuneService) DescribeDBClusterParameters(ctx context.Context, reqCtx
 		}
 	}
 	for _, p := range userMods {
+		if p.Source == "" {
+			p.Source = "user"
+		}
 		items = append(items, map[string]interface{}{
 			"ParameterName": p.ParameterName, "ParameterValue": p.ParameterValue,
 			"Description": p.Description, "Source": p.Source, "ApplyType": p.ApplyType,
@@ -198,7 +217,15 @@ func (s *NeptuneService) ModifyDBClusterParameterGroup(ctx context.Context, reqC
 			existing[p.ParameterName] = p
 		}
 		for _, mp := range modParams {
-			existing[mp.ParameterName] = mp
+			if prev, ok := existing[mp.ParameterName]; ok {
+				prev.ParameterValue = mp.ParameterValue
+				if mp.ApplyMethod != "" {
+					prev.ApplyMethod = mp.ApplyMethod
+				}
+				existing[mp.ParameterName] = prev
+			} else {
+				existing[mp.ParameterName] = mp
+			}
 		}
 		pg.Parameters = make([]neptunestore.Parameter, 0, len(existing))
 		for _, p := range existing {
@@ -418,10 +445,26 @@ func (s *NeptuneService) DescribeDBParameters(ctx context.Context, reqCtx *reque
 	for _, p := range defaultParams {
 		name := p["ParameterName"].(string)
 		if mod, ok := userMods[name]; ok {
+			desc := mod.Description
+			if desc == "" {
+				desc = p["Description"].(string)
+			}
+			source := mod.Source
+			if source == "" {
+				source = "user"
+			}
+			applyType := mod.ApplyType
+			if applyType == "" {
+				applyType = p["ApplyType"].(string)
+			}
+			dataType := mod.DataType
+			if dataType == "" {
+				dataType = p["DataType"].(string)
+			}
 			items = append(items, map[string]interface{}{
 				"ParameterName": mod.ParameterName, "ParameterValue": mod.ParameterValue,
-				"Description": mod.Description, "Source": mod.Source, "ApplyType": mod.ApplyType,
-				"DataType": mod.DataType, "IsModifiable": mod.IsModifiable,
+				"Description": desc, "Source": source, "ApplyType": applyType,
+				"DataType": dataType, "IsModifiable": mod.IsModifiable,
 			})
 			delete(userMods, name)
 		} else {
@@ -429,6 +472,9 @@ func (s *NeptuneService) DescribeDBParameters(ctx context.Context, reqCtx *reque
 		}
 	}
 	for _, p := range userMods {
+		if p.Source == "" {
+			p.Source = "user"
+		}
 		items = append(items, map[string]interface{}{
 			"ParameterName": p.ParameterName, "ParameterValue": p.ParameterValue,
 			"Description": p.Description, "Source": p.Source, "ApplyType": p.ApplyType,
@@ -476,7 +522,15 @@ func (s *NeptuneService) ModifyDBParameterGroup(ctx context.Context, reqCtx *req
 			existing[p.ParameterName] = p
 		}
 		for _, mp := range modParams {
-			existing[mp.ParameterName] = mp
+			if prev, ok := existing[mp.ParameterName]; ok {
+				prev.ParameterValue = mp.ParameterValue
+				if mp.ApplyMethod != "" {
+					prev.ApplyMethod = mp.ApplyMethod
+				}
+				existing[mp.ParameterName] = prev
+			} else {
+				existing[mp.ParameterName] = mp
+			}
 		}
 		pg.Parameters = make([]neptunestore.Parameter, 0, len(existing))
 		for _, p := range existing {

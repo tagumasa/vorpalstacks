@@ -244,13 +244,9 @@ func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.Reque
 	}
 
 	return map[string]interface{}{
-		"ArchiveArn":     archive.ARN,
-		"ArchiveName":    archive.Name,
-		"EventSourceArn": archive.EventSourceARN,
-		"State":          string(archive.State),
-		"CreationTime":   archive.CreatedAt.Unix(),
-		"EventCount":     archive.EventCount,
-		"SizeBytes":      archive.SizeBytes,
+		"ArchiveArn":   archive.ARN,
+		"State":        string(archive.State),
+		"CreationTime": archive.CreatedAt.Unix(),
 	}, nil
 }
 
@@ -639,7 +635,7 @@ func (s *EventsService) ListConnections(ctx context.Context, reqCtx *request.Req
 	for _, conn := range result.Connections {
 		c := map[string]interface{}{
 			"ConnectionArn":     conn.ARN,
-			"ConnectionName":    conn.Name,
+			"Name":              conn.Name,
 			"ConnectionState":   string(conn.State),
 			"AuthorizationType": conn.AuthorizationType,
 			"CreationTime":      conn.CreatedAt.Unix(),
@@ -691,14 +687,24 @@ func (s *EventsService) ListApiDestinations(ctx context.Context, reqCtx *request
 	destinations := make([]map[string]interface{}, 0, len(result.ApiDestinations))
 	for _, dest := range result.ApiDestinations {
 		d := map[string]interface{}{
-			"ApiDestinationArn":            dest.ARN,
-			"ApiDestinationName":           dest.Name,
-			"ApiDestinationState":          string(dest.State),
-			"ConnectionArn":                dest.ConnectionARN,
-			"InvocationEndpoint":           dest.InvocationEndpoint,
-			"InvocationRateLimitPerSecond": dest.InvocationRateLimitPerSecond,
-			"HttpMethod":                   dest.HttpMethod,
-			"CreationTime":                 dest.CreatedAt.Unix(),
+			"ApiDestinationArn":   dest.ARN,
+			"ApiDestinationState": string(dest.State),
+			"ConnectionArn":       dest.ConnectionARN,
+			"InvocationEndpoint":  dest.InvocationEndpoint,
+			"HttpMethod":          dest.HttpMethod,
+			"CreationTime":        dest.CreatedAt.Unix(),
+		}
+		if dest.Name != "" {
+			d["Name"] = dest.Name
+		}
+		if dest.InvocationRateLimitPerSecond > 0 {
+			d["InvocationRateLimitPerSecond"] = dest.InvocationRateLimitPerSecond
+		}
+		if dest.Description != "" {
+			d["Description"] = dest.Description
+		}
+		if !dest.LastModifiedAt.IsZero() {
+			d["LastModifiedTime"] = dest.LastModifiedAt.Unix()
 		}
 		if dest.Description != "" {
 			d["Description"] = dest.Description

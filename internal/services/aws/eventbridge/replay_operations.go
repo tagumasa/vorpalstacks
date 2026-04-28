@@ -125,16 +125,11 @@ func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.Request
 	}()
 
 	result := map[string]interface{}{
-		"ReplayArn":      replay.ARN,
-		"ReplayName":     replay.Name,
-		"State":          string(replay.State),
-		"EventSourceArn": replay.EventSourceARN,
-		"Destination": map[string]interface{}{
-			"Arn":        destination.Arn,
-			"FilterArns": destination.FilterArns,
-		},
-		"EventStartTime": replay.EventStartTime.Unix(),
-		"EventEndTime":   replay.EventEndTime.Unix(),
+		"ReplayArn": replay.ARN,
+		"State":     string(replay.State),
+	}
+	if !replay.ReplayStartTime.IsZero() {
+		result["ReplayStartTime"] = replay.ReplayStartTime.Unix()
 	}
 	if replay.StateReason != "" {
 		result["StateReason"] = replay.StateReason

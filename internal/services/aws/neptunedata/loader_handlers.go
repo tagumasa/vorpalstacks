@@ -116,6 +116,7 @@ func (s *NeptuneDataService) GetLoaderJobStatus(ctx context.Context, reqCtx *req
 		totalTimeMs = float64(job.GetEndTime().AsTime().Sub(job.GetSubmitTime().AsTime()).Milliseconds())
 	}
 
+	succeeded := total - failed
 	payload := map[string]interface{}{
 		"loadId": job.GetLoadId(),
 		"status": job.GetStatus(),
@@ -125,8 +126,13 @@ func (s *NeptuneDataService) GetLoaderJobStatus(ctx context.Context, reqCtx *req
 			"failed":    mapBool(failed > 0),
 		},
 		"overallStatus": map[string]interface{}{
-			"totalRecords": total,
-			"totalTime":    totalTimeMs,
+			"status":         job.GetStatus(),
+			"totalRecords":   total,
+			"loaded":         succeeded,
+			"inserts":        succeeded,
+			"errors":         failed,
+			"drops":          0,
+			"totalTimeSpent": totalTimeMs,
 		},
 	}
 
@@ -251,7 +257,7 @@ func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string)
 
 	switch {
 	case strings.HasPrefix(source, "s3://"):
-		loadErr = fmt.Sprintf("source %s is not accessible in standalone mode", source)
+		loadErr = s.loadFromS3(region, job, loadID, source, format, stats)
 	case strings.HasPrefix(source, "file://"):
 		loadErr = s.loadFromFile(job, loadID, source, format, stats)
 	default:
@@ -307,6 +313,92 @@ func (s *NeptuneDataService) loadFromFile(job *pb.LoaderJob, loadID, source, for
 	default:
 		return fmt.Sprintf("unsupported format: %s", format)
 	}
+}
+
+// loadFromS3 reads objects from S3 via the S3Reader invoker and delegates to
+// format-specific loaders. Supports CSV and ntriples formats.
+func (s *NeptuneDataService) loadFromS3(region string, job *pb.LoaderJob, loadID, source, format string, stats *loaderStats) string {
+	if s.s3Invoker == nil {
+		return fmt.Sprintf("S3 service not available for loading from %s", source)
+	}
+
+	bucket, prefix := parseS3URI(source)
+
+	keys, err := s.s3Invoker.ListObjects(context.Background(), region, bucket, prefix)
+	if err != nil {
+		return fmt.Sprintf("failed to list S3 objects at %s: %v", source, err)
+	}
+	if len(keys) == 0 {
+		return fmt.Sprintf("no objects found at %s", source)
+	}
+
+	if s.graphDB == nil {
+		return "graph database not available"
+	}
+
+	writer := graphengine.GraphWriter(s.graphDB)
+
+	for _, key := range keys {
+		select {
+		case <-s.loaderCancelCh:
+			return "loader job cancelled"
+		default:
+		}
+
+		data, err := s.s3Invoker.GetObject(context.Background(), region, bucket, key)
+		if err != nil {
+			stats.failed++
+			stats.totalRecords++
+			continue
+		}
+
+		tmpFile, err := os.CreateTemp("", "neptune-load-*.csv")
+		if err != nil {
+			return fmt.Sprintf("failed to create temp file: %v", err)
+		}
+		tmpPath := tmpFile.Name()
+		defer os.Remove(tmpPath)
+
+		if _, err := tmpFile.Write(data); err != nil {
+			tmpFile.Close()
+			return fmt.Sprintf("failed to write temp file: %v", err)
+		}
+		tmpFile.Close()
+
+		f, err := os.Open(tmpPath)
+		if err != nil {
+			return fmt.Sprintf("failed to open temp file: %v", err)
+		}
+
+		var loadErr string
+		switch strings.ToLower(format) {
+		case "csv":
+			loadErr = s.loadCSV(f, writer, stats)
+		case "ntriples", "ntriplesrdf":
+			loadErr = s.loadNTriples(f, writer, stats)
+		default:
+			f.Close()
+			return fmt.Sprintf("unsupported format: %s", format)
+		}
+		f.Close()
+
+		if loadErr != "" {
+			return loadErr
+		}
+	}
+
+	return ""
+}
+
+// parseS3URI extracts bucket and prefix from an s3:// URI.
+func parseS3URI(uri string) (bucket, prefix string) {
+	uri = strings.TrimPrefix(uri, "s3://")
+	parts := strings.SplitN(uri, "/", 2)
+	bucket = parts[0]
+	if len(parts) > 1 {
+		prefix = parts[1]
+	}
+	return
 }
 
 func (s *NeptuneDataService) loadCSV(f *os.File, writer graphengine.GraphWriter, stats *loaderStats) string {

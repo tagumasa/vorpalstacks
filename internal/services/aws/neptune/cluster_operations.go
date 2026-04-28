@@ -87,32 +87,32 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		backupRetention = 1
 	}
 	cluster := &neptunestore.DBCluster{
-		DBClusterIdentifier:             id,
-		Engine:                          engine,
-		EngineVersion:                   request.GetStringParam(params, "EngineVersion"),
-		Status:                          "available",
-		Port:                            port,
-		BackupRetentionPeriod:           backupRetention,
-		PreferredBackupWindow:           request.GetStringParam(params, "PreferredBackupWindow"),
-		PreferredMaintenanceWindow:      request.GetStringParam(params, "PreferredMaintenanceWindow"),
-		MasterUsername:                  request.GetStringParam(params, "MasterUsername"),
-		DatabaseName:                    request.GetStringParam(params, "DatabaseName"),
-		DBClusterParameterGroupName:     request.GetStringParam(params, "DBClusterParameterGroupName"),
-		DBSubnetGroupName:               request.GetStringParam(params, "DBSubnetGroupName"),
-		StorageEncrypted:                request.GetBoolParam(params, "StorageEncrypted"),
-		KmsKeyId:                        request.GetStringParam(params, "KmsKeyId"),
-		CopyTagsToSnapshot:              request.GetBoolParam(params, "CopyTagsToSnapshot"),
-		DeletionProtection:              request.GetBoolParam(params, "DeletionProtection"),
-		EnableIAMDatabaseAuthentication: request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
-		ClusterCreateTime:               &now,
-		EarliestRestorableTime:          &now,
-		LatestRestorableTime:            &now,
-		ReplicationSourceIdentifier:     replicationSource,
-		GlobalClusterIdentifier:         request.GetStringParam(params, "GlobalClusterIdentifier"),
-		StorageType:                     request.GetStringParam(params, "StorageType"),
-		AccountID:                       reqCtx.GetAccountID(),
-		Region:                          reqCtx.GetRegion(),
-		DBClusterArn:                    arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Cluster(id),
+		DBClusterIdentifier:              id,
+		Engine:                           engine,
+		EngineVersion:                    request.GetStringParam(params, "EngineVersion"),
+		Status:                           "available",
+		Port:                             port,
+		BackupRetentionPeriod:            backupRetention,
+		PreferredBackupWindow:            request.GetStringParam(params, "PreferredBackupWindow"),
+		PreferredMaintenanceWindow:       request.GetStringParam(params, "PreferredMaintenanceWindow"),
+		MasterUsername:                   request.GetStringParam(params, "MasterUsername"),
+		DatabaseName:                     request.GetStringParam(params, "DatabaseName"),
+		DBClusterParameterGroupName:      request.GetStringParam(params, "DBClusterParameterGroupName"),
+		DBSubnetGroupName:                request.GetStringParam(params, "DBSubnetGroupName"),
+		StorageEncrypted:                 request.GetBoolParam(params, "StorageEncrypted"),
+		KmsKeyId:                         request.GetStringParam(params, "KmsKeyId"),
+		CopyTagsToSnapshot:               request.GetBoolParam(params, "CopyTagsToSnapshot"),
+		DeletionProtection:               request.GetBoolParam(params, "DeletionProtection"),
+		IAMDatabaseAuthenticationEnabled: request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
+		ClusterCreateTime:                &now,
+		EarliestRestorableTime:           &now,
+		LatestRestorableTime:             &now,
+		ReplicationSourceIdentifier:      replicationSource,
+		GlobalClusterIdentifier:          request.GetStringParam(params, "GlobalClusterIdentifier"),
+		StorageType:                      request.GetStringParam(params, "StorageType"),
+		AccountID:                        reqCtx.GetAccountID(),
+		Region:                           reqCtx.GetRegion(),
+		DBClusterArn:                     arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Cluster(id),
 	}
 
 	if azList := request.GetStringList(params, "AvailabilityZones"); len(azList) > 0 {
@@ -125,7 +125,7 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		cluster.VpcSecurityGroupIds = sgList
 	}
 	if logExports := request.GetStringList(params, "EnableCloudwatchLogsExports"); len(logExports) > 0 {
-		cluster.EnableCloudwatchLogsExports = logExports
+		cluster.EnabledCloudwatchLogsExports = logExports
 	}
 
 	if err := store.CreateCluster(cluster); err != nil {
@@ -265,7 +265,7 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		cluster.DeletionProtection = request.GetBoolParam(params, "DeletionProtection")
 	}
 	if request.HasParam(params, "EnableIAMDatabaseAuthentication") {
-		cluster.EnableIAMDatabaseAuthentication = request.GetBoolParam(params, "EnableIAMDatabaseAuthentication")
+		cluster.IAMDatabaseAuthenticationEnabled = request.GetBoolParam(params, "EnableIAMDatabaseAuthentication")
 	}
 	if request.HasParam(params, "VpcSecurityGroupIds") {
 		sgList := request.GetStringList(params, "VpcSecurityGroupIds")
@@ -277,7 +277,7 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		cluster.VpcSecurityGroupIds = sgList
 	}
 	if request.HasParam(params, "EnableCloudwatchLogsExports") {
-		cluster.EnableCloudwatchLogsExports = request.GetStringList(params, "EnableCloudwatchLogsExports")
+		cluster.EnabledCloudwatchLogsExports = request.GetStringList(params, "EnableCloudwatchLogsExports")
 	}
 
 	if err := store.UpdateCluster(cluster); err != nil {

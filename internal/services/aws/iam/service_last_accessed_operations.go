@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
@@ -166,7 +167,7 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType string
 			continue
 		}
 
-		eventRegion := request.DefaultRegion
+		eventRegion := defaults.DefaultRegion
 		if event.UserIdentity != nil && event.UserIdentity.ARN != "" {
 			if _, _, r, _, _ := arnutil.SplitARN(event.UserIdentity.ARN); r != "" {
 				eventRegion = r

@@ -13,8 +13,8 @@ import (
 
 	"github.com/robfig/cron/v3"
 
+	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/endpoint"
-	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
@@ -308,7 +308,7 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 	targetArn := target.Arn
 	region := schedule.Region
 	if region == "" {
-		region = request.DefaultRegion
+		region = defaults.DefaultRegion
 	}
 
 	if e.bus != nil {
@@ -349,7 +349,7 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 	if schedule.ActionAfterCompletion == schedulerstore.ActionAfterCompletionDelete {
 		region := schedule.Region
 		if region == "" {
-			region = request.DefaultRegion
+			region = defaults.DefaultRegion
 		}
 		storage, err := e.storageManager.GetStorage(region)
 		if err != nil {

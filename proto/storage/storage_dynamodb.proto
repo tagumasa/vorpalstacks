@@ -209,6 +209,7 @@ message Table {
   string resource_policy = 22;
   repeated KinesisDataStreamDestination kinesis_data_stream_destinations = 23;
   bool contributor_insights_enabled = 24;
+  string table_class = 25;
 }
 
 // AttributeValue represents a DynamoDB attribute value.

@@ -75,11 +75,20 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 		}
 	}
 
-	return map[string]interface{}{
-		"UserConfirmed":       preSignUpResult.AutoConfirmUser,
-		"CodeDeliveryDetails": map[string]interface{}{},
-		"UserSub":             user.ID,
-	}, nil
+	result := map[string]interface{}{
+		"UserConfirmed": preSignUpResult.AutoConfirmUser,
+		"UserSub":       user.ID,
+	}
+
+	if preSignUpResult.AutoConfirmUser {
+		result["CodeDeliveryDetails"] = map[string]interface{}{
+			"Destination":    "***",
+			"DeliveryMedium": "EMAIL",
+			"AttributeName":  "email",
+		}
+	}
+
+	return result, nil
 }
 
 // ConfirmSignUp confirms a user's registration with the confirmation code.
@@ -117,6 +126,43 @@ func (s *CognitoService) ConfirmSignUp(ctx context.Context, reqCtx *request.Requ
 
 	attrs := userAttributesMap(user)
 	if err := invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, attrs); err != nil {
+		logs.Warn("PostConfirmation trigger failed", logs.Err(err))
+	}
+
+	return response.EmptyResponse(), nil
+}
+
+// AdminConfirmSignUp confirms a user's registration as an administrator.
+// https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminConfirmSignUp.html
+func (s *CognitoService) AdminConfirmSignUp(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	userPoolID := getUserPoolID(req)
+	username := getUsername(req)
+
+	if userPoolID == "" || username == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := store.GetUser(userPoolID, username)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+
+	if user.UserStatus == "CONFIRMED" {
+		return nil, ErrUserAlreadyConfirmed
+	}
+
+	user.UserStatus = "CONFIRMED"
+	if err := store.UpdateUser(user); err != nil {
+		return nil, ErrInternalError
+	}
+
+	attrs := userAttributesMap(user)
+	if err := invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, userPoolID, username, "", nil, attrs); err != nil {
 		logs.Warn("PostConfirmation trigger failed", logs.Err(err))
 	}
 

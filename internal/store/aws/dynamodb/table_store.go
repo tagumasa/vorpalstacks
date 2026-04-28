@@ -22,6 +22,7 @@ type TableStore struct {
 	arnBuilder *svcarn.DynamoDBBuilder
 	keyLocker  common.KeyLocker
 	region     string
+	classStore *common.BaseStore
 }
 
 // NewTableStore creates a new store for DynamoDB tables.
@@ -31,6 +32,7 @@ func NewTableStore(store storage.BasicStorage, accountId, region string) *TableS
 		TagStore:   common.NewTagStoreWithRegion(store, "dynamodb", region),
 		arnBuilder: svcarn.NewARNBuilder(accountId, region).DynamoDB(),
 		region:     region,
+		classStore: common.NewBaseStore(store.Bucket("dynamodb_table_class-"+region), "dynamodb"),
 	}
 }
 
@@ -40,7 +42,15 @@ func (s *TableStore) Get(name string) (*Table, error) {
 	if err := s.BaseStore.GetProto(name, &pbTable); err != nil {
 		return nil, err
 	}
-	return ProtoToTable(&pbTable), nil
+	table := ProtoToTable(&pbTable)
+
+	var classData map[string]string
+	if err := s.classStore.Get(name, &classData); err == nil {
+		if tc, ok := classData["tc"]; ok {
+			table.TableClass = tc
+		}
+	}
+	return table, nil
 }
 
 // Create creates a new DynamoDB table.
@@ -100,7 +110,13 @@ func (s *TableStore) Create(
 
 // Put stores or updates a DynamoDB table.
 func (s *TableStore) Put(table *Table) error {
-	return s.BaseStore.PutProto(table.Name, TableToProto(table))
+	if err := s.BaseStore.PutProto(table.Name, TableToProto(table)); err != nil {
+		return err
+	}
+	if table.TableClass != "" {
+		return s.classStore.Put(table.Name, map[string]string{"tc": table.TableClass})
+	}
+	return nil
 }
 
 // Delete removes a DynamoDB table by name.

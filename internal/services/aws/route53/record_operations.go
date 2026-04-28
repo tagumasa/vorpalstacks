@@ -160,7 +160,7 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 
 		switch action {
 		case "CREATE":
-			if err := st.RecordSets().Upsert(hostedZoneId, rrs); err != nil {
+			if err := st.RecordSets().Create(hostedZoneId, rrs); err != nil {
 				for _, ac := range appliedChanges {
 					if delErr := st.RecordSets().Delete(hostedZoneId, ac.Name, ac.Type, ac.SetIdentifier); delErr != nil {
 						logs.Error("Failed to rollback record", logs.String("name", ac.Name), logs.Err(delErr))
@@ -275,6 +275,8 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 		}
 	}
 
+	allRecords := filtered
+
 	totalFiltered := len(filtered)
 	if maxItems > 0 && totalFiltered > maxItems {
 		filtered = filtered[:maxItems]
@@ -293,10 +295,10 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 		"MaxItems":           maxItems,
 	}
 
-	if isTruncated && len(filtered) > 0 {
-		lastRecord := filtered[len(filtered)-1]
-		result["NextRecordName"] = lastRecord.Name
-		result["NextRecordType"] = lastRecord.Type
+	if isTruncated && len(allRecords) > maxItems {
+		nextRecord := allRecords[maxItems]
+		result["NextRecordName"] = nextRecord.Name
+		result["NextRecordType"] = nextRecord.Type
 	}
 
 	return result, nil

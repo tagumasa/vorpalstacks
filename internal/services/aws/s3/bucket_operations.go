@@ -8,6 +8,7 @@ import (
 
 	"sort"
 
+	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -93,7 +94,7 @@ func (o *BucketOperations) CreateBucket(ctx *request.RequestContext, input *Crea
 	}
 
 	region := ctx.GetRegion()
-	if input.LocationConstraint != "" && input.LocationConstraint != "us-east-1" {
+	if input.LocationConstraint != "" && input.LocationConstraint != defaults.DefaultRegion {
 		region = input.LocationConstraint
 	}
 

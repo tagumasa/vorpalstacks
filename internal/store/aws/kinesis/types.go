@@ -149,6 +149,7 @@ func NewStream(name string, shardCount int32, streamMode StreamMode) *Stream {
 		ShardCount:           shardCount,
 		RetentionPeriodHours: 24,
 		EnhancedMonitoring:   []EnhancedMonitoring{{ShardLevelMetrics: []string{}}},
+		MaxRecordSizeInKiB:   1024,
 		CreatedAt:            now,
 		LastModifiedAt:       now,
 	}

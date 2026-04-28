@@ -59,10 +59,15 @@ func (s *KinesisService) PutRecord(ctx context.Context, reqCtx *request.RequestC
 		return nil, s.mapStoreError(err)
 	}
 
+	encType := "NONE"
+	if stream, err := store.GetStream(streamName); err == nil && stream.EncryptionType != "" {
+		encType = stream.EncryptionType
+	}
+
 	return map[string]interface{}{
 		"ShardId":        targetShard.ShardID,
 		"SequenceNumber": record.SequenceNumber,
-		"EncryptionType": "NONE",
+		"EncryptionType": encType,
 	}, nil
 }
 
@@ -138,10 +143,15 @@ func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.Request
 
 	var failedCount int32
 	var formattedResults []map[string]interface{}
+	encType := "NONE"
+	if stream, err := store.GetStream(streamName); err == nil && stream.EncryptionType != "" {
+		encType = stream.EncryptionType
+	}
 	for _, r := range results {
 		entry := map[string]interface{}{
 			"SequenceNumber": r.SequenceNumber,
 			"ShardId":        r.ShardID,
+			"EncryptionType": encType,
 		}
 		if r.ErrorCode != "" {
 			failedCount++
@@ -154,7 +164,7 @@ func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.Request
 	return map[string]interface{}{
 		"FailedRecordCount": failedCount,
 		"Records":           formattedResults,
-		"EncryptionType":    "NONE",
+		"EncryptionType":    encType,
 	}, nil
 }
 

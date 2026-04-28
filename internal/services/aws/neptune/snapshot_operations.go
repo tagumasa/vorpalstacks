@@ -242,8 +242,8 @@ func (s *NeptuneService) ModifyDBClusterSnapshotAttribute(ctx context.Context, r
 	}
 
 	attrName := request.GetStringParam(params, "AttributeName")
-	valuesToAdd := request.GetStringList(params, "ValuesToAdd")
-	valuesToRemove := request.GetStringList(params, "ValuesToRemove")
+	valuesToAdd := getNeptuneStringList(params, "ValuesToAdd", "AttributeValue", "member")
+	valuesToRemove := getNeptuneStringList(params, "ValuesToRemove", "AttributeValue", "member")
 
 	if attrName == "" {
 		attrName = "restore"

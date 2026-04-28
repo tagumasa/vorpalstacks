@@ -167,7 +167,6 @@ func (s *CognitoService) handleUserPasswordAuth(ctx context.Context, reqCtx *req
 			"TokenType":    "Bearer",
 			"ExpiresIn":    expiresIn,
 		},
-		"ChallengeParameters": map[string]interface{}{},
 	}, nil
 }
 
@@ -223,7 +222,6 @@ func (s *CognitoService) handleRefreshTokenAuth(ctx context.Context, reqCtx *req
 			"TokenType":   "Bearer",
 			"ExpiresIn":   expiresIn,
 		},
-		"ChallengeParameters": map[string]interface{}{},
 	}, nil
 }
 
@@ -324,7 +322,6 @@ func (s *CognitoService) handleRespondNewPasswordChallenge(reqCtx *request.Reque
 			"TokenType":    "Bearer",
 			"ExpiresIn":    expiresIn,
 		},
-		"ChallengeParameters": map[string]interface{}{},
 	}, nil
 }
 
@@ -360,19 +357,25 @@ func (s *CognitoService) GlobalSignOut(ctx context.Context, reqCtx *request.Requ
 		return nil, ErrInvalidParameter
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	at, err := store.GetAccessTokenByValue(accessToken)
+	userID, err := s.ValidateAccessToken(reqCtx, accessToken)
 	if err != nil {
 		return nil, ErrNotAuthorized
 	}
 
-	if err := store.DeleteAllRefreshTokensForUser(at.UserPoolID, at.UserID); err != nil {
+	store, err := s.store(reqCtx)
+	if err != nil {
 		return nil, err
 	}
-	if err := store.DeleteAccessToken(at.UserPoolID, at.UserID, accessToken); err != nil {
+
+	user, err := store.GetUserByID(userID)
+	if err != nil {
+		return nil, ErrNotAuthorized
+	}
+
+	if err := store.DeleteAllRefreshTokensForUser(user.UserPoolID, user.ID); err != nil {
+		return nil, err
+	}
+	if err := store.DeleteAccessToken(user.UserPoolID, user.ID, accessToken); err != nil {
 		return nil, err
 	}
 
@@ -390,23 +393,24 @@ func (s *CognitoService) ChangePassword(ctx context.Context, reqCtx *request.Req
 		return nil, ErrInvalidParameter
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	at, err := store.GetAccessTokenByValue(accessToken)
+	userID, err := s.ValidateAccessToken(reqCtx, accessToken)
 	if err != nil {
 		return nil, ErrNotAuthorized
 	}
 
-	userPool, err := store.GetUserPool(at.UserPoolID)
+	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, err
 	}
 
-	user, err := store.GetUserByID(at.UserID)
+	user, err := store.GetUserByID(userID)
 	if err != nil {
 		return nil, ErrUserNotFound
+	}
+
+	userPool, err := store.GetUserPool(user.UserPoolID)
+	if err != nil {
+		return nil, ErrResourceNotFound
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(previousPassword)); err != nil {
@@ -674,7 +678,6 @@ func (s *CognitoService) handleAdminNoSrpAuth(reqCtx *request.RequestContext, re
 			"TokenType":    "Bearer",
 			"ExpiresIn":    expiresIn,
 		},
-		"ChallengeParameters": map[string]interface{}{},
 	}, nil
 }
 
@@ -722,7 +725,6 @@ func (s *CognitoService) handleAdminRefreshTokenAuth(reqCtx *request.RequestCont
 			"TokenType":   "Bearer",
 			"ExpiresIn":   expiresIn,
 		},
-		"ChallengeParameters": map[string]interface{}{},
 	}, nil
 }
 
@@ -824,6 +826,5 @@ func (s *CognitoService) handleNewPasswordChallenge(reqCtx *request.RequestConte
 			"TokenType":    "Bearer",
 			"ExpiresIn":    expiresIn,
 		},
-		"ChallengeParameters": map[string]interface{}{},
 	}, nil
 }

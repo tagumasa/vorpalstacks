@@ -47,6 +47,7 @@ import (
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	storeconfig "vorpalstacks/internal/store/config"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -147,6 +148,9 @@ func (a *App) initNeptune(st *serviceState) error {
 func (a *App) initNeptuneData(st *serviceState) error {
 	st.neptuneDataService = svcneptunedata.NewNeptuneDataService()
 	st.neptuneDataService.SetStorageManager(a.server.StorageManager())
+	if st.s3Service != nil {
+		st.neptuneDataService.SetS3Invoker(st.s3Service)
+	}
 	st.neptuneDataService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("neptunedata", func(ctx context.Context) error {
 		st.neptuneDataService.Close()
@@ -158,9 +162,27 @@ func (a *App) initNeptuneData(st *serviceState) error {
 // --- Route53 (optional) ---
 
 func (a *App) initRoute53(st *serviceState) error {
-	route53Service, err := svcroute53.NewRoute53ServiceWithDNS(a.server.Storage(), st.accountID, a.cfg.Route53DNSBindAddr, a.cfg.Route53DNSEnabled)
+	dnsPort := 8088
+	bindAddr := "127.0.0.1"
+	cfgStore := storeconfig.NewStore(a.server.Storage())
+	if entry, err := cfgStore.Get("ports.route53_dns"); err == nil {
+		if p, ok := entry.Value.(int); ok && p > 0 {
+			dnsPort = p
+		}
+	}
+	if entry, err := cfgStore.Get("server.bind_addr"); err == nil {
+		if addr, ok := entry.Value.(string); ok && addr != "" {
+			bindAddr = addr
+		}
+	}
+	route53Service, err := svcroute53.NewRoute53ServiceWithDNS(a.server.Storage(), st.accountID, bindAddr, dnsPort, a.cfg.Route53DNSEnabled)
 	if err != nil {
 		return fmt.Errorf("failed to create Route53 service: %w", err)
+	}
+	if entry, err := cfgStore.Get("ports.route53_healthcheck"); err == nil {
+		if p, ok := entry.Value.(int); ok && p > 0 {
+			route53Service.SetDefaultHCPort(p)
+		}
 	}
 	st.route53Service = route53Service
 	st.route53Service.RegisterHandlers(a.server.Dispatcher())

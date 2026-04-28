@@ -1404,6 +1404,7 @@ type Table struct {
 	ResourcePolicy                string                          `protobuf:"bytes,22,opt,name=resource_policy,json=resourcePolicy,proto3" json:"resource_policy,omitempty"`
 	KinesisDataStreamDestinations []*KinesisDataStreamDestination `protobuf:"bytes,23,rep,name=kinesis_data_stream_destinations,json=kinesisDataStreamDestinations,proto3" json:"kinesis_data_stream_destinations,omitempty"`
 	ContributorInsightsEnabled    bool                            `protobuf:"varint,24,opt,name=contributor_insights_enabled,json=contributorInsightsEnabled,proto3" json:"contributor_insights_enabled,omitempty"`
+	TableClass                    string                          `protobuf:"bytes,25,opt,name=table_class,json=tableClass,proto3" json:"table_class,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -1604,6 +1605,13 @@ func (x *Table) GetContributorInsightsEnabled() bool {
 		return x.ContributorInsightsEnabled
 	}
 	return false
+}
+
+func (x *Table) GetTableClass() string {
+	if x != nil {
+		return x.TableClass
+	}
+	return ""
 }
 
 // AttributeValue represents a DynamoDB attribute value.
@@ -3054,7 +3062,7 @@ const file_storage_dynamodb_proto_rawDesc = "" +
 	"\n" +
 	"stream_arn\x18\x01 \x01(\tR\tstreamArn\x12-\n" +
 	"\x12destination_status\x18\x02 \x01(\tR\x11destinationStatus\x12D\n" +
-	"\x1edestination_status_description\x18\x03 \x01(\tR\x1cdestinationStatusDescription\"\xc1\f\n" +
+	"\x1edestination_status_description\x18\x03 \x01(\tR\x1cdestinationStatusDescription\"\xe2\f\n" +
 	"\x05Table\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
 	"\x03arn\x18\x02 \x01(\tR\x03arn\x125\n" +
@@ -3084,7 +3092,9 @@ const file_storage_dynamodb_proto_rawDesc = "" +
 	"\x16point_in_time_recovery\x18\x15 \x01(\v20.storage.dynamodb.PointInTimeRecoveryDescriptionR\x13pointInTimeRecovery\x12'\n" +
 	"\x0fresource_policy\x18\x16 \x01(\tR\x0eresourcePolicy\x12w\n" +
 	" kinesis_data_stream_destinations\x18\x17 \x03(\v2..storage.dynamodb.KinesisDataStreamDestinationR\x1dkinesisDataStreamDestinations\x12@\n" +
-	"\x1ccontributor_insights_enabled\x18\x18 \x01(\bR\x1acontributorInsightsEnabled\"\xfe\x02\n" +
+	"\x1ccontributor_insights_enabled\x18\x18 \x01(\bR\x1acontributorInsightsEnabled\x12\x1f\n" +
+	"\vtable_class\x18\x19 \x01(\tR\n" +
+	"tableClass\"\xfe\x02\n" +
 	"\x0eAttributeValue\x12\x0e\n" +
 	"\x01s\x18\x01 \x01(\tH\x00R\x01s\x12\x0e\n" +
 	"\x01n\x18\x02 \x01(\tH\x00R\x01n\x12\x0e\n" +

@@ -2,9 +2,6 @@ package request
 
 import "strings"
 
-// DefaultRegion is the default AWS region used when none is specified.
-const DefaultRegion = "us-east-1"
-
 // ExtractRegionFromAuth extracts the region from an AWS V4 auth header.
 func ExtractRegionFromAuth(authHeader string) string {
 	if authHeader == "" {

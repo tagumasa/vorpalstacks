@@ -84,13 +84,13 @@ func (s *KeyStore) Create(keyID string, keyUsage KeyUsage, keySpec KeySpec, desc
 	case KeyUsageGenerateVerifyMAC:
 		switch keySpec {
 		case KeySpecHMAC224:
-			key.SigningAlgorithms = []string{"HMAC_SHA_224"}
+			key.MacAlgorithms = []string{"HMAC_SHA_224"}
 		case KeySpecHMAC256:
-			key.SigningAlgorithms = []string{"HMAC_SHA_256"}
+			key.MacAlgorithms = []string{"HMAC_SHA_256"}
 		case KeySpecHMAC384:
-			key.SigningAlgorithms = []string{"HMAC_SHA_384"}
+			key.MacAlgorithms = []string{"HMAC_SHA_384"}
 		case KeySpecHMAC512:
-			key.SigningAlgorithms = []string{"HMAC_SHA_512"}
+			key.MacAlgorithms = []string{"HMAC_SHA_512"}
 		}
 	}
 

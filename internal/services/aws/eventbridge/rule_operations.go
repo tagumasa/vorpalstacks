@@ -131,11 +131,21 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 		if err == eventsstore.ErrRuleAlreadyExists {
 			existingRule, _ := store.GetRule(ctx, eventBusName, name)
 			if existingRule != nil {
-				existingRule.Description = rule.Description
-				existingRule.EventPattern = rule.EventPattern
-				existingRule.ScheduleExpression = rule.ScheduleExpression
-				existingRule.RoleARN = rule.RoleARN
-				existingRule.State = rule.State
+				if desc, ok := req.Parameters["Description"].(string); ok {
+					existingRule.Description = desc
+				}
+				if pattern, ok := req.Parameters["EventPattern"].(string); ok {
+					existingRule.EventPattern = pattern
+				}
+				if schedule, ok := req.Parameters["ScheduleExpression"].(string); ok {
+					existingRule.ScheduleExpression = schedule
+				}
+				if roleArn, ok := req.Parameters["RoleArn"].(string); ok {
+					existingRule.RoleARN = roleArn
+				}
+				if state, ok := req.Parameters["State"].(string); ok {
+					existingRule.State = eventsstore.RuleState(state)
+				}
 				if err := store.UpdateRule(ctx, existingRule); err != nil {
 					return nil, err
 				}
@@ -148,7 +158,7 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 					"RuleArn": existingRule.ARN,
 				}, nil
 			}
-			return nil, awserrors.NewResourceAlreadyExistsException("Rule already exists: " + name)
+			return nil, awserrors.NewResourceAlreadyExistsException("Rule '" + name + "'")
 		}
 		return nil, err
 	}

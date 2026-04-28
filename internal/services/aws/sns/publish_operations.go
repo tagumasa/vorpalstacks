@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/common/defaults"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -356,7 +357,7 @@ func (s *SNSService) deliverToHTTP(msg *snsstore.Message, sub *snsstore.Subscrip
 
 func (s *SNSService) buildNotificationPayloadWithMessage(msg *snsstore.Message, sub *snsstore.Subscription, region string, message string) map[string]interface{} {
 	if region == "" {
-		region = request.DefaultRegion
+		region = defaults.DefaultRegion
 	}
 	payload := map[string]interface{}{
 		"Type":             "Notification",
@@ -448,7 +449,7 @@ func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscr
 	}
 
 	if region == "" {
-		region = request.DefaultRegion
+		region = defaults.DefaultRegion
 	}
 
 	functionARN := sub.Endpoint

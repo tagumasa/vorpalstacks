@@ -46,6 +46,13 @@ type NeptuneDataService struct {
 	graphDB            *graphengine.DB
 	nodeIDMap          map[string]graphengine.NodeID
 	loaderCancelCh     chan struct{}
+	s3Invoker          S3Reader
+}
+
+// S3Reader provides read access to S3 objects for the bulk loader.
+type S3Reader interface {
+	GetObject(ctx context.Context, region, bucket, key string) ([]byte, error)
+	ListObjects(ctx context.Context, region, bucket, prefix string) ([]string, error)
 }
 
 // GraphStatistics holds cached graph-level statistics for the property graph.
@@ -203,6 +210,12 @@ func (s *NeptuneDataService) SetStorageManager(sm *storage.RegionStorageManager)
 // that run outside of a request context.
 func (s *NeptuneDataService) SetGraphDB(db *graphengine.DB) {
 	s.graphDB = db
+}
+
+// SetS3Invoker injects the S3 reader for bulk loader jobs that load data
+// from S3 sources.
+func (s *NeptuneDataService) SetS3Invoker(invoker S3Reader) {
+	s.s3Invoker = invoker
 }
 
 // GetStoreForRegion returns the cached Neptune store for the given region,

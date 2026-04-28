@@ -39,7 +39,7 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 	}
 	if err := store.CreateEventBus(ctx, eventBus); err != nil {
 		if err == eventsstore.ErrEventBusAlreadyExists {
-			return nil, awserrors.NewResourceAlreadyExistsException("Event bus '" + name + "' already exists")
+			return nil, awserrors.NewResourceAlreadyExistsException("Event bus '" + name + "'")
 		}
 		return nil, err
 	}

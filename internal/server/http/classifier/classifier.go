@@ -11,6 +11,7 @@ import (
 
 	"github.com/fxamacker/cbor/v2"
 
+	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/server/actionregistry"
 	"vorpalstacks/internal/server/http/router"
@@ -96,7 +97,7 @@ func (c *Classifier) Classify(r *http.Request) (*ClassifiedRequest, error) {
 	request.ExtractRESTPathParams(r, cr.Parameters)
 
 	if cr.Region == "" {
-		cr.Region = request.DefaultRegion
+		cr.Region = defaults.DefaultRegion
 	}
 
 	return cr, nil

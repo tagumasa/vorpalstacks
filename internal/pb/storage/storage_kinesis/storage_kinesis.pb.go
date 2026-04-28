@@ -328,6 +328,7 @@ type Stream struct {
 	ConsumerCount        int32                  `protobuf:"varint,10,opt,name=consumer_count,json=consumerCount,proto3" json:"consumer_count,omitempty"`
 	CreatedAt            *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	LastModifiedAt       *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=last_modified_at,json=lastModifiedAt,proto3" json:"last_modified_at,omitempty"`
+	MaxRecordSizeInKib   int32                  `protobuf:"varint,13,opt,name=max_record_size_in_kib,json=maxRecordSizeInKib,proto3" json:"max_record_size_in_kib,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -444,6 +445,13 @@ func (x *Stream) GetLastModifiedAt() *timestamppb.Timestamp {
 		return x.LastModifiedAt
 	}
 	return nil
+}
+
+func (x *Stream) GetMaxRecordSizeInKib() int32 {
+	if x != nil {
+		return x.MaxRecordSizeInKib
+	}
+	return 0
 }
 
 // StreamSummary represents a summary of a Kinesis stream.
@@ -872,7 +880,7 @@ const file_storage_kinesis_proto_rawDesc = "" +
 	"\vstream_mode\x18\x01 \x01(\x0e2\x1b.storage.kinesis.StreamModeR\n" +
 	"streamMode\"D\n" +
 	"\x12EnhancedMonitoring\x12.\n" +
-	"\x13shard_level_metrics\x18\x01 \x03(\tR\x11shardLevelMetrics\"\xd6\x04\n" +
+	"\x13shard_level_metrics\x18\x01 \x03(\tR\x11shardLevelMetrics\"\x8a\x05\n" +
 	"\x06Stream\x12\x1f\n" +
 	"\vstream_name\x18\x01 \x01(\tR\n" +
 	"streamName\x12\x1d\n" +
@@ -890,7 +898,8 @@ const file_storage_kinesis_proto_rawDesc = "" +
 	" \x01(\x05R\rconsumerCount\x129\n" +
 	"\n" +
 	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12D\n" +
-	"\x10last_modified_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\x0elastModifiedAt\"\xef\x01\n" +
+	"\x10last_modified_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\x0elastModifiedAt\x122\n" +
+	"\x16max_record_size_in_kib\x18\r \x01(\x05R\x12maxRecordSizeInKib\"\xef\x01\n" +
 	"\rStreamSummary\x12\x1f\n" +
 	"\vstream_name\x18\x01 \x01(\tR\n" +
 	"streamName\x12\x1d\n" +

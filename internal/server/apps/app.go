@@ -35,7 +35,6 @@ type Config struct {
 	TLSKeyPath            string
 	TLSHostname           string
 	Route53DNSEnabled     bool
-	Route53DNSBindAddr    string
 	DockerHost            string
 
 	ACM             bool
@@ -92,7 +91,6 @@ func FromBootstrap(bc *appconfig.BootstrapConfig) *Config {
 		TLSKeyPath:            bc.TLSKeyPath,
 		TLSHostname:           bc.TLSHostname,
 		Route53DNSEnabled:     bc.Route53DNSEnabled,
-		Route53DNSBindAddr:    bc.Route53DNSBindAddr,
 		DockerHost:            bc.DockerHost,
 		ACM:                   bc.ACM,
 		APIGateway:            bc.APIGateway,
@@ -166,7 +164,7 @@ func (c *Config) PrintStartupBanner() {
 	}
 	fmt.Println()
 	if c.Route53DNSEnabled {
-		fmt.Printf("Route53 DNS server: enabled on %s:53\n", c.Route53DNSBindAddr)
+		fmt.Printf("Route53 DNS server: enabled (port from config)\n")
 	}
 	if c.SignatureVerification {
 		fmt.Printf("Signature verification: enabled\n")

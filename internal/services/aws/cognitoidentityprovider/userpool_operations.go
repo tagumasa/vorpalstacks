@@ -102,6 +102,10 @@ func (s *CognitoService) UpdateUserPool(ctx context.Context, reqCtx *request.Req
 		return nil, ErrResourceNotFound
 	}
 
+	if poolName := req.GetParam("PoolName"); poolName != "" {
+		userPool.Name = poolName
+	}
+
 	if policy := parsePasswordPolicy(req); policy != nil {
 		userPool.PasswordPolicy = policy
 	}
@@ -189,8 +193,7 @@ func (s *CognitoService) GetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 	}
 
 	result := map[string]interface{}{
-		"MfaConfiguration":    mfaConfig,
-		"SmsMfaConfiguration": map[string]interface{}{"SmsConfiguration": map[string]interface{}{"SmsConfigType": "EXTERNAL"}},
+		"MfaConfiguration": mfaConfig,
 	}
 
 	return result, nil
@@ -221,7 +224,6 @@ func (s *CognitoService) SetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 	}
 
 	return map[string]interface{}{
-		"MfaConfiguration":    userPool.MfaConfiguration,
-		"SmsMfaConfiguration": map[string]interface{}{"SmsConfiguration": map[string]interface{}{"SmsConfigType": "EXTERNAL"}},
+		"MfaConfiguration": userPool.MfaConfiguration,
 	}, nil
 }

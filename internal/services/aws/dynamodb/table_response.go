@@ -75,8 +75,12 @@ func (s *DynamoDBService) buildTableDescription(table *dbstore.Table) map[string
 		"Status":              "ACTIVE",
 	}
 
+	tableClass := table.TableClass
+	if tableClass == "" {
+		tableClass = "STANDARD"
+	}
 	desc["TableClassSummary"] = map[string]interface{}{
-		"TableClass": "STANDARD",
+		"TableClass": tableClass,
 	}
 
 	desc["Replicas"] = []interface{}{}

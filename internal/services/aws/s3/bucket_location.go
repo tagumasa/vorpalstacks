@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/request"
 )
 
@@ -26,7 +27,7 @@ func (o *BucketOperations) GetBucketLocation(ctx *request.RequestContext, input 
 		return nil, err
 	}
 
-	if bucket.Region == "us-east-1" {
+	if bucket.Region == defaults.DefaultRegion {
 		return &GetBucketLocationOutput{LocationConstraint: ""}, nil
 	}
 

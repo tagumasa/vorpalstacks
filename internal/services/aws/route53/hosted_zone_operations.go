@@ -194,14 +194,12 @@ func (s *Route53Service) GetHostedZone(ctx context.Context, reqCtx *request.Requ
 	if len(zone.VPCs) > 0 {
 		vpcs := make([]interface{}, len(zone.VPCs))
 		for i, vpc := range zone.VPCs {
-			vpcs[i] = map[string]string{
+			vpcs[i] = map[string]interface{}{
 				"VPCRegion": vpc.VPCRegion,
 				"VPCId":     vpc.VPCID,
 			}
 		}
 		result["VPCs"] = protocol.XMLElements{ElementName: "VPC", Items: vpcs}
-	} else {
-		result["VPCs"] = []interface{}{}
 	}
 
 	return result, nil
@@ -410,17 +408,6 @@ func (s *Route53Service) hostedZoneToResponse(zone *route53store.HostedZone) map
 			config["Comment"] = zone.Config.Comment
 		}
 		result["Config"] = config
-	}
-
-	if len(zone.VPCs) > 0 {
-		vpcs := make([]interface{}, len(zone.VPCs))
-		for i, vpc := range zone.VPCs {
-			vpcs[i] = map[string]string{
-				"VPCRegion": vpc.VPCRegion,
-				"VPCId":     vpc.VPCID,
-			}
-		}
-		result["VPCs"] = protocol.XMLElements{ElementName: "VPC", Items: vpcs}
 	}
 
 	return result

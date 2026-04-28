@@ -35,22 +35,22 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 
 	now := time.Now()
 	instance := &neptunestore.DBInstance{
-		DBInstanceIdentifier:            id,
-		DBClusterIdentifier:             clusterID,
-		Engine:                          request.GetStringParam(params, "Engine"),
-		EngineVersion:                   request.GetStringParam(params, "EngineVersion"),
-		DBInstanceClass:                 request.GetStringParam(params, "DBInstanceClass"),
-		Status:                          "available",
-		AvailabilityZone:                request.GetStringParam(params, "AvailabilityZone"),
-		DBParameterGroupName:            request.GetStringParam(params, "DBParameterGroupName"),
-		DBSubnetGroupName:               request.GetStringParam(params, "DBSubnetGroupName"),
-		EnableIAMDatabaseAuthentication: request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
-		PubliclyAccessible:              request.GetBoolParam(params, "PubliclyAccessible"),
-		AutoMinorVersionUpgrade:         request.GetBoolParam(params, "AutoMinorVersionUpgrade"),
-		InstanceCreateTime:              &now,
-		AccountID:                       reqCtx.GetAccountID(),
-		Region:                          reqCtx.GetRegion(),
-		DBInstanceArn:                   arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().DBInstance(id),
+		DBInstanceIdentifier:             id,
+		DBClusterIdentifier:              clusterID,
+		Engine:                           request.GetStringParam(params, "Engine"),
+		EngineVersion:                    request.GetStringParam(params, "EngineVersion"),
+		DBInstanceClass:                  request.GetStringParam(params, "DBInstanceClass"),
+		DBInstanceStatus:                 "available",
+		AvailabilityZone:                 request.GetStringParam(params, "AvailabilityZone"),
+		DBParameterGroupName:             request.GetStringParam(params, "DBParameterGroupName"),
+		DBSubnetGroupName:                request.GetStringParam(params, "DBSubnetGroupName"),
+		IAMDatabaseAuthenticationEnabled: request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
+		PubliclyAccessible:               request.GetBoolParam(params, "PubliclyAccessible"),
+		AutoMinorVersionUpgrade:          request.GetBoolParam(params, "AutoMinorVersionUpgrade"),
+		InstanceCreateTime:               &now,
+		AccountID:                        reqCtx.GetAccountID(),
+		Region:                           reqCtx.GetRegion(),
+		DBInstanceArn:                    arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().DBInstance(id),
 	}
 
 	if err := store.CreateInstance(instance); err != nil {
@@ -83,7 +83,7 @@ func (s *NeptuneService) DeleteDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, translateStoreError(err)
 	}
 
-	instance.Status = "deleting"
+	instance.DBInstanceStatus = "deleting"
 
 	if err := store.DeleteInstance(id); err != nil {
 		return nil, translateStoreError(err)
@@ -134,7 +134,7 @@ func (s *NeptuneService) ModifyDBInstance(ctx context.Context, reqCtx *request.R
 		instance.AutoMinorVersionUpgrade = request.GetBoolParam(params, "AutoMinorVersionUpgrade")
 	}
 	if request.HasParam(params, "EnableIAMDatabaseAuthentication") {
-		instance.EnableIAMDatabaseAuthentication = request.GetBoolParam(params, "EnableIAMDatabaseAuthentication")
+		instance.IAMDatabaseAuthenticationEnabled = request.GetBoolParam(params, "EnableIAMDatabaseAuthentication")
 	}
 	if request.HasParam(params, "CopyTagsToSnapshot") {
 		instance.CopyTagsToSnapshot = request.GetBoolParam(params, "CopyTagsToSnapshot")
@@ -212,11 +212,11 @@ func (s *NeptuneService) RebootDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, translateStoreError(err)
 	}
 
-	if instance.Status != "available" {
+	if instance.DBInstanceStatus != "available" {
 		return nil, awserrors.NewAWSError("InvalidDBInstanceStateFault", fmt.Sprintf("instance %s is not in available state", id), http.StatusBadRequest)
 	}
 
-	instance.Status = "available"
+	instance.DBInstanceStatus = "available"
 	if err := store.UpdateInstance(instance); err != nil {
 		return nil, translateStoreError(err)
 	}

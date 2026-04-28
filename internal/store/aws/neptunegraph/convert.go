@@ -62,12 +62,8 @@ func protoToGraph(p *pb.Graph) *Graph {
 		AccountID:          p.GetAccountId(),
 		Region:             p.GetRegion(),
 	}
-	if v := p.GetProvisionedMemory(); v != 0 {
-		g.ProvisionedMemory = int32Ptr(v)
-	}
-	if v := p.GetReplicaCount(); v != 0 {
-		g.ReplicaCount = int32Ptr(v)
-	}
+	g.ProvisionedMemory = int32Ptr(p.GetProvisionedMemory())
+	g.ReplicaCount = int32Ptr(p.GetReplicaCount())
 	if p.VectorSearchConfiguration != nil {
 		g.VectorSearchConfiguration = &VectorSearchConfig{
 			Dimension: p.VectorSearchConfiguration.GetDimension(),

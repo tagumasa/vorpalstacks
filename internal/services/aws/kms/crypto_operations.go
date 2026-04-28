@@ -206,11 +206,11 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 	}
 
 	return map[string]interface{}{
-		"CiphertextBlob":            base64.StdEncoding.EncodeToString(encryptResult.Ciphertext),
-		"SourceKeyId":               sourceKeyArn,
-		"KeyId":                     destinationKey.Arn,
-		"EncryptionAlgorithm":       "SYMMETRIC_DEFAULT",
-		"SourceEncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+		"CiphertextBlob":                 base64.StdEncoding.EncodeToString(encryptResult.Ciphertext),
+		"SourceKeyId":                    sourceKeyArn,
+		"KeyId":                          destinationKey.Arn,
+		"SourceEncryptionAlgorithm":      "SYMMETRIC_DEFAULT",
+		"DestinationEncryptionAlgorithm": "SYMMETRIC_DEFAULT",
 	}, nil
 }
 

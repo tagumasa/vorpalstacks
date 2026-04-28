@@ -101,6 +101,7 @@ func TableToProto(t *Table) *pb.Table {
 		ResourcePolicy:                t.ResourcePolicy,
 		KinesisDataStreamDestinations: kinesisDataStreamsToProto(t.KinesisDataStreamDestinations),
 		ContributorInsightsEnabled:    t.ContributorInsightsEnabled,
+		TableClass:                    t.TableClass,
 	}
 }
 
@@ -135,6 +136,7 @@ func ProtoToTable(p *pb.Table) *Table {
 		ResourcePolicy:                p.ResourcePolicy,
 		KinesisDataStreamDestinations: protoToKinesisDataStreams(p.KinesisDataStreamDestinations),
 		ContributorInsightsEnabled:    p.ContributorInsightsEnabled,
+		TableClass:                    p.GetTableClass(),
 	}
 }
 

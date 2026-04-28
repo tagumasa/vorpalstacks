@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/defaults"
 )
 
 // BootstrapConfig holds all configuration values read from environment variables
@@ -27,7 +27,6 @@ type BootstrapConfig struct {
 	TLSKeyPath            string
 	TLSHostname           string
 	Route53DNSEnabled     bool
-	Route53DNSBindAddr    string
 	DockerHost            string
 
 	SNS             bool
@@ -85,7 +84,7 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		GRPCWebBindAddr:       envOr("GRPC_WEB_BIND_ADDR", "127.0.0.1"),
 		DataPath:              envOr("DATA_PATH", "./data"),
 		AccountID:             accountId,
-		Region:                envOr("AWS_REGION", request.DefaultRegion),
+		Region:                envOr("AWS_REGION", defaults.DefaultRegion),
 		AccessKeyID:           os.Getenv("AWS_ACCESS_KEY_ID"),
 		SecretAccessKey:       os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		SignatureVerification: envBool("SIGNATURE_VERIFICATION_ENABLED", true),
@@ -96,7 +95,6 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		TLSKeyPath:            envOr("TLS_KEY_PATH", "auto"),
 		TLSHostname:           envOr("TLS_HOSTNAME", ""),
 		Route53DNSEnabled:     envBool("ROUTE53_DNS_ENABLED", false),
-		Route53DNSBindAddr:    envOr("ROUTE53_DNS_BIND_ADDR", "127.0.0.1"),
 		DockerHost:            envOr("DOCKER_HOST", "unix:///var/run/docker.sock"),
 
 		SNS:             envBool("SNS_ENABLED", true),

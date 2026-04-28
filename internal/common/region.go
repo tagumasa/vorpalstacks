@@ -3,7 +3,7 @@ package common
 import (
 	"net/http"
 
-	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/defaults"
 )
 
 // GetRegionFromHeader extracts the AWS region from the X-Aws-Region header,
@@ -11,7 +11,7 @@ import (
 func GetRegionFromHeader(headers http.Header) string {
 	region := headers.Get("X-Aws-Region")
 	if region == "" {
-		region = request.DefaultRegion
+		region = defaults.DefaultRegion
 	}
 	return region
 }

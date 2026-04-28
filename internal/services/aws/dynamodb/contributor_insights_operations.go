@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 )
 
@@ -33,27 +34,55 @@ func (s *DynamoDBService) DescribeContributorInsights(ctx context.Context, reqCt
 	return result, nil
 }
 
-// ListContributorInsights lists the contributor insights summaries for a table.
+// ListContributorInsights lists the contributor insights summaries for tables.
 func (s *DynamoDBService) ListContributorInsights(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tableName := request.GetStringParam(req.Parameters, "TableName")
+	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	var tables []string
 	if tableName != "" {
 		if _, err := s.validateAndGetTable(reqCtx, req.Parameters); err != nil {
 			return nil, err
 		}
+		tables = []string{tableName}
+	} else {
+		tableList, _, err := store.Tables().List(nextToken, maxResults+1)
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range tableList {
+			tables = append(tables, t.Name)
+		}
 	}
 
-	var summaries []map[string]interface{}
-	if tableName != "" {
+	summaries := make([]map[string]interface{}, 0)
+	for _, tn := range tables {
+		t, err := store.Tables().Get(tn)
+		if err != nil {
+			continue
+		}
+		status := "DISABLED"
+		if t.ContributorInsightsEnabled {
+			status = "ENABLED"
+		}
 		summaries = append(summaries, map[string]interface{}{
-			"TableName":                 tableName,
-			"ContributorInsightsStatus": "ENABLED",
+			"TableName":                 tn,
+			"ContributorInsightsStatus": status,
 		})
 	}
 
-	return map[string]interface{}{
-		"ContributorInsightsSummaries": summaries,
-	}, nil
+	if len(summaries) > maxResults {
+		summaries = summaries[:maxResults]
+		return pagination.BuildListResponse("ContributorInsightsSummaries", summaries, summaries[len(summaries)-1]["TableName"].(string)), nil
+	}
+
+	return pagination.BuildListResponse("ContributorInsightsSummaries", summaries, ""), nil
 }
 
 // UpdateContributorInsights enables or disables contributor insights for a table.

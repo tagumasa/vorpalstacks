@@ -208,7 +208,14 @@ func (s *EventsService) store(ctx *request.RequestContext) (*eventsstore.EventsS
 		if err != nil {
 			return nil, fmt.Errorf("failed to get storage: %w", err)
 		}
-		return eventsstore.NewEventsStore(storage, s.accountID, ctx.GetRegion()), nil
+		es := eventsstore.NewEventsStore(storage, s.accountID, ctx.GetRegion())
+		defaultBus := &eventsstore.EventBus{Name: "default"}
+		if err := es.CreateEventBus(context.Background(), defaultBus); err != nil {
+			if err != eventsstore.ErrEventBusAlreadyExists {
+				logs.Warn("eventbridge: failed to auto-create default event bus", logs.Err(err))
+			}
+		}
+		return es, nil
 	})
 }
 

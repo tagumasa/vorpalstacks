@@ -3,6 +3,7 @@ package request
 import (
 	"context"
 
+	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/core/storage"
 )
@@ -49,7 +50,7 @@ func NewRequestContext(ctx context.Context, storageMgr *storage.RegionStorageMan
 		ctx = context.Background()
 	}
 	if region == "" {
-		region = DefaultRegion
+		region = defaults.DefaultRegion
 	}
 	return &RequestContext{
 		Context:        ctx,
@@ -62,7 +63,7 @@ func NewRequestContext(ctx context.Context, storageMgr *storage.RegionStorageMan
 // GetRegion returns the AWS region for the request.
 func (c *RequestContext) GetRegion() string {
 	if c.Region == "" {
-		return DefaultRegion
+		return defaults.DefaultRegion
 	}
 	return c.Region
 }

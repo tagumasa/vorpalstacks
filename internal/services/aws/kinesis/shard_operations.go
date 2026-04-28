@@ -35,14 +35,28 @@ func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.Request
 	}
 
 	var filter *kinesisstore.ShardFilter
-	if ft := request.GetParamLowerFirst(req.Parameters, "ShardFilter.Type"); ft != "" {
-		filter = &kinesisstore.ShardFilter{
-			Type: ft,
+	shardFilterMap := request.GetMapParam(req.Parameters, "ShardFilter")
+	if shardFilterMap == nil {
+		shardFilterMap = request.GetMapParam(req.Parameters, "shardFilter")
+	}
+	if shardFilterMap != nil {
+		filter = &kinesisstore.ShardFilter{}
+		if ft, ok := shardFilterMap["Type"].(string); ok {
+			filter.Type = ft
+		} else if ft, ok := shardFilterMap["type"].(string); ok {
+			filter.Type = ft
 		}
-		if shardID := request.GetParamLowerFirst(req.Parameters, "ShardFilter.ShardId"); shardID != "" {
+		if shardID, ok := shardFilterMap["ShardId"].(string); ok {
+			filter.ShardID = shardID
+		} else if shardID, ok := shardFilterMap["shardId"].(string); ok {
 			filter.ShardID = shardID
 		}
-		if ts := request.GetParamLowerFirst(req.Parameters, "ShardFilter.Timestamp"); ts != "" {
+		if ts, ok := shardFilterMap["Timestamp"].(string); ok {
+			if unixTs, err := strconv.ParseInt(ts, 10, 64); err == nil {
+				t := time.Unix(unixTs, 0).UTC()
+				filter.Timestamp = &t
+			}
+		} else if ts, ok := shardFilterMap["timestamp"].(string); ok {
 			if unixTs, err := strconv.ParseInt(ts, 10, 64); err == nil {
 				t := time.Unix(unixTs, 0).UTC()
 				filter.Timestamp = &t

@@ -107,7 +107,10 @@ func getPassword(req *request.ParsedRequest) string {
 }
 
 func getNewPassword(req *request.ParsedRequest) string {
-	return req.GetParam("NewPassword")
+	if v := req.GetParam("NewPassword"); v != "" {
+		return v
+	}
+	return req.GetParam("ProposedPassword")
 }
 
 func getPreviousPassword(req *request.ParsedRequest) string {

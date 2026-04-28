@@ -129,28 +129,19 @@ func (s *KinesisService) DescribeStream(ctx context.Context, reqCtx *request.Req
 		encryptionType = "NONE"
 	}
 
-	var streamModeDetails map[string]interface{}
-	if stream.StreamModeDetails != nil {
-		streamModeDetails = map[string]interface{}{
-			"StreamMode": string(stream.StreamModeDetails.StreamMode),
-		}
-	}
-
 	return map[string]interface{}{
 		"StreamDescription": map[string]interface{}{
 			"StreamName":              stream.StreamName,
 			"StreamARN":               stream.StreamARN,
 			"StreamStatus":            stream.StreamStatus,
-			"ShardCount":              stream.ShardCount,
-			"StreamModeDetails":       streamModeDetails,
+			"StreamModeDetails":       formatStreamModeDetails(stream.StreamModeDetails),
 			"Shards":                  s.formatShards(shards),
 			"HasMoreShards":           false,
 			"RetentionPeriodHours":    stream.RetentionPeriodHours,
 			"StreamCreationTimestamp": float64(stream.CreatedAt.Unix()),
-			"EnhancedMonitoring":      stream.EnhancedMonitoring,
+			"EnhancedMonitoring":      formatEnhancedMonitoring(stream.EnhancedMonitoring),
 			"EncryptionType":          encryptionType,
 			"KeyId":                   stream.KeyID,
-			"ConsumerCount":           stream.ConsumerCount,
 		},
 	}, nil
 }
@@ -187,26 +178,20 @@ func (s *KinesisService) DescribeStreamSummary(ctx context.Context, reqCtx *requ
 		encryptionType = "NONE"
 	}
 
-	var streamModeDetails map[string]interface{}
-	if stream.StreamModeDetails != nil {
-		streamModeDetails = map[string]interface{}{
-			"StreamMode": string(stream.StreamModeDetails.StreamMode),
-		}
-	}
-
 	return map[string]interface{}{
 		"StreamDescriptionSummary": map[string]interface{}{
 			"StreamName":              stream.StreamName,
 			"StreamARN":               stream.StreamARN,
 			"StreamStatus":            stream.StreamStatus,
-			"StreamModeDetails":       streamModeDetails,
+			"StreamModeDetails":       formatStreamModeDetails(stream.StreamModeDetails),
 			"ConsumerCount":           stream.ConsumerCount,
 			"OpenShardCount":          stream.ShardCount,
 			"RetentionPeriodHours":    stream.RetentionPeriodHours,
 			"StreamCreationTimestamp": float64(stream.CreatedAt.Unix()),
-			"EnhancedMonitoring":      stream.EnhancedMonitoring,
+			"EnhancedMonitoring":      formatEnhancedMonitoring(stream.EnhancedMonitoring),
 			"EncryptionType":          encryptionType,
 			"KeyId":                   stream.KeyID,
+			"MaxRecordSizeInKiB":      stream.MaxRecordSizeInKiB,
 		},
 	}, nil
 }
@@ -249,8 +234,7 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 			"StreamName":              stream.StreamName,
 			"StreamARN":               stream.StreamARN,
 			"StreamStatus":            stream.StreamStatus,
-			"StreamModeDetails":       stream.StreamModeDetails,
-			"ConsumerCount":           stream.ConsumerCount,
+			"StreamModeDetails":       formatStreamModeDetails(stream.StreamModeDetails),
 			"StreamCreationTimestamp": float64(stream.CreatedAt.Unix()),
 		})
 		if len(streamSummaries) >= limit {
@@ -314,21 +298,83 @@ func (s *KinesisService) UpdateStreamMode(ctx context.Context, reqCtx *request.R
 }
 
 func (s *KinesisService) formatShards(shards []*kinesisstore.Shard) []map[string]interface{} {
-	var result []map[string]interface{}
+	result := make([]map[string]interface{}, 0, len(shards))
 	for _, shard := range shards {
-		result = append(result, map[string]interface{}{
-			"ShardId":               shard.ShardID,
-			"ParentShardId":         shard.ParentShardID,
-			"AdjacentParentShardId": shard.AdjacentParentShardID,
+		m := map[string]interface{}{
+			"ShardId": shard.ShardID,
 			"HashKeyRange": map[string]interface{}{
 				"StartingHashKey": shard.HashKeyRange.StartingHashKey,
 				"EndingHashKey":   shard.HashKeyRange.EndingHashKey,
 			},
 			"SequenceNumberRange": map[string]interface{}{
 				"StartingSequenceNumber": shard.SequenceNumberRange.StartingSequenceNumber,
-				"EndingSequenceNumber":   shard.SequenceNumberRange.EndingSequenceNumber,
 			},
-		})
+		}
+		if shard.ParentShardID != "" {
+			m["ParentShardId"] = shard.ParentShardID
+		}
+		if shard.AdjacentParentShardID != "" {
+			m["AdjacentParentShardId"] = shard.AdjacentParentShardID
+		}
+		if shard.SequenceNumberRange.EndingSequenceNumber != "" {
+			m["SequenceNumberRange"].(map[string]interface{})["EndingSequenceNumber"] = shard.SequenceNumberRange.EndingSequenceNumber
+		}
+		result = append(result, m)
+	}
+	return result
+}
+
+func formatEnhancedMonitoring(em []kinesisstore.EnhancedMonitoring) []map[string]interface{} {
+	result := make([]map[string]interface{}, len(em))
+	for i, m := range em {
+		metrics := m.ShardLevelMetrics
+		if metrics == nil {
+			metrics = []string{}
+		}
+		result[i] = map[string]interface{}{
+			"ShardLevelMetrics": metrics,
+		}
+	}
+	return result
+}
+
+func formatStreamModeDetails(smd *kinesisstore.StreamModeDetails) map[string]interface{} {
+	if smd != nil {
+		return map[string]interface{}{
+			"StreamMode": string(smd.StreamMode),
+		}
+	}
+	return map[string]interface{}{
+		"StreamMode": "PROVISIONED",
+	}
+}
+
+func mergeMetrics(current, added []string) []string {
+	seen := make(map[string]bool)
+	for _, m := range current {
+		seen[m] = true
+	}
+	result := make([]string, len(current))
+	copy(result, current)
+	for _, m := range added {
+		if !seen[m] {
+			result = append(result, m)
+			seen[m] = true
+		}
+	}
+	return result
+}
+
+func subtractMetrics(current, removed []string) []string {
+	removeSet := make(map[string]bool)
+	for _, m := range removed {
+		removeSet[m] = true
+	}
+	result := make([]string, 0, len(current))
+	for _, m := range current {
+		if !removeSet[m] {
+			result = append(result, m)
+		}
 	}
 	return result
 }

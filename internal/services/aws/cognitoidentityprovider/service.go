@@ -135,6 +135,7 @@ func (s *CognitoService) RegisterHandlers(d handler.Registrar) {
 
 	d.RegisterHandlerForService("cognito-idp", "SignUp", s.SignUp)
 	d.RegisterHandlerForService("cognito-idp", "ConfirmSignUp", s.ConfirmSignUp)
+	d.RegisterHandlerForService("cognito-idp", "AdminConfirmSignUp", s.AdminConfirmSignUp)
 	d.RegisterHandlerForService("cognito-idp", "InitiateAuth", s.InitiateAuth)
 	d.RegisterHandlerForService("cognito-idp", "AdminInitiateAuth", s.AdminInitiateAuth)
 	d.RegisterHandlerForService("cognito-idp", "RespondToAuthChallenge", s.RespondToAuthChallenge)

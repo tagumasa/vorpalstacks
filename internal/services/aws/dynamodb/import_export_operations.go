@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -117,17 +118,19 @@ func (s *DynamoDBService) DescribeExport(ctx context.Context, reqCtx *request.Re
 // ListExports lists the exports for a table.
 func (s *DynamoDBService) ListExports(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tableArn := request.GetStringParam(req.Parameters, "TableArn")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
+	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	exports, err := store.Exports().List(tableArn)
+	exports, nextToken, err := store.Exports().List(tableArn, nextToken, maxResults)
 	if err != nil {
 		return nil, err
 	}
 
-	var exportSummaries []map[string]interface{}
+	exportSummaries := make([]map[string]interface{}, 0)
 	for _, e := range exports {
 		exportSummaries = append(exportSummaries, map[string]interface{}{
 			"ExportArn":    e.ExportArn,
@@ -137,9 +140,7 @@ func (s *DynamoDBService) ListExports(ctx context.Context, reqCtx *request.Reque
 		})
 	}
 
-	return map[string]interface{}{
-		"ExportSummaries": exportSummaries,
-	}, nil
+	return pagination.BuildListResponse("ExportSummaries", exportSummaries, nextToken), nil
 }
 
 // ImportTable imports table data from S3.
@@ -311,17 +312,19 @@ func (s *DynamoDBService) DescribeImport(ctx context.Context, reqCtx *request.Re
 // ListImports lists the imports for a table.
 func (s *DynamoDBService) ListImports(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tableArn := request.GetStringParam(req.Parameters, "TableArn")
+	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
+	maxResults := pagination.GetMaxItems(req.Parameters, 100, "MaxResults")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	imports, err := store.Imports().List(tableArn)
+	imports, nextToken, err := store.Imports().List(tableArn, nextToken, maxResults)
 	if err != nil {
 		return nil, err
 	}
 
-	var importSummaries []map[string]interface{}
+	importSummaries := make([]map[string]interface{}, 0)
 	for _, i := range imports {
 		importSummaries = append(importSummaries, map[string]interface{}{
 			"ImportArn":    i.ImportArn,
@@ -330,7 +333,5 @@ func (s *DynamoDBService) ListImports(ctx context.Context, reqCtx *request.Reque
 		})
 	}
 
-	return map[string]interface{}{
-		"ImportSummaries": importSummaries,
-	}, nil
+	return pagination.BuildListResponse("ImportSummaryList", importSummaries, nextToken), nil
 }

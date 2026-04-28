@@ -87,7 +87,7 @@ type ExportStoreInterface interface {
 	Get(exportArn string) (*ExportDescription, error)
 	Create(tableArn, tableId, exportFormat string) (*ExportDescription, error)
 	Put(export *ExportDescription) error
-	List(tableArn string) ([]*ExportDescription, error)
+	List(tableArn, marker string, maxItems int) ([]*ExportDescription, string, error)
 }
 
 // ImportStoreInterface defines operations for managing DynamoDB imports.
@@ -95,7 +95,7 @@ type ImportStoreInterface interface {
 	Get(importArn string) (*ImportTableDescription, error)
 	Create(tableArn, tableId string) (*ImportTableDescription, error)
 	Put(imp *ImportTableDescription) error
-	List(tableArn string) ([]*ImportTableDescription, error)
+	List(tableArn, marker string, maxItems int) ([]*ImportTableDescription, string, error)
 }
 
 // DynamoDBTxnInterface defines operations for DynamoDB transactions.

@@ -158,7 +158,7 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	backups, nextToken, err := store.Backups().List("", 0, tableName)
+	backups, _, err := store.Backups().List("", 0, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -219,8 +219,6 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 	if hasMore && len(backupSummaries) > 0 {
 		resp["LastEvaluatedBackupArn"] = backupSummaries[len(backupSummaries)-1]["BackupArn"]
 	}
-
-	_ = nextToken
 
 	return resp, nil
 }

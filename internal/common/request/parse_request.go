@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/fxamacker/cbor/v2"
+
+	"vorpalstacks/internal/common/defaults"
 )
 
 const maxRequestBodySize = 64 * 1024 * 1024 // 64 MiB
@@ -26,12 +28,12 @@ type ParsedRequest struct {
 	AccessKeyID string
 }
 
-// GetRegion returns the request region, defaulting to DefaultRegion if unset.
+// GetRegion returns the request region, defaulting to defaults.DefaultRegion if unset.
 func (r *ParsedRequest) GetRegion() string {
 	if r.Region != "" {
 		return r.Region
 	}
-	return DefaultRegion
+	return defaults.DefaultRegion
 }
 
 // GetParam returns a parameter value, trying the original key first
@@ -124,7 +126,7 @@ func ParseAWSRequest(r *http.Request) (*ParsedRequest, error) {
 	authHeader := r.Header.Get("Authorization")
 	req.Region = ExtractRegionFromAuth(authHeader)
 	if req.Region == "" {
-		req.Region = DefaultRegion
+		req.Region = defaults.DefaultRegion
 	}
 	req.AccessKeyID = ExtractAccessKeyIDFromAuth(authHeader)
 

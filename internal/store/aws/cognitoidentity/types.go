@@ -2,9 +2,11 @@
 package cognitoidentity
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"vorpalstacks/internal/common/defaults"
 )
 
 // IdentityPool represents an Amazon Cognito Identity Pool.
@@ -102,13 +104,21 @@ func NewIdentityPool(name string, allowUnauthenticated bool, region string) *Ide
 // NewIdentity creates a new Identity for the specified Identity Pool.
 func NewIdentity(identityPoolID string) *Identity {
 	now := time.Now().UTC()
+	region := extractRegionFromPoolID(identityPoolID)
 	return &Identity{
-		ID:               generateIdentityID(),
+		ID:               region + ":" + uuid.New().String(),
 		IdentityPoolID:   identityPoolID,
 		Logins:           make(map[string]string),
 		CreationDate:     now,
 		LastModifiedDate: now,
 	}
+}
+
+func extractRegionFromPoolID(poolID string) string {
+	if idx := strings.Index(poolID, ":"); idx > 0 {
+		return poolID[:idx]
+	}
+	return defaults.DefaultRegion
 }
 
 func generateIdentityPoolID(region string) string {

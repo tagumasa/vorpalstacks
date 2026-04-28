@@ -262,12 +262,15 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 }
 
 func parseGrantConstraints(params map[string]interface{}) *kmsstore.GrantConstraints {
-	constraints := &kmsstore.GrantConstraints{}
+	var constraints *kmsstore.GrantConstraints
 
 	if c, ok := params["Constraints"]; ok {
 		if cmap, ok := c.(map[string]interface{}); ok {
 			if ecEquals, ok := cmap["EncryptionContextEquals"]; ok {
 				if ecMap, ok := ecEquals.(map[string]interface{}); ok {
+					if constraints == nil {
+						constraints = &kmsstore.GrantConstraints{}
+					}
 					constraints.EncryptionContextEquals = make(map[string]string)
 					for k, v := range ecMap {
 						if vs, ok := v.(string); ok {
@@ -278,6 +281,9 @@ func parseGrantConstraints(params map[string]interface{}) *kmsstore.GrantConstra
 			}
 			if ecSubset, ok := cmap["EncryptionContextSubset"]; ok {
 				if ecMap, ok := ecSubset.(map[string]interface{}); ok {
+					if constraints == nil {
+						constraints = &kmsstore.GrantConstraints{}
+					}
 					constraints.EncryptionContextSubset = make(map[string]string)
 					for k, v := range ecMap {
 						if vs, ok := v.(string); ok {

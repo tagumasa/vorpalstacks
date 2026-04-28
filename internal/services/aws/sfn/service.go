@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -55,7 +56,7 @@ func (s *StepFunctionService) SetEventBus(bus eventbus.Bus) {
 func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt *eventbus.StepFunctionsStartExecutionEvent) eventbus.HandlerResult {
 	region := evt.Region
 	if region == "" {
-		region = request.DefaultRegion
+		region = defaults.DefaultRegion
 	}
 
 	store, err := s.getStoreForRegion(region)

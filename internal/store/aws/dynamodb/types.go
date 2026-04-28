@@ -16,6 +16,7 @@ const (
 	TableStatusActive   TableStatus = "ACTIVE"
 	TableStatusUpdating TableStatus = "UPDATING"
 	TableStatusDeleting TableStatus = "DELETING"
+	TableStatusArchived TableStatus = "ARCHIVED"
 )
 
 // BillingMode represents the billing mode for a DynamoDB table.
@@ -224,6 +225,7 @@ type Table struct {
 	ResourcePolicy                string                          `json:"resource_policy,omitempty"`
 	KinesisDataStreamDestinations []*KinesisDataStreamDestination `json:"kinesis_data_stream_destinations,omitempty"`
 	ContributorInsightsEnabled    bool                            `json:"contributor_insights_enabled,omitempty"`
+	TableClass                    string                          `json:"table_class,omitempty"`
 }
 
 // Backup represents a DynamoDB table backup.

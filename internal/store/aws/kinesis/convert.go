@@ -161,6 +161,7 @@ func StreamToProto(s *Stream) *pb.Stream {
 		EncryptionType:       s.EncryptionType,
 		KeyId:                s.KeyID,
 		ConsumerCount:        s.ConsumerCount,
+		MaxRecordSizeInKib:   s.MaxRecordSizeInKiB,
 		CreatedAt:            timestamppb.New(s.CreatedAt),
 		LastModifiedAt:       timestamppb.New(s.LastModifiedAt),
 	}
@@ -182,6 +183,7 @@ func ProtoToStream(p *pb.Stream) *Stream {
 		EncryptionType:       p.EncryptionType,
 		KeyID:                p.KeyId,
 		ConsumerCount:        p.ConsumerCount,
+		MaxRecordSizeInKiB:   p.MaxRecordSizeInKib,
 		CreatedAt:            p.CreatedAt.AsTime(),
 		LastModifiedAt:       p.LastModifiedAt.AsTime(),
 	}

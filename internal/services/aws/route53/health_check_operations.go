@@ -24,7 +24,7 @@ func (s *Route53Service) CreateHealthCheck(ctx context.Context, reqCtx *request.
 		return nil, awserrors.NewAWSError("InvalidInput", "HealthCheckConfig is required", 400)
 	}
 
-	config := parseHealthCheckConfig(healthCheckConfigMap)
+	config := parseHealthCheckConfig(healthCheckConfigMap, s.defaultHCPort)
 
 	healthCheck := &route53store.HealthCheck{
 		ID:                 generateHealthCheckId(),
@@ -156,11 +156,13 @@ func (s *Route53Service) UpdateHealthCheck(ctx context.Context, reqCtx *request.
 func (s *Route53Service) healthCheckConfigToResponse(config *route53store.HealthCheckConfig) map[string]interface{} {
 	result := map[string]interface{}{
 		"Type": config.Type,
-		"Port": config.Port,
 	}
 
 	if config.IPAddress != "" {
 		result["IPAddress"] = config.IPAddress
+	}
+	if config.Port > 0 {
+		result["Port"] = config.Port
 	}
 	if config.ResourcePath != "" {
 		result["ResourcePath"] = config.ResourcePath

@@ -113,20 +113,28 @@ func (s *Route53Service) getChangeById(reqCtx *request.RequestContext, id string
 	return change, nil
 }
 
-func parseHealthCheckConfig(configMap map[string]interface{}) *route53store.HealthCheckConfig {
+func parseHealthCheckConfig(configMap map[string]interface{}, defaultPort int64) *route53store.HealthCheckConfig {
 	if configMap == nil {
 		return nil
 	}
 
 	config := &route53store.HealthCheckConfig{
 		Type: request.GetStringParam(configMap, "Type"),
-		Port: 80,
+	}
+
+	hcType := request.GetStringParam(configMap, "Type")
+	if hcType != "CALCULATED" && hcType != "CLOUDWATCH_METRIC" {
+		config.Port = defaultPort
+	}
+
+	if v := request.GetIntParam(configMap, "Port"); v > 0 {
+		config.Port = int64(v)
 	}
 
 	if v, ok := configMap["IPAddress"].(string); ok {
 		config.IPAddress = v
 	}
-	if v, ok := configMap["Port"].(float64); ok {
+	if v := request.GetIntParam(configMap, "Port"); v > 0 {
 		config.Port = int64(v)
 	}
 	if v, ok := configMap["ResourcePath"].(string); ok {
@@ -135,10 +143,10 @@ func parseHealthCheckConfig(configMap map[string]interface{}) *route53store.Heal
 	if v, ok := configMap["FullyQualifiedDomainName"].(string); ok {
 		config.FullyQualifiedDomainName = v
 	}
-	if v, ok := configMap["RequestInterval"].(float64); ok {
+	if v := request.GetIntParam(configMap, "RequestInterval"); v > 0 {
 		config.RequestInterval = int64(v)
 	}
-	if v, ok := configMap["FailureThreshold"].(float64); ok {
+	if v := request.GetIntParam(configMap, "FailureThreshold"); v > 0 {
 		config.FailureThreshold = int64(v)
 	}
 	config.MeasureLatency = request.GetBoolParam(configMap, "MeasureLatency")

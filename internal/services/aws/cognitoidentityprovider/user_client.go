@@ -139,7 +139,5 @@ func (s *CognitoService) UpdateUserAttributes(ctx context.Context, reqCtx *reque
 		return nil, ErrInternalError
 	}
 
-	return map[string]interface{}{
-		"CodeDeliveryDetailsList": []interface{}{},
-	}, nil
+	return response.EmptyResponse(), nil
 }
