@@ -27,7 +27,7 @@ func TestSSMError(t *testing.T) {
 			err:          ErrParameterAlreadyExists,
 			wantCode:     "ParameterAlreadyExists",
 			wantMsg:      "Parameter already exists",
-			wantHTTPCode: http.StatusConflict,
+			wantHTTPCode: http.StatusBadRequest,
 		},
 		{
 			name:         "ErrInvalidParameterName",

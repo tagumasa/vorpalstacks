@@ -34,6 +34,9 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 	if definition == "" {
 		return nil, NewInvalidDefinitionException("State Machine definition is required")
 	}
+	if !json.Valid([]byte(definition)) {
+		return nil, NewInvalidDefinitionException("State Machine definition is not valid JSON")
+	}
 
 	if smType == "" {
 		smType = "STANDARD"
@@ -75,6 +78,9 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 	if err := store.CreateStateMachine(ctx, sm); err != nil {
+		if errors.Is(err, sfnstore.ErrStateMachineAlreadyExists) {
+			return nil, awserrors.NewAWSError("StateMachineAlreadyExists", "A state machine with the same name already exists: "+name, 400)
+		}
 		return nil, err
 	}
 
@@ -645,7 +651,7 @@ func (s *StepFunctionService) tagHandlerConfig(store *sfnstore.StepFunctionStore
 		},
 		FormatResponse: func(tagSlice []types.Tag, _ string) (interface{}, error) {
 			return map[string]interface{}{
-				"tags": tagutil.ToResponse(tagSlice),
+				"tags": tagutil.ToResponseWithKeyNames(tagSlice, "key", "value"),
 			}, nil
 		},
 		EmptyResponse: func() (interface{}, error) {
