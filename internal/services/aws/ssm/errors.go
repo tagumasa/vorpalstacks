@@ -10,7 +10,7 @@ var (
 	// ErrParameterNotFound is returned when the specified parameter does not exist.
 	ErrParameterNotFound = awserrors.NewAWSError("ParameterNotFound", "Parameter not found", http.StatusNotFound)
 	// ErrParameterAlreadyExists is returned when attempting to create a parameter that already exists.
-	ErrParameterAlreadyExists = awserrors.NewAWSError("ParameterAlreadyExists", "Parameter already exists", http.StatusConflict)
+	ErrParameterAlreadyExists = awserrors.NewAWSError("ParameterAlreadyExists", "Parameter already exists", http.StatusBadRequest)
 	// ErrInvalidParameterName is returned when the parameter name is invalid.
 	ErrInvalidParameterName = awserrors.NewAWSError("InvalidParameter", "Invalid parameter name", http.StatusBadRequest)
 	// ErrInvalidParameterValue is returned when the parameter value is invalid.
@@ -22,5 +22,7 @@ var (
 	// ErrInvalidParameterLabel is returned when the parameter label is invalid.
 	ErrInvalidParameterLabel = awserrors.NewAWSError("InvalidParameter", "Invalid parameter label", http.StatusBadRequest)
 	// ErrParameterVersionNotFound is returned when the specified parameter version does not exist.
-	ErrParameterVersionNotFound = awserrors.NewAWSError("ParameterVersionNotFound", "Parameter version not found", http.StatusNotFound)
+	ErrParameterVersionNotFound = awserrors.NewAWSError("ParameterVersionNotFound", "Parameter version not found", http.StatusBadRequest)
+	// ErrParameterPatternMismatch is returned when the parameter name uses a reserved prefix.
+	ErrParameterPatternMismatch = awserrors.NewAWSError("ParameterPatternMismatchException", "The parameter name is not valid", http.StatusBadRequest)
 )

@@ -126,7 +126,6 @@ func (s *SecretsManagerService) ValidateResourcePolicy(ctx context.Context, reqC
 
 	result := map[string]interface{}{
 		"PolicyValidationPassed": true,
-		"ValidationErrors":       []interface{}{},
 	}
 
 	if policy != "" {

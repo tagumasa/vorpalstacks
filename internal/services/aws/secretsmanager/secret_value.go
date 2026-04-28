@@ -146,12 +146,18 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 		entry := map[string]interface{}{
 			"ARN":                    secret.ARN,
 			"Name":                   secret.Name,
-			"Description":            secret.Description,
-			"KmsKeyId":               secret.KmsKeyId,
 			"CreatedDate":            secret.CreatedDate.Unix(),
 			"LastChangedDate":        secret.LastChangedDate.Unix(),
-			"LastAccessedDate":       secret.LastAccessedDate.Unix(),
 			"SecretVersionsToStages": s.buildSecretVersionsToStages(reqCtx, secret),
+		}
+		if secret.Description != "" {
+			entry["Description"] = secret.Description
+		}
+		if secret.KmsKeyId != "" {
+			entry["KmsKeyId"] = secret.KmsKeyId
+		}
+		if !secret.LastAccessedDate.IsZero() {
+			entry["LastAccessedDate"] = secret.LastAccessedDate.Unix()
 		}
 		if secret.Type != "" {
 			entry["Type"] = secret.Type
@@ -308,14 +314,25 @@ func (s *SecretsManagerService) DescribeSecret(ctx context.Context, reqCtx *requ
 	result := map[string]interface{}{
 		"ARN":                secret.ARN,
 		"Name":               secret.Name,
-		"SecretId":           secret.ARN,
-		"Description":        secret.Description,
-		"KmsKeyId":           secret.KmsKeyId,
 		"CreatedDate":        secret.CreatedDate.Unix(),
 		"LastChangedDate":    secret.LastChangedDate.Unix(),
-		"LastAccessedDate":   secret.LastAccessedDate.Unix(),
 		"VersionIdsToStages": s.buildSecretVersionsToStages(reqCtx, secret),
-		"Tags":               s.buildTagsList(secret),
+	}
+	if secret.Description != "" {
+		result["Description"] = secret.Description
+	}
+	if secret.KmsKeyId != "" {
+		result["KmsKeyId"] = secret.KmsKeyId
+	}
+	if !secret.LastAccessedDate.IsZero() {
+		result["LastAccessedDate"] = secret.LastAccessedDate.Unix()
+	}
+	tags := s.buildTagsList(secret)
+	if len(tags) > 0 {
+		result["Tags"] = tags
+	}
+	if secret.DeletedDate != nil {
+		result["DeletedDate"] = secret.DeletedDate.Unix()
 	}
 	s.addRotationFields(result, secret)
 	if secret.OwningService != "" {
@@ -369,12 +386,12 @@ func (s *SecretsManagerService) ListSecretVersionIds(ctx context.Context, reqCtx
 		versionList = append(versionList, entry)
 	}
 
-	return map[string]interface{}{
-		"ARN":       secret.ARN,
-		"Name":      secret.Name,
-		"Versions":  versionList,
-		"NextToken": "",
-	}, nil
+	result := map[string]interface{}{
+		"ARN":      secret.ARN,
+		"Name":     secret.Name,
+		"Versions": versionList,
+	}
+	return result, nil
 }
 
 // UpdateSecretVersionStage moves a staging label from one version to another.

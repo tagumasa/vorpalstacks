@@ -305,6 +305,12 @@ func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.Re
 	if groupName == "" {
 		groupName = request.GetStringParam(req.Parameters, "groupName")
 	}
+	if groupName == "" {
+		groupName = request.GetStringParam(req.Parameters, "ScheduleGroup")
+	}
+	if groupName == "" {
+		groupName = "default"
+	}
 	namePrefix := request.GetStringParam(req.Parameters, "NamePrefix")
 	stateFilter := schedulerstore.ScheduleState(request.GetStringParam(req.Parameters, "State"))
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")

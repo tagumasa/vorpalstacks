@@ -3,6 +3,8 @@ package sns
 import (
 	"context"
 	"crypto/subtle"
+	"strconv"
+	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
@@ -36,24 +38,7 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 		Owner:    reqCtx.GetAccountID(),
 	}
 
-	if attrs, ok := req.Parameters["Attributes"].(map[string]interface{}); ok {
-		subscription.Attributes = make(map[string]string)
-		for k, v := range attrs {
-			if vs, ok := v.(string); ok {
-				subscription.Attributes[k] = vs
-			}
-		}
-	}
-	if attrs, ok := req.Parameters["attributes"].(map[string]interface{}); ok {
-		if subscription.Attributes == nil {
-			subscription.Attributes = make(map[string]string)
-		}
-		for k, v := range attrs {
-			if vs, ok := v.(string); ok {
-				subscription.Attributes[k] = vs
-			}
-		}
-	}
+	subscription.Attributes = parseSubscriptionAttributes(req.Parameters)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -67,14 +52,22 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	if protocol == "sqs" || protocol == "lambda" || protocol == "http" || protocol == "https" {
+	needsConfirmation := protocol == "email" || protocol == "email-json" || protocol == "http" || protocol == "https" || protocol == "sms"
+
+	returnSubscriptionArn := request.GetParamLowerFirst(req.Parameters, "ReturnSubscriptionArn")
+	if !needsConfirmation {
 		if err := store.AutoConfirmSubscription(created); err != nil {
 			return nil, err
 		}
 	}
 
+	subArn := created.SubscriptionArn
+	if needsConfirmation && strings.ToLower(returnSubscriptionArn) != "true" {
+		subArn = "pending confirmation"
+	}
+
 	return map[string]interface{}{
-		"SubscriptionArn": created.SubscriptionArn,
+		"SubscriptionArn": subArn,
 	}, nil
 }
 
@@ -207,8 +200,12 @@ func (s *SNSService) ListSubscriptions(ctx context.Context, reqCtx *request.Requ
 
 	subscriptions := make([]map[string]interface{}, 0, len(result.Items))
 	for _, sub := range result.Items {
+		subArn := sub.SubscriptionArn
+		if sub.PendingConfirmation {
+			subArn = "pending confirmation"
+		}
 		subscriptions = append(subscriptions, map[string]interface{}{
-			"SubscriptionArn": sub.SubscriptionArn,
+			"SubscriptionArn": subArn,
 			"TopicArn":        sub.TopicArn,
 			"Protocol":        sub.Protocol,
 			"Endpoint":        sub.Endpoint,
@@ -244,8 +241,12 @@ func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *reque
 
 	subs := make([]map[string]interface{}, 0, len(result.Items))
 	for _, sub := range result.Items {
+		subArn := sub.SubscriptionArn
+		if sub.PendingConfirmation {
+			subArn = "pending confirmation"
+		}
 		subs = append(subs, map[string]interface{}{
-			"SubscriptionArn": sub.SubscriptionArn,
+			"SubscriptionArn": subArn,
 			"TopicArn":        sub.TopicArn,
 			"Protocol":        sub.Protocol,
 			"Endpoint":        sub.Endpoint,
@@ -260,4 +261,36 @@ func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *reque
 		response["NextToken"] = result.NextMarker
 	}
 	return response, nil
+}
+
+func parseSubscriptionAttributes(params map[string]interface{}) map[string]string {
+	result := make(map[string]string)
+
+	if attrs, ok := params["Attributes"].(map[string]interface{}); ok {
+		for k, v := range attrs {
+			if vs, ok := v.(string); ok {
+				result[k] = vs
+			}
+		}
+	}
+	if attrs, ok := params["attributes"].(map[string]interface{}); ok {
+		for k, v := range attrs {
+			if vs, ok := v.(string); ok {
+				result[k] = vs
+			}
+		}
+	}
+
+	for i := 1; ; i++ {
+		keyKey := "Attributes.entry." + strconv.Itoa(i) + ".key"
+		valueKey := "Attributes.entry." + strconv.Itoa(i) + ".value"
+		key := request.GetStringParam(params, keyKey)
+		if key == "" {
+			break
+		}
+		value := request.GetStringParam(params, valueKey)
+		result[key] = value
+	}
+
+	return result
 }

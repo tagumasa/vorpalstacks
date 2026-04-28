@@ -3,11 +3,33 @@ package secretsmanager
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
+
+func nestedInt(m map[string]interface{}, key string) int {
+	if v, ok := m[key]; ok {
+		switch n := v.(type) {
+		case float64:
+			return int(n)
+		case int:
+			return n
+		}
+	}
+	return 0
+}
+
+func nestedString(m map[string]interface{}, key string) string {
+	if v, ok := m[key]; ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
 
 // RestoreSecret restores a previously deleted secret. Secrets Manager keeps
 // deleted secrets recoverable for a minimum of 30 days.
@@ -64,23 +86,43 @@ func (s *SecretsManagerService) RotateSecret(ctx context.Context, reqCtx *reques
 	}
 
 	rotationLambdaARN := request.GetStringParam(req.Parameters, "RotationLambdaARN")
-	automaticallyAfterDays := request.GetIntParam(req.Parameters, "RotationRules.AutomaticallyAfterDays")
+	rotationRulesRaw, _ := req.Parameters["RotationRules"].(map[string]interface{})
+	if rotationRulesRaw == nil {
+		rotationRulesRaw = make(map[string]interface{})
+	}
+	automaticallyAfterDays := nestedInt(rotationRulesRaw, "AutomaticallyAfterDays")
+	scheduleExpression := nestedString(rotationRulesRaw, "ScheduleExpression")
+	duration := nestedString(rotationRulesRaw, "Duration")
 
 	secret.RotationEnabled = true
 	if rotationLambdaARN != "" {
 		secret.RotationLambdaARN = rotationLambdaARN
 	}
-	if automaticallyAfterDays > 0 {
+	if automaticallyAfterDays > 0 || scheduleExpression != "" {
 		if secret.RotationRules == nil {
 			secret.RotationRules = &secretsmanagerstore.RotationRules{}
 		}
-		secret.RotationRules.AutomaticallyAfterDays = automaticallyAfterDays
+		if automaticallyAfterDays > 0 {
+			secret.RotationRules.AutomaticallyAfterDays = automaticallyAfterDays
+		}
+		if scheduleExpression != "" {
+			secret.RotationRules.ScheduleExpression = scheduleExpression
+		}
+	}
+	if duration != "" {
+		if secret.RotationRules == nil {
+			secret.RotationRules = &secretsmanagerstore.RotationRules{}
+		}
+		secret.RotationRules.Duration = duration
 	}
 
 	var versionId string
 
 	if secret.RotationLambdaARN != "" && s.bus != nil {
 		if rotErr := s.executeRotation(ctx, store, secret); rotErr != nil {
+			// Persist rotation config even when the Lambda invocation fails.
+			secret.LastChangedDate = time.Now().UTC()
+			_ = store.UpdateSecretMetadata(secret)
 			return nil, errors.NewAWSError("InvalidRequestException",
 				rotErr.Error(), 400)
 		}

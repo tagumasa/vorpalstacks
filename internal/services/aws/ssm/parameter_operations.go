@@ -60,6 +60,12 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 		paramType = "String"
 	}
 
+	switch ssmstore.ParameterType(paramType) {
+	case ssmstore.ParameterTypeString, ssmstore.ParameterTypeStringList, ssmstore.ParameterTypeSecureString:
+	default:
+		return nil, ErrInvalidParameterType
+	}
+
 	keyID := req.GetParam("KeyId")
 
 	if paramType == "SecureString" && s.kmsEncryptor != nil {
@@ -92,6 +98,12 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 	}
 	version, err := store.PutParameter(param, overwrite)
 	if err != nil {
+		if errors.Is(err, ssmstore.ErrParameterAlreadyExists) {
+			return nil, ErrParameterAlreadyExists
+		}
+		if errors.Is(err, ssmstore.ErrReservedParameterName) {
+			return nil, ErrParameterPatternMismatch
+		}
 		return nil, err
 	}
 
@@ -142,6 +154,9 @@ func (s *SSMService) GetParameter(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	if err != nil {
+		if errors.Is(err, ssmstore.ErrParameterVersionNotFound) {
+			return nil, ErrParameterVersionNotFound
+		}
 		return nil, ErrParameterNotFound
 	}
 
@@ -478,6 +493,12 @@ func (s *SSMService) LabelParameterVersion(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 	if err := store.LabelParameterVersion(name, parameterVersion, labels); err != nil {
+		if errors.Is(err, ssmstore.ErrParameterNotFound) {
+			return nil, ErrParameterNotFound
+		}
+		if errors.Is(err, ssmstore.ErrParameterVersionNotFound) {
+			return nil, ErrParameterVersionNotFound
+		}
 		return nil, err
 	}
 

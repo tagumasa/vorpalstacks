@@ -382,8 +382,6 @@ func (s *SecretStore) CancelRotation(name string) error {
 		return ErrSecretNotFound
 	}
 	secret.RotationEnabled = false
-	secret.RotationLambdaARN = ""
-	secret.RotationRules = nil
 	return s.Put(key, &secret)
 }
 

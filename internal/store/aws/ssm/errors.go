@@ -33,4 +33,8 @@ var (
 	// ErrParameterLabelNotFound is returned when the specified parameter
 	// label does not exist.
 	ErrParameterLabelNotFound = errors.New("parameter label not found")
+
+	// ErrReservedParameterName is returned when the parameter name uses a
+	// reserved prefix such as "aws" or "ssm".
+	ErrReservedParameterName = errors.New("parameter name uses a reserved prefix")
 )

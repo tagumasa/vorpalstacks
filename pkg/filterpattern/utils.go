@@ -111,6 +111,11 @@ func CompareValues(left, right any, op string) bool {
 		}
 	}
 
+	switch op {
+	case ">=", "<=", ">", "<":
+		return false
+	}
+
 	leftStr := toStringRaw(left)
 	rightStr := toStringRaw(right)
 
@@ -119,14 +124,6 @@ func CompareValues(left, right any, op string) bool {
 		return leftStr == rightStr
 	case "!=":
 		return leftStr != rightStr
-	case ">":
-		return leftStr > rightStr
-	case "<":
-		return leftStr < rightStr
-	case ">=":
-		return leftStr >= rightStr
-	case "<=":
-		return leftStr <= rightStr
 	}
 	return false
 }

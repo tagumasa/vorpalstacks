@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"vorpalstacks/internal/common/defaults"
 )
 
 func TestParseAWSRequest(t *testing.T) {
@@ -432,7 +433,7 @@ func TestParsedRequest_GetRegion(t *testing.T) {
 
 	t.Run("default region", func(t *testing.T) {
 		req := &ParsedRequest{}
-		assert.Equal(t, DefaultRegion, req.GetRegion())
+		assert.Equal(t, defaults.DefaultRegion, req.GetRegion())
 	})
 }
 

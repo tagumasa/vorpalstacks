@@ -139,6 +139,18 @@ func targetToResponse(target *schedulerstore.Target) map[string]interface{} {
 			"PartitionKey": target.KinesisParameters.PartitionKey,
 		}
 	}
+	if target.SageMakerPipelineParameters != nil && len(target.SageMakerPipelineParameters.PipelineParameterList) > 0 {
+		params := make([]map[string]interface{}, len(target.SageMakerPipelineParameters.PipelineParameterList))
+		for i, p := range target.SageMakerPipelineParameters.PipelineParameterList {
+			params[i] = map[string]interface{}{
+				"Name":  p.Name,
+				"Value": p.Value,
+			}
+		}
+		resp["SageMakerPipelineParameters"] = map[string]interface{}{
+			"PipelineParameterList": params,
+		}
+	}
 	return resp
 }
 
@@ -156,18 +168,18 @@ func networkConfigurationToResponse(nc *schedulerstore.NetworkConfiguration) map
 	if nc.AwsVpcConfiguration.AssignPublicIp != "" {
 		vpc["AssignPublicIp"] = nc.AwsVpcConfiguration.AssignPublicIp
 	}
-	return map[string]interface{}{"AwsVpcConfiguration": vpc}
+	return map[string]interface{}{"awsvpcConfiguration": vpc}
 }
 
 func capacityProviderStrategyToResponse(cps []schedulerstore.CapacityProviderStrategyItem) []map[string]interface{} {
 	result := make([]map[string]interface{}, len(cps))
 	for i, cp := range cps {
-		item := map[string]interface{}{"CapacityProvider": cp.CapacityProvider}
+		item := map[string]interface{}{"capacityProvider": cp.CapacityProvider}
 		if cp.Weight != nil {
-			item["Weight"] = *cp.Weight
+			item["weight"] = *cp.Weight
 		}
 		if cp.Base != nil {
-			item["Base"] = *cp.Base
+			item["base"] = *cp.Base
 		}
 		result[i] = item
 	}
@@ -179,10 +191,10 @@ func placementConstraintsToResponse(pc []schedulerstore.PlacementConstraint) []m
 	for i, c := range pc {
 		item := map[string]interface{}{}
 		if c.Type != "" {
-			item["Type"] = c.Type
+			item["type"] = c.Type
 		}
 		if c.Expression != "" {
-			item["Expression"] = c.Expression
+			item["expression"] = c.Expression
 		}
 		result[i] = item
 	}
@@ -194,10 +206,10 @@ func placementStrategyToResponse(ps []schedulerstore.PlacementStrategy) []map[st
 	for i, s := range ps {
 		item := map[string]interface{}{}
 		if s.Type != "" {
-			item["Type"] = s.Type
+			item["type"] = s.Type
 		}
 		if s.Field != "" {
-			item["Field"] = s.Field
+			item["field"] = s.Field
 		}
 		result[i] = item
 	}

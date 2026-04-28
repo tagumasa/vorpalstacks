@@ -560,11 +560,17 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 	}
 	region := reqCtx.GetRegion()
 
-	for i, entryMap := range entryMaps {
+	for _, entryMap := range entryMaps {
 
 		id, _ := entryMap["Id"].(string)
 		if id == "" {
-			id = fmt.Sprintf("%d", i)
+			failed = append(failed, map[string]interface{}{
+				"Id":          "",
+				"Code":        "InvalidBatchEntryId",
+				"Message":     "A batch entry Id is required",
+				"SenderFault": true,
+			})
+			continue
 		}
 
 		message, _ := entryMap["Message"].(string)

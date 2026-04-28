@@ -389,6 +389,8 @@ func (s *Store) ListTagsForResource(name string) (map[string]string, error) {
 
 var parameterNameRegex = regexp.MustCompile(`^/([a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_.-]+$|^[a-zA-Z0-9_.-]+$`)
 
+var reservedPrefixes = []string{"aws", "ssm"}
+
 // ValidateParameterName validates a parameter name.
 func ValidateParameterName(name string) error {
 	if name == "" {
@@ -399,6 +401,16 @@ func ValidateParameterName(name string) error {
 	}
 	if !parameterNameRegex.MatchString(name) {
 		return ErrInvalidParameterName
+	}
+	trimmed := strings.TrimPrefix(name, "/")
+	if idx := strings.Index(trimmed, "/"); idx != -1 {
+		trimmed = trimmed[:idx]
+	}
+	lower := strings.ToLower(trimmed)
+	for _, prefix := range reservedPrefixes {
+		if lower == prefix {
+			return ErrReservedParameterName
+		}
 	}
 	return nil
 }

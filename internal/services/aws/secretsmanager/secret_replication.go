@@ -297,9 +297,11 @@ func buildReplicationStatusResponse(statuses []secretsmanagerstore.ReplicationSt
 	result := make([]interface{}, len(statuses))
 	for i, rs := range statuses {
 		entry := map[string]interface{}{
-			"Region":   rs.Region,
-			"KmsKeyId": rs.KmsKeyId,
-			"Status":   rs.Status,
+			"Region": rs.Region,
+			"Status": rs.Status,
+		}
+		if rs.KmsKeyId != "" {
+			entry["KmsKeyId"] = rs.KmsKeyId
 		}
 		if rs.StatusMessage != "" {
 			entry["StatusMessage"] = rs.StatusMessage

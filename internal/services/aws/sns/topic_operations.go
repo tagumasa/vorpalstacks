@@ -2,6 +2,7 @@ package sns
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -137,6 +138,34 @@ func (s *SNSService) GetTopicAttributes(ctx context.Context, reqCtx *request.Req
 	if _, hasPolicy := attrs["Policy"]; !hasPolicy {
 		defaultPolicy := fmt.Sprintf(`{"Version":"2008-10-17","Id":"__default_policy_ID","Statement":[{"Sid":"__default_statement_ID","Effect":"Allow","Principal":{"AWS":"*"},"Action":["SNS:GetTopicAttributes","SNS:SetTopicAttributes","SNS:AddPermission","SNS:RemovePermission","SNS:DeleteTopic","SNS:Subscribe","SNS:ListSubscriptionsByTopic","SNS:Publish","SNS:Receive"],"Resource":"%s","Condition":{"StringEquals":{"AWS:SourceOwner":"%s"}}}]}`, topic.Arn, topic.Owner)
 		attrs["Policy"] = defaultPolicy
+	}
+
+	if len(topic.Permissions) > 0 {
+		var policyMap struct {
+			Version   string                   `json:"Version"`
+			Id        string                   `json:"Id"`
+			Statement []map[string]interface{} `json:"Statement"`
+		}
+		if err := json.Unmarshal([]byte(attrs["Policy"]), &policyMap); err == nil {
+			for _, perm := range topic.Permissions {
+				principals := make([]string, len(perm.Principals))
+				for i, p := range perm.Principals {
+					principals[i] = "arn:aws:iam::" + p + ":root"
+				}
+				actions := make([]string, len(perm.Actions))
+				copy(actions, perm.Actions)
+				policyMap.Statement = append(policyMap.Statement, map[string]interface{}{
+					"Sid":       perm.Label,
+					"Effect":    "Allow",
+					"Principal": map[string]interface{}{"AWS": principals},
+					"Action":    actions,
+					"Resource":  topic.Arn,
+				})
+			}
+			if updated, err := json.Marshal(policyMap); err == nil {
+				attrs["Policy"] = string(updated)
+			}
+		}
 	}
 
 	if topic.FifoTopic {

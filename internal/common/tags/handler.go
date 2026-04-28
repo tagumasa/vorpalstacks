@@ -200,6 +200,9 @@ func HandleList(ctx context.Context, req *request.ParsedRequest, cfg TagHandlerC
 		tagResponse = ToResponseWithKeyNames(tags, cfg.Param.TagKeyName, cfg.Param.TagValueName)
 	}
 
+	if len(tagResponse) == 0 {
+		return map[string]interface{}{}, nil
+	}
 	return map[string]interface{}{
 		cfg.Param.TagsParam: tagResponse,
 	}, nil

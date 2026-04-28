@@ -389,6 +389,7 @@ func (s *SNSStore) AutoConfirmSubscription(subscription *Subscription) error {
 	defer s.subscriptionMu.Unlock()
 
 	subscription.PendingConfirmation = false
+	subscription.ConfirmationWasAuthenticated = true
 	subscription.ConfirmationToken = ""
 
 	if err := s.topicSubscriptionsStore.Put(subscription.SubscriptionArn, subscription); err != nil {
@@ -439,6 +440,7 @@ func (s *SNSStore) ConfirmSubscription(subscriptionArn, token string) (*Subscrip
 	}
 
 	subscription.PendingConfirmation = false
+	subscription.ConfirmationWasAuthenticated = true
 	subscription.ConfirmationToken = ""
 
 	if err := s.topicSubscriptionsStore.Put(subscriptionArn, &subscription); err != nil {

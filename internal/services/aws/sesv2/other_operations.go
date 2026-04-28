@@ -150,10 +150,9 @@ func (s *SESv2Service) GetSuppressedDestination(ctx context.Context, reqCtx *req
 
 	return map[string]interface{}{
 		"SuppressedDestination": map[string]interface{}{
-			"EmailAddress":      dest.EmailAddress,
-			"Reason":            dest.Reason,
-			"SuppressionReason": dest.SuppressionReason,
-			"LastUpdateTime":    parseStoredTime(dest.LastUpdateTime),
+			"EmailAddress":   dest.EmailAddress,
+			"Reason":         dest.Reason,
+			"LastUpdateTime": parseStoredTime(dest.LastUpdateTime),
 		},
 	}, nil
 }

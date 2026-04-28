@@ -88,8 +88,6 @@ func (s *SecretsManagerService) buildSecretVersionsToStages(reqCtx *request.Requ
 		for _, versionId := range secret.VersionIDs {
 			if versionId == secret.CurrentVersion {
 				result[versionId] = []string{"AWSCURRENT"}
-			} else {
-				result[versionId] = []string{}
 			}
 		}
 		return result
@@ -97,14 +95,10 @@ func (s *SecretsManagerService) buildSecretVersionsToStages(reqCtx *request.Requ
 
 	for _, versionId := range secret.VersionIDs {
 		version, err := store.GetSecretVersion(secret.Name, versionId)
-		if err == nil {
+		if err == nil && len(version.VersionStages) > 0 {
 			result[versionId] = version.VersionStages
-		} else {
-			if versionId == secret.CurrentVersion {
-				result[versionId] = []string{"AWSCURRENT"}
-			} else {
-				result[versionId] = []string{}
-			}
+		} else if versionId == secret.CurrentVersion {
+			result[versionId] = []string{"AWSCURRENT"}
 		}
 	}
 	return result
@@ -120,15 +114,25 @@ func (s *SecretsManagerService) buildTagsList(secret *secretsmanagerstore.Secret
 }
 
 func (s *SecretsManagerService) addRotationFields(m map[string]interface{}, secret *secretsmanagerstore.Secret) {
-	if secret.RotationEnabled {
-		m["RotationEnabled"] = true
+	if secret.RotationEnabled || secret.RotationLambdaARN != "" {
+		m["RotationEnabled"] = secret.RotationEnabled
 	}
 	if secret.RotationLambdaARN != "" {
 		m["RotationLambdaARN"] = secret.RotationLambdaARN
 	}
 	if secret.RotationRules != nil {
-		m["RotationRules"] = map[string]interface{}{
-			"AutomaticallyAfterDays": secret.RotationRules.AutomaticallyAfterDays,
+		rules := map[string]interface{}{}
+		if secret.RotationRules.AutomaticallyAfterDays > 0 {
+			rules["AutomaticallyAfterDays"] = secret.RotationRules.AutomaticallyAfterDays
+		}
+		if secret.RotationRules.ScheduleExpression != "" {
+			rules["ScheduleExpression"] = secret.RotationRules.ScheduleExpression
+		}
+		if secret.RotationRules.Duration != "" {
+			rules["Duration"] = secret.RotationRules.Duration
+		}
+		if len(rules) > 0 {
+			m["RotationRules"] = rules
 		}
 	}
 	if !secret.LastRotatedDate.IsZero() {

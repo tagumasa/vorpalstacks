@@ -40,6 +40,26 @@ func (s *SESv2Service) GetAccount(ctx context.Context, reqCtx *request.RequestCo
 		}
 	}
 
+	if account.VdmAttributes != nil {
+		vdm := map[string]interface{}{}
+		if account.VdmAttributes.VdmEnabled {
+			vdm["VdmEnabled"] = "ENABLED"
+		} else {
+			vdm["VdmEnabled"] = "DISABLED"
+		}
+		if account.VdmAttributes.DashboardAttributes != "" {
+			vdm["DashboardAttributes"] = map[string]interface{}{
+				"EngagementMetrics": account.VdmAttributes.DashboardAttributes,
+			}
+		}
+		if account.VdmAttributes.GuardianAttributes != "" {
+			vdm["GuardianAttributes"] = map[string]interface{}{
+				"OptimizedSharedDelivery": account.VdmAttributes.GuardianAttributes,
+			}
+		}
+		result["VdmAttributes"] = vdm
+	}
+
 	if account.SendingAttributes != nil {
 		result["SendQuota"] = map[string]interface{}{
 			"Max24HourSend":   account.SendingAttributes.Max24HourSend,
@@ -91,7 +111,7 @@ func (s *SESv2Service) PutAccountDetails(ctx context.Context, reqCtx *request.Re
 	details := &sesv2store.AccountDetails{
 		MailType:                request.GetStringParam(req.Parameters, "MailType"),
 		UseCaseDescription:      request.GetStringParam(req.Parameters, "UseCaseDescription"),
-		WebsiteURL:              request.GetStringParam(req.Parameters, "WebsiteUrl"),
+		WebsiteURL:              request.GetStringParam(req.Parameters, "WebsiteURL"),
 		ContactLanguage:         request.GetStringParam(req.Parameters, "ContactLanguage"),
 		ProductionAccessEnabled: request.GetBoolParam(req.Parameters, "ProductionAccessEnabled"),
 	}

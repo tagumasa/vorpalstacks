@@ -204,7 +204,7 @@ func extractSESv2Operation(r *http.Request) string {
 					return "PutAccountSuppressionAttributes"
 				}
 			case "details":
-				if method == http.MethodPut {
+				if method == http.MethodPost || method == http.MethodPut {
 					return "PutAccountDetails"
 				}
 			case "vdm":
