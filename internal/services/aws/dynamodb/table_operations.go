@@ -175,8 +175,8 @@ func (s *DynamoDBService) DescribeTable(ctx context.Context, reqCtx *request.Req
 // ListTables returns a list of DynamoDB tables.
 // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_ListTables.html
 func (s *DynamoDBService) ListTables(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit := pagination.GetMaxItems(req.Parameters, 100)
-	marker := pagination.GetMarker(req.Parameters)
+	limit := pagination.GetMaxItems(req.Parameters, 100, "Limit")
+	marker := pagination.GetMarker(req.Parameters, "ExclusiveStartTableName")
 
 	store, err := s.store(reqCtx)
 	if err != nil {

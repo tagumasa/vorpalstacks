@@ -148,10 +148,11 @@ type IAMPrincipalResolver interface {
 	ResolvePrincipal(ctx context.Context, accessKeyID string) (username string, err error)
 }
 
-// S3Invoker provides S3 object read operations for cross-service consumers
-// (e.g. NeptuneData bulk loader). Consumers call these methods instead of
-// holding a direct reference to the S3 store.
+// S3Invoker provides S3 object read and write operations for cross-service
+// consumers (e.g. NeptuneData bulk loader, DynamoDB import/export). Consumers
+// call these methods instead of holding a direct reference to the S3 store.
 type S3Invoker interface {
 	GetObject(ctx context.Context, region, bucket, key string) ([]byte, error)
+	PutObject(ctx context.Context, region, bucket, key string, data []byte) error
 	ListObjects(ctx context.Context, region, bucket, prefix string) ([]string, error)
 }

@@ -8,6 +8,7 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
@@ -18,6 +19,7 @@ type DynamoDBService struct {
 	stores          sync.Map // region → dynamodbstore.DynamoDBStoreInterface
 	storageManager  *storage.RegionStorageManager
 	busStoreFactory *dynamodbstore.DynamoDBStoreFactory
+	bus             eventbus.Bus
 }
 
 // NewDynamoDBService creates a new DynamoDB service instance.
@@ -32,6 +34,12 @@ func NewDynamoDBService(accountID string) *DynamoDBService {
 func (s *DynamoDBService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
 	s.busStoreFactory = dynamodbstore.NewDynamoDBStoreFactory(sm, s.accountID)
+}
+
+// SetEventBus sets the EventBus for cross-service invoker access (e.g. S3
+// import/export operations).
+func (s *DynamoDBService) SetEventBus(bus eventbus.Bus) {
+	s.bus = bus
 }
 
 // GetStoreForRegion returns the DynamoDB store for the given region.

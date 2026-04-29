@@ -464,6 +464,7 @@ type ExportDescription struct {
 	EndTime           time.Time `json:"end_time,omitempty"`
 	ManifestFilesSize int64     `json:"manifest_files_size,omitempty"`
 	ItemCount         int64     `json:"item_count,omitempty"`
+	BilledSizeBytes   int64     `json:"billed_size_bytes,omitempty"`
 	TableArn          string    `json:"table_arn,omitempty"`
 	TableId           string    `json:"table_id,omitempty"`
 	ExportFormat      string    `json:"export_format,omitempty"`

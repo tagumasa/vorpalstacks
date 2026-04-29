@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -23,6 +24,17 @@ func (s *S3Service) GetObject(ctx context.Context, region, bucket, key string) (
 		return nil, fmt.Errorf("s3 GetObject read %s/%s: %w", bucket, key, err)
 	}
 	return data, nil
+}
+
+// PutObject implements the eventbus.S3Invoker interface. It stores the given
+// byte data as an object in the specified region, bucket and key.
+func (s *S3Service) PutObject(ctx context.Context, region, bucket, key string, data []byte) error {
+	objs := s.s3Store.Objects(region)
+	_, err := objs.Put(ctx, bucket, key, bytes.NewReader(data), "application/octet-stream", nil)
+	if err != nil {
+		return fmt.Errorf("s3 PutObject %s/%s: %w", bucket, key, err)
+	}
+	return nil
 }
 
 // ListObjects implements the eventbus.S3Invoker interface. It returns object

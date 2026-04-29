@@ -396,6 +396,9 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 			var err error
 			updatedAttrNames, err = applyUpdateExpressionWithTracking(item.Attributes, updateExpr, parseExpressionAttributeNames(req.Parameters), parseExpressionAttributeValues(req.Parameters))
 			if err != nil {
+				if err.Error() == "TYPE_MISMATCH: Type mismatch for attribute to update" {
+					return ErrInvalidParameter
+				}
 				return err
 			}
 		} else if attrs != nil {

@@ -207,8 +207,8 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 			"BackupStatus":           string(b.BackupStatus),
 			"BackupType":             string(b.BackupType),
 			"BackupCreationDateTime": b.BackupCreationDateTime.Unix(),
-			"SourceTableName":        b.SourceTableName,
-			"SourceTableArn":         b.SourceTableArn,
+			"TableName":              b.SourceTableName,
+			"TableArn":               b.SourceTableArn,
 		})
 	}
 

@@ -61,7 +61,7 @@ func (s *DynamoDBService) ExecuteStatement(ctx context.Context, reqCtx *request.
 }
 
 func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, consistentRead bool, limit int) (interface{}, error) {
-	tableName, whereExpr, orderBy := parseSelectStatementWithOrderBy(statement)
+	tableName, whereExpr, orderBy, selectCols := parseSelectStatementWithOrderBy(statement)
 	if tableName == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -119,7 +119,17 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 
 	result := make([]map[string]interface{}, 0, len(items))
 	for _, item := range items {
-		result = append(result, buildItemResponse(item.Attributes))
+		attrs := item.Attributes
+		if selectCols != nil {
+			filtered := make(map[string]*dbstore.AttributeValue)
+			for _, col := range selectCols {
+				if v, ok := attrs[col]; ok {
+					filtered[col] = v
+				}
+			}
+			attrs = filtered
+		}
+		result = append(result, buildItemResponse(attrs))
 	}
 
 	_ = consistentRead

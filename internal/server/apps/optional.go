@@ -148,8 +148,8 @@ func (a *App) initNeptune(st *serviceState) error {
 func (a *App) initNeptuneData(st *serviceState) error {
 	st.neptuneDataService = svcneptunedata.NewNeptuneDataService()
 	st.neptuneDataService.SetStorageManager(a.server.StorageManager())
-	if st.s3Service != nil {
-		st.neptuneDataService.SetS3Invoker(st.s3Service)
+	if eb := a.server.EventBus(); eb != nil {
+		st.neptuneDataService.SetS3Invoker(eb.S3Invoker())
 	}
 	st.neptuneDataService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("neptunedata", func(ctx context.Context) error {

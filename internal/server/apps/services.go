@@ -183,6 +183,7 @@ func (a *App) initCognitoIdentity(st *serviceState) error {
 func (a *App) initDynamoDB(st *serviceState) error {
 	st.dynamoDBService = svcdynamodb.NewDynamoDBService(st.accountID)
 	st.dynamoDBService.SetStorageManager(a.server.StorageManager())
+	st.dynamoDBService.SetEventBus(a.server.EventBus())
 	st.dynamoDBService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }
@@ -313,6 +314,10 @@ func (a *App) initS3(st *serviceState) error {
 	s3Handler := svcs3.NewS3Handler(st.s3Service, st.region, a.server.StorageManager())
 	a.server.RegisterS3Handler(s3Handler)
 	st.s3Service.SetEventBus(a.server.EventBus())
+
+	if eb := a.server.EventBus(); eb != nil {
+		eb.SetS3Invoker(st.s3Service)
+	}
 
 	st.s3ObjectStore = s3Store.Objects(st.region)
 	return nil

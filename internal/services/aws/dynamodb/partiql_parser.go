@@ -185,15 +185,15 @@ type orderByClause struct {
 	direction string
 }
 
-func parseSelectStatementWithOrderBy(statement string) (tableName string, whereExpr sqlparser.Expr, orderBy *orderByClause) {
+func parseSelectStatementWithOrderBy(statement string) (tableName string, whereExpr sqlparser.Expr, orderBy *orderByClause, selectCols []string) {
 	stmt, err := sqlparser.ParseWithOptions(statement, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
 	if err != nil {
-		return "", nil, nil
+		return "", nil, nil, nil
 	}
 
 	sel, ok := stmt.(*sqlparser.Select)
 	if !ok {
-		return "", nil, nil
+		return "", nil, nil, nil
 	}
 
 	tableName = sqlparser.String(sel.From)
@@ -213,5 +213,19 @@ func parseSelectStatementWithOrderBy(statement string) (tableName string, whereE
 		}
 	}
 
-	return tableName, whereExpr, orderBy
+	for _, expr := range sel.SelectExprs {
+		switch e := expr.(type) {
+		case *sqlparser.StarExpr:
+			selectCols = nil
+		case *sqlparser.AliasedExpr:
+			colName := sqlparser.String(e.Expr)
+			colName = trimQuotes(colName)
+			selectCols = append(selectCols, colName)
+		}
+	}
+	if len(selectCols) == 0 {
+		selectCols = nil
+	}
+
+	return tableName, whereExpr, orderBy, selectCols
 }

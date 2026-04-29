@@ -140,6 +140,7 @@ type Bus interface {
 	DynamoDBInvoker() DynamoDBInvoker
 	NeptuneGraphInvoker() NeptuneGraphInvoker
 	KMSInvoker() KMSInvoker
+	S3Invoker() S3Invoker
 
 	SetLambdaInvoker(invoker LambdaInvoker)
 	SetSQSInvoker(invoker SQSInvoker)
@@ -150,6 +151,7 @@ type Bus interface {
 	SetDynamoDBInvoker(invoker DynamoDBInvoker)
 	SetNeptuneGraphInvoker(invoker NeptuneGraphInvoker)
 	SetKMSInvoker(invoker KMSInvoker)
+	SetS3Invoker(invoker S3Invoker)
 }
 
 // EventBus is the central implementation of the Bus interface, managing
@@ -183,6 +185,7 @@ type EventBus struct {
 	dynamoDBInvoker     DynamoDBInvoker
 	neptuneGraphInvoker NeptuneGraphInvoker
 	kmsInvoker          KMSInvoker
+	s3Invoker           S3Invoker
 	nextSubID           atomic.Int64
 	asyncCh             chan *OutboxEntry
 	directCh            chan *directDispatch
@@ -628,6 +631,12 @@ func (b *EventBus) SetKMSInvoker(invoker KMSInvoker) { b.kmsInvoker = invoker }
 
 // KMSInvoker returns the configured KMS invoker.
 func (b *EventBus) KMSInvoker() KMSInvoker { return b.kmsInvoker }
+
+// SetS3Invoker sets the S3 invoker used for cross-service S3 object operations.
+func (b *EventBus) SetS3Invoker(invoker S3Invoker) { b.s3Invoker = invoker }
+
+// S3Invoker returns the configured S3 invoker.
+func (b *EventBus) S3Invoker() S3Invoker { return b.s3Invoker }
 
 // RoleResolver returns the configured RoleResolver, or nil if none was set.
 func (b *EventBus) RoleResolver() RoleResolver {

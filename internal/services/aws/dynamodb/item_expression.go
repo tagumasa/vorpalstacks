@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -38,7 +39,10 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 					exprTokens = append(exprTokens, tokens[j], tokens[j+1])
 					j += 2
 				}
-				value := resolveValueWithIfNotExists(strings.Join(exprTokens, " "), values, names, attrs)
+				value, valErr := resolveValueWithIfNotExists(strings.Join(exprTokens, " "), values, names, attrs)
+				if valErr != nil {
+					return nil, valErr
+				}
 				if value != nil {
 					if err := setNestedValue(attrs, path, value); err != nil {
 						return nil, err
@@ -567,9 +571,9 @@ func resolveValue(token string, values map[string]*dbstore.AttributeValue, names
 	return nil
 }
 
-func resolveValueWithIfNotExists(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) *dbstore.AttributeValue {
+func resolveValueWithIfNotExists(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) (*dbstore.AttributeValue, error) {
 	if result := evaluateArithmeticExpression(token, values, names, attrs); result != nil {
-		return result
+		return result, nil
 	}
 
 	if strings.HasPrefix(token, "if_not_exists(") {
@@ -582,7 +586,7 @@ func resolveValueWithIfNotExists(token string, values map[string]*dbstore.Attrib
 				defaultVal := strings.TrimSpace(parts[1])
 				attrName := resolveName(path, names)
 				if existing, ok := attrs[attrName]; ok && existing != nil {
-					return existing
+					return existing, nil
 				}
 				return resolveValueWithIfNotExists(defaultVal, values, names, attrs)
 			}
@@ -601,19 +605,22 @@ func resolveValueWithIfNotExists(token string, values map[string]*dbstore.Attrib
 					combined := make([]*dbstore.AttributeValue, 0, len(list1.L)+len(list2.L))
 					combined = append(combined, list1.L...)
 					combined = append(combined, list2.L...)
-					return dbstore.ListValue(combined)
+					return dbstore.ListValue(combined), nil
 				}
 				if list1 == nil && list2 != nil && list2.L != nil {
-					return list2
+					return list2, nil
 				}
 				if list1 != nil && list1.L != nil {
-					return list1
+					return list1, nil
+				}
+				if (list1 != nil && list1.L == nil) || (list2 != nil && list2.L == nil) {
+					return nil, fmt.Errorf("TYPE_MISMATCH: Type mismatch for attribute to update")
 				}
 			}
 		}
 	}
 
-	return resolveValue(token, values, names)
+	return resolveValue(token, values, names), nil
 }
 
 func evaluateArithmeticExpression(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) *dbstore.AttributeValue {
@@ -762,7 +769,8 @@ func splitListAppendArgs(s string) []string {
 
 func resolveValueOrPath(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) *dbstore.AttributeValue {
 	if strings.HasPrefix(token, "if_not_exists(") {
-		return resolveValueWithIfNotExists(token, values, names, attrs)
+		val, _ := resolveValueWithIfNotExists(token, values, names, attrs)
+		return val
 	}
 	if strings.HasPrefix(token, ":") {
 		return resolveValue(token, values, names)
