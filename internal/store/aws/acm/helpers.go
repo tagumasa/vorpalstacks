@@ -5,6 +5,7 @@ import (
 	cryptorand "crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -29,7 +30,12 @@ func GenerateCertificateSerial() string {
 	counter := atomic.LoadUint64(&certificateCounter)
 	ts := time.Now().UnixNano()
 	hash := md5.Sum([]byte(fmt.Sprintf("%d-%d", counter, ts)))
-	return fmt.Sprintf("%x", hash)[:16]
+	hexStr := fmt.Sprintf("%x", hash)
+	parts := make([]string, 0, len(hexStr)/2)
+	for i := 0; i+1 < len(hexStr); i += 2 {
+		parts = append(parts, hexStr[i:i+2])
+	}
+	return strings.Join(parts, ":")
 }
 
 func generateValidationToken() string {

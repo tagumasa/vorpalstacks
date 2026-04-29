@@ -29,6 +29,7 @@ import (
 	"vorpalstacks/internal/store/api"
 	"vorpalstacks/internal/store/aws/iam"
 	s3store "vorpalstacks/internal/store/aws/s3"
+	stsstore "vorpalstacks/internal/store/aws/sts"
 )
 
 // NewServer creates and configures a new HTTP server with all required components.
@@ -131,6 +132,9 @@ func NewServer(cfg *Config) (*Server, error) {
 		region = defaults.DefaultRegion
 	}
 
+	// Create STS session store for temporary credential verification
+	stsSessionStore := stsstore.NewSessionStore(globalStore, region)
+
 	regionStorage, err := storageMgr.GetStorage(region)
 	if err != nil {
 		storageMgr.Close()
@@ -174,18 +178,19 @@ func NewServer(cfg *Config) (*Server, error) {
 	shutdownCtx, shutdownCancel := context.WithCancel(context.Background())
 
 	srv := &Server{
-		config:         cfg,
-		storageManager: storageMgr,
-		eventBus:       bus,
-		dispatcher:     disp,
-		classifier:     classifier,
-		serviceStore:   serviceStore,
-		operationStore: operationStore,
-		shutdownCtx:    shutdownCtx,
-		shutdownCancel: shutdownCancel,
-		iamStore:       iamStore,
-		s3Store:        s3Store,
-		blobStore:      blobStore,
+		config:          cfg,
+		storageManager:  storageMgr,
+		eventBus:        bus,
+		dispatcher:      disp,
+		classifier:      classifier,
+		serviceStore:    serviceStore,
+		operationStore:  operationStore,
+		shutdownCtx:     shutdownCtx,
+		shutdownCancel:  shutdownCancel,
+		iamStore:        iamStore,
+		stsSessionStore: stsSessionStore,
+		s3Store:         s3Store,
+		blobStore:       blobStore,
 	}
 
 	if cfg.TLSConfig.Enabled {
@@ -226,7 +231,7 @@ func (s *Server) Start() error {
 		})
 
 		if s.config.SignatureConfig.Enabled {
-			r.Use(SignatureMiddleware(s.config.SignatureConfig, s.classifier))
+			r.Use(SignatureMiddleware(s.config.SignatureConfig, s.classifier, s.stsSessionStore))
 		}
 
 		r.Use(LoggingMiddleware)

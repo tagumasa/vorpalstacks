@@ -8,6 +8,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
@@ -152,6 +153,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	}
 	template := &x509.Certificate{
 		SerialNumber: serialBigInt,
+		Subject:      pkix.Name{CommonName: domainName},
 		NotBefore:    now,
 		NotAfter:     now.AddDate(1, 0, 0),
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
@@ -176,6 +178,8 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 		SignatureAlgorithm: "SHA256WITHRSA",
 		RenewalEligibility: "ELIGIBLE",
 		CreatedAt:          now,
+		Subject:            domainName,
+		Issuer:             domainName,
 		AccountID:          reqCtx.GetAccountID(),
 		Region:             reqCtx.GetRegion(),
 		Certificate:        string(certPEM),
@@ -247,10 +251,13 @@ func (s *ACMService) GetCertificate(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"Certificate":      cert.Certificate,
-		"CertificateChain": cert.CertificateChain,
-	}, nil
+	result := map[string]interface{}{
+		"Certificate": cert.Certificate,
+	}
+	if cert.CertificateChain != "" {
+		result["CertificateChain"] = cert.CertificateChain
+	}
+	return result, nil
 }
 
 // ListCertificates retrieves a list of certificates for the account.
@@ -467,6 +474,8 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 		cert.NotAfter = parsedCert.NotAfter
 		cert.KeyAlgorithm = determineKeyAlgorithmFromParsed(parsedCert)
 		cert.SignatureAlgorithm = determineSignatureAlgorithmFromParsed(parsedCert)
+		cert.Subject = parsedCert.Subject.String()
+		cert.Issuer = parsedCert.Issuer.String()
 	}
 
 	if err := stores.certificates.Create(cert); err != nil {

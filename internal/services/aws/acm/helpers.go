@@ -121,7 +121,10 @@ func certificateToDetailResponse(cert *acmstorelib.Certificate) map[string]inter
 		"NotAfter":           formatEpochSeconds(notAfter),
 		"CreatedAt":          formatEpochSeconds(cert.CreatedAt),
 		"Options":            certificateOptionsToResponse(cert.Options),
-		"InUseBy":            cert.InUseBy,
+	}
+
+	if len(cert.InUseBy) > 0 {
+		result["InUseBy"] = cert.InUseBy
 	}
 
 	if len(cert.SubjectAlternativeNames) > 0 {

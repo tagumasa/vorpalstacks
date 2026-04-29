@@ -1,8 +1,5 @@
 package sts
 
-// Package sts provides STS (Security Token Service) data store implementations
-// for vorpalstacks.
-
 import (
 	"crypto/rand"
 	"encoding/base64"
@@ -10,6 +7,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 )
@@ -22,14 +20,17 @@ const (
 
 // SessionStore manages STS session tokens.
 type SessionStore struct {
-	bucket storage.Bucket
+	bucket          storage.Bucket
+	accessKeyBucket storage.Bucket
 }
 
 // NewSessionStore creates a new SessionStore instance.
 func NewSessionStore(store storage.BasicStorage, region string) *SessionStore {
 	bucketName := "sts_sessions-" + region
+	akBucketName := "sts_access_keys-" + region
 	return &SessionStore{
-		bucket: store.Bucket(bucketName),
+		bucket:          store.Bucket(bucketName),
+		accessKeyBucket: store.Bucket(akBucketName),
 	}
 }
 
@@ -75,6 +76,11 @@ func (s *SessionStore) Create(principalType, principalName, principalArn, roleAr
 		return nil, err
 	}
 
+	if err := s.accessKeyBucket.Put([]byte(accessKeyId), []byte(sessionToken)); err != nil {
+		_ = s.bucket.Delete([]byte(sessionToken))
+		return nil, err
+	}
+
 	return session, nil
 }
 
@@ -105,7 +111,39 @@ func (s *SessionStore) Get(sessionToken string) (*Session, error) {
 
 // Delete removes an STS session.
 func (s *SessionStore) Delete(sessionToken string) error {
+	data, err := s.bucket.Get([]byte(sessionToken))
+	if err == nil && data != nil {
+		var session Session
+		if json.Unmarshal(data, &session) == nil {
+			_ = s.accessKeyBucket.Delete([]byte(session.AccessKeyId))
+		}
+	}
 	return s.bucket.Delete([]byte(sessionToken))
+}
+
+// GetByAccessKeyId retrieves an STS session by access key ID.
+func (s *SessionStore) GetByAccessKeyId(accessKeyId string) (*Session, error) {
+	tokenBytes, err := s.accessKeyBucket.Get([]byte(accessKeyId))
+	if err != nil {
+		return nil, err
+	}
+	if tokenBytes == nil {
+		return nil, ErrSessionNotFound
+	}
+	return s.Get(string(tokenBytes))
+}
+
+// ResolveSession implements auth.SessionResolver for STS session lookup by access key ID.
+func (s *SessionStore) ResolveSession(accessKeyId string) (*auth.SessionCredentials, error) {
+	session, err := s.GetByAccessKeyId(accessKeyId)
+	if err != nil {
+		return nil, err
+	}
+	return &auth.SessionCredentials{
+		AccessKeyID:     session.AccessKeyId,
+		SecretAccessKey: session.SecretAccessKey,
+		SessionToken:    session.SessionToken,
+	}, nil
 }
 
 func generateSessionToken() (string, error) {

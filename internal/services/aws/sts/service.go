@@ -172,6 +172,11 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 		return nil, ErrNoSuchRole
 	}
 
+	role, roleErr := iamStore.Roles().Get(roleName)
+	if roleErr != nil {
+		return nil, ErrNoSuchRole
+	}
+
 	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
 	if err != nil {
 		return nil, ErrNoSuchRole
@@ -209,7 +214,7 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
 		},
 		"AssumedRoleUser": map[string]interface{}{
-			"AssumedRoleId": session.AccessKeyId + ":" + roleSessionName,
+			"AssumedRoleId": role.ID + ":" + roleSessionName,
 			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
 		},
 		"PackedPolicySize": computePackedPolicySize(sessionPolicy, req.Parameters),
@@ -371,6 +376,8 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 		return nil, ErrNoSuchRole
 	}
 
+	samlRole, _ := iamStore.Roles().Get(roleName)
+
 	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
 	if err != nil {
 		return nil, ErrNoSuchRole
@@ -395,6 +402,11 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
+	roleId := ""
+	if samlRole != nil {
+		roleId = samlRole.ID
+	}
+
 	return map[string]interface{}{
 		"Credentials": map[string]interface{}{
 			"AccessKeyId":     session.AccessKeyId,
@@ -403,7 +415,7 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
 		},
 		"AssumedRoleUser": map[string]interface{}{
-			"AssumedRoleId": session.AccessKeyId + ":" + roleSessionName,
+			"AssumedRoleId": roleId + ":" + roleSessionName,
 			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
 		},
 		"Subject":          principalArn,
@@ -455,6 +467,8 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 		return nil, ErrNoSuchRole
 	}
 
+	webRole, _ := iamStore.Roles().Get(roleName)
+
 	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
 	if err != nil {
 		return nil, ErrNoSuchRole
@@ -484,6 +498,11 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	roleId := ""
+	if webRole != nil {
+		roleId = webRole.ID
+	}
+
 	return map[string]interface{}{
 		"Credentials": map[string]interface{}{
 			"AccessKeyId":     session.AccessKeyId,
@@ -492,7 +511,7 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
 		},
 		"AssumedRoleUser": map[string]interface{}{
-			"AssumedRoleId": session.AccessKeyId + ":" + roleSessionName,
+			"AssumedRoleId": roleId + ":" + roleSessionName,
 			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
 		},
 		"Provider":                    providerId,
@@ -630,7 +649,7 @@ func (s *STSService) GetFederationToken(ctx context.Context, reqCtx *request.Req
 		},
 		"FederatedUser": map[string]interface{}{
 			"FederatedUserId": reqCtx.GetAccountID() + ":" + name,
-			"Arn":             callerArn + ":" + name,
+			"Arn":             "arn:aws:sts::" + reqCtx.GetAccountID() + ":federated-user/" + name,
 		},
 		"PackedPolicySize": packedPolicySize,
 	}, nil

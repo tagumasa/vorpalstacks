@@ -16,6 +16,7 @@ import (
 	"vorpalstacks/internal/store/api"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	s3store "vorpalstacks/internal/store/aws/s3"
+	stsstore "vorpalstacks/internal/store/aws/sts"
 )
 
 // Config holds configuration for the HTTP server.
@@ -74,6 +75,7 @@ type Server struct {
 	tlsServer         *http.Server
 	tlsServerMu       sync.Mutex
 	iamStore          iamstore.IAMStoreInterface
+	stsSessionStore   stsstore.SessionStoreInterface
 	s3Store           s3store.S3StoreInterface
 	blobStore         storage.BlobStore
 	shutdownHooks     []ShutdownHook

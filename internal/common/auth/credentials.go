@@ -18,6 +18,19 @@ type CredentialsProvider interface {
 	GetCredentials() (*Credentials, error)
 }
 
+// SessionCredentials represents temporary session credentials from STS.
+type SessionCredentials struct {
+	AccessKeyID     string
+	SecretAccessKey string
+	SessionToken    string
+}
+
+// SessionResolver resolves temporary session credentials by access key ID.
+// Implementations typically look up STS sessions.
+type SessionResolver interface {
+	ResolveSession(accessKeyId string) (*SessionCredentials, error)
+}
+
 // StaticCredentialsProvider provides static credentials for authentication.
 type StaticCredentialsProvider struct {
 	credentials *Credentials

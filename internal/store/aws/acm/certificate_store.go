@@ -184,7 +184,7 @@ func CertificateToSummary(cert *Certificate) *CertificateSummary {
 		CertificateArn:                       cert.CertificateArn,
 		DomainName:                           cert.DomainName,
 		SubjectAlternativeNameSummaries:      cert.SubjectAlternativeNames,
-		HasAdditionalSubjectAlternativeNames: len(cert.SubjectAlternativeNames) > 0,
+		HasAdditionalSubjectAlternativeNames: len(cert.SubjectAlternativeNames) > 100,
 		Status:                               cert.Status,
 		Type:                                 cert.Type,
 		RenewalEligibility:                   cert.RenewalEligibility,
