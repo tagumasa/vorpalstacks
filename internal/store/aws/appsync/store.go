@@ -316,11 +316,11 @@ func (s *AppSyncStore) ListApis(opts common.ListOptions) ([]*Api, string, error)
 	return result.Items, nextToken, nil
 }
 
-// ListAssociationsBySourceApi lists merged API associations for a given source API.
-// Filters all associations by sourceApiId since the store key is composite (mergedApiId/associationId).
-func (s *AppSyncStore) ListAssociationsBySourceApi(sourceApiId string, opts common.ListOptions) ([]*SourceApiAssociation, string, error) {
+// ListAssociationsByMergedApi lists source API associations for a merged API.
+// The apiId parameter is the merged API identifier per AWS spec.
+func (s *AppSyncStore) ListAssociationsByMergedApi(apiId string, opts common.ListOptions) ([]*SourceApiAssociation, string, error) {
 	result, err := common.List[SourceApiAssociation](s.mergedApiAssociationsStore, opts, func(a *SourceApiAssociation) bool {
-		return a.SourceApiId == sourceApiId
+		return a.MergedApiId == apiId
 	})
 	if err != nil {
 		return nil, "", err

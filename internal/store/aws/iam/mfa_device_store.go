@@ -36,12 +36,8 @@ func (s *MFADeviceStore) Put(device *VirtualMFADevice) error {
 }
 
 // Create creates a new virtual MFA device.
-func (s *MFADeviceStore) Create(accountId string, tags []types.Tag) (*VirtualMFADevice, error) {
-	serialNumber, err := GenerateMFADeviceSerialNumber()
-	if err != nil {
-		return nil, err
-	}
-	serialNumberARN := s.arnBuilder.VirtualMFADeviceARN(serialNumber)
+func (s *MFADeviceStore) Create(accountId, deviceName string, tags []types.Tag) (*VirtualMFADevice, error) {
+	serialNumberARN := s.arnBuilder.VirtualMFADeviceARN(deviceName)
 
 	base32Seed, err := GenerateBase32Seed()
 	if err != nil {
@@ -50,6 +46,7 @@ func (s *MFADeviceStore) Create(accountId string, tags []types.Tag) (*VirtualMFA
 
 	device := &VirtualMFADevice{
 		SerialNumber:     serialNumberARN,
+		FriendlyName:     deviceName,
 		AccountId:        accountId,
 		Base32StringSeed: base32Seed,
 		Tags:             tags,

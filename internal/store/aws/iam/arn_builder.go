@@ -100,7 +100,9 @@ func (b *ARNBuilder) SAMLProviderARN(providerName string) string {
 
 // OpenIDConnectProviderARN constructs an ARN for an OIDC provider.
 func (b *ARNBuilder) OpenIDConnectProviderARN(providerURL string) string {
-	return fmt.Sprintf("arn:%s:iam::%s:oidc-provider/%s", b.partition, b.accountId, providerURL)
+	cleaned := strings.TrimPrefix(providerURL, "https://")
+	cleaned = strings.TrimPrefix(cleaned, "http://")
+	return fmt.Sprintf("arn:%s:iam::%s:oidc-provider/%s", b.partition, b.accountId, cleaned)
 }
 
 // AccountARN constructs an ARN for the AWS account.

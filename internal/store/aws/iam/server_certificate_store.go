@@ -58,20 +58,30 @@ func (s *ServerCertificateStore) Create(name, path, certificateBody, certificate
 }
 
 // Update modifies the path, certificate body, or chain of an existing server certificate.
-func (s *ServerCertificateStore) Update(name, newPath, newCertificateBody, newCertificateChain string) error {
+func (s *ServerCertificateStore) Update(name, newPath, newName, newCertificateBody, newCertificateChain string) error {
 	return s.kl.WithLock(name, func() error {
 		cert, err := s.Get(name)
 		if err != nil {
 			return err
 		}
+		needsRekey := newName != "" && newName != name
 		if newPath != "" {
 			cert.Path = newPath
+		}
+		if newName != "" {
+			cert.ServerCertificateName = newName
+			cert.Arn = s.arnBuilder.ServerCertificateARN(newName)
 		}
 		if newCertificateBody != "" {
 			cert.CertificateBody = newCertificateBody
 		}
 		if newCertificateChain != "" {
 			cert.CertificateChain = newCertificateChain
+		}
+		if needsRekey {
+			if err := s.BaseStore.Delete(name); err != nil {
+				return err
+			}
 		}
 		return s.Put(cert)
 	})

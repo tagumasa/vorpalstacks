@@ -214,6 +214,7 @@ type AttachedPolicyRef struct {
 // VirtualMFADevice represents a virtual MFA device.
 type VirtualMFADevice struct {
 	SerialNumber     string             `json:"serial_number"`
+	FriendlyName     string             `json:"friendly_name"`
 	AccountId        string             `json:"account_id"`
 	Base32StringSeed string             `json:"base32_string_seed,omitempty"`
 	QRCodePNG        []byte             `json:"qr_code_png,omitempty"`

@@ -267,7 +267,7 @@ func (s *AppSyncService) ListSourceApiAssociations(ctx context.Context, reqCtx *
 	}
 
 	opts := parsePaginationOptions(req)
-	assocs, nextToken, err := store.ListAssociationsBySourceApi(apiId, opts)
+	assocs, nextToken, err := store.ListAssociationsByMergedApi(apiId, opts)
 	if err != nil {
 		return mapStoreError(err)
 	}

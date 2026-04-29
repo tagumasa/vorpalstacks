@@ -159,7 +159,7 @@ type MFADeviceStoreInterface interface {
 	Put(device *VirtualMFADevice) error
 	Delete(serialNumber string) error
 	Exists(serialNumber string) bool
-	Create(accountId string, tags []types.Tag) (*VirtualMFADevice, error)
+	Create(accountId string, deviceName string, tags []types.Tag) (*VirtualMFADevice, error)
 	EnableForUser(serialNumber, userName string) error
 	Deactivate(serialNumber string) error
 	ListForUser(userName string, marker string, maxItems int) (*MFADeviceListResult, error)

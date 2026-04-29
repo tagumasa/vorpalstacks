@@ -2,9 +2,6 @@ package iam
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -16,6 +13,8 @@ import (
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -82,13 +81,9 @@ var namespaceToDisplayName = map[string]string{
 	"waf":            "AWS WAF",
 }
 
-// generateJobID produces a unique 32-character lowercase hex identifier for a report job.
+// generateJobID produces a unique UUID for a report job.
 func generateJobID() string {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return fmt.Sprintf("%032x", time.Now().UnixNano())
-	}
-	return strings.ToLower(hex.EncodeToString(b))
+	return uuid.New().String()
 }
 
 // parseGranularity converts an ISO 8601 duration string to a time.Duration.

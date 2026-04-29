@@ -188,21 +188,20 @@ func (s *IAMService) DeleteRole(ctx context.Context, reqCtx *request.RequestCont
 		return nil, NewDeleteRoleConflictError("Cannot delete entity, must remove role from instance profile first.")
 	}
 
-	if err := store.InlinePolicies().DeleteAllForPrincipal(PrincipalTypeRole, roleName); err != nil {
+	inlinePolicies, err := store.InlinePolicies().List(PrincipalTypeRole, roleName)
+	if err != nil {
 		return nil, err
+	}
+	if len(inlinePolicies) > 0 {
+		return nil, NewDeleteRoleConflictError("Cannot delete entity, must delete policies first.")
 	}
 
 	attachedPolicies, err := store.AttachedPolicies().ListAttachedPolicies(PrincipalTypeRole, roleName)
 	if err != nil {
 		return nil, err
 	}
-	for _, policyArn := range attachedPolicies {
-		if err := store.AttachedPolicies().Detach(PrincipalTypeRole, roleName, policyArn); err != nil {
-			return nil, err
-		}
-		if err := store.Policies().DecrementAttachmentCount(policyArn); err != nil {
-			return nil, err
-		}
+	if len(attachedPolicies) > 0 {
+		return nil, NewDeleteRoleConflictError("Cannot delete entity, must detach policies first.")
 	}
 
 	if err := store.Roles().Delete(roleName); err != nil {

@@ -21,13 +21,18 @@ import (
 // Tags are optional.
 // Returns the virtual MFA device with base32 seed and secret.
 func (s *IAMService) CreateVirtualMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	deviceName := request.GetStringParam(req.Parameters, "VirtualMFADeviceName")
+	if deviceName == "" {
+		return nil, ErrInvalidInput
+	}
+
 	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	device, err := store.MFADevices().Create(s.accountID, newTags)
+	device, err := store.MFADevices().Create(s.accountID, deviceName, newTags)
 	if err != nil {
 		return nil, err
 	}
@@ -458,6 +463,10 @@ func (s *IAMService) ListMFADeviceTags(ctx context.Context, reqCtx *request.Requ
 func (s *IAMService) mfaDeviceToResponse(reqCtx *request.RequestContext, device *iamstore.VirtualMFADevice, includeSecret bool) map[string]interface{} {
 	resp := map[string]interface{}{
 		"SerialNumber": device.SerialNumber,
+	}
+
+	if device.FriendlyName != "" {
+		resp["FriendlyName"] = device.FriendlyName
 	}
 
 	if includeSecret && device.Base32StringSeed != "" {

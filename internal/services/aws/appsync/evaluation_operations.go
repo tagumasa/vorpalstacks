@@ -10,29 +10,84 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
+	"github.com/google/uuid"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/pkg/vtl"
 )
 
-// StartDataSourceIntrospection initiates an introspection of a relational data source.
-// Returns HTTP 501 — external IdP/data-source introspection is not supported locally.
+// StartDataSourceIntrospection initiates an introspection of a data source.
+// In the local environment external RDS is unavailable, so the introspection
+// is immediately marked as FAILED with a descriptive status detail.
 // POST /v1/datasources/introspections
 func (s *AppSyncService) StartDataSourceIntrospection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return nil, ErrInternalFailureException
+	introspectionId := uuid.New().String()
+	return map[string]interface{}{
+		"introspectionId":           introspectionId,
+		"introspectionStatus":       "FAILED",
+		"introspectionStatusDetail": "Data source introspection is not supported in the local environment",
+	}, nil
 }
 
 // GetDataSourceIntrospection retrieves the result of a data source introspection.
-// Returns HTTP 501 — external IdP/data-source introspection is not supported locally.
 // GET /v1/datasources/introspections/{introspectionId}
 func (s *AppSyncService) GetDataSourceIntrospection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return nil, ErrInternalFailureException
+	introspectionId := request.GetStringParam(req.Parameters, "introspectionId")
+	if introspectionId == "" {
+		return nil, NewBadRequestException("introspectionId is required")
+	}
+	return map[string]interface{}{
+		"introspectionId":           introspectionId,
+		"introspectionStatus":       "FAILED",
+		"introspectionStatusDetail": "Data source introspection is not supported in the local environment",
+	}, nil
 }
 
-// ListTypesByAssociation returns types associated with a merged API source association.
-// Returns HTTP 501 — merged API is not yet implemented.
+// ListTypesByAssociation returns types from the source API of a merged API association.
 // GET /v1/mergedApis/{mergedApiIdentifier}/sourceApiAssociations/{associationId}/types
 func (s *AppSyncService) ListTypesByAssociation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return nil, ErrInternalFailureException
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	mergedApiId := request.GetStringParam(req.Parameters, "mergedApiIdentifier")
+	if mergedApiId == "" {
+		return nil, NewBadRequestException("mergedApiIdentifier is required")
+	}
+
+	associationId := request.GetStringParam(req.Parameters, "associationId")
+	if associationId == "" {
+		return nil, NewBadRequestException("associationId is required")
+	}
+
+	assoc, err := store.GetMergedApiAssociation(mergedApiId, associationId)
+	if err != nil {
+		return mapStoreError(err)
+	}
+
+	format := request.GetStringParam(req.Parameters, "format")
+	if format == "" {
+		return nil, NewBadRequestException("format is required")
+	}
+
+	opts := parsePaginationOptions(req)
+	types, nextToken, err := store.ListTypes(assoc.SourceApiId, opts)
+	if err != nil {
+		return mapStoreError(err)
+	}
+
+	items := make([]interface{}, 0, len(types))
+	for _, t := range types {
+		items = append(items, typeToMap(t))
+	}
+
+	response := map[string]interface{}{
+		"types": items,
+	}
+	if nextToken != "" {
+		response["nextToken"] = nextToken
+	}
+	return response, nil
 }
 
 func (s *AppSyncService) EvaluateCode(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {

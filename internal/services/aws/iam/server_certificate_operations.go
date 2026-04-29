@@ -83,6 +83,7 @@ func (s *IAMService) UpdateServerCertificate(ctx context.Context, reqCtx *reques
 	}
 
 	newPath := request.GetStringParam(req.Parameters, "NewPath")
+	newName := request.GetStringParam(req.Parameters, "NewServerCertificateName")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -91,7 +92,7 @@ func (s *IAMService) UpdateServerCertificate(ctx context.Context, reqCtx *reques
 	if !store.ServerCertificates().Exists(name) {
 		return nil, NewNoSuchEntityError("server certificate", name)
 	}
-	if err := store.ServerCertificates().Update(name, newPath, "", ""); err != nil {
+	if err := store.ServerCertificates().Update(name, newPath, newName, "", ""); err != nil {
 		return nil, err
 	}
 
