@@ -55,6 +55,9 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		if string(gotBody) != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
 		}
+		if getResp.ServerSideEncryption != types.ServerSideEncryptionAes256 {
+			return fmt.Errorf("expected GetObject ServerSideEncryption AES256, got %s", getResp.ServerSideEncryption)
+		}
 
 		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
 			Bucket: aws.String(bucket),
@@ -119,6 +122,9 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		}
 		if string(gotBody) != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
+		}
+		if getResp.ServerSideEncryption != types.ServerSideEncryptionAes256 {
+			return fmt.Errorf("expected GetObject ServerSideEncryption AES256, got %s", getResp.ServerSideEncryption)
 		}
 
 		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
@@ -185,6 +191,9 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		}
 		if string(gotBody) != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
+		}
+		if getResp.SSECustomerAlgorithm == nil || *getResp.SSECustomerAlgorithm != "AES256" {
+			return fmt.Errorf("expected GetObject SSECustomerAlgorithm AES256, got %v", getResp.SSECustomerAlgorithm)
 		}
 
 		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{

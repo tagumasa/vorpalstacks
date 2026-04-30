@@ -83,6 +83,12 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if getResp.Owner == nil {
 			return fmt.Errorf("Owner is nil")
 		}
+		if getResp.Owner.DisplayName == nil || *getResp.Owner.DisplayName == "" {
+			return fmt.Errorf("Owner.DisplayName is nil or empty")
+		}
+		if getResp.Owner.ID == nil || *getResp.Owner.ID == "" {
+			return fmt.Errorf("Owner.ID is nil or empty")
+		}
 		return nil
 	}))
 
@@ -95,6 +101,12 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		if resp.Owner == nil {
 			return fmt.Errorf("Owner is nil")
+		}
+		if resp.Owner.DisplayName == nil || *resp.Owner.DisplayName == "" {
+			return fmt.Errorf("Owner.DisplayName is nil or empty")
+		}
+		if resp.Owner.ID == nil || *resp.Owner.ID == "" {
+			return fmt.Errorf("Owner.ID is nil or empty")
 		}
 		return nil
 	}))
@@ -119,6 +131,37 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		if !strings.Contains(*getResp.Policy, "Allow") {
 			return fmt.Errorf("policy does not contain 'Allow'")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "GetBucketPolicy_PlainJSON", func() error {
+		policyDoc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::000000000000:root"},"Action":"s3:*","Resource":"arn:aws:s3:::` + bucketName + `/*"}]}`
+		_, err := client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+			Bucket: aws.String(bucketName),
+			Policy: aws.String(policyDoc),
+		})
+		if err != nil {
+			return fmt.Errorf("PutBucketPolicy failed: %w", err)
+		}
+		getResp, err := client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{
+			Bucket: aws.String(bucketName),
+		})
+		if err != nil {
+			return fmt.Errorf("GetBucketPolicy failed: %w", err)
+		}
+		if getResp.Policy == nil {
+			return fmt.Errorf("Policy is nil")
+		}
+		policyStr := *getResp.Policy
+		if strings.Contains(policyStr, "&quot;") || strings.Contains(policyStr, "&amp;") || strings.Contains(policyStr, "&lt;") {
+			return fmt.Errorf("policy contains XML-escaped characters: %s", policyStr)
+		}
+		if policyStr[0] != '{' {
+			return fmt.Errorf("policy does not start with '{': %s", policyStr[:min(50, len(policyStr))])
+		}
+		if !strings.Contains(policyStr, "\"Version\"") || !strings.Contains(policyStr, "\"Statement\"") {
+			return fmt.Errorf("policy is not valid JSON: %s", policyStr[:min(100, len(policyStr))])
 		}
 		return nil
 	}))
@@ -180,6 +223,16 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		if !foundGet {
 			return fmt.Errorf("AllowedMethods does not contain GET: %v", rule.AllowedMethods)
+		}
+		foundOrigin := false
+		for _, o := range rule.AllowedOrigins {
+			if o == "https://example.com" {
+				foundOrigin = true
+				break
+			}
+		}
+		if !foundOrigin {
+			return fmt.Errorf("AllowedOrigins does not contain https://example.com: %v", rule.AllowedOrigins)
 		}
 		return nil
 	}))

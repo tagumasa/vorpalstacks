@@ -25,6 +25,9 @@ func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts st
 		if resp.Location == nil {
 			return fmt.Errorf("Location is nil")
 		}
+		if *resp.Location != "/"+bucketName {
+			return fmt.Errorf("expected Location /%s, got %s", bucketName, *resp.Location)
+		}
 		return nil
 	}))
 
@@ -45,6 +48,14 @@ func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts st
 		}
 		if !found {
 			return fmt.Errorf("bucket %q not found in list", bucketName)
+		}
+		for _, b := range resp.Buckets {
+			if b.Name != nil && *b.Name == bucketName {
+				if b.CreationDate == nil {
+					return fmt.Errorf("bucket %q has nil CreationDate", bucketName)
+				}
+				break
+			}
 		}
 		return nil
 	}))
@@ -108,6 +119,9 @@ func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts st
 		}
 		if resp.BucketRegion == nil {
 			return fmt.Errorf("BucketRegion is nil")
+		}
+		if *resp.BucketRegion == "" {
+			return fmt.Errorf("BucketRegion is empty")
 		}
 		return nil
 	}))

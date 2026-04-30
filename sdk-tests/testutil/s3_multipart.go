@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 )
 
 func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts string) []TestResult {
@@ -92,6 +94,20 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 		if len(resp.Parts) != 2 {
 			return fmt.Errorf("expected 2 parts, got %d", len(resp.Parts))
 		}
+		for _, p := range resp.Parts {
+			if p.PartNumber == nil {
+				return fmt.Errorf("PartNumber is nil for a part")
+			}
+			if p.ETag == nil || *p.ETag == "" {
+				return fmt.Errorf("ETag is nil or empty for part %d", aws.ToInt32(p.PartNumber))
+			}
+			if p.Size == nil || *p.Size == 0 {
+				return fmt.Errorf("Size is nil or zero for part %d", aws.ToInt32(p.PartNumber))
+			}
+		}
+		if resp.Key == nil || *resp.Key != "multipart-obj.txt" {
+			return fmt.Errorf("expected Key multipart-obj.txt, got %v", resp.Key)
+		}
 		return nil
 	}))
 
@@ -121,6 +137,12 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 		}
 		if resp.ETag == nil {
 			return fmt.Errorf("ETag is nil")
+		}
+		if resp.Key == nil || *resp.Key != "multipart-obj.txt" {
+			return fmt.Errorf("expected Key multipart-obj.txt, got %v", resp.Key)
+		}
+		if resp.Bucket == nil || *resp.Bucket != mpuBucket {
+			return fmt.Errorf("expected Bucket %s, got %v", mpuBucket, resp.Bucket)
 		}
 		return nil
 	}))
@@ -197,6 +219,26 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 		return nil
 	}))
 
+	results = append(results, r.RunTest("s3", "ListParts_NoSuchUpload", func() error {
+		_, err := client.ListParts(ctx, &s3.ListPartsInput{
+			Bucket:   aws.String(mpuBucket),
+			Key:      aws.String("nonexistent-key.txt"),
+			UploadId: aws.String("nonexistent-upload-id-12345"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for non-existent upload ID, got nil")
+		}
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) {
+			if apiErr.ErrorCode() != "NoSuchUpload" {
+				return fmt.Errorf("expected NoSuchUpload, got %s: %v", apiErr.ErrorCode(), err)
+			}
+		} else if !strings.Contains(err.Error(), "NoSuchUpload") {
+			return fmt.Errorf("expected NoSuchUpload error, got: %T: %v", err, err)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("s3", "ListMultipartUploads_Verify", func() error {
 		listBucket := s3Bucket(ts, "mpu-list")
 		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
@@ -223,6 +265,16 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 		}
 		if len(resp.Uploads) == 0 {
 			return fmt.Errorf("expected at least 1 upload, got 0")
+		}
+		u := resp.Uploads[0]
+		if u.Key == nil || *u.Key != "list-obj.txt" {
+			return fmt.Errorf("expected Key list-obj.txt, got %v", u.Key)
+		}
+		if u.UploadId == nil || *u.UploadId == "" {
+			return fmt.Errorf("UploadId is nil or empty")
+		}
+		if u.Initiated == nil {
+			return fmt.Errorf("Initiated is nil")
 		}
 		return nil
 	}))

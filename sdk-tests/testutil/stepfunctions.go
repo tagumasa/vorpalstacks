@@ -336,15 +336,15 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 			Definition: aws.String("not valid json {{{"),
 			RoleArn:    aws.String(fmt.Sprintf("arn:aws:iam::000000000000:role/%s", invalidRoleName)),
 		})
-		if err != nil {
+		if err == nil {
 			defer client.DeleteStateMachine(ctx, &sfn.DeleteStateMachineInput{
 				StateMachineArn: aws.String(fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachine:%s", r.region, invalidName)),
 			})
-			return fmt.Errorf("server rejected invalid definition: %v", err)
+			return fmt.Errorf("server accepted invalid definition, expected InvalidDefinition error")
 		}
-		defer client.DeleteStateMachine(ctx, &sfn.DeleteStateMachineInput{
-			StateMachineArn: aws.String(fmt.Sprintf("arn:aws:states:%s:000000000000:stateMachine:%s", r.region, invalidName)),
-		})
+		if err := AssertErrorContains(err, "InvalidDefinition"); err != nil {
+			return err
+		}
 		return nil
 	}))
 

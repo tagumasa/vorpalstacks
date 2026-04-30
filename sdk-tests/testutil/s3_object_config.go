@@ -293,6 +293,9 @@ func (r *TestRunner) s3ObjectConfigTests(ctx context.Context, client *s3.Client,
 		if resp.ObjectSize == nil || *resp.ObjectSize == 0 {
 			return fmt.Errorf("expected ObjectSize > 0, got %v", resp.ObjectSize)
 		}
+		if *resp.ObjectSize != int64(len("attributes content")) {
+			return fmt.Errorf("expected ObjectSize %d, got %d", len("attributes content"), *resp.ObjectSize)
+		}
 		if resp.ETag == nil {
 			return fmt.Errorf("ETag is nil")
 		}

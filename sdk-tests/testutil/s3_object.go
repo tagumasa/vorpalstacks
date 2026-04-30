@@ -15,13 +15,16 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 	var results []TestResult
 
 	results = append(results, r.RunTest("s3", "PutObject", func() error {
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
+		resp, err := client.PutObject(ctx, &s3.PutObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String("test.txt"),
 			Body:   strings.NewReader("Hello, World!"),
 		})
 		if err != nil {
 			return fmt.Errorf("PutObject failed: %w", err)
+		}
+		if resp.ETag == nil || *resp.ETag == "" {
+			return fmt.Errorf("ETag is nil or empty")
 		}
 		return nil
 	}))
@@ -42,6 +45,15 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 		if string(body) != "Hello, World!" {
 			return fmt.Errorf("expected body %q, got %q", "Hello, World!", string(body))
 		}
+		if resp.ContentLength == nil || *resp.ContentLength != 13 {
+			return fmt.Errorf("expected ContentLength 13, got %v", resp.ContentLength)
+		}
+		if resp.ContentType == nil || *resp.ContentType == "" {
+			return fmt.Errorf("ContentType is nil or empty")
+		}
+		if resp.LastModified == nil {
+			return fmt.Errorf("LastModified is nil")
+		}
 		return nil
 	}))
 
@@ -58,6 +70,12 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 		}
 		if resp.ETag == nil {
 			return fmt.Errorf("ETag is nil")
+		}
+		if resp.ContentType == nil || *resp.ContentType == "" {
+			return fmt.Errorf("ContentType is nil or empty")
+		}
+		if resp.LastModified == nil {
+			return fmt.Errorf("LastModified is nil")
 		}
 		return nil
 	}))
@@ -433,6 +451,57 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 		})
 		if err != nil {
 			return fmt.Errorf("DeleteObject on non-existent key should not error, got: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "PutObject_SystemMetadata", func() error {
+		_, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket:             aws.String(bucketName),
+			Key:                aws.String("sysmeta.txt"),
+			Body:               strings.NewReader("system metadata test"),
+			ContentEncoding:    aws.String("gzip"),
+			CacheControl:       aws.String("max-age=3600"),
+			ContentDisposition: aws.String("attachment; filename=\"test.txt\""),
+			ContentLanguage:    aws.String("en-US"),
+		})
+		if err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+
+		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String("sysmeta.txt"),
+		})
+		if err != nil {
+			return fmt.Errorf("HeadObject failed: %w", err)
+		}
+		if headResp.ContentEncoding == nil || *headResp.ContentEncoding != "gzip" {
+			return fmt.Errorf("expected ContentEncoding gzip, got %v", headResp.ContentEncoding)
+		}
+		if headResp.CacheControl == nil || *headResp.CacheControl != "max-age=3600" {
+			return fmt.Errorf("expected CacheControl max-age=3600, got %v", headResp.CacheControl)
+		}
+		if headResp.ContentDisposition == nil || *headResp.ContentDisposition != "attachment; filename=\"test.txt\"" {
+			return fmt.Errorf("expected ContentDisposition attachment; filename=\"test.txt\", got %v", headResp.ContentDisposition)
+		}
+		if headResp.ContentLanguage == nil || *headResp.ContentLanguage != "en-US" {
+			return fmt.Errorf("expected ContentLanguage en-US, got %v", headResp.ContentLanguage)
+		}
+
+		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String("sysmeta.txt"),
+		})
+		if err != nil {
+			return fmt.Errorf("GetObject failed: %w", err)
+		}
+		defer getResp.Body.Close()
+		if getResp.ContentEncoding == nil || *getResp.ContentEncoding != "gzip" {
+			return fmt.Errorf("GetObject: expected ContentEncoding gzip, got %v", getResp.ContentEncoding)
+		}
+		if getResp.CacheControl == nil || *getResp.CacheControl != "max-age=3600" {
+			return fmt.Errorf("GetObject: expected CacheControl max-age=3600, got %v", getResp.CacheControl)
 		}
 		return nil
 	}))

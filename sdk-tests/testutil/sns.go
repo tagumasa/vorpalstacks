@@ -1200,9 +1200,10 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		defer client.DeleteTopic(ctx, &sns.DeleteTopicInput{TopicArn: tResp.TopicArn})
 
 		sResp, err := client.Subscribe(ctx, &sns.SubscribeInput{
-			TopicArn: aws.String(*tResp.TopicArn),
-			Protocol: aws.String("email"),
-			Endpoint: aws.String("pending@example.com"),
+			TopicArn:              aws.String(*tResp.TopicArn),
+			Protocol:              aws.String("email"),
+			Endpoint:              aws.String("pending@example.com"),
+			ReturnSubscriptionArn: true,
 		})
 		if err != nil {
 			return fmt.Errorf("subscribe: %v", err)
@@ -1238,6 +1239,12 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("subscribe: %v", err)
 		}
+		if sResp.SubscriptionArn == nil || *sResp.SubscriptionArn == "" {
+			return fmt.Errorf("application subscription should return ARN")
+		}
+		if *sResp.SubscriptionArn == "pending confirmation" {
+			return fmt.Errorf("application protocol should be auto-confirmed, got pending confirmation")
+		}
 
 		getResp, err := client.GetSubscriptionAttributes(ctx, &sns.GetSubscriptionAttributesInput{
 			SubscriptionArn: sResp.SubscriptionArn,
@@ -1245,8 +1252,8 @@ func (r *TestRunner) RunSNSTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("get attrs: %v", err)
 		}
-		if getResp.Attributes["PendingConfirmation"] != "true" {
-			return fmt.Errorf("application subscription should be pending, got PendingConfirmation=%s", getResp.Attributes["PendingConfirmation"])
+		if getResp.Attributes["PendingConfirmation"] != "false" {
+			return fmt.Errorf("application subscription should be auto-confirmed, got PendingConfirmation=%s", getResp.Attributes["PendingConfirmation"])
 		}
 		return nil
 	}))

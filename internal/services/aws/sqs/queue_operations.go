@@ -2,6 +2,7 @@ package sqs
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -269,6 +270,15 @@ func (s *SQSService) GetQueueAttributes(ctx context.Context, reqCtx *request.Req
 	allAttrs["DelaySeconds"] = strconv.FormatInt(int64(queue.DelaySeconds), 10)
 	allAttrs["ReceiveMessageWaitTimeSeconds"] = strconv.FormatInt(int64(queue.ReceiveMessageWaitTimeSeconds), 10)
 
+	if queue.Policy != "" {
+		allAttrs["Policy"] = queue.Policy
+	} else if len(queue.Permissions) > 0 {
+		policyJSON := buildPolicyFromPermissions(queue.ARN, queue.Permissions)
+		if policyJSON != "" {
+			allAttrs["Policy"] = policyJSON
+		}
+	}
+
 	for k, v := range queue.Attributes {
 		allAttrs[k] = v
 	}
@@ -511,4 +521,52 @@ func getListOptions(req *request.ParsedRequest) common.ListOptions {
 	}
 	opts.Marker = request.GetParamCaseInsensitive(req.Parameters, "NextToken")
 	return opts
+}
+
+func buildPolicyFromPermissions(queueARN string, permissions map[string]*sqsstore.Permission) string {
+	type statement struct {
+		Sid       string `json:"Sid"`
+		Effect    string `json:"Effect"`
+		Principal struct {
+			AWS interface{} `json:"AWS"`
+		} `json:"Principal"`
+		Action   interface{} `json:"Action"`
+		Resource string      `json:"Resource"`
+	}
+	type policy struct {
+		Version   string      `json:"Version"`
+		Id        string      `json:"Id,omitempty"`
+		Statement []statement `json:"Statement"`
+	}
+
+	p := policy{
+		Version:   "2012-10-17",
+		Id:        queueARN + "/SQSDefaultPolicy",
+		Statement: make([]statement, 0, len(permissions)),
+	}
+
+	for _, perm := range permissions {
+		s := statement{
+			Sid:      perm.Label,
+			Effect:   "Allow",
+			Resource: queueARN,
+		}
+		s.Principal.AWS = perm.AWSAccountIDs
+		if len(perm.Actions) == 1 {
+			s.Action = "sqs:" + perm.Actions[0]
+		} else {
+			actions := make([]string, len(perm.Actions))
+			for i, a := range perm.Actions {
+				actions[i] = "sqs:" + a
+			}
+			s.Action = actions
+		}
+		p.Statement = append(p.Statement, s)
+	}
+
+	b, err := json.Marshal(p)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }

@@ -53,10 +53,11 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	}))
 
 	results = append(results, r.RunTest("s3", "StorageClass_STANDARD_IA", func() error {
+		content := "standard-ia"
 		_, err := client.PutObject(ctx, &s3.PutObjectInput{
 			Bucket:       aws.String(bucketName),
 			Key:          aws.String("sc-ia.txt"),
-			Body:         strings.NewReader("standard-ia"),
+			Body:         strings.NewReader(content),
 			StorageClass: types.StorageClassStandardIa,
 		})
 		if err != nil {
@@ -72,6 +73,9 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		}
 		if resp.StorageClass != types.StorageClassStandardIa {
 			return fmt.Errorf("expected StorageClass %s, got %s", types.StorageClassStandardIa, resp.StorageClass)
+		}
+		if resp.ContentLength == nil || *resp.ContentLength != int64(len(content)) {
+			return fmt.Errorf("expected ContentLength %d, got %v", len(content), resp.ContentLength)
 		}
 		return nil
 	}))
