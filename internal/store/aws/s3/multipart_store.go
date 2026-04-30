@@ -202,7 +202,7 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 		logs.Error("Failed to cleanup multipart upload after complete", logs.Err(err))
 	}
 
-	obj := newObject(key, bucket, upload.ContentType, upload.Metadata, versionId, false, StorageClassStandard)
+	obj := newObject(key, bucket, upload.ContentType, upload.Metadata, versionId, false, StorageClassStandard, nil)
 	obj.Size = blobMeta.Size
 	obj.ETag = blobMeta.ETag
 	obj.LastModified = blobMeta.LastModified

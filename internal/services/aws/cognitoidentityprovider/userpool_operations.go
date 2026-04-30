@@ -19,6 +19,28 @@ func (s *CognitoService) CreateUserPool(ctx context.Context, reqCtx *request.Req
 	userPool := cognitostore.NewUserPool(poolName, reqCtx.GetRegion())
 	userPool.PasswordPolicy = parsePasswordPolicy(req)
 	userPool.LambdaConfig = parseLambdaConfig(req)
+	if v := request.GetStringList(req.Parameters, "AliasAttributes"); v != nil {
+		userPool.AliasAttributes = v
+	}
+	if v := request.GetStringList(req.Parameters, "UsernameAttributes"); v != nil {
+		userPool.UsernameAttributes = v
+	}
+	if v := request.GetStringList(req.Parameters, "AutoVerifiedAttributes"); v != nil {
+		userPool.AutoVerifiedAttributes = v
+	}
+	if v := req.GetParam("MfaConfiguration"); v != "" {
+		userPool.MfaConfiguration = v
+	}
+	userPool.DeletionProtection = req.GetParam("DeletionProtection")
+	userPool.EmailVerificationMessage = req.GetParam("EmailVerificationMessage")
+	userPool.EmailVerificationSubject = req.GetParam("EmailVerificationSubject")
+	userPool.SmsVerificationMessage = req.GetParam("SmsVerificationMessage")
+	userPool.SmsAuthenticationMessage = req.GetParam("SmsAuthenticationMessage")
+	userPool.EmailConfiguration = parseEmailConfiguration(req)
+	userPool.SmsConfiguration = parseSmsConfiguration(req)
+	userPool.AdminCreateUserConfig = parseAdminCreateUserConfig(req)
+	userPool.VerificationMessageTemplate = parseVerificationMessageTemplate(req)
+	userPool.UserAttributeUpdateSettings = parseUserAttributeUpdateSettings(req)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -187,16 +209,7 @@ func (s *CognitoService) GetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 		return nil, ErrResourceNotFound
 	}
 
-	mfaConfig := "OFF"
-	if userPool.MfaConfiguration != "" {
-		mfaConfig = userPool.MfaConfiguration
-	}
-
-	result := map[string]interface{}{
-		"MfaConfiguration": mfaConfig,
-	}
-
-	return result, nil
+	return formatMfaConfigResponse(userPool), nil
 }
 
 // SetUserPoolMfaConfig updates the multi-factor authentication configuration for a Cognito user pool.
@@ -219,11 +232,69 @@ func (s *CognitoService) SetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 		userPool.MfaConfiguration = mfaConfig
 	}
 
+	if m, ok := req.Parameters["SmsMfaConfiguration"].(map[string]interface{}); ok {
+		smsMfa := &cognitostore.MfaConfigurationType{}
+		if enabled, ok := m["Enabled"].(bool); ok {
+			smsMfa.Enabled = enabled
+		}
+		if smsConfig, ok := m["SmsConfiguration"].(map[string]interface{}); ok {
+			poolSmsConfig := &cognitostore.SmsConfiguration{}
+			if v, ok := smsConfig["SnsCallerArn"].(string); ok {
+				poolSmsConfig.SnsCallerArn = v
+			}
+			if v, ok := smsConfig["ExternalId"].(string); ok {
+				poolSmsConfig.ExternalId = v
+			}
+			userPool.SmsConfiguration = poolSmsConfig
+			smsMfa.Enabled = true
+		}
+		userPool.MfaConfigurationSms = smsMfa
+	}
+	if m, ok := req.Parameters["SoftwareTokenMfaConfiguration"].(map[string]interface{}); ok {
+		swMfa := &cognitostore.MfaConfigurationType{}
+		if enabled, ok := m["Enabled"].(bool); ok {
+			swMfa.Enabled = enabled
+		}
+		userPool.MfaConfigurationSoftwareToken = swMfa
+	}
+
 	if err := store.UpdateUserPool(userPool); err != nil {
 		return nil, ErrInternalError
 	}
 
-	return map[string]interface{}{
-		"MfaConfiguration": userPool.MfaConfiguration,
-	}, nil
+	return formatMfaConfigResponse(userPool), nil
+}
+
+func formatMfaConfigResponse(pool *cognitostore.UserPool) map[string]interface{} {
+	mfaConfig := "OFF"
+	if pool.MfaConfiguration != "" {
+		mfaConfig = pool.MfaConfiguration
+	}
+	result := map[string]interface{}{
+		"MfaConfiguration": mfaConfig,
+	}
+	if pool.MfaConfigurationSms != nil {
+		smsEntry := map[string]interface{}{
+			"Enabled": pool.MfaConfigurationSms.Enabled,
+		}
+		if pool.SmsConfiguration != nil {
+			smsConfig := map[string]interface{}{}
+			if pool.SmsConfiguration.SnsCallerArn != "" {
+				smsConfig["SnsCallerArn"] = pool.SmsConfiguration.SnsCallerArn
+			}
+			if pool.SmsConfiguration.ExternalId != "" {
+				smsConfig["ExternalId"] = pool.SmsConfiguration.ExternalId
+			}
+			if len(smsConfig) > 0 {
+				smsEntry["SmsConfiguration"] = smsConfig
+			}
+		}
+		result["SmsMfaConfiguration"] = smsEntry
+	}
+	if pool.MfaConfigurationSoftwareToken != nil {
+		result["SoftwareTokenMfaConfiguration"] = map[string]interface{}{
+			"Enabled": pool.MfaConfigurationSoftwareToken.Enabled,
+		}
+	}
+	return result
 }

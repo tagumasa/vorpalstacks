@@ -70,7 +70,10 @@ func (s *APIGatewayService) CreateResource(ctx context.Context, reqCtx *request.
 
 	created, err := stores.restApis.CreateResource(apiId, resource)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, store.ErrResourceAlreadyExists) {
+			return nil, NewConflictException("Resource already exists")
+		}
+		return nil, toApiGatewayError(err)
 	}
 
 	return s.toResourceResponse(created), nil

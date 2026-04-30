@@ -112,6 +112,13 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 		storageClass = s3store.StorageClassStandard
 	}
 
+	sysMeta := &s3store.SystemMetadata{
+		ContentEncoding:    input.ContentEncoding,
+		ContentLanguage:    input.ContentLanguage,
+		ContentDisposition: input.ContentDisposition,
+		CacheControl:       input.CacheControl,
+	}
+
 	if o.svc.encryptionManager.ShouldEncrypt(encryptionType, bucket.EncryptionConfig) {
 		data, err := io.ReadAll(input.Body)
 		if err != nil {
@@ -132,7 +139,7 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 			UnencryptedSize:  encResult.UnencryptedSize,
 		}
 
-		obj, err = store.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, input.ContentType, input.Metadata, sseMetadata, storageClass)
+		obj, err = store.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, input.ContentType, input.Metadata, sseMetadata, storageClass, sysMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +154,7 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 		}, nil
 	}
 
-	obj, err = store.objects.PutWithVersioning(ctx, input.Bucket, input.Key, input.Body, input.ContentType, input.Metadata, false, storageClass)
+	obj, err = store.objects.PutWithVersioning(ctx, input.Bucket, input.Key, input.Body, input.ContentType, input.Metadata, false, storageClass, sysMeta)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +324,7 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 			UnencryptedSize:  encResult.UnencryptedSize,
 		}
 
-		obj, err = store.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, contentType, metadata, sseMetadata, s3store.StorageClassStandard)
+		obj, err = store.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, contentType, metadata, sseMetadata, s3store.StorageClassStandard, nil)
 		if err != nil {
 			return nil, err
 		}

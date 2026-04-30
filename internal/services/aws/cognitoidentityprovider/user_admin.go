@@ -187,8 +187,12 @@ func (s *CognitoService) ListUsers(ctx context.Context, reqCtx *request.RequestC
 		return nil, ErrInternalError
 	}
 
+	filter := req.GetParam("Filter")
 	userList := make([]map[string]interface{}, 0)
 	for _, user := range users {
+		if filter != "" && !matchUserFilter(user, filter) {
+			continue
+		}
 		userList = append(userList, formatUser(user))
 	}
 

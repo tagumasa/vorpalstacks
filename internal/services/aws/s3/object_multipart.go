@@ -591,7 +591,7 @@ func (o *ObjectOperations) ListParts(ctx context.Context, reqCtx *request.Reques
 
 	parts, nextPartNumberMarker, isTruncated, err := store.objects.ListParts(ctx, input.Bucket, input.Key, input.UploadId, partNumberMarker, maxParts)
 	if err != nil {
-		return nil, err
+		return nil, ErrNoSuchUpload
 	}
 
 	var outputParts []*Part

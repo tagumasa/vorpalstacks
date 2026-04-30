@@ -31,7 +31,7 @@ func (s *CognitoService) CreateGroup(ctx context.Context, reqCtx *request.Reques
 	group.Description = req.GetParam("Description")
 	group.RoleArn = req.GetParam("RoleArn")
 	if precedence, ok := getIntParamOK(req, "Precedence"); ok {
-		group.Precedence = precedence
+		group.Precedence = &precedence
 	}
 
 	if group.RoleArn != "" {
@@ -161,7 +161,7 @@ func (s *CognitoService) UpdateGroup(ctx context.Context, reqCtx *request.Reques
 		group.RoleArn = roleArn
 	}
 	if precedence, ok := getIntParamOK(req, "Precedence"); ok {
-		group.Precedence = precedence
+		group.Precedence = &precedence
 	}
 
 	if err := store.UpdateGroup(group); err != nil {

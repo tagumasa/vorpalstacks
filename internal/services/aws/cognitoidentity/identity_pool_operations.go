@@ -3,6 +3,7 @@ package cognitoidentity
 import (
 	"context"
 	"errors"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -209,11 +210,36 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 		pool.SamlProviderARNs = samlArns
 	}
 
+	var updatedTags map[string]string
+	if _, ok := req.Parameters["IdentityPoolTags"]; ok {
+		updatedTags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "IdentityPoolTags"))
+		existingTags, _ := store.List(pool.Arn)
+		var keysToRemove []string
+		for k := range existingTags {
+			if _, keep := updatedTags[k]; !keep {
+				keysToRemove = append(keysToRemove, k)
+			}
+		}
+		if len(keysToRemove) > 0 {
+			if err := store.Untag(pool.Arn, keysToRemove); err != nil {
+				return nil, ErrInternalError
+			}
+		}
+		if err := store.Tag(pool.Arn, updatedTags); err != nil {
+			return nil, ErrInternalError
+		}
+		pool.Tags = updatedTags
+	} else {
+		updatedTags, _ = store.List(pool.Arn)
+	}
+
+	pool.LastModifiedDate = time.Now().UTC()
+
 	if err := store.UpdateIdentityPool(pool); err != nil {
 		return nil, ErrInternalError
 	}
 
-	return formatIdentityPool(pool), nil
+	return formatIdentityPoolWithTags(pool, updatedTags), nil
 }
 
 // GetIdentityPoolRoles returns the roles for a Cognito identity pool.

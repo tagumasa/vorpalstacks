@@ -515,18 +515,15 @@ func (s *AppSyncService) EvaluateMappingTemplate(ctx context.Context, reqCtx *re
 	var errorObj interface{}
 	outErrors := ""
 	if engine.AppSyncCtx != nil && len(engine.AppSyncCtx.Errors) > 0 {
-		errArr := make([]map[string]interface{}, 0, len(engine.AppSyncCtx.Errors))
-		for _, ae := range engine.AppSyncCtx.Errors {
-			eObj := map[string]interface{}{"message": ae.Message}
-			if ae.ErrorType != "" {
-				eObj["errorType"] = ae.ErrorType
-			}
-			if ae.Data != nil {
-				eObj["data"] = ae.Data
-			}
-			errArr = append(errArr, eObj)
+		firstErr := engine.AppSyncCtx.Errors[0]
+		eObj := map[string]interface{}{"message": firstErr.Message}
+		if firstErr.ErrorType != "" {
+			eObj["errorType"] = firstErr.ErrorType
 		}
-		errorObj = errArr
+		if firstErr.Data != nil {
+			eObj["data"] = firstErr.Data
+		}
+		errorObj = eObj
 		errBytes, _ := json.Marshal(engine.AppSyncCtx.Errors)
 		outErrors = string(errBytes)
 	}

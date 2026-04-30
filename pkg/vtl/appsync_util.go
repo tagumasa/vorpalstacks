@@ -108,7 +108,11 @@ func (e *Engine) processUtilDefaultIfNull(templateStr string) string {
 		if isNullLiteral(val) {
 			return e.formatAppSyncValue(e.resolveValue(def))
 		}
-		return e.formatAppSyncValue(e.resolveValue(val))
+		resolved := e.resolveValue(val)
+		if resolved == nil || resolved == "" {
+			return e.formatAppSyncValue(e.resolveValue(def))
+		}
+		return e.formatAppSyncValue(resolved)
 	})
 }
 
@@ -225,6 +229,18 @@ func (e *Engine) processUtilToJsonPass(templateStr string, finalPass bool) strin
 			inner := arg[1 : len(arg)-1]
 			return inner
 		}
+		if strings.HasPrefix(arg, "$") {
+			resolved := e.resolveValue(arg)
+			if resolved != nil && resolved != "" {
+				if s, ok := resolved.(string); ok {
+					return s
+				}
+				b, err := json.Marshal(resolved)
+				if err == nil {
+					return string(b)
+				}
+			}
+		}
 		return arg
 	})
 }
@@ -306,8 +322,70 @@ func (e *Engine) processUtilDynamoDBToMapValues(templateStr string) string {
 		if isNullLiteral(arg) {
 			return "null"
 		}
-		return arg
+		resolved := e.resolveValue(arg)
+		if resolved == nil {
+			return "null"
+		}
+		m, ok := resolved.(map[string]interface{})
+		if !ok {
+			if str, ok := resolved.(string); ok {
+				if err := json.Unmarshal([]byte(str), &m); err != nil {
+					return arg
+				}
+			} else {
+				return arg
+			}
+		}
+		result := make(map[string]interface{}, len(m))
+		for k, v := range m {
+			result[k] = toDynamoDBAttribute(v)
+		}
+		b, _ := json.Marshal(result)
+		return string(b)
 	})
+}
+
+func toDynamoDBAttribute(val interface{}) interface{} {
+	if val == nil {
+		return map[string]interface{}{"NULL": true}
+	}
+	switch v := val.(type) {
+	case string:
+		return map[string]interface{}{"S": v}
+	case bool:
+		return map[string]interface{}{"BOOL": v}
+	case float64:
+		if v == float64(int64(v)) {
+			return map[string]interface{}{"N": fmt.Sprintf("%d", int64(v))}
+		}
+		return map[string]interface{}{"N": fmt.Sprintf("%g", v)}
+	case int:
+		return map[string]interface{}{"N": fmt.Sprintf("%d", v)}
+	case int64:
+		return map[string]interface{}{"N": fmt.Sprintf("%d", v)}
+	case []interface{}:
+		return map[string]interface{}{"L": convertSliceToDynamoDB(v)}
+	case map[string]interface{}:
+		return map[string]interface{}{"M": toDynamoDBMapValues(v)}
+	default:
+		return map[string]interface{}{"S": fmt.Sprintf("%v", v)}
+	}
+}
+
+func toDynamoDBMapValues(m map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{}, len(m))
+	for k, v := range m {
+		result[k] = toDynamoDBAttribute(v)
+	}
+	return result
+}
+
+func convertSliceToDynamoDB(s []interface{}) []interface{} {
+	result := make([]interface{}, len(s))
+	for i, v := range s {
+		result[i] = toDynamoDBAttribute(v)
+	}
+	return result
 }
 
 func (e *Engine) processUtilValidate(templateStr string) string {

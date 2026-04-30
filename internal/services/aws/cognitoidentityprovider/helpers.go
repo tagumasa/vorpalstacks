@@ -1,6 +1,7 @@
 package cognitoidentityprovider
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -334,6 +335,158 @@ func parseLambdaConfig(req *request.ParsedRequest) *cognitostore.LambdaConfig {
 	return config
 }
 
+func parseEmailConfiguration(req *request.ParsedRequest) *cognitostore.EmailConfiguration {
+	hasConfig := false
+	config := &cognitostore.EmailConfiguration{}
+	if m, ok := req.Parameters["EmailConfiguration"].(map[string]interface{}); ok {
+		if v, ok := m["SourceArn"].(string); ok && v != "" {
+			config.SourceArn = v
+			hasConfig = true
+		}
+		if v, ok := m["ReplyToEmailAddress"].(string); ok && v != "" {
+			config.ReplyToEmailAddress = v
+			hasConfig = true
+		}
+		if v, ok := m["EmailSendingAccount"].(string); ok && v != "" {
+			config.EmailSendingAccount = v
+			hasConfig = true
+		}
+		if v, ok := m["From"].(string); ok && v != "" {
+			config.From = v
+			hasConfig = true
+		}
+		if v, ok := m["ConfigurationSet"].(string); ok && v != "" {
+			config.ConfigurationSet = v
+			hasConfig = true
+		}
+	}
+	if !hasConfig {
+		return nil
+	}
+	return config
+}
+
+func parseSmsConfiguration(req *request.ParsedRequest) *cognitostore.SmsConfiguration {
+	hasConfig := false
+	config := &cognitostore.SmsConfiguration{}
+	if m, ok := req.Parameters["SmsConfiguration"].(map[string]interface{}); ok {
+		if v, ok := m["SnsCallerArn"].(string); ok && v != "" {
+			config.SnsCallerArn = v
+			hasConfig = true
+		}
+		if v, ok := m["ExternalId"].(string); ok && v != "" {
+			config.ExternalId = v
+			hasConfig = true
+		}
+		if v, ok := m["SnsRegion"].(string); ok && v != "" {
+			config.SnsRegion = v
+			hasConfig = true
+		}
+	}
+	if !hasConfig {
+		return nil
+	}
+	return config
+}
+
+func parseAdminCreateUserConfig(req *request.ParsedRequest) *cognitostore.AdminCreateUserConfig {
+	hasConfig := false
+	config := &cognitostore.AdminCreateUserConfig{
+		UnusedAccountValidityDays: 7,
+	}
+	if m, ok := req.Parameters["AdminCreateUserConfig"].(map[string]interface{}); ok {
+		if v, ok := m["AllowAdminCreateUserOnly"].(bool); ok {
+			config.AllowAdminCreateUserOnly = v
+			hasConfig = true
+		}
+		if v, ok := m["UnusedAccountValidityDays"]; ok {
+			switch n := v.(type) {
+			case int:
+				config.UnusedAccountValidityDays = n
+			case float64:
+				config.UnusedAccountValidityDays = int(n)
+			}
+			hasConfig = true
+		}
+		if tmplMap, ok := m["InviteMessageTemplate"].(map[string]interface{}); ok {
+			tmpl := &cognitostore.MessageTemplate{}
+			if v, ok := tmplMap["SMSMessage"].(string); ok {
+				tmpl.SMSMessage = v
+			}
+			if v, ok := tmplMap["EmailMessage"].(string); ok {
+				tmpl.EmailMessage = v
+			}
+			if v, ok := tmplMap["EmailSubject"].(string); ok {
+				tmpl.EmailSubject = v
+			}
+			config.InviteMessageTemplate = tmpl
+			hasConfig = true
+		}
+	}
+	if !hasConfig {
+		return nil
+	}
+	return config
+}
+
+func parseVerificationMessageTemplate(req *request.ParsedRequest) *cognitostore.VerificationMessageTemplate {
+	hasConfig := false
+	config := &cognitostore.VerificationMessageTemplate{}
+	if m, ok := req.Parameters["VerificationMessageTemplate"].(map[string]interface{}); ok {
+		if v, ok := m["SmsMessage"].(string); ok && v != "" {
+			config.SmsMessage = v
+			hasConfig = true
+		}
+		if v, ok := m["EmailMessage"].(string); ok && v != "" {
+			config.EmailMessage = v
+			hasConfig = true
+		}
+		if v, ok := m["EmailSubject"].(string); ok && v != "" {
+			config.EmailSubject = v
+			hasConfig = true
+		}
+		if v, ok := m["EmailMessageByLink"].(string); ok && v != "" {
+			config.EmailMessageByLink = v
+			hasConfig = true
+		}
+		if v, ok := m["EmailSubjectByLink"].(string); ok && v != "" {
+			config.EmailSubjectByLink = v
+			hasConfig = true
+		}
+		if v, ok := m["DefaultEmailOption"].(string); ok && v != "" {
+			config.DefaultEmailOption = v
+			hasConfig = true
+		}
+	}
+	if !hasConfig {
+		return nil
+	}
+	return config
+}
+
+func parseUserAttributeUpdateSettings(req *request.ParsedRequest) *cognitostore.UserAttributeUpdateSettings {
+	m, ok := req.Parameters["UserAttributeUpdateSettings"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	arr, ok := m["AttributesRequireVerificationBeforeUpdate"].([]interface{})
+	if !ok {
+		return nil
+	}
+	var attrs []string
+	for _, v := range arr {
+		if s, ok := v.(string); ok {
+			attrs = append(attrs, s)
+		}
+	}
+	if len(attrs) == 0 {
+		return nil
+	}
+	return &cognitostore.UserAttributeUpdateSettings{
+		AttributesRequireVerificationBeforeUpdate: attrs,
+	}
+}
+
 func parseInt(s string) int {
 	var result int
 	for _, c := range s {
@@ -345,6 +498,10 @@ func parseInt(s string) int {
 }
 
 func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
+	mfaConfig := pool.MfaConfiguration
+	if mfaConfig == "" {
+		mfaConfig = "OFF"
+	}
 	result := map[string]interface{}{
 		"Id":                 pool.ID,
 		"Name":               pool.Name,
@@ -352,12 +509,11 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 		"Status":             pool.Status,
 		"CreationDate":       pool.CreationDate.Unix(),
 		"LastModifiedDate":   pool.LastModifiedDate.Unix(),
-		"MfaConfiguration":   pool.MfaConfiguration,
-		"DeletionProtection": "INACTIVE",
+		"MfaConfiguration":   mfaConfig,
+		"DeletionProtection": pool.DeletionProtection,
 	}
-
-	if pool.MfaConfiguration == "" {
-		result["MfaConfiguration"] = "OFF"
+	if pool.DeletionProtection == "" {
+		result["DeletionProtection"] = "INACTIVE"
 	}
 
 	if pool.AliasAttributes != nil {
@@ -366,11 +522,11 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 	if pool.UsernameAttributes != nil {
 		result["UsernameAttributes"] = pool.UsernameAttributes
 	}
+	if pool.AutoVerifiedAttributes != nil {
+		result["AutoVerifiedAttributes"] = pool.AutoVerifiedAttributes
+	}
 	if pool.Schema != "" {
 		result["Schema"] = pool.Schema
-	}
-	if pool.MfaConfiguration != "" {
-		result["MfaConfiguration"] = pool.MfaConfiguration
 	}
 	if pool.PasswordPolicy != nil {
 		result["Policies"] = map[string]interface{}{
@@ -397,7 +553,136 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 		}
 		result["UserPoolTags"] = tags
 	}
+	if pool.EmailConfiguration != nil {
+		result["EmailConfiguration"] = formatEmailConfiguration(pool.EmailConfiguration)
+	}
+	if pool.SmsConfiguration != nil {
+		result["SmsConfiguration"] = formatSmsConfiguration(pool.SmsConfiguration)
+	}
+	if pool.AdminCreateUserConfig != nil {
+		result["AdminCreateUserConfig"] = formatAdminCreateUserConfig(pool.AdminCreateUserConfig)
+	}
+	if pool.VerificationMessageTemplate != nil {
+		result["VerificationMessageTemplate"] = formatVerificationMessageTemplate(pool.VerificationMessageTemplate)
+	}
+	if pool.EmailVerificationMessage != "" {
+		result["EmailVerificationMessage"] = pool.EmailVerificationMessage
+	}
+	if pool.EmailVerificationSubject != "" {
+		result["EmailVerificationSubject"] = pool.EmailVerificationSubject
+	}
+	if pool.SmsVerificationMessage != "" {
+		result["SmsVerificationMessage"] = pool.SmsVerificationMessage
+	}
+	if pool.SmsAuthenticationMessage != "" {
+		result["SmsAuthenticationMessage"] = pool.SmsAuthenticationMessage
+	}
+	if pool.UserAttributeUpdateSettings != nil {
+		result["UserAttributeUpdateSettings"] = map[string]interface{}{
+			"AttributesRequireVerificationBeforeUpdate": pool.UserAttributeUpdateSettings.AttributesRequireVerificationBeforeUpdate,
+		}
+	}
+	if pool.UserPoolAddOns != nil {
+		result["UserPoolAddOns"] = map[string]interface{}{
+			"AdvancedSecurityMode": pool.UserPoolAddOns.AdvancedSecurityMode,
+		}
+	}
+	if pool.AccountRecoverySetting != nil && len(pool.AccountRecoverySetting.RecoveryMechanisms) > 0 {
+		mechanisms := make([]map[string]interface{}, 0, len(pool.AccountRecoverySetting.RecoveryMechanisms))
+		for _, rm := range pool.AccountRecoverySetting.RecoveryMechanisms {
+			mechanisms = append(mechanisms, map[string]interface{}{
+				"Priority": rm.Priority,
+				"Name":     rm.Name,
+			})
+		}
+		result["AccountRecoverySetting"] = map[string]interface{}{
+			"RecoveryMechanisms": mechanisms,
+		}
+	}
+	if pool.UsernameConfiguration != nil {
+		result["UsernameConfiguration"] = map[string]interface{}{
+			"CaseSensitive": pool.UsernameConfiguration.CaseSensitive,
+		}
+	}
 
+	return result
+}
+
+func formatEmailConfiguration(config *cognitostore.EmailConfiguration) map[string]interface{} {
+	result := make(map[string]interface{})
+	if config.SourceArn != "" {
+		result["SourceArn"] = config.SourceArn
+	}
+	if config.ReplyToEmailAddress != "" {
+		result["ReplyToEmailAddress"] = config.ReplyToEmailAddress
+	}
+	if config.EmailSendingAccount != "" {
+		result["EmailSendingAccount"] = config.EmailSendingAccount
+	}
+	if config.From != "" {
+		result["From"] = config.From
+	}
+	if config.ConfigurationSet != "" {
+		result["ConfigurationSet"] = config.ConfigurationSet
+	}
+	return result
+}
+
+func formatSmsConfiguration(config *cognitostore.SmsConfiguration) map[string]interface{} {
+	result := make(map[string]interface{})
+	if config.SnsCallerArn != "" {
+		result["SnsCallerArn"] = config.SnsCallerArn
+	}
+	if config.ExternalId != "" {
+		result["ExternalId"] = config.ExternalId
+	}
+	if config.SnsRegion != "" {
+		result["SnsRegion"] = config.SnsRegion
+	}
+	return result
+}
+
+func formatAdminCreateUserConfig(config *cognitostore.AdminCreateUserConfig) map[string]interface{} {
+	result := map[string]interface{}{
+		"AllowAdminCreateUserOnly":  config.AllowAdminCreateUserOnly,
+		"UnusedAccountValidityDays": config.UnusedAccountValidityDays,
+	}
+	if config.InviteMessageTemplate != nil {
+		tmpl := make(map[string]interface{})
+		if config.InviteMessageTemplate.SMSMessage != "" {
+			tmpl["SMSMessage"] = config.InviteMessageTemplate.SMSMessage
+		}
+		if config.InviteMessageTemplate.EmailMessage != "" {
+			tmpl["EmailMessage"] = config.InviteMessageTemplate.EmailMessage
+		}
+		if config.InviteMessageTemplate.EmailSubject != "" {
+			tmpl["EmailSubject"] = config.InviteMessageTemplate.EmailSubject
+		}
+		result["InviteMessageTemplate"] = tmpl
+	}
+	return result
+}
+
+func formatVerificationMessageTemplate(config *cognitostore.VerificationMessageTemplate) map[string]interface{} {
+	result := make(map[string]interface{})
+	if config.SmsMessage != "" {
+		result["SmsMessage"] = config.SmsMessage
+	}
+	if config.EmailMessage != "" {
+		result["EmailMessage"] = config.EmailMessage
+	}
+	if config.EmailSubject != "" {
+		result["EmailSubject"] = config.EmailSubject
+	}
+	if config.EmailMessageByLink != "" {
+		result["EmailMessageByLink"] = config.EmailMessageByLink
+	}
+	if config.EmailSubjectByLink != "" {
+		result["EmailSubjectByLink"] = config.EmailSubjectByLink
+	}
+	if config.DefaultEmailOption != "" {
+		result["DefaultEmailOption"] = config.DefaultEmailOption
+	}
 	return result
 }
 
@@ -474,8 +759,8 @@ func formatGroup(group *cognitostore.Group) map[string]interface{} {
 	if group.RoleArn != "" {
 		result["RoleArn"] = group.RoleArn
 	}
-	if group.Precedence != 0 {
-		result["Precedence"] = group.Precedence
+	if group.Precedence != nil {
+		result["Precedence"] = *group.Precedence
 	}
 
 	return result
@@ -483,4 +768,43 @@ func formatGroup(group *cognitostore.Group) map[string]interface{} {
 
 func generateSessionID() string {
 	return "SESSION_" + uuid.New().String()[:16]
+}
+
+var userFilterRe = regexp.MustCompile(`^"?(\w[\w:]*)\s*(=|\^=)\s*"([^"]*)"\s*$`)
+
+func matchUserFilter(user *cognitostore.User, filter string) bool {
+	f := strings.TrimSpace(filter)
+	m := userFilterRe.FindStringSubmatch(f)
+	if m == nil {
+		return true
+	}
+	attrName := m[1]
+	op := m[2]
+	attrValue := m[3]
+
+	var actual string
+	switch strings.ToLower(attrName) {
+	case "username":
+		actual = user.Username
+	case "cognito:user_status":
+		actual = user.UserStatus
+	case "status":
+		if user.Enabled {
+			actual = "Enabled"
+		} else {
+			actual = "Disabled"
+		}
+	default:
+		if user.Attributes != nil {
+			actual = user.Attributes[attrName]
+		}
+	}
+
+	switch op {
+	case "=":
+		return strings.EqualFold(actual, attrValue)
+	case "^=":
+		return strings.HasPrefix(strings.ToLower(actual), strings.ToLower(attrValue))
+	}
+	return false
 }

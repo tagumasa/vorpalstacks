@@ -389,6 +389,21 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 				header.Set("x-amz-server-side-encryption-aws-kms-key-id", result.SSEKMSKeyId)
 			}
 		}
+		if result.CacheControl != "" {
+			header.Set("Cache-Control", result.CacheControl)
+		}
+		if result.ContentDisposition != "" {
+			header.Set("Content-Disposition", result.ContentDisposition)
+		}
+		if result.ContentEncoding != "" {
+			header.Set("Content-Encoding", result.ContentEncoding)
+		}
+		if result.ContentLanguage != "" {
+			header.Set("Content-Language", result.ContentLanguage)
+		}
+		if result.StorageClass != "" {
+			header.Set("x-amz-storage-class", result.StorageClass)
+		}
 		for k, v := range result.Metadata {
 			header.Set("x-amz-meta-"+k, v)
 		}
@@ -517,6 +532,10 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			Body:                 body,
 			ContentLength:        contentLength,
 			ContentType:          contentType,
+			ContentEncoding:      r.Header.Get("Content-Encoding"),
+			ContentDisposition:   r.Header.Get("Content-Disposition"),
+			CacheControl:         r.Header.Get("Cache-Control"),
+			ContentLanguage:      r.Header.Get("Content-Language"),
 			Metadata:             metadata,
 			StorageClass:         r.Header.Get("x-amz-storage-class"),
 			IfMatch:              r.Header.Get("If-Match"),

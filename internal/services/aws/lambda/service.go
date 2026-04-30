@@ -692,14 +692,15 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 	}
 	return map[string]interface{}{
 		"AccountLimit": map[string]interface{}{
-			"TotalCodeSizeZipped":            80530636800,
+			"TotalCodeSize":                  80530636800,
 			"CodeSizeUnzipped":               262144000,
+			"CodeSizeZipped":                 52428800,
 			"ConcurrentExecutions":           1000,
 			"UnreservedConcurrentExecutions": 1000,
 		},
 		"AccountUsage": map[string]interface{}{
-			"TotalCodeSizeZipped": 0,
-			"FunctionCount":       len(result.Items),
+			"TotalCodeSize": 0,
+			"FunctionCount": len(result.Items),
 		},
 	}, nil
 }

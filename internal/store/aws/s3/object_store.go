@@ -195,7 +195,7 @@ func (s *ObjectStore) GetMetadata(bucket, key string) (*Object, error) {
 
 // Put stores an object in the store.
 func (s *ObjectStore) Put(ctx context.Context, bucket, key string, reader io.Reader, contentType string, metadata map[string]string) (*Object, error) {
-	return s.PutWithVersioning(ctx, bucket, key, reader, contentType, metadata, false, StorageClassStandard)
+	return s.PutWithVersioning(ctx, bucket, key, reader, contentType, metadata, false, StorageClassStandard, nil)
 }
 
 // Delete removes an object from the store.
@@ -214,12 +214,19 @@ func (s *ObjectStore) Head(ctx context.Context, bucket, key string) (*Object, er
 	return s.HeadWithVersion(ctx, bucket, key, "")
 }
 
-func newObject(key, bucket, contentType string, metadata map[string]string, versionId string, isDeleteMarker bool, storageClass ObjectStorageClass) *Object {
+type SystemMetadata struct {
+	ContentEncoding    string
+	ContentLanguage    string
+	ContentDisposition string
+	CacheControl       string
+}
+
+func newObject(key, bucket, contentType string, metadata map[string]string, versionId string, isDeleteMarker bool, storageClass ObjectStorageClass, sysMeta *SystemMetadata) *Object {
 	sc := storageClass
 	if sc == "" {
 		sc = StorageClassStandard
 	}
-	return &Object{
+	obj := &Object{
 		Key:            key,
 		BucketName:     bucket,
 		Size:           0,
@@ -232,4 +239,11 @@ func newObject(key, bucket, contentType string, metadata map[string]string, vers
 		IsDeleteMarker: isDeleteMarker,
 		VersionID:      versionId,
 	}
+	if sysMeta != nil {
+		obj.ContentEncoding = sysMeta.ContentEncoding
+		obj.ContentLanguage = sysMeta.ContentLanguage
+		obj.ContentDisposition = sysMeta.ContentDisposition
+		obj.CacheControl = sysMeta.CacheControl
+	}
+	return obj
 }

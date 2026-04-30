@@ -55,6 +55,7 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 		Description:            request.GetStringParam(req.Parameters, "description"),
 		Version:                request.GetStringParam(req.Parameters, "version"),
 		ApiKeySource:           request.GetStringParam(req.Parameters, "apiKeySource"),
+		Policy:                 request.GetStringParam(req.Parameters, "policy"),
 		MinimumCompressionSize: int32(request.GetIntParam(req.Parameters, "minimumCompressionSize")),
 	}
 
@@ -170,18 +171,34 @@ func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.R
 					api.ApiKeySource = value
 				case "/policy":
 					api.Policy = value
+				case "/minimumCompressionSize":
+					api.MinimumCompressionSize = parseInt32(value)
 				}
-				if strings.HasPrefix(path, "/binaryMediaTypes/") {
-					if opMap["op"] == "add" {
-						if !containsMediaType(api.BinaryMediaTypes, value) {
-							api.BinaryMediaTypes = append(api.BinaryMediaTypes, value)
+				if strings.HasPrefix(path, "/binaryMediaTypes") {
+					opName := ""
+					if o, ok := opMap["op"].(string); ok {
+						opName = o
+					}
+					if opName == "add" {
+						if path == "/binaryMediaTypes" || path == "/binaryMediaTypes/-" {
+							if !containsMediaType(api.BinaryMediaTypes, value) {
+								api.BinaryMediaTypes = append(api.BinaryMediaTypes, value)
+							}
+						} else if strings.HasPrefix(path, "/binaryMediaTypes/") {
+							if !containsMediaType(api.BinaryMediaTypes, value) {
+								api.BinaryMediaTypes = append(api.BinaryMediaTypes, value)
+							}
 						}
-					} else if opMap["op"] == "remove" {
+					} else if opName == "remove" {
 						mediaType := strings.TrimPrefix(path, "/binaryMediaTypes/")
+						mediaType = strings.ReplaceAll(mediaType, "~1", "/")
+						mediaType = strings.ReplaceAll(mediaType, "~0", "~")
 						target := mediaType
 						idx, err := strconv.Atoi(mediaType)
 						if err == nil && idx < len(api.BinaryMediaTypes) {
 							target = api.BinaryMediaTypes[idx]
+						} else if mediaType == "" {
+							target = value
 						}
 						newTypes := []string{}
 						for _, t := range api.BinaryMediaTypes {
@@ -240,16 +257,22 @@ func (s *APIGatewayService) GetRestApis(ctx context.Context, reqCtx *request.Req
 
 func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]interface{} {
 	response := map[string]interface{}{
-		"id":                     api.Id,
-		"name":                   api.Name,
-		"createdDate":            timeutils.FormatEpochSeconds(api.CreatedDate),
-		"version":                api.Version,
-		"apiKeySource":           api.ApiKeySource,
-		"minimumCompressionSize": api.MinimumCompressionSize,
+		"id":          api.Id,
+		"name":        api.Name,
+		"createdDate": timeutils.FormatEpochSeconds(api.CreatedDate),
 	}
 
 	if api.Description != "" {
 		response["description"] = api.Description
+	}
+	if api.Version != "" {
+		response["version"] = api.Version
+	}
+	if api.ApiKeySource != "" {
+		response["apiKeySource"] = api.ApiKeySource
+	}
+	if api.MinimumCompressionSize > 0 {
+		response["minimumCompressionSize"] = api.MinimumCompressionSize
 	}
 	if api.Policy != "" {
 		response["policy"] = api.Policy

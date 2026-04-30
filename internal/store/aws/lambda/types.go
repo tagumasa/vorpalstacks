@@ -350,9 +350,11 @@ type Filter struct {
 // ProvisionedConcurrencyConfig represents the provisioned concurrency configuration for a Lambda function.
 type ProvisionedConcurrencyConfig struct {
 	FunctionName                             string    `json:"function_name"`
+	FunctionArn                              string    `json:"function_arn,omitempty"`
 	Qualifier                                string    `json:"qualifier"`
 	AllocatedProvisionedConcurrentExecutions int32     `json:"allocated_provisioned_concurrent_executions,omitempty"`
 	AvailableProvisionedConcurrentExecutions int32     `json:"available_provisioned_concurrent_executions,omitempty"`
+	RequestedProvisionedConcurrentExecutions int32     `json:"requested_provisioned_concurrent_executions,omitempty"`
 	Status                                   string    `json:"status,omitempty"`
 	StatusReason                             string    `json:"status_reason,omitempty"`
 	LastModified                             time.Time `json:"last_modified"`

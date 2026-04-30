@@ -41,7 +41,7 @@ func (s *APIGatewayService) UpdateResource(ctx context.Context, reqCtx *request.
 		}
 	}
 
-	if err := stores.restApis.UpdateResource(apiId, resource); err != nil {
+	if err := stores.restApis.UpdateResourceCascade(apiId, resource); err != nil {
 		return nil, toApiGatewayError(err)
 	}
 

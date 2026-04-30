@@ -25,6 +25,14 @@ func (s *APIGatewayService) PutMethod(ctx context.Context, reqCtx *request.Reque
 		authorizationType = "NONE"
 	}
 
+	validAuthTypes := map[string]bool{
+		"NONE": true, "AWS_IAM": true, "CUSTOM": true,
+		"COGNITO_USER_POOLS": true,
+	}
+	if !validAuthTypes[authorizationType] {
+		return nil, NewBadRequestException("Invalid authorization type: " + authorizationType)
+	}
+
 	method := &store.Method{
 		HttpMethod:         httpMethod,
 		AuthorizationType:  authorizationType,

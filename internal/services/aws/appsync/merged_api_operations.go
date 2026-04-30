@@ -2,6 +2,7 @@ package appsync
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -136,11 +137,22 @@ func (s *AppSyncService) DisassociateSourceGraphqlApi(ctx context.Context, reqCt
 		return mapStoreError(err)
 	}
 
-	if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
+	assoc.SourceApiAssociationStatus = "DELETION_SCHEDULED"
+	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
 		return mapStoreError(err)
 	}
 
-	return map[string]interface{}{"sourceApiAssociationStatus": assoc.SourceApiAssociationStatus}, nil
+	go func() {
+		time.Sleep(5 * time.Second)
+		if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
+			logs.Warn("async deletion of source API association failed",
+				logs.String("mergedApiId", mergedApiId),
+				logs.String("associationId", associationId),
+				logs.Err(err))
+		}
+	}()
+
+	return map[string]interface{}{"sourceApiAssociationStatus": "DELETION_SCHEDULED"}, nil
 }
 
 // StartSchemaMerge initiates a schema merge for a source API association.
@@ -242,11 +254,23 @@ func (s *AppSyncService) DisassociateMergedGraphqlApi(ctx context.Context, reqCt
 		return mapStoreError(err)
 	}
 
-	if err := store.DeleteMergedApiAssociation(assoc.MergedApiId, associationId); err != nil {
+	assoc.SourceApiAssociationStatus = "DELETION_SCHEDULED"
+	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
 		return mapStoreError(err)
 	}
 
-	return map[string]interface{}{"sourceApiAssociationStatus": assoc.SourceApiAssociationStatus}, nil
+	mergedApiId := assoc.MergedApiId
+	go func() {
+		time.Sleep(5 * time.Second)
+		if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
+			logs.Warn("async deletion of merged API association failed",
+				logs.String("mergedApiId", mergedApiId),
+				logs.String("associationId", associationId),
+				logs.Err(err))
+		}
+	}()
+
+	return map[string]interface{}{"sourceApiAssociationStatus": "DELETION_SCHEDULED"}, nil
 }
 
 // ListSourceApiAssociations lists source API associations for a GraphQL API.

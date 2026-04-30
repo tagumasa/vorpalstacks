@@ -19,7 +19,7 @@ func (s *ObjectStore) Copy(ctx context.Context, srcBucket, srcKey, dstBucket, ds
 	}
 	defer reader.Close()
 
-	return s.PutWithVersioning(ctx, dstBucket, dstKey, reader, srcObj.ContentType, srcObj.Metadata, false, StorageClassStandard)
+	return s.PutWithVersioning(ctx, dstBucket, dstKey, reader, srcObj.ContentType, srcObj.Metadata, false, StorageClassStandard, nil)
 }
 
 // CopyWithMetadata copies an object with custom content type and metadata.
@@ -36,7 +36,7 @@ func (s *ObjectStore) CopyWithMetadata(ctx context.Context, srcBucket, srcKey, d
 	}
 	defer reader.Close()
 
-	return s.PutWithVersioning(ctx, dstBucket, dstKey, reader, contentType, metadata, false, StorageClassStandard)
+	return s.PutWithVersioning(ctx, dstBucket, dstKey, reader, contentType, metadata, false, StorageClassStandard, nil)
 }
 
 // CopyWithVersion copies a specific version of an object.
@@ -64,7 +64,7 @@ func (s *ObjectStore) CopyWithVersion(ctx context.Context, srcBucket, srcKey, sr
 	}
 	defer reader.Close()
 
-	return s.PutWithVersioning(ctx, dstBucket, dstKey, reader, srcObj.ContentType, srcObj.Metadata, false, StorageClassStandard)
+	return s.PutWithVersioning(ctx, dstBucket, dstKey, reader, srcObj.ContentType, srcObj.Metadata, false, StorageClassStandard, nil)
 }
 
 // CopyWithVersionAndMetadata copies a specific version of an object with custom content type and metadata.
@@ -88,5 +88,5 @@ func (s *ObjectStore) CopyWithVersionAndMetadata(ctx context.Context, srcBucket,
 	}
 	defer reader.Close()
 
-	return s.PutWithVersioning(ctx, dstBucket, dstKey, reader, contentType, metadata, false, StorageClassStandard)
+	return s.PutWithVersioning(ctx, dstBucket, dstKey, reader, contentType, metadata, false, StorageClassStandard, nil)
 }

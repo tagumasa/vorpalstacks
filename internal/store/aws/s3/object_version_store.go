@@ -95,7 +95,7 @@ func (s *ObjectStore) GetWithVersion(ctx context.Context, bucket, key, versionId
 }
 
 // PutWithVersioning stores an object with versioning support.
-func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string, reader io.Reader, contentType string, metadata map[string]string, isDeleteMarker bool, storageClass ObjectStorageClass) (*Object, error) {
+func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string, reader io.Reader, contentType string, metadata map[string]string, isDeleteMarker bool, storageClass ObjectStorageClass, sysMeta *SystemMetadata) (*Object, error) {
 	versionId := "null"
 	isVersioned := s.isVersioningEnabled(bucket)
 
@@ -121,7 +121,7 @@ func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string,
 		}
 	}
 
-	obj := newObject(key, bucket, contentType, metadata, versionId, isDeleteMarker, storageClass)
+	obj := newObject(key, bucket, contentType, metadata, versionId, isDeleteMarker, storageClass, sysMeta)
 
 	if blobMetaResult != nil {
 		obj.Size = blobMetaResult.Size
@@ -234,7 +234,7 @@ func (s *ObjectStore) DeleteWithVersion(ctx context.Context, bucket, key, versio
 	}
 
 	if s.isVersioningEnabled(bucket) {
-		deleteMarker, err := s.PutWithVersioning(ctx, bucket, key, nil, "", nil, true, StorageClassStandard)
+		deleteMarker, err := s.PutWithVersioning(ctx, bucket, key, nil, "", nil, true, StorageClassStandard, nil)
 		if err != nil {
 			return nil, err
 		}

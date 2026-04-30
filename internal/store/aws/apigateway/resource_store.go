@@ -2,6 +2,7 @@ package apigateway
 
 import (
 	"errors"
+	"strings"
 
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -119,4 +120,40 @@ func (s *RestApiStore) UpdateResource(apiId string, resource *Resource) error {
 	resource.RestApiId = apiId
 	api.Resources[resource.Id] = resource
 	return s.Update(api)
+}
+
+// UpdateResourceCascade updates a resource and recalculates paths for all descendants.
+func (s *RestApiStore) UpdateResourceCascade(apiId string, resource *Resource) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	api, err := s.Get(apiId)
+	if err != nil {
+		return err
+	}
+
+	if _, ok := api.Resources[resource.Id]; !ok {
+		return ErrResourceNotFound
+	}
+
+	resource.RestApiId = apiId
+	api.Resources[resource.Id] = resource
+
+	s.recalculateDescendantPaths(api, resource)
+
+	return s.Update(api)
+}
+
+// recalculateDescendantPaths updates paths for all descendants of the given resource.
+func (s *RestApiStore) recalculateDescendantPaths(api *RestApi, parent *Resource) {
+	for _, child := range api.Resources {
+		if child.ParentId == parent.Id {
+			parentPath := strings.TrimRight(parent.Path, "/")
+			if parent.Path == "/" {
+				parentPath = ""
+			}
+			child.Path = parentPath + "/" + child.PathPart
+			s.recalculateDescendantPaths(api, child)
+		}
+	}
 }

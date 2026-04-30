@@ -12,12 +12,12 @@ import (
 )
 
 // PutEncrypted stores encrypted data for an object.
-func (s *ObjectStore) PutEncrypted(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, storageClass ObjectStorageClass) (*Object, error) {
-	return s.PutEncryptedWithVersioning(ctx, bucket, key, encryptedData, contentType, metadata, sseMetadata, false, storageClass)
+func (s *ObjectStore) PutEncrypted(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, storageClass ObjectStorageClass, sysMeta *SystemMetadata) (*Object, error) {
+	return s.PutEncryptedWithVersioning(ctx, bucket, key, encryptedData, contentType, metadata, sseMetadata, false, storageClass, sysMeta)
 }
 
 // PutEncryptedWithVersioning stores encrypted data for an object with versioning support.
-func (s *ObjectStore) PutEncryptedWithVersioning(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, isDeleteMarker bool, storageClass ObjectStorageClass) (*Object, error) {
+func (s *ObjectStore) PutEncryptedWithVersioning(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, isDeleteMarker bool, storageClass ObjectStorageClass, sysMeta *SystemMetadata) (*Object, error) {
 	versionId := "null"
 	isVersioned := s.isVersioningEnabled(bucket)
 
@@ -66,6 +66,12 @@ func (s *ObjectStore) PutEncryptedWithVersioning(ctx context.Context, bucket, ke
 		IsDeleteMarker: isDeleteMarker,
 		VersionID:      versionId,
 		SSEMetadata:    sseMetadata,
+	}
+	if sysMeta != nil {
+		obj.ContentEncoding = sysMeta.ContentEncoding
+		obj.ContentLanguage = sysMeta.ContentLanguage
+		obj.ContentDisposition = sysMeta.ContentDisposition
+		obj.CacheControl = sysMeta.CacheControl
 	}
 
 	if blobMetaResult != nil {

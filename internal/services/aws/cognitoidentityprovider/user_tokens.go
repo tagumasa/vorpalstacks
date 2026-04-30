@@ -99,6 +99,12 @@ func (s *CognitoService) ValidateAccessToken(reqCtx *request.RequestContext, tok
 	if err != nil {
 		return "", err
 	}
+
+	_, err = store.GetAccessTokenByValue(tokenString)
+	if err != nil {
+		return "", ErrNotAuthorized
+	}
+
 	userPools, err := store.ListUserPools()
 	if err != nil || len(userPools) == 0 {
 		return "", ErrResourceNotFound

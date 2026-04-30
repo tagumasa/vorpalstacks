@@ -3,9 +3,11 @@ package apigateway
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
+	integration "vorpalstacks/internal/services/aws/apigateway/runtime/integration"
 	store "vorpalstacks/internal/store/aws/apigateway"
 )
 
@@ -34,30 +36,6 @@ func (s *APIGatewayService) TestInvokeMethod(ctx context.Context, reqCtx *reques
 	body := request.GetStringParam(req.Parameters, "body")
 	pathWithQueryString := request.GetStringParam(req.Parameters, "pathWithQueryString")
 
-	responseBody := ""
-	responseStatus := 200
-
-	if method.MethodIntegration != nil {
-		switch method.MethodIntegration.Type {
-		case "MOCK":
-			responseBody = `{"message": "Mock integration response"}`
-		case "AWS_PROXY", "AWS":
-			if method.MethodIntegration.Uri != "" {
-				responseBody = `{"message": "Test invocation simulated successfully"}`
-			} else {
-				responseBody = ""
-				responseStatus = 502
-			}
-		case "HTTP", "HTTP_PROXY":
-			responseBody = `{"message": "Test invocation simulated successfully"}`
-		default:
-			responseBody = `{"message": "Test invocation simulated"}`
-		}
-	} else {
-		responseStatus = 502
-		responseBody = `{"message": "No integration configured"}`
-	}
-
 	headers := make(map[string]string)
 	if h, ok := req.Parameters["headers"].(map[string]interface{}); ok {
 		for k, v := range h {
@@ -76,25 +54,97 @@ func (s *APIGatewayService) TestInvokeMethod(ctx context.Context, reqCtx *reques
 		}
 	}
 
-	result := map[string]interface{}{
-		"status": responseStatus,
-		"log":    "TestInvokeMethod completed successfully",
+	responseStatus := 200
+	var responseBody string
+	var logEntries []string
+
+	if method.MethodIntegration != nil {
+		mi := method.MethodIntegration
+
+		reqTemplates := make(map[string]string)
+		for k, v := range mi.RequestTemplates {
+			reqTemplates[k] = v
+		}
+
+		intResponses := make(map[string]*integration.IntegrationResponseConfig)
+		for code, ir := range mi.IntegrationResponses {
+			respHeaders := make(map[string]string)
+			for k, v := range ir.ResponseParameters {
+				respHeaders[k] = v
+			}
+			respTemplates := make(map[string]string)
+			for k, v := range ir.ResponseTemplates {
+				respTemplates[k] = v
+			}
+			intResponses[code] = &integration.IntegrationResponseConfig{
+				StatusCode:        ir.StatusCode,
+				SelectionPattern:  ir.SelectionPattern,
+				ResponseHeaders:   respHeaders,
+				ResponseTemplates: respTemplates,
+			}
+		}
+
+		intReq := &integration.IntegrationRequest{
+			Method:               httpMethod,
+			Headers:              headers,
+			Body:                 []byte(body),
+			PathParams:           make(map[string]string),
+			QueryParams:          make(map[string]string),
+			Path:                 pathWithQueryString,
+			StageVariables:       stageVariables,
+			IntegrationType:      mi.Type,
+			RequestTemplates:     reqTemplates,
+			IntegrationResponses: intResponses,
+			RestApiId:            apiId,
+			StageName:            "test-invoke-stage",
+		}
+
+		var executor integration.Executor
+		switch mi.Type {
+		case "MOCK":
+			executor = integration.NewMockExecutor()
+		case "HTTP", "HTTP_PROXY":
+			executor = integration.NewHTTPExecutor()
+		case "AWS", "AWS_PROXY":
+			executor = integration.NewAWSExecutor(nil, s.accountID, s.region)
+		default:
+			executor = integration.NewMockExecutor()
+		}
+
+		resp, execErr := executor.Execute(ctx, intReq)
+		if execErr != nil {
+			responseStatus = 502
+			responseBody = fmt.Sprintf(`{"message": "Integration execution failed: %v"}`, execErr)
+			logEntries = append(logEntries, fmt.Sprintf("Execution failed: %v", execErr))
+		} else {
+			responseStatus = resp.StatusCode
+			responseBody = string(resp.Body)
+			logEntries = append(logEntries, "Execution completed successfully")
+		}
+	} else {
+		responseStatus = 502
+		responseBody = `{"message": "No integration configured"}`
+		logEntries = append(logEntries, "No integration configured")
 	}
 
+	logStr := "TestInvokeMethod completed successfully"
+	if len(logEntries) > 0 {
+		logStr = strings.Join(logEntries, "; ")
+	}
+
+	result := map[string]interface{}{
+		"status": responseStatus,
+		"body":   responseBody,
+		"log":    logStr,
+	}
 	if len(headers) > 0 {
 		result["headers"] = headers
-	}
-	if body != "" {
-		result["body"] = body
 	}
 	if pathWithQueryString != "" {
 		result["pathWithQueryString"] = pathWithQueryString
 	}
 	if len(stageVariables) > 0 {
 		result["stageVariables"] = stageVariables
-	}
-	if responseBody != "" {
-		result["body"] = responseBody
 	}
 
 	return result, nil

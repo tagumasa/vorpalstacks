@@ -24,9 +24,15 @@ func (s *APIGatewayService) CreateApiKey(ctx context.Context, reqCtx *request.Re
 	apiKey := &store.ApiKey{
 		Name:        name,
 		Description: request.GetStringParam(req.Parameters, "description"),
-		Enabled:     request.GetBoolParam(req.Parameters, "enabled"),
+		Enabled:     true,
 		CustomerId:  request.GetStringParam(req.Parameters, "customerId"),
 		Value:       request.GetStringParam(req.Parameters, "value"),
+	}
+
+	if v, ok := req.Parameters["enabled"]; ok {
+		if b, ok := v.(bool); ok {
+			apiKey.Enabled = b
+		}
 	}
 
 	if stageKeys, ok := req.Parameters["stageKeys"].([]interface{}); ok {

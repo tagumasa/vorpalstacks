@@ -263,6 +263,10 @@ func (s *APIGatewayService) CreateBasePathMapping(ctx context.Context, reqCtx *r
 		Stage:     request.GetStringParam(req.Parameters, "stage"),
 	}
 
+	if mapping.BasePath == "" {
+		mapping.BasePath = "(none)"
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

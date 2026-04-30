@@ -213,6 +213,10 @@ func (s *CognitoIdentityService) GetPrincipalTagAttributeMap(ctx context.Context
 		return nil, err
 	}
 
+	if _, err := store.GetIdentityPool(poolID); err != nil {
+		return nil, ErrResourceNotFound
+	}
+
 	ptam, err := store.GetPrincipalTagAttributeMap(poolID, providerName)
 	if err != nil {
 		return map[string]interface{}{

@@ -1,10 +1,13 @@
 package apigateway
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
+
+	storeerrors "vorpalstacks/internal/store/aws/apigateway"
 )
 
 // ApiGatewayError represents an error returned by API Gateway operations.
@@ -60,5 +63,35 @@ func GetApiGatewayError(err error) *ApiGatewayError {
 	if apiErr, ok := err.(*ApiGatewayError); ok {
 		return apiErr
 	}
+	if isNotFoundError(err) {
+		return ErrNotFoundException
+	}
 	return ErrServiceException
+}
+
+func isNotFoundError(err error) bool {
+	notFoundErrors := []error{
+		storeerrors.ErrRestApiNotFound,
+		storeerrors.ErrResourceNotFound,
+		storeerrors.ErrMethodNotFound,
+		storeerrors.ErrIntegrationNotFound,
+		storeerrors.ErrDeploymentNotFound,
+		storeerrors.ErrStageNotFound,
+		storeerrors.ErrRequestValidatorNotFound,
+		storeerrors.ErrModelNotFound,
+		storeerrors.ErrApiKeyNotFound,
+		storeerrors.ErrUsagePlanNotFound,
+		storeerrors.ErrUsagePlanKeyNotFound,
+		storeerrors.ErrDomainNameNotFound,
+		storeerrors.ErrBasePathMappingNotFound,
+		storeerrors.ErrAuthorizerNotFound,
+		storeerrors.ErrMethodResponseNotFound,
+		storeerrors.ErrIntegrationResponseNotFound,
+	}
+	for _, notFound := range notFoundErrors {
+		if errors.Is(err, notFound) {
+			return true
+		}
+	}
+	return false
 }

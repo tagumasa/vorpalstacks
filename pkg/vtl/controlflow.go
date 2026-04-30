@@ -17,6 +17,7 @@
 package vtl
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -31,7 +32,7 @@ var (
 	endifRe        = regexp.MustCompile(`#end\s*`)
 	foreachStartRe = regexp.MustCompile(`#foreach\s*\(\s*\$(\w+)\s+in\s*`)
 	endforeachRe   = regexp.MustCompile(`#end\s*`)
-	setRe          = regexp.MustCompile(`#set\s*\(\s*\$(\w+)\s*=\s*`)
+	setRe          = regexp.MustCompile(`#set\s*\(\s*\$(\w+(?:\.\w+)*)\s*=\s*`)
 	commentRe      = regexp.MustCompile(`#\*.*?\*#`)
 )
 
@@ -83,18 +84,40 @@ func (e *Engine) processControlFlow(template string) string {
 }
 
 // processNextBlock attempts to process the next control flow block in the
-// template. It checks for #foreach, #if, and #set directives in order and
-// processes the first one found. Returns the modified template and a boolean
-// indicating whether a block was processed.
+// template. It finds whichever directive (#foreach, #if, #set) appears
+// first in the template and processes it. Returns the modified template
+// and a boolean indicating whether a block was processed.
 func (e *Engine) processNextBlock(template string) (string, bool) {
-	if result, found := e.processForeachBlock(template); found {
-		return result, true
+	foreachMatch := foreachStartRe.FindStringIndex(template)
+	ifMatch := ifStartRe.FindStringIndex(template)
+	setMatch := setRe.FindStringIndex(template)
+
+	bestPos := len(template) + 1
+	bestType := ""
+
+	if foreachMatch != nil && foreachMatch[0] < bestPos {
+		bestPos = foreachMatch[0]
+		bestType = "foreach"
 	}
-	if result, found := e.processIfBlock(template); found {
-		return result, true
+	if ifMatch != nil && ifMatch[0] < bestPos {
+		bestPos = ifMatch[0]
+		bestType = "if"
 	}
-	if result, found := e.processSetBlock(template); found {
-		return result, true
+	if setMatch != nil && setMatch[0] < bestPos {
+		bestPos = setMatch[0]
+		bestType = "set"
+	}
+
+	switch bestType {
+	case "foreach":
+		result, found := e.processForeachBlock(template)
+		return result, found
+	case "if":
+		result, found := e.processIfBlock(template)
+		return result, found
+	case "set":
+		result, found := e.processSetBlock(template)
+		return result, found
 	}
 	return template, false
 }
@@ -152,6 +175,7 @@ func (e *Engine) processForeachBlock(template string) (string, bool) {
 		loopVars := map[string]interface{}{
 			"index":     i + 1,
 			"index0":    i,
+			"count":     i + 1,
 			"first":     i == 0,
 			"last":      i == len(items)-1,
 			"hasNext":   i < len(items)-1,
@@ -164,6 +188,8 @@ func (e *Engine) processForeachBlock(template string) (string, bool) {
 		e.context.Context["foreach"] = loopVars
 
 		rendered := e.processControlFlow(body)
+		rendered = e.processAppSyncUtil(rendered)
+		rendered = e.processAppSyncContext(rendered)
 		rendered = e.processSimpleVariables(rendered)
 		result.WriteString(rendered)
 
@@ -215,6 +241,8 @@ func (e *Engine) processIfBlock(template string) (string, bool) {
 	for _, branch := range branches {
 		if e.evaluateCondition(branch.condition) {
 			rendered := e.processControlFlow(branch.body)
+			rendered = e.processAppSyncUtil(rendered)
+			rendered = e.processAppSyncContext(rendered)
 			return template[:blockStart] + rendered + template[blockEnd:], true
 		}
 	}
@@ -423,9 +451,93 @@ func (e *Engine) processSetBlock(template string) (string, bool) {
 	}
 
 	value := e.resolveValue(valueExpr)
-	e.context.Context[varName] = value
+
+	if strings.Contains(varName, ".") {
+		parts := strings.SplitN(varName, ".", 2)
+		if parts[0] == "ctx" && e.AppSyncCtx != nil {
+			e.setAppSyncCtxPath(parts[1], value)
+		} else if parts[0] == "context" {
+			e.setContextPath(parts[1], value)
+		} else {
+			e.setNestedVariable(varName, value)
+		}
+	} else {
+		if strings.Contains(valueExpr, ".add(") {
+			e.processMethodCall(varName, valueExpr)
+		} else {
+			e.context.Context[varName] = value
+		}
+	}
 
 	return template[:matches[0]] + template[closeIdx+1:], true
+}
+
+func (e *Engine) setAppSyncCtxPath(path string, value interface{}) {
+	parts := strings.SplitN(path, ".", 2)
+	if len(parts) < 2 {
+		return
+	}
+	topLevel := parts[0]
+	field := parts[1]
+
+	switch topLevel {
+	case "stash":
+		if e.AppSyncCtx.Stash == nil {
+			e.AppSyncCtx.Stash = map[string]interface{}{}
+		}
+		e.AppSyncCtx.Stash[field] = value
+	case "args":
+		if e.AppSyncCtx.Args == nil {
+			e.AppSyncCtx.Args = map[string]interface{}{}
+		}
+		e.AppSyncCtx.Args[field] = value
+	}
+}
+
+func (e *Engine) setContextPath(path string, value interface{}) {
+	e.context.Context[path] = value
+}
+
+func (e *Engine) setNestedVariable(varName string, value interface{}) {
+	parts := strings.SplitN(varName, ".", 2)
+	if len(parts) < 2 {
+		e.context.Context[varName] = value
+		return
+	}
+	base, ok := e.context.Context[parts[0]]
+	if !ok {
+		base = map[string]interface{}{}
+	}
+	if m, ok := base.(map[string]interface{}); ok {
+		m[parts[1]] = value
+		e.context.Context[parts[0]] = m
+	}
+}
+
+var methodCallRe = regexp.MustCompile(`\$([\w]+)\.add\(([^)]+)\)`)
+
+func (e *Engine) processMethodCall(varName string, valueExpr string) {
+	matches := methodCallRe.FindStringSubmatch(valueExpr)
+	if matches == nil {
+		e.context.Context[varName] = e.resolveValue(valueExpr)
+		return
+	}
+	targetVar := matches[1]
+	argExpr := strings.TrimSpace(matches[2])
+
+	current, ok := e.context.Context[targetVar]
+	if !ok {
+		return
+	}
+
+	arr, ok := current.([]interface{})
+	if !ok {
+		return
+	}
+
+	arg := e.resolveValue(argExpr)
+	e.context.Context[targetVar] = append(arr, arg)
+	e.context.Context[varName] = true
 }
 
 // findMatchingEnd finds the matching #end tag for a block starting at the
@@ -498,6 +610,35 @@ func findMatchingEnd(template string, startIdx int, blockType string) int {
 	return findMatchingEndImpl(template, startIdx)
 }
 
+// resolveInputExpr attempts to resolve a $input.* expression string to its
+// concrete value by running the input processing functions on it.
+func (e *Engine) resolveInputExpr(expr string) (interface{}, bool) {
+	if !strings.HasPrefix(expr, "$input") {
+		return nil, false
+	}
+
+	resolved := e.processInputPath(expr)
+	if resolved != expr {
+		return resolved, true
+	}
+
+	resolved = e.processInputJson(expr)
+	if resolved != expr {
+		var parsed interface{}
+		if err := json.Unmarshal([]byte(resolved), &parsed); err == nil {
+			return parsed, true
+		}
+		return resolved, true
+	}
+
+	resolved = e.processInputBody(expr)
+	if resolved != expr {
+		return resolved, true
+	}
+
+	return nil, false
+}
+
 // resolveIterable resolves an expression to an iterable value (array or slice).
 // It supports variable references that start with $.
 func (e *Engine) resolveIterable(expr string) interface{} {
@@ -505,7 +646,18 @@ func (e *Engine) resolveIterable(expr string) interface{} {
 
 	if strings.HasPrefix(expr, "$") {
 		path := expr[1:]
-		return e.getVariableByPath(path)
+		val := e.getVariableByPath(path)
+		if val != nil {
+			return val
+		}
+		if e.AppSyncCtx != nil {
+			if appSyncVal := e.resolveAppSyncPath(path); appSyncVal != nil {
+				return appSyncVal
+			}
+		}
+		if inputVal, ok := e.resolveInputExpr(expr); ok {
+			return inputVal
+		}
 	}
 
 	return nil
@@ -517,7 +669,8 @@ func (e *Engine) resolveValue(expr string) interface{} {
 	expr = strings.TrimSpace(expr)
 
 	if strings.HasPrefix(expr, `"`) && strings.HasSuffix(expr, `"`) {
-		return expr[1 : len(expr)-1]
+		inner := expr[1 : len(expr)-1]
+		return e.interpolateStringVars(inner)
 	}
 	if strings.HasPrefix(expr, `'`) && strings.HasSuffix(expr, `'`) {
 		return expr[1 : len(expr)-1]
@@ -528,6 +681,14 @@ func (e *Engine) resolveValue(expr string) interface{} {
 		val := e.getVariableByPath(path)
 		if val != nil {
 			return val
+		}
+		if e.AppSyncCtx != nil {
+			if appSyncVal := e.resolveAppSyncPath(path); appSyncVal != nil {
+				return appSyncVal
+			}
+		}
+		if inputVal, ok := e.resolveInputExpr(expr); ok {
+			return inputVal
 		}
 		if strings.HasPrefix(path, "util.") {
 			resolved := e.processAppSyncUtil(expr)
@@ -546,6 +707,12 @@ func (e *Engine) resolveValue(expr string) interface{} {
 	}
 	if expr == "null" {
 		return nil
+	}
+	if expr == "[]" {
+		return []interface{}{}
+	}
+	if expr == "{}" {
+		return map[string]interface{}{}
 	}
 
 	return expr
@@ -636,4 +803,95 @@ func (e *Engine) compareValues(left, right interface{}, op string) bool {
 		return leftStr <= rightStr
 	}
 	return false
+}
+
+func (e *Engine) resolveAppSyncPath(path string) interface{} {
+	if e.AppSyncCtx == nil {
+		return nil
+	}
+
+	parts := strings.SplitN(path, ".", 2)
+	if len(parts) < 2 || parts[0] != "ctx" {
+		return nil
+	}
+
+	subPath := parts[1]
+	subParts := strings.SplitN(subPath, ".", 2)
+	topLevel := subParts[0]
+	fieldPath := ""
+	if len(subParts) > 1 {
+		fieldPath = subParts[1]
+	}
+
+	var base interface{}
+	switch topLevel {
+	case "args":
+		base = e.AppSyncCtx.Args
+	case "source":
+		base = e.AppSyncCtx.Source
+	case "stash":
+		base = e.AppSyncCtx.Stash
+	case "identity":
+		base = e.AppSyncCtx.Identity
+	case "result":
+		base = e.AppSyncCtx.Result
+	case "request":
+		base = e.AppSyncCtx.Request
+	case "error":
+		base = e.AppSyncCtx.Error
+	case "prev":
+		base = e.AppSyncCtx.Prev
+	case "trigger":
+		base = e.AppSyncCtx.Trigger
+	case "info":
+		if e.AppSyncCtx.Info == nil {
+			return nil
+		}
+		info := e.AppSyncCtx.Info
+		if fieldPath == "" {
+			return info
+		}
+		switch fieldPath {
+		case "fieldName":
+			return info.FieldName
+		case "parentTypeName":
+			return info.ParentTypeName
+		case "selectionSetGraphQL":
+			return info.SelectionSetGraphQL
+		case "selectionSetList":
+			return info.SelectionSetList
+		}
+		return nil
+	default:
+		return nil
+	}
+
+	if base == nil {
+		return nil
+	}
+	if fieldPath == "" {
+		return base
+	}
+
+	return navigatePath(base, fieldPath)
+}
+
+var stringVarRe = regexp.MustCompile(`\$([\w]+(?:\.[\w]+)*)`)
+
+func (e *Engine) interpolateStringVars(s string) string {
+	return stringVarRe.ReplaceAllStringFunc(s, func(match string) string {
+		path := stringVarRe.FindStringSubmatch(match)[1]
+		if strings.HasPrefix(path, "context.") || strings.HasPrefix(path, "stageVariables.") {
+			return match
+		}
+		if val := e.getVariableByPath(path); val != nil {
+			return e.formatValue(val)
+		}
+		if e.AppSyncCtx != nil {
+			if val := e.resolveAppSyncPath(path); val != nil {
+				return e.formatValue(val)
+			}
+		}
+		return match
+	})
 }

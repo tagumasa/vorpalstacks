@@ -11,24 +11,40 @@ import (
 
 // UserPool represents a Cognito user pool.
 type UserPool struct {
-	ID                     string          `json:"id"`
-	Name                   string          `json:"name"`
-	Arn                    string          `json:"arn"`
-	Status                 string          `json:"status"`
-	CreationDate           time.Time       `json:"creationDate"`
-	LastModifiedDate       time.Time       `json:"lastModifiedDate"`
-	AliasAttributes        []string        `json:"aliasAttributes,omitempty"`
-	UsernameAttributes     []string        `json:"usernameAttributes,omitempty"`
-	AutoVerifiedAttributes []string        `json:"autoVerifiedAttributes,omitempty"`
-	Schema                 string          `json:"schema,omitempty"`
-	MfaConfiguration       string          `json:"mfaConfiguration,omitempty"`
-	PasswordPolicy         *PasswordPolicy `json:"passwordPolicy,omitempty"`
-	LambdaConfig           *LambdaConfig   `json:"lambdaConfig,omitempty"`
-	Tags                   []types.Tag     `json:"tags,omitempty"`
-	EstimatedNumberOfUsers int64           `json:"estimatedNumberOfUsers,omitempty"`
-	JwtPrivateKey          string          `json:"jwtPrivateKey,omitempty"`
-	JwtPublicKey           string          `json:"jwtPublicKey,omitempty"`
-	JwtKeyID               string          `json:"jwtKeyId,omitempty"`
+	ID                            string                       `json:"id"`
+	Name                          string                       `json:"name"`
+	Arn                           string                       `json:"arn"`
+	Status                        string                       `json:"status"`
+	CreationDate                  time.Time                    `json:"creationDate"`
+	LastModifiedDate              time.Time                    `json:"lastModifiedDate"`
+	AliasAttributes               []string                     `json:"aliasAttributes,omitempty"`
+	UsernameAttributes            []string                     `json:"usernameAttributes,omitempty"`
+	AutoVerifiedAttributes        []string                     `json:"autoVerifiedAttributes,omitempty"`
+	Schema                        string                       `json:"schema,omitempty"`
+	MfaConfiguration              string                       `json:"mfaConfiguration,omitempty"`
+	PasswordPolicy                *PasswordPolicy              `json:"passwordPolicy,omitempty"`
+	LambdaConfig                  *LambdaConfig                `json:"lambdaConfig,omitempty"`
+	Tags                          []types.Tag                  `json:"tags,omitempty"`
+	EstimatedNumberOfUsers        int64                        `json:"estimatedNumberOfUsers,omitempty"`
+	JwtPrivateKey                 string                       `json:"jwtPrivateKey,omitempty"`
+	JwtPublicKey                  string                       `json:"jwtPublicKey,omitempty"`
+	JwtKeyID                      string                       `json:"jwtKeyId,omitempty"`
+	EmailConfiguration            *EmailConfiguration          `json:"emailConfiguration,omitempty"`
+	SmsConfiguration              *SmsConfiguration            `json:"smsConfiguration,omitempty"`
+	AdminCreateUserConfig         *AdminCreateUserConfig       `json:"adminCreateUserConfig,omitempty"`
+	VerificationMessageTemplate   *VerificationMessageTemplate `json:"verificationMessageTemplate,omitempty"`
+	DeletionProtection            string                       `json:"deletionProtection,omitempty"`
+	UserPoolAddOns                *UserPoolAddOns              `json:"userPoolAddOns,omitempty"`
+	AccountRecoverySetting        *AccountRecoverySetting      `json:"accountRecoverySetting,omitempty"`
+	UsernameConfiguration         *UsernameConfiguration       `json:"usernameConfiguration,omitempty"`
+	DeviceConfiguration           *DeviceConfiguration         `json:"deviceConfiguration,omitempty"`
+	EmailVerificationMessage      string                       `json:"emailVerificationMessage,omitempty"`
+	EmailVerificationSubject      string                       `json:"emailVerificationSubject,omitempty"`
+	SmsVerificationMessage        string                       `json:"smsVerificationMessage,omitempty"`
+	SmsAuthenticationMessage      string                       `json:"smsAuthenticationMessage,omitempty"`
+	UserAttributeUpdateSettings   *UserAttributeUpdateSettings `json:"userAttributeUpdateSettings,omitempty"`
+	MfaConfigurationSms           *MfaConfigurationType        `json:"mfaConfigurationSms,omitempty"`
+	MfaConfigurationSoftwareToken *MfaConfigurationType        `json:"mfaConfigurationSoftwareToken,omitempty"`
 }
 
 // PasswordPolicy represents the password policy for a Cognito user pool.
@@ -42,6 +58,83 @@ type PasswordPolicy struct {
 	PasswordHistorySize           int  `json:"passwordHistorySize,omitempty"`
 	MaxPasswordAge                int  `json:"maxPasswordAge,omitempty"`
 	PreventUserExistenceErrors    bool `json:"preventUserExistenceErrors,omitempty"`
+}
+
+// EmailConfiguration represents the email configuration for a user pool.
+type EmailConfiguration struct {
+	SourceArn           string `json:"sourceArn,omitempty"`
+	ReplyToEmailAddress string `json:"replyToEmailAddress,omitempty"`
+	EmailSendingAccount string `json:"emailSendingAccount,omitempty"`
+	From                string `json:"from,omitempty"`
+	ConfigurationSet    string `json:"configurationSet,omitempty"`
+}
+
+// SmsConfiguration represents the SMS configuration for a user pool.
+type SmsConfiguration struct {
+	SnsCallerArn string `json:"snsCallerArn,omitempty"`
+	ExternalId   string `json:"externalId,omitempty"`
+	SnsRegion    string `json:"snsRegion,omitempty"`
+}
+
+// AdminCreateUserConfig represents the admin create user configuration for a user pool.
+type AdminCreateUserConfig struct {
+	AllowAdminCreateUserOnly  bool             `json:"allowAdminCreateUserOnly"`
+	UnusedAccountValidityDays int              `json:"unusedAccountValidityDays,omitempty"`
+	InviteMessageTemplate     *MessageTemplate `json:"inviteMessageTemplate,omitempty"`
+}
+
+// MessageTemplate represents the message template for invite messages.
+type MessageTemplate struct {
+	SMSMessage   string `json:"smsMessage,omitempty"`
+	EmailMessage string `json:"emailMessage,omitempty"`
+	EmailSubject string `json:"emailSubject,omitempty"`
+}
+
+// VerificationMessageTemplate represents the verification message template.
+type VerificationMessageTemplate struct {
+	SmsMessage         string `json:"smsMessage,omitempty"`
+	EmailMessage       string `json:"emailMessage,omitempty"`
+	EmailSubject       string `json:"emailSubject,omitempty"`
+	EmailMessageByLink string `json:"emailMessageByLink,omitempty"`
+	EmailSubjectByLink string `json:"emailSubjectByLink,omitempty"`
+	DefaultEmailOption string `json:"defaultEmailOption,omitempty"`
+}
+
+// UserPoolAddOns represents advanced security configuration for a user pool.
+type UserPoolAddOns struct {
+	AdvancedSecurityMode string `json:"advancedSecurityMode,omitempty"`
+}
+
+// AccountRecoverySetting represents the account recovery setting for a user pool.
+type AccountRecoverySetting struct {
+	RecoveryMechanisms []RecoveryMechanism `json:"recoveryMechanisms,omitempty"`
+}
+
+// RecoveryMechanism represents a recovery mechanism.
+type RecoveryMechanism struct {
+	Priority int    `json:"priority"`
+	Name     string `json:"name,omitempty"`
+}
+
+// UsernameConfiguration represents the username configuration.
+type UsernameConfiguration struct {
+	CaseSensitive bool `json:"caseSensitive"`
+}
+
+// DeviceConfiguration represents the device configuration.
+type DeviceConfiguration struct {
+	ChallengeRequiredOnNewDevice     bool `json:"challengeRequiredOnNewDevice"`
+	DeviceOnlyRememberedOnUserPrompt bool `json:"deviceOnlyRememberedOnUserPrompt"`
+}
+
+// UserAttributeUpdateSettings represents the user attribute update settings.
+type UserAttributeUpdateSettings struct {
+	AttributesRequireVerificationBeforeUpdate []string `json:"attributesRequireVerificationBeforeUpdate,omitempty"`
+}
+
+// MfaConfigurationType represents MFA configuration details (SMS or SoftwareToken).
+type MfaConfigurationType struct {
+	Enabled bool `json:"enabled"`
 }
 
 // LambdaConfig represents the Lambda trigger configuration for a Cognito user pool.
@@ -135,7 +228,7 @@ type Group struct {
 	Name             string    `json:"name"`
 	Description      string    `json:"description,omitempty"`
 	RoleArn          string    `json:"roleArn,omitempty"`
-	Precedence       int       `json:"precedence,omitempty"`
+	Precedence       *int      `json:"precedence,omitempty"`
 	CreationDate     time.Time `json:"creationDate"`
 	LastModifiedDate time.Time `json:"lastModifiedDate"`
 	Members          []string  `json:"members,omitempty"`

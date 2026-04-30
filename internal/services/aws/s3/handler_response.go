@@ -220,6 +220,10 @@ func (h *S3Handler) writeResult(w http.ResponseWriter, result interface{}, statu
 		} else {
 			w.WriteHeader(statusCode)
 		}
+	case *GetBucketPolicyOutput:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
+		_, _ = w.Write([]byte(v.Policy))
 	case *GetBucketLocationOutput:
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(statusCode)

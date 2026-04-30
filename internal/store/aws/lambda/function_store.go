@@ -684,6 +684,7 @@ func (s *FunctionStore) SetProvisionedConcurrency(functionName, qualifier string
 		if pc.Qualifier == qualifier {
 			function.ProvisionedConcurrency[i].AllocatedProvisionedConcurrentExecutions = concurrentExecutions
 			function.ProvisionedConcurrency[i].AvailableProvisionedConcurrentExecutions = concurrentExecutions
+			function.ProvisionedConcurrency[i].RequestedProvisionedConcurrentExecutions = concurrentExecutions
 			function.ProvisionedConcurrency[i].Status = "READY"
 			function.ProvisionedConcurrency[i].LastModified = now
 			found = true
@@ -694,9 +695,11 @@ func (s *FunctionStore) SetProvisionedConcurrency(functionName, qualifier string
 	if !found {
 		function.ProvisionedConcurrency = append(function.ProvisionedConcurrency, ProvisionedConcurrencyConfig{
 			FunctionName:                             functionName,
+			FunctionArn:                              fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", s.region, functionName),
 			Qualifier:                                qualifier,
 			AllocatedProvisionedConcurrentExecutions: concurrentExecutions,
 			AvailableProvisionedConcurrentExecutions: concurrentExecutions,
+			RequestedProvisionedConcurrentExecutions: concurrentExecutions,
 			Status:                                   "READY",
 			LastModified:                             now,
 		})

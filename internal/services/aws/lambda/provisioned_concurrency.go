@@ -131,9 +131,11 @@ func (s *LambdaService) ListProvisionedConcurrencyConfigs(ctx context.Context, r
 func (s *LambdaService) toProvisionedConcurrencyConfig(c *lambdastore.ProvisionedConcurrencyConfig) map[string]interface{} {
 	return map[string]interface{}{
 		"FunctionName": c.FunctionName,
+		"FunctionArn":  c.FunctionArn,
 		"Qualifier":    c.Qualifier,
 		"AllocatedProvisionedConcurrentExecutions": c.AllocatedProvisionedConcurrentExecutions,
 		"AvailableProvisionedConcurrentExecutions": c.AvailableProvisionedConcurrentExecutions,
+		"RequestedProvisionedConcurrentExecutions": c.RequestedProvisionedConcurrentExecutions,
 		"Status":       c.Status,
 		"StatusReason": c.StatusReason,
 		"LastModified": c.LastModified.Format(timeutils.ISO8601UTCFormat),
