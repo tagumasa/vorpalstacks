@@ -117,12 +117,28 @@ func (s *KinesisService) DescribeLimits(ctx context.Context, reqCtx *request.Req
 
 // DescribeAccountSettings returns the Kinesis account settings.
 func (s *KinesisService) DescribeAccountSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{}, nil
+	return map[string]interface{}{
+		"MinimumThroughputBillingCommitment": map[string]interface{}{
+			"Status": "DISABLED",
+		},
+	}, nil
 }
 
 // UpdateAccountSettings updates the Kinesis account settings.
 func (s *KinesisService) UpdateAccountSettings(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{}, nil
+	status := "DISABLED"
+	if mtbc, ok := req.Parameters["MinimumThroughputBillingCommitment"]; ok {
+		if mtbcMap, ok := mtbc.(map[string]interface{}); ok {
+			if s, ok := mtbcMap["Status"].(string); ok {
+				status = s
+			}
+		}
+	}
+	return map[string]interface{}{
+		"MinimumThroughputBillingCommitment": map[string]interface{}{
+			"Status": status,
+		},
+	}, nil
 }
 
 // EnableEnhancedMonitoring enables enhanced monitoring for a Kinesis stream.

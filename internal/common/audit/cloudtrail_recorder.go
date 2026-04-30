@@ -40,6 +40,7 @@ func (r *CloudTrailRecorder) RecordEvent(event *AuditEvent) error {
 		event.EventSource,
 		userIdentity,
 		event.SourceIP,
+		event.AccessKeyID,
 		event.RequestParameters,
 		event.ResponseElements,
 		buildResources(event),

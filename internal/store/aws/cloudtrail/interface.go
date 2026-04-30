@@ -26,7 +26,7 @@ type CloudTrailStoreInterface interface {
 	PutEvent(event *Event) error
 	LookupEvents(query EventQuery) ([]*Event, string, error)
 	GetEventByID(eventID string) (*Event, error)
-	RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}, resources []Resource) error
+	RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP, accessKeyID string, requestParams, responseElements map[string]interface{}, resources []Resource) error
 	GetResourcePolicy(resourceARN string) (*ResourcePolicy, error)
 	PutResourcePolicy(resourceARN string, policy string) error
 	DeleteResourcePolicy(resourceARN string) error

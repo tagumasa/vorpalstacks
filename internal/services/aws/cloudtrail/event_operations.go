@@ -21,6 +21,11 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 			return nil, ErrInvalidParameter
 		}
 		query.StartTime = &t
+	} else if stRaw := req.Parameters["StartTime"]; stRaw != nil {
+		if ts, ok := stRaw.(float64); ok {
+			t := time.Unix(int64(ts), 0).UTC()
+			query.StartTime = &t
+		}
 	}
 	if endTime := req.GetParam("EndTime"); endTime != "" {
 		t, err := time.Parse(time.RFC3339, endTime)
@@ -28,6 +33,11 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 			return nil, ErrInvalidParameter
 		}
 		query.EndTime = &t
+	} else if etRaw := req.Parameters["EndTime"]; etRaw != nil {
+		if ts, ok := etRaw.(float64); ok {
+			t := time.Unix(int64(ts), 0).UTC()
+			query.EndTime = &t
+		}
 	}
 
 	if nextToken := req.GetParam("NextToken"); nextToken != "" {
@@ -53,6 +63,10 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 						query.EventSource = value
 					case "AccessKeyId":
 						query.AccessKeyID = value
+					case "EventId":
+						query.EventID = value
+					case "ReadOnly":
+						query.ReadOnly = value
 					}
 				}
 			}

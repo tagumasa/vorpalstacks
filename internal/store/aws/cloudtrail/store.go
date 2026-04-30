@@ -465,6 +465,12 @@ func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, erro
 	var err error
 
 	switch {
+	case query.EventID != "":
+		event, getErr := s.GetEventByID(query.EventID)
+		if getErr != nil {
+			return nil, "", nil
+		}
+		return []*Event{event}, "", nil
 	case len(query.EventNames) > 0 && s.indexer != nil:
 		eventIDs, err = s.indexer.QueryByEventName(query.EventNames, query.MaxResults)
 	case query.Username != "" && s.indexer != nil:
@@ -624,6 +630,17 @@ func protoMatchesQuery(event *pb.Event, query EventQuery) bool {
 		return false
 	}
 
+	if query.EventID != "" && event.GetEventId() != query.EventID {
+		return false
+	}
+
+	if query.ReadOnly == "true" && event.GetReadOnly() != "true" {
+		return false
+	}
+	if query.ReadOnly == "false" && event.GetReadOnly() != "false" {
+		return false
+	}
+
 	return true
 }
 
@@ -699,15 +716,27 @@ func (s *CloudTrailStore) eventMatchesQuery(event *Event, query EventQuery) bool
 		return false
 	}
 
+	if query.EventID != "" && event.EventID != query.EventID {
+		return false
+	}
+
+	if query.ReadOnly == "true" && event.ReadOnly != "true" {
+		return false
+	}
+	if query.ReadOnly == "false" && event.ReadOnly != "false" {
+		return false
+	}
+
 	return true
 }
 
 // RecordServiceEvent records a service event to CloudTrail.
-func (s *CloudTrailStore) RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}, resources []Resource) error {
+func (s *CloudTrailStore) RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP, accessKeyID string, requestParams, responseElements map[string]interface{}, resources []Resource) error {
 	event := NewEvent(eventName, eventSource, userIdentity)
 	event.RequestParameters = requestParams
 	event.ResponseElements = responseElements
 	event.SourceIPAddress = sourceIP
+	event.AccessKeyId = accessKeyID
 	event.UserAgent = "vorpalstacks-internal"
 	for _, r := range resources {
 		event.Resources = append(event.Resources, Resource{ResourceType: r.ResourceType, ResourceName: r.ResourceName})
@@ -726,6 +755,8 @@ type EventQuery struct {
 	ResourceType  string
 	EventSource   string
 	AccessKeyID   string
+	EventID       string
+	ReadOnly      string
 	MaxResults    int32
 	NextToken     string
 }

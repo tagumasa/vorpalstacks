@@ -529,7 +529,7 @@ type cloudTrailStoreAdapter struct {
 
 // RecordServiceEvent translates an audit UserIdentity to a cloudtrailstore UserIdentity and
 // delegates to the underlying CloudTrail store.
-func (a *cloudTrailStoreAdapter) RecordServiceEvent(eventName, eventSource string, userIdentity *audit.UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}, resources []audit.ResourceEntry) error {
+func (a *cloudTrailStoreAdapter) RecordServiceEvent(eventName, eventSource string, userIdentity *audit.UserIdentity, sourceIP, accessKeyID string, requestParams, responseElements map[string]interface{}, resources []audit.ResourceEntry) error {
 	var storeResources []cloudtrailstore.Resource
 	for _, r := range resources {
 		storeResources = append(storeResources, cloudtrailstore.Resource{ResourceType: r.ResourceType, ResourceName: r.ResourceName})
@@ -540,7 +540,7 @@ func (a *cloudTrailStoreAdapter) RecordServiceEvent(eventName, eventSource strin
 		ARN:         userIdentity.ARN,
 		AccountID:   userIdentity.AccountID,
 		UserName:    userIdentity.UserName,
-	}, sourceIP, requestParams, responseElements, storeResources)
+	}, sourceIP, accessKeyID, requestParams, responseElements, storeResources)
 }
 
 func (a *App) initPrincipalResolver() {

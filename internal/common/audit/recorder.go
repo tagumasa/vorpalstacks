@@ -29,7 +29,7 @@ type UserIdentity struct {
 // EventStore defines the interface for recording events to a backend store,
 // decoupling the audit package from concrete store implementations.
 type EventStore interface {
-	RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP string, requestParams, responseElements map[string]interface{}, resources []ResourceEntry) error
+	RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP, accessKeyID string, requestParams, responseElements map[string]interface{}, resources []ResourceEntry) error
 }
 
 // ResourceEntry carries resource information for an audit event.

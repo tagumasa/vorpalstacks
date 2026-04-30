@@ -103,7 +103,53 @@ func (b *EventBuilder) Build(response interface{}, err error) *AuditEvent {
 
 	event.ReadOnly = b.isReadOnlyOperation()
 
+	event.ResourceTypes = b.extractResourceTypes(response)
+
 	return event
+}
+
+func (b *EventBuilder) extractResourceTypes(response interface{}) map[string]string {
+	resources := make(map[string]string)
+
+	resp, ok := response.(map[string]interface{})
+	if !ok {
+		return resources
+	}
+
+	switch b.serviceName {
+	case "cloudtrail":
+		if arn, ok := resp["TrailARN"].(string); ok && arn != "" {
+			resources[arn] = "AWS::CloudTrail::Trail"
+		}
+	case "s3":
+		if loc, ok := resp["Location"].(string); ok && loc != "" {
+			resources[loc] = "AWS::S3::Bucket"
+		}
+	case "kms":
+		if arn, ok := resp["KeyMetadata"].(map[string]interface{}); ok {
+			if kid, ok := arn["Arn"].(string); ok && kid != "" {
+				resources[kid] = "AWS::KMS::Key"
+			}
+		}
+	case "iam":
+		if arn, ok := resp["User"].(map[string]interface{}); ok {
+			if uarn, ok := arn["Arn"].(string); ok && uarn != "" {
+				resources[uarn] = "AWS::IAM::User"
+			}
+		}
+		if arn, ok := resp["Role"].(map[string]interface{}); ok {
+			if rarn, ok := arn["Arn"].(string); ok && rarn != "" {
+				resources[rarn] = "AWS::IAM::Role"
+			}
+		}
+		if arn, ok := resp["Policy"].(map[string]interface{}); ok {
+			if parn, ok := arn["Arn"].(string); ok && parn != "" {
+				resources[parn] = "AWS::IAM::Policy"
+			}
+		}
+	}
+
+	return resources
 }
 
 func (b *EventBuilder) sanitizeParameters(params map[string]interface{}) map[string]interface{} {
