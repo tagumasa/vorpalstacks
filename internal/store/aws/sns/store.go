@@ -29,6 +29,7 @@ type SNSStore struct {
 	platformApplicationsStore *common.BaseStore
 	platformEndpointsStore    *common.BaseStore
 	platformAppEndpointsIndex storage.Bucket
+	endpointTokenIndex        storage.Bucket
 	*common.TagStore
 	arnBuilder         *svcarn.ARNBuilder
 	accountID          string
@@ -60,6 +61,7 @@ func NewSNSStore(store storage.BasicStorage, accountID, region string) *SNSStore
 		platformApplicationsStore: common.NewBaseStore(store.Bucket("sns-platform-apps-"+region), "sns-platform-apps"),
 		platformEndpointsStore:    common.NewBaseStore(store.Bucket("sns-platform-endpoints-"+region), "sns-platform-endpoints"),
 		platformAppEndpointsIndex: store.Bucket("sns-app-endpoints-index-" + region),
+		endpointTokenIndex:        store.Bucket("sns-endpoint-token-index-" + region),
 		TagStore:                  common.NewTagStoreWithRegion(store, "sns", region),
 		arnBuilder:                svcarn.NewARNBuilder(accountID, region),
 		accountID:                 accountID,
@@ -94,6 +96,10 @@ func (s *SNSStore) rebuildEndpointIndex() {
 		if ep.PlatformApplicationArn != "" {
 			idxKey := ep.PlatformApplicationArn + "\x00" + ep.EndpointArn
 			_ = s.platformAppEndpointsIndex.Put([]byte(idxKey), []byte("1"))
+		}
+		if ep.Token != "" && ep.PlatformApplicationArn != "" {
+			tokenKey := ep.PlatformApplicationArn + "\x00" + ep.Token
+			_ = s.endpointTokenIndex.Put([]byte(tokenKey), []byte(ep.EndpointArn))
 		}
 		return nil
 	})
@@ -792,6 +798,27 @@ func (s *SNSStore) CreatePlatformEndpoint(endpoint *PlatformEndpoint) (*Platform
 	s.platformEndpointMu.Lock()
 	defer s.platformEndpointMu.Unlock()
 
+	tokenKey := endpoint.PlatformApplicationArn + "\x00" + endpoint.Token
+	if existingArnBytes, err := s.endpointTokenIndex.Get([]byte(tokenKey)); err == nil && len(existingArnBytes) > 0 {
+		existingArn := string(existingArnBytes)
+		var existing PlatformEndpoint
+		if err := s.platformEndpointsStore.Get(existingArn, &existing); err == nil {
+			if endpoint.CustomUserData != "" {
+				existing.CustomUserData = endpoint.CustomUserData
+			}
+			if endpoint.Attributes != nil {
+				if existing.Attributes == nil {
+					existing.Attributes = make(map[string]string)
+				}
+				for k, v := range endpoint.Attributes {
+					existing.Attributes[k] = v
+				}
+			}
+			_ = s.platformEndpointsStore.Put(existingArn, &existing)
+			return &existing, nil
+		}
+	}
+
 	if endpoint.EndpointArn == "" {
 		endpointID := uuid.New().String()
 		parts := strings.SplitN(endpoint.PlatformApplicationArn, "app/", 2)
@@ -841,6 +868,12 @@ func (s *SNSStore) CreatePlatformEndpoint(endpoint *PlatformEndpoint) (*Platform
 			logs.String("endpointArn", endpoint.EndpointArn), logs.Err(err))
 	}
 
+	epTokenKey := endpoint.PlatformApplicationArn + "\x00" + endpoint.Token
+	if err := s.endpointTokenIndex.Put([]byte(epTokenKey), []byte(endpoint.EndpointArn)); err != nil {
+		logs.Warn("sns: failed to write endpoint token index entry",
+			logs.String("endpointArn", endpoint.EndpointArn), logs.Err(err))
+	}
+
 	return endpoint, nil
 }
 
@@ -867,6 +900,11 @@ func (s *SNSStore) DeleteEndpoint(arn string) error {
 		idxKey := endpoint.PlatformApplicationArn + "\x00" + arn
 		if idxErr := s.platformAppEndpointsIndex.Delete([]byte(idxKey)); idxErr != nil {
 			logs.Warn("sns: failed to delete endpoint index entry",
+				logs.String("endpointArn", arn), logs.Err(idxErr))
+		}
+		tokenKey := endpoint.PlatformApplicationArn + "\x00" + endpoint.Token
+		if idxErr := s.endpointTokenIndex.Delete([]byte(tokenKey)); idxErr != nil {
+			logs.Warn("sns: failed to delete endpoint token index entry",
 				logs.String("endpointArn", arn), logs.Err(idxErr))
 		}
 	}

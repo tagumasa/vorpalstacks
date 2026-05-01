@@ -2,6 +2,7 @@ package sesv2
 
 import (
 	"context"
+	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -135,10 +136,18 @@ func (s *SESv2Service) PutAccountVdmAttributes(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	vdmAttrs := request.GetMapParam(req.Parameters, "VdmAttributes")
+	if vdmAttrs == nil {
+		return nil, fmt.Errorf("VdmAttributes is required")
+	}
+
+	vdmEnabledStr := request.GetStringParam(vdmAttrs, "VdmEnabled")
+	vdmEnabled := vdmEnabledStr == "ENABLED" || vdmEnabledStr == "true"
 	vdm := &sesv2store.VdmAttributes{
-		VdmEnabled:          request.GetBoolParam(req.Parameters, "VdmEnabled"),
-		DashboardAttributes: request.GetStringParam(req.Parameters, "DashboardAttributes"),
-		GuardianAttributes:  request.GetStringParam(req.Parameters, "GuardianAttributes"),
+		VdmEnabled:                      vdmEnabled,
+		DashboardAttributes:             request.GetStringParam(vdmAttrs, "DashboardAttributes"),
+		GuardianAttributes:              request.GetStringParam(vdmAttrs, "GuardianAttributes"),
+		AdditionalContactEmailAddresses: request.GetStringList(vdmAttrs, "AdditionalContactEmailAddresses"),
 	}
 
 	if err := store.PutVdmAttributes(vdm); err != nil {

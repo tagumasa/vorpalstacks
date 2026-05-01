@@ -128,9 +128,6 @@ func isDomain(identity string) bool {
 
 // GenerateDkimAttributes generates DKIM attributes for an email identity.
 func GenerateDkimAttributes(identityType string) *DkimAttributes {
-	if identityType == "EMAIL_ADDRESS" {
-		return nil
-	}
 	return &DkimAttributes{
 		Status:         "SUCCESS",
 		SigningEnabled: true,

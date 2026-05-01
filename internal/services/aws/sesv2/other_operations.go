@@ -260,12 +260,19 @@ func (s *SESv2Service) CreateContactList(ctx context.Context, reqCtx *request.Re
 	contactList := sesv2store.NewContactList(contactListName)
 	contactList.Description = description
 
-	if topics := request.GetStringList(req.Parameters, "Topics"); len(topics) > 0 {
-		for _, t := range topics {
-			contactList.Topics = append(contactList.Topics, sesv2store.Topic{
-				TopicName:                 t,
-				DefaultSubscriptionStatus: "OPT_IN",
-			})
+	if topicsList := request.GetListParam(req.Parameters, "Topics"); len(topicsList) > 0 {
+		for _, t := range topicsList {
+			topic := sesv2store.Topic{
+				TopicName:                 request.GetStringParam(t, "TopicName"),
+				DefaultSubscriptionStatus: request.GetStringParam(t, "DefaultSubscriptionStatus"),
+			}
+			if desc := request.GetStringParam(t, "Description"); desc != "" {
+				topic.Description = desc
+			}
+			if dn := request.GetStringParam(t, "DisplayName"); dn != "" {
+				topic.DisplayName = dn
+			}
+			contactList.Topics = append(contactList.Topics, topic)
 		}
 	}
 
@@ -401,13 +408,20 @@ func (s *SESv2Service) UpdateContactList(ctx context.Context, reqCtx *request.Re
 		cl.Description = description
 	}
 
-	if topics := request.GetStringList(req.Parameters, "Topics"); len(topics) > 0 {
-		newTopics := make([]sesv2store.Topic, 0, len(topics))
-		for _, t := range topics {
-			newTopics = append(newTopics, sesv2store.Topic{
-				TopicName:                 t,
-				DefaultSubscriptionStatus: "OPT_IN",
-			})
+	if topicsList := request.GetListParam(req.Parameters, "Topics"); len(topicsList) > 0 {
+		newTopics := make([]sesv2store.Topic, 0, len(topicsList))
+		for _, t := range topicsList {
+			topic := sesv2store.Topic{
+				TopicName:                 request.GetStringParam(t, "TopicName"),
+				DefaultSubscriptionStatus: request.GetStringParam(t, "DefaultSubscriptionStatus"),
+			}
+			if desc := request.GetStringParam(t, "Description"); desc != "" {
+				topic.Description = desc
+			}
+			if dn := request.GetStringParam(t, "DisplayName"); dn != "" {
+				topic.DisplayName = dn
+			}
+			newTopics = append(newTopics, topic)
 		}
 		cl.Topics = newTopics
 	}
@@ -439,11 +453,11 @@ func (s *SESv2Service) CreateContact(ctx context.Context, reqCtx *request.Reques
 		contact.AttributesData = attrs
 	}
 
-	if topicPrefs := request.GetStringList(req.Parameters, "TopicPreferences"); len(topicPrefs) > 0 {
-		for _, tp := range topicPrefs {
+	if topicPrefsList := request.GetListParam(req.Parameters, "TopicPreferences"); len(topicPrefsList) > 0 {
+		for _, tp := range topicPrefsList {
 			contact.TopicPreferences = append(contact.TopicPreferences, sesv2store.TopicPreference{
-				TopicName:          tp,
-				SubscriptionStatus: "OPT_IN",
+				TopicName:          request.GetStringParam(tp, "TopicName"),
+				SubscriptionStatus: request.GetStringParam(tp, "SubscriptionStatus"),
 			})
 		}
 	}
@@ -589,12 +603,12 @@ func (s *SESv2Service) UpdateContact(ctx context.Context, reqCtx *request.Reques
 		contact.AttributesData = attrs
 	}
 
-	if topicPrefs := request.GetStringList(req.Parameters, "TopicPreferences"); len(topicPrefs) > 0 {
-		newPrefs := make([]sesv2store.TopicPreference, 0, len(topicPrefs))
-		for _, tp := range topicPrefs {
+	if topicPrefsList := request.GetListParam(req.Parameters, "TopicPreferences"); len(topicPrefsList) > 0 {
+		newPrefs := make([]sesv2store.TopicPreference, 0, len(topicPrefsList))
+		for _, tp := range topicPrefsList {
 			newPrefs = append(newPrefs, sesv2store.TopicPreference{
-				TopicName:          tp,
-				SubscriptionStatus: "OPT_IN",
+				TopicName:          request.GetStringParam(tp, "TopicName"),
+				SubscriptionStatus: request.GetStringParam(tp, "SubscriptionStatus"),
 			})
 		}
 		contact.TopicPreferences = newPrefs

@@ -8,6 +8,7 @@ import (
 type HostedZoneStoreInterface interface {
 	Get(id string) (*HostedZone, error)
 	GetByName(name string) (*HostedZone, error)
+	GetByCallerReference(callerRef string) (*HostedZone, error)
 	List(marker string, maxItems int) (*HostedZoneListResult, error)
 	ListByName() ([]*HostedZone, error)
 	Create(zone *HostedZone) error

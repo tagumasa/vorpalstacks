@@ -97,14 +97,23 @@ func (s *KMSService) CreateKey(ctx context.Context, reqCtx *request.RequestConte
 		}
 	}
 
-	if err := s.hsmBackend.GenerateKey(keyID, hsm.KeySpec(keySpec)); err != nil {
-		if delErr := stores.keys.Delete(keyID); delErr != nil {
-			logs.Error("Failed to delete key during rollback after HSM GenerateKey failure", logs.Err(delErr), logs.String("keyId", keyID))
+	isExternal := kmsstore.OriginType(origin) == kmsstore.OriginTypeExternal
+	if isExternal {
+		if err := stores.keys.SetPendingImport(keyID); err != nil {
+			return nil, err
 		}
-		if delErr := stores.keys.TagStore.Delete(keyID); delErr != nil {
-			logs.Error("Failed to delete tags during rollback after HSM GenerateKey failure", logs.Err(delErr), logs.String("keyId", keyID))
+		key.KeyState = kmsstore.KeyStatePendingImport
+		key.Enabled = false
+	} else {
+		if err := s.hsmBackend.GenerateKey(keyID, hsm.KeySpec(keySpec)); err != nil {
+			if delErr := stores.keys.Delete(keyID); delErr != nil {
+				logs.Error("Failed to delete key during rollback after HSM GenerateKey failure", logs.Err(delErr), logs.String("keyId", keyID))
+			}
+			if delErr := stores.keys.TagStore.Delete(keyID); delErr != nil {
+				logs.Error("Failed to delete tags during rollback after HSM GenerateKey failure", logs.Err(delErr), logs.String("keyId", keyID))
+			}
+			return nil, err
 		}
-		return nil, err
 	}
 
 	policyStr := request.GetStringParam(req.Parameters, "Policy")
@@ -387,7 +396,7 @@ func (s *KMSService) GetParametersForImport(ctx context.Context, reqCtx *request
 		"KeyId":             keyID,
 		"ImportToken":       importToken,
 		"PublicKey":         publicKey,
-		"ParametersValidTo": validTo.Unix(),
+		"ParametersValidTo": float64(validTo.Unix()),
 	}, nil
 }
 
@@ -403,6 +412,12 @@ func (s *KMSService) ImportKeyMaterial(ctx context.Context, reqCtx *request.Requ
 	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "ImportKeyMaterial", keyID, nil); err != nil {
 		return nil, err
 	}
+
+	key, err := stores.keys.Get(keyID)
+	if err != nil {
+		return nil, err
+	}
+
 	importToken := request.GetStringParam(req.Parameters, "ImportToken")
 	encryptedKeyMaterialB64 := request.GetStringParam(req.Parameters, "EncryptedKeyMaterial")
 	validTo := request.GetIntParam(req.Parameters, "ValidTo")
@@ -418,7 +433,12 @@ func (s *KMSService) ImportKeyMaterial(ctx context.Context, reqCtx *request.Requ
 		validToTime = &t
 	}
 
-	if err := stores.keys.ImportKeyMaterial(keyID, importToken, encryptedKeyMaterial, validToTime); err != nil {
+	rawKeyMaterial, err := stores.keys.ImportKeyMaterial(keyID, importToken, encryptedKeyMaterial, validToTime)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.hsmBackend.ImportKey(keyID, rawKeyMaterial, hsm.KeySpec(key.KeySpec)); err != nil {
 		return nil, err
 	}
 
@@ -441,6 +461,8 @@ func (s *KMSService) DeleteImportedKeyMaterial(ctx context.Context, reqCtx *requ
 	if err := stores.keys.DeleteImportedKeyMaterial(keyID); err != nil {
 		return nil, err
 	}
+
+	s.hsmBackend.DeleteKey(keyID)
 
 	return response.EmptyResponse(), nil
 }

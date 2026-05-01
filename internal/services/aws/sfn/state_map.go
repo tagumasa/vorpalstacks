@@ -73,26 +73,50 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 			}
 		}
 	} else {
-		var inputData map[string]interface{}
-		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+		var rawInput interface{}
+		if err := json.Unmarshal([]byte(processedInput), &rawInput); err != nil {
 			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
 		}
 
-		itemsPath := state.ItemsPath
-		if itemsPath == "" {
-			itemsPath = "$"
+		var itemsArrayFromPath []interface{}
+		switch v := rawInput.(type) {
+		case []interface{}:
+			if state.ItemsPath == "" || state.ItemsPath == "$" {
+				itemsArrayFromPath = v
+			} else {
+				inputMap, ok := v[0].(map[string]interface{})
+				if !ok {
+					return "", "", &ExecutionError{ErrorCode: "States.InvalidItemsPath", Cause: "ItemsPath requires object input"}
+				}
+				items, err := getJSONPathValue(inputMap, state.ItemsPath)
+				if err != nil {
+					return "", "", &ExecutionError{ErrorCode: "States.InvalidItemsPath", Cause: err.Error()}
+				}
+				var ok2 bool
+				itemsArrayFromPath, ok2 = items.([]interface{})
+				if !ok2 {
+					return "", "", &ExecutionError{ErrorCode: "States.InvalidItems", Cause: "items is not an array"}
+				}
+			}
+		case map[string]interface{}:
+			itemsPath := state.ItemsPath
+			if itemsPath == "" {
+				itemsPath = "$"
+			}
+			items, err := getJSONPathValue(v, itemsPath)
+			if err != nil {
+				return "", "", &ExecutionError{ErrorCode: "States.InvalidItemsPath", Cause: err.Error()}
+			}
+			var ok2 bool
+			itemsArrayFromPath, ok2 = items.([]interface{})
+			if !ok2 {
+				return "", "", &ExecutionError{ErrorCode: "States.InvalidItems", Cause: "items is not an array"}
+			}
+		default:
+			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "input must be an array or object"}
 		}
 
-		items, err := getJSONPathValue(inputData, itemsPath)
-		if err != nil {
-			return "", "", &ExecutionError{ErrorCode: "States.InvalidItemsPath", Cause: err.Error()}
-		}
-
-		var ok bool
-		itemsArray, ok = items.([]interface{})
-		if !ok {
-			return "", "", &ExecutionError{ErrorCode: "States.InvalidItems", Cause: "items is not an array"}
-		}
+		itemsArray = itemsArrayFromPath
 	}
 
 	maxConcurrency := int(state.MaxConcurrency)

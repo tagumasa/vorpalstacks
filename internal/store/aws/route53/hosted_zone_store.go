@@ -44,6 +44,12 @@ func (s *HostedZoneStore) GetByName(name string) (*HostedZone, error) {
 	return common.FindFirst[HostedZone](s.BaseStore, func(z *HostedZone) bool { return normalizeZoneName(z.Name) == name })
 }
 
+// GetByCallerReference retrieves a hosted zone by its CallerReference.
+// Used for idempotent CreateHostedZone: same CallerReference returns existing zone.
+func (s *HostedZoneStore) GetByCallerReference(callerRef string) (*HostedZone, error) {
+	return common.FindFirst[HostedZone](s.BaseStore, func(z *HostedZone) bool { return z.CallerReference == callerRef })
+}
+
 // List returns a list of hosted zones from the store with pagination support.
 func (s *HostedZoneStore) List(marker string, maxItems int) (*HostedZoneListResult, error) {
 	result, err := common.List[HostedZone](s.BaseStore, common.ListOptions{

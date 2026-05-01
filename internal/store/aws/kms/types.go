@@ -96,6 +96,8 @@ type Key struct {
 	MacAlgorithms                  []string                  `json:"mac_algorithms,omitempty"`
 	PreDeletionEnabled             *bool                     `json:"pre_deletion_enabled,omitempty"`
 	Tags                           []types.Tag               `json:"tags,omitempty"`
+	ImportToken                    string                    `json:"import_token,omitempty"`
+	WrappingPrivateKey             []byte                    `json:"wrapping_private_key,omitempty"`
 }
 
 // MultiRegionConfiguration represents the configuration for a multi-region KMS key.

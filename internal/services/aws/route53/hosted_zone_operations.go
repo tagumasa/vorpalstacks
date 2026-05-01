@@ -78,6 +78,24 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
+
+	// Idempotent: if same CallerReference already exists, return existing zone
+	if existing, err := st.HostedZones().GetByCallerReference(callerRef); err == nil && existing != nil {
+		nsItems := make([]interface{}, len(existing.NameServers))
+		for i, ns := range existing.NameServers {
+			nsItems[i] = ns
+		}
+		return map[string]interface{}{
+			"HostedZone": s.hostedZoneToResponse(existing),
+			"DelegationSet": delegationSetResponse{
+				NameServers: protocol.XMLElements{
+					ElementName: "NameServer",
+					Items:       nsItems,
+				},
+			},
+		}, nil
+	}
+
 	if err := st.HostedZones().Create(zone); err != nil {
 		if route53store.IsAlreadyExists(err) {
 			return nil, awserrors.NewAWSError("HostedZoneAlreadyExists", fmt.Sprintf("Hosted zone already exists: %s", name), 400)

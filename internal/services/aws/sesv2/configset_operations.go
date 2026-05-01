@@ -190,8 +190,29 @@ func (s *SESv2Service) CreateConfigurationSetEventDestination(ctx context.Contex
 		return nil, ErrMissingParameter
 	}
 
-	_, err = store.GetConfigurationSet(configSetName)
+	configSet, err := store.GetConfigurationSet(configSetName)
 	if err != nil {
+		return nil, err
+	}
+
+	for _, ed := range configSet.EventDestinations {
+		if ed.Name == eventDestinationName {
+			return nil, ErrAlreadyExists
+		}
+	}
+
+	eventDest := &sesv2store.EventDestination{
+		Name:    eventDestinationName,
+		Enabled: true,
+	}
+
+	if defMap := request.GetMapParam(req.Parameters, "EventDestination"); defMap != nil {
+		eventDest.Enabled = request.GetBoolParam(defMap, "Enabled")
+		eventDest.MatchingEventTypes = request.GetStringList(defMap, "MatchingEventTypes")
+	}
+
+	configSet.EventDestinations = append(configSet.EventDestinations, eventDest)
+	if err := store.UpdateConfigurationSet(configSet); err != nil {
 		return nil, err
 	}
 
@@ -210,13 +231,25 @@ func (s *SESv2Service) GetConfigurationSetEventDestinations(ctx context.Context,
 		return nil, ErrMissingParameter
 	}
 
-	_, err = store.GetConfigurationSet(configSetName)
+	configSet, err := store.GetConfigurationSet(configSetName)
 	if err != nil {
 		return nil, err
 	}
 
+	eventDests := make([]interface{}, 0, len(configSet.EventDestinations))
+	for _, ed := range configSet.EventDestinations {
+		edMap := map[string]interface{}{
+			"Name":    ed.Name,
+			"Enabled": ed.Enabled,
+		}
+		if len(ed.MatchingEventTypes) > 0 {
+			edMap["MatchingEventTypes"] = ed.MatchingEventTypes
+		}
+		eventDests = append(eventDests, edMap)
+	}
+
 	return map[string]interface{}{
-		"EventDestinations": []interface{}{},
+		"EventDestinations": eventDests,
 	}, nil
 }
 
@@ -234,8 +267,29 @@ func (s *SESv2Service) UpdateConfigurationSetEventDestination(ctx context.Contex
 		return nil, ErrMissingParameter
 	}
 
-	_, err = store.GetConfigurationSet(configSetName)
+	configSet, err := store.GetConfigurationSet(configSetName)
 	if err != nil {
+		return nil, err
+	}
+
+	found := false
+	for i, ed := range configSet.EventDestinations {
+		if ed.Name == eventDestinationName {
+			if defMap := request.GetMapParam(req.Parameters, "EventDestination"); defMap != nil {
+				configSet.EventDestinations[i].Enabled = request.GetBoolParam(defMap, "Enabled")
+				if types := request.GetStringList(defMap, "MatchingEventTypes"); len(types) > 0 {
+					configSet.EventDestinations[i].MatchingEventTypes = types
+				}
+			}
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, ErrNotFound
+	}
+
+	if err := store.UpdateConfigurationSet(configSet); err != nil {
 		return nil, err
 	}
 
@@ -256,8 +310,26 @@ func (s *SESv2Service) DeleteConfigurationSetEventDestination(ctx context.Contex
 		return nil, ErrMissingParameter
 	}
 
-	_, err = store.GetConfigurationSet(configSetName)
+	configSet, err := store.GetConfigurationSet(configSetName)
 	if err != nil {
+		return nil, err
+	}
+
+	found := false
+	filtered := make([]*sesv2store.EventDestination, 0, len(configSet.EventDestinations))
+	for _, ed := range configSet.EventDestinations {
+		if ed.Name == eventDestinationName {
+			found = true
+			continue
+		}
+		filtered = append(filtered, ed)
+	}
+	if !found {
+		return nil, ErrNotFound
+	}
+
+	configSet.EventDestinations = filtered
+	if err := store.UpdateConfigurationSet(configSet); err != nil {
 		return nil, err
 	}
 

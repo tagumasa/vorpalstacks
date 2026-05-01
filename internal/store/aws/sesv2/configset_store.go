@@ -65,9 +65,10 @@ type ConfigurationSet struct {
 	ReputationOptions    *ReputationOptions  `json:"reputationOptions,omitempty"`
 	DeliveryOptions      *DeliveryOptions    `json:"deliveryOptions,omitempty"`
 	TrackingOptions      *TrackingOptions    `json:"trackingOptions,omitempty"`
-	SuppressionOptions   *SuppressionOptions `json:"suppressionOptions,omitempty"`
+	SuppressionOptions   *SuppressionOptions `json:"suppressedReasons,omitempty"`
 	VdmOptions           *VdmOptions         `json:"vdmOptions,omitempty"`
 	ArchivingOptions     *ArchivingOptions   `json:"archivingOptions,omitempty"`
+	EventDestinations    []*EventDestination `json:"eventDestinations,omitempty"`
 	CreatedTimestamp     time.Time           `json:"createdTimestamp"`
 	LastUpdatedTimestamp time.Time           `json:"lastUpdatedTimestamp"`
 }

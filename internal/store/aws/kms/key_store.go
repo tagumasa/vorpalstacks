@@ -5,6 +5,7 @@ package kms
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -329,7 +330,17 @@ func IsHMACKey(keySpec KeySpec) bool {
 	return strings.HasPrefix(string(keySpec), "HMAC_")
 }
 
-// GetParametersForImport returns the parameters required to import key material into a KMS key.
+// SetPendingImport sets the key state to PendingImport for external-origin keys.
+func (s *KeyStore) SetPendingImport(keyID string) error {
+	return s.atomicUpdate(keyID, func(key *Key) error {
+		key.KeyState = KeyStatePendingImport
+		key.Enabled = false
+		return nil
+	})
+}
+
+// GetParametersForImport generates an import token and wrapping RSA key pair,
+// stores them on the key for later validation, and returns token + public key (base64 DER).
 func (s *KeyStore) GetParametersForImport(keyID string, wrappingKeySpec string) (string, string, error) {
 	key, err := s.Get(keyID)
 	if err != nil {
@@ -344,29 +355,55 @@ func (s *KeyStore) GetParametersForImport(keyID string, wrappingKeySpec string) 
 	if err != nil {
 		return "", "", err
 	}
-	publicKey, err := GeneratePublicKey(wrappingKeySpec)
+
+	pubKeyB64, privKeyBytes, err := GenerateWrappingKeyPair(wrappingKeySpec)
 	if err != nil {
 		return "", "", err
 	}
 
-	return importToken, publicKey, nil
+	if err := s.atomicUpdate(keyID, func(k *Key) error {
+		k.ImportToken = importToken
+		k.WrappingPrivateKey = privKeyBytes
+		return nil
+	}); err != nil {
+		return "", "", err
+	}
+
+	return importToken, pubKeyB64, nil
 }
 
-// ImportKeyMaterial imports key material into a KMS key.
-// The key must have an external origin.
-func (s *KeyStore) ImportKeyMaterial(keyID string, importToken string, encryptedKeyMaterial []byte, validTo *time.Time) error {
-	return s.atomicUpdate(keyID, func(key *Key) error {
+// ImportKeyMaterial validates the import token, decrypts the wrapped key material
+// using the stored wrapping private key, and returns the raw key material for HSM import.
+func (s *KeyStore) ImportKeyMaterial(keyID string, importToken string, encryptedKeyMaterial []byte, validTo *time.Time) ([]byte, error) {
+	var rawKeyMaterial []byte
+	err := s.atomicUpdate(keyID, func(key *Key) error {
 		if key.Origin != OriginTypeExternal {
 			return ErrInvalidKeyOrigin
 		}
+		if key.ImportToken == "" {
+			return fmt.Errorf("no import token found: call GetParametersForImport first")
+		}
+		if key.ImportToken != importToken {
+			return fmt.Errorf("import token mismatch")
+		}
+
+		decrypted, err := DecryptWrappedKeyMaterial(key.WrappingPrivateKey, encryptedKeyMaterial)
+		if err != nil {
+			return fmt.Errorf("failed to decrypt key material: %w", err)
+		}
+		rawKeyMaterial = decrypted
+
 		key.KeyState = KeyStateEnabled
 		key.Enabled = true
 		key.ValidTo = validTo
+		key.ImportToken = ""
+		key.WrappingPrivateKey = nil
 		return nil
 	})
+	return rawKeyMaterial, err
 }
 
-// DeleteImportedKeyMaterial deletes imported key material from a KMS key.
+// DeleteImportedKeyMaterial removes imported key material and sets state to PendingImport.
 func (s *KeyStore) DeleteImportedKeyMaterial(keyID string) error {
 	return s.atomicUpdate(keyID, func(key *Key) error {
 		if key.Origin != OriginTypeExternal {
@@ -375,17 +412,10 @@ func (s *KeyStore) DeleteImportedKeyMaterial(keyID string) error {
 		key.KeyState = KeyStatePendingImport
 		key.Enabled = false
 		key.ValidTo = nil
+		key.ImportToken = ""
+		key.WrappingPrivateKey = nil
 		return nil
 	})
-}
-
-// GeneratePublicKey generates a public key for key material wrapping.
-func GeneratePublicKey(wrappingKeySpec string) (string, error) {
-	keyID, err := GenerateKeyID()
-	if err != nil {
-		return "", err
-	}
-	return "public-key-" + wrappingKeySpec + "-" + keyID[:16], nil
 }
 
 // ReplicateKey replicates a multi-region KMS key to another region.

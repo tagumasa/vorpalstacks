@@ -240,7 +240,7 @@ func (s *SESv2Service) PutEmailIdentityFeedbackAttributes(ctx context.Context, r
 		return nil, ErrMissingParameter
 	}
 
-	feedbackForwardingEnabled := request.GetBoolParam(req.Parameters, "EmailFeedbackForwardingEnabled")
+	feedbackForwardingEnabled := request.GetBoolParam(req.Parameters, "EmailForwardingEnabled")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
