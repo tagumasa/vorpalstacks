@@ -12,6 +12,7 @@ const webACLBucketName = "waf_web_acls"
 
 var webACLAccessor = wafResourceAccessor[WebACL]{
 	getIDFn:        func(r *WebACL) string { return r.ID },
+	getNameFn:      func(r *WebACL) string { return r.Name },
 	getARNFn:       func(r *WebACL) string { return r.ARN },
 	setARNFn:       func(r *WebACL, arn string) { r.ARN = arn },
 	getLockTokenFn: func(r *WebACL) string { return r.LockToken },
@@ -34,6 +35,9 @@ func NewWebACLStore(store storage.BasicStorage, accountId, region string) *WebAC
 // Create creates a new WAF Web ACL in the store.
 // Returns the created Web ACL or an error if creation fails.
 func (s *WebACLStore) Create(id, name, description, scope string, capacity int64, rules []*Rule, defaultAction *Action, visibilityConfig *VisibilityConfig) (*WebACL, error) {
+	if existing, _ := s.FindByName(name); existing != nil {
+		return nil, ErrAlreadyExists
+	}
 	webACL := &WebACL{
 		ID:               id,
 		Name:             name,

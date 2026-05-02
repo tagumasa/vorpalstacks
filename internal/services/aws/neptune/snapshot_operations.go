@@ -43,6 +43,7 @@ func (s *NeptuneService) CreateDBClusterSnapshot(ctx context.Context, reqCtx *re
 		SnapshotCreateTime:          &now,
 		Engine:                      cluster.Engine,
 		EngineVersion:               cluster.EngineVersion,
+		SnapshotType:                "manual",
 		Status:                      "available",
 		Port:                        cluster.Port,
 		StorageEncrypted:            cluster.StorageEncrypted,
@@ -109,6 +110,9 @@ func (s *NeptuneService) DescribeDBClusterSnapshots(ctx context.Context, reqCtx 
 		if err != nil {
 			return nil, translateStoreError(err)
 		}
+		if snapshot.SnapshotType == "" {
+			snapshot.SnapshotType = "manual"
+		}
 		return map[string]interface{}{
 			"DBClusterSnapshots": protocol.XMLElements{ElementName: "DBClusterSnapshot", Items: []interface{}{snapshot}},
 		}, nil
@@ -124,6 +128,9 @@ func (s *NeptuneService) DescribeDBClusterSnapshots(ctx context.Context, reqCtx 
 	for _, snap := range snapshots {
 		if clusterID != "" && snap.DBClusterIdentifier != clusterID {
 			continue
+		}
+		if snap.SnapshotType == "" {
+			snap.SnapshotType = "manual"
 		}
 		items = append(items, snap)
 	}

@@ -16,6 +16,7 @@ type SSMStoreInterface interface {
 	RemoveTagsFromResource(name string, tagKeys []string) error
 	ListTagsForResource(name string) (map[string]string, error)
 	LabelParameterVersion(name string, parameterVersion int64, labels []string) error
+	UnlabelParameterVersion(name string, parameterVersion int64, labels []string) ([]string, error)
 }
 
 var _ SSMStoreInterface = (*Store)(nil)

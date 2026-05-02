@@ -9,6 +9,7 @@ import (
 
 type wafResourceAccessor[T any] struct {
 	getIDFn        func(*T) string
+	getNameFn      func(*T) string
 	getARNFn       func(*T) string
 	setARNFn       func(*T, string)
 	getLockTokenFn func(*T) string
@@ -47,6 +48,16 @@ func (s *ResourceStore[T]) Get(id string) (*T, error) {
 func (s *ResourceStore[T]) GetByARN(arn string) (*T, error) {
 	return common.FindFirst[T](s.BaseStore, func(r *T) bool {
 		return s.accessor.getARNFn(r) == arn
+	})
+}
+
+// FindByName checks whether a resource with the given name already exists.
+func (s *ResourceStore[T]) FindByName(name string) (*T, error) {
+	if s.accessor.getNameFn == nil {
+		return nil, nil
+	}
+	return common.FindFirst[T](s.BaseStore, func(r *T) bool {
+		return s.accessor.getNameFn(r) == name
 	})
 }
 

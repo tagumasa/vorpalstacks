@@ -3,6 +3,7 @@ package cloudwatch
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -48,10 +49,17 @@ func getAlarmIntParam(params map[string]interface{}, keys ...string) int {
 			switch val := v.(type) {
 			case int:
 				return val
+			case int32:
+				return int(val)
 			case int64:
+				return int(val)
+			case uint64:
 				return int(val)
 			case float64:
 				return int(val)
+			case string:
+				n, _ := strconv.Atoi(val)
+				return n
 			}
 		}
 	}
@@ -107,6 +115,7 @@ func alarmToResponse(alarm *cwstore.Alarm, stateUpdatedTs time.Time) map[string]
 		"Period":                alarm.Period,
 		"Statistic":             alarm.Statistic,
 		"StateValue":            alarm.State,
+		"StateReason":           alarm.StateReason,
 		"StateUpdatedTimestamp": stateUpdatedTs.UTC().UnixMilli(),
 		"TreatMissingData":      alarm.TreatMissingData,
 		"ActionsEnabled":        alarm.ActionsEnabled,

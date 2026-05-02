@@ -195,6 +195,7 @@ type Alarm struct {
 	OKActions               []string          `json:"okActions,omitempty"`
 	InsufficientDataActions []string          `json:"insufficientDataActions,omitempty"`
 	State                   string            `json:"state"`
+	StateReason             string            `json:"stateReason,omitempty"`
 	StateUpdatedTimestamp   time.Time         `json:"stateUpdatedTimestamp"`
 	CreatedAt               time.Time         `json:"createdAt"`
 	Tags                    map[string]string `json:"tags,omitempty"`

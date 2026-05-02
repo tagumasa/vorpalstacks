@@ -156,6 +156,7 @@ func (s *LogsService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("logs", "ListTagsForResource", s.ListTagsForResource)
 	d.RegisterHandlerForService("logs", "TagLogGroup", s.TagLogGroup)
 	d.RegisterHandlerForService("logs", "ListTagsLogGroup", s.ListTagsLogGroup)
+	d.RegisterHandlerForService("logs", "UntagLogGroup", s.UntagLogGroup)
 
 	d.RegisterHandlerForService("logs", "CreateLogStream", s.CreateLogStream)
 	d.RegisterHandlerForService("logs", "DeleteLogStream", s.DeleteLogStream)

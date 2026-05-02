@@ -38,7 +38,7 @@ func (s *TimestreamQueryService) executeSQLQuery(ctx context.Context, reqCtx *re
 	}
 
 	if databaseName == "" || tableName == "" {
-		return nil, fmt.Errorf("database and table name are required")
+		return s.executeExpressionQuery(selectStmt)
 	}
 
 	st, err := s.store(reqCtx)
@@ -58,6 +58,74 @@ func (s *TimestreamQueryService) executeSQLQuery(ctx context.Context, reqCtx *re
 		QueryID:    "",
 		Rows:       rows,
 		ColumnInfo: columnInfo,
+	}, nil
+}
+
+func (s *TimestreamQueryService) executeExpressionQuery(selectStmt *sqlparser.Select) (*QueryResult, error) {
+	var columns []ColumnInfo
+	var row map[string]interface{}
+
+	for _, expr := range selectStmt.SelectExprs {
+		if aliased, ok := expr.(*sqlparser.AliasedExpr); ok {
+			colName := s.extractColumnName(aliased.Expr)
+			if !aliased.As.IsEmpty() {
+				colName = aliased.As.String()
+			}
+
+			var value interface{}
+			scalarType := "INTEGER"
+
+			switch e := aliased.Expr.(type) {
+			case *sqlparser.SQLVal:
+				switch e.Type {
+				case sqlparser.IntVal:
+					value = string(e.Val)
+					scalarType = "INTEGER"
+				case sqlparser.FloatVal:
+					value = string(e.Val)
+					scalarType = "DOUBLE"
+				case sqlparser.StrVal:
+					value = string(e.Val)
+					scalarType = "VARCHAR"
+				default:
+					value = string(e.Val)
+				}
+			case *sqlparser.FuncExpr:
+				funcName := strings.ToLower(e.Name.String())
+				switch funcName {
+				case "now", "current_timestamp", "current_date", "current_time":
+					value = time.Now().UTC().Format("2006-01-02 15:04:05.000000")
+					scalarType = "TIMESTAMP"
+				default:
+					value = sqlparser.String(aliased.Expr)
+					scalarType = "VARCHAR"
+				}
+			default:
+				value = sqlparser.String(aliased.Expr)
+			}
+
+			if row == nil {
+				row = make(map[string]interface{})
+			}
+			row[colName] = map[string]interface{}{
+				"ScalarValue": value,
+			}
+			columns = append(columns, ColumnInfo{
+				Name: colName,
+				Type: ColumnTypeInfo{ScalarType: scalarType},
+			})
+		}
+	}
+
+	var rows []map[string]interface{}
+	if row != nil {
+		rows = append(rows, row)
+	}
+
+	return &QueryResult{
+		QueryID:    "",
+		Rows:       rows,
+		ColumnInfo: columns,
 	}, nil
 }
 

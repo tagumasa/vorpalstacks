@@ -162,6 +162,7 @@ func (s *AlarmStore) SetAlarmState(name, state, reason string) error {
 	}
 
 	alarm.State = state
+	alarm.StateReason = reason
 	alarm.StateUpdatedTimestamp = time.Now().UTC()
 
 	key := s.buildAlarmKey(alarm.Name)

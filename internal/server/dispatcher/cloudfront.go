@@ -86,11 +86,16 @@ func extractCloudFrontETag(w http.ResponseWriter, response interface{}, payloadR
 	}
 
 	var etag string
+	var location string
 
 	if inner, exists := m[payloadRoot]; exists {
 		if innerMap, ok := inner.(map[string]interface{}); ok {
 			if e, ok := innerMap["ETag"].(string); ok && e != "" {
 				etag = e
+			}
+			if l, ok := innerMap["Location"].(string); ok && l != "" {
+				location = l
+				delete(innerMap, "Location")
 			}
 		}
 	}
@@ -101,7 +106,17 @@ func extractCloudFrontETag(w http.ResponseWriter, response interface{}, payloadR
 		}
 	}
 
+	if location == "" {
+		if l, ok := m["Location"].(string); ok && l != "" {
+			location = l
+			delete(m, "Location")
+		}
+	}
+
 	if etag != "" {
 		w.Header().Set("ETag", etag)
+	}
+	if location != "" {
+		w.Header().Set("Location", location)
 	}
 }

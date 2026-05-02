@@ -647,6 +647,7 @@ type DBClusterSnapshot struct {
 	AccountId                   string                 `protobuf:"bytes,13,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 	Region                      string                 `protobuf:"bytes,14,opt,name=region,proto3" json:"region,omitempty"`
 	RestoreAttributeValues      []string               `protobuf:"bytes,15,rep,name=restore_attribute_values,json=restoreAttributeValues,proto3" json:"restore_attribute_values,omitempty"`
+	SnapshotType                string                 `protobuf:"bytes,16,opt,name=snapshot_type,json=snapshotType,proto3" json:"snapshot_type,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -784,6 +785,13 @@ func (x *DBClusterSnapshot) GetRestoreAttributeValues() []string {
 		return x.RestoreAttributeValues
 	}
 	return nil
+}
+
+func (x *DBClusterSnapshot) GetSnapshotType() string {
+	if x != nil {
+		return x.SnapshotType
+	}
+	return ""
 }
 
 type DBClusterParameterGroup struct {

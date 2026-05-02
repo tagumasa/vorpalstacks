@@ -2,6 +2,7 @@ package cloudwatchlogs
 
 import (
 	"context"
+	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -105,7 +106,53 @@ func (s *LogsService) DescribeLogGroups(ctx context.Context, reqCtx *request.Req
 
 // ListLogGroups returns a list of CloudWatch Logs log groups.
 func (s *LogsService) ListLogGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.DescribeLogGroups(ctx, reqCtx, req)
+	prefix := request.GetParamLowerFirst(req.Parameters, "logGroupNamePattern")
+	if prefix == "" {
+		prefix = request.GetParamLowerFirst(req.Parameters, "LogGroupNamePattern")
+	}
+	if prefix != "" && len(prefix) > 1 && prefix[0] == '^' {
+		prefix = prefix[1:]
+		if idx := strings.Index(prefix, "$"); idx >= 0 {
+			prefix = prefix[:idx]
+		}
+	}
+	if prefix == "" {
+		prefix = request.GetParamLowerFirst(req.Parameters, "LogGroupNamePrefix")
+	}
+
+	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
+	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
+	if limit <= 0 {
+		limit = 50
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	groups, nextMarker, err := store.ListLogGroups(prefix, nextToken, int(limit))
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	logGroups := make([]map[string]interface{}, 0)
+	for _, lg := range groups {
+		entry := map[string]interface{}{
+			"logGroupName": lg.Name,
+			"logGroupArn":  lg.ARN,
+		}
+		logGroups = append(logGroups, entry)
+	}
+
+	resp := map[string]interface{}{
+		"logGroups": logGroups,
+	}
+	if nextMarker != "" {
+		resp["nextToken"] = nextMarker
+	}
+
+	return resp, nil
 }
 
 // PutRetentionPolicy sets the retention policy for a CloudWatch Logs log group.
@@ -255,6 +302,33 @@ func (s *LogsService) TagLogGroup(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	if err := store.Tags().Tag(lg.ARN, tags); err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	return response.EmptyResponse(), nil
+}
+
+// UntagLogGroup removes tags from the specified CloudWatch Logs log group.
+// Deprecated: use UntagResource instead.
+func (s *LogsService) UntagLogGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
+	if logGroupName == "" {
+		return nil, ErrMissingParameter
+	}
+
+	tagKeys := request.GetStringList(req.Parameters, "Tags")
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	lg, err := store.GetLogGroup(logGroupName)
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	if err := store.Tags().Untag(lg.ARN, tagKeys); err != nil {
 		return nil, mapStoreError(err)
 	}
 

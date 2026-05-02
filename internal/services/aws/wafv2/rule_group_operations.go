@@ -43,7 +43,7 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 	ruleGroup, err := stores.ruleGroups.Create(id, name, description, capacity, rules, visibilityConfig)
 	if err != nil {
 		if wafstore.IsAlreadyExists(err) {
-			return nil, newAPIError("WafV2AlreadyExistsException", fmt.Sprintf("RuleGroup already exists: %s", name), 400)
+			return nil, newAPIError("WAFDuplicateItemException", fmt.Sprintf("AWS WAF couldn't perform the operation because some resource in your request is a duplicate of an existing one: %s", name), 400)
 		}
 		return nil, err
 	}

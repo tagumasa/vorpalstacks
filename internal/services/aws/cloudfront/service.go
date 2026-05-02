@@ -2,6 +2,7 @@
 package cloudfront
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -153,6 +154,20 @@ func (s *CloudFrontService) generateETag() string {
 }
 
 // RegisterHandlers registers the CloudFront handlers with the dispatcher.
+func (s *CloudFrontService) ListKeyGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	maxItems := int(request.GetIntParam(req.Parameters, "MaxItems"))
+	if maxItems == 0 {
+		maxItems = 100
+	}
+	return map[string]interface{}{
+		"KeyGroupList": map[string]interface{}{
+			"MaxItems":    maxItems,
+			"Quantity":    0,
+			"IsTruncated": false,
+		},
+	}, nil
+}
+
 func (s *CloudFrontService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudfront", "CreateDistribution", s.CreateDistribution)
 	d.RegisterHandlerForService("cloudfront", "CreateDistributionWithTags", s.CreateDistributionWithTags)
@@ -198,4 +213,6 @@ func (s *CloudFrontService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudfront", "UpdateResponseHeadersPolicy", s.UpdateResponseHeadersPolicy)
 	d.RegisterHandlerForService("cloudfront", "DeleteResponseHeadersPolicy", s.DeleteResponseHeadersPolicy)
 	d.RegisterHandlerForService("cloudfront", "ListResponseHeadersPolicies", s.ListResponseHeadersPolicies)
+
+	d.RegisterHandlerForService("cloudfront", "ListKeyGroups", s.ListKeyGroups)
 }

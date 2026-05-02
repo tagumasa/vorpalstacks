@@ -70,6 +70,7 @@ func (s *SSMService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("ssm", "DescribeParameters", s.DescribeParameters)
 	d.RegisterHandlerForService("ssm", "GetParameterHistory", s.GetParameterHistory)
 	d.RegisterHandlerForService("ssm", "LabelParameterVersion", s.LabelParameterVersion)
+	d.RegisterHandlerForService("ssm", "UnlabelParameterVersion", s.UnlabelParameterVersion)
 
 	d.RegisterHandlerForService("ssm", "AddTagsToResource", s.AddTagsToResource)
 	d.RegisterHandlerForService("ssm", "RemoveTagsFromResource", s.RemoveTagsFromResource)

@@ -49,7 +49,7 @@ func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestC
 	ipSet, err := stores.ipSets.Create(id, name, description, ipAddressVersion, addresses)
 	if err != nil {
 		if wafstore.IsAlreadyExists(err) {
-			return nil, newAPIError("WafV2AlreadyExistsException", "IPSet already exists", 400)
+			return nil, newAPIError("WAFDuplicateItemException", "AWS WAF couldn't perform the operation because some resource in your request is a duplicate of an existing one", 400)
 		}
 		return nil, err
 	}

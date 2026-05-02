@@ -47,6 +47,9 @@ func enrichClusterWithTags(store neptunestore.NeptuneStoreInterface, cluster *ne
 		}
 		m["TagList"] = protocol.XMLElements{ElementName: "Tag", Items: tagItems}
 	}
+	if roles, ok := m["AssociatedRoles"].([]interface{}); ok && len(roles) > 0 {
+		m["AssociatedRoles"] = protocol.XMLElements{ElementName: "DBClusterRole", Items: roles}
+	}
 	return m
 }
 

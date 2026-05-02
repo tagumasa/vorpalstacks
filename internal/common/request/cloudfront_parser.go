@@ -148,6 +148,13 @@ func extractCloudFrontOperation(r *http.Request) string {
 				}
 			}
 		}
+	case "key-group":
+		if len(parts) == 1 || parts[1] == "" {
+			switch method {
+			case "GET":
+				return "ListKeyGroups"
+			}
+		}
 	case "response-headers-policy":
 		if len(parts) == 1 || parts[1] == "" {
 			switch method {

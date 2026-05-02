@@ -507,3 +507,57 @@ func (s *SSMService) LabelParameterVersion(ctx context.Context, reqCtx *request.
 		"ParameterVersion": parameterVersion,
 	}, nil
 }
+
+// UnlabelParameterVersion removes labels from a specific version of a parameter.
+func (s *SSMService) UnlabelParameterVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	name := req.GetParam("Name")
+	if name == "" {
+		return nil, ErrInvalidParameterName
+	}
+
+	parameterVersion := int64(getIntParam(req, "ParameterVersion"))
+	if parameterVersion == 0 {
+		return nil, ErrInvalidParameterVersion
+	}
+
+	var labels []string
+	if labelsRaw, ok := req.Parameters["Labels"].([]interface{}); ok {
+		for _, l := range labelsRaw {
+			if ls, ok := l.(string); ok {
+				labels = append(labels, ls)
+			}
+		}
+	} else {
+		for i := 1; ; i++ {
+			label := req.GetParam("Labels.member." + strconv.Itoa(i))
+			if label == "" {
+				break
+			}
+			labels = append(labels, label)
+		}
+	}
+
+	if len(labels) == 0 {
+		return nil, ErrInvalidParameterLabel
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	removedLabels, err := store.UnlabelParameterVersion(name, parameterVersion, labels)
+	if err != nil {
+		if errors.Is(err, ssmstore.ErrParameterNotFound) {
+			return nil, ErrParameterNotFound
+		}
+		if errors.Is(err, ssmstore.ErrParameterVersionNotFound) {
+			return nil, ErrParameterVersionNotFound
+		}
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"InvalidLabels": []string{},
+		"RemovedLabels": removedLabels,
+	}, nil
+}

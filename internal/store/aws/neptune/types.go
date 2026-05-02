@@ -91,6 +91,7 @@ type DBClusterSnapshot struct {
 	SnapshotCreateTime          *time.Time `json:"SnapshotCreateTime,omitempty"`
 	Engine                      string     `json:"Engine"`
 	EngineVersion               string     `json:"EngineVersion,omitempty"`
+	SnapshotType                string     `json:"SnapshotType,omitempty"`
 	Status                      string     `json:"Status"`
 	Port                        int        `json:"Port"`
 	VpcId                       string     `json:"VpcId,omitempty"`

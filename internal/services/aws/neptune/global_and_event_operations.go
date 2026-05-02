@@ -355,7 +355,7 @@ func (s *NeptuneService) CreateEventSubscription(ctx context.Context, reqCtx *re
 	}
 
 	return map[string]interface{}{
-		"EventSubscription": sub,
+		"EventSubscription": enrichEventSubscription(sub),
 	}, nil
 }
 
@@ -384,7 +384,7 @@ func (s *NeptuneService) DeleteEventSubscription(ctx context.Context, reqCtx *re
 	}
 
 	return map[string]interface{}{
-		"EventSubscription": sub,
+		"EventSubscription": enrichEventSubscription(sub),
 	}, nil
 }
 
@@ -404,7 +404,7 @@ func (s *NeptuneService) DescribeEventSubscriptions(ctx context.Context, reqCtx 
 			return nil, translateStoreError(err)
 		}
 		return map[string]interface{}{
-			"EventSubscriptionsList": protocol.XMLElements{ElementName: "EventSubscription", Items: []interface{}{sub}},
+			"EventSubscriptionsList": protocol.XMLElements{ElementName: "EventSubscription", Items: []interface{}{enrichEventSubscription(sub)}},
 		}, nil
 	}
 
@@ -415,13 +415,17 @@ func (s *NeptuneService) DescribeEventSubscriptions(ctx context.Context, reqCtx 
 
 	items := make([]interface{}, 0, len(subs))
 	for _, sub := range subs {
-		items = append(items, sub)
+		items = append(items, enrichEventSubscription(sub))
 	}
 
 	marker := request.GetStringParam(params, "Marker")
 	maxRecords := request.GetIntParam(params, "MaxRecords")
 	resultItems, nextMarker, isTruncated := paginateItems(items, marker, maxRecords, func(item interface{}) string {
-		return item.(*neptunestore.EventSubscription).CustSubscriptionId
+		m := item.(map[string]interface{})
+		if v, ok := m["CustSubscriptionId"]; ok {
+			return v.(string)
+		}
+		return ""
 	})
 
 	result := map[string]interface{}{
@@ -470,7 +474,7 @@ func (s *NeptuneService) ModifyEventSubscription(ctx context.Context, reqCtx *re
 	}
 
 	return map[string]interface{}{
-		"EventSubscription": sub,
+		"EventSubscription": enrichEventSubscription(sub),
 	}, nil
 }
 
@@ -508,7 +512,7 @@ func (s *NeptuneService) AddSourceIdentifierToSubscription(ctx context.Context, 
 	}
 
 	return map[string]interface{}{
-		"EventSubscription": sub,
+		"EventSubscription": enrichEventSubscription(sub),
 	}, nil
 }
 
@@ -547,6 +551,35 @@ func (s *NeptuneService) RemoveSourceIdentifierFromSubscription(ctx context.Cont
 	}
 
 	return map[string]interface{}{
-		"EventSubscription": sub,
+		"EventSubscription": enrichEventSubscription(sub),
 	}, nil
+}
+
+func enrichEventSubscription(sub *neptunestore.EventSubscription) map[string]interface{} {
+	m := map[string]interface{}{
+		"CustSubscriptionId":   sub.CustSubscriptionId,
+		"SnsTopicArn":          sub.SnsTopicArn,
+		"Status":               sub.Status,
+		"SourceType":           sub.SourceType,
+		"Enabled":              sub.Enabled,
+		"EventSubscriptionArn": sub.CustSubscriptionArn,
+	}
+	if sub.SubscriptionCreationTime != nil {
+		m["SubscriptionCreationTime"] = *sub.SubscriptionCreationTime
+	}
+	if len(sub.SourceIdsList) > 0 {
+		items := make([]interface{}, 0, len(sub.SourceIdsList))
+		for _, id := range sub.SourceIdsList {
+			items = append(items, id)
+		}
+		m["SourceIdsList"] = protocol.XMLElements{ElementName: "SourceId", Items: items}
+	}
+	if len(sub.EventCategoriesList) > 0 {
+		items := make([]interface{}, 0, len(sub.EventCategoriesList))
+		for _, cat := range sub.EventCategoriesList {
+			items = append(items, cat)
+		}
+		m["EventCategoriesList"] = protocol.XMLElements{ElementName: "EventCategory", Items: items}
+	}
+	return m
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -209,16 +210,30 @@ func (s *TimestreamQueryService) PrepareQuery(ctx context.Context, reqCtx *reque
 	opts := sqlparser.ParserOptions{
 		Dialect: sqlparser.DialectTimestream,
 	}
-	_, err := sqlparser.ParseWithOptions(processedSQL, opts)
+	stmt, err := sqlparser.ParseWithOptions(processedSQL, opts)
 	if err != nil {
 		return nil, fmt.Errorf("SQL parse error: %w", err)
 	}
 
 	params := s.extractParameters(queryString)
 
+	var columns []map[string]interface{}
+	if selectStmt, ok := stmt.(*sqlparser.Select); ok {
+		columnInfo := s.buildColumnInfoForPrepare(selectStmt)
+		for _, ci := range columnInfo {
+			columns = append(columns, map[string]interface{}{
+				"Name": ci.Name,
+				"Type": map[string]interface{}{
+					"ScalarType": ci.Type.ScalarType,
+				},
+			})
+		}
+	}
+
 	return map[string]interface{}{
 		"QueryString":        queryString,
 		"Parameters":         params,
+		"Columns":            columns,
 		"QueryId":            uuid.New().String(),
 		"QueryParsingStatus": "SUCCESSFUL",
 	}, nil
@@ -243,6 +258,35 @@ func (s *TimestreamQueryService) extractParameters(queryString string) []map[str
 	}
 
 	return params
+}
+
+func (s *TimestreamQueryService) buildColumnInfoForPrepare(selectStmt *sqlparser.Select) []ColumnInfo {
+	var columns []ColumnInfo
+	for _, expr := range selectStmt.SelectExprs {
+		if aliased, ok := expr.(*sqlparser.AliasedExpr); ok {
+			colName := s.extractColumnName(aliased.Expr)
+			if !aliased.As.IsEmpty() {
+				colName = aliased.As.String()
+			}
+			scalarType := "VARCHAR"
+			if strings.Contains(strings.ToLower(colName), "time") {
+				scalarType = "TIMESTAMP"
+			}
+			if _, isFunc := aliased.Expr.(*sqlparser.FuncExpr); isFunc {
+				if fn, ok := aliased.Expr.(*sqlparser.FuncExpr); ok && fn.IsAggregate() {
+					scalarType = "DOUBLE"
+				}
+			}
+			if _, isVal := aliased.Expr.(*sqlparser.SQLVal); isVal {
+				scalarType = "INTEGER"
+			}
+			columns = append(columns, ColumnInfo{
+				Name: colName,
+				Type: ColumnTypeInfo{ScalarType: scalarType},
+			})
+		}
+	}
+	return columns
 }
 
 // GetQueryStatus returns the status of a query.

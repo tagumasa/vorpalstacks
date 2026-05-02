@@ -13,6 +13,7 @@ const ruleKeyPrefix = "rule_"
 
 var ruleGroupAccessor = wafResourceAccessor[RuleGroup]{
 	getIDFn:        func(r *RuleGroup) string { return r.ID },
+	getNameFn:      func(r *RuleGroup) string { return r.Name },
 	getARNFn:       func(r *RuleGroup) string { return r.ARN },
 	setARNFn:       func(r *RuleGroup, arn string) { r.ARN = arn },
 	getLockTokenFn: func(r *RuleGroup) string { return r.LockToken },
@@ -34,6 +35,9 @@ func NewRuleGroupStore(store storage.BasicStorage, accountId, region string) *Ru
 
 // Create creates a new Rule Group.
 func (s *RuleGroupStore) Create(id, name, description string, capacity int64, rules []*Rule, visibilityConfig *VisibilityConfig) (*RuleGroup, error) {
+	if existing, _ := s.FindByName(name); existing != nil {
+		return nil, ErrAlreadyExists
+	}
 	ruleGroup := &RuleGroup{
 		ID:               id,
 		Name:             name,

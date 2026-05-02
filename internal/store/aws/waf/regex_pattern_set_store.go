@@ -12,6 +12,7 @@ const regexPatternSetBucketName = "waf_regex_pattern_sets"
 
 var regexPatternSetAccessor = wafResourceAccessor[RegexPatternSet]{
 	getIDFn:        func(r *RegexPatternSet) string { return r.ID },
+	getNameFn:      func(r *RegexPatternSet) string { return r.Name },
 	getARNFn:       func(r *RegexPatternSet) string { return r.ARN },
 	setARNFn:       func(r *RegexPatternSet, arn string) { r.ARN = arn },
 	getLockTokenFn: func(r *RegexPatternSet) string { return r.LockToken },
@@ -33,6 +34,9 @@ func NewRegexPatternSetStore(store storage.BasicStorage, accountId, region strin
 
 // Create creates a new Regex Pattern Set.
 func (s *RegexPatternSetStore) Create(id, name, description string, regularPatterns []string) (*RegexPatternSet, error) {
+	if existing, _ := s.FindByName(name); existing != nil {
+		return nil, ErrAlreadyExists
+	}
 	regexPatternSet := &RegexPatternSet{
 		ID:              id,
 		Name:            name,

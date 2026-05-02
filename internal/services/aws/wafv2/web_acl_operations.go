@@ -44,13 +44,11 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	_, err = stores.webACLs.Get(id)
-	if err == nil {
-		return nil, newAPIError("WafV2AlreadyExistsException", fmt.Sprintf("WebACL already exists: %s", name), 400)
-	}
-
 	webACL, err := stores.webACLs.Create(id, name, description, scope, capacity, rules, defaultAction, visibilityConfig)
 	if err != nil {
+		if wafstore.IsAlreadyExists(err) {
+			return nil, newAPIError("WAFDuplicateItemException", fmt.Sprintf("AWS WAF couldn't perform the operation because some resource in your request is a duplicate of an existing one: %s", name), 400)
+		}
 		return nil, err
 	}
 

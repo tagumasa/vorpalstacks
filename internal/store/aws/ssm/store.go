@@ -467,3 +467,59 @@ func (s *Store) LabelParameterVersion(name string, parameterVersion int64, label
 
 	return s.Put(key, param)
 }
+
+// UnlabelParameterVersion removes labels from a specific version of a parameter.
+func (s *Store) UnlabelParameterVersion(name string, parameterVersion int64, labels []string) ([]string, error) {
+	key := s.paramKey(name)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var param Parameter
+	if err := s.BaseStore.Get(key, &param); err != nil {
+		return nil, ErrParameterNotFound
+	}
+
+	hKey := s.historyKey(name, parameterVersion)
+	var paramVersion ParameterVersion
+	if err := s.historyStore.Get(hKey, &paramVersion); err != nil {
+		return nil, ErrParameterVersionNotFound
+	}
+
+	if param.VersionLabels == nil {
+		return []string{}, nil
+	}
+
+	currentLabels, ok := param.VersionLabels[parameterVersion]
+	if !ok {
+		return []string{}, nil
+	}
+
+	var removedLabels []string
+	remainingLabels := make([]string, 0, len(currentLabels))
+	for _, existing := range currentLabels {
+		found := false
+		for _, toRemove := range labels {
+			if existing == toRemove {
+				found = true
+				removedLabels = append(removedLabels, existing)
+				break
+			}
+		}
+		if !found {
+			remainingLabels = append(remainingLabels, existing)
+		}
+	}
+
+	if len(remainingLabels) == 0 {
+		delete(param.VersionLabels, parameterVersion)
+	} else {
+		param.VersionLabels[parameterVersion] = remainingLabels
+	}
+
+	if err := s.Put(key, param); err != nil {
+		return nil, err
+	}
+
+	return removedLabels, nil
+}

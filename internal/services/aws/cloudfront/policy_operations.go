@@ -425,8 +425,11 @@ func (s *CloudFrontService) UpdateOriginRequestPolicy(ctx context.Context, reqCt
 	}
 
 	config := &cloudfrontstore.OriginRequestPolicyConfig{
-		Name:    request.GetStringParam(configMap, "Name"),
-		Comment: request.GetStringParam(configMap, "Comment"),
+		Name:               request.GetStringParam(configMap, "Name"),
+		Comment:            request.GetStringParam(configMap, "Comment"),
+		CookiesConfig:      parseCookiesConfig(request.GetMapParam(configMap, "CookiesConfig")),
+		HeadersConfig:      parseORPHeadersConfig(request.GetMapParam(configMap, "HeadersConfig")),
+		QueryStringsConfig: parseORPQueryStringsConfig(request.GetMapParam(configMap, "QueryStringsConfig")),
 	}
 
 	policy, err := store.originRequestPolicies.Update(id, config)
