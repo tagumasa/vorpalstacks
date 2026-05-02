@@ -9,8 +9,10 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"vorpalstacks-sdk-tests/config"
 )
 
 func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, ts string) []TestResult {
@@ -220,6 +222,163 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		})
 		if err == nil {
 			return fmt.Errorf("expected error when getting SSE-C object without customer key, got nil")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "SSEKMS_PutGetRoundtrip", func() error {
+		kmsCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   r.region,
+		})
+		if err != nil {
+			return fmt.Errorf("load KMS config: %w", err)
+		}
+		kmsClient := kms.NewFromConfig(kmsCfg)
+
+		createKeyResp, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
+			Description: aws.String("S3 SSE-KMS test key"),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateKey failed: %w", err)
+		}
+		keyID := *createKeyResp.KeyMetadata.KeyId
+		defer kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
+			KeyId:               aws.String(keyID),
+			PendingWindowInDays: aws.Int32(7),
+		})
+
+		bucket := s3Bucket(ts, "enc-kms")
+		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, bucket)
+
+		body := "kms-encrypted-data"
+		putResp, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket:               aws.String(bucket),
+			Key:                  aws.String("sse-kms.txt"),
+			Body:                 strings.NewReader(body),
+			ServerSideEncryption: types.ServerSideEncryptionAwsKms,
+			SSEKMSKeyId:          aws.String(keyID),
+		})
+		if err != nil {
+			return fmt.Errorf("PutObject SSE-KMS failed: %w", err)
+		}
+		if putResp.ServerSideEncryption != types.ServerSideEncryptionAwsKms {
+			return fmt.Errorf("expected ServerSideEncryption aws:kms, got %s", putResp.ServerSideEncryption)
+		}
+
+		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String("sse-kms.txt"),
+		})
+		if err != nil {
+			return fmt.Errorf("GetObject failed: %w", err)
+		}
+		defer getResp.Body.Close()
+		gotBody, err := io.ReadAll(getResp.Body)
+		if err != nil {
+			return fmt.Errorf("ReadAll failed: %w", err)
+		}
+		if string(gotBody) != body {
+			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
+		}
+		if getResp.ServerSideEncryption != types.ServerSideEncryptionAwsKms {
+			return fmt.Errorf("expected GetObject ServerSideEncryption aws:kms, got %s", getResp.ServerSideEncryption)
+		}
+
+		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String("sse-kms.txt"),
+		})
+		if err != nil {
+			return fmt.Errorf("HeadObject failed: %w", err)
+		}
+		if headResp.ServerSideEncryption != types.ServerSideEncryptionAwsKms {
+			return fmt.Errorf("expected HeadObject ServerSideEncryption aws:kms, got %s", headResp.ServerSideEncryption)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "SSEKMS_BucketDefaultEncryption", func() error {
+		kmsCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   r.region,
+		})
+		if err != nil {
+			return fmt.Errorf("load KMS config: %w", err)
+		}
+		kmsClient := kms.NewFromConfig(kmsCfg)
+
+		createKeyResp, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
+			Description: aws.String("S3 SSE-KMS bucket default test key"),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateKey failed: %w", err)
+		}
+		keyID := *createKeyResp.KeyMetadata.KeyId
+		defer kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
+			KeyId:               aws.String(keyID),
+			PendingWindowInDays: aws.Int32(7),
+		})
+
+		bucket := s3Bucket(ts, "enc-kms-default")
+		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateBucket failed: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, bucket)
+
+		_, err = client.PutBucketEncryption(ctx, &s3.PutBucketEncryptionInput{
+			Bucket: aws.String(bucket),
+			ServerSideEncryptionConfiguration: &types.ServerSideEncryptionConfiguration{
+				Rules: []types.ServerSideEncryptionRule{
+					{
+						ApplyServerSideEncryptionByDefault: &types.ServerSideEncryptionByDefault{
+							SSEAlgorithm:   types.ServerSideEncryptionAwsKms,
+							KMSMasterKeyID: aws.String(keyID),
+						},
+					},
+				},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("PutBucketEncryption SSE-KMS failed: %w", err)
+		}
+
+		body := "kms-default-encrypted"
+		_, err = client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String("kms-default.txt"),
+			Body:   strings.NewReader(body),
+		})
+		if err != nil {
+			return fmt.Errorf("PutObject with bucket default KMS encryption failed: %w", err)
+		}
+
+		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String("kms-default.txt"),
+		})
+		if err != nil {
+			return fmt.Errorf("GetObject failed: %w", err)
+		}
+		defer getResp.Body.Close()
+		gotBody, err := io.ReadAll(getResp.Body)
+		if err != nil {
+			return fmt.Errorf("ReadAll failed: %w", err)
+		}
+		if string(gotBody) != body {
+			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
+		}
+		if getResp.ServerSideEncryption != types.ServerSideEncryptionAwsKms {
+			return fmt.Errorf("expected GetObject ServerSideEncryption aws:kms, got %s", getResp.ServerSideEncryption)
 		}
 		return nil
 	}))

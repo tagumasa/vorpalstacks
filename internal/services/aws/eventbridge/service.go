@@ -71,11 +71,7 @@ func (s *EventsService) SetEventBus(bus eventbus.Bus) {
 }
 
 func (s *EventsService) handleBusDelivery(ctx context.Context, evt *eventbus.EventBridgeDeliveryEvent) eventbus.HandlerResult {
-	var store *eventsstore.EventsStore
-	if v, ok := s.eventsStores.Load(evt.Region); ok {
-		store = v.(*eventsstore.EventsStore)
-	}
-	if store == nil && strings.Contains(evt.TargetARN, ":event-bus/") {
+	if strings.Contains(evt.TargetARN, ":event-bus/") {
 		return s.handleEventBusDelivery(ctx, evt)
 	}
 

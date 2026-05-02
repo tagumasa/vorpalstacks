@@ -442,6 +442,213 @@ func (e *Executor) executeActivityTask(ctx context.Context, execCtx *ExecutionCo
 	return result.Output, state.Next, nil
 }
 
+func (e *Executor) executeDynamoDBTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string) (string, error) {
+	if e.bus == nil || e.bus.DynamoDBInvoker() == nil {
+		return "", fmt.Errorf("DynamoDB invoker not configured")
+	}
+
+	resourceParts := strings.Split(state.Resource, ":")
+	if len(resourceParts) < 7 {
+		return "", fmt.Errorf("invalid DynamoDB resource ARN: %s", state.Resource)
+	}
+
+	action := resourceParts[6]
+
+	var inputData map[string]interface{}
+	if err := json.Unmarshal([]byte(input), &inputData); err != nil {
+		return "", fmt.Errorf("invalid input for DynamoDB task: %w", err)
+	}
+
+	tableName := getStr(inputData, "TableName")
+	if tableName == "" {
+		return "", fmt.Errorf("TableName is required for DynamoDB task")
+	}
+
+	region := e.region
+
+	switch action {
+	case "getItem":
+		return e.executeDynamoDBGetItem(ctx, region, tableName, inputData)
+	case "putItem":
+		return e.executeDynamoDBPutItem(ctx, region, tableName, inputData)
+	case "deleteItem":
+		return e.executeDynamoDBDeleteItem(ctx, region, tableName, inputData)
+	case "updateItem":
+		return e.executeDynamoDBUpdateItem(ctx, region, tableName, inputData)
+	default:
+		return "", fmt.Errorf("unsupported DynamoDB action: %s", action)
+	}
+}
+
+func (e *Executor) executeDynamoDBGetItem(ctx context.Context, region, tableName string, inputData map[string]interface{}) (string, error) {
+	keyRaw, ok := inputData["Key"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("Key is required for getItem")
+	}
+	key := awsAttrValuesToPlain(keyRaw)
+
+	item, err := e.bus.DynamoDBInvoker().GetItem(ctx, region, tableName, key)
+	if err != nil {
+		return "", fmt.Errorf("DynamoDB GetItem failed: %w", err)
+	}
+
+	result := map[string]interface{}{"Item": plainMapToAWSAttrValues(item)}
+	resultJSON, _ := json.Marshal(result)
+	return string(resultJSON), nil
+}
+
+func (e *Executor) executeDynamoDBPutItem(ctx context.Context, region, tableName string, inputData map[string]interface{}) (string, error) {
+	itemRaw, ok := inputData["Item"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("Item is required for putItem")
+	}
+	plainItem := awsAttrValuesToPlain(itemRaw)
+
+	key := extractKeyFromItem(plainItem)
+	attrs := removeKeys(plainItem, key)
+
+	result, err := e.bus.DynamoDBInvoker().PutItem(ctx, region, tableName, key, attrs)
+	if err != nil {
+		return "", fmt.Errorf("DynamoDB PutItem failed: %w", err)
+	}
+
+	resultJSON, _ := json.Marshal(map[string]interface{}{"Attributes": plainMapToAWSAttrValues(result)})
+	return string(resultJSON), nil
+}
+
+func (e *Executor) executeDynamoDBDeleteItem(ctx context.Context, region, tableName string, inputData map[string]interface{}) (string, error) {
+	keyRaw, ok := inputData["Key"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("Key is required for deleteItem")
+	}
+	key := awsAttrValuesToPlain(keyRaw)
+
+	if err := e.bus.DynamoDBInvoker().DeleteItem(ctx, region, tableName, key); err != nil {
+		return "", fmt.Errorf("DynamoDB DeleteItem failed: %w", err)
+	}
+
+	return "{}", nil
+}
+
+func (e *Executor) executeDynamoDBUpdateItem(ctx context.Context, region, tableName string, inputData map[string]interface{}) (string, error) {
+	keyRaw, ok := inputData["Key"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("Key is required for updateItem")
+	}
+	key := awsAttrValuesToPlain(keyRaw)
+
+	attrValues := map[string]interface{}{}
+	if av, ok := inputData["AttributeValues"].(map[string]interface{}); ok {
+		attrValues = awsAttrValuesToPlain(av)
+	} else if av, ok := inputData["ExpressionAttributeValues"].(map[string]interface{}); ok {
+		attrValues = awsAttrValuesToPlain(av)
+	}
+
+	if err := e.bus.DynamoDBInvoker().UpdateItem(ctx, region, tableName, key, attrValues); err != nil {
+		return "", fmt.Errorf("DynamoDB UpdateItem failed: %w", err)
+	}
+
+	return "{}", nil
+}
+
+func awsAttrValuesToPlain(av map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(av))
+	for k, v := range av {
+		out[k] = awsAttrValueToPlain(v)
+	}
+	return out
+}
+
+func awsAttrValueToPlain(v interface{}) interface{} {
+	m, ok := v.(map[string]interface{})
+	if !ok {
+		return v
+	}
+	if s, ok := m["S"].(string); ok {
+		return s
+	}
+	if n, ok := m["N"].(string); ok {
+		return n
+	}
+	if b, ok := m["BOOL"].(bool); ok {
+		return b
+	}
+	if _, ok := m["NULL"]; ok {
+		return nil
+	}
+	if s, ok := m["SS"].([]interface{}); ok {
+		strs := make([]string, len(s))
+		for i, v := range s {
+			strs[i] = fmt.Sprintf("%v", v)
+		}
+		return strs
+	}
+	return v
+}
+
+func plainMapToAWSAttrValues(m map[string]interface{}) map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	out := make(map[string]interface{}, len(m))
+	for k, v := range m {
+		out[k] = plainToAWSAttrValue(v)
+	}
+	return out
+}
+
+func plainToAWSAttrValue(v interface{}) interface{} {
+	switch val := v.(type) {
+	case string:
+		return map[string]interface{}{"S": val}
+	case bool:
+		return map[string]interface{}{"BOOL": val}
+	case nil:
+		return map[string]interface{}{"NULL": true}
+	case []string:
+		ss := make([]interface{}, len(val))
+		for i, s := range val {
+			ss[i] = s
+		}
+		return map[string]interface{}{"SS": ss}
+	case []interface{}:
+		ss := make([]interface{}, len(val))
+		for i, s := range val {
+			ss[i] = fmt.Sprintf("%v", s)
+		}
+		return map[string]interface{}{"SS": ss}
+	default:
+		return map[string]interface{}{"S": fmt.Sprintf("%v", val)}
+	}
+}
+
+func extractKeyFromItem(item map[string]interface{}) map[string]interface{} {
+	key := make(map[string]interface{})
+	for k, v := range item {
+		key[k] = v
+	}
+	return key
+}
+
+func removeKeys(item map[string]interface{}, keys map[string]interface{}) map[string]interface{} {
+	attrs := make(map[string]interface{})
+	for k, v := range item {
+		if _, isKey := keys[k]; !isKey {
+			attrs[k] = v
+		}
+	}
+	return attrs
+}
+
+func getStr(m map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if v, ok := m[key].(string); ok && v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 func (e *Executor) isActivityResource(resource string) bool {
 	if strings.HasPrefix(resource, "arn:aws:states:::activity:") {
 		return true

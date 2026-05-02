@@ -83,6 +83,7 @@ func init() {
 	RegisterService("appsync", CategorySDK, (*TestRunner).RunAppSyncTests)
 	RegisterService("appsync-ws", CategoryWS, (*TestRunner).RunAppSyncWSTests)
 	RegisterService("integration", CategoryIntegration, (*TestRunner).RunIntegrationTests)
+	RegisterService("cloudtrail-audit", CategoryIntegration, (*TestRunner).RunCloudTrailAuditIntegrationTests)
 }
 
 func NewTestRunner(endpoint, region string, verbose bool) *TestRunner {

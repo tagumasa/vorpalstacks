@@ -8,47 +8,49 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 32 AWS services with 2121 test cases (2080 SDK + 24 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests for 32 AWS services with 2260 test cases (2216 SDK + 27 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
 
 | Service | Tests | Pass Rate | Status |
 |---------|--------|-----------|--------|
-| ACM | 37 | 100% | ✅ Perfect |
-| API Gateway | 129 | 100% | ✅ Perfect (split: 11 files) |
+| ACM | 43 | 100% | ✅ Perfect |
+| API Gateway | 129 | 100% | ✅ Perfect |
 | AppSync | 170 | 100% | ✅ Perfect |
 | Athena | 65 | 100% | ✅ Perfect |
-| CloudFront | 53 | 100% | ✅ Perfect |
-| CloudTrail | 58 | 100% | ✅ Perfect |
+| CloudFront | 60 | 100% | ✅ Perfect |
+| CloudTrail | 65 | 100% | ✅ Perfect |
 | CloudWatch | 24 | 100% | ✅ Perfect |
-| CloudWatch Logs | 42 | 100% | ✅ Perfect |
-| Cognito | 67 | 100% | ✅ Perfect (split: 8 files) |
+| CloudWatch Logs | 43 | 100% | ✅ Perfect |
+| Cognito | 67 | 100% | ✅ Perfect |
 | Cognito Identity | 43 | 100% | ✅ Perfect |
-| DynamoDB | 111 | 100% | ✅ Perfect (split: 8 files) |
-| EventBridge | 59 | 100% | ✅ Perfect (split: 8 files, all assertions STRONG, 3 delete coverage gaps filled) |
-| IAM | 117 | 100% | ✅ Perfect |
+| DynamoDB | 111 | 100% | ✅ Perfect |
+| EventBridge | 59 | 100% | ✅ Perfect |
+| IAM | 152 | 100% | ✅ Perfect |
 | Kinesis | 51 | 100% | ✅ Perfect |
-| KMS | 92 | 100% | ✅ Perfect |
-| Lambda | 68 | 100% | ✅ Perfect (split: 7 files, 33 assertions strengthened, 3 server bugs fixed) |
-| Neptune | 80 | 100% | ✅ Perfect |
+| KMS | 97 | 100% | ✅ Perfect |
+| Lambda | 68 | 100% | ✅ Perfect |
+| Neptune | 97 | 100% | ✅ Perfect |
 | NeptuneData | 168 | 100% | ✅ Perfect |
 | NeptuneGraph | 47 | 100% | ✅ Perfect |
-| Route53 | 39 | 100% | ✅ Perfect |
-| S3 | 88 | 100% | ✅ Perfect (split: 9 files) |
-| Scheduler | 30 | 100% | ✅ Perfect |
-| SecretsManager | 43 | 100% | ✅ Perfect |
-| SESv2 | 78 | 100% | ✅ Perfect |
+| Route53 | 44 | 100% | ✅ Perfect |
+| S3 | 90 | 100% | ✅ Perfect |
+| Scheduler | 38 | 100% | ✅ Perfect |
+| SecretsManager | 41 | 100% | ✅ Perfect |
+| SESv2 | 79 | 100% | ✅ Perfect |
 | SNS | 63 | 100% | ✅ Perfect |
-| SQS | 49 | 100% | ✅ Perfect (split: 6 files, 20 assertions strengthened, 1 server bug fixed) |
-| SSM | 30 | 100% | ✅ Perfect |
-| STS | 39 | 100% | ✅ Perfect |
-| StepFunctions | 43 | 100% | ✅ Perfect |
-| Timestream | 45 | 100% | ✅ Perfect |
+| SQS | 49 | 100% | ✅ Perfect |
+| SSM | 44 | 100% | ✅ Perfect |
+| STS | 41 | 100% | ✅ Perfect |
+| StepFunctions | 53 | 100% | ✅ Perfect |
+| Timestream | 50 | 100% | ✅ Perfect |
 | WAF | Removed | No longer a supported service |
-| WAFv2 | 52 | 100% | ✅ Perfect |
+| WAFv2 | 61 | 100% | ✅ Perfect |
 
-**Overall: 2121/2121 tests passing (100%) — 2080 SDK + 24 integration + 17 WebSocket**
+**Overall: 2262/2262 tests passing (100%) — 2216 SDK + 29 integration + 17 WebSocket**
+
+*CloudTrail audit tests require `VS_AUDIT_ENABLED=true`.*
 
 ## Prerequisites
 
@@ -72,6 +74,22 @@ go build -o sdk-tests-test .
 # From project root
 pkill -9 vorpalstacks 2>/dev/null; sleep 1
 SIGNATURE_VERIFICATION_ENABLED=false PORT=8080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
+```
+
+### Start with CloudTrail Audit Enabled
+
+To run CloudTrail audit integration tests, set `VS_AUDIT_ENABLED=true`:
+
+```bash
+pkill -9 vorpalstacks 2>/dev/null; sleep 1
+rm -rf data/us-east-1 data/global
+SIGNATURE_VERIFICATION_ENABLED=false VS_AUDIT_ENABLED=true PORT=8080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
+```
+
+Then run tests with the env var:
+
+```bash
+VS_AUDIT_ENABLED=true ./sdk-tests/tmp/sdk-tests-all -service all -v
 ```
 
 ### Run Tests
@@ -198,7 +216,7 @@ func (r *TestRunner) RunServiceTests() []TestResult {
 
 ## Cross-Service Integration Tests
 
-In addition to per-service SDK tests, 24 cross-service integration tests verify end-to-end delivery between services. These tests create real resources via SDK, trigger cross-service connections, and verify data arrives at the destination.
+In addition to per-service SDK tests, 27 cross-service integration tests verify end-to-end delivery between services. These tests create real resources via SDK, trigger cross-service connections, and verify data arrives at the destination.
 
 ### Running Integration Tests
 
@@ -232,11 +250,25 @@ In addition to per-service SDK tests, 24 cross-service integration tests verify 
 | `DescribeAlarms` State | CWAlarm→Lambda/SNS/SFN | Alarm transitioned to ALARM state |
 | ESM message consumption | ESM→SQS | Messages deleted from SQS after Lambda invocation |
 
-### Skipped Tests (server not implemented)
+### Verification Methods
 
-- ESM→DynamoDB Streams — DynamoDB Streams storage not implemented
-- S3→Kinesis notification — Server-side S3→Kinesis delivery not implemented
-- SFN Task→DynamoDB — DynamoDB task integration not implemented
+3 tests verify that CloudTrail captures audit events from cross-service operations. These require `VS_AUDIT_ENABLED=true` at server startup; without it they are automatically skipped.
+
+| Test | What It Verifies |
+|------|-----------------|
+| `CloudTrailAudit_CreateTrail_VerifyEvent` | CreateTrail generates a CloudTrail event findable by `EventName=CreateTrail` |
+| `CloudTrailAudit_S3_PutObject` | S3 PutObject generates a CloudTrail event findable by `EventSource=s3.amazonaws.com` |
+| `CloudTrailAudit_CrossService_EventSource` | Events from both `cloudtrail.amazonaws.com` and `s3.amazonaws.com` coexist in LookupEvents |
+
+### Running
+
+```bash
+# Start server with audit enabled
+SIGNATURE_VERIFICATION_ENABLED=false VS_AUDIT_ENABLED=true PORT=8080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
+
+# Run audit tests
+VS_AUDIT_ENABLED=true ./sdk-tests/tmp/sdk-tests-all -service cloudtrail-audit -v
+```
 
 ## Adding New Tests
 

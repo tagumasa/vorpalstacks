@@ -13,11 +13,11 @@ import (
 )
 
 type vtlTest struct {
-	name         string
-	template     string
-	body         string
-	validate     func(body string) error
-	respTmpl     string
+	name     string
+	template string
+	body     string
+	validate func(body string) error
+	respTmpl string
 }
 
 func (r *TestRunner) invokeMock(ctx context.Context, client *apigateway.Client, apiID, pathPart, template, body string, respTmpl string) (string, error) {

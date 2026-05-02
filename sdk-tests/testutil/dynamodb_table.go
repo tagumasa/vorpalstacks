@@ -66,19 +66,31 @@ func (r *TestRunner) dynamoDBCreateTableTests(ctx context.Context, client *dynam
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "ListTables", func() error {
-		resp, err := client.ListTables(ctx, &dynamodb.ListTablesInput{})
-		if err != nil {
-			return err
-		}
-		if resp.TableNames == nil {
-			return fmt.Errorf("table names is nil")
-		}
+		var lastEvalTableName *string
 		found := false
-		for _, name := range resp.TableNames {
-			if name == tableName {
-				found = true
+		for {
+			resp, err := client.ListTables(ctx, &dynamodb.ListTablesInput{
+				ExclusiveStartTableName: lastEvalTableName,
+			})
+			if err != nil {
+				return err
+			}
+			if resp.TableNames == nil {
+				return fmt.Errorf("table names is nil")
+			}
+			for _, name := range resp.TableNames {
+				if name == tableName {
+					found = true
+					break
+				}
+			}
+			if found {
 				break
 			}
+			if resp.LastEvaluatedTableName == nil || *resp.LastEvaluatedTableName == "" {
+				break
+			}
+			lastEvalTableName = resp.LastEvaluatedTableName
 		}
 		if !found {
 			return fmt.Errorf("created table %s not found in ListTables response", tableName)

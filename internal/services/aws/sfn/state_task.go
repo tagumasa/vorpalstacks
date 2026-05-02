@@ -119,6 +119,8 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 			output, taskErr = e.executeSNSTask(taskCtx, execCtx, state, processedInput)
 		} else if strings.HasPrefix(state.Resource, "arn:aws:states:::events:") {
 			output, taskErr = e.executeEventsTask(taskCtx, execCtx, state, processedInput)
+		} else if strings.HasPrefix(state.Resource, "arn:aws:states:::dynamodb:") {
+			output, taskErr = e.executeDynamoDBTask(taskCtx, execCtx, state, processedInput)
 		} else {
 			taskErr = fmt.Errorf("unsupported resource type: %s", state.Resource)
 		}

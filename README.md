@@ -2,7 +2,7 @@
 
 [日本語](README.ja.md) | [中文](README.zh.md)
 
-> **Warning: This is a beta release.** Vorpalstacks is under active development. While 32 AWS services are implemented with 2002 passing SDK tests, 24 cross-service integration tests, and 17 WebSocket tests (2043 total, plus 631 Python, 2028 TypeScript, 2019 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
+> **Warning: This is a beta release.** Vorpalstacks is under active development. While 32 AWS services are implemented with 2216 passing SDK tests, 29 cross-service integration tests, and 17 WebSocket tests (2262 total, plus 631 Python, 2028 TypeScript, 2019 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
 
 A lightweight edge and on-premise cloud platform providing AWS-compatible services.
 
@@ -32,7 +32,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 - **Lightweight**: Single binary, minimal dependencies
 - **Persistent Storage**: Pebble-based key-value store
 - **Docker Integration**: Lambda functions run in containers
-- **Service Integration**: Event-driven communication between services with 24 cross-service integration tests
+- **Service Integration**: Event-driven communication between services with 29 cross-service integration tests
 - **TLS Support**: Optional HTTPS with auto-generated or custom certificates
 - **LocalStack Comparison**: See [docs/localstack_vs_vorpalstacks_report.md](docs/localstack_vs_vorpalstacks_report.md) for a technical comparison with LocalStack
 
@@ -216,7 +216,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 Vorpalstacks implements all 32 services as native Go binaries backed by PebbleDB, avoiding the overhead of interpreted languages or external process dependencies.
 
-This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (1990 SDK + 24 integration + 17 WebSocket Go tests, 631 Python, 2028 TypeScript, 2019 C# tests) directly within CI/CD pipelines without containerization overhead.
+This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (2216 SDK + 29 integration + 17 WebSocket Go tests, 631 Python, 2028 TypeScript, 2019 C# tests) directly within CI/CD pipelines without containerization overhead.
 
 ### Benchmark Results (Reference)
 
