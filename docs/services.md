@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-04-21
 **Total**: 32 AWS services
-**SDK Tests**: 2026 (1985 SDK + 24 integration + 17 WebSocket)
+**SDK Tests**: 2262 (2216 SDK + 29 integration + 17 WebSocket)
 
 ---
 

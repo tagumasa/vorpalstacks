@@ -278,7 +278,7 @@ This approach provides consistent behaviour across all services and persistent s
 | Project | Test Count | Details |
 |---------|-----------|---------|
 | LocalStack | Not publicly documented | — |
-| Vorpalstacks | 2,026 tests | 1,985 SDK + 24 integration + 17 WebSocket (100% pass rate) |
+| Vorpalstacks | 2,262 tests | 2,216 SDK + 29 integration + 17 WebSocket (100% pass rate) |
 
 ### Appendix: Vorpalstacks Benchmark Results (Reference)
 
@@ -352,7 +352,7 @@ This approach provides consistent behaviour across all services and persistent s
 | **Data Persistence** | In-memory default; paid plans add local + Cloud Pods | Pebble persistent KV (all services) |
 | **Lambda Execution** | Docker (real) | Docker (real) |
 | **IAM Enforcement** | Base+ plans only | Policy-based (all editions) |
-| **SDK Test Coverage** | Not publicly documented | 2,026 tests (100% pass rate) |
+| **SDK Test Coverage** | Not publicly documented | 2,262 tests (100% pass rate) |
 | **Runtime Dependencies** | Python, Docker, Java, kinesis-mock | Docker (Lambda only) |
 | **CORS** | Default | Configurable multi-origin |
 | **Admin Interface** | LocalStack Web UI (paid) | gRPC-Web admin API + `vstacks` CLI |

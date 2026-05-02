@@ -103,7 +103,6 @@ All services can be enabled/disabled individually via environment variables. Set
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ROUTE53_DNS_ENABLED` | `false` | Enable Route53 DNS server |
-| `ROUTE53_DNS_BIND_ADDR` | `127.0.0.1` | DNS server bind address |
 
 ### Lambda Configuration
 
@@ -255,7 +254,7 @@ Priority order: **Store (persistent) > Environment variable > Default**
 |-----|------|---------|---------|-------------|
 | `features.audit_enabled` | BOOL | `false` | `VS_AUDIT_ENABLED` | CloudTrail audit logging |
 | `features.signature_verification` | BOOL | `true` | `SIGNATURE_VERIFICATION_ENABLED` | AWS signature verification |
-| `features.route53_dns` | BOOL | `false` | `ROUTE53_DNS_ENABLED` | Route53 DNS server |
+| `features.route53_dns` | BOOL | `false` | `ROUTE53_DNS_ENABLED` | Route53 DNS server (binds to `server.bind_addr`) |
 
 #### Endpoints
 
@@ -277,6 +276,8 @@ Priority order: **Store (persistent) > Environment variable > Default**
 | `ports.lambda_url` | PORT | `8085` | Lambda Function URL port |
 | `ports.appsync_events` | PORT | `8086` | AppSync Events port |
 | `ports.neptune` | PORT | `8087` | Neptune DB cluster default port |
+| `ports.route53_dns` | PORT | `8088` | Route53 DNS server port |
+| `ports.route53_healthcheck` | PORT | `8089` | Route53 health check default port |
 
 #### HTTP / CORS
 
@@ -429,7 +430,6 @@ SIGNATURE_VERIFICATION_ENABLED=false
 
 # Route53 DNS (default: false)
 # ROUTE53_DNS_ENABLED=false
-# ROUTE53_DNS_BIND_ADDR=127.0.0.1
 
 # gRPC-Web Admin
 GRPC_WEB_PORT=9090

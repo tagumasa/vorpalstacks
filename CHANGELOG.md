@@ -4,6 +4,45 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.10] - 2026-04-27
+
+### Added
+- **Temporary session credentials support** (`internal/server/http/auth_middleware.go`): AWS Signature middleware verifies both static and temporary (STS) credentials via `SessionResolver`
+- **S3Invoker for EventBus** (`internal/eventbus/service_invokers.go`): cross-service S3 object operations enabling DynamoDB export/import to S3
+- **DynamoDB Step Functions integration**: `GetItem`, `PutItem`, `DeleteItem`, `UpdateItem` task support in Step Functions service
+- **CloudFront ListKeyGroups operation** and Location header handling in responses
+- **IAM MFADevice name requirement** and server certificate rename support
+- **Resource tracking in audit events**: `ResourceTypes` field and `buildResources` function for CloudTrail event enrichment
+- **IAMPrincipalResolver**: access key ID to username resolution for audit logging
+- **Defaults package** (`internal/common/defaults/`): centralized `DefaultRegion` constant replacing scattered references
+- **SDK tests massively expanded** (290 files, +66,464/-44,016 lines): full lifecycle coverage for ACM, API Gateway (14 test files), AppSync (13 files), Athena (8 files), CloudWatch/Logs, Cognito, DynamoDB, EventBridge, KMS, Neptune, S3, SESv2, SQS, WAFv2 (5 files), and more — now 2262+ tests total
+
+### Changed
+- **awscli full-service validation pass**: comprehensive awscli-driven testing across all services uncovering and fixing integration issues
+- **DynamoDB import/export refactored** (`import_export_operations.go`, 260 lines): S3-backed export/import with improved error handling and validation
+- **KMS key operations refactored**: `CreateKey` handles external-origin keys (PendingImport state), `ImportKeyMaterial` validates tokens and decrypts wrapped keys
+- **SESv2 configuration handling enhanced**: VDM attributes, contact list topic handling, configuration set event destination management
+- **API Gateway service hardened**: conflict detection in `CreateResource`, authorization type validation in `PutMethod`, `CreateRestApi` Policy parameter, cascading `UpdateResource`, streamlined `TestInvokeMethod`
+- **Cognito user pool configuration expanded**: email/SMS configuration parsing, new user pool attributes and settings
+- **AppSync introspection and associations fixed**: `ListTypesByAssociation` validation, `ListSourceApiAssociations` merged API references, `StartDataSourceIntrospection` consistent failure response
+- **Athena service hardened**: resource-not-found errors for catalog/workgroup/prepared statement queries, pagination in `ListDataCatalogs`/`ListPreparedStatements`, SELECT without FROM support
+- **CloudWatch metric response formatting** and log group operations improved
+- **State machine definition JSON validation** added, duplicate creation error handling
+- **Audit event builder enhanced**: S3 event determination logic, event source mappings, event filtering by `EventID`/`ReadOnly`/`EventSource`/`AccessKeyID`
+- **SDK test utilities refactored**: monolithic test files split into focused modules (e.g., `apigateway.go` → 14 files, `appsync.go` → 13 files, `athena.go` → 8 files)
+
+### Fixed
+- S3 encryption handling
+- DynamoDB condition expression handling
+- API Gateway error responses with specific not-found exceptions
+- SQS policy generation in `GetQueueAttributes`
+- SSM parameter label management (`UnlabelParameterVersion`) and validation error handling
+- WAF duplicate resource error messages
+- OIDC provider ARN construction for URL prefixes
+- Neptune `SnapshotType` field in DBClusterSnapshot
+- SESv2 response structure inconsistencies
+- Region handling edge cases across services
+
 ## [0.0.9] - 2026-04-26
 
 ### Added
