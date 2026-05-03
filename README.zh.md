@@ -15,6 +15,8 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 - 开发和测试环境
 - 物理隔离网络
 
+![Vorpalstacks 管理控制台](docs/images/gui.png)
+
 ## 特性
 
 > **关于本项目的定位**：这是 AWS 兼容 API 的真实实现，而非 Mock 框架。各服务将数据存储在 PebbleDB 中，并支持多区域隔离。

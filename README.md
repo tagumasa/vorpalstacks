@@ -15,6 +15,8 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 - Development and testing environments
 - Air-gapped networks
 
+![Vorpalstacks Admin Console](docs/images/gui.png)
+
 ## Features
 
 > **What this is**: A real implementation of AWS-compatible APIs, not a mock framework. Each service stores data in PebbleDB and supports multi-region isolation.
