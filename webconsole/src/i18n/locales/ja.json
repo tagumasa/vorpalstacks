@@ -1,0 +1,55 @@
+{
+  "common": {
+    "loading": "読み込み中...",
+    "failedToLoad": "読み込みに失敗しました: {{error}}",
+    "comingSoon": "準備中",
+    "resources": "{{count}} 件",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "create": "作成",
+    "creating": "作成中...",
+    "close": "✕",
+    "noData": "リソースがありません"
+  },
+  "header": {
+    "online": "オンライン :8080",
+    "offline": "オフライン",
+    "theme": "テーマ",
+    "region": "リージョン",
+    "settings": "設定",
+    "language": "言語",
+    "logout": "ログアウト"
+  },
+  "setup": {
+    "subtitle": "初期セットアップ — Rootパスワードの作成",
+    "password": "パスワード（8文字以上）",
+    "confirmPassword": "パスワード確認",
+    "createRootUser": "Rootユーザーを作成",
+    "passwordMismatch": "パスワードが一致しません",
+    "passwordTooShort": "パスワードは8文字以上にしてください",
+    "setupFailed": "セットアップに失敗しました",
+    "keysCreated": "Rootアクセスキーが作成されました",
+    "saveWarning": "今すぐ認証情報を保存してください。シークレットアクセスキーは二度と表示できません。",
+    "accessKeyId": "アクセスキーID",
+    "secretAccessKey": "シークレットアクセスキー",
+    "continueToDashboard": "ダッシュボードへ",
+    "downloadCsv": ".csvをダウンロード"
+  },
+  "login": {
+    "iamSubtitle": "IAMユーザーログイン",
+    "rootSubtitle": "Rootユーザーログイン",
+    "username": "ユーザー名",
+    "password": "パスワード",
+    "signIn": "サインイン",
+    "signingIn": "サインイン中...",
+    "signInAsRoot": "Rootとしてサインイン",
+    "loginFailed": "ログインに失敗しました",
+    "switchToRoot": "← Rootユーザーでサインイン",
+    "switchToIam": "IAMユーザーでサインイン →"
+  },
+  "confirm": {
+    "deleteParameter": "パラメータを削除",
+    "deleteBucket": "バケットを削除",
+    "confirmDelete": "{{name}} を削除してもよろしいですか？"
+  }
+}

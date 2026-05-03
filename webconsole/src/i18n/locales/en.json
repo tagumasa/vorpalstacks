@@ -1,0 +1,55 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "failedToLoad": "Failed to load: {{error}}",
+    "comingSoon": "Coming soon",
+    "resources": "{{count}} resources",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "creating": "Creating...",
+    "close": "✕",
+    "noData": "No resources found"
+  },
+  "header": {
+    "online": "ONLINE :8080",
+    "offline": "OFFLINE",
+    "theme": "Theme",
+    "region": "Region",
+    "settings": "Settings",
+    "language": "Language",
+    "logout": "Logout"
+  },
+  "setup": {
+    "subtitle": "Initial Setup — Create Root Password",
+    "password": "Password (min. 8 characters)",
+    "confirmPassword": "Confirm Password",
+    "createRootUser": "Create Root User",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "setupFailed": "Setup failed",
+    "keysCreated": "Root Access Keys Created",
+    "saveWarning": "Save these credentials now. You will not be able to see the secret access key again.",
+    "accessKeyId": "Access Key ID",
+    "secretAccessKey": "Secret Access Key",
+    "continueToDashboard": "Continue to Dashboard",
+    "downloadCsv": "Download .csv"
+  },
+  "login": {
+    "iamSubtitle": "IAM User Login",
+    "rootSubtitle": "Root User Login",
+    "username": "Username",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in...",
+    "signInAsRoot": "Sign in as Root",
+    "loginFailed": "Login failed",
+    "switchToRoot": "← Sign in as Root User",
+    "switchToIam": "Sign in as IAM User →"
+  },
+  "confirm": {
+    "deleteParameter": "Delete parameter",
+    "deleteBucket": "Delete bucket",
+    "confirmDelete": "Are you sure you want to delete {{name}}?"
+  }
+}

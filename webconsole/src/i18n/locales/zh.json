@@ -1,0 +1,55 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "failedToLoad": "加载失败: {{error}}",
+    "comingSoon": "即将推出",
+    "resources": "{{count}} 个资源",
+    "cancel": "取消",
+    "delete": "删除",
+    "create": "创建",
+    "creating": "创建中...",
+    "close": "✕",
+    "noData": "未找到资源"
+  },
+  "header": {
+    "online": "在线 :8080",
+    "offline": "离线",
+    "theme": "主题",
+    "region": "区域",
+    "settings": "设置",
+    "language": "语言",
+    "logout": "退出登录"
+  },
+  "setup": {
+    "subtitle": "初始设置 — 创建Root密码",
+    "password": "密码（至少8个字符）",
+    "confirmPassword": "确认密码",
+    "createRootUser": "创建Root用户",
+    "passwordMismatch": "密码不匹配",
+    "passwordTooShort": "密码必须至少8个字符",
+    "setupFailed": "设置失败",
+    "keysCreated": "Root访问密钥已创建",
+    "saveWarning": "请立即保存这些凭证。您将无法再次查看秘密访问密钥。",
+    "accessKeyId": "访问密钥ID",
+    "secretAccessKey": "秘密访问密钥",
+    "continueToDashboard": "进入控制台",
+    "downloadCsv": "下载 .csv"
+  },
+  "login": {
+    "iamSubtitle": "IAM用户登录",
+    "rootSubtitle": "Root用户登录",
+    "username": "用户名",
+    "password": "密码",
+    "signIn": "登录",
+    "signingIn": "登录中...",
+    "signInAsRoot": "以Root登录",
+    "loginFailed": "登录失败",
+    "switchToRoot": "← 以Root用户登录",
+    "switchToIam": "以IAM用户登录 →"
+  },
+  "confirm": {
+    "deleteParameter": "删除参数",
+    "deleteBucket": "删除存储桶",
+    "confirmDelete": "确定要删除 {{name}} 吗？"
+  }
+}
