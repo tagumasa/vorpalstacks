@@ -91,8 +91,10 @@ SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 
 ### 使用 Docker 运行（Lambda 用）
 
+需安装 Docker 并保持运行。Lambda 函数在 Docker 容器中执行。
+
 ```bash
-SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
+SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/run/docker.sock ./vorpalstacks
 ```
 
 ### 使用 AWS CLI
@@ -144,6 +146,7 @@ cd scripts/services && bash test_iam.sh
 | `GRPC_WEB_PORT` | `9090` | gRPC-Web 管理服务器端口 |
 | `TLS_ENABLED` | `false` | 启用 TLS |
 | `AUTHORIZATION_ENABLED` | `false` | 启用 IAM 策略评估 |
+| `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker 守护进程 Socket（Lambda 用） |
 
 完整列表请参阅 [配置](docs/configuration.md)。
 
@@ -191,7 +194,7 @@ DATA_PATH/
 ## 已知限制
 
 - 并非所有服务的全部 AWS 操作都已实现 — 详情请参阅 [docs/services.md](docs/services.md)
-- 某些边界情况和未公开文档的 AWS 行为可能存在差异
+- 某些边界情况和文档未公开的 AWS 行为可能存在差异
 - 不支持跨账号访问控制（单账号模式）
 - CloudFront 分发不提供实际边缘流量
 - 不支持 Cognito 托管 UI 域名（需要 CloudFront 边缘）

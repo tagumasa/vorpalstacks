@@ -90,8 +90,10 @@ SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 
 ### Dockerで実行（Lambda用）
 
+Dockerがインストールされ実行中である必要があります。Lambda関数はDockerコンテナ内で実行されます。
+
 ```bash
-SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
+SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/run/docker.sock ./vorpalstacks
 ```
 
 ### AWS CLIでの使用
@@ -143,6 +145,7 @@ cd scripts/services && bash test_iam.sh
 | `GRPC_WEB_PORT` | `9090` | gRPC-Web管理サーバーポート |
 | `TLS_ENABLED` | `false` | TLSを有効化 |
 | `AUTHORIZATION_ENABLED` | `false` | IAMポリシー評価を有効化 |
+| `DOCKER_HOST` | `unix:///var/run/docker.sock` | Dockerデーモンソケット（Lambda用） |
 
 完全な一覧については[設定](docs/configuration.md)を参照してください。
 
