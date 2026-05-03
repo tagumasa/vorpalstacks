@@ -2,6 +2,7 @@ package cognitoidentityprovider
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -9,6 +10,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cognitoidentityprovider"
 	"vorpalstacks/internal/pb/aws/cognitoidentityprovider/cognitoidentityproviderconnect"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
@@ -58,6 +60,42 @@ func (h *AdminHandler) ListUserPools(ctx context.Context, req *connect.Request[p
 	return connect.NewResponse(&pb.ListUserPoolsResponse{
 		Userpools: descriptions,
 	}), nil
+}
+
+// CreateUserPool creates a new Cognito user pool via the admin console.
+func (h *AdminHandler) CreateUserPool(ctx context.Context, req *connect.Request[pb.CreateUserPoolRequest]) (*connect.Response[pb.CreateUserPoolResponse], error) {
+	if req.Msg.GetPoolname() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PoolName is required"))
+	}
+
+	pool := &cognitostore.UserPool{
+		Name: req.Msg.GetPoolname(),
+	}
+
+	result, err := h.store.CreateUserPool(pool)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.CreateUserPoolResponse{
+		Userpool: &pb.UserPoolType{
+			Id:   result.ID,
+			Name: result.Name,
+		},
+	}), nil
+}
+
+// DeleteUserPool deletes a Cognito user pool via the admin console.
+func (h *AdminHandler) DeleteUserPool(ctx context.Context, req *connect.Request[pb.DeleteUserPoolRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.GetUserpoolid() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserPoolId is required"))
+	}
+
+	if err := h.store.DeleteUserPool(req.Msg.GetUserpoolid()); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Cognito Identity Provider admin console.

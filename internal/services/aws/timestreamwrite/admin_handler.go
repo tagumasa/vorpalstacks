@@ -2,6 +2,7 @@ package timestreamwrite
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -10,6 +11,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/timestreamwrite"
 	timestreamwriteconnect "vorpalstacks/internal/pb/aws/timestreamwrite/timestreamwriteconnect"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 )
@@ -35,8 +37,8 @@ func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId, da
 	}
 }
 
-func (h *AdminHandler) getStore(req *connect.Request[pb.ListDatabasesRequest]) (*timestreamstore.Store, error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+func (h *AdminHandler) getStoreFromHeader(header http.Header) (*timestreamstore.Store, error) {
+	region := svccommon.GetRegionFromHeader(header)
 	regionStorage, err := h.storageManager.GetStorage(region)
 	if err != nil {
 		return nil, err
@@ -44,8 +46,8 @@ func (h *AdminHandler) getStore(req *connect.Request[pb.ListDatabasesRequest]) (
 	return timestreamstore.NewStore(regionStorage, h.accountId, region), nil
 }
 
-func (h *AdminHandler) getTableStore(req *connect.Request[pb.ListTablesRequest]) (*timestreamstore.TableStore, error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+func (h *AdminHandler) getTableStoreFromHeader(header http.Header) (*timestreamstore.TableStore, error) {
+	region := svccommon.GetRegionFromHeader(header)
 	regionStorage, err := h.storageManager.GetStorage(region)
 	if err != nil {
 		return nil, err
@@ -57,7 +59,7 @@ func (h *AdminHandler) getTableStore(req *connect.Request[pb.ListTablesRequest])
 // ListDatabases returns a paginated list of Timestream databases in the
 // requested region.
 func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[pb.ListDatabasesRequest]) (*connect.Response[pb.ListDatabasesResponse], error) {
-	store, err := h.getStore(req)
+	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -98,7 +100,7 @@ func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[p
 // ListTables returns a paginated list of Timestream tables in the specified
 // database.
 func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.ListTablesRequest]) (*connect.Response[pb.ListTablesResponse], error) {
-	store, err := h.getTableStore(req)
+	store, err := h.getTableStoreFromHeader(req.Header())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -133,6 +135,51 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 		Tables:    tables,
 		Nexttoken: result.NextMarker,
 	}), nil
+}
+
+// CreateDatabase creates a new Timestream database via the admin console.
+func (h *AdminHandler) CreateDatabase(ctx context.Context, req *connect.Request[pb.CreateDatabaseRequest]) (*connect.Response[pb.CreateDatabaseResponse], error) {
+	if req.Msg.GetDatabasename() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DatabaseName is required"))
+	}
+
+	store, err := h.getStoreFromHeader(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	db, err := store.CreateDatabase(req.Msg.GetDatabasename(), req.Msg.GetKmskeyid())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.CreateDatabaseResponse{
+		Database: &pb.Database{
+			Arn:             db.ARN,
+			Databasename:    db.DatabaseName,
+			Kmskeyid:        db.KmsKeyId,
+			Creationtime:    db.CreationTime.Format("2006-01-02T15:04:05.000Z"),
+			Lastupdatedtime: db.LastUpdatedTime.Format("2006-01-02T15:04:05.000Z"),
+		},
+	}), nil
+}
+
+// DeleteDatabase deletes a Timestream database via the admin console.
+func (h *AdminHandler) DeleteDatabase(ctx context.Context, req *connect.Request[pb.DeleteDatabaseRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.GetDatabasename() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DatabaseName is required"))
+	}
+
+	store, err := h.getStoreFromHeader(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if err := store.DeleteDatabase(req.Msg.GetDatabasename()); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Timestream Write admin console.

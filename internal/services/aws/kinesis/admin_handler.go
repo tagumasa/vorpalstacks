@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/kinesis"
 	kinesisconnect "vorpalstacks/internal/pb/aws/kinesis/kinesisconnect"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
@@ -234,6 +235,50 @@ func toPbMetricsName(metric string) pb.MetricsName {
 	default:
 		return pb.MetricsName_METRICS_NAME_INCOMING_BYTES
 	}
+}
+
+// CreateStream creates a new Kinesis stream via the admin console.
+func (h *AdminHandler) CreateStream(ctx context.Context, req *connect.Request[pb.CreateStreamInput]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.GetStreamname() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("StreamName is required"))
+	}
+
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.getKinesisStoreByRegion(region)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	shardCount := req.Msg.GetShardcount()
+	if shardCount <= 0 {
+		shardCount = 1
+	}
+
+	_, err = store.CreateStream(req.Msg.GetStreamname(), shardCount, kinesisstore.StreamModeProvisioned)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// DeleteStream deletes a Kinesis stream via the admin console.
+func (h *AdminHandler) DeleteStream(ctx context.Context, req *connect.Request[pb.DeleteStreamInput]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.GetStreamname() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("StreamName is required"))
+	}
+
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.getKinesisStoreByRegion(region)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if err := store.DeleteStream(req.Msg.GetStreamname()); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Kinesis admin console.

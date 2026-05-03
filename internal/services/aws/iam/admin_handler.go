@@ -2,15 +2,20 @@ package iam
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
 
 	"vorpalstacks/internal/core/storage"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/iam"
 	"vorpalstacks/internal/pb/aws/iam/iamconnect"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	"vorpalstacks/internal/utils/aws/types"
 )
+
+var _ iamconnect.IAMServiceHandler = (*AdminHandler)(nil)
 
 // AdminHandler implements the IAM admin console gRPC-Web handler.
 type AdminHandler struct {
@@ -199,6 +204,90 @@ func toPbPolicy(policy *iamstore.Policy) *pb.Policy {
 	}
 
 	return pbPolicy
+}
+
+// CreateUser creates a new IAM user via the admin console gRPC-Web interface.
+func (h *AdminHandler) CreateUser(ctx context.Context, req *connect.Request[pb.CreateUserRequest]) (*connect.Response[pb.CreateUserResponse], error) {
+	if req.Msg.Username == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
+	}
+
+	var tags []types.Tag
+	for _, t := range req.Msg.Tags {
+		tags = append(tags, types.Tag{Key: t.Key, Value: t.Value})
+	}
+
+	user, err := h.storeObj.Users().Create(req.Msg.Username, req.Msg.Path, h.storeObj.AccountID(), tags)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.CreateUserResponse{
+		User: toPbUser(user),
+	}), nil
+}
+
+// DeleteUser deletes an IAM user via the admin console gRPC-Web interface.
+func (h *AdminHandler) DeleteUser(ctx context.Context, req *connect.Request[pb.DeleteUserRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Username == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
+	}
+
+	if err := h.storeObj.Users().Delete(req.Msg.Username); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// CreateRole creates a new IAM role via the admin console gRPC-Web interface.
+func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.CreateRoleRequest]) (*connect.Response[pb.CreateRoleResponse], error) {
+	if req.Msg.Rolename == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
+	}
+	if req.Msg.Assumerolepolicydocument == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AssumeRolePolicyDocument is required"))
+	}
+
+	var tags []types.Tag
+	for _, t := range req.Msg.Tags {
+		tags = append(tags, types.Tag{Key: t.Key, Value: t.Value})
+	}
+
+	maxSessionDuration := int(req.Msg.Maxsessionduration)
+	if maxSessionDuration == 0 {
+		maxSessionDuration = 3600
+	}
+
+	role, err := h.storeObj.Roles().Create(
+		req.Msg.Rolename,
+		req.Msg.Path,
+		h.storeObj.AccountID(),
+		req.Msg.Assumerolepolicydocument,
+		req.Msg.Description,
+		maxSessionDuration,
+		tags,
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.CreateRoleResponse{
+		Role: toPbRole(role),
+	}), nil
+}
+
+// DeleteRole deletes an IAM role via the admin console gRPC-Web interface.
+func (h *AdminHandler) DeleteRole(ctx context.Context, req *connect.Request[pb.DeleteRoleRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Rolename == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
+	}
+
+	if err := h.storeObj.Roles().Delete(req.Msg.Rolename); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Iam admin console.

@@ -24,6 +24,7 @@ func (r *TestRunner) runTimestreamEdgeTests(tc *tsTestContext) []TestResult {
 			return fmt.Errorf("create db: %v", err)
 		}
 		defer tc.deleteDatabase(rtDBName)
+		defer tc.deleteTable(rtDBName, rtTableName)
 
 		_, err = tc.writeClient.CreateTable(tc.ctx, &timestreamwrite.CreateTableInput{
 			DatabaseName: aws.String(rtDBName),

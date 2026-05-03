@@ -5,6 +5,7 @@ package appsync
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -128,6 +129,64 @@ func toPbGraphqlApi(a *appsyncstore.GraphqlApi) *pb.GraphqlApi {
 		Xrayenabled:  a.XrayEnabled,
 		Wafwebaclarn: a.WafWebAclArn,
 	}
+}
+
+// CreateGraphqlApi creates a new AppSync GraphQL API via the admin console.
+func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Request[pb.CreateGraphqlApiRequest]) (*connect.Response[pb.CreateGraphqlApiResponse], error) {
+	if req.Msg.GetName() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("Name is required"))
+	}
+
+	store, err := h.getStoreByHeader(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	authType := "API_KEY"
+	switch req.Msg.GetAuthenticationtype() {
+	case pb.AuthenticationType_AUTHENTICATION_TYPE_AWS_IAM:
+		authType = "AWS_IAM"
+	case pb.AuthenticationType_AUTHENTICATION_TYPE_OPENID_CONNECT:
+		authType = "OPENID_CONNECT"
+	case pb.AuthenticationType_AUTHENTICATION_TYPE_AMAZON_COGNITO_USER_POOLS:
+		authType = "AMAZON_COGNITO_USER_POOLS"
+	case pb.AuthenticationType_AUTHENTICATION_TYPE_AWS_LAMBDA:
+		authType = "AWS_LAMBDA"
+	}
+
+	api := &appsyncstore.GraphqlApi{
+		Name:               req.Msg.GetName(),
+		AuthenticationType: authType,
+		Tags:               req.Msg.GetTags(),
+		XrayEnabled:        req.Msg.GetXrayenabled(),
+	}
+
+	result, err := store.CreateGraphqlApi(api)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.CreateGraphqlApiResponse{
+		Graphqlapi: toPbGraphqlApi(result),
+	}), nil
+}
+
+// DeleteGraphqlApi deletes an AppSync GraphQL API via the admin console.
+func (h *AdminHandler) DeleteGraphqlApi(ctx context.Context, req *connect.Request[pb.DeleteGraphqlApiRequest]) (*connect.Response[pb.DeleteGraphqlApiResponse], error) {
+	if req.Msg.GetApiid() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("ApiId is required"))
+	}
+
+	store, err := h.getStoreByHeader(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if err := store.DeleteGraphqlApiById(req.Msg.GetApiid()); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.DeleteGraphqlApiResponse{}), nil
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Appsync admin console.

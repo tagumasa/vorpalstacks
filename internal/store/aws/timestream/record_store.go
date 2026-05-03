@@ -76,6 +76,18 @@ func (s *RecordStore) Close() {
 	s.closeOnce.Do(func() { close(s.stopCh) })
 }
 
+// DeleteTableChunks removes all chunk files for a given table.
+func (s *RecordStore) DeleteTableChunks(databaseName, tableName string) {
+	chunkDir := fmt.Sprintf("%s/timestream_chunks/%s/%s/%s", s.dataPath, s.region, naming.SanitizePathComponent(databaseName), naming.SanitizePathComponent(tableName))
+	os.RemoveAll(chunkDir)
+}
+
+// DeleteDatabaseChunks removes all chunk files for a given database.
+func (s *RecordStore) DeleteDatabaseChunks(databaseName string) {
+	chunkDir := fmt.Sprintf("%s/timestream_chunks/%s/%s", s.dataPath, s.region, naming.SanitizePathComponent(databaseName))
+	os.RemoveAll(chunkDir)
+}
+
 func convertDimensions(dimensions []Dimension) []chunk.Dimension {
 	result := make([]chunk.Dimension, len(dimensions))
 	for i, d := range dimensions {

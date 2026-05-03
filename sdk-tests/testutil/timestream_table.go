@@ -184,6 +184,7 @@ func (r *TestRunner) runTimestreamTableTests(tc *tsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("timestream", "TableLifecycle_Cleanup", func() error {
+		tc.deleteTable(dbName, tableName)
 		tc.deleteDatabase(dbName)
 		return nil
 	}))

@@ -16,6 +16,17 @@ func s3Bucket(ts string, name string) string {
 }
 
 func s3CleanupBucket(ctx context.Context, client *s3.Client, bucket string) {
+	mpuResp, err := client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: aws.String(bucket)})
+	if err == nil {
+		for _, u := range mpuResp.Uploads {
+			client.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+				Bucket:   aws.String(bucket),
+				Key:      u.Key,
+				UploadId: u.UploadId,
+			})
+		}
+	}
+
 	listResp, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
 	if err != nil {
 		return
@@ -55,6 +66,7 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 	ctx := context.Background()
 	ts := fmt.Sprintf("%d", time.Now().UnixNano())
 	bucketName := s3Bucket(ts, "main")
+	defer s3CleanupBucket(ctx, client, bucketName)
 
 	results = append(results, r.s3BucketTests(ctx, client, ts, bucketName)...)
 	results = append(results, r.s3ObjectTests(ctx, client, ts, bucketName)...)

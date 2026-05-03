@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/scheduler"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -242,6 +243,17 @@ func (ic *integClients) createBucket(name string) error {
 }
 
 func (ic *integClients) deleteBucket(name string) {
+	listResp, err := ic.s3.ListObjectsV2(ic.ctx, &s3.ListObjectsV2Input{Bucket: aws.String(name)})
+	if err == nil && len(listResp.Contents) > 0 {
+		var objs []s3types.ObjectIdentifier
+		for _, o := range listResp.Contents {
+			objs = append(objs, s3types.ObjectIdentifier{Key: o.Key})
+		}
+		ic.s3.DeleteObjects(ic.ctx, &s3.DeleteObjectsInput{
+			Bucket: aws.String(name),
+			Delete: &s3types.Delete{Objects: objs},
+		})
+	}
 	ic.s3.DeleteBucket(ic.ctx, &s3.DeleteBucketInput{Bucket: aws.String(name)})
 }
 

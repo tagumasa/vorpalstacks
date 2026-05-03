@@ -2,6 +2,7 @@ package sns
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -9,6 +10,7 @@ import (
 	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/sns"
 	snsconnect "vorpalstacks/internal/pb/aws/sns/snsconnect"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
@@ -62,6 +64,47 @@ func (h *AdminHandler) ListTopics(ctx context.Context, req *connect.Request[pb.L
 		Topics:    topics,
 		Nexttoken: result.NextMarker,
 	}), nil
+}
+
+// CreateTopic creates a new SNS topic via the admin console.
+func (h *AdminHandler) CreateTopic(ctx context.Context, req *connect.Request[pb.CreateTopicInput]) (*connect.Response[pb.CreateTopicResponse], error) {
+	if req.Msg.GetName() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("Name is required"))
+	}
+
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.getSNSStoreByRegion(region)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	result, err := store.CreateTopic(&snsstore.Topic{Name: req.Msg.GetName()})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.CreateTopicResponse{
+		Topicarn: result.Arn,
+	}), nil
+}
+
+// DeleteTopic deletes an SNS topic via the admin console.
+func (h *AdminHandler) DeleteTopic(ctx context.Context, req *connect.Request[pb.DeleteTopicInput]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.GetTopicarn() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TopicArn is required"))
+	}
+
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.getSNSStoreByRegion(region)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if err := store.DeleteTopic(req.Msg.GetTopicarn()); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Sns admin console.

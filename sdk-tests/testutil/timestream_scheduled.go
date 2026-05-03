@@ -17,6 +17,12 @@ func (r *TestRunner) runTimestreamScheduledTests(tc *tsTestContext) []TestResult
 	sqRoleName := tc.uniqueName("ts-sq-role")
 	var sqARN string
 
+	defer func() {
+		tc.deleteTable(sqDBName, sqTableName)
+		tc.deleteDatabase(sqDBName)
+		IAMDeleteRole(tc.iamClient, sqRoleName)
+	}()
+
 	createIAMRole := func(roleName string) error {
 		return IAMCreateRole(tc.iamClient, roleName, `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"timestream.amazonaws.com"},"Action":"sts:AssumeRole"}]}`)
 	}
@@ -228,12 +234,6 @@ func (r *TestRunner) runTimestreamScheduledTests(tc *tsTestContext) []TestResult
 		})
 		_, err = tc.queryClient.CreateScheduledQuery(tc.ctx, dupInput)
 		return AssertErrorContains(err, "ResourceAlreadyExistsException")
-	}))
-
-	results = append(results, r.RunTest("timestream", "ScheduledQuery_Cleanup", func() error {
-		tc.deleteDatabase(sqDBName)
-		IAMDeleteRole(tc.iamClient, sqRoleName)
-		return nil
 	}))
 
 	return results

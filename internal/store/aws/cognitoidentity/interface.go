@@ -34,6 +34,11 @@ type CognitoIdentityStoreInterface interface {
 	GetPrincipalTagAttributeMap(poolID, providerName string) (*PrincipalTagAttributeMap, error)
 }
 
+// Region returns the AWS region configured for this store.
+func (s *CognitoIdentityStore) Region() string {
+	return s.region
+}
+
 // Raw returns the underlying Cognito Identity store.
 func (s *CognitoIdentityStore) Raw() *CognitoIdentityStore {
 	return s

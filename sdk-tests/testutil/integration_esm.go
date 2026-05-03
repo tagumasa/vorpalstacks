@@ -27,7 +27,7 @@ func (r *TestRunner) runESMSQSToLambda(ic *integClients, ts string) TestResult {
 	}
 	defer ic.deleteQueue(queueURL)
 
-	_, err = ic.lambda.CreateEventSourceMapping(ic.ctx, &lambda.CreateEventSourceMappingInput{
+	esmResp, err := ic.lambda.CreateEventSourceMapping(ic.ctx, &lambda.CreateEventSourceMappingInput{
 		FunctionName:   aws.String(fnName),
 		EventSourceArn: aws.String(fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:%s", queueName)),
 		Enabled:        aws.Bool(true),
@@ -36,6 +36,10 @@ func (r *TestRunner) runESMSQSToLambda(ic *integClients, ts string) TestResult {
 	if err != nil {
 		return r.RunTest(integSvc, "ESM_SQS_Lambda", func() error { return fmt.Errorf("create ESM: %w", err) })
 	}
+	esmUUID := esmResp.UUID
+	defer func() {
+		ic.lambda.DeleteEventSourceMapping(ic.ctx, &lambda.DeleteEventSourceMappingInput{UUID: esmUUID})
+	}()
 
 	ic.sqs.SendMessage(ic.ctx, &sqs.SendMessageInput{
 		QueueUrl:    aws.String(queueURL),

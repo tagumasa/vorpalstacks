@@ -172,6 +172,7 @@ func (s *TimestreamWriteService) DeleteDatabase(ctx context.Context, reqCtx *req
 		}
 		return nil, s.mapStoreError(err)
 	}
+	st.recordStore.DeleteDatabaseChunks(databaseName)
 
 	return response.EmptyResponse(), nil
 }

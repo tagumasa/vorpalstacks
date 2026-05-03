@@ -184,6 +184,7 @@ func (s *TimestreamWriteService) DeleteTable(ctx context.Context, reqCtx *reques
 		}
 		return nil, s.mapStoreError(err)
 	}
+	st.recordStore.DeleteTableChunks(databaseName, tableName)
 
 	return response.EmptyResponse(), nil
 }

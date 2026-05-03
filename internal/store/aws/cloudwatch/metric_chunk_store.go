@@ -83,6 +83,57 @@ func (s *MetricChunkStore) Close() {
 	s.closeOnce.Do(func() { close(s.stopCh) })
 }
 
+// DeleteNamespaceChunks removes all chunk files for a given namespace.
+func (s *MetricChunkStore) DeleteNamespaceChunks(namespace string) {
+	safeNS := strings.ReplaceAll(namespace, "/", "_")
+	chunkDir := fmt.Sprintf("%s/%s/cw_metric_chunks/%s", s.dataPath, s.region, safeNS)
+	os.RemoveAll(chunkDir)
+}
+
+// defaultMetricRetention is the default CloudWatch metric retention period (15 months).
+const defaultMetricRetention = 15 * 30 * 24 * time.Hour
+
+func (s *MetricChunkStore) cleanupExpiredChunks() {
+	chunkBase := fmt.Sprintf("%s/%s/cw_metric_chunks", s.dataPath, s.region)
+	cutoff := time.Now().Add(-defaultMetricRetention)
+
+	nsEntries, err := os.ReadDir(chunkBase)
+	if err != nil {
+		return
+	}
+	for _, nsEntry := range nsEntries {
+		if !nsEntry.IsDir() {
+			continue
+		}
+		nsDir := filepath.Join(chunkBase, nsEntry.Name())
+		s.cleanExpiredMetricDirs(nsDir, cutoff)
+	}
+}
+
+func (s *MetricChunkStore) cleanExpiredMetricDirs(nsDir string, cutoff time.Time) {
+	metricEntries, err := os.ReadDir(nsDir)
+	if err != nil {
+		return
+	}
+	for _, metricEntry := range metricEntries {
+		if !metricEntry.IsDir() {
+			continue
+		}
+		metricDir := filepath.Join(nsDir, metricEntry.Name())
+		info, err := metricEntry.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().Before(cutoff) {
+			os.RemoveAll(metricDir)
+		}
+	}
+	entries, _ := os.ReadDir(nsDir)
+	if len(entries) == 0 {
+		os.Remove(nsDir)
+	}
+}
+
 func (s *MetricChunkStore) getChunkPath(namespace, metricName string, ts time.Time) string {
 	safeNS := strings.ReplaceAll(namespace, "/", "_")
 	safeMetric := strings.ReplaceAll(metricName, "/", "_")
@@ -121,6 +172,7 @@ func (s *MetricChunkStore) cleanupChunkLocks() {
 			}
 			return true
 		})
+		s.cleanupExpiredChunks()
 	}
 }
 
