@@ -6,10 +6,15 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	commoniam "vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/store/aws/common"
 )
 
 const accessKeyBucketName = "iam_access_keys"
+
+// RootUserName is the canonical constant for root user access keys,
+// sourced from common/iam for cross-package consistency.
+const RootUserName = commoniam.RootUserName
 
 // AccessKeyStore manages IAM access key data in persistent storage.
 type AccessKeyStore struct {

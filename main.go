@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/server/apps"
@@ -19,6 +20,10 @@ func main() {
 
 	app, err := apps.New(cfg)
 	if err != nil {
+		if strings.Contains(err.Error(), "resource temporarily unavailable") ||
+			strings.Contains(err.Error(), "lock file") {
+			fmt.Fprintln(os.Stderr, "Another vorpalstacks process is running. Kill it first: pkill -9 vorpalstacks")
+		}
 		fmt.Fprintf(os.Stderr, "Failed to initialise: %v\n", err)
 		os.Exit(1)
 	}
