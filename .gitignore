@@ -27,23 +27,16 @@ go.work
 *.swp
 *.swo
 
-# Terraform
-.terraform/
-.terraform.lock.hcl
-*.tfstate
-*.tfstate.backup
-
 # OS
 .DS_Store
 Thumbs.db
 
-# Flutter/Dart
-web_ui/.dart_tool/
-web_ui/build/
-web_ui/.packages
-web_ui/.flutter-plugins
-web_ui/.flutter-plugins-dependencies
-*.iml
+# webconsole (TypeScript/React)
+webconsole/node_modules/
+webconsole/dist/
+webconsole/.vite/
+webconsole/*.tsbuildinfo
+webconsole/src/gen/
 
 # Ruff
 .ruff_cache/

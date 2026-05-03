@@ -1,4 +1,10 @@
 // Package sts provides STS (Security Token Service) operations for vorpalstacks.
+//
+// STS is an IAM sub-service and directly accesses the IAM store
+// (internal/store/aws/iam) for identity and role resolution.
+// This is an intentional architectural decision: STS fundamentally
+// depends on IAM roles and access keys, and synchronous store access
+// is required for trust policy evaluation and caller identity resolution.
 package sts
 
 import (
@@ -110,16 +116,10 @@ func (s *STSService) GetCallerIdentity(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if userId == "" && arn == "" {
-		accessKeyId := req.Headers.Get("X-Amz-Access-Key")
-		if accessKeyId != "" {
-			iamStore, err := s.iamStore(reqCtx)
-			if err == nil {
-				accessKey, err := iamStore.AccessKeys().Get(accessKeyId)
-				if err == nil && accessKey != nil {
-					userId = accessKey.UserName
-					arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(accessKey.UserName)
-				}
-			}
+		callerArn, callerName := s.resolveCallerIdentity(reqCtx, req)
+		if callerArn != "" {
+			arn = callerArn
+			userId = callerName
 		}
 	}
 
@@ -168,12 +168,9 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
-	if !iamStore.Roles().Exists(roleName) {
-		return nil, ErrNoSuchRole
-	}
 
-	role, roleErr := iamStore.Roles().Get(roleName)
-	if roleErr != nil {
+	role, err := iamStore.Roles().Get(roleName)
+	if err != nil {
 		return nil, ErrNoSuchRole
 	}
 
@@ -239,15 +236,7 @@ func (s *STSService) GetSessionToken(ctx context.Context, reqCtx *request.Reques
 	var callerArn, callerName string
 
 	if accessKeyId != "" {
-		iamStore, err := s.iamStore(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		accessKey, err := iamStore.AccessKeys().Get(accessKeyId)
-		if err == nil && accessKey != nil {
-			callerName = accessKey.UserName
-			callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(callerName)
-		}
+		callerArn, callerName = s.resolveCallerIdentity(reqCtx, req)
 	}
 
 	if callerArn == "" {
@@ -320,6 +309,10 @@ func (s *STSService) resolveCallerIdentity(reqCtx *request.RequestContext, req *
 	if err != nil || accessKey == nil {
 		return "", ""
 	}
+	// Root user access keys use the special RootUserName constant.
+	if accessKey.UserName == iam.RootUserName {
+		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root(), iam.RootUserName
+	}
 	return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(accessKey.UserName), accessKey.UserName
 }
 
@@ -372,11 +365,11 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	if !iamStore.Roles().Exists(roleName) {
+
+	samlRole, err := iamStore.Roles().Get(roleName)
+	if err != nil {
 		return nil, ErrNoSuchRole
 	}
-
-	samlRole, _ := iamStore.Roles().Get(roleName)
 
 	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
 	if err != nil {
@@ -402,11 +395,6 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	roleId := ""
-	if samlRole != nil {
-		roleId = samlRole.ID
-	}
-
 	return map[string]interface{}{
 		"Credentials": map[string]interface{}{
 			"AccessKeyId":     session.AccessKeyId,
@@ -415,7 +403,7 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
 		},
 		"AssumedRoleUser": map[string]interface{}{
-			"AssumedRoleId": roleId + ":" + roleSessionName,
+			"AssumedRoleId": samlRole.ID + ":" + roleSessionName,
 			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
 		},
 		"Subject":          principalArn,
@@ -463,11 +451,11 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
-	if !iamStore.Roles().Exists(roleName) {
+
+	webRole, err := iamStore.Roles().Get(roleName)
+	if err != nil {
 		return nil, ErrNoSuchRole
 	}
-
-	webRole, _ := iamStore.Roles().Get(roleName)
 
 	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
 	if err != nil {
@@ -498,11 +486,6 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	roleId := ""
-	if webRole != nil {
-		roleId = webRole.ID
-	}
-
 	return map[string]interface{}{
 		"Credentials": map[string]interface{}{
 			"AccessKeyId":     session.AccessKeyId,
@@ -511,7 +494,7 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
 		},
 		"AssumedRoleUser": map[string]interface{}{
-			"AssumedRoleId": roleId + ":" + roleSessionName,
+			"AssumedRoleId": webRole.ID + ":" + roleSessionName,
 			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
 		},
 		"Provider":                    providerId,

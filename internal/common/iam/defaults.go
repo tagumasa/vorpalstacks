@@ -2,6 +2,12 @@ package iam
 
 import "time"
 
+// RootUserName is the special user name used for root user access keys.
+// Access keys with this user name are treated as root credentials, bypassing
+// all IAM policy evaluation in the authoriser. This constant is shared across
+// services and stores to ensure consistent root user identification.
+const RootUserName = "<root>"
+
 // Default values for IAM caching and validation.
 const (
 	// DefaultCacheNumCounters is the default number of cache counters.

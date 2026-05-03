@@ -92,6 +92,15 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 			return err
 		}
 		tc.user = newName
+		resp, err := tc.client.GetUser(tc.ctx, &iam.GetUserInput{
+			UserName: aws.String(newName),
+		})
+		if err != nil {
+			return fmt.Errorf("GetUser with new name after UpdateUser: %w", err)
+		}
+		if aws.ToString(resp.User.UserName) != newName {
+			return fmt.Errorf("username not updated: got %s, want %s", aws.ToString(resp.User.UserName), newName)
+		}
 		return nil
 	}))
 
@@ -228,7 +237,19 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 			Password:              aws.String("NewPassword456!"),
 			PasswordResetRequired: aws.Bool(true),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetLoginProfile(tc.ctx, &iam.GetLoginProfileInput{
+			UserName: aws.String(tc.user),
+		})
+		if err != nil {
+			return fmt.Errorf("GetLoginProfile after update: %w", err)
+		}
+		if resp.LoginProfile == nil {
+			return fmt.Errorf("login profile is nil after UpdateLoginProfile")
+		}
+		return nil
 	}))
 
 	// User tags
@@ -239,7 +260,19 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListUserTags(tc.ctx, &iam.ListUserTagsInput{
+			UserName: aws.String(tc.user),
+		})
+		if err != nil {
+			return fmt.Errorf("ListUserTags after tag: %w", err)
+		}
+		if !iamTagPresent(resp.Tags, "Environment", "test") {
+			return fmt.Errorf("Environment=test tag not found after TagUser")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListUserTags", func() error {
@@ -287,7 +320,20 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 			PolicyName:     aws.String(tc.userInlinePolicy),
 			PolicyDocument: aws.String(s3FullAccessPolicy),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetUserPolicy(tc.ctx, &iam.GetUserPolicyInput{
+			UserName:   aws.String(tc.user),
+			PolicyName: aws.String(tc.userInlinePolicy),
+		})
+		if err != nil {
+			return fmt.Errorf("GetUserPolicy after PutUserPolicy: %w", err)
+		}
+		if resp.PolicyDocument == nil || *resp.PolicyDocument == "" {
+			return fmt.Errorf("policy document is empty after PutUserPolicy")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetUserPolicy", func() error {

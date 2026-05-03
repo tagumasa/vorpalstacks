@@ -20,10 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AdminAuthService_Login_FullMethodName          = "/admin_auth.AdminAuthService/Login"
-	AdminAuthService_RefreshToken_FullMethodName   = "/admin_auth.AdminAuthService/RefreshToken"
-	AdminAuthService_Logout_FullMethodName         = "/admin_auth.AdminAuthService/Logout"
-	AdminAuthService_GetCurrentUser_FullMethodName = "/admin_auth.AdminAuthService/GetCurrentUser"
+	AdminAuthService_Login_FullMethodName             = "/admin_auth.AdminAuthService/Login"
+	AdminAuthService_LoginRoot_FullMethodName         = "/admin_auth.AdminAuthService/LoginRoot"
+	AdminAuthService_RefreshToken_FullMethodName      = "/admin_auth.AdminAuthService/RefreshToken"
+	AdminAuthService_Logout_FullMethodName            = "/admin_auth.AdminAuthService/Logout"
+	AdminAuthService_GetCurrentUser_FullMethodName    = "/admin_auth.AdminAuthService/GetCurrentUser"
+	AdminAuthService_InitialSetup_FullMethodName      = "/admin_auth.AdminAuthService/InitialSetup"
+	AdminAuthService_IsRootInitialized_FullMethodName = "/admin_auth.AdminAuthService/IsRootInitialized"
 )
 
 // AdminAuthServiceClient is the client API for AdminAuthService service.
@@ -31,9 +34,12 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AdminAuthServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	LoginRoot(ctx context.Context, in *LoginRootRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*common.Empty, error)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
+	InitialSetup(ctx context.Context, in *InitialSetupRequest, opts ...grpc.CallOption) (*InitialSetupResponse, error)
+	IsRootInitialized(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*IsRootInitializedResponse, error)
 }
 
 type adminAuthServiceClient struct {
@@ -48,6 +54,16 @@ func (c *adminAuthServiceClient) Login(ctx context.Context, in *LoginRequest, op
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoginResponse)
 	err := c.cc.Invoke(ctx, AdminAuthService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminAuthServiceClient) LoginRoot(ctx context.Context, in *LoginRootRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginResponse)
+	err := c.cc.Invoke(ctx, AdminAuthService_LoginRoot_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -84,14 +100,37 @@ func (c *adminAuthServiceClient) GetCurrentUser(ctx context.Context, in *GetCurr
 	return out, nil
 }
 
+func (c *adminAuthServiceClient) InitialSetup(ctx context.Context, in *InitialSetupRequest, opts ...grpc.CallOption) (*InitialSetupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InitialSetupResponse)
+	err := c.cc.Invoke(ctx, AdminAuthService_InitialSetup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminAuthServiceClient) IsRootInitialized(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*IsRootInitializedResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IsRootInitializedResponse)
+	err := c.cc.Invoke(ctx, AdminAuthService_IsRootInitialized_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminAuthServiceServer is the server API for AdminAuthService service.
 // All implementations must embed UnimplementedAdminAuthServiceServer
 // for forward compatibility.
 type AdminAuthServiceServer interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	LoginRoot(context.Context, *LoginRootRequest) (*LoginResponse, error)
 	RefreshToken(context.Context, *RefreshTokenRequest) (*LoginResponse, error)
 	Logout(context.Context, *LogoutRequest) (*common.Empty, error)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
+	InitialSetup(context.Context, *InitialSetupRequest) (*InitialSetupResponse, error)
+	IsRootInitialized(context.Context, *common.Empty) (*IsRootInitializedResponse, error)
 	mustEmbedUnimplementedAdminAuthServiceServer()
 }
 
@@ -105,6 +144,9 @@ type UnimplementedAdminAuthServiceServer struct{}
 func (UnimplementedAdminAuthServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
 }
+func (UnimplementedAdminAuthServiceServer) LoginRoot(context.Context, *LoginRootRequest) (*LoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LoginRoot not implemented")
+}
 func (UnimplementedAdminAuthServiceServer) RefreshToken(context.Context, *RefreshTokenRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RefreshToken not implemented")
 }
@@ -113,6 +155,12 @@ func (UnimplementedAdminAuthServiceServer) Logout(context.Context, *LogoutReques
 }
 func (UnimplementedAdminAuthServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetCurrentUser not implemented")
+}
+func (UnimplementedAdminAuthServiceServer) InitialSetup(context.Context, *InitialSetupRequest) (*InitialSetupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InitialSetup not implemented")
+}
+func (UnimplementedAdminAuthServiceServer) IsRootInitialized(context.Context, *common.Empty) (*IsRootInitializedResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method IsRootInitialized not implemented")
 }
 func (UnimplementedAdminAuthServiceServer) mustEmbedUnimplementedAdminAuthServiceServer() {}
 func (UnimplementedAdminAuthServiceServer) testEmbeddedByValue()                          {}
@@ -149,6 +197,24 @@ func _AdminAuthService_Login_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminAuthServiceServer).Login(ctx, req.(*LoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminAuthService_LoginRoot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginRootRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminAuthServiceServer).LoginRoot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminAuthService_LoginRoot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminAuthServiceServer).LoginRoot(ctx, req.(*LoginRootRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -207,6 +273,42 @@ func _AdminAuthService_GetCurrentUser_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminAuthService_InitialSetup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InitialSetupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminAuthServiceServer).InitialSetup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminAuthService_InitialSetup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminAuthServiceServer).InitialSetup(ctx, req.(*InitialSetupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminAuthService_IsRootInitialized_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(common.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminAuthServiceServer).IsRootInitialized(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminAuthService_IsRootInitialized_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminAuthServiceServer).IsRootInitialized(ctx, req.(*common.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminAuthService_ServiceDesc is the grpc.ServiceDesc for AdminAuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -219,6 +321,10 @@ var AdminAuthService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminAuthService_Login_Handler,
 		},
 		{
+			MethodName: "LoginRoot",
+			Handler:    _AdminAuthService_LoginRoot_Handler,
+		},
+		{
 			MethodName: "RefreshToken",
 			Handler:    _AdminAuthService_RefreshToken_Handler,
 		},
@@ -229,6 +335,14 @@ var AdminAuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCurrentUser",
 			Handler:    _AdminAuthService_GetCurrentUser_Handler,
+		},
+		{
+			MethodName: "InitialSetup",
+			Handler:    _AdminAuthService_InitialSetup_Handler,
+		},
+		{
+			MethodName: "IsRootInitialized",
+			Handler:    _AdminAuthService_IsRootInitialized_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -8,15 +8,14 @@ var (
 	// ErrMissingCredentials is returned when username or password is not provided.
 	ErrMissingCredentials = errors.New("username and password are required")
 
+	// ErrMissingPassword is returned when password is not provided.
+	ErrMissingPassword = errors.New("password is required")
+
 	// ErrInvalidCredentials is returned when the username or password is incorrect.
 	ErrInvalidCredentials = errors.New("invalid username or password")
 
 	// ErrMissingRefreshToken is returned when the refresh token is not provided.
 	ErrMissingRefreshToken = errors.New("refresh token is required")
-
-	// ErrRefreshNotImplemented is returned when the refresh token flow is not
-	// implemented.
-	ErrRefreshNotImplemented = errors.New("refresh token flow not implemented")
 
 	// ErrMissingAccessToken is returned when the access token is not provided.
 	ErrMissingAccessToken = errors.New("access token is required")
@@ -30,4 +29,11 @@ var (
 	// ErrInvalidRefreshToken is returned when the refresh token is invalid
 	// or has expired.
 	ErrInvalidRefreshToken = errors.New("invalid or expired refresh token")
+
+	// ErrAlreadyInitialised is returned when InitialSetup is called but
+	// the root user has already been set up.
+	ErrAlreadyInitialised = errors.New("root user has already been initialised")
+
+	// ErrPasswordTooShort is returned when the password does not meet minimum length.
+	ErrPasswordTooShort = errors.New("password must be at least 8 characters")
 )

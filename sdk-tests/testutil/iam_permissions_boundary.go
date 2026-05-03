@@ -16,7 +16,22 @@ func (r *TestRunner) iamPermissionsBoundaryTests(tc *iamTestContext) []TestResul
 			UserName:            aws.String(tc.user),
 			PermissionsBoundary: aws.String(tc.policyArn),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetUser(tc.ctx, &iam.GetUserInput{
+			UserName: aws.String(tc.user),
+		})
+		if err != nil {
+			return fmt.Errorf("GetUser after PutUserPermissionsBoundary: %w", err)
+		}
+		if resp.User.PermissionsBoundary == nil {
+			return fmt.Errorf("permissions boundary is nil after PutUserPermissionsBoundary")
+		}
+		if aws.ToString(resp.User.PermissionsBoundary.PermissionsBoundaryArn) != tc.policyArn {
+			return fmt.Errorf("permissions boundary arn mismatch: got %s", aws.ToString(resp.User.PermissionsBoundary.PermissionsBoundaryArn))
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetUser_PermissionsBoundary", func() error {
@@ -61,7 +76,22 @@ func (r *TestRunner) iamPermissionsBoundaryTests(tc *iamTestContext) []TestResul
 			RoleName:            aws.String(tc.role),
 			PermissionsBoundary: aws.String(tc.policyArn),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetRole(tc.ctx, &iam.GetRoleInput{
+			RoleName: aws.String(tc.role),
+		})
+		if err != nil {
+			return fmt.Errorf("GetRole after PutRolePermissionsBoundary: %w", err)
+		}
+		if resp.Role.PermissionsBoundary == nil {
+			return fmt.Errorf("permissions boundary is nil after PutRolePermissionsBoundary")
+		}
+		if aws.ToString(resp.Role.PermissionsBoundary.PermissionsBoundaryArn) != tc.policyArn {
+			return fmt.Errorf("permissions boundary arn mismatch: got %s", aws.ToString(resp.Role.PermissionsBoundary.PermissionsBoundaryArn))
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetRole_PermissionsBoundary", func() error {

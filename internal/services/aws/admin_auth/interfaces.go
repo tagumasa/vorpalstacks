@@ -12,9 +12,20 @@ type PasswordVerifier interface {
 	VerifyPassword(username, password string) (bool, error)
 }
 
+// LoginProfileChecker defines the interface for checking whether a login profile exists.
+// Used to determine if the root user has been initialised.
+type LoginProfileChecker interface {
+	Exists(userName string) bool
+}
+
 // UserReader defines the interface for retrieving user information.
 type UserReader interface {
 	Get(userName string) (*iamstore.User, error)
+}
+
+// PasswordCreator defines the interface for creating login profiles with passwords.
+type PasswordCreator interface {
+	Create(userName, password string, passwordResetRequired bool) (*iamstore.LoginProfile, error)
 }
 
 // GroupMembershipReader defines the interface for retrieving group membership information.
@@ -25,6 +36,11 @@ type GroupMembershipReader interface {
 // AttachedPolicyReader defines the interface for retrieving attached policy information.
 type AttachedPolicyReader interface {
 	ListAttachedPolicies(principalType, principalName string) ([]string, error)
+}
+
+// AccessKeyCreator defines the interface for creating IAM access keys.
+type AccessKeyCreator interface {
+	Create(userName string) (*iamstore.AccessKey, error)
 }
 
 // TokenGenerator defines the interface for generating and validating authentication tokens.

@@ -36,6 +36,9 @@ const (
 const (
 	// AdminAuthServiceLoginProcedure is the fully-qualified name of the AdminAuthService's Login RPC.
 	AdminAuthServiceLoginProcedure = "/admin_auth.AdminAuthService/Login"
+	// AdminAuthServiceLoginRootProcedure is the fully-qualified name of the AdminAuthService's
+	// LoginRoot RPC.
+	AdminAuthServiceLoginRootProcedure = "/admin_auth.AdminAuthService/LoginRoot"
 	// AdminAuthServiceRefreshTokenProcedure is the fully-qualified name of the AdminAuthService's
 	// RefreshToken RPC.
 	AdminAuthServiceRefreshTokenProcedure = "/admin_auth.AdminAuthService/RefreshToken"
@@ -44,14 +47,23 @@ const (
 	// AdminAuthServiceGetCurrentUserProcedure is the fully-qualified name of the AdminAuthService's
 	// GetCurrentUser RPC.
 	AdminAuthServiceGetCurrentUserProcedure = "/admin_auth.AdminAuthService/GetCurrentUser"
+	// AdminAuthServiceInitialSetupProcedure is the fully-qualified name of the AdminAuthService's
+	// InitialSetup RPC.
+	AdminAuthServiceInitialSetupProcedure = "/admin_auth.AdminAuthService/InitialSetup"
+	// AdminAuthServiceIsRootInitializedProcedure is the fully-qualified name of the AdminAuthService's
+	// IsRootInitialized RPC.
+	AdminAuthServiceIsRootInitializedProcedure = "/admin_auth.AdminAuthService/IsRootInitialized"
 )
 
 // AdminAuthServiceClient is a client for the admin_auth.AdminAuthService service.
 type AdminAuthServiceClient interface {
 	Login(context.Context, *connect.Request[admin_auth.LoginRequest]) (*connect.Response[admin_auth.LoginResponse], error)
+	LoginRoot(context.Context, *connect.Request[admin_auth.LoginRootRequest]) (*connect.Response[admin_auth.LoginResponse], error)
 	RefreshToken(context.Context, *connect.Request[admin_auth.RefreshTokenRequest]) (*connect.Response[admin_auth.LoginResponse], error)
 	Logout(context.Context, *connect.Request[admin_auth.LogoutRequest]) (*connect.Response[common.Empty], error)
 	GetCurrentUser(context.Context, *connect.Request[admin_auth.GetCurrentUserRequest]) (*connect.Response[admin_auth.GetCurrentUserResponse], error)
+	InitialSetup(context.Context, *connect.Request[admin_auth.InitialSetupRequest]) (*connect.Response[admin_auth.InitialSetupResponse], error)
+	IsRootInitialized(context.Context, *connect.Request[common.Empty]) (*connect.Response[admin_auth.IsRootInitializedResponse], error)
 }
 
 // NewAdminAuthServiceClient constructs a client for the admin_auth.AdminAuthService service. By
@@ -69,6 +81,12 @@ func NewAdminAuthServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			httpClient,
 			baseURL+AdminAuthServiceLoginProcedure,
 			connect.WithSchema(adminAuthServiceMethods.ByName("Login")),
+			connect.WithClientOptions(opts...),
+		),
+		loginRoot: connect.NewClient[admin_auth.LoginRootRequest, admin_auth.LoginResponse](
+			httpClient,
+			baseURL+AdminAuthServiceLoginRootProcedure,
+			connect.WithSchema(adminAuthServiceMethods.ByName("LoginRoot")),
 			connect.WithClientOptions(opts...),
 		),
 		refreshToken: connect.NewClient[admin_auth.RefreshTokenRequest, admin_auth.LoginResponse](
@@ -89,20 +107,40 @@ func NewAdminAuthServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(adminAuthServiceMethods.ByName("GetCurrentUser")),
 			connect.WithClientOptions(opts...),
 		),
+		initialSetup: connect.NewClient[admin_auth.InitialSetupRequest, admin_auth.InitialSetupResponse](
+			httpClient,
+			baseURL+AdminAuthServiceInitialSetupProcedure,
+			connect.WithSchema(adminAuthServiceMethods.ByName("InitialSetup")),
+			connect.WithClientOptions(opts...),
+		),
+		isRootInitialized: connect.NewClient[common.Empty, admin_auth.IsRootInitializedResponse](
+			httpClient,
+			baseURL+AdminAuthServiceIsRootInitializedProcedure,
+			connect.WithSchema(adminAuthServiceMethods.ByName("IsRootInitialized")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // adminAuthServiceClient implements AdminAuthServiceClient.
 type adminAuthServiceClient struct {
-	login          *connect.Client[admin_auth.LoginRequest, admin_auth.LoginResponse]
-	refreshToken   *connect.Client[admin_auth.RefreshTokenRequest, admin_auth.LoginResponse]
-	logout         *connect.Client[admin_auth.LogoutRequest, common.Empty]
-	getCurrentUser *connect.Client[admin_auth.GetCurrentUserRequest, admin_auth.GetCurrentUserResponse]
+	login             *connect.Client[admin_auth.LoginRequest, admin_auth.LoginResponse]
+	loginRoot         *connect.Client[admin_auth.LoginRootRequest, admin_auth.LoginResponse]
+	refreshToken      *connect.Client[admin_auth.RefreshTokenRequest, admin_auth.LoginResponse]
+	logout            *connect.Client[admin_auth.LogoutRequest, common.Empty]
+	getCurrentUser    *connect.Client[admin_auth.GetCurrentUserRequest, admin_auth.GetCurrentUserResponse]
+	initialSetup      *connect.Client[admin_auth.InitialSetupRequest, admin_auth.InitialSetupResponse]
+	isRootInitialized *connect.Client[common.Empty, admin_auth.IsRootInitializedResponse]
 }
 
 // Login calls admin_auth.AdminAuthService.Login.
 func (c *adminAuthServiceClient) Login(ctx context.Context, req *connect.Request[admin_auth.LoginRequest]) (*connect.Response[admin_auth.LoginResponse], error) {
 	return c.login.CallUnary(ctx, req)
+}
+
+// LoginRoot calls admin_auth.AdminAuthService.LoginRoot.
+func (c *adminAuthServiceClient) LoginRoot(ctx context.Context, req *connect.Request[admin_auth.LoginRootRequest]) (*connect.Response[admin_auth.LoginResponse], error) {
+	return c.loginRoot.CallUnary(ctx, req)
 }
 
 // RefreshToken calls admin_auth.AdminAuthService.RefreshToken.
@@ -120,12 +158,25 @@ func (c *adminAuthServiceClient) GetCurrentUser(ctx context.Context, req *connec
 	return c.getCurrentUser.CallUnary(ctx, req)
 }
 
+// InitialSetup calls admin_auth.AdminAuthService.InitialSetup.
+func (c *adminAuthServiceClient) InitialSetup(ctx context.Context, req *connect.Request[admin_auth.InitialSetupRequest]) (*connect.Response[admin_auth.InitialSetupResponse], error) {
+	return c.initialSetup.CallUnary(ctx, req)
+}
+
+// IsRootInitialized calls admin_auth.AdminAuthService.IsRootInitialized.
+func (c *adminAuthServiceClient) IsRootInitialized(ctx context.Context, req *connect.Request[common.Empty]) (*connect.Response[admin_auth.IsRootInitializedResponse], error) {
+	return c.isRootInitialized.CallUnary(ctx, req)
+}
+
 // AdminAuthServiceHandler is an implementation of the admin_auth.AdminAuthService service.
 type AdminAuthServiceHandler interface {
 	Login(context.Context, *connect.Request[admin_auth.LoginRequest]) (*connect.Response[admin_auth.LoginResponse], error)
+	LoginRoot(context.Context, *connect.Request[admin_auth.LoginRootRequest]) (*connect.Response[admin_auth.LoginResponse], error)
 	RefreshToken(context.Context, *connect.Request[admin_auth.RefreshTokenRequest]) (*connect.Response[admin_auth.LoginResponse], error)
 	Logout(context.Context, *connect.Request[admin_auth.LogoutRequest]) (*connect.Response[common.Empty], error)
 	GetCurrentUser(context.Context, *connect.Request[admin_auth.GetCurrentUserRequest]) (*connect.Response[admin_auth.GetCurrentUserResponse], error)
+	InitialSetup(context.Context, *connect.Request[admin_auth.InitialSetupRequest]) (*connect.Response[admin_auth.InitialSetupResponse], error)
+	IsRootInitialized(context.Context, *connect.Request[common.Empty]) (*connect.Response[admin_auth.IsRootInitializedResponse], error)
 }
 
 // NewAdminAuthServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -139,6 +190,12 @@ func NewAdminAuthServiceHandler(svc AdminAuthServiceHandler, opts ...connect.Han
 		AdminAuthServiceLoginProcedure,
 		svc.Login,
 		connect.WithSchema(adminAuthServiceMethods.ByName("Login")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminAuthServiceLoginRootHandler := connect.NewUnaryHandler(
+		AdminAuthServiceLoginRootProcedure,
+		svc.LoginRoot,
+		connect.WithSchema(adminAuthServiceMethods.ByName("LoginRoot")),
 		connect.WithHandlerOptions(opts...),
 	)
 	adminAuthServiceRefreshTokenHandler := connect.NewUnaryHandler(
@@ -159,16 +216,34 @@ func NewAdminAuthServiceHandler(svc AdminAuthServiceHandler, opts ...connect.Han
 		connect.WithSchema(adminAuthServiceMethods.ByName("GetCurrentUser")),
 		connect.WithHandlerOptions(opts...),
 	)
+	adminAuthServiceInitialSetupHandler := connect.NewUnaryHandler(
+		AdminAuthServiceInitialSetupProcedure,
+		svc.InitialSetup,
+		connect.WithSchema(adminAuthServiceMethods.ByName("InitialSetup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminAuthServiceIsRootInitializedHandler := connect.NewUnaryHandler(
+		AdminAuthServiceIsRootInitializedProcedure,
+		svc.IsRootInitialized,
+		connect.WithSchema(adminAuthServiceMethods.ByName("IsRootInitialized")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/admin_auth.AdminAuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AdminAuthServiceLoginProcedure:
 			adminAuthServiceLoginHandler.ServeHTTP(w, r)
+		case AdminAuthServiceLoginRootProcedure:
+			adminAuthServiceLoginRootHandler.ServeHTTP(w, r)
 		case AdminAuthServiceRefreshTokenProcedure:
 			adminAuthServiceRefreshTokenHandler.ServeHTTP(w, r)
 		case AdminAuthServiceLogoutProcedure:
 			adminAuthServiceLogoutHandler.ServeHTTP(w, r)
 		case AdminAuthServiceGetCurrentUserProcedure:
 			adminAuthServiceGetCurrentUserHandler.ServeHTTP(w, r)
+		case AdminAuthServiceInitialSetupProcedure:
+			adminAuthServiceInitialSetupHandler.ServeHTTP(w, r)
+		case AdminAuthServiceIsRootInitializedProcedure:
+			adminAuthServiceIsRootInitializedHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -182,6 +257,10 @@ func (UnimplementedAdminAuthServiceHandler) Login(context.Context, *connect.Requ
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_auth.AdminAuthService.Login is not implemented"))
 }
 
+func (UnimplementedAdminAuthServiceHandler) LoginRoot(context.Context, *connect.Request[admin_auth.LoginRootRequest]) (*connect.Response[admin_auth.LoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_auth.AdminAuthService.LoginRoot is not implemented"))
+}
+
 func (UnimplementedAdminAuthServiceHandler) RefreshToken(context.Context, *connect.Request[admin_auth.RefreshTokenRequest]) (*connect.Response[admin_auth.LoginResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_auth.AdminAuthService.RefreshToken is not implemented"))
 }
@@ -192,4 +271,12 @@ func (UnimplementedAdminAuthServiceHandler) Logout(context.Context, *connect.Req
 
 func (UnimplementedAdminAuthServiceHandler) GetCurrentUser(context.Context, *connect.Request[admin_auth.GetCurrentUserRequest]) (*connect.Response[admin_auth.GetCurrentUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_auth.AdminAuthService.GetCurrentUser is not implemented"))
+}
+
+func (UnimplementedAdminAuthServiceHandler) InitialSetup(context.Context, *connect.Request[admin_auth.InitialSetupRequest]) (*connect.Response[admin_auth.InitialSetupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_auth.AdminAuthService.InitialSetup is not implemented"))
+}
+
+func (UnimplementedAdminAuthServiceHandler) IsRootInitialized(context.Context, *connect.Request[common.Empty]) (*connect.Response[admin_auth.IsRootInitializedResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_auth.AdminAuthService.IsRootInitialized is not implemented"))
 }

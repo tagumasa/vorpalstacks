@@ -101,7 +101,26 @@ func (r *TestRunner) iamGroupTests(tc *iamTestContext) []TestResult {
 			GroupName: aws.String(tc.group),
 			UserName:  aws.String(tc.user),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetGroup(tc.ctx, &iam.GetGroupInput{
+			GroupName: aws.String(tc.group),
+		})
+		if err != nil {
+			return fmt.Errorf("GetGroup after AddUserToGroup: %w", err)
+		}
+		found := false
+		for _, u := range resp.Users {
+			if aws.ToString(u.UserName) == tc.user {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("user %s not found in group after AddUserToGroup", tc.user)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListGroupsForUser", func() error {
@@ -153,7 +172,20 @@ func (r *TestRunner) iamGroupTests(tc *iamTestContext) []TestResult {
 			PolicyName:     aws.String(tc.groupInlinePolicy),
 			PolicyDocument: aws.String(logsFullAccessPolicy),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetGroupPolicy(tc.ctx, &iam.GetGroupPolicyInput{
+			GroupName:  aws.String(tc.group),
+			PolicyName: aws.String(tc.groupInlinePolicy),
+		})
+		if err != nil {
+			return fmt.Errorf("GetGroupPolicy after PutGroupPolicy: %w", err)
+		}
+		if resp.PolicyDocument == nil || *resp.PolicyDocument == "" {
+			return fmt.Errorf("policy document is empty after PutGroupPolicy")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetGroupPolicy", func() error {

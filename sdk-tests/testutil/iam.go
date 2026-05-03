@@ -31,6 +31,7 @@ type iamTestContext struct {
 	samlProviderArn     string
 	virtualMFASerial    string
 	svcLinkedRoleName   string
+	deletionTaskId      string
 	oidcProviderArn     string
 	sshPublicKeyId      string
 	serverCertArn       string

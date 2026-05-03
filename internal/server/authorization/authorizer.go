@@ -21,13 +21,15 @@ import (
 // Authorizer handles IAM-based authorization for AWS service requests.
 // It evaluates IAM policies to determine whether a request should be allowed or denied.
 // The authoriser uses a policy cache to improve performance for repeated requests.
+//
+// Root user access keys (UserName == iam.RootUserName) bypass all policy evaluation
+// and are granted unrestricted access, consistent with the AWS root user model.
 type Authorizer struct {
 	iamStore          iam.IAMStoreInterface
 	policyEvaluator   *policy.PolicyEvaluator
 	resourceExtractor *ResourceExtractor
 	actionMapper      *ActionMapper
 
-	rootAccessKeys     map[string]bool
 	defaultAccessKeyID string
 	failureMode        string
 	cacheTTL           time.Duration
@@ -47,19 +49,11 @@ type cachedPolicies struct {
 
 // NewAuthorizer creates a new Authorizer instance with the given IAM store.
 // It reads configuration from environment variables:
-// - AUTHORIZATION_ROOT_ACCESS_KEYS: Comma-separated list of root access key IDs
 // - AUTHORIZATION_DEFAULT_ACCESS_KEY_ID: Default access key ID to use when no signature is provided
 // - AUTHORIZATION_FAILURE_MODE: "permissive" (default) or "strict" - how to handle policy fetch errors
 // - AUTHORIZATION_CACHE_TTL_SECONDS: Cache TTL in seconds (default 300)
 // - AUTHORIZATION_CACHE_MAX_SIZE: Maximum number of cached entries (default 1000)
 func NewAuthorizer(iamStore iam.IAMStoreInterface) *Authorizer {
-	rootKeys := make(map[string]bool)
-	if keys := os.Getenv("AUTHORIZATION_ROOT_ACCESS_KEYS"); keys != "" {
-		for _, key := range strings.Split(keys, ",") {
-			rootKeys[strings.TrimSpace(key)] = true
-		}
-	}
-
 	defaultAccessKeyID := os.Getenv("AUTHORIZATION_DEFAULT_ACCESS_KEY_ID")
 
 	failureMode := os.Getenv("AUTHORIZATION_FAILURE_MODE")
@@ -86,7 +80,6 @@ func NewAuthorizer(iamStore iam.IAMStoreInterface) *Authorizer {
 		policyEvaluator:    policy.NewPolicyEvaluator(),
 		resourceExtractor:  NewResourceExtractor(),
 		actionMapper:       NewActionMapper(),
-		rootAccessKeys:     rootKeys,
 		defaultAccessKeyID: defaultAccessKeyID,
 		failureMode:        failureMode,
 		cacheTTL:           cacheTTL,
@@ -121,15 +114,6 @@ func (a *Authorizer) Authorize(
 		accessKeyID = a.defaultAccessKeyID
 	}
 
-	if a.isRootAccessKey(accessKeyID) {
-		if accessKeyID != "" {
-			reqCtx.Principal = accessKeyID
-			reqCtx.PrincipalID = accessKeyID
-			reqCtx.PrincipalType = request.PrincipalTypeUser
-		}
-		return true, nil
-	}
-
 	accessKey, err := a.iamStore.AccessKeys().Get(accessKeyID)
 	if err != nil {
 		return false, nil
@@ -137,6 +121,14 @@ func (a *Authorizer) Authorize(
 
 	if accessKey.Status != iam.AccessKeyStatusActive {
 		return false, nil
+	}
+
+	// Root user access keys bypass all IAM policy evaluation.
+	if accessKey.UserName == iam.RootUserName {
+		reqCtx.Principal = iam.RootUserName
+		reqCtx.PrincipalID = iam.RootUserName
+		reqCtx.PrincipalType = request.PrincipalTypeUser
+		return true, nil
 	}
 
 	user, err := a.iamStore.Users().Get(accessKey.UserName)
@@ -181,10 +173,6 @@ func (a *Authorizer) Authorize(
 	default:
 		return false, nil
 	}
-}
-
-func (a *Authorizer) isRootAccessKey(accessKeyID string) bool {
-	return a.rootAccessKeys[accessKeyID]
 }
 
 func (a *Authorizer) getEffectivePolicies(ctx context.Context, userName string) ([]*policy.Document, error) {

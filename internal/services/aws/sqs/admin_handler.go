@@ -9,9 +9,10 @@ import (
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/sqs"
 	sqsconnect "vorpalstacks/internal/pb/aws/sqs/sqsconnect"
-	"vorpalstacks/internal/store/aws/common"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 
@@ -43,7 +44,7 @@ func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.L
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	opts := common.ListOptions{
+	opts := storecommon.ListOptions{
 		MaxItems: int(req.Msg.Maxresults),
 		Marker:   req.Msg.Nexttoken,
 	}
@@ -95,4 +96,45 @@ func (h *AdminHandler) GetQueueUrl(ctx context.Context, req *connect.Request[pb.
 // NewConnectHandler creates a gRPC-Web connect handler for the Sqs admin console.
 func NewConnectHandler(svc *SQSService) (string, http.Handler) {
 	return sqsconnect.NewSQSServiceHandler(NewAdminHandler(svc))
+}
+
+func (h *AdminHandler) CreateQueue(ctx context.Context, req *connect.Request[pb.CreateQueueRequest]) (*connect.Response[pb.CreateQueueResult], error) {
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.getSQSStoreByRegion(region)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if req.Msg.Queuename == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("QueueName is required"))
+	}
+
+	queue, err := store.CreateQueue(&sqsstore.Queue{
+		Name: req.Msg.Queuename,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.CreateQueueResult{
+		Queueurl: queue.URL,
+	}), nil
+}
+
+func (h *AdminHandler) DeleteQueue(ctx context.Context, req *connect.Request[pb.DeleteQueueRequest]) (*connect.Response[pbcommon.Empty], error) {
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.getSQSStoreByRegion(region)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if req.Msg.Queueurl == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("QueueUrl is required"))
+	}
+
+	if err := store.DeleteQueue(req.Msg.Queueurl); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
 }

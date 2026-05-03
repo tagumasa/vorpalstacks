@@ -40,7 +40,24 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		_, err := tc.client.CreateAccountAlias(tc.ctx, &iam.CreateAccountAliasInput{
 			AccountAlias: aws.String(tc.accountAlias),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListAccountAliases(tc.ctx, &iam.ListAccountAliasesInput{})
+		if err != nil {
+			return fmt.Errorf("ListAccountAliases after create: %w", err)
+		}
+		found := false
+		for _, a := range resp.AccountAliases {
+			if a == tc.accountAlias {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("alias %s not found after CreateAccountAlias", tc.accountAlias)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListAccountAliases", func() error {
@@ -65,7 +82,19 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		_, err := tc.client.DeleteAccountAlias(tc.ctx, &iam.DeleteAccountAliasInput{
 			AccountAlias: aws.String(tc.accountAlias),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListAccountAliases(tc.ctx, &iam.ListAccountAliasesInput{})
+		if err != nil {
+			return fmt.Errorf("ListAccountAliases after delete: %w", err)
+		}
+		for _, a := range resp.AccountAliases {
+			if a == tc.accountAlias {
+				return fmt.Errorf("alias %s still exists after DeleteAccountAlias", tc.accountAlias)
+			}
+		}
+		return nil
 	}))
 
 	// Password policy
@@ -80,7 +109,17 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 			MaxPasswordAge:             aws.Int32(90),
 			PasswordReusePrevention:    aws.Int32(5),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetAccountPasswordPolicy(tc.ctx, &iam.GetAccountPasswordPolicyInput{})
+		if err != nil {
+			return fmt.Errorf("GetAccountPasswordPolicy after update: %w", err)
+		}
+		if aws.ToInt32(resp.PasswordPolicy.MinimumPasswordLength) != 12 {
+			return fmt.Errorf("minimum password length: got %d, want 12", aws.ToInt32(resp.PasswordPolicy.MinimumPasswordLength))
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetAccountPasswordPolicy", func() error {
@@ -121,7 +160,14 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "DeleteAccountPasswordPolicy", func() error {
 		_, err := tc.client.DeleteAccountPasswordPolicy(tc.ctx, &iam.DeleteAccountPasswordPolicyInput{})
-		return err
+		if err != nil {
+			return err
+		}
+		_, err = tc.client.GetAccountPasswordPolicy(tc.ctx, &iam.GetAccountPasswordPolicyInput{})
+		if err == nil {
+			return fmt.Errorf("GetAccountPasswordPolicy should fail after DeleteAccountPasswordPolicy")
+		}
+		return nil
 	}))
 
 	return results

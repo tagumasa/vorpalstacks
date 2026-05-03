@@ -165,7 +165,19 @@ func (r *TestRunner) iamAdvancedTests(tc *iamTestContext) []TestResult {
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListOpenIDConnectProviderTags(tc.ctx, &iam.ListOpenIDConnectProviderTagsInput{
+			OpenIDConnectProviderArn: aws.String(tc.oidcProviderArn),
+		})
+		if err != nil {
+			return fmt.Errorf("ListOpenIDConnectProviderTags after tag: %w", err)
+		}
+		if !iamTagPresent(resp.Tags, "Environment", "test") {
+			return fmt.Errorf("Environment=test tag not found after TagOpenIDConnectProvider")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListOpenIDConnectProviderTags", func() error {
@@ -186,14 +198,35 @@ func (r *TestRunner) iamAdvancedTests(tc *iamTestContext) []TestResult {
 			OpenIDConnectProviderArn: aws.String(tc.oidcProviderArn),
 			TagKeys:                  []string{"Environment"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListOpenIDConnectProviderTags(tc.ctx, &iam.ListOpenIDConnectProviderTagsInput{
+			OpenIDConnectProviderArn: aws.String(tc.oidcProviderArn),
+		})
+		if err != nil {
+			return fmt.Errorf("ListOpenIDConnectProviderTags after untag: %w", err)
+		}
+		if iamTagPresent(resp.Tags, "Environment", "test") {
+			return fmt.Errorf("Environment=test tag still present after UntagOpenIDConnectProvider")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteOpenIDConnectProvider", func() error {
 		_, err := tc.client.DeleteOpenIDConnectProvider(tc.ctx, &iam.DeleteOpenIDConnectProviderInput{
 			OpenIDConnectProviderArn: aws.String(tc.oidcProviderArn),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		_, err = tc.client.GetOpenIDConnectProvider(tc.ctx, &iam.GetOpenIDConnectProviderInput{
+			OpenIDConnectProviderArn: aws.String(tc.oidcProviderArn),
+		})
+		if err == nil {
+			return fmt.Errorf("GetOpenIDConnectProvider should fail after DeleteOpenIDConnectProvider")
+		}
+		return nil
 	}))
 
 	// ========== SSH Public Key ==========
@@ -294,7 +327,21 @@ func (r *TestRunner) iamAdvancedTests(tc *iamTestContext) []TestResult {
 			UserName:       aws.String(sshUserName),
 			SSHPublicKeyId: aws.String(tc.sshPublicKeyId),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListSSHPublicKeys(tc.ctx, &iam.ListSSHPublicKeysInput{
+			UserName: aws.String(sshUserName),
+		})
+		if err != nil {
+			return fmt.Errorf("ListSSHPublicKeys after delete: %w", err)
+		}
+		for _, k := range resp.SSHPublicKeys {
+			if aws.ToString(k.SSHPublicKeyId) == tc.sshPublicKeyId {
+				return fmt.Errorf("ssh key %s still present after DeleteSSHPublicKey", tc.sshPublicKeyId)
+			}
+		}
+		return nil
 	}))
 
 	// ========== Server Certificate ==========
@@ -379,6 +426,15 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 			return err
 		}
 		serverCertName = newName
+		resp, err := tc.client.GetServerCertificate(tc.ctx, &iam.GetServerCertificateInput{
+			ServerCertificateName: aws.String(newName),
+		})
+		if err != nil {
+			return fmt.Errorf("GetServerCertificate with new name: %w", err)
+		}
+		if aws.ToString(resp.ServerCertificate.ServerCertificateMetadata.ServerCertificateName) != newName {
+			return fmt.Errorf("renamed cert name mismatch: got %s", aws.ToString(resp.ServerCertificate.ServerCertificateMetadata.ServerCertificateName))
+		}
 		return nil
 	}))
 
@@ -389,7 +445,19 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 				{Key: aws.String("Env"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListServerCertificateTags(tc.ctx, &iam.ListServerCertificateTagsInput{
+			ServerCertificateName: aws.String(serverCertName),
+		})
+		if err != nil {
+			return fmt.Errorf("ListServerCertificateTags after tag: %w", err)
+		}
+		if !iamTagPresent(resp.Tags, "Env", "test") {
+			return fmt.Errorf("Env=test tag not found after TagServerCertificate")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListServerCertificateTags", func() error {
@@ -410,14 +478,35 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 			ServerCertificateName: aws.String(serverCertName),
 			TagKeys:               []string{"Env"},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListServerCertificateTags(tc.ctx, &iam.ListServerCertificateTagsInput{
+			ServerCertificateName: aws.String(serverCertName),
+		})
+		if err != nil {
+			return fmt.Errorf("ListServerCertificateTags after untag: %w", err)
+		}
+		if iamTagPresent(resp.Tags, "Env", "test") {
+			return fmt.Errorf("Env=test tag still present after UntagServerCertificate")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteServerCertificate", func() error {
 		_, err := tc.client.DeleteServerCertificate(tc.ctx, &iam.DeleteServerCertificateInput{
 			ServerCertificateName: aws.String(serverCertName),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		_, err = tc.client.GetServerCertificate(tc.ctx, &iam.GetServerCertificateInput{
+			ServerCertificateName: aws.String(serverCertName),
+		})
+		if err == nil {
+			return fmt.Errorf("GetServerCertificate should fail after DeleteServerCertificate")
+		}
+		return nil
 	}))
 
 	// ========== Service-Specific Credential ==========
@@ -507,7 +596,21 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 			UserName:                    aws.String(sshUserName),
 			ServiceSpecificCredentialId: aws.String(tc.serviceCredId),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListServiceSpecificCredentials(tc.ctx, &iam.ListServiceSpecificCredentialsInput{
+			UserName: aws.String(sshUserName),
+		})
+		if err != nil {
+			return fmt.Errorf("ListServiceSpecificCredentials after delete: %w", err)
+		}
+		for _, c := range resp.ServiceSpecificCredentials {
+			if aws.ToString(c.ServiceSpecificCredentialId) == tc.serviceCredId {
+				return fmt.Errorf("credential %s still present after delete", tc.serviceCredId)
+			}
+		}
+		return nil
 	}))
 
 	// Cleanup temp user
@@ -520,15 +623,27 @@ IDAQABMA0GCSqGSIb3DQEBCwUAA4GBAKHHCgVZU65BMA0GCSqGSIb3DQEBCwUAMB
 
 	// ========== Credential Report ==========
 	results = append(results, r.RunTest("iam", "GenerateCredentialReport", func() error {
-		_, err := tc.client.GenerateCredentialReport(tc.ctx, &iam.GenerateCredentialReportInput{})
-		return err
+		resp, err := tc.client.GenerateCredentialReport(tc.ctx, &iam.GenerateCredentialReportInput{})
+		if err != nil {
+			return err
+		}
+		if resp.State != types.ReportStateTypeComplete && resp.State != types.ReportStateTypeStarted {
+			return fmt.Errorf("unexpected report state: %v", resp.State)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetCredentialReport", func() error {
 		var lastErr error
 		for i := 0; i < 10; i++ {
-			_, err := tc.client.GetCredentialReport(tc.ctx, &iam.GetCredentialReportInput{})
+			resp, err := tc.client.GetCredentialReport(tc.ctx, &iam.GetCredentialReportInput{})
 			if err == nil {
+				if resp.Content == nil || len(resp.Content) == 0 {
+					return fmt.Errorf("credential report content is empty")
+				}
+				if resp.ReportFormat != "text/csv" {
+					return fmt.Errorf("report format mismatch: %v", resp.ReportFormat)
+				}
 				return nil
 			}
 			if !strings.Contains(err.Error(), "ReportInProgress") {

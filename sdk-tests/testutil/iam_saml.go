@@ -87,7 +87,19 @@ func (r *TestRunner) iamSAMLTests(tc *iamTestContext) []TestResult {
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListSAMLProviderTags(tc.ctx, &iam.ListSAMLProviderTagsInput{
+			SAMLProviderArn: aws.String(tc.samlProviderArn),
+		})
+		if err != nil {
+			return fmt.Errorf("ListSAMLProviderTags after tag: %w", err)
+		}
+		if !iamTagPresent(resp.Tags, "Environment", "test") {
+			return fmt.Errorf("Environment=test tag not found after TagSAMLProvider")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListSAMLProviderTags", func() error {
@@ -130,7 +142,16 @@ func (r *TestRunner) iamSAMLTests(tc *iamTestContext) []TestResult {
 		_, err := tc.client.DeleteSAMLProvider(tc.ctx, &iam.DeleteSAMLProviderInput{
 			SAMLProviderArn: aws.String(tc.samlProviderArn),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		_, err = tc.client.GetSAMLProvider(tc.ctx, &iam.GetSAMLProviderInput{
+			SAMLProviderArn: aws.String(tc.samlProviderArn),
+		})
+		if err == nil {
+			return fmt.Errorf("GetSAMLProvider should fail after DeleteSAMLProvider")
+		}
+		return nil
 	}))
 
 	return results

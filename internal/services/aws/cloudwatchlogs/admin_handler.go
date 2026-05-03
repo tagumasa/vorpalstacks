@@ -2,11 +2,13 @@ package cloudwatchlogs
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchlogs"
 	cloudwatchlogsconnect "vorpalstacks/internal/pb/aws/cloudwatchlogs/cloudwatchlogsconnect"
 	cloudwatchlogsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
@@ -100,6 +102,47 @@ func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Requ
 		Logstreams: pbStreams,
 		Nexttoken:  nextToken,
 	}), nil
+}
+
+// CreateLogGroup creates a new CloudWatch Logs log group via the admin console.
+func (h *AdminHandler) CreateLogGroup(ctx context.Context, req *connect.Request[pb.CreateLogGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Loggroupname == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("LogGroupName is required"))
+	}
+
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.getStoreByRegion(region)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if err := store.CreateLogGroup(&cloudwatchlogsstore.LogGroup{
+		Name: req.Msg.Loggroupname,
+		Tags: req.Msg.Tags,
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// DeleteLogGroup deletes a CloudWatch Logs log group by name via the admin console.
+func (h *AdminHandler) DeleteLogGroup(ctx context.Context, req *connect.Request[pb.DeleteLogGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Loggroupname == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("LogGroupName is required"))
+	}
+
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.getStoreByRegion(region)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if err := store.DeleteLogGroup(req.Msg.Loggroupname); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the CloudWatch Logs admin console.

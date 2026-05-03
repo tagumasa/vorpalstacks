@@ -76,7 +76,26 @@ func (r *TestRunner) iamInstanceProfileTests(tc *iamTestContext) []TestResult {
 			InstanceProfileName: aws.String(tc.profile),
 			RoleName:            aws.String(tc.role),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetInstanceProfile(tc.ctx, &iam.GetInstanceProfileInput{
+			InstanceProfileName: aws.String(tc.profile),
+		})
+		if err != nil {
+			return fmt.Errorf("GetInstanceProfile after AddRole: %w", err)
+		}
+		found := false
+		for _, r := range resp.InstanceProfile.Roles {
+			if aws.ToString(r.RoleName) == tc.role {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("role %s not found in instance profile after AddRoleToInstanceProfile", tc.role)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListInstanceProfilesForRole", func() error {
@@ -104,7 +123,21 @@ func (r *TestRunner) iamInstanceProfileTests(tc *iamTestContext) []TestResult {
 			InstanceProfileName: aws.String(tc.profile),
 			RoleName:            aws.String(tc.role),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetInstanceProfile(tc.ctx, &iam.GetInstanceProfileInput{
+			InstanceProfileName: aws.String(tc.profile),
+		})
+		if err != nil {
+			return fmt.Errorf("GetInstanceProfile after RemoveRole: %w", err)
+		}
+		for _, r := range resp.InstanceProfile.Roles {
+			if aws.ToString(r.RoleName) == tc.role {
+				return fmt.Errorf("role %s still in instance profile after RemoveRoleFromInstanceProfile", tc.role)
+			}
+		}
+		return nil
 	}))
 
 	// Tags
@@ -115,7 +148,19 @@ func (r *TestRunner) iamInstanceProfileTests(tc *iamTestContext) []TestResult {
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListInstanceProfileTags(tc.ctx, &iam.ListInstanceProfileTagsInput{
+			InstanceProfileName: aws.String(tc.profile),
+		})
+		if err != nil {
+			return fmt.Errorf("ListInstanceProfileTags after tag: %w", err)
+		}
+		if !iamTagPresent(resp.Tags, "Environment", "test") {
+			return fmt.Errorf("Environment=test tag not found after TagInstanceProfile")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListInstanceProfileTags", func() error {

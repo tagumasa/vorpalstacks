@@ -68,7 +68,19 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 				{Key: aws.String("Env"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListMFADeviceTags(tc.ctx, &iam.ListMFADeviceTagsInput{
+			SerialNumber: aws.String(tc.virtualMFASerial),
+		})
+		if err != nil {
+			return fmt.Errorf("ListMFADeviceTags after tag: %w", err)
+		}
+		if !iamTagPresent(resp.Tags, "Env", "test") {
+			return fmt.Errorf("Env=test tag not found after TagMFADevice")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListMFADeviceTags", func() error {
@@ -111,7 +123,26 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 		_, err := tc.client.DeleteVirtualMFADevice(tc.ctx, &iam.DeleteVirtualMFADeviceInput{
 			SerialNumber: aws.String(tc.virtualMFASerial),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		var marker *string
+		for {
+			resp, err := tc.client.ListVirtualMFADevices(tc.ctx, &iam.ListVirtualMFADevicesInput{Marker: marker})
+			if err != nil {
+				return fmt.Errorf("ListVirtualMFADevices after delete: %w", err)
+			}
+			for _, d := range resp.VirtualMFADevices {
+				if aws.ToString(d.SerialNumber) == tc.virtualMFASerial {
+					return fmt.Errorf("MFA device %s still present after delete", tc.virtualMFASerial)
+				}
+			}
+			if !resp.IsTruncated || resp.Marker == nil {
+				break
+			}
+			marker = resp.Marker
+		}
+		return nil
 	}))
 
 	return results

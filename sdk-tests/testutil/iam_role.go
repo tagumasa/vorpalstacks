@@ -170,7 +170,19 @@ func (r *TestRunner) iamRoleTests(tc *iamTestContext) []TestResult {
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListRoleTags(tc.ctx, &iam.ListRoleTagsInput{
+			RoleName: aws.String(tc.role),
+		})
+		if err != nil {
+			return fmt.Errorf("ListRoleTags after tag: %w", err)
+		}
+		if !iamTagPresent(resp.Tags, "Environment", "test") {
+			return fmt.Errorf("Environment=test tag not found after TagRole")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListRoleTags", func() error {
@@ -215,7 +227,20 @@ func (r *TestRunner) iamRoleTests(tc *iamTestContext) []TestResult {
 			PolicyName:     aws.String(tc.roleInlinePolicy),
 			PolicyDocument: aws.String(logsFullAccessPolicy),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetRolePolicy(tc.ctx, &iam.GetRolePolicyInput{
+			RoleName:   aws.String(tc.role),
+			PolicyName: aws.String(tc.roleInlinePolicy),
+		})
+		if err != nil {
+			return fmt.Errorf("GetRolePolicy after PutRolePolicy: %w", err)
+		}
+		if resp.PolicyDocument == nil || *resp.PolicyDocument == "" {
+			return fmt.Errorf("policy document is empty after PutRolePolicy")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetRolePolicy", func() error {
@@ -309,14 +334,21 @@ func (r *TestRunner) iamRoleTests(tc *iamTestContext) []TestResult {
 		if resp.DeletionTaskId == nil {
 			return fmt.Errorf("deletion task id is nil")
 		}
+		tc.deletionTaskId = *resp.DeletionTaskId
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "GetServiceLinkedRoleDeletionStatus", func() error {
-		_, err := tc.client.GetServiceLinkedRoleDeletionStatus(tc.ctx, &iam.GetServiceLinkedRoleDeletionStatusInput{
-			DeletionTaskId: aws.String("test-task-id"),
+		resp, err := tc.client.GetServiceLinkedRoleDeletionStatus(tc.ctx, &iam.GetServiceLinkedRoleDeletionStatusInput{
+			DeletionTaskId: aws.String(tc.deletionTaskId),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.Status == "" {
+			return fmt.Errorf("deletion status is empty")
+		}
+		return nil
 	}))
 
 	return results

@@ -30,8 +30,8 @@ func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId str
 	}
 }
 
-func (h *AdminHandler) getStore(req *connect.Request[pb.DescribeParametersRequest]) (*ssmstore.Store, error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*ssmstore.Store, error) {
+	region := svccommon.GetRegionFromHeader(headers)
 	regionStorage, err := h.storageManager.GetStorage(region)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (h *AdminHandler) getStore(req *connect.Request[pb.DescribeParametersReques
 
 // DescribeParameters retrieves SSM parameters from the store, applying optional filters and pagination.
 func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Request[pb.DescribeParametersRequest]) (*connect.Response[pb.DescribeParametersResult], error) {
-	store, err := h.getStore(req)
+	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -108,7 +108,55 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 	}), nil
 }
 
-// NewConnectHandler creates a gRPC-Web connect handler for the Ssm admin console.
+// PutParameter creates or updates an SSM parameter via the admin console.
+func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb.PutParameterRequest]) (*connect.Response[pb.PutParameterResult], error) {
+	store, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	paramType := ssmstore.ParameterTypeString
+	switch req.Msg.Type {
+	case pb.ParameterType_PARAMETER_TYPE_STRING_LIST:
+		paramType = ssmstore.ParameterTypeStringList
+	case pb.ParameterType_PARAMETER_TYPE_SECURE_STRING:
+		paramType = ssmstore.ParameterTypeSecureString
+	}
+
+	param := &ssmstore.Parameter{
+		Name:        req.Msg.Name,
+		Value:       req.Msg.Value,
+		Type:        paramType,
+		Description: req.Msg.Description,
+		DataType:    req.Msg.Datatype,
+	}
+
+	overwrite := req.Msg.Overwrite
+	version, err := store.PutParameter(param, overwrite)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.PutParameterResult{
+		Version: version,
+	}), nil
+}
+
+// DeleteParameter deletes an SSM parameter via the admin console.
+func (h *AdminHandler) DeleteParameter(ctx context.Context, req *connect.Request[pb.DeleteParameterRequest]) (*connect.Response[pb.DeleteParameterResult], error) {
+	store, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if err := store.DeleteParameter(req.Msg.Name); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.DeleteParameterResult{}), nil
+}
+
+// NewConnectHandler creates a gRPC-Web connect handler for the SSM admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return ssmconnect.NewSSMServiceHandler(NewAdminHandler(sm, accountID))
 }

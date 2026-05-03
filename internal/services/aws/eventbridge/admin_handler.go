@@ -9,6 +9,7 @@ import (
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchevents"
 	cloudwatcheventsconnect "vorpalstacks/internal/pb/aws/cloudwatchevents/cloudwatcheventsconnect"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
@@ -135,6 +136,48 @@ func toPbRuleState(state eventsstore.RuleState) pb.RuleState {
 	default:
 		return pb.RuleState_RULE_STATE_DISABLED
 	}
+}
+
+// CreateEventBus creates a new custom event bus via the admin console.
+func (h *AdminHandler) CreateEventBus(ctx context.Context, req *connect.Request[pb.CreateEventBusRequest]) (*connect.Response[pb.CreateEventBusResponse], error) {
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("Name is required"))
+	}
+
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	region := svccommon.GetRegionFromHeader(req.Header())
+	if err := store.CreateEventBus(ctx, &eventsstore.EventBus{
+		Name:      req.Msg.Name,
+		Region:    region,
+		AccountID: h.service.accountID,
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	arn := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", region, h.service.accountID, req.Msg.Name)
+	return connect.NewResponse(&pb.CreateEventBusResponse{Eventbusarn: arn}), nil
+}
+
+// DeleteEventBus deletes a custom event bus by name via the admin console.
+func (h *AdminHandler) DeleteEventBus(ctx context.Context, req *connect.Request[pb.DeleteEventBusRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("Name is required"))
+	}
+
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if err := store.DeleteEventBus(ctx, req.Msg.Name); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the EventBridge admin console.

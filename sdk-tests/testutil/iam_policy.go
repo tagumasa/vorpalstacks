@@ -93,7 +93,19 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListPolicyTags(tc.ctx, &iam.ListPolicyTagsInput{
+			PolicyArn: aws.String(tc.policyArn),
+		})
+		if err != nil {
+			return fmt.Errorf("ListPolicyTags after tag: %w", err)
+		}
+		if !iamTagPresent(resp.Tags, "Environment", "test") {
+			return fmt.Errorf("Environment=test tag not found after TagPolicy")
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListPolicyTags", func() error {
@@ -135,7 +147,19 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 			UserName:  aws.String(tc.user),
 			PolicyArn: aws.String(tc.policyArn),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListAttachedUserPolicies(tc.ctx, &iam.ListAttachedUserPoliciesInput{
+			UserName: aws.String(tc.user),
+		})
+		if err != nil {
+			return fmt.Errorf("ListAttachedUserPolicies after attach: %w", err)
+		}
+		if !iamFindAttachedPolicy(resp.AttachedPolicies, tc.policyArn) {
+			return fmt.Errorf("policy %s not found after AttachUserPolicy", tc.policyArn)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListAttachedUserPolicies", func() error {
@@ -177,7 +201,19 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 			GroupName: aws.String(tc.group),
 			PolicyArn: aws.String(tc.policyArn),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListAttachedGroupPolicies(tc.ctx, &iam.ListAttachedGroupPoliciesInput{
+			GroupName: aws.String(tc.group),
+		})
+		if err != nil {
+			return fmt.Errorf("ListAttachedGroupPolicies after attach: %w", err)
+		}
+		if !iamFindAttachedPolicy(resp.AttachedPolicies, tc.policyArn) {
+			return fmt.Errorf("policy %s not found after AttachGroupPolicy", tc.policyArn)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iam", "ListAttachedGroupPolicies", func() error {
@@ -198,7 +234,19 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 			GroupName: aws.String(tc.group),
 			PolicyArn: aws.String(tc.policyArn),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListAttachedGroupPolicies(tc.ctx, &iam.ListAttachedGroupPoliciesInput{
+			GroupName: aws.String(tc.group),
+		})
+		if err != nil {
+			return fmt.Errorf("ListAttachedGroupPolicies after detach: %w", err)
+		}
+		if iamFindAttachedPolicy(resp.AttachedPolicies, tc.policyArn) {
+			return fmt.Errorf("policy should be detached from group")
+		}
+		return nil
 	}))
 
 	// Attached policies — Role + ListEntitiesForPolicy
@@ -250,7 +298,19 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 			RoleName:  aws.String(tc.role),
 			PolicyArn: aws.String(tc.policyArn),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ListAttachedRolePolicies(tc.ctx, &iam.ListAttachedRolePoliciesInput{
+			RoleName: aws.String(tc.role),
+		})
+		if err != nil {
+			return fmt.Errorf("ListAttachedRolePolicies after detach: %w", err)
+		}
+		if iamFindAttachedPolicy(resp.AttachedPolicies, tc.policyArn) {
+			return fmt.Errorf("policy should be detached from role")
+		}
+		return nil
 	}))
 
 	// Policy versioning

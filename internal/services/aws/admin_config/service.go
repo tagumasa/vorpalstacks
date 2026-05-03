@@ -31,13 +31,6 @@ type AdminConfigService struct {
 }
 
 // NewAdminConfigService creates a new admin config service instance.
-//
-// Parameters:
-//   - configStore: The configuration store instance
-//   - shutdownFunc: Optional function to trigger graceful server shutdown (may be nil)
-//
-// Returns:
-//   - *AdminConfigService: A new admin config service instance
 func NewAdminConfigService(configStore ConfigStore, shutdownFunc func()) *AdminConfigService {
 	return &AdminConfigService{
 		configStore:  configStore,
