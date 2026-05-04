@@ -23,7 +23,7 @@ export function AppShell() {
           onClick={() => setSidebarCollapsed(true)}
         />
       )}
-      <div className={`sidebar${sidebarCollapsed ? " collapsed" : ""}`}>
+      <div className={sidebarCollapsed ? "sidebar collapsed" : "sidebar"}>
         <Sidebar />
       </div>
       <main className="main">

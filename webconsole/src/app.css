@@ -269,6 +269,11 @@ html, body, #root {
   border-right: var(--border-w-thick, 6px) solid var(--border-color);
   overflow-y: auto;
   padding: 8px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sidebar::-webkit-scrollbar {
+  display: none;
 }
 .sidebar-title {
   font-family: var(--pixel-font);
@@ -363,10 +368,10 @@ html, body, #root {
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--border-dim);
-  border: 1px solid var(--bg-primary);
+  border: 1px solid transparent;
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-color); }
 

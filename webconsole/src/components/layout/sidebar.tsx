@@ -31,7 +31,7 @@ export function Sidebar() {
   }, []);
 
   return (
-    <nav className="sidebar">
+    <>
       <div className="sidebar-title">Services</div>
       {[...catalogByCategory.entries()].map(([category, entries]) => (
         <div key={category}>
@@ -48,6 +48,6 @@ export function Sidebar() {
           ))}
         </div>
       ))}
-    </nav>
+    </>
   );
 }

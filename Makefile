@@ -1,4 +1,36 @@
 # Makefile for VorpalStacks
+#
+# Build targets:
+#   make build          - Build webconsole frontend + Go server binary
+#   make build-console  - Build webconsole frontend only (npm run build)
+#   make build-tools    - Build proto_generator tool
+#   make clean          - Remove build artifacts and generated files
+#   make deps           - Install protoc plugins and webconsole dependencies
+#
+# Proto targets:
+#   make proto-generate - Generate .proto files from Smithy JSON models
+#   make proto          - Generate Go code from .proto files
+#   make proto-ts       - Generate TypeScript code for webconsole (buf + protoc-gen-es)
+#   make proto-dart     - Generate Dart code for Flutter UI
+#   make proto-all      - Generate .proto, Go, and TypeScript code
+#   make proto-<svc>    - Generate for a specific service (e.g., proto-s3)
+#   make proto-storage  - Generate Go code from storage proto files
+#   make pebble-load    - Load Smithy models into Pebble DB
+#
+# Server targets:
+#   make run            - Run server in dev mode (no signature verification)
+#   make start/stop     - Start/stop server on port 8080
+#   make start-test/stop-test - Start/stop test server on port 8081
+#
+# Test targets:
+#   make test           - Run unit tests
+#   make test-cli       - Run CLI integration tests
+#   make test-integration - Run all integration tests
+#
+# Other:
+#   make fmt            - Format Go code
+#   make tidy           - Tidy Go dependencies
+#   make help           - Show help
 
 PROTO_DIR := proto/aws
 PB_DIR := internal/pb/aws
@@ -17,9 +49,10 @@ WEBCONSOLE_DIR := webconsole
 all: build
 
 build: build-console
-	go build -o vorpalstacks_server .
+	go build -o tmp/vorpalstacks .
 
-build-console: proto-ts
+# Build webconsole frontend
+build-console:
 	cd $(WEBCONSOLE_DIR) && npm run build
 
 build-tools: build-proto-generator
@@ -28,7 +61,7 @@ build-proto-generator:
 	go build -o proto_generator ./cmd/proto_generator
 
 clean:
-	rm -f proto_generator vorpalstacks_server
+	rm -f proto_generator tmp/vorpalstacks
 	rm -rf $(PB_DIR)
 	rm -rf $(WEBCONSOLE_DIR)/dist
 
@@ -82,8 +115,7 @@ proto:
 # Generate TypeScript code from proto files for webconsole (buf + protoc-gen-es)
 proto-ts:
 	@echo "Generating TypeScript Protocol Buffer code for webconsole..."
-	PATH="$(WEBCONSOLE_DIR)/node_modules/.bin:$$PATH" \
-		$(WEBCONSOLE_DIR)/node_modules/.bin/buf generate --template $(WEBCONSOLE_DIR)/buf.gen.yaml
+	PATH="$(WEBCONSOLE_DIR)/node_modules/.bin:$$PATH" && buf generate --template $(WEBCONSOLE_DIR)/buf.gen.yaml
 	@echo "TypeScript Protocol Buffer code generated in $(WEBCONSOLE_DIR)/src/gen/"
 
 # Generate Dart code from proto files for Flutter UI
@@ -183,7 +215,7 @@ help:
 	@echo ""
 	@echo "Build targets:"
 	@echo "  make build                Build webconsole + server binary"
-	@echo "  make build-console        Build webconsole frontend only (npm run build)"
+	@echo "  make build-console        Build webconsole frontend (npm run build)"
 	@echo "  make build-tools          Build all tools (proto_generator)"
 	@echo "  make clean                Remove build artifacts, pb files, and webconsole/dist"
 	@echo ""

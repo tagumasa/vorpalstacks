@@ -85,7 +85,7 @@ export function Splitter({
         minHeight: 0,
       }}
     >
-      <div style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: "auto" }}>
+      <div style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: "hidden" }}>
         {children[0]}
       </div>
       <div
