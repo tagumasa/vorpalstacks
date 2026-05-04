@@ -10,7 +10,7 @@ SMITHY_DIR := third_party/api-models-aws/models
 WEBCONSOLE_DIR := webconsole
 
 .PHONY: all build build-console build-tools clean deps
-.PHONY: proto-generate proto proto-% pebble-load
+.PHONY: proto-generate proto proto-ts proto-% pebble-load
 .PHONY: run start stop start-test stop-test test test-cli test-integration
 .PHONY: fmt tidy help
 
@@ -79,6 +79,13 @@ proto:
 	done
 	@echo "Protocol Buffer code generated."
 
+# Generate TypeScript code from proto files for webconsole (buf + protoc-gen-es)
+proto-ts:
+	@echo "Generating TypeScript Protocol Buffer code for webconsole..."
+	PATH="$(WEBCONSOLE_DIR)/node_modules/.bin:$$PATH" \
+		$(WEBCONSOLE_DIR)/node_modules/.bin/buf generate --template $(WEBCONSOLE_DIR)/buf.gen.yaml
+	@echo "TypeScript Protocol Buffer code generated in $(WEBCONSOLE_DIR)/src/gen/"
+
 # Generate Dart code from proto files for Flutter UI
 DART_OUT := web_ui/lib/src/generated
 proto-dart:
@@ -94,7 +101,7 @@ proto-dart:
 	@echo "Dart Protocol Buffer code generated in $(DART_OUT)"
 
 # Generate both proto files and Go code
-proto-all: proto-generate proto
+proto-all: proto-generate proto proto-ts
 
 # Generate Go code from storage proto files
 proto-storage:
@@ -184,7 +191,8 @@ help:
 	@echo "  make deps                 Install protoc plugins"
 	@echo "  make proto-generate       Generate .proto files from Smithy JSON"
 	@echo "  make proto                Generate Go code from .proto files"
-	@echo "  make proto-all            Generate both .proto and Go code"
+	@echo "  make proto-all            Generate .proto, Go code, and TypeScript code"
+	@echo "  make proto-ts             Generate TypeScript code for webconsole (buf)"
 	@echo "  make proto-<service>      Generate for specific service (e.g., proto-s3)"
 	@echo "  make pebble-load          Load Smithy models into Pebble DB"
 	@echo ""

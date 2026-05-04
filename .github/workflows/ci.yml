@@ -21,14 +21,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Build webconsole
-        run: cd webconsole && npm install && npm run generate && npm run build
+      - name: Install webconsole deps
+        run: cd webconsole && npm install
 
       - name: Build
-        run: go build -o vorpalstacks .
+        run: make build
 
       - name: Vet
         run: go vet ./...
 
       - name: Test
-        run: go test -v ./...
+        run: make test
