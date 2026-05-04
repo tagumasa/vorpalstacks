@@ -52,7 +52,7 @@ build: build-console
 	go build -o tmp/vorpalstacks .
 
 # Build webconsole frontend
-build-console:
+build-console: proto-ts
 	cd $(WEBCONSOLE_DIR) && npm run build
 
 build-tools: build-proto-generator
