@@ -5,12 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime"
+	"time"
 
 	"connectrpc.com/connect"
 
 	pb "vorpalstacks/internal/pb/aws/admin_config"
 	"vorpalstacks/internal/pb/aws/common"
 	storeconfig "vorpalstacks/internal/store/config"
+
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/disk"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 // ConfigStore defines the interface for configuration storage operations.
@@ -28,13 +34,21 @@ type ConfigStore interface {
 type AdminConfigService struct {
 	configStore  ConfigStore
 	shutdownFunc func()
+	startTime    time.Time
+	dataPath     string
+	version      string
 }
 
 // NewAdminConfigService creates a new admin config service instance.
-func NewAdminConfigService(configStore ConfigStore, shutdownFunc func()) *AdminConfigService {
+func NewAdminConfigService(configStore ConfigStore, shutdownFunc func(), dataPath string, version string) *AdminConfigService {
+	// Warm up gopsutil CPU sampler so first call returns meaningful data.
+	cpu.Percent(0, false)
 	return &AdminConfigService{
 		configStore:  configStore,
 		shutdownFunc: shutdownFunc,
+		startTime:    time.Now(),
+		dataPath:     dataPath,
+		version:      version,
 	}
 }
 
@@ -218,6 +232,40 @@ func (s *AdminConfigService) SetResourcePort(ctx context.Context, req *connect.R
 	}
 
 	return connect.NewResponse(&common.Empty{}), nil
+}
+
+// GetServerMetrics returns process and machine-level telemetry metrics.
+func (s *AdminConfigService) GetServerMetrics(ctx context.Context, req *connect.Request[pb.GetServerMetricsRequest]) (*connect.Response[pb.GetServerMetricsResponse], error) {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	resp := &pb.GetServerMetricsResponse{
+		UptimeSeconds:        int64(time.Since(s.startTime).Seconds()),
+		ProcessMemorySysBytes: int64(m.Sys),
+		ProcessHeapAllocBytes: int64(m.HeapAlloc),
+		GoroutineCount:        int32(runtime.NumGoroutine()),
+		GcCount:               int64(m.NumGC),
+		GcPauseTotalNs:        int64(m.PauseTotalNs),
+		NumCpu:                int32(runtime.NumCPU()),
+		GoVersion:             runtime.Version(),
+		Version:               s.version,
+	}
+
+	if vm, err := mem.VirtualMemory(); err == nil {
+		resp.MachineTotalMemoryBytes = int64(vm.Total)
+		resp.MachineAvailableMemoryBytes = int64(vm.Available)
+	}
+
+	if pct, err := cpu.Percent(0, false); err == nil && len(pct) > 0 {
+		resp.MachineCpuUsagePercent = pct[0]
+	}
+
+	if du, err := disk.Usage(s.dataPath); err == nil {
+		resp.MachineDiskTotalBytes = int64(du.Total)
+		resp.MachineDiskFreeBytes = int64(du.Free)
+	}
+
+	return connect.NewResponse(resp), nil
 }
 
 // ShutdownServer triggers a graceful server shutdown. The response is sent

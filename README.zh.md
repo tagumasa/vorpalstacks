@@ -31,6 +31,7 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 - **多区域支持**：每个区域使用独立的 PebbleDB 实现区域隔离存储
 - **全局服务**：IAM、Route53、CloudFront、STS 共享全局存储
 - **gRPC-Web 管理 API**：在独立端口上为所有服务提供 Connect-RPC 管理界面
+- **管理控制台**：基于 Web 的 GUI，可浏览所有服务的资源（`/webconsole/`）
 - **轻量**：单一二进制文件，依赖极少
 - **持久存储**：基于 Pebble 的键值存储
 - **Docker 集成**：Lambda 函数在容器中运行
@@ -80,6 +81,15 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 ### 构建
 
 ```bash
+make build
+```
+
+该命令先构建 Web 控制台前端（`npm run build`），再通过 `embed.FS` 将其嵌入 Go 二进制文件编译。
+
+不使用 Make 手动构建：
+
+```bash
+cd webconsole && npm install && npm run build && cd ..
 go build -o vorpalstacks .
 ```
 
@@ -88,6 +98,8 @@ go build -o vorpalstacks .
 ```bash
 SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ```
+
+管理控制台可通过 `http://localhost:9090/webconsole/` 访问（端口 9090 为 gRPC-Web 管理端口）。AWS API 端点在端口 8080。
 
 ### 使用 Docker 运行（Lambda 用）
 
@@ -102,9 +114,9 @@ SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/ru
 ```bash
 export AWS_ENDPOINT_URL=http://localhost:8080
 
-aws --endpoint-url=http://localhost:8080 --no-sign-request sns list-topics
-aws --endpoint-url=http://localhost:8080 --no-sign-request sqs list-queues
-aws --endpoint-url=http://localhost:8080 --no-sign-request lambda list-functions
+aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sns list-topics
+aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sqs list-queues
+aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request lambda list-functions
 ```
 
 ## 测试
@@ -143,7 +155,7 @@ cd scripts/services && bash test_iam.sh
 | `AWS_REGION` | `us-east-1` | 默认区域 |
 | `AWS_ACCOUNT_ID` | `000000000000` | AWS 账号 ID |
 | `SIGNATURE_VERIFICATION_ENABLED` | `true` | 启用 AWS Signature V4 验证 |
-| `GRPC_WEB_PORT` | `9090` | gRPC-Web 管理服务器端口 |
+| `GRPC_WEB_PORT` | `9090` | gRPC-Web 管理服务器端口（同时提供 Web 控制台） |
 | `TLS_ENABLED` | `false` | 启用 TLS |
 | `AUTHORIZATION_ENABLED` | `false` | 启用 IAM 策略评估 |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker 守护进程 Socket（Lambda 用） |
@@ -212,6 +224,7 @@ DATA_PATH/
 ## 系统要求
 
 - Go 1.25+
+- Node.js 22+（LTS，构建 Web 控制台）
 - Docker（使用 Lambda 功能时）
 
 ## 性能

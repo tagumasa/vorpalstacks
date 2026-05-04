@@ -1,87 +1,78 @@
+/**
+ * SSM Parameter Store service page. Lists parameters with create/delete CRUD.
+ */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { createClient } from "@connectrpc/connect";
+import type { TFunction } from "i18next";
 import { create } from "@bufbuild/protobuf";
-import { SSMService } from "@/gen/ssm_pb";
 import {
+  SSMService,
   PutParameterRequestSchema,
   DeleteParameterRequestSchema,
   type ParameterMetadata,
   ParameterType,
   ParameterTier,
 } from "@/gen/ssm_pb";
-import { transport } from "@/lib/transport";
-import { useListKey, useListInvalidator, dropEmpty } from "@/lib/use-service-list";
-import { DataTable } from "@/components/shared/data-table";
-import { JsonViewer } from "@/components/shared/json-viewer";
-import { Modal } from "@/components/shared/modal";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import {
+  ServicePageLayout,
+  SplitPane,
+  ServiceCreateModal,
+  ServiceDeleteDialog,
+  MonoCell,
+  DateCell,
+  useServiceClient,
+} from "@/components/shared/service-page";
 
-const columns: ColumnDef<ParameterMetadata, any>[] = [
-  {
-    accessorKey: "name",
-    header: "Name",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
+/** Column definitions for the SSM parameter table. */
+const getColumns = (t: TFunction): ColumnDef<ParameterMetadata, any>[] => [
+  { accessorKey: "name", header: t("services.ssm.nameHeader"), cell: MonoCell },
   {
     accessorKey: "type",
-    header: "Type",
+    header: t("services.ssm.typeHeader"),
     cell: ({ getValue }) => {
-      const t = getValue() as ParameterType;
+      const val = getValue() as ParameterType;
       const labels: Record<number, string> = {
-        [ParameterType.SECURE_STRING]: "SecureString",
-        [ParameterType.STRING_LIST]: "StringList",
-        [ParameterType.STRING]: "String",
+        [ParameterType.SECURE_STRING]: t("services.ssm.paramTypeSecureString"),
+        [ParameterType.STRING_LIST]: t("services.ssm.paramTypeStringList"),
+        [ParameterType.STRING]: t("services.ssm.paramTypeString"),
       };
-      return <span className="badge">{labels[t] ?? String(t)}</span>;
+      return <span className="badge">{labels[val] ?? String(val)}</span>;
     },
   },
-  {
-    accessorKey: "version",
-    header: "Ver",
-    size: 50,
-  },
+  { accessorKey: "version", header: t("services.ssm.versionHeader"), size: 50 },
   {
     accessorKey: "tier",
-    header: "Tier",
+    header: t("services.ssm.tierHeader"),
     cell: ({ getValue }) => {
-      const t = getValue() as ParameterTier;
+      const val = getValue() as ParameterTier;
       const labels: Record<number, string> = {
-        [ParameterTier.STANDARD]: "Standard",
-        [ParameterTier.ADVANCED]: "Advanced",
-        [ParameterTier.INTELLIGENT_TIERING]: "Intelligent",
+        [ParameterTier.STANDARD]: t("services.ssm.tierStandard"),
+        [ParameterTier.ADVANCED]: t("services.ssm.tierAdvanced"),
+        [ParameterTier.INTELLIGENT_TIERING]: t("services.ssm.tierIntelligent"),
       };
-      return <span>{labels[t] ?? String(t)}</span>;
+      return <span>{labels[val] ?? String(val)}</span>;
     },
     size: 90,
   },
-  {
-    accessorKey: "lastmodifieddate",
-    header: "Last Modified",
-    cell: ({ getValue }) => {
-      const v = getValue() as string;
-      if (!v) return "\u2014";
-      try {
-        return new Date(v).toLocaleString();
-      } catch {
-        return v;
-      }
-    },
-  },
+  { accessorKey: "description", header: t("services.ssm.descriptionHeader"), cell: ({ getValue }) => (getValue() as string) || "\u2014" },
+  { accessorKey: "datatype", header: t("services.ssm.dataTypeHeader"), cell: ({ getValue }) => (getValue() as string) || "text" },
+  { accessorKey: "lastmodifieddate", header: t("services.ssm.lastModifiedHeader"), cell: DateCell },
 ];
 
+/** Available parameter types for the create form. */
 const PARAM_TYPES = [
-  { value: ParameterType.STRING, label: "String" },
-  { value: ParameterType.SECURE_STRING, label: "SecureString" },
-  { value: ParameterType.STRING_LIST, label: "StringList" },
+  { value: ParameterType.STRING, i18nKey: "services.ssm.paramTypeString" },
+  { value: ParameterType.SECURE_STRING, i18nKey: "services.ssm.paramTypeSecureString" },
+  { value: ParameterType.STRING_LIST, i18nKey: "services.ssm.paramTypeStringList" },
 ];
 
+/** SSM Parameter Store page with list, create, and delete operations. */
 export function SSMPage() {
   const { t } = useTranslation();
+  const columns = getColumns(t);
   const [selectedItem, setSelectedItem] = useState<ParameterMetadata | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -90,14 +81,13 @@ export function SSMPage() {
   const [formType, setFormType] = useState(ParameterType.STRING);
   const [formDesc, setFormDesc] = useState("");
 
-  const client = createClient(SSMService, transport);
+  const { client, invalidate } = useServiceClient(SSMService);
   const { queryKey } = useListKey("ssm");
-  const invalidate = useListInvalidator();
 
   const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: () => client.describeParameters({}),
-    refetchInterval: 30_000,
+    refetchInterval: REFETCH_INTERVAL,
   });
 
   const items: ParameterMetadata[] = dropEmpty(data?.parameters ?? [], "name");
@@ -119,15 +109,14 @@ export function SSMPage() {
       setShowCreate(false);
       setFormName("");
       setFormValue("");
+      setFormType(ParameterType.STRING);
       setFormDesc("");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (name: string) =>
-      client.deleteParameter(
-        create(DeleteParameterRequestSchema, { name }),
-      ),
+      client.deleteParameter(create(DeleteParameterRequestSchema, { name })),
     onSuccess: () => {
       invalidate(queryKey);
       setShowDelete(false);
@@ -135,97 +124,69 @@ export function SSMPage() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">📋</span>
-          <h1>Systems Manager Parameter Store</h1>
-        </div>
-        <div className="loading-state">{t("common.loading")}</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">📋</span>
-          <h1>Systems Manager Parameter Store</h1>
-        </div>
-        <div className="error-state">{t("common.failedToLoad", { error: String(error) })}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="content-area">
-      <div className="page-header">
-        <span className="page-icon">📋</span>
-        <h1>Systems Manager Parameter Store</h1>
-        <span className="resource-count">{t("common.resources", { count: items.length })}</span>
-        <div className="page-actions">
+    <ServicePageLayout
+      icon="📋"
+      title={t("services.ssm.title")}
+      isLoading={isLoading}
+      error={error}
+      count={items.length}
+      countLabel={t("services.ssm.countLabel")}
+      actions={
+        <>
           <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
-            Create parameter
+            {t("services.ssm.create")}
           </button>
           {selectedItem && (
             <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
               {t("common.delete")}
             </button>
           )}
-        </div>
-      </div>
+        </>
+      }
+      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "ssm-items" }}
+    >
+      <SplitPane
+        columns={columns}
+        data={items}
+        getRowId={(row) => row.name}
+        onRowClick={setSelectedItem}
+        selectedId={selectedItem?.name}
+        selected={selectedItem}
+        detailTitle={selectedItem?.name}
+        onDetailClose={() => setSelectedItem(null)}
+      />
 
-      <div className="split-pane">
-        <div className="split-table">
-          <DataTable
-            columns={columns}
-            data={items}
-            getRowId={(row) => row.name}
-            onRowClick={setSelectedItem}
-            selectedId={selectedItem?.name}
-          />
-        </div>
-        {selectedItem && (
-          <div className="split-detail">
-            <div className="detail-header">
-              <h2>{selectedItem.name}</h2>
-              <button className="detail-close" onClick={() => setSelectedItem(null)}>
-                ✕
-              </button>
-            </div>
-            <JsonViewer data={selectedItem} />
-          </div>
-        )}
-      </div>
-
-      <Modal open={showCreate} onClose={() => setShowCreate(false)}>
-        <h2>Create parameter</h2>
-        {createMutation.error && (
-          <div className="modal-error">{String(createMutation.error)}</div>
-        )}
+      <ServiceCreateModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t("services.ssm.create")}
+        error={createMutation.error}
+        isPending={createMutation.isPending}
+        onCreate={() => createMutation.mutate()}
+        disabled={!formName || !formValue}
+      >
         <label>
-          Name
+          {t("services.ssm.nameField")}
           <input
             value={formName}
             onChange={(e) => setFormName(e.target.value)}
-            placeholder="/my-app/config-key"
+            placeholder={t("services.ssm.placeholder")}
             className="modal-input"
           />
         </label>
         <label>
-          Value
+          {t("services.ssm.valueLabel")}
           <textarea
             value={formValue}
             onChange={(e) => setFormValue(e.target.value)}
-            placeholder="parameter value"
+            placeholder={t("services.ssm.valuePlaceholder")}
             className="modal-textarea"
             rows={3}
           />
         </label>
         <label>
-          Type
+          {t("services.ssm.typeLabel")}
           <select
             value={formType}
             onChange={(e) => setFormType(Number(e.target.value))}
@@ -233,48 +194,31 @@ export function SSMPage() {
           >
             {PARAM_TYPES.map((pt) => (
               <option key={pt.value} value={pt.value}>
-                {pt.label}
+                {t(pt.i18nKey)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Description
+          {t("services.ssm.descLabel")}
           <input
             value={formDesc}
             onChange={(e) => setFormDesc(e.target.value)}
-            placeholder="optional description"
+            placeholder={t("services.ssm.descPlaceholder")}
             className="modal-input"
           />
         </label>
-        <div className="modal-actions">
-          <button className="btn btn-secondary" onClick={() => setShowCreate(false)}>
-            {t("common.cancel")}
-          </button>
-          <button
-            className="btn btn-primary"
-            disabled={!formName || !formValue || createMutation.isPending}
-            onClick={() => createMutation.mutate()}
-          >
-            {createMutation.isPending ? t("common.creating") : t("common.create")}
-          </button>
-        </div>
-      </Modal>
+      </ServiceCreateModal>
 
-      <ConfirmDialog
+      <ServiceDeleteDialog
         open={showDelete && !!selectedItem}
-        title={t("confirm.deleteParameter")}
-        message={
-          <>
-            {t("confirm.confirmDelete", { name: "" })}
-            <strong>{selectedItem?.name}</strong>?
-          </>
-        }
+        title={t("services.ssm.delete")}
+        name={selectedItem?.name}
         error={deleteMutation.error}
         isPending={deleteMutation.isPending}
         onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.name)}
         onClose={() => setShowDelete(false)}
       />
-    </div>
+    </ServicePageLayout>
   );
 }

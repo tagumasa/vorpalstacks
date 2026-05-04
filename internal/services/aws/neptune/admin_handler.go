@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
@@ -50,12 +53,12 @@ func (h *AdminHandler) getStore(header http.Header) (*storeneptune.NeptuneStore,
 func (h *AdminHandler) DescribeDBClusters(ctx context.Context, req *connect.Request[pb.DescribeDBClustersMessage]) (*connect.Response[pb.DBClusterMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	clusters, err := store.ListClusters()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbClusters := make([]*pb.DBCluster, 0, len(clusters))
@@ -76,12 +79,12 @@ func (h *AdminHandler) DescribeDBClusters(ctx context.Context, req *connect.Requ
 func (h *AdminHandler) DescribeDBInstances(ctx context.Context, req *connect.Request[pb.DescribeDBInstancesMessage]) (*connect.Response[pb.DBInstanceMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	instances, err := store.ListInstances()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbInstances := make([]*pb.DBInstance, 0, len(instances))
@@ -102,12 +105,12 @@ func (h *AdminHandler) DescribeDBInstances(ctx context.Context, req *connect.Req
 func (h *AdminHandler) DescribeDBClusterSnapshots(ctx context.Context, req *connect.Request[pb.DescribeDBClusterSnapshotsMessage]) (*connect.Response[pb.DBClusterSnapshotMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	snapshots, err := store.ListSnapshots()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbSnapshots := make([]*pb.DBClusterSnapshot, 0, len(snapshots))
@@ -131,12 +134,12 @@ func (h *AdminHandler) DescribeDBClusterSnapshots(ctx context.Context, req *conn
 func (h *AdminHandler) DescribeDBClusterParameterGroups(ctx context.Context, req *connect.Request[pb.DescribeDBClusterParameterGroupsMessage]) (*connect.Response[pb.DBClusterParameterGroupsMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	groups, err := store.ListClusterParameterGroups()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbGroups := make([]*pb.DBClusterParameterGroup, 0, len(groups))
@@ -157,12 +160,12 @@ func (h *AdminHandler) DescribeDBClusterParameterGroups(ctx context.Context, req
 func (h *AdminHandler) DescribeDBParameterGroups(ctx context.Context, req *connect.Request[pb.DescribeDBParameterGroupsMessage]) (*connect.Response[pb.DBParameterGroupsMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	groups, err := store.ListParameterGroups()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbGroups := make([]*pb.DBParameterGroup, 0, len(groups))
@@ -183,12 +186,12 @@ func (h *AdminHandler) DescribeDBParameterGroups(ctx context.Context, req *conne
 func (h *AdminHandler) DescribeDBSubnetGroups(ctx context.Context, req *connect.Request[pb.DescribeDBSubnetGroupsMessage]) (*connect.Response[pb.DBSubnetGroupMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	groups, err := store.ListSubnetGroups()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbGroups := make([]*pb.DBSubnetGroup, 0, len(groups))
@@ -209,12 +212,12 @@ func (h *AdminHandler) DescribeDBSubnetGroups(ctx context.Context, req *connect.
 func (h *AdminHandler) DescribeGlobalClusters(ctx context.Context, req *connect.Request[pb.DescribeGlobalClustersMessage]) (*connect.Response[pb.GlobalClustersMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	clusters, err := store.ListGlobalClusters()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbClusters := make([]*pb.GlobalCluster, 0, len(clusters))
@@ -235,12 +238,12 @@ func (h *AdminHandler) DescribeGlobalClusters(ctx context.Context, req *connect.
 func (h *AdminHandler) DescribeEventSubscriptions(ctx context.Context, req *connect.Request[pb.DescribeEventSubscriptionsMessage]) (*connect.Response[pb.EventSubscriptionsMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	subs, err := store.ListEventSubscriptions()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbSubs := make([]*pb.EventSubscription, 0, len(subs))
@@ -261,13 +264,13 @@ func (h *AdminHandler) DescribeEventSubscriptions(ctx context.Context, req *conn
 func (h *AdminHandler) DescribeDBClusterEndpoints(ctx context.Context, req *connect.Request[pb.DescribeDBClusterEndpointsMessage]) (*connect.Response[pb.DBClusterEndpointMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	clusterID := req.Msg.Dbclusteridentifier
 	endpoints, err := store.ListClusterEndpoints(clusterID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbEndpoints := make([]*pb.DBClusterEndpoint, 0, len(endpoints))
@@ -287,12 +290,12 @@ func (h *AdminHandler) DescribeDBClusterEndpoints(ctx context.Context, req *conn
 func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Request[pb.ListTagsForResourceMessage]) (*connect.Response[pb.TagListMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	tags, err := store.GetTags(req.Msg.Resourcename)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbTags := make([]*pb.Tag, len(tags))
@@ -344,11 +347,11 @@ func (h *AdminHandler) DescribeEventCategories(ctx context.Context, req *connect
 func (h *AdminHandler) DescribeEvents(ctx context.Context, req *connect.Request[pb.DescribeEventsMessage]) (*connect.Response[pb.EventsMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, err
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	result, err := store.ListEvents(storeneptune.EventListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	events := make([]*pb.Event, 0, len(result.Events))
 	for _, evt := range result.Events {
@@ -366,7 +369,7 @@ func (h *AdminHandler) DescribeEvents(ctx context.Context, req *connect.Request[
 			sourceType = pb.SourceType_SOURCE_TYPE_DB_CLUSTER
 		}
 		events = append(events, &pb.Event{
-			Date:             evt.Date.UTC().Format("2006-01-02T15:04:05.000Z"),
+			Date:             evt.Date.UTC().Format(timeutils.ISO8601UTCFormat),
 			Message:          evt.Message,
 			Sourcearn:        evt.SourceArn,
 			Sourceidentifier: evt.SourceIdentifier,
@@ -414,7 +417,7 @@ func (h *AdminHandler) DescribeValidDBInstanceModifications(ctx context.Context,
 func (h *AdminHandler) DescribeDBClusterParameters(ctx context.Context, req *connect.Request[pb.DescribeDBClusterParametersMessage]) (*connect.Response[pb.DBClusterParameterGroupDetails], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, err
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	pg, err := store.GetClusterParameterGroup(req.Msg.Dbclusterparametergroupname)
 	if err != nil {
@@ -478,7 +481,7 @@ func (h *AdminHandler) DescribeDBClusterParameters(ctx context.Context, req *con
 func (h *AdminHandler) DescribeDBParameters(ctx context.Context, req *connect.Request[pb.DescribeDBParametersMessage]) (*connect.Response[pb.DBParameterGroupDetails], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, err
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	pg, err := store.GetParameterGroup(req.Msg.Dbparametergroupname)
 	if err != nil {
@@ -606,13 +609,13 @@ func clusterToPb(c *storeneptune.DBCluster, accountId string) *pb.DBCluster {
 		Availabilityzones:                c.AvailabilityZones,
 	}
 	if c.ClusterCreateTime != nil {
-		p.Clustercreatetime = c.ClusterCreateTime.Format("2006-01-02T15:04:05.000Z")
+		p.Clustercreatetime = c.ClusterCreateTime.Format(timeutils.ISO8601UTCFormat)
 	}
 	if c.EarliestRestorableTime != nil {
-		p.Earliestrestorabletime = c.EarliestRestorableTime.Format("2006-01-02T15:04:05.000Z")
+		p.Earliestrestorabletime = c.EarliestRestorableTime.Format(timeutils.ISO8601UTCFormat)
 	}
 	if c.LatestRestorableTime != nil {
-		p.Latestrestorabletime = c.LatestRestorableTime.Format("2006-01-02T15:04:05.000Z")
+		p.Latestrestorabletime = c.LatestRestorableTime.Format(timeutils.ISO8601UTCFormat)
 	}
 	if c.ServerlessV2ScalingConfiguration != nil {
 		p.Serverlessv2Scalingconfiguration = &pb.ServerlessV2ScalingConfigurationInfo{
@@ -649,7 +652,7 @@ func instanceToPb(i *storeneptune.DBInstance, accountId string) *pb.DBInstance {
 		Dbinstancearn:                    i.DBInstanceArn,
 	}
 	if i.InstanceCreateTime != nil {
-		p.Instancecreatetime = i.InstanceCreateTime.Format("2006-01-02T15:04:05.000Z")
+		p.Instancecreatetime = i.InstanceCreateTime.Format(timeutils.ISO8601UTCFormat)
 	}
 	return p
 }
@@ -669,10 +672,10 @@ func snapshotToPb(s *storeneptune.DBClusterSnapshot, accountId string) *pb.DBClu
 		Dbclustersnapshotarn:        s.DBSnapshotArn,
 	}
 	if s.SnapshotCreateTime != nil {
-		p.Snapshotcreatetime = s.SnapshotCreateTime.Format("2006-01-02T15:04:05.000Z")
+		p.Snapshotcreatetime = s.SnapshotCreateTime.Format(timeutils.ISO8601UTCFormat)
 	}
 	if s.ClusterCreateTime != nil {
-		p.Clustercreatetime = s.ClusterCreateTime.Format("2006-01-02T15:04:05.000Z")
+		p.Clustercreatetime = s.ClusterCreateTime.Format(timeutils.ISO8601UTCFormat)
 	}
 	return p
 }

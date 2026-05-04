@@ -2,9 +2,11 @@ package wafv2
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
@@ -43,7 +45,7 @@ func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*wafstore.WebAC
 func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.ListWebACLsRequest]) (*connect.Response[pb.ListWebACLsResponse], error) {
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	maxItems := int(req.Msg.Limit)
@@ -53,7 +55,7 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 
 	result, err := store.List(req.Msg.Nextmarker, maxItems)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	summaries := make([]*pb.WebACLSummary, 0, len(result.WebACLs))
@@ -76,12 +78,12 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 // CreateWebACL creates a new WebACL via the admin console gRPC-Web interface.
 func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb.CreateWebACLRequest]) (*connect.Response[pb.CreateWebACLResponse], error) {
 	if req.Msg.GetName() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, connect.NewError(connect.CodeInvalidArgument, nil))
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
 	}
 
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	scope := "REGIONAL"
@@ -91,7 +93,7 @@ func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb
 
 	id, err := generateID()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	webACL, err := store.Create(id, req.Msg.GetName(), req.Msg.GetDescription(), scope, 1500, nil, nil, nil)
@@ -99,7 +101,7 @@ func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb
 		if wafstore.IsAlreadyExists(err) {
 			return nil, connect.NewError(connect.CodeAlreadyExists, err)
 		}
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateWebACLResponse{
@@ -116,12 +118,12 @@ func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb
 // DeleteWebACL deletes an existing WebACL via the admin console gRPC-Web interface.
 func (h *AdminHandler) DeleteWebACL(ctx context.Context, req *connect.Request[pb.DeleteWebACLRequest]) (*connect.Response[pb.DeleteWebACLResponse], error) {
 	if req.Msg.GetId() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, connect.NewError(connect.CodeInvalidArgument, nil))
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("id is required"))
 	}
 
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	lockToken := req.Msg.GetLocktoken()
@@ -131,7 +133,7 @@ func (h *AdminHandler) DeleteWebACL(ctx context.Context, req *connect.Request[pb
 			if wafstore.IsNotFound(getErr) {
 				return nil, connect.NewError(connect.CodeNotFound, getErr)
 			}
-			return nil, connect.NewError(connect.CodeInternal, getErr)
+			return nil, svcerrors.StoreErrorToGRPC(getErr)
 		}
 		lockToken = webACL.LockToken
 	}
@@ -143,7 +145,7 @@ func (h *AdminHandler) DeleteWebACL(ctx context.Context, req *connect.Request[pb
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteWebACLResponse{}), nil

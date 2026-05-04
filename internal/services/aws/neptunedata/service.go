@@ -18,6 +18,7 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 const (
@@ -301,7 +302,7 @@ func (s *NeptuneDataService) GetEngineStatus(ctx context.Context, reqCtx *reques
 	_ = req
 	return map[string]interface{}{
 		"status":    "healthy",
-		"startTime": s.startTime.UTC().Format("2006-01-02T15:04:05.000Z"),
+		"startTime": s.startTime.UTC().Format(timeutils.ISO8601UTCFormat),
 		"gremlin": map[string]interface{}{
 			"version": "3.7.x",
 		},

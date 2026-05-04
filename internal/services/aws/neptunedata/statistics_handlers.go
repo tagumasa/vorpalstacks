@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage/graphengine"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 // GetPropertygraphStatistics returns auto-computed property graph statistics
@@ -35,7 +36,7 @@ func (s *NeptuneDataService) GetPropertygraphStatistics(ctx context.Context, req
 		"payload": map[string]interface{}{
 			"active":       !statsDisabled,
 			"autoCompute":  autoCompute,
-			"date":         time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+			"date":         time.Now().UTC().Format(timeutils.ISO8601UTCFormat),
 			"note":         "Automatically computed",
 			"statisticsId": "auto-statistics",
 			"signatureInfo": map[string]interface{}{
@@ -169,7 +170,7 @@ func (s *NeptuneDataService) GetPropertygraphSummary(ctx context.Context, reqCtx
 		"payload": map[string]interface{}{
 			"version":                       "v1",
 			"graphSummary":                  summary,
-			"lastStatisticsComputationTime": time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+			"lastStatisticsComputationTime": time.Now().UTC().Format(timeutils.ISO8601UTCFormat),
 		},
 	}, nil
 }

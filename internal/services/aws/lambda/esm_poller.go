@@ -15,6 +15,7 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 const (
@@ -364,7 +365,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 					"partitionKey":                rec.PartitionKey,
 					"sequenceNumber":              rec.SequenceNumber,
 					"data":                        string(rec.Data),
-					"approximateArrivalTimestamp": rec.ApproximateArrivalTimestamp.Format("2006-01-02T15:04:05.000Z"),
+					"approximateArrivalTimestamp": rec.ApproximateArrivalTimestamp.Format(timeutils.ISO8601UTCFormat),
 				},
 				"eventSource":       "aws:kinesis",
 				"eventVersion":      "1.0",

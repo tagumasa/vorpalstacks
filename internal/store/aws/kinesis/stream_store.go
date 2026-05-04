@@ -107,11 +107,11 @@ func (s *KinesisStore) GetStreamByARN(streamARN string) (*Stream, error) {
 		}
 	}
 
-	streams, err := s.ListStreams()
+	result, err := s.ListStreams(common.ListOptions{MaxItems: 10000})
 	if err != nil {
 		return nil, err
 	}
-	for _, stream := range streams {
+	for _, stream := range result.Items {
 		if normalizeARN(stream.StreamARN, s.accountID) == normalizedARN {
 			_ = arnBucket.Put(arnKey, []byte(stream.StreamName))
 			return stream, nil
@@ -176,9 +176,8 @@ func (s *KinesisStore) DeleteStream(streamName string) error {
 	return s.BaseStore.Delete(streamName)
 }
 
-// ListStreams returns all Kinesis streams in the store.
-func (s *KinesisStore) ListStreams() ([]*Stream, error) {
-	opts := common.ListOptions{MaxItems: 10000}
+// ListStreams returns Kinesis streams with pagination support.
+func (s *KinesisStore) ListStreams(opts common.ListOptions) (*common.ListResult[Stream], error) {
 	result, err := common.ListProto(s.BaseStore, opts, func() *pb.Stream { return &pb.Stream{} }, nil)
 	if err != nil {
 		return nil, err
@@ -187,5 +186,9 @@ func (s *KinesisStore) ListStreams() ([]*Stream, error) {
 	for i, pbStream := range result.Items {
 		streams[i] = ProtoToStream(pbStream)
 	}
-	return streams, nil
+	return &common.ListResult[Stream]{
+		Items:       streams,
+		NextMarker:  result.NextMarker,
+		IsTruncated: result.IsTruncated,
+	}, nil
 }

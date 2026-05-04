@@ -2,6 +2,8 @@ package kinesis
 
 import (
 	"time"
+
+	common "vorpalstacks/internal/store/aws/common"
 )
 
 // KinesisStoreInterface defines operations for managing Kinesis streams.
@@ -14,7 +16,7 @@ type KinesisStoreInterface interface {
 	GetStreamByARN(streamARN string) (*Stream, error)
 	UpdateStream(stream *Stream) error
 	DeleteStream(streamName string) error
-	ListStreams() ([]*Stream, error)
+	ListStreams(opts common.ListOptions) (*common.ListResult[Stream], error)
 	PutShard(shard *Shard) error
 	GetShard(streamName, shardID string) (*Shard, error)
 	UpdateShard(shard *Shard) error

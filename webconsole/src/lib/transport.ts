@@ -1,6 +1,7 @@
 import { createConnectTransport } from "@connectrpc/connect-web";
 import type { Interceptor } from "@connectrpc/connect";
 import { getToken, clearTokens } from "./auth";
+import { recordRequest, recordError, recordLatency } from "./metrics-store";
 
 /** Current region injected into every outgoing request header. */
 let currentRegion = "us-east-1";
@@ -8,16 +9,6 @@ let currentRegion = "us-east-1";
 /** Update the region used by the region interceptor. */
 export function setTransportRegion(r: string) {
   currentRegion = r;
-}
-
-/**
- * Creates a Connect transport instance with JWT auth and region header interceptors.
- */
-export function createTransport() {
-  return createConnectTransport({
-    baseUrl: "/",
-    interceptors: [authInterceptor, regionInterceptor],
-  });
 }
 
 /**
@@ -49,6 +40,33 @@ const regionInterceptor: Interceptor = (next) => async (req) => {
   req.header.set("X-Aws-Region", currentRegion);
   return next(req);
 };
+
+/**
+ * Telemetry interceptor: tracks request count, error count, and latency
+ * in the singleton MetricsStore for the StatusBar.
+ */
+const telemetryInterceptor: Interceptor = (next) => async (req) => {
+  recordRequest();
+  const start = performance.now();
+  try {
+    return await next(req);
+  } catch (err: any) {
+    recordError();
+    throw err;
+  } finally {
+    recordLatency(performance.now() - start);
+  }
+};
+
+/**
+ * Creates a Connect transport instance with JWT auth and region header interceptors.
+ */
+export function createTransport() {
+  return createConnectTransport({
+    baseUrl: "/",
+    interceptors: [authInterceptor, regionInterceptor, telemetryInterceptor],
+  });
+}
 
 /** Shared transport instance used by all Connect RPC clients. */
 export const transport = createTransport();

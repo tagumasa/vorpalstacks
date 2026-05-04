@@ -6,6 +6,7 @@ import { LoginIAMPage } from "@/pages/login-iam";
 import { SetupPage } from "@/pages/setup";
 import { AppShell } from "@/components/layout/app-shell";
 import { ServiceRoute } from "@/pages/services/_router";
+import { SettingsPage } from "@/pages/settings";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) {
@@ -27,33 +28,37 @@ export function DashboardPage() {
   );
 }
 
-export const router = createBrowserRouter([
-  {
-    path: "/setup",
-    element: <SetupPage />,
-  },
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    path: "/login/root",
-    element: <LoginRootPage />,
-  },
-  {
-    path: "/login/iam",
-    element: <LoginIAMPage />,
-  },
-  {
-    path: "/",
-    element: (
-      <RequireAuth>
-        <AppShell />
-      </RequireAuth>
-    ),
-    children: [
-      { index: true, element: <DashboardPage /> },
-      { path: "services/:serviceId", element: <ServiceRoute /> },
-    ],
-  },
-]);
+export const router = createBrowserRouter(
+  [
+    {
+      path: "/setup",
+      element: <SetupPage />,
+    },
+    {
+      path: "/login",
+      element: <LoginPage />,
+    },
+    {
+      path: "/login/root",
+      element: <LoginRootPage />,
+    },
+    {
+      path: "/login/iam",
+      element: <LoginIAMPage />,
+    },
+    {
+      path: "/",
+      element: (
+        <RequireAuth>
+          <AppShell />
+        </RequireAuth>
+      ),
+      children: [
+        { index: true, element: <DashboardPage /> },
+        { path: "settings", element: <SettingsPage /> },
+        { path: "services/:serviceId", element: <ServiceRoute /> },
+      ],
+    },
+  ],
+  { basename: "/webconsole" },
+);

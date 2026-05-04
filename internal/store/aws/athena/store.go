@@ -134,9 +134,9 @@ func (s *WorkGroupStore) DeleteWorkGroup(name string) error {
 	})
 }
 
-// ListWorkGroups returns all Athena work groups.
-func (s *WorkGroupStore) ListWorkGroups() ([]*WorkGroup, error) {
-	result, err := common.ListProto[*pb.WorkGroup](s.BaseStore, common.ListOptions{}, func() *pb.WorkGroup { return &pb.WorkGroup{} }, nil)
+// ListWorkGroups returns Athena work groups with pagination support.
+func (s *WorkGroupStore) ListWorkGroups(opts common.ListOptions) (*common.ListResult[WorkGroup], error) {
+	result, err := common.ListProto[*pb.WorkGroup](s.BaseStore, opts, func() *pb.WorkGroup { return &pb.WorkGroup{} }, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,11 @@ func (s *WorkGroupStore) ListWorkGroups() ([]*WorkGroup, error) {
 	for i, p := range result.Items {
 		workGroups[i] = ProtoToWorkGroup(p)
 	}
-	return workGroups, nil
+	return &common.ListResult[WorkGroup]{
+		Items:       workGroups,
+		NextMarker:  result.NextMarker,
+		IsTruncated: result.IsTruncated,
+	}, nil
 }
 
 // GetARN returns the ARN for an Athena work group.

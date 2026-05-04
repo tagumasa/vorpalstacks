@@ -1,25 +1,35 @@
+/**
+ * ACM service page. Lists certificates with create/delete operations.
+ */
 import { useState } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { createClient } from "@connectrpc/connect";
-import { ACMService, type CertificateSummary } from "@/gen/acm_pb";
-import { transport } from "@/lib/transport";
-import { useListKey, dropEmpty } from "@/lib/use-service-list";
-import { DataTable } from "@/components/shared/data-table";
+import { create } from "@bufbuild/protobuf";
+import { ACMService, type CertificateSummary, KeyAlgorithm } from "@/gen/acm_pb";
+import { RequestCertificateRequestSchema } from "@/gen/acm_pb";
+import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import {
+  ServicePageLayout,
+  SplitPane,
+  ServiceCreateModal,
+  ServiceDeleteDialog,
+  MonoCell,
+  BooleanBadge,
+  BooleanCell,
+  DateCell,
+  fmtDate,
+  useServiceClient,
+} from "@/components/shared/service-page";
 import { JsonViewer } from "@/components/shared/json-viewer";
 
-const columns: ColumnDef<CertificateSummary, any>[] = [
-  {
-    accessorKey: "domainname",
-    header: "Domain",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
+/** Column definitions for the ACM certificate table. */
+const getColumns = (t: TFunction): ColumnDef<CertificateSummary, any>[] => [
+  { accessorKey: "domainname", header: t("services.acm.domainHeader"), cell: MonoCell },
   {
     accessorKey: "status",
-    header: "Status",
+    header: t("services.acm.statusHeader"),
     cell: ({ getValue }) => {
       const v = String(getValue());
       const cls = v === "ISSUED" ? "badge-green" : v === "PENDING_VALIDATION" ? "badge-yellow" : "";
@@ -27,32 +37,15 @@ const columns: ColumnDef<CertificateSummary, any>[] = [
     },
     size: 160,
   },
-  {
-    accessorKey: "type",
-    header: "Type",
-    size: 100,
-  },
-  {
-    accessorKey: "notafter",
-    header: "Expires",
-    cell: ({ getValue }) => {
-      const v = getValue() as string;
-      if (!v) return "\u2014";
-      try {
-        return new Date(v).toLocaleDateString();
-      } catch {
-        return v;
-      }
-    },
-  },
+  { accessorKey: "type", header: t("services.acm.typeHeader"), size: 100 },
+  { accessorKey: "keyalgorithm", header: t("services.acm.keyAlgorithmHeader"), size: 120 },
+  { accessorKey: "inuse", header: t("services.acm.inUseHeader"), cell: BooleanCell, size: 70 },
+  { accessorKey: "notafter", header: t("services.acm.expiresHeader"), cell: DateCell },
 ];
 
-function fmtDate(v: string | undefined): string {
-  if (!v) return "\u2014";
-  try { return new Date(v).toLocaleString(); } catch { return v; }
-}
-
+/** Detail panel for an ACM certificate. */
 function ACMDetail({ item }: { item: CertificateSummary }) {
+  const { t } = useTranslation();
   const sans = item.subjectalternativenamesummaries ?? [];
   const keyUsages = item.keyusages ?? [];
   const extKeyUsages = item.extendedkeyusages ?? [];
@@ -60,30 +53,30 @@ function ACMDetail({ item }: { item: CertificateSummary }) {
   return (
     <div className="detail-body">
       <section className="detail-section">
-        <h3>General</h3>
-        <div className="detail-field"><span className="detail-label">Domain</span><span className="cell-mono">{item.domainname}</span></div>
-        <div className="detail-field"><span className="detail-label">ARN</span><span className="cell-mono" style={{ fontSize: 11 }}>{item.certificatearn || "\u2014"}</span></div>
-        <div className="detail-field"><span className="detail-label">Status</span><span className="badge">{String(item.status)}</span></div>
-        <div className="detail-field"><span className="detail-label">Type</span><span>{String(item.type)}</span></div>
-        <div className="detail-field"><span className="detail-label">Key Algorithm</span><span>{String(item.keyalgorithm)}</span></div>
-        <div className="detail-field"><span className="detail-label">In Use</span>{item.inuse ? <span className="badge badge-green">Yes</span> : <span className="badge">No</span>}</div>
-        <div className="detail-field"><span className="detail-label">Managed By</span><span>{String(item.managedby)}</span></div>
-        <div className="detail-field"><span className="detail-label">Renewal</span><span>{String(item.renewaleligibility)}</span></div>
+        <h3>{t("common.general")}</h3>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.domainLabel")}</span><span className="cell-mono">{item.domainname}</span></div>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.arnLabel")}</span><span className="cell-mono" style={{ fontSize: 11 }}>{item.certificatearn || "\u2014"}</span></div>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.statusLabel")}</span><span className="badge">{String(item.status)}</span></div>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.typeLabel")}</span><span>{String(item.type)}</span></div>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.keyAlgorithmLabel")}</span><span>{String(item.keyalgorithm)}</span></div>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.inUseLabel")}</span><BooleanBadge value={item.inuse} /></div>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.managedByLabel")}</span><span>{String(item.managedby)}</span></div>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.renewalLabel")}</span><span>{String(item.renewaleligibility)}</span></div>
       </section>
 
       <section className="detail-section">
-        <h3>Validity</h3>
-        <div className="detail-field"><span className="detail-label">Created</span><span>{fmtDate(item.createdat)}</span></div>
-        <div className="detail-field"><span className="detail-label">Issued</span><span>{fmtDate(item.issuedat)}</span></div>
-        <div className="detail-field"><span className="detail-label">Not Before</span><span>{fmtDate(item.notbefore)}</span></div>
-        <div className="detail-field"><span className="detail-label">Not After</span><span>{fmtDate(item.notafter)}</span></div>
-        {item.importedat && <div className="detail-field"><span className="detail-label">Imported</span><span>{fmtDate(item.importedat)}</span></div>}
-        {item.revokedat && <div className="detail-field"><span className="detail-label">Revoked</span><span>{fmtDate(item.revokedat)}</span></div>}
+        <h3>{t("services.acm.detail.validitySection")}</h3>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.createdLabel")}</span><span>{fmtDate(item.createdat)}</span></div>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.issuedLabel")}</span><span>{fmtDate(item.issuedat)}</span></div>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.notBeforeLabel")}</span><span>{fmtDate(item.notbefore)}</span></div>
+        <div className="detail-field"><span className="detail-label">{t("services.acm.detail.notAfterLabel")}</span><span>{fmtDate(item.notafter)}</span></div>
+        {item.importedat && <div className="detail-field"><span className="detail-label">{t("services.acm.detail.importedLabel")}</span><span>{fmtDate(item.importedat)}</span></div>}
+        {item.revokedat && <div className="detail-field"><span className="detail-label">{t("services.acm.detail.revokedLabel")}</span><span>{fmtDate(item.revokedat)}</span></div>}
       </section>
 
       {sans.length > 0 && (
         <section className="detail-section">
-          <h3>Subject Alternative Names ({sans.length})</h3>
+          <h3>{t("services.acm.detail.sanSection")} ({sans.length})</h3>
           {sans.map((s, i) => (
             <div key={i} className="detail-field"><span className="detail-label">{i + 1}</span><span className="cell-mono">{s}</span></div>
           ))}
@@ -92,25 +85,32 @@ function ACMDetail({ item }: { item: CertificateSummary }) {
 
       {(keyUsages.length > 0 || extKeyUsages.length > 0) && (
         <section className="detail-section">
-          <h3>Key Usage</h3>
-          {keyUsages.length > 0 && <div className="detail-field"><span className="detail-label">Usages</span><span>{keyUsages.join(", ")}</span></div>}
-          {extKeyUsages.length > 0 && <div className="detail-field"><span className="detail-label">Extended</span><span>{extKeyUsages.join(", ")}</span></div>}
+          <h3>{t("services.acm.detail.keyUsageSection")}</h3>
+          {keyUsages.length > 0 && <div className="detail-field"><span className="detail-label">{t("services.acm.detail.usagesLabel")}</span><span>{keyUsages.join(", ")}</span></div>}
+          {extKeyUsages.length > 0 && <div className="detail-field"><span className="detail-label">{t("services.acm.detail.extendedLabel")}</span><span>{extKeyUsages.join(", ")}</span></div>}
         </section>
       )}
 
       <section className="detail-section">
-        <h3>Raw JSON</h3>
+        <h3>{t("common.rawJson")}</h3>
         <JsonViewer data={item} />
       </section>
     </div>
   );
 }
 
+/** ACM service page with certificate list and detail view. */
 export function ACMPage() {
   const { t } = useTranslation();
+  const columns = getColumns(t);
   const [selectedItem, setSelectedItem] = useState<CertificateSummary | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [formDomain, setFormDomain] = useState("");
+  const [formSAN, setFormSAN] = useState("");
+  const [formKeyAlgo, setFormKeyAlgo] = useState(KeyAlgorithm.RSA_2048);
 
-  const client = createClient(ACMService, transport);
+  const { client, invalidate } = useServiceClient(ACMService);
   const { queryKey } = useListKey("acm");
 
   const { data, isLoading, error } = useQuery({
@@ -119,65 +119,128 @@ export function ACMPage() {
       const resp = await client.listCertificates({});
       return dropEmpty(resp.certificatesummarylist ?? [], "certificatearn");
     },
-    refetchInterval: 30_000,
+    refetchInterval: REFETCH_INTERVAL,
   });
 
   const items: CertificateSummary[] = data ?? [];
 
-  if (isLoading) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">🔐</span>
-          <h1>ACM</h1>
-        </div>
-        <div className="loading-state">{t("common.loading")}</div>
-      </div>
-    );
-  }
+  const createMutation = useMutation({
+    mutationFn: () =>
+      client.requestCertificate(
+        create(RequestCertificateRequestSchema, {
+          domainname: formDomain,
+          subjectalternativenames: formSAN
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+          keyalgorithm: formKeyAlgo,
+        }),
+      ),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowCreate(false);
+      setFormDomain("");
+      setFormSAN("");
+      setFormKeyAlgo(KeyAlgorithm.RSA_2048);
+    },
+  });
 
-  if (error) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">🔐</span>
-          <h1>ACM</h1>
-        </div>
-        <div className="error-state">{t("common.failedToLoad", { error: String(error) })}</div>
-      </div>
-    );
-  }
+  const deleteMutation = useMutation({
+    mutationFn: (arn: string) => client.deleteCertificate({ certificatearn: arn }),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowDelete(false);
+      setSelectedItem(null);
+    },
+  });
 
   return (
-    <div className="content-area">
-      <div className="page-header">
-        <span className="page-icon">🔐</span>
-        <h1>ACM</h1>
-        <span className="resource-count">{items.length} certificates</span>
-      </div>
+    <ServicePageLayout
+      icon="🔐"
+      title={t("services.acm.title")}
+      isLoading={isLoading}
+      error={error}
+      count={items.length}
+      countLabel={t("services.acm.countLabel")}
+      actions={
+        <>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+            {t("services.acm.create")}
+          </button>
+          {selectedItem && (
+            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
+              {t("services.acm.delete")}
+            </button>
+          )}
+        </>
+      }
+      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "acm-items" }}
+    >
+      <SplitPane
+        columns={columns}
+        data={items}
+        getRowId={(row) => row.certificatearn}
+        onRowClick={setSelectedItem}
+        selectedId={selectedItem?.certificatearn}
+        selected={selectedItem}
+        detailTitle={selectedItem?.domainname}
+        onDetailClose={() => setSelectedItem(null)}
+        DetailComponent={ACMDetail}
+      />
 
-      <div className="split-pane">
-        <div className="split-table">
-          <DataTable
-            columns={columns}
-            data={items}
-            getRowId={(row) => row.certificatearn}
-            onRowClick={setSelectedItem}
-            selectedId={selectedItem?.certificatearn}
+      <ServiceCreateModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t("services.acm.create")}
+        error={createMutation.error}
+        isPending={createMutation.isPending}
+        onCreate={() => createMutation.mutate()}
+        disabled={!formDomain}
+      >
+        <label>
+          {t("services.acm.domainField")}
+          <input
+            value={formDomain}
+            onChange={(e) => setFormDomain(e.target.value)}
+            placeholder={t("services.acm.domainPlaceholder")}
+            className="modal-input"
           />
-        </div>
-        {selectedItem && (
-          <div className="split-detail">
-            <div className="detail-header">
-              <h2>{selectedItem.domainname}</h2>
-              <button className="detail-close" onClick={() => setSelectedItem(null)}>
-                ✕
-              </button>
-            </div>
-            <ACMDetail item={selectedItem} />
-          </div>
-        )}
-      </div>
-    </div>
+        </label>
+        <label>
+          {t("services.acm.sanLabel")}
+          <input
+            value={formSAN}
+            onChange={(e) => setFormSAN(e.target.value)}
+            placeholder={t("services.acm.sanPlaceholder")}
+            className="modal-input"
+          />
+        </label>
+        <label>
+          {t("services.acm.keyAlgorithmLabel")}
+          <select
+            value={formKeyAlgo}
+            onChange={(e) => setFormKeyAlgo(Number(e.target.value))}
+            className="modal-input"
+          >
+            <option value={KeyAlgorithm.RSA_2048}>RSA 2048</option>
+            <option value={KeyAlgorithm.RSA_3072}>RSA 3072</option>
+            <option value={KeyAlgorithm.RSA_4096}>RSA 4096</option>
+            <option value={KeyAlgorithm.EC_PRIME256V1}>EC prime256v1</option>
+            <option value={KeyAlgorithm.EC_SECP384R1}>EC secp384r1</option>
+            <option value={KeyAlgorithm.EC_SECP521R1}>EC secp521r1</option>
+          </select>
+        </label>
+      </ServiceCreateModal>
+
+      <ServiceDeleteDialog
+        open={showDelete && !!selectedItem}
+        title={t("services.acm.delete")}
+        name={selectedItem?.domainname}
+        error={deleteMutation.error}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.certificatearn)}
+        onClose={() => setShowDelete(false)}
+      />
+    </ServicePageLayout>
   );
 }

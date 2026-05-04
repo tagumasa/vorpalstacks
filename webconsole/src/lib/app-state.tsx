@@ -8,11 +8,15 @@ import { setTransportRegion } from "./transport";
 interface AppState {
   region: string;
   setRegion: (r: string) => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (v: boolean) => void;
 }
 
 const AppContext = createContext<AppState>({
   region: "us-east-1",
   setRegion: () => {},
+  sidebarCollapsed: false,
+  setSidebarCollapsed: () => {},
 });
 
 /** All AWS regions available for selection in the header dropdown. */
@@ -38,6 +42,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [region, setRegionState] = useState(() => {
     return localStorage.getItem(REGION_STORAGE_KEY) ?? "us-east-1";
   });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(REGION_STORAGE_KEY, region);
@@ -49,7 +54,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ region, setRegion }}>
+    <AppContext.Provider value={{ region, setRegion, sidebarCollapsed, setSidebarCollapsed }}>
       {children}
     </AppContext.Provider>
   );

@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tags "vorpalstacks/internal/common/tags"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 
@@ -229,10 +230,11 @@ func (s *CloudTrailService) DescribeTrails(ctx context.Context, reqCtx *request.
 			}
 		}
 	} else {
-		trails, err = store.ListTrails()
+		ctResult, err := store.ListTrails(storecommon.ListOptions{MaxItems: 10000})
 		if err != nil {
 			return nil, s.mapStoreError(err)
 		}
+		trails = ctResult.Items
 	}
 
 	formattedTrails := make([]map[string]interface{}, 0)
@@ -321,10 +323,11 @@ func (s *CloudTrailService) ListTrails(ctx context.Context, reqCtx *request.Requ
 		return nil, s.mapStoreError(err)
 	}
 
-	trails, err := store.ListTrails()
+	ctResult, err := store.ListTrails(storecommon.ListOptions{MaxItems: 10000})
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
+	trails := ctResult.Items
 
 	resumeAfter := ""
 	if nextToken := req.GetParam("NextToken"); nextToken != "" {

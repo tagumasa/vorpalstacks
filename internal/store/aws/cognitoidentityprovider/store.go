@@ -143,6 +143,15 @@ func (s *CognitoStore) ListUserPools() ([]*UserPool, error) {
 	return userPools, nil
 }
 
+// ListUserPoolsPaginated lists Cognito user pools with server-side pagination.
+// The user pool bucket contains other entities keyed by prefixed names; only
+// keys matching the "{region}_{uuid}" pattern are actual user pool entries.
+func (s *CognitoStore) ListUserPoolsPaginated(opts common.ListOptions) (*common.ListResult[UserPool], error) {
+	return common.List[UserPool](s.BaseStore, opts, func(pool *UserPool) bool {
+		return strings.HasPrefix(pool.ID, s.region+"_")
+	})
+}
+
 // CreateUser creates a new Cognito user.
 func (s *CognitoStore) CreateUser(user *User) error {
 	s.createMu.Lock()

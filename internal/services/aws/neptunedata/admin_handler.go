@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
@@ -45,7 +48,7 @@ func (h *AdminHandler) getStore(header http.Header) (*neptunestore.NeptuneStore,
 func (h *AdminHandler) GetEngineStatus(ctx context.Context, req *connect.Request[common.Empty]) (*connect.Response[pb.GetEngineStatusOutput], error) {
 	s := h.service
 	s.mu.RLock()
-	startTime := s.startTime.UTC().Format("2006-01-02T15:04:05.000Z")
+	startTime := s.startTime.UTC().Format(timeutils.ISO8601UTCFormat)
 	s.mu.RUnlock()
 
 	return connect.NewResponse(&pb.GetEngineStatusOutput{
@@ -74,7 +77,7 @@ func (h *AdminHandler) GetGremlinQueryStatus(ctx context.Context, req *connect.R
 
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	qr, err := store.GetQuery(queryId)
@@ -103,7 +106,7 @@ func (h *AdminHandler) GetOpenCypherQueryStatus(ctx context.Context, req *connec
 
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	qr, err := store.GetQuery(queryId)
@@ -130,12 +133,12 @@ func (h *AdminHandler) GetOpenCypherQueryStatus(ctx context.Context, req *connec
 func (h *AdminHandler) ListGremlinQueries(ctx context.Context, req *connect.Request[pb.ListGremlinQueriesInput]) (*connect.Response[pb.ListGremlinQueriesOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	queries, err := store.ListQueries()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbQueries := make([]*pb.GremlinQueryStatus, 0)
@@ -177,12 +180,12 @@ func (h *AdminHandler) ListGremlinQueries(ctx context.Context, req *connect.Requ
 func (h *AdminHandler) ListOpenCypherQueries(ctx context.Context, req *connect.Request[pb.ListOpenCypherQueriesInput]) (*connect.Response[pb.ListOpenCypherQueriesOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	queries, err := store.ListQueries()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbQueries := make([]*pb.GremlinQueryStatus, 0)
@@ -226,7 +229,7 @@ func (h *AdminHandler) GetLoaderJobStatus(ctx context.Context, req *connect.Requ
 
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	job, err := store.GetLoaderJob(loadId)
@@ -244,12 +247,12 @@ func (h *AdminHandler) GetLoaderJobStatus(ctx context.Context, req *connect.Requ
 func (h *AdminHandler) ListLoaderJobs(ctx context.Context, req *connect.Request[pb.ListLoaderJobsInput]) (*connect.Response[pb.ListLoaderJobsOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	jobs, err := store.ListLoaderJobs()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	loadIds := make([]string, 0, len(jobs))
@@ -286,7 +289,7 @@ func (h *AdminHandler) GetPropertygraphStatistics(ctx context.Context, req *conn
 	stats := &pb.Statistics{
 		Active:       fmt.Sprintf("%t", !statsDisabled),
 		Autocompute:  fmt.Sprintf("%t", autoCompute),
-		Date:         time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+		Date:         time.Now().UTC().Format(timeutils.ISO8601UTCFormat),
 		Note:         "Automatically computed",
 		Statisticsid: "auto-statistics",
 		Signatureinfo: &pb.StatisticsSummary{

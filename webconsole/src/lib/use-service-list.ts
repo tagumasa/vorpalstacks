@@ -5,6 +5,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useAppState } from "@/lib/app-state";
 
+/** Default refetch interval for all service list queries (30 seconds). */
+export const REFETCH_INTERVAL = 30_000;
+
 /**
  * Returns [queryKey, region]. The queryKey embeds region so React Query
  * refetches when the user switches region.

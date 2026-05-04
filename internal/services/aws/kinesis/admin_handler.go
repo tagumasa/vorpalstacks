@@ -2,16 +2,21 @@ package kinesis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/kinesis"
 	kinesisconnect "vorpalstacks/internal/pb/aws/kinesis/kinesisconnect"
-	pbcommon "vorpalstacks/internal/pb/aws/common"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
@@ -49,22 +54,30 @@ func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getKinesisStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	streams, err := store.ListStreams()
+	limit := int(req.Msg.Limit)
+	if limit <= 0 {
+		limit = 100
+	}
+	result, err := store.ListStreams(storecommon.ListOptions{
+		Marker:   req.Msg.Exclusivestartstreamname,
+		MaxItems: limit,
+	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	streamNames := make([]string, len(streams))
-	for i, s := range streams {
+	streamNames := make([]string, len(result.Items))
+	for i, s := range result.Items {
 		streamNames[i] = s.StreamName
 	}
 
 	return connect.NewResponse(&pb.ListStreamsOutput{
 		Streamnames:    streamNames,
-		Hasmorestreams: false,
+		Hasmorestreams: result.IsTruncated,
+		Nexttoken:      result.NextMarker,
 	}), nil
 }
 
@@ -73,17 +86,17 @@ func (h *AdminHandler) DescribeStream(ctx context.Context, req *connect.Request[
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getKinesisStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	streamName := req.Msg.Streamname
 	if streamName == "" && req.Msg.Streamarn != "" {
 		stream, err := store.GetStreamByARN(req.Msg.Streamarn)
 		if err != nil {
-			if err == kinesisstore.ErrStreamNotFound {
+			if errors.Is(err, kinesisstore.ErrStreamNotFound) {
 				return nil, connect.NewError(connect.CodeNotFound, err)
 			}
-			return nil, connect.NewError(connect.CodeInternal, err)
+			return nil, svcerrors.StoreErrorToGRPC(err)
 		}
 		streamName = stream.StreamName
 	}
@@ -94,15 +107,15 @@ func (h *AdminHandler) DescribeStream(ctx context.Context, req *connect.Request[
 
 	stream, err := store.GetStream(streamName)
 	if err != nil {
-		if err == kinesisstore.ErrStreamNotFound {
+		if errors.Is(err, kinesisstore.ErrStreamNotFound) {
 			return nil, connect.NewError(connect.CodeNotFound, err)
 		}
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	shards, err := store.ListShards(streamName, nil, "", 0)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DescribeStreamOutput{
@@ -116,7 +129,7 @@ func toPbStreamDescription(stream *kinesisstore.Stream, shards []*kinesisstore.S
 		Streamarn:               stream.StreamARN,
 		Streamstatus:            toPbStreamStatus(stream.StreamStatus),
 		Retentionperiodhours:    stream.RetentionPeriodHours,
-		Streamcreationtimestamp: stream.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		Streamcreationtimestamp: stream.CreatedAt.Format(timeutils.ISO8601UTCFormat),
 		Hasmoreshards:           false,
 	}
 
@@ -246,7 +259,7 @@ func (h *AdminHandler) CreateStream(ctx context.Context, req *connect.Request[pb
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getKinesisStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	shardCount := req.Msg.GetShardcount()
@@ -256,7 +269,7 @@ func (h *AdminHandler) CreateStream(ctx context.Context, req *connect.Request[pb
 
 	_, err = store.CreateStream(req.Msg.GetStreamname(), shardCount, kinesisstore.StreamModeProvisioned)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -271,11 +284,11 @@ func (h *AdminHandler) DeleteStream(ctx context.Context, req *connect.Request[pb
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getKinesisStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteStream(req.Msg.GetStreamname()); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil

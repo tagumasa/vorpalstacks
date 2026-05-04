@@ -1,108 +1,171 @@
 /**
- * CloudTrail service page. Lists trails via ListTrails RPC.
+ * CloudTrail service page. Lists trails with create/delete operations.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { createClient } from "@connectrpc/connect";
+import type { TFunction } from "i18next";
+import { create } from "@bufbuild/protobuf";
 import { CloudTrailService, type TrailInfo } from "@/gen/cloudtrail_pb";
-import { transport } from "@/lib/transport";
-import { useListKey, dropEmpty } from "@/lib/use-service-list";
-import { DataTable } from "@/components/shared/data-table";
-import { JsonViewer } from "@/components/shared/json-viewer";
+import { CreateTrailRequestSchema } from "@/gen/cloudtrail_pb";
+import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import {
+  ServicePageLayout,
+  SplitPane,
+  ServiceCreateModal,
+  ServiceDeleteDialog,
+  MonoCell,
+  SmallMonoCell,
+  useServiceClient,
+} from "@/components/shared/service-page";
 
-const columns: ColumnDef<TrailInfo, any>[] = [
-  {
-    accessorKey: "name",
-    header: "Trail Name",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "trailarn",
-    header: "ARN",
-    cell: ({ getValue }) => (
-      <span className="cell-mono" style={{ fontSize: "0.85em" }}>{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "homeregion",
-    header: "Home Region",
-    size: 120,
-  },
+/** Column definitions for the CloudTrail trail table. */
+const getColumns = (t: TFunction): ColumnDef<TrailInfo, any>[] => [
+  { accessorKey: "name", header: t("services.cloudtrail.trailNameHeader"), cell: MonoCell },
+  { accessorKey: "trailarn", header: t("services.cloudtrail.arnHeader"), cell: SmallMonoCell },
+  { accessorKey: "homeregion", header: t("services.cloudtrail.homeRegionHeader"), size: 120 },
 ];
 
+/** CloudTrail service page with list, create, and delete operations. */
 export function CloudTrailPage() {
   const { t } = useTranslation();
+  const columns = getColumns(t);
   const [selectedItem, setSelectedItem] = useState<TrailInfo | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formS3Bucket, setFormS3Bucket] = useState("");
+  const [formMultiRegion, setFormMultiRegion] = useState(true);
+  const [formGlobalEvents, setFormGlobalEvents] = useState(true);
 
-  const client = createClient(CloudTrailService, transport);
+  const { client, invalidate } = useServiceClient(CloudTrailService);
   const { queryKey } = useListKey("cloudtrail");
 
   const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: () => client.listTrails({}),
-    refetchInterval: 30_000,
+    refetchInterval: REFETCH_INTERVAL,
   });
 
   const items: TrailInfo[] = dropEmpty(data?.trails ?? [], "name");
 
-  if (isLoading) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">📋</span>
-          <h1>CloudTrail</h1>
-        </div>
-        <div className="loading-state">{t("common.loading")}</div>
-      </div>
-    );
-  }
+  const createMutation = useMutation({
+    mutationFn: () =>
+      client.createTrail(
+        create(CreateTrailRequestSchema, {
+          name: formName,
+          s3bucketname: formS3Bucket,
+          ismultiregiontrail: formMultiRegion,
+          includeglobalserviceevents: formGlobalEvents,
+        }),
+      ),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowCreate(false);
+      setFormName("");
+      setFormS3Bucket("");
+      setFormMultiRegion(true);
+      setFormGlobalEvents(true);
+    },
+  });
 
-  if (error) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">📋</span>
-          <h1>CloudTrail</h1>
-        </div>
-        <div className="error-state">{t("common.failedToLoad", { error: String(error) })}</div>
-      </div>
-    );
-  }
+  const deleteMutation = useMutation({
+    mutationFn: (name: string) => client.deleteTrail({ name }),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowDelete(false);
+      setSelectedItem(null);
+    },
+  });
 
   return (
-    <div className="content-area">
-      <div className="page-header">
-        <span className="page-icon">📋</span>
-        <h1>CloudTrail</h1>
-        <span className="resource-count">{items.length} trails</span>
-      </div>
+    <ServicePageLayout
+      icon="📋"
+      title={t("services.cloudtrail.title")}
+      isLoading={isLoading}
+      error={error}
+      count={items.length}
+      countLabel={t("services.cloudtrail.countLabel")}
+      actions={
+        <>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+            {t("services.cloudtrail.create")}
+          </button>
+          {selectedItem && (
+            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
+              {t("common.delete")}
+            </button>
+          )}
+        </>
+      }
+      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "cloudtrail-items" }}
+    >
+      <SplitPane
+        columns={columns}
+        data={items}
+        getRowId={(row) => row.name}
+        onRowClick={setSelectedItem}
+        selectedId={selectedItem?.name}
+        selected={selectedItem}
+        detailTitle={selectedItem?.name}
+        onDetailClose={() => setSelectedItem(null)}
+      />
 
-      <div className="split-pane">
-        <div className="split-table">
-          <DataTable
-            columns={columns}
-            data={items}
-            getRowId={(row) => row.name}
-            onRowClick={setSelectedItem}
-            selectedId={selectedItem?.name}
+      <ServiceCreateModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t("services.cloudtrail.create")}
+        error={createMutation.error}
+        isPending={createMutation.isPending}
+        onCreate={() => createMutation.mutate()}
+        disabled={!formName || !formS3Bucket}
+      >
+        <label>
+          {t("services.cloudtrail.nameField")}
+          <input
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder={t("services.cloudtrail.placeholder")}
+            className="modal-input"
           />
-        </div>
-        {selectedItem && (
-          <div className="split-detail">
-            <div className="detail-header">
-              <h2>{selectedItem.name}</h2>
-              <button className="detail-close" onClick={() => setSelectedItem(null)}>
-                ✕
-              </button>
-            </div>
-            <JsonViewer data={selectedItem} />
-          </div>
-        )}
-      </div>
-    </div>
+        </label>
+        <label>
+          {t("services.cloudtrail.s3BucketLabel")}
+          <input
+            value={formS3Bucket}
+            onChange={(e) => setFormS3Bucket(e.target.value)}
+            placeholder={t("services.cloudtrail.s3BucketPlaceholder")}
+            className="modal-input"
+          />
+        </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={formMultiRegion}
+            onChange={(e) => setFormMultiRegion(e.target.checked)}
+          />
+          {t("services.cloudtrail.multiRegionLabel")}
+        </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={formGlobalEvents}
+            onChange={(e) => setFormGlobalEvents(e.target.checked)}
+          />
+          {t("services.cloudtrail.globalServiceEventsLabel")}
+        </label>
+      </ServiceCreateModal>
+
+      <ServiceDeleteDialog
+        open={showDelete && !!selectedItem}
+        title={t("services.cloudtrail.delete")}
+        name={selectedItem?.name}
+        error={deleteMutation.error}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.name)}
+        onClose={() => setShowDelete(false)}
+      />
+    </ServicePageLayout>
   );
 }

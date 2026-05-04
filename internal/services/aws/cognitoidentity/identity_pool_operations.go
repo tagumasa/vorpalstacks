@@ -10,6 +10,7 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // CreateIdentityPool creates a new Cognito identity pool.
@@ -125,43 +126,38 @@ func (s *CognitoIdentityService) ListIdentityPools(ctx context.Context, reqCtx *
 		return nil, err
 	}
 
-	pools, err := store.ListIdentityPools()
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
 	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
 	if maxResults <= 0 || maxResults > 60 {
 		maxResults = 60
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 
-	identityPools := make([]map[string]interface{}, 0)
-	started := nextToken == ""
-	for _, pool := range pools {
-		if !started {
-			if pool.ID == nextToken {
-				started = true
-			}
-			continue
-		}
+	opts := storecommon.ListOptions{
+		MaxItems: maxResults,
+		Marker:   nextToken,
+	}
+
+	result, err := store.ListIdentityPools(opts)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+
+	identityPools := make([]map[string]interface{}, 0, len(result.Items))
+	for _, pool := range result.Items {
 		identityPools = append(identityPools, map[string]interface{}{
 			"IdentityPoolId":   pool.ID,
 			"IdentityPoolName": pool.Name,
 		})
-		if len(identityPools) >= maxResults {
-			break
-		}
 	}
 
-	result := map[string]interface{}{
+	resp := map[string]interface{}{
 		"IdentityPools": identityPools,
 	}
-	if len(identityPools) >= maxResults && len(identityPools) > 0 {
-		result["NextToken"] = identityPools[len(identityPools)-1]["IdentityPoolId"]
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
 	}
 
-	return result, nil
+	return resp, nil
 }
 
 // UpdateIdentityPool updates a Cognito identity pool.

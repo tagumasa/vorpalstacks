@@ -1,12 +1,16 @@
 package athena
 
+import (
+	common "vorpalstacks/internal/store/aws/common"
+)
+
 // WorkGroupStoreInterface defines operations for managing Athena work groups.
 type WorkGroupStoreInterface interface {
 	CreateWorkGroup(wg *WorkGroup) error
 	GetWorkGroup(name string) (*WorkGroup, error)
 	UpdateWorkGroup(wg *WorkGroup) error
 	DeleteWorkGroup(name string) error
-	ListWorkGroups() ([]*WorkGroup, error)
+	ListWorkGroups(opts common.ListOptions) (*common.ListResult[WorkGroup], error)
 	GetARN(name string) string
 }
 

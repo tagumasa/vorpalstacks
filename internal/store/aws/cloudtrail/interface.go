@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"vorpalstacks/internal/utils/aws/types"
+
+	common "vorpalstacks/internal/store/aws/common"
 )
 
 // CloudTrailStoreInterface defines operations for managing CloudTrail trails and events.
@@ -16,7 +18,7 @@ type CloudTrailStoreInterface interface {
 	GetTrailByARN(trailARN string) (*Trail, error)
 	UpdateTrail(trail *Trail) error
 	DeleteTrail(trailName string) error
-	ListTrails() ([]*Trail, error)
+	ListTrails(opts common.ListOptions) (*common.ListResult[Trail], error)
 	StartLogging(trailName string) error
 	StopLogging(trailName string) error
 	PutEventSelector(trailName string, eventSelectors []EventSelector) error

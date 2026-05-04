@@ -2,10 +2,12 @@ package route53
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/route53"
@@ -37,14 +39,17 @@ func (h *AdminHandler) ListHostedZones(ctx context.Context, req *connect.Request
 	maxItems := 100
 	if req.Msg.Maxitems != "" {
 		mi, err := strconv.Atoi(req.Msg.Maxitems)
-		if err == nil && mi > 0 {
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid max_items: %s", req.Msg.Maxitems))
+		}
+		if mi > 0 {
 			maxItems = mi
 		}
 	}
 
 	result, err := zoneStore.List(req.Msg.Marker, maxItems)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var zones []*pb.HostedZone
@@ -62,6 +67,10 @@ func (h *AdminHandler) ListHostedZones(ctx context.Context, req *connect.Request
 
 // CreateHostedZone creates a new Route 53 hosted zone via the admin console.
 func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Request[pb.CreateHostedZoneRequest]) (*connect.Response[pb.CreateHostedZoneResponse], error) {
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+
 	zoneStore := route53store.NewHostedZoneStore(h.store, h.accountId)
 
 	zone := &route53store.HostedZone{
@@ -85,7 +94,7 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 	}
 
 	if err := zoneStore.Create(zone); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateHostedZoneResponse{
@@ -95,10 +104,14 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 
 // DeleteHostedZone deletes a Route 53 hosted zone via the admin console.
 func (h *AdminHandler) DeleteHostedZone(ctx context.Context, req *connect.Request[pb.DeleteHostedZoneRequest]) (*connect.Response[pb.DeleteHostedZoneResponse], error) {
+	if req.Msg.Id == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("id is required"))
+	}
+
 	zoneStore := route53store.NewHostedZoneStore(h.store, h.accountId)
 
 	if err := zoneStore.Delete(req.Msg.Id); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteHostedZoneResponse{}), nil

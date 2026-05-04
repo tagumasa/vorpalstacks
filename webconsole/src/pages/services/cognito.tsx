@@ -1,175 +1,224 @@
 /**
- * Cognito service page. Lists user pools and identity pools.
+ * Cognito IDP service page. Lists user pools with create/delete operations.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { createClient } from "@connectrpc/connect";
-import { CognitoIdentityProviderService, type UserPoolDescriptionType } from "@/gen/cognitoidentityprovider_pb";
-import { CognitoIdentityService, type IdentityPoolShortDescription } from "@/gen/cognitoidentity_pb";
-import { transport } from "@/lib/transport";
-import { useListKey, dropEmpty } from "@/lib/use-service-list";
-import { DataTable } from "@/components/shared/data-table";
-import { JsonViewer } from "@/components/shared/json-viewer";
+import type { TFunction } from "i18next";
+import { create } from "@bufbuild/protobuf";
+import { CognitoIdentityProviderService, VerifiedAttributeType } from "@/gen/cognitoidentityprovider_pb";
+import { CreateUserPoolRequestSchema, PasswordPolicyTypeSchema, UserPoolPolicyTypeSchema } from "@/gen/cognitoidentityprovider_pb";
+import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import {
+  ServicePageLayout,
+  SplitPane,
+  ServiceCreateModal,
+  ServiceDeleteDialog,
+  MonoCell,
+  SmallMonoCell,
+  DateCell,
+  BadgeCell,
+  useServiceClient,
+} from "@/components/shared/service-page";
 
-type TabKey = "userpools" | "identitypools";
+/** Derived row shape for the Cognito user pool list table. */
+interface TableRow {
+  name: string;
+  id: string;
+  status: string;
+  creationdate: string;
+  lastmodifieddate: string;
+}
 
-const userPoolColumns: ColumnDef<UserPoolDescriptionType, any>[] = [
-  {
-    accessorKey: "name",
-    header: "Pool Name",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "id",
-    header: "Pool ID",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    size: 90,
-  },
-  {
-    accessorKey: "creationdate",
-    header: "Created",
-    cell: ({ getValue }) => {
-      const v = getValue() as string;
-      if (!v) return "\u2014";
-      try { return new Date(v).toLocaleString(); } catch { return v; }
-    },
-  },
+/** Column definitions for the Cognito user pool table. */
+const getColumns = (t: TFunction): ColumnDef<TableRow, any>[] => [
+  { accessorKey: "name", header: t("services.cognito.poolNameHeader"), cell: MonoCell },
+  { accessorKey: "id", header: t("services.cognito.poolIdHeader"), cell: SmallMonoCell },
+  { accessorKey: "status", header: t("services.cognito.statusHeader"), cell: ({ getValue }) => <BadgeCell getValue={getValue} positive={["Enabled"]} negative={["Disabled"]} />, size: 90 },
+  { accessorKey: "creationdate", header: t("services.cognito.creationDateHeader"), cell: DateCell },
+  { accessorKey: "lastmodifieddate", header: t("services.cognito.creationDateHeader"), cell: DateCell },
 ];
 
-const identityPoolColumns: ColumnDef<IdentityPoolShortDescription, any>[] = [
-  {
-    accessorKey: "identitypoolname",
-    header: "Pool Name",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "identitypoolid",
-    header: "Pool ID",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
-];
-
+/** Cognito IDP service page with list, create, and delete operations. */
 export function CognitoPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<TabKey>("userpools");
-  const [selectedUP, setSelectedUP] = useState<UserPoolDescriptionType | null>(null);
-  const [selectedIP, setSelectedIP] = useState<IdentityPoolShortDescription | null>(null);
+  const columns = getColumns(t);
+  const [selectedItem, setSelectedItem] = useState<TableRow | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formAutoVerifyEmail, setFormAutoVerifyEmail] = useState(false);
+  const [formAutoVerifyPhone, setFormAutoVerifyPhone] = useState(false);
+  const [formPasswordMinLength, setFormPasswordMinLength] = useState(8);
+  const [formTempPasswordDays, setFormTempPasswordDays] = useState(7);
 
-  const idpClient = createClient(CognitoIdentityProviderService, transport);
-  const identityClient = createClient(CognitoIdentityService, transport);
-  const { queryKey: upKey } = useListKey("cognito-userpools");
-  const { queryKey: ipKey } = useListKey("cognito-identitypools");
+  const { client, invalidate } = useServiceClient(CognitoIdentityProviderService);
+  const { queryKey } = useListKey("cognito");
 
-  const upQ = useQuery({
-    queryKey: upKey,
-    queryFn: () => idpClient.listUserPools({}),
-    refetchInterval: 30_000,
+  const { data, isLoading, error } = useQuery({
+    queryKey,
+    queryFn: () => client.listUserPools({}),
+    refetchInterval: REFETCH_INTERVAL,
   });
 
-  const ipQ = useQuery({
-    queryKey: ipKey,
-    queryFn: () => identityClient.listIdentityPools({}),
-    refetchInterval: 30_000,
+  const items: TableRow[] = dropEmpty(
+    (data?.userpools ?? []).map((pool) => ({
+      name: pool.name,
+      id: pool.id,
+      status: String(pool.status ?? ""),
+      creationdate: pool.creationdate ?? "",
+      lastmodifieddate: pool.lastmodifieddate ?? "",
+    })),
+    "name",
+  );
+
+  const createMutation = useMutation({
+    mutationFn: () => {
+      const autoVerified: VerifiedAttributeType[] = [];
+      if (formAutoVerifyEmail) autoVerified.push(VerifiedAttributeType.EMAIL);
+      if (formAutoVerifyPhone) autoVerified.push(VerifiedAttributeType.PHONE_NUMBER);
+      const passwordpolicy = create(PasswordPolicyTypeSchema, {
+        minimumlength: formPasswordMinLength,
+        temporarypasswordvaliditydays: formTempPasswordDays,
+      });
+      const policies = create(UserPoolPolicyTypeSchema, { passwordpolicy });
+      return client.createUserPool(
+        create(CreateUserPoolRequestSchema, {
+          poolname: formName,
+          ...(autoVerified.length > 0 ? { autoverifiedattributes: autoVerified } : {}),
+          policies,
+        }),
+      );
+    },
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowCreate(false);
+      setFormName("");
+      setFormAutoVerifyEmail(false);
+      setFormAutoVerifyPhone(false);
+      setFormPasswordMinLength(8);
+      setFormTempPasswordDays(7);
+    },
   });
 
-  const query = tab === "userpools" ? upQ : ipQ;
-
-  if (query.isLoading) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">👤</span>
-          <h1>Cognito</h1>
-        </div>
-        <div className="loading-state">{t("common.loading")}</div>
-      </div>
-    );
-  }
-
-  if (query.error) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">👤</span>
-          <h1>Cognito</h1>
-        </div>
-        <div className="error-state">{t("common.failedToLoad", { error: String(query.error) })}</div>
-      </div>
-    );
-  }
-
-  const userPools = dropEmpty(upQ.data?.userpools ?? [], "id");
-  const identityPools = dropEmpty(ipQ.data?.identitypools ?? [], "identitypoolid");
-  const selected = tab === "userpools" ? selectedUP : selectedIP;
+  const deleteMutation = useMutation({
+    mutationFn: (userpoolid: string) =>
+      client.deleteUserPool({ userpoolid }),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowDelete(false);
+      setSelectedItem(null);
+    },
+  });
 
   return (
-    <div className="content-area">
-      <div className="page-header">
-        <span className="page-icon">👤</span>
-        <h1>Cognito</h1>
-        <div className="tab-bar">
-          <button
-            className={`tab-btn ${tab === "userpools" ? "active" : ""}`}
-            onClick={() => setTab("userpools")}
-          >
-            User Pools ({userPools.length})
+    <ServicePageLayout
+      icon="👤"
+      title={t("services.cognito.title")}
+      isLoading={isLoading}
+      error={error}
+      count={items.length}
+      countLabel={t("services.cognito.countLabel")}
+      actions={
+        <>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+            {t("services.cognito.create")}
           </button>
-          <button
-            className={`tab-btn ${tab === "identitypools" ? "active" : ""}`}
-            onClick={() => setTab("identitypools")}
-          >
-            Identity Pools ({identityPools.length})
-          </button>
-        </div>
-      </div>
+          {selectedItem && (
+            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
+              {t("common.delete")}
+            </button>
+          )}
+        </>
+      }
+      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "cognito-items" }}
+    >
+      <SplitPane
+        columns={columns}
+        data={items}
+        getRowId={(row) => row.id}
+        onRowClick={setSelectedItem}
+        selectedId={selectedItem?.id}
+        selected={selectedItem}
+        detailTitle={selectedItem?.name}
+        onDetailClose={() => setSelectedItem(null)}
+      />
 
-      <div className="split-pane">
-        <div className="split-table">
-          {tab === "userpools" && (
-            <DataTable
-              columns={userPoolColumns}
-              data={userPools}
-              getRowId={(row) => row.id}
-              onRowClick={setSelectedUP}
-              selectedId={selectedUP?.id}
+      <ServiceCreateModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t("services.cognito.create")}
+        error={createMutation.error}
+        isPending={createMutation.isPending}
+        onCreate={() => createMutation.mutate()}
+        disabled={!formName}
+      >
+        <label>
+          {t("services.cognito.nameField")}
+          <input
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder={t("services.cognito.placeholder")}
+            className="modal-input"
+          />
+        </label>
+        <div style={{ marginTop: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 500, display: "block", marginBottom: 4 }}>
+            {t("services.cognito.autoVerifiedAttributesLabel")}
+          </span>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <input
+              type="checkbox"
+              checked={formAutoVerifyEmail}
+              onChange={(e) => setFormAutoVerifyEmail(e.target.checked)}
             />
-          )}
-          {tab === "identitypools" && (
-            <DataTable
-              columns={identityPoolColumns}
-              data={identityPools}
-              getRowId={(row) => row.identitypoolid}
-              onRowClick={setSelectedIP}
-              selectedId={selectedIP?.identitypoolid}
+            {t("services.cognito.autoVerifiedEmailLabel")}
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <input
+              type="checkbox"
+              checked={formAutoVerifyPhone}
+              onChange={(e) => setFormAutoVerifyPhone(e.target.checked)}
             />
-          )}
+            {t("services.cognito.autoVerifiedPhoneLabel")}
+          </label>
         </div>
-        {selected && (
-          <div className="split-detail">
-            <div className="detail-header">
-              <h2>{(selected as any).name || (selected as any).identitypoolname}</h2>
-              <button className="detail-close" onClick={() => { setSelectedUP(null); setSelectedIP(null); }}>
-                ✕
-              </button>
-            </div>
-            <JsonViewer data={selected} />
-          </div>
-        )}
-      </div>
-    </div>
+        <div className="form-row">
+          <label>
+            {t("services.cognito.passwordMinLengthLabel")}
+            <input
+              type="number"
+              min={6}
+              max={99}
+              value={formPasswordMinLength}
+              onChange={(e) => setFormPasswordMinLength(Number(e.target.value))}
+              className="modal-input"
+            />
+          </label>
+          <label>
+            {t("services.cognito.tempPasswordDaysLabel")}
+            <input
+              type="number"
+              min={1}
+              max={365}
+              value={formTempPasswordDays}
+              onChange={(e) => setFormTempPasswordDays(Number(e.target.value))}
+              className="modal-input"
+            />
+          </label>
+        </div>
+      </ServiceCreateModal>
+
+      <ServiceDeleteDialog
+        open={showDelete && !!selectedItem}
+        title={t("services.cognito.delete")}
+        name={selectedItem?.name}
+        error={deleteMutation.error}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.id)}
+        onClose={() => setShowDelete(false)}
+      />
+    </ServicePageLayout>
   );
 }

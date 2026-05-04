@@ -7,6 +7,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
@@ -203,10 +204,11 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	streams, err := store.ListStreams()
+	result, err := store.ListStreams(storecommon.ListOptions{MaxItems: 10000})
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
+	streams := result.Items
 
 	exclusiveStartName := request.GetStringParam(req.Parameters, "ExclusiveStartStreamName")
 	// The SDK paginator sends NextToken instead of ExclusiveStartStreamName

@@ -31,6 +31,7 @@ Vorpalstacks enables running AWS-compatible services in environments where full 
 - **Multi-Region Support**: Region-isolated storage with dedicated PebbleDB per region
 - **Global Services**: IAM, Route53, CloudFront, STS with shared global storage
 - **gRPC-Web Admin API**: Connect-RPC admin interface on separate port for all services
+- **Admin Console**: Web-based GUI for browsing resources across all services at `/webconsole/`
 - **Lightweight**: Single binary, minimal dependencies
 - **Persistent Storage**: Pebble-based key-value store
 - **Docker Integration**: Lambda functions run in containers
@@ -80,6 +81,15 @@ See [docs/services.md](docs/services.md) for detailed coverage tiers and service
 ### Build
 
 ```bash
+make build
+```
+
+This builds the web console frontend (`npm run build`) and then compiles the Go binary with the frontend embedded via `embed.FS`.
+
+To build manually without Make:
+
+```bash
+cd webconsole && npm install && npm run build && cd ..
 go build -o vorpalstacks .
 ```
 
@@ -88,6 +98,8 @@ go build -o vorpalstacks .
 ```bash
 SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ```
+
+The admin console is available at `http://localhost:9090/webconsole/` (port 9090 is the gRPC-Web admin port). AWS API endpoints are on port 8080.
 
 ### Run with Docker (for Lambda)
 
@@ -102,9 +114,9 @@ SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/ru
 ```bash
 export AWS_ENDPOINT_URL=http://localhost:8080
 
-aws --endpoint-url=http://localhost:8080 --no-sign-request sns list-topics
-aws --endpoint-url=http://localhost:8080 --no-sign-request sqs list-queues
-aws --endpoint-url=http://localhost:8080 --no-sign-request lambda list-functions
+aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sns list-topics
+aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sqs list-queues
+aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request lambda list-functions
 ```
 
 ## Testing
@@ -143,7 +155,7 @@ cd scripts/services && bash test_iam.sh
 | `AWS_REGION` | `us-east-1` | Default region |
 | `AWS_ACCOUNT_ID` | `000000000000` | AWS account ID |
 | `SIGNATURE_VERIFICATION_ENABLED` | `true` | Enable AWS Signature V4 verification |
-| `GRPC_WEB_PORT` | `9090` | gRPC-Web admin server port |
+| `GRPC_WEB_PORT` | `9090` | gRPC-Web admin server port (also serves web console) |
 | `TLS_ENABLED` | `false` | Enable TLS |
 | `AUTHORIZATION_ENABLED` | `false` | Enable IAM policy evaluation |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker daemon socket for Lambda |
@@ -212,6 +224,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 ## Requirements
 
 - Go 1.25+
+- Node.js 22+ (LTS, for web console build)
 - Docker (for Lambda functionality)
 
 ## Performance

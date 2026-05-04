@@ -1,104 +1,170 @@
 /**
- * Kinesis service page. Lists streams via ListStreams RPC.
- * Uses DescribeStream for detail view.
+ * Kinesis service page. Lists streams with create/delete operations.
  */
-import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { createClient } from "@connectrpc/connect";
-import { KinesisService, type StreamSummary } from "@/gen/kinesis_pb";
-import { transport } from "@/lib/transport";
-import { useListKey, dropEmpty } from "@/lib/use-service-list";
-import { DataTable } from "@/components/shared/data-table";
-import { JsonViewer } from "@/components/shared/json-viewer";
+import type { TFunction } from "i18next";
+import { create } from "@bufbuild/protobuf";
+import { KinesisService, type StreamSummary, StreamMode } from "@/gen/kinesis_pb";
+import { CreateStreamInputSchema, StreamModeDetailsSchema } from "@/gen/kinesis_pb";
+import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import {
+  ServicePageLayout,
+  SplitPane,
+  ServiceCreateModal,
+  ServiceDeleteDialog,
+  MonoCell,
+  SmallMonoCell,
+  DateCell,
+  BadgeCell,
+  useServiceClient,
+} from "@/components/shared/service-page";
 
-const columns: ColumnDef<StreamSummary, any>[] = [
-  {
-    accessorKey: "streamname",
-    header: "Stream Name",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "streamarn",
-    header: "ARN",
-    cell: ({ getValue }) => (
-      <span className="cell-mono" style={{ fontSize: "0.85em" }}>{getValue() as string}</span>
-    ),
-  },
+/** Column definitions for the Kinesis stream table. */
+const getColumns = (t: TFunction): ColumnDef<StreamSummary, any>[] => [
+  { accessorKey: "streamname", header: t("services.kinesis.streamNameHeader"), cell: MonoCell },
+  { accessorKey: "streamstatus", header: t("services.kinesis.streamStatusHeader"), cell: ({ getValue }) => <BadgeCell getValue={getValue} positive={["ACTIVE"]} negative={["CREATING", "DELETING"]} />, size: 90 },
+  { accessorKey: "streamarn", header: t("services.kinesis.arnHeader"), cell: SmallMonoCell },
+  { accessorKey: "streamcreationtimestamp", header: t("services.kinesis.streamCreatedHeader"), cell: DateCell },
 ];
 
+/** Kinesis service page with list, create, and delete operations. */
 export function KinesisPage() {
   const { t } = useTranslation();
+  const columns = getColumns(t);
   const [selectedItem, setSelectedItem] = useState<StreamSummary | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formShardCount, setFormShardCount] = useState("1");
+  const [formStreamMode, setFormStreamMode] = useState(StreamMode.PROVISIONED);
 
-  const client = createClient(KinesisService, transport);
+  const { client, invalidate } = useServiceClient(KinesisService);
   const { queryKey } = useListKey("kinesis");
 
   const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: () => client.listStreams({}),
-    refetchInterval: 30_000,
+    refetchInterval: REFETCH_INTERVAL,
   });
 
   const items: StreamSummary[] = dropEmpty(data?.streamsummaries ?? [], "streamname");
 
-  if (isLoading) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">🌊</span>
-          <h1>Kinesis</h1>
-        </div>
-        <div className="loading-state">{t("common.loading")}</div>
-      </div>
-    );
-  }
+  const createMutation = useMutation({
+    mutationFn: () =>
+      client.createStream(
+        create(CreateStreamInputSchema, {
+          streamname: formName,
+          shardcount: parseInt(formShardCount, 10) || 1,
+          streammodedetails: create(StreamModeDetailsSchema, {
+            streammode: formStreamMode,
+          }),
+        }),
+      ),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowCreate(false);
+      setFormName("");
+      setFormShardCount("1");
+      setFormStreamMode(StreamMode.PROVISIONED);
+    },
+  });
 
-  if (error) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">🌊</span>
-          <h1>Kinesis</h1>
-        </div>
-        <div className="error-state">{t("common.failedToLoad", { error: String(error) })}</div>
-      </div>
-    );
-  }
+  const deleteMutation = useMutation({
+    mutationFn: (streamName: string) =>
+      client.deleteStream({ streamname: streamName }),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowDelete(false);
+      setSelectedItem(null);
+    },
+  });
 
   return (
-    <div className="content-area">
-      <div className="page-header">
-        <span className="page-icon">🌊</span>
-        <h1>Kinesis</h1>
-        <span className="resource-count">{items.length} streams</span>
-      </div>
+    <ServicePageLayout
+      icon="🌊"
+      title={t("services.kinesis.title")}
+      isLoading={isLoading}
+      error={error}
+      count={items.length}
+      countLabel={t("services.kinesis.countLabel")}
+      actions={
+        <>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+            {t("services.kinesis.create")}
+          </button>
+          {selectedItem && (
+            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
+              {t("common.delete")}
+            </button>
+          )}
+        </>
+      }
+      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "kinesis-items" }}
+    >
+      <SplitPane
+        columns={columns}
+        data={items}
+        getRowId={(row) => row.streamname}
+        onRowClick={setSelectedItem}
+        selectedId={selectedItem?.streamname}
+        selected={selectedItem}
+        detailTitle={selectedItem?.streamname}
+        onDetailClose={() => setSelectedItem(null)}
+      />
 
-      <div className="split-pane">
-        <div className="split-table">
-          <DataTable
-            columns={columns}
-            data={items}
-            getRowId={(row) => row.streamname}
-            onRowClick={setSelectedItem}
-            selectedId={selectedItem?.streamname}
+      <ServiceCreateModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t("services.kinesis.create")}
+        error={createMutation.error}
+        isPending={createMutation.isPending}
+        onCreate={() => createMutation.mutate()}
+        disabled={!formName}
+      >
+        <label>
+          {t("services.kinesis.nameField")}
+          <input
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder={t("services.kinesis.placeholder")}
+            className="modal-input"
           />
-        </div>
-        {selectedItem && (
-          <div className="split-detail">
-            <div className="detail-header">
-              <h2>{selectedItem.streamname}</h2>
-              <button className="detail-close" onClick={() => setSelectedItem(null)}>
-                ✕
-              </button>
-            </div>
-            <JsonViewer data={selectedItem} />
-          </div>
-        )}
-      </div>
-    </div>
+        </label>
+        <label>
+          {t("services.kinesis.shardCountLabel")}
+          <input
+            type="number"
+            min="1"
+            value={formShardCount}
+            onChange={(e) => setFormShardCount(e.target.value)}
+            className="modal-input"
+          />
+        </label>
+        <label>
+          {t("services.kinesis.modeLabel")}
+          <select
+            value={formStreamMode}
+            onChange={(e) => setFormStreamMode(Number(e.target.value))}
+            className="modal-input"
+          >
+            <option value={StreamMode.PROVISIONED}>{t("services.kinesis.modeProvisioned")}</option>
+            <option value={StreamMode.ON_DEMAND}>{t("services.kinesis.modeOnDemand")}</option>
+          </select>
+        </label>
+      </ServiceCreateModal>
+
+      <ServiceDeleteDialog
+        open={showDelete && !!selectedItem}
+        title={t("services.kinesis.delete")}
+        name={selectedItem?.streamname}
+        error={deleteMutation.error}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.streamname)}
+        onClose={() => setShowDelete(false)}
+      />
+    </ServicePageLayout>
   );
 }

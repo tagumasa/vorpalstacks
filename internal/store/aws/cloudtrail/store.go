@@ -208,11 +208,11 @@ func (s *CloudTrailStore) GetTrailByARN(trailARN string) (*Trail, error) {
 		}
 	}
 
-	trails, err := s.ListTrails()
+	ctResult, err := s.ListTrails(common.ListOptions{MaxItems: 10000})
 	if err != nil {
 		return nil, err
 	}
-	for _, trail := range trails {
+	for _, trail := range ctResult.Items {
 		if s.normalizeARN(trail.TrailARN) == normalizedARN {
 			return trail, nil
 		}
@@ -302,9 +302,8 @@ func (s *CloudTrailStore) DeleteTrail(trailName string) error {
 	return s.BaseStore.Delete(trailName)
 }
 
-// ListTrails returns all CloudTrail trails.
-func (s *CloudTrailStore) ListTrails() ([]*Trail, error) {
-	opts := common.ListOptions{MaxItems: 10000}
+// ListTrails returns CloudTrail trails with pagination support.
+func (s *CloudTrailStore) ListTrails(opts common.ListOptions) (*common.ListResult[Trail], error) {
 	result, err := common.ListProto[*pb.Trail](s.BaseStore, opts, func() *pb.Trail { return &pb.Trail{} }, nil)
 	if err != nil {
 		return nil, err
@@ -313,7 +312,11 @@ func (s *CloudTrailStore) ListTrails() ([]*Trail, error) {
 	for _, t := range result.Items {
 		trails = append(trails, ProtoToTrail(t))
 	}
-	return trails, nil
+	return &common.ListResult[Trail]{
+		Items:       trails,
+		NextMarker:  result.NextMarker,
+		IsTruncated: result.IsTruncated,
+	}, nil
 }
 
 // StartLogging starts logging for a CloudTrail trail.

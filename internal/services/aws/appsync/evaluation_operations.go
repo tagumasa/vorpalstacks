@@ -9,10 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/utils/timeutils"
+	"vorpalstacks/pkg/vtl"
+
 	"github.com/dop251/goja"
 	"github.com/google/uuid"
-	"vorpalstacks/internal/common/request"
-	"vorpalstacks/pkg/vtl"
 )
 
 // StartDataSourceIntrospection initiates an introspection of a data source.
@@ -360,7 +362,7 @@ func buildUtilObject(vm *goja.Runtime, logs *[]interface{}, hasError *bool, erro
 		},
 		"time": map[string]interface{}{
 			"nowISO8601": func(call goja.FunctionCall) goja.Value {
-				return vm.ToValue(time.Now().UTC().Format("2006-01-02T15:04:05.000Z"))
+				return vm.ToValue(time.Now().UTC().Format(timeutils.ISO8601UTCFormat))
 			},
 			"nowEpochSeconds": func(call goja.FunctionCall) goja.Value {
 				return vm.ToValue(time.Now().Unix())

@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"time"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
@@ -81,7 +84,7 @@ func (h *AdminHandler) DeleteGraph(ctx context.Context, req *connect.Request[pb.
 func (h *AdminHandler) GetGraph(ctx context.Context, req *connect.Request[pb.GetGraphInput]) (*connect.Response[pb.GetGraphOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	graph, err := store.GetGraph(req.Msg.Graphidentifier)
 	if err != nil {
@@ -94,11 +97,11 @@ func (h *AdminHandler) GetGraph(ctx context.Context, req *connect.Request[pb.Get
 func (h *AdminHandler) ListGraphs(ctx context.Context, req *connect.Request[pb.ListGraphsInput]) (*connect.Response[pb.ListGraphsOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	graphs, _, _, err := store.ListGraphs(storecommon.ListOptions{})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	pbGraphs := make([]*pb.GraphSummary, 0, len(graphs))
 	for _, g := range graphs {
@@ -146,7 +149,7 @@ func (h *AdminHandler) DeleteGraphSnapshot(ctx context.Context, req *connect.Req
 func (h *AdminHandler) GetGraphSnapshot(ctx context.Context, req *connect.Request[pb.GetGraphSnapshotInput]) (*connect.Response[pb.GetGraphSnapshotOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	snapshot, err := store.GetSnapshot(req.Msg.Snapshotidentifier)
 	if err != nil {
@@ -159,11 +162,11 @@ func (h *AdminHandler) GetGraphSnapshot(ctx context.Context, req *connect.Reques
 func (h *AdminHandler) ListGraphSnapshots(ctx context.Context, req *connect.Request[pb.ListGraphSnapshotsInput]) (*connect.Response[pb.ListGraphSnapshotsOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	snapshots, _, _, err := store.ListSnapshots(storecommon.ListOptions{}, req.Msg.Graphidentifier)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	pbSnapshots := make([]*pb.GraphSnapshotSummary, 0, len(snapshots))
 	for _, s := range snapshots {
@@ -186,7 +189,7 @@ func (h *AdminHandler) DeletePrivateGraphEndpoint(ctx context.Context, req *conn
 func (h *AdminHandler) GetPrivateGraphEndpoint(ctx context.Context, req *connect.Request[pb.GetPrivateGraphEndpointInput]) (*connect.Response[pb.GetPrivateGraphEndpointOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	ep, err := store.GetEndpoint(req.Msg.Graphidentifier, req.Msg.Vpcid)
 	if err != nil {
@@ -199,11 +202,11 @@ func (h *AdminHandler) GetPrivateGraphEndpoint(ctx context.Context, req *connect
 func (h *AdminHandler) ListPrivateGraphEndpoints(ctx context.Context, req *connect.Request[pb.ListPrivateGraphEndpointsInput]) (*connect.Response[pb.ListPrivateGraphEndpointsOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	endpoints, err := store.ListEndpoints(req.Msg.Graphidentifier)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	pbEndpoints := make([]*pb.PrivateGraphEndpointSummary, 0, len(endpoints))
 	for _, ep := range endpoints {
@@ -216,11 +219,11 @@ func (h *AdminHandler) ListPrivateGraphEndpoints(ctx context.Context, req *conne
 func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Request[pb.ListTagsForResourceInput]) (*connect.Response[pb.ListTagsForResourceOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	tags, err := store.GetTags(req.Msg.Resourcearn)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pb.ListTagsForResourceOutput{Tags: tags}), nil
 }
@@ -229,11 +232,11 @@ func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Req
 func (h *AdminHandler) TagResource(ctx context.Context, req *connect.Request[pb.TagResourceInput]) (*connect.Response[pb.TagResourceOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	if len(req.Msg.Tags) > 0 {
 		if err := store.AddTags(req.Msg.Resourcearn, req.Msg.Tags); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
+			return nil, svcerrors.StoreErrorToGRPC(err)
 		}
 	}
 	return connect.NewResponse(&pb.TagResourceOutput{}), nil
@@ -243,11 +246,11 @@ func (h *AdminHandler) TagResource(ctx context.Context, req *connect.Request[pb.
 func (h *AdminHandler) UntagResource(ctx context.Context, req *connect.Request[pb.UntagResourceInput]) (*connect.Response[pb.UntagResourceOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	if len(req.Msg.Tagkeys) > 0 {
 		if err := store.RemoveTags(req.Msg.Resourcearn, req.Msg.Tagkeys); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
+			return nil, svcerrors.StoreErrorToGRPC(err)
 		}
 	}
 	return connect.NewResponse(&pb.UntagResourceOutput{}), nil
@@ -262,7 +265,7 @@ func (h *AdminHandler) CreateGraphUsingImportTask(ctx context.Context, req *conn
 func (h *AdminHandler) GetImportTask(ctx context.Context, req *connect.Request[pb.GetImportTaskInput]) (*connect.Response[pb.GetImportTaskOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	task, err := store.GetImportTask(req.Msg.Taskidentifier)
 	if err != nil {
@@ -275,11 +278,11 @@ func (h *AdminHandler) GetImportTask(ctx context.Context, req *connect.Request[p
 func (h *AdminHandler) ListImportTasks(ctx context.Context, req *connect.Request[pb.ListImportTasksInput]) (*connect.Response[pb.ListImportTasksOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	tasks, _, _, err := store.ListImportTasks(storecommon.ListOptions{})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	pbTasks := make([]*pb.ImportTaskSummary, 0, len(tasks))
 	for _, t := range tasks {
@@ -307,7 +310,7 @@ func (h *AdminHandler) StartExportTask(ctx context.Context, req *connect.Request
 func (h *AdminHandler) GetExportTask(ctx context.Context, req *connect.Request[pb.GetExportTaskInput]) (*connect.Response[pb.GetExportTaskOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	task, err := store.GetExportTask(req.Msg.Taskidentifier)
 	if err != nil {
@@ -320,11 +323,11 @@ func (h *AdminHandler) GetExportTask(ctx context.Context, req *connect.Request[p
 func (h *AdminHandler) ListExportTasks(ctx context.Context, req *connect.Request[pb.ListExportTasksInput]) (*connect.Response[pb.ListExportTasksOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	tasks, _, _, err := store.ListExportTasks(storecommon.ListOptions{}, req.Msg.Graphidentifier)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 	pbTasks := make([]*pb.ExportTaskSummary, 0, len(tasks))
 	for _, t := range tasks {
@@ -491,7 +494,7 @@ func timePtrToStr(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
-	return t.UTC().Format("2006-01-02T15:04:05.000Z")
+	return t.UTC().Format(timeutils.ISO8601UTCFormat)
 }
 
 func int32ToStr(v int32) string {

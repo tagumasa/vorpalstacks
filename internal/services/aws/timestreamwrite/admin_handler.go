@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"net/http"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/timestreamwrite"
 	timestreamwriteconnect "vorpalstacks/internal/pb/aws/timestreamwrite/timestreamwriteconnect"
-	pbcommon "vorpalstacks/internal/pb/aws/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 )
@@ -61,7 +64,7 @@ func (h *AdminHandler) getTableStoreFromHeader(header http.Header) (*timestreams
 func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[pb.ListDatabasesRequest]) (*connect.Response[pb.ListDatabasesResponse], error) {
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	limit := int(req.Msg.Maxresults)
@@ -76,7 +79,7 @@ func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[p
 
 	result, err := store.ListDatabases(opts)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var databases []*pb.Database
@@ -86,8 +89,8 @@ func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[p
 			Databasename:    db.DatabaseName,
 			Tablecount:      db.TableCount,
 			Kmskeyid:        db.KmsKeyId,
-			Creationtime:    db.CreationTime.Format("2006-01-02T15:04:05.000Z"),
-			Lastupdatedtime: db.LastUpdatedTime.Format("2006-01-02T15:04:05.000Z"),
+			Creationtime:    db.CreationTime.Format(timeutils.ISO8601UTCFormat),
+			Lastupdatedtime: db.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat),
 		})
 	}
 
@@ -102,7 +105,7 @@ func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[p
 func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.ListTablesRequest]) (*connect.Response[pb.ListTablesResponse], error) {
 	store, err := h.getTableStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	limit := int(req.Msg.Maxresults)
@@ -117,7 +120,7 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 
 	result, err := store.ListTables(req.Msg.Databasename, opts)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var tables []*pb.Table
@@ -126,8 +129,8 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 			Arn:             t.ARN,
 			Tablename:       t.TableName,
 			Databasename:    t.DatabaseName,
-			Creationtime:    t.CreationTime.Format("2006-01-02T15:04:05.000Z"),
-			Lastupdatedtime: t.LastUpdatedTime.Format("2006-01-02T15:04:05.000Z"),
+			Creationtime:    t.CreationTime.Format(timeutils.ISO8601UTCFormat),
+			Lastupdatedtime: t.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat),
 		})
 	}
 
@@ -145,12 +148,12 @@ func (h *AdminHandler) CreateDatabase(ctx context.Context, req *connect.Request[
 
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	db, err := store.CreateDatabase(req.Msg.GetDatabasename(), req.Msg.GetKmskeyid())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateDatabaseResponse{
@@ -158,8 +161,8 @@ func (h *AdminHandler) CreateDatabase(ctx context.Context, req *connect.Request[
 			Arn:             db.ARN,
 			Databasename:    db.DatabaseName,
 			Kmskeyid:        db.KmsKeyId,
-			Creationtime:    db.CreationTime.Format("2006-01-02T15:04:05.000Z"),
-			Lastupdatedtime: db.LastUpdatedTime.Format("2006-01-02T15:04:05.000Z"),
+			Creationtime:    db.CreationTime.Format(timeutils.ISO8601UTCFormat),
+			Lastupdatedtime: db.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat),
 		},
 	}), nil
 }
@@ -172,11 +175,11 @@ func (h *AdminHandler) DeleteDatabase(ctx context.Context, req *connect.Request[
 
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteDatabase(req.Msg.GetDatabasename()); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil

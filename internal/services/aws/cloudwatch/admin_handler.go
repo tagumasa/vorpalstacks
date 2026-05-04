@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"net/http"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
 	"connectrpc.com/connect"
 
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudwatch"
-	pbcommon "vorpalstacks/internal/pb/aws/common"
 	cloudwatchconnect "vorpalstacks/internal/pb/aws/cloudwatch/cloudwatchconnect"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	cloudwatchstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 
@@ -49,7 +52,7 @@ func (h *AdminHandler) ListMetrics(ctx context.Context, req *connect.Request[pb.
 
 	metrics, err := h.metricStore.ListMetrics(req.Msg.Namespace, req.Msg.Metricname, dimensions)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbMetrics := make([]*pb.Metric, len(metrics))
@@ -77,7 +80,7 @@ func (h *AdminHandler) ListMetrics(ctx context.Context, req *connect.Request[pb.
 func (h *AdminHandler) DescribeAlarms(ctx context.Context, req *connect.Request[pb.DescribeAlarmsInput]) (*connect.Response[pb.DescribeAlarmsOutput], error) {
 	alarms, err := h.alarmStore.ListAlarms(req.Msg.Alarmnameprefix)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbAlarms := make([]*pb.MetricAlarm, 0, len(alarms))
@@ -112,8 +115,8 @@ func toPbMetricAlarm(alarm *cloudwatchstore.Alarm) *pb.MetricAlarm {
 		Statistic:                          toPbStatistic(alarm.Statistic),
 		Treatmissingdata:                   alarm.TreatMissingData,
 		Statevalue:                         toPbStateValue(alarm.State),
-		Stateupdatedtimestamp:              alarm.StateUpdatedTimestamp.Format("2006-01-02T15:04:05Z"),
-		Alarmconfigurationupdatedtimestamp: alarm.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		Stateupdatedtimestamp:              alarm.StateUpdatedTimestamp.Format(timeutils.ISO8601UTCFormat),
+		Alarmconfigurationupdatedtimestamp: alarm.CreatedAt.Format(timeutils.ISO8601UTCFormat),
 	}
 }
 
@@ -209,12 +212,12 @@ func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[
 
 	created, err := h.alarmStore.CreateAlarm(alarm)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if len(created.Tags) > 0 {
 		if err := h.alarmStore.Tag(created.ARN, created.Tags); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
+			return nil, svcerrors.StoreErrorToGRPC(err)
 		}
 	}
 
@@ -230,7 +233,7 @@ func (h *AdminHandler) DeleteAlarms(ctx context.Context, req *connect.Request[pb
 
 	for _, name := range req.Msg.Alarmnames {
 		if err := h.alarmStore.DeleteAlarm(name); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
+			return nil, svcerrors.StoreErrorToGRPC(err)
 		}
 	}
 

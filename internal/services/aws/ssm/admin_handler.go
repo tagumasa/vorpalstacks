@@ -2,7 +2,11 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
 
@@ -43,7 +47,7 @@ func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*ssmstore.Store
 func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Request[pb.DescribeParametersRequest]) (*connect.Response[pb.DescribeParametersResult], error) {
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	maxResults := req.Msg.Maxresults
@@ -60,7 +64,7 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 
 	params, nextToken, err := store.DescribeParameters(filters, maxResults, req.Msg.Nexttoken)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var metadataList []*pb.ParameterMetadata
@@ -70,7 +74,7 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 			Type:             pb.ParameterType_PARAMETER_TYPE_STRING,
 			Tier:             pb.ParameterTier_PARAMETER_TIER_STANDARD,
 			Version:          p.Version,
-			Lastmodifieddate: p.LastModifiedDate.Format("2006-01-02T15:04:05.000Z"),
+			Lastmodifieddate: p.LastModifiedDate.Format(timeutils.ISO8601UTCFormat),
 			Datatype:         p.DataType,
 			Arn:              p.ARN,
 		}
@@ -110,9 +114,13 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 
 // PutParameter creates or updates an SSM parameter via the admin console.
 func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb.PutParameterRequest]) (*connect.Response[pb.PutParameterResult], error) {
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	paramType := ssmstore.ParameterTypeString
@@ -134,7 +142,7 @@ func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb
 	overwrite := req.Msg.Overwrite
 	version, err := store.PutParameter(param, overwrite)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.PutParameterResult{
@@ -144,13 +152,17 @@ func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb
 
 // DeleteParameter deletes an SSM parameter via the admin console.
 func (h *AdminHandler) DeleteParameter(ctx context.Context, req *connect.Request[pb.DeleteParameterRequest]) (*connect.Response[pb.DeleteParameterResult], error) {
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteParameter(req.Msg.Name); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteParameterResult{}), nil

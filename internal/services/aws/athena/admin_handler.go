@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"net/http"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/athena"
 	athenaconnect "vorpalstacks/internal/pb/aws/athena/athenaconnect"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
@@ -31,15 +35,6 @@ func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId str
 	}
 }
 
-func (h *AdminHandler) getWorkGroupStore(req *connect.Request[pb.ListWorkGroupsInput]) (*athenastore.WorkGroupStore, error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return athenastore.NewWorkGroupStore(regionStorage, h.accountId, region), nil
-}
-
 func (h *AdminHandler) getWorkGroupStoreFromHeaders(headers http.Header) (*athenastore.WorkGroupStore, error) {
 	region := svccommon.GetRegionFromHeader(headers)
 	regionStorage, err := h.storageManager.GetStorage(region)
@@ -57,7 +52,7 @@ func (h *AdminHandler) CreateWorkGroup(ctx context.Context, req *connect.Request
 
 	store, err := h.getWorkGroupStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	wg := &athenastore.WorkGroup{
@@ -84,7 +79,7 @@ func (h *AdminHandler) CreateWorkGroup(ctx context.Context, req *connect.Request
 	}
 
 	if err := store.CreateWorkGroup(wg); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateWorkGroupOutput{}), nil
@@ -98,30 +93,37 @@ func (h *AdminHandler) DeleteWorkGroup(ctx context.Context, req *connect.Request
 
 	store, err := h.getWorkGroupStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteWorkGroup(req.Msg.Workgroup); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteWorkGroupOutput{}), nil
 }
 
-// ListWorkGroups retrieves all Athena work groups from the regional store.
+// ListWorkGroups retrieves Athena work groups with pagination support.
 func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[pb.ListWorkGroupsInput]) (*connect.Response[pb.ListWorkGroupsOutput], error) {
-	store, err := h.getWorkGroupStore(req)
+	store, err := h.getWorkGroupStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	workGroups, err := store.ListWorkGroups()
+	limit := int(req.Msg.Maxresults)
+	if limit <= 0 {
+		limit = 100
+	}
+	result, err := store.ListWorkGroups(storecommon.ListOptions{
+		Marker:   req.Msg.Nexttoken,
+		MaxItems: limit,
+	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var summaries []*pb.WorkGroupSummary
-	for _, wg := range workGroups {
+	for _, wg := range result.Items {
 		state := pb.WorkGroupState_WORK_GROUP_STATE_DISABLED
 		if wg.State == "ENABLED" {
 			state = pb.WorkGroupState_WORK_GROUP_STATE_ENABLED
@@ -134,13 +136,14 @@ func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[
 			summary.Description = wg.Description
 		}
 		if !wg.CreatedTime.IsZero() {
-			summary.Creationtime = wg.CreatedTime.Format("2006-01-02T15:04:05.000Z")
+			summary.Creationtime = wg.CreatedTime.Format(timeutils.ISO8601UTCFormat)
 		}
 		summaries = append(summaries, summary)
 	}
 
 	return connect.NewResponse(&pb.ListWorkGroupsOutput{
 		Workgroups: summaries,
+		Nexttoken:  result.NextMarker,
 	}), nil
 }
 

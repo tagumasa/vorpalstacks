@@ -278,7 +278,7 @@ func (a *App) initGRPCWebAdmin() {
 	var p string
 	var h http.Handler
 
-	p, h = svcacm.NewConnectHandler()
+	p, h = svcacm.NewConnectHandler(a.server.Storage(), aid, reg)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcapigateway.NewConnectHandler(sm, aid)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
@@ -346,6 +346,7 @@ func (a *App) initGRPCWebAdmin() {
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 
 	grpcweb.RegisterAdminHandlers(grpcWebServer, a.server.Storage(), aid, reg, dp, handlers, a.server.TriggerShutdown)
+	grpcWebServer.ServeConsole(a.consoleAssets)
 	a.grpcWeb = grpcWebServer
 	a.addShutdown("grpcweb", func(ctx context.Context) error {
 		return grpcWebServer.Shutdown(ctx)

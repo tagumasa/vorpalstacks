@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
@@ -50,41 +53,26 @@ func (h *AdminHandler) getStoreFromHeader(header http.Header) (*lambdastore.Func
 func (h *AdminHandler) ListFunctions(ctx context.Context, req *connect.Request[pb.ListFunctionsRequest]) (*connect.Response[pb.ListFunctionsResponse], error) {
 	functionStore, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	maxItems := int(req.Msg.Maxitems)
+	if maxItems <= 0 {
+		maxItems = 50
 	}
 
 	opts := storecommon.ListOptions{
 		Marker:   req.Msg.Marker,
-		MaxItems: int(req.Msg.Maxitems),
+		MaxItems: maxItems,
 	}
 	result, err := functionStore.List(opts)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	functions := make([]*pb.FunctionConfiguration, len(result.Items))
 	for i, f := range result.Items {
-		functions[i] = &pb.FunctionConfiguration{
-			Functionname:    f.FunctionName,
-			Functionarn:     f.FunctionArn,
-			Runtime:         pb.Runtime(pb.Runtime_value[string(f.Runtime)]),
-			Role:            f.Role,
-			Handler:         f.Handler,
-			Codesize:        f.CodeSize,
-			Codesha256:      f.CodeSha256,
-			Description:     f.Description,
-			Timeout:         f.Timeout,
-			Memorysize:      f.MemorySize,
-			Lastmodified:    f.LastModified.Format("2006-01-02T15:04:05.000Z"),
-			Revisionid:      f.RevisionId,
-			State:           pb.State(pb.State_value[string(f.State)]),
-			Statereason:     f.StateReason,
-			Statereasoncode: pb.StateReasonCode(pb.StateReasonCode_value[f.StateReasonCode]),
-			Packagetype:     pb.PackageType(pb.PackageType_value[f.PackageType]),
-		}
-		if f.EphemeralStorage != nil {
-			functions[i].Ephemeralstorage = &pb.EphemeralStorage{Size: f.EphemeralStorage.Size}
-		}
+		functions[i] = functionToProto(f)
 	}
 
 	resp := &pb.ListFunctionsResponse{Functions: functions}
@@ -101,13 +89,16 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 	if req.Msg.Functionname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("FunctionName is required"))
 	}
+	if req.Msg.Handler == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("Handler is required"))
+	}
 	if req.Msg.Role == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("Role is required"))
 	}
 
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	memorySize := req.Msg.Memorysize
@@ -130,20 +121,10 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 		PackageType:  req.Msg.Packagetype.String(),
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	resp := &pb.FunctionConfiguration{
-		Functionname: fn.FunctionName,
-		Functionarn:  fn.FunctionArn,
-		Runtime:      pb.Runtime(pb.Runtime_value[string(fn.Runtime)]),
-		Role:         fn.Role,
-		Handler:      fn.Handler,
-		Description:  fn.Description,
-		Timeout:      fn.Timeout,
-		Memorysize:   fn.MemorySize,
-		Packagetype:  pb.PackageType(pb.PackageType_value[fn.PackageType]),
-	}
+	resp := functionToProto(fn)
 	return connect.NewResponse(resp), nil
 }
 
@@ -155,14 +136,76 @@ func (h *AdminHandler) DeleteFunction(ctx context.Context, req *connect.Request[
 
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.Delete(req.Msg.Functionname); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteFunctionResponse{Statuscode: 204}), nil
+}
+
+// safeRuntime converts a store Runtime to a proto Runtime, falling back to
+// nodejs16x when the value is not present in the proto enum map.
+func safeRuntime(v lambdastore.Runtime) pb.Runtime {
+	if val, ok := pb.Runtime_value[string(v)]; ok {
+		return pb.Runtime(val)
+	}
+	return pb.Runtime_RUNTIME_NODEJS16X
+}
+
+// safeState converts a store State to a proto State, defaulting to Active.
+func safeState(v lambdastore.State) pb.State {
+	if val, ok := pb.State_value[string(v)]; ok {
+		return pb.State(val)
+	}
+	return pb.State_STATE_ACTIVE
+}
+
+// safeStateReasonCode maps a state reason code string to the proto enum,
+// falling back to Idle when the value is unrecognised.
+func safeStateReasonCode(v string) pb.StateReasonCode {
+	if val, ok := pb.StateReasonCode_value[v]; ok {
+		return pb.StateReasonCode(val)
+	}
+	return pb.StateReasonCode_STATE_REASON_CODE_IDLE
+}
+
+// safePackageType maps a package type string to the proto enum, falling back
+// to Zip when the value is unrecognised.
+func safePackageType(v string) pb.PackageType {
+	if val, ok := pb.PackageType_value[v]; ok {
+		return pb.PackageType(val)
+	}
+	return pb.PackageType_PACKAGE_TYPE_ZIP
+}
+
+// functionToProto converts a store Function to its proto representation,
+// using safe enum mappers to avoid silent zero-value fallbacks.
+func functionToProto(f *lambdastore.Function) *pb.FunctionConfiguration {
+	pbFn := &pb.FunctionConfiguration{
+		Functionname:    f.FunctionName,
+		Functionarn:     f.FunctionArn,
+		Runtime:         safeRuntime(f.Runtime),
+		Role:            f.Role,
+		Handler:         f.Handler,
+		Codesize:        f.CodeSize,
+		Codesha256:      f.CodeSha256,
+		Description:     f.Description,
+		Timeout:         f.Timeout,
+		Memorysize:      f.MemorySize,
+		Lastmodified:    f.LastModified.Format(timeutils.ISO8601UTCFormat),
+		Revisionid:      f.RevisionId,
+		State:           safeState(f.State),
+		Statereason:     f.StateReason,
+		Statereasoncode: safeStateReasonCode(f.StateReasonCode),
+		Packagetype:     safePackageType(f.PackageType),
+	}
+	if f.EphemeralStorage != nil {
+		pbFn.Ephemeralstorage = &pb.EphemeralStorage{Size: f.EphemeralStorage.Size}
+	}
+	return pbFn
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Lambda admin console.

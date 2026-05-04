@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+
 	"connectrpc.com/connect"
 
 	"vorpalstacks/internal/core/storage"
@@ -13,6 +15,7 @@ import (
 	"vorpalstacks/internal/pb/aws/iam/iamconnect"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/aws/types"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 var _ iamconnect.IAMServiceHandler = (*AdminHandler)(nil)
@@ -23,8 +26,6 @@ type AdminHandler struct {
 	store    storage.BasicStorage
 	storeObj *iamstore.IAMStore
 }
-
-var _ iamconnect.IAMServiceHandler = (*AdminHandler)(nil)
 
 // NewAdminHandler creates a new IAM admin handler with the given storage and account ID.
 func NewAdminHandler(store storage.BasicStorage, accountID string) *AdminHandler {
@@ -43,7 +44,7 @@ func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.Li
 
 	result, err := h.storeObj.Users().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	users := make([]*pb.User, len(result.Users))
@@ -67,7 +68,7 @@ func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.Li
 
 	result, err := h.storeObj.Roles().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	roles := make([]*pb.Role, len(result.Roles))
@@ -98,7 +99,7 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 
 	result, err := h.storeObj.Policies().List(scope, req.Msg.Pathprefix, req.Msg.Onlyattached, req.Msg.Marker, maxItems)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	policies := make([]*pb.Policy, len(result.Policies))
@@ -119,11 +120,11 @@ func toPbUser(user *iamstore.User) *pb.User {
 		Userid:     user.ID,
 		Arn:        user.Arn,
 		Path:       user.Path,
-		Createdate: user.CreateDate.Format("2006-01-02T15:04:05Z"),
+		Createdate: user.CreateDate.Format(timeutils.ISO8601UTCFormat),
 	}
 
 	if user.PasswordLastUsed != nil {
-		pbUser.Passwordlastused = user.PasswordLastUsed.Format("2006-01-02T15:04:05Z")
+		pbUser.Passwordlastused = user.PasswordLastUsed.Format(timeutils.ISO8601UTCFormat)
 	}
 
 	if user.PermissionsBoundary != nil {
@@ -149,7 +150,7 @@ func toPbRole(role *iamstore.Role) *pb.Role {
 		Roleid:                   role.ID,
 		Arn:                      role.Arn,
 		Path:                     role.Path,
-		Createdate:               role.CreateDate.Format("2006-01-02T15:04:05Z"),
+		Createdate:               role.CreateDate.Format(timeutils.ISO8601UTCFormat),
 		Assumerolepolicydocument: role.AssumeRolePolicyDocument,
 		Description:              role.Description,
 		Maxsessionduration:       int32(role.MaxSessionDuration),
@@ -167,7 +168,7 @@ func toPbRole(role *iamstore.Role) *pb.Role {
 			Region: role.RoleLastUsed.Region,
 		}
 		if role.RoleLastUsed.LastUsedDate != nil {
-			pbRole.Rolelastused.Lastuseddate = role.RoleLastUsed.LastUsedDate.Format("2006-01-02T15:04:05Z")
+			pbRole.Rolelastused.Lastuseddate = role.RoleLastUsed.LastUsedDate.Format(timeutils.ISO8601UTCFormat)
 		}
 	}
 
@@ -187,8 +188,8 @@ func toPbPolicy(policy *iamstore.Policy) *pb.Policy {
 		Policyid:                      policy.ID,
 		Arn:                           policy.Arn,
 		Path:                          policy.Path,
-		Createdate:                    policy.CreateDate.Format("2006-01-02T15:04:05Z"),
-		Updatedate:                    policy.UpdateDate.Format("2006-01-02T15:04:05Z"),
+		Createdate:                    policy.CreateDate.Format(timeutils.ISO8601UTCFormat),
+		Updatedate:                    policy.UpdateDate.Format(timeutils.ISO8601UTCFormat),
 		Defaultversionid:              policy.DefaultVersionId,
 		Attachmentcount:               int32(policy.AttachmentCount),
 		Isattachable:                  policy.IsAttachable,
@@ -219,7 +220,7 @@ func (h *AdminHandler) CreateUser(ctx context.Context, req *connect.Request[pb.C
 
 	user, err := h.storeObj.Users().Create(req.Msg.Username, req.Msg.Path, h.storeObj.AccountID(), tags)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateUserResponse{
@@ -234,7 +235,7 @@ func (h *AdminHandler) DeleteUser(ctx context.Context, req *connect.Request[pb.D
 	}
 
 	if err := h.storeObj.Users().Delete(req.Msg.Username); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -269,7 +270,7 @@ func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.C
 		tags,
 	)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateRoleResponse{
@@ -284,7 +285,7 @@ func (h *AdminHandler) DeleteRole(ctx context.Context, req *connect.Request[pb.D
 	}
 
 	if err := h.storeObj.Roles().Delete(req.Msg.Rolename); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil

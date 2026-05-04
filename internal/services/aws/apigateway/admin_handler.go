@@ -5,7 +5,11 @@ package apigateway
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
 
@@ -48,12 +52,19 @@ func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*apigatewaystor
 func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.GetRestApisRequest]) (*connect.Response[pb.RestApis], error) {
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	result, err := store.List(common.ListOptions{MaxItems: 100})
+	limit := int(req.Msg.Limit)
+	if limit <= 0 {
+		limit = 100
+	}
+	result, err := store.List(common.ListOptions{
+		Marker:   req.Msg.Position,
+		MaxItems: limit,
+	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var items []*pb.RestApi
@@ -62,15 +73,20 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 	}
 
 	return connect.NewResponse(&pb.RestApis{
-		Items: items,
+		Items:    items,
+		Position: result.NextMarker,
 	}), nil
 }
 
 // CreateRestApi creates a new REST API via the admin console.
 func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[pb.CreateRestApiRequest]) (*connect.Response[pb.RestApi], error) {
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	api := &apigatewaystore.RestApi{
@@ -94,7 +110,7 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 
 	created, err := store.Create(api)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(toPbRestApi(created)), nil
@@ -102,13 +118,17 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 
 // DeleteRestApi deletes a REST API via the admin console.
 func (h *AdminHandler) DeleteRestApi(ctx context.Context, req *connect.Request[pb.DeleteRestApiRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Restapiid == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
+	}
+
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.Delete(req.Msg.Restapiid); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil
@@ -122,7 +142,7 @@ func toPbRestApi(api *apigatewaystore.RestApi) *pb.RestApi {
 		Description: api.Description,
 		Version:     api.Version,
 		Warnings:    api.Warnings,
-		Createddate: api.CreatedDate.Format("2006-01-02T15:04:05.000Z"),
+		Createddate: api.CreatedDate.Format(timeutils.ISO8601UTCFormat),
 	}
 	if api.EndpointConfiguration != nil {
 		types := make([]pb.EndpointType, len(api.EndpointConfiguration.Types))

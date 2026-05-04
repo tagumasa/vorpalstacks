@@ -10,11 +10,6 @@ export function getToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-/** Returns the stored refresh token, or null if not available. */
-export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
-}
-
 /**
  * Persists authentication tokens to localStorage.
  * Called after successful Login, RefreshToken, or InitialSetup RPC responses.

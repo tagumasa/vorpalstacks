@@ -1,117 +1,199 @@
 /**
- * Timestream service page. Lists databases and tables.
+ * Timestream service page. Lists databases with create/delete operations.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { createClient } from "@connectrpc/connect";
-import { TimestreamWriteService, type Database } from "@/gen/timestreamwrite_pb";
-import { transport } from "@/lib/transport";
-import { useListKey, dropEmpty } from "@/lib/use-service-list";
-import { DataTable } from "@/components/shared/data-table";
-import { JsonViewer } from "@/components/shared/json-viewer";
+import type { TFunction } from "i18next";
+import { create } from "@bufbuild/protobuf";
+import { TimestreamWriteService } from "@/gen/timestreamwrite_pb";
+import { CreateDatabaseRequestSchema } from "@/gen/timestreamwrite_pb";
+import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import {
+  ServicePageLayout,
+  SplitPane,
+  ServiceCreateModal,
+  ServiceDeleteDialog,
+  MonoCell,
+  SmallMonoCell,
+  DateCell,
+  useServiceClient,
+} from "@/components/shared/service-page";
 
-const columns: ColumnDef<Database, any>[] = [
-  {
-    accessorKey: "databasename",
-    header: "Database",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "tablecount",
-    header: "Tables",
-    size: 80,
-  },
-  {
-    accessorKey: "arn",
-    header: "ARN",
-    cell: ({ getValue }) => (
-      <span className="cell-mono" style={{ fontSize: "0.85em" }}>{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "creationtime",
-    header: "Created",
-    cell: ({ getValue }) => {
-      const v = getValue() as string;
-      if (!v) return "\u2014";
-      try { return new Date(v).toLocaleString(); } catch { return v; }
-    },
-  },
+/** Derived row shape for the Timestream database list table. */
+interface TableRow {
+  databasename: string;
+  arn: string;
+  tablecount: number;
+  creationtime: string;
+  lastupdatedtime: string;
+}
+
+/** Column definitions for the Timestream database table. */
+const getColumns = (t: TFunction): ColumnDef<TableRow, any>[] => [
+  { accessorKey: "databasename", header: t("services.timestream.databaseNameHeader"), cell: MonoCell },
+  { accessorKey: "tablecount", header: t("services.timestream.tableCountHeader"), size: 80 },
+  { accessorKey: "creationtime", header: t("services.timestream.createdHeader"), cell: DateCell },
+  { accessorKey: "lastupdatedtime", header: t("services.timestream.lastUpdatedHeader"), cell: DateCell },
+  { accessorKey: "arn", header: t("services.timestream.arnHeader"), cell: SmallMonoCell },
 ];
 
+/** Timestream service page with list, create, and delete operations. */
 export function TimestreamPage() {
   const { t } = useTranslation();
-  const [selectedItem, setSelectedItem] = useState<Database | null>(null);
+  const columns = getColumns(t);
+  const [selectedItem, setSelectedItem] = useState<TableRow | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formKmsKeyId, setFormKmsKeyId] = useState("");
+  const [formMagneticRetentionDays, setFormMagneticRetentionDays] = useState(365);
+  const [formMemoryRetentionHours, setFormMemoryRetentionHours] = useState(24);
 
-  const client = createClient(TimestreamWriteService, transport);
+  const { client, invalidate } = useServiceClient(TimestreamWriteService);
   const { queryKey } = useListKey("timestream");
 
   const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: () => client.listDatabases({}),
-    refetchInterval: 30_000,
+    refetchInterval: REFETCH_INTERVAL,
   });
 
-  const items: Database[] = dropEmpty(data?.databases ?? [], "databasename");
+  const items: TableRow[] = dropEmpty(
+    (data?.databases ?? []).map((db) => ({
+      databasename: db.databasename,
+      arn: db.arn,
+      tablecount: Number(db.tablecount ?? 0),
+      creationtime: db.creationtime ?? "",
+      lastupdatedtime: db.lastupdatedtime ?? "",
+    })),
+    "databasename",
+  );
 
-  if (isLoading) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">⏳</span>
-          <h1>Timestream</h1>
-        </div>
-        <div className="loading-state">{t("common.loading")}</div>
-      </div>
-    );
-  }
+  const createMutation = useMutation({
+    mutationFn: () => {
+      const req: Record<string, any> = {
+        databasename: formName,
+        magneticretentiondays: formMagneticRetentionDays,
+        memoryretentionhours: formMemoryRetentionHours,
+      };
+      if (formKmsKeyId) req.kmskeyid = formKmsKeyId;
+      return client.createDatabase(create(CreateDatabaseRequestSchema, req));
+    },
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowCreate(false);
+      setFormName("");
+      setFormKmsKeyId("");
+      setFormMagneticRetentionDays(365);
+      setFormMemoryRetentionHours(24);
+    },
+  });
 
-  if (error) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">⏳</span>
-          <h1>Timestream</h1>
-        </div>
-        <div className="error-state">{t("common.failedToLoad", { error: String(error) })}</div>
-      </div>
-    );
-  }
+  const deleteMutation = useMutation({
+    mutationFn: (databasename: string) =>
+      client.deleteDatabase({ databasename }),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowDelete(false);
+      setSelectedItem(null);
+    },
+  });
 
   return (
-    <div className="content-area">
-      <div className="page-header">
-        <span className="page-icon">⏳</span>
-        <h1>Timestream</h1>
-        <span className="resource-count">{items.length} databases</span>
-      </div>
+    <ServicePageLayout
+      icon="⏱"
+      title={t("services.timestream.title")}
+      isLoading={isLoading}
+      error={error}
+      count={items.length}
+      countLabel={t("services.timestream.countLabel")}
+      actions={
+        <>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+            {t("services.timestream.create")}
+          </button>
+          {selectedItem && (
+            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
+              {t("common.delete")}
+            </button>
+          )}
+        </>
+      }
+      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "timestream-items" }}
+    >
+      <SplitPane
+        columns={columns}
+        data={items}
+        getRowId={(row) => row.databasename}
+        onRowClick={setSelectedItem}
+        selectedId={selectedItem?.databasename}
+        selected={selectedItem}
+        detailTitle={selectedItem?.databasename}
+        onDetailClose={() => setSelectedItem(null)}
+      />
 
-      <div className="split-pane">
-        <div className="split-table">
-          <DataTable
-            columns={columns}
-            data={items}
-            getRowId={(row) => row.databasename}
-            onRowClick={setSelectedItem}
-            selectedId={selectedItem?.databasename}
+      <ServiceCreateModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t("services.timestream.create")}
+        error={createMutation.error}
+        isPending={createMutation.isPending}
+        onCreate={() => createMutation.mutate()}
+        disabled={!formName}
+      >
+        <label>
+          {t("services.timestream.nameField")}
+          <input
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder={t("services.timestream.placeholder")}
+            className="modal-input"
           />
-        </div>
-        {selectedItem && (
-          <div className="split-detail">
-            <div className="detail-header">
-              <h2>{selectedItem.databasename}</h2>
-              <button className="detail-close" onClick={() => setSelectedItem(null)}>
-                ✕
-              </button>
-            </div>
-            <JsonViewer data={selectedItem} />
-          </div>
-        )}
-      </div>
-    </div>
+        </label>
+        <label>
+          {t("services.timestream.kmsKeyLabel")}
+          <input
+            value={formKmsKeyId}
+            onChange={(e) => setFormKmsKeyId(e.target.value)}
+            placeholder={t("services.timestream.kmsKeyPlaceholder")}
+            className="modal-input"
+          />
+        </label>
+        <label>
+          {t("services.timestream.magneticRetentionLabel")}
+          <input
+            type="number"
+            min={1}
+            max={73000}
+            value={formMagneticRetentionDays}
+            onChange={(e) => setFormMagneticRetentionDays(Number(e.target.value))}
+            className="modal-input"
+          />
+        </label>
+        <label>
+          {t("services.timestream.memoryRetentionLabel")}
+          <input
+            type="number"
+            min={1}
+            max={8766}
+            value={formMemoryRetentionHours}
+            onChange={(e) => setFormMemoryRetentionHours(Number(e.target.value))}
+            className="modal-input"
+          />
+        </label>
+      </ServiceCreateModal>
+
+      <ServiceDeleteDialog
+        open={showDelete && !!selectedItem}
+        title={t("services.timestream.delete")}
+        name={selectedItem?.databasename}
+        error={deleteMutation.error}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.databasename)}
+        onClose={() => setShowDelete(false)}
+      />
+    </ServicePageLayout>
   );
 }

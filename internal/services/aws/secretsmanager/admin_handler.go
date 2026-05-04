@@ -2,7 +2,11 @@ package secretsmanager
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
 
@@ -44,7 +48,7 @@ func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*secretsmanager
 func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.ListSecretsRequest]) (*connect.Response[pb.ListSecretsResponse], error) {
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	maxResults := req.Msg.Maxresults
@@ -58,7 +62,7 @@ func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.
 	}
 	result, err := store.ListSecrets(opts)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var entries []*pb.SecretListEntry
@@ -71,29 +75,29 @@ func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.
 			Type:        s.Type,
 		}
 		if !s.CreatedDate.IsZero() {
-			entry.Createddate = s.CreatedDate.Format("2006-01-02T15:04:05.000Z")
+			entry.Createddate = s.CreatedDate.Format(timeutils.ISO8601UTCFormat)
 		}
 		if !s.LastChangedDate.IsZero() {
-			entry.Lastchangeddate = s.LastChangedDate.Format("2006-01-02T15:04:05.000Z")
+			entry.Lastchangeddate = s.LastChangedDate.Format(timeutils.ISO8601UTCFormat)
 		}
 		if !s.LastAccessedDate.IsZero() {
-			entry.Lastaccesseddate = s.LastAccessedDate.Format("2006-01-02T15:04:05.000Z")
+			entry.Lastaccesseddate = s.LastAccessedDate.Format(timeutils.ISO8601UTCFormat)
 		}
 		if !s.LastRotatedDate.IsZero() {
-			entry.Lastrotateddate = s.LastRotatedDate.Format("2006-01-02T15:04:05.000Z")
+			entry.Lastrotateddate = s.LastRotatedDate.Format(timeutils.ISO8601UTCFormat)
 		}
 		if !s.NextRotationDate.IsZero() {
-			entry.Nextrotationdate = s.NextRotationDate.Format("2006-01-02T15:04:05.000Z")
+			entry.Nextrotationdate = s.NextRotationDate.Format(timeutils.ISO8601UTCFormat)
 		}
 		entry.Rotationenabled = s.RotationEnabled
 		entry.Rotationlambdaarn = s.RotationLambdaARN
 		if s.RotationRules != nil {
-		entry.Rotationrules = &pb.RotationRulesType{
-			Automaticallyafterdays: int64(s.RotationRules.AutomaticallyAfterDays),
-		}
+			entry.Rotationrules = &pb.RotationRulesType{
+				Automaticallyafterdays: int64(s.RotationRules.AutomaticallyAfterDays),
+			}
 		}
 		if s.DeletedDate != nil {
-			entry.Deleteddate = s.DeletedDate.Format("2006-01-02T15:04:05.000Z")
+			entry.Deleteddate = s.DeletedDate.Format(timeutils.ISO8601UTCFormat)
 		}
 		entry.Owningservice = s.OwningService
 		entry.Primaryregion = s.PrimaryRegion
@@ -108,9 +112,13 @@ func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.
 
 // CreateSecret creates a new secret via the admin console.
 func (h *AdminHandler) CreateSecret(ctx context.Context, req *connect.Request[pb.CreateSecretRequest]) (*connect.Response[pb.CreateSecretResponse], error) {
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	secret := &secretsmanagerstore.Secret{
@@ -131,7 +139,7 @@ func (h *AdminHandler) CreateSecret(ctx context.Context, req *connect.Request[pb
 
 	created, err := store.CreateSecret(secret)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	resp := &pb.CreateSecretResponse{
@@ -147,18 +155,22 @@ func (h *AdminHandler) CreateSecret(ctx context.Context, req *connect.Request[pb
 
 // DeleteSecret deletes a secret via the admin console.
 func (h *AdminHandler) DeleteSecret(ctx context.Context, req *connect.Request[pb.DeleteSecretRequest]) (*connect.Response[pb.DeleteSecretResponse], error) {
+	if req.Msg.Secretid == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("SecretId is required"))
+	}
+
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	secret, getErr := store.GetSecretForMetadata(req.Msg.Secretid)
 	if getErr != nil {
-		return nil, connect.NewError(connect.CodeInternal, getErr)
+		return nil, svcerrors.StoreErrorToGRPC(getErr)
 	}
 
 	if err := store.DeleteSecret(req.Msg.Secretid); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	resp := &pb.DeleteSecretResponse{

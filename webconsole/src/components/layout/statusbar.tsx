@@ -1,74 +1,37 @@
-import { useState, useEffect } from "react";
-
-/** Telemetry metrics displayed in the status bar. */
-interface Metrics {
-  /** Total RPC requests made in this session. */
-  requests: number;
-  /** Total RPC errors encountered. */
-  errors: number;
-  /** Average response latency in milliseconds. */
-  latency: string;
-  /** Server memory usage (placeholder until telemetry RPC exists). */
-  memory: string;
-  /** Server uptime (placeholder until telemetry RPC exists). */
-  uptime: string;
-}
-
 /**
  * Status bar component at the bottom of the app shell.
- * Shows session metrics: REQ count, ERR count, LAT, MEM, and uptime.
- * Metrics are placeholders until a telemetry RPC is implemented.
+ * Shows session metrics: REQ, ERR, LAT, MEM, GOR, UPTIME, VER.
+ * Metrics are sourced from the useTelemetry() hook which polls
+ * GetServerMetrics and reads the frontend interceptor store.
  */
-export function StatusBar() {
-  const [metrics] = useState<Metrics>({
-    requests: 0,
-    errors: 0,
-    latency: "0ms",
-    memory: "--",
-    uptime: formatUptime(startTime),
-  });
+import { useTelemetry } from "@/hooks/use-telemetry";
 
-  /** Refresh uptime display every 60 seconds. */
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => setTick((t) => t + 1), 60_000);
-    return () => clearInterval(timer);
-  }, []);
+export function StatusBar() {
+  const m = useTelemetry();
 
   return (
     <footer className="statusbar">
       <div className="sb-item">
-        REQ <span className="sb-val">{metrics.requests.toLocaleString()}</span>
+        REQ <span className="sb-val">{m.requests.toLocaleString()}</span>
       </div>
       <div className="sb-item">
-        ERR <span className="sb-val green">{metrics.errors}</span>
+        ERR <span className="sb-val green">{m.errors}</span>
       </div>
       <div className="sb-item">
-        LAT <span className="sb-val cyan">{metrics.latency}</span>
+        LAT <span className="sb-val cyan">{m.avgLatency}ms</span>
       </div>
       <div className="sb-item">
-        MEM <span className="sb-val">{metrics.memory}</span>
+        MEM <span className="sb-val">{m.memory}</span>
       </div>
       <div className="sb-item">
-        UPTIME <span className="sb-val yellow">{metrics.uptime}</span>
+        GOR <span className="sb-val">{m.goroutines}</span>
+      </div>
+      <div className="sb-item">
+        UPTIME <span className="sb-val yellow">{m.uptime}</span>
       </div>
       <div className="sb-item">
         VER <span className="sb-val">{__APP_VERSION__}</span>
       </div>
     </footer>
   );
-}
-
-/** Session start time for uptime calculation. */
-const startTime = Date.now();
-
-/** Formats milliseconds into a human-readable uptime string (e.g. "2h15m"). */
-function formatUptime(ms: number): string {
-  const elapsed = Date.now() - ms;
-  const seconds = Math.floor(elapsed / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  if (hours > 0) return `${hours}h${minutes % 60}m`;
-  if (minutes > 0) return `${minutes}m`;
-  return `${seconds}s`;
 }

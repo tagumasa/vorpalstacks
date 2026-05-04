@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
@@ -49,7 +50,7 @@ func (h *AdminHandler) getStoreByHeader(header http.Header) (*appsyncstore.AppSy
 func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.ListApisRequest]) (*connect.Response[pb.ListApisResponse], error) {
 	store, err := h.getStoreByHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	limit := int(req.Msg.Maxresults)
@@ -64,7 +65,7 @@ func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.Lis
 
 	apis, nextToken, err := store.ListApis(opts)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbApis := make([]*pb.Api, len(apis))
@@ -90,7 +91,7 @@ func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.Lis
 func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request[pb.ListGraphqlApisRequest]) (*connect.Response[pb.ListGraphqlApisResponse], error) {
 	store, err := h.getStoreByHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	limit := int(req.Msg.Maxresults)
@@ -105,7 +106,7 @@ func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request
 
 	graphqlApis, nextToken, err := store.ListGraphqlApis(opts, "")
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbApis := make([]*pb.GraphqlApi, len(graphqlApis))
@@ -139,7 +140,7 @@ func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Reques
 
 	store, err := h.getStoreByHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	authType := "API_KEY"
@@ -163,7 +164,7 @@ func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Reques
 
 	result, err := store.CreateGraphqlApi(api)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateGraphqlApiResponse{
@@ -179,11 +180,11 @@ func (h *AdminHandler) DeleteGraphqlApi(ctx context.Context, req *connect.Reques
 
 	store, err := h.getStoreByHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteGraphqlApiById(req.Msg.GetApiid()); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteGraphqlApiResponse{}), nil

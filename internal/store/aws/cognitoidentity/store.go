@@ -141,10 +141,10 @@ func (s *CognitoIdentityStore) DeleteIdentityPool(id string) error {
 	return s.BaseStore.Delete(id)
 }
 
-// ListIdentityPools returns a list of all Identity Pools.
+// ListIdentityPools returns a list of Identity Pools with server-side pagination.
 // Returns the list of Identity Pools or an error if the operation fails.
-func (s *CognitoIdentityStore) ListIdentityPools() ([]*IdentityPool, error) {
-	return common.ListAll[IdentityPool](s.BaseStore)
+func (s *CognitoIdentityStore) ListIdentityPools(opts common.ListOptions) (*common.ListResult[IdentityPool], error) {
+	return common.List[IdentityPool](s.BaseStore, opts, nil)
 }
 
 // CreateIdentity creates a new Identity in the specified Identity Pool.

@@ -7,6 +7,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 // ExecuteQuery runs a Cypher query against the specified graph's query engine.
@@ -225,7 +226,7 @@ func (s *NeptuneGraphService) GetGraphSummary(ctx context.Context, reqCtx *reque
 
 	return map[string]interface{}{
 		"graphSummary":                  graphDataSummaryToResponse(summary),
-		"lastStatisticsComputationTime": now.Format("2006-01-02T15:04:05.000Z"),
+		"lastStatisticsComputationTime": now.Format(timeutils.ISO8601UTCFormat),
 		"version":                       "1.0",
 	}, nil
 }

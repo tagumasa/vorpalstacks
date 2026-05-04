@@ -1,117 +1,188 @@
 /**
- * SES service page. Lists email identities via ListEmailIdentities RPC.
+ * SESv2 service page. Lists email identities with create/delete operations.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { createClient } from "@connectrpc/connect";
-import { SESv2Service, type IdentityInfo } from "@/gen/sesv2_pb";
-import { transport } from "@/lib/transport";
-import { useListKey, dropEmpty } from "@/lib/use-service-list";
-import { DataTable } from "@/components/shared/data-table";
-import { JsonViewer } from "@/components/shared/json-viewer";
+import type { TFunction } from "i18next";
+import { create } from "@bufbuild/protobuf";
+import { SESv2Service, type IdentityInfo, IdentityType, VerificationStatus } from "@/gen/sesv2_pb";
+import { CreateEmailIdentityRequestSchema } from "@/gen/sesv2_pb";
+import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import {
+  ServicePageLayout,
+  SplitPane,
+  ServiceCreateModal,
+  ServiceDeleteDialog,
+  MonoCell,
+  BooleanBadge,
+  useServiceClient,
+} from "@/components/shared/service-page";
 
-const columns: ColumnDef<IdentityInfo, any>[] = [
-  {
-    accessorKey: "identityname",
-    header: "Identity",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
+/** Lookup map for IdentityType proto enum values to i18n keys. */
+const IDENTITY_TYPE_I18N: Record<number, string> = {
+  [IdentityType.MANAGED_DOMAIN]: "services.ses.typeManagedDomain",
+  [IdentityType.DOMAIN]: "services.ses.typeDomain",
+  [IdentityType.EMAIL_ADDRESS]: "services.ses.typeEmailAddress",
+};
+
+/** Lookup map for VerificationStatus proto enum values to i18n keys. */
+const VERIFICATION_STATUS_I18N: Record<number, string> = {
+  [VerificationStatus.PENDING]: "services.ses.statusPending",
+  [VerificationStatus.SUCCESS]: "services.ses.statusSuccess",
+  [VerificationStatus.TEMPORARY_FAILURE]: "services.ses.statusTemporaryFailure",
+  [VerificationStatus.FAILED]: "services.ses.statusFailed",
+  [VerificationStatus.NOT_STARTED]: "services.ses.statusNotStarted",
+};
+
+/** Column definitions for the SES email identity table. */
+const getColumns = (t: TFunction): ColumnDef<IdentityInfo, any>[] => [
+  { accessorKey: "identityname", header: t("services.ses.identityHeader"), cell: MonoCell },
   {
     accessorKey: "identitytype",
-    header: "Type",
-    cell: ({ getValue }) => <span className="badge">{String(getValue())}</span>,
+    header: t("services.ses.typeHeader"),
+    cell: ({ getValue }) => {
+      const v = getValue() as number;
+      return <span className="badge">{IDENTITY_TYPE_I18N[v] ? t(IDENTITY_TYPE_I18N[v]) : String(v)}</span>;
+    },
     size: 90,
   },
   {
     accessorKey: "verificationstatus",
-    header: "Verification",
-    cell: ({ getValue }) => <span className="badge">{String(getValue())}</span>,
+    header: t("services.ses.verificationHeader"),
+    cell: ({ getValue }) => {
+      const v = getValue() as number;
+      return <span className="badge">{VERIFICATION_STATUS_I18N[v] ? t(VERIFICATION_STATUS_I18N[v]) : String(v)}</span>;
+    },
     size: 110,
   },
   {
     accessorKey: "sendingenabled",
-    header: "Sending",
-    cell: ({ getValue }) => {
-      const v = getValue() as boolean;
-      return v ? <span className="badge badge-green">Enabled</span> : <span className="badge">Disabled</span>;
-    },
+    header: t("services.ses.sendingHeader"),
+    cell: ({ getValue }) => <BooleanBadge value={getValue() as boolean} />,
     size: 90,
   },
 ];
 
+/** SESv2 service page with list, create, and delete operations. */
 export function SESPage() {
   const { t } = useTranslation();
+  const columns = getColumns(t);
   const [selectedItem, setSelectedItem] = useState<IdentityInfo | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [formIdentity, setFormIdentity] = useState("");
+  const [formConfigSetName, setFormConfigSetName] = useState("");
 
-  const client = createClient(SESv2Service, transport);
+  const { client, invalidate } = useServiceClient(SESv2Service);
   const { queryKey } = useListKey("ses");
 
   const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: () => client.listEmailIdentities({}),
-    refetchInterval: 30_000,
+    refetchInterval: REFETCH_INTERVAL,
   });
 
   const items: IdentityInfo[] = dropEmpty(data?.emailidentities ?? [], "identityname");
 
-  if (isLoading) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">✉️</span>
-          <h1>SES</h1>
-        </div>
-        <div className="loading-state">{t("common.loading")}</div>
-      </div>
-    );
-  }
+  const createMutation = useMutation({
+    mutationFn: () =>
+      client.createEmailIdentity(
+        create(CreateEmailIdentityRequestSchema, {
+          emailidentity: formIdentity,
+          ...(formConfigSetName ? { configurationsetname: formConfigSetName } : {}),
+        }),
+      ),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowCreate(false);
+      setFormIdentity("");
+      setFormConfigSetName("");
+    },
+  });
 
-  if (error) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">✉️</span>
-          <h1>SES</h1>
-        </div>
-        <div className="error-state">{t("common.failedToLoad", { error: String(error) })}</div>
-      </div>
-    );
-  }
+  const deleteMutation = useMutation({
+    mutationFn: (identity: string) =>
+      client.deleteEmailIdentity({ emailidentity: identity }),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowDelete(false);
+      setSelectedItem(null);
+    },
+  });
 
   return (
-    <div className="content-area">
-      <div className="page-header">
-        <span className="page-icon">✉️</span>
-        <h1>SES</h1>
-        <span className="resource-count">{items.length} identities</span>
-      </div>
+    <ServicePageLayout
+      icon="✉️"
+      title={t("services.ses.title")}
+      isLoading={isLoading}
+      error={error}
+      count={items.length}
+      countLabel={t("services.ses.countLabel")}
+      actions={
+        <>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+            {t("services.ses.create")}
+          </button>
+          {selectedItem && (
+            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
+              {t("common.delete")}
+            </button>
+          )}
+        </>
+      }
+      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "ses-items" }}
+    >
+      <SplitPane
+        columns={columns}
+        data={items}
+        getRowId={(row) => row.identityname}
+        onRowClick={setSelectedItem}
+        selectedId={selectedItem?.identityname}
+        selected={selectedItem}
+        detailTitle={selectedItem?.identityname}
+        onDetailClose={() => setSelectedItem(null)}
+      />
 
-      <div className="split-pane">
-        <div className="split-table">
-          <DataTable
-            columns={columns}
-            data={items}
-            getRowId={(row) => row.identityname}
-            onRowClick={setSelectedItem}
-            selectedId={selectedItem?.identityname}
+      <ServiceCreateModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t("services.ses.create")}
+        error={createMutation.error}
+        isPending={createMutation.isPending}
+        onCreate={() => createMutation.mutate()}
+        disabled={!formIdentity}
+      >
+        <label>
+          {t("services.ses.nameField")}
+          <input
+            value={formIdentity}
+            onChange={(e) => setFormIdentity(e.target.value)}
+            placeholder={t("services.ses.placeholder")}
+            className="modal-input"
           />
-        </div>
-        {selectedItem && (
-          <div className="split-detail">
-            <div className="detail-header">
-              <h2>{selectedItem.identityname}</h2>
-              <button className="detail-close" onClick={() => setSelectedItem(null)}>
-                ✕
-              </button>
-            </div>
-            <JsonViewer data={selectedItem} />
-          </div>
-        )}
-      </div>
-    </div>
+        </label>
+        <label>
+          {t("services.ses.configurationSetLabel")}
+          <input
+            value={formConfigSetName}
+            onChange={(e) => setFormConfigSetName(e.target.value)}
+            placeholder={t("services.ses.configurationSetPlaceholder")}
+            className="modal-input"
+          />
+        </label>
+      </ServiceCreateModal>
+
+      <ServiceDeleteDialog
+        open={showDelete && !!selectedItem}
+        title={t("services.ses.delete")}
+        name={selectedItem?.identityname}
+        error={deleteMutation.error}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.identityname)}
+        onClose={() => setShowDelete(false)}
+      />
+    </ServicePageLayout>
   );
 }

@@ -24,6 +24,7 @@ type LogGroup struct {
 	RetentionInDays   int32             `json:"retentionInDays,omitempty"`
 	MetricFilterCount int32             `json:"metricFilterCount"`
 	StoredBytes       int64             `json:"storedBytes"`
+	LogGroupClass     string            `json:"logGroupClass,omitempty"`
 	Tags              map[string]string `json:"tags,omitempty"`
 }
 

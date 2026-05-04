@@ -1,100 +1,202 @@
 /**
- * DynamoDB service page. Lists table names via ListTables RPC.
+ * DynamoDB service page. Lists tables with create/delete operations.
  */
-import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
-import type { ColumnDef } from "@tanstack/react-table";
-import { createClient } from "@connectrpc/connect";
-import { DynamoDBService } from "@/gen/dynamodb_pb";
-import { transport } from "@/lib/transport";
-import { useListKey, dropEmpty } from "@/lib/use-service-list";
-import { DataTable } from "@/components/shared/data-table";
-import { JsonViewer } from "@/components/shared/json-viewer";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
+import type { TFunction } from "i18next";
+import { create } from "@bufbuild/protobuf";
+import { DynamoDBService } from "@/gen/dynamodb_pb";
+import { CreateTableInputSchema, DeleteTableInputSchema, KeyType, ScalarAttributeType, BillingMode } from "@/gen/dynamodb_pb";
+import { useListKey, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import {
+  ServicePageLayout,
+  SplitPane,
+  ServiceCreateModal,
+  ServiceDeleteDialog,
+  MonoCell,
+  useServiceClient,
+} from "@/components/shared/service-page";
 
+/** Derived row shape for the DynamoDB table list. */
 interface TableRow {
   name: string;
 }
 
-const columns: ColumnDef<TableRow, any>[] = [
-  {
-    accessorKey: "name",
-    header: "Table Name",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
+/** Column definitions for the DynamoDB table list. */
+const getColumns = (t: TFunction): ColumnDef<TableRow, any>[] => [
+  { accessorKey: "name", header: t("services.dynamodb.tableNameHeader"), cell: MonoCell },
 ];
 
+/** DynamoDB service page with list, create, and delete operations. */
 export function DynamoDBPage() {
   const { t } = useTranslation();
+  const columns = getColumns(t);
   const [selectedItem, setSelectedItem] = useState<TableRow | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formPkName, setFormPkName] = useState("pk");
+  const [formPkType, setFormPkType] = useState<ScalarAttributeType>(ScalarAttributeType.S);
+  const [formSkName, setFormSkName] = useState("");
+  const [formSkType, setFormSkType] = useState<ScalarAttributeType>(ScalarAttributeType.S);
+  const [formBillingMode, setFormBillingMode] = useState<BillingMode>(BillingMode.PAY_PER_REQUEST);
 
-  const client = createClient(DynamoDBService, transport);
+  const { client, invalidate } = useServiceClient(DynamoDBService);
   const { queryKey } = useListKey("dynamodb");
 
   const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: () => client.listTables({}),
-    refetchInterval: 30_000,
+    refetchInterval: REFETCH_INTERVAL,
   });
 
-  const items: TableRow[] = dropEmpty((data?.tablenames ?? []).map((n) => ({ name: n })), "name");
+  const items: TableRow[] = (data?.tablenames ?? []).map((name) => ({ name }));
 
-  if (isLoading) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">🗃️</span>
-          <h1>DynamoDB</h1>
-        </div>
-        <div className="loading-state">{t("common.loading")}</div>
-      </div>
-    );
-  }
+  const createMutation = useMutation({
+    mutationFn: () =>
+      client.createTable(
+        create(CreateTableInputSchema, {
+          tablename: formName,
+          keyschema: [
+            { attributename: formPkName, keytype: KeyType.HASH },
+            ...(formSkName ? [{ attributename: formSkName, keytype: KeyType.RANGE }] : []),
+          ],
+          attributedefinitions: [
+            { attributename: formPkName, attributetype: formPkType },
+            ...(formSkName ? [{ attributename: formSkName, attributetype: formSkType }] : []),
+          ],
+          billingmode: formBillingMode,
+        }),
+      ),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowCreate(false);
+      setFormName("");
+      setFormPkName("pk");
+      setFormPkType(ScalarAttributeType.S);
+      setFormSkName("");
+      setFormSkType(ScalarAttributeType.S);
+      setFormBillingMode(BillingMode.PAY_PER_REQUEST);
+    },
+  });
 
-  if (error) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">🗃️</span>
-          <h1>DynamoDB</h1>
-        </div>
-        <div className="error-state">{t("common.failedToLoad", { error: String(error) })}</div>
-      </div>
-    );
-  }
+  const deleteMutation = useMutation({
+    mutationFn: (tablename: string) =>
+      client.deleteTable(create(DeleteTableInputSchema, { tablename })),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowDelete(false);
+      setSelectedItem(null);
+    },
+  });
 
   return (
-    <div className="content-area">
-      <div className="page-header">
-        <span className="page-icon">🗃️</span>
-        <h1>DynamoDB</h1>
-        <span className="resource-count">{items.length} tables</span>
-      </div>
+    <ServicePageLayout
+      icon="🗃️"
+      title={t("services.dynamodb.title")}
+      isLoading={isLoading}
+      error={error}
+      count={items.length}
+      countLabel={t("services.dynamodb.countLabel")}
+      actions={
+        <>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+            {t("services.dynamodb.create")}
+          </button>
+          {selectedItem && (
+            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
+              {t("common.delete")}
+            </button>
+          )}
+        </>
+      }
+      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "dynamodb-items" }}
+    >
+      <SplitPane
+        columns={columns}
+        data={items}
+        getRowId={(row) => row.name}
+        onRowClick={setSelectedItem}
+        selectedId={selectedItem?.name}
+        selected={selectedItem}
+        detailTitle={selectedItem?.name}
+        onDetailClose={() => setSelectedItem(null)}
+      />
 
-      <div className="split-pane">
-        <div className="split-table">
-          <DataTable
-            columns={columns}
-            data={items}
-            getRowId={(row) => row.name}
-            onRowClick={setSelectedItem}
-            selectedId={selectedItem?.name}
+      <ServiceCreateModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t("services.dynamodb.create")}
+        error={createMutation.error}
+        isPending={createMutation.isPending}
+        onCreate={() => createMutation.mutate()}
+        disabled={!formName || !formPkName}
+      >
+        <label>
+          {t("services.dynamodb.nameField")}
+          <input
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder={t("services.dynamodb.placeholder")}
+            className="modal-input"
           />
-        </div>
-        {selectedItem && (
-          <div className="split-detail">
-            <div className="detail-header">
-              <h2>{selectedItem.name}</h2>
-              <button className="detail-close" onClick={() => setSelectedItem(null)}>
-                ✕
-              </button>
-            </div>
-            <JsonViewer data={selectedItem} />
-          </div>
+        </label>
+        <label>
+          {t("services.dynamodb.partitionKeyLabel")}
+          <input
+            value={formPkName}
+            onChange={(e) => setFormPkName(e.target.value)}
+            placeholder={t("services.dynamodb.pkPlaceholder")}
+            className="modal-input"
+          />
+        </label>
+        <label>
+          {t("services.dynamodb.partitionKeyTypeLabel")}
+          <select value={formPkType} onChange={(e) => setFormPkType(Number(e.target.value) as ScalarAttributeType)} className="modal-input">
+            <option value={ScalarAttributeType.S}>{t("services.dynamodb.attrTypeString")}</option>
+            <option value={ScalarAttributeType.N}>{t("services.dynamodb.attrTypeNumber")}</option>
+            <option value={ScalarAttributeType.B}>{t("services.dynamodb.attrTypeBinary")}</option>
+          </select>
+        </label>
+        <label>
+          {t("services.dynamodb.sortKeyLabel")}
+            <input
+              value={formSkName}
+              onChange={(e) => setFormSkName(e.target.value)}
+              placeholder={t("common.optional")}
+            className="modal-input"
+          />
+        </label>
+        {formSkName && (
+          <label>
+            {t("services.dynamodb.sortKeyTypeLabel")}
+            <select value={formSkType} onChange={(e) => setFormSkType(Number(e.target.value) as ScalarAttributeType)} className="modal-input">
+              <option value={ScalarAttributeType.S}>{t("services.dynamodb.attrTypeString")}</option>
+              <option value={ScalarAttributeType.N}>{t("services.dynamodb.attrTypeNumber")}</option>
+              <option value={ScalarAttributeType.B}>{t("services.dynamodb.attrTypeBinary")}</option>
+            </select>
+          </label>
         )}
-      </div>
-    </div>
+        <label>
+          {t("services.dynamodb.billingModeLabel")}
+          <select value={formBillingMode} onChange={(e) => setFormBillingMode(Number(e.target.value) as BillingMode)} className="modal-input">
+            <option value={BillingMode.PAY_PER_REQUEST}>{t("services.dynamodb.billingPayPerRequest")}</option>
+            <option value={BillingMode.PROVISIONED}>{t("services.dynamodb.billingProvisioned")}</option>
+          </select>
+        </label>
+      </ServiceCreateModal>
+
+      <ServiceDeleteDialog
+        open={showDelete && !!selectedItem}
+        title={t("services.dynamodb.delete")}
+        name={selectedItem?.name}
+        error={deleteMutation.error}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.name)}
+        onClose={() => setShowDelete(false)}
+      />
+    </ServicePageLayout>
   );
 }

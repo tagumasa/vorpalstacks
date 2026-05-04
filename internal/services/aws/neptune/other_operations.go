@@ -14,6 +14,7 @@ import (
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 func (s *NeptuneService) neptuneTagConfig(store neptunestore.NeptuneStoreInterface) tags.TagHandlerConfig {
@@ -327,7 +328,7 @@ func (s *NeptuneService) DescribeEvents(ctx context.Context, reqCtx *request.Req
 	filtered := make([]interface{}, 0, len(result.Events))
 	for _, evt := range result.Events {
 		filtered = append(filtered, map[string]interface{}{
-			"Date":             evt.Date.UTC().Format("2006-01-02T15:04:05.000Z"),
+			"Date":             evt.Date.UTC().Format(timeutils.ISO8601UTCFormat),
 			"EventCategories":  protocol.XMLElements{ElementName: "EventCategory", Items: stringSliceToInterface(evt.EventCategories)},
 			"Message":          evt.Message,
 			"SourceArn":        evt.SourceArn,

@@ -61,6 +61,9 @@ const (
 	// AdminConfigServiceShutdownServerProcedure is the fully-qualified name of the AdminConfigService's
 	// ShutdownServer RPC.
 	AdminConfigServiceShutdownServerProcedure = "/admin_config.AdminConfigService/ShutdownServer"
+	// AdminConfigServiceGetServerMetricsProcedure is the fully-qualified name of the
+	// AdminConfigService's GetServerMetrics RPC.
+	AdminConfigServiceGetServerMetricsProcedure = "/admin_config.AdminConfigService/GetServerMetrics"
 )
 
 // AdminConfigServiceClient is a client for the admin_config.AdminConfigService service.
@@ -78,6 +81,8 @@ type AdminConfigServiceClient interface {
 	SetResourcePort(context.Context, *connect.Request[admin_config.SetResourcePortRequest]) (*connect.Response[common.Empty], error)
 	// Server control
 	ShutdownServer(context.Context, *connect.Request[admin_config.ShutdownServerRequest]) (*connect.Response[admin_config.ShutdownServerResponse], error)
+	// Server telemetry
+	GetServerMetrics(context.Context, *connect.Request[admin_config.GetServerMetricsRequest]) (*connect.Response[admin_config.GetServerMetricsResponse], error)
 }
 
 // NewAdminConfigServiceClient constructs a client for the admin_config.AdminConfigService service.
@@ -145,6 +150,12 @@ func NewAdminConfigServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(adminConfigServiceMethods.ByName("ShutdownServer")),
 			connect.WithClientOptions(opts...),
 		),
+		getServerMetrics: connect.NewClient[admin_config.GetServerMetricsRequest, admin_config.GetServerMetricsResponse](
+			httpClient,
+			baseURL+AdminConfigServiceGetServerMetricsProcedure,
+			connect.WithSchema(adminConfigServiceMethods.ByName("GetServerMetrics")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -159,6 +170,7 @@ type adminConfigServiceClient struct {
 	getResourcePort  *connect.Client[admin_config.GetResourcePortRequest, admin_config.GetResourcePortResponse]
 	setResourcePort  *connect.Client[admin_config.SetResourcePortRequest, common.Empty]
 	shutdownServer   *connect.Client[admin_config.ShutdownServerRequest, admin_config.ShutdownServerResponse]
+	getServerMetrics *connect.Client[admin_config.GetServerMetricsRequest, admin_config.GetServerMetricsResponse]
 }
 
 // GetConfig calls admin_config.AdminConfigService.GetConfig.
@@ -206,6 +218,11 @@ func (c *adminConfigServiceClient) ShutdownServer(ctx context.Context, req *conn
 	return c.shutdownServer.CallUnary(ctx, req)
 }
 
+// GetServerMetrics calls admin_config.AdminConfigService.GetServerMetrics.
+func (c *adminConfigServiceClient) GetServerMetrics(ctx context.Context, req *connect.Request[admin_config.GetServerMetricsRequest]) (*connect.Response[admin_config.GetServerMetricsResponse], error) {
+	return c.getServerMetrics.CallUnary(ctx, req)
+}
+
 // AdminConfigServiceHandler is an implementation of the admin_config.AdminConfigService service.
 type AdminConfigServiceHandler interface {
 	// Configuration management (full CRUD)
@@ -221,6 +238,8 @@ type AdminConfigServiceHandler interface {
 	SetResourcePort(context.Context, *connect.Request[admin_config.SetResourcePortRequest]) (*connect.Response[common.Empty], error)
 	// Server control
 	ShutdownServer(context.Context, *connect.Request[admin_config.ShutdownServerRequest]) (*connect.Response[admin_config.ShutdownServerResponse], error)
+	// Server telemetry
+	GetServerMetrics(context.Context, *connect.Request[admin_config.GetServerMetricsRequest]) (*connect.Response[admin_config.GetServerMetricsResponse], error)
 }
 
 // NewAdminConfigServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -284,6 +303,12 @@ func NewAdminConfigServiceHandler(svc AdminConfigServiceHandler, opts ...connect
 		connect.WithSchema(adminConfigServiceMethods.ByName("ShutdownServer")),
 		connect.WithHandlerOptions(opts...),
 	)
+	adminConfigServiceGetServerMetricsHandler := connect.NewUnaryHandler(
+		AdminConfigServiceGetServerMetricsProcedure,
+		svc.GetServerMetrics,
+		connect.WithSchema(adminConfigServiceMethods.ByName("GetServerMetrics")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/admin_config.AdminConfigService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AdminConfigServiceGetConfigProcedure:
@@ -304,6 +329,8 @@ func NewAdminConfigServiceHandler(svc AdminConfigServiceHandler, opts ...connect
 			adminConfigServiceSetResourcePortHandler.ServeHTTP(w, r)
 		case AdminConfigServiceShutdownServerProcedure:
 			adminConfigServiceShutdownServerHandler.ServeHTTP(w, r)
+		case AdminConfigServiceGetServerMetricsProcedure:
+			adminConfigServiceGetServerMetricsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -347,4 +374,8 @@ func (UnimplementedAdminConfigServiceHandler) SetResourcePort(context.Context, *
 
 func (UnimplementedAdminConfigServiceHandler) ShutdownServer(context.Context, *connect.Request[admin_config.ShutdownServerRequest]) (*connect.Response[admin_config.ShutdownServerResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_config.AdminConfigService.ShutdownServer is not implemented"))
+}
+
+func (UnimplementedAdminConfigServiceHandler) GetServerMetrics(context.Context, *connect.Request[admin_config.GetServerMetricsRequest]) (*connect.Response[admin_config.GetServerMetricsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_config.AdminConfigService.GetServerMetrics is not implemented"))
 }

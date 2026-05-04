@@ -29,6 +29,7 @@ const (
 	AdminConfigService_GetResourcePort_FullMethodName  = "/admin_config.AdminConfigService/GetResourcePort"
 	AdminConfigService_SetResourcePort_FullMethodName  = "/admin_config.AdminConfigService/SetResourcePort"
 	AdminConfigService_ShutdownServer_FullMethodName   = "/admin_config.AdminConfigService/ShutdownServer"
+	AdminConfigService_GetServerMetrics_FullMethodName = "/admin_config.AdminConfigService/GetServerMetrics"
 )
 
 // AdminConfigServiceClient is the client API for AdminConfigService service.
@@ -48,6 +49,8 @@ type AdminConfigServiceClient interface {
 	SetResourcePort(ctx context.Context, in *SetResourcePortRequest, opts ...grpc.CallOption) (*common.Empty, error)
 	// Server control
 	ShutdownServer(ctx context.Context, in *ShutdownServerRequest, opts ...grpc.CallOption) (*ShutdownServerResponse, error)
+	// Server telemetry
+	GetServerMetrics(ctx context.Context, in *GetServerMetricsRequest, opts ...grpc.CallOption) (*GetServerMetricsResponse, error)
 }
 
 type adminConfigServiceClient struct {
@@ -148,6 +151,16 @@ func (c *adminConfigServiceClient) ShutdownServer(ctx context.Context, in *Shutd
 	return out, nil
 }
 
+func (c *adminConfigServiceClient) GetServerMetrics(ctx context.Context, in *GetServerMetricsRequest, opts ...grpc.CallOption) (*GetServerMetricsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetServerMetricsResponse)
+	err := c.cc.Invoke(ctx, AdminConfigService_GetServerMetrics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminConfigServiceServer is the server API for AdminConfigService service.
 // All implementations must embed UnimplementedAdminConfigServiceServer
 // for forward compatibility.
@@ -165,6 +178,8 @@ type AdminConfigServiceServer interface {
 	SetResourcePort(context.Context, *SetResourcePortRequest) (*common.Empty, error)
 	// Server control
 	ShutdownServer(context.Context, *ShutdownServerRequest) (*ShutdownServerResponse, error)
+	// Server telemetry
+	GetServerMetrics(context.Context, *GetServerMetricsRequest) (*GetServerMetricsResponse, error)
 	mustEmbedUnimplementedAdminConfigServiceServer()
 }
 
@@ -201,6 +216,9 @@ func (UnimplementedAdminConfigServiceServer) SetResourcePort(context.Context, *S
 }
 func (UnimplementedAdminConfigServiceServer) ShutdownServer(context.Context, *ShutdownServerRequest) (*ShutdownServerResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ShutdownServer not implemented")
+}
+func (UnimplementedAdminConfigServiceServer) GetServerMetrics(context.Context, *GetServerMetricsRequest) (*GetServerMetricsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetServerMetrics not implemented")
 }
 func (UnimplementedAdminConfigServiceServer) mustEmbedUnimplementedAdminConfigServiceServer() {}
 func (UnimplementedAdminConfigServiceServer) testEmbeddedByValue()                            {}
@@ -385,6 +403,24 @@ func _AdminConfigService_ShutdownServer_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminConfigService_GetServerMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetServerMetricsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminConfigServiceServer).GetServerMetrics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminConfigService_GetServerMetrics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminConfigServiceServer).GetServerMetrics(ctx, req.(*GetServerMetricsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminConfigService_ServiceDesc is the grpc.ServiceDesc for AdminConfigService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -427,6 +463,10 @@ var AdminConfigService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ShutdownServer",
 			Handler:    _AdminConfigService_ShutdownServer_Handler,
+		},
+		{
+			MethodName: "GetServerMetrics",
+			Handler:    _AdminConfigService_GetServerMetrics_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

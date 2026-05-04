@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
@@ -47,7 +48,7 @@ func (h *AdminHandler) getSESv2StoreFromHeader(header http.Header) (*sesv2store.
 func (h *AdminHandler) ListEmailIdentities(ctx context.Context, req *connect.Request[pb.ListEmailIdentitiesRequest]) (*connect.Response[pb.ListEmailIdentitiesResponse], error) {
 	store, err := h.getSESv2StoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	limit := int(req.Msg.Pagesize)
@@ -62,7 +63,7 @@ func (h *AdminHandler) ListEmailIdentities(ctx context.Context, req *connect.Req
 
 	result, err := store.ListEmailIdentities(opts)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var identities []*pb.IdentityInfo
@@ -71,7 +72,7 @@ func (h *AdminHandler) ListEmailIdentities(ctx context.Context, req *connect.Req
 			Identityname:       identity.Identity,
 			Identitytype:       pb.IdentityType_IDENTITY_TYPE_EMAIL_ADDRESS,
 			Sendingenabled:     identity.VerifiedForSending,
-			Verificationstatus: pb.VerificationStatus_VERIFICATION_STATUS_SUCCESS,
+			Verificationstatus: verificationStatusToProto(identity.DkimAttributes),
 		}
 		if identity.IdentityType == "DOMAIN" {
 			info.Identitytype = pb.IdentityType_IDENTITY_TYPE_DOMAIN
@@ -93,13 +94,13 @@ func (h *AdminHandler) CreateEmailIdentity(ctx context.Context, req *connect.Req
 
 	store, err := h.getSESv2StoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	identity := sesv2store.NewEmailIdentity(req.Msg.Emailidentity)
 	result, err := store.CreateEmailIdentity(identity)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	resp := &pb.CreateEmailIdentityResponse{
@@ -127,11 +128,11 @@ func (h *AdminHandler) DeleteEmailIdentity(ctx context.Context, req *connect.Req
 
 	store, err := h.getSESv2StoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteEmailIdentity(req.Msg.Emailidentity); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteEmailIdentityResponse{}), nil
@@ -140,4 +141,24 @@ func (h *AdminHandler) DeleteEmailIdentity(ctx context.Context, req *connect.Req
 // NewConnectHandler creates a gRPC-Web connect handler for the Sesv2 admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return sesv2connect.NewSESv2ServiceHandler(NewAdminHandler(sm, accountID))
+}
+
+func verificationStatusToProto(dkim *sesv2store.DkimAttributes) pb.VerificationStatus {
+	if dkim == nil {
+		return pb.VerificationStatus_VERIFICATION_STATUS_PENDING
+	}
+	switch dkim.Status {
+	case "SUCCESS":
+		return pb.VerificationStatus_VERIFICATION_STATUS_SUCCESS
+	case "PENDING":
+		return pb.VerificationStatus_VERIFICATION_STATUS_PENDING
+	case "FAILED":
+		return pb.VerificationStatus_VERIFICATION_STATUS_FAILED
+	case "TEMPORARY_FAILURE":
+		return pb.VerificationStatus_VERIFICATION_STATUS_TEMPORARY_FAILURE
+	case "NOT_STARTED":
+		return pb.VerificationStatus_VERIFICATION_STATUS_NOT_STARTED
+	default:
+		return pb.VerificationStatus_VERIFICATION_STATUS_PENDING
+	}
 }

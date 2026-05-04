@@ -7,23 +7,20 @@ STORAGE_PB_DIR := internal/pb/storage
 PROTOC := protoc
 GENERATOR := ./proto_generator
 SMITHY_DIR := third_party/api-models-aws/models
+WEBCONSOLE_DIR := webconsole
 
-# AWS services to generate (directory names in api-models-aws/models)
-# Updated: 2026-03-11 - Added 5 missing services for Admin API
-SERVICES := acm api-gateway athena cloudfront cloudtrail cloudwatch cloudwatch-events cloudwatch-logs \
-	cognito-identity cognito-identity-provider dynamodb iam kinesis kms lambda \
-	route-53 s3 scheduler secrets-manager sesv2 sfn sns sqs ssm sts \
-	timestream-query timestream-write waf wafv2
-
-.PHONY: all build build-tools clean deps
+.PHONY: all build build-console build-tools clean deps
 .PHONY: proto-generate proto proto-% pebble-load
 .PHONY: run start stop start-test stop-test test test-cli test-integration
 .PHONY: fmt tidy help
 
 all: build
 
-build:
+build: build-console
 	go build -o vorpalstacks_server .
+
+build-console:
+	cd $(WEBCONSOLE_DIR) && npm run build
 
 build-tools: build-proto-generator
 
@@ -33,12 +30,15 @@ build-proto-generator:
 clean:
 	rm -f proto_generator vorpalstacks_server
 	rm -rf $(PB_DIR)
+	rm -rf $(WEBCONSOLE_DIR)/dist
 
 deps:
 	@echo "Installing protoc plugins..."
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
+	@echo "Installing webconsole dependencies..."
+	cd $(WEBCONSOLE_DIR) && npm install
 	@echo "Dependencies installed."
 
 deps-dart:
@@ -175,9 +175,10 @@ help:
 	@echo "VorpalStacks Makefile"
 	@echo ""
 	@echo "Build targets:"
-	@echo "  make build                Build the server binary"
+	@echo "  make build                Build webconsole + server binary"
+	@echo "  make build-console        Build webconsole frontend only (npm run build)"
 	@echo "  make build-tools          Build all tools (proto_generator)"
-	@echo "  make clean                Remove build artifacts and pb files"
+	@echo "  make clean                Remove build artifacts, pb files, and webconsole/dist"
 	@echo ""
 	@echo "Proto targets:"
 	@echo "  make deps                 Install protoc plugins"

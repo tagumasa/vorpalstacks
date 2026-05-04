@@ -10,7 +10,7 @@ type CognitoIdentityStoreInterface interface {
 	GetIdentityPool(id string) (*IdentityPool, error)
 	UpdateIdentityPool(pool *IdentityPool) error
 	DeleteIdentityPool(id string) error
-	ListIdentityPools() ([]*IdentityPool, error)
+	ListIdentityPools(opts common.ListOptions) (*common.ListResult[IdentityPool], error)
 	CreateIdentity(identity *Identity) error
 	GetIdentity(poolID, identityID string) (*Identity, error)
 	DeleteIdentity(poolID, identityID string) error

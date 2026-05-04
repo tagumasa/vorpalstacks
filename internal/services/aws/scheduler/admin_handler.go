@@ -2,8 +2,12 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
+
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
 
@@ -16,12 +20,12 @@ import (
 
 // parseTime attempts to parse a timestamp string using common AWS formats.
 func parseTime(s string) (time.Time, error) {
-	for _, layout := range []string{time.RFC3339, time.RFC3339Nano, "2006-01-02T15:04:05.000Z", "2006-01-02"} {
+	for _, layout := range []string{time.RFC3339, time.RFC3339Nano, timeutils.ISO8601UTCFormat, "2006-01-02"} {
 		if t, err := time.Parse(layout, s); err == nil {
 			return t, nil
 		}
 	}
-	return time.Time{}, nil
+	return time.Time{}, fmt.Errorf("invalid time format: %s", s)
 }
 
 // AdminHandler provides EventBridge Scheduler service administration functionality.
@@ -53,7 +57,7 @@ func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*schedulerstore
 func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[pb.ListSchedulesInput]) (*connect.Response[pb.ListSchedulesOutput], error) {
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	maxResults := req.Msg.Maxresults
@@ -63,7 +67,7 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 
 	result, err := store.ListSchedules(ctx, req.Msg.Groupname, req.Msg.Nameprefix, schedulerstore.ScheduleState(req.Msg.State), maxResults, req.Msg.Nexttoken)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var summaries []*pb.ScheduleSummary
@@ -75,10 +79,10 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 			State:     string(s.State),
 		}
 		if s.CreationDate != nil {
-			summary.Creationdate = s.CreationDate.Format("2006-01-02T15:04:05.000Z")
+			summary.Creationdate = s.CreationDate.Format(timeutils.ISO8601UTCFormat)
 		}
 		if s.LastModificationDate != nil {
-			summary.Lastmodificationdate = s.LastModificationDate.Format("2006-01-02T15:04:05.000Z")
+			summary.Lastmodificationdate = s.LastModificationDate.Format(timeutils.ISO8601UTCFormat)
 		}
 		if s.Target != nil {
 			summary.Target = &pb.TargetSummary{Arn: s.Target.Arn}
@@ -94,9 +98,13 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 
 // CreateSchedule creates a new schedule via the admin console.
 func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[pb.CreateScheduleInput]) (*connect.Response[pb.CreateScheduleOutput], error) {
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	schedule := &schedulerstore.Schedule{
@@ -112,15 +120,17 @@ func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[
 
 	if req.Msg.Startdate != "" {
 		t, parseErr := parseTime(req.Msg.Startdate)
-		if parseErr == nil {
-			schedule.StartDate = &t
+		if parseErr != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid StartDate: %w", parseErr))
 		}
+		schedule.StartDate = &t
 	}
 	if req.Msg.Enddate != "" {
 		t, parseErr := parseTime(req.Msg.Enddate)
-		if parseErr == nil {
-			schedule.EndDate = &t
+		if parseErr != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid EndDate: %w", parseErr))
 		}
+		schedule.EndDate = &t
 	}
 
 	if req.Msg.Flexibletimewindow != nil {
@@ -140,7 +150,7 @@ func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[
 	}
 
 	if err := store.CreateSchedule(ctx, schedule); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateScheduleOutput{
@@ -150,13 +160,17 @@ func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[
 
 // DeleteSchedule deletes a schedule via the admin console.
 func (h *AdminHandler) DeleteSchedule(ctx context.Context, req *connect.Request[pb.DeleteScheduleInput]) (*connect.Response[pb.DeleteScheduleOutput], error) {
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+
 	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteSchedule(ctx, req.Msg.Groupname, req.Msg.Name); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteScheduleOutput{}), nil

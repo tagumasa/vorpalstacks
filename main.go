@@ -6,6 +6,7 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"os"
 	"strings"
@@ -14,9 +15,13 @@ import (
 	"vorpalstacks/internal/server/apps"
 )
 
+//go:embed webconsole/dist
+var webconsoleFS embed.FS
+
 func main() {
 	bc := config.LoadBootstrapConfig()
 	cfg := apps.FromBootstrap(bc)
+	cfg.ConsoleAssets = webconsoleFS
 
 	app, err := apps.New(cfg)
 	if err != nil {

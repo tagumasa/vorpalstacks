@@ -60,6 +60,7 @@ export default defineConfig({
       "/wafv2": "http://127.0.0.1:9090",
     },
   },
+  base: "/webconsole/",
   build: {
     outDir: "dist",
   },

@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
 	"connectrpc.com/connect"
 
 	"vorpalstacks/internal/core/storage"
@@ -28,9 +31,13 @@ func NewAdminHandler(store *kmsstore.KeyStore) *AdminHandler {
 
 // ListKeys retrieves all KMS keys from the key store with pagination.
 func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.ListKeysRequest]) (*connect.Response[pb.ListKeysResponse], error) {
-	result, err := h.store.List(req.Msg.Marker, int(req.Msg.Limit))
+	limit := int(req.Msg.Limit)
+	if limit <= 0 {
+		limit = 100
+	}
+	result, err := h.store.List(req.Msg.Marker, limit)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	keys := make([]*pb.KeyListEntry, len(result.Keys))
@@ -85,22 +92,22 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 	keyID := ""
 	key, err := h.store.Create(keyID, keyUsage, keySpec, req.Msg.GetDescription(), origin, req.Msg.GetMultiregion())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateKeyResponse{
 		Keymetadata: &pb.KeyMetadata{
-			Keyid:       key.KeyID,
-			Arn:         key.Arn,
-			Keystate:    pb.KeyState_KEY_STATE_ENABLED,
-			Keyusage:    req.Msg.GetKeyusage(),
-			Keyspec:     req.Msg.GetKeyspec(),
-			Description: key.Description,
-			Enabled:     key.Enabled,
-			Origin:      req.Msg.GetOrigin(),
-			Keymanager:  pb.KeyManagerType_KEY_MANAGER_TYPE_CUSTOMER,
-			Multiregion: key.MultiRegion,
-			Creationdate: fmt.Sprintf("%d", key.CreationDate.Unix()),
+			Keyid:        key.KeyID,
+			Arn:          key.Arn,
+			Keystate:     pb.KeyState_KEY_STATE_ENABLED,
+			Keyusage:     req.Msg.GetKeyusage(),
+			Keyspec:      req.Msg.GetKeyspec(),
+			Description:  key.Description,
+			Enabled:      key.Enabled,
+			Origin:       req.Msg.GetOrigin(),
+			Keymanager:   pb.KeyManagerType_KEY_MANAGER_TYPE_CUSTOMER,
+			Multiregion:  key.MultiRegion,
+			Creationdate: key.CreationDate.Format(timeutils.ISO8601UTCFormat),
 		},
 	}), nil
 }
@@ -117,19 +124,19 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 	}
 
 	if err := h.store.ScheduleDeletion(req.Msg.GetKeyid(), pendingDays); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	key, err := h.store.Get(req.Msg.GetKeyid())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	resp := &pb.ScheduleKeyDeletionResponse{
 		Keyid: key.KeyID,
 	}
 	if key.DeletionDate != nil {
-		resp.Deletiondate = fmt.Sprintf("%d", key.DeletionDate.Unix())
+		resp.Deletiondate = key.DeletionDate.UTC().Format(timeutils.ISO8601UTCFormat)
 	}
 	return connect.NewResponse(resp), nil
 }

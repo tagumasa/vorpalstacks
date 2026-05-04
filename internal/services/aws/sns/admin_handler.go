@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/sns"
@@ -40,7 +41,7 @@ func (h *AdminHandler) ListTopics(ctx context.Context, req *connect.Request[pb.L
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getSNSStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	opts := storecommon.ListOptions{
@@ -50,7 +51,7 @@ func (h *AdminHandler) ListTopics(ctx context.Context, req *connect.Request[pb.L
 
 	result, err := store.ListTopics(opts)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	topics := make([]*pb.Topic, len(result.Items))
@@ -75,12 +76,20 @@ func (h *AdminHandler) CreateTopic(ctx context.Context, req *connect.Request[pb.
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getSNSStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	result, err := store.CreateTopic(&snsstore.Topic{Name: req.Msg.GetName()})
+	tags := make(map[string]string, len(req.Msg.Tags))
+	for _, tag := range req.Msg.Tags {
+		tags[tag.Key] = tag.Value
+	}
+
+	result, err := store.CreateTopic(&snsstore.Topic{
+		Name: req.Msg.GetName(),
+		Tags: tags,
+	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateTopicResponse{
@@ -97,11 +106,11 @@ func (h *AdminHandler) DeleteTopic(ctx context.Context, req *connect.Request[pb.
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getSNSStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteTopic(req.Msg.GetTopicarn()); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil

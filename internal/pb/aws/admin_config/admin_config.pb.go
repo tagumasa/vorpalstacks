@@ -906,6 +906,190 @@ func (x *ShutdownServerResponse) GetMessage() string {
 	return ""
 }
 
+type GetServerMetricsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetServerMetricsRequest) Reset() {
+	*x = GetServerMetricsRequest{}
+	mi := &file_admin_config_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetServerMetricsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetServerMetricsRequest) ProtoMessage() {}
+
+func (x *GetServerMetricsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_config_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetServerMetricsRequest.ProtoReflect.Descriptor instead.
+func (*GetServerMetricsRequest) Descriptor() ([]byte, []int) {
+	return file_admin_config_proto_rawDescGZIP(), []int{17}
+}
+
+type GetServerMetricsResponse struct {
+	state                       protoimpl.MessageState `protogen:"open.v1"`
+	UptimeSeconds               int64                  `protobuf:"varint,1,opt,name=uptime_seconds,json=uptimeSeconds,proto3" json:"uptime_seconds,omitempty"`
+	ProcessMemorySysBytes       int64                  `protobuf:"varint,2,opt,name=process_memory_sys_bytes,json=processMemorySysBytes,proto3" json:"process_memory_sys_bytes,omitempty"`
+	ProcessHeapAllocBytes       int64                  `protobuf:"varint,3,opt,name=process_heap_alloc_bytes,json=processHeapAllocBytes,proto3" json:"process_heap_alloc_bytes,omitempty"`
+	GoroutineCount              int32                  `protobuf:"varint,4,opt,name=goroutine_count,json=goroutineCount,proto3" json:"goroutine_count,omitempty"`
+	GcCount                     int64                  `protobuf:"varint,5,opt,name=gc_count,json=gcCount,proto3" json:"gc_count,omitempty"`
+	GcPauseTotalNs              int64                  `protobuf:"varint,6,opt,name=gc_pause_total_ns,json=gcPauseTotalNs,proto3" json:"gc_pause_total_ns,omitempty"`
+	NumCpu                      int32                  `protobuf:"varint,7,opt,name=num_cpu,json=numCpu,proto3" json:"num_cpu,omitempty"`
+	GoVersion                   string                 `protobuf:"bytes,8,opt,name=go_version,json=goVersion,proto3" json:"go_version,omitempty"`
+	Version                     string                 `protobuf:"bytes,9,opt,name=version,proto3" json:"version,omitempty"`
+	MachineTotalMemoryBytes     int64                  `protobuf:"varint,10,opt,name=machine_total_memory_bytes,json=machineTotalMemoryBytes,proto3" json:"machine_total_memory_bytes,omitempty"`
+	MachineAvailableMemoryBytes int64                  `protobuf:"varint,11,opt,name=machine_available_memory_bytes,json=machineAvailableMemoryBytes,proto3" json:"machine_available_memory_bytes,omitempty"`
+	MachineCpuUsagePercent      float64                `protobuf:"fixed64,12,opt,name=machine_cpu_usage_percent,json=machineCpuUsagePercent,proto3" json:"machine_cpu_usage_percent,omitempty"`
+	MachineDiskTotalBytes       int64                  `protobuf:"varint,13,opt,name=machine_disk_total_bytes,json=machineDiskTotalBytes,proto3" json:"machine_disk_total_bytes,omitempty"`
+	MachineDiskFreeBytes        int64                  `protobuf:"varint,14,opt,name=machine_disk_free_bytes,json=machineDiskFreeBytes,proto3" json:"machine_disk_free_bytes,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
+}
+
+func (x *GetServerMetricsResponse) Reset() {
+	*x = GetServerMetricsResponse{}
+	mi := &file_admin_config_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetServerMetricsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetServerMetricsResponse) ProtoMessage() {}
+
+func (x *GetServerMetricsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_config_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetServerMetricsResponse.ProtoReflect.Descriptor instead.
+func (*GetServerMetricsResponse) Descriptor() ([]byte, []int) {
+	return file_admin_config_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetServerMetricsResponse) GetUptimeSeconds() int64 {
+	if x != nil {
+		return x.UptimeSeconds
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetProcessMemorySysBytes() int64 {
+	if x != nil {
+		return x.ProcessMemorySysBytes
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetProcessHeapAllocBytes() int64 {
+	if x != nil {
+		return x.ProcessHeapAllocBytes
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetGoroutineCount() int32 {
+	if x != nil {
+		return x.GoroutineCount
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetGcCount() int64 {
+	if x != nil {
+		return x.GcCount
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetGcPauseTotalNs() int64 {
+	if x != nil {
+		return x.GcPauseTotalNs
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetNumCpu() int32 {
+	if x != nil {
+		return x.NumCpu
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetGoVersion() string {
+	if x != nil {
+		return x.GoVersion
+	}
+	return ""
+}
+
+func (x *GetServerMetricsResponse) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *GetServerMetricsResponse) GetMachineTotalMemoryBytes() int64 {
+	if x != nil {
+		return x.MachineTotalMemoryBytes
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetMachineAvailableMemoryBytes() int64 {
+	if x != nil {
+		return x.MachineAvailableMemoryBytes
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetMachineCpuUsagePercent() float64 {
+	if x != nil {
+		return x.MachineCpuUsagePercent
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetMachineDiskTotalBytes() int64 {
+	if x != nil {
+		return x.MachineDiskTotalBytes
+	}
+	return 0
+}
+
+func (x *GetServerMetricsResponse) GetMachineDiskFreeBytes() int64 {
+	if x != nil {
+		return x.MachineDiskFreeBytes
+	}
+	return 0
+}
+
 var File_admin_config_proto protoreflect.FileDescriptor
 
 const file_admin_config_proto_rawDesc = "" +
@@ -964,7 +1148,25 @@ const file_admin_config_proto_rawDesc = "" +
 	"\x04port\x18\x03 \x01(\x05R\x04port\"\x17\n" +
 	"\x15ShutdownServerRequest\"2\n" +
 	"\x16ShutdownServerResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2\x81\x06\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"\x19\n" +
+	"\x17GetServerMetricsRequest\"\xa1\x05\n" +
+	"\x18GetServerMetricsResponse\x12%\n" +
+	"\x0euptime_seconds\x18\x01 \x01(\x03R\ruptimeSeconds\x127\n" +
+	"\x18process_memory_sys_bytes\x18\x02 \x01(\x03R\x15processMemorySysBytes\x127\n" +
+	"\x18process_heap_alloc_bytes\x18\x03 \x01(\x03R\x15processHeapAllocBytes\x12'\n" +
+	"\x0fgoroutine_count\x18\x04 \x01(\x05R\x0egoroutineCount\x12\x19\n" +
+	"\bgc_count\x18\x05 \x01(\x03R\agcCount\x12)\n" +
+	"\x11gc_pause_total_ns\x18\x06 \x01(\x03R\x0egcPauseTotalNs\x12\x17\n" +
+	"\anum_cpu\x18\a \x01(\x05R\x06numCpu\x12\x1d\n" +
+	"\n" +
+	"go_version\x18\b \x01(\tR\tgoVersion\x12\x18\n" +
+	"\aversion\x18\t \x01(\tR\aversion\x12;\n" +
+	"\x1amachine_total_memory_bytes\x18\n" +
+	" \x01(\x03R\x17machineTotalMemoryBytes\x12C\n" +
+	"\x1emachine_available_memory_bytes\x18\v \x01(\x03R\x1bmachineAvailableMemoryBytes\x129\n" +
+	"\x19machine_cpu_usage_percent\x18\f \x01(\x01R\x16machineCpuUsagePercent\x127\n" +
+	"\x18machine_disk_total_bytes\x18\r \x01(\x03R\x15machineDiskTotalBytes\x125\n" +
+	"\x17machine_disk_free_bytes\x18\x0e \x01(\x03R\x14machineDiskFreeBytes2\xe4\x06\n" +
 	"\x12AdminConfigService\x12L\n" +
 	"\tGetConfig\x12\x1e.admin_config.GetConfigRequest\x1a\x1f.admin_config.GetConfigResponse\x12O\n" +
 	"\n" +
@@ -975,7 +1177,8 @@ const file_admin_config_proto_rawDesc = "" +
 	"\x10GetServiceStatus\x12%.admin_config.GetServiceStatusRequest\x1a\x1b.admin_config.ServiceStatus\x12^\n" +
 	"\x0fGetResourcePort\x12$.admin_config.GetResourcePortRequest\x1a%.admin_config.GetResourcePortResponse\x12F\n" +
 	"\x0fSetResourcePort\x12$.admin_config.SetResourcePortRequest\x1a\r.common.Empty\x12[\n" +
-	"\x0eShutdownServer\x12#.admin_config.ShutdownServerRequest\x1a$.admin_config.ShutdownServerResponseB+Z)vorpalstacks/internal/pb/aws/admin_configb\x06proto3"
+	"\x0eShutdownServer\x12#.admin_config.ShutdownServerRequest\x1a$.admin_config.ShutdownServerResponse\x12a\n" +
+	"\x10GetServerMetrics\x12%.admin_config.GetServerMetricsRequest\x1a&.admin_config.GetServerMetricsResponseB+Z)vorpalstacks/internal/pb/aws/admin_configb\x06proto3"
 
 var (
 	file_admin_config_proto_rawDescOnce sync.Once
@@ -989,26 +1192,28 @@ func file_admin_config_proto_rawDescGZIP() []byte {
 	return file_admin_config_proto_rawDescData
 }
 
-var file_admin_config_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_admin_config_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_admin_config_proto_goTypes = []any{
-	(*ConfigEntry)(nil),             // 0: admin_config.ConfigEntry
-	(*GetConfigRequest)(nil),        // 1: admin_config.GetConfigRequest
-	(*GetConfigResponse)(nil),       // 2: admin_config.GetConfigResponse
-	(*ListConfigRequest)(nil),       // 3: admin_config.ListConfigRequest
-	(*ListConfigResponse)(nil),      // 4: admin_config.ListConfigResponse
-	(*UpdateConfigRequest)(nil),     // 5: admin_config.UpdateConfigRequest
-	(*ResetConfigRequest)(nil),      // 6: admin_config.ResetConfigRequest
-	(*ListServicesRequest)(nil),     // 7: admin_config.ListServicesRequest
-	(*ListServicesResponse)(nil),    // 8: admin_config.ListServicesResponse
-	(*ServiceInfo)(nil),             // 9: admin_config.ServiceInfo
-	(*GetServiceStatusRequest)(nil), // 10: admin_config.GetServiceStatusRequest
-	(*ServiceStatus)(nil),           // 11: admin_config.ServiceStatus
-	(*GetResourcePortRequest)(nil),  // 12: admin_config.GetResourcePortRequest
-	(*GetResourcePortResponse)(nil), // 13: admin_config.GetResourcePortResponse
-	(*SetResourcePortRequest)(nil),  // 14: admin_config.SetResourcePortRequest
-	(*ShutdownServerRequest)(nil),   // 15: admin_config.ShutdownServerRequest
-	(*ShutdownServerResponse)(nil),  // 16: admin_config.ShutdownServerResponse
-	(*common.Empty)(nil),            // 17: common.Empty
+	(*ConfigEntry)(nil),              // 0: admin_config.ConfigEntry
+	(*GetConfigRequest)(nil),         // 1: admin_config.GetConfigRequest
+	(*GetConfigResponse)(nil),        // 2: admin_config.GetConfigResponse
+	(*ListConfigRequest)(nil),        // 3: admin_config.ListConfigRequest
+	(*ListConfigResponse)(nil),       // 4: admin_config.ListConfigResponse
+	(*UpdateConfigRequest)(nil),      // 5: admin_config.UpdateConfigRequest
+	(*ResetConfigRequest)(nil),       // 6: admin_config.ResetConfigRequest
+	(*ListServicesRequest)(nil),      // 7: admin_config.ListServicesRequest
+	(*ListServicesResponse)(nil),     // 8: admin_config.ListServicesResponse
+	(*ServiceInfo)(nil),              // 9: admin_config.ServiceInfo
+	(*GetServiceStatusRequest)(nil),  // 10: admin_config.GetServiceStatusRequest
+	(*ServiceStatus)(nil),            // 11: admin_config.ServiceStatus
+	(*GetResourcePortRequest)(nil),   // 12: admin_config.GetResourcePortRequest
+	(*GetResourcePortResponse)(nil),  // 13: admin_config.GetResourcePortResponse
+	(*SetResourcePortRequest)(nil),   // 14: admin_config.SetResourcePortRequest
+	(*ShutdownServerRequest)(nil),    // 15: admin_config.ShutdownServerRequest
+	(*ShutdownServerResponse)(nil),   // 16: admin_config.ShutdownServerResponse
+	(*GetServerMetricsRequest)(nil),  // 17: admin_config.GetServerMetricsRequest
+	(*GetServerMetricsResponse)(nil), // 18: admin_config.GetServerMetricsResponse
+	(*common.Empty)(nil),             // 19: common.Empty
 }
 var file_admin_config_proto_depIdxs = []int32{
 	0,  // 0: admin_config.GetConfigResponse.entry:type_name -> admin_config.ConfigEntry
@@ -1023,17 +1228,19 @@ var file_admin_config_proto_depIdxs = []int32{
 	12, // 9: admin_config.AdminConfigService.GetResourcePort:input_type -> admin_config.GetResourcePortRequest
 	14, // 10: admin_config.AdminConfigService.SetResourcePort:input_type -> admin_config.SetResourcePortRequest
 	15, // 11: admin_config.AdminConfigService.ShutdownServer:input_type -> admin_config.ShutdownServerRequest
-	2,  // 12: admin_config.AdminConfigService.GetConfig:output_type -> admin_config.GetConfigResponse
-	4,  // 13: admin_config.AdminConfigService.ListConfig:output_type -> admin_config.ListConfigResponse
-	0,  // 14: admin_config.AdminConfigService.UpdateConfig:output_type -> admin_config.ConfigEntry
-	0,  // 15: admin_config.AdminConfigService.ResetConfig:output_type -> admin_config.ConfigEntry
-	8,  // 16: admin_config.AdminConfigService.ListServices:output_type -> admin_config.ListServicesResponse
-	11, // 17: admin_config.AdminConfigService.GetServiceStatus:output_type -> admin_config.ServiceStatus
-	13, // 18: admin_config.AdminConfigService.GetResourcePort:output_type -> admin_config.GetResourcePortResponse
-	17, // 19: admin_config.AdminConfigService.SetResourcePort:output_type -> common.Empty
-	16, // 20: admin_config.AdminConfigService.ShutdownServer:output_type -> admin_config.ShutdownServerResponse
-	12, // [12:21] is the sub-list for method output_type
-	3,  // [3:12] is the sub-list for method input_type
+	17, // 12: admin_config.AdminConfigService.GetServerMetrics:input_type -> admin_config.GetServerMetricsRequest
+	2,  // 13: admin_config.AdminConfigService.GetConfig:output_type -> admin_config.GetConfigResponse
+	4,  // 14: admin_config.AdminConfigService.ListConfig:output_type -> admin_config.ListConfigResponse
+	0,  // 15: admin_config.AdminConfigService.UpdateConfig:output_type -> admin_config.ConfigEntry
+	0,  // 16: admin_config.AdminConfigService.ResetConfig:output_type -> admin_config.ConfigEntry
+	8,  // 17: admin_config.AdminConfigService.ListServices:output_type -> admin_config.ListServicesResponse
+	11, // 18: admin_config.AdminConfigService.GetServiceStatus:output_type -> admin_config.ServiceStatus
+	13, // 19: admin_config.AdminConfigService.GetResourcePort:output_type -> admin_config.GetResourcePortResponse
+	19, // 20: admin_config.AdminConfigService.SetResourcePort:output_type -> common.Empty
+	16, // 21: admin_config.AdminConfigService.ShutdownServer:output_type -> admin_config.ShutdownServerResponse
+	18, // 22: admin_config.AdminConfigService.GetServerMetrics:output_type -> admin_config.GetServerMetricsResponse
+	13, // [13:23] is the sub-list for method output_type
+	3,  // [3:13] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -1050,7 +1257,7 @@ func file_admin_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_config_proto_rawDesc), len(file_admin_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

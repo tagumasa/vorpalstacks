@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -41,12 +41,15 @@ func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.L
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getSQSStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	opts := storecommon.ListOptions{
 		MaxItems: int(req.Msg.Maxresults),
 		Marker:   req.Msg.Nexttoken,
+	}
+	if opts.MaxItems <= 0 {
+		opts.MaxItems = 100
 	}
 
 	if req.Msg.Queuenameprefix != "" {
@@ -55,14 +58,12 @@ func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.L
 
 	result, err := store.ListQueues(opts)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	queueUrls := make([]string, 0, len(result.Items))
 	for _, queue := range result.Items {
-		if req.Msg.Queuenameprefix == "" || strings.HasPrefix(queue.Name, req.Msg.Queuenameprefix) {
-			queueUrls = append(queueUrls, queue.URL)
-		}
+		queueUrls = append(queueUrls, queue.URL)
 	}
 
 	return connect.NewResponse(&pb.ListQueuesResult{
@@ -73,19 +74,19 @@ func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.L
 
 // GetQueueUrl returns the URL for the specified queue via the admin console gRPC-Web interface.
 func (h *AdminHandler) GetQueueUrl(ctx context.Context, req *connect.Request[pb.GetQueueUrlRequest]) (*connect.Response[pb.GetQueueUrlResult], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getSQSStoreByRegion(region)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
 	if req.Msg.Queuename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("QueueName is required"))
 	}
 
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.getSQSStoreByRegion(region)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	queue, err := store.GetQueueByName(req.Msg.Queuename)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("queue not found"))
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.GetQueueUrlResult{
@@ -99,21 +100,21 @@ func NewConnectHandler(svc *SQSService) (string, http.Handler) {
 }
 
 func (h *AdminHandler) CreateQueue(ctx context.Context, req *connect.Request[pb.CreateQueueRequest]) (*connect.Response[pb.CreateQueueResult], error) {
+	if req.Msg.Queuename == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("QueueName is required"))
+	}
+
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getSQSStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	if req.Msg.Queuename == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("QueueName is required"))
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	queue, err := store.CreateQueue(&sqsstore.Queue{
 		Name: req.Msg.Queuename,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateQueueResult{
@@ -122,18 +123,18 @@ func (h *AdminHandler) CreateQueue(ctx context.Context, req *connect.Request[pb.
 }
 
 func (h *AdminHandler) DeleteQueue(ctx context.Context, req *connect.Request[pb.DeleteQueueRequest]) (*connect.Response[pbcommon.Empty], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
-	store, err := h.getSQSStoreByRegion(region)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
 	if req.Msg.Queueurl == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("QueueUrl is required"))
 	}
 
+	region := svccommon.GetRegionFromHeader(req.Header())
+	store, err := h.getSQSStoreByRegion(region)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if err := store.DeleteQueue(req.Msg.Queueurl); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil

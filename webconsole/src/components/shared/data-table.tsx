@@ -94,7 +94,7 @@ export function DataTable<T>({ columns, data, onRowClick, selectedId, getRowId, 
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            ◀ Prev
+            {t("common.prev")}
           </button>
           <span className="page-info">
             {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
@@ -103,7 +103,7 @@ export function DataTable<T>({ columns, data, onRowClick, selectedId, getRowId, 
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            Next ▶
+            {t("common.next")}
           </button>
         </div>
       )}

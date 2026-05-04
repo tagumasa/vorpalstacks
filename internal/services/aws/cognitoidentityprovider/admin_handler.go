@@ -6,12 +6,15 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cognitoidentityprovider"
 	"vorpalstacks/internal/pb/aws/cognitoidentityprovider/cognitoidentityproviderconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	storecommon "vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 // AdminHandler provides Cognito Identity Provider service administration functionality.
@@ -27,38 +30,41 @@ func NewAdminHandler(store *cognitostore.CognitoStore) *AdminHandler {
 	return &AdminHandler{store: store}
 }
 
-// ListUserPools lists user pools in Cognito Identity Provider.
+// ListUserPools lists user pools in Cognito Identity Provider with pagination.
 func (h *AdminHandler) ListUserPools(ctx context.Context, req *connect.Request[pb.ListUserPoolsRequest]) (*connect.Response[pb.ListUserPoolsResponse], error) {
-	pools, err := h.store.ListUserPools()
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
 	maxResults := int(req.Msg.Maxresults)
 	if maxResults <= 0 {
 		maxResults = 60
 	}
 
-	descriptions := make([]*pb.UserPoolDescriptionType, 0, len(pools))
-	for i, pool := range pools {
-		if i >= maxResults {
-			break
-		}
+	opts := storecommon.ListOptions{
+		MaxItems: maxResults,
+		Marker:   req.Msg.Nexttoken,
+	}
+
+	result, err := h.store.ListUserPoolsPaginated(opts)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	descriptions := make([]*pb.UserPoolDescriptionType, 0, len(result.Items))
+	for _, pool := range result.Items {
 		desc := &pb.UserPoolDescriptionType{
 			Id:   pool.ID,
 			Name: pool.Name,
 		}
 		if !pool.CreationDate.IsZero() {
-			desc.Creationdate = pool.CreationDate.Format("2006-01-02T15:04:05.000Z")
+			desc.Creationdate = pool.CreationDate.Format(timeutils.ISO8601UTCFormat)
 		}
 		if !pool.LastModifiedDate.IsZero() {
-			desc.Lastmodifieddate = pool.LastModifiedDate.Format("2006-01-02T15:04:05.000Z")
+			desc.Lastmodifieddate = pool.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)
 		}
 		descriptions = append(descriptions, desc)
 	}
 
 	return connect.NewResponse(&pb.ListUserPoolsResponse{
 		Userpools: descriptions,
+		Nexttoken: result.NextMarker,
 	}), nil
 }
 
@@ -74,7 +80,7 @@ func (h *AdminHandler) CreateUserPool(ctx context.Context, req *connect.Request[
 
 	result, err := h.store.CreateUserPool(pool)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateUserPoolResponse{
@@ -92,7 +98,7 @@ func (h *AdminHandler) DeleteUserPool(ctx context.Context, req *connect.Request[
 	}
 
 	if err := h.store.DeleteUserPool(req.Msg.GetUserpoolid()); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil

@@ -6,11 +6,13 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudtrail"
 	cloudtrailconnect "vorpalstacks/internal/pb/aws/cloudtrail/cloudtrailconnect"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
 
@@ -40,20 +42,23 @@ func (h *AdminHandler) getStoreFromHeader(header http.Header) (*cloudtrailstore.
 	return cloudtrailstore.NewCloudTrailStore(regionStorage, h.accountId, region), nil
 }
 
-// ListTrails retrieves all CloudTrail trails from the regional store.
+// ListTrails retrieves CloudTrail trails with pagination support.
 func (h *AdminHandler) ListTrails(ctx context.Context, req *connect.Request[pb.ListTrailsRequest]) (*connect.Response[pb.ListTrailsResponse], error) {
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	trails, err := store.ListTrails()
+	result, err := store.ListTrails(storecommon.ListOptions{
+		Marker:   req.Msg.Nexttoken,
+		MaxItems: 100,
+	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var trailInfos []*pb.TrailInfo
-	for _, trail := range trails {
+	for _, trail := range result.Items {
 		trailInfos = append(trailInfos, &pb.TrailInfo{
 			Name:       trail.Name,
 			Trailarn:   trail.TrailARN,
@@ -62,7 +67,8 @@ func (h *AdminHandler) ListTrails(ctx context.Context, req *connect.Request[pb.L
 	}
 
 	return connect.NewResponse(&pb.ListTrailsResponse{
-		Trails: trailInfos,
+		Trails:    trailInfos,
+		Nexttoken: result.NextMarker,
 	}), nil
 }
 
@@ -77,7 +83,7 @@ func (h *AdminHandler) CreateTrail(ctx context.Context, req *connect.Request[pb.
 
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	trail := &cloudtrailstore.Trail{
@@ -96,7 +102,7 @@ func (h *AdminHandler) CreateTrail(ctx context.Context, req *connect.Request[pb.
 
 	result, err := store.CreateTrail(trail)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateTrailResponse{
@@ -124,11 +130,11 @@ func (h *AdminHandler) DeleteTrail(ctx context.Context, req *connect.Request[pb.
 
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteTrail(req.Msg.GetName()); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteTrailResponse{}), nil

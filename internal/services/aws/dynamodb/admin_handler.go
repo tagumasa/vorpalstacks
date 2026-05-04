@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
@@ -44,10 +45,10 @@ func (h *AdminHandler) getStoreFromHeader(header http.Header) (*dynamodbstore.Ta
 func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.ListTablesInput]) (*connect.Response[pb.ListTablesOutput], error) {
 	tableStore, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	marker := ""
+	marker := req.Msg.Exclusivestarttablename
 	limit := 100
 	if req.Msg.Limit > 0 {
 		limit = int(req.Msg.Limit)
@@ -55,7 +56,7 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 
 	tables, nextMarker, err := tableStore.List(marker, limit)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var tableNames []string
@@ -77,7 +78,7 @@ func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.
 
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var keySchema []*dynamodbstore.KeySchemaElement
@@ -113,7 +114,7 @@ func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.
 
 	table, err := store.Create(req.Msg.GetTablename(), keySchema, attrDefs, billingMode, nil, nil, nil, nil, nil, false)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateTableOutput{
@@ -132,11 +133,11 @@ func (h *AdminHandler) DeleteTable(ctx context.Context, req *connect.Request[pb.
 
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.Delete(req.Msg.GetTablename()); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteTableOutput{}), nil

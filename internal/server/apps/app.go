@@ -4,6 +4,7 @@ package apps
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"os"
 	"strconv"
@@ -36,6 +37,7 @@ type Config struct {
 	TLSHostname           string
 	Route53DNSEnabled     bool
 	DockerHost            string
+	ConsoleAssets         embed.FS
 
 	ACM             bool
 	APIGateway      bool
@@ -193,12 +195,13 @@ type shutdownEntry struct {
 // App owns the HTTP server, gRPC-Web admin server, all services, and their
 // lifecycle. It is created by New and started by Run.
 type App struct {
-	cfg     *Config
-	server  *chihttp.Server
-	grpcWeb grpcWebStarter
-	lm      *listener.Manager
-	graphDB *graphengine.DB
-	state   *serviceState
+	cfg           *Config
+	server        *chihttp.Server
+	grpcWeb       grpcWebStarter
+	lm            *listener.Manager
+	graphDB       *graphengine.DB
+	state         *serviceState
+	consoleAssets embed.FS
 
 	mu        sync.Mutex
 	shutdowns []shutdownEntry
@@ -240,8 +243,9 @@ func New(cfg *Config) (*App, error) {
 	appconfig.Initialise(srv.Storage())
 
 	a := &App{
-		cfg:    cfg,
-		server: srv,
+		cfg:           cfg,
+		server:        srv,
+		consoleAssets: cfg.ConsoleAssets,
 	}
 
 	if err := a.initAlwaysOnServices(); err != nil {

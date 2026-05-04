@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
@@ -41,12 +44,12 @@ func (h *AdminHandler) ListStateMachines(ctx context.Context, req *connect.Reque
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	result, err := store.ListStateMachines(ctx, req.Msg.Maxresults, req.Msg.Nexttoken)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	stateMachines := make([]*pb.StateMachineListItem, len(result.StateMachines))
@@ -54,7 +57,7 @@ func (h *AdminHandler) ListStateMachines(ctx context.Context, req *connect.Reque
 		stateMachines[i] = &pb.StateMachineListItem{
 			Statemachinearn: sm.StateMachineArn,
 			Name:            sm.Name,
-			Creationdate:    sm.CreationDate.Format("2006-01-02T15:04:05Z"),
+			Creationdate:    sm.CreationDate.Format(timeutils.ISO8601UTCFormat),
 			Type:            toPbStateMachineType(sm.Type),
 		}
 	}
@@ -78,7 +81,7 @@ func (h *AdminHandler) CreateStateMachine(ctx context.Context, req *connect.Requ
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	smType := "STANDARD"
@@ -93,23 +96,23 @@ func (h *AdminHandler) CreateStateMachine(ctx context.Context, req *connect.Requ
 
 	now := time.Now().UTC()
 	sm := &sfnstore.StateMachine{
-		Name:        req.Msg.Name,
-		Definition:  req.Msg.Definition,
-		RoleArn:     req.Msg.Rolearn,
-		Type:        smType,
+		Name:         req.Msg.Name,
+		Definition:   req.Msg.Definition,
+		RoleArn:      req.Msg.Rolearn,
+		Type:         smType,
 		CreationDate: now,
-		UpdateDate:  now,
-		Status:      "ACTIVE",
-		Tags:        tags,
+		UpdateDate:   now,
+		Status:       "ACTIVE",
+		Tags:         tags,
 	}
 
 	if err := store.CreateStateMachine(ctx, sm); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateStateMachineOutput{
 		Statemachinearn: sm.StateMachineArn,
-		Creationdate:    sm.CreationDate.Format("2006-01-02T15:04:05Z"),
+		Creationdate:    sm.CreationDate.Format(timeutils.ISO8601UTCFormat),
 	}), nil
 }
 
@@ -123,11 +126,11 @@ func (h *AdminHandler) DeleteStateMachine(ctx context.Context, req *connect.Requ
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getStoreByRegion(region)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteStateMachine(ctx, req.Msg.Statemachinearn); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.DeleteStateMachineOutput{}), nil

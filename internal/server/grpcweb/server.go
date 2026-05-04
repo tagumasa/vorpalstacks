@@ -2,7 +2,11 @@ package grpcweb
 
 import (
 	"context"
+	"embed"
+	"io"
+	"io/fs"
 	"net/http"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
@@ -38,6 +42,45 @@ func (s *Server) Handle(pattern string, handler http.Handler) {
 // HandleFunc registers an HTTP handler function for the given pattern.
 func (s *Server) HandleFunc(pattern string, handler http.HandlerFunc) {
 	s.mux.HandleFunc(pattern, handler)
+}
+
+// ServeConsole registers handlers that serve the embedded web console SPA.
+// Static assets live under /webconsole/assets/*, and all other /webconsole/*
+// paths fall back to index.html for client-side routing.
+func (s *Server) ServeConsole(consoleFS embed.FS) {
+	sub, err := fs.Sub(consoleFS, "webconsole/dist")
+	if err != nil {
+		logs.Error("Failed to create sub filesystem for webconsole", logs.Err(err))
+		return
+	}
+
+	s.mux.HandleFunc("/webconsole/", func(w http.ResponseWriter, r *http.Request) {
+		relPath := strings.TrimPrefix(r.URL.Path, "/webconsole/")
+		if relPath == "" {
+			relPath = "index.html"
+		}
+
+		// Try to open the file from the embedded filesystem.
+		f, err := sub.Open(relPath)
+		if err == nil {
+			defer f.Close()
+			stat, _ := f.Stat()
+			if stat != nil && !stat.IsDir() {
+				http.ServeContent(w, r, stat.Name(), stat.ModTime(), f.(io.ReadSeeker))
+				return
+			}
+		}
+
+		// File not found — serve index.html for SPA client-side routing.
+		idx, idxErr := sub.Open("index.html")
+		if idxErr != nil {
+			http.Error(w, "index.html not found", http.StatusInternalServerError)
+			return
+		}
+		defer idx.Close()
+		idxStat, _ := idx.Stat()
+		http.ServeContent(w, r, "index.html", idxStat.ModTime(), idx.(io.ReadSeeker))
+	})
 }
 
 // Start starts the gRPC-Web server and blocks until it stops.

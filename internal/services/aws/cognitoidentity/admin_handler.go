@@ -6,12 +6,14 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cognitoidentity"
 	"vorpalstacks/internal/pb/aws/cognitoidentity/cognitoidentityconnect"
 	"vorpalstacks/internal/pb/aws/common"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AdminHandler provides Cognito Identity service administration functionality.
@@ -27,23 +29,25 @@ func NewAdminHandler(store *cognitoidentitystore.CognitoIdentityStore) *AdminHan
 	return &AdminHandler{store: store}
 }
 
-// ListIdentityPools lists identity pools in Cognito Identity.
+// ListIdentityPools lists identity pools in Cognito Identity with pagination.
 func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Request[pb.ListIdentityPoolsInput]) (*connect.Response[pb.ListIdentityPoolsResponse], error) {
-	pools, err := h.store.ListIdentityPools()
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
 	maxResults := int(req.Msg.Maxresults)
 	if maxResults <= 0 {
 		maxResults = 60
 	}
 
-	descriptions := make([]*pb.IdentityPoolShortDescription, 0, len(pools))
-	for i, pool := range pools {
-		if i >= maxResults {
-			break
-		}
+	opts := storecommon.ListOptions{
+		MaxItems: maxResults,
+		Marker:   req.Msg.Nexttoken,
+	}
+
+	result, err := h.store.ListIdentityPools(opts)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	descriptions := make([]*pb.IdentityPoolShortDescription, 0, len(result.Items))
+	for _, pool := range result.Items {
 		descriptions = append(descriptions, &pb.IdentityPoolShortDescription{
 			Identitypoolid:   pool.ID,
 			Identitypoolname: pool.Name,
@@ -52,6 +56,7 @@ func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Reque
 
 	return connect.NewResponse(&pb.ListIdentityPoolsResponse{
 		Identitypools: descriptions,
+		Nexttoken:     result.NextMarker,
 	}), nil
 }
 
@@ -100,7 +105,7 @@ func (h *AdminHandler) CreateIdentityPool(ctx context.Context, req *connect.Requ
 		if errors.Is(err, cognitoidentitystore.ErrIdentityPoolAlreadyExists) {
 			return nil, connect.NewError(connect.CodeAlreadyExists, err)
 		}
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	resp := &pb.IdentityPool{
@@ -145,7 +150,7 @@ func (h *AdminHandler) DeleteIdentityPool(ctx context.Context, req *connect.Requ
 		if errors.Is(err, cognitoidentitystore.ErrIdentityPoolNotFound) {
 			return nil, connect.NewError(connect.CodeNotFound, err)
 		}
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&common.Empty{}), nil

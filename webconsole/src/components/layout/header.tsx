@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { clearTokens } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
@@ -15,9 +15,19 @@ const LANGUAGES = [
 export function Header() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const [online] = useState(true);
+  const [online, setOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
   const { cycleTheme, label: themeLabel } = useTheme();
-  const { region, setRegion } = useAppState();
+  const { region, setRegion, sidebarCollapsed, setSidebarCollapsed } = useAppState();
 
   function handleLogout() {
     clearTokens();
@@ -33,6 +43,9 @@ export function Header() {
   return (
     <header className="header">
       <div className="header-logo">
+        <button className="header-hamburger" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
+          ☰
+        </button>
         VORPALSTACKS<span className="sub">Inspector {__APP_VERSION__}</span>
       </div>
       <div className="header-controls">
@@ -61,7 +74,7 @@ export function Header() {
             </div>
           ))}
         </Dropdown>
-        <button className="header-btn" title={t("header.settings")}>
+        <button className="header-btn" title={t("header.settings")} onClick={() => navigate("/settings")}>
           {"⚙"}
         </button>
         <Dropdown

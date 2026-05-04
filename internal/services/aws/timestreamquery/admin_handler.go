@@ -4,6 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
@@ -49,12 +52,12 @@ func (h *AdminHandler) getScheduledQueryStore(req *connect.Request[pb.ListSchedu
 func (h *AdminHandler) ListScheduledQueries(ctx context.Context, req *connect.Request[pb.ListScheduledQueriesRequest]) (*connect.Response[pb.ListScheduledQueriesResponse], error) {
 	store, err := h.getScheduledQueryStore(req)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	queries, err := store.ListScheduledQueries()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	var summaries []*pb.ScheduledQuery
@@ -62,13 +65,13 @@ func (h *AdminHandler) ListScheduledQueries(ctx context.Context, req *connect.Re
 		summary := &pb.ScheduledQuery{
 			Arn:          sq.ARN,
 			Name:         sq.Name,
-			Creationtime: sq.CreationTime.Format("2006-01-02T15:04:05.000Z"),
+			Creationtime: sq.CreationTime.Format(timeutils.ISO8601UTCFormat),
 		}
 		if !sq.PreviousRunTime.IsZero() {
-			summary.Previousinvocationtime = sq.PreviousRunTime.Format("2006-01-02T15:04:05.000Z")
+			summary.Previousinvocationtime = sq.PreviousRunTime.Format(timeutils.ISO8601UTCFormat)
 		}
 		if !sq.NextRunTime.IsZero() {
-			summary.Nextinvocationtime = sq.NextRunTime.Format("2006-01-02T15:04:05.000Z")
+			summary.Nextinvocationtime = sq.NextRunTime.Format(timeutils.ISO8601UTCFormat)
 		}
 		summaries = append(summaries, summary)
 	}

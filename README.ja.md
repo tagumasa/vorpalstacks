@@ -31,6 +31,7 @@ Vorpalstacksは、完全なAWS接続が利用できない環境でAWS互換サ�
 - **マルチリージョンサポート**: リージョンごとの専用PebbleDBによる分離ストレージ
 - **グローバルサービス**: IAM、Route53、CloudFront、STSの共有グローバルストレージ
 - **gRPC-Web管理API**: 全サービス向けの別ポートConnect-RPC管理インターフェース
+- **管理コンソール**: 全サービスのリソースをブラウズできるWeb GUI（`/webconsole/`）
 - **軽量**: シングルバイナリ、最小限の依存関係
 - **永続ストレージ**: Pebbleベースのキーバリューストア
 - **Docker統合**: Lambda関数をコンテナで実行
@@ -79,6 +80,15 @@ Vorpalstacksは、完全なAWS接続が利用できない環境でAWS互換サ�
 ### ビルド
 
 ```bash
+make build
+```
+
+Webコンソールのフロントエンド（`npm run build`）をビルド後、Goバイナリに`embed.FS`で組み込んでコンパイルします。
+
+Makeを使わず手動でビルドする場合：
+
+```bash
+cd webconsole && npm install && npm run build && cd ..
 go build -o vorpalstacks .
 ```
 
@@ -87,6 +97,8 @@ go build -o vorpalstacks .
 ```bash
 SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ```
+
+管理コンソールは`http://localhost:9090/webconsole/`（ポート9090はgRPC-Web管理ポート）から利用できます。AWS APIエンドポイントはポート8080です。
 
 ### Dockerで実行（Lambda用）
 
@@ -101,9 +113,9 @@ SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/ru
 ```bash
 export AWS_ENDPOINT_URL=http://localhost:8080
 
-aws --endpoint-url=http://localhost:8080 --no-sign-request sns list-topics
-aws --endpoint-url=http://localhost:8080 --no-sign-request sqs list-queues
-aws --endpoint-url=http://localhost:8080 --no-sign-request lambda list-functions
+aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sns list-topics
+aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sqs list-queues
+aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request lambda list-functions
 ```
 
 ## テスト
@@ -142,7 +154,7 @@ cd scripts/services && bash test_iam.sh
 | `AWS_REGION` | `us-east-1` | デフォルトリージョン |
 | `AWS_ACCOUNT_ID` | `000000000000` | AWSアカウントID |
 | `SIGNATURE_VERIFICATION_ENABLED` | `true` | AWS Signature V4検証を有効化 |
-| `GRPC_WEB_PORT` | `9090` | gRPC-Web管理サーバーポート |
+| `GRPC_WEB_PORT` | `9090` | gRPC-Web管理サーバーポート（Webコンソールも配信） |
 | `TLS_ENABLED` | `false` | TLSを有効化 |
 | `AUTHORIZATION_ENABLED` | `false` | IAMポリシー評価を有効化 |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Dockerデーモンソケット（Lambda用） |
@@ -211,6 +223,7 @@ Lambda機能を使用する場合：
 ## 動作要件
 
 - Go 1.25+
+- Node.js 22+（LTS、Webコンソールのビルド用）
 - Docker（Lambda機能を使用する場合）
 
 ## パフォーマンス

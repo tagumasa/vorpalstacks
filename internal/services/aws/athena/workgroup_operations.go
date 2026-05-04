@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
@@ -190,10 +191,11 @@ func (s *AthenaService) ListWorkGroups(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	workGroups, err := stores.workGroupStore.ListWorkGroups()
+	result, err := stores.workGroupStore.ListWorkGroups(storecommon.ListOptions{MaxItems: 10000})
 	if err != nil {
 		return nil, err
 	}
+	workGroups := result.Items
 
 	maxResults := 50
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
@@ -225,15 +227,15 @@ func (s *AthenaService) ListWorkGroups(ctx context.Context, reqCtx *request.Requ
 		})
 	}
 
-	result := map[string]interface{}{
+	resp := map[string]interface{}{
 		"WorkGroups": workGroupSummaries,
 	}
 
 	if offset+maxResults < len(workGroups) {
-		result["NextToken"] = strconv.Itoa(offset + maxResults)
+		resp["NextToken"] = strconv.Itoa(offset + maxResults)
 	}
 
-	return result, nil
+	return resp, nil
 }
 
 func (s *AthenaService) validateResourceExists(stores *athenaStores, resourceType, resourceName string) error {

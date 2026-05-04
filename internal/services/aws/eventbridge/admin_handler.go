@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
@@ -60,12 +61,12 @@ func (h *AdminHandler) getStore(header http.Header) (*eventsstore.EventsStore, e
 func (h *AdminHandler) ListEventBuses(ctx context.Context, req *connect.Request[pb.ListEventBusesRequest]) (*connect.Response[pb.ListEventBusesResponse], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	result, err := store.ListEventBuses(ctx, req.Msg.GetNameprefix(), req.Msg.GetLimit(), req.Msg.GetNexttoken())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	eventBuses := make([]*pb.EventBus, len(result.EventBuses))
@@ -83,7 +84,7 @@ func (h *AdminHandler) ListEventBuses(ctx context.Context, req *connect.Request[
 func (h *AdminHandler) ListRules(ctx context.Context, req *connect.Request[pb.ListRulesRequest]) (*connect.Response[pb.ListRulesResponse], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	eventBusName := req.Msg.GetEventbusname()
@@ -93,7 +94,7 @@ func (h *AdminHandler) ListRules(ctx context.Context, req *connect.Request[pb.Li
 
 	result, err := store.ListRules(ctx, eventBusName, req.Msg.GetNameprefix(), req.Msg.GetLimit(), req.Msg.GetNexttoken())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	rules := make([]*pb.Rule, len(result.Rules))
@@ -146,7 +147,7 @@ func (h *AdminHandler) CreateEventBus(ctx context.Context, req *connect.Request[
 
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	region := svccommon.GetRegionFromHeader(req.Header())
@@ -155,7 +156,7 @@ func (h *AdminHandler) CreateEventBus(ctx context.Context, req *connect.Request[
 		Region:    region,
 		AccountID: h.service.accountID,
 	}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	arn := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", region, h.service.accountID, req.Msg.Name)
@@ -170,11 +171,11 @@ func (h *AdminHandler) DeleteEventBus(ctx context.Context, req *connect.Request[
 
 	store, err := h.getStore(req.Header())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if err := store.DeleteEventBus(ctx, req.Msg.Name); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pbcommon.Empty{}), nil

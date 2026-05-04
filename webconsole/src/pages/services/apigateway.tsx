@@ -1,121 +1,181 @@
 /**
- * API Gateway service page. Lists REST APIs via GetRestApis RPC.
+ * API Gateway service page. Lists REST APIs with create/delete operations.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { createClient } from "@connectrpc/connect";
-import { APIGatewayService, type RestApi } from "@/gen/apigateway_pb";
-import { transport } from "@/lib/transport";
-import { useListKey, dropEmpty } from "@/lib/use-service-list";
-import { DataTable } from "@/components/shared/data-table";
-import { JsonViewer } from "@/components/shared/json-viewer";
+import type { TFunction } from "i18next";
+import { create } from "@bufbuild/protobuf";
+import { APIGatewayService, type RestApi, EndpointType } from "@/gen/apigateway_pb";
+import { CreateRestApiRequestSchema, EndpointConfigurationSchema } from "@/gen/apigateway_pb";
+import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import {
+  ServicePageLayout,
+  SplitPane,
+  ServiceCreateModal,
+  ServiceDeleteDialog,
+  MonoCell,
+  DateCell,
+  FallbackCell,
+  useServiceClient,
+} from "@/components/shared/service-page";
 
-const columns: ColumnDef<RestApi, any>[] = [
-  {
-    accessorKey: "name",
-    header: "API Name",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "id",
-    header: "API ID",
-    cell: ({ getValue }) => (
-      <span className="cell-mono">{getValue() as string}</span>
-    ),
-    size: 100,
-  },
-  {
-    accessorKey: "description",
-    header: "Description",
-    cell: ({ getValue }) => {
-      const v = getValue() as string;
-      return v || "\u2014";
-    },
-  },
-  {
-    accessorKey: "createddate",
-    header: "Created",
-    cell: ({ getValue }) => {
-      const v = getValue() as string;
-      if (!v) return "\u2014";
-      try { return new Date(v).toLocaleString(); } catch { return v; }
-    },
-  },
+/** Column definitions for the API Gateway REST API table. */
+const getColumns = (t: TFunction): ColumnDef<RestApi, any>[] => [
+  { accessorKey: "name", header: t("services.apigateway.apiNameHeader"), cell: MonoCell },
+  { accessorKey: "id", header: t("services.apigateway.apiIdHeader"), cell: MonoCell, size: 100 },
+  { accessorKey: "apistatus", header: t("services.apigateway.apiStatusHeader"), cell: FallbackCell, size: 90 },
+  { accessorKey: "description", header: t("services.apigateway.descriptionHeader"), cell: FallbackCell },
+  { accessorKey: "createddate", header: t("services.apigateway.createdHeader"), cell: DateCell },
 ];
 
+/** API Gateway service page with list, create, and delete operations. */
 export function APIGatewayPage() {
   const { t } = useTranslation();
+  const columns = getColumns(t);
   const [selectedItem, setSelectedItem] = useState<RestApi | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formVersion, setFormVersion] = useState("1.0");
+  const [formEndpointType, setFormEndpointType] = useState<string>("REGIONAL");
 
-  const client = createClient(APIGatewayService, transport);
+  const { client, invalidate } = useServiceClient(APIGatewayService);
   const { queryKey } = useListKey("apigateway");
 
   const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: () => client.getRestApis({}),
-    refetchInterval: 30_000,
+    refetchInterval: REFETCH_INTERVAL,
   });
 
   const items: RestApi[] = dropEmpty(data?.items ?? [], "id");
 
-  if (isLoading) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">🌉</span>
-          <h1>API Gateway</h1>
-        </div>
-        <div className="loading-state">{t("common.loading")}</div>
-      </div>
-    );
-  }
+  const createMutation = useMutation({
+    mutationFn: () =>
+      client.createRestApi(
+        create(CreateRestApiRequestSchema, {
+          name: formName,
+          description: formDescription,
+          version: formVersion,
+          endpointconfiguration: create(EndpointConfigurationSchema, {
+            types: [EndpointType[formEndpointType as keyof typeof EndpointType] ?? EndpointType.REGIONAL],
+          }),
+        }),
+      ),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowCreate(false);
+      setFormName("");
+      setFormDescription("");
+      setFormVersion("1.0");
+      setFormEndpointType("REGIONAL");
+    },
+  });
 
-  if (error) {
-    return (
-      <div className="content-area">
-        <div className="page-header">
-          <span className="page-icon">🌉</span>
-          <h1>API Gateway</h1>
-        </div>
-        <div className="error-state">{t("common.failedToLoad", { error: String(error) })}</div>
-      </div>
-    );
-  }
+  const deleteMutation = useMutation({
+    mutationFn: (apiId: string) =>
+      client.deleteRestApi({ restapiid: apiId }),
+    onSuccess: () => {
+      invalidate(queryKey);
+      setShowDelete(false);
+      setSelectedItem(null);
+    },
+  });
 
   return (
-    <div className="content-area">
-      <div className="page-header">
-        <span className="page-icon">🌉</span>
-        <h1>API Gateway</h1>
-        <span className="resource-count">{items.length} APIs</span>
-      </div>
+    <ServicePageLayout
+      icon="🌉"
+      title={t("services.apigateway.title")}
+      isLoading={isLoading}
+      error={error}
+      count={items.length}
+      countLabel={t("services.apigateway.countLabel")}
+      actions={
+        <>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+            {t("services.apigateway.create")}
+          </button>
+          {selectedItem && (
+            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
+              {t("common.delete")}
+            </button>
+          )}
+        </>
+      }
+      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "apigateway-items" }}
+    >
+      <SplitPane
+        columns={columns}
+        data={items}
+        getRowId={(row) => row.id}
+        onRowClick={setSelectedItem}
+        selectedId={selectedItem?.id}
+        selected={selectedItem}
+        detailTitle={selectedItem?.name}
+        onDetailClose={() => setSelectedItem(null)}
+      />
 
-      <div className="split-pane">
-        <div className="split-table">
-          <DataTable
-            columns={columns}
-            data={items}
-            getRowId={(row) => row.id}
-            onRowClick={setSelectedItem}
-            selectedId={selectedItem?.id}
+      <ServiceCreateModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t("services.apigateway.create")}
+        error={createMutation.error}
+        isPending={createMutation.isPending}
+        onCreate={() => createMutation.mutate()}
+        disabled={!formName}
+      >
+        <label>
+          {t("services.apigateway.nameField")}
+          <input
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder={t("services.apigateway.placeholder")}
+            className="modal-input"
           />
-        </div>
-        {selectedItem && (
-          <div className="split-detail">
-            <div className="detail-header">
-              <h2>{selectedItem.name}</h2>
-              <button className="detail-close" onClick={() => setSelectedItem(null)}>
-                ✕
-              </button>
-            </div>
-            <JsonViewer data={selectedItem} />
-          </div>
-        )}
-      </div>
-    </div>
+        </label>
+        <label>
+          {t("services.apigateway.descriptionLabel")}
+          <input
+            value={formDescription}
+            onChange={(e) => setFormDescription(e.target.value)}
+            placeholder={t("services.apigateway.descPlaceholder")}
+            className="modal-input"
+          />
+        </label>
+        <label>
+          {t("services.apigateway.versionLabel")}
+          <input
+            value={formVersion}
+            onChange={(e) => setFormVersion(e.target.value)}
+            className="modal-input"
+          />
+        </label>
+        <label>
+          {t("services.apigateway.endpointTypeLabel")}
+          <select
+            value={formEndpointType}
+            onChange={(e) => setFormEndpointType(e.target.value)}
+            className="modal-input"
+          >
+            <option value="REGIONAL">{t("services.apigateway.endpointRegional")}</option>
+            <option value="EDGE">{t("services.apigateway.endpointEdge")}</option>
+            <option value="PRIVATE">{t("services.apigateway.endpointPrivate")}</option>
+          </select>
+        </label>
+      </ServiceCreateModal>
+
+      <ServiceDeleteDialog
+        open={showDelete && !!selectedItem}
+        title={t("services.apigateway.delete")}
+        name={selectedItem?.name}
+        error={deleteMutation.error}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.id)}
+        onClose={() => setShowDelete(false)}
+      />
+    </ServicePageLayout>
   );
 }
