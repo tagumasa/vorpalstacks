@@ -19,7 +19,7 @@ all: build
 build: build-console
 	go build -o vorpalstacks_server .
 
-build-console:
+build-console: proto-ts
 	cd $(WEBCONSOLE_DIR) && npm run build
 
 build-tools: build-proto-generator
