@@ -23,6 +23,9 @@ service AdminConfigService {
 
   // Server control
   rpc ShutdownServer(ShutdownServerRequest) returns (ShutdownServerResponse);
+
+  // Server telemetry
+  rpc GetServerMetrics(GetServerMetricsRequest) returns (GetServerMetricsResponse);
 }
 
 message ConfigEntry {
@@ -106,4 +109,23 @@ message ShutdownServerRequest {}
 
 message ShutdownServerResponse {
   string message = 1;
+}
+
+message GetServerMetricsRequest {}
+
+message GetServerMetricsResponse {
+  int64 uptime_seconds = 1;
+  int64 process_memory_sys_bytes = 2;
+  int64 process_heap_alloc_bytes = 3;
+  int32 goroutine_count = 4;
+  int64 gc_count = 5;
+  int64 gc_pause_total_ns = 6;
+  int32 num_cpu = 7;
+  string go_version = 8;
+  string version = 9;
+  int64 machine_total_memory_bytes = 10;
+  int64 machine_available_memory_bytes = 11;
+  double machine_cpu_usage_percent = 12;
+  int64 machine_disk_total_bytes = 13;
+  int64 machine_disk_free_bytes = 14;
 }

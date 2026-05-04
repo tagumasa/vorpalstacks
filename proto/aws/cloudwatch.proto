@@ -28,7 +28,7 @@ service CloudWatchService {
   // Protocol: awsJson1_0
   rpc DeleteAnomalyDetector(DeleteAnomalyDetectorInput) returns (DeleteAnomalyDetectorOutput);
 
-  // Deletes all dashboards that you specify. You can specify up to 100 dashboards to delete. If there is an error during this call, no dashboards are deleted.
+  // Deletes all dashboards that you specify. You can specify up to 100 dashboards to delete. If there is an error during this call, the operation attempts to delete as many dashboards as possible.
   // HTTP:  
   // Protocol: awsJson1_0
   rpc DeleteDashboards(DeleteDashboardsInput) returns (DeleteDashboardsOutput);
@@ -158,7 +158,7 @@ service CloudWatchService {
   // Protocol: awsJson1_0
   rpc ListMetricStreams(ListMetricStreamsInput) returns (ListMetricStreamsOutput);
 
-  // Displays the tags associated with a CloudWatch resource. Currently, alarms and Contributor Insights rules support tagging.
+  // Displays the tags associated with a CloudWatch resource. Currently, alarms, dashboards, metric streams and Contributor Insights rules support tagging.
   // HTTP:  
   // Protocol: awsJson1_0
   rpc ListTagsForResource(ListTagsForResourceInput) returns (ListTagsForResourceOutput);
@@ -218,7 +218,7 @@ service CloudWatchService {
   // Protocol: awsJson1_0
   rpc StartMetricStreams(StartMetricStreamsInput) returns (StartMetricStreamsOutput);
 
-  // Enables enrichment and PromQL access for CloudWatch vended metrics for supported AWS resources in the account. Once enabled, metrics that contain a resource identifier dimension (for example, EC2 C...
+  // Enables enrichment and PromQL access for CloudWatch vended metrics for supported Amazon Web Services resources in the account. Once enabled, metrics that contain a resource identifier dimension (fo...
   // HTTP:  
   // Protocol: awsJson1_0
   rpc StartOTelEnrichment(StartOTelEnrichmentInput) returns (StartOTelEnrichmentOutput);
@@ -228,17 +228,17 @@ service CloudWatchService {
   // Protocol: awsJson1_0
   rpc StopMetricStreams(StopMetricStreamsInput) returns (StopMetricStreamsOutput);
 
-  // Disables enrichment and PromQL access for CloudWatch vended metrics for supported AWS resources in the account. After disabling, these metrics are no longer enriched with resource ARN and resource ...
+  // Disables enrichment and PromQL access for CloudWatch vended metrics for supported Amazon Web Services resources in the account. After disabling, these metrics are no longer enriched with resource A...
   // HTTP:  
   // Protocol: awsJson1_0
   rpc StopOTelEnrichment(StopOTelEnrichmentInput) returns (StopOTelEnrichmentOutput);
 
-  // Assigns one or more tags (key-value pairs) to the specified CloudWatch resource. Currently, the only CloudWatch resources that can be tagged are alarms and Contributor Insights rules. Tags can help...
+  // Assigns one or more tags (key-value pairs) to the specified CloudWatch resource. Currently, the only CloudWatch resources that can be tagged are alarms, dashboards, metric streams and Contributor I...
   // HTTP:  
   // Protocol: awsJson1_0
   rpc TagResource(TagResourceInput) returns (TagResourceOutput);
 
-  // Removes one or more tags from the specified resource.
+  // Removes one or more tags from the specified resource. Currently, alarms, dashboards, metric streams and Contributor Insights rules support tagging.
   // HTTP:  
   // Protocol: awsJson1_0
   rpc UntagResource(UntagResourceInput) returns (UntagResourceOutput);
@@ -1906,6 +1906,8 @@ message PutDashboardInput {
   string dashboardbody = 3403236;
 
   string dashboardname = 506599873;
+
+  repeated Tag tags = 381526209;
 
 }
 
