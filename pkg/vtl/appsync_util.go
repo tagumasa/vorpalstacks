@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"vorpalstacks/internal/utils/timeutils"
 
 	"github.com/google/uuid"
 )
@@ -270,7 +271,7 @@ func (e *Engine) processUtilQr(templateStr string) string {
 
 func (e *Engine) processUtilTimeNowISO8601(templateStr string) string {
 	return appSyncUtilTimeNowISO8601Regex.ReplaceAllStringFunc(templateStr, func(match string) string {
-		return time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
+		return time.Now().UTC().Format(timeutils.ISO8601UTCFormat)
 	})
 }
 
