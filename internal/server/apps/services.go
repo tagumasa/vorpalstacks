@@ -293,7 +293,7 @@ func (a *App) initLambda(st *serviceState) error {
 
 	st.lambdaService = svclambda.NewLambdaService(st.dockerClient, st.accountID, st.region, a.cfg.DataPath)
 	st.lambdaService.SetStorageManager(a.server.StorageManager())
-	st.lambdaService.SetHostEndpoint(fmt.Sprintf("http://host.docker.internal:%s", a.cfg.Port))
+	st.lambdaService.SetHostEndpoint(fmt.Sprintf("http://host.docker.internal:%d", a.cfg.Port))
 	st.lambdaService.RegisterHandlers(a.server.Dispatcher())
 
 	a.addShutdown("lambda", func(ctx context.Context) error {
