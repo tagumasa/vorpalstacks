@@ -1041,11 +1041,13 @@ html, body, #root {
 }
 
 .settings-note {
-  margin-top: 12px;
-  padding: 8px 12px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding: 6px 12px;
   font-size: 11px;
   color: var(--text-muted);
   background: var(--bg-secondary);
+  border-left: 3px solid var(--border-dim);
 }
 
 .settings-actions {

@@ -146,12 +146,15 @@ export function SettingsPage() {
   }, [dirty, updateMut, t]);
 
   const handleResetTab = useCallback(() => {
-    const keys = [...tabEntries.map((e) => e.key), "server.bind_mode", "server.bind_interface"].filter(
-      (k, i, arr) => arr.indexOf(k) === i,
-    );
+    let keys = tabEntries.map((e) => e.key);
+    if (tab === "ports") {
+      keys = [...keys, "server.bind_mode", "server.bind_interface"].filter(
+        (k, i, arr) => arr.indexOf(k) === i,
+      );
+    }
     keys.forEach((k) => resetMut.mutate(k));
     setDirty({});
-  }, [tabEntries, resetMut]);
+  }, [tabEntries, tab, resetMut]);
 
   const applyNote = tab === "services"
     ? t("settings.immediateNote")
@@ -484,6 +487,9 @@ function MappingsTab({
                   />
                   <span className="settings-toggle-slider" />
                 </label>
+                {dirty[s.modeKey] !== undefined && (
+                  <span className="settings-dirty-dot" />
+                )}
               </td>
               <td>
                 {s.portMode === "fqdn" ? (
