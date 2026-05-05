@@ -1,0 +1,158 @@
+syntax = "proto3";
+
+package storage.neptunegraph;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_neptunegraph";
+
+import "google/protobuf/timestamp.proto";
+
+message Graph {
+  string id = 1;
+  string name = 2;
+  string arn = 3;
+  string status = 4;
+  string endpoint = 5;
+  int32 provisioned_memory = 6;
+  int32 replica_count = 7;
+  bool deletion_protection = 8;
+  bool public_connectivity = 9;
+  string kms_key_identifier = 10;
+  VectorSearchConfiguration vector_search_configuration = 11;
+  string build_number = 12;
+  string source_snapshot_id = 13;
+  string status_reason = 14;
+  google.protobuf.Timestamp create_time = 15;
+  string account_id = 16;
+  string region = 17;
+}
+
+message VectorSearchConfiguration {
+  int32 dimension = 1;
+}
+
+message GraphSnapshot {
+  string id = 1;
+  string name = 2;
+  string arn = 3;
+  string status = 4;
+  string kms_key_identifier = 5;
+  string source_graph_id = 6;
+  google.protobuf.Timestamp snapshot_create_time = 7;
+  string account_id = 8;
+  string region = 9;
+}
+
+message PrivateGraphEndpoint {
+  string graph_id = 1;
+  string vpc_id = 2;
+  string vpc_endpoint_id = 3;
+  repeated string subnet_ids = 4;
+  string status = 5;
+  string account_id = 6;
+  string region = 7;
+}
+
+message TagEntry {
+  string key = 1;
+  string value = 2;
+}
+
+message TagMap {
+  map<string, string> tags = 1;
+}
+
+message QueryRecord {
+  string id = 1;
+  string query_string = 2;
+  string language = 3;
+  string state = 4;
+  string graph_id = 5;
+  google.protobuf.Timestamp started_at = 6;
+  int32 elapsed = 7;
+  int32 waited = 8;
+}
+
+message ImportTaskRecord {
+  string task_id = 1;
+  string graph_id = 2;
+  string status = 3;
+  string format = 4;
+  string parquet_type = 5;
+  string source = 6;
+  string role_arn = 7;
+  int32 attempt_number = 8;
+  ImportOptions import_options = 9;
+  ImportTaskDetails import_task_details = 10;
+  string status_reason = 11;
+  string graph_name = 12;
+  bool deletion_protection = 13;
+  string kms_key_identifier = 14;
+  bool public_connectivity = 15;
+  int32 replica_count = 16;
+  VectorSearchConfiguration vector_search_configuration = 17;
+  int32 min_provisioned_memory = 18;
+  int32 max_provisioned_memory = 19;
+  string blank_node_handling = 20;
+  bool fail_on_error = 21;
+  google.protobuf.Timestamp start_time = 22;
+}
+
+message ImportOptions {
+  NeptuneImportOptions neptune = 1;
+}
+
+message NeptuneImportOptions {
+  string s3_export_path = 1;
+  string s3_export_kms_key_id = 2;
+  bool preserve_default_vertex_labels = 3;
+  bool preserve_edge_ids = 4;
+}
+
+message ImportTaskDetails {
+  int32 progress_percentage = 1;
+  google.protobuf.Timestamp start_time = 2;
+  int64 time_elapsed_seconds = 3;
+  int64 statement_count = 4;
+  int64 dictionary_entry_count = 5;
+  int32 error_count = 6;
+  string error_details = 7;
+  string status = 8;
+}
+
+message ExportTaskRecord {
+  string task_id = 1;
+  string graph_id = 2;
+  string status = 3;
+  string format = 4;
+  string parquet_type = 5;
+  string destination = 6;
+  string role_arn = 7;
+  string kms_key_identifier = 8;
+  string status_reason = 9;
+  ExportFilter export_filter = 10;
+  ExportTaskDetails export_task_details = 11;
+  google.protobuf.Timestamp start_time = 12;
+}
+
+message ExportFilter {
+  map<string, ExportFilterElement> edge_filter = 1;
+  map<string, ExportFilterElement> vertex_filter = 2;
+}
+
+message ExportFilterElement {
+  map<string, ExportFilterPropertyAttributes> properties = 1;
+}
+
+message ExportFilterPropertyAttributes {
+  string multi_value_handling = 1;
+  string output_type = 2;
+  string source_property_name = 3;
+}
+
+message ExportTaskDetails {
+  int32 progress_percentage = 1;
+  google.protobuf.Timestamp start_time = 2;
+  int64 time_elapsed_seconds = 3;
+  int64 num_edges_written = 4;
+  int64 num_vertices_written = 5;
+}

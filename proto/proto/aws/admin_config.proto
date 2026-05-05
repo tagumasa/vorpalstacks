@@ -1,0 +1,166 @@
+syntax = "proto3";
+
+package admin_config;
+
+option go_package = "vorpalstacks/internal/pb/aws/admin_config";
+
+import "common.proto";
+
+service AdminConfigService {
+  // Configuration management (full CRUD)
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc ListConfig(ListConfigRequest) returns (ListConfigResponse);
+  rpc UpdateConfig(UpdateConfigRequest) returns (ConfigEntry);
+  rpc ResetConfig(ResetConfigRequest) returns (ConfigEntry);
+
+  // Service management
+  rpc ListServices(ListServicesRequest) returns (ListServicesResponse);
+  rpc GetServiceStatus(GetServiceStatusRequest) returns (ServiceStatus);
+  rpc EnableService(EnableServiceRequest) returns (ServiceStatus);
+  rpc DisableService(DisableServiceRequest) returns (ServiceStatus);
+
+  // Port mode management
+  rpc GetPortMode(GetPortModeRequest) returns (PortModeResponse);
+  rpc SetPortMode(SetPortModeRequest) returns (PortModeResponse);
+
+  // Port mappings for resources
+  rpc GetResourcePort(GetResourcePortRequest) returns (GetResourcePortResponse);
+  rpc SetResourcePort(SetResourcePortRequest) returns (common.Empty);
+
+  // Server control
+  rpc ShutdownServer(ShutdownServerRequest) returns (ShutdownServerResponse);
+
+  // Server telemetry
+  rpc GetServerMetrics(GetServerMetricsRequest) returns (GetServerMetricsResponse);
+}
+
+message ConfigEntry {
+  string key = 1;
+  string value = 2;
+  string type = 3;
+  string source = 4;
+  string description = 5;
+  bool read_only = 6;
+  int64 updated_at = 7;
+  string env_var = 8;
+  string category = 9;
+}
+
+message GetConfigRequest {
+  string key = 1;
+}
+
+message GetConfigResponse {
+  ConfigEntry entry = 1;
+}
+
+message ListConfigRequest {
+  string category = 1;
+}
+
+message ListConfigResponse {
+  repeated ConfigEntry entries = 1;
+}
+
+message UpdateConfigRequest {
+  string key = 1;
+  string value = 2;
+}
+
+message ResetConfigRequest {
+  string key = 1;
+}
+
+message ListServicesRequest {}
+
+message ListServicesResponse {
+  repeated ServiceInfo services = 1;
+}
+
+message ServiceInfo {
+  string name = 1;
+  bool enabled = 2;
+  int32 resource_count = 3;
+  string port_mode = 4;
+  int32 default_port = 5;
+  string host_suffix = 6;
+  string mode = 7;
+}
+
+message GetServiceStatusRequest {
+  string name = 1;
+}
+
+message ServiceStatus {
+  string name = 1;
+  bool enabled = 2;
+  string mode = 3;
+  int32 resource_count = 4;
+  int64 last_request_at = 5;
+}
+
+message GetResourcePortRequest {
+  string service_port_key = 1;
+  string resource_id = 2;
+}
+
+message GetResourcePortResponse {
+  int32 port = 1;
+  string source = 2;
+}
+
+message SetResourcePortRequest {
+  string service_port_key = 1;
+  string resource_id = 2;
+  int32 port = 3;
+}
+
+message ShutdownServerRequest {}
+
+message ShutdownServerResponse {
+  string message = 1;
+}
+
+message GetServerMetricsRequest {}
+
+message GetServerMetricsResponse {
+  int64 uptime_seconds = 1;
+  int64 process_memory_sys_bytes = 2;
+  int64 process_heap_alloc_bytes = 3;
+  int32 goroutine_count = 4;
+  int64 gc_count = 5;
+  int64 gc_pause_total_ns = 6;
+  int32 num_cpu = 7;
+  string go_version = 8;
+  string version = 9;
+  int64 machine_total_memory_bytes = 10;
+  int64 machine_available_memory_bytes = 11;
+  double machine_cpu_usage_percent = 12;
+  int64 machine_disk_total_bytes = 13;
+  int64 machine_disk_free_bytes = 14;
+}
+
+// Service enable/disable
+message EnableServiceRequest {
+  string service_name = 1;
+}
+
+message DisableServiceRequest {
+  string service_name = 1;
+}
+
+// Port mode management
+message GetPortModeRequest {
+  string service_name = 1;
+}
+
+message SetPortModeRequest {
+  string service_name = 1;
+  string mode = 2; // "fqdn" or "individual"
+}
+
+message PortModeResponse {
+  string service_name = 1;
+  string mode = 2;
+  int32 port = 3; // set only in individual mode
+}

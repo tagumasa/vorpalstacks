@@ -1,0 +1,13 @@
+// AWS-specific proto options
+
+syntax = "proto3";
+
+package aws;
+
+option go_package = "vorpalstacks/internal/pb/aws/aws";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.FieldOptions {
+  bool http_payload = 50001;
+}

@@ -1,0 +1,198 @@
+syntax = "proto3";
+
+package storage.athena;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_athena";
+
+import "google/protobuf/timestamp.proto";
+
+message WorkGroup {
+  string name = 1;
+  string description = 2;
+  WorkGroupConfiguration configuration = 3;
+  string state = 4;
+  google.protobuf.Timestamp created_time = 5;
+}
+
+message WorkGroupConfiguration {
+  ResultConfiguration result_configuration = 1;
+  bool enforce_work_group_configuration = 2;
+  bool publish_cloud_watch_metrics_enabled = 3;
+  int64 bytes_scanned_cutoff_per_query = 4;
+  bool requester_pays_enabled = 5;
+  EngineVersion engine_version = 6;
+  string additional_configuration = 7;
+  string execution_role = 8;
+  CustomerContentEncryptionConfiguration customer_content_encryption_configuration = 9;
+  bool enable_minimum_encryption_configuration = 10;
+}
+
+message ResultConfiguration {
+  string output_location = 1;
+  EncryptionConfiguration encryption_configuration = 2;
+  string expected_bucket_owner = 3;
+  ACLConfiguration acl_configuration = 4;
+}
+
+message EncryptionConfiguration {
+  string encryption_option = 1;
+  string kms_key = 2;
+}
+
+message ACLConfiguration {
+  string s3_acl_option = 1;
+}
+
+message EngineVersion {
+  string selected_engine_version = 1;
+  string effective_engine_version = 2;
+}
+
+message CustomerContentEncryptionConfiguration {
+  string kms_key = 1;
+}
+
+message QueryExecution {
+  string query_execution_id = 1;
+  string query = 2;
+  string statement_type = 3;
+  string work_group = 4;
+  QueryExecutionContext query_execution_context = 5;
+  ResultConfiguration result_configuration = 6;
+  QueryExecutionStatus status = 7;
+  QueryExecutionStatistics statistics = 8;
+  string substatement_type = 9;
+}
+
+message QueryExecutionContext {
+  string database = 1;
+  string catalog = 2;
+}
+
+message QueryExecutionStatus {
+  string state = 1;
+  string state_change_reason = 2;
+  google.protobuf.Timestamp submission_date_time = 3;
+  google.protobuf.Timestamp completion_date_time = 4;
+  AthenaError athena_error = 5;
+}
+
+message AthenaError {
+  int32 error_category = 1;
+  string error_type = 2;
+  bool retryable = 3;
+  string error_message = 4;
+  int32 syntax_error_row = 5;
+  int32 syntax_error_column = 6;
+}
+
+message QueryExecutionStatistics {
+  int64 engine_execution_time_in_millis = 1;
+  int64 data_scanned_in_bytes = 2;
+  string data_manifest_location = 3;
+  int64 total_execution_time_in_millis = 4;
+  int64 query_queue_time_in_millis = 5;
+  int64 query_planning_time_in_millis = 6;
+  int64 service_processing_time_in_millis = 7;
+  ResultReuseInformation result_reuse_information = 8;
+}
+
+message ResultReuseInformation {
+  bool reused_previous_result = 1;
+}
+
+message QueryResult {
+  string query_execution_id = 1;
+  ResultSet result_set = 2;
+  string next_token = 3;
+  int64 update_count = 4;
+}
+
+message ResultSet {
+  repeated Row rows = 1;
+  ResultSetMetadata result_set_metadata = 2;
+}
+
+message Row {
+  repeated Datum data = 1;
+}
+
+message Datum {
+  string var_char_value = 1;
+}
+
+message ResultSetMetadata {
+  repeated ColumnInfo column_info = 1;
+}
+
+message ColumnInfo {
+  string label = 1;
+  string name = 2;
+  string type = 3;
+  int32 precision = 4;
+  int32 scale = 5;
+  string nullable = 6;
+  bool case_sensitive = 7;
+  string schema_name = 8;
+  string table_name = 9;
+  string catalog_name = 10;
+}
+
+message NamedQuery {
+  string named_query_id = 1;
+  string name = 2;
+  string description = 3;
+  string database = 4;
+  string query_string = 5;
+  string work_group = 6;
+  google.protobuf.Timestamp created_time = 7;
+}
+
+message PreparedStatement {
+  string statement_name = 1;
+  string work_group_name = 2;
+  string query_statement = 3;
+  string description = 4;
+  google.protobuf.Timestamp last_modified_time = 5;
+  google.protobuf.Timestamp created_time = 6;
+}
+
+message DataCatalog {
+  string name = 1;
+  string description = 2;
+  string type = 3;
+  map<string, string> parameters = 4;
+}
+
+message Database {
+  string name = 1;
+  string description = 2;
+  map<string, string> parameters = 3;
+}
+
+message TableMetadata {
+  string name = 1;
+  string database_name = 2;
+  string description = 3;
+  string table_type = 4;
+  repeated Column columns = 5;
+  repeated Column partition_keys = 6;
+  map<string, string> parameters = 7;
+}
+
+message Column {
+  string name = 1;
+  string type = 2;
+  string comment = 3;
+}
+
+message StoredRow {
+  bytes values_json = 1;
+}
+
+message StoredTable {
+  string database_name = 1;
+  string table_name = 2;
+  repeated Column columns = 3;
+  repeated StoredRow rows = 4;
+}
