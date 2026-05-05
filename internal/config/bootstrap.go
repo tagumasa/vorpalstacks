@@ -2,17 +2,20 @@
 package config
 
 import (
+	"fmt"
+	"net"
 	"os"
 	"strconv"
 
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/serviceports"
 )
 
 // BootstrapConfig holds all configuration values read from environment variables
 // at server startup, before the storage layer is available.
 type BootstrapConfig struct {
-	Port                  string
-	GRPCWebPort           string
+	Port                  int
+	GRPCWebPort           int
 	GRPCWebBindAddr       string
 	DataPath              string
 	AccountID             string
@@ -22,12 +25,15 @@ type BootstrapConfig struct {
 	SignatureVerification bool
 	UseChainGateway       bool
 	TLSEnabled            bool
-	TLSPort               string
+	TLSPort               int
 	TLSCertPath           string
 	TLSKeyPath            string
 	TLSHostname           string
 	Route53DNSEnabled     bool
 	DockerHost            string
+	BindMode              string
+	BindInterface         string
+	bindAddr              string
 
 	SNS             bool
 	SQS             bool
@@ -66,21 +72,81 @@ type BootstrapConfig struct {
 
 // ServerHost returns the server hostname suitable for self-referencing URLs.
 func (c *BootstrapConfig) ServerHost() string {
-	return "127.0.0.1:" + c.Port
+	addr := c.bindAddr
+	if addr == "" {
+		addr = "127.0.0.1"
+	}
+	return addr + ":" + strconv.Itoa(c.Port)
+}
+
+// ResolvedBindAddr returns the bind address for console ports (HTTP + gRPC-Web).
+// Must be called after LoadBootstrapConfig. Returns an error when bind_mode is
+// "interface" but the specified IP does not exist on any host network interface.
+func (c *BootstrapConfig) ResolvedBindAddr() (string, error) {
+	if c.bindAddr != "" {
+		return c.bindAddr, nil
+	}
+	switch c.BindMode {
+	case "localhost", "":
+		c.bindAddr = "127.0.0.1"
+	case "all":
+		c.bindAddr = "0.0.0.0"
+	case "interface":
+		if c.BindInterface == "" {
+			return "", fmt.Errorf("bind_mode=interface requires BIND_INTERFACE to be set")
+		}
+		ip := net.ParseIP(c.BindInterface)
+		if ip == nil {
+			return "", fmt.Errorf("BIND_INTERFACE %q is not a valid IP address", c.BindInterface)
+		}
+		ifaces, err := net.Interfaces()
+		if err != nil {
+			return "", fmt.Errorf("failed to list network interfaces: %w", err)
+		}
+		found := false
+		for _, iface := range ifaces {
+			addrs, err := iface.Addrs()
+			if err != nil {
+				continue
+			}
+			for _, a := range addrs {
+				var ifaceIP net.IP
+				switch v := a.(type) {
+				case *net.IPNet:
+					ifaceIP = v.IP
+				case *net.IPAddr:
+					ifaceIP = v.IP
+				}
+				if ifaceIP != nil && ifaceIP.Equal(ip) {
+					found = true
+					break
+				}
+			}
+			if found {
+				break
+			}
+		}
+		if !found {
+			return "", fmt.Errorf("BIND_INTERFACE %q not found on any host network interface", c.BindInterface)
+		}
+		c.bindAddr = c.BindInterface
+	default:
+		return "", fmt.Errorf("invalid BIND_MODE %q (must be localhost, all, or interface)", c.BindMode)
+	}
+	return c.bindAddr, nil
 }
 
 // LoadBootstrapConfig reads all bootstrap configuration from environment variables
-// and returns a populated BootstrapConfig. Defaults are applied when variables
-// are unset.
+// and returns a populated BootstrapConfig. Defaults come from serviceports constants.
 func LoadBootstrapConfig() *BootstrapConfig {
-	accountId := envOr("AWS_ACCOUNT_ID", "")
+	accountId := os.Getenv("AWS_ACCOUNT_ID")
 	if accountId == "" {
 		accountId = "000000000000"
 	}
 
 	return &BootstrapConfig{
-		Port:                  envOr("PORT", "8080"),
-		GRPCWebPort:           envOr("GRPC_WEB_PORT", "9090"),
+		Port:                  envOrInt("PORT", serviceports.HTTP),
+		GRPCWebPort:           envOrInt("GRPC_WEB_PORT", serviceports.GRPCWeb),
 		GRPCWebBindAddr:       envOr("GRPC_WEB_BIND_ADDR", "127.0.0.1"),
 		DataPath:              envOr("DATA_PATH", "./data"),
 		AccountID:             accountId,
@@ -90,12 +156,14 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		SignatureVerification: envBool("SIGNATURE_VERIFICATION_ENABLED", true),
 		UseChainGateway:       envBool("USE_CHAIN_GATEWAY", false),
 		TLSEnabled:            envBool("TLS_ENABLED", false),
-		TLSPort:               envOr("TLS_PORT", "8443"),
+		TLSPort:               envOrInt("TLS_PORT", serviceports.TLS),
 		TLSCertPath:           envOr("TLS_CERT_PATH", "auto"),
 		TLSKeyPath:            envOr("TLS_KEY_PATH", "auto"),
 		TLSHostname:           envOr("TLS_HOSTNAME", ""),
 		Route53DNSEnabled:     envBool("ROUTE53_DNS_ENABLED", false),
 		DockerHost:            envOr("DOCKER_HOST", "unix:///var/run/docker.sock"),
+		BindMode:              envOr("BIND_MODE", "localhost"),
+		BindInterface:         envOr("BIND_INTERFACE", ""),
 
 		SNS:             envBool("SNS_ENABLED", true),
 		SQS:             envBool("SQS_ENABLED", true),
@@ -136,6 +204,15 @@ func LoadBootstrapConfig() *BootstrapConfig {
 func envOr(key, defaultVal string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
+	}
+	return defaultVal
+}
+
+func envOrInt(key string, defaultVal int) int {
+	if v := os.Getenv(key); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			return i
+		}
 	}
 	return defaultVal
 }

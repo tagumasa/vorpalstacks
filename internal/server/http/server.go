@@ -34,21 +34,34 @@ import (
 
 // NewServer creates and configures a new HTTP server with all required components.
 func NewServer(cfg *Config) (*Server, error) {
-	if cfg.Port == "" {
-		cfg.Port = "8080"
-	}
-	if cfg.DataPath == "" {
-		cfg.DataPath = "./data"
+	if cfg.Port == 0 {
+		cfg.Port = 50080
 	}
 
-	storageMgr, err := storage.NewRegionStorageManager(&storage.Config{Path: cfg.DataPath})
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialise storage manager: %w", err)
+	var (
+		storageMgr  *storage.RegionStorageManager
+		err         error
+		ownsStorage bool
+	)
+
+	if cfg.StorageManager != nil {
+		storageMgr = cfg.StorageManager
+	} else {
+		if cfg.DataPath == "" {
+			cfg.DataPath = "./data"
+		}
+		storageMgr, err = storage.NewRegionStorageManager(&storage.Config{Path: cfg.DataPath})
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialise storage manager: %w", err)
+		}
+		ownsStorage = true
 	}
 
 	globalStore, err := storageMgr.GetGlobalStorage()
 	if err != nil {
-		storageMgr.Close()
+		if ownsStorage {
+			storageMgr.Close()
+		}
 		return nil, fmt.Errorf("failed to get global storage: %w", err)
 	}
 
@@ -59,7 +72,9 @@ func NewServer(cfg *Config) (*Server, error) {
 	configStore := api.NewConfigStore(globalStore)
 
 	if err := configStore.LoadAll(); err != nil {
-		storageMgr.Close()
+		if ownsStorage {
+			storageMgr.Close()
+		}
 		return nil, fmt.Errorf("failed to load service configs: %w", err)
 	}
 
@@ -94,7 +109,9 @@ func NewServer(cfg *Config) (*Server, error) {
 	// Create blob store for S3 and other services
 	blobStore, err := storage.NewHybridBlobStore(globalStore, cfg.DataPath)
 	if err != nil {
-		storageMgr.Close()
+		if ownsStorage {
+			storageMgr.Close()
+		}
 		return nil, fmt.Errorf("failed to initialise blob store: %w", err)
 	}
 
@@ -122,7 +139,9 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	serviceIndex, err := router.NewServiceIndex(serviceStore, operationStore)
 	if err != nil {
-		storageMgr.Close()
+		if ownsStorage {
+			storageMgr.Close()
+		}
 		return nil, fmt.Errorf("failed to build service index: %w", err)
 	}
 	classifier := classifier.NewClassifier(serviceIndex)
@@ -137,13 +156,17 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	regionStorage, err := storageMgr.GetStorage(region)
 	if err != nil {
-		storageMgr.Close()
+		if ownsStorage {
+			storageMgr.Close()
+		}
 		return nil, fmt.Errorf("eventbus: get storage for region %s: %w", region, err)
 	}
 
 	pebbleStorage, ok := regionStorage.(*storage.PebbleStorage)
 	if !ok {
-		storageMgr.Close()
+		if ownsStorage {
+			storageMgr.Close()
+		}
 		return nil, fmt.Errorf("eventbus: storage is not PebbleStorage")
 	}
 
@@ -196,7 +219,9 @@ func NewServer(cfg *Config) (*Server, error) {
 	if cfg.TLSConfig.Enabled {
 		tlsMgr, err := NewTLSManager(globalStore, cfg.TLSConfig.CertPath, cfg.TLSConfig.KeyPath, cfg.TLSConfig.Hostname)
 		if err != nil {
-			storageMgr.Close()
+			if ownsStorage {
+				storageMgr.Close()
+			}
 			return nil, fmt.Errorf("failed to initialise TLS manager: %w", err)
 		}
 		srv.tlsManager = tlsMgr
@@ -240,9 +265,13 @@ func (s *Server) Start() error {
 
 		h2s := &http2.Server{}
 
+		bindAddr := s.config.BindAddr
+		if bindAddr == "" {
+			bindAddr = "0.0.0.0"
+		}
 		s.httpServerMu.Lock()
 		s.httpServer = &http.Server{
-			Addr:              ":" + s.config.Port,
+			Addr:              fmt.Sprintf("%s:%d", bindAddr, s.config.Port),
 			Handler:           h2c.NewHandler(r, h2s),
 			ReadHeaderTimeout: 5 * time.Second,
 			ReadTimeout:       15 * time.Second,
@@ -276,7 +305,7 @@ func (s *Server) Start() error {
 
 			s.tlsServerMu.Lock()
 			s.tlsServer = &http.Server{
-				Addr:              ":" + s.config.TLSConfig.Port,
+				Addr:              fmt.Sprintf("%s:%d", bindAddr, s.config.TLSConfig.Port),
 				Handler:           r,
 				TLSConfig:         tlsConfig,
 				ReadHeaderTimeout: 5 * time.Second,

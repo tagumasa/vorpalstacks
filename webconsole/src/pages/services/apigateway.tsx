@@ -105,7 +105,6 @@ export function APIGatewayPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "apigateway-items" }}
     >
       <SplitPane
         columns={columns}

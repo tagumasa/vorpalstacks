@@ -21,13 +21,15 @@ import (
 
 // Config holds configuration for the HTTP server.
 type Config struct {
-	Port            string
+	Port            int
+	BindAddr        string
 	DataPath        string
 	AccountID       string
 	Region          string
 	SignatureConfig SignatureConfig
 	UseChainGateway bool
 	TLSConfig       TLSConfig
+	StorageManager  *storage.RegionStorageManager // pre-created storage (nil = create new)
 }
 
 // SignatureConfig holds AWS signature verification configuration.
@@ -42,7 +44,7 @@ type SignatureConfig struct {
 // TLSConfig holds TLS configuration.
 type TLSConfig struct {
 	Enabled  bool
-	Port     string
+	Port     int
 	CertPath string
 	KeyPath  string
 	Hostname string

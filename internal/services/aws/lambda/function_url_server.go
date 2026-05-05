@@ -11,6 +11,7 @@ import (
 
 	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/server/fqdnrouter"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -41,7 +42,10 @@ func NewFunctionURLServer(storeProvider FunctionStoreProvider, accountID, region
 
 // HandleRequest routes an incoming request to the target Lambda function via its function URL configuration.
 func (s *FunctionURLServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	functionName := s.extractFunctionName(r.Host)
+	functionName := fqdnrouter.ResourceIDFromContext(r.Context())
+	if functionName == "" {
+		functionName = s.extractFunctionName(r.Host)
+	}
 	if functionName == "" {
 		http.Error(w, `{"message":"Function not found"}`, http.StatusNotFound)
 		return

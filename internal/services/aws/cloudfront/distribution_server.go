@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/server/fqdnrouter"
 	cfstore "vorpalstacks/internal/store/aws/cloudfront"
 )
 
@@ -50,7 +51,10 @@ func (s *DistributionServer) SetDistributionStore(store *cfstore.DistributionSto
 
 // HandleRequest proxies an incoming request to the matching CloudFront distribution's origin.
 func (s *DistributionServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	distributionID := s.extractDistributionID(r.Host)
+	distributionID := fqdnrouter.ResourceIDFromContext(r.Context())
+	if distributionID == "" {
+		distributionID = s.extractDistributionID(r.Host)
+	}
 	if distributionID == "" {
 		http.Error(w, `{"message":"Distribution not found"}`, http.StatusNotFound)
 		return

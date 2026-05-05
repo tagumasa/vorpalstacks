@@ -26,6 +26,10 @@ const (
 	AdminConfigService_ResetConfig_FullMethodName      = "/admin_config.AdminConfigService/ResetConfig"
 	AdminConfigService_ListServices_FullMethodName     = "/admin_config.AdminConfigService/ListServices"
 	AdminConfigService_GetServiceStatus_FullMethodName = "/admin_config.AdminConfigService/GetServiceStatus"
+	AdminConfigService_EnableService_FullMethodName    = "/admin_config.AdminConfigService/EnableService"
+	AdminConfigService_DisableService_FullMethodName   = "/admin_config.AdminConfigService/DisableService"
+	AdminConfigService_GetPortMode_FullMethodName      = "/admin_config.AdminConfigService/GetPortMode"
+	AdminConfigService_SetPortMode_FullMethodName      = "/admin_config.AdminConfigService/SetPortMode"
 	AdminConfigService_GetResourcePort_FullMethodName  = "/admin_config.AdminConfigService/GetResourcePort"
 	AdminConfigService_SetResourcePort_FullMethodName  = "/admin_config.AdminConfigService/SetResourcePort"
 	AdminConfigService_ShutdownServer_FullMethodName   = "/admin_config.AdminConfigService/ShutdownServer"
@@ -41,9 +45,14 @@ type AdminConfigServiceClient interface {
 	ListConfig(ctx context.Context, in *ListConfigRequest, opts ...grpc.CallOption) (*ListConfigResponse, error)
 	UpdateConfig(ctx context.Context, in *UpdateConfigRequest, opts ...grpc.CallOption) (*ConfigEntry, error)
 	ResetConfig(ctx context.Context, in *ResetConfigRequest, opts ...grpc.CallOption) (*ConfigEntry, error)
-	// Service information (read-only)
+	// Service management
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	GetServiceStatus(ctx context.Context, in *GetServiceStatusRequest, opts ...grpc.CallOption) (*ServiceStatus, error)
+	EnableService(ctx context.Context, in *EnableServiceRequest, opts ...grpc.CallOption) (*ServiceStatus, error)
+	DisableService(ctx context.Context, in *DisableServiceRequest, opts ...grpc.CallOption) (*ServiceStatus, error)
+	// Port mode management
+	GetPortMode(ctx context.Context, in *GetPortModeRequest, opts ...grpc.CallOption) (*PortModeResponse, error)
+	SetPortMode(ctx context.Context, in *SetPortModeRequest, opts ...grpc.CallOption) (*PortModeResponse, error)
 	// Port mappings for resources
 	GetResourcePort(ctx context.Context, in *GetResourcePortRequest, opts ...grpc.CallOption) (*GetResourcePortResponse, error)
 	SetResourcePort(ctx context.Context, in *SetResourcePortRequest, opts ...grpc.CallOption) (*common.Empty, error)
@@ -121,6 +130,46 @@ func (c *adminConfigServiceClient) GetServiceStatus(ctx context.Context, in *Get
 	return out, nil
 }
 
+func (c *adminConfigServiceClient) EnableService(ctx context.Context, in *EnableServiceRequest, opts ...grpc.CallOption) (*ServiceStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ServiceStatus)
+	err := c.cc.Invoke(ctx, AdminConfigService_EnableService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminConfigServiceClient) DisableService(ctx context.Context, in *DisableServiceRequest, opts ...grpc.CallOption) (*ServiceStatus, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ServiceStatus)
+	err := c.cc.Invoke(ctx, AdminConfigService_DisableService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminConfigServiceClient) GetPortMode(ctx context.Context, in *GetPortModeRequest, opts ...grpc.CallOption) (*PortModeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PortModeResponse)
+	err := c.cc.Invoke(ctx, AdminConfigService_GetPortMode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminConfigServiceClient) SetPortMode(ctx context.Context, in *SetPortModeRequest, opts ...grpc.CallOption) (*PortModeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PortModeResponse)
+	err := c.cc.Invoke(ctx, AdminConfigService_SetPortMode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminConfigServiceClient) GetResourcePort(ctx context.Context, in *GetResourcePortRequest, opts ...grpc.CallOption) (*GetResourcePortResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetResourcePortResponse)
@@ -170,9 +219,14 @@ type AdminConfigServiceServer interface {
 	ListConfig(context.Context, *ListConfigRequest) (*ListConfigResponse, error)
 	UpdateConfig(context.Context, *UpdateConfigRequest) (*ConfigEntry, error)
 	ResetConfig(context.Context, *ResetConfigRequest) (*ConfigEntry, error)
-	// Service information (read-only)
+	// Service management
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	GetServiceStatus(context.Context, *GetServiceStatusRequest) (*ServiceStatus, error)
+	EnableService(context.Context, *EnableServiceRequest) (*ServiceStatus, error)
+	DisableService(context.Context, *DisableServiceRequest) (*ServiceStatus, error)
+	// Port mode management
+	GetPortMode(context.Context, *GetPortModeRequest) (*PortModeResponse, error)
+	SetPortMode(context.Context, *SetPortModeRequest) (*PortModeResponse, error)
 	// Port mappings for resources
 	GetResourcePort(context.Context, *GetResourcePortRequest) (*GetResourcePortResponse, error)
 	SetResourcePort(context.Context, *SetResourcePortRequest) (*common.Empty, error)
@@ -207,6 +261,18 @@ func (UnimplementedAdminConfigServiceServer) ListServices(context.Context, *List
 }
 func (UnimplementedAdminConfigServiceServer) GetServiceStatus(context.Context, *GetServiceStatusRequest) (*ServiceStatus, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetServiceStatus not implemented")
+}
+func (UnimplementedAdminConfigServiceServer) EnableService(context.Context, *EnableServiceRequest) (*ServiceStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method EnableService not implemented")
+}
+func (UnimplementedAdminConfigServiceServer) DisableService(context.Context, *DisableServiceRequest) (*ServiceStatus, error) {
+	return nil, status.Error(codes.Unimplemented, "method DisableService not implemented")
+}
+func (UnimplementedAdminConfigServiceServer) GetPortMode(context.Context, *GetPortModeRequest) (*PortModeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPortMode not implemented")
+}
+func (UnimplementedAdminConfigServiceServer) SetPortMode(context.Context, *SetPortModeRequest) (*PortModeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetPortMode not implemented")
 }
 func (UnimplementedAdminConfigServiceServer) GetResourcePort(context.Context, *GetResourcePortRequest) (*GetResourcePortResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetResourcePort not implemented")
@@ -349,6 +415,78 @@ func _AdminConfigService_GetServiceStatus_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminConfigService_EnableService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnableServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminConfigServiceServer).EnableService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminConfigService_EnableService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminConfigServiceServer).EnableService(ctx, req.(*EnableServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminConfigService_DisableService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisableServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminConfigServiceServer).DisableService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminConfigService_DisableService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminConfigServiceServer).DisableService(ctx, req.(*DisableServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminConfigService_GetPortMode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPortModeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminConfigServiceServer).GetPortMode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminConfigService_GetPortMode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminConfigServiceServer).GetPortMode(ctx, req.(*GetPortModeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminConfigService_SetPortMode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetPortModeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminConfigServiceServer).SetPortMode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminConfigService_SetPortMode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminConfigServiceServer).SetPortMode(ctx, req.(*SetPortModeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminConfigService_GetResourcePort_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetResourcePortRequest)
 	if err := dec(in); err != nil {
@@ -451,6 +589,22 @@ var AdminConfigService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetServiceStatus",
 			Handler:    _AdminConfigService_GetServiceStatus_Handler,
+		},
+		{
+			MethodName: "EnableService",
+			Handler:    _AdminConfigService_EnableService_Handler,
+		},
+		{
+			MethodName: "DisableService",
+			Handler:    _AdminConfigService_DisableService_Handler,
+		},
+		{
+			MethodName: "GetPortMode",
+			Handler:    _AdminConfigService_GetPortMode_Handler,
+		},
+		{
+			MethodName: "SetPortMode",
+			Handler:    _AdminConfigService_SetPortMode_Handler,
 		},
 		{
 			MethodName: "GetResourcePort",

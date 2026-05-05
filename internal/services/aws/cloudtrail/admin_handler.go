@@ -12,8 +12,8 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudtrail"
 	cloudtrailconnect "vorpalstacks/internal/pb/aws/cloudtrail/cloudtrailconnect"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AdminHandler implements the CloudTrail admin console gRPC-Web handler.

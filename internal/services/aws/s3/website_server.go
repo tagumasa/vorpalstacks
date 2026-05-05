@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/server/fqdnrouter"
 
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -36,7 +37,10 @@ func NewWebsiteServer(s3Store S3StoreProvider, accountID, region string) *Websit
 
 // HandleRequest serves static website content from an S3 bucket with website configuration enabled.
 func (s *WebsiteServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	bucket := s.extractBucket(r.Host)
+	bucket := fqdnrouter.ResourceIDFromContext(r.Context())
+	if bucket == "" {
+		bucket = s.extractBucket(r.Host)
+	}
 	if bucket == "" {
 		http.Error(w, "NoSuchBucket: could not determine bucket from Host", http.StatusNotFound)
 		return

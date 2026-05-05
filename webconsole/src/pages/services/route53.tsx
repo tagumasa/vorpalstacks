@@ -103,7 +103,6 @@ export function Route53Page() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "route53-items" }}
     >
       <SplitPane
         columns={columns}

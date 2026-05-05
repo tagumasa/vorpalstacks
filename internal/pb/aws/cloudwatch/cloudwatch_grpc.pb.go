@@ -89,7 +89,7 @@ type CloudWatchServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	DeleteAnomalyDetector(ctx context.Context, in *DeleteAnomalyDetectorInput, opts ...grpc.CallOption) (*DeleteAnomalyDetectorOutput, error)
-	// Deletes all dashboards that you specify. You can specify up to 100 dashboards to delete. If there is an error during this call, no dashboards are deleted.
+	// Deletes all dashboards that you specify. You can specify up to 100 dashboards to delete. If there is an error during this call, the operation attempts to delete as many dashboards as possible.
 	// HTTP:
 	// Protocol: awsJson1_0
 	DeleteDashboards(ctx context.Context, in *DeleteDashboardsInput, opts ...grpc.CallOption) (*DeleteDashboardsOutput, error)
@@ -193,7 +193,7 @@ type CloudWatchServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	ListMetricStreams(ctx context.Context, in *ListMetricStreamsInput, opts ...grpc.CallOption) (*ListMetricStreamsOutput, error)
-	// Displays the tags associated with a CloudWatch resource. Currently, alarms and Contributor Insights rules support tagging.
+	// Displays the tags associated with a CloudWatch resource. Currently, alarms, dashboards, metric streams and Contributor Insights rules support tagging.
 	// HTTP:
 	// Protocol: awsJson1_0
 	ListTagsForResource(ctx context.Context, in *ListTagsForResourceInput, opts ...grpc.CallOption) (*ListTagsForResourceOutput, error)
@@ -241,7 +241,7 @@ type CloudWatchServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	StartMetricStreams(ctx context.Context, in *StartMetricStreamsInput, opts ...grpc.CallOption) (*StartMetricStreamsOutput, error)
-	// Enables enrichment and PromQL access for CloudWatch vended metrics for supported AWS resources in the account. Once enabled, metrics that contain a resource identifier dimension (for example, EC2 C...
+	// Enables enrichment and PromQL access for CloudWatch vended metrics for supported Amazon Web Services resources in the account. Once enabled, metrics that contain a resource identifier dimension (fo...
 	// HTTP:
 	// Protocol: awsJson1_0
 	StartOTelEnrichment(ctx context.Context, in *StartOTelEnrichmentInput, opts ...grpc.CallOption) (*StartOTelEnrichmentOutput, error)
@@ -249,15 +249,15 @@ type CloudWatchServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	StopMetricStreams(ctx context.Context, in *StopMetricStreamsInput, opts ...grpc.CallOption) (*StopMetricStreamsOutput, error)
-	// Disables enrichment and PromQL access for CloudWatch vended metrics for supported AWS resources in the account. After disabling, these metrics are no longer enriched with resource ARN and resource ...
+	// Disables enrichment and PromQL access for CloudWatch vended metrics for supported Amazon Web Services resources in the account. After disabling, these metrics are no longer enriched with resource A...
 	// HTTP:
 	// Protocol: awsJson1_0
 	StopOTelEnrichment(ctx context.Context, in *StopOTelEnrichmentInput, opts ...grpc.CallOption) (*StopOTelEnrichmentOutput, error)
-	// Assigns one or more tags (key-value pairs) to the specified CloudWatch resource. Currently, the only CloudWatch resources that can be tagged are alarms and Contributor Insights rules. Tags can help...
+	// Assigns one or more tags (key-value pairs) to the specified CloudWatch resource. Currently, the only CloudWatch resources that can be tagged are alarms, dashboards, metric streams and Contributor I...
 	// HTTP:
 	// Protocol: awsJson1_0
 	TagResource(ctx context.Context, in *TagResourceInput, opts ...grpc.CallOption) (*TagResourceOutput, error)
-	// Removes one or more tags from the specified resource.
+	// Removes one or more tags from the specified resource. Currently, alarms, dashboards, metric streams and Contributor Insights rules support tagging.
 	// HTTP:
 	// Protocol: awsJson1_0
 	UntagResource(ctx context.Context, in *UntagResourceInput, opts ...grpc.CallOption) (*UntagResourceOutput, error)
@@ -749,7 +749,7 @@ type CloudWatchServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	DeleteAnomalyDetector(context.Context, *DeleteAnomalyDetectorInput) (*DeleteAnomalyDetectorOutput, error)
-	// Deletes all dashboards that you specify. You can specify up to 100 dashboards to delete. If there is an error during this call, no dashboards are deleted.
+	// Deletes all dashboards that you specify. You can specify up to 100 dashboards to delete. If there is an error during this call, the operation attempts to delete as many dashboards as possible.
 	// HTTP:
 	// Protocol: awsJson1_0
 	DeleteDashboards(context.Context, *DeleteDashboardsInput) (*DeleteDashboardsOutput, error)
@@ -853,7 +853,7 @@ type CloudWatchServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	ListMetricStreams(context.Context, *ListMetricStreamsInput) (*ListMetricStreamsOutput, error)
-	// Displays the tags associated with a CloudWatch resource. Currently, alarms and Contributor Insights rules support tagging.
+	// Displays the tags associated with a CloudWatch resource. Currently, alarms, dashboards, metric streams and Contributor Insights rules support tagging.
 	// HTTP:
 	// Protocol: awsJson1_0
 	ListTagsForResource(context.Context, *ListTagsForResourceInput) (*ListTagsForResourceOutput, error)
@@ -901,7 +901,7 @@ type CloudWatchServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	StartMetricStreams(context.Context, *StartMetricStreamsInput) (*StartMetricStreamsOutput, error)
-	// Enables enrichment and PromQL access for CloudWatch vended metrics for supported AWS resources in the account. Once enabled, metrics that contain a resource identifier dimension (for example, EC2 C...
+	// Enables enrichment and PromQL access for CloudWatch vended metrics for supported Amazon Web Services resources in the account. Once enabled, metrics that contain a resource identifier dimension (fo...
 	// HTTP:
 	// Protocol: awsJson1_0
 	StartOTelEnrichment(context.Context, *StartOTelEnrichmentInput) (*StartOTelEnrichmentOutput, error)
@@ -909,15 +909,15 @@ type CloudWatchServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	StopMetricStreams(context.Context, *StopMetricStreamsInput) (*StopMetricStreamsOutput, error)
-	// Disables enrichment and PromQL access for CloudWatch vended metrics for supported AWS resources in the account. After disabling, these metrics are no longer enriched with resource ARN and resource ...
+	// Disables enrichment and PromQL access for CloudWatch vended metrics for supported Amazon Web Services resources in the account. After disabling, these metrics are no longer enriched with resource A...
 	// HTTP:
 	// Protocol: awsJson1_0
 	StopOTelEnrichment(context.Context, *StopOTelEnrichmentInput) (*StopOTelEnrichmentOutput, error)
-	// Assigns one or more tags (key-value pairs) to the specified CloudWatch resource. Currently, the only CloudWatch resources that can be tagged are alarms and Contributor Insights rules. Tags can help...
+	// Assigns one or more tags (key-value pairs) to the specified CloudWatch resource. Currently, the only CloudWatch resources that can be tagged are alarms, dashboards, metric streams and Contributor I...
 	// HTTP:
 	// Protocol: awsJson1_0
 	TagResource(context.Context, *TagResourceInput) (*TagResourceOutput, error)
-	// Removes one or more tags from the specified resource.
+	// Removes one or more tags from the specified resource. Currently, alarms, dashboards, metric streams and Contributor Insights rules support tagging.
 	// HTTP:
 	// Protocol: awsJson1_0
 	UntagResource(context.Context, *UntagResourceInput) (*UntagResourceOutput, error)

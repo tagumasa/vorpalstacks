@@ -12,6 +12,7 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/server/fqdnrouter"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/auth"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/integration"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/validator"
@@ -72,20 +73,32 @@ func (s *RuntimeServer) Close() {
 
 // HandleRequest handles incoming API Gateway requests.
 func (s *RuntimeServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(pathParts) < 4 {
-		s.sendError(w, http.StatusBadRequest, "Invalid request path format")
-		return
-	}
+	var restApiID, stageName, requestPath string
 
-	if pathParts[0] != "restapis" || pathParts[3] != "_user_request_" {
-		s.sendError(w, http.StatusBadRequest, "Invalid request path format")
-		return
+	fqdnApiID := fqdnrouter.ResourceIDFromContext(r.Context())
+	if fqdnApiID != "" {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) < 2 || pathParts[1] != "_user_request_" {
+			s.sendError(w, http.StatusBadRequest, "Invalid request path format")
+			return
+		}
+		restApiID = fqdnApiID
+		stageName = pathParts[0]
+		requestPath = "/" + strings.Join(pathParts[2:], "/")
+	} else {
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		if len(pathParts) < 4 {
+			s.sendError(w, http.StatusBadRequest, "Invalid request path format")
+			return
+		}
+		if pathParts[0] != "restapis" || pathParts[3] != "_user_request_" {
+			s.sendError(w, http.StatusBadRequest, "Invalid request path format")
+			return
+		}
+		restApiID = pathParts[1]
+		stageName = pathParts[2]
+		requestPath = "/" + strings.Join(pathParts[4:], "/")
 	}
-
-	restApiID := pathParts[1]
-	stageName := pathParts[2]
-	requestPath := "/" + strings.Join(pathParts[4:], "/")
 
 	restAPI, err := s.store.Get(restApiID)
 	if err != nil || restAPI == nil {

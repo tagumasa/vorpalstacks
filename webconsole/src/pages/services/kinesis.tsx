@@ -102,7 +102,6 @@ export function KinesisPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "kinesis-items" }}
     >
       <SplitPane
         columns={columns}

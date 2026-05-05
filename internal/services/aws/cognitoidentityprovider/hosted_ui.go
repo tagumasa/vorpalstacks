@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/server/fqdnrouter"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -19,7 +20,10 @@ func (s *CognitoService) HostedUIHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	domain := s.extractDomain(r.Host)
+	domain := fqdnrouter.ResourceIDFromContext(r.Context())
+	if domain == "" {
+		domain = s.extractDomain(r.Host)
+	}
 	if domain == "" {
 		http.Error(w, "Could not determine domain from Host", http.StatusBadRequest)
 		return

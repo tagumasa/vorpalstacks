@@ -9,8 +9,8 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tags "vorpalstacks/internal/common/tags"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // CreateTrail creates a new CloudTrail trail.

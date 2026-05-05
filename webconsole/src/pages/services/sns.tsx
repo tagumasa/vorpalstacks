@@ -119,7 +119,6 @@ export function SNSPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "sns-items" }}
     >
       <SplitPane
         columns={columns}

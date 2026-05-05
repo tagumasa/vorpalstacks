@@ -2,10 +2,13 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -31,24 +34,13 @@ func NewStore(store storage.BasicStorage) *Store {
 }
 
 // Get retrieves a configuration entry by key.
-//
-// The lookup order is: store, environment variable, default value.
-//
-// Parameters:
-//   - key: The configuration key
-//
-// Returns:
-//   - *ConfigEntry: The configuration entry
-//   - error: An error if the key is not found
+// Lookup order: store, default value. ENV fallback is handled by MergeAndPersist
+// during startup, not at runtime.
 func (s *Store) Get(key string) (*ConfigEntry, error) {
 	var entry ConfigEntry
 	if err := s.BaseStore.Get(key, &entry); err == nil {
 		entry.Source = ConfigSourceStore
 		return &entry, nil
-	}
-
-	if envVal := s.getFromEnv(key); envVal != nil {
-		return envVal, nil
 	}
 
 	if def, ok := s.defaults[key]; ok {
@@ -60,81 +52,40 @@ func (s *Store) Get(key string) (*ConfigEntry, error) {
 	return nil, ErrConfigNotFound
 }
 
-func (s *Store) getFromEnv(key string) *ConfigEntry {
-	def, ok := s.defaults[key]
-	if !ok || def.EnvVar == "" {
-		return nil
-	}
-
-	envVal := os.Getenv(def.EnvVar)
-	if envVal == "" {
-		return nil
-	}
-
-	entry := def
-	entry.Value = s.parseEnvValue(envVal, def.Type)
-	entry.Source = ConfigSourceEnv
-	return &entry
-}
-
-func (s *Store) parseEnvValue(val string, typ ConfigType) interface{} {
-	switch typ {
-	case ConfigTypeInt, ConfigTypePort:
-		var i int
-		if _, err := parseInt(val, &i); err == nil {
-			return i
-		}
-		return 0
-	case ConfigTypeBool:
-		return val == "true" || val == "1" || val == "yes"
-	default:
-		return val
-	}
-}
-
 // Set sets a configuration value in the store.
-//
-// Parameters:
-//   - key: The configuration key
-//   - value: The value to set
-//
-// Returns:
-//   - error: An error if setting fails or the key is read-only
+// For keys defined in defaults: validates ReadOnly, persists via BaseStore.
+// For dynamic keys (not in defaults): creates a synthetic ConfigEntry with
+// Type=ConfigTypePort, Category=CategoryPorts, ReadOnly=false.
 func (s *Store) Set(key string, value interface{}) error {
-	entry, err := s.Get(key)
-	if err != nil {
-		return err
-	}
-	if entry.ReadOnly {
-		return ErrConfigReadOnly
+	if def, ok := s.defaults[key]; ok {
+		if def.ReadOnly {
+			return ErrConfigReadOnly
+		}
+		entry := def
+		entry.Value = value
+		entry.Source = ConfigSourceStore
+		entry.UpdatedAt = time.Now().Unix()
+		return s.BaseStore.Put(key, entry)
 	}
 
-	entry.Value = value
-	entry.Source = ConfigSourceStore
-	entry.UpdatedAt = time.Now().Unix()
-
+	entry := ConfigEntry{
+		Key:       key,
+		Value:     value,
+		Type:      ConfigTypePort,
+		Source:    ConfigSourceStore,
+		Category:  CategoryPorts,
+		ReadOnly:  false,
+		UpdatedAt: time.Now().Unix(),
+	}
 	return s.BaseStore.Put(key, entry)
 }
 
 // Delete removes a configuration entry from the store.
-//
-// Parameters:
-//   - key: The configuration key to delete
-//
-// Returns:
-//   - error: An error if deletion fails
 func (s *Store) Delete(key string) error {
 	return s.BaseStore.Delete(key)
 }
 
 // Reset resets a configuration entry to its default value.
-//
-// Parameters:
-//   - key: The configuration key to reset
-//
-// Returns:
-//   - *ConfigEntry: The reset configuration entry
-//   - error: An error if reset fails
 func (s *Store) Reset(key string) (*ConfigEntry, error) {
 	if err := s.BaseStore.Delete(key); err != nil {
 		return nil, err
@@ -142,11 +93,7 @@ func (s *Store) Reset(key string) (*ConfigEntry, error) {
 	return s.Get(key)
 }
 
-// GetAll retrieves all configuration entries.
-//
-// Returns:
-//   - []*ConfigEntry: All configuration entries
-//   - error: An error if retrieval fails
+// GetAll retrieves all configuration entries sorted by category then key.
 func (s *Store) GetAll() ([]*ConfigEntry, error) {
 	entries := make(map[string]*ConfigEntry)
 
@@ -154,10 +101,6 @@ func (s *Store) GetAll() ([]*ConfigEntry, error) {
 		defCopy := def
 		defCopy.Source = ConfigSourceDefault
 		entries[key] = &defCopy
-
-		if envVal := s.getFromEnv(key); envVal != nil {
-			entries[key] = envVal
-		}
 	}
 
 	err := s.BaseStore.ForEach(func(key string, value []byte) error {
@@ -177,17 +120,16 @@ func (s *Store) GetAll() ([]*ConfigEntry, error) {
 	for _, entry := range entries {
 		result = append(result, entry)
 	}
+	slices.SortFunc(result, func(a, b *ConfigEntry) int {
+		if a.Category != b.Category {
+			return strings.Compare(string(a.Category), string(b.Category))
+		}
+		return strings.Compare(a.Key, b.Key)
+	})
 	return result, nil
 }
 
 // ListByCategory retrieves all configuration entries in a category.
-//
-// Parameters:
-//   - category: The category to filter by
-//
-// Returns:
-//   - []*ConfigEntry: Configuration entries in the category
-//   - error: An error if retrieval fails
 func (s *Store) ListByCategory(category ConfigCategory) ([]*ConfigEntry, error) {
 	all, err := s.GetAll()
 	if err != nil {
@@ -204,14 +146,6 @@ func (s *Store) ListByCategory(category ConfigCategory) ([]*ConfigEntry, error) 
 }
 
 // GetResourcePort retrieves the port for a specific resource.
-//
-// Parameters:
-//   - servicePortKey: The service port configuration key
-//   - resourceID: The resource identifier
-//
-// Returns:
-//   - int: The resource port
-//   - error: An error if retrieval fails
 func (s *Store) GetResourcePort(servicePortKey, resourceID string) (int, error) {
 	resourceKey := servicePortKey + "." + resourceID
 
@@ -238,44 +172,58 @@ func (s *Store) GetResourcePort(servicePortKey, resourceID string) (int, error) 
 }
 
 // SetResourcePort sets the port for a specific resource.
-//
-// Parameters:
-//   - servicePortKey: The service port configuration key
-//   - resourceID: The resource identifier
-//   - port: The port to set
-//
-// Returns:
-//   - error: An error if setting fails
 func (s *Store) SetResourcePort(servicePortKey, resourceID string, port int) error {
 	resourceKey := servicePortKey + "." + resourceID
 	return s.Set(resourceKey, port)
 }
 
+// DeleteResourcePort removes a resource port allocation.
+func (s *Store) DeleteResourcePort(servicePortKey, resourceID string) error {
+	resourceKey := servicePortKey + "." + resourceID
+	return s.BaseStore.Delete(resourceKey)
+}
+
+// ListResourcePorts returns all resource port allocations for a service.
+func (s *Store) ListResourcePorts(servicePortKey string) (map[string]int, error) {
+	result := make(map[string]int)
+	prefix := servicePortKey + "."
+	err := s.BaseStore.ForEach(func(key string, value []byte) error {
+		if !strings.HasPrefix(key, prefix) {
+			return nil
+		}
+		var entry ConfigEntry
+		if err := json.Unmarshal(value, &entry); err != nil {
+			return nil
+		}
+		port := 0
+		switch v := entry.Value.(type) {
+		case float64:
+			port = int(v)
+		case int:
+			port = v
+		default:
+			return nil
+		}
+		resourceID := strings.TrimPrefix(key, prefix)
+		result[resourceID] = port
+		return nil
+	})
+	return result, err
+}
+
 // GetString retrieves a string configuration value.
-//
-// Parameters:
-//   - key: The configuration key
-//
-// Returns:
-//   - string: The string value, or empty string if not found
 func (s *Store) GetString(key string) string {
 	entry, err := s.Get(key)
 	if err != nil {
 		return ""
 	}
-	if s, ok := entry.Value.(string); ok {
-		return s
+	if sv, ok := entry.Value.(string); ok {
+		return sv
 	}
 	return ""
 }
 
 // GetInt retrieves an integer configuration value.
-//
-// Parameters:
-//   - key: The configuration key
-//
-// Returns:
-//   - int: The integer value, or 0 if not found
 func (s *Store) GetInt(key string) int {
 	entry, err := s.Get(key)
 	if err != nil {
@@ -296,12 +244,6 @@ func (s *Store) GetInt(key string) int {
 }
 
 // GetBool retrieves a boolean configuration value.
-//
-// Parameters:
-//   - key: The configuration key
-//
-// Returns:
-//   - bool: The boolean value, or false if not found
 func (s *Store) GetBool(key string) bool {
 	entry, err := s.Get(key)
 	if err != nil {
@@ -314,12 +256,6 @@ func (s *Store) GetBool(key string) bool {
 }
 
 // GetCategory returns the category for a configuration key.
-//
-// Parameters:
-//   - key: The configuration key
-//
-// Returns:
-//   - ConfigCategory: The category of the configuration key
 func (s *Store) GetCategory(key string) ConfigCategory {
 	if def, ok := s.defaults[key]; ok {
 		return def.Category
@@ -339,7 +275,74 @@ func (s *Store) GetCategory(key string) ConfigCategory {
 			return CategoryEndpoints
 		case "ports":
 			return CategoryPorts
+		case "services":
+			return CategoryServices
+		case "http":
+			return CategoryHTTP
 		}
 	}
 	return ""
+}
+
+// ForEach iterates over all raw key-value pairs in the underlying store.
+func (s *Store) ForEach(fn func(key string, value []byte) error) error {
+	return s.BaseStore.ForEach(fn)
+}
+
+// InitDefaults seeds all default values into the store on first startup.
+// Only writes entries that don't already exist in the store.
+func (s *Store) InitDefaults() error {
+	for key, def := range s.defaults {
+		var existing ConfigEntry
+		if err := s.BaseStore.Get(key, &existing); err != nil {
+			entry := def
+			entry.Source = ConfigSourceDefault
+			entry.UpdatedAt = time.Now().Unix()
+			if err := s.BaseStore.Put(key, entry); err != nil {
+				return fmt.Errorf("init defaults: write %s: %w", key, err)
+			}
+		}
+	}
+	return nil
+}
+
+// MergeAndPersist writes a set of configuration values to the store.
+// For each key that has an EnvVar in defaults and that env var is set,
+// the Source is set to ConfigSourceEnv. Otherwise, ConfigSourceStore.
+// This is called once during startup to persist ENV overrides.
+func (s *Store) MergeAndPersist(values map[string]interface{}) {
+	for key, value := range values {
+		def, hasDef := s.defaults[key]
+
+		entry := ConfigEntry{
+			Key:       key,
+			Value:     value,
+			Source:    ConfigSourceStore,
+			UpdatedAt: time.Now().Unix(),
+		}
+
+		if hasDef {
+			entry.Type = def.Type
+			entry.Category = def.Category
+			entry.Description = def.Description
+			entry.ReadOnly = def.ReadOnly
+			entry.EnvVar = def.EnvVar
+
+			if def.EnvVar != "" {
+				if envVal := os.Getenv(def.EnvVar); envVal != "" {
+					entry.Source = ConfigSourceEnv
+				}
+			}
+		} else {
+			entry.Type = ConfigTypePort
+			entry.Category = CategoryPorts
+		}
+
+		if err := s.BaseStore.Put(key, entry); err != nil {
+			logs.Warn("MergeAndPersist: failed to write config entry",
+				logs.String("key", key),
+				logs.Err(err),
+			)
+		}
+	}
 }

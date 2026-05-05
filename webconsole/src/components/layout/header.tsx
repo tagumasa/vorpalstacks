@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { clearTokens } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
-import { useAppState, REGIONS } from "@/lib/app-state";
+import { useAppState, REGIONS, REGION_LABELS } from "@/lib/app-state";
 import { useNavigate } from "react-router";
 import { Dropdown } from "@/components/shared/dropdown";
 
@@ -60,7 +60,7 @@ export function Header() {
         <Dropdown
           trigger={
             <button className="header-btn" title={t("header.region")}>
-              {"🌐"} {region}
+              {"🌐"} {REGION_LABELS[region] ?? region}
             </button>
           }
         >
@@ -70,7 +70,7 @@ export function Header() {
               className={`dropdown-item${r === region ? " active" : ""}`}
               onClick={() => setRegion(r)}
             >
-              {r}
+              {REGION_LABELS[r] ?? r}
             </div>
           ))}
         </Dropdown>

@@ -215,18 +215,6 @@ func GRPCWebPort() int {
 	return GetInt("server.grpc_web_port")
 }
 
-// BindAddr returns the configured server bind address.
-//
-// Returns:
-//   - string: The bind address
-func BindAddr() string {
-	return GetString("server.bind_addr")
-}
-
-// AWSAccountID returns the configured AWS account ID.
-//
-// Returns:
-//   - string: The AWS account ID
 func AWSAccountID() string {
 	return GetString("aws.account_id")
 }

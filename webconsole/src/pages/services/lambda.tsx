@@ -225,7 +225,6 @@ export function LambdaPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "lambda-items" }}
     >
       <SplitPane
         columns={columns}

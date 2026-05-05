@@ -144,7 +144,6 @@ export function SSMPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "ssm-items" }}
     >
       <SplitPane
         columns={columns}

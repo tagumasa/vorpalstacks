@@ -116,10 +116,10 @@ func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Requ
 
 	return connect.NewResponse(&pb.CreateDistributionResult{
 		Distribution: &pb.Distribution{
-			Id:         dist.ID,
-			Arn:        dist.ARN,
-			Status:     dist.Status,
-			Domainname: dist.DomainName,
+			Id:               dist.ID,
+			Arn:              dist.ARN,
+			Status:           dist.Status,
+			Domainname:       dist.DomainName,
 			Lastmodifiedtime: dist.LastModifiedAt.Format(timeutils.ISO8601UTCFormat),
 		},
 	}), nil

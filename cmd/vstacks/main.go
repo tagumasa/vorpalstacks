@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"vorpalstacks/internal/common/serviceports"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/tools/vstackscli"
 )
@@ -12,8 +13,8 @@ import (
 func main() {
 	dataPath := flag.String("data", "./data", "Path to data directory")
 	accountId := flag.String("account-id", "123456789012", "AWS Account ID")
-	endpoint := flag.String("endpoint", "http://127.0.0.1:9090", "gRPC-Web admin endpoint")
-	httpEndpoint := flag.String("http-endpoint", "http://127.0.0.1:8080", "HTTP server endpoint")
+	endpoint := flag.String("endpoint", fmt.Sprintf("http://127.0.0.1:%d", serviceports.GRPCWeb), "gRPC-Web admin endpoint")
+	httpEndpoint := flag.String("http-endpoint", fmt.Sprintf("http://127.0.0.1:%d", serviceports.HTTP), "HTTP server endpoint")
 	flag.Parse()
 
 	args := flag.Args()
@@ -104,8 +105,8 @@ func printUsage() {
 	fmt.Println("Options:")
 	fmt.Println("  -data <path>           Path to data directory (default: ./data)")
 	fmt.Println("  -account-id <id>       AWS Account ID (default: 123456789012)")
-	fmt.Println("  -endpoint <url>        gRPC-Web admin endpoint (default: http://127.0.0.1:9090)")
-	fmt.Println("  -http-endpoint <url>   HTTP server endpoint (default: http://127.0.0.1:8080)")
+	fmt.Println("  -endpoint <url>        gRPC-Web admin endpoint (default: http://127.0.0.1:50090)")
+	fmt.Println("  -http-endpoint <url>   HTTP server endpoint (default: http://127.0.0.1:50080)")
 	fmt.Println()
 	fmt.Println("Groups:")
 	fmt.Println("  server   Server control (stop, status)")

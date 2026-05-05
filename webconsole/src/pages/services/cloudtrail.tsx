@@ -99,7 +99,6 @@ export function CloudTrailPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "cloudtrail-items" }}
     >
       <SplitPane
         columns={columns}

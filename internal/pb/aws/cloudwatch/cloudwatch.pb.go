@@ -7927,6 +7927,7 @@ type PutDashboardInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dashboardbody string                 `protobuf:"bytes,3403236,opt,name=dashboardbody,proto3" json:"dashboardbody,omitempty"`
 	Dashboardname string                 `protobuf:"bytes,506599873,opt,name=dashboardname,proto3" json:"dashboardname,omitempty"`
+	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7973,6 +7974,13 @@ func (x *PutDashboardInput) GetDashboardname() string {
 		return x.Dashboardname
 	}
 	return ""
+}
+
+func (x *PutDashboardInput) GetTags() []*Tag {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
 }
 
 type PutDashboardOutput struct {
@@ -10293,10 +10301,11 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\talarmrule\x18\xed\xfe\xc2\xf6\x01 \x01(\tR\talarmrule\x12<\n" +
 	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12 \n" +
 	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12'\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\"f\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\"\x8f\x01\n" +
 	"\x11PutDashboardInput\x12'\n" +
 	"\rdashboardbody\x18\xe4\xdb\xcf\x01 \x01(\tR\rdashboardbody\x12(\n" +
-	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tR\rdashboardname\"\x82\x01\n" +
+	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tR\rdashboardname\x12'\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\"\x82\x01\n" +
 	"\x12PutDashboardOutput\x12l\n" +
 	"\x1bdashboardvalidationmessages\x18\xc9\xcb\xd9\xf5\x01 \x03(\v2&.cloudwatch.DashboardValidationMessageR\x1bdashboardvalidationmessages\"\xe5\x01\n" +
 	"\x13PutInsightRuleInput\x129\n" +
@@ -10847,125 +10856,126 @@ var file_cloudwatch_proto_depIdxs = []int32{
 	113, // 102: cloudwatch.PutAnomalyDetectorInput.metricmathanomalydetector:type_name -> cloudwatch.MetricMathAnomalyDetector
 	142, // 103: cloudwatch.PutAnomalyDetectorInput.singlemetricanomalydetector:type_name -> cloudwatch.SingleMetricAnomalyDetector
 	152, // 104: cloudwatch.PutCompositeAlarmInput.tags:type_name -> cloudwatch.Tag
-	28,  // 105: cloudwatch.PutDashboardOutput.dashboardvalidationmessages:type_name -> cloudwatch.DashboardValidationMessage
-	152, // 106: cloudwatch.PutInsightRuleInput.tags:type_name -> cloudwatch.Tag
-	103, // 107: cloudwatch.PutManagedInsightRulesInput.managedrules:type_name -> cloudwatch.ManagedRule
-	121, // 108: cloudwatch.PutManagedInsightRulesOutput.failures:type_name -> cloudwatch.PartialFailure
-	5,   // 109: cloudwatch.PutMetricAlarmInput.comparisonoperator:type_name -> cloudwatch.ComparisonOperator
-	52,  // 110: cloudwatch.PutMetricAlarmInput.dimensions:type_name -> cloudwatch.Dimension
-	62,  // 111: cloudwatch.PutMetricAlarmInput.evaluationcriteria:type_name -> cloudwatch.EvaluationCriteria
-	110, // 112: cloudwatch.PutMetricAlarmInput.metrics:type_name -> cloudwatch.MetricDataQuery
-	14,  // 113: cloudwatch.PutMetricAlarmInput.statistic:type_name -> cloudwatch.Statistic
-	152, // 114: cloudwatch.PutMetricAlarmInput.tags:type_name -> cloudwatch.Tag
-	12,  // 115: cloudwatch.PutMetricAlarmInput.unit:type_name -> cloudwatch.StandardUnit
-	61,  // 116: cloudwatch.PutMetricDataInput.entitymetricdata:type_name -> cloudwatch.EntityMetricData
-	112, // 117: cloudwatch.PutMetricDataInput.metricdata:type_name -> cloudwatch.MetricDatum
-	116, // 118: cloudwatch.PutMetricStreamInput.excludefilters:type_name -> cloudwatch.MetricStreamFilter
-	116, // 119: cloudwatch.PutMetricStreamInput.includefilters:type_name -> cloudwatch.MetricStreamFilter
-	8,   // 120: cloudwatch.PutMetricStreamInput.outputformat:type_name -> cloudwatch.MetricStreamOutputFormat
-	117, // 121: cloudwatch.PutMetricStreamInput.statisticsconfigurations:type_name -> cloudwatch.MetricStreamStatisticsConfiguration
-	152, // 122: cloudwatch.PutMetricStreamInput.tags:type_name -> cloudwatch.Tag
-	140, // 123: cloudwatch.Rule.schedule:type_name -> cloudwatch.Schedule
-	13,  // 124: cloudwatch.SetAlarmStateInput.statevalue:type_name -> cloudwatch.StateValue
-	52,  // 125: cloudwatch.SingleMetricAnomalyDetector.dimensions:type_name -> cloudwatch.Dimension
-	152, // 126: cloudwatch.TagResourceInput.tags:type_name -> cloudwatch.Tag
-	30,  // 127: cloudwatch.CloudWatchService.DeleteAlarmMuteRule:input_type -> cloudwatch.DeleteAlarmMuteRuleInput
-	31,  // 128: cloudwatch.CloudWatchService.DeleteAlarms:input_type -> cloudwatch.DeleteAlarmsInput
-	32,  // 129: cloudwatch.CloudWatchService.DeleteAnomalyDetector:input_type -> cloudwatch.DeleteAnomalyDetectorInput
-	34,  // 130: cloudwatch.CloudWatchService.DeleteDashboards:input_type -> cloudwatch.DeleteDashboardsInput
-	36,  // 131: cloudwatch.CloudWatchService.DeleteInsightRules:input_type -> cloudwatch.DeleteInsightRulesInput
-	38,  // 132: cloudwatch.CloudWatchService.DeleteMetricStream:input_type -> cloudwatch.DeleteMetricStreamInput
-	40,  // 133: cloudwatch.CloudWatchService.DescribeAlarmContributors:input_type -> cloudwatch.DescribeAlarmContributorsInput
-	42,  // 134: cloudwatch.CloudWatchService.DescribeAlarmHistory:input_type -> cloudwatch.DescribeAlarmHistoryInput
-	46,  // 135: cloudwatch.CloudWatchService.DescribeAlarms:input_type -> cloudwatch.DescribeAlarmsInput
-	44,  // 136: cloudwatch.CloudWatchService.DescribeAlarmsForMetric:input_type -> cloudwatch.DescribeAlarmsForMetricInput
-	48,  // 137: cloudwatch.CloudWatchService.DescribeAnomalyDetectors:input_type -> cloudwatch.DescribeAnomalyDetectorsInput
-	50,  // 138: cloudwatch.CloudWatchService.DescribeInsightRules:input_type -> cloudwatch.DescribeInsightRulesInput
-	54,  // 139: cloudwatch.CloudWatchService.DisableAlarmActions:input_type -> cloudwatch.DisableAlarmActionsInput
-	55,  // 140: cloudwatch.CloudWatchService.DisableInsightRules:input_type -> cloudwatch.DisableInsightRulesInput
-	57,  // 141: cloudwatch.CloudWatchService.EnableAlarmActions:input_type -> cloudwatch.EnableAlarmActionsInput
-	58,  // 142: cloudwatch.CloudWatchService.EnableInsightRules:input_type -> cloudwatch.EnableInsightRulesInput
-	63,  // 143: cloudwatch.CloudWatchService.GetAlarmMuteRule:input_type -> cloudwatch.GetAlarmMuteRuleInput
-	65,  // 144: cloudwatch.CloudWatchService.GetDashboard:input_type -> cloudwatch.GetDashboardInput
-	67,  // 145: cloudwatch.CloudWatchService.GetInsightRuleReport:input_type -> cloudwatch.GetInsightRuleReportInput
-	69,  // 146: cloudwatch.CloudWatchService.GetMetricData:input_type -> cloudwatch.GetMetricDataInput
-	71,  // 147: cloudwatch.CloudWatchService.GetMetricStatistics:input_type -> cloudwatch.GetMetricStatisticsInput
-	73,  // 148: cloudwatch.CloudWatchService.GetMetricStream:input_type -> cloudwatch.GetMetricStreamInput
-	75,  // 149: cloudwatch.CloudWatchService.GetMetricWidgetImage:input_type -> cloudwatch.GetMetricWidgetImageInput
-	77,  // 150: cloudwatch.CloudWatchService.GetOTelEnrichment:input_type -> cloudwatch.GetOTelEnrichmentInput
-	91,  // 151: cloudwatch.CloudWatchService.ListAlarmMuteRules:input_type -> cloudwatch.ListAlarmMuteRulesInput
-	93,  // 152: cloudwatch.CloudWatchService.ListDashboards:input_type -> cloudwatch.ListDashboardsInput
-	95,  // 153: cloudwatch.CloudWatchService.ListManagedInsightRules:input_type -> cloudwatch.ListManagedInsightRulesInput
-	99,  // 154: cloudwatch.CloudWatchService.ListMetrics:input_type -> cloudwatch.ListMetricsInput
-	97,  // 155: cloudwatch.CloudWatchService.ListMetricStreams:input_type -> cloudwatch.ListMetricStreamsInput
-	101, // 156: cloudwatch.CloudWatchService.ListTagsForResource:input_type -> cloudwatch.ListTagsForResourceInput
-	122, // 157: cloudwatch.CloudWatchService.PutAlarmMuteRule:input_type -> cloudwatch.PutAlarmMuteRuleInput
-	123, // 158: cloudwatch.CloudWatchService.PutAnomalyDetector:input_type -> cloudwatch.PutAnomalyDetectorInput
-	125, // 159: cloudwatch.CloudWatchService.PutCompositeAlarm:input_type -> cloudwatch.PutCompositeAlarmInput
-	126, // 160: cloudwatch.CloudWatchService.PutDashboard:input_type -> cloudwatch.PutDashboardInput
-	128, // 161: cloudwatch.CloudWatchService.PutInsightRule:input_type -> cloudwatch.PutInsightRuleInput
-	130, // 162: cloudwatch.CloudWatchService.PutManagedInsightRules:input_type -> cloudwatch.PutManagedInsightRulesInput
-	132, // 163: cloudwatch.CloudWatchService.PutMetricAlarm:input_type -> cloudwatch.PutMetricAlarmInput
-	133, // 164: cloudwatch.CloudWatchService.PutMetricData:input_type -> cloudwatch.PutMetricDataInput
-	134, // 165: cloudwatch.CloudWatchService.PutMetricStream:input_type -> cloudwatch.PutMetricStreamInput
-	141, // 166: cloudwatch.CloudWatchService.SetAlarmState:input_type -> cloudwatch.SetAlarmStateInput
-	143, // 167: cloudwatch.CloudWatchService.StartMetricStreams:input_type -> cloudwatch.StartMetricStreamsInput
-	145, // 168: cloudwatch.CloudWatchService.StartOTelEnrichment:input_type -> cloudwatch.StartOTelEnrichmentInput
-	148, // 169: cloudwatch.CloudWatchService.StopMetricStreams:input_type -> cloudwatch.StopMetricStreamsInput
-	150, // 170: cloudwatch.CloudWatchService.StopOTelEnrichment:input_type -> cloudwatch.StopOTelEnrichmentInput
-	153, // 171: cloudwatch.CloudWatchService.TagResource:input_type -> cloudwatch.TagResourceInput
-	155, // 172: cloudwatch.CloudWatchService.UntagResource:input_type -> cloudwatch.UntagResourceInput
-	162, // 173: cloudwatch.CloudWatchService.DeleteAlarmMuteRule:output_type -> common.Empty
-	162, // 174: cloudwatch.CloudWatchService.DeleteAlarms:output_type -> common.Empty
-	33,  // 175: cloudwatch.CloudWatchService.DeleteAnomalyDetector:output_type -> cloudwatch.DeleteAnomalyDetectorOutput
-	35,  // 176: cloudwatch.CloudWatchService.DeleteDashboards:output_type -> cloudwatch.DeleteDashboardsOutput
-	37,  // 177: cloudwatch.CloudWatchService.DeleteInsightRules:output_type -> cloudwatch.DeleteInsightRulesOutput
-	39,  // 178: cloudwatch.CloudWatchService.DeleteMetricStream:output_type -> cloudwatch.DeleteMetricStreamOutput
-	41,  // 179: cloudwatch.CloudWatchService.DescribeAlarmContributors:output_type -> cloudwatch.DescribeAlarmContributorsOutput
-	43,  // 180: cloudwatch.CloudWatchService.DescribeAlarmHistory:output_type -> cloudwatch.DescribeAlarmHistoryOutput
-	47,  // 181: cloudwatch.CloudWatchService.DescribeAlarms:output_type -> cloudwatch.DescribeAlarmsOutput
-	45,  // 182: cloudwatch.CloudWatchService.DescribeAlarmsForMetric:output_type -> cloudwatch.DescribeAlarmsForMetricOutput
-	49,  // 183: cloudwatch.CloudWatchService.DescribeAnomalyDetectors:output_type -> cloudwatch.DescribeAnomalyDetectorsOutput
-	51,  // 184: cloudwatch.CloudWatchService.DescribeInsightRules:output_type -> cloudwatch.DescribeInsightRulesOutput
-	162, // 185: cloudwatch.CloudWatchService.DisableAlarmActions:output_type -> common.Empty
-	56,  // 186: cloudwatch.CloudWatchService.DisableInsightRules:output_type -> cloudwatch.DisableInsightRulesOutput
-	162, // 187: cloudwatch.CloudWatchService.EnableAlarmActions:output_type -> common.Empty
-	59,  // 188: cloudwatch.CloudWatchService.EnableInsightRules:output_type -> cloudwatch.EnableInsightRulesOutput
-	64,  // 189: cloudwatch.CloudWatchService.GetAlarmMuteRule:output_type -> cloudwatch.GetAlarmMuteRuleOutput
-	66,  // 190: cloudwatch.CloudWatchService.GetDashboard:output_type -> cloudwatch.GetDashboardOutput
-	68,  // 191: cloudwatch.CloudWatchService.GetInsightRuleReport:output_type -> cloudwatch.GetInsightRuleReportOutput
-	70,  // 192: cloudwatch.CloudWatchService.GetMetricData:output_type -> cloudwatch.GetMetricDataOutput
-	72,  // 193: cloudwatch.CloudWatchService.GetMetricStatistics:output_type -> cloudwatch.GetMetricStatisticsOutput
-	74,  // 194: cloudwatch.CloudWatchService.GetMetricStream:output_type -> cloudwatch.GetMetricStreamOutput
-	76,  // 195: cloudwatch.CloudWatchService.GetMetricWidgetImage:output_type -> cloudwatch.GetMetricWidgetImageOutput
-	78,  // 196: cloudwatch.CloudWatchService.GetOTelEnrichment:output_type -> cloudwatch.GetOTelEnrichmentOutput
-	92,  // 197: cloudwatch.CloudWatchService.ListAlarmMuteRules:output_type -> cloudwatch.ListAlarmMuteRulesOutput
-	94,  // 198: cloudwatch.CloudWatchService.ListDashboards:output_type -> cloudwatch.ListDashboardsOutput
-	96,  // 199: cloudwatch.CloudWatchService.ListManagedInsightRules:output_type -> cloudwatch.ListManagedInsightRulesOutput
-	100, // 200: cloudwatch.CloudWatchService.ListMetrics:output_type -> cloudwatch.ListMetricsOutput
-	98,  // 201: cloudwatch.CloudWatchService.ListMetricStreams:output_type -> cloudwatch.ListMetricStreamsOutput
-	102, // 202: cloudwatch.CloudWatchService.ListTagsForResource:output_type -> cloudwatch.ListTagsForResourceOutput
-	162, // 203: cloudwatch.CloudWatchService.PutAlarmMuteRule:output_type -> common.Empty
-	124, // 204: cloudwatch.CloudWatchService.PutAnomalyDetector:output_type -> cloudwatch.PutAnomalyDetectorOutput
-	162, // 205: cloudwatch.CloudWatchService.PutCompositeAlarm:output_type -> common.Empty
-	127, // 206: cloudwatch.CloudWatchService.PutDashboard:output_type -> cloudwatch.PutDashboardOutput
-	129, // 207: cloudwatch.CloudWatchService.PutInsightRule:output_type -> cloudwatch.PutInsightRuleOutput
-	131, // 208: cloudwatch.CloudWatchService.PutManagedInsightRules:output_type -> cloudwatch.PutManagedInsightRulesOutput
-	162, // 209: cloudwatch.CloudWatchService.PutMetricAlarm:output_type -> common.Empty
-	162, // 210: cloudwatch.CloudWatchService.PutMetricData:output_type -> common.Empty
-	135, // 211: cloudwatch.CloudWatchService.PutMetricStream:output_type -> cloudwatch.PutMetricStreamOutput
-	162, // 212: cloudwatch.CloudWatchService.SetAlarmState:output_type -> common.Empty
-	144, // 213: cloudwatch.CloudWatchService.StartMetricStreams:output_type -> cloudwatch.StartMetricStreamsOutput
-	146, // 214: cloudwatch.CloudWatchService.StartOTelEnrichment:output_type -> cloudwatch.StartOTelEnrichmentOutput
-	149, // 215: cloudwatch.CloudWatchService.StopMetricStreams:output_type -> cloudwatch.StopMetricStreamsOutput
-	151, // 216: cloudwatch.CloudWatchService.StopOTelEnrichment:output_type -> cloudwatch.StopOTelEnrichmentOutput
-	154, // 217: cloudwatch.CloudWatchService.TagResource:output_type -> cloudwatch.TagResourceOutput
-	156, // 218: cloudwatch.CloudWatchService.UntagResource:output_type -> cloudwatch.UntagResourceOutput
-	173, // [173:219] is the sub-list for method output_type
-	127, // [127:173] is the sub-list for method input_type
-	127, // [127:127] is the sub-list for extension type_name
-	127, // [127:127] is the sub-list for extension extendee
-	0,   // [0:127] is the sub-list for field type_name
+	152, // 105: cloudwatch.PutDashboardInput.tags:type_name -> cloudwatch.Tag
+	28,  // 106: cloudwatch.PutDashboardOutput.dashboardvalidationmessages:type_name -> cloudwatch.DashboardValidationMessage
+	152, // 107: cloudwatch.PutInsightRuleInput.tags:type_name -> cloudwatch.Tag
+	103, // 108: cloudwatch.PutManagedInsightRulesInput.managedrules:type_name -> cloudwatch.ManagedRule
+	121, // 109: cloudwatch.PutManagedInsightRulesOutput.failures:type_name -> cloudwatch.PartialFailure
+	5,   // 110: cloudwatch.PutMetricAlarmInput.comparisonoperator:type_name -> cloudwatch.ComparisonOperator
+	52,  // 111: cloudwatch.PutMetricAlarmInput.dimensions:type_name -> cloudwatch.Dimension
+	62,  // 112: cloudwatch.PutMetricAlarmInput.evaluationcriteria:type_name -> cloudwatch.EvaluationCriteria
+	110, // 113: cloudwatch.PutMetricAlarmInput.metrics:type_name -> cloudwatch.MetricDataQuery
+	14,  // 114: cloudwatch.PutMetricAlarmInput.statistic:type_name -> cloudwatch.Statistic
+	152, // 115: cloudwatch.PutMetricAlarmInput.tags:type_name -> cloudwatch.Tag
+	12,  // 116: cloudwatch.PutMetricAlarmInput.unit:type_name -> cloudwatch.StandardUnit
+	61,  // 117: cloudwatch.PutMetricDataInput.entitymetricdata:type_name -> cloudwatch.EntityMetricData
+	112, // 118: cloudwatch.PutMetricDataInput.metricdata:type_name -> cloudwatch.MetricDatum
+	116, // 119: cloudwatch.PutMetricStreamInput.excludefilters:type_name -> cloudwatch.MetricStreamFilter
+	116, // 120: cloudwatch.PutMetricStreamInput.includefilters:type_name -> cloudwatch.MetricStreamFilter
+	8,   // 121: cloudwatch.PutMetricStreamInput.outputformat:type_name -> cloudwatch.MetricStreamOutputFormat
+	117, // 122: cloudwatch.PutMetricStreamInput.statisticsconfigurations:type_name -> cloudwatch.MetricStreamStatisticsConfiguration
+	152, // 123: cloudwatch.PutMetricStreamInput.tags:type_name -> cloudwatch.Tag
+	140, // 124: cloudwatch.Rule.schedule:type_name -> cloudwatch.Schedule
+	13,  // 125: cloudwatch.SetAlarmStateInput.statevalue:type_name -> cloudwatch.StateValue
+	52,  // 126: cloudwatch.SingleMetricAnomalyDetector.dimensions:type_name -> cloudwatch.Dimension
+	152, // 127: cloudwatch.TagResourceInput.tags:type_name -> cloudwatch.Tag
+	30,  // 128: cloudwatch.CloudWatchService.DeleteAlarmMuteRule:input_type -> cloudwatch.DeleteAlarmMuteRuleInput
+	31,  // 129: cloudwatch.CloudWatchService.DeleteAlarms:input_type -> cloudwatch.DeleteAlarmsInput
+	32,  // 130: cloudwatch.CloudWatchService.DeleteAnomalyDetector:input_type -> cloudwatch.DeleteAnomalyDetectorInput
+	34,  // 131: cloudwatch.CloudWatchService.DeleteDashboards:input_type -> cloudwatch.DeleteDashboardsInput
+	36,  // 132: cloudwatch.CloudWatchService.DeleteInsightRules:input_type -> cloudwatch.DeleteInsightRulesInput
+	38,  // 133: cloudwatch.CloudWatchService.DeleteMetricStream:input_type -> cloudwatch.DeleteMetricStreamInput
+	40,  // 134: cloudwatch.CloudWatchService.DescribeAlarmContributors:input_type -> cloudwatch.DescribeAlarmContributorsInput
+	42,  // 135: cloudwatch.CloudWatchService.DescribeAlarmHistory:input_type -> cloudwatch.DescribeAlarmHistoryInput
+	46,  // 136: cloudwatch.CloudWatchService.DescribeAlarms:input_type -> cloudwatch.DescribeAlarmsInput
+	44,  // 137: cloudwatch.CloudWatchService.DescribeAlarmsForMetric:input_type -> cloudwatch.DescribeAlarmsForMetricInput
+	48,  // 138: cloudwatch.CloudWatchService.DescribeAnomalyDetectors:input_type -> cloudwatch.DescribeAnomalyDetectorsInput
+	50,  // 139: cloudwatch.CloudWatchService.DescribeInsightRules:input_type -> cloudwatch.DescribeInsightRulesInput
+	54,  // 140: cloudwatch.CloudWatchService.DisableAlarmActions:input_type -> cloudwatch.DisableAlarmActionsInput
+	55,  // 141: cloudwatch.CloudWatchService.DisableInsightRules:input_type -> cloudwatch.DisableInsightRulesInput
+	57,  // 142: cloudwatch.CloudWatchService.EnableAlarmActions:input_type -> cloudwatch.EnableAlarmActionsInput
+	58,  // 143: cloudwatch.CloudWatchService.EnableInsightRules:input_type -> cloudwatch.EnableInsightRulesInput
+	63,  // 144: cloudwatch.CloudWatchService.GetAlarmMuteRule:input_type -> cloudwatch.GetAlarmMuteRuleInput
+	65,  // 145: cloudwatch.CloudWatchService.GetDashboard:input_type -> cloudwatch.GetDashboardInput
+	67,  // 146: cloudwatch.CloudWatchService.GetInsightRuleReport:input_type -> cloudwatch.GetInsightRuleReportInput
+	69,  // 147: cloudwatch.CloudWatchService.GetMetricData:input_type -> cloudwatch.GetMetricDataInput
+	71,  // 148: cloudwatch.CloudWatchService.GetMetricStatistics:input_type -> cloudwatch.GetMetricStatisticsInput
+	73,  // 149: cloudwatch.CloudWatchService.GetMetricStream:input_type -> cloudwatch.GetMetricStreamInput
+	75,  // 150: cloudwatch.CloudWatchService.GetMetricWidgetImage:input_type -> cloudwatch.GetMetricWidgetImageInput
+	77,  // 151: cloudwatch.CloudWatchService.GetOTelEnrichment:input_type -> cloudwatch.GetOTelEnrichmentInput
+	91,  // 152: cloudwatch.CloudWatchService.ListAlarmMuteRules:input_type -> cloudwatch.ListAlarmMuteRulesInput
+	93,  // 153: cloudwatch.CloudWatchService.ListDashboards:input_type -> cloudwatch.ListDashboardsInput
+	95,  // 154: cloudwatch.CloudWatchService.ListManagedInsightRules:input_type -> cloudwatch.ListManagedInsightRulesInput
+	99,  // 155: cloudwatch.CloudWatchService.ListMetrics:input_type -> cloudwatch.ListMetricsInput
+	97,  // 156: cloudwatch.CloudWatchService.ListMetricStreams:input_type -> cloudwatch.ListMetricStreamsInput
+	101, // 157: cloudwatch.CloudWatchService.ListTagsForResource:input_type -> cloudwatch.ListTagsForResourceInput
+	122, // 158: cloudwatch.CloudWatchService.PutAlarmMuteRule:input_type -> cloudwatch.PutAlarmMuteRuleInput
+	123, // 159: cloudwatch.CloudWatchService.PutAnomalyDetector:input_type -> cloudwatch.PutAnomalyDetectorInput
+	125, // 160: cloudwatch.CloudWatchService.PutCompositeAlarm:input_type -> cloudwatch.PutCompositeAlarmInput
+	126, // 161: cloudwatch.CloudWatchService.PutDashboard:input_type -> cloudwatch.PutDashboardInput
+	128, // 162: cloudwatch.CloudWatchService.PutInsightRule:input_type -> cloudwatch.PutInsightRuleInput
+	130, // 163: cloudwatch.CloudWatchService.PutManagedInsightRules:input_type -> cloudwatch.PutManagedInsightRulesInput
+	132, // 164: cloudwatch.CloudWatchService.PutMetricAlarm:input_type -> cloudwatch.PutMetricAlarmInput
+	133, // 165: cloudwatch.CloudWatchService.PutMetricData:input_type -> cloudwatch.PutMetricDataInput
+	134, // 166: cloudwatch.CloudWatchService.PutMetricStream:input_type -> cloudwatch.PutMetricStreamInput
+	141, // 167: cloudwatch.CloudWatchService.SetAlarmState:input_type -> cloudwatch.SetAlarmStateInput
+	143, // 168: cloudwatch.CloudWatchService.StartMetricStreams:input_type -> cloudwatch.StartMetricStreamsInput
+	145, // 169: cloudwatch.CloudWatchService.StartOTelEnrichment:input_type -> cloudwatch.StartOTelEnrichmentInput
+	148, // 170: cloudwatch.CloudWatchService.StopMetricStreams:input_type -> cloudwatch.StopMetricStreamsInput
+	150, // 171: cloudwatch.CloudWatchService.StopOTelEnrichment:input_type -> cloudwatch.StopOTelEnrichmentInput
+	153, // 172: cloudwatch.CloudWatchService.TagResource:input_type -> cloudwatch.TagResourceInput
+	155, // 173: cloudwatch.CloudWatchService.UntagResource:input_type -> cloudwatch.UntagResourceInput
+	162, // 174: cloudwatch.CloudWatchService.DeleteAlarmMuteRule:output_type -> common.Empty
+	162, // 175: cloudwatch.CloudWatchService.DeleteAlarms:output_type -> common.Empty
+	33,  // 176: cloudwatch.CloudWatchService.DeleteAnomalyDetector:output_type -> cloudwatch.DeleteAnomalyDetectorOutput
+	35,  // 177: cloudwatch.CloudWatchService.DeleteDashboards:output_type -> cloudwatch.DeleteDashboardsOutput
+	37,  // 178: cloudwatch.CloudWatchService.DeleteInsightRules:output_type -> cloudwatch.DeleteInsightRulesOutput
+	39,  // 179: cloudwatch.CloudWatchService.DeleteMetricStream:output_type -> cloudwatch.DeleteMetricStreamOutput
+	41,  // 180: cloudwatch.CloudWatchService.DescribeAlarmContributors:output_type -> cloudwatch.DescribeAlarmContributorsOutput
+	43,  // 181: cloudwatch.CloudWatchService.DescribeAlarmHistory:output_type -> cloudwatch.DescribeAlarmHistoryOutput
+	47,  // 182: cloudwatch.CloudWatchService.DescribeAlarms:output_type -> cloudwatch.DescribeAlarmsOutput
+	45,  // 183: cloudwatch.CloudWatchService.DescribeAlarmsForMetric:output_type -> cloudwatch.DescribeAlarmsForMetricOutput
+	49,  // 184: cloudwatch.CloudWatchService.DescribeAnomalyDetectors:output_type -> cloudwatch.DescribeAnomalyDetectorsOutput
+	51,  // 185: cloudwatch.CloudWatchService.DescribeInsightRules:output_type -> cloudwatch.DescribeInsightRulesOutput
+	162, // 186: cloudwatch.CloudWatchService.DisableAlarmActions:output_type -> common.Empty
+	56,  // 187: cloudwatch.CloudWatchService.DisableInsightRules:output_type -> cloudwatch.DisableInsightRulesOutput
+	162, // 188: cloudwatch.CloudWatchService.EnableAlarmActions:output_type -> common.Empty
+	59,  // 189: cloudwatch.CloudWatchService.EnableInsightRules:output_type -> cloudwatch.EnableInsightRulesOutput
+	64,  // 190: cloudwatch.CloudWatchService.GetAlarmMuteRule:output_type -> cloudwatch.GetAlarmMuteRuleOutput
+	66,  // 191: cloudwatch.CloudWatchService.GetDashboard:output_type -> cloudwatch.GetDashboardOutput
+	68,  // 192: cloudwatch.CloudWatchService.GetInsightRuleReport:output_type -> cloudwatch.GetInsightRuleReportOutput
+	70,  // 193: cloudwatch.CloudWatchService.GetMetricData:output_type -> cloudwatch.GetMetricDataOutput
+	72,  // 194: cloudwatch.CloudWatchService.GetMetricStatistics:output_type -> cloudwatch.GetMetricStatisticsOutput
+	74,  // 195: cloudwatch.CloudWatchService.GetMetricStream:output_type -> cloudwatch.GetMetricStreamOutput
+	76,  // 196: cloudwatch.CloudWatchService.GetMetricWidgetImage:output_type -> cloudwatch.GetMetricWidgetImageOutput
+	78,  // 197: cloudwatch.CloudWatchService.GetOTelEnrichment:output_type -> cloudwatch.GetOTelEnrichmentOutput
+	92,  // 198: cloudwatch.CloudWatchService.ListAlarmMuteRules:output_type -> cloudwatch.ListAlarmMuteRulesOutput
+	94,  // 199: cloudwatch.CloudWatchService.ListDashboards:output_type -> cloudwatch.ListDashboardsOutput
+	96,  // 200: cloudwatch.CloudWatchService.ListManagedInsightRules:output_type -> cloudwatch.ListManagedInsightRulesOutput
+	100, // 201: cloudwatch.CloudWatchService.ListMetrics:output_type -> cloudwatch.ListMetricsOutput
+	98,  // 202: cloudwatch.CloudWatchService.ListMetricStreams:output_type -> cloudwatch.ListMetricStreamsOutput
+	102, // 203: cloudwatch.CloudWatchService.ListTagsForResource:output_type -> cloudwatch.ListTagsForResourceOutput
+	162, // 204: cloudwatch.CloudWatchService.PutAlarmMuteRule:output_type -> common.Empty
+	124, // 205: cloudwatch.CloudWatchService.PutAnomalyDetector:output_type -> cloudwatch.PutAnomalyDetectorOutput
+	162, // 206: cloudwatch.CloudWatchService.PutCompositeAlarm:output_type -> common.Empty
+	127, // 207: cloudwatch.CloudWatchService.PutDashboard:output_type -> cloudwatch.PutDashboardOutput
+	129, // 208: cloudwatch.CloudWatchService.PutInsightRule:output_type -> cloudwatch.PutInsightRuleOutput
+	131, // 209: cloudwatch.CloudWatchService.PutManagedInsightRules:output_type -> cloudwatch.PutManagedInsightRulesOutput
+	162, // 210: cloudwatch.CloudWatchService.PutMetricAlarm:output_type -> common.Empty
+	162, // 211: cloudwatch.CloudWatchService.PutMetricData:output_type -> common.Empty
+	135, // 212: cloudwatch.CloudWatchService.PutMetricStream:output_type -> cloudwatch.PutMetricStreamOutput
+	162, // 213: cloudwatch.CloudWatchService.SetAlarmState:output_type -> common.Empty
+	144, // 214: cloudwatch.CloudWatchService.StartMetricStreams:output_type -> cloudwatch.StartMetricStreamsOutput
+	146, // 215: cloudwatch.CloudWatchService.StartOTelEnrichment:output_type -> cloudwatch.StartOTelEnrichmentOutput
+	149, // 216: cloudwatch.CloudWatchService.StopMetricStreams:output_type -> cloudwatch.StopMetricStreamsOutput
+	151, // 217: cloudwatch.CloudWatchService.StopOTelEnrichment:output_type -> cloudwatch.StopOTelEnrichmentOutput
+	154, // 218: cloudwatch.CloudWatchService.TagResource:output_type -> cloudwatch.TagResourceOutput
+	156, // 219: cloudwatch.CloudWatchService.UntagResource:output_type -> cloudwatch.UntagResourceOutput
+	174, // [174:220] is the sub-list for method output_type
+	128, // [128:174] is the sub-list for method input_type
+	128, // [128:128] is the sub-list for extension type_name
+	128, // [128:128] is the sub-list for extension extendee
+	0,   // [0:128] is the sub-list for field type_name
 }
 
 func init() { file_cloudwatch_proto_init() }

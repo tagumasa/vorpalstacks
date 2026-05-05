@@ -7,6 +7,7 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/serviceports"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/services/aws/route53/dnsserver"
@@ -35,7 +36,7 @@ func NewRoute53Service(store storage.BasicStorage, accountID string) *Route53Ser
 			route53store.NewARNBuilder(accountID),
 		),
 		accountID:     accountID,
-		defaultHCPort: 8089,
+		defaultHCPort: serviceports.Route53HC,
 	}
 }
 

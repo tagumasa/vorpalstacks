@@ -124,7 +124,6 @@ export function WAFv2Page() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "wafv2-items" }}
     >
       <SplitPane
         columns={columns}

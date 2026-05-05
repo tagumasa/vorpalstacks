@@ -132,7 +132,6 @@ export function CognitoPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "cognito-items" }}
     >
       <SplitPane
         columns={columns}

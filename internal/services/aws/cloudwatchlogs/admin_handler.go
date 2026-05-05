@@ -9,9 +9,9 @@ import (
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
-	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchlogs"
 	cloudwatchlogsconnect "vorpalstacks/internal/pb/aws/cloudwatchlogs/cloudwatchlogsconnect"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	cloudwatchlogsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 

@@ -487,6 +487,10 @@ type ServiceInfo struct {
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Enabled       bool                   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	ResourceCount int32                  `protobuf:"varint,3,opt,name=resource_count,json=resourceCount,proto3" json:"resource_count,omitempty"`
+	PortMode      string                 `protobuf:"bytes,4,opt,name=port_mode,json=portMode,proto3" json:"port_mode,omitempty"`
+	DefaultPort   int32                  `protobuf:"varint,5,opt,name=default_port,json=defaultPort,proto3" json:"default_port,omitempty"`
+	HostSuffix    string                 `protobuf:"bytes,6,opt,name=host_suffix,json=hostSuffix,proto3" json:"host_suffix,omitempty"`
+	Mode          string                 `protobuf:"bytes,7,opt,name=mode,proto3" json:"mode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -540,6 +544,34 @@ func (x *ServiceInfo) GetResourceCount() int32 {
 		return x.ResourceCount
 	}
 	return 0
+}
+
+func (x *ServiceInfo) GetPortMode() string {
+	if x != nil {
+		return x.PortMode
+	}
+	return ""
+}
+
+func (x *ServiceInfo) GetDefaultPort() int32 {
+	if x != nil {
+		return x.DefaultPort
+	}
+	return 0
+}
+
+func (x *ServiceInfo) GetHostSuffix() string {
+	if x != nil {
+		return x.HostSuffix
+	}
+	return ""
+}
+
+func (x *ServiceInfo) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
 }
 
 type GetServiceStatusRequest struct {
@@ -1090,6 +1122,252 @@ func (x *GetServerMetricsResponse) GetMachineDiskFreeBytes() int64 {
 	return 0
 }
 
+// Service enable/disable
+type EnableServiceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ServiceName   string                 `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnableServiceRequest) Reset() {
+	*x = EnableServiceRequest{}
+	mi := &file_admin_config_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnableServiceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnableServiceRequest) ProtoMessage() {}
+
+func (x *EnableServiceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_config_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnableServiceRequest.ProtoReflect.Descriptor instead.
+func (*EnableServiceRequest) Descriptor() ([]byte, []int) {
+	return file_admin_config_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *EnableServiceRequest) GetServiceName() string {
+	if x != nil {
+		return x.ServiceName
+	}
+	return ""
+}
+
+type DisableServiceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ServiceName   string                 `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DisableServiceRequest) Reset() {
+	*x = DisableServiceRequest{}
+	mi := &file_admin_config_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DisableServiceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DisableServiceRequest) ProtoMessage() {}
+
+func (x *DisableServiceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_config_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DisableServiceRequest.ProtoReflect.Descriptor instead.
+func (*DisableServiceRequest) Descriptor() ([]byte, []int) {
+	return file_admin_config_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *DisableServiceRequest) GetServiceName() string {
+	if x != nil {
+		return x.ServiceName
+	}
+	return ""
+}
+
+// Port mode management
+type GetPortModeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ServiceName   string                 `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPortModeRequest) Reset() {
+	*x = GetPortModeRequest{}
+	mi := &file_admin_config_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPortModeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPortModeRequest) ProtoMessage() {}
+
+func (x *GetPortModeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_config_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPortModeRequest.ProtoReflect.Descriptor instead.
+func (*GetPortModeRequest) Descriptor() ([]byte, []int) {
+	return file_admin_config_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetPortModeRequest) GetServiceName() string {
+	if x != nil {
+		return x.ServiceName
+	}
+	return ""
+}
+
+type SetPortModeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ServiceName   string                 `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	Mode          string                 `protobuf:"bytes,2,opt,name=mode,proto3" json:"mode,omitempty"` // "fqdn" or "individual"
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetPortModeRequest) Reset() {
+	*x = SetPortModeRequest{}
+	mi := &file_admin_config_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetPortModeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetPortModeRequest) ProtoMessage() {}
+
+func (x *SetPortModeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_config_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetPortModeRequest.ProtoReflect.Descriptor instead.
+func (*SetPortModeRequest) Descriptor() ([]byte, []int) {
+	return file_admin_config_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *SetPortModeRequest) GetServiceName() string {
+	if x != nil {
+		return x.ServiceName
+	}
+	return ""
+}
+
+func (x *SetPortModeRequest) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
+type PortModeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ServiceName   string                 `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	Mode          string                 `protobuf:"bytes,2,opt,name=mode,proto3" json:"mode,omitempty"`
+	Port          int32                  `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"` // set only in individual mode
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PortModeResponse) Reset() {
+	*x = PortModeResponse{}
+	mi := &file_admin_config_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PortModeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PortModeResponse) ProtoMessage() {}
+
+func (x *PortModeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_config_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PortModeResponse.ProtoReflect.Descriptor instead.
+func (*PortModeResponse) Descriptor() ([]byte, []int) {
+	return file_admin_config_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *PortModeResponse) GetServiceName() string {
+	if x != nil {
+		return x.ServiceName
+	}
+	return ""
+}
+
+func (x *PortModeResponse) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
+func (x *PortModeResponse) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
 var File_admin_config_proto protoreflect.FileDescriptor
 
 const file_admin_config_proto_rawDesc = "" +
@@ -1121,11 +1399,16 @@ const file_admin_config_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\"\x15\n" +
 	"\x13ListServicesRequest\"M\n" +
 	"\x14ListServicesResponse\x125\n" +
-	"\bservices\x18\x01 \x03(\v2\x19.admin_config.ServiceInfoR\bservices\"b\n" +
+	"\bservices\x18\x01 \x03(\v2\x19.admin_config.ServiceInfoR\bservices\"\xd7\x01\n" +
 	"\vServiceInfo\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\x12%\n" +
-	"\x0eresource_count\x18\x03 \x01(\x05R\rresourceCount\"-\n" +
+	"\x0eresource_count\x18\x03 \x01(\x05R\rresourceCount\x12\x1b\n" +
+	"\tport_mode\x18\x04 \x01(\tR\bportMode\x12!\n" +
+	"\fdefault_port\x18\x05 \x01(\x05R\vdefaultPort\x12\x1f\n" +
+	"\vhost_suffix\x18\x06 \x01(\tR\n" +
+	"hostSuffix\x12\x12\n" +
+	"\x04mode\x18\a \x01(\tR\x04mode\"-\n" +
 	"\x17GetServiceStatusRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"\xa0\x01\n" +
 	"\rServiceStatus\x12\x12\n" +
@@ -1166,7 +1449,20 @@ const file_admin_config_proto_rawDesc = "" +
 	"\x1emachine_available_memory_bytes\x18\v \x01(\x03R\x1bmachineAvailableMemoryBytes\x129\n" +
 	"\x19machine_cpu_usage_percent\x18\f \x01(\x01R\x16machineCpuUsagePercent\x127\n" +
 	"\x18machine_disk_total_bytes\x18\r \x01(\x03R\x15machineDiskTotalBytes\x125\n" +
-	"\x17machine_disk_free_bytes\x18\x0e \x01(\x03R\x14machineDiskFreeBytes2\xe4\x06\n" +
+	"\x17machine_disk_free_bytes\x18\x0e \x01(\x03R\x14machineDiskFreeBytes\"9\n" +
+	"\x14EnableServiceRequest\x12!\n" +
+	"\fservice_name\x18\x01 \x01(\tR\vserviceName\":\n" +
+	"\x15DisableServiceRequest\x12!\n" +
+	"\fservice_name\x18\x01 \x01(\tR\vserviceName\"7\n" +
+	"\x12GetPortModeRequest\x12!\n" +
+	"\fservice_name\x18\x01 \x01(\tR\vserviceName\"K\n" +
+	"\x12SetPortModeRequest\x12!\n" +
+	"\fservice_name\x18\x01 \x01(\tR\vserviceName\x12\x12\n" +
+	"\x04mode\x18\x02 \x01(\tR\x04mode\"]\n" +
+	"\x10PortModeResponse\x12!\n" +
+	"\fservice_name\x18\x01 \x01(\tR\vserviceName\x12\x12\n" +
+	"\x04mode\x18\x02 \x01(\tR\x04mode\x12\x12\n" +
+	"\x04port\x18\x03 \x01(\x05R\x04port2\xac\t\n" +
 	"\x12AdminConfigService\x12L\n" +
 	"\tGetConfig\x12\x1e.admin_config.GetConfigRequest\x1a\x1f.admin_config.GetConfigResponse\x12O\n" +
 	"\n" +
@@ -1174,7 +1470,11 @@ const file_admin_config_proto_rawDesc = "" +
 	"\fUpdateConfig\x12!.admin_config.UpdateConfigRequest\x1a\x19.admin_config.ConfigEntry\x12J\n" +
 	"\vResetConfig\x12 .admin_config.ResetConfigRequest\x1a\x19.admin_config.ConfigEntry\x12U\n" +
 	"\fListServices\x12!.admin_config.ListServicesRequest\x1a\".admin_config.ListServicesResponse\x12V\n" +
-	"\x10GetServiceStatus\x12%.admin_config.GetServiceStatusRequest\x1a\x1b.admin_config.ServiceStatus\x12^\n" +
+	"\x10GetServiceStatus\x12%.admin_config.GetServiceStatusRequest\x1a\x1b.admin_config.ServiceStatus\x12P\n" +
+	"\rEnableService\x12\".admin_config.EnableServiceRequest\x1a\x1b.admin_config.ServiceStatus\x12R\n" +
+	"\x0eDisableService\x12#.admin_config.DisableServiceRequest\x1a\x1b.admin_config.ServiceStatus\x12O\n" +
+	"\vGetPortMode\x12 .admin_config.GetPortModeRequest\x1a\x1e.admin_config.PortModeResponse\x12O\n" +
+	"\vSetPortMode\x12 .admin_config.SetPortModeRequest\x1a\x1e.admin_config.PortModeResponse\x12^\n" +
 	"\x0fGetResourcePort\x12$.admin_config.GetResourcePortRequest\x1a%.admin_config.GetResourcePortResponse\x12F\n" +
 	"\x0fSetResourcePort\x12$.admin_config.SetResourcePortRequest\x1a\r.common.Empty\x12[\n" +
 	"\x0eShutdownServer\x12#.admin_config.ShutdownServerRequest\x1a$.admin_config.ShutdownServerResponse\x12a\n" +
@@ -1192,7 +1492,7 @@ func file_admin_config_proto_rawDescGZIP() []byte {
 	return file_admin_config_proto_rawDescData
 }
 
-var file_admin_config_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_admin_config_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_admin_config_proto_goTypes = []any{
 	(*ConfigEntry)(nil),              // 0: admin_config.ConfigEntry
 	(*GetConfigRequest)(nil),         // 1: admin_config.GetConfigRequest
@@ -1213,7 +1513,12 @@ var file_admin_config_proto_goTypes = []any{
 	(*ShutdownServerResponse)(nil),   // 16: admin_config.ShutdownServerResponse
 	(*GetServerMetricsRequest)(nil),  // 17: admin_config.GetServerMetricsRequest
 	(*GetServerMetricsResponse)(nil), // 18: admin_config.GetServerMetricsResponse
-	(*common.Empty)(nil),             // 19: common.Empty
+	(*EnableServiceRequest)(nil),     // 19: admin_config.EnableServiceRequest
+	(*DisableServiceRequest)(nil),    // 20: admin_config.DisableServiceRequest
+	(*GetPortModeRequest)(nil),       // 21: admin_config.GetPortModeRequest
+	(*SetPortModeRequest)(nil),       // 22: admin_config.SetPortModeRequest
+	(*PortModeResponse)(nil),         // 23: admin_config.PortModeResponse
+	(*common.Empty)(nil),             // 24: common.Empty
 }
 var file_admin_config_proto_depIdxs = []int32{
 	0,  // 0: admin_config.GetConfigResponse.entry:type_name -> admin_config.ConfigEntry
@@ -1225,22 +1530,30 @@ var file_admin_config_proto_depIdxs = []int32{
 	6,  // 6: admin_config.AdminConfigService.ResetConfig:input_type -> admin_config.ResetConfigRequest
 	7,  // 7: admin_config.AdminConfigService.ListServices:input_type -> admin_config.ListServicesRequest
 	10, // 8: admin_config.AdminConfigService.GetServiceStatus:input_type -> admin_config.GetServiceStatusRequest
-	12, // 9: admin_config.AdminConfigService.GetResourcePort:input_type -> admin_config.GetResourcePortRequest
-	14, // 10: admin_config.AdminConfigService.SetResourcePort:input_type -> admin_config.SetResourcePortRequest
-	15, // 11: admin_config.AdminConfigService.ShutdownServer:input_type -> admin_config.ShutdownServerRequest
-	17, // 12: admin_config.AdminConfigService.GetServerMetrics:input_type -> admin_config.GetServerMetricsRequest
-	2,  // 13: admin_config.AdminConfigService.GetConfig:output_type -> admin_config.GetConfigResponse
-	4,  // 14: admin_config.AdminConfigService.ListConfig:output_type -> admin_config.ListConfigResponse
-	0,  // 15: admin_config.AdminConfigService.UpdateConfig:output_type -> admin_config.ConfigEntry
-	0,  // 16: admin_config.AdminConfigService.ResetConfig:output_type -> admin_config.ConfigEntry
-	8,  // 17: admin_config.AdminConfigService.ListServices:output_type -> admin_config.ListServicesResponse
-	11, // 18: admin_config.AdminConfigService.GetServiceStatus:output_type -> admin_config.ServiceStatus
-	13, // 19: admin_config.AdminConfigService.GetResourcePort:output_type -> admin_config.GetResourcePortResponse
-	19, // 20: admin_config.AdminConfigService.SetResourcePort:output_type -> common.Empty
-	16, // 21: admin_config.AdminConfigService.ShutdownServer:output_type -> admin_config.ShutdownServerResponse
-	18, // 22: admin_config.AdminConfigService.GetServerMetrics:output_type -> admin_config.GetServerMetricsResponse
-	13, // [13:23] is the sub-list for method output_type
-	3,  // [3:13] is the sub-list for method input_type
+	19, // 9: admin_config.AdminConfigService.EnableService:input_type -> admin_config.EnableServiceRequest
+	20, // 10: admin_config.AdminConfigService.DisableService:input_type -> admin_config.DisableServiceRequest
+	21, // 11: admin_config.AdminConfigService.GetPortMode:input_type -> admin_config.GetPortModeRequest
+	22, // 12: admin_config.AdminConfigService.SetPortMode:input_type -> admin_config.SetPortModeRequest
+	12, // 13: admin_config.AdminConfigService.GetResourcePort:input_type -> admin_config.GetResourcePortRequest
+	14, // 14: admin_config.AdminConfigService.SetResourcePort:input_type -> admin_config.SetResourcePortRequest
+	15, // 15: admin_config.AdminConfigService.ShutdownServer:input_type -> admin_config.ShutdownServerRequest
+	17, // 16: admin_config.AdminConfigService.GetServerMetrics:input_type -> admin_config.GetServerMetricsRequest
+	2,  // 17: admin_config.AdminConfigService.GetConfig:output_type -> admin_config.GetConfigResponse
+	4,  // 18: admin_config.AdminConfigService.ListConfig:output_type -> admin_config.ListConfigResponse
+	0,  // 19: admin_config.AdminConfigService.UpdateConfig:output_type -> admin_config.ConfigEntry
+	0,  // 20: admin_config.AdminConfigService.ResetConfig:output_type -> admin_config.ConfigEntry
+	8,  // 21: admin_config.AdminConfigService.ListServices:output_type -> admin_config.ListServicesResponse
+	11, // 22: admin_config.AdminConfigService.GetServiceStatus:output_type -> admin_config.ServiceStatus
+	11, // 23: admin_config.AdminConfigService.EnableService:output_type -> admin_config.ServiceStatus
+	11, // 24: admin_config.AdminConfigService.DisableService:output_type -> admin_config.ServiceStatus
+	23, // 25: admin_config.AdminConfigService.GetPortMode:output_type -> admin_config.PortModeResponse
+	23, // 26: admin_config.AdminConfigService.SetPortMode:output_type -> admin_config.PortModeResponse
+	13, // 27: admin_config.AdminConfigService.GetResourcePort:output_type -> admin_config.GetResourcePortResponse
+	24, // 28: admin_config.AdminConfigService.SetResourcePort:output_type -> common.Empty
+	16, // 29: admin_config.AdminConfigService.ShutdownServer:output_type -> admin_config.ShutdownServerResponse
+	18, // 30: admin_config.AdminConfigService.GetServerMetrics:output_type -> admin_config.GetServerMetricsResponse
+	17, // [17:31] is the sub-list for method output_type
+	3,  // [3:17] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -1257,7 +1570,7 @@ func file_admin_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_config_proto_rawDesc), len(file_admin_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

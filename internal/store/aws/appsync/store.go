@@ -208,9 +208,18 @@ func (s *AppSyncStore) CreateApi(api *Api) (*Api, error) {
 	api.Created = time.Now().UTC()
 	if api.Dns == nil {
 		eventsPort := config.GetInt("ports.appsync_events")
+		baseURL := config.GetString("endpoints.base_url")
+		host := strings.TrimPrefix(baseURL, "http://")
+		host = strings.TrimPrefix(host, "https://")
+		if idx := strings.Index(host, ":"); idx >= 0 {
+			host = host[:idx]
+		}
+		if host == "" {
+			host = "127.0.0.1"
+		}
 		api.Dns = map[string]string{
-			"HTTP":     fmt.Sprintf("http://127.0.0.1:%d/event", eventsPort),
-			"REALTIME": fmt.Sprintf("ws://127.0.0.1:%d/event/realtime", eventsPort),
+			"HTTP":     fmt.Sprintf("http://%s:%d/event", host, eventsPort),
+			"REALTIME": fmt.Sprintf("ws://%s:%d/event/realtime", host, eventsPort),
 		}
 	}
 

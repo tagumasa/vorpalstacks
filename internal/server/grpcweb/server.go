@@ -3,6 +3,7 @@ package grpcweb
 import (
 	"context"
 	"embed"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -27,7 +28,7 @@ func NewServer(cfg *Config) *Server {
 	return &Server{
 		config: cfg,
 		httpServer: &http.Server{
-			Addr:              cfg.getBindAddr() + ":" + cfg.DefaultPort(),
+			Addr:              fmt.Sprintf("%s:%d", cfg.getBindAddr(), cfg.DefaultPort()),
 			ReadHeaderTimeout: 10 * time.Second,
 		},
 		mux: http.NewServeMux(),
@@ -108,7 +109,7 @@ func (s *Server) Addr() string {
 }
 
 // Port returns the server's port number.
-func (s *Server) Port() string {
+func (s *Server) Port() int {
 	return s.config.DefaultPort()
 }
 

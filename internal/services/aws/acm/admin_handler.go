@@ -20,9 +20,9 @@ import (
 // AdminHandler implements the ACM admin console gRPC-Web handler.
 type AdminHandler struct {
 	acmconnect.UnimplementedACMServiceHandler
-	store     acmstore.CertificateStoreInterface
+	store      acmstore.CertificateStoreInterface
 	arnBuilder *acmstore.ARNBuilder
-	accountID string
+	accountID  string
 }
 
 var _ acmconnect.ACMServiceHandler = (*AdminHandler)(nil)

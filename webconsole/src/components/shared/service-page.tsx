@@ -8,7 +8,6 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { createClient } from "@connectrpc/connect";
 import type { DescService } from "@bufbuild/protobuf";
 import { DataTable } from "./data-table";
-import { ExportButton } from "./export-button";
 import { JsonViewer } from "./json-viewer";
 import { Modal } from "./modal";
 import { Splitter } from "./splitter";
@@ -25,7 +24,6 @@ interface ServicePageLayoutProps {
   count?: number;
   countLabel?: string;
   actions?: ReactNode;
-  exportData?: { rows: Record<string, unknown>[]; columns: ColumnDef<any, any>[]; filenamePrefix: string };
   tabs?: { key: string; label: string; count: number }[];
   activeTab?: string;
   onTabChange?: (key: string) => void;
@@ -40,7 +38,6 @@ export function ServicePageLayout({
   count,
   countLabel,
   actions,
-  exportData,
   tabs,
   activeTab,
   onTabChange,
@@ -69,8 +66,16 @@ export function ServicePageLayout({
   return (
     <div className="content-area">
       <div className="page-header">
-        <span className="page-icon">{icon}</span>
-        <h1>{title}</h1>
+        <div className="page-header-row">
+          <span className="page-icon">{icon}</span>
+          <h1>{title}</h1>
+          {count !== undefined && !tabs && (
+            <span className="resource-count">
+              {count} {countLabel ?? t("common.resources", { count })}
+            </span>
+          )}
+        </div>
+        {actions && <div className="page-actions">{actions}</div>}
         {tabs && (
           <div className="tab-bar">
             {tabs.map((tb) => (
@@ -79,23 +84,10 @@ export function ServicePageLayout({
                 className={`tab-btn ${activeTab === tb.key ? "active" : ""}`}
                 onClick={() => onTabChange?.(tb.key)}
               >
-                {tb.label} ({tb.count})
+                {tb.count > 0 ? `${tb.label} (${tb.count})` : tb.label}
               </button>
             ))}
           </div>
-        )}
-        {count !== undefined && !tabs && (
-          <span className="resource-count">
-            {count} {countLabel ?? t("common.resources", { count })}
-          </span>
-        )}
-        {actions && <div className="page-actions">{actions}</div>}
-        {exportData && (
-          <ExportButton
-            rows={exportData.rows}
-            columns={exportData.columns}
-            filenamePrefix={exportData.filenamePrefix}
-          />
         )}
       </div>
       {children}

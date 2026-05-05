@@ -99,7 +99,6 @@ export function S3Page() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "s3-buckets" }}
     >
       <SplitPane
         columns={columns}

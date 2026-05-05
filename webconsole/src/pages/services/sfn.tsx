@@ -120,7 +120,6 @@ export function SFNPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "sfn-items" }}
     >
       <SplitPane
         columns={columns}

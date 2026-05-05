@@ -132,7 +132,6 @@ export function SESPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "ses-items" }}
     >
       <SplitPane
         columns={columns}

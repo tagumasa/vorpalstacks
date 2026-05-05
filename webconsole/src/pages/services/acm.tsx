@@ -174,7 +174,6 @@ export function ACMPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "acm-items" }}
     >
       <SplitPane
         columns={columns}

@@ -10,8 +10,8 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	athenastore "vorpalstacks/internal/store/aws/athena"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 var workGroupNameRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)

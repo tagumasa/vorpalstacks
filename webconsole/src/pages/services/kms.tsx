@@ -128,7 +128,6 @@ export function KMSPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "kms-items" }}
     >
       <SplitPane
         columns={columns}

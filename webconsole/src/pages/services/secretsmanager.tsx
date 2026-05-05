@@ -109,7 +109,6 @@ export function SecretsManagerPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "secretsmanager-items" }}
     >
       <SplitPane
         columns={columns}

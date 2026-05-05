@@ -1,6 +1,7 @@
 /**
  * TanStack Query hooks for admin_config RPC operations.
- * Provides ListConfig, UpdateConfig, ResetConfig, and ShutdownServer.
+ * Provides ListConfig, UpdateConfig, ResetConfig, ShutdownServer,
+ * ListServices, SetPortMode.
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { create } from "@bufbuild/protobuf";
@@ -11,13 +12,17 @@ import {
   UpdateConfigRequestSchema,
   ResetConfigRequestSchema,
   ShutdownServerRequestSchema,
+  ListServicesRequestSchema,
+  SetPortModeRequestSchema,
   type ConfigEntry,
+  type ServiceInfo,
 } from "@/gen/admin_config_pb";
 import { transport } from "@/lib/transport";
 
 const client = createClient(AdminConfigService, transport);
 
 const CONFIG_KEY = ["admin_config", "list"];
+const SERVICES_KEY = ["admin_config", "services"];
 
 export function useConfigList(category?: string) {
   return useQuery({
@@ -39,6 +44,7 @@ export function useConfigUpdate() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: CONFIG_KEY });
+      qc.invalidateQueries({ queryKey: SERVICES_KEY });
     },
   });
 }
@@ -63,4 +69,31 @@ export function useShutdownServer() {
   });
 }
 
-export type { ConfigEntry };
+export function useServicesList() {
+  return useQuery({
+    queryKey: SERVICES_KEY,
+    queryFn: async () => {
+      const res = await client.listServices(
+        create(ListServicesRequestSchema, {}),
+      );
+      return res.services;
+    },
+  });
+}
+
+export function useSetPortMode() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ serviceName, mode }: { serviceName: string; mode: string }) => {
+      return client.setPortMode(
+        create(SetPortModeRequestSchema, { serviceName, mode }),
+      );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: SERVICES_KEY });
+      qc.invalidateQueries({ queryKey: CONFIG_KEY });
+    },
+  });
+}
+
+export type { ConfigEntry, ServiceInfo };

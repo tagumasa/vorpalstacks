@@ -224,7 +224,6 @@ export function CloudFrontPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "cloudfront-items" }}
     >
       <SplitPane
         columns={columns}

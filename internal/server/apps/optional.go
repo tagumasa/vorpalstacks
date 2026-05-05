@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/common/audit"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/serviceports"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage/graphengine"
 	"vorpalstacks/internal/eventbus"
@@ -162,27 +163,14 @@ func (a *App) initNeptuneData(st *serviceState) error {
 // --- Route53 (optional) ---
 
 func (a *App) initRoute53(st *serviceState) error {
-	dnsPort := 8088
-	bindAddr := "127.0.0.1"
-	cfgStore := storeconfig.NewStore(a.server.Storage())
-	if entry, err := cfgStore.Get("ports.route53_dns"); err == nil {
-		if p, ok := entry.Value.(int); ok && p > 0 {
-			dnsPort = p
-		}
-	}
-	if entry, err := cfgStore.Get("server.bind_addr"); err == nil {
-		if addr, ok := entry.Value.(string); ok && addr != "" {
-			bindAddr = addr
-		}
-	}
-	route53Service, err := svcroute53.NewRoute53ServiceWithDNS(a.server.Storage(), st.accountID, bindAddr, dnsPort, a.cfg.Route53DNSEnabled)
+	dnsPort := a.resolvedPort("ports.route53_dns", serviceports.Route53DNS)
+	route53Service, err := svcroute53.NewRoute53ServiceWithDNS(a.server.Storage(), st.accountID, "0.0.0.0", dnsPort, a.cfg.Route53DNSEnabled)
 	if err != nil {
 		return fmt.Errorf("failed to create Route53 service: %w", err)
 	}
-	if entry, err := cfgStore.Get("ports.route53_healthcheck"); err == nil {
-		if p, ok := entry.Value.(int); ok && p > 0 {
-			route53Service.SetDefaultHCPort(p)
-		}
+	hcPort := a.resolvedPort("ports.route53_healthcheck", serviceports.Route53HC)
+	if hcPort != serviceports.Route53HC {
+		route53Service.SetDefaultHCPort(hcPort)
 	}
 	st.route53Service = route53Service
 	st.route53Service.RegisterHandlers(a.server.Dispatcher())
@@ -431,21 +419,25 @@ func (a *App) initEventBusPolicies() {
 func (a *App) registerListeners() {
 	st := a.state
 
-	a.registerListener(listener.ListenerConfig{
-		Name:        "s3_website",
-		PortKey:     "ports.s3_website",
-		DefaultPort: 8081,
-		Handler: http.HandlerFunc(svcs3.NewWebsiteServer(
-			a.server.S3Store(), st.accountID, st.region,
-		).HandleRequest),
-	})
+	if a.cfg.S3 {
+		a.registerListener(listener.ListenerConfig{
+			Name:        "s3_website",
+			PortKey:     "ports.s3_website",
+			DefaultPort: serviceports.S3Website,
+			HostSuffix:  fmt.Sprintf(".s3-website.%s.amazonaws.com", st.region),
+			Handler: http.HandlerFunc(svcs3.NewWebsiteServer(
+				a.server.S3Store(), st.accountID, st.region,
+			).HandleRequest),
+		})
+	}
 
 	if a.cfg.CloudFront && st.cloudFrontService != nil {
 		if handler := st.cloudFrontService.DistributionHandler(); handler != nil {
 			a.registerListener(listener.ListenerConfig{
 				Name:        "cloudfront",
 				PortKey:     "ports.cloudfront",
-				DefaultPort: 8084,
+				DefaultPort: serviceports.CloudFront,
+				HostSuffix:  ".cloudfront.net",
 				Handler:     handler,
 			})
 		}
@@ -456,7 +448,8 @@ func (a *App) registerListeners() {
 		a.registerListener(listener.ListenerConfig{
 			Name:        "lambda_url",
 			PortKey:     "ports.lambda_url",
-			DefaultPort: 8085,
+			DefaultPort: serviceports.LambdaURL,
+			HostSuffix:  fmt.Sprintf(".lambda-url.%s.on.aws", st.region),
 			Handler:     http.HandlerFunc(lambdaUrlServer.HandleRequest),
 		})
 	}
@@ -471,7 +464,8 @@ func (a *App) registerListeners() {
 			a.registerListener(listener.ListenerConfig{
 				Name:        "apigateway",
 				PortKey:     "ports.apigateway",
-				DefaultPort: 8082,
+				DefaultPort: serviceports.APIGateway,
+				HostSuffix:  fmt.Sprintf(".execute-api.%s.amazonaws.com", st.region),
 				Handler:     handler,
 			})
 			a.addShutdown("apigateway", func(ctx context.Context) error {
@@ -485,7 +479,8 @@ func (a *App) registerListeners() {
 		a.registerListener(listener.ListenerConfig{
 			Name:        "cognito_hosted",
 			PortKey:     "ports.cognito_hosted",
-			DefaultPort: 8083,
+			DefaultPort: serviceports.Cognito,
+			HostSuffix:  fmt.Sprintf(".auth.%s.amazoncognito.com", st.region),
 			Handler:     http.HandlerFunc(st.cognitoService.HostedUIHandler),
 		})
 	}
@@ -494,7 +489,8 @@ func (a *App) registerListeners() {
 		a.registerListener(listener.ListenerConfig{
 			Name:        "appsync_events",
 			PortKey:     "ports.appsync_events",
-			DefaultPort: 8086,
+			DefaultPort: serviceports.AppSync,
+			HostSuffix:  fmt.Sprintf(".appsync-api.%s.amazonaws.com", st.region),
 			Handler:     st.appSyncService.EventServerHandler(),
 			Timeouts: &listener.ListenerTimeouts{
 				ReadHeaderTimeout: 5 * time.Second,
@@ -565,7 +561,24 @@ func (r *iamPrincipalResolverAdapter) ResolvePrincipal(ctx context.Context, acce
 }
 
 func (a *App) registerListener(cfg listener.ListenerConfig) {
+	cfg.DefaultPort = a.resolvedPort(cfg.PortKey, cfg.DefaultPort)
 	a.lm.Register(cfg)
+}
+
+func (a *App) resolvedPort(portKey string, defaultPort int) int {
+	if portKey == "" {
+		return defaultPort
+	}
+	cfgStore := storeconfig.NewStore(a.server.Storage())
+	if entry, err := cfgStore.Get(portKey); err == nil {
+		if p, ok := entry.Value.(int); ok && p > 0 {
+			return p
+		}
+		if p, ok := entry.Value.(float64); ok && p > 0 {
+			return int(p)
+		}
+	}
+	return defaultPort
 }
 
 // injectS3AuditRecorder creates a CloudTrail audit recorder for the S3 handler.

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/config"
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/server/apps"
 )
 
@@ -19,11 +20,31 @@ import (
 var webconsoleFS embed.FS
 
 func main() {
+	dataPath := os.Getenv("DATA_PATH")
+	if dataPath == "" {
+		dataPath = "./data"
+	}
+
+	storageMgr, err := storage.NewRegionStorageManager(&storage.Config{Path: dataPath})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialise storage: %v\n", err)
+		os.Exit(1)
+	}
+
+	globalStorage, err := storageMgr.GetGlobalStorage()
+	if err != nil {
+		storageMgr.Close()
+		fmt.Fprintf(os.Stderr, "Failed to get global storage: %v\n", err)
+		os.Exit(1)
+	}
+
+	config.Initialise(globalStorage)
+
 	bc := config.LoadBootstrapConfig()
 	cfg := apps.FromBootstrap(bc)
 	cfg.ConsoleAssets = webconsoleFS
 
-	app, err := apps.New(cfg)
+	app, err := apps.NewWithStorage(cfg, storageMgr)
 	if err != nil {
 		if strings.Contains(err.Error(), "resource temporarily unavailable") ||
 			strings.Contains(err.Error(), "lock file") {

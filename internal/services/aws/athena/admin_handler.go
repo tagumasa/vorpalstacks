@@ -14,8 +14,8 @@ import (
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/athena"
 	athenaconnect "vorpalstacks/internal/pb/aws/athena/athenaconnect"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	athenastore "vorpalstacks/internal/store/aws/athena"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AdminHandler implements the Athena admin console gRPC-Web handler.

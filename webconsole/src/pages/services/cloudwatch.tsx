@@ -257,7 +257,6 @@ export function CloudWatchPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "cloudwatch-items" }}
     >
       <SplitPane
         columns={columns}

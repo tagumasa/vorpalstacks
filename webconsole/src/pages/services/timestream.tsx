@@ -121,7 +121,6 @@ export function TimestreamPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "timestream-items" }}
     >
       <SplitPane
         columns={columns}

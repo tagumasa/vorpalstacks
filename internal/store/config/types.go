@@ -51,6 +51,8 @@ const (
 	CategoryPorts ConfigCategory = "ports"
 	// CategoryHTTP contains HTTP-related configuration keys (e.g. CORS).
 	CategoryHTTP ConfigCategory = "http"
+	// CategoryServices contains per-service enable/disable configuration keys.
+	CategoryServices ConfigCategory = "services"
 )
 
 // ConfigEntry represents a single configuration entry.

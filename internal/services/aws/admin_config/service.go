@@ -6,12 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
+	"strconv"
 	"time"
 
 	"connectrpc.com/connect"
 
 	pb "vorpalstacks/internal/pb/aws/admin_config"
 	"vorpalstacks/internal/pb/aws/common"
+	"vorpalstacks/internal/serviceconfig"
 	storeconfig "vorpalstacks/internal/store/config"
 
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -39,9 +41,7 @@ type AdminConfigService struct {
 	version      string
 }
 
-// NewAdminConfigService creates a new admin config service instance.
 func NewAdminConfigService(configStore ConfigStore, shutdownFunc func(), dataPath string, version string) *AdminConfigService {
-	// Warm up gopsutil CPU sampler so first call returns meaningful data.
 	cpu.Percent(0, false)
 	return &AdminConfigService{
 		configStore:  configStore,
@@ -123,6 +123,8 @@ func (s *AdminConfigService) UpdateConfig(ctx context.Context, req *connect.Requ
 		value = req.Msg.Value
 	}
 
+	value = s.coerceValue(req.Msg.Key, value)
+
 	if err := s.configStore.Set(req.Msg.Key, value); err != nil {
 		if err == storeconfig.ErrConfigReadOnly {
 			return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("configuration is read-only: %s", req.Msg.Key))
@@ -172,8 +174,20 @@ func (s *AdminConfigService) ResetConfig(ctx context.Context, req *connect.Reque
 //   - *connect.Response[pb.ListServicesResponse]: The list of available services
 //   - error: An error if the operation fails
 func (s *AdminConfigService) ListServices(ctx context.Context, req *connect.Request[pb.ListServicesRequest]) (*connect.Response[pb.ListServicesResponse], error) {
+	allServices := serviceconfig.Services
+	result := make([]*pb.ServiceInfo, 0, len(allServices))
+
+	for i := range allServices {
+		svc := &allServices[i]
+		result = append(result, &pb.ServiceInfo{
+			Name:     svc.Name,
+			Enabled:  s.isServiceEnabled(svc.Name),
+			PortMode: s.resolvedPortMode(svc),
+		})
+	}
+
 	return connect.NewResponse(&pb.ListServicesResponse{
-		Services: []*pb.ServiceInfo{},
+		Services: result,
 	}), nil
 }
 
@@ -187,7 +201,15 @@ func (s *AdminConfigService) ListServices(ctx context.Context, req *connect.Requ
 //   - *connect.Response[pb.ServiceStatus]: The service status if found
 //   - error: An error if the service is not found
 func (s *AdminConfigService) GetServiceStatus(ctx context.Context, req *connect.Request[pb.GetServiceStatusRequest]) (*connect.Response[pb.ServiceStatus], error) {
-	return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("service not found: %s", req.Msg.Name))
+	svc := serviceconfig.ByName(req.Msg.Name)
+	if svc == nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("service not found: %s", req.Msg.Name))
+	}
+
+	return connect.NewResponse(&pb.ServiceStatus{
+		Name:    svc.Name,
+		Enabled: s.isServiceEnabled(svc.Name),
+	}), nil
 }
 
 // GetResourcePort retrieves the port for a specific resource.
@@ -240,7 +262,7 @@ func (s *AdminConfigService) GetServerMetrics(ctx context.Context, req *connect.
 	runtime.ReadMemStats(&m)
 
 	resp := &pb.GetServerMetricsResponse{
-		UptimeSeconds:        int64(time.Since(s.startTime).Seconds()),
+		UptimeSeconds:         int64(time.Since(s.startTime).Seconds()),
 		ProcessMemorySysBytes: int64(m.Sys),
 		ProcessHeapAllocBytes: int64(m.HeapAlloc),
 		GoroutineCount:        int32(runtime.NumGoroutine()),
@@ -268,6 +290,92 @@ func (s *AdminConfigService) GetServerMetrics(ctx context.Context, req *connect.
 	return connect.NewResponse(resp), nil
 }
 
+// EnableService enables a service by setting services.{name}.enabled = true.
+func (s *AdminConfigService) EnableService(ctx context.Context, req *connect.Request[pb.EnableServiceRequest]) (*connect.Response[pb.ServiceStatus], error) {
+	svc := serviceconfig.ByName(req.Msg.ServiceName)
+	if svc == nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("service not found: %s", req.Msg.ServiceName))
+	}
+
+	key := "services." + svc.Name + ".enabled"
+	if err := s.configStore.Set(key, true); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.ServiceStatus{
+		Name:    svc.Name,
+		Enabled: true,
+	}), nil
+}
+
+func (s *AdminConfigService) DisableService(ctx context.Context, req *connect.Request[pb.DisableServiceRequest]) (*connect.Response[pb.ServiceStatus], error) {
+	svc := serviceconfig.ByName(req.Msg.ServiceName)
+	if svc == nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("service not found: %s", req.Msg.ServiceName))
+	}
+
+	key := "services." + svc.Name + ".enabled"
+	if err := s.configStore.Set(key, false); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&pb.ServiceStatus{
+		Name:    svc.Name,
+		Enabled: false,
+	}), nil
+}
+
+// GetPortMode returns the current port mode for a service.
+func (s *AdminConfigService) GetPortMode(ctx context.Context, req *connect.Request[pb.GetPortModeRequest]) (*connect.Response[pb.PortModeResponse], error) {
+	svc := serviceconfig.ByName(req.Msg.ServiceName)
+	if svc == nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("service not found: %s", req.Msg.ServiceName))
+	}
+
+	mode := s.resolvedPortMode(svc)
+	resp := &pb.PortModeResponse{
+		ServiceName: svc.Name,
+		Mode:        mode,
+	}
+
+	if mode == "individual" {
+		if p, err := s.configStore.GetResourcePort(svc.PortKey, "default"); err == nil && p > 0 {
+			resp.Port = int32(p)
+		}
+	}
+
+	return connect.NewResponse(resp), nil
+}
+
+func (s *AdminConfigService) SetPortMode(ctx context.Context, req *connect.Request[pb.SetPortModeRequest]) (*connect.Response[pb.PortModeResponse], error) {
+	svc := serviceconfig.ByName(req.Msg.ServiceName)
+	if svc == nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("service not found: %s", req.Msg.ServiceName))
+	}
+
+	if req.Msg.Mode != "fqdn" && req.Msg.Mode != "individual" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid port mode: %s (must be fqdn or individual)", req.Msg.Mode))
+	}
+
+	key := svc.PortKey + ".mode"
+	if err := s.configStore.Set(key, req.Msg.Mode); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	resp := &pb.PortModeResponse{
+		ServiceName: svc.Name,
+		Mode:        req.Msg.Mode,
+	}
+
+	if req.Msg.Mode == "individual" {
+		if p, err := s.configStore.GetResourcePort(svc.PortKey, "default"); err == nil && p > 0 {
+			resp.Port = int32(p)
+		}
+	}
+
+	return connect.NewResponse(resp), nil
+}
+
 // ShutdownServer triggers a graceful server shutdown. The response is sent
 // immediately; the actual shutdown happens asynchronously in a goroutine.
 func (s *AdminConfigService) ShutdownServer(ctx context.Context, req *connect.Request[pb.ShutdownServerRequest]) (*connect.Response[pb.ShutdownServerResponse], error) {
@@ -283,13 +391,9 @@ func (s *AdminConfigService) ShutdownServer(ctx context.Context, req *connect.Re
 }
 
 func toPbEntry(entry *storeconfig.ConfigEntry) *pb.ConfigEntry {
-	valueBytes, err := json.Marshal(entry.Value)
-	if err != nil {
-		valueBytes = []byte("{}")
-	}
 	return &pb.ConfigEntry{
 		Key:         entry.Key,
-		Value:       string(valueBytes),
+		Value:       formatValue(entry.Value, entry.Type),
 		Type:        string(entry.Type),
 		Source:      string(entry.Source),
 		Description: entry.Description,
@@ -298,4 +402,68 @@ func toPbEntry(entry *storeconfig.ConfigEntry) *pb.ConfigEntry {
 		EnvVar:      entry.EnvVar,
 		Category:    string(entry.Category),
 	}
+}
+
+func formatValue(v interface{}, typ storeconfig.ConfigType) string {
+	switch typ {
+	case storeconfig.ConfigTypeInt, storeconfig.ConfigTypePort:
+		switch n := v.(type) {
+		case int:
+			return strconv.Itoa(n)
+		case float64:
+			return strconv.Itoa(int(n))
+		case int64:
+			return strconv.Itoa(int(n))
+		}
+	case storeconfig.ConfigTypeBool:
+		return fmt.Sprintf("%v", v)
+	}
+	return fmt.Sprintf("%v", v)
+}
+
+func (s *AdminConfigService) isServiceEnabled(name string) bool {
+	if entry, err := s.configStore.Get("services." + name + ".enabled"); err == nil {
+		if v, ok := entry.Value.(bool); ok {
+			return v
+		}
+	}
+	return true
+}
+
+func (s *AdminConfigService) resolvedPortMode(svc *serviceconfig.ServiceDef) string {
+	if svc.PortKey == "" {
+		return svc.DefaultPortMode()
+	}
+	if entry, err := s.configStore.Get(svc.PortKey + ".mode"); err == nil {
+		if v, ok := entry.Value.(string); ok && v != "" {
+			return v
+		}
+	}
+	return svc.DefaultPortMode()
+}
+
+func (s *AdminConfigService) coerceValue(key string, value interface{}) interface{} {
+	entry, err := s.configStore.Get(key)
+	if err != nil {
+		return value
+	}
+	switch entry.Type {
+	case storeconfig.ConfigTypePort, storeconfig.ConfigTypeInt:
+		switch v := value.(type) {
+		case float64:
+			return int(v)
+		case string:
+			if i, e := strconv.Atoi(v); e == nil {
+				return i
+			}
+		}
+	case storeconfig.ConfigTypeBool:
+		switch v := value.(type) {
+		case string:
+			return v == "true" || v == "1"
+		case float64:
+			return v != 0
+		}
+	}
+	return value
 }

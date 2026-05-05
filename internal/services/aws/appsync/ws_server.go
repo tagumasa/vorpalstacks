@@ -17,6 +17,7 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/server/fqdnrouter"
 )
 
 const (
@@ -342,6 +343,10 @@ func (s *EventServer) writeHTTPError(w http.ResponseWriter, status int, format s
 // In production, the API ID comes from the Host header or subprotocol auth.
 // For TEST_MODE, this is best-effort.
 func (s *EventServer) extractApiId(r *http.Request) string {
+	if id := fqdnrouter.ResourceIDFromContext(r.Context()); id != "" {
+		return id
+	}
+
 	host := r.Host
 	host = strings.Split(host, ":")[0]
 	parts := strings.Split(host, ".")

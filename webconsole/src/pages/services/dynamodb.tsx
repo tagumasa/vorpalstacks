@@ -112,7 +112,6 @@ export function DynamoDBPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "dynamodb-items" }}
     >
       <SplitPane
         columns={columns}

@@ -9,9 +9,9 @@ import (
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/sns"
 	snsconnect "vorpalstacks/internal/pb/aws/sns/snsconnect"
-	pbcommon "vorpalstacks/internal/pb/aws/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )

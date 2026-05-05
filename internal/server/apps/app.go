@@ -7,12 +7,12 @@ import (
 	"embed"
 	"fmt"
 	"os"
-	"strconv"
 	"sync"
 	"time"
 
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/graphengine"
 	chihttp "vorpalstacks/internal/server/http"
 	"vorpalstacks/internal/server/listener"
@@ -20,9 +20,10 @@ import (
 
 // Config holds all configuration for service initialisation and wiring.
 type Config struct {
-	Port                  string
-	GRPCWebPort           string
+	Port                  int
+	GRPCWebPort           int
 	GRPCWebBindAddr       string
+	BindAddr              string
 	DataPath              string
 	AccountID             string
 	Region                string
@@ -31,7 +32,7 @@ type Config struct {
 	SignatureVerification bool
 	UseChainGateway       bool
 	TLSEnabled            bool
-	TLSPort               string
+	TLSPort               int
 	TLSCertPath           string
 	TLSKeyPath            string
 	TLSHostname           string
@@ -76,10 +77,12 @@ type Config struct {
 
 // FromBootstrap converts a BootstrapConfig into an apps.Config.
 func FromBootstrap(bc *appconfig.BootstrapConfig) *Config {
+	bindAddr, _ := bc.ResolvedBindAddr()
 	return &Config{
 		Port:                  bc.Port,
 		GRPCWebPort:           bc.GRPCWebPort,
-		GRPCWebBindAddr:       bc.GRPCWebBindAddr,
+		GRPCWebBindAddr:       bindAddr,
+		BindAddr:              bindAddr,
 		DataPath:              bc.DataPath,
 		AccountID:             bc.AccountID,
 		Region:                bc.Region,
@@ -132,7 +135,7 @@ func FromBootstrap(bc *appconfig.BootstrapConfig) *Config {
 
 // PrintStartupBanner writes the server startup information to stdout.
 func (c *Config) PrintStartupBanner() {
-	fmt.Printf("Starting AWS-compatible server on :%s\n", c.Port)
+	fmt.Printf("Starting AWS-compatible server on %s:%d\n", c.BindAddr, c.Port)
 	fmt.Printf("Data path: %s\n", c.DataPath)
 	fmt.Printf("Account ID: %s\n", c.AccountID)
 	if c.UseChainGateway {
@@ -183,7 +186,11 @@ func (c *Config) PrintStartupBanner() {
 
 // ServerHost returns the server hostname suitable for self-referencing URLs.
 func (c *Config) ServerHost() string {
-	return "127.0.0.1:" + c.Port
+	addr := c.BindAddr
+	if addr == "" {
+		addr = "127.0.0.1"
+	}
+	return fmt.Sprintf("%s:%d", addr, c.Port)
 }
 
 // shutdownEntry pairs a service name with its shutdown function.
@@ -217,6 +224,7 @@ type grpcWebStarter interface {
 func New(cfg *Config) (*App, error) {
 	serverCfg := &chihttp.Config{
 		Port:      cfg.Port,
+		BindAddr:  cfg.BindAddr,
 		DataPath:  cfg.DataPath,
 		AccountID: cfg.AccountID,
 		SignatureConfig: chihttp.SignatureConfig{
@@ -260,9 +268,69 @@ func New(cfg *Config) (*App, error) {
 	a.initGRPCWebAdmin()
 	a.initEventBusPolicies()
 
-	mainPort, _ := strconv.Atoi(cfg.Port)
+	mainPort := cfg.Port
 	if mainPort == 0 {
-		mainPort = 8080
+		mainPort = 50080
+	}
+	a.lm = listener.NewManager(mainPort)
+	a.registerListeners()
+	srv.SetListenerManager(a.lm)
+
+	return a, nil
+}
+
+// NewWithStorage creates the App using a pre-created storage manager.
+// The caller must have already called config.Initialise() with the global
+// storage. This is the production entry point used by main.go.
+func NewWithStorage(cfg *Config, sm *storage.RegionStorageManager) (*App, error) {
+	serverCfg := &chihttp.Config{
+		Port:      cfg.Port,
+		BindAddr:  cfg.BindAddr,
+		DataPath:  cfg.DataPath,
+		AccountID: cfg.AccountID,
+		SignatureConfig: chihttp.SignatureConfig{
+			Enabled:         cfg.SignatureVerification,
+			Region:          cfg.Region,
+			AccessKeyID:     cfg.AccessKeyID,
+			SecretAccessKey: cfg.SecretAccessKey,
+		},
+		UseChainGateway: cfg.UseChainGateway,
+		TLSConfig: chihttp.TLSConfig{
+			Enabled:  cfg.TLSEnabled,
+			Port:     cfg.TLSPort,
+			CertPath: cfg.TLSCertPath,
+			KeyPath:  cfg.TLSKeyPath,
+			Hostname: cfg.TLSHostname,
+		},
+		StorageManager: sm,
+	}
+
+	srv, err := chihttp.NewServer(serverCfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create server: %w", err)
+	}
+
+	a := &App{
+		cfg:           cfg,
+		server:        srv,
+		consoleAssets: cfg.ConsoleAssets,
+	}
+
+	if err := a.initAlwaysOnServices(); err != nil {
+		return nil, err
+	}
+	a.wireCrossServiceDeps()
+	if err := a.initOptionalServices(); err != nil {
+		a.Shutdown(context.Background())
+		return nil, err
+	}
+	a.initGraphDB()
+	a.initGRPCWebAdmin()
+	a.initEventBusPolicies()
+
+	mainPort := cfg.Port
+	if mainPort == 0 {
+		mainPort = 50080
 	}
 	a.lm = listener.NewManager(mainPort)
 	a.registerListeners()
@@ -278,7 +346,7 @@ func (a *App) Run() error {
 
 	go func() {
 		defer func() { recover() }()
-		fmt.Printf("Starting gRPC-Web admin server on :%s\n", a.cfg.GRPCWebPort)
+		fmt.Printf("Starting gRPC-Web admin server on %s:%d\n", a.cfg.GRPCWebBindAddr, a.cfg.GRPCWebPort)
 		if err := a.grpcWeb.Start(); err != nil {
 			fmt.Fprintf(os.Stderr, "gRPC-Web server error: %v\n", err)
 		}

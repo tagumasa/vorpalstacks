@@ -52,6 +52,18 @@ const (
 	// AdminConfigServiceGetServiceStatusProcedure is the fully-qualified name of the
 	// AdminConfigService's GetServiceStatus RPC.
 	AdminConfigServiceGetServiceStatusProcedure = "/admin_config.AdminConfigService/GetServiceStatus"
+	// AdminConfigServiceEnableServiceProcedure is the fully-qualified name of the AdminConfigService's
+	// EnableService RPC.
+	AdminConfigServiceEnableServiceProcedure = "/admin_config.AdminConfigService/EnableService"
+	// AdminConfigServiceDisableServiceProcedure is the fully-qualified name of the AdminConfigService's
+	// DisableService RPC.
+	AdminConfigServiceDisableServiceProcedure = "/admin_config.AdminConfigService/DisableService"
+	// AdminConfigServiceGetPortModeProcedure is the fully-qualified name of the AdminConfigService's
+	// GetPortMode RPC.
+	AdminConfigServiceGetPortModeProcedure = "/admin_config.AdminConfigService/GetPortMode"
+	// AdminConfigServiceSetPortModeProcedure is the fully-qualified name of the AdminConfigService's
+	// SetPortMode RPC.
+	AdminConfigServiceSetPortModeProcedure = "/admin_config.AdminConfigService/SetPortMode"
 	// AdminConfigServiceGetResourcePortProcedure is the fully-qualified name of the
 	// AdminConfigService's GetResourcePort RPC.
 	AdminConfigServiceGetResourcePortProcedure = "/admin_config.AdminConfigService/GetResourcePort"
@@ -73,9 +85,14 @@ type AdminConfigServiceClient interface {
 	ListConfig(context.Context, *connect.Request[admin_config.ListConfigRequest]) (*connect.Response[admin_config.ListConfigResponse], error)
 	UpdateConfig(context.Context, *connect.Request[admin_config.UpdateConfigRequest]) (*connect.Response[admin_config.ConfigEntry], error)
 	ResetConfig(context.Context, *connect.Request[admin_config.ResetConfigRequest]) (*connect.Response[admin_config.ConfigEntry], error)
-	// Service information (read-only)
+	// Service management
 	ListServices(context.Context, *connect.Request[admin_config.ListServicesRequest]) (*connect.Response[admin_config.ListServicesResponse], error)
 	GetServiceStatus(context.Context, *connect.Request[admin_config.GetServiceStatusRequest]) (*connect.Response[admin_config.ServiceStatus], error)
+	EnableService(context.Context, *connect.Request[admin_config.EnableServiceRequest]) (*connect.Response[admin_config.ServiceStatus], error)
+	DisableService(context.Context, *connect.Request[admin_config.DisableServiceRequest]) (*connect.Response[admin_config.ServiceStatus], error)
+	// Port mode management
+	GetPortMode(context.Context, *connect.Request[admin_config.GetPortModeRequest]) (*connect.Response[admin_config.PortModeResponse], error)
+	SetPortMode(context.Context, *connect.Request[admin_config.SetPortModeRequest]) (*connect.Response[admin_config.PortModeResponse], error)
 	// Port mappings for resources
 	GetResourcePort(context.Context, *connect.Request[admin_config.GetResourcePortRequest]) (*connect.Response[admin_config.GetResourcePortResponse], error)
 	SetResourcePort(context.Context, *connect.Request[admin_config.SetResourcePortRequest]) (*connect.Response[common.Empty], error)
@@ -132,6 +149,30 @@ func NewAdminConfigServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(adminConfigServiceMethods.ByName("GetServiceStatus")),
 			connect.WithClientOptions(opts...),
 		),
+		enableService: connect.NewClient[admin_config.EnableServiceRequest, admin_config.ServiceStatus](
+			httpClient,
+			baseURL+AdminConfigServiceEnableServiceProcedure,
+			connect.WithSchema(adminConfigServiceMethods.ByName("EnableService")),
+			connect.WithClientOptions(opts...),
+		),
+		disableService: connect.NewClient[admin_config.DisableServiceRequest, admin_config.ServiceStatus](
+			httpClient,
+			baseURL+AdminConfigServiceDisableServiceProcedure,
+			connect.WithSchema(adminConfigServiceMethods.ByName("DisableService")),
+			connect.WithClientOptions(opts...),
+		),
+		getPortMode: connect.NewClient[admin_config.GetPortModeRequest, admin_config.PortModeResponse](
+			httpClient,
+			baseURL+AdminConfigServiceGetPortModeProcedure,
+			connect.WithSchema(adminConfigServiceMethods.ByName("GetPortMode")),
+			connect.WithClientOptions(opts...),
+		),
+		setPortMode: connect.NewClient[admin_config.SetPortModeRequest, admin_config.PortModeResponse](
+			httpClient,
+			baseURL+AdminConfigServiceSetPortModeProcedure,
+			connect.WithSchema(adminConfigServiceMethods.ByName("SetPortMode")),
+			connect.WithClientOptions(opts...),
+		),
 		getResourcePort: connect.NewClient[admin_config.GetResourcePortRequest, admin_config.GetResourcePortResponse](
 			httpClient,
 			baseURL+AdminConfigServiceGetResourcePortProcedure,
@@ -167,6 +208,10 @@ type adminConfigServiceClient struct {
 	resetConfig      *connect.Client[admin_config.ResetConfigRequest, admin_config.ConfigEntry]
 	listServices     *connect.Client[admin_config.ListServicesRequest, admin_config.ListServicesResponse]
 	getServiceStatus *connect.Client[admin_config.GetServiceStatusRequest, admin_config.ServiceStatus]
+	enableService    *connect.Client[admin_config.EnableServiceRequest, admin_config.ServiceStatus]
+	disableService   *connect.Client[admin_config.DisableServiceRequest, admin_config.ServiceStatus]
+	getPortMode      *connect.Client[admin_config.GetPortModeRequest, admin_config.PortModeResponse]
+	setPortMode      *connect.Client[admin_config.SetPortModeRequest, admin_config.PortModeResponse]
 	getResourcePort  *connect.Client[admin_config.GetResourcePortRequest, admin_config.GetResourcePortResponse]
 	setResourcePort  *connect.Client[admin_config.SetResourcePortRequest, common.Empty]
 	shutdownServer   *connect.Client[admin_config.ShutdownServerRequest, admin_config.ShutdownServerResponse]
@@ -203,6 +248,26 @@ func (c *adminConfigServiceClient) GetServiceStatus(ctx context.Context, req *co
 	return c.getServiceStatus.CallUnary(ctx, req)
 }
 
+// EnableService calls admin_config.AdminConfigService.EnableService.
+func (c *adminConfigServiceClient) EnableService(ctx context.Context, req *connect.Request[admin_config.EnableServiceRequest]) (*connect.Response[admin_config.ServiceStatus], error) {
+	return c.enableService.CallUnary(ctx, req)
+}
+
+// DisableService calls admin_config.AdminConfigService.DisableService.
+func (c *adminConfigServiceClient) DisableService(ctx context.Context, req *connect.Request[admin_config.DisableServiceRequest]) (*connect.Response[admin_config.ServiceStatus], error) {
+	return c.disableService.CallUnary(ctx, req)
+}
+
+// GetPortMode calls admin_config.AdminConfigService.GetPortMode.
+func (c *adminConfigServiceClient) GetPortMode(ctx context.Context, req *connect.Request[admin_config.GetPortModeRequest]) (*connect.Response[admin_config.PortModeResponse], error) {
+	return c.getPortMode.CallUnary(ctx, req)
+}
+
+// SetPortMode calls admin_config.AdminConfigService.SetPortMode.
+func (c *adminConfigServiceClient) SetPortMode(ctx context.Context, req *connect.Request[admin_config.SetPortModeRequest]) (*connect.Response[admin_config.PortModeResponse], error) {
+	return c.setPortMode.CallUnary(ctx, req)
+}
+
 // GetResourcePort calls admin_config.AdminConfigService.GetResourcePort.
 func (c *adminConfigServiceClient) GetResourcePort(ctx context.Context, req *connect.Request[admin_config.GetResourcePortRequest]) (*connect.Response[admin_config.GetResourcePortResponse], error) {
 	return c.getResourcePort.CallUnary(ctx, req)
@@ -230,9 +295,14 @@ type AdminConfigServiceHandler interface {
 	ListConfig(context.Context, *connect.Request[admin_config.ListConfigRequest]) (*connect.Response[admin_config.ListConfigResponse], error)
 	UpdateConfig(context.Context, *connect.Request[admin_config.UpdateConfigRequest]) (*connect.Response[admin_config.ConfigEntry], error)
 	ResetConfig(context.Context, *connect.Request[admin_config.ResetConfigRequest]) (*connect.Response[admin_config.ConfigEntry], error)
-	// Service information (read-only)
+	// Service management
 	ListServices(context.Context, *connect.Request[admin_config.ListServicesRequest]) (*connect.Response[admin_config.ListServicesResponse], error)
 	GetServiceStatus(context.Context, *connect.Request[admin_config.GetServiceStatusRequest]) (*connect.Response[admin_config.ServiceStatus], error)
+	EnableService(context.Context, *connect.Request[admin_config.EnableServiceRequest]) (*connect.Response[admin_config.ServiceStatus], error)
+	DisableService(context.Context, *connect.Request[admin_config.DisableServiceRequest]) (*connect.Response[admin_config.ServiceStatus], error)
+	// Port mode management
+	GetPortMode(context.Context, *connect.Request[admin_config.GetPortModeRequest]) (*connect.Response[admin_config.PortModeResponse], error)
+	SetPortMode(context.Context, *connect.Request[admin_config.SetPortModeRequest]) (*connect.Response[admin_config.PortModeResponse], error)
 	// Port mappings for resources
 	GetResourcePort(context.Context, *connect.Request[admin_config.GetResourcePortRequest]) (*connect.Response[admin_config.GetResourcePortResponse], error)
 	SetResourcePort(context.Context, *connect.Request[admin_config.SetResourcePortRequest]) (*connect.Response[common.Empty], error)
@@ -285,6 +355,30 @@ func NewAdminConfigServiceHandler(svc AdminConfigServiceHandler, opts ...connect
 		connect.WithSchema(adminConfigServiceMethods.ByName("GetServiceStatus")),
 		connect.WithHandlerOptions(opts...),
 	)
+	adminConfigServiceEnableServiceHandler := connect.NewUnaryHandler(
+		AdminConfigServiceEnableServiceProcedure,
+		svc.EnableService,
+		connect.WithSchema(adminConfigServiceMethods.ByName("EnableService")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminConfigServiceDisableServiceHandler := connect.NewUnaryHandler(
+		AdminConfigServiceDisableServiceProcedure,
+		svc.DisableService,
+		connect.WithSchema(adminConfigServiceMethods.ByName("DisableService")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminConfigServiceGetPortModeHandler := connect.NewUnaryHandler(
+		AdminConfigServiceGetPortModeProcedure,
+		svc.GetPortMode,
+		connect.WithSchema(adminConfigServiceMethods.ByName("GetPortMode")),
+		connect.WithHandlerOptions(opts...),
+	)
+	adminConfigServiceSetPortModeHandler := connect.NewUnaryHandler(
+		AdminConfigServiceSetPortModeProcedure,
+		svc.SetPortMode,
+		connect.WithSchema(adminConfigServiceMethods.ByName("SetPortMode")),
+		connect.WithHandlerOptions(opts...),
+	)
 	adminConfigServiceGetResourcePortHandler := connect.NewUnaryHandler(
 		AdminConfigServiceGetResourcePortProcedure,
 		svc.GetResourcePort,
@@ -323,6 +417,14 @@ func NewAdminConfigServiceHandler(svc AdminConfigServiceHandler, opts ...connect
 			adminConfigServiceListServicesHandler.ServeHTTP(w, r)
 		case AdminConfigServiceGetServiceStatusProcedure:
 			adminConfigServiceGetServiceStatusHandler.ServeHTTP(w, r)
+		case AdminConfigServiceEnableServiceProcedure:
+			adminConfigServiceEnableServiceHandler.ServeHTTP(w, r)
+		case AdminConfigServiceDisableServiceProcedure:
+			adminConfigServiceDisableServiceHandler.ServeHTTP(w, r)
+		case AdminConfigServiceGetPortModeProcedure:
+			adminConfigServiceGetPortModeHandler.ServeHTTP(w, r)
+		case AdminConfigServiceSetPortModeProcedure:
+			adminConfigServiceSetPortModeHandler.ServeHTTP(w, r)
 		case AdminConfigServiceGetResourcePortProcedure:
 			adminConfigServiceGetResourcePortHandler.ServeHTTP(w, r)
 		case AdminConfigServiceSetResourcePortProcedure:
@@ -362,6 +464,22 @@ func (UnimplementedAdminConfigServiceHandler) ListServices(context.Context, *con
 
 func (UnimplementedAdminConfigServiceHandler) GetServiceStatus(context.Context, *connect.Request[admin_config.GetServiceStatusRequest]) (*connect.Response[admin_config.ServiceStatus], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_config.AdminConfigService.GetServiceStatus is not implemented"))
+}
+
+func (UnimplementedAdminConfigServiceHandler) EnableService(context.Context, *connect.Request[admin_config.EnableServiceRequest]) (*connect.Response[admin_config.ServiceStatus], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_config.AdminConfigService.EnableService is not implemented"))
+}
+
+func (UnimplementedAdminConfigServiceHandler) DisableService(context.Context, *connect.Request[admin_config.DisableServiceRequest]) (*connect.Response[admin_config.ServiceStatus], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_config.AdminConfigService.DisableService is not implemented"))
+}
+
+func (UnimplementedAdminConfigServiceHandler) GetPortMode(context.Context, *connect.Request[admin_config.GetPortModeRequest]) (*connect.Response[admin_config.PortModeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_config.AdminConfigService.GetPortMode is not implemented"))
+}
+
+func (UnimplementedAdminConfigServiceHandler) SetPortMode(context.Context, *connect.Request[admin_config.SetPortModeRequest]) (*connect.Response[admin_config.PortModeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("admin_config.AdminConfigService.SetPortMode is not implemented"))
 }
 
 func (UnimplementedAdminConfigServiceHandler) GetResourcePort(context.Context, *connect.Request[admin_config.GetResourcePortRequest]) (*connect.Response[admin_config.GetResourcePortResponse], error) {

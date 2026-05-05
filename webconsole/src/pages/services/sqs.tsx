@@ -112,7 +112,6 @@ export function SQSPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "sqs-items" }}
     >
       <SplitPane
         columns={columns}

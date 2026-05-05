@@ -10,9 +10,9 @@ import (
 
 	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/core/storage"
-	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchevents"
 	cloudwatcheventsconnect "vorpalstacks/internal/pb/aws/cloudwatchevents/cloudwatcheventsconnect"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 

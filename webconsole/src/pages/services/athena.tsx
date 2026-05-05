@@ -103,7 +103,6 @@ export function AthenaPage() {
           )}
         </>
       }
-      exportData={{ rows: items as unknown as Record<string, unknown>[], columns, filenamePrefix: "athena-items" }}
     >
       <SplitPane
         columns={columns}
