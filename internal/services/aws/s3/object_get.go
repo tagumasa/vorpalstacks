@@ -141,6 +141,7 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 			decryptedData = decResult.DecryptedData
 			unencryptedSize = obj.SSEMetadata.UnencryptedSize
 			output.SSECustomerAlgorithm = "AES256"
+			output.SSECustomerKeyMD5 = input.SSECustomerKeyMD5
 		} else {
 			if len(obj.SSEMetadata.PartEncryptionInfos) > 0 {
 				decryptedData, err = o.decryptMultipartParts(encryptedData, obj.SSEMetadata, input.Bucket, input.Key)
@@ -252,11 +253,11 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 
 // HeadObjectInput contains the input parameters for the HeadObject operation.
 type HeadObjectInput struct {
-	Bucket               string
-	Key                  string
-	VersionId            string
-	SSECustomerKey       string
-	SSECustomerKeyMD5    string
+	Bucket            string
+	Key               string
+	VersionId         string
+	SSECustomerKey    string
+	SSECustomerKeyMD5 string
 }
 
 // HeadObjectOutput contains the output from the HeadObject operation.
@@ -275,6 +276,7 @@ type HeadObjectOutput struct {
 	ServerSideEncryption string
 	SSEKMSKeyId          string
 	SSECustomerAlgorithm string
+	SSECustomerKeyMD5    string
 }
 
 // HeadObject retrieves metadata for an object without returning the object itself.
@@ -322,6 +324,7 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 				return nil, awserrors.NewAWSError("InvalidRequest", "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object.", http.StatusBadRequest)
 			}
 			output.SSECustomerAlgorithm = "AES256"
+			output.SSECustomerKeyMD5 = input.SSECustomerKeyMD5
 		} else {
 			output.ServerSideEncryption = string(obj.SSEMetadata.EncryptionType)
 			output.SSEKMSKeyId = obj.SSEMetadata.KMSKeyID

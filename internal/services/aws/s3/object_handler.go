@@ -423,7 +423,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			return nil, header, http.StatusNotFound, err
 		}
 		setObjectResponseHeaders(header, result.ETag, result.ContentType, result.ContentLength, result.LastModified,
-			result.VersionId, "", "",
+			result.VersionId, result.SSECustomerAlgorithm, result.SSECustomerKeyMD5,
 			result.ServerSideEncryption, result.SSEKMSKeyId,
 			result.CacheControl, result.ContentDisposition, result.ContentEncoding, result.ContentLanguage,
 			result.StorageClass, result.Metadata)

@@ -1,4 +1,3 @@
-// Package s3 provides S3 service operations for vorpalstacks.
 package s3
 
 import (
@@ -73,7 +72,7 @@ func (m *EncryptionManager) EncryptWithCustomerKey(plaintext []byte, encryptionT
 	switch encryptionType {
 	case EncryptionTypeSSE_S3:
 		return m.sseS3Encryptor.Encrypt(plaintext, bucket, key)
-	case EncryptionTypeSSE_KMS:
+	case EncryptionTypeSSE_KMS, EncryptionTypeSSE_DSSE_KMS:
 		if m.sseKMSEncryptor == nil {
 			return nil, fmt.Errorf("SSE-KMS encryption requested but KMS is not configured")
 		}
@@ -112,7 +111,7 @@ func (m *EncryptionManager) DecryptWithCustomerKey(ciphertext []byte, sseMetadat
 	switch sseMetadata.EncryptionType {
 	case s3store.SSETypeAES256:
 		return m.sseS3Encryptor.Decrypt(ciphertext, sseMetadata, bucket, key)
-	case s3store.SSETypeKMS:
+	case s3store.SSETypeKMS, s3store.SSETypeKMSES:
 		if m.sseKMSEncryptor == nil {
 			return &DecryptionResult{DecryptedData: ciphertext}, nil
 		}
@@ -158,7 +157,7 @@ func (m *EncryptionManager) EncryptWithPlaintextKey(plaintext []byte, encryption
 	switch encryptionType {
 	case EncryptionTypeSSE_S3:
 		return m.sseS3Encryptor.EncryptWithPlaintextKey(plaintext, bucket, plaintextKey)
-	case EncryptionTypeSSE_KMS:
+	case EncryptionTypeSSE_KMS, EncryptionTypeSSE_DSSE_KMS:
 		if m.sseKMSEncryptor == nil {
 			return nil, fmt.Errorf("KMS client not configured")
 		}
@@ -181,7 +180,7 @@ func (m *EncryptionManager) GenerateKey(encryptionType EncryptionType, bucketEnc
 	switch encryptionType {
 	case EncryptionTypeSSE_S3:
 		return m.sseS3Encryptor.GenerateKey(bucket)
-	case EncryptionTypeSSE_KMS:
+	case EncryptionTypeSSE_KMS, EncryptionTypeSSE_DSSE_KMS:
 		if m.sseKMSEncryptor == nil {
 			return nil, fmt.Errorf("KMS client not configured")
 		}

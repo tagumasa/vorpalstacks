@@ -21,21 +21,21 @@ func (h *S3Handler) writeXMLResponse(w http.ResponseWriter, rootElement string, 
 	if rootElement != "" {
 		xmlData, err = xml.Marshal(data)
 		if err != nil {
-		h.writeError(w, err, "", "", requestID)
-		return
-	}
-	xmlStr := string(xmlData)
-	if idx := strings.Index(xmlStr, ">"); idx != -1 {
-		xmlStr = xmlStr[idx+1:]
-	}
-	if idx := strings.LastIndex(xmlStr, "<"); idx != -1 {
-		xmlStr = xmlStr[:idx]
-	}
-	if xmlns != "" {
-		xmlData = []byte(fmt.Sprintf(`<%s xmlns="%s">%s</%s>`, rootElement, xmlns, xmlStr, rootElement))
-	} else {
-		xmlData = []byte(fmt.Sprintf(`<%s>%s</%s>`, rootElement, xmlStr, rootElement))
-	}
+			h.writeError(w, err, "", "", requestID)
+			return
+		}
+		xmlStr := string(xmlData)
+		if idx := strings.Index(xmlStr, ">"); idx != -1 {
+			xmlStr = xmlStr[idx+1:]
+		}
+		if idx := strings.LastIndex(xmlStr, "<"); idx != -1 {
+			xmlStr = xmlStr[:idx]
+		}
+		if xmlns != "" {
+			xmlData = []byte(fmt.Sprintf(`<%s xmlns="%s">%s</%s>`, rootElement, xmlns, xmlStr, rootElement))
+		} else {
+			xmlData = []byte(fmt.Sprintf(`<%s>%s</%s>`, rootElement, xmlStr, rootElement))
+		}
 	} else {
 		xmlData, err = xml.Marshal(data)
 	}

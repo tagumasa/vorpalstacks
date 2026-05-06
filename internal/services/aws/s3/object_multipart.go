@@ -15,7 +15,7 @@ import (
 )
 
 type ssePartEncryptResult struct {
-	Reader       io.Reader
+	Reader        io.Reader
 	EncryptedSize int64
 	PlainSize     int64
 	ContentNonce  []byte
@@ -24,7 +24,7 @@ type ssePartEncryptResult struct {
 
 func (o *ObjectOperations) encryptPartData(data []byte, upload *s3store.MultipartUpload, inputBucket, inputKey, sseCustomerKey, sseCustomerKeyMD5 string, store *s3Stores) (*ssePartEncryptResult, error) {
 	result := &ssePartEncryptResult{
-		Reader:   bytes.NewReader(data),
+		Reader:    bytes.NewReader(data),
 		PlainSize: int64(len(data)),
 	}
 	if upload.SSEType == "" {
@@ -39,7 +39,7 @@ func (o *ObjectOperations) encryptPartData(data []byte, upload *s3store.Multipar
 		} else {
 			encResult, err = o.svc.encryptionManager.Encrypt(data, EncryptionTypeSSE_S3, nil, inputBucket, inputKey, "")
 		}
-	case s3store.SSETypeKMS:
+	case s3store.SSETypeKMS, s3store.SSETypeKMSES:
 		if upload.PlaintextDataKey != nil && upload.SSEMetadata != nil {
 			encResult, err = o.svc.encryptionManager.EncryptWithPlaintextKey(data, EncryptionTypeSSE_KMS, inputBucket, upload.PlaintextDataKey, upload.KMSKeyID, upload.SSEMetadata.EncryptedDataKey)
 		} else {
@@ -140,7 +140,7 @@ func (o *ObjectOperations) CreateMultipartUpload(ctx context.Context, reqCtx *re
 	switch effectiveEncryptionType {
 	case EncryptionTypeSSE_S3:
 		sseType = s3store.SSETypeAES256
-	case EncryptionTypeSSE_KMS:
+	case EncryptionTypeSSE_KMS, EncryptionTypeSSE_DSSE_KMS:
 		sseType = s3store.SSETypeKMS
 		kmsKeyID = input.SSEKMSKeyId
 		if kmsKeyID == "" && bucketEncryption != nil {
@@ -269,7 +269,6 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 		plainSize = encResult.PlainSize
 		contentNonce = encResult.ContentNonce
 		dataKey = encResult.DataKey
-		_ = err
 	}
 
 	part, err := store.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, plainSize, contentNonce, dataKey)
@@ -360,7 +359,7 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 	}
 
 	if input.CopySourceRange == "" && srcObj.Size > maxCopyObjectSize {
-		return nil, fmt.Errorf("copy source object size %d exceeds maximum copy size of %d bytes", srcObj.Size, maxCopyObjectSize)
+		return nil, ErrEntityTooLarge
 	}
 
 	var data []byte

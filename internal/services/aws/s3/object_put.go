@@ -240,7 +240,7 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if srcObj.Size > maxCopyObjectSize {
-		return nil, fmt.Errorf("copy source object size %d exceeds maximum copy size of %d bytes", srcObj.Size, maxCopyObjectSize)
+		return nil, ErrEntityTooLarge
 	}
 
 	var data []byte

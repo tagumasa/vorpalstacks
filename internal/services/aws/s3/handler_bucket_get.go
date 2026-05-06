@@ -189,7 +189,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 		return result, http.StatusOK, err
 	}
 	if query.Has("list-type") && query.Get("list-type") == "2" {
-		action := "s3:ListBucket"
+		action := "s3:HeadBucket"
 		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
 			return nil, http.StatusForbidden, err
 		}

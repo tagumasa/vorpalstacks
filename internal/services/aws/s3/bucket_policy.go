@@ -53,6 +53,12 @@ func isPublicPrincipal(principal interface{}) bool {
 	switch v := principal.(type) {
 	case string:
 		return v == "*"
+	case []interface{}:
+		for _, item := range v {
+			if s, ok := item.(string); ok && s == "*" {
+				return true
+			}
+		}
 	case map[string]interface{}:
 		for _, val := range v {
 			if s, ok := val.(string); ok && s == "*" {

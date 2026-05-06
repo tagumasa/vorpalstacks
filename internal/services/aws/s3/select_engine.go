@@ -377,7 +377,7 @@ func (e *SelectEngine) evaluateComparison(expr *sqlparser.ComparisonExpr, row ma
 func (e *SelectEngine) getExprValue(expr sqlparser.Expr, row map[string]interface{}) interface{} {
 	switch ex := expr.(type) {
 	case *sqlparser.ColName:
-		name := ex.Name.String()
+		name := e.resolveColName(ex)
 		if val, ok := row[name]; ok {
 			return val
 		}
@@ -634,10 +634,19 @@ func (e *SelectEngine) selectJSONFields(original map[string]interface{}, flatten
 	return result
 }
 
+func (e *SelectEngine) resolveColName(col *sqlparser.ColName) string {
+	name := col.Name.String()
+	qualifier := col.Qualifier.Name.String()
+	if qualifier != "" && qualifier != "s3object" && qualifier != "s" {
+		return qualifier + "." + name
+	}
+	return name
+}
+
 func (e *SelectEngine) getColumnName(expr sqlparser.Expr) string {
 	switch ex := expr.(type) {
 	case *sqlparser.ColName:
-		return ex.Name.String()
+		return e.resolveColName(ex)
 	}
 	return ""
 }
