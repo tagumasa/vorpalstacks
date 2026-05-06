@@ -39,7 +39,7 @@ func (o *ObjectOperations) encryptPartData(data []byte, upload *s3store.Multipar
 		} else {
 			encResult, err = o.svc.encryptionManager.Encrypt(data, EncryptionTypeSSE_S3, nil, inputBucket, inputKey, "")
 		}
-	case s3store.SSETypeKMS, s3store.SSETypeKMSES:
+	case s3store.SSETypeKMS, s3store.SSETypeDSSEKMS:
 		if upload.PlaintextDataKey != nil && upload.SSEMetadata != nil {
 			encResult, err = o.svc.encryptionManager.EncryptWithPlaintextKey(data, EncryptionTypeSSE_KMS, inputBucket, upload.PlaintextDataKey, upload.KMSKeyID, upload.SSEMetadata.EncryptedDataKey)
 		} else {
@@ -140,8 +140,14 @@ func (o *ObjectOperations) CreateMultipartUpload(ctx context.Context, reqCtx *re
 	switch effectiveEncryptionType {
 	case EncryptionTypeSSE_S3:
 		sseType = s3store.SSETypeAES256
-	case EncryptionTypeSSE_KMS, EncryptionTypeSSE_DSSE_KMS:
+	case EncryptionTypeSSE_KMS:
 		sseType = s3store.SSETypeKMS
+		kmsKeyID = input.SSEKMSKeyId
+		if kmsKeyID == "" && bucketEncryption != nil {
+			kmsKeyID = bucketEncryption.KMSMasterKeyID
+		}
+	case EncryptionTypeSSE_DSSE_KMS:
+		sseType = s3store.SSETypeDSSEKMS
 		kmsKeyID = input.SSEKMSKeyId
 		if kmsKeyID == "" && bucketEncryption != nil {
 			kmsKeyID = bucketEncryption.KMSMasterKeyID
@@ -854,11 +860,7 @@ func (o *ListMultipartUploadsOutput) ToXML() string {
 		result.WriteString(u.Initiated.Format(time.RFC3339))
 		result.WriteString(`</Initiated></Upload>`)
 	}
-	for _, p := range o.CommonPrefixes {
-		result.WriteString(`<CommonPrefixes><Prefix>`)
-		result.WriteString(xmlEscape(p.Prefix))
-		result.WriteString(`</Prefix></CommonPrefixes>`)
-	}
+	writeCommonPrefixesXML(&result, o.CommonPrefixes)
 	result.WriteString(`</ListMultipartUploadsResult>`)
 	return result.String()
 }

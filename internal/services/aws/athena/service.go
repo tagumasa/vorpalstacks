@@ -41,6 +41,7 @@ type AthenaService struct {
 	cancelMu      sync.Mutex
 	cancelFuncs   map[string]context.CancelFunc
 	stores        sync.Map // region → *athenaStores
+	cleanupOnce   sync.Once
 }
 
 // NewService creates a new Athena service instance.
@@ -76,7 +77,7 @@ func (s *AthenaService) getAndRemoveCancelFunc(id string) (context.CancelFunc, b
 }
 
 func (s *AthenaService) store(reqCtx *request.RequestContext) (*athenaStores, error) {
-	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*athenaStores, error) {
+	st, err := storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*athenaStores, error) {
 		storage, err := reqCtx.GetStorage()
 		if err != nil {
 			return nil, err
@@ -93,6 +94,13 @@ func (s *AthenaService) store(reqCtx *request.RequestContext) (*athenaStores, er
 			tableDataStore:         athena.NewTableDataStore(storage, reqCtx.GetRegion()),
 		}, nil
 	})
+	if err != nil {
+		return nil, err
+	}
+	s.cleanupOnce.Do(func() {
+		s.cleanupExpiredQueryExecutions(st)
+	})
+	return st, nil
 }
 
 // Shutdown gracefully shuts down the Athena service by waiting for all asynchronous operations to complete.

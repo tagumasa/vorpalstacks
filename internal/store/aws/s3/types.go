@@ -274,7 +274,7 @@ type SSEType string
 const (
 	SSETypeAES256   SSEType = "AES256"
 	SSETypeKMS      SSEType = "aws:kms"
-	SSETypeKMSES    SSEType = "aws:kms:dsse"
+	SSETypeDSSEKMS  SSEType = "aws:kms:dsse"
 	SSETypeCustomer SSEType = "CUSTOMER"
 )
 

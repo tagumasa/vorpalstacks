@@ -2,6 +2,7 @@ package s3
 
 import (
 	"crypto/md5"
+	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 
@@ -94,13 +95,5 @@ func (e *SSECEncryptor) Decrypt(ciphertext []byte, customerKey []byte, sseMetada
 }
 
 func equalBytes(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
+	return subtle.ConstantTimeCompare(a, b) == 1
 }

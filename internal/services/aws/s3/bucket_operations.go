@@ -147,7 +147,7 @@ func (o *BucketOperations) DeleteBucket(ctx *request.RequestContext, input *Dele
 		return err
 	}
 	if count > 0 {
-		return fmt.Errorf("bucket is not empty")
+		return ErrBucketNotEmpty
 	}
 
 	multipartCount, err := store.objects.CountMultipartUploadsByBucket(input.Bucket)
@@ -155,7 +155,7 @@ func (o *BucketOperations) DeleteBucket(ctx *request.RequestContext, input *Dele
 		return err
 	}
 	if multipartCount > 0 {
-		return fmt.Errorf("bucket has ongoing multipart uploads")
+		return ErrBucketNotEmpty
 	}
 
 	o.svc.encryptionManager.DeleteBucketKey(input.Bucket)

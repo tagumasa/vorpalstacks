@@ -1,6 +1,8 @@
 package athena
 
 import (
+	"time"
+
 	common "vorpalstacks/internal/store/aws/common"
 )
 
@@ -38,6 +40,7 @@ type QueryExecutionStoreInterface interface {
 	UpdateQueryExecution(qe *QueryExecution) error
 	DeleteQueryExecution(id string) error
 	ListQueryExecutionIDs(workGroup string, maxResults int) ([]string, error)
+	DeleteExpiredQueryExecutions(olderThan time.Time) (int, error)
 }
 
 // ResultStoreInterface defines operations for storing query results.

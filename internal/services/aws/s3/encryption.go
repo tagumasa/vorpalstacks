@@ -111,18 +111,18 @@ func (m *EncryptionManager) DecryptWithCustomerKey(ciphertext []byte, sseMetadat
 	switch sseMetadata.EncryptionType {
 	case s3store.SSETypeAES256:
 		return m.sseS3Encryptor.Decrypt(ciphertext, sseMetadata, bucket, key)
-	case s3store.SSETypeKMS, s3store.SSETypeKMSES:
+	case s3store.SSETypeKMS, s3store.SSETypeDSSEKMS:
 		if m.sseKMSEncryptor == nil {
-			return &DecryptionResult{DecryptedData: ciphertext}, nil
+			return nil, fmt.Errorf("KMS encryptor not configured for SSE type %s", sseMetadata.EncryptionType)
 		}
 		return m.sseKMSEncryptor.Decrypt(ciphertext, sseMetadata, bucket, key)
 	case s3store.SSETypeCustomer:
 		if m.sseCEncryptor == nil {
-			return &DecryptionResult{DecryptedData: ciphertext}, nil
+			return nil, fmt.Errorf("SSE-C encryptor not configured")
 		}
 		return m.sseCEncryptor.Decrypt(ciphertext, customerKey, sseMetadata, bucket, key)
 	default:
-		return &DecryptionResult{DecryptedData: ciphertext}, nil
+		return nil, fmt.Errorf("unsupported encryption type for decryption: %s", sseMetadata.EncryptionType)
 	}
 }
 

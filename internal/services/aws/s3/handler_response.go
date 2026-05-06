@@ -66,7 +66,7 @@ func (h *S3Handler) writeError(w http.ResponseWriter, err error, bucket, key, re
 		}
 	case errors.Is(err, storecommon.ErrAlreadyExists):
 		awsErr = NewBucketAlreadyExistsError(bucket)
-	case errors.Is(err, storecommon.ErrConflict) || (err != nil && strings.Contains(err.Error(), "not empty")):
+	case errors.Is(err, storecommon.ErrConflict):
 		awsErr = ErrBucketNotEmpty
 	case errors.Is(err, storecommon.ErrInvalidInput):
 		awsErr = ErrInvalidRequest

@@ -425,6 +425,27 @@ func (s *QueryExecutionStore) UpdateQueryExecution(qe *QueryExecution) error {
 	return s.PutProto(qe.QueryExecutionId, QueryExecutionToProto(qe))
 }
 
+// DeleteExpiredQueryExecutions removes query executions older than the given threshold.
+// Returns the number of deleted executions.
+func (s *QueryExecutionStore) DeleteExpiredQueryExecutions(olderThan time.Time) (int, error) {
+	result, err := common.ListProto[*pb.QueryExecution](s.BaseStore, common.ListOptions{MaxItems: 0}, func() *pb.QueryExecution { return &pb.QueryExecution{} }, nil)
+	if err != nil {
+		return 0, err
+	}
+	var deleted int
+	for _, p := range result.Items {
+		if p.Status != nil && p.Status.SubmissionDateTime != nil {
+			submissionTime := p.Status.SubmissionDateTime.AsTime()
+			if submissionTime.Before(olderThan) {
+				if err := s.BaseStore.Delete(p.QueryExecutionId); err == nil {
+					deleted++
+				}
+			}
+		}
+	}
+	return deleted, nil
+}
+
 // DeleteQueryExecution deletes an Athena query execution by ID.
 func (s *QueryExecutionStore) DeleteQueryExecution(id string) error {
 	if _, err := s.GetQueryExecution(id); err != nil {

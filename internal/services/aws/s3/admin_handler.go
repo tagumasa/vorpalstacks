@@ -14,7 +14,6 @@ import (
 	"vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/s3"
 	s3connect "vorpalstacks/internal/pb/aws/s3/s3connect"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // AdminHandler implements the S3 admin console gRPC-Web handler.
@@ -32,11 +31,6 @@ func NewAdminHandler(s3Store S3StoreProvider, accountId string) *AdminHandler {
 		s3Store:   s3Store,
 		accountId: accountId,
 	}
-}
-
-func (h *AdminHandler) getBucketStoreFromHeaders(headers http.Header) s3store.BucketStoreInterface {
-	region := svccommon.GetRegionFromHeader(headers)
-	return h.s3Store.Buckets(region)
 }
 
 // ListBuckets retrieves all S3 buckets from the regional store.

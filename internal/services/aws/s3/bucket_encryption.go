@@ -42,8 +42,8 @@ func (o *BucketOperations) PutBucketEncryption(ctx *request.RequestContext, inpu
 
 	rule := input.ServerSideEncryptionConfiguration.Rules[0]
 	sseAlgorithm := rule.ApplyServerSideEncryptionByDefault.SSEAlgorithm
-	if sseAlgorithm != "AES256" && sseAlgorithm != "aws:kms" {
-		return fmt.Errorf("invalid SSE algorithm: %s (must be AES256 or aws:kms)", sseAlgorithm)
+	if sseAlgorithm != "AES256" && sseAlgorithm != "aws:kms" && sseAlgorithm != "aws:kms:dsse" {
+		return fmt.Errorf("invalid SSE algorithm: %s (must be AES256, aws:kms, or aws:kms:dsse)", sseAlgorithm)
 	}
 
 	config := &s3store.EncryptionConfig{

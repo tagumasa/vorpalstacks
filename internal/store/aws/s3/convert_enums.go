@@ -71,7 +71,7 @@ func sseTypeToProto(s SSEType) pb.SSEType {
 		return pb.SSEType_SSE_TYPE_AES256
 	case SSETypeKMS:
 		return pb.SSEType_SSE_TYPE_KMS
-	case SSETypeKMSES:
+	case SSETypeDSSEKMS:
 		return pb.SSEType_SSE_TYPE_KMS_ES
 	case SSETypeCustomer:
 		return pb.SSEType_SSE_TYPE_CUSTOMER
@@ -87,7 +87,7 @@ func protoToSSEType(p pb.SSEType) SSEType {
 	case pb.SSEType_SSE_TYPE_KMS:
 		return SSETypeKMS
 	case pb.SSEType_SSE_TYPE_KMS_ES:
-		return SSETypeKMSES
+		return SSETypeDSSEKMS
 	case pb.SSEType_SSE_TYPE_CUSTOMER:
 		return SSETypeCustomer
 	default:

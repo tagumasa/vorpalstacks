@@ -49,11 +49,7 @@ func (o *ListObjectsOutput) ToXML() string {
 		result.WriteString(c.StorageClass)
 		result.WriteString(`</StorageClass></Contents>`)
 	}
-	for _, p := range o.CommonPrefixes {
-		result.WriteString(`<CommonPrefixes><Prefix>`)
-		result.WriteString(xmlEscape(p.Prefix))
-		result.WriteString(`</Prefix></CommonPrefixes>`)
-	}
+	writeCommonPrefixesXML(&result, o.CommonPrefixes)
 	result.WriteString(`<Delimiter>`)
 	result.WriteString(xmlEscape(o.Delimiter))
 	result.WriteString(`</Delimiter><IsTruncated>`)
@@ -89,6 +85,14 @@ type ObjectContent struct {
 // CommonPrefix contains a prefix that represents a folder.
 type CommonPrefix struct {
 	Prefix string `xml:"Prefix"`
+}
+
+func writeCommonPrefixesXML(builder *strings.Builder, prefixes []CommonPrefix) {
+	for _, p := range prefixes {
+		builder.WriteString(`<CommonPrefixes><Prefix>`)
+		builder.WriteString(xmlEscape(p.Prefix))
+		builder.WriteString(`</Prefix></CommonPrefixes>`)
+	}
 }
 
 // ListObjects lists the objects in a bucket.
@@ -171,11 +175,7 @@ func (o *ListObjectsV2Output) ToXML() string {
 		result.WriteString(c.StorageClass)
 		result.WriteString(`</StorageClass></Contents>`)
 	}
-	for _, p := range o.CommonPrefixes {
-		result.WriteString(`<CommonPrefixes><Prefix>`)
-		result.WriteString(xmlEscape(p.Prefix))
-		result.WriteString(`</Prefix></CommonPrefixes>`)
-	}
+	writeCommonPrefixesXML(&result, o.CommonPrefixes)
 	result.WriteString(`<Delimiter>`)
 	result.WriteString(xmlEscape(o.Delimiter))
 	result.WriteString(`</Delimiter><IsTruncated>`)
@@ -371,11 +371,7 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 		result.WriteString(`</LastModified></DeleteMarker>`)
 	}
 
-	for _, p := range o.CommonPrefixes {
-		result.WriteString(`<CommonPrefixes><Prefix>`)
-		result.WriteString(xmlEscape(p.Prefix))
-		result.WriteString(`</Prefix></CommonPrefixes>`)
-	}
+	writeCommonPrefixesXML(&result, o.CommonPrefixes)
 
 	result.WriteString(`</ListVersionsResult>`)
 	return result.String()

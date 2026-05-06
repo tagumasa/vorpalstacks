@@ -59,21 +59,32 @@ func (tc *athenaTestCtx) testQueryExecution() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("athena", "ListQueryExecutions", func() error {
-		resp, err := client.ListQueryExecutions(ctx, &athena.ListQueryExecutionsInput{
-			MaxResults: aws.Int32(10),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.QueryExecutionIds == nil {
-			return fmt.Errorf("query execution IDs list is nil")
-		}
 		var found bool
-		for _, id := range resp.QueryExecutionIds {
-			if id == queryExecutionId {
-				found = true
+		var nextToken *string
+		for i := 0; i < 50; i++ {
+			resp, err := client.ListQueryExecutions(ctx, &athena.ListQueryExecutionsInput{
+				MaxResults: aws.Int32(50),
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				return err
+			}
+			if resp.QueryExecutionIds == nil {
+				return fmt.Errorf("query execution IDs list is nil")
+			}
+			for _, id := range resp.QueryExecutionIds {
+				if id == queryExecutionId {
+					found = true
+					break
+				}
+			}
+			if found {
 				break
 			}
+			if resp.NextToken == nil {
+				break
+			}
+			nextToken = resp.NextToken
 		}
 		if !found {
 			return fmt.Errorf("started query execution ID %q not found in list", queryExecutionId)

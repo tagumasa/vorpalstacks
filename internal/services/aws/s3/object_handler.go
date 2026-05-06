@@ -31,42 +31,64 @@ func clampInt(val, min, max int) int {
 	return val
 }
 
-func setObjectResponseHeaders(header http.Header, etag, contentType string, contentLength int64, lastModified time.Time, versionId, sseAlgo, sseKeyMD5, sseType, sseKMSKey, cacheControl, contentDisp, contentEnc, contentLang, storageClass string, metadata map[string]string) {
-	header.Set("ETag", etag)
-	header.Set("Content-Length", strconv.FormatInt(contentLength, 10))
-	header.Set("Content-Type", contentType)
-	header.Set("Last-Modified", lastModified.Format(http.TimeFormat))
-	if versionId != "" && versionId != "null" {
-		header.Set("x-amz-version-id", versionId)
+func setSSEHeaders(header http.Header, customerAlgo, customerKeyMD5, sseType, kmsKeyID string) {
+	if customerAlgo != "" {
+		header.Set("x-amz-server-side-encryption-customer-algorithm", customerAlgo)
 	}
-	if sseAlgo != "" {
-		header.Set("x-amz-server-side-encryption-customer-algorithm", sseAlgo)
-	}
-	if sseKeyMD5 != "" {
-		header.Set("x-amz-server-side-encryption-customer-key-MD5", sseKeyMD5)
+	if customerKeyMD5 != "" {
+		header.Set("x-amz-server-side-encryption-customer-key-MD5", customerKeyMD5)
 	}
 	if sseType != "" {
 		header.Set("x-amz-server-side-encryption", sseType)
-		if sseKMSKey != "" {
-			header.Set("x-amz-server-side-encryption-aws-kms-key-id", sseKMSKey)
+		if kmsKeyID != "" {
+			header.Set("x-amz-server-side-encryption-aws-kms-key-id", kmsKeyID)
 		}
 	}
-	if cacheControl != "" {
-		header.Set("Cache-Control", cacheControl)
+}
+
+type objectResponseHeaders struct {
+	ETag                 string
+	ContentType          string
+	ContentLength        int64
+	LastModified         time.Time
+	VersionId            string
+	SSECustomerAlgorithm string
+	SSECustomerKeyMD5    string
+	ServerSideEncryption string
+	SSEKMSKeyId          string
+	CacheControl         string
+	ContentDisposition   string
+	ContentEncoding      string
+	ContentLanguage      string
+	StorageClass         string
+	Metadata             map[string]string
+}
+
+func setObjectResponseHeaders(header http.Header, h objectResponseHeaders) {
+	header.Set("ETag", h.ETag)
+	header.Set("Content-Length", strconv.FormatInt(h.ContentLength, 10))
+	header.Set("Content-Type", h.ContentType)
+	header.Set("Last-Modified", h.LastModified.Format(http.TimeFormat))
+	if h.VersionId != "" && h.VersionId != "null" {
+		header.Set("x-amz-version-id", h.VersionId)
 	}
-	if contentDisp != "" {
-		header.Set("Content-Disposition", contentDisp)
+	setSSEHeaders(header, h.SSECustomerAlgorithm, h.SSECustomerKeyMD5, h.ServerSideEncryption, h.SSEKMSKeyId)
+	if h.CacheControl != "" {
+		header.Set("Cache-Control", h.CacheControl)
 	}
-	if contentEnc != "" {
-		header.Set("Content-Encoding", contentEnc)
+	if h.ContentDisposition != "" {
+		header.Set("Content-Disposition", h.ContentDisposition)
 	}
-	if contentLang != "" {
-		header.Set("Content-Language", contentLang)
+	if h.ContentEncoding != "" {
+		header.Set("Content-Encoding", h.ContentEncoding)
 	}
-	if storageClass != "" {
-		header.Set("x-amz-storage-class", storageClass)
+	if h.ContentLanguage != "" {
+		header.Set("Content-Language", h.ContentLanguage)
 	}
-	for k, v := range metadata {
+	if h.StorageClass != "" {
+		header.Set("x-amz-storage-class", h.StorageClass)
+	}
+	for k, v := range h.Metadata {
 		header.Set("x-amz-meta-"+k, v)
 	}
 }
@@ -79,42 +101,6 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 	header := make(http.Header)
 
 	switch {
-	case method == "GET" && key == "" && query.Has("versions"):
-		input := &ListObjectVersionsInput{
-			Bucket:          bucket,
-			Delimiter:       query.Get("delimiter"),
-			Prefix:          query.Get("prefix"),
-			KeyMarker:       query.Get("key-marker"),
-			VersionIdMarker: query.Get("version-id-marker"),
-		}
-		if maxKeys := query.Get("max-keys"); maxKeys != "" {
-			mk, err := strconv.Atoi(maxKeys)
-			if err != nil {
-				return nil, header, http.StatusBadRequest, NewInvalidArgumentError("Provided max-keys not an integer")
-			}
-			input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
-		}
-		result, err := o.ListObjectVersions(ctx, reqCtx, input)
-		return result, header, http.StatusOK, err
-
-	case method == "GET" && key == "" && query.Has("uploads"):
-		input := &ListMultipartUploadsInput{
-			Bucket:         bucket,
-			Delimiter:      query.Get("delimiter"),
-			Prefix:         query.Get("prefix"),
-			KeyMarker:      query.Get("key-marker"),
-			UploadIdMarker: query.Get("upload-id-marker"),
-		}
-		if maxUploads := query.Get("max-uploads"); maxUploads != "" {
-			mu, err := strconv.Atoi(maxUploads)
-			if err != nil {
-				return nil, header, http.StatusBadRequest, NewInvalidArgumentError("Provided max-uploads not an integer")
-			}
-			input.MaxUploads = clampInt(mu, 0, s3MaxUploads)
-		}
-		result, err := o.ListMultipartUploads(ctx, reqCtx, input)
-		return result, header, http.StatusOK, err
-
 	case method == "POST" && query.Has("restore"):
 		input := &RestoreObjectInput{
 			Bucket:    bucket,
@@ -143,21 +129,13 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}
-		if result.ServerSideEncryption != "" {
-			header.Set("x-amz-server-side-encryption", result.ServerSideEncryption)
-		}
-		if result.SSEKMSKeyId != "" {
-			header.Set("x-amz-server-side-encryption-aws-kms-key-id", result.SSEKMSKeyId)
-		}
-		if result.SSECustomerAlgorithm != "" {
-			header.Set("x-amz-server-side-encryption-customer-algorithm", result.SSECustomerAlgorithm)
-		}
+		setSSEHeaders(header, result.SSECustomerAlgorithm, "", result.ServerSideEncryption, result.SSEKMSKeyId)
 		return result, header, http.StatusOK, nil
 
 	case method == "PUT" && query.Has("uploadId") && query.Has("partNumber") && r.Header.Get("x-amz-copy-source") != "":
 		partNumber, err := strconv.Atoi(query.Get("partNumber"))
 		if err != nil || partNumber < s3MinPartNum || partNumber > s3MaxPartNum {
-			return nil, nil, http.StatusBadRequest, fmt.Errorf("invalid partNumber: must be between %d and %d", s3MinPartNum, s3MaxPartNum)
+			return nil, header, http.StatusBadRequest, NewInvalidArgumentError(fmt.Sprintf("invalid partNumber: must be between %d and %d", s3MinPartNum, s3MaxPartNum))
 		}
 		input := &UploadPartCopyInput{
 			Bucket:                    bucket,
@@ -183,7 +161,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 	case method == "PUT" && query.Has("uploadId") && query.Has("partNumber"):
 		partNumber, err := strconv.Atoi(query.Get("partNumber"))
 		if err != nil || partNumber < s3MinPartNum || partNumber > s3MaxPartNum {
-			return nil, nil, http.StatusBadRequest, fmt.Errorf("invalid partNumber: must be between %d and %d", s3MinPartNum, s3MaxPartNum)
+			return nil, header, http.StatusBadRequest, NewInvalidArgumentError(fmt.Sprintf("invalid partNumber: must be between %d and %d", s3MinPartNum, s3MaxPartNum))
 		}
 
 		var partBody io.Reader = r.Body
@@ -206,9 +184,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			return nil, header, http.StatusInternalServerError, err
 		}
 		header.Set("ETag", result.ETag)
-		if result.SSECustomerAlgorithm != "" {
-			header.Set("x-amz-server-side-encryption-customer-algorithm", result.SSECustomerAlgorithm)
-		}
+		setSSEHeaders(header, result.SSECustomerAlgorithm, "", "", "")
 		return result, header, http.StatusOK, nil
 
 	case method == "GET" && query.Has("uploadId"):
@@ -219,9 +195,10 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		}
 		if maxParts := query.Get("max-parts"); maxParts != "" {
 			mp, err := strconv.Atoi(maxParts)
-			if err == nil {
-				input.MaxParts = clampInt(mp, 0, s3MaxParts)
+			if err != nil {
+				return nil, header, http.StatusBadRequest, NewInvalidArgumentError("Provided max-parts not an integer")
 			}
+			input.MaxParts = clampInt(mp, 0, s3MaxParts)
 		}
 		if partNumberMarker := query.Get("part-number-marker"); partNumberMarker != "" {
 			input.PartNumberMarker = partNumberMarker
@@ -246,12 +223,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}
-		if result.ServerSideEncryption != "" {
-			header.Set("x-amz-server-side-encryption", result.ServerSideEncryption)
-		}
-		if result.SSEKMSKeyId != "" {
-			header.Set("x-amz-server-side-encryption-aws-kms-key-id", result.SSEKMSKeyId)
-		}
+		setSSEHeaders(header, "", "", result.ServerSideEncryption, result.SSEKMSKeyId)
 		return result, header, http.StatusOK, nil
 
 	case method == "DELETE" && query.Has("uploadId"):
@@ -261,39 +233,6 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			UploadId: query.Get("uploadId"),
 		})
 		return nil, header, http.StatusNoContent, err
-
-	case method == "GET" && key == "" && query.Has("list-type") && query.Get("list-type") == "2":
-		input := &ListObjectsV2Input{
-			Bucket:            bucket,
-			Delimiter:         query.Get("delimiter"),
-			Prefix:            query.Get("prefix"),
-			ContinuationToken: query.Get("continuation-token"),
-			StartAfter:        query.Get("start-after"),
-		}
-		if maxKeys := query.Get("max-keys"); maxKeys != "" {
-			mk, err := strconv.Atoi(maxKeys)
-			if err == nil {
-				input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
-			}
-		}
-		result, err := o.ListObjectsV2(ctx, reqCtx, input)
-		return result, header, http.StatusOK, err
-
-	case method == "GET" && key == "":
-		input := &ListObjectsInput{
-			Bucket:    bucket,
-			Delimiter: query.Get("delimiter"),
-			Prefix:    query.Get("prefix"),
-			Marker:    query.Get("marker"),
-		}
-		if maxKeys := query.Get("max-keys"); maxKeys != "" {
-			mk, err := strconv.Atoi(maxKeys)
-			if err == nil {
-				input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
-			}
-		}
-		result, err := o.ListObjects(ctx, reqCtx, input)
-		return result, header, http.StatusOK, err
 
 	case method == "GET" && query.Has("tagging"):
 		result, err := o.GetObjectTagging(ctx, reqCtx, &GetObjectTaggingInput{Bucket: bucket, Key: key})
@@ -410,11 +349,13 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if err != nil {
 			return nil, header, http.StatusNotFound, err
 		}
-		setObjectResponseHeaders(header, result.ETag, result.ContentType, result.ContentLength, result.LastModified,
-			result.VersionId, result.SSECustomerAlgorithm, result.SSECustomerKeyMD5,
-			result.ServerSideEncryption, result.SSEKMSKeyId,
-			result.CacheControl, result.ContentDisposition, result.ContentEncoding, result.ContentLanguage,
-			result.StorageClass, result.Metadata)
+		setObjectResponseHeaders(header, objectResponseHeaders{
+			ETag: result.ETag, ContentType: result.ContentType, ContentLength: result.ContentLength, LastModified: result.LastModified,
+			VersionId: result.VersionId, SSECustomerAlgorithm: result.SSECustomerAlgorithm, SSECustomerKeyMD5: result.SSECustomerKeyMD5,
+			ServerSideEncryption: result.ServerSideEncryption, SSEKMSKeyId: result.SSEKMSKeyId,
+			CacheControl: result.CacheControl, ContentDisposition: result.ContentDisposition, ContentEncoding: result.ContentEncoding, ContentLanguage: result.ContentLanguage,
+			StorageClass: result.StorageClass, Metadata: result.Metadata,
+		})
 		return result, header, http.StatusOK, nil
 
 	case method == "HEAD":
@@ -422,11 +363,13 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if err != nil {
 			return nil, header, http.StatusNotFound, err
 		}
-		setObjectResponseHeaders(header, result.ETag, result.ContentType, result.ContentLength, result.LastModified,
-			result.VersionId, result.SSECustomerAlgorithm, result.SSECustomerKeyMD5,
-			result.ServerSideEncryption, result.SSEKMSKeyId,
-			result.CacheControl, result.ContentDisposition, result.ContentEncoding, result.ContentLanguage,
-			result.StorageClass, result.Metadata)
+		setObjectResponseHeaders(header, objectResponseHeaders{
+			ETag: result.ETag, ContentType: result.ContentType, ContentLength: result.ContentLength, LastModified: result.LastModified,
+			VersionId: result.VersionId, SSECustomerAlgorithm: result.SSECustomerAlgorithm, SSECustomerKeyMD5: result.SSECustomerKeyMD5,
+			ServerSideEncryption: result.ServerSideEncryption, SSEKMSKeyId: result.SSEKMSKeyId,
+			CacheControl: result.CacheControl, ContentDisposition: result.ContentDisposition, ContentEncoding: result.ContentEncoding, ContentLanguage: result.ContentLanguage,
+			StorageClass: result.StorageClass, Metadata: result.Metadata,
+		})
 		return result, header, http.StatusOK, nil
 
 	case method == "PUT" && query.Has("tagging"):
@@ -463,12 +406,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}
-		if result.ServerSideEncryption != "" {
-			header.Set("x-amz-server-side-encryption", result.ServerSideEncryption)
-		}
-		if result.SSEKMSKeyId != "" {
-			header.Set("x-amz-server-side-encryption-aws-kms-key-id", result.SSEKMSKeyId)
-		}
+		setSSEHeaders(header, "", "", result.ServerSideEncryption, result.SSEKMSKeyId)
 		return result, header, http.StatusOK, nil
 
 	case method == "PUT":
@@ -485,7 +423,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			var parseErr error
 			contentLength, parseErr = strconv.ParseInt(contentLengthStr, 10, 64)
 			if parseErr != nil || contentLength < 0 {
-				return nil, header, http.StatusBadRequest, fmt.Errorf("invalid Content-Length: %s", contentLengthStr)
+				return nil, header, http.StatusBadRequest, NewInvalidArgumentError(fmt.Sprintf("invalid Content-Length: %s", contentLengthStr))
 			}
 		}
 
@@ -536,18 +474,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if result.VersionId != "" && result.VersionId != "null" {
 			header.Set("x-amz-version-id", result.VersionId)
 		}
-		if input.SSECustomerAlgorithm != "" {
-			header.Set("x-amz-server-side-encryption-customer-algorithm", input.SSECustomerAlgorithm)
-		}
-		if input.SSECustomerKeyMD5 != "" {
-			header.Set("x-amz-server-side-encryption-customer-key-MD5", input.SSECustomerKeyMD5)
-		}
-		if result.ServerSideEncryption != "" {
-			header.Set("x-amz-server-side-encryption", result.ServerSideEncryption)
-			if result.SSEKMSKeyId != "" {
-				header.Set("x-amz-server-side-encryption-aws-kms-key-id", result.SSEKMSKeyId)
-			}
-		}
+		setSSEHeaders(header, input.SSECustomerAlgorithm, input.SSECustomerKeyMD5, result.ServerSideEncryption, result.SSEKMSKeyId)
 		for k, v := range metadata {
 			header.Set("x-amz-meta-"+k, v)
 		}

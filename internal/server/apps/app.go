@@ -80,10 +80,10 @@ type Config struct {
 func FromBootstrap(bc *appconfig.BootstrapConfig) *Config {
 	bindAddr := portalloc.ResolveBindAddr(appconfig.GetStore())
 	return &Config{
-		Port:            bc.Port,
-		GRPCWebPort:     bc.GRPCWebPort,
-		GRPCWebBindAddr: bindAddr,
-		BindAddr:        bindAddr,
+		Port:                  bc.Port,
+		GRPCWebPort:           bc.GRPCWebPort,
+		GRPCWebBindAddr:       bindAddr,
+		BindAddr:              bindAddr,
 		DataPath:              bc.DataPath,
 		AccountID:             bc.AccountID,
 		Region:                bc.Region,

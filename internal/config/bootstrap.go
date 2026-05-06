@@ -12,9 +12,9 @@ import (
 // BootstrapConfig holds all configuration values read from environment variables
 // at server startup, before the storage layer is available.
 type BootstrapConfig struct {
-	Port            int
-	GRPCWebPort     int
-	DataPath        string
+	Port                  int
+	GRPCWebPort           int
+	DataPath              string
 	AccountID             string
 	Region                string
 	AccessKeyID           string

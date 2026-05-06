@@ -55,7 +55,7 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if input.ContentLength > maxSingleUploadSize {
-		return nil, fmt.Errorf("object size exceeds maximum single upload size (5GB), use multipart upload")
+		return nil, ErrEntityTooLarge
 	}
 
 	store, err := o.svc.store(reqCtx)
@@ -279,7 +279,10 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
-	bucketEncryption, _ := store.buckets.GetEncryptionConfiguration(input.Bucket)
+	bucketEncryption, err := store.buckets.GetEncryptionConfiguration(input.Bucket)
+	if err != nil {
+		return nil, err
+	}
 
 	var targetEncryptionType EncryptionType
 	var targetKMSKeyID string

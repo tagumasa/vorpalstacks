@@ -2,6 +2,8 @@ package athena
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -11,12 +13,15 @@ import (
 	athenastore "vorpalstacks/internal/store/aws/athena"
 
 	"github.com/google/uuid"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 )
 
 const (
-	maxResultRows      = 1000
-	maxQueryStringSize = 262144
+	maxResultRows             = 1000
+	maxQueryStringSize        = 262144
+	queryHistoryRetentionDays = 45
+	athenaListMaxResults      = 50
 )
 
 // StartQueryExecution starts a new query execution in Athena.
@@ -179,10 +184,12 @@ func (s *AthenaService) StopQueryExecution(ctx context.Context, reqCtx *request.
 func (s *AthenaService) ListQueryExecutions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
 
-	maxResults := 50
+	maxResults := athenaListMaxResults
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
 		if val, err := strconv.Atoi(maxStr); err == nil && val > 0 {
-			maxResults = val
+			if val < athenaListMaxResults {
+				maxResults = val
+			}
 		}
 	}
 
@@ -436,4 +443,32 @@ func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *r
 			},
 		},
 	}, nil
+}
+
+// cleanupExpiredQueryExecutions removes query executions older than the AWS-specified
+// 45-day retention period. Athena keeps query history for 45 days per AWS documentation.
+func (s *AthenaService) cleanupExpiredQueryExecutions(st *athenaStores) {
+	if os.Getenv("TEST_MODE") == "true" {
+		// In test mode, purge all query executions on each StartQueryExecution
+		// to prevent accumulation from repeated test runs.
+		allIds, err := st.queryExecutionStore.ListQueryExecutionIDs("", 0)
+		if err != nil {
+			return
+		}
+		for _, id := range allIds {
+			st.queryExecutionStore.DeleteQueryExecution(id)
+		}
+		if len(allIds) > 0 {
+			logs.Info(fmt.Sprintf("athena: test mode cleanup removed %d query executions", len(allIds)))
+		}
+		return
+	}
+	cutoff := time.Now().UTC().AddDate(0, 0, -queryHistoryRetentionDays)
+	deleted, err := st.queryExecutionStore.DeleteExpiredQueryExecutions(cutoff)
+	if err != nil {
+		return
+	}
+	if deleted > 0 {
+		logs.Info(fmt.Sprintf("athena: cleaned up %d expired query executions (older than %d days)", deleted, queryHistoryRetentionDays))
+	}
 }

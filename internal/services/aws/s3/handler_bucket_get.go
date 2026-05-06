@@ -189,7 +189,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 		return result, http.StatusOK, err
 	}
 	if query.Has("list-type") && query.Get("list-type") == "2" {
-		action := "s3:HeadBucket"
+		action := "s3:ListBucket"
 		if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
 			return nil, http.StatusForbidden, err
 		}
@@ -205,7 +205,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 			if err != nil {
 				return nil, http.StatusBadRequest, NewInvalidArgumentError("Provided max-keys not an integer")
 			}
-			input.MaxKeys = mk
+			input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
 		}
 		result, err := h.objectOps.ListObjectsV2(r.Context(), ctx, input)
 		return result, http.StatusOK, err
@@ -226,7 +226,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 		if err != nil {
 			return nil, http.StatusBadRequest, NewInvalidArgumentError("Provided max-keys not an integer")
 		}
-		input.MaxKeys = mk
+		input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
 	}
 	result, err := h.objectOps.ListObjects(r.Context(), ctx, input)
 	return result, http.StatusOK, err
@@ -234,7 +234,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 
 // headBucket handles HEAD requests for bucket existence checks.
 func (h *S3Handler) headBucket(ctx *request.RequestContext, r *http.Request, bucket string, stores *s3Stores) (interface{}, int, error) {
-	action := "s3:ListBucket"
+	action := "s3:HeadBucket"
 	if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
 		return nil, http.StatusForbidden, err
 	}

@@ -128,15 +128,15 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 
 		if obj.SSEMetadata.EncryptionType == s3store.SSETypeCustomer {
 			if input.SSECustomerKey == "" {
-				return nil, fmt.Errorf("customer key is required for SSE-C encrypted object")
+				return nil, awserrors.NewAWSError("InvalidRequest", "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object.", http.StatusBadRequest)
 			}
 			customerKey, err := o.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
 			if err != nil {
-				return nil, fmt.Errorf("invalid SSE-C customer key: %w", err)
+				return nil, ErrInvalidSSECustomerKey
 			}
 			decResult, err := o.svc.encryptionManager.DecryptWithCustomerKey(encryptedData, obj.SSEMetadata, input.Bucket, input.Key, customerKey)
 			if err != nil {
-				return nil, fmt.Errorf("failed to decrypt data: %w", err)
+				return nil, ErrInvalidSSECustomerKey
 			}
 			decryptedData = decResult.DecryptedData
 			unencryptedSize = obj.SSEMetadata.UnencryptedSize
@@ -240,6 +240,12 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 			ServerSideEncryption: output.ServerSideEncryption,
 			SSEKMSKeyId:          output.SSEKMSKeyId,
 			SSECustomerAlgorithm: output.SSECustomerAlgorithm,
+			SSECustomerKeyMD5:    output.SSECustomerKeyMD5,
+			ContentEncoding:      obj.ContentEncoding,
+			ContentLanguage:      obj.ContentLanguage,
+			ContentDisposition:   obj.ContentDisposition,
+			CacheControl:         obj.CacheControl,
+			StorageClass:         string(obj.StorageClass),
 		}, nil
 	}
 
@@ -412,9 +418,14 @@ func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	objectSize := obj.Size
+	if obj.SSEMetadata != nil && obj.SSEMetadata.UnencryptedSize > 0 {
+		objectSize = obj.SSEMetadata.UnencryptedSize
+	}
+
 	output := &GetObjectAttributesOutput{
 		ETag:         formatETag(obj.ETag),
-		ObjectSize:   obj.Size,
+		ObjectSize:   objectSize,
 		StorageClass: string(obj.StorageClass),
 		LastModified: s3Timestamp(obj.LastModified),
 	}
@@ -424,7 +435,7 @@ func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *requ
 		case "ETag":
 			output.ETag = formatETag(obj.ETag)
 		case "ObjectSize":
-			output.ObjectSize = obj.Size
+			output.ObjectSize = objectSize
 		case "StorageClass":
 			output.StorageClass = string(obj.StorageClass)
 		case "ObjectParts":
