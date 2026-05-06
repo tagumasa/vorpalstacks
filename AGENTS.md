@@ -45,8 +45,7 @@ pkg/
   filterpattern/              — CloudWatch Logs filter patterns
   cypherparser/               — openCypher query parser
   gremlinparser/              — Gremlin query parser
-webconsole/                   — Web admin console (HTML/JS, npm build, embedded via embed.FS)
-web_ui/                       — Flutter admin console (gRPC-Web, legacy/alternative)
+webconsole/                   — Web admin console (TypeScript/React, npm build, embedded via embed.FS)
 proto/                        — Protocol buffer definitions
 sdk-tests/                    — AWS SDK v2 integration tests
 scripts/services/             — CLI integration test scripts per service
@@ -88,7 +87,7 @@ DATA_PATH/
 
 ### Admin API
 
-Connect-RPC gRPC-Web admin interface runs on a separate port (`GRPC_WEB_PORT`, default 9090). The web console at `/webconsole/` is served from this port. Proto definitions are in `proto/`, generated Go code in `internal/pb/`.
+Connect-RPC gRPC-Web admin interface runs on a separate port (`GRPC_WEB_PORT`, default 50090). The web console at `/webconsole/` is served from this port. Proto definitions are in `proto/`, generated Go code in `internal/pb/`.
 
 ### Protocol Quirks
 
@@ -113,8 +112,8 @@ make fmt
 make tidy
 ```
 
-- AWS API endpoints: port 8080 (`PORT`)
-- Admin console: `http://localhost:9090/webconsole/` (`GRPC_WEB_PORT`)
+- AWS API endpoints: port 50080 (`PORT`)
+- Admin console: `http://localhost:50090/webconsole/` (`GRPC_WEB_PORT`)
 
 ## Testing
 
@@ -122,9 +121,10 @@ make tidy
 # Unit tests
 make test
 
-# SDK tests (requires running server)
+# SDK tests (requires running server with audit enabled)
+# Start server: VS_AUDIT_ENABLED=true SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks_server
 cd sdk-tests && go build -o sdk-tests-all .
-./sdk-tests-all -service all -endpoint http://127.0.0.1:8080 -v
+./sdk-tests-all -service all -endpoint http://127.0.0.1:50080 -v
 
 # CLI integration tests (all services)
 make test-cli
@@ -143,12 +143,12 @@ cd scripts/services && bash test_stepfunctions.sh
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `8080` | HTTP server port |
+| `PORT` | `50080` | HTTP server port |
 | `DATA_PATH` | `./data` | Persistent data storage path |
 | `AWS_REGION` | `us-east-1` | Default region |
 | `AWS_ACCOUNT_ID` | `000000000000` | AWS account ID |
 | `SIGNATURE_VERIFICATION_ENABLED` | `true` | AWS Signature V4 verification |
-| `GRPC_WEB_PORT` | `9090` | gRPC-Web admin server port |
+| `GRPC_WEB_PORT` | `50090` | gRPC-Web admin server port |
 | `TLS_ENABLED` | `false` | Enable TLS |
 | `AUTHORIZATION_ENABLED` | `false` | Enable IAM policy evaluation |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker socket for Lambda |
