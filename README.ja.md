@@ -98,7 +98,7 @@ go build -o vorpalstacks .
 SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ```
 
-管理コンソールは`http://localhost:9090/webconsole/`（ポート9090はgRPC-Web管理ポート）から利用できます。AWS APIエンドポイントはポート8080です。
+管理コンソールは`http://localhost:50090/webconsole/`（ポート50090はgRPC-Web管理ポート）から利用できます。AWS APIエンドポイントはポート50080です。
 
 ### Dockerで実行（Lambda用）
 
@@ -111,11 +111,11 @@ SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/ru
 ### AWS CLIでの使用
 
 ```bash
-export AWS_ENDPOINT_URL=http://localhost:8080
+export AWS_ENDPOINT_URL=http://localhost:50080
 
-aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sns list-topics
-aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sqs list-queues
-aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request lambda list-functions
+aws --endpoint-url=http://localhost:50080 --region us-east-1 --no-sign-request sns list-topics
+aws --endpoint-url=http://localhost:50080 --region us-east-1 --no-sign-request sqs list-queues
+aws --endpoint-url=http://localhost:50080 --region us-east-1 --no-sign-request lambda list-functions
 ```
 
 ## テスト
@@ -131,7 +131,7 @@ make test
 ```bash
 cd sdk-tests
 go build -o sdk-tests-all .
-./sdk-tests-all -service all -endpoint http://127.0.0.1:8080 -v
+./sdk-tests-all -service all -endpoint http://127.0.0.1:50080 -v
 ```
 
 ### CLI統合テスト
@@ -149,14 +149,16 @@ cd scripts/services && bash test_iam.sh
 
 | 変数 | デフォルト | 説明 |
 |------|-----------|------|
-| `PORT` | `8080` | HTTPサーバーポート |
+| `PORT` | `50080` | HTTPサーバーポート |
 | `DATA_PATH` | `./data` | 永続データストレージのパス |
 | `AWS_REGION` | `us-east-1` | デフォルトリージョン |
 | `AWS_ACCOUNT_ID` | `000000000000` | AWSアカウントID |
 | `SIGNATURE_VERIFICATION_ENABLED` | `true` | AWS Signature V4検証を有効化 |
-| `GRPC_WEB_PORT` | `9090` | gRPC-Web管理サーバーポート（Webコンソールも配信） |
+| `GRPC_WEB_PORT` | `50090` | gRPC-Web管理サーバーポート（Webコンソールも配信） |
 | `TLS_ENABLED` | `false` | TLSを有効化 |
+| `TLS_PORT` | `50443` | HTTPSサーバーポート |
 | `AUTHORIZATION_ENABLED` | `false` | IAMポリシー評価を有効化 |
+| `BIND_MODE` | `all` | バインドモード: `all` (0.0.0.0), `localhost`, `interface` |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Dockerデーモンソケット（Lambda用） |
 
 完全な一覧については[設定](docs/configuration.md)を参照してください。

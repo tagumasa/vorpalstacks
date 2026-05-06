@@ -99,7 +99,7 @@ go build -o vorpalstacks .
 SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ```
 
-The admin console is available at `http://localhost:9090/webconsole/` (port 9090 is the gRPC-Web admin port). AWS API endpoints are on port 8080.
+The admin console is available at `http://localhost:50090/webconsole/` (port 50090 is the gRPC-Web admin port). AWS API endpoints are on port 50080.
 
 ### Run with Docker (for Lambda)
 
@@ -112,11 +112,11 @@ SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/ru
 ### Use with AWS CLI
 
 ```bash
-export AWS_ENDPOINT_URL=http://localhost:8080
+export AWS_ENDPOINT_URL=http://localhost:50080
 
-aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sns list-topics
-aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sqs list-queues
-aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request lambda list-functions
+aws --endpoint-url=http://localhost:50080 --region us-east-1 --no-sign-request sns list-topics
+aws --endpoint-url=http://localhost:50080 --region us-east-1 --no-sign-request sqs list-queues
+aws --endpoint-url=http://localhost:50080 --region us-east-1 --no-sign-request lambda list-functions
 ```
 
 ## Testing
@@ -132,7 +132,7 @@ make test
 ```bash
 cd sdk-tests
 go build -o sdk-tests-all .
-./sdk-tests-all -service all -endpoint http://127.0.0.1:8080 -v
+./sdk-tests-all -service all -endpoint http://127.0.0.1:50080 -v
 ```
 
 ### CLI Integration Tests
@@ -150,14 +150,16 @@ cd scripts/services && bash test_iam.sh
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `8080` | HTTP server port |
+| `PORT` | `50080` | HTTP server port |
 | `DATA_PATH` | `./data` | Path for persistent data storage |
 | `AWS_REGION` | `us-east-1` | Default region |
 | `AWS_ACCOUNT_ID` | `000000000000` | AWS account ID |
 | `SIGNATURE_VERIFICATION_ENABLED` | `true` | Enable AWS Signature V4 verification |
-| `GRPC_WEB_PORT` | `9090` | gRPC-Web admin server port (also serves web console) |
+| `GRPC_WEB_PORT` | `50090` | gRPC-Web admin server port (also serves web console) |
 | `TLS_ENABLED` | `false` | Enable TLS |
+| `TLS_PORT` | `50443` | HTTPS server port |
 | `AUTHORIZATION_ENABLED` | `false` | Enable IAM policy evaluation |
+| `BIND_MODE` | `all` | Bind mode: `all` (0.0.0.0), `localhost`, or `interface` |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker daemon socket for Lambda |
 
 See [Configuration](docs/configuration.md) for the complete list.

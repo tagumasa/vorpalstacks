@@ -99,7 +99,7 @@ go build -o vorpalstacks .
 SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ```
 
-管理控制台可通过 `http://localhost:9090/webconsole/` 访问（端口 9090 为 gRPC-Web 管理端口）。AWS API 端点在端口 8080。
+管理控制台可通过 `http://localhost:50090/webconsole/` 访问（端口 50090 为 gRPC-Web 管理端口）。AWS API 端点在端口 50080。
 
 ### 使用 Docker 运行（Lambda 用）
 
@@ -112,11 +112,11 @@ SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data DOCKER_HOST=unix:///var/ru
 ### 使用 AWS CLI
 
 ```bash
-export AWS_ENDPOINT_URL=http://localhost:8080
+export AWS_ENDPOINT_URL=http://localhost:50080
 
-aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sns list-topics
-aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request sqs list-queues
-aws --endpoint-url=http://localhost:8080 --region us-east-1 --no-sign-request lambda list-functions
+aws --endpoint-url=http://localhost:50080 --region us-east-1 --no-sign-request sns list-topics
+aws --endpoint-url=http://localhost:50080 --region us-east-1 --no-sign-request sqs list-queues
+aws --endpoint-url=http://localhost:50080 --region us-east-1 --no-sign-request lambda list-functions
 ```
 
 ## 测试
@@ -132,7 +132,7 @@ make test
 ```bash
 cd sdk-tests
 go build -o sdk-tests-all .
-./sdk-tests-all -service all -endpoint http://127.0.0.1:8080 -v
+./sdk-tests-all -service all -endpoint http://127.0.0.1:50080 -v
 ```
 
 ### CLI 集成测试
@@ -150,14 +150,16 @@ cd scripts/services && bash test_iam.sh
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `PORT` | `8080` | HTTP 服务器端口 |
+| `PORT` | `50080` | HTTP 服务器端口 |
 | `DATA_PATH` | `./data` | 持久化数据存储路径 |
 | `AWS_REGION` | `us-east-1` | 默认区域 |
 | `AWS_ACCOUNT_ID` | `000000000000` | AWS 账号 ID |
 | `SIGNATURE_VERIFICATION_ENABLED` | `true` | 启用 AWS Signature V4 验证 |
-| `GRPC_WEB_PORT` | `9090` | gRPC-Web 管理服务器端口（同时提供 Web 控制台） |
+| `GRPC_WEB_PORT` | `50090` | gRPC-Web 管理服务器端口（同时提供 Web 控制台） |
 | `TLS_ENABLED` | `false` | 启用 TLS |
+| `TLS_PORT` | `50443` | HTTPS 服务器端口 |
 | `AUTHORIZATION_ENABLED` | `false` | 启用 IAM 策略评估 |
+| `BIND_MODE` | `all` | 绑定模式: `all` (0.0.0.0), `localhost`, `interface` |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker 守护进程 Socket（Lambda 用） |
 
 完整列表请参阅 [配置](docs/configuration.md)。
