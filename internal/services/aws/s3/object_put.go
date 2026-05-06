@@ -12,6 +12,8 @@ import (
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
+const maxCopyObjectSize int64 = 5 * 1024 * 1024 * 1024
+
 // PutObjectInput contains the input parameters for the PutObject operation.
 type PutObjectInput struct {
 	Bucket               string
@@ -237,6 +239,10 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrInvalidCopySource
 	}
 
+	if srcObj.Size > maxCopyObjectSize {
+		return nil, fmt.Errorf("copy source object size %d exceeds maximum copy size of %d bytes", srcObj.Size, maxCopyObjectSize)
+	}
+
 	var data []byte
 	if srcObj.SSEMetadata != nil || input.CopySourceSSECustomerKey != "" {
 		getInput := &GetObjectInput{
@@ -411,6 +417,10 @@ func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.Re
 				return nil, NewInvalidArgumentError("Days must be between 1 and 3653")
 			}
 		}
+	}
+
+	if err := store.objects.SetStorageClass(input.Bucket, input.Key, input.VersionId, s3store.StorageClassStandard); err != nil {
+		return nil, err
 	}
 
 	return nil, nil

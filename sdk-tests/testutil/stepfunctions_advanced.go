@@ -193,6 +193,24 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 			return fmt.Errorf("start: %v", err)
 		}
 
+		var execStatus string
+		for i := 0; i < 20; i++ {
+			desc, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
+				ExecutionArn: execResp.ExecutionArn,
+			})
+			if err != nil {
+				return fmt.Errorf("describe: %v", err)
+			}
+			execStatus = string(desc.Status)
+			if execStatus != "RUNNING" {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		if execStatus == "RUNNING" {
+			return fmt.Errorf("execution still RUNNING after 2s, cannot redrive")
+		}
+
 		redriveResp, err := tc.client.RedriveExecution(tc.ctx, &sfn.RedriveExecutionInput{
 			ExecutionArn: aws.String(*execResp.ExecutionArn),
 		})

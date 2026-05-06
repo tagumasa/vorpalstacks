@@ -267,7 +267,7 @@ func (s *Server) Start() error {
 
 		bindAddr := s.config.BindAddr
 		if bindAddr == "" {
-			bindAddr = "0.0.0.0"
+			bindAddr = "127.0.0.1"
 		}
 		s.httpServerMu.Lock()
 		s.httpServer = &http.Server{

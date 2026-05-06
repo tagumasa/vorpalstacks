@@ -1,4 +1,3 @@
-// Package s3 provides S3 service operations for vorpalstacks.
 package s3
 
 import (
@@ -198,9 +197,4 @@ func (e *SSEKMSEncryptor) Decrypt(ciphertext []byte, sseMetadata *s3store.SSEObj
 	}
 
 	return &DecryptionResult{DecryptedData: plaintext}, nil
-}
-
-// EncryptWithInterface encrypts data using the encryptor interface (not supported for KMS).
-func (e *SSEKMSEncryptor) EncryptWithInterface(plaintext []byte, bucket, key string) (*EncryptionResult, error) {
-	return nil, fmt.Errorf("KMS key ID is required for SSE-KMS, use EncryptWithKeyID instead")
 }

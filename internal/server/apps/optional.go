@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/common/audit"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/serviceports"
+	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage/graphengine"
 	"vorpalstacks/internal/eventbus"
@@ -48,7 +49,6 @@ import (
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	storeconfig "vorpalstacks/internal/store/config"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -569,7 +569,7 @@ func (a *App) resolvedPort(portKey string, defaultPort int) int {
 	if portKey == "" {
 		return defaultPort
 	}
-	cfgStore := storeconfig.NewStore(a.server.Storage())
+	cfgStore := appconfig.GetStore()
 	if entry, err := cfgStore.Get(portKey); err == nil {
 		if p, ok := entry.Value.(int); ok && p > 0 {
 			return p

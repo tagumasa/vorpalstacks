@@ -1,4 +1,3 @@
-// Package s3 provides S3 service operations for vorpalstacks.
 package s3
 
 import (
@@ -314,7 +313,6 @@ func (e *SelectEngine) flattenJSON(obj map[string]interface{}, prefix string) ma
 		default:
 			result[key] = v
 		}
-		result[k] = v
 	}
 	return result
 }

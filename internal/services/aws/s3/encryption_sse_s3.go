@@ -1,4 +1,3 @@
-// Package s3 provides S3 service operations for vorpalstacks.
 package s3
 
 import (
@@ -229,14 +228,4 @@ func (e *SSES3Encryptor) LoadBucketKey(bucket string, keyData []byte) error {
 	}
 	e.bucketKeys.Store(bucket, &meta)
 	return nil
-}
-
-// ExportBucketKey exports a bucket key to serialised data.
-func (e *SSES3Encryptor) ExportBucketKey(bucket string) ([]byte, error) {
-	val, ok := e.bucketKeys.Load(bucket)
-	if !ok {
-		return nil, fmt.Errorf("bucket key not found: %s", bucket)
-	}
-	meta := val.(*sseS3KeyMetadata)
-	return json.Marshal(meta)
 }

@@ -40,6 +40,7 @@ func DefaultOptions() *Options {
 			CheckInterval: 5 * time.Minute,
 			DefaultTTL:    24 * time.Hour,
 		},
+		SyncWrites: true,
 	}
 }
 
@@ -67,5 +68,12 @@ func WithTTL(enabled bool, interval, defaultTTL time.Duration) Option {
 		o.TTL.Enabled = enabled
 		o.TTL.CheckInterval = interval
 		o.TTL.DefaultTTL = defaultTTL
+	}
+}
+
+// WithSyncWrites configures whether writes are synced to disk immediately.
+func WithSyncWrites(sync bool) Option {
+	return func(o *Options) {
+		o.SyncWrites = sync
 	}
 }

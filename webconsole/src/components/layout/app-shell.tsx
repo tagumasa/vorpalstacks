@@ -3,6 +3,7 @@ import { Sidebar } from "./sidebar";
 import { StatusBar } from "./statusbar";
 import { Outlet } from "react-router";
 import { useAppState } from "@/lib/app-state";
+import { useIdleTimeout } from "@/lib/idle-timeout";
 
 /**
  * Root application shell layout. Uses CSS Grid to arrange:
@@ -13,6 +14,7 @@ import { useAppState } from "@/lib/app-state";
  */
 export function AppShell() {
   const { sidebarCollapsed, setSidebarCollapsed } = useAppState();
+  useIdleTimeout();
 
   return (
     <div className="app">

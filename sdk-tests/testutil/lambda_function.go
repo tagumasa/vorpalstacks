@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -18,6 +19,7 @@ func runLambdaFunctionTests(
 	r *TestRunner,
 	ctx context.Context,
 	client *lambda.Client,
+	cwlClient *cloudwatchlogs.Client,
 	createIAMRole func(string) error,
 	deleteIAMRole func(string),
 ) []TestResult {
@@ -32,6 +34,7 @@ func runLambdaFunctionTests(
 			Error: fmt.Sprintf("Failed to create IAM role: %v", err)}}
 	}
 	defer deleteIAMRole(roleName)
+	defer deleteLambdaLogGroup(cwlClient, ctx, functionName)
 
 	results = append(results, r.RunTest("lambda", "CreateFunction", func() error {
 		resp, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
@@ -342,6 +345,7 @@ func runLambdaFunctionTests(
 			return fmt.Errorf("first create: %v", err)
 		}
 		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(dupName)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, dupName)
 
 		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
 			FunctionName: aws.String(dupName),
@@ -399,6 +403,7 @@ func runLambdaFunctionTests(
 			return fmt.Errorf("create: %v", err)
 		}
 		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(invFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, invFunc)
 
 		resp, err := client.Invoke(ctx, &lambda.InvokeInput{
 			FunctionName: aws.String(invFunc),
@@ -464,6 +469,7 @@ func runLambdaFunctionTests(
 			return fmt.Errorf("create: %v", err)
 		}
 		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(gfcFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, gfcFunc)
 
 		resp, err := client.GetFunction(ctx, &lambda.GetFunctionInput{
 			FunctionName: aws.String(gfcFunc),
@@ -512,6 +518,7 @@ func runLambdaFunctionTests(
 			return fmt.Errorf("create: %v", err)
 		}
 		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(lfFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, lfFunc)
 
 		resp, err := client.ListFunctions(ctx, &lambda.ListFunctionsInput{})
 		if err != nil {
@@ -557,6 +564,7 @@ func runLambdaFunctionTests(
 			return fmt.Errorf("create: %v", err)
 		}
 		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(ucFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, ucFunc)
 
 		newDesc := "updated description"
 		newTimeout := int32(30)

@@ -31,6 +31,46 @@ func clampInt(val, min, max int) int {
 	return val
 }
 
+func setObjectResponseHeaders(header http.Header, etag, contentType string, contentLength int64, lastModified time.Time, versionId, sseAlgo, sseKeyMD5, sseType, sseKMSKey, cacheControl, contentDisp, contentEnc, contentLang, storageClass string, metadata map[string]string) {
+	header.Set("ETag", etag)
+	header.Set("Content-Length", strconv.FormatInt(contentLength, 10))
+	header.Set("Content-Type", contentType)
+	header.Set("Last-Modified", lastModified.Format(http.TimeFormat))
+	if versionId != "" && versionId != "null" {
+		header.Set("x-amz-version-id", versionId)
+	}
+	if sseAlgo != "" {
+		header.Set("x-amz-server-side-encryption-customer-algorithm", sseAlgo)
+	}
+	if sseKeyMD5 != "" {
+		header.Set("x-amz-server-side-encryption-customer-key-MD5", sseKeyMD5)
+	}
+	if sseType != "" {
+		header.Set("x-amz-server-side-encryption", sseType)
+		if sseKMSKey != "" {
+			header.Set("x-amz-server-side-encryption-aws-kms-key-id", sseKMSKey)
+		}
+	}
+	if cacheControl != "" {
+		header.Set("Cache-Control", cacheControl)
+	}
+	if contentDisp != "" {
+		header.Set("Content-Disposition", contentDisp)
+	}
+	if contentEnc != "" {
+		header.Set("Content-Encoding", contentEnc)
+	}
+	if contentLang != "" {
+		header.Set("Content-Language", contentLang)
+	}
+	if storageClass != "" {
+		header.Set("x-amz-storage-class", storageClass)
+	}
+	for k, v := range metadata {
+		header.Set("x-amz-meta-"+k, v)
+	}
+}
+
 // HandleRequest processes HTTP requests for object-level operations such as
 // get, put, delete, copy, multipart uploads, tagging, ACL, and legal hold.
 func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.RequestContext, r *http.Request, bucket, key string) (interface{}, http.Header, int, error) {
@@ -370,81 +410,23 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if err != nil {
 			return nil, header, http.StatusNotFound, err
 		}
-		header.Set("ETag", result.ETag)
-		header.Set("Content-Length", strconv.FormatInt(result.ContentLength, 10))
-		header.Set("Content-Type", result.ContentType)
-		header.Set("Last-Modified", result.LastModified.Format(http.TimeFormat))
-		if result.VersionId != "" && result.VersionId != "null" {
-			header.Set("x-amz-version-id", result.VersionId)
-		}
-		if result.SSECustomerAlgorithm != "" {
-			header.Set("x-amz-server-side-encryption-customer-algorithm", result.SSECustomerAlgorithm)
-		}
-		if result.SSECustomerKeyMD5 != "" {
-			header.Set("x-amz-server-side-encryption-customer-key-MD5", result.SSECustomerKeyMD5)
-		}
-		if result.ServerSideEncryption != "" {
-			header.Set("x-amz-server-side-encryption", result.ServerSideEncryption)
-			if result.SSEKMSKeyId != "" {
-				header.Set("x-amz-server-side-encryption-aws-kms-key-id", result.SSEKMSKeyId)
-			}
-		}
-		if result.CacheControl != "" {
-			header.Set("Cache-Control", result.CacheControl)
-		}
-		if result.ContentDisposition != "" {
-			header.Set("Content-Disposition", result.ContentDisposition)
-		}
-		if result.ContentEncoding != "" {
-			header.Set("Content-Encoding", result.ContentEncoding)
-		}
-		if result.ContentLanguage != "" {
-			header.Set("Content-Language", result.ContentLanguage)
-		}
-		if result.StorageClass != "" {
-			header.Set("x-amz-storage-class", result.StorageClass)
-		}
-		for k, v := range result.Metadata {
-			header.Set("x-amz-meta-"+k, v)
-		}
+		setObjectResponseHeaders(header, result.ETag, result.ContentType, result.ContentLength, result.LastModified,
+			result.VersionId, result.SSECustomerAlgorithm, result.SSECustomerKeyMD5,
+			result.ServerSideEncryption, result.SSEKMSKeyId,
+			result.CacheControl, result.ContentDisposition, result.ContentEncoding, result.ContentLanguage,
+			result.StorageClass, result.Metadata)
 		return result, header, http.StatusOK, nil
 
 	case method == "HEAD":
-		result, err := o.HeadObject(ctx, reqCtx, &HeadObjectInput{Bucket: bucket, Key: key, VersionId: query.Get("versionId")})
+		result, err := o.HeadObject(ctx, reqCtx, &HeadObjectInput{Bucket: bucket, Key: key, VersionId: query.Get("versionId"), SSECustomerKey: r.Header.Get("x-amz-server-side-encryption-customer-key"), SSECustomerKeyMD5: r.Header.Get("x-amz-server-side-encryption-customer-key-MD5")})
 		if err != nil {
 			return nil, header, http.StatusNotFound, err
 		}
-		header.Set("ETag", result.ETag)
-		header.Set("Content-Length", strconv.FormatInt(result.ContentLength, 10))
-		header.Set("Content-Type", result.ContentType)
-		header.Set("Last-Modified", result.LastModified.Format(http.TimeFormat))
-		if result.VersionId != "" && result.VersionId != "null" {
-			header.Set("x-amz-version-id", result.VersionId)
-		}
-		if result.ServerSideEncryption != "" {
-			header.Set("x-amz-server-side-encryption", result.ServerSideEncryption)
-			if result.SSEKMSKeyId != "" {
-				header.Set("x-amz-server-side-encryption-aws-kms-key-id", result.SSEKMSKeyId)
-			}
-		}
-		if result.CacheControl != "" {
-			header.Set("Cache-Control", result.CacheControl)
-		}
-		if result.ContentDisposition != "" {
-			header.Set("Content-Disposition", result.ContentDisposition)
-		}
-		if result.ContentEncoding != "" {
-			header.Set("Content-Encoding", result.ContentEncoding)
-		}
-		if result.ContentLanguage != "" {
-			header.Set("Content-Language", result.ContentLanguage)
-		}
-		if result.StorageClass != "" {
-			header.Set("x-amz-storage-class", result.StorageClass)
-		}
-		for k, v := range result.Metadata {
-			header.Set("x-amz-meta-"+k, v)
-		}
+		setObjectResponseHeaders(header, result.ETag, result.ContentType, result.ContentLength, result.LastModified,
+			result.VersionId, "", "",
+			result.ServerSideEncryption, result.SSEKMSKeyId,
+			result.CacheControl, result.ContentDisposition, result.ContentEncoding, result.ContentLanguage,
+			result.StorageClass, result.Metadata)
 		return result, header, http.StatusOK, nil
 
 	case method == "PUT" && query.Has("tagging"):

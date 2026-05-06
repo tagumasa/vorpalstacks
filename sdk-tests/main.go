@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	endpoint    = flag.String("endpoint", "http://localhost:8080", "VorpalStacks endpoint")
+	endpoint    = flag.String("endpoint", "http://localhost:50080", "VorpalStacks endpoint")
 	region      = flag.String("region", "us-east-1", "AWS region")
 	services    = flag.String("service", "", "Comma-separated list of services to test (or 'all')")
 	testType    = flag.String("type", "all", "Test type to run: all, sdk, ws, integration")

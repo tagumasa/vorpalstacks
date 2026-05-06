@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -14,6 +15,7 @@ func runLambdaESMTests(
 	r *TestRunner,
 	ctx context.Context,
 	client *lambda.Client,
+	cwlClient *cloudwatchlogs.Client,
 	createIAMRole func(string) error,
 	deleteIAMRole func(string),
 ) []TestResult {
@@ -43,6 +45,7 @@ func runLambdaESMTests(
 			Error: fmt.Sprintf("Failed to create function: %v", err)}}
 	}
 	defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(esmFuncName)})
+	defer deleteLambdaLogGroup(cwlClient, ctx, esmFuncName)
 
 	var esmUUID string
 

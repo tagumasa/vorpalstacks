@@ -14,6 +14,63 @@ import (
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
+type ssePartEncryptResult struct {
+	Reader       io.Reader
+	EncryptedSize int64
+	PlainSize     int64
+	ContentNonce  []byte
+	DataKey       []byte
+}
+
+func (o *ObjectOperations) encryptPartData(data []byte, upload *s3store.MultipartUpload, inputBucket, inputKey, sseCustomerKey, sseCustomerKeyMD5 string, store *s3Stores) (*ssePartEncryptResult, error) {
+	result := &ssePartEncryptResult{
+		Reader:   bytes.NewReader(data),
+		PlainSize: int64(len(data)),
+	}
+	if upload.SSEType == "" {
+		return result, nil
+	}
+	var encResult *EncryptionResult
+	var err error
+	switch upload.SSEType {
+	case s3store.SSETypeAES256:
+		if upload.PlaintextDataKey != nil && upload.SSEMetadata != nil {
+			encResult, err = o.svc.encryptionManager.EncryptWithPlaintextKey(data, EncryptionTypeSSE_S3, inputBucket, upload.PlaintextDataKey, "", nil)
+		} else {
+			encResult, err = o.svc.encryptionManager.Encrypt(data, EncryptionTypeSSE_S3, nil, inputBucket, inputKey, "")
+		}
+	case s3store.SSETypeKMS:
+		if upload.PlaintextDataKey != nil && upload.SSEMetadata != nil {
+			encResult, err = o.svc.encryptionManager.EncryptWithPlaintextKey(data, EncryptionTypeSSE_KMS, inputBucket, upload.PlaintextDataKey, upload.KMSKeyID, upload.SSEMetadata.EncryptedDataKey)
+		} else {
+			bucketEncryption, _ := store.buckets.GetEncryptionConfiguration(inputBucket)
+			encResult, err = o.svc.encryptionManager.Encrypt(data, EncryptionTypeSSE_KMS, bucketEncryption, inputBucket, inputKey, upload.KMSKeyID)
+		}
+	case s3store.SSETypeCustomer:
+		if sseCustomerKey == "" {
+			return nil, ErrInvalidSSECustomerKey
+		}
+		if upload.CustomerKeyMD5 != "" && upload.CustomerKeyMD5 != sseCustomerKeyMD5 {
+			return nil, ErrInvalidSSECustomerKey
+		}
+		customerKey, parseErr := o.svc.encryptionManager.ParseCustomerKey(sseCustomerKey, sseCustomerKeyMD5)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		encResult, err = o.svc.encryptionManager.EncryptWithCustomerKey(data, EncryptionTypeSSE_C, nil, inputBucket, inputKey, "", customerKey)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if encResult != nil {
+		result.Reader = bytes.NewReader(encResult.EncryptedData)
+		result.EncryptedSize = int64(len(encResult.EncryptedData))
+		result.ContentNonce = encResult.ContentNonce
+		result.DataKey = encResult.EncryptedDataKey
+	}
+	return result, nil
+}
+
 // CreateMultipartUploadInput contains the parameters for initiating a multipart upload.
 // Bucket is the name of the S3 bucket.
 // Key is the object key to upload.
@@ -203,45 +260,16 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 		if err != nil {
 			return nil, err
 		}
-		plainSize = int64(len(data))
-
-		var encResult *EncryptionResult
-		switch upload.SSEType {
-		case s3store.SSETypeAES256:
-			if upload.PlaintextDataKey != nil && upload.SSEMetadata != nil {
-				encResult, err = o.svc.encryptionManager.EncryptWithPlaintextKey(data, EncryptionTypeSSE_S3, input.Bucket, upload.PlaintextDataKey, "", nil)
-			} else {
-				encResult, err = o.svc.encryptionManager.Encrypt(data, EncryptionTypeSSE_S3, nil, input.Bucket, input.Key, "")
-			}
-		case s3store.SSETypeKMS:
-			if upload.PlaintextDataKey != nil && upload.SSEMetadata != nil {
-				encResult, err = o.svc.encryptionManager.EncryptWithPlaintextKey(data, EncryptionTypeSSE_KMS, input.Bucket, upload.PlaintextDataKey, upload.KMSKeyID, upload.SSEMetadata.EncryptedDataKey)
-			} else {
-				bucketEncryption, _ := store.buckets.GetEncryptionConfiguration(input.Bucket)
-				encResult, err = o.svc.encryptionManager.Encrypt(data, EncryptionTypeSSE_KMS, bucketEncryption, input.Bucket, input.Key, upload.KMSKeyID)
-			}
-		case s3store.SSETypeCustomer:
-			if input.SSECustomerKey == "" {
-				return nil, ErrInvalidSSECustomerKey
-			}
-			if upload.CustomerKeyMD5 != "" && upload.CustomerKeyMD5 != input.SSECustomerKeyMD5 {
-				return nil, ErrInvalidSSECustomerKey
-			}
-			customerKey, parseErr := o.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
-			if parseErr != nil {
-				return nil, parseErr
-			}
-			encResult, err = o.svc.encryptionManager.EncryptWithCustomerKey(data, EncryptionTypeSSE_C, nil, input.Bucket, input.Key, "", customerKey)
+		encResult, encErr := o.encryptPartData(data, upload, input.Bucket, input.Key, input.SSECustomerKey, input.SSECustomerKeyMD5, store)
+		if encErr != nil {
+			return nil, encErr
 		}
-		if err != nil {
-			return nil, err
-		}
-		if encResult != nil {
-			reader = bytes.NewReader(encResult.EncryptedData)
-			encryptedSize = int64(len(encResult.EncryptedData))
-			contentNonce = encResult.ContentNonce
-			dataKey = encResult.EncryptedDataKey
-		}
+		reader = encResult.Reader
+		encryptedSize = encResult.EncryptedSize
+		plainSize = encResult.PlainSize
+		contentNonce = encResult.ContentNonce
+		dataKey = encResult.DataKey
+		_ = err
 	}
 
 	part, err := store.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, plainSize, contentNonce, dataKey)
@@ -331,6 +359,10 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 		return nil, ErrInvalidCopySource
 	}
 
+	if input.CopySourceRange == "" && srcObj.Size > maxCopyObjectSize {
+		return nil, fmt.Errorf("copy source object size %d exceeds maximum copy size of %d bytes", srcObj.Size, maxCopyObjectSize)
+	}
+
 	var data []byte
 	if srcObj.SSEMetadata != nil || input.CopySourceSSECustomerKey != "" {
 		getInput := &GetObjectInput{
@@ -392,43 +424,14 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 	var contentNonce, dataKey []byte
 
 	if upload.SSEType != "" {
-		var encResult *EncryptionResult
-		switch upload.SSEType {
-		case s3store.SSETypeAES256:
-			if upload.PlaintextDataKey != nil && upload.SSEMetadata != nil {
-				encResult, err = o.svc.encryptionManager.EncryptWithPlaintextKey(data, EncryptionTypeSSE_S3, input.Bucket, upload.PlaintextDataKey, "", nil)
-			} else {
-				encResult, err = o.svc.encryptionManager.Encrypt(data, EncryptionTypeSSE_S3, nil, input.Bucket, input.Key, "")
-			}
-		case s3store.SSETypeKMS:
-			if upload.PlaintextDataKey != nil && upload.SSEMetadata != nil {
-				encResult, err = o.svc.encryptionManager.EncryptWithPlaintextKey(data, EncryptionTypeSSE_KMS, input.Bucket, upload.PlaintextDataKey, upload.KMSKeyID, upload.SSEMetadata.EncryptedDataKey)
-			} else {
-				bucketEncryption, _ := store.buckets.GetEncryptionConfiguration(input.Bucket)
-				encResult, err = o.svc.encryptionManager.Encrypt(data, EncryptionTypeSSE_KMS, bucketEncryption, input.Bucket, input.Key, upload.KMSKeyID)
-			}
-		case s3store.SSETypeCustomer:
-			if input.SSECustomerKey == "" {
-				return nil, ErrInvalidSSECustomerKey
-			}
-			if upload.CustomerKeyMD5 != "" && upload.CustomerKeyMD5 != input.SSECustomerKeyMD5 {
-				return nil, ErrInvalidSSECustomerKey
-			}
-			customerKey, parseErr := o.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
-			if parseErr != nil {
-				return nil, parseErr
-			}
-			encResult, err = o.svc.encryptionManager.EncryptWithCustomerKey(data, EncryptionTypeSSE_C, nil, input.Bucket, input.Key, "", customerKey)
+		encResult, encErr := o.encryptPartData(data, upload, input.Bucket, input.Key, input.SSECustomerKey, input.SSECustomerKeyMD5, store)
+		if encErr != nil {
+			return nil, encErr
 		}
-		if err != nil {
-			return nil, err
-		}
-		if encResult != nil {
-			reader = bytes.NewReader(encResult.EncryptedData)
-			encryptedSize = int64(len(encResult.EncryptedData))
-			contentNonce = encResult.ContentNonce
-			dataKey = encResult.EncryptedDataKey
-		}
+		reader = encResult.Reader
+		encryptedSize = encResult.EncryptedSize
+		contentNonce = encResult.ContentNonce
+		dataKey = encResult.DataKey
 	}
 
 	part, err := store.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, plainSize, contentNonce, dataKey)

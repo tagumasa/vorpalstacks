@@ -1,11 +1,11 @@
 // Package portalloc provides dynamic port allocation for services
-// operating in Individual mode. Ports are allocated from a configurable
-// range and persisted via the PortStore interface.
+// operating in Individual mode, and bind address resolution for console ports.
 package portalloc
 
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"sort"
 	"sync"
 
@@ -178,4 +178,61 @@ func (a *Allocator) Allocations() map[string]int {
 		cp[k] = v
 	}
 	return cp
+}
+
+// BindAddrStore is the interface for reading bind address configuration.
+type BindAddrStore interface {
+	GetString(key string) string
+}
+
+// ResolveBindAddr resolves the console bind address from the config store.
+// Default is 0.0.0.0 (bind to all interfaces). Fallback on any error: 127.0.0.1.
+func ResolveBindAddr(store BindAddrStore) string {
+	if store == nil {
+		return "127.0.0.1"
+	}
+	mode := store.GetString("server.bind_mode")
+	if mode == "" {
+		mode = "all"
+	}
+	switch mode {
+	case "localhost":
+		return "127.0.0.1"
+	case "all":
+		return "0.0.0.0"
+	case "interface":
+		iface := store.GetString("server.bind_interface")
+		if iface == "" {
+			return "127.0.0.1"
+		}
+		ip := net.ParseIP(iface)
+		if ip == nil {
+			return "127.0.0.1"
+		}
+		ifaces, err := net.Interfaces()
+		if err != nil {
+			return "127.0.0.1"
+		}
+		for _, i := range ifaces {
+			addrs, err := i.Addrs()
+			if err != nil {
+				continue
+			}
+			for _, a := range addrs {
+				var ifaceIP net.IP
+				switch v := a.(type) {
+				case *net.IPNet:
+					ifaceIP = v.IP
+				case *net.IPAddr:
+					ifaceIP = v.IP
+				}
+				if ifaceIP != nil && ifaceIP.Equal(ip) {
+					return iface
+				}
+			}
+		}
+		return "127.0.0.1"
+	default:
+		return "127.0.0.1"
+	}
 }

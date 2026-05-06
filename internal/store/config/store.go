@@ -2,9 +2,9 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,19 +13,11 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 )
 
-// Store provides configuration storage with support for defaults, environment variables, and persistent storage.
 type Store struct {
 	*common.BaseStore
 	defaults map[string]ConfigEntry
 }
 
-// NewStore creates a new configuration store.
-//
-// Parameters:
-//   - store: The underlying storage instance
-//
-// Returns:
-//   - *Store: A new configuration store
 func NewStore(store storage.BasicStorage) *Store {
 	return &Store{
 		BaseStore: common.NewBaseStore(store.Bucket("app_config"), "config"),
@@ -33,29 +25,80 @@ func NewStore(store storage.BasicStorage) *Store {
 	}
 }
 
-// Get retrieves a configuration entry by key.
-// Lookup order: store, default value. ENV fallback is handled by MergeAndPersist
-// during startup, not at runtime.
-func (s *Store) Get(key string) (*ConfigEntry, error) {
-	var entry ConfigEntry
-	if err := s.BaseStore.Get(key, &entry); err == nil {
-		entry.Source = ConfigSourceStore
-		return &entry, nil
-	}
-
-	if def, ok := s.defaults[key]; ok {
-		defCopy := def
-		defCopy.Source = ConfigSourceDefault
-		return &defCopy, nil
-	}
-
-	return nil, ErrConfigNotFound
+// Initialise seeds default values for keys not yet in Pebble, then applies
+// environment variable overrides. Must be called once after NewStore.
+func (s *Store) Initialise() {
+	s.seedDefaults()
+	s.applyEnvOverrides()
 }
 
-// Set sets a configuration value in the store.
-// For keys defined in defaults: validates ReadOnly, persists via BaseStore.
-// For dynamic keys (not in defaults): creates a synthetic ConfigEntry with
-// Type=ConfigTypePort, Category=CategoryPorts, ReadOnly=false.
+// seedDefaults writes every default key that does not already exist in Pebble.
+func (s *Store) seedDefaults() {
+	for key, def := range s.defaults {
+		if s.BaseStore.Exists(key) {
+			continue
+		}
+		entry := def
+		entry.UpdatedAt = time.Now().Unix()
+		if err := s.BaseStore.Put(key, entry); err != nil {
+			logs.Warn("seedDefaults: failed to write default entry",
+				logs.String("key", key),
+				logs.Err(err),
+			)
+		}
+	}
+}
+
+// applyEnvOverrides overwrites Pebble entries for keys whose EnvVar is set
+// in the current process environment. After this call the server never reads
+// ENV vars again — Pebble is the single source of truth.
+func (s *Store) applyEnvOverrides() {
+	for key, def := range s.defaults {
+		if def.EnvVar == "" {
+			continue
+		}
+		envVal := os.Getenv(def.EnvVar)
+		if envVal == "" {
+			continue
+		}
+
+		var value interface{}
+		switch def.Type {
+		case ConfigTypeBool:
+			value, _ = strconv.ParseBool(envVal)
+		case ConfigTypeInt, ConfigTypePort:
+			value, _ = strconv.Atoi(envVal)
+		default:
+			value = envVal
+		}
+
+		entry := def
+		entry.Value = value
+		entry.UpdatedAt = time.Now().Unix()
+		if err := s.BaseStore.Put(key, entry); err != nil {
+			logs.Warn("applyEnvOverrides: failed to write config entry",
+				logs.String("key", key),
+				logs.Err(err),
+			)
+		}
+	}
+}
+
+// Get retrieves a configuration entry from Pebble by key.
+func (s *Store) Get(key string) (*ConfigEntry, error) {
+	var entry ConfigEntry
+	if err := s.BaseStore.Get(key, &entry); err != nil {
+		if common.IsNotFound(err) {
+			return nil, ErrConfigNotFound
+		}
+		return nil, err
+	}
+	return &entry, nil
+}
+
+// Set persists a configuration value to Pebble.
+// For keys defined in defaults: validates ReadOnly and copies schema metadata.
+// For dynamic keys (resource ports): creates a synthetic ConfigEntry.
 func (s *Store) Set(key string, value interface{}) error {
 	if def, ok := s.defaults[key]; ok {
 		if def.ReadOnly {
@@ -63,7 +106,6 @@ func (s *Store) Set(key string, value interface{}) error {
 		}
 		entry := def
 		entry.Value = value
-		entry.Source = ConfigSourceStore
 		entry.UpdatedAt = time.Now().Unix()
 		return s.BaseStore.Put(key, entry)
 	}
@@ -72,7 +114,6 @@ func (s *Store) Set(key string, value interface{}) error {
 		Key:       key,
 		Value:     value,
 		Type:      ConfigTypePort,
-		Source:    ConfigSourceStore,
 		Category:  CategoryPorts,
 		ReadOnly:  false,
 		UpdatedAt: time.Now().Unix(),
@@ -80,45 +121,40 @@ func (s *Store) Set(key string, value interface{}) error {
 	return s.BaseStore.Put(key, entry)
 }
 
-// Delete removes a configuration entry from the store.
 func (s *Store) Delete(key string) error {
 	return s.BaseStore.Delete(key)
 }
 
-// Reset resets a configuration entry to its default value.
+// Reset deletes the Pebble entry and re-seeds the default value.
 func (s *Store) Reset(key string) (*ConfigEntry, error) {
+	def, ok := s.defaults[key]
+	if !ok {
+		return nil, ErrConfigNotFound
+	}
 	if err := s.BaseStore.Delete(key); err != nil {
 		return nil, err
 	}
-	return s.Get(key)
+	entry := def
+	entry.UpdatedAt = time.Now().Unix()
+	if err := s.BaseStore.Put(key, entry); err != nil {
+		return nil, err
+	}
+	return &entry, nil
 }
 
-// GetAll retrieves all configuration entries sorted by category then key.
+// GetAll retrieves all configuration entries from Pebble, sorted by category then key.
 func (s *Store) GetAll() ([]*ConfigEntry, error) {
-	entries := make(map[string]*ConfigEntry)
-
-	for key, def := range s.defaults {
-		defCopy := def
-		defCopy.Source = ConfigSourceDefault
-		entries[key] = &defCopy
-	}
-
+	var result []*ConfigEntry
 	err := s.BaseStore.ForEach(func(key string, value []byte) error {
 		var entry ConfigEntry
 		if err := json.Unmarshal(value, &entry); err != nil {
 			return err
 		}
-		entry.Source = ConfigSourceStore
-		entries[key] = &entry
+		result = append(result, &entry)
 		return nil
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	result := make([]*ConfigEntry, 0, len(entries))
-	for _, entry := range entries {
-		result = append(result, entry)
 	}
 	slices.SortFunc(result, func(a, b *ConfigEntry) int {
 		if a.Category != b.Category {
@@ -129,13 +165,11 @@ func (s *Store) GetAll() ([]*ConfigEntry, error) {
 	return result, nil
 }
 
-// ListByCategory retrieves all configuration entries in a category.
 func (s *Store) ListByCategory(category ConfigCategory) ([]*ConfigEntry, error) {
 	all, err := s.GetAll()
 	if err != nil {
 		return nil, err
 	}
-
 	var result []*ConfigEntry
 	for _, entry := range all {
 		if entry.Category == category {
@@ -145,10 +179,8 @@ func (s *Store) ListByCategory(category ConfigCategory) ([]*ConfigEntry, error) 
 	return result, nil
 }
 
-// GetResourcePort retrieves the port for a specific resource.
 func (s *Store) GetResourcePort(servicePortKey, resourceID string) (int, error) {
 	resourceKey := servicePortKey + "." + resourceID
-
 	if entry, err := s.Get(resourceKey); err == nil {
 		if port, ok := entry.Value.(int); ok {
 			return port, nil
@@ -157,7 +189,6 @@ func (s *Store) GetResourcePort(servicePortKey, resourceID string) (int, error) 
 			return int(port), nil
 		}
 	}
-
 	entry, err := s.Get(servicePortKey)
 	if err != nil {
 		return 0, err
@@ -171,19 +202,16 @@ func (s *Store) GetResourcePort(servicePortKey, resourceID string) (int, error) 
 	return 0, ErrConfigInvalid
 }
 
-// SetResourcePort sets the port for a specific resource.
 func (s *Store) SetResourcePort(servicePortKey, resourceID string, port int) error {
 	resourceKey := servicePortKey + "." + resourceID
 	return s.Set(resourceKey, port)
 }
 
-// DeleteResourcePort removes a resource port allocation.
 func (s *Store) DeleteResourcePort(servicePortKey, resourceID string) error {
 	resourceKey := servicePortKey + "." + resourceID
 	return s.BaseStore.Delete(resourceKey)
 }
 
-// ListResourcePorts returns all resource port allocations for a service.
 func (s *Store) ListResourcePorts(servicePortKey string) (map[string]int, error) {
 	result := make(map[string]int)
 	prefix := servicePortKey + "."
@@ -211,7 +239,6 @@ func (s *Store) ListResourcePorts(servicePortKey string) (map[string]int, error)
 	return result, err
 }
 
-// GetString retrieves a string configuration value.
 func (s *Store) GetString(key string) string {
 	entry, err := s.Get(key)
 	if err != nil {
@@ -223,7 +250,6 @@ func (s *Store) GetString(key string) string {
 	return ""
 }
 
-// GetInt retrieves an integer configuration value.
 func (s *Store) GetInt(key string) int {
 	entry, err := s.Get(key)
 	if err != nil {
@@ -243,7 +269,6 @@ func (s *Store) GetInt(key string) int {
 	return 0
 }
 
-// GetBool retrieves a boolean configuration value.
 func (s *Store) GetBool(key string) bool {
 	entry, err := s.Get(key)
 	if err != nil {
@@ -255,7 +280,6 @@ func (s *Store) GetBool(key string) bool {
 	return false
 }
 
-// GetCategory returns the category for a configuration key.
 func (s *Store) GetCategory(key string) ConfigCategory {
 	if def, ok := s.defaults[key]; ok {
 		return def.Category
@@ -284,65 +308,34 @@ func (s *Store) GetCategory(key string) ConfigCategory {
 	return ""
 }
 
-// ForEach iterates over all raw key-value pairs in the underlying store.
 func (s *Store) ForEach(fn func(key string, value []byte) error) error {
 	return s.BaseStore.ForEach(fn)
 }
 
-// InitDefaults seeds all default values into the store on first startup.
-// Only writes entries that don't already exist in the store.
-func (s *Store) InitDefaults() error {
-	for key, def := range s.defaults {
-		var existing ConfigEntry
-		if err := s.BaseStore.Get(key, &existing); err != nil {
-			entry := def
-			entry.Source = ConfigSourceDefault
-			entry.UpdatedAt = time.Now().Unix()
-			if err := s.BaseStore.Put(key, entry); err != nil {
-				return fmt.Errorf("init defaults: write %s: %w", key, err)
-			}
-		}
+// GetSchema returns the configuration schema derived from the defaults map.
+func (s *Store) GetSchema() []ConfigSchema {
+	schema := make([]ConfigSchema, 0, len(s.defaults))
+	for _, entry := range s.defaults {
+		schema = append(schema, ConfigSchema{
+			Key:         entry.Key,
+			Type:        entry.Type,
+			Default:     entry.Value,
+			Description: entry.Description,
+			ReadOnly:    entry.ReadOnly,
+			EnvVar:      entry.EnvVar,
+			Category:    entry.Category,
+		})
 	}
-	return nil
+	return schema
 }
 
-// MergeAndPersist writes a set of configuration values to the store.
-// For each key that has an EnvVar in defaults and that env var is set,
-// the Source is set to ConfigSourceEnv. Otherwise, ConfigSourceStore.
-// This is called once during startup to persist ENV overrides.
-func (s *Store) MergeAndPersist(values map[string]interface{}) {
-	for key, value := range values {
-		def, hasDef := s.defaults[key]
-
-		entry := ConfigEntry{
-			Key:       key,
-			Value:     value,
-			Source:    ConfigSourceStore,
-			UpdatedAt: time.Now().Unix(),
-		}
-
-		if hasDef {
-			entry.Type = def.Type
-			entry.Category = def.Category
-			entry.Description = def.Description
-			entry.ReadOnly = def.ReadOnly
-			entry.EnvVar = def.EnvVar
-
-			if def.EnvVar != "" {
-				if envVal := os.Getenv(def.EnvVar); envVal != "" {
-					entry.Source = ConfigSourceEnv
-				}
-			}
-		} else {
-			entry.Type = ConfigTypePort
-			entry.Category = CategoryPorts
-		}
-
-		if err := s.BaseStore.Put(key, entry); err != nil {
-			logs.Warn("MergeAndPersist: failed to write config entry",
-				logs.String("key", key),
-				logs.Err(err),
-			)
+// GetKeysByCategory returns all configuration keys in a category.
+func (s *Store) GetKeysByCategory(category ConfigCategory) []string {
+	keys := make([]string, 0)
+	for key, entry := range s.defaults {
+		if entry.Category == category {
+			keys = append(keys, key)
 		}
 	}
+	return keys
 }

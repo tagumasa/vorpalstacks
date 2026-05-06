@@ -822,8 +822,10 @@
       "tls": "TLS Configuration",
       "dynamicRange": "Dynamic Port Range",
       "listenerPorts": "Listener Ports",
-      "bindMode": "Bind Mode"
+      "bindMode": "Bind Mode",
+      "session": "Session"
     },
+    "idleTimeout": "Auto-logout after inactivity (minutes)",
     "mappings": {
       "modeTable": "Service Port Modes",
       "resourcePorts": "Resource Port Assignments",

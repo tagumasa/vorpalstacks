@@ -10,7 +10,7 @@ import (
 
 	"connectrpc.com/connect"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/store/config"
+	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/pkg/vsjwt"
 
 	adminauthconnect "vorpalstacks/internal/pb/aws/admin_auth/admin_authconnect"
@@ -33,7 +33,7 @@ type HandlerRegistration struct {
 // The admin auth service is intentionally excluded because clients must be
 // able to log in before they possess a valid token.
 func RegisterAdminHandlers(s *Server, st storage.BasicStorage, accountID, region, dataPath string, handlers []HandlerRegistration, shutdownFunc func()) {
-	configStore := config.NewStore(st)
+	configStore := appconfig.GetStore()
 	version := buildVersion()
 	adminConfigService := svcadminconfig.NewAdminConfigService(configStore, shutdownFunc, dataPath, version)
 

@@ -820,8 +820,10 @@
       "tls": "TLS配置",
       "dynamicRange": "动态端口范围",
       "listenerPorts": "监听端口",
-      "bindMode": "绑定模式"
+      "bindMode": "绑定模式",
+      "session": "会话"
     },
+    "idleTimeout": "无操作自动登出（分钟）",
     "mappings": {
       "modeTable": "服务端口模式",
       "resourcePorts": "资源端口分配",

@@ -14,6 +14,7 @@ import {
   useServicesList,
   type ServiceInfo,
 } from "@/hooks/use-config";
+import { getIdleTimeoutMin, setIdleTimeoutMin } from "@/lib/idle-timeout";
 
 type TabKey = "server" | "ports" | "mappings" | "services";
 
@@ -269,6 +270,15 @@ function ServerTab({
 
   const find = (key: string) => allEntries.find((e) => e.key === key);
   const tlsEnabled = currentVal("server.tls_enabled", find("server.tls_enabled")?.value ?? "false") === "true";
+  const [idleMin, setIdleMin] = useState(getIdleTimeoutMin);
+
+  const handleIdleChange = (val: string) => {
+    const n = parseInt(val, 10);
+    if (!isNaN(n) && n >= 1 && n <= 480) {
+      setIdleMin(n);
+      setIdleTimeoutMin(n);
+    }
+  };
 
   const renderEntry = (key: string) => {
     const e = find(key);
@@ -309,16 +319,29 @@ function ServerTab({
 
   return (
     <div className="settings-form">
-      <h4 className="settings-section-title">{t("settings.sections.tls")}</h4>
-      {renderEntry("server.tls_enabled")}
-      {tlsEnabled && renderEntry("server.tls_cert_path")}
-      {tlsEnabled && renderEntry("server.tls_key_path")}
+      <h4 className="settings-section-title">{t("settings.sections.session")}</h4>
+      <div className="settings-entry">
+        <label className="settings-label">{t("settings.idleTimeout")}</label>
+        <input
+          type="number"
+          className="settings-input"
+          min={1}
+          max={480}
+          value={idleMin}
+          onChange={(ev) => handleIdleChange(ev.target.value)}
+        />
+      </div>
 
       <h4 className="settings-section-title">{t("settings.sections.cors")}</h4>
       {renderEntry("http.cors_allowed_origins")}
       {renderEntry("http.cors_allowed_methods")}
       {renderEntry("http.cors_allowed_headers")}
       {renderEntry("http.cors_expose_headers")}
+
+      <h4 className="settings-section-title">{t("settings.sections.tls")}</h4>
+      {renderEntry("server.tls_enabled")}
+      {tlsEnabled && renderEntry("server.tls_cert_path")}
+      {tlsEnabled && renderEntry("server.tls_key_path")}
 
       <h4 className="settings-section-title">{t("settings.sections.dynamicRange")}</h4>
       {renderEntry("ports.dynamic_range_start")}

@@ -820,8 +820,10 @@
       "tls": "TLS設定",
       "dynamicRange": "動的ポート範囲",
       "listenerPorts": "リスナーポート",
-      "bindMode": "バインドモード"
+      "bindMode": "バインドモード",
+      "session": "セッション"
     },
+    "idleTimeout": "操作なしで自動ログアウト（分）",
     "mappings": {
       "modeTable": "サービスポートモード",
       "resourcePorts": "リソースポート割り当て",

@@ -67,7 +67,9 @@ func (d *awsChunkedDecoder) Read(p []byte) (int, error) {
 
 	if size == 0 {
 		d.eof = true
-		_, _ = d.reader.ReadString('\n')
+		if _, trailingErr := d.reader.ReadString('\n'); trailingErr != nil && !errors.Is(trailingErr, io.EOF) {
+			return 0, fmt.Errorf("%w: failed to read trailing newline: %w", errAwsChunkedInvalidFormat, trailingErr)
+		}
 		return 0, io.EOF
 	}
 

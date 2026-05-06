@@ -6,9 +6,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -118,14 +120,13 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 	var unencryptedSize int64
 
 	if obj.SSEMetadata != nil {
-		encryptedData, encObj, err := store.objects.GetEncrypted(ctx, input.Bucket, input.Key, input.VersionId)
-		if err != nil {
-			reader.Close()
-			return nil, err
-		}
+		encryptedData, err := io.ReadAll(reader)
 		reader.Close()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read encrypted data: %w", err)
+		}
 
-		if encObj.SSEMetadata.EncryptionType == s3store.SSEType("CUSTOMER") {
+		if obj.SSEMetadata.EncryptionType == s3store.SSETypeCustomer {
 			if input.SSECustomerKey == "" {
 				return nil, fmt.Errorf("customer key is required for SSE-C encrypted object")
 			}
@@ -133,29 +134,29 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 			if err != nil {
 				return nil, fmt.Errorf("invalid SSE-C customer key: %w", err)
 			}
-			decResult, err := o.svc.encryptionManager.DecryptWithCustomerKey(encryptedData, encObj.SSEMetadata, input.Bucket, input.Key, customerKey)
+			decResult, err := o.svc.encryptionManager.DecryptWithCustomerKey(encryptedData, obj.SSEMetadata, input.Bucket, input.Key, customerKey)
 			if err != nil {
 				return nil, fmt.Errorf("failed to decrypt data: %w", err)
 			}
 			decryptedData = decResult.DecryptedData
-			unencryptedSize = encObj.SSEMetadata.UnencryptedSize
+			unencryptedSize = obj.SSEMetadata.UnencryptedSize
 			output.SSECustomerAlgorithm = "AES256"
 		} else {
-			if len(encObj.SSEMetadata.PartEncryptionInfos) > 0 {
-				decryptedData, err = o.decryptMultipartParts(encryptedData, encObj.SSEMetadata, input.Bucket, input.Key)
+			if len(obj.SSEMetadata.PartEncryptionInfos) > 0 {
+				decryptedData, err = o.decryptMultipartParts(encryptedData, obj.SSEMetadata, input.Bucket, input.Key)
 				if err != nil {
 					return nil, fmt.Errorf("failed to decrypt multipart data: %w", err)
 				}
 			} else {
-				decResult, err := o.svc.encryptionManager.Decrypt(encryptedData, encObj.SSEMetadata, input.Bucket, input.Key)
+				decResult, err := o.svc.encryptionManager.Decrypt(encryptedData, obj.SSEMetadata, input.Bucket, input.Key)
 				if err != nil {
 					return nil, fmt.Errorf("failed to decrypt data: %w", err)
 				}
 				decryptedData = decResult.DecryptedData
 			}
-			unencryptedSize = encObj.SSEMetadata.UnencryptedSize
-			output.ServerSideEncryption = string(encObj.SSEMetadata.EncryptionType)
-			output.SSEKMSKeyId = encObj.SSEMetadata.KMSKeyID
+			unencryptedSize = obj.SSEMetadata.UnencryptedSize
+			output.ServerSideEncryption = string(obj.SSEMetadata.EncryptionType)
+			output.SSEKMSKeyId = obj.SSEMetadata.KMSKeyID
 		}
 	}
 
@@ -251,9 +252,11 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 
 // HeadObjectInput contains the input parameters for the HeadObject operation.
 type HeadObjectInput struct {
-	Bucket    string
-	Key       string
-	VersionId string
+	Bucket               string
+	Key                  string
+	VersionId            string
+	SSECustomerKey       string
+	SSECustomerKeyMD5    string
 }
 
 // HeadObjectOutput contains the output from the HeadObject operation.
@@ -314,7 +317,10 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if obj.SSEMetadata != nil {
-		if obj.SSEMetadata.EncryptionType == s3store.SSEType("CUSTOMER") {
+		if obj.SSEMetadata.EncryptionType == s3store.SSETypeCustomer {
+			if input.SSECustomerKey == "" {
+				return nil, awserrors.NewAWSError("InvalidRequest", "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object.", http.StatusBadRequest)
+			}
 			output.SSECustomerAlgorithm = "AES256"
 		} else {
 			output.ServerSideEncryption = string(obj.SSEMetadata.EncryptionType)
@@ -419,18 +425,19 @@ func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *requ
 		case "StorageClass":
 			output.StorageClass = string(obj.StorageClass)
 		case "ObjectParts":
-			if obj.SSEMetadata != nil && len(obj.SSEMetadata.EncryptedDataKey) > 0 {
+			if obj.SSEMetadata != nil && len(obj.SSEMetadata.PartEncryptionInfos) > 0 {
+				partInfos := obj.SSEMetadata.PartEncryptionInfos
+				totalParts := int32(len(partInfos))
 				output.ObjectParts = &GetObjectAttributesParts{
 					IsTruncated:     false,
 					MaxParts:        input.MaxParts,
-					TotalPartsCount: 1,
-					Parts: []GetObjectAttributesPart{
-						{
-							PartNumber: 1,
-							Size:       obj.Size,
-							ETag:       formatETag(obj.ETag),
-						},
-					},
+					TotalPartsCount: totalParts,
+				}
+				for i, pi := range partInfos {
+					output.ObjectParts.Parts = append(output.ObjectParts.Parts, GetObjectAttributesPart{
+						PartNumber: int32(i + 1),
+						Size:       pi.PlainSize,
+					})
 				}
 			}
 		case "Checksum":

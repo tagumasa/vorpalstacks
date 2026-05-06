@@ -85,7 +85,7 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if h.isPresignedURLRequest(query) {
 		if err := h.verifyPresignedURL(r, bucket); err != nil {
-			h.writeError(w, err, bucket, key)
+			h.writeError(w, err, bucket, key, requestID)
 			return
 		}
 	}
@@ -108,7 +108,7 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		h.recordAudit(determineS3EventName(r, bucket, key), reqCtx, r, nil, err)
-		h.writeError(w, err, bucket, key)
+		h.writeError(w, err, bucket, key, requestID)
 		return
 	}
 
@@ -117,7 +117,7 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.recordAudit(determineS3EventName(r, bucket, key), reqCtx, r, result, nil)
-	h.writeResult(w, result, statusCode)
+	h.writeResult(w, result, statusCode, requestID)
 }
 
 func parseS3Path(urlPath string) (bucket, key string) {

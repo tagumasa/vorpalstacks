@@ -1,8 +1,8 @@
 package s3
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 )
@@ -33,12 +33,41 @@ func (o *BucketOperations) PutBucketPolicy(ctx *request.RequestContext, input *P
 }
 
 func policyContainsPublicAccess(policy string) bool {
-	return strings.Contains(policy, `"Principal": "*"`) ||
-		strings.Contains(policy, `"Principal":"*"`) ||
-		strings.Contains(policy, `"Principal": {"AWS": "*"`) ||
-		strings.Contains(policy, `"Principal":{"AWS":"*"`) ||
-		strings.Contains(strings.ToLower(policy), `"principal": "*"`) ||
-		strings.Contains(strings.ToLower(policy), `"principal":{"aws":"*"`)
+	var p struct {
+		Statement []struct {
+			Principal interface{} `json:"Principal"`
+		} `json:"Statement"`
+	}
+	if err := json.Unmarshal([]byte(policy), &p); err != nil {
+		return false
+	}
+	for _, stmt := range p.Statement {
+		if isPublicPrincipal(stmt.Principal) {
+			return true
+		}
+	}
+	return false
+}
+
+func isPublicPrincipal(principal interface{}) bool {
+	switch v := principal.(type) {
+	case string:
+		return v == "*"
+	case map[string]interface{}:
+		for _, val := range v {
+			if s, ok := val.(string); ok && s == "*" {
+				return true
+			}
+			if arr, ok := val.([]interface{}); ok {
+				for _, item := range arr {
+					if s, ok := item.(string); ok && s == "*" {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 // GetBucketPolicyInput contains the request parameters for the GetBucketPolicy operation.

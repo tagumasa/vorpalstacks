@@ -88,6 +88,7 @@ type ObjectStoreInterface interface {
 	SetTags(bucket, key string, tags []types.Tag) error
 	SetACL(bucket, key string, acp *AccessControlPolicy) error
 	GetACL(bucket, key string) (*AccessControlPolicy, error)
+	SetStorageClass(bucket, key, versionId string, storageClass ObjectStorageClass) error
 }
 
 // S3StoreInterface defines access to S3 stores.

@@ -40,7 +40,7 @@ func NewPebbleStorage(cfg *Config) (*PebbleStorage, error) {
 		cfg.Path = "./data"
 	}
 
-	opts := []pebbledb.Option{pebbledb.WithPath(cfg.Path)}
+	opts := []pebbledb.Option{pebbledb.WithPath(cfg.Path), pebbledb.WithSyncWrites(true)}
 
 	if len(cfg.EncryptionKey) > 0 {
 		opts = append(opts, pebbledb.WithEncryption(cfg.EncryptionKey))

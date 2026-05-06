@@ -17,6 +17,8 @@ const (
 	EncryptionTypeSSE_S3 EncryptionType = "AES256"
 	// EncryptionTypeSSE_KMS indicates AWS KMS-managed keys.
 	EncryptionTypeSSE_KMS EncryptionType = "aws:kms"
+	// EncryptionTypeSSE_DSSE_KMS indicates dual-layer AWS KMS-managed keys.
+	EncryptionTypeSSE_DSSE_KMS EncryptionType = "aws:kms:dsse"
 	// EncryptionTypeSSE_C indicates customer-provided keys.
 	EncryptionTypeSSE_C EncryptionType = "CUSTOMER"
 )
@@ -35,13 +37,6 @@ type EncryptionResult struct {
 // DecryptionResult holds the result of a decryption operation.
 type DecryptionResult struct {
 	DecryptedData []byte
-}
-
-// Encryptor defines the interface for S3 encryption operations.
-type Encryptor interface {
-	Encrypt(plaintext []byte, bucket, key string) (*EncryptionResult, error)
-	Decrypt(ciphertext []byte, sseMetadata *s3store.SSEObjectMetadata, bucket, key string) (*DecryptionResult, error)
-	GetEncryptionType() EncryptionType
 }
 
 // EncryptionManager manages different S3 encryption methods.
@@ -122,7 +117,7 @@ func (m *EncryptionManager) DecryptWithCustomerKey(ciphertext []byte, sseMetadat
 			return &DecryptionResult{DecryptedData: ciphertext}, nil
 		}
 		return m.sseKMSEncryptor.Decrypt(ciphertext, sseMetadata, bucket, key)
-	case s3store.SSEType("CUSTOMER"):
+	case s3store.SSETypeCustomer:
 		if m.sseCEncryptor == nil {
 			return &DecryptionResult{DecryptedData: ciphertext}, nil
 		}
@@ -151,6 +146,8 @@ func (m *EncryptionManager) DetermineEncryptionType(requestEncryption Encryption
 			return EncryptionTypeSSE_S3
 		case "aws:kms":
 			return EncryptionTypeSSE_KMS
+		case "aws:kms:dsse":
+			return EncryptionTypeSSE_DSSE_KMS
 		}
 	}
 	return EncryptionTypeNone

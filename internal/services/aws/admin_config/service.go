@@ -227,15 +227,8 @@ func (s *AdminConfigService) GetResourcePort(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("port configuration not found"))
 	}
 
-	entry, _ := s.configStore.Get(req.Msg.ServicePortKey + "." + req.Msg.ResourceId)
-	source := "default"
-	if entry != nil {
-		source = string(entry.Source)
-	}
-
 	return connect.NewResponse(&pb.GetResourcePortResponse{
-		Port:   int32(port),
-		Source: source,
+		Port: int32(port),
 	}), nil
 }
 
@@ -395,7 +388,6 @@ func toPbEntry(entry *storeconfig.ConfigEntry) *pb.ConfigEntry {
 		Key:         entry.Key,
 		Value:       formatValue(entry.Value, entry.Type),
 		Type:        string(entry.Type),
-		Source:      string(entry.Source),
 		Description: entry.Description,
 		ReadOnly:    entry.ReadOnly,
 		UpdatedAt:   entry.UpdatedAt,

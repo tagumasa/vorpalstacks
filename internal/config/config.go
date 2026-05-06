@@ -21,6 +21,7 @@ func Initialise(store storage.BasicStorage) {
 	mu.Lock()
 	defer mu.Unlock()
 	globalStore = storeconfig.NewStore(store)
+	globalStore.Initialise()
 }
 
 // GetStore returns the global configuration store.

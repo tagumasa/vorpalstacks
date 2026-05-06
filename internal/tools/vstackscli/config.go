@@ -23,6 +23,7 @@ func RunConfig(store storage.BasicStorage, args []string) {
 	}
 
 	configStore := storeconfig.NewStore(store)
+	configStore.Initialise()
 	cmd := args[0]
 	cmdArgs := args[1:]
 
@@ -36,7 +37,7 @@ func RunConfig(store storage.BasicStorage, args []string) {
 	case "list":
 		configListCmd(configStore, cmdArgs)
 	case "schema":
-		configSchemaCmd()
+		configSchemaCmd(configStore)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", cmd)
 		printConfigUsage()
@@ -152,8 +153,8 @@ func configListCmd(store *storeconfig.Store, args []string) {
 	}
 }
 
-func configSchemaCmd() {
-	schema := storeconfig.GetSchema()
+func configSchemaCmd(store *storeconfig.Store) {
+	schema := store.GetSchema()
 	for _, s := range schema {
 		readOnly := ""
 		if s.ReadOnly {
@@ -170,7 +171,6 @@ func printConfigEntry(entry *storeconfig.ConfigEntry) {
 	fmt.Printf("  Key:         %s\n", entry.Key)
 	fmt.Printf("  Value:       %v\n", entry.Value)
 	fmt.Printf("  Type:        %s\n", entry.Type)
-	fmt.Printf("  Source:      %s\n", entry.Source)
 	fmt.Printf("  Category:    %s\n", entry.Category)
 	if entry.Description != "" {
 		fmt.Printf("  Description: %s\n", entry.Description)

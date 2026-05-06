@@ -79,12 +79,6 @@ func TestConfigTypes(t *testing.T) {
 	assert.Equal(t, ConfigType("URL"), ConfigTypeURL)
 }
 
-func TestConfigSources(t *testing.T) {
-	assert.Equal(t, ConfigSource("ENV"), ConfigSourceEnv)
-	assert.Equal(t, ConfigSource("STORE"), ConfigSourceStore)
-	assert.Equal(t, ConfigSource("DEFAULT"), ConfigSourceDefault)
-}
-
 func TestConfigCategories(t *testing.T) {
 	assert.Equal(t, ConfigCategory("server"), CategoryServer)
 	assert.Equal(t, ConfigCategory("aws"), CategoryAWS)
@@ -106,7 +100,6 @@ func TestConfigEntry(t *testing.T) {
 		Key:      "test.key",
 		Value:    "test-value",
 		Type:     ConfigTypeString,
-		Source:   ConfigSourceDefault,
 		Category: CategoryServer,
 	}
 	assert.Equal(t, "test.key", e.Key)

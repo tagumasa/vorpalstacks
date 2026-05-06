@@ -8,27 +8,35 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 func (h *S3Handler) handleObjectRequest(ctx *request.RequestContext, r *http.Request, bucket, key string) (interface{}, http.Header, int, error) {
+	if r.Method == "POST" && r.URL.Query().Has("select") {
+		action := "s3:GetObject"
+		stores, err := h.svc.store(ctx)
+		if err != nil {
+			return nil, nil, http.StatusInternalServerError, err
+		}
+		if err := h.checkAccess(ctx, r, stores, action, bucket, key); err != nil {
+			return nil, nil, http.StatusForbidden, err
+		}
+		return h.handleSelectObjectContent(ctx, r, bucket, key, stores)
+	}
+
+	action := determineObjectAction(r)
 	stores, err := h.svc.store(ctx)
 	if err != nil {
 		return nil, nil, http.StatusInternalServerError, err
 	}
-
-	action := determineObjectAction(r)
 	if err := h.checkAccess(ctx, r, stores, action, bucket, key); err != nil {
 		return nil, nil, http.StatusForbidden, err
-	}
-
-	if r.Method == "POST" && r.URL.Query().Has("select") {
-		return h.handleSelectObjectContent(ctx, r, bucket, key)
 	}
 
 	return h.objectOps.HandleRequest(r.Context(), ctx, r, bucket, key)
 }
 
-func (h *S3Handler) handleSelectObjectContent(ctx *request.RequestContext, r *http.Request, bucket, key string) (interface{}, http.Header, int, error) {
+func (h *S3Handler) handleSelectObjectContent(ctx *request.RequestContext, r *http.Request, bucket, key string, stores *s3Stores) (interface{}, http.Header, int, error) {
 	var input SelectObjectContentInput
 	if err := request.NewSafeXMLDecoder(r.Body).Decode(&input); err != nil {
 		return nil, nil, http.StatusBadRequest, fmt.Errorf("failed to decode request: %w", err)
@@ -36,12 +44,7 @@ func (h *S3Handler) handleSelectObjectContent(ctx *request.RequestContext, r *ht
 	input.Bucket = bucket
 	input.Key = key
 
-	store, err := h.svc.store(ctx)
-	if err != nil {
-		return nil, nil, http.StatusInternalServerError, err
-	}
-
-	objReader, obj, err := store.objects.Get(ctx, bucket, key)
+	objReader, obj, err := stores.objects.Get(ctx, bucket, key)
 	if err != nil {
 		return nil, nil, http.StatusNotFound, err
 	}
@@ -50,12 +53,13 @@ func (h *S3Handler) handleSelectObjectContent(ctx *request.RequestContext, r *ht
 	var dataReader io.Reader = objReader
 
 	if obj.SSEMetadata != nil {
-		encryptedData, encObj, err := store.objects.GetEncrypted(ctx, bucket, key, "")
+		encryptedData, err := io.ReadAll(objReader)
 		if err != nil {
-			return nil, nil, http.StatusInternalServerError, fmt.Errorf("failed to get encrypted object: %w", err)
+			return nil, nil, http.StatusInternalServerError, fmt.Errorf("failed to read encrypted data: %w", err)
 		}
+		objReader.Close()
 
-		if encObj.SSEMetadata.EncryptionType == "CUSTOMER" {
+		if obj.SSEMetadata.EncryptionType == s3store.SSETypeCustomer {
 			if input.SSECustomerKey == "" {
 				return nil, nil, http.StatusBadRequest, fmt.Errorf("customer key is required for SSE-C encrypted object")
 			}
@@ -63,13 +67,13 @@ func (h *S3Handler) handleSelectObjectContent(ctx *request.RequestContext, r *ht
 			if err != nil {
 				return nil, nil, http.StatusBadRequest, fmt.Errorf("invalid SSE-C customer key: %w", err)
 			}
-			decResult, err := h.svc.encryptionManager.DecryptWithCustomerKey(encryptedData, encObj.SSEMetadata, bucket, key, customerKey)
+			decResult, err := h.svc.encryptionManager.DecryptWithCustomerKey(encryptedData, obj.SSEMetadata, bucket, key, customerKey)
 			if err != nil {
 				return nil, nil, http.StatusInternalServerError, fmt.Errorf("failed to decrypt data: %w", err)
 			}
 			dataReader = bytes.NewReader(decResult.DecryptedData)
 		} else {
-			decResult, err := h.svc.encryptionManager.Decrypt(encryptedData, encObj.SSEMetadata, bucket, key)
+			decResult, err := h.svc.encryptionManager.Decrypt(encryptedData, obj.SSEMetadata, bucket, key)
 			if err != nil {
 				return nil, nil, http.StatusInternalServerError, fmt.Errorf("failed to decrypt data: %w", err)
 			}

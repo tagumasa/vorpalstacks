@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"vorpalstacks-sdk-tests/config"
@@ -29,6 +31,7 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 
 	client := lambda.NewFromConfig(cfg)
 	iamClient := iam.NewFromConfig(cfg)
+	cwlClient := cloudwatchlogs.NewFromConfig(cfg)
 	ctx := context.Background()
 
 	createIAMRole := func(roleName string) error {
@@ -39,12 +42,18 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		IAMDeleteRole(iamClient, roleName)
 	}
 
-	results = append(results, runLambdaFunctionTests(r, ctx, client, createIAMRole, deleteIAMRole)...)
-	results = append(results, runLambdaAliasTests(r, ctx, client, createIAMRole, deleteIAMRole)...)
+	results = append(results, runLambdaFunctionTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
+	results = append(results, runLambdaAliasTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
 	results = append(results, runLambdaLayerTests(r, ctx, client)...)
-	results = append(results, runLambdaESMTests(r, ctx, client, createIAMRole, deleteIAMRole)...)
-	results = append(results, runLambdaConfigTests(r, ctx, client, createIAMRole, deleteIAMRole)...)
-	results = append(results, runLambdaPermissionTests(r, ctx, client, createIAMRole, deleteIAMRole, r.region)...)
+	results = append(results, runLambdaESMTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
+	results = append(results, runLambdaConfigTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
+	results = append(results, runLambdaPermissionTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole, r.region)...)
 
 	return results
+}
+
+func deleteLambdaLogGroup(cwlClient *cloudwatchlogs.Client, ctx context.Context, functionName string) {
+	cwlClient.DeleteLogGroup(ctx, &cloudwatchlogs.DeleteLogGroupInput{
+		LogGroupName: aws.String("/aws/lambda/" + functionName),
+	})
 }

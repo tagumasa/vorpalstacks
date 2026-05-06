@@ -1,10 +1,8 @@
-// Package s3 provides S3 service operations for vorpalstacks.
 package s3
 
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
@@ -94,16 +92,6 @@ func (o *ObjectOperations) validateBucketExists(reqCtx *request.RequestContext, 
 
 func formatETag(etag string) string {
 	return fmt.Sprintf("\"%s\"", etag)
-}
-
-// ObjectStoreObject defines the interface for object storage operations.
-type ObjectStoreObject interface {
-	GetKey() string
-	GetLastModified() time.Time
-	GetETag() string
-	GetSize() int64
-	GetStorageClass() string
-	IsDeleteMarker() bool
 }
 
 func buildObjectContents(objects []*s3store.Object) []*ObjectContent {

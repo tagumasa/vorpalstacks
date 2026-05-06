@@ -1,4 +1,3 @@
-// Package s3 provides S3 (Simple Storage Service) functionality for vorpalstacks.
 package s3
 
 import (

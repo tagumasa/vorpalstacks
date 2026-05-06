@@ -150,7 +150,6 @@ func (s *S3Service) publishObjectNotification(ctx context.Context, reqCtx *reque
 	}
 
 	region := reqCtx.GetRegion()
-	_ = ctx
 
 	evt := &eventbus.S3ObjectEvent{
 		EventBase: eventbus.EventBase{
@@ -171,7 +170,7 @@ func (s *S3Service) publishObjectNotification(ctx context.Context, reqCtx *reque
 		Op:        op,
 	}
 
-	if err := s.bus.Publish(context.Background(), evt); err != nil {
+	if err := s.bus.Publish(ctx, evt); err != nil {
 		logs.Warn("s3: event bus publish failed", logs.String("bucket", bucket), logs.String("key", key), logs.Err(err))
 	}
 }

@@ -123,9 +123,12 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType string
 
 	query := cloudtrailstore.EventQuery{
 		MaxResults: 1000,
+		StartTime:  &startTime,
+		EndTime:    &now,
+		Username:   entityName,
 	}
 
-	var allEvents []*cloudtrailstore.Event
+	var filteredEvents []*cloudtrailstore.Event
 	nextToken := ""
 	for {
 		query.NextToken = nextToken
@@ -133,25 +136,11 @@ func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType string
 		if err != nil {
 			break
 		}
-		allEvents = append(allEvents, events...)
+		filteredEvents = append(filteredEvents, events...)
 		if token == "" {
 			break
 		}
 		nextToken = token
-	}
-
-	filteredEvents := make([]*cloudtrailstore.Event, 0, len(allEvents))
-	for _, event := range allEvents {
-		if event == nil || event.UserIdentity == nil {
-			continue
-		}
-		if event.UserIdentity.UserName != entityName {
-			continue
-		}
-		if event.EventTime.Before(startTime) || event.EventTime.After(now) {
-			continue
-		}
-		filteredEvents = append(filteredEvents, event)
 	}
 
 	serviceMap := make(map[string]*iamstore.ServiceLastAccessed)

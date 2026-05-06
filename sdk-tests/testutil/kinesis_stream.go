@@ -15,6 +15,7 @@ func (r *TestRunner) kinesisStreamTests(ctx context.Context, client *kinesis.Cli
 	var results []TestResult
 
 	streamName := kinesisStream(ts, "main")
+	defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
 
 	results = append(results, r.RunTest("kinesis", "CreateStream", func() error {
 		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{

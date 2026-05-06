@@ -65,9 +65,9 @@ func loadDefaults() map[string]ConfigEntry {
 		},
 		"server.bind_mode": {
 			Key:         "server.bind_mode",
-			Value:       "localhost",
+			Value:       "all",
 			Type:        ConfigTypeString,
-			Description: "Console bind mode: localhost (127.0.0.1), all (0.0.0.0), or interface (custom IP)",
+			Description: "Console bind mode: all (0.0.0.0, default), localhost (127.0.0.1), or interface (custom IP)",
 			ReadOnly:    false,
 			EnvVar:      "BIND_MODE",
 			Category:    CategoryServer,
@@ -389,9 +389,6 @@ func parseInt(s string, dest *int) (int, error) {
 }
 
 // GetSchema returns the configuration schema.
-//
-// Returns:
-//   - []ConfigSchema: The configuration schema
 func GetSchema() []ConfigSchema {
 	defaults := loadDefaults()
 	schema := make([]ConfigSchema, 0, len(defaults))
@@ -410,12 +407,6 @@ func GetSchema() []ConfigSchema {
 }
 
 // GetKeysByCategory returns all configuration keys in a category.
-//
-// Parameters:
-//   - category: The category to filter by
-//
-// Returns:
-//   - []string: Configuration keys in the category
 func GetKeysByCategory(category ConfigCategory) []string {
 	defaults := loadDefaults()
 	keys := make([]string, 0)

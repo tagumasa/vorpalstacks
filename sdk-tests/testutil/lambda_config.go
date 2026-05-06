@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -14,6 +15,7 @@ func runLambdaConfigTests(
 	r *TestRunner,
 	ctx context.Context,
 	client *lambda.Client,
+	cwlClient *cloudwatchlogs.Client,
 	createIAMRole func(string) error,
 	deleteIAMRole func(string),
 ) []TestResult {
@@ -41,6 +43,7 @@ func runLambdaConfigTests(
 			results = append(results, TestResult{Service: "lambda", TestName: "PutProvisionedConcurrencyConfig_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create function: %v", err)})
 		} else {
 			defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(pcFuncName)})
+			defer deleteLambdaLogGroup(cwlClient, ctx, pcFuncName)
 
 			publishResp, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
 				FunctionName: aws.String(pcFuncName),
@@ -171,6 +174,7 @@ func runLambdaConfigTests(
 			results = append(results, TestResult{Service: "lambda", TestName: "PutFunctionEventInvokeConfig_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create function: %v", err)})
 		} else {
 			defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(eicFuncName)})
+			defer deleteLambdaLogGroup(cwlClient, ctx, eicFuncName)
 
 			results = append(results, r.RunTest("lambda", "PutFunctionEventInvokeConfig", func() error {
 				maxAge := int32(3600)
@@ -274,6 +278,7 @@ func runLambdaConfigTests(
 			results = append(results, TestResult{Service: "lambda", TestName: "CreateFunctionUrlConfig_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create function: %v", err)})
 		} else {
 			defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(furlFuncName)})
+			defer deleteLambdaLogGroup(cwlClient, ctx, furlFuncName)
 
 			results = append(results, r.RunTest("lambda", "CreateFunctionUrlConfig", func() error {
 				resp, err := client.CreateFunctionUrlConfig(ctx, &lambda.CreateFunctionUrlConfigInput{
@@ -385,6 +390,7 @@ func runLambdaConfigTests(
 			results = append(results, TestResult{Service: "lambda", TestName: "ResponseStream_Setup", Status: "FAIL", Error: fmt.Sprintf("Failed to create function: %v", err)})
 		} else {
 			defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(iaFuncName)})
+			defer deleteLambdaLogGroup(cwlClient, ctx, iaFuncName)
 
 			results = append(results, r.RunTest("lambda", "InvokeWithResponseStream", func() error {
 				resp, err := client.InvokeWithResponseStream(ctx, &lambda.InvokeWithResponseStreamInput{
@@ -425,6 +431,7 @@ func runLambdaConfigTests(
 			return fmt.Errorf("create function: %v", err)
 		}
 		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(nofcFuncName)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, nofcFuncName)
 
 		_, err = client.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
 			FunctionName: aws.String(nofcFuncName),

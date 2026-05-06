@@ -10,8 +10,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const wsTestEndpoint = "ws://127.0.0.1:8086/event/realtime"
-const wsTestHTTPEndpoint = "http://127.0.0.1:8086/event"
+const wsTestEndpoint = "ws://127.0.0.1:50106/event/realtime"
+const wsTestHTTPEndpoint = "http://127.0.0.1:50106/event"
 
 func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	var results []TestResult

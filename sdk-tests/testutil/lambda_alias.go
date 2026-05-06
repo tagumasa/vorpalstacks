@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -14,6 +15,7 @@ func runLambdaAliasTests(
 	r *TestRunner,
 	ctx context.Context,
 	client *lambda.Client,
+	cwlClient *cloudwatchlogs.Client,
 	createIAMRole func(string) error,
 	deleteIAMRole func(string),
 ) []TestResult {
@@ -41,6 +43,7 @@ func runLambdaAliasTests(
 			Error: fmt.Sprintf("Failed to create function: %v", err)}}
 	}
 	defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(funcName)})
+	defer deleteLambdaLogGroup(cwlClient, ctx, funcName)
 
 	results = append(results, r.RunTest("lambda", "PublishVersion", func() error {
 		resp, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
@@ -204,6 +207,7 @@ func runLambdaAliasTests(
 			return fmt.Errorf("create: %v", err)
 		}
 		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(pvFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, pvFunc)
 
 		resp, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
 			FunctionName: aws.String(pvFunc),
@@ -240,6 +244,7 @@ func runLambdaAliasTests(
 			return fmt.Errorf("create: %v", err)
 		}
 		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(caFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, caFunc)
 
 		_, err = client.CreateAlias(ctx, &lambda.CreateAliasInput{
 			FunctionName:    aws.String(caFunc),

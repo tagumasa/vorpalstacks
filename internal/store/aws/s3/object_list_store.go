@@ -236,12 +236,9 @@ func (s *ObjectStore) CountByBucket(bucket string) (int, error) {
 // CountMultipartUploadsByBucket returns the number of in-progress multipart uploads in a bucket.
 func (s *ObjectStore) CountMultipartUploadsByBucket(bucket string) (int, error) {
 	count := 0
-	err := s.storage.Bucket(multipartBucketName(s.region)).ForEach(func(k, v []byte) error {
-		var upload pb.MultipartUpload
-		if err := proto.Unmarshal(v, &upload); err != nil {
-			return err
-		}
-		if upload.BucketName == bucket {
+	prefix := bucket + "#"
+	err := s.storage.Bucket(multipartIndexBucketName(s.region)).ForEach(func(k, v []byte) error {
+		if strings.HasPrefix(string(k), prefix) {
 			count++
 		}
 		return nil

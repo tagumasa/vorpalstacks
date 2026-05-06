@@ -1,19 +1,15 @@
 package s3
 
 import (
-	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
-// HandleRequest processes HTTP requests for bucket-level operations such as
-// versioning, encryption, policy, CORS, tagging, and ACL configuration.
-func (o *BucketOperations) HandleRequest(ctx *request.RequestContext, r *http.Request, bucket string) (interface{}, int, error) {
+func (o *BucketOperations) handleBucketSubRequest(ctx *request.RequestContext, r *http.Request, bucket string) (interface{}, int, error) {
 	method := r.Method
 	query := r.URL.Query()
 
@@ -226,51 +222,4 @@ func (o *BucketOperations) HandleRequest(ctx *request.RequestContext, r *http.Re
 	default:
 		return nil, http.StatusMethodNotAllowed, fmt.Errorf("unsupported operation")
 	}
-}
-
-// HandleServiceRequest processes HTTP requests for service-level S3 operations,
-// such as listing all buckets.
-func (o *BucketOperations) HandleServiceRequest(ctx *request.RequestContext, r *http.Request) (interface{}, int, error) {
-	method := r.Method
-
-	if method == "GET" && strings.Count(r.URL.Path, "/") == 1 {
-		result, err := o.ListBuckets(ctx, &ListBucketsInput{})
-		return result, http.StatusOK, err
-	}
-
-	return nil, http.StatusMethodNotAllowed, fmt.Errorf("unsupported service operation")
-}
-
-// EncodeS3XMLResponse encodes S3 operation responses into XML format with the
-// appropriate wrapper element for the given operation.
-func EncodeS3XMLResponse(operation string, data interface{}) ([]byte, error) {
-	wrapper := struct {
-		XMLName xml.Name
-		Content interface{} `xml:",innerxml"`
-	}{
-		Content: data,
-	}
-
-	switch operation {
-	case "ListBuckets":
-		wrapper.XMLName = xml.Name{Local: "ListAllMyBucketsResult", Space: "http://s3.amazonaws.com/doc/2006-03-01/"}
-	case "GetBucketVersioning":
-		wrapper.XMLName = xml.Name{Local: "VersioningConfiguration"}
-	case "GetBucketEncryption":
-		wrapper.XMLName = xml.Name{Local: "ServerSideEncryptionConfiguration", Space: "http://s3.amazonaws.com/doc/2006-03-01/"}
-	case "GetBucketPolicy":
-		wrapper.XMLName = xml.Name{Local: "GetBucketPolicyOutput"}
-	case "GetBucketCORS":
-		wrapper.XMLName = xml.Name{Local: "GetBucketCORSOutput"}
-	case "GetBucketTagging":
-		wrapper.XMLName = xml.Name{Local: "Tagging"}
-	case "GetPublicAccessBlock":
-		wrapper.XMLName = xml.Name{Local: "GetPublicAccessBlockOutput"}
-	case "GetBucketLocation":
-		wrapper.XMLName = xml.Name{Local: "LocationConstraint"}
-	default:
-		wrapper.XMLName = xml.Name{Local: operation + "Result"}
-	}
-
-	return xml.Marshal(wrapper)
 }

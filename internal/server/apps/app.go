@@ -16,6 +16,7 @@ import (
 	"vorpalstacks/internal/core/storage/graphengine"
 	chihttp "vorpalstacks/internal/server/http"
 	"vorpalstacks/internal/server/listener"
+	"vorpalstacks/internal/server/portalloc"
 )
 
 // Config holds all configuration for service initialisation and wiring.
@@ -77,12 +78,12 @@ type Config struct {
 
 // FromBootstrap converts a BootstrapConfig into an apps.Config.
 func FromBootstrap(bc *appconfig.BootstrapConfig) *Config {
-	bindAddr, _ := bc.ResolvedBindAddr()
+	bindAddr := portalloc.ResolveBindAddr(appconfig.GetStore())
 	return &Config{
-		Port:                  bc.Port,
-		GRPCWebPort:           bc.GRPCWebPort,
-		GRPCWebBindAddr:       bindAddr,
-		BindAddr:              bindAddr,
+		Port:            bc.Port,
+		GRPCWebPort:     bc.GRPCWebPort,
+		GRPCWebBindAddr: bindAddr,
+		BindAddr:        bindAddr,
 		DataPath:              bc.DataPath,
 		AccountID:             bc.AccountID,
 		Region:                bc.Region,

@@ -21,18 +21,6 @@ const (
 	ConfigTypeURL ConfigType = "URL"
 )
 
-// ConfigSource represents the source of a configuration value.
-type ConfigSource string
-
-const (
-	// ConfigSourceEnv indicates the value comes from an environment variable.
-	ConfigSourceEnv ConfigSource = "ENV"
-	// ConfigSourceStore indicates the value comes from persistent storage.
-	ConfigSourceStore ConfigSource = "STORE"
-	// ConfigSourceDefault indicates the value is the default.
-	ConfigSourceDefault ConfigSource = "DEFAULT"
-)
-
 // ConfigCategory represents a configuration category.
 type ConfigCategory string
 
@@ -60,7 +48,6 @@ type ConfigEntry struct {
 	Key         string         `json:"key"`
 	Value       interface{}    `json:"value"`
 	Type        ConfigType     `json:"type"`
-	Source      ConfigSource   `json:"source"`
 	Description string         `json:"description"`
 	ReadOnly    bool           `json:"read_only"`
 	EnvVar      string         `json:"env_var,omitempty"`

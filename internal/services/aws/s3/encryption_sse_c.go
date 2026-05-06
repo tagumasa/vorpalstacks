@@ -1,4 +1,3 @@
-// Package s3 provides S3 service operations for vorpalstacks.
 package s3
 
 import (
@@ -43,11 +42,7 @@ func (e *SSECEncryptor) ParseCustomerKey(encodedKey, encodedMD5 string) ([]byte,
 	}
 
 	if len(key) != 32 {
-		secondKey, err2 := base64.StdEncoding.DecodeString(string(key))
-		if err2 != nil || len(secondKey) != 32 {
-			return nil, fmt.Errorf("customer key must be 32 bytes (AES-256)")
-		}
-		key = secondKey
+		return nil, fmt.Errorf("customer key must be 32 bytes (AES-256)")
 	}
 
 	return key, nil

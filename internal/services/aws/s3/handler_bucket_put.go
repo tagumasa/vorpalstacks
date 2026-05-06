@@ -274,7 +274,7 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 		ObjectLockEnabledForBucket: createConfig.ObjectLockEnabled,
 	})
 	if err != nil {
-		return nil, http.StatusOK, err
+		return nil, http.StatusConflict, err
 	}
 	if len(createConfig.Tags) > 0 {
 		err = h.bucketOps.PutBucketTagging(ctx, &PutBucketTaggingInput{

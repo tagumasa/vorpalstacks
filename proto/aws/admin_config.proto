@@ -38,12 +38,11 @@ message ConfigEntry {
   string key = 1;
   string value = 2;
   string type = 3;
-  string source = 4;
-  string description = 5;
-  bool read_only = 6;
-  int64 updated_at = 7;
-  string env_var = 8;
-  string category = 9;
+  string description = 4;
+  bool read_only = 5;
+  int64 updated_at = 6;
+  string env_var = 7;
+  string category = 8;
 }
 
 message GetConfigRequest {
@@ -106,7 +105,6 @@ message GetResourcePortRequest {
 
 message GetResourcePortResponse {
   int32 port = 1;
-  string source = 2;
 }
 
 message SetResourcePortRequest {

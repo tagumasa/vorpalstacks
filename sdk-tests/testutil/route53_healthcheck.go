@@ -215,8 +215,8 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 			return fmt.Errorf("get: %v", err)
 		}
 		port := aws.ToInt32(getResp.HealthCheck.HealthCheckConfig.Port)
-		if port != 8089 {
-			return fmt.Errorf("expected default port 8089, got %d", port)
+		if port != 50089 {
+			return fmt.Errorf("expected default port 50089, got %d", port)
 		}
 		return nil
 	}))

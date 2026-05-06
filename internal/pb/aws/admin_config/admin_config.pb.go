@@ -27,12 +27,11 @@ type ConfigEntry struct {
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	Type          string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
-	Source        string                 `protobuf:"bytes,4,opt,name=source,proto3" json:"source,omitempty"`
-	Description   string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	ReadOnly      bool                   `protobuf:"varint,6,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
-	UpdatedAt     int64                  `protobuf:"varint,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	EnvVar        string                 `protobuf:"bytes,8,opt,name=env_var,json=envVar,proto3" json:"env_var,omitempty"`
-	Category      string                 `protobuf:"bytes,9,opt,name=category,proto3" json:"category,omitempty"`
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	ReadOnly      bool                   `protobuf:"varint,5,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
+	UpdatedAt     int64                  `protobuf:"varint,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	EnvVar        string                 `protobuf:"bytes,7,opt,name=env_var,json=envVar,proto3" json:"env_var,omitempty"`
+	Category      string                 `protobuf:"bytes,8,opt,name=category,proto3" json:"category,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -84,13 +83,6 @@ func (x *ConfigEntry) GetValue() string {
 func (x *ConfigEntry) GetType() string {
 	if x != nil {
 		return x.Type
-	}
-	return ""
-}
-
-func (x *ConfigEntry) GetSource() string {
-	if x != nil {
-		return x.Source
 	}
 	return ""
 }
@@ -749,7 +741,6 @@ func (x *GetResourcePortRequest) GetResourceId() string {
 type GetResourcePortResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Port          int32                  `protobuf:"varint,1,opt,name=port,proto3" json:"port,omitempty"`
-	Source        string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -789,13 +780,6 @@ func (x *GetResourcePortResponse) GetPort() int32 {
 		return x.Port
 	}
 	return 0
-}
-
-func (x *GetResourcePortResponse) GetSource() string {
-	if x != nil {
-		return x.Source
-	}
-	return ""
 }
 
 type SetResourcePortRequest struct {
@@ -1372,18 +1356,17 @@ var File_admin_config_proto protoreflect.FileDescriptor
 
 const file_admin_config_proto_rawDesc = "" +
 	"\n" +
-	"\x12admin_config.proto\x12\fadmin_config\x1a\fcommon.proto\"\xf4\x01\n" +
+	"\x12admin_config.proto\x12\fadmin_config\x1a\fcommon.proto\"\xdc\x01\n" +
 	"\vConfigEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\x12\x12\n" +
-	"\x04type\x18\x03 \x01(\tR\x04type\x12\x16\n" +
-	"\x06source\x18\x04 \x01(\tR\x06source\x12 \n" +
-	"\vdescription\x18\x05 \x01(\tR\vdescription\x12\x1b\n" +
-	"\tread_only\x18\x06 \x01(\bR\breadOnly\x12\x1d\n" +
+	"\x04type\x18\x03 \x01(\tR\x04type\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x1b\n" +
+	"\tread_only\x18\x05 \x01(\bR\breadOnly\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\x03R\tupdatedAt\x12\x17\n" +
-	"\aenv_var\x18\b \x01(\tR\x06envVar\x12\x1a\n" +
-	"\bcategory\x18\t \x01(\tR\bcategory\"$\n" +
+	"updated_at\x18\x06 \x01(\x03R\tupdatedAt\x12\x17\n" +
+	"\aenv_var\x18\a \x01(\tR\x06envVar\x12\x1a\n" +
+	"\bcategory\x18\b \x01(\tR\bcategory\"$\n" +
 	"\x10GetConfigRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\"D\n" +
 	"\x11GetConfigResponse\x12/\n" +
@@ -1420,10 +1403,9 @@ const file_admin_config_proto_rawDesc = "" +
 	"\x16GetResourcePortRequest\x12(\n" +
 	"\x10service_port_key\x18\x01 \x01(\tR\x0eservicePortKey\x12\x1f\n" +
 	"\vresource_id\x18\x02 \x01(\tR\n" +
-	"resourceId\"E\n" +
+	"resourceId\"-\n" +
 	"\x17GetResourcePortResponse\x12\x12\n" +
-	"\x04port\x18\x01 \x01(\x05R\x04port\x12\x16\n" +
-	"\x06source\x18\x02 \x01(\tR\x06source\"w\n" +
+	"\x04port\x18\x01 \x01(\x05R\x04port\"w\n" +
 	"\x16SetResourcePortRequest\x12(\n" +
 	"\x10service_port_key\x18\x01 \x01(\tR\x0eservicePortKey\x12\x1f\n" +
 	"\vresource_id\x18\x02 \x01(\tR\n" +

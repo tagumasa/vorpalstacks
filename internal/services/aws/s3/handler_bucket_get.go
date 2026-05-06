@@ -161,7 +161,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 			if err != nil {
 				return nil, http.StatusBadRequest, NewInvalidArgumentError("Provided max-keys not an integer")
 			}
-			input.MaxKeys = mk
+			input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
 		}
 		result, err := h.objectOps.ListObjectVersions(r.Context(), ctx, input)
 		return result, http.StatusOK, err
@@ -183,7 +183,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 			if err != nil {
 				return nil, http.StatusBadRequest, NewInvalidArgumentError("Provided max-uploads not an integer")
 			}
-			input.MaxUploads = mu
+			input.MaxUploads = clampInt(mu, 0, s3MaxUploads)
 		}
 		result, err := h.objectOps.ListMultipartUploads(r.Context(), ctx, input)
 		return result, http.StatusOK, err

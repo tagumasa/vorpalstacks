@@ -6,9 +6,6 @@ import "net/http"
 // based on HTTP method, query parameters, and path.
 func determineS3EventName(r *http.Request, bucket, key string) string {
 	if bucket == "" && key == "" {
-		if r.Method == "GET" {
-			return "ListBuckets"
-		}
 		return "ListBuckets"
 	}
 
@@ -129,7 +126,7 @@ func determineBucketEventName(r *http.Request) string {
 		if query.Has("delete") {
 			return "DeleteObjects"
 		}
-		return "DeleteObjects"
+		return "UnknownS3Operation"
 	}
 	return "UnknownS3Operation"
 }
