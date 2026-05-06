@@ -7,7 +7,7 @@ This document describes the architecture of Vorpalstacks.
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                  HTTP Server (Chi)                              │
-│                 :8080 (configurable)                            │
+│                 :50080 (configurable)                           │
 └────────────────────────────┬────────────────────────────────────┘
                              │
                ┌──────────────┴──────────────┐
@@ -43,11 +43,54 @@ This document describes the architecture of Vorpalstacks.
 
 ┌─────────────────────────────────────────────────────────────────┐
 │              gRPC-Web Admin Server (Connect-RPC)                │
-│                 :9090 (configurable)                            │
+│                 :50090 (configurable)                           │
 │                                                                 │
 │  Admin handlers for all 32 services (admin_handler.go)          │
 │  Runtime config, service status, port mapping                   │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+## Port Architecture
+
+All port constants are centralised in `internal/common/serviceports/ports.go`.
+
+### Fixed Listeners
+
+| Port | Purpose |
+|------|---------|
+| `50080` | HTTP server — all AWS API endpoints |
+| `50090` | gRPC-Web admin API + web console |
+| `50443` | HTTPS server (TLS) |
+| `50088` | Route53 DNS server |
+| `50089` | Route53 health check target |
+
+### Service Endpoints (FQDN / Individual)
+
+Service endpoints (S3 Website, API Gateway, Cognito, CloudFront, Lambda URL, AppSync, Neptune) default to **FQDN mode**: all traffic is routed through `:50080` via `Host` header matching. No additional listener is bound.
+
+In **Individual mode**, each resource gets its own port from the dynamic range (`50200–50400`). Neptune uses `50107` for its first cluster when in Individual mode.
+
+| Reserved Slot | Service |
+|--------------|---------|
+| `50101` | S3 Website |
+| `50102` | API Gateway |
+| `50103` | Cognito Hosted UI |
+| `50104` | CloudFront |
+| `50105` | Lambda Function URL |
+| `50106` | AppSync Events |
+| `50107` | Neptune (first cluster) |
+
+### Port Mode Configuration
+
+```bash
+# View current mode
+vstacks config get ports.apigateway.mode
+
+# Switch to individual ports
+vstacks config set ports.apigateway.mode individual
+
+# Revert to FQDN mode
+vstacks config set ports.apigateway.mode fqdn
 ```
 
 ## Two-Layer Architecture
@@ -89,7 +132,7 @@ Shared utilities:
 
 ### HTTP API Path
 
-1. **HTTP Request** arrives at Chi router (`:8080`)
+1. **HTTP Request** arrives at Chi router (`:50080`)
 2. **Classifier** (`internal/server/http/classifier/`) detects protocol and extracts service/operation
 3. **Signature Verification** (if enabled) validates AWS SigV4
 4. **IAM Authorization** (if enabled) evaluates policies
@@ -99,7 +142,7 @@ Shared utilities:
 
 ### gRPC-Web Admin Path
 
-1. **Connect-RPC Request** arrives at gRPC-Web server (`:9090`)
+1. **Connect-RPC Request** arrives at gRPC-Web server (`:50090`)
 2. **Admin Handler** processes the request
 3. **StorageManager** provides region-aware storage access
 4. **Response** returned as Connect-RPC message
@@ -137,7 +180,7 @@ Request → Extract Access Key → Gather Policies → Evaluate → Allow/Deny
 | AWS JSON 1.0 | `application/x-amz-json-1.0` | DynamoDB |
 | REST-XML | XML over HTTP | S3, CloudFront |
 | AWS Query | `application/x-www-form-urlencoded` | SQS |
-| Connect-RPC | `application/connect+proto` | All 32 services (admin API on :9090) |
+| Connect-RPC | `application/connect+proto` | All 32 services (admin API on :50090) |
 
 ## Service Integration Patterns
 
@@ -241,6 +284,33 @@ Key management with HSM-backed cryptographic operations:
 - **Persistent Backend**: AES-256-GCM encrypted keys persisted to disk
 - **Memory Backend**: In-memory keys (testing only)
 - Supported operations: Encrypt, Decrypt, Sign, Verify, GenerateMAC, VerifyMAC, GenerateDataKey, asymmetric key pairs (RSA, ECC)
+
+## Config Store Architecture
+
+### Single Source of Truth: Pebble
+
+All runtime configuration is stored in PebbleDB (`app_config` bucket). The startup flow is:
+
+1. `NewStore()` creates the store with defaults from `serviceports` constants
+2. `Initialise()` → `seedDefaults()` writes missing keys to Pebble
+3. `applyEnvOverrides()` overwrites Pebble values with any set ENV vars
+4. From this point, **only Pebble is read** — no further ENV lookups
+
+### Access Pattern
+
+```go
+// Always use the global singleton via appconfig
+store := appconfig.GetStore()
+port := store.GetInt("server.port")
+```
+
+**Never** call `storeconfig.NewStore()` directly — it creates a separate instance without `Initialise()`.
+
+### Priority Order
+
+**Pebble (persistent) > Environment variable > Default constant**
+
+ENV overrides are applied once at startup. Changes made via the web console or CLI persist in Pebble but are overwritten on next startup if the ENV var is set.
 
 ## Scalability Considerations
 

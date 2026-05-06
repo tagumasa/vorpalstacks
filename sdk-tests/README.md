@@ -55,7 +55,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 ## Prerequisites
 
 1. **Go 1.25+** installed
-2. **VorpalStacks server** running on `http://localhost:8080`
+2. **VorpalStacks server** running on `http://localhost:50080`
 3. **AWS credentials** set (can be dummy values for testing)
 
 ## Installation
@@ -73,7 +73,7 @@ go build -o sdk-tests-test .
 ```bash
 # From project root
 pkill -9 vorpalstacks 2>/dev/null; sleep 1
-SIGNATURE_VERIFICATION_ENABLED=false PORT=8080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
+SIGNATURE_VERIFICATION_ENABLED=false PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
 ```
 
 ### Start with CloudTrail Audit Enabled
@@ -83,7 +83,7 @@ To run CloudTrail audit integration tests, set `VS_AUDIT_ENABLED=true`:
 ```bash
 pkill -9 vorpalstacks 2>/dev/null; sleep 1
 rm -rf data/us-east-1 data/global
-SIGNATURE_VERIFICATION_ENABLED=false VS_AUDIT_ENABLED=true PORT=8080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
+SIGNATURE_VERIFICATION_ENABLED=false VS_AUDIT_ENABLED=true PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
 ```
 
 Then run tests with the env var:
@@ -143,7 +143,7 @@ neptunegraph
 
 ```
 -endpoint string
-    VorpalStacks endpoint (default "http://localhost:8080")
+    VorpalStacks endpoint (default "http://localhost:50080")
 -region string
     AWS region (default "us-east-1")
 -format string
@@ -222,7 +222,7 @@ In addition to per-service SDK tests, 27 cross-service integration tests verify 
 
 ```bash
 # From project root — server must be running
-./sdk-tests/tmp/sdk-tests-all -service integration -endpoint http://127.0.0.1:8080
+./sdk-tests/tmp/sdk-tests-all -service integration -endpoint http://127.0.0.1:50080
 ```
 
 ### Test Matrix
@@ -264,7 +264,7 @@ In addition to per-service SDK tests, 27 cross-service integration tests verify 
 
 ```bash
 # Start server with audit enabled
-SIGNATURE_VERIFICATION_ENABLED=false VS_AUDIT_ENABLED=true PORT=8080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
+SIGNATURE_VERIFICATION_ENABLED=false VS_AUDIT_ENABLED=true PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
 
 # Run audit tests
 VS_AUDIT_ENABLED=true ./sdk-tests/tmp/sdk-tests-all -service cloudtrail-audit -v
@@ -334,7 +334,7 @@ Summary: 10 passed, 1 failed
 ### Server Not Running
 ```
 Error: connection refused
-Solution: Start VorpalStacks server on localhost:8080
+Solution: Start VorpalStacks server on localhost:50080
 ```
 
 ### Build Errors

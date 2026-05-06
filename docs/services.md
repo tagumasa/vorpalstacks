@@ -47,7 +47,7 @@
 
 | Service | Coverage | Notes |
 |---------|----------|-------|
-| Athena | Broad | No capacity reservations or notebook sessions |
+| Athena | Broad | No capacity reservations or notebook sessions. TEST_MODE: query execution history is purged at startup |
 | AppSync | Broad | GraphQL API with VTL resolvers, real-time subscriptions |
 | CloudFront | Selective | No actual edge traffic distribution |
 | Neptune | Full | Property graph + RDF, openCypher/Gremlin, bulk loader, management API |
@@ -82,7 +82,7 @@
 
 - **IAM Authorization**: Policy-based access control (env: `AUTHORIZATION_ENABLED`)
 - **CloudTrail Audit Logging**: API operation recording (env: `VS_AUDIT_ENABLED`)
-- **gRPC-Web Admin API**: Connect-RPC admin interface on port 9090 (env: `GRPC_WEB_PORT`)
+- **gRPC-Web Admin API**: Connect-RPC admin interface on port 50090 (env: `GRPC_WEB_PORT`)
 
 ---
 

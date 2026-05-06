@@ -47,9 +47,9 @@ SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data ./vorpalstacks
 ## AWS CLI Usage
 
 ```bash
-aws --endpoint-url=http://localhost:8080 sns list-topics
-aws --endpoint-url=http://localhost:8080 sqs list-queues
-aws --endpoint-url=http://localhost:8080 lambda list-functions
+aws --endpoint-url=http://localhost:50080 sns list-topics
+aws --endpoint-url=http://localhost:50080 sqs list-queues
+aws --endpoint-url=http://localhost:50080 lambda list-functions
 ```
 
 ## For Developers
