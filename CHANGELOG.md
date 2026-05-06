@@ -4,6 +4,40 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ## [Unreleased]
 
+### ⚠️ Breaking Changes
+
+- **Management console rewritten from Flutter/Dart to TypeScript/React**: Removed `web_ui/` (Flutter) and replaced with `webconsole/` (TypeScript, React, Vite, Tailwind CSS). The web console is now embedded into the Go binary via `//go:embed`. Build requires Node.js 22; `make build` runs proto generation and webconsole build automatically.
+- **Configuration system overhauled**: Removed `ConfigSource` tracking (ENV/STORE/DEFAULT). Replaced `server.bind_addr` with `server.bind_mode` (all/localhost/interface) + `server.bind_interface`. Port defaults centralized in new `internal/common/serviceports/` package; environment variable reads removed from defaults layer.
+- **Port allocation restructured**: Service endpoint ports defined as constants in new `serviceports` package. Added dynamic port allocator (`internal/server/portalloc/`) with FQDN/Individual port mode per service. Dynamic port range configurable via `VS_PORT_DYNAMIC_START`/`VS_PORT_DYNAMIC_END`.
+
+### Added
+
+- **TypeScript/React web console**: gRPC-Web admin interface with i18n (EN/JA/ZH), Tailwind CSS, JSON viewer, sidebar navigation, and settings management
+- **Per-service enable/disable configuration**: 32 services individually controllable via `services.<name>.enabled` config keys and gRPC RPCs (EnableService/DisableService)
+- **Root user authentication**: LoginRoot, InitialSetup, IsRootInitialized gRPC methods for initial setup flow
+- **Server metrics RPC**: GetServerMetrics in AdminConfigService for runtime performance data
+- **Protobuf service definitions**: Added proto files for ACM, AdminAuth, AdminConfig, APIGateway, AppSync, Athena, CloudFront, CloudTrail, and more in `proto/aws/`
+- **Dynamic port allocation**: New `internal/server/portalloc/` package for resolving and binding service ports dynamically
+- **Storage manager**: Centralized global storage initialization in `main.go`
+
+### Changed
+
+- **S3 service refactored**: Removed `bucket_handler.go`, improved encryption handling, unified error responses
+- **All AWS service admin handlers**: Unified constructor signature with StorageManager and AccountID parameters
+- **Athena**: Added cleanup logic for expired query executions
+- **Lambda**: Fixed host endpoint port formatting
+- **Makefile**: Build now generates proto TypeScript before webconsole build; binary name updated
+- **CI/CD**: Added Node.js 22 setup, webconsole dependency install, and proto generation steps
+- **Documentation**: Updated README (EN/JA/ZH) with GUI screenshot and Docker requirements
+- **Dependencies**: Added gopsutil (indirect: purego, go-ole, plan9stats, perfstat, go-sysconf, numcpus, wmi)
+
+### Removed
+
+- **Flutter/Dart web UI** (`web_ui/` directory deleted)
+- `internal/common/defaults/` package (superseded by `serviceports`)
+- `ConfigSource` type and `Source` field from config entries
+- `getEnvString`, `getEnvInt`, `getEnvBool` helper functions from config defaults
+
 ## [0.0.10] - 2026-04-27
 
 ### Added
