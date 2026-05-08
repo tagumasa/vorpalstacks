@@ -362,10 +362,10 @@ func TestConvertMessageTagsToSESv2(t *testing.T) {
 func TestGetResourceKey(t *testing.T) {
 	t.Run("case insensitive", func(t *testing.T) {
 		params := map[string]interface{}{
-			"QueueUrl": "http://localhost:8080/123/my-queue",
+			"QueueUrl": "http://localhost:50080/123/my-queue",
 		}
 		key := GetResourceKey(params, SQSConfig)
-		assert.Equal(t, "http://localhost:8080/123/my-queue", key)
+		assert.Equal(t, "http://localhost:50080/123/my-queue", key)
 	})
 
 	t.Run("alt param", func(t *testing.T) {

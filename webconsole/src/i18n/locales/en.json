@@ -124,7 +124,28 @@
       "attrTypeBinary": "Binary (B)",
       "billingPayPerRequest": "PAY_PER_REQUEST",
       "billingProvisioned": "PROVISIONED",
-      "tableNameHeader": "Table Name"
+      "tableNameHeader": "Table Name",
+      "detail": {
+        "keySchema": "Key Schema",
+        "attributes": "Attribute Definitions",
+        "itemCount": "Item Count",
+        "tableSize": "Table Size (bytes)",
+        "billingMode": "Billing Mode",
+        "status": "Status",
+        "creationDate": "Created",
+        "hashKey": "HASH",
+        "rangeKey": "RANGE",
+        "items": "Items",
+        "noItems": "No items found",
+        "addJson": "Add Item (JSON)",
+        "deleteItem": "Delete Item",
+        "jsonPlaceholder": "{\"pk\": {\"s\": \"value\"}}",
+        "invalidJson": "Invalid JSON",
+        "confirmDeleteItem": "Delete this item?",
+        "pk": "PK",
+        "sk": "SK",
+        "value": "Value"
+      }
     },
     "lambda": {
       "title": "Lambda",

@@ -57,29 +57,33 @@ func (s *RoleStore) Put(role *Role) error {
 
 // Create creates a new IAM role in the store.
 func (s *RoleStore) Create(roleName, path, accountId, assumeRolePolicyDocument, description string, maxSessionDuration int, tags []types.Tag) (*Role, error) {
-	if s.Exists(roleName) {
-		return nil, NewStoreError("create_role", ErrRoleAlreadyExists)
-	}
+	var role *Role
+	err := s.kl.WithLock(roleName, func() error {
+		if s.Exists(roleName) {
+			return NewStoreError("create_role", ErrRoleAlreadyExists)
+		}
 
-	roleID, err := GenerateRoleID()
+		roleID, err := GenerateRoleID()
+		if err != nil {
+			return NewStoreError("generate_role_id", err)
+		}
+
+		role = &Role{
+			ID:                       roleID,
+			Path:                     path,
+			RoleName:                 roleName,
+			AccountId:                accountId,
+			CreateDate:               time.Now().UTC(),
+			AssumeRolePolicyDocument: assumeRolePolicyDocument,
+			Description:              description,
+			MaxSessionDuration:       maxSessionDuration,
+			Tags:                     tags,
+		}
+		role.Arn = s.arnBuilder.RoleARN(path, roleName)
+
+		return s.Put(role)
+	})
 	if err != nil {
-		return nil, NewStoreError("generate_role_id", err)
-	}
-
-	role := &Role{
-		ID:                       roleID,
-		Path:                     path,
-		RoleName:                 roleName,
-		AccountId:                accountId,
-		CreateDate:               time.Now().UTC(),
-		AssumeRolePolicyDocument: assumeRolePolicyDocument,
-		Description:              description,
-		MaxSessionDuration:       maxSessionDuration,
-		Tags:                     tags,
-	}
-	role.Arn = s.arnBuilder.RoleARN(path, roleName)
-
-	if err := s.Put(role); err != nil {
 		return nil, err
 	}
 	return role, nil

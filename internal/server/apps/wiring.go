@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"vorpalstacks/internal/core/logs"
+	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
 func (a *App) wireCrossServiceDeps() {
@@ -37,8 +38,37 @@ func (a *App) wireCrossServiceDeps() {
 	if st.dynamoDBService != nil {
 		eb.SetDynamoDBInvoker(&dynamoDBInvokerAdapter{provider: st.dynamoDBService})
 	}
-	if st.neptuneGraphService != nil {
-		eb.SetNeptuneGraphInvoker(&neptuneGraphInvokerAdapter{service: st.neptuneGraphService})
+
+	sm := a.server.StorageManager()
+	globalStorage, err := sm.GetGlobalStorage()
+	if err == nil {
+		eb.SetWAFInvoker(&wafInvokerAdapter{
+			store: wafstore.NewWebACLAssociationStore(globalStorage),
+		})
+	} else {
+		logs.Warn("WAFInvoker not initialised: failed to get global storage", logs.Err(err))
+	}
+	eb.SetCloudWatchMetricInvoker(&cloudWatchMetricInvokerAdapter{
+		storageMgr: sm,
+		dataPath:   a.cfg.DataPath,
+	})
+	eb.SetCloudTrailInvoker(&cloudTrailInvokerAdapter{
+		storageMgr: sm,
+		accountID:  st.accountID,
+	})
+	eb.SetLogsInvoker(&logsInvokerAdapter{
+		storageMgr: sm,
+		accountID:  st.accountID,
+		dataPath:   a.cfg.DataPath,
+	})
+
+	if st.iamService != nil {
+		st.iamService.SetCloudTrailInvoker(eb.CloudTrailInvoker())
+	}
+
+	if st.logsService != nil {
+		st.logsService.SetCloudWatchMetricInvoker(eb.CloudWatchMetricInvoker())
+		st.logsService.SetEventBus(eb)
 	}
 
 	if st.cloudWatchService != nil {
@@ -50,10 +80,6 @@ func (a *App) wireCrossServiceDeps() {
 		})
 	}
 
-	if st.logsService != nil {
-		st.logsService.SetEventBus(eb)
-	}
-
 	if st.cognitoService != nil {
 		st.cognitoService.SetEventBus(eb)
 	}
@@ -63,9 +89,8 @@ func (a *App) wireCrossServiceDeps() {
 	}
 
 	if st.lambdaService != nil {
-		if st.s3ObjectStore != nil {
-			st.lambdaService.SetS3ObjectStore(st.region, st.s3ObjectStore)
-		}
+		st.lambdaService.SetS3Invoker(eb.S3Invoker())
+		st.lambdaService.SetLogsInvoker(eb.LogsInvoker())
 		st.lambdaService.SetEventBus(eb)
 		st.lambdaService.StartESMPoller(context.Background())
 		a.addShutdown("lambda-esm", func(ctx context.Context) error {
@@ -102,9 +127,5 @@ func (a *App) wireCrossServiceDeps() {
 
 	if st.snsService != nil {
 		st.snsService.SetEventBus(eb)
-	}
-
-	if st.appSyncService != nil {
-		st.appSyncService.SetEventBus(eb)
 	}
 }

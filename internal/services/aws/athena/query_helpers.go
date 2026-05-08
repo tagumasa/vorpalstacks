@@ -9,47 +9,6 @@ import (
 	"vorpalstacks/pkg/sqlparser"
 )
 
-func (s *AthenaService) convertCastOperator(sql string) string {
-	var result strings.Builder
-	inString := false
-	i := 0
-
-	for i < len(sql) {
-		ch := sql[i]
-
-		if ch == '\'' {
-			inString = !inString
-			result.WriteByte(ch)
-			i++
-			continue
-		}
-
-		if inString {
-			result.WriteByte(ch)
-			i++
-			continue
-		}
-
-		if i+1 < len(sql) && sql[i:i+2] == "::" {
-			j := i + 2
-			for j < len(sql) && (isAlphaNum(sql[j]) || sql[j] == '_') {
-				j++
-			}
-			i = j
-			continue
-		}
-
-		result.WriteByte(ch)
-		i++
-	}
-
-	return result.String()
-}
-
-func isAlphaNum(c byte) bool {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
-}
-
 func (s *AthenaService) detectStatementType(query string) athenastore.StatementType {
 	upperQuery := strings.ToUpper(strings.TrimSpace(query))
 	if strings.HasPrefix(upperQuery, "SELECT") || strings.HasPrefix(upperQuery, "WITH") {

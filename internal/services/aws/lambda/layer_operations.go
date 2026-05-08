@@ -178,11 +178,12 @@ func (s *LambdaService) ListLayers(ctx context.Context, reqCtx *request.RequestC
 		maxItems = 50
 	}
 
+	marker := request.GetStringParam(req.Parameters, "Marker")
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.Layers.List(common.ListOptions{MaxItems: maxItems})
+	result, err := store.Layers.List(common.ListOptions{Marker: marker, MaxItems: maxItems})
 	if err != nil {
 		return nil, err
 	}

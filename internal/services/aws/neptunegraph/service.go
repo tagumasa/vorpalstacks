@@ -13,6 +13,7 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/serviceports"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/graphengine"
@@ -201,6 +202,10 @@ func (s *NeptuneGraphService) engineOptions() graphengine.Options {
 	return opts
 }
 
+func (s *NeptuneGraphService) graphEndpoint(graphID string) string {
+	return fmt.Sprintf("%s.graph.%s.vorpalstacks.localhost:%d", graphID, s.region, serviceports.HTTP)
+}
+
 // GetStoreForRegion returns a lazily-initialised NeptuneGraphStore for the given region.
 func (s *NeptuneGraphService) GetStoreForRegion(region string) (*ngstore.NeptuneGraphStore, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (*ngstore.NeptuneGraphStore, error) {
@@ -278,16 +283,20 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphName")
 	}
 
-	mem := request.GetIntParam(req.Parameters, "provisionedMemory")
-	if mem < minProvisionedMemory || mem > maxProvisionedMemory {
-		mem = 128
+	mem := 128
+	if request.HasParam(req.Parameters, "provisionedMemory") {
+		mem = request.GetIntParam(req.Parameters, "provisionedMemory")
+		if mem < minProvisionedMemory || mem > maxProvisionedMemory {
+			return nil, newValidationException("ILLEGAL_ARGUMENT", "provisionedMemory must be between 16 and 24576")
+		}
 	}
 
-	replicaCount := request.GetIntParam(req.Parameters, "replicaCount")
-	if !request.HasParam(req.Parameters, "replicaCount") {
-		replicaCount = 1
-	} else if replicaCount < 0 || replicaCount > maxReplicaCount {
-		replicaCount = 1
+	replicaCount := 1
+	if request.HasParam(req.Parameters, "replicaCount") {
+		replicaCount = request.GetIntParam(req.Parameters, "replicaCount")
+		if replicaCount < 0 || replicaCount > maxReplicaCount {
+			return nil, newValidationException("ILLEGAL_ARGUMENT", "replicaCount must be between 0 and 2")
+		}
 	}
 
 	region := reqCtx.GetRegion()
@@ -340,6 +349,7 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 	s.enginesMu.Unlock()
 
 	graph.Status = "AVAILABLE"
+	graph.Endpoint = s.graphEndpoint(graphID)
 	if err := store.UpdateGraph(graph); err != nil {
 		logs.Warn("failed to update graph status", logs.Err(err))
 	}
@@ -431,8 +441,6 @@ func (s *NeptuneGraphService) UpdateGraph(ctx context.Context, reqCtx *request.R
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graph is not in AVAILABLE state")
 	}
 
-	graph.Status = "UPDATING"
-
 	if request.HasParam(req.Parameters, "provisionedMemory") {
 		mem := request.GetIntParam(req.Parameters, "provisionedMemory")
 		if mem < minProvisionedMemory || mem > maxProvisionedMemory {
@@ -449,11 +457,6 @@ func (s *NeptuneGraphService) UpdateGraph(ctx context.Context, reqCtx *request.R
 
 	if err := store.UpdateGraph(graph); err != nil {
 		return nil, err
-	}
-
-	graph.Status = "AVAILABLE"
-	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("failed to update graph status to AVAILABLE", logs.String("graphId", graph.Id), logs.Err(err))
 	}
 
 	return graphToResponse(graph, false), nil
@@ -601,6 +604,7 @@ func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.Re
 	s.enginesMu.Unlock()
 
 	graph.Status = "AVAILABLE"
+	graph.Endpoint = s.graphEndpoint(graphID)
 	if err := store.UpdateGraph(graph); err != nil {
 		logs.Warn("Failed to update graph status to AVAILABLE", logs.Err(err))
 	}
@@ -647,6 +651,7 @@ func (s *NeptuneGraphService) StopGraph(ctx context.Context, reqCtx *request.Req
 	s.enginesMu.Unlock()
 
 	graph.Status = "STOPPED"
+	graph.Endpoint = ""
 	if err := store.UpdateGraph(graph); err != nil {
 		logs.Warn("Failed to update graph status to STOPPED", logs.Err(err))
 	}
@@ -687,7 +692,9 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 	entry, ok := s.activeEngines[graphID]
 
 	if ok {
+		entry.mu.Lock()
 		if err := entry.db.Clear(); err != nil {
+			entry.mu.Unlock()
 			s.enginesMu.RUnlock()
 
 			graph.Status = "FAILED"
@@ -699,6 +706,7 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 			}
 			return nil, newInternalServerException(err)
 		}
+		entry.mu.Unlock()
 	}
 	s.enginesMu.RUnlock()
 
@@ -803,6 +811,7 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 	}
 
 	graph.Status = "AVAILABLE"
+	graph.Endpoint = s.graphEndpoint(graphID)
 	if err := store.UpdateGraph(graph); err != nil {
 		logs.Warn("Failed to update restored graph status", logs.Err(err))
 	}

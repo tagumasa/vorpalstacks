@@ -167,9 +167,10 @@ func (s *NeptuneGraphService) CancelExportTask(ctx context.Context, reqCtx *requ
 		return exportTaskSummaryToResponse(task), nil
 	}
 
+	originalStatus := task.Status
 	task.Status = "CANCELLED"
 	task.StatusReason = "Cancelled by user"
-	if err := store.TryAdvanceExportTask(taskID, task.Status, func(t *ngstore.ExportTask) {
+	if err := store.TryAdvanceExportTask(taskID, originalStatus, func(t *ngstore.ExportTask) {
 		t.Status = "CANCELLED"
 		t.StatusReason = "Cancelled by user"
 	}); err != nil {

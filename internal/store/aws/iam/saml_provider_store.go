@@ -47,18 +47,22 @@ func (s *SAMLProviderStore) Put(provider *SAMLProvider) error {
 // Create creates a new SAML provider with the given name, metadata document, and optional validity period.
 func (s *SAMLProviderStore) Create(name, metadataDocument string, validUntil *time.Time, tags []types.Tag) (*SAMLProvider, error) {
 	arn := s.arnBuilder.SAMLProviderARN(name)
-	if s.Exists(arn) {
-		return nil, NewStoreError("create_saml_provider", ErrSAMLProviderAlreadyExists)
-	}
-	provider := &SAMLProvider{
-		Arn:                  arn,
-		AccountId:            s.arnBuilder.AccountID(),
-		SAMLMetadataDocument: metadataDocument,
-		ValidUntil:           validUntil,
-		CreateDate:           time.Now().UTC(),
-		Tags:                 tags,
-	}
-	if err := s.Put(provider); err != nil {
+	var provider *SAMLProvider
+	err := s.kl.WithLock(arn, func() error {
+		if s.Exists(arn) {
+			return NewStoreError("create_saml_provider", ErrSAMLProviderAlreadyExists)
+		}
+		provider = &SAMLProvider{
+			Arn:                  arn,
+			AccountId:            s.arnBuilder.AccountID(),
+			SAMLMetadataDocument: metadataDocument,
+			ValidUntil:           validUntil,
+			CreateDate:           time.Now().UTC(),
+			Tags:                 tags,
+		}
+		return s.Put(provider)
+	})
+	if err != nil {
 		return nil, err
 	}
 	return provider, nil

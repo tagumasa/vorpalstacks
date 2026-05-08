@@ -312,3 +312,197 @@ func (s *IAMStore) AccountSettings() *AccountSettingsStore {
 func (s *IAMStore) ServiceLastAccessed() *ServiceLastAccessedDetailsJobStore {
 	return s.serviceLastAccessed
 }
+
+// RenameUser changes a user's name and/or path, migrating all associated
+// resources (access keys, login profile, inline/attached policies,
+// group memberships, MFA devices) to the new name. The old user key is
+// deleted after successful migration.
+func (s *IAMStore) RenameUser(oldName, newName, newPath string) error {
+	if newName == "" {
+		newName = oldName
+	}
+	needsRename := newName != oldName
+
+	return s.users.kl.WithLock(oldName, func() error {
+		user, err := s.users.Get(oldName)
+		if err != nil {
+			return err
+		}
+
+		if needsRename && s.users.Exists(newName) {
+			return NewStoreError("rename_user", ErrUserAlreadyExists)
+		}
+
+		if newPath != "" {
+			user.Path = newPath
+		}
+		if needsRename {
+			user.UserName = newName
+		}
+		if newPath != "" || needsRename {
+			user.Arn = s.arnBuilder.UserARN(user.Path, user.UserName)
+		}
+
+		if needsRename {
+			if err := s.users.Put(user); err != nil {
+				return err
+			}
+
+			migrateErr := func() error {
+				keys, err := s.accessKeys.ListByUserNameWithSecret(oldName)
+				if err != nil {
+					return err
+				}
+				for _, key := range keys {
+					key.UserName = newName
+					if err := s.accessKeys.Put(key); err != nil {
+						return err
+					}
+				}
+
+				if s.loginProfiles.Exists(oldName) {
+					profile, err := s.loginProfiles.Get(oldName)
+					if err != nil {
+						return err
+					}
+					profile.UserName = newName
+					if err := s.loginProfiles.Put(profile); err != nil {
+						return err
+					}
+					if err := s.loginProfiles.Delete(oldName); err != nil {
+						return err
+					}
+				}
+
+				if err := s.inlinePolicies.MigratePrincipal(oldName, newName, "user"); err != nil {
+					return err
+				}
+
+				if err := s.attachedPolicies.MigratePrincipal(oldName, newName, "user"); err != nil {
+					return err
+				}
+
+				if err := s.userGroups.MigrateUser(oldName, newName); err != nil {
+					return err
+				}
+
+				if err := s.mfaDevices.MigrateUser(oldName, newName); err != nil {
+					return err
+				}
+
+				return nil
+			}()
+
+			if migrateErr != nil {
+				_ = s.users.Delete(newName)
+				return migrateErr
+			}
+
+			if err := s.users.Delete(oldName); err != nil {
+				return err
+			}
+		} else {
+			if err := s.users.Put(user); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+// RenameGroup changes a group's name and/or path, migrating all associated
+// resources (user-group memberships, inline/attached policies) to the new
+// name. The old group key is deleted after successful migration.
+func (s *IAMStore) RenameGroup(oldName, newName, newPath string) error {
+	if newName == "" {
+		newName = oldName
+	}
+	needsRename := newName != oldName
+
+	return s.groups.kl.WithLock(oldName, func() error {
+		group, err := s.groups.Get(oldName)
+		if err != nil {
+			return err
+		}
+
+		if needsRename && s.groups.Exists(newName) {
+			return NewStoreError("rename_group", ErrGroupAlreadyExists)
+		}
+
+		if newPath != "" {
+			group.Path = newPath
+		}
+		if needsRename {
+			group.GroupName = newName
+		}
+		if newPath != "" || needsRename {
+			group.Arn = s.arnBuilder.GroupARN(group.Path, group.GroupName)
+		}
+
+		if needsRename {
+			if err := s.groups.Put(group); err != nil {
+				return err
+			}
+
+			migrateErr := func() error {
+				users, err := s.userGroups.ListUsersInGroup(oldName)
+				if err != nil {
+					return err
+				}
+				for _, userName := range users {
+					if err := s.userGroups.RemoveUserFromGroup(userName, oldName); err != nil {
+						return err
+					}
+					if err := s.userGroups.AddUserToGroup(userName, newName); err != nil {
+						return err
+					}
+				}
+
+				if err := s.inlinePolicies.MigratePrincipal(oldName, newName, "group"); err != nil {
+					return err
+				}
+
+				if err := s.attachedPolicies.MigratePrincipal(oldName, newName, "group"); err != nil {
+					return err
+				}
+				return nil
+			}()
+
+			if migrateErr != nil {
+				_ = s.groups.Delete(newName)
+				return migrateErr
+			}
+
+			if err := s.groups.Delete(oldName); err != nil {
+				return err
+			}
+		} else {
+			if err := s.groups.Put(group); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+// UpdateRoleFields updates the description and/or maximum session duration
+// of an existing IAM role. The operation is protected by a per-role lock.
+func (s *IAMStore) UpdateRoleFields(roleName, description string, maxSessionDuration int) error {
+	return s.roles.kl.WithLock(roleName, func() error {
+		role, err := s.roles.Get(roleName)
+		if err != nil {
+			return err
+		}
+
+		if description != "" {
+			role.Description = description
+		}
+		if maxSessionDuration > 0 {
+			role.MaxSessionDuration = maxSessionDuration
+		}
+
+		return s.roles.Update(role)
+	})
+}

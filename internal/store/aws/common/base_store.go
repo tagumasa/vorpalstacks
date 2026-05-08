@@ -17,6 +17,10 @@ const DefaultMaxItems = 100
 // AbsoluteMaxItems is the hard upper limit for paginated list operations.
 const AbsoluteMaxItems = 1000
 
+// errStopIteration is a sentinel error used by pageIterator to stop ForEach
+// when the page limit is reached without signalling a real error.
+var errStopIteration = errors.New("stop iteration")
+
 // BaseStore provides common storage operations for AWS services.
 type BaseStore struct {
 	bucket  storage.Bucket
@@ -230,7 +234,7 @@ func (it *pageIterator) forEachPage(visit func(key string, value []byte) (bool, 
 
 		if it.count >= it.opts.MaxItems {
 			it.hasMore = true
-			return nil
+			return errStopIteration
 		}
 
 		accepted, err := visit(key, value)
@@ -272,7 +276,7 @@ func ListProto[T proto.Message](store *BaseStore, opts ListOptions, newFunc func
 		return true, nil
 	})
 
-	if err != nil {
+	if err != nil && !errors.Is(err, errStopIteration) {
 		return nil, NewStoreError(store.service, "list_proto", err)
 	}
 
@@ -303,7 +307,7 @@ func List[T any](store *BaseStore, opts ListOptions, filter FilterFunc[T]) (*Lis
 		return true, nil
 	})
 
-	if err != nil {
+	if err != nil && !errors.Is(err, errStopIteration) {
 		return nil, NewStoreError(store.service, "list", err)
 	}
 

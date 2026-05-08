@@ -124,7 +124,28 @@
       "attrTypeBinary": "二进制 (B)",
       "billingPayPerRequest": "按需",
       "billingProvisioned": "预置",
-      "tableNameHeader": "表名称"
+      "tableNameHeader": "表名称",
+      "detail": {
+        "keySchema": "键架构",
+        "attributes": "属性定义",
+        "itemCount": "项目数",
+        "tableSize": "表大小 (字节)",
+        "billingMode": "计费模式",
+        "status": "状态",
+        "creationDate": "创建时间",
+        "hashKey": "哈希",
+        "rangeKey": "范围",
+        "items": "项目",
+        "noItems": "无项目",
+        "addJson": "添加项目 (JSON)",
+        "deleteItem": "删除项目",
+        "jsonPlaceholder": "{\"pk\": {\"s\": \"值\"}}",
+        "invalidJson": "无效JSON",
+        "confirmDeleteItem": "确认删除此项目？",
+        "pk": "PK",
+        "sk": "SK",
+        "value": "值"
+      }
     },
     "lambda": {
       "title": "Lambda",

@@ -1,6 +1,8 @@
 package dispatcher
 
 import (
+	"os"
+
 	"vorpalstacks/internal/common/audit"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -15,8 +17,15 @@ func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.
 		return
 	}
 
-	if reqCtx.Principal == "" && req != nil && req.AccessKeyID != "" {
-		d.resolvePrincipal(reqCtx, req.AccessKeyID)
+	if reqCtx.Principal == "" {
+		if req != nil && req.AccessKeyID != "" {
+			d.resolvePrincipal(reqCtx, req.AccessKeyID)
+		} else if os.Getenv("TEST_MODE") == "true" {
+			reqCtx.Principal = "vorpalstacks"
+			if req != nil {
+				req.AccessKeyID = "vorpalstacks"
+			}
+		}
 	}
 
 	if !reqCtx.HasAuditRecorder() {

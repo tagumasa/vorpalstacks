@@ -186,8 +186,8 @@ func (s *NeptuneDataService) GetPropertygraphStream(ctx context.Context, reqCtx 
 		limit = 1000
 	}
 
-	reader, ok := reqCtx.GraphReader().(graphengine.GraphReader)
-	if !ok {
+	reader := reqCtx.GraphReader()
+	if reader == nil {
 		return nil, internalFailure("graph reader not available")
 	}
 

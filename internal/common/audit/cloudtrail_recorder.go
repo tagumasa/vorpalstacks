@@ -23,13 +23,15 @@ func (r *CloudTrailRecorder) RecordEvent(event *AuditEvent) error {
 		AccountID: event.AccountID,
 		UserName:  event.PrincipalName,
 	}
-	if event.AccessKeyID != "" {
-		if len(event.AccessKeyID) >= 16 {
-			userIdentity.PrincipalID = "AIDAI" + event.AccessKeyID[:16]
+	accessKeyID := event.AccessKeyID
+
+	if accessKeyID != "" {
+		if len(accessKeyID) >= 16 {
+			userIdentity.PrincipalID = "AIDAI" + accessKeyID[:16]
 		} else {
-			userIdentity.PrincipalID = "AIDAI" + event.AccessKeyID
+			userIdentity.PrincipalID = "AIDAI" + accessKeyID
 		}
-		userIdentity.ARN = arnutil.NewARNBuilder(event.AccountID, "").STS().AssumedRole("vorpalstacks", event.AccessKeyID)
+		userIdentity.ARN = arnutil.NewARNBuilder(event.AccountID, "").STS().AssumedRole("vorpalstacks", accessKeyID)
 	} else {
 		userIdentity.PrincipalID = "vorpalstacks:vorpalstacks"
 		userIdentity.ARN = arnutil.NewARNBuilder(event.AccountID, "").STS().AssumedRole("vorpalstacks", "vorpalstacks")

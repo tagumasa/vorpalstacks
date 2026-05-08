@@ -3,7 +3,6 @@ package athena
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -448,7 +447,7 @@ func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *r
 // cleanupExpiredQueryExecutions removes query executions older than the AWS-specified
 // 45-day retention period. Athena keeps query history for 45 days per AWS documentation.
 func (s *AthenaService) cleanupExpiredQueryExecutions(st *athenaStores) {
-	if os.Getenv("TEST_MODE") == "true" {
+	if s.testMode {
 		// In test mode, purge all query executions on each StartQueryExecution
 		// to prevent accumulation from repeated test runs.
 		allIds, err := st.queryExecutionStore.ListQueryExecutionIDs("", 0)

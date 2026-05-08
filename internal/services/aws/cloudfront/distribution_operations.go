@@ -674,8 +674,10 @@ func (s *CloudFrontService) CreateDistribution(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	if err := s.syncWAFAssociation(reqCtx, config.WebACLId, distribution.ARN); err != nil {
-		return nil, fmt.Errorf("failed to sync WAF association: %w", err)
+	if config.WebACLId != "" && s.wafInvoker != nil {
+		if err := s.wafInvoker.AssociateWebACL(config.WebACLId, distribution.ARN); err != nil {
+			return nil, fmt.Errorf("failed to sync WAF association: %w", err)
+		}
 	}
 
 	return map[string]interface{}{
@@ -707,8 +709,10 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 		return nil, err
 	}
 
-	if err := s.syncWAFAssociation(reqCtx, config.WebACLId, distribution.ARN); err != nil {
-		return nil, fmt.Errorf("failed to sync WAF association: %w", err)
+	if config.WebACLId != "" && s.wafInvoker != nil {
+		if err := s.wafInvoker.AssociateWebACL(config.WebACLId, distribution.ARN); err != nil {
+			return nil, fmt.Errorf("failed to sync WAF association: %w", err)
+		}
 	}
 
 	var tags []types.Tag
@@ -893,13 +897,17 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 	distribution.Enabled = newConfig.Enabled
 	distribution.ETag = s.generateETag()
 
-	if oldWebACLId := distribution.DistributionConfig.WebACLId; oldWebACLId != newConfig.WebACLId {
+	if oldWebACLId := distribution.DistributionConfig.WebACLId; oldWebACLId != newConfig.WebACLId && s.wafInvoker != nil {
 		distArn := distribution.ARN
-		if err := s.removeWAFAssociation(reqCtx, oldWebACLId, distArn); err != nil {
-			return nil, fmt.Errorf("failed to remove old WAF association: %w", err)
+		if oldWebACLId != "" {
+			if err := s.wafInvoker.DisassociateWebACL(oldWebACLId, distArn); err != nil {
+				return nil, fmt.Errorf("failed to remove old WAF association: %w", err)
+			}
 		}
-		if err := s.syncWAFAssociation(reqCtx, newConfig.WebACLId, distArn); err != nil {
-			return nil, fmt.Errorf("failed to sync WAF association: %w", err)
+		if newConfig.WebACLId != "" {
+			if err := s.wafInvoker.AssociateWebACL(newConfig.WebACLId, distArn); err != nil {
+				return nil, fmt.Errorf("failed to sync WAF association: %w", err)
+			}
 		}
 	}
 
@@ -945,9 +953,12 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 		return nil, newCloudFrontError("DistributionNotDisabled", "Distribution must be disabled before deletion", 409)
 	}
 
-	if distribution.DistributionConfig != nil {
-		if err := s.removeWAFAssociation(reqCtx, distribution.DistributionConfig.WebACLId, distribution.ARN); err != nil {
-			return nil, fmt.Errorf("failed to remove WAF association: %w", err)
+	if distribution.DistributionConfig != nil && s.wafInvoker != nil {
+		webACLId := distribution.DistributionConfig.WebACLId
+		if webACLId != "" {
+			if err := s.wafInvoker.DisassociateWebACL(webACLId, distribution.ARN); err != nil {
+				return nil, fmt.Errorf("failed to remove WAF association: %w", err)
+			}
 		}
 	}
 

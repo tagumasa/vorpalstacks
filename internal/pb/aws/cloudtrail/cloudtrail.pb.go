@@ -6312,7 +6312,7 @@ type GetQueryResultsResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Errormessage    string                 `protobuf:"bytes,518702377,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
 	Nexttoken       string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Queryresultrows map[string]string      `protobuf:"bytes,240264704,rep,name=queryresultrows,proto3" json:"queryresultrows,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Queryresultrows []*QueryResultRowEntry `protobuf:"bytes,240264704,rep,name=queryresultrows,proto3" json:"queryresultrows,omitempty"`
 	Querystatistics *QueryStatistics       `protobuf:"bytes,260794841,opt,name=querystatistics,proto3" json:"querystatistics,omitempty"`
 	Querystatus     QueryStatus            `protobuf:"varint,367016406,opt,name=querystatus,proto3,enum=cloudtrail.QueryStatus" json:"querystatus,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -6363,7 +6363,7 @@ func (x *GetQueryResultsResponse) GetNexttoken() string {
 	return ""
 }
 
-func (x *GetQueryResultsResponse) GetQueryresultrows() map[string]string {
+func (x *GetQueryResultsResponse) GetQueryresultrows() []*QueryResultRowEntry {
 	if x != nil {
 		return x.Queryresultrows
 	}
@@ -15176,6 +15176,50 @@ func (x *Widget) GetViewproperties() map[string]string {
 	return nil
 }
 
+type QueryResultRowEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         map[string]string      `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryResultRowEntry) Reset() {
+	*x = QueryResultRowEntry{}
+	mi := &file_cloudtrail_proto_msgTypes[241]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryResultRowEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryResultRowEntry) ProtoMessage() {}
+
+func (x *QueryResultRowEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_cloudtrail_proto_msgTypes[241]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryResultRowEntry.ProtoReflect.Descriptor instead.
+func (*QueryResultRowEntry) Descriptor() ([]byte, []int) {
+	return file_cloudtrail_proto_rawDescGZIP(), []int{241}
+}
+
+func (x *QueryResultRowEntry) GetValue() map[string]string {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
 var File_cloudtrail_proto protoreflect.FileDescriptor
 
 const file_cloudtrail_proto_rawDesc = "" +
@@ -15530,16 +15574,13 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x12+\n" +
 	"\x0fmaxqueryresults\x18\xe0\xc3\xc49 \x01(\x05R\x0fmaxqueryresults\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1b\n" +
-	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\"\x96\x03\n" +
+	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\"\xb9\x02\n" +
 	"\x17GetQueryResultsResponse\x12&\n" +
 	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12e\n" +
-	"\x0fqueryresultrows\x18\x80\xcc\xc8r \x03(\v28.cloudtrail.GetQueryResultsResponse.QueryresultrowsEntryR\x0fqueryresultrows\x12H\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12L\n" +
+	"\x0fqueryresultrows\x18\x80\xcc\xc8r \x03(\v2\x1f.cloudtrail.QueryResultRowEntryR\x0fqueryresultrows\x12H\n" +
 	"\x0fquerystatistics\x18\xd9ӭ| \x01(\v2\x1b.cloudtrail.QueryStatisticsR\x0fquerystatistics\x12=\n" +
-	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\x1aB\n" +
-	"\x14QueryresultrowsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"@\n" +
+	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\"@\n" +
 	"\x18GetResourcePolicyRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"\xb4\x01\n" +
 	"\x19GetResourcePolicyResponse\x12F\n" +
@@ -16153,6 +16194,12 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x0eviewproperties\x18\xfe\ue476\x01 \x03(\v2&.cloudtrail.Widget.ViewpropertiesEntryR\x0eviewproperties\x1aA\n" +
 	"\x13ViewpropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x91\x01\n" +
+	"\x13QueryResultRowEntry\x12@\n" +
+	"\x05value\x18\x01 \x03(\v2*.cloudtrail.QueryResultRowEntry.ValueEntryR\x05value\x1a8\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*f\n" +
 	"\vBillingMode\x12(\n" +
 	"$BILLING_MODE_FIXED_RETENTION_PRICING\x10\x00\x12-\n" +
@@ -16336,7 +16383,7 @@ func file_cloudtrail_proto_rawDescGZIP() []byte {
 }
 
 var file_cloudtrail_proto_enumTypes = make([]protoimpl.EnumInfo, 24)
-var file_cloudtrail_proto_msgTypes = make([]protoimpl.MessageInfo, 246)
+var file_cloudtrail_proto_msgTypes = make([]protoimpl.MessageInfo, 247)
 var file_cloudtrail_proto_goTypes = []any{
 	(BillingMode)(0),                                               // 0: cloudtrail.BillingMode
 	(DashboardStatus)(0),                                           // 1: cloudtrail.DashboardStatus
@@ -16603,11 +16650,12 @@ var file_cloudtrail_proto_goTypes = []any{
 	(*UpdateTrailRequest)(nil),                                     // 262: cloudtrail.UpdateTrailRequest
 	(*UpdateTrailResponse)(nil),                                    // 263: cloudtrail.UpdateTrailResponse
 	(*Widget)(nil),                                                 // 264: cloudtrail.Widget
-	nil,                                                            // 265: cloudtrail.GetQueryResultsResponse.QueryresultrowsEntry
+	(*QueryResultRowEntry)(nil),                                    // 265: cloudtrail.QueryResultRowEntry
 	nil,                                                            // 266: cloudtrail.ListInsightsDataRequest.DimensionsEntry
 	nil,                                                            // 267: cloudtrail.RequestWidget.ViewpropertiesEntry
 	nil,                                                            // 268: cloudtrail.StartDashboardRefreshRequest.QueryparametervaluesEntry
 	nil,                                                            // 269: cloudtrail.Widget.ViewpropertiesEntry
+	nil,                                                            // 270: cloudtrail.QueryResultRowEntry.ValueEntry
 }
 var file_cloudtrail_proto_depIdxs = []int32{
 	247, // 0: cloudtrail.AddTagsRequest.tagslist:type_name -> cloudtrail.Tag
@@ -16669,7 +16717,7 @@ var file_cloudtrail_proto_depIdxs = []int32{
 	120, // 56: cloudtrail.GetImportResponse.importstatistics:type_name -> cloudtrail.ImportStatistics
 	10,  // 57: cloudtrail.GetImportResponse.importstatus:type_name -> cloudtrail.ImportStatus
 	126, // 58: cloudtrail.GetInsightSelectorsResponse.insightselectors:type_name -> cloudtrail.InsightSelector
-	265, // 59: cloudtrail.GetQueryResultsResponse.queryresultrows:type_name -> cloudtrail.GetQueryResultsResponse.QueryresultrowsEntry
+	265, // 59: cloudtrail.GetQueryResultsResponse.queryresultrows:type_name -> cloudtrail.QueryResultRowEntry
 	206, // 60: cloudtrail.GetQueryResultsResponse.querystatistics:type_name -> cloudtrail.QueryStatistics
 	17,  // 61: cloudtrail.GetQueryResultsResponse.querystatus:type_name -> cloudtrail.QueryStatus
 	250, // 62: cloudtrail.GetTrailResponse.trail:type_name -> cloudtrail.Trail
@@ -16745,131 +16793,132 @@ var file_cloudtrail_proto_depIdxs = []int32{
 	8,   // 132: cloudtrail.UpdateEventDataStoreResponse.federationstatus:type_name -> cloudtrail.FederationStatus
 	7,   // 133: cloudtrail.UpdateEventDataStoreResponse.status:type_name -> cloudtrail.EventDataStoreStatus
 	269, // 134: cloudtrail.Widget.viewproperties:type_name -> cloudtrail.Widget.ViewpropertiesEntry
-	29,  // 135: cloudtrail.CloudTrailService.AddTags:input_type -> cloudtrail.AddTagsRequest
-	34,  // 136: cloudtrail.CloudTrailService.CancelQuery:input_type -> cloudtrail.CancelQueryRequest
-	50,  // 137: cloudtrail.CloudTrailService.CreateChannel:input_type -> cloudtrail.CreateChannelRequest
-	52,  // 138: cloudtrail.CloudTrailService.CreateDashboard:input_type -> cloudtrail.CreateDashboardRequest
-	54,  // 139: cloudtrail.CloudTrailService.CreateEventDataStore:input_type -> cloudtrail.CreateEventDataStoreRequest
-	56,  // 140: cloudtrail.CloudTrailService.CreateTrail:input_type -> cloudtrail.CreateTrailRequest
-	61,  // 141: cloudtrail.CloudTrailService.DeleteChannel:input_type -> cloudtrail.DeleteChannelRequest
-	63,  // 142: cloudtrail.CloudTrailService.DeleteDashboard:input_type -> cloudtrail.DeleteDashboardRequest
-	65,  // 143: cloudtrail.CloudTrailService.DeleteEventDataStore:input_type -> cloudtrail.DeleteEventDataStoreRequest
-	67,  // 144: cloudtrail.CloudTrailService.DeleteResourcePolicy:input_type -> cloudtrail.DeleteResourcePolicyRequest
-	69,  // 145: cloudtrail.CloudTrailService.DeleteTrail:input_type -> cloudtrail.DeleteTrailRequest
-	71,  // 146: cloudtrail.CloudTrailService.DeregisterOrganizationDelegatedAdmin:input_type -> cloudtrail.DeregisterOrganizationDelegatedAdminRequest
-	73,  // 147: cloudtrail.CloudTrailService.DescribeQuery:input_type -> cloudtrail.DescribeQueryRequest
-	75,  // 148: cloudtrail.CloudTrailService.DescribeTrails:input_type -> cloudtrail.DescribeTrailsRequest
-	78,  // 149: cloudtrail.CloudTrailService.DisableFederation:input_type -> cloudtrail.DisableFederationRequest
-	80,  // 150: cloudtrail.CloudTrailService.EnableFederation:input_type -> cloudtrail.EnableFederationRequest
-	92,  // 151: cloudtrail.CloudTrailService.GenerateQuery:input_type -> cloudtrail.GenerateQueryRequest
-	95,  // 152: cloudtrail.CloudTrailService.GetChannel:input_type -> cloudtrail.GetChannelRequest
-	97,  // 153: cloudtrail.CloudTrailService.GetDashboard:input_type -> cloudtrail.GetDashboardRequest
-	99,  // 154: cloudtrail.CloudTrailService.GetEventConfiguration:input_type -> cloudtrail.GetEventConfigurationRequest
-	101, // 155: cloudtrail.CloudTrailService.GetEventDataStore:input_type -> cloudtrail.GetEventDataStoreRequest
-	103, // 156: cloudtrail.CloudTrailService.GetEventSelectors:input_type -> cloudtrail.GetEventSelectorsRequest
-	105, // 157: cloudtrail.CloudTrailService.GetImport:input_type -> cloudtrail.GetImportRequest
-	107, // 158: cloudtrail.CloudTrailService.GetInsightSelectors:input_type -> cloudtrail.GetInsightSelectorsRequest
-	109, // 159: cloudtrail.CloudTrailService.GetQueryResults:input_type -> cloudtrail.GetQueryResultsRequest
-	111, // 160: cloudtrail.CloudTrailService.GetResourcePolicy:input_type -> cloudtrail.GetResourcePolicyRequest
-	113, // 161: cloudtrail.CloudTrailService.GetTrail:input_type -> cloudtrail.GetTrailRequest
-	115, // 162: cloudtrail.CloudTrailService.GetTrailStatus:input_type -> cloudtrail.GetTrailStatusRequest
-	161, // 163: cloudtrail.CloudTrailService.ListChannels:input_type -> cloudtrail.ListChannelsRequest
-	163, // 164: cloudtrail.CloudTrailService.ListDashboards:input_type -> cloudtrail.ListDashboardsRequest
-	165, // 165: cloudtrail.CloudTrailService.ListEventDataStores:input_type -> cloudtrail.ListEventDataStoresRequest
-	167, // 166: cloudtrail.CloudTrailService.ListImportFailures:input_type -> cloudtrail.ListImportFailuresRequest
-	169, // 167: cloudtrail.CloudTrailService.ListImports:input_type -> cloudtrail.ListImportsRequest
-	171, // 168: cloudtrail.CloudTrailService.ListInsightsData:input_type -> cloudtrail.ListInsightsDataRequest
-	173, // 169: cloudtrail.CloudTrailService.ListInsightsMetricData:input_type -> cloudtrail.ListInsightsMetricDataRequest
-	175, // 170: cloudtrail.CloudTrailService.ListPublicKeys:input_type -> cloudtrail.ListPublicKeysRequest
-	177, // 171: cloudtrail.CloudTrailService.ListQueries:input_type -> cloudtrail.ListQueriesRequest
-	179, // 172: cloudtrail.CloudTrailService.ListTags:input_type -> cloudtrail.ListTagsRequest
-	181, // 173: cloudtrail.CloudTrailService.ListTrails:input_type -> cloudtrail.ListTrailsRequest
-	184, // 174: cloudtrail.CloudTrailService.LookupEvents:input_type -> cloudtrail.LookupEventsRequest
-	196, // 175: cloudtrail.CloudTrailService.PutEventConfiguration:input_type -> cloudtrail.PutEventConfigurationRequest
-	198, // 176: cloudtrail.CloudTrailService.PutEventSelectors:input_type -> cloudtrail.PutEventSelectorsRequest
-	200, // 177: cloudtrail.CloudTrailService.PutInsightSelectors:input_type -> cloudtrail.PutInsightSelectorsRequest
-	202, // 178: cloudtrail.CloudTrailService.PutResourcePolicy:input_type -> cloudtrail.PutResourcePolicyRequest
-	210, // 179: cloudtrail.CloudTrailService.RegisterOrganizationDelegatedAdmin:input_type -> cloudtrail.RegisterOrganizationDelegatedAdminRequest
-	212, // 180: cloudtrail.CloudTrailService.RemoveTags:input_type -> cloudtrail.RemoveTagsRequest
-	222, // 181: cloudtrail.CloudTrailService.RestoreEventDataStore:input_type -> cloudtrail.RestoreEventDataStoreRequest
-	226, // 182: cloudtrail.CloudTrailService.SearchSampleQueries:input_type -> cloudtrail.SearchSampleQueriesRequest
-	231, // 183: cloudtrail.CloudTrailService.StartDashboardRefresh:input_type -> cloudtrail.StartDashboardRefreshRequest
-	233, // 184: cloudtrail.CloudTrailService.StartEventDataStoreIngestion:input_type -> cloudtrail.StartEventDataStoreIngestionRequest
-	235, // 185: cloudtrail.CloudTrailService.StartImport:input_type -> cloudtrail.StartImportRequest
-	237, // 186: cloudtrail.CloudTrailService.StartLogging:input_type -> cloudtrail.StartLoggingRequest
-	239, // 187: cloudtrail.CloudTrailService.StartQuery:input_type -> cloudtrail.StartQueryRequest
-	241, // 188: cloudtrail.CloudTrailService.StopEventDataStoreIngestion:input_type -> cloudtrail.StopEventDataStoreIngestionRequest
-	243, // 189: cloudtrail.CloudTrailService.StopImport:input_type -> cloudtrail.StopImportRequest
-	245, // 190: cloudtrail.CloudTrailService.StopLogging:input_type -> cloudtrail.StopLoggingRequest
-	256, // 191: cloudtrail.CloudTrailService.UpdateChannel:input_type -> cloudtrail.UpdateChannelRequest
-	258, // 192: cloudtrail.CloudTrailService.UpdateDashboard:input_type -> cloudtrail.UpdateDashboardRequest
-	260, // 193: cloudtrail.CloudTrailService.UpdateEventDataStore:input_type -> cloudtrail.UpdateEventDataStoreRequest
-	262, // 194: cloudtrail.CloudTrailService.UpdateTrail:input_type -> cloudtrail.UpdateTrailRequest
-	30,  // 195: cloudtrail.CloudTrailService.AddTags:output_type -> cloudtrail.AddTagsResponse
-	35,  // 196: cloudtrail.CloudTrailService.CancelQuery:output_type -> cloudtrail.CancelQueryResponse
-	51,  // 197: cloudtrail.CloudTrailService.CreateChannel:output_type -> cloudtrail.CreateChannelResponse
-	53,  // 198: cloudtrail.CloudTrailService.CreateDashboard:output_type -> cloudtrail.CreateDashboardResponse
-	55,  // 199: cloudtrail.CloudTrailService.CreateEventDataStore:output_type -> cloudtrail.CreateEventDataStoreResponse
-	57,  // 200: cloudtrail.CloudTrailService.CreateTrail:output_type -> cloudtrail.CreateTrailResponse
-	62,  // 201: cloudtrail.CloudTrailService.DeleteChannel:output_type -> cloudtrail.DeleteChannelResponse
-	64,  // 202: cloudtrail.CloudTrailService.DeleteDashboard:output_type -> cloudtrail.DeleteDashboardResponse
-	66,  // 203: cloudtrail.CloudTrailService.DeleteEventDataStore:output_type -> cloudtrail.DeleteEventDataStoreResponse
-	68,  // 204: cloudtrail.CloudTrailService.DeleteResourcePolicy:output_type -> cloudtrail.DeleteResourcePolicyResponse
-	70,  // 205: cloudtrail.CloudTrailService.DeleteTrail:output_type -> cloudtrail.DeleteTrailResponse
-	72,  // 206: cloudtrail.CloudTrailService.DeregisterOrganizationDelegatedAdmin:output_type -> cloudtrail.DeregisterOrganizationDelegatedAdminResponse
-	74,  // 207: cloudtrail.CloudTrailService.DescribeQuery:output_type -> cloudtrail.DescribeQueryResponse
-	76,  // 208: cloudtrail.CloudTrailService.DescribeTrails:output_type -> cloudtrail.DescribeTrailsResponse
-	79,  // 209: cloudtrail.CloudTrailService.DisableFederation:output_type -> cloudtrail.DisableFederationResponse
-	81,  // 210: cloudtrail.CloudTrailService.EnableFederation:output_type -> cloudtrail.EnableFederationResponse
-	93,  // 211: cloudtrail.CloudTrailService.GenerateQuery:output_type -> cloudtrail.GenerateQueryResponse
-	96,  // 212: cloudtrail.CloudTrailService.GetChannel:output_type -> cloudtrail.GetChannelResponse
-	98,  // 213: cloudtrail.CloudTrailService.GetDashboard:output_type -> cloudtrail.GetDashboardResponse
-	100, // 214: cloudtrail.CloudTrailService.GetEventConfiguration:output_type -> cloudtrail.GetEventConfigurationResponse
-	102, // 215: cloudtrail.CloudTrailService.GetEventDataStore:output_type -> cloudtrail.GetEventDataStoreResponse
-	104, // 216: cloudtrail.CloudTrailService.GetEventSelectors:output_type -> cloudtrail.GetEventSelectorsResponse
-	106, // 217: cloudtrail.CloudTrailService.GetImport:output_type -> cloudtrail.GetImportResponse
-	108, // 218: cloudtrail.CloudTrailService.GetInsightSelectors:output_type -> cloudtrail.GetInsightSelectorsResponse
-	110, // 219: cloudtrail.CloudTrailService.GetQueryResults:output_type -> cloudtrail.GetQueryResultsResponse
-	112, // 220: cloudtrail.CloudTrailService.GetResourcePolicy:output_type -> cloudtrail.GetResourcePolicyResponse
-	114, // 221: cloudtrail.CloudTrailService.GetTrail:output_type -> cloudtrail.GetTrailResponse
-	116, // 222: cloudtrail.CloudTrailService.GetTrailStatus:output_type -> cloudtrail.GetTrailStatusResponse
-	162, // 223: cloudtrail.CloudTrailService.ListChannels:output_type -> cloudtrail.ListChannelsResponse
-	164, // 224: cloudtrail.CloudTrailService.ListDashboards:output_type -> cloudtrail.ListDashboardsResponse
-	166, // 225: cloudtrail.CloudTrailService.ListEventDataStores:output_type -> cloudtrail.ListEventDataStoresResponse
-	168, // 226: cloudtrail.CloudTrailService.ListImportFailures:output_type -> cloudtrail.ListImportFailuresResponse
-	170, // 227: cloudtrail.CloudTrailService.ListImports:output_type -> cloudtrail.ListImportsResponse
-	172, // 228: cloudtrail.CloudTrailService.ListInsightsData:output_type -> cloudtrail.ListInsightsDataResponse
-	174, // 229: cloudtrail.CloudTrailService.ListInsightsMetricData:output_type -> cloudtrail.ListInsightsMetricDataResponse
-	176, // 230: cloudtrail.CloudTrailService.ListPublicKeys:output_type -> cloudtrail.ListPublicKeysResponse
-	178, // 231: cloudtrail.CloudTrailService.ListQueries:output_type -> cloudtrail.ListQueriesResponse
-	180, // 232: cloudtrail.CloudTrailService.ListTags:output_type -> cloudtrail.ListTagsResponse
-	182, // 233: cloudtrail.CloudTrailService.ListTrails:output_type -> cloudtrail.ListTrailsResponse
-	185, // 234: cloudtrail.CloudTrailService.LookupEvents:output_type -> cloudtrail.LookupEventsResponse
-	197, // 235: cloudtrail.CloudTrailService.PutEventConfiguration:output_type -> cloudtrail.PutEventConfigurationResponse
-	199, // 236: cloudtrail.CloudTrailService.PutEventSelectors:output_type -> cloudtrail.PutEventSelectorsResponse
-	201, // 237: cloudtrail.CloudTrailService.PutInsightSelectors:output_type -> cloudtrail.PutInsightSelectorsResponse
-	203, // 238: cloudtrail.CloudTrailService.PutResourcePolicy:output_type -> cloudtrail.PutResourcePolicyResponse
-	211, // 239: cloudtrail.CloudTrailService.RegisterOrganizationDelegatedAdmin:output_type -> cloudtrail.RegisterOrganizationDelegatedAdminResponse
-	213, // 240: cloudtrail.CloudTrailService.RemoveTags:output_type -> cloudtrail.RemoveTagsResponse
-	223, // 241: cloudtrail.CloudTrailService.RestoreEventDataStore:output_type -> cloudtrail.RestoreEventDataStoreResponse
-	227, // 242: cloudtrail.CloudTrailService.SearchSampleQueries:output_type -> cloudtrail.SearchSampleQueriesResponse
-	232, // 243: cloudtrail.CloudTrailService.StartDashboardRefresh:output_type -> cloudtrail.StartDashboardRefreshResponse
-	234, // 244: cloudtrail.CloudTrailService.StartEventDataStoreIngestion:output_type -> cloudtrail.StartEventDataStoreIngestionResponse
-	236, // 245: cloudtrail.CloudTrailService.StartImport:output_type -> cloudtrail.StartImportResponse
-	238, // 246: cloudtrail.CloudTrailService.StartLogging:output_type -> cloudtrail.StartLoggingResponse
-	240, // 247: cloudtrail.CloudTrailService.StartQuery:output_type -> cloudtrail.StartQueryResponse
-	242, // 248: cloudtrail.CloudTrailService.StopEventDataStoreIngestion:output_type -> cloudtrail.StopEventDataStoreIngestionResponse
-	244, // 249: cloudtrail.CloudTrailService.StopImport:output_type -> cloudtrail.StopImportResponse
-	246, // 250: cloudtrail.CloudTrailService.StopLogging:output_type -> cloudtrail.StopLoggingResponse
-	257, // 251: cloudtrail.CloudTrailService.UpdateChannel:output_type -> cloudtrail.UpdateChannelResponse
-	259, // 252: cloudtrail.CloudTrailService.UpdateDashboard:output_type -> cloudtrail.UpdateDashboardResponse
-	261, // 253: cloudtrail.CloudTrailService.UpdateEventDataStore:output_type -> cloudtrail.UpdateEventDataStoreResponse
-	263, // 254: cloudtrail.CloudTrailService.UpdateTrail:output_type -> cloudtrail.UpdateTrailResponse
-	195, // [195:255] is the sub-list for method output_type
-	135, // [135:195] is the sub-list for method input_type
-	135, // [135:135] is the sub-list for extension type_name
-	135, // [135:135] is the sub-list for extension extendee
-	0,   // [0:135] is the sub-list for field type_name
+	270, // 135: cloudtrail.QueryResultRowEntry.value:type_name -> cloudtrail.QueryResultRowEntry.ValueEntry
+	29,  // 136: cloudtrail.CloudTrailService.AddTags:input_type -> cloudtrail.AddTagsRequest
+	34,  // 137: cloudtrail.CloudTrailService.CancelQuery:input_type -> cloudtrail.CancelQueryRequest
+	50,  // 138: cloudtrail.CloudTrailService.CreateChannel:input_type -> cloudtrail.CreateChannelRequest
+	52,  // 139: cloudtrail.CloudTrailService.CreateDashboard:input_type -> cloudtrail.CreateDashboardRequest
+	54,  // 140: cloudtrail.CloudTrailService.CreateEventDataStore:input_type -> cloudtrail.CreateEventDataStoreRequest
+	56,  // 141: cloudtrail.CloudTrailService.CreateTrail:input_type -> cloudtrail.CreateTrailRequest
+	61,  // 142: cloudtrail.CloudTrailService.DeleteChannel:input_type -> cloudtrail.DeleteChannelRequest
+	63,  // 143: cloudtrail.CloudTrailService.DeleteDashboard:input_type -> cloudtrail.DeleteDashboardRequest
+	65,  // 144: cloudtrail.CloudTrailService.DeleteEventDataStore:input_type -> cloudtrail.DeleteEventDataStoreRequest
+	67,  // 145: cloudtrail.CloudTrailService.DeleteResourcePolicy:input_type -> cloudtrail.DeleteResourcePolicyRequest
+	69,  // 146: cloudtrail.CloudTrailService.DeleteTrail:input_type -> cloudtrail.DeleteTrailRequest
+	71,  // 147: cloudtrail.CloudTrailService.DeregisterOrganizationDelegatedAdmin:input_type -> cloudtrail.DeregisterOrganizationDelegatedAdminRequest
+	73,  // 148: cloudtrail.CloudTrailService.DescribeQuery:input_type -> cloudtrail.DescribeQueryRequest
+	75,  // 149: cloudtrail.CloudTrailService.DescribeTrails:input_type -> cloudtrail.DescribeTrailsRequest
+	78,  // 150: cloudtrail.CloudTrailService.DisableFederation:input_type -> cloudtrail.DisableFederationRequest
+	80,  // 151: cloudtrail.CloudTrailService.EnableFederation:input_type -> cloudtrail.EnableFederationRequest
+	92,  // 152: cloudtrail.CloudTrailService.GenerateQuery:input_type -> cloudtrail.GenerateQueryRequest
+	95,  // 153: cloudtrail.CloudTrailService.GetChannel:input_type -> cloudtrail.GetChannelRequest
+	97,  // 154: cloudtrail.CloudTrailService.GetDashboard:input_type -> cloudtrail.GetDashboardRequest
+	99,  // 155: cloudtrail.CloudTrailService.GetEventConfiguration:input_type -> cloudtrail.GetEventConfigurationRequest
+	101, // 156: cloudtrail.CloudTrailService.GetEventDataStore:input_type -> cloudtrail.GetEventDataStoreRequest
+	103, // 157: cloudtrail.CloudTrailService.GetEventSelectors:input_type -> cloudtrail.GetEventSelectorsRequest
+	105, // 158: cloudtrail.CloudTrailService.GetImport:input_type -> cloudtrail.GetImportRequest
+	107, // 159: cloudtrail.CloudTrailService.GetInsightSelectors:input_type -> cloudtrail.GetInsightSelectorsRequest
+	109, // 160: cloudtrail.CloudTrailService.GetQueryResults:input_type -> cloudtrail.GetQueryResultsRequest
+	111, // 161: cloudtrail.CloudTrailService.GetResourcePolicy:input_type -> cloudtrail.GetResourcePolicyRequest
+	113, // 162: cloudtrail.CloudTrailService.GetTrail:input_type -> cloudtrail.GetTrailRequest
+	115, // 163: cloudtrail.CloudTrailService.GetTrailStatus:input_type -> cloudtrail.GetTrailStatusRequest
+	161, // 164: cloudtrail.CloudTrailService.ListChannels:input_type -> cloudtrail.ListChannelsRequest
+	163, // 165: cloudtrail.CloudTrailService.ListDashboards:input_type -> cloudtrail.ListDashboardsRequest
+	165, // 166: cloudtrail.CloudTrailService.ListEventDataStores:input_type -> cloudtrail.ListEventDataStoresRequest
+	167, // 167: cloudtrail.CloudTrailService.ListImportFailures:input_type -> cloudtrail.ListImportFailuresRequest
+	169, // 168: cloudtrail.CloudTrailService.ListImports:input_type -> cloudtrail.ListImportsRequest
+	171, // 169: cloudtrail.CloudTrailService.ListInsightsData:input_type -> cloudtrail.ListInsightsDataRequest
+	173, // 170: cloudtrail.CloudTrailService.ListInsightsMetricData:input_type -> cloudtrail.ListInsightsMetricDataRequest
+	175, // 171: cloudtrail.CloudTrailService.ListPublicKeys:input_type -> cloudtrail.ListPublicKeysRequest
+	177, // 172: cloudtrail.CloudTrailService.ListQueries:input_type -> cloudtrail.ListQueriesRequest
+	179, // 173: cloudtrail.CloudTrailService.ListTags:input_type -> cloudtrail.ListTagsRequest
+	181, // 174: cloudtrail.CloudTrailService.ListTrails:input_type -> cloudtrail.ListTrailsRequest
+	184, // 175: cloudtrail.CloudTrailService.LookupEvents:input_type -> cloudtrail.LookupEventsRequest
+	196, // 176: cloudtrail.CloudTrailService.PutEventConfiguration:input_type -> cloudtrail.PutEventConfigurationRequest
+	198, // 177: cloudtrail.CloudTrailService.PutEventSelectors:input_type -> cloudtrail.PutEventSelectorsRequest
+	200, // 178: cloudtrail.CloudTrailService.PutInsightSelectors:input_type -> cloudtrail.PutInsightSelectorsRequest
+	202, // 179: cloudtrail.CloudTrailService.PutResourcePolicy:input_type -> cloudtrail.PutResourcePolicyRequest
+	210, // 180: cloudtrail.CloudTrailService.RegisterOrganizationDelegatedAdmin:input_type -> cloudtrail.RegisterOrganizationDelegatedAdminRequest
+	212, // 181: cloudtrail.CloudTrailService.RemoveTags:input_type -> cloudtrail.RemoveTagsRequest
+	222, // 182: cloudtrail.CloudTrailService.RestoreEventDataStore:input_type -> cloudtrail.RestoreEventDataStoreRequest
+	226, // 183: cloudtrail.CloudTrailService.SearchSampleQueries:input_type -> cloudtrail.SearchSampleQueriesRequest
+	231, // 184: cloudtrail.CloudTrailService.StartDashboardRefresh:input_type -> cloudtrail.StartDashboardRefreshRequest
+	233, // 185: cloudtrail.CloudTrailService.StartEventDataStoreIngestion:input_type -> cloudtrail.StartEventDataStoreIngestionRequest
+	235, // 186: cloudtrail.CloudTrailService.StartImport:input_type -> cloudtrail.StartImportRequest
+	237, // 187: cloudtrail.CloudTrailService.StartLogging:input_type -> cloudtrail.StartLoggingRequest
+	239, // 188: cloudtrail.CloudTrailService.StartQuery:input_type -> cloudtrail.StartQueryRequest
+	241, // 189: cloudtrail.CloudTrailService.StopEventDataStoreIngestion:input_type -> cloudtrail.StopEventDataStoreIngestionRequest
+	243, // 190: cloudtrail.CloudTrailService.StopImport:input_type -> cloudtrail.StopImportRequest
+	245, // 191: cloudtrail.CloudTrailService.StopLogging:input_type -> cloudtrail.StopLoggingRequest
+	256, // 192: cloudtrail.CloudTrailService.UpdateChannel:input_type -> cloudtrail.UpdateChannelRequest
+	258, // 193: cloudtrail.CloudTrailService.UpdateDashboard:input_type -> cloudtrail.UpdateDashboardRequest
+	260, // 194: cloudtrail.CloudTrailService.UpdateEventDataStore:input_type -> cloudtrail.UpdateEventDataStoreRequest
+	262, // 195: cloudtrail.CloudTrailService.UpdateTrail:input_type -> cloudtrail.UpdateTrailRequest
+	30,  // 196: cloudtrail.CloudTrailService.AddTags:output_type -> cloudtrail.AddTagsResponse
+	35,  // 197: cloudtrail.CloudTrailService.CancelQuery:output_type -> cloudtrail.CancelQueryResponse
+	51,  // 198: cloudtrail.CloudTrailService.CreateChannel:output_type -> cloudtrail.CreateChannelResponse
+	53,  // 199: cloudtrail.CloudTrailService.CreateDashboard:output_type -> cloudtrail.CreateDashboardResponse
+	55,  // 200: cloudtrail.CloudTrailService.CreateEventDataStore:output_type -> cloudtrail.CreateEventDataStoreResponse
+	57,  // 201: cloudtrail.CloudTrailService.CreateTrail:output_type -> cloudtrail.CreateTrailResponse
+	62,  // 202: cloudtrail.CloudTrailService.DeleteChannel:output_type -> cloudtrail.DeleteChannelResponse
+	64,  // 203: cloudtrail.CloudTrailService.DeleteDashboard:output_type -> cloudtrail.DeleteDashboardResponse
+	66,  // 204: cloudtrail.CloudTrailService.DeleteEventDataStore:output_type -> cloudtrail.DeleteEventDataStoreResponse
+	68,  // 205: cloudtrail.CloudTrailService.DeleteResourcePolicy:output_type -> cloudtrail.DeleteResourcePolicyResponse
+	70,  // 206: cloudtrail.CloudTrailService.DeleteTrail:output_type -> cloudtrail.DeleteTrailResponse
+	72,  // 207: cloudtrail.CloudTrailService.DeregisterOrganizationDelegatedAdmin:output_type -> cloudtrail.DeregisterOrganizationDelegatedAdminResponse
+	74,  // 208: cloudtrail.CloudTrailService.DescribeQuery:output_type -> cloudtrail.DescribeQueryResponse
+	76,  // 209: cloudtrail.CloudTrailService.DescribeTrails:output_type -> cloudtrail.DescribeTrailsResponse
+	79,  // 210: cloudtrail.CloudTrailService.DisableFederation:output_type -> cloudtrail.DisableFederationResponse
+	81,  // 211: cloudtrail.CloudTrailService.EnableFederation:output_type -> cloudtrail.EnableFederationResponse
+	93,  // 212: cloudtrail.CloudTrailService.GenerateQuery:output_type -> cloudtrail.GenerateQueryResponse
+	96,  // 213: cloudtrail.CloudTrailService.GetChannel:output_type -> cloudtrail.GetChannelResponse
+	98,  // 214: cloudtrail.CloudTrailService.GetDashboard:output_type -> cloudtrail.GetDashboardResponse
+	100, // 215: cloudtrail.CloudTrailService.GetEventConfiguration:output_type -> cloudtrail.GetEventConfigurationResponse
+	102, // 216: cloudtrail.CloudTrailService.GetEventDataStore:output_type -> cloudtrail.GetEventDataStoreResponse
+	104, // 217: cloudtrail.CloudTrailService.GetEventSelectors:output_type -> cloudtrail.GetEventSelectorsResponse
+	106, // 218: cloudtrail.CloudTrailService.GetImport:output_type -> cloudtrail.GetImportResponse
+	108, // 219: cloudtrail.CloudTrailService.GetInsightSelectors:output_type -> cloudtrail.GetInsightSelectorsResponse
+	110, // 220: cloudtrail.CloudTrailService.GetQueryResults:output_type -> cloudtrail.GetQueryResultsResponse
+	112, // 221: cloudtrail.CloudTrailService.GetResourcePolicy:output_type -> cloudtrail.GetResourcePolicyResponse
+	114, // 222: cloudtrail.CloudTrailService.GetTrail:output_type -> cloudtrail.GetTrailResponse
+	116, // 223: cloudtrail.CloudTrailService.GetTrailStatus:output_type -> cloudtrail.GetTrailStatusResponse
+	162, // 224: cloudtrail.CloudTrailService.ListChannels:output_type -> cloudtrail.ListChannelsResponse
+	164, // 225: cloudtrail.CloudTrailService.ListDashboards:output_type -> cloudtrail.ListDashboardsResponse
+	166, // 226: cloudtrail.CloudTrailService.ListEventDataStores:output_type -> cloudtrail.ListEventDataStoresResponse
+	168, // 227: cloudtrail.CloudTrailService.ListImportFailures:output_type -> cloudtrail.ListImportFailuresResponse
+	170, // 228: cloudtrail.CloudTrailService.ListImports:output_type -> cloudtrail.ListImportsResponse
+	172, // 229: cloudtrail.CloudTrailService.ListInsightsData:output_type -> cloudtrail.ListInsightsDataResponse
+	174, // 230: cloudtrail.CloudTrailService.ListInsightsMetricData:output_type -> cloudtrail.ListInsightsMetricDataResponse
+	176, // 231: cloudtrail.CloudTrailService.ListPublicKeys:output_type -> cloudtrail.ListPublicKeysResponse
+	178, // 232: cloudtrail.CloudTrailService.ListQueries:output_type -> cloudtrail.ListQueriesResponse
+	180, // 233: cloudtrail.CloudTrailService.ListTags:output_type -> cloudtrail.ListTagsResponse
+	182, // 234: cloudtrail.CloudTrailService.ListTrails:output_type -> cloudtrail.ListTrailsResponse
+	185, // 235: cloudtrail.CloudTrailService.LookupEvents:output_type -> cloudtrail.LookupEventsResponse
+	197, // 236: cloudtrail.CloudTrailService.PutEventConfiguration:output_type -> cloudtrail.PutEventConfigurationResponse
+	199, // 237: cloudtrail.CloudTrailService.PutEventSelectors:output_type -> cloudtrail.PutEventSelectorsResponse
+	201, // 238: cloudtrail.CloudTrailService.PutInsightSelectors:output_type -> cloudtrail.PutInsightSelectorsResponse
+	203, // 239: cloudtrail.CloudTrailService.PutResourcePolicy:output_type -> cloudtrail.PutResourcePolicyResponse
+	211, // 240: cloudtrail.CloudTrailService.RegisterOrganizationDelegatedAdmin:output_type -> cloudtrail.RegisterOrganizationDelegatedAdminResponse
+	213, // 241: cloudtrail.CloudTrailService.RemoveTags:output_type -> cloudtrail.RemoveTagsResponse
+	223, // 242: cloudtrail.CloudTrailService.RestoreEventDataStore:output_type -> cloudtrail.RestoreEventDataStoreResponse
+	227, // 243: cloudtrail.CloudTrailService.SearchSampleQueries:output_type -> cloudtrail.SearchSampleQueriesResponse
+	232, // 244: cloudtrail.CloudTrailService.StartDashboardRefresh:output_type -> cloudtrail.StartDashboardRefreshResponse
+	234, // 245: cloudtrail.CloudTrailService.StartEventDataStoreIngestion:output_type -> cloudtrail.StartEventDataStoreIngestionResponse
+	236, // 246: cloudtrail.CloudTrailService.StartImport:output_type -> cloudtrail.StartImportResponse
+	238, // 247: cloudtrail.CloudTrailService.StartLogging:output_type -> cloudtrail.StartLoggingResponse
+	240, // 248: cloudtrail.CloudTrailService.StartQuery:output_type -> cloudtrail.StartQueryResponse
+	242, // 249: cloudtrail.CloudTrailService.StopEventDataStoreIngestion:output_type -> cloudtrail.StopEventDataStoreIngestionResponse
+	244, // 250: cloudtrail.CloudTrailService.StopImport:output_type -> cloudtrail.StopImportResponse
+	246, // 251: cloudtrail.CloudTrailService.StopLogging:output_type -> cloudtrail.StopLoggingResponse
+	257, // 252: cloudtrail.CloudTrailService.UpdateChannel:output_type -> cloudtrail.UpdateChannelResponse
+	259, // 253: cloudtrail.CloudTrailService.UpdateDashboard:output_type -> cloudtrail.UpdateDashboardResponse
+	261, // 254: cloudtrail.CloudTrailService.UpdateEventDataStore:output_type -> cloudtrail.UpdateEventDataStoreResponse
+	263, // 255: cloudtrail.CloudTrailService.UpdateTrail:output_type -> cloudtrail.UpdateTrailResponse
+	196, // [196:256] is the sub-list for method output_type
+	136, // [136:196] is the sub-list for method input_type
+	136, // [136:136] is the sub-list for extension type_name
+	136, // [136:136] is the sub-list for extension extendee
+	0,   // [0:136] is the sub-list for field type_name
 }
 
 func init() { file_cloudtrail_proto_init() }
@@ -16883,7 +16932,7 @@ func file_cloudtrail_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cloudtrail_proto_rawDesc), len(file_cloudtrail_proto_rawDesc)),
 			NumEnums:      24,
-			NumMessages:   246,
+			NumMessages:   247,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

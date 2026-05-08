@@ -55,27 +55,31 @@ func (s *InstanceProfileStore) Put(profile *InstanceProfile) error {
 
 // Create creates a new IAM instance profile.
 func (s *InstanceProfileStore) Create(instanceProfileName, path, accountId string, tags []types.Tag) (*InstanceProfile, error) {
-	if s.Exists(instanceProfileName) {
-		return nil, NewStoreError("create_instance_profile", ErrInstanceProfileAlreadyExists)
-	}
+	var profile *InstanceProfile
+	err := s.kl.WithLock(instanceProfileName, func() error {
+		if s.Exists(instanceProfileName) {
+			return NewStoreError("create_instance_profile", ErrInstanceProfileAlreadyExists)
+		}
 
-	instanceProfileID, err := GenerateInstanceProfileID()
+		instanceProfileID, err := GenerateInstanceProfileID()
+		if err != nil {
+			return NewStoreError("generate_instance_profile_id", err)
+		}
+
+		profile = &InstanceProfile{
+			ID:                  instanceProfileID,
+			Path:                path,
+			InstanceProfileName: instanceProfileName,
+			AccountId:           accountId,
+			CreateDate:          time.Now().UTC(),
+			Roles:               []string{},
+			Tags:                tags,
+		}
+		profile.Arn = s.arnBuilder.InstanceProfileARN(path, instanceProfileName)
+
+		return s.Put(profile)
+	})
 	if err != nil {
-		return nil, NewStoreError("generate_instance_profile_id", err)
-	}
-
-	profile := &InstanceProfile{
-		ID:                  instanceProfileID,
-		Path:                path,
-		InstanceProfileName: instanceProfileName,
-		AccountId:           accountId,
-		CreateDate:          time.Now().UTC(),
-		Roles:               []string{},
-		Tags:                tags,
-	}
-	profile.Arn = s.arnBuilder.InstanceProfileARN(path, instanceProfileName)
-
-	if err := s.Put(profile); err != nil {
 		return nil, err
 	}
 	return profile, nil

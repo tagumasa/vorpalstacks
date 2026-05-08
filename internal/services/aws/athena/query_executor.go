@@ -71,6 +71,15 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *at
 	result, stats, err := s.executeSQLQuery(reqCtx, ctx, qe.Query, qe.QueryExecutionContext)
 
 	if ctx.Err() != nil {
+		qe.Status.State = athenastore.QueryExecutionStateCancelled
+		qe.Status.CompletionDateTime = time.Now().UTC()
+		qe.Statistics = &athenastore.QueryExecutionStatistics{
+			TotalExecutionTimeInMillis: time.Since(startTime).Milliseconds(),
+			ResultReuseInformation:     &athenastore.ResultReuseInformation{ReusedPreviousResult: false},
+		}
+		if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {
+			logs.Error("Failed to update query execution to CANCELLED after context cancellation", logs.String("id", qe.QueryExecutionId), logs.Err(err))
+		}
 		return
 	}
 
@@ -99,7 +108,7 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, qe *at
 		}
 
 		if qe.ResultConfiguration != nil && qe.ResultConfiguration.OutputLocation != "" {
-			if writeErr := s.writeQueryResultsToS3(ctx, qe.QueryExecutionId, queryResult, qe.ResultConfiguration.OutputLocation); writeErr != nil {
+			if writeErr := s.writeQueryResultsToS3(ctx, reqCtx.GetRegion(), qe.QueryExecutionId, queryResult, qe.ResultConfiguration.OutputLocation); writeErr != nil {
 				logs.Warn("Failed to write query results to S3", logs.Err(writeErr))
 			}
 		}
@@ -164,10 +173,7 @@ func (s *AthenaService) executeSQLQuery(reqCtx *request.RequestContext, ctx cont
 		Dialect: sqlparser.DialectAthena,
 	}
 
-	processedSQL := queryString
-	if strings.Contains(queryString, "::") {
-		processedSQL = s.convertCastOperator(queryString)
-	}
+	processedSQL := sqlparser.NewAthenaPreprocessor().Process(queryString)
 
 	stmt, err := sqlparser.ParseWithOptions(processedSQL, opts)
 	if err != nil {

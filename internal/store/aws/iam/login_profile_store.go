@@ -58,23 +58,27 @@ func (s *LoginProfileStore) Exists(userName string) bool {
 
 // Create creates a new login profile for a user.
 func (s *LoginProfileStore) Create(userName, password string, passwordResetRequired bool) (*LoginProfile, error) {
-	if s.Exists(userName) {
-		return nil, NewStoreError("create_login_profile", ErrLoginProfileExists)
-	}
+	var profile *LoginProfile
+	err := s.kl.WithLock(userName, func() error {
+		if s.Exists(userName) {
+			return NewStoreError("create_login_profile", ErrLoginProfileExists)
+		}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+		if err != nil {
+			return NewStoreError("create_login_profile", err)
+		}
+
+		profile = &LoginProfile{
+			UserName:              userName,
+			PasswordHash:          string(passwordHash),
+			PasswordResetRequired: passwordResetRequired,
+			CreateDate:            time.Now().UTC(),
+		}
+
+		return s.Put(profile)
+	})
 	if err != nil {
-		return nil, NewStoreError("create_login_profile", err)
-	}
-
-	profile := &LoginProfile{
-		UserName:              userName,
-		PasswordHash:          string(passwordHash),
-		PasswordResetRequired: passwordResetRequired,
-		CreateDate:            time.Now().UTC(),
-	}
-
-	if err := s.Put(profile); err != nil {
 		return nil, err
 	}
 	return profile, nil

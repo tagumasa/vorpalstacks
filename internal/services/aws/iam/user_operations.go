@@ -160,78 +160,21 @@ func (s *IAMService) UpdateUser(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
-	user, err := store.Users().Get(userName)
-	if err != nil {
-		return nil, NewNoSuchUserError(userName)
-	}
 
 	newPath := request.GetStringParam(req.Parameters, "NewPath")
-	if newPath != "" {
-		user.Path = newPath
-		user.Arn = store.ARNBuilder().UserARN(newPath, user.UserName)
+	newUserName := request.GetStringParam(req.Parameters, "NewUserName")
+
+	if err := store.RenameUser(userName, newUserName, newPath); err != nil {
+		return nil, err
 	}
 
-	newUserName := request.GetStringParam(req.Parameters, "NewUserName")
-	if newUserName != "" && newUserName != userName {
-		if store.Users().Exists(newUserName) {
-			return nil, NewUserAlreadyExistsError(newUserName)
-		}
-
-		user.UserName = newUserName
-		user.Arn = store.ARNBuilder().UserARN(user.Path, newUserName)
-
-		if err := store.Users().Put(user); err != nil {
-			return nil, err
-		}
-
-		keys, err := store.AccessKeys().ListByUserNameWithSecret(userName)
-		if err != nil {
-			return nil, err
-		}
-		for _, key := range keys {
-			key.UserName = newUserName
-			if err := store.AccessKeys().Put(key); err != nil {
-				return nil, err
-			}
-		}
-
-		if store.LoginProfiles().Exists(userName) {
-			profile, err := store.LoginProfiles().Get(userName)
-			if err != nil {
-				return nil, err
-			}
-			profile.UserName = newUserName
-			if err := store.LoginProfiles().Put(profile); err != nil {
-				return nil, err
-			}
-			if err := store.LoginProfiles().Delete(userName); err != nil {
-				return nil, err
-			}
-		}
-
-		if err := store.InlinePolicies().MigratePrincipal(userName, newUserName, PrincipalTypeUser); err != nil {
-			return nil, err
-		}
-
-		if err := store.AttachedPolicies().MigratePrincipal(userName, newUserName, PrincipalTypeUser); err != nil {
-			return nil, err
-		}
-
-		if err := store.UserGroups().MigrateUser(userName, newUserName); err != nil {
-			return nil, err
-		}
-
-		if err := store.MFADevices().MigrateUser(userName, newUserName); err != nil {
-			return nil, err
-		}
-
-		if err := store.Users().Delete(userName); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := store.Users().Put(user); err != nil {
-			return nil, err
-		}
+	targetName := userName
+	if newUserName != "" {
+		targetName = newUserName
+	}
+	user, err := store.Users().Get(targetName)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{

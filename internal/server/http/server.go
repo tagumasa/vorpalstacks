@@ -263,6 +263,7 @@ func (s *Server) Start() error {
 
 		s.registerRoutes(r)
 
+		s.mainHandler = r
 		h2s := &http2.Server{}
 
 		bindAddr := s.config.BindAddr

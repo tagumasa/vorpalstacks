@@ -41,7 +41,7 @@ func (s *AthenaService) executeCreateDatabase(reqCtx *request.RequestContext, qu
 			ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: []athenastore.ColumnInfo{}},
 		}, &athenastore.QueryExecutionStatistics{
 			QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-			DataScannedInBytes:        00,
+			DataScannedInBytes:        0,
 		}, nil
 }
 
@@ -70,7 +70,7 @@ func (s *AthenaService) executeDropDatabase(reqCtx *request.RequestContext, quer
 			ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: []athenastore.ColumnInfo{}},
 		}, &athenastore.QueryExecutionStatistics{
 			QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-			DataScannedInBytes:        00,
+			DataScannedInBytes:        0,
 		}, nil
 }
 
@@ -201,6 +201,13 @@ func (s *AthenaService) executeInsert(reqCtx *request.RequestContext, queryStrin
 		return nil, nil, err
 	}
 
+	table, tblErr := stores.tableStore.GetTable(catalog, database, tableName)
+	if tblErr == nil && table.Parameters != nil {
+		if location, ok := table.Parameters["LOCATION"]; ok && strings.HasPrefix(location, "s3://") {
+			return nil, nil, fmt.Errorf("INSERT INTO external S3 tables is not supported")
+		}
+	}
+
 	tableData, err := stores.tableDataStore.GetTableData(catalog, database, tableName)
 	if err != nil {
 		return nil, nil, fmt.Errorf("table not found: %w", err)
@@ -240,7 +247,7 @@ func (s *AthenaService) executeInsert(reqCtx *request.RequestContext, queryStrin
 			ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: []athenastore.ColumnInfo{}},
 		}, &athenastore.QueryExecutionStatistics{
 			QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-			DataScannedInBytes:        00,
+			DataScannedInBytes:        0,
 		}, nil
 }
 
@@ -268,7 +275,16 @@ func (s *AthenaService) executeShowDatabases(reqCtx *request.RequestContext, que
 	}
 
 	if catalog == "AwsDataCatalog" {
-		rows = append([]athenastore.Row{{Data: []athenastore.Datum{{VarCharValue: "default"}}}}, rows...)
+		hasDefault := false
+		for _, db := range databases {
+			if db.Name == "default" {
+				hasDefault = true
+				break
+			}
+		}
+		if !hasDefault {
+			rows = append([]athenastore.Row{{Data: []athenastore.Datum{{VarCharValue: "default"}}}}, rows...)
+		}
 	}
 
 	return &athenastore.ResultSet{

@@ -6,8 +6,9 @@ const DEFAULT_MINUTES = 30;
 const MIN_MINUTES = 1;
 const MAX_MINUTES = 480;
 
-/** Read idle timeout in minutes from localStorage. */
-export function getIdleTimeoutMin(): number {
+let cachedMinutes: number | null = null;
+
+function readFromStorage(): number {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return DEFAULT_MINUTES;
   const n = parseInt(raw, 10);
@@ -16,18 +17,19 @@ export function getIdleTimeoutMin(): number {
   return n;
 }
 
-/** Persist idle timeout in minutes to localStorage. */
+export function getIdleTimeoutMin(): number {
+  if (cachedMinutes === null) {
+    cachedMinutes = readFromStorage();
+  }
+  return cachedMinutes;
+}
+
 export function setIdleTimeoutMin(minutes: number): void {
   const clamped = Math.max(MIN_MINUTES, Math.min(MAX_MINUTES, Math.round(minutes)));
   localStorage.setItem(STORAGE_KEY, String(clamped));
+  cachedMinutes = clamped;
 }
 
-/**
- * Hook that monitors user activity and auto-logouts after
- * the configured idle timeout. Installs listeners for
- * mousemove, keydown, scroll, touchstart, and pointerdown.
- * Resets the timer on any activity.
- */
 export function useIdleTimeout() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,11 +51,20 @@ export function useIdleTimeout() {
     }
     resetTimer();
 
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        cachedMinutes = null;
+        resetTimer();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       for (const ev of events) {
         window.removeEventListener(ev, handler);
       }
+      window.removeEventListener("storage", onStorage);
     };
   }, [resetTimer]);
 }

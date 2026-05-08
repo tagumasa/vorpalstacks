@@ -102,29 +102,25 @@ func (s *IAMService) UpdateRole(ctx context.Context, reqCtx *request.RequestCont
 		return nil, ErrNoSuchRole
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	role, err := store.Roles().Get(roleName)
-	if err != nil {
-		return nil, NewNoSuchRoleError(roleName)
-	}
-
-	description := request.GetStringParam(req.Parameters, "Description")
-	if description != "" {
-		role.Description = description
-	}
-
 	maxSessionDuration := request.GetIntParam(req.Parameters, "MaxSessionDuration")
 	if maxSessionDuration > 0 {
 		if maxSessionDuration < 900 || maxSessionDuration > 43200 {
 			return nil, NewInvalidInputError("MaxSessionDuration", "must be between 900 and 43200 seconds")
 		}
-		role.MaxSessionDuration = maxSessionDuration
 	}
 
-	if err := store.Roles().Put(role); err != nil {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	description := request.GetStringParam(req.Parameters, "Description")
+	if err := store.UpdateRoleFields(roleName, description, maxSessionDuration); err != nil {
+		return nil, err
+	}
+
+	role, err := store.Roles().Get(roleName)
+	if err != nil {
 		return nil, err
 	}
 
@@ -145,15 +141,14 @@ func (s *IAMService) UpdateRoleDescription(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	role, err := store.Roles().Get(roleName)
-	if err != nil {
-		return nil, NewNoSuchRoleError(roleName)
-	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
-	role.Description = description
+	if err := store.UpdateRoleFields(roleName, description, 0); err != nil {
+		return nil, err
+	}
 
-	if err := store.Roles().Put(role); err != nil {
+	role, err := store.Roles().Get(roleName)
+	if err != nil {
 		return nil, err
 	}
 

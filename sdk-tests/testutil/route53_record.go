@@ -346,6 +346,19 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 		neZoneID := aws.ToString(createResp.HostedZone.Id)
 
 		neRecord := fmt.Sprintf("keep.%s", neDomain)
+		_, err = tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: aws.String(neZoneID),
+			ChangeBatch: &types.ChangeBatch{
+				Changes: []types.Change{{
+					Action: types.ChangeActionCreate,
+					ResourceRecordSet: &types.ResourceRecordSet{
+						Name: aws.String(neRecord), Type: types.RRTypeA, TTL: aws.Int64(300),
+						ResourceRecords: []types.ResourceRecord{{Value: aws.String("10.0.0.1")}},
+					},
+				}},
+			},
+		})
+		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(neZoneID)})
 		defer tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
 			HostedZoneId: aws.String(neZoneID),
 			ChangeBatch: &types.ChangeBatch{
@@ -356,26 +369,6 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 						ResourceRecords: []types.ResourceRecord{{Value: aws.String("10.0.0.1")}},
 					},
 				}},
-			},
-		})
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(neZoneID)})
-
-		tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(neZoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
-					{
-						Action: types.ChangeActionCreate,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name: aws.String(fmt.Sprintf("keep.%s", neDomain)),
-							Type: types.RRTypeA,
-							TTL:  aws.Int64(300),
-							ResourceRecords: []types.ResourceRecord{
-								{Value: aws.String("10.0.0.1")},
-							},
-						},
-					},
-				},
 			},
 		})
 
@@ -404,6 +397,7 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 		for i := 0; i < 5; i++ {
 			pgRecordNames = append(pgRecordNames, fmt.Sprintf("rec%d.%s", i, pgDomain))
 		}
+		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(pgZoneID)})
 		defer func() {
 			for _, rn := range pgRecordNames {
 				tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
@@ -418,7 +412,6 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 				})
 			}
 		}()
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(pgZoneID)})
 
 		var recordNames []string
 		for i := 0; i < 5; i++ {
@@ -505,6 +498,7 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 		ddZoneID := aws.ToString(cr.HostedZone.Id)
 
 		ddRecord := fmt.Sprintf("dup.%s", ddDomain)
+		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(ddZoneID)})
 		defer tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
 			HostedZoneId: aws.String(ddZoneID),
 			ChangeBatch: &types.ChangeBatch{Changes: []types.Change{{
@@ -515,7 +509,6 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 				},
 			}}},
 		})
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(ddZoneID)})
 
 		_, err = tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
 			HostedZoneId: aws.String(ddZoneID),

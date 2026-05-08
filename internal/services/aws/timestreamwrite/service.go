@@ -1,4 +1,7 @@
 // Package timestreamwrite provides AWS Timestream Write service operations for vorpalstacks.
+// This package is part of the Timestream service family and shares the underlying
+// store with "vorpalstacks/internal/store/aws/timestream" and the sibling package
+// "vorpalstacks/internal/services/aws/timestreamquery".
 package timestreamwrite
 
 import (

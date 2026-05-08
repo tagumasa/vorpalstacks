@@ -129,35 +129,40 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 }
 
 func (s *DynamoDBService) DeleteTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
-	if err != nil {
-		return nil, err
+	tableName := request.GetStringParam(req.Parameters, "TableName")
+	if tableName == "" {
+		return nil, ErrInvalidParameter
 	}
-
-	if table.DeletionProtectionEnabled {
-		return nil, ErrTableDeletionProtected
-	}
-
-	tableName := table.Name
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Items().DeleteAllForTable(tableName); err != nil {
+
+	var deletedTable *dbstore.Table
+
+	err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+		table, err := txn.GetTable(tableName)
+		if err != nil {
+			if dbstore.IsTableNotFound(err) {
+				return ErrTableNotFound
+			}
+			return err
+		}
+		if table.DeletionProtectionEnabled {
+			return ErrTableDeletionProtected
+		}
+		deletedTable = table
+		return txn.DeleteTableCascade(tableName)
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	if err := store.Tables().Delete(tableName); err != nil {
-		return nil, err
-	}
-
-	store.Tables().Tags().Delete(tableName)
-
-	table.Status = dbstore.TableStatusArchived
+	deletedTable.Status = dbstore.TableStatusArchived
 
 	return map[string]interface{}{
-		"TableDescription": s.buildTableDescription(table),
+		"TableDescription": s.buildTableDescription(deletedTable),
 	}, nil
 }
 

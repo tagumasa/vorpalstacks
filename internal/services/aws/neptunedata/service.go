@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,7 +16,10 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/graphengine"
+	"vorpalstacks/internal/eventbus"
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
+	"vorpalstacks/internal/server/listener"
+	"vorpalstacks/internal/server/portalloc"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	"vorpalstacks/internal/utils/timeutils"
@@ -29,10 +33,10 @@ const (
 )
 
 // NeptuneDataService implements the Neptune Data API service, handling Gremlin,
-// OpenCypher, graph statistics, loader, and ML operations. Query state and
-// loader jobs are persisted in Pebble storage via per-region Neptune stores.
-// Graph data is read and written via the GraphReader/GraphWriter interfaces
-// provided by the request context.
+// OpenCypher, graph statistics, loader, and ML operations. Each Neptune DB
+// cluster gets its own isolated graph engine backed by a dedicated Pebble
+// bucket. Query state and loader jobs are persisted in Pebble storage via
+// per-region Neptune stores.
 type NeptuneDataService struct {
 	mu                 sync.RWMutex
 	fastTokens         sync.Map
@@ -41,19 +45,26 @@ type NeptuneDataService struct {
 	autoComputeEnabled bool
 	startTime          time.Time
 	storageManager     *storage.RegionStorageManager
+	region             string
 	stores             sync.Map
 	loaderWg           sync.WaitGroup
 	cancelCleanup      context.CancelFunc
-	graphDB            *graphengine.DB
 	nodeIDMap          map[string]graphengine.NodeID
 	loaderCancelCh     chan struct{}
-	s3Invoker          S3Reader
+	s3Invoker          eventbus.S3Invoker
+	portAllocator      *portalloc.Allocator
+	listenerManager    *listener.Manager
+	dispatcherHandler  func() http.Handler
+	activeEngines      map[string]*clusterEngineEntry
+	enginesMu          sync.RWMutex
+	graphCache         *graphengine.Cache
 }
 
-// S3Reader provides read access to S3 objects for the bulk loader.
-type S3Reader interface {
-	GetObject(ctx context.Context, region, bucket, key string) ([]byte, error)
-	ListObjects(ctx context.Context, region, bucket, prefix string) ([]string, error)
+// clusterEngineEntry holds the graph engine instance for a single DB cluster.
+type clusterEngineEntry struct {
+	db      *graphengine.DB
+	mu      sync.RWMutex
+	stopped bool
 }
 
 // GraphStatistics holds cached graph-level statistics for the property graph.
@@ -71,23 +82,32 @@ type GraphStatistics struct {
 // NewNeptuneDataService creates a new service instance. Per-region stores are
 // created lazily via the RegionStorageManager. A background goroutine is
 // started to periodically purge expired query states from Pebble storage.
-func NewNeptuneDataService() *NeptuneDataService {
+func NewNeptuneDataService(allocator *portalloc.Allocator) *NeptuneDataService {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &NeptuneDataService{
 		autoComputeEnabled: true,
 		startTime:          time.Now(),
 		cancelCleanup:      cancel,
+		portAllocator:      allocator,
+		activeEngines:      make(map[string]*clusterEngineEntry),
 	}
 	go s.cleanupExpiredQueries(ctx)
 	return s
 }
 
-// Close stops the background query-state cleanup goroutine.
+// Close stops the background query-state cleanup goroutine and closes all
+// per-cluster graph engines.
 func (s *NeptuneDataService) Close() {
 	if s.cancelCleanup != nil {
 		s.cancelCleanup()
 	}
 	s.loaderWg.Wait()
+	s.enginesMu.Lock()
+	for id, entry := range s.activeEngines {
+		entry.db.Close()
+		delete(s.activeEngines, id)
+	}
+	s.enginesMu.Unlock()
 }
 
 // cleanupExpiredQueries periodically scans all per-region stores and deletes
@@ -205,17 +225,33 @@ func (s *NeptuneDataService) purgeExpiredFastTokens() {
 // caching and admin console access.
 func (s *NeptuneDataService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+	if regions := sm.GetActiveRegions(); len(regions) > 0 {
+		s.region = regions[0]
+	}
 }
 
-// SetGraphDB injects the graph database instance for bulk loader jobs
-// that run outside of a request context.
-func (s *NeptuneDataService) SetGraphDB(db *graphengine.DB) {
-	s.graphDB = db
+// SetGraphCache injects a shared graph node/edge cache used by all per-cluster
+// engines. Must be called before OpenClusterEngine or RestoreEngines.
+func (s *NeptuneDataService) SetGraphCache(cache *graphengine.Cache) {
+	s.graphCache = cache
+}
+
+// SetListenerManager injects the listener manager for dynamic per-cluster
+// listener registration. Must be called before OpenClusterEngine or RestoreEngines.
+func (s *NeptuneDataService) SetListenerManager(lm *listener.Manager) {
+	s.listenerManager = lm
+}
+
+// SetDispatcherHandler sets a lazy resolver for the main HTTP dispatcher.
+// The handler is resolved at request time so listeners can be registered
+// before the main server has started.
+func (s *NeptuneDataService) SetDispatcherHandler(fn func() http.Handler) {
+	s.dispatcherHandler = fn
 }
 
 // SetS3Invoker injects the S3 reader for bulk loader jobs that load data
 // from S3 sources.
-func (s *NeptuneDataService) SetS3Invoker(invoker S3Reader) {
+func (s *NeptuneDataService) SetS3Invoker(invoker eventbus.S3Invoker) {
 	s.s3Invoker = invoker
 }
 
@@ -243,6 +279,209 @@ func (s *NeptuneDataService) GetStoreForRegion(region string) (*neptunestore.Nep
 func (s *NeptuneDataService) store(reqCtx *request.RequestContext) (*neptunestore.NeptuneStore, error) {
 	region := reqCtx.GetRegion()
 	return s.GetStoreForRegion(region)
+}
+
+// clusterBucket returns a dedicated Pebble bucket for the given cluster,
+// following the same bucketBackend pattern used by NeptuneGraph.
+func (s *NeptuneDataService) clusterBucket(clusterID string) (storage.BatchBucket, error) {
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("storage manager not set")
+	}
+	rs, err := s.storageManager.GetStorage(s.region)
+	if err != nil {
+		return nil, err
+	}
+	bkt := rs.Bucket("neptunedata:cluster:" + clusterID)
+	bb, ok := bkt.(storage.BatchBucket)
+	if !ok {
+		return nil, fmt.Errorf("storage bucket does not support batch operations")
+	}
+	return bb, nil
+}
+
+// OpenClusterEngine creates and opens a new isolated graph engine for the
+// given cluster. The engine is stored in the activeEngines map. Returns the
+// dynamically allocated port number.
+func (s *NeptuneDataService) OpenClusterEngine(clusterID string) (int, error) {
+	bucket, err := s.clusterBucket(clusterID)
+	if err != nil {
+		return 0, fmt.Errorf("neptunedata: failed to get cluster bucket: %w", err)
+	}
+
+	opts := graphengine.DefaultOptions()
+	if s.graphCache != nil {
+		opts.SharedCache = s.graphCache
+	}
+	db, err := graphengine.New(bucket, opts)
+	if err != nil {
+		return 0, fmt.Errorf("neptunedata: failed to open cluster engine: %w", err)
+	}
+
+	port, err := s.portAllocator.Get("neptunedata", clusterID)
+	if err != nil {
+		db.Close()
+		return 0, fmt.Errorf("neptunedata: failed to allocate port: %w", err)
+	}
+
+	s.enginesMu.Lock()
+	entry := &clusterEngineEntry{db: db}
+	s.activeEngines[clusterID] = entry
+	s.enginesMu.Unlock()
+
+	if s.listenerManager != nil && s.dispatcherHandler != nil {
+		s.registerClusterListener(clusterID, entry)
+	}
+
+	logs.Info("opened cluster engine", logs.String("cluster", clusterID), logs.Int("port", port))
+	return port, nil
+}
+
+// CloseClusterEngine closes the graph engine for the given cluster and
+// releases its dynamically allocated port.
+func (s *NeptuneDataService) CloseClusterEngine(clusterID string) error {
+	s.enginesMu.Lock()
+	entry, ok := s.activeEngines[clusterID]
+	if ok {
+		delete(s.activeEngines, clusterID)
+	}
+	s.enginesMu.Unlock()
+
+	if !ok {
+		return nil
+	}
+
+	entry.db.Close()
+
+	if s.listenerManager != nil {
+		s.listenerManager.Unregister("neptune_cluster_" + clusterID)
+	}
+
+	if err := s.portAllocator.Release("neptunedata", clusterID); err != nil {
+		logs.Warn("failed to release cluster port", logs.String("cluster", clusterID), logs.Err(err))
+	}
+
+	logs.Info("closed cluster engine", logs.String("cluster", clusterID))
+	return nil
+}
+
+// GetClusterEngine returns the graph engine for the given cluster, or nil if
+// no engine is active.
+// GetClusterEngine returns the graph engine for the specified cluster, or nil if
+// the cluster has no active engine.
+func (s *NeptuneDataService) GetClusterEngine(clusterID string) *graphengine.DB {
+	s.enginesMu.RLock()
+	entry, ok := s.activeEngines[clusterID]
+	s.enginesMu.RUnlock()
+	if !ok {
+		return nil
+	}
+	return entry.db
+}
+
+// GetClusterPort returns the allocated listener port for a cluster.
+func (s *NeptuneDataService) GetClusterPort(clusterID string) (int, error) {
+	return s.portAllocator.Get("neptunedata", clusterID)
+}
+
+// RestoreEngines reopens graph engines for all existing clusters after a
+// service restart. Reads cluster IDs from the Neptune store.
+func (s *NeptuneDataService) RestoreEngines() {
+	if s.storageManager == nil {
+		return
+	}
+	store, err := s.GetStoreForRegion(s.region)
+	if err != nil {
+		logs.Warn("failed to get store for engine restore", logs.Err(err))
+		return
+	}
+
+	clusters, err := store.ListClusters()
+	if err != nil {
+		logs.Warn("failed to list clusters for engine restore", logs.Err(err))
+		return
+	}
+
+	for _, c := range clusters {
+		if c.Status != "available" {
+			continue
+		}
+		if _, err := s.OpenClusterEngine(c.DBClusterIdentifier); err != nil {
+			logs.Warn("failed to restore cluster engine", logs.String("cluster", c.DBClusterIdentifier), logs.Err(err))
+		}
+	}
+}
+
+// DataPlaneHandler returns an HTTP handler for the specified cluster's data
+// plane. The handler injects the cluster's graph engine into the HTTP context
+// before forwarding to the main dispatcher, enabling per-cluster isolation on
+// dedicated listener ports.
+func (s *NeptuneDataService) DataPlaneHandler(clusterID string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		db := s.GetClusterEngine(clusterID)
+		if db == nil {
+			http.Error(w, fmt.Sprintf("cluster %s engine not available", clusterID), http.StatusServiceUnavailable)
+			return
+		}
+		if s.dispatcherHandler == nil {
+			http.Error(w, "dispatcher not available", http.StatusServiceUnavailable)
+			return
+		}
+		handler := s.dispatcherHandler()
+		if handler == nil {
+			http.Error(w, "dispatcher not available", http.StatusServiceUnavailable)
+			return
+		}
+		ctx := request.WithGraphDBOverride(r.Context(), db)
+		handler.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// RegisterClusterListeners registers HTTP listeners for all active cluster
+// engines. Must be called after the main HTTP server has started (so that
+// MainHandler is available) and after RestoreEngines has restored existing
+// engines. Called from App.Run() or equivalent.
+func (s *NeptuneDataService) RegisterClusterListeners() {
+	if s.listenerManager == nil {
+		return
+	}
+	s.enginesMu.RLock()
+	defer s.enginesMu.RUnlock()
+	for clusterID, entry := range s.activeEngines {
+		s.registerClusterListener(clusterID, entry)
+	}
+}
+
+// RegisterClusterListener registers an HTTP listener for a single cluster.
+// Called during CreateDBCluster after the server is running.
+func (s *NeptuneDataService) RegisterClusterListener(clusterID string) {
+	if s.listenerManager == nil {
+		return
+	}
+	s.enginesMu.RLock()
+	entry, ok := s.activeEngines[clusterID]
+	s.enginesMu.RUnlock()
+	if !ok {
+		return
+	}
+	s.registerClusterListener(clusterID, entry)
+}
+
+func (s *NeptuneDataService) registerClusterListener(clusterID string, entry *clusterEngineEntry) {
+	listenerName := "neptune_cluster_" + clusterID
+	if s.listenerManager.IsRunning(listenerName) {
+		return
+	}
+	port, err := s.portAllocator.Get("neptunedata", clusterID)
+	if err != nil {
+		logs.Warn("failed to get port for cluster listener", logs.String("cluster", clusterID), logs.Err(err))
+		return
+	}
+	s.listenerManager.Register(listener.ListenerConfig{
+		Name:        listenerName,
+		DefaultPort: port,
+		Handler:     s.DataPlaneHandler(clusterID),
+	})
+	logs.Info("registered cluster listener", logs.String("cluster", clusterID), logs.Int("port", port))
 }
 
 // RegisterHandlers registers all Neptune Data API operation handlers with the
@@ -463,16 +702,10 @@ func (s *NeptuneDataService) refreshStatistics(reqCtx *request.RequestContext) {
 	var region string
 
 	if reqCtx != nil {
-		if readerAny := reqCtx.GraphReader(); readerAny != nil {
-			if r, ok := readerAny.(graphengine.GraphReader); ok {
-				reader = r
-			}
+		if r := reqCtx.GraphReader(); r != nil {
+			reader = r
 		}
 		region = reqCtx.GetRegion()
-	}
-
-	if reader == nil && s.graphDB != nil {
-		reader = s.graphDB
 	}
 
 	if reader == nil {

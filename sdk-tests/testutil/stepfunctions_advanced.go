@@ -194,7 +194,8 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 		}
 
 		var execStatus string
-		for i := 0; i < 20; i++ {
+		time.Sleep(200 * time.Millisecond)
+		for i := 0; i < 30; i++ {
 			desc, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
 				ExecutionArn: execResp.ExecutionArn,
 			})
@@ -207,8 +208,8 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
-		if execStatus == "RUNNING" {
-			return fmt.Errorf("execution still RUNNING after 2s, cannot redrive")
+		if execStatus == "RUNNING" || execStatus == "" {
+			return fmt.Errorf("execution status %q after polling, cannot redrive", execStatus)
 		}
 
 		redriveResp, err := tc.client.RedriveExecution(tc.ctx, &sfn.RedriveExecutionInput{

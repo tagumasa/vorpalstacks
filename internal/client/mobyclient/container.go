@@ -374,6 +374,18 @@ func (c *Client) CreateContainerFromConfig(ctx context.Context, cfg AdvancedCont
 		}
 	}
 
+	if cfg.PullImage {
+		exists, err := c.ImageExists(ctx, cfg.Image)
+		if err != nil {
+			c.logger.Warn("Failed to check image existence, attempting pull", logs.Err(err))
+		}
+		if !exists || err != nil {
+			if pullErr := c.PullImage(ctx, cfg.Image); pullErr != nil {
+				return nil, fmt.Errorf("failed to pull image %s: %w", cfg.Image, pullErr)
+			}
+		}
+	}
+
 	options := client.ContainerCreateOptions{
 		Config:           containerCfg,
 		HostConfig:       hostCfg,

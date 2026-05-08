@@ -75,25 +75,29 @@ func (s *GroupStore) List(pathPrefix, marker string, maxItems int) (*GroupListRe
 
 // Create creates a new IAM group.
 func (s *GroupStore) Create(groupName, path, accountId string) (*Group, error) {
-	if s.Exists(groupName) {
-		return nil, NewStoreError("create_group", ErrGroupAlreadyExists)
-	}
+	var group *Group
+	err := s.kl.WithLock(groupName, func() error {
+		if s.Exists(groupName) {
+			return NewStoreError("create_group", ErrGroupAlreadyExists)
+		}
 
-	groupID, err := GenerateGroupID()
+		groupID, err := GenerateGroupID()
+		if err != nil {
+			return NewStoreError("generate_group_id", err)
+		}
+
+		group = &Group{
+			ID:         groupID,
+			Path:       path,
+			GroupName:  groupName,
+			AccountId:  accountId,
+			CreateDate: time.Now().UTC(),
+		}
+		group.Arn = s.arnBuilder.GroupARN(path, groupName)
+
+		return s.Put(group)
+	})
 	if err != nil {
-		return nil, NewStoreError("generate_group_id", err)
-	}
-
-	group := &Group{
-		ID:         groupID,
-		Path:       path,
-		GroupName:  groupName,
-		AccountId:  accountId,
-		CreateDate: time.Now().UTC(),
-	}
-	group.Arn = s.arnBuilder.GroupARN(path, groupName)
-
-	if err := s.Put(group); err != nil {
 		return nil, err
 	}
 	return group, nil

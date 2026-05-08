@@ -15,7 +15,6 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/core/storage/graphengine"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/store/api"
@@ -48,7 +47,6 @@ type Dispatcher struct {
 	authorizer                Authorizer
 	authorizationEnabled      bool
 	accountID                 string
-	graphDB                   *graphengine.DB
 	cloudTrailRecorderFactory CloudTrailRecorderFactory
 	principalResolver         eventbus.IAMPrincipalResolver
 }
@@ -101,8 +99,8 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 	httpCtx := r.Context()
 	reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
 	reqCtx.SetIAMStore(d.iamStore, d.iamStore.Roles())
-	if d.graphDB != nil {
-		reqCtx.SetGraphDBManager(d.graphDB, d.graphDB)
+	if graphDB := request.GraphDBOverride(httpCtx); graphDB != nil {
+		reqCtx.SetGraphDBManager(graphDB, graphDB)
 	}
 
 	if d.authorizationEnabled && d.authorizer != nil {
@@ -243,11 +241,6 @@ func (d *Dispatcher) DispatchWithContext(w http.ResponseWriter, r *http.Request,
 	d.Dispatch(w, r, dispatchCtx.ServiceName, nil)
 }
 
-// SetGraphDB injects the graph database instance into the dispatcher for query support.
-func (d *Dispatcher) SetGraphDB(db *graphengine.DB) {
-	d.graphDB = db
-}
-
 // DispatchClassified handles an incoming HTTP request that has already been
 // classified by the request classifier. It converts the ClassifiedRequest to
 // a ParsedRequest and routes it through the standard dispatch pipeline,
@@ -312,4 +305,9 @@ func (d *Dispatcher) SetCloudTrailRecorderFactory(factory CloudTrailRecorderFact
 // SetPrincipalResolver sets the IAM principal resolver for audit logging.
 func (d *Dispatcher) SetPrincipalResolver(resolver eventbus.IAMPrincipalResolver) {
 	d.principalResolver = resolver
+}
+
+// PrincipalResolver returns the IAM principal resolver.
+func (d *Dispatcher) PrincipalResolver() eventbus.IAMPrincipalResolver {
+	return d.principalResolver
 }

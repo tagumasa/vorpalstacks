@@ -12,9 +12,9 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
 // cloudfrontStores holds the various CloudFront stores.
@@ -36,6 +36,7 @@ type CloudFrontService struct {
 	stores              sync.Map // global (no region) — single cached instance
 	seedManagedPolicies sync.Once
 	distributionServer  *DistributionServer
+	wafInvoker          eventbus.WAFInvoker
 }
 
 // NewCloudFrontService creates a new CloudFront service instance.
@@ -93,47 +94,9 @@ func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontSt
 	})
 }
 
-var globalWAFAssocKey struct{}
-
-func (s *CloudFrontService) wafAssociationStore(reqCtx *request.RequestContext) (*wafstore.WebACLAssociationStore, error) {
-	if cached, ok := s.stores.Load(globalWAFAssocKey); ok {
-		if typed, ok := cached.(*wafstore.WebACLAssociationStore); ok {
-			return typed, nil
-		}
-	}
-	storage, err := reqCtx.GetGlobalStorage()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get global storage for WAF association: %w", err)
-	}
-	store := wafstore.NewWebACLAssociationStore(storage)
-	if actual, loaded := s.stores.LoadOrStore(globalWAFAssocKey, store); loaded {
-		if typed, ok := actual.(*wafstore.WebACLAssociationStore); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
-}
-
-func (s *CloudFrontService) syncWAFAssociation(reqCtx *request.RequestContext, webACLId, distributionArn string) error {
-	if webACLId == "" {
-		return nil
-	}
-	assocStore, err := s.wafAssociationStore(reqCtx)
-	if err != nil {
-		return err
-	}
-	return assocStore.Associate(webACLId, distributionArn)
-}
-
-func (s *CloudFrontService) removeWAFAssociation(reqCtx *request.RequestContext, webACLId, distributionArn string) error {
-	if webACLId == "" {
-		return nil
-	}
-	assocStore, err := s.wafAssociationStore(reqCtx)
-	if err != nil {
-		return err
-	}
-	return assocStore.Disassociate(webACLId, distributionArn)
+// SetWAFInvoker injects the WAF invoker for cross-service WebACL association.
+func (s *CloudFrontService) SetWAFInvoker(invoker eventbus.WAFInvoker) {
+	s.wafInvoker = invoker
 }
 
 // AccountId returns the account ID.

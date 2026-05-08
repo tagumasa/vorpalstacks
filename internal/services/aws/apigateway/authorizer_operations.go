@@ -247,10 +247,3 @@ func (s *APIGatewayService) toAuthorizerResponse(a *store.Authorizer) map[string
 
 	return response
 }
-
-func toApiGatewayError(err error) *ApiGatewayError {
-	if err == nil {
-		return nil
-	}
-	return GetApiGatewayError(err)
-}

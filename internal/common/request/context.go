@@ -6,7 +6,22 @@ import (
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/core/storage/graphengine"
 )
+
+type graphDBOverrideKey struct{}
+
+// WithGraphDBOverride stores a graph engine override in the context.
+// The dispatcher picks this up and injects it into the RequestContext.
+func WithGraphDBOverride(ctx context.Context, db *graphengine.DB) context.Context {
+	return context.WithValue(ctx, graphDBOverrideKey{}, db)
+}
+
+// GraphDBOverride retrieves the graph engine override from context, if any.
+func GraphDBOverride(ctx context.Context) *graphengine.DB {
+	val, _ := ctx.Value(graphDBOverrideKey{}).(*graphengine.DB)
+	return val
+}
 
 // AuditRecorder records audit events for CloudTrail.
 type AuditRecorder interface {
@@ -40,8 +55,8 @@ type RequestContext struct {
 	SourceIP       string
 	UserAgent      string
 	auditRecorder  AuditRecorder
-	graphReader    any
-	graphWriter    any
+	graphReader    graphengine.GraphReader
+	graphWriter    graphengine.GraphWriter
 }
 
 // NewRequestContext creates a new RequestContext with the given parameters.
@@ -140,21 +155,18 @@ func (c *RequestContext) GetIAMValidator() *iam.IAMValidator {
 }
 
 // SetGraphDBManager sets the graph database reader and writer for
-// NeptuneGraph queries. The caller (dispatcher) extracts these from
-// the concrete *graphengine.DB at injection time.
-func (c *RequestContext) SetGraphDBManager(reader, writer any) {
+// NeptuneGraph queries, extracted from the concrete *graphengine.DB.
+func (c *RequestContext) SetGraphDBManager(reader graphengine.GraphReader, writer graphengine.GraphWriter) {
 	c.graphReader = reader
 	c.graphWriter = writer
 }
 
 // GraphReader returns the graph database reader for NeptuneGraph queries.
-// Callers should type-assert to graphengine.GraphReader.
-func (c *RequestContext) GraphReader() any {
+func (c *RequestContext) GraphReader() graphengine.GraphReader {
 	return c.graphReader
 }
 
 // GraphWriter returns the graph database writer for NeptuneGraph mutations.
-// Callers should type-assert to graphengine.GraphWriter or graphengine.GraphStore.
-func (c *RequestContext) GraphWriter() any {
+func (c *RequestContext) GraphWriter() graphengine.GraphWriter {
 	return c.graphWriter
 }

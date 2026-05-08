@@ -3,22 +3,15 @@ package athena
 
 import (
 	"context"
-	"io"
+	"os"
 	"sync"
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/store/aws/athena"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
-
-// S3ObjectStore defines the interface for s3 object operations.
-type S3ObjectStore interface {
-	Get(ctx context.Context, bucket, key string) (io.ReadCloser, *s3store.Object, error)
-	Put(ctx context.Context, bucket, key string, reader io.Reader, contentType string, metadata map[string]string) (*s3store.Object, error)
-	List(bucket, prefix, delimiter, marker string, maxKeys int) (*s3store.ObjectListResult, error)
-}
 
 // athenaStores holds the various Athena stores.
 type athenaStores struct {
@@ -33,33 +26,36 @@ type athenaStores struct {
 	tableDataStore         *athena.TableDataStore
 }
 
-// Service provides AWS Athena operations.
+// AthenaService provides AWS Athena operations.
 type AthenaService struct {
-	accountID     string
-	s3ObjectStore S3ObjectStore
-	asyncWg       sync.WaitGroup
-	cancelMu      sync.Mutex
-	cancelFuncs   map[string]context.CancelFunc
-	stores        sync.Map // region → *athenaStores
-	cleanupOnce   sync.Once
+	accountID      string
+	s3Invoker      eventbus.S3Invoker
+	region         string
+	testMode       bool
+	asyncWg        sync.WaitGroup
+	cancelMu       sync.Mutex
+	cancelFuncs    map[string]context.CancelFunc
+	stores         sync.Map
+	regionCleanups sync.Map
 }
 
-// NewService creates a new Athena service instance.
+// NewAthenaService creates a new Athena service instance.
 func NewAthenaService(accountID string) *AthenaService {
 	return &AthenaService{
 		accountID:   accountID,
 		cancelFuncs: make(map[string]context.CancelFunc),
+		testMode:    os.Getenv("TEST_MODE") == "true",
 	}
 }
 
-// NewServiceWithS3 creates a new Athena service with s3 object store.
-func NewAthenaServiceWithS3(accountID string, s3ObjectStore S3ObjectStore) *AthenaService {
-	return &AthenaService{
-		accountID:     accountID,
-		s3ObjectStore: s3ObjectStore,
-		asyncWg:       sync.WaitGroup{},
-		cancelFuncs:   make(map[string]context.CancelFunc),
-	}
+// SetS3Invoker injects the S3 invoker for cross-service S3 operations.
+func (s *AthenaService) SetS3Invoker(invoker eventbus.S3Invoker) {
+	s.s3Invoker = invoker
+}
+
+// SetRegion sets the default region for S3 operations.
+func (s *AthenaService) SetRegion(region string) {
+	s.region = region
 }
 
 func (s *AthenaService) setCancelFunc(id string, fn context.CancelFunc) {
@@ -97,7 +93,8 @@ func (s *AthenaService) store(reqCtx *request.RequestContext) (*athenaStores, er
 	if err != nil {
 		return nil, err
 	}
-	s.cleanupOnce.Do(func() {
+	onceVal, _ := s.regionCleanups.LoadOrStore(reqCtx.GetRegion(), &sync.Once{})
+	onceVal.(*sync.Once).Do(func() {
 		s.cleanupExpiredQueryExecutions(st)
 	})
 	return st, nil

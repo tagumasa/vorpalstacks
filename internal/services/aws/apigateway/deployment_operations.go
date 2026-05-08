@@ -69,7 +69,7 @@ func (s *APIGatewayService) GetDeployment(ctx context.Context, reqCtx *request.R
 	}
 	deployment, err := stores.restApis.GetDeployment(apiId, deploymentId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	return s.toDeploymentResponse(deployment), nil
@@ -98,7 +98,7 @@ func (s *APIGatewayService) DeleteDeployment(ctx context.Context, reqCtx *reques
 		if errors.Is(err, store.ErrDeploymentInUse) {
 			return nil, NewConflictException("Deployment is in use by a stage")
 		}
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -263,7 +263,7 @@ func (s *APIGatewayService) UpdateStage(ctx context.Context, reqCtx *request.Req
 	}
 	stage, err := stores.restApis.GetStage(apiId, stageName)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	patchOps, ok := req.Parameters["patchOperations"].([]interface{})

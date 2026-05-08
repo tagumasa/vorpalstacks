@@ -12,36 +12,38 @@ import (
 // GetObject implements the eventbus.S3Invoker interface. It retrieves the
 // content of an object by region, bucket and key, returning the full byte
 // content.
-func (s *S3Service) GetObject(ctx context.Context, region, bucket, key string) ([]byte, error) {
+func (s *S3Service) GetObject(ctx context.Context, region, bucket, key string, maxBytes int64) ([]byte, error) {
 	objs := s.s3Store.Objects(region)
 	reader, _, err := objs.Get(ctx, bucket, key)
 	if err != nil {
 		return nil, fmt.Errorf("s3 GetObject %s/%s: %w", bucket, key, err)
 	}
 	defer reader.Close()
-	data, err := io.ReadAll(reader)
+	if maxBytes <= 0 {
+		maxBytes = 5 * 1024 * 1024 * 1024
+	}
+	data, err := io.ReadAll(io.LimitReader(reader, maxBytes))
 	if err != nil {
 		return nil, fmt.Errorf("s3 GetObject read %s/%s: %w", bucket, key, err)
 	}
 	return data, nil
 }
 
-// PutObject implements the eventbus.S3Invoker interface. It stores the given
-// byte data as an object in the specified region, bucket and key.
-func (s *S3Service) PutObject(ctx context.Context, region, bucket, key string, data []byte) error {
+func (s *S3Service) PutObject(ctx context.Context, region, bucket, key string, data []byte, contentType string) error {
 	objs := s.s3Store.Objects(region)
-	_, err := objs.Put(ctx, bucket, key, bytes.NewReader(data), "application/octet-stream", nil)
+	_, err := objs.Put(ctx, bucket, key, bytes.NewReader(data), contentType, nil)
 	if err != nil {
 		return fmt.Errorf("s3 PutObject %s/%s: %w", bucket, key, err)
 	}
 	return nil
 }
 
-// ListObjects implements the eventbus.S3Invoker interface. It returns object
-// keys under the given region, bucket and prefix.
-func (s *S3Service) ListObjects(ctx context.Context, region, bucket, prefix string) ([]string, error) {
+func (s *S3Service) ListObjects(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]string, error) {
 	objs := s.s3Store.Objects(region)
-	result, err := objs.List(bucket, prefix, "", "", 1000)
+	if maxKeys <= 0 {
+		maxKeys = 1000
+	}
+	result, err := objs.List(bucket, prefix, "", "", maxKeys)
 	if err != nil {
 		return nil, fmt.Errorf("s3 ListObjects %s/%s: %w", bucket, prefix, err)
 	}

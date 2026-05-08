@@ -31,24 +31,29 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 		if tc.keyID == "" {
 			return fmt.Errorf("key ID not available")
 		}
-		resp, err := tc.client.ListKeys(tc.ctx, &kms.ListKeysInput{})
-		if err != nil {
-			return err
-		}
-		found := false
-		for _, k := range resp.Keys {
-			if aws.ToString(k.KeyId) == tc.keyID {
-				found = true
-				if k.KeyArn == nil || *k.KeyArn == "" {
-					return fmt.Errorf("key ARN is nil or empty")
+		var marker *string
+		for page := 0; page < 100; page++ {
+			resp, err := tc.client.ListKeys(tc.ctx, &kms.ListKeysInput{
+				Marker: marker,
+				Limit:  aws.Int32(1000),
+			})
+			if err != nil {
+				return err
+			}
+			for _, k := range resp.Keys {
+				if aws.ToString(k.KeyId) == tc.keyID {
+					if k.KeyArn == nil || *k.KeyArn == "" {
+						return fmt.Errorf("key ARN is nil or empty")
+					}
+					return nil
 				}
+			}
+			if resp.NextMarker == nil || !resp.Truncated {
 				break
 			}
+			marker = resp.NextMarker
 		}
-		if !found {
-			return fmt.Errorf("created key %q not found in ListKeys", tc.keyID)
-		}
-		return nil
+		return fmt.Errorf("created key %q not found in ListKeys", tc.keyID)
 	}))
 
 	results = append(results, r.RunTest("kms", "DescribeKey_NonExistentKey", func() error {

@@ -114,6 +114,7 @@ type DynamoDBTxnInterface interface {
 	QueryByLSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error)
 	Scan(tableName string, fn func(item *Item) error) error
 	ScanByPartitionKey(tableName, partitionKeyValue string, fn func(item *Item) error) error
+	DeleteTableCascade(name string) error
 }
 
 // DynamoDBStoreInterface defines access to all DynamoDB stores.

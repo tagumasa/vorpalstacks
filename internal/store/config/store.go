@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
@@ -16,6 +17,7 @@ import (
 type Store struct {
 	*common.BaseStore
 	defaults map[string]ConfigEntry
+	initOnce sync.Once
 }
 
 func NewStore(store storage.BasicStorage) *Store {
@@ -28,8 +30,10 @@ func NewStore(store storage.BasicStorage) *Store {
 // Initialise seeds default values for keys not yet in Pebble, then applies
 // environment variable overrides. Must be called once after NewStore.
 func (s *Store) Initialise() {
-	s.seedDefaults()
-	s.applyEnvOverrides()
+	s.initOnce.Do(func() {
+		s.seedDefaults()
+		s.applyEnvOverrides()
+	})
 }
 
 // seedDefaults writes every default key that does not already exist in Pebble.
@@ -65,9 +69,27 @@ func (s *Store) applyEnvOverrides() {
 		var value interface{}
 		switch def.Type {
 		case ConfigTypeBool:
-			value, _ = strconv.ParseBool(envVal)
+			parsed, err := strconv.ParseBool(envVal)
+			if err != nil {
+				logs.Warn("applyEnvOverrides: invalid bool value, skipping",
+					logs.String("key", key),
+					logs.String("env", def.EnvVar),
+					logs.String("value", envVal),
+				)
+				continue
+			}
+			value = parsed
 		case ConfigTypeInt, ConfigTypePort:
-			value, _ = strconv.Atoi(envVal)
+			parsed, err := strconv.Atoi(envVal)
+			if err != nil {
+				logs.Warn("applyEnvOverrides: invalid int value, skipping",
+					logs.String("key", key),
+					logs.String("env", def.EnvVar),
+					logs.String("value", envVal),
+				)
+				continue
+			}
+			value = parsed
 		default:
 			value = envVal
 		}

@@ -83,6 +83,7 @@ type Server struct {
 	shutdownHooks     []ShutdownHook
 	shutdownHooksMu   sync.Mutex
 	listenerManager   *listener.Manager
+	mainHandler       http.Handler
 }
 
 // Classifier returns the request classifier.
@@ -91,6 +92,12 @@ type Server struct {
 //   - *classifier.Classifier: The request classifier
 func (s *Server) Classifier() *classifier.Classifier {
 	return s.classifier
+}
+
+// MainHandler returns the main HTTP handler (chi router) for use by
+// secondary listeners that need to forward requests to the main dispatcher.
+func (s *Server) MainHandler() http.Handler {
+	return s.mainHandler
 }
 
 // ServiceStore returns the service store.

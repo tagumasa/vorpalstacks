@@ -244,15 +244,6 @@ func loadDefaults() map[string]ConfigEntry {
 			EnvVar:      "VS_PORT_APPSYNC_EVENTS",
 			Category:    CategoryPorts,
 		},
-		"ports.neptune": {
-			Key:         "ports.neptune",
-			Value:       serviceports.Neptune,
-			Type:        ConfigTypePort,
-			Description: "Neptune DB cluster default port",
-			ReadOnly:    false,
-			EnvVar:      "VS_PORT_NEPTUNE",
-			Category:    CategoryPorts,
-		},
 		"ports.route53_dns": {
 			Key:         "ports.route53_dns",
 			Value:       serviceports.Route53DNS,
@@ -297,7 +288,6 @@ func loadDefaults() map[string]ConfigEntry {
 		"ports.cloudfront.mode":     {Key: "ports.cloudfront.mode", Value: "fqdn", Type: ConfigTypeString, Description: "CloudFront port mode", ReadOnly: false, Category: CategoryPorts},
 		"ports.lambda_url.mode":     {Key: "ports.lambda_url.mode", Value: "fqdn", Type: ConfigTypeString, Description: "Lambda URL port mode", ReadOnly: false, Category: CategoryPorts},
 		"ports.appsync_events.mode": {Key: "ports.appsync_events.mode", Value: "fqdn", Type: ConfigTypeString, Description: "AppSync Events port mode", ReadOnly: false, Category: CategoryPorts},
-		"ports.neptune.mode":        {Key: "ports.neptune.mode", Value: "fqdn", Type: ConfigTypeString, Description: "Neptune port mode", ReadOnly: false, Category: CategoryPorts},
 
 		// HTTP Configuration (CORS)
 		"http.cors_allowed_origins": {

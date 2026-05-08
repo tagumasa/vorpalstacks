@@ -61,19 +61,19 @@ func (s *NeptuneDataService) ExecuteOpenCypherQuery(ctx context.Context, reqCtx 
 		return nil, malformedQuery(err.Error())
 	}
 
-	reader, ok := reqCtx.GraphReader().(graphengine.GraphReader)
-	if !ok {
+	reader := reqCtx.GraphReader()
+	if reader == nil {
 		return nil, internalFailure("graph reader not available")
 	}
-	writer, ok := reqCtx.GraphWriter().(graphengine.GraphWriter)
-	if !ok {
+	writer := reqCtx.GraphWriter()
+	if writer == nil {
 		return nil, internalFailure("graph writer not available")
 	}
 
 	var result *cypherparser.CypherResult
 	switch {
 	case parsed.DDL != nil:
-		ddl, ok := reqCtx.GraphReader().(graphengine.GraphDDL)
+		ddl, ok := reader.(graphengine.GraphDDL)
 		if !ok {
 			s.resolveQuery(store, qid, nil, fmt.Errorf("DDL not available"))
 			return nil, internalFailure("DDL interface not available")
@@ -128,8 +128,8 @@ func (s *NeptuneDataService) ExecuteOpenCypherExplainQuery(ctx context.Context, 
 		return nil, badRequest("EXPLAIN is only supported for read queries")
 	}
 
-	reader, ok := reqCtx.GraphReader().(graphengine.GraphReader)
-	if !ok {
+	reader := reqCtx.GraphReader()
+	if reader == nil {
 		return nil, internalFailure("graph reader not available")
 	}
 	plan := cypherparser.BuildExplainPlan(parsed.Read, reader)

@@ -5,6 +5,7 @@ import (
 	svcacm "vorpalstacks/internal/services/aws/acm"
 	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
 	svcappsync "vorpalstacks/internal/services/aws/appsync"
+	svcathena "vorpalstacks/internal/services/aws/athena"
 	svccloudfront "vorpalstacks/internal/services/aws/cloudfront"
 	svccloudtrail "vorpalstacks/internal/services/aws/cloudtrail"
 	svccloudwatch "vorpalstacks/internal/services/aws/cloudwatch"
@@ -31,10 +32,11 @@ import (
 	svcsqs "vorpalstacks/internal/services/aws/sqs"
 	svcssm "vorpalstacks/internal/services/aws/ssm"
 	svcsts "vorpalstacks/internal/services/aws/sts"
+	svctimestreamquery "vorpalstacks/internal/services/aws/timestreamquery"
 	svctimestreamwrite "vorpalstacks/internal/services/aws/timestreamwrite"
+	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	storeevents "vorpalstacks/internal/store/aws/eventbridge"
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
-	s3store "vorpalstacks/internal/store/aws/s3"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
 )
@@ -74,10 +76,12 @@ type serviceState struct {
 	logsService            *svclogs.LogsService
 	appSyncService         *svcappsync.AppSyncService
 	timestreamWriteService *svctimestreamwrite.TimestreamWriteService
+	timestreamQueryService *svctimestreamquery.TimestreamQueryService
+	wafv2Service           *svcwafv2.WAFv2Service
+	athenaService          *svcathena.AthenaService
 
 	sqsStoreInstance     *storesqs.SQSStore
 	snsStoreInstance     *storesns.SNSStore
 	kinesisStoreInstance *storekinesis.KinesisStore
 	eventsStoreInstance  *storeevents.EventsStore
-	s3ObjectStore        s3store.ObjectStoreInterface
 }

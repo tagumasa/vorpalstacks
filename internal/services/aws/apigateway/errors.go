@@ -95,3 +95,12 @@ func isNotFoundError(err error) bool {
 	}
 	return false
 }
+
+// toApiGatewayError converts a generic error to an ApiGatewayError,
+// properly mapping store-level errors to the correct API Gateway error types.
+func toApiGatewayError(err error) *ApiGatewayError {
+	if err == nil {
+		return nil
+	}
+	return GetApiGatewayError(err)
+}

@@ -1,6 +1,9 @@
 // Package neptunedata implements AWS Neptune Data API operations including
 // property graph queries (OpenCypher, Gremlin), bulk loading, statistics,
 // and streaming.
+//
+// NeptuneData is a sub-service of Neptune and shares the Neptune store
+// (internal/store/aws/neptune) for cluster metadata access.
 package neptunedata
 
 import (

@@ -66,7 +66,7 @@ aws lambda update-function-configuration \
 
 ## API Gateway Integration
 
-API Gateway invoke requests are served on a dedicated secondary listener (default port 8082) to avoid routing conflicts with S3 on the main server port. This means:
+API Gateway invoke requests are served on a dedicated secondary listener (default port 50102) to avoid routing conflicts with S3 on the main server port. This means:
 
 - The invoke URL returned by `CreateStage` includes the configured API Gateway port.
 - SDK clients must use the endpoint URL from the stage response, not the default main server port.
@@ -98,9 +98,9 @@ aws apigateway put-integration --rest-api-id $API_ID --resource-id $ITEMS --http
 DEPLOY=$(aws apigateway create-deployment --rest-api-id $API_ID --query 'id' --output text)
 aws apigateway create-stage --rest-api-id $API_ID --stage-name prod --deployment-id $DEPLOY
 
-# 3. Invoke via the API Gateway port (8082 by default)
-curl http://localhost:8082/restapis/$API_ID/prod/_user_request_/items
-curl -X PUT http://localhost:8082/restapis/$API_ID/prod/_user_request_/items \
+# 3. Invoke via the API Gateway port (50102 by default)
+curl http://localhost:50102/restapis/$API_ID/prod/_user_request_/items
+curl -X PUT http://localhost:50102/restapis/$API_ID/prod/_user_request_/items \
     -H "Content-Type: application/json" \
     -d '{"id":"item1","data":"hello"}'
 ```
@@ -121,13 +121,13 @@ Vorpalstacks uses dedicated ports for invoke-style endpoints:
 
 | Service | Default Port | Env Variable | Purpose |
 |---------|-------------|-------------|---------|
-| Main server | 8080 | `PORT` | Management API, all CRUD operations |
-| API Gateway invoke | 8082 | `VS_PORT_APIGW` | Runtime invoke (`_user_request_` paths) |
-| Lambda Function URL | 8085 | `VS_PORT_LAMBDA_URL` | Direct function URL invocation |
-| S3 Website | 8081 | `VS_PORT_S3_WEBSITE` | Static website hosting |
-| CloudFront | 8084 | `VS_PORT_CLOUDFRONT` | Distribution edge |
-| Cognito Hosted UI | 8083 | `VS_PORT_COGNITO_HOSTED` | Authentication UI |
-| AppSync Events | 8086 | `VS_PORT_APPSYNC_EVENTS` | WebSocket + HTTP publish |
+| Main server | 50080 | `PORT` | Management API, all CRUD operations |
+| API Gateway invoke | 50102 | `VS_PORT_APIGW` | Runtime invoke (`_user_request_` paths) |
+| Lambda Function URL | 50105 | `VS_PORT_LAMBDA_URL` | Direct function URL invocation |
+| S3 Website | 50101 | `VS_PORT_S3_WEBSITE` | Static website hosting |
+| CloudFront | 50104 | `VS_PORT_CLOUDFRONT` | Distribution edge |
+| Cognito Hosted UI | 50103 | `VS_PORT_COGNITO_HOSTED` | Authentication UI |
+| AppSync Events | 50106 | `VS_PORT_APPSYNC_EVENTS` | WebSocket + HTTP publish |
 
 If a secondary port is set to the same value as the main server port, the listener is skipped and the main router handles requests instead.
 

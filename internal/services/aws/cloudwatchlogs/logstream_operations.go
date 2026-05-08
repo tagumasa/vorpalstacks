@@ -16,7 +16,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	"vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/pkg/filterpattern"
@@ -193,6 +192,10 @@ func (s *LogsService) PutLogEvents(ctx context.Context, reqCtx *request.RequestC
 }
 
 func (s *LogsService) applyMetricFilters(reqCtx *request.RequestContext, logGroupName string, events []logsstore.LogEntry) {
+	if s.cwMetricInvoker == nil {
+		return
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return
@@ -203,11 +206,7 @@ func (s *LogsService) applyMetricFilters(reqCtx *request.RequestContext, logGrou
 		return
 	}
 
-	cwMetricStore, err := s.getMetricStore(reqCtx)
-	if err != nil {
-		return
-	}
-
+	region := reqCtx.GetRegion()
 	matcher := filterpattern.NewMatcher()
 	now := time.Now()
 
@@ -237,12 +236,7 @@ func (s *LogsService) applyMetricFilters(reqCtx *request.RequestContext, logGrou
 						ts = now
 					}
 
-					datum := cwstore.MetricDatum{
-						MetricName: transform.MetricName,
-						Value:      value,
-						Timestamp:  ts,
-					}
-					if err := cwMetricStore.PutMetricData(transform.MetricNamespace, []cwstore.MetricDatum{datum}); err != nil {
+					if err := s.cwMetricInvoker.PutMetricData(region, transform.MetricNamespace, transform.MetricName, value, ts); err != nil {
 						logs.Error("Failed to put metric data", logs.Err(err))
 					}
 				}
@@ -255,6 +249,10 @@ func (s *LogsService) applyMetricFilters(reqCtx *request.RequestContext, logGrou
 // and events, emitting CloudWatch metrics for matched log entries. This is the
 // region-based variant used by bus handlers that lack an HTTP request context.
 func (s *LogsService) applyMetricFiltersByRegion(region, logGroupName string, events []logsstore.LogEntry) {
+	if s.cwMetricInvoker == nil {
+		return
+	}
+
 	store, err := s.getLogsStoreByRegion(region)
 	if err != nil {
 		return
@@ -262,11 +260,6 @@ func (s *LogsService) applyMetricFiltersByRegion(region, logGroupName string, ev
 
 	filters, _, err := store.ListMetricFilters(logGroupName, "", "", 1000)
 	if err != nil || len(filters) == 0 {
-		return
-	}
-
-	cwMetricStore, err := s.getMetricStoreByRegion(region)
-	if err != nil {
 		return
 	}
 
@@ -299,12 +292,7 @@ func (s *LogsService) applyMetricFiltersByRegion(region, logGroupName string, ev
 						ts = now
 					}
 
-					datum := cwstore.MetricDatum{
-						MetricName: transform.MetricName,
-						Value:      value,
-						Timestamp:  ts,
-					}
-					if err := cwMetricStore.PutMetricData(transform.MetricNamespace, []cwstore.MetricDatum{datum}); err != nil {
+					if err := s.cwMetricInvoker.PutMetricData(region, transform.MetricNamespace, transform.MetricName, value, ts); err != nil {
 						logs.Error("Failed to put metric data from Lambda log write", logs.Err(err))
 					}
 				}

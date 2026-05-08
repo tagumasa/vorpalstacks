@@ -245,7 +245,7 @@ message EcsParameters {
 
   string referenceid = 291739032;
 
-  map<string, string> tags = 381526209;
+  repeated TagsEntry tags = 381526209;
 
   int32 taskcount = 398407508;
 
@@ -708,6 +708,16 @@ message UpdateScheduleOutput {
 message ValidationException {
 
   string message = 235854213;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message TagsEntry {
+
+  map<string, string> value = 1;
 
 }
 

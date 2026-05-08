@@ -15,7 +15,6 @@ import (
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	iamstore "vorpalstacks/internal/store/aws/iam"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -30,10 +29,15 @@ type kmsStores struct {
 
 // KMSService provides AWS KMS key and encryption operations.
 type KMSService struct {
-	hsmBackend      hsm.Backend
-	policyEvaluator *policy.PolicyEvaluator
-	accountID       string
-	stores          sync.Map // region → *kmsStores
+	hsmBackend        hsm.Backend
+	policyEvaluator   *policy.PolicyEvaluator
+	principalResolver eventbus.IAMPrincipalResolver
+	accountID         string
+	stores            sync.Map // region → *kmsStores
+}
+
+func (s *KMSService) SetPrincipalResolver(resolver eventbus.IAMPrincipalResolver) {
+	s.principalResolver = resolver
 }
 
 // NewKMSService creates a new KMS service instance.
@@ -200,19 +204,14 @@ func (s *KMSService) resolveCallerPrincipal(reqCtx *request.RequestContext, req 
 	if accessKeyId == "" {
 		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
-	iamStoreAny := reqCtx.GetIAMStore()
-	if iamStoreAny == nil {
+	if s.principalResolver == nil {
 		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
-	iamStore, ok := iamStoreAny.(iamstore.IAMStoreInterface)
-	if !ok {
+	username, err := s.principalResolver.ResolvePrincipal(reqCtx, accessKeyId)
+	if err != nil || username == "" {
 		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
-	accessKey, err := iamStore.AccessKeys().Get(accessKeyId)
-	if err != nil || accessKey == nil {
-		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
-	}
-	return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(accessKey.UserName)
+	return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(username)
 }
 
 func (s *KMSService) resolveAndAuthorizeKey(reqCtx *request.RequestContext, req *request.ParsedRequest, stores *kmsStores, action string, encryptionContext map[string]string) (*kmsstore.Key, error) {

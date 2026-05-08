@@ -258,9 +258,15 @@ func (b *PebbleDBTransactionBucket) ScanPrefix(prefix []byte) Iterator {
 }
 
 // ScanRange returns an iterator for keys within the given range in the transaction bucket.
+// If end is nil, the iterator scans from start to the end of the bucket namespace.
 func (b *PebbleDBTransactionBucket) ScanRange(start, end []byte) Iterator {
 	lower := b.makeKey(start)
-	upper := b.makeKey(end)
+	var upper []byte
+	if end != nil {
+		upper = b.makeKey(end)
+	} else {
+		upper = append(append([]byte{}, b.prefix...), 0xFF)
+	}
 
 	return newPrefixedDBIterator(b.txn.NewLazyIterator(lower, upper), b.prefixL)
 }

@@ -59,21 +59,26 @@ func (tc *athenaTestCtx) testNamedQueries() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("athena", "ListNamedQueries", func() error {
-		resp, err := client.ListNamedQueries(ctx, &athena.ListNamedQueriesInput{
-			MaxResults: aws.Int32(10),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.NamedQueryIds == nil {
-			return fmt.Errorf("named query IDs list is nil")
-		}
 		var found bool
-		for _, id := range resp.NamedQueryIds {
-			if id == namedQueryId {
-				found = true
+		var nextToken *string
+		for page := 0; page < 100; page++ {
+			resp, err := client.ListNamedQueries(ctx, &athena.ListNamedQueriesInput{
+				MaxResults: aws.Int32(50),
+				NextToken:  nextToken,
+			})
+			if err != nil {
+				return err
+			}
+			for _, id := range resp.NamedQueryIds {
+				if id == namedQueryId {
+					found = true
+					break
+				}
+			}
+			if found || resp.NextToken == nil {
 				break
 			}
+			nextToken = resp.NextToken
 		}
 		if !found {
 			return fmt.Errorf("created named query ID %q not found in list", namedQueryId)
@@ -117,6 +122,7 @@ func (tc *athenaTestCtx) testNamedQueries() []TestResult {
 
 	oldNameReusable := fmt.Sprintf("oldname-reuse-%d", time.Now().UnixNano())
 	var reusableQueryId string
+	var oldNameReuseSecondId string
 	results = append(results, tc.runner.RunTest("athena", "UpdateNamedQuery_OldNameReusable", func() error {
 		createResp, err := client.CreateNamedQuery(ctx, &athena.CreateNamedQueryInput{
 			Name:        aws.String(oldNameReusable),
@@ -139,7 +145,7 @@ func (tc *athenaTestCtx) testNamedQueries() []TestResult {
 			return fmt.Errorf("update failed: %w", err)
 		}
 
-		_, err = client.CreateNamedQuery(ctx, &athena.CreateNamedQueryInput{
+		resp2, err := client.CreateNamedQuery(ctx, &athena.CreateNamedQueryInput{
 			Name:        aws.String(oldNameReusable),
 			Database:    aws.String("default"),
 			QueryString: aws.String("SELECT 5"),
@@ -147,6 +153,7 @@ func (tc *athenaTestCtx) testNamedQueries() []TestResult {
 		if err != nil {
 			return fmt.Errorf("creating query with old name should succeed after rename: %w", err)
 		}
+		oldNameReuseSecondId = aws.ToString(resp2.NamedQueryId)
 		return nil
 	}))
 
@@ -164,6 +171,9 @@ func (tc *athenaTestCtx) testNamedQueries() []TestResult {
 
 	if reusableQueryId != "" {
 		_, _ = client.DeleteNamedQuery(ctx, &athena.DeleteNamedQueryInput{NamedQueryId: aws.String(reusableQueryId)})
+	}
+	if oldNameReuseSecondId != "" {
+		_, _ = client.DeleteNamedQuery(ctx, &athena.DeleteNamedQueryInput{NamedQueryId: aws.String(oldNameReuseSecondId)})
 	}
 
 	results = append(results, tc.runner.RunTest("athena", "DeleteNamedQuery", func() error {

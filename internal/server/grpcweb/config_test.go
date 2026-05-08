@@ -12,10 +12,10 @@ func TestConfig_DefaultPort(t *testing.T) {
 }
 
 func TestConfig_DefaultPort_WithPort(t *testing.T) {
-	cfg := &Config{Port: 8080}
+	cfg := &Config{Port: 50090}
 
 	port := cfg.DefaultPort()
-	if port != 8080 {
-		t.Errorf("expected 8080, got %d", port)
+	if port != 50090 {
+		t.Errorf("expected 50090, got %d", port)
 	}
 }

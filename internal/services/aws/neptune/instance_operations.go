@@ -57,6 +57,16 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, translateStoreError(err)
 	}
 
+	if clusterID != "" {
+		addr, port := s.clusterEndpointInfo(clusterID)
+		if addr != "" || port > 0 {
+			instance.Endpoint = &neptunestore.Endpoint{
+				Address: fmt.Sprintf("%s.%s.%s.neptune.amazonaws.com", id, s.accountID, s.region),
+				Port:    port,
+			}
+		}
+	}
+
 	recordEvent(store, "db-instance", id, instance.DBInstanceArn,
 		fmt.Sprintf("DB instance %s created", id), []string{"creation"})
 

@@ -59,6 +59,7 @@ type managedListener struct {
 // based on the Host header suffix.
 type Manager struct {
 	mainPort  int
+	started   bool
 	listeners map[string]*managedListener
 	portIndex map[int]*managedListener
 	mu        sync.Mutex
@@ -137,6 +138,15 @@ func (m *Manager) Register(cfg ListenerConfig) {
 	}
 	m.listeners[cfg.Name] = ml
 	m.portIndex[port] = ml
+
+	if m.started {
+		logs.Info("Starting dynamic listener", logs.String("name", cfg.Name), logs.String("port", ml.server.Addr))
+		go func() {
+			if err := ml.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				logs.Error("Dynamic listener error", logs.String("name", cfg.Name), logs.Err(err))
+			}
+		}()
+	}
 }
 
 // mergeIntoExisting adds a handler to an existing listener that already
@@ -172,6 +182,8 @@ func (m *Manager) mergeIntoExisting(ml *managedListener, rh registeredHandler) {
 func (m *Manager) Start() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	m.started = true
 
 	seen := make(map[*managedListener]bool)
 	for _, l := range m.listeners {
@@ -215,6 +227,33 @@ func (m *Manager) IsRunning(name string) bool {
 	defer m.mu.Unlock()
 	_, ok := m.listeners[name]
 	return ok
+}
+
+// Unregister removes a listener by name and shuts down its HTTP server if no
+// other handlers share the same port. Used for dynamic per-cluster listeners.
+func (m *Manager) Unregister(name string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	ml, ok := m.listeners[name]
+	if !ok {
+		return
+	}
+
+	delete(m.listeners, name)
+	for i, h := range ml.handlers {
+		if h.name == name {
+			ml.handlers = append(ml.handlers[:i], ml.handlers[i+1:]...)
+			break
+		}
+	}
+
+	if len(ml.handlers) == 0 {
+		delete(m.portIndex, ml.port)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		ml.server.Shutdown(ctx)
+	}
 }
 
 // handlerNames returns a comma-separated list of handler names sharing

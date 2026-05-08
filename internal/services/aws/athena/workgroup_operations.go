@@ -328,8 +328,17 @@ func (s *AthenaService) UntagResource(ctx context.Context, reqCtx *request.Reque
 	resourceArn = normalizeAthenaARN(resourceArn, s.accountID)
 
 	if len(tagKeys) > 0 {
-		if err := stores.workGroupStore.Untag(resourceArn, tagKeys); err != nil {
-			return nil, err
+		switch matches[1] {
+		case "workgroup":
+			if err := stores.workGroupStore.Untag(resourceArn, tagKeys); err != nil {
+				return nil, err
+			}
+		case "datacatalog":
+			if err := stores.dataCatalogStore.Untag(resourceArn, tagKeys); err != nil {
+				return nil, err
+			}
+		default:
+			return nil, ErrInvalidRequestException
 		}
 	}
 

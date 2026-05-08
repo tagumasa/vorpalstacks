@@ -55,26 +55,30 @@ func (s *UserStore) Put(user *User) error {
 
 // Create creates a new user.
 func (s *UserStore) Create(userName, path, accountId string, tags []types.Tag) (*User, error) {
-	if s.Exists(userName) {
-		return nil, NewStoreError("create_user", ErrUserAlreadyExists)
-	}
+	var user *User
+	err := s.kl.WithLock(userName, func() error {
+		if s.Exists(userName) {
+			return NewStoreError("create_user", ErrUserAlreadyExists)
+		}
 
-	userID, err := GenerateUserID()
+		userID, err := GenerateUserID()
+		if err != nil {
+			return NewStoreError("generate_user_id", err)
+		}
+
+		user = &User{
+			ID:         userID,
+			Path:       path,
+			UserName:   userName,
+			AccountId:  accountId,
+			CreateDate: time.Now().UTC(),
+			Tags:       tags,
+		}
+		user.Arn = s.arnBuilder.UserARN(path, userName)
+
+		return s.Put(user)
+	})
 	if err != nil {
-		return nil, NewStoreError("generate_user_id", err)
-	}
-
-	user := &User{
-		ID:         userID,
-		Path:       path,
-		UserName:   userName,
-		AccountId:  accountId,
-		CreateDate: time.Now().UTC(),
-		Tags:       tags,
-	}
-	user.Arn = s.arnBuilder.UserARN(path, userName)
-
-	if err := s.Put(user); err != nil {
 		return nil, err
 	}
 	return user, nil

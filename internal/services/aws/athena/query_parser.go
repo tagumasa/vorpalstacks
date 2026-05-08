@@ -178,7 +178,27 @@ func (s *AthenaService) parseCreateTableStatementWithLocation(query string) (str
 
 		parts := strings.Fields(fmtPart)
 		if len(parts) > 0 {
-			format = strings.ToLower(strings.Trim(parts[0], "'\";"))
+			firstWord := strings.ToUpper(strings.Trim(parts[0], "'\";"))
+			switch firstWord {
+			case "PARQUET":
+				format = "parquet"
+			case "ORC":
+				format = "orc"
+			case "JSONFILE":
+				format = "json"
+			case "SEQUENCEFILE", "TEXTFILE", "AVRO":
+				format = "csv"
+			case "INPUTFORMAT":
+				if strings.Contains(strings.ToUpper(fmtPart), "PARQUET") {
+					format = "parquet"
+				} else if strings.Contains(strings.ToUpper(fmtPart), "JSON") {
+					format = "json"
+				} else {
+					format = "csv"
+				}
+			default:
+				format = strings.ToLower(strings.Trim(parts[0], "'\";"))
+			}
 		}
 	}
 

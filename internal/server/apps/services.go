@@ -150,7 +150,6 @@ func (a *App) initCloudWatch(st *serviceState) error {
 
 func (a *App) initCloudWatchLogs(st *serviceState) error {
 	st.logsService = svclogs.NewLogsService(a.server.StorageManager(), st.accountID, a.cfg.DataPath)
-	st.logsService.SetEventBus(a.server.EventBus())
 	st.logsService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("cloudwatchlogs", func(ctx context.Context) error {
 		st.logsService.Stop()
@@ -164,7 +163,6 @@ func (a *App) initCloudWatchLogs(st *serviceState) error {
 func (a *App) initCognito(st *serviceState) error {
 	st.cognitoService = svccognito.NewCognitoService(st.accountID, st.region)
 	st.cognitoService.SetStorageManager(a.server.StorageManager())
-	st.cognitoService.SetEventBus(a.server.EventBus())
 	st.cognitoService.RegisterHandlers(a.server.Dispatcher())
 	a.server.RegisterJWKSHandler(http.HandlerFunc(st.cognitoService.JWKSHandler))
 	return nil
@@ -183,7 +181,6 @@ func (a *App) initCognitoIdentity(st *serviceState) error {
 func (a *App) initDynamoDB(st *serviceState) error {
 	st.dynamoDBService = svcdynamodb.NewDynamoDBService(st.accountID)
 	st.dynamoDBService.SetStorageManager(a.server.StorageManager())
-	st.dynamoDBService.SetEventBus(a.server.EventBus())
 	st.dynamoDBService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }
@@ -211,7 +208,6 @@ func (a *App) initEventBridge(st *serviceState) error {
 	st.eventsStoreInstance = storeevents.NewEventsStore(eventsRegionalStorage, st.accountID, st.region)
 	st.eventBridgeService = svcevents.NewEventsService(a.server.StorageManager(), st.accountID)
 	st.eventBridgeService.SetEventsStore(st.region, st.eventsStoreInstance)
-	st.eventBridgeService.SetEventBus(a.server.EventBus())
 	st.eventBridgeService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }
@@ -313,13 +309,11 @@ func (a *App) initS3(st *serviceState) error {
 	st.s3Service.RestoreSSE3Keys()
 	s3Handler := svcs3.NewS3Handler(st.s3Service, st.region, a.server.StorageManager())
 	a.server.RegisterS3Handler(s3Handler)
-	st.s3Service.SetEventBus(a.server.EventBus())
 
 	if eb := a.server.EventBus(); eb != nil {
 		eb.SetS3Invoker(st.s3Service)
 	}
 
-	st.s3ObjectStore = s3Store.Objects(st.region)
 	return nil
 }
 
@@ -358,7 +352,6 @@ func (a *App) initSESv2(st *serviceState) error {
 
 func (a *App) initSFN(st *serviceState) error {
 	st.stepFunctionService = svcstepfunction.NewStepFunctionService(a.server.StorageManager(), st.accountID)
-	st.stepFunctionService.SetEventBus(a.server.EventBus())
 	st.stepFunctionService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("sfn", func(ctx context.Context) error {
 		st.stepFunctionService.Shutdown()
@@ -377,7 +370,6 @@ func (a *App) initSNS(st *serviceState) error {
 	st.snsStoreInstance = storesns.NewSNSStore(snsRegionalStorage, st.accountID, st.region)
 	st.snsService = svcsns.NewSNSService(a.server.StorageManager(), st.accountID, st.region)
 	st.snsService.SetSNSStore(st.region, st.snsStoreInstance)
-	st.snsService.SetEventBus(a.server.EventBus())
 	st.snsService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("sns", func(ctx context.Context) error {
 		st.snsService.Close()

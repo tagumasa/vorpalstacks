@@ -124,7 +124,28 @@
       "attrTypeBinary": "バイナリ (B)",
       "billingPayPerRequest": "オンデマンド",
       "billingProvisioned": "プロビジョニング",
-      "tableNameHeader": "テーブル名"
+      "tableNameHeader": "テーブル名",
+      "detail": {
+        "keySchema": "キースキーマ",
+        "attributes": "属性定義",
+        "itemCount": "アイテム数",
+        "tableSize": "テーブルサイズ (バイト)",
+        "billingMode": "課金モード",
+        "status": "ステータス",
+        "creationDate": "作成日",
+        "hashKey": "ハッシュ",
+        "rangeKey": "レンジ",
+        "items": "アイテム",
+        "noItems": "アイテムなし",
+        "addJson": "アイテム追加 (JSON)",
+        "deleteItem": "アイテム削除",
+        "jsonPlaceholder": "{\"pk\": {\"s\": \"値\"}}",
+        "invalidJson": "無効なJSON",
+        "confirmDeleteItem": "このアイテムを削除しますか？",
+        "pk": "PK",
+        "sk": "SK",
+        "value": "値"
+      }
     },
     "lambda": {
       "title": "Lambda",

@@ -13,15 +13,17 @@ import (
 
 // ProtoGenerator generates proto files from Smithy models
 type ProtoGenerator struct {
-	reader     ProtoDataReader
-	typeMapper *TypeMapper
+	reader      ProtoDataReader
+	typeMapper  *TypeMapper
+	mapWrappers map[string]string
 }
 
 // NewProtoGenerator creates a new ProtoGenerator
 func NewProtoGenerator(reader ProtoDataReader) *ProtoGenerator {
 	return &ProtoGenerator{
-		reader:     reader,
-		typeMapper: NewTypeMapper(),
+		reader:      reader,
+		typeMapper:  NewTypeMapper(),
+		mapWrappers: make(map[string]string),
 	}
 }
 
@@ -86,6 +88,7 @@ func (g *ProtoGenerator) GenerateFlutterProto(ctx context.Context, serviceName, 
 }
 
 func (g *ProtoGenerator) buildTemplateData(ctx context.Context, service *ServiceInfo, operations []*OperationInfo, shapes []*ShapeInfo, forFlutter bool) (ProtoTemplateData, error) {
+	g.mapWrappers = make(map[string]string)
 	if service == nil {
 		return ProtoTemplateData{}, fmt.Errorf("service cannot be nil")
 	}
@@ -189,6 +192,20 @@ func (g *ProtoGenerator) buildTemplateData(ctx context.Context, service *Service
 		}
 	}
 
+	for wrapperName, mapType := range g.mapWrappers {
+		shapeData = append(shapeData, ShapeData{
+			Name: wrapperName,
+			Fields: []FieldData{
+				{
+					NameLower: "value",
+					Type:      mapType,
+					Number:    1,
+				},
+			},
+			Comment: fmt.Sprintf("Wrapper message for %s (protobuf3 cannot express repeated map directly).", mapType),
+		})
+	}
+
 	return ProtoTemplateData{
 		PackageName: packageName,
 		ServiceName: fmt.Sprintf("%sService", serviceName),
@@ -250,7 +267,14 @@ func (g *ProtoGenerator) resolveProtoType(ctx context.Context, shape *ShapeInfo)
 			return "repeated string"
 		}
 		memberType := g.resolveProtoType(ctx, memberShape)
-		if strings.HasPrefix(memberType, "repeated ") || strings.HasPrefix(memberType, "map<") {
+		if strings.HasPrefix(memberType, "map<") {
+			wrapperName := toProtoMessageName(shape.ShapeID) + "Entry"
+			if _, exists := g.mapWrappers[wrapperName]; !exists {
+				g.mapWrappers[wrapperName] = memberType
+			}
+			return "repeated " + wrapperName
+		}
+		if strings.HasPrefix(memberType, "repeated ") {
 			return memberType
 		}
 		return "repeated " + memberType

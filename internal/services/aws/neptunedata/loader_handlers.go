@@ -70,6 +70,12 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 	}
 
 	region := reqCtx.GetRegion()
+	var clusterDB *graphengine.DB
+	if reader := reqCtx.GraphReader(); reader != nil {
+		if db, ok := reader.(*graphengine.DB); ok {
+			clusterDB = db
+		}
+	}
 	s.loaderWg.Add(1)
 	go func() {
 		defer func() {
@@ -78,7 +84,7 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 			}
 		}()
 		defer s.loaderWg.Done()
-		s.runLoaderJob(region, loadId, params.Source, params.Format)
+		s.runLoaderJob(region, loadId, params.Source, params.Format, clusterDB)
 	}()
 
 	return map[string]interface{}{
@@ -230,7 +236,7 @@ func (s *NeptuneDataService) CancelLoaderJob(ctx context.Context, reqCtx *reques
 // with CSV and ntriples formats. S3 sources fail with an appropriate error in
 // standalone mode. The job status is persisted to Pebble storage on completion
 // or failure.
-func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string) {
+func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string, clusterDB *graphengine.DB) {
 	time.Sleep(100 * time.Millisecond)
 
 	store, err := s.GetStoreForRegion(region)
@@ -257,9 +263,9 @@ func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string)
 
 	switch {
 	case strings.HasPrefix(source, "s3://"):
-		loadErr = s.loadFromS3(region, job, loadID, source, format, stats)
+		loadErr = s.loadFromS3(region, job, loadID, source, format, stats, clusterDB)
 	case strings.HasPrefix(source, "file://"):
-		loadErr = s.loadFromFile(job, loadID, source, format, stats)
+		loadErr = s.loadFromFile(job, loadID, source, format, stats, clusterDB)
 	default:
 		loadErr = fmt.Sprintf("unsupported source URI scheme: %s", source)
 	}
@@ -287,7 +293,7 @@ func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string)
 	}
 }
 
-func (s *NeptuneDataService) loadFromFile(job *pb.LoaderJob, loadID, source, format string, stats *loaderStats) string {
+func (s *NeptuneDataService) loadFromFile(job *pb.LoaderJob, loadID, source, format string, stats *loaderStats, clusterDB *graphengine.DB) string {
 	filePath := strings.TrimPrefix(source, "file://")
 	if filePath == "" {
 		return "empty file path in file:// source"
@@ -299,11 +305,11 @@ func (s *NeptuneDataService) loadFromFile(job *pb.LoaderJob, loadID, source, for
 	}
 	defer f.Close()
 
-	if s.graphDB == nil {
+	if clusterDB == nil {
 		return "graph database not available"
 	}
 
-	writer := graphengine.GraphWriter(s.graphDB)
+	writer := graphengine.GraphWriter(clusterDB)
 
 	switch strings.ToLower(format) {
 	case "csv":
@@ -317,14 +323,14 @@ func (s *NeptuneDataService) loadFromFile(job *pb.LoaderJob, loadID, source, for
 
 // loadFromS3 reads objects from S3 via the S3Reader invoker and delegates to
 // format-specific loaders. Supports CSV and ntriples formats.
-func (s *NeptuneDataService) loadFromS3(region string, job *pb.LoaderJob, loadID, source, format string, stats *loaderStats) string {
+func (s *NeptuneDataService) loadFromS3(region string, job *pb.LoaderJob, loadID, source, format string, stats *loaderStats, clusterDB *graphengine.DB) string {
 	if s.s3Invoker == nil {
 		return fmt.Sprintf("S3 service not available for loading from %s", source)
 	}
 
 	bucket, prefix := parseS3URI(source)
 
-	keys, err := s.s3Invoker.ListObjects(context.Background(), region, bucket, prefix)
+	keys, err := s.s3Invoker.ListObjects(context.Background(), region, bucket, prefix, 0)
 	if err != nil {
 		return fmt.Sprintf("failed to list S3 objects at %s: %v", source, err)
 	}
@@ -332,11 +338,11 @@ func (s *NeptuneDataService) loadFromS3(region string, job *pb.LoaderJob, loadID
 		return fmt.Sprintf("no objects found at %s", source)
 	}
 
-	if s.graphDB == nil {
+	if clusterDB == nil {
 		return "graph database not available"
 	}
 
-	writer := graphengine.GraphWriter(s.graphDB)
+	writer := graphengine.GraphWriter(clusterDB)
 
 	for _, key := range keys {
 		select {
@@ -345,7 +351,7 @@ func (s *NeptuneDataService) loadFromS3(region string, job *pb.LoaderJob, loadID
 		default:
 		}
 
-		data, err := s.s3Invoker.GetObject(context.Background(), region, bucket, key)
+		data, err := s.s3Invoker.GetObject(context.Background(), region, bucket, key, 0)
 		if err != nil {
 			stats.failed++
 			stats.totalRecords++

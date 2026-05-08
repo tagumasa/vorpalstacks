@@ -9,7 +9,7 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
-	appconfig "vorpalstacks/internal/config"
+	"vorpalstacks/internal/core/logs"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -322,7 +322,7 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 	now := time.Now()
 	port := request.GetIntParam(params, "Port")
 	if port == 0 {
-		port, _ = appconfig.GetResourcePort("ports.neptune", clusterID)
+		port = 8182
 	}
 	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
 	if backupRetention == 0 {
@@ -351,8 +351,17 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 		return nil, translateStoreError(err)
 	}
 
+	var enginePort int
+	if s.dataPlaneService != nil {
+		if port, err := s.dataPlaneService.OpenClusterEngine(clusterID); err != nil {
+			logs.Warn("failed to open cluster engine on snapshot restore", logs.String("cluster", clusterID), logs.Err(err))
+		} else {
+			enginePort = port
+		}
+	}
+
 	return map[string]interface{}{
-		"DBCluster": cluster,
+		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, s.endpointAddress(clusterID), enginePort),
 	}, nil
 }
 
@@ -382,7 +391,7 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 	now := time.Now()
 	port := request.GetIntParam(params, "Port")
 	if port == 0 {
-		port, _ = appconfig.GetResourcePort("ports.neptune", clusterID)
+		port = 8182
 	}
 	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
 	if backupRetention == 0 {
@@ -411,8 +420,17 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 		return nil, translateStoreError(err)
 	}
 
+	var enginePort int
+	if s.dataPlaneService != nil {
+		if port, err := s.dataPlaneService.OpenClusterEngine(clusterID); err != nil {
+			logs.Warn("failed to open cluster engine on restore", logs.String("cluster", clusterID), logs.Err(err))
+		} else {
+			enginePort = port
+		}
+	}
+
 	return map[string]interface{}{
-		"DBCluster": cluster,
+		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, s.endpointAddress(clusterID), enginePort),
 	}, nil
 }
 

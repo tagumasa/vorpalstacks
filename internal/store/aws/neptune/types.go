@@ -8,6 +8,12 @@ import (
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
+// Endpoint represents the network endpoint for a Neptune DB cluster or instance.
+type Endpoint struct {
+	Address string `json:"Address"`
+	Port    int    `json:"Port"`
+}
+
 // DBCluster represents a Neptune database cluster, including its configuration,
 // status, and associated metadata.
 type DBCluster struct {
@@ -43,6 +49,7 @@ type DBCluster struct {
 	AccountID                        string                            `json:"AccountId,omitempty"`
 	Region                           string                            `json:"Region,omitempty"`
 	DBClusterArn                     string                            `json:"DBClusterArn,omitempty"`
+	Endpoint                         *Endpoint                         `json:"Endpoint,omitempty"`
 }
 
 // ServerlessV2ScalingConfiguration defines the minimum and maximum capacity for
@@ -82,6 +89,7 @@ type DBInstance struct {
 	AccountID                        string     `json:"AccountId,omitempty"`
 	Region                           string     `json:"Region,omitempty"`
 	DBInstanceArn                    string     `json:"DBInstanceArn,omitempty"`
+	Endpoint                         *Endpoint  `json:"Endpoint,omitempty"`
 }
 
 // DBClusterSnapshot represents a point-in-time backup of a Neptune DB cluster.

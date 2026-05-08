@@ -49,7 +49,8 @@ type ObjectStore struct {
 func NewObjectStore(store storage.BasicStorage, blobStore storage.BlobStore, bucketStore *BucketStore, accountId, region string) (*ObjectStore, error) {
 	cache, err := NewVersioningCache()
 	if err != nil {
-		slog.Warn("s3: versioning cache creation failed, retrying", "error", err)
+		slog.Warn("s3: versioning cache creation failed, retrying in 500ms", "error", err)
+		time.Sleep(500 * time.Millisecond)
 		cache, err = NewVersioningCache()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create versioning cache after retry: %w", err)
@@ -252,22 +253,24 @@ func newObject(key, bucket, contentType string, metadata map[string]string, vers
 
 // SetStorageClass updates the storage class of an object.
 func (s *ObjectStore) SetStorageClass(bucket, key, versionId string, storageClass ObjectStorageClass) error {
-	var obj pb.Object
-	storageKey := s.storageKey(bucket, key)
-	if versionId != "" {
-		storageKey = s.versionedStorageKey(bucket, key, versionId)
-	} else {
-		b, bucketErr := s.bucketStore.Get(bucket)
-		if bucketErr == nil && (b.VersioningStatus == BucketVersioningEnabled || b.VersioningStatus == "Suspended") {
-			latestKey := s.latestKeyStorageKey(bucket, key)
-			if err := s.BaseStore.GetProto(latestKey, &obj); err == nil {
-				storageKey = latestKey
+	return s.keyLocker.WithLock(bucket+"#"+key, func() error {
+		var obj pb.Object
+		storageKey := s.storageKey(bucket, key)
+		if versionId != "" {
+			storageKey = s.versionedStorageKey(bucket, key, versionId)
+		} else {
+			b, bucketErr := s.bucketStore.Get(bucket)
+			if bucketErr == nil && (b.VersioningStatus == BucketVersioningEnabled || b.VersioningStatus == "Suspended") {
+				latestKey := s.latestKeyStorageKey(bucket, key)
+				if err := s.BaseStore.GetProto(latestKey, &obj); err == nil {
+					storageKey = latestKey
+				}
 			}
 		}
-	}
-	if err := s.BaseStore.GetProto(storageKey, &obj); err != nil {
-		return err
-	}
-	obj.StorageClass = objectStorageClassToProto(storageClass)
-	return s.BaseStore.PutProto(storageKey, &obj)
+		if err := s.BaseStore.GetProto(storageKey, &obj); err != nil {
+			return err
+		}
+		obj.StorageClass = objectStorageClassToProto(storageClass)
+		return s.BaseStore.PutProto(storageKey, &obj)
+	})
 }

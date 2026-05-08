@@ -65,6 +65,11 @@ func (s *S3Service) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
 }
 
+// EncryptionManager returns the encryption manager used by the S3 service.
+func (s *S3Service) EncryptionManager() *EncryptionManager {
+	return s.encryptionManager
+}
+
 type busKMSClient struct {
 	bus eventbus.Bus
 }

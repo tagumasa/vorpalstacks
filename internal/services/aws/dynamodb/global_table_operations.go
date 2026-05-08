@@ -112,13 +112,28 @@ func (s *DynamoDBService) ListGlobalTables(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	globalTables, _, err := store.GlobalTables().List("", 0)
-	if err != nil {
-		return nil, err
+
+	var allTables []*dbstore.GlobalTable
+	marker := exclusiveStartGlobalTableName
+	pageLimit := 1000
+	if marker == "" {
+		marker = ""
+	}
+
+	for {
+		page, nextMarker, err := store.GlobalTables().List(marker, pageLimit)
+		if err != nil {
+			return nil, err
+		}
+		allTables = append(allTables, page...)
+		if nextMarker == "" {
+			break
+		}
+		marker = nextMarker
 	}
 
 	var filteredTables []*dbstore.GlobalTable
-	for _, gt := range globalTables {
+	for _, gt := range allTables {
 		if regionName != "" {
 			found := false
 			for _, r := range gt.ReplicationGroup {

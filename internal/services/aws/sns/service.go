@@ -253,11 +253,12 @@ func (s *SNSService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("sns", "RemovePermission", s.RemovePermission)
 }
 
-// PublishToTopic publishes a message to an SNS topic and delivers it to all subscriptions.
-func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topicArn, message string) error {
+// PublishToTopic publishes a message to an SNS topic and delivers it to all
+// subscriptions. Returns the generated message ID.
+func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topicArn, message, subject string, messageAttributes map[string]string) (string, error) {
 	storage, err := s.storageManager.GetStorage(region)
 	if err != nil {
-		return fmt.Errorf("failed to get storage for region %s: %w", region, err)
+		return "", fmt.Errorf("failed to get storage for region %s: %w", region, err)
 	}
 
 	store, _ := storecommon.GetOrCreateStoreE(&s.stores, region, func() (snsstore.SNSStoreInterface, error) {
@@ -266,21 +267,30 @@ func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topi
 
 	topic, err := store.GetTopic(topicArn)
 	if err != nil {
-		return fmt.Errorf("topic not found: %s", topicArn)
+		return "", fmt.Errorf("topic not found: %s", topicArn)
 	}
 
 	subscriptions, err := store.ListSubscriptionsByTopic(topicArn, storecommon.ListOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to list subscriptions: %w", err)
+		return "", fmt.Errorf("failed to list subscriptions: %w", err)
 	}
+
+	messageID := fmt.Sprintf("%d", time.Now().UnixNano())
 
 	if len(subscriptions.Items) > 0 {
 		msg := &snsstore.Message{
-			MessageId:          fmt.Sprintf("%d", time.Now().UnixNano()),
+			MessageId:          messageID,
 			TopicArn:           topic.Arn,
+			Subject:            subject,
 			Message:            message,
 			PublishedTimestamp: time.Now().UTC(),
 			ReceivedTimestamp:  time.Now().UTC(),
+		}
+		if len(messageAttributes) > 0 {
+			msg.MessageAttributes = make(map[string]*snsstore.MessageAttribute, len(messageAttributes))
+			for k, v := range messageAttributes {
+				msg.MessageAttributes[k] = &snsstore.MessageAttribute{Type: "String", StringValue: v}
+			}
 		}
 
 		if s.bus != nil {
@@ -304,5 +314,5 @@ func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topi
 		}
 	}
 
-	return nil
+	return messageID, nil
 }

@@ -719,7 +719,7 @@ type EcsParameters struct {
 	Platformversion          string                          `protobuf:"bytes,139924287,opt,name=platformversion,proto3" json:"platformversion,omitempty"`
 	Propagatetags            string                          `protobuf:"bytes,405557622,opt,name=propagatetags,proto3" json:"propagatetags,omitempty"`
 	Referenceid              string                          `protobuf:"bytes,291739032,opt,name=referenceid,proto3" json:"referenceid,omitempty"`
-	Tags                     map[string]string               `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Tags                     []*TagsEntry                    `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Taskcount                int32                           `protobuf:"varint,398407508,opt,name=taskcount,proto3" json:"taskcount,omitempty"`
 	Taskdefinitionarn        string                          `protobuf:"bytes,82234477,opt,name=taskdefinitionarn,proto3" json:"taskdefinitionarn,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -833,7 +833,7 @@ func (x *EcsParameters) GetReferenceid() string {
 	return ""
 }
 
-func (x *EcsParameters) GetTags() map[string]string {
+func (x *EcsParameters) GetTags() []*TagsEntry {
 	if x != nil {
 		return x.Tags
 	}
@@ -2958,6 +2958,50 @@ func (x *ValidationException) GetMessage() string {
 	return ""
 }
 
+type TagsEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         map[string]string      `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TagsEntry) Reset() {
+	*x = TagsEntry{}
+	mi := &file_scheduler_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TagsEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TagsEntry) ProtoMessage() {}
+
+func (x *TagsEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_scheduler_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TagsEntry.ProtoReflect.Descriptor instead.
+func (*TagsEntry) Descriptor() ([]byte, []int) {
+	return file_scheduler_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *TagsEntry) GetValue() map[string]string {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
 var File_scheduler_proto protoreflect.FileDescriptor
 
 const file_scheduler_proto_rawDesc = "" +
@@ -3005,7 +3049,7 @@ const file_scheduler_proto_rawDesc = "" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12 \n" +
 	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x16\n" +
-	"\x14DeleteScheduleOutput\"\xe6\x06\n" +
+	"\x14DeleteScheduleOutput\"\x9f\x06\n" +
 	"\rEcsParameters\x12g\n" +
 	"\x18capacityproviderstrategy\x18ւт\x01 \x03(\v2'.scheduler.CapacityProviderStrategyItemR\x18capacityproviderstrategy\x125\n" +
 	"\x14enableecsmanagedtags\x18\x96\xfc\xd8E \x01(\bR\x14enableecsmanagedtags\x126\n" +
@@ -3019,13 +3063,10 @@ const file_scheduler_proto_rawDesc = "" +
 	"\x11placementstrategy\x18\x86\x8f\xf8\v \x03(\v2\x1c.scheduler.PlacementStrategyR\x11placementstrategy\x12+\n" +
 	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tR\x0fplatformversion\x12(\n" +
 	"\rpropagatetags\x18\xf6\xa2\xb1\xc1\x01 \x01(\tR\rpropagatetags\x12$\n" +
-	"\vreferenceid\x18\x98\xab\x8e\x8b\x01 \x01(\tR\vreferenceid\x12:\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\".scheduler.EcsParameters.TagsEntryR\x04tags\x12 \n" +
+	"\vreferenceid\x18\x98\xab\x8e\x8b\x01 \x01(\tR\vreferenceid\x12,\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x14.scheduler.TagsEntryR\x04tags\x12 \n" +
 	"\ttaskcount\x18\xd4\xee\xfc\xbd\x01 \x01(\x05R\ttaskcount\x12/\n" +
-	"\x11taskdefinitionarn\x18혛' \x01(\tR\x11taskdefinitionarn\x1a7\n" +
-	"\tTagsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"U\n" +
+	"\x11taskdefinitionarn\x18혛' \x01(\tR\x11taskdefinitionarn\"U\n" +
 	"\x15EventBridgeParameters\x12!\n" +
 	"\n" +
 	"detailtype\x18\xfd\xd7\xcd\x05 \x01(\tR\n" +
@@ -3174,7 +3215,13 @@ const file_scheduler_proto_rawDesc = "" +
 	"\x14UpdateScheduleOutput\x12#\n" +
 	"\vschedulearn\x18\x84\xb7\x8bU \x01(\tR\vschedulearn\"2\n" +
 	"\x13ValidationException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage2\x9d\b\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"|\n" +
+	"\tTagsEntry\x125\n" +
+	"\x05value\x18\x01 \x03(\v2\x1f.scheduler.TagsEntry.ValueEntryR\x05value\x1a8\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\x9d\b\n" +
 	"\x10SchedulerService\x12`\n" +
 	"\x13ListTagsForResource\x12#.scheduler.ListTagsForResourceInput\x1a$.scheduler.ListTagsForResourceOutput\x12H\n" +
 	"\vTagResource\x12\x1b.scheduler.TagResourceInput\x1a\x1c.scheduler.TagResourceOutput\x12N\n" +
@@ -3201,7 +3248,7 @@ func file_scheduler_proto_rawDescGZIP() []byte {
 	return file_scheduler_proto_rawDescData
 }
 
-var file_scheduler_proto_msgTypes = make([]protoimpl.MessageInfo, 50)
+var file_scheduler_proto_msgTypes = make([]protoimpl.MessageInfo, 51)
 var file_scheduler_proto_goTypes = []any{
 	(*AwsVpcConfiguration)(nil),           // 0: scheduler.AwsVpcConfiguration
 	(*CapacityProviderStrategyItem)(nil),  // 1: scheduler.CapacityProviderStrategyItem
@@ -3252,7 +3299,8 @@ var file_scheduler_proto_goTypes = []any{
 	(*UpdateScheduleInput)(nil),           // 46: scheduler.UpdateScheduleInput
 	(*UpdateScheduleOutput)(nil),          // 47: scheduler.UpdateScheduleOutput
 	(*ValidationException)(nil),           // 48: scheduler.ValidationException
-	nil,                                   // 49: scheduler.EcsParameters.TagsEntry
+	(*TagsEntry)(nil),                     // 49: scheduler.TagsEntry
+	nil,                                   // 50: scheduler.TagsEntry.ValueEntry
 }
 var file_scheduler_proto_depIdxs = []int32{
 	38, // 0: scheduler.CreateScheduleGroupInput.tags:type_name -> scheduler.Tag
@@ -3262,7 +3310,7 @@ var file_scheduler_proto_depIdxs = []int32{
 	27, // 4: scheduler.EcsParameters.networkconfiguration:type_name -> scheduler.NetworkConfiguration
 	28, // 5: scheduler.EcsParameters.placementconstraints:type_name -> scheduler.PlacementConstraint
 	29, // 6: scheduler.EcsParameters.placementstrategy:type_name -> scheduler.PlacementStrategy
-	49, // 7: scheduler.EcsParameters.tags:type_name -> scheduler.EcsParameters.TagsEntry
+	49, // 7: scheduler.EcsParameters.tags:type_name -> scheduler.TagsEntry
 	14, // 8: scheduler.GetScheduleOutput.flexibletimewindow:type_name -> scheduler.FlexibleTimeWindow
 	41, // 9: scheduler.GetScheduleOutput.target:type_name -> scheduler.Target
 	34, // 10: scheduler.ListScheduleGroupsOutput.schedulegroups:type_name -> scheduler.ScheduleGroupSummary
@@ -3281,35 +3329,36 @@ var file_scheduler_proto_depIdxs = []int32{
 	37, // 23: scheduler.Target.sqsparameters:type_name -> scheduler.SqsParameters
 	14, // 24: scheduler.UpdateScheduleInput.flexibletimewindow:type_name -> scheduler.FlexibleTimeWindow
 	41, // 25: scheduler.UpdateScheduleInput.target:type_name -> scheduler.Target
-	25, // 26: scheduler.SchedulerService.ListTagsForResource:input_type -> scheduler.ListTagsForResourceInput
-	39, // 27: scheduler.SchedulerService.TagResource:input_type -> scheduler.TagResourceInput
-	44, // 28: scheduler.SchedulerService.UntagResource:input_type -> scheduler.UntagResourceInput
-	23, // 29: scheduler.SchedulerService.ListSchedules:input_type -> scheduler.ListSchedulesInput
-	5,  // 30: scheduler.SchedulerService.CreateSchedule:input_type -> scheduler.CreateScheduleInput
-	17, // 31: scheduler.SchedulerService.GetSchedule:input_type -> scheduler.GetScheduleInput
-	46, // 32: scheduler.SchedulerService.UpdateSchedule:input_type -> scheduler.UpdateScheduleInput
-	10, // 33: scheduler.SchedulerService.DeleteSchedule:input_type -> scheduler.DeleteScheduleInput
-	21, // 34: scheduler.SchedulerService.ListScheduleGroups:input_type -> scheduler.ListScheduleGroupsInput
-	3,  // 35: scheduler.SchedulerService.CreateScheduleGroup:input_type -> scheduler.CreateScheduleGroupInput
-	15, // 36: scheduler.SchedulerService.GetScheduleGroup:input_type -> scheduler.GetScheduleGroupInput
-	8,  // 37: scheduler.SchedulerService.DeleteScheduleGroup:input_type -> scheduler.DeleteScheduleGroupInput
-	26, // 38: scheduler.SchedulerService.ListTagsForResource:output_type -> scheduler.ListTagsForResourceOutput
-	40, // 39: scheduler.SchedulerService.TagResource:output_type -> scheduler.TagResourceOutput
-	45, // 40: scheduler.SchedulerService.UntagResource:output_type -> scheduler.UntagResourceOutput
-	24, // 41: scheduler.SchedulerService.ListSchedules:output_type -> scheduler.ListSchedulesOutput
-	6,  // 42: scheduler.SchedulerService.CreateSchedule:output_type -> scheduler.CreateScheduleOutput
-	18, // 43: scheduler.SchedulerService.GetSchedule:output_type -> scheduler.GetScheduleOutput
-	47, // 44: scheduler.SchedulerService.UpdateSchedule:output_type -> scheduler.UpdateScheduleOutput
-	11, // 45: scheduler.SchedulerService.DeleteSchedule:output_type -> scheduler.DeleteScheduleOutput
-	22, // 46: scheduler.SchedulerService.ListScheduleGroups:output_type -> scheduler.ListScheduleGroupsOutput
-	4,  // 47: scheduler.SchedulerService.CreateScheduleGroup:output_type -> scheduler.CreateScheduleGroupOutput
-	16, // 48: scheduler.SchedulerService.GetScheduleGroup:output_type -> scheduler.GetScheduleGroupOutput
-	9,  // 49: scheduler.SchedulerService.DeleteScheduleGroup:output_type -> scheduler.DeleteScheduleGroupOutput
-	38, // [38:50] is the sub-list for method output_type
-	26, // [26:38] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	50, // 26: scheduler.TagsEntry.value:type_name -> scheduler.TagsEntry.ValueEntry
+	25, // 27: scheduler.SchedulerService.ListTagsForResource:input_type -> scheduler.ListTagsForResourceInput
+	39, // 28: scheduler.SchedulerService.TagResource:input_type -> scheduler.TagResourceInput
+	44, // 29: scheduler.SchedulerService.UntagResource:input_type -> scheduler.UntagResourceInput
+	23, // 30: scheduler.SchedulerService.ListSchedules:input_type -> scheduler.ListSchedulesInput
+	5,  // 31: scheduler.SchedulerService.CreateSchedule:input_type -> scheduler.CreateScheduleInput
+	17, // 32: scheduler.SchedulerService.GetSchedule:input_type -> scheduler.GetScheduleInput
+	46, // 33: scheduler.SchedulerService.UpdateSchedule:input_type -> scheduler.UpdateScheduleInput
+	10, // 34: scheduler.SchedulerService.DeleteSchedule:input_type -> scheduler.DeleteScheduleInput
+	21, // 35: scheduler.SchedulerService.ListScheduleGroups:input_type -> scheduler.ListScheduleGroupsInput
+	3,  // 36: scheduler.SchedulerService.CreateScheduleGroup:input_type -> scheduler.CreateScheduleGroupInput
+	15, // 37: scheduler.SchedulerService.GetScheduleGroup:input_type -> scheduler.GetScheduleGroupInput
+	8,  // 38: scheduler.SchedulerService.DeleteScheduleGroup:input_type -> scheduler.DeleteScheduleGroupInput
+	26, // 39: scheduler.SchedulerService.ListTagsForResource:output_type -> scheduler.ListTagsForResourceOutput
+	40, // 40: scheduler.SchedulerService.TagResource:output_type -> scheduler.TagResourceOutput
+	45, // 41: scheduler.SchedulerService.UntagResource:output_type -> scheduler.UntagResourceOutput
+	24, // 42: scheduler.SchedulerService.ListSchedules:output_type -> scheduler.ListSchedulesOutput
+	6,  // 43: scheduler.SchedulerService.CreateSchedule:output_type -> scheduler.CreateScheduleOutput
+	18, // 44: scheduler.SchedulerService.GetSchedule:output_type -> scheduler.GetScheduleOutput
+	47, // 45: scheduler.SchedulerService.UpdateSchedule:output_type -> scheduler.UpdateScheduleOutput
+	11, // 46: scheduler.SchedulerService.DeleteSchedule:output_type -> scheduler.DeleteScheduleOutput
+	22, // 47: scheduler.SchedulerService.ListScheduleGroups:output_type -> scheduler.ListScheduleGroupsOutput
+	4,  // 48: scheduler.SchedulerService.CreateScheduleGroup:output_type -> scheduler.CreateScheduleGroupOutput
+	16, // 49: scheduler.SchedulerService.GetScheduleGroup:output_type -> scheduler.GetScheduleGroupOutput
+	9,  // 50: scheduler.SchedulerService.DeleteScheduleGroup:output_type -> scheduler.DeleteScheduleGroupOutput
+	39, // [39:51] is the sub-list for method output_type
+	27, // [27:39] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_scheduler_proto_init() }
@@ -3323,7 +3372,7 @@ func file_scheduler_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_scheduler_proto_rawDesc), len(file_scheduler_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   50,
+			NumMessages:   51,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

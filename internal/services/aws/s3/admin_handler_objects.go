@@ -197,7 +197,6 @@ func (h *AdminHandler) GetObject(ctx context.Context, req *connect.Request[pb.Ge
 	if obj.SSEMetadata != nil {
 		output.Serversideencryption = storeSSETypeToProto(obj.SSEMetadata.EncryptionType)
 		output.Ssekmskeyid = obj.SSEMetadata.KMSKeyID
-		return connect.NewResponse(output), nil
 	}
 
 	var reader io.ReadCloser

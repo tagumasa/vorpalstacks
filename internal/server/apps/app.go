@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/serviceports"
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/core/storage/graphengine"
 	chihttp "vorpalstacks/internal/server/http"
 	"vorpalstacks/internal/server/listener"
 	"vorpalstacks/internal/server/portalloc"
@@ -207,7 +207,6 @@ type App struct {
 	server        *chihttp.Server
 	grpcWeb       grpcWebStarter
 	lm            *listener.Manager
-	graphDB       *graphengine.DB
 	state         *serviceState
 	consoleAssets embed.FS
 
@@ -257,6 +256,13 @@ func New(cfg *Config) (*App, error) {
 		consoleAssets: cfg.ConsoleAssets,
 	}
 
+	mainPort := cfg.Port
+	if mainPort == 0 {
+		mainPort = serviceports.HTTP
+	}
+	a.lm = listener.NewManager(mainPort)
+	srv.SetListenerManager(a.lm)
+
 	if err := a.initAlwaysOnServices(); err != nil {
 		return nil, err
 	}
@@ -265,17 +271,10 @@ func New(cfg *Config) (*App, error) {
 		a.Shutdown(context.Background())
 		return nil, err
 	}
-	a.initGraphDB()
 	a.initGRPCWebAdmin()
 	a.initEventBusPolicies()
 
-	mainPort := cfg.Port
-	if mainPort == 0 {
-		mainPort = 50080
-	}
-	a.lm = listener.NewManager(mainPort)
 	a.registerListeners()
-	srv.SetListenerManager(a.lm)
 
 	return a, nil
 }
@@ -317,6 +316,13 @@ func NewWithStorage(cfg *Config, sm *storage.RegionStorageManager) (*App, error)
 		consoleAssets: cfg.ConsoleAssets,
 	}
 
+	mainPort := cfg.Port
+	if mainPort == 0 {
+		mainPort = serviceports.HTTP
+	}
+	a.lm = listener.NewManager(mainPort)
+	srv.SetListenerManager(a.lm)
+
 	if err := a.initAlwaysOnServices(); err != nil {
 		return nil, err
 	}
@@ -325,17 +331,10 @@ func NewWithStorage(cfg *Config, sm *storage.RegionStorageManager) (*App, error)
 		a.Shutdown(context.Background())
 		return nil, err
 	}
-	a.initGraphDB()
 	a.initGRPCWebAdmin()
 	a.initEventBusPolicies()
 
-	mainPort := cfg.Port
-	if mainPort == 0 {
-		mainPort = 50080
-	}
-	a.lm = listener.NewManager(mainPort)
 	a.registerListeners()
-	srv.SetListenerManager(a.lm)
 
 	return a, nil
 }

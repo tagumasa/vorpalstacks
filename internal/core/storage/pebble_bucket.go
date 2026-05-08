@@ -76,9 +76,15 @@ func (b *PebbleBucket) ScanPrefix(prefix []byte) Iterator {
 }
 
 // ScanRange returns an iterator for keys within the given range.
+// If end is nil, the iterator scans from start to the end of the bucket.
 func (b *PebbleBucket) ScanRange(start, end []byte) Iterator {
 	lower := b.makeKey(start)
-	upper := b.makeKey(end)
+	var upper []byte
+	if end != nil {
+		upper = b.makeKey(end)
+	} else {
+		upper = append(append([]byte{}, b.prefix...), 0xFF)
+	}
 
 	return newPrefixedDBIterator(b.db.NewLazyIterator(lower, upper), len(b.prefix))
 }

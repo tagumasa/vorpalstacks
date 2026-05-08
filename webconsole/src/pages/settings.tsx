@@ -47,7 +47,7 @@ const PORTS_TAB_KEYS = [
 
 const FQDN_SERVICE_NAMES = [
   "s3_website", "apigateway", "cognito_hosted", "cloudfront",
-  "lambda_url", "appsync_events", "neptune",
+  "lambda_url", "appsync_events",
 ];
 
 const SERVICE_DISPLAY_GROUPS: { keys: string[]; displayKey: string }[] = [
@@ -458,7 +458,6 @@ function MappingsTab({
     cloudfront: "settings.mappings.svc_cloudfront",
     lambda_url: "settings.mappings.svc_lambda_url",
     appsync_events: "settings.mappings.svc_appsync_events",
-    neptune: "settings.mappings.svc_neptune",
   };
 
   const portServices = useMemo(() => {

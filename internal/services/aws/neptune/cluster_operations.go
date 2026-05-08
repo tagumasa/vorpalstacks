@@ -10,7 +10,6 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
-	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
@@ -53,6 +52,16 @@ func enrichClusterWithTags(store neptunestore.NeptuneStoreInterface, cluster *ne
 	return m
 }
 
+func enrichClusterWithTagsAndEndpoint(store neptunestore.NeptuneStoreInterface, cluster *neptunestore.DBCluster, endpointAddr string, endpointPort int) map[string]interface{} {
+	m := enrichClusterWithTags(store, cluster)
+	if endpointAddr != "" && endpointPort > 0 {
+		m["Endpoint"] = fmt.Sprintf("%s:%d", endpointAddr, endpointPort)
+	} else if endpointAddr != "" {
+		m["Endpoint"] = endpointAddr
+	}
+	return m
+}
+
 // CreateDBCluster creates a new Neptune DB cluster with the specified configuration.
 func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
@@ -82,9 +91,6 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 
 	now := time.Now()
 	port := request.GetIntParam(params, "Port")
-	if port == 0 {
-		port, _ = appconfig.GetResourcePort("ports.neptune", id)
-	}
 	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
 	if backupRetention == 0 {
 		backupRetention = 1
@@ -135,6 +141,15 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		return nil, translateStoreError(err)
 	}
 
+	var enginePort int
+	if s.dataPlaneService != nil {
+		if port, err := s.dataPlaneService.OpenClusterEngine(id); err != nil {
+			logs.Warn("failed to open cluster engine", logs.String("cluster", id), logs.Err(err))
+		} else {
+			enginePort = port
+		}
+	}
+
 	if tagList := getNeptuneTagList(params); len(tagList) > 0 {
 		storeTags := make([]types.Tag, 0, len(tagList))
 		for _, t := range tagList {
@@ -153,7 +168,7 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		fmt.Sprintf("DB cluster %s created", id), []string{"creation"})
 
 	return map[string]interface{}{
-		"DBCluster": enrichClusterWithTags(store, cluster),
+		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, s.endpointAddress(id), enginePort),
 	}, nil
 }
 
@@ -213,6 +228,12 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 
 	cascadeDeleteClusterResources(store, cluster)
 
+	if s.dataPlaneService != nil {
+		if err := s.dataPlaneService.CloseClusterEngine(id); err != nil {
+			logs.Warn("failed to close cluster engine", logs.String("cluster", id), logs.Err(err))
+		}
+	}
+
 	if err := store.DeleteCluster(id); err != nil {
 		return nil, translateStoreError(err)
 	}
@@ -221,7 +242,7 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 		fmt.Sprintf("DB cluster %s deleted", id), []string{"deletion"})
 
 	return map[string]interface{}{
-		"DBCluster": cluster,
+		"DBCluster": enrichClusterWithTags(store, cluster),
 	}, nil
 }
 
@@ -301,9 +322,21 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
+	addr, port := s.clusterEndpointInfo(cluster.DBClusterIdentifier)
 	return map[string]interface{}{
-		"DBCluster": cluster,
+		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, addr, port),
 	}, nil
+}
+
+func (s *NeptuneService) clusterEndpointInfo(clusterID string) (addr string, port int) {
+	if s.dataPlaneService == nil {
+		return "", 0
+	}
+	p, err := s.dataPlaneService.GetClusterPort(clusterID)
+	if err != nil || p == 0 {
+		return "", 0
+	}
+	return s.endpointAddress(clusterID), p
 }
 
 // DescribeDBClusters returns information about the specified DB cluster or lists
@@ -321,8 +354,9 @@ func (s *NeptuneService) DescribeDBClusters(ctx context.Context, reqCtx *request
 		if err != nil {
 			return nil, translateStoreError(err)
 		}
+		addr, port := s.clusterEndpointInfo(clusterID)
 		return map[string]interface{}{
-			"DBClusters": protocol.XMLElements{ElementName: "DBCluster", Items: []interface{}{enrichClusterWithTags(store, cluster)}},
+			"DBClusters": protocol.XMLElements{ElementName: "DBCluster", Items: []interface{}{enrichClusterWithTagsAndEndpoint(store, cluster, addr, port)}},
 		}, nil
 	}
 
@@ -333,7 +367,8 @@ func (s *NeptuneService) DescribeDBClusters(ctx context.Context, reqCtx *request
 
 	items := make([]interface{}, 0, len(clusters))
 	for _, c := range clusters {
-		items = append(items, enrichClusterWithTags(store, c))
+		addr, port := s.clusterEndpointInfo(c.DBClusterIdentifier)
+		items = append(items, enrichClusterWithTagsAndEndpoint(store, c, addr, port))
 	}
 
 	marker := request.GetStringParam(params, "Marker")
@@ -383,8 +418,17 @@ func (s *NeptuneService) StartDBCluster(ctx context.Context, reqCtx *request.Req
 		return nil, translateStoreError(err)
 	}
 
+	var enginePort int
+	if s.dataPlaneService != nil {
+		if port, err := s.dataPlaneService.OpenClusterEngine(id); err != nil {
+			logs.Warn("failed to open cluster engine on start", logs.String("cluster", id), logs.Err(err))
+		} else {
+			enginePort = port
+		}
+	}
+
 	return map[string]interface{}{
-		"DBCluster": cluster,
+		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, s.endpointAddress(id), enginePort),
 	}, nil
 }
 
@@ -410,13 +454,19 @@ func (s *NeptuneService) StopDBCluster(ctx context.Context, reqCtx *request.Requ
 		return nil, fmt.Errorf("neptune: DBCluster %s is not in available state (current: %s)", id, cluster.Status)
 	}
 
+	if s.dataPlaneService != nil {
+		if err := s.dataPlaneService.CloseClusterEngine(id); err != nil {
+			logs.Warn("failed to close cluster engine on stop", logs.String("cluster", id), logs.Err(err))
+		}
+	}
+
 	cluster.Status = "stopped"
 	if err := store.UpdateCluster(cluster); err != nil {
 		return nil, translateStoreError(err)
 	}
 
 	return map[string]interface{}{
-		"DBCluster": cluster,
+		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, "", 0),
 	}, nil
 }
 
@@ -443,8 +493,9 @@ func (s *NeptuneService) FailoverDBCluster(ctx context.Context, reqCtx *request.
 		return nil, translateStoreError(err)
 	}
 
+	addr, port := s.clusterEndpointInfo(id)
 	return map[string]interface{}{
-		"DBCluster": cluster,
+		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, addr, port),
 	}, nil
 }
 

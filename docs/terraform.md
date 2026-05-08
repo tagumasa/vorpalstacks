@@ -13,7 +13,7 @@ Vorpalstacks works with HashiCorp Terraform and OpenTofu using the standard AWS 
 ### 1. Start Vorpalstacks
 
 ```bash
-SIGNATURE_VERIFICATION_ENABLED=false PORT=8080 DATA_PATH=./data TEST_MODE=true ./vorpalstacks &
+SIGNATURE_VERIFICATION_ENABLED=false PORT=50080 DATA_PATH=./data TEST_MODE=true ./vorpalstacks &
 ```
 
 ### 2. Provider Configuration
@@ -39,38 +39,38 @@ provider "aws" {
 
   endpoints {
     # Regional services
-    dynamodb     = "http://localhost:8080"
-    s3           = "http://localhost:8080"
-    sqs          = "http://localhost:8080"
-    sns          = "http://localhost:8080"
-    lambda       = "http://localhost:8080"
-    kinesis      = "http://localhost:8080"
-    kms          = "http://localhost:8080"
-    secretsmanager = "http://localhost:8080"
-    ssm          = "http://localhost:8080"
-    events       = "http://localhost:8080"
-    scheduler    = "http://localhost:8080"
-    athena       = "http://localhost:8080"
-    cloudwatch   = "http://localhost:8080"
-    cloudwatchlogs = "http://localhost:8080"
-    cloudtrail   = "http://localhost:8080"
-    sesv2        = "http://localhost:8080"
-    apigateway   = "http://localhost:8080"
-    wafv2        = "http://localhost:8080"
-    neptune      = "http://localhost:8080"
-    appsync      = "http://localhost:8080"
-    cognitoidp   = "http://localhost:8080"
-    cognitoidentity = "http://localhost:8080"
-    timestreamwrite = "http://localhost:8080"
-    timestreamquery = "http://localhost:8080"
-    stepfunctions = "http://localhost:8080"
-    acm          = "http://localhost:8080"
+    dynamodb     = "http://localhost:50080"
+    s3           = "http://localhost:50080"
+    sqs          = "http://localhost:50080"
+    sns          = "http://localhost:50080"
+    lambda       = "http://localhost:50080"
+    kinesis      = "http://localhost:50080"
+    kms          = "http://localhost:50080"
+    secretsmanager = "http://localhost:50080"
+    ssm          = "http://localhost:50080"
+    events       = "http://localhost:50080"
+    scheduler    = "http://localhost:50080"
+    athena       = "http://localhost:50080"
+    cloudwatch   = "http://localhost:50080"
+    cloudwatchlogs = "http://localhost:50080"
+    cloudtrail   = "http://localhost:50080"
+    sesv2        = "http://localhost:50080"
+    apigateway   = "http://localhost:50080"
+    wafv2        = "http://localhost:50080"
+    neptune      = "http://localhost:50080"
+    appsync      = "http://localhost:50080"
+    cognitoidp   = "http://localhost:50080"
+    cognitoidentity = "http://localhost:50080"
+    timestreamwrite = "http://localhost:50080"
+    timestreamquery = "http://localhost:50080"
+    stepfunctions = "http://localhost:50080"
+    acm          = "http://localhost:50080"
 
     # Global services
-    iam          = "http://localhost:8080"
-    sts          = "http://localhost:8080"
-    route53      = "http://localhost:8080"
-    cloudfront   = "http://localhost:8080"
+    iam          = "http://localhost:50080"
+    sts          = "http://localhost:50080"
+    route53      = "http://localhost:50080"
+    cloudfront   = "http://localhost:50080"
   }
 
   default_tags {

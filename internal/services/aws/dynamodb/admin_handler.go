@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -15,7 +16,6 @@ import (
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
-// AdminHandler implements the DynamoDB admin console gRPC-Web handler.
 type AdminHandler struct {
 	dynamodbconnect.UnimplementedDynamoDBServiceHandler
 	storageManager *storage.RegionStorageManager
@@ -24,7 +24,6 @@ type AdminHandler struct {
 
 var _ dynamodbconnect.DynamoDBServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new DynamoDB admin handler with the given storage manager and account ID.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -32,18 +31,21 @@ func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId str
 	}
 }
 
-func (h *AdminHandler) getStoreFromHeader(header http.Header) (*dynamodbstore.TableStore, error) {
-	region := svccommon.GetRegionFromHeader(header)
+func (h *AdminHandler) getStore(headers http.Header) (dynamodbstore.DynamoDBStoreInterface, error) {
+	region := svccommon.GetRegionFromHeader(headers)
 	regionStorage, err := h.storageManager.GetStorage(region)
 	if err != nil {
 		return nil, err
 	}
-	return dynamodbstore.NewTableStore(regionStorage, h.accountId, region), nil
+	txnStorage, ok := regionStorage.(storage.TransactionalStorageWith2PC)
+	if !ok {
+		return nil, fmt.Errorf("storage does not support transactions")
+	}
+	return dynamodbstore.NewDynamoDBStore(txnStorage, h.accountId, region), nil
 }
 
-// ListTables retrieves all DynamoDB tables from the regional store with pagination.
 func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.ListTablesInput]) (*connect.Response[pb.ListTablesOutput], error) {
-	tableStore, err := h.getStoreFromHeader(req.Header())
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -54,7 +56,7 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 		limit = int(req.Msg.Limit)
 	}
 
-	tables, nextMarker, err := tableStore.List(marker, limit)
+	tables, nextMarker, err := store.Tables().List(marker, limit)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -70,13 +72,32 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 	}), nil
 }
 
-// CreateTable creates a new DynamoDB table via the admin console.
+func (h *AdminHandler) DescribeTable(ctx context.Context, req *connect.Request[pb.DescribeTableInput]) (*connect.Response[pb.DescribeTableOutput], error) {
+	if req.Msg.GetTablename() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
+	}
+
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	table, err := store.Tables().Get(req.Msg.GetTablename())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pb.DescribeTableOutput{
+		Table: storeTableToProtoDescription(table),
+	}), nil
+}
+
 func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.CreateTableInput]) (*connect.Response[pb.CreateTableOutput], error) {
 	if req.Msg.GetTablename() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
 	}
 
-	store, err := h.getStoreFromHeader(req.Header())
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -91,6 +112,17 @@ func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.
 			AttributeName: ks.GetAttributename(),
 			KeyType:       dynamodbstore.KeyType(kt),
 		})
+	}
+
+	hasHash := false
+	for _, ks := range keySchema {
+		if ks.KeyType == dynamodbstore.KeyTypeHash {
+			hasHash = true
+			break
+		}
+	}
+	if !hasHash {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("KeySchema must contain at least one HASH key"))
 	}
 
 	var attrDefs []*dynamodbstore.AttributeDefinition
@@ -112,38 +144,54 @@ func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.
 		billingMode = dynamodbstore.BillingModeProvisioned
 	}
 
-	table, err := store.Create(req.Msg.GetTablename(), keySchema, attrDefs, billingMode, nil, nil, nil, nil, nil, false)
+	table, err := store.Tables().Create(req.Msg.GetTablename(), keySchema, attrDefs, billingMode, nil, nil, nil, nil, nil, false)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateTableOutput{
-		Tabledescription: &pb.TableDescription{
-			Tablename: table.Name,
-			Tablearn:  table.ARN,
-		},
+		Tabledescription: storeTableToProtoDescription(table),
 	}), nil
 }
 
-// DeleteTable deletes a DynamoDB table via the admin console.
 func (h *AdminHandler) DeleteTable(ctx context.Context, req *connect.Request[pb.DeleteTableInput]) (*connect.Response[pb.DeleteTableOutput], error) {
 	if req.Msg.GetTablename() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
 	}
 
-	store, err := h.getStoreFromHeader(req.Header())
+	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	if err := store.Delete(req.Msg.GetTablename()); err != nil {
+	tableName := req.Msg.GetTablename()
+	var deletedTable *dynamodbstore.Table
+
+	err = store.Update(ctx, func(txn *dynamodbstore.DynamoDBTxn) error {
+		table, err := txn.GetTable(tableName)
+		if err != nil {
+			return err
+		}
+		if table.DeletionProtectionEnabled {
+			return connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("table %s is protected from deletion", tableName))
+		}
+		deletedTable = table
+		return txn.DeleteTableCascade(tableName)
+	})
+	if err != nil {
+		if connectErr := new(connect.Error); errors.As(err, &connectErr) {
+			return nil, connectErr
+		}
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	return connect.NewResponse(&pb.DeleteTableOutput{}), nil
+	deletedTable.Status = dynamodbstore.TableStatusArchived
+
+	return connect.NewResponse(&pb.DeleteTableOutput{
+		Tabledescription: storeTableToProtoDescription(deletedTable),
+	}), nil
 }
 
-// NewConnectHandler creates a gRPC-Web connect handler for the Dynamodb admin console.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return dynamodbconnect.NewDynamoDBServiceHandler(NewAdminHandler(sm, accountID))
 }

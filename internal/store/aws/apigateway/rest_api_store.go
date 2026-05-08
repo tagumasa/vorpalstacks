@@ -462,6 +462,9 @@ func (s *RestApiStore) GetAuthorizer(apiId, authorizerId string) (*Authorizer, e
 
 // UpdateAuthorizer updates an authorizer.
 func (s *RestApiStore) UpdateAuthorizer(apiId string, authorizer *Authorizer) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	api, err := s.Get(apiId)
 	if err != nil {
 		return err
@@ -478,6 +481,9 @@ func (s *RestApiStore) UpdateAuthorizer(apiId string, authorizer *Authorizer) er
 
 // DeleteAuthorizer deletes an authorizer.
 func (s *RestApiStore) DeleteAuthorizer(apiId, authorizerId string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	api, err := s.Get(apiId)
 	if err != nil {
 		return err

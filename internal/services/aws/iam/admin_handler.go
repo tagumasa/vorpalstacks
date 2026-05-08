@@ -2,10 +2,9 @@ package iam
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
-
-	svcerrors "vorpalstacks/internal/common/errors"
 
 	"connectrpc.com/connect"
 
@@ -17,6 +16,27 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
+
+const defaultMaxItemsValue = 100
+
+func pbTagsToStoreTags(pbTags []*pb.Tag) []types.Tag {
+	if len(pbTags) == 0 {
+		return nil
+	}
+	tags := make([]types.Tag, len(pbTags))
+	for i, t := range pbTags {
+		tags[i] = types.Tag{Key: t.Key, Value: t.Value}
+	}
+	return tags
+}
+
+func defaultMaxItems(n int32) int {
+	v := int(n)
+	if v <= 0 {
+		return defaultMaxItemsValue
+	}
+	return v
+}
 
 var _ iamconnect.IAMServiceHandler = (*AdminHandler)(nil)
 
@@ -35,16 +55,71 @@ func NewAdminHandler(store storage.BasicStorage, accountID string) *AdminHandler
 	}
 }
 
+func storeErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	switch {
+	case errors.Is(err, iamstore.ErrUserNotFound),
+		errors.Is(err, iamstore.ErrRoleNotFound),
+		errors.Is(err, iamstore.ErrGroupNotFound),
+		errors.Is(err, iamstore.ErrPolicyNotFound),
+		errors.Is(err, iamstore.ErrAccessKeyNotFound),
+		errors.Is(err, iamstore.ErrLoginProfileNotFound),
+		errors.Is(err, iamstore.ErrInstanceProfileNotFound),
+		errors.Is(err, iamstore.ErrMFADeviceNotFound),
+		errors.Is(err, iamstore.ErrPasswordPolicyNotFound),
+		errors.Is(err, iamstore.ErrServerCertificateNotFound),
+		errors.Is(err, iamstore.ErrSAMLProviderNotFound),
+		errors.Is(err, iamstore.ErrOpenIDConnectProviderNotFound),
+		errors.Is(err, iamstore.ErrSigningCertificateNotFound),
+		errors.Is(err, iamstore.ErrSSHPublicKeyNotFound),
+		errors.Is(err, iamstore.ErrServiceSpecificCredentialNotFound):
+		return connect.NewError(connect.CodeNotFound, err)
+	case errors.Is(err, iamstore.ErrUserAlreadyExists),
+		errors.Is(err, iamstore.ErrRoleAlreadyExists),
+		errors.Is(err, iamstore.ErrGroupAlreadyExists),
+		errors.Is(err, iamstore.ErrPolicyAlreadyExists),
+		errors.Is(err, iamstore.ErrLoginProfileExists),
+		errors.Is(err, iamstore.ErrInstanceProfileAlreadyExists),
+		errors.Is(err, iamstore.ErrRoleAlreadyInInstanceProfile),
+		errors.Is(err, iamstore.ErrServerCertificateAlreadyExists),
+		errors.Is(err, iamstore.ErrSAMLProviderAlreadyExists),
+		errors.Is(err, iamstore.ErrOpenIDConnectProviderAlreadyExists),
+		errors.Is(err, iamstore.ErrUserAlreadyInGroup):
+		return connect.NewError(connect.CodeAlreadyExists, err)
+	case errors.Is(err, iamstore.ErrUserNotInGroup),
+		errors.Is(err, iamstore.ErrRoleNotInInstanceProfile):
+		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case errors.Is(err, iamstore.ErrInvalidPassword),
+		errors.Is(err, iamstore.ErrInvalidAccessKeyStatus):
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	default:
+		return connect.NewError(connect.CodeInternal, err)
+	}
+}
+
+// --- User operations ---
+
+// GetUser returns a single IAM user by name.
+func (h *AdminHandler) GetUser(ctx context.Context, req *connect.Request[pb.GetUserRequest]) (*connect.Response[pb.GetUserResponse], error) {
+	if req.Msg.Username == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
+	}
+	user, err := h.storeObj.Users().Get(req.Msg.Username)
+	if err != nil {
+		return nil, storeErr(err)
+	}
+	return connect.NewResponse(&pb.GetUserResponse{User: toPbUser(user)}), nil
+}
+
 // ListUsers returns a paginated list of IAM users via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.ListUsersRequest]) (*connect.Response[pb.ListUsersResponse], error) {
-	maxItems := int(req.Msg.Maxitems)
-	if maxItems <= 0 {
-		maxItems = 100
-	}
+	maxItems := defaultMaxItems(req.Msg.Maxitems)
 
 	result, err := h.storeObj.Users().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, storeErr(err)
 	}
 
 	users := make([]*pb.User, len(result.Users))
@@ -59,16 +134,71 @@ func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.Li
 	}), nil
 }
 
+// CreateUser creates a new IAM user via the admin console gRPC-Web interface.
+func (h *AdminHandler) CreateUser(ctx context.Context, req *connect.Request[pb.CreateUserRequest]) (*connect.Response[pb.CreateUserResponse], error) {
+	if req.Msg.Username == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
+	}
+
+	tags := pbTagsToStoreTags(req.Msg.Tags)
+
+	user, err := h.storeObj.Users().Create(req.Msg.Username, req.Msg.Path, h.storeObj.AccountID(), tags)
+	if err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pb.CreateUserResponse{
+		User: toPbUser(user),
+	}), nil
+}
+
+// UpdateUser updates an existing IAM user.
+func (h *AdminHandler) UpdateUser(ctx context.Context, req *connect.Request[pb.UpdateUserRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Username == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
+	}
+
+	if err := h.storeObj.RenameUser(req.Msg.Username, req.Msg.Newusername, req.Msg.Newpath); err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// DeleteUser deletes an IAM user via the admin console gRPC-Web interface.
+func (h *AdminHandler) DeleteUser(ctx context.Context, req *connect.Request[pb.DeleteUserRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Username == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
+	}
+
+	if err := h.storeObj.Users().Delete(req.Msg.Username); err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// --- Role operations ---
+
+// GetRole returns a single IAM role by name.
+func (h *AdminHandler) GetRole(ctx context.Context, req *connect.Request[pb.GetRoleRequest]) (*connect.Response[pb.GetRoleResponse], error) {
+	if req.Msg.Rolename == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
+	}
+	role, err := h.storeObj.Roles().Get(req.Msg.Rolename)
+	if err != nil {
+		return nil, storeErr(err)
+	}
+	return connect.NewResponse(&pb.GetRoleResponse{Role: toPbRole(role)}), nil
+}
+
 // ListRoles returns a paginated list of IAM roles via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.ListRolesRequest]) (*connect.Response[pb.ListRolesResponse], error) {
-	maxItems := int(req.Msg.Maxitems)
-	if maxItems <= 0 {
-		maxItems = 100
-	}
+	maxItems := defaultMaxItems(req.Msg.Maxitems)
 
 	result, err := h.storeObj.Roles().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, storeErr(err)
 	}
 
 	roles := make([]*pb.Role, len(result.Roles))
@@ -83,12 +213,83 @@ func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.Li
 	}), nil
 }
 
+// CreateRole creates a new IAM role via the admin console gRPC-Web interface.
+func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.CreateRoleRequest]) (*connect.Response[pb.CreateRoleResponse], error) {
+	if req.Msg.Rolename == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
+	}
+	if req.Msg.Assumerolepolicydocument == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AssumeRolePolicyDocument is required"))
+	}
+
+	tags := pbTagsToStoreTags(req.Msg.Tags)
+
+	maxSessionDuration := int(req.Msg.Maxsessionduration)
+	if maxSessionDuration == 0 {
+		maxSessionDuration = 3600
+	}
+
+	role, err := h.storeObj.Roles().Create(
+		req.Msg.Rolename,
+		req.Msg.Path,
+		h.storeObj.AccountID(),
+		req.Msg.Assumerolepolicydocument,
+		req.Msg.Description,
+		maxSessionDuration,
+		tags,
+	)
+	if err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pb.CreateRoleResponse{
+		Role: toPbRole(role),
+	}), nil
+}
+
+// UpdateRole updates an existing IAM role.
+func (h *AdminHandler) UpdateRole(ctx context.Context, req *connect.Request[pb.UpdateRoleRequest]) (*connect.Response[pb.UpdateRoleResponse], error) {
+	if req.Msg.Rolename == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
+	}
+
+	if err := h.storeObj.UpdateRoleFields(req.Msg.Rolename, req.Msg.Description, int(req.Msg.Maxsessionduration)); err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pb.UpdateRoleResponse{}), nil
+}
+
+// DeleteRole deletes an IAM role via the admin console gRPC-Web interface.
+func (h *AdminHandler) DeleteRole(ctx context.Context, req *connect.Request[pb.DeleteRoleRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Rolename == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
+	}
+
+	if err := h.storeObj.Roles().Delete(req.Msg.Rolename); err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// --- Policy operations ---
+
+// GetPolicy returns a single IAM policy by ARN.
+func (h *AdminHandler) GetPolicy(ctx context.Context, req *connect.Request[pb.GetPolicyRequest]) (*connect.Response[pb.GetPolicyResponse], error) {
+	if req.Msg.Policyarn == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyArn is required"))
+	}
+	policy, err := h.storeObj.Policies().Get(req.Msg.Policyarn)
+	if err != nil {
+		return nil, storeErr(err)
+	}
+	return connect.NewResponse(&pb.GetPolicyResponse{Policy: toPbPolicy(policy)}), nil
+}
+
 // ListPolicies returns a paginated list of IAM policies via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb.ListPoliciesRequest]) (*connect.Response[pb.ListPoliciesResponse], error) {
-	maxItems := int(req.Msg.Maxitems)
-	if maxItems <= 0 {
-		maxItems = 100
-	}
+	maxItems := defaultMaxItems(req.Msg.Maxitems)
 
 	scope := "Local"
 	if req.Msg.Scope == pb.PolicyScopeType_POLICY_SCOPE_TYPE_AWS {
@@ -99,7 +300,7 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 
 	result, err := h.storeObj.Policies().List(scope, req.Msg.Pathprefix, req.Msg.Onlyattached, req.Msg.Marker, maxItems)
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, storeErr(err)
 	}
 
 	policies := make([]*pb.Policy, len(result.Policies))
@@ -113,6 +314,115 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 		Marker:      result.Marker,
 	}), nil
 }
+
+// CreatePolicy creates a new IAM managed policy.
+func (h *AdminHandler) CreatePolicy(ctx context.Context, req *connect.Request[pb.CreatePolicyRequest]) (*connect.Response[pb.CreatePolicyResponse], error) {
+	if req.Msg.Policyname == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyName is required"))
+	}
+	if req.Msg.Policydocument == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyDocument is required"))
+	}
+
+	tags := pbTagsToStoreTags(req.Msg.Tags)
+
+	policy, err := h.storeObj.Policies().Create(req.Msg.Policyname, req.Msg.Path, h.storeObj.AccountID(), req.Msg.Policydocument, req.Msg.Description, tags)
+	if err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pb.CreatePolicyResponse{Policy: toPbPolicy(policy)}), nil
+}
+
+// DeletePolicy deletes an IAM managed policy.
+func (h *AdminHandler) DeletePolicy(ctx context.Context, req *connect.Request[pb.DeletePolicyRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Policyarn == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyArn is required"))
+	}
+
+	if err := h.storeObj.Policies().Delete(req.Msg.Policyarn); err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// --- Group operations ---
+
+// GetGroup returns a single IAM group by name.
+func (h *AdminHandler) GetGroup(ctx context.Context, req *connect.Request[pb.GetGroupRequest]) (*connect.Response[pb.GetGroupResponse], error) {
+	if req.Msg.Groupname == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
+	}
+	group, err := h.storeObj.Groups().Get(req.Msg.Groupname)
+	if err != nil {
+		return nil, storeErr(err)
+	}
+	return connect.NewResponse(&pb.GetGroupResponse{Group: toPbGroup(group)}), nil
+}
+
+// ListGroups returns a paginated list of IAM groups.
+func (h *AdminHandler) ListGroups(ctx context.Context, req *connect.Request[pb.ListGroupsRequest]) (*connect.Response[pb.ListGroupsResponse], error) {
+	maxItems := defaultMaxItems(req.Msg.Maxitems)
+
+	result, err := h.storeObj.Groups().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
+	if err != nil {
+		return nil, storeErr(err)
+	}
+
+	groups := make([]*pb.Group, len(result.Groups))
+	for i, group := range result.Groups {
+		groups[i] = toPbGroup(group)
+	}
+
+	return connect.NewResponse(&pb.ListGroupsResponse{
+		Groups:      groups,
+		Istruncated: result.IsTruncated,
+		Marker:      result.Marker,
+	}), nil
+}
+
+// CreateGroup creates a new IAM group.
+func (h *AdminHandler) CreateGroup(ctx context.Context, req *connect.Request[pb.CreateGroupRequest]) (*connect.Response[pb.CreateGroupResponse], error) {
+	if req.Msg.Groupname == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
+	}
+
+	group, err := h.storeObj.Groups().Create(req.Msg.Groupname, req.Msg.Path, h.storeObj.AccountID())
+	if err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pb.CreateGroupResponse{Group: toPbGroup(group)}), nil
+}
+
+// UpdateGroup updates an existing IAM group.
+func (h *AdminHandler) UpdateGroup(ctx context.Context, req *connect.Request[pb.UpdateGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Groupname == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
+	}
+
+	if err := h.storeObj.RenameGroup(req.Msg.Groupname, req.Msg.Newgroupname, req.Msg.Newpath); err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// DeleteGroup deletes an IAM group.
+func (h *AdminHandler) DeleteGroup(ctx context.Context, req *connect.Request[pb.DeleteGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
+	if req.Msg.Groupname == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
+	}
+
+	if err := h.storeObj.Groups().Delete(req.Msg.Groupname); err != nil {
+		return nil, storeErr(err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// --- Convert functions ---
 
 func toPbUser(user *iamstore.User) *pb.User {
 	pbUser := &pb.User{
@@ -184,17 +494,16 @@ func toPbRole(role *iamstore.Role) *pb.Role {
 
 func toPbPolicy(policy *iamstore.Policy) *pb.Policy {
 	pbPolicy := &pb.Policy{
-		Policyname:                    policy.PolicyName,
-		Policyid:                      policy.ID,
-		Arn:                           policy.Arn,
-		Path:                          policy.Path,
-		Createdate:                    policy.CreateDate.Format(timeutils.ISO8601UTCFormat),
-		Updatedate:                    policy.UpdateDate.Format(timeutils.ISO8601UTCFormat),
-		Defaultversionid:              policy.DefaultVersionId,
-		Attachmentcount:               int32(policy.AttachmentCount),
-		Isattachable:                  policy.IsAttachable,
-		Description:                   policy.Description,
-		Permissionsboundaryusagecount: 0,
+		Policyname:       policy.PolicyName,
+		Policyid:         policy.ID,
+		Arn:              policy.Arn,
+		Path:             policy.Path,
+		Createdate:       policy.CreateDate.Format(timeutils.ISO8601UTCFormat),
+		Updatedate:       policy.UpdateDate.Format(timeutils.ISO8601UTCFormat),
+		Defaultversionid: policy.DefaultVersionId,
+		Attachmentcount:  int32(policy.AttachmentCount),
+		Isattachable:     policy.IsAttachable,
+		Description:      policy.Description,
 	}
 
 	if len(policy.Tags) > 0 {
@@ -207,88 +516,16 @@ func toPbPolicy(policy *iamstore.Policy) *pb.Policy {
 	return pbPolicy
 }
 
-// CreateUser creates a new IAM user via the admin console gRPC-Web interface.
-func (h *AdminHandler) CreateUser(ctx context.Context, req *connect.Request[pb.CreateUserRequest]) (*connect.Response[pb.CreateUserResponse], error) {
-	if req.Msg.Username == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
+func toPbGroup(group *iamstore.Group) *pb.Group {
+	pbGroup := &pb.Group{
+		Groupid:    group.ID,
+		Groupname:  group.GroupName,
+		Arn:        group.Arn,
+		Path:       group.Path,
+		Createdate: group.CreateDate.Format(timeutils.ISO8601UTCFormat),
 	}
 
-	var tags []types.Tag
-	for _, t := range req.Msg.Tags {
-		tags = append(tags, types.Tag{Key: t.Key, Value: t.Value})
-	}
-
-	user, err := h.storeObj.Users().Create(req.Msg.Username, req.Msg.Path, h.storeObj.AccountID(), tags)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	return connect.NewResponse(&pb.CreateUserResponse{
-		User: toPbUser(user),
-	}), nil
-}
-
-// DeleteUser deletes an IAM user via the admin console gRPC-Web interface.
-func (h *AdminHandler) DeleteUser(ctx context.Context, req *connect.Request[pb.DeleteUserRequest]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.Username == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
-	}
-
-	if err := h.storeObj.Users().Delete(req.Msg.Username); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	return connect.NewResponse(&pbcommon.Empty{}), nil
-}
-
-// CreateRole creates a new IAM role via the admin console gRPC-Web interface.
-func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.CreateRoleRequest]) (*connect.Response[pb.CreateRoleResponse], error) {
-	if req.Msg.Rolename == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
-	}
-	if req.Msg.Assumerolepolicydocument == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AssumeRolePolicyDocument is required"))
-	}
-
-	var tags []types.Tag
-	for _, t := range req.Msg.Tags {
-		tags = append(tags, types.Tag{Key: t.Key, Value: t.Value})
-	}
-
-	maxSessionDuration := int(req.Msg.Maxsessionduration)
-	if maxSessionDuration == 0 {
-		maxSessionDuration = 3600
-	}
-
-	role, err := h.storeObj.Roles().Create(
-		req.Msg.Rolename,
-		req.Msg.Path,
-		h.storeObj.AccountID(),
-		req.Msg.Assumerolepolicydocument,
-		req.Msg.Description,
-		maxSessionDuration,
-		tags,
-	)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	return connect.NewResponse(&pb.CreateRoleResponse{
-		Role: toPbRole(role),
-	}), nil
-}
-
-// DeleteRole deletes an IAM role via the admin console gRPC-Web interface.
-func (h *AdminHandler) DeleteRole(ctx context.Context, req *connect.Request[pb.DeleteRoleRequest]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.Rolename == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
-	}
-
-	if err := h.storeObj.Roles().Delete(req.Msg.Rolename); err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	return connect.NewResponse(&pbcommon.Empty{}), nil
+	return pbGroup
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Iam admin console.

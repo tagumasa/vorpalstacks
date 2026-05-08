@@ -356,22 +356,28 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 			return fmt.Errorf("start replay: %v", err)
 		}
 
-		resp, err := client.ListReplays(ctx, &eventbridge.ListReplaysInput{})
-		if err != nil {
-			return fmt.Errorf("list replays: %v", err)
-		}
-		if resp == nil {
-			return fmt.Errorf("response is nil")
-		}
-		if resp.Replays == nil {
-			return fmt.Errorf("replays list is nil")
-		}
+		var nextToken *string
 		found := false
-		for _, rp := range resp.Replays {
-			if rp.ReplayName != nil && *rp.ReplayName == lrReplay {
-				found = true
+		for page := 0; page < 100; page++ {
+			resp, err := client.ListReplays(ctx, &eventbridge.ListReplaysInput{
+				NextToken: nextToken,
+			})
+			if err != nil {
+				return fmt.Errorf("list replays: %v", err)
+			}
+			if resp == nil {
+				return fmt.Errorf("response is nil")
+			}
+			for _, rp := range resp.Replays {
+				if rp.ReplayName != nil && *rp.ReplayName == lrReplay {
+					found = true
+					break
+				}
+			}
+			if found || resp.NextToken == nil {
 				break
 			}
+			nextToken = resp.NextToken
 		}
 		if !found {
 			return fmt.Errorf("expected replay %s in list", lrReplay)

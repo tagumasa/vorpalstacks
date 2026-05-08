@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
@@ -16,6 +17,7 @@ import (
 type IAMService struct {
 	accountID             string
 	stores                sync.Map // global — single cached instance
+	cloudTrailInvoker     eventbus.CloudTrailInvoker
 	reportWg              sync.WaitGroup
 	credentialReportMu    sync.RWMutex
 	credentialReportState string
@@ -28,6 +30,11 @@ func NewIAMService(accountID string) *IAMService {
 	return &IAMService{
 		accountID: accountID,
 	}
+}
+
+// SetCloudTrailInvoker injects the CloudTrail invoker for last-accessed analysis.
+func (s *IAMService) SetCloudTrailInvoker(invoker eventbus.CloudTrailInvoker) {
+	s.cloudTrailInvoker = invoker
 }
 
 func (s *IAMService) store(reqCtx *request.RequestContext) (*iamstore.IAMStore, error) {

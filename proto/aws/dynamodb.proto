@@ -1630,7 +1630,7 @@ message ExecuteStatementOutput {
 
   ConsumedCapacity consumedcapacity = 449336620;
 
-  map<string, AttributeValue> items = 3553328;
+  repeated ItemListEntry items = 3553328;
 
   map<string, AttributeValue> lastevaluatedkey = 54319830;
 
@@ -2458,7 +2458,7 @@ message KeysAndAttributes {
 
   map<string, string> expressionattributenames = 150228092;
 
-  map<string, AttributeValue> keys = 2831086;
+  repeated KeyListEntry keys = 2831086;
 
   string projectionexpression = 150730243;
 
@@ -3052,7 +3052,7 @@ message QueryOutput {
 
   int32 count = 31963285;
 
-  map<string, AttributeValue> items = 3553328;
+  repeated ItemListEntry items = 3553328;
 
   map<string, AttributeValue> lastevaluatedkey = 54319830;
 
@@ -3658,7 +3658,7 @@ message ScanOutput {
 
   int32 count = 31963285;
 
-  map<string, AttributeValue> items = 3553328;
+  repeated ItemListEntry items = 3553328;
 
   map<string, AttributeValue> lastevaluatedkey = 54319830;
 
@@ -4495,6 +4495,26 @@ message WriteRequest {
   DeleteRequest deleterequest = 477809064;
 
   PutRequest putrequest = 443252836;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message ItemListEntry {
+
+  map<string, AttributeValue> value = 1;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message KeyListEntry {
+
+  map<string, AttributeValue> value = 1;
 
 }
 

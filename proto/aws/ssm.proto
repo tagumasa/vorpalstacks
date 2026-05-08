@@ -941,7 +941,7 @@ message Association {
 
   int32 scheduleoffset = 156928216;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   repeated Target targets = 262180226;
 
@@ -1031,7 +1031,7 @@ message AssociationDescription {
 
   repeated TargetLocation targetlocations = 289168805;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   repeated Target targets = 262180226;
 
@@ -1313,7 +1313,7 @@ message AssociationVersionInfo {
 
   repeated TargetLocation targetlocations = 289168805;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   repeated Target targets = 262180226;
 
@@ -1487,7 +1487,7 @@ message AutomationExecution {
 
   string targetlocationsurl = 107583422;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   string targetparametername = 351056597;
 
@@ -1553,7 +1553,7 @@ message AutomationExecutionInputs {
 
   string targetlocationsurl = 107583422;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   string targetparametername = 351056597;
 
@@ -1631,7 +1631,7 @@ message AutomationExecutionMetadata {
 
   string targetlocationsurl = 107583422;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   string targetparametername = 351056597;
 
@@ -2301,7 +2301,7 @@ message CreateAssociationBatchRequestEntry {
 
   repeated TargetLocation targetlocations = 289168805;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   repeated Target targets = 262180226;
 
@@ -2361,7 +2361,7 @@ message CreateAssociationRequest {
 
   repeated TargetLocation targetlocations = 289168805;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   repeated Target targets = 262180226;
 
@@ -3673,7 +3673,7 @@ message DescribePatchPropertiesResult {
 
   string nexttoken = 216957566;
 
-  map<string, string> properties = 29886973;
+  repeated PatchPropertiesListEntry properties = 29886973;
 
 }
 
@@ -4705,7 +4705,7 @@ message GetMaintenanceWindowExecutionTaskResult {
 
   string taskexecutionid = 474180408;
 
-  map<string, MaintenanceWindowTaskParameterValueExpression> taskparameters = 385451905;
+  repeated MaintenanceWindowTaskParametersListEntry taskparameters = 385451905;
 
   repeated AlarmStateInformation triggeredalarms = 263222917;
 
@@ -6171,7 +6171,7 @@ message InventoryItem {
 
   string capturetime = 72276089;
 
-  map<string, string> content = 23568227;
+  repeated InventoryItemEntryListEntry content = 23568227;
 
   string contenthash = 99301015;
 
@@ -6249,7 +6249,7 @@ message InventoryResultItem {
 
   string capturetime = 72276089;
 
-  map<string, string> content = 23568227;
+  repeated InventoryItemEntryListEntry content = 23568227;
 
   string contenthash = 99301015;
 
@@ -6581,7 +6581,7 @@ message ListInventoryEntriesResult {
 
   string capturetime = 72276089;
 
-  map<string, string> entries = 481075860;
+  repeated InventoryItemEntryListEntry entries = 481075860;
 
   string instanceid = 49567392;
 
@@ -6639,7 +6639,7 @@ message ListNodesSummaryResult {
 
   string nexttoken = 216957566;
 
-  map<string, string> summary = 21935540;
+  repeated NodeSummaryListEntry summary = 21935540;
 
 }
 
@@ -7491,7 +7491,7 @@ message OpsEntityItem {
 
   string capturetime = 72276089;
 
-  map<string, string> content = 23568227;
+  repeated OpsEntityItemEntryListEntry content = 23568227;
 
 }
 
@@ -9483,7 +9483,7 @@ message Runbook {
 
   repeated TargetLocation targetlocations = 289168805;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   string targetparametername = 351056597;
 
@@ -9859,7 +9859,7 @@ message StartAutomationExecutionRequest {
 
   string targetlocationsurl = 107583422;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   string targetparametername = 351056597;
 
@@ -10385,7 +10385,7 @@ message UpdateAssociationRequest {
 
   repeated TargetLocation targetlocations = 289168805;
 
-  map<string, string> targetmaps = 74800696;
+  repeated TargetMapsEntry targetmaps = 74800696;
 
   repeated Target targets = 262180226;
 
@@ -10854,6 +10854,66 @@ message ValidationException {
   string message = 235854213;
 
   string reasoncode = 209655857;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message TargetMapsEntry {
+
+  map<string, string> value = 1;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message PatchPropertiesListEntry {
+
+  map<string, string> value = 1;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message MaintenanceWindowTaskParametersListEntry {
+
+  map<string, MaintenanceWindowTaskParameterValueExpression> value = 1;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message InventoryItemEntryListEntry {
+
+  map<string, string> value = 1;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message NodeSummaryListEntry {
+
+  map<string, string> value = 1;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message OpsEntityItemEntryListEntry {
+
+  map<string, string> value = 1;
 
 }
 

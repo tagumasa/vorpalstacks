@@ -3,14 +3,22 @@ package apps
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
+	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
+	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
+	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
 	storesns "vorpalstacks/internal/store/aws/sns"
 	storesqs "vorpalstacks/internal/store/aws/sqs"
+	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
 // sqsInvokerAdapter adapts the SQS concrete store to the eventbus.SQSInvoker
@@ -92,9 +100,10 @@ type snsInvokerAdapter struct {
 	publisher snsPublisher
 }
 
-// snsPublisher publishes a message to an SNS topic by ARN.
+// snsPublisher publishes a message to an SNS topic by ARN and returns the
+// generated message ID.
 type snsPublisher interface {
-	PublishToTopic(ctx context.Context, accountID, region, topicArn, message string) error
+	PublishToTopic(ctx context.Context, accountID, region, topicArn, message, subject string, messageAttributes map[string]string) (string, error)
 }
 
 // GetTopic retrieves the topic ARN for the given topic ARN.
@@ -136,10 +145,11 @@ func (a *snsInvokerAdapter) PublishToTopic(ctx context.Context, topicARN string,
 	}
 	accountID := parts[4]
 	region := parts[3]
-	if err := a.publisher.PublishToTopic(ctx, accountID, region, topicARN, message); err != nil {
+	msgID, err := a.publisher.PublishToTopic(ctx, accountID, region, topicARN, message, subject, messageAttributes)
+	if err != nil {
 		return "", err
 	}
-	return topicARN, nil
+	return msgID, nil
 }
 
 // StoreMessage persists arbitrary data keyed by the given key.
@@ -260,15 +270,12 @@ func convertFromSQSMessageAttributes(attrs map[string]*storesqs.MessageAttribute
 }
 
 // selectOpenShard returns the first open shard (no ending sequence number)
-// from the list, falling back to the last shard if all are closed.
+// from the list, or nil if all shards are closed.
 func selectOpenShard(shards []*storekinesis.Shard) *storekinesis.Shard {
 	for _, s := range shards {
 		if s.SequenceNumberRange != nil && s.SequenceNumberRange.EndingSequenceNumber == "" {
 			return s
 		}
-	}
-	if len(shards) > 0 {
-		return shards[len(shards)-1]
 	}
 	return nil
 }
@@ -299,7 +306,7 @@ func (a *dynamoDBInvokerAdapter) GetItem(ctx context.Context, region, tableName 
 	dynamoKey := dynamoMapToKey(key)
 	item, err := s.Items().Get(tableName, dynamoKey)
 	if err != nil {
-		return map[string]interface{}{}, nil
+		return nil, err
 	}
 	return dynamoItemToPlainMap(item), nil
 }
@@ -333,6 +340,8 @@ func (a *dynamoDBInvokerAdapter) DeleteItem(ctx context.Context, region, tableNa
 	return s.Items().Delete(tableName, dynamoKey)
 }
 
+var errScanLimitReached = fmt.Errorf("scan limit reached")
+
 // Scan scans all items in a DynamoDB table up to the given limit.
 func (a *dynamoDBInvokerAdapter) Scan(ctx context.Context, region, tableName string, limit int) ([]map[string]interface{}, error) {
 	s, err := a.store(ctx, region)
@@ -346,16 +355,16 @@ func (a *dynamoDBInvokerAdapter) Scan(ctx context.Context, region, tableName str
 	count := 0
 	scanErr := s.Items().Scan(tableName, func(item *dynamodbstore.Item) error {
 		if count >= limit {
-			return fmt.Errorf("scan limit reached")
+			return errScanLimitReached
 		}
 		results = append(results, dynamoItemToPlainMap(item))
 		count++
 		return nil
 	})
-	if scanErr != nil && count >= limit {
-		scanErr = nil
+	if scanErr != nil && scanErr != errScanLimitReached {
+		return nil, scanErr
 	}
-	return results, scanErr
+	return results, nil
 }
 
 // Query retrieves items from a DynamoDB table by partition key value.
@@ -371,16 +380,16 @@ func (a *dynamoDBInvokerAdapter) Query(ctx context.Context, region, tableName, p
 	count := 0
 	queryErr := s.Items().ScanByPartitionKey(tableName, partitionKeyValue, func(item *dynamodbstore.Item) error {
 		if count >= limit {
-			return fmt.Errorf("query limit reached")
+			return errScanLimitReached
 		}
 		results = append(results, dynamoItemToPlainMap(item))
 		count++
 		return nil
 	})
-	if queryErr != nil && count >= limit {
-		queryErr = nil
+	if queryErr != nil && queryErr != errScanLimitReached {
+		return nil, queryErr
 	}
-	return results, queryErr
+	return results, nil
 }
 
 // UpdateItem replaces the attributes of an existing item in DynamoDB.
@@ -441,6 +450,8 @@ func dynamoInterfaceToAV(v interface{}) *dynamodbstore.AttributeValue {
 			l[i] = dynamoInterfaceToAV(item)
 		}
 		return &dynamodbstore.AttributeValue{L: l}
+	case []byte:
+		return &dynamodbstore.AttributeValue{B: val}
 	default:
 		s := fmt.Sprintf("%v", val)
 		return &dynamodbstore.AttributeValue{S: &s}
@@ -476,6 +487,9 @@ func dynamoAVToInterface(av *dynamodbstore.AttributeValue) interface{} {
 		return *av.S
 	}
 	if av.N != nil {
+		if f, err := strconv.ParseFloat(*av.N, 64); err == nil {
+			return f
+		}
 		return *av.N
 	}
 	if av.BOOL != nil {
@@ -505,6 +519,194 @@ type neptuneGraphInvokerAdapter struct {
 	service interface {
 		ExecuteQueryOnGraph(ctx context.Context, graphID string, query string, language string, parameters map[string]interface{}) (interface{}, error)
 	}
+}
+
+type wafInvokerAdapter struct {
+	store *wafstore.WebACLAssociationStore
+}
+
+func (a *wafInvokerAdapter) AssociateWebACL(webACLArn, resourceArn string) error {
+	return a.store.Associate(webACLArn, resourceArn)
+}
+
+func (a *wafInvokerAdapter) DisassociateWebACL(webACLArn, resourceArn string) error {
+	return a.store.Disassociate(webACLArn, resourceArn)
+}
+
+type cloudWatchMetricInvokerAdapter struct {
+	storageMgr *storage.RegionStorageManager
+	dataPath   string
+	stores     sync.Map
+}
+
+func (a *cloudWatchMetricInvokerAdapter) getOrCreateStore(region string) (*cwstore.MetricChunkStore, error) {
+	if cached, ok := a.stores.Load(region); ok {
+		if typed, ok := cached.(*cwstore.MetricChunkStore); ok {
+			return typed, nil
+		}
+	}
+	regionStorage, err := a.storageMgr.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store, err := cwstore.NewMetricChunkStoreWithIndex(regionStorage, region, a.dataPath)
+	if err != nil {
+		return nil, err
+	}
+	if actual, loaded := a.stores.LoadOrStore(region, store); loaded {
+		store.Close()
+		typed, ok := actual.(*cwstore.MetricChunkStore)
+		if !ok {
+			return nil, fmt.Errorf("cloudwatch metric: unexpected store type for region %s", region)
+		}
+		return typed, nil
+	}
+	return store, nil
+}
+
+func (a *cloudWatchMetricInvokerAdapter) PutMetricData(region, namespace string, metricName string, value float64, timestamp time.Time) error {
+	store, err := a.getOrCreateStore(region)
+	if err != nil {
+		return err
+	}
+	datum := cwstore.MetricDatum{
+		Namespace:  namespace,
+		MetricName: metricName,
+		Value:      value,
+		Timestamp:  timestamp,
+	}
+	return store.PutMetricData(namespace, []cwstore.MetricDatum{datum})
+}
+
+type cloudTrailInvokerAdapter struct {
+	storageMgr *storage.RegionStorageManager
+	accountID  string
+	stores     sync.Map
+}
+
+func (a *cloudTrailInvokerAdapter) getOrCreateStore(region string) (*cloudtrailstore.CloudTrailStore, error) {
+	if cached, ok := a.stores.Load(region); ok {
+		if typed, ok := cached.(*cloudtrailstore.CloudTrailStore); ok {
+			return typed, nil
+		}
+	}
+	regionStorage, err := a.storageMgr.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	ctStore := cloudtrailstore.NewCloudTrailStore(regionStorage, a.accountID, region)
+	if actual, loaded := a.stores.LoadOrStore(region, ctStore); loaded {
+		typed, ok := actual.(*cloudtrailstore.CloudTrailStore)
+		if !ok {
+			return nil, fmt.Errorf("cloudtrail: unexpected store type for region %s", region)
+		}
+		return typed, nil
+	}
+	return ctStore, nil
+}
+
+func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, accountID, username string, startTime, endTime time.Time, maxResults int32) ([]eventbus.CloudTrailEventInfo, string, error) {
+	ctStore, err := a.getOrCreateStore(region)
+	if err != nil {
+		return nil, "", err
+	}
+	query := cloudtrailstore.EventQuery{
+		MaxResults: maxResults,
+		StartTime:  &startTime,
+		EndTime:    &endTime,
+		Username:   username,
+	}
+	events, nextToken, err := ctStore.LookupEvents(query)
+	if err != nil {
+		return nil, "", err
+	}
+	out := make([]eventbus.CloudTrailEventInfo, 0, len(events))
+	for _, e := range events {
+		if e == nil {
+			continue
+		}
+		username := ""
+		if e.UserIdentity != nil {
+			username = e.UserIdentity.UserName
+		}
+		out = append(out, eventbus.CloudTrailEventInfo{
+			EventID:     e.EventID,
+			EventName:   e.EventName,
+			EventSource: e.EventSource,
+			EventTime:   e.EventTime,
+			Username:    username,
+		})
+	}
+	return out, nextToken, nil
+}
+
+type logsInvokerAdapter struct {
+	storageMgr *storage.RegionStorageManager
+	accountID  string
+	dataPath   string
+	stores     sync.Map
+}
+
+func (a *logsInvokerAdapter) getOrCreateStore(region string) (*logsstore.Store, error) {
+	if cached, ok := a.stores.Load(region); ok {
+		if typed, ok := cached.(*logsstore.Store); ok {
+			return typed, nil
+		}
+	}
+	regionStorage, err := a.storageMgr.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store, err := logsstore.NewStore(regionStorage, regionStorage.Bucket("logs-"+region), a.accountID, region, a.dataPath)
+	if err != nil {
+		return nil, err
+	}
+	if actual, loaded := a.stores.LoadOrStore(region, store); loaded {
+		typed, ok := actual.(*logsstore.Store)
+		if !ok {
+			return nil, fmt.Errorf("logs: unexpected store type for region %s", region)
+		}
+		return typed, nil
+	}
+	return store, nil
+}
+
+func (a *logsInvokerAdapter) EnsureLogGroup(_ context.Context, region, logGroupName, accountID string) error {
+	store, err := a.getOrCreateStore(region)
+	if err != nil {
+		return err
+	}
+	_, err = store.GetLogGroup(logGroupName)
+	if err != nil {
+		lg := logsstore.NewLogGroup(logGroupName, region, accountID)
+		return store.CreateLogGroup(lg)
+	}
+	return nil
+}
+
+func (a *logsInvokerAdapter) EnsureLogStream(_ context.Context, region, logGroupName, logStreamName string) error {
+	store, err := a.getOrCreateStore(region)
+	if err != nil {
+		return err
+	}
+	if _, err := store.GetLogStream(logGroupName, logStreamName); err == nil {
+		return nil
+	}
+	ls := logsstore.NewLogStream(logStreamName, logGroupName)
+	return store.CreateLogStream(ls)
+}
+
+func (a *logsInvokerAdapter) PutLogEvents(_ context.Context, region, logGroupName, logStreamName string, entries []eventbus.LogsLogEntry) error {
+	store, err := a.getOrCreateStore(region)
+	if err != nil {
+		return err
+	}
+	storeEvents := make([]logsstore.LogEntry, len(entries))
+	for i, e := range entries {
+		storeEvents[i] = logsstore.LogEntry{Timestamp: e.Timestamp, Message: e.Message}
+	}
+	_, err = store.PutLogEvents(logGroupName, logStreamName, storeEvents)
+	return err
 }
 
 func (a *neptuneGraphInvokerAdapter) ExecuteQueryOnGraph(ctx context.Context, graphID string, query string, language string, parameters map[string]interface{}) (interface{}, error) {

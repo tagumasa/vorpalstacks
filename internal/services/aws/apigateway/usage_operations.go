@@ -77,7 +77,7 @@ func (s *APIGatewayService) GetApiKey(ctx context.Context, reqCtx *request.Reque
 	}
 	apiKey, err := stores.usage.GetApiKey(apiKeyId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	return s.toApiKeyResponseWithIncludeValue(apiKey, includeValue), nil
@@ -98,7 +98,7 @@ func (s *APIGatewayService) DeleteApiKey(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 	if err := stores.usage.DeleteApiKey(apiKeyId); err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	if s.runtimeServer != nil {
@@ -124,7 +124,7 @@ func (s *APIGatewayService) UpdateApiKey(ctx context.Context, reqCtx *request.Re
 	}
 	apiKey, err := stores.usage.GetApiKey(apiKeyId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	patchOps, ok := req.Parameters["patchOperations"].([]interface{})
@@ -361,7 +361,7 @@ func (s *APIGatewayService) GetUsagePlan(ctx context.Context, reqCtx *request.Re
 	}
 	usagePlan, err := stores.usage.GetUsagePlan(usagePlanId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	return s.toUsagePlanResponse(usagePlan), nil
@@ -382,7 +382,7 @@ func (s *APIGatewayService) DeleteUsagePlan(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 	if err := stores.usage.DeleteUsagePlan(usagePlanId); err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -404,7 +404,7 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 	}
 	usagePlan, err := stores.usage.GetUsagePlan(usagePlanId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	patchOps, ok := req.Parameters["patchOperations"].([]interface{})

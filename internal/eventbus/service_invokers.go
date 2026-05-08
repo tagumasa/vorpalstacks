@@ -152,7 +152,55 @@ type IAMPrincipalResolver interface {
 // consumers (e.g. NeptuneData bulk loader, DynamoDB import/export). Consumers
 // call these methods instead of holding a direct reference to the S3 store.
 type S3Invoker interface {
-	GetObject(ctx context.Context, region, bucket, key string) ([]byte, error)
-	PutObject(ctx context.Context, region, bucket, key string, data []byte) error
-	ListObjects(ctx context.Context, region, bucket, prefix string) ([]string, error)
+	GetObject(ctx context.Context, region, bucket, key string, maxBytes int64) ([]byte, error)
+	PutObject(ctx context.Context, region, bucket, key string, data []byte, contentType string) error
+	ListObjects(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]string, error)
+}
+
+// WAFInvoker provides WAF WebACL association operations for cross-service
+// consumers (e.g. CloudFront distribution management). Consumers call these
+// methods instead of holding a direct reference to the WAF store.
+type WAFInvoker interface {
+	AssociateWebACL(webACLArn, resourceArn string) error
+	DisassociateWebACL(webACLArn, resourceArn string) error
+}
+
+// CloudWatchMetricInvoker provides CloudWatch metric data operations for
+// cross-service consumers (e.g. CloudWatch Logs metric filter evaluation).
+// Consumers call these methods instead of holding a direct reference to the
+// CloudWatch metric store.
+type CloudWatchMetricInvoker interface {
+	PutMetricData(region, namespace string, metricName string, value float64, timestamp time.Time) error
+}
+
+// CloudTrailEventInfo carries the fields of a CloudTrail event that
+// cross-service consumers need for last-accessed analysis.
+type CloudTrailEventInfo struct {
+	EventID     string
+	EventName   string
+	EventSource string
+	EventTime   time.Time
+	Username    string
+}
+
+// CloudTrailInvoker provides CloudTrail event lookup for cross-service
+// consumers (e.g. IAM GenerateServiceLastAccessedDetails). Consumers call
+// these methods instead of holding a direct reference to the CloudTrail store.
+type CloudTrailInvoker interface {
+	LookupEvents(ctx context.Context, region, accountID, username string, startTime, endTime time.Time, maxResults int32) ([]CloudTrailEventInfo, string, error)
+}
+
+// LogsLogEntry carries a single log entry for cross-service delivery.
+type LogsLogEntry struct {
+	Timestamp int64
+	Message   string
+}
+
+// LogsInvoker provides CloudWatch Logs write operations for cross-service
+// consumers (e.g. Lambda function log delivery). Consumers call these methods
+// instead of holding a direct reference to the Logs store.
+type LogsInvoker interface {
+	EnsureLogGroup(ctx context.Context, region, logGroupName, accountID string) error
+	EnsureLogStream(ctx context.Context, region, logGroupName, logStreamName string) error
+	PutLogEvents(ctx context.Context, region, logGroupName, logStreamName string, entries []LogsLogEntry) error
 }

@@ -47,19 +47,23 @@ func (s *OpenIDConnectProviderStore) Put(provider *OpenIDConnectProvider) error 
 // Create creates a new OpenID Connect provider with the specified URL, thumbprints, client IDs, and tags.
 func (s *OpenIDConnectProviderStore) Create(url string, thumbprintList, clientIdList []string, tags []types.Tag) (*OpenIDConnectProvider, error) {
 	arn := s.arnBuilder.OpenIDConnectProviderARN(url)
-	if s.Exists(arn) {
-		return nil, NewStoreError("create_oidc_provider", ErrOpenIDConnectProviderAlreadyExists)
-	}
-	provider := &OpenIDConnectProvider{
-		Arn:            arn,
-		AccountId:      s.arnBuilder.AccountID(),
-		URL:            url,
-		ThumbprintList: thumbprintList,
-		ClientIDList:   clientIdList,
-		CreateDate:     time.Now().UTC(),
-		Tags:           tags,
-	}
-	if err := s.Put(provider); err != nil {
+	var provider *OpenIDConnectProvider
+	err := s.kl.WithLock(arn, func() error {
+		if s.Exists(arn) {
+			return NewStoreError("create_oidc_provider", ErrOpenIDConnectProviderAlreadyExists)
+		}
+		provider = &OpenIDConnectProvider{
+			Arn:            arn,
+			AccountId:      s.arnBuilder.AccountID(),
+			URL:            url,
+			ThumbprintList: thumbprintList,
+			ClientIDList:   clientIdList,
+			CreateDate:     time.Now().UTC(),
+			Tags:           tags,
+		}
+		return s.Put(provider)
+	})
+	if err != nil {
 		return nil, err
 	}
 	return provider, nil

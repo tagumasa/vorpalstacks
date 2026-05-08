@@ -7326,7 +7326,7 @@ func (x *ExecuteStatementInput) GetStatement() string {
 type ExecuteStatementOutput struct {
 	state            protoimpl.MessageState     `protogen:"open.v1"`
 	Consumedcapacity *ConsumedCapacity          `protobuf:"bytes,449336620,opt,name=consumedcapacity,proto3" json:"consumedcapacity,omitempty"`
-	Items            map[string]*AttributeValue `protobuf:"bytes,3553328,rep,name=items,proto3" json:"items,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Items            []*ItemListEntry           `protobuf:"bytes,3553328,rep,name=items,proto3" json:"items,omitempty"`
 	Lastevaluatedkey map[string]*AttributeValue `protobuf:"bytes,54319830,rep,name=lastevaluatedkey,proto3" json:"lastevaluatedkey,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Nexttoken        string                     `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -7370,7 +7370,7 @@ func (x *ExecuteStatementOutput) GetConsumedcapacity() *ConsumedCapacity {
 	return nil
 }
 
-func (x *ExecuteStatementOutput) GetItems() map[string]*AttributeValue {
+func (x *ExecuteStatementOutput) GetItems() []*ItemListEntry {
 	if x != nil {
 		return x.Items
 	}
@@ -10352,12 +10352,12 @@ func (x *KeySchemaElement) GetKeytype() KeyType {
 }
 
 type KeysAndAttributes struct {
-	state                    protoimpl.MessageState     `protogen:"open.v1"`
-	Attributestoget          []string                   `protobuf:"bytes,311382592,rep,name=attributestoget,proto3" json:"attributestoget,omitempty"`
-	Consistentread           bool                       `protobuf:"varint,531556994,opt,name=consistentread,proto3" json:"consistentread,omitempty"`
-	Expressionattributenames map[string]string          `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Keys                     map[string]*AttributeValue `protobuf:"bytes,2831086,rep,name=keys,proto3" json:"keys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Projectionexpression     string                     `protobuf:"bytes,150730243,opt,name=projectionexpression,proto3" json:"projectionexpression,omitempty"`
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	Attributestoget          []string               `protobuf:"bytes,311382592,rep,name=attributestoget,proto3" json:"attributestoget,omitempty"`
+	Consistentread           bool                   `protobuf:"varint,531556994,opt,name=consistentread,proto3" json:"consistentread,omitempty"`
+	Expressionattributenames map[string]string      `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Keys                     []*KeyListEntry        `protobuf:"bytes,2831086,rep,name=keys,proto3" json:"keys,omitempty"`
+	Projectionexpression     string                 `protobuf:"bytes,150730243,opt,name=projectionexpression,proto3" json:"projectionexpression,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -10413,7 +10413,7 @@ func (x *KeysAndAttributes) GetExpressionattributenames() map[string]string {
 	return nil
 }
 
-func (x *KeysAndAttributes) GetKeys() map[string]*AttributeValue {
+func (x *KeysAndAttributes) GetKeys() []*KeyListEntry {
 	if x != nil {
 		return x.Keys
 	}
@@ -12903,7 +12903,7 @@ type QueryOutput struct {
 	state            protoimpl.MessageState     `protogen:"open.v1"`
 	Consumedcapacity *ConsumedCapacity          `protobuf:"bytes,449336620,opt,name=consumedcapacity,proto3" json:"consumedcapacity,omitempty"`
 	Count            int32                      `protobuf:"varint,31963285,opt,name=count,proto3" json:"count,omitempty"`
-	Items            map[string]*AttributeValue `protobuf:"bytes,3553328,rep,name=items,proto3" json:"items,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Items            []*ItemListEntry           `protobuf:"bytes,3553328,rep,name=items,proto3" json:"items,omitempty"`
 	Lastevaluatedkey map[string]*AttributeValue `protobuf:"bytes,54319830,rep,name=lastevaluatedkey,proto3" json:"lastevaluatedkey,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Scannedcount     int32                      `protobuf:"varint,531161315,opt,name=scannedcount,proto3" json:"scannedcount,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -12954,7 +12954,7 @@ func (x *QueryOutput) GetCount() int32 {
 	return 0
 }
 
-func (x *QueryOutput) GetItems() map[string]*AttributeValue {
+func (x *QueryOutput) GetItems() []*ItemListEntry {
 	if x != nil {
 		return x.Items
 	}
@@ -14991,7 +14991,7 @@ type ScanOutput struct {
 	state            protoimpl.MessageState     `protogen:"open.v1"`
 	Consumedcapacity *ConsumedCapacity          `protobuf:"bytes,449336620,opt,name=consumedcapacity,proto3" json:"consumedcapacity,omitempty"`
 	Count            int32                      `protobuf:"varint,31963285,opt,name=count,proto3" json:"count,omitempty"`
-	Items            map[string]*AttributeValue `protobuf:"bytes,3553328,rep,name=items,proto3" json:"items,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Items            []*ItemListEntry           `protobuf:"bytes,3553328,rep,name=items,proto3" json:"items,omitempty"`
 	Lastevaluatedkey map[string]*AttributeValue `protobuf:"bytes,54319830,rep,name=lastevaluatedkey,proto3" json:"lastevaluatedkey,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Scannedcount     int32                      `protobuf:"varint,531161315,opt,name=scannedcount,proto3" json:"scannedcount,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -15042,7 +15042,7 @@ func (x *ScanOutput) GetCount() int32 {
 	return 0
 }
 
-func (x *ScanOutput) GetItems() map[string]*AttributeValue {
+func (x *ScanOutput) GetItems() []*ItemListEntry {
 	if x != nil {
 		return x.Items
 	}
@@ -18403,6 +18403,94 @@ func (x *WriteRequest) GetPutrequest() *PutRequest {
 	return nil
 }
 
+type ItemListEntry struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Value         map[string]*AttributeValue `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ItemListEntry) Reset() {
+	*x = ItemListEntry{}
+	mi := &file_dynamodb_proto_msgTypes[259]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ItemListEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ItemListEntry) ProtoMessage() {}
+
+func (x *ItemListEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_dynamodb_proto_msgTypes[259]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ItemListEntry.ProtoReflect.Descriptor instead.
+func (*ItemListEntry) Descriptor() ([]byte, []int) {
+	return file_dynamodb_proto_rawDescGZIP(), []int{259}
+}
+
+func (x *ItemListEntry) GetValue() map[string]*AttributeValue {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+type KeyListEntry struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Value         map[string]*AttributeValue `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KeyListEntry) Reset() {
+	*x = KeyListEntry{}
+	mi := &file_dynamodb_proto_msgTypes[260]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KeyListEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KeyListEntry) ProtoMessage() {}
+
+func (x *KeyListEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_dynamodb_proto_msgTypes[260]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KeyListEntry.ProtoReflect.Descriptor instead.
+func (*KeyListEntry) Descriptor() ([]byte, []int) {
+	return file_dynamodb_proto_rawDescGZIP(), []int{260}
+}
+
+func (x *KeyListEntry) GetValue() map[string]*AttributeValue {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
 var File_dynamodb_proto protoreflect.FileDescriptor
 
 const file_dynamodb_proto_rawDesc = "" +
@@ -18853,16 +18941,12 @@ const file_dynamodb_proto_rawDesc = "" +
 	"parameters\x12[\n" +
 	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12\x82\x01\n" +
 	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12\x1f\n" +
-	"\tstatement\x18\xb7\xf9\xd0v \x01(\tR\tstatement\"\xe5\x03\n" +
+	"\tstatement\x18\xb7\xf9\xd0v \x01(\tR\tstatement\"\xfd\x02\n" +
 	"\x16ExecuteStatementOutput\x12J\n" +
-	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12D\n" +
-	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2+.dynamodb.ExecuteStatementOutput.ItemsEntryR\x05items\x12e\n" +
+	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x120\n" +
+	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x17.dynamodb.ItemListEntryR\x05items\x12e\n" +
 	"\x10lastevaluatedkey\x18ֵ\xf3\x19 \x03(\v26.dynamodb.ExecuteStatementOutput.LastevaluatedkeyEntryR\x10lastevaluatedkey\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x1aR\n" +
-	"\n" +
-	"ItemsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\x1a]\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x1a]\n" +
 	"\x15LastevaluatedkeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\"\x80\x02\n" +
@@ -19119,19 +19203,16 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\"l\n" +
 	"\x10KeySchemaElement\x12(\n" +
 	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tR\rattributename\x12.\n" +
-	"\akeytype\x18\xe5\xfa\xb2\x02 \x01(\x0e2\x11.dynamodb.KeyTypeR\akeytype\"\xfc\x03\n" +
+	"\akeytype\x18\xe5\xfa\xb2\x02 \x01(\x0e2\x11.dynamodb.KeyTypeR\akeytype\"\x9a\x03\n" +
 	"\x11KeysAndAttributes\x12,\n" +
 	"\x0fattributestoget\x18\xc0\xa4\xbd\x94\x01 \x03(\tR\x0fattributestoget\x12*\n" +
 	"\x0econsistentread\x18\x82ջ\xfd\x01 \x01(\bR\x0econsistentread\x12x\n" +
-	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v29.dynamodb.KeysAndAttributes.ExpressionattributenamesEntryR\x18expressionattributenames\x12<\n" +
-	"\x04keys\x18\xee\xe5\xac\x01 \x03(\v2%.dynamodb.KeysAndAttributes.KeysEntryR\x04keys\x125\n" +
+	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v29.dynamodb.KeysAndAttributes.ExpressionattributenamesEntryR\x18expressionattributenames\x12-\n" +
+	"\x04keys\x18\xee\xe5\xac\x01 \x03(\v2\x16.dynamodb.KeyListEntryR\x04keys\x125\n" +
 	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tR\x14projectionexpression\x1aK\n" +
 	"\x1dExpressionattributenamesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aQ\n" +
-	"\tKeysEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\"\xe0\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe0\x02\n" +
 	"\x1cKinesisDataStreamDestination\x12\x86\x01\n" +
 	"$approximatecreationdatetimeprecision\x18\xe8ׇ\xbb\x01 \x01(\x0e2..dynamodb.ApproximateCreationDateTimePrecisionR$approximatecreationdatetimeprecision\x12M\n" +
 	"\x11destinationstatus\x18\xea\xc5\xe5\xb5\x01 \x01(\x0e2\x1b.dynamodb.DestinationStatusR\x11destinationstatus\x12F\n" +
@@ -19368,17 +19449,13 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01\x1aS\n" +
 	"\x10QueryfilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12)\n" +
-	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01\"\xe4\x03\n" +
+	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01\"\x87\x03\n" +
 	"\vQueryOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12\x17\n" +
-	"\x05count\x18\x95\xf1\x9e\x0f \x01(\x05R\x05count\x129\n" +
-	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2 .dynamodb.QueryOutput.ItemsEntryR\x05items\x12Z\n" +
+	"\x05count\x18\x95\xf1\x9e\x0f \x01(\x05R\x05count\x120\n" +
+	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x17.dynamodb.ItemListEntryR\x05items\x12Z\n" +
 	"\x10lastevaluatedkey\x18ֵ\xf3\x19 \x03(\v2+.dynamodb.QueryOutput.LastevaluatedkeyEntryR\x10lastevaluatedkey\x12&\n" +
-	"\fscannedcount\x18\xe3\xc1\xa3\xfd\x01 \x01(\x05R\fscannedcount\x1aR\n" +
-	"\n" +
-	"ItemsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\x1a]\n" +
+	"\fscannedcount\x18\xe3\xc1\xa3\xfd\x01 \x01(\x05R\fscannedcount\x1a]\n" +
 	"\x15LastevaluatedkeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\",\n" +
@@ -19561,18 +19638,14 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\x1aR\n" +
 	"\x0fScanfilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12)\n" +
-	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01\"\xe1\x03\n" +
+	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01\"\x85\x03\n" +
 	"\n" +
 	"ScanOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12\x17\n" +
-	"\x05count\x18\x95\xf1\x9e\x0f \x01(\x05R\x05count\x128\n" +
-	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x1f.dynamodb.ScanOutput.ItemsEntryR\x05items\x12Y\n" +
+	"\x05count\x18\x95\xf1\x9e\x0f \x01(\x05R\x05count\x120\n" +
+	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x17.dynamodb.ItemListEntryR\x05items\x12Y\n" +
 	"\x10lastevaluatedkey\x18ֵ\xf3\x19 \x03(\v2*.dynamodb.ScanOutput.LastevaluatedkeyEntryR\x10lastevaluatedkey\x12&\n" +
-	"\fscannedcount\x18\xe3\xc1\xa3\xfd\x01 \x01(\x05R\fscannedcount\x1aR\n" +
-	"\n" +
-	"ItemsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\x1a]\n" +
+	"\fscannedcount\x18\xe3\xc1\xa3\xfd\x01 \x01(\x05R\fscannedcount\x1a]\n" +
 	"\x15LastevaluatedkeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\"\x9e\x04\n" +
@@ -19854,7 +19927,19 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\rdeleterequest\x18\xa8\x93\xeb\xe3\x01 \x01(\v2\x17.dynamodb.DeleteRequestR\rdeleterequest\x128\n" +
 	"\n" +
 	"putrequest\x18䀮\xd3\x01 \x01(\v2\x14.dynamodb.PutRequestR\n" +
-	"putrequest*\x9a\x01\n" +
+	"putrequest\"\x9d\x01\n" +
+	"\rItemListEntry\x128\n" +
+	"\x05value\x18\x01 \x03(\v2\".dynamodb.ItemListEntry.ValueEntryR\x05value\x1aR\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
+	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\"\x9b\x01\n" +
+	"\fKeyListEntry\x127\n" +
+	"\x05value\x18\x01 \x03(\v2!.dynamodb.KeyListEntry.ValueEntryR\x05value\x1aR\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
+	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01*\x9a\x01\n" +
 	"$ApproximateCreationDateTimePrecision\x128\n" +
 	"4APPROXIMATE_CREATION_DATE_TIME_PRECISION_MILLISECOND\x10\x00\x128\n" +
 	"4APPROXIMATE_CREATION_DATE_TIME_PRECISION_MICROSECOND\x10\x01*b\n" +
@@ -20441,42 +20526,42 @@ var file_dynamodb_proto_goTypes = []any{
 	(*UpdateTimeToLiveOutput)(nil),                            // 299: dynamodb.UpdateTimeToLiveOutput
 	(*WarmThroughput)(nil),                                    // 300: dynamodb.WarmThroughput
 	(*WriteRequest)(nil),                                      // 301: dynamodb.WriteRequest
-	nil,                                                       // 302: dynamodb.AttributeValue.MEntry
-	nil,                                                       // 303: dynamodb.BatchGetItemInput.RequestitemsEntry
-	nil,                                                       // 304: dynamodb.BatchGetItemOutput.ResponsesEntry
-	nil,                                                       // 305: dynamodb.BatchGetItemOutput.UnprocessedkeysEntry
-	nil,                                                       // 306: dynamodb.BatchStatementError.ItemEntry
-	nil,                                                       // 307: dynamodb.BatchStatementResponse.ItemEntry
-	nil,                                                       // 308: dynamodb.BatchWriteItemInput.RequestitemsEntry
-	nil,                                                       // 309: dynamodb.BatchWriteItemOutput.ItemcollectionmetricsEntry
-	nil,                                                       // 310: dynamodb.BatchWriteItemOutput.UnprocesseditemsEntry
-	nil,                                                       // 311: dynamodb.CancellationReason.ItemEntry
-	nil,                                                       // 312: dynamodb.ConditionCheck.ExpressionattributenamesEntry
-	nil,                                                       // 313: dynamodb.ConditionCheck.ExpressionattributevaluesEntry
-	nil,                                                       // 314: dynamodb.ConditionCheck.KeyEntry
-	nil,                                                       // 315: dynamodb.ConditionalCheckFailedException.ItemEntry
-	nil,                                                       // 316: dynamodb.ConsumedCapacity.GlobalsecondaryindexesEntry
-	nil,                                                       // 317: dynamodb.ConsumedCapacity.LocalsecondaryindexesEntry
-	nil,                                                       // 318: dynamodb.Delete.ExpressionattributenamesEntry
-	nil,                                                       // 319: dynamodb.Delete.ExpressionattributevaluesEntry
-	nil,                                                       // 320: dynamodb.Delete.KeyEntry
-	nil,                                                       // 321: dynamodb.DeleteItemInput.ExpectedEntry
-	nil,                                                       // 322: dynamodb.DeleteItemInput.ExpressionattributenamesEntry
-	nil,                                                       // 323: dynamodb.DeleteItemInput.ExpressionattributevaluesEntry
-	nil,                                                       // 324: dynamodb.DeleteItemInput.KeyEntry
-	nil,                                                       // 325: dynamodb.DeleteItemOutput.AttributesEntry
-	nil,                                                       // 326: dynamodb.DeleteRequest.KeyEntry
-	nil,                                                       // 327: dynamodb.ExecuteStatementOutput.ItemsEntry
-	nil,                                                       // 328: dynamodb.ExecuteStatementOutput.LastevaluatedkeyEntry
-	nil,                                                       // 329: dynamodb.Get.ExpressionattributenamesEntry
-	nil,                                                       // 330: dynamodb.Get.KeyEntry
-	nil,                                                       // 331: dynamodb.GetItemInput.ExpressionattributenamesEntry
-	nil,                                                       // 332: dynamodb.GetItemInput.KeyEntry
-	nil,                                                       // 333: dynamodb.GetItemOutput.ItemEntry
-	nil,                                                       // 334: dynamodb.ItemCollectionMetrics.ItemcollectionkeyEntry
-	nil,                                                       // 335: dynamodb.ItemResponse.ItemEntry
-	nil,                                                       // 336: dynamodb.KeysAndAttributes.ExpressionattributenamesEntry
-	nil,                                                       // 337: dynamodb.KeysAndAttributes.KeysEntry
+	(*ItemListEntry)(nil),                                     // 302: dynamodb.ItemListEntry
+	(*KeyListEntry)(nil),                                      // 303: dynamodb.KeyListEntry
+	nil,                                                       // 304: dynamodb.AttributeValue.MEntry
+	nil,                                                       // 305: dynamodb.BatchGetItemInput.RequestitemsEntry
+	nil,                                                       // 306: dynamodb.BatchGetItemOutput.ResponsesEntry
+	nil,                                                       // 307: dynamodb.BatchGetItemOutput.UnprocessedkeysEntry
+	nil,                                                       // 308: dynamodb.BatchStatementError.ItemEntry
+	nil,                                                       // 309: dynamodb.BatchStatementResponse.ItemEntry
+	nil,                                                       // 310: dynamodb.BatchWriteItemInput.RequestitemsEntry
+	nil,                                                       // 311: dynamodb.BatchWriteItemOutput.ItemcollectionmetricsEntry
+	nil,                                                       // 312: dynamodb.BatchWriteItemOutput.UnprocesseditemsEntry
+	nil,                                                       // 313: dynamodb.CancellationReason.ItemEntry
+	nil,                                                       // 314: dynamodb.ConditionCheck.ExpressionattributenamesEntry
+	nil,                                                       // 315: dynamodb.ConditionCheck.ExpressionattributevaluesEntry
+	nil,                                                       // 316: dynamodb.ConditionCheck.KeyEntry
+	nil,                                                       // 317: dynamodb.ConditionalCheckFailedException.ItemEntry
+	nil,                                                       // 318: dynamodb.ConsumedCapacity.GlobalsecondaryindexesEntry
+	nil,                                                       // 319: dynamodb.ConsumedCapacity.LocalsecondaryindexesEntry
+	nil,                                                       // 320: dynamodb.Delete.ExpressionattributenamesEntry
+	nil,                                                       // 321: dynamodb.Delete.ExpressionattributevaluesEntry
+	nil,                                                       // 322: dynamodb.Delete.KeyEntry
+	nil,                                                       // 323: dynamodb.DeleteItemInput.ExpectedEntry
+	nil,                                                       // 324: dynamodb.DeleteItemInput.ExpressionattributenamesEntry
+	nil,                                                       // 325: dynamodb.DeleteItemInput.ExpressionattributevaluesEntry
+	nil,                                                       // 326: dynamodb.DeleteItemInput.KeyEntry
+	nil,                                                       // 327: dynamodb.DeleteItemOutput.AttributesEntry
+	nil,                                                       // 328: dynamodb.DeleteRequest.KeyEntry
+	nil,                                                       // 329: dynamodb.ExecuteStatementOutput.LastevaluatedkeyEntry
+	nil,                                                       // 330: dynamodb.Get.ExpressionattributenamesEntry
+	nil,                                                       // 331: dynamodb.Get.KeyEntry
+	nil,                                                       // 332: dynamodb.GetItemInput.ExpressionattributenamesEntry
+	nil,                                                       // 333: dynamodb.GetItemInput.KeyEntry
+	nil,                                                       // 334: dynamodb.GetItemOutput.ItemEntry
+	nil,                                                       // 335: dynamodb.ItemCollectionMetrics.ItemcollectionkeyEntry
+	nil,                                                       // 336: dynamodb.ItemResponse.ItemEntry
+	nil,                                                       // 337: dynamodb.KeysAndAttributes.ExpressionattributenamesEntry
 	nil,                                                       // 338: dynamodb.Put.ExpressionattributenamesEntry
 	nil,                                                       // 339: dynamodb.Put.ExpressionattributevaluesEntry
 	nil,                                                       // 340: dynamodb.Put.ItemEntry
@@ -20491,30 +20576,30 @@ var file_dynamodb_proto_goTypes = []any{
 	nil,                                                       // 349: dynamodb.QueryInput.ExpressionattributevaluesEntry
 	nil,                                                       // 350: dynamodb.QueryInput.KeyconditionsEntry
 	nil,                                                       // 351: dynamodb.QueryInput.QueryfilterEntry
-	nil,                                                       // 352: dynamodb.QueryOutput.ItemsEntry
-	nil,                                                       // 353: dynamodb.QueryOutput.LastevaluatedkeyEntry
-	nil,                                                       // 354: dynamodb.ScanInput.ExclusivestartkeyEntry
-	nil,                                                       // 355: dynamodb.ScanInput.ExpressionattributenamesEntry
-	nil,                                                       // 356: dynamodb.ScanInput.ExpressionattributevaluesEntry
-	nil,                                                       // 357: dynamodb.ScanInput.ScanfilterEntry
-	nil,                                                       // 358: dynamodb.ScanOutput.ItemsEntry
-	nil,                                                       // 359: dynamodb.ScanOutput.LastevaluatedkeyEntry
-	nil,                                                       // 360: dynamodb.TransactWriteItemsOutput.ItemcollectionmetricsEntry
-	nil,                                                       // 361: dynamodb.Update.ExpressionattributenamesEntry
-	nil,                                                       // 362: dynamodb.Update.ExpressionattributevaluesEntry
-	nil,                                                       // 363: dynamodb.Update.KeyEntry
-	nil,                                                       // 364: dynamodb.UpdateItemInput.AttributeupdatesEntry
-	nil,                                                       // 365: dynamodb.UpdateItemInput.ExpectedEntry
-	nil,                                                       // 366: dynamodb.UpdateItemInput.ExpressionattributenamesEntry
-	nil,                                                       // 367: dynamodb.UpdateItemInput.ExpressionattributevaluesEntry
-	nil,                                                       // 368: dynamodb.UpdateItemInput.KeyEntry
-	nil,                                                       // 369: dynamodb.UpdateItemOutput.AttributesEntry
+	nil,                                                       // 352: dynamodb.QueryOutput.LastevaluatedkeyEntry
+	nil,                                                       // 353: dynamodb.ScanInput.ExclusivestartkeyEntry
+	nil,                                                       // 354: dynamodb.ScanInput.ExpressionattributenamesEntry
+	nil,                                                       // 355: dynamodb.ScanInput.ExpressionattributevaluesEntry
+	nil,                                                       // 356: dynamodb.ScanInput.ScanfilterEntry
+	nil,                                                       // 357: dynamodb.ScanOutput.LastevaluatedkeyEntry
+	nil,                                                       // 358: dynamodb.TransactWriteItemsOutput.ItemcollectionmetricsEntry
+	nil,                                                       // 359: dynamodb.Update.ExpressionattributenamesEntry
+	nil,                                                       // 360: dynamodb.Update.ExpressionattributevaluesEntry
+	nil,                                                       // 361: dynamodb.Update.KeyEntry
+	nil,                                                       // 362: dynamodb.UpdateItemInput.AttributeupdatesEntry
+	nil,                                                       // 363: dynamodb.UpdateItemInput.ExpectedEntry
+	nil,                                                       // 364: dynamodb.UpdateItemInput.ExpressionattributenamesEntry
+	nil,                                                       // 365: dynamodb.UpdateItemInput.ExpressionattributevaluesEntry
+	nil,                                                       // 366: dynamodb.UpdateItemInput.KeyEntry
+	nil,                                                       // 367: dynamodb.UpdateItemOutput.AttributesEntry
+	nil,                                                       // 368: dynamodb.ItemListEntry.ValueEntry
+	nil,                                                       // 369: dynamodb.KeyListEntry.ValueEntry
 	(*common.Empty)(nil),                                      // 370: common.Empty
 }
 var file_dynamodb_proto_depIdxs = []int32{
 	36,  // 0: dynamodb.AttributeDefinition.attributetype:type_name -> dynamodb.ScalarAttributeType
 	45,  // 1: dynamodb.AttributeValue.l:type_name -> dynamodb.AttributeValue
-	302, // 2: dynamodb.AttributeValue.m:type_name -> dynamodb.AttributeValue.MEntry
+	304, // 2: dynamodb.AttributeValue.m:type_name -> dynamodb.AttributeValue.MEntry
 	1,   // 3: dynamodb.AttributeValueUpdate.action:type_name -> dynamodb.AttributeAction
 	45,  // 4: dynamodb.AttributeValueUpdate.value:type_name -> dynamodb.AttributeValue
 	51,  // 5: dynamodb.AutoScalingPolicyDescription.targettrackingscalingpolicyconfiguration:type_name -> dynamodb.AutoScalingTargetTrackingScalingPolicyConfigurationDescription
@@ -20532,34 +20617,34 @@ var file_dynamodb_proto_depIdxs = []int32{
 	63,  // 17: dynamodb.BatchExecuteStatementInput.statements:type_name -> dynamodb.BatchStatementRequest
 	73,  // 18: dynamodb.BatchExecuteStatementOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
 	64,  // 19: dynamodb.BatchExecuteStatementOutput.responses:type_name -> dynamodb.BatchStatementResponse
-	303, // 20: dynamodb.BatchGetItemInput.requestitems:type_name -> dynamodb.BatchGetItemInput.RequestitemsEntry
+	305, // 20: dynamodb.BatchGetItemInput.requestitems:type_name -> dynamodb.BatchGetItemInput.RequestitemsEntry
 	29,  // 21: dynamodb.BatchGetItemInput.returnconsumedcapacity:type_name -> dynamodb.ReturnConsumedCapacity
 	73,  // 22: dynamodb.BatchGetItemOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
-	304, // 23: dynamodb.BatchGetItemOutput.responses:type_name -> dynamodb.BatchGetItemOutput.ResponsesEntry
-	305, // 24: dynamodb.BatchGetItemOutput.unprocessedkeys:type_name -> dynamodb.BatchGetItemOutput.UnprocessedkeysEntry
+	306, // 23: dynamodb.BatchGetItemOutput.responses:type_name -> dynamodb.BatchGetItemOutput.ResponsesEntry
+	307, // 24: dynamodb.BatchGetItemOutput.unprocessedkeys:type_name -> dynamodb.BatchGetItemOutput.UnprocessedkeysEntry
 	5,   // 25: dynamodb.BatchStatementError.code:type_name -> dynamodb.BatchStatementErrorCodeEnum
-	306, // 26: dynamodb.BatchStatementError.item:type_name -> dynamodb.BatchStatementError.ItemEntry
+	308, // 26: dynamodb.BatchStatementError.item:type_name -> dynamodb.BatchStatementError.ItemEntry
 	45,  // 27: dynamodb.BatchStatementRequest.parameters:type_name -> dynamodb.AttributeValue
 	32,  // 28: dynamodb.BatchStatementRequest.returnvaluesonconditioncheckfailure:type_name -> dynamodb.ReturnValuesOnConditionCheckFailure
 	62,  // 29: dynamodb.BatchStatementResponse.error:type_name -> dynamodb.BatchStatementError
-	307, // 30: dynamodb.BatchStatementResponse.item:type_name -> dynamodb.BatchStatementResponse.ItemEntry
-	308, // 31: dynamodb.BatchWriteItemInput.requestitems:type_name -> dynamodb.BatchWriteItemInput.RequestitemsEntry
+	309, // 30: dynamodb.BatchStatementResponse.item:type_name -> dynamodb.BatchStatementResponse.ItemEntry
+	310, // 31: dynamodb.BatchWriteItemInput.requestitems:type_name -> dynamodb.BatchWriteItemInput.RequestitemsEntry
 	29,  // 32: dynamodb.BatchWriteItemInput.returnconsumedcapacity:type_name -> dynamodb.ReturnConsumedCapacity
 	30,  // 33: dynamodb.BatchWriteItemInput.returnitemcollectionmetrics:type_name -> dynamodb.ReturnItemCollectionMetrics
 	73,  // 34: dynamodb.BatchWriteItemOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
-	309, // 35: dynamodb.BatchWriteItemOutput.itemcollectionmetrics:type_name -> dynamodb.BatchWriteItemOutput.ItemcollectionmetricsEntry
-	310, // 36: dynamodb.BatchWriteItemOutput.unprocesseditems:type_name -> dynamodb.BatchWriteItemOutput.UnprocesseditemsEntry
+	311, // 35: dynamodb.BatchWriteItemOutput.itemcollectionmetrics:type_name -> dynamodb.BatchWriteItemOutput.ItemcollectionmetricsEntry
+	312, // 36: dynamodb.BatchWriteItemOutput.unprocesseditems:type_name -> dynamodb.BatchWriteItemOutput.UnprocesseditemsEntry
 	6,   // 37: dynamodb.BillingModeSummary.billingmode:type_name -> dynamodb.BillingMode
-	311, // 38: dynamodb.CancellationReason.item:type_name -> dynamodb.CancellationReason.ItemEntry
+	313, // 38: dynamodb.CancellationReason.item:type_name -> dynamodb.CancellationReason.ItemEntry
 	45,  // 39: dynamodb.Condition.attributevaluelist:type_name -> dynamodb.AttributeValue
 	7,   // 40: dynamodb.Condition.comparisonoperator:type_name -> dynamodb.ComparisonOperator
-	312, // 41: dynamodb.ConditionCheck.expressionattributenames:type_name -> dynamodb.ConditionCheck.ExpressionattributenamesEntry
-	313, // 42: dynamodb.ConditionCheck.expressionattributevalues:type_name -> dynamodb.ConditionCheck.ExpressionattributevaluesEntry
-	314, // 43: dynamodb.ConditionCheck.key:type_name -> dynamodb.ConditionCheck.KeyEntry
+	314, // 41: dynamodb.ConditionCheck.expressionattributenames:type_name -> dynamodb.ConditionCheck.ExpressionattributenamesEntry
+	315, // 42: dynamodb.ConditionCheck.expressionattributevalues:type_name -> dynamodb.ConditionCheck.ExpressionattributevaluesEntry
+	316, // 43: dynamodb.ConditionCheck.key:type_name -> dynamodb.ConditionCheck.KeyEntry
 	32,  // 44: dynamodb.ConditionCheck.returnvaluesonconditioncheckfailure:type_name -> dynamodb.ReturnValuesOnConditionCheckFailure
-	315, // 45: dynamodb.ConditionalCheckFailedException.item:type_name -> dynamodb.ConditionalCheckFailedException.ItemEntry
-	316, // 46: dynamodb.ConsumedCapacity.globalsecondaryindexes:type_name -> dynamodb.ConsumedCapacity.GlobalsecondaryindexesEntry
-	317, // 47: dynamodb.ConsumedCapacity.localsecondaryindexes:type_name -> dynamodb.ConsumedCapacity.LocalsecondaryindexesEntry
+	317, // 45: dynamodb.ConditionalCheckFailedException.item:type_name -> dynamodb.ConditionalCheckFailedException.ItemEntry
+	318, // 46: dynamodb.ConsumedCapacity.globalsecondaryindexes:type_name -> dynamodb.ConsumedCapacity.GlobalsecondaryindexesEntry
+	319, // 47: dynamodb.ConsumedCapacity.localsecondaryindexes:type_name -> dynamodb.ConsumedCapacity.LocalsecondaryindexesEntry
 	69,  // 48: dynamodb.ConsumedCapacity.table:type_name -> dynamodb.Capacity
 	9,   // 49: dynamodb.ContinuousBackupsDescription.continuousbackupsstatus:type_name -> dynamodb.ContinuousBackupsStatus
 	204, // 50: dynamodb.ContinuousBackupsDescription.pointintimerecoverydescription:type_name -> dynamodb.PointInTimeRecoveryDescription
@@ -20591,24 +20676,24 @@ var file_dynamodb_proto_depIdxs = []int32{
 	262, // 76: dynamodb.CreateTableInput.tags:type_name -> dynamodb.Tag
 	300, // 77: dynamodb.CreateTableInput.warmthroughput:type_name -> dynamodb.WarmThroughput
 	258, // 78: dynamodb.CreateTableOutput.tabledescription:type_name -> dynamodb.TableDescription
-	318, // 79: dynamodb.Delete.expressionattributenames:type_name -> dynamodb.Delete.ExpressionattributenamesEntry
-	319, // 80: dynamodb.Delete.expressionattributevalues:type_name -> dynamodb.Delete.ExpressionattributevaluesEntry
-	320, // 81: dynamodb.Delete.key:type_name -> dynamodb.Delete.KeyEntry
+	320, // 79: dynamodb.Delete.expressionattributenames:type_name -> dynamodb.Delete.ExpressionattributenamesEntry
+	321, // 80: dynamodb.Delete.expressionattributevalues:type_name -> dynamodb.Delete.ExpressionattributevaluesEntry
+	322, // 81: dynamodb.Delete.key:type_name -> dynamodb.Delete.KeyEntry
 	32,  // 82: dynamodb.Delete.returnvaluesonconditioncheckfailure:type_name -> dynamodb.ReturnValuesOnConditionCheckFailure
 	53,  // 83: dynamodb.DeleteBackupOutput.backupdescription:type_name -> dynamodb.BackupDescription
 	8,   // 84: dynamodb.DeleteItemInput.conditionaloperator:type_name -> dynamodb.ConditionalOperator
-	321, // 85: dynamodb.DeleteItemInput.expected:type_name -> dynamodb.DeleteItemInput.ExpectedEntry
-	322, // 86: dynamodb.DeleteItemInput.expressionattributenames:type_name -> dynamodb.DeleteItemInput.ExpressionattributenamesEntry
-	323, // 87: dynamodb.DeleteItemInput.expressionattributevalues:type_name -> dynamodb.DeleteItemInput.ExpressionattributevaluesEntry
-	324, // 88: dynamodb.DeleteItemInput.key:type_name -> dynamodb.DeleteItemInput.KeyEntry
+	323, // 85: dynamodb.DeleteItemInput.expected:type_name -> dynamodb.DeleteItemInput.ExpectedEntry
+	324, // 86: dynamodb.DeleteItemInput.expressionattributenames:type_name -> dynamodb.DeleteItemInput.ExpressionattributenamesEntry
+	325, // 87: dynamodb.DeleteItemInput.expressionattributevalues:type_name -> dynamodb.DeleteItemInput.ExpressionattributevaluesEntry
+	326, // 88: dynamodb.DeleteItemInput.key:type_name -> dynamodb.DeleteItemInput.KeyEntry
 	29,  // 89: dynamodb.DeleteItemInput.returnconsumedcapacity:type_name -> dynamodb.ReturnConsumedCapacity
 	30,  // 90: dynamodb.DeleteItemInput.returnitemcollectionmetrics:type_name -> dynamodb.ReturnItemCollectionMetrics
 	31,  // 91: dynamodb.DeleteItemInput.returnvalues:type_name -> dynamodb.ReturnValue
 	32,  // 92: dynamodb.DeleteItemInput.returnvaluesonconditioncheckfailure:type_name -> dynamodb.ReturnValuesOnConditionCheckFailure
-	325, // 93: dynamodb.DeleteItemOutput.attributes:type_name -> dynamodb.DeleteItemOutput.AttributesEntry
+	327, // 93: dynamodb.DeleteItemOutput.attributes:type_name -> dynamodb.DeleteItemOutput.AttributesEntry
 	73,  // 94: dynamodb.DeleteItemOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
 	175, // 95: dynamodb.DeleteItemOutput.itemcollectionmetrics:type_name -> dynamodb.ItemCollectionMetrics
-	326, // 96: dynamodb.DeleteRequest.key:type_name -> dynamodb.DeleteRequest.KeyEntry
+	328, // 96: dynamodb.DeleteRequest.key:type_name -> dynamodb.DeleteRequest.KeyEntry
 	258, // 97: dynamodb.DeleteTableOutput.tabledescription:type_name -> dynamodb.TableDescription
 	53,  // 98: dynamodb.DescribeBackupOutput.backupdescription:type_name -> dynamodb.BackupDescription
 	74,  // 99: dynamodb.DescribeContinuousBackupsOutput.continuousbackupsdescription:type_name -> dynamodb.ContinuousBackupsDescription
@@ -20629,8 +20714,8 @@ var file_dynamodb_proto_depIdxs = []int32{
 	29,  // 114: dynamodb.ExecuteStatementInput.returnconsumedcapacity:type_name -> dynamodb.ReturnConsumedCapacity
 	32,  // 115: dynamodb.ExecuteStatementInput.returnvaluesonconditioncheckfailure:type_name -> dynamodb.ReturnValuesOnConditionCheckFailure
 	73,  // 116: dynamodb.ExecuteStatementOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
-	327, // 117: dynamodb.ExecuteStatementOutput.items:type_name -> dynamodb.ExecuteStatementOutput.ItemsEntry
-	328, // 118: dynamodb.ExecuteStatementOutput.lastevaluatedkey:type_name -> dynamodb.ExecuteStatementOutput.LastevaluatedkeyEntry
+	302, // 117: dynamodb.ExecuteStatementOutput.items:type_name -> dynamodb.ItemListEntry
+	329, // 118: dynamodb.ExecuteStatementOutput.lastevaluatedkey:type_name -> dynamodb.ExecuteStatementOutput.LastevaluatedkeyEntry
 	29,  // 119: dynamodb.ExecuteTransactionInput.returnconsumedcapacity:type_name -> dynamodb.ReturnConsumedCapacity
 	203, // 120: dynamodb.ExecuteTransactionInput.transactstatements:type_name -> dynamodb.ParameterizedStatement
 	73,  // 121: dynamodb.ExecuteTransactionOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
@@ -20650,13 +20735,13 @@ var file_dynamodb_proto_depIdxs = []int32{
 	168, // 135: dynamodb.ExportTableToPointInTimeInput.incrementalexportspecification:type_name -> dynamodb.IncrementalExportSpecification
 	33,  // 136: dynamodb.ExportTableToPointInTimeInput.s3ssealgorithm:type_name -> dynamodb.S3SseAlgorithm
 	137, // 137: dynamodb.ExportTableToPointInTimeOutput.exportdescription:type_name -> dynamodb.ExportDescription
-	329, // 138: dynamodb.Get.expressionattributenames:type_name -> dynamodb.Get.ExpressionattributenamesEntry
-	330, // 139: dynamodb.Get.key:type_name -> dynamodb.Get.KeyEntry
-	331, // 140: dynamodb.GetItemInput.expressionattributenames:type_name -> dynamodb.GetItemInput.ExpressionattributenamesEntry
-	332, // 141: dynamodb.GetItemInput.key:type_name -> dynamodb.GetItemInput.KeyEntry
+	330, // 138: dynamodb.Get.expressionattributenames:type_name -> dynamodb.Get.ExpressionattributenamesEntry
+	331, // 139: dynamodb.Get.key:type_name -> dynamodb.Get.KeyEntry
+	332, // 140: dynamodb.GetItemInput.expressionattributenames:type_name -> dynamodb.GetItemInput.ExpressionattributenamesEntry
+	333, // 141: dynamodb.GetItemInput.key:type_name -> dynamodb.GetItemInput.KeyEntry
 	29,  // 142: dynamodb.GetItemInput.returnconsumedcapacity:type_name -> dynamodb.ReturnConsumedCapacity
 	73,  // 143: dynamodb.GetItemOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
-	333, // 144: dynamodb.GetItemOutput.item:type_name -> dynamodb.GetItemOutput.ItemEntry
+	334, // 144: dynamodb.GetItemOutput.item:type_name -> dynamodb.GetItemOutput.ItemEntry
 	178, // 145: dynamodb.GlobalSecondaryIndex.keyschema:type_name -> dynamodb.KeySchemaElement
 	201, // 146: dynamodb.GlobalSecondaryIndex.ondemandthroughput:type_name -> dynamodb.OnDemandThroughput
 	208, // 147: dynamodb.GlobalSecondaryIndex.projection:type_name -> dynamodb.Projection
@@ -20701,11 +20786,11 @@ var file_dynamodb_proto_depIdxs = []int32{
 	165, // 186: dynamodb.ImportTableOutput.importtabledescription:type_name -> dynamodb.ImportTableDescription
 	17,  // 187: dynamodb.IncrementalExportSpecification.exportviewtype:type_name -> dynamodb.ExportViewType
 	87,  // 188: dynamodb.InputFormatOptions.csv:type_name -> dynamodb.CsvOptions
-	334, // 189: dynamodb.ItemCollectionMetrics.itemcollectionkey:type_name -> dynamodb.ItemCollectionMetrics.ItemcollectionkeyEntry
-	335, // 190: dynamodb.ItemResponse.item:type_name -> dynamodb.ItemResponse.ItemEntry
+	335, // 189: dynamodb.ItemCollectionMetrics.itemcollectionkey:type_name -> dynamodb.ItemCollectionMetrics.ItemcollectionkeyEntry
+	336, // 190: dynamodb.ItemResponse.item:type_name -> dynamodb.ItemResponse.ItemEntry
 	24,  // 191: dynamodb.KeySchemaElement.keytype:type_name -> dynamodb.KeyType
-	336, // 192: dynamodb.KeysAndAttributes.expressionattributenames:type_name -> dynamodb.KeysAndAttributes.ExpressionattributenamesEntry
-	337, // 193: dynamodb.KeysAndAttributes.keys:type_name -> dynamodb.KeysAndAttributes.KeysEntry
+	337, // 192: dynamodb.KeysAndAttributes.expressionattributenames:type_name -> dynamodb.KeysAndAttributes.ExpressionattributenamesEntry
+	303, // 193: dynamodb.KeysAndAttributes.keys:type_name -> dynamodb.KeyListEntry
 	0,   // 194: dynamodb.KinesisDataStreamDestination.approximatecreationdatetimeprecision:type_name -> dynamodb.ApproximateCreationDateTimePrecision
 	13,  // 195: dynamodb.KinesisDataStreamDestination.destinationstatus:type_name -> dynamodb.DestinationStatus
 	129, // 196: dynamodb.KinesisStreamingDestinationInput.enablekinesisstreamingconfiguration:type_name -> dynamodb.EnableKinesisStreamingConfiguration
@@ -20755,8 +20840,8 @@ var file_dynamodb_proto_depIdxs = []int32{
 	29,  // 240: dynamodb.QueryInput.returnconsumedcapacity:type_name -> dynamodb.ReturnConsumedCapacity
 	37,  // 241: dynamodb.QueryInput.select:type_name -> dynamodb.Select
 	73,  // 242: dynamodb.QueryOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
-	352, // 243: dynamodb.QueryOutput.items:type_name -> dynamodb.QueryOutput.ItemsEntry
-	353, // 244: dynamodb.QueryOutput.lastevaluatedkey:type_name -> dynamodb.QueryOutput.LastevaluatedkeyEntry
+	302, // 243: dynamodb.QueryOutput.items:type_name -> dynamodb.ItemListEntry
+	352, // 244: dynamodb.QueryOutput.lastevaluatedkey:type_name -> dynamodb.QueryOutput.LastevaluatedkeyEntry
 	227, // 245: dynamodb.ReplicaAutoScalingDescription.globalsecondaryindexes:type_name -> dynamodb.ReplicaGlobalSecondaryIndexAutoScalingDescription
 	49,  // 246: dynamodb.ReplicaAutoScalingDescription.replicaprovisionedreadcapacityautoscalingsettings:type_name -> dynamodb.AutoScalingSettingsDescription
 	49,  // 247: dynamodb.ReplicaAutoScalingDescription.replicaprovisionedwritecapacityautoscalingsettings:type_name -> dynamodb.AutoScalingSettingsDescription
@@ -20816,15 +20901,15 @@ var file_dynamodb_proto_depIdxs = []int32{
 	34,  // 301: dynamodb.SSEDescription.status:type_name -> dynamodb.SSEStatus
 	35,  // 302: dynamodb.SSESpecification.ssetype:type_name -> dynamodb.SSEType
 	8,   // 303: dynamodb.ScanInput.conditionaloperator:type_name -> dynamodb.ConditionalOperator
-	354, // 304: dynamodb.ScanInput.exclusivestartkey:type_name -> dynamodb.ScanInput.ExclusivestartkeyEntry
-	355, // 305: dynamodb.ScanInput.expressionattributenames:type_name -> dynamodb.ScanInput.ExpressionattributenamesEntry
-	356, // 306: dynamodb.ScanInput.expressionattributevalues:type_name -> dynamodb.ScanInput.ExpressionattributevaluesEntry
+	353, // 304: dynamodb.ScanInput.exclusivestartkey:type_name -> dynamodb.ScanInput.ExclusivestartkeyEntry
+	354, // 305: dynamodb.ScanInput.expressionattributenames:type_name -> dynamodb.ScanInput.ExpressionattributenamesEntry
+	355, // 306: dynamodb.ScanInput.expressionattributevalues:type_name -> dynamodb.ScanInput.ExpressionattributevaluesEntry
 	29,  // 307: dynamodb.ScanInput.returnconsumedcapacity:type_name -> dynamodb.ReturnConsumedCapacity
-	357, // 308: dynamodb.ScanInput.scanfilter:type_name -> dynamodb.ScanInput.ScanfilterEntry
+	356, // 308: dynamodb.ScanInput.scanfilter:type_name -> dynamodb.ScanInput.ScanfilterEntry
 	37,  // 309: dynamodb.ScanInput.select:type_name -> dynamodb.Select
 	73,  // 310: dynamodb.ScanOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
-	358, // 311: dynamodb.ScanOutput.items:type_name -> dynamodb.ScanOutput.ItemsEntry
-	359, // 312: dynamodb.ScanOutput.lastevaluatedkey:type_name -> dynamodb.ScanOutput.LastevaluatedkeyEntry
+	302, // 311: dynamodb.ScanOutput.items:type_name -> dynamodb.ItemListEntry
+	357, // 312: dynamodb.ScanOutput.lastevaluatedkey:type_name -> dynamodb.ScanOutput.LastevaluatedkeyEntry
 	6,   // 313: dynamodb.SourceTableDetails.billingmode:type_name -> dynamodb.BillingMode
 	178, // 314: dynamodb.SourceTableDetails.keyschema:type_name -> dynamodb.KeySchemaElement
 	201, // 315: dynamodb.SourceTableDetails.ondemandthroughput:type_name -> dynamodb.OnDemandThroughput
@@ -20880,11 +20965,11 @@ var file_dynamodb_proto_depIdxs = []int32{
 	30,  // 365: dynamodb.TransactWriteItemsInput.returnitemcollectionmetrics:type_name -> dynamodb.ReturnItemCollectionMetrics
 	271, // 366: dynamodb.TransactWriteItemsInput.transactitems:type_name -> dynamodb.TransactWriteItem
 	73,  // 367: dynamodb.TransactWriteItemsOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
-	360, // 368: dynamodb.TransactWriteItemsOutput.itemcollectionmetrics:type_name -> dynamodb.TransactWriteItemsOutput.ItemcollectionmetricsEntry
+	358, // 368: dynamodb.TransactWriteItemsOutput.itemcollectionmetrics:type_name -> dynamodb.TransactWriteItemsOutput.ItemcollectionmetricsEntry
 	68,  // 369: dynamodb.TransactionCanceledException.cancellationreasons:type_name -> dynamodb.CancellationReason
-	361, // 370: dynamodb.Update.expressionattributenames:type_name -> dynamodb.Update.ExpressionattributenamesEntry
-	362, // 371: dynamodb.Update.expressionattributevalues:type_name -> dynamodb.Update.ExpressionattributevaluesEntry
-	363, // 372: dynamodb.Update.key:type_name -> dynamodb.Update.KeyEntry
+	359, // 370: dynamodb.Update.expressionattributenames:type_name -> dynamodb.Update.ExpressionattributenamesEntry
+	360, // 371: dynamodb.Update.expressionattributevalues:type_name -> dynamodb.Update.ExpressionattributevaluesEntry
+	361, // 372: dynamodb.Update.key:type_name -> dynamodb.Update.KeyEntry
 	32,  // 373: dynamodb.Update.returnvaluesonconditioncheckfailure:type_name -> dynamodb.ReturnValuesOnConditionCheckFailure
 	205, // 374: dynamodb.UpdateContinuousBackupsInput.pointintimerecoveryspecification:type_name -> dynamodb.PointInTimeRecoverySpecification
 	74,  // 375: dynamodb.UpdateContinuousBackupsOutput.continuousbackupsdescription:type_name -> dynamodb.ContinuousBackupsDescription
@@ -20902,17 +20987,17 @@ var file_dynamodb_proto_depIdxs = []int32{
 	50,  // 387: dynamodb.UpdateGlobalTableSettingsInput.globaltableprovisionedwritecapacityautoscalingsettingsupdate:type_name -> dynamodb.AutoScalingSettingsUpdate
 	234, // 388: dynamodb.UpdateGlobalTableSettingsInput.replicasettingsupdate:type_name -> dynamodb.ReplicaSettingsUpdate
 	233, // 389: dynamodb.UpdateGlobalTableSettingsOutput.replicasettings:type_name -> dynamodb.ReplicaSettingsDescription
-	364, // 390: dynamodb.UpdateItemInput.attributeupdates:type_name -> dynamodb.UpdateItemInput.AttributeupdatesEntry
+	362, // 390: dynamodb.UpdateItemInput.attributeupdates:type_name -> dynamodb.UpdateItemInput.AttributeupdatesEntry
 	8,   // 391: dynamodb.UpdateItemInput.conditionaloperator:type_name -> dynamodb.ConditionalOperator
-	365, // 392: dynamodb.UpdateItemInput.expected:type_name -> dynamodb.UpdateItemInput.ExpectedEntry
-	366, // 393: dynamodb.UpdateItemInput.expressionattributenames:type_name -> dynamodb.UpdateItemInput.ExpressionattributenamesEntry
-	367, // 394: dynamodb.UpdateItemInput.expressionattributevalues:type_name -> dynamodb.UpdateItemInput.ExpressionattributevaluesEntry
-	368, // 395: dynamodb.UpdateItemInput.key:type_name -> dynamodb.UpdateItemInput.KeyEntry
+	363, // 392: dynamodb.UpdateItemInput.expected:type_name -> dynamodb.UpdateItemInput.ExpectedEntry
+	364, // 393: dynamodb.UpdateItemInput.expressionattributenames:type_name -> dynamodb.UpdateItemInput.ExpressionattributenamesEntry
+	365, // 394: dynamodb.UpdateItemInput.expressionattributevalues:type_name -> dynamodb.UpdateItemInput.ExpressionattributevaluesEntry
+	366, // 395: dynamodb.UpdateItemInput.key:type_name -> dynamodb.UpdateItemInput.KeyEntry
 	29,  // 396: dynamodb.UpdateItemInput.returnconsumedcapacity:type_name -> dynamodb.ReturnConsumedCapacity
 	30,  // 397: dynamodb.UpdateItemInput.returnitemcollectionmetrics:type_name -> dynamodb.ReturnItemCollectionMetrics
 	31,  // 398: dynamodb.UpdateItemInput.returnvalues:type_name -> dynamodb.ReturnValue
 	32,  // 399: dynamodb.UpdateItemInput.returnvaluesonconditioncheckfailure:type_name -> dynamodb.ReturnValuesOnConditionCheckFailure
-	369, // 400: dynamodb.UpdateItemOutput.attributes:type_name -> dynamodb.UpdateItemOutput.AttributesEntry
+	367, // 400: dynamodb.UpdateItemOutput.attributes:type_name -> dynamodb.UpdateItemOutput.AttributesEntry
 	73,  // 401: dynamodb.UpdateItemOutput.consumedcapacity:type_name -> dynamodb.ConsumedCapacity
 	175, // 402: dynamodb.UpdateItemOutput.itemcollectionmetrics:type_name -> dynamodb.ItemCollectionMetrics
 	0,   // 403: dynamodb.UpdateKinesisStreamingConfiguration.approximatecreationdatetimeprecision:type_name -> dynamodb.ApproximateCreationDateTimePrecision
@@ -20945,32 +21030,32 @@ var file_dynamodb_proto_depIdxs = []int32{
 	267, // 430: dynamodb.UpdateTimeToLiveOutput.timetolivespecification:type_name -> dynamodb.TimeToLiveSpecification
 	97,  // 431: dynamodb.WriteRequest.deleterequest:type_name -> dynamodb.DeleteRequest
 	216, // 432: dynamodb.WriteRequest.putrequest:type_name -> dynamodb.PutRequest
-	45,  // 433: dynamodb.AttributeValue.MEntry.value:type_name -> dynamodb.AttributeValue
-	179, // 434: dynamodb.BatchGetItemInput.RequestitemsEntry.value:type_name -> dynamodb.KeysAndAttributes
-	179, // 435: dynamodb.BatchGetItemOutput.UnprocessedkeysEntry.value:type_name -> dynamodb.KeysAndAttributes
-	45,  // 436: dynamodb.BatchStatementError.ItemEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 437: dynamodb.BatchStatementResponse.ItemEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 438: dynamodb.CancellationReason.ItemEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 439: dynamodb.ConditionCheck.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 440: dynamodb.ConditionCheck.KeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 441: dynamodb.ConditionalCheckFailedException.ItemEntry.value:type_name -> dynamodb.AttributeValue
-	69,  // 442: dynamodb.ConsumedCapacity.GlobalsecondaryindexesEntry.value:type_name -> dynamodb.Capacity
-	69,  // 443: dynamodb.ConsumedCapacity.LocalsecondaryindexesEntry.value:type_name -> dynamodb.Capacity
-	45,  // 444: dynamodb.Delete.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 445: dynamodb.Delete.KeyEntry.value:type_name -> dynamodb.AttributeValue
-	135, // 446: dynamodb.DeleteItemInput.ExpectedEntry.value:type_name -> dynamodb.ExpectedAttributeValue
-	45,  // 447: dynamodb.DeleteItemInput.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 448: dynamodb.DeleteItemInput.KeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 449: dynamodb.DeleteItemOutput.AttributesEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 450: dynamodb.DeleteRequest.KeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 451: dynamodb.ExecuteStatementOutput.ItemsEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 452: dynamodb.ExecuteStatementOutput.LastevaluatedkeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 453: dynamodb.Get.KeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 454: dynamodb.GetItemInput.KeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 455: dynamodb.GetItemOutput.ItemEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 456: dynamodb.ItemCollectionMetrics.ItemcollectionkeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 457: dynamodb.ItemResponse.ItemEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 458: dynamodb.KeysAndAttributes.KeysEntry.value:type_name -> dynamodb.AttributeValue
+	368, // 433: dynamodb.ItemListEntry.value:type_name -> dynamodb.ItemListEntry.ValueEntry
+	369, // 434: dynamodb.KeyListEntry.value:type_name -> dynamodb.KeyListEntry.ValueEntry
+	45,  // 435: dynamodb.AttributeValue.MEntry.value:type_name -> dynamodb.AttributeValue
+	179, // 436: dynamodb.BatchGetItemInput.RequestitemsEntry.value:type_name -> dynamodb.KeysAndAttributes
+	179, // 437: dynamodb.BatchGetItemOutput.UnprocessedkeysEntry.value:type_name -> dynamodb.KeysAndAttributes
+	45,  // 438: dynamodb.BatchStatementError.ItemEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 439: dynamodb.BatchStatementResponse.ItemEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 440: dynamodb.CancellationReason.ItemEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 441: dynamodb.ConditionCheck.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 442: dynamodb.ConditionCheck.KeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 443: dynamodb.ConditionalCheckFailedException.ItemEntry.value:type_name -> dynamodb.AttributeValue
+	69,  // 444: dynamodb.ConsumedCapacity.GlobalsecondaryindexesEntry.value:type_name -> dynamodb.Capacity
+	69,  // 445: dynamodb.ConsumedCapacity.LocalsecondaryindexesEntry.value:type_name -> dynamodb.Capacity
+	45,  // 446: dynamodb.Delete.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 447: dynamodb.Delete.KeyEntry.value:type_name -> dynamodb.AttributeValue
+	135, // 448: dynamodb.DeleteItemInput.ExpectedEntry.value:type_name -> dynamodb.ExpectedAttributeValue
+	45,  // 449: dynamodb.DeleteItemInput.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 450: dynamodb.DeleteItemInput.KeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 451: dynamodb.DeleteItemOutput.AttributesEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 452: dynamodb.DeleteRequest.KeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 453: dynamodb.ExecuteStatementOutput.LastevaluatedkeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 454: dynamodb.Get.KeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 455: dynamodb.GetItemInput.KeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 456: dynamodb.GetItemOutput.ItemEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 457: dynamodb.ItemCollectionMetrics.ItemcollectionkeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 458: dynamodb.ItemResponse.ItemEntry.value:type_name -> dynamodb.AttributeValue
 	45,  // 459: dynamodb.Put.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
 	45,  // 460: dynamodb.Put.ItemEntry.value:type_name -> dynamodb.AttributeValue
 	135, // 461: dynamodb.PutItemInput.ExpectedEntry.value:type_name -> dynamodb.ExpectedAttributeValue
@@ -20982,20 +21067,20 @@ var file_dynamodb_proto_depIdxs = []int32{
 	45,  // 467: dynamodb.QueryInput.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
 	70,  // 468: dynamodb.QueryInput.KeyconditionsEntry.value:type_name -> dynamodb.Condition
 	70,  // 469: dynamodb.QueryInput.QueryfilterEntry.value:type_name -> dynamodb.Condition
-	45,  // 470: dynamodb.QueryOutput.ItemsEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 471: dynamodb.QueryOutput.LastevaluatedkeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 472: dynamodb.ScanInput.ExclusivestartkeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 473: dynamodb.ScanInput.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
-	70,  // 474: dynamodb.ScanInput.ScanfilterEntry.value:type_name -> dynamodb.Condition
-	45,  // 475: dynamodb.ScanOutput.ItemsEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 476: dynamodb.ScanOutput.LastevaluatedkeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 477: dynamodb.Update.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 478: dynamodb.Update.KeyEntry.value:type_name -> dynamodb.AttributeValue
-	46,  // 479: dynamodb.UpdateItemInput.AttributeupdatesEntry.value:type_name -> dynamodb.AttributeValueUpdate
-	135, // 480: dynamodb.UpdateItemInput.ExpectedEntry.value:type_name -> dynamodb.ExpectedAttributeValue
-	45,  // 481: dynamodb.UpdateItemInput.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 482: dynamodb.UpdateItemInput.KeyEntry.value:type_name -> dynamodb.AttributeValue
-	45,  // 483: dynamodb.UpdateItemOutput.AttributesEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 470: dynamodb.QueryOutput.LastevaluatedkeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 471: dynamodb.ScanInput.ExclusivestartkeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 472: dynamodb.ScanInput.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
+	70,  // 473: dynamodb.ScanInput.ScanfilterEntry.value:type_name -> dynamodb.Condition
+	45,  // 474: dynamodb.ScanOutput.LastevaluatedkeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 475: dynamodb.Update.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 476: dynamodb.Update.KeyEntry.value:type_name -> dynamodb.AttributeValue
+	46,  // 477: dynamodb.UpdateItemInput.AttributeupdatesEntry.value:type_name -> dynamodb.AttributeValueUpdate
+	135, // 478: dynamodb.UpdateItemInput.ExpectedEntry.value:type_name -> dynamodb.ExpectedAttributeValue
+	45,  // 479: dynamodb.UpdateItemInput.ExpressionattributevaluesEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 480: dynamodb.UpdateItemInput.KeyEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 481: dynamodb.UpdateItemOutput.AttributesEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 482: dynamodb.ItemListEntry.ValueEntry.value:type_name -> dynamodb.AttributeValue
+	45,  // 483: dynamodb.KeyListEntry.ValueEntry.value:type_name -> dynamodb.AttributeValue
 	58,  // 484: dynamodb.DynamoDBService.BatchExecuteStatement:input_type -> dynamodb.BatchExecuteStatementInput
 	60,  // 485: dynamodb.DynamoDBService.BatchGetItem:input_type -> dynamodb.BatchGetItemInput
 	65,  // 486: dynamodb.DynamoDBService.BatchWriteItem:input_type -> dynamodb.BatchWriteItemInput

@@ -130,7 +130,6 @@ type Bus interface {
 	RoleResolver() RoleResolver
 	Start(ctx context.Context) error
 	Shutdown(ctx context.Context) error
-
 	LambdaInvoker() LambdaInvoker
 	SQSInvoker() SQSInvoker
 	SNSInvoker() SNSInvoker
@@ -141,7 +140,10 @@ type Bus interface {
 	NeptuneGraphInvoker() NeptuneGraphInvoker
 	KMSInvoker() KMSInvoker
 	S3Invoker() S3Invoker
-
+	WAFInvoker() WAFInvoker
+	CloudWatchMetricInvoker() CloudWatchMetricInvoker
+	CloudTrailInvoker() CloudTrailInvoker
+	LogsInvoker() LogsInvoker
 	SetLambdaInvoker(invoker LambdaInvoker)
 	SetSQSInvoker(invoker SQSInvoker)
 	SetSNSInvoker(invoker SNSInvoker)
@@ -152,43 +154,50 @@ type Bus interface {
 	SetNeptuneGraphInvoker(invoker NeptuneGraphInvoker)
 	SetKMSInvoker(invoker KMSInvoker)
 	SetS3Invoker(invoker S3Invoker)
+	SetWAFInvoker(invoker WAFInvoker)
+	SetCloudWatchMetricInvoker(invoker CloudWatchMetricInvoker)
+	SetCloudTrailInvoker(invoker CloudTrailInvoker)
+	SetLogsInvoker(invoker LogsInvoker)
 }
 
 // EventBus is the central implementation of the Bus interface, managing
 // subscriptions, outbox persistence, async workers, and invoker dispatch.
 type EventBus struct {
-	mu            sync.RWMutex
-	subscriptions map[string][]*subscriptionEntry
-	outbox        OutboxStore
-	registry      *EventRegistry
-	roleResolver  RoleResolver
-	policyEval    BusPolicyEvaluator
-	policyFuncs   map[string]ResourcePolicyFunc
-	policyFuncsMu sync.RWMutex
-	globalSem     chan struct{}
-	maxRetries    int32
-	maxEventDepth int
-	logger        logs.Logger
-	wg            sync.WaitGroup
-	started       atomic.Bool
-	stopOnce      sync.Once
-	stopCh        chan struct{}
-	invokers      map[string]ServiceInvoker
-	invokersMu    sync.RWMutex
-
-	lambdaInvoker       LambdaInvoker
-	sqsInvoker          SQSInvoker
-	snsInvoker          SNSInvoker
-	kinesisInvoker      KinesisInvoker
-	eventsInvoker       EventsInvoker
-	ec2Invoker          EC2Invoker
-	dynamoDBInvoker     DynamoDBInvoker
-	neptuneGraphInvoker NeptuneGraphInvoker
-	kmsInvoker          KMSInvoker
-	s3Invoker           S3Invoker
-	nextSubID           atomic.Int64
-	asyncCh             chan *OutboxEntry
-	directCh            chan *directDispatch
+	mu                      sync.RWMutex
+	subscriptions           map[string][]*subscriptionEntry
+	outbox                  OutboxStore
+	registry                *EventRegistry
+	roleResolver            RoleResolver
+	policyEval              BusPolicyEvaluator
+	policyFuncs             map[string]ResourcePolicyFunc
+	policyFuncsMu           sync.RWMutex
+	globalSem               chan struct{}
+	maxRetries              int32
+	maxEventDepth           int
+	logger                  logs.Logger
+	wg                      sync.WaitGroup
+	started                 atomic.Bool
+	stopOnce                sync.Once
+	stopCh                  chan struct{}
+	invokers                map[string]ServiceInvoker
+	invokersMu              sync.RWMutex
+	lambdaInvoker           LambdaInvoker
+	sqsInvoker              SQSInvoker
+	snsInvoker              SNSInvoker
+	kinesisInvoker          KinesisInvoker
+	eventsInvoker           EventsInvoker
+	ec2Invoker              EC2Invoker
+	dynamoDBInvoker         DynamoDBInvoker
+	neptuneGraphInvoker     NeptuneGraphInvoker
+	kmsInvoker              KMSInvoker
+	s3Invoker               S3Invoker
+	wafInvoker              WAFInvoker
+	cloudWatchMetricInvoker CloudWatchMetricInvoker
+	cloudTrailInvoker       CloudTrailInvoker
+	logsInvoker             LogsInvoker
+	nextSubID               atomic.Int64
+	asyncCh                 chan *OutboxEntry
+	directCh                chan *directDispatch
 }
 
 // NewEventBus creates a new EventBus with sensible defaults, applying all
@@ -637,6 +646,37 @@ func (b *EventBus) SetS3Invoker(invoker S3Invoker) { b.s3Invoker = invoker }
 
 // S3Invoker returns the configured S3 invoker.
 func (b *EventBus) S3Invoker() S3Invoker { return b.s3Invoker }
+
+// SetWAFInvoker sets the WAF invoker used for WebACL association operations.
+func (b *EventBus) SetWAFInvoker(invoker WAFInvoker) { b.wafInvoker = invoker }
+
+// WAFInvoker returns the configured WAF invoker.
+func (b *EventBus) WAFInvoker() WAFInvoker { return b.wafInvoker }
+
+// SetCloudWatchMetricInvoker sets the CloudWatch metric invoker used for
+// cross-service metric data submission (e.g. CloudWatch Logs metric filters).
+func (b *EventBus) SetCloudWatchMetricInvoker(invoker CloudWatchMetricInvoker) {
+	b.cloudWatchMetricInvoker = invoker
+}
+
+// CloudWatchMetricInvoker returns the configured CloudWatch metric invoker.
+func (b *EventBus) CloudWatchMetricInvoker() CloudWatchMetricInvoker {
+	return b.cloudWatchMetricInvoker
+}
+
+// SetCloudTrailInvoker sets the CloudTrail invoker used for event lookup
+// (e.g. IAM GenerateServiceLastAccessedDetails).
+func (b *EventBus) SetCloudTrailInvoker(invoker CloudTrailInvoker) { b.cloudTrailInvoker = invoker }
+
+// CloudTrailInvoker returns the configured CloudTrail invoker.
+func (b *EventBus) CloudTrailInvoker() CloudTrailInvoker { return b.cloudTrailInvoker }
+
+// SetLogsInvoker sets the CloudWatch Logs invoker used for cross-service log
+// delivery (e.g. Lambda function log output).
+func (b *EventBus) SetLogsInvoker(invoker LogsInvoker) { b.logsInvoker = invoker }
+
+// LogsInvoker returns the configured CloudWatch Logs invoker.
+func (b *EventBus) LogsInvoker() LogsInvoker { return b.logsInvoker }
 
 // RoleResolver returns the configured RoleResolver, or nil if none was set.
 func (b *EventBus) RoleResolver() RoleResolver {

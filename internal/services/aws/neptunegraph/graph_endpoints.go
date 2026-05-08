@@ -68,12 +68,13 @@ func (s *NeptuneGraphService) CreatePrivateGraphEndpoint(ctx context.Context, re
 	}
 
 	ep := &ngstore.PrivateGraphEndpoint{
-		GraphId:   graphID,
-		VpcId:     vpcID,
-		SubnetIds: subnetIds,
-		Status:    "AVAILABLE",
-		AccountID: s.accountID,
-		Region:    reqCtx.GetRegion(),
+		GraphId:       graphID,
+		VpcId:         vpcID,
+		VpcEndpointId: generateID("vpce-"),
+		SubnetIds:     subnetIds,
+		Status:        "AVAILABLE",
+		AccountID:     s.accountID,
+		Region:        reqCtx.GetRegion(),
 	}
 
 	if err := store.CreateEndpoint(ep); err != nil {

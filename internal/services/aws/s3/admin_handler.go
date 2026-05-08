@@ -19,17 +19,19 @@ import (
 // AdminHandler implements the S3 admin console gRPC-Web handler.
 type AdminHandler struct {
 	s3connect.UnimplementedS3ServiceHandler
-	s3Store   S3StoreProvider
-	accountId string
+	s3Store           S3StoreProvider
+	accountId         string
+	encryptionManager *EncryptionManager
 }
 
 var _ s3connect.S3ServiceHandler = (*AdminHandler)(nil)
 
 // NewAdminHandler creates a new S3 admin handler backed by the shared S3 store.
-func NewAdminHandler(s3Store S3StoreProvider, accountId string) *AdminHandler {
+func NewAdminHandler(s3Store S3StoreProvider, accountId string, encryptionManager *EncryptionManager) *AdminHandler {
 	return &AdminHandler{
-		s3Store:   s3Store,
-		accountId: accountId,
+		s3Store:           s3Store,
+		accountId:         accountId,
+		encryptionManager: encryptionManager,
 	}
 }
 
@@ -99,6 +101,6 @@ func (h *AdminHandler) DeleteBucket(ctx context.Context, req *connect.Request[pb
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the S3 admin console.
-func NewConnectHandler(s3Store S3StoreProvider, accountID string) (string, http.Handler) {
-	return s3connect.NewS3ServiceHandler(NewAdminHandler(s3Store, accountID))
+func NewConnectHandler(s3Store S3StoreProvider, accountID string, encryptionManager *EncryptionManager) (string, http.Handler) {
+	return s3connect.NewS3ServiceHandler(NewAdminHandler(s3Store, accountID, encryptionManager))
 }

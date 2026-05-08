@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 )
@@ -22,12 +23,16 @@ func (s *NeptuneGraphService) CreateGraphSnapshot(ctx context.Context, reqCtx *r
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
 	}
 
-	_, err = store.GetGraph(graphID)
+	graph, err := store.GetGraph(graphID)
 	if err != nil {
 		if ngstore.IsNotFound(err) {
 			return nil, newResourceNotFoundException("graph", graphID)
 		}
 		return nil, err
+	}
+
+	if graph.Status != "AVAILABLE" {
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "graph is not in AVAILABLE state")
 	}
 
 	snapshotName := request.GetStringParam(req.Parameters, "snapshotName")
@@ -55,6 +60,15 @@ func (s *NeptuneGraphService) CreateGraphSnapshot(ctx context.Context, reqCtx *r
 			return nil, newConflictException("CONCURRENT_MODIFICATION")
 		}
 		return nil, err
+	}
+
+	srcBkt, srcErr := s.graphBucket(graphID)
+	dstBkt, dstErr := s.graphBucket("snapshot:" + snapshotID)
+	if srcErr == nil && dstErr == nil {
+		if err := copyGraphBucket(srcBkt, dstBkt); err != nil {
+			logs.Warn("failed to copy graph data to snapshot bucket",
+				logs.String("graphId", graphID), logs.String("snapshotId", snapshotID), logs.Err(err))
+		}
 	}
 
 	return snapshotToResponse(snapshot), nil
@@ -146,6 +160,10 @@ func (s *NeptuneGraphService) DeleteGraphSnapshot(ctx context.Context, reqCtx *r
 			return nil, newResourceNotFoundException("snapshot", snapshotID)
 		}
 		return nil, err
+	}
+
+	if rs, err := s.storageManager.GetStorage(s.region); err == nil {
+		rs.DeleteBucket("neptunegraph:graph:snapshot:" + snapshotID)
 	}
 
 	return response, nil

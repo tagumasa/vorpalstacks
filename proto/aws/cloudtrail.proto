@@ -1549,7 +1549,7 @@ message GetQueryResultsResponse {
 
   string nexttoken = 216957566;
 
-  map<string, string> queryresultrows = 240264704;
+  repeated QueryResultRowEntry queryresultrows = 240264704;
 
   QueryStatistics querystatistics = 260794841;
 
@@ -3676,6 +3676,16 @@ message Widget {
   string querystatement = 340852217;
 
   map<string, string> viewproperties = 381974398;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message QueryResultRowEntry {
+
+  map<string, string> value = 1;
 
 }
 

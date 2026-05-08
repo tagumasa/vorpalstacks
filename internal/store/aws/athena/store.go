@@ -184,7 +184,15 @@ func (s *NamedQueryStore) CreateNamedQuery(nq *NamedQuery) error {
 		nameKey := s.namedQueryByNameKey(nq.WorkGroup, nq.Name)
 
 		if s.Exists(nameKey) {
-			return ErrNamedQueryAlreadyExists
+			var existingIdBytes []byte
+			err := s.Get(nameKey, &existingIdBytes)
+			existingId := string(existingIdBytes)
+			if err != nil || existingId == "" {
+				// Stale name index from a crashed update — overwrite it
+			} else if s.Exists(existingId) {
+				return ErrNamedQueryAlreadyExists
+			}
+			// Stale index pointing to deleted query — overwrite
 		}
 
 		if err := s.Put(nameKey, []byte(nq.NamedQueryId)); err != nil {
@@ -281,9 +289,12 @@ func (s *NamedQueryStore) ListNamedQueries(workGroup string) ([]*NamedQuery, err
 		if len(key) > 0 && key[0] == '#' {
 			return nil
 		}
+		if len(key) > 0 && key[0] == '_' {
+			return nil
+		}
 		var p pb.NamedQuery
 		if err := proto.Unmarshal(value, &p); err != nil {
-			return err
+			return nil
 		}
 		nq := ProtoToNamedQuery(&p)
 		if workGroup == "" || nq.WorkGroup == workGroup {
@@ -428,20 +439,31 @@ func (s *QueryExecutionStore) UpdateQueryExecution(qe *QueryExecution) error {
 // DeleteExpiredQueryExecutions removes query executions older than the given threshold.
 // Returns the number of deleted executions.
 func (s *QueryExecutionStore) DeleteExpiredQueryExecutions(olderThan time.Time) (int, error) {
-	result, err := common.ListProto[*pb.QueryExecution](s.BaseStore, common.ListOptions{MaxItems: 0}, func() *pb.QueryExecution { return &pb.QueryExecution{} }, nil)
-	if err != nil {
-		return 0, err
-	}
+	batchSize := 200
 	var deleted int
-	for _, p := range result.Items {
-		if p.Status != nil && p.Status.SubmissionDateTime != nil {
-			submissionTime := p.Status.SubmissionDateTime.AsTime()
-			if submissionTime.Before(olderThan) {
-				if err := s.BaseStore.Delete(p.QueryExecutionId); err == nil {
-					deleted++
+	marker := ""
+	for {
+		result, err := common.ListProto[*pb.QueryExecution](s.BaseStore, common.ListOptions{MaxItems: batchSize, Marker: marker}, func() *pb.QueryExecution { return &pb.QueryExecution{} }, nil)
+		if err != nil {
+			return deleted, err
+		}
+		if len(result.Items) == 0 {
+			break
+		}
+		for _, p := range result.Items {
+			if p.Status != nil && p.Status.SubmissionDateTime != nil {
+				submissionTime := p.Status.SubmissionDateTime.AsTime()
+				if submissionTime.Before(olderThan) {
+					if err := s.BaseStore.Delete(p.QueryExecutionId); err == nil {
+						deleted++
+					}
 				}
 			}
 		}
+		if !result.IsTruncated {
+			break
+		}
+		marker = result.NextMarker
 	}
 	return deleted, nil
 }

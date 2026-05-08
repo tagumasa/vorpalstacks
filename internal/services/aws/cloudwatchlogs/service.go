@@ -13,22 +13,21 @@ import (
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
-	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // LogsService provides CloudWatch Logs service operations.
 type LogsService struct {
-	storageManager *storage.RegionStorageManager
-	accountID      string
-	dataPath       string
-	logsStores     sync.Map // region → *logsstore.Store
-	metricStores   sync.Map // region → *cwstore.MetricChunkStore
-	bus            eventbus.Bus
-	ctx            context.Context
-	cancel         context.CancelFunc
-	wg             sync.WaitGroup
+	storageManager  *storage.RegionStorageManager
+	accountID       string
+	dataPath        string
+	logsStores      sync.Map // region → *logsstore.Store
+	cwMetricInvoker eventbus.CloudWatchMetricInvoker
+	bus             eventbus.Bus
+	ctx             context.Context
+	cancel          context.CancelFunc
+	wg              sync.WaitGroup
 }
 
 // NewLogsService creates a new CloudWatch Logs service.
@@ -96,51 +95,10 @@ func (s *LogsService) getLogsStoreByRegion(region string) (*logsstore.Store, err
 	return store, nil
 }
 
-func (s *LogsService) getMetricStore(reqCtx *request.RequestContext) (*cwstore.MetricChunkStore, error) {
-	region := reqCtx.GetRegion()
-	if cached, ok := s.metricStores.Load(region); ok {
-		if typed, ok := cached.(*cwstore.MetricChunkStore); ok {
-			return typed, nil
-		}
-	}
-	storage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-	store, err := cwstore.NewMetricChunkStoreWithIndex(storage, region, s.dataPath)
-	if err != nil {
-		return nil, err
-	}
-	if actual, loaded := s.metricStores.LoadOrStore(region, store); loaded {
-		store.Close()
-		if typed, ok := actual.(*cwstore.MetricChunkStore); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
-}
-
-func (s *LogsService) getMetricStoreByRegion(region string) (*cwstore.MetricChunkStore, error) {
-	if cached, ok := s.metricStores.Load(region); ok {
-		if typed, ok := cached.(*cwstore.MetricChunkStore); ok {
-			return typed, nil
-		}
-	}
-	regionStorage, err := s.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get storage for region %q: %w", region, err)
-	}
-	store, err := cwstore.NewMetricChunkStoreWithIndex(regionStorage, region, s.dataPath)
-	if err != nil {
-		return nil, err
-	}
-	if actual, loaded := s.metricStores.LoadOrStore(region, store); loaded {
-		store.Close()
-		if typed, ok := actual.(*cwstore.MetricChunkStore); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
+// SetCloudWatchMetricInvoker injects the CloudWatch metric invoker for emitting
+// metric data when metric filters match log events.
+func (s *LogsService) SetCloudWatchMetricInvoker(invoker eventbus.CloudWatchMetricInvoker) {
+	s.cwMetricInvoker = invoker
 }
 
 // RegisterHandlers registers the CloudWatch Logs service handlers with the dispatcher.

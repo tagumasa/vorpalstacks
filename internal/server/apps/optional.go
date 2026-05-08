@@ -10,11 +10,11 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/serviceports"
 	appconfig "vorpalstacks/internal/config"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage/graphengine"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/grpcweb"
 	"vorpalstacks/internal/server/listener"
+	"vorpalstacks/internal/server/portalloc"
 	svcacm "vorpalstacks/internal/services/aws/acm"
 	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
 	svcappsync "vorpalstacks/internal/services/aws/appsync"
@@ -86,19 +86,29 @@ func (a *App) initOptionalServices() error {
 	a.initCloudTrailRecorderFactory(st)
 	a.injectS3AuditRecorder(st)
 	a.initPrincipalResolver()
+
+	if st.neptuneService != nil && st.neptuneDataService != nil {
+		st.neptuneService.SetDataPlaneService(st.neptuneDataService)
+	}
+
+	if st.kmsService != nil {
+		st.kmsService.SetPrincipalResolver(a.server.Dispatcher().PrincipalResolver())
+	}
+
 	return nil
 }
 
 // --- Athena (optional) ---
 
-// initAthena creates the Athena service. Skipped with a warning if S3 is not
-// enabled, because Athena requires S3 for query result storage.
+// initAthena creates the Athena service. S3 invoker is injected from the
+// event bus immediately after creation.
 func (a *App) initAthena(st *serviceState) error {
-	if st.s3ObjectStore == nil {
-		logs.Warn("Athena skipped: S3 not enabled")
-		return nil
+	athenaService := svcathena.NewAthenaService(st.accountID)
+	athenaService.SetRegion(st.region)
+	st.athenaService = athenaService
+	if eb := a.server.EventBus(); eb != nil {
+		st.athenaService.SetS3Invoker(eb.S3Invoker())
 	}
-	athenaService := svcathena.NewAthenaServiceWithS3(st.accountID, st.s3ObjectStore)
 	athenaService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("athena", func(ctx context.Context) error {
 		athenaService.Shutdown()
@@ -125,6 +135,9 @@ func (a *App) initAppSync(st *serviceState) error {
 func (a *App) initCloudFront(st *serviceState) error {
 	st.cloudFrontService = svccloudfront.NewCloudFrontService(st.accountID)
 	st.cloudFrontService.SetRegionAndStorage(st.region, a.server.StorageManager())
+	if eb := a.server.EventBus(); eb != nil {
+		st.cloudFrontService.SetWAFInvoker(eb.WAFInvoker())
+	}
 	st.cloudFrontService.RegisterHandlers(a.server.Dispatcher())
 	st.cloudFrontService.InitDistributionServer()
 	return nil
@@ -136,6 +149,7 @@ func (a *App) initNeptune(st *serviceState) error {
 	st.neptuneService = svcneptune.NewNeptuneService(st.accountID, st.region)
 	st.neptuneService.SetStorageManager(a.server.StorageManager())
 	st.neptuneService.SetEventBus(a.server.EventBus())
+	st.neptuneService.SetServerHost(a.cfg.ServerHost())
 	st.neptuneService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("neptune", func(ctx context.Context) error {
 		st.neptuneService.Close()
@@ -147,14 +161,23 @@ func (a *App) initNeptune(st *serviceState) error {
 // --- NeptuneData (optional) ---
 
 func (a *App) initNeptuneData(st *serviceState) error {
-	st.neptuneDataService = svcneptunedata.NewNeptuneDataService()
+	allocator := portalloc.New(appconfig.GetStore())
+	graphCache := graphengine.NewSharedCache(graphengine.DefaultCacheSize)
+	st.neptuneDataService = svcneptunedata.NewNeptuneDataService(allocator)
 	st.neptuneDataService.SetStorageManager(a.server.StorageManager())
+	st.neptuneDataService.SetGraphCache(graphCache)
+	st.neptuneDataService.SetListenerManager(a.lm)
+	st.neptuneDataService.SetDispatcherHandler(a.server.MainHandler)
 	if eb := a.server.EventBus(); eb != nil {
 		st.neptuneDataService.SetS3Invoker(eb.S3Invoker())
 	}
 	st.neptuneDataService.RegisterHandlers(a.server.Dispatcher())
+	st.neptuneDataService.RestoreEngines()
+	st.neptuneDataService.RegisterClusterListeners()
+
 	a.addShutdown("neptunedata", func(ctx context.Context) error {
 		st.neptuneDataService.Close()
+		graphCache.Release()
 		return nil
 	})
 	return nil
@@ -184,6 +207,7 @@ func (a *App) initRoute53(st *serviceState) error {
 
 func (a *App) initTimestreamQuery(st *serviceState) error {
 	timestreamQueryService := svctimestreamquery.NewTimestreamQueryService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
+	st.timestreamQueryService = timestreamQueryService
 	timestreamQueryService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }
@@ -204,32 +228,9 @@ func (a *App) initTimestreamWrite(st *serviceState) error {
 // --- WAFv2 (optional) ---
 
 func (a *App) initWAFv2(st *serviceState) error {
-	wafv2Service := svcwafv2.NewWAFv2Service(st.accountID, st.region)
-	wafv2Service.RegisterHandlers(a.server.Dispatcher())
+	st.wafv2Service = svcwafv2.NewWAFv2Service(st.accountID, st.region)
+	st.wafv2Service.RegisterHandlers(a.server.Dispatcher())
 	return nil
-}
-
-// --- GraphDB ---
-
-func (a *App) initGraphDB() {
-	graphDir := a.cfg.DataPath + "/graph"
-	graphDB, err := graphengine.Open(graphDir, graphengine.DefaultOptions())
-	if err != nil {
-		logs.Warn("Failed to open graph DB",
-			logs.String("path", graphDir),
-			logs.String("error", err.Error()),
-		)
-		return
-	}
-	a.server.Dispatcher().SetGraphDB(graphDB)
-	a.graphDB = graphDB
-	if a.state.neptuneDataService != nil {
-		a.state.neptuneDataService.SetGraphDB(graphDB)
-	}
-	a.addShutdown("graphdb", func(ctx context.Context) error {
-		graphDB.Close()
-		return nil
-	})
 }
 
 // --- NeptuneGraph (optional) ---
@@ -242,6 +243,9 @@ func (a *App) initNeptuneGraph(st *serviceState) error {
 	st.neptuneGraphService.SetEventBus(a.server.EventBus())
 	st.neptuneGraphService.RegisterHandlers(a.server.Dispatcher())
 	st.neptuneGraphService.RestoreEngines()
+	if eb := a.server.EventBus(); eb != nil {
+		eb.SetNeptuneGraphInvoker(&neptuneGraphInvokerAdapter{service: st.neptuneGraphService})
+	}
 	a.addShutdown("neptunegraph", func(ctx context.Context) error {
 		st.neptuneGraphService.Close()
 		graphCache.Release()
@@ -288,7 +292,7 @@ func (a *App) initGRPCWebAdmin() {
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svclambda.NewConnectHandler(sm, aid)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svcs3.NewConnectHandler(a.server.S3Store(), aid)
+	p, h = svcs3.NewConnectHandler(a.server.S3Store(), aid, st.s3Service.EncryptionManager())
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcstepfunction.NewConnectHandler(st.stepFunctionService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})

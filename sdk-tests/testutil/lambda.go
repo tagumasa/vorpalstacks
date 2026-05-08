@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
@@ -53,7 +54,10 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 }
 
 func deleteLambdaLogGroup(cwlClient *cloudwatchlogs.Client, ctx context.Context, functionName string) {
-	cwlClient.DeleteLogGroup(ctx, &cloudwatchlogs.DeleteLogGroupInput{
+	_, err := cwlClient.DeleteLogGroup(ctx, &cloudwatchlogs.DeleteLogGroupInput{
 		LogGroupName: aws.String("/aws/lambda/" + functionName),
 	})
+	if err != nil {
+		log.Printf("lambda: failed to delete log group for %s: %v", functionName, err)
+	}
 }

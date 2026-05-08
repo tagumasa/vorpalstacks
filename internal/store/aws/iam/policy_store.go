@@ -124,44 +124,48 @@ func (s *PolicyStore) Exists(policyArn string) bool {
 // Create creates a new policy.
 func (s *PolicyStore) Create(policyName, path, accountId, document, description string, tags []types.Tag) (*Policy, error) {
 	arn := s.arnBuilder.PolicyARN(path, policyName)
-	if s.Exists(arn) {
-		return nil, NewStoreError("create_policy", ErrPolicyAlreadyExists)
-	}
 
-	policyID, err := GeneratePolicyID()
+	var policy *Policy
+	err := s.kl.WithLock(arn, func() error {
+		if s.Exists(arn) {
+			return NewStoreError("create_policy", ErrPolicyAlreadyExists)
+		}
+
+		policyID, err := GeneratePolicyID()
+		if err != nil {
+			return NewStoreError("generate_policy_id", err)
+		}
+
+		policy = &Policy{
+			ID:               policyID,
+			Path:             path,
+			PolicyName:       policyName,
+			Arn:              arn,
+			AccountId:        accountId,
+			CreateDate:       time.Now().UTC(),
+			DefaultVersionId: "v1",
+			AttachmentCount:  0,
+			IsAttachable:     true,
+			Description:      description,
+			Tags:             tags,
+		}
+
+		if err := s.Put(policy); err != nil {
+			return err
+		}
+
+		version := &PolicyVersion{
+			VersionId:        "v1",
+			PolicyArn:        arn,
+			IsDefaultVersion: true,
+			CreateDate:       time.Now().UTC(),
+			Document:         document,
+		}
+		return s.PutVersion(version)
+	})
 	if err != nil {
-		return nil, NewStoreError("generate_policy_id", err)
-	}
-
-	policy := &Policy{
-		ID:               policyID,
-		Path:             path,
-		PolicyName:       policyName,
-		Arn:              arn,
-		AccountId:        accountId,
-		CreateDate:       time.Now().UTC(),
-		DefaultVersionId: "v1",
-		AttachmentCount:  0,
-		IsAttachable:     true,
-		Description:      description,
-		Tags:             tags,
-	}
-
-	if err := s.Put(policy); err != nil {
 		return nil, err
 	}
-
-	version := &PolicyVersion{
-		VersionId:        "v1",
-		PolicyArn:        arn,
-		IsDefaultVersion: true,
-		CreateDate:       time.Now().UTC(),
-		Document:         document,
-	}
-	if err := s.PutVersion(version); err != nil {
-		return nil, err
-	}
-
 	return policy, nil
 }
 

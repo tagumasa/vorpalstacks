@@ -6041,7 +6041,7 @@ type Association struct {
 	Overview           *AssociationOverview   `protobuf:"bytes,172576699,opt,name=overview,proto3" json:"overview,omitempty"`
 	Scheduleexpression string                 `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
 	Scheduleoffset     int32                  `protobuf:"varint,156928216,opt,name=scheduleoffset,proto3" json:"scheduleoffset,omitempty"`
-	Targetmaps         map[string]string      `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps         []*TargetMapsEntry     `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targets            []*Target              `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -6154,7 +6154,7 @@ func (x *Association) GetScheduleoffset() int32 {
 	return 0
 }
 
-func (x *Association) GetTargetmaps() map[string]string {
+func (x *Association) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -6233,7 +6233,7 @@ type AssociationDescription struct {
 	Status                        *AssociationStatus                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
 	Synccompliance                AssociationSyncCompliance          `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance" json:"synccompliance,omitempty"`
 	Targetlocations               []*TargetLocation                  `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
-	Targetmaps                    map[string]string                  `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps                    []*TargetMapsEntry                 `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targets                       []*Target                          `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	Triggeredalarms               []*AlarmStateInformation           `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
@@ -6459,7 +6459,7 @@ func (x *AssociationDescription) GetTargetlocations() []*TargetLocation {
 	return nil
 }
 
-func (x *AssociationDescription) GetTargetmaps() map[string]string {
+func (x *AssociationDescription) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -7141,7 +7141,7 @@ type AssociationVersionInfo struct {
 	Scheduleoffset                int32                              `protobuf:"varint,156928216,opt,name=scheduleoffset,proto3" json:"scheduleoffset,omitempty"`
 	Synccompliance                AssociationSyncCompliance          `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance" json:"synccompliance,omitempty"`
 	Targetlocations               []*TargetLocation                  `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
-	Targetmaps                    map[string]string                  `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps                    []*TargetMapsEntry                 `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targets                       []*Target                          `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -7310,7 +7310,7 @@ func (x *AssociationVersionInfo) GetTargetlocations() []*TargetLocation {
 	return nil
 }
 
-func (x *AssociationVersionInfo) GetTargetmaps() map[string]string {
+func (x *AssociationVersionInfo) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -7712,7 +7712,7 @@ type AutomationExecution struct {
 	Target                      string                    `protobuf:"bytes,191361385,opt,name=target,proto3" json:"target,omitempty"`
 	Targetlocations             []*TargetLocation         `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
 	Targetlocationsurl          string                    `protobuf:"bytes,107583422,opt,name=targetlocationsurl,proto3" json:"targetlocationsurl,omitempty"`
-	Targetmaps                  map[string]string         `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps                  []*TargetMapsEntry        `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targetparametername         string                    `protobuf:"bytes,351056597,opt,name=targetparametername,proto3" json:"targetparametername,omitempty"`
 	Targets                     []*Target                 `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	Triggeredalarms             []*AlarmStateInformation  `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
@@ -7961,7 +7961,7 @@ func (x *AutomationExecution) GetTargetlocationsurl() string {
 	return ""
 }
 
-func (x *AutomationExecution) GetTargetmaps() map[string]string {
+func (x *AutomationExecution) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -8053,7 +8053,7 @@ type AutomationExecutionInputs struct {
 	Parameters          map[string]string      `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Targetlocations     []*TargetLocation      `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
 	Targetlocationsurl  string                 `protobuf:"bytes,107583422,opt,name=targetlocationsurl,proto3" json:"targetlocationsurl,omitempty"`
-	Targetmaps          map[string]string      `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps          []*TargetMapsEntry     `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targetparametername string                 `protobuf:"bytes,351056597,opt,name=targetparametername,proto3" json:"targetparametername,omitempty"`
 	Targets             []*Target              `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -8111,7 +8111,7 @@ func (x *AutomationExecutionInputs) GetTargetlocationsurl() string {
 	return ""
 }
 
-func (x *AutomationExecutionInputs) GetTargetmaps() map[string]string {
+func (x *AutomationExecutionInputs) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -8205,7 +8205,7 @@ type AutomationExecutionMetadata struct {
 	Scheduledtime               string                    `protobuf:"bytes,334708242,opt,name=scheduledtime,proto3" json:"scheduledtime,omitempty"`
 	Target                      string                    `protobuf:"bytes,191361385,opt,name=target,proto3" json:"target,omitempty"`
 	Targetlocationsurl          string                    `protobuf:"bytes,107583422,opt,name=targetlocationsurl,proto3" json:"targetlocationsurl,omitempty"`
-	Targetmaps                  map[string]string         `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps                  []*TargetMapsEntry        `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targetparametername         string                    `protobuf:"bytes,351056597,opt,name=targetparametername,proto3" json:"targetparametername,omitempty"`
 	Targets                     []*Target                 `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	Triggeredalarms             []*AlarmStateInformation  `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
@@ -8432,7 +8432,7 @@ func (x *AutomationExecutionMetadata) GetTargetlocationsurl() string {
 	return ""
 }
 
-func (x *AutomationExecutionMetadata) GetTargetmaps() map[string]string {
+func (x *AutomationExecutionMetadata) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -10228,7 +10228,7 @@ type CreateAssociationBatchRequestEntry struct {
 	Scheduleoffset                int32                              `protobuf:"varint,156928216,opt,name=scheduleoffset,proto3" json:"scheduleoffset,omitempty"`
 	Synccompliance                AssociationSyncCompliance          `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance" json:"synccompliance,omitempty"`
 	Targetlocations               []*TargetLocation                  `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
-	Targetmaps                    map[string]string                  `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps                    []*TargetMapsEntry                 `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targets                       []*Target                          `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -10390,7 +10390,7 @@ func (x *CreateAssociationBatchRequestEntry) GetTargetlocations() []*TargetLocat
 	return nil
 }
 
-func (x *CreateAssociationBatchRequestEntry) GetTargetmaps() map[string]string {
+func (x *CreateAssociationBatchRequestEntry) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -10478,7 +10478,7 @@ type CreateAssociationRequest struct {
 	Synccompliance                AssociationSyncCompliance          `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance" json:"synccompliance,omitempty"`
 	Tags                          []*Tag                             `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Targetlocations               []*TargetLocation                  `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
-	Targetmaps                    map[string]string                  `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps                    []*TargetMapsEntry                 `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targets                       []*Target                          `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -10654,7 +10654,7 @@ func (x *CreateAssociationRequest) GetTargetlocations() []*TargetLocation {
 	return nil
 }
 
-func (x *CreateAssociationRequest) GetTargetmaps() map[string]string {
+func (x *CreateAssociationRequest) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -17129,9 +17129,9 @@ func (x *DescribePatchPropertiesRequest) GetProperty() PatchProperty {
 }
 
 type DescribePatchPropertiesResult struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Properties    map[string]string      `protobuf:"bytes,29886973,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Nexttoken     string                      `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Properties    []*PatchPropertiesListEntry `protobuf:"bytes,29886973,rep,name=properties,proto3" json:"properties,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -17173,7 +17173,7 @@ func (x *DescribePatchPropertiesResult) GetNexttoken() string {
 	return ""
 }
 
-func (x *DescribePatchPropertiesResult) GetProperties() map[string]string {
+func (x *DescribePatchPropertiesResult) GetProperties() []*PatchPropertiesListEntry {
 	if x != nil {
 		return x.Properties
 	}
@@ -20921,22 +20921,22 @@ func (x *GetMaintenanceWindowExecutionTaskRequest) GetWindowexecutionid() string
 }
 
 type GetMaintenanceWindowExecutionTaskResult struct {
-	state              protoimpl.MessageState                                    `protogen:"open.v1"`
-	Alarmconfiguration *AlarmConfiguration                                       `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
-	Endtime            string                                                    `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
-	Maxconcurrency     string                                                    `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3" json:"maxconcurrency,omitempty"`
-	Maxerrors          string                                                    `protobuf:"bytes,129851691,opt,name=maxerrors,proto3" json:"maxerrors,omitempty"`
-	Priority           int32                                                     `protobuf:"varint,109944618,opt,name=priority,proto3" json:"priority,omitempty"`
-	Servicerole        string                                                    `protobuf:"bytes,47807725,opt,name=servicerole,proto3" json:"servicerole,omitempty"`
-	Starttime          string                                                    `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
-	Status             MaintenanceWindowExecutionStatus                          `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus" json:"status,omitempty"`
-	Statusdetails      string                                                    `protobuf:"bytes,372263208,opt,name=statusdetails,proto3" json:"statusdetails,omitempty"`
-	Taskarn            string                                                    `protobuf:"bytes,312386788,opt,name=taskarn,proto3" json:"taskarn,omitempty"`
-	Taskexecutionid    string                                                    `protobuf:"bytes,474180408,opt,name=taskexecutionid,proto3" json:"taskexecutionid,omitempty"`
-	Taskparameters     map[string]*MaintenanceWindowTaskParameterValueExpression `protobuf:"bytes,385451905,rep,name=taskparameters,proto3" json:"taskparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Triggeredalarms    []*AlarmStateInformation                                  `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
-	Type               MaintenanceWindowTaskType                                 `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.MaintenanceWindowTaskType" json:"type,omitempty"`
-	Windowexecutionid  string                                                    `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3" json:"windowexecutionid,omitempty"`
+	state              protoimpl.MessageState                      `protogen:"open.v1"`
+	Alarmconfiguration *AlarmConfiguration                         `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
+	Endtime            string                                      `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
+	Maxconcurrency     string                                      `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3" json:"maxconcurrency,omitempty"`
+	Maxerrors          string                                      `protobuf:"bytes,129851691,opt,name=maxerrors,proto3" json:"maxerrors,omitempty"`
+	Priority           int32                                       `protobuf:"varint,109944618,opt,name=priority,proto3" json:"priority,omitempty"`
+	Servicerole        string                                      `protobuf:"bytes,47807725,opt,name=servicerole,proto3" json:"servicerole,omitempty"`
+	Starttime          string                                      `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
+	Status             MaintenanceWindowExecutionStatus            `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus" json:"status,omitempty"`
+	Statusdetails      string                                      `protobuf:"bytes,372263208,opt,name=statusdetails,proto3" json:"statusdetails,omitempty"`
+	Taskarn            string                                      `protobuf:"bytes,312386788,opt,name=taskarn,proto3" json:"taskarn,omitempty"`
+	Taskexecutionid    string                                      `protobuf:"bytes,474180408,opt,name=taskexecutionid,proto3" json:"taskexecutionid,omitempty"`
+	Taskparameters     []*MaintenanceWindowTaskParametersListEntry `protobuf:"bytes,385451905,rep,name=taskparameters,proto3" json:"taskparameters,omitempty"`
+	Triggeredalarms    []*AlarmStateInformation                    `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
+	Type               MaintenanceWindowTaskType                   `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.MaintenanceWindowTaskType" json:"type,omitempty"`
+	Windowexecutionid  string                                      `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3" json:"windowexecutionid,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -21048,7 +21048,7 @@ func (x *GetMaintenanceWindowExecutionTaskResult) GetTaskexecutionid() string {
 	return ""
 }
 
-func (x *GetMaintenanceWindowExecutionTaskResult) GetTaskparameters() map[string]*MaintenanceWindowTaskParameterValueExpression {
+func (x *GetMaintenanceWindowExecutionTaskResult) GetTaskparameters() []*MaintenanceWindowTaskParametersListEntry {
 	if x != nil {
 		return x.Taskparameters
 	}
@@ -27037,13 +27037,13 @@ func (x *InventoryGroup) GetName() string {
 }
 
 type InventoryItem struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Capturetime   string                 `protobuf:"bytes,72276089,opt,name=capturetime,proto3" json:"capturetime,omitempty"`
-	Content       map[string]string      `protobuf:"bytes,23568227,rep,name=content,proto3" json:"content,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Contenthash   string                 `protobuf:"bytes,99301015,opt,name=contenthash,proto3" json:"contenthash,omitempty"`
-	Context       map[string]string      `protobuf:"bytes,489783069,rep,name=context,proto3" json:"context,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Schemaversion string                 `protobuf:"bytes,371681851,opt,name=schemaversion,proto3" json:"schemaversion,omitempty"`
-	Typename      string                 `protobuf:"bytes,446064463,opt,name=typename,proto3" json:"typename,omitempty"`
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Capturetime   string                         `protobuf:"bytes,72276089,opt,name=capturetime,proto3" json:"capturetime,omitempty"`
+	Content       []*InventoryItemEntryListEntry `protobuf:"bytes,23568227,rep,name=content,proto3" json:"content,omitempty"`
+	Contenthash   string                         `protobuf:"bytes,99301015,opt,name=contenthash,proto3" json:"contenthash,omitempty"`
+	Context       map[string]string              `protobuf:"bytes,489783069,rep,name=context,proto3" json:"context,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Schemaversion string                         `protobuf:"bytes,371681851,opt,name=schemaversion,proto3" json:"schemaversion,omitempty"`
+	Typename      string                         `protobuf:"bytes,446064463,opt,name=typename,proto3" json:"typename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -27085,7 +27085,7 @@ func (x *InventoryItem) GetCapturetime() string {
 	return ""
 }
 
-func (x *InventoryItem) GetContent() map[string]string {
+func (x *InventoryItem) GetContent() []*InventoryItemEntryListEntry {
 	if x != nil {
 		return x.Content
 	}
@@ -27293,12 +27293,12 @@ func (x *InventoryResultEntity) GetId() string {
 }
 
 type InventoryResultItem struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Capturetime   string                 `protobuf:"bytes,72276089,opt,name=capturetime,proto3" json:"capturetime,omitempty"`
-	Content       map[string]string      `protobuf:"bytes,23568227,rep,name=content,proto3" json:"content,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Contenthash   string                 `protobuf:"bytes,99301015,opt,name=contenthash,proto3" json:"contenthash,omitempty"`
-	Schemaversion string                 `protobuf:"bytes,371681851,opt,name=schemaversion,proto3" json:"schemaversion,omitempty"`
-	Typename      string                 `protobuf:"bytes,446064463,opt,name=typename,proto3" json:"typename,omitempty"`
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Capturetime   string                         `protobuf:"bytes,72276089,opt,name=capturetime,proto3" json:"capturetime,omitempty"`
+	Content       []*InventoryItemEntryListEntry `protobuf:"bytes,23568227,rep,name=content,proto3" json:"content,omitempty"`
+	Contenthash   string                         `protobuf:"bytes,99301015,opt,name=contenthash,proto3" json:"contenthash,omitempty"`
+	Schemaversion string                         `protobuf:"bytes,371681851,opt,name=schemaversion,proto3" json:"schemaversion,omitempty"`
+	Typename      string                         `protobuf:"bytes,446064463,opt,name=typename,proto3" json:"typename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -27340,7 +27340,7 @@ func (x *InventoryResultItem) GetCapturetime() string {
 	return ""
 }
 
-func (x *InventoryResultItem) GetContent() map[string]string {
+func (x *InventoryResultItem) GetContent() []*InventoryItemEntryListEntry {
 	if x != nil {
 		return x.Content
 	}
@@ -28809,13 +28809,13 @@ func (x *ListInventoryEntriesRequest) GetTypename() string {
 }
 
 type ListInventoryEntriesResult struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Capturetime   string                 `protobuf:"bytes,72276089,opt,name=capturetime,proto3" json:"capturetime,omitempty"`
-	Entries       map[string]string      `protobuf:"bytes,481075860,rep,name=entries,proto3" json:"entries,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Instanceid    string                 `protobuf:"bytes,49567392,opt,name=instanceid,proto3" json:"instanceid,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Schemaversion string                 `protobuf:"bytes,371681851,opt,name=schemaversion,proto3" json:"schemaversion,omitempty"`
-	Typename      string                 `protobuf:"bytes,446064463,opt,name=typename,proto3" json:"typename,omitempty"`
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Capturetime   string                         `protobuf:"bytes,72276089,opt,name=capturetime,proto3" json:"capturetime,omitempty"`
+	Entries       []*InventoryItemEntryListEntry `protobuf:"bytes,481075860,rep,name=entries,proto3" json:"entries,omitempty"`
+	Instanceid    string                         `protobuf:"bytes,49567392,opt,name=instanceid,proto3" json:"instanceid,omitempty"`
+	Nexttoken     string                         `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Schemaversion string                         `protobuf:"bytes,371681851,opt,name=schemaversion,proto3" json:"schemaversion,omitempty"`
+	Typename      string                         `protobuf:"bytes,446064463,opt,name=typename,proto3" json:"typename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -28857,7 +28857,7 @@ func (x *ListInventoryEntriesResult) GetCapturetime() string {
 	return ""
 }
 
-func (x *ListInventoryEntriesResult) GetEntries() map[string]string {
+func (x *ListInventoryEntriesResult) GetEntries() []*InventoryItemEntryListEntry {
 	if x != nil {
 		return x.Entries
 	}
@@ -29089,9 +29089,9 @@ func (x *ListNodesSummaryRequest) GetSyncname() string {
 }
 
 type ListNodesSummaryResult struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Summary       map[string]string      `protobuf:"bytes,21935540,rep,name=summary,proto3" json:"summary,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Nexttoken     string                  `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Summary       []*NodeSummaryListEntry `protobuf:"bytes,21935540,rep,name=summary,proto3" json:"summary,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -29133,7 +29133,7 @@ func (x *ListNodesSummaryResult) GetNexttoken() string {
 	return ""
 }
 
-func (x *ListNodesSummaryResult) GetSummary() map[string]string {
+func (x *ListNodesSummaryResult) GetSummary() []*NodeSummaryListEntry {
 	if x != nil {
 		return x.Summary
 	}
@@ -31925,9 +31925,9 @@ func (x *OpsEntity) GetId() string {
 }
 
 type OpsEntityItem struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Capturetime   string                 `protobuf:"bytes,72276089,opt,name=capturetime,proto3" json:"capturetime,omitempty"`
-	Content       map[string]string      `protobuf:"bytes,23568227,rep,name=content,proto3" json:"content,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Capturetime   string                         `protobuf:"bytes,72276089,opt,name=capturetime,proto3" json:"capturetime,omitempty"`
+	Content       []*OpsEntityItemEntryListEntry `protobuf:"bytes,23568227,rep,name=content,proto3" json:"content,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -31969,7 +31969,7 @@ func (x *OpsEntityItem) GetCapturetime() string {
 	return ""
 }
 
-func (x *OpsEntityItem) GetContent() map[string]string {
+func (x *OpsEntityItem) GetContent() []*OpsEntityItemEntryListEntry {
 	if x != nil {
 		return x.Content
 	}
@@ -38492,7 +38492,7 @@ type Runbook struct {
 	Maxerrors           string                 `protobuf:"bytes,129851691,opt,name=maxerrors,proto3" json:"maxerrors,omitempty"`
 	Parameters          map[string]string      `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Targetlocations     []*TargetLocation      `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
-	Targetmaps          map[string]string      `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps          []*TargetMapsEntry     `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targetparametername string                 `protobuf:"bytes,351056597,opt,name=targetparametername,proto3" json:"targetparametername,omitempty"`
 	Targets             []*Target              `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -38571,7 +38571,7 @@ func (x *Runbook) GetTargetlocations() []*TargetLocation {
 	return nil
 }
 
-func (x *Runbook) GetTargetmaps() map[string]string {
+func (x *Runbook) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -39797,7 +39797,7 @@ type StartAutomationExecutionRequest struct {
 	Tags                []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Targetlocations     []*TargetLocation      `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
 	Targetlocationsurl  string                 `protobuf:"bytes,107583422,opt,name=targetlocationsurl,proto3" json:"targetlocationsurl,omitempty"`
-	Targetmaps          map[string]string      `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps          []*TargetMapsEntry     `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targetparametername string                 `protobuf:"bytes,351056597,opt,name=targetparametername,proto3" json:"targetparametername,omitempty"`
 	Targets             []*Target              `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -39911,7 +39911,7 @@ func (x *StartAutomationExecutionRequest) GetTargetlocationsurl() string {
 	return ""
 }
 
-func (x *StartAutomationExecutionRequest) GetTargetmaps() map[string]string {
+func (x *StartAutomationExecutionRequest) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -41958,7 +41958,7 @@ type UpdateAssociationRequest struct {
 	Scheduleoffset                int32                              `protobuf:"varint,156928216,opt,name=scheduleoffset,proto3" json:"scheduleoffset,omitempty"`
 	Synccompliance                AssociationSyncCompliance          `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance" json:"synccompliance,omitempty"`
 	Targetlocations               []*TargetLocation                  `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
-	Targetmaps                    map[string]string                  `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Targetmaps                    []*TargetMapsEntry                 `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targets                       []*Target                          `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -42134,7 +42134,7 @@ func (x *UpdateAssociationRequest) GetTargetlocations() []*TargetLocation {
 	return nil
 }
 
-func (x *UpdateAssociationRequest) GetTargetmaps() map[string]string {
+func (x *UpdateAssociationRequest) GetTargetmaps() []*TargetMapsEntry {
 	if x != nil {
 		return x.Targetmaps
 	}
@@ -44324,6 +44324,270 @@ func (x *ValidationException) GetReasoncode() string {
 	return ""
 }
 
+type TargetMapsEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         map[string]string      `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TargetMapsEntry) Reset() {
+	*x = TargetMapsEntry{}
+	mi := &file_ssm_proto_msgTypes[600]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TargetMapsEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TargetMapsEntry) ProtoMessage() {}
+
+func (x *TargetMapsEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ssm_proto_msgTypes[600]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TargetMapsEntry.ProtoReflect.Descriptor instead.
+func (*TargetMapsEntry) Descriptor() ([]byte, []int) {
+	return file_ssm_proto_rawDescGZIP(), []int{600}
+}
+
+func (x *TargetMapsEntry) GetValue() map[string]string {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+type PatchPropertiesListEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         map[string]string      `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PatchPropertiesListEntry) Reset() {
+	*x = PatchPropertiesListEntry{}
+	mi := &file_ssm_proto_msgTypes[601]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PatchPropertiesListEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PatchPropertiesListEntry) ProtoMessage() {}
+
+func (x *PatchPropertiesListEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ssm_proto_msgTypes[601]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PatchPropertiesListEntry.ProtoReflect.Descriptor instead.
+func (*PatchPropertiesListEntry) Descriptor() ([]byte, []int) {
+	return file_ssm_proto_rawDescGZIP(), []int{601}
+}
+
+func (x *PatchPropertiesListEntry) GetValue() map[string]string {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+type MaintenanceWindowTaskParametersListEntry struct {
+	state         protoimpl.MessageState                                    `protogen:"open.v1"`
+	Value         map[string]*MaintenanceWindowTaskParameterValueExpression `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MaintenanceWindowTaskParametersListEntry) Reset() {
+	*x = MaintenanceWindowTaskParametersListEntry{}
+	mi := &file_ssm_proto_msgTypes[602]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MaintenanceWindowTaskParametersListEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MaintenanceWindowTaskParametersListEntry) ProtoMessage() {}
+
+func (x *MaintenanceWindowTaskParametersListEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ssm_proto_msgTypes[602]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MaintenanceWindowTaskParametersListEntry.ProtoReflect.Descriptor instead.
+func (*MaintenanceWindowTaskParametersListEntry) Descriptor() ([]byte, []int) {
+	return file_ssm_proto_rawDescGZIP(), []int{602}
+}
+
+func (x *MaintenanceWindowTaskParametersListEntry) GetValue() map[string]*MaintenanceWindowTaskParameterValueExpression {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+type InventoryItemEntryListEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         map[string]string      `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InventoryItemEntryListEntry) Reset() {
+	*x = InventoryItemEntryListEntry{}
+	mi := &file_ssm_proto_msgTypes[603]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InventoryItemEntryListEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InventoryItemEntryListEntry) ProtoMessage() {}
+
+func (x *InventoryItemEntryListEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ssm_proto_msgTypes[603]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InventoryItemEntryListEntry.ProtoReflect.Descriptor instead.
+func (*InventoryItemEntryListEntry) Descriptor() ([]byte, []int) {
+	return file_ssm_proto_rawDescGZIP(), []int{603}
+}
+
+func (x *InventoryItemEntryListEntry) GetValue() map[string]string {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+type NodeSummaryListEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         map[string]string      `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NodeSummaryListEntry) Reset() {
+	*x = NodeSummaryListEntry{}
+	mi := &file_ssm_proto_msgTypes[604]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NodeSummaryListEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NodeSummaryListEntry) ProtoMessage() {}
+
+func (x *NodeSummaryListEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ssm_proto_msgTypes[604]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NodeSummaryListEntry.ProtoReflect.Descriptor instead.
+func (*NodeSummaryListEntry) Descriptor() ([]byte, []int) {
+	return file_ssm_proto_rawDescGZIP(), []int{604}
+}
+
+func (x *NodeSummaryListEntry) GetValue() map[string]string {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+type OpsEntityItemEntryListEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         map[string]string      `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OpsEntityItemEntryListEntry) Reset() {
+	*x = OpsEntityItemEntryListEntry{}
+	mi := &file_ssm_proto_msgTypes[605]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OpsEntityItemEntryListEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OpsEntityItemEntryListEntry) ProtoMessage() {}
+
+func (x *OpsEntityItemEntryListEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ssm_proto_msgTypes[605]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OpsEntityItemEntryListEntry.ProtoReflect.Descriptor instead.
+func (*OpsEntityItemEntryListEntry) Descriptor() ([]byte, []int) {
+	return file_ssm_proto_rawDescGZIP(), []int{605}
+}
+
+func (x *OpsEntityItemEntryListEntry) GetValue() map[string]string {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
 var File_ssm_proto protoreflect.FileDescriptor
 
 const file_ssm_proto_rawDesc = "" +
@@ -44371,7 +44635,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\vresourceuri\x18\x8eӆ\xd3\x01 \x01(\tR\vresourceuri\"N\n" +
 	"#AssociateOpsItemRelatedItemResponse\x12'\n" +
 	"\rassociationid\x18\x92\xfc\x95B \x01(\tR\rassociationid\"\x15\n" +
-	"\x13AssociatedInstances\"\x97\x05\n" +
+	"\x13AssociatedInstances\"\xcc\x04\n" +
 	"\vAssociation\x12'\n" +
 	"\rassociationid\x18\x92\xfc\x95B \x01(\tR\rassociationid\x12,\n" +
 	"\x0fassociationname\x18\x98\x90ŕ\x01 \x01(\tR\x0fassociationname\x122\n" +
@@ -44385,15 +44649,12 @@ const file_ssm_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x127\n" +
 	"\boverview\x18\xbb\x9f\xa5R \x01(\v2\x18.ssm.AssociationOverviewR\boverview\x122\n" +
 	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\x12)\n" +
-	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05R\x0escheduleoffset\x12C\n" +
+	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05R\x0escheduleoffset\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2 .ssm.Association.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x12(\n" +
-	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x1a\n" +
-	"\x18AssociationAlreadyExists\"\xa4\x0e\n" +
+	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\"\x1a\n" +
+	"\x18AssociationAlreadyExists\"\xce\r\n" +
 	"\x16AssociationDescription\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12<\n" +
 	"\x17applyonlyatcroninterval\x18\x96\xf9\xa7\x88\x01 \x01(\bR\x17applyonlyatcroninterval\x12H\n" +
@@ -44425,16 +44686,13 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05R\x0escheduleoffset\x121\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\v2\x16.ssm.AssociationStatusR\x06status\x12J\n" +
 	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceR\x0esynccompliance\x12A\n" +
-	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x12N\n" +
+	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2+.ssm.AssociationDescription.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12G\n" +
 	"\x0ftriggeredalarms\x18\x85\xed\xc1} \x03(\v2\x1a.ssm.AlarmStateInformationR\x0ftriggeredalarms\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"6\n" +
 	"\x17AssociationDoesNotExist\x12\x1b\n" +
@@ -44486,8 +44744,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0eadditionalinfo\x18\x81\xcb\xe5\x1d \x01(\tR\x0eadditionalinfo\x12\x16\n" +
 	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x121\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x1a.ssm.AssociationStatusNameR\x04name\"\x8c\n" +
-	"\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x1a.ssm.AssociationStatusNameR\x04name\"\xb6\t\n" +
 	"\x16AssociationVersionInfo\x12<\n" +
 	"\x17applyonlyatcroninterval\x18\x96\xf9\xa7\x88\x01 \x01(\bR\x17applyonlyatcroninterval\x12H\n" +
 	"\x1dassociationdispatchassumerole\x18\xa1\x96\xa5\x86\x01 \x01(\tR\x1dassociationdispatchassumerole\x12'\n" +
@@ -44509,15 +44766,12 @@ const file_ssm_proto_rawDesc = "" +
 	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\x12)\n" +
 	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05R\x0escheduleoffset\x12J\n" +
 	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceR\x0esynccompliance\x12A\n" +
-	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x12N\n" +
+	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2+.ssm.AssociationVersionInfo.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\">\n" +
 	"\x1fAssociationVersionLimitExceeded\x12\x1b\n" +
@@ -44539,7 +44793,7 @@ const file_ssm_proto_rawDesc = "" +
 	"%AutomationDefinitionNotFoundException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"K\n" +
 	",AutomationDefinitionVersionNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x97\x11\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xc4\x10\n" +
 	"\x13AutomationExecution\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12'\n" +
 	"\rassociationid\x18\x92\xfc\x95B \x01(\tR\rassociationid\x127\n" +
@@ -44574,9 +44828,9 @@ const file_ssm_proto_rawDesc = "" +
 	"\x17stepexecutionstruncated\x18\xff\xa0\xc3\xe1\x01 \x01(\bR\x17stepexecutionstruncated\x12\x19\n" +
 	"\x06target\x18\xe9\xe2\x9f[ \x01(\tR\x06target\x12A\n" +
 	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x121\n" +
-	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tR\x12targetlocationsurl\x12K\n" +
+	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tR\x12targetlocationsurl\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2(.ssm.AutomationExecution.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x124\n" +
 	"\x13targetparametername\x18\xd5岧\x01 \x01(\tR\x13targetparametername\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12G\n" +
@@ -44587,35 +44841,29 @@ const file_ssm_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a<\n" +
 	"\x0eVariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"n\n" +
 	"\x19AutomationExecutionFilter\x126\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\x0e2!.ssm.AutomationExecutionFilterKeyR\x03key\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\x96\x04\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xbd\x03\n" +
 	"\x19AutomationExecutionInputs\x12R\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2..ssm.AutomationExecutionInputs.ParametersEntryR\n" +
 	"parameters\x12A\n" +
 	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x121\n" +
-	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tR\x12targetlocationsurl\x12Q\n" +
+	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tR\x12targetlocationsurl\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2..ssm.AutomationExecutionInputs.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x124\n" +
 	"\x13targetparametername\x18\xd5岧\x01 \x01(\tR\x13targetparametername\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"H\n" +
 	")AutomationExecutionLimitExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xf0\r\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x95\r\n" +
 	"\x1bAutomationExecutionMetadata\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12'\n" +
 	"\rassociationid\x18\x92\xfc\x95B \x01(\tR\rassociationid\x127\n" +
@@ -44645,17 +44893,14 @@ const file_ssm_proto_rawDesc = "" +
 	"\brunbooks\x18\xa5Х\xf5\x01 \x03(\v2\f.ssm.RunbookR\brunbooks\x12(\n" +
 	"\rscheduledtime\x18\x92\xfc̟\x01 \x01(\tR\rscheduledtime\x12\x19\n" +
 	"\x06target\x18\xe9\xe2\x9f[ \x01(\tR\x06target\x121\n" +
-	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tR\x12targetlocationsurl\x12S\n" +
+	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tR\x12targetlocationsurl\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v20.ssm.AutomationExecutionMetadata.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x124\n" +
 	"\x13targetparametername\x18\xd5岧\x01 \x01(\tR\x13targetparametername\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12G\n" +
 	"\x0ftriggeredalarms\x18\x85\xed\xc1} \x03(\v2\x1a.ssm.AlarmStateInformationR\x0ftriggeredalarms\x1a:\n" +
 	"\fOutputsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"C\n" +
 	"$AutomationExecutionNotFoundException\x12\x1b\n" +
@@ -44818,8 +45063,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\factivationid\x18\xe9ăF \x01(\tR\factivationid\"\xb0\x01\n" +
 	"\x1dCreateAssociationBatchRequest\x12H\n" +
 	"\x1dassociationdispatchassumerole\x18\xa1\x96\xa5\x86\x01 \x01(\tR\x1dassociationdispatchassumerole\x12E\n" +
-	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2'.ssm.CreateAssociationBatchRequestEntryR\aentries\"\x9c\n" +
-	"\n" +
+	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2'.ssm.CreateAssociationBatchRequestEntryR\aentries\"\xba\t\n" +
 	"\"CreateAssociationBatchRequestEntry\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12<\n" +
 	"\x17applyonlyatcroninterval\x18\x96\xf9\xa7\x88\x01 \x01(\bR\x17applyonlyatcroninterval\x12,\n" +
@@ -44842,22 +45086,19 @@ const file_ssm_proto_rawDesc = "" +
 	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\x12)\n" +
 	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05R\x0escheduleoffset\x12J\n" +
 	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceR\x0esynccompliance\x12A\n" +
-	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x12Z\n" +
+	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v27.ssm.CreateAssociationBatchRequestEntry.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x99\x01\n" +
 	"\x1cCreateAssociationBatchResult\x128\n" +
 	"\x06failed\x18Շ\xe7\xab\x01 \x03(\v2\x1c.ssm.FailedCreateAssociationR\x06failed\x12?\n" +
 	"\n" +
 	"successful\x18\x9c\xbb\xec\xc4\x01 \x03(\v2\x1b.ssm.AssociationDescriptionR\n" +
-	"successful\"\xea\n" +
+	"successful\"\x92\n" +
 	"\n" +
 	"\x18CreateAssociationRequest\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12<\n" +
@@ -44883,15 +45124,12 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05R\x0escheduleoffset\x12J\n" +
 	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceR\x0esynccompliance\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tags\x12A\n" +
-	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x12P\n" +
+	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2-.ssm.CreateAssociationRequest.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"r\n" +
 	"\x17CreateAssociationResult\x12W\n" +
@@ -45427,15 +45665,12 @@ const file_ssm_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12A\n" +
 	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystem\x12,\n" +
 	"\bpatchset\x18\xc0ћy \x01(\x0e2\r.ssm.PatchSetR\bpatchset\x122\n" +
-	"\bproperty\x18\xe9\xf3\x87\x91\x01 \x01(\x0e2\x12.ssm.PatchPropertyR\bproperty\"\xd6\x01\n" +
+	"\bproperty\x18\xe9\xf3\x87\x91\x01 \x01(\x0e2\x12.ssm.PatchPropertyR\bproperty\"\x82\x01\n" +
 	"\x1dDescribePatchPropertiesResult\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12U\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12@\n" +
 	"\n" +
-	"properties\x18\xfd\x93\xa0\x0e \x03(\v22.ssm.DescribePatchPropertiesResult.PropertiesEntryR\n" +
-	"properties\x1a=\n" +
-	"\x0fPropertiesEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xbc\x01\n" +
+	"properties\x18\xfd\x93\xa0\x0e \x03(\v2\x1d.ssm.PatchPropertiesListEntryR\n" +
+	"properties\"\xbc\x01\n" +
 	"\x17DescribeSessionsRequest\x12/\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x12.ssm.SessionFilterR\afilters\x12\"\n" +
 	"\n" +
@@ -45750,7 +45985,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0ewindowtargetid\x18\xde\xce\xea{ \x01(\tR\x0ewindowtargetid\"w\n" +
 	"(GetMaintenanceWindowExecutionTaskRequest\x12\x19\n" +
 	"\x06taskid\x18\xa2\x91\xeb\b \x01(\tR\x06taskid\x120\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tR\x11windowexecutionid\"\x94\a\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tR\x11windowexecutionid\"\x8a\x06\n" +
 	"'GetMaintenanceWindowExecutionTaskResult\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12)\n" +
@@ -45762,14 +45997,11 @@ const file_ssm_proto_rawDesc = "" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusR\x06status\x12(\n" +
 	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tR\rstatusdetails\x12\x1c\n" +
 	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tR\ataskarn\x12,\n" +
-	"\x0ftaskexecutionid\x18\xb8֍\xe2\x01 \x01(\tR\x0ftaskexecutionid\x12l\n" +
-	"\x0etaskparameters\x18\x81\x8f\xe6\xb7\x01 \x03(\v2@.ssm.GetMaintenanceWindowExecutionTaskResult.TaskparametersEntryR\x0etaskparameters\x12G\n" +
+	"\x0ftaskexecutionid\x18\xb8֍\xe2\x01 \x01(\tR\x0ftaskexecutionid\x12Y\n" +
+	"\x0etaskparameters\x18\x81\x8f\xe6\xb7\x01 \x03(\v2-.ssm.MaintenanceWindowTaskParametersListEntryR\x0etaskparameters\x12G\n" +
 	"\x0ftriggeredalarms\x18\x85\xed\xc1} \x03(\v2\x1a.ssm.AlarmStateInformationR\x0ftriggeredalarms\x126\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeR\x04type\x120\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tR\x11windowexecutionid\x1au\n" +
-	"\x13TaskparametersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12H\n" +
-	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01\"<\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tR\x11windowexecutionid\"<\n" +
 	"\x1bGetMaintenanceWindowRequest\x12\x1d\n" +
 	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tR\bwindowid\"\xc7\x04\n" +
 	"\x1aGetMaintenanceWindowResult\x12=\n" +
@@ -46236,17 +46468,14 @@ const file_ssm_proto_rawDesc = "" +
 	"\x06values\x18\xdcĴj \x03(\tR\x06values\"Z\n" +
 	"\x0eInventoryGroup\x121\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x14.ssm.InventoryFilterR\afilters\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x98\x03\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xdd\x02\n" +
 	"\rInventoryItem\x12#\n" +
-	"\vcapturetime\x18\xf9\xb0\xbb\" \x01(\tR\vcapturetime\x12<\n" +
-	"\acontent\x18㾞\v \x03(\v2\x1f.ssm.InventoryItem.ContentEntryR\acontent\x12#\n" +
+	"\vcapturetime\x18\xf9\xb0\xbb\" \x01(\tR\vcapturetime\x12=\n" +
+	"\acontent\x18㾞\v \x03(\v2 .ssm.InventoryItemEntryListEntryR\acontent\x12#\n" +
 	"\vcontenthash\x18\x97\xed\xac/ \x01(\tR\vcontenthash\x12=\n" +
 	"\acontext\x18\x9d\xfe\xc5\xe9\x01 \x03(\v2\x1f.ssm.InventoryItem.ContextEntryR\acontext\x12(\n" +
 	"\rschemaversion\x18\xbbԝ\xb1\x01 \x01(\tR\rschemaversion\x12\x1e\n" +
 	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\tR\btypename\x1a:\n" +
-	"\fContentEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a:\n" +
 	"\fContextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"o\n" +
@@ -46265,16 +46494,13 @@ const file_ssm_proto_rawDesc = "" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x1aQ\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.ssm.InventoryResultItemR\x05value:\x028\x01\"\xa9\x02\n" +
+	"\x05value\x18\x02 \x01(\v2\x18.ssm.InventoryResultItemR\x05value:\x028\x01\"\xe8\x01\n" +
 	"\x13InventoryResultItem\x12#\n" +
-	"\vcapturetime\x18\xf9\xb0\xbb\" \x01(\tR\vcapturetime\x12B\n" +
-	"\acontent\x18㾞\v \x03(\v2%.ssm.InventoryResultItem.ContentEntryR\acontent\x12#\n" +
+	"\vcapturetime\x18\xf9\xb0\xbb\" \x01(\tR\vcapturetime\x12=\n" +
+	"\acontent\x18㾞\v \x03(\v2 .ssm.InventoryItemEntryListEntryR\acontent\x12#\n" +
 	"\vcontenthash\x18\x97\xed\xac/ \x01(\tR\vcontenthash\x12(\n" +
 	"\rschemaversion\x18\xbbԝ\xb1\x01 \x01(\tR\rschemaversion\x12\x1e\n" +
-	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\tR\btypename\x1a:\n" +
-	"\fContentEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x18\n" +
+	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\tR\btypename\"\x18\n" +
 	"\x16InvocationDoesNotExist\"[\n" +
 	"\x1cItemContentMismatchException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12\x1e\n" +
@@ -46396,19 +46622,16 @@ const file_ssm_proto_rawDesc = "" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
 	"maxresults\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\tR\btypename\"\xd7\x02\n" +
+	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\tR\btypename\"\x8f\x02\n" +
 	"\x1aListInventoryEntriesResult\x12#\n" +
-	"\vcapturetime\x18\xf9\xb0\xbb\" \x01(\tR\vcapturetime\x12J\n" +
-	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2,.ssm.ListInventoryEntriesResult.EntriesEntryR\aentries\x12!\n" +
+	"\vcapturetime\x18\xf9\xb0\xbb\" \x01(\tR\vcapturetime\x12>\n" +
+	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2 .ssm.InventoryItemEntryListEntryR\aentries\x12!\n" +
 	"\n" +
 	"instanceid\x18\xa0\xad\xd1\x17 \x01(\tR\n" +
 	"instanceid\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12(\n" +
 	"\rschemaversion\x18\xbbԝ\xb1\x01 \x01(\tR\rschemaversion\x12\x1e\n" +
-	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\tR\btypename\x1a:\n" +
-	"\fEntriesEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa5\x01\n" +
+	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\tR\btypename\"\xa5\x01\n" +
 	"\x10ListNodesRequest\x12,\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.ssm.NodeFilterR\afilters\x12\"\n" +
 	"\n" +
@@ -46426,14 +46649,11 @@ const file_ssm_proto_rawDesc = "" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
 	"maxresults\x12\x1f\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\bsyncname\x18\xa2\x96\xb2\xb0\x01 \x01(\tR\bsyncname\"\xbc\x01\n" +
+	"\bsyncname\x18\xa2\x96\xb2\xb0\x01 \x01(\tR\bsyncname\"q\n" +
 	"\x16ListNodesSummaryResult\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12E\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x126\n" +
 	"\asummary\x18\xb4\xeb\xba\n" +
-	" \x03(\v2(.ssm.ListNodesSummaryResult.SummaryEntryR\asummary\x1a:\n" +
-	"\fSummaryEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x95\x01\n" +
+	" \x03(\v2\x19.ssm.NodeSummaryListEntryR\asummary\"\x95\x01\n" +
 	"\x18ListOpsItemEventsRequest\x124\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x17.ssm.OpsItemEventFilterR\afilters\x12\"\n" +
 	"\n" +
@@ -46673,13 +46893,10 @@ const file_ssm_proto_rawDesc = "" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x1aK\n" +
 	"\tDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12(\n" +
-	"\x05value\x18\x02 \x01(\v2\x12.ssm.OpsEntityItemR\x05value:\x028\x01\"\xae\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x12.ssm.OpsEntityItemR\x05value:\x028\x01\"s\n" +
 	"\rOpsEntityItem\x12#\n" +
-	"\vcapturetime\x18\xf9\xb0\xbb\" \x01(\tR\vcapturetime\x12<\n" +
-	"\acontent\x18㾞\v \x03(\v2\x1f.ssm.OpsEntityItem.ContentEntryR\acontent\x1a:\n" +
-	"\fContentEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"o\n" +
+	"\vcapturetime\x18\xf9\xb0\xbb\" \x01(\tR\vcapturetime\x12=\n" +
+	"\acontent\x18㾞\v \x03(\v2 .ssm.OpsEntityItemEntryListEntryR\acontent\"o\n" +
 	"\tOpsFilter\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x122\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1a.ssm.OpsFilterOperatorTypeR\x04type\x12\x19\n" +
@@ -47207,7 +47424,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11ReviewInformation\x12&\n" +
 	"\freviewedtime\x18\x92\u05f7\x84\x01 \x01(\tR\freviewedtime\x12\x1e\n" +
 	"\breviewer\x18\xbb\xb8\x8e\xd0\x01 \x01(\tR\breviewer\x12,\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.ssm.ReviewStatusR\x06status\"\xcd\x04\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.ssm.ReviewStatusR\x06status\"\x86\x04\n" +
 	"\aRunbook\x12%\n" +
 	"\fdocumentname\x18У\xc79 \x01(\tR\fdocumentname\x12+\n" +
 	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tR\x0fdocumentversion\x12)\n" +
@@ -47216,16 +47433,13 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x1c.ssm.Runbook.ParametersEntryR\n" +
 	"parameters\x12A\n" +
-	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x12?\n" +
+	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x1c.ssm.Runbook.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x124\n" +
 	"\x13targetparametername\x18\xd5岧\x01 \x01(\tR\x13targetparametername\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa2\x01\n" +
 	"\x10S3OutputLocation\x121\n" +
@@ -47328,7 +47542,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0faccessrequestid\x18\xfa\x97\xe8\xb3\x01 \x01(\tR\x0faccessrequestid\"I\n" +
 	"\x1cStartAssociationsOnceRequest\x12)\n" +
 	"\x0eassociationids\x18\xc7\xe8\x97; \x03(\tR\x0eassociationids\"\x1d\n" +
-	"\x1bStartAssociationsOnceResult\"\x87\a\n" +
+	"\x1bStartAssociationsOnceResult\"\xa8\x06\n" +
 	"\x1fStartAutomationExecutionRequest\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12#\n" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12%\n" +
@@ -47342,16 +47556,13 @@ const file_ssm_proto_rawDesc = "" +
 	"parameters\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tags\x12A\n" +
 	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x121\n" +
-	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tR\x12targetlocationsurl\x12W\n" +
+	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tR\x12targetlocationsurl\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v24.ssm.StartAutomationExecutionRequest.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x124\n" +
 	"\x13targetparametername\x18\xd5岧\x01 \x01(\tR\x13targetparametername\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Y\n" +
 	"\x1eStartAutomationExecutionResult\x127\n" +
@@ -47509,7 +47720,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x18UnsupportedParameterType\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"6\n" +
 	"\x17UnsupportedPlatformType\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x82\v\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xaa\n" +
+	"\n" +
 	"\x18UpdateAssociationRequest\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12<\n" +
 	"\x17applyonlyatcroninterval\x18\x96\xf9\xa7\x88\x01 \x01(\bR\x17applyonlyatcroninterval\x12H\n" +
@@ -47532,15 +47744,12 @@ const file_ssm_proto_rawDesc = "" +
 	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\x12)\n" +
 	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05R\x0escheduleoffset\x12J\n" +
 	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceR\x0esynccompliance\x12A\n" +
-	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x12P\n" +
+	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
-	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2-.ssm.UpdateAssociationRequest.TargetmapsEntryR\n" +
+	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
-	"\x0fTargetmapsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"r\n" +
 	"\x17UpdateAssociationResult\x12W\n" +
@@ -47744,7 +47953,43 @@ const file_ssm_proto_rawDesc = "" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12!\n" +
 	"\n" +
 	"reasoncode\x18\xb1\xb0\xfcc \x01(\tR\n" +
-	"reasoncode*\xc6\x01\n" +
+	"reasoncode\"\x82\x01\n" +
+	"\x0fTargetMapsEntry\x125\n" +
+	"\x05value\x18\x01 \x03(\v2\x1f.ssm.TargetMapsEntry.ValueEntryR\x05value\x1a8\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x94\x01\n" +
+	"\x18PatchPropertiesListEntry\x12>\n" +
+	"\x05value\x18\x01 \x03(\v2(.ssm.PatchPropertiesListEntry.ValueEntryR\x05value\x1a8\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe8\x01\n" +
+	"(MaintenanceWindowTaskParametersListEntry\x12N\n" +
+	"\x05value\x18\x01 \x03(\v28.ssm.MaintenanceWindowTaskParametersListEntry.ValueEntryR\x05value\x1al\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12H\n" +
+	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01\"\x9a\x01\n" +
+	"\x1bInventoryItemEntryListEntry\x12A\n" +
+	"\x05value\x18\x01 \x03(\v2+.ssm.InventoryItemEntryListEntry.ValueEntryR\x05value\x1a8\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8c\x01\n" +
+	"\x14NodeSummaryListEntry\x12:\n" +
+	"\x05value\x18\x01 \x03(\v2$.ssm.NodeSummaryListEntry.ValueEntryR\x05value\x1a8\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9a\x01\n" +
+	"\x1bOpsEntityItemEntryListEntry\x12A\n" +
+	"\x05value\x18\x01 \x03(\v2+.ssm.OpsEntityItemEntryListEntry.ValueEntryR\x05value\x1a8\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xc6\x01\n" +
 	"\x13AccessRequestStatus\x12!\n" +
 	"\x1dACCESS_REQUEST_STATUS_PENDING\x10\x00\x12!\n" +
 	"\x1dACCESS_REQUEST_STATUS_REVOKED\x10\x01\x12\"\n" +
@@ -48497,7 +48742,7 @@ func file_ssm_proto_rawDescGZIP() []byte {
 }
 
 var file_ssm_proto_enumTypes = make([]protoimpl.EnumInfo, 98)
-var file_ssm_proto_msgTypes = make([]protoimpl.MessageInfo, 662)
+var file_ssm_proto_msgTypes = make([]protoimpl.MessageInfo, 656)
 var file_ssm_proto_goTypes = []any{
 	(AccessRequestStatus)(0),                                         // 0: ssm.AccessRequestStatus
 	(AccessType)(0),                                                  // 1: ssm.AccessType
@@ -49197,68 +49442,62 @@ var file_ssm_proto_goTypes = []any{
 	(*UpdateServiceSettingRequest)(nil),                // 695: ssm.UpdateServiceSettingRequest
 	(*UpdateServiceSettingResult)(nil),                 // 696: ssm.UpdateServiceSettingResult
 	(*ValidationException)(nil),                        // 697: ssm.ValidationException
-	nil,                                                // 698: ssm.Association.TargetmapsEntry
-	nil,                                                // 699: ssm.AssociationDescription.ParametersEntry
-	nil,                                                // 700: ssm.AssociationDescription.TargetmapsEntry
-	nil,                                                // 701: ssm.AssociationOverview.AssociationstatusaggregatedcountEntry
-	nil,                                                // 702: ssm.AssociationVersionInfo.ParametersEntry
-	nil,                                                // 703: ssm.AssociationVersionInfo.TargetmapsEntry
-	nil,                                                // 704: ssm.AutomationExecution.OutputsEntry
-	nil,                                                // 705: ssm.AutomationExecution.ParametersEntry
-	nil,                                                // 706: ssm.AutomationExecution.TargetmapsEntry
-	nil,                                                // 707: ssm.AutomationExecution.VariablesEntry
-	nil,                                                // 708: ssm.AutomationExecutionInputs.ParametersEntry
-	nil,                                                // 709: ssm.AutomationExecutionInputs.TargetmapsEntry
-	nil,                                                // 710: ssm.AutomationExecutionMetadata.OutputsEntry
-	nil,                                                // 711: ssm.AutomationExecutionMetadata.TargetmapsEntry
+	(*TargetMapsEntry)(nil),                            // 698: ssm.TargetMapsEntry
+	(*PatchPropertiesListEntry)(nil),                   // 699: ssm.PatchPropertiesListEntry
+	(*MaintenanceWindowTaskParametersListEntry)(nil),   // 700: ssm.MaintenanceWindowTaskParametersListEntry
+	(*InventoryItemEntryListEntry)(nil),                // 701: ssm.InventoryItemEntryListEntry
+	(*NodeSummaryListEntry)(nil),                       // 702: ssm.NodeSummaryListEntry
+	(*OpsEntityItemEntryListEntry)(nil),                // 703: ssm.OpsEntityItemEntryListEntry
+	nil,                                                // 704: ssm.AssociationDescription.ParametersEntry
+	nil,                                                // 705: ssm.AssociationOverview.AssociationstatusaggregatedcountEntry
+	nil,                                                // 706: ssm.AssociationVersionInfo.ParametersEntry
+	nil,                                                // 707: ssm.AutomationExecution.OutputsEntry
+	nil,                                                // 708: ssm.AutomationExecution.ParametersEntry
+	nil,                                                // 709: ssm.AutomationExecution.VariablesEntry
+	nil,                                                // 710: ssm.AutomationExecutionInputs.ParametersEntry
+	nil,                                                // 711: ssm.AutomationExecutionMetadata.OutputsEntry
 	nil,                                                // 712: ssm.AutomationExecutionPreview.SteppreviewsEntry
 	nil,                                                // 713: ssm.Command.ParametersEntry
 	nil,                                                // 714: ssm.ComplianceItem.DetailsEntry
 	nil,                                                // 715: ssm.ComplianceItemEntry.DetailsEntry
 	nil,                                                // 716: ssm.CreateAssociationBatchRequestEntry.ParametersEntry
-	nil,                                                // 717: ssm.CreateAssociationBatchRequestEntry.TargetmapsEntry
-	nil,                                                // 718: ssm.CreateAssociationRequest.ParametersEntry
-	nil,                                                // 719: ssm.CreateAssociationRequest.TargetmapsEntry
-	nil,                                                // 720: ssm.CreateOpsItemRequest.OperationaldataEntry
-	nil,                                                // 721: ssm.CreateOpsMetadataRequest.MetadataEntry
-	nil,                                                // 722: ssm.DescribePatchPropertiesResult.PropertiesEntry
-	nil,                                                // 723: ssm.FailureDetails.DetailsEntry
-	nil,                                                // 724: ssm.GetMaintenanceWindowExecutionTaskResult.TaskparametersEntry
-	nil,                                                // 725: ssm.GetMaintenanceWindowTaskResult.TaskparametersEntry
-	nil,                                                // 726: ssm.GetOpsMetadataResult.MetadataEntry
-	nil,                                                // 727: ssm.InstanceAggregatedAssociationOverview.InstanceassociationstatusaggregatedcountEntry
-	nil,                                                // 728: ssm.InventoryItem.ContentEntry
-	nil,                                                // 729: ssm.InventoryItem.ContextEntry
-	nil,                                                // 730: ssm.InventoryResultEntity.DataEntry
-	nil,                                                // 731: ssm.InventoryResultItem.ContentEntry
-	nil,                                                // 732: ssm.ListInventoryEntriesResult.EntriesEntry
-	nil,                                                // 733: ssm.ListNodesSummaryResult.SummaryEntry
-	nil,                                                // 734: ssm.MaintenanceWindowAutomationParameters.ParametersEntry
-	nil,                                                // 735: ssm.MaintenanceWindowRunCommandParameters.ParametersEntry
-	nil,                                                // 736: ssm.MaintenanceWindowTask.TaskparametersEntry
-	nil,                                                // 737: ssm.OpsAggregator.ValuesEntry
-	nil,                                                // 738: ssm.OpsEntity.DataEntry
-	nil,                                                // 739: ssm.OpsEntityItem.ContentEntry
-	nil,                                                // 740: ssm.OpsItem.OperationaldataEntry
-	nil,                                                // 741: ssm.OpsItemSummary.OperationaldataEntry
-	nil,                                                // 742: ssm.RegisterTaskWithMaintenanceWindowRequest.TaskparametersEntry
-	nil,                                                // 743: ssm.Runbook.ParametersEntry
-	nil,                                                // 744: ssm.Runbook.TargetmapsEntry
-	nil,                                                // 745: ssm.SendAutomationSignalRequest.PayloadEntry
-	nil,                                                // 746: ssm.SendCommandRequest.ParametersEntry
-	nil,                                                // 747: ssm.StartAutomationExecutionRequest.ParametersEntry
-	nil,                                                // 748: ssm.StartAutomationExecutionRequest.TargetmapsEntry
-	nil,                                                // 749: ssm.StartChangeRequestExecutionRequest.ParametersEntry
-	nil,                                                // 750: ssm.StartSessionRequest.ParametersEntry
-	nil,                                                // 751: ssm.StepExecution.InputsEntry
-	nil,                                                // 752: ssm.StepExecution.OutputsEntry
-	nil,                                                // 753: ssm.StepExecution.OverriddenparametersEntry
-	nil,                                                // 754: ssm.UpdateAssociationRequest.ParametersEntry
-	nil,                                                // 755: ssm.UpdateAssociationRequest.TargetmapsEntry
-	nil,                                                // 756: ssm.UpdateMaintenanceWindowTaskRequest.TaskparametersEntry
-	nil,                                                // 757: ssm.UpdateMaintenanceWindowTaskResult.TaskparametersEntry
-	nil,                                                // 758: ssm.UpdateOpsItemRequest.OperationaldataEntry
-	nil,                                                // 759: ssm.UpdateOpsMetadataRequest.MetadatatoupdateEntry
+	nil,                                                // 717: ssm.CreateAssociationRequest.ParametersEntry
+	nil,                                                // 718: ssm.CreateOpsItemRequest.OperationaldataEntry
+	nil,                                                // 719: ssm.CreateOpsMetadataRequest.MetadataEntry
+	nil,                                                // 720: ssm.FailureDetails.DetailsEntry
+	nil,                                                // 721: ssm.GetMaintenanceWindowTaskResult.TaskparametersEntry
+	nil,                                                // 722: ssm.GetOpsMetadataResult.MetadataEntry
+	nil,                                                // 723: ssm.InstanceAggregatedAssociationOverview.InstanceassociationstatusaggregatedcountEntry
+	nil,                                                // 724: ssm.InventoryItem.ContextEntry
+	nil,                                                // 725: ssm.InventoryResultEntity.DataEntry
+	nil,                                                // 726: ssm.MaintenanceWindowAutomationParameters.ParametersEntry
+	nil,                                                // 727: ssm.MaintenanceWindowRunCommandParameters.ParametersEntry
+	nil,                                                // 728: ssm.MaintenanceWindowTask.TaskparametersEntry
+	nil,                                                // 729: ssm.OpsAggregator.ValuesEntry
+	nil,                                                // 730: ssm.OpsEntity.DataEntry
+	nil,                                                // 731: ssm.OpsItem.OperationaldataEntry
+	nil,                                                // 732: ssm.OpsItemSummary.OperationaldataEntry
+	nil,                                                // 733: ssm.RegisterTaskWithMaintenanceWindowRequest.TaskparametersEntry
+	nil,                                                // 734: ssm.Runbook.ParametersEntry
+	nil,                                                // 735: ssm.SendAutomationSignalRequest.PayloadEntry
+	nil,                                                // 736: ssm.SendCommandRequest.ParametersEntry
+	nil,                                                // 737: ssm.StartAutomationExecutionRequest.ParametersEntry
+	nil,                                                // 738: ssm.StartChangeRequestExecutionRequest.ParametersEntry
+	nil,                                                // 739: ssm.StartSessionRequest.ParametersEntry
+	nil,                                                // 740: ssm.StepExecution.InputsEntry
+	nil,                                                // 741: ssm.StepExecution.OutputsEntry
+	nil,                                                // 742: ssm.StepExecution.OverriddenparametersEntry
+	nil,                                                // 743: ssm.UpdateAssociationRequest.ParametersEntry
+	nil,                                                // 744: ssm.UpdateMaintenanceWindowTaskRequest.TaskparametersEntry
+	nil,                                                // 745: ssm.UpdateMaintenanceWindowTaskResult.TaskparametersEntry
+	nil,                                                // 746: ssm.UpdateOpsItemRequest.OperationaldataEntry
+	nil,                                                // 747: ssm.UpdateOpsMetadataRequest.MetadatatoupdateEntry
+	nil,                                                // 748: ssm.TargetMapsEntry.ValueEntry
+	nil,                                                // 749: ssm.PatchPropertiesListEntry.ValueEntry
+	nil,                                                // 750: ssm.MaintenanceWindowTaskParametersListEntry.ValueEntry
+	nil,                                                // 751: ssm.InventoryItemEntryListEntry.ValueEntry
+	nil,                                                // 752: ssm.NodeSummaryListEntry.ValueEntry
+	nil,                                                // 753: ssm.OpsEntityItemEntryListEntry.ValueEntry
 }
 var file_ssm_proto_depIdxs = []int32{
 	647, // 0: ssm.Activation.tags:type_name -> ssm.Tag
@@ -49267,17 +49506,17 @@ var file_ssm_proto_depIdxs = []int32{
 	103, // 3: ssm.AlarmConfiguration.alarms:type_name -> ssm.Alarm
 	38,  // 4: ssm.AlarmStateInformation.state:type_name -> ssm.ExternalAlarmState
 	121, // 5: ssm.Association.overview:type_name -> ssm.AssociationOverview
-	698, // 6: ssm.Association.targetmaps:type_name -> ssm.Association.TargetmapsEntry
+	698, // 6: ssm.Association.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 7: ssm.Association.targets:type_name -> ssm.Target
 	104, // 8: ssm.AssociationDescription.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	2,   // 9: ssm.AssociationDescription.complianceseverity:type_name -> ssm.AssociationComplianceSeverity
 	365, // 10: ssm.AssociationDescription.outputlocation:type_name -> ssm.InstanceAssociationOutputLocation
 	121, // 11: ssm.AssociationDescription.overview:type_name -> ssm.AssociationOverview
-	699, // 12: ssm.AssociationDescription.parameters:type_name -> ssm.AssociationDescription.ParametersEntry
+	704, // 12: ssm.AssociationDescription.parameters:type_name -> ssm.AssociationDescription.ParametersEntry
 	122, // 13: ssm.AssociationDescription.status:type_name -> ssm.AssociationStatus
 	8,   // 14: ssm.AssociationDescription.synccompliance:type_name -> ssm.AssociationSyncCompliance
 	650, // 15: ssm.AssociationDescription.targetlocations:type_name -> ssm.TargetLocation
-	700, // 16: ssm.AssociationDescription.targetmaps:type_name -> ssm.AssociationDescription.TargetmapsEntry
+	698, // 16: ssm.AssociationDescription.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 17: ssm.AssociationDescription.targets:type_name -> ssm.Target
 	105, // 18: ssm.AssociationDescription.triggeredalarms:type_name -> ssm.AlarmStateInformation
 	104, // 19: ssm.AssociationExecution.alarmconfiguration:type_name -> ssm.AlarmConfiguration
@@ -49287,14 +49526,14 @@ var file_ssm_proto_depIdxs = []int32{
 	539, // 23: ssm.AssociationExecutionTarget.outputsource:type_name -> ssm.OutputSource
 	4,   // 24: ssm.AssociationExecutionTargetsFilter.key:type_name -> ssm.AssociationExecutionTargetsFilterKey
 	5,   // 25: ssm.AssociationFilter.key:type_name -> ssm.AssociationFilterKey
-	701, // 26: ssm.AssociationOverview.associationstatusaggregatedcount:type_name -> ssm.AssociationOverview.AssociationstatusaggregatedcountEntry
+	705, // 26: ssm.AssociationOverview.associationstatusaggregatedcount:type_name -> ssm.AssociationOverview.AssociationstatusaggregatedcountEntry
 	7,   // 27: ssm.AssociationStatus.name:type_name -> ssm.AssociationStatusName
 	2,   // 28: ssm.AssociationVersionInfo.complianceseverity:type_name -> ssm.AssociationComplianceSeverity
 	365, // 29: ssm.AssociationVersionInfo.outputlocation:type_name -> ssm.InstanceAssociationOutputLocation
-	702, // 30: ssm.AssociationVersionInfo.parameters:type_name -> ssm.AssociationVersionInfo.ParametersEntry
+	706, // 30: ssm.AssociationVersionInfo.parameters:type_name -> ssm.AssociationVersionInfo.ParametersEntry
 	8,   // 31: ssm.AssociationVersionInfo.synccompliance:type_name -> ssm.AssociationSyncCompliance
 	650, // 32: ssm.AssociationVersionInfo.targetlocations:type_name -> ssm.TargetLocation
-	703, // 33: ssm.AssociationVersionInfo.targetmaps:type_name -> ssm.AssociationVersionInfo.TargetmapsEntry
+	698, // 33: ssm.AssociationVersionInfo.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 34: ssm.AssociationVersionInfo.targets:type_name -> ssm.Target
 	9,   // 35: ssm.AttachmentContent.hashtype:type_name -> ssm.AttachmentHashType
 	10,  // 36: ssm.AttachmentsSource.key:type_name -> ssm.AttachmentsSourceKey
@@ -49302,31 +49541,31 @@ var file_ssm_proto_depIdxs = []int32{
 	12,  // 38: ssm.AutomationExecution.automationexecutionstatus:type_name -> ssm.AutomationExecutionStatus
 	13,  // 39: ssm.AutomationExecution.automationsubtype:type_name -> ssm.AutomationSubtype
 	36,  // 40: ssm.AutomationExecution.mode:type_name -> ssm.ExecutionMode
-	704, // 41: ssm.AutomationExecution.outputs:type_name -> ssm.AutomationExecution.OutputsEntry
-	705, // 42: ssm.AutomationExecution.parameters:type_name -> ssm.AutomationExecution.ParametersEntry
+	707, // 41: ssm.AutomationExecution.outputs:type_name -> ssm.AutomationExecution.OutputsEntry
+	708, // 42: ssm.AutomationExecution.parameters:type_name -> ssm.AutomationExecution.ParametersEntry
 	566, // 43: ssm.AutomationExecution.progresscounters:type_name -> ssm.ProgressCounters
 	589, // 44: ssm.AutomationExecution.resolvedtargets:type_name -> ssm.ResolvedTargets
 	614, // 45: ssm.AutomationExecution.runbooks:type_name -> ssm.Runbook
 	642, // 46: ssm.AutomationExecution.stepexecutions:type_name -> ssm.StepExecution
 	650, // 47: ssm.AutomationExecution.targetlocations:type_name -> ssm.TargetLocation
-	706, // 48: ssm.AutomationExecution.targetmaps:type_name -> ssm.AutomationExecution.TargetmapsEntry
+	698, // 48: ssm.AutomationExecution.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 49: ssm.AutomationExecution.targets:type_name -> ssm.Target
 	105, // 50: ssm.AutomationExecution.triggeredalarms:type_name -> ssm.AlarmStateInformation
-	707, // 51: ssm.AutomationExecution.variables:type_name -> ssm.AutomationExecution.VariablesEntry
+	709, // 51: ssm.AutomationExecution.variables:type_name -> ssm.AutomationExecution.VariablesEntry
 	11,  // 52: ssm.AutomationExecutionFilter.key:type_name -> ssm.AutomationExecutionFilterKey
-	708, // 53: ssm.AutomationExecutionInputs.parameters:type_name -> ssm.AutomationExecutionInputs.ParametersEntry
+	710, // 53: ssm.AutomationExecutionInputs.parameters:type_name -> ssm.AutomationExecutionInputs.ParametersEntry
 	650, // 54: ssm.AutomationExecutionInputs.targetlocations:type_name -> ssm.TargetLocation
-	709, // 55: ssm.AutomationExecutionInputs.targetmaps:type_name -> ssm.AutomationExecutionInputs.TargetmapsEntry
+	698, // 55: ssm.AutomationExecutionInputs.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 56: ssm.AutomationExecutionInputs.targets:type_name -> ssm.Target
 	104, // 57: ssm.AutomationExecutionMetadata.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	12,  // 58: ssm.AutomationExecutionMetadata.automationexecutionstatus:type_name -> ssm.AutomationExecutionStatus
 	13,  // 59: ssm.AutomationExecutionMetadata.automationsubtype:type_name -> ssm.AutomationSubtype
 	14,  // 60: ssm.AutomationExecutionMetadata.automationtype:type_name -> ssm.AutomationType
 	36,  // 61: ssm.AutomationExecutionMetadata.mode:type_name -> ssm.ExecutionMode
-	710, // 62: ssm.AutomationExecutionMetadata.outputs:type_name -> ssm.AutomationExecutionMetadata.OutputsEntry
+	711, // 62: ssm.AutomationExecutionMetadata.outputs:type_name -> ssm.AutomationExecutionMetadata.OutputsEntry
 	589, // 63: ssm.AutomationExecutionMetadata.resolvedtargets:type_name -> ssm.ResolvedTargets
 	614, // 64: ssm.AutomationExecutionMetadata.runbooks:type_name -> ssm.Runbook
-	711, // 65: ssm.AutomationExecutionMetadata.targetmaps:type_name -> ssm.AutomationExecutionMetadata.TargetmapsEntry
+	698, // 65: ssm.AutomationExecutionMetadata.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 66: ssm.AutomationExecutionMetadata.targets:type_name -> ssm.Target
 	105, // 67: ssm.AutomationExecutionMetadata.triggeredalarms:type_name -> ssm.AlarmStateInformation
 	712, // 68: ssm.AutomationExecutionPreview.steppreviews:type_name -> ssm.AutomationExecutionPreview.SteppreviewsEntry
@@ -49371,18 +49610,18 @@ var file_ssm_proto_depIdxs = []int32{
 	716, // 107: ssm.CreateAssociationBatchRequestEntry.parameters:type_name -> ssm.CreateAssociationBatchRequestEntry.ParametersEntry
 	8,   // 108: ssm.CreateAssociationBatchRequestEntry.synccompliance:type_name -> ssm.AssociationSyncCompliance
 	650, // 109: ssm.CreateAssociationBatchRequestEntry.targetlocations:type_name -> ssm.TargetLocation
-	717, // 110: ssm.CreateAssociationBatchRequestEntry.targetmaps:type_name -> ssm.CreateAssociationBatchRequestEntry.TargetmapsEntry
+	698, // 110: ssm.CreateAssociationBatchRequestEntry.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 111: ssm.CreateAssociationBatchRequestEntry.targets:type_name -> ssm.Target
 	301, // 112: ssm.CreateAssociationBatchResult.failed:type_name -> ssm.FailedCreateAssociation
 	112, // 113: ssm.CreateAssociationBatchResult.successful:type_name -> ssm.AssociationDescription
 	104, // 114: ssm.CreateAssociationRequest.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	2,   // 115: ssm.CreateAssociationRequest.complianceseverity:type_name -> ssm.AssociationComplianceSeverity
 	365, // 116: ssm.CreateAssociationRequest.outputlocation:type_name -> ssm.InstanceAssociationOutputLocation
-	718, // 117: ssm.CreateAssociationRequest.parameters:type_name -> ssm.CreateAssociationRequest.ParametersEntry
+	717, // 117: ssm.CreateAssociationRequest.parameters:type_name -> ssm.CreateAssociationRequest.ParametersEntry
 	8,   // 118: ssm.CreateAssociationRequest.synccompliance:type_name -> ssm.AssociationSyncCompliance
 	647, // 119: ssm.CreateAssociationRequest.tags:type_name -> ssm.Tag
 	650, // 120: ssm.CreateAssociationRequest.targetlocations:type_name -> ssm.TargetLocation
-	719, // 121: ssm.CreateAssociationRequest.targetmaps:type_name -> ssm.CreateAssociationRequest.TargetmapsEntry
+	698, // 121: ssm.CreateAssociationRequest.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 122: ssm.CreateAssociationRequest.targets:type_name -> ssm.Target
 	112, // 123: ssm.CreateAssociationResult.associationdescription:type_name -> ssm.AssociationDescription
 	127, // 124: ssm.CreateDocumentRequest.attachments:type_name -> ssm.AttachmentsSource
@@ -49393,10 +49632,10 @@ var file_ssm_proto_depIdxs = []int32{
 	280, // 129: ssm.CreateDocumentResult.documentdescription:type_name -> ssm.DocumentDescription
 	647, // 130: ssm.CreateMaintenanceWindowRequest.tags:type_name -> ssm.Tag
 	524, // 131: ssm.CreateOpsItemRequest.notifications:type_name -> ssm.OpsItemNotification
-	720, // 132: ssm.CreateOpsItemRequest.operationaldata:type_name -> ssm.CreateOpsItemRequest.OperationaldataEntry
+	718, // 132: ssm.CreateOpsItemRequest.operationaldata:type_name -> ssm.CreateOpsItemRequest.OperationaldataEntry
 	584, // 133: ssm.CreateOpsItemRequest.relatedopsitems:type_name -> ssm.RelatedOpsItem
 	647, // 134: ssm.CreateOpsItemRequest.tags:type_name -> ssm.Tag
-	721, // 135: ssm.CreateOpsMetadataRequest.metadata:type_name -> ssm.CreateOpsMetadataRequest.MetadataEntry
+	719, // 135: ssm.CreateOpsMetadataRequest.metadata:type_name -> ssm.CreateOpsMetadataRequest.MetadataEntry
 	647, // 136: ssm.CreateOpsMetadataRequest.tags:type_name -> ssm.Tag
 	562, // 137: ssm.CreatePatchBaselineRequest.approvalrules:type_name -> ssm.PatchRuleGroup
 	77,  // 138: ssm.CreatePatchBaselineRequest.approvedpatchescompliancelevel:type_name -> ssm.PatchComplianceLevel
@@ -49473,7 +49712,7 @@ var file_ssm_proto_depIdxs = []int32{
 	62,  // 209: ssm.DescribePatchPropertiesRequest.operatingsystem:type_name -> ssm.OperatingSystem
 	83,  // 210: ssm.DescribePatchPropertiesRequest.patchset:type_name -> ssm.PatchSet
 	82,  // 211: ssm.DescribePatchPropertiesRequest.property:type_name -> ssm.PatchProperty
-	722, // 212: ssm.DescribePatchPropertiesResult.properties:type_name -> ssm.DescribePatchPropertiesResult.PropertiesEntry
+	699, // 212: ssm.DescribePatchPropertiesResult.properties:type_name -> ssm.PatchPropertiesListEntry
 	626, // 213: ssm.DescribeSessionsRequest.filters:type_name -> ssm.SessionFilter
 	92,  // 214: ssm.DescribeSessionsRequest.state:type_name -> ssm.SessionState
 	625, // 215: ssm.DescribeSessionsResponse.sessions:type_name -> ssm.Session
@@ -49511,7 +49750,7 @@ var file_ssm_proto_depIdxs = []int32{
 	137, // 247: ssm.ExecutionPreview.automation:type_name -> ssm.AutomationExecutionPreview
 	159, // 248: ssm.FailedCreateAssociation.entry:type_name -> ssm.CreateAssociationBatchRequestEntry
 	39,  // 249: ssm.FailedCreateAssociation.fault:type_name -> ssm.Fault
-	723, // 250: ssm.FailureDetails.details:type_name -> ssm.FailureDetails.DetailsEntry
+	720, // 250: ssm.FailureDetails.details:type_name -> ssm.FailureDetails.DetailsEntry
 	0,   // 251: ssm.GetAccessTokenResponse.accessrequeststatus:type_name -> ssm.AccessRequestStatus
 	175, // 252: ssm.GetAccessTokenResponse.credentials:type_name -> ssm.Credentials
 	131, // 253: ssm.GetAutomationExecutionResult.automationexecution:type_name -> ssm.AutomationExecution
@@ -49541,7 +49780,7 @@ var file_ssm_proto_depIdxs = []int32{
 	53,  // 277: ssm.GetMaintenanceWindowExecutionTaskInvocationResult.tasktype:type_name -> ssm.MaintenanceWindowTaskType
 	104, // 278: ssm.GetMaintenanceWindowExecutionTaskResult.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	50,  // 279: ssm.GetMaintenanceWindowExecutionTaskResult.status:type_name -> ssm.MaintenanceWindowExecutionStatus
-	724, // 280: ssm.GetMaintenanceWindowExecutionTaskResult.taskparameters:type_name -> ssm.GetMaintenanceWindowExecutionTaskResult.TaskparametersEntry
+	700, // 280: ssm.GetMaintenanceWindowExecutionTaskResult.taskparameters:type_name -> ssm.MaintenanceWindowTaskParametersListEntry
 	105, // 281: ssm.GetMaintenanceWindowExecutionTaskResult.triggeredalarms:type_name -> ssm.AlarmStateInformation
 	53,  // 282: ssm.GetMaintenanceWindowExecutionTaskResult.type:type_name -> ssm.MaintenanceWindowTaskType
 	104, // 283: ssm.GetMaintenanceWindowTaskResult.alarmconfiguration:type_name -> ssm.AlarmConfiguration
@@ -49549,10 +49788,10 @@ var file_ssm_proto_depIdxs = []int32{
 	480, // 285: ssm.GetMaintenanceWindowTaskResult.logginginfo:type_name -> ssm.LoggingInfo
 	648, // 286: ssm.GetMaintenanceWindowTaskResult.targets:type_name -> ssm.Target
 	493, // 287: ssm.GetMaintenanceWindowTaskResult.taskinvocationparameters:type_name -> ssm.MaintenanceWindowTaskInvocationParameters
-	725, // 288: ssm.GetMaintenanceWindowTaskResult.taskparameters:type_name -> ssm.GetMaintenanceWindowTaskResult.TaskparametersEntry
+	721, // 288: ssm.GetMaintenanceWindowTaskResult.taskparameters:type_name -> ssm.GetMaintenanceWindowTaskResult.TaskparametersEntry
 	53,  // 289: ssm.GetMaintenanceWindowTaskResult.tasktype:type_name -> ssm.MaintenanceWindowTaskType
 	512, // 290: ssm.GetOpsItemResponse.opsitem:type_name -> ssm.OpsItem
-	726, // 291: ssm.GetOpsMetadataResult.metadata:type_name -> ssm.GetOpsMetadataResult.MetadataEntry
+	722, // 291: ssm.GetOpsMetadataResult.metadata:type_name -> ssm.GetOpsMetadataResult.MetadataEntry
 	508, // 292: ssm.GetOpsSummaryRequest.aggregators:type_name -> ssm.OpsAggregator
 	511, // 293: ssm.GetOpsSummaryRequest.filters:type_name -> ssm.OpsFilter
 	538, // 294: ssm.GetOpsSummaryRequest.resultattributes:type_name -> ssm.OpsResultAttribute
@@ -49573,7 +49812,7 @@ var file_ssm_proto_depIdxs = []int32{
 	563, // 309: ssm.GetPatchBaselineResult.sources:type_name -> ssm.PatchSource
 	356, // 310: ssm.GetResourcePoliciesResponse.policies:type_name -> ssm.GetResourcePoliciesResponseEntry
 	623, // 311: ssm.GetServiceSettingResult.servicesetting:type_name -> ssm.ServiceSetting
-	727, // 312: ssm.InstanceAggregatedAssociationOverview.instanceassociationstatusaggregatedcount:type_name -> ssm.InstanceAggregatedAssociationOverview.InstanceassociationstatusaggregatedcountEntry
+	723, // 312: ssm.InstanceAggregatedAssociationOverview.instanceassociationstatusaggregatedcount:type_name -> ssm.InstanceAggregatedAssociationOverview.InstanceassociationstatusaggregatedcountEntry
 	615, // 313: ssm.InstanceAssociationOutputLocation.s3location:type_name -> ssm.S3OutputLocation
 	616, // 314: ssm.InstanceAssociationOutputUrl.s3outputurl:type_name -> ssm.S3OutputUrl
 	366, // 315: ssm.InstanceAssociationStatusInfo.outputurl:type_name -> ssm.InstanceAssociationOutputUrl
@@ -49602,12 +49841,12 @@ var file_ssm_proto_depIdxs = []int32{
 	431, // 338: ssm.InventoryDeletionSummary.summaryitems:type_name -> ssm.InventoryDeletionSummaryItem
 	47,  // 339: ssm.InventoryFilter.type:type_name -> ssm.InventoryQueryOperatorType
 	432, // 340: ssm.InventoryGroup.filters:type_name -> ssm.InventoryFilter
-	728, // 341: ssm.InventoryItem.content:type_name -> ssm.InventoryItem.ContentEntry
-	729, // 342: ssm.InventoryItem.context:type_name -> ssm.InventoryItem.ContextEntry
+	701, // 341: ssm.InventoryItem.content:type_name -> ssm.InventoryItemEntryListEntry
+	724, // 342: ssm.InventoryItem.context:type_name -> ssm.InventoryItem.ContextEntry
 	45,  // 343: ssm.InventoryItemAttribute.datatype:type_name -> ssm.InventoryAttributeDataType
 	435, // 344: ssm.InventoryItemSchema.attributes:type_name -> ssm.InventoryItemAttribute
-	730, // 345: ssm.InventoryResultEntity.data:type_name -> ssm.InventoryResultEntity.DataEntry
-	731, // 346: ssm.InventoryResultItem.content:type_name -> ssm.InventoryResultItem.ContentEntry
+	725, // 345: ssm.InventoryResultEntity.data:type_name -> ssm.InventoryResultEntity.DataEntry
+	701, // 346: ssm.InventoryResultItem.content:type_name -> ssm.InventoryItemEntryListEntry
 	123, // 347: ssm.ListAssociationVersionsResult.associationversions:type_name -> ssm.AssociationVersionInfo
 	119, // 348: ssm.ListAssociationsRequest.associationfilterlist:type_name -> ssm.AssociationFilter
 	110, // 349: ssm.ListAssociationsResult.associations:type_name -> ssm.Association
@@ -49626,12 +49865,12 @@ var file_ssm_proto_depIdxs = []int32{
 	283, // 362: ssm.ListDocumentsRequest.filters:type_name -> ssm.DocumentKeyValuesFilter
 	282, // 363: ssm.ListDocumentsResult.documentidentifiers:type_name -> ssm.DocumentIdentifier
 	432, // 364: ssm.ListInventoryEntriesRequest.filters:type_name -> ssm.InventoryFilter
-	732, // 365: ssm.ListInventoryEntriesResult.entries:type_name -> ssm.ListInventoryEntriesResult.EntriesEntry
+	701, // 365: ssm.ListInventoryEntriesResult.entries:type_name -> ssm.InventoryItemEntryListEntry
 	503, // 366: ssm.ListNodesRequest.filters:type_name -> ssm.NodeFilter
 	501, // 367: ssm.ListNodesResult.nodes:type_name -> ssm.Node
 	502, // 368: ssm.ListNodesSummaryRequest.aggregators:type_name -> ssm.NodeAggregator
 	503, // 369: ssm.ListNodesSummaryRequest.filters:type_name -> ssm.NodeFilter
-	733, // 370: ssm.ListNodesSummaryResult.summary:type_name -> ssm.ListNodesSummaryResult.SummaryEntry
+	702, // 370: ssm.ListNodesSummaryResult.summary:type_name -> ssm.NodeSummaryListEntry
 	517, // 371: ssm.ListOpsItemEventsRequest.filters:type_name -> ssm.OpsItemEventFilter
 	518, // 372: ssm.ListOpsItemEventsResponse.summaries:type_name -> ssm.OpsItemEventSummary
 	528, // 373: ssm.ListOpsItemRelatedItemsRequest.filters:type_name -> ssm.OpsItemRelatedItemsFilter
@@ -49643,7 +49882,7 @@ var file_ssm_proto_depIdxs = []int32{
 	597, // 379: ssm.ListResourceDataSyncResult.resourcedatasyncitems:type_name -> ssm.ResourceDataSyncItem
 	89,  // 380: ssm.ListTagsForResourceRequest.resourcetype:type_name -> ssm.ResourceTypeForTagging
 	647, // 381: ssm.ListTagsForResourceResult.taglist:type_name -> ssm.Tag
-	734, // 382: ssm.MaintenanceWindowAutomationParameters.parameters:type_name -> ssm.MaintenanceWindowAutomationParameters.ParametersEntry
+	726, // 382: ssm.MaintenanceWindowAutomationParameters.parameters:type_name -> ssm.MaintenanceWindowAutomationParameters.ParametersEntry
 	50,  // 383: ssm.MaintenanceWindowExecution.status:type_name -> ssm.MaintenanceWindowExecutionStatus
 	104, // 384: ssm.MaintenanceWindowExecutionTaskIdentity.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	50,  // 385: ssm.MaintenanceWindowExecutionTaskIdentity.status:type_name -> ssm.MaintenanceWindowExecutionStatus
@@ -49654,14 +49893,14 @@ var file_ssm_proto_depIdxs = []int32{
 	144, // 390: ssm.MaintenanceWindowRunCommandParameters.cloudwatchoutputconfig:type_name -> ssm.CloudWatchOutputConfig
 	28,  // 391: ssm.MaintenanceWindowRunCommandParameters.documenthashtype:type_name -> ssm.DocumentHashType
 	507, // 392: ssm.MaintenanceWindowRunCommandParameters.notificationconfig:type_name -> ssm.NotificationConfig
-	735, // 393: ssm.MaintenanceWindowRunCommandParameters.parameters:type_name -> ssm.MaintenanceWindowRunCommandParameters.ParametersEntry
+	727, // 393: ssm.MaintenanceWindowRunCommandParameters.parameters:type_name -> ssm.MaintenanceWindowRunCommandParameters.ParametersEntry
 	51,  // 394: ssm.MaintenanceWindowTarget.resourcetype:type_name -> ssm.MaintenanceWindowResourceType
 	648, // 395: ssm.MaintenanceWindowTarget.targets:type_name -> ssm.Target
 	104, // 396: ssm.MaintenanceWindowTask.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	52,  // 397: ssm.MaintenanceWindowTask.cutoffbehavior:type_name -> ssm.MaintenanceWindowTaskCutoffBehavior
 	480, // 398: ssm.MaintenanceWindowTask.logginginfo:type_name -> ssm.LoggingInfo
 	648, // 399: ssm.MaintenanceWindowTask.targets:type_name -> ssm.Target
-	736, // 400: ssm.MaintenanceWindowTask.taskparameters:type_name -> ssm.MaintenanceWindowTask.TaskparametersEntry
+	728, // 400: ssm.MaintenanceWindowTask.taskparameters:type_name -> ssm.MaintenanceWindowTask.TaskparametersEntry
 	53,  // 401: ssm.MaintenanceWindowTask.type:type_name -> ssm.MaintenanceWindowTaskType
 	481, // 402: ssm.MaintenanceWindowTaskInvocationParameters.automation:type_name -> ssm.MaintenanceWindowAutomationParameters
 	488, // 403: ssm.MaintenanceWindowTaskInvocationParameters.lambda:type_name -> ssm.MaintenanceWindowLambdaParameters
@@ -49682,12 +49921,12 @@ var file_ssm_proto_depIdxs = []int32{
 	61,  // 418: ssm.NotificationConfig.notificationtype:type_name -> ssm.NotificationType
 	508, // 419: ssm.OpsAggregator.aggregators:type_name -> ssm.OpsAggregator
 	511, // 420: ssm.OpsAggregator.filters:type_name -> ssm.OpsFilter
-	737, // 421: ssm.OpsAggregator.values:type_name -> ssm.OpsAggregator.ValuesEntry
-	738, // 422: ssm.OpsEntity.data:type_name -> ssm.OpsEntity.DataEntry
-	739, // 423: ssm.OpsEntityItem.content:type_name -> ssm.OpsEntityItem.ContentEntry
+	729, // 421: ssm.OpsAggregator.values:type_name -> ssm.OpsAggregator.ValuesEntry
+	730, // 422: ssm.OpsEntity.data:type_name -> ssm.OpsEntity.DataEntry
+	703, // 423: ssm.OpsEntityItem.content:type_name -> ssm.OpsEntityItemEntryListEntry
 	63,  // 424: ssm.OpsFilter.type:type_name -> ssm.OpsFilterOperatorType
 	524, // 425: ssm.OpsItem.notifications:type_name -> ssm.OpsItemNotification
-	740, // 426: ssm.OpsItem.operationaldata:type_name -> ssm.OpsItem.OperationaldataEntry
+	731, // 426: ssm.OpsItem.operationaldata:type_name -> ssm.OpsItem.OperationaldataEntry
 	584, // 427: ssm.OpsItem.relatedopsitems:type_name -> ssm.RelatedOpsItem
 	71,  // 428: ssm.OpsItem.status:type_name -> ssm.OpsItemStatus
 	64,  // 429: ssm.OpsItemDataValue.type:type_name -> ssm.OpsItemDataType
@@ -49700,7 +49939,7 @@ var file_ssm_proto_depIdxs = []int32{
 	520, // 436: ssm.OpsItemRelatedItemSummary.lastmodifiedby:type_name -> ssm.OpsItemIdentity
 	69,  // 437: ssm.OpsItemRelatedItemsFilter.key:type_name -> ssm.OpsItemRelatedItemsFilterKey
 	70,  // 438: ssm.OpsItemRelatedItemsFilter.operator:type_name -> ssm.OpsItemRelatedItemsFilterOperator
-	741, // 439: ssm.OpsItemSummary.operationaldata:type_name -> ssm.OpsItemSummary.OperationaldataEntry
+	732, // 439: ssm.OpsItemSummary.operationaldata:type_name -> ssm.OpsItemSummary.OperationaldataEntry
 	71,  // 440: ssm.OpsItemSummary.status:type_name -> ssm.OpsItemStatus
 	73,  // 441: ssm.Parameter.type:type_name -> ssm.ParameterType
 	543, // 442: ssm.ParameterHistory.policies:type_name -> ssm.ParameterInlinePolicy
@@ -49735,7 +49974,7 @@ var file_ssm_proto_depIdxs = []int32{
 	480, // 471: ssm.RegisterTaskWithMaintenanceWindowRequest.logginginfo:type_name -> ssm.LoggingInfo
 	648, // 472: ssm.RegisterTaskWithMaintenanceWindowRequest.targets:type_name -> ssm.Target
 	493, // 473: ssm.RegisterTaskWithMaintenanceWindowRequest.taskinvocationparameters:type_name -> ssm.MaintenanceWindowTaskInvocationParameters
-	742, // 474: ssm.RegisterTaskWithMaintenanceWindowRequest.taskparameters:type_name -> ssm.RegisterTaskWithMaintenanceWindowRequest.TaskparametersEntry
+	733, // 474: ssm.RegisterTaskWithMaintenanceWindowRequest.taskparameters:type_name -> ssm.RegisterTaskWithMaintenanceWindowRequest.TaskparametersEntry
 	53,  // 475: ssm.RegisterTaskWithMaintenanceWindowRequest.tasktype:type_name -> ssm.MaintenanceWindowTaskType
 	89,  // 476: ssm.RemoveTagsFromResourceRequest.resourcetype:type_name -> ssm.ResourceTypeForTagging
 	623, // 477: ssm.ResetServiceSettingResult.servicesetting:type_name -> ssm.ServiceSetting
@@ -49753,17 +49992,17 @@ var file_ssm_proto_depIdxs = []int32{
 	592, // 489: ssm.ResourceDataSyncSource.awsorganizationssource:type_name -> ssm.ResourceDataSyncAwsOrganizationsSource
 	592, // 490: ssm.ResourceDataSyncSourceWithState.awsorganizationssource:type_name -> ssm.ResourceDataSyncAwsOrganizationsSource
 	90,  // 491: ssm.ReviewInformation.status:type_name -> ssm.ReviewStatus
-	743, // 492: ssm.Runbook.parameters:type_name -> ssm.Runbook.ParametersEntry
+	734, // 492: ssm.Runbook.parameters:type_name -> ssm.Runbook.ParametersEntry
 	650, // 493: ssm.Runbook.targetlocations:type_name -> ssm.TargetLocation
-	744, // 494: ssm.Runbook.targetmaps:type_name -> ssm.Runbook.TargetmapsEntry
+	698, // 494: ssm.Runbook.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 495: ssm.Runbook.targets:type_name -> ssm.Target
-	745, // 496: ssm.SendAutomationSignalRequest.payload:type_name -> ssm.SendAutomationSignalRequest.PayloadEntry
+	735, // 496: ssm.SendAutomationSignalRequest.payload:type_name -> ssm.SendAutomationSignalRequest.PayloadEntry
 	94,  // 497: ssm.SendAutomationSignalRequest.signaltype:type_name -> ssm.SignalType
 	104, // 498: ssm.SendCommandRequest.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	144, // 499: ssm.SendCommandRequest.cloudwatchoutputconfig:type_name -> ssm.CloudWatchOutputConfig
 	28,  // 500: ssm.SendCommandRequest.documenthashtype:type_name -> ssm.DocumentHashType
 	507, // 501: ssm.SendCommandRequest.notificationconfig:type_name -> ssm.NotificationConfig
-	746, // 502: ssm.SendCommandRequest.parameters:type_name -> ssm.SendCommandRequest.ParametersEntry
+	736, // 502: ssm.SendCommandRequest.parameters:type_name -> ssm.SendCommandRequest.ParametersEntry
 	648, // 503: ssm.SendCommandRequest.targets:type_name -> ssm.Target
 	145, // 504: ssm.SendCommandResult.command:type_name -> ssm.Command
 	1,   // 505: ssm.Session.accesstype:type_name -> ssm.AccessType
@@ -49774,20 +50013,20 @@ var file_ssm_proto_depIdxs = []int32{
 	648, // 510: ssm.StartAccessRequestRequest.targets:type_name -> ssm.Target
 	104, // 511: ssm.StartAutomationExecutionRequest.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	36,  // 512: ssm.StartAutomationExecutionRequest.mode:type_name -> ssm.ExecutionMode
-	747, // 513: ssm.StartAutomationExecutionRequest.parameters:type_name -> ssm.StartAutomationExecutionRequest.ParametersEntry
+	737, // 513: ssm.StartAutomationExecutionRequest.parameters:type_name -> ssm.StartAutomationExecutionRequest.ParametersEntry
 	647, // 514: ssm.StartAutomationExecutionRequest.tags:type_name -> ssm.Tag
 	650, // 515: ssm.StartAutomationExecutionRequest.targetlocations:type_name -> ssm.TargetLocation
-	748, // 516: ssm.StartAutomationExecutionRequest.targetmaps:type_name -> ssm.StartAutomationExecutionRequest.TargetmapsEntry
+	698, // 516: ssm.StartAutomationExecutionRequest.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 517: ssm.StartAutomationExecutionRequest.targets:type_name -> ssm.Target
-	749, // 518: ssm.StartChangeRequestExecutionRequest.parameters:type_name -> ssm.StartChangeRequestExecutionRequest.ParametersEntry
+	738, // 518: ssm.StartChangeRequestExecutionRequest.parameters:type_name -> ssm.StartChangeRequestExecutionRequest.ParametersEntry
 	614, // 519: ssm.StartChangeRequestExecutionRequest.runbooks:type_name -> ssm.Runbook
 	647, // 520: ssm.StartChangeRequestExecutionRequest.tags:type_name -> ssm.Tag
 	299, // 521: ssm.StartExecutionPreviewRequest.executioninputs:type_name -> ssm.ExecutionInputs
-	750, // 522: ssm.StartSessionRequest.parameters:type_name -> ssm.StartSessionRequest.ParametersEntry
+	739, // 522: ssm.StartSessionRequest.parameters:type_name -> ssm.StartSessionRequest.ParametersEntry
 	302, // 523: ssm.StepExecution.failuredetails:type_name -> ssm.FailureDetails
-	751, // 524: ssm.StepExecution.inputs:type_name -> ssm.StepExecution.InputsEntry
-	752, // 525: ssm.StepExecution.outputs:type_name -> ssm.StepExecution.OutputsEntry
-	753, // 526: ssm.StepExecution.overriddenparameters:type_name -> ssm.StepExecution.OverriddenparametersEntry
+	740, // 524: ssm.StepExecution.inputs:type_name -> ssm.StepExecution.InputsEntry
+	741, // 525: ssm.StepExecution.outputs:type_name -> ssm.StepExecution.OutputsEntry
+	742, // 526: ssm.StepExecution.overriddenparameters:type_name -> ssm.StepExecution.OverriddenparametersEntry
 	553, // 527: ssm.StepExecution.parentstepdetails:type_name -> ssm.ParentStepDetails
 	12,  // 528: ssm.StepExecution.stepstatus:type_name -> ssm.AutomationExecutionStatus
 	650, // 529: ssm.StepExecution.targetlocation:type_name -> ssm.TargetLocation
@@ -49800,10 +50039,10 @@ var file_ssm_proto_depIdxs = []int32{
 	104, // 536: ssm.UpdateAssociationRequest.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	2,   // 537: ssm.UpdateAssociationRequest.complianceseverity:type_name -> ssm.AssociationComplianceSeverity
 	365, // 538: ssm.UpdateAssociationRequest.outputlocation:type_name -> ssm.InstanceAssociationOutputLocation
-	754, // 539: ssm.UpdateAssociationRequest.parameters:type_name -> ssm.UpdateAssociationRequest.ParametersEntry
+	743, // 539: ssm.UpdateAssociationRequest.parameters:type_name -> ssm.UpdateAssociationRequest.ParametersEntry
 	8,   // 540: ssm.UpdateAssociationRequest.synccompliance:type_name -> ssm.AssociationSyncCompliance
 	650, // 541: ssm.UpdateAssociationRequest.targetlocations:type_name -> ssm.TargetLocation
-	755, // 542: ssm.UpdateAssociationRequest.targetmaps:type_name -> ssm.UpdateAssociationRequest.TargetmapsEntry
+	698, // 542: ssm.UpdateAssociationRequest.targetmaps:type_name -> ssm.TargetMapsEntry
 	648, // 543: ssm.UpdateAssociationRequest.targets:type_name -> ssm.Target
 	112, // 544: ssm.UpdateAssociationResult.associationdescription:type_name -> ssm.AssociationDescription
 	122, // 545: ssm.UpdateAssociationStatusRequest.associationstatus:type_name -> ssm.AssociationStatus
@@ -49820,18 +50059,18 @@ var file_ssm_proto_depIdxs = []int32{
 	480, // 556: ssm.UpdateMaintenanceWindowTaskRequest.logginginfo:type_name -> ssm.LoggingInfo
 	648, // 557: ssm.UpdateMaintenanceWindowTaskRequest.targets:type_name -> ssm.Target
 	493, // 558: ssm.UpdateMaintenanceWindowTaskRequest.taskinvocationparameters:type_name -> ssm.MaintenanceWindowTaskInvocationParameters
-	756, // 559: ssm.UpdateMaintenanceWindowTaskRequest.taskparameters:type_name -> ssm.UpdateMaintenanceWindowTaskRequest.TaskparametersEntry
+	744, // 559: ssm.UpdateMaintenanceWindowTaskRequest.taskparameters:type_name -> ssm.UpdateMaintenanceWindowTaskRequest.TaskparametersEntry
 	104, // 560: ssm.UpdateMaintenanceWindowTaskResult.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	52,  // 561: ssm.UpdateMaintenanceWindowTaskResult.cutoffbehavior:type_name -> ssm.MaintenanceWindowTaskCutoffBehavior
 	480, // 562: ssm.UpdateMaintenanceWindowTaskResult.logginginfo:type_name -> ssm.LoggingInfo
 	648, // 563: ssm.UpdateMaintenanceWindowTaskResult.targets:type_name -> ssm.Target
 	493, // 564: ssm.UpdateMaintenanceWindowTaskResult.taskinvocationparameters:type_name -> ssm.MaintenanceWindowTaskInvocationParameters
-	757, // 565: ssm.UpdateMaintenanceWindowTaskResult.taskparameters:type_name -> ssm.UpdateMaintenanceWindowTaskResult.TaskparametersEntry
+	745, // 565: ssm.UpdateMaintenanceWindowTaskResult.taskparameters:type_name -> ssm.UpdateMaintenanceWindowTaskResult.TaskparametersEntry
 	524, // 566: ssm.UpdateOpsItemRequest.notifications:type_name -> ssm.OpsItemNotification
-	758, // 567: ssm.UpdateOpsItemRequest.operationaldata:type_name -> ssm.UpdateOpsItemRequest.OperationaldataEntry
+	746, // 567: ssm.UpdateOpsItemRequest.operationaldata:type_name -> ssm.UpdateOpsItemRequest.OperationaldataEntry
 	584, // 568: ssm.UpdateOpsItemRequest.relatedopsitems:type_name -> ssm.RelatedOpsItem
 	71,  // 569: ssm.UpdateOpsItemRequest.status:type_name -> ssm.OpsItemStatus
-	759, // 570: ssm.UpdateOpsMetadataRequest.metadatatoupdate:type_name -> ssm.UpdateOpsMetadataRequest.MetadatatoupdateEntry
+	747, // 570: ssm.UpdateOpsMetadataRequest.metadatatoupdate:type_name -> ssm.UpdateOpsMetadataRequest.MetadatatoupdateEntry
 	562, // 571: ssm.UpdatePatchBaselineRequest.approvalrules:type_name -> ssm.PatchRuleGroup
 	77,  // 572: ssm.UpdatePatchBaselineRequest.approvedpatchescompliancelevel:type_name -> ssm.PatchComplianceLevel
 	78,  // 573: ssm.UpdatePatchBaselineRequest.availablesecurityupdatescompliancestatus:type_name -> ssm.PatchComplianceStatus
@@ -49846,318 +50085,324 @@ var file_ssm_proto_depIdxs = []int32{
 	75,  // 582: ssm.UpdatePatchBaselineResult.rejectedpatchesaction:type_name -> ssm.PatchAction
 	563, // 583: ssm.UpdatePatchBaselineResult.sources:type_name -> ssm.PatchSource
 	601, // 584: ssm.UpdateResourceDataSyncRequest.syncsource:type_name -> ssm.ResourceDataSyncSource
-	516, // 585: ssm.CreateOpsItemRequest.OperationaldataEntry.value:type_name -> ssm.OpsItemDataValue
-	497, // 586: ssm.CreateOpsMetadataRequest.MetadataEntry.value:type_name -> ssm.MetadataValue
-	494, // 587: ssm.GetMaintenanceWindowExecutionTaskResult.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
-	494, // 588: ssm.GetMaintenanceWindowTaskResult.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
-	497, // 589: ssm.GetOpsMetadataResult.MetadataEntry.value:type_name -> ssm.MetadataValue
-	438, // 590: ssm.InventoryResultEntity.DataEntry.value:type_name -> ssm.InventoryResultItem
-	494, // 591: ssm.MaintenanceWindowTask.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
-	510, // 592: ssm.OpsEntity.DataEntry.value:type_name -> ssm.OpsEntityItem
-	516, // 593: ssm.OpsItem.OperationaldataEntry.value:type_name -> ssm.OpsItemDataValue
-	516, // 594: ssm.OpsItemSummary.OperationaldataEntry.value:type_name -> ssm.OpsItemDataValue
-	494, // 595: ssm.RegisterTaskWithMaintenanceWindowRequest.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
-	494, // 596: ssm.UpdateMaintenanceWindowTaskRequest.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
-	494, // 597: ssm.UpdateMaintenanceWindowTaskResult.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
-	516, // 598: ssm.UpdateOpsItemRequest.OperationaldataEntry.value:type_name -> ssm.OpsItemDataValue
-	497, // 599: ssm.UpdateOpsMetadataRequest.MetadatatoupdateEntry.value:type_name -> ssm.MetadataValue
-	101, // 600: ssm.SSMService.AddTagsToResource:input_type -> ssm.AddTagsToResourceRequest
-	107, // 601: ssm.SSMService.AssociateOpsItemRelatedItem:input_type -> ssm.AssociateOpsItemRelatedItemRequest
-	140, // 602: ssm.SSMService.CancelCommand:input_type -> ssm.CancelCommandRequest
-	142, // 603: ssm.SSMService.CancelMaintenanceWindowExecution:input_type -> ssm.CancelMaintenanceWindowExecutionRequest
-	156, // 604: ssm.SSMService.CreateActivation:input_type -> ssm.CreateActivationRequest
-	161, // 605: ssm.SSMService.CreateAssociation:input_type -> ssm.CreateAssociationRequest
-	158, // 606: ssm.SSMService.CreateAssociationBatch:input_type -> ssm.CreateAssociationBatchRequest
-	163, // 607: ssm.SSMService.CreateDocument:input_type -> ssm.CreateDocumentRequest
-	165, // 608: ssm.SSMService.CreateMaintenanceWindow:input_type -> ssm.CreateMaintenanceWindowRequest
-	167, // 609: ssm.SSMService.CreateOpsItem:input_type -> ssm.CreateOpsItemRequest
-	169, // 610: ssm.SSMService.CreateOpsMetadata:input_type -> ssm.CreateOpsMetadataRequest
-	171, // 611: ssm.SSMService.CreatePatchBaseline:input_type -> ssm.CreatePatchBaselineRequest
-	173, // 612: ssm.SSMService.CreateResourceDataSync:input_type -> ssm.CreateResourceDataSyncRequest
-	177, // 613: ssm.SSMService.DeleteActivation:input_type -> ssm.DeleteActivationRequest
-	179, // 614: ssm.SSMService.DeleteAssociation:input_type -> ssm.DeleteAssociationRequest
-	181, // 615: ssm.SSMService.DeleteDocument:input_type -> ssm.DeleteDocumentRequest
-	183, // 616: ssm.SSMService.DeleteInventory:input_type -> ssm.DeleteInventoryRequest
-	185, // 617: ssm.SSMService.DeleteMaintenanceWindow:input_type -> ssm.DeleteMaintenanceWindowRequest
-	187, // 618: ssm.SSMService.DeleteOpsItem:input_type -> ssm.DeleteOpsItemRequest
-	189, // 619: ssm.SSMService.DeleteOpsMetadata:input_type -> ssm.DeleteOpsMetadataRequest
-	191, // 620: ssm.SSMService.DeleteParameter:input_type -> ssm.DeleteParameterRequest
-	193, // 621: ssm.SSMService.DeleteParameters:input_type -> ssm.DeleteParametersRequest
-	195, // 622: ssm.SSMService.DeletePatchBaseline:input_type -> ssm.DeletePatchBaselineRequest
-	197, // 623: ssm.SSMService.DeleteResourceDataSync:input_type -> ssm.DeleteResourceDataSyncRequest
-	199, // 624: ssm.SSMService.DeleteResourcePolicy:input_type -> ssm.DeleteResourcePolicyRequest
-	201, // 625: ssm.SSMService.DeregisterManagedInstance:input_type -> ssm.DeregisterManagedInstanceRequest
-	203, // 626: ssm.SSMService.DeregisterPatchBaselineForPatchGroup:input_type -> ssm.DeregisterPatchBaselineForPatchGroupRequest
-	205, // 627: ssm.SSMService.DeregisterTargetFromMaintenanceWindow:input_type -> ssm.DeregisterTargetFromMaintenanceWindowRequest
-	207, // 628: ssm.SSMService.DeregisterTaskFromMaintenanceWindow:input_type -> ssm.DeregisterTaskFromMaintenanceWindowRequest
-	210, // 629: ssm.SSMService.DescribeActivations:input_type -> ssm.DescribeActivationsRequest
-	216, // 630: ssm.SSMService.DescribeAssociation:input_type -> ssm.DescribeAssociationRequest
-	214, // 631: ssm.SSMService.DescribeAssociationExecutions:input_type -> ssm.DescribeAssociationExecutionsRequest
-	212, // 632: ssm.SSMService.DescribeAssociationExecutionTargets:input_type -> ssm.DescribeAssociationExecutionTargetsRequest
-	218, // 633: ssm.SSMService.DescribeAutomationExecutions:input_type -> ssm.DescribeAutomationExecutionsRequest
-	220, // 634: ssm.SSMService.DescribeAutomationStepExecutions:input_type -> ssm.DescribeAutomationStepExecutionsRequest
-	222, // 635: ssm.SSMService.DescribeAvailablePatches:input_type -> ssm.DescribeAvailablePatchesRequest
-	226, // 636: ssm.SSMService.DescribeDocument:input_type -> ssm.DescribeDocumentRequest
-	224, // 637: ssm.SSMService.DescribeDocumentPermission:input_type -> ssm.DescribeDocumentPermissionRequest
-	228, // 638: ssm.SSMService.DescribeEffectiveInstanceAssociations:input_type -> ssm.DescribeEffectiveInstanceAssociationsRequest
-	230, // 639: ssm.SSMService.DescribeEffectivePatchesForPatchBaseline:input_type -> ssm.DescribeEffectivePatchesForPatchBaselineRequest
-	232, // 640: ssm.SSMService.DescribeInstanceAssociationsStatus:input_type -> ssm.DescribeInstanceAssociationsStatusRequest
-	234, // 641: ssm.SSMService.DescribeInstanceInformation:input_type -> ssm.DescribeInstanceInformationRequest
-	240, // 642: ssm.SSMService.DescribeInstancePatches:input_type -> ssm.DescribeInstancePatchesRequest
-	238, // 643: ssm.SSMService.DescribeInstancePatchStates:input_type -> ssm.DescribeInstancePatchStatesRequest
-	236, // 644: ssm.SSMService.DescribeInstancePatchStatesForPatchGroup:input_type -> ssm.DescribeInstancePatchStatesForPatchGroupRequest
-	242, // 645: ssm.SSMService.DescribeInstanceProperties:input_type -> ssm.DescribeInstancePropertiesRequest
-	244, // 646: ssm.SSMService.DescribeInventoryDeletions:input_type -> ssm.DescribeInventoryDeletionsRequest
-	250, // 647: ssm.SSMService.DescribeMaintenanceWindowExecutions:input_type -> ssm.DescribeMaintenanceWindowExecutionsRequest
-	246, // 648: ssm.SSMService.DescribeMaintenanceWindowExecutionTaskInvocations:input_type -> ssm.DescribeMaintenanceWindowExecutionTaskInvocationsRequest
-	248, // 649: ssm.SSMService.DescribeMaintenanceWindowExecutionTasks:input_type -> ssm.DescribeMaintenanceWindowExecutionTasksRequest
-	260, // 650: ssm.SSMService.DescribeMaintenanceWindows:input_type -> ssm.DescribeMaintenanceWindowsRequest
-	252, // 651: ssm.SSMService.DescribeMaintenanceWindowSchedule:input_type -> ssm.DescribeMaintenanceWindowScheduleRequest
-	258, // 652: ssm.SSMService.DescribeMaintenanceWindowsForTarget:input_type -> ssm.DescribeMaintenanceWindowsForTargetRequest
-	254, // 653: ssm.SSMService.DescribeMaintenanceWindowTargets:input_type -> ssm.DescribeMaintenanceWindowTargetsRequest
-	256, // 654: ssm.SSMService.DescribeMaintenanceWindowTasks:input_type -> ssm.DescribeMaintenanceWindowTasksRequest
-	262, // 655: ssm.SSMService.DescribeOpsItems:input_type -> ssm.DescribeOpsItemsRequest
-	264, // 656: ssm.SSMService.DescribeParameters:input_type -> ssm.DescribeParametersRequest
-	266, // 657: ssm.SSMService.DescribePatchBaselines:input_type -> ssm.DescribePatchBaselinesRequest
-	270, // 658: ssm.SSMService.DescribePatchGroups:input_type -> ssm.DescribePatchGroupsRequest
-	268, // 659: ssm.SSMService.DescribePatchGroupState:input_type -> ssm.DescribePatchGroupStateRequest
-	272, // 660: ssm.SSMService.DescribePatchProperties:input_type -> ssm.DescribePatchPropertiesRequest
-	274, // 661: ssm.SSMService.DescribeSessions:input_type -> ssm.DescribeSessionsRequest
-	276, // 662: ssm.SSMService.DisassociateOpsItemRelatedItem:input_type -> ssm.DisassociateOpsItemRelatedItemRequest
-	304, // 663: ssm.SSMService.GetAccessToken:input_type -> ssm.GetAccessTokenRequest
-	306, // 664: ssm.SSMService.GetAutomationExecution:input_type -> ssm.GetAutomationExecutionRequest
-	308, // 665: ssm.SSMService.GetCalendarState:input_type -> ssm.GetCalendarStateRequest
-	310, // 666: ssm.SSMService.GetCommandInvocation:input_type -> ssm.GetCommandInvocationRequest
-	312, // 667: ssm.SSMService.GetConnectionStatus:input_type -> ssm.GetConnectionStatusRequest
-	314, // 668: ssm.SSMService.GetDefaultPatchBaseline:input_type -> ssm.GetDefaultPatchBaselineRequest
-	316, // 669: ssm.SSMService.GetDeployablePatchSnapshotForInstance:input_type -> ssm.GetDeployablePatchSnapshotForInstanceRequest
-	318, // 670: ssm.SSMService.GetDocument:input_type -> ssm.GetDocumentRequest
-	320, // 671: ssm.SSMService.GetExecutionPreview:input_type -> ssm.GetExecutionPreviewRequest
-	322, // 672: ssm.SSMService.GetInventory:input_type -> ssm.GetInventoryRequest
-	324, // 673: ssm.SSMService.GetInventorySchema:input_type -> ssm.GetInventorySchemaRequest
-	332, // 674: ssm.SSMService.GetMaintenanceWindow:input_type -> ssm.GetMaintenanceWindowRequest
-	326, // 675: ssm.SSMService.GetMaintenanceWindowExecution:input_type -> ssm.GetMaintenanceWindowExecutionRequest
-	330, // 676: ssm.SSMService.GetMaintenanceWindowExecutionTask:input_type -> ssm.GetMaintenanceWindowExecutionTaskRequest
-	328, // 677: ssm.SSMService.GetMaintenanceWindowExecutionTaskInvocation:input_type -> ssm.GetMaintenanceWindowExecutionTaskInvocationRequest
-	334, // 678: ssm.SSMService.GetMaintenanceWindowTask:input_type -> ssm.GetMaintenanceWindowTaskRequest
-	336, // 679: ssm.SSMService.GetOpsItem:input_type -> ssm.GetOpsItemRequest
-	338, // 680: ssm.SSMService.GetOpsMetadata:input_type -> ssm.GetOpsMetadataRequest
-	340, // 681: ssm.SSMService.GetOpsSummary:input_type -> ssm.GetOpsSummaryRequest
-	344, // 682: ssm.SSMService.GetParameter:input_type -> ssm.GetParameterRequest
-	342, // 683: ssm.SSMService.GetParameterHistory:input_type -> ssm.GetParameterHistoryRequest
-	348, // 684: ssm.SSMService.GetParameters:input_type -> ssm.GetParametersRequest
-	346, // 685: ssm.SSMService.GetParametersByPath:input_type -> ssm.GetParametersByPathRequest
-	352, // 686: ssm.SSMService.GetPatchBaseline:input_type -> ssm.GetPatchBaselineRequest
-	350, // 687: ssm.SSMService.GetPatchBaselineForPatchGroup:input_type -> ssm.GetPatchBaselineForPatchGroupRequest
-	354, // 688: ssm.SSMService.GetResourcePolicies:input_type -> ssm.GetResourcePoliciesRequest
-	357, // 689: ssm.SSMService.GetServiceSetting:input_type -> ssm.GetServiceSettingRequest
-	442, // 690: ssm.SSMService.LabelParameterVersion:input_type -> ssm.LabelParameterVersionRequest
-	446, // 691: ssm.SSMService.ListAssociations:input_type -> ssm.ListAssociationsRequest
-	444, // 692: ssm.SSMService.ListAssociationVersions:input_type -> ssm.ListAssociationVersionsRequest
-	448, // 693: ssm.SSMService.ListCommandInvocations:input_type -> ssm.ListCommandInvocationsRequest
-	450, // 694: ssm.SSMService.ListCommands:input_type -> ssm.ListCommandsRequest
-	452, // 695: ssm.SSMService.ListComplianceItems:input_type -> ssm.ListComplianceItemsRequest
-	454, // 696: ssm.SSMService.ListComplianceSummaries:input_type -> ssm.ListComplianceSummariesRequest
-	456, // 697: ssm.SSMService.ListDocumentMetadataHistory:input_type -> ssm.ListDocumentMetadataHistoryRequest
-	460, // 698: ssm.SSMService.ListDocuments:input_type -> ssm.ListDocumentsRequest
-	458, // 699: ssm.SSMService.ListDocumentVersions:input_type -> ssm.ListDocumentVersionsRequest
-	462, // 700: ssm.SSMService.ListInventoryEntries:input_type -> ssm.ListInventoryEntriesRequest
-	464, // 701: ssm.SSMService.ListNodes:input_type -> ssm.ListNodesRequest
-	466, // 702: ssm.SSMService.ListNodesSummary:input_type -> ssm.ListNodesSummaryRequest
-	468, // 703: ssm.SSMService.ListOpsItemEvents:input_type -> ssm.ListOpsItemEventsRequest
-	470, // 704: ssm.SSMService.ListOpsItemRelatedItems:input_type -> ssm.ListOpsItemRelatedItemsRequest
-	472, // 705: ssm.SSMService.ListOpsMetadata:input_type -> ssm.ListOpsMetadataRequest
-	474, // 706: ssm.SSMService.ListResourceComplianceSummaries:input_type -> ssm.ListResourceComplianceSummariesRequest
-	476, // 707: ssm.SSMService.ListResourceDataSync:input_type -> ssm.ListResourceDataSyncRequest
-	478, // 708: ssm.SSMService.ListTagsForResource:input_type -> ssm.ListTagsForResourceRequest
-	498, // 709: ssm.SSMService.ModifyDocumentPermission:input_type -> ssm.ModifyDocumentPermissionRequest
-	567, // 710: ssm.SSMService.PutComplianceItems:input_type -> ssm.PutComplianceItemsRequest
-	569, // 711: ssm.SSMService.PutInventory:input_type -> ssm.PutInventoryRequest
-	571, // 712: ssm.SSMService.PutParameter:input_type -> ssm.PutParameterRequest
-	573, // 713: ssm.SSMService.PutResourcePolicy:input_type -> ssm.PutResourcePolicyRequest
-	575, // 714: ssm.SSMService.RegisterDefaultPatchBaseline:input_type -> ssm.RegisterDefaultPatchBaselineRequest
-	577, // 715: ssm.SSMService.RegisterPatchBaselineForPatchGroup:input_type -> ssm.RegisterPatchBaselineForPatchGroupRequest
-	579, // 716: ssm.SSMService.RegisterTargetWithMaintenanceWindow:input_type -> ssm.RegisterTargetWithMaintenanceWindowRequest
-	581, // 717: ssm.SSMService.RegisterTaskWithMaintenanceWindow:input_type -> ssm.RegisterTaskWithMaintenanceWindowRequest
-	585, // 718: ssm.SSMService.RemoveTagsFromResource:input_type -> ssm.RemoveTagsFromResourceRequest
-	587, // 719: ssm.SSMService.ResetServiceSetting:input_type -> ssm.ResetServiceSettingRequest
-	611, // 720: ssm.SSMService.ResumeSession:input_type -> ssm.ResumeSessionRequest
-	618, // 721: ssm.SSMService.SendAutomationSignal:input_type -> ssm.SendAutomationSignalRequest
-	620, // 722: ssm.SSMService.SendCommand:input_type -> ssm.SendCommandRequest
-	629, // 723: ssm.SSMService.StartAccessRequest:input_type -> ssm.StartAccessRequestRequest
-	631, // 724: ssm.SSMService.StartAssociationsOnce:input_type -> ssm.StartAssociationsOnceRequest
-	633, // 725: ssm.SSMService.StartAutomationExecution:input_type -> ssm.StartAutomationExecutionRequest
-	635, // 726: ssm.SSMService.StartChangeRequestExecution:input_type -> ssm.StartChangeRequestExecutionRequest
-	637, // 727: ssm.SSMService.StartExecutionPreview:input_type -> ssm.StartExecutionPreviewRequest
-	639, // 728: ssm.SSMService.StartSession:input_type -> ssm.StartSessionRequest
-	644, // 729: ssm.SSMService.StopAutomationExecution:input_type -> ssm.StopAutomationExecutionRequest
-	653, // 730: ssm.SSMService.TerminateSession:input_type -> ssm.TerminateSessionRequest
-	659, // 731: ssm.SSMService.UnlabelParameterVersion:input_type -> ssm.UnlabelParameterVersionRequest
-	669, // 732: ssm.SSMService.UpdateAssociation:input_type -> ssm.UpdateAssociationRequest
-	671, // 733: ssm.SSMService.UpdateAssociationStatus:input_type -> ssm.UpdateAssociationStatusRequest
-	677, // 734: ssm.SSMService.UpdateDocument:input_type -> ssm.UpdateDocumentRequest
-	673, // 735: ssm.SSMService.UpdateDocumentDefaultVersion:input_type -> ssm.UpdateDocumentDefaultVersionRequest
-	675, // 736: ssm.SSMService.UpdateDocumentMetadata:input_type -> ssm.UpdateDocumentMetadataRequest
-	679, // 737: ssm.SSMService.UpdateMaintenanceWindow:input_type -> ssm.UpdateMaintenanceWindowRequest
-	681, // 738: ssm.SSMService.UpdateMaintenanceWindowTarget:input_type -> ssm.UpdateMaintenanceWindowTargetRequest
-	683, // 739: ssm.SSMService.UpdateMaintenanceWindowTask:input_type -> ssm.UpdateMaintenanceWindowTaskRequest
-	685, // 740: ssm.SSMService.UpdateManagedInstanceRole:input_type -> ssm.UpdateManagedInstanceRoleRequest
-	687, // 741: ssm.SSMService.UpdateOpsItem:input_type -> ssm.UpdateOpsItemRequest
-	689, // 742: ssm.SSMService.UpdateOpsMetadata:input_type -> ssm.UpdateOpsMetadataRequest
-	691, // 743: ssm.SSMService.UpdatePatchBaseline:input_type -> ssm.UpdatePatchBaselineRequest
-	693, // 744: ssm.SSMService.UpdateResourceDataSync:input_type -> ssm.UpdateResourceDataSyncRequest
-	695, // 745: ssm.SSMService.UpdateServiceSetting:input_type -> ssm.UpdateServiceSettingRequest
-	102, // 746: ssm.SSMService.AddTagsToResource:output_type -> ssm.AddTagsToResourceResult
-	108, // 747: ssm.SSMService.AssociateOpsItemRelatedItem:output_type -> ssm.AssociateOpsItemRelatedItemResponse
-	141, // 748: ssm.SSMService.CancelCommand:output_type -> ssm.CancelCommandResult
-	143, // 749: ssm.SSMService.CancelMaintenanceWindowExecution:output_type -> ssm.CancelMaintenanceWindowExecutionResult
-	157, // 750: ssm.SSMService.CreateActivation:output_type -> ssm.CreateActivationResult
-	162, // 751: ssm.SSMService.CreateAssociation:output_type -> ssm.CreateAssociationResult
-	160, // 752: ssm.SSMService.CreateAssociationBatch:output_type -> ssm.CreateAssociationBatchResult
-	164, // 753: ssm.SSMService.CreateDocument:output_type -> ssm.CreateDocumentResult
-	166, // 754: ssm.SSMService.CreateMaintenanceWindow:output_type -> ssm.CreateMaintenanceWindowResult
-	168, // 755: ssm.SSMService.CreateOpsItem:output_type -> ssm.CreateOpsItemResponse
-	170, // 756: ssm.SSMService.CreateOpsMetadata:output_type -> ssm.CreateOpsMetadataResult
-	172, // 757: ssm.SSMService.CreatePatchBaseline:output_type -> ssm.CreatePatchBaselineResult
-	174, // 758: ssm.SSMService.CreateResourceDataSync:output_type -> ssm.CreateResourceDataSyncResult
-	178, // 759: ssm.SSMService.DeleteActivation:output_type -> ssm.DeleteActivationResult
-	180, // 760: ssm.SSMService.DeleteAssociation:output_type -> ssm.DeleteAssociationResult
-	182, // 761: ssm.SSMService.DeleteDocument:output_type -> ssm.DeleteDocumentResult
-	184, // 762: ssm.SSMService.DeleteInventory:output_type -> ssm.DeleteInventoryResult
-	186, // 763: ssm.SSMService.DeleteMaintenanceWindow:output_type -> ssm.DeleteMaintenanceWindowResult
-	188, // 764: ssm.SSMService.DeleteOpsItem:output_type -> ssm.DeleteOpsItemResponse
-	190, // 765: ssm.SSMService.DeleteOpsMetadata:output_type -> ssm.DeleteOpsMetadataResult
-	192, // 766: ssm.SSMService.DeleteParameter:output_type -> ssm.DeleteParameterResult
-	194, // 767: ssm.SSMService.DeleteParameters:output_type -> ssm.DeleteParametersResult
-	196, // 768: ssm.SSMService.DeletePatchBaseline:output_type -> ssm.DeletePatchBaselineResult
-	198, // 769: ssm.SSMService.DeleteResourceDataSync:output_type -> ssm.DeleteResourceDataSyncResult
-	200, // 770: ssm.SSMService.DeleteResourcePolicy:output_type -> ssm.DeleteResourcePolicyResponse
-	202, // 771: ssm.SSMService.DeregisterManagedInstance:output_type -> ssm.DeregisterManagedInstanceResult
-	204, // 772: ssm.SSMService.DeregisterPatchBaselineForPatchGroup:output_type -> ssm.DeregisterPatchBaselineForPatchGroupResult
-	206, // 773: ssm.SSMService.DeregisterTargetFromMaintenanceWindow:output_type -> ssm.DeregisterTargetFromMaintenanceWindowResult
-	208, // 774: ssm.SSMService.DeregisterTaskFromMaintenanceWindow:output_type -> ssm.DeregisterTaskFromMaintenanceWindowResult
-	211, // 775: ssm.SSMService.DescribeActivations:output_type -> ssm.DescribeActivationsResult
-	217, // 776: ssm.SSMService.DescribeAssociation:output_type -> ssm.DescribeAssociationResult
-	215, // 777: ssm.SSMService.DescribeAssociationExecutions:output_type -> ssm.DescribeAssociationExecutionsResult
-	213, // 778: ssm.SSMService.DescribeAssociationExecutionTargets:output_type -> ssm.DescribeAssociationExecutionTargetsResult
-	219, // 779: ssm.SSMService.DescribeAutomationExecutions:output_type -> ssm.DescribeAutomationExecutionsResult
-	221, // 780: ssm.SSMService.DescribeAutomationStepExecutions:output_type -> ssm.DescribeAutomationStepExecutionsResult
-	223, // 781: ssm.SSMService.DescribeAvailablePatches:output_type -> ssm.DescribeAvailablePatchesResult
-	227, // 782: ssm.SSMService.DescribeDocument:output_type -> ssm.DescribeDocumentResult
-	225, // 783: ssm.SSMService.DescribeDocumentPermission:output_type -> ssm.DescribeDocumentPermissionResponse
-	229, // 784: ssm.SSMService.DescribeEffectiveInstanceAssociations:output_type -> ssm.DescribeEffectiveInstanceAssociationsResult
-	231, // 785: ssm.SSMService.DescribeEffectivePatchesForPatchBaseline:output_type -> ssm.DescribeEffectivePatchesForPatchBaselineResult
-	233, // 786: ssm.SSMService.DescribeInstanceAssociationsStatus:output_type -> ssm.DescribeInstanceAssociationsStatusResult
-	235, // 787: ssm.SSMService.DescribeInstanceInformation:output_type -> ssm.DescribeInstanceInformationResult
-	241, // 788: ssm.SSMService.DescribeInstancePatches:output_type -> ssm.DescribeInstancePatchesResult
-	239, // 789: ssm.SSMService.DescribeInstancePatchStates:output_type -> ssm.DescribeInstancePatchStatesResult
-	237, // 790: ssm.SSMService.DescribeInstancePatchStatesForPatchGroup:output_type -> ssm.DescribeInstancePatchStatesForPatchGroupResult
-	243, // 791: ssm.SSMService.DescribeInstanceProperties:output_type -> ssm.DescribeInstancePropertiesResult
-	245, // 792: ssm.SSMService.DescribeInventoryDeletions:output_type -> ssm.DescribeInventoryDeletionsResult
-	251, // 793: ssm.SSMService.DescribeMaintenanceWindowExecutions:output_type -> ssm.DescribeMaintenanceWindowExecutionsResult
-	247, // 794: ssm.SSMService.DescribeMaintenanceWindowExecutionTaskInvocations:output_type -> ssm.DescribeMaintenanceWindowExecutionTaskInvocationsResult
-	249, // 795: ssm.SSMService.DescribeMaintenanceWindowExecutionTasks:output_type -> ssm.DescribeMaintenanceWindowExecutionTasksResult
-	261, // 796: ssm.SSMService.DescribeMaintenanceWindows:output_type -> ssm.DescribeMaintenanceWindowsResult
-	253, // 797: ssm.SSMService.DescribeMaintenanceWindowSchedule:output_type -> ssm.DescribeMaintenanceWindowScheduleResult
-	259, // 798: ssm.SSMService.DescribeMaintenanceWindowsForTarget:output_type -> ssm.DescribeMaintenanceWindowsForTargetResult
-	255, // 799: ssm.SSMService.DescribeMaintenanceWindowTargets:output_type -> ssm.DescribeMaintenanceWindowTargetsResult
-	257, // 800: ssm.SSMService.DescribeMaintenanceWindowTasks:output_type -> ssm.DescribeMaintenanceWindowTasksResult
-	263, // 801: ssm.SSMService.DescribeOpsItems:output_type -> ssm.DescribeOpsItemsResponse
-	265, // 802: ssm.SSMService.DescribeParameters:output_type -> ssm.DescribeParametersResult
-	267, // 803: ssm.SSMService.DescribePatchBaselines:output_type -> ssm.DescribePatchBaselinesResult
-	271, // 804: ssm.SSMService.DescribePatchGroups:output_type -> ssm.DescribePatchGroupsResult
-	269, // 805: ssm.SSMService.DescribePatchGroupState:output_type -> ssm.DescribePatchGroupStateResult
-	273, // 806: ssm.SSMService.DescribePatchProperties:output_type -> ssm.DescribePatchPropertiesResult
-	275, // 807: ssm.SSMService.DescribeSessions:output_type -> ssm.DescribeSessionsResponse
-	277, // 808: ssm.SSMService.DisassociateOpsItemRelatedItem:output_type -> ssm.DisassociateOpsItemRelatedItemResponse
-	305, // 809: ssm.SSMService.GetAccessToken:output_type -> ssm.GetAccessTokenResponse
-	307, // 810: ssm.SSMService.GetAutomationExecution:output_type -> ssm.GetAutomationExecutionResult
-	309, // 811: ssm.SSMService.GetCalendarState:output_type -> ssm.GetCalendarStateResponse
-	311, // 812: ssm.SSMService.GetCommandInvocation:output_type -> ssm.GetCommandInvocationResult
-	313, // 813: ssm.SSMService.GetConnectionStatus:output_type -> ssm.GetConnectionStatusResponse
-	315, // 814: ssm.SSMService.GetDefaultPatchBaseline:output_type -> ssm.GetDefaultPatchBaselineResult
-	317, // 815: ssm.SSMService.GetDeployablePatchSnapshotForInstance:output_type -> ssm.GetDeployablePatchSnapshotForInstanceResult
-	319, // 816: ssm.SSMService.GetDocument:output_type -> ssm.GetDocumentResult
-	321, // 817: ssm.SSMService.GetExecutionPreview:output_type -> ssm.GetExecutionPreviewResponse
-	323, // 818: ssm.SSMService.GetInventory:output_type -> ssm.GetInventoryResult
-	325, // 819: ssm.SSMService.GetInventorySchema:output_type -> ssm.GetInventorySchemaResult
-	333, // 820: ssm.SSMService.GetMaintenanceWindow:output_type -> ssm.GetMaintenanceWindowResult
-	327, // 821: ssm.SSMService.GetMaintenanceWindowExecution:output_type -> ssm.GetMaintenanceWindowExecutionResult
-	331, // 822: ssm.SSMService.GetMaintenanceWindowExecutionTask:output_type -> ssm.GetMaintenanceWindowExecutionTaskResult
-	329, // 823: ssm.SSMService.GetMaintenanceWindowExecutionTaskInvocation:output_type -> ssm.GetMaintenanceWindowExecutionTaskInvocationResult
-	335, // 824: ssm.SSMService.GetMaintenanceWindowTask:output_type -> ssm.GetMaintenanceWindowTaskResult
-	337, // 825: ssm.SSMService.GetOpsItem:output_type -> ssm.GetOpsItemResponse
-	339, // 826: ssm.SSMService.GetOpsMetadata:output_type -> ssm.GetOpsMetadataResult
-	341, // 827: ssm.SSMService.GetOpsSummary:output_type -> ssm.GetOpsSummaryResult
-	345, // 828: ssm.SSMService.GetParameter:output_type -> ssm.GetParameterResult
-	343, // 829: ssm.SSMService.GetParameterHistory:output_type -> ssm.GetParameterHistoryResult
-	349, // 830: ssm.SSMService.GetParameters:output_type -> ssm.GetParametersResult
-	347, // 831: ssm.SSMService.GetParametersByPath:output_type -> ssm.GetParametersByPathResult
-	353, // 832: ssm.SSMService.GetPatchBaseline:output_type -> ssm.GetPatchBaselineResult
-	351, // 833: ssm.SSMService.GetPatchBaselineForPatchGroup:output_type -> ssm.GetPatchBaselineForPatchGroupResult
-	355, // 834: ssm.SSMService.GetResourcePolicies:output_type -> ssm.GetResourcePoliciesResponse
-	358, // 835: ssm.SSMService.GetServiceSetting:output_type -> ssm.GetServiceSettingResult
-	443, // 836: ssm.SSMService.LabelParameterVersion:output_type -> ssm.LabelParameterVersionResult
-	447, // 837: ssm.SSMService.ListAssociations:output_type -> ssm.ListAssociationsResult
-	445, // 838: ssm.SSMService.ListAssociationVersions:output_type -> ssm.ListAssociationVersionsResult
-	449, // 839: ssm.SSMService.ListCommandInvocations:output_type -> ssm.ListCommandInvocationsResult
-	451, // 840: ssm.SSMService.ListCommands:output_type -> ssm.ListCommandsResult
-	453, // 841: ssm.SSMService.ListComplianceItems:output_type -> ssm.ListComplianceItemsResult
-	455, // 842: ssm.SSMService.ListComplianceSummaries:output_type -> ssm.ListComplianceSummariesResult
-	457, // 843: ssm.SSMService.ListDocumentMetadataHistory:output_type -> ssm.ListDocumentMetadataHistoryResponse
-	461, // 844: ssm.SSMService.ListDocuments:output_type -> ssm.ListDocumentsResult
-	459, // 845: ssm.SSMService.ListDocumentVersions:output_type -> ssm.ListDocumentVersionsResult
-	463, // 846: ssm.SSMService.ListInventoryEntries:output_type -> ssm.ListInventoryEntriesResult
-	465, // 847: ssm.SSMService.ListNodes:output_type -> ssm.ListNodesResult
-	467, // 848: ssm.SSMService.ListNodesSummary:output_type -> ssm.ListNodesSummaryResult
-	469, // 849: ssm.SSMService.ListOpsItemEvents:output_type -> ssm.ListOpsItemEventsResponse
-	471, // 850: ssm.SSMService.ListOpsItemRelatedItems:output_type -> ssm.ListOpsItemRelatedItemsResponse
-	473, // 851: ssm.SSMService.ListOpsMetadata:output_type -> ssm.ListOpsMetadataResult
-	475, // 852: ssm.SSMService.ListResourceComplianceSummaries:output_type -> ssm.ListResourceComplianceSummariesResult
-	477, // 853: ssm.SSMService.ListResourceDataSync:output_type -> ssm.ListResourceDataSyncResult
-	479, // 854: ssm.SSMService.ListTagsForResource:output_type -> ssm.ListTagsForResourceResult
-	499, // 855: ssm.SSMService.ModifyDocumentPermission:output_type -> ssm.ModifyDocumentPermissionResponse
-	568, // 856: ssm.SSMService.PutComplianceItems:output_type -> ssm.PutComplianceItemsResult
-	570, // 857: ssm.SSMService.PutInventory:output_type -> ssm.PutInventoryResult
-	572, // 858: ssm.SSMService.PutParameter:output_type -> ssm.PutParameterResult
-	574, // 859: ssm.SSMService.PutResourcePolicy:output_type -> ssm.PutResourcePolicyResponse
-	576, // 860: ssm.SSMService.RegisterDefaultPatchBaseline:output_type -> ssm.RegisterDefaultPatchBaselineResult
-	578, // 861: ssm.SSMService.RegisterPatchBaselineForPatchGroup:output_type -> ssm.RegisterPatchBaselineForPatchGroupResult
-	580, // 862: ssm.SSMService.RegisterTargetWithMaintenanceWindow:output_type -> ssm.RegisterTargetWithMaintenanceWindowResult
-	582, // 863: ssm.SSMService.RegisterTaskWithMaintenanceWindow:output_type -> ssm.RegisterTaskWithMaintenanceWindowResult
-	586, // 864: ssm.SSMService.RemoveTagsFromResource:output_type -> ssm.RemoveTagsFromResourceResult
-	588, // 865: ssm.SSMService.ResetServiceSetting:output_type -> ssm.ResetServiceSettingResult
-	612, // 866: ssm.SSMService.ResumeSession:output_type -> ssm.ResumeSessionResponse
-	619, // 867: ssm.SSMService.SendAutomationSignal:output_type -> ssm.SendAutomationSignalResult
-	621, // 868: ssm.SSMService.SendCommand:output_type -> ssm.SendCommandResult
-	630, // 869: ssm.SSMService.StartAccessRequest:output_type -> ssm.StartAccessRequestResponse
-	632, // 870: ssm.SSMService.StartAssociationsOnce:output_type -> ssm.StartAssociationsOnceResult
-	634, // 871: ssm.SSMService.StartAutomationExecution:output_type -> ssm.StartAutomationExecutionResult
-	636, // 872: ssm.SSMService.StartChangeRequestExecution:output_type -> ssm.StartChangeRequestExecutionResult
-	638, // 873: ssm.SSMService.StartExecutionPreview:output_type -> ssm.StartExecutionPreviewResponse
-	640, // 874: ssm.SSMService.StartSession:output_type -> ssm.StartSessionResponse
-	645, // 875: ssm.SSMService.StopAutomationExecution:output_type -> ssm.StopAutomationExecutionResult
-	654, // 876: ssm.SSMService.TerminateSession:output_type -> ssm.TerminateSessionResponse
-	660, // 877: ssm.SSMService.UnlabelParameterVersion:output_type -> ssm.UnlabelParameterVersionResult
-	670, // 878: ssm.SSMService.UpdateAssociation:output_type -> ssm.UpdateAssociationResult
-	672, // 879: ssm.SSMService.UpdateAssociationStatus:output_type -> ssm.UpdateAssociationStatusResult
-	678, // 880: ssm.SSMService.UpdateDocument:output_type -> ssm.UpdateDocumentResult
-	674, // 881: ssm.SSMService.UpdateDocumentDefaultVersion:output_type -> ssm.UpdateDocumentDefaultVersionResult
-	676, // 882: ssm.SSMService.UpdateDocumentMetadata:output_type -> ssm.UpdateDocumentMetadataResponse
-	680, // 883: ssm.SSMService.UpdateMaintenanceWindow:output_type -> ssm.UpdateMaintenanceWindowResult
-	682, // 884: ssm.SSMService.UpdateMaintenanceWindowTarget:output_type -> ssm.UpdateMaintenanceWindowTargetResult
-	684, // 885: ssm.SSMService.UpdateMaintenanceWindowTask:output_type -> ssm.UpdateMaintenanceWindowTaskResult
-	686, // 886: ssm.SSMService.UpdateManagedInstanceRole:output_type -> ssm.UpdateManagedInstanceRoleResult
-	688, // 887: ssm.SSMService.UpdateOpsItem:output_type -> ssm.UpdateOpsItemResponse
-	690, // 888: ssm.SSMService.UpdateOpsMetadata:output_type -> ssm.UpdateOpsMetadataResult
-	692, // 889: ssm.SSMService.UpdatePatchBaseline:output_type -> ssm.UpdatePatchBaselineResult
-	694, // 890: ssm.SSMService.UpdateResourceDataSync:output_type -> ssm.UpdateResourceDataSyncResult
-	696, // 891: ssm.SSMService.UpdateServiceSetting:output_type -> ssm.UpdateServiceSettingResult
-	746, // [746:892] is the sub-list for method output_type
-	600, // [600:746] is the sub-list for method input_type
-	600, // [600:600] is the sub-list for extension type_name
-	600, // [600:600] is the sub-list for extension extendee
-	0,   // [0:600] is the sub-list for field type_name
+	748, // 585: ssm.TargetMapsEntry.value:type_name -> ssm.TargetMapsEntry.ValueEntry
+	749, // 586: ssm.PatchPropertiesListEntry.value:type_name -> ssm.PatchPropertiesListEntry.ValueEntry
+	750, // 587: ssm.MaintenanceWindowTaskParametersListEntry.value:type_name -> ssm.MaintenanceWindowTaskParametersListEntry.ValueEntry
+	751, // 588: ssm.InventoryItemEntryListEntry.value:type_name -> ssm.InventoryItemEntryListEntry.ValueEntry
+	752, // 589: ssm.NodeSummaryListEntry.value:type_name -> ssm.NodeSummaryListEntry.ValueEntry
+	753, // 590: ssm.OpsEntityItemEntryListEntry.value:type_name -> ssm.OpsEntityItemEntryListEntry.ValueEntry
+	516, // 591: ssm.CreateOpsItemRequest.OperationaldataEntry.value:type_name -> ssm.OpsItemDataValue
+	497, // 592: ssm.CreateOpsMetadataRequest.MetadataEntry.value:type_name -> ssm.MetadataValue
+	494, // 593: ssm.GetMaintenanceWindowTaskResult.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
+	497, // 594: ssm.GetOpsMetadataResult.MetadataEntry.value:type_name -> ssm.MetadataValue
+	438, // 595: ssm.InventoryResultEntity.DataEntry.value:type_name -> ssm.InventoryResultItem
+	494, // 596: ssm.MaintenanceWindowTask.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
+	510, // 597: ssm.OpsEntity.DataEntry.value:type_name -> ssm.OpsEntityItem
+	516, // 598: ssm.OpsItem.OperationaldataEntry.value:type_name -> ssm.OpsItemDataValue
+	516, // 599: ssm.OpsItemSummary.OperationaldataEntry.value:type_name -> ssm.OpsItemDataValue
+	494, // 600: ssm.RegisterTaskWithMaintenanceWindowRequest.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
+	494, // 601: ssm.UpdateMaintenanceWindowTaskRequest.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
+	494, // 602: ssm.UpdateMaintenanceWindowTaskResult.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
+	516, // 603: ssm.UpdateOpsItemRequest.OperationaldataEntry.value:type_name -> ssm.OpsItemDataValue
+	497, // 604: ssm.UpdateOpsMetadataRequest.MetadatatoupdateEntry.value:type_name -> ssm.MetadataValue
+	494, // 605: ssm.MaintenanceWindowTaskParametersListEntry.ValueEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
+	101, // 606: ssm.SSMService.AddTagsToResource:input_type -> ssm.AddTagsToResourceRequest
+	107, // 607: ssm.SSMService.AssociateOpsItemRelatedItem:input_type -> ssm.AssociateOpsItemRelatedItemRequest
+	140, // 608: ssm.SSMService.CancelCommand:input_type -> ssm.CancelCommandRequest
+	142, // 609: ssm.SSMService.CancelMaintenanceWindowExecution:input_type -> ssm.CancelMaintenanceWindowExecutionRequest
+	156, // 610: ssm.SSMService.CreateActivation:input_type -> ssm.CreateActivationRequest
+	161, // 611: ssm.SSMService.CreateAssociation:input_type -> ssm.CreateAssociationRequest
+	158, // 612: ssm.SSMService.CreateAssociationBatch:input_type -> ssm.CreateAssociationBatchRequest
+	163, // 613: ssm.SSMService.CreateDocument:input_type -> ssm.CreateDocumentRequest
+	165, // 614: ssm.SSMService.CreateMaintenanceWindow:input_type -> ssm.CreateMaintenanceWindowRequest
+	167, // 615: ssm.SSMService.CreateOpsItem:input_type -> ssm.CreateOpsItemRequest
+	169, // 616: ssm.SSMService.CreateOpsMetadata:input_type -> ssm.CreateOpsMetadataRequest
+	171, // 617: ssm.SSMService.CreatePatchBaseline:input_type -> ssm.CreatePatchBaselineRequest
+	173, // 618: ssm.SSMService.CreateResourceDataSync:input_type -> ssm.CreateResourceDataSyncRequest
+	177, // 619: ssm.SSMService.DeleteActivation:input_type -> ssm.DeleteActivationRequest
+	179, // 620: ssm.SSMService.DeleteAssociation:input_type -> ssm.DeleteAssociationRequest
+	181, // 621: ssm.SSMService.DeleteDocument:input_type -> ssm.DeleteDocumentRequest
+	183, // 622: ssm.SSMService.DeleteInventory:input_type -> ssm.DeleteInventoryRequest
+	185, // 623: ssm.SSMService.DeleteMaintenanceWindow:input_type -> ssm.DeleteMaintenanceWindowRequest
+	187, // 624: ssm.SSMService.DeleteOpsItem:input_type -> ssm.DeleteOpsItemRequest
+	189, // 625: ssm.SSMService.DeleteOpsMetadata:input_type -> ssm.DeleteOpsMetadataRequest
+	191, // 626: ssm.SSMService.DeleteParameter:input_type -> ssm.DeleteParameterRequest
+	193, // 627: ssm.SSMService.DeleteParameters:input_type -> ssm.DeleteParametersRequest
+	195, // 628: ssm.SSMService.DeletePatchBaseline:input_type -> ssm.DeletePatchBaselineRequest
+	197, // 629: ssm.SSMService.DeleteResourceDataSync:input_type -> ssm.DeleteResourceDataSyncRequest
+	199, // 630: ssm.SSMService.DeleteResourcePolicy:input_type -> ssm.DeleteResourcePolicyRequest
+	201, // 631: ssm.SSMService.DeregisterManagedInstance:input_type -> ssm.DeregisterManagedInstanceRequest
+	203, // 632: ssm.SSMService.DeregisterPatchBaselineForPatchGroup:input_type -> ssm.DeregisterPatchBaselineForPatchGroupRequest
+	205, // 633: ssm.SSMService.DeregisterTargetFromMaintenanceWindow:input_type -> ssm.DeregisterTargetFromMaintenanceWindowRequest
+	207, // 634: ssm.SSMService.DeregisterTaskFromMaintenanceWindow:input_type -> ssm.DeregisterTaskFromMaintenanceWindowRequest
+	210, // 635: ssm.SSMService.DescribeActivations:input_type -> ssm.DescribeActivationsRequest
+	216, // 636: ssm.SSMService.DescribeAssociation:input_type -> ssm.DescribeAssociationRequest
+	214, // 637: ssm.SSMService.DescribeAssociationExecutions:input_type -> ssm.DescribeAssociationExecutionsRequest
+	212, // 638: ssm.SSMService.DescribeAssociationExecutionTargets:input_type -> ssm.DescribeAssociationExecutionTargetsRequest
+	218, // 639: ssm.SSMService.DescribeAutomationExecutions:input_type -> ssm.DescribeAutomationExecutionsRequest
+	220, // 640: ssm.SSMService.DescribeAutomationStepExecutions:input_type -> ssm.DescribeAutomationStepExecutionsRequest
+	222, // 641: ssm.SSMService.DescribeAvailablePatches:input_type -> ssm.DescribeAvailablePatchesRequest
+	226, // 642: ssm.SSMService.DescribeDocument:input_type -> ssm.DescribeDocumentRequest
+	224, // 643: ssm.SSMService.DescribeDocumentPermission:input_type -> ssm.DescribeDocumentPermissionRequest
+	228, // 644: ssm.SSMService.DescribeEffectiveInstanceAssociations:input_type -> ssm.DescribeEffectiveInstanceAssociationsRequest
+	230, // 645: ssm.SSMService.DescribeEffectivePatchesForPatchBaseline:input_type -> ssm.DescribeEffectivePatchesForPatchBaselineRequest
+	232, // 646: ssm.SSMService.DescribeInstanceAssociationsStatus:input_type -> ssm.DescribeInstanceAssociationsStatusRequest
+	234, // 647: ssm.SSMService.DescribeInstanceInformation:input_type -> ssm.DescribeInstanceInformationRequest
+	240, // 648: ssm.SSMService.DescribeInstancePatches:input_type -> ssm.DescribeInstancePatchesRequest
+	238, // 649: ssm.SSMService.DescribeInstancePatchStates:input_type -> ssm.DescribeInstancePatchStatesRequest
+	236, // 650: ssm.SSMService.DescribeInstancePatchStatesForPatchGroup:input_type -> ssm.DescribeInstancePatchStatesForPatchGroupRequest
+	242, // 651: ssm.SSMService.DescribeInstanceProperties:input_type -> ssm.DescribeInstancePropertiesRequest
+	244, // 652: ssm.SSMService.DescribeInventoryDeletions:input_type -> ssm.DescribeInventoryDeletionsRequest
+	250, // 653: ssm.SSMService.DescribeMaintenanceWindowExecutions:input_type -> ssm.DescribeMaintenanceWindowExecutionsRequest
+	246, // 654: ssm.SSMService.DescribeMaintenanceWindowExecutionTaskInvocations:input_type -> ssm.DescribeMaintenanceWindowExecutionTaskInvocationsRequest
+	248, // 655: ssm.SSMService.DescribeMaintenanceWindowExecutionTasks:input_type -> ssm.DescribeMaintenanceWindowExecutionTasksRequest
+	260, // 656: ssm.SSMService.DescribeMaintenanceWindows:input_type -> ssm.DescribeMaintenanceWindowsRequest
+	252, // 657: ssm.SSMService.DescribeMaintenanceWindowSchedule:input_type -> ssm.DescribeMaintenanceWindowScheduleRequest
+	258, // 658: ssm.SSMService.DescribeMaintenanceWindowsForTarget:input_type -> ssm.DescribeMaintenanceWindowsForTargetRequest
+	254, // 659: ssm.SSMService.DescribeMaintenanceWindowTargets:input_type -> ssm.DescribeMaintenanceWindowTargetsRequest
+	256, // 660: ssm.SSMService.DescribeMaintenanceWindowTasks:input_type -> ssm.DescribeMaintenanceWindowTasksRequest
+	262, // 661: ssm.SSMService.DescribeOpsItems:input_type -> ssm.DescribeOpsItemsRequest
+	264, // 662: ssm.SSMService.DescribeParameters:input_type -> ssm.DescribeParametersRequest
+	266, // 663: ssm.SSMService.DescribePatchBaselines:input_type -> ssm.DescribePatchBaselinesRequest
+	270, // 664: ssm.SSMService.DescribePatchGroups:input_type -> ssm.DescribePatchGroupsRequest
+	268, // 665: ssm.SSMService.DescribePatchGroupState:input_type -> ssm.DescribePatchGroupStateRequest
+	272, // 666: ssm.SSMService.DescribePatchProperties:input_type -> ssm.DescribePatchPropertiesRequest
+	274, // 667: ssm.SSMService.DescribeSessions:input_type -> ssm.DescribeSessionsRequest
+	276, // 668: ssm.SSMService.DisassociateOpsItemRelatedItem:input_type -> ssm.DisassociateOpsItemRelatedItemRequest
+	304, // 669: ssm.SSMService.GetAccessToken:input_type -> ssm.GetAccessTokenRequest
+	306, // 670: ssm.SSMService.GetAutomationExecution:input_type -> ssm.GetAutomationExecutionRequest
+	308, // 671: ssm.SSMService.GetCalendarState:input_type -> ssm.GetCalendarStateRequest
+	310, // 672: ssm.SSMService.GetCommandInvocation:input_type -> ssm.GetCommandInvocationRequest
+	312, // 673: ssm.SSMService.GetConnectionStatus:input_type -> ssm.GetConnectionStatusRequest
+	314, // 674: ssm.SSMService.GetDefaultPatchBaseline:input_type -> ssm.GetDefaultPatchBaselineRequest
+	316, // 675: ssm.SSMService.GetDeployablePatchSnapshotForInstance:input_type -> ssm.GetDeployablePatchSnapshotForInstanceRequest
+	318, // 676: ssm.SSMService.GetDocument:input_type -> ssm.GetDocumentRequest
+	320, // 677: ssm.SSMService.GetExecutionPreview:input_type -> ssm.GetExecutionPreviewRequest
+	322, // 678: ssm.SSMService.GetInventory:input_type -> ssm.GetInventoryRequest
+	324, // 679: ssm.SSMService.GetInventorySchema:input_type -> ssm.GetInventorySchemaRequest
+	332, // 680: ssm.SSMService.GetMaintenanceWindow:input_type -> ssm.GetMaintenanceWindowRequest
+	326, // 681: ssm.SSMService.GetMaintenanceWindowExecution:input_type -> ssm.GetMaintenanceWindowExecutionRequest
+	330, // 682: ssm.SSMService.GetMaintenanceWindowExecutionTask:input_type -> ssm.GetMaintenanceWindowExecutionTaskRequest
+	328, // 683: ssm.SSMService.GetMaintenanceWindowExecutionTaskInvocation:input_type -> ssm.GetMaintenanceWindowExecutionTaskInvocationRequest
+	334, // 684: ssm.SSMService.GetMaintenanceWindowTask:input_type -> ssm.GetMaintenanceWindowTaskRequest
+	336, // 685: ssm.SSMService.GetOpsItem:input_type -> ssm.GetOpsItemRequest
+	338, // 686: ssm.SSMService.GetOpsMetadata:input_type -> ssm.GetOpsMetadataRequest
+	340, // 687: ssm.SSMService.GetOpsSummary:input_type -> ssm.GetOpsSummaryRequest
+	344, // 688: ssm.SSMService.GetParameter:input_type -> ssm.GetParameterRequest
+	342, // 689: ssm.SSMService.GetParameterHistory:input_type -> ssm.GetParameterHistoryRequest
+	348, // 690: ssm.SSMService.GetParameters:input_type -> ssm.GetParametersRequest
+	346, // 691: ssm.SSMService.GetParametersByPath:input_type -> ssm.GetParametersByPathRequest
+	352, // 692: ssm.SSMService.GetPatchBaseline:input_type -> ssm.GetPatchBaselineRequest
+	350, // 693: ssm.SSMService.GetPatchBaselineForPatchGroup:input_type -> ssm.GetPatchBaselineForPatchGroupRequest
+	354, // 694: ssm.SSMService.GetResourcePolicies:input_type -> ssm.GetResourcePoliciesRequest
+	357, // 695: ssm.SSMService.GetServiceSetting:input_type -> ssm.GetServiceSettingRequest
+	442, // 696: ssm.SSMService.LabelParameterVersion:input_type -> ssm.LabelParameterVersionRequest
+	446, // 697: ssm.SSMService.ListAssociations:input_type -> ssm.ListAssociationsRequest
+	444, // 698: ssm.SSMService.ListAssociationVersions:input_type -> ssm.ListAssociationVersionsRequest
+	448, // 699: ssm.SSMService.ListCommandInvocations:input_type -> ssm.ListCommandInvocationsRequest
+	450, // 700: ssm.SSMService.ListCommands:input_type -> ssm.ListCommandsRequest
+	452, // 701: ssm.SSMService.ListComplianceItems:input_type -> ssm.ListComplianceItemsRequest
+	454, // 702: ssm.SSMService.ListComplianceSummaries:input_type -> ssm.ListComplianceSummariesRequest
+	456, // 703: ssm.SSMService.ListDocumentMetadataHistory:input_type -> ssm.ListDocumentMetadataHistoryRequest
+	460, // 704: ssm.SSMService.ListDocuments:input_type -> ssm.ListDocumentsRequest
+	458, // 705: ssm.SSMService.ListDocumentVersions:input_type -> ssm.ListDocumentVersionsRequest
+	462, // 706: ssm.SSMService.ListInventoryEntries:input_type -> ssm.ListInventoryEntriesRequest
+	464, // 707: ssm.SSMService.ListNodes:input_type -> ssm.ListNodesRequest
+	466, // 708: ssm.SSMService.ListNodesSummary:input_type -> ssm.ListNodesSummaryRequest
+	468, // 709: ssm.SSMService.ListOpsItemEvents:input_type -> ssm.ListOpsItemEventsRequest
+	470, // 710: ssm.SSMService.ListOpsItemRelatedItems:input_type -> ssm.ListOpsItemRelatedItemsRequest
+	472, // 711: ssm.SSMService.ListOpsMetadata:input_type -> ssm.ListOpsMetadataRequest
+	474, // 712: ssm.SSMService.ListResourceComplianceSummaries:input_type -> ssm.ListResourceComplianceSummariesRequest
+	476, // 713: ssm.SSMService.ListResourceDataSync:input_type -> ssm.ListResourceDataSyncRequest
+	478, // 714: ssm.SSMService.ListTagsForResource:input_type -> ssm.ListTagsForResourceRequest
+	498, // 715: ssm.SSMService.ModifyDocumentPermission:input_type -> ssm.ModifyDocumentPermissionRequest
+	567, // 716: ssm.SSMService.PutComplianceItems:input_type -> ssm.PutComplianceItemsRequest
+	569, // 717: ssm.SSMService.PutInventory:input_type -> ssm.PutInventoryRequest
+	571, // 718: ssm.SSMService.PutParameter:input_type -> ssm.PutParameterRequest
+	573, // 719: ssm.SSMService.PutResourcePolicy:input_type -> ssm.PutResourcePolicyRequest
+	575, // 720: ssm.SSMService.RegisterDefaultPatchBaseline:input_type -> ssm.RegisterDefaultPatchBaselineRequest
+	577, // 721: ssm.SSMService.RegisterPatchBaselineForPatchGroup:input_type -> ssm.RegisterPatchBaselineForPatchGroupRequest
+	579, // 722: ssm.SSMService.RegisterTargetWithMaintenanceWindow:input_type -> ssm.RegisterTargetWithMaintenanceWindowRequest
+	581, // 723: ssm.SSMService.RegisterTaskWithMaintenanceWindow:input_type -> ssm.RegisterTaskWithMaintenanceWindowRequest
+	585, // 724: ssm.SSMService.RemoveTagsFromResource:input_type -> ssm.RemoveTagsFromResourceRequest
+	587, // 725: ssm.SSMService.ResetServiceSetting:input_type -> ssm.ResetServiceSettingRequest
+	611, // 726: ssm.SSMService.ResumeSession:input_type -> ssm.ResumeSessionRequest
+	618, // 727: ssm.SSMService.SendAutomationSignal:input_type -> ssm.SendAutomationSignalRequest
+	620, // 728: ssm.SSMService.SendCommand:input_type -> ssm.SendCommandRequest
+	629, // 729: ssm.SSMService.StartAccessRequest:input_type -> ssm.StartAccessRequestRequest
+	631, // 730: ssm.SSMService.StartAssociationsOnce:input_type -> ssm.StartAssociationsOnceRequest
+	633, // 731: ssm.SSMService.StartAutomationExecution:input_type -> ssm.StartAutomationExecutionRequest
+	635, // 732: ssm.SSMService.StartChangeRequestExecution:input_type -> ssm.StartChangeRequestExecutionRequest
+	637, // 733: ssm.SSMService.StartExecutionPreview:input_type -> ssm.StartExecutionPreviewRequest
+	639, // 734: ssm.SSMService.StartSession:input_type -> ssm.StartSessionRequest
+	644, // 735: ssm.SSMService.StopAutomationExecution:input_type -> ssm.StopAutomationExecutionRequest
+	653, // 736: ssm.SSMService.TerminateSession:input_type -> ssm.TerminateSessionRequest
+	659, // 737: ssm.SSMService.UnlabelParameterVersion:input_type -> ssm.UnlabelParameterVersionRequest
+	669, // 738: ssm.SSMService.UpdateAssociation:input_type -> ssm.UpdateAssociationRequest
+	671, // 739: ssm.SSMService.UpdateAssociationStatus:input_type -> ssm.UpdateAssociationStatusRequest
+	677, // 740: ssm.SSMService.UpdateDocument:input_type -> ssm.UpdateDocumentRequest
+	673, // 741: ssm.SSMService.UpdateDocumentDefaultVersion:input_type -> ssm.UpdateDocumentDefaultVersionRequest
+	675, // 742: ssm.SSMService.UpdateDocumentMetadata:input_type -> ssm.UpdateDocumentMetadataRequest
+	679, // 743: ssm.SSMService.UpdateMaintenanceWindow:input_type -> ssm.UpdateMaintenanceWindowRequest
+	681, // 744: ssm.SSMService.UpdateMaintenanceWindowTarget:input_type -> ssm.UpdateMaintenanceWindowTargetRequest
+	683, // 745: ssm.SSMService.UpdateMaintenanceWindowTask:input_type -> ssm.UpdateMaintenanceWindowTaskRequest
+	685, // 746: ssm.SSMService.UpdateManagedInstanceRole:input_type -> ssm.UpdateManagedInstanceRoleRequest
+	687, // 747: ssm.SSMService.UpdateOpsItem:input_type -> ssm.UpdateOpsItemRequest
+	689, // 748: ssm.SSMService.UpdateOpsMetadata:input_type -> ssm.UpdateOpsMetadataRequest
+	691, // 749: ssm.SSMService.UpdatePatchBaseline:input_type -> ssm.UpdatePatchBaselineRequest
+	693, // 750: ssm.SSMService.UpdateResourceDataSync:input_type -> ssm.UpdateResourceDataSyncRequest
+	695, // 751: ssm.SSMService.UpdateServiceSetting:input_type -> ssm.UpdateServiceSettingRequest
+	102, // 752: ssm.SSMService.AddTagsToResource:output_type -> ssm.AddTagsToResourceResult
+	108, // 753: ssm.SSMService.AssociateOpsItemRelatedItem:output_type -> ssm.AssociateOpsItemRelatedItemResponse
+	141, // 754: ssm.SSMService.CancelCommand:output_type -> ssm.CancelCommandResult
+	143, // 755: ssm.SSMService.CancelMaintenanceWindowExecution:output_type -> ssm.CancelMaintenanceWindowExecutionResult
+	157, // 756: ssm.SSMService.CreateActivation:output_type -> ssm.CreateActivationResult
+	162, // 757: ssm.SSMService.CreateAssociation:output_type -> ssm.CreateAssociationResult
+	160, // 758: ssm.SSMService.CreateAssociationBatch:output_type -> ssm.CreateAssociationBatchResult
+	164, // 759: ssm.SSMService.CreateDocument:output_type -> ssm.CreateDocumentResult
+	166, // 760: ssm.SSMService.CreateMaintenanceWindow:output_type -> ssm.CreateMaintenanceWindowResult
+	168, // 761: ssm.SSMService.CreateOpsItem:output_type -> ssm.CreateOpsItemResponse
+	170, // 762: ssm.SSMService.CreateOpsMetadata:output_type -> ssm.CreateOpsMetadataResult
+	172, // 763: ssm.SSMService.CreatePatchBaseline:output_type -> ssm.CreatePatchBaselineResult
+	174, // 764: ssm.SSMService.CreateResourceDataSync:output_type -> ssm.CreateResourceDataSyncResult
+	178, // 765: ssm.SSMService.DeleteActivation:output_type -> ssm.DeleteActivationResult
+	180, // 766: ssm.SSMService.DeleteAssociation:output_type -> ssm.DeleteAssociationResult
+	182, // 767: ssm.SSMService.DeleteDocument:output_type -> ssm.DeleteDocumentResult
+	184, // 768: ssm.SSMService.DeleteInventory:output_type -> ssm.DeleteInventoryResult
+	186, // 769: ssm.SSMService.DeleteMaintenanceWindow:output_type -> ssm.DeleteMaintenanceWindowResult
+	188, // 770: ssm.SSMService.DeleteOpsItem:output_type -> ssm.DeleteOpsItemResponse
+	190, // 771: ssm.SSMService.DeleteOpsMetadata:output_type -> ssm.DeleteOpsMetadataResult
+	192, // 772: ssm.SSMService.DeleteParameter:output_type -> ssm.DeleteParameterResult
+	194, // 773: ssm.SSMService.DeleteParameters:output_type -> ssm.DeleteParametersResult
+	196, // 774: ssm.SSMService.DeletePatchBaseline:output_type -> ssm.DeletePatchBaselineResult
+	198, // 775: ssm.SSMService.DeleteResourceDataSync:output_type -> ssm.DeleteResourceDataSyncResult
+	200, // 776: ssm.SSMService.DeleteResourcePolicy:output_type -> ssm.DeleteResourcePolicyResponse
+	202, // 777: ssm.SSMService.DeregisterManagedInstance:output_type -> ssm.DeregisterManagedInstanceResult
+	204, // 778: ssm.SSMService.DeregisterPatchBaselineForPatchGroup:output_type -> ssm.DeregisterPatchBaselineForPatchGroupResult
+	206, // 779: ssm.SSMService.DeregisterTargetFromMaintenanceWindow:output_type -> ssm.DeregisterTargetFromMaintenanceWindowResult
+	208, // 780: ssm.SSMService.DeregisterTaskFromMaintenanceWindow:output_type -> ssm.DeregisterTaskFromMaintenanceWindowResult
+	211, // 781: ssm.SSMService.DescribeActivations:output_type -> ssm.DescribeActivationsResult
+	217, // 782: ssm.SSMService.DescribeAssociation:output_type -> ssm.DescribeAssociationResult
+	215, // 783: ssm.SSMService.DescribeAssociationExecutions:output_type -> ssm.DescribeAssociationExecutionsResult
+	213, // 784: ssm.SSMService.DescribeAssociationExecutionTargets:output_type -> ssm.DescribeAssociationExecutionTargetsResult
+	219, // 785: ssm.SSMService.DescribeAutomationExecutions:output_type -> ssm.DescribeAutomationExecutionsResult
+	221, // 786: ssm.SSMService.DescribeAutomationStepExecutions:output_type -> ssm.DescribeAutomationStepExecutionsResult
+	223, // 787: ssm.SSMService.DescribeAvailablePatches:output_type -> ssm.DescribeAvailablePatchesResult
+	227, // 788: ssm.SSMService.DescribeDocument:output_type -> ssm.DescribeDocumentResult
+	225, // 789: ssm.SSMService.DescribeDocumentPermission:output_type -> ssm.DescribeDocumentPermissionResponse
+	229, // 790: ssm.SSMService.DescribeEffectiveInstanceAssociations:output_type -> ssm.DescribeEffectiveInstanceAssociationsResult
+	231, // 791: ssm.SSMService.DescribeEffectivePatchesForPatchBaseline:output_type -> ssm.DescribeEffectivePatchesForPatchBaselineResult
+	233, // 792: ssm.SSMService.DescribeInstanceAssociationsStatus:output_type -> ssm.DescribeInstanceAssociationsStatusResult
+	235, // 793: ssm.SSMService.DescribeInstanceInformation:output_type -> ssm.DescribeInstanceInformationResult
+	241, // 794: ssm.SSMService.DescribeInstancePatches:output_type -> ssm.DescribeInstancePatchesResult
+	239, // 795: ssm.SSMService.DescribeInstancePatchStates:output_type -> ssm.DescribeInstancePatchStatesResult
+	237, // 796: ssm.SSMService.DescribeInstancePatchStatesForPatchGroup:output_type -> ssm.DescribeInstancePatchStatesForPatchGroupResult
+	243, // 797: ssm.SSMService.DescribeInstanceProperties:output_type -> ssm.DescribeInstancePropertiesResult
+	245, // 798: ssm.SSMService.DescribeInventoryDeletions:output_type -> ssm.DescribeInventoryDeletionsResult
+	251, // 799: ssm.SSMService.DescribeMaintenanceWindowExecutions:output_type -> ssm.DescribeMaintenanceWindowExecutionsResult
+	247, // 800: ssm.SSMService.DescribeMaintenanceWindowExecutionTaskInvocations:output_type -> ssm.DescribeMaintenanceWindowExecutionTaskInvocationsResult
+	249, // 801: ssm.SSMService.DescribeMaintenanceWindowExecutionTasks:output_type -> ssm.DescribeMaintenanceWindowExecutionTasksResult
+	261, // 802: ssm.SSMService.DescribeMaintenanceWindows:output_type -> ssm.DescribeMaintenanceWindowsResult
+	253, // 803: ssm.SSMService.DescribeMaintenanceWindowSchedule:output_type -> ssm.DescribeMaintenanceWindowScheduleResult
+	259, // 804: ssm.SSMService.DescribeMaintenanceWindowsForTarget:output_type -> ssm.DescribeMaintenanceWindowsForTargetResult
+	255, // 805: ssm.SSMService.DescribeMaintenanceWindowTargets:output_type -> ssm.DescribeMaintenanceWindowTargetsResult
+	257, // 806: ssm.SSMService.DescribeMaintenanceWindowTasks:output_type -> ssm.DescribeMaintenanceWindowTasksResult
+	263, // 807: ssm.SSMService.DescribeOpsItems:output_type -> ssm.DescribeOpsItemsResponse
+	265, // 808: ssm.SSMService.DescribeParameters:output_type -> ssm.DescribeParametersResult
+	267, // 809: ssm.SSMService.DescribePatchBaselines:output_type -> ssm.DescribePatchBaselinesResult
+	271, // 810: ssm.SSMService.DescribePatchGroups:output_type -> ssm.DescribePatchGroupsResult
+	269, // 811: ssm.SSMService.DescribePatchGroupState:output_type -> ssm.DescribePatchGroupStateResult
+	273, // 812: ssm.SSMService.DescribePatchProperties:output_type -> ssm.DescribePatchPropertiesResult
+	275, // 813: ssm.SSMService.DescribeSessions:output_type -> ssm.DescribeSessionsResponse
+	277, // 814: ssm.SSMService.DisassociateOpsItemRelatedItem:output_type -> ssm.DisassociateOpsItemRelatedItemResponse
+	305, // 815: ssm.SSMService.GetAccessToken:output_type -> ssm.GetAccessTokenResponse
+	307, // 816: ssm.SSMService.GetAutomationExecution:output_type -> ssm.GetAutomationExecutionResult
+	309, // 817: ssm.SSMService.GetCalendarState:output_type -> ssm.GetCalendarStateResponse
+	311, // 818: ssm.SSMService.GetCommandInvocation:output_type -> ssm.GetCommandInvocationResult
+	313, // 819: ssm.SSMService.GetConnectionStatus:output_type -> ssm.GetConnectionStatusResponse
+	315, // 820: ssm.SSMService.GetDefaultPatchBaseline:output_type -> ssm.GetDefaultPatchBaselineResult
+	317, // 821: ssm.SSMService.GetDeployablePatchSnapshotForInstance:output_type -> ssm.GetDeployablePatchSnapshotForInstanceResult
+	319, // 822: ssm.SSMService.GetDocument:output_type -> ssm.GetDocumentResult
+	321, // 823: ssm.SSMService.GetExecutionPreview:output_type -> ssm.GetExecutionPreviewResponse
+	323, // 824: ssm.SSMService.GetInventory:output_type -> ssm.GetInventoryResult
+	325, // 825: ssm.SSMService.GetInventorySchema:output_type -> ssm.GetInventorySchemaResult
+	333, // 826: ssm.SSMService.GetMaintenanceWindow:output_type -> ssm.GetMaintenanceWindowResult
+	327, // 827: ssm.SSMService.GetMaintenanceWindowExecution:output_type -> ssm.GetMaintenanceWindowExecutionResult
+	331, // 828: ssm.SSMService.GetMaintenanceWindowExecutionTask:output_type -> ssm.GetMaintenanceWindowExecutionTaskResult
+	329, // 829: ssm.SSMService.GetMaintenanceWindowExecutionTaskInvocation:output_type -> ssm.GetMaintenanceWindowExecutionTaskInvocationResult
+	335, // 830: ssm.SSMService.GetMaintenanceWindowTask:output_type -> ssm.GetMaintenanceWindowTaskResult
+	337, // 831: ssm.SSMService.GetOpsItem:output_type -> ssm.GetOpsItemResponse
+	339, // 832: ssm.SSMService.GetOpsMetadata:output_type -> ssm.GetOpsMetadataResult
+	341, // 833: ssm.SSMService.GetOpsSummary:output_type -> ssm.GetOpsSummaryResult
+	345, // 834: ssm.SSMService.GetParameter:output_type -> ssm.GetParameterResult
+	343, // 835: ssm.SSMService.GetParameterHistory:output_type -> ssm.GetParameterHistoryResult
+	349, // 836: ssm.SSMService.GetParameters:output_type -> ssm.GetParametersResult
+	347, // 837: ssm.SSMService.GetParametersByPath:output_type -> ssm.GetParametersByPathResult
+	353, // 838: ssm.SSMService.GetPatchBaseline:output_type -> ssm.GetPatchBaselineResult
+	351, // 839: ssm.SSMService.GetPatchBaselineForPatchGroup:output_type -> ssm.GetPatchBaselineForPatchGroupResult
+	355, // 840: ssm.SSMService.GetResourcePolicies:output_type -> ssm.GetResourcePoliciesResponse
+	358, // 841: ssm.SSMService.GetServiceSetting:output_type -> ssm.GetServiceSettingResult
+	443, // 842: ssm.SSMService.LabelParameterVersion:output_type -> ssm.LabelParameterVersionResult
+	447, // 843: ssm.SSMService.ListAssociations:output_type -> ssm.ListAssociationsResult
+	445, // 844: ssm.SSMService.ListAssociationVersions:output_type -> ssm.ListAssociationVersionsResult
+	449, // 845: ssm.SSMService.ListCommandInvocations:output_type -> ssm.ListCommandInvocationsResult
+	451, // 846: ssm.SSMService.ListCommands:output_type -> ssm.ListCommandsResult
+	453, // 847: ssm.SSMService.ListComplianceItems:output_type -> ssm.ListComplianceItemsResult
+	455, // 848: ssm.SSMService.ListComplianceSummaries:output_type -> ssm.ListComplianceSummariesResult
+	457, // 849: ssm.SSMService.ListDocumentMetadataHistory:output_type -> ssm.ListDocumentMetadataHistoryResponse
+	461, // 850: ssm.SSMService.ListDocuments:output_type -> ssm.ListDocumentsResult
+	459, // 851: ssm.SSMService.ListDocumentVersions:output_type -> ssm.ListDocumentVersionsResult
+	463, // 852: ssm.SSMService.ListInventoryEntries:output_type -> ssm.ListInventoryEntriesResult
+	465, // 853: ssm.SSMService.ListNodes:output_type -> ssm.ListNodesResult
+	467, // 854: ssm.SSMService.ListNodesSummary:output_type -> ssm.ListNodesSummaryResult
+	469, // 855: ssm.SSMService.ListOpsItemEvents:output_type -> ssm.ListOpsItemEventsResponse
+	471, // 856: ssm.SSMService.ListOpsItemRelatedItems:output_type -> ssm.ListOpsItemRelatedItemsResponse
+	473, // 857: ssm.SSMService.ListOpsMetadata:output_type -> ssm.ListOpsMetadataResult
+	475, // 858: ssm.SSMService.ListResourceComplianceSummaries:output_type -> ssm.ListResourceComplianceSummariesResult
+	477, // 859: ssm.SSMService.ListResourceDataSync:output_type -> ssm.ListResourceDataSyncResult
+	479, // 860: ssm.SSMService.ListTagsForResource:output_type -> ssm.ListTagsForResourceResult
+	499, // 861: ssm.SSMService.ModifyDocumentPermission:output_type -> ssm.ModifyDocumentPermissionResponse
+	568, // 862: ssm.SSMService.PutComplianceItems:output_type -> ssm.PutComplianceItemsResult
+	570, // 863: ssm.SSMService.PutInventory:output_type -> ssm.PutInventoryResult
+	572, // 864: ssm.SSMService.PutParameter:output_type -> ssm.PutParameterResult
+	574, // 865: ssm.SSMService.PutResourcePolicy:output_type -> ssm.PutResourcePolicyResponse
+	576, // 866: ssm.SSMService.RegisterDefaultPatchBaseline:output_type -> ssm.RegisterDefaultPatchBaselineResult
+	578, // 867: ssm.SSMService.RegisterPatchBaselineForPatchGroup:output_type -> ssm.RegisterPatchBaselineForPatchGroupResult
+	580, // 868: ssm.SSMService.RegisterTargetWithMaintenanceWindow:output_type -> ssm.RegisterTargetWithMaintenanceWindowResult
+	582, // 869: ssm.SSMService.RegisterTaskWithMaintenanceWindow:output_type -> ssm.RegisterTaskWithMaintenanceWindowResult
+	586, // 870: ssm.SSMService.RemoveTagsFromResource:output_type -> ssm.RemoveTagsFromResourceResult
+	588, // 871: ssm.SSMService.ResetServiceSetting:output_type -> ssm.ResetServiceSettingResult
+	612, // 872: ssm.SSMService.ResumeSession:output_type -> ssm.ResumeSessionResponse
+	619, // 873: ssm.SSMService.SendAutomationSignal:output_type -> ssm.SendAutomationSignalResult
+	621, // 874: ssm.SSMService.SendCommand:output_type -> ssm.SendCommandResult
+	630, // 875: ssm.SSMService.StartAccessRequest:output_type -> ssm.StartAccessRequestResponse
+	632, // 876: ssm.SSMService.StartAssociationsOnce:output_type -> ssm.StartAssociationsOnceResult
+	634, // 877: ssm.SSMService.StartAutomationExecution:output_type -> ssm.StartAutomationExecutionResult
+	636, // 878: ssm.SSMService.StartChangeRequestExecution:output_type -> ssm.StartChangeRequestExecutionResult
+	638, // 879: ssm.SSMService.StartExecutionPreview:output_type -> ssm.StartExecutionPreviewResponse
+	640, // 880: ssm.SSMService.StartSession:output_type -> ssm.StartSessionResponse
+	645, // 881: ssm.SSMService.StopAutomationExecution:output_type -> ssm.StopAutomationExecutionResult
+	654, // 882: ssm.SSMService.TerminateSession:output_type -> ssm.TerminateSessionResponse
+	660, // 883: ssm.SSMService.UnlabelParameterVersion:output_type -> ssm.UnlabelParameterVersionResult
+	670, // 884: ssm.SSMService.UpdateAssociation:output_type -> ssm.UpdateAssociationResult
+	672, // 885: ssm.SSMService.UpdateAssociationStatus:output_type -> ssm.UpdateAssociationStatusResult
+	678, // 886: ssm.SSMService.UpdateDocument:output_type -> ssm.UpdateDocumentResult
+	674, // 887: ssm.SSMService.UpdateDocumentDefaultVersion:output_type -> ssm.UpdateDocumentDefaultVersionResult
+	676, // 888: ssm.SSMService.UpdateDocumentMetadata:output_type -> ssm.UpdateDocumentMetadataResponse
+	680, // 889: ssm.SSMService.UpdateMaintenanceWindow:output_type -> ssm.UpdateMaintenanceWindowResult
+	682, // 890: ssm.SSMService.UpdateMaintenanceWindowTarget:output_type -> ssm.UpdateMaintenanceWindowTargetResult
+	684, // 891: ssm.SSMService.UpdateMaintenanceWindowTask:output_type -> ssm.UpdateMaintenanceWindowTaskResult
+	686, // 892: ssm.SSMService.UpdateManagedInstanceRole:output_type -> ssm.UpdateManagedInstanceRoleResult
+	688, // 893: ssm.SSMService.UpdateOpsItem:output_type -> ssm.UpdateOpsItemResponse
+	690, // 894: ssm.SSMService.UpdateOpsMetadata:output_type -> ssm.UpdateOpsMetadataResult
+	692, // 895: ssm.SSMService.UpdatePatchBaseline:output_type -> ssm.UpdatePatchBaselineResult
+	694, // 896: ssm.SSMService.UpdateResourceDataSync:output_type -> ssm.UpdateResourceDataSyncResult
+	696, // 897: ssm.SSMService.UpdateServiceSetting:output_type -> ssm.UpdateServiceSettingResult
+	752, // [752:898] is the sub-list for method output_type
+	606, // [606:752] is the sub-list for method input_type
+	606, // [606:606] is the sub-list for extension type_name
+	606, // [606:606] is the sub-list for extension extendee
+	0,   // [0:606] is the sub-list for field type_name
 }
 
 func init() { file_ssm_proto_init() }
@@ -50171,7 +50416,7 @@ func file_ssm_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ssm_proto_rawDesc), len(file_ssm_proto_rawDesc)),
 			NumEnums:      98,
-			NumMessages:   662,
+			NumMessages:   656,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

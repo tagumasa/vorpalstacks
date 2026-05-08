@@ -680,3 +680,99 @@ func (t *DynamoDBTxn) ScanByPartitionKey(tableName, partitionKeyValue string, fn
 	}
 	return iter.Error()
 }
+
+// DeleteTableCascade removes all data associated with a table within a single
+// transaction: items, GSI/LSI index entries, the table record itself, and tags.
+// It does NOT check DeletionProtectionEnabled — that is the caller's responsibility.
+func (t *DynamoDBTxn) DeleteTableCascade(name string) error {
+	if err := t.deleteAllByPrefix(itemBucketName(t.region()), name+"#"); err != nil {
+		return fmt.Errorf("delete items for table %s: %w", name, err)
+	}
+
+	if err := t.deleteAllByPrefix(gsiIndexBucketName(t.region()), name+"#"); err != nil {
+		return fmt.Errorf("delete GSI index entries for table %s: %w", name, err)
+	}
+
+	if err := t.deleteAllByPrefix(lsiIndexBucketName(t.region()), name+"#"); err != nil {
+		return fmt.Errorf("delete LSI index entries for table %s: %w", name, err)
+	}
+
+	tableBucket := t.txn.Bucket(tableBucketName(t.region()))
+	if err := tableBucket.Delete([]byte(name)); err != nil {
+		return fmt.Errorf("delete table record %s: %w", name, err)
+	}
+
+	tagMainBucket := t.txn.Bucket(tagMainBucketName(t.region()))
+	if tagMainBucket != nil {
+		if err := tagMainBucket.Delete([]byte(name)); err != nil {
+			return fmt.Errorf("delete tags for table %s: %w", name, err)
+		}
+	}
+
+	globalTableBucket := t.txn.Bucket(globalTableBucketName(t.region()))
+	if globalTableBucket != nil {
+		_ = globalTableBucket.Delete([]byte(name))
+	}
+
+	tagIdxBucket := t.txn.Bucket(tagIndexBucketName(t.region()))
+	if tagIdxBucket != nil {
+		suffix := "\x00" + name
+		iter := tagIdxBucket.ScanPrefix(nil)
+		defer iter.Close()
+		var idxKeysToDelete []string
+		for iter.Next() {
+			k := string(iter.Key())
+			if strings.HasSuffix(k, suffix) {
+				idxKeysToDelete = append(idxKeysToDelete, k)
+			}
+		}
+		if err := iter.Error(); err != nil {
+			return fmt.Errorf("scan tag index for table %s: %w", name, err)
+		}
+		for _, k := range idxKeysToDelete {
+			if err := tagIdxBucket.Delete([]byte(k)); err != nil {
+				return fmt.Errorf("delete tag index entry %s: %w", k, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// deleteAllByPrefix deletes all keys with the given prefix from the specified bucket.
+func (t *DynamoDBTxn) deleteAllByPrefix(bucketName, prefix string) error {
+	bucket := t.txn.Bucket(bucketName)
+	if bucket == nil {
+		return nil
+	}
+
+	const batchSize = 500
+	var keysBatch []string
+
+	iter := bucket.ScanPrefix([]byte(prefix))
+	defer iter.Close()
+
+	for iter.Next() {
+		keysBatch = append(keysBatch, string(iter.Key()))
+		if len(keysBatch) >= batchSize {
+			for _, k := range keysBatch {
+				if err := bucket.Delete([]byte(k)); err != nil {
+					return err
+				}
+			}
+			keysBatch = keysBatch[:0]
+		}
+	}
+
+	if err := iter.Error(); err != nil {
+		return err
+	}
+
+	for _, k := range keysBatch {
+		if err := bucket.Delete([]byte(k)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

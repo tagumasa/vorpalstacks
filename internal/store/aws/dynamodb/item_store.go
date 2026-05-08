@@ -25,6 +25,14 @@ func lsiIndexBucketName(region string) string {
 	return "dynamodb_lsi_index-" + region
 }
 
+func tagMainBucketName(region string) string {
+	return "dynamodb-tags-" + region
+}
+
+func tagIndexBucketName(region string) string {
+	return "dynamodb-tag-idx-" + region
+}
+
 // ItemStore manages DynamoDB table items in persistent storage.
 type ItemStore struct {
 	*common.BaseStore

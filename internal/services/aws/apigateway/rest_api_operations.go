@@ -107,7 +107,7 @@ func (s *APIGatewayService) GetRestApi(ctx context.Context, reqCtx *request.Requ
 	}
 	api, err := stores.restApis.Get(apiId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	return s.toRestApiResponse(api), nil
@@ -125,7 +125,7 @@ func (s *APIGatewayService) DeleteRestApi(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 	if err := stores.restApis.Delete(apiId); err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	return response.EmptyResponse(), nil

@@ -116,7 +116,7 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 		objectKey := fmt.Sprintf("%s/AWSDynamoDB/%s/data/%s.json",
 			s3Prefix, export.ExportArn, export.ExportArn,
 		)
-		if err := s3.PutObject(ctx, region, s3Bucket, objectKey, buf.Bytes()); err != nil {
+		if err := s3.PutObject(ctx, region, s3Bucket, objectKey, buf.Bytes(), "application/octet-stream"); err != nil {
 			logs.Error("Failed to write export to S3",
 				logs.Err(err),
 				logs.String("bucket", s3Bucket),
@@ -340,7 +340,7 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 	s3 := s.s3invoker()
 	if s3 != nil && inputFormat == "DYNAMODB_JSON" {
 		region := reqCtx.GetRegion()
-		keys, listErr := s3.ListObjects(ctx, region, s3Bucket, s3Prefix)
+		keys, listErr := s3.ListObjects(ctx, region, s3Bucket, s3Prefix, 0)
 		if listErr != nil {
 			logs.Error("Failed to list S3 objects for import",
 				logs.Err(listErr),
@@ -349,7 +349,7 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 			)
 		} else {
 			for _, key := range keys {
-				data, getErr := s3.GetObject(ctx, region, s3Bucket, key)
+				data, getErr := s3.GetObject(ctx, region, s3Bucket, key, 0)
 				if getErr != nil {
 					logs.Error("Failed to read S3 object for import",
 						logs.Err(getErr),

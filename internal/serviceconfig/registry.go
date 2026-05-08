@@ -55,8 +55,8 @@ var Services = []ServiceDef{
 	{Name: "timestream_query", EnvVar: "TIMESTREAM_QUERY_ENABLED", Category: "analytics"},
 	{Name: "athena", EnvVar: "ATHENA_ENABLED", Category: "analytics"},
 	{Name: "appsync", EnvVar: "APPSYNC_ENABLED", PortKey: "ports.appsync_events", Category: "integration", HostSuffix: "appsync-api.{region}.amazonaws.com", SupportsFQDN: true},
-	{Name: "neptune", EnvVar: "NEPTUNE_ENABLED", PortKey: "ports.neptune", Category: "database", HostSuffix: "cluster.{account-id}.{region}.neptune.amazonaws.com", SupportsFQDN: true},
-	{Name: "neptune_data", EnvVar: "NEPTUNE_DATA_ENABLED", PortKey: "ports.neptune", Category: "database", HostSuffix: "neptune-db.{region}.amazonaws.com", SupportsFQDN: true},
+	{Name: "neptune", EnvVar: "NEPTUNE_ENABLED", Category: "database"},
+	{Name: "neptune_data", EnvVar: "NEPTUNE_DATA_ENABLED", Category: "database"},
 	{Name: "neptune_graph", EnvVar: "NEPTUNE_GRAPH_ENABLED", Category: "database"},
 	{Name: "cloudfront", EnvVar: "CLOUDFRONT_ENABLED", PortKey: "ports.cloudfront", Category: "networking", HostSuffix: "cloudfront.net", SupportsFQDN: true},
 	{Name: "wafv2", EnvVar: "WAFv2_ENABLED", Category: "security"},
@@ -66,9 +66,6 @@ var Services = []ServiceDef{
 
 // defaultPortMode returns the default port mode for this service.
 func (s *ServiceDef) DefaultPortMode() string {
-	if s.Name == "neptune" {
-		return string(PortModeIndividual)
-	}
 	if s.SupportsFQDN {
 		return string(PortModeFQDN)
 	}

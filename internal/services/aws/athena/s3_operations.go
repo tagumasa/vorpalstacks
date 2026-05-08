@@ -12,13 +12,12 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	athenastore "vorpalstacks/internal/store/aws/athena"
-	s3store "vorpalstacks/internal/store/aws/s3"
 
 	"github.com/parquet-go/parquet-go"
 )
 
 func (s *AthenaService) hasS3Support() bool {
-	return s.s3ObjectStore != nil
+	return s.s3Invoker != nil
 }
 
 func (s *AthenaService) parseS3Location(location string) (bucket, prefix string, err error) {
@@ -31,10 +30,10 @@ func (s *AthenaService) parseS3Location(location string) (bucket, prefix string,
 	if idx == -1 {
 		return rest, "", nil
 	}
-	return rest[:idx], rest[idx+1:], nil
+	return rest[:idx], strings.TrimPrefix(rest[idx+1:], "/"), nil
 }
 
-func (s *AthenaService) writeQueryResultsToS3(ctx context.Context, queryExecutionId string, result *athenastore.QueryResult, outputLocation string) error {
+func (s *AthenaService) writeQueryResultsToS3(ctx context.Context, region, queryExecutionId string, result *athenastore.QueryResult, outputLocation string) error {
 	if !s.hasS3Support() {
 		return nil
 	}
@@ -52,8 +51,7 @@ func (s *AthenaService) writeQueryResultsToS3(ctx context.Context, queryExecutio
 	}
 	key += queryExecutionId + ".csv"
 
-	_, err = s.s3ObjectStore.Put(ctx, bucket, key, bytes.NewReader(csvData), "text/csv", nil)
-	return err
+	return s.s3Invoker.PutObject(ctx, region, bucket, key, csvData, "text/csv")
 }
 
 func (s *AthenaService) resultSetToCSV(resultSet *athenastore.ResultSet) []byte {
@@ -74,7 +72,7 @@ func (s *AthenaService) resultSetToCSV(resultSet *athenastore.ResultSet) []byte 
 	return buf.Bytes()
 }
 
-func (s *AthenaService) readDataFromS3(ctx context.Context, location string, format string) ([]map[string]interface{}, error) {
+func (s *AthenaService) readDataFromS3(ctx context.Context, region, location, format string) ([]map[string]interface{}, error) {
 	if !s.hasS3Support() {
 		return nil, fmt.Errorf("S3 integration not available")
 	}
@@ -84,29 +82,27 @@ func (s *AthenaService) readDataFromS3(ctx context.Context, location string, for
 		return nil, err
 	}
 
-	listResult, err := s.s3ObjectStore.List(bucket, prefix, "", "", 1000)
+	keys, err := s.s3Invoker.ListObjects(ctx, region, bucket, prefix, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list S3 objects: %w", err)
 	}
 
 	var allData []map[string]interface{}
+	var firstErr error
 
-	for _, obj := range listResult.Objects {
-		reader, _, err := s.s3ObjectStore.Get(ctx, bucket, obj.Key)
+	for _, key := range keys {
+		data, err := s.s3Invoker.GetObject(ctx, region, bucket, key, 0)
 		if err != nil {
-			continue
-		}
-
-		data, err := io.ReadAll(reader)
-		reader.Close()
-		if err != nil {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to get S3 object %s: %w", key, err)
+			}
 			continue
 		}
 
 		var parsedData []map[string]interface{}
 		detectedFormat := format
 		if detectedFormat == "" {
-			detectedFormat = s.detectFileFormat(obj.Key, data)
+			detectedFormat = s.detectFileFormat(key, data)
 		}
 
 		switch detectedFormat {
@@ -121,10 +117,17 @@ func (s *AthenaService) readDataFromS3(ctx context.Context, location string, for
 		}
 
 		if err != nil {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to parse S3 object %s: %w", key, err)
+			}
 			continue
 		}
 
 		allData = append(allData, parsedData...)
+	}
+
+	if len(allData) == 0 && firstErr != nil {
+		return nil, firstErr
 	}
 
 	return allData, nil
@@ -250,7 +253,7 @@ func (s *AthenaService) loadExternalTableData(reqCtx *request.RequestContext, ca
 		format = table.Parameters["format"]
 	}
 
-	return s.readDataFromS3(reqCtx, location, format)
+	return s.readDataFromS3(reqCtx, reqCtx.GetRegion(), location, format)
 }
 
 func (s *AthenaService) convertS3DataToStoredTable(data []map[string]interface{}, columns []athenastore.Column) *athenastore.StoredTable {
@@ -273,5 +276,3 @@ func (s *AthenaService) convertS3DataToStoredTable(data []map[string]interface{}
 
 	return storedTable
 }
-
-var _ S3ObjectStore = (*s3store.ObjectStore)(nil)

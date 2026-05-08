@@ -10,9 +10,7 @@ import (
 	"vorpalstacks/internal/common/endpoint"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
-	snsstore "vorpalstacks/internal/store/aws/sns"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -177,25 +175,23 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 		subject = s
 	}
 
-	msg := &snsstore.Message{
-		MessageId:         fmt.Sprintf("%x", time.Now().UnixNano()),
-		TopicArn:          topicArn,
-		Subject:           subject,
-		Message:           message,
-		MessageAttributes: make(map[string]*snsstore.MessageAttribute),
+	msgID := fmt.Sprintf("%x", time.Now().UnixNano())
+	msg := map[string]interface{}{
+		"MessageId":         msgID,
+		"TopicArn":          topicArn,
+		"Subject":           subject,
+		"Message":           message,
+		"MessageAttributes": map[string]interface{}{},
 	}
 
-	msg.PublishedTimestamp = time.Now().UTC()
-	msg.ReceivedTimestamp = time.Now().UTC()
-
-	if err := e.bus.SNSInvoker().StoreMessage(ctx, topicArn+":messages:"+msg.MessageId, msg); err != nil {
+	if err := e.bus.SNSInvoker().StoreMessage(ctx, topicArn+":messages:"+msgID, msg); err != nil {
 		return "", fmt.Errorf("failed to store SNS message: %w", err)
 	}
 
 	if e.bus != nil {
 		snsEvt := &eventbus.SNSDeliveryEvent{
 			TopicARN:  topicArn,
-			MessageID: msg.MessageId,
+			MessageID: msgID,
 			Message:   message,
 			Subject:   subject,
 		}
@@ -210,7 +206,7 @@ func (e *Executor) executeSNSPublish(ctx context.Context, execCtx *ExecutionCont
 	}
 
 	result := map[string]interface{}{
-		"MessageId": msg.MessageId,
+		"MessageId": msgID,
 	}
 
 	resultJSON, err := json.Marshal(result)
@@ -305,18 +301,18 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 			}
 		}
 
-		event := &eventsstore.Event{
-			ID:           fmt.Sprintf("%x", now.UnixNano()),
-			EventBusName: eventBusName,
-			Source:       getStringOrEmpty(entry, "Source", "source"),
-			DetailType:   getStringOrEmpty(entry, "DetailType", "detailType"),
-			Time:         now,
-			Region:       eventsRegion,
-			Account:      e.accountID,
-			Detail:       detail,
+		event := map[string]interface{}{
+			"ID":           fmt.Sprintf("%x", now.UnixNano()),
+			"EventBusName": eventBusName,
+			"Source":       getStringOrEmpty(entry, "Source", "source"),
+			"DetailType":   getStringOrEmpty(entry, "DetailType", "detailType"),
+			"Time":         now,
+			"Region":       eventsRegion,
+			"Account":      e.accountID,
+			"Detail":       detail,
 		}
 
-		key := fmt.Sprintf("events:%s:%s", eventBusName, event.ID)
+		key := fmt.Sprintf("events:%s:%s", eventBusName, event["ID"])
 		if err := e.bus.EventsInvoker().PutEvent(ctx, key, event); err != nil {
 			return "", fmt.Errorf("failed to store event: %w", err)
 		}
@@ -335,7 +331,7 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 			}
 		}
 
-		eventIds = append(eventIds, event.ID)
+		eventIds = append(eventIds, event["ID"].(string))
 	}
 
 	result := map[string]interface{}{

@@ -6,16 +6,22 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
-	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
+	"vorpalstacks/internal/eventbus"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 
 	"github.com/google/uuid"
 )
+
+func extractRegionFromARN(arn string) string {
+	parts := strings.SplitN(arn, ":", 6)
+	if len(parts) >= 4 && parts[3] != "" {
+		return parts[3]
+	}
+	return ""
+}
 
 var (
 	// ErrNoSuchJob is returned when a job ID does not match any stored report.
@@ -115,57 +121,25 @@ func resolveEntityName(arn string) string {
 
 // generateLastAccessedReport queries CloudTrail events for the given entity within the
 // specified time granularity and produces a ServiceLastAccessedJob with aggregated results.
-func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType string, ctStore cloudtrailstore.CloudTrailStoreInterface) *iamstore.ServiceLastAccessedJob {
+func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType, region string) *iamstore.ServiceLastAccessedJob {
 	now := time.Now().UTC()
 	duration := parseGranularity(granularity)
 	startTime := now.Add(-duration)
 	entityName := resolveEntityName(arn)
 
-	query := cloudtrailstore.EventQuery{
-		MaxResults: 1000,
-		StartTime:  &startTime,
-		EndTime:    &now,
-		Username:   entityName,
-	}
-
-	var filteredEvents []*cloudtrailstore.Event
-	nextToken := ""
-	for {
-		query.NextToken = nextToken
-		events, token, err := ctStore.LookupEvents(query)
-		if err != nil {
-			break
+	var filteredEvents []eventbus.CloudTrailEventInfo
+	if s.cloudTrailInvoker != nil {
+		events, _, err := s.cloudTrailInvoker.LookupEvents(context.Background(), region, s.accountID, entityName, startTime, now, 1000)
+		if err == nil {
+			filteredEvents = events
 		}
-		filteredEvents = append(filteredEvents, events...)
-		if token == "" {
-			break
-		}
-		nextToken = token
 	}
 
 	serviceMap := make(map[string]*iamstore.ServiceLastAccessed)
 	actionMap := make(map[string]*iamstore.TrackedActionLastAccessed)
 
 	for _, event := range filteredEvents {
-		if event == nil {
-			continue
-		}
-
-		eventRegion := defaults.DefaultRegion
-		if event.UserIdentity != nil && event.UserIdentity.ARN != "" {
-			if _, _, r, _, _ := arnutil.SplitARN(event.UserIdentity.ARN); r != "" {
-				eventRegion = r
-			}
-		} else if len(event.Resources) > 0 {
-			for _, res := range event.Resources {
-				if res.ARN != "" {
-					if _, _, r, _, _ := arnutil.SplitARN(res.ARN); r != "" {
-						eventRegion = r
-						break
-					}
-				}
-			}
-		}
+		eventRegion := region
 
 		serviceNamespace := eventSourceToServiceNamespace[event.EventSource]
 		if serviceNamespace == "" {
@@ -270,13 +244,7 @@ func (s *IAMService) GenerateServiceLastAccessedDetails(_ context.Context, reqCt
 		return nil, err
 	}
 
-	regionStorage, err := reqCtx.GetStorage()
-	if err != nil {
-		return nil, errors.NewAWSError("InternalFailure", "Failed to access CloudTrail storage", http.StatusInternalServerError)
-	}
-	ctStore := cloudtrailstore.NewCloudTrailStore(regionStorage, s.accountID, reqCtx.GetRegion())
-
-	job := s.generateLastAccessedReport(arn, granularity, "SERVICE_LAST_ACCESSED", ctStore)
+	job := s.generateLastAccessedReport(arn, granularity, "SERVICE_LAST_ACCESSED", reqCtx.GetRegion())
 
 	if err := store.ServiceLastAccessed().Put(job); err != nil {
 		return nil, err

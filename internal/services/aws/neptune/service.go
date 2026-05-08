@@ -13,18 +13,21 @@ import (
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
+	svcneptunedata "vorpalstacks/internal/services/aws/neptunedata"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/neptune"
 )
 
 // NeptuneService handles incoming Neptune Management API requests.
 type NeptuneService struct {
-	accountID      string
-	region         string
-	storageManager *storage.RegionStorageManager
-	stores         sync.Map
-	eventBus       *eventbus.EventBus
-	cancelCleanup  context.CancelFunc
+	accountID        string
+	region           string
+	serverHost       string
+	storageManager   *storage.RegionStorageManager
+	stores           sync.Map
+	eventBus         *eventbus.EventBus
+	cancelCleanup    context.CancelFunc
+	dataPlaneService *svcneptunedata.NeptuneDataService
 }
 
 // NewNeptuneService creates a new NeptuneService for the specified account and
@@ -41,6 +44,19 @@ func (s *NeptuneService) Close() {
 	if s.cancelCleanup != nil {
 		s.cancelCleanup()
 	}
+}
+
+// SetServerHost sets the server hostname used to construct cluster Endpoint addresses.
+func (s *NeptuneService) SetServerHost(host string) {
+	s.serverHost = host
+}
+
+// endpointAddress returns the hostname for a cluster's Endpoint field.
+func (s *NeptuneService) endpointAddress(clusterID string) string {
+	if s.serverHost != "" {
+		return s.serverHost
+	}
+	return fmt.Sprintf("%s.cluster-%s.%s.neptune.amazonaws.com", clusterID, s.accountID, s.region)
 }
 
 // cleanupOldEvents periodically purges events older than the retention period.
@@ -79,6 +95,12 @@ func (s *NeptuneService) SetStorageManager(sm *storage.RegionStorageManager) {
 // EC2 subnet lookups.
 func (s *NeptuneService) SetEventBus(bus *eventbus.EventBus) {
 	s.eventBus = bus
+}
+
+// SetDataPlaneService injects the NeptuneDataService for per-cluster engine
+// lifecycle management (open/close on create/delete).
+func (s *NeptuneService) SetDataPlaneService(dp *svcneptunedata.NeptuneDataService) {
+	s.dataPlaneService = dp
 }
 
 // GetStoreForRegion returns the cached Neptune store for the given region,

@@ -21,10 +21,8 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
-	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
-	s3store "vorpalstacks/internal/store/aws/s3"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/naming"
 )
@@ -39,18 +37,17 @@ type lambdaStore struct {
 // LambdaService provides Lambda operations.
 type LambdaService struct {
 	storageManager *storage.RegionStorageManager
-	s3Objects      map[string]s3store.ObjectStoreInterface
+	s3Invoker      eventbus.S3Invoker
+	logsInvoker    eventbus.LogsInvoker
 	dockerClient   mobyclient.ContainerLifecycle
 	bus            eventbus.Bus
-	logsStores     sync.Map // region → *logsstore.Store
 	storeCache     sync.Map // region → *lambdaStore
 	accountID      string
 	region         string
 	hostEndpoint   string
 	dataDir        string
 	dataDirOnce    sync.Once
-	asyncWg        sync.WaitGroup // goroutine tracking for InvokeAsync
-	s3ObjectsMu    sync.RWMutex
+	asyncWg        sync.WaitGroup
 	esmPoller      *esmPoller
 }
 
@@ -73,7 +70,6 @@ func (s *LambdaService) store(reqCtx *request.RequestContext) (*lambdaStore, err
 // setter methods before registering handlers.
 func NewLambdaService(dockerClient mobyclient.ContainerLifecycle, accountID, region, dataDir string) *LambdaService {
 	return &LambdaService{
-		s3Objects:    make(map[string]s3store.ObjectStoreInterface),
 		dockerClient: dockerClient,
 		accountID:    accountID,
 		region:       region,
@@ -81,21 +77,14 @@ func NewLambdaService(dockerClient mobyclient.ContainerLifecycle, accountID, reg
 	}
 }
 
-// SetLogsStore registers a CloudWatch Logs store for a given region for Lambda log delivery.
-func (s *LambdaService) SetLogsStore(region string, store *logsstore.Store) {
-	if store != nil {
-		s.logsStores.Store(region, store)
-	}
+// SetS3Invoker injects the S3 invoker for reading deployment packages.
+func (s *LambdaService) SetS3Invoker(invoker eventbus.S3Invoker) {
+	s.s3Invoker = invoker
 }
 
-// SetS3ObjectStore registers an S3 object store for the specified region.
-func (s *LambdaService) SetS3ObjectStore(region string, store s3store.ObjectStoreInterface) {
-	s.s3ObjectsMu.Lock()
-	defer s.s3ObjectsMu.Unlock()
-	if s.s3Objects == nil {
-		s.s3Objects = make(map[string]s3store.ObjectStoreInterface)
-	}
-	s.s3Objects[region] = store
+// SetLogsInvoker injects the Logs invoker for writing Lambda execution logs.
+func (s *LambdaService) SetLogsInvoker(invoker eventbus.LogsInvoker) {
+	s.logsInvoker = invoker
 }
 
 // SetStorageManager sets the region storage manager for resolving regional storage.
@@ -148,34 +137,6 @@ func (s *LambdaService) getRegionalStorage(region string) storage.BasicStorage {
 		}
 	}
 	return nil
-}
-
-func (s *LambdaService) getS3ObjectStore(region string) s3store.ObjectStoreInterface {
-	s.s3ObjectsMu.RLock()
-	defer s.s3ObjectsMu.RUnlock()
-	return s.s3Objects[region]
-}
-
-func (s *LambdaService) getLogsStore(region string) (*logsstore.Store, error) {
-	if cached, ok := s.logsStores.Load(region); ok {
-		if typed, ok := cached.(*logsstore.Store); ok {
-			return typed, nil
-		}
-	}
-	regionalStore := s.getRegionalStorage(region)
-	if regionalStore == nil {
-		return nil, fmt.Errorf("lambda: no regional storage available for %s", region)
-	}
-	store, err := logsstore.NewStore(regionalStore, regionalStore.Bucket("logs-"+region), s.accountID, region, s.dataDir)
-	if err != nil {
-		return nil, err
-	}
-	if actual, loaded := s.logsStores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(*logsstore.Store); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
 }
 
 // RegisterHandlers registers the Lambda service handlers with the dispatcher.
@@ -288,16 +249,14 @@ func (s *LambdaService) storeCode(functionName, version string, code []byte, reg
 }
 
 func (s *LambdaService) fetchCodeFromS3(ctx context.Context, bucket, key, region string) ([]byte, error) {
-	s3ObjStore := s.getS3ObjectStore(region)
-	if s3ObjStore == nil {
-		return nil, fmt.Errorf("S3 object store not configured for region %s", region)
+	if s.s3Invoker == nil {
+		return nil, fmt.Errorf("S3 invoker not configured")
 	}
-	reader, _, err := s3ObjStore.Get(ctx, bucket, key)
+	data, err := s.s3Invoker.GetObject(ctx, region, bucket, key, 250*1024*1024)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get object from S3: s3://%s/%s: %w", bucket, key, err)
 	}
-	defer reader.Close()
-	return io.ReadAll(io.LimitReader(reader, 250*1024*1024))
+	return data, nil
 }
 
 func (s *LambdaService) loadCode(functionName, version string, region string) ([]byte, error) {
@@ -587,30 +546,26 @@ func (s *LambdaService) writeLambdaLogs(functionName, version, stdout, stderr, r
 // available. It writes Lambda execution logs directly to the CloudWatch
 // Logs store without applying metric or subscription filters.
 func (s *LambdaService) writeLambdaLogsDirect(logGroupName, logStreamName string, events []eventbus.LogEntry, functionName, region string) {
-	logsStore, err := s.getLogsStore(region)
-	if err != nil {
+	if s.logsInvoker == nil {
 		return
 	}
 
-	_, err = logsStore.GetLogGroup(logGroupName)
-	if err != nil {
-		lg := logsstore.NewLogGroup(logGroupName, region, s.accountID)
-		if createErr := logsStore.CreateLogGroup(lg); createErr != nil {
-			return
-		}
-	}
+	ctx := context.Background()
 
-	ls := logsstore.NewLogStream(logStreamName, logGroupName)
-	if createErr := logsStore.CreateLogStream(ls); createErr != nil {
+	if err := s.logsInvoker.EnsureLogGroup(ctx, region, logGroupName, s.accountID); err != nil {
 		return
 	}
 
-	storeEvents := make([]logsstore.LogEntry, len(events))
+	if err := s.logsInvoker.EnsureLogStream(ctx, region, logGroupName, logStreamName); err != nil {
+		return
+	}
+
+	entries := make([]eventbus.LogsLogEntry, len(events))
 	for i, e := range events {
-		storeEvents[i] = logsstore.LogEntry{Timestamp: e.Timestamp, Message: e.Message}
+		entries[i] = eventbus.LogsLogEntry{Timestamp: e.Timestamp, Message: e.Message}
 	}
 
-	if _, err := logsStore.PutLogEvents(logGroupName, logStreamName, storeEvents); err != nil {
+	if err := s.logsInvoker.PutLogEvents(ctx, region, logGroupName, logStreamName, entries); err != nil {
 		logs.Warn("Failed to write Lambda logs", logs.String("function", functionName), logs.Err(err))
 	}
 }

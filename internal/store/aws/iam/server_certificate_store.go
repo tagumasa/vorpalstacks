@@ -33,25 +33,29 @@ func (s *ServerCertificateStore) Put(cert *ServerCertificate) error {
 
 // Create creates a new server certificate with the given name, path, certificate body, and chain.
 func (s *ServerCertificateStore) Create(name, path, certificateBody, certificateChain string, tags []types.Tag) (*ServerCertificate, error) {
-	if s.Exists(name) {
-		return nil, NewStoreError("create_server_certificate", ErrServerCertificateAlreadyExists)
-	}
-	id, err := GenerateServerCertificateID()
+	var cert *ServerCertificate
+	err := s.kl.WithLock(name, func() error {
+		if s.Exists(name) {
+			return NewStoreError("create_server_certificate", ErrServerCertificateAlreadyExists)
+		}
+		id, err := GenerateServerCertificateID()
+		if err != nil {
+			return NewStoreError("generate_server_certificate_id", err)
+		}
+		cert = &ServerCertificate{
+			ID:                    id,
+			Path:                  path,
+			ServerCertificateName: name,
+			Arn:                   s.arnBuilder.ServerCertificateARN(name),
+			AccountId:             s.arnBuilder.AccountID(),
+			CreateDate:            time.Now().UTC(),
+			CertificateBody:       certificateBody,
+			CertificateChain:      certificateChain,
+			Tags:                  tags,
+		}
+		return s.Put(cert)
+	})
 	if err != nil {
-		return nil, err
-	}
-	cert := &ServerCertificate{
-		ID:                    id,
-		Path:                  path,
-		ServerCertificateName: name,
-		Arn:                   s.arnBuilder.ServerCertificateARN(name),
-		AccountId:             s.arnBuilder.AccountID(),
-		CreateDate:            time.Now().UTC(),
-		CertificateBody:       certificateBody,
-		CertificateChain:      certificateChain,
-		Tags:                  tags,
-	}
-	if err := s.Put(cert); err != nil {
 		return nil, err
 	}
 	return cert, nil

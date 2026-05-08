@@ -63,24 +63,25 @@ func runLambdaLayerTests(
 	}))
 
 	results = append(results, r.RunTest("lambda", "ListLayers", func() error {
-		resp, err := client.ListLayers(ctx, &lambda.ListLayersInput{})
-		if err != nil {
-			return err
-		}
-		if resp.Layers == nil {
-			return fmt.Errorf("layers list is nil")
-		}
-		found := false
-		for _, l := range resp.Layers {
-			if l.LayerName != nil && *l.LayerName == layerName {
-				found = true
+		var nextMarker *string
+		for page := 0; page < 100; page++ {
+			resp, err := client.ListLayers(ctx, &lambda.ListLayersInput{
+				Marker: nextMarker,
+			})
+			if err != nil {
+				return err
+			}
+			for _, l := range resp.Layers {
+				if l.LayerName != nil && *l.LayerName == layerName {
+					return nil
+				}
+			}
+			if resp.NextMarker == nil {
 				break
 			}
+			nextMarker = resp.NextMarker
 		}
-		if !found {
-			return fmt.Errorf("layer %s not found in ListLayers", layerName)
-		}
-		return nil
+		return fmt.Errorf("layer %s not found in ListLayers", layerName)
 	}))
 
 	results = append(results, r.RunTest("lambda", "ListLayerVersions", func() error {

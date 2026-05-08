@@ -1,3 +1,7 @@
+// Package wafv2 provides AWS WAFv2 service operations for vorpalstacks.
+// This package is part of the WAF service family and shares the underlying
+// store with "vorpalstacks/internal/store/aws/waf" (IAM sub-service exemption
+// declared for WAF WebACL association operations).
 package wafv2
 
 import (

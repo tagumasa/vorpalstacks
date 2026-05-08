@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -59,7 +58,7 @@ func (h *AdminHandler) PutObject(ctx context.Context, req *connect.Request[pb.Pu
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("key is required"))
 	}
 
-	_, objectStore := h.getStores(req.Header())
+	bucketStore, objectStore := h.getStores(req.Header())
 	if objectStore == nil {
 		return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("storage unavailable"))
 	}
@@ -68,8 +67,6 @@ func (h *AdminHandler) PutObject(ctx context.Context, req *connect.Request[pb.Pu
 	if contentLength > maxSingleUploadSize {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("object size %d exceeds maximum allowed size %d", contentLength, maxSingleUploadSize))
 	}
-
-	var reader io.Reader = bytes.NewReader(req.Msg.Body)
 
 	metadata := req.Msg.Metadata
 	if metadata == nil {
@@ -81,7 +78,37 @@ func (h *AdminHandler) PutObject(ctx context.Context, req *connect.Request[pb.Pu
 		contentType = "application/octet-stream"
 	}
 
-	obj, err := objectStore.Put(ctx, req.Msg.Bucket, req.Msg.Key, reader, contentType, metadata)
+	var bucketEncryption *s3store.EncryptionConfig
+	if bucketStore != nil {
+		bucketEncryption, _ = bucketStore.GetEncryptionConfiguration(req.Msg.Bucket)
+	}
+
+	encType := EncryptionTypeNone
+	if h.encryptionManager != nil {
+		encType = h.encryptionManager.DetermineEncryptionType(EncryptionTypeNone, bucketEncryption)
+	}
+
+	var obj *s3store.Object
+	var err error
+
+	if h.encryptionManager != nil && h.encryptionManager.ShouldEncrypt(encType, bucketEncryption) {
+		encResult, err := h.encryptionManager.Encrypt(req.Msg.Body, encType, bucketEncryption, req.Msg.Bucket, req.Msg.Key, "")
+		if err != nil {
+			return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("encryption failed: %w", err))
+		}
+		sseMeta := &s3store.SSEObjectMetadata{
+			EncryptionType:   s3store.SSEType(encResult.EncryptionType),
+			EncryptedDataKey: encResult.EncryptedDataKey,
+			ContentNonce:     encResult.ContentNonce,
+			KMSKeyID:         encResult.KMSKeyID,
+			UnencryptedMD5:   encResult.UnencryptedMD5,
+			UnencryptedSize:  encResult.UnencryptedSize,
+		}
+		obj, err = objectStore.PutEncrypted(ctx, req.Msg.Bucket, req.Msg.Key, encResult.EncryptedData, contentType, metadata, sseMeta, s3store.StorageClassStandard, nil)
+	} else {
+		reader := bytes.NewReader(req.Msg.Body)
+		obj, err = objectStore.Put(ctx, req.Msg.Bucket, req.Msg.Key, reader, contentType, metadata)
+	}
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}

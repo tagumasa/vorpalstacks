@@ -8,7 +8,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
@@ -89,61 +88,21 @@ func (s *IAMService) UpdateGroup(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	group, err := store.Groups().Get(groupName)
-	if err != nil {
-		return nil, NewNoSuchGroupError(groupName)
-	}
 
 	newPath := request.GetStringParam(req.Parameters, "NewPath")
-	if newPath != "" {
-		group.Path = newPath
-		group.Arn = store.ARNBuilder().GroupARN(newPath, group.GroupName)
+	newGroupName := request.GetStringParam(req.Parameters, "NewGroupName")
+
+	if err := store.RenameGroup(groupName, newGroupName, newPath); err != nil {
+		return nil, err
 	}
 
-	newGroupName := request.GetStringParam(req.Parameters, "NewGroupName")
-	if newGroupName != "" && newGroupName != groupName {
-		if store.Groups().Exists(newGroupName) {
-			return nil, NewGroupAlreadyExistsError(newGroupName)
-		}
-
-		group.GroupName = newGroupName
-		group.Arn = store.ARNBuilder().GroupARN(group.Path, newGroupName)
-
-		if err := store.Groups().Put(group); err != nil {
-			return nil, err
-		}
-
-		users, err := store.UserGroups().ListUsersInGroup(groupName)
-		if err != nil {
-			if delErr := store.Groups().Delete(newGroupName); delErr != nil {
-				logs.Error("UpdateGroup: failed to rollback group creation", logs.Err(delErr))
-			}
-			return nil, err
-		}
-		for _, userName := range users {
-			if err := store.UserGroups().RemoveUserFromGroup(userName, groupName); err != nil {
-				return nil, err
-			}
-			if err := store.UserGroups().AddUserToGroup(userName, newGroupName); err != nil {
-				return nil, err
-			}
-		}
-
-		if err := store.InlinePolicies().MigratePrincipal(groupName, newGroupName, PrincipalTypeGroup); err != nil {
-			return nil, err
-		}
-
-		if err := store.AttachedPolicies().MigratePrincipal(groupName, newGroupName, PrincipalTypeGroup); err != nil {
-			return nil, err
-		}
-
-		if err := store.Groups().Delete(groupName); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := store.Groups().Put(group); err != nil {
-			return nil, err
-		}
+	targetName := groupName
+	if newGroupName != "" {
+		targetName = newGroupName
+	}
+	group, err := store.Groups().Get(targetName)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
