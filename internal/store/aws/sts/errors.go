@@ -14,4 +14,11 @@ var (
 
 	// ErrSessionExpired is returned when the STS session has expired.
 	ErrSessionExpired = errors.New("session expired")
+
+	// ErrDelegationTokenNotFound is returned when the specified trade-in
+	// token does not exist.
+	ErrDelegationTokenNotFound = errors.New("delegated token not found")
+
+	// ErrDelegationTokenExpired is returned when the trade-in token has expired.
+	ErrDelegationTokenExpired = errors.New("delegated token expired")
 )

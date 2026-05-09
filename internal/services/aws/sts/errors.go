@@ -48,4 +48,9 @@ var (
 	ErrInvalidParameter = errors.NewAWSError("ValidationError", "1 validation error detected: Value at 'roleSessionName' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w+=,.@-]*", http.StatusBadRequest)
 	// ErrAccessDenied is returned when the caller is not authorized to assume the role.
 	ErrAccessDenied = errors.NewAWSError("AccessDenied", "Not authorized to perform sts:AssumeRole", http.StatusForbidden)
+	// ErrExpiredTradeInToken is returned when the trade-in token has expired.
+	ErrExpiredTradeInToken = errors.NewAWSError("ExpiredTradeInToken", "The trade-in token provided has expired.", http.StatusBadRequest)
+	// ErrIDPCommunicationError is returned when external IdP validation is unavailable.
+	// VorpalStacks cannot reach external IdPs; SAML and WebIdentity flows are test-only.
+	ErrIDPCommunicationError = errors.NewAWSError("IDPCommunicationError", "The identity provider is not available. SAML and WebIdentity federation require external IdP connectivity.", http.StatusBadRequest)
 )

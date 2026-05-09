@@ -154,6 +154,10 @@ func NewServer(cfg *Config) (*Server, error) {
 	// Create STS session store for temporary credential verification
 	stsSessionStore := stsstore.NewSessionStore(globalStore, region)
 
+	if os.Getenv("TEST_MODE") == "true" {
+		stsSessionStore.SeedTestDelegatedTokens()
+	}
+
 	regionStorage, err := storageMgr.GetStorage(region)
 	if err != nil {
 		if ownsStorage {

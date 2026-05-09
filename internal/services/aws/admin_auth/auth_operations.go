@@ -2,12 +2,13 @@ package admin_auth
 
 import (
 	"context"
-	"fmt"
 
 	pb "vorpalstacks/internal/pb/aws/admin_auth"
 	"vorpalstacks/internal/pb/aws/common"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
+	"vorpalstacks/pkg/vsjwt"
 
 	"connectrpc.com/connect"
 )
@@ -32,22 +33,10 @@ func (s *AdminAuthService) Login(
 		return nil, connect.NewError(connect.CodeUnauthenticated, ErrInvalidCredentials)
 	}
 
-	user, err := s.userReader.Get(username)
+	jwtUser, err := s.resolveJWTUser(username)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-
-	groups, err := s.groupReader.ListGroupsForUser(username)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	policies, err := s.policyReader.ListAttachedPolicies("user", username)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	jwtUser := NewUserAdapter(user, groups, policies)
 
 	return s.generateLoginResponse(jwtUser, username)
 }
@@ -150,6 +139,32 @@ func (s *AdminAuthService) InitialSetup(
 	return resp, nil
 }
 
+// resolveJWTUser builds a JWTUser for the given username.
+// For the root user it returns a RootUserAdapter; for IAM users it looks up
+// groups and attached policies from the IAM store.
+func (s *AdminAuthService) resolveJWTUser(username string) (vsjwt.JWTUser, error) {
+	if username == iamstore.RootUserName {
+		return NewRootUserAdapter(s.accountID), nil
+	}
+
+	user, err := s.userReader.Get(username)
+	if err != nil {
+		return nil, err
+	}
+
+	groups, err := s.groupReader.ListGroupsForUser(username)
+	if err != nil {
+		return nil, err
+	}
+
+	policies, err := s.policyReader.ListAttachedPolicies("user", username)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewUserAdapter(user, groups, policies), nil
+}
+
 // RefreshToken refreshes access and ID tokens using a refresh token.
 func (s *AdminAuthService) RefreshToken(
 	ctx context.Context,
@@ -165,80 +180,19 @@ func (s *AdminAuthService) RefreshToken(
 		return nil, connect.NewError(connect.CodeUnauthenticated, ErrInvalidRefreshToken)
 	}
 
-	var jwtUser interface {
-		GetID() string
-		GetUsername() string
-		GetEmail() string
-		GetGroups() []string
-		GetCustomClaims() map[string]interface{}
+	jwtUser, err := s.resolveJWTUser(rt.Username)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-
-	if rt.Username == iamstore.RootUserName {
-		jwtUser = NewRootUserAdapter(s.accountID)
-	} else {
-		user, err := s.userReader.Get(rt.Username)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-
-		groups, err := s.groupReader.ListGroupsForUser(rt.Username)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-
-		policies, err := s.policyReader.ListAttachedPolicies("user", rt.Username)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-
-		jwtUser = NewUserAdapter(user, groups, policies)
-	}
-
-	// Generate tokens using the adapter that satisfies vsjwt.JWTUser
-	var accessToken, idToken string
-	switch u := jwtUser.(type) {
-	case *RootUserAdapter:
-		accessToken, err = s.tokenGenerator.GenerateAccessToken(u, DefaultClientID, AccessTokenDurationSec)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		idToken, err = s.tokenGenerator.GenerateIDToken(u, DefaultClientID, IDTokenDurationSec)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-	case *UserAdapter:
-		accessToken, err = s.tokenGenerator.GenerateAccessToken(u, DefaultClientID, AccessTokenDurationSec)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		idToken, err = s.tokenGenerator.GenerateIDToken(u, DefaultClientID, IDTokenDurationSec)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-	}
-
-	newRefreshToken := s.tokenGenerator.GenerateRefreshToken()
 
 	if err := s.deleteRefreshToken(refreshToken); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if err := s.saveRefreshToken(newRefreshToken, rt.Username); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
 
-	resp := connect.NewResponse(&pb.LoginResponse{
-		AccessToken:      accessToken,
-		RefreshToken:     newRefreshToken,
-		IdToken:          idToken,
-		ExpiresIn:        int32(AccessTokenDurationSec),
-		TokenType:        "Bearer",
-		RefreshExpiresIn: int32(RefreshTokenDurationSec),
-	})
-
-	return resp, nil
+	return s.generateLoginResponse(jwtUser, rt.Username)
 }
 
-// Logout invalidates the given access token.
+// Logout invalidates the given access token by deleting any associated refresh tokens.
 func (s *AdminAuthService) Logout(
 	ctx context.Context,
 	req *connect.Request[pb.LogoutRequest],
@@ -248,9 +202,15 @@ func (s *AdminAuthService) Logout(
 		return nil, connect.NewError(connect.CodeInvalidArgument, ErrMissingAccessToken)
 	}
 
-	_, err := s.tokenGenerator.ValidateToken(accessToken)
+	claims, err := s.tokenGenerator.ValidateToken(accessToken)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, ErrInvalidToken)
+	}
+
+	if claims.TokenUse == "refresh" {
+		if err := s.deleteRefreshToken(accessToken); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
 	}
 
 	return connect.NewResponse(&common.Empty{}), nil
@@ -276,7 +236,7 @@ func (s *AdminAuthService) GetCurrentUser(
 	if username == iamstore.RootUserName {
 		return connect.NewResponse(&pb.GetCurrentUserResponse{
 			Username:   iamstore.RootUserName,
-			Arn:        fmt.Sprintf("arn:aws:iam::%s:root", s.accountID),
+			Arn:        arnutil.NewARNBuilder(s.accountID, "").IAM().Root(),
 			UserId:     iamstore.RootUserName,
 			CreateDate: "",
 		}), nil
@@ -310,32 +270,14 @@ func (s *AdminAuthService) GetCurrentUser(
 }
 
 // generateLoginResponse is a helper that generates JWT tokens and builds a LoginResponse.
-func (s *AdminAuthService) generateLoginResponse(jwtUser interface {
-	GetID() string
-	GetUsername() string
-}, username string) (*connect.Response[pb.LoginResponse], error) {
-	var accessToken, idToken string
-	var err error
-
-	switch u := jwtUser.(type) {
-	case *RootUserAdapter:
-		accessToken, err = s.tokenGenerator.GenerateAccessToken(u, DefaultClientID, AccessTokenDurationSec)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		idToken, err = s.tokenGenerator.GenerateIDToken(u, DefaultClientID, IDTokenDurationSec)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-	case *UserAdapter:
-		accessToken, err = s.tokenGenerator.GenerateAccessToken(u, DefaultClientID, AccessTokenDurationSec)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		idToken, err = s.tokenGenerator.GenerateIDToken(u, DefaultClientID, IDTokenDurationSec)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
+func (s *AdminAuthService) generateLoginResponse(jwtUser vsjwt.JWTUser, username string) (*connect.Response[pb.LoginResponse], error) {
+	accessToken, err := s.tokenGenerator.GenerateAccessToken(jwtUser, DefaultClientID, AccessTokenDurationSec)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	idToken, err := s.tokenGenerator.GenerateIDToken(jwtUser, DefaultClientID, IDTokenDurationSec)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	refreshToken := s.tokenGenerator.GenerateRefreshToken()

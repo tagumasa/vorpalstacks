@@ -51,7 +51,7 @@ type AdminHandler struct {
 func NewAdminHandler(store storage.BasicStorage, accountID string) *AdminHandler {
 	return &AdminHandler{
 		store:    store,
-		storeObj: iamstore.NewIAMStore(store, accountID),
+		storeObj: iamstore.GetOrCreateGlobalStore(store, accountID),
 	}
 }
 

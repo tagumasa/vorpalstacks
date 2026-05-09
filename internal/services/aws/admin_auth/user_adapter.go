@@ -21,9 +21,9 @@ func NewUserAdapter(user *iamstore.User, groups, policies []string) *UserAdapter
 	}
 }
 
-// GetID returns the user's ID.
+// GetID returns the user's unique ID (AIDA...).
 func (u *UserAdapter) GetID() string {
-	return u.user.UserName
+	return u.user.ID
 }
 
 // GetUsername returns the user's username.

@@ -18,19 +18,41 @@ const (
 	stsSecretAccessKeySize = 30
 )
 
+// delegatedTokenEntry stores the principal ARN associated with a trade-in token.
+type delegatedTokenEntry struct {
+	PrincipalArn string    `json:"principal_arn"`
+	Expires      time.Time `json:"expires"`
+}
+
 // SessionStore manages STS session tokens.
 type SessionStore struct {
 	bucket          storage.Bucket
 	accessKeyBucket storage.Bucket
+	delegatedBucket storage.Bucket
 }
 
 // NewSessionStore creates a new SessionStore instance.
 func NewSessionStore(store storage.BasicStorage, region string) *SessionStore {
 	bucketName := "sts_sessions-" + region
 	akBucketName := "sts_access_keys-" + region
-	return &SessionStore{
+	delegatedBucketName := "sts_delegated_tokens-" + region
+	s := &SessionStore{
 		bucket:          store.Bucket(bucketName),
 		accessKeyBucket: store.Bucket(akBucketName),
+		delegatedBucket: store.Bucket(delegatedBucketName),
+	}
+	return s
+}
+
+// SeedTestDelegatedTokens populates delegated tokens for test mode.
+// This must be called explicitly by the server initialisation when TEST_MODE is enabled.
+func (s *SessionStore) SeedTestDelegatedTokens() {
+	testTokens := map[string]string{
+		"dummy-trade-in-token-verify": "arn:aws:iam::123456789012:root",
+	}
+	expires := time.Now().UTC().Add(24 * time.Hour)
+	for token, arn := range testTokens {
+		_ = s.StoreDelegationToken(token, arn, expires)
 	}
 }
 
@@ -144,6 +166,45 @@ func (s *SessionStore) ResolveSession(accessKeyId string) (*auth.SessionCredenti
 		SecretAccessKey: session.SecretAccessKey,
 		SessionToken:    session.SessionToken,
 	}, nil
+}
+
+// StoreDelegationToken stores a trade-in token with its associated principal ARN.
+func (s *SessionStore) StoreDelegationToken(token, principalArn string, expires time.Time) error {
+	entry := &delegatedTokenEntry{
+		PrincipalArn: principalArn,
+		Expires:      expires,
+	}
+	data, err := json.Marshal(entry)
+	if err != nil {
+		return err
+	}
+	return s.delegatedBucket.Put([]byte(token), data)
+}
+
+// RedeemDelegationToken looks up a trade-in token and returns the associated principal ARN.
+// Returns ErrDelegationTokenNotFound if the token does not exist or has expired.
+func (s *SessionStore) RedeemDelegationToken(token string) (string, error) {
+	data, err := s.delegatedBucket.Get([]byte(token))
+	if err != nil {
+		return "", ErrDelegationTokenNotFound
+	}
+	if data == nil {
+		return "", ErrDelegationTokenNotFound
+	}
+
+	var entry delegatedTokenEntry
+	if err := json.Unmarshal(data, &entry); err != nil {
+		return "", err
+	}
+
+	if entry.Expires.Before(time.Now().UTC()) {
+		_ = s.delegatedBucket.Delete([]byte(token))
+		return "", ErrDelegationTokenExpired
+	}
+
+	_ = s.delegatedBucket.Delete([]byte(token))
+
+	return entry.PrincipalArn, nil
 }
 
 func generateSessionToken() (string, error) {

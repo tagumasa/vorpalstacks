@@ -1,6 +1,10 @@
 package sts
 
-import "vorpalstacks/internal/common/auth"
+import (
+	"time"
+
+	"vorpalstacks/internal/common/auth"
+)
 
 // SessionStoreInterface defines operations for managing STS sessions.
 type SessionStoreInterface interface {
@@ -9,6 +13,8 @@ type SessionStoreInterface interface {
 	Get(sessionToken string) (*Session, error)
 	GetByAccessKeyId(accessKeyId string) (*Session, error)
 	Delete(sessionToken string) error
+	StoreDelegationToken(token, principalArn string, expires time.Time) error
+	RedeemDelegationToken(token string) (principalArn string, err error)
 }
 
 var _ SessionStoreInterface = (*SessionStore)(nil)

@@ -56,18 +56,16 @@ func NewAdminAuthService(
 	jwtManager *vsjwt.Manager,
 	accountID string,
 ) *AdminAuthService {
-	userStore := iamstore.NewUserStore(store, accountID)
-	loginProfileStore := iamstore.NewLoginProfileStore(store)
-	accessKeyStore := iamstore.NewAccessKeyStore(store)
+	iam := iamstore.GetOrCreateGlobalStore(store, accountID)
 
 	return &AdminAuthService{
-		passwordVerifier:  loginProfileStore,
-		loginProfileCheck: loginProfileStore,
-		userReader:        userStore,
-		passwordCreator:   loginProfileStore,
-		accessKeyCreator:  accessKeyStore,
-		groupReader:       iamstore.NewUserGroupStore(store),
-		policyReader:      iamstore.NewAttachedPolicyStore(store),
+		passwordVerifier:  iam.LoginProfiles(),
+		loginProfileCheck: iam.LoginProfiles(),
+		userReader:        iam.Users(),
+		passwordCreator:   iam.LoginProfiles(),
+		accessKeyCreator:  iam.AccessKeys(),
+		groupReader:       iam.UserGroups(),
+		policyReader:      iam.AttachedPolicies(),
 		tokenGenerator:    jwtManager,
 		refreshTokenStore: adminauthstore.NewRefreshTokenStore(store),
 		accountID:         accountID,

@@ -12,7 +12,10 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,16 +30,51 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-var stsIAMStoreKey struct{}
-
 // STSService provides AWS Security Token Service operations.
 type STSService struct {
-	stores sync.Map // global — single cached instances
+	stores sync.Map // caches STS SessionStore per region
 }
 
 // NewSTSService creates a new STS service instance.
 func NewSTSService() *STSService {
 	return &STSService{}
+}
+
+// resolveRoleForAssume resolves and validates a role for STS Assume operations.
+// It fetches the role by name, parses its trust policy, and evaluates whether
+// the given principal is allowed to perform the specified action.
+func (s *STSService) resolveRoleForAssume(reqCtx *request.RequestContext, roleArn, principalArn, action string) (*iamstore.Role, error) {
+	roleName := arnutil.ExtractRoleNameFromARN(roleArn)
+	if roleName == "" {
+		return nil, ErrInvalidRoleArn
+	}
+
+	iamStore, err := s.iamStore(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	role, err := iamStore.Roles().Get(roleName)
+	if err != nil {
+		return nil, ErrNoSuchRole
+	}
+
+	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
+	if err != nil {
+		return nil, ErrNoSuchRole
+	}
+
+	parsedPolicy, err := policy.ParseDocument(trustPolicyDoc)
+	if err != nil {
+		return nil, ErrInvalidRoleArn
+	}
+
+	evalCtx := iam.BuildEvaluationContext(reqCtx.GetAccountID(), principalArn)
+	if err := iam.EvaluateTrustPolicyForAction(parsedPolicy, principalArn, action, evalCtx); err != nil {
+		return nil, ErrAccessDenied
+	}
+
+	return role, nil
 }
 
 func (s *STSService) store(reqCtx *request.RequestContext) (stsstore.SessionStoreInterface, error) {
@@ -50,22 +88,11 @@ func (s *STSService) store(reqCtx *request.RequestContext) (stsstore.SessionStor
 }
 
 func (s *STSService) iamStore(reqCtx *request.RequestContext) (iamstore.IAMStoreInterface, error) {
-	if cached, ok := s.stores.Load(stsIAMStoreKey); ok {
-		if typed, ok := cached.(iamstore.IAMStoreInterface); ok {
-			return typed, nil
-		}
-	}
 	storage, err := reqCtx.GetGlobalStorage()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get global storage: %w", err)
 	}
-	store := iamstore.NewIAMStore(storage, reqCtx.GetAccountID())
-	if actual, loaded := s.stores.LoadOrStore(stsIAMStoreKey, store); loaded {
-		if typed, ok := actual.(iamstore.IAMStoreInterface); ok {
-			return typed, nil
-		}
-	}
-	return store, nil
+	return iamstore.GetOrCreateGlobalStore(storage, reqCtx.GetAccountID()), nil
 }
 
 // RegisterHandlers registers all STS operation handlers with the dispatcher.
@@ -102,11 +129,13 @@ func (s *STSService) GetCallerIdentity(ctx context.Context, reqCtx *request.Requ
 				roleName := arnutil.ExtractRoleNameFromARN(session.RoleArn)
 				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.RoleSessionName)
 			case "SAML":
-				arn = session.RoleArn + "/saml/" + session.PrincipalName
+				roleName := arnutil.ExtractRoleNameFromARN(session.RoleArn)
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.PrincipalName)
 			case "WebIdentity":
-				arn = session.RoleArn + "/assumed-role/" + session.RoleSessionName
+				roleName := arnutil.ExtractRoleNameFromARN(session.RoleArn)
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.RoleSessionName)
 			case "FederatedUser":
-				arn = session.PrincipalArn + ":" + session.PrincipalName
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().FederatedUser(session.PrincipalName)
 			case "Root":
 				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 			default:
@@ -159,39 +188,14 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 		return nil, ErrInvalidParameter
 	}
 
-	roleName := arnutil.ExtractRoleNameFromARN(roleArn)
-	if roleName == "" {
-		return nil, ErrInvalidRoleArn
-	}
-
-	iamStore, err := s.iamStore(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	role, err := iamStore.Roles().Get(roleName)
-	if err != nil {
-		return nil, ErrNoSuchRole
-	}
-
-	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
-	if err != nil {
-		return nil, ErrNoSuchRole
-	}
-
-	parsedPolicy, err := policy.ParseDocument(trustPolicyDoc)
-	if err != nil {
-		return nil, ErrInvalidRoleArn
-	}
-
 	callerArn, _ := s.resolveCallerIdentity(reqCtx, req)
 	if callerArn == "" {
 		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
 
-	evalCtx := iam.BuildEvaluationContext(reqCtx.GetAccountID(), callerArn)
-	if err := iam.EvaluateTrustPolicy(parsedPolicy, callerArn, evalCtx); err != nil {
-		return nil, ErrAccessDenied
+	role, err := s.resolveRoleForAssume(reqCtx, roleArn, callerArn, "sts:AssumeRole")
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -212,7 +216,7 @@ func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestCont
 		},
 		"AssumedRoleUser": map[string]interface{}{
 			"AssumedRoleId": role.ID + ":" + roleSessionName,
-			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
 		},
 		"PackedPolicySize": computePackedPolicySize(sessionPolicy, req.Parameters),
 		"SourceIdentity":   sourceIdentity,
@@ -327,7 +331,12 @@ func validateDurationSecondsExtended(durationSeconds int) (int, error) {
 }
 
 // AssumeRoleWithSAML returns a set of temporary security credentials for users who have been authenticated via a SAML authentication response.
+// VorpalStacks cannot validate SAML assertions against external IdPs, so this is only available in TEST_MODE.
 func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if os.Getenv("TEST_MODE") != "true" {
+		return nil, ErrIDPCommunicationError
+	}
+
 	roleArn := request.GetStringParam(req.Parameters, "RoleArn")
 	principalArn := request.GetStringParam(req.Parameters, "PrincipalArn")
 	samlAssertion := request.GetStringParam(req.Parameters, "SAMLAssertion")
@@ -356,34 +365,15 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 		return nil, ErrInvalidSAMLAssertion
 	}
 
-	roleName := arnutil.ExtractRoleNameFromARN(roleArn)
-	if roleName == "" {
-		return nil, ErrInvalidRoleArn
+	if _, err := base64.StdEncoding.DecodeString(samlAssertion); err != nil {
+		if _, err := base64.URLEncoding.DecodeString(samlAssertion); err != nil {
+			return nil, ErrInvalidSAMLAssertion
+		}
 	}
 
-	iamStore, err := s.iamStore(reqCtx)
+	role, err := s.resolveRoleForAssume(reqCtx, roleArn, principalArn, "sts:AssumeRoleWithSAML")
 	if err != nil {
 		return nil, err
-	}
-
-	samlRole, err := iamStore.Roles().Get(roleName)
-	if err != nil {
-		return nil, ErrNoSuchRole
-	}
-
-	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
-	if err != nil {
-		return nil, ErrNoSuchRole
-	}
-
-	parsedPolicy, err := policy.ParseDocument(trustPolicyDoc)
-	if err != nil {
-		return nil, ErrInvalidRoleArn
-	}
-
-	evalCtx := iam.BuildEvaluationContext(reqCtx.GetAccountID(), principalArn)
-	if err := iam.EvaluateTrustPolicyForAction(parsedPolicy, principalArn, "sts:AssumeRoleWithSAML", evalCtx); err != nil {
-		return nil, ErrAccessDenied
 	}
 
 	store, err := s.store(reqCtx)
@@ -403,8 +393,8 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
 		},
 		"AssumedRoleUser": map[string]interface{}{
-			"AssumedRoleId": samlRole.ID + ":" + roleSessionName,
-			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
+			"AssumedRoleId": role.ID + ":" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
 		},
 		"Subject":          principalArn,
 		"SubjectType":      "persistent",
@@ -416,7 +406,12 @@ func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.Req
 }
 
 // AssumeRoleWithWebIdentity returns a set of temporary security credentials for users who have been authenticated in a mobile or web application with a web identity provider.
+// VorpalStacks cannot validate web identity tokens against external IdPs, so this is only available in TEST_MODE.
 func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if os.Getenv("TEST_MODE") != "true" {
+		return nil, ErrIDPCommunicationError
+	}
+
 	roleArn := request.GetStringParam(req.Parameters, "RoleArn")
 	roleSessionName := request.GetStringParam(req.Parameters, "RoleSessionName")
 	webIdentityToken := request.GetStringParam(req.Parameters, "WebIdentityToken")
@@ -442,29 +437,8 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 		return nil, ErrInvalidWebIdentityToken
 	}
 
-	roleName := arnutil.ExtractRoleNameFromARN(roleArn)
-	if roleName == "" {
-		return nil, ErrInvalidRoleArn
-	}
-
-	iamStore, err := s.iamStore(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	webRole, err := iamStore.Roles().Get(roleName)
-	if err != nil {
-		return nil, ErrNoSuchRole
-	}
-
-	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
-	if err != nil {
-		return nil, ErrNoSuchRole
-	}
-
-	parsedPolicy, err := policy.ParseDocument(trustPolicyDoc)
-	if err != nil {
-		return nil, ErrInvalidRoleArn
+	if _, err := base64.RawURLEncoding.DecodeString(strings.SplitN(webIdentityToken, ".", 2)[0]); err != nil {
+		return nil, ErrInvalidWebIdentityToken
 	}
 
 	federatedPrincipal := ""
@@ -472,9 +446,9 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 		federatedPrincipal = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().OIDCProvider(providerId)
 	}
 
-	evalCtx := iam.BuildEvaluationContext(reqCtx.GetAccountID(), federatedPrincipal)
-	if err := iam.EvaluateTrustPolicyForAction(parsedPolicy, federatedPrincipal, "sts:AssumeRoleWithWebIdentity", evalCtx); err != nil {
-		return nil, ErrAccessDenied
+	role, err := s.resolveRoleForAssume(reqCtx, roleArn, federatedPrincipal, "sts:AssumeRoleWithWebIdentity")
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -494,8 +468,8 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
 		},
 		"AssumedRoleUser": map[string]interface{}{
-			"AssumedRoleId": webRole.ID + ":" + roleSessionName,
-			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, roleSessionName),
+			"AssumedRoleId": role.ID + ":" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
 		},
 		"Provider":                    providerId,
 		"SubjectFromWebIdentityToken": roleSessionName,
@@ -563,15 +537,6 @@ func (s *STSService) GetAccessKeyInfo(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrInvalidAccessKeyId
 	}
 
-	if len(accessKeyId) >= 4 {
-		prefix := accessKeyId[:4]
-		if prefix == "ASIA" || prefix == "AKIA" || prefix == "ABIA" || prefix == "ACCA" {
-			return map[string]interface{}{
-				"Account": reqCtx.GetAccountID(),
-			}, nil
-		}
-	}
-
 	return map[string]interface{}{
 		"Account": reqCtx.GetAccountID(),
 	}, nil
@@ -599,12 +564,9 @@ func (s *STSService) GetFederationToken(ctx context.Context, reqCtx *request.Req
 		}
 	}
 
-	callerArn, callerName := s.resolveCallerIdentity(reqCtx, req)
+	callerArn, _ := s.resolveCallerIdentity(reqCtx, req)
 	if callerArn == "" {
 		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
-	}
-	if callerName == "" {
-		_ = reqCtx.GetAccountID()
 	}
 
 	store, err := s.store(reqCtx)
@@ -632,7 +594,7 @@ func (s *STSService) GetFederationToken(ctx context.Context, reqCtx *request.Req
 		},
 		"FederatedUser": map[string]interface{}{
 			"FederatedUserId": reqCtx.GetAccountID() + ":" + name,
-			"Arn":             "arn:aws:sts::" + reqCtx.GetAccountID() + ":federated-user/" + name,
+			"Arn":             arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().FederatedUser(name),
 		},
 		"PackedPolicySize": packedPolicySize,
 	}, nil
@@ -646,19 +608,20 @@ func (s *STSService) GetDelegatedAccessToken(ctx context.Context, reqCtx *reques
 		return nil, ErrInvalidTradeInToken
 	}
 
-	principalArn, principalName := s.resolveCallerIdentity(reqCtx, req)
-	if principalArn == "" {
-		principalArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
-	}
-	if principalName == "" {
-		principalName = reqCtx.GetAccountID()
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	session, err := store.Create("DelegatedAccess", principalName, principalArn, "", "", 3600)
+
+	principalArn, err := store.RedeemDelegationToken(tradeInToken)
+	if err != nil {
+		if errors.Is(err, stsstore.ErrDelegationTokenExpired) {
+			return nil, ErrExpiredTradeInToken
+		}
+		return nil, ErrInvalidTradeInToken
+	}
+
+	session, err := store.Create("DelegatedAccess", principalArn, principalArn, "", "", 3600)
 	if err != nil {
 		return nil, err
 	}

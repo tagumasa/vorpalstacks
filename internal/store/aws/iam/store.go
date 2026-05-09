@@ -2,8 +2,28 @@
 package iam
 
 import (
+	"sync"
+
 	"vorpalstacks/internal/core/storage"
 )
+
+// globalIAMStore ensures a single IAMStore instance per (storage, accountID) pair.
+// All services (IAM, STS, admin_auth, IAM admin handler) must use this
+// to avoid duplicate store instances and redundant AWS managed policy seeding.
+var globalStores sync.Map
+
+// GetOrCreateGlobalStore returns the cached IAMStore for the given storage and
+// accountID, creating and seeding it on first access.
+func GetOrCreateGlobalStore(store storage.BasicStorage, accountID string) *IAMStore {
+	if cached, ok := globalStores.Load(accountID); ok {
+		if typed, ok := cached.(*IAMStore); ok {
+			return typed
+		}
+	}
+	newStore := NewIAMStore(store, accountID)
+	actual, _ := globalStores.LoadOrStore(accountID, newStore)
+	return actual.(*IAMStore)
+}
 
 // IAMStore provides a unified interface to all IAM-related stores.
 type IAMStore struct {

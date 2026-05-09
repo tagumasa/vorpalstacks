@@ -43,7 +43,7 @@ func (s *IAMService) store(reqCtx *request.RequestContext) (*iamstore.IAMStore, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to get global storage: %w", err)
 		}
-		return iamstore.NewIAMStore(storage, s.accountID), nil
+		return iamstore.GetOrCreateGlobalStore(storage, s.accountID), nil
 	})
 }
 
