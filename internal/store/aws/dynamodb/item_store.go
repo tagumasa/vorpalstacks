@@ -64,7 +64,7 @@ func (s *ItemStore) buildItemKey(tableName string, key map[string]*AttributeValu
 	pkName := s.tableStore.GetPartitionKey(table)
 	skName := s.tableStore.GetSortKey(table)
 
-	pkValue := s.attributeValueToString(key[pkName])
+	pkValue := attributeValueToString(key[pkName])
 	if pkValue == "" {
 		return ""
 	}
@@ -73,7 +73,7 @@ func (s *ItemStore) buildItemKey(tableName string, key map[string]*AttributeValu
 		if key[skName] == nil {
 			return ""
 		}
-		skValue := s.attributeValueToString(key[skName])
+		skValue := attributeValueToString(key[skName])
 		if skValue == "" {
 			return ""
 		}
@@ -81,28 +81,6 @@ func (s *ItemStore) buildItemKey(tableName string, key map[string]*AttributeValu
 	}
 
 	return fmt.Sprintf("%s#%s", tableName, pkValue)
-}
-
-func (s *ItemStore) attributeValueToString(av *AttributeValue) string {
-	if av == nil {
-		return ""
-	}
-	if av.S != nil {
-		return *av.S
-	}
-	if av.N != nil {
-		return formatNumberForSort(*av.N)
-	}
-	if av.B != nil {
-		return string(av.B)
-	}
-	if av.BOOL != nil {
-		return ""
-	}
-	if av.NULL != nil && *av.NULL {
-		return ""
-	}
-	return ""
 }
 
 // Get retrieves a DynamoDB item by table name and key.
@@ -136,14 +114,18 @@ func (s *ItemStore) Put(tableName string, key map[string]*AttributeValue, attrib
 	if attributes == nil {
 		attributes = make(map[string]*AttributeValue)
 	}
+	merged := make(map[string]*AttributeValue, len(attributes)+len(key))
+	for k, v := range attributes {
+		merged[k] = v
+	}
 	for k, v := range key {
-		attributes[k] = v
+		merged[k] = v
 	}
 
 	pbItem := &pb.Item{
 		TableName:  tableName,
 		Key:        attributeValueMapToProtoDirect(key),
-		Attributes: attributeValueMapToProtoDirect(attributes),
+		Attributes: attributeValueMapToProtoDirect(merged),
 	}
 
 	if err := s.BaseStore.PutProto(itemKey, pbItem); err != nil {
@@ -153,7 +135,7 @@ func (s *ItemStore) Put(tableName string, key map[string]*AttributeValue, attrib
 	return &Item{
 		TableName:  tableName,
 		Key:        key,
-		Attributes: attributes,
+		Attributes: merged,
 	}, nil
 }
 
@@ -258,7 +240,7 @@ func (s *ItemStore) scanByPartitionKeyWithTable(tableName string, table *Table, 
 			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
 		}
 		if !hasSortKey {
-			itemPkValue := s.attributeValueToString(item.Key[pkName])
+			itemPkValue := attributeValueToString(item.Key[pkName])
 			if itemPkValue != partitionKeyValue {
 				return nil
 			}
@@ -324,10 +306,15 @@ func (s *ItemStore) DeleteAllForTable(tableName string) error {
 		}
 	}
 
-	if table, err := s.tableStore.Get(tableName); err == nil {
-		if err := s.tableStore.UpdateTableSize(tableName, -table.TableSizeBytes); err != nil {
-			return err
+	table, err := s.tableStore.Get(tableName)
+	if err != nil {
+		if !IsTableNotFound(err) {
+			return fmt.Errorf("get table for size reset: %w", err)
 		}
+		return nil
+	}
+	if err := s.tableStore.UpdateTableSize(tableName, -table.TableSizeBytes); err != nil {
+		return fmt.Errorf("reset table size after delete all: %w", err)
 	}
 	return nil
 }

@@ -50,6 +50,8 @@ var (
 
 	// ErrBackupNotFound is returned when the specified backup does not exist.
 	ErrBackupNotFound = errors.New("backup not found")
+	// ErrBackupAlreadyExists is returned when a backup with the same name already exists.
+	ErrBackupAlreadyExists = errors.New("backup already exists")
 )
 
 // IsTableNotFound checks if the error indicates that a DynamoDB table

@@ -121,9 +121,6 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 	})
 
 	if err != nil {
-		if err == ErrConditionalCheckFailed {
-			return nil, err
-		}
 		return nil, err
 	}
 
@@ -275,9 +272,6 @@ func (s *DynamoDBService) DeleteItem(ctx context.Context, reqCtx *request.Reques
 	})
 
 	if err != nil {
-		if err == ErrConditionalCheckFailed {
-			return nil, err
-		}
 		return nil, err
 	}
 
@@ -445,9 +439,6 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 	})
 
 	if err != nil {
-		if err == ErrConditionalCheckFailed {
-			return nil, err
-		}
 		return nil, err
 	}
 

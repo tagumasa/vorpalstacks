@@ -295,22 +295,17 @@ func extractOperationKey(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 func executeTransactWriteItems(ctx context.Context, store dbstore.DynamoDBStoreInterface, operations []writeOperation, cancellationReasons []CancellationReason) error {
 	twoPhase := store.Storage().TwoPhaseTransaction()
 
-	tableStore, ok := store.Tables().(*dbstore.TableStore)
-	if !ok {
-		return fmt.Errorf("transaction failed")
-	}
-
 	for _, op := range operations {
 		op := op
 		twoPhase.AddValidator(storage.ValidatorFunc(func(ctx context.Context, txn storage.Transaction) error {
-			return validateWriteOperation(ctx, txn, tableStore, op, cancellationReasons)
+			return validateWriteOperation(ctx, txn, store.NewTxn(txn), op, cancellationReasons)
 		}))
 	}
 
 	for _, op := range operations {
 		op := op
 		twoPhase.AddExecutor(storage.ExecutorFunc(func(ctx context.Context, txn storage.Transaction) error {
-			dbTxn := dbstore.NewDynamoDBTxn(txn, tableStore)
+			dbTxn := store.NewTxn(txn)
 			return executeWriteOperation(dbTxn, op)
 		}))
 	}
@@ -325,8 +320,7 @@ func executeTransactWriteItems(ctx context.Context, store dbstore.DynamoDBStoreI
 	return nil
 }
 
-func validateWriteOperation(_ context.Context, txn storage.Transaction, tableStore *dbstore.TableStore, op writeOperation, cancellationReasons []CancellationReason) error {
-	dbTxn := dbstore.NewDynamoDBTxn(txn, tableStore)
+func validateWriteOperation(_ context.Context, txn storage.Transaction, dbTxn *dbstore.DynamoDBTxn, op writeOperation, cancellationReasons []CancellationReason) error {
 
 	var item *dbstore.Item
 	itemExists := true

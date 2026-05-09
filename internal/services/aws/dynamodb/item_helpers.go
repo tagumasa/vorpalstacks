@@ -259,7 +259,7 @@ func splitAndTrim(s, sep string) []string {
 	start := 0
 	for i := 0; i <= len(s); i++ {
 		if i == len(s) || string(s[i]) == sep {
-			part := trim(s[start:i])
+			part := strings.TrimSpace(s[start:i])
 			if part != "" {
 				result = append(result, part)
 			}
@@ -267,18 +267,6 @@ func splitAndTrim(s, sep string) []string {
 		}
 	}
 	return result
-}
-
-func trim(s string) string {
-	start := 0
-	end := len(s)
-	for start < end && (s[start] == ' ' || s[start] == '\t' || s[start] == '\n') {
-		start++
-	}
-	for end > start && (s[end-1] == ' ' || s[end-1] == '\t' || s[end-1] == '\n') {
-		end--
-	}
-	return s[start:end]
 }
 
 func isIdentRune(s string) bool {

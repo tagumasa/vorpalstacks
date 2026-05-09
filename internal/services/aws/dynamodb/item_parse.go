@@ -131,7 +131,7 @@ func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
 
 func buildItemResponse(attrs map[string]*dbstore.AttributeValue) map[string]interface{} {
 	if attrs == nil {
-		return nil
+		return map[string]interface{}{}
 	}
 
 	result := make(map[string]interface{})

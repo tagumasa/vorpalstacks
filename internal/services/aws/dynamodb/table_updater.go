@@ -2,6 +2,8 @@
 package dynamodb
 
 import (
+	"sort"
+
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
@@ -18,6 +20,9 @@ func mergeAttributeDefinitions(existing, newDefs []*dbstore.AttributeDefinition)
 	for _, a := range attrMap {
 		result = append(result, a)
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].AttributeName < result[j].AttributeName
+	})
 	return result
 }
 
@@ -157,5 +162,8 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 	for _, g := range gsiMap {
 		result = append(result, g)
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].IndexName < result[j].IndexName
+	})
 	return result
 }

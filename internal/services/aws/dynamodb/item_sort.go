@@ -49,47 +49,7 @@ func getSortKeyType(table *dbstore.Table, sortKeyName string) string {
 }
 
 func sortItemsBySortKeyWithIndex(table *dbstore.Table, items []*dbstore.Item, indexName string) {
-	sortKeyName := getSortKeyName(table, indexName)
-	if sortKeyName == "" {
-		return
-	}
-
-	var basePK, baseSK string
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == dbstore.KeyTypeHash {
-			basePK = ks.AttributeName
-		} else if ks.KeyType == dbstore.KeyTypeRange {
-			baseSK = ks.AttributeName
-		}
-	}
-
-	sort.Slice(items, func(i, j int) bool {
-		avI := items[i].Attributes[sortKeyName]
-		avJ := items[j].Attributes[sortKeyName]
-		if avI == nil || avJ == nil {
-			return false
-		}
-
-		cmp := compareAttributeValuesGeneric(avI, avJ)
-
-		if cmp == 0 && basePK != "" {
-			pkI := items[i].Attributes[basePK]
-			pkJ := items[j].Attributes[basePK]
-			if pkI != nil && pkJ != nil {
-				cmp = compareAttributeValuesGeneric(pkI, pkJ)
-			}
-		}
-
-		if cmp == 0 && baseSK != "" {
-			skI := items[i].Attributes[baseSK]
-			skJ := items[j].Attributes[baseSK]
-			if skI != nil && skJ != nil {
-				cmp = compareAttributeValuesGeneric(skI, skJ)
-			}
-		}
-
-		return cmp < 0
-	})
+	sortItemsBySortKeyWithIndexDirection(table, items, indexName, true)
 }
 
 func compareAttributeValuesGeneric(avI, avJ *dbstore.AttributeValue) int {
@@ -111,6 +71,10 @@ func compareAttributeValuesGeneric(avI, avJ *dbstore.AttributeValue) int {
 }
 
 func sortItemsReverseBySortKeyWithIndex(table *dbstore.Table, items []*dbstore.Item, indexName string) {
+	sortItemsBySortKeyWithIndexDirection(table, items, indexName, false)
+}
+
+func sortItemsBySortKeyWithIndexDirection(table *dbstore.Table, items []*dbstore.Item, indexName string, ascending bool) {
 	sortKeyName := getSortKeyName(table, indexName)
 	if sortKeyName == "" {
 		return
@@ -150,6 +114,9 @@ func sortItemsReverseBySortKeyWithIndex(table *dbstore.Table, items []*dbstore.I
 			}
 		}
 
+		if ascending {
+			return cmp < 0
+		}
 		return cmp > 0
 	})
 }

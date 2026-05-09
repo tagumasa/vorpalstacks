@@ -129,6 +129,7 @@ type DynamoDBStoreInterface interface {
 	View(ctx context.Context, fn func(txn *DynamoDBTxn) error) error
 	Update(ctx context.Context, fn func(txn *DynamoDBTxn) error) error
 	TwoPhaseTransaction() storage.TwoPhaseTransaction
+	NewTxn(txn storage.Transaction) *DynamoDBTxn
 }
 
 var (

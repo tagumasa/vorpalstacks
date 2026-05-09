@@ -107,13 +107,13 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 
 	if sseDesc != nil {
 		table.SSEDescription = sseDesc
-		if err := store.Tables().Put(table); err != nil {
-			return nil, err
-		}
 	}
 
 	if tableClass := request.GetStringParam(req.Parameters, "TableClass"); tableClass != "" {
 		table.TableClass = tableClass
+	}
+
+	if sseDesc != nil || request.GetStringParam(req.Parameters, "TableClass") != "" {
 		if err := store.Tables().Put(table); err != nil {
 			return nil, err
 		}

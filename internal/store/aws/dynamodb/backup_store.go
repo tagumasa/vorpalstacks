@@ -56,6 +56,10 @@ func (s *BackupStore) GetByName(backupName string) (*Backup, error) {
 
 // Create creates a new backup for a DynamoDB table.
 func (s *BackupStore) Create(backupName, tableName, tableArn string, tableSize int64) (*Backup, error) {
+	if s.Exists(backupName) {
+		return nil, ErrBackupAlreadyExists
+	}
+
 	now := time.Now().UTC()
 	backupArn := s.arnBuilder.Backup(tableName, backupName)
 

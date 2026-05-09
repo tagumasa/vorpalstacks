@@ -101,6 +101,9 @@ func itemKeyMatches(itemKey, searchKey map[string]*dbstore.AttributeValue) bool 
 	if itemKey == nil || searchKey == nil {
 		return false
 	}
+	if len(itemKey) != len(searchKey) {
+		return false
+	}
 	for k, v := range itemKey {
 		searchV, ok := searchKey[k]
 		if !ok {

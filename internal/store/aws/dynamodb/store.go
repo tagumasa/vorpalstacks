@@ -3,6 +3,7 @@ package dynamodb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strings"
@@ -95,6 +96,10 @@ func (s *DynamoDBStore) Update(ctx context.Context, fn func(txn *DynamoDBTxn) er
 // TwoPhaseTransaction returns a two-phase transaction interface for the DynamoDB store.
 func (s *DynamoDBStore) TwoPhaseTransaction() storage.TwoPhaseTransaction {
 	return s.storage.TwoPhaseTransaction()
+}
+
+func (s *DynamoDBStore) NewTxn(txn storage.Transaction) *DynamoDBTxn {
+	return &DynamoDBTxn{txn: txn, tableStore: s.tables}
 }
 
 // NewDynamoDBTxn creates a new DynamoDB transaction with the given storage transaction and table store.
@@ -497,68 +502,25 @@ func (t *DynamoDBTxn) getAttributeValueForIndex(item *Item, attrName string) str
 	return ""
 }
 
-// QueryByGSI queries items from a global secondary index.
 func (t *DynamoDBTxn) QueryByGSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error) {
 	_, err := t.GetTable(tableName)
 	if err != nil {
 		return nil, fmt.Errorf("get table %s for GSI query: %w", tableName, err)
 	}
-
-	prefix := tableName + "#" + indexName + "#" + hashKeyValue + "#"
-	bucket := t.txn.Bucket(gsiIndexBucketName(t.region()))
-	iter := bucket.ScanPrefix([]byte(prefix))
-	defer iter.Close()
-
-	var items []*Item
-
-	for iter.Next() {
-		if !opts.Reverse && opts.Limit > 0 && len(items) >= opts.Limit {
-			break
-		}
-
-		primaryKey := string(iter.Value())
-		itemBucket := t.txn.Bucket(itemBucketName(t.region()))
-		data, err := itemBucket.Get([]byte(primaryKey))
-		if err != nil {
-			return nil, fmt.Errorf("failed to get item from index %s key %s: %w", indexName, primaryKey, err)
-		}
-		if data == nil {
-			continue
-		}
-
-		var pbItem pb.Item
-		if err := proto.Unmarshal(data, &pbItem); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal item from index %s key %s: %w", indexName, primaryKey, err)
-		}
-
-		items = append(items, &Item{
-			TableName:  pbItem.TableName,
-			Key:        protoToAttributeValueMapDirect(pbItem.Key),
-			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
-		})
-	}
-
-	if opts.Reverse {
-		for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
-			items[i], items[j] = items[j], items[i]
-		}
-		if opts.Limit > 0 && len(items) > opts.Limit {
-			items = items[:opts.Limit]
-		}
-	}
-
-	return items, iter.Error()
+	return t.queryByIndex(tableName, indexName, hashKeyValue, gsiIndexBucketName(t.region()), opts)
 }
 
-// QueryByLSI queries items from a local secondary index.
 func (t *DynamoDBTxn) QueryByLSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error) {
 	_, err := t.GetTable(tableName)
 	if err != nil {
 		return nil, fmt.Errorf("get table %s for LSI query: %w", tableName, err)
 	}
+	return t.queryByIndex(tableName, indexName, hashKeyValue, lsiIndexBucketName(t.region()), opts)
+}
 
+func (t *DynamoDBTxn) queryByIndex(tableName, indexName, hashKeyValue, bucketName string, opts IndexQueryOptions) ([]*Item, error) {
 	prefix := tableName + "#" + indexName + "#" + hashKeyValue + "#"
-	bucket := t.txn.Bucket(lsiIndexBucketName(t.region()))
+	bucket := t.txn.Bucket(bucketName)
 	iter := bucket.ScanPrefix([]byte(prefix))
 	defer iter.Close()
 
@@ -619,7 +581,7 @@ func (t *DynamoDBTxn) Scan(tableName string, fn func(item *Item) error) error {
 	for iter.Next() {
 		var pbItem pb.Item
 		if err := proto.Unmarshal(iter.Value(), &pbItem); err != nil {
-			continue
+			return fmt.Errorf("unmarshal item during scan: %w", err)
 		}
 		item := &Item{
 			TableName:  pbItem.TableName,
@@ -661,7 +623,7 @@ func (t *DynamoDBTxn) ScanByPartitionKey(tableName, partitionKeyValue string, fn
 	for iter.Next() {
 		var pbItem pb.Item
 		if err := proto.Unmarshal(iter.Value(), &pbItem); err != nil {
-			continue
+			return fmt.Errorf("unmarshal item during ScanByPartitionKey: %w", err)
 		}
 		item := &Item{
 			TableName:  pbItem.TableName,
@@ -682,7 +644,8 @@ func (t *DynamoDBTxn) ScanByPartitionKey(tableName, partitionKeyValue string, fn
 }
 
 // DeleteTableCascade removes all data associated with a table within a single
-// transaction: items, GSI/LSI index entries, the table record itself, and tags.
+// transaction: items, GSI/LSI index entries, the table record itself, backups,
+// exports, imports, tags, and global table entries.
 // It does NOT check DeletionProtectionEnabled — that is the caller's responsibility.
 func (t *DynamoDBTxn) DeleteTableCascade(name string) error {
 	if err := t.deleteAllByPrefix(itemBucketName(t.region()), name+"#"); err != nil {
@@ -695,6 +658,18 @@ func (t *DynamoDBTxn) DeleteTableCascade(name string) error {
 
 	if err := t.deleteAllByPrefix(lsiIndexBucketName(t.region()), name+"#"); err != nil {
 		return fmt.Errorf("delete LSI index entries for table %s: %w", name, err)
+	}
+
+	if err := t.deleteBackupsForTable(name); err != nil {
+		return fmt.Errorf("delete backups for table %s: %w", name, err)
+	}
+
+	if err := t.deleteExportsForTable(name); err != nil {
+		return fmt.Errorf("delete exports for table %s: %w", name, err)
+	}
+
+	if err := t.deleteImportsForTable(name); err != nil {
+		return fmt.Errorf("delete imports for table %s: %w", name, err)
 	}
 
 	tableBucket := t.txn.Bucket(tableBucketName(t.region()))
@@ -711,7 +686,9 @@ func (t *DynamoDBTxn) DeleteTableCascade(name string) error {
 
 	globalTableBucket := t.txn.Bucket(globalTableBucketName(t.region()))
 	if globalTableBucket != nil {
-		_ = globalTableBucket.Delete([]byte(name))
+		if err := globalTableBucket.Delete([]byte(name)); err != nil {
+			return fmt.Errorf("delete global table entry for %s: %w", name, err)
+		}
 	}
 
 	tagIdxBucket := t.txn.Bucket(tagIndexBucketName(t.region()))
@@ -736,6 +713,90 @@ func (t *DynamoDBTxn) DeleteTableCascade(name string) error {
 		}
 	}
 
+	return nil
+}
+
+func (t *DynamoDBTxn) deleteBackupsForTable(tableName string) error {
+	backupBucket := t.txn.Bucket(backupBucketName(t.region()))
+	if backupBucket == nil {
+		return nil
+	}
+	iter := backupBucket.ScanPrefix(nil)
+	defer iter.Close()
+	var keysToDelete []string
+	for iter.Next() {
+		var backup Backup
+		if err := json.Unmarshal(iter.Value(), &backup); err != nil {
+			continue
+		}
+		if backup.SourceTableName == tableName {
+			keysToDelete = append(keysToDelete, string(iter.Key()))
+		}
+	}
+	if err := iter.Error(); err != nil {
+		return err
+	}
+	for _, k := range keysToDelete {
+		if err := backupBucket.Delete([]byte(k)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *DynamoDBTxn) deleteExportsForTable(tableName string) error {
+	exportBucket := t.txn.Bucket(exportBucketName(t.region()))
+	if exportBucket == nil {
+		return nil
+	}
+	iter := exportBucket.ScanPrefix(nil)
+	defer iter.Close()
+	var keysToDelete []string
+	for iter.Next() {
+		var export pb.ExportDescription
+		if err := proto.Unmarshal(iter.Value(), &export); err != nil {
+			continue
+		}
+		if strings.HasSuffix(export.TableArn, "/table/"+tableName) {
+			keysToDelete = append(keysToDelete, string(iter.Key()))
+		}
+	}
+	if err := iter.Error(); err != nil {
+		return err
+	}
+	for _, k := range keysToDelete {
+		if err := exportBucket.Delete([]byte(k)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *DynamoDBTxn) deleteImportsForTable(tableName string) error {
+	importBucket := t.txn.Bucket(importBucketName(t.region()))
+	if importBucket == nil {
+		return nil
+	}
+	iter := importBucket.ScanPrefix(nil)
+	defer iter.Close()
+	var keysToDelete []string
+	for iter.Next() {
+		var imp pb.ImportTableDescription
+		if err := proto.Unmarshal(iter.Value(), &imp); err != nil {
+			continue
+		}
+		if strings.HasSuffix(imp.TableArn, "/table/"+tableName) {
+			keysToDelete = append(keysToDelete, string(iter.Key()))
+		}
+	}
+	if err := iter.Error(); err != nil {
+		return err
+	}
+	for _, k := range keysToDelete {
+		if err := importBucket.Delete([]byte(k)); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

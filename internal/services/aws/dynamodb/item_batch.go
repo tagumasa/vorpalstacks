@@ -56,6 +56,7 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 		for _, k := range keys {
 			key := parseKey(k)
 			if key == nil {
+				unprocessedKeys = append(unprocessedKeys, k)
 				continue
 			}
 
@@ -145,6 +146,9 @@ func (s *DynamoDBService) BatchWriteItem(ctx context.Context, reqCtx *request.Re
 
 		table, tableErr := store.Tables().Get(tableName)
 		if tableErr != nil {
+			if dbstore.IsTableNotFound(tableErr) {
+				return nil, ErrTableNotFound
+			}
 			unprocessed[tableName] = writes
 			continue
 		}
