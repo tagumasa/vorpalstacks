@@ -60,7 +60,7 @@ func (s *IAMService) GetInstanceProfile(ctx context.Context, reqCtx *request.Req
 	}
 
 	return map[string]interface{}{
-		"InstanceProfile": s.instanceProfileToResponseWithRoles(reqCtx, profile),
+		"InstanceProfile": s.instanceProfileToResponseWithRoles(reqCtx, profile, store),
 	}, nil
 }
 
@@ -110,7 +110,7 @@ func (s *IAMService) ListInstanceProfiles(ctx context.Context, reqCtx *request.R
 
 	profiles := make([]interface{}, len(result.InstanceProfiles))
 	for i, profile := range result.InstanceProfiles {
-		profiles[i] = s.instanceProfileToResponseWithRoles(reqCtx, profile)
+		profiles[i] = s.instanceProfileToResponseWithRoles(reqCtx, profile, store)
 	}
 
 	response := map[string]interface{}{
@@ -239,13 +239,9 @@ func (s *IAMService) instanceProfileToResponse(reqCtx *request.RequestContext, p
 	return resp
 }
 
-func (s *IAMService) instanceProfileToResponseWithRoles(reqCtx *request.RequestContext, profile *iamstore.InstanceProfile) map[string]interface{} {
+func (s *IAMService) instanceProfileToResponseWithRoles(reqCtx *request.RequestContext, profile *iamstore.InstanceProfile, store *iamstore.IAMStore) map[string]interface{} {
 	resp := s.instanceProfileToResponse(reqCtx, profile)
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return resp
-	}
 	roles := make([]interface{}, 0, len(profile.Roles))
 	for _, roleName := range profile.Roles {
 		if role, err := store.Roles().Get(roleName); err == nil {

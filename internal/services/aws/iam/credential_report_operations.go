@@ -2,10 +2,12 @@ package iam
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -85,7 +87,7 @@ func (s *IAMService) GetCredentialReport(_ context.Context, reqCtx *request.Requ
 	switch state {
 	case "":
 		return nil, ErrReportNotPresent
-	case "STARTED", "INPROGRESS":
+	case "STARTED":
 		return nil, ErrReportInProgress
 	case "COMPLETE":
 		if data == "" {
@@ -146,6 +148,7 @@ func generateReportContentFromStore(store *iamstore.IAMStore) string {
 		if err != nil {
 			logs.Warn("failed to list access keys for credential report", logs.String("user", user.UserName), logs.Err(err))
 		}
+		slices.SortFunc(keys, func(a, b *iamstore.AccessKey) int { return cmp.Compare(a.AccessKeyId, b.AccessKeyId) })
 
 		ak1Active := "FALSE"
 		ak1LastRotated := "N/A"

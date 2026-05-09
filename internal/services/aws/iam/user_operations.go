@@ -329,17 +329,17 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 		return nil, err
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"IsTruncated": false,
 	}
 
 	if filters["User"] {
-		userResult, err := store.Users().List("", "", 1000)
+		users, err := listAllUsers(store, "")
 		if err != nil {
 			return nil, err
 		}
-		userDetails := make([]interface{}, 0, len(userResult.Users))
-		for _, user := range userResult.Users {
+		userDetails := make([]interface{}, 0, len(users))
+		for _, user := range users {
 			detail := map[string]interface{}{
 				"UserId":     user.ID,
 				"Path":       user.Path,
@@ -360,40 +360,21 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 				}
 			}
 			detail["GroupList"] = groupList
-
-			attachedPolicyArns, _ := store.AttachedPolicies().ListAttachedPolicies(PrincipalTypeUser, user.UserName)
-			attachedPolicies := make([]interface{}, 0, len(attachedPolicyArns))
-			for _, arn := range attachedPolicyArns {
-				if p, err := store.Policies().Get(arn); err == nil {
-					attachedPolicies = append(attachedPolicies, map[string]interface{}{
-						"PolicyName": p.PolicyName,
-						"PolicyArn":  p.Arn,
-					})
-				}
-			}
-			detail["AttachedManagedPolicies"] = attachedPolicies
-
-			inlinePolicyNames, _ := store.InlinePolicies().List(PrincipalTypeUser, user.UserName)
-			userPolicyList := make([]interface{}, 0, len(inlinePolicyNames))
-			for _, pn := range inlinePolicyNames {
-				userPolicyList = append(userPolicyList, map[string]interface{}{
-					"PolicyName": pn,
-				})
-			}
-			detail["UserPolicyList"] = userPolicyList
+			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeUser, user.UserName)
+			detail["UserPolicyList"] = buildInlinePolicyList(store, PrincipalTypeUser, user.UserName)
 
 			userDetails = append(userDetails, detail)
 		}
-		response["UserDetailList"] = userDetails
+		resp["UserDetailList"] = userDetails
 	}
 
 	if filters["Group"] {
-		groupResult, err := store.Groups().List("", "", 1000)
+		groups, err := listAllGroups(store, "")
 		if err != nil {
 			return nil, err
 		}
-		groupDetails := make([]interface{}, 0, len(groupResult.Groups))
-		for _, group := range groupResult.Groups {
+		groupDetails := make([]interface{}, 0, len(groups))
+		for _, group := range groups {
 			detail := map[string]interface{}{
 				"GroupId":    group.ID,
 				"Path":       group.Path,
@@ -401,40 +382,20 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 				"Arn":        group.Arn,
 				"CreateDate": group.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 			}
-
-			inlinePolicyNames, _ := store.InlinePolicies().List(PrincipalTypeGroup, group.GroupName)
-			groupPolicyList := make([]interface{}, 0, len(inlinePolicyNames))
-			for _, pn := range inlinePolicyNames {
-				groupPolicyList = append(groupPolicyList, map[string]interface{}{
-					"PolicyName": pn,
-				})
-			}
-			detail["GroupPolicyList"] = groupPolicyList
-
-			attachedPolicyArns, _ := store.AttachedPolicies().ListAttachedPolicies(PrincipalTypeGroup, group.GroupName)
-			attachedPolicies := make([]interface{}, 0, len(attachedPolicyArns))
-			for _, arn := range attachedPolicyArns {
-				if p, err := store.Policies().Get(arn); err == nil {
-					attachedPolicies = append(attachedPolicies, map[string]interface{}{
-						"PolicyName": p.PolicyName,
-						"PolicyArn":  p.Arn,
-					})
-				}
-			}
-			detail["AttachedManagedPolicies"] = attachedPolicies
-
+			detail["GroupPolicyList"] = buildInlinePolicyList(store, PrincipalTypeGroup, group.GroupName)
+			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeGroup, group.GroupName)
 			groupDetails = append(groupDetails, detail)
 		}
-		response["GroupDetailList"] = groupDetails
+		resp["GroupDetailList"] = groupDetails
 	}
 
 	if filters["Role"] {
-		roleResult, err := store.Roles().List("", "", 1000)
+		roles, err := listAllRoles(store, "")
 		if err != nil {
 			return nil, err
 		}
-		roleDetails := make([]interface{}, 0, len(roleResult.Roles))
-		for _, role := range roleResult.Roles {
+		roleDetails := make([]interface{}, 0, len(roles))
+		for _, role := range roles {
 			detail := map[string]interface{}{
 				"RoleId":                   role.ID,
 				"Path":                     role.Path,
@@ -443,41 +404,21 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 				"CreateDate":               role.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 				"AssumeRolePolicyDocument": role.AssumeRolePolicyDocument,
 			}
-
-			inlinePolicyNames, _ := store.InlinePolicies().List(PrincipalTypeRole, role.RoleName)
-			rolePolicyList := make([]interface{}, 0, len(inlinePolicyNames))
-			for _, pn := range inlinePolicyNames {
-				rolePolicyList = append(rolePolicyList, map[string]interface{}{
-					"PolicyName": pn,
-				})
-			}
-			detail["RolePolicyList"] = rolePolicyList
-
-			attachedPolicyArns, _ := store.AttachedPolicies().ListAttachedPolicies(PrincipalTypeRole, role.RoleName)
-			attachedPolicies := make([]interface{}, 0, len(attachedPolicyArns))
-			for _, arn := range attachedPolicyArns {
-				if p, err := store.Policies().Get(arn); err == nil {
-					attachedPolicies = append(attachedPolicies, map[string]interface{}{
-						"PolicyName": p.PolicyName,
-						"PolicyArn":  p.Arn,
-					})
-				}
-			}
-			detail["AttachedManagedPolicies"] = attachedPolicies
-
+			detail["RolePolicyList"] = buildInlinePolicyList(store, PrincipalTypeRole, role.RoleName)
+			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeRole, role.RoleName)
 			roleDetails = append(roleDetails, detail)
 		}
-		response["RoleDetailList"] = roleDetails
+		resp["RoleDetailList"] = roleDetails
 	}
 
 	if filters["LocalManagedPolicy"] {
-		policyResult, err := store.Policies().List("Local", "", false, "", 1000)
+		policies, err := listAllPolicies(store, "Local", "", false)
 		if err != nil {
 			return nil, err
 		}
-		policies := make([]interface{}, 0, len(policyResult.Policies))
-		for _, policy := range policyResult.Policies {
-			policies = append(policies, map[string]interface{}{
+		policyList := make([]interface{}, 0, len(policies))
+		for _, policy := range policies {
+			policyList = append(policyList, map[string]interface{}{
 				"PolicyName":       policy.PolicyName,
 				"PolicyId":         policy.ID,
 				"Arn":              policy.Arn,
@@ -485,10 +426,10 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 				"DefaultVersionId": policy.DefaultVersionId,
 			})
 		}
-		response["Policies"] = policies
+		resp["Policies"] = policyList
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 func (s *IAMService) userToResponse(reqCtx *request.RequestContext, user *iamstore.User) map[string]interface{} {

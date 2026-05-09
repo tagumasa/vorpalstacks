@@ -6,7 +6,6 @@ import (
 	stderrors "errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
@@ -475,33 +474,8 @@ func (s *IAMService) policyVersionToResponse(reqCtx *request.RequestContext, ver
 
 // SimulatePrincipalPolicy simulates the effects of a set of IAM policies on a principal.
 func (s *IAMService) SimulatePrincipalPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	var actionNames []string
-	for i := 1; ; i++ {
-		action := request.GetStringParam(req.Parameters, "ActionNames.member."+strconv.Itoa(i))
-		if action == "" {
-			break
-		}
-		actionNames = append(actionNames, action)
-	}
-
-	if len(actionNames) == 0 {
-		if raw, ok := req.Parameters["ActionNames"].([]interface{}); ok {
-			for _, a := range raw {
-				if s, ok := a.(string); ok {
-					actionNames = append(actionNames, s)
-				}
-			}
-		}
-	}
-
-	resourceArns := []string{}
-	for i := 1; ; i++ {
-		arn := request.GetStringParam(req.Parameters, "ResourceArns.member."+strconv.Itoa(i))
-		if arn == "" {
-			break
-		}
-		resourceArns = append(resourceArns, arn)
-	}
+	actionNames := request.GetStringList(req.Parameters, "ActionNames")
+	resourceArns := request.GetStringList(req.Parameters, "ResourceArns")
 
 	evaluationResults := make([]interface{}, 0, len(actionNames))
 	resources := resourceArns

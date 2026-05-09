@@ -3,7 +3,9 @@ package iam
 import (
 	"context"
 	"fmt"
+	"net/http"
 
+	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 )
@@ -81,7 +83,7 @@ func (s *IAMService) SetSecurityTokenServicePreferences(ctx context.Context, req
 	}
 
 	if tokenVersion != "v1Token" && tokenVersion != "v2Token" {
-		return nil, fmt.Errorf("InvalidParameterValue: %s is not a valid value for GlobalEndpointTokenVersion", tokenVersion)
+		return nil, errors.NewAWSError("InvalidParameterValue", tokenVersion+" is not a valid value for GlobalEndpointTokenVersion. Must be v1Token or v2Token.", http.StatusBadRequest)
 	}
 
 	store, err := s.store(reqCtx)

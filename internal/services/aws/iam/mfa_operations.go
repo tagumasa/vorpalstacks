@@ -544,6 +544,7 @@ func (s *IAMService) GetAccountSummary(ctx context.Context, reqCtx *request.Requ
 	policies := store.Policies().Count()
 	instanceProfiles := store.InstanceProfiles().Count()
 	mfaDevices := store.MFADevices().Count()
+	serverCertificates := store.ServerCertificates().Count()
 
 	summaryMap := map[string]string{
 		"Users":                     strconv.Itoa(users),
@@ -552,7 +553,7 @@ func (s *IAMService) GetAccountSummary(ctx context.Context, reqCtx *request.Requ
 		"LocalManagedPolicies":      strconv.Itoa(policies),
 		"InstanceProfiles":          strconv.Itoa(instanceProfiles),
 		"MFADevices":                strconv.Itoa(mfaDevices),
-		"ServerCertificates":        "0",
+		"ServerCertificates":        strconv.Itoa(serverCertificates),
 		"UsersQuota":                "5000",
 		"GroupsQuota":               "300",
 		"RolesQuota":                "1000",

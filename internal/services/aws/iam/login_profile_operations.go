@@ -13,21 +13,24 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
+var (
+	symbolPattern = regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':",\.<>?/\\|~]`)
+	numberPattern = regexp.MustCompile(`[0-9]`)
+)
+
 func validatePasswordAgainstPolicy(password string, policy *iamstore.AccountPasswordPolicy) bool {
 	if len(password) < policy.MinimumPasswordLength {
 		return false
 	}
 
 	if policy.RequireSymbols {
-		hasSymbol := regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':",\.<>?/\\|~]`).MatchString(password)
-		if !hasSymbol {
+		if !symbolPattern.MatchString(password) {
 			return false
 		}
 	}
 
 	if policy.RequireNumbers {
-		hasNumber := regexp.MustCompile(`[0-9]`).MatchString(password)
-		if !hasNumber {
+		if !numberPattern.MatchString(password) {
 			return false
 		}
 	}

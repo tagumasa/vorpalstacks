@@ -370,7 +370,7 @@ func (s *IAMService) ListInstanceProfilesForRole(ctx context.Context, reqCtx *re
 
 	profiles := make([]interface{}, len(result.InstanceProfiles))
 	for i, profile := range result.InstanceProfiles {
-		profiles[i] = s.instanceProfileToResponseWithRoles(reqCtx, profile)
+		profiles[i] = s.instanceProfileToResponseWithRoles(reqCtx, profile, store)
 	}
 
 	response := map[string]interface{}{
