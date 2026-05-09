@@ -14,28 +14,36 @@ type Runtime string
 
 // Runtime constants define supported Lambda runtime environments.
 const (
+	RuntimeNodejs24X      Runtime = "nodejs24.x"
 	RuntimeNodejs22X      Runtime = "nodejs22.x"
-	RuntimeNodejs20X      Runtime = "nodejs20.x"
-	RuntimeNodejs18X      Runtime = "nodejs18.x"
-	RuntimeNodejs16X      Runtime = "nodejs16.x"
+	RuntimePython314      Runtime = "python3.14"
 	RuntimePython313      Runtime = "python3.13"
 	RuntimePython312      Runtime = "python3.12"
 	RuntimePython311      Runtime = "python3.11"
 	RuntimePython310      Runtime = "python3.10"
-	RuntimePython39       Runtime = "python3.9"
-	RuntimePython38       Runtime = "python3.8"
+	RuntimeJava25         Runtime = "java25"
 	RuntimeJava21         Runtime = "java21"
 	RuntimeJava17         Runtime = "java17"
 	RuntimeJava11         Runtime = "java11"
 	RuntimeJava8Al2       Runtime = "java8.al2"
+	RuntimeDotnet10       Runtime = "dotnet10"
+	RuntimeDotnet9        Runtime = "dotnet9"
 	RuntimeDotnet8        Runtime = "dotnet8"
-	RuntimeDotnet6        Runtime = "dotnet6"
+	RuntimeRuby40         Runtime = "ruby4.0"
 	RuntimeRuby34         Runtime = "ruby3.4"
 	RuntimeRuby33         Runtime = "ruby3.3"
-	RuntimeRuby32         Runtime = "ruby3.2"
 	RuntimeProvidedAl2023 Runtime = "provided.al2023"
 	RuntimeProvidedAl2    Runtime = "provided.al2"
-	RuntimeGo1X           Runtime = "go1.x"
+
+	// Deprecated runtimes — kept for existing functions only.
+	RuntimeNodejs20X Runtime = "nodejs20.x"
+	RuntimeNodejs18X Runtime = "nodejs18.x"
+	RuntimeNodejs16X Runtime = "nodejs16.x"
+	RuntimePython39  Runtime = "python3.9"
+	RuntimePython38  Runtime = "python3.8"
+	RuntimeDotnet6   Runtime = "dotnet6"
+	RuntimeRuby32    Runtime = "ruby3.2"
+	RuntimeGo1X      Runtime = "go1.x"
 )
 
 // State represents the current state of a Lambda function.
@@ -408,22 +416,28 @@ type FunctionListResult struct {
 
 // RuntimeImageMapping maps Lambda runtimes to their default container images.
 var RuntimeImageMapping = map[Runtime]string{
+	RuntimeNodejs24X:      "public.ecr.aws/lambda/nodejs:24",
 	RuntimeNodejs22X:      "public.ecr.aws/lambda/nodejs:22",
 	RuntimeNodejs20X:      "public.ecr.aws/lambda/nodejs:20",
 	RuntimeNodejs18X:      "public.ecr.aws/lambda/nodejs:18",
 	RuntimeNodejs16X:      "public.ecr.aws/lambda/nodejs:16",
+	RuntimePython314:      "public.ecr.aws/lambda/python:3.14",
 	RuntimePython313:      "public.ecr.aws/lambda/python:3.13",
 	RuntimePython312:      "public.ecr.aws/lambda/python:3.12",
 	RuntimePython311:      "public.ecr.aws/lambda/python:3.11",
 	RuntimePython310:      "public.ecr.aws/lambda/python:3.10",
 	RuntimePython39:       "public.ecr.aws/lambda/python:3.9",
 	RuntimePython38:       "public.ecr.aws/lambda/python:3.8",
+	RuntimeJava25:         "public.ecr.aws/lambda/java:25",
 	RuntimeJava21:         "public.ecr.aws/lambda/java:21",
 	RuntimeJava17:         "public.ecr.aws/lambda/java:17",
 	RuntimeJava11:         "public.ecr.aws/lambda/java:11",
 	RuntimeJava8Al2:       "public.ecr.aws/lambda/java:8.al2",
+	RuntimeDotnet10:       "public.ecr.aws/lambda/dotnet:10",
+	RuntimeDotnet9:        "public.ecr.aws/lambda/dotnet:9",
 	RuntimeDotnet8:        "public.ecr.aws/lambda/dotnet:8",
 	RuntimeDotnet6:        "public.ecr.aws/lambda/dotnet:6",
+	RuntimeRuby40:         "public.ecr.aws/lambda/ruby:4.0",
 	RuntimeRuby34:         "public.ecr.aws/lambda/ruby:3.4",
 	RuntimeRuby33:         "public.ecr.aws/lambda/ruby:3.3",
 	RuntimeRuby32:         "public.ecr.aws/lambda/ruby:3.2",

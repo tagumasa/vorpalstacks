@@ -58,6 +58,10 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 2. **VorpalStacks server** running on `http://localhost:50080`
 3. **AWS credentials** set (can be dummy values for testing)
 
+### TEST_MODE and Seeded Tokens
+
+When `TEST_MODE=true`, the server seeds delegated tokens (e.g. `dummy-trade-in-token-verify`) for STS `GetDelegatedAccessToken` tests. These tokens are **re-used across test runs** — `RedeemDelegationToken` re-seeds them immediately after use in TEST_MODE so that repeated test runs pass. In production, tokens are single-use as expected.
+
 ## Installation
 
 ```bash

@@ -221,13 +221,17 @@ func (s *LambdaService) resolveQualifier(store *lambdastore.FunctionStore, funct
 	return function, version, alias, nil
 }
 
-func (s *LambdaService) storeCode(functionName, version string, code []byte, region string) (string, int64, error) {
+func (s *LambdaService) initDataDir() string {
 	s.dataDirOnce.Do(func() {
 		if s.dataDir == "" {
 			s.dataDir = "./data"
 		}
 	})
-	dataDir := s.dataDir
+	return s.dataDir
+}
+
+func (s *LambdaService) storeCode(functionName, version string, code []byte, region string) (string, int64, error) {
+	dataDir := s.initDataDir()
 
 	if version == "" {
 		version = "$LATEST"
@@ -260,12 +264,7 @@ func (s *LambdaService) fetchCodeFromS3(ctx context.Context, bucket, key, region
 }
 
 func (s *LambdaService) loadCode(functionName, version string, region string) ([]byte, error) {
-	s.dataDirOnce.Do(func() {
-		if s.dataDir == "" {
-			s.dataDir = "./data"
-		}
-	})
-	dataDir := s.dataDir
+	dataDir := s.initDataDir()
 
 	if version == "" {
 		version = "$LATEST"

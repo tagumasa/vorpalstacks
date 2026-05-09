@@ -1,6 +1,8 @@
 package lambda
 
 import (
+	"time"
+
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	"vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
@@ -72,89 +74,188 @@ type SnapStart struct {
 	ApplyOn string `json:"ApplyOn,omitempty"`
 }
 
-func (s *LambdaService) toFunctionConfiguration(fn *lambdastore.Function) map[string]interface{} {
+// configFields holds the common fields shared between Function and Version
+// configurations, used to eliminate copy-paste in response building.
+type configFields struct {
+	FunctionName     string
+	FunctionArn      string
+	Role             string
+	CodeSize         int64
+	Description      string
+	Timeout          int32
+	MemorySize       int32
+	LastModified     time.Time
+	CodeSha256       string
+	Version          string
+	RevisionId       string
+	State            string
+	StateReason      string
+	StateReasonCode  string
+	LastUpdateStatus string
+	PackageType      string
+	Runtime          string
+	Handler          string
+	KMSKeyArn        string
+	ImageUri         string
+	EphemeralStorage *lambdastore.EphemeralStorage
+	VpcConfig        *lambdastore.VpcConfig
+	Environment      *lambdastore.Environment
+	TracingConfig    *lambdastore.TracingConfig
+	DeadLetterConfig *lambdastore.DeadLetterConfig
+	SnapStart        *lambdastore.SnapStart
+	Architectures    []string
+	Layers           []lambdastore.LayerReference
+}
+
+func functionToConfigFields(fn *lambdastore.Function) configFields {
+	return configFields{
+		FunctionName:     fn.FunctionName,
+		FunctionArn:      fn.FunctionArn,
+		Role:             fn.Role,
+		CodeSize:         fn.CodeSize,
+		Description:      fn.Description,
+		Timeout:          fn.Timeout,
+		MemorySize:       fn.MemorySize,
+		LastModified:     fn.LastModified,
+		CodeSha256:       fn.CodeSha256,
+		Version:          fn.CurrentVersion,
+		RevisionId:       fn.RevisionId,
+		State:            string(fn.State),
+		StateReason:      fn.StateReason,
+		StateReasonCode:  fn.StateReasonCode,
+		LastUpdateStatus: string(fn.LastUpdateStatus),
+		PackageType:      fn.PackageType,
+		Runtime:          string(fn.Runtime),
+		Handler:          fn.Handler,
+		KMSKeyArn:        fn.KMSKeyArn,
+		ImageUri:         fn.ImageUri,
+		EphemeralStorage: fn.EphemeralStorage,
+		VpcConfig:        fn.VpcConfig,
+		Environment:      fn.Environment,
+		TracingConfig:    fn.TracingConfig,
+		DeadLetterConfig: fn.DeadLetterConfig,
+		SnapStart:        fn.SnapStart,
+		Architectures:    fn.Architectures,
+		Layers:           fn.Layers,
+	}
+}
+
+func versionToConfigFields(v *lambdastore.Version) configFields {
+	return configFields{
+		FunctionName:     arn.ExtractFunctionNameFromARN(v.FunctionArn),
+		FunctionArn:      v.FunctionArn,
+		Role:             v.Role,
+		CodeSize:         v.CodeSize,
+		Description:      v.Description,
+		Timeout:          v.Timeout,
+		MemorySize:       v.MemorySize,
+		LastModified:     v.LastModified,
+		CodeSha256:       v.CodeSha256,
+		Version:          v.Version,
+		RevisionId:       v.RevisionId,
+		State:            string(v.State),
+		StateReason:      v.StateReason,
+		StateReasonCode:  v.StateReasonCode,
+		LastUpdateStatus: string(v.LastUpdateStatus),
+		PackageType:      v.PackageType,
+		Runtime:          string(v.Runtime),
+		Handler:          v.Handler,
+		KMSKeyArn:        v.KMSKeyArn,
+		ImageUri:         v.ImageUri,
+		EphemeralStorage: v.EphemeralStorage,
+		VpcConfig:        v.VpcConfig,
+		Environment:      v.Environment,
+		TracingConfig:    v.TracingConfig,
+		DeadLetterConfig: v.DeadLetterConfig,
+		SnapStart:        v.SnapStart,
+		Architectures:    v.Architectures,
+		Layers:           v.Layers,
+	}
+}
+
+func buildConfigMap(f configFields) map[string]interface{} {
 	config := map[string]interface{}{
-		"FunctionName":     fn.FunctionName,
-		"FunctionArn":      fn.FunctionArn,
-		"Role":             fn.Role,
-		"CodeSize":         fn.CodeSize,
-		"Description":      fn.Description,
-		"Timeout":          fn.Timeout,
-		"MemorySize":       fn.MemorySize,
-		"LastModified":     fn.LastModified.Format(timeutils.ISO8601UTCFormat),
-		"CodeSha256":       fn.CodeSha256,
-		"Version":          fn.CurrentVersion,
-		"RevisionId":       fn.RevisionId,
-		"State":            string(fn.State),
-		"LastUpdateStatus": string(fn.LastUpdateStatus),
-		"PackageType":      fn.PackageType,
+		"FunctionName":     f.FunctionName,
+		"FunctionArn":      f.FunctionArn,
+		"Role":             f.Role,
+		"CodeSize":         f.CodeSize,
+		"Description":      f.Description,
+		"Timeout":          f.Timeout,
+		"MemorySize":       f.MemorySize,
+		"LastModified":     f.LastModified.Format(timeutils.ISO8601UTCFormat),
+		"CodeSha256":       f.CodeSha256,
+		"Version":          f.Version,
+		"RevisionId":       f.RevisionId,
+		"State":            f.State,
+		"LastUpdateStatus": f.LastUpdateStatus,
+		"PackageType":      f.PackageType,
 	}
 
-	if fn.StateReason != "" {
-		config["StateReason"] = fn.StateReason
+	if f.StateReason != "" {
+		config["StateReason"] = f.StateReason
 	}
-	if fn.StateReasonCode != "" {
-		config["StateReasonCode"] = fn.StateReasonCode
-	}
-
-	if fn.PackageType != "Image" {
-		config["Runtime"] = string(fn.Runtime)
-		config["Handler"] = fn.Handler
+	if f.StateReasonCode != "" {
+		config["StateReasonCode"] = f.StateReasonCode
 	}
 
-	if fn.EphemeralStorage != nil {
+	if f.PackageType != "Image" {
+		config["Runtime"] = f.Runtime
+		config["Handler"] = f.Handler
+	}
+
+	if f.EphemeralStorage != nil {
 		config["EphemeralStorage"] = map[string]interface{}{
-			"Size": fn.EphemeralStorage.Size,
+			"Size": f.EphemeralStorage.Size,
 		}
 	}
 
-	if fn.VpcConfig != nil {
+	if f.VpcConfig != nil {
 		config["VpcConfig"] = map[string]interface{}{
-			"SubnetIds":        fn.VpcConfig.SubnetIds,
-			"SecurityGroupIds": fn.VpcConfig.SecurityGroupIds,
-			"VpcId":            fn.VpcConfig.VpcId,
+			"SubnetIds":        f.VpcConfig.SubnetIds,
+			"SecurityGroupIds": f.VpcConfig.SecurityGroupIds,
+			"VpcId":            f.VpcConfig.VpcId,
 		}
 	}
 
-	if fn.Environment != nil {
+	if f.Environment != nil {
 		config["Environment"] = map[string]interface{}{
-			"Variables": fn.Environment.Variables,
+			"Variables": f.Environment.Variables,
 		}
 	}
 
-	if fn.TracingConfig != nil {
+	if f.TracingConfig != nil {
 		config["TracingConfig"] = map[string]interface{}{
-			"Mode": fn.TracingConfig.Mode,
+			"Mode": f.TracingConfig.Mode,
 		}
 	}
 
-	if fn.DeadLetterConfig != nil {
+	if f.DeadLetterConfig != nil {
 		config["DeadLetterConfig"] = map[string]interface{}{
-			"TargetArn": fn.DeadLetterConfig.TargetArn,
+			"TargetArn": f.DeadLetterConfig.TargetArn,
 		}
 	}
 
-	if fn.KMSKeyArn != "" {
-		config["KMSKeyArn"] = fn.KMSKeyArn
+	if f.KMSKeyArn != "" {
+		config["KMSKeyArn"] = f.KMSKeyArn
 	}
 
-	if fn.SnapStart != nil {
+	if f.SnapStart != nil {
 		snapStart := map[string]interface{}{
-			"ApplyOn": fn.SnapStart.ApplyOn,
+			"ApplyOn": f.SnapStart.ApplyOn,
 		}
-		if fn.SnapStart.OptimizationStatus != "" {
-			snapStart["OptimizationStatus"] = fn.SnapStart.OptimizationStatus
+		if f.SnapStart.OptimizationStatus != "" {
+			snapStart["OptimizationStatus"] = f.SnapStart.OptimizationStatus
 		}
 		config["SnapStart"] = snapStart
 	}
 
-	if len(fn.Architectures) > 0 {
-		config["Architectures"] = fn.Architectures
+	if len(f.Architectures) > 0 {
+		config["Architectures"] = f.Architectures
 	}
 
-	if len(fn.Layers) > 0 {
-		layers := make([]map[string]interface{}, 0, len(fn.Layers))
-		for _, l := range fn.Layers {
+	if len(f.Layers) > 0 {
+		layers := make([]map[string]interface{}, 0, len(f.Layers))
+		for _, l := range f.Layers {
 			layer := map[string]interface{}{
 				"Arn": l.Arn,
 			}
@@ -166,110 +267,17 @@ func (s *LambdaService) toFunctionConfiguration(fn *lambdastore.Function) map[st
 		config["Layers"] = layers
 	}
 
-	if fn.ImageUri != "" {
-		config["ImageUri"] = fn.ImageUri
+	if f.ImageUri != "" {
+		config["ImageUri"] = f.ImageUri
 	}
 
 	return config
 }
 
+func (s *LambdaService) toFunctionConfiguration(fn *lambdastore.Function) map[string]interface{} {
+	return buildConfigMap(functionToConfigFields(fn))
+}
+
 func (s *LambdaService) toVersionConfiguration(v *lambdastore.Version) map[string]interface{} {
-	config := map[string]interface{}{
-		"FunctionName":     arn.ExtractFunctionNameFromARN(v.FunctionArn),
-		"FunctionArn":      v.FunctionArn,
-		"Role":             v.Role,
-		"CodeSize":         v.CodeSize,
-		"Description":      v.Description,
-		"Timeout":          v.Timeout,
-		"MemorySize":       v.MemorySize,
-		"LastModified":     v.LastModified.Format(timeutils.ISO8601UTCFormat),
-		"CodeSha256":       v.CodeSha256,
-		"Version":          v.Version,
-		"RevisionId":       v.RevisionId,
-		"State":            string(v.State),
-		"LastUpdateStatus": string(v.LastUpdateStatus),
-		"PackageType":      v.PackageType,
-	}
-
-	if v.StateReason != "" {
-		config["StateReason"] = v.StateReason
-	}
-	if v.StateReasonCode != "" {
-		config["StateReasonCode"] = v.StateReasonCode
-	}
-
-	if v.PackageType != "Image" {
-		config["Runtime"] = string(v.Runtime)
-		config["Handler"] = v.Handler
-	}
-
-	if v.EphemeralStorage != nil {
-		config["EphemeralStorage"] = map[string]interface{}{
-			"Size": v.EphemeralStorage.Size,
-		}
-	}
-
-	if v.VpcConfig != nil {
-		config["VpcConfig"] = map[string]interface{}{
-			"SubnetIds":        v.VpcConfig.SubnetIds,
-			"SecurityGroupIds": v.VpcConfig.SecurityGroupIds,
-			"VpcId":            v.VpcConfig.VpcId,
-		}
-	}
-
-	if v.Environment != nil {
-		config["Environment"] = map[string]interface{}{
-			"Variables": v.Environment.Variables,
-		}
-	}
-
-	if v.TracingConfig != nil {
-		config["TracingConfig"] = map[string]interface{}{
-			"Mode": v.TracingConfig.Mode,
-		}
-	}
-
-	if v.DeadLetterConfig != nil {
-		config["DeadLetterConfig"] = map[string]interface{}{
-			"TargetArn": v.DeadLetterConfig.TargetArn,
-		}
-	}
-
-	if v.KMSKeyArn != "" {
-		config["KMSKeyArn"] = v.KMSKeyArn
-	}
-
-	if v.SnapStart != nil {
-		snapStart := map[string]interface{}{
-			"ApplyOn": v.SnapStart.ApplyOn,
-		}
-		if v.SnapStart.OptimizationStatus != "" {
-			snapStart["OptimizationStatus"] = v.SnapStart.OptimizationStatus
-		}
-		config["SnapStart"] = snapStart
-	}
-
-	if len(v.Architectures) > 0 {
-		config["Architectures"] = v.Architectures
-	}
-
-	if len(v.Layers) > 0 {
-		layers := make([]map[string]interface{}, 0, len(v.Layers))
-		for _, l := range v.Layers {
-			layer := map[string]interface{}{
-				"Arn": l.Arn,
-			}
-			if l.CodeSize > 0 {
-				layer["CodeSize"] = l.CodeSize
-			}
-			layers = append(layers, layer)
-		}
-		config["Layers"] = layers
-	}
-
-	if v.ImageUri != "" {
-		config["ImageUri"] = v.ImageUri
-	}
-
-	return config
+	return buildConfigMap(versionToConfigFields(v))
 }

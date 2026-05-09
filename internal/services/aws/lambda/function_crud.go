@@ -279,7 +279,9 @@ func (s *LambdaService) DeleteFunction(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	store.Functions.TagStore.Delete(function.FunctionName)
+	if err := store.Functions.TagStore.Delete(function.FunctionName); err != nil {
+		logs.Warn("Failed to delete tags for function", logs.String("function", function.FunctionName), logs.Err(err))
+	}
 
 	return response.EmptyResponse(), nil
 }

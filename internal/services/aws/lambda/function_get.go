@@ -25,7 +25,10 @@ func (s *LambdaService) GetFunction(ctx context.Context, reqCtx *request.Request
 	if err != nil {
 		return nil, err
 	}
-	tags, _ := store.Functions.TagStore.List(function.FunctionName)
+	tags, err := store.Functions.TagStore.List(function.FunctionName)
+	if err != nil {
+		tags = map[string]string{}
+	}
 
 	return map[string]interface{}{
 		"Configuration": config,

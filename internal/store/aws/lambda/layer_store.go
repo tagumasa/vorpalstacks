@@ -297,7 +297,7 @@ func (s *LayerStore) ListByCompatibleRuntime(runtime Runtime) ([]*Layer, error) 
 	var layers []*Layer
 	err := s.ForEach(func(key string, value []byte) error {
 		var layer Layer
-		if err := decodeJSON(value, &layer); err != nil {
+		if err := json.Unmarshal(value, &layer); err != nil {
 			return err
 		}
 		if layer.LatestMatchingVersion != nil {
@@ -311,10 +311,6 @@ func (s *LayerStore) ListByCompatibleRuntime(runtime Runtime) ([]*Layer, error) 
 		return nil
 	})
 	return layers, err
-}
-
-func decodeJSON(data []byte, v interface{}) error {
-	return json.Unmarshal(data, v)
 }
 
 func deepCopyLayerVersion(src *LayerVersion) *LayerVersion {

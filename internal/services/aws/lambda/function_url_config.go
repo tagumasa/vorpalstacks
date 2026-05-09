@@ -188,8 +188,7 @@ func (s *LambdaService) toFunctionUrlConfig(c *lambdastore.FunctionUrlConfig) ma
 	return result
 }
 
-func parseCorsConfig(corsMap map[string]interface{}) *lambdastore.CorsConfig {
-	config := &lambdastore.CorsConfig{}
+func applyCorsFields(config *lambdastore.CorsConfig, corsMap map[string]interface{}) {
 	if allowCreds, ok := corsMap["AllowCredentials"].(bool); ok {
 		config.AllowCredentials = allowCreds
 	}
@@ -231,6 +230,11 @@ func parseCorsConfig(corsMap map[string]interface{}) *lambdastore.CorsConfig {
 	if maxAgeFloat, ok := corsMap["MaxAge"].(float64); ok {
 		config.MaxAge = int32(maxAgeFloat)
 	}
+}
+
+func parseCorsConfig(corsMap map[string]interface{}) *lambdastore.CorsConfig {
+	config := &lambdastore.CorsConfig{}
+	applyCorsFields(config, corsMap)
 	return config
 }
 
@@ -246,46 +250,6 @@ func toCorsConfig(c *lambdastore.CorsConfig) map[string]interface{} {
 }
 
 func updateCorsConfig(existing *lambdastore.CorsConfig, corsMap map[string]interface{}) *lambdastore.CorsConfig {
-	if allowCreds, ok := corsMap["AllowCredentials"].(bool); ok {
-		existing.AllowCredentials = allowCreds
-	}
-	if allowHeaders, ok := corsMap["AllowHeaders"].([]interface{}); ok {
-		existing.AllowHeaders = make([]string, 0, len(allowHeaders))
-		for _, h := range allowHeaders {
-			if hs, ok := h.(string); ok {
-				existing.AllowHeaders = append(existing.AllowHeaders, hs)
-			}
-		}
-	}
-	if allowMethods, ok := corsMap["AllowMethods"].([]interface{}); ok {
-		existing.AllowMethods = make([]string, 0, len(allowMethods))
-		for _, m := range allowMethods {
-			if ms, ok := m.(string); ok {
-				existing.AllowMethods = append(existing.AllowMethods, ms)
-			}
-		}
-	}
-	if allowOrigins, ok := corsMap["AllowOrigins"].([]interface{}); ok {
-		existing.AllowOrigins = make([]string, 0, len(allowOrigins))
-		for _, o := range allowOrigins {
-			if os, ok := o.(string); ok {
-				existing.AllowOrigins = append(existing.AllowOrigins, os)
-			}
-		}
-	}
-	if exposeHeaders, ok := corsMap["ExposeHeaders"].([]interface{}); ok {
-		existing.ExposeHeaders = make([]string, 0, len(exposeHeaders))
-		for _, h := range exposeHeaders {
-			if hs, ok := h.(string); ok {
-				existing.ExposeHeaders = append(existing.ExposeHeaders, hs)
-			}
-		}
-	}
-	if maxAge, ok := corsMap["MaxAge"].(int); ok {
-		existing.MaxAge = int32(maxAge)
-	}
-	if maxAgeFloat, ok := corsMap["MaxAge"].(float64); ok {
-		existing.MaxAge = int32(maxAgeFloat)
-	}
+	applyCorsFields(existing, corsMap)
 	return existing
 }

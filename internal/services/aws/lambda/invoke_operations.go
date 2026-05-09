@@ -52,6 +52,7 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 	if invocationType == "Event" {
 		region := reqCtx.GetRegion()
 		functionCopy := deepCopyFunction(function)
+		verCopy := deepCopyVersion(ver)
 		s.asyncWg.Add(1)
 		go func() {
 			defer s.asyncWg.Done()
@@ -67,7 +68,7 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 			default:
 			}
 			asyncStore := s.getOrCreateFunctionStore(region)
-			if _, err := s.invokeFunction(functionCopy, nil, asyncStore, region, payload); err != nil {
+			if _, err := s.invokeFunction(functionCopy, verCopy, asyncStore, region, payload); err != nil {
 				logs.Error("Invoke Event failed", logs.String("function", functionCopy.FunctionName), logs.Err(err))
 			}
 		}()
@@ -219,7 +220,7 @@ func (r *invokeWithResponseStreamResponse) GetStreamStatusCode() int {
 // InvokeAsync asynchronously invokes a Lambda function with the given payload.
 // The function is invoked in the background and returns immediately with HTTP 202.
 func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	function, err := s.validateAndGetFunction(reqCtx, req.Parameters)
+	function, ver, _, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -232,6 +233,10 @@ func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.Request
 	region := reqCtx.GetRegion()
 
 	functionCopy := deepCopyFunction(function)
+	var verCopy *lambdastore.Version
+	if ver != nil {
+		verCopy = deepCopyVersion(ver)
+	}
 
 	s.asyncWg.Add(1)
 	go func() {
@@ -248,7 +253,7 @@ func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.Request
 		default:
 		}
 		asyncStore := s.getOrCreateFunctionStore(region)
-		if _, err := s.invokeFunction(functionCopy, nil, asyncStore, region, payload); err != nil {
+		if _, err := s.invokeFunction(functionCopy, verCopy, asyncStore, region, payload); err != nil {
 			logs.Error("InvokeAsync failed", logs.String("function", functionCopy.FunctionName), logs.Err(err))
 		}
 	}()

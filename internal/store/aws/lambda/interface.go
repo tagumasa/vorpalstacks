@@ -21,12 +21,11 @@ type FunctionStoreInterface interface {
 
 	CreateAlias(function *Function, alias *Alias) (*Alias, error)
 	GetAlias(functionName, aliasName string) (*Alias, error)
-	UpdateAlias(function *Function, alias *Alias) error
 	CreateAliasAtomically(functionName string, creator func(*Function) (*Alias, error)) (*Alias, error)
 	UpdateAliasAtomically(functionName, aliasName string, modifier func(*Function, *Alias) error) (*Alias, error)
 	DeleteAlias(functionName, aliasName string) error
 
-	AddPolicy(function *Function, policy *FunctionPolicy) error
+	AddPolicyAtomically(functionName string, policy *FunctionPolicy) error
 	RemovePolicy(functionName, statementId string) error
 	GetPolicy(functionName string) ([]FunctionPolicy, error)
 

@@ -364,35 +364,6 @@ func (s *FunctionStore) GetAlias(functionName, aliasName string) (*Alias, error)
 	return nil, ErrAliasNotFound
 }
 
-// UpdateAlias updates an existing alias for a Lambda function.
-// Returns an error if the alias does not exist.
-// Deprecated: Use UpdateAliasAtomically for race-free updates.
-func (s *FunctionStore) UpdateAlias(function *Function, alias *Alias) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	function.rebuildIndexes()
-
-	existing, ok := function.aliasesByName[alias.Name]
-	if !ok {
-		return ErrAliasNotFound
-	}
-
-	alias.AliasArn = existing.AliasArn
-	alias.FunctionName = existing.FunctionName
-	alias.RevisionId = uuid.New().String()
-
-	for i := range function.Aliases {
-		if function.Aliases[i].Name == alias.Name {
-			function.Aliases[i] = *alias
-			function.aliasesByName[alias.Name] = &function.Aliases[i]
-			return s.updateInternal(function)
-		}
-	}
-
-	return ErrAliasNotFound
-}
-
 // CreateAliasAtomically creates an alias atomically (race-free).
 // The creator function is called while holding the lock.
 func (s *FunctionStore) CreateAliasAtomically(functionName string, creator func(*Function) (*Alias, error)) (*Alias, error) {
@@ -501,18 +472,6 @@ func (s *FunctionStore) DeleteAlias(functionName, aliasName string) error {
 	}
 
 	return ErrAliasNotFound
-}
-
-// AddPolicy adds a resource-based policy to a Lambda function.
-func (s *FunctionStore) AddPolicy(function *Function, policy *FunctionPolicy) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if policy.Id == "" {
-		policy.Id = uuid.New().String()
-	}
-	function.Policies = append(function.Policies, *policy)
-	return s.updateInternal(function)
 }
 
 // AddPolicyAtomically adds a resource-based policy to a Lambda function atomically.
@@ -695,7 +654,7 @@ func (s *FunctionStore) SetProvisionedConcurrency(functionName, qualifier string
 	if !found {
 		function.ProvisionedConcurrency = append(function.ProvisionedConcurrency, ProvisionedConcurrencyConfig{
 			FunctionName:                             functionName,
-			FunctionArn:                              fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", s.region, functionName),
+			FunctionArn:                              s.arnBuilder.FunctionArn(functionName),
 			Qualifier:                                qualifier,
 			AllocatedProvisionedConcurrentExecutions: concurrentExecutions,
 			AvailableProvisionedConcurrentExecutions: concurrentExecutions,

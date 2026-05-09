@@ -3,6 +3,7 @@ package lambda
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -22,6 +23,18 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 		return nil, NewInvalidParameter("StatementId", "Statement ID is required")
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	existingPolicies, _ := store.Functions.GetPolicy(function.FunctionName)
+	for _, p := range existingPolicies {
+		if p.Id == statementId {
+			return nil, NewResourceConflict(fmt.Sprintf("StatementId %s already exists", statementId))
+		}
+	}
+
 	policy := &lambdastore.FunctionPolicy{
 		Id:        statementId,
 		Principal: request.GetStringParam(req.Parameters, "Principal"),
@@ -30,10 +43,6 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 		Resource:  function.FunctionArn,
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
 	if err := store.Functions.AddPolicyAtomically(function.FunctionName, policy); err != nil {
 		return nil, err
 	}

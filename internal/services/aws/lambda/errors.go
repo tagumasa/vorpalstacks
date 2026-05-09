@@ -126,11 +126,11 @@ func GetLambdaError(err error) *LambdaError {
 }
 
 var validRuntimes = []string{
-	"nodejs24.x", "nodejs22.x", "nodejs20.x",
+	"nodejs24.x", "nodejs22.x",
 	"python3.14", "python3.13", "python3.12", "python3.11", "python3.10",
 	"java25", "java21", "java17", "java11", "java8.al2",
-	"dotnet10", "dotnet8",
-	"ruby3.4", "ruby3.3", "ruby3.2",
+	"dotnet10", "dotnet9", "dotnet8",
+	"ruby4.0", "ruby3.4", "ruby3.3",
 	"provided.al2023", "provided.al2",
 }
 

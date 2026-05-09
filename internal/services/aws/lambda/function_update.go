@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"os"
 
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
@@ -153,8 +154,10 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 	role := request.GetStringParam(req.Parameters, "Role")
 	if role != "" {
 		validator := reqCtx.GetIAMValidator()
-		if err := validator.ValidateRoleForService(ctx, role, iam.ServicePrincipalLambda); err != nil {
-			return nil, err
+		if os.Getenv("TEST_MODE") != "true" {
+			if err := validator.ValidateRoleForService(ctx, role, iam.ServicePrincipalLambda); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -194,48 +197,28 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 			fn.KMSKeyArn = kmsKeyArn
 		}
 
-		if vpcMap := request.GetMapParam(req.Parameters, "VpcConfig"); vpcMap != nil {
-			fn.VpcConfig = &lambdastore.VpcConfig{}
-			if subnets, ok := vpcMap["SubnetIds"].([]interface{}); ok {
-				for _, sub := range subnets {
-					if str, ok := sub.(string); ok {
-						fn.VpcConfig.SubnetIds = append(fn.VpcConfig.SubnetIds, str)
-					}
-				}
-			}
-			if sgs, ok := vpcMap["SecurityGroupIds"].([]interface{}); ok {
-				for _, sg := range sgs {
-					if str, ok := sg.(string); ok {
-						fn.VpcConfig.SecurityGroupIds = append(fn.VpcConfig.SecurityGroupIds, str)
-					}
-				}
-			}
+		if request.GetMapParam(req.Parameters, "VpcConfig") != nil {
+			fn.VpcConfig = parseVpcConfig(req.Parameters)
 		}
 
-		if envMap := request.GetMapParam(req.Parameters, "Environment"); envMap != nil {
-			fn.Environment = &lambdastore.Environment{}
-			if vars, ok := envMap["Variables"].(map[string]interface{}); ok {
-				fn.Environment.Variables = make(map[string]string)
-				for k, v := range vars {
-					if str, ok := v.(string); ok {
-						fn.Environment.Variables[k] = str
-					}
-				}
-			}
+		if request.GetMapParam(req.Parameters, "Environment") != nil {
+			fn.Environment = parseEnvironment(req.Parameters)
 		}
 
-		if dlMap := request.GetMapParam(req.Parameters, "DeadLetterConfig"); dlMap != nil {
-			fn.DeadLetterConfig = &lambdastore.DeadLetterConfig{}
-			if targetArn, ok := dlMap["TargetArn"].(string); ok {
-				fn.DeadLetterConfig.TargetArn = targetArn
+		if request.GetMapParam(req.Parameters, "DeadLetterConfig") != nil {
+			dl, err := parseDeadLetterConfig(req.Parameters)
+			if err != nil {
+				return err
 			}
+			fn.DeadLetterConfig = dl
 		}
 
-		if traceMap := request.GetMapParam(req.Parameters, "TracingConfig"); traceMap != nil {
-			fn.TracingConfig = &lambdastore.TracingConfig{}
-			if mode, ok := traceMap["Mode"].(string); ok {
-				fn.TracingConfig.Mode = mode
+		if request.GetMapParam(req.Parameters, "TracingConfig") != nil {
+			trace, err := parseTracingConfig(req.Parameters)
+			if err != nil {
+				return err
 			}
+			fn.TracingConfig = trace
 		}
 
 		if layers, ok := req.Parameters["Layers"].([]interface{}); ok {

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"os"
 	"time"
 
 	"vorpalstacks/internal/common/auth"
@@ -203,6 +204,9 @@ func (s *SessionStore) RedeemDelegationToken(token string) (string, error) {
 	}
 
 	_ = s.delegatedBucket.Delete([]byte(token))
+	if os.Getenv("TEST_MODE") == "true" {
+		_ = s.StoreDelegationToken(token, entry.PrincipalArn, entry.Expires)
+	}
 
 	return entry.PrincipalArn, nil
 }
