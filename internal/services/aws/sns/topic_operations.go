@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -92,7 +93,7 @@ func (s *SNSService) DeleteTopic(ctx context.Context, reqCtx *request.RequestCon
 	}
 	if err := store.DeleteTopic(topicArn); err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewTopicNotFoundException()
+			return nil, ErrTopicNotFound
 		}
 		return nil, err
 	}
@@ -115,7 +116,7 @@ func (s *SNSService) GetTopicAttributes(ctx context.Context, reqCtx *request.Req
 	topic, err := store.GetTopic(topicArn)
 	if err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewTopicNotFoundException()
+			return nil, ErrTopicNotFound
 		}
 		return nil, err
 	}
@@ -174,6 +175,18 @@ func (s *SNSService) GetTopicAttributes(ctx context.Context, reqCtx *request.Req
 	if topic.ContentBasedDeduplication {
 		attrs["ContentBasedDeduplication"] = "true"
 	}
+	if topic.KmsMasterKeyId != "" {
+		attrs["KmsMasterKeyId"] = topic.KmsMasterKeyId
+	}
+	if topic.EffectiveDeliveryPolicy != "" {
+		attrs["EffectiveDeliveryPolicy"] = topic.EffectiveDeliveryPolicy
+	}
+	if !topic.CreatedDate.IsZero() {
+		attrs["CreatedDate"] = topic.CreatedDate.UTC().Format(time.RFC3339)
+	}
+	if !topic.LastModifiedTime.IsZero() {
+		attrs["LastModifiedTime"] = topic.LastModifiedTime.UTC().Format(time.RFC3339)
+	}
 
 	return map[string]interface{}{
 		"Attributes": attrs,
@@ -202,7 +215,7 @@ func (s *SNSService) SetTopicAttributes(ctx context.Context, reqCtx *request.Req
 	}
 	if err := store.SetTopicAttributes(topicArn, attrs); err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewTopicNotFoundException()
+			return nil, ErrTopicNotFound
 		}
 		return nil, err
 	}

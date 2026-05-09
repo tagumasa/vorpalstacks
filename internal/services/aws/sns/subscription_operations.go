@@ -3,7 +3,6 @@ package sns
 import (
 	"context"
 	"crypto/subtle"
-	"strconv"
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -38,7 +37,7 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 		Owner:    reqCtx.GetAccountID(),
 	}
 
-	subscription.Attributes = parseSubscriptionAttributes(req.Parameters)
+	subscription.Attributes = parseAttributes(req.Parameters)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -47,7 +46,7 @@ func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestConte
 	created, err := store.CreateSubscription(subscription)
 	if err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewTopicNotFoundException()
+			return nil, ErrTopicNotFound
 		}
 		return nil, err
 	}
@@ -254,43 +253,9 @@ func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *reque
 		})
 	}
 
-	response := map[string]interface{}{
-		"Subscriptions": subs,
-	}
+	nextToken = ""
 	if result.IsTruncated && result.NextMarker != "" {
-		response["NextToken"] = result.NextMarker
+		nextToken = result.NextMarker
 	}
-	return response, nil
-}
-
-func parseSubscriptionAttributes(params map[string]interface{}) map[string]string {
-	result := make(map[string]string)
-
-	if attrs, ok := params["Attributes"].(map[string]interface{}); ok {
-		for k, v := range attrs {
-			if vs, ok := v.(string); ok {
-				result[k] = vs
-			}
-		}
-	}
-	if attrs, ok := params["attributes"].(map[string]interface{}); ok {
-		for k, v := range attrs {
-			if vs, ok := v.(string); ok {
-				result[k] = vs
-			}
-		}
-	}
-
-	for i := 1; ; i++ {
-		keyKey := "Attributes.entry." + strconv.Itoa(i) + ".key"
-		valueKey := "Attributes.entry." + strconv.Itoa(i) + ".value"
-		key := request.GetStringParam(params, keyKey)
-		if key == "" {
-			break
-		}
-		value := request.GetStringParam(params, valueKey)
-		result[key] = value
-	}
-
-	return result
+	return pagination.BuildListResponse("Subscriptions", subs, nextToken), nil
 }

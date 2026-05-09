@@ -39,11 +39,6 @@ var (
 	ErrTooManyEntriesInBatch = awserrors.NewAWSError("TooManyEntriesInBatchRequest", "Maximum number of entries per request are 10", 400)
 )
 
-// NewTopicNotFoundException creates a new AWSError for non-existent topic errors.
-func NewTopicNotFoundException() *awserrors.AWSError {
-	return awserrors.NewAWSError("NotFound", "Topic does not exist", 404)
-}
-
 // NewNotFoundException creates a new AWSError for not found errors.
 func NewNotFoundException(resource string) *awserrors.AWSError {
 	return awserrors.NewAWSError("NotFound", resource+" not found", 404)

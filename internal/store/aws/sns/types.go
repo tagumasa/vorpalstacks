@@ -91,20 +91,6 @@ type Permission struct {
 	Actions     []string `json:"actions,omitempty"`
 }
 
-// TopicListResult represents the result of listing SNS topics.
-type TopicListResult struct {
-	Topics      []*Topic
-	NextToken   string
-	IsTruncated bool
-}
-
-// SubscriptionListResult represents the result of listing SNS subscriptions.
-type SubscriptionListResult struct {
-	Subscriptions []*Subscription
-	NextToken     string
-	IsTruncated   bool
-}
-
 // PlatformApplication represents an SNS platform application.
 type PlatformApplication struct {
 	PlatformApplicationArn string            `json:"platform_application_arn"`

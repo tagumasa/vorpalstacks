@@ -285,6 +285,25 @@ func (s *SNSStore) SetTopicAttributes(topicArn string, attributes map[string]str
 		topic.Attributes[k] = v
 	}
 
+	if v, ok := topic.Attributes["FifoTopic"]; ok {
+		topic.FifoTopic = v == "true"
+	}
+	if v, ok := topic.Attributes["ContentBasedDeduplication"]; ok {
+		topic.ContentBasedDeduplication = v == "true"
+	}
+	if v, ok := topic.Attributes["KmsMasterKeyId"]; ok {
+		topic.KmsMasterKeyId = v
+	}
+	if v, ok := topic.Attributes["DisplayName"]; ok {
+		topic.DisplayName = v
+	}
+	if v, ok := topic.Attributes["Policy"]; ok {
+		topic.Policy = v
+	}
+	if v, ok := topic.Attributes["DeliveryPolicy"]; ok {
+		topic.DeliveryPolicy = v
+	}
+
 	topic.LastModifiedTime = time.Now().UTC()
 	return s.Put(topic.Arn, &topic)
 }
@@ -973,6 +992,7 @@ func (s *SNSStore) ListEndpointsByPlatformApplication(platformAppArn string, opt
 		if !started {
 			if epArn == opts.Marker {
 				started = true
+				continue
 			} else if epArn > opts.Marker {
 				started = true
 			}

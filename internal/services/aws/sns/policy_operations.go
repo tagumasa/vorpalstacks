@@ -27,7 +27,7 @@ func (s *SNSService) GetDataProtectionPolicy(ctx context.Context, reqCtx *reques
 	policy, err := store.GetDataProtectionPolicy(topicArn)
 	if err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewTopicNotFoundException()
+			return nil, ErrTopicNotFound
 		}
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s *SNSService) PutDataProtectionPolicy(ctx context.Context, reqCtx *reques
 
 	if err := store.PutDataProtectionPolicy(topicArn, policy); err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewTopicNotFoundException()
+			return nil, ErrTopicNotFound
 		}
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (s *SNSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 
 	if err := store.AddPermission(topicArn, permission); err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewTopicNotFoundException()
+			return nil, ErrTopicNotFound
 		}
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (s *SNSService) RemovePermission(ctx context.Context, reqCtx *request.Reque
 
 	if err := store.RemovePermission(topicArn, label); err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewTopicNotFoundException()
+			return nil, ErrTopicNotFound
 		}
 		return nil, err
 	}

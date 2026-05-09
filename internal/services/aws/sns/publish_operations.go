@@ -52,7 +52,7 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 	topic, err := store.GetTopic(topicArn)
 	if err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewTopicNotFoundException()
+			return nil, ErrTopicNotFound
 		}
 		return nil, err
 	}
@@ -96,37 +96,7 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 		MessageDeduplicationId: messageDeduplicationId,
 	}
 
-	attrs, ok := req.Parameters["messageAttributes"].(map[string]interface{})
-	if !ok {
-		attrs, ok = req.Parameters["MessageAttributes"].(map[string]interface{})
-	}
-	if ok {
-		msg.MessageAttributes = make(map[string]*snsstore.MessageAttribute)
-		for k, v := range attrs {
-			if attrMap, ok := v.(map[string]interface{}); ok {
-				attr := &snsstore.MessageAttribute{}
-				if dataType, ok := attrMap["dataType"].(string); ok {
-					attr.Type = dataType
-				}
-				if dataType, ok := attrMap["DataType"].(string); ok {
-					attr.Type = dataType
-				}
-				if stringValue, ok := attrMap["stringValue"].(string); ok {
-					attr.StringValue = stringValue
-				}
-				if stringValue, ok := attrMap["StringValue"].(string); ok {
-					attr.StringValue = stringValue
-				}
-				if binaryValue, ok := attrMap["binaryValue"].([]byte); ok {
-					attr.BinaryValue = binaryValue
-				}
-				if binaryValue, ok := attrMap["BinaryValue"].([]byte); ok {
-					attr.BinaryValue = binaryValue
-				}
-				msg.MessageAttributes[k] = attr
-			}
-		}
-	}
+	parseMessageAttributes(req.Parameters, msg)
 
 	msg.PublishedTimestamp = time.Now().UTC()
 	msg.ReceivedTimestamp = time.Now().UTC()
@@ -183,6 +153,45 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 	return result, nil
 }
 
+// parseMessageAttributes extracts SNS message attributes from a request params
+// map (either top-level req.Parameters or a PublishBatch entry map) and
+// populates the Message's MessageAttributes field.
+func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message) {
+	attrs, ok := params["MessageAttributes"].(map[string]interface{})
+	if !ok {
+		attrs, ok = params["messageAttributes"].(map[string]interface{})
+	}
+	if !ok {
+		return
+	}
+	msg.MessageAttributes = make(map[string]*snsstore.MessageAttribute, len(attrs))
+	for k, v := range attrs {
+		attrMap, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		attr := &snsstore.MessageAttribute{}
+		if dataType, ok := attrMap["dataType"].(string); ok {
+			attr.Type = dataType
+		}
+		if dataType, ok := attrMap["DataType"].(string); ok {
+			attr.Type = dataType
+		}
+		if sv, ok := attrMap["stringValue"].(string); ok {
+			attr.StringValue = sv
+		}
+		if sv, ok := attrMap["StringValue"].(string); ok {
+			attr.StringValue = sv
+		}
+		if bv, ok := attrMap["binaryValue"].([]byte); ok {
+			attr.BinaryValue = bv
+		}
+		if bv, ok := attrMap["BinaryValue"].([]byte); ok {
+			attr.BinaryValue = bv
+		}
+		msg.MessageAttributes[k] = attr
+	}
+}
 func generateContentBasedDeduplicationId(message string) string {
 	hash := sha256.Sum256([]byte(message))
 	return hex.EncodeToString(hash[:32])
@@ -315,7 +324,12 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 
 func (s *SNSService) deliverToHTTP(msg *snsstore.Message, sub *snsstore.Subscription, region string) {
 	protocolMessage := extractProtocolMessage(msg, sub.Protocol)
-	payload := s.buildNotificationPayloadWithMessage(msg, sub, region, protocolMessage)
+	payload := s.buildNotificationPayload(msg, sub, region, protocolMessage)
+
+	if signature, certURL := s.signPayload(payload, region); signature != "" {
+		payload["Signature"] = signature
+		payload["SigningCertURL"] = certURL
+	}
 
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
@@ -355,7 +369,9 @@ func (s *SNSService) deliverToHTTP(msg *snsstore.Message, sub *snsstore.Subscrip
 		logs.Int("status", resp.StatusCode))
 }
 
-func (s *SNSService) buildNotificationPayloadWithMessage(msg *snsstore.Message, sub *snsstore.Subscription, region string, message string) map[string]interface{} {
+// buildNotificationPayload constructs the base SNS notification payload common to
+// all delivery protocols. The caller may add protocol-specific fields (e.g. signature).
+func (s *SNSService) buildNotificationPayload(msg *snsstore.Message, sub *snsstore.Subscription, region string, message string) map[string]interface{} {
 	if region == "" {
 		region = defaults.DefaultRegion
 	}
@@ -374,7 +390,7 @@ func (s *SNSService) buildNotificationPayloadWithMessage(msg *snsstore.Message, 
 	}
 
 	if len(msg.MessageAttributes) > 0 {
-		attrs := make(map[string]interface{})
+		attrs := make(map[string]interface{}, len(msg.MessageAttributes))
 		for k, v := range msg.MessageAttributes {
 			attr := map[string]interface{}{
 				"Type": v.Type,
@@ -385,12 +401,6 @@ func (s *SNSService) buildNotificationPayloadWithMessage(msg *snsstore.Message, 
 			attrs[k] = attr
 		}
 		payload["MessageAttributes"] = attrs
-	}
-
-	signature, certURL := s.signPayload(payload, region)
-	if signature != "" {
-		payload["Signature"] = signature
-		payload["SigningCertURL"] = certURL
 	}
 
 	return payload
@@ -422,10 +432,7 @@ func (s *SNSService) signPayload(payload map[string]interface{}, region string) 
 		strToSign += "TopicArn\n" + ta + "\n"
 	}
 	if t, ok := payload["Type"].(string); ok {
-		strToSign += "Type\n" + t + "\n"
-	}
-	if unsubURL, ok := payload["UnsubscribeURL"].(string); ok {
-		strToSign += "UnsubscribeURL\n" + unsubURL + "\n"
+		strToSign += "Type\n" + t
 	}
 
 	hashed := sha256.Sum256([]byte(strToSign))
@@ -469,32 +476,7 @@ func (s *SNSService) deliverToLambda(msg *snsstore.Message, sub *snsstore.Subscr
 	}
 
 	protocolMessage := extractProtocolMessage(msg, "lambda")
-
-	certURL := fmt.Sprintf("https://sns.%s.amazonaws.com/SimpleNotificationService-%x.pem", region, sha256.Sum256(s.signingCertPEM))
-	s.initSigningKey()
-
-	snsPayload := map[string]interface{}{
-		"Type":             "Notification",
-		"MessageId":        msg.MessageId,
-		"TopicArn":         msg.TopicArn,
-		"Subject":          msg.Subject,
-		"Message":          protocolMessage,
-		"Timestamp":        msg.PublishedTimestamp.Format(time.RFC3339Nano),
-		"SignatureVersion": "2",
-		"SigningCertURL":   certURL,
-		"UnsubscribeURL":   fmt.Sprintf("https://sns.%s.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=%s", region, sub.SubscriptionArn),
-	}
-
-	if len(msg.MessageAttributes) > 0 {
-		attrs := make(map[string]interface{})
-		for k, v := range msg.MessageAttributes {
-			attrs[k] = map[string]interface{}{
-				"Type":  v.Type,
-				"Value": v.StringValue,
-			}
-		}
-		snsPayload["MessageAttributes"] = attrs
-	}
+	snsPayload := s.buildNotificationPayload(msg, sub, region, protocolMessage)
 
 	record := map[string]interface{}{
 		"EventSource":          "aws:sns",
@@ -538,7 +520,7 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 	topic, err := store.GetTopic(topicArn)
 	if err != nil {
 		if err == snsstore.ErrTopicNotFound {
-			return nil, NewTopicNotFoundException()
+			return nil, ErrTopicNotFound
 		}
 		return nil, err
 	}
@@ -639,37 +621,7 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 			MessageDeduplicationId: messageDeduplicationId,
 		}
 
-		attrs, ok := entryMap["MessageAttributes"].(map[string]interface{})
-		if !ok {
-			attrs, ok = entryMap["messageAttributes"].(map[string]interface{})
-		}
-		if ok {
-			msg.MessageAttributes = make(map[string]*snsstore.MessageAttribute)
-			for k, v := range attrs {
-				if attrMap, ok := v.(map[string]interface{}); ok {
-					attr := &snsstore.MessageAttribute{}
-					if dataType, ok := attrMap["dataType"].(string); ok {
-						attr.Type = dataType
-					}
-					if dataType, ok := attrMap["DataType"].(string); ok {
-						attr.Type = dataType
-					}
-					if stringValue, ok := attrMap["stringValue"].(string); ok {
-						attr.StringValue = stringValue
-					}
-					if stringValue, ok := attrMap["StringValue"].(string); ok {
-						attr.StringValue = stringValue
-					}
-					if binaryValue, ok := attrMap["binaryValue"].([]byte); ok {
-						attr.BinaryValue = binaryValue
-					}
-					if binaryValue, ok := attrMap["BinaryValue"].([]byte); ok {
-						attr.BinaryValue = binaryValue
-					}
-					msg.MessageAttributes[k] = attr
-				}
-			}
-		}
+		parseMessageAttributes(entryMap, msg)
 
 		msg.PublishedTimestamp = time.Now().UTC()
 		msg.ReceivedTimestamp = time.Now().UTC()
