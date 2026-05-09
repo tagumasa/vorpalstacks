@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,9 +18,15 @@ const (
 	s3MaxKeys    = 1000
 	s3MaxParts   = 1000
 	s3MaxUploads = 1000
-	s3MaxPartNum = 10000
-	s3MinPartNum = 1
 )
+
+func errorStatusCode(err error, fallback int) int {
+	var awsErr interface{ StatusCode() int }
+	if errors.As(err, &awsErr) {
+		return awsErr.StatusCode()
+	}
+	return fallback
+}
 
 func clampInt(val, min, max int) int {
 	if val < min {
@@ -95,7 +102,7 @@ func setObjectResponseHeaders(header http.Header, h objectResponseHeaders) {
 
 // HandleRequest processes HTTP requests for object-level operations such as
 // get, put, delete, copy, multipart uploads, tagging, ACL, and legal hold.
-func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.RequestContext, r *http.Request, bucket, key string) (interface{}, http.Header, int, error) {
+func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, r *http.Request, bucket, key string) (interface{}, http.Header, int, error) {
 	method := r.Method
 	query := r.URL.Query()
 	header := make(http.Header)
@@ -108,7 +115,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			VersionId: r.Header.Get("x-amz-version-id"),
 			Body:      r.Body,
 		}
-		result, err := o.RestoreObject(ctx, reqCtx, input)
+		result, err := o.RestoreObject(ctx, reqCtx, stores, input)
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}
@@ -119,13 +126,24 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			Bucket:               bucket,
 			Key:                  key,
 			ContentType:          r.Header.Get("Content-Type"),
+			ContentEncoding:      r.Header.Get("Content-Encoding"),
+			ContentDisposition:   r.Header.Get("Content-Disposition"),
+			CacheControl:         r.Header.Get("Cache-Control"),
 			ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),
 			SSEKMSKeyId:          r.Header.Get("x-amz-server-side-encryption-aws-kms-key-id"),
 			SSECustomerAlgorithm: r.Header.Get("x-amz-server-side-encryption-customer-algorithm"),
 			SSECustomerKey:       r.Header.Get("x-amz-server-side-encryption-customer-key"),
 			SSECustomerKeyMD5:    r.Header.Get("x-amz-server-side-encryption-customer-key-MD5"),
 		}
-		result, err := o.CreateMultipartUpload(ctx, reqCtx, input)
+		for k, v := range r.Header {
+			if strings.HasPrefix(k, "X-Amz-Meta-") {
+				if input.Metadata == nil {
+					input.Metadata = make(map[string]string)
+				}
+				input.Metadata[strings.TrimPrefix(k, "X-Amz-Meta-")] = v[0]
+			}
+		}
+		result, err := o.CreateMultipartUpload(ctx, reqCtx, stores, input)
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}
@@ -134,8 +152,8 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 
 	case method == "PUT" && query.Has("uploadId") && query.Has("partNumber") && r.Header.Get("x-amz-copy-source") != "":
 		partNumber, err := strconv.Atoi(query.Get("partNumber"))
-		if err != nil || partNumber < s3MinPartNum || partNumber > s3MaxPartNum {
-			return nil, header, http.StatusBadRequest, NewInvalidArgumentError(fmt.Sprintf("invalid partNumber: must be between %d and %d", s3MinPartNum, s3MaxPartNum))
+		if err != nil || partNumber < minPartNumber || partNumber > maxPartNumber {
+			return nil, header, http.StatusBadRequest, NewInvalidArgumentError(fmt.Sprintf("invalid partNumber: must be between %d and %d", minPartNumber, maxPartNumber))
 		}
 		input := &UploadPartCopyInput{
 			Bucket:                    bucket,
@@ -152,7 +170,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			SSECustomerKey:            r.Header.Get("x-amz-server-side-encryption-customer-key"),
 			SSECustomerKeyMD5:         r.Header.Get("x-amz-server-side-encryption-customer-key-MD5"),
 		}
-		result, err := o.UploadPartCopy(ctx, reqCtx, input)
+		result, err := o.UploadPartCopy(ctx, reqCtx, stores, input)
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}
@@ -160,8 +178,8 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 
 	case method == "PUT" && query.Has("uploadId") && query.Has("partNumber"):
 		partNumber, err := strconv.Atoi(query.Get("partNumber"))
-		if err != nil || partNumber < s3MinPartNum || partNumber > s3MaxPartNum {
-			return nil, header, http.StatusBadRequest, NewInvalidArgumentError(fmt.Sprintf("invalid partNumber: must be between %d and %d", s3MinPartNum, s3MaxPartNum))
+		if err != nil || partNumber < minPartNumber || partNumber > maxPartNumber {
+			return nil, header, http.StatusBadRequest, NewInvalidArgumentError(fmt.Sprintf("invalid partNumber: must be between %d and %d", minPartNumber, maxPartNumber))
 		}
 
 		var partBody io.Reader = r.Body
@@ -179,7 +197,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			SSECustomerKey:       r.Header.Get("x-amz-server-side-encryption-customer-key"),
 			SSECustomerKeyMD5:    r.Header.Get("x-amz-server-side-encryption-customer-key-MD5"),
 		}
-		result, err := o.UploadPart(ctx, reqCtx, input)
+		result, err := o.UploadPart(ctx, reqCtx, stores, input)
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}
@@ -203,7 +221,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if partNumberMarker := query.Get("part-number-marker"); partNumberMarker != "" {
 			input.PartNumberMarker = partNumberMarker
 		}
-		result, err := o.ListParts(ctx, reqCtx, input)
+		result, err := o.ListParts(ctx, reqCtx, stores, input)
 		return result, header, http.StatusOK, err
 
 	case method == "POST" && query.Has("uploadId"):
@@ -219,7 +237,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			UploadId: query.Get("uploadId"),
 			Parts:    completeReq.Parts,
 		}
-		result, err := o.CompleteMultipartUpload(ctx, reqCtx, input)
+		result, err := o.CompleteMultipartUpload(ctx, reqCtx, stores, input)
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}
@@ -227,7 +245,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		return result, header, http.StatusOK, nil
 
 	case method == "DELETE" && query.Has("uploadId"):
-		err := o.AbortMultipartUpload(ctx, reqCtx, &AbortMultipartUploadInput{
+		err := o.AbortMultipartUpload(ctx, reqCtx, stores, &AbortMultipartUploadInput{
 			Bucket:   bucket,
 			Key:      key,
 			UploadId: query.Get("uploadId"),
@@ -235,11 +253,11 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		return nil, header, http.StatusNoContent, err
 
 	case method == "GET" && query.Has("tagging"):
-		result, err := o.GetObjectTagging(ctx, reqCtx, &GetObjectTaggingInput{Bucket: bucket, Key: key})
+		result, err := o.GetObjectTagging(ctx, reqCtx, stores, &GetObjectTaggingInput{Bucket: bucket, Key: key})
 		return result, header, http.StatusOK, err
 
 	case method == "GET" && query.Has("legal-hold"):
-		result, err := o.GetObjectLegalHold(ctx, reqCtx, &GetObjectLegalHoldInput{
+		result, err := o.GetObjectLegalHold(ctx, reqCtx, stores, &GetObjectLegalHoldInput{
 			Bucket:    bucket,
 			Key:       key,
 			VersionId: query.Get("versionId"),
@@ -251,7 +269,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&legalHoldReq); err != nil {
 			return nil, header, http.StatusBadRequest, err
 		}
-		err := o.PutObjectLegalHold(ctx, reqCtx, &PutObjectLegalHoldInput{
+		err := o.PutObjectLegalHold(ctx, reqCtx, stores, &PutObjectLegalHoldInput{
 			Bucket:    bucket,
 			Key:       key,
 			VersionId: query.Get("versionId"),
@@ -260,7 +278,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		return nil, header, http.StatusOK, err
 
 	case method == "GET" && query.Has("retention"):
-		result, err := o.GetObjectRetention(ctx, reqCtx, &GetObjectRetentionInput{
+		result, err := o.GetObjectRetention(ctx, reqCtx, stores, &GetObjectRetentionInput{
 			Bucket:    bucket,
 			Key:       key,
 			VersionId: query.Get("versionId"),
@@ -272,7 +290,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&retentionReq); err != nil {
 			return nil, header, http.StatusBadRequest, err
 		}
-		err := o.PutObjectRetention(ctx, reqCtx, &PutObjectRetentionInput{
+		err := o.PutObjectRetention(ctx, reqCtx, stores, &PutObjectRetentionInput{
 			Bucket:    bucket,
 			Key:       key,
 			VersionId: query.Get("versionId"),
@@ -298,11 +316,11 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 				input.AccessControlPolicy = &acp
 			}
 		}
-		err := o.PutObjectAcl(ctx, reqCtx, input)
+		err := o.PutObjectAcl(ctx, reqCtx, stores, input)
 		return nil, header, http.StatusOK, err
 
 	case method == "GET" && query.Has("acl"):
-		result, err := o.GetObjectAcl(ctx, reqCtx, bucket, key, query.Get("versionId"))
+		result, err := o.GetObjectAcl(ctx, reqCtx, stores, bucket, key, query.Get("versionId"))
 		return result, header, http.StatusOK, err
 
 	case method == "GET" && query.Has("attributes"):
@@ -313,7 +331,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 				maxParts = int32(parsed)
 			}
 		}
-		result, err := o.GetObjectAttributes(ctx, reqCtx, &GetObjectAttributesInput{
+		result, err := o.GetObjectAttributes(ctx, reqCtx, stores, &GetObjectAttributesInput{
 			Bucket:           bucket,
 			Key:              key,
 			VersionId:        query.Get("versionId"),
@@ -345,9 +363,9 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 				input.IfUnmodifiedSince = &t
 			}
 		}
-		result, err := o.GetObject(ctx, reqCtx, input)
+		result, err := o.GetObject(ctx, reqCtx, stores, input)
 		if err != nil {
-			return nil, header, http.StatusNotFound, err
+			return nil, header, errorStatusCode(err, http.StatusNotFound), err
 		}
 		setObjectResponseHeaders(header, objectResponseHeaders{
 			ETag: result.ETag, ContentType: result.ContentType, ContentLength: result.ContentLength, LastModified: result.LastModified,
@@ -359,9 +377,9 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		return result, header, http.StatusOK, nil
 
 	case method == "HEAD":
-		result, err := o.HeadObject(ctx, reqCtx, &HeadObjectInput{Bucket: bucket, Key: key, VersionId: query.Get("versionId"), SSECustomerKey: r.Header.Get("x-amz-server-side-encryption-customer-key"), SSECustomerKeyMD5: r.Header.Get("x-amz-server-side-encryption-customer-key-MD5")})
+		result, err := o.HeadObject(ctx, reqCtx, stores, &HeadObjectInput{Bucket: bucket, Key: key, VersionId: query.Get("versionId"), SSECustomerKey: r.Header.Get("x-amz-server-side-encryption-customer-key"), SSECustomerKeyMD5: r.Header.Get("x-amz-server-side-encryption-customer-key-MD5")})
 		if err != nil {
-			return nil, header, http.StatusNotFound, err
+			return nil, header, errorStatusCode(err, http.StatusNotFound), err
 		}
 		setObjectResponseHeaders(header, objectResponseHeaders{
 			ETag: result.ETag, ContentType: result.ContentType, ContentLength: result.ContentLength, LastModified: result.LastModified,
@@ -379,7 +397,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		if err := request.NewSafeXMLDecoder(r.Body).Decode(&tagSet); err != nil {
 			return nil, header, http.StatusBadRequest, err
 		}
-		err := o.PutObjectTagging(ctx, reqCtx, &PutObjectTaggingInput{
+		err := o.PutObjectTagging(ctx, reqCtx, stores, &PutObjectTaggingInput{
 			Bucket: bucket,
 			Key:    key,
 			Tags:   tagSet.Tags,
@@ -402,7 +420,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			CopySourceSSECustomerKey:  r.Header.Get("x-amz-copy-source-server-side-encryption-customer-key"),
 			CopySourceSSECustomerMD5:  r.Header.Get("x-amz-copy-source-server-side-encryption-customer-key-MD5"),
 		}
-		result, err := o.CopyObject(ctx, reqCtx, input)
+		result, err := o.CopyObject(ctx, reqCtx, stores, input)
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}
@@ -466,7 +484,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			SSECustomerKey:       r.Header.Get("x-amz-server-side-encryption-customer-key"),
 			SSECustomerKeyMD5:    r.Header.Get("x-amz-server-side-encryption-customer-key-md5"),
 		}
-		result, err := o.PutObject(ctx, reqCtx, input)
+		result, err := o.PutObject(ctx, reqCtx, stores, input)
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}
@@ -481,11 +499,11 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		return result, header, http.StatusOK, nil
 
 	case method == "DELETE" && query.Has("tagging"):
-		err := o.DeleteObjectTagging(ctx, reqCtx, &DeleteObjectTaggingInput{Bucket: bucket, Key: key})
+		err := o.DeleteObjectTagging(ctx, reqCtx, stores, &DeleteObjectTaggingInput{Bucket: bucket, Key: key})
 		return nil, header, http.StatusNoContent, err
 
 	case method == "DELETE":
-		result, err := o.DeleteObject(ctx, reqCtx, &DeleteObjectInput{Bucket: bucket, Key: key, VersionId: query.Get("versionId")})
+		result, err := o.DeleteObject(ctx, reqCtx, stores, &DeleteObjectInput{Bucket: bucket, Key: key, VersionId: query.Get("versionId")})
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
 		}

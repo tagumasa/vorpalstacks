@@ -33,7 +33,7 @@ func (s *S3Service) handleS3Notification(ctx context.Context, event *eventbus.S3
 	}
 
 	eventName := "s3:" + string(event.Op)
-	eventRecord := buildS3EventRecord(event)
+	attrs := s3NotificationAttributes(event)
 
 	for _, tc := range config.TopicConfigurations {
 		if !matchS3Event(tc.Events, eventName) {
@@ -42,7 +42,8 @@ func (s *S3Service) handleS3Notification(ctx context.Context, event *eventbus.S3
 		if tc.Filter != nil && !matchS3KeyFilter(event.Key, tc.Filter) {
 			continue
 		}
-		s.dispatchToSNS(ctx, tc.TopicArn, eventRecord)
+		payload := buildS3EventRecord(event, tc.Id)
+		s.dispatchToSNS(ctx, tc.TopicArn, payload, attrs)
 	}
 
 	for _, qc := range config.QueueConfigurations {
@@ -52,7 +53,8 @@ func (s *S3Service) handleS3Notification(ctx context.Context, event *eventbus.S3
 		if qc.Filter != nil && !matchS3KeyFilter(event.Key, qc.Filter) {
 			continue
 		}
-		s.dispatchToSQS(ctx, qc.QueueArn, eventRecord)
+		payload := buildS3EventRecord(event, qc.Id)
+		s.dispatchToSQS(ctx, qc.QueueArn, payload, attrs)
 	}
 
 	for _, lc := range config.LambdaConfigurations {
@@ -62,7 +64,12 @@ func (s *S3Service) handleS3Notification(ctx context.Context, event *eventbus.S3
 		if lc.Filter != nil && !matchS3KeyFilter(event.Key, lc.Filter) {
 			continue
 		}
-		s.dispatchToLambda(ctx, lc.LambdaFunctionArn, eventRecord)
+		payload := buildS3EventRecord(event, lc.Id)
+		s.dispatchToLambda(ctx, lc.LambdaFunctionArn, payload)
+	}
+
+	if config.EventBridgeConfiguration != nil {
+		s.dispatchToEventBridge(ctx, event, eventName)
 	}
 
 	return eventbus.HandlerResult{}
@@ -108,26 +115,51 @@ func matchS3KeyFilter(key string, filter *s3store.NotificationConfigurationFilte
 	return true
 }
 
+// s3NotificationAttributes returns the MessageAttributes that AWS S3 attaches
+// to every SNS and SQS notification delivery. They allow subscribers to filter
+// or route messages without parsing the full JSON body.
+func s3NotificationAttributes(event *eventbus.S3ObjectEvent) map[string]string {
+	return map[string]string{
+		"s3.bucket.name": event.Bucket,
+		"s3.object.key":  event.Key,
+		"s3.eventName":   "s3:" + string(event.Op),
+	}
+}
+
+// s3SNSMessageAttributes wraps the flat string attributes into the
+// json.RawMessage format required by SNSDeliveryEvent.
+func s3SNSMessageAttributes(attrs map[string]string) map[string]json.RawMessage {
+	result := make(map[string]json.RawMessage, len(attrs))
+	for k, v := range attrs {
+		result[k], _ = json.Marshal(map[string]interface{}{
+			"Type":  "String",
+			"Value": v,
+		})
+	}
+	return result
+}
+
 // buildS3EventRecord constructs the AWS S3 event notification JSON payload
 // matching the format documented at:
 // https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html
 // The output is a JSON envelope with a single-element "Records" array.
-func buildS3EventRecord(event *eventbus.S3ObjectEvent) []byte {
+// configurationId is populated from the matching notification configuration.
+func buildS3EventRecord(event *eventbus.S3ObjectEvent, configurationId string) []byte {
 	record := map[string]interface{}{
 		"eventVersion": "2.1",
 		"eventSource":  "aws:s3",
 		"awsRegion":    event.EventRegion(),
 		"eventTime":    event.EventTimestamp().UTC().Format(time.RFC3339Nano),
-		"eventName":    string(event.Op),
+		"eventName":    "s3:" + string(event.Op),
 		"userIdentity": map[string]string{
 			"principalId": event.EventAccountID(),
 		},
 		"requestParameters": map[string]string{
-			"sourceIPAddress": "127.0.0.1",
+			"sourceIPAddress": event.SourceIP,
 		},
 		"s3": map[string]interface{}{
 			"s3SchemaVersion": "1.0",
-			"configurationId": "",
+			"configurationId": configurationId,
 			"bucket": map[string]interface{}{
 				"name": event.Bucket,
 				"arn":  svcarn.NewARNBuilder("", "").S3().Bucket(event.Bucket),
@@ -140,6 +172,7 @@ func buildS3EventRecord(event *eventbus.S3ObjectEvent) []byte {
 				"size":      event.Size,
 				"eTag":      event.ETag,
 				"versionId": event.VersionID,
+				"sequencer": fmt.Sprintf("%016X", event.EventTimestamp().UnixNano()),
 			},
 		},
 	}
@@ -151,9 +184,9 @@ func buildS3EventRecord(event *eventbus.S3ObjectEvent) []byte {
 }
 
 // dispatchToSNS publishes the S3 event record to an SNS topic via the
-// event bus. Region and account ID are extracted from the topic ARN to
-// support cross-region notification configurations.
-func (s *S3Service) dispatchToSNS(ctx context.Context, topicArn string, payload []byte) {
+// event bus. MessageAttributes are included so that SNS subscribers can
+// filter by bucket, key, or event type without parsing the body.
+func (s *S3Service) dispatchToSNS(ctx context.Context, topicArn string, payload []byte, attrs map[string]string) {
 	if s.bus == nil {
 		return
 	}
@@ -176,9 +209,10 @@ func (s *S3Service) dispatchToSNS(ctx context.Context, topicArn string, payload 
 				AccountID:        accountID,
 			},
 		},
-		TopicARN:  topicArn,
-		MessageID: messageID,
-		Message:   string(payload),
+		TopicARN:          topicArn,
+		MessageID:         messageID,
+		Message:           string(payload),
+		MessageAttributes: s3SNSMessageAttributes(attrs),
 	}
 	if err := s.bus.Publish(ctx, snsEvt); err != nil {
 		logs.Warn("s3: failed to publish notification to SNS", logs.String("topicArn", topicArn), logs.Err(err))
@@ -186,9 +220,9 @@ func (s *S3Service) dispatchToSNS(ctx context.Context, topicArn string, payload 
 }
 
 // dispatchToSQS sends the S3 event record directly to an SQS queue.
-// Region and account ID are extracted from the queue ARN so that the
-// correct queue URL is constructed for the target region.
-func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload []byte) {
+// MessageAttributes are included so that SQS consumers can filter by
+// bucket, key, or event type.
+func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload []byte, attrs map[string]string) {
 	if s.bus == nil {
 		return
 	}
@@ -208,17 +242,14 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 		return
 	}
 
-	queueARN, arnErr := sqsInvoker.GetQueueARN(ctx, queueURL)
-	if arnErr != nil {
-		return
-	}
-
-	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queueARN, "sqs", "s3.amazonaws.com", "sqs:SendMessage", queueARN)
+	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queueArn, "sqs", "s3.amazonaws.com", "sqs:SendMessage", queueArn)
 	if evalErr != nil || !allowed {
 		return
 	}
 
-	if _, _, err := sqsInvoker.SendMessage(ctx, queueURL, string(payload), eventbus.SQSSendOptions{}); err != nil {
+	if _, _, err := sqsInvoker.SendMessage(ctx, queueURL, string(payload), eventbus.SQSSendOptions{
+		MessageAttributes: attrs,
+	}); err != nil {
 		logs.Warn("Failed to send S3 event to SQS queue", logs.String("queue", queueURL), logs.Err(err))
 	}
 }
@@ -242,5 +273,54 @@ func (s *S3Service) dispatchToLambda(ctx context.Context, functionArn string, pa
 
 	if _, _, err := lambdaInvoker.InvokeForGateway(ctx, functionArn, payload); err != nil {
 		logs.Warn("Failed to invoke Lambda for S3 event", logs.String("function", functionArn), logs.Err(err))
+	}
+}
+
+// dispatchToEventBridge sends the S3 event to the default EventBridge event bus
+// for the account. AWS S3 delivers events to EventBridge when
+// EventBridgeConfiguration is set on the bucket notification configuration.
+func (s *S3Service) dispatchToEventBridge(ctx context.Context, event *eventbus.S3ObjectEvent, eventName string) {
+	if s.bus == nil {
+		return
+	}
+
+	reason := eventName
+	deletionType := ""
+	if strings.HasPrefix(eventName, "s3:ObjectRemoved:") {
+		parts := strings.SplitN(eventName, ":", 3)
+		if len(parts) == 3 {
+			deletionType = parts[2]
+		}
+	}
+
+	sourceIP := event.SourceIP
+	if sourceIP == "" {
+		sourceIP = "127.0.0.1"
+	}
+
+	detail := map[string]interface{}{
+		"version":       "0",
+		"bucket":        map[string]string{"name": event.Bucket},
+		"object":        map[string]interface{}{"key": event.Key, "size": event.Size, "etag": event.ETag, "version-id": event.VersionID},
+		"request-id":    fmt.Sprintf("%016X", event.EventTimestamp().UnixNano()),
+		"requester":     event.EventAccountID(),
+		"source-ip":     sourceIP,
+		"reason":        reason,
+		"deletion-type": deletionType,
+	}
+	detailBytes, _ := json.Marshal(detail)
+
+	ebEvt := &eventbus.EventBridgePutEventsEvent{
+		EventBase: eventbus.EventBase{
+			Timestamp: time.Now().UTC(),
+			Source:    "aws.s3",
+			Region:    event.EventRegion(),
+			AccountID: event.EventAccountID(),
+		},
+		EventBusName: "default",
+		Input:        string(detailBytes),
+	}
+	if err := s.bus.Publish(ctx, ebEvt); err != nil {
+		logs.Warn("s3: failed to publish EventBridge event", logs.String("bucket", event.Bucket), logs.Err(err))
 	}
 }

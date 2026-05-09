@@ -41,31 +41,31 @@ var validCORSMethods = map[string]bool{
 
 func validateBucketName(name string) error {
 	if len(name) < minBucketNameLength || len(name) > maxBucketNameLength {
-		return fmt.Errorf("bucket name must be between 3 and 63 characters")
+		return NewInvalidBucketNameError(name)
 	}
 	if !bucketNameRegex.MatchString(name) {
-		return fmt.Errorf("bucket name can only contain lowercase letters, numbers, dots, and hyphens")
+		return NewInvalidBucketNameError(name)
 	}
 	if strings.HasPrefix(name, "xn--") {
-		return fmt.Errorf("bucket name cannot start with 'xn--' (punycode)")
+		return NewInvalidBucketNameError(name)
 	}
 	if strings.HasSuffix(name, "-s3alias") {
-		return fmt.Errorf("bucket name cannot end with '-s3alias'")
+		return NewInvalidBucketNameError(name)
 	}
 	if strings.HasSuffix(name, "--ol-s3") {
-		return fmt.Errorf("bucket name cannot end with '--ol-s3'")
+		return NewInvalidBucketNameError(name)
 	}
 	if strings.HasSuffix(name, ".mrap") {
-		return fmt.Errorf("bucket name cannot end with '.mrap'")
+		return NewInvalidBucketNameError(name)
 	}
 	if ipAddressRegex.MatchString(name) {
-		return fmt.Errorf("bucket name cannot be formatted as an IP address")
+		return NewInvalidBucketNameError(name)
 	}
 	if strings.Contains(name, "..") {
-		return fmt.Errorf("bucket name cannot contain consecutive periods")
+		return NewInvalidBucketNameError(name)
 	}
 	if strings.Contains(name, ".-") || strings.Contains(name, "-.") {
-		return fmt.Errorf("bucket name cannot contain periods adjacent to hyphens")
+		return NewInvalidBucketNameError(name)
 	}
 	return nil
 }
@@ -109,7 +109,7 @@ func (o *BucketOperations) CreateBucket(ctx *request.RequestContext, input *Crea
 	}
 
 	if input.ACL != "" {
-		acp, err := cannedACLToPolicy(input.ACL, &s3store.ACLOwner{ID: o.svc.accountID, DisplayName: o.svc.accountID})
+		acp, err := CannedACLToPolicy(input.ACL, &s3store.ACLOwner{ID: o.svc.accountID, DisplayName: o.svc.accountID})
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +195,7 @@ func (o *BucketOperations) HeadBucket(ctx *request.RequestContext, input *HeadBu
 	}
 	bucket, err := store.buckets.Get(input.Bucket)
 	if err != nil {
-		return nil, fmt.Errorf("bucket not found")
+		return nil, err
 	}
 	return &HeadBucketOutput{
 		BucketRegion: bucket.Region,

@@ -291,18 +291,19 @@ func (s *ObjectStore) ListMultipartUploads(bucket, prefix, keyMarker, uploadIdMa
 	hasMore := false
 
 	indexPrefix := bucket + "#"
+	prefixLen := len(indexPrefix)
 	iter := s.storage.Bucket(multipartIndexBucketName(s.region)).ScanPrefix([]byte(indexPrefix))
 	defer iter.Close()
 
 	for iter.Next() {
 		indexKey := string(iter.Key())
 
-		parts := strings.SplitN(indexKey, "#", 4)
-		if len(parts) < 3 {
+		lastSep := strings.LastIndex(indexKey, "#")
+		if lastSep <= prefixLen-1 {
 			continue
 		}
-		key := parts[1]
-		uploadId := parts[2]
+		key := indexKey[prefixLen:lastSep]
+		uploadId := indexKey[lastSep+1:]
 
 		if prefix != "" && !strings.HasPrefix(key, prefix) {
 			continue

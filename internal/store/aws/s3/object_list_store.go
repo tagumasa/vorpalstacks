@@ -122,6 +122,7 @@ func (s *ObjectStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, v
 	prefixSet := make(map[string]bool)
 	count := 0
 	started := keyMarker == ""
+	skipUntilNewKey := ""
 	hasMore := false
 
 	searchPrefix := bucket + "#" + prefix
@@ -138,8 +139,13 @@ func (s *ObjectStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, v
 		}
 
 		if !started {
-			if obj.Key == keyMarker && (versionIdMarker == "" || obj.VersionID == versionIdMarker) {
-				started = true
+			if obj.Key == keyMarker {
+				if versionIdMarker == "" {
+					started = true
+					skipUntilNewKey = keyMarker
+				} else if obj.VersionID == versionIdMarker {
+					started = true
+				}
 				return nil
 			} else if obj.Key > keyMarker {
 				started = true
@@ -148,7 +154,11 @@ func (s *ObjectStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, v
 			}
 		}
 
-		if prefix != "" && delimiter != "" {
+		if skipUntilNewKey != "" && obj.Key == skipUntilNewKey {
+			return nil
+		}
+
+		if delimiter != "" {
 			idx := strings.Index(strings.TrimPrefix(obj.Key, prefix), delimiter)
 			if idx >= 0 {
 				commonPrefix := prefix + obj.Key[len(prefix):len(prefix)+idx+1]

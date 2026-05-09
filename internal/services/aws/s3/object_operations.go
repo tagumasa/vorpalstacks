@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"vorpalstacks/internal/common/request"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
@@ -79,12 +78,8 @@ func validatePartNumber(partNumber int) error {
 	return nil
 }
 
-func (o *ObjectOperations) validateBucketExists(reqCtx *request.RequestContext, bucket string) error {
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return err
-	}
-	if !store.buckets.Exists(bucket) {
+func (o *ObjectOperations) validateBucketExists(stores *s3Stores, bucket string) error {
+	if !stores.buckets.Exists(bucket) {
 		return ErrNoSuchBucket
 	}
 	return nil

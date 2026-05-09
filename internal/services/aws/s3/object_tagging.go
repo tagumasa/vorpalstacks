@@ -17,8 +17,8 @@ type PutObjectTaggingInput struct {
 }
 
 // PutObjectTagging replaces all tags on an object with the specified tag set.
-func (o *ObjectOperations) PutObjectTagging(ctx context.Context, reqCtx *request.RequestContext, input *PutObjectTaggingInput) error {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) PutObjectTagging(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *PutObjectTaggingInput) error {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return err
 	}
 
@@ -26,12 +26,7 @@ func (o *ObjectOperations) PutObjectTagging(ctx context.Context, reqCtx *request
 		return err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return err
-	}
-
-	return store.objects.SetTags(input.Bucket, input.Key, TagsToCommon(input.Tags))
+	return stores.objects.SetTags(input.Bucket, input.Key, TagsToCommon(input.Tags))
 }
 
 // GetObjectTaggingInput contains the parameters for retrieving an object's tags.
@@ -49,8 +44,8 @@ type GetObjectTaggingOutput struct {
 }
 
 // GetObjectTagging retrieves all tags associated with an object.
-func (o *ObjectOperations) GetObjectTagging(ctx context.Context, reqCtx *request.RequestContext, input *GetObjectTaggingInput) (*GetObjectTaggingOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) GetObjectTagging(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *GetObjectTaggingInput) (*GetObjectTaggingOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -58,12 +53,7 @@ func (o *ObjectOperations) GetObjectTagging(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	obj, err := store.objects.GetMetadata(input.Bucket, input.Key)
+	obj, err := stores.objects.GetMetadata(input.Bucket, input.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -80,8 +70,8 @@ type DeleteObjectTaggingInput struct {
 }
 
 // DeleteObjectTagging removes all tags from an object.
-func (o *ObjectOperations) DeleteObjectTagging(ctx context.Context, reqCtx *request.RequestContext, input *DeleteObjectTaggingInput) error {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) DeleteObjectTagging(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *DeleteObjectTaggingInput) error {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return err
 	}
 
@@ -89,10 +79,5 @@ func (o *ObjectOperations) DeleteObjectTagging(ctx context.Context, reqCtx *requ
 		return err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return err
-	}
-
-	return store.objects.SetTags(input.Bucket, input.Key, nil)
+	return stores.objects.SetTags(input.Bucket, input.Key, nil)
 }

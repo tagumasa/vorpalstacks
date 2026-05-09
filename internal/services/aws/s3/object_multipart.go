@@ -108,8 +108,8 @@ type CreateMultipartUploadOutput struct {
 
 // CreateMultipartUpload initiates a multipart upload for an object.
 // Returns an UploadId that must be used for subsequent UploadPart and CompleteMultipartUpload calls.
-func (o *ObjectOperations) CreateMultipartUpload(ctx context.Context, reqCtx *request.RequestContext, input *CreateMultipartUploadInput) (*CreateMultipartUploadOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) CreateMultipartUpload(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *CreateMultipartUploadInput) (*CreateMultipartUploadOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -117,12 +117,7 @@ func (o *ObjectOperations) CreateMultipartUpload(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	bucketEncryption, _ := store.buckets.GetEncryptionConfiguration(input.Bucket)
+	bucketEncryption, _ := stores.buckets.GetEncryptionConfiguration(input.Bucket)
 
 	var sseType s3store.SSEType
 	var kmsKeyID string
@@ -181,7 +176,7 @@ func (o *ObjectOperations) CreateMultipartUpload(ctx context.Context, reqCtx *re
 		}
 	}
 
-	upload, err := store.objects.CreateMultipartUpload(ctx, input.Bucket, input.Key, input.ContentType, input.Metadata, sseType, kmsKeyID, customerKeyMD5, sseMetadata, plaintextDataKey)
+	upload, err := stores.objects.CreateMultipartUpload(ctx, input.Bucket, input.Key, input.ContentType, input.Metadata, sseType, kmsKeyID, customerKeyMD5, sseMetadata, plaintextDataKey)
 	if err != nil {
 		return nil, err
 	}
@@ -233,8 +228,8 @@ type UploadPartOutput struct {
 
 // UploadPart uploads a single part of a multipart upload.
 // The part number must be unique within the upload and between 1 and 10000.
-func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.RequestContext, input *UploadPartInput) (*UploadPartOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *UploadPartInput) (*UploadPartOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -246,12 +241,7 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	upload, err := store.objects.GetMultipartUpload(input.UploadId)
+	upload, err := stores.objects.GetMultipartUpload(input.UploadId)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +256,7 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 		if err != nil {
 			return nil, err
 		}
-		encResult, encErr := o.encryptPartData(data, upload, input.Bucket, input.Key, input.SSECustomerKey, input.SSECustomerKeyMD5, store)
+		encResult, encErr := o.encryptPartData(data, upload, input.Bucket, input.Key, input.SSECustomerKey, input.SSECustomerKeyMD5, stores)
 		if encErr != nil {
 			return nil, encErr
 		}
@@ -277,7 +267,7 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 		dataKey = encResult.DataKey
 	}
 
-	part, err := store.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, plainSize, contentNonce, dataKey)
+	part, err := stores.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, plainSize, contentNonce, dataKey)
 	if err != nil {
 		return nil, err
 	}
@@ -321,8 +311,8 @@ type CopyPartResult struct {
 }
 
 // UploadPartCopy uploads a part by copying bytes from an existing S3 object.
-func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.RequestContext, input *UploadPartCopyInput) (*UploadPartCopyOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *UploadPartCopyInput) (*UploadPartCopyOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 	if err := validateObjectKey(input.Key); err != nil {
@@ -340,25 +330,20 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 		srcVersionId = input.CopySourceVersionId
 	}
 
-	if err := o.validateBucketExists(reqCtx, srcBucket); err != nil {
+	if err := o.validateBucketExists(stores, srcBucket); err != nil {
 		return nil, ErrInvalidCopySource
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	upload, err := store.objects.GetMultipartUpload(input.UploadId)
+	upload, err := stores.objects.GetMultipartUpload(input.UploadId)
 	if err != nil {
 		return nil, err
 	}
 
 	var srcObj *s3store.Object
 	if srcVersionId != "" {
-		srcObj, err = store.objects.HeadWithVersion(ctx, srcBucket, srcKey, srcVersionId)
+		srcObj, err = stores.objects.HeadWithVersion(ctx, srcBucket, srcKey, srcVersionId)
 	} else {
-		srcObj, err = store.objects.GetMetadata(srcBucket, srcKey)
+		srcObj, err = stores.objects.GetMetadata(srcBucket, srcKey)
 	}
 	if err != nil {
 		return nil, ErrInvalidCopySource
@@ -378,7 +363,7 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 			SSECustomerKey:       input.CopySourceSSECustomerKey,
 			SSECustomerKeyMD5:    input.CopySourceSSECustomerMD5,
 		}
-		getOutput, err := o.GetObject(ctx, reqCtx, getInput)
+		getOutput, err := o.GetObject(ctx, reqCtx, stores, getInput)
 		if err != nil {
 			return nil, err
 		}
@@ -394,9 +379,9 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 		}
 		var reader io.ReadCloser
 		if srcVersionId != "" {
-			reader, _, err = store.objects.GetRangeWithVersion(ctx, srcBucket, srcKey, srcVersionId, offset, length)
+			reader, _, err = stores.objects.GetRangeWithVersion(ctx, srcBucket, srcKey, srcVersionId, offset, length)
 		} else {
-			reader, _, err = store.objects.GetRange(ctx, srcBucket, srcKey, offset, length)
+			reader, _, err = stores.objects.GetRange(ctx, srcBucket, srcKey, offset, length)
 		}
 		if err != nil {
 			return nil, err
@@ -409,9 +394,9 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 	} else {
 		var reader io.ReadCloser
 		if srcVersionId != "" {
-			reader, _, err = store.objects.GetWithVersion(ctx, srcBucket, srcKey, srcVersionId)
+			reader, _, err = stores.objects.GetWithVersion(ctx, srcBucket, srcKey, srcVersionId)
 		} else {
-			reader, _, err = store.objects.Get(ctx, srcBucket, srcKey)
+			reader, _, err = stores.objects.Get(ctx, srcBucket, srcKey)
 		}
 		if err != nil {
 			return nil, err
@@ -429,7 +414,7 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 	var contentNonce, dataKey []byte
 
 	if upload.SSEType != "" {
-		encResult, encErr := o.encryptPartData(data, upload, input.Bucket, input.Key, input.SSECustomerKey, input.SSECustomerKeyMD5, store)
+		encResult, encErr := o.encryptPartData(data, upload, input.Bucket, input.Key, input.SSECustomerKey, input.SSECustomerKeyMD5, stores)
 		if encErr != nil {
 			return nil, encErr
 		}
@@ -439,7 +424,7 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 		dataKey = encResult.DataKey
 	}
 
-	part, err := store.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, plainSize, contentNonce, dataKey)
+	part, err := stores.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, plainSize, contentNonce, dataKey)
 	if err != nil {
 		return nil, err
 	}
@@ -577,13 +562,8 @@ func (o *ListPartsOutput) ToXML() string {
 }
 
 // ListParts returns the list of parts that have been uploaded for a multipart upload.
-func (o *ObjectOperations) ListParts(ctx context.Context, reqCtx *request.RequestContext, input *ListPartsInput) (*ListPartsOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
-		return nil, err
-	}
-
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
+func (o *ObjectOperations) ListParts(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *ListPartsInput) (*ListPartsOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -597,7 +577,7 @@ func (o *ObjectOperations) ListParts(ctx context.Context, reqCtx *request.Reques
 		partNumberMarker, _ = strconv.Atoi(input.PartNumberMarker)
 	}
 
-	parts, nextPartNumberMarker, isTruncated, err := store.objects.ListParts(ctx, input.Bucket, input.Key, input.UploadId, partNumberMarker, maxParts)
+	parts, nextPartNumberMarker, isTruncated, err := stores.objects.ListParts(ctx, input.Bucket, input.Key, input.UploadId, partNumberMarker, maxParts)
 	if err != nil {
 		return nil, ErrNoSuchUpload
 	}
@@ -670,8 +650,8 @@ type CompleteMultipartUploadOutput struct {
 
 // CompleteMultipartUpload assembles the uploaded parts into a complete object.
 // At least one part is required. Parts are assembled in the order specified.
-func (o *ObjectOperations) CompleteMultipartUpload(ctx context.Context, reqCtx *request.RequestContext, input *CompleteMultipartUploadInput) (*CompleteMultipartUploadOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) CompleteMultipartUpload(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *CompleteMultipartUploadInput) (*CompleteMultipartUploadOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -694,12 +674,23 @@ func (o *ObjectOperations) CompleteMultipartUpload(ctx context.Context, reqCtx *
 		})
 	}
 
-	store, err := o.svc.store(reqCtx)
+	upload, err := stores.objects.GetMultipartUpload(input.UploadId)
 	if err != nil {
-		return nil, err
+		return nil, ErrNoSuchUpload
 	}
 
-	obj, err := store.objects.CompleteMultipartUpload(ctx, input.Bucket, input.Key, input.UploadId, parts)
+	for _, p := range parts {
+		idx, exists := upload.FindPart(p.PartNumber)
+		if !exists {
+			return nil, ErrInvalidPart
+		}
+		expectedETag := strings.Trim(upload.Parts[idx].ETag, "\"")
+		if p.ETag != expectedETag {
+			return nil, ErrInvalidPart
+		}
+	}
+
+	obj, err := stores.objects.CompleteMultipartUpload(ctx, input.Bucket, input.Key, input.UploadId, parts)
 	if err != nil {
 		return nil, err
 	}
@@ -736,8 +727,8 @@ type AbortMultipartUploadInput struct {
 
 // AbortMultipartUpload aborts a multipart upload and removes all uploaded parts.
 // After aborting, the UploadId is no longer valid.
-func (o *ObjectOperations) AbortMultipartUpload(ctx context.Context, reqCtx *request.RequestContext, input *AbortMultipartUploadInput) error {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) AbortMultipartUpload(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *AbortMultipartUploadInput) error {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return err
 	}
 
@@ -745,12 +736,7 @@ func (o *ObjectOperations) AbortMultipartUpload(ctx context.Context, reqCtx *req
 		return err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return err
-	}
-
-	return store.objects.AbortMultipartUpload(ctx, input.Bucket, input.Key, input.UploadId)
+	return stores.objects.AbortMultipartUpload(ctx, input.Bucket, input.Key, input.UploadId)
 }
 
 // ListMultipartUploadsInput contains the parameters for listing multipart uploads.
@@ -867,8 +853,8 @@ func (o *ListMultipartUploadsOutput) ToXML() string {
 
 // ListMultipartUploads lists the in-progress multipart uploads for a bucket.
 // Returns uploads that have been initiated but not yet completed or aborted.
-func (o *ObjectOperations) ListMultipartUploads(ctx context.Context, reqCtx *request.RequestContext, input *ListMultipartUploadsInput) (*ListMultipartUploadsOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) ListMultipartUploads(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *ListMultipartUploadsInput) (*ListMultipartUploadsOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -876,12 +862,7 @@ func (o *ObjectOperations) ListMultipartUploads(ctx context.Context, reqCtx *req
 		input.MaxUploads = 1000
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := store.objects.ListMultipartUploads(input.Bucket, input.Prefix, input.KeyMarker, input.UploadIdMarker, input.MaxUploads)
+	result, err := stores.objects.ListMultipartUploads(input.Bucket, input.Prefix, input.KeyMarker, input.UploadIdMarker, input.MaxUploads)
 	if err != nil {
 		return nil, err
 	}

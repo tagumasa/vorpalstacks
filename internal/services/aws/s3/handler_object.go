@@ -12,12 +12,13 @@ import (
 )
 
 func (h *S3Handler) handleObjectRequest(ctx *request.RequestContext, r *http.Request, bucket, key string) (interface{}, http.Header, int, error) {
+	stores, err := h.svc.store(ctx)
+	if err != nil {
+		return nil, nil, http.StatusInternalServerError, err
+	}
+
 	if r.Method == "POST" && r.URL.Query().Has("select") {
 		action := "s3:GetObject"
-		stores, err := h.svc.store(ctx)
-		if err != nil {
-			return nil, nil, http.StatusInternalServerError, err
-		}
 		if err := h.checkAccess(ctx, r, stores, action, bucket, key); err != nil {
 			return nil, nil, http.StatusForbidden, err
 		}
@@ -25,15 +26,11 @@ func (h *S3Handler) handleObjectRequest(ctx *request.RequestContext, r *http.Req
 	}
 
 	action := determineObjectAction(r)
-	stores, err := h.svc.store(ctx)
-	if err != nil {
-		return nil, nil, http.StatusInternalServerError, err
-	}
 	if err := h.checkAccess(ctx, r, stores, action, bucket, key); err != nil {
 		return nil, nil, http.StatusForbidden, err
 	}
 
-	return h.objectOps.HandleRequest(r.Context(), ctx, r, bucket, key)
+	return h.objectOps.HandleRequest(r.Context(), ctx, stores, r, bucket, key)
 }
 
 func (h *S3Handler) handleSelectObjectContent(ctx *request.RequestContext, r *http.Request, bucket, key string, stores *s3Stores) (interface{}, http.Header, int, error) {
@@ -127,7 +124,7 @@ func (h *S3Handler) handleDeleteObjects(ctx *request.RequestContext, r *http.Req
 		return nil, http.StatusForbidden, err
 	}
 
-	result, err := h.objectOps.HandleDeleteObjects(r.Context(), ctx, bucket, body)
+	result, err := h.objectOps.HandleDeleteObjects(r.Context(), ctx, stores, bucket, body)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}

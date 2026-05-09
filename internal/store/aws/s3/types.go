@@ -459,9 +459,17 @@ type ObjectLockRetention struct {
 
 // NotificationConfiguration represents the notification configuration for an S3 bucket.
 type NotificationConfiguration struct {
-	TopicConfigurations  []TopicNotificationConfiguration  `json:"topic_configurations,omitempty"`
-	QueueConfigurations  []QueueNotificationConfiguration  `json:"queue_configurations,omitempty"`
-	LambdaConfigurations []LambdaNotificationConfiguration `json:"lambda_configurations,omitempty"`
+	TopicConfigurations      []TopicNotificationConfiguration      `json:"topic_configurations,omitempty"`
+	QueueConfigurations      []QueueNotificationConfiguration      `json:"queue_configurations,omitempty"`
+	LambdaConfigurations     []LambdaNotificationConfiguration     `json:"lambda_configurations,omitempty"`
+	EventBridgeConfiguration *EventBridgeNotificationConfiguration `json:"event_bridge_configuration,omitempty"`
+}
+
+// EventBridgeNotificationConfiguration enables S3 event delivery to an
+// EventBridge event bus. When set, all S3 events for the bucket are sent
+// to the default event bus of the account.
+type EventBridgeNotificationConfiguration struct {
+	Id string `json:"id,omitempty"`
 }
 
 // TopicNotificationConfiguration represents an SNS topic notification configuration.

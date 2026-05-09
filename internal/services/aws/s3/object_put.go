@@ -45,8 +45,8 @@ type PutObjectOutput struct {
 }
 
 // PutObject uploads an object to S3.
-func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.RequestContext, input *PutObjectInput) (*PutObjectOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *PutObjectInput) (*PutObjectOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -58,13 +58,8 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrEntityTooLarge
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	if input.IfNoneMatch != "" || input.IfMatch != "" {
-		existingObj, err := store.objects.Head(ctx, input.Bucket, input.Key)
+		existingObj, err := stores.objects.Head(ctx, input.Bucket, input.Key)
 		objectExists := err == nil && existingObj != nil
 
 		if input.IfNoneMatch == "*" {
@@ -87,7 +82,7 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 		}
 	}
 
-	bucket, err := store.buckets.Get(input.Bucket)
+	bucket, err := stores.buckets.Get(input.Bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +136,7 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 			UnencryptedSize:  encResult.UnencryptedSize,
 		}
 
-		obj, err = store.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, input.ContentType, input.Metadata, sseMetadata, storageClass, sysMeta)
+		obj, err = stores.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, input.ContentType, input.Metadata, sseMetadata, storageClass, sysMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -156,7 +151,7 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 		}, nil
 	}
 
-	obj, err = store.objects.PutWithVersioning(ctx, input.Bucket, input.Key, input.Body, input.ContentType, input.Metadata, false, storageClass, sysMeta)
+	obj, err = stores.objects.PutWithVersioning(ctx, input.Bucket, input.Key, input.Body, input.ContentType, input.Metadata, false, storageClass, sysMeta)
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +197,8 @@ type CopyObjectResult struct {
 }
 
 // CopyObject copies an object to another location in S3.
-func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.RequestContext, input *CopyObjectInput) (*CopyObjectOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *CopyObjectInput) (*CopyObjectOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -220,20 +215,15 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		srcVersionId = input.CopySourceVersionId
 	}
 
-	if err := o.validateBucketExists(reqCtx, srcBucket); err != nil {
+	if err := o.validateBucketExists(stores, srcBucket); err != nil {
 		return nil, ErrInvalidCopySource
-	}
-
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
 	}
 
 	var srcObj *s3store.Object
 	if srcVersionId != "" {
-		srcObj, err = store.objects.HeadWithVersion(ctx, srcBucket, srcKey, srcVersionId)
+		srcObj, err = stores.objects.HeadWithVersion(ctx, srcBucket, srcKey, srcVersionId)
 	} else {
-		srcObj, err = store.objects.GetMetadata(srcBucket, srcKey)
+		srcObj, err = stores.objects.GetMetadata(srcBucket, srcKey)
 	}
 	if err != nil {
 		return nil, ErrInvalidCopySource
@@ -253,7 +243,7 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 			SSECustomerKey:       input.CopySourceSSECustomerKey,
 			SSECustomerKeyMD5:    input.CopySourceSSECustomerMD5,
 		}
-		getOutput, err := o.GetObject(ctx, reqCtx, getInput)
+		getOutput, err := o.GetObject(ctx, reqCtx, stores, getInput)
 		if err != nil {
 			return nil, err
 		}
@@ -265,9 +255,9 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 	} else {
 		var reader io.ReadCloser
 		if srcVersionId != "" {
-			reader, _, err = store.objects.GetWithVersion(ctx, srcBucket, srcKey, srcVersionId)
+			reader, _, err = stores.objects.GetWithVersion(ctx, srcBucket, srcKey, srcVersionId)
 		} else {
-			reader, srcObj, err = store.objects.Get(ctx, srcBucket, srcKey)
+			reader, srcObj, err = stores.objects.Get(ctx, srcBucket, srcKey)
 		}
 		if err != nil {
 			return nil, err
@@ -279,7 +269,7 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
-	bucketEncryption, err := store.buckets.GetEncryptionConfiguration(input.Bucket)
+	bucketEncryption, err := stores.buckets.GetEncryptionConfiguration(input.Bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -333,22 +323,26 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 			UnencryptedSize:  encResult.UnencryptedSize,
 		}
 
-		obj, err = store.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, contentType, metadata, sseMetadata, s3store.StorageClassStandard, nil)
+		targetStorageClass := srcObj.StorageClass
+		if targetStorageClass == "" {
+			targetStorageClass = s3store.StorageClassStandard
+		}
+		obj, err = stores.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, contentType, metadata, sseMetadata, targetStorageClass, nil)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		if srcVersionId != "" {
 			if input.MetadataDirective == "REPLACE" {
-				obj, err = store.objects.CopyWithVersionAndMetadata(ctx, srcBucket, srcKey, srcVersionId, input.Bucket, input.Key, contentType, metadata)
+				obj, err = stores.objects.CopyWithVersionAndMetadata(ctx, srcBucket, srcKey, srcVersionId, input.Bucket, input.Key, contentType, metadata)
 			} else {
-				obj, err = store.objects.CopyWithVersion(ctx, srcBucket, srcKey, srcVersionId, input.Bucket, input.Key)
+				obj, err = stores.objects.CopyWithVersion(ctx, srcBucket, srcKey, srcVersionId, input.Bucket, input.Key)
 			}
 		} else {
 			if input.MetadataDirective == "REPLACE" {
-				obj, err = store.objects.CopyWithMetadata(ctx, srcBucket, srcKey, input.Bucket, input.Key, contentType, metadata)
+				obj, err = stores.objects.CopyWithMetadata(ctx, srcBucket, srcKey, input.Bucket, input.Key, contentType, metadata)
 			} else {
-				obj, err = store.objects.Copy(ctx, srcBucket, srcKey, input.Bucket, input.Key)
+				obj, err = stores.objects.Copy(ctx, srcBucket, srcKey, input.Bucket, input.Key)
 			}
 		}
 		if err != nil {
@@ -389,21 +383,17 @@ type RestoreRequest struct {
 }
 
 // RestoreObject restores an archived copy of an object back into S3.
-func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.RequestContext, input *RestoreObjectInput) (interface{}, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
-		return nil, err
-	}
-
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
+func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *RestoreObjectInput) (interface{}, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
 	var obj *s3store.Object
+	var err error
 	if input.VersionId != "" {
-		obj, err = store.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
+		obj, err = stores.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
 	} else {
-		obj, err = store.objects.Head(ctx, input.Bucket, input.Key)
+		obj, err = stores.objects.Head(ctx, input.Bucket, input.Key)
 	}
 	if err != nil {
 		return nil, NewNoSuchKeyError(input.Key)
@@ -422,7 +412,7 @@ func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
-	if err := store.objects.SetStorageClass(input.Bucket, input.Key, input.VersionId, s3store.StorageClassStandard); err != nil {
+	if err := stores.objects.SetStorageClass(input.Bucket, input.Key, input.VersionId, s3store.StorageClassStandard); err != nil {
 		return nil, err
 	}
 

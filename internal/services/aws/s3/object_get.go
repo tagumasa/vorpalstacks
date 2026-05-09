@@ -54,8 +54,8 @@ type GetObjectOutput struct {
 }
 
 // GetObject retrieves an object from S3.
-func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.RequestContext, input *GetObjectInput) (*GetObjectOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *GetObjectInput) (*GetObjectOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -63,13 +63,8 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	if input.IfMatch != "" || input.IfNoneMatch != "" || input.IfModifiedSince != nil || input.IfUnmodifiedSince != nil {
-		obj, err := store.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
+		obj, err := stores.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +91,7 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		}
 	}
 
-	reader, obj, err := store.objects.GetWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
+	reader, obj, err := stores.objects.GetWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +215,7 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		} else {
 			reader.Close()
 			var getErr error
-			rangeReader, _, getErr = store.objects.GetRange(ctx, input.Bucket, input.Key, offset, length)
+			rangeReader, _, getErr = stores.objects.GetRange(ctx, input.Bucket, input.Key, offset, length)
 			if getErr != nil {
 				return nil, getErr
 			}
@@ -286,8 +281,8 @@ type HeadObjectOutput struct {
 }
 
 // HeadObject retrieves metadata for an object without returning the object itself.
-func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.RequestContext, input *HeadObjectInput) (*HeadObjectOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *HeadObjectInput) (*HeadObjectOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -295,12 +290,7 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	obj, err := store.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
+	obj, err := stores.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
 	if err != nil {
 		return nil, err
 	}
@@ -399,8 +389,8 @@ type GetObjectAttributesChecksum struct {
 }
 
 // GetObjectAttributes retrieves attributes of an object.
-func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *request.RequestContext, input *GetObjectAttributesInput) (*GetObjectAttributesOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *GetObjectAttributesInput) (*GetObjectAttributesOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -408,12 +398,7 @@ func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	obj, err := store.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
+	obj, err := stores.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
 	if err != nil {
 		return nil, err
 	}

@@ -217,7 +217,7 @@ func (s *WebsiteServer) writeWebsiteError(w http.ResponseWriter, statusCode int,
 
 func routingRuleMatches(rr *s3store.RoutingRule, key string, httpCode int) bool {
 	if rr.Condition == nil {
-		return false
+		return true
 	}
 	if rr.Condition.HTTPErrorCodeReturnedEquals != nil {
 		var code int

@@ -29,17 +29,12 @@ type LegalHoldInput struct {
 
 // PutObjectLegalHold applies a legal hold to an object.
 // The bucket must have Object Lock enabled. Legal hold prevents object deletion or overwriting.
-func (o *ObjectOperations) PutObjectLegalHold(ctx context.Context, reqCtx *request.RequestContext, input *PutObjectLegalHoldInput) error {
+func (o *ObjectOperations) PutObjectLegalHold(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *PutObjectLegalHoldInput) error {
 	if err := validateObjectKey(input.Key); err != nil {
 		return err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return err
-	}
-
-	bucket, err := store.buckets.Get(input.Bucket)
+	bucket, err := stores.buckets.Get(input.Bucket)
 	if err != nil {
 		return err
 	}
@@ -59,7 +54,7 @@ func (o *ObjectOperations) PutObjectLegalHold(ctx context.Context, reqCtx *reque
 
 	legalHold := &s3store.ObjectLockLegalHold{Status: status}
 
-	return store.objects.SetObjectLegalHold(ctx, input.Bucket, input.Key, input.VersionId, legalHold)
+	return stores.objects.SetObjectLegalHold(ctx, input.Bucket, input.Key, input.VersionId, legalHold)
 }
 
 // GetObjectLegalHoldInput contains the parameters for retrieving an object's legal hold.
@@ -85,17 +80,12 @@ type LegalHoldOutput struct {
 
 // GetObjectLegalHold retrieves the legal hold status for an object.
 // Returns the current legal hold configuration for the specified object version.
-func (o *ObjectOperations) GetObjectLegalHold(ctx context.Context, reqCtx *request.RequestContext, input *GetObjectLegalHoldInput) (*GetObjectLegalHoldOutput, error) {
+func (o *ObjectOperations) GetObjectLegalHold(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *GetObjectLegalHoldInput) (*GetObjectLegalHoldOutput, error) {
 	if err := validateObjectKey(input.Key); err != nil {
 		return nil, err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	bucket, err := store.buckets.Get(input.Bucket)
+	bucket, err := stores.buckets.Get(input.Bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +94,7 @@ func (o *ObjectOperations) GetObjectLegalHold(ctx context.Context, reqCtx *reque
 		return nil, fmt.Errorf("object lock is not enabled on this bucket")
 	}
 
-	legalHold, err := store.objects.GetObjectLegalHold(ctx, input.Bucket, input.Key, input.VersionId)
+	legalHold, err := stores.objects.GetObjectLegalHold(ctx, input.Bucket, input.Key, input.VersionId)
 	if err != nil {
 		return nil, err
 	}
@@ -138,17 +128,12 @@ type RetentionInput struct {
 
 // PutObjectRetention applies a retention period to an object.
 // The bucket must have Object Lock enabled. COMPLIANCE mode prevents deletion until retention expires.
-func (o *ObjectOperations) PutObjectRetention(ctx context.Context, reqCtx *request.RequestContext, input *PutObjectRetentionInput) error {
+func (o *ObjectOperations) PutObjectRetention(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *PutObjectRetentionInput) error {
 	if err := validateObjectKey(input.Key); err != nil {
 		return err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return err
-	}
-
-	bucket, err := store.buckets.Get(input.Bucket)
+	bucket, err := stores.buckets.Get(input.Bucket)
 	if err != nil {
 		return err
 	}
@@ -166,7 +151,7 @@ func (o *ObjectOperations) PutObjectRetention(ctx context.Context, reqCtx *reque
 		RetainUntilDate: input.Retention.RetainUntilDate,
 	}
 
-	return store.objects.SetObjectRetention(ctx, input.Bucket, input.Key, input.VersionId, retention)
+	return stores.objects.SetObjectRetention(ctx, input.Bucket, input.Key, input.VersionId, retention)
 }
 
 // GetObjectRetentionInput contains the parameters for retrieving an object's retention configuration.
@@ -194,17 +179,12 @@ type RetentionOutput struct {
 
 // GetObjectRetention retrieves the retention configuration for an object.
 // Returns the retention mode and retain until date for the specified object version.
-func (o *ObjectOperations) GetObjectRetention(ctx context.Context, reqCtx *request.RequestContext, input *GetObjectRetentionInput) (*GetObjectRetentionOutput, error) {
+func (o *ObjectOperations) GetObjectRetention(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *GetObjectRetentionInput) (*GetObjectRetentionOutput, error) {
 	if err := validateObjectKey(input.Key); err != nil {
 		return nil, err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	bucket, err := store.buckets.Get(input.Bucket)
+	bucket, err := stores.buckets.Get(input.Bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +193,7 @@ func (o *ObjectOperations) GetObjectRetention(ctx context.Context, reqCtx *reque
 		return nil, fmt.Errorf("object lock is not enabled on this bucket")
 	}
 
-	retention, err := store.objects.GetObjectRetention(ctx, input.Bucket, input.Key, input.VersionId)
+	retention, err := stores.objects.GetObjectRetention(ctx, input.Bucket, input.Key, input.VersionId)
 	if err != nil {
 		return nil, err
 	}

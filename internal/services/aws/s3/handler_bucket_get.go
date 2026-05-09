@@ -163,7 +163,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 			}
 			input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
 		}
-		result, err := h.objectOps.ListObjectVersions(r.Context(), ctx, input)
+		result, err := h.objectOps.ListObjectVersions(r.Context(), ctx, stores, input)
 		return result, http.StatusOK, err
 	}
 	if query.Has("uploads") {
@@ -185,7 +185,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 			}
 			input.MaxUploads = clampInt(mu, 0, s3MaxUploads)
 		}
-		result, err := h.objectOps.ListMultipartUploads(r.Context(), ctx, input)
+		result, err := h.objectOps.ListMultipartUploads(r.Context(), ctx, stores, input)
 		return result, http.StatusOK, err
 	}
 	if query.Has("list-type") && query.Get("list-type") == "2" {
@@ -207,7 +207,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 			}
 			input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
 		}
-		result, err := h.objectOps.ListObjectsV2(r.Context(), ctx, input)
+		result, err := h.objectOps.ListObjectsV2(r.Context(), ctx, stores, input)
 		return result, http.StatusOK, err
 	}
 
@@ -228,7 +228,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 		}
 		input.MaxKeys = clampInt(mk, 0, s3MaxKeys)
 	}
-	result, err := h.objectOps.ListObjects(r.Context(), ctx, input)
+	result, err := h.objectOps.ListObjects(r.Context(), ctx, stores, input)
 	return result, http.StatusOK, err
 }
 

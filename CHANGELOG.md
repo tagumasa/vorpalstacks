@@ -22,7 +22,7 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ### Changed
 
-- **S3 service refactored**: Removed `bucket_handler.go`, improved encryption handling, unified error responses
+- **S3 service overhauled**: Store acquisition hoisted to handler layer; EventBridge notification support; SNS/SQS `MessageAttributes`; copy operations preserve source StorageClass; `CompleteMultipartUpload` ETag validation; fixed `ListObjectVersions` pagination, `ListMultipartUploads` key parsing, website routing rules, and chunked encoding bounds
 - **SQS overhauled**: FIFO ReceiveMessage with per-MessageGroup in-flight isolation; `SQSInvoker.SendMessage` signature changed to `SQSSendOptions` struct; `SetQueueAttributes` expanded to `FifoQueue`, `ContentBasedDeduplication`, `RedrivePolicy`; `ChangeMessageVisibility` and DLQ move now use atomic transactions
 - **All AWS service admin handlers**: Unified constructor signature with StorageManager and AccountID parameters
 - **Athena**: Added cleanup logic for expired query executions

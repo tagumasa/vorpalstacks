@@ -139,6 +139,8 @@ func (s *s3Store) getStoresForRegion(region string) (*regionStores, error) {
 }
 
 // Buckets returns the bucket store for the given region.
+// Returns nil when the underlying storage has not been initialised for
+// the requested region (e.g. region is not configured).
 func (s *s3Store) Buckets(region string) BucketStoreInterface {
 	stores, err := s.getStoresForRegion(region)
 	if err != nil {
@@ -148,6 +150,8 @@ func (s *s3Store) Buckets(region string) BucketStoreInterface {
 }
 
 // Objects returns the object store for the given region.
+// Returns nil when the underlying storage has not been initialised for
+// the requested region (e.g. region is not configured).
 func (s *s3Store) Objects(region string) ObjectStoreInterface {
 	stores, err := s.getStoresForRegion(region)
 	if err != nil {

@@ -173,6 +173,7 @@ func (s *S3Service) publishObjectNotification(ctx context.Context, reqCtx *reque
 		VersionID: versionID,
 		ETag:      etag,
 		Op:        op,
+		SourceIP:  reqCtx.SourceIP,
 	}
 
 	if err := s.bus.Publish(ctx, evt); err != nil {

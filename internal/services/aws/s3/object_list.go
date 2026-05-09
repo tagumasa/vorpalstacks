@@ -96,8 +96,8 @@ func writeCommonPrefixesXML(builder *strings.Builder, prefixes []CommonPrefix) {
 }
 
 // ListObjects lists the objects in a bucket.
-func (o *ObjectOperations) ListObjects(ctx context.Context, reqCtx *request.RequestContext, input *ListObjectsInput) (*ListObjectsOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) ListObjects(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *ListObjectsInput) (*ListObjectsOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -105,12 +105,7 @@ func (o *ObjectOperations) ListObjects(ctx context.Context, reqCtx *request.Requ
 		input.MaxKeys = 1000
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := store.objects.List(input.Bucket, input.Prefix, input.Delimiter, input.Marker, input.MaxKeys)
+	result, err := stores.objects.List(input.Bucket, input.Prefix, input.Delimiter, input.Marker, input.MaxKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -205,8 +200,8 @@ func (o *ListObjectsV2Output) ToXML() string {
 }
 
 // ListObjectsV2 lists the objects in a bucket using version 2 of the API.
-func (o *ObjectOperations) ListObjectsV2(ctx context.Context, reqCtx *request.RequestContext, input *ListObjectsV2Input) (*ListObjectsV2Output, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) ListObjectsV2(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *ListObjectsV2Input) (*ListObjectsV2Output, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -219,12 +214,7 @@ func (o *ObjectOperations) ListObjectsV2(ctx context.Context, reqCtx *request.Re
 		input.MaxKeys = 1000
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := store.objects.List(input.Bucket, input.Prefix, input.Delimiter, marker, input.MaxKeys)
+	result, err := stores.objects.List(input.Bucket, input.Prefix, input.Delimiter, marker, input.MaxKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -378,8 +368,8 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 }
 
 // ListObjectVersions lists the versions of objects in a bucket.
-func (o *ObjectOperations) ListObjectVersions(ctx context.Context, reqCtx *request.RequestContext, input *ListObjectVersionsInput) (*ListObjectVersionsOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) ListObjectVersions(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *ListObjectVersionsInput) (*ListObjectVersionsOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -387,12 +377,7 @@ func (o *ObjectOperations) ListObjectVersions(ctx context.Context, reqCtx *reque
 		input.MaxKeys = 1000
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := store.objects.ListObjectVersions(input.Bucket, input.Prefix, input.Delimiter, input.KeyMarker, input.VersionIdMarker, input.MaxKeys)
+	result, err := stores.objects.ListObjectVersions(input.Bucket, input.Prefix, input.Delimiter, input.KeyMarker, input.VersionIdMarker, input.MaxKeys)
 	if err != nil {
 		return nil, err
 	}

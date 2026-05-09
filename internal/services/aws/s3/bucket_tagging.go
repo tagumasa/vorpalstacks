@@ -1,9 +1,6 @@
 package s3
 
 import (
-	"fmt"
-	"strings"
-
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/utils/aws/types"
 )
@@ -43,30 +40,9 @@ func CommonToTags(tags []types.Tag) []Tag {
 	return result
 }
 
-func validateBucketTags(tags []Tag) error {
-	if len(tags) > maxTags {
-		return fmt.Errorf("too many tags (maximum %d)", maxTags)
-	}
-	for _, tag := range tags {
-		if len(tag.Key) == 0 {
-			return fmt.Errorf("tag key cannot be empty")
-		}
-		if len(tag.Key) > maxTagKeyLength {
-			return fmt.Errorf("tag key cannot exceed 128 characters")
-		}
-		if len(tag.Value) > maxTagValueLength {
-			return fmt.Errorf("tag value cannot exceed 256 characters")
-		}
-		if strings.HasPrefix(strings.ToLower(tag.Key), "aws:") {
-			return fmt.Errorf("tag key cannot start with 'aws:' (reserved prefix)")
-		}
-	}
-	return nil
-}
-
 // PutBucketTagging applies a set of tags to a bucket.
 func (o *BucketOperations) PutBucketTagging(ctx *request.RequestContext, input *PutBucketTaggingInput) error {
-	if err := validateBucketTags(input.Tags); err != nil {
+	if err := validateTags(input.Tags); err != nil {
 		return err
 	}
 	store, err := o.svc.store(ctx)

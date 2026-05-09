@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 32 AWS services with 2260 test cases (2216 SDK + 27 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests for 32 AWS services with 2261 test cases (2215 SDK + 29 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -48,7 +48,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | WAF | Removed | No longer a supported service |
 | WAFv2 | 61 | 100% | ✅ Perfect |
 
-**Overall: 2262/2262 tests passing (100%) — 2216 SDK + 29 integration + 17 WebSocket**
+**Overall: 2261/2261 tests passing (100%) — 2215 SDK + 29 integration + 17 WebSocket**
 
 *CloudTrail audit tests require `VS_AUDIT_ENABLED=true`.*
 

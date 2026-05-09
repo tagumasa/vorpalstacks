@@ -26,10 +26,8 @@ func (d *awsChunkedDecoder) Read(p []byte) (int, error) {
 	}
 
 	if d.remaining > 0 {
-		n, err := d.reader.Read(p)
-		if n > d.remaining {
-			n = d.remaining
-		}
+		limited := io.LimitReader(d.reader, int64(d.remaining))
+		n, err := limited.Read(p)
 		d.remaining -= n
 		if err != nil {
 			return n, err
@@ -74,10 +72,8 @@ func (d *awsChunkedDecoder) Read(p []byte) (int, error) {
 	}
 
 	d.remaining = int(size)
-	n, err := d.reader.Read(p)
-	if n > d.remaining {
-		n = d.remaining
-	}
+	limited := io.LimitReader(d.reader, int64(d.remaining))
+	n, err := limited.Read(p)
 	d.remaining -= n
 	if d.remaining > 0 {
 		return n, err

@@ -19,22 +19,16 @@ func (h *S3Handler) writeXMLResponse(w http.ResponseWriter, rootElement string, 
 	var err error
 
 	if rootElement != "" {
-		xmlData, err = xml.Marshal(data)
-		if err != nil {
-			h.writeError(w, err, "", "", requestID)
+		inner, marshalErr := xml.Marshal(data)
+		if marshalErr != nil {
+			h.writeError(w, marshalErr, "", "", requestID)
 			return
 		}
-		xmlStr := string(xmlData)
-		if idx := strings.Index(xmlStr, ">"); idx != -1 {
-			xmlStr = xmlStr[idx+1:]
-		}
-		if idx := strings.LastIndex(xmlStr, "<"); idx != -1 {
-			xmlStr = xmlStr[:idx]
-		}
+		innerStr := xmlStripOuterTag(string(inner))
 		if xmlns != "" {
-			xmlData = []byte(fmt.Sprintf(`<%s xmlns="%s">%s</%s>`, rootElement, xmlns, xmlStr, rootElement))
+			xmlData = []byte(fmt.Sprintf(`<%s xmlns="%s">%s</%s>`, rootElement, xmlns, innerStr, rootElement))
 		} else {
-			xmlData = []byte(fmt.Sprintf(`<%s>%s</%s>`, rootElement, xmlStr, rootElement))
+			xmlData = []byte(fmt.Sprintf(`<%s>%s</%s>`, rootElement, innerStr, rootElement))
 		}
 	} else {
 		xmlData, err = xml.Marshal(data)
@@ -49,6 +43,23 @@ func (h *S3Handler) writeXMLResponse(w http.ResponseWriter, rootElement string, 
 	w.WriteHeader(statusCode)
 	_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
 	_, _ = w.Write(xmlData)
+}
+
+// xmlStripOuterTag removes the outermost XML element produced by xml.Marshal.
+// xml.Marshal wraps the value in a tag named after the Go struct (e.g.
+// <GetBucketTaggingOutput>...</GetBucketTaggingOutput>). We strip that outer
+// wrapper so the caller can re-wrap with the correct S3 root element name.
+// Because xml.Marshal always produces well-formed XML with the struct name as
+// the outermost tag, splitting at the first ">" and last "<" is safe — inner
+// content is escaped (&gt;, &lt;) and never breaks the boundary markers.
+func xmlStripOuterTag(xmlStr string) string {
+	if idx := strings.Index(xmlStr, ">"); idx != -1 {
+		xmlStr = xmlStr[idx+1:]
+	}
+	if idx := strings.LastIndex(xmlStr, "<"); idx != -1 {
+		xmlStr = xmlStr[:idx]
+	}
+	return xmlStr
 }
 
 // #nosec G705
@@ -90,13 +101,7 @@ func (h *S3Handler) writeError(w http.ResponseWriter, err error, bucket, key, re
 	w.WriteHeader(awsErr.HTTPStatus)
 	_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
 	_, _ = w.Write([]byte(fmt.Sprintf(`<Error><Code>%s</Code><Message>%s</Message><Resource>%s</Resource><RequestId>%s</RequestId></Error>`,
-		escapeXMLValue(awsErr.Code), escapeXMLValue(awsErr.Message), escapeXMLValue(resource), requestID)))
-}
-
-func escapeXMLValue(s string) string {
-	var buf strings.Builder
-	xml.Escape(&buf, []byte(s))
-	return buf.String()
+		xmlEscape(awsErr.Code), xmlEscape(awsErr.Message), xmlEscape(resource), requestID)))
 }
 
 // writeResult serialises the operation result into the HTTP response.
@@ -255,10 +260,24 @@ func (h *S3Handler) writeResult(w http.ResponseWriter, result interface{}, statu
 		w.Header().Set("Location", v.Location)
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(statusCode)
-		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><CreateBucketResult><Location>` + escapeXMLValue(v.Location) + `</Location></CreateBucketResult>`))
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><CreateBucketResult><Location>` + xmlEscape(v.Location) + `</Location></CreateBucketResult>`))
 	case *HeadBucketOutput:
 		w.Header().Set("x-amz-bucket-region", v.BucketRegion)
 		w.WriteHeader(statusCode)
+	case *GetBucketTaggingOutput:
+		h.writeXMLResponse(w, "Tagging", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
+	case *GetBucketVersioningOutput:
+		h.writeXMLResponse(w, "VersioningConfiguration", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
+	case *GetBucketLifecycleConfigurationOutput:
+		h.writeXMLResponse(w, "LifecycleConfiguration", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
+	case *GetBucketWebsiteOutput:
+		h.writeXMLResponse(w, "WebsiteConfiguration", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
+	case *GetObjectTaggingOutput:
+		h.writeXMLResponse(w, "Tagging", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
+	case *CreateMultipartUploadOutput:
+		h.writeXMLResponse(w, "InitiateMultipartUploadResult", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
+	case *CompleteMultipartUploadOutput:
+		h.writeXMLResponse(w, "CompleteMultipartUploadResult", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
 	case nil:
 		w.WriteHeader(statusCode)
 	default:

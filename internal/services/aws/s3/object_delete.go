@@ -23,8 +23,8 @@ type DeleteObjectOutput struct {
 }
 
 // DeleteObject deletes an object from S3.
-func (o *ObjectOperations) DeleteObject(ctx context.Context, reqCtx *request.RequestContext, input *DeleteObjectInput) (*DeleteObjectOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
+func (o *ObjectOperations) DeleteObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *DeleteObjectInput) (*DeleteObjectOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -32,12 +32,7 @@ func (o *ObjectOperations) DeleteObject(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	marker, err := store.objects.DeleteWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
+	marker, err := stores.objects.DeleteWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
 	if err != nil {
 		return nil, err
 	}
@@ -97,13 +92,8 @@ type DeleteError struct {
 }
 
 // DeleteObjects deletes multiple objects from S3 in a single request.
-func (o *ObjectOperations) DeleteObjects(ctx context.Context, reqCtx *request.RequestContext, input *DeleteObjectsInput) (*DeleteObjectsOutput, error) {
-	if err := o.validateBucketExists(reqCtx, input.Bucket); err != nil {
-		return nil, err
-	}
-
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
+func (o *ObjectOperations) DeleteObjects(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *DeleteObjectsInput) (*DeleteObjectsOutput, error) {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
 	}
 
@@ -111,7 +101,7 @@ func (o *ObjectOperations) DeleteObjects(ctx context.Context, reqCtx *request.Re
 	var errors []DeleteError
 
 	for _, obj := range input.Delete.Objects {
-		marker, err := store.objects.DeleteWithVersion(ctx, input.Bucket, obj.Key, obj.VersionId)
+		marker, err := stores.objects.DeleteWithVersion(ctx, input.Bucket, obj.Key, obj.VersionId)
 		if err != nil {
 			errors = append(errors, DeleteError{
 				Key:     obj.Key,
@@ -143,13 +133,13 @@ func (o *ObjectOperations) DeleteObjects(ctx context.Context, reqCtx *request.Re
 }
 
 // HandleDeleteObjects handles the DeleteObjects API request.
-func (o *ObjectOperations) HandleDeleteObjects(ctx context.Context, reqCtx *request.RequestContext, bucket string, body io.Reader) (*DeleteObjectsOutput, error) {
+func (o *ObjectOperations) HandleDeleteObjects(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, bucket string, body io.Reader) (*DeleteObjectsOutput, error) {
 	var deleteReq Delete
 	if err := request.NewSafeXMLDecoder(body).Decode(&deleteReq); err != nil {
 		return nil, err
 	}
 
-	return o.DeleteObjects(ctx, reqCtx, &DeleteObjectsInput{
+	return o.DeleteObjects(ctx, reqCtx, stores, &DeleteObjectsInput{
 		Bucket: bucket,
 		Delete: &deleteReq,
 	})

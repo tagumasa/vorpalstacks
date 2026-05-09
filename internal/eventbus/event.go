@@ -170,6 +170,7 @@ type S3ObjectEvent struct {
 	VersionID string     `json:"version_id"`
 	ETag      string     `json:"etag"`
 	Op        S3ObjectOp `json:"op"`
+	SourceIP  string     `json:"source_ip"`
 }
 
 // EventType returns "s3:ObjectEvent" for this event type.

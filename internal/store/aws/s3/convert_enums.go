@@ -175,14 +175,10 @@ func protoToTagPtr(p *pb.Tag) *types.Tag {
 	return &types.Tag{Key: p.Key, Value: p.Value}
 }
 
-func int32PtrToInt32(p *int) int32 {
-	if p == nil {
-		return 0
-	}
-	return int32(*p)
-}
-
 func int32ToInt32Ptr(v int32) *int {
+	if v == 0 {
+		return nil
+	}
 	i := int(v)
 	return &i
 }

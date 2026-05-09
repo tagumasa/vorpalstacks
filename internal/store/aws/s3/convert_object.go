@@ -347,8 +347,8 @@ func defaultRetentionToProto(r *DefaultRetention) *pb.DefaultRetention {
 	}
 	return &pb.DefaultRetention{
 		Mode:  objectLockRetentionModeToProto(r.Mode),
-		Days:  int32PtrToInt32(r.Days),
-		Years: int32PtrToInt32(r.Years),
+		Days:  intPtrToInt32(r.Days),
+		Years: intPtrToInt32(r.Years),
 	}
 }
 

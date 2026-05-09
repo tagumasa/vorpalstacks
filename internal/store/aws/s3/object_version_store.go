@@ -12,6 +12,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// putVersionedObject writes a new object version and updates the _latest pointer.
+// Writes are ordered so that the new versioned key and latest pointer are
+// persisted first, then the previous latest's IsLatest flag is cleared.
+// This avoids leaving no latest if the old-version update fails.
 func (s *ObjectStore) putVersionedObject(bucket, key, versionId string, obj *Object) error {
 	lockKey := bucket + "#" + key
 	s.keyLocker.Lock(lockKey)
@@ -21,8 +25,19 @@ func (s *ObjectStore) putVersionedObject(bucket, key, versionId string, obj *Obj
 	}()
 
 	latestKey := s.latestKeyStorageKey(bucket, key)
+
 	var prevLatest pb.Object
-	if err := s.BaseStore.GetProto(latestKey, &prevLatest); err == nil {
+	prevLatestFound := s.BaseStore.GetProto(latestKey, &prevLatest) == nil
+
+	versionedKey := s.versionedStorageKey(bucket, key, versionId)
+	if err := s.BaseStore.PutProto(versionedKey, ObjectToProto(obj)); err != nil {
+		return err
+	}
+	if err := s.BaseStore.PutProto(latestKey, ObjectToProto(obj)); err != nil {
+		return err
+	}
+
+	if prevLatestFound && prevLatest.VersionId != versionId {
 		prevLatest.IsLatest = false
 		prevStorageKey := s.versionedStorageKey(bucket, key, prevLatest.VersionId)
 		if err := s.BaseStore.PutProto(prevStorageKey, &prevLatest); err != nil {
@@ -30,12 +45,7 @@ func (s *ObjectStore) putVersionedObject(bucket, key, versionId string, obj *Obj
 		}
 	}
 
-	versionedKey := s.versionedStorageKey(bucket, key, versionId)
-	if err := s.BaseStore.PutProto(versionedKey, ObjectToProto(obj)); err != nil {
-		return err
-	}
-
-	return s.BaseStore.PutProto(latestKey, ObjectToProto(obj))
+	return nil
 }
 
 // GetWithVersion retrieves a specific version of an object.
@@ -374,6 +384,8 @@ func (s *ObjectStore) GetRangeWithVersion(ctx context.Context, bucket, key, vers
 }
 
 // SetACLWithVersion sets the access control list for a specific version of an object.
+// When no explicit versionId is given on a versioned bucket the latest version is
+// updated. Both the versioned record and the _latest pointer are kept in sync.
 func (s *ObjectStore) SetACLWithVersion(bucket, key, versionId string, acp *AccessControlPolicy) error {
 	lockKey := bucket + "#" + key
 	s.keyLocker.Lock(lockKey)
@@ -382,15 +394,13 @@ func (s *ObjectStore) SetACLWithVersion(bucket, key, versionId string, acp *Acce
 		s.keyLocker.Delete(lockKey)
 	}()
 
-	var pbObj pb.Object
-	var storageKey string
-
 	isVersioned := s.isVersioningEnabled(bucket)
 	effectiveVersionId := versionId
 	if !isVersioned && versionId == "null" {
 		effectiveVersionId = ""
 	}
 
+	var storageKey string
 	if effectiveVersionId != "" || isVersioned {
 		storageKey = s.versionedStorageKey(bucket, key, effectiveVersionId)
 		if effectiveVersionId == "" {
@@ -400,13 +410,34 @@ func (s *ObjectStore) SetACLWithVersion(bucket, key, versionId string, acp *Acce
 		storageKey = s.storageKey(bucket, key)
 	}
 
+	var pbObj pb.Object
 	if err := s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
 		return ErrObjectNotFound
 	}
 
 	obj := ProtoToObject(&pbObj)
 	obj.ACL = acp
-	return s.BaseStore.PutProto(storageKey, ObjectToProto(obj))
+
+	if err := s.BaseStore.PutProto(storageKey, ObjectToProto(obj)); err != nil {
+		return err
+	}
+
+	if isVersioned && obj.IsLatest {
+		versionedKey := s.versionedStorageKey(bucket, key, obj.VersionID)
+		if versionedKey != storageKey {
+			if err := s.BaseStore.PutProto(versionedKey, ObjectToProto(obj)); err != nil {
+				return err
+			}
+		}
+		latestKey := s.latestKeyStorageKey(bucket, key)
+		if storageKey != latestKey {
+			if err := s.BaseStore.PutProto(latestKey, ObjectToProto(obj)); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // GetACLWithVersion retrieves the access control list for a specific version of an object.

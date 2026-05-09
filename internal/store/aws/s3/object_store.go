@@ -261,10 +261,7 @@ func (s *ObjectStore) SetStorageClass(bucket, key, versionId string, storageClas
 		} else {
 			b, bucketErr := s.bucketStore.Get(bucket)
 			if bucketErr == nil && (b.VersioningStatus == BucketVersioningEnabled || b.VersioningStatus == "Suspended") {
-				latestKey := s.latestKeyStorageKey(bucket, key)
-				if err := s.BaseStore.GetProto(latestKey, &obj); err == nil {
-					storageKey = latestKey
-				}
+				storageKey = s.latestKeyStorageKey(bucket, key)
 			}
 		}
 		if err := s.BaseStore.GetProto(storageKey, &obj); err != nil {

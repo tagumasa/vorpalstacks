@@ -43,8 +43,8 @@ func (o *GetObjectAclOutput) ToXML() string {
 
 // GetObjectAcl retrieves the Access Control List for an object.
 // Returns the owner and list of grants for the specified object version.
-func (o *ObjectOperations) GetObjectAcl(ctx context.Context, reqCtx *request.RequestContext, bucket, key, versionId string) (*GetObjectAclOutput, error) {
-	if err := o.validateBucketExists(reqCtx, bucket); err != nil {
+func (o *ObjectOperations) GetObjectAcl(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, bucket, key, versionId string) (*GetObjectAclOutput, error) {
+	if err := o.validateBucketExists(stores, bucket); err != nil {
 		return nil, err
 	}
 
@@ -52,12 +52,7 @@ func (o *ObjectOperations) GetObjectAcl(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	acp, err := store.objects.GetACLWithVersion(bucket, key, versionId)
+	acp, err := stores.objects.GetACLWithVersion(bucket, key, versionId)
 	if err != nil {
 		return nil, err
 	}
@@ -84,15 +79,11 @@ func (o *ObjectOperations) GetObjectAcl(ctx context.Context, reqCtx *request.Req
 
 // PutObjectAcl sets the Access Control List for an object.
 // Accepts either a canned ACL string, an AccessControlPolicy, or individual grant headers.
-func (o *ObjectOperations) PutObjectAcl(ctx context.Context, reqCtx *request.RequestContext, input *PutObjectAclInput) error {
-	store, err := o.svc.store(reqCtx)
-	if err != nil {
-		return err
-	}
-
+func (o *ObjectOperations) PutObjectAcl(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *PutObjectAclInput) error {
 	owner := &s3store.ACLOwner{ID: o.svc.accountID, DisplayName: o.svc.accountID}
 
 	var acp *s3store.AccessControlPolicy
+	var err error
 
 	if input.ACL != "" {
 		acp, err = CannedACLToPolicy(input.ACL, owner)
@@ -110,5 +101,5 @@ func (o *ObjectOperations) PutObjectAcl(ctx context.Context, reqCtx *request.Req
 		}
 	}
 
-	return store.objects.SetACLWithVersion(input.Bucket, input.Key, input.VersionId, acp)
+	return stores.objects.SetACLWithVersion(input.Bucket, input.Key, input.VersionId, acp)
 }
