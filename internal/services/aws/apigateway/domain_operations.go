@@ -116,28 +116,14 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 		return nil, ErrNotFoundException
 	}
 
-	patchOps, ok := req.Parameters["patchOperations"].([]interface{})
-	if ok {
-		for _, op := range patchOps {
-			if opMap, ok := op.(map[string]interface{}); ok {
-				path := ""
-				value := ""
-				if p, ok := opMap["path"].(string); ok {
-					path = p
-				}
-				if v, ok := opMap["value"].(string); ok {
-					value = v
-				}
-
-				switch path {
-				case "/certificateArn":
-					domain.CertificateArn = value
-				case "/regionalCertificateArn":
-					domain.RegionalCertificateArn = value
-				case "/certificateName":
-					domain.CertificateName = value
-				}
-			}
+	for _, po := range parsePatchOperations(req.Parameters) {
+		switch po.Path {
+		case "/certificateArn":
+			domain.CertificateArn = po.Value
+		case "/regionalCertificateArn":
+			domain.RegionalCertificateArn = po.Value
+		case "/certificateName":
+			domain.CertificateName = po.Value
 		}
 	}
 
@@ -365,34 +351,20 @@ func (s *APIGatewayService) UpdateBasePathMapping(ctx context.Context, reqCtx *r
 		return nil, ErrNotFoundException
 	}
 
-	patchOps, ok := req.Parameters["patchOperations"].([]interface{})
 	renamed := false
-	if ok {
-		for _, op := range patchOps {
-			if opMap, ok := op.(map[string]interface{}); ok {
-				patchPath := ""
-				value := ""
-				if p, ok := opMap["path"].(string); ok {
-					patchPath = p
-				}
-				if v, ok := opMap["value"].(string); ok {
-					value = v
-				}
-
-				switch patchPath {
-				case "/restApiId":
-					mapping.RestApiId = value
-				case "/stage":
-					mapping.Stage = value
-				case "/basePath":
-					oldPath := basePath
-					basePath = value
-					mapping.BasePath = value
-					renamed = true
-					if err := stores.domains.DeleteBasePathMapping(domainName, oldPath); err != nil {
-						return nil, err
-					}
-				}
+	for _, po := range parsePatchOperations(req.Parameters) {
+		switch po.Path {
+		case "/restApiId":
+			mapping.RestApiId = po.Value
+		case "/stage":
+			mapping.Stage = po.Value
+		case "/basePath":
+			oldPath := basePath
+			basePath = po.Value
+			mapping.BasePath = po.Value
+			renamed = true
+			if err := stores.domains.DeleteBasePathMapping(domainName, oldPath); err != nil {
+				return nil, err
 			}
 		}
 	}

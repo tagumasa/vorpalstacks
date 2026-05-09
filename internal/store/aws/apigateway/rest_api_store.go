@@ -54,24 +54,7 @@ func (s *RestApiStore) Create(api *RestApi) (*RestApi, error) {
 
 	now := time.Now().UTC()
 	api.CreatedDate = now
-	if api.Resources == nil {
-		api.Resources = make(map[string]*Resource)
-	}
-	if api.Deployments == nil {
-		api.Deployments = make(map[string]*Deployment)
-	}
-	if api.Stages == nil {
-		api.Stages = make(map[string]*Stage)
-	}
-	if api.RequestValidators == nil {
-		api.RequestValidators = make(map[string]*RequestValidator)
-	}
-	if api.Models == nil {
-		api.Models = make(map[string]*Model)
-	}
-	if api.Authorizers == nil {
-		api.Authorizers = make(map[string]*Authorizer)
-	}
+	ensureRestApiMaps(api)
 
 	rootResource := &Resource{
 		Id:              api.Id,
@@ -102,6 +85,13 @@ func (s *RestApiStore) Update(api *RestApi) error {
 	if !s.Exists(api.Id) {
 		return ErrRestApiNotFound
 	}
+	ensureRestApiMaps(api)
+	return s.Put(api.Id, api)
+}
+
+// ensureRestApiMaps initialises nil maps on a RestApi so that serialised
+// output is always a valid empty map rather than null.
+func ensureRestApiMaps(api *RestApi) {
 	if api.Resources == nil {
 		api.Resources = make(map[string]*Resource)
 	}
@@ -120,7 +110,6 @@ func (s *RestApiStore) Update(api *RestApi) error {
 	if api.Authorizers == nil {
 		api.Authorizers = make(map[string]*Authorizer)
 	}
-	return s.Put(api.Id, api)
 }
 
 // Delete deletes a REST API.

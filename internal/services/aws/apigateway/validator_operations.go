@@ -119,28 +119,14 @@ func (s *APIGatewayService) UpdateRequestValidator(ctx context.Context, reqCtx *
 		return nil, ErrNotFoundException
 	}
 
-	patchOps, ok := req.Parameters["patchOperations"].([]interface{})
-	if ok {
-		for _, op := range patchOps {
-			if opMap, ok := op.(map[string]interface{}); ok {
-				path := ""
-				value := ""
-				if p, ok := opMap["path"].(string); ok {
-					path = p
-				}
-				if v, ok := opMap["value"].(string); ok {
-					value = v
-				}
-
-				switch path {
-				case "/name":
-					validator.Name = value
-				case "/validateRequestBody":
-					validator.ValidateRequestBody = value == "true"
-				case "/validateRequestParameters":
-					validator.ValidateRequestParameters = value == "true"
-				}
-			}
+	for _, po := range parsePatchOperations(req.Parameters) {
+		switch po.Path {
+		case "/name":
+			validator.Name = po.Value
+		case "/validateRequestBody":
+			validator.ValidateRequestBody = po.Value == "true"
+		case "/validateRequestParameters":
+			validator.ValidateRequestParameters = po.Value == "true"
 		}
 	}
 

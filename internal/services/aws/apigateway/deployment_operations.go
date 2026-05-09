@@ -266,60 +266,42 @@ func (s *APIGatewayService) UpdateStage(ctx context.Context, reqCtx *request.Req
 		return nil, toApiGatewayError(err)
 	}
 
-	patchOps, ok := req.Parameters["patchOperations"].([]interface{})
-	if ok {
-		for _, op := range patchOps {
-			if opMap, ok := op.(map[string]interface{}); ok {
-				path := ""
-				value := ""
-				if p, ok := opMap["path"].(string); ok {
-					path = p
+	for _, po := range parsePatchOperations(req.Parameters) {
+		switch {
+		case po.Path == "/description":
+			stage.Description = po.Value
+		case po.Path == "/deploymentId":
+			if po.Value != "" {
+				if _, err := stores.restApis.GetDeployment(apiId, po.Value); err != nil {
+					return nil, NewBadRequestException("deployment not found")
 				}
-				if v, ok := opMap["value"].(string); ok {
-					value = v
-				}
-
-				switch path {
-				case "/description":
-					stage.Description = value
-				case "/deploymentId":
-					if value != "" {
-						_, err := stores.restApis.GetDeployment(apiId, value)
-						if err != nil {
-							return nil, NewBadRequestException("deployment not found")
-						}
-					}
-					stage.DeploymentId = value
-				case "/cacheClusterEnabled":
-					stage.CacheClusterEnabled = value == "true"
-				case "/cacheClusterSize":
-					stage.CacheClusterSize = value
-				case "/tracingEnabled":
-					stage.TracingEnabled = value == "true"
-				}
-				if strings.HasPrefix(path, "/variables/") {
-					if stage.Variables == nil {
-						stage.Variables = make(map[string]string)
-					}
-					varName := strings.TrimPrefix(path, "/variables/")
-					if opMap["op"] == "remove" {
-						delete(stage.Variables, varName)
-					} else {
-						stage.Variables[varName] = value
-					}
-				}
-				if strings.HasPrefix(path, "/accessLogSettings/") {
-					if stage.AccessLogSettings == nil {
-						stage.AccessLogSettings = &store.AccessLogSettings{}
-					}
-					setting := strings.TrimPrefix(path, "/accessLogSettings/")
-					switch setting {
-					case "destinationArn":
-						stage.AccessLogSettings.DestinationArn = value
-					case "format":
-						stage.AccessLogSettings.Format = value
-					}
-				}
+			}
+			stage.DeploymentId = po.Value
+		case po.Path == "/cacheClusterEnabled":
+			stage.CacheClusterEnabled = po.Value == "true"
+		case po.Path == "/cacheClusterSize":
+			stage.CacheClusterSize = po.Value
+		case po.Path == "/tracingEnabled":
+			stage.TracingEnabled = po.Value == "true"
+		case strings.HasPrefix(po.Path, "/variables/"):
+			if stage.Variables == nil {
+				stage.Variables = make(map[string]string)
+			}
+			varName := strings.TrimPrefix(po.Path, "/variables/")
+			if po.Op == "remove" {
+				delete(stage.Variables, varName)
+			} else {
+				stage.Variables[varName] = po.Value
+			}
+		case strings.HasPrefix(po.Path, "/accessLogSettings/"):
+			if stage.AccessLogSettings == nil {
+				stage.AccessLogSettings = &store.AccessLogSettings{}
+			}
+			switch strings.TrimPrefix(po.Path, "/accessLogSettings/") {
+			case "destinationArn":
+				stage.AccessLogSettings.DestinationArn = po.Value
+			case "format":
+				stage.AccessLogSettings.Format = po.Value
 			}
 		}
 	}

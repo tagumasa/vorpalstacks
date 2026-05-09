@@ -142,57 +142,39 @@ func CloneSnapshot(api *RestApi) *DeploymentSnapshot {
 }
 
 func deepCopyResources(src map[string]*Resource) map[string]*Resource {
-	if src == nil {
-		return nil
-	}
-	dst := make(map[string]*Resource, len(src))
-	for k, v := range src {
-		data, _ := json.Marshal(v)
-		copy := &Resource{}
-		_ = json.Unmarshal(data, copy)
-		dst[k] = copy
-	}
-	return dst
+	return deepCopyMap(src, func() *Resource { return &Resource{} })
 }
 
 func deepCopyAuthorizers(src map[string]*Authorizer) map[string]*Authorizer {
-	if src == nil {
-		return nil
-	}
-	dst := make(map[string]*Authorizer, len(src))
-	for k, v := range src {
-		data, _ := json.Marshal(v)
-		copy := &Authorizer{}
-		_ = json.Unmarshal(data, copy)
-		dst[k] = copy
-	}
-	return dst
+	return deepCopyMap(src, func() *Authorizer { return &Authorizer{} })
 }
 
 func deepCopyRequestValidators(src map[string]*RequestValidator) map[string]*RequestValidator {
-	if src == nil {
-		return nil
-	}
-	dst := make(map[string]*RequestValidator, len(src))
-	for k, v := range src {
-		data, _ := json.Marshal(v)
-		copy := &RequestValidator{}
-		_ = json.Unmarshal(data, copy)
-		dst[k] = copy
-	}
-	return dst
+	return deepCopyMap(src, func() *RequestValidator { return &RequestValidator{} })
 }
 
 func deepCopyModels(src map[string]*Model) map[string]*Model {
+	return deepCopyMap(src, func() *Model { return &Model{} })
+}
+
+// deepCopyMap creates a deep copy of a map using JSON round-trip serialisation.
+func deepCopyMap[T any](src map[string]*T, newFn func() *T) map[string]*T {
 	if src == nil {
 		return nil
 	}
-	dst := make(map[string]*Model, len(src))
+	dst := make(map[string]*T, len(src))
 	for k, v := range src {
-		data, _ := json.Marshal(v)
-		copy := &Model{}
-		_ = json.Unmarshal(data, copy)
-		dst[k] = copy
+		data, err := json.Marshal(v)
+		if err != nil {
+			dst[k] = v
+			continue
+		}
+		cp := newFn()
+		if err := json.Unmarshal(data, cp); err != nil {
+			dst[k] = v
+			continue
+		}
+		dst[k] = cp
 	}
 	return dst
 }
@@ -361,46 +343,4 @@ type BasePathMapping struct {
 	BasePath   string `json:"base_path"`
 	RestApiId  string `json:"rest_api_id"`
 	Stage      string `json:"stage"`
-}
-
-// RestApiListResult represents the result of listing REST APIs.
-type RestApiListResult struct {
-	Items       []*RestApi
-	NextMarker  string
-	IsTruncated bool
-}
-
-// ResourceListResult represents the result of listing API Gateway resources.
-type ResourceListResult struct {
-	Items       []*Resource
-	NextMarker  string
-	IsTruncated bool
-}
-
-// DeploymentListResult represents the result of listing API Gateway deployments.
-type DeploymentListResult struct {
-	Items       []*Deployment
-	NextMarker  string
-	IsTruncated bool
-}
-
-// StageListResult represents the result of listing API Gateway stages.
-type StageListResult struct {
-	Items       []*Stage
-	NextMarker  string
-	IsTruncated bool
-}
-
-// ApiKeyListResult represents the result of listing API keys.
-type ApiKeyListResult struct {
-	Items       []*ApiKey
-	NextMarker  string
-	IsTruncated bool
-}
-
-// UsagePlanListResult represents the result of listing usage plans.
-type UsagePlanListResult struct {
-	Items       []*UsagePlan
-	NextMarker  string
-	IsTruncated bool
 }

@@ -50,3 +50,13 @@ func parseFloat64(s string) float64 {
 	v, _ := strconv.ParseFloat(s, 64)
 	return v
 }
+
+// containsAny checks whether slice contains the target string.
+func containsAny(slice []string, target string) bool {
+	for _, s := range slice {
+		if s == target {
+			return true
+		}
+	}
+	return false
+}

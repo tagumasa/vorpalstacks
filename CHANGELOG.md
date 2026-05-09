@@ -23,6 +23,7 @@ All notable changes to Vorpalstacks will be documented in this file.
 ### Changed
 
 - **All AWS service admin handlers**: Unified constructor signature with StorageManager and AccountID parameters
+- **API Gateway overhauled**: Patch operation parsing consolidated into `parsePatchOperations` helper, eliminating duplicated type-assertion boilerplate across all Update operations; deep-copy helpers unified via generic `deepCopyMap[T]`; unused `*ListResult` types removed; admin store uses `GetOrCreateStoreE` singleton pattern; fixed nil map serialization in `Update` (`ensureRestApiMaps`), binary media type remove with JSON Patch `-` (append marker), and missing `rootResourceId` in REST API responses; `UpdateApiKey` now invalidates runtime cache via `RemoveApiKey`
 - **Athena**: Added cleanup logic for expired query executions
 - **CI/CD**: Added Node.js 22 setup, webconsole dependency install, and proto generation steps
 - **Dependencies**: Added gopsutil (indirect: purego, go-ole, plan9stats, perfstat, go-sysconf, numcpus, wmi)

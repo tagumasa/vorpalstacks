@@ -3,6 +3,7 @@ package apigateway
 import (
 	"errors"
 	"net/http"
+	"sync"
 
 	"connectrpc.com/connect"
 
@@ -10,12 +11,14 @@ import (
 	"vorpalstacks/internal/core/storage"
 	apigatewayconnect "vorpalstacks/internal/pb/aws/apigateway/apigatewayconnect"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 type AdminHandler struct {
 	apigatewayconnect.UnimplementedAPIGatewayServiceHandler
 	storageManager *storage.RegionStorageManager
 	accountId      string
+	stores         sync.Map
 }
 
 var _ apigatewayconnect.APIGatewayServiceHandler = (*AdminHandler)(nil)
@@ -35,15 +38,17 @@ type adminStores struct {
 
 func (h *AdminHandler) getStores(headers http.Header) (*adminStores, error) {
 	region := svccommon.GetRegionFromHeader(headers)
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return &adminStores{
-		restApis: apigatewaystore.NewRestApiStore(regionStorage, h.accountId, region),
-		usage:    apigatewaystore.NewUsageStore(regionStorage, h.accountId, region),
-		domains:  apigatewaystore.NewDomainStore(regionStorage, h.accountId, region),
-	}, nil
+	return storecommon.GetOrCreateStoreE(&h.stores, region, func() (*adminStores, error) {
+		regionStorage, err := h.storageManager.GetStorage(region)
+		if err != nil {
+			return nil, err
+		}
+		return &adminStores{
+			restApis: apigatewaystore.NewRestApiStore(regionStorage, h.accountId, region),
+			usage:    apigatewaystore.NewUsageStore(regionStorage, h.accountId, region),
+			domains:  apigatewaystore.NewDomainStore(regionStorage, h.accountId, region),
+		}, nil
+	})
 }
 
 func storeErr(err error) error {

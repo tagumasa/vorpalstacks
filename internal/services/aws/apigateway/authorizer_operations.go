@@ -124,38 +124,24 @@ func (s *APIGatewayService) UpdateAuthorizer(ctx context.Context, reqCtx *reques
 		return nil, toApiGatewayError(err)
 	}
 
-	patchOps, ok := req.Parameters["patchOperations"].([]interface{})
-	if ok {
-		for _, op := range patchOps {
-			if opMap, ok := op.(map[string]interface{}); ok {
-				path := ""
-				value := ""
-				if p, ok := opMap["path"].(string); ok {
-					path = p
-				}
-				if v, ok := opMap["value"].(string); ok {
-					value = v
-				}
-
-				switch path {
-				case "/name":
-					existing.Name = value
-				case "/type":
-					existing.Type = value
-				case "/authType":
-					existing.AuthType = value
-				case "/authorizerUri":
-					existing.AuthorizerUri = value
-				case "/authorizerCredentials":
-					existing.AuthorizerCredentials = value
-				case "/identitySource":
-					existing.IdentitySource = value
-				case "/identityValidationExpression":
-					existing.IdentityValidationExpression = value
-				case "/authorizerResultTtlInSeconds":
-					existing.AuthorizerResultTtlInSeconds = int32(parseInt64(value))
-				}
-			}
+	for _, po := range parsePatchOperations(req.Parameters) {
+		switch po.Path {
+		case "/name":
+			existing.Name = po.Value
+		case "/type":
+			existing.Type = po.Value
+		case "/authType":
+			existing.AuthType = po.Value
+		case "/authorizerUri":
+			existing.AuthorizerUri = po.Value
+		case "/authorizerCredentials":
+			existing.AuthorizerCredentials = po.Value
+		case "/identitySource":
+			existing.IdentitySource = po.Value
+		case "/identityValidationExpression":
+			existing.IdentityValidationExpression = po.Value
+		case "/authorizerResultTtlInSeconds":
+			existing.AuthorizerResultTtlInSeconds = int32(parseInt64(po.Value))
 		}
 	}
 

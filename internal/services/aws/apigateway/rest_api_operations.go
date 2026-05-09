@@ -23,6 +23,34 @@ func getPathParam(req *request.ParsedRequest, key string) string {
 	return ""
 }
 
+// resolveBinaryMediaTypeToRemove determines which media type to remove based on
+// the JSON Patch path. The path may be an index ("/binaryMediaTypes/2"), a
+// value ("/binaryMediaTypes/image~1png"), or empty ("/binaryMediaTypes/-").
+func resolveBinaryMediaTypeToRemove(path, value string, current []string) string {
+	segment := strings.TrimPrefix(path, "/binaryMediaTypes/")
+	segment = strings.ReplaceAll(segment, "~1", "/")
+	segment = strings.ReplaceAll(segment, "~0", "~")
+	if idx, err := strconv.Atoi(segment); err == nil && idx < len(current) {
+		return current[idx]
+	}
+	if segment == "" || segment == "-" {
+		return value
+	}
+	return segment
+}
+
+// removeString returns a new slice with all occurrences of target removed.
+func removeString(slice []string, target string) []string {
+	n := 0
+	for _, s := range slice {
+		if s != target {
+			slice[n] = s
+			n++
+		}
+	}
+	return slice[:n]
+}
+
 func getRestApiId(req *request.ParsedRequest) string {
 	apiId := request.GetStringParam(req.Parameters, "restApiId")
 	if apiId == "" {
@@ -147,68 +175,28 @@ func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.R
 		return nil, ErrNotFoundException
 	}
 
-	patchOps, ok := req.Parameters["patchOperations"].([]interface{})
-	if ok {
-		for _, op := range patchOps {
-			if opMap, ok := op.(map[string]interface{}); ok {
-				path := ""
-				value := ""
-				if p, ok := opMap["path"].(string); ok {
-					path = p
+	for _, po := range parsePatchOperations(req.Parameters) {
+		switch {
+		case po.Path == "/name":
+			api.Name = po.Value
+		case po.Path == "/description":
+			api.Description = po.Value
+		case po.Path == "/version":
+			api.Version = po.Value
+		case po.Path == "/apiKeySource":
+			api.ApiKeySource = po.Value
+		case po.Path == "/policy":
+			api.Policy = po.Value
+		case po.Path == "/minimumCompressionSize":
+			api.MinimumCompressionSize = parseInt32(po.Value)
+		case strings.HasPrefix(po.Path, "/binaryMediaTypes"):
+			if po.Op == "add" {
+				if !containsAny(api.BinaryMediaTypes, po.Value) {
+					api.BinaryMediaTypes = append(api.BinaryMediaTypes, po.Value)
 				}
-				if v, ok := opMap["value"].(string); ok {
-					value = v
-				}
-
-				switch path {
-				case "/name":
-					api.Name = value
-				case "/description":
-					api.Description = value
-				case "/version":
-					api.Version = value
-				case "/apiKeySource":
-					api.ApiKeySource = value
-				case "/policy":
-					api.Policy = value
-				case "/minimumCompressionSize":
-					api.MinimumCompressionSize = parseInt32(value)
-				}
-				if strings.HasPrefix(path, "/binaryMediaTypes") {
-					opName := ""
-					if o, ok := opMap["op"].(string); ok {
-						opName = o
-					}
-					if opName == "add" {
-						if path == "/binaryMediaTypes" || path == "/binaryMediaTypes/-" {
-							if !containsMediaType(api.BinaryMediaTypes, value) {
-								api.BinaryMediaTypes = append(api.BinaryMediaTypes, value)
-							}
-						} else if strings.HasPrefix(path, "/binaryMediaTypes/") {
-							if !containsMediaType(api.BinaryMediaTypes, value) {
-								api.BinaryMediaTypes = append(api.BinaryMediaTypes, value)
-							}
-						}
-					} else if opName == "remove" {
-						mediaType := strings.TrimPrefix(path, "/binaryMediaTypes/")
-						mediaType = strings.ReplaceAll(mediaType, "~1", "/")
-						mediaType = strings.ReplaceAll(mediaType, "~0", "~")
-						target := mediaType
-						idx, err := strconv.Atoi(mediaType)
-						if err == nil && idx < len(api.BinaryMediaTypes) {
-							target = api.BinaryMediaTypes[idx]
-						} else if mediaType == "" {
-							target = value
-						}
-						newTypes := []string{}
-						for _, t := range api.BinaryMediaTypes {
-							if t != target {
-								newTypes = append(newTypes, t)
-							}
-						}
-						api.BinaryMediaTypes = newTypes
-					}
-				}
+			} else if po.Op == "remove" {
+				target := resolveBinaryMediaTypeToRemove(po.Path, po.Value, api.BinaryMediaTypes)
+				api.BinaryMediaTypes = removeString(api.BinaryMediaTypes, target)
 			}
 		}
 	}
@@ -257,9 +245,10 @@ func (s *APIGatewayService) GetRestApis(ctx context.Context, reqCtx *request.Req
 
 func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]interface{} {
 	response := map[string]interface{}{
-		"id":          api.Id,
-		"name":        api.Name,
-		"createdDate": timeutils.FormatEpochSeconds(api.CreatedDate),
+		"id":             api.Id,
+		"name":           api.Name,
+		"createdDate":    timeutils.FormatEpochSeconds(api.CreatedDate),
+		"rootResourceId": api.Id,
 	}
 
 	if api.Description != "" {
@@ -294,13 +283,4 @@ func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]int
 	}
 
 	return response
-}
-
-func containsMediaType(types []string, t string) bool {
-	for _, v := range types {
-		if v == t {
-			return true
-		}
-	}
-	return false
 }

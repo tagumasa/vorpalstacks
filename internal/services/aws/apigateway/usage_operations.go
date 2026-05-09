@@ -127,52 +127,34 @@ func (s *APIGatewayService) UpdateApiKey(ctx context.Context, reqCtx *request.Re
 		return nil, toApiGatewayError(err)
 	}
 
-	patchOps, ok := req.Parameters["patchOperations"].([]interface{})
-	if ok {
-		for _, op := range patchOps {
-			if opMap, ok := op.(map[string]interface{}); ok {
-				path := ""
-				value := ""
-				if p, ok := opMap["path"].(string); ok {
-					path = p
+	for _, po := range parsePatchOperations(req.Parameters) {
+		switch {
+		case po.Path == "/name":
+			apiKey.Name = po.Value
+		case po.Path == "/description":
+			apiKey.Description = po.Value
+		case po.Path == "/enabled":
+			apiKey.Enabled = po.Value == "true"
+		case strings.HasPrefix(po.Path, "/stageKeys/"):
+			if apiKey.StageKeys == nil {
+				apiKey.StageKeys = []string{}
+			}
+			stageKey := strings.TrimPrefix(po.Path, "/stageKeys/")
+			if po.Op == "add" || po.Op == "replace" {
+				if !containsAny(apiKey.StageKeys, stageKey) {
+					apiKey.StageKeys = append(apiKey.StageKeys, stageKey)
 				}
-				if v, ok := opMap["value"].(string); ok {
-					value = v
-				}
-
-				switch path {
-				case "/name":
-					apiKey.Name = value
-				case "/description":
-					apiKey.Description = value
-				case "/enabled":
-					apiKey.Enabled = value == "true"
-				}
-				if strings.HasPrefix(path, "/stageKeys/") {
-					if apiKey.StageKeys == nil {
-						apiKey.StageKeys = []string{}
-					}
-					stageKey := strings.TrimPrefix(path, "/stageKeys/")
-					if opMap["op"] == "add" || opMap["op"] == "replace" {
-						if !containsString(apiKey.StageKeys, stageKey) {
-							apiKey.StageKeys = append(apiKey.StageKeys, stageKey)
-						}
-					} else if opMap["op"] == "remove" {
-						newStageKeys := []string{}
-						for _, sk := range apiKey.StageKeys {
-							if sk != stageKey {
-								newStageKeys = append(newStageKeys, sk)
-							}
-						}
-						apiKey.StageKeys = newStageKeys
-					}
-				}
+			} else if po.Op == "remove" {
+				apiKey.StageKeys = removeString(apiKey.StageKeys, stageKey)
 			}
 		}
 	}
-
 	if err := stores.usage.UpdateApiKey(apiKey); err != nil {
 		return nil, err
+	}
+
+	if s.runtimeServer != nil {
+		s.runtimeServer.RemoveApiKey(apiKeyId)
 	}
 
 	return s.toApiKeyResponse(apiKey), nil
@@ -407,51 +389,37 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 		return nil, toApiGatewayError(err)
 	}
 
-	patchOps, ok := req.Parameters["patchOperations"].([]interface{})
-	if ok {
-		for _, op := range patchOps {
-			if opMap, ok := op.(map[string]interface{}); ok {
-				path := ""
-				value := ""
-				if p, ok := opMap["path"].(string); ok {
-					path = p
-				}
-				if v, ok := opMap["value"].(string); ok {
-					value = v
-				}
-
-				switch path {
-				case "/name":
-					usagePlan.Name = value
-				case "/description":
-					usagePlan.Description = value
-				case "/quota/limit":
-					if usagePlan.Quota == nil {
-						usagePlan.Quota = &store.Quota{}
-					}
-					usagePlan.Quota.Limit = parseInt64(value)
-				case "/quota/period":
-					if usagePlan.Quota == nil {
-						usagePlan.Quota = &store.Quota{}
-					}
-					usagePlan.Quota.Period = value
-				case "/quota/offset":
-					if usagePlan.Quota == nil {
-						usagePlan.Quota = &store.Quota{}
-					}
-					usagePlan.Quota.Offset = parseInt64(value)
-				case "/throttle/burstLimit":
-					if usagePlan.Throttle == nil {
-						usagePlan.Throttle = &store.Throttle{}
-					}
-					usagePlan.Throttle.BurstLimit = parseInt64(value)
-				case "/throttle/rateLimit":
-					if usagePlan.Throttle == nil {
-						usagePlan.Throttle = &store.Throttle{}
-					}
-					usagePlan.Throttle.RateLimit = parseFloat64(value)
-				}
+	for _, po := range parsePatchOperations(req.Parameters) {
+		switch po.Path {
+		case "/name":
+			usagePlan.Name = po.Value
+		case "/description":
+			usagePlan.Description = po.Value
+		case "/quota/limit":
+			if usagePlan.Quota == nil {
+				usagePlan.Quota = &store.Quota{}
 			}
+			usagePlan.Quota.Limit = parseInt64(po.Value)
+		case "/quota/period":
+			if usagePlan.Quota == nil {
+				usagePlan.Quota = &store.Quota{}
+			}
+			usagePlan.Quota.Period = po.Value
+		case "/quota/offset":
+			if usagePlan.Quota == nil {
+				usagePlan.Quota = &store.Quota{}
+			}
+			usagePlan.Quota.Offset = parseInt64(po.Value)
+		case "/throttle/burstLimit":
+			if usagePlan.Throttle == nil {
+				usagePlan.Throttle = &store.Throttle{}
+			}
+			usagePlan.Throttle.BurstLimit = parseInt64(po.Value)
+		case "/throttle/rateLimit":
+			if usagePlan.Throttle == nil {
+				usagePlan.Throttle = &store.Throttle{}
+			}
+			usagePlan.Throttle.RateLimit = parseFloat64(po.Value)
 		}
 	}
 
@@ -772,13 +740,4 @@ func (s *APIGatewayService) GetUsage(ctx context.Context, reqCtx *request.Reques
 		"endDate":     endDate,
 		"items":       items,
 	}, nil
-}
-
-func containsString(slice []string, s string) bool {
-	for _, v := range slice {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
