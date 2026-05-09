@@ -78,9 +78,9 @@ func (e *AWSExecutor) executeSQSSendMessage(ctx context.Context, queueURL string
 		messageBody = req.Headers["MessageBody"]
 	}
 
-	messageAttributes := convertToSQSInvokerAttrs(extractSQSMessageAttributes(req.Headers, req.QueryParams, req.Body))
-
-	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, messageBody, 0, messageAttributes)
+	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, messageBody, eventbus.SQSSendOptions{
+		MessageAttributes: convertToSQSInvokerAttrs(extractSQSMessageAttributes(req.Headers, req.QueryParams, req.Body)),
+	})
 	if err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Failed to send SQS message: %v", err),

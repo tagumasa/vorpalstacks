@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/endpoint"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -76,14 +75,14 @@ func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *Execution
 		}
 
 		if queueName == "" {
-			queueName = "default-queue"
+			return "", fmt.Errorf("SQS SendMessage requires QueueUrl or QueueName")
 		}
 
-		if qURL, qErr := e.bus.SQSInvoker().GetQueueByName(ctx, queueName); qErr == nil {
-			queueURL = qURL
-		} else {
-			queueURL = endpoint.SQSQueueURL(e.accountID, queueName)
+		qURL, qErr := e.bus.SQSInvoker().GetQueueByName(ctx, queueName)
+		if qErr != nil {
+			return "", fmt.Errorf("SQS queue not found: %s: %w", queueName, qErr)
 		}
+		queueURL = qURL
 	}
 
 	messageBody := input
@@ -97,7 +96,7 @@ func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *Execution
 		}
 	}
 
-	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, messageBody, 0, nil)
+	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, messageBody, eventbus.SQSSendOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to send SQS message: %w", err)
 	}

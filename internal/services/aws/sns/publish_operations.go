@@ -298,13 +298,13 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 		msgAttrs[k] = v.StringValue
 	}
 
-	if msg.MessageGroupId != "" || msg.MessageDeduplicationId != "" {
-		logs.Warn("SNS to SQS FIFO delivery: MessageGroupId/MessageDeduplicationId not supported by SQSInvoker; attributes will be dropped",
-			logs.String("topicArn", msg.TopicArn),
-			logs.String("messageId", msg.MessageId))
+	opts := eventbus.SQSSendOptions{
+		MessageAttributes:      msgAttrs,
+		MessageGroupID:         msg.MessageGroupId,
+		MessageDeduplicationID: msg.MessageDeduplicationId,
 	}
 
-	if _, _, err := sqsInvoker.SendMessage(context.Background(), queueURL, body, 0, msgAttrs); err != nil {
+	if _, _, err := sqsInvoker.SendMessage(context.Background(), queueURL, body, opts); err != nil {
 		logs.Error("Failed to deliver SNS message to SQS queue — message may be permanently lost",
 			logs.String("queueURL", queueURL),
 			logs.String("messageId", msg.MessageId),

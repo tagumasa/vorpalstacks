@@ -20,12 +20,8 @@ import (
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-var _ = pb.Queue{}
-
 const (
 	maxQueueNameLength    = 80
-	maxMessageBodySize    = 262144
-	maxBatchSize          = 10
 	maxBatchEntryIdLength = 80
 	maxTagsPerQueue       = 50
 	maxTagKeyLength       = 128
@@ -150,30 +146,28 @@ func (s *SQSStore) getDeduplicationMessageID(dedupKey string) (string, bool) {
 		return entry.messageID, true
 	}
 
-	if s.storage != nil {
-		data, err := s.storage.Bucket("sqs-dedup-" + s.region).Get([]byte(dedupKey))
-		if err == nil && data != nil {
-			idx := bytes.IndexByte(data, '\x01')
-			if idx > 0 {
-				msgKey := string(data[:idx])
-				expiryStr := string(data[idx+1:])
-				if expiryMs, err := strconv.ParseInt(expiryStr, 10, 64); err == nil {
-					if time.Now().UnixMilli() >= expiryMs {
-						_ = s.storage.Bucket("sqs-dedup-" + s.region).Delete([]byte(dedupKey))
-						s.deduplicationMu.Lock()
-						delete(s.deduplicationCache, dedupKey)
-						s.deduplicationMu.Unlock()
-						return "", false
-					}
+	data, err := s.storage.Bucket("sqs-dedup-" + s.region).Get([]byte(dedupKey))
+	if err == nil && data != nil {
+		idx := bytes.IndexByte(data, '\x01')
+		if idx > 0 {
+			msgKey := string(data[:idx])
+			expiryStr := string(data[idx+1:])
+			if expiryMs, err := strconv.ParseInt(expiryStr, 10, 64); err == nil {
+				if time.Now().UnixMilli() >= expiryMs {
+					_ = s.storage.Bucket("sqs-dedup-" + s.region).Delete([]byte(dedupKey))
+					s.deduplicationMu.Lock()
+					delete(s.deduplicationCache, dedupKey)
+					s.deduplicationMu.Unlock()
+					return "", false
 				}
-				s.deduplicationMu.Lock()
-				s.deduplicationCache[dedupKey] = &deduplicationEntry{
-					messageID: msgKey,
-					expiresAt: time.Now().Add(deduplicationWindow),
-				}
-				s.deduplicationMu.Unlock()
-				return msgKey, true
 			}
+			s.deduplicationMu.Lock()
+			s.deduplicationCache[dedupKey] = &deduplicationEntry{
+				messageID: msgKey,
+				expiresAt: time.Now().Add(deduplicationWindow),
+			}
+			s.deduplicationMu.Unlock()
+			return msgKey, true
 		}
 	}
 
@@ -191,12 +185,10 @@ func (s *SQSStore) putDeduplicationEntry(dedupKey, messageID string) {
 	}
 	s.deduplicationMu.Unlock()
 
-	if s.storage != nil {
-		expiry := time.Now().Add(deduplicationWindow).UnixMilli()
-		val := append([]byte(messageID), '\x01')
-		val = append(val, []byte(strconv.FormatInt(expiry, 10))...)
-		_ = s.storage.Bucket("sqs-dedup-"+s.region).Put([]byte(dedupKey), val)
-	}
+	expiry := time.Now().Add(deduplicationWindow).UnixMilli()
+	val := append([]byte(messageID), '\x01')
+	val = append(val, []byte(strconv.FormatInt(expiry, 10))...)
+	_ = s.storage.Bucket("sqs-dedup-"+s.region).Put([]byte(dedupKey), val)
 }
 
 func (s *SQSStore) cleanupDeduplicationCache() {
@@ -251,37 +243,26 @@ func (s *SQSStore) moveToDLQ(msg *Message, dlqARN string) error {
 	newMsg.Attributes["SenderId"] = s.accountID
 	newMsg.Attributes["SentTimestamp"] = fmt.Sprintf("%d", newMsg.SentTimestamp.UnixMilli())
 
-	if s.storage != nil {
-		dlqKey := messageKey(dlqURL, newMsg.ID)
-		srcKey := messageKey(msg.QueueURL, msg.ID)
-		dlqData, marshalErr := proto.Marshal(MessageToProto(newMsg))
-		if marshalErr != nil {
-			return fmt.Errorf("failed to marshal DLQ message: %w", marshalErr)
+	dlqKey := messageKey(dlqURL, newMsg.ID)
+	srcKey := messageKey(msg.QueueURL, msg.ID)
+	dlqData, marshalErr := proto.Marshal(MessageToProto(newMsg))
+	if marshalErr != nil {
+		return fmt.Errorf("failed to marshal DLQ message: %w", marshalErr)
+	}
+	messagesBucket := "sqs-messages-" + s.region
+	receiptsBucket := "sqs-receipts-" + s.region
+	return s.storage.Update(context.Background(), func(txn storage.Transaction) error {
+		if err := txn.Bucket(messagesBucket).Put([]byte(dlqKey), dlqData); err != nil {
+			return err
 		}
-		messagesBucket := "sqs-messages-" + s.region
-		receiptsBucket := "sqs-receipts-" + s.region
-		err := s.storage.Update(context.Background(), func(txn storage.Transaction) error {
-			if err := txn.Bucket(messagesBucket).Put([]byte(dlqKey), dlqData); err != nil {
-				return err
-			}
-			if err := txn.Bucket(messagesBucket).Delete([]byte(srcKey)); err != nil {
-				return err
-			}
-			if msg.ReceiptHandle != "" {
-				_ = txn.Bucket(receiptsBucket).Delete([]byte(msg.ReceiptHandle))
-			}
-			return nil
-		})
-		return err
-	}
-
-	if err := s.messagesStore.PutProto(messageKey(dlqURL, newMsg.ID), MessageToProto(newMsg)); err != nil {
-		return fmt.Errorf("failed to put message to DLQ: %w", err)
-	}
-	if err := s.messagesStore.Delete(messageKey(msg.QueueURL, msg.ID)); err != nil {
-		return fmt.Errorf("failed to delete original message after DLQ move: %w", err)
-	}
-	return nil
+		if err := txn.Bucket(messagesBucket).Delete([]byte(srcKey)); err != nil {
+			return err
+		}
+		if msg.ReceiptHandle != "" {
+			_ = txn.Bucket(receiptsBucket).Delete([]byte(msg.ReceiptHandle))
+		}
+		return nil
+	})
 }
 
 func calculateMessageAttributesMD5(attrs map[string]*MessageAttributeValue) string {

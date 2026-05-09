@@ -836,7 +836,7 @@ func (s *EventsService) deliverToSQS(ctx context.Context, region string, arnStr 
 		return
 	}
 
-	if _, _, err := s.bus.SQSInvoker().SendMessage(ctx, queueURL, string(payload), 0, nil); err != nil {
+	if _, _, err := s.bus.SQSInvoker().SendMessage(ctx, queueURL, string(payload), eventbus.SQSSendOptions{}); err != nil {
 		logs.Error("Failed to deliver event to SQS",
 			logs.String("queue", queueName),
 			logs.String("error", err.Error()))

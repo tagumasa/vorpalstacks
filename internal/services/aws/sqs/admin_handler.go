@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"connectrpc.com/connect"
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -52,10 +53,6 @@ func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.L
 		opts.MaxItems = 100
 	}
 
-	if req.Msg.Queuenameprefix != "" {
-		opts.Prefix = req.Msg.Queuenameprefix
-	}
-
 	result, err := store.ListQueues(opts)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
@@ -63,6 +60,9 @@ func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.L
 
 	queueUrls := make([]string, 0, len(result.Items))
 	for _, queue := range result.Items {
+		if req.Msg.Queuenameprefix != "" && !strings.HasPrefix(queue.Name, req.Msg.Queuenameprefix) {
+			continue
+		}
 		queueUrls = append(queueUrls, queue.URL)
 	}
 
@@ -110,15 +110,23 @@ func (h *AdminHandler) CreateQueue(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	queue, err := store.CreateQueue(&sqsstore.Queue{
-		Name: req.Msg.Queuename,
-	})
+	queue := sqsstore.NewQueue(req.Msg.Queuename, region, store.GetAccountID())
+
+	if err := applyQueueAttributes(req.Msg.Attributes, queue); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	if len(req.Msg.Tags) > 0 {
+		queue.Tags = req.Msg.Tags
+	}
+
+	created, err := store.CreateQueue(queue)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.CreateQueueResult{
-		Queueurl: queue.URL,
+		Queueurl: created.URL,
 	}), nil
 }
 

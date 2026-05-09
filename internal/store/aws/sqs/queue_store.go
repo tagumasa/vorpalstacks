@@ -125,38 +125,36 @@ func (s *SQSStore) DeleteQueue(queueURL string) error {
 	s.cleanupDeduplicationCacheForQueue(queueURL)
 	s.deduplicationMu.Unlock()
 
-	if s.storage != nil {
-		msgPrefix := messagePrefix(queueURL)
-		prefixBytes := []byte(msgPrefix)
+	msgPrefix := messagePrefix(queueURL)
+	prefixBytes := []byte(msgPrefix)
 
-		receiptsBucket := s.storage.Bucket("sqs-receipts-" + s.region)
-		var receiptKeys [][]byte
-		_ = receiptsBucket.ForEach(func(k, v []byte) error {
-			if bytes.HasPrefix(v, prefixBytes) {
-				keyCopy := make([]byte, len(k))
-				copy(keyCopy, k)
-				receiptKeys = append(receiptKeys, keyCopy)
-			}
-			return nil
-		})
-		for _, k := range receiptKeys {
-			_ = receiptsBucket.Delete(k)
+	receiptsBucket := s.storage.Bucket("sqs-receipts-" + s.region)
+	var receiptKeys [][]byte
+	_ = receiptsBucket.ForEach(func(k, v []byte) error {
+		if bytes.HasPrefix(v, prefixBytes) {
+			keyCopy := make([]byte, len(k))
+			copy(keyCopy, k)
+			receiptKeys = append(receiptKeys, keyCopy)
 		}
+		return nil
+	})
+	for _, k := range receiptKeys {
+		_ = receiptsBucket.Delete(k)
+	}
 
-		dedupBucket := s.storage.Bucket("sqs-dedup-" + s.region)
-		dedupPrefix := queueURL + "#"
-		var dedupKeys [][]byte
-		_ = dedupBucket.ForEach(func(k, v []byte) error {
-			if bytes.HasPrefix(k, []byte(dedupPrefix)) {
-				keyCopy := make([]byte, len(k))
-				copy(keyCopy, k)
-				dedupKeys = append(dedupKeys, keyCopy)
-			}
-			return nil
-		})
-		for _, k := range dedupKeys {
-			_ = dedupBucket.Delete(k)
+	dedupBucket := s.storage.Bucket("sqs-dedup-" + s.region)
+	dedupPrefix := queueURL + "#"
+	var dedupKeys [][]byte
+	_ = dedupBucket.ForEach(func(k, v []byte) error {
+		if bytes.HasPrefix(k, []byte(dedupPrefix)) {
+			keyCopy := make([]byte, len(k))
+			copy(keyCopy, k)
+			dedupKeys = append(dedupKeys, keyCopy)
 		}
+		return nil
+	})
+	for _, k := range dedupKeys {
+		_ = dedupBucket.Delete(k)
 	}
 
 	return s.BaseStore.Delete(queueURL)
@@ -196,60 +194,84 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 	}
 
 	for k, v := range attributes {
-		var valid bool
 		switch k {
 		case "VisibilityTimeout":
-			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
-				if err := validateVisibilityTimeout(int32(val)); err != nil {
-					return fmt.Errorf("validating visibility timeout: %w", err)
-				}
-				queue.VisibilityTimeout = int32(val)
-				valid = true
+			val, err := strconv.ParseInt(v, 10, 32)
+			if err != nil {
+				return fmt.Errorf("invalid VisibilityTimeout: %w", ErrInvalidParameterValue)
 			}
+			if err := validateVisibilityTimeout(int32(val)); err != nil {
+				return fmt.Errorf("validating visibility timeout: %w", err)
+			}
+			queue.VisibilityTimeout = int32(val)
+
 		case "MaximumMessageSize":
-			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
-				if err := validateMaximumMessageSize(int32(val)); err != nil {
-					return fmt.Errorf("validating maximum message size: %w", err)
-				}
-				queue.MaximumMessageSize = int32(val)
-				valid = true
+			val, err := strconv.ParseInt(v, 10, 32)
+			if err != nil {
+				return fmt.Errorf("invalid MaximumMessageSize: %w", ErrInvalidParameterValue)
 			}
+			if err := validateMaximumMessageSize(int32(val)); err != nil {
+				return fmt.Errorf("validating maximum message size: %w", err)
+			}
+			queue.MaximumMessageSize = int32(val)
+
 		case "MessageRetentionPeriod":
-			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
-				if err := validateMessageRetentionPeriod(int32(val)); err != nil {
-					return fmt.Errorf("validating message retention period: %w", err)
-				}
-				queue.MessageRetentionPeriod = int32(val)
-				valid = true
+			val, err := strconv.ParseInt(v, 10, 32)
+			if err != nil {
+				return fmt.Errorf("invalid MessageRetentionPeriod: %w", ErrInvalidParameterValue)
 			}
+			if err := validateMessageRetentionPeriod(int32(val)); err != nil {
+				return fmt.Errorf("validating message retention period: %w", err)
+			}
+			queue.MessageRetentionPeriod = int32(val)
+
 		case "DelaySeconds":
-			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
-				if err := validateDelaySeconds(int32(val)); err != nil {
-					return fmt.Errorf("validating delay seconds: %w", err)
-				}
-				queue.DelaySeconds = int32(val)
-				valid = true
+			val, err := strconv.ParseInt(v, 10, 32)
+			if err != nil {
+				return fmt.Errorf("invalid DelaySeconds: %w", ErrInvalidParameterValue)
 			}
+			if err := validateDelaySeconds(int32(val)); err != nil {
+				return fmt.Errorf("validating delay seconds: %w", err)
+			}
+			queue.DelaySeconds = int32(val)
+
 		case "ReceiveMessageWaitTimeSeconds":
-			if val, err := strconv.ParseInt(v, 10, 32); err == nil {
-				if err := validateReceiveMessageWaitTimeSeconds(int32(val)); err != nil {
-					return fmt.Errorf("validating receive message wait time: %w", err)
-				}
-				queue.ReceiveMessageWaitTimeSeconds = int32(val)
-				valid = true
+			val, err := strconv.ParseInt(v, 10, 32)
+			if err != nil {
+				return fmt.Errorf("invalid ReceiveMessageWaitTimeSeconds: %w", ErrInvalidParameterValue)
 			}
+			if err := validateReceiveMessageWaitTimeSeconds(int32(val)); err != nil {
+				return fmt.Errorf("validating receive message wait time: %w", err)
+			}
+			queue.ReceiveMessageWaitTimeSeconds = int32(val)
+
+		case "Policy":
+			queue.Policy = v
+
 		case "RedrivePolicy":
 			rdp, err := ParseRedrivePolicy(v)
-			if err == nil {
-				queue.RedrivePolicy = rdp
-				valid = true
+			if err != nil {
+				return fmt.Errorf("invalid RedrivePolicy: %w", ErrInvalidParameterValue)
 			}
+			queue.RedrivePolicy = rdp
+
+		case "FifoQueue":
+			val, err := strconv.ParseBool(v)
+			if err != nil {
+				return fmt.Errorf("invalid FifoQueue: %w", ErrInvalidParameterValue)
+			}
+			queue.FifoQueue = val
+
+		case "ContentBasedDeduplication":
+			val, err := strconv.ParseBool(v)
+			if err != nil {
+				return fmt.Errorf("invalid ContentBasedDeduplication: %w", ErrInvalidParameterValue)
+			}
+			queue.ContentBasedDeduplication = val
+
 		default:
-			valid = true
 		}
-		if valid {
-			queue.Attributes[k] = v
-		}
+		queue.Attributes[k] = v
 	}
 
 	return s.UpdateQueue(queue)
@@ -257,6 +279,9 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 
 // AddPermission adds permission to a queue.
 func (s *SQSStore) AddPermission(queueURL, label string, awsAccountIDs []string, actions []string) error {
+	s.queueMutex.Lock()
+	defer s.queueMutex.Unlock()
+
 	queue, err := s.GetQueue(queueURL)
 	if err != nil {
 		return fmt.Errorf("getting queue: %w", err)
@@ -277,6 +302,9 @@ func (s *SQSStore) AddPermission(queueURL, label string, awsAccountIDs []string,
 
 // RemovePermission removes permission from a queue.
 func (s *SQSStore) RemovePermission(queueURL, label string) error {
+	s.queueMutex.Lock()
+	defer s.queueMutex.Unlock()
+
 	queue, err := s.GetQueue(queueURL)
 	if err != nil {
 		return fmt.Errorf("getting queue: %w", err)

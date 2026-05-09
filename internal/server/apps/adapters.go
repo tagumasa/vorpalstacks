@@ -47,11 +47,13 @@ func (a *sqsInvokerAdapter) GetQueueARN(_ context.Context, queueURL string) (str
 }
 
 // SendMessage sends a message to the specified queue, returning the message ID and MD5.
-func (a *sqsInvokerAdapter) SendMessage(_ context.Context, queueURL string, body string, delaySeconds int64, messageAttributes map[string]string) (string, string, error) {
+func (a *sqsInvokerAdapter) SendMessage(_ context.Context, queueURL string, body string, opts eventbus.SQSSendOptions) (string, string, error) {
 	msg := &storesqs.Message{
-		Body:              body,
-		DelaySeconds:      int32(delaySeconds),
-		MessageAttributes: convertToSQSMessageAttributes(messageAttributes),
+		Body:                   body,
+		DelaySeconds:           int32(opts.DelaySeconds),
+		MessageAttributes:      convertToSQSMessageAttributes(opts.MessageAttributes),
+		MessageGroupID:         opts.MessageGroupID,
+		MessageDeduplicationID: opts.MessageDeduplicationID,
 	}
 	result, err := a.store.SendMessage(queueURL, msg)
 	if err != nil {

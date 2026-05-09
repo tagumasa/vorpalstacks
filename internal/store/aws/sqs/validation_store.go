@@ -105,13 +105,6 @@ func validateReceiveMessageWaitTimeSeconds(value int32) error {
 	return nil
 }
 
-func validateMessageBodySize(body string) error {
-	if len(body) > maxMessageBodySize {
-		return ErrMessageTooLarge
-	}
-	return nil
-}
-
 func validateTags(tags map[string]string) error {
 	if len(tags) > maxTagsPerQueue {
 		return ErrTooManyTags

@@ -189,6 +189,11 @@ func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrMissingParameter
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	entries := make([]map[string]interface{}, 0)
 	seenIDs := make(map[string]bool)
 	entryCount := 0
@@ -253,17 +258,6 @@ func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.Reque
 				message.MessageAttributes = messageAttributes
 			}
 
-			store, err := s.store(reqCtx)
-			if err != nil {
-				entries = append(entries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": true,
-					"Code":        "InternalError",
-					"Message":     err.Error(),
-				})
-				continue
-			}
-
 			created, err := store.SendMessage(queueURL, message)
 			if err != nil {
 				code, senderFault := mapStoreErrorToBatchCode(err)
@@ -276,16 +270,16 @@ func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.Reque
 				continue
 			}
 
-			entry := map[string]interface{}{
+			batchEntry := map[string]interface{}{
 				"Id":                     id,
 				"MessageId":              created.ID,
 				"MD5OfMessageBody":       created.MD5OfBody,
 				"MD5OfMessageAttributes": created.MD5OfMessageAttributes,
 			}
 			if created.SequenceNumber != "" {
-				entry["SequenceNumber"] = created.SequenceNumber
+				batchEntry["SequenceNumber"] = created.SequenceNumber
 			}
-			entries = append(entries, entry)
+			entries = append(entries, batchEntry)
 		}
 	} else {
 		for i := 1; i <= 10; i++ {
@@ -339,17 +333,6 @@ func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.Reque
 				message.MessageAttributes = msgAttrs
 			}
 
-			store, err := s.store(reqCtx)
-			if err != nil {
-				entries = append(entries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": true,
-					"Code":        "InternalError",
-					"Message":     err.Error(),
-				})
-				continue
-			}
-
 			created, err := store.SendMessage(queueURL, message)
 			if err != nil {
 				code, senderFault := mapStoreErrorToBatchCode(err)
@@ -362,16 +345,16 @@ func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.Reque
 				continue
 			}
 
-			entry := map[string]interface{}{
+			batchEntry := map[string]interface{}{
 				"Id":                     id,
 				"MessageId":              created.ID,
 				"MD5OfMessageBody":       created.MD5OfBody,
 				"MD5OfMessageAttributes": created.MD5OfMessageAttributes,
 			}
 			if created.SequenceNumber != "" {
-				entry["SequenceNumber"] = created.SequenceNumber
+				batchEntry["SequenceNumber"] = created.SequenceNumber
 			}
-			entries = append(entries, entry)
+			entries = append(entries, batchEntry)
 		}
 	}
 
@@ -508,12 +491,16 @@ func (s *SQSService) DeleteMessageBatch(ctx context.Context, reqCtx *request.Req
 		return nil, ErrMissingParameter
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	successEntries := make([]map[string]interface{}, 0)
 	failedEntries := make([]map[string]interface{}, 0)
 	seenIDs := make(map[string]bool)
 	entryCount := 0
 
-	// Check for JSON-style Entries array (SDK sends this format)
 	if entries, ok := req.Parameters["Entries"].([]interface{}); ok && len(entries) > 0 {
 		for _, entry := range entries {
 			entryMap, ok := entry.(map[string]interface{})
@@ -542,17 +529,6 @@ func (s *SQSService) DeleteMessageBatch(ctx context.Context, reqCtx *request.Req
 				return nil, ErrTooManyEntriesInBatch
 			}
 
-			store, err := s.store(reqCtx)
-			if err != nil {
-				failedEntries = append(failedEntries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": true,
-					"Code":        "InternalError",
-					"Message":     err.Error(),
-				})
-				continue
-			}
-
 			if err := store.DeleteMessage(queueURL, receiptHandle); err != nil {
 				failedEntries = append(failedEntries, map[string]interface{}{
 					"Id":          id,
@@ -568,7 +544,6 @@ func (s *SQSService) DeleteMessageBatch(ctx context.Context, reqCtx *request.Req
 			})
 		}
 	} else {
-		// Check for Query-style entries (DeleteMessageBatchRequestEntry.1.Id format)
 		for i := 1; ; i++ {
 			id := request.GetParamCaseInsensitive(req.Parameters, "DeleteMessageBatchRequestEntry."+strconv.Itoa(i)+".Id")
 			if id == "" {
@@ -601,17 +576,6 @@ func (s *SQSService) DeleteMessageBatch(ctx context.Context, reqCtx *request.Req
 				if val, ok := req.Parameters[rhKey].(string); ok {
 					receiptHandle = val
 				}
-			}
-
-			store, err := s.store(reqCtx)
-			if err != nil {
-				failedEntries = append(failedEntries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": true,
-					"Code":        "InternalError",
-					"Message":     err.Error(),
-				})
-				continue
 			}
 
 			if err := store.DeleteMessage(queueURL, receiptHandle); err != nil {
@@ -675,6 +639,11 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 		return nil, ErrMissingParameter
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	entries := make([]map[string]interface{}, 0)
 	seenIDs := make(map[string]bool)
 	entryCount := 0
@@ -707,17 +676,6 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 			}
 
 			visibilityTimeout := int32(request.GetIntParam(entryMap, "VisibilityTimeout"))
-
-			store, err := s.store(reqCtx)
-			if err != nil {
-				entries = append(entries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": true,
-					"Code":        "InternalError",
-					"Message":     err.Error(),
-				})
-				continue
-			}
 
 			if err := store.ChangeMessageVisibility(queueURL, receiptHandle, visibilityTimeout); err != nil {
 				code, senderFault := mapStoreErrorToBatchCode(err)
@@ -770,17 +728,6 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 			}
 
 			visibilityTimeout := int32(request.GetIntParam(req.Parameters, "ChangeMessageVisibilityBatchRequestEntry."+strconv.Itoa(i)+".VisibilityTimeout"))
-
-			store, err := s.store(reqCtx)
-			if err != nil {
-				entries = append(entries, map[string]interface{}{
-					"Id":          id,
-					"SenderFault": true,
-					"Code":        "InternalError",
-					"Message":     err.Error(),
-				})
-				continue
-			}
 
 			if err := store.ChangeMessageVisibility(queueURL, receiptHandle, visibilityTimeout); err != nil {
 				code, senderFault := mapStoreErrorToBatchCode(err)

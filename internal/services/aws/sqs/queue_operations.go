@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,18 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
+
+var typedQueueAttributes = map[string]bool{
+	"QueueArn": true, "ApproximateNumberOfMessages": true,
+	"ApproximateNumberOfMessagesNotVisible": true,
+	"ApproximateNumberOfMessagesDelayed":    true,
+	"CreatedTimestamp":                      true, "LastModifiedTimestamp": true,
+	"VisibilityTimeout": true, "MaximumMessageSize": true,
+	"MessageRetentionPeriod": true, "DelaySeconds": true,
+	"ReceiveMessageWaitTimeSeconds": true, "Policy": true,
+	"FifoQueue": true, "ContentBasedDeduplication": true,
+	"RedrivePolicy": true,
+}
 
 func queuesHaveSameAttributes(q1, q2 *sqsstore.Queue) bool {
 	if q1.VisibilityTimeout != q2.VisibilityTimeout {
@@ -39,7 +52,97 @@ func queuesHaveSameAttributes(q1, q2 *sqsstore.Queue) bool {
 	if q1.Policy != q2.Policy {
 		return false
 	}
+	if q1.RedrivePolicy != nil && q2.RedrivePolicy != nil {
+		if q1.RedrivePolicy.DeadLetterTargetARN != q2.RedrivePolicy.DeadLetterTargetARN {
+			return false
+		}
+		if q1.RedrivePolicy.MaxReceiveCount != q2.RedrivePolicy.MaxReceiveCount {
+			return false
+		}
+	} else if q1.RedrivePolicy != nil || q2.RedrivePolicy != nil {
+		return false
+	}
 	return true
+}
+
+// applyQueueAttributes validates and applies attribute key-value pairs to a Queue
+// struct. Returns ErrInvalidParameterValue for any invalid attribute value.
+func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error {
+	for attrName, attrValue := range attrs {
+		if queue.Attributes == nil {
+			queue.Attributes = make(map[string]string)
+		}
+		queue.Attributes[attrName] = attrValue
+
+		switch attrName {
+		case "VisibilityTimeout":
+			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
+				if val < 0 || val > 43200 {
+					return ErrInvalidParameterValue
+				}
+				queue.VisibilityTimeout = int32(val)
+			} else {
+				return ErrInvalidParameterValue
+			}
+		case "MaximumMessageSize":
+			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
+				if val < 1024 || val > 262144 {
+					return ErrInvalidParameterValue
+				}
+				queue.MaximumMessageSize = int32(val)
+			} else {
+				return ErrInvalidParameterValue
+			}
+		case "MessageRetentionPeriod":
+			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
+				if val < 60 || val > 1209600 {
+					return ErrInvalidParameterValue
+				}
+				queue.MessageRetentionPeriod = int32(val)
+			} else {
+				return ErrInvalidParameterValue
+			}
+		case "DelaySeconds":
+			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
+				if val < 0 || val > 900 {
+					return ErrInvalidParameterValue
+				}
+				queue.DelaySeconds = int32(val)
+			} else {
+				return ErrInvalidParameterValue
+			}
+		case "ReceiveMessageWaitTimeSeconds":
+			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
+				if val < 0 || val > 20 {
+					return ErrInvalidParameterValue
+				}
+				queue.ReceiveMessageWaitTimeSeconds = int32(val)
+			} else {
+				return ErrInvalidParameterValue
+			}
+		case "FifoQueue":
+			if val, err := strconv.ParseBool(attrValue); err == nil {
+				queue.FifoQueue = val
+			} else {
+				return ErrInvalidParameterValue
+			}
+		case "ContentBasedDeduplication":
+			if val, err := strconv.ParseBool(attrValue); err == nil {
+				queue.ContentBasedDeduplication = val
+			} else {
+				return ErrInvalidParameterValue
+			}
+		case "Policy":
+			queue.Policy = attrValue
+		case "RedrivePolicy":
+			rdp, err := sqsstore.ParseRedrivePolicy(attrValue)
+			if err != nil {
+				return ErrInvalidParameterValue
+			}
+			queue.RedrivePolicy = rdp
+		}
+	}
+	return nil
 }
 
 // CreateQueue creates a new SQS queue.
@@ -56,78 +159,8 @@ func (s *SQSService) CreateQueue(ctx context.Context, reqCtx *request.RequestCon
 	if len(attrs) == 0 {
 		attrs = request.ParseAttributes(req.Parameters, "Attributes")
 	}
-	for attrName, attrValue := range attrs {
-		if queue.Attributes == nil {
-			queue.Attributes = make(map[string]string)
-		}
-		queue.Attributes[attrName] = attrValue
-
-		switch attrName {
-		case "VisibilityTimeout":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 0 || val > 43200 {
-					return nil, ErrInvalidParameterValue
-				}
-				queue.VisibilityTimeout = int32(val)
-			} else {
-				return nil, ErrInvalidParameterValue
-			}
-		case "MaximumMessageSize":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 1024 || val > 262144 {
-					return nil, ErrInvalidParameterValue
-				}
-				queue.MaximumMessageSize = int32(val)
-			} else {
-				return nil, ErrInvalidParameterValue
-			}
-		case "MessageRetentionPeriod":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 60 || val > 1209600 {
-					return nil, ErrInvalidParameterValue
-				}
-				queue.MessageRetentionPeriod = int32(val)
-			} else {
-				return nil, ErrInvalidParameterValue
-			}
-		case "DelaySeconds":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 0 || val > 900 {
-					return nil, ErrInvalidParameterValue
-				}
-				queue.DelaySeconds = int32(val)
-			} else {
-				return nil, ErrInvalidParameterValue
-			}
-		case "ReceiveMessageWaitTimeSeconds":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 0 || val > 20 {
-					return nil, ErrInvalidParameterValue
-				}
-				queue.ReceiveMessageWaitTimeSeconds = int32(val)
-			} else {
-				return nil, ErrInvalidParameterValue
-			}
-		case "FifoQueue":
-			if val, err := strconv.ParseBool(attrValue); err == nil {
-				queue.FifoQueue = val
-			} else {
-				return nil, ErrInvalidParameterValue
-			}
-		case "ContentBasedDeduplication":
-			if val, err := strconv.ParseBool(attrValue); err == nil {
-				queue.ContentBasedDeduplication = val
-			} else {
-				return nil, ErrInvalidParameterValue
-			}
-		case "Policy":
-			queue.Policy = attrValue
-		case "RedrivePolicy":
-			rdp, err := sqsstore.ParseRedrivePolicy(attrValue)
-			if err == nil {
-				queue.RedrivePolicy = rdp
-			}
-		}
+	if err := applyQueueAttributes(attrs, queue); err != nil {
+		return nil, err
 	}
 
 	queue.Tags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
@@ -269,6 +302,16 @@ func (s *SQSService) GetQueueAttributes(ctx context.Context, reqCtx *request.Req
 	allAttrs["MessageRetentionPeriod"] = strconv.FormatInt(int64(queue.MessageRetentionPeriod), 10)
 	allAttrs["DelaySeconds"] = strconv.FormatInt(int64(queue.DelaySeconds), 10)
 	allAttrs["ReceiveMessageWaitTimeSeconds"] = strconv.FormatInt(int64(queue.ReceiveMessageWaitTimeSeconds), 10)
+	allAttrs["FifoQueue"] = strconv.FormatBool(queue.FifoQueue)
+	allAttrs["ContentBasedDeduplication"] = strconv.FormatBool(queue.ContentBasedDeduplication)
+
+	if queue.RedrivePolicy != nil {
+		rdpJSON, _ := json.Marshal(map[string]interface{}{
+			"deadLetterTargetArn": queue.RedrivePolicy.DeadLetterTargetARN,
+			"maxReceiveCount":     queue.RedrivePolicy.MaxReceiveCount,
+		})
+		allAttrs["RedrivePolicy"] = string(rdpJSON)
+	}
 
 	if queue.Policy != "" {
 		allAttrs["Policy"] = queue.Policy
@@ -280,7 +323,9 @@ func (s *SQSService) GetQueueAttributes(ctx context.Context, reqCtx *request.Req
 	}
 
 	for k, v := range queue.Attributes {
-		allAttrs[k] = v
+		if _, isKnown := typedQueueAttributes[k]; !isKnown {
+			allAttrs[k] = v
+		}
 	}
 
 	var requestedAttrs []string
@@ -523,6 +568,14 @@ func getListOptions(req *request.ParsedRequest) common.ListOptions {
 	return opts
 }
 
+func buildPrincipalARNs(accountIDs []string) []string {
+	arns := make([]string, len(accountIDs))
+	for i, id := range accountIDs {
+		arns[i] = fmt.Sprintf("arn:aws:iam::%s:root", id)
+	}
+	return arns
+}
+
 func buildPolicyFromPermissions(queueARN string, permissions map[string]*sqsstore.Permission) string {
 	type statement struct {
 		Sid       string `json:"Sid"`
@@ -551,7 +604,7 @@ func buildPolicyFromPermissions(queueARN string, permissions map[string]*sqsstor
 			Effect:   "Allow",
 			Resource: queueARN,
 		}
-		s.Principal.AWS = perm.AWSAccountIDs
+		s.Principal.AWS = buildPrincipalARNs(perm.AWSAccountIDs)
 		if len(perm.Actions) == 1 {
 			s.Action = "sqs:" + perm.Actions[0]
 		} else {

@@ -19,9 +19,19 @@ type LambdaInvoker interface {
 type SQSInvoker interface {
 	GetQueueByName(ctx context.Context, queueName string) (queueURL string, err error)
 	GetQueueARN(ctx context.Context, queueURL string) (queueARN string, err error)
-	SendMessage(ctx context.Context, queueURL string, body string, delaySeconds int64, messageAttributes map[string]string) (messageID string, md5OfBody string, err error)
+	SendMessage(ctx context.Context, queueURL string, body string, opts SQSSendOptions) (messageID string, md5OfBody string, err error)
 	ReceiveMessage(ctx context.Context, queueURL string, maxMessages int32, visibilityTimeout *int32, waitTimeSeconds int32) ([]ReceivedSQSMessage, error)
 	DeleteMessage(ctx context.Context, queueURL string, receiptHandle string) error
+}
+
+// SQSSendOptions carries optional parameters for cross-service SQS SendMessage
+// calls. Callers that do not need FIFO semantics leave MessageGroupID and
+// MessageDeduplicationID empty.
+type SQSSendOptions struct {
+	DelaySeconds           int64
+	MessageAttributes      map[string]string
+	MessageGroupID         string
+	MessageDeduplicationID string
 }
 
 // ReceivedSQSMessage carries the fields of an SQS message returned by

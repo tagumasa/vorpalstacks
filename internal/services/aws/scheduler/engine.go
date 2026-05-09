@@ -420,13 +420,22 @@ func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedul
 		return
 	}
 
-	parts := strings.Split(target.Arn, ":")
-	if len(parts) < 6 {
+	sqsInvoker := e.bus.SQSInvoker()
+	if sqsInvoker == nil {
+		return
+	}
+
+	queueName := svcarn.ExtractQueueNameFromARN(target.Arn)
+	if queueName == "" {
 		logs.Debug("Invalid SQS ARN", logs.String("arn", target.Arn))
 		return
 	}
-	queueName := parts[5]
-	queueURL := endpoint.SQSQueueURL(e.accountID, queueName)
+
+	queueURL, qErr := sqsInvoker.GetQueueByName(ctx, queueName)
+	if qErr != nil {
+		logs.Debug("SQS queue not found", logs.String("queue", queueName), logs.Err(qErr))
+		return
+	}
 
 	messageBody := target.Input
 	if messageBody == "" {
@@ -437,12 +446,11 @@ func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedul
 		logs.String("schedule", schedule.Name),
 		logs.String("queue", queueName))
 
-	_, _, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, messageBody, 0, nil)
-	if err != nil {
+	if _, _, err := sqsInvoker.SendMessage(ctx, queueURL, messageBody, eventbus.SQSSendOptions{}); err != nil {
 		logs.Debug("Failed to send to SQS",
 			logs.String("schedule", schedule.Name),
 			logs.String("queue", queueName),
-			logs.String("error", err.Error()))
+			logs.Err(err))
 	}
 }
 
@@ -518,7 +526,7 @@ func (e *Engine) deliverSNSToSQS(ctx context.Context, schedule *schedulerstore.S
 	queueName := endpointParts[5]
 	queueURL := endpoint.SQSQueueURL(e.accountID, queueName)
 
-	_, _, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, message, 0, nil)
+	_, _, err := e.bus.SQSInvoker().SendMessage(ctx, queueURL, message, eventbus.SQSSendOptions{})
 	if err != nil {
 		logs.Debug("Failed to deliver SNS to SQS",
 			logs.String("schedule", schedule.Name),
