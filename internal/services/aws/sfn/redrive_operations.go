@@ -3,6 +3,7 @@ package sfn
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -55,7 +56,7 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	_ = history
 
 	newExecutionArn := arnutil.NewARNBuilder(s.accountID, reqCtx.GetRegion()).StepFunctions().Execution(
-		extractStateMachineName(sm.StateMachineArn), exec.Name+"-redrive-"+strconv.FormatInt(time.Now().UnixNano(), 10))
+		arnutil.ExtractStateMachineNameFromARN(sm.StateMachineArn), exec.Name+"-redrive-"+strconv.FormatInt(time.Now().UnixNano(), 10))
 
 	newExec := sfnstore.NewExecution(exec.StateMachineArn, exec.Name+"-redrive", exec.Input, "")
 	newExec.ExecutionArn = newExecutionArn
@@ -303,16 +304,6 @@ func buildInspectionData(inspectionLevel string, execCtx *ExecutionContext, outp
 	return data
 }
 
-func extractStateMachineName(arn string) string {
-	for i := len(arn) - 1; i >= 0; i-- {
-		if arn[i] == ':' {
-			return arn[i+1:]
-		}
-	}
-	return arn
-}
-
 func isErrNotFound(err error) bool {
-	return err != nil && (err.Error() == "execution not found" ||
-		err.Error() == "state machine not found")
+	return errors.Is(err, sfnstore.ErrExecutionNotFound) || errors.Is(err, sfnstore.ErrStateMachineNotFound)
 }

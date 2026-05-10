@@ -346,12 +346,7 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 }
 
 func getStringOrEmpty(m map[string]interface{}, keys ...string) string {
-	for _, key := range keys {
-		if v, ok := m[key].(string); ok && v != "" {
-			return v
-		}
-	}
-	return ""
+	return getStr(m, keys...)
 }
 
 func (e *Executor) executeActivityTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string, timeoutSeconds, heartbeatSeconds int32) (string, string, error) {

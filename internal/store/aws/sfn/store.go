@@ -3,6 +3,7 @@ package sfn
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -136,7 +137,8 @@ func (s *StepFunctionStore) UpdateStateMachine(ctx context.Context, sm *StateMac
 	return s.Put(sm.StateMachineArn, sm)
 }
 
-// DeleteStateMachine removes a state machine from the store.
+// DeleteStateMachine removes a state machine from the store and cascades
+// deletion to its executions, history events, versions, and aliases.
 func (s *StepFunctionStore) DeleteStateMachine(ctx context.Context, arn string) error {
 	if !s.Exists(arn) {
 		return ErrStateMachineNotFound
@@ -177,12 +179,62 @@ func (s *StepFunctionStore) DeleteStateMachine(ctx context.Context, arn string) 
 			select {
 			case <-ch:
 			default:
+				close(ch)
 				delete(s.activityQueues, arn)
 				break drainLoop
 			}
 		}
 	}
 	s.activityQueuesMu.Unlock()
+
+	// Cascade delete executions and their history.
+	// Collect keys first to avoid mutating store during ForEach iteration.
+	var execKeys []string
+	_ = s.executionsStore.ForEach(func(key string, value []byte) error {
+		var exec Execution
+		if err := json.Unmarshal(value, &exec); err != nil {
+			return nil
+		}
+		if exec.StateMachineArn == arn {
+			execKeys = append(execKeys, key)
+			s.deleteExecutionHistory(exec.ExecutionArn)
+		}
+		return nil
+	})
+	for _, key := range execKeys {
+		_ = s.executionsStore.Delete(key)
+	}
+
+	// Cascade delete versions. Collect keys first.
+	var verKeys []string
+	_ = s.versionsStore.ForEach(func(key string, value []byte) error {
+		if strings.HasPrefix(key, arn+":") {
+			var v StateMachineVersion
+			if err := json.Unmarshal(value, &v); err == nil {
+				verKeys = append(verKeys, v.StateMachineVersionArn)
+			}
+		}
+		return nil
+	})
+	for _, key := range verKeys {
+		_ = s.versionsStore.Delete(key)
+	}
+
+	// Cascade delete aliases. Collect keys first.
+	var aliasKeys []string
+	_ = s.aliasesStore.ForEach(func(key string, value []byte) error {
+		var alias StateMachineAlias
+		if err := json.Unmarshal(value, &alias); err != nil {
+			return nil
+		}
+		if alias.StateMachineArn == arn {
+			aliasKeys = append(aliasKeys, key)
+		}
+		return nil
+	})
+	for _, key := range aliasKeys {
+		_ = s.aliasesStore.Delete(key)
+	}
 
 	return s.BaseStore.Delete(arn)
 }
@@ -194,7 +246,19 @@ func extractStateMachineNameFromArn(arn string) string {
 	}
 	return ""
 }
-
+func (s *StepFunctionStore) deleteExecutionHistory(executionArn string) {
+	prefix := executionArn + ":"
+	var histKeys []string
+	_ = s.executionHistoryStore.ForEach(func(key string, value []byte) error {
+		if strings.HasPrefix(key, prefix) {
+			histKeys = append(histKeys, key)
+		}
+		return nil
+	})
+	for _, key := range histKeys {
+		_ = s.executionHistoryStore.Delete(key)
+	}
+}
 func extractStateMachineNameFromExecutionArn(arn string) string {
 	_, _, _, _, resource := svcarn.SplitARN(arn)
 	if strings.HasPrefix(resource, "execution:") {
@@ -345,7 +409,8 @@ func (s *StepFunctionStore) GetActivity(ctx context.Context, arn string) (*Activ
 	return &activity, nil
 }
 
-// DeleteActivity removes an activity from the store.
+// DeleteActivity removes an activity from the store and cascades deletion
+// to any pending tasks associated with it.
 func (s *StepFunctionStore) DeleteActivity(ctx context.Context, arn string) error {
 	if !s.activitiesStore.Exists(arn) {
 		return ErrActivityNotFound
@@ -357,6 +422,28 @@ func (s *StepFunctionStore) DeleteActivity(ctx context.Context, arn string) erro
 		close(ch)
 	}
 	s.activityQueuesMu.Unlock()
+
+	// Cascade delete pending tasks. Collect keys first to avoid mutating during ForEach.
+	var taskKeys []string
+	_ = s.tasksStore.ForEach(func(key string, value []byte) error {
+		var task ActivityTask
+		if err := json.Unmarshal(value, &task); err != nil {
+			return nil
+		}
+		if task.ActivityArn == arn {
+			taskKeys = append(taskKeys, key)
+		}
+		return nil
+	})
+	for _, key := range taskKeys {
+		s.pendingTasksMu.Lock()
+		if ch, ok := s.pendingTasks[key]; ok {
+			close(ch)
+			delete(s.pendingTasks, key)
+		}
+		s.pendingTasksMu.Unlock()
+		_ = s.tasksStore.Delete(key)
+	}
 
 	return s.activitiesStore.Delete(arn)
 }

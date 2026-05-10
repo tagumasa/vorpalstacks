@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -32,6 +33,10 @@ const (
 	maxReplicaCount      = 2
 	maxTags              = 50
 	tagKeyPattern        = `^[a-zA-Z+\-=._:/]+$`
+	taskCleanupInterval  = 24 * time.Hour
+	taskTTL              = 24 * time.Hour
+	taskTTLTestMode      = 30 * time.Minute
+	taskCleanupTestMode  = 5 * time.Minute
 )
 
 var (
@@ -53,6 +58,8 @@ type NeptuneGraphService struct {
 	graphCache     *graphengine.Cache
 	arnBuilder     *arn.ARNBuilder
 	eventBus       *eventbus.EventBus
+	regionCleanups sync.Map
+	testMode       bool
 }
 
 type engineEntry struct {
@@ -70,6 +77,7 @@ func NewNeptuneGraphService(accountID, region, dataPath string) *NeptuneGraphSer
 		dataPath:      dataPath,
 		activeEngines: make(map[string]*engineEntry),
 		arnBuilder:    arn.NewARNBuilder(accountID, region),
+		testMode:      os.Getenv("TEST_MODE") == "true",
 	}
 }
 
@@ -222,7 +230,29 @@ func (s *NeptuneGraphService) GetStoreForRegion(region string) (*ngstore.Neptune
 
 func (s *NeptuneGraphService) store(reqCtx *request.RequestContext) (*ngstore.NeptuneGraphStore, error) {
 	region := reqCtx.GetRegion()
-	return s.GetStoreForRegion(region)
+	st, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	lastVal, loaded := s.regionCleanups.LoadOrStore(region, now)
+	shouldCleanup := !loaded
+	if loaded {
+		interval := taskCleanupInterval
+		if s.testMode {
+			interval = taskCleanupTestMode
+		}
+		if now.Sub(lastVal.(time.Time)) >= interval {
+			shouldCleanup = true
+		}
+	}
+	if shouldCleanup {
+		s.regionCleanups.Store(region, now)
+		go s.cleanupExpiredTasks(st)
+	}
+
+	return st, nil
 }
 
 // RegisterHandlers registers all NeptuneGraph operation handlers with the dispatcher.

@@ -43,10 +43,6 @@ func (s *StepFunctionService) StartSyncExecution(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	if sm.Type == "EXPRESS" {
-		return nil, NewInvalidExecutionType("EXPRESS state machines do not support synchronous executions")
-	}
-
 	if name == "" {
 		name = generateExecutionName()
 	}
@@ -167,8 +163,12 @@ func (s *StepFunctionService) ListMapRuns(ctx context.Context, reqCtx *request.R
 		respNextToken = result.MapRuns[len(result.MapRuns)-1].MapRunArn
 	}
 
-	return map[string]interface{}{
-		"mapRuns":   mapRuns,
-		"nextToken": respNextToken,
-	}, nil
+	resp := map[string]interface{}{
+		"mapRuns": mapRuns,
+	}
+	if respNextToken != "" {
+		resp["nextToken"] = respNextToken
+	}
+
+	return resp, nil
 }

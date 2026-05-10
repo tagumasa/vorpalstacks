@@ -52,24 +52,25 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListImportTasks", func() error {
-		resp, err := tc.client.ListImportTasks(tc.ctx, &neptunegraph.ListImportTasksInput{})
-		if err != nil {
-			return err
-		}
-		if resp.Tasks == nil {
-			return fmt.Errorf("expected non-nil Tasks list")
-		}
-		found := false
-		for _, t := range resp.Tasks {
-			if t.TaskId != nil && *t.TaskId == importTaskID {
-				found = true
+		var nextToken *string
+		for {
+			resp, err := tc.client.ListImportTasks(tc.ctx, &neptunegraph.ListImportTasksInput{
+				NextToken: nextToken,
+			})
+			if err != nil {
+				return err
+			}
+			for _, t := range resp.Tasks {
+				if t.TaskId != nil && *t.TaskId == importTaskID {
+					return nil
+				}
+			}
+			if resp.NextToken == nil {
 				break
 			}
+			nextToken = resp.NextToken
 		}
-		if !found {
-			return fmt.Errorf("import task not found in ListImportTasks")
-		}
-		return nil
+		return fmt.Errorf("import task not found in ListImportTasks")
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "CancelImportTask", func() error {
@@ -162,24 +163,25 @@ func (r *TestRunner) runNeptunegraphExportTaskTests(tc *neptunegraphContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListExportTasks", func() error {
-		resp, err := tc.client.ListExportTasks(tc.ctx, &neptunegraph.ListExportTasksInput{})
-		if err != nil {
-			return err
-		}
-		if resp.Tasks == nil {
-			return fmt.Errorf("expected non-nil Tasks list")
-		}
-		found := false
-		for _, t := range resp.Tasks {
-			if t.TaskId != nil && *t.TaskId == exportTaskID {
-				found = true
+		var nextToken *string
+		for {
+			resp, err := tc.client.ListExportTasks(tc.ctx, &neptunegraph.ListExportTasksInput{
+				NextToken: nextToken,
+			})
+			if err != nil {
+				return err
+			}
+			for _, t := range resp.Tasks {
+				if t.TaskId != nil && *t.TaskId == exportTaskID {
+					return nil
+				}
+			}
+			if resp.NextToken == nil {
 				break
 			}
+			nextToken = resp.NextToken
 		}
-		if !found {
-			return fmt.Errorf("export task not found in ListExportTasks")
-		}
-		return nil
+		return fmt.Errorf("export task not found in ListExportTasks")
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListExportTasks_FilterByGraph", func() error {
