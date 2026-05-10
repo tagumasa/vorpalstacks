@@ -82,21 +82,17 @@ type MappingRule struct {
 }
 
 // NewIdentityPool creates a new Identity Pool with the specified name and configuration.
+// Timestamps are set by the store on creation; zero values here indicate "not yet persisted".
 func NewIdentityPool(name string, allowUnauthenticated bool, region string) *IdentityPool {
-	now := time.Now().UTC()
-	id := generateIdentityPoolID(region)
 	return &IdentityPool{
-		ID:                             id,
+		ID:                             generateIdentityPoolID(region),
 		Name:                           name,
 		AllowUnauthenticatedIdentities: allowUnauthenticated,
-		AllowClassicFlow:               false,
 		CognitoIdentityProviders:       []CognitoIdentityProvider{},
 		SupportedLoginProviders:        make(map[string]string),
 		OpenIdConnectProviderARNs:      []string{},
 		SamlProviderARNs:               []string{},
 		Tags:                           make(map[string]string),
-		CreationDate:                   now,
-		LastModifiedDate:               now,
 		RoleMappings:                   make(map[string]RoleMapping),
 	}
 }
@@ -123,8 +119,4 @@ func extractRegionFromPoolID(poolID string) string {
 
 func generateIdentityPoolID(region string) string {
 	return region + ":" + uuid.New().String()
-}
-
-func generateIdentityID() string {
-	return uuid.New().String()
 }

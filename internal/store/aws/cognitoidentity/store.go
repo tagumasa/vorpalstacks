@@ -127,6 +127,7 @@ func (s *CognitoIdentityStore) DeleteIdentityPool(id string) error {
 	}
 
 	prefix := id + "#"
+
 	if err := s.identitiesStore.ScanPrefix(prefix, func(key string, value []byte) error {
 		if err := s.identitiesStore.Delete(key); err != nil {
 			logs.Warn("failed to delete identity during pool deletion",
@@ -135,6 +136,28 @@ func (s *CognitoIdentityStore) DeleteIdentityPool(id string) error {
 		return nil
 	}); err != nil {
 		logs.Warn("failed to scan identities during pool deletion",
+			logs.String("poolId", id), logs.Err(err))
+	}
+
+	if err := s.developerIdStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		if err := s.developerIdStore.Delete(key); err != nil {
+			logs.Warn("failed to delete developer identity during pool deletion",
+				logs.String("devKey", key), logs.String("poolId", id), logs.Err(err))
+		}
+		return nil
+	}); err != nil {
+		logs.Warn("failed to scan developer identities during pool deletion",
+			logs.String("poolId", id), logs.Err(err))
+	}
+
+	if err := s.principalTagStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		if err := s.principalTagStore.Delete(key); err != nil {
+			logs.Warn("failed to delete principal tag attribute map during pool deletion",
+				logs.String("ptKey", key), logs.String("poolId", id), logs.Err(err))
+		}
+		return nil
+	}); err != nil {
+		logs.Warn("failed to scan principal tags during pool deletion",
 			logs.String("poolId", id), logs.Err(err))
 	}
 

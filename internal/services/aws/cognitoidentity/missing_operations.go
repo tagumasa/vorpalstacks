@@ -78,15 +78,11 @@ func (s *CognitoIdentityService) ListIdentities(ctx context.Context, reqCtx *req
 
 	items := make([]map[string]interface{}, 0, len(identities))
 	for _, identity := range identities {
-		logins := make([]string, 0, len(identity.Logins))
-		for k := range identity.Logins {
-			logins = append(logins, k)
-		}
 		items = append(items, map[string]interface{}{
 			"IdentityId":       identity.ID,
 			"CreationDate":     identity.CreationDate.Unix(),
 			"LastModifiedDate": identity.LastModifiedDate.Unix(),
-			"Logins":           logins,
+			"Logins":           formatLoginKeys(identity.Logins),
 		})
 	}
 
@@ -113,16 +109,12 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	_, err = store.GetIdentityByID(identityID)
+	identity, err := store.GetIdentityByID(identityID)
 	if err != nil {
 		return nil, ErrResourceNotFound
 	}
 
-	if logins := parseLogins(req); len(logins) > 0 {
-		identity, err := store.GetIdentityByID(identityID)
-		if err != nil {
-			return nil, ErrResourceNotFound
-		}
+	if logins := parseMapParam(req, "Logins"); len(logins) > 0 {
 		for k, v := range logins {
 			identity.Logins[k] = v
 		}
@@ -147,7 +139,7 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 		return nil, ErrInvalidParameter
 	}
 
-	logins := parseLogins(req)
+	logins := parseMapParam(req, "Logins")
 	if len(logins) == 0 {
 		return nil, ErrInvalidParameter
 	}

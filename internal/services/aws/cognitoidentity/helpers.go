@@ -27,6 +27,14 @@ func getStringSliceParam(req *request.ParsedRequest, key string) []string {
 	return nil
 }
 
+func formatLoginKeys(logins map[string]string) []string {
+	keys := make([]string, 0, len(logins))
+	for k := range logins {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 func parseCognitoIdentityProviders(req *request.ParsedRequest) []cognitoidentitystore.CognitoIdentityProvider {
 	if val, ok := req.Parameters["CognitoIdentityProviders"]; ok {
 		if slice, ok := val.([]interface{}); ok {
@@ -47,15 +55,6 @@ func parseCognitoIdentityProviders(req *request.ParsedRequest) []cognitoidentity
 				}
 			}
 			return providers
-		}
-	}
-	return nil
-}
-
-func parseSupportedLoginProviders(req *request.ParsedRequest) map[string]string {
-	if val, ok := req.Parameters["SupportedLoginProviders"]; ok {
-		if m, ok := val.(map[string]interface{}); ok {
-			return request.CopyStringMap(m)
 		}
 	}
 	return nil

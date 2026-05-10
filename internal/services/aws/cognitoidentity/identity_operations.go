@@ -28,7 +28,7 @@ func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.Requ
 	}
 
 	identity := cognitoidentitystore.NewIdentity(poolID)
-	if logins := parseLogins(req); len(logins) > 0 {
+	if logins := parseMapParam(req, "Logins"); len(logins) > 0 {
 		identity.Logins = logins
 	}
 
@@ -91,24 +91,10 @@ func (s *CognitoIdentityService) DescribeIdentity(ctx context.Context, reqCtx *r
 		return nil, ErrResourceNotFound
 	}
 
-	logins := make([]string, 0, len(identity.Logins))
-	for k := range identity.Logins {
-		logins = append(logins, k)
-	}
-
 	return map[string]interface{}{
 		"IdentityId":       identity.ID,
 		"CreationDate":     identity.CreationDate.Unix(),
 		"LastModifiedDate": identity.LastModifiedDate.Unix(),
-		"Logins":           logins,
+		"Logins":           formatLoginKeys(identity.Logins),
 	}, nil
-}
-
-func parseLogins(req *request.ParsedRequest) map[string]string {
-	if val, ok := req.Parameters["Logins"]; ok {
-		if m, ok := val.(map[string]interface{}); ok {
-			return request.CopyStringMap(m)
-		}
-	}
-	return nil
 }

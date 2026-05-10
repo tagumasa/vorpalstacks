@@ -35,7 +35,7 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 	if providerName := req.GetParam("DeveloperProviderName"); providerName != "" {
 		pool.DeveloperProviderName = providerName
 	}
-	if loginProviders := parseSupportedLoginProviders(req); len(loginProviders) > 0 {
+	if loginProviders := parseMapParam(req, "SupportedLoginProviders"); len(loginProviders) > 0 {
 		pool.SupportedLoginProviders = loginProviders
 	}
 	if oidcArns := getStringSliceParam(req, "OpenIdConnectProviderARNs"); len(oidcArns) > 0 {
@@ -196,7 +196,7 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 	if providers := parseCognitoIdentityProviders(req); len(providers) > 0 {
 		pool.CognitoIdentityProviders = providers
 	}
-	if loginProviders := parseSupportedLoginProviders(req); len(loginProviders) > 0 {
+	if loginProviders := parseMapParam(req, "SupportedLoginProviders"); len(loginProviders) > 0 {
 		pool.SupportedLoginProviders = loginProviders
 	}
 	if oidcArns := getStringSliceParam(req, "OpenIdConnectProviderARNs"); len(oidcArns) > 0 {
