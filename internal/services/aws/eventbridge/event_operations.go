@@ -559,37 +559,7 @@ func compareNumeric(val float64, op string, comp float64) bool {
 }
 
 func (s *EventsService) deliverToTarget(ctx context.Context, region string, event *eventsstore.Event, target eventsstore.Target) {
-	targetType := s.parseTargetType(target.ARN)
-
-	payload := map[string]interface{}{
-		"version":     event.Version,
-		"id":          event.ID,
-		"detail-type": event.DetailType,
-		"source":      event.Source,
-		"account":     event.Account,
-		"time":        event.Time,
-		"region":      event.Region,
-		"resources":   event.Resources,
-		"detail":      event.Detail,
-	}
-
-	if target.Input != "" {
-		var inputPayload map[string]interface{}
-		if err := json.Unmarshal([]byte(target.Input), &inputPayload); err == nil {
-			payload = inputPayload
-		}
-	} else if target.InputPath != "" {
-		extracted := s.extractInputPath(payload, target.InputPath)
-		if extracted != nil {
-			payload = extracted
-		}
-	} else if target.InputTransformer != nil {
-		transformed := s.applyInputTransformer(payload, target.InputTransformer)
-		if transformed != nil {
-			payload = transformed
-		}
-	}
-
+	payload := s.buildTargetPayload(event, target)
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		logs.Error("failed to marshal event payload",
@@ -599,32 +569,11 @@ func (s *EventsService) deliverToTarget(ctx context.Context, region string, even
 		return
 	}
 
-	switch targetType {
-	case "lambda":
-		s.deliverToLambda(ctx, region, event.ID, target.ARN, payloadBytes)
-	case "sqs":
-		s.deliverToSQS(ctx, region, target.ARN, payloadBytes)
-	case "sns":
-		s.deliverToSNS(ctx, region, target.ARN, payloadBytes)
-	case "logs":
-		s.deliverToCloudWatchLogs(ctx, region, event.ID, target.ARN, payloadBytes)
-	case "states":
-		s.deliverToStepFunctions(ctx, region, target.ARN, payloadBytes)
-	case "kinesis":
-		s.deliverToKinesis(ctx, region, target.ARN, payloadBytes)
-	case "firehose":
-		s.deliverToFirehose(ctx, region, target.ARN, payloadBytes)
-	case "ecs":
-		s.deliverToECS(ctx, region, target.ARN, payloadBytes)
-	default:
-		logs.Warn("target type not yet implemented, event not delivered",
-			logs.String("targetType", targetType),
-			logs.String("targetArn", target.ARN),
-			logs.String("eventId", event.ID))
-	}
+	s.dispatchToTarget(ctx, region, event, target, payloadBytes)
 }
 
-func (s *EventsService) dispatchToTarget(ctx context.Context, region string, event *eventsstore.Event, target eventsstore.Target, targetType string, payload []byte) {
+func (s *EventsService) dispatchToTarget(ctx context.Context, region string, event *eventsstore.Event, target eventsstore.Target, payload []byte) {
+	targetType := s.parseTargetType(target.ARN)
 	switch targetType {
 	case "lambda":
 		s.deliverToLambda(ctx, region, event.ID, target.ARN, payload)

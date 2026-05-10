@@ -8,9 +8,55 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
+
+// taggableResource represents a validated EventBridge resource that can be tagged.
+type taggableResource struct {
+	arn string
+}
+
+// resolveTaggableResource validates that the ARN refers to an existing EventBridge
+// resource (event bus, rule, archive, connection, or API destination).
+func (s *EventsService) resolveTaggableResource(ctx context.Context, reqCtx *request.RequestContext, resourceArn string) (*taggableResource, error) {
+	_, _, _, _, resource := svcarn.SplitARN(resourceArn)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	switch {
+	case strings.HasPrefix(resource, "event-bus/"):
+		name := svcarn.ExtractEventBusNameFromARN(resourceArn)
+		if _, err := store.GetEventBus(ctx, name); err != nil {
+			return nil, NewResourceNotFoundException("Event bus '" + name + "' does not exist")
+		}
+	case strings.HasPrefix(resource, "rule/"):
+		eventBusName, ruleName := extractRuleInfoFromArn(resourceArn)
+		if _, err := store.GetRule(ctx, eventBusName, ruleName); err != nil {
+			return nil, NewResourceNotFoundException("Rule '" + ruleName + "' does not exist")
+		}
+	case strings.HasPrefix(resource, "archive/"):
+		name := strings.TrimPrefix(resource, "archive/")
+		if _, err := store.GetArchive(ctx, name); err != nil {
+			return nil, NewResourceNotFoundException("Archive '" + name + "' does not exist")
+		}
+	case strings.HasPrefix(resource, "connection/"):
+		name := strings.TrimPrefix(resource, "connection/")
+		if _, err := store.GetConnection(ctx, name); err != nil {
+			return nil, NewResourceNotFoundException("Connection '" + name + "' does not exist")
+		}
+	case strings.HasPrefix(resource, "api-destination/"):
+		name := strings.TrimPrefix(resource, "api-destination/")
+		if _, err := store.GetApiDestination(ctx, name); err != nil {
+			return nil, NewResourceNotFoundException("API destination '" + name + "' does not exist")
+		}
+	default:
+		return nil, NewResourceNotFoundException("Resource not found: " + resourceArn)
+	}
+
+	return &taggableResource{arn: resourceArn}, nil
+}
 
 // TagResource adds tags to an EventBridge resource.
 func (s *EventsService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -24,37 +70,25 @@ func (s *EventsService) TagResource(ctx context.Context, reqCtx *request.Request
 		return nil, awserrors.NewValidationException("Tags are required")
 	}
 
-	_, _, _, _, resource := svcarn.SplitARN(resourceArn)
+	resolved, err := s.resolveTaggableResource(ctx, reqCtx, resourceArn)
+	if err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if strings.HasPrefix(resource, "rule/") {
-		if _, err := s.getRuleByArn(ctx, reqCtx, resourceArn); err == nil {
-			tagMap := make(map[string]string, len(newTags))
-			for _, t := range newTags {
-				tagMap[t.Key] = t.Value
-			}
-			if err := store.TagStore.Tag(resourceArn, tagMap); err != nil {
-				return nil, err
-			}
-			return response.EmptyResponse(), nil
-		}
+	tagMap := make(map[string]string, len(newTags))
+	for _, t := range newTags {
+		tagMap[t.Key] = t.Value
+	}
+	if err := store.TagStore.Tag(resolved.arn, tagMap); err != nil {
+		return nil, err
 	}
 
-	if _, err := s.getEventBusByArn(ctx, reqCtx, resourceArn); err == nil {
-		tagMap := make(map[string]string, len(newTags))
-		for _, t := range newTags {
-			tagMap[t.Key] = t.Value
-		}
-		if err := store.TagStore.Tag(resourceArn, tagMap); err != nil {
-			return nil, err
-		}
-		return response.EmptyResponse(), nil
-	}
-
-	return nil, NewResourceNotFoundException("Resource not found")
+	return response.EmptyResponse(), nil
 }
 
 // UntagResource removes tags from an EventBridge resource.
@@ -72,37 +106,25 @@ func (s *EventsService) UntagResource(ctx context.Context, reqCtx *request.Reque
 		return nil, awserrors.NewValidationException("TagKeys are required")
 	}
 
-	_, _, _, _, resource := svcarn.SplitARN(resourceArn)
+	resolved, err := s.resolveTaggableResource(ctx, reqCtx, resourceArn)
+	if err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if strings.HasPrefix(resource, "rule/") {
-		if _, err := s.getRuleByArn(ctx, reqCtx, resourceArn); err == nil {
-			keys := make([]string, 0, len(tagKeysMap))
-			for k := range tagKeysMap {
-				keys = append(keys, k)
-			}
-			if err := store.TagStore.Untag(resourceArn, keys); err != nil {
-				return nil, err
-			}
-			return response.EmptyResponse(), nil
-		}
+	keys := make([]string, 0, len(tagKeysMap))
+	for k := range tagKeysMap {
+		keys = append(keys, k)
+	}
+	if err := store.TagStore.Untag(resolved.arn, keys); err != nil {
+		return nil, err
 	}
 
-	if _, err := s.getEventBusByArn(ctx, reqCtx, resourceArn); err == nil {
-		keys := make([]string, 0, len(tagKeysMap))
-		for k := range tagKeysMap {
-			keys = append(keys, k)
-		}
-		if err := store.TagStore.Untag(resourceArn, keys); err != nil {
-			return nil, err
-		}
-		return response.EmptyResponse(), nil
-	}
-
-	return nil, NewResourceNotFoundException("Resource not found")
+	return response.EmptyResponse(), nil
 }
 
 // ListTagsForResource lists tags for an EventBridge resource.
@@ -112,24 +134,17 @@ func (s *EventsService) ListTagsForResource(ctx context.Context, reqCtx *request
 		return nil, awserrors.NewValidationException("ResourceARN is required")
 	}
 
-	_, _, _, _, resource := svcarn.SplitARN(resourceArn)
+	resolved, err := s.resolveTaggableResource(ctx, reqCtx, resourceArn)
+	if err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	isRule := strings.HasPrefix(resource, "rule/")
-	if isRule {
-		if _, err := s.getRuleByArn(ctx, reqCtx, resourceArn); err != nil {
-			return nil, NewResourceNotFoundException("Resource not found: " + resourceArn)
-		}
-	} else {
-		if _, err := s.getEventBusByArn(ctx, reqCtx, resourceArn); err != nil {
-			return nil, NewResourceNotFoundException("Resource not found: " + resourceArn)
-		}
-	}
-
-	tagSlice, err := store.TagStore.ListAsSlice(resourceArn)
+	tagSlice, err := store.TagStore.ListAsSlice(resolved.arn)
 	if err != nil {
 		return nil, err
 	}
@@ -143,30 +158,11 @@ func (s *EventsService) ListTagsForResource(ctx context.Context, reqCtx *request
 	return map[string]interface{}{"Tags": tagMaps}, nil
 }
 
-func (s *EventsService) getEventBusByArn(ctx context.Context, reqCtx *request.RequestContext, arnStr string) (*eventsstore.EventBus, error) {
-	name := svcarn.ExtractEventBusNameFromARN(arnStr)
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	return store.GetEventBus(ctx, name)
-}
-
-func (s *EventsService) getRuleByArn(ctx context.Context, reqCtx *request.RequestContext, arn string) (*eventsstore.Rule, error) {
-	eventBusName, ruleName := extractRuleInfoFromArn(arn)
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	return store.GetRule(ctx, eventBusName, ruleName)
-}
-
 func extractRuleInfoFromArn(arn string) (eventBusName, ruleName string) {
 	_, _, _, _, resource := svcarn.SplitARN(arn)
 	if resource == "" {
 		return "", ""
 	}
-	// resource format: rule/event-bus-name/rule-name
 	parts := strings.Split(resource, "/")
 	if len(parts) >= 3 && parts[0] == "rule" {
 		eventBusName = parts[1]

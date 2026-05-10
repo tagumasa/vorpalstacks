@@ -36,10 +36,7 @@ func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.Request
 
 	archive, err := store.GetArchive(ctx, archiveName)
 	if err != nil {
-		if err == eventsstore.ErrArchiveNotFound {
-			return nil, NewResourceNotFoundException("Archive '" + archiveName + "' does not exist")
-		}
-		return nil, err
+		return nil, mapStoreError(err, archiveName)
 	}
 
 	var destination *eventsstore.ReplayDestination
@@ -109,10 +106,7 @@ func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.Request
 	}
 
 	if err := store.CreateReplay(ctx, replay); err != nil {
-		if err == eventsstore.ErrReplayAlreadyExists {
-			return nil, awserrors.NewResourceAlreadyExistsException("Replay '" + replayName + "' already exists")
-		}
-		return nil, err
+		return nil, mapStoreError(err, replayName)
 	}
 
 	replayCtx, cancel := context.WithCancel(context.Background())
@@ -246,10 +240,7 @@ func (s *EventsService) DescribeReplay(ctx context.Context, reqCtx *request.Requ
 
 	replay, err := store.GetReplay(ctx, replayName)
 	if err != nil {
-		if err == eventsstore.ErrReplayNotFound {
-			return nil, NewResourceNotFoundException("Replay '" + replayName + "' does not exist")
-		}
-		return nil, err
+		return nil, mapStoreError(err, replayName)
 	}
 
 	result := map[string]interface{}{
@@ -358,10 +349,7 @@ func (s *EventsService) CancelReplay(ctx context.Context, reqCtx *request.Reques
 
 	replay, err := store.GetReplay(ctx, replayName)
 	if err != nil {
-		if err == eventsstore.ErrReplayNotFound {
-			return nil, NewResourceNotFoundException("Replay '" + replayName + "' does not exist")
-		}
-		return nil, err
+		return nil, mapStoreError(err, replayName)
 	}
 
 	if replay.State != eventsstore.ReplayStateRunning && replay.State != eventsstore.ReplayStateStarting {

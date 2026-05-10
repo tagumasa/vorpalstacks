@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"regexp"
+	"strconv"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
@@ -13,6 +14,35 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
+
+func ruleToMap(r *eventsstore.Rule, includeTimestamps bool) map[string]interface{} {
+	result := map[string]interface{}{
+		"Arn":          r.ARN,
+		"Name":         r.Name,
+		"EventBusName": r.EventBusName,
+		"State":        string(r.State),
+	}
+	if includeTimestamps {
+		result["CreationTime"] = r.CreatedAt.Unix()
+		result["LastModifiedTime"] = r.LastModifiedAt.Unix()
+	}
+	if r.Description != "" {
+		result["Description"] = r.Description
+	}
+	if r.EventPattern != "" {
+		result["EventPattern"] = r.EventPattern
+	}
+	if r.ScheduleExpression != "" {
+		result["ScheduleExpression"] = r.ScheduleExpression
+	}
+	if r.RoleARN != "" {
+		result["RoleArn"] = r.RoleARN
+	}
+	if r.ManagedBy != "" {
+		result["ManagedBy"] = r.ManagedBy
+	}
+	return result
+}
 
 var (
 	scheduleCronRegex = regexp.MustCompile(`^cron\(.+\)$`)
@@ -194,10 +224,7 @@ func (s *EventsService) DeleteRule(ctx context.Context, reqCtx *request.RequestC
 
 	rule, err := store.GetRule(ctx, eventBusName, name)
 	if err != nil {
-		if err == eventsstore.ErrRuleNotFound {
-			return nil, NewResourceNotFoundException("Rule '" + name + "' does not exist on event bus '" + eventBusName + "'")
-		}
-		return nil, err
+		return nil, mapStoreError(err, name)
 	}
 
 	// Check if rule has targets
@@ -237,33 +264,17 @@ func (s *EventsService) DescribeRule(ctx context.Context, reqCtx *request.Reques
 	}
 	rule, err := store.GetRule(ctx, eventBusName, name)
 	if err != nil {
-		if err == eventsstore.ErrRuleNotFound {
-			return nil, NewResourceNotFoundException("Rule '" + name + "' does not exist on event bus '" + eventBusName + "'")
+		return nil, mapStoreError(err, name)
+	}
+
+	result := ruleToMap(rule, false)
+
+	if tagSlice, err := store.TagStore.ListAsSlice(rule.ARN); err == nil && len(tagSlice) > 0 {
+		tagMaps := make([]map[string]string, 0, len(tagSlice))
+		for _, t := range tagSlice {
+			tagMaps = append(tagMaps, map[string]string{"Key": t.Key, "Value": t.Value})
 		}
-		return nil, err
-	}
-
-	result := map[string]interface{}{
-		"Arn":          rule.ARN,
-		"Name":         rule.Name,
-		"EventBusName": rule.EventBusName,
-		"State":        string(rule.State),
-	}
-
-	if rule.Description != "" {
-		result["Description"] = rule.Description
-	}
-	if rule.EventPattern != "" {
-		result["EventPattern"] = rule.EventPattern
-	}
-	if rule.ScheduleExpression != "" {
-		result["ScheduleExpression"] = rule.ScheduleExpression
-	}
-	if rule.RoleARN != "" {
-		result["RoleArn"] = rule.RoleARN
-	}
-	if rule.ManagedBy != "" {
-		result["ManagedBy"] = rule.ManagedBy
+		result["Tags"] = tagMaps
 	}
 
 	return result, nil
@@ -298,23 +309,7 @@ func (s *EventsService) ListRules(ctx context.Context, reqCtx *request.RequestCo
 
 	rules := make([]map[string]interface{}, len(result.Rules))
 	for i, r := range result.Rules {
-		rules[i] = map[string]interface{}{
-			"Arn":              r.ARN,
-			"Name":             r.Name,
-			"EventBusName":     r.EventBusName,
-			"State":            string(r.State),
-			"CreationTime":     r.CreatedAt.Unix(),
-			"LastModifiedTime": r.LastModifiedAt.Unix(),
-		}
-		if r.Description != "" {
-			rules[i]["Description"] = r.Description
-		}
-		if r.EventPattern != "" {
-			rules[i]["EventPattern"] = r.EventPattern
-		}
-		if r.ScheduleExpression != "" {
-			rules[i]["ScheduleExpression"] = r.ScheduleExpression
-		}
+		rules[i] = ruleToMap(r, true)
 	}
 
 	response := map[string]interface{}{
@@ -344,10 +339,7 @@ func (s *EventsService) EnableRule(ctx context.Context, reqCtx *request.RequestC
 	}
 	rule, err := store.GetRule(ctx, eventBusName, name)
 	if err != nil {
-		if err == eventsstore.ErrRuleNotFound {
-			return nil, NewResourceNotFoundException("Rule '" + name + "' does not exist on event bus '" + eventBusName + "'")
-		}
-		return nil, err
+		return nil, mapStoreError(err, name)
 	}
 
 	rule.State = eventsstore.RuleStateEnabled
@@ -376,10 +368,7 @@ func (s *EventsService) DisableRule(ctx context.Context, reqCtx *request.Request
 	}
 	rule, err := store.GetRule(ctx, eventBusName, name)
 	if err != nil {
-		if err == eventsstore.ErrRuleNotFound {
-			return nil, NewResourceNotFoundException("Rule '" + name + "' does not exist on event bus '" + eventBusName + "'")
-		}
-		return nil, err
+		return nil, mapStoreError(err, name)
 	}
 
 	rule.State = eventsstore.RuleStateDisabled
@@ -391,6 +380,8 @@ func (s *EventsService) DisableRule(ctx context.Context, reqCtx *request.Request
 }
 
 // ListRuleNamesByTarget returns the list of rules that have the specified target.
+// It scans all rules on the event bus, checks each rule's targets for a match,
+// then applies client-side pagination to the matched rule names.
 func (s *EventsService) ListRuleNamesByTarget(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	targetArn := request.GetStringParam(req.Parameters, "TargetArn")
 	if targetArn == "" {
@@ -416,30 +407,51 @@ func (s *EventsService) ListRuleNamesByTarget(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	rulesResult, err := store.ListRules(ctx, eventBusName, "", limit, nextToken)
-	if err != nil {
-		return nil, err
-	}
-
-	ruleNames := make([]string, 0)
-	for _, rule := range rulesResult.Rules {
-		targets, err := store.ListTargetsByRule(ctx, eventBusName, rule.Name, 100, "")
+	var allRuleNames []string
+	scanToken := ""
+	for {
+		rulesResult, err := store.ListRules(ctx, eventBusName, "", 100, scanToken)
 		if err != nil {
-			continue
+			return nil, err
 		}
-		for _, t := range targets.Targets {
-			if t.ARN == targetArn {
-				ruleNames = append(ruleNames, rule.Name)
-				break
+		for _, rule := range rulesResult.Rules {
+			targets, err := store.ListTargetsByRule(ctx, eventBusName, rule.Name, 100, "")
+			if err != nil {
+				continue
+			}
+			for _, t := range targets.Targets {
+				if t.ARN == targetArn {
+					allRuleNames = append(allRuleNames, rule.Name)
+					break
+				}
 			}
 		}
+		if rulesResult.NextToken == "" {
+			break
+		}
+		scanToken = rulesResult.NextToken
 	}
 
-	response := map[string]interface{}{
+	start := 0
+	if nextToken != "" {
+		if idx, err := strconv.Atoi(nextToken); err == nil && idx < len(allRuleNames) {
+			start = idx
+		}
+	}
+	end := start + int(limit)
+	if end > len(allRuleNames) {
+		end = len(allRuleNames)
+	}
+
+	ruleNames := allRuleNames[start:end]
+
+	resp := map[string]interface{}{
 		"RuleNames": ruleNames,
 	}
 
-	pagination.SetNextToken(response, "NextToken", rulesResult.NextToken)
+	if end < len(allRuleNames) {
+		pagination.SetNextToken(resp, "NextToken", strconv.Itoa(end))
+	}
 
-	return response, nil
+	return resp, nil
 }

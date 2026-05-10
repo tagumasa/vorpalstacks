@@ -11,6 +11,22 @@ import (
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
+func eventBusToMap(eb *eventsstore.EventBus) map[string]interface{} {
+	result := map[string]interface{}{
+		"Arn":              eb.ARN,
+		"Name":             eb.Name,
+		"CreationTime":     eb.CreatedAt.Unix(),
+		"LastModifiedTime": eb.LastModifiedAt.Unix(),
+	}
+	if eb.Description != "" {
+		result["Description"] = eb.Description
+	}
+	if eb.Policy != "" {
+		result["Policy"] = eb.Policy
+	}
+	return result
+}
+
 // CreateEventBus creates a new event bus.
 func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
@@ -38,10 +54,7 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 	if err := store.CreateEventBus(ctx, eventBus); err != nil {
-		if err == eventsstore.ErrEventBusAlreadyExists {
-			return nil, awserrors.NewResourceAlreadyExistsException("Event bus '" + name + "'")
-		}
-		return nil, err
+		return nil, mapStoreError(err, name)
 	}
 
 	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
@@ -71,11 +84,31 @@ func (s *EventsService) DeleteEventBus(ctx context.Context, reqCtx *request.Requ
 	}
 	eventBus, err := store.GetEventBus(ctx, name)
 	if err != nil {
-		if err == eventsstore.ErrEventBusNotFound {
-			return nil, NewResourceNotFoundException("Event bus '" + name + "' does not exist")
-		}
-		return nil, err
+		return nil, mapStoreError(err, name)
 	}
+	// Cascade-delete: rules → targets, then archives
+	rulesResult, err := store.ListRules(ctx, name, "", 1000, "")
+	if err == nil {
+		for _, rule := range rulesResult.Rules {
+			targetsResult, tErr := store.ListTargetsByRule(ctx, name, rule.Name, 1000, "")
+			if tErr == nil {
+				for _, t := range targetsResult.Targets {
+					_ = store.DeleteTarget(ctx, name, rule.Name, t.ID)
+				}
+			}
+			_ = store.DeleteRule(ctx, name, rule.Name)
+			store.TagStore.Delete(rule.ARN)
+		}
+	}
+
+	archives, err := store.ListArchivesForEventBus(ctx, name)
+	if err == nil {
+		for _, a := range archives {
+			_ = store.DeleteArchiveEvents(ctx, a.Name)
+			_ = store.DeleteArchive(ctx, a.Name)
+		}
+	}
+
 	if err := store.DeleteEventBus(ctx, name); err != nil {
 		return nil, err
 	}
@@ -98,24 +131,17 @@ func (s *EventsService) DescribeEventBus(ctx context.Context, reqCtx *request.Re
 	}
 	eventBus, err := store.GetEventBus(ctx, name)
 	if err != nil {
-		if err == eventsstore.ErrEventBusNotFound {
-			return nil, NewResourceNotFoundException("Event bus '" + name + "' does not exist")
+		return nil, mapStoreError(err, name)
+	}
+
+	result := eventBusToMap(eventBus)
+
+	if tagSlice, err := store.TagStore.ListAsSlice(eventBus.ARN); err == nil && len(tagSlice) > 0 {
+		tagMaps := make([]map[string]string, 0, len(tagSlice))
+		for _, t := range tagSlice {
+			tagMaps = append(tagMaps, map[string]string{"Key": t.Key, "Value": t.Value})
 		}
-		return nil, err
-	}
-
-	result := map[string]interface{}{
-		"Arn":              eventBus.ARN,
-		"Name":             eventBus.Name,
-		"CreationTime":     eventBus.CreatedAt.Unix(),
-		"LastModifiedTime": eventBus.LastModifiedAt.Unix(),
-	}
-
-	if eventBus.Description != "" {
-		result["Description"] = eventBus.Description
-	}
-	if eventBus.Policy != "" {
-		result["Policy"] = eventBus.Policy
+		result["Tags"] = tagMaps
 	}
 
 	return result, nil
@@ -145,18 +171,7 @@ func (s *EventsService) ListEventBuses(ctx context.Context, reqCtx *request.Requ
 
 	eventBuses := make([]map[string]interface{}, len(result.EventBuses))
 	for i, eb := range result.EventBuses {
-		eventBuses[i] = map[string]interface{}{
-			"Arn":              eb.ARN,
-			"Name":             eb.Name,
-			"CreationTime":     eb.CreatedAt.Unix(),
-			"LastModifiedTime": eb.LastModifiedAt.Unix(),
-		}
-		if eb.Description != "" {
-			eventBuses[i]["Description"] = eb.Description
-		}
-		if eb.Policy != "" {
-			eventBuses[i]["Policy"] = eb.Policy
-		}
+		eventBuses[i] = eventBusToMap(eb)
 	}
 
 	response := map[string]interface{}{
@@ -181,10 +196,7 @@ func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.Requ
 	}
 	eventBus, err := store.GetEventBus(ctx, name)
 	if err != nil {
-		if err == eventsstore.ErrEventBusNotFound {
-			return nil, NewResourceNotFoundException("Event bus '" + name + "' does not exist")
-		}
-		return nil, err
+		return nil, mapStoreError(err, name)
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
@@ -199,19 +211,5 @@ func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	result := map[string]interface{}{
-		"Arn":              eventBus.ARN,
-		"Name":             eventBus.Name,
-		"CreationTime":     eventBus.CreatedAt.Unix(),
-		"LastModifiedTime": eventBus.LastModifiedAt.Unix(),
-	}
-
-	if eventBus.Description != "" {
-		result["Description"] = eventBus.Description
-	}
-	if eventBus.Policy != "" {
-		result["Policy"] = eventBus.Policy
-	}
-
-	return result, nil
+	return eventBusToMap(eventBus), nil
 }

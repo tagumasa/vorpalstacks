@@ -183,7 +183,7 @@ func (s *EventsStore) ListEventBuses(ctx context.Context, namePrefix string, lim
 		if namePrefix == "" {
 			return true
 		}
-		return len(e.Name) >= len(namePrefix) && e.Name[:len(namePrefix)] == namePrefix
+		return strings.HasPrefix(e.Name, namePrefix)
 	})
 	if err != nil {
 		return nil, err
@@ -311,7 +311,7 @@ func (s *EventsStore) ListRules(ctx context.Context, eventBusName, namePrefix st
 		if namePrefix == "" {
 			return true
 		}
-		return len(r.Name) >= len(namePrefix) && r.Name[:len(namePrefix)] == namePrefix
+		return strings.HasPrefix(r.Name, namePrefix)
 	})
 	if err != nil {
 		return nil, err

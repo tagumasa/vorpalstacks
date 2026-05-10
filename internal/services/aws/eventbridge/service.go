@@ -70,12 +70,33 @@ func (s *EventsService) SetEventBus(bus eventbus.Bus) {
 	_, _ = eventbus.SubscribeTyped[*eventbus.EventBridgePutEventsEvent](bus, s.handlePutEventsEvent, eventbus.WithAsync())
 }
 
+// GetStoreForRegion returns a cached or newly-created store for the given region.
+// This is used by the admin handler and event bus subscribers that do not have
+// a RequestContext.
+func (s *EventsService) GetStoreForRegion(region string) (*eventsstore.EventsStore, error) {
+	if cached, ok := s.eventsStores.Load(region); ok {
+		if typed, ok := cached.(*eventsstore.EventsStore); ok {
+			return typed, nil
+		}
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
+	}
+	es := eventsstore.NewEventsStore(st, s.accountID, region)
+	if actual, loaded := s.eventsStores.LoadOrStore(region, es); loaded {
+		if typed, ok := actual.(*eventsstore.EventsStore); ok {
+			return typed, nil
+		}
+	}
+	return es, nil
+}
+
 func (s *EventsService) handleBusDelivery(ctx context.Context, evt *eventbus.EventBridgeDeliveryEvent) eventbus.HandlerResult {
 	if strings.Contains(evt.TargetARN, ":event-bus/") {
 		return s.handleEventBusDelivery(ctx, evt)
 	}
 
-	targetType := s.parseTargetType(evt.TargetARN)
 	target := eventsstore.Target{
 		ARN: evt.TargetARN,
 		ID:  evt.TargetID,
@@ -85,7 +106,7 @@ func (s *EventsService) handleBusDelivery(ctx context.Context, evt *eventbus.Eve
 		ID: evt.EventID(),
 	}
 
-	s.dispatchToTarget(ctx, evt.Region, event, target, targetType, evt.Input)
+	s.dispatchToTarget(ctx, evt.Region, event, target, evt.Input)
 	return eventbus.HandlerResult{}
 }
 

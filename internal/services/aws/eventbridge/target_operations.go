@@ -48,18 +48,12 @@ func (s *EventsService) PutTargets(ctx context.Context, reqCtx *request.RequestC
 
 	// Check if event bus exists
 	if _, err := store.GetEventBus(ctx, eventBusName); err != nil {
-		if err == eventsstore.ErrEventBusNotFound {
-			return nil, NewResourceNotFoundException("Event bus '" + eventBusName + "' does not exist")
-		}
-		return nil, err
+		return nil, mapStoreError(err, eventBusName)
 	}
 
 	_, err = store.GetRule(ctx, eventBusName, ruleName)
 	if err != nil {
-		if err == eventsstore.ErrRuleNotFound {
-			return nil, NewResourceNotFoundException("Rule '" + ruleName + "' does not exist on event bus '" + eventBusName + "'")
-		}
-		return nil, err
+		return nil, mapStoreError(err, ruleName)
 	}
 
 	targets, ok := req.Parameters["Targets"].([]interface{})
@@ -278,6 +272,11 @@ func (s *EventsService) RemoveTargets(ctx context.Context, reqCtx *request.Reque
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	_, err = store.GetRule(ctx, eventBusName, ruleName)
+	if err != nil {
+		return nil, mapStoreError(err, ruleName)
 	}
 
 	failedEntries := make([]map[string]interface{}, 0)

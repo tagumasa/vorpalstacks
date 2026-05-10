@@ -9,7 +9,6 @@ import (
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchevents"
 	cloudwatcheventsconnect "vorpalstacks/internal/pb/aws/cloudwatchevents/cloudwatcheventsconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -21,8 +20,7 @@ import (
 // the Flutter management UI, delegating to the shared EventsService store.
 type AdminHandler struct {
 	cloudwatcheventsconnect.UnimplementedCloudWatchEventsServiceHandler
-	service        *EventsService
-	storageManager *storage.RegionStorageManager
+	service *EventsService
 }
 
 var _ cloudwatcheventsconnect.CloudWatchEventsServiceHandler = (*AdminHandler)(nil)
@@ -30,31 +28,13 @@ var _ cloudwatcheventsconnect.CloudWatchEventsServiceHandler = (*AdminHandler)(n
 // NewAdminHandler creates a new EventBridge admin console handler backed by
 // the given service instance, ensuring the same per-region cached stores are used
 // as the HTTP API handlers.
-func NewAdminHandler(svc *EventsService, sm *storage.RegionStorageManager) *AdminHandler {
-	return &AdminHandler{service: svc, storageManager: sm}
+func NewAdminHandler(svc *EventsService) *AdminHandler {
+	return &AdminHandler{service: svc}
 }
 
 func (h *AdminHandler) getStore(header http.Header) (*eventsstore.EventsStore, error) {
 	region := svccommon.GetRegionFromHeader(header)
-	if cached, ok := h.service.eventsStores.Load(region); ok {
-		if typed, ok := cached.(*eventsstore.EventsStore); ok {
-			return typed, nil
-		}
-	}
-	if h.storageManager == nil {
-		return nil, fmt.Errorf("storage manager not initialised")
-	}
-	st, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	es := eventsstore.NewEventsStore(st, h.service.accountID, region)
-	if actual, loaded := h.service.eventsStores.LoadOrStore(region, es); loaded {
-		if typed, ok := actual.(*eventsstore.EventsStore); ok {
-			return typed, nil
-		}
-	}
-	return es, nil
+	return h.service.GetStoreForRegion(region)
 }
 
 // ListEventBuses returns a paginated list of event buses in the requested region.
@@ -182,6 +162,6 @@ func (h *AdminHandler) DeleteEventBus(ctx context.Context, req *connect.Request[
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the EventBridge admin console.
-func NewConnectHandler(svc *EventsService, sm *storage.RegionStorageManager) (string, http.Handler) {
-	return cloudwatcheventsconnect.NewCloudWatchEventsServiceHandler(NewAdminHandler(svc, sm))
+func NewConnectHandler(svc *EventsService) (string, http.Handler) {
+	return cloudwatcheventsconnect.NewCloudWatchEventsServiceHandler(NewAdminHandler(svc))
 }

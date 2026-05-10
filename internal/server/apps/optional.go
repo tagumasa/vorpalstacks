@@ -298,7 +298,7 @@ func (a *App) initGRPCWebAdmin() {
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcsqs.NewConnectHandler(st.sqsService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svcevents.NewConnectHandler(st.eventBridgeService, sm)
+	p, h = svcevents.NewConnectHandler(st.eventBridgeService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svclogs.NewConnectHandler(st.logsService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
