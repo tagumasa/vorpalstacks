@@ -40,7 +40,7 @@ type QueryExecutionStoreInterface interface {
 	UpdateQueryExecution(qe *QueryExecution) error
 	DeleteQueryExecution(id string) error
 	ListQueryExecutionIDs(workGroup string, maxResults int) ([]string, error)
-	DeleteExpiredQueryExecutions(olderThan time.Time) (int, error)
+	DeleteExpiredQueryExecutions(olderThan time.Time) (int, []string, error)
 }
 
 // ResultStoreInterface defines operations for storing query results.
@@ -83,126 +83,6 @@ type TableDataStoreInterface interface {
 	DeleteTableData(catalog, database, table string) error
 }
 
-// AthenaStoresInterface defines access to all Athena stores.
-type AthenaStoresInterface interface {
-	WorkGroupStore() WorkGroupStoreInterface
-	NamedQueryStore() NamedQueryStoreInterface
-	PreparedStatementStore() PreparedStatementStoreInterface
-	QueryExecutionStore() QueryExecutionStoreInterface
-	ResultStore() ResultStoreInterface
-	DataCatalogStore() DataCatalogStoreInterface
-	DatabaseStore() DatabaseStoreInterface
-	TableStore() TableStoreInterface
-	TableDataStore() TableDataStoreInterface
-	WorkGroupStoreRaw() *WorkGroupStore
-	NamedQueryStoreRaw() *NamedQueryStore
-	PreparedStatementStoreRaw() *PreparedStatementStore
-	QueryExecutionStoreRaw() *QueryExecutionStore
-	ResultStoreRaw() *ResultStore
-	DataCatalogStoreRaw() *DataCatalogStore
-	DatabaseStoreRaw() *DatabaseStore
-	TableStoreRaw() *TableStore
-	TableDataStoreRaw() *TableDataStore
-}
-
-// AthenaStore provides access to all Athena stores.
-type AthenaStore struct {
-	workGroupStore         *WorkGroupStore
-	namedQueryStore        *NamedQueryStore
-	preparedStatementStore *PreparedStatementStore
-	queryExecutionStore    *QueryExecutionStore
-	resultStore            *ResultStore
-	dataCatalogStore       *DataCatalogStore
-	databaseStore          *DatabaseStore
-	tableStore             *TableStore
-	tableDataStore         *TableDataStore
-}
-
-// NewAthenaStore creates a new AthenaStore with the given stores.
-func NewAthenaStore(
-	workGroupStore *WorkGroupStore,
-	namedQueryStore *NamedQueryStore,
-	preparedStatementStore *PreparedStatementStore,
-	queryExecutionStore *QueryExecutionStore,
-	resultStore *ResultStore,
-	dataCatalogStore *DataCatalogStore,
-	databaseStore *DatabaseStore,
-	tableStore *TableStore,
-	tableDataStore *TableDataStore,
-) *AthenaStore {
-	return &AthenaStore{
-		workGroupStore:         workGroupStore,
-		namedQueryStore:        namedQueryStore,
-		preparedStatementStore: preparedStatementStore,
-		queryExecutionStore:    queryExecutionStore,
-		resultStore:            resultStore,
-		dataCatalogStore:       dataCatalogStore,
-		databaseStore:          databaseStore,
-		tableStore:             tableStore,
-		tableDataStore:         tableDataStore,
-	}
-}
-
-// WorkGroupStore returns the work group store.
-func (s *AthenaStore) WorkGroupStore() WorkGroupStoreInterface { return s.workGroupStore }
-
-// NamedQueryStore returns the named query store.
-func (s *AthenaStore) NamedQueryStore() NamedQueryStoreInterface { return s.namedQueryStore }
-
-// PreparedStatementStore returns the prepared statement store.
-func (s *AthenaStore) PreparedStatementStore() PreparedStatementStoreInterface {
-	return s.preparedStatementStore
-}
-
-// QueryExecutionStore returns the query execution store.
-func (s *AthenaStore) QueryExecutionStore() QueryExecutionStoreInterface {
-	return s.queryExecutionStore
-}
-
-// ResultStore returns the result store.
-func (s *AthenaStore) ResultStore() ResultStoreInterface { return s.resultStore }
-
-// DataCatalogStore returns the data catalog store.
-func (s *AthenaStore) DataCatalogStore() DataCatalogStoreInterface { return s.dataCatalogStore }
-
-// DatabaseStore returns the database store.
-func (s *AthenaStore) DatabaseStore() DatabaseStoreInterface { return s.databaseStore }
-
-// TableStore returns the table store.
-func (s *AthenaStore) TableStore() TableStoreInterface { return s.tableStore }
-
-// TableDataStore returns the table data store.
-func (s *AthenaStore) TableDataStore() TableDataStoreInterface { return s.tableDataStore }
-
-// WorkGroupStoreRaw returns the raw work group store.
-func (s *AthenaStore) WorkGroupStoreRaw() *WorkGroupStore { return s.workGroupStore }
-
-// NamedQueryStoreRaw returns the raw named query store.
-func (s *AthenaStore) NamedQueryStoreRaw() *NamedQueryStore { return s.namedQueryStore }
-
-// PreparedStatementStoreRaw returns the raw prepared statement store.
-func (s *AthenaStore) PreparedStatementStoreRaw() *PreparedStatementStore {
-	return s.preparedStatementStore
-}
-
-// QueryExecutionStoreRaw returns the raw query execution store.
-func (s *AthenaStore) QueryExecutionStoreRaw() *QueryExecutionStore { return s.queryExecutionStore }
-
-// ResultStoreRaw returns the raw result store.
-func (s *AthenaStore) ResultStoreRaw() *ResultStore { return s.resultStore }
-
-// DataCatalogStoreRaw returns the raw data catalog store.
-func (s *AthenaStore) DataCatalogStoreRaw() *DataCatalogStore { return s.dataCatalogStore }
-
-// DatabaseStoreRaw returns the raw database store.
-func (s *AthenaStore) DatabaseStoreRaw() *DatabaseStore { return s.databaseStore }
-
-// TableStoreRaw returns the raw table store.
-func (s *AthenaStore) TableStoreRaw() *TableStore { return s.tableStore }
-
-// TableDataStoreRaw returns the raw table data store.
-func (s *AthenaStore) TableDataStoreRaw() *TableDataStore { return s.tableDataStore }
-
 var (
 	_ WorkGroupStoreInterface         = (*WorkGroupStore)(nil)
 	_ NamedQueryStoreInterface        = (*NamedQueryStore)(nil)
@@ -213,5 +93,4 @@ var (
 	_ DatabaseStoreInterface          = (*DatabaseStore)(nil)
 	_ TableStoreInterface             = (*TableStore)(nil)
 	_ TableDataStoreInterface         = (*TableDataStore)(nil)
-	_ AthenaStoresInterface           = (*AthenaStore)(nil)
 )

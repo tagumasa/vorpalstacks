@@ -3,6 +3,7 @@ package athena
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -306,6 +307,19 @@ func (s *NamedQueryStore) ListNamedQueries(workGroup string) ([]*NamedQuery, err
 	return namedQueries, err
 }
 
+func (s *NamedQueryStore) DeleteNamedQueriesByWorkGroup(workGroup string) error {
+	queries, err := s.ListNamedQueries(workGroup)
+	if err != nil {
+		return err
+	}
+	for _, nq := range queries {
+		nameKey := s.namedQueryByNameKey(nq.WorkGroup, nq.Name)
+		_ = s.BaseStore.Delete(nameKey)
+		_ = s.BaseStore.Delete(nq.NamedQueryId)
+	}
+	return nil
+}
+
 // PreparedStatementStore provides Athena prepared statement storage operations.
 type PreparedStatementStore struct {
 	*common.BaseStore
@@ -394,6 +408,19 @@ func (s *PreparedStatementStore) ListPreparedStatements(workGroup string) ([]*Pr
 	return statements, nil
 }
 
+func (s *PreparedStatementStore) DeletePreparedStatementsByWorkGroup(workGroup string) error {
+	prefix := workGroup + ":"
+	result, err := common.ListProto[*pb.PreparedStatement](s.BaseStore, common.ListOptions{Prefix: prefix}, func() *pb.PreparedStatement { return &pb.PreparedStatement{} }, nil)
+	if err != nil {
+		return err
+	}
+	for _, p := range result.Items {
+		key := s.preparedStatementKey(p.WorkGroupName, p.StatementName)
+		_ = s.BaseStore.Delete(key)
+	}
+	return nil
+}
+
 // QueryExecutionStore provides Athena query execution storage operations.
 type QueryExecutionStore struct {
 	*common.BaseStore
@@ -404,6 +431,19 @@ func NewQueryExecutionStore(store storage.BasicStorage, region string) *QueryExe
 	return &QueryExecutionStore{
 		BaseStore: common.NewBaseStore(store.Bucket(queryExecutionBucketName(region)), "athena-query-execution"),
 	}
+}
+
+func (s *QueryExecutionStore) workGroupIndexKey(workGroup, queryExecutionId string) string {
+	return "#wg:" + workGroup + ":" + queryExecutionId
+}
+
+// extractIDFromIndexKey parses "#wg:<workGroup>:<id>" and returns the id portion.
+func extractIDFromIndexKey(key string) string {
+	parts := strings.SplitN(key, ":", 3)
+	if len(parts) == 3 {
+		return parts[2]
+	}
+	return ""
 }
 
 // CreateQueryExecution creates a new Athena query execution.
@@ -419,7 +459,18 @@ func (s *QueryExecutionStore) CreateQueryExecution(qe *QueryExecution) error {
 		}
 	}
 
-	return s.PutProto(qe.QueryExecutionId, QueryExecutionToProto(qe))
+	if err := s.PutProto(qe.QueryExecutionId, QueryExecutionToProto(qe)); err != nil {
+		return err
+	}
+
+	if qe.WorkGroup != "" {
+		if err := s.Put(s.workGroupIndexKey(qe.WorkGroup, qe.QueryExecutionId), nil); err != nil {
+			_ = s.BaseStore.Delete(qe.QueryExecutionId)
+			return fmt.Errorf("failed to write workgroup index: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // GetQueryExecution retrieves an Athena query execution by ID.
@@ -437,58 +488,105 @@ func (s *QueryExecutionStore) UpdateQueryExecution(qe *QueryExecution) error {
 }
 
 // DeleteExpiredQueryExecutions removes query executions older than the given threshold.
-// Returns the number of deleted executions.
-func (s *QueryExecutionStore) DeleteExpiredQueryExecutions(olderThan time.Time) (int, error) {
-	batchSize := 200
-	var deleted int
-	marker := ""
-	for {
-		result, err := common.ListProto[*pb.QueryExecution](s.BaseStore, common.ListOptions{MaxItems: batchSize, Marker: marker}, func() *pb.QueryExecution { return &pb.QueryExecution{} }, nil)
-		if err != nil {
-			return deleted, err
+// Returns the number of deleted executions and their IDs for cascade cleanup.
+func (s *QueryExecutionStore) DeleteExpiredQueryExecutions(olderThan time.Time) (int, []string, error) {
+	var ids []string
+	err := s.ForEach(func(key string, value []byte) error {
+		if len(key) > 0 && key[0] == '#' {
+			return nil
 		}
-		if len(result.Items) == 0 {
-			break
+		var p pb.QueryExecution
+		if err := proto.Unmarshal(value, &p); err != nil {
+			return nil
 		}
-		for _, p := range result.Items {
-			if p.Status != nil && p.Status.SubmissionDateTime != nil {
-				submissionTime := p.Status.SubmissionDateTime.AsTime()
-				if submissionTime.Before(olderThan) {
-					if err := s.BaseStore.Delete(p.QueryExecutionId); err == nil {
-						deleted++
-					}
-				}
-			}
+		if p.Status == nil || p.Status.SubmissionDateTime == nil {
+			return nil
 		}
-		if !result.IsTruncated {
-			break
+		if !p.Status.SubmissionDateTime.AsTime().Before(olderThan) {
+			return nil
 		}
-		marker = result.NextMarker
+		if p.WorkGroup != "" {
+			_ = s.BaseStore.Delete(s.workGroupIndexKey(p.WorkGroup, p.QueryExecutionId))
+		}
+		ids = append(ids, p.QueryExecutionId)
+		return nil
+	})
+	if err != nil {
+		return 0, nil, err
 	}
-	return deleted, nil
+	for _, id := range ids {
+		_ = s.BaseStore.Delete(id)
+	}
+	return len(ids), ids, nil
 }
 
 // DeleteQueryExecution deletes an Athena query execution by ID.
 func (s *QueryExecutionStore) DeleteQueryExecution(id string) error {
-	if _, err := s.GetQueryExecution(id); err != nil {
+	qe, err := s.GetQueryExecution(id)
+	if err != nil {
 		return err
+	}
+	if qe.WorkGroup != "" {
+		_ = s.BaseStore.Delete(s.workGroupIndexKey(qe.WorkGroup, id))
 	}
 	return s.BaseStore.Delete(id)
 }
 
 // ListQueryExecutionIDs returns query execution IDs for a work group.
 func (s *QueryExecutionStore) ListQueryExecutionIDs(workGroup string, maxResults int) ([]string, error) {
-	result, err := common.ListProto[*pb.QueryExecution](s.BaseStore, common.ListOptions{MaxItems: maxResults}, func() *pb.QueryExecution { return &pb.QueryExecution{} }, nil)
-	if err != nil {
+	if workGroup != "" {
+		return s.listQueryExecutionIDsByIndex(workGroup, maxResults)
+	}
+
+	var ids []string
+	err := s.ForEach(func(key string, value []byte) error {
+		if len(key) > 0 && key[0] == '#' {
+			return nil
+		}
+		var p pb.QueryExecution
+		if err := proto.Unmarshal(value, &p); err != nil {
+			return nil
+		}
+		ids = append(ids, p.QueryExecutionId)
+		return nil
+	})
+	return ids, err
+}
+
+var errStopScan = fmt.Errorf("stop scan")
+
+func (s *QueryExecutionStore) listQueryExecutionIDsByIndex(workGroup string, maxResults int) ([]string, error) {
+	prefix := "#wg:" + workGroup + ":"
+	var ids []string
+	err := s.ScanPrefix(prefix, func(key string, _ []byte) error {
+		id := extractIDFromIndexKey(key)
+		if id != "" {
+			ids = append(ids, id)
+		}
+		if maxResults > 0 && len(ids) >= maxResults {
+			return errStopScan
+		}
+		return nil
+	})
+	if err != nil && err != errStopScan {
 		return nil, err
 	}
-	var ids []string
-	for _, p := range result.Items {
-		if workGroup == "" || p.WorkGroup == workGroup {
-			ids = append(ids, p.QueryExecutionId)
-		}
-	}
 	return ids, nil
+}
+
+func (s *QueryExecutionStore) DeleteQueryExecutionsByWorkGroup(workGroup string) ([]string, error) {
+	prefix := "#wg:" + workGroup + ":"
+	var ids []string
+	err := s.ScanPrefix(prefix, func(key string, _ []byte) error {
+		id := extractIDFromIndexKey(key)
+		if id != "" {
+			ids = append(ids, id)
+			_ = s.BaseStore.Delete(key)
+			_ = s.BaseStore.Delete(id)
+		}
+		return nil
+	})
+	return ids, err
 }
 
 // ResultStore provides Athena query result storage operations.
@@ -523,6 +621,12 @@ func (s *ResultStore) DeleteResult(queryExecutionId string) error {
 		return err
 	}
 	return s.BaseStore.Delete(queryExecutionId)
+}
+
+func (s *ResultStore) DeleteResultsByIDs(ids []string) {
+	for _, id := range ids {
+		_ = s.BaseStore.Delete(id)
+	}
 }
 
 // DataCatalogStore provides Athena data catalog storage operations.
@@ -725,6 +829,18 @@ func (s *TableStore) UpdateTable(catalog, database string, table *TableMetadata)
 	return s.PutProto(key, TableMetadataToProto(table))
 }
 
+func (s *TableStore) DeleteTablesByDatabase(catalog, database string) error {
+	tables, err := s.ListTables(catalog, database)
+	if err != nil {
+		return err
+	}
+	for _, t := range tables {
+		key := s.tableKey(catalog, database, t.Name)
+		_ = s.BaseStore.Delete(key)
+	}
+	return nil
+}
+
 // TableDataStore provides Athena table data storage operations.
 type TableDataStore struct {
 	*common.BaseStore
@@ -769,4 +885,17 @@ func (s *TableDataStore) DeleteTableData(catalog, database, table string) error 
 		return nil
 	}
 	return s.BaseStore.Delete(key)
+}
+
+func (s *TableDataStore) DeleteTableDataByDatabase(catalog, database string) error {
+	prefix := catalog + ":" + database + ":"
+	result, err := common.ListProto[*pb.StoredTable](s.BaseStore, common.ListOptions{Prefix: prefix}, func() *pb.StoredTable { return &pb.StoredTable{} }, nil)
+	if err != nil {
+		return err
+	}
+	for _, p := range result.Items {
+		key := s.tableDataKey(catalog, database, p.TableName)
+		_ = s.BaseStore.Delete(key)
+	}
+	return nil
 }

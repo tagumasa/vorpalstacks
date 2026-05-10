@@ -10,6 +10,16 @@ import (
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
+func emptyDDLResult(startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics) {
+	return &athenastore.ResultSet{
+			Rows:              []athenastore.Row{},
+			ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: []athenastore.ColumnInfo{}},
+		}, &athenastore.QueryExecutionStatistics{
+			QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
+			DataScannedInBytes:        0,
+		}
+}
+
 func (s *AthenaService) executeCreateDatabase(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
 	catalog := "AwsDataCatalog"
 	if context != nil && context.Catalog != "" {
@@ -36,13 +46,8 @@ func (s *AthenaService) executeCreateDatabase(reqCtx *request.RequestContext, qu
 		return nil, nil, fmt.Errorf("failed to create database: %w", err)
 	}
 
-	return &athenastore.ResultSet{
-			Rows:              []athenastore.Row{},
-			ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: []athenastore.ColumnInfo{}},
-		}, &athenastore.QueryExecutionStatistics{
-			QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-			DataScannedInBytes:        0,
-		}, nil
+	rs, stats := emptyDDLResult(startTime)
+	return rs, stats, nil
 }
 
 func (s *AthenaService) executeDropDatabase(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
@@ -61,17 +66,15 @@ func (s *AthenaService) executeDropDatabase(reqCtx *request.RequestContext, quer
 		return nil, nil, err
 	}
 
+	stores.tableStore.DeleteTablesByDatabase(catalog, dbName)
+	stores.tableDataStore.DeleteTableDataByDatabase(catalog, dbName)
+
 	if err := stores.databaseStore.DeleteDatabase(catalog, dbName); err != nil {
 		return nil, nil, fmt.Errorf("failed to drop database: %w", err)
 	}
 
-	return &athenastore.ResultSet{
-			Rows:              []athenastore.Row{},
-			ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: []athenastore.ColumnInfo{}},
-		}, &athenastore.QueryExecutionStatistics{
-			QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-			DataScannedInBytes:        0,
-		}, nil
+	rs, stats := emptyDDLResult(startTime)
+	return rs, stats, nil
 }
 
 func (s *AthenaService) executeCreateTable(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
@@ -131,13 +134,8 @@ func (s *AthenaService) executeCreateTable(reqCtx *request.RequestContext, query
 		}
 	}
 
-	return &athenastore.ResultSet{
-			Rows:              []athenastore.Row{},
-			ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: []athenastore.ColumnInfo{}},
-		}, &athenastore.QueryExecutionStatistics{
-			QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-			DataScannedInBytes:        0,
-		}, nil
+	rs, stats := emptyDDLResult(startTime)
+	return rs, stats, nil
 }
 
 func (s *AthenaService) executeDropTable(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
@@ -170,13 +168,8 @@ func (s *AthenaService) executeDropTable(reqCtx *request.RequestContext, querySt
 		logs.Warn("failed to delete table data after DROP TABLE", logs.String("table", tableName), logs.Err(err))
 	}
 
-	return &athenastore.ResultSet{
-			Rows:              []athenastore.Row{},
-			ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: []athenastore.ColumnInfo{}},
-		}, &athenastore.QueryExecutionStatistics{
-			QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-			DataScannedInBytes:        0,
-		}, nil
+	rs, stats := emptyDDLResult(startTime)
+	return rs, stats, nil
 }
 
 func (s *AthenaService) executeInsert(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {
@@ -242,13 +235,8 @@ func (s *AthenaService) executeInsert(reqCtx *request.RequestContext, queryStrin
 		return nil, nil, fmt.Errorf("failed to store data: %w", err)
 	}
 
-	return &athenastore.ResultSet{
-			Rows:              []athenastore.Row{},
-			ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: []athenastore.ColumnInfo{}},
-		}, &athenastore.QueryExecutionStatistics{
-			QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-			DataScannedInBytes:        0,
-		}, nil
+	rs, stats := emptyDDLResult(startTime)
+	return rs, stats, nil
 }
 
 func (s *AthenaService) executeShowDatabases(reqCtx *request.RequestContext, queryString string, context *athenastore.QueryExecutionContext, startTime time.Time) (*athenastore.ResultSet, *athenastore.QueryExecutionStatistics, error) {

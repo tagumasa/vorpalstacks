@@ -233,44 +233,21 @@ func (s *AthenaService) executeSQLQuery(reqCtx *request.RequestContext, ctx cont
 	rows := s.applyQuery(selectStmt, tableData)
 
 	columnInfo := s.buildColumnInfoFromSelect(selectStmt)
-	if len(columnInfo) == 0 && len(tableData.Columns) > 0 {
-		for _, col := range tableData.Columns {
-			columnInfo = append(columnInfo, athenastore.ColumnInfo{
-				Label: col.Name,
-				Name:  col.Name,
-				Type:  col.Type,
-			})
+	var columns []athenastore.Column
+	if len(columnInfo) > 0 {
+		for _, ci := range columnInfo {
+			columns = append(columns, athenastore.Column{Name: ci.Name, Type: ci.Type})
 		}
+	} else {
+		columns = tableData.Columns
 	}
 
-	var resultRows []athenastore.Row
-	for _, row := range rows {
-		var data []athenastore.Datum
-		for _, col := range columnInfo {
-			val := ""
-			if v, ok := row.Values[col.Name]; ok {
-				val = fmt.Sprintf("%v", v)
-			}
-			data = append(data, athenastore.Datum{VarCharValue: val})
-		}
-		resultRows = append(resultRows, athenastore.Row{Data: data})
+	projectedTable := &athenastore.StoredTable{
+		Columns: columns,
+		Rows:    rows,
 	}
 
-	headerRow := athenastore.Row{}
-	for _, col := range columnInfo {
-		headerRow.Data = append(headerRow.Data, athenastore.Datum{VarCharValue: col.Name})
-	}
-	resultRows = append([]athenastore.Row{headerRow}, resultRows...)
-
-	stats := &athenastore.QueryExecutionStatistics{
-		QueryPlanningTimeInMillis: time.Since(startTime).Milliseconds(),
-		DataScannedInBytes:        int64(len(tableData.Rows) * 100),
-	}
-
-	return &athenastore.ResultSet{
-		Rows:              resultRows,
-		ResultSetMetadata: &athenastore.ResultSetMetadata{ColumnInfo: columnInfo},
-	}, stats, nil
+	return s.buildResultSetFromStoredTable(projectedTable, startTime)
 }
 
 func (s *AthenaService) getTableData(reqCtx *request.RequestContext, catalog, database, tableName string) (*athenastore.StoredTable, error) {

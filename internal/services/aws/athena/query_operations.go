@@ -231,11 +231,6 @@ func (s *AthenaService) ListQueryExecutions(ctx context.Context, reqCtx *request
 	return result, nil
 }
 
-// ListQueryExecutionsWithPagination returns a list of query executions with pagination support.
-func (s *AthenaService) ListQueryExecutionsWithPagination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.ListQueryExecutions(ctx, reqCtx, req)
-}
-
 // BatchGetQueryExecution retrieves details for multiple query executions in a single call.
 func (s *AthenaService) BatchGetQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryExecutionIdsRaw := request.GetArrayParam(req.Parameters, "QueryExecutionIds")
@@ -448,8 +443,6 @@ func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *r
 // 45-day retention period. Athena keeps query history for 45 days per AWS documentation.
 func (s *AthenaService) cleanupExpiredQueryExecutions(st *athenaStores) {
 	if s.testMode {
-		// In test mode, purge all query executions on each StartQueryExecution
-		// to prevent accumulation from repeated test runs.
 		allIds, err := st.queryExecutionStore.ListQueryExecutionIDs("", 0)
 		if err != nil {
 			return
@@ -457,16 +450,18 @@ func (s *AthenaService) cleanupExpiredQueryExecutions(st *athenaStores) {
 		for _, id := range allIds {
 			st.queryExecutionStore.DeleteQueryExecution(id)
 		}
+		st.resultStore.DeleteResultsByIDs(allIds)
 		if len(allIds) > 0 {
 			logs.Info(fmt.Sprintf("athena: test mode cleanup removed %d query executions", len(allIds)))
 		}
 		return
 	}
 	cutoff := time.Now().UTC().AddDate(0, 0, -queryHistoryRetentionDays)
-	deleted, err := st.queryExecutionStore.DeleteExpiredQueryExecutions(cutoff)
+	deleted, deletedIds, err := st.queryExecutionStore.DeleteExpiredQueryExecutions(cutoff)
 	if err != nil {
 		return
 	}
+	st.resultStore.DeleteResultsByIDs(deletedIds)
 	if deleted > 0 {
 		logs.Info(fmt.Sprintf("athena: cleaned up %d expired query executions (older than %d days)", deleted, queryHistoryRetentionDays))
 	}

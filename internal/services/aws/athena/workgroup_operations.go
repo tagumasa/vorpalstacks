@@ -175,6 +175,12 @@ func (s *AthenaService) DeleteWorkGroup(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
+
+	stores.namedQueryStore.DeleteNamedQueriesByWorkGroup(name)
+	stores.preparedStatementStore.DeletePreparedStatementsByWorkGroup(name)
+	deletedQEIds, _ := stores.queryExecutionStore.DeleteQueryExecutionsByWorkGroup(name)
+	stores.resultStore.DeleteResultsByIDs(deletedQEIds)
+
 	if err := stores.workGroupStore.DeleteWorkGroup(name); err != nil {
 		if err == athenastore.ErrWorkGroupNotFound {
 			return nil, workGroupNotFound(name)
@@ -516,39 +522,4 @@ func (s *AthenaService) configurationToResponse(cfg *athenastore.WorkGroupConfig
 	}
 
 	return response
-}
-
-// GetDefaultWorkGroup returns the default primary workgroup, creating it if it does not exist.
-func (s *AthenaService) GetDefaultWorkGroup(reqCtx *request.RequestContext) (*athenastore.WorkGroup, error) {
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	wg, err := stores.workGroupStore.GetWorkGroup("primary")
-	if err == nil {
-		return wg, nil
-	}
-
-	if err == athenastore.ErrWorkGroupNotFound {
-		defaultWg := &athenastore.WorkGroup{
-			Name:        "primary",
-			Description: "The default workgroup",
-			Configuration: &athenastore.WorkGroupConfiguration{
-				ResultConfiguration: &athenastore.ResultConfiguration{
-					OutputLocation: "s3://aws-athena-query-results-" + s.accountID + "-" + reqCtx.GetRegion() + "/",
-				},
-				EngineVersion: &athenastore.EngineVersion{
-					SelectedEngineVersion:  "AUTO",
-					EffectiveEngineVersion: "Athena engine version 3",
-				},
-			},
-			State: athenastore.WorkGroupStateEnabled,
-		}
-		if err := stores.workGroupStore.CreateWorkGroup(defaultWg); err != nil {
-			logs.Warn("failed to create default primary workgroup", logs.Err(err))
-		}
-		return defaultWg, nil
-	}
-
-	return nil, err
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"sync"
+	"time"
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
@@ -25,6 +26,8 @@ type athenaStores struct {
 	tableStore             *athena.TableStore
 	tableDataStore         *athena.TableDataStore
 }
+
+const cleanupInterval = 24 * time.Hour
 
 // AthenaService provides AWS Athena operations.
 type AthenaService struct {
@@ -93,10 +96,22 @@ func (s *AthenaService) store(reqCtx *request.RequestContext) (*athenaStores, er
 	if err != nil {
 		return nil, err
 	}
-	onceVal, _ := s.regionCleanups.LoadOrStore(reqCtx.GetRegion(), &sync.Once{})
-	onceVal.(*sync.Once).Do(func() {
+	now := time.Now()
+	lastVal, loaded := s.regionCleanups.LoadOrStore(reqCtx.GetRegion(), now)
+	shouldCleanup := !loaded
+	if loaded {
+		interval := cleanupInterval
+		if s.testMode {
+			interval = 5 * time.Minute
+		}
+		if now.Sub(lastVal.(time.Time)) >= interval {
+			shouldCleanup = true
+		}
+	}
+	if shouldCleanup {
+		s.regionCleanups.Store(reqCtx.GetRegion(), now)
 		s.cleanupExpiredQueryExecutions(st)
-	})
+	}
 	return st, nil
 }
 

@@ -587,96 +587,10 @@ func (s *AthenaService) applyHaving(rows []*athenastore.StoredRow, expr sqlparse
 	var result []*athenastore.StoredRow
 
 	for _, row := range rows {
-		if s.evaluateHaving(expr, row.Values) {
+		if s.evaluateWhere(expr, row.Values) {
 			result = append(result, row)
 		}
 	}
 
 	return result
-}
-
-func (s *AthenaService) evaluateHaving(expr sqlparser.Expr, row map[string]interface{}) bool {
-	switch e := expr.(type) {
-	case *sqlparser.ComparisonExpr:
-		return s.evaluateHavingComparison(e, row)
-	case *sqlparser.AndExpr:
-		return s.evaluateHaving(e.Left, row) && s.evaluateHaving(e.Right, row)
-	case *sqlparser.OrExpr:
-		return s.evaluateHaving(e.Left, row) || s.evaluateHaving(e.Right, row)
-	case *sqlparser.ParenExpr:
-		return s.evaluateHaving(e.Expr, row)
-	}
-	return true
-}
-
-func (s *AthenaService) evaluateHavingComparison(expr *sqlparser.ComparisonExpr, row map[string]interface{}) bool {
-	leftVal := s.getHavingExprValue(expr.Left, row)
-	rightVal := s.getHavingExprValue(expr.Right, row)
-
-	leftStr := fmt.Sprintf("%v", leftVal)
-	rightStr := fmt.Sprintf("%v", rightVal)
-
-	switch expr.Operator {
-	case sqlparser.EqualStr:
-		return leftStr == rightStr
-	case sqlparser.NotEqualStr:
-		return leftStr != rightStr
-	case sqlparser.LessThanStr:
-		return s.compareNumeric(leftVal, rightVal) < 0
-	case sqlparser.LessEqualStr:
-		return s.compareNumeric(leftVal, rightVal) <= 0
-	case sqlparser.GreaterThanStr:
-		return s.compareNumeric(leftVal, rightVal) > 0
-	case sqlparser.GreaterEqualStr:
-		return s.compareNumeric(leftVal, rightVal) >= 0
-	}
-	return false
-}
-
-func (s *AthenaService) getHavingExprValue(expr sqlparser.Expr, row map[string]interface{}) interface{} {
-	switch e := expr.(type) {
-	case *sqlparser.ColName:
-		colName := e.Name.String()
-		return row[colName]
-	case *sqlparser.SQLVal:
-		if e.Type == sqlparser.StrVal {
-			return string(e.Val)
-		} else if e.Type == sqlparser.IntVal {
-			if val, err := strconv.ParseInt(string(e.Val), 10, 64); err == nil {
-				return val
-			}
-		} else if e.Type == sqlparser.FloatVal {
-			if val, err := strconv.ParseFloat(string(e.Val), 64); err == nil {
-				return val
-			}
-		}
-		return string(e.Val)
-	case *sqlparser.NullVal:
-		return nil
-	default:
-		return nil
-	}
-}
-
-func (s *AthenaService) compareNumeric(left, right interface{}) int {
-	leftFloat, leftErr := s.toFloat(left)
-	rightFloat, rightErr := s.toFloat(right)
-
-	if leftErr != nil || rightErr != nil {
-		leftStr := fmt.Sprintf("%v", left)
-		rightStr := fmt.Sprintf("%v", right)
-		if leftStr < rightStr {
-			return -1
-		} else if leftStr > rightStr {
-			return 1
-		}
-		return 0
-	}
-
-	if leftFloat < rightFloat {
-		return -1
-	} else if leftFloat > rightFloat {
-		return 1
-	}
-	return 0
 }
