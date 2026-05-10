@@ -44,7 +44,7 @@ var (
 	ErrApiKeyValidityOutOfBoundsException = NewAppSyncError("ApiKeyValidityOutOfBoundsException", "The API key validity period is out of bounds.", http.StatusBadRequest)
 	ErrGraphQLSchemaException             = NewAppSyncError("GraphQLSchemaException", "The GraphQL schema is not valid.", http.StatusBadRequest)
 	ErrInternalFailureException           = NewAppSyncError("InternalFailureException", "An internal failure occurred.", http.StatusInternalServerError)
-	ErrServiceQuotaExceededException      = NewAppSyncError("ServiceQuotaExceededException", "The service quota has been exceeded.", http.StatusPaymentRequired)
+	ErrServiceQuotaExceededException      = NewAppSyncError("ServiceQuotaExceededException", "The service quota has been exceeded.", http.StatusTooManyRequests)
 )
 
 // NewNotFoundException creates a NotFoundException with the specified resource description.

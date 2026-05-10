@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/graphql"
 
 	"github.com/google/uuid"
 )
@@ -226,7 +227,43 @@ func (s *AppSyncStore) CreateApi(api *Api) (*Api, error) {
 	if err := s.apisStore.Put(api.Name, api); err != nil {
 		return nil, err
 	}
+	if err := s.putApiIdIndex(api.ApiId, api.Name); err != nil {
+		logs.Warn("failed to write apiId index", logs.String("apiId", api.ApiId), logs.Err(err))
+	}
 	return api, nil
+}
+
+// apiIdIndexKey returns the index key for looking up an Event API name by its UUID.
+func apiIdIndexKey(apiId string) string {
+	return "#id:" + apiId
+}
+
+// putApiIdIndex writes the apiId→name index entry. Must be called within createMu.
+func (s *AppSyncStore) putApiIdIndex(apiId, name string) error {
+	return s.apisStore.Put(apiIdIndexKey(apiId), map[string]string{"name": name})
+}
+
+// getApiNameByIndex retrieves the API name from the apiId index.
+// Falls back to full scan if the index entry is missing (pre-index data).
+func (s *AppSyncStore) getApiNameByIndex(apiId string) (string, error) {
+	var m map[string]string
+	if err := s.apisStore.Get(apiIdIndexKey(apiId), &m); err == nil {
+		if name, ok := m["name"]; ok {
+			return name, nil
+		}
+	}
+
+	// Fallback: full scan for pre-index data.
+	apis, _, err := s.ListApis(common.ListOptions{MaxItems: 10000})
+	if err != nil {
+		return "", err
+	}
+	for _, api := range apis {
+		if api.ApiId == apiId {
+			return api.Name, nil
+		}
+	}
+	return "", ErrApiNotFound
 }
 
 // GetApi retrieves an Event API by name.
@@ -239,18 +276,13 @@ func (s *AppSyncStore) GetApi(name string) (*Api, error) {
 }
 
 // GetApiById retrieves an Event API by its UUID.
-// Scans all APIs to find the one matching the given ID.
+// Uses the apiId→name index for direct lookup, with full-scan fallback.
 func (s *AppSyncStore) GetApiById(apiId string) (*Api, error) {
-	apis, _, err := s.ListApis(common.ListOptions{MaxItems: 10000})
+	name, err := s.getApiNameByIndex(apiId)
 	if err != nil {
 		return nil, err
 	}
-	for _, api := range apis {
-		if api.ApiId == apiId {
-			return api, nil
-		}
-	}
-	return nil, ErrApiNotFound
+	return s.GetApi(name)
 }
 
 // UpdateApiById updates an Event API identified by apiId.
@@ -278,7 +310,11 @@ func (s *AppSyncStore) UpdateApiById(apiId string, update *Api) (*Api, error) {
 	existing.WafWebAclArn = update.WafWebAclArn
 	existing.XrayEnabled = update.XrayEnabled
 
-	// If the name changed, remove the old entry before saving under the new key.
+	if err := s.apisStore.Put(existing.Name, existing); err != nil {
+		return nil, err
+	}
+
+	// Delete old key after successful Put to prevent data loss on rename.
 	if oldName != existing.Name {
 		if err := s.apisStore.Delete(oldName); err != nil {
 			logs.Warn("failed to delete stale Event API name during rename",
@@ -286,9 +322,11 @@ func (s *AppSyncStore) UpdateApiById(apiId string, update *Api) (*Api, error) {
 		}
 	}
 
-	if err := s.apisStore.Put(existing.Name, existing); err != nil {
-		return nil, err
+	if err := s.putApiIdIndex(existing.ApiId, existing.Name); err != nil {
+		logs.Warn("failed to update apiId index during rename",
+			logs.String("apiId", existing.ApiId), logs.Err(err))
 	}
+
 	return existing, nil
 }
 
@@ -308,6 +346,8 @@ func (s *AppSyncStore) DeleteApiById(apiId string) error {
 		logs.Warn("failed to delete channel namespaces during Event API deletion",
 			logs.String("apiId", apiId), logs.Err(err))
 	}
+
+	_ = s.apisStore.Delete(apiIdIndexKey(apiId))
 
 	return s.apisStore.Delete(existing.Name)
 }
@@ -434,58 +474,8 @@ func (s *AppSyncStore) ListChannelNamespaces(apiId string, opts common.ListOptio
 	return result.Items, nextToken, nil
 }
 
-// UpdateChannelNamespaceTags atomically updates the tags on a channel namespace
-// using the provided merge function.
-func (s *AppSyncStore) UpdateChannelNamespaceTags(apiId, name string, mergeFn func(map[string]string) map[string]string) error {
-	s.createMu.Lock()
-	defer s.createMu.Unlock()
-
-	key := apiId + "/" + name
-	var ns ChannelNamespace
-	if err := s.channelsStore.Get(key, &ns); err != nil {
-		return ErrChannelNamespaceNotFound
-	}
-
-	mergedTags := mergeFn(ns.Tags)
-	ns.Tags = mergedTags
-	ns.LastModified = time.Now().UTC()
-
-	if err := s.channelsStore.Put(key, ns); err != nil {
-		return err
-	}
-
-	if len(mergedTags) > 0 {
-		if err := s.TagStore.Tag(ns.ChannelNamespaceArn, mergedTags); err != nil {
-			logs.Warn("failed to update tags for channel namespace",
-				logs.String("arn", ns.ChannelNamespaceArn), logs.Err(err))
-		}
-	}
-
-	return nil
-}
-
 // extractTypeName parses a GraphQL SDL definition and extracts the type name.
 // Handles formats like "type Post { ... }", "input PostInput { ... }", "enum Status { ... }".
 func extractTypeName(definition string) string {
-	definition = strings.TrimSpace(definition)
-	if definition == "" {
-		return ""
-	}
-
-	parts := strings.Fields(definition)
-	if len(parts) < 2 {
-		return ""
-	}
-
-	for _, keyword := range []string{"type", "input", "interface", "enum", "union", "scalar"} {
-		if parts[0] == keyword {
-			name := parts[1]
-			if idx := strings.Index(name, "{"); idx >= 0 {
-				name = strings.TrimSpace(name[:idx])
-			}
-			return name
-		}
-	}
-
-	return ""
+	return graphql.ExtractTypeName(definition)
 }

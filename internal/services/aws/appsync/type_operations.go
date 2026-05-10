@@ -13,7 +13,7 @@ import (
 func (s *AppSyncService) CreateType(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -53,7 +53,7 @@ func (s *AppSyncService) CreateType(ctx context.Context, reqCtx *request.Request
 func (s *AppSyncService) GetType(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -77,7 +77,7 @@ func (s *AppSyncService) GetType(ctx context.Context, reqCtx *request.RequestCon
 func (s *AppSyncService) UpdateType(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -114,7 +114,7 @@ func (s *AppSyncService) UpdateType(ctx context.Context, reqCtx *request.Request
 func (s *AppSyncService) DeleteType(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -135,7 +135,7 @@ func (s *AppSyncService) DeleteType(ctx context.Context, reqCtx *request.Request
 func (s *AppSyncService) ListTypes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -161,24 +161,4 @@ func (s *AppSyncService) ListTypes(ctx context.Context, reqCtx *request.RequestC
 		response["nextToken"] = nextToken
 	}
 	return response, nil
-}
-
-// typeToMap converts a Type struct to a response map with correct wire format.
-func typeToMap(t *appsyncstore.Type) map[string]interface{} {
-	m := map[string]interface{}{
-		"name":   t.Name,
-		"format": t.Format,
-	}
-
-	if t.Arn != "" {
-		m["arn"] = t.Arn
-	}
-	if t.Definition != "" {
-		m["definition"] = t.Definition
-	}
-	if t.Description != "" {
-		m["description"] = t.Description
-	}
-
-	return m
 }

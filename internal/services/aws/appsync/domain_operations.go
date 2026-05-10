@@ -138,6 +138,11 @@ func (s *AppSyncService) DeleteDomainName(ctx context.Context, reqCtx *request.R
 		return nil, NewBadRequestException("domainName is required")
 	}
 
+	// Disassociate API before deleting the domain to prevent dangling references.
+	if assoc, err := store.GetApiAssociation(domainName); err == nil && assoc != nil {
+		_ = store.DisassociateApi(domainName)
+	}
+
 	if err := store.DeleteDomainName(domainName); err != nil {
 		return mapStoreError(err)
 	}
@@ -220,41 +225,4 @@ func (s *AppSyncService) GetApiAssociation(ctx context.Context, reqCtx *request.
 	}
 
 	return map[string]interface{}{"apiAssociation": apiAssociationToMap(assoc)}, nil
-}
-
-func domainNameConfigToMap(c *appsyncstore.DomainNameConfig) map[string]interface{} {
-	result := map[string]interface{}{
-		"domainName":        c.DomainName,
-		"appsyncDomainName": c.AppsyncDomainName,
-	}
-	if c.CertificateArn != "" {
-		result["certificateArn"] = c.CertificateArn
-	}
-	if c.Description != "" {
-		result["description"] = c.Description
-	}
-	if c.DomainNameArn != "" {
-		result["domainNameArn"] = c.DomainNameArn
-	}
-	if c.HostedZoneId != "" {
-		result["hostedZoneId"] = c.HostedZoneId
-	}
-	if len(c.Tags) > 0 {
-		result["tags"] = c.Tags
-	}
-	return result
-}
-
-func apiAssociationToMap(a *appsyncstore.ApiAssociation) map[string]interface{} {
-	result := map[string]interface{}{
-		"domainName":        a.DomainName,
-		"associationStatus": a.AssociationStatus,
-	}
-	if a.ApiId != "" {
-		result["apiId"] = a.ApiId
-	}
-	if a.DeploymentDetail != "" {
-		result["deploymentDetail"] = a.DeploymentDetail
-	}
-	return result
 }

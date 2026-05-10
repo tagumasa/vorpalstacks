@@ -49,7 +49,7 @@ func (s *AppSyncService) GetDataSourceIntrospection(ctx context.Context, reqCtx 
 func (s *AppSyncService) ListTypesByAssociation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	mergedApiId := request.GetStringParam(req.Parameters, "mergedApiIdentifier")

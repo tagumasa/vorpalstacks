@@ -150,22 +150,3 @@ func (s *AppSyncService) FlushApiCache(ctx context.Context, reqCtx *request.Requ
 
 	return map[string]interface{}{}, nil
 }
-
-func apiCacheToMap(c *appsyncstore.ApiCache) map[string]interface{} {
-	result := map[string]interface{}{
-		"type":               c.Type,
-		"ttl":                c.Ttl,
-		"apiCachingBehavior": c.ApiCachingBehavior,
-		"status":             c.Status,
-	}
-	if c.AtRestEncryptionEnabled {
-		result["atRestEncryptionEnabled"] = c.AtRestEncryptionEnabled
-	}
-	if c.TransitEncryptionEnabled {
-		result["transitEncryptionEnabled"] = c.TransitEncryptionEnabled
-	}
-	if c.HealthMetricsConfig != "" {
-		result["healthMetricsConfig"] = c.HealthMetricsConfig
-	}
-	return result
-}

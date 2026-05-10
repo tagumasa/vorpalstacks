@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,7 +19,6 @@ import (
 )
 
 var sharedHTTPClient = &http.Client{Timeout: 30 * time.Second}
-var sharedHTTPClientOnce sync.Once
 
 // dispatchDataSource routes a resolver payload to the appropriate data source
 // based on the data source type (DynamoDB, Lambda, HTTP, EventBridge, Neptune, None, etc.).

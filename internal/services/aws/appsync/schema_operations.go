@@ -16,6 +16,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	storecommon "vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/graphql"
 )
 
 // StartSchemaCreation initiates schema creation for a GraphQL API.
@@ -24,7 +25,7 @@ import (
 func (s *AppSyncService) StartSchemaCreation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -111,7 +112,7 @@ func (s *AppSyncService) StartSchemaCreation(ctx context.Context, reqCtx *reques
 func (s *AppSyncService) GetSchemaCreationStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -142,7 +143,7 @@ func (s *AppSyncService) GetSchemaCreationStatus(ctx context.Context, reqCtx *re
 func (s *AppSyncService) GetIntrospectionSchema(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -219,17 +220,7 @@ func typeDefInSDL(sdl, def string) bool {
 }
 
 func extractTypeName(def string) string {
-	for _, prefix := range typeNamePrefixes {
-		if idx := strings.Index(def, prefix); idx != -1 {
-			rest := def[idx+len(prefix):]
-			rest = strings.TrimLeft(rest, " ")
-			end := strings.IndexAny(rest, " \t\n{(")
-			if end > 0 {
-				return rest[:end]
-			}
-		}
-	}
-	return ""
+	return graphql.ExtractTypeName(def)
 }
 
 // buildIntrospectionSchema generates a default introspection SDL.

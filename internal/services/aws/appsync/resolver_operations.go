@@ -13,7 +13,7 @@ import (
 func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -56,7 +56,7 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 func (s *AppSyncService) GetResolver(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -82,7 +82,7 @@ func (s *AppSyncService) GetResolver(ctx context.Context, reqCtx *request.Reques
 func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -125,7 +125,7 @@ func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.Req
 func (s *AppSyncService) DeleteResolver(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -148,7 +148,7 @@ func (s *AppSyncService) DeleteResolver(ctx context.Context, reqCtx *request.Req
 func (s *AppSyncService) ListResolvers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -182,7 +182,7 @@ func (s *AppSyncService) ListResolvers(ctx context.Context, reqCtx *request.Requ
 func (s *AppSyncService) ListResolversByFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -209,159 +209,4 @@ func (s *AppSyncService) ListResolversByFunction(ctx context.Context, reqCtx *re
 		response["nextToken"] = nextToken
 	}
 	return response, nil
-}
-
-// resolverToMap converts a Resolver struct to a response map with correct wire format.
-func resolverToMap(r *appsyncstore.Resolver) map[string]interface{} {
-	m := map[string]interface{}{
-		"typeName":  r.TypeName,
-		"fieldName": r.FieldName,
-	}
-
-	if r.ResolverArn != "" {
-		m["resolverArn"] = r.ResolverArn
-	}
-	if r.Kind != "" {
-		m["kind"] = r.Kind
-	}
-	if r.DataSourceName != "" {
-		m["dataSourceName"] = r.DataSourceName
-	}
-	if r.RequestMappingTemplate != "" {
-		m["requestMappingTemplate"] = r.RequestMappingTemplate
-	}
-	if r.ResponseMappingTemplate != "" {
-		m["responseMappingTemplate"] = r.ResponseMappingTemplate
-	}
-	if r.PipelineConfig != nil {
-		m["pipelineConfig"] = pipelineConfigToMap(r.PipelineConfig)
-	}
-	if r.Runtime != nil {
-		m["runtime"] = appSyncRuntimeToMap(r.Runtime)
-	}
-	if r.Code != "" {
-		m["code"] = r.Code
-	}
-	if r.CachingConfig != nil {
-		m["cachingConfig"] = cachingConfigToMap(r.CachingConfig)
-	}
-	if r.MaxBatchSize > 0 {
-		m["maxBatchSize"] = r.MaxBatchSize
-	}
-	if r.MetricsConfig != "" {
-		m["metricsConfig"] = r.MetricsConfig
-	}
-	if r.SyncConfig != nil {
-		m["syncConfig"] = syncConfigToMap(r.SyncConfig)
-	}
-
-	return m
-}
-
-// parseAppSyncRuntime parses an AppSyncRuntime from request parameters.
-func parseAppSyncRuntime(params map[string]interface{}) *appsyncstore.AppSyncRuntime {
-	raw := request.GetMapParam(params, "runtime")
-	if raw == nil {
-		return nil
-	}
-	return &appsyncstore.AppSyncRuntime{
-		Name:           request.GetStringParam(raw, "name"),
-		RuntimeVersion: request.GetStringParam(raw, "runtimeVersion"),
-	}
-}
-
-// parsePipelineConfig parses a PipelineConfig from request parameters.
-func parsePipelineConfig(params map[string]interface{}) *appsyncstore.PipelineConfig {
-	raw := request.GetMapParam(params, "pipelineConfig")
-	if raw == nil {
-		return nil
-	}
-	functions := request.GetStringList(raw, "functions")
-	if len(functions) == 0 {
-		return nil
-	}
-	return &appsyncstore.PipelineConfig{
-		Functions: functions,
-	}
-}
-
-// parseCachingConfig parses a CachingConfig from request parameters.
-func parseCachingConfig(params map[string]interface{}) *appsyncstore.CachingConfig {
-	raw := request.GetMapParam(params, "cachingConfig")
-	if raw == nil {
-		return nil
-	}
-	return &appsyncstore.CachingConfig{
-		CachingKeys: request.GetStringList(raw, "cachingKeys"),
-		Ttl:         request.GetInt64Param(raw, "ttl"),
-	}
-}
-
-// parseSyncConfig parses a SyncConfig from request parameters.
-func parseSyncConfig(params map[string]interface{}) *appsyncstore.SyncConfig {
-	raw := request.GetMapParam(params, "syncConfig")
-	if raw == nil {
-		return nil
-	}
-	cfg := &appsyncstore.SyncConfig{
-		ConflictDetection: request.GetStringParam(raw, "conflictDetection"),
-		ConflictHandler:   request.GetStringParam(raw, "conflictHandler"),
-	}
-	if lambdaRaw := request.GetMapParam(raw, "lambdaConflictHandlerConfig"); lambdaRaw != nil {
-		cfg.LambdaConflictHandlerConfig = &appsyncstore.LambdaConflictHandlerConfig{
-			LambdaConflictHandlerArn: request.GetStringParam(lambdaRaw, "lambdaConflictHandlerArn"),
-		}
-	}
-	return cfg
-}
-
-// appSyncRuntimeToMap converts an AppSyncRuntime to a wire-format map.
-func appSyncRuntimeToMap(r *appsyncstore.AppSyncRuntime) map[string]interface{} {
-	return map[string]interface{}{
-		"name":           r.Name,
-		"runtimeVersion": r.RuntimeVersion,
-	}
-}
-
-// pipelineConfigToMap converts a PipelineConfig to a wire-format map.
-func pipelineConfigToMap(c *appsyncstore.PipelineConfig) map[string]interface{} {
-	functions := make([]interface{}, 0, len(c.Functions))
-	for _, f := range c.Functions {
-		functions = append(functions, f)
-	}
-	return map[string]interface{}{
-		"functions": functions,
-	}
-}
-
-// cachingConfigToMap converts a CachingConfig to a wire-format map.
-func cachingConfigToMap(c *appsyncstore.CachingConfig) map[string]interface{} {
-	m := map[string]interface{}{
-		"ttl": c.Ttl,
-	}
-	if len(c.CachingKeys) > 0 {
-		keys := make([]interface{}, 0, len(c.CachingKeys))
-		for _, k := range c.CachingKeys {
-			keys = append(keys, k)
-		}
-		m["cachingKeys"] = keys
-	}
-	return m
-}
-
-// syncConfigToMap converts a SyncConfig to a wire-format map.
-func syncConfigToMap(c *appsyncstore.SyncConfig) map[string]interface{} {
-	m := map[string]interface{}{}
-	if c.ConflictDetection != "" {
-		m["conflictDetection"] = c.ConflictDetection
-	}
-	if c.ConflictHandler != "" {
-		m["conflictHandler"] = c.ConflictHandler
-	}
-	if c.LambdaConflictHandlerConfig != nil {
-		m["lambdaConflictHandlerConfig"] = map[string]interface{}{
-			"lambdaConflictHandlerArn": c.LambdaConflictHandlerConfig.LambdaConflictHandlerArn,
-		}
-	}
-	return m
 }

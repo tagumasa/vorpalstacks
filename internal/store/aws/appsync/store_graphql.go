@@ -13,6 +13,39 @@ import (
 
 // --- GraphQL API (v1) ---
 
+// graphqlApiIdIndexKey returns the index key for looking up a GraphQL API name by its UUID.
+func graphqlApiIdIndexKey(apiId string) string {
+	return "#id:" + apiId
+}
+
+// putGraphqlApiIdIndex writes the apiId→name index entry. Must be called within createMu.
+func (s *AppSyncStore) putGraphqlApiIdIndex(apiId, name string) error {
+	return s.graphqlApisStore.Put(graphqlApiIdIndexKey(apiId), map[string]string{"name": name})
+}
+
+// getGraphqlApiNameByIndex retrieves the GraphQL API name from the apiId index.
+// Falls back to full scan if the index entry is missing (pre-index data).
+func (s *AppSyncStore) getGraphqlApiNameByIndex(apiId string) (string, error) {
+	var m map[string]string
+	if err := s.graphqlApisStore.Get(graphqlApiIdIndexKey(apiId), &m); err == nil {
+		if name, ok := m["name"]; ok {
+			return name, nil
+		}
+	}
+
+	// Fallback: full scan for pre-index data.
+	apis, _, err := s.ListGraphqlApis(common.ListOptions{MaxItems: 10000}, "")
+	if err != nil {
+		return "", err
+	}
+	for _, api := range apis {
+		if api.ApiId == apiId {
+			return api.Name, nil
+		}
+	}
+	return "", ErrGraphqlApiNotFound
+}
+
 // CreateGraphqlApi persists a new GraphQL API (v1).
 // Generates apiId, ARN, timestamps, and default URIs.
 func (s *AppSyncStore) CreateGraphqlApi(api *GraphqlApi) (*GraphqlApi, error) {
@@ -55,6 +88,9 @@ func (s *AppSyncStore) CreateGraphqlApi(api *GraphqlApi) (*GraphqlApi, error) {
 	if err := s.graphqlApisStore.Put(api.Name, api); err != nil {
 		return nil, err
 	}
+	if err := s.putGraphqlApiIdIndex(api.ApiId, api.Name); err != nil {
+		logs.Warn("failed to write graphqlApiId index", logs.String("apiId", api.ApiId), logs.Err(err))
+	}
 	return api, nil
 }
 
@@ -68,18 +104,13 @@ func (s *AppSyncStore) GetGraphqlApi(name string) (*GraphqlApi, error) {
 }
 
 // GetGraphqlApiById retrieves a GraphQL API by its UUID.
-// Scans all GraphQL APIs to find the one matching the given ID.
+// Uses the apiId→name index for direct lookup, with full-scan fallback.
 func (s *AppSyncStore) GetGraphqlApiById(apiId string) (*GraphqlApi, error) {
-	apis, _, err := s.ListGraphqlApis(common.ListOptions{MaxItems: 10000}, "")
+	name, err := s.getGraphqlApiNameByIndex(apiId)
 	if err != nil {
 		return nil, err
 	}
-	for _, api := range apis {
-		if api.ApiId == apiId {
-			return api, nil
-		}
-	}
-	return nil, ErrGraphqlApiNotFound
+	return s.GetGraphqlApi(name)
 }
 
 // UpdateGraphqlApiById updates a GraphQL API identified by apiId.
@@ -140,13 +171,20 @@ func (s *AppSyncStore) UpdateGraphqlApiById(apiId string, update *GraphqlApi) (*
 	existing.WafWebAclArn = update.WafWebAclArn
 	existing.XrayEnabled = update.XrayEnabled
 
+	if err := s.graphqlApisStore.Put(existing.Name, existing); err != nil {
+		return nil, err
+	}
+
+	// Delete old key after successful Put to prevent data loss on rename.
 	if oldName != existing.Name {
 		_ = s.graphqlApisStore.Delete(oldName)
 	}
 
-	if err := s.graphqlApisStore.Put(existing.Name, existing); err != nil {
-		return nil, err
+	if err := s.putGraphqlApiIdIndex(existing.ApiId, existing.Name); err != nil {
+		logs.Warn("failed to update graphqlApiId index during rename",
+			logs.String("apiId", existing.ApiId), logs.Err(err))
 	}
+
 	return existing, nil
 }
 
@@ -214,6 +252,24 @@ func (s *AppSyncStore) DeleteGraphqlApiById(apiId string) error {
 				logs.String("apiId", apiId), logs.String("assocKey", k), logs.Err(err))
 		}
 	}
+
+	// Remove domain name associations referencing this API.
+	var domainAssocKeys []string
+	_ = s.apiAssociationsStore.ForEach(func(key string, value []byte) error {
+		var assoc ApiAssociation
+		if json.Unmarshal(value, &assoc) == nil && assoc.ApiId == apiId {
+			domainAssocKeys = append(domainAssocKeys, key)
+		}
+		return nil
+	})
+	for _, k := range domainAssocKeys {
+		if err := s.apiAssociationsStore.Delete(k); err != nil {
+			logs.Warn("failed to delete domain association during API deletion",
+				logs.String("apiId", apiId), logs.String("domainName", k), logs.Err(err))
+		}
+	}
+
+	_ = s.graphqlApisStore.Delete(graphqlApiIdIndexKey(apiId))
 
 	return s.graphqlApisStore.Delete(existing.Name)
 }

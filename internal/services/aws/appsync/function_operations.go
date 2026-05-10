@@ -13,7 +13,7 @@ import (
 func (s *AppSyncService) CreateFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -60,7 +60,7 @@ func (s *AppSyncService) CreateFunction(ctx context.Context, reqCtx *request.Req
 func (s *AppSyncService) GetFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -84,7 +84,7 @@ func (s *AppSyncService) GetFunction(ctx context.Context, reqCtx *request.Reques
 func (s *AppSyncService) UpdateFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -133,7 +133,7 @@ func (s *AppSyncService) UpdateFunction(ctx context.Context, reqCtx *request.Req
 func (s *AppSyncService) DeleteFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -154,7 +154,7 @@ func (s *AppSyncService) DeleteFunction(ctx context.Context, reqCtx *request.Req
 func (s *AppSyncService) ListFunctions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -180,43 +180,4 @@ func (s *AppSyncService) ListFunctions(ctx context.Context, reqCtx *request.Requ
 		response["nextToken"] = nextToken
 	}
 	return response, nil
-}
-
-// functionToMap converts a FunctionConfiguration struct to a response map with correct wire format.
-func functionToMap(f *appsyncstore.FunctionConfiguration) map[string]interface{} {
-	m := map[string]interface{}{
-		"functionId":     f.FunctionId,
-		"name":           f.Name,
-		"dataSourceName": f.DataSourceName,
-	}
-
-	if f.FunctionArn != "" {
-		m["functionArn"] = f.FunctionArn
-	}
-	if f.FunctionVersion != "" {
-		m["functionVersion"] = f.FunctionVersion
-	}
-	if f.Description != "" {
-		m["description"] = f.Description
-	}
-	if f.RequestMappingTemplate != "" {
-		m["requestMappingTemplate"] = f.RequestMappingTemplate
-	}
-	if f.ResponseMappingTemplate != "" {
-		m["responseMappingTemplate"] = f.ResponseMappingTemplate
-	}
-	if f.Runtime != nil {
-		m["runtime"] = appSyncRuntimeToMap(f.Runtime)
-	}
-	if f.Code != "" {
-		m["code"] = f.Code
-	}
-	if f.MaxBatchSize > 0 {
-		m["maxBatchSize"] = f.MaxBatchSize
-	}
-	if f.SyncConfig != nil {
-		m["syncConfig"] = syncConfigToMap(f.SyncConfig)
-	}
-
-	return m
 }

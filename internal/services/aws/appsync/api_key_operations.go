@@ -148,21 +148,3 @@ func (s *AppSyncService) DeleteApiKey(ctx context.Context, reqCtx *request.Reque
 
 	return map[string]interface{}{}, nil
 }
-
-// apiKeyToMap converts an API key to a serialisable map.
-// The deletes field is only emitted when non-zero, matching AWS behaviour.
-func apiKeyToMap(k *appsyncstore.ApiKey) map[string]interface{} {
-	result := map[string]interface{}{
-		"id": k.Id,
-	}
-	if k.Description != "" {
-		result["description"] = k.Description
-	}
-	if k.Expires != 0 {
-		result["expires"] = k.Expires
-	}
-	if k.Deletes != 0 {
-		result["deletes"] = k.Deletes
-	}
-	return result
-}

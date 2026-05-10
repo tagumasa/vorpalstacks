@@ -139,7 +139,7 @@ func validateAppSyncResource(store *appsyncstore.AppSyncStore, resourceArn strin
 func (s *AppSyncService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 	return tags.HandleTag(ctx, req, appsyncTagConfig(store, req))
 }
@@ -148,7 +148,7 @@ func (s *AppSyncService) TagResource(ctx context.Context, reqCtx *request.Reques
 func (s *AppSyncService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 	return tags.HandleUntag(ctx, req, appsyncTagConfig(store, req))
 }
@@ -157,7 +157,7 @@ func (s *AppSyncService) UntagResource(ctx context.Context, reqCtx *request.Requ
 func (s *AppSyncService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 	return tags.HandleList(ctx, req, appsyncTagConfig(store, req))
 }

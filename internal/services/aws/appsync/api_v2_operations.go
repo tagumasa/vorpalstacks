@@ -6,7 +6,6 @@ import (
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/utils/timeutils"
 )
 
 // CreateApi creates a new Event API (v2).
@@ -14,7 +13,7 @@ import (
 func (s *AppSyncService) CreateApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	name := request.GetStringParam(req.Parameters, "name")
@@ -61,7 +60,7 @@ func (s *AppSyncService) CreateApi(ctx context.Context, reqCtx *request.RequestC
 func (s *AppSyncService) GetApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -89,7 +88,7 @@ func (s *AppSyncService) GetApi(ctx context.Context, reqCtx *request.RequestCont
 func (s *AppSyncService) UpdateApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -125,7 +124,7 @@ func (s *AppSyncService) UpdateApi(ctx context.Context, reqCtx *request.RequestC
 func (s *AppSyncService) DeleteApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
@@ -154,7 +153,7 @@ func (s *AppSyncService) DeleteApi(ctx context.Context, reqCtx *request.RequestC
 func (s *AppSyncService) ListApis(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
-		return nil, err
+		return mapStoreError(err)
 	}
 
 	opts := parsePaginationOptions(req)
@@ -225,117 +224,4 @@ func mapStoreError(err error) (interface{}, error) {
 	default:
 		return nil, ErrInternalFailureException
 	}
-}
-
-// apiToMap converts an Api struct to a response map with correct wire format.
-// Timestamps are serialised as epoch seconds (float64) per REST-JSON 1.0 protocol.
-func apiToMap(api *appsyncstore.Api) map[string]interface{} {
-	m := map[string]interface{}{
-		"apiId":       api.ApiId,
-		"name":        api.Name,
-		"apiArn":      api.Arn,
-		"created":     timeutils.FormatEpochSeconds(api.Created),
-		"xrayEnabled": api.XrayEnabled,
-	}
-
-	if len(api.Tags) > 0 {
-		m["tags"] = api.Tags
-	}
-	if api.OwnerContact != "" {
-		m["ownerContact"] = api.OwnerContact
-	}
-	if api.WafWebAclArn != "" {
-		m["wafWebAclArn"] = api.WafWebAclArn
-	}
-	if len(api.Dns) > 0 {
-		m["dns"] = api.Dns
-	}
-	if api.EventConfig != nil {
-		m["eventConfig"] = eventConfigToMap(api.EventConfig)
-	}
-
-	return m
-}
-
-// eventConfigToMap converts an EventConfig to a wire-format map.
-func eventConfigToMap(ec *appsyncstore.EventConfig) map[string]interface{} {
-	m := map[string]interface{}{}
-
-	if len(ec.AuthProviders) > 0 {
-		providers := make([]interface{}, 0, len(ec.AuthProviders))
-		for _, ap := range ec.AuthProviders {
-			providers = append(providers, authProviderToMap(&ap))
-		}
-		m["authProviders"] = providers
-	}
-	if len(ec.ConnectionAuthModes) > 0 {
-		m["connectionAuthModes"] = authModesToMap(ec.ConnectionAuthModes)
-	}
-	if len(ec.DefaultPublishAuthModes) > 0 {
-		m["defaultPublishAuthModes"] = authModesToMap(ec.DefaultPublishAuthModes)
-	}
-	if len(ec.DefaultSubscribeAuthModes) > 0 {
-		m["defaultSubscribeAuthModes"] = authModesToMap(ec.DefaultSubscribeAuthModes)
-	}
-	if ec.LogConfig != nil {
-		m["logConfig"] = map[string]interface{}{
-			"cloudWatchLogsRoleArn": ec.LogConfig.CloudWatchLogsRoleArn,
-			"logLevel":              ec.LogConfig.LogLevel,
-		}
-	}
-
-	return m
-}
-
-// authProviderToMap converts an AuthProvider to a wire-format map.
-func authProviderToMap(ap *appsyncstore.AuthProvider) map[string]interface{} {
-	m := map[string]interface{}{
-		"authType": ap.AuthType,
-	}
-	if ap.CognitoConfig != nil {
-		m["cognitoConfig"] = map[string]interface{}{
-			"awsRegion":        ap.CognitoConfig.AwsRegion,
-			"userPoolId":       ap.CognitoConfig.UserPoolId,
-			"appIdClientRegex": ap.CognitoConfig.AppIdClientRegex,
-		}
-	}
-	if ap.LambdaAuthorizerConfig != nil {
-		lc := map[string]interface{}{
-			"authorizerUri": ap.LambdaAuthorizerConfig.AuthorizerUri,
-		}
-		if ap.LambdaAuthorizerConfig.AuthorizerResultTtlInSeconds > 0 {
-			lc["authorizerResultTtlInSeconds"] = ap.LambdaAuthorizerConfig.AuthorizerResultTtlInSeconds
-		}
-		if ap.LambdaAuthorizerConfig.IdentityValidationExpression != "" {
-			lc["identityValidationExpression"] = ap.LambdaAuthorizerConfig.IdentityValidationExpression
-		}
-		m["lambdaAuthorizerConfig"] = lc
-	}
-	if ap.OpenIDConnectConfig != nil {
-		oidc := map[string]interface{}{
-			"issuer": ap.OpenIDConnectConfig.Issuer,
-		}
-		if ap.OpenIDConnectConfig.AuthTTL > 0 {
-			oidc["authTTL"] = ap.OpenIDConnectConfig.AuthTTL
-		}
-		if ap.OpenIDConnectConfig.ClientId != "" {
-			oidc["clientId"] = ap.OpenIDConnectConfig.ClientId
-		}
-		if ap.OpenIDConnectConfig.IatTTL > 0 {
-			oidc["iatTTL"] = ap.OpenIDConnectConfig.IatTTL
-		}
-		m["openIDConnectConfig"] = oidc
-	}
-	return m
-}
-
-// authModesToMap converts a slice of AuthMode to a wire-format slice.
-func authModesToMap(modes []appsyncstore.AuthMode) []map[string]interface{} {
-	result := make([]map[string]interface{}, 0, len(modes))
-	for _, mode := range modes {
-		result = append(result, map[string]interface{}{
-			"authType": mode.AuthType,
-		})
-	}
-	return result
 }

@@ -19,9 +19,6 @@ import (
 	"vorpalstacks/pkg/vtl"
 )
 
-// jsonUnmarshal is an alias for json.Unmarshal to avoid shadowing in template methods.
-var jsonUnmarshal = json.Unmarshal
-
 // graphqlExecutionResult is the standard GraphQL response envelope.
 type graphqlExecutionResult struct {
 	Data   interface{}    `json:"data,omitempty"`
@@ -439,7 +436,7 @@ func (e *graphQLEngine) executeUnitResolver(
 
 		if result != "" {
 			var parsed interface{}
-			if jsonErr := jsonUnmarshal([]byte(result), &parsed); jsonErr != nil {
+			if jsonErr := json.Unmarshal([]byte(result), &parsed); jsonErr != nil {
 				dsPayload = result
 			} else {
 				dsPayload = parsed
@@ -470,7 +467,7 @@ func (e *graphQLEngine) executeUnitResolver(
 
 		if respStr != "" {
 			var parsed interface{}
-			if jsonErr := jsonUnmarshal([]byte(respStr), &parsed); jsonErr != nil {
+			if jsonErr := json.Unmarshal([]byte(respStr), &parsed); jsonErr != nil {
 				return respStr, nil
 			}
 			return parsed, nil
@@ -561,7 +558,7 @@ func (e *graphQLEngine) executePipelineResolver(
 			}
 			if fnResult != "" {
 				var parsed interface{}
-				if jsonErr := jsonUnmarshal([]byte(fnResult), &parsed); jsonErr != nil {
+				if jsonErr := json.Unmarshal([]byte(fnResult), &parsed); jsonErr != nil {
 					fnPayload = fnResult
 				} else {
 					fnPayload = parsed
@@ -589,7 +586,7 @@ func (e *graphQLEngine) executePipelineResolver(
 			}
 			if respStr != "" {
 				var parsed interface{}
-				if jsonErr := jsonUnmarshal([]byte(respStr), &parsed); jsonErr != nil {
+				if jsonErr := json.Unmarshal([]byte(respStr), &parsed); jsonErr != nil {
 					result = respStr
 				} else {
 					result = parsed
@@ -618,7 +615,7 @@ func (e *graphQLEngine) executePipelineResolver(
 		}
 		if respStr != "" {
 			var parsed interface{}
-			if jsonErr := jsonUnmarshal([]byte(respStr), &parsed); jsonErr != nil {
+			if jsonErr := json.Unmarshal([]byte(respStr), &parsed); jsonErr != nil {
 				return respStr, nil
 			}
 			return parsed, nil
