@@ -3,8 +3,37 @@ package cognitoidentityprovider
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
+	"time"
+
+	"vorpalstacks/internal/store/aws/common"
 )
+
+func findTokenByValue[T any](store *common.BaseStore, tokenValue string, getToken func(*T) string, getExpires func(*T) time.Time) (*T, error) {
+	var found *T
+	err := store.ForEach(func(key string, value []byte) error {
+		var t T
+		if err := json.Unmarshal(value, &t); err != nil {
+			return err
+		}
+		if getToken(&t) == tokenValue {
+			cp := t
+			found = &cp
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if found == nil {
+		return nil, ErrTokenNotFound
+	}
+	if time.Now().After(getExpires(found)) {
+		return nil, ErrTokenExpired
+	}
+	return found, nil
+}
 
 func userPoolBucketName(region string) string {
 	return "cognito-userpools-" + region
@@ -50,15 +79,7 @@ func userPoolClientKey(userPoolID, clientID string) string {
 	return userPoolID + "#" + clientID
 }
 
-func refreshTokenKey(userPoolID, userID, token string) string {
-	return userPoolID + "#" + userID + "#" + token
-}
-
-func idTokenKey(userPoolID, userID, token string) string {
-	return userPoolID + "#" + userID + "#" + token
-}
-
-func accessTokenKey(userPoolID, userID, token string) string {
+func tokenKey(userPoolID, userID, token string) string {
 	return userPoolID + "#" + userID + "#" + token
 }
 

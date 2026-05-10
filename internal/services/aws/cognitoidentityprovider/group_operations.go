@@ -117,14 +117,35 @@ func (s *CognitoService) ListGroups(ctx context.Context, reqCtx *request.Request
 		return nil, ErrInternalError
 	}
 
-	groupList := make([]map[string]interface{}, 0)
+	maxResults := request.GetIntParam(req.Parameters, "Limit")
+	if maxResults <= 0 || maxResults > 60 {
+		maxResults = 60
+	}
+	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+
+	started := nextToken == ""
+	groupList := make([]map[string]interface{}, 0, maxResults)
 	for _, group := range groups {
+		if !started {
+			if group.Name == nextToken {
+				started = true
+			}
+			continue
+		}
 		groupList = append(groupList, formatGroup(group))
+		if len(groupList) >= maxResults {
+			break
+		}
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"Groups": groupList,
-	}, nil
+	}
+	if len(groupList) >= maxResults && len(groupList) > 0 {
+		resp["NextToken"] = groupList[len(groupList)-1]["GroupName"]
+	}
+
+	return resp, nil
 }
 
 // UpdateGroup updates a group in a Cognito user pool.

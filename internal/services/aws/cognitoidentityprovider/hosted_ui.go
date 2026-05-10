@@ -3,12 +3,15 @@ package cognitoidentityprovider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"html"
 	"net/http"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/server/fqdnrouter"
+	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -114,7 +117,7 @@ button:hover { background: #1274A3; }
 <button type="submit">Sign In</button>
 </form>
 </body>
-</html>`, poolID, redirectURI, responseType)
+</html>`, html.EscapeString(poolID), html.EscapeString(redirectURI), html.EscapeString(responseType))
 }
 
 func (s *CognitoService) renderSignUpPage(w http.ResponseWriter, r *http.Request, poolID string) {
@@ -146,7 +149,7 @@ button:hover { background: #1274A3; }
 <button type="submit">Sign Up</button>
 </form>
 </body>
-</html>`, "")
+</html>`, html.EscapeString(poolID))
 }
 
 func (s *CognitoService) handleTokenEndpoint(w http.ResponseWriter, r *http.Request, poolID string) {
@@ -280,9 +283,15 @@ func (s *CognitoService) handleTokenEndpoint(w http.ResponseWriter, r *http.Requ
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
+			errCode := "invalid_grant"
+			errDesc := "Invalid refresh token."
+			if errors.Is(err, cognitostore.ErrTokenExpired) {
+				errCode = "expired_grant"
+				errDesc = "Refresh token has expired."
+			}
 			json.NewEncoder(w).Encode(map[string]string{
-				"error":             "invalid_grant",
-				"error_description": "Invalid refresh token.",
+				"error":             errCode,
+				"error_description": errDesc,
 			})
 			return
 		}

@@ -30,65 +30,37 @@ func getBoolParam(req *request.ParsedRequest, key string) bool {
 }
 
 func getIntParam(req *request.ParsedRequest, key string) int {
-	if v, ok := req.Parameters[key]; ok {
-		switch n := v.(type) {
-		case int:
-			return n
-		case int64:
-			return int(n)
-		case float64:
-			return int(n)
-		case string:
-			return parseInt(n)
-		}
-	}
-	lowerKey := strings.ToLower(key[:1]) + key[1:]
-	if v, ok := req.Parameters[lowerKey]; ok {
-		switch n := v.(type) {
-		case int:
-			return n
-		case int64:
-			return int(n)
-		case float64:
-			return int(n)
-		case string:
-			return parseInt(n)
-		}
-	}
-	return 0
+	v, _ := parseIntParam(req, key)
+	return v
 }
 
 func getIntParamOK(req *request.ParsedRequest, key string) (int, bool) {
-	if v, ok := req.Parameters[key]; ok {
-		switch n := v.(type) {
-		case int:
-			return n, true
-		case int64:
-			return int(n), true
-		case float64:
-			return int(n), true
-		case string:
-			if n != "" {
-				return parseInt(n), true
+	return parseIntParam(req, key)
+}
+
+func parseIntParam(req *request.ParsedRequest, key string) (int, bool) {
+	tryKey := func(k string) (int, bool) {
+		if v, ok := req.Parameters[k]; ok {
+			switch n := v.(type) {
+			case int:
+				return n, true
+			case int64:
+				return int(n), true
+			case float64:
+				return int(n), true
+			case string:
+				if n != "" {
+					return parseInt(n), true
+				}
 			}
 		}
+		return 0, false
+	}
+	if v, ok := tryKey(key); ok {
+		return v, true
 	}
 	lowerKey := strings.ToLower(key[:1]) + key[1:]
-	if v, ok := req.Parameters[lowerKey]; ok {
-		switch n := v.(type) {
-		case int:
-			return n, true
-		case int64:
-			return int(n), true
-		case float64:
-			return int(n), true
-		case string:
-			if n != "" {
-				return parseInt(n), true
-			}
-		}
-	}
-	return 0, false
+	return tryKey(lowerKey)
 }
 
 func getUserPoolID(req *request.ParsedRequest) string {
@@ -497,6 +469,134 @@ func parseInt(s string) int {
 	return result
 }
 
+func parseUserPoolAddOns(req *request.ParsedRequest) *cognitostore.UserPoolAddOns {
+	m, ok := req.Parameters["UserPoolAddOns"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	addOns := &cognitostore.UserPoolAddOns{}
+	if v, ok := m["AdvancedSecurityMode"].(string); ok {
+		addOns.AdvancedSecurityMode = v
+	}
+	return addOns
+}
+
+func parseAccountRecoverySetting(req *request.ParsedRequest) *cognitostore.AccountRecoverySetting {
+	m, ok := req.Parameters["AccountRecoverySetting"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	setting := &cognitostore.AccountRecoverySetting{}
+	if mechs, ok := m["RecoveryMechanisms"].([]interface{}); ok {
+		for _, mech := range mechs {
+			if mm, ok := mech.(map[string]interface{}); ok {
+				rm := cognitostore.RecoveryMechanism{}
+				if v, ok := mm["Priority"].(float64); ok {
+					rm.Priority = int(v)
+				}
+				if v, ok := mm["Name"].(string); ok {
+					rm.Name = v
+				}
+				setting.RecoveryMechanisms = append(setting.RecoveryMechanisms, rm)
+			}
+		}
+	}
+	return setting
+}
+
+func parseUsernameConfiguration(req *request.ParsedRequest) *cognitostore.UsernameConfiguration {
+	m, ok := req.Parameters["UsernameConfiguration"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	cfg := &cognitostore.UsernameConfiguration{}
+	if v, ok := m["CaseSensitive"].(bool); ok {
+		cfg.CaseSensitive = v
+	}
+	return cfg
+}
+
+func parseDeviceConfiguration(req *request.ParsedRequest) *cognitostore.DeviceConfiguration {
+	m, ok := req.Parameters["DeviceConfiguration"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	cfg := &cognitostore.DeviceConfiguration{}
+	if v, ok := m["ChallengeRequiredOnNewDevice"].(bool); ok {
+		cfg.ChallengeRequiredOnNewDevice = v
+	}
+	if v, ok := m["DeviceOnlyRememberedOnUserPrompt"].(bool); ok {
+		cfg.DeviceOnlyRememberedOnUserPrompt = v
+	}
+	return cfg
+}
+
+func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedRequest) {
+	if v := req.GetParam("PoolName"); v != "" {
+		pool.Name = v
+	}
+	if v := req.GetParam("MfaConfiguration"); v != "" {
+		pool.MfaConfiguration = v
+	}
+	if v := req.GetParam("DeletionProtection"); v != "" {
+		pool.DeletionProtection = v
+	}
+	if v := req.GetParam("EmailVerificationMessage"); v != "" {
+		pool.EmailVerificationMessage = v
+	}
+	if v := req.GetParam("EmailVerificationSubject"); v != "" {
+		pool.EmailVerificationSubject = v
+	}
+	if v := req.GetParam("SmsVerificationMessage"); v != "" {
+		pool.SmsVerificationMessage = v
+	}
+	if v := req.GetParam("SmsAuthenticationMessage"); v != "" {
+		pool.SmsAuthenticationMessage = v
+	}
+	if v := request.GetStringList(req.Parameters, "AliasAttributes"); v != nil {
+		pool.AliasAttributes = v
+	}
+	if v := request.GetStringList(req.Parameters, "UsernameAttributes"); v != nil {
+		pool.UsernameAttributes = v
+	}
+	if v := request.GetStringList(req.Parameters, "AutoVerifiedAttributes"); v != nil {
+		pool.AutoVerifiedAttributes = v
+	}
+	if v := parsePasswordPolicy(req); v != nil {
+		pool.PasswordPolicy = v
+	}
+	if v := parseLambdaConfig(req); v != nil {
+		pool.LambdaConfig = v
+	}
+	if v := parseEmailConfiguration(req); v != nil {
+		pool.EmailConfiguration = v
+	}
+	if v := parseSmsConfiguration(req); v != nil {
+		pool.SmsConfiguration = v
+	}
+	if v := parseAdminCreateUserConfig(req); v != nil {
+		pool.AdminCreateUserConfig = v
+	}
+	if v := parseVerificationMessageTemplate(req); v != nil {
+		pool.VerificationMessageTemplate = v
+	}
+	if v := parseUserAttributeUpdateSettings(req); v != nil {
+		pool.UserAttributeUpdateSettings = v
+	}
+	if v := parseUserPoolAddOns(req); v != nil {
+		pool.UserPoolAddOns = v
+	}
+	if v := parseAccountRecoverySetting(req); v != nil {
+		pool.AccountRecoverySetting = v
+	}
+	if v := parseUsernameConfiguration(req); v != nil {
+		pool.UsernameConfiguration = v
+	}
+	if v := parseDeviceConfiguration(req); v != nil {
+		pool.DeviceConfiguration = v
+	}
+}
+
 func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 	mfaConfig := pool.MfaConfiguration
 	if mfaConfig == "" {
@@ -602,6 +702,12 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 	if pool.UsernameConfiguration != nil {
 		result["UsernameConfiguration"] = map[string]interface{}{
 			"CaseSensitive": pool.UsernameConfiguration.CaseSensitive,
+		}
+	}
+	if pool.DeviceConfiguration != nil {
+		result["DeviceConfiguration"] = map[string]interface{}{
+			"ChallengeRequiredOnNewDevice":     pool.DeviceConfiguration.ChallengeRequiredOnNewDevice,
+			"DeviceOnlyRememberedOnUserPrompt": pool.DeviceConfiguration.DeviceOnlyRememberedOnUserPrompt,
 		}
 	}
 

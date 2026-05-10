@@ -23,14 +23,35 @@ func (s *CognitoService) ListUsersInGroup(ctx context.Context, reqCtx *request.R
 		return nil, ErrGroupNotFound
 	}
 
-	userList := make([]map[string]interface{}, 0)
+	maxResults := request.GetIntParam(req.Parameters, "Limit")
+	if maxResults <= 0 || maxResults > 60 {
+		maxResults = 60
+	}
+	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+
+	started := nextToken == ""
+	userList := make([]map[string]interface{}, 0, maxResults)
 	for _, user := range users {
+		if !started {
+			if user.Username == nextToken {
+				started = true
+			}
+			continue
+		}
 		userList = append(userList, formatUser(user))
+		if len(userList) >= maxResults {
+			break
+		}
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"Users": userList,
-	}, nil
+	}
+	if len(userList) >= maxResults && len(userList) > 0 {
+		resp["NextToken"] = userList[len(userList)-1]["Username"]
+	}
+
+	return resp, nil
 }
 
 // AdminListGroupsForUser lists the groups for a user.
@@ -51,12 +72,33 @@ func (s *CognitoService) AdminListGroupsForUser(ctx context.Context, reqCtx *req
 		return nil, ErrUserNotFound
 	}
 
-	groupList := make([]map[string]interface{}, 0)
+	maxResults := request.GetIntParam(req.Parameters, "Limit")
+	if maxResults <= 0 || maxResults > 60 {
+		maxResults = 60
+	}
+	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+
+	started := nextToken == ""
+	groupList := make([]map[string]interface{}, 0, maxResults)
 	for _, group := range groups {
+		if !started {
+			if group.Name == nextToken {
+				started = true
+			}
+			continue
+		}
 		groupList = append(groupList, formatGroup(group))
+		if len(groupList) >= maxResults {
+			break
+		}
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"Groups": groupList,
-	}, nil
+	}
+	if len(groupList) >= maxResults && len(groupList) > 0 {
+		resp["NextToken"] = groupList[len(groupList)-1]["GroupName"]
+	}
+
+	return resp, nil
 }

@@ -128,14 +128,9 @@ func (s *CognitoService) AdminGetUser(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrUserNotFound
 	}
 
-	return map[string]interface{}{
-		"Username":             user.Username,
-		"UserAttributes":       formatUserAttributes(user.Attributes),
-		"UserCreateDate":       user.CreatedDate.Unix(),
-		"UserLastModifiedDate": user.LastModifiedDate.Unix(),
-		"Enabled":              user.Enabled,
-		"UserStatus":           user.UserStatus,
-	}, nil
+	result := formatUser(user)
+	result["UserAttributes"] = formatUserAttributes(user.Attributes)
+	return result, nil
 }
 
 // AdminUpdateUserAttributes updates the specified user's attributes in the user pool.
@@ -196,9 +191,35 @@ func (s *CognitoService) ListUsers(ctx context.Context, reqCtx *request.RequestC
 		userList = append(userList, formatUser(user))
 	}
 
-	return map[string]interface{}{
-		"Users": userList,
-	}, nil
+	maxResults := request.GetIntParam(req.Parameters, "Limit")
+	if maxResults <= 0 || maxResults > 60 {
+		maxResults = 60
+	}
+	paginationToken := request.GetStringParam(req.Parameters, "PaginationToken")
+
+	started := paginationToken == ""
+	result := make([]map[string]interface{}, 0, maxResults)
+	for _, u := range userList {
+		if !started {
+			if u["Username"] == paginationToken {
+				started = true
+			}
+			continue
+		}
+		result = append(result, u)
+		if len(result) >= maxResults {
+			break
+		}
+	}
+
+	resp := map[string]interface{}{
+		"Users": result,
+	}
+	if len(result) >= maxResults && len(result) > 0 {
+		resp["PaginationToken"] = result[len(result)-1]["Username"]
+	}
+
+	return resp, nil
 }
 
 // AdminEnableUser enables the specified user in the user pool.

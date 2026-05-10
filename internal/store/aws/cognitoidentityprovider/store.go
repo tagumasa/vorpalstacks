@@ -111,11 +111,42 @@ func (s *CognitoStore) UpdateUserPool(userPool *UserPool) error {
 	return s.Put(userPool.ID, userPool)
 }
 
-// DeleteUserPool deletes a Cognito user pool by ID.
+// DeleteUserPool deletes a Cognito user pool by ID and cascades to users,
+// groups, clients, tokens, and challenge sessions.
 func (s *CognitoStore) DeleteUserPool(userPoolID string) error {
 	if !s.Exists(userPoolID) {
 		return ErrUserPoolNotFound
 	}
+
+	users, _ := s.ListUsers(userPoolID)
+	for _, u := range users {
+		prefix := userPoolID + "#" + u.ID + "#"
+		_ = s.refreshTokensStore.ScanPrefix(prefix, func(key string, _ []byte) error {
+			return s.refreshTokensStore.Delete(key)
+		})
+		_ = s.idTokensStore.ScanPrefix(prefix, func(key string, _ []byte) error {
+			return s.idTokensStore.Delete(key)
+		})
+		_ = s.accessTokensStore.ScanPrefix(prefix, func(key string, _ []byte) error {
+			return s.accessTokensStore.Delete(key)
+		})
+		_ = s.DeleteUser(userPoolID, u.Username)
+	}
+
+	groups, _ := s.ListGroups(userPoolID)
+	for _, g := range groups {
+		_ = s.DeleteGroup(userPoolID, g.Name)
+	}
+
+	clients, _ := s.ListUserPoolClients(userPoolID)
+	for _, c := range clients {
+		_ = s.DeleteUserPoolClient(userPoolID, c.ClientID)
+	}
+
+	_ = s.challengeSessionsStore.ScanPrefix(userPoolID+"#", func(key string, _ []byte) error {
+		return s.challengeSessionsStore.Delete(key)
+	})
+
 	return s.BaseStore.Delete(userPoolID)
 }
 
@@ -583,13 +614,13 @@ func (s *CognitoStore) ListUsersInGroup(userPoolID, groupName string) ([]*User, 
 
 // CreateRefreshToken creates a new Cognito refresh token.
 func (s *CognitoStore) CreateRefreshToken(token *RefreshToken) error {
-	key := refreshTokenKey(token.UserPoolID, token.UserID, token.Token)
+	key := tokenKey(token.UserPoolID, token.UserID, token.Token)
 	return s.refreshTokensStore.Put(key, token)
 }
 
 // GetRefreshToken retrieves a Cognito refresh token.
 func (s *CognitoStore) GetRefreshToken(userPoolID, userID, token string) (*RefreshToken, error) {
-	key := refreshTokenKey(userPoolID, userID, token)
+	key := tokenKey(userPoolID, userID, token)
 	var rt RefreshToken
 	if err := s.refreshTokensStore.Get(key, &rt); err != nil {
 		return nil, ErrTokenNotFound
@@ -602,32 +633,12 @@ func (s *CognitoStore) GetRefreshToken(userPoolID, userID, token string) (*Refre
 
 // GetRefreshTokenByValue retrieves a Cognito refresh token by its token value.
 func (s *CognitoStore) GetRefreshTokenByValue(token string) (*RefreshToken, error) {
-	var found *RefreshToken
-	err := s.refreshTokensStore.ForEach(func(key string, value []byte) error {
-		var rt RefreshToken
-		if err := json.Unmarshal(value, &rt); err != nil {
-			return err
-		}
-		if rt.Token == token {
-			found = &rt
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	if found == nil {
-		return nil, ErrTokenNotFound
-	}
-	if time.Now().After(found.Expires) {
-		return nil, ErrTokenExpired
-	}
-	return found, nil
+	return findTokenByValue(s.refreshTokensStore, token, func(t *RefreshToken) string { return t.Token }, func(t *RefreshToken) time.Time { return t.Expires })
 }
 
 // DeleteRefreshToken deletes a Cognito refresh token.
 func (s *CognitoStore) DeleteRefreshToken(userPoolID, userID, token string) error {
-	key := refreshTokenKey(userPoolID, userID, token)
+	key := tokenKey(userPoolID, userID, token)
 	return s.refreshTokensStore.Delete(key)
 }
 
@@ -641,13 +652,13 @@ func (s *CognitoStore) DeleteAllRefreshTokensForUser(userPoolID, userID string) 
 
 // CreateIDToken creates a new Cognito ID token.
 func (s *CognitoStore) CreateIDToken(token *IDToken) error {
-	key := idTokenKey(token.UserPoolID, token.UserID, token.Token)
+	key := tokenKey(token.UserPoolID, token.UserID, token.Token)
 	return s.idTokensStore.Put(key, token)
 }
 
 // GetIDToken retrieves a Cognito ID token.
 func (s *CognitoStore) GetIDToken(userPoolID, userID, token string) (*IDToken, error) {
-	key := idTokenKey(userPoolID, userID, token)
+	key := tokenKey(userPoolID, userID, token)
 	var it IDToken
 	if err := s.idTokensStore.Get(key, &it); err != nil {
 		return nil, ErrTokenNotFound
@@ -660,44 +671,24 @@ func (s *CognitoStore) GetIDToken(userPoolID, userID, token string) (*IDToken, e
 
 // GetIDTokenByValue retrieves a Cognito ID token by its token value.
 func (s *CognitoStore) GetIDTokenByValue(token string) (*IDToken, error) {
-	var found *IDToken
-	err := s.idTokensStore.ForEach(func(key string, value []byte) error {
-		var it IDToken
-		if err := json.Unmarshal(value, &it); err != nil {
-			return err
-		}
-		if it.Token == token {
-			found = &it
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	if found == nil {
-		return nil, ErrTokenNotFound
-	}
-	if time.Now().After(found.Expires) {
-		return nil, ErrTokenExpired
-	}
-	return found, nil
+	return findTokenByValue(s.idTokensStore, token, func(t *IDToken) string { return t.Token }, func(t *IDToken) time.Time { return t.Expires })
 }
 
 // DeleteIDToken deletes a Cognito ID token.
 func (s *CognitoStore) DeleteIDToken(userPoolID, userID, token string) error {
-	key := idTokenKey(userPoolID, userID, token)
+	key := tokenKey(userPoolID, userID, token)
 	return s.idTokensStore.Delete(key)
 }
 
 // CreateAccessToken creates a new Cognito access token.
 func (s *CognitoStore) CreateAccessToken(token *AccessToken) error {
-	key := accessTokenKey(token.UserPoolID, token.UserID, token.Token)
+	key := tokenKey(token.UserPoolID, token.UserID, token.Token)
 	return s.accessTokensStore.Put(key, token)
 }
 
 // GetAccessToken retrieves a Cognito access token.
 func (s *CognitoStore) GetAccessToken(userPoolID, userID, token string) (*AccessToken, error) {
-	key := accessTokenKey(userPoolID, userID, token)
+	key := tokenKey(userPoolID, userID, token)
 	var at AccessToken
 	if err := s.accessTokensStore.Get(key, &at); err != nil {
 		return nil, ErrTokenNotFound
@@ -710,32 +701,12 @@ func (s *CognitoStore) GetAccessToken(userPoolID, userID, token string) (*Access
 
 // GetAccessTokenByValue retrieves a Cognito access token by its token value.
 func (s *CognitoStore) GetAccessTokenByValue(token string) (*AccessToken, error) {
-	var found *AccessToken
-	err := s.accessTokensStore.ForEach(func(key string, value []byte) error {
-		var at AccessToken
-		if err := json.Unmarshal(value, &at); err != nil {
-			return err
-		}
-		if at.Token == token {
-			found = &at
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	if found == nil {
-		return nil, ErrTokenNotFound
-	}
-	if time.Now().After(found.Expires) {
-		return nil, ErrTokenExpired
-	}
-	return found, nil
+	return findTokenByValue(s.accessTokensStore, token, func(t *AccessToken) string { return t.Token }, func(t *AccessToken) time.Time { return t.Expires })
 }
 
 // DeleteAccessToken deletes a Cognito access token.
 func (s *CognitoStore) DeleteAccessToken(userPoolID, userID, token string) error {
-	key := accessTokenKey(userPoolID, userID, token)
+	key := tokenKey(userPoolID, userID, token)
 	return s.accessTokensStore.Delete(key)
 }
 

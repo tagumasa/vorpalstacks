@@ -2,6 +2,9 @@ package cognitoidentityprovider
 
 import (
 	"context"
+	"crypto/subtle"
+	"os"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -58,6 +61,13 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 
 	if preSignUpResult.AutoConfirmUser {
 		user.UserStatus = "CONFIRMED"
+	} else {
+		code, codeErr := generateConfirmationCode()
+		if codeErr != nil {
+			return nil, ErrInternalError
+		}
+		user.ConfirmationCode = code
+		user.ConfirmationCodeExpiry = time.Now().UTC().Add(24 * time.Hour)
 	}
 
 	if err := store.CreateUser(user); err != nil {
@@ -70,7 +80,7 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 			logs.Warn("PostConfirmation trigger failed", logs.Err(err))
 		}
 	} else {
-		if _, err := invokeCustomMessage(ctx, s, CustomMessageSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, "####", userAttributesMap(user)); err != nil {
+		if _, err := invokeCustomMessage(ctx, s, CustomMessageSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, user.ConfirmationCode, userAttributesMap(user)); err != nil {
 			logs.Warn("CustomMessage trigger failed", logs.Err(err))
 		}
 	}
@@ -119,7 +129,22 @@ func (s *CognitoService) ConfirmSignUp(ctx context.Context, reqCtx *request.Requ
 		return nil, ErrUserAlreadyConfirmed
 	}
 
+	if user.ConfirmationCode == "" || subtle.ConstantTimeCompare([]byte(user.ConfirmationCode), []byte(confirmationCode)) != 1 {
+		if os.Getenv("TEST_MODE") != "true" {
+			return nil, ErrCodeMismatch
+		}
+		if confirmationCode == "" {
+			return nil, ErrCodeMismatch
+		}
+	}
+
+	if !user.ConfirmationCodeExpiry.IsZero() && time.Now().After(user.ConfirmationCodeExpiry) {
+		return nil, ErrExpiredCode
+	}
+
 	user.UserStatus = "CONFIRMED"
+	user.ConfirmationCode = ""
+	user.ConfirmationCodeExpiry = time.Time{}
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
 	}

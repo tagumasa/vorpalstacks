@@ -47,47 +47,35 @@ func (s *CognitoService) InitiateAuth(ctx context.Context, reqCtx *request.Reque
 	case "USER_SRP_AUTH":
 		return nil, ErrInvalidParameter
 	case "REFRESH_TOKEN_AUTH", "REFRESH_TOKEN":
-		return s.handleRefreshTokenAuth(ctx, reqCtx, req)
+		return s.handleRefreshTokenAuth(reqCtx, req)
 	default:
 		return nil, ErrInvalidParameter
 	}
 }
 
-func (s *CognitoService) handleUserPasswordAuth(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	authParams := req.Parameters["AuthParameters"]
-	if authParams == nil {
-		return nil, ErrInvalidParameter
-	}
-
-	params, ok := authParams.(map[string]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-
-	username, _ := params["USERNAME"].(string)
-	password, _ := params["PASSWORD"].(string)
-
-	if username == "" || password == "" {
-		return nil, ErrInvalidParameter
-	}
-
+// authenticateUser contains the shared authentication logic used by both
+// USER_PASSWORD_AUTH (InitiateAuth) and ADMIN_NO_SRP_AUTH (AdminInitiateAuth).
+// It handles user lookup, migration, challenge detection, credential
+// verification, trigger invocation, and token generation.
+func (s *CognitoService) authenticateUser(
+	ctx context.Context,
+	reqCtx *request.RequestContext,
+	userPoolID, clientID, username, password string,
+	lambdaConfig *cognitostore.LambdaConfig,
+) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	userPool, err := store.GetUserPoolByClientID(getClientId(req))
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
 
-	user, err := store.GetUser(userPool.ID, username)
+	user, err := store.GetUser(userPoolID, username)
 	if err != nil {
-		migrationResult, migrationErr := invokeUserMigration(ctx, s, userPool.ID, username, getClientId(req), password, userPool.LambdaConfig)
+		migrationResult, migrationErr := invokeUserMigration(ctx, s, userPoolID, username, clientID, password, lambdaConfig)
 		if migrationErr != nil || migrationResult == nil {
 			return nil, ErrIncorrectPassword
 		}
 
-		migratedUser := cognitostore.NewUser(userPool.ID, username)
+		migratedUser := cognitostore.NewUser(userPoolID, username)
 		if migrationResult.UserAttributes != nil {
 			migratedUser.Attributes = migrationResult.UserAttributes
 		}
@@ -117,27 +105,7 @@ func (s *CognitoService) handleUserPasswordAuth(ctx context.Context, reqCtx *req
 	}
 
 	if user.UserStatus == "FORCE_CHANGE_PASSWORD" || user.UserStatus == "RESET_REQUIRED" {
-		session := generateSessionID()
-		challengeSession := &cognitostore.ChallengeSession{
-			SessionID:     session,
-			UserPoolID:    userPool.ID,
-			ClientID:      getClientId(req),
-			Username:      user.Username,
-			ChallengeName: "NEW_PASSWORD_REQUIRED",
-			CreatedAt:     time.Now().UTC(),
-			ExpiresAt:     time.Now().UTC().Add(5 * time.Minute),
-		}
-		if err := store.SaveChallengeSession(challengeSession); err != nil {
-			return nil, ErrInternalError
-		}
-		return map[string]interface{}{
-			"ChallengeName": "NEW_PASSWORD_REQUIRED",
-			"Session":       session,
-			"ChallengeParameters": map[string]interface{}{
-				"USER_ID_FOR_SRP":    user.Username,
-				"requiredAttributes": "[]",
-			},
-		}, nil
+		return s.newPasswordChallenge(reqCtx, userPoolID, clientID, user)
 	}
 
 	if user.UserStatus != "CONFIRMED" {
@@ -145,20 +113,53 @@ func (s *CognitoService) handleUserPasswordAuth(ctx context.Context, reqCtx *req
 	}
 
 	attrs := userAttributesMap(user)
-	if err := invokePreAuthentication(ctx, s, userPool.ID, username, getClientId(req), userPool.LambdaConfig, attrs); err != nil {
-		logs.Warn("PreAuthentication trigger failed", logs.String("userPoolId", userPool.ID), logs.String("username", username), logs.Err(err))
+	if err := invokePreAuthentication(ctx, s, userPoolID, username, clientID, lambdaConfig, attrs); err != nil {
+		logs.Warn("PreAuthentication trigger failed", logs.String("userPoolId", userPoolID), logs.String("username", username), logs.Err(err))
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return nil, ErrIncorrectPassword
 	}
 
-	if err := invokePostAuthentication(ctx, s, userPool.ID, username, getClientId(req), userPool.LambdaConfig, attrs); err != nil {
-		logs.Warn("PostAuthentication trigger failed", logs.String("userPoolId", userPool.ID), logs.String("username", username), logs.Err(err))
+	if err := invokePostAuthentication(ctx, s, userPoolID, username, clientID, lambdaConfig, attrs); err != nil {
+		logs.Warn("PostAuthentication trigger failed", logs.String("userPoolId", userPoolID), logs.String("username", username), logs.Err(err))
 	}
 
-	accessToken, idToken, refreshToken, expiresIn := s.CreateTokens(reqCtx, userPool.ID, user.ID, getClientId(req))
+	accessToken, idToken, refreshToken, expiresIn := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID)
+	return authResult(accessToken, idToken, refreshToken, expiresIn), nil
+}
 
+// newPasswordChallenge creates a NEW_PASSWORD_REQUIRED challenge session and
+// returns the challenge response.
+func (s *CognitoService) newPasswordChallenge(reqCtx *request.RequestContext, userPoolID, clientID string, user *cognitostore.User) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	session := generateSessionID()
+	challengeSession := &cognitostore.ChallengeSession{
+		SessionID:     session,
+		UserPoolID:    userPoolID,
+		ClientID:      clientID,
+		Username:      user.Username,
+		ChallengeName: "NEW_PASSWORD_REQUIRED",
+		CreatedAt:     time.Now().UTC(),
+		ExpiresAt:     time.Now().UTC().Add(5 * time.Minute),
+	}
+	if err := store.SaveChallengeSession(challengeSession); err != nil {
+		return nil, ErrInternalError
+	}
+	return map[string]interface{}{
+		"ChallengeName": "NEW_PASSWORD_REQUIRED",
+		"Session":       session,
+		"ChallengeParameters": map[string]interface{}{
+			"USER_ID_FOR_SRP":    user.Username,
+			"requiredAttributes": "[]",
+		},
+	}, nil
+}
+
+func authResult(accessToken, idToken, refreshToken string, expiresIn int64) map[string]interface{} {
 	return map[string]interface{}{
 		"AuthenticationResult": map[string]interface{}{
 			"AccessToken":  accessToken,
@@ -167,25 +168,42 @@ func (s *CognitoService) handleUserPasswordAuth(ctx context.Context, reqCtx *req
 			"TokenType":    "Bearer",
 			"ExpiresIn":    expiresIn,
 		},
-	}, nil
+	}
 }
 
-func (s *CognitoService) handleRefreshTokenAuth(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	authParams := req.Parameters["AuthParameters"]
-	if authParams == nil {
-		return nil, ErrInvalidParameter
+func authResultNoRefresh(accessToken, idToken string, expiresIn int64) map[string]interface{} {
+	return map[string]interface{}{
+		"AuthenticationResult": map[string]interface{}{
+			"AccessToken": accessToken,
+			"IdToken":     idToken,
+			"TokenType":   "Bearer",
+			"ExpiresIn":   expiresIn,
+		},
+	}
+}
+
+func (s *CognitoService) handleUserPasswordAuth(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	username, password, err := parseAuthParams(req)
+	if err != nil {
+		return nil, err
 	}
 
-	params, ok := authParams.(map[string]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	userPool, err := store.GetUserPoolByClientID(getClientId(req))
+	if err != nil {
+		return nil, ErrResourceNotFound
 	}
 
-	refreshToken, _ := params["REFRESH_TOKEN"].(string)
-	if refreshToken == "" {
-		return nil, ErrInvalidParameter
-	}
+	return s.authenticateUser(ctx, reqCtx, userPool.ID, getClientId(req), username, password, userPool.LambdaConfig)
+}
 
+// refreshAuthToken contains the shared refresh-token flow for both InitiateAuth
+// and AdminInitiateAuth. It validates the refresh token, looks up the user, and
+// issues new access/ID tokens.
+func (s *CognitoService) refreshAuthToken(reqCtx *request.RequestContext, userPoolID string, refreshToken string) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -194,13 +212,14 @@ func (s *CognitoService) handleRefreshTokenAuth(ctx context.Context, reqCtx *req
 	if err != nil {
 		return nil, ErrNotAuthorized
 	}
+
 	if time.Now().After(rt.Expires) {
 		return nil, ErrNotAuthorized
 	}
 
-	userPool, err := store.GetUserPool(rt.UserPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
+	poolID := userPoolID
+	if poolID == "" {
+		poolID = rt.UserPoolID
 	}
 
 	user, err := store.GetUserByID(rt.UserID)
@@ -209,20 +228,28 @@ func (s *CognitoService) handleRefreshTokenAuth(ctx context.Context, reqCtx *req
 	}
 
 	attrs := userAttributesMap(user)
-	if err := invokePostAuthentication(ctx, s, userPool.ID, user.Username, rt.ClientID, nil, attrs); err != nil {
-		logs.Warn("PostAuthentication trigger failed for refresh token auth", logs.String("userPoolId", userPool.ID), logs.String("username", user.Username), logs.Err(err))
+	if err := invokePostAuthentication(reqCtx, s, poolID, user.Username, rt.ClientID, nil, attrs); err != nil {
+		logs.Warn("PostAuthentication trigger failed for refresh token auth", logs.String("userPoolId", poolID), logs.String("username", user.Username), logs.Err(err))
 	}
 
-	accessToken, idToken, _, expiresIn := s.CreateTokens(reqCtx, userPool.ID, user.ID, rt.ClientID)
+	accessToken, idToken, _, expiresIn := s.CreateTokens(reqCtx, poolID, user.ID, rt.ClientID)
+	return authResultNoRefresh(accessToken, idToken, expiresIn), nil
+}
 
-	return map[string]interface{}{
-		"AuthenticationResult": map[string]interface{}{
-			"AccessToken": accessToken,
-			"IdToken":     idToken,
-			"TokenType":   "Bearer",
-			"ExpiresIn":   expiresIn,
-		},
-	}, nil
+func (s *CognitoService) handleRefreshTokenAuth(reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	refreshToken, err := parseRefreshTokenParam(req)
+	if err != nil {
+		return nil, err
+	}
+	return s.refreshAuthToken(reqCtx, "", refreshToken)
+}
+
+func (s *CognitoService) handleAdminRefreshTokenAuth(reqCtx *request.RequestContext, req *request.ParsedRequest, userPoolID string) (interface{}, error) {
+	refreshToken, err := parseRefreshTokenParam(req)
+	if err != nil {
+		return nil, err
+	}
+	return s.refreshAuthToken(reqCtx, userPoolID, refreshToken)
 }
 
 // RespondToAuthChallenge responds to an authentication challenge.
@@ -246,83 +273,50 @@ func (s *CognitoService) RespondToAuthChallenge(ctx context.Context, reqCtx *req
 	}
 
 	if challengeName == "NEW_PASSWORD_REQUIRED" {
-		return s.handleRespondNewPasswordChallenge(reqCtx, req, userPool.ID, clientID, session)
+		return s.respondToNewPasswordChallenge(reqCtx, req, userPool.ID, clientID, session)
 	}
 
 	return nil, ErrInvalidParameter
 }
 
-func (s *CognitoService) handleRespondNewPasswordChallenge(reqCtx *request.RequestContext, req *request.ParsedRequest, userPoolID, clientID, session string) (interface{}, error) {
-	challengeResponses := req.Parameters["ChallengeResponses"]
-	if challengeResponses == nil {
-		return nil, ErrInvalidParameter
+// parseAuthParams extracts USERNAME and PASSWORD from the AuthParameters
+// block of an InitiateAuth or AdminInitiateAuth request.
+func parseAuthParams(req *request.ParsedRequest) (username, password string, err error) {
+	authParams := req.Parameters["AuthParameters"]
+	if authParams == nil {
+		return "", "", ErrInvalidParameter
 	}
-
-	params, ok := challengeResponses.(map[string]interface{})
+	params, ok := authParams.(map[string]interface{})
 	if !ok {
-		return nil, ErrInvalidParameter
+		return "", "", ErrInvalidParameter
 	}
-
-	username, _ := params["USERNAME"].(string)
-	newPassword, _ := params["NEW_PASSWORD"].(string)
-
-	if username == "" || newPassword == "" {
-		return nil, ErrInvalidParameter
+	username, _ = params["USERNAME"].(string)
+	password, _ = params["PASSWORD"].(string)
+	if username == "" || password == "" {
+		return "", "", ErrInvalidParameter
 	}
+	return username, password, nil
+}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
+// parseRefreshTokenParam extracts the REFRESH_TOKEN from AuthParameters.
+func parseRefreshTokenParam(req *request.ParsedRequest) (string, error) {
+	authParams := req.Parameters["AuthParameters"]
+	if authParams == nil {
+		return "", ErrInvalidParameter
 	}
+	params, ok := authParams.(map[string]interface{})
+	if !ok {
+		return "", ErrInvalidParameter
+	}
+	refreshToken, _ := params["REFRESH_TOKEN"].(string)
+	if refreshToken == "" {
+		return "", ErrInvalidParameter
+	}
+	return refreshToken, nil
+}
 
-	challengeSession, err := store.GetChallengeSession(session)
-	if err != nil || challengeSession == nil {
-		return nil, ErrNotAuthorized
-	}
-	if challengeSession.Username != username {
-		return nil, ErrNotAuthorized
-	}
-	if !challengeSession.ExpiresAt.IsZero() && time.Now().UTC().After(challengeSession.ExpiresAt) {
-		_ = store.DeleteChallengeSession(session)
-		return nil, ErrNotAuthorized
-	}
-
-	userPool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	if err := validatePassword(newPassword, userPool.PasswordPolicy); err != nil {
-		return nil, ErrPasswordPolicyViolation
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-	user.PasswordHash = string(hash)
-	user.UserStatus = "CONFIRMED"
-
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
-	}
-
-	accessToken, idToken, refreshToken, expiresIn := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID)
-
-	return map[string]interface{}{
-		"AuthenticationResult": map[string]interface{}{
-			"AccessToken":  accessToken,
-			"IdToken":      idToken,
-			"RefreshToken": refreshToken,
-			"TokenType":    "Bearer",
-			"ExpiresIn":    expiresIn,
-		},
-	}, nil
+func (s *CognitoService) handleRespondNewPasswordChallenge(reqCtx *request.RequestContext, req *request.ParsedRequest, userPoolID, clientID, session string) (interface{}, error) {
+	return s.respondToNewPasswordChallenge(reqCtx, req, userPoolID, clientID, session)
 }
 
 // SignOut signs out a user.
@@ -561,7 +555,7 @@ func (s *CognitoService) AdminInitiateAuth(ctx context.Context, reqCtx *request.
 
 	switch authFlow {
 	case "ADMIN_NO_SRP_AUTH":
-		return s.handleAdminNoSrpAuth(reqCtx, req, userPoolID, clientID)
+		return s.handleAdminNoSrpAuth(ctx, reqCtx, req, userPoolID, clientID)
 	case "REFRESH_TOKEN_AUTH", "REFRESH_TOKEN":
 		return s.handleAdminRefreshTokenAuth(reqCtx, req, userPoolID)
 	default:
@@ -569,163 +563,13 @@ func (s *CognitoService) AdminInitiateAuth(ctx context.Context, reqCtx *request.
 	}
 }
 
-func (s *CognitoService) handleAdminNoSrpAuth(reqCtx *request.RequestContext, req *request.ParsedRequest, userPoolID, clientID string) (interface{}, error) {
-	authParams := req.Parameters["AuthParameters"]
-	if authParams == nil {
-		return nil, ErrInvalidParameter
-	}
-
-	params, ok := authParams.(map[string]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-
-	username, _ := params["USERNAME"].(string)
-	password, _ := params["PASSWORD"].(string)
-
-	if username == "" || password == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+func (s *CognitoService) handleAdminNoSrpAuth(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest, userPoolID, clientID string) (interface{}, error) {
+	username, password, err := parseAuthParams(req)
 	if err != nil {
 		return nil, err
 	}
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		migrationResult, migrationErr := invokeUserMigration(reqCtx, s, userPoolID, username, clientID, password, nil)
-		if migrationErr != nil || migrationResult == nil {
-			return nil, ErrIncorrectPassword
-		}
 
-		migratedUser := cognitostore.NewUser(userPoolID, username)
-		if migrationResult.UserAttributes != nil {
-			migratedUser.Attributes = migrationResult.UserAttributes
-		}
-		if migrationResult.FinalUserStatus != "" {
-			migratedUser.UserStatus = migrationResult.FinalUserStatus
-		} else {
-			migratedUser.UserStatus = "CONFIRMED"
-		}
-		if migrationResult.MessageAction != "SUPPRESS" && password != "" {
-			hash, hashErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-			if hashErr != nil {
-				return nil, ErrInternalError
-			}
-			migratedUser.PasswordHash = string(hash)
-		}
-		if err := store.CreateUser(migratedUser); err != nil {
-			if errors.Is(err, cognitostore.ErrUserAlreadyExists) {
-				return nil, ErrIncorrectPassword
-			}
-			return nil, ErrInternalError
-		}
-		user = migratedUser
-	}
-
-	if !user.Enabled {
-		return nil, ErrNotAuthorized
-	}
-
-	if user.UserStatus == "FORCE_CHANGE_PASSWORD" || user.UserStatus == "RESET_REQUIRED" {
-		session := generateSessionID()
-		challengeSession := &cognitostore.ChallengeSession{
-			SessionID:     session,
-			UserPoolID:    userPoolID,
-			ClientID:      clientID,
-			Username:      user.Username,
-			ChallengeName: "NEW_PASSWORD_REQUIRED",
-			CreatedAt:     time.Now().UTC(),
-			ExpiresAt:     time.Now().UTC().Add(5 * time.Minute),
-		}
-		if err := store.SaveChallengeSession(challengeSession); err != nil {
-			return nil, ErrInternalError
-		}
-		return map[string]interface{}{
-			"ChallengeName": "NEW_PASSWORD_REQUIRED",
-			"Session":       session,
-			"ChallengeParameters": map[string]interface{}{
-				"USER_ID_FOR_SRP":    user.Username,
-				"requiredAttributes": "[]",
-			},
-		}, nil
-	}
-
-	if user.UserStatus != "CONFIRMED" {
-		return nil, ErrUserNotConfirmed
-	}
-
-	attrs := userAttributesMap(user)
-	if err := invokePreAuthentication(reqCtx, s, userPoolID, username, clientID, nil, attrs); err != nil {
-		logs.Warn("PreAuthentication trigger failed", logs.Err(err))
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return nil, ErrIncorrectPassword
-	}
-
-	if err := invokePostAuthentication(reqCtx, s, userPoolID, username, clientID, nil, attrs); err != nil {
-		logs.Warn("PostAuthentication trigger failed", logs.Err(err))
-	}
-
-	accessToken, idToken, refreshToken, expiresIn := s.CreateTokens(reqCtx, userPoolID, user.ID, clientID)
-
-	return map[string]interface{}{
-		"AuthenticationResult": map[string]interface{}{
-			"AccessToken":  accessToken,
-			"IdToken":      idToken,
-			"RefreshToken": refreshToken,
-			"TokenType":    "Bearer",
-			"ExpiresIn":    expiresIn,
-		},
-	}, nil
-}
-
-func (s *CognitoService) handleAdminRefreshTokenAuth(reqCtx *request.RequestContext, req *request.ParsedRequest, userPoolID string) (interface{}, error) {
-	authParams := req.Parameters["AuthParameters"]
-	if authParams == nil {
-		return nil, ErrInvalidParameter
-	}
-
-	params, ok := authParams.(map[string]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-
-	refreshToken, _ := params["REFRESH_TOKEN"].(string)
-	if refreshToken == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	rt, err := store.GetRefreshTokenByValue(refreshToken)
-	if err != nil {
-		return nil, ErrNotAuthorized
-	}
-
-	user, err := store.GetUserByID(rt.UserID)
-	if err != nil {
-		return nil, ErrNotAuthorized
-	}
-
-	attrs := userAttributesMap(user)
-	if err := invokePostAuthentication(reqCtx, s, userPoolID, user.Username, rt.ClientID, nil, attrs); err != nil {
-		logs.Warn("PostAuthentication trigger failed", logs.Err(err))
-	}
-
-	accessToken, idToken, _, expiresIn := s.CreateTokens(reqCtx, userPoolID, user.ID, rt.ClientID)
-
-	return map[string]interface{}{
-		"AuthenticationResult": map[string]interface{}{
-			"AccessToken": accessToken,
-			"IdToken":     idToken,
-			"TokenType":   "Bearer",
-			"ExpiresIn":   expiresIn,
-		},
-	}, nil
+	return s.authenticateUser(ctx, reqCtx, userPoolID, clientID, username, password, nil)
 }
 
 // AdminRespondToAuthChallenge responds to an admin authentication challenge.
@@ -750,13 +594,15 @@ func (s *CognitoService) AdminRespondToAuthChallenge(ctx context.Context, reqCtx
 	}
 
 	if challengeName == "NEW_PASSWORD_REQUIRED" {
-		return s.handleNewPasswordChallenge(reqCtx, req, userPoolID, clientID, session)
+		return s.respondToNewPasswordChallenge(reqCtx, req, userPoolID, clientID, session)
 	}
 
 	return nil, ErrInvalidParameter
 }
 
-func (s *CognitoService) handleNewPasswordChallenge(reqCtx *request.RequestContext, req *request.ParsedRequest, userPoolID, clientID, session string) (interface{}, error) {
+// respondToNewPasswordChallenge handles the NEW_PASSWORD_REQUIRED challenge
+// for both RespondToAuthChallenge and AdminRespondToAuthChallenge.
+func (s *CognitoService) respondToNewPasswordChallenge(reqCtx *request.RequestContext, req *request.ParsedRequest, userPoolID, clientID, session string) (interface{}, error) {
 	challengeResponses := req.Parameters["ChallengeResponses"]
 	if challengeResponses == nil {
 		return nil, ErrInvalidParameter

@@ -95,14 +95,9 @@ func (s *CognitoService) GetUser(ctx context.Context, reqCtx *request.RequestCon
 		return nil, ErrUserNotFound
 	}
 
-	return map[string]interface{}{
-		"Username":             user.Username,
-		"UserAttributes":       formatUserAttributes(user.Attributes),
-		"UserCreateDate":       user.CreatedDate.Unix(),
-		"UserLastModifiedDate": user.LastModifiedDate.Unix(),
-		"Enabled":              user.Enabled,
-		"UserStatus":           user.UserStatus,
-	}, nil
+	result := formatUser(user)
+	result["UserAttributes"] = formatUserAttributes(user.Attributes)
+	return result, nil
 }
 
 // UpdateUserAttributes updates the user attributes for the authenticated user.

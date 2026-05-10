@@ -17,30 +17,7 @@ func (s *CognitoService) CreateUserPool(ctx context.Context, reqCtx *request.Req
 	}
 
 	userPool := cognitostore.NewUserPool(poolName, reqCtx.GetRegion())
-	userPool.PasswordPolicy = parsePasswordPolicy(req)
-	userPool.LambdaConfig = parseLambdaConfig(req)
-	if v := request.GetStringList(req.Parameters, "AliasAttributes"); v != nil {
-		userPool.AliasAttributes = v
-	}
-	if v := request.GetStringList(req.Parameters, "UsernameAttributes"); v != nil {
-		userPool.UsernameAttributes = v
-	}
-	if v := request.GetStringList(req.Parameters, "AutoVerifiedAttributes"); v != nil {
-		userPool.AutoVerifiedAttributes = v
-	}
-	if v := req.GetParam("MfaConfiguration"); v != "" {
-		userPool.MfaConfiguration = v
-	}
-	userPool.DeletionProtection = req.GetParam("DeletionProtection")
-	userPool.EmailVerificationMessage = req.GetParam("EmailVerificationMessage")
-	userPool.EmailVerificationSubject = req.GetParam("EmailVerificationSubject")
-	userPool.SmsVerificationMessage = req.GetParam("SmsVerificationMessage")
-	userPool.SmsAuthenticationMessage = req.GetParam("SmsAuthenticationMessage")
-	userPool.EmailConfiguration = parseEmailConfiguration(req)
-	userPool.SmsConfiguration = parseSmsConfiguration(req)
-	userPool.AdminCreateUserConfig = parseAdminCreateUserConfig(req)
-	userPool.VerificationMessageTemplate = parseVerificationMessageTemplate(req)
-	userPool.UserAttributeUpdateSettings = parseUserAttributeUpdateSettings(req)
+	applyUserPoolUpdates(userPool, req)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -124,17 +101,7 @@ func (s *CognitoService) UpdateUserPool(ctx context.Context, reqCtx *request.Req
 		return nil, ErrResourceNotFound
 	}
 
-	if poolName := req.GetParam("PoolName"); poolName != "" {
-		userPool.Name = poolName
-	}
-
-	if policy := parsePasswordPolicy(req); policy != nil {
-		userPool.PasswordPolicy = policy
-	}
-
-	if config := parseLambdaConfig(req); config != nil {
-		userPool.LambdaConfig = config
-	}
+	applyUserPoolUpdates(userPool, req)
 
 	if err := store.UpdateUserPool(userPool); err != nil {
 		return nil, ErrInternalError

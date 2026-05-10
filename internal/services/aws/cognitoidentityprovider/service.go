@@ -51,12 +51,20 @@ func (s *CognitoService) SetEventBus(bus eventbus.Bus) {
 	}
 }
 
+func writeJSON(w http.ResponseWriter, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		http.Error(w, `{"error":"internal_error"}`, http.StatusInternalServerError)
+	}
+}
+
+var emptyJWKS = map[string]interface{}{"keys": []interface{}{}}
+
 // JWKSHandler serves the JSON Web Key Set for a Cognito User Pool.
 // If no userPoolId query parameter is provided, the first available pool is used.
 func (s *CognitoService) JWKSHandler(w http.ResponseWriter, r *http.Request) {
 	if s.storageManager == nil {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
+		writeJSON(w, emptyJWKS)
 		return
 	}
 	ctx := context.Background()
@@ -69,18 +77,15 @@ func (s *CognitoService) JWKSHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if userPoolID == "" {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
+		writeJSON(w, emptyJWKS)
 		return
 	}
 	jwks, err := s.GetJWKS(reqCtx, userPoolID)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{}})
+		writeJSON(w, emptyJWKS)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(jwks)
+	writeJSON(w, jwks)
 }
 
 func (s *CognitoService) store(reqCtx *request.RequestContext) (cognitostore.CognitoStoreInterface, error) {

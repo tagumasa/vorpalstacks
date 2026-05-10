@@ -168,14 +168,35 @@ func (s *CognitoService) ListUserPoolClients(ctx context.Context, reqCtx *reques
 		return nil, ErrInternalError
 	}
 
-	clientList := make([]map[string]interface{}, 0)
+	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
+	if maxResults <= 0 || maxResults > 60 {
+		maxResults = 60
+	}
+	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+
+	started := nextToken == ""
+	clientList := make([]map[string]interface{}, 0, maxResults)
 	for _, client := range clients {
+		if !started {
+			if client.ClientID == nextToken {
+				started = true
+			}
+			continue
+		}
 		clientList = append(clientList, formatUserPoolClientSummary(client))
+		if len(clientList) >= maxResults {
+			break
+		}
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"UserPoolClients": clientList,
-	}, nil
+	}
+	if len(clientList) >= maxResults && len(clientList) > 0 {
+		resp["NextToken"] = clientList[len(clientList)-1]["ClientId"]
+	}
+
+	return resp, nil
 }
 
 func getStringSliceParam(req *request.ParsedRequest, key string) []string {
