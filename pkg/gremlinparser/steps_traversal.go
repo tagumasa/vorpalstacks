@@ -101,67 +101,28 @@ func execBoth(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser
 	return result, nil
 }
 
-// execOutE traverses outgoing edges from each vertex, filtered by optional edge labels.
 func execOutE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
-	labels := argStrings(step.Args)
-	var result []*Traverser
-
-	for _, t := range traversers {
-		n, ok := asNode(t)
-		if !ok {
-			return nil, fmt.Errorf("gremlin: outE() requires vertex input, got %T", t.Element)
-		}
-		edges, err := ec.Reader.GetEdges(n.ID, graphengine.Outgoing, singleLabelFilter(labels))
-		if err != nil {
-			continue
-		}
-		edges = filterEdgesByLabels(edges, labels)
-		for _, e := range edges {
-			nt := t.clone()
-			nt.Element = e
-			nt.Path = append(nt.Path, e)
-			result = append(result, nt)
-		}
-	}
-	return result, nil
+	return execEdgeTraversal(ec, traversers, step, graphengine.Outgoing, "outE")
 }
 
-// execInE traverses incoming edges to each vertex, filtered by optional edge labels.
 func execInE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
-	labels := argStrings(step.Args)
-	var result []*Traverser
-
-	for _, t := range traversers {
-		n, ok := asNode(t)
-		if !ok {
-			return nil, fmt.Errorf("gremlin: inE() requires vertex input, got %T", t.Element)
-		}
-		edges, err := ec.Reader.GetEdges(n.ID, graphengine.Incoming, singleLabelFilter(labels))
-		if err != nil {
-			continue
-		}
-		edges = filterEdgesByLabels(edges, labels)
-		for _, e := range edges {
-			nt := t.clone()
-			nt.Element = e
-			nt.Path = append(nt.Path, e)
-			result = append(result, nt)
-		}
-	}
-	return result, nil
+	return execEdgeTraversal(ec, traversers, step, graphengine.Incoming, "inE")
 }
 
-// execBothE traverses both incoming and outgoing edges from each vertex.
 func execBothE(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
+	return execEdgeTraversal(ec, traversers, step, graphengine.Both, "bothE")
+}
+
+func execEdgeTraversal(ec *ExecContext, traversers []*Traverser, step Step, dir graphengine.Direction, stepName string) ([]*Traverser, error) {
 	labels := argStrings(step.Args)
 	var result []*Traverser
 
 	for _, t := range traversers {
 		n, ok := asNode(t)
 		if !ok {
-			return nil, fmt.Errorf("gremlin: bothE() requires vertex input, got %T", t.Element)
+			return nil, fmt.Errorf("gremlin: %s() requires vertex input, got %T", stepName, t.Element)
 		}
-		edges, err := ec.Reader.GetEdges(n.ID, graphengine.Both, singleLabelFilter(labels))
+		edges, err := ec.Reader.GetEdges(n.ID, dir, singleLabelFilter(labels))
 		if err != nil {
 			continue
 		}

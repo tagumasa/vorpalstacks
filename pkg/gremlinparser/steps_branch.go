@@ -6,56 +6,57 @@ import (
 
 func execGroup(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	byMods := getModulators(step, "by")
-	groups := make(map[string][]any)
-	var keys []string
+	keyMod, valMod := groupMods(byMods)
 
-	keyMod := Step{}
-	if len(byMods) >= 1 {
-		keyMod = byMods[0]
-	}
-	valMod := Step{}
-	if len(byMods) >= 2 {
-		valMod = byMods[1]
-	}
-
-	for _, t := range traversers {
-		var key string
-		if keyMod.Name != "" {
-			keyElement := computeByValue(ec, t, keyMod)
-			key = fmt.Sprintf("%v", keyElement)
-		} else {
-			key = dedupKey(t.Element)
-		}
-		if _, exists := groups[key]; !exists {
-			keys = append(keys, key)
-		}
-
+	groups, keys := groupBy(ec, traversers, keyMod, func(t *Traverser) any {
 		if valMod.Name != "" {
-			val := computeByValue(ec, t, valMod)
-			groups[key] = append(groups[key], val)
-		} else {
-			groups[key] = append(groups[key], t.Element)
+			return computeByValue(ec, t, valMod)
 		}
-	}
+		return t.Element
+	})
 
 	result := make(map[string]any)
 	for _, key := range keys {
 		result[key] = groups[key]
 	}
-
 	return []*Traverser{newTraverser(result)}, nil
 }
 
 func execGroupCount(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
 	byMods := getModulators(step, "by")
-	counts := make(map[string]int64)
-	var keys []string
+	keyMod, _ := groupMods(byMods)
 
-	keyMod := Step{}
+	counts, keys := groupBy(ec, traversers, keyMod, func(t *Traverser) any {
+		return int64(1)
+	})
+
+	result := make(map[string]any)
+	for _, key := range keys {
+		var total int64
+		for _, v := range counts[key] {
+			if n, ok := v.(int64); ok {
+				total += n
+			}
+		}
+		result[key] = total
+	}
+	return []*Traverser{newTraverser(result)}, nil
+}
+
+func groupMods(byMods []Step) (Step, Step) {
+	var keyMod, valMod Step
 	if len(byMods) >= 1 {
 		keyMod = byMods[0]
 	}
+	if len(byMods) >= 2 {
+		valMod = byMods[1]
+	}
+	return keyMod, valMod
+}
 
+func groupBy(ec *ExecContext, traversers []*Traverser, keyMod Step, valFn func(*Traverser) any) (map[string][]any, []string) {
+	groups := make(map[string][]any)
+	var keys []string
 	for _, t := range traversers {
 		var key string
 		if keyMod.Name != "" {
@@ -63,18 +64,12 @@ func execGroupCount(ec *ExecContext, traversers []*Traverser, step Step) ([]*Tra
 		} else {
 			key = dedupKey(t.Element)
 		}
-		if _, exists := counts[key]; !exists {
+		if _, exists := groups[key]; !exists {
 			keys = append(keys, key)
 		}
-		counts[key]++
+		groups[key] = append(groups[key], valFn(t))
 	}
-
-	result := make(map[string]any)
-	for _, key := range keys {
-		result[key] = counts[key]
-	}
-
-	return []*Traverser{newTraverser(result)}, nil
+	return groups, keys
 }
 
 func execPath(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {

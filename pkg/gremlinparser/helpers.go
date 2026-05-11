@@ -318,7 +318,7 @@ func resolveArgValue(arg Argument) any {
 			keyVal := resolveArgValue(entry.Key)
 			keyStr, ok := keyVal.(string)
 			if !ok {
-				return fmt.Errorf("gremlin: map key must be a string, got %T", keyVal)
+				continue
 			}
 			m[keyStr] = resolveArgValue(entry.Value)
 		}

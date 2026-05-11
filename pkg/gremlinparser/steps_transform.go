@@ -146,97 +146,39 @@ func execCap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser,
 }
 
 func execFrom(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
-	if len(step.Args) == 0 {
-		return traversers, nil
-	}
-	if len(traversers) == 0 {
-		return traversers, nil
-	}
-	if step.Args[0].Kind == ArgString {
-		label := argString(step.Args[0])
-		result := make([]*Traverser, len(traversers))
-		for i, t := range traversers {
-			val, ok := t.Tags[label]
-			if !ok {
-				result[i] = t
-				continue
-			}
-			if n, ok := val.(*graphengine.Node); ok {
-				nt := t.clone()
-				nt.Tags["__from"] = n.ID
-				result[i] = nt
-			} else {
-				result[i] = t
-			}
-		}
-		return result, nil
-	}
-	if step.Args[0].Kind == ArgNestedTraversal {
-		result := make([]*Traverser, len(traversers))
-		for i, t := range traversers {
-			nested, err := executeNestedTraversal(ec, t, step.Args[0].Trav)
-			if err != nil || len(nested) == 0 {
-				result[i] = t
-				continue
-			}
-			if n, ok := asNode(nested[0]); ok {
-				nt := t.clone()
-				nt.Tags["__from"] = n.ID
-				result[i] = nt
-			} else {
-				result[i] = t
-			}
-		}
-		return result, nil
-	}
-	return traversers, nil
+	return execFromTo(ec, traversers, step, "__from")
 }
 
 func execTo(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
-	if len(step.Args) == 0 {
+	return execFromTo(ec, traversers, step, "__to")
+}
+
+func execFromTo(ec *ExecContext, traversers []*Traverser, step Step, tagKey string) ([]*Traverser, error) {
+	if len(step.Args) == 0 || len(traversers) == 0 {
 		return traversers, nil
 	}
-	if len(traversers) == 0 {
-		return traversers, nil
-	}
-	if step.Args[0].Kind == ArgString {
-		label := argString(step.Args[0])
-		result := make([]*Traverser, len(traversers))
-		for i, t := range traversers {
-			val, ok := t.Tags[label]
-			if !ok {
-				result[i] = t
-				continue
+
+	result := make([]*Traverser, len(traversers))
+	for i, t := range traversers {
+		result[i] = t
+		var node *graphengine.Node
+		if step.Args[0].Kind == ArgString {
+			if val, ok := t.Tags[argString(step.Args[0])]; ok {
+				node, _ = val.(*graphengine.Node)
 			}
-			if n, ok := val.(*graphengine.Node); ok {
-				nt := t.clone()
-				nt.Tags["__to"] = n.ID
-				result[i] = nt
-			} else {
-				result[i] = t
-			}
-		}
-		return result, nil
-	}
-	if step.Args[0].Kind == ArgNestedTraversal {
-		result := make([]*Traverser, len(traversers))
-		for i, t := range traversers {
+		} else if step.Args[0].Kind == ArgNestedTraversal {
 			nested, err := executeNestedTraversal(ec, t, step.Args[0].Trav)
-			if err != nil || len(nested) == 0 {
-				result[i] = t
-				continue
-			}
-			if n, ok := asNode(nested[0]); ok {
-				nt := t.clone()
-				nt.Tags["__to"] = n.ID
-				result[i] = nt
-			} else {
-				result[i] = t
+			if err == nil && len(nested) > 0 {
+				node, _ = asNode(nested[0])
 			}
 		}
-		return result, nil
+		if node != nil {
+			nt := t.clone()
+			nt.Tags[tagKey] = node.ID
+			result[i] = nt
+		}
 	}
-	return traversers, nil
+	return result, nil
 }
 
 func execMergeV(ec *ExecContext, traversers []*Traverser, step Step) ([]*Traverser, error) {
@@ -361,45 +303,49 @@ func execElementMap(ec *ExecContext, traversers []*Traverser, step Step) ([]*Tra
 
 	for _, t := range traversers {
 		m := make(map[string]any)
-		switch el := t.Element.(type) {
-		case *graphengine.Node:
-			if len(keys) == 0 || sliceContains(keys, "label") || sliceContains(keys, "~label") {
-				if len(el.Labels) > 0 {
-					m["~label"] = el.Labels[0]
-				}
-			}
-			if len(keys) == 0 || sliceContains(keys, "id") || sliceContains(keys, "~id") {
-				m["~id"] = fmt.Sprintf("%d", el.ID)
-			}
-			for k, v := range el.Props {
-				if len(keys) == 0 || sliceContains(keys, k) {
-					m[k] = v
-				}
-			}
-		case *graphengine.Edge:
-			if len(keys) == 0 || sliceContains(keys, "label") || sliceContains(keys, "~label") {
-				m["~label"] = el.Label
-			}
-			if len(keys) == 0 || sliceContains(keys, "id") || sliceContains(keys, "~id") {
-				m["~id"] = fmt.Sprintf("%d", el.ID)
-			}
-			if len(keys) == 0 || sliceContains(keys, "from") || sliceContains(keys, "~from") {
-				m["~from"] = fmt.Sprintf("%d", el.From)
-			}
-			if len(keys) == 0 || sliceContains(keys, "to") || sliceContains(keys, "~to") {
-				m["~to"] = fmt.Sprintf("%d", el.To)
-			}
-			for k, v := range el.Props {
-				if len(keys) == 0 || sliceContains(keys, k) {
-					m[k] = v
-				}
-			}
-		}
+		buildElementMap(t.Element, keys, m)
 		nt := t.clone()
 		nt.Element = m
 		result = append(result, nt)
 	}
 	return result, nil
+}
+
+func buildElementMap(el any, keys []string, m map[string]any) {
+	switch v := el.(type) {
+	case *graphengine.Node:
+		if len(keys) == 0 || sliceContains(keys, "label") || sliceContains(keys, "~label") {
+			if len(v.Labels) > 0 {
+				m["~label"] = v.Labels[0]
+			}
+		}
+		if len(keys) == 0 || sliceContains(keys, "id") || sliceContains(keys, "~id") {
+			m["~id"] = fmt.Sprintf("%d", v.ID)
+		}
+		for k, pv := range v.Props {
+			if len(keys) == 0 || sliceContains(keys, k) {
+				m[k] = pv
+			}
+		}
+	case *graphengine.Edge:
+		if len(keys) == 0 || sliceContains(keys, "label") || sliceContains(keys, "~label") {
+			m["~label"] = v.Label
+		}
+		if len(keys) == 0 || sliceContains(keys, "id") || sliceContains(keys, "~id") {
+			m["~id"] = fmt.Sprintf("%d", v.ID)
+		}
+		if len(keys) == 0 || sliceContains(keys, "from") || sliceContains(keys, "~from") {
+			m["~from"] = fmt.Sprintf("%d", v.From)
+		}
+		if len(keys) == 0 || sliceContains(keys, "to") || sliceContains(keys, "~to") {
+			m["~to"] = fmt.Sprintf("%d", v.To)
+		}
+		for k, pv := range v.Props {
+			if len(keys) == 0 || sliceContains(keys, k) {
+				m[k] = pv
+			}
+		}
+	}
 }
 
 func sliceContains(s []string, item string) bool {

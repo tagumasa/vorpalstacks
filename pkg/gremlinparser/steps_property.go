@@ -5,7 +5,6 @@ package gremlinparser
 import (
 	"fmt"
 	"math/rand"
-	"reflect"
 	"strings"
 
 	"vorpalstacks/internal/core/storage/graphengine"
@@ -111,11 +110,9 @@ func execValues(ec *ExecContext, traversers []*Traverser, step Step) ([]*Travers
 	return result, nil
 }
 
-// isSlice returns true if val is a slice or array.
 func isSlice(val any) bool {
-	v := reflect.ValueOf(val)
-	kind := v.Kind()
-	return kind == reflect.Slice || kind == reflect.Array
+	_, ok := val.([]any)
+	return ok
 }
 
 // execValueMap projects element properties as a map. Property values are wrapped in lists
@@ -297,78 +294,80 @@ func execProperty(ec *ExecContext, traversers []*Traverser, step Step) ([]*Trave
 	val := resolveArgValue(args[startIdx+1])
 
 	for _, t := range traversers {
-		switch el := t.Element.(type) {
-		case *graphengine.Node:
-			switch cardinality {
-			case "single":
-				if err := ec.Writer.UpdateNode(el.ID, graphengine.Props{key: val}); err != nil {
-					return nil, err
-				}
-			case "set":
-				existingProps := el.Props
-				if existingVals, ok := existingValsAsList(existingProps[key]); ok {
-					if !containsVal(existingVals, val) {
-						if err := ec.Writer.UpdateNode(el.ID, graphengine.Props{key: append(existingVals, val)}); err != nil {
-							return nil, err
-						}
-					}
-				} else {
-					if err := ec.Writer.UpdateNode(el.ID, graphengine.Props{key: []any{existingProps[key], val}}); err != nil {
-						return nil, err
-					}
-				}
-			case "list":
-				existingProps := el.Props
-				if existingVals, ok := existingValsAsList(existingProps[key]); ok {
-					if err := ec.Writer.UpdateNode(el.ID, graphengine.Props{key: append(existingVals, val)}); err != nil {
-						return nil, err
-					}
-				} else {
-					if err := ec.Writer.UpdateNode(el.ID, graphengine.Props{key: []any{existingProps[key], val}}); err != nil {
-						return nil, err
-					}
-				}
+		nodeID, edgeID, isNode, isEdge := elementIDForUpdate(t.Element)
+		if !isNode && !isEdge {
+			continue
+		}
+
+		updateVal := resolvePropertyValue(t.Element, key, val, cardinality, isNode)
+
+		if cardinality == "set" {
+			existing := elementProps(t.Element)[key]
+			if existing != nil && valuesEqual(existing, updateVal) {
+				continue
 			}
-			if refreshed, err := ec.Reader.GetNode(el.ID); err == nil {
+		}
+
+		updateProps := graphengine.Props{key: updateVal}
+		var err error
+		if isNode {
+			err = ec.Writer.UpdateNode(nodeID, updateProps)
+		} else {
+			err = ec.Writer.UpdateEdge(edgeID, updateProps)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if isNode {
+			if refreshed, rerr := ec.Reader.GetNode(nodeID); rerr == nil {
 				t.Element = refreshed
 			}
-		case *graphengine.Edge:
-			switch cardinality {
-			case "single":
-				if err := ec.Writer.UpdateEdge(el.ID, graphengine.Props{key: val}); err != nil {
-					return nil, err
-				}
-			case "set":
-				existingProps := el.Props
-				if existingVals, ok := existingValsAsList(existingProps[key]); ok {
-					if !containsVal(existingVals, val) {
-						if err := ec.Writer.UpdateEdge(el.ID, graphengine.Props{key: append(existingVals, val)}); err != nil {
-							return nil, err
-						}
-					}
-				} else {
-					if err := ec.Writer.UpdateEdge(el.ID, graphengine.Props{key: []any{existingProps[key], val}}); err != nil {
-						return nil, err
-					}
-				}
-			case "list":
-				existingProps := el.Props
-				if existingVals, ok := existingValsAsList(existingProps[key]); ok {
-					if err := ec.Writer.UpdateEdge(el.ID, graphengine.Props{key: append(existingVals, val)}); err != nil {
-						return nil, err
-					}
-				} else {
-					if err := ec.Writer.UpdateEdge(el.ID, graphengine.Props{key: []any{existingProps[key], val}}); err != nil {
-						return nil, err
-					}
-				}
-			}
-			if refreshed, err := ec.Reader.GetEdge(el.ID); err == nil {
+		} else {
+			if refreshed, rerr := ec.Reader.GetEdge(edgeID); rerr == nil {
 				t.Element = refreshed
 			}
 		}
 	}
 	return traversers, nil
+}
+
+func elementIDForUpdate(el any) (graphengine.NodeID, graphengine.EdgeID, bool, bool) {
+	switch v := el.(type) {
+	case *graphengine.Node:
+		return v.ID, 0, true, false
+	case *graphengine.Edge:
+		return 0, v.ID, false, true
+	}
+	return 0, 0, false, false
+}
+
+func resolvePropertyValue(el any, key string, val any, cardinality string, isNode bool) any {
+	props := elementProps(el)
+	switch cardinality {
+	case "single":
+		return val
+	case "set":
+		if existingVals, ok := existingValsAsList(props[key]); ok {
+			if !containsVal(existingVals, val) {
+				return append(existingVals, val)
+			}
+			return existingVals
+		}
+		if existing := props[key]; existing != nil {
+			return []any{existing, val}
+		}
+		return []any{val}
+	case "list":
+		if existingVals, ok := existingValsAsList(props[key]); ok {
+			return append(existingVals, val)
+		}
+		if existing := props[key]; existing != nil {
+			return []any{existing, val}
+		}
+		return []any{val}
+	}
+	return val
 }
 
 // existingValsAsList attempts to extract a []any from a property value. Used by
