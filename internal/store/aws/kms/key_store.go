@@ -149,9 +149,20 @@ func (s *KeyStore) Exists(keyID string) bool {
 
 // List returns a list of KMS keys from the store with pagination support.
 func (s *KeyStore) List(marker string, maxItems int) (*KeyListResult, error) {
-	result, err := common.List[Key](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, func(k *Key) bool {
+	return s.listFiltered(marker, maxItems, func(k *Key) bool {
 		return k.KeyState != KeyStatePendingDeletion
 	})
+}
+
+// ListByKeyUsage returns a list of KMS keys filtered by key usage.
+func (s *KeyStore) ListByKeyUsage(keyUsage KeyUsage, marker string, maxItems int) (*KeyListResult, error) {
+	return s.listFiltered(marker, maxItems, func(k *Key) bool {
+		return k.KeyUsage == keyUsage && k.KeyState != KeyStatePendingDeletion
+	})
+}
+
+func (s *KeyStore) listFiltered(marker string, maxItems int, filter func(*Key) bool) (*KeyListResult, error) {
+	result, err := common.List[Key](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -273,30 +284,6 @@ func (s *KeyStore) Count() (int, error) {
 // ARNBuilder returns the ARN builder for KMS keys.
 func (s *KeyStore) ARNBuilder() *ARNBuilder {
 	return s.arnBuilder
-}
-
-// ListByKeyUsage returns a list of KMS keys filtered by key usage.
-func (s *KeyStore) ListByKeyUsage(keyUsage KeyUsage, marker string, maxItems int) (*KeyListResult, error) {
-	result, err := common.List[Key](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, func(k *Key) bool {
-		return k.KeyUsage == keyUsage && k.KeyState != KeyStatePendingDeletion
-	})
-	if err != nil {
-		return nil, err
-	}
-	items := make([]*KeyListItem, len(result.Items))
-	for i, k := range result.Items {
-		items[i] = &KeyListItem{
-			KeyID:    k.KeyID,
-			KeyArn:   k.Arn,
-			Enabled:  k.Enabled,
-			KeyState: k.KeyState,
-		}
-	}
-	return &KeyListResult{
-		Keys:        items,
-		IsTruncated: result.IsTruncated,
-		NextMarker:  result.NextMarker,
-	}, nil
 }
 
 // KeyMatchesSpec checks if a KMS key matches the given key spec.

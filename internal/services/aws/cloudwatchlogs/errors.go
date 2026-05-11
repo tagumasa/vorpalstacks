@@ -74,6 +74,8 @@ func mapStoreError(err error) error {
 		return ErrDestinationNotFound
 	case errors.Is(err, logsstore.ErrDestinationAlreadyExists):
 		return ErrDestinationAlreadyExists
+	case errors.Is(err, logsstore.ErrLimitExceeded):
+		return ErrLimitExceeded
 	default:
 		return err
 	}

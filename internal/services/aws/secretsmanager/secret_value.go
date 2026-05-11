@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	pagination "vorpalstacks/internal/common/pagination"
@@ -187,81 +186,63 @@ func applySecretFilters(secrets []*secretsmanagerstore.Secret, filters []map[str
 		}
 		switch key {
 		case "name":
-			kept := secrets[:0]
-			for _, sec := range secrets {
-				for _, v := range values {
-					if strings.Contains(sec.Name, v) {
-						kept = append(kept, sec)
-						break
-					}
-				}
-			}
-			secrets = kept
+			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
+				return matchesAny(sec.Name, values, strings.Contains)
+			})
 		case "description":
-			kept := secrets[:0]
-			for _, sec := range secrets {
-				for _, v := range values {
-					if strings.Contains(sec.Description, v) {
-						kept = append(kept, sec)
-						break
-					}
-				}
-			}
-			secrets = kept
+			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
+				return matchesAny(sec.Description, values, strings.Contains)
+			})
 		case "tag-key":
-			kept := secrets[:0]
-			for _, sec := range secrets {
+			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
 				for _, v := range values {
 					if _, ok := sec.Tags[v]; ok {
-						kept = append(kept, sec)
-						break
+						return true
 					}
 				}
-			}
-			secrets = kept
+				return false
+			})
 		case "tag-value":
-			kept := secrets[:0]
-			for _, sec := range secrets {
+			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
 				for _, v := range values {
-					found := false
 					for _, tv := range sec.Tags {
 						if strings.Contains(tv, v) {
-							found = true
-							break
+							return true
 						}
 					}
-					if found {
-						kept = append(kept, sec)
-						break
-					}
 				}
-			}
-			secrets = kept
+				return false
+			})
 		case "primary-region":
-			kept := secrets[:0]
-			for _, sec := range secrets {
-				for _, v := range values {
-					if sec.PrimaryRegion == v {
-						kept = append(kept, sec)
-						break
-					}
-				}
-			}
-			secrets = kept
+			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
+				return matchesAny(sec.PrimaryRegion, values, func(a, b string) bool { return a == b })
+			})
 		case "owning-service":
-			kept := secrets[:0]
-			for _, sec := range secrets {
-				for _, v := range values {
-					if sec.OwningService == v {
-						kept = append(kept, sec)
-						break
-					}
-				}
-			}
-			secrets = kept
+			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
+				return matchesAny(sec.OwningService, values, func(a, b string) bool { return a == b })
+			})
 		}
 	}
 	return secrets
+}
+
+func filterSecrets(secrets []*secretsmanagerstore.Secret, match func(*secretsmanagerstore.Secret) bool) []*secretsmanagerstore.Secret {
+	kept := secrets[:0]
+	for _, sec := range secrets {
+		if match(sec) {
+			kept = append(kept, sec)
+		}
+	}
+	return kept
+}
+
+func matchesAny(s string, values []string, cmp func(string, string) bool) bool {
+	for _, v := range values {
+		if cmp(s, v) {
+			return true
+		}
+	}
+	return false
 }
 
 func sortSecrets(secrets []*secretsmanagerstore.Secret, sortBy, sortOrder string) {
@@ -427,88 +408,13 @@ func (s *SecretsManagerService) UpdateSecretVersionStage(ctx context.Context, re
 		removeVersionId = existingVer.VersionId
 	}
 
-	if removeVersionId != moveToVersionId {
-		existingVer, err := store.GetSecretVersion(secret.Name, removeVersionId)
-		if err != nil {
-			return nil, awserrors.NewAWSError("ResourceNotFoundException",
-				fmt.Sprintf("Secrets Manager can't find the version %s", removeVersionId), http.StatusNotFound)
-		}
-		newStages := []string{}
-		for _, st := range existingVer.VersionStages {
-			if st != versionStage {
-				newStages = append(newStages, st)
-			}
-		}
-		if err := store.UpdateSecretVersionStage(secret.Name, removeVersionId, newStages); err != nil {
-			return nil, mapStoreError(err)
-		}
-	}
-
 	targetVerId := moveToVersionId
 	if targetVerId == "" {
 		return nil, awserrors.NewAWSError("InvalidParameterException",
 			"You must specify MoveToVersionId.", http.StatusBadRequest)
 	}
 
-	targetVer, err := store.GetSecretVersion(secret.Name, targetVerId)
-	if err != nil {
-		return nil, awserrors.NewAWSError("ResourceNotFoundException",
-			fmt.Sprintf("Secrets Manager can't find the version %s", targetVerId), http.StatusNotFound)
-	}
-
-	found := false
-	for _, st := range targetVer.VersionStages {
-		if st == versionStage {
-			found = true
-			break
-		}
-	}
-	if !found {
-		targetVer.VersionStages = append(targetVer.VersionStages, versionStage)
-	}
-
-	if versionStage == "AWSCURRENT" {
-		secret.CurrentVersion = targetVerId
-		secret.LastChangedDate = time.Now().UTC()
-
-		oldPrevious, err := store.GetSecretVersionByStage(secret.Name, "AWSPREVIOUS")
-		if err == nil && oldPrevious.VersionId != targetVerId {
-			prevStages := []string{}
-			for _, st := range oldPrevious.VersionStages {
-				if st != "AWSPREVIOUS" {
-					prevStages = append(prevStages, st)
-				}
-			}
-			if err := store.UpdateSecretVersionStage(secret.Name, oldPrevious.VersionId, prevStages); err != nil {
-				return nil, mapStoreError(err)
-			}
-		}
-
-		if removeVersionId != "" && removeVersionId != targetVerId {
-			oldCurrentVer, err := store.GetSecretVersion(secret.Name, removeVersionId)
-			if err == nil {
-				hasPrev := false
-				for _, st := range oldCurrentVer.VersionStages {
-					if st == "AWSPREVIOUS" {
-						hasPrev = true
-						break
-					}
-				}
-				if !hasPrev {
-					oldCurrentVer.VersionStages = append(oldCurrentVer.VersionStages, "AWSPREVIOUS")
-					if err := store.UpdateSecretVersionStage(secret.Name, removeVersionId, oldCurrentVer.VersionStages); err != nil {
-						return nil, mapStoreError(err)
-					}
-				}
-			}
-		}
-
-		if err := store.UpdateSecretMetadata(secret); err != nil {
-			return nil, mapStoreError(err)
-		}
-	}
-
-	if err := store.UpdateSecretVersionStage(secret.Name, targetVerId, targetVer.VersionStages); err != nil {
+	if err := store.MoveStage(secret, versionStage, targetVerId, removeVersionId); err != nil {
 		return nil, mapStoreError(err)
 	}
 

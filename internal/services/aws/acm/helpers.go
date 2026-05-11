@@ -1,4 +1,3 @@
-// Package acm provides ACM (AWS Certificate Manager) service operations for vorpalstacks.
 package acm
 
 import (
@@ -96,16 +95,6 @@ func domainValidationToResponse(dv *acmstorelib.DomainValidation) map[string]int
 }
 
 func certificateToDetailResponse(cert *acmstorelib.Certificate) map[string]interface{} {
-	now := time.Now()
-	notBefore := cert.NotBefore
-	notAfter := cert.NotAfter
-	if notBefore.IsZero() {
-		notBefore = now
-	}
-	if notAfter.IsZero() {
-		notAfter = now.AddDate(1, 0, 0)
-	}
-
 	result := map[string]interface{}{
 		"CertificateArn":     cert.CertificateArn,
 		"DomainName":         cert.DomainName,
@@ -117,10 +106,15 @@ func certificateToDetailResponse(cert *acmstorelib.Certificate) map[string]inter
 		"KeyAlgorithm":       cert.KeyAlgorithm,
 		"SignatureAlgorithm": cert.SignatureAlgorithm,
 		"RenewalEligibility": cert.RenewalEligibility,
-		"NotBefore":          formatEpochSeconds(notBefore),
-		"NotAfter":           formatEpochSeconds(notAfter),
 		"CreatedAt":          formatEpochSeconds(cert.CreatedAt),
 		"Options":            certificateOptionsToResponse(cert.Options),
+	}
+
+	if !cert.NotBefore.IsZero() {
+		result["NotBefore"] = formatEpochSeconds(cert.NotBefore)
+	}
+	if !cert.NotAfter.IsZero() {
+		result["NotAfter"] = formatEpochSeconds(cert.NotAfter)
 	}
 
 	if len(cert.InUseBy) > 0 {
@@ -244,51 +238,16 @@ func certificateSummaryToResponse(summary *acmstorelib.CertificateSummary) map[s
 	return result
 }
 
-func listCertificatesToResponse(result *acmstorelib.CertificateListResult) map[string]interface{} {
+func listResultToResponse(result *acmstorelib.CertificateListResult) map[string]interface{} {
 	certs := make([]interface{}, len(result.Certificates))
 	for i, cert := range result.Certificates {
 		certs[i] = certificateSummaryToResponse(cert)
 	}
-	return map[string]interface{}{
-		"NextToken":              result.NextToken,
+	resp := map[string]interface{}{
 		"CertificateSummaryList": certs,
 	}
-}
-
-func filteredListToResponse(summaries []*acmstorelib.CertificateSummary, marker string, maxItems int) map[string]interface{} {
-	if maxItems <= 0 {
-		maxItems = 100
+	if result.NextToken != "" {
+		resp["NextToken"] = result.NextToken
 	}
-	started := marker == ""
-	var filtered []*acmstorelib.CertificateSummary
-	for _, s := range summaries {
-		if !started {
-			if s.CertificateArn > marker {
-				started = true
-			}
-			if !started {
-				continue
-			}
-		}
-		filtered = append(filtered, s)
-	}
-	certs := make([]interface{}, 0, len(filtered))
-	hasMore := false
-	var lastArn string
-	for i, s := range filtered {
-		if i >= maxItems {
-			hasMore = true
-			break
-		}
-		certs = append(certs, certificateSummaryToResponse(s))
-		lastArn = s.CertificateArn
-	}
-	nextToken := ""
-	if hasMore && lastArn != "" {
-		nextToken = lastArn
-	}
-	return map[string]interface{}{
-		"NextToken":              nextToken,
-		"CertificateSummaryList": certs,
-	}
+	return resp
 }

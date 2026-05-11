@@ -2,6 +2,7 @@ package common
 
 import (
 	"google.golang.org/protobuf/proto"
+	"vorpalstacks/internal/core/logs"
 )
 
 // ProtoStoreConfig configures a generic protobuf CRUD store for a single entity
@@ -105,7 +106,8 @@ func (s *ProtoStore[D]) List() ([]*D, error) {
 	err := s.store.ForEach(func(key string, value []byte) error {
 		pb := s.newProto()
 		if err := proto.Unmarshal(value, pb); err != nil {
-			return err
+			logs.Warn("proto unmarshal failed, skipping entry", logs.String("key", key), logs.Err(err))
+			return nil
 		}
 		items = append(items, s.toDomain(pb))
 		return nil
@@ -119,7 +121,8 @@ func (s *ProtoStore[D]) ListFiltered(filter func(*D) bool) ([]*D, error) {
 	err := s.store.ForEach(func(key string, value []byte) error {
 		pb := s.newProto()
 		if err := proto.Unmarshal(value, pb); err != nil {
-			return err
+			logs.Warn("proto unmarshal failed, skipping entry", logs.String("key", key), logs.Err(err))
+			return nil
 		}
 		d := s.toDomain(pb)
 		if filter == nil || filter(d) {
@@ -137,7 +140,8 @@ func (s *ProtoStore[D]) ListProto() ([]proto.Message, error) {
 	err := s.store.ForEach(func(key string, value []byte) error {
 		pb := s.newProto()
 		if err := proto.Unmarshal(value, pb); err != nil {
-			return err
+			logs.Warn("proto unmarshal failed, skipping entry", logs.String("key", key), logs.Err(err))
+			return nil
 		}
 		items = append(items, pb)
 		return nil

@@ -263,6 +263,10 @@ func ListProto[T proto.Message](store *BaseStore, opts ListOptions, newFunc func
 
 	var items []T
 	err := it.forEachPage(func(key string, value []byte) (bool, error) {
+		if len(key) > 0 && key[0] == '#' {
+			return false, nil
+		}
+
 		item := newFunc()
 		if err := proto.Unmarshal(value, item); err != nil {
 			return false, err
@@ -294,6 +298,10 @@ func List[T any](store *BaseStore, opts ListOptions, filter FilterFunc[T]) (*Lis
 
 	var items []*T
 	err := it.forEachPage(func(key string, value []byte) (bool, error) {
+		if len(key) > 0 && key[0] == '#' {
+			return false, nil
+		}
+
 		var item T
 		if err := json.Unmarshal(value, &item); err != nil {
 			return false, err

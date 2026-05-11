@@ -2,11 +2,7 @@ package kms
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -306,19 +302,7 @@ func (s *KMSService) GenerateRandom(ctx context.Context, reqCtx *request.Request
 }
 
 func (s *KMSService) resolveKeyByKeyID(stores *kmsStores, keyID string) (*kmsstore.Key, error) {
-	if keyID == "" {
-		return nil, ErrKeyNotFound
-	}
-
-	if stores.keys.ARNBuilder().IsAlias(keyID) {
-		alias, err := stores.aliases.Get(keyID)
-		if err != nil {
-			return nil, err
-		}
-		keyID = alias.TargetKeyID
-	}
-
-	return stores.keys.Get(keyID)
+	return s.resolveKey(stores, map[string]interface{}{"KeyId": keyID})
 }
 
 func parseEncryptionContextForPrefix(params map[string]interface{}, prefix string) map[string]string {
@@ -356,19 +340,9 @@ func (s *KMSService) GenerateDataKeyPair(ctx context.Context, reqCtx *request.Re
 		return nil, ErrValidation
 	}
 
-	privKey, pubKey, err := generateAsymmetricKeyPair(keyPairSpec)
+	privKeyDER, pubKeyDER, err := s.hsmBackend.GenerateKeyPair(hsm.KeySpec(keyPairSpec))
 	if err != nil {
 		return nil, err
-	}
-
-	privKeyDER, err := x509.MarshalPKCS8PrivateKey(privKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal private key: %w", err)
-	}
-
-	pubKeyDER, err := x509.MarshalPKIXPublicKey(pubKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal public key: %w", err)
 	}
 
 	encryptedResult, err := s.hsmBackend.Encrypt(key.KeyID, privKeyDER, encryptionContext)
@@ -411,19 +385,9 @@ func (s *KMSService) GenerateDataKeyPairWithoutPlaintext(ctx context.Context, re
 		return nil, ErrValidation
 	}
 
-	privKey, pubKey, err := generateAsymmetricKeyPair(keyPairSpec)
+	privKeyDER, pubKeyDER, err := s.hsmBackend.GenerateKeyPair(keyPairSpec)
 	if err != nil {
 		return nil, err
-	}
-
-	privKeyDER, err := x509.MarshalPKCS8PrivateKey(privKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal private key: %w", err)
-	}
-
-	pubKeyDER, err := x509.MarshalPKIXPublicKey(pubKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal public key: %w", err)
 	}
 
 	encryptedResult, err := s.hsmBackend.Encrypt(key.KeyID, privKeyDER, encryptionContext)
@@ -489,55 +453,6 @@ func (s *KMSService) ListKeyRotations(ctx context.Context, reqCtx *request.Reque
 	}
 
 	return response, nil
-}
-
-func generateAsymmetricKeyPair(spec hsm.KeySpec) (interface{}, interface{}, error) {
-	switch spec {
-	case hsm.KeySpecRSA2048:
-		key, err := rsa.GenerateKey(rand.Reader, 2048)
-		if err != nil {
-			return nil, nil, err
-		}
-		return key, &key.PublicKey, nil
-	case hsm.KeySpecRSA3072:
-		key, err := rsa.GenerateKey(rand.Reader, 3072)
-		if err != nil {
-			return nil, nil, err
-		}
-		return key, &key.PublicKey, nil
-	case hsm.KeySpecRSA4096:
-		key, err := rsa.GenerateKey(rand.Reader, 4096)
-		if err != nil {
-			return nil, nil, err
-		}
-		return key, &key.PublicKey, nil
-	case hsm.KeySpecECCNISTP256:
-		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			return nil, nil, err
-		}
-		return key, &key.PublicKey, nil
-	case hsm.KeySpecECCNISTP384:
-		key, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-		if err != nil {
-			return nil, nil, err
-		}
-		return key, &key.PublicKey, nil
-	case hsm.KeySpecECCNISTP521:
-		key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
-		if err != nil {
-			return nil, nil, err
-		}
-		return key, &key.PublicKey, nil
-	case hsm.KeySpecECCSECPP256R1:
-		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			return nil, nil, err
-		}
-		return key, &key.PublicKey, nil
-	default:
-		return nil, nil, fmt.Errorf("unsupported KeyPairSpec: %s", spec)
-	}
 }
 
 func (s *KMSService) mapHSMError(err error) error {

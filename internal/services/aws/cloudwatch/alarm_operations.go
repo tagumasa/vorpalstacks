@@ -102,7 +102,20 @@ func getAlarmStringListParam(params map[string]interface{}, keys ...string) []st
 	return nil
 }
 
-func alarmToResponse(alarm *cwstore.Alarm, stateUpdatedTs time.Time) map[string]interface{} {
+func parseAlarmTags(params map[string]interface{}) map[string]string {
+	tagList := tagutil.ParseTags(params, "Tags")
+	if len(tagList) == 0 {
+		tagList = tagutil.ParseTags(params, "tags")
+	}
+	return tagutil.ToMap(tagList)
+}
+
+func alarmToResponse(alarm *cwstore.Alarm) map[string]interface{} {
+	stateUpdatedTs := alarm.StateUpdatedTimestamp
+	if stateUpdatedTs.IsZero() {
+		stateUpdatedTs = alarm.CreatedAt
+	}
+
 	result := map[string]interface{}{
 		"AlarmName":             alarm.Name,
 		"AlarmArn":              alarm.ARN,
@@ -180,6 +193,43 @@ func parseAlarmDimensions(params map[string]interface{}) []cwstore.Dimension {
 }
 
 // PutMetricAlarm creates or updates a metric alarm.
+func (s *CloudWatchService) upsertAlarm(store *cwstore.AlarmStore, alarm *cwstore.Alarm, alarmType string) (*cwstore.Alarm, error) {
+	existing, err := store.GetAlarm(alarm.Name)
+	if err == nil && existing != nil {
+		alarm.ARN = existing.ARN
+		alarm.CreatedAt = existing.CreatedAt
+		alarm.State = existing.State
+		alarm.StateUpdatedTimestamp = existing.StateUpdatedTimestamp
+		if err := store.UpdateAlarm(alarm); err != nil {
+			return nil, err
+		}
+	} else {
+		created, err := store.CreateAlarm(alarm)
+		if err != nil {
+			return nil, err
+		}
+		alarm = created
+	}
+
+	if len(alarm.Tags) > 0 {
+		if err := store.Tag(alarm.ARN, alarm.Tags); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := store.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
+		AlarmName:       alarm.Name,
+		AlarmType:       alarmType,
+		Timestamp:       time.Now().UTC().UnixMilli(),
+		HistoryItemType: cwstore.HistoryItemTypeConfigurationUpdate,
+		HistorySummary:  "Alarm was created or updated",
+	}); err != nil {
+		logs.Warn("failed to add alarm history", logs.String("alarm", alarm.Name), logs.Err(err))
+	}
+
+	return alarm, nil
+}
+
 func (s *CloudWatchService) PutMetricAlarm(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	alarmName := getAlarmStringParam(req.Parameters, "AlarmName", "alarmName")
 	if alarmName == "" {
@@ -190,7 +240,6 @@ func (s *CloudWatchService) PutMetricAlarm(ctx context.Context, reqCtx *request.
 	metricName := getAlarmStringParam(req.Parameters, "MetricName", "metricName")
 
 	alarm := cwstore.NewAlarm(alarmName, namespace, metricName)
-
 	alarm.Dimensions = parseAlarmDimensions(req.Parameters)
 	alarm.ComparisonOperator = getAlarmStringParam(req.Parameters, "ComparisonOperator", "comparisonOperator")
 	alarm.Threshold = getAlarmFloatParam(req.Parameters, "Threshold", "threshold")
@@ -224,48 +273,16 @@ func (s *CloudWatchService) PutMetricAlarm(ctx context.Context, reqCtx *request.
 		alarm.TreatMissingData = "missing"
 	}
 
-	tagList := tagutil.ParseTags(req.Parameters, "Tags")
-	if len(tagList) == 0 {
-		tagList = tagutil.ParseTags(req.Parameters, "tags")
-	}
-	alarm.Tags = tagutil.ToMap(tagList)
+	alarm.Tags = parseAlarmTags(req.Parameters)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, err := store.alarms.GetAlarm(alarmName)
-	if err == nil && existing != nil {
-		alarm.ARN = existing.ARN
-		alarm.CreatedAt = existing.CreatedAt
-		alarm.State = existing.State
-		alarm.StateUpdatedTimestamp = existing.StateUpdatedTimestamp
-		if err := store.alarms.UpdateAlarm(alarm); err != nil {
-			return nil, err
-		}
-	} else {
-		created, err := store.alarms.CreateAlarm(alarm)
-		if err != nil {
-			return nil, err
-		}
-		alarm = created
-	}
-
-	if len(alarm.Tags) > 0 {
-		if err := store.alarms.Tag(alarm.ARN, alarm.Tags); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
-		AlarmName:       alarmName,
-		AlarmType:       cwstore.AlarmTypeMetricAlarm,
-		Timestamp:       time.Now().UTC().UnixMilli(),
-		HistoryItemType: cwstore.HistoryItemTypeConfigurationUpdate,
-		HistorySummary:  "Alarm was created or updated",
-	}); err != nil {
-		logs.Warn("failed to add alarm history", logs.String("alarm", alarmName), logs.Err(err))
+	alarm, err = s.upsertAlarm(store.alarms, alarm, cwstore.AlarmTypeMetricAlarm)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -348,11 +365,7 @@ func (s *CloudWatchService) DescribeAlarms(ctx context.Context, reqCtx *request.
 	metricAlarms := make([]map[string]interface{}, 0)
 	compositeAlarms := make([]map[string]interface{}, 0)
 	for _, alarm := range alarms {
-		stateUpdatedTs := alarm.StateUpdatedTimestamp
-		if stateUpdatedTs.IsZero() {
-			stateUpdatedTs = time.Now()
-		}
-		resp := alarmToResponse(alarm, stateUpdatedTs)
+		resp := alarmToResponse(alarm)
 		if alarm.AlarmType == cwstore.AlarmTypeCompositeAlarm {
 			compositeAlarms = append(compositeAlarms, resp)
 		} else {
@@ -401,11 +414,7 @@ func (s *CloudWatchService) DescribeAlarmsForMetric(ctx context.Context, reqCtx 
 
 	metricAlarms := make([]map[string]interface{}, len(matchedAlarms))
 	for i, alarm := range matchedAlarms {
-		stateUpdatedTs := alarm.StateUpdatedTimestamp
-		if stateUpdatedTs.IsZero() {
-			stateUpdatedTs = time.Now()
-		}
-		metricAlarms[i] = alarmToResponse(alarm, stateUpdatedTs)
+		metricAlarms[i] = alarmToResponse(alarm)
 	}
 
 	return map[string]interface{}{
@@ -503,13 +512,9 @@ func (s *CloudWatchService) SetAlarmState(ctx context.Context, reqCtx *request.R
 	}
 
 	alarm, _ := store.alarms.GetAlarm(alarmName)
-	alarmType := cwstore.AlarmTypeMetricAlarm
-	if alarm != nil && alarm.AlarmType == cwstore.AlarmTypeCompositeAlarm {
-		alarmType = cwstore.AlarmTypeCompositeAlarm
-	}
 	if err := store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
 		AlarmName:       alarmName,
-		AlarmType:       alarmType,
+		AlarmType:       resolveAlarmType(alarm),
 		Timestamp:       time.Now().UTC().UnixMilli(),
 		HistoryItemType: cwstore.HistoryItemTypeStateUpdate,
 		HistorySummary:  stateReason,
@@ -518,6 +523,27 @@ func (s *CloudWatchService) SetAlarmState(ctx context.Context, reqCtx *request.R
 	}
 
 	return response.EmptyResponse(), nil
+}
+
+func resolveAlarmType(alarm *cwstore.Alarm) string {
+	if alarm != nil && alarm.AlarmType == cwstore.AlarmTypeCompositeAlarm {
+		return cwstore.AlarmTypeCompositeAlarm
+	}
+	return cwstore.AlarmTypeMetricAlarm
+}
+
+func addAlarmActionHistory(store *cwstore.AlarmStore, alarmName, summary string) {
+	alarm, _ := store.GetAlarm(alarmName)
+	alarmType := resolveAlarmType(alarm)
+	if err := store.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
+		AlarmName:       alarmName,
+		AlarmType:       alarmType,
+		Timestamp:       time.Now().UTC().UnixMilli(),
+		HistoryItemType: cwstore.HistoryItemTypeAction,
+		HistorySummary:  summary,
+	}); err != nil {
+		logs.Warn("failed to add alarm history", logs.String("alarm", alarmName), logs.Err(err))
+	}
 }
 
 func cwAlarmTagConfig(s *CloudWatchService, reqCtx *request.RequestContext) tagutil.TagHandlerConfig {
@@ -582,20 +608,7 @@ func (s *CloudWatchService) EnableAlarmActions(ctx context.Context, reqCtx *requ
 			}
 			return nil, err
 		}
-		alarm, _ := store.alarms.GetAlarm(name)
-		alarmType := cwstore.AlarmTypeMetricAlarm
-		if alarm != nil && alarm.AlarmType == cwstore.AlarmTypeCompositeAlarm {
-			alarmType = cwstore.AlarmTypeCompositeAlarm
-		}
-		if err := store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
-			AlarmName:       name,
-			AlarmType:       alarmType,
-			Timestamp:       time.Now().UTC().UnixMilli(),
-			HistoryItemType: cwstore.HistoryItemTypeAction,
-			HistorySummary:  "Alarm actions enabled",
-		}); err != nil {
-			logs.Warn("failed to add alarm enable history", logs.String("alarm", name), logs.Err(err))
-		}
+		addAlarmActionHistory(store.alarms, name, "Alarm actions enabled")
 	}
 
 	return response.EmptyResponse(), nil
@@ -620,21 +633,7 @@ func (s *CloudWatchService) DisableAlarmActions(ctx context.Context, reqCtx *req
 			}
 			return nil, err
 		}
-		alarm, _ := store.alarms.GetAlarm(name)
-		alarmType := cwstore.AlarmTypeMetricAlarm
-		if alarm != nil && alarm.AlarmType == cwstore.AlarmTypeCompositeAlarm {
-			alarmType = cwstore.AlarmTypeCompositeAlarm
-		}
-		if err := store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
-			AlarmName:       name,
-			AlarmType:       alarmType,
-			Timestamp:       time.Now().UTC().UnixMilli(),
-			HistoryItemType: cwstore.HistoryItemTypeAction,
-			HistorySummary:  "Alarm actions disabled",
-		}); err != nil {
-			logs.Error("Failed to add alarm history entry on DisableAlarmActions",
-				logs.String("alarmName", name), logs.Err(err))
-		}
+		addAlarmActionHistory(store.alarms, name, "Alarm actions disabled")
 	}
 
 	return response.EmptyResponse(), nil
@@ -687,57 +686,21 @@ func (s *CloudWatchService) PutCompositeAlarm(ctx context.Context, reqCtx *reque
 	alarm := cwstore.NewAlarm(alarmName, "", "")
 	alarm.AlarmRule = alarmRule
 	alarm.AlarmType = cwstore.AlarmTypeCompositeAlarm
-	alarm.Namespace = ""
-	alarm.MetricName = ""
-
 	alarm.AlarmDescription = getAlarmStringParam(req.Parameters, "AlarmDescription", "alarmDescription")
 	alarm.ActionsEnabled = getAlarmBoolParam(req.Parameters, []string{"ActionsEnabled", "actionsEnabled"}, true)
 	alarm.AlarmActions = getAlarmStringListParam(req.Parameters, "AlarmActions", "alarmActions")
 	alarm.OKActions = getAlarmStringListParam(req.Parameters, "OKActions", "okActions")
 	alarm.InsufficientDataActions = getAlarmStringListParam(req.Parameters, "InsufficientDataActions", "insufficientDataActions")
-
-	tagList := tagutil.ParseTags(req.Parameters, "Tags")
-	if len(tagList) == 0 {
-		tagList = tagutil.ParseTags(req.Parameters, "tags")
-	}
-	alarm.Tags = tagutil.ToMap(tagList)
+	alarm.Tags = parseAlarmTags(req.Parameters)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, err := store.alarms.GetAlarm(alarmName)
-	if err == nil && existing != nil {
-		alarm.ARN = existing.ARN
-		alarm.CreatedAt = existing.CreatedAt
-		alarm.State = existing.State
-		alarm.StateUpdatedTimestamp = existing.StateUpdatedTimestamp
-		if err := store.alarms.UpdateAlarm(alarm); err != nil {
-			return nil, err
-		}
-	} else {
-		created, err := store.alarms.CreateAlarm(alarm)
-		if err != nil {
-			return nil, err
-		}
-		alarm = created
-	}
-
-	if len(alarm.Tags) > 0 {
-		if err := store.alarms.Tag(alarm.ARN, alarm.Tags); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := store.alarms.AddAlarmHistory(&cwstore.AlarmHistoryEntry{
-		AlarmName:       alarmName,
-		AlarmType:       cwstore.AlarmTypeCompositeAlarm,
-		Timestamp:       time.Now().UTC().UnixMilli(),
-		HistoryItemType: cwstore.HistoryItemTypeConfigurationUpdate,
-		HistorySummary:  "Alarm was created or updated",
-	}); err != nil {
-		logs.Warn("Failed to add alarm history", logs.Err(err))
+	alarm, err = s.upsertAlarm(store.alarms, alarm, cwstore.AlarmTypeCompositeAlarm)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{

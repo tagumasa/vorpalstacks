@@ -215,6 +215,7 @@ func EventToProto(e *Event) *pb.Event {
 		ErrorCode:             e.ErrorCode,
 		ErrorMessage:          e.ErrorMessage,
 		Tags:                  e.Tags,
+		EventCategory:         e.EventCategory,
 	}
 }
 
@@ -255,6 +256,7 @@ func ProtoToEvent(p *pb.Event) *Event {
 		ErrorCode:         p.ErrorCode,
 		ErrorMessage:      p.ErrorMessage,
 		Tags:              p.Tags,
+		EventCategory:     p.EventCategory,
 	}
 }
 

@@ -172,6 +172,11 @@ func (s *LogsService) purgeAllRegions() {
 	})
 }
 
+// AccountID returns the AWS account ID for this service.
+func (s *LogsService) AccountID() string {
+	return s.accountID
+}
+
 // Stop stops the CloudWatch Logs service by canceling the context and waiting for goroutines to complete.
 func (s *LogsService) Stop() {
 	if s.cancel != nil {

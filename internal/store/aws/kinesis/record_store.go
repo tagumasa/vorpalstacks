@@ -14,6 +14,8 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_kinesis"
 )
 
+const iteratorCleanupInterval = 5 * time.Minute
+
 // PutRecord writes a single data record to a Kinesis stream shard.
 func (s *KinesisStore) PutRecord(streamName, shardID, partitionKey, data string) (*Record, error) {
 	s.mu.Lock()
@@ -47,6 +49,54 @@ func (s *KinesisStore) PutRecord(streamName, shardID, partitionKey, data string)
 	}
 
 	return record, nil
+}
+
+// PutRecordWithShardSelection selects the appropriate shard by partition key
+// and writes a single record, all under a single lock.
+func (s *KinesisStore) PutRecordWithShardSelection(streamName, partitionKey, data string) (*Record, string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	shards, err := s.ListShards(streamName, nil, "", 0)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var activeShards []*Shard
+	for _, shard := range shards {
+		if shard.SequenceNumberRange == nil || shard.SequenceNumberRange.EndingSequenceNumber == "" {
+			activeShards = append(activeShards, shard)
+		}
+	}
+
+	if len(activeShards) == 0 {
+		return nil, "", ErrNoActiveShards
+	}
+
+	targetShard, _ := s.selectShardByPartitionKey(activeShards, partitionKey)
+	if targetShard == nil {
+		targetShard = activeShards[0]
+	}
+
+	seqNum := s.generateSequenceNumber(targetShard.ShardID)
+	targetShard.LatestSequenceNumber = seqNum
+	if err := s.UpdateShard(targetShard); err != nil {
+		return nil, "", err
+	}
+
+	record := &Record{
+		SequenceNumber:              seqNum,
+		ApproximateArrivalTimestamp: time.Now().UTC(),
+		Data:                        data,
+		PartitionKey:                partitionKey,
+	}
+
+	key := fmt.Sprintf("%s#%s#%s", streamName, targetShard.ShardID, seqNum)
+	if err := s.recordsStore.PutProto(key, RecordToProto(record)); err != nil {
+		return nil, "", err
+	}
+
+	return record, targetShard.ShardID, nil
 }
 
 // PutRecords writes multiple data records to a Kinesis stream.
@@ -110,7 +160,7 @@ func (s *KinesisStore) PutRecords(streamName string, records []PutRecordRequest)
 	}
 
 	stream.LastModifiedAt = time.Now().UTC()
-	if err := s.UpdateStream(stream); err != nil {
+	if err := s.PutProto(stream.StreamName, StreamToProto(stream)); err != nil {
 		return nil, err
 	}
 
@@ -190,8 +240,13 @@ func (s *KinesisStore) GetRecords(streamName, shardID, startingSeqNum string, li
 }
 
 // cleanExpiredIterators removes shard iterators that have passed their expiry time.
+// Runs at most once per cleanupInterval to avoid O(n) scans on every CreateShardIterator call.
 func (s *KinesisStore) cleanExpiredIterators() {
 	now := time.Now().UTC()
+	if now.Before(s.nextIteratorCleanup) {
+		return
+	}
+	s.nextIteratorCleanup = now.Add(iteratorCleanupInterval)
 	_ = s.iteratorsStore.ForEach(func(key string, value []byte) error {
 		var it ShardIterator
 		if err := json.Unmarshal(value, &it); err != nil {

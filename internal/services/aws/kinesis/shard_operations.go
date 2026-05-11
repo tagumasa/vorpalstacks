@@ -12,20 +12,9 @@ import (
 
 // ListShards lists the shards in a Kinesis stream.
 func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamNameOptional(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
-	}
-
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
 	}
 
 	if streamName != "" {
@@ -81,39 +70,28 @@ func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.Request
 		return nil, s.mapStoreError(err)
 	}
 
-	response := map[string]interface{}{
-		"Shards": s.formatShards(shards),
+	resp := map[string]interface{}{
+		"Shards": formatShards(shards),
 	}
 
 	if len(shards) == limit {
 		lastShard := shards[len(shards)-1]
-		response["NextToken"] = base64.StdEncoding.EncodeToString([]byte(lastShard.ShardID))
+		resp["NextToken"] = base64.StdEncoding.EncodeToString([]byte(lastShard.ShardID))
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // SplitShard splits a shard in a Kinesis stream.
 func (s *KinesisService) SplitShard(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	shardID := request.GetParamLowerFirst(req.Parameters, "ShardToSplit")
-	newHashKey := request.GetParamLowerFirst(req.Parameters, "NewStartingHashKey")
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" || shardID == "" {
+	shardID := request.GetParamLowerFirst(req.Parameters, "ShardToSplit")
+	newHashKey := request.GetParamLowerFirst(req.Parameters, "NewStartingHashKey")
+	if shardID == "" {
 		return nil, ErrInvalidArgument
 	}
 
@@ -128,25 +106,14 @@ func (s *KinesisService) SplitShard(ctx context.Context, reqCtx *request.Request
 
 // MergeShards merges two adjacent shards in a Kinesis stream.
 func (s *KinesisService) MergeShards(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	shardID1 := request.GetParamLowerFirst(req.Parameters, "ShardToMerge")
-	shardID2 := request.GetParamLowerFirst(req.Parameters, "AdjacentShardToMerge")
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" || shardID1 == "" || shardID2 == "" {
+	shardID1 := request.GetParamLowerFirst(req.Parameters, "ShardToMerge")
+	shardID2 := request.GetParamLowerFirst(req.Parameters, "AdjacentShardToMerge")
+	if shardID1 == "" || shardID2 == "" {
 		return nil, ErrInvalidArgument
 	}
 
@@ -161,24 +128,13 @@ func (s *KinesisService) MergeShards(ctx context.Context, reqCtx *request.Reques
 
 // UpdateShardCount updates the shard count of a Kinesis stream.
 func (s *KinesisService) UpdateShardCount(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	targetCount := int32(request.GetIntParam(req.Parameters, "TargetShardCount"))
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" || targetCount <= 0 {
+	targetCount := int32(request.GetIntParam(req.Parameters, "TargetShardCount"))
+	if targetCount <= 0 {
 		return nil, ErrInvalidArgument
 	}
 

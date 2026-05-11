@@ -33,6 +33,12 @@ func (s *KMSService) Sign(ctx context.Context, reqCtx *request.RequestContext, r
 	messageB64 := request.GetStringParam(req.Parameters, "Message")
 	_ = request.GetStringParam(req.Parameters, "MessageType")
 	algorithm := request.GetStringParam(req.Parameters, "SigningAlgorithm")
+	if algorithm == "" {
+		return nil, ErrInvalidAlgorithm
+	}
+	if !algorithmSupported(algorithm, key.SigningAlgorithms) {
+		return nil, ErrInvalidAlgorithm
+	}
 
 	var message []byte
 	message, err = base64.StdEncoding.DecodeString(messageB64)
@@ -73,6 +79,12 @@ func (s *KMSService) Verify(ctx context.Context, reqCtx *request.RequestContext,
 
 	messageB64 := request.GetStringParam(req.Parameters, "Message")
 	algorithm := request.GetStringParam(req.Parameters, "SigningAlgorithm")
+	if algorithm == "" {
+		return nil, ErrInvalidAlgorithm
+	}
+	if !algorithmSupported(algorithm, key.SigningAlgorithms) {
+		return nil, ErrInvalidAlgorithm
+	}
 	signatureB64 := request.GetStringParam(req.Parameters, "Signature")
 
 	var message []byte
@@ -114,60 +126,30 @@ func (s *KMSService) GetPublicKey(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	encryptionAlgorithms, signingAlgorithms, keyAgreementAlgorithms := getAlgorithmSets(key.KeySpec, key.KeyUsage)
-
 	result := map[string]interface{}{
 		"KeyId":     key.Arn,
 		"PublicKey": base64.StdEncoding.EncodeToString(publicKey),
 		"KeySpec":   key.KeySpec,
 		"KeyUsage":  key.KeyUsage,
 	}
-	if len(encryptionAlgorithms) > 0 {
-		result["EncryptionAlgorithms"] = encryptionAlgorithms
+	if len(key.EncryptionAlgorithms) > 0 {
+		result["EncryptionAlgorithms"] = key.EncryptionAlgorithms
 	}
-	if len(signingAlgorithms) > 0 {
-		result["SigningAlgorithms"] = signingAlgorithms
+	if len(key.SigningAlgorithms) > 0 {
+		result["SigningAlgorithms"] = key.SigningAlgorithms
 	}
-	if len(keyAgreementAlgorithms) > 0 {
-		result["KeyAgreementAlgorithms"] = keyAgreementAlgorithms
+	if len(key.MacAlgorithms) > 0 {
+		result["MacAlgorithms"] = key.MacAlgorithms
 	}
 
 	return result, nil
 }
 
-// getAlgorithmSets returns the default algorithm sets for a given KeySpec and KeyUsage.
-func getAlgorithmSets(keySpec kmsstore.KeySpec, keyUsage kmsstore.KeyUsage) (encryptionAlgorithms []string, signingAlgorithms []string, keyAgreementAlgorithms []string) {
-	switch {
-	case keyUsage == kmsstore.KeyUsageSignVerify:
-		switch keySpec {
-		case kmsstore.KeySpecRSA2048, kmsstore.KeySpecRSA3072, kmsstore.KeySpecRSA4096:
-			signingAlgorithms = []string{
-				"RSASSA_PKCS1_V1_5_SHA_256",
-				"RSASSA_PKCS1_V1_5_SHA_384",
-				"RSASSA_PKCS1_V1_5_SHA_512",
-				"RSASSA_PSS_SHA_256",
-				"RSASSA_PSS_SHA_384",
-				"RSASSA_PSS_SHA_512",
-			}
-		case kmsstore.KeySpecECCNISTP256, kmsstore.KeySpecECCSECGP256K1:
-			signingAlgorithms = []string{"ECDSA_SHA_256"}
-		case kmsstore.KeySpecECCNISTP384:
-			signingAlgorithms = []string{"ECDSA_SHA_384"}
-		case kmsstore.KeySpecECCNISTP521:
-			signingAlgorithms = []string{"ECDSA_SHA_512"}
-		case kmsstore.KeySpecSM2:
-			signingAlgorithms = []string{"SM2"}
-		}
-	case keyUsage == kmsstore.KeyUsageEncryptDecrypt && keySpec != kmsstore.KeySpecSymmetricDefault:
-		switch keySpec {
-		case kmsstore.KeySpecRSA2048, kmsstore.KeySpecRSA3072, kmsstore.KeySpecRSA4096:
-			encryptionAlgorithms = []string{
-				"RSAES_OAEP_SHA_256",
-				"RSAES_OAEP_SHA_1",
-			}
-		case kmsstore.KeySpecSM2:
-			encryptionAlgorithms = []string{"SM2PKE"}
+func algorithmSupported(algorithm string, supported []string) bool {
+	for _, a := range supported {
+		if a == algorithm {
+			return true
 		}
 	}
-	return
+	return false
 }

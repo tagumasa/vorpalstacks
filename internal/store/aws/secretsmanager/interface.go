@@ -14,6 +14,7 @@ type SecretStoreInterface interface {
 	CreateSecret(secret *Secret) (*Secret, error)
 	GetSecret(name string) (*Secret, error)
 	GetSecretByARN(arn string) (*Secret, error)
+	LookupNameByARN(arn string) (string, error)
 	GetSecretForMetadata(name string) (*Secret, error)
 	UpdateSecret(secret *Secret) (*Secret, error)
 	DeleteSecret(name string) error
@@ -34,6 +35,7 @@ type SecretStoreInterface interface {
 	UpdateSecretVersionStage(name, versionId string, stages []string) error
 	UpdateSecretMetadata(secret *Secret) error
 	FinishRotation(secret *Secret, pendingVersionID string) error
+	MoveStage(secret *Secret, versionStage, moveToVersionId, removeFromVersionId string) error
 	CreateVersionDirect(secretName string, version *SecretVersion) error
 }
 

@@ -91,7 +91,7 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DomainName is required"))
 	}
 
-	certId := fmt.Sprintf("%d", time.Now().UnixNano())
+	certId := acmstore.GenerateCertificateId()
 	certArn := h.arnBuilder.BuildCertificateARN(certId)
 
 	cert := &acmstore.Certificate{

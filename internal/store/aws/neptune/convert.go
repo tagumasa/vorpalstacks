@@ -647,3 +647,39 @@ func ProtoToClusterEndpoint(p *pb.DBClusterEndpoint) *DBClusterEndpoint {
 		DBClusterEndpointArn:        p.GetDbClusterEndpointArn(),
 	}
 }
+
+func EventToProto(e *Event) *pb.Event {
+	if e == nil {
+		return nil
+	}
+	p := &pb.Event{
+		EventId:          e.EventID,
+		EventCategories:  e.EventCategories,
+		Message:          e.Message,
+		SourceArn:        e.SourceArn,
+		SourceIdentifier: e.SourceIdentifier,
+		SourceType:       e.SourceType,
+	}
+	if !e.Date.IsZero() {
+		p.Date = timestamppb.New(e.Date)
+	}
+	return p
+}
+
+func ProtoToEvent(p *pb.Event) *Event {
+	if p == nil {
+		return nil
+	}
+	e := &Event{
+		EventID:          p.GetEventId(),
+		EventCategories:  p.GetEventCategories(),
+		Message:          p.GetMessage(),
+		SourceArn:        p.GetSourceArn(),
+		SourceIdentifier: p.GetSourceIdentifier(),
+		SourceType:       p.GetSourceType(),
+	}
+	if p.Date != nil {
+		e.Date = p.Date.AsTime()
+	}
+	return e
+}

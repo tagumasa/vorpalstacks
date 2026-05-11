@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -23,18 +24,19 @@ type KinesisStore struct {
 	consumersStore *common.BaseStore
 	iteratorsStore *common.BaseStore
 	*common.TagStore
-	arnBuilder      *svcarn.ARNBuilder
-	accountID       string
-	region          string
-	mu              sync.Mutex
-	sequenceCounter int64
-	shardIDCounter  int64
-	storage         storage.TransactionalStorageWith2PC
+	arnBuilder          *svcarn.ARNBuilder
+	accountID           string
+	region              string
+	mu                  sync.Mutex
+	sequenceCounter     int64
+	shardIDCounter      int64
+	storage             storage.TransactionalStorageWith2PC
+	nextIteratorCleanup time.Time
 }
 
 // NewKinesisStore creates a new KinesisStore instance with the specified storage, account ID, and region.
 func NewKinesisStore(store storage.TransactionalStorageWith2PC, accountID, region string) *KinesisStore {
-	return &KinesisStore{
+	ks := &KinesisStore{
 		BaseStore:      common.NewBaseStore(store.Bucket("kinesis-streams-"+region), "kinesis-streams"),
 		shardsStore:    common.NewBaseStore(store.Bucket("kinesis-shards-"+region), "kinesis-shards"),
 		recordsStore:   common.NewBaseStore(store.Bucket("kinesis-records-"+region), "kinesis-records"),
@@ -46,6 +48,31 @@ func NewKinesisStore(store storage.TransactionalStorageWith2PC, accountID, regio
 		region:         region,
 		storage:        store,
 	}
+	ks.initShardIDCounter()
+	return ks
+}
+
+// initShardIDCounter scans existing shards to find the highest shard ID
+// number so that subsequent split/merge operations do not collide with
+// existing shard IDs.
+func (s *KinesisStore) initShardIDCounter() {
+	var maxID int64
+	_ = s.shardsStore.ForEach(func(key string, value []byte) error {
+		parts := strings.SplitN(key, "#", 2)
+		if len(parts) < 2 {
+			return nil
+		}
+		shardID := parts[1]
+		if !strings.HasPrefix(shardID, "shardId-") {
+			return nil
+		}
+		numStr := strings.TrimPrefix(shardID, "shardId-")
+		if num, err := strconv.ParseInt(numStr, 10, 64); err == nil && num > maxID {
+			maxID = num
+		}
+		return nil
+	})
+	s.shardIDCounter = maxID
 }
 
 // GetAccountID returns the account ID associated with this store.

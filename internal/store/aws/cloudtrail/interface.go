@@ -18,6 +18,7 @@ type CloudTrailStoreInterface interface {
 	GetTrailByARN(trailARN string) (*Trail, error)
 	UpdateTrail(trail *Trail) error
 	DeleteTrail(trailName string) error
+	ResolveTrail(nameOrARN string) (*Trail, error)
 	ListTrails(opts common.ListOptions) (*common.ListResult[Trail], error)
 	StartLogging(trailName string) error
 	StopLogging(trailName string) error

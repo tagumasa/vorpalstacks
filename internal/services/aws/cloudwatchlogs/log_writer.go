@@ -1,6 +1,7 @@
 package cloudwatchlogs
 
 import (
+	"errors"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
@@ -32,11 +33,13 @@ func (s *LogsService) ensureLogGroupAndStream(region, logGroup, logStream, accou
 
 	ls := logsstore.NewLogStream(logStream, logGroup)
 	if createErr := logsStore.CreateLogStream(ls); createErr != nil {
-		logs.Error("Failed to create log stream",
-			logs.String("logGroup", logGroup),
-			logs.String("logStream", logStream),
-			logs.Err(createErr))
-		return nil
+		if !errors.Is(createErr, logsstore.ErrLogStreamAlreadyExists) {
+			logs.Error("Failed to create log stream",
+				logs.String("logGroup", logGroup),
+				logs.String("logStream", logStream),
+				logs.Err(createErr))
+			return nil
+		}
 	}
 
 	return logsStore

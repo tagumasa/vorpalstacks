@@ -92,6 +92,7 @@ message DBClusterSnapshot {
   string account_id = 13;
   string region = 14;
   repeated string restore_attribute_values = 15;
+  string snapshot_type = 16;
 }
 
 message DBClusterParameterGroup {
@@ -157,6 +158,16 @@ message EventSubscription {
   repeated string event_categories_list = 7;
   bool enabled = 8;
   string cust_subscription_arn = 9;
+}
+
+message Event {
+  string event_id = 1;
+  google.protobuf.Timestamp date = 2;
+  repeated string event_categories = 3;
+  string message = 4;
+  string source_arn = 5;
+  string source_identifier = 6;
+  string source_type = 7;
 }
 
 message Parameter {

@@ -2,7 +2,6 @@ package neptune
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -16,21 +15,99 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 )
 
-func clusterToResponseMap(cluster *neptunestore.DBCluster) map[string]interface{} {
-	data, err := json.Marshal(cluster)
-	if err != nil {
-		return map[string]interface{}{"error": err.Error()}
+func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
+	m := map[string]interface{}{
+		"DBClusterIdentifier":              c.DBClusterIdentifier,
+		"Engine":                           c.Engine,
+		"Status":                           c.Status,
+		"Port":                             c.Port,
+		"BackupRetentionPeriod":            c.BackupRetentionPeriod,
+		"MultiAZ":                          c.MultiAZ,
+		"StorageEncrypted":                 c.StorageEncrypted,
+		"CopyTagsToSnapshot":               c.CopyTagsToSnapshot,
+		"DeletionProtection":               c.DeletionProtection,
+		"IAMDatabaseAuthenticationEnabled": c.IAMDatabaseAuthenticationEnabled,
+		"DBClusterArn":                     c.DBClusterArn,
 	}
-	var m map[string]interface{}
-	if err := json.Unmarshal(data, &m); err != nil {
-		return map[string]interface{}{"error": err.Error()}
+	if c.EngineVersion != "" {
+		m["EngineVersion"] = c.EngineVersion
 	}
-	for k, v := range m {
-		if v == nil {
-			delete(m, k)
+	if c.MasterUsername != "" {
+		m["MasterUsername"] = c.MasterUsername
+	}
+	if c.DatabaseName != "" {
+		m["DatabaseName"] = c.DatabaseName
+	}
+	if c.PreferredBackupWindow != "" {
+		m["PreferredBackupWindow"] = c.PreferredBackupWindow
+	}
+	if c.PreferredMaintenanceWindow != "" {
+		m["PreferredMaintenanceWindow"] = c.PreferredMaintenanceWindow
+	}
+	if len(c.AvailabilityZones) > 0 {
+		m["AvailabilityZones"] = protocol.XMLElements{ElementName: "AvailabilityZone", Items: stringSliceToInterface(c.AvailabilityZones)}
+	}
+	if len(c.VpcSecurityGroupIds) > 0 {
+		m["VpcSecurityGroupIds"] = protocol.XMLElements{ElementName: "VpcSecurityGroupMembership", Items: vpcSecurityToInterface(c.VpcSecurityGroupIds)}
+	}
+	if c.DBSubnetGroupName != "" {
+		m["DBSubnetGroup"] = c.DBSubnetGroupName
+	}
+	if c.DBClusterParameterGroupName != "" {
+		m["DBClusterParameterGroup"] = c.DBClusterParameterGroupName
+	}
+	if c.KmsKeyId != "" {
+		m["KmsKeyId"] = c.KmsKeyId
+	}
+	if len(c.EnabledCloudwatchLogsExports) > 0 {
+		m["EnabledCloudwatchLogsExports"] = protocol.XMLElements{ElementName: "member", Items: stringSliceToInterface(c.EnabledCloudwatchLogsExports)}
+	}
+	if c.ClusterCreateTime != nil {
+		m["ClusterCreateTime"] = c.ClusterCreateTime.Format(time.RFC3339)
+	}
+	if c.EarliestRestorableTime != nil {
+		m["EarliestRestorableTime"] = c.EarliestRestorableTime.Format(time.RFC3339)
+	}
+	if c.LatestRestorableTime != nil {
+		m["LatestRestorableTime"] = c.LatestRestorableTime.Format(time.RFC3339)
+	}
+	if len(c.AssociatedRoles) > 0 {
+		roles := make([]interface{}, 0, len(c.AssociatedRoles))
+		for _, r := range c.AssociatedRoles {
+			roles = append(roles, map[string]interface{}{"RoleArn": r.RoleArn, "FeatureName": r.FeatureName, "Status": r.Status})
+		}
+		m["AssociatedRoles"] = roles
+	}
+	if c.ReplicationSourceIdentifier != "" {
+		m["ReplicationSourceIdentifier"] = c.ReplicationSourceIdentifier
+	}
+	if c.GlobalClusterIdentifier != "" {
+		m["GlobalClusterIdentifier"] = c.GlobalClusterIdentifier
+	}
+	if c.StorageType != "" {
+		m["StorageType"] = c.StorageType
+	}
+	if c.ServerlessV2ScalingConfiguration != nil {
+		m["ServerlessV2ScalingConfiguration"] = map[string]interface{}{
+			"MinCapacity": c.ServerlessV2ScalingConfiguration.MinCapacity,
+			"MaxCapacity": c.ServerlessV2ScalingConfiguration.MaxCapacity,
+		}
+	}
+	if c.Endpoint != nil {
+		m["Endpoint"] = map[string]interface{}{
+			"Address": c.Endpoint.Address,
+			"Port":    c.Endpoint.Port,
 		}
 	}
 	return m
+}
+
+func vpcSecurityToInterface(ids []string) []interface{} {
+	result := make([]interface{}, len(ids))
+	for i, id := range ids {
+		result[i] = map[string]interface{}{"VpcSecurityGroupId": id, "Status": "active"}
+	}
+	return result
 }
 
 func enrichClusterWithTags(store neptunestore.NeptuneStoreInterface, cluster *neptunestore.DBCluster) map[string]interface{} {
@@ -310,9 +387,11 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 
 	newID := request.GetStringParam(params, "NewDBClusterIdentifier")
 	if newID != "" && newID != id {
+		oldArn := cluster.DBClusterArn
 		oldID := cluster.DBClusterIdentifier
 		cluster.DBClusterIdentifier = newID
 		cluster.DBClusterArn = arnutil.NewARNBuilder(cluster.AccountID, cluster.Region).RDS().Cluster(newID)
+		reparentClusterResources(store, oldArn, cluster.DBClusterArn, oldID, newID)
 		if err := store.CreateCluster(cluster); err != nil {
 			return nil, translateStoreError(err)
 		}
@@ -584,6 +663,67 @@ func (s *NeptuneService) RemoveRoleFromDBCluster(ctx context.Context, reqCtx *re
 // cascadeDeleteClusterResources removes all instances, cluster endpoints, and tags
 // associated with the given cluster. Errors are logged but not returned so that
 // the cluster deletion itself always succeeds.
+// buildRestoredCluster constructs a DBCluster for restore-from-snapshot or
+// point-in-time restore, deriving defaults from the source when not overridden.
+func buildRestoredCluster(clusterID, engine, engineVersion string, params map[string]interface{}, now *time.Time, reqCtx *request.RequestContext) *neptunestore.DBCluster {
+	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
+	if backupRetention == 0 {
+		backupRetention = 1
+	}
+	return &neptunestore.DBCluster{
+		DBClusterIdentifier:         clusterID,
+		Engine:                      engine,
+		EngineVersion:               engineVersion,
+		Status:                      "available",
+		Port:                        request.GetIntParam(params, "Port"),
+		BackupRetentionPeriod:       backupRetention,
+		DBClusterParameterGroupName: request.GetStringParam(params, "DBClusterParameterGroupName"),
+		DBSubnetGroupName:           request.GetStringParam(params, "DBSubnetGroupName"),
+		StorageEncrypted:            request.GetBoolParam(params, "StorageEncrypted"),
+		DeletionProtection:          request.GetBoolParam(params, "DeletionProtection"),
+		ClusterCreateTime:           now,
+		EarliestRestorableTime:      now,
+		LatestRestorableTime:        now,
+		AccountID:                   reqCtx.GetAccountID(),
+		Region:                      reqCtx.GetRegion(),
+		DBClusterArn:                arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Cluster(clusterID),
+	}
+}
+
+// reparentClusterResources migrates tags and updates instance references when
+// a cluster is renamed. Errors are logged but not propagated so the rename
+// itself always succeeds.
+func reparentClusterResources(store neptunestore.NeptuneStoreInterface, oldArn, newArn, oldID, newID string) {
+	tags, err := store.GetTags(oldArn)
+	if err == nil && len(tags) > 0 {
+		if err := store.AddTags(newArn, tags); err != nil {
+			logs.Warn("reparent: failed to copy tags to new cluster ARN", logs.Err(err))
+		} else {
+			keys := make([]string, len(tags))
+			for i, t := range tags {
+				keys[i] = t.Key
+			}
+			if err := store.RemoveTags(oldArn, keys); err != nil {
+				logs.Warn("reparent: failed to remove old cluster tags", logs.Err(err))
+			}
+		}
+	}
+
+	instances, err := store.ListInstances()
+	if err != nil {
+		logs.Warn("reparent: failed to list instances", logs.Err(err))
+	} else {
+		for _, inst := range instances {
+			if inst.DBClusterIdentifier == oldID {
+				inst.DBClusterIdentifier = newID
+				if err := store.UpdateInstance(inst); err != nil {
+					logs.Warn("reparent: failed to update instance cluster ref", logs.String("instance", inst.DBInstanceIdentifier), logs.Err(err))
+				}
+			}
+		}
+	}
+}
+
 func cascadeDeleteClusterResources(store neptunestore.NeptuneStoreInterface, cluster *neptunestore.DBCluster) {
 	clusterID := cluster.DBClusterIdentifier
 

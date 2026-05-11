@@ -30,12 +30,6 @@ type CloudWatchLogsStoreInterface interface {
 	DeleteDestination(name string) error
 	PutDestinationPolicy(name, accessPolicy string) error
 	ListDestinations(prefix string) ([]*Destination, error)
-	Raw() *Store
 }
 
 var _ CloudWatchLogsStoreInterface = (*Store)(nil)
-
-// Raw returns the underlying CloudWatch Logs store.
-func (s *Store) Raw() *Store {
-	return s
-}

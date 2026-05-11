@@ -110,9 +110,6 @@ func (s *NeptuneService) DescribeDBClusterSnapshots(ctx context.Context, reqCtx 
 		if err != nil {
 			return nil, translateStoreError(err)
 		}
-		if snapshot.SnapshotType == "" {
-			snapshot.SnapshotType = "manual"
-		}
 		return map[string]interface{}{
 			"DBClusterSnapshots": protocol.XMLElements{ElementName: "DBClusterSnapshot", Items: []interface{}{snapshot}},
 		}, nil
@@ -128,9 +125,6 @@ func (s *NeptuneService) DescribeDBClusterSnapshots(ctx context.Context, reqCtx 
 	for _, snap := range snapshots {
 		if clusterID != "" && snap.DBClusterIdentifier != clusterID {
 			continue
-		}
-		if snap.SnapshotType == "" {
-			snap.SnapshotType = "manual"
 		}
 		items = append(items, snap)
 	}
@@ -320,31 +314,15 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 	}
 
 	now := time.Now()
-	port := request.GetIntParam(params, "Port")
-	if port == 0 {
-		port = 8182
+	cluster := buildRestoredCluster(clusterID, engine, snapshot.EngineVersion, params, &now, reqCtx)
+	if cluster.Port == 0 {
+		cluster.Port = snapshot.Port
 	}
-	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
-	if backupRetention == 0 {
-		backupRetention = 1
+	if cluster.StorageEncrypted == false && snapshot.StorageEncrypted {
+		cluster.StorageEncrypted = snapshot.StorageEncrypted
 	}
-	cluster := &neptunestore.DBCluster{
-		DBClusterIdentifier:         clusterID,
-		Engine:                      engine,
-		EngineVersion:               snapshot.EngineVersion,
-		Status:                      "available",
-		Port:                        port,
-		BackupRetentionPeriod:       backupRetention,
-		DBClusterParameterGroupName: request.GetStringParam(params, "DBClusterParameterGroupName"),
-		DBSubnetGroupName:           request.GetStringParam(params, "DBSubnetGroupName"),
-		StorageEncrypted:            request.GetBoolParam(params, "StorageEncrypted"),
-		DeletionProtection:          request.GetBoolParam(params, "DeletionProtection"),
-		ClusterCreateTime:           &now,
-		EarliestRestorableTime:      &now,
-		LatestRestorableTime:        &now,
-		AccountID:                   reqCtx.GetAccountID(),
-		Region:                      reqCtx.GetRegion(),
-		DBClusterArn:                arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Cluster(clusterID),
+	if cluster.KmsKeyId == "" && snapshot.KmsKeyId != "" {
+		cluster.KmsKeyId = snapshot.KmsKeyId
 	}
 
 	if err := store.CreateCluster(cluster); err != nil {
@@ -389,31 +367,36 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 	}
 
 	now := time.Now()
-	port := request.GetIntParam(params, "Port")
-	if port == 0 {
-		port = 8182
+	cluster := buildRestoredCluster(clusterID, source.Engine, source.EngineVersion, params, &now, reqCtx)
+	if cluster.Port == 0 {
+		cluster.Port = source.Port
 	}
-	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
-	if backupRetention == 0 {
-		backupRetention = 1
+	if cluster.StorageEncrypted == false && source.StorageEncrypted {
+		cluster.StorageEncrypted = source.StorageEncrypted
 	}
-	cluster := &neptunestore.DBCluster{
-		DBClusterIdentifier:         clusterID,
-		Engine:                      source.Engine,
-		EngineVersion:               source.EngineVersion,
-		Status:                      "available",
-		Port:                        port,
-		BackupRetentionPeriod:       backupRetention,
-		DBClusterParameterGroupName: request.GetStringParam(params, "DBClusterParameterGroupName"),
-		DBSubnetGroupName:           request.GetStringParam(params, "DBSubnetGroupName"),
-		StorageEncrypted:            source.StorageEncrypted,
-		DeletionProtection:          request.GetBoolParam(params, "DeletionProtection"),
-		ClusterCreateTime:           &now,
-		EarliestRestorableTime:      &now,
-		LatestRestorableTime:        &now,
-		AccountID:                   reqCtx.GetAccountID(),
-		Region:                      reqCtx.GetRegion(),
-		DBClusterArn:                arnutil.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).RDS().Cluster(clusterID),
+	if cluster.KmsKeyId == "" && source.KmsKeyId != "" {
+		cluster.KmsKeyId = source.KmsKeyId
+	}
+	if cluster.DBClusterParameterGroupName == "" && source.DBClusterParameterGroupName != "" {
+		cluster.DBClusterParameterGroupName = source.DBClusterParameterGroupName
+	}
+	if cluster.DBSubnetGroupName == "" && source.DBSubnetGroupName != "" {
+		cluster.DBSubnetGroupName = source.DBSubnetGroupName
+	}
+	if len(source.VpcSecurityGroupIds) > 0 {
+		cluster.VpcSecurityGroupIds = source.VpcSecurityGroupIds
+	}
+	if len(source.EnabledCloudwatchLogsExports) > 0 {
+		cluster.EnabledCloudwatchLogsExports = source.EnabledCloudwatchLogsExports
+	}
+	if source.BackupRetentionPeriod > 0 && request.GetIntParam(params, "BackupRetentionPeriod") == 0 {
+		cluster.BackupRetentionPeriod = source.BackupRetentionPeriod
+	}
+	if source.PreferredBackupWindow != "" && request.GetStringParam(params, "PreferredBackupWindow") == "" {
+		cluster.PreferredBackupWindow = source.PreferredBackupWindow
+	}
+	if source.PreferredMaintenanceWindow != "" && request.GetStringParam(params, "PreferredMaintenanceWindow") == "" {
+		cluster.PreferredMaintenanceWindow = source.PreferredMaintenanceWindow
 	}
 
 	if err := store.CreateCluster(cluster); err != nil {

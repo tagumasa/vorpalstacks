@@ -11,20 +11,6 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 )
 
-func secretsManagerMapError(err error) error {
-	switch e := err.(type) {
-	case *tagutil.MissingResourceError:
-		return errors.ErrMissingParameter
-	case *tagutil.MissingTagsError:
-		_ = e
-		return errors.ErrMissingParameter
-	case *tagutil.MissingTagKeysError:
-		_ = e
-		return errors.ErrMissingParameter
-	}
-	return err
-}
-
 func secretsManagerTagConfig(store secretsmanagerstore.SecretStoreInterface, secretName string) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.TagOperationConfig{
@@ -62,7 +48,17 @@ func secretsManagerTagConfig(store secretsmanagerstore.SecretStoreInterface, sec
 		EmptyResponse: func() (interface{}, error) {
 			return response.EmptyResponse(), nil
 		},
-		MapError: secretsManagerMapError,
+		MapError: func(err error) error {
+			switch err.(type) {
+			case *tagutil.MissingResourceError:
+				return errors.ErrMissingParameter
+			case *tagutil.MissingTagsError:
+				return errors.ErrMissingParameter
+			case *tagutil.MissingTagKeysError:
+				return errors.ErrMissingParameter
+			}
+			return mapStoreError(err)
+		},
 	}
 }
 

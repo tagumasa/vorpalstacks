@@ -112,6 +112,10 @@ func (s *SecretStore) CreateSecret(secret *Secret) (*Secret, error) {
 		return nil, err
 	}
 
+	if err := s.writeARNIndex(secret.ARN, secret.Name); err != nil {
+		return nil, err
+	}
+
 	if len(secret.Tags) > 0 {
 		if err := s.TagStore.Tag(key, secret.Tags); err != nil {
 			return nil, err
@@ -143,10 +147,33 @@ func (s *SecretStore) GetSecret(name string) (*Secret, error) {
 	return &secret, nil
 }
 
-// GetSecretByARN retrieves a secret by its ARN from the store.
-// Returns the secret or an error if not found.
-func (s *SecretStore) GetSecretByARN(arn string) (*Secret, error) {
-	var found *Secret
+// arnIndexEntry is the JSON structure stored for ARN index entries.
+// The field uses a distinct JSON key "_arn_name" that does not overlap with
+// any Secret field, so when a ForEach/List scan deserialises the value as a
+// Secret the result has Name="" and is filtered out.
+type arnIndexEntry struct {
+	Name string `json:"_arn_name"`
+}
+
+// arnIndexKey returns the index key for a given ARN. The prefix "#" marks it
+// as an index entry so that ForEach scans skip it automatically.
+func (s *SecretStore) arnIndexKey(arn string) string {
+	return "#arn:" + arn
+}
+
+// writeARNIndex creates a secondary index entry mapping ARN → secret name.
+func (s *SecretStore) writeARNIndex(arn, name string) error {
+	return s.Put(s.arnIndexKey(arn), &arnIndexEntry{Name: name})
+}
+
+// lookupNameByARN resolves a secret name from its ARN via the secondary index.
+// Falls back to a full scan for secrets created before the index was added.
+func (s *SecretStore) lookupNameByARN(arn string) (string, error) {
+	var entry arnIndexEntry
+	if err := s.Get(s.arnIndexKey(arn), &entry); err == nil && entry.Name != "" {
+		return entry.Name, nil
+	}
+	var name string
 	err := s.ForEach(func(key string, value []byte) error {
 		if len(key) > 0 && key[0] == '#' {
 			return nil
@@ -156,29 +183,44 @@ func (s *SecretStore) GetSecretByARN(arn string) (*Secret, error) {
 			return err
 		}
 		if secret.ARN == arn {
-			if secret.DeletedDate != nil || secret.ScheduledDeletionDate != nil {
-				return nil
-			}
-			found = &secret
+			name = secret.Name
 		}
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	if found == nil {
-		return nil, ErrSecretNotFound
+	if name == "" {
+		return "", ErrSecretNotFound
 	}
-	key := s.buildSecretKey(found.Name)
-	tags, err := s.TagStore.List(key)
+	return name, nil
+}
+
+// LookupNameByARN resolves a secret name from its ARN via the secondary index.
+// Unlike GetSecretByARN this does not check soft-deletion status.
+func (s *SecretStore) LookupNameByARN(arn string) (string, error) {
+	return s.lookupNameByARN(arn)
+}
+
+// GetSecretByARN retrieves a secret by its ARN from the store.
+// Uses a secondary index for O(1) lookup with a full-scan fallback.
+func (s *SecretStore) GetSecretByARN(arn string) (*Secret, error) {
+	name, err := s.lookupNameByARN(arn)
 	if err != nil {
 		return nil, err
 	}
-	if tags == nil {
-		tags = make(map[string]string)
+	secret, err := s.GetSecret(name)
+	if err != nil {
+		// The secret may be soft-deleted; try metadata lookup.
+		secret, err = s.GetSecretForMetadata(name)
+		if err != nil {
+			return nil, err
+		}
+		if secret.DeletedDate != nil || secret.ScheduledDeletionDate != nil {
+			return nil, ErrSecretNotFound
+		}
 	}
-	found.Tags = tags
-	return found, nil
+	return secret, nil
 }
 
 // GetSecretForMetadata retrieves a secret by name including soft-deleted ones.
@@ -276,19 +318,13 @@ func (s *SecretStore) DeleteSecret(name string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if !s.Exists(key) {
+	var secret Secret
+	if err := s.BaseStore.Get(key, &secret); err != nil {
 		return ErrSecretNotFound
 	}
 
-	opts := common.ListOptions{MaxItems: 10000}
-	result, err := common.List[SecretVersion](s.versionsStore, opts, func(v *SecretVersion) bool {
-		return v.SecretName == name
-	})
-	if err != nil {
-		return err
-	}
-	for _, version := range result.Items {
-		if err := s.versionsStore.Delete(s.buildVersionKey(name, version.VersionId)); err != nil {
+	for _, versionId := range secret.VersionIDs {
+		if err := s.versionsStore.Delete(s.buildVersionKey(name, versionId)); err != nil {
 			return err
 		}
 	}
@@ -301,9 +337,10 @@ func (s *SecretStore) DeleteSecret(name string) error {
 }
 
 // ListSecrets returns a list of secrets from the store using the specified list options.
+// Callers should filter soft-deleted secrets as needed.
 func (s *SecretStore) ListSecrets(opts common.ListOptions) (*common.ListResult[Secret], error) {
 	return common.List[Secret](s.BaseStore, opts, func(secret *Secret) bool {
-		return secret.DeletedDate == nil && secret.ScheduledDeletionDate == nil
+		return secret.Name != ""
 	})
 }
 
@@ -328,25 +365,22 @@ func (s *SecretStore) GetSecretVersion(name, versionId string) (*SecretVersion, 
 
 // GetSecretVersionByStage retrieves a version of a secret by its stage (AWSCURRENT, AWSPREVIOUS, etc.)
 func (s *SecretStore) GetSecretVersionByStage(name, stage string) (*SecretVersion, error) {
-	opts := common.ListOptions{MaxItems: 10000}
-	result, err := common.List[SecretVersion](s.versionsStore, opts, func(v *SecretVersion) bool {
-		if v.SecretName != name {
-			return false
+	secret, err := s.GetSecretForMetadata(name)
+	if err != nil {
+		return nil, err
+	}
+	for _, versionId := range secret.VersionIDs {
+		var version SecretVersion
+		if err := s.versionsStore.Get(s.buildVersionKey(name, versionId), &version); err != nil {
+			continue
 		}
-		for _, s := range v.VersionStages {
-			if s == stage {
-				return true
+		for _, st := range version.VersionStages {
+			if st == stage {
+				return &version, nil
 			}
 		}
-		return false
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list secret versions: %w", err)
 	}
-	if len(result.Items) == 0 {
-		return nil, ErrInvalidVersionId
-	}
-	return result.Items[0], nil
+	return nil, ErrInvalidVersionId
 }
 
 // ListSecretTags retrieves the tags associated with a secret.
@@ -599,6 +633,99 @@ func (s *SecretStore) getSecretForMetadataLocked(name string) (*Secret, error) {
 		return nil, err
 	}
 	return &secret, nil
+}
+
+// MoveStage atomically moves a staging label from one version to another.
+// All version stage reads and writes execute under a single mutex lock so that
+// no concurrent request can observe an intermediate state.
+func (s *SecretStore) MoveStage(secret *Secret, versionStage, moveToVersionId, removeFromVersionId string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if removeFromVersionId != "" && removeFromVersionId != moveToVersionId {
+		removeKey := s.buildVersionKey(secret.Name, removeFromVersionId)
+		var removeVer SecretVersion
+		if err := s.versionsStore.Get(removeKey, &removeVer); err != nil {
+			return fmt.Errorf("failed to read remove-from version during MoveStage: %w", err)
+		}
+		newStages := make([]string, 0, len(removeVer.VersionStages))
+		for _, st := range removeVer.VersionStages {
+			if st != versionStage {
+				newStages = append(newStages, st)
+			}
+		}
+		removeVer.VersionStages = newStages
+		if err := s.versionsStore.Put(removeKey, &removeVer); err != nil {
+			return fmt.Errorf("failed to remove stage from version during MoveStage: %w", err)
+		}
+	}
+
+	targetKey := s.buildVersionKey(secret.Name, moveToVersionId)
+	var targetVer SecretVersion
+	if err := s.versionsStore.Get(targetKey, &targetVer); err != nil {
+		return fmt.Errorf("failed to read target version during MoveStage: %w", err)
+	}
+
+	found := false
+	for _, st := range targetVer.VersionStages {
+		if st == versionStage {
+			found = true
+			break
+		}
+	}
+	if !found {
+		targetVer.VersionStages = append(targetVer.VersionStages, versionStage)
+	}
+
+	if versionStage == "AWSCURRENT" {
+		oldPrevious, prevErr := s.getSecretVersionByStageLocked(secret.Name, "AWSPREVIOUS")
+		if prevErr == nil && oldPrevious.VersionId != moveToVersionId {
+			prevStages := make([]string, 0, len(oldPrevious.VersionStages))
+			for _, st := range oldPrevious.VersionStages {
+				if st != "AWSPREVIOUS" {
+					prevStages = append(prevStages, st)
+				}
+			}
+			prevKey := s.buildVersionKey(secret.Name, oldPrevious.VersionId)
+			oldPrevious.VersionStages = prevStages
+			if err := s.versionsStore.Put(prevKey, &oldPrevious); err != nil {
+				return fmt.Errorf("failed to clean AWSPREVIOUS from old previous version during MoveStage: %w", err)
+			}
+		}
+
+		if removeFromVersionId != "" && removeFromVersionId != moveToVersionId {
+			oldCurrentKey := s.buildVersionKey(secret.Name, removeFromVersionId)
+			var oldCurrentVer SecretVersion
+			if err := s.versionsStore.Get(oldCurrentKey, &oldCurrentVer); err == nil {
+				hasPrev := false
+				for _, st := range oldCurrentVer.VersionStages {
+					if st == "AWSPREVIOUS" {
+						hasPrev = true
+						break
+					}
+				}
+				if !hasPrev {
+					oldCurrentVer.VersionStages = append(oldCurrentVer.VersionStages, "AWSPREVIOUS")
+					if err := s.versionsStore.Put(oldCurrentKey, &oldCurrentVer); err != nil {
+						return fmt.Errorf("failed to add AWSPREVIOUS to old current version during MoveStage: %w", err)
+					}
+				}
+			}
+		}
+
+		secret.CurrentVersion = moveToVersionId
+		secret.LastChangedDate = time.Now().UTC()
+		secretKey := s.buildSecretKey(secret.Name)
+		if err := s.Put(secretKey, secret); err != nil {
+			return fmt.Errorf("failed to update secret metadata during MoveStage: %w", err)
+		}
+	}
+
+	if err := s.versionsStore.Put(targetKey, &targetVer); err != nil {
+		return fmt.Errorf("failed to add stage to target version during MoveStage: %w", err)
+	}
+
+	return nil
 }
 
 // CreateVersionDirect creates a secret version with a specific version ID (used for replication).

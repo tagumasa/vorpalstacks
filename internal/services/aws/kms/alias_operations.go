@@ -93,8 +93,13 @@ func (s *KMSService) DeleteAlias(ctx context.Context, reqCtx *request.RequestCon
 		return nil, ErrInvalidAliasName
 	}
 
-	if !stores.aliases.Exists(aliasName) {
+	alias, err := stores.aliases.Get(aliasName)
+	if err != nil {
 		return nil, ErrAliasNotFound
+	}
+
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "DeleteAlias", alias.TargetKeyID, nil); err != nil {
+		return nil, err
 	}
 
 	if err := stores.aliases.Delete(aliasName); err != nil {

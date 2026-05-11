@@ -21,6 +21,7 @@ var (
 	ErrEventSubscriptionNotFound = errors.New("neptune: EventSubscription not found")
 	// ErrDBClusterEndpointNotFound is returned when a cluster endpoint cannot be found.
 	ErrDBClusterEndpointNotFound = errors.New("neptune: DBClusterEndpoint not found")
+	ErrEventNotFound             = errors.New("neptune: Event not found")
 	// ErrDBClusterAlreadyExists is returned when a DB cluster with the given identifier already exists.
 	ErrDBClusterAlreadyExists = errors.New("neptune: DBCluster already exists")
 	// ErrDBInstanceAlreadyExists is returned when a DB instance with the given identifier already exists.
@@ -39,6 +40,7 @@ var (
 	ErrEventSubscriptionAlreadyExists = errors.New("neptune: EventSubscription already exists")
 	// ErrDBClusterEndpointAlreadyExists is returned when a cluster endpoint with the given identifier already exists.
 	ErrDBClusterEndpointAlreadyExists = errors.New("neptune: DBClusterEndpoint already exists")
+	ErrEventAlreadyExists             = errors.New("neptune: Event already exists")
 	// ErrInvalidParameterGroupState is returned when a parameter group is not in a valid state for the requested operation.
 	ErrInvalidParameterGroupState = errors.New("neptune: InvalidDBClusterParameterGroupState")
 )

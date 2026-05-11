@@ -134,6 +134,7 @@ type Backend interface {
 	GenerateDataKey(keyID string, keySpec string, numberOfBytes int, encryptionContext map[string]string) (*GenerateDataKeyResult, error)
 
 	GetPublicKey(keyID string) ([]byte, error)
+	GenerateKeyPair(keySpec KeySpec) (privateKeyDER []byte, publicKeyDER []byte, err error)
 	IsKeyAvailable(keyID string) bool
 	KeyExists(keyID string) bool
 }

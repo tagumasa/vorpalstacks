@@ -14,6 +14,7 @@ message LogGroup {
   int32 metric_filter_count = 7;
   int64 stored_bytes = 8;
   map<string, string> tags = 9;
+  string log_group_class = 10;
 }
 
 message LogStream {
@@ -66,4 +67,14 @@ message SubscriptionFilter {
 message LogEntry {
   int64 timestamp = 1;
   string message = 2;
+}
+
+message Destination {
+  string name = 1;
+  string arn = 2;
+  string role_arn = 3;
+  string target_arn = 4;
+  string access_policy = 5;
+  int64 creation_time = 6;
+  map<string, string> tags = 7;
 }

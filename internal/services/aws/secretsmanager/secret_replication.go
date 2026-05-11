@@ -98,7 +98,7 @@ func (s *SecretsManagerService) ReplicateSecretToRegions(ctx context.Context, re
 			continue
 		}
 
-		if len(secret.SecretString) > 0 || len(secret.SecretBinary) > 0 && replica.CurrentVersion != "" {
+		if (len(secret.SecretString) > 0 || len(secret.SecretBinary) > 0) && replica.CurrentVersion != "" {
 			srcVersions, err := store.ListSecretVersions(secret.Name)
 			if err == nil && len(srcVersions) > 0 {
 				for _, v := range srcVersions {

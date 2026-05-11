@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"math/big"
 	"net/http"
+	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
@@ -94,13 +95,14 @@ func buildCharset(excludeCharacters string, excludeNumbers, excludePunctuation, 
 }
 
 func removeChar(s string, c byte) string {
-	result := make([]byte, 0, len(s))
+	var b strings.Builder
+	b.Grow(len(s))
 	for i := 0; i < len(s); i++ {
 		if s[i] != c {
-			result = append(result, s[i])
+			b.WriteByte(s[i])
 		}
 	}
-	return string(result)
+	return b.String()
 }
 
 func generatePassword(charset string, length int) (string, error) {
@@ -123,23 +125,17 @@ func generatePasswordWithRequiredTypes(charset string, length int, excludeCharac
 	charsetLen := big.NewInt(int64(len(charset)))
 
 	var requiredChars []byte
-	var requiredPositions []int
-
 	if !excludeLowercase {
 		requiredChars = append(requiredChars, getRandomCharFromSet(lowercaseLetters, excludeCharacters))
-		requiredPositions = append(requiredPositions, 0)
 	}
 	if !excludeUppercase {
 		requiredChars = append(requiredChars, getRandomCharFromSet(uppercaseLetters, excludeCharacters))
-		requiredPositions = append(requiredPositions, 1)
 	}
 	if !excludeNumbers {
 		requiredChars = append(requiredChars, getRandomCharFromSet(digits, excludeCharacters))
-		requiredPositions = append(requiredPositions, 2)
 	}
 	if !excludePunctuation {
 		requiredChars = append(requiredChars, getRandomCharFromSet(punctuation, excludeCharacters))
-		requiredPositions = append(requiredPositions, 3)
 	}
 
 	for i := 0; i < length; i++ {
@@ -150,9 +146,31 @@ func generatePasswordWithRequiredTypes(charset string, length int, excludeCharac
 		result[i] = charset[n.Int64()]
 	}
 
-	for i, pos := range requiredPositions {
-		if pos < length {
-			result[pos] = requiredChars[i]
+	for i := len(requiredChars) - 1; i > 0; i-- {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		if err != nil {
+			return "", err
+		}
+		j := int(n.Int64())
+		requiredChars[i], requiredChars[j] = requiredChars[j], requiredChars[i]
+	}
+
+	positions := make([]int, length)
+	for i := range positions {
+		positions[i] = i
+	}
+	for i := length - 1; i > 0; i-- {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		if err != nil {
+			return "", err
+		}
+		j := int(n.Int64())
+		positions[i], positions[j] = positions[j], positions[i]
+	}
+
+	for i, ch := range requiredChars {
+		if i < length {
+			result[positions[i]] = ch
 		}
 	}
 

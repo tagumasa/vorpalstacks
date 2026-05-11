@@ -11,86 +11,36 @@ import (
 
 // PutRecord writes a single data record into a Kinesis stream.
 func (s *KinesisService) PutRecord(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	data := request.GetParamLowerFirst(req.Parameters, "Data")
-	partitionKey := request.GetParamLowerFirst(req.Parameters, "PartitionKey")
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" || data == "" || partitionKey == "" {
+	data := request.GetParamLowerFirst(req.Parameters, "Data")
+	partitionKey := request.GetParamLowerFirst(req.Parameters, "PartitionKey")
+	if data == "" || partitionKey == "" {
 		return nil, ErrInvalidArgument
 	}
 
-	shards, err := store.ListShards(streamName, nil, "", 0)
+	record, targetShardID, err := store.PutRecordWithShardSelection(streamName, partitionKey, data)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
-	var activeShards []*kinesisstore.Shard
-	for _, shard := range shards {
-		if shard.SequenceNumberRange != nil && shard.SequenceNumberRange.EndingSequenceNumber == "" {
-			activeShards = append(activeShards, shard)
-		}
-	}
-
-	if len(activeShards) == 0 {
-		return nil, ErrResourceNotFound
-	}
-
-	targetShard := store.SelectShardByPartitionKey(activeShards, partitionKey)
-	if targetShard == nil {
-		targetShard = activeShards[0]
-	}
-
-	record, err := store.PutRecord(streamName, targetShard.ShardID, partitionKey, data)
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	encType := "NONE"
-	if stream, err := store.GetStream(streamName); err == nil && stream.EncryptionType != "" {
-		encType = stream.EncryptionType
-	}
+	stream, _ := store.GetStream(streamName)
 
 	return map[string]interface{}{
-		"ShardId":        targetShard.ShardID,
+		"ShardId":        targetShardID,
 		"SequenceNumber": record.SequenceNumber,
-		"EncryptionType": encType,
+		"EncryptionType": resolveEncryptionType(stream),
 	}, nil
 }
 
 // PutRecords writes multiple data records into a Kinesis stream.
 func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
-	}
-
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
 	}
 
 	recordsRaw := req.Parameters["Records"]
@@ -102,29 +52,25 @@ func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.Request
 	switch v := recordsRaw.(type) {
 	case []interface{}:
 		for _, r := range v {
-			if rm, ok := r.(map[string]interface{}); ok {
-				data := ""
-				if d, ok := rm["Data"].(string); ok {
-					data = d
-				}
-				pk := ""
-				if p, ok := rm["PartitionKey"].(string); ok {
-					pk = p
-				}
-				if pk == "" {
-					return nil, ErrValidation
-				}
-				if len(pk) > 256 {
-					return nil, ErrValidation
-				}
-				if len(data) > 1048576 {
-					return nil, ErrValidation
-				}
-				requests = append(requests, kinesisstore.PutRecordRequest{
-					Data:         data,
-					PartitionKey: pk,
-				})
+			rm, ok := r.(map[string]interface{})
+			if !ok {
+				continue
 			}
+			data, _ := rm["Data"].(string)
+			pk, _ := rm["PartitionKey"].(string)
+			if pk == "" {
+				return nil, ErrValidation
+			}
+			if len(pk) > 256 {
+				return nil, ErrValidation
+			}
+			if len(data) > 1048576 {
+				return nil, ErrValidation
+			}
+			requests = append(requests, kinesisstore.PutRecordRequest{
+				Data:         data,
+				PartitionKey: pk,
+			})
 		}
 	}
 
@@ -141,13 +87,12 @@ func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.Request
 		return nil, s.mapStoreError(err)
 	}
 
+	stream, _ := store.GetStream(streamName)
+	encType := resolveEncryptionType(stream)
+
 	var failedCount int32
-	var formattedResults []map[string]interface{}
-	encType := "NONE"
-	if stream, err := store.GetStream(streamName); err == nil && stream.EncryptionType != "" {
-		encType = stream.EncryptionType
-	}
-	for _, r := range results {
+	formattedResults := make([]map[string]interface{}, len(results))
+	for i, r := range results {
 		entry := map[string]interface{}{
 			"SequenceNumber": r.SequenceNumber,
 			"ShardId":        r.ShardID,
@@ -158,7 +103,7 @@ func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.Request
 			entry["ErrorCode"] = r.ErrorCode
 			entry["ErrorMessage"] = r.ErrorMessage
 		}
-		formattedResults = append(formattedResults, entry)
+		formattedResults[i] = entry
 	}
 
 	return map[string]interface{}{
@@ -198,15 +143,18 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 		return nil, s.mapStoreError(err)
 	}
 
-	formattedRecords := make([]map[string]interface{}, 0)
-	for _, r := range records {
-		formattedRecords = append(formattedRecords, map[string]interface{}{
+	stream, _ := store.GetStream(iterator.StreamName)
+	encType := resolveEncryptionType(stream)
+
+	formattedRecords := make([]map[string]interface{}, len(records))
+	for i, r := range records {
+		formattedRecords[i] = map[string]interface{}{
 			"SequenceNumber":              r.SequenceNumber,
 			"ApproximateArrivalTimestamp": r.ApproximateArrivalTimestamp.Unix(),
 			"Data":                        r.Data,
 			"PartitionKey":                r.PartitionKey,
-			"EncryptionType":              "NONE",
-		})
+			"EncryptionType":              encType,
+		}
 	}
 
 	var nextIterator interface{}

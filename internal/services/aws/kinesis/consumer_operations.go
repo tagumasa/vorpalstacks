@@ -49,13 +49,7 @@ func (s *KinesisService) RegisterStreamConsumer(ctx context.Context, reqCtx *req
 	}
 
 	return map[string]interface{}{
-		"Consumer": map[string]interface{}{
-			"ConsumerName":              consumer.ConsumerName,
-			"ConsumerARN":               consumer.ConsumerARN,
-			"StreamARN":                 consumer.StreamARN,
-			"ConsumerStatus":            consumer.ConsumerStatus,
-			"ConsumerCreationTimestamp": float64(consumer.ConsumerCreationTimestamp.Unix()),
-		},
+		"Consumer": formatConsumer(consumer),
 	}, nil
 }
 
@@ -69,11 +63,12 @@ func (s *KinesisService) DeregisterStreamConsumer(ctx context.Context, reqCtx *r
 		return nil, ErrInvalidArgument
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	if consumerName != "" && streamARN != "" {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
 		consumer, err := store.GetStreamConsumerByName(streamARN, consumerName)
 		if err != nil {
 			return nil, s.mapStoreError(err)
@@ -81,10 +76,6 @@ func (s *KinesisService) DeregisterStreamConsumer(ctx context.Context, reqCtx *r
 		consumerARN = consumer.ConsumerARN
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
 	if err := store.DeregisterStreamConsumer(consumerARN); err != nil {
 		return nil, s.mapStoreError(err)
 	}
@@ -102,13 +93,12 @@ func (s *KinesisService) DescribeStreamConsumer(ctx context.Context, reqCtx *req
 		return nil, ErrInvalidArgument
 	}
 
-	var consumer *kinesisstore.Consumer
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
+	var consumer *kinesisstore.Consumer
 	if consumerARN != "" {
 		consumer, err = store.GetStreamConsumer(consumerARN)
 	} else if consumerName != "" && streamARN != "" {
@@ -122,13 +112,7 @@ func (s *KinesisService) DescribeStreamConsumer(ctx context.Context, reqCtx *req
 	}
 
 	return map[string]interface{}{
-		"ConsumerDescription": map[string]interface{}{
-			"ConsumerName":              consumer.ConsumerName,
-			"ConsumerARN":               consumer.ConsumerARN,
-			"StreamARN":                 consumer.StreamARN,
-			"ConsumerStatus":            consumer.ConsumerStatus,
-			"ConsumerCreationTimestamp": float64(consumer.ConsumerCreationTimestamp.Unix()),
-		},
+		"ConsumerDescription": formatConsumer(consumer),
 	}, nil
 }
 
@@ -155,15 +139,9 @@ func (s *KinesisService) ListStreamConsumers(ctx context.Context, reqCtx *reques
 		return nil, s.mapStoreError(err)
 	}
 
-	var formattedConsumers []map[string]interface{}
-	for _, c := range consumers {
-		formattedConsumers = append(formattedConsumers, map[string]interface{}{
-			"ConsumerName":              c.ConsumerName,
-			"ConsumerARN":               c.ConsumerARN,
-			"StreamARN":                 c.StreamARN,
-			"ConsumerStatus":            c.ConsumerStatus,
-			"ConsumerCreationTimestamp": float64(c.ConsumerCreationTimestamp.Unix()),
-		})
+	formattedConsumers := make([]map[string]interface{}, len(consumers))
+	for i, c := range consumers {
+		formattedConsumers[i] = formatConsumer(c)
 	}
 
 	return map[string]interface{}{

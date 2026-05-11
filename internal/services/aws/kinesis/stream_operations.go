@@ -26,18 +26,7 @@ func (s *KinesisService) CreateStream(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrInvalidArgument
 	}
 
-	streamMode := kinesisstore.StreamModeProvisioned
-	streamModeDetails := request.GetMapParam(req.Parameters, "StreamModeDetails")
-	if streamModeDetails == nil {
-		streamModeDetails = request.GetMapParam(req.Parameters, "streamModeDetails")
-	}
-	if streamModeDetails != nil {
-		if v, ok := streamModeDetails["StreamMode"].(string); ok {
-			streamMode = kinesisstore.StreamMode(v)
-		} else if v, ok := streamModeDetails["streamMode"].(string); ok {
-			streamMode = kinesisstore.StreamMode(v)
-		}
-	}
+	streamMode := parseStreamModeDetails(req.Parameters)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -50,7 +39,7 @@ func (s *KinesisService) CreateStream(ctx context.Context, reqCtx *request.Reque
 	}
 
 	if tagList := tags.ParseTags(req.Parameters, "Tags"); len(tagList) > 0 {
-		tagMap := make(map[string]string)
+		tagMap := make(map[string]string, len(tagList))
 		for _, t := range tagList {
 			tagMap[t.Key] = t.Value
 		}
@@ -66,24 +55,9 @@ func (s *KinesisService) CreateStream(ctx context.Context, reqCtx *request.Reque
 
 // DeleteStream deletes a Kinesis stream.
 func (s *KinesisService) DeleteStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
-	}
-
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
 	}
 
 	if err := store.DeleteStream(streamName); err != nil {
@@ -95,24 +69,9 @@ func (s *KinesisService) DeleteStream(ctx context.Context, reqCtx *request.Reque
 
 // DescribeStream returns detailed information about a Kinesis stream.
 func (s *KinesisService) DescribeStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
-	}
-
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
 	}
 
 	stream, err := store.GetStream(streamName)
@@ -125,23 +84,18 @@ func (s *KinesisService) DescribeStream(ctx context.Context, reqCtx *request.Req
 		return nil, s.mapStoreError(err)
 	}
 
-	encryptionType := stream.EncryptionType
-	if encryptionType == "" {
-		encryptionType = "NONE"
-	}
-
 	return map[string]interface{}{
 		"StreamDescription": map[string]interface{}{
 			"StreamName":              stream.StreamName,
 			"StreamARN":               stream.StreamARN,
 			"StreamStatus":            stream.StreamStatus,
 			"StreamModeDetails":       formatStreamModeDetails(stream.StreamModeDetails),
-			"Shards":                  s.formatShards(shards),
+			"Shards":                  formatShards(shards),
 			"HasMoreShards":           false,
 			"RetentionPeriodHours":    stream.RetentionPeriodHours,
 			"StreamCreationTimestamp": float64(stream.CreatedAt.Unix()),
 			"EnhancedMonitoring":      formatEnhancedMonitoring(stream.EnhancedMonitoring),
-			"EncryptionType":          encryptionType,
+			"EncryptionType":          resolveEncryptionType(stream),
 			"KeyId":                   stream.KeyID,
 		},
 	}, nil
@@ -149,34 +103,14 @@ func (s *KinesisService) DescribeStream(ctx context.Context, reqCtx *request.Req
 
 // DescribeStreamSummary returns summary information about a Kinesis stream.
 func (s *KinesisService) DescribeStreamSummary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
-	}
-
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
 	}
 
 	stream, err := store.GetStream(streamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
-	}
-
-	encryptionType := stream.EncryptionType
-	if encryptionType == "" {
-		encryptionType = "NONE"
 	}
 
 	return map[string]interface{}{
@@ -190,7 +124,7 @@ func (s *KinesisService) DescribeStreamSummary(ctx context.Context, reqCtx *requ
 			"RetentionPeriodHours":    stream.RetentionPeriodHours,
 			"StreamCreationTimestamp": float64(stream.CreatedAt.Unix()),
 			"EnhancedMonitoring":      formatEnhancedMonitoring(stream.EnhancedMonitoring),
-			"EncryptionType":          encryptionType,
+			"EncryptionType":          resolveEncryptionType(stream),
 			"KeyId":                   stream.KeyID,
 			"MaxRecordSizeInKiB":      stream.MaxRecordSizeInKiB,
 		},
@@ -204,15 +138,7 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	result, err := store.ListStreams(storecommon.ListOptions{MaxItems: 10000})
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-	streams := result.Items
-
 	exclusiveStartName := request.GetStringParam(req.Parameters, "ExclusiveStartStreamName")
-	// The SDK paginator sends NextToken instead of ExclusiveStartStreamName
-	// on subsequent pages; accept both for compatibility.
 	if exclusiveStartName == "" {
 		exclusiveStartName = request.GetStringParam(req.Parameters, "NextToken")
 	}
@@ -221,16 +147,22 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 		limit = 100
 	}
 
-	streamNames := []string{}
-	streamSummaries := []map[string]interface{}{}
-	started := exclusiveStartName == ""
-	for _, stream := range streams {
-		if !started {
-			if stream.StreamName == exclusiveStartName {
-				started = true
-			}
-			continue
-		}
+	result, err := store.ListStreams(storecommon.ListOptions{
+		Marker:   exclusiveStartName,
+		MaxItems: limit + 1,
+	})
+	if err != nil {
+		return nil, s.mapStoreError(err)
+	}
+
+	hasMore := len(result.Items) > limit
+	if hasMore {
+		result.Items = result.Items[:limit]
+	}
+
+	streamNames := make([]string, 0, len(result.Items))
+	streamSummaries := make([]map[string]interface{}, 0, len(result.Items))
+	for _, stream := range result.Items {
 		streamNames = append(streamNames, stream.StreamName)
 		streamSummaries = append(streamSummaries, map[string]interface{}{
 			"StreamName":              stream.StreamName,
@@ -239,12 +171,8 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 			"StreamModeDetails":       formatStreamModeDetails(stream.StreamModeDetails),
 			"StreamCreationTimestamp": float64(stream.CreatedAt.Unix()),
 		})
-		if len(streamSummaries) >= limit {
-			break
-		}
 	}
 
-	hasMore := len(streamSummaries) >= limit
 	nextToken := ""
 	if hasMore && len(streamSummaries) > 0 {
 		nextToken = streamSummaries[len(streamSummaries)-1]["StreamName"].(string)
@@ -261,19 +189,7 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 // UpdateStreamMode updates the stream mode of a Kinesis stream.
 func (s *KinesisService) UpdateStreamMode(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
-	streamModeDetails := request.GetMapParam(req.Parameters, "StreamModeDetails")
-	if streamModeDetails == nil {
-		streamModeDetails = request.GetMapParam(req.Parameters, "streamModeDetails")
-	}
-	var streamMode string
-	if streamModeDetails != nil {
-		if v, ok := streamModeDetails["StreamMode"].(string); ok {
-			streamMode = v
-		} else if v, ok := streamModeDetails["streamMode"].(string); ok {
-			streamMode = v
-		}
-	}
+	streamMode := parseStreamModeDetails(req.Parameters)
 
 	if streamARN == "" || streamMode == "" {
 		return nil, ErrInvalidArgument
@@ -289,7 +205,7 @@ func (s *KinesisService) UpdateStreamMode(ctx context.Context, reqCtx *request.R
 		return nil, s.mapStoreError(err)
 	}
 
-	stream.StreamModeDetails = &kinesisstore.StreamModeDetails{StreamMode: kinesisstore.StreamMode(streamMode)}
+	stream.StreamModeDetails = &kinesisstore.StreamModeDetails{StreamMode: streamMode}
 	if err := store.UpdateStream(stream); err != nil {
 		return nil, s.mapStoreError(err)
 	}
@@ -299,7 +215,7 @@ func (s *KinesisService) UpdateStreamMode(ctx context.Context, reqCtx *request.R
 	}, nil
 }
 
-func (s *KinesisService) formatShards(shards []*kinesisstore.Shard) []map[string]interface{} {
+func formatShards(shards []*kinesisstore.Shard) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(shards))
 	for _, shard := range shards {
 		m := map[string]interface{}{
@@ -352,12 +268,12 @@ func formatStreamModeDetails(smd *kinesisstore.StreamModeDetails) map[string]int
 }
 
 func mergeMetrics(current, added []string) []string {
-	seen := make(map[string]bool)
+	seen := make(map[string]bool, len(current)+len(added))
 	for _, m := range current {
 		seen[m] = true
 	}
-	result := make([]string, len(current))
-	copy(result, current)
+	result := make([]string, 0, len(current)+len(added))
+	result = append(result, current...)
 	for _, m := range added {
 		if !seen[m] {
 			result = append(result, m)
@@ -368,7 +284,7 @@ func mergeMetrics(current, added []string) []string {
 }
 
 func subtractMetrics(current, removed []string) []string {
-	removeSet := make(map[string]bool)
+	removeSet := make(map[string]bool, len(removed))
 	for _, m := range removed {
 		removeSet[m] = true
 	}

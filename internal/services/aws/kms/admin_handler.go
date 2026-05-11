@@ -89,7 +89,11 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 		origin = kmsstore.OriginTypeExternal
 	}
 
-	keyID := ""
+	keyID, err := kmsstore.GenerateKeyID()
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	key, err := h.store.Create(keyID, keyUsage, keySpec, req.Msg.GetDescription(), origin, req.Msg.GetMultiregion())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)

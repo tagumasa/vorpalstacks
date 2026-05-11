@@ -102,8 +102,8 @@ func TestGetLambdaError(t *testing.T) {
 
 func TestValidateRuntime(t *testing.T) {
 	t.Run("valid Node.js runtimes", func(t *testing.T) {
+		assert.True(t, ValidateRuntime("nodejs24.x"))
 		assert.True(t, ValidateRuntime("nodejs22.x"))
-		assert.True(t, ValidateRuntime("nodejs20.x"))
 	})
 
 	t.Run("valid Python runtimes", func(t *testing.T) {
@@ -128,9 +128,9 @@ func TestValidateRuntime(t *testing.T) {
 	})
 
 	t.Run("valid Ruby runtimes", func(t *testing.T) {
+		assert.True(t, ValidateRuntime("ruby4.0"))
 		assert.True(t, ValidateRuntime("ruby3.4"))
 		assert.True(t, ValidateRuntime("ruby3.3"))
-		assert.True(t, ValidateRuntime("ruby3.2"))
 	})
 
 	t.Run("valid custom runtimes", func(t *testing.T) {
@@ -140,7 +140,7 @@ func TestValidateRuntime(t *testing.T) {
 
 	t.Run("case insensitive", func(t *testing.T) {
 		assert.True(t, ValidateRuntime("PYTHON3.12"))
-		assert.True(t, ValidateRuntime("NodeJS20.x"))
+		assert.True(t, ValidateRuntime("NodeJS22.x"))
 	})
 
 	t.Run("invalid runtime", func(t *testing.T) {

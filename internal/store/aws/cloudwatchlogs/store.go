@@ -3,7 +3,6 @@ package cloudwatchlogs
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -106,15 +105,10 @@ func (s *Store) DeleteLogGroup(name string) error {
 		return err
 	}
 
-	streams, _, err := s.ListLogStreams(name, "", "", 1000)
-	if err != nil {
+	if err := s.deleteAllLogStreams(name); err != nil {
 		return err
 	}
-	for _, stream := range streams {
-		if err := s.DeleteLogStream(name, stream.Name); err != nil {
-			return err
-		}
-	}
+
 	chunks := s.ListChunksForLogGroup(name)
 	for _, chunk := range chunks {
 		cp, err := s.safeChunkPath(chunk.ChunkPath)
@@ -143,6 +137,25 @@ func (s *Store) DeleteLogGroup(name string) error {
 	}
 	key := s.logGroupKey(name)
 	return s.Delete(key)
+}
+
+func (s *Store) deleteAllLogStreams(logGroupName string) error {
+	marker := ""
+	for {
+		streams, nextMarker, err := s.ListLogStreams(logGroupName, "", marker, 1000)
+		if err != nil {
+			return err
+		}
+		for _, stream := range streams {
+			if err := s.DeleteLogStream(logGroupName, stream.Name); err != nil {
+				return err
+			}
+		}
+		if nextMarker == "" {
+			return nil
+		}
+		marker = nextMarker
+	}
 }
 
 // ListLogGroups lists CloudWatch Logs log groups with optional prefix and pagination.
@@ -778,17 +791,17 @@ func (s *Store) PutDestination(dest *Destination) error {
 			dest.CreationTime = time.Now().UnixMilli()
 		}
 	}
-	return s.Put(key, dest)
+	return s.PutProto(key, DestinationToProto(dest))
 }
 
 // GetDestination retrieves a CloudWatch Logs destination by name.
 func (s *Store) GetDestination(name string) (*Destination, error) {
 	key := s.destinationKey(name)
-	var dest Destination
-	if err := s.Get(key, &dest); err != nil {
+	var p pb.Destination
+	if err := s.GetProto(key, &p); err != nil {
 		return nil, ErrDestinationNotFound
 	}
-	return &dest, nil
+	return ProtoToDestination(&p), nil
 }
 
 // DeleteDestination deletes a CloudWatch Logs destination by name.
@@ -807,7 +820,7 @@ func (s *Store) PutDestinationPolicy(name, accessPolicy string) error {
 		return err
 	}
 	dest.AccessPolicy = accessPolicy
-	return s.Put("destination:"+name, dest)
+	return s.PutProto(s.destinationKey(name), DestinationToProto(dest))
 }
 
 // ListDestinations returns all CloudWatch Logs destinations, optionally filtered by name prefix.
@@ -816,12 +829,13 @@ func (s *Store) ListDestinations(prefix string) ([]*Destination, error) {
 	var destinations []*Destination
 
 	if err := s.ScanPrefix(destPrefix, func(key string, value []byte) error {
-		var dest Destination
-		if err := json.Unmarshal(value, &dest); err != nil {
+		var p pb.Destination
+		if err := proto.Unmarshal(value, &p); err != nil {
 			return nil
 		}
+		dest := ProtoToDestination(&p)
 		if prefix == "" || strings.HasPrefix(dest.Name, prefix) {
-			destinations = append(destinations, &dest)
+			destinations = append(destinations, dest)
 		}
 		return nil
 	}); err != nil {

@@ -123,53 +123,33 @@ func (s *CloudTrailStore) CreateTrail(trail *Trail) (*Trail, error) {
 		trail.Tags = make(map[string]string)
 	}
 
-	if s.storage != nil {
-		err := s.storage.Update(context.Background(), func(txn storage.Transaction) error {
-			trailData, err := proto.Marshal(TrailToProto(trail))
-			if err != nil {
-				return err
-			}
-
-			trailsBucket := txn.Bucket(trailBucketName(s.region))
-			if err := trailsBucket.Put([]byte(trail.Name), trailData); err != nil {
-				return err
-			}
-
-			if s.arnIndexStore != nil {
-				arnIndexBucket := txn.Bucket(arnIndexBucketName(s.region))
-				if err := arnIndexBucket.Put([]byte(trail.TrailARN), []byte(trail.Name)); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		if len(trail.Tags) > 0 {
-			if err := s.TagStore.Tag(trail.Name, trail.Tags); err != nil {
-				return nil, err
-			}
-		}
-
-		if trail.LogFileValidationEnabled {
-			if _, err := s.GenerateAndStorePublicKey(trail.Name); err != nil {
-				return nil, fmt.Errorf("failed to generate public key for trail: %w", err)
-			}
-		}
-
-		return trail, nil
-	}
-
-	if err := s.PutProto(trail.Name, TrailToProto(trail)); err != nil {
+	trailData, err := proto.Marshal(TrailToProto(trail))
+	if err != nil {
 		return nil, err
 	}
 
-	if s.arnIndexStore != nil {
-		if err := s.arnIndexStore.Put(trail.TrailARN, trail.Name); err != nil {
+	if s.storage != nil {
+		if err := s.storage.Update(context.Background(), func(txn storage.Transaction) error {
+			if err := txn.Bucket(trailBucketName(s.region)).Put([]byte(trail.Name), trailData); err != nil {
+				return err
+			}
+			if s.arnIndexStore != nil {
+				if err := txn.Bucket(arnIndexBucketName(s.region)).Put([]byte(trail.TrailARN), []byte(trail.Name)); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
 			return nil, err
+		}
+	} else {
+		if err := s.BaseStore.PutProto(trail.Name, TrailToProto(trail)); err != nil {
+			return nil, err
+		}
+		if s.arnIndexStore != nil {
+			if err := s.arnIndexStore.Put(trail.TrailARN, trail.Name); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -229,7 +209,8 @@ func (s *CloudTrailStore) normalizeARN(arn string) string {
 	return arn
 }
 
-func (s *CloudTrailStore) resolveTrail(nameOrARN string) (*Trail, error) {
+// ResolveTrail resolves a trail by name or ARN.
+func (s *CloudTrailStore) ResolveTrail(nameOrARN string) (*Trail, error) {
 	if strings.Contains(nameOrARN, ":trail/") {
 		return s.GetTrailByARN(nameOrARN)
 	}
@@ -267,25 +248,16 @@ func (s *CloudTrailStore) DeleteTrail(trailName string) error {
 
 	if s.storage != nil {
 		return s.storage.Update(context.Background(), func(txn storage.Transaction) error {
-			trailsBucket := txn.Bucket(trailBucketName(s.region))
-			if err := trailsBucket.Delete([]byte(trailName)); err != nil {
+			if err := txn.Bucket(trailBucketName(s.region)).Delete([]byte(trailName)); err != nil {
 				return err
 			}
-
 			if s.arnIndexStore != nil {
-				arnIndexBucket := txn.Bucket(arnIndexBucketName(s.region))
-				if err := arnIndexBucket.Delete([]byte(trail.TrailARN)); err != nil {
+				if err := txn.Bucket(arnIndexBucketName(s.region)).Delete([]byte(trail.TrailARN)); err != nil {
 					return err
 				}
 			}
-
-			tagBucketName := "cloudtrail-tags-" + s.region
-			tagBucket := txn.Bucket(tagBucketName)
-			if err := tagBucket.Delete([]byte(trailName)); err != nil {
-				return err
-			}
-
-			return nil
+			tagBucket := txn.Bucket("cloudtrail-tags-" + s.region)
+			return tagBucket.Delete([]byte(trailName))
 		})
 	}
 
@@ -294,11 +266,9 @@ func (s *CloudTrailStore) DeleteTrail(trailName string) error {
 			return err
 		}
 	}
-
 	if err := s.TagStore.Delete(trailName); err != nil {
 		return err
 	}
-
 	return s.BaseStore.Delete(trailName)
 }
 
@@ -324,7 +294,7 @@ func (s *CloudTrailStore) StartLogging(trailName string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	trail, err := s.resolveTrail(trailName)
+	trail, err := s.ResolveTrail(trailName)
 	if err != nil {
 		return err
 	}
@@ -342,7 +312,7 @@ func (s *CloudTrailStore) StopLogging(trailName string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	trail, err := s.resolveTrail(trailName)
+	trail, err := s.ResolveTrail(trailName)
 	if err != nil {
 		return err
 	}
@@ -414,48 +384,35 @@ func (s *CloudTrailStore) PutEvent(event *Event) error {
 	}
 
 	key := fmt.Sprintf("%d#%s", event.EventTime.UnixNano(), event.EventID)
+	eventData, err := proto.Marshal(EventToProto(event))
+	if err != nil {
+		return err
+	}
 
 	if s.storage != nil {
 		return s.storage.Update(context.Background(), func(txn storage.Transaction) error {
-			eventData, err := proto.Marshal(EventToProto(event))
-			if err != nil {
+			if err := txn.Bucket(eventBucketName(s.region)).Put([]byte(key), eventData); err != nil {
 				return err
 			}
-
-			eventsBucket := txn.Bucket(eventBucketName(s.region))
-			if err := eventsBucket.Put([]byte(key), eventData); err != nil {
+			if err := txn.Bucket(eventIDIndexBucketName(s.region)).Put([]byte(event.EventID), []byte(key)); err != nil {
 				return err
 			}
-
-			eventIDIndexBucket := txn.Bucket(eventIDIndexBucketName(s.region))
-			if err := eventIDIndexBucket.Put([]byte(event.EventID), []byte(key)); err != nil {
-				return err
-			}
-
 			if s.indexer != nil {
-				if err := s.indexer.AddIndexInTxn(txn, event); err != nil {
-					return err
-				}
+				return s.indexer.AddIndexInTxn(txn, event)
 			}
-
 			return nil
 		})
 	}
 
-	if err := s.eventsStore.Put(key, event); err != nil {
+	if err := s.eventsStore.PutProto(key, EventToProto(event)); err != nil {
 		return err
 	}
-
 	if err := s.eventIDIndexStore.Put(event.EventID, key); err != nil {
 		return err
 	}
-
 	if s.indexer != nil {
-		if err := s.indexer.AddIndex(event); err != nil {
-			return err
-		}
+		return s.indexer.AddIndex(event)
 	}
-
 	return nil
 }
 
@@ -527,19 +484,11 @@ func (s *CloudTrailStore) GetEventByID(eventID string) (*Event, error) {
 		return nil, ErrEventNotFound
 	}
 
-	if s.storage != nil {
-		var p pb.Event
-		if err := s.eventsStore.GetProto(fullKey, &p); err != nil {
-			return nil, ErrEventNotFound
-		}
-		return ProtoToEvent(&p), nil
-	}
-
-	var event Event
-	if err := s.eventsStore.Get(fullKey, &event); err != nil {
+	var p pb.Event
+	if err := s.eventsStore.GetProto(fullKey, &p); err != nil {
 		return nil, ErrEventNotFound
 	}
-	return &event, nil
+	return ProtoToEvent(&p), nil
 }
 
 func (s *CloudTrailStore) lookupEventsScan(query EventQuery) ([]*Event, string, error) {
@@ -648,89 +597,7 @@ func protoMatchesQuery(event *pb.Event, query EventQuery) bool {
 }
 
 func (s *CloudTrailStore) eventMatchesQuery(event *Event, query EventQuery) bool {
-	if query.StartTime != nil && event.EventTime.Before(*query.StartTime) {
-		return false
-	}
-	if query.EndTime != nil && event.EventTime.After(*query.EndTime) {
-		return false
-	}
-
-	if len(query.EventNames) > 0 {
-		found := false
-		for _, name := range query.EventNames {
-			if event.EventName == name {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	if query.Username != "" {
-		if event.UserIdentity == nil || event.UserIdentity.UserName != query.Username {
-			return false
-		}
-	}
-
-	if len(query.ResourceNames) > 0 {
-		if event.Resources == nil {
-			return false
-		}
-		found := false
-		for _, rn := range query.ResourceNames {
-			for _, res := range event.Resources {
-				if res.ResourceName == rn {
-					found = true
-					break
-				}
-			}
-			if found {
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	if query.ResourceType != "" {
-		if event.Resources == nil {
-			return false
-		}
-		found := false
-		for _, res := range event.Resources {
-			if res.ResourceType == query.ResourceType {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	if query.EventSource != "" && event.EventSource != query.EventSource {
-		return false
-	}
-
-	if query.AccessKeyID != "" && event.AccessKeyId != query.AccessKeyID {
-		return false
-	}
-
-	if query.EventID != "" && event.EventID != query.EventID {
-		return false
-	}
-
-	if query.ReadOnly == "true" && event.ReadOnly != "true" {
-		return false
-	}
-	if query.ReadOnly == "false" && event.ReadOnly != "false" {
-		return false
-	}
-
-	return true
+	return protoMatchesQuery(EventToProto(event), query)
 }
 
 // RecordServiceEvent records a service event to CloudTrail.

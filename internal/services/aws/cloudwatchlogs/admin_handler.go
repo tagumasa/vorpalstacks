@@ -133,11 +133,11 @@ func (h *AdminHandler) CreateLogGroup(ctx context.Context, req *connect.Request[
 		logGroupClass = "INFREQUENT_ACCESS"
 	}
 
-	if err := store.CreateLogGroup(&cloudwatchlogsstore.LogGroup{
-		Name:          req.Msg.Loggroupname,
-		Tags:          req.Msg.Tags,
-		LogGroupClass: logGroupClass,
-	}); err != nil {
+	lg := cloudwatchlogsstore.NewLogGroup(req.Msg.Loggroupname, region, h.service.AccountID())
+	lg.Tags = req.Msg.Tags
+	lg.LogGroupClass = logGroupClass
+
+	if err := store.CreateLogGroup(lg); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 

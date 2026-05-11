@@ -162,6 +162,14 @@ func (b *MemoryBackend) GetPublicKey(keyID string) ([]byte, error) {
 	return b.getPublicKey(keyID)
 }
 
+// GenerateKeyPair generates an asymmetric key pair and returns DER-encoded keys.
+// The private key is PKCS8 and the public key is PKIX.
+func (b *MemoryBackend) GenerateKeyPair(keySpec KeySpec) ([]byte, []byte, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.generateKeyPairDER(keySpec)
+}
+
 // IsKeyAvailable checks whether a key is available for cryptographic operations.
 // A key is considered available if it has key material (symmetric, RSA, or ECDSA).
 func (b *MemoryBackend) IsKeyAvailable(keyID string) bool {

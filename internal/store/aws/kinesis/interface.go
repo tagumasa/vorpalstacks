@@ -22,6 +22,7 @@ type KinesisStoreInterface interface {
 	UpdateShard(shard *Shard) error
 	ListShards(streamName string, filter *ShardFilter, exclusiveStartShardID string, limit int) ([]*Shard, error)
 	PutRecord(streamName, shardID, partitionKey, data string) (*Record, error)
+	PutRecordWithShardSelection(streamName, partitionKey, data string) (*Record, string, error)
 	PutRecords(streamName string, records []PutRecordRequest) ([]PutRecordResult, error)
 	SelectShardByPartitionKey(shards []*Shard, partitionKey string) *Shard
 	GetRecords(streamName, shardID, startingSeqNum string, limit int32, includeStart bool) ([]*Record, string, error)

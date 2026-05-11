@@ -26,7 +26,7 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-func (s *ACMService) acmTagConfig(stores *acmStores, req *request.ParsedRequest) tagutil.TagHandlerConfig {
+func (s *ACMService) acmTagConfig(stores *acmStores, arn string) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.TagOperationConfig{
 			ResourceParam:    "CertificateArn",
@@ -40,11 +40,9 @@ func (s *ACMService) acmTagConfig(stores *acmStores, req *request.ParsedRequest)
 			UseQueryFallback: true,
 		},
 		ResourceKey: func(rawKey string) string {
-			arn, _ := parseCertificateArn(req.Parameters, "CertificateArn")
 			return arn
 		},
 		ValidateResource: func(ctx context.Context, rawKey string) error {
-			arn, _ := parseCertificateArn(req.Parameters, "CertificateArn")
 			_, err := stores.certificates.Get(arn)
 			if err != nil {
 				if acmstorelib.IsNotFound(err) {
@@ -75,13 +73,9 @@ func (s *ACMService) acmTagConfig(stores *acmStores, req *request.ParsedRequest)
 			if err != nil {
 				return err
 			}
-			removeTags := make([]types.Tag, len(tagKeys))
-			for i, k := range tagKeys {
-				removeTags[i] = types.Tag{Key: k}
-			}
-			tagKeySet := make(map[string]bool)
-			for _, t := range removeTags {
-				tagKeySet[t.Key] = true
+			tagKeySet := make(map[string]bool, len(tagKeys))
+			for _, k := range tagKeys {
+				tagKeySet[k] = true
 			}
 			cert.Tags = tagutil.Remove(cert.Tags, tagKeySet)
 			return stores.certificates.Update(cert)
@@ -102,25 +96,17 @@ func (s *ACMService) acmTagConfig(stores *acmStores, req *request.ParsedRequest)
 			return response.EmptyResponse(), nil
 		},
 		MapError: func(err error) error {
+			switch err.(type) {
+			case *tagutil.MissingResourceError:
+				return awserrors.NewResourceNotFoundException("certificate", "")
+			case *tagutil.MissingTagsError:
+				return awserrors.NewValidationException("Tags are required")
+			case *tagutil.MissingTagKeysError:
+				return awserrors.NewValidationException("Tag keys are required")
+			}
 			return err
 		},
 	}
-}
-
-func generateCertificateId() string {
-	return acmstorelib.GenerateCertificateId()
-}
-
-func generateCertificateSerial() string {
-	return acmstorelib.GenerateCertificateSerial()
-}
-
-func generateDomainValidationRecordName(domain string) string {
-	return acmstorelib.GenerateDomainValidationRecordName(domain)
-}
-
-func generateDomainValidationRecordValue() string {
-	return acmstorelib.GenerateDomainValidationRecordValue()
 }
 
 // RequestCertificate requests a new certificate from ACM.
@@ -131,7 +117,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	certId := generateCertificateId()
+	certId := acmstorelib.GenerateCertificateId()
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -151,11 +137,12 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to generate serial", 500)
 	}
+	notAfter := now.AddDate(1, 0, 0)
 	template := &x509.Certificate{
 		SerialNumber: serialBigInt,
 		Subject:      pkix.Name{CommonName: domainName},
 		NotBefore:    now,
-		NotAfter:     now.AddDate(1, 0, 0),
+		NotAfter:     notAfter,
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		DNSNames:     []string{domainName},
 	}
@@ -167,7 +154,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
 
-	serialStr := generateCertificateSerial()
+	serialStr := acmstorelib.GenerateCertificateSerial()
 	cert := &acmstorelib.Certificate{
 		CertificateArn:     certificateArn,
 		DomainName:         domainName,
@@ -184,7 +171,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 		Region:             reqCtx.GetRegion(),
 		Certificate:        string(certPEM),
 		NotBefore:          now,
-		NotAfter:           now.AddDate(1, 0, 0),
+		NotAfter:           notAfter,
 		IssuedAt:           now,
 	}
 
@@ -266,6 +253,11 @@ func (s *ACMService) ListCertificates(ctx context.Context, reqCtx *request.Reque
 	marker := request.GetStringParam(params, "NextToken")
 	maxItems := getMaxItems(params)
 
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	var statuses []string
 	if raw, ok := params["CertificateStatuses"]; ok {
 		if arr, ok := raw.([]interface{}); ok {
@@ -277,35 +269,17 @@ func (s *ACMService) ListCertificates(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
+	var result *acmstorelib.CertificateListResult
 	if len(statuses) > 0 {
-		allCerts, err := stores.certificates.ListAll()
-		if err != nil {
-			return nil, err
-		}
-		statusSet := make(map[string]bool)
-		for _, s := range statuses {
-			statusSet[s] = true
-		}
-		var filtered []*acmstorelib.CertificateSummary
-		for _, cert := range allCerts {
-			if statusSet[cert.Status] {
-				filtered = append(filtered, acmstorelib.CertificateToSummary(cert))
-			}
-		}
-		return filteredListToResponse(filtered, marker, maxItems), nil
+		result, err = stores.certificates.ListByStatus(statuses, marker, maxItems)
+	} else {
+		result, err = stores.certificates.List(marker, maxItems)
 	}
-
-	result, err := stores.certificates.List(marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	return listCertificatesToResponse(result), nil
+	return listResultToResponse(result), nil
 }
 
 // DeleteCertificate deletes the specified certificate.
@@ -400,7 +374,8 @@ func (s *ACMService) AddTagsToCertificate(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	return tagutil.HandleTag(ctx, req, s.acmTagConfig(stores, req))
+	arn, _ := parseCertificateArn(req.Parameters, "CertificateArn")
+	return tagutil.HandleTag(ctx, req, s.acmTagConfig(stores, arn))
 }
 
 // RemoveTagsFromCertificate removes one or more tags from a certificate.
@@ -409,7 +384,8 @@ func (s *ACMService) RemoveTagsFromCertificate(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
-	return tagutil.HandleUntag(ctx, req, s.acmTagConfig(stores, req))
+	arn, _ := parseCertificateArn(req.Parameters, "CertificateArn")
+	return tagutil.HandleUntag(ctx, req, s.acmTagConfig(stores, arn))
 }
 
 // ListTagsForCertificate lists the tags associated with a certificate.
@@ -418,7 +394,8 @@ func (s *ACMService) ListTagsForCertificate(ctx context.Context, reqCtx *request
 	if err != nil {
 		return nil, err
 	}
-	return tagutil.HandleList(ctx, req, s.acmTagConfig(stores, req))
+	arn, _ := parseCertificateArn(req.Parameters, "CertificateArn")
+	return tagutil.HandleList(ctx, req, s.acmTagConfig(stores, arn))
 }
 
 // ImportCertificate imports a certificate into ACM.
@@ -441,26 +418,27 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 
 	tags := tagutil.ParseTagsWithQueryFallback(params, "Tags")
 
-	certId := generateCertificateId()
+	certId := acmstorelib.GenerateCertificateId()
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 	certificateArn := stores.arnBuilder.BuildCertificateARN(certId)
 
+	now := time.Now().UTC()
 	cert := &acmstorelib.Certificate{
 		CertificateArn:     certificateArn,
 		DomainName:         extractDomainFromCert(certificate),
-		Serial:             generateCertificateSerial(),
+		Serial:             acmstorelib.GenerateCertificateSerial(),
 		Status:             "ISSUED",
 		Type:               "IMPORTED",
 		KeyAlgorithm:       determineKeyAlgorithm(certificate),
 		SignatureAlgorithm: "SHA256WITHRSA",
 		RenewalEligibility: "INELIGIBLE",
-		CreatedAt:          time.Now(),
-		ImportedAt:         time.Now(),
-		NotBefore:          time.Now(),
-		NotAfter:           time.Now().AddDate(1, 0, 0),
+		CreatedAt:          now,
+		ImportedAt:         now,
+		NotBefore:          now,
+		NotAfter:           now.AddDate(1, 0, 0),
 		Certificate:        certificate,
 		CertificateChain:   certificateChain,
 		PrivateKey:         privateKey,
@@ -666,9 +644,9 @@ func buildDomainValidationOptions(domainName, validationMethod string) []*acmsto
 
 	if validationMethod == "DNS" {
 		dv.ResourceRecord = &acmstorelib.ResourceRecord{
-			Name:  generateDomainValidationRecordName(domainName),
+			Name:  acmstorelib.GenerateDomainValidationRecordName(domainName),
 			Type:  "CNAME",
-			Value: generateDomainValidationRecordValue(),
+			Value: acmstorelib.GenerateDomainValidationRecordValue(),
 		}
 	}
 

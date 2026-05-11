@@ -168,8 +168,7 @@ func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *reques
 	if secretString != "" {
 		secret.SecretString = secretString
 		secret.SecretBinary = nil
-	}
-	if secretBinaryStr != "" {
+	} else if secretBinaryStr != "" {
 		decoded, err := decodeSecretBinary(secretBinaryStr)
 		if err != nil {
 			return nil, err

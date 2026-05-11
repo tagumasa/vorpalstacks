@@ -2,37 +2,48 @@
 package acm
 
 import (
-	"encoding/json"
 	"strings"
 	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CertificateStore provides storage operations for ACM certificates.
 type CertificateStore struct {
 	*common.BaseStore
-	arnBuilder *ARNBuilder
-	mu         sync.RWMutex
+	arnBuilder  *ARNBuilder
+	mu          sync.RWMutex
+	configStore *common.BaseStore
 }
 
 func certificateBucketName(region string) string {
 	return "acm_certificates-" + region
 }
 
+func configBucketName(region string) string {
+	return "acm_config-" + region
+}
+
 // NewCertificateStore creates a new CertificateStore instance with the specified storage, account ID, and region.
 func NewCertificateStore(store storage.BasicStorage, accountId, region string) *CertificateStore {
 	return &CertificateStore{
-		BaseStore:  common.NewBaseStore(store.Bucket(certificateBucketName(region)), "acm"),
-		arnBuilder: NewARNBuilder(accountId, region),
+		BaseStore:   common.NewBaseStore(store.Bucket(certificateBucketName(region)), "acm"),
+		arnBuilder:  NewARNBuilder(accountId, region),
+		configStore: common.NewBaseStore(store.Bucket(configBucketName(region)), "acm-config"),
 	}
 }
 
+func (s *CertificateStore) extractCertificateId(arn string) string {
+	parts := strings.Split(arn, "/")
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return arn
+}
+
 // Get retrieves an ACM certificate by its ARN from the store.
-// Returns the certificate or an error if not found.
 func (s *CertificateStore) Get(arn string) (*Certificate, error) {
 	certId := s.extractCertificateId(arn)
 	var cert Certificate
@@ -42,64 +53,51 @@ func (s *CertificateStore) Get(arn string) (*Certificate, error) {
 	return &cert, nil
 }
 
-// GetByDomain retrieves an ACM certificate by its domain name from the store.
-// Returns the certificate or an error if not found.
-func (s *CertificateStore) GetByDomain(domain string) (*Certificate, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return common.FindFirst[Certificate](s.BaseStore, func(c *Certificate) bool { return strings.EqualFold(c.DomainName, domain) })
-}
-
-// List returns a list of ACM certificates from the store with pagination support.
+// List returns a paginated list of ACM certificates from the store.
 func (s *CertificateStore) List(marker string, maxItems int) (*CertificateListResult, error) {
-	if maxItems <= 0 {
-		maxItems = 100
+	opts := common.ListOptions{
+		Marker:   marker,
+		MaxItems: maxItems,
 	}
-
-	var certs []*CertificateSummary
-	count := 0
-	started := marker == ""
-	hasMore := false
-	var lastIncludedArn string
-
-	err := s.ForEach(func(key string, value []byte) error {
-		var cert Certificate
-		if err := json.Unmarshal(value, &cert); err != nil {
-			return err
-		}
-
-		if !started {
-			if cert.CertificateArn > marker {
-				started = true
-			}
-			if !started {
-				return nil
-			}
-		}
-
-		if count < maxItems {
-			certs = append(certs, certificateToSummary(&cert))
-			count++
-			lastIncludedArn = cert.CertificateArn
-		} else {
-			hasMore = true
-			return nil
-		}
-		return nil
-	})
-
+	result, err := common.List[Certificate](s.BaseStore, opts, nil)
 	if err != nil {
-		return nil, NewStoreError("list_certificates", err)
+		return nil, err
 	}
-
-	nextToken := ""
-	if hasMore && lastIncludedArn != "" {
-		nextToken = lastIncludedArn
+	summaries := make([]*CertificateSummary, len(result.Items))
+	for i, cert := range result.Items {
+		summaries[i] = CertificateToSummary(cert)
 	}
 	return &CertificateListResult{
-		Certificates: certs,
-		IsTruncated:  hasMore,
-		NextToken:    nextToken,
+		Certificates: summaries,
+		IsTruncated:  result.IsTruncated,
+		NextToken:    result.NextMarker,
+	}, nil
+}
+
+// ListByStatus returns a paginated list of ACM certificates filtered by status.
+func (s *CertificateStore) ListByStatus(statuses []string, marker string, maxItems int) (*CertificateListResult, error) {
+	statusSet := make(map[string]bool, len(statuses))
+	for _, s := range statuses {
+		statusSet[s] = true
+	}
+	opts := common.ListOptions{
+		Marker:   marker,
+		MaxItems: maxItems,
+	}
+	result, err := common.List[Certificate](s.BaseStore, opts, func(cert *Certificate) bool {
+		return statusSet[cert.Status]
+	})
+	if err != nil {
+		return nil, err
+	}
+	summaries := make([]*CertificateSummary, len(result.Items))
+	for i, cert := range result.Items {
+		summaries[i] = CertificateToSummary(cert)
+	}
+	return &CertificateListResult{
+		Certificates: summaries,
+		IsTruncated:  result.IsTruncated,
+		NextToken:    result.NextMarker,
 	}, nil
 }
 
@@ -109,7 +107,6 @@ func (s *CertificateStore) ListAll() ([]*Certificate, error) {
 }
 
 // Create creates a new ACM certificate in the store.
-// Returns an error if the certificate already exists.
 func (s *CertificateStore) Create(cert *Certificate) error {
 	certId := s.extractCertificateId(cert.CertificateArn)
 
@@ -119,7 +116,6 @@ func (s *CertificateStore) Create(cert *Certificate) error {
 	if s.Exists(certId) {
 		return NewStoreError("create_certificate", ErrCertificateExists)
 	}
-	cert.CreatedAt = time.Now()
 	if err := s.BaseStore.Put(certId, cert); err != nil {
 		return NewStoreError("create_certificate", err)
 	}
@@ -127,7 +123,6 @@ func (s *CertificateStore) Create(cert *Certificate) error {
 }
 
 // Update updates an existing ACM certificate in the store.
-// Returns an error if the certificate does not exist.
 func (s *CertificateStore) Update(cert *Certificate) error {
 	certId := s.extractCertificateId(cert.CertificateArn)
 
@@ -144,7 +139,6 @@ func (s *CertificateStore) Update(cert *Certificate) error {
 }
 
 // Delete deletes an ACM certificate by its ARN from the store.
-// Returns an error if the certificate does not exist.
 func (s *CertificateStore) Delete(arn string) error {
 	certId := s.extractCertificateId(arn)
 
@@ -164,18 +158,6 @@ func (s *CertificateStore) Delete(arn string) error {
 func (s *CertificateStore) Exists(arn string) bool {
 	certId := s.extractCertificateId(arn)
 	return s.BaseStore.Exists(certId)
-}
-
-func (s *CertificateStore) extractCertificateId(arn string) string {
-	parts := strings.Split(arn, "/")
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return arn
-}
-
-func formatEpochSeconds(t time.Time) float64 {
-	return float64(t.Unix()) + float64(t.Nanosecond())/1e9
 }
 
 // CertificateToSummary converts a Certificate to a CertificateSummary.
@@ -216,95 +198,30 @@ func CertificateToSummary(cert *Certificate) *CertificateSummary {
 	return summary
 }
 
-func certificateToSummary(cert *Certificate) *CertificateSummary {
-	return CertificateToSummary(cert)
-}
-
-// GetTags retrieves the tags associated with an ACM certificate.
-func (s *CertificateStore) GetTags(arn string) ([]types.Tag, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	cert, err := s.Get(arn)
-	if err != nil {
-		return nil, err
-	}
-	return cert.Tags, nil
-}
-
-// AddTags adds tags to an ACM certificate.
-func (s *CertificateStore) AddTags(arn string, tags []types.Tag) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	cert, err := s.Get(arn)
-	if err != nil {
-		return err
-	}
-	cert.Tags = append(cert.Tags, tags...)
-	return s.BaseStore.Put(s.extractCertificateId(arn), cert)
-}
-
-// RemoveTags removes tags from an ACM certificate.
-func (s *CertificateStore) RemoveTags(arn string, tagKeys []string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	cert, err := s.Get(arn)
-	if err != nil {
-		return err
-	}
-	keySet := make(map[string]bool)
-	for _, k := range tagKeys {
-		keySet[k] = true
-	}
-	var remaining []types.Tag
-	for _, t := range cert.Tags {
-		if !keySet[t.Key] {
-			remaining = append(remaining, t)
-		}
-	}
-	cert.Tags = remaining
-	return s.BaseStore.Put(s.extractCertificateId(arn), cert)
-}
-
-var accountConfigurations = make(map[string]*AccountConfiguration)
-var accountConfigMutex sync.RWMutex
-
 func accountConfigKey(accountID, region string) string {
 	return accountID + "/" + region
 }
 
 // GetAccountConfiguration retrieves the account configuration for ACM certificates.
 func (s *CertificateStore) GetAccountConfiguration(accountID, region string) (*AccountConfiguration, error) {
-	accountConfigMutex.RLock()
-	defer accountConfigMutex.RUnlock()
-
 	key := accountConfigKey(accountID, region)
-	if config, ok := accountConfigurations[key]; ok {
-		return config, nil
+	var config AccountConfiguration
+	if err := s.configStore.Get(key, &config); err != nil {
+		return &AccountConfiguration{
+			ExpiryEvents: ExpiryEventsConfiguration{
+				DaysBeforeExpiry: 45,
+			},
+		}, nil
 	}
-	return &AccountConfiguration{
-		ExpiryEvents: ExpiryEventsConfiguration{
-			DaysBeforeExpiry: 45,
-		},
-	}, nil
+	return &config, nil
 }
 
 // PutAccountConfiguration stores the account configuration for ACM certificates.
 func (s *CertificateStore) PutAccountConfiguration(accountID, region string, config *AccountConfiguration) error {
-	accountConfigMutex.Lock()
-	defer accountConfigMutex.Unlock()
-
 	key := accountConfigKey(accountID, region)
-	accountConfigurations[key] = config
-	return nil
+	return s.configStore.Put(key, config)
 }
 
-// DeleteAccountConfiguration removes the account configuration for ACM certificates.
-func (s *CertificateStore) DeleteAccountConfiguration(accountID, region string) {
-	accountConfigMutex.Lock()
-	defer accountConfigMutex.Unlock()
-
-	delete(accountConfigurations, accountConfigKey(accountID, region))
+func formatEpochSeconds(t time.Time) float64 {
+	return float64(t.Unix()) + float64(t.Nanosecond())/1e9
 }

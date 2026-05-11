@@ -2,8 +2,6 @@ package kinesis
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -13,30 +11,13 @@ import (
 
 // IncreaseStreamRetentionPeriod increases the retention period of a Kinesis stream.
 func (s *KinesisService) IncreaseStreamRetentionPeriod(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	retentionHours := int32(request.GetIntParam(req.Parameters, "RetentionPeriodHours"))
-
-	if streamARN != "" {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
-	}
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
+
+	retentionHours := int32(request.GetIntParam(req.Parameters, "RetentionPeriodHours"))
+
 	stream, err := store.GetStream(streamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
@@ -60,30 +41,13 @@ func (s *KinesisService) IncreaseStreamRetentionPeriod(ctx context.Context, reqC
 
 // DecreaseStreamRetentionPeriod decreases the retention period of a Kinesis stream.
 func (s *KinesisService) DecreaseStreamRetentionPeriod(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	retentionHours := int32(request.GetIntParam(req.Parameters, "RetentionPeriodHours"))
-
-	if streamARN != "" {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
-	}
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
+
+	retentionHours := int32(request.GetIntParam(req.Parameters, "RetentionPeriodHours"))
+
 	stream, err := store.GetStream(streamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
@@ -143,29 +107,11 @@ func (s *KinesisService) UpdateAccountSettings(ctx context.Context, reqCtx *requ
 
 // EnableEnhancedMonitoring enables enhanced monitoring for a Kinesis stream.
 func (s *KinesisService) EnableEnhancedMonitoring(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
-	if streamARN != "" {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
-	}
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
+
 	stream, err := store.GetStream(streamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
@@ -187,7 +133,7 @@ func (s *KinesisService) EnableEnhancedMonitoring(ctx context.Context, reqCtx *r
 		{ShardLevelMetrics: desiredMetrics},
 	}
 	if err := store.UpdateStream(stream); err != nil {
-		return nil, fmt.Errorf("failed to update stream monitoring: %w", err)
+		return nil, s.mapStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -200,29 +146,11 @@ func (s *KinesisService) EnableEnhancedMonitoring(ctx context.Context, reqCtx *r
 
 // DisableEnhancedMonitoring disables enhanced monitoring for a Kinesis stream.
 func (s *KinesisService) DisableEnhancedMonitoring(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
-	if streamARN != "" {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
-	}
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
+
 	stream, err := store.GetStream(streamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
@@ -244,7 +172,7 @@ func (s *KinesisService) DisableEnhancedMonitoring(ctx context.Context, reqCtx *
 		{ShardLevelMetrics: desiredMetrics},
 	}
 	if err := store.UpdateStream(stream); err != nil {
-		return nil, fmt.Errorf("failed to update stream monitoring: %w", err)
+		return nil, s.mapStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -257,31 +185,14 @@ func (s *KinesisService) DisableEnhancedMonitoring(ctx context.Context, reqCtx *
 
 // StartStreamEncryption starts server-side encryption for a Kinesis stream.
 func (s *KinesisService) StartStreamEncryption(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	encryptionType := request.GetParamLowerFirst(req.Parameters, "EncryptionType")
-	keyID := request.GetParamLowerFirst(req.Parameters, "KeyId")
-
-	if streamARN != "" {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
-	}
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
+
+	encryptionType := request.GetParamLowerFirst(req.Parameters, "EncryptionType")
+	keyID := request.GetParamLowerFirst(req.Parameters, "KeyId")
+
 	stream, err := store.GetStream(streamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
@@ -300,29 +211,11 @@ func (s *KinesisService) StartStreamEncryption(ctx context.Context, reqCtx *requ
 
 // StopStreamEncryption stops server-side encryption for a Kinesis stream.
 func (s *KinesisService) StopStreamEncryption(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-
-	if streamARN != "" {
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
-	}
-
-	store, err := s.store(reqCtx)
+	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
+
 	stream, err := store.GetStream(streamName)
 	if err != nil {
 		return nil, s.mapStoreError(err)
@@ -377,7 +270,7 @@ func (s *KinesisService) PutResourcePolicy(ctx context.Context, reqCtx *request.
 	}
 
 	if err := store.PutResourcePolicy(resourceARN, policy); err != nil {
-		return nil, fmt.Errorf("failed to put resource policy: %w", err)
+		return nil, s.mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -426,7 +319,6 @@ func (s *KinesisService) UpdateMaxRecordSize(ctx context.Context, reqCtx *reques
 	}
 
 	stream.MaxRecordSizeInKiB = maxRecordSizeInKiB
-	stream.LastModifiedAt = time.Now()
 	if err := store.UpdateStream(stream); err != nil {
 		return nil, s.mapStoreError(err)
 	}
@@ -437,8 +329,6 @@ func (s *KinesisService) UpdateMaxRecordSize(ctx context.Context, reqCtx *reques
 // UpdateStreamWarmThroughput updates the warm throughput capacity for an on-demand Kinesis stream.
 func (s *KinesisService) UpdateStreamWarmThroughput(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	warmThroughputMiBps := int32(request.GetIntParam(req.Parameters, "WarmThroughputMiBps"))
 
 	if streamARN == "" {
 		return nil, ErrInvalidArgument
@@ -449,35 +339,24 @@ func (s *KinesisService) UpdateStreamWarmThroughput(ctx context.Context, reqCtx 
 		return nil, err
 	}
 
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" {
-		return nil, ErrInvalidArgument
-	}
-
-	stream, err := store.GetStream(streamName)
+	stream, err := store.GetStreamByARN(streamARN)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
+
+	warmThroughputMiBps := int32(request.GetIntParam(req.Parameters, "WarmThroughputMiBps"))
 
 	if stream.OnDemandStreamConfig == nil {
 		stream.OnDemandStreamConfig = &kinesisstore.OnDemandStreamConfig{}
 	}
 	stream.OnDemandStreamConfig.OnDemandMode = true
-	stream.LastModifiedAt = time.Now()
 	if err := store.UpdateStream(stream); err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
 	return map[string]interface{}{
 		"StreamARN":  streamARN,
-		"StreamName": streamName,
+		"StreamName": stream.StreamName,
 		"WarmThroughput": map[string]interface{}{
 			"CurrentMiBps": warmThroughputMiBps,
 			"TargetMiBps":  warmThroughputMiBps,

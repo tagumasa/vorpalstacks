@@ -4,12 +4,58 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
+
+// resolveTrailForSelectors resolves a trail from the TrailName or TrailArn parameter.
+func (s *CloudTrailService) resolveTrailForSelectors(reqCtx *request.RequestContext, req *request.ParsedRequest) (cloudtrailstore.CloudTrailStoreInterface, *cloudtrailstore.Trail, error) {
+	trailName := req.GetParam("TrailName")
+	if trailName == "" {
+		trailName = req.GetParam("TrailArn")
+	}
+	if trailName == "" {
+		return nil, nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, nil, s.mapStoreError(err)
+	}
+
+	trail, err := store.ResolveTrail(trailName)
+	if err != nil {
+		return nil, nil, s.mapStoreError(err)
+	}
+	return store, trail, nil
+}
+
+// formatEventSelectors converts event selectors to API response format.
+func formatEventSelectors(selectors []cloudtrailstore.EventSelector) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(selectors))
+	for _, es := range selectors {
+		result = append(result, map[string]interface{}{
+			"ReadWriteType":                 es.ReadWriteType,
+			"IncludeManagementEvents":       es.IncludeManagementEvents,
+			"DataResources":                 es.DataResources,
+			"ExcludeManagementEventSources": es.ExcludeManagementEventSources,
+		})
+	}
+	return result
+}
+
+// formatInsightSelectors converts insight selectors to API response format.
+func formatInsightSelectors(selectors []cloudtrailstore.InsightSelector) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(selectors))
+	for _, is := range selectors {
+		result = append(result, map[string]interface{}{
+			"InsightType": is.InsightType,
+		})
+	}
+	return result
+}
 
 // LookupEvents looks up events in CloudTrail based on the specified lookup attributes.
 func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -184,70 +230,22 @@ func (s *CloudTrailService) ListPublicKeys(ctx context.Context, reqCtx *request.
 
 // GetEventSelectors retrieves the event selectors for a trail.
 func (s *CloudTrailService) GetEventSelectors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	trailName := req.GetParam("TrailName")
-	if trailName == "" {
-		trailName = req.GetParam("TrailArn")
-	}
-
-	if trailName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	_, trail, err := s.resolveTrailForSelectors(reqCtx, req)
 	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	var trail *cloudtrailstore.Trail
-	if strings.HasPrefix(trailName, "arn:") || strings.Contains(trailName, "/") {
-		trail, err = store.GetTrailByARN(trailName)
-	} else {
-		trail, err = store.GetTrail(trailName)
-	}
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	formattedSelectors := make([]map[string]interface{}, 0)
-	for _, es := range trail.EventSelectors {
-		formattedSelectors = append(formattedSelectors, map[string]interface{}{
-			"ReadWriteType":                 es.ReadWriteType,
-			"IncludeManagementEvents":       es.IncludeManagementEvents,
-			"DataResources":                 es.DataResources,
-			"ExcludeManagementEventSources": es.ExcludeManagementEventSources,
-		})
+		return nil, err
 	}
 
 	return map[string]interface{}{
 		"TrailArn":       trail.TrailARN,
-		"EventSelectors": formattedSelectors,
+		"EventSelectors": formatEventSelectors(trail.EventSelectors),
 	}, nil
 }
 
 // PutEventSelectors configures event selectors for a trail.
 func (s *CloudTrailService) PutEventSelectors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	trailName := req.GetParam("TrailName")
-	if trailName == "" {
-		trailName = req.GetParam("TrailArn")
-	}
-
-	if trailName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	store, trail, err := s.resolveTrailForSelectors(reqCtx, req)
 	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	var trail *cloudtrailstore.Trail
-	if strings.HasPrefix(trailName, "arn:") || strings.Contains(trailName, "/") {
-		trail, err = store.GetTrailByARN(trailName)
-	} else {
-		trail, err = store.GetTrail(trailName)
-	}
-	if err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
 	selectorsRaw := req.Parameters["EventSelectors"]
@@ -301,85 +299,30 @@ func (s *CloudTrailService) PutEventSelectors(ctx context.Context, reqCtx *reque
 		return nil, s.mapStoreError(err)
 	}
 
-	var formattedSelectors []map[string]interface{}
-	for _, es := range selectors {
-		formattedSelectors = append(formattedSelectors, map[string]interface{}{
-			"ReadWriteType":                 es.ReadWriteType,
-			"IncludeManagementEvents":       es.IncludeManagementEvents,
-			"DataResources":                 es.DataResources,
-			"ExcludeManagementEventSources": es.ExcludeManagementEventSources,
-		})
-	}
-
 	return map[string]interface{}{
 		"TrailArn":       trail.TrailARN,
-		"EventSelectors": formattedSelectors,
+		"EventSelectors": formatEventSelectors(selectors),
 	}, nil
 }
 
 // GetInsightSelectors retrieves the insight selectors for a trail.
 func (s *CloudTrailService) GetInsightSelectors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	trailName := req.GetParam("TrailName")
-	if trailName == "" {
-		trailName = req.GetParam("TrailArn")
-	}
-
-	if trailName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	_, trail, err := s.resolveTrailForSelectors(reqCtx, req)
 	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	var trail *cloudtrailstore.Trail
-	if strings.HasPrefix(trailName, "arn:") || strings.Contains(trailName, "/") {
-		trail, err = store.GetTrailByARN(trailName)
-	} else {
-		trail, err = store.GetTrail(trailName)
-	}
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	formattedSelectors := make([]map[string]interface{}, 0)
-	for _, is := range trail.InsightSelectors {
-		formattedSelectors = append(formattedSelectors, map[string]interface{}{
-			"InsightType": is.InsightType,
-		})
+		return nil, err
 	}
 
 	return map[string]interface{}{
 		"TrailArn":         trail.TrailARN,
-		"InsightSelectors": formattedSelectors,
+		"InsightSelectors": formatInsightSelectors(trail.InsightSelectors),
 	}, nil
 }
 
 // PutInsightSelectors configures insight selectors for a trail.
 func (s *CloudTrailService) PutInsightSelectors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	trailName := req.GetParam("TrailName")
-	if trailName == "" {
-		trailName = req.GetParam("TrailArn")
-	}
-
-	if trailName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	store, trail, err := s.resolveTrailForSelectors(reqCtx, req)
 	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	var trail *cloudtrailstore.Trail
-	if strings.HasPrefix(trailName, "arn:") || strings.Contains(trailName, "/") {
-		trail, err = store.GetTrailByARN(trailName)
-	} else {
-		trail, err = store.GetTrail(trailName)
-	}
-	if err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
 	selectorsRaw := req.Parameters["InsightSelectors"]
@@ -405,16 +348,9 @@ func (s *CloudTrailService) PutInsightSelectors(ctx context.Context, reqCtx *req
 		return nil, s.mapStoreError(err)
 	}
 
-	var formattedSelectors []map[string]interface{}
-	for _, is := range selectors {
-		formattedSelectors = append(formattedSelectors, map[string]interface{}{
-			"InsightType": is.InsightType,
-		})
-	}
-
 	return map[string]interface{}{
 		"TrailArn":         trail.TrailARN,
-		"InsightSelectors": formattedSelectors,
+		"InsightSelectors": formatInsightSelectors(selectors),
 	}, nil
 }
 

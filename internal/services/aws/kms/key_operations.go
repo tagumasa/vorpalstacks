@@ -22,8 +22,7 @@ var keyUsageKeySpecConstraints = map[kmsstore.KeyUsage][]kmsstore.KeySpec{
 	kmsstore.KeyUsageEncryptDecrypt: {
 		kmsstore.KeySpecSymmetricDefault,
 		kmsstore.KeySpecRSA2048, kmsstore.KeySpecRSA3072, kmsstore.KeySpecRSA4096,
-		kmsstore.KeySpecECCNISTP256, kmsstore.KeySpecECCNISTP384, kmsstore.KeySpecECCNISTP521,
-		kmsstore.KeySpecECCSECGP256K1, kmsstore.KeySpecSM2,
+		kmsstore.KeySpecSM2,
 	},
 	kmsstore.KeyUsageSignVerify: {
 		kmsstore.KeySpecRSA2048, kmsstore.KeySpecRSA3072, kmsstore.KeySpecRSA4096,
@@ -353,14 +352,35 @@ func (s *KMSService) buildKeyMetadata(key *kmsstore.Key) map[string]interface{} 
 		metadata["MacAlgorithms"] = key.MacAlgorithms
 	}
 	if key.MultiRegion {
-		_, _, region, _, _ := arn.SplitARN(key.Arn)
-		metadata["MultiRegionConfiguration"] = map[string]interface{}{
-			"MultiRegionKeyType": "PRIMARY",
-			"PrimaryKey": map[string]interface{}{
-				"Arn":    key.Arn,
-				"Region": region,
-			},
-			"ReplicaKeys": []interface{}{},
+		if key.MultiRegionConfiguration != nil {
+			mrc := map[string]interface{}{
+				"MultiRegionKeyType": key.MultiRegionConfiguration.MultiRegionKeyType,
+			}
+			if key.MultiRegionConfiguration.PrimaryKey != nil {
+				mrc["PrimaryKey"] = map[string]interface{}{
+					"Arn":    key.MultiRegionConfiguration.PrimaryKey.Arn,
+					"Region": key.MultiRegionConfiguration.PrimaryKey.Region,
+				}
+			}
+			replicas := make([]interface{}, 0, len(key.MultiRegionConfiguration.ReplicaKeys))
+			for _, r := range key.MultiRegionConfiguration.ReplicaKeys {
+				replicas = append(replicas, map[string]interface{}{
+					"Arn":    r.Arn,
+					"Region": r.Region,
+				})
+			}
+			mrc["ReplicaKeys"] = replicas
+			metadata["MultiRegionConfiguration"] = mrc
+		} else {
+			_, _, region, _, _ := arn.SplitARN(key.Arn)
+			metadata["MultiRegionConfiguration"] = map[string]interface{}{
+				"MultiRegionKeyType": "PRIMARY",
+				"PrimaryKey": map[string]interface{}{
+					"Arn":    key.Arn,
+					"Region": region,
+				},
+				"ReplicaKeys": []interface{}{},
+			}
 		}
 	}
 

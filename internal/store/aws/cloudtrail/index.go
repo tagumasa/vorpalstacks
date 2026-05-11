@@ -116,75 +116,42 @@ func NewEventIndexManager(s storage.BasicStorage, accountID, region string) *Eve
 	}
 }
 
-// AddIndex adds an event to the index.
-func (m *EventIndexManager) AddIndex(event *Event) error {
-	accountID := m.accountID
-	region := m.region
+// buildIndexKeys generates all index keys for the given event.
+func buildIndexKeys(accountID, region string, event *Event) []*EventIndexKey {
 	dateHour := event.EventTime.Format("2006-01-02:15")
 	ts := event.EventTime.UnixNano()
 
-	timeKey := NewTimeIndexKey(accountID, region, dateHour, event.EventID)
-	if err := m.putIndex(timeKey); err != nil {
-		return err
-	}
+	var keys []*EventIndexKey
+	keys = append(keys, NewTimeIndexKey(accountID, region, dateHour, event.EventID))
 
 	if event.EventName != "" {
-		eventNameKey := NewEventNameIndexKey(accountID, region, event.EventName, ts, event.EventID)
-		if err := m.putIndex(eventNameKey); err != nil {
-			return err
-		}
+		keys = append(keys, NewEventNameIndexKey(accountID, region, event.EventName, ts, event.EventID))
 	}
-
 	if event.UserIdentity != nil && event.UserIdentity.UserName != "" {
-		usernameKey := NewUsernameIndexKey(accountID, region, event.UserIdentity.UserName, ts, event.EventID)
-		if err := m.putIndex(usernameKey); err != nil {
-			return err
-		}
+		keys = append(keys, NewUsernameIndexKey(accountID, region, event.UserIdentity.UserName, ts, event.EventID))
 	}
-
 	if event.EventSource != "" {
-		eventSourceKey := NewEventSourceIndexKey(accountID, region, event.EventSource, ts, event.EventID)
-		if err := m.putIndex(eventSourceKey); err != nil {
-			return err
-		}
+		keys = append(keys, NewEventSourceIndexKey(accountID, region, event.EventSource, ts, event.EventID))
 	}
+	return keys
+}
 
-	return nil
+// AddIndex adds an event to the index.
+func (m *EventIndexManager) AddIndex(event *Event) error {
+	return m.applyIndexKeys(buildIndexKeys(m.accountID, m.region, event), m.putIndex)
 }
 
 // RemoveIndex removes an event from the index.
 func (m *EventIndexManager) RemoveIndex(event *Event) error {
-	accountID := m.accountID
-	region := m.region
-	dateHour := event.EventTime.Format("2006-01-02:15")
-	ts := event.EventTime.UnixNano()
+	return m.applyIndexKeys(buildIndexKeys(m.accountID, m.region, event), m.deleteIndex)
+}
 
-	timeKey := NewTimeIndexKey(accountID, region, dateHour, event.EventID)
-	if err := m.deleteIndex(timeKey); err != nil {
-		return err
-	}
-
-	if event.EventName != "" {
-		eventNameKey := NewEventNameIndexKey(accountID, region, event.EventName, ts, event.EventID)
-		if err := m.deleteIndex(eventNameKey); err != nil {
+func (m *EventIndexManager) applyIndexKeys(keys []*EventIndexKey, fn func(*EventIndexKey) error) error {
+	for _, k := range keys {
+		if err := fn(k); err != nil {
 			return err
 		}
 	}
-
-	if event.UserIdentity != nil && event.UserIdentity.UserName != "" {
-		usernameKey := NewUsernameIndexKey(accountID, region, event.UserIdentity.UserName, ts, event.EventID)
-		if err := m.deleteIndex(usernameKey); err != nil {
-			return err
-		}
-	}
-
-	if event.EventSource != "" {
-		eventSourceKey := NewEventSourceIndexKey(accountID, region, event.EventSource, ts, event.EventID)
-		if err := m.deleteIndex(eventSourceKey); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -362,38 +329,9 @@ func (m *EventIndexManager) ClearIndexes(accountID, region string) error {
 
 // AddIndexInTxn adds an event to the index within a transaction.
 func (m *EventIndexManager) AddIndexInTxn(txn storage.Transaction, event *Event) error {
-	accountID := m.accountID
-	region := m.region
-	dateHour := event.EventTime.Format("2006-01-02:15")
-	ts := event.EventTime.UnixNano()
-
-	timeKey := NewTimeIndexKey(accountID, region, dateHour, event.EventID)
-	if err := m.putIndexInTxn(txn, timeKey); err != nil {
-		return err
-	}
-
-	if event.EventName != "" {
-		eventNameKey := NewEventNameIndexKey(accountID, region, event.EventName, ts, event.EventID)
-		if err := m.putIndexInTxn(txn, eventNameKey); err != nil {
-			return err
-		}
-	}
-
-	if event.UserIdentity != nil && event.UserIdentity.UserName != "" {
-		usernameKey := NewUsernameIndexKey(accountID, region, event.UserIdentity.UserName, ts, event.EventID)
-		if err := m.putIndexInTxn(txn, usernameKey); err != nil {
-			return err
-		}
-	}
-
-	if event.EventSource != "" {
-		eventSourceKey := NewEventSourceIndexKey(accountID, region, event.EventSource, ts, event.EventID)
-		if err := m.putIndexInTxn(txn, eventSourceKey); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return m.applyIndexKeys(buildIndexKeys(m.accountID, m.region, event), func(key *EventIndexKey) error {
+		return m.putIndexInTxn(txn, key)
+	})
 }
 
 func (m *EventIndexManager) putIndexInTxn(txn storage.Transaction, key *EventIndexKey) error {

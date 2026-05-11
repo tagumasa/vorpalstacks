@@ -319,6 +319,13 @@ func (b *PersistentBackend) GetPublicKey(keyID string) ([]byte, error) {
 	return b.getPublicKey(keyID)
 }
 
+// GenerateKeyPair generates an asymmetric key pair and returns DER-encoded keys.
+func (b *PersistentBackend) GenerateKeyPair(keySpec KeySpec) ([]byte, []byte, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.generateKeyPairDER(keySpec)
+}
+
 // IsKeyAvailable checks if a key is available in the HSM.
 func (b *PersistentBackend) IsKeyAvailable(keyID string) bool {
 	b.mu.RLock()

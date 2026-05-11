@@ -430,54 +430,31 @@ func (s *NeptuneService) DescribeDBEngineVersions(ctx context.Context, reqCtx *r
 		}, nil
 	}
 
-	versions := []map[string]interface{}{
-		{
-			"Engine":                             engine,
-			"EngineVersion":                      "1.3.2.0",
-			"DBParameterGroupFamily":             "neptune1",
-			"DBEngineDescription":                "Amazon Neptune",
-			"DBEngineVersionDescription":         "Neptune 1.3.2.0",
-			"ValidUpgradeTarget":                 protocol.XMLElements{ElementName: "UpgradeTarget", Items: []interface{}{}},
-			"ExportableLogTypes":                 []interface{}{"audit", "slowquery"},
-			"SupportsLogExportsToCloudwatchLogs": true,
-			"SupportsGlobalDatabases":            false,
-			"SupportsParallelQuery":              true,
-			"SupportsReadReplica":                true,
-			"Status":                             "available",
-		},
-		{
-			"Engine":                             engine,
-			"EngineVersion":                      "1.3.1.0",
-			"DBParameterGroupFamily":             "neptune1",
-			"DBEngineDescription":                "Amazon Neptune",
-			"DBEngineVersionDescription":         "Neptune 1.3.1.0",
-			"ValidUpgradeTarget":                 protocol.XMLElements{ElementName: "UpgradeTarget", Items: []interface{}{}},
-			"ExportableLogTypes":                 []interface{}{"audit", "slowquery"},
-			"SupportsLogExportsToCloudwatchLogs": true,
-			"SupportsGlobalDatabases":            false,
-			"SupportsParallelQuery":              true,
-			"SupportsReadReplica":                true,
-			"Status":                             "available",
-		},
-		{
-			"Engine":                             engine,
-			"EngineVersion":                      "1.2.1.0",
-			"DBParameterGroupFamily":             "neptune1",
-			"DBEngineDescription":                "Amazon Neptune",
-			"DBEngineVersionDescription":         "Neptune 1.2.1.0",
-			"ValidUpgradeTarget":                 protocol.XMLElements{ElementName: "UpgradeTarget", Items: []interface{}{}},
-			"ExportableLogTypes":                 []interface{}{"audit", "slowquery"},
-			"SupportsLogExportsToCloudwatchLogs": true,
-			"SupportsGlobalDatabases":            false,
-			"SupportsParallelQuery":              false,
-			"SupportsReadReplica":                true,
-			"Status":                             "available",
-		},
+	versions := []struct {
+		version       string
+		parallelQuery bool
+	}{
+		{"1.3.2.0", true},
+		{"1.3.1.0", true},
+		{"1.2.1.0", false},
 	}
 
 	result := make([]interface{}, 0, len(versions))
 	for _, v := range versions {
-		result = append(result, v)
+		result = append(result, map[string]interface{}{
+			"Engine":                             engine,
+			"EngineVersion":                      v.version,
+			"DBParameterGroupFamily":             "neptune1",
+			"DBEngineDescription":                "Amazon Neptune",
+			"DBEngineVersionDescription":         "Neptune " + v.version,
+			"ValidUpgradeTarget":                 protocol.XMLElements{ElementName: "UpgradeTarget", Items: []interface{}{}},
+			"ExportableLogTypes":                 []interface{}{"audit", "slowquery"},
+			"SupportsLogExportsToCloudwatchLogs": true,
+			"SupportsGlobalDatabases":            false,
+			"SupportsParallelQuery":              v.parallelQuery,
+			"SupportsReadReplica":                true,
+			"Status":                             "available",
+		})
 	}
 
 	return map[string]interface{}{

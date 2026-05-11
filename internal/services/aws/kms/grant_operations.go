@@ -82,35 +82,10 @@ func (s *KMSService) ListGrants(ctx context.Context, reqCtx *request.RequestCont
 
 	grants := make([]map[string]interface{}, len(result.Grants))
 	for i, g := range result.Grants {
-		grant := map[string]interface{}{
-			"KeyId":            key.Arn,
-			"GrantId":          g.GrantID,
-			"GranteePrincipal": g.GranteePrincipal,
-			"Operations":       g.Operations,
-			"IssuingAccount":   g.IssuingAccount,
-			"CreationDate":     g.CreationDate.Unix(),
-		}
-		if g.Name != "" {
-			grant["Name"] = g.Name
-		}
-		if g.RetiringPrincipal != "" {
-			grant["RetiringPrincipal"] = g.RetiringPrincipal
-		}
-		if g.Constraints != nil {
-			grant["Constraints"] = g.Constraints
-		}
-		grants[i] = grant
+		grants[i] = s.buildGrantResponse(g, key.Arn)
 	}
 
-	response := map[string]interface{}{
-		"Grants":    grants,
-		"Truncated": result.IsTruncated,
-	}
-	if result.IsTruncated {
-		response["NextMarker"] = result.NextMarker
-	}
-
-	return response, nil
+	return s.buildGrantsListResponse(grants, result.IsTruncated, result.NextMarker), nil
 }
 
 // ListRetirableGrants retrieves grants that can be retired by the specified retiring principal.
@@ -133,42 +108,53 @@ func (s *KMSService) ListRetirableGrants(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	grants := make([]map[string]interface{}, len(result.Grants))
-	for i, g := range result.Grants {
+	var grants []map[string]interface{}
+	grants = make([]map[string]interface{}, 0)
+	for _, g := range result.Grants {
 		key, err := stores.keys.Get(g.KeyID)
 		if err != nil {
 			continue
 		}
 
-		grant := map[string]interface{}{
-			"KeyId":            key.Arn,
-			"GrantId":          g.GrantID,
-			"GranteePrincipal": g.GranteePrincipal,
-			"Operations":       g.Operations,
-			"IssuingAccount":   g.IssuingAccount,
-			"CreationDate":     g.CreationDate.Unix(),
-		}
-		if g.Name != "" {
-			grant["Name"] = g.Name
-		}
-		if g.RetiringPrincipal != "" {
-			grant["RetiringPrincipal"] = g.RetiringPrincipal
-		}
-		if g.Constraints != nil {
-			grant["Constraints"] = g.Constraints
-		}
-		grants[i] = grant
+		grant := s.buildGrantResponse(g, key.Arn)
+		grants = append(grants, grant)
 	}
 
+	return s.buildGrantsListResponse(grants, result.IsTruncated, result.NextMarker), nil
+}
+
+// buildGrantResponse constructs a grant response map from a store grant.
+func (s *KMSService) buildGrantResponse(g *kmsstore.Grant, keyArn string) map[string]interface{} {
+	grant := map[string]interface{}{
+		"KeyId":            keyArn,
+		"GrantId":          g.GrantID,
+		"GranteePrincipal": g.GranteePrincipal,
+		"Operations":       g.Operations,
+		"IssuingAccount":   g.IssuingAccount,
+		"CreationDate":     g.CreationDate.Unix(),
+	}
+	if g.Name != "" {
+		grant["Name"] = g.Name
+	}
+	if g.RetiringPrincipal != "" {
+		grant["RetiringPrincipal"] = g.RetiringPrincipal
+	}
+	if g.Constraints != nil {
+		grant["Constraints"] = g.Constraints
+	}
+	return grant
+}
+
+// buildGrantsListResponse constructs a paginated grants list response.
+func (s *KMSService) buildGrantsListResponse(grants []map[string]interface{}, isTruncated bool, nextMarker string) map[string]interface{} {
 	response := map[string]interface{}{
 		"Grants":    grants,
-		"Truncated": result.IsTruncated,
+		"Truncated": isTruncated,
 	}
-	if result.IsTruncated {
-		response["NextMarker"] = result.NextMarker
+	if isTruncated {
+		response["NextMarker"] = nextMarker
 	}
-
-	return response, nil
+	return response
 }
 
 // RevokeGrant revokes a grant from a KMS key.

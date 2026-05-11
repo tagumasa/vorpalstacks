@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/store/aws/common"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
 
@@ -26,6 +26,9 @@ var (
 	// ErrInvalidRequest indicates that the request is not valid.
 	ErrInvalidRequest = awserrors.NewAWSError("InvalidParameterException", "The request is not valid.", http.StatusBadRequest)
 )
+
+// arnPrefix is the standard AWS ARN prefix used to detect ARN-based secret IDs.
+const arnPrefix = "arn:"
 
 func mapStoreError(err error) error {
 	if err == nil {
@@ -51,7 +54,7 @@ func (s *SecretsManagerService) resolveSecret(reqCtx *request.RequestContext, se
 	if err != nil {
 		return nil, err
 	}
-	if len(secretId) >= 3 && secretId[:3] == "arn" {
+	if strings.HasPrefix(secretId, arnPrefix) {
 		secret, err := store.GetSecretByARN(secretId)
 		return secret, mapStoreError(err)
 	}
@@ -64,18 +67,12 @@ func (s *SecretsManagerService) resolveSecretForMetadata(reqCtx *request.Request
 	if err != nil {
 		return nil, err
 	}
-	if len(secretId) >= 3 && secretId[:3] == "arn" {
-		opts := common.ListOptions{MaxItems: 1000}
-		result, err := common.List[secretsmanagerstore.Secret](store.GetBaseStore(), opts, func(sec *secretsmanagerstore.Secret) bool {
-			return sec.ARN == secretId
-		})
+	if strings.HasPrefix(secretId, arnPrefix) {
+		name, err := store.LookupNameByARN(secretId)
 		if err != nil {
-			return nil, err
+			return nil, mapStoreError(err)
 		}
-		if len(result.Items) == 0 {
-			return nil, ErrSecretNotFound
-		}
-		return result.Items[0], nil
+		return store.GetSecretForMetadata(name)
 	}
 	secret, err := store.GetSecretForMetadata(secretId)
 	return secret, mapStoreError(err)

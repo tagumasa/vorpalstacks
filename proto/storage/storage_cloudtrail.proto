@@ -67,6 +67,7 @@ message Event {
   string error_code = 17;
   string error_message = 18;
   map<string, string> tags = 19;
+  string event_category = 20;
 }
 
 message UserIdentity {

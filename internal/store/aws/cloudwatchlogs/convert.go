@@ -21,6 +21,7 @@ func LogGroupToProto(lg *LogGroup) *pb.LogGroup {
 		MetricFilterCount: lg.MetricFilterCount,
 		StoredBytes:       lg.StoredBytes,
 		Tags:              lg.Tags,
+		LogGroupClass:     lg.LogGroupClass,
 	}
 }
 
@@ -39,6 +40,7 @@ func ProtoToLogGroup(p *pb.LogGroup) *LogGroup {
 		MetricFilterCount: p.MetricFilterCount,
 		StoredBytes:       p.StoredBytes,
 		Tags:              p.Tags,
+		LogGroupClass:     p.LogGroupClass,
 	}
 }
 
@@ -185,5 +187,37 @@ func ProtoToSubscriptionFilter(p *pb.SubscriptionFilter) *SubscriptionFilter {
 		RoleArn:        p.RoleArn,
 		Distribution:   p.Distribution,
 		CreationTime:   time.UnixMilli(p.CreatedAt),
+	}
+}
+
+// DestinationToProto converts a Destination to its protobuf representation.
+func DestinationToProto(d *Destination) *pb.Destination {
+	if d == nil {
+		return nil
+	}
+	return &pb.Destination{
+		Name:         d.Name,
+		Arn:          d.ARN,
+		RoleArn:      d.RoleArn,
+		TargetArn:    d.TargetArn,
+		AccessPolicy: d.AccessPolicy,
+		CreationTime: d.CreationTime,
+		Tags:         d.Tags,
+	}
+}
+
+// ProtoToDestination converts a protobuf Destination to its internal representation.
+func ProtoToDestination(p *pb.Destination) *Destination {
+	if p == nil {
+		return nil
+	}
+	return &Destination{
+		Name:         p.Name,
+		ARN:          p.Arn,
+		RoleArn:      p.RoleArn,
+		TargetArn:    p.TargetArn,
+		AccessPolicy: p.AccessPolicy,
+		CreationTime: p.CreationTime,
+		Tags:         p.Tags,
 	}
 }

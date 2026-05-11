@@ -1,7 +1,6 @@
 package neptune
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -46,7 +45,7 @@ type NeptuneStore struct {
 	clusterEndpoints   *common.ProtoStore[DBClusterEndpoint]
 	queries            *common.RawProtoStore[*pb.QueryState]
 	loaderJobs         *common.RawProtoStore[*pb.LoaderJob]
-	events             *common.BaseStore
+	events             *common.ProtoStore[Event]
 	tags               *common.BaseStore
 	mu                 sync.RWMutex
 }
@@ -148,8 +147,16 @@ func NewNeptuneStore(store storage.BasicStorage) *NeptuneStore {
 			NewProto: func() *pb.LoaderJob { return &pb.LoaderJob{} },
 			IDFunc:   func(p *pb.LoaderJob) string { return p.GetLoadId() },
 		}),
-		events: common.NewBaseStore(store.Bucket(eventsBucket), "neptune"),
-		tags:   common.NewBaseStore(store.Bucket(tagsBucket), "neptune"),
+		events: common.NewProtoStore(common.ProtoStoreConfig[Event]{
+			Store:        common.NewBaseStore(store.Bucket(eventsBucket), "neptune"),
+			NewProto:     func() proto.Message { return &pb.Event{} },
+			ToDomain:     func(m proto.Message) *Event { return ProtoToEvent(m.(*pb.Event)) },
+			ToProto:      func(d *Event) proto.Message { return EventToProto(d) },
+			IDFunc:       func(d *Event) string { return d.EventID },
+			NotFoundErr:  ErrEventNotFound,
+			AlreadyExist: ErrEventAlreadyExists,
+		}),
+		tags: common.NewBaseStore(store.Bucket(tagsBucket), "neptune"),
 	}
 }
 
@@ -578,10 +585,9 @@ func (s *NeptuneStore) RecordEvent(evt *Event) error {
 	if evt.EventID == "" {
 		evt.EventID = fmt.Sprintf("evt-%d", time.Now().UnixNano())
 	}
-	return s.events.Put(evt.EventID, evt)
+	return s.events.Create(evt)
 }
 
-// ListEvents returns events matching the given filters with pagination.
 func (s *NeptuneStore) ListEvents(opts EventListOptions) (*EventListResult, error) {
 	if opts.MaxRecords <= 0 {
 		opts.MaxRecords = 100
@@ -589,36 +595,30 @@ func (s *NeptuneStore) ListEvents(opts EventListOptions) (*EventListResult, erro
 
 	cutoff := time.Now().Add(-maxEventAge)
 
-	var allEvents []*Event
-	err := s.events.ForEach(func(key string, value []byte) error {
-		var evt Event
-		if err := json.Unmarshal(value, &evt); err != nil {
-			return err
-		}
+	allEvents, err := s.events.ListFiltered(func(evt *Event) bool {
 		if evt.Date.Before(cutoff) {
-			return nil
+			return false
 		}
 		if opts.SourceType != "" && evt.SourceType != opts.SourceType {
-			return nil
+			return false
 		}
 		if opts.SourceIdentifier != "" && evt.SourceIdentifier != opts.SourceIdentifier {
-			return nil
+			return false
 		}
 		if !opts.StartTime.IsZero() && evt.Date.Before(opts.StartTime) {
-			return nil
+			return false
 		}
 		if !opts.EndTime.IsZero() && evt.Date.After(opts.EndTime) {
-			return nil
+			return false
 		}
-		allEvents = append(allEvents, &evt)
-		return nil
+		return true
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	started := opts.Marker == ""
-	var page []*Event
+	var remaining []*Event
 	for _, evt := range allEvents {
 		if !started {
 			if evt.EventID == opts.Marker {
@@ -626,37 +626,28 @@ func (s *NeptuneStore) ListEvents(opts EventListOptions) (*EventListResult, erro
 			}
 			continue
 		}
-		page = append(page, evt)
-		if len(page) >= opts.MaxRecords {
+		remaining = append(remaining, evt)
+		if len(remaining) > opts.MaxRecords {
 			break
 		}
 	}
 
-	result := &EventListResult{Events: page}
-	if len(page) < len(allEvents) {
+	result := &EventListResult{Events: remaining}
+	if len(remaining) > opts.MaxRecords {
+		result.Events = remaining[:opts.MaxRecords]
 		result.IsTruncated = true
-		result.Marker = page[len(page)-1].EventID
+		result.Marker = result.Events[len(result.Events)-1].EventID
 	}
 	return result, nil
 }
 
-// PurgeOldEvents removes events older than maxEventAge and trims the total
-// count to maxEvents by deleting the oldest entries first.
 func (s *NeptuneStore) PurgeOldEvents() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	cutoff := time.Now().Add(-maxEventAge)
 
-	var allEvents []*Event
-	err := s.events.ForEach(func(key string, value []byte) error {
-		var evt Event
-		if err := json.Unmarshal(value, &evt); err != nil {
-			return err
-		}
-		allEvents = append(allEvents, &evt)
-		return nil
-	})
+	allEvents, err := s.events.List()
 	if err != nil {
 		return err
 	}

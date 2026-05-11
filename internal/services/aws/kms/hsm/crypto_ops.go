@@ -9,6 +9,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/sha512"
+	"crypto/x509"
 	"encoding/asn1"
 	"errors"
 	"math/big"
@@ -108,6 +109,61 @@ func (c *cryptoOps) generateKeyMaterial(keySpec KeySpec) (*memoryKey, error) {
 	}
 
 	return key, nil
+}
+
+func (c *cryptoOps) generateKeyPairDER(keySpec KeySpec) ([]byte, []byte, error) {
+	switch keySpec {
+	case KeySpecRSA2048:
+		key, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			return nil, nil, err
+		}
+		return marshalKeyPair(key, &key.PublicKey)
+	case KeySpecRSA3072:
+		key, err := rsa.GenerateKey(rand.Reader, 3072)
+		if err != nil {
+			return nil, nil, err
+		}
+		return marshalKeyPair(key, &key.PublicKey)
+	case KeySpecRSA4096:
+		key, err := rsa.GenerateKey(rand.Reader, 4096)
+		if err != nil {
+			return nil, nil, err
+		}
+		return marshalKeyPair(key, &key.PublicKey)
+	case KeySpecECCNISTP256, KeySpecECCSECPP256R1:
+		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			return nil, nil, err
+		}
+		return marshalKeyPair(key, &key.PublicKey)
+	case KeySpecECCNISTP384:
+		key, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+		if err != nil {
+			return nil, nil, err
+		}
+		return marshalKeyPair(key, &key.PublicKey)
+	case KeySpecECCNISTP521:
+		key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		if err != nil {
+			return nil, nil, err
+		}
+		return marshalKeyPair(key, &key.PublicKey)
+	default:
+		return nil, nil, ErrInvalidKeySpec
+	}
+}
+
+func marshalKeyPair(priv crypto.PrivateKey, pub crypto.PublicKey) ([]byte, []byte, error) {
+	privDER, err := x509.MarshalPKCS8PrivateKey(priv)
+	if err != nil {
+		return nil, nil, err
+	}
+	pubDER, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		return nil, nil, err
+	}
+	return privDER, pubDER, nil
 }
 
 func (c *cryptoOps) encrypt(keyID string, plaintext []byte, context map[string]string) (*EncryptResult, error) {
