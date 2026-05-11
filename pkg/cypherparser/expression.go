@@ -376,9 +376,6 @@ func evalComparison(ctx *EvalContext, e *Expression) (any, error) {
 
 	cmp, cerr := compareValuesSafe(left, right)
 	if cerr != nil {
-		if e.Op == OpNeq {
-			return nil, nil
-		}
 		return nil, nil
 	}
 

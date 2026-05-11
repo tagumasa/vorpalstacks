@@ -129,14 +129,7 @@ func collectMainBindings(ctx context.Context, reader graphengine.GraphReader, q 
 			}
 
 			for _, e := range edges {
-				targetID := e.To
-				if rel.Dir == graphengine.Incoming {
-					targetID = e.From
-				} else if rel.Dir == graphengine.Both {
-					if e.To == a.ID {
-						targetID = e.From
-					}
-				}
+				targetID := resolveEdgeTarget(e, rel.Dir, a.ID)
 
 				bNode, err := reader.GetNode(targetID)
 				if err != nil {
@@ -147,6 +140,10 @@ func collectMainBindings(ctx context.Context, reader graphengine.GraphReader, q 
 					continue
 				}
 				if !matchProps(bNode.Props, bPat.Props) {
+					continue
+				}
+
+				if len(rel.Props) > 0 && !matchEdgeProps(e, rel.Props) {
 					continue
 				}
 
@@ -164,10 +161,6 @@ func collectMainBindings(ctx context.Context, reader graphengine.GraphReader, q 
 					if !ok {
 						continue
 					}
-				}
-
-				if len(rel.Props) > 0 && !matchEdgeProps(e, rel.Props) {
-					continue
 				}
 
 				bindings = append(bindings, row)
@@ -214,14 +207,7 @@ func attemptOptionalMatch(ctx context.Context, reader graphengine.GraphReader, b
 				return nil, err
 			}
 
-			targetID := e.To
-			if rel.Dir == graphengine.Incoming {
-				targetID = e.From
-			} else if rel.Dir == graphengine.Both {
-				if e.To == sourceNode.ID {
-					targetID = e.From
-				}
-			}
+			targetID := resolveEdgeTarget(e, rel.Dir, sourceNode.ID)
 
 			bNode, err := reader.GetNode(targetID)
 			if err != nil {
@@ -324,6 +310,7 @@ func nullifyOptionalBindings(binding map[string]any, optPat Pattern) map[string]
 }
 
 func findCandidates(reader graphengine.GraphReader, np NodePattern) ([]*graphengine.Node, error) {
+
 	if len(np.Labels) > 0 {
 		candidates, err := reader.FindByLabel(np.Labels[0])
 		if err != nil {
@@ -473,25 +460,7 @@ func projectResults(reader graphengine.GraphReader, q *CypherQuery, nodes []*gra
 		result.Rows = append(result.Rows, row)
 	}
 
-	if q.Return.Distinct {
-		result.Rows = distinctRows(result.Rows, result.Columns)
-	}
-
-	if len(q.OrderBy) > 0 {
-		sortRows(result.Rows, q.OrderBy)
-	}
-
-	if q.Skip != nil && *q.Skip > 0 {
-		if *q.Skip < len(result.Rows) {
-			result.Rows = result.Rows[*q.Skip:]
-		} else {
-			result.Rows = []map[string]any{}
-		}
-	}
-
-	if q.Limit != nil && *q.Limit > 0 && len(result.Rows) > *q.Limit {
-		result.Rows = result.Rows[:*q.Limit]
-	}
+	result.Rows = applyResultModifiers(result.Rows, result.Columns, q.OrderBy, q.Skip, q.Limit, q.Return.Distinct)
 
 	return result, nil
 }
@@ -574,25 +543,7 @@ func projectPatternResults(reader graphengine.GraphReader, q *CypherQuery, rows 
 		result.Rows = append(result.Rows, row)
 	}
 
-	if q.Return.Distinct {
-		result.Rows = distinctRows(result.Rows, result.Columns)
-	}
-
-	if len(q.OrderBy) > 0 {
-		sortRows(result.Rows, q.OrderBy)
-	}
-
-	if q.Skip != nil && *q.Skip > 0 {
-		if *q.Skip < len(result.Rows) {
-			result.Rows = result.Rows[*q.Skip:]
-		} else {
-			result.Rows = []map[string]any{}
-		}
-	}
-
-	if q.Limit != nil && *q.Limit > 0 && len(result.Rows) > *q.Limit {
-		result.Rows = result.Rows[:*q.Limit]
-	}
+	result.Rows = applyResultModifiers(result.Rows, result.Columns, q.OrderBy, q.Skip, q.Limit, q.Return.Distinct)
 
 	return result, nil
 }
@@ -625,25 +576,7 @@ func projectBindings(reader graphengine.GraphReader, q *CypherQuery, bindings []
 		result.Rows = append(result.Rows, row)
 	}
 
-	if q.Return.Distinct {
-		result.Rows = distinctRows(result.Rows, result.Columns)
-	}
-
-	if len(q.OrderBy) > 0 {
-		sortRows(result.Rows, q.OrderBy)
-	}
-
-	if q.Skip != nil && *q.Skip > 0 {
-		if *q.Skip < len(result.Rows) {
-			result.Rows = result.Rows[*q.Skip:]
-		} else {
-			result.Rows = []map[string]any{}
-		}
-	}
-
-	if q.Limit != nil && *q.Limit > 0 && len(result.Rows) > *q.Limit {
-		result.Rows = result.Rows[:*q.Limit]
-	}
+	result.Rows = applyResultModifiers(result.Rows, result.Columns, q.OrderBy, q.Skip, q.Limit, q.Return.Distinct)
 
 	return result, nil
 }
@@ -853,6 +786,26 @@ func rowKey(row map[string]any, columns []string) string {
 		}
 	}
 	return b.String()
+}
+
+func applyResultModifiers(rows []map[string]any, columns []string, orderBy []OrderItem, skip *int, limit *int, distinct bool) []map[string]any {
+	if distinct {
+		rows = distinctRows(rows, columns)
+	}
+	if len(orderBy) > 0 {
+		sortRows(rows, orderBy)
+	}
+	if skip != nil && *skip > 0 {
+		if *skip < len(rows) {
+			rows = rows[*skip:]
+		} else {
+			rows = []map[string]any{}
+		}
+	}
+	if limit != nil && *limit > 0 && len(rows) > *limit {
+		rows = rows[:*limit]
+	}
+	return rows
 }
 
 func buildColumns(items []ReturnItem) []string {

@@ -1518,21 +1518,21 @@ func TestEvalExpr_ListFuncs(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// evalRowExpr
+// evalOrderValue (was evalRowExpr)
 // ---------------------------------------------------------------------------
 
-func TestEvalRowExpr(t *testing.T) {
+func TestEvalOrderValue(t *testing.T) {
 	row := map[string]any{
 		"n.age": float64(25),
 		"n":     &graphengine.Node{Props: graphengine.Props{"age": float64(25)}},
 	}
 
-	got := evalRowExpr(ep(propExpr("n", "age")), row)
+	got := evalOrderValue(ep(propExpr("n", "age")), row)
 	if got != float64(25) {
 		t.Errorf("got %v, want 25", got)
 	}
 
-	got = evalRowExpr(ep(varRefExpr("n")), row)
+	got = evalOrderValue(ep(varRefExpr("n")), row)
 	if got == nil {
 		t.Error("got nil for variable lookup")
 	}

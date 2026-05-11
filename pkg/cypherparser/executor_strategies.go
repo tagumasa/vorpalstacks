@@ -59,14 +59,7 @@ func execSingleHopMatch(ctx context.Context, reader graphengine.GraphReader, q *
 		}
 
 		for _, e := range edges {
-			targetID := e.To
-			if rel.Dir == graphengine.Incoming {
-				targetID = e.From
-			} else if rel.Dir == graphengine.Both {
-				if e.To == a.ID {
-					targetID = e.From
-				}
-			}
+			targetID := resolveEdgeTarget(e, rel.Dir, a.ID)
 
 			bNode, err := reader.GetNode(targetID)
 			if err != nil {

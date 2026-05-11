@@ -323,7 +323,6 @@ func runSegmentSingleHopMatch(ctx context.Context, reader graphengine.GraphReade
 	aHasExprProps := hasExpressionProps(aPat.Props)
 	bHasExprProps := hasExpressionProps(bPat.Props)
 	rHasExprProps := hasExpressionProps(rel.Props)
-	_ = aHasExprProps
 
 	if boundVal, ok := seedBinding[aVar]; ok {
 		sourceNode, ok := boundVal.(*graphengine.Node)
@@ -342,14 +341,7 @@ func runSegmentSingleHopMatch(ctx context.Context, reader graphengine.GraphReade
 				return nil, err
 			}
 
-			targetID := e.To
-			if rel.Dir == graphengine.Incoming {
-				targetID = e.From
-			} else if rel.Dir == graphengine.Both {
-				if e.To == sourceNode.ID {
-					targetID = e.From
-				}
-			}
+			targetID := resolveEdgeTarget(e, rel.Dir, sourceNode.ID)
 
 			bNode, err := reader.GetNode(targetID)
 			if err != nil {
@@ -427,14 +419,7 @@ func runSegmentSingleHopMatch(ctx context.Context, reader graphengine.GraphReade
 		}
 
 		for _, e := range edges {
-			targetID := e.To
-			if rel.Dir == graphengine.Incoming {
-				targetID = e.From
-			} else if rel.Dir == graphengine.Both {
-				if e.To == a.ID {
-					targetID = e.From
-				}
-			}
+			targetID := resolveEdgeTarget(e, rel.Dir, a.ID)
 
 			bNode, err := reader.GetNode(targetID)
 			if err != nil {

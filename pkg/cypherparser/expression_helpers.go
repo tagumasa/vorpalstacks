@@ -455,3 +455,17 @@ func evalRange(start, end, step int64) []any {
 	}
 	return result
 }
+
+func resolveEdgeTarget(e *graphengine.Edge, dir graphengine.Direction, sourceID graphengine.NodeID) graphengine.NodeID {
+	switch dir {
+	case graphengine.Incoming:
+		return e.From
+	case graphengine.Both:
+		if e.To == sourceID {
+			return e.From
+		}
+		return e.To
+	default:
+		return e.To
+	}
+}

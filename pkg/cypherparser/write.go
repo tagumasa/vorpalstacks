@@ -169,7 +169,7 @@ func collectCommaBindings(ctx context.Context, reader graphengine.GraphReader, q
 	}
 
 	var bindings []map[string]any
-	crossProduct(candidateSets, varNames, 0, map[string]any{}, func(binding map[string]any) {
+	crossProductBindings(candidateSets, varNames, 0, map[string]any{}, func(binding map[string]any) {
 		if q.Where != nil {
 			ok, err := evalBool(&EvalContext{Bindings: binding}, q.Where)
 			if err != nil || !ok {
@@ -183,21 +183,6 @@ func collectCommaBindings(ctx context.Context, reader graphengine.GraphReader, q
 		bindings = append(bindings, cp)
 	})
 	return bindings, nil
-}
-
-func crossProduct(sets [][]*graphengine.Node, varNames []string, idx int, acc map[string]any, emit func(map[string]any)) {
-	if idx >= len(sets) {
-		emit(acc)
-		return
-	}
-	for _, n := range sets[idx] {
-		newAcc := make(map[string]any, len(acc)+1)
-		for k, v := range acc {
-			newAcc[k] = v
-		}
-		newAcc[varNames[idx]] = n
-		crossProduct(sets, varNames, idx+1, newAcc, emit)
-	}
 }
 
 func collectSingleNodeBindings(ctx context.Context, reader graphengine.GraphReader, q *CypherQuery, np NodePattern, varName string) ([]map[string]any, error) {
@@ -265,14 +250,7 @@ func collectSingleHopBindings(ctx context.Context, reader graphengine.GraphReade
 		}
 
 		for _, e := range edges {
-			targetID := e.To
-			if rel.Dir == graphengine.Incoming {
-				targetID = e.From
-			} else if rel.Dir == graphengine.Both {
-				if e.To == a.ID {
-					targetID = e.From
-				}
-			}
+			targetID := resolveEdgeTarget(e, rel.Dir, a.ID)
 
 			bNode, err := reader.GetNode(targetID)
 			if err != nil {
@@ -371,21 +349,7 @@ func executeCreate(ctx context.Context, reader graphengine.GraphReader, writer g
 		result.Rows = append(result.Rows, row)
 	}
 
-	if len(w.OrderBy) > 0 {
-		sortRows(result.Rows, w.OrderBy)
-	}
-
-	if w.Skip != nil && *w.Skip > 0 {
-		if *w.Skip < len(result.Rows) {
-			result.Rows = result.Rows[*w.Skip:]
-		} else {
-			result.Rows = nil
-		}
-	}
-
-	if w.Limit != nil && *w.Limit > 0 && len(result.Rows) > *w.Limit {
-		result.Rows = result.Rows[:*w.Limit]
-	}
+	result.Rows = applyResultModifiers(result.Rows, result.Columns, w.OrderBy, w.Skip, w.Limit, false)
 
 	return result, nil
 }
@@ -635,21 +599,7 @@ func executeMerge(ctx context.Context, reader graphengine.GraphReader, writer gr
 		result.Rows = append(result.Rows, row)
 	}
 
-	if len(m.OrderBy) > 0 {
-		sortRows(result.Rows, m.OrderBy)
-	}
-
-	if m.Skip != nil && *m.Skip > 0 {
-		if *m.Skip < len(result.Rows) {
-			result.Rows = result.Rows[*m.Skip:]
-		} else {
-			result.Rows = nil
-		}
-	}
-
-	if m.Limit != nil && *m.Limit > 0 && len(result.Rows) > *m.Limit {
-		result.Rows = result.Rows[:*m.Limit]
-	}
+	result.Rows = applyResultModifiers(result.Rows, result.Columns, m.OrderBy, m.Skip, m.Limit, false)
 
 	return result, nil
 }
@@ -941,129 +891,61 @@ func resolveMergeParams(m *CypherMerge, params map[string]any) error {
 	return nil
 }
 
-func resolveNodeProps(np *NodePattern, params map[string]any) error {
-	if np.Props == nil {
-		return nil
-	}
-	for k, v := range np.Props {
-		if p, ok := v.(paramRef); ok {
-			val, ok := params[string(p)]
-			if !ok {
-				return fmt.Errorf("cypher exec: parameter $%s not provided", p)
-			}
-			np.Props[k] = val
-		} else if expr, ok := v.(Expression); ok {
-			if err := resolveExprParams(&expr, params); err != nil {
-				return err
-			}
-			val, err := evalExpr(&EvalContext{Params: params}, &expr)
-			if err != nil {
-				return fmt.Errorf("cypher exec: failed to evaluate property expression: %w", err)
-			}
-			np.Props[k] = val
+func resolvePropValue(v any, params map[string]any, bindings map[string]any) (any, error, bool) {
+	if p, ok := v.(paramRef); ok {
+		val, ok := params[string(p)]
+		if !ok {
+			return nil, fmt.Errorf("cypher exec: parameter $%s not provided", p), false
 		}
+		return val, nil, true
 	}
-	return nil
+	if expr, ok := v.(Expression); ok {
+		if err := resolveExprParams(&expr, params); err != nil {
+			return nil, err, false
+		}
+		val, err := evalExpr(&EvalContext{Params: params, Bindings: bindings}, &expr)
+		if err != nil {
+			return nil, fmt.Errorf("cypher exec: failed to evaluate property expression: %w", err), false
+		}
+		return val, nil, true
+	}
+	return nil, nil, false
 }
 
-func resolveNodePropsWithBindings(np *NodePattern, params map[string]any, bindings map[string]any) error {
-	if np.Props == nil {
-		return nil
-	}
-	for k, v := range np.Props {
-		if p, ok := v.(paramRef); ok {
-			val, ok := params[string(p)]
-			if !ok {
-				return fmt.Errorf("cypher exec: parameter $%s not provided", p)
-			}
-			np.Props[k] = val
-		} else if expr, ok := v.(Expression); ok {
-			if err := resolveExprParams(&expr, params); err != nil {
-				return err
-			}
-			val, err := evalExpr(&EvalContext{Params: params, Bindings: bindings}, &expr)
-			if err != nil {
-				return fmt.Errorf("cypher exec: failed to evaluate property expression: %w", err)
-			}
-			np.Props[k] = val
-		}
-	}
-	return nil
-}
-
-func resolveRelPropsWithBindings(rp *RelPattern, params map[string]any, bindings map[string]any) error {
-	if rp.Props == nil {
-		return nil
-	}
-	for k, v := range rp.Props {
-		if p, ok := v.(paramRef); ok {
-			val, ok := params[string(p)]
-			if !ok {
-				return fmt.Errorf("cypher exec: parameter $%s not provided", p)
-			}
-			rp.Props[k] = val
-		} else if expr, ok := v.(Expression); ok {
-			if err := resolveExprParams(&expr, params); err != nil {
-				return err
-			}
-			val, err := evalExpr(&EvalContext{Params: params, Bindings: bindings}, &expr)
-			if err != nil {
-				return fmt.Errorf("cypher exec: failed to evaluate property expression: %w", err)
-			}
-			rp.Props[k] = val
-		}
-	}
-	return nil
-}
-
-func resolveRelPropsWrite(rp *RelPattern, params map[string]any) error {
-	if rp.Props == nil {
-		return nil
-	}
-	for k, v := range rp.Props {
-		if p, ok := v.(paramRef); ok {
-			val, ok := params[string(p)]
-			if !ok {
-				return fmt.Errorf("cypher exec: parameter $%s not provided", p)
-			}
-			rp.Props[k] = val
-		} else if expr, ok := v.(Expression); ok {
-			if err := resolveExprParams(&expr, params); err != nil {
-				return err
-			}
-			val, err := evalExpr(&EvalContext{Params: params}, &expr)
-			if err != nil {
-				return fmt.Errorf("cypher exec: failed to evaluate edge property expression: %w", err)
-			}
-			rp.Props[k] = val
-		}
-	}
-	return nil
-}
-
-func resolveNodePropsDirect(props map[string]any, params map[string]any) error {
+func resolvePropsMap(props map[string]any, params map[string]any, bindings map[string]any) error {
 	if props == nil {
 		return nil
 	}
 	for k, v := range props {
-		if p, ok := v.(paramRef); ok {
-			val, ok := params[string(p)]
-			if !ok {
-				return fmt.Errorf("cypher exec: parameter $%s not provided", p)
-			}
-			props[k] = val
-		} else if expr, ok := v.(Expression); ok {
-			if err := resolveExprParams(&expr, params); err != nil {
-				return err
-			}
-			val, err := evalExpr(&EvalContext{Params: params}, &expr)
-			if err != nil {
-				return fmt.Errorf("cypher exec: failed to evaluate property expression: %w", err)
-			}
+		val, err, resolved := resolvePropValue(v, params, bindings)
+		if err != nil {
+			return err
+		}
+		if resolved {
 			props[k] = val
 		}
 	}
 	return nil
+}
+
+func resolveNodeProps(np *NodePattern, params map[string]any) error {
+	return resolvePropsMap(np.Props, params, nil)
+}
+
+func resolveNodePropsWithBindings(np *NodePattern, params map[string]any, bindings map[string]any) error {
+	return resolvePropsMap(np.Props, params, bindings)
+}
+
+func resolveRelPropsWithBindings(rp *RelPattern, params map[string]any, bindings map[string]any) error {
+	return resolvePropsMap(rp.Props, params, bindings)
+}
+
+func resolveRelPropsWrite(rp *RelPattern, params map[string]any) error {
+	return resolvePropsMap(rp.Props, params, nil)
+}
+
+func resolveNodePropsDirect(props map[string]any, params map[string]any) error {
+	return resolvePropsMap(props, params, nil)
 }
 
 func collectMultiHopBindings(ctx context.Context, reader graphengine.GraphReader, q *CypherQuery, pat Pattern) ([]map[string]any, error) {

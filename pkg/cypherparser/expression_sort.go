@@ -53,10 +53,6 @@ func evalOrderValue(e *Expression, row map[string]any) any {
 	return val
 }
 
-func evalRowExpr(e *Expression, row map[string]any) any {
-	return evalOrderValue(e, row)
-}
-
 type topKItem struct {
 	sortKey []any
 	source  any

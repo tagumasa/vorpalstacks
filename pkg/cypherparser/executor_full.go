@@ -140,9 +140,6 @@ func matchWhere(q *CypherQuery, bindings map[string]any) bool {
 	if q.Where == nil {
 		return true
 	}
-	if q.With != nil {
-		return true
-	}
 	ok, err := evalBool(&EvalContext{Bindings: bindings}, q.Where)
 	if err != nil {
 		return false
@@ -267,14 +264,7 @@ func matchSingleHopBindings(ctx context.Context, reader graphengine.GraphReader,
 				return nil, err
 			}
 
-			targetID := e.To
-			if rel.Dir == graphengine.Incoming {
-				targetID = e.From
-			} else if rel.Dir == graphengine.Both {
-				if e.To == sourceNode.ID {
-					targetID = e.From
-				}
-			}
+			targetID := resolveEdgeTarget(e, rel.Dir, sourceNode.ID)
 
 			bNode, err := reader.GetNode(targetID)
 			if err != nil {
@@ -345,14 +335,7 @@ func matchSingleHopBindings(ctx context.Context, reader graphengine.GraphReader,
 		}
 
 		for _, e := range edges {
-			targetID := e.To
-			if rel.Dir == graphengine.Incoming {
-				targetID = e.From
-			} else if rel.Dir == graphengine.Both {
-				if e.To == a.ID {
-					targetID = e.From
-				}
-			}
+			targetID := resolveEdgeTarget(e, rel.Dir, a.ID)
 
 			bNode, err := reader.GetNode(targetID)
 			if err != nil {
@@ -622,14 +605,7 @@ func chainMultiHop(ctx context.Context, reader graphengine.GraphReader, pat Patt
 			return nil
 		}
 
-		targetID := e.To
-		if rel.Dir == graphengine.Incoming {
-			targetID = e.From
-		} else if rel.Dir == graphengine.Both {
-			if e.To == current.ID {
-				targetID = e.From
-			}
-		}
+		targetID := resolveEdgeTarget(e, rel.Dir, current.ID)
 
 		nextNode, err := reader.GetNode(targetID)
 		if err != nil {
@@ -751,7 +727,7 @@ func matchVarLengthBindings(ctx context.Context, reader graphengine.GraphReader,
 					binding[rVar] = tr.Path
 				}
 
-				if q.Where != nil && q.With == nil {
+				if q.Where != nil {
 					ok, err := evalBool(&EvalContext{Bindings: binding}, q.Where)
 					if err != nil {
 						bfsErr = err
