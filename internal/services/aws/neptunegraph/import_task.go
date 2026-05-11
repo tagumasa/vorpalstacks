@@ -19,6 +19,89 @@ import (
 	"vorpalstacks/internal/utils/ntriples"
 )
 
+const importBatchSize = 500
+
+// importBatcher manages batched node and edge writes during bulk import,
+// flushing automatically when the batch reaches importBatchSize.
+type importBatcher struct {
+	db            *graphengine.DB
+	extToInternal map[string]graphengine.NodeID
+	nodeBatch     []struct {
+		Labels []string
+		Props  graphengine.Props
+	}
+	edgeBatch []graphengine.Edge
+	dictCount int64
+	errCount  int64
+}
+
+func newImportBatcher(db *graphengine.DB) *importBatcher {
+	return &importBatcher{
+		db:            db,
+		extToInternal: make(map[string]graphengine.NodeID),
+	}
+}
+
+func (b *importBatcher) queueNode(labels []string, props graphengine.Props) {
+	b.nodeBatch = append(b.nodeBatch, struct {
+		Labels []string
+		Props  graphengine.Props
+	}{Labels: labels, Props: props})
+	if len(b.nodeBatch) >= importBatchSize {
+		b.flushNodes()
+	}
+}
+
+func (b *importBatcher) queueEdge(from, to graphengine.NodeID, label string, props graphengine.Props) {
+	b.edgeBatch = append(b.edgeBatch, graphengine.Edge{
+		From: from, To: to, Label: label, Props: props,
+	})
+	if len(b.edgeBatch) >= importBatchSize {
+		b.flushEdges()
+	}
+}
+
+func (b *importBatcher) flushNodes() {
+	if len(b.nodeBatch) == 0 {
+		return
+	}
+	ids, err := b.db.AddNodeBatch(b.nodeBatch)
+	if err != nil {
+		b.errCount += int64(len(b.nodeBatch))
+		logs.Warn("AddNodeBatch failed", logs.Err(err))
+	} else {
+		for i, id := range ids {
+			if i < len(b.nodeBatch) {
+				if extID, ok := b.nodeBatch[i].Props["~id"].(string); ok {
+					b.extToInternal[extID] = id
+					delete(b.nodeBatch[i].Props, "~id")
+				}
+			}
+		}
+		b.dictCount += int64(len(ids))
+	}
+	b.nodeBatch = nil
+}
+
+func (b *importBatcher) flushEdges() {
+	if len(b.edgeBatch) == 0 {
+		return
+	}
+	_, err := b.db.AddEdgeBatch(b.edgeBatch)
+	if err != nil {
+		b.errCount += int64(len(b.edgeBatch))
+		logs.Warn("AddEdgeBatch failed", logs.Err(err))
+	} else {
+		b.dictCount += int64(len(b.edgeBatch))
+	}
+	b.edgeBatch = nil
+}
+
+func (b *importBatcher) flush() {
+	b.flushNodes()
+	b.flushEdges()
+}
+
 // CreateGraphUsingImportTask creates a new graph and initiates a bulk import task from the specified source.
 func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
@@ -455,7 +538,6 @@ func (s *NeptuneGraphService) importCSV(db *graphengine.DB, filePath string) (st
 			break
 		}
 	}
-
 	isEdge := hasFromTo
 
 	idIndex := -1
@@ -477,40 +559,12 @@ func (s *NeptuneGraphService) importCSV(db *graphengine.DB, filePath string) (st
 
 	propIndices := make(map[string]int)
 	for i, h := range headerLower {
-		if strings.HasPrefix(h, "~") {
-			continue
+		if !strings.HasPrefix(h, "~") {
+			propIndices[h] = i
 		}
-		propIndices[h] = i
 	}
 
-	var nodeBatch []struct {
-		Labels []string
-		Props  graphengine.Props
-	}
-	var edgeBatch []graphengine.Edge
-	extToInternal := make(map[string]graphengine.NodeID)
-
-	flushNodeBatch := func() {
-		if len(nodeBatch) == 0 {
-			return
-		}
-		ids, err := db.AddNodeBatch(nodeBatch)
-		if err != nil {
-			errorCount += int64(len(nodeBatch))
-			logs.Warn("AddNodeBatch failed", logs.Err(err))
-		} else {
-			for i, id := range ids {
-				if idIndex >= 0 && i < len(nodeBatch) {
-					if extID, ok := nodeBatch[i].Props["~id"].(string); ok {
-						extToInternal[extID] = id
-						delete(nodeBatch[i].Props, "~id")
-					}
-				}
-			}
-			dictionaryCount += int64(len(ids))
-		}
-		nodeBatch = nil
-	}
+	b := newImportBatcher(db)
 
 	for {
 		record, err := r.Read()
@@ -524,7 +578,7 @@ func (s *NeptuneGraphService) importCSV(db *graphengine.DB, filePath string) (st
 		statementCount++
 
 		if isEdge {
-			flushNodeBatch()
+			b.flushNodes()
 
 			if fromIndex < 0 || toIndex < 0 {
 				errorCount++
@@ -533,20 +587,21 @@ func (s *NeptuneGraphService) importCSV(db *graphengine.DB, filePath string) (st
 
 			fromExt := strings.TrimSpace(record[fromIndex])
 			toExt := strings.TrimSpace(record[toIndex])
+
+			fromID, ok := b.extToInternal[fromExt]
+			if !ok {
+				errorCount++
+				continue
+			}
+			toID, ok := b.extToInternal[toExt]
+			if !ok {
+				errorCount++
+				continue
+			}
+
 			label := ""
 			if labelIndex >= 0 && labelIndex < len(record) {
 				label = strings.TrimSpace(record[labelIndex])
-			}
-
-			fromID, ok := extToInternal[fromExt]
-			if !ok {
-				errorCount++
-				continue
-			}
-			toID, ok := extToInternal[toExt]
-			if !ok {
-				errorCount++
-				continue
 			}
 
 			props := make(graphengine.Props)
@@ -556,12 +611,7 @@ func (s *NeptuneGraphService) importCSV(db *graphengine.DB, filePath string) (st
 				}
 			}
 
-			edgeBatch = append(edgeBatch, graphengine.Edge{
-				From:  fromID,
-				To:    toID,
-				Label: label,
-				Props: props,
-			})
+			b.queueEdge(fromID, toID, label, props)
 		} else {
 			var labels []string
 			if labelIndex >= 0 && labelIndex < len(record) {
@@ -582,43 +632,12 @@ func (s *NeptuneGraphService) importCSV(db *graphengine.DB, filePath string) (st
 				}
 			}
 
-			nodeBatch = append(nodeBatch, struct {
-				Labels []string
-				Props  graphengine.Props
-			}{Labels: labels, Props: props})
-		}
-
-		if len(nodeBatch) >= 500 {
-			flushNodeBatch()
-		}
-
-		if len(edgeBatch) >= 500 {
-			_, err := db.AddEdgeBatch(edgeBatch)
-			if err != nil {
-				errorCount += int64(len(edgeBatch))
-				logs.Warn("AddEdgeBatch failed", logs.Err(err))
-			} else {
-				dictionaryCount += int64(len(edgeBatch))
-			}
-			edgeBatch = nil
+			b.queueNode(labels, props)
 		}
 	}
 
-	if len(nodeBatch) > 0 {
-		flushNodeBatch()
-	}
-
-	if len(edgeBatch) > 0 {
-		_, err := db.AddEdgeBatch(edgeBatch)
-		if err != nil {
-			errorCount += int64(len(edgeBatch))
-			logs.Warn("AddEdgeBatch failed", logs.Err(err))
-		} else {
-			dictionaryCount += int64(len(edgeBatch))
-		}
-	}
-
-	return
+	b.flush()
+	return statementCount, b.dictCount, errorCount + b.errCount
 }
 
 func (s *NeptuneGraphService) importJSON(db *graphengine.DB, filePath string) (statementCount, dictionaryCount, errorCount int64) {
@@ -633,12 +652,7 @@ func (s *NeptuneGraphService) importJSON(db *graphengine.DB, filePath string) (s
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 1024*1024), 10*1024*1024)
 
-	var nodeBatch []struct {
-		Labels []string
-		Props  graphengine.Props
-	}
-	var edgeBatch []graphengine.Edge
-	extToInternal := make(map[string]graphengine.NodeID)
+	b := newImportBatcher(db)
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -659,12 +673,12 @@ func (s *NeptuneGraphService) importJSON(db *graphengine.DB, filePath string) (s
 			toExt := fmt.Sprintf("%v", doc["~to"])
 			label := fmt.Sprintf("%v", doc["~type"])
 
-			fromID, ok := extToInternal[fromExt]
+			fromID, ok := b.extToInternal[fromExt]
 			if !ok {
 				errorCount++
 				continue
 			}
-			toID, ok := extToInternal[toExt]
+			toID, ok := b.extToInternal[toExt]
 			if !ok {
 				errorCount++
 				continue
@@ -678,12 +692,7 @@ func (s *NeptuneGraphService) importJSON(db *graphengine.DB, filePath string) (s
 				props[k] = v
 			}
 
-			edgeBatch = append(edgeBatch, graphengine.Edge{
-				From:  fromID,
-				To:    toID,
-				Label: label,
-				Props: props,
-			})
+			b.queueEdge(fromID, toID, label, props)
 		} else {
 			var labels []string
 			if lbl, ok := doc["~label"]; ok {
@@ -711,72 +720,12 @@ func (s *NeptuneGraphService) importJSON(db *graphengine.DB, filePath string) (s
 				props[k] = v
 			}
 
-			nodeBatch = append(nodeBatch, struct {
-				Labels []string
-				Props  graphengine.Props
-			}{Labels: labels, Props: props})
-		}
-
-		if len(nodeBatch) >= 500 {
-			ids, err := db.AddNodeBatch(nodeBatch)
-			if err != nil {
-				errorCount += int64(len(nodeBatch))
-				logs.Warn("AddNodeBatch failed", logs.Err(err))
-			} else {
-				for i, id := range ids {
-					if i < len(nodeBatch) {
-						if extID, ok := nodeBatch[i].Props["~id"].(string); ok {
-							extToInternal[extID] = id
-							delete(nodeBatch[i].Props, "~id")
-						}
-					}
-				}
-				dictionaryCount += int64(len(ids))
-			}
-			nodeBatch = nil
-		}
-
-		if len(edgeBatch) >= 500 {
-			_, err := db.AddEdgeBatch(edgeBatch)
-			if err != nil {
-				errorCount += int64(len(edgeBatch))
-				logs.Warn("AddEdgeBatch failed", logs.Err(err))
-			} else {
-				dictionaryCount += int64(len(edgeBatch))
-			}
-			edgeBatch = nil
+			b.queueNode(labels, props)
 		}
 	}
 
-	if len(nodeBatch) > 0 {
-		ids, err := db.AddNodeBatch(nodeBatch)
-		if err != nil {
-			errorCount += int64(len(nodeBatch))
-			logs.Warn("AddNodeBatch failed", logs.Err(err))
-		} else {
-			for i, id := range ids {
-				if i < len(nodeBatch) {
-					if extID, ok := nodeBatch[i].Props["~id"].(string); ok {
-						extToInternal[extID] = id
-						delete(nodeBatch[i].Props, "~id")
-					}
-				}
-			}
-			dictionaryCount += int64(len(ids))
-		}
-	}
-
-	if len(edgeBatch) > 0 {
-		_, err := db.AddEdgeBatch(edgeBatch)
-		if err != nil {
-			errorCount += int64(len(edgeBatch))
-			logs.Warn("AddEdgeBatch failed", logs.Err(err))
-		} else {
-			dictionaryCount += int64(len(edgeBatch))
-		}
-	}
-
-	return
+	b.flush()
+	return statementCount, b.dictCount, errorCount + b.errCount
 }
 
 func (s *NeptuneGraphService) importRDF(db *graphengine.DB, filePath string) (statementCount, dictionaryCount, errorCount int64) {
@@ -792,12 +741,8 @@ func (s *NeptuneGraphService) importRDF(db *graphengine.DB, filePath string) (st
 	scanner.Buffer(make([]byte, 1024*1024), 10*1024*1024)
 
 	extToInternal := make(map[string]graphengine.NodeID)
-
-	var nodeBatch []struct {
-		Labels []string
-		Props  graphengine.Props
-	}
-	var edgeBatch []graphengine.Edge
+	b := newImportBatcher(db)
+	b.extToInternal = extToInternal
 
 	ensureNode := func(extID string) graphengine.NodeID {
 		if id, ok := extToInternal[extID]; ok {
@@ -810,41 +755,6 @@ func (s *NeptuneGraphService) importRDF(db *graphengine.DB, filePath string) (st
 		extToInternal[extID] = nodeID
 		dictionaryCount++
 		return nodeID
-	}
-
-	flushNodes := func() {
-		if len(nodeBatch) == 0 {
-			return
-		}
-		ids, err := db.AddNodeBatch(nodeBatch)
-		if err != nil {
-			errorCount += int64(len(nodeBatch))
-			logs.Warn("AddNodeBatch failed", logs.Err(err))
-		} else {
-			for i, id := range ids {
-				if i < len(nodeBatch) {
-					if uri, ok := nodeBatch[i].Props["uri"].(string); ok {
-						extToInternal[uri] = id
-					}
-				}
-			}
-			dictionaryCount += int64(len(ids))
-		}
-		nodeBatch = nil
-	}
-
-	flushEdges := func() {
-		if len(edgeBatch) == 0 {
-			return
-		}
-		_, err := db.AddEdgeBatch(edgeBatch)
-		if err != nil {
-			errorCount += int64(len(edgeBatch))
-			logs.Warn("AddEdgeBatch failed", logs.Err(err))
-		} else {
-			dictionaryCount += int64(len(edgeBatch))
-		}
-		edgeBatch = nil
 	}
 
 	for scanner.Scan() {
@@ -870,11 +780,7 @@ func (s *NeptuneGraphService) importRDF(db *graphengine.DB, filePath string) (st
 
 			predLabel := ntriples.ExtractLocalName(predicate)
 
-			edgeBatch = append(edgeBatch, graphengine.Edge{
-				From:  subjID,
-				To:    objID,
-				Label: predLabel,
-			})
+			b.queueEdge(subjID, objID, predLabel, nil)
 		} else {
 			predKey := ntriples.ExtractLocalName(predicate)
 
@@ -894,15 +800,10 @@ func (s *NeptuneGraphService) importRDF(db *graphengine.DB, filePath string) (st
 				_ = db.UpdateNode(subjID, updatedProps)
 			}
 		}
-
-		if len(edgeBatch) >= 500 {
-			flushEdges()
-		}
 	}
 
-	flushNodes()
-	flushEdges()
-	return
+	b.flush()
+	return statementCount, dictionaryCount + b.dictCount, errorCount + b.errCount
 }
 
 func parseImportOptions(params map[string]interface{}) *ngstore.ImportOptions {

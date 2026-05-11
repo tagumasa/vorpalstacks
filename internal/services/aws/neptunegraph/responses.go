@@ -4,7 +4,7 @@ import (
 	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
 )
 
-func graphToResponse(g *ngstore.Graph, isCreate bool) map[string]interface{} {
+func graphToResponse(g *ngstore.Graph) map[string]interface{} {
 	r := map[string]interface{}{
 		"id":                 g.Id,
 		"name":               g.Name,
@@ -84,16 +84,13 @@ func snapshotToResponse(s *ngstore.GraphSnapshot) map[string]interface{} {
 
 func endpointToResponse(ep *ngstore.PrivateGraphEndpoint) map[string]interface{} {
 	r := map[string]interface{}{
-		"status":    ep.Status,
-		"subnetIds": ep.SubnetIds,
-		"accountId": ep.AccountID,
-		"region":    ep.Region,
-	}
-	if ep.VpcId != "" {
-		r["vpcId"] = ep.VpcId
-	}
-	if ep.VpcEndpointId != "" {
-		r["vpcEndpointId"] = ep.VpcEndpointId
+		"graphId":       ep.GraphId,
+		"vpcId":         ep.VpcId,
+		"vpcEndpointId": ep.VpcEndpointId,
+		"status":        ep.Status,
+		"subnetIds":     ep.SubnetIds,
+		"accountId":     ep.AccountID,
+		"region":        ep.Region,
 	}
 	return r
 }

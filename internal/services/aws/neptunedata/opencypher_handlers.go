@@ -6,10 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage/graphengine"
 	"vorpalstacks/pkg/cypherparser"
 )
@@ -142,123 +139,20 @@ func (s *NeptuneDataService) ExecuteOpenCypherExplainQuery(ctx context.Context, 
 // of a previously submitted OpenCypher query.
 func (s *NeptuneDataService) GetOpenCypherQueryStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	queryId := getPathParam(req, "queryId")
-	if queryId == "" {
-		return nil, missingParameter("queryId")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, internalFailure(err.Error())
-	}
-
-	qr, err := store.GetQuery(queryId)
-	if err != nil || qr == nil {
-		return nil, badRequest(fmt.Sprintf("query not found: %s", queryId))
-	}
-
-	var elapsed int64
-	if qr.EndTime != nil && qr.StartTime != nil {
-		elapsed = qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
-	}
-
-	evalStats := map[string]interface{}{
-		"cancelled": qr.GetStatus() == "cancelled",
-		"elapsed":   elapsed,
-		"waited":    0,
-	}
-
-	return map[string]interface{}{
-		"queryId":        qr.GetQueryId(),
-		"queryString":    qr.GetQueryString(),
-		"queryEvalStats": evalStats,
-	}, nil
+	return s.getQueryStatus(reqCtx, req)
 }
 
 // ListOpenCypherQueries returns all submitted OpenCypher queries, optionally
 // including those in a waiting state.
 func (s *NeptuneDataService) ListOpenCypherQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	includeWaiting := request.GetBoolParam(req.Parameters, "includeWaiting")
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, internalFailure(err.Error())
-	}
-
-	queries, err := store.ListQueries()
-	if err != nil {
-		return nil, err
-	}
-
-	var result []interface{}
-	var acceptedCount, runningCount int32
-
-	for _, qr := range queries {
-		if qr.GetQueryType() != "opencypher" {
-			continue
-		}
-		st := qr.GetStatus()
-		if st == "complete" || st == "failed" || st == "cancelled" {
-			continue
-		}
-		if st == "waiting" && !includeWaiting {
-			continue
-		}
-		entry := map[string]interface{}{
-			"queryId":     qr.GetQueryId(),
-			"queryString": qr.GetQueryString(),
-		}
-		if st == "running" {
-			runningCount++
-		} else {
-			acceptedCount++
-		}
-		result = append(result, entry)
-	}
-
-	return map[string]interface{}{
-		"queries":            result,
-		"acceptedQueryCount": acceptedCount,
-		"runningQueryCount":  runningCount,
-	}, nil
+	return s.listQueries(reqCtx, req, "opencypher")
 }
 
 // CancelOpenCypherQuery cancels a running OpenCypher query and marks its status
 // as cancelled.
 func (s *NeptuneDataService) CancelOpenCypherQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	queryId := getPathParam(req, "queryId")
 	silent := request.GetBoolParam(req.Parameters, "silent")
-	if queryId == "" {
-		return nil, missingParameter("queryId")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, internalFailure(err.Error())
-	}
-
-	qr, err := store.GetQuery(queryId)
-	if err != nil || qr == nil {
-		return nil, badRequest(fmt.Sprintf("query not found: %s", queryId))
-	}
-	switch qr.GetStatus() {
-	case "complete", "failed", "cancelled":
-		return nil, badRequest(fmt.Sprintf("cannot cancel query in terminal state: %s", qr.GetStatus()))
-	}
-	qr.Status = "cancelled"
-	qr.EndTime = timestamppb.Now()
-	if err := store.UpdateQuery(qr); err != nil {
-		logs.Warn("failed to persist query cancellation", logs.String("queryId", queryId), logs.Err(err))
-	}
-
-	if silent {
-		return map[string]interface{}{}, nil
-	}
-
-	return map[string]interface{}{
-		"payload": true,
-		"status":  "200 OK",
-	}, nil
+	return s.cancelQuery(reqCtx, req, silent, true)
 }

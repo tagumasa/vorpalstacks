@@ -77,6 +77,10 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 		}
 	}
 	s.loaderWg.Add(1)
+	cancelCh := make(chan struct{})
+	s.loaderMu.Lock()
+	s.loaderCancelChs[loadId] = cancelCh
+	s.loaderMu.Unlock()
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -84,7 +88,7 @@ func (s *NeptuneDataService) StartLoaderJob(ctx context.Context, reqCtx *request
 			}
 		}()
 		defer s.loaderWg.Done()
-		s.runLoaderJob(region, loadId, params.Source, params.Format, clusterDB)
+		s.runLoaderJob(region, loadId, params.Source, params.Format, clusterDB, cancelCh)
 	}()
 
 	return map[string]interface{}{
@@ -220,12 +224,12 @@ func (s *NeptuneDataService) CancelLoaderJob(ctx context.Context, reqCtx *reques
 		logs.Warn("failed to persist loader job cancellation", logs.String("loadId", loadId), logs.Err(err))
 	}
 
-	s.mu.Lock()
-	if s.loaderCancelCh != nil {
-		close(s.loaderCancelCh)
-		s.loaderCancelCh = nil
+	s.loaderMu.Lock()
+	if ch, ok := s.loaderCancelChs[loadId]; ok {
+		close(ch)
+		delete(s.loaderCancelChs, loadId)
 	}
-	s.mu.Unlock()
+	s.loaderMu.Unlock()
 
 	return map[string]interface{}{
 		"status": "200",
@@ -236,7 +240,7 @@ func (s *NeptuneDataService) CancelLoaderJob(ctx context.Context, reqCtx *reques
 // with CSV and ntriples formats. S3 sources fail with an appropriate error in
 // standalone mode. The job status is persisted to Pebble storage on completion
 // or failure.
-func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string, clusterDB *graphengine.DB) {
+func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string, clusterDB *graphengine.DB, cancelCh chan struct{}) {
 	time.Sleep(100 * time.Millisecond)
 
 	store, err := s.GetStoreForRegion(region)
@@ -254,18 +258,14 @@ func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string,
 		return
 	}
 
-	s.mu.Lock()
-	s.loaderCancelCh = make(chan struct{})
-	s.mu.Unlock()
-
 	stats := &loaderStats{}
 	var loadErr string
 
 	switch {
 	case strings.HasPrefix(source, "s3://"):
-		loadErr = s.loadFromS3(region, job, loadID, source, format, stats, clusterDB)
+		loadErr = s.loadFromS3(region, job, loadID, source, format, stats, clusterDB, cancelCh)
 	case strings.HasPrefix(source, "file://"):
-		loadErr = s.loadFromFile(job, loadID, source, format, stats, clusterDB)
+		loadErr = s.loadFromFile(job, loadID, source, format, stats, clusterDB, cancelCh)
 	default:
 		loadErr = fmt.Sprintf("unsupported source URI scheme: %s", source)
 	}
@@ -291,9 +291,13 @@ func (s *NeptuneDataService) runLoaderJob(region, loadID, source, format string,
 	if updateErr := store.UpdateLoaderJob(job); updateErr != nil {
 		logs.Warn("failed to update loader job", logs.String("loadId", loadID), logs.Err(updateErr))
 	}
+
+	s.loaderMu.Lock()
+	delete(s.loaderCancelChs, loadID)
+	s.loaderMu.Unlock()
 }
 
-func (s *NeptuneDataService) loadFromFile(job *pb.LoaderJob, loadID, source, format string, stats *loaderStats, clusterDB *graphengine.DB) string {
+func (s *NeptuneDataService) loadFromFile(job *pb.LoaderJob, loadID, source, format string, stats *loaderStats, clusterDB *graphengine.DB, cancelCh chan struct{}) string {
 	filePath := strings.TrimPrefix(source, "file://")
 	if filePath == "" {
 		return "empty file path in file:// source"
@@ -313,9 +317,9 @@ func (s *NeptuneDataService) loadFromFile(job *pb.LoaderJob, loadID, source, for
 
 	switch strings.ToLower(format) {
 	case "csv":
-		return s.loadCSV(f, writer, stats)
+		return s.loadCSV(f, writer, stats, cancelCh)
 	case "ntriples", "ntriplesrdf":
-		return s.loadNTriples(f, writer, stats)
+		return s.loadNTriples(f, writer, stats, cancelCh)
 	default:
 		return fmt.Sprintf("unsupported format: %s", format)
 	}
@@ -323,7 +327,7 @@ func (s *NeptuneDataService) loadFromFile(job *pb.LoaderJob, loadID, source, for
 
 // loadFromS3 reads objects from S3 via the S3Reader invoker and delegates to
 // format-specific loaders. Supports CSV and ntriples formats.
-func (s *NeptuneDataService) loadFromS3(region string, job *pb.LoaderJob, loadID, source, format string, stats *loaderStats, clusterDB *graphengine.DB) string {
+func (s *NeptuneDataService) loadFromS3(region string, job *pb.LoaderJob, loadID, source, format string, stats *loaderStats, clusterDB *graphengine.DB, cancelCh chan struct{}) string {
 	if s.s3Invoker == nil {
 		return fmt.Sprintf("S3 service not available for loading from %s", source)
 	}
@@ -346,7 +350,7 @@ func (s *NeptuneDataService) loadFromS3(region string, job *pb.LoaderJob, loadID
 
 	for _, key := range keys {
 		select {
-		case <-s.loaderCancelCh:
+		case <-cancelCh:
 			return "loader job cancelled"
 		default:
 		}
@@ -363,30 +367,33 @@ func (s *NeptuneDataService) loadFromS3(region string, job *pb.LoaderJob, loadID
 			return fmt.Sprintf("failed to create temp file: %v", err)
 		}
 		tmpPath := tmpFile.Name()
-		defer os.Remove(tmpPath)
 
 		if _, err := tmpFile.Write(data); err != nil {
 			tmpFile.Close()
+			os.Remove(tmpPath)
 			return fmt.Sprintf("failed to write temp file: %v", err)
 		}
 		tmpFile.Close()
 
 		f, err := os.Open(tmpPath)
 		if err != nil {
+			os.Remove(tmpPath)
 			return fmt.Sprintf("failed to open temp file: %v", err)
 		}
 
 		var loadErr string
 		switch strings.ToLower(format) {
 		case "csv":
-			loadErr = s.loadCSV(f, writer, stats)
+			loadErr = s.loadCSV(f, writer, stats, cancelCh)
 		case "ntriples", "ntriplesrdf":
-			loadErr = s.loadNTriples(f, writer, stats)
+			loadErr = s.loadNTriples(f, writer, stats, cancelCh)
 		default:
 			f.Close()
+			os.Remove(tmpPath)
 			return fmt.Sprintf("unsupported format: %s", format)
 		}
 		f.Close()
+		os.Remove(tmpPath)
 
 		if loadErr != "" {
 			return loadErr
@@ -407,7 +414,7 @@ func parseS3URI(uri string) (bucket, prefix string) {
 	return
 }
 
-func (s *NeptuneDataService) loadCSV(f *os.File, writer graphengine.GraphWriter, stats *loaderStats) string {
+func (s *NeptuneDataService) loadCSV(f *os.File, writer graphengine.GraphWriter, stats *loaderStats, cancelCh chan struct{}) string {
 	r := csv.NewReader(f)
 	r.LazyQuotes = true
 	r.FieldsPerRecord = -1
@@ -448,25 +455,69 @@ func (s *NeptuneDataService) loadCSV(f *os.File, writer graphengine.GraphWriter,
 		}
 	}
 
+	idMap := make(map[string]graphengine.NodeID)
 	if hasFromTo {
-		return s.loadCSVEdges(r, writer, stats, idIdx, labelIdx, fromIdx, toIdx, propIndices, s.nodeIDMap)
+		return s.loadCSVEdges(r, writer, stats, idIdx, labelIdx, fromIdx, toIdx, propIndices, idMap, cancelCh)
 	}
-	return s.loadCSVNodes(r, writer, stats, idIdx, labelIdx, propIndices)
+	return s.loadCSVNodes(r, writer, stats, idIdx, labelIdx, propIndices, cancelCh)
 }
 
-func (s *NeptuneDataService) loadCSVNodes(r *csv.Reader, writer graphengine.GraphWriter, stats *loaderStats, idIdx, labelIdx int, propIndices map[int]string) string {
-	idMap := make(map[string]graphengine.NodeID)
-	type batchEntry struct {
+type csvNodeEntry struct {
+	Labels []string
+	Props  graphengine.Props
+	OrigID string
+}
+
+func flushCSVNodeBatch(writer graphengine.GraphWriter, batch []csvNodeEntry, stats *loaderStats, idMap map[string]graphengine.NodeID) []csvNodeEntry {
+	if len(batch) == 0 {
+		return batch
+	}
+	items := make([]struct {
 		Labels []string
 		Props  graphengine.Props
-		OrigID string
+	}, len(batch))
+	for i, e := range batch {
+		items[i] = struct {
+			Labels []string
+			Props  graphengine.Props
+		}{Labels: e.Labels, Props: e.Props}
 	}
-	var batch []batchEntry
+	ids, err := writer.AddNodeBatch(items)
+	if err != nil {
+		stats.failed += int64(len(batch))
+		logs.Warn("failed to add node batch", logs.Err(err))
+	} else {
+		stats.succeeded += int64(len(ids))
+		stats.nodesLoaded += int64(len(ids))
+		for i, assignedID := range ids {
+			if i < len(batch) && batch[i].OrigID != "" {
+				idMap[batch[i].OrigID] = assignedID
+			}
+		}
+	}
+	return batch[:0]
+}
+
+func resolveNodeID(str string, idMap map[string]graphengine.NodeID) graphengine.NodeID {
+	if idMap != nil {
+		if nid, ok := idMap[str]; ok {
+			return nid
+		}
+	}
+	if n, err := strconv.ParseUint(str, 10, 64); err == nil {
+		return graphengine.NodeID(n)
+	}
+	return graphengine.NodeID(0)
+}
+
+func (s *NeptuneDataService) loadCSVNodes(r *csv.Reader, writer graphengine.GraphWriter, stats *loaderStats, idIdx, labelIdx int, propIndices map[int]string, cancelCh chan struct{}) string {
+	idMap := make(map[string]graphengine.NodeID)
+	var batch []csvNodeEntry
 	batchSize := 500
 
 	for {
 		select {
-		case <-s.loaderCancelCh:
+		case <-cancelCh:
 			return "loader job cancelled"
 		default:
 		}
@@ -506,67 +557,21 @@ func (s *NeptuneDataService) loadCSVNodes(r *csv.Reader, writer graphengine.Grap
 			}
 		}
 
-		batch = append(batch, batchEntry{Labels: labels, Props: props, OrigID: nodeID})
+		batch = append(batch, csvNodeEntry{Labels: labels, Props: props, OrigID: nodeID})
 
 		if len(batch) >= batchSize {
-			items := make([]struct {
-				Labels []string
-				Props  graphengine.Props
-			}, len(batch))
-			for i, e := range batch {
-				items[i] = struct {
-					Labels []string
-					Props  graphengine.Props
-				}{Labels: e.Labels, Props: e.Props}
-			}
-			ids, err := writer.AddNodeBatch(items)
-			if err != nil {
-				stats.failed += int64(len(batch))
-				logs.Warn("failed to add node batch", logs.Err(err))
-			} else {
-				stats.succeeded += int64(len(ids))
-				stats.nodesLoaded += int64(len(ids))
-				for i, assignedID := range ids {
-					if i < len(batch) && batch[i].OrigID != "" {
-						idMap[batch[i].OrigID] = assignedID
-					}
-				}
-			}
-			batch = batch[:0]
+			batch = flushCSVNodeBatch(writer, batch, stats, idMap)
 		}
 	}
 
 	if len(batch) > 0 {
-		items := make([]struct {
-			Labels []string
-			Props  graphengine.Props
-		}, len(batch))
-		for i, e := range batch {
-			items[i] = struct {
-				Labels []string
-				Props  graphengine.Props
-			}{Labels: e.Labels, Props: e.Props}
-		}
-		ids, err := writer.AddNodeBatch(items)
-		if err != nil {
-			stats.failed += int64(len(batch))
-			logs.Warn("failed to add final node batch", logs.Err(err))
-		} else {
-			stats.succeeded += int64(len(ids))
-			stats.nodesLoaded += int64(len(ids))
-			for i, assignedID := range ids {
-				if i < len(batch) && batch[i].OrigID != "" {
-					idMap[batch[i].OrigID] = assignedID
-				}
-			}
-		}
+		flushCSVNodeBatch(writer, batch, stats, idMap)
 	}
 
-	s.nodeIDMap = idMap
 	return ""
 }
 
-func (s *NeptuneDataService) loadCSVEdges(r *csv.Reader, writer graphengine.GraphWriter, stats *loaderStats, idIdx, labelIdx, fromIdx, toIdx int, propIndices map[int]string, idMap map[string]graphengine.NodeID) string {
+func (s *NeptuneDataService) loadCSVEdges(r *csv.Reader, writer graphengine.GraphWriter, stats *loaderStats, idIdx, labelIdx, fromIdx, toIdx int, propIndices map[int]string, idMap map[string]graphengine.NodeID, cancelCh chan struct{}) string {
 	if fromIdx < 0 || toIdx < 0 {
 		return "edge CSV requires ~from and ~to columns"
 	}
@@ -576,7 +581,7 @@ func (s *NeptuneDataService) loadCSVEdges(r *csv.Reader, writer graphengine.Grap
 
 	for {
 		select {
-		case <-s.loaderCancelCh:
+		case <-cancelCh:
 			return "loader job cancelled"
 		default:
 		}
@@ -623,26 +628,8 @@ func (s *NeptuneDataService) loadCSVEdges(r *csv.Reader, writer graphengine.Grap
 			}
 		}
 
-		fromNodeID := graphengine.NodeID(0)
-		if idMap != nil {
-			if nid, ok := idMap[fromStr]; ok {
-				fromNodeID = nid
-			} else if n, err := strconv.ParseUint(fromStr, 10, 64); err == nil {
-				fromNodeID = graphengine.NodeID(n)
-			}
-		} else if n, err := strconv.ParseUint(fromStr, 10, 64); err == nil {
-			fromNodeID = graphengine.NodeID(n)
-		}
-		toNodeID := graphengine.NodeID(0)
-		if idMap != nil {
-			if nid, ok := idMap[toStr]; ok {
-				toNodeID = nid
-			} else if n, err := strconv.ParseUint(toStr, 10, 64); err == nil {
-				toNodeID = graphengine.NodeID(n)
-			}
-		} else if n, err := strconv.ParseUint(toStr, 10, 64); err == nil {
-			toNodeID = graphengine.NodeID(n)
-		}
+		fromNodeID := resolveNodeID(fromStr, idMap)
+		toNodeID := resolveNodeID(toStr, idMap)
 
 		batch = append(batch, graphengine.Edge{
 			ID:    graphengine.EdgeID(edgeID),
@@ -679,7 +666,7 @@ func (s *NeptuneDataService) loadCSVEdges(r *csv.Reader, writer graphengine.Grap
 	return ""
 }
 
-func (s *NeptuneDataService) loadNTriples(f *os.File, writer graphengine.GraphWriter, stats *loaderStats) string {
+func (s *NeptuneDataService) loadNTriples(f *os.File, writer graphengine.GraphWriter, stats *loaderStats, cancelCh chan struct{}) string {
 	type pendingEdgeEntry struct {
 		fromExt string
 		toExt   string
@@ -778,6 +765,12 @@ func (s *NeptuneDataService) loadNTriples(f *os.File, writer graphengine.GraphWr
 	}
 
 	for scanner.Scan() {
+		select {
+		case <-cancelCh:
+			return ""
+		default:
+		}
+
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue

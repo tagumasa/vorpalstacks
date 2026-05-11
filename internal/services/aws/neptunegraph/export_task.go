@@ -385,21 +385,6 @@ func exportGraphCSV(db *graphengine.DB, filePath string) (int64, int64, error) {
 	return nodeCount, edgeCount, nil
 }
 
-func sortedPropKeys(props graphengine.Props) []string {
-	keys := make([]string, 0, len(props))
-	for k := range props {
-		keys = append(keys, k)
-	}
-	for i := 0; i < len(keys); i++ {
-		for j := i + 1; j < len(keys); j++ {
-			if keys[i] > keys[j] {
-				keys[i], keys[j] = keys[j], keys[i]
-			}
-		}
-	}
-	return keys
-}
-
 func formatPropValue(v interface{}) string {
 	if v == nil {
 		return ""

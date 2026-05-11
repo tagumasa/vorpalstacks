@@ -10,6 +10,13 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
+func resolveGraphIdentifier(params map[string]interface{}) string {
+	if id := request.GetStringParam(params, "graphIdentifier"); id != "" {
+		return id
+	}
+	return request.GetStringParam(params, "graphidentifier")
+}
+
 // ExecuteQuery runs a Cypher query against the specified graph's query engine.
 func (s *NeptuneGraphService) ExecuteQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
@@ -17,10 +24,7 @@ func (s *NeptuneGraphService) ExecuteQuery(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		graphID = request.GetStringParam(req.Parameters, "graphidentifier")
-	}
+	graphID := resolveGraphIdentifier(req.Parameters)
 	if graphID == "" {
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
 	}
@@ -53,10 +57,7 @@ func (s *NeptuneGraphService) GetQuery(ctx context.Context, reqCtx *request.Requ
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "queryId")
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		graphID = request.GetStringParam(req.Parameters, "graphidentifier")
-	}
+	graphID := resolveGraphIdentifier(req.Parameters)
 	if graphID == "" {
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
 	}
@@ -79,10 +80,7 @@ func (s *NeptuneGraphService) ListQueries(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		graphID = request.GetStringParam(req.Parameters, "graphidentifier")
-	}
+	graphID := resolveGraphIdentifier(req.Parameters)
 	if graphID == "" {
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
 	}
@@ -94,7 +92,7 @@ func (s *NeptuneGraphService) ListQueries(ctx context.Context, reqCtx *request.R
 
 	stateFilter := request.GetStringParam(req.Parameters, "state")
 	if stateFilter != "" && stateFilter != "ALL" {
-		allQueries, err := store.ListQueries(graphID, maxResults*3)
+		allQueries, err := store.ListQueries(graphID, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -142,10 +140,7 @@ func (s *NeptuneGraphService) CancelQuery(ctx context.Context, reqCtx *request.R
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "queryId")
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		graphID = request.GetStringParam(req.Parameters, "graphidentifier")
-	}
+	graphID := resolveGraphIdentifier(req.Parameters)
 	if graphID == "" {
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
 	}
@@ -174,10 +169,7 @@ func (s *NeptuneGraphService) CancelQuery(ctx context.Context, reqCtx *request.R
 
 // GetGraphSummary returns structural statistics about the specified graph's data.
 func (s *NeptuneGraphService) GetGraphSummary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		graphID = request.GetStringParam(req.Parameters, "graphidentifier")
-	}
+	graphID := resolveGraphIdentifier(req.Parameters)
 	if graphID == "" {
 		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
 	}

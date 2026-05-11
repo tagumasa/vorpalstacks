@@ -5,10 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/pkg/gremlinparser"
 )
 
@@ -126,117 +123,19 @@ func (s *NeptuneDataService) ExecuteGremlinProfileQuery(ctx context.Context, req
 // a previously submitted Gremlin query.
 func (s *NeptuneDataService) GetGremlinQueryStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	queryId := getPathParam(req, "queryId")
-	if queryId == "" {
-		return nil, missingParameter("queryId")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, internalFailure(err.Error())
-	}
-
-	qr, err := store.GetQuery(queryId)
-	if err != nil || qr == nil {
-		return nil, badRequest(fmt.Sprintf("query not found: %s", queryId))
-	}
-
-	var elapsed int64
-	if qr.EndTime != nil && qr.StartTime != nil {
-		elapsed = qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
-	}
-
-	evalStats := map[string]interface{}{
-		"cancelled": qr.GetStatus() == "cancelled",
-		"elapsed":   elapsed,
-		"waited":    0,
-	}
-
-	return map[string]interface{}{
-		"queryId":        qr.GetQueryId(),
-		"queryString":    qr.GetQueryString(),
-		"queryEvalStats": evalStats,
-	}, nil
+	return s.getQueryStatus(reqCtx, req)
 }
 
 // ListGremlinQueries returns all submitted Gremlin queries, optionally
 // including those in a waiting state.
 func (s *NeptuneDataService) ListGremlinQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	includeWaiting := request.GetBoolParam(req.Parameters, "includeWaiting")
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, internalFailure(err.Error())
-	}
-
-	queries, err := store.ListQueries()
-	if err != nil {
-		return nil, err
-	}
-
-	var result []interface{}
-	var acceptedCount, runningCount int32
-
-	for _, qr := range queries {
-		if qr.GetQueryType() != "gremlin" {
-			continue
-		}
-		st := qr.GetStatus()
-		if st == "complete" || st == "failed" || st == "cancelled" {
-			continue
-		}
-		if st == "waiting" && !includeWaiting {
-			continue
-		}
-		entry := map[string]interface{}{
-			"queryId":     qr.GetQueryId(),
-			"queryString": qr.GetQueryString(),
-		}
-		if st == "running" {
-			runningCount++
-		} else {
-			acceptedCount++
-		}
-		result = append(result, entry)
-	}
-
-	return map[string]interface{}{
-		"queries":            result,
-		"acceptedQueryCount": acceptedCount,
-		"runningQueryCount":  runningCount,
-	}, nil
+	return s.listQueries(reqCtx, req, "gremlin")
 }
 
 // CancelGremlinQuery cancels a running Gremlin query and marks its status as
 // cancelled.
 func (s *NeptuneDataService) CancelGremlinQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	queryId := getPathParam(req, "queryId")
-	if queryId == "" {
-		return nil, missingParameter("queryId")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, internalFailure(err.Error())
-	}
-
-	qr, err := store.GetQuery(queryId)
-	if err != nil || qr == nil {
-		return nil, badRequest(fmt.Sprintf("query not found: %s", queryId))
-	}
-	switch qr.GetStatus() {
-	case "complete", "failed", "cancelled":
-		return nil, badRequest(fmt.Sprintf("cannot cancel query in terminal state: %s", qr.GetStatus()))
-	}
-	qr.Status = "cancelled"
-	qr.EndTime = timestamppb.Now()
-	if err := store.UpdateQuery(qr); err != nil {
-		logs.Warn("failed to persist query cancellation", logs.String("queryId", queryId), logs.Err(err))
-	}
-
-	return map[string]interface{}{
-		"status": "200 OK",
-	}, nil
+	return s.cancelQuery(reqCtx, req, false, false)
 }

@@ -372,7 +372,7 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 		if updateErr := store.UpdateGraph(graph); updateErr != nil {
 			logs.Warn("failed to update graph status to FAILED", logs.String("graphId", graphID), logs.Err(updateErr))
 		}
-		return graphToResponse(graph, true), nil
+		return graphToResponse(graph), nil
 	}
 	s.enginesMu.Lock()
 	s.activeEngines[graphID] = &engineEntry{db: db}
@@ -390,7 +390,7 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 		}
 	}
 
-	return graphToResponse(graph, true), nil
+	return graphToResponse(graph), nil
 }
 
 // GetGraph retrieves a graph by its identifier.
@@ -413,7 +413,7 @@ func (s *NeptuneGraphService) GetGraph(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	return graphToResponse(graph, false), nil
+	return graphToResponse(graph), nil
 }
 
 // ListGraphs returns a paginated list of graph summaries.
@@ -489,7 +489,7 @@ func (s *NeptuneGraphService) UpdateGraph(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	return graphToResponse(graph, false), nil
+	return graphToResponse(graph), nil
 }
 
 // DeleteGraph removes a graph, optionally creating an automatic snapshot, and cleans up all associated resources.
@@ -575,7 +575,7 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 		}
 	}
 
-	if rs, err := s.storageManager.GetStorage(s.region); err == nil {
+	if rs, err := s.storageManager.GetStorage(reqCtx.GetRegion()); err == nil {
 		rs.DeleteBucket("neptunegraph:graph:" + graphID)
 	}
 
@@ -583,7 +583,7 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 		logs.Warn("failed to delete graph", logs.String("graphId", graphID), logs.Err(err))
 	}
 
-	return graphToResponse(graph, false), nil
+	return graphToResponse(graph), nil
 }
 
 // StartGraph transitions a STOPPED graph to AVAILABLE by reopening its query engine.
@@ -639,7 +639,7 @@ func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.Re
 		logs.Warn("Failed to update graph status to AVAILABLE", logs.Err(err))
 	}
 
-	return graphToResponse(graph, false), nil
+	return graphToResponse(graph), nil
 }
 
 // StopGraph gracefully shuts down a graph's query engine and transitions it to STOPPED state.
@@ -686,7 +686,7 @@ func (s *NeptuneGraphService) StopGraph(ctx context.Context, reqCtx *request.Req
 		logs.Warn("Failed to update graph status to STOPPED", logs.Err(err))
 	}
 
-	return graphToResponse(graph, false), nil
+	return graphToResponse(graph), nil
 }
 
 // ResetGraph clears all data from an AVAILABLE graph's engine while keeping the graph resource intact.
@@ -745,7 +745,7 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 		logs.Warn("Failed to update graph status to AVAILABLE", logs.Err(err))
 	}
 
-	return graphToResponse(graph, false), nil
+	return graphToResponse(graph), nil
 }
 
 // RestoreGraphFromSnapshot creates a new graph from an existing snapshot, copying source graph data.
@@ -846,7 +846,7 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 		logs.Warn("Failed to update restored graph status", logs.Err(err))
 	}
 
-	return graphToResponse(graph, true), nil
+	return graphToResponse(graph), nil
 }
 
 func copyGraphBucket(src, dst storage.BatchBucket) error {

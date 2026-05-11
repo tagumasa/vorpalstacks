@@ -608,9 +608,6 @@ func exportFormatToPb(s string) pb.ExportFormat {
 }
 
 func parquetTypeToPb(s string) pb.ParquetType {
-	if s == "COLUMNAR" {
-		return pb.ParquetType_PARQUET_TYPE_COLUMNAR
-	}
 	return pb.ParquetType_PARQUET_TYPE_COLUMNAR
 }
 

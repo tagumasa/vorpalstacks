@@ -15,26 +15,34 @@ func explainGremlinQuery(query string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("parse error: %w", err)
 	}
 
-	steps := []map[string]interface{}{}
+	var steps []map[string]interface{}
 	if len(parsed.Statements) > 0 && parsed.Statements[0].Traversal != nil {
-		for _, step := range parsed.Statements[0].Traversal.Steps {
-			stepInfo := map[string]interface{}{
-				"name": step.Name,
-			}
-			if len(step.Args) > 0 {
-				args := make([]interface{}, len(step.Args))
-				for i, arg := range step.Args {
-					args[i] = describeArg(arg)
-				}
-				stepInfo["args"] = args
-			}
-			steps = append(steps, stepInfo)
-		}
+		steps = traversalToSteps(parsed.Statements[0].Traversal)
 	}
 
 	return map[string]interface{}{
 		"steps": steps,
 	}, nil
+}
+
+// traversalToSteps converts a Gremlin traversal into a step-by-step
+// explanation. Shared between top-level explain and nested traversal arguments.
+func traversalToSteps(trav *gremlinparser.Traversal) []map[string]interface{} {
+	steps := []map[string]interface{}{}
+	for _, step := range trav.Steps {
+		stepInfo := map[string]interface{}{
+			"name": step.Name,
+		}
+		if len(step.Args) > 0 {
+			args := make([]interface{}, len(step.Args))
+			for i, arg := range step.Args {
+				args[i] = describeArg(arg)
+			}
+			stepInfo["args"] = args
+		}
+		steps = append(steps, stepInfo)
+	}
+	return steps
 }
 
 // profileGremlinQuery returns an explain plan augmented with profiling metrics.
@@ -100,21 +108,7 @@ func describeArg(arg gremlinparser.Argument) interface{} {
 		return nil
 	case gremlinparser.ArgNestedTraversal:
 		if arg.Trav != nil {
-			steps := []map[string]interface{}{}
-			for _, step := range arg.Trav.Steps {
-				stepInfo := map[string]interface{}{
-					"name": step.Name,
-				}
-				if len(step.Args) > 0 {
-					args := make([]interface{}, len(step.Args))
-					for i, a := range step.Args {
-						args[i] = describeArg(a)
-					}
-					stepInfo["args"] = args
-				}
-				steps = append(steps, stepInfo)
-			}
-			return steps
+			return traversalToSteps(arg.Trav)
 		}
 		return nil
 	default:

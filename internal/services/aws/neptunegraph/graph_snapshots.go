@@ -162,7 +162,7 @@ func (s *NeptuneGraphService) DeleteGraphSnapshot(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 
-	if rs, err := s.storageManager.GetStorage(s.region); err == nil {
+	if rs, err := s.storageManager.GetStorage(reqCtx.GetRegion()); err == nil {
 		rs.DeleteBucket("neptunegraph:graph:snapshot:" + snapshotID)
 	}
 

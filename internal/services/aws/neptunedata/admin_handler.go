@@ -76,38 +76,32 @@ func (h *AdminHandler) GetEngineStatus(ctx context.Context, req *connect.Request
 
 // GetGremlinQueryStatus returns the status and timing of a Gremlin query.
 func (h *AdminHandler) GetGremlinQueryStatus(ctx context.Context, req *connect.Request[pb.GetGremlinQueryStatusInput]) (*connect.Response[pb.GetGremlinQueryStatusOutput], error) {
-	queryId := req.Msg.Queryid
-
-	store, err := h.getStore(req.Header())
+	out, err := h.buildQueryStatus(ctx, req.Msg.Queryid, req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, err
 	}
-
-	qr, err := store.GetQuery(queryId)
-	if err != nil || qr == nil {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("query not found: %s", queryId))
-	}
-
-	output := &pb.GetGremlinQueryStatusOutput{
-		Queryid:     qr.GetQueryId(),
-		Querystring: qr.GetQueryString(),
-	}
-
-	if qr.EndTime != nil && qr.StartTime != nil {
-		elapsed := qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
-		output.Queryevalstats = &pb.QueryEvalStats{
-			Elapsed: fmt.Sprintf("%d", elapsed),
-		}
-	}
-
-	return connect.NewResponse(output), nil
+	return connect.NewResponse(&pb.GetGremlinQueryStatusOutput{
+		Queryid:        out.Queryid,
+		Querystring:    out.Querystring,
+		Queryevalstats: out.Queryevalstats,
+	}), nil
 }
 
 // GetOpenCypherQueryStatus returns the status and timing of an openCypher query.
 func (h *AdminHandler) GetOpenCypherQueryStatus(ctx context.Context, req *connect.Request[pb.GetOpenCypherQueryStatusInput]) (*connect.Response[pb.GetOpenCypherQueryStatusOutput], error) {
-	queryId := req.Msg.Queryid
+	out, err := h.buildQueryStatus(ctx, req.Msg.Queryid, req.Header())
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&pb.GetOpenCypherQueryStatusOutput{
+		Queryid:        out.Queryid,
+		Querystring:    out.Querystring,
+		Queryevalstats: out.Queryevalstats,
+	}), nil
+}
 
-	store, err := h.getStore(req.Header())
+func (h *AdminHandler) buildQueryStatus(ctx context.Context, queryId string, header http.Header) (*pb.GetOpenCypherQueryStatusOutput, error) {
+	store, err := h.getStore(header)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -129,51 +123,17 @@ func (h *AdminHandler) GetOpenCypherQueryStatus(ctx context.Context, req *connec
 		}
 	}
 
-	return connect.NewResponse(output), nil
+	return output, nil
 }
 
 // ListGremlinQueries returns the status of all accepted and running Gremlin queries.
 func (h *AdminHandler) ListGremlinQueries(ctx context.Context, req *connect.Request[pb.ListGremlinQueriesInput]) (*connect.Response[pb.ListGremlinQueriesOutput], error) {
-	store, err := h.getStore(req.Header())
+	queries, accepted, running, err := h.buildQueryList(ctx, "gremlin", req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, err
 	}
-
-	queries, err := store.ListQueries()
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	pbQueries := make([]*pb.GremlinQueryStatus, 0)
-	accepted := 0
-	running := 0
-	for _, qr := range queries {
-		if qr.GetQueryType() != "gremlin" {
-			continue
-		}
-		st := qr.GetStatus()
-		if st == "complete" || st == "failed" || st == "cancelled" {
-			continue
-		}
-		accepted++
-		if st == "running" {
-			running++
-		}
-		status := &pb.GremlinQueryStatus{
-			Queryid:     qr.GetQueryId(),
-			Querystring: qr.GetQueryString(),
-		}
-		if qr.EndTime != nil && qr.StartTime != nil {
-			elapsed := qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
-			status.Queryevalstats = &pb.QueryEvalStats{
-				Elapsed: fmt.Sprintf("%d", elapsed),
-			}
-		}
-		pbQueries = append(pbQueries, status)
-	}
-
 	return connect.NewResponse(&pb.ListGremlinQueriesOutput{
-		Queries:            pbQueries,
+		Queries:            queries,
 		Acceptedquerycount: strconv.Itoa(accepted),
 		Runningquerycount:  strconv.Itoa(running),
 	}), nil
@@ -181,21 +141,33 @@ func (h *AdminHandler) ListGremlinQueries(ctx context.Context, req *connect.Requ
 
 // ListOpenCypherQueries returns the status of all accepted and running openCypher queries.
 func (h *AdminHandler) ListOpenCypherQueries(ctx context.Context, req *connect.Request[pb.ListOpenCypherQueriesInput]) (*connect.Response[pb.ListOpenCypherQueriesOutput], error) {
-	store, err := h.getStore(req.Header())
+	queries, accepted, running, err := h.buildQueryList(ctx, "opencypher", req.Header())
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, err
+	}
+	return connect.NewResponse(&pb.ListOpenCypherQueriesOutput{
+		Queries:            queries,
+		Acceptedquerycount: strconv.Itoa(accepted),
+		Runningquerycount:  strconv.Itoa(running),
+	}), nil
+}
+
+func (h *AdminHandler) buildQueryList(ctx context.Context, queryType string, header http.Header) ([]*pb.GremlinQueryStatus, int, int, error) {
+	store, err := h.getStore(header)
+	if err != nil {
+		return nil, 0, 0, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	queries, err := store.ListQueries()
 	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
+		return nil, 0, 0, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	pbQueries := make([]*pb.GremlinQueryStatus, 0)
 	accepted := 0
 	running := 0
 	for _, qr := range queries {
-		if qr.GetQueryType() != "opencypher" {
+		if qr.GetQueryType() != queryType {
 			continue
 		}
 		st := qr.GetStatus()
@@ -219,11 +191,7 @@ func (h *AdminHandler) ListOpenCypherQueries(ctx context.Context, req *connect.R
 		pbQueries = append(pbQueries, status)
 	}
 
-	return connect.NewResponse(&pb.ListOpenCypherQueriesOutput{
-		Queries:            pbQueries,
-		Acceptedquerycount: strconv.Itoa(accepted),
-		Runningquerycount:  strconv.Itoa(running),
-	}), nil
+	return pbQueries, accepted, running, nil
 }
 
 // GetLoaderJobStatus returns the status of a bulk loader job.
@@ -282,7 +250,7 @@ func (h *AdminHandler) GetPropertygraphStatistics(ctx context.Context, req *conn
 	s.mu.RUnlock()
 
 	if !statsDisabled {
-		s.refreshStatistics(nil)
+		s.refreshStatisticsForRegion(region)
 	}
 	st := s.getStats(region)
 	nodeCount, _, labelCounts, relCounts := st.snapshot()
@@ -318,7 +286,7 @@ func (h *AdminHandler) GetPropertygraphSummary(ctx context.Context, req *connect
 	s.mu.RUnlock()
 
 	if !statsDisabled {
-		s.refreshStatistics(nil)
+		s.refreshStatisticsForRegion(region)
 	}
 	st := s.getStats(region)
 	nodeCount, edgeCount, _, _ := st.snapshot()

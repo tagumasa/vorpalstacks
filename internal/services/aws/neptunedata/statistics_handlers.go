@@ -53,7 +53,6 @@ func (s *NeptuneDataService) GetPropertygraphStatistics(ctx context.Context, req
 // ManagePropertygraphStatistics enables, disables, or refreshes auto-computed property graph statistics.
 func (s *NeptuneDataService) ManagePropertygraphStatistics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
 	body := req.Body
 	var params struct {
 		Mode string `json:"mode"`

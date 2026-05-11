@@ -220,7 +220,7 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 
 	var enginePort int
 	if s.dataPlaneService != nil {
-		if port, err := s.dataPlaneService.OpenClusterEngine(id); err != nil {
+		if port, err := s.dataPlaneService.OpenClusterEngine(reqCtx.GetRegion(), id); err != nil {
 			logs.Warn("failed to open cluster engine", logs.String("cluster", id), logs.Err(err))
 		} else {
 			enginePort = port
@@ -499,7 +499,7 @@ func (s *NeptuneService) StartDBCluster(ctx context.Context, reqCtx *request.Req
 
 	var enginePort int
 	if s.dataPlaneService != nil {
-		if port, err := s.dataPlaneService.OpenClusterEngine(id); err != nil {
+		if port, err := s.dataPlaneService.OpenClusterEngine(reqCtx.GetRegion(), id); err != nil {
 			logs.Warn("failed to open cluster engine on start", logs.String("cluster", id), logs.Err(err))
 		} else {
 			enginePort = port

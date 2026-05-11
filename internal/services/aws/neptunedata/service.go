@@ -49,8 +49,8 @@ type NeptuneDataService struct {
 	stores             sync.Map
 	loaderWg           sync.WaitGroup
 	cancelCleanup      context.CancelFunc
-	nodeIDMap          map[string]graphengine.NodeID
-	loaderCancelCh     chan struct{}
+	loaderCancelChs    map[string]chan struct{}
+	loaderMu           sync.Mutex
 	s3Invoker          eventbus.S3Invoker
 	portAllocator      *portalloc.Allocator
 	listenerManager    *listener.Manager
@@ -90,6 +90,7 @@ func NewNeptuneDataService(allocator *portalloc.Allocator) *NeptuneDataService {
 		cancelCleanup:      cancel,
 		portAllocator:      allocator,
 		activeEngines:      make(map[string]*clusterEngineEntry),
+		loaderCancelChs:    make(map[string]chan struct{}),
 	}
 	go s.cleanupExpiredQueries(ctx)
 	return s
@@ -281,13 +282,14 @@ func (s *NeptuneDataService) store(reqCtx *request.RequestContext) (*neptunestor
 	return s.GetStoreForRegion(region)
 }
 
-// clusterBucket returns a dedicated Pebble bucket for the given cluster,
-// following the same bucketBackend pattern used by NeptuneGraph.
-func (s *NeptuneDataService) clusterBucket(clusterID string) (storage.BatchBucket, error) {
+// clusterBucket returns a dedicated Pebble bucket for the given cluster in
+// the specified region, following the same bucketBackend pattern used by
+// NeptuneGraph.
+func (s *NeptuneDataService) clusterBucket(region, clusterID string) (storage.BatchBucket, error) {
 	if s.storageManager == nil {
 		return nil, fmt.Errorf("storage manager not set")
 	}
-	rs, err := s.storageManager.GetStorage(s.region)
+	rs, err := s.storageManager.GetStorage(region)
 	if err != nil {
 		return nil, err
 	}
@@ -300,10 +302,10 @@ func (s *NeptuneDataService) clusterBucket(clusterID string) (storage.BatchBucke
 }
 
 // OpenClusterEngine creates and opens a new isolated graph engine for the
-// given cluster. The engine is stored in the activeEngines map. Returns the
-// dynamically allocated port number.
-func (s *NeptuneDataService) OpenClusterEngine(clusterID string) (int, error) {
-	bucket, err := s.clusterBucket(clusterID)
+// given cluster in the specified region. The engine is stored in the
+// activeEngines map. Returns the dynamically allocated port number.
+func (s *NeptuneDataService) OpenClusterEngine(region, clusterID string) (int, error) {
+	bucket, err := s.clusterBucket(region, clusterID)
 	if err != nil {
 		return 0, fmt.Errorf("neptunedata: failed to get cluster bucket: %w", err)
 	}
@@ -364,8 +366,6 @@ func (s *NeptuneDataService) CloseClusterEngine(clusterID string) error {
 	return nil
 }
 
-// GetClusterEngine returns the graph engine for the given cluster, or nil if
-// no engine is active.
 // GetClusterEngine returns the graph engine for the specified cluster, or nil if
 // the cluster has no active engine.
 func (s *NeptuneDataService) GetClusterEngine(clusterID string) *graphengine.DB {
@@ -405,7 +405,7 @@ func (s *NeptuneDataService) RestoreEngines() {
 		if c.Status != "available" {
 			continue
 		}
-		if _, err := s.OpenClusterEngine(c.DBClusterIdentifier); err != nil {
+		if _, err := s.OpenClusterEngine(s.region, c.DBClusterIdentifier); err != nil {
 			logs.Warn("failed to restore cluster engine", logs.String("cluster", c.DBClusterIdentifier), logs.Err(err))
 		}
 	}
@@ -683,6 +683,131 @@ func (s *NeptuneDataService) resolveQuery(store *neptunestore.NeptuneStore, id s
 	}
 }
 
+// getQueryStatus returns the status and evaluation statistics of a query
+// identified by queryId. Shared by both Gremlin and OpenCypher query status
+// handlers.
+func (s *NeptuneDataService) getQueryStatus(reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	queryId := getPathParam(req, "queryId")
+	if queryId == "" {
+		return nil, missingParameter("queryId")
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
+	qr, err := store.GetQuery(queryId)
+	if err != nil || qr == nil {
+		return nil, badRequest(fmt.Sprintf("query not found: %s", queryId))
+	}
+
+	var elapsed int64
+	if qr.EndTime != nil && qr.StartTime != nil {
+		elapsed = qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
+	}
+
+	return map[string]interface{}{
+		"queryId":     qr.GetQueryId(),
+		"queryString": qr.GetQueryString(),
+		"queryEvalStats": map[string]interface{}{
+			"cancelled": qr.GetStatus() == "cancelled",
+			"elapsed":   elapsed,
+			"waited":    0,
+		},
+	}, nil
+}
+
+// listQueries returns all submitted queries of the given type, optionally
+// including those in a waiting state. Shared by both Gremlin and OpenCypher
+// list queries handlers.
+func (s *NeptuneDataService) listQueries(reqCtx *request.RequestContext, req *request.ParsedRequest, queryType string) (interface{}, error) {
+	includeWaiting := request.GetBoolParam(req.Parameters, "includeWaiting")
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
+	queries, err := store.ListQueries()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []interface{}
+	var acceptedCount, runningCount int32
+
+	for _, qr := range queries {
+		if qr.GetQueryType() != queryType {
+			continue
+		}
+		st := qr.GetStatus()
+		if st == "complete" || st == "failed" || st == "cancelled" {
+			continue
+		}
+		if st == "waiting" && !includeWaiting {
+			continue
+		}
+		entry := map[string]interface{}{
+			"queryId":     qr.GetQueryId(),
+			"queryString": qr.GetQueryString(),
+		}
+		if st == "running" {
+			runningCount++
+		} else {
+			acceptedCount++
+		}
+		result = append(result, entry)
+	}
+
+	return map[string]interface{}{
+		"queries":            result,
+		"acceptedQueryCount": acceptedCount,
+		"runningQueryCount":  runningCount,
+	}, nil
+}
+
+// cancelQuery cancels a running query identified by queryId. Shared by both
+// Gremlin and OpenCypher cancel handlers. If silent is true, an empty body is
+// returned instead of the standard cancellation confirmation.
+func (s *NeptuneDataService) cancelQuery(reqCtx *request.RequestContext, req *request.ParsedRequest, silent bool, includePayload bool) (interface{}, error) {
+	queryId := getPathParam(req, "queryId")
+	if queryId == "" {
+		return nil, missingParameter("queryId")
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, internalFailure(err.Error())
+	}
+
+	qr, err := store.GetQuery(queryId)
+	if err != nil || qr == nil {
+		return nil, badRequest(fmt.Sprintf("query not found: %s", queryId))
+	}
+	switch qr.GetStatus() {
+	case "complete", "failed", "cancelled":
+		return nil, badRequest(fmt.Sprintf("cannot cancel query in terminal state: %s", qr.GetStatus()))
+	}
+	qr.Status = "cancelled"
+	qr.EndTime = timestamppb.Now()
+	if err := store.UpdateQuery(qr); err != nil {
+		logs.Warn("failed to persist query cancellation", logs.String("queryId", queryId), logs.Err(err))
+	}
+
+	if silent {
+		return map[string]interface{}{}, nil
+	}
+
+	resp := map[string]interface{}{
+		"status": "200 OK",
+	}
+	if includePayload {
+		resp["payload"] = true
+	}
+	return resp, nil
+}
+
 func (s *NeptuneDataService) getStats(region string) *GraphStatistics {
 	val, _ := s.statsMap.LoadOrStore(region, &GraphStatistics{
 		LabelCounts: make(map[string]int64),
@@ -708,6 +833,24 @@ func (s *NeptuneDataService) refreshStatistics(reqCtx *request.RequestContext) {
 		region = reqCtx.GetRegion()
 	}
 
+	refreshStatisticsWithReader(reader, region, s)
+}
+
+// refreshStatisticsForRegion refreshes stats for a given region using the
+// first available cluster engine. Used by the admin handler which has no
+// per-request graph context.
+func (s *NeptuneDataService) refreshStatisticsForRegion(region string) {
+	s.enginesMu.RLock()
+	var reader graphengine.GraphReader
+	for _, entry := range s.activeEngines {
+		reader = entry.db
+		break
+	}
+	s.enginesMu.RUnlock()
+	refreshStatisticsWithReader(reader, region, s)
+}
+
+func refreshStatisticsWithReader(reader graphengine.GraphReader, region string, s *NeptuneDataService) {
 	if reader == nil {
 		return
 	}
