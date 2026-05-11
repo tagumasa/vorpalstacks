@@ -91,10 +91,19 @@ func PaginateSlice[T any](items []T, marker string, maxItems int, keyExtractor K
 
 	startIdx := 0
 	if marker != "" {
+		found := false
 		for i, item := range items {
 			if keyExtractor(item) == marker {
 				startIdx = i + 1
+				found = true
 				break
+			}
+		}
+		if !found {
+			return SliceResult[T]{
+				Items:       []T{},
+				NextMarker:  "",
+				IsTruncated: false,
 			}
 		}
 	}
