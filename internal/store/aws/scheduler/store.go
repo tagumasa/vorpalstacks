@@ -4,6 +4,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -165,7 +166,7 @@ func (s *SchedulerStore) ListScheduleGroups(ctx context.Context, namePrefix stri
 		if namePrefix == "" {
 			return true
 		}
-		return len(g.Name) >= len(namePrefix) && g.Name[:len(namePrefix)] == namePrefix
+		return strings.HasPrefix(g.Name, namePrefix)
 	})
 	if err != nil {
 		return nil, err
@@ -336,10 +337,8 @@ func (s *SchedulerStore) ListSchedules(ctx context.Context, groupName, namePrefi
 	}
 
 	result, err := common.List[Schedule](s.schedulesStore, opts, func(s *Schedule) bool {
-		if namePrefix != "" {
-			if len(s.Name) < len(namePrefix) || s.Name[:len(namePrefix)] != namePrefix {
-				return false
-			}
+		if namePrefix != "" && !strings.HasPrefix(s.Name, namePrefix) {
+			return false
 		}
 		if state != "" && s.State != state {
 			return false

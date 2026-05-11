@@ -24,114 +24,76 @@ func isValidScheduleExpression(expr string) bool {
 }
 
 func parseTarget(params map[string]interface{}) (*schedulerstore.Target, error) {
-	targetData, ok := params["Target"]
-	if !ok {
-		targetData, ok = params["target"]
-	}
-	if targetData == nil || !ok {
+	targetData, _ := getMapField(params, "Target")
+	if targetData == nil {
 		return nil, nil
 	}
 
-	var target schedulerstore.Target
-	switch v := targetData.(type) {
-	case string:
-		var rawMap map[string]interface{}
-		if err := json.Unmarshal([]byte(v), &rawMap); err != nil {
-			return nil, ErrInvalidTarget
-		}
-		target.Arn = getStringFromMap(rawMap, "arn", "Arn")
-		target.RoleArn = getStringFromMap(rawMap, "roleArn", "RoleArn")
-		target.Input = getStringFromMap(rawMap, "input", "Input")
-		if dlConfig, ok := rawMap["deadLetterConfig"].(map[string]interface{}); ok {
-			target.DeadLetterConfig = &schedulerstore.DeadLetterConfig{
-				Arn: getStringFromMap(dlConfig, "arn", "Arn"),
-			}
-		} else if dlConfig, ok := rawMap["DeadLetterConfig"].(map[string]interface{}); ok {
-			target.DeadLetterConfig = &schedulerstore.DeadLetterConfig{
-				Arn: getStringFromMap(dlConfig, "arn", "Arn"),
-			}
-		}
-		if retryPolicy, ok := rawMap["retryPolicy"].(map[string]interface{}); ok {
-			target.RetryPolicy = parseRetryPolicyFromMap(retryPolicy)
-		} else if retryPolicy, ok := rawMap["RetryPolicy"].(map[string]interface{}); ok {
-			target.RetryPolicy = parseRetryPolicyFromMap(retryPolicy)
-		}
-		if sqsParams, ok := rawMap["sqsParameters"].(map[string]interface{}); ok {
-			target.SqsParameters = &schedulerstore.SqsParameters{
-				MessageGroupId: getStringFromMap(sqsParams, "messageGroupId", "MessageGroupId"),
-			}
-		} else if sqsParams, ok := rawMap["SqsParameters"].(map[string]interface{}); ok {
-			target.SqsParameters = &schedulerstore.SqsParameters{
-				MessageGroupId: getStringFromMap(sqsParams, "messageGroupId", "MessageGroupId"),
-			}
-		}
-		if ecsParams, ok := rawMap["ecsParameters"].(map[string]interface{}); ok {
-			target.EcsParameters = parseEcsParameters(ecsParams)
-		} else if ecsParams, ok := rawMap["EcsParameters"].(map[string]interface{}); ok {
-			target.EcsParameters = parseEcsParameters(ecsParams)
-		}
-		if ebParams, ok := rawMap["eventBridgeParameters"].(map[string]interface{}); ok {
-			target.EventBridgeParameters = parseEventBridgeParameters(ebParams)
-		} else if ebParams, ok := rawMap["EventBridgeParameters"].(map[string]interface{}); ok {
-			target.EventBridgeParameters = parseEventBridgeParameters(ebParams)
-		}
-		if kinesisParams, ok := rawMap["kinesisParameters"].(map[string]interface{}); ok {
-			target.KinesisParameters = parseKinesisParameters(kinesisParams)
-		} else if kinesisParams, ok := rawMap["KinesisParameters"].(map[string]interface{}); ok {
-			target.KinesisParameters = parseKinesisParameters(kinesisParams)
-		}
-	case map[string]interface{}:
-		target.Arn = getStringFromMap(v, "arn", "Arn")
-		target.RoleArn = getStringFromMap(v, "roleArn", "RoleArn")
-		target.Input = getStringFromMap(v, "input", "Input")
-
-		if dlConfig, ok := v["deadLetterConfig"].(map[string]interface{}); ok {
-			target.DeadLetterConfig = &schedulerstore.DeadLetterConfig{
-				Arn: getStringFromMap(dlConfig, "arn", "Arn"),
-			}
-		} else if dlConfig, ok := v["DeadLetterConfig"].(map[string]interface{}); ok {
-			target.DeadLetterConfig = &schedulerstore.DeadLetterConfig{
-				Arn: getStringFromMap(dlConfig, "arn", "Arn"),
-			}
-		}
-		if retryPolicy, ok := v["retryPolicy"].(map[string]interface{}); ok {
-			target.RetryPolicy = parseRetryPolicyFromMap(retryPolicy)
-		} else if retryPolicy, ok := v["RetryPolicy"].(map[string]interface{}); ok {
-			target.RetryPolicy = parseRetryPolicyFromMap(retryPolicy)
-		}
-		if sqsParams, ok := v["sqsParameters"].(map[string]interface{}); ok {
-			target.SqsParameters = &schedulerstore.SqsParameters{
-				MessageGroupId: getStringFromMap(sqsParams, "messageGroupId", "MessageGroupId"),
-			}
-		} else if sqsParams, ok := v["SqsParameters"].(map[string]interface{}); ok {
-			target.SqsParameters = &schedulerstore.SqsParameters{
-				MessageGroupId: getStringFromMap(sqsParams, "messageGroupId", "MessageGroupId"),
-			}
-		}
-		if ecsParams, ok := v["ecsParameters"].(map[string]interface{}); ok {
-			target.EcsParameters = parseEcsParameters(ecsParams)
-		} else if ecsParams, ok := v["EcsParameters"].(map[string]interface{}); ok {
-			target.EcsParameters = parseEcsParameters(ecsParams)
-		}
-		if ebParams, ok := v["eventBridgeParameters"].(map[string]interface{}); ok {
-			target.EventBridgeParameters = parseEventBridgeParameters(ebParams)
-		} else if ebParams, ok := v["EventBridgeParameters"].(map[string]interface{}); ok {
-			target.EventBridgeParameters = parseEventBridgeParameters(ebParams)
-		}
-		if kinesisParams, ok := v["kinesisParameters"].(map[string]interface{}); ok {
-			target.KinesisParameters = parseKinesisParameters(kinesisParams)
-		} else if kinesisParams, ok := v["KinesisParameters"].(map[string]interface{}); ok {
-			target.KinesisParameters = parseKinesisParameters(kinesisParams)
-		}
-	default:
+	rawMap, err := coerceToMap(targetData)
+	if err != nil {
 		return nil, ErrInvalidTarget
 	}
 
+	target := parseTargetFromMap(rawMap)
 	if target.Arn == "" || target.RoleArn == "" {
 		return nil, ErrInvalidTarget
 	}
-
 	return &target, nil
+}
+
+func coerceToMap(v interface{}) (map[string]interface{}, error) {
+	switch t := v.(type) {
+	case string:
+		var m map[string]interface{}
+		if err := json.Unmarshal([]byte(t), &m); err != nil {
+			return nil, err
+		}
+		return m, nil
+	case map[string]interface{}:
+		return t, nil
+	default:
+		return nil, fmt.Errorf("unexpected target type: %T", v)
+	}
+}
+
+func parseTargetFromMap(m map[string]interface{}) schedulerstore.Target {
+	var target schedulerstore.Target
+	target.Arn = getStringFromMap(m, "arn", "Arn")
+	target.RoleArn = getStringFromMap(m, "roleArn", "RoleArn")
+	target.Input = getStringFromMap(m, "input", "Input")
+
+	if dl, ok := getMapField(m, "deadLetterConfig", "DeadLetterConfig"); ok {
+		target.DeadLetterConfig = &schedulerstore.DeadLetterConfig{
+			Arn: getStringFromMap(dl, "arn", "Arn"),
+		}
+	}
+	if rp, ok := getMapField(m, "retryPolicy", "RetryPolicy"); ok {
+		target.RetryPolicy = parseRetryPolicyFromMap(rp)
+	}
+	if sqs, ok := getMapField(m, "sqsParameters", "SqsParameters"); ok {
+		target.SqsParameters = &schedulerstore.SqsParameters{
+			MessageGroupId: getStringFromMap(sqs, "messageGroupId", "MessageGroupId"),
+		}
+	}
+	if ecs, ok := getMapField(m, "ecsParameters", "EcsParameters"); ok {
+		target.EcsParameters = parseEcsParameters(ecs)
+	}
+	if eb, ok := getMapField(m, "eventBridgeParameters", "EventBridgeParameters"); ok {
+		target.EventBridgeParameters = parseEventBridgeParameters(eb)
+	}
+	if kinesis, ok := getMapField(m, "kinesisParameters", "KinesisParameters"); ok {
+		target.KinesisParameters = parseKinesisParameters(kinesis)
+	}
+	return target
+}
+
+func getMapField(m map[string]interface{}, keys ...string) (map[string]interface{}, bool) {
+	for _, k := range keys {
+		if v, ok := m[k].(map[string]interface{}); ok {
+			return v, true
+		}
+	}
+	return nil, false
 }
 
 func getStringFromMap(m map[string]interface{}, keys ...string) string {
@@ -145,29 +107,29 @@ func getStringFromMap(m map[string]interface{}, keys ...string) string {
 
 func parseRetryPolicyFromMap(retryPolicy map[string]interface{}) *schedulerstore.RetryPolicy {
 	rp := &schedulerstore.RetryPolicy{}
-	if maxAge, ok := retryPolicy["maximumEventAgeInSeconds"].(float64); ok {
-		val := int(maxAge)
-		if val >= 60 && val <= 86400 {
-			rp.MaximumEventAgeInSeconds = &val
-		}
-	} else if maxAge, ok := retryPolicy["MaximumEventAgeInSeconds"].(float64); ok {
-		val := int(maxAge)
-		if val >= 60 && val <= 86400 {
-			rp.MaximumEventAgeInSeconds = &val
-		}
+	if val, ok := getFloatField(retryPolicy, "maximumEventAgeInSeconds", "MaximumEventAgeInSeconds"); ok && val >= 60 && val <= 86400 {
+		rp.MaximumEventAgeInSeconds = &val
 	}
-	if maxRetry, ok := retryPolicy["maximumRetryAttempts"].(float64); ok {
-		val := int(maxRetry)
-		if val >= 0 && val <= 185 {
-			rp.MaximumRetryAttempts = &val
-		}
-	} else if maxRetry, ok := retryPolicy["MaximumRetryAttempts"].(float64); ok {
-		val := int(maxRetry)
-		if val >= 0 && val <= 185 {
-			rp.MaximumRetryAttempts = &val
-		}
+	if val, ok := getFloatField(retryPolicy, "maximumRetryAttempts", "MaximumRetryAttempts"); ok && val >= 0 && val <= 185 {
+		rp.MaximumRetryAttempts = &val
 	}
 	return rp
+}
+
+func getFloatField(m map[string]interface{}, keys ...string) (int, bool) {
+	for _, k := range keys {
+		switch v := m[k].(type) {
+		case float64:
+			return int(v), true
+		case int:
+			return v, true
+		case int32:
+			return int(v), true
+		case int64:
+			return int(v), true
+		}
+	}
+	return 0, false
 }
 
 func parseEcsParameters(data map[string]interface{}) *schedulerstore.EcsParameters {
@@ -179,64 +141,54 @@ func parseEcsParameters(data map[string]interface{}) *schedulerstore.EcsParamete
 		PropagateTags:     getStringFromMap(data, "propagateTags", "PropagateTags"),
 		ReferenceId:       getStringFromMap(data, "referenceId", "ReferenceId"),
 	}
-	if taskCount, ok := data["taskCount"].(float64); ok {
-		val := int(taskCount)
+	if val, ok := getFloatField(data, "taskCount", "TaskCount"); ok {
 		params.TaskCount = &val
 	}
-	if taskCount, ok := data["TaskCount"].(float64); ok {
-		val := int(taskCount)
-		params.TaskCount = &val
+	if val, ok := getBoolField(data, "enableECSManagedTags", "EnableECSManagedTags"); ok {
+		params.EnableECSManagedTags = &val
 	}
-	if enabled, ok := data["enableECSManagedTags"].(bool); ok {
-		params.EnableECSManagedTags = &enabled
+	if val, ok := getBoolField(data, "enableExecuteCommand", "EnableExecuteCommand"); ok {
+		params.EnableExecuteCommand = &val
 	}
-	if enabled, ok := data["EnableECSManagedTags"].(bool); ok {
-		params.EnableECSManagedTags = &enabled
-	}
-	if enabled, ok := data["enableExecuteCommand"].(bool); ok {
-		params.EnableExecuteCommand = &enabled
-	}
-	if enabled, ok := data["EnableExecuteCommand"].(bool); ok {
-		params.EnableExecuteCommand = &enabled
-	}
-	if nc, ok := data["networkConfiguration"].(map[string]interface{}); ok {
+	if nc, ok := getMapField(data, "networkConfiguration", "NetworkConfiguration"); ok {
 		params.NetworkConfiguration = parseNetworkConfiguration(nc)
 	}
-	if nc, ok := data["NetworkConfiguration"].(map[string]interface{}); ok {
-		params.NetworkConfiguration = parseNetworkConfiguration(nc)
-	}
-	if cps, ok := data["capacityProviderStrategy"].([]interface{}); ok {
+	if cps, ok := getSliceField(data, "capacityProviderStrategy", "CapacityProviderStrategy"); ok {
 		params.CapacityProviderStrategy = parseCapacityProviderStrategy(cps)
 	}
-	if cps, ok := data["CapacityProviderStrategy"].([]interface{}); ok {
-		params.CapacityProviderStrategy = parseCapacityProviderStrategy(cps)
-	}
-	if pc, ok := data["placementConstraints"].([]interface{}); ok {
+	if pc, ok := getSliceField(data, "placementConstraints", "PlacementConstraints"); ok {
 		params.PlacementConstraints = parsePlacementConstraints(pc)
 	}
-	if pc, ok := data["PlacementConstraints"].([]interface{}); ok {
-		params.PlacementConstraints = parsePlacementConstraints(pc)
-	}
-	if ps, ok := data["placementStrategy"].([]interface{}); ok {
+	if ps, ok := getSliceField(data, "placementStrategy", "PlacementStrategy"); ok {
 		params.PlacementStrategy = parsePlacementStrategy(ps)
 	}
-	if ps, ok := data["PlacementStrategy"].([]interface{}); ok {
-		params.PlacementStrategy = parsePlacementStrategy(ps)
-	}
-	if tags, ok := data["tags"].([]interface{}); ok {
-		params.Tags = tagutil.ParseEcsTags(tags)
-	}
-	if tags, ok := data["Tags"].([]interface{}); ok {
+	if tags, ok := getSliceField(data, "tags", "Tags"); ok {
 		params.Tags = tagutil.ParseEcsTags(tags)
 	}
 	return params
 }
 
+func getBoolField(m map[string]interface{}, keys ...string) (bool, bool) {
+	for _, k := range keys {
+		if v, ok := m[k].(bool); ok {
+			return v, true
+		}
+	}
+	return false, false
+}
+
+func getSliceField(m map[string]interface{}, keys ...string) ([]interface{}, bool) {
+	for _, k := range keys {
+		if v, ok := m[k].([]interface{}); ok {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
 func parseNetworkConfiguration(data map[string]interface{}) *schedulerstore.NetworkConfiguration {
 	nc := &schedulerstore.NetworkConfiguration{}
-	if vpc, ok := data["awsvpcConfiguration"].(map[string]interface{}); ok {
-		nc.AwsVpcConfiguration = parseAwsVpcConfiguration(vpc)
-	} else if vpc, ok := data["AwsVpcConfiguration"].(map[string]interface{}); ok {
+	if vpc, ok := getMapField(data, "awsvpcConfiguration", "AwsvpcConfiguration"); ok {
 		nc.AwsVpcConfiguration = parseAwsVpcConfiguration(vpc)
 	}
 	return nc
@@ -246,26 +198,14 @@ func parseAwsVpcConfiguration(data map[string]interface{}) *schedulerstore.AwsVp
 	vpc := &schedulerstore.AwsVpcConfiguration{
 		AssignPublicIp: getStringFromMap(data, "assignPublicIp", "AssignPublicIp"),
 	}
-	if subnets, ok := data["subnets"].([]interface{}); ok {
-		for _, s := range subnets {
-			if str, ok := s.(string); ok {
-				vpc.Subnets = append(vpc.Subnets, str)
-			}
-		}
-	} else if subnets, ok := data["Subnets"].([]interface{}); ok {
+	if subnets, ok := getSliceField(data, "subnets", "Subnets"); ok {
 		for _, s := range subnets {
 			if str, ok := s.(string); ok {
 				vpc.Subnets = append(vpc.Subnets, str)
 			}
 		}
 	}
-	if sgs, ok := data["securityGroups"].([]interface{}); ok {
-		for _, sg := range sgs {
-			if str, ok := sg.(string); ok {
-				vpc.SecurityGroups = append(vpc.SecurityGroups, str)
-			}
-		}
-	} else if sgs, ok := data["SecurityGroups"].([]interface{}); ok {
+	if sgs, ok := getSliceField(data, "securityGroups", "SecurityGroups"); ok {
 		for _, sg := range sgs {
 			if str, ok := sg.(string); ok {
 				vpc.SecurityGroups = append(vpc.SecurityGroups, str)
@@ -282,21 +222,11 @@ func parseCapacityProviderStrategy(data []interface{}) []schedulerstore.Capacity
 			cps := schedulerstore.CapacityProviderStrategyItem{
 				CapacityProvider: getStringFromMap(m, "capacityProvider", "CapacityProvider"),
 			}
-			if w, ok := m["weight"].(float64); ok {
-				val := int(w)
-				cps.Weight = &val
+			if w, ok := getFloatField(m, "weight", "Weight"); ok {
+				cps.Weight = &w
 			}
-			if w, ok := m["Weight"].(float64); ok {
-				val := int(w)
-				cps.Weight = &val
-			}
-			if b, ok := m["base"].(float64); ok {
-				val := int(b)
-				cps.Base = &val
-			}
-			if b, ok := m["Base"].(float64); ok {
-				val := int(b)
-				cps.Base = &val
+			if b, ok := getFloatField(m, "base", "Base"); ok {
+				cps.Base = &b
 			}
 			result = append(result, cps)
 		}
@@ -363,12 +293,8 @@ func parseFlexibleTimeWindow(params map[string]interface{}) (*schedulerstore.Fle
 		if mode != "" {
 			ftw.Mode = schedulerstore.FlexibleTimeWindowMode(mode)
 		}
-		if maxWindow, ok := v["maximumWindowInMinutes"].(float64); ok {
-			val := int(maxWindow)
-			ftw.MaximumWindowInMinutes = &val
-		} else if maxWindow, ok := v["MaximumWindowInMinutes"].(float64); ok {
-			val := int(maxWindow)
-			ftw.MaximumWindowInMinutes = &val
+		if maxWindow, ok := getFloatField(v, "maximumWindowInMinutes", "MaximumWindowInMinutes"); ok {
+			ftw.MaximumWindowInMinutes = &maxWindow
 		}
 	default:
 		return nil, ErrInvalidFlexibleTimeWindow

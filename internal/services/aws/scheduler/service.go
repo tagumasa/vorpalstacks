@@ -3,7 +3,6 @@ package scheduler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -71,17 +70,8 @@ func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.
 	} else if strings.Contains(evt.TargetArn, ":sqs:") {
 		s.engine.sendToSQS(ctx, schedule, target)
 	} else if strings.Contains(evt.TargetArn, ":sns:") {
-		if s.engine.bus != nil {
-			message := target.Input
-			if message == "" {
-				msgPayload := map[string]interface{}{
-					"schedule":  schedule.Name,
-					"timestamp": time.Now().UTC().Format(time.RFC3339),
-				}
-				if msgBytes, err := json.Marshal(msgPayload); err == nil {
-					message = string(msgBytes)
-				}
-			}
+		if s.engine != nil && s.engine.bus != nil {
+			message := scheduleInput(target, schedule.Name)
 			snsEvt := &eventbus.SNSDeliveryEvent{
 				TopicARN:  evt.TargetArn,
 				MessageID: fmt.Sprintf("%d", time.Now().UnixNano()),

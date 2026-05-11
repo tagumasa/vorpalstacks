@@ -12,6 +12,38 @@ import (
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
 
+func getScheduleNameAndGroup(params map[string]interface{}) (name, groupName string, err error) {
+	name = request.GetStringParam(params, "Name")
+	if name == "" {
+		name = request.GetStringParam(params, "name")
+	}
+	if name == "" {
+		return "", "", ErrValidation
+	}
+	groupName = request.GetStringParam(params, "GroupName")
+	if groupName == "" {
+		groupName = request.GetStringParam(params, "groupName")
+	}
+	if groupName == "" {
+		groupName = "default"
+	}
+	return name, groupName, nil
+}
+
+func getListGroupName(params map[string]interface{}) string {
+	groupName := request.GetStringParam(params, "GroupName")
+	if groupName == "" {
+		groupName = request.GetStringParam(params, "groupName")
+	}
+	if groupName == "" {
+		groupName = request.GetStringParam(params, "ScheduleGroup")
+	}
+	if groupName == "" {
+		groupName = "default"
+	}
+	return groupName
+}
+
 // CreateSchedule creates a new schedule in EventBridge Scheduler.
 func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "Name")
@@ -129,20 +161,9 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 
 // DeleteSchedule deletes a schedule from EventBridge Scheduler.
 func (s *SchedulerService) DeleteSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		name = request.GetStringParam(req.Parameters, "name")
-	}
-	if name == "" {
-		return nil, ErrValidation
-	}
-
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		groupName = request.GetStringParam(req.Parameters, "groupName")
-	}
-	if groupName == "" {
-		groupName = "default"
+	name, groupName, err := getScheduleNameAndGroup(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -162,20 +183,9 @@ func (s *SchedulerService) DeleteSchedule(ctx context.Context, reqCtx *request.R
 
 // GetSchedule retrieves a schedule from EventBridge Scheduler.
 func (s *SchedulerService) GetSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		name = request.GetStringParam(req.Parameters, "name")
-	}
-	if name == "" {
-		return nil, ErrValidation
-	}
-
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		groupName = request.GetStringParam(req.Parameters, "groupName")
-	}
-	if groupName == "" {
-		groupName = "default"
+	name, groupName, err := getScheduleNameAndGroup(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -196,20 +206,9 @@ func (s *SchedulerService) GetSchedule(ctx context.Context, reqCtx *request.Requ
 
 // UpdateSchedule updates an existing schedule in EventBridge Scheduler.
 func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		name = request.GetStringParam(req.Parameters, "name")
-	}
-	if name == "" {
-		return nil, ErrValidation
-	}
-
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		groupName = request.GetStringParam(req.Parameters, "groupName")
-	}
-	if groupName == "" {
-		groupName = "default"
+	name, groupName, err := getScheduleNameAndGroup(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -301,16 +300,7 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 
 // ListSchedules lists schedules in EventBridge Scheduler.
 func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		groupName = request.GetStringParam(req.Parameters, "groupName")
-	}
-	if groupName == "" {
-		groupName = request.GetStringParam(req.Parameters, "ScheduleGroup")
-	}
-	if groupName == "" {
-		groupName = "default"
-	}
+	groupName := getListGroupName(req.Parameters)
 	namePrefix := request.GetStringParam(req.Parameters, "NamePrefix")
 	stateFilter := schedulerstore.ScheduleState(request.GetStringParam(req.Parameters, "State"))
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")

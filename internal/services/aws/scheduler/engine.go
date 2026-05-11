@@ -270,28 +270,32 @@ func (e *Engine) parseCronNextTime(expr string, now time.Time) (time.Time, error
 	return schedule.Next(now.Add(-time.Minute)), nil
 }
 
+var awsCronReplacements = map[string]string{
+	"?":   "*",
+	"SUN": "0", "MON": "1", "TUE": "2", "WED": "3", "THU": "4", "FRI": "5", "SAT": "6",
+	"JAN": "1", "FEB": "2", "MAR": "3", "APR": "4", "MAY": "5", "JUN": "6",
+	"JUL": "7", "AUG": "8", "SEP": "9", "OCT": "10", "NOV": "11", "DEC": "12",
+}
+
 func convertAWSCronField(field string) string {
-	field = strings.ReplaceAll(field, "?", "*")
-	field = strings.ReplaceAll(field, "SUN", "0")
-	field = strings.ReplaceAll(field, "MON", "1")
-	field = strings.ReplaceAll(field, "TUE", "2")
-	field = strings.ReplaceAll(field, "WED", "3")
-	field = strings.ReplaceAll(field, "THU", "4")
-	field = strings.ReplaceAll(field, "FRI", "5")
-	field = strings.ReplaceAll(field, "SAT", "6")
-	field = strings.ReplaceAll(field, "JAN", "1")
-	field = strings.ReplaceAll(field, "FEB", "2")
-	field = strings.ReplaceAll(field, "MAR", "3")
-	field = strings.ReplaceAll(field, "APR", "4")
-	field = strings.ReplaceAll(field, "MAY", "5")
-	field = strings.ReplaceAll(field, "JUN", "6")
-	field = strings.ReplaceAll(field, "JUL", "7")
-	field = strings.ReplaceAll(field, "AUG", "8")
-	field = strings.ReplaceAll(field, "SEP", "9")
-	field = strings.ReplaceAll(field, "OCT", "10")
-	field = strings.ReplaceAll(field, "NOV", "11")
-	field = strings.ReplaceAll(field, "DEC", "12")
+	for old, new := range awsCronReplacements {
+		field = strings.ReplaceAll(field, old, new)
+	}
 	return field
+}
+
+func scheduleInput(target *schedulerstore.Target, scheduleName string) string {
+	if target.Input != "" {
+		return target.Input
+	}
+	msgPayload := map[string]interface{}{
+		"schedule":  scheduleName,
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	}
+	if msgBytes, err := json.Marshal(msgPayload); err == nil {
+		return string(msgBytes)
+	}
+	return "{}"
 }
 
 func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.Schedule) {
@@ -312,10 +316,7 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 	}
 
 	if e.bus != nil {
-		input := target.Input
-		if input == "" {
-			input = "{}"
-		}
+		input := scheduleInput(target, schedule.Name)
 		schedEvt := &eventbus.ScheduleFiredEvent{
 			ScheduleName: schedule.Name,
 			ScheduleArn:  "",
@@ -347,33 +348,34 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 	}
 
 	if schedule.ActionAfterCompletion == schedulerstore.ActionAfterCompletionDelete {
-		region := schedule.Region
-		if region == "" {
-			region = defaults.DefaultRegion
-		}
-		storage, err := e.storageManager.GetStorage(region)
-		if err != nil {
-			logs.Debug("Failed to get storage for region",
-				logs.String("schedule", schedule.Name),
-				logs.String("region", region),
-				logs.String("error", err.Error()))
-			return
-		}
-		var store *schedulerstore.SchedulerStore
-		if cached, ok := e.stores.Load(region); ok {
-			store = cached.(*schedulerstore.SchedulerStore)
-		} else {
-			store = schedulerstore.NewSchedulerStore(storage, e.accountID, region)
-			if actual, loaded := e.stores.LoadOrStore(region, store); loaded {
-				store = actual.(*schedulerstore.SchedulerStore)
+		store := e.getStoreForSchedule(schedule)
+		if store != nil {
+			if err := store.DeleteSchedule(ctx, schedule.GroupName, schedule.Name); err != nil {
+				logs.Debug("Failed to delete schedule after completion",
+					logs.String("schedule", schedule.Name),
+					logs.String("error", err.Error()))
 			}
 		}
-		if err := store.DeleteSchedule(ctx, schedule.GroupName, schedule.Name); err != nil {
-			logs.Debug("Failed to delete schedule after completion",
-				logs.String("schedule", schedule.Name),
-				logs.String("error", err.Error()))
-		}
 	}
+}
+
+func (e *Engine) getStoreForSchedule(schedule *schedulerstore.Schedule) *schedulerstore.SchedulerStore {
+	region := schedule.Region
+	if region == "" {
+		region = defaults.DefaultRegion
+	}
+	if cached, ok := e.stores.Load(region); ok {
+		return cached.(*schedulerstore.SchedulerStore)
+	}
+	storage, err := e.storageManager.GetStorage(region)
+	if err != nil {
+		return nil
+	}
+	store := schedulerstore.NewSchedulerStore(storage, e.accountID, region)
+	if actual, loaded := e.stores.LoadOrStore(region, store); loaded {
+		return actual.(*schedulerstore.SchedulerStore)
+	}
+	return store
 }
 
 func (e *Engine) invokeLambda(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) {
@@ -382,10 +384,7 @@ func (e *Engine) invokeLambda(ctx context.Context, schedule *schedulerstore.Sche
 		return
 	}
 
-	input := target.Input
-	if input == "" {
-		input = "{}"
-	}
+	input := scheduleInput(target, schedule.Name)
 
 	functionName := svcarn.ExtractFunctionNameFromARN(target.Arn)
 	if functionName == "" {
@@ -437,10 +436,7 @@ func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedul
 		return
 	}
 
-	messageBody := target.Input
-	if messageBody == "" {
-		messageBody = fmt.Sprintf(`{"schedule":"%s","timestamp":"%s"}`, schedule.Name, time.Now().UTC().Format(time.RFC3339))
-	}
+	messageBody := scheduleInput(target, schedule.Name)
 
 	logs.Debug("Sending to SQS for schedule",
 		logs.String("schedule", schedule.Name),
@@ -467,21 +463,7 @@ func (e *Engine) publishToSNS(ctx context.Context, schedule *schedulerstore.Sche
 	}
 	topicArn := target.Arn
 
-	message := target.Input
-	if message == "" {
-		msgPayload := map[string]interface{}{
-			"schedule":  schedule.Name,
-			"timestamp": time.Now().UTC().Format(time.RFC3339),
-		}
-		msgBytes, err := json.Marshal(msgPayload)
-		if err != nil {
-			logs.Debug("Failed to marshal SNS message payload",
-				logs.String("schedule", schedule.Name),
-				logs.String("error", err.Error()))
-			return
-		}
-		message = string(msgBytes)
-	}
+	message := scheduleInput(target, schedule.Name)
 
 	result, err := e.bus.SNSInvoker().ListSubscriptionsByTopic(ctx, topicArn)
 	if err != nil {
@@ -602,16 +584,7 @@ func (e *Engine) sendToCloudWatchLogs(ctx context.Context, schedule *schedulerst
 		logStream = fmt.Sprintf("scheduler-%s", schedule.Name)
 	}
 
-	message := target.Input
-	if message == "" {
-		msgPayload := map[string]interface{}{
-			"schedule":  schedule.Name,
-			"timestamp": time.Now().UTC().Format(time.RFC3339),
-		}
-		if msgBytes, err := json.Marshal(msgPayload); err == nil {
-			message = string(msgBytes)
-		}
-	}
+	message := scheduleInput(target, schedule.Name)
 
 	evt := &eventbus.CloudWatchLogsPutEvent{
 		LogGroup:  logGroup,
@@ -648,10 +621,7 @@ func (e *Engine) startStepFunctionExecution(ctx context.Context, schedule *sched
 		smRegion = schedule.Region
 	}
 
-	input := target.Input
-	if input == "" {
-		input = "{}"
-	}
+	input := scheduleInput(target, schedule.Name)
 
 	evt := &eventbus.StepFunctionsStartExecutionEvent{
 		StateMachineArn: target.Arn,
@@ -690,10 +660,7 @@ func (e *Engine) sendToEventBridge(ctx context.Context, schedule *schedulerstore
 		eventBusName = resource[idx+len(":event-bus/"):]
 	}
 
-	input := target.Input
-	if input == "" {
-		input = "{}"
-	}
+	input := scheduleInput(target, schedule.Name)
 
 	evt := &eventbus.EventBridgePutEventsEvent{
 		EventBusName: eventBusName,
