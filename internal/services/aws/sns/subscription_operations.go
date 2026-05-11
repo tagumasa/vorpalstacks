@@ -197,20 +197,7 @@ func (s *SNSService) ListSubscriptions(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	subscriptions := make([]map[string]interface{}, 0, len(result.Items))
-	for _, sub := range result.Items {
-		subArn := sub.SubscriptionArn
-		if sub.PendingConfirmation {
-			subArn = "pending confirmation"
-		}
-		subscriptions = append(subscriptions, map[string]interface{}{
-			"SubscriptionArn": subArn,
-			"TopicArn":        sub.TopicArn,
-			"Protocol":        sub.Protocol,
-			"Endpoint":        sub.Endpoint,
-			"Owner":           sub.Owner,
-		})
-	}
+	subscriptions := buildSubscriptionList(result.Items)
 
 	nextToken = ""
 	if result.IsTruncated && result.NextMarker != "" {
@@ -238,13 +225,23 @@ func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	subs := make([]map[string]interface{}, 0, len(result.Items))
-	for _, sub := range result.Items {
+	subs := buildSubscriptionList(result.Items)
+
+	nextToken = ""
+	if result.IsTruncated && result.NextMarker != "" {
+		nextToken = result.NextMarker
+	}
+	return pagination.BuildListResponse("Subscriptions", subs, nextToken), nil
+}
+
+func buildSubscriptionList(items []*snsstore.Subscription) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, sub := range items {
 		subArn := sub.SubscriptionArn
 		if sub.PendingConfirmation {
 			subArn = "pending confirmation"
 		}
-		subs = append(subs, map[string]interface{}{
+		result = append(result, map[string]interface{}{
 			"SubscriptionArn": subArn,
 			"TopicArn":        sub.TopicArn,
 			"Protocol":        sub.Protocol,
@@ -252,10 +249,5 @@ func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *reque
 			"Owner":           sub.Owner,
 		})
 	}
-
-	nextToken = ""
-	if result.IsTruncated && result.NextMarker != "" {
-		nextToken = result.NextMarker
-	}
-	return pagination.BuildListResponse("Subscriptions", subs, nextToken), nil
+	return result
 }

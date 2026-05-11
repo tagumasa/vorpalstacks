@@ -30,8 +30,19 @@ type SQSInvoker interface {
 type SQSSendOptions struct {
 	DelaySeconds           int64
 	MessageAttributes      map[string]string
+	TypedMessageAttributes map[string]SQSMessageAttribute
 	MessageGroupID         string
 	MessageDeduplicationID string
+}
+
+// SQSMessageAttribute carries a typed SQS message attribute value.
+// DataType is one of "String", "Number", or "Binary". For Binary type the
+// caller stores the raw bytes in BinaryValue; for String/Number the value
+// goes in StringValue.
+type SQSMessageAttribute struct {
+	DataType    string
+	StringValue string
+	BinaryValue []byte
 }
 
 // ReceivedSQSMessage carries the fields of an SQS message returned by

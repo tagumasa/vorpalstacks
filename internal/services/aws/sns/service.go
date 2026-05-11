@@ -294,10 +294,22 @@ func (s *SNSService) PublishToTopic(ctx context.Context, accountID, region, topi
 		}
 
 		if s.bus != nil {
+			var msgAttrs map[string]json.RawMessage
+			if len(msg.MessageAttributes) > 0 {
+				msgAttrs = make(map[string]json.RawMessage, len(msg.MessageAttributes))
+				for k, v := range msg.MessageAttributes {
+					raw, err := json.Marshal(v)
+					if err == nil {
+						msgAttrs[k] = raw
+					}
+				}
+			}
 			snsEvt := &eventbus.SNSDeliveryEvent{
-				TopicARN:  topic.Arn,
-				MessageID: msg.MessageId,
-				Message:   message,
+				TopicARN:          topic.Arn,
+				MessageID:         msg.MessageId,
+				Message:           message,
+				Subject:           subject,
+				MessageAttributes: msgAttrs,
 			}
 			snsEvt.Region = region
 			if err := s.bus.Publish(context.Background(), snsEvt); err != nil {

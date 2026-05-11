@@ -157,41 +157,57 @@ func (s *SNSService) Publish(ctx context.Context, reqCtx *request.RequestContext
 // map (either top-level req.Parameters or a PublishBatch entry map) and
 // populates the Message's MessageAttributes field.
 func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message) {
-	attrs, ok := params["MessageAttributes"].(map[string]interface{})
-	if !ok {
-		attrs, ok = params["messageAttributes"].(map[string]interface{})
+	var attrs map[string]interface{}
+	for _, key := range []string{"MessageAttributes", "messageAttributes"} {
+		if m, ok := params[key].(map[string]interface{}); ok {
+			attrs = m
+			break
+		}
 	}
-	if !ok {
+	if attrs == nil {
 		return
 	}
+
 	msg.MessageAttributes = make(map[string]*snsstore.MessageAttribute, len(attrs))
 	for k, v := range attrs {
 		attrMap, ok := v.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		attr := &snsstore.MessageAttribute{}
-		if dataType, ok := attrMap["dataType"].(string); ok {
-			attr.Type = dataType
+		attr := &snsstore.MessageAttribute{
+			Type:        firstString(attrMap, "DataType", "dataType"),
+			StringValue: firstString(attrMap, "StringValue", "stringValue"),
 		}
-		if dataType, ok := attrMap["DataType"].(string); ok {
-			attr.Type = dataType
-		}
-		if sv, ok := attrMap["stringValue"].(string); ok {
-			attr.StringValue = sv
-		}
-		if sv, ok := attrMap["StringValue"].(string); ok {
-			attr.StringValue = sv
-		}
-		if bv, ok := attrMap["binaryValue"].([]byte); ok {
-			attr.BinaryValue = bv
-		}
-		if bv, ok := attrMap["BinaryValue"].([]byte); ok {
-			attr.BinaryValue = bv
+		if raw := firstString(attrMap, "BinaryValue", "binaryValue"); raw != "" {
+			if decoded, err := base64.StdEncoding.DecodeString(raw); err == nil {
+				attr.BinaryValue = decoded
+			}
 		}
 		msg.MessageAttributes[k] = attr
 	}
 }
+
+// firstString returns the first non-empty string value found for any of the
+// given keys in the map.
+func firstString(m map[string]interface{}, keys ...string) string {
+	for _, k := range keys {
+		if v, ok := m[k].(string); ok && v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// messageAttributeValue returns the serialisable value for an SNS message
+// attribute. String/Number/String.Array types return the string value;
+// Binary types return the base64-encoded representation.
+func messageAttributeValue(attr *snsstore.MessageAttribute) string {
+	if len(attr.BinaryValue) > 0 {
+		return base64.StdEncoding.EncodeToString(attr.BinaryValue)
+	}
+	return attr.StringValue
+}
+
 func generateContentBasedDeduplicationId(message string) string {
 	hash := sha256.Sum256([]byte(message))
 	return hex.EncodeToString(hash[:32])
@@ -288,7 +304,7 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 			for k, v := range msg.MessageAttributes {
 				attrs[k] = map[string]interface{}{
 					"Type":  v.Type,
-					"Value": v.StringValue,
+					"Value": messageAttributeValue(v),
 				}
 			}
 			payload["MessageAttributes"] = attrs
@@ -302,13 +318,19 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 		body = string(jsonData)
 	}
 
-	msgAttrs := make(map[string]string)
+	typedAttrs := make(map[string]eventbus.SQSMessageAttribute, len(msg.MessageAttributes))
 	for k, v := range msg.MessageAttributes {
-		msgAttrs[k] = v.StringValue
+		ta := eventbus.SQSMessageAttribute{DataType: v.Type}
+		if len(v.BinaryValue) > 0 {
+			ta.BinaryValue = v.BinaryValue
+		} else {
+			ta.StringValue = v.StringValue
+		}
+		typedAttrs[k] = ta
 	}
 
 	opts := eventbus.SQSSendOptions{
-		MessageAttributes:      msgAttrs,
+		TypedMessageAttributes: typedAttrs,
 		MessageGroupID:         msg.MessageGroupId,
 		MessageDeduplicationID: msg.MessageDeduplicationId,
 	}
@@ -392,13 +414,10 @@ func (s *SNSService) buildNotificationPayload(msg *snsstore.Message, sub *snssto
 	if len(msg.MessageAttributes) > 0 {
 		attrs := make(map[string]interface{}, len(msg.MessageAttributes))
 		for k, v := range msg.MessageAttributes {
-			attr := map[string]interface{}{
-				"Type": v.Type,
+			attrs[k] = map[string]interface{}{
+				"Type":  v.Type,
+				"Value": messageAttributeValue(v),
 			}
-			if v.StringValue != "" {
-				attr["Value"] = v.StringValue
-			}
-			attrs[k] = attr
 		}
 		payload["MessageAttributes"] = attrs
 	}
@@ -635,12 +654,23 @@ func (s *SNSService) PublishBatch(ctx context.Context, reqCtx *request.RequestCo
 			}
 
 			if s.bus != nil {
+				var msgAttrs map[string]json.RawMessage
+				if len(msg.MessageAttributes) > 0 {
+					msgAttrs = make(map[string]json.RawMessage, len(msg.MessageAttributes))
+					for k, v := range msg.MessageAttributes {
+						raw, err := json.Marshal(v)
+						if err == nil {
+							msgAttrs[k] = raw
+						}
+					}
+				}
 				snsEvt := &eventbus.SNSDeliveryEvent{
-					TopicARN:       topicArn,
-					MessageID:      messageId,
-					Message:        message,
-					Subject:        subject,
-					MessageGroupId: messageGroupId,
+					TopicARN:          topicArn,
+					MessageID:         messageId,
+					Message:           message,
+					Subject:           subject,
+					MessageGroupId:    messageGroupId,
+					MessageAttributes: msgAttrs,
 				}
 				snsEvt.Region = region
 				if err := s.bus.Publish(context.Background(), snsEvt); err != nil {

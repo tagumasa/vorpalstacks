@@ -51,7 +51,7 @@ func (a *sqsInvokerAdapter) SendMessage(_ context.Context, queueURL string, body
 	msg := &storesqs.Message{
 		Body:                   body,
 		DelaySeconds:           int32(opts.DelaySeconds),
-		MessageAttributes:      convertToSQSMessageAttributes(opts.MessageAttributes),
+		MessageAttributes:      buildSQSMessageAttributes(opts),
 		MessageGroupID:         opts.MessageGroupID,
 		MessageDeduplicationID: opts.MessageDeduplicationID,
 	}
@@ -60,6 +60,26 @@ func (a *sqsInvokerAdapter) SendMessage(_ context.Context, queueURL string, body
 		return "", "", err
 	}
 	return result.ID, result.MD5OfBody, nil
+}
+
+// buildSQSMessageAttributes selects the richer of the two attribute maps
+// from SQSSendOptions. TypedMessageAttributes (with DataType) takes
+// precedence; the legacy string map is used as a fallback.
+func buildSQSMessageAttributes(opts eventbus.SQSSendOptions) map[string]*storesqs.MessageAttributeValue {
+	if len(opts.TypedMessageAttributes) > 0 {
+		out := make(map[string]*storesqs.MessageAttributeValue, len(opts.TypedMessageAttributes))
+		for k, v := range opts.TypedMessageAttributes {
+			attr := &storesqs.MessageAttributeValue{DataType: v.DataType}
+			if len(v.BinaryValue) > 0 {
+				attr.BinaryValue = v.BinaryValue
+			} else {
+				attr.StringValue = &v.StringValue
+			}
+			out[k] = attr
+		}
+		return out
+	}
+	return convertToSQSMessageAttributes(opts.MessageAttributes)
 }
 
 // ReceiveMessage retrieves messages from the specified queue.

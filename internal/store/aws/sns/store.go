@@ -822,17 +822,7 @@ func (s *SNSStore) CreatePlatformEndpoint(endpoint *PlatformEndpoint) (*Platform
 		existingArn := string(existingArnBytes)
 		var existing PlatformEndpoint
 		if err := s.platformEndpointsStore.Get(existingArn, &existing); err == nil {
-			if endpoint.CustomUserData != "" {
-				existing.CustomUserData = endpoint.CustomUserData
-			}
-			if endpoint.Attributes != nil {
-				if existing.Attributes == nil {
-					existing.Attributes = make(map[string]string)
-				}
-				for k, v := range endpoint.Attributes {
-					existing.Attributes[k] = v
-				}
-			}
+			mergeEndpointAttrs(&existing, endpoint)
 			_ = s.platformEndpointsStore.Put(existingArn, &existing)
 			return &existing, nil
 		}
@@ -852,17 +842,7 @@ func (s *SNSStore) CreatePlatformEndpoint(endpoint *PlatformEndpoint) (*Platform
 		var existing PlatformEndpoint
 		if err := s.platformEndpointsStore.Get(endpoint.EndpointArn, &existing); err == nil {
 			existing.Token = endpoint.Token
-			if endpoint.CustomUserData != "" {
-				existing.CustomUserData = endpoint.CustomUserData
-			}
-			if endpoint.Attributes != nil {
-				if existing.Attributes == nil {
-					existing.Attributes = make(map[string]string)
-				}
-				for k, v := range endpoint.Attributes {
-					existing.Attributes[k] = v
-				}
-			}
+			mergeEndpointAttrs(&existing, endpoint)
 			if err := s.platformEndpointsStore.Put(endpoint.EndpointArn, &existing); err != nil {
 				return nil, err
 			}
@@ -894,6 +874,21 @@ func (s *SNSStore) CreatePlatformEndpoint(endpoint *PlatformEndpoint) (*Platform
 	}
 
 	return endpoint, nil
+}
+
+// mergeEndpointAttrs merges CustomUserData and Attributes from src into dst.
+func mergeEndpointAttrs(dst, src *PlatformEndpoint) {
+	if src.CustomUserData != "" {
+		dst.CustomUserData = src.CustomUserData
+	}
+	if src.Attributes != nil {
+		if dst.Attributes == nil {
+			dst.Attributes = make(map[string]string)
+		}
+		for k, v := range src.Attributes {
+			dst.Attributes[k] = v
+		}
+	}
 }
 
 // GetEndpoint retrieves an SNS platform endpoint by its ARN.
