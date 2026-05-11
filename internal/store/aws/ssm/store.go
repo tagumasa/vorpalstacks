@@ -91,9 +91,6 @@ func (s *Store) PutParameter(param *Parameter, overwrite bool) (int64, error) {
 	if param.DataType == "" {
 		param.DataType = "text"
 	}
-	if param.Tags == nil {
-		param.Tags = make(map[string]string)
-	}
 
 	if err := s.Put(key, param); err != nil {
 		return 0, err
@@ -252,18 +249,27 @@ func (s *Store) DeleteParameter(name string) error {
 		return ErrParameterNotFound
 	}
 
-	opts := common.ListOptions{MaxItems: 10000}
-	result, err := common.List[ParameterVersion](s.historyStore, opts, func(pv *ParameterVersion) bool {
-		return pv.ParameterName == name
-	})
-	if err != nil {
-		return fmt.Errorf("failed to list parameter history: %w", err)
-	}
-	for _, pv := range result.Items {
-		hKey := s.historyKey(name, pv.Version)
-		if err := s.historyStore.Delete(hKey); err != nil {
-			return fmt.Errorf("failed to delete parameter history: %w", err)
+	opts := common.ListOptions{MaxItems: 1000}
+	for {
+		result, err := common.List[ParameterVersion](s.historyStore, opts, func(pv *ParameterVersion) bool {
+			return pv.ParameterName == name
+		})
+		if err != nil {
+			return fmt.Errorf("failed to list parameter history: %w", err)
 		}
+		if len(result.Items) == 0 {
+			break
+		}
+		for _, pv := range result.Items {
+			hKey := s.historyKey(name, pv.Version)
+			if err := s.historyStore.Delete(hKey); err != nil {
+				return fmt.Errorf("failed to delete parameter history: %w", err)
+			}
+		}
+		if result.NextMarker == "" {
+			break
+		}
+		opts.Marker = result.NextMarker
 	}
 
 	if err := s.TagStore.Delete(name); err != nil {
@@ -310,6 +316,10 @@ func (s *Store) DescribeParameters(filters map[string]string, maxResults int32, 
 				if string(p.Tier) != v {
 					return false
 				}
+			case "DataType":
+				if p.DataType != v {
+					return false
+				}
 			case "Name":
 				if !strings.HasPrefix(p.Name, v) {
 					return false
@@ -345,16 +355,20 @@ func (s *Store) GetParametersByPath(path string, recursive bool, withDecryption 
 	}
 
 	result, err := common.List[Parameter](s.BaseStore, opts, func(p *Parameter) bool {
-		if recursive {
-			if !strings.HasPrefix(p.Name, path) {
-				return false
-			}
-			if len(p.Name) > len(path) && p.Name[len(path)] != '/' {
-				return false
-			}
+		if !strings.HasPrefix(p.Name, path) {
+			return false
+		}
+		if len(p.Name) == len(path) {
 			return true
 		}
-		return strings.HasPrefix(p.Name, path) && !strings.Contains(strings.TrimPrefix(strings.TrimPrefix(p.Name, path), "/"), "/")
+		if recursive {
+			return strings.HasSuffix(path, "/") || p.Name[len(path)] == '/'
+		}
+		remainder := p.Name[len(path):]
+		if len(remainder) > 0 && remainder[0] == '/' {
+			remainder = remainder[1:]
+		}
+		return remainder != "" && !strings.Contains(remainder, "/")
 	})
 	if err != nil {
 		return nil, "", err

@@ -118,6 +118,7 @@ func paginateParameters(items []interface{}, params map[string]interface{}) (map
 
 // --- Cluster Parameter Group handlers ---
 
+// CreateDBClusterParameterGroup creates a new DB cluster parameter group.
 func (s *NeptuneService) CreateDBClusterParameterGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	name := request.GetStringParam(params, "DBClusterParameterGroupName")
@@ -146,6 +147,7 @@ func (s *NeptuneService) CreateDBClusterParameterGroup(ctx context.Context, reqC
 	return map[string]interface{}{"DBClusterParameterGroup": pg}, nil
 }
 
+// DeleteDBClusterParameterGroup deletes the specified DB cluster parameter group.
 func (s *NeptuneService) DeleteDBClusterParameterGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "DBClusterParameterGroupName")
 	if name == "" {
@@ -161,6 +163,8 @@ func (s *NeptuneService) DeleteDBClusterParameterGroup(ctx context.Context, reqC
 	return map[string]interface{}{}, nil
 }
 
+// DescribeDBClusterParameterGroups returns information about the specified
+// cluster parameter group, or lists all groups when no name is provided.
 func (s *NeptuneService) DescribeDBClusterParameterGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -198,6 +202,8 @@ func (s *NeptuneService) DescribeDBClusterParameterGroups(ctx context.Context, r
 	return result, nil
 }
 
+// DescribeDBClusterParameters returns the parameters contained in the
+// specified DB cluster parameter group.
 func (s *NeptuneService) DescribeDBClusterParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "DBClusterParameterGroupName")
 	if name == "" {
@@ -216,6 +222,8 @@ func (s *NeptuneService) DescribeDBClusterParameters(ctx context.Context, reqCtx
 	return result, nil
 }
 
+// ModifyDBClusterParameterGroup modifies the parameters of the specified DB
+// cluster parameter group.
 func (s *NeptuneService) ModifyDBClusterParameterGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "DBClusterParameterGroupName")
 	if name == "" {
@@ -238,6 +246,8 @@ func (s *NeptuneService) ModifyDBClusterParameterGroup(ctx context.Context, reqC
 	return map[string]interface{}{"DBClusterParameterGroupName": name}, nil
 }
 
+// ResetDBClusterParameterGroup resets the parameters of the specified DB
+// cluster parameter group to their default values.
 func (s *NeptuneService) ResetDBClusterParameterGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "DBClusterParameterGroupName")
 	if name == "" {
@@ -258,6 +268,8 @@ func (s *NeptuneService) ResetDBClusterParameterGroup(ctx context.Context, reqCt
 	return map[string]interface{}{"DBClusterParameterGroupName": name}, nil
 }
 
+// CopyDBClusterParameterGroup creates a copy of the specified DB cluster
+// parameter group.
 func (s *NeptuneService) CopyDBClusterParameterGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	sourceName := request.GetStringParam(params, "SourceDBClusterParameterGroupIdentifier")
@@ -295,6 +307,7 @@ func (s *NeptuneService) CopyDBClusterParameterGroup(ctx context.Context, reqCtx
 
 // --- Instance Parameter Group handlers ---
 
+// CreateDBParameterGroup creates a new DB parameter group.
 func (s *NeptuneService) CreateDBParameterGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	name := request.GetStringParam(params, "DBParameterGroupName")
@@ -321,6 +334,7 @@ func (s *NeptuneService) CreateDBParameterGroup(ctx context.Context, reqCtx *req
 	return map[string]interface{}{"DBParameterGroup": pg}, nil
 }
 
+// DeleteDBParameterGroup deletes the specified DB parameter group.
 func (s *NeptuneService) DeleteDBParameterGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "DBParameterGroupName")
 	if name == "" {
@@ -336,6 +350,8 @@ func (s *NeptuneService) DeleteDBParameterGroup(ctx context.Context, reqCtx *req
 	return map[string]interface{}{}, nil
 }
 
+// DescribeDBParameterGroups returns information about the specified DB
+// parameter group, or lists all groups when no name is provided.
 func (s *NeptuneService) DescribeDBParameterGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -373,6 +389,8 @@ func (s *NeptuneService) DescribeDBParameterGroups(ctx context.Context, reqCtx *
 	return result, nil
 }
 
+// DescribeDBParameters returns the parameters contained in the specified DB
+// parameter group.
 func (s *NeptuneService) DescribeDBParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "DBParameterGroupName")
 	if name == "" {
@@ -391,6 +409,8 @@ func (s *NeptuneService) DescribeDBParameters(ctx context.Context, reqCtx *reque
 	return result, nil
 }
 
+// ModifyDBParameterGroup modifies the parameters of the specified DB parameter
+// group.
 func (s *NeptuneService) ModifyDBParameterGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "DBParameterGroupName")
 	if name == "" {
@@ -413,6 +433,8 @@ func (s *NeptuneService) ModifyDBParameterGroup(ctx context.Context, reqCtx *req
 	return map[string]interface{}{"DBParameterGroupName": name}, nil
 }
 
+// ResetDBParameterGroup resets the parameters of the specified DB parameter
+// group to their default values.
 func (s *NeptuneService) ResetDBParameterGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetStringParam(req.Parameters, "DBParameterGroupName")
 	if name == "" {
@@ -433,6 +455,7 @@ func (s *NeptuneService) ResetDBParameterGroup(ctx context.Context, reqCtx *requ
 	return map[string]interface{}{"DBParameterGroupName": name}, nil
 }
 
+// CopyDBParameterGroup creates a copy of the specified DB parameter group.
 func (s *NeptuneService) CopyDBParameterGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	sourceName := request.GetStringParam(params, "SourceDBParameterGroupIdentifier")
@@ -468,6 +491,8 @@ func (s *NeptuneService) CopyDBParameterGroup(ctx context.Context, reqCtx *reque
 	return map[string]interface{}{"DBParameterGroup": pg}, nil
 }
 
+// DescribeEngineDefaultClusterParameters returns the default engine parameters
+// for the specified cluster parameter group family.
 func (s *NeptuneService) DescribeEngineDefaultClusterParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	family := request.GetStringParam(req.Parameters, "DBParameterGroupFamily")
 	if family == "" {
@@ -484,6 +509,8 @@ func (s *NeptuneService) DescribeEngineDefaultClusterParameters(ctx context.Cont
 	}, nil
 }
 
+// DescribeEngineDefaultParameters returns the default engine parameters for the
+// specified DB parameter group family.
 func (s *NeptuneService) DescribeEngineDefaultParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	family := request.GetStringParam(req.Parameters, "DBParameterGroupFamily")
 	if family == "" {

@@ -71,8 +71,6 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 	for _, p := range params {
 		meta := &pb.ParameterMetadata{
 			Name:             p.Name,
-			Type:             pb.ParameterType_PARAMETER_TYPE_STRING,
-			Tier:             pb.ParameterTier_PARAMETER_TIER_STANDARD,
 			Version:          p.Version,
 			Lastmodifieddate: p.LastModifiedDate.Format(timeutils.ISO8601UTCFormat),
 			Datatype:         p.DataType,
@@ -137,6 +135,24 @@ func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb
 		Type:        paramType,
 		Description: req.Msg.Description,
 		DataType:    req.Msg.Datatype,
+		KeyID:       req.Msg.Keyid,
+	}
+
+	switch req.Msg.Tier {
+	case pb.ParameterTier_PARAMETER_TIER_ADVANCED:
+		param.Tier = ssmstore.ParameterTierAdvanced
+	case pb.ParameterTier_PARAMETER_TIER_INTELLIGENT_TIERING:
+		param.Tier = ssmstore.ParameterTierIntelligentTiering
+	}
+
+	if len(req.Msg.Tags) > 0 {
+		tags := make(map[string]string, len(req.Msg.Tags))
+		for _, t := range req.Msg.Tags {
+			if t.Key != "" {
+				tags[t.Key] = t.Value
+			}
+		}
+		param.Tags = tags
 	}
 
 	overwrite := req.Msg.Overwrite

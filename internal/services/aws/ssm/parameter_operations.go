@@ -30,6 +30,27 @@ func parseParameterSelector(name string) (baseName string, selector string) {
 	return name, ""
 }
 
+func parseStringList(params map[string]interface{}, field, memberPrefix string) []string {
+	if raw, ok := params[field].([]interface{}); ok {
+		var result []string
+		for _, v := range raw {
+			if s, ok := v.(string); ok {
+				result = append(result, s)
+			}
+		}
+		return result
+	}
+	var result []string
+	for i := 1; ; i++ {
+		val := request.GetStringParam(params, memberPrefix+strconv.Itoa(i))
+		if val == "" {
+			break
+		}
+		result = append(result, val)
+	}
+	return result
+}
+
 func parameterToResponse(p *ssmstore.Parameter, selector string) map[string]interface{} {
 	if selector == "" {
 		selector = fmt.Sprintf("%s:%d", p.Name, p.Version)
@@ -107,11 +128,9 @@ func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	if !overwrite {
-		if tags := tagutil.GetTags(req.Parameters, tagutil.StandardConfig); len(tags) > 0 {
-			if err := store.AddTagsToResource(name, tagutil.ToMap(tags)); err != nil {
-				logs.Warn("Failed to add tags to parameter", logs.String("name", name), logs.Err(err))
-			}
+	if tags := tagutil.GetTags(req.Parameters, tagutil.StandardConfig); len(tags) > 0 {
+		if err := store.AddTagsToResource(name, tagutil.ToMap(tags)); err != nil {
+			logs.Warn("Failed to add tags to parameter", logs.String("name", name), logs.Err(err))
 		}
 	}
 
@@ -176,23 +195,7 @@ func (s *SSMService) GetParameter(ctx context.Context, reqCtx *request.RequestCo
 // GetParameters retrieves multiple parameters from the Parameter Store.
 func (s *SSMService) GetParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	withDecryption := getBoolParam(req, "WithDecryption")
-
-	var names []string
-	if namesRaw, ok := req.Parameters["Names"].([]interface{}); ok {
-		for _, n := range namesRaw {
-			if ns, ok := n.(string); ok {
-				names = append(names, ns)
-			}
-		}
-	} else {
-		for i := 1; ; i++ {
-			name := req.GetParam("Names." + strconv.Itoa(i))
-			if name == "" {
-				break
-			}
-			names = append(names, name)
-		}
-	}
+	names := parseStringList(req.Parameters, "Names", "Names.")
 
 	if len(names) == 0 {
 		return map[string]interface{}{
@@ -231,6 +234,9 @@ func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.Re
 	path := req.GetParam("Path")
 	if path == "" {
 		return nil, ErrInvalidParameterName
+	}
+	if !strings.HasSuffix(path, "/") {
+		path = path + "/"
 	}
 
 	recursive := getBoolParam(req, "Recursive")
@@ -290,22 +296,7 @@ func (s *SSMService) DeleteParameter(ctx context.Context, reqCtx *request.Reques
 
 // DeleteParameters removes multiple parameters from the Parameter Store.
 func (s *SSMService) DeleteParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	var names []string
-	if namesRaw, ok := req.Parameters["Names"].([]interface{}); ok {
-		for _, n := range namesRaw {
-			if ns, ok := n.(string); ok {
-				names = append(names, ns)
-			}
-		}
-	} else {
-		for i := 1; ; i++ {
-			name := req.GetParam("Names." + strconv.Itoa(i))
-			if name == "" {
-				break
-			}
-			names = append(names, name)
-		}
-	}
+	names := parseStringList(req.Parameters, "Names", "Names.")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -467,23 +458,7 @@ func (s *SSMService) LabelParameterVersion(ctx context.Context, reqCtx *request.
 		return nil, ErrInvalidParameterVersion
 	}
 
-	var labels []string
-	if labelsRaw, ok := req.Parameters["Labels"].([]interface{}); ok {
-		for _, l := range labelsRaw {
-			if ls, ok := l.(string); ok {
-				labels = append(labels, ls)
-			}
-		}
-	} else {
-		for i := 1; ; i++ {
-			label := req.GetParam("Labels.member." + strconv.Itoa(i))
-			if label == "" {
-				break
-			}
-			labels = append(labels, label)
-		}
-	}
-
+	labels := parseStringList(req.Parameters, "Labels", "Labels.member.")
 	if len(labels) == 0 {
 		return nil, ErrInvalidParameterLabel
 	}
@@ -520,23 +495,7 @@ func (s *SSMService) UnlabelParameterVersion(ctx context.Context, reqCtx *reques
 		return nil, ErrInvalidParameterVersion
 	}
 
-	var labels []string
-	if labelsRaw, ok := req.Parameters["Labels"].([]interface{}); ok {
-		for _, l := range labelsRaw {
-			if ls, ok := l.(string); ok {
-				labels = append(labels, ls)
-			}
-		}
-	} else {
-		for i := 1; ; i++ {
-			label := req.GetParam("Labels.member." + strconv.Itoa(i))
-			if label == "" {
-				break
-			}
-			labels = append(labels, label)
-		}
-	}
-
+	labels := parseStringList(req.Parameters, "Labels", "Labels.member.")
 	if len(labels) == 0 {
 		return nil, ErrInvalidParameterLabel
 	}
