@@ -34,7 +34,7 @@ func (s *TimestreamWriteService) DescribeEndpoints(ctx context.Context, reqCtx *
 func (s *TimestreamWriteService) CreateDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	if !isValidTimestreamName(databaseName) {
@@ -72,7 +72,7 @@ func (s *TimestreamWriteService) CreateDatabase(ctx context.Context, reqCtx *req
 func (s *TimestreamWriteService) DescribeDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	st, err := s.store(reqCtx)
@@ -130,7 +130,7 @@ func (s *TimestreamWriteService) ListDatabases(ctx context.Context, reqCtx *requ
 func (s *TimestreamWriteService) UpdateDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
@@ -158,7 +158,7 @@ func (s *TimestreamWriteService) UpdateDatabase(ctx context.Context, reqCtx *req
 func (s *TimestreamWriteService) DeleteDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	st, err := s.store(reqCtx)

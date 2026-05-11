@@ -19,22 +19,22 @@ import (
 func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	targetDatabaseName := request.GetParamCaseInsensitive(req.Parameters, "TargetDatabaseName")
 	if targetDatabaseName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	targetTableName := request.GetParamCaseInsensitive(req.Parameters, "TargetTableName")
 	if targetTableName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	dataSourceConfig := parseDataSourceConfiguration(req.Parameters["DataSourceConfiguration"])
 	if dataSourceConfig == nil {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	reportConfig := parseReportConfiguration(req.Parameters["ReportConfiguration"])
 	if reportConfig == nil {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	dataModelConfig := parseDataModelConfiguration(req.Parameters["DataModelConfiguration"])
@@ -85,7 +85,7 @@ func (s *TimestreamWriteService) CreateBatchLoadTask(ctx context.Context, reqCtx
 func (s *TimestreamWriteService) DescribeBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskId := request.GetParamCaseInsensitive(req.Parameters, "TaskId")
 	if taskId == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	st, err := s.store(reqCtx)
@@ -137,7 +137,7 @@ func (s *TimestreamWriteService) ListBatchLoadTasks(ctx context.Context, reqCtx 
 func (s *TimestreamWriteService) ResumeBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskId := request.GetParamCaseInsensitive(req.Parameters, "TaskId")
 	if taskId == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	st, err := s.store(reqCtx)
@@ -153,7 +153,7 @@ func (s *TimestreamWriteService) ResumeBatchLoadTask(ctx context.Context, reqCtx
 	}
 
 	if task.TaskStatus != tsstore.BatchLoadStatusProgressStopped && task.TaskStatus != tsstore.BatchLoadStatusPendingResume {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	if err := st.batchLoadStore.UpdateBatchLoadTaskStatus(taskId, tsstore.BatchLoadStatusPendingResume, ""); err != nil {
@@ -176,7 +176,7 @@ func (s *TimestreamWriteService) ResumeBatchLoadTask(ctx context.Context, reqCtx
 func (s *TimestreamWriteService) DeleteBatchLoadTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskId := request.GetParamCaseInsensitive(req.Parameters, "TaskId")
 	if taskId == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	st, err := s.store(reqCtx)

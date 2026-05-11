@@ -152,16 +152,6 @@ type RejectedRecord struct {
 	ExistingVersion int64  `json:"existingVersion,omitempty"`
 }
 
-// ScheduledQueryState represents the state of a scheduled query.
-type ScheduledQueryState string
-
-const (
-	// ScheduledQueryStateEnabled indicates the scheduled query is enabled.
-	ScheduledQueryStateEnabled ScheduledQueryState = "ENABLED"
-	// ScheduledQueryStateDisabled indicates the scheduled query is disabled.
-	ScheduledQueryStateDisabled ScheduledQueryState = "DISABLED"
-)
-
 // ScheduledQueryStatus represents the status of a scheduled query.
 type ScheduledQueryStatus string
 

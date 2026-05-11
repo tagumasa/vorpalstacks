@@ -34,15 +34,14 @@ const QueryStatusTimedOut QueryStatus = "TIMED_OUT"
 
 // QueryInfo contains information about a query execution.
 type QueryInfo struct {
-	QueryID        string                   `json:"queryId"`
-	QueryString    string                   `json:"queryString"`
-	Status         QueryStatus              `json:"status"`
-	SubmitTime     time.Time                `json:"submitTime"`
-	CompletionTime time.Time                `json:"completionTime,omitempty"`
-	Error          string                   `json:"error,omitempty"`
-	Cancelled      bool                     `json:"cancelled"`
-	CachedResult   *QueryResult             `json:"cachedResult,omitempty"`
-	CachedRows     []map[string]interface{} `json:"cachedRows,omitempty"`
+	QueryID        string       `json:"queryId"`
+	QueryString    string       `json:"queryString"`
+	Status         QueryStatus  `json:"status"`
+	SubmitTime     time.Time    `json:"submitTime"`
+	CompletionTime time.Time    `json:"completionTime,omitempty"`
+	Error          string       `json:"error,omitempty"`
+	Cancelled      bool         `json:"cancelled"`
+	CachedResult   *QueryResult `json:"cachedResult,omitempty"`
 }
 
 // QueryResult contains the results of a query execution.
@@ -124,7 +123,6 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 	queryInfo.Status = QueryStatusSucceeded
 	queryInfo.CompletionTime = time.Now().UTC()
 	queryInfo.CachedResult = result
-	queryInfo.CachedRows = result.Rows
 	if err := stores.queryInfoStore.Put(queryID, queryInfo); err != nil {
 		logs.Warn("Failed to update query info", logs.Err(err))
 	}
@@ -287,51 +285,4 @@ func (s *TimestreamQueryService) buildColumnInfoForPrepare(selectStmt *sqlparser
 		}
 	}
 	return columns
-}
-
-// GetQueryStatus returns the status of a query.
-func (s *TimestreamQueryService) GetQueryStatus(ctx context.Context, reqCtx *request.RequestContext, queryID string) (*QueryInfo, error) {
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	var queryInfo QueryInfo
-	if err := stores.queryInfoStore.Get(queryID, &queryInfo); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	return &queryInfo, nil
-}
-
-// ListQueryResults returns the results of a completed query.
-func (s *TimestreamQueryService) ListQueryResults(ctx context.Context, reqCtx *request.RequestContext, queryID string) (*QueryResult, error) {
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	var queryInfo QueryInfo
-	if err := stores.queryInfoStore.Get(queryID, &queryInfo); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	if queryInfo.Status != QueryStatusSucceeded {
-		return nil, fmt.Errorf("query not completed")
-	}
-
-	if queryInfo.CachedResult != nil {
-		return queryInfo.CachedResult, nil
-	}
-
-	if queryInfo.CachedRows == nil {
-		return nil, fmt.Errorf("query result not found")
-	}
-
-	result := &QueryResult{
-		QueryID:    queryID,
-		Rows:       queryInfo.CachedRows,
-		ColumnInfo: []ColumnInfo{},
-	}
-	return result, nil
 }

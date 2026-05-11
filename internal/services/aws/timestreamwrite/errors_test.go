@@ -18,11 +18,6 @@ func TestTimestreamWriteErrors(t *testing.T) {
 		assert.Equal(t, http.StatusConflict, ErrResourceAlreadyExists.GetHTTPStatusCode())
 	})
 
-	t.Run("ErrInvalidParameter", func(t *testing.T) {
-		assert.Equal(t, "ValidationException: The input fails to satisfy the constraints specified by an AWS service.", ErrInvalidParameter.Error())
-		assert.Equal(t, http.StatusBadRequest, ErrInvalidParameter.GetHTTPStatusCode())
-	})
-
 	t.Run("ErrValidationException", func(t *testing.T) {
 		assert.Equal(t, "ValidationException: The input fails to satisfy the constraints specified by an AWS service.", ErrValidationException.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrValidationException.GetHTTPStatusCode())

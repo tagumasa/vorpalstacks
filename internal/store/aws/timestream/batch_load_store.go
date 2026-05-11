@@ -13,7 +13,6 @@ import (
 // BatchLoadTaskStore manages batch load tasks in Timestream.
 type BatchLoadTaskStore struct {
 	*common.BaseStore
-	*common.TagStore
 	tableStore *TableStore
 	createMu   sync.Mutex
 	region     string
@@ -23,7 +22,6 @@ type BatchLoadTaskStore struct {
 func NewBatchLoadTaskStore(store storage.BasicStorage, tableStore *TableStore, region string) *BatchLoadTaskStore {
 	return &BatchLoadTaskStore{
 		BaseStore:  common.NewBaseStore(store.Bucket(batchLoadTaskBucketName(region)), "timestream-batch-load"),
-		TagStore:   common.NewTagStoreWithRegion(store, "timestream-batch-load", region),
 		tableStore: tableStore,
 		region:     region,
 	}

@@ -76,16 +76,17 @@ func (s *ScheduledQueryStore) GetScheduledQuery(name string) (*ScheduledQuery, e
 }
 
 // UpdateScheduledQuery updates an existing scheduled query.
-func (s *ScheduledQueryStore) UpdateScheduledQuery(name string, state ScheduledQueryState, scheduleConfig *ScheduleConfiguration, notificationConfig *NotificationConfiguration, kmsKeyID string, errorReportConfig *ErrorReportConfiguration, targetConfig *TargetConfiguration) (*ScheduledQuery, error) {
+func (s *ScheduledQueryStore) UpdateScheduledQuery(name string, state ScheduledQueryStatus, scheduleConfig *ScheduleConfiguration, notificationConfig *NotificationConfiguration, kmsKeyID string, errorReportConfig *ErrorReportConfiguration, targetConfig *TargetConfiguration) (*ScheduledQuery, error) {
 	sq, err := s.GetScheduledQuery(name)
 	if err != nil {
 		return nil, err
 	}
 
 	if state != "" {
-		if state == ScheduledQueryStateEnabled {
+		switch state {
+		case ScheduledQueryStatusEnabled:
 			sq.ScheduledQueryStatus = ScheduledQueryStatusEnabled
-		} else {
+		case ScheduledQueryStatusDisabled:
 			sq.ScheduledQueryStatus = ScheduledQueryStatusDisabled
 		}
 	}

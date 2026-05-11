@@ -32,22 +32,6 @@ type RecordStore struct {
 	closeOnce  sync.Once
 }
 
-// NewRecordStore creates a new record store.
-func NewRecordStore(store storage.BasicStorage, tableStore *TableStore, region, dataPath string) *RecordStore {
-	s := &RecordStore{
-		tableStore: tableStore,
-		region:     region,
-		dataPath:   dataPath,
-		chunkSize:  chunk.DefaultChunkSize,
-		useIndex:   false,
-		buffers:    make(map[string]*chunkBuffer),
-		bufferSize: 1000,
-		stopCh:     make(chan struct{}),
-	}
-	go s.cleanupChunkLocks()
-	return s
-}
-
 // NewRecordStoreWithIndex creates a new record store with an index.
 func NewRecordStoreWithIndex(store storage.BasicStorage, tableStore *TableStore, region, dataPath string) (*RecordStore, error) {
 	indexPath := filepath.Join(dataPath, region, "timestream_chunks", "index.db")
@@ -281,11 +265,11 @@ func (s *RecordStore) WriteRecords(databaseName, tableName string, records []Rec
 		for j, ie := range indexedEntries {
 			entries[j] = ie.entry
 		}
-		if err := s.writeChunkBatch(chunkPath, entries); err != nil {
+		if errs := s.writeChunkBatch(chunkPath, entries); len(errs) > 0 {
 			for _, ie := range indexedEntries {
 				rejectedRecords = append(rejectedRecords, RejectedRecord{
 					RecordIndex: int64(ie.originalIdx),
-					Reason:      err.Error(),
+					Reason:      errs[0].Error(),
 				})
 			}
 		}
@@ -298,7 +282,7 @@ func (s *RecordStore) WriteRecords(databaseName, tableName string, records []Rec
 	return rejectedRecords, nil
 }
 
-func (s *RecordStore) writeChunkBatch(chunkPath string, newEntries []*chunk.TimestreamEntry) error {
+func (s *RecordStore) writeChunkBatch(chunkPath string, newEntries []*chunk.TimestreamEntry) []error {
 	s.keyLocker.Lock(chunkPath)
 	defer s.keyLocker.Unlock(chunkPath)
 
@@ -313,6 +297,7 @@ func (s *RecordStore) writeChunkBatch(chunkPath string, newEntries []*chunk.Time
 	}
 	s.bufferMu.Unlock()
 
+	var versionConflicts []error
 	for _, entry := range newEntries {
 		key := fmt.Sprintf("%s|%s|%s|%d",
 			entry.DatabaseName,
@@ -322,6 +307,7 @@ func (s *RecordStore) writeChunkBatch(chunkPath string, newEntries []*chunk.Time
 
 		if existingVersion, exists := buf.seenKeys[key]; exists {
 			if existingVersion != 0 && existingVersion != entry.Version {
+				versionConflicts = append(versionConflicts, fmt.Errorf("version conflict: existing=%d new=%d", existingVersion, entry.Version))
 				continue
 			}
 		}
@@ -330,10 +316,12 @@ func (s *RecordStore) writeChunkBatch(chunkPath string, newEntries []*chunk.Time
 	}
 
 	if len(buf.entries) >= s.bufferSize {
-		return s.flushBuffer(chunkPath, buf)
+		if flushErr := s.flushBuffer(chunkPath, buf); flushErr != nil {
+			return append(versionConflicts, flushErr)
+		}
 	}
 
-	return nil
+	return versionConflicts
 }
 
 func (s *RecordStore) flushBuffer(chunkPath string, buf *chunkBuffer) error {

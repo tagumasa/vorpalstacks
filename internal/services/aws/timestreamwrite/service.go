@@ -5,6 +5,7 @@
 package timestreamwrite
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -89,21 +90,17 @@ func (s *TimestreamWriteService) mapStoreError(err error) error {
 	if err == nil {
 		return nil
 	}
-	switch err.Error() {
-	case "database not found":
+	switch {
+	case errors.Is(err, tsstore.ErrDatabaseNotFound),
+		errors.Is(err, tsstore.ErrTableNotFound),
+		errors.Is(err, tsstore.ErrBatchLoadTaskNotFound):
 		return ErrResourceNotFound
-	case "database already exists":
+	case errors.Is(err, tsstore.ErrDatabaseAlreadyExists),
+		errors.Is(err, tsstore.ErrTableAlreadyExists),
+		errors.Is(err, tsstore.ErrBatchLoadTaskAlreadyExists):
 		return ErrResourceAlreadyExists
-	case "database is not empty":
+	case errors.Is(err, tsstore.ErrDatabaseNotEmpty):
 		return ErrValidationException
-	case "table not found":
-		return ErrResourceNotFound
-	case "table already exists":
-		return ErrResourceAlreadyExists
-	case "batch load task not found":
-		return ErrResourceNotFound
-	case "batch load task already exists":
-		return ErrResourceAlreadyExists
 	default:
 		return ErrInternalServer
 	}

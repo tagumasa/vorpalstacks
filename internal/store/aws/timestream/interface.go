@@ -51,7 +51,7 @@ type BatchLoadTaskStoreInterface interface {
 type ScheduledQueryStoreInterface interface {
 	CreateScheduledQuery(name, queryString string, scheduleConfig *ScheduleConfiguration, notificationConfig *NotificationConfiguration, roleARN, kmsKeyID string, errorReportConfig *ErrorReportConfiguration, targetConfig *TargetConfiguration, clientToken string) (*ScheduledQuery, error)
 	GetScheduledQuery(name string) (*ScheduledQuery, error)
-	UpdateScheduledQuery(name string, state ScheduledQueryState, scheduleConfig *ScheduleConfiguration, notificationConfig *NotificationConfiguration, kmsKeyID string, errorReportConfig *ErrorReportConfiguration, targetConfig *TargetConfiguration) (*ScheduledQuery, error)
+	UpdateScheduledQuery(name string, state ScheduledQueryStatus, scheduleConfig *ScheduleConfiguration, notificationConfig *NotificationConfiguration, kmsKeyID string, errorReportConfig *ErrorReportConfiguration, targetConfig *TargetConfiguration) (*ScheduledQuery, error)
 	DeleteScheduledQuery(name string) error
 	ListScheduledQueries() ([]*ScheduledQuery, error)
 	UpdateNextRunTime(name string, nextRunTime time.Time) error
@@ -73,97 +73,6 @@ type AccountSettingsStoreInterface interface {
 	GetAccountSettings() (*AccountSettings, error)
 	UpdateAccountSettings(maxQueryTCU *int64, queryPricingMode, queryComputeType, encryptionConfiguration string) (*AccountSettings, error)
 	Raw() *AccountSettingsStore
-}
-
-// TimestreamStoresInterface defines access to all Timestream stores.
-type TimestreamStoresInterface interface {
-	DatabaseStore() DatabaseStoreInterface
-	TableStore() TableStoreInterface
-	RecordStore() RecordStoreInterface
-	BatchLoadTaskStore() BatchLoadTaskStoreInterface
-	ScheduledQueryStore() ScheduledQueryStoreInterface
-	ScheduledQueryRunStore() ScheduledQueryRunStoreInterface
-	AccountSettingsStore() AccountSettingsStoreInterface
-}
-
-// TimestreamStores provides access to all Timestream stores.
-type TimestreamStores struct {
-	databaseStore          *Store
-	tableStore             *TableStore
-	recordStore            *RecordStore
-	batchLoadTaskStore     *BatchLoadTaskStore
-	scheduledQueryStore    *ScheduledQueryStore
-	scheduledQueryRunStore *ScheduledQueryRunStore
-	accountSettingsStore   *AccountSettingsStore
-}
-
-// NewTimestreamStores creates a new TimestreamStores with the given stores.
-func NewTimestreamStores(database *Store, table *TableStore, record *RecordStore, batchLoad *BatchLoadTaskStore, scheduledQuery *ScheduledQueryStore, scheduledQueryRun *ScheduledQueryRunStore, accountSettings *AccountSettingsStore) *TimestreamStores {
-	return &TimestreamStores{
-		databaseStore:          database,
-		tableStore:             table,
-		recordStore:            record,
-		batchLoadTaskStore:     batchLoad,
-		scheduledQueryStore:    scheduledQuery,
-		scheduledQueryRunStore: scheduledQueryRun,
-		accountSettingsStore:   accountSettings,
-	}
-}
-
-// DatabaseStore returns the database store.
-func (s *TimestreamStores) DatabaseStore() DatabaseStoreInterface {
-	if s.databaseStore == nil {
-		return nil
-	}
-	return s.databaseStore
-}
-
-// TableStore returns the table store.
-func (s *TimestreamStores) TableStore() TableStoreInterface {
-	if s.tableStore == nil {
-		return nil
-	}
-	return s.tableStore
-}
-
-// RecordStore returns the record store.
-func (s *TimestreamStores) RecordStore() RecordStoreInterface {
-	if s.recordStore == nil {
-		return nil
-	}
-	return s.recordStore
-}
-
-// BatchLoadTaskStore returns the batch load task store.
-func (s *TimestreamStores) BatchLoadTaskStore() BatchLoadTaskStoreInterface {
-	if s.batchLoadTaskStore == nil {
-		return nil
-	}
-	return s.batchLoadTaskStore
-}
-
-// ScheduledQueryStore returns the scheduled query store.
-func (s *TimestreamStores) ScheduledQueryStore() ScheduledQueryStoreInterface {
-	if s.scheduledQueryStore == nil {
-		return nil
-	}
-	return s.scheduledQueryStore
-}
-
-// ScheduledQueryRunStore returns the scheduled query run store.
-func (s *TimestreamStores) ScheduledQueryRunStore() ScheduledQueryRunStoreInterface {
-	if s.scheduledQueryRunStore == nil {
-		return nil
-	}
-	return s.scheduledQueryRunStore
-}
-
-// AccountSettingsStore returns the account settings store.
-func (s *TimestreamStores) AccountSettingsStore() AccountSettingsStoreInterface {
-	if s.accountSettingsStore == nil {
-		return nil
-	}
-	return s.accountSettingsStore
 }
 
 // Raw returns the underlying database store.

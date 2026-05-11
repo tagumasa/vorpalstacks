@@ -11,8 +11,6 @@ var (
 	ErrResourceNotFound = awserrors.NewAWSError("ResourceNotFoundException", "The requested resource could not be found.", http.StatusNotFound)
 	// ErrResourceAlreadyExists is returned when attempting to create a resource that already exists.
 	ErrResourceAlreadyExists = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", http.StatusConflict)
-	// ErrInvalidParameter is returned when a parameter is invalid.
-	ErrInvalidParameter = awserrors.NewAWSError("ValidationException", "The input fails to satisfy the constraints specified by an AWS service.", http.StatusBadRequest)
 	// ErrValidationException is returned when validation fails.
 	ErrValidationException = awserrors.NewAWSError("ValidationException", "The input fails to satisfy the constraints specified by an AWS service.", http.StatusBadRequest)
 	// ErrAccessDenied is returned when access is denied.

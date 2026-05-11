@@ -304,7 +304,7 @@ func (s *TimestreamQueryService) UpdateScheduledQuery(ctx context.Context, reqCt
 		return nil, ErrValidationException
 	}
 
-	state := tsstore.ScheduledQueryState(request.GetParamCaseInsensitive(req.Parameters, "State"))
+	state := tsstore.ScheduledQueryStatus(request.GetParamCaseInsensitive(req.Parameters, "State"))
 	scheduleConfig := s.parseScheduleConfiguration(req.Parameters)
 	notificationConfig := s.parseNotificationConfiguration(req.Parameters)
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
@@ -488,7 +488,7 @@ func epochFloat(t time.Time) float64 {
 	return float64(t.UnixNano()) / 1e9
 }
 
-func (s *TimestreamQueryService) formatScheduledQueryResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
+func (s *TimestreamQueryService) formatScheduledQueryBaseResponse(sq *tsstore.ScheduledQuery) map[string]interface{} {
 	response := map[string]interface{}{
 		"Arn":          sq.ARN,
 		"Name":         sq.Name,
@@ -503,10 +503,6 @@ func (s *TimestreamQueryService) formatScheduledQueryResponse(sq *tsstore.Schedu
 				"ObjectKeyPrefix": sq.ErrorReportConfiguration.S3Configuration.ObjectKeyPrefix,
 			},
 		}
-	}
-
-	if sq.LastRunStatus != "" {
-		response["LastRunStatus"] = sq.LastRunStatus
 	}
 
 	if !sq.NextRunTime.IsZero() {
@@ -530,14 +526,20 @@ func (s *TimestreamQueryService) formatScheduledQueryResponse(sq *tsstore.Schedu
 	return response
 }
 
-func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
-	response := map[string]interface{}{
-		"Arn":          sq.ARN,
-		"Name":         sq.Name,
-		"State":        sq.ScheduledQueryStatus,
-		"QueryString":  sq.QueryString,
-		"CreationTime": epochFloat(sq.CreationTime),
+func (s *TimestreamQueryService) formatScheduledQueryResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
+	response := s.formatScheduledQueryBaseResponse(sq)
+
+	if sq.LastRunStatus != "" {
+		response["LastRunStatus"] = sq.LastRunStatus
 	}
+
+	return response
+}
+
+func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tsstore.ScheduledQuery, tags map[string]string) map[string]interface{} {
+	response := s.formatScheduledQueryBaseResponse(sq)
+
+	response["QueryString"] = sq.QueryString
 
 	if sq.ScheduleConfiguration != nil {
 		response["ScheduleConfiguration"] = map[string]interface{}{
@@ -561,36 +563,9 @@ func (s *TimestreamQueryService) formatScheduledQueryDescriptionResponse(sq *tss
 		response["KmsKeyId"] = sq.KmsKeyID
 	}
 
-	if sq.ErrorReportConfiguration != nil && sq.ErrorReportConfiguration.S3Configuration != nil {
-		response["ErrorReportConfiguration"] = map[string]interface{}{
-			"S3Configuration": map[string]interface{}{
-				"BucketName":      sq.ErrorReportConfiguration.S3Configuration.BucketName,
-				"ObjectKeyPrefix": sq.ErrorReportConfiguration.S3Configuration.ObjectKeyPrefix,
-			},
-		}
-	}
-
 	if sq.LastRunStatus != "" {
 		response["LastRunSummary"] = map[string]interface{}{
 			"RunStatus": sq.LastRunStatus,
-		}
-	}
-
-	if !sq.NextRunTime.IsZero() {
-		response["NextInvocationTime"] = epochFloat(sq.NextRunTime)
-	}
-
-	if !sq.PreviousRunTime.IsZero() {
-		response["PreviousInvocationTime"] = epochFloat(sq.PreviousRunTime)
-	}
-
-	if sq.TargetConfiguration != nil && sq.TargetConfiguration.TimestreamConfiguration != nil {
-		tsConfig := sq.TargetConfiguration.TimestreamConfiguration
-		response["TargetDestination"] = map[string]interface{}{
-			"TimestreamDestination": map[string]interface{}{
-				"DatabaseName": tsConfig.DatabaseName,
-				"TableName":    tsConfig.TableName,
-			},
 		}
 	}
 

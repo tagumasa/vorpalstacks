@@ -16,7 +16,7 @@ import (
 func (s *TimestreamWriteService) CreateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	if !isValidTimestreamName(databaseName) {
@@ -25,7 +25,7 @@ func (s *TimestreamWriteService) CreateTable(ctx context.Context, reqCtx *reques
 
 	tableName := request.GetParamCaseInsensitive(req.Parameters, "TableName")
 	if tableName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	if !isValidTimestreamName(tableName) {
@@ -67,12 +67,12 @@ func (s *TimestreamWriteService) CreateTable(ctx context.Context, reqCtx *reques
 func (s *TimestreamWriteService) DescribeTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	tableName := request.GetParamCaseInsensitive(req.Parameters, "TableName")
 	if tableName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	st, err := s.store(reqCtx)
@@ -97,6 +97,9 @@ func (s *TimestreamWriteService) DescribeTable(ctx context.Context, reqCtx *requ
 // ListTables returns a list of Timestream tables in a database.
 func (s *TimestreamWriteService) ListTables(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
+	if databaseName == "" {
+		return nil, ErrValidationException
+	}
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	maxResults := pagination.GetMaxItems(req.Parameters, 20, "MaxResults")
 
@@ -131,12 +134,12 @@ func (s *TimestreamWriteService) ListTables(ctx context.Context, reqCtx *request
 func (s *TimestreamWriteService) UpdateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	tableName := request.GetParamCaseInsensitive(req.Parameters, "TableName")
 	if tableName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	retentionProperties := s.parseRetentionProperties(req.Parameters["RetentionProperties"])
@@ -165,12 +168,12 @@ func (s *TimestreamWriteService) UpdateTable(ctx context.Context, reqCtx *reques
 func (s *TimestreamWriteService) DeleteTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	tableName := request.GetParamCaseInsensitive(req.Parameters, "TableName")
 	if tableName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	st, err := s.store(reqCtx)

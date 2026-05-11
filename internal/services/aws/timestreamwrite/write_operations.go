@@ -14,12 +14,12 @@ import (
 func (s *TimestreamWriteService) WriteRecords(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	if databaseName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	tableName := request.GetParamCaseInsensitive(req.Parameters, "TableName")
 	if tableName == "" {
-		return nil, ErrInvalidParameter
+		return nil, ErrValidationException
 	}
 
 	records := s.parseRecords(req.Parameters["Records"])
