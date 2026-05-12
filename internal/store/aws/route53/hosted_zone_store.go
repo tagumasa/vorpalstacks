@@ -126,3 +126,8 @@ func normalizeZoneName(name string) string {
 	}
 	return name
 }
+
+// NormalizeZoneName lowercases and ensures a trailing dot.
+func NormalizeZoneName(name string) string {
+	return normalizeZoneName(name)
+}

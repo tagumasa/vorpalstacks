@@ -12,17 +12,18 @@ import (
 )
 
 // CreateSecurityGroup creates a security group in the specified VPC.
+// GroupName must be unique within the VPC scope.
 func (s *EC2Service) CreateSecurityGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	groupName := getStringParam(params, "GroupName")
+	groupName := request.GetStringParam(params, "GroupName")
 	if groupName == "" {
 		return nil, fmt.Errorf("ec2: GroupName is required")
 	}
-	description := getStringParam(params, "Description")
+	description := request.GetStringParam(params, "Description")
 	if description == "" {
 		description = groupName
 	}
-	vpcID := getStringParam(params, "VpcId")
+	vpcID := request.GetStringParam(params, "VpcId")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -35,12 +36,22 @@ func (s *EC2Service) CreateSecurityGroup(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
+	existingSGs, err := store.ListSecurityGroups()
+	if err != nil {
+		return nil, err
+	}
+	for _, sg := range existingSGs {
+		if sg.GroupName == groupName && sg.VpcId == vpcID {
+			return nil, awserrors.NewAWSError("InvalidGroup.Duplicate",
+				"Security group '"+groupName+"' already exists",
+				http.StatusBadRequest)
+		}
+	}
+
 	groupID, err := GenerateSecurityGroupID()
 	if err != nil {
 		return nil, err
 	}
-
-	tags := ParseTags(params)
 
 	sg := &ec2store.SecurityGroup{
 		GroupId:     groupID,
@@ -48,7 +59,7 @@ func (s *EC2Service) CreateSecurityGroup(ctx context.Context, reqCtx *request.Re
 		Description: description,
 		VpcId:       vpcID,
 		OwnerId:     s.accountID,
-		Tags:        tags,
+		Tags:        parseEC2Tags(params),
 		IpPermissionsEgress: []ec2store.IPRule{
 			{
 				IpProtocol: "-1",
@@ -68,7 +79,8 @@ func (s *EC2Service) CreateSecurityGroup(ctx context.Context, reqCtx *request.Re
 	}, nil
 }
 
-// DescribeSecurityGroups describes one or all security groups.
+// DescribeSecurityGroups describes one or more security groups.
+// Supports GroupId, GroupName, and Filter.N for filtering.
 func (s *EC2Service) DescribeSecurityGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	store, err := s.store(reqCtx)
@@ -76,8 +88,8 @@ func (s *EC2Service) DescribeSecurityGroups(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	groupID := getStringParam(params, "GroupId")
-	groupName := getStringParam(params, "GroupName")
+	groupID := request.GetStringParam(params, "GroupId")
+	groupName := request.GetStringParam(params, "GroupName")
 
 	if groupID != "" {
 		sg, err := store.GetSecurityGroup(groupID)
@@ -94,12 +106,15 @@ func (s *EC2Service) DescribeSecurityGroups(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
+	filters := parseFilters(params)
 	items := make([]interface{}, 0, len(sgs))
 	for _, sg := range sgs {
 		if groupName != "" && sg.GroupName != groupName {
 			continue
 		}
-		items = append(items, sg)
+		if matchesSGFilters(sg, filters) {
+			items = append(items, sg)
+		}
 	}
 	return map[string]interface{}{
 		"SecurityGroupInfo": protocol.XMLElements{ElementName: "item", Items: items},
@@ -109,7 +124,7 @@ func (s *EC2Service) DescribeSecurityGroups(ctx context.Context, reqCtx *request
 // DeleteSecurityGroup deletes the specified security group.
 func (s *EC2Service) DeleteSecurityGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	groupID := getStringParam(params, "GroupId")
+	groupID := request.GetStringParam(params, "GroupId")
 	if groupID == "" {
 		return nil, awserrors.NewAWSError("MissingParameter", "The request must contain the parameter GroupId", http.StatusBadRequest)
 	}
@@ -130,78 +145,34 @@ func (s *EC2Service) DeleteSecurityGroup(ctx context.Context, reqCtx *request.Re
 
 // AuthorizeSecurityGroupIngress adds one or more ingress rules to a security group.
 func (s *EC2Service) AuthorizeSecurityGroupIngress(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	sg, err := resolveSecurityGroup(store, req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-
-	newRules := parseIPRules(req.Parameters, "IpPermissions")
-	sg.IpPermissions = mergeIPRules(sg.IpPermissions, newRules...)
-
-	if err := store.UpdateSecurityGroup(sg); err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"return": true,
-	}, nil
+	return s.modifySecurityGroupRules(reqCtx, req, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
+		sg.IpPermissions = mergeIPRules(sg.IpPermissions, rules...)
+	})
 }
 
 // AuthorizeSecurityGroupEgress adds one or more egress rules to a security group.
 func (s *EC2Service) AuthorizeSecurityGroupEgress(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	sg, err := resolveSecurityGroup(store, req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-
-	newRules := parseIPRules(req.Parameters, "IpPermissions")
-	sg.IpPermissionsEgress = mergeIPRules(sg.IpPermissionsEgress, newRules...)
-
-	if err := store.UpdateSecurityGroup(sg); err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"return": true,
-	}, nil
+	return s.modifySecurityGroupRules(reqCtx, req, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
+		sg.IpPermissionsEgress = mergeIPRules(sg.IpPermissionsEgress, rules...)
+	})
 }
 
 // RevokeSecurityGroupIngress removes one or more ingress rules from a security group.
 func (s *EC2Service) RevokeSecurityGroupIngress(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	sg, err := resolveSecurityGroup(store, req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-
-	removeRules := parseIPRules(req.Parameters, "IpPermissions")
-	sg.IpPermissions = removeIPRules(sg.IpPermissions, removeRules...)
-
-	if err := store.UpdateSecurityGroup(sg); err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"return": true,
-	}, nil
+	return s.modifySecurityGroupRules(reqCtx, req, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
+		sg.IpPermissions = removeIPRules(sg.IpPermissions, rules...)
+	})
 }
 
 // RevokeSecurityGroupEgress removes one or more egress rules from a security group.
 func (s *EC2Service) RevokeSecurityGroupEgress(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	return s.modifySecurityGroupRules(reqCtx, req, func(sg *ec2store.SecurityGroup, rules []ec2store.IPRule) {
+		sg.IpPermissionsEgress = removeIPRules(sg.IpPermissionsEgress, rules...)
+	})
+}
+
+// modifySecurityGroupRules is the common handler for Authorize/Revoke Ingress/Egress.
+func (s *EC2Service) modifySecurityGroupRules(reqCtx *request.RequestContext, req *request.ParsedRequest, apply func(*ec2store.SecurityGroup, []ec2store.IPRule)) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -212,8 +183,8 @@ func (s *EC2Service) RevokeSecurityGroupEgress(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	removeRules := parseIPRules(req.Parameters, "IpPermissions")
-	sg.IpPermissionsEgress = removeIPRules(sg.IpPermissionsEgress, removeRules...)
+	rules := parseIPRules(req.Parameters, "IpPermissions")
+	apply(sg, rules)
 
 	if err := store.UpdateSecurityGroup(sg); err != nil {
 		return nil, err
@@ -226,7 +197,7 @@ func (s *EC2Service) RevokeSecurityGroupEgress(ctx context.Context, reqCtx *requ
 
 // resolveSecurityGroup finds the security group by GroupId or GroupName.
 func resolveSecurityGroup(store *ec2store.EC2Store, params map[string]interface{}) (*ec2store.SecurityGroup, error) {
-	groupID := getStringParam(params, "GroupId")
+	groupID := request.GetStringParam(params, "GroupId")
 	if groupID != "" {
 		sg, err := store.GetSecurityGroup(groupID)
 		if err != nil {
@@ -235,7 +206,7 @@ func resolveSecurityGroup(store *ec2store.EC2Store, params map[string]interface{
 		return sg, nil
 	}
 
-	groupName := getStringParam(params, "GroupName")
+	groupName := request.GetStringParam(params, "GroupName")
 	if groupName == "" {
 		return nil, fmt.Errorf("ec2: GroupId or GroupName is required")
 	}
@@ -252,57 +223,35 @@ func resolveSecurityGroup(store *ec2store.EC2Store, params map[string]interface{
 	return nil, awserrors.NewAWSError("InvalidGroup.NotFound", "The security group does not exist", http.StatusNotFound)
 }
 
-// parseIPRules extracts IP permission rules from request parameters.
-func parseIPRules(params map[string]interface{}, prefix string) []ec2store.IPRule {
-	var rules []ec2store.IPRule
-
-	for i := 1; ; i++ {
-		ipProtocol := getStringParam(params, fmt.Sprintf("%s.%d.IpProtocol", prefix, i))
-		if ipProtocol == "" {
-			break
-		}
-
-		rule := ec2store.IPRule{
-			IpProtocol: ipProtocol,
-		}
-
-		fromPort := getStringParam(params, fmt.Sprintf("%s.%d.FromPort", prefix, i))
-		if fromPort != "" {
-			rule.FromPort = parseInt64(fromPort)
-		} else {
-			rule.FromPort = -1
-		}
-
-		toPort := getStringParam(params, fmt.Sprintf("%s.%d.ToPort", prefix, i))
-		if toPort != "" {
-			rule.ToPort = parseInt64(toPort)
-		} else {
-			rule.ToPort = -1
-		}
-
-		groupID := getStringParam(params, fmt.Sprintf("%s.%d.GroupId", prefix, i))
-		if groupID != "" {
-			rule.UserIdGroupPairs = append(rule.UserIdGroupPairs, ec2store.GroupPair{GroupId: groupID})
-		}
-
-		cidrIP := getStringParam(params, fmt.Sprintf("%s.%d.CidrIp", prefix, i))
-		if cidrIP != "" {
-			rule.IpRanges = append(rule.IpRanges, ec2store.IPRange{CidrIp: cidrIP})
-		}
-
-		rules = append(rules, rule)
-	}
-
-	return rules
-}
-
-// parseInt64 parses a decimal string to int64, ignoring non-digit characters.
-func parseInt64(s string) int64 {
-	var n int64
-	for _, c := range s {
-		if c >= '0' && c <= '9' {
-			n = n*10 + int64(c-'0')
+// matchesSGFilters checks if a security group matches all the given filters.
+func matchesSGFilters(sg *ec2store.SecurityGroup, filters []ec2Filter) bool {
+	for _, f := range filters {
+		switch f.Name {
+		case "group-id":
+			if !anyMatch(f.Values, sg.GroupId) {
+				return false
+			}
+		case "group-name":
+			if !anyMatch(f.Values, sg.GroupName) {
+				return false
+			}
+		case "vpc-id":
+			if !anyMatch(f.Values, sg.VpcId) {
+				return false
+			}
+		case "tag-key":
+			if !hasTagKey(sg.Tags, f.Values) {
+				return false
+			}
+		case "tag-value":
+			if !hasTagValue(sg.Tags, f.Values) {
+				return false
+			}
+		case "tag":
+			if !hasTagKeyValue(sg.Tags, f.Values) {
+				return false
+			}
 		}
 	}
-	return n
+	return true
 }

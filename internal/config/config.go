@@ -216,6 +216,7 @@ func GRPCWebPort() int {
 	return GetInt("server.grpc_web_port")
 }
 
+// AWSAccountID returns the configured AWS account identifier.
 func AWSAccountID() string {
 	return GetString("aws.account_id")
 }

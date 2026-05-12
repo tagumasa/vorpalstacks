@@ -3,6 +3,7 @@ package wafv2
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
@@ -28,6 +29,13 @@ func (s *WAFv2Service) PutLoggingConfiguration(ctx context.Context, reqCtx *requ
 	logType := request.GetStringParam(loggingConfigMap, "LogType")
 	managedByFirewallManager := request.GetBoolParam(loggingConfigMap, "ManagedByFirewallManager")
 
+	var redactedFields []interface{}
+	if rfRaw := loggingConfigMap["RedactedFields"]; rfRaw != nil {
+		if arr, ok := rfRaw.([]interface{}); ok {
+			redactedFields = arr
+		}
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -43,7 +51,7 @@ func (s *WAFv2Service) PutLoggingConfiguration(ctx context.Context, reqCtx *requ
 
 	existingConfig, err := stores.loggingConfigs.GetByResourceArn(resourceArn)
 	if err == nil && existingConfig != nil {
-		config, err := stores.loggingConfigs.Update(resourceArn, logDestinationConfigs, logScope, logType, nil, managedByFirewallManager, nil)
+		config, err := stores.loggingConfigs.Update(resourceArn, logDestinationConfigs, logScope, logType, nil, managedByFirewallManager, redactedFields)
 		if err != nil {
 			return nil, err
 		}
@@ -52,7 +60,7 @@ func (s *WAFv2Service) PutLoggingConfiguration(ctx context.Context, reqCtx *requ
 		}, nil
 	}
 
-	config, err := stores.loggingConfigs.Create(resourceArn, logDestinationConfigs, logScope, logType, nil, managedByFirewallManager, nil)
+	config, err := stores.loggingConfigs.Create(resourceArn, logDestinationConfigs, logScope, logType, nil, managedByFirewallManager, redactedFields)
 	if err != nil {
 		return nil, err
 	}
@@ -112,22 +120,17 @@ func (s *WAFv2Service) DeleteLoggingConfiguration(ctx context.Context, reqCtx *r
 // ListLoggingConfigurations returns a paginated list of all logging configurations.
 func (s *WAFv2Service) ListLoggingConfigurations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	scope := request.GetStringParam(req.Parameters, "Scope")
-	if scope == "" {
-		scope = "REGIONAL"
-	}
+	_ = scope
 
-	limit := request.GetIntParam(req.Parameters, "Limit")
-	if limit == 0 {
-		limit = 100
-	}
-	marker := request.GetStringParam(req.Parameters, "NextMarker")
+	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
+	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := stores.loggingConfigs.List(scope, marker, limit)
+	result, err := stores.loggingConfigs.List(scope, nextMarker, maxItems)
 	if err != nil {
 		return nil, err
 	}
@@ -140,11 +143,7 @@ func (s *WAFv2Service) ListLoggingConfigurations(ctx context.Context, reqCtx *re
 	resp := map[string]interface{}{
 		"LoggingConfigurations": configs,
 	}
-
-	if result.IsTruncated && result.NextMarker != "" {
-		resp["NextMarker"] = result.NextMarker
-	}
-
+	pagination.SetNextToken(resp, "NextMarker", result.NextMarker)
 	return resp, nil
 }
 
@@ -164,6 +163,9 @@ func convertLoggingConfigToResponse(config *wafstore.LoggingConfiguration) map[s
 	}
 	if config.LogType != "" {
 		result["LogType"] = config.LogType
+	}
+	if len(config.RedactedFields) > 0 {
+		result["RedactedFields"] = config.RedactedFields
 	}
 
 	return result

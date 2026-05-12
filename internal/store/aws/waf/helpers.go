@@ -1,8 +1,5 @@
 package waf
 
-// Package waf provides WAF (Web Application Firewall) data store implementations
-// for vorpalstacks.
-
 import (
 	"crypto/rand"
 	"encoding/hex"

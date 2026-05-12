@@ -11,7 +11,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 	"vorpalstacks/internal/utils/aws/types"
 )
@@ -199,11 +198,12 @@ func (s *CloudFrontService) UpdateCachePolicy(ctx context.Context, reqCtx *reque
 	}
 
 	config := &cloudfrontstore.CachePolicyConfig{
-		Name:       request.GetStringParam(configMap, "Name"),
-		Comment:    request.GetStringParam(configMap, "Comment"),
-		DefaultTTL: int64(request.GetIntParam(configMap, "DefaultTTL")),
-		MaxTTL:     int64(request.GetIntParam(configMap, "MaxTTL")),
-		MinTTL:     int64(request.GetIntParam(configMap, "MinTTL")),
+		Name:                                     request.GetStringParam(configMap, "Name"),
+		Comment:                                  request.GetStringParam(configMap, "Comment"),
+		DefaultTTL:                               int64(request.GetIntParam(configMap, "DefaultTTL")),
+		MaxTTL:                                   int64(request.GetIntParam(configMap, "MaxTTL")),
+		MinTTL:                                   int64(request.GetIntParam(configMap, "MinTTL")),
+		ParametersInCacheKeyParametersInCacheKey: parseParametersInCacheKey(request.GetMapParam(configMap, "ParametersInCacheKeyAndForwardedToOrigin")),
 	}
 
 	cachePolicy, err := store.cachePolicies.Update(id, config)
@@ -534,41 +534,9 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 	var tags []types.Tag
 	tagsMap := request.GetMapParam(req.Parameters, "Tags")
 	if tagsMap != nil {
-		if tagInner, ok := tagsMap["Tag"]; ok {
-			switch tv := tagInner.(type) {
-			case []interface{}:
-				for _, t := range tv {
-					if m, ok := t.(map[string]interface{}); ok {
-						tags = append(tags, types.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
-					}
-				}
-			case map[string]interface{}:
-				tags = append(tags, types.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
-			}
-		} else if items := tagsMap["Items"]; items != nil {
-			switch v := items.(type) {
-			case map[string]interface{}:
-				if tagItems, ok := v["Tag"]; ok {
-					switch tv := tagItems.(type) {
-					case []interface{}:
-						for _, t := range tv {
-							if m, ok := t.(map[string]interface{}); ok {
-								tags = append(tags, types.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
-							}
-						}
-					case map[string]interface{}:
-						tags = append(tags, types.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
-					}
-				}
-			}
-		}
+		tags = parseXMLTags(tagsMap)
 	}
 	if len(tags) == 0 {
-		var keys []string
-		for k := range req.Parameters {
-			keys = append(keys, k)
-		}
-		logs.Debug("CloudFront TagResource: no tags parsed", logs.String("arn", arn), logs.String("param_keys", strings.Join(keys, ",")))
 		parsedTags := tagutil.ParseTags(req.Parameters, "Tags")
 		for _, t := range parsedTags {
 			tags = append(tags, types.Tag(t))

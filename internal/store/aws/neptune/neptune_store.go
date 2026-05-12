@@ -588,6 +588,7 @@ func (s *NeptuneStore) RecordEvent(evt *Event) error {
 	return s.events.Create(evt)
 }
 
+// ListEvents returns events matching the given filter options with pagination.
 func (s *NeptuneStore) ListEvents(opts EventListOptions) (*EventListResult, error) {
 	if opts.MaxRecords <= 0 {
 		opts.MaxRecords = 100
@@ -641,6 +642,7 @@ func (s *NeptuneStore) ListEvents(opts EventListOptions) (*EventListResult, erro
 	return result, nil
 }
 
+// PurgeOldEvents removes events older than the configured retention period.
 func (s *NeptuneStore) PurgeOldEvents() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

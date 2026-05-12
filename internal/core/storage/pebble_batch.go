@@ -23,26 +23,32 @@ func (b *PebbleBatch) makeKey(key []byte) []byte {
 	return makePrefixedKey(b.prefix, key)
 }
 
+// Put writes a key-value pair to the batch.
 func (b *PebbleBatch) Put(key, value []byte) error {
 	return b.batch.Set(b.makeKey(key), value)
 }
 
+// Delete removes a key from the batch.
 func (b *PebbleBatch) Delete(key []byte) error {
 	return b.batch.Delete(b.makeKey(key))
 }
 
+// DeleteRange removes all keys in [start, end) from the batch.
 func (b *PebbleBatch) DeleteRange(start, end []byte) error {
 	return b.batch.DeleteRange(b.makeKey(start), b.makeKey(end))
 }
 
+// Commit writes the batch to storage without fsync.
 func (b *PebbleBatch) Commit() error {
 	return b.batch.Commit(pebble.NoSync)
 }
 
+// CommitSync writes the batch to storage and fsyncs the WAL.
 func (b *PebbleBatch) CommitSync() error {
 	return b.batch.Commit(pebble.Sync)
 }
 
+// Close releases batch resources without committing.
 func (b *PebbleBatch) Close() error {
 	return b.batch.Close()
 }

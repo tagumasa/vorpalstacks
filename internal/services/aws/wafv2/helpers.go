@@ -38,17 +38,27 @@ func convertAction(m map[string]interface{}) *waf.Action {
 	action := &waf.Action{}
 	if _, ok := m["Allow"]; ok {
 		action.Allow = &waf.AllowAction{}
+	} else if _, ok := m["allow"]; ok {
+		action.Allow = &waf.AllowAction{}
 	}
 	if _, ok := m["Block"]; ok {
+		action.Block = &waf.BlockAction{}
+	} else if _, ok := m["block"]; ok {
 		action.Block = &waf.BlockAction{}
 	}
 	if _, ok := m["Count"]; ok {
 		action.Count = &waf.CountAction{}
+	} else if _, ok := m["count"]; ok {
+		action.Count = &waf.CountAction{}
 	}
 	if _, ok := m["Captcha"]; ok {
 		action.Captcha = &waf.CaptchaAction{}
+	} else if _, ok := m["captcha"]; ok {
+		action.Captcha = &waf.CaptchaAction{}
 	}
 	if _, ok := m["Challenge"]; ok {
+		action.Challenge = &waf.ChallengeAction{}
+	} else if _, ok := m["challenge"]; ok {
 		action.Challenge = &waf.ChallengeAction{}
 	}
 	return action
@@ -66,6 +76,10 @@ func convertActionToResponse(a interface{}) map[string]interface{} {
 			result["Block"] = map[string]interface{}{}
 		} else if action.Count != nil {
 			result["Count"] = map[string]interface{}{}
+		} else if action.Captcha != nil {
+			result["Captcha"] = map[string]interface{}{}
+		} else if action.Challenge != nil {
+			result["Challenge"] = map[string]interface{}{}
 		}
 		if len(result) == 0 {
 			result["Allow"] = map[string]interface{}{}
@@ -248,21 +262,50 @@ func convertStatementToResponse(s *waf.Statement) map[string]interface{} {
 	return result
 }
 
-func mapToAction(m map[string]interface{}) *waf.Action {
-	action := &waf.Action{}
-	for k := range m {
-		switch k {
-		case "allow", "Allow":
-			action.Allow = &waf.AllowAction{}
-		case "block", "Block":
-			action.Block = &waf.BlockAction{}
-		case "count", "Count":
-			action.Count = &waf.CountAction{}
-		case "captcha", "Captcha":
-			action.Captcha = &waf.CaptchaAction{}
-		case "challenge", "Challenge":
-			action.Challenge = &waf.ChallengeAction{}
-		}
+func buildWebACLSummary(wa *waf.WebACL) map[string]interface{} {
+	return map[string]interface{}{
+		"Id":          wa.ID,
+		"Name":        wa.Name,
+		"ARN":         wa.ARN,
+		"Description": wa.Description,
+		"LockToken":   wa.LockToken,
 	}
-	return action
+}
+
+func buildWebACLSummaryList(webACLs []*waf.WebACL) []interface{} {
+	result := make([]interface{}, 0, len(webACLs))
+	for _, wa := range webACLs {
+		result = append(result, buildWebACLSummary(wa))
+	}
+	return result
+}
+
+func buildRuleGroupSummary(rg *waf.RuleGroup) map[string]interface{} {
+	return map[string]interface{}{
+		"Id":          rg.ID,
+		"Name":        rg.Name,
+		"ARN":         rg.ARN,
+		"Description": rg.Description,
+		"LockToken":   rg.LockToken,
+	}
+}
+
+func buildIPSetSummary(ips *waf.IPSet) map[string]interface{} {
+	return map[string]interface{}{
+		"Id":          ips.ID,
+		"Name":        ips.Name,
+		"ARN":         ips.ARN,
+		"Description": ips.Description,
+		"LockToken":   ips.LockToken,
+	}
+}
+
+func buildRegexPatternSetSummary(rps *waf.RegexPatternSet) map[string]interface{} {
+	return map[string]interface{}{
+		"Id":          rps.ID,
+		"Name":        rps.Name,
+		"ARN":         rps.ARN,
+		"Description": rps.Description,
+		"LockToken":   rps.LockToken,
+	}
 }

@@ -8,16 +8,22 @@ import (
 )
 
 var (
-	ErrValidation            = awserrors.NewValidationException("Validation error")
-	ErrResourceNotFound      = awserrors.NewResourceNotFoundException("Resource", "")
+	// ErrValidation is a sentinel validation error for EventBridge operations.
+	ErrValidation = awserrors.NewValidationException("Validation error")
+	// ErrResourceNotFound is a sentinel resource-not-found error.
+	ErrResourceNotFound = awserrors.NewResourceNotFoundException("Resource", "")
+	// ErrResourceAlreadyExists is a sentinel duplicate-resource error.
 	ErrResourceAlreadyExists = awserrors.NewResourceAlreadyExistsException("Resource")
-	ErrInvalidParameter      = awserrors.NewInvalidParameterException("Invalid parameter")
+	// ErrInvalidParameter is a sentinel invalid-parameter error.
+	ErrInvalidParameter = awserrors.NewInvalidParameterException("Invalid parameter")
 )
 
+// NewResourceNotFoundException creates an EventBridge ResourceNotFoundException.
 func NewResourceNotFoundException(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("ResourceNotFoundException", message, 404)
 }
 
+// BuildEventBusARN constructs an ARN for an EventBridge event bus.
 func BuildEventBusARN(accountID, region, name string) string {
 	return arnutil.NewARNBuilder(accountID, region).Events().EventBus(name)
 }

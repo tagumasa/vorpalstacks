@@ -59,19 +59,6 @@ func (s *ChangeStore) UpdateStatus(id, status string) error {
 	return nil
 }
 
-// UpdateStatusAndGet updates the status and returns the change.
-func (s *ChangeStore) UpdateStatusAndGet(id, status string) (*ChangeInfo, error) {
-	change, err := s.Get(id)
-	if err != nil {
-		return nil, NewStoreError("update_change_status", err)
-	}
-	change.Status = status
-	if err := s.BaseStore.Put(id, change); err != nil {
-		return nil, NewStoreError("update_change_status", err)
-	}
-	return change, nil
-}
-
 // Exists checks whether a change exists.
 func (s *ChangeStore) Exists(id string) bool {
 	return s.BaseStore.Exists(id)

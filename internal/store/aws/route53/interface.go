@@ -45,7 +45,6 @@ type ChangeStoreInterface interface {
 	Get(id string) (*ChangeInfo, error)
 	Create(change *ChangeInfo) error
 	UpdateStatus(id, status string) error
-	UpdateStatusAndGet(id, status string) (*ChangeInfo, error)
 	Exists(id string) bool
 	Raw() *ChangeStore
 }

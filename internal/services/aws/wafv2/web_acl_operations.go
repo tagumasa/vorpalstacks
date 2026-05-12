@@ -59,13 +59,7 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 	}
 
 	return map[string]interface{}{
-		"Summary": map[string]interface{}{
-			"Id":          webACL.ID,
-			"Name":        webACL.Name,
-			"ARN":         webACL.ARN,
-			"Description": webACL.Description,
-			"LockToken":   webACL.LockToken,
-		},
+		"Summary": buildWebACLSummary(webACL),
 	}, nil
 }
 
@@ -120,19 +114,8 @@ func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
-	webACLs := make([]interface{}, 0, len(result.WebACLs))
-	for _, wa := range result.WebACLs {
-		webACLs = append(webACLs, map[string]interface{}{
-			"Id":          wa.ID,
-			"Name":        wa.Name,
-			"ARN":         wa.ARN,
-			"Description": wa.Description,
-			"LockToken":   wa.LockToken,
-		})
-	}
-
 	resp := map[string]interface{}{
-		"WebACLs": webACLs,
+		"WebACLs": buildWebACLSummaryList(result.WebACLs),
 	}
 	pagination.SetNextToken(resp, "NextMarker", result.NextMarker)
 	return resp, nil
@@ -185,12 +168,12 @@ func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.Request
 		rules = convertRules(rulesRaw)
 	}
 
-	var daAction *wafstore.Action
+	daAction := convertAction(nil)
 	if defaultAction != nil {
 		if a, ok := defaultAction.(*wafstore.Action); ok {
 			daAction = a
 		} else if m, ok := defaultAction.(map[string]interface{}); ok {
-			daAction = mapToAction(m)
+			daAction = convertAction(m)
 		}
 	}
 

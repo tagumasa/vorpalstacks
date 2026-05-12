@@ -128,6 +128,7 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 	}, nil
 }
 
+// DeleteTable removes a DynamoDB table and all its data.
 func (s *DynamoDBService) DeleteTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tableName := request.GetStringParam(req.Parameters, "TableName")
 	if tableName == "" {
@@ -166,6 +167,7 @@ func (s *DynamoDBService) DeleteTable(ctx context.Context, reqCtx *request.Reque
 	}, nil
 }
 
+// DescribeTable returns detailed metadata for a DynamoDB table.
 func (s *DynamoDBService) DescribeTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
 	if err != nil {

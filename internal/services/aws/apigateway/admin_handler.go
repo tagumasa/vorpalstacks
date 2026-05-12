@@ -14,6 +14,7 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
+// AdminHandler implements the gRPC admin console handlers for API Gateway.
 type AdminHandler struct {
 	apigatewayconnect.UnimplementedAPIGatewayServiceHandler
 	storageManager *storage.RegionStorageManager
@@ -23,6 +24,7 @@ type AdminHandler struct {
 
 var _ apigatewayconnect.APIGatewayServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new API Gateway admin handler.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -103,6 +105,7 @@ func storeErr(err error) error {
 	return connect.NewError(connect.CodeInternal, err)
 }
 
+// NewConnectHandler returns the connect RPC path and handler for API Gateway admin.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return apigatewayconnect.NewAPIGatewayServiceHandler(NewAdminHandler(sm, accountID))
 }

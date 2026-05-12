@@ -217,6 +217,7 @@ func (s *ObjectStore) Head(ctx context.Context, bucket, key string) (*Object, er
 	return s.HeadWithVersion(ctx, bucket, key, "")
 }
 
+// SystemMetadata holds S3 object system-level metadata (content-type, size, etc.).
 type SystemMetadata struct {
 	ContentEncoding    string
 	ContentLanguage    string

@@ -12,11 +12,11 @@ import (
 // CreateSubnet creates a subnet in the specified VPC.
 func (s *EC2Service) CreateSubnet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	vpcID := getStringParam(params, "VpcId")
+	vpcID := request.GetStringParam(params, "VpcId")
 	if vpcID == "" {
 		return nil, fmt.Errorf("ec2: VpcId is required")
 	}
-	cidrBlock := getStringParam(params, "CidrBlock")
+	cidrBlock := request.GetStringParam(params, "CidrBlock")
 	if cidrBlock == "" {
 		return nil, fmt.Errorf("ec2: CidrBlock is required")
 	}
@@ -35,17 +35,15 @@ func (s *EC2Service) CreateSubnet(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	az := getStringParam(params, "AvailabilityZone")
+	az := request.GetStringParam(params, "AvailabilityZone")
 	if az == "" {
 		az = reqCtx.GetRegion() + "a"
 	}
 
 	mapPublicIpOnLaunch := false
-	if v := getStringParam(params, "MapPublicIpOnLaunch"); v == "true" {
+	if v := request.GetStringParam(params, "MapPublicIpOnLaunch"); v == "true" {
 		mapPublicIpOnLaunch = true
 	}
-
-	tags := ParseTags(params)
 
 	subnet := &ec2store.Subnet{
 		SubnetId:            subnetID,
@@ -55,7 +53,7 @@ func (s *EC2Service) CreateSubnet(ctx context.Context, reqCtx *request.RequestCo
 		State:               "available",
 		OwnerId:             s.accountID,
 		MapPublicIpOnLaunch: mapPublicIpOnLaunch,
-		Tags:                tags,
+		Tags:                parseEC2Tags(params),
 	}
 
 	if err := store.CreateSubnet(subnet); err != nil {
@@ -67,7 +65,9 @@ func (s *EC2Service) CreateSubnet(ctx context.Context, reqCtx *request.RequestCo
 	}, nil
 }
 
-// DescribeSubnets describes one or all subnets.
+// DescribeSubnets describes one or more subnets. Supports SubnetId for single
+// lookup and Filter.N for filtering by vpc-id, subnet-id, cidr-block, state,
+// availability-zone, tag, etc.
 func (s *EC2Service) DescribeSubnets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	store, err := s.store(reqCtx)
@@ -75,7 +75,7 @@ func (s *EC2Service) DescribeSubnets(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	subnetID := getStringParam(params, "SubnetId")
+	subnetID := request.GetStringParam(params, "SubnetId")
 	if subnetID != "" {
 		subnet, err := store.GetSubnet(subnetID)
 		if err != nil {
@@ -86,19 +86,17 @@ func (s *EC2Service) DescribeSubnets(ctx context.Context, reqCtx *request.Reques
 		}, nil
 	}
 
-	filterVpcID := getStringParam(params, "Filter.1.Value")
-
 	subnets, err := store.ListSubnets()
 	if err != nil {
 		return nil, err
 	}
 
+	filters := parseFilters(params)
 	items := make([]interface{}, 0, len(subnets))
 	for _, sn := range subnets {
-		if filterVpcID != "" && sn.VpcId != filterVpcID {
-			continue
+		if matchesSubnetFilters(sn, filters) {
+			items = append(items, sn)
 		}
-		items = append(items, sn)
 	}
 	return map[string]interface{}{
 		"SubnetSet": protocol.XMLElements{ElementName: "item", Items: items},
@@ -108,7 +106,7 @@ func (s *EC2Service) DescribeSubnets(ctx context.Context, reqCtx *request.Reques
 // DeleteSubnet deletes the specified subnet.
 func (s *EC2Service) DeleteSubnet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	subnetID := getStringParam(params, "SubnetId")
+	subnetID := request.GetStringParam(params, "SubnetId")
 	if subnetID == "" {
 		return nil, fmt.Errorf("ec2: SubnetId is required")
 	}
@@ -125,4 +123,45 @@ func (s *EC2Service) DeleteSubnet(ctx context.Context, reqCtx *request.RequestCo
 	return map[string]interface{}{
 		"return": true,
 	}, nil
+}
+
+// matchesSubnetFilters checks if a subnet matches all the given filters.
+func matchesSubnetFilters(sn *ec2store.Subnet, filters []ec2Filter) bool {
+	for _, f := range filters {
+		switch f.Name {
+		case "vpc-id":
+			if !anyMatch(f.Values, sn.VpcId) {
+				return false
+			}
+		case "subnet-id":
+			if !anyMatch(f.Values, sn.SubnetId) {
+				return false
+			}
+		case "cidr-block":
+			if !anyMatch(f.Values, sn.CidrBlock) {
+				return false
+			}
+		case "state":
+			if !anyMatch(f.Values, sn.State) {
+				return false
+			}
+		case "availability-zone":
+			if !anyMatch(f.Values, sn.AvailabilityZone) {
+				return false
+			}
+		case "tag-key":
+			if !hasTagKey(sn.Tags, f.Values) {
+				return false
+			}
+		case "tag-value":
+			if !hasTagValue(sn.Tags, f.Values) {
+				return false
+			}
+		case "tag":
+			if !hasTagKeyValue(sn.Tags, f.Values) {
+				return false
+			}
+		}
+	}
+	return true
 }

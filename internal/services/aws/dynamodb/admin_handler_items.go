@@ -12,6 +12,7 @@ import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
+// GetItem retrieves a single DynamoDB item by primary key.
 func (h *AdminHandler) GetItem(ctx context.Context, req *connect.Request[pb.GetItemInput]) (*connect.Response[pb.GetItemOutput], error) {
 	if req.Msg.GetTablename() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
@@ -52,6 +53,7 @@ func (h *AdminHandler) GetItem(ctx context.Context, req *connect.Request[pb.GetI
 	}), nil
 }
 
+// Scan returns all items in a DynamoDB table with optional pagination.
 func (h *AdminHandler) Scan(ctx context.Context, req *connect.Request[pb.ScanInput]) (*connect.Response[pb.ScanOutput], error) {
 	if req.Msg.GetTablename() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
@@ -100,6 +102,7 @@ func (h *AdminHandler) Scan(ctx context.Context, req *connect.Request[pb.ScanInp
 	return connect.NewResponse(output), nil
 }
 
+// PutItem inserts or replaces a DynamoDB item.
 func (h *AdminHandler) PutItem(ctx context.Context, req *connect.Request[pb.PutItemInput]) (*connect.Response[pb.PutItemOutput], error) {
 	if req.Msg.GetTablename() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
@@ -197,6 +200,7 @@ func (h *AdminHandler) PutItem(ctx context.Context, req *connect.Request[pb.PutI
 	}), nil
 }
 
+// DeleteItem removes a DynamoDB item by primary key.
 func (h *AdminHandler) DeleteItem(ctx context.Context, req *connect.Request[pb.DeleteItemInput]) (*connect.Response[pb.DeleteItemOutput], error) {
 	if req.Msg.GetTablename() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))

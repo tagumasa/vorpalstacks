@@ -185,7 +185,7 @@ func parseMessage(msgMap map[string]interface{}) *sesv2store.Message {
 	msg := &sesv2store.Message{}
 
 	if subject, ok := msgMap["Subject"].(map[string]interface{}); ok {
-		msg.Subject = parseContent_(subject)
+		msg.Subject = parseContentPart(subject)
 	}
 
 	if body, ok := msgMap["Body"].(map[string]interface{}); ok {
@@ -195,7 +195,7 @@ func parseMessage(msgMap map[string]interface{}) *sesv2store.Message {
 	return msg
 }
 
-func parseContent_(contentMap map[string]interface{}) *sesv2store.Content {
+func parseContentPart(contentMap map[string]interface{}) *sesv2store.Content {
 	if contentMap == nil {
 		return nil
 	}
@@ -213,11 +213,11 @@ func parseBody(bodyMap map[string]interface{}) *sesv2store.Body {
 	body := &sesv2store.Body{}
 
 	if text, ok := bodyMap["Text"].(map[string]interface{}); ok {
-		body.Text = parseContent_(text)
+		body.Text = parseContentPart(text)
 	}
 
 	if html, ok := bodyMap["Html"].(map[string]interface{}); ok {
-		body.Html = parseContent_(html)
+		body.Html = parseContentPart(html)
 	}
 
 	return body

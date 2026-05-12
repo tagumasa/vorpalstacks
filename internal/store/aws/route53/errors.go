@@ -36,9 +36,6 @@ var (
 	// ErrChangeNotFound is returned when the specified change batch
 	// does not exist.
 	ErrChangeNotFound = errors.New("change not found")
-
-	// ErrInvalidInput is returned when the input is not valid.
-	ErrInvalidInput = errors.New("invalid input")
 )
 
 // NewStoreError creates a new Route 53 store error with the given operation and error.

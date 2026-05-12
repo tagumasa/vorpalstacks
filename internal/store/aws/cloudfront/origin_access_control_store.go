@@ -42,6 +42,9 @@ func (s *OriginAccessControlStore) GetByName(name string) (*OriginAccessControl,
 
 // Create creates a new origin access control.
 func (s *OriginAccessControlStore) Create(config *OriginAccessControlConfig) (*OriginAccessControl, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	id, err := generateDistributionID()
 	if err != nil {
 		return nil, NewStoreError("create_origin_access_control", err)

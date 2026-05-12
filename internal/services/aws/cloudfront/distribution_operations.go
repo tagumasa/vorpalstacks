@@ -14,18 +14,14 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 )
 
-func newCloudFrontError(typeName, message string, statusCode int) *awserrors.AWSError {
-	return awserrors.NewAWSError(typeName, message, statusCode)
-}
-
-// NewAPIError creates a new CloudFront API error.
-func NewAPIError(typeName, message string, statusCode int) *awserrors.AWSError {
-	return newCloudFrontError(typeName, message, statusCode)
-}
-
 func getIfMatch(req *request.ParsedRequest) string {
 	ifMatch := req.Headers.Get("If-Match")
 	return strings.TrimSpace(ifMatch)
+}
+
+// NewAPIError creates a CloudFront-specific AWS error with the given type and message.
+func NewAPIError(typeName, message string, statusCode int) *awserrors.AWSError {
+	return awserrors.NewAWSError(typeName, message, statusCode)
 }
 
 func getDistributionConfigMap(req *request.ParsedRequest) map[string]interface{} {
@@ -609,9 +605,6 @@ func parseCacheBehavior(cbMap map[string]interface{}) *cloudfrontstore.CacheBeha
 			Enabled:  request.GetBoolParam(ts, "Enabled"),
 			Quantity: request.GetIntParam(ts, "Quantity"),
 		}
-		if cb.TrustedSigners.Quantity == 0 && !cb.TrustedSigners.Enabled {
-			cb.TrustedSigners.Quantity = 0
-		}
 	}
 	if tkg := request.GetMapParam(cbMap, "TrustedKeyGroups"); tkg != nil {
 		cb.TrustedKeyGroups = &cloudfrontstore.TrustedKeyGroups{
@@ -718,41 +711,7 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 	var tags []types.Tag
 	tagsMap := request.GetMapParam(req.Parameters, "Tags")
 	if tagsMap != nil {
-		if itemsVal := tagsMap["Items"]; itemsVal != nil {
-			switch v := itemsVal.(type) {
-			case []interface{}:
-				for _, t := range v {
-					if m, ok := t.(map[string]interface{}); ok {
-						tags = append(tags, types.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
-					}
-				}
-			case map[string]interface{}:
-				if tagVal, ok := v["Tag"]; ok {
-					switch tv := tagVal.(type) {
-					case []interface{}:
-						for _, t := range tv {
-							if m, ok := t.(map[string]interface{}); ok {
-								tags = append(tags, types.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
-							}
-						}
-					case map[string]interface{}:
-						tags = append(tags, types.Tag{Key: request.GetStringParam(tv, "Key"), Value: request.GetStringParam(tv, "Value")})
-					}
-				}
-			}
-		}
-		if tagVal := tagsMap["Tag"]; tagVal != nil && len(tags) == 0 {
-			switch v := tagVal.(type) {
-			case []interface{}:
-				for _, t := range v {
-					if m, ok := t.(map[string]interface{}); ok {
-						tags = append(tags, types.Tag{Key: request.GetStringParam(m, "Key"), Value: request.GetStringParam(m, "Value")})
-					}
-				}
-			case map[string]interface{}:
-				tags = append(tags, types.Tag{Key: request.GetStringParam(v, "Key"), Value: request.GetStringParam(v, "Value")})
-			}
-		}
+		tags = parseXMLTags(tagsMap)
 	}
 	if len(tags) > 0 && distribution.ARN != "" {
 		if err := store.tags.Tag(distribution.ARN, tags); err != nil {
@@ -769,7 +728,7 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 func (s *CloudFrontService) GetDistribution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, newCloudFrontError("InvalidArgument", "Id is required", 400)
+		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
 	}
 
 	store, err := s.store(reqCtx)
@@ -779,7 +738,7 @@ func (s *CloudFrontService) GetDistribution(ctx context.Context, reqCtx *request
 	distribution, err := store.distributions.Get(id)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
-			return nil, newCloudFrontError("NoSuchDistribution", "Distribution not found", 404)
+			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
 		}
 		return nil, err
 	}
@@ -793,7 +752,7 @@ func (s *CloudFrontService) GetDistribution(ctx context.Context, reqCtx *request
 func (s *CloudFrontService) GetDistributionConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, newCloudFrontError("InvalidArgument", "Id is required", 400)
+		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
 	}
 
 	store, err := s.store(reqCtx)
@@ -803,7 +762,7 @@ func (s *CloudFrontService) GetDistributionConfig(ctx context.Context, reqCtx *r
 	distribution, err := store.distributions.Get(id)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
-			return nil, newCloudFrontError("NoSuchDistribution", "Distribution not found", 404)
+			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
 		}
 		return nil, err
 	}
@@ -865,7 +824,7 @@ func (s *CloudFrontService) ListDistributions(ctx context.Context, reqCtx *reque
 func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, newCloudFrontError("InvalidArgument", "Id is required", 400)
+		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
 	}
 
 	ifMatch := getIfMatch(req)
@@ -880,13 +839,18 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 	distribution, err := store.distributions.Get(id)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
-			return nil, newCloudFrontError("NoSuchDistribution", "Distribution not found", 404)
+			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
 		}
 		return nil, err
 	}
 
 	if ifMatch != "" && ifMatch != "*" && distribution.ETag != ifMatch {
-		return nil, newCloudFrontError("PreconditionFailed", "The If-Match header does not match the current ETag", 412)
+		return nil, awserrors.NewAWSError("PreconditionFailed", "The If-Match header does not match the current ETag", 412)
+	}
+
+	oldWebACLId := ""
+	if distribution.DistributionConfig != nil {
+		oldWebACLId = distribution.DistributionConfig.WebACLId
 	}
 
 	newConfig := parseDistributionConfig(configMap)
@@ -895,9 +859,8 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 	}
 	distribution.DistributionConfig = newConfig
 	distribution.Enabled = newConfig.Enabled
-	distribution.ETag = s.generateETag()
 
-	if oldWebACLId := distribution.DistributionConfig.WebACLId; oldWebACLId != newConfig.WebACLId && s.wafInvoker != nil {
+	if oldWebACLId != newConfig.WebACLId && s.wafInvoker != nil {
 		distArn := distribution.ARN
 		if oldWebACLId != "" {
 			if err := s.wafInvoker.DisassociateWebACL(oldWebACLId, distArn); err != nil {
@@ -913,7 +876,7 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 
 	if err := store.distributions.UpdateWithLastModified(id, distribution); err != nil {
 		if cloudfrontstore.IsNotFound(err) {
-			return nil, newCloudFrontError("NoSuchDistribution", "Distribution not found", 404)
+			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
 		}
 		return nil, err
 	}
@@ -927,7 +890,7 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	id := request.GetStringParam(req.Parameters, "Id")
 	if id == "" {
-		return nil, newCloudFrontError("InvalidArgument", "Id is required", 400)
+		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
 	}
 
 	ifMatch := getIfMatch(req)
@@ -940,17 +903,17 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 	distribution, err := store.distributions.Get(id)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
-			return nil, newCloudFrontError("NoSuchDistribution", "Distribution not found", 404)
+			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
 		}
 		return nil, err
 	}
 
 	if ifMatch != "" && ifMatch != "*" && distribution.ETag != ifMatch {
-		return nil, newCloudFrontError("PreconditionFailed", "The If-Match header does not match the current ETag", 412)
+		return nil, awserrors.NewAWSError("PreconditionFailed", "The If-Match header does not match the current ETag", 412)
 	}
 
 	if distribution.Enabled {
-		return nil, newCloudFrontError("DistributionNotDisabled", "Distribution must be disabled before deletion", 409)
+		return nil, awserrors.NewAWSError("DistributionNotDisabled", "Distribution must be disabled before deletion", 409)
 	}
 
 	if distribution.DistributionConfig != nil && s.wafInvoker != nil {
@@ -965,7 +928,7 @@ func (s *CloudFrontService) DeleteDistribution(ctx context.Context, reqCtx *requ
 	err = store.distributions.Delete(id)
 	if err != nil {
 		if cloudfrontstore.IsNotFound(err) {
-			return nil, newCloudFrontError("NoSuchDistribution", "Distribution not found", 404)
+			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
 		}
 		return nil, err
 	}
@@ -1046,4 +1009,48 @@ func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, req
 			"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: paged},
 		},
 	}, nil
+}
+
+// parseXMLTags extracts tags from an XML-style map, handling both array and
+// nested map forms produced by XML serialisation.
+func parseXMLTags(tagsMap map[string]interface{}) []types.Tag {
+	var tags []types.Tag
+	parseSingle := func(m map[string]interface{}) {
+		tags = append(tags, types.Tag{
+			Key:   request.GetStringParam(m, "Key"),
+			Value: request.GetStringParam(m, "Value"),
+		})
+	}
+	parseSlice := func(items []interface{}) {
+		for _, t := range items {
+			if m, ok := t.(map[string]interface{}); ok {
+				parseSingle(m)
+			}
+		}
+	}
+
+	if itemsVal := tagsMap["Items"]; itemsVal != nil {
+		switch v := itemsVal.(type) {
+		case []interface{}:
+			parseSlice(v)
+		case map[string]interface{}:
+			if tagVal, ok := v["Tag"]; ok {
+				switch tv := tagVal.(type) {
+				case []interface{}:
+					parseSlice(tv)
+				case map[string]interface{}:
+					parseSingle(tv)
+				}
+			}
+		}
+	}
+	if tagVal := tagsMap["Tag"]; tagVal != nil && len(tags) == 0 {
+		switch v := tagVal.(type) {
+		case []interface{}:
+			parseSlice(v)
+		case map[string]interface{}:
+			parseSingle(v)
+		}
+	}
+	return tags
 }

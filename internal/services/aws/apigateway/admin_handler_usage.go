@@ -12,6 +12,7 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 )
 
+// CreateApiKey creates a new API key.
 func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb.CreateApiKeyRequest]) (*connect.Response[pb.ApiKey], error) {
 	if req.Msg.Name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
@@ -41,6 +42,7 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 	return connect.NewResponse(toPbApiKey(created, true)), nil
 }
 
+// GetApiKeys returns all API keys.
 func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.GetApiKeysRequest]) (*connect.Response[pb.ApiKeys], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
@@ -70,6 +72,7 @@ func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.G
 	return connect.NewResponse(resp), nil
 }
 
+// GetApiKey returns a single API key by ID.
 func (h *AdminHandler) GetApiKey(ctx context.Context, req *connect.Request[pb.GetApiKeyRequest]) (*connect.Response[pb.ApiKey], error) {
 	if req.Msg.Apikey == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("api_key is required"))
@@ -85,6 +88,7 @@ func (h *AdminHandler) GetApiKey(ctx context.Context, req *connect.Request[pb.Ge
 	return connect.NewResponse(toPbApiKey(k, req.Msg.Includevalue)), nil
 }
 
+// DeleteApiKey removes an API key.
 func (h *AdminHandler) DeleteApiKey(ctx context.Context, req *connect.Request[pb.DeleteApiKeyRequest]) (*connect.Response[pbcommon.Empty], error) {
 	if req.Msg.Apikey == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("api_key is required"))
@@ -99,6 +103,7 @@ func (h *AdminHandler) DeleteApiKey(ctx context.Context, req *connect.Request[pb
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
+// CreateUsagePlan creates a new usage plan.
 func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request[pb.CreateUsagePlanRequest]) (*connect.Response[pb.UsagePlan], error) {
 	if req.Msg.Name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
@@ -142,6 +147,7 @@ func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request
 	return connect.NewResponse(toPbUsagePlan(created)), nil
 }
 
+// GetUsagePlans returns all usage plans.
 func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[pb.GetUsagePlansRequest]) (*connect.Response[pb.UsagePlans], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
@@ -171,6 +177,7 @@ func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[p
 	return connect.NewResponse(resp), nil
 }
 
+// GetUsagePlan returns a single usage plan by ID.
 func (h *AdminHandler) GetUsagePlan(ctx context.Context, req *connect.Request[pb.GetUsagePlanRequest]) (*connect.Response[pb.UsagePlan], error) {
 	if req.Msg.Usageplanid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id is required"))
@@ -186,6 +193,7 @@ func (h *AdminHandler) GetUsagePlan(ctx context.Context, req *connect.Request[pb
 	return connect.NewResponse(toPbUsagePlan(p)), nil
 }
 
+// DeleteUsagePlan removes a usage plan.
 func (h *AdminHandler) DeleteUsagePlan(ctx context.Context, req *connect.Request[pb.DeleteUsagePlanRequest]) (*connect.Response[pbcommon.Empty], error) {
 	if req.Msg.Usageplanid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id is required"))
@@ -200,6 +208,7 @@ func (h *AdminHandler) DeleteUsagePlan(ctx context.Context, req *connect.Request
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
+// CreateUsagePlanKey adds an API key to a usage plan.
 func (h *AdminHandler) CreateUsagePlanKey(ctx context.Context, req *connect.Request[pb.CreateUsagePlanKeyRequest]) (*connect.Response[pb.UsagePlanKey], error) {
 	if req.Msg.Usageplanid == "" || req.Msg.Keyid == "" || req.Msg.Keytype == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id, key_id, and key_type are required"))
@@ -228,6 +237,7 @@ func (h *AdminHandler) CreateUsagePlanKey(ctx context.Context, req *connect.Requ
 	return connect.NewResponse(toPbUsagePlanKey(created)), nil
 }
 
+// GetUsagePlanKeys returns all keys in a usage plan.
 func (h *AdminHandler) GetUsagePlanKeys(ctx context.Context, req *connect.Request[pb.GetUsagePlanKeysRequest]) (*connect.Response[pb.UsagePlanKeys], error) {
 	if req.Msg.Usageplanid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id is required"))
@@ -260,6 +270,7 @@ func (h *AdminHandler) GetUsagePlanKeys(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(resp), nil
 }
 
+// GetUsagePlanKey returns a single key from a usage plan.
 func (h *AdminHandler) GetUsagePlanKey(ctx context.Context, req *connect.Request[pb.GetUsagePlanKeyRequest]) (*connect.Response[pb.UsagePlanKey], error) {
 	if req.Msg.Usageplanid == "" || req.Msg.Keyid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id and key_id are required"))
@@ -275,6 +286,7 @@ func (h *AdminHandler) GetUsagePlanKey(ctx context.Context, req *connect.Request
 	return connect.NewResponse(toPbUsagePlanKey(k)), nil
 }
 
+// DeleteUsagePlanKey removes a key from a usage plan.
 func (h *AdminHandler) DeleteUsagePlanKey(ctx context.Context, req *connect.Request[pb.DeleteUsagePlanKeyRequest]) (*connect.Response[pbcommon.Empty], error) {
 	if req.Msg.Usageplanid == "" || req.Msg.Keyid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("usage_plan_id and key_id are required"))

@@ -230,6 +230,7 @@ func (s *CloudWatchService) upsertAlarm(store *cwstore.AlarmStore, alarm *cwstor
 	return alarm, nil
 }
 
+// PutMetricAlarm creates or updates a CloudWatch alarm.
 func (s *CloudWatchService) PutMetricAlarm(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	alarmName := getAlarmStringParam(req.Parameters, "AlarmName", "alarmName")
 	if alarmName == "" {

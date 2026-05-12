@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"connectrpc.com/connect"
+	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	"vorpalstacks/internal/core/storage"
@@ -72,28 +74,72 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 	}
 
 	zoneStore := route53store.NewHostedZoneStore(h.store, h.accountId)
+	recordSetStore := route53store.NewRecordSetStore(h.store)
 
-	zone := &route53store.HostedZone{
-		Name:            req.Msg.Name,
-		CallerReference: req.Msg.Callerreference,
-		AccountID:       h.accountId,
+	zoneName := route53store.NormalizeZoneName(req.Msg.Name)
+	nameServers := generateNameServers(4)
+
+	privateZone := false
+	if req.Msg.Vpc != nil {
+		privateZone = true
 	}
 
+	comment := ""
 	if req.Msg.Hostedzoneconfig != nil {
-		zone.Config = &route53store.HostedZoneConfig{
-			Comment:     req.Msg.Hostedzoneconfig.Comment,
-			PrivateZone: req.Msg.Hostedzoneconfig.Privatezone,
+		comment = req.Msg.Hostedzoneconfig.Comment
+		if req.Msg.Hostedzoneconfig.Privatezone {
+			privateZone = true
 		}
+	}
+
+	zone := &route53store.HostedZone{
+		ID:              generateHostedZoneId(),
+		Name:            zoneName,
+		CallerReference: req.Msg.Callerreference,
+		AccountID:       h.accountId,
+		NameServers:     nameServers,
+		Config:          &route53store.HostedZoneConfig{Comment: comment, PrivateZone: privateZone},
+		Private:         privateZone,
+		Region:          svccommon.GetRegionFromHeader(req.Header()),
 	}
 
 	if req.Msg.Vpc != nil {
 		zone.VPCs = []*route53store.VPC{{
-			VPCID: req.Msg.Vpc.Vpcid,
+			VPCID:     req.Msg.Vpc.Vpcid,
+			VPCRegion: protoVPCRegionToAWS(req.Msg.Vpc.Vpcregion),
 		}}
-		zone.Private = true
 	}
 
 	if err := zoneStore.Create(zone); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	nsRecords := make([]*route53store.ResourceRecord, len(nameServers))
+	for i, ns := range nameServers {
+		nsRecords[i] = &route53store.ResourceRecord{Value: ns}
+	}
+	if err := recordSetStore.Create(zone.ID, &route53store.ResourceRecordSet{
+		Name:            zoneName,
+		Type:            "NS",
+		TTL:             172800,
+		ResourceRecords: nsRecords,
+	}); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	if err := recordSetStore.Create(zone.ID, &route53store.ResourceRecordSet{
+		Name: zoneName,
+		Type: "SOA",
+		TTL:  900,
+		ResourceRecords: []*route53store.ResourceRecord{
+			{Value: fmt.Sprintf("%s %s 1 7200 900 1209600 86400", zoneName, nameServers[0])},
+		},
+	}); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	zone.ResourceRecordSetCount = 2
+	if err := zoneStore.Update(zone); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -137,4 +183,16 @@ func toPbHostedZone(z *route53store.HostedZone) *pb.HostedZone {
 // NewConnectHandler creates a gRPC-Web connect handler for the Route53 admin console.
 func NewConnectHandler(store storage.BasicStorage, accountID string) (string, http.Handler) {
 	return route53connect.NewRoute53ServiceHandler(NewAdminHandler(store, accountID))
+}
+
+// protoVPCRegionToAWS converts a proto VPCRegion enum name (e.g. "V_P_C_REGION_US_EAST_1")
+// to an AWS region string (e.g. "us-east-1").
+func protoVPCRegionToAWS(region pb.VPCRegion) string {
+	name := region.String()
+	const prefix = "V_P_C_REGION_"
+	if !strings.HasPrefix(name, prefix) {
+		return strings.ToLower(name)
+	}
+	parts := strings.Split(strings.ToLower(strings.TrimPrefix(name, prefix)), "_")
+	return strings.Join(parts, "-")
 }

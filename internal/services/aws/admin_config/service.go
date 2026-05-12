@@ -41,6 +41,7 @@ type AdminConfigService struct {
 	version      string
 }
 
+// NewAdminConfigService creates a new admin configuration service.
 func NewAdminConfigService(configStore ConfigStore, shutdownFunc func(), dataPath string, version string) *AdminConfigService {
 	cpu.Percent(0, false)
 	return &AdminConfigService{
@@ -301,6 +302,7 @@ func (s *AdminConfigService) EnableService(ctx context.Context, req *connect.Req
 	}), nil
 }
 
+// DisableService disables a service and persists the change.
 func (s *AdminConfigService) DisableService(ctx context.Context, req *connect.Request[pb.DisableServiceRequest]) (*connect.Response[pb.ServiceStatus], error) {
 	svc := serviceconfig.ByName(req.Msg.ServiceName)
 	if svc == nil {
@@ -340,6 +342,7 @@ func (s *AdminConfigService) GetPortMode(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(resp), nil
 }
 
+// SetPortMode changes the port allocation mode for a service.
 func (s *AdminConfigService) SetPortMode(ctx context.Context, req *connect.Request[pb.SetPortModeRequest]) (*connect.Response[pb.PortModeResponse], error) {
 	svc := serviceconfig.ByName(req.Msg.ServiceName)
 	if svc == nil {

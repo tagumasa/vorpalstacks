@@ -8,6 +8,7 @@ func (d *DB) allocNodeID() NodeID {
 	return NodeID(d.nextNodeID.Add(1))
 }
 
+// AddNode creates a new node with the given labels and properties.
 func (d *DB) AddNode(labels []string, props Props) (NodeID, error) {
 	if d.closed.Load() {
 		return 0, fmt.Errorf("graphengine: database is closed")
@@ -48,6 +49,7 @@ func (d *DB) AddNode(labels []string, props Props) (NodeID, error) {
 	return id, nil
 }
 
+// AddNodeBatch atomically creates multiple nodes in a single write batch.
 func (d *DB) AddNodeBatch(items []struct {
 	Labels []string
 	Props  Props
@@ -117,6 +119,7 @@ func (d *DB) AddNodeBatch(items []struct {
 	return ids, nil
 }
 
+// GetNode retrieves a node by its identifier.
 func (d *DB) GetNode(id NodeID) (*Node, error) {
 	if d.closed.Load() {
 		return nil, fmt.Errorf("graphengine: database is closed")
@@ -142,6 +145,7 @@ func (d *DB) GetNode(id NodeID) (*Node, error) {
 	}, nil
 }
 
+// UpdateNode merges properties into an existing node, updating all indexes.
 func (d *DB) UpdateNode(id NodeID, props Props) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -223,6 +227,7 @@ func (d *DB) getConstrainedProps(labels []string) map[string][]string {
 	return result
 }
 
+// DeleteNode removes a node and all its connected edges.
 func (d *DB) DeleteNode(id NodeID) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -282,6 +287,7 @@ func (d *DB) DeleteNode(id NodeID) error {
 	return nil
 }
 
+// NodeExists reports whether a node with the given ID exists.
 func (d *DB) NodeExists(id NodeID) (bool, error) {
 	if d.closed.Load() {
 		return false, fmt.Errorf("graphengine: database is closed")

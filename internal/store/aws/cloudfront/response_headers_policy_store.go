@@ -41,6 +41,9 @@ func (s *ResponseHeadersPolicyStore) GetByName(name string) (*ResponseHeadersPol
 
 // Create creates a new response headers policy.
 func (s *ResponseHeadersPolicyStore) Create(config *ResponseHeadersPolicyConfig) (*ResponseHeadersPolicy, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	id, err := generateDistributionID()
 	if err != nil {
 		return nil, NewStoreError("create_response_headers_policy", err)

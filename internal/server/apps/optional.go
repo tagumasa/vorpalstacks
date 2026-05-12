@@ -556,6 +556,7 @@ type iamPrincipalResolverAdapter struct {
 	store iamstore.IAMStoreInterface
 }
 
+// ResolvePrincipal returns the IAM user name associated with the given access key ID.
 func (r *iamPrincipalResolverAdapter) ResolvePrincipal(ctx context.Context, accessKeyID string) (string, error) {
 	accessKey, err := r.store.AccessKeys().Get(accessKeyID)
 	if err != nil || accessKey == nil || accessKey.UserName == "" {

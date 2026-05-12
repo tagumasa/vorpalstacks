@@ -37,26 +37,8 @@ func (s *EC2Service) SetEC2Store(region string, store *ec2store.EC2Store) {
 	s.stores.Store(region, store)
 }
 
-// store returns the EC2 store for the request's region, creating it lazily.
-func (s *EC2Service) store(reqCtx *request.RequestContext) (*ec2store.EC2Store, error) {
-	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*ec2store.EC2Store, error) {
-		if s.storageManager == nil {
-			return nil, fmt.Errorf("storage manager not set")
-		}
-		rs, err := s.storageManager.GetStorage(reqCtx.GetRegion())
-		if err != nil {
-			return nil, err
-		}
-		tstore, ok := rs.(storage.TransactionalStorageWith2PC)
-		if !ok {
-			return nil, fmt.Errorf("storage does not support 2PC")
-		}
-		return ec2store.NewEC2Store(tstore, s.accountID, reqCtx.GetRegion()), nil
-	})
-}
-
-// GetStoreForRegion returns the cached EC2 store for the given region.
-func (s *EC2Service) GetStoreForRegion(region string) (*ec2store.EC2Store, error) {
+// storeForRegion returns the EC2 store for the given region, creating it lazily.
+func (s *EC2Service) storeForRegion(region string) (*ec2store.EC2Store, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (*ec2store.EC2Store, error) {
 		if s.storageManager == nil {
 			return nil, fmt.Errorf("storage manager not set")
@@ -73,11 +55,21 @@ func (s *EC2Service) GetStoreForRegion(region string) (*ec2store.EC2Store, error
 	})
 }
 
+// store returns the EC2 store for the request's region.
+func (s *EC2Service) store(reqCtx *request.RequestContext) (*ec2store.EC2Store, error) {
+	return s.storeForRegion(reqCtx.GetRegion())
+}
+
+// GetStoreForRegion returns the cached EC2 store for the given region.
+func (s *EC2Service) GetStoreForRegion(region string) (*ec2store.EC2Store, error) {
+	return s.storeForRegion(region)
+}
+
 // LookupSubnet resolves a subnet ID to its VPC ID and availability zone for
 // the given region. Implements eventbus.EC2SubnetLookup for cross-service
 // subnet resolution (e.g. Neptune DB subnet groups).
 func (s *EC2Service) LookupSubnet(ctx context.Context, region string, subnetId string) (string, string, error) {
-	store, err := s.GetStoreForRegion(region)
+	store, err := s.storeForRegion(region)
 	if err != nil {
 		return "", "", err
 	}
@@ -92,7 +84,7 @@ func (s *EC2Service) LookupSubnet(ctx context.Context, region string, subnetId s
 // given region. Implements eventbus.EC2SubnetLookup for cross-service
 // security group validation (e.g. Neptune DB clusters, Lambda VPC config).
 func (s *EC2Service) LookupSecurityGroup(ctx context.Context, region string, groupId string) (string, error) {
-	store, err := s.GetStoreForRegion(region)
+	store, err := s.storeForRegion(region)
 	if err != nil {
 		return "", err
 	}

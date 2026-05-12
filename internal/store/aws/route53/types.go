@@ -126,18 +126,6 @@ type ChangeInfo struct {
 	Comment     string    `json:"comment,omitempty"`
 }
 
-// Change represents a change to a resource record set.
-type Change struct {
-	Action            string             `json:"action"`
-	ResourceRecordSet *ResourceRecordSet `json:"resourceRecordSet"`
-}
-
-// ChangeBatch represents a batch of changes to resource record sets.
-type ChangeBatch struct {
-	Comment string    `json:"comment,omitempty"`
-	Changes []*Change `json:"changes"`
-}
-
 // HostedZoneListResult represents the result of listing hosted zones.
 type HostedZoneListResult struct {
 	HostedZones []*HostedZone
@@ -150,11 +138,4 @@ type HealthCheckListResult struct {
 	HealthChecks []*HealthCheck
 	IsTruncated  bool
 	Marker       string
-}
-
-// ResourceRecordSetListResult represents the result of listing resource record sets.
-type ResourceRecordSetListResult struct {
-	ResourceRecordSets []*ResourceRecordSet
-	IsTruncated        bool
-	Marker             string
 }

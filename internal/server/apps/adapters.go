@@ -547,10 +547,12 @@ type wafInvokerAdapter struct {
 	store *wafstore.WebACLAssociationStore
 }
 
+// AssociateWebACL links a WAF WebACL to a resource.
 func (a *wafInvokerAdapter) AssociateWebACL(webACLArn, resourceArn string) error {
 	return a.store.Associate(webACLArn, resourceArn)
 }
 
+// DisassociateWebACL removes the WAF WebACL association from a resource.
 func (a *wafInvokerAdapter) DisassociateWebACL(webACLArn, resourceArn string) error {
 	return a.store.Disassociate(webACLArn, resourceArn)
 }
@@ -586,6 +588,7 @@ func (a *cloudWatchMetricInvokerAdapter) getOrCreateStore(region string) (*cwsto
 	return store, nil
 }
 
+// PutMetricData writes a single metric datum to CloudWatch in the given region.
 func (a *cloudWatchMetricInvokerAdapter) PutMetricData(region, namespace string, metricName string, value float64, timestamp time.Time) error {
 	store, err := a.getOrCreateStore(region)
 	if err != nil {
@@ -627,6 +630,7 @@ func (a *cloudTrailInvokerAdapter) getOrCreateStore(region string) (*cloudtrails
 	return ctStore, nil
 }
 
+// LookupEvents queries CloudTrail for events matching the given criteria.
 func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, accountID, username string, startTime, endTime time.Time, maxResults int32) ([]eventbus.CloudTrailEventInfo, string, error) {
 	ctStore, err := a.getOrCreateStore(region)
 	if err != nil {
@@ -693,6 +697,7 @@ func (a *logsInvokerAdapter) getOrCreateStore(region string) (*logsstore.Store, 
 	return store, nil
 }
 
+// EnsureLogGroup creates the log group if it does not already exist.
 func (a *logsInvokerAdapter) EnsureLogGroup(_ context.Context, region, logGroupName, accountID string) error {
 	store, err := a.getOrCreateStore(region)
 	if err != nil {
@@ -706,6 +711,7 @@ func (a *logsInvokerAdapter) EnsureLogGroup(_ context.Context, region, logGroupN
 	return nil
 }
 
+// EnsureLogStream creates the log stream if it does not already exist.
 func (a *logsInvokerAdapter) EnsureLogStream(_ context.Context, region, logGroupName, logStreamName string) error {
 	store, err := a.getOrCreateStore(region)
 	if err != nil {
@@ -718,6 +724,7 @@ func (a *logsInvokerAdapter) EnsureLogStream(_ context.Context, region, logGroup
 	return store.CreateLogStream(ls)
 }
 
+// PutLogEvents writes log entries to the specified log stream.
 func (a *logsInvokerAdapter) PutLogEvents(_ context.Context, region, logGroupName, logStreamName string, entries []eventbus.LogsLogEntry) error {
 	store, err := a.getOrCreateStore(region)
 	if err != nil {
@@ -731,6 +738,7 @@ func (a *logsInvokerAdapter) PutLogEvents(_ context.Context, region, logGroupNam
 	return err
 }
 
+// ExecuteQueryOnGraph runs a graph query (Cypher/Gremlin/openCypher) against the identified graph.
 func (a *neptuneGraphInvokerAdapter) ExecuteQueryOnGraph(ctx context.Context, graphID string, query string, language string, parameters map[string]interface{}) (interface{}, error) {
 	return a.service.ExecuteQueryOnGraph(ctx, graphID, query, language, parameters)
 }

@@ -10,6 +10,20 @@ import (
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
+func parseAddressList(params map[string]interface{}) []string {
+	var addresses []string
+	if addrRaw := params["Addresses"]; addrRaw != nil {
+		if arr, ok := addrRaw.([]interface{}); ok {
+			for _, a := range arr {
+				if s, ok := a.(string); ok {
+					addresses = append(addresses, s)
+				}
+			}
+		}
+	}
+	return addresses
+}
+
 // CreateIPSet creates a new IP set containing the specified IP addresses.
 func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stores, err := s.store(reqCtx)
@@ -28,17 +42,7 @@ func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestC
 		ipAddressVersion = "IPV4"
 	}
 
-	var addresses []string
-	if addrRaw := req.Parameters["Addresses"]; addrRaw != nil {
-		if arr, ok := addrRaw.([]interface{}); ok {
-			for _, a := range arr {
-				if s, ok := a.(string); ok {
-					addresses = append(addresses, s)
-				}
-			}
-		}
-	}
-
+	addresses := parseAddressList(req.Parameters)
 	description := request.GetStringParam(req.Parameters, "Description")
 
 	id, err := generateID()
@@ -61,13 +65,7 @@ func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	return map[string]interface{}{
-		"Summary": map[string]interface{}{
-			"Id":          ipSet.ID,
-			"Name":        ipSet.Name,
-			"ARN":         ipSet.ARN,
-			"Description": ipSet.Description,
-			"LockToken":   ipSet.LockToken,
-		},
+		"Summary": buildIPSetSummary(ipSet),
 	}, nil
 }
 
@@ -119,13 +117,7 @@ func (s *WAFv2Service) ListIPSets(ctx context.Context, reqCtx *request.RequestCo
 
 	ipSets := make([]interface{}, 0, len(result.IPSets))
 	for _, ips := range result.IPSets {
-		ipSets = append(ipSets, map[string]interface{}{
-			"Id":          ips.ID,
-			"Name":        ips.Name,
-			"ARN":         ips.ARN,
-			"Description": ips.Description,
-			"LockToken":   ips.LockToken,
-		})
+		ipSets = append(ipSets, buildIPSetSummary(ips))
 	}
 
 	resp := map[string]interface{}{
@@ -151,16 +143,7 @@ func (s *WAFv2Service) UpdateIPSet(ctx context.Context, reqCtx *request.RequestC
 		return nil, validationError("LockToken is required")
 	}
 
-	var addresses []string
-	if addrRaw := req.Parameters["Addresses"]; addrRaw != nil {
-		if arr, ok := addrRaw.([]interface{}); ok {
-			for _, a := range arr {
-				if s, ok := a.(string); ok {
-					addresses = append(addresses, s)
-				}
-			}
-		}
-	}
+	addresses := parseAddressList(req.Parameters)
 
 	ipSet, err := stores.ipSets.Update(id, lockToken, addresses)
 	if err != nil {
