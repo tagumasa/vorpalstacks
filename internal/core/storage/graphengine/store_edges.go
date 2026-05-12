@@ -8,6 +8,7 @@ func (d *DB) allocEdgeID() EdgeID {
 	return EdgeID(d.nextEdgeID.Add(1))
 }
 
+// AddEdge creates a directed edge from source to target with the given label and properties.
 func (d *DB) AddEdge(from, to NodeID, label string, props Props) (EdgeID, error) {
 	if d.closed.Load() {
 		return 0, fmt.Errorf("graphengine: database is closed")
@@ -58,6 +59,7 @@ func (d *DB) AddEdge(from, to NodeID, label string, props Props) (EdgeID, error)
 	return id, nil
 }
 
+// AddEdgeBatch atomically inserts multiple edges in a single write batch.
 func (d *DB) AddEdgeBatch(edges []Edge) ([]EdgeID, error) {
 	if d.closed.Load() {
 		return nil, fmt.Errorf("graphengine: database is closed")
@@ -96,6 +98,7 @@ func (d *DB) AddEdgeBatch(edges []Edge) ([]EdgeID, error) {
 	return ids, nil
 }
 
+// GetEdge retrieves an edge by its identifier.
 func (d *DB) GetEdge(id EdgeID) (*Edge, error) {
 	if d.closed.Load() {
 		return nil, fmt.Errorf("graphengine: database is closed")
@@ -112,6 +115,7 @@ func (d *DB) GetEdge(id EdgeID) (*Edge, error) {
 	return decodeEdgeData(id, val)
 }
 
+// DeleteEdge removes an edge and its adjacency index entries.
 func (d *DB) DeleteEdge(id EdgeID) error {
 	if d.closed.Load() {
 		return fmt.Errorf("graphengine: database is closed")
@@ -213,30 +217,37 @@ func (d *DB) getEdgesForNode(id NodeID, dir Direction, loadProps bool, labelFilt
 	return edges, nil
 }
 
+// OutEdges returns all outgoing edges for the given node.
 func (d *DB) OutEdges(id NodeID) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Outgoing, true, "")
 }
 
+// InEdges returns all incoming edges for the given node.
 func (d *DB) InEdges(id NodeID) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Incoming, true, "")
 }
 
+// OutEdgesByLabel returns outgoing edges filtered by label.
 func (d *DB) OutEdgesByLabel(id NodeID, label string) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Outgoing, true, label)
 }
 
+// InEdgesByLabel returns incoming edges filtered by label.
 func (d *DB) InEdgesByLabel(id NodeID, label string) ([]*Edge, error) {
 	return d.getEdgesForNode(id, Incoming, true, label)
 }
 
+// GetEdges returns edges for a node in the given direction, optionally filtered by label.
 func (d *DB) GetEdges(nodeID NodeID, dir Direction, labelFilter string) ([]*Edge, error) {
 	return d.getEdgesForNode(nodeID, dir, true, labelFilter)
 }
 
+// GetAdjacentNodes returns unique neighbour nodes in the given direction.
 func (d *DB) GetAdjacentNodes(nodeID NodeID, dir Direction) ([]*Node, error) {
 	return d.getAdjacentNodesFiltered(nodeID, dir, "")
 }
 
+// GetAdjacentNodesByLabel returns unique neighbour nodes filtered by edge label.
 func (d *DB) GetAdjacentNodesByLabel(nodeID NodeID, dir Direction, label string) ([]*Node, error) {
 	return d.getAdjacentNodesFiltered(nodeID, dir, label)
 }

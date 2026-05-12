@@ -262,6 +262,9 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 	if maxItems == 0 {
 		maxItems = int(request.GetIntParam(req.Parameters, "maxitems"))
 	}
+	if maxItems <= 0 {
+		maxItems = 300
+	}
 
 	var filtered []*route53store.ResourceRecordSet
 	started := startRecordName == "" && startRecordType == ""

@@ -7,11 +7,6 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 )
 
-// ContactListStore provides storage operations for SESv2 contact lists.
-type ContactListStore struct {
-	*common.BaseStore
-}
-
 // ContactList represents an SESv2 contact list with its topics and metadata.
 type ContactList struct {
 	ContactListName      string            `json:"contactListName"`
@@ -28,11 +23,6 @@ type Topic struct {
 	DisplayName               string `json:"displayName,omitempty"`
 	Description               string `json:"description,omitempty"`
 	DefaultSubscriptionStatus string `json:"defaultSubscriptionStatus,omitempty"`
-}
-
-// ContactStore provides storage operations for SESv2 contacts.
-type ContactStore struct {
-	*common.BaseStore
 }
 
 // Contact represents an email address in an SESv2 contact list.

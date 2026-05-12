@@ -3,8 +3,6 @@ package cloudfront
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"sync"
@@ -104,18 +102,6 @@ func (s *CloudFrontService) AccountId() string {
 	return s.accountID
 }
 
-// generateETag generates a random ETag value.
-func (s *CloudFrontService) generateETag() string {
-	bytes := make([]byte, 16)
-	if _, err := rand.Read(bytes); err != nil {
-		bytes = make([]byte, 16)
-		for i := range bytes {
-			bytes[i] = byte(i % 256)
-		}
-	}
-	return hex.EncodeToString(bytes)
-}
-
 // RegisterHandlers registers the CloudFront handlers with the dispatcher.
 func (s *CloudFrontService) ListKeyGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	maxItems := int(request.GetIntParam(req.Parameters, "MaxItems"))
@@ -131,6 +117,7 @@ func (s *CloudFrontService) ListKeyGroups(ctx context.Context, reqCtx *request.R
 	}, nil
 }
 
+// RegisterHandlers registers all CloudFront API handlers with the dispatcher.
 func (s *CloudFrontService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudfront", "CreateDistribution", s.CreateDistribution)
 	d.RegisterHandlerForService("cloudfront", "CreateDistributionWithTags", s.CreateDistributionWithTags)

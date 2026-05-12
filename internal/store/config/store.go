@@ -14,12 +14,14 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 )
 
+// Store is the Pebble-backed configuration store, seeded with defaults on first init.
 type Store struct {
 	*common.BaseStore
 	defaults map[string]ConfigEntry
 	initOnce sync.Once
 }
 
+// NewStore creates a new configuration store backed by the given storage.
 func NewStore(store storage.BasicStorage) *Store {
 	return &Store{
 		BaseStore: common.NewBaseStore(store.Bucket("app_config"), "config"),
@@ -143,6 +145,7 @@ func (s *Store) Set(key string, value interface{}) error {
 	return s.BaseStore.Put(key, entry)
 }
 
+// Delete removes a configuration entry by key.
 func (s *Store) Delete(key string) error {
 	return s.BaseStore.Delete(key)
 }
@@ -187,6 +190,7 @@ func (s *Store) GetAll() ([]*ConfigEntry, error) {
 	return result, nil
 }
 
+// ListByCategory returns all configuration entries in the given category.
 func (s *Store) ListByCategory(category ConfigCategory) ([]*ConfigEntry, error) {
 	all, err := s.GetAll()
 	if err != nil {
@@ -201,6 +205,7 @@ func (s *Store) ListByCategory(category ConfigCategory) ([]*ConfigEntry, error) 
 	return result, nil
 }
 
+// GetResourcePort returns the allocated port for a resource, or 0 if unassigned.
 func (s *Store) GetResourcePort(servicePortKey, resourceID string) (int, error) {
 	resourceKey := servicePortKey + "." + resourceID
 	if entry, err := s.Get(resourceKey); err == nil {
@@ -224,16 +229,19 @@ func (s *Store) GetResourcePort(servicePortKey, resourceID string) (int, error) 
 	return 0, ErrConfigInvalid
 }
 
+// SetResourcePort persists the port allocation for a resource.
 func (s *Store) SetResourcePort(servicePortKey, resourceID string, port int) error {
 	resourceKey := servicePortKey + "." + resourceID
 	return s.Set(resourceKey, port)
 }
 
+// DeleteResourcePort removes a port allocation for a resource.
 func (s *Store) DeleteResourcePort(servicePortKey, resourceID string) error {
 	resourceKey := servicePortKey + "." + resourceID
 	return s.BaseStore.Delete(resourceKey)
 }
 
+// ListResourcePorts returns all resource-to-port mappings for a service port key.
 func (s *Store) ListResourcePorts(servicePortKey string) (map[string]int, error) {
 	result := make(map[string]int)
 	prefix := servicePortKey + "."
@@ -261,6 +269,7 @@ func (s *Store) ListResourcePorts(servicePortKey string) (map[string]int, error)
 	return result, err
 }
 
+// GetString retrieves a configuration value as a string.
 func (s *Store) GetString(key string) string {
 	entry, err := s.Get(key)
 	if err != nil {
@@ -272,6 +281,7 @@ func (s *Store) GetString(key string) string {
 	return ""
 }
 
+// GetInt retrieves a configuration value as an integer.
 func (s *Store) GetInt(key string) int {
 	entry, err := s.Get(key)
 	if err != nil {
@@ -291,6 +301,7 @@ func (s *Store) GetInt(key string) int {
 	return 0
 }
 
+// GetBool retrieves a configuration value as a boolean.
 func (s *Store) GetBool(key string) bool {
 	entry, err := s.Get(key)
 	if err != nil {
@@ -302,6 +313,7 @@ func (s *Store) GetBool(key string) bool {
 	return false
 }
 
+// GetCategory returns the category of a configuration key.
 func (s *Store) GetCategory(key string) ConfigCategory {
 	if def, ok := s.defaults[key]; ok {
 		return def.Category
@@ -330,6 +342,7 @@ func (s *Store) GetCategory(key string) ConfigCategory {
 	return ""
 }
 
+// ForEach iterates over all raw configuration key-value pairs.
 func (s *Store) ForEach(fn func(key string, value []byte) error) error {
 	return s.BaseStore.ForEach(fn)
 }

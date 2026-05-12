@@ -12,6 +12,7 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 )
 
+// GetRestApis returns all REST APIs.
 func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.GetRestApisRequest]) (*connect.Response[pb.RestApis], error) {
 	stores, err := h.getStores(req.Header())
 	if err != nil {
@@ -42,6 +43,7 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 	return connect.NewResponse(resp), nil
 }
 
+// GetRestApi returns a single REST API by ID.
 func (h *AdminHandler) GetRestApi(ctx context.Context, req *connect.Request[pb.GetRestApiRequest]) (*connect.Response[pb.RestApi], error) {
 	if req.Msg.Restapiid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
@@ -57,6 +59,7 @@ func (h *AdminHandler) GetRestApi(ctx context.Context, req *connect.Request[pb.G
 	return connect.NewResponse(toPbRestApi(api)), nil
 }
 
+// CreateRestApi creates a new REST API.
 func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[pb.CreateRestApiRequest]) (*connect.Response[pb.RestApi], error) {
 	if req.Msg.Name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
@@ -89,6 +92,7 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 	return connect.NewResponse(toPbRestApi(created)), nil
 }
 
+// DeleteRestApi removes a REST API.
 func (h *AdminHandler) DeleteRestApi(ctx context.Context, req *connect.Request[pb.DeleteRestApiRequest]) (*connect.Response[pbcommon.Empty], error) {
 	if req.Msg.Restapiid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
@@ -103,6 +107,7 @@ func (h *AdminHandler) DeleteRestApi(ctx context.Context, req *connect.Request[p
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
+// UpdateRestApi modifies an existing REST API.
 func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[pb.UpdateRestApiRequest]) (*connect.Response[pb.RestApi], error) {
 	if req.Msg.Restapiid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))

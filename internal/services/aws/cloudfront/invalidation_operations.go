@@ -192,11 +192,6 @@ func (s *CloudFrontService) ListInvalidations(ctx context.Context, reqCtx *reque
 	}
 
 	return map[string]interface{}{
-		"IsTruncated": isTruncated,
-		"Quantity":    len(items),
-		"MaxItems":    maxItems,
-		"Marker":      marker,
-		"NextMarker":  nextMarker,
 		"InvalidationList": map[string]interface{}{
 			"IsTruncated": isTruncated,
 			"Quantity":    len(items),

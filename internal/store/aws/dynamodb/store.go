@@ -98,6 +98,7 @@ func (s *DynamoDBStore) TwoPhaseTransaction() storage.TwoPhaseTransaction {
 	return s.storage.TwoPhaseTransaction()
 }
 
+// NewTxn creates a new DynamoDB transaction wrapper over the given storage transaction.
 func (s *DynamoDBStore) NewTxn(txn storage.Transaction) *DynamoDBTxn {
 	return &DynamoDBTxn{txn: txn, tableStore: s.tables}
 }
@@ -502,6 +503,7 @@ func (t *DynamoDBTxn) getAttributeValueForIndex(item *Item, attrName string) str
 	return ""
 }
 
+// QueryByGSI queries a global secondary index for items matching the hash key.
 func (t *DynamoDBTxn) QueryByGSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error) {
 	_, err := t.GetTable(tableName)
 	if err != nil {
@@ -510,6 +512,7 @@ func (t *DynamoDBTxn) QueryByGSI(tableName, indexName, hashKeyValue string, opts
 	return t.queryByIndex(tableName, indexName, hashKeyValue, gsiIndexBucketName(t.region()), opts)
 }
 
+// QueryByLSI queries a local secondary index for items matching the hash key.
 func (t *DynamoDBTxn) QueryByLSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error) {
 	_, err := t.GetTable(tableName)
 	if err != nil {

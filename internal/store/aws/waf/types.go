@@ -34,7 +34,6 @@ type Rule struct {
 	ARN              string            `json:"arn"`
 	MetricName       string            `json:"metricName"`
 	Priority         int32             `json:"priority"`
-	Predicates       []interface{}     `json:"predicates"`
 	Action           interface{}       `json:"action"`
 	Statement        *Statement        `json:"statement"`
 	OverrideAction   *Action           `json:"overrideAction"`
@@ -215,31 +214,29 @@ type RuleGroup struct {
 
 // IPSet represents a WAF IP set.
 type IPSet struct {
-	ID               string        `json:"id"`
-	Name             string        `json:"name"`
-	ARN              string        `json:"arn"`
-	IPAddressVersion string        `json:"ipAddressVersion"`
-	Description      string        `json:"description"`
-	Addresses        []string      `json:"addresses"`
-	IPSetDescriptors []interface{} `json:"ipSetDescriptors"`
-	LockToken        string        `json:"lockToken"`
-	Tags             []types.Tag   `json:"tags"`
-	CreatedAt        time.Time     `json:"createdAt"`
-	ModifiedAt       time.Time     `json:"modifiedAt"`
+	ID               string      `json:"id"`
+	Name             string      `json:"name"`
+	ARN              string      `json:"arn"`
+	IPAddressVersion string      `json:"ipAddressVersion"`
+	Description      string      `json:"description"`
+	Addresses        []string    `json:"addresses"`
+	LockToken        string      `json:"lockToken"`
+	Tags             []types.Tag `json:"tags"`
+	CreatedAt        time.Time   `json:"createdAt"`
+	ModifiedAt       time.Time   `json:"modifiedAt"`
 }
 
 // RegexPatternSet represents a WAF regular expression pattern set.
 type RegexPatternSet struct {
-	ID                  string      `json:"id"`
-	Name                string      `json:"name"`
-	ARN                 string      `json:"arn"`
-	Description         string      `json:"description"`
-	RegularPatterns     []string    `json:"regularPatterns"`
-	RegexPatternStrings []string    `json:"regexPatternStrings"`
-	LockToken           string      `json:"lockToken"`
-	Tags                []types.Tag `json:"tags"`
-	CreatedAt           time.Time   `json:"createdAt"`
-	ModifiedAt          time.Time   `json:"modifiedAt"`
+	ID              string      `json:"id"`
+	Name            string      `json:"name"`
+	ARN             string      `json:"arn"`
+	Description     string      `json:"description"`
+	RegularPatterns []string    `json:"regularPatterns"`
+	LockToken       string      `json:"lockToken"`
+	Tags            []types.Tag `json:"tags"`
+	CreatedAt       time.Time   `json:"createdAt"`
+	ModifiedAt      time.Time   `json:"modifiedAt"`
 }
 
 // WebACLAssociation represents an association between a web ACL and a resource.
@@ -278,14 +275,14 @@ type RegexPatternSetListResult struct {
 
 // LoggingConfiguration represents a WAF logging configuration.
 type LoggingConfiguration struct {
-	ResourceArn              string          `json:"resourceArn"`
-	LogDestinationConfigs    []string        `json:"logDestinationConfigs"`
-	LogScope                 string          `json:"logScope"`
-	LogType                  string          `json:"logType"`
-	LoggingFilter            *LoggingFilter  `json:"loggingFilter,omitempty"`
-	ManagedByFirewallManager bool            `json:"managedByFirewallManager"`
-	RedactedFields           []*FieldToMatch `json:"redactedFields,omitempty"`
-	CreatedAt                time.Time       `json:"createdAt"`
+	ResourceArn              string         `json:"resourceArn"`
+	LogDestinationConfigs    []string       `json:"logDestinationConfigs"`
+	LogScope                 string         `json:"logScope"`
+	LogType                  string         `json:"logType"`
+	LoggingFilter            *LoggingFilter `json:"loggingFilter,omitempty"`
+	ManagedByFirewallManager bool           `json:"managedByFirewallManager"`
+	RedactedFields           []interface{}  `json:"redactedFields,omitempty"`
+	CreatedAt                time.Time      `json:"createdAt"`
 }
 
 // LoggingFilter represents filtering for logging configuration.

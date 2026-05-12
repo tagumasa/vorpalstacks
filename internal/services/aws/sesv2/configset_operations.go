@@ -2,12 +2,40 @@ package sesv2
 
 import (
 	"context"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
+
+// updateConfigSet is a common helper for PutConfigurationSet* operations.
+// It retrieves the configuration set, applies the modifier, and persists.
+func (s *SESv2Service) updateConfigSet(reqCtx *request.RequestContext, req *request.ParsedRequest, modify func(*sesv2store.ConfigurationSet, map[string]interface{})) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
+	if configSetName == "" {
+		return nil, ErrMissingParameter
+	}
+
+	configSet, err := store.GetConfigurationSet(configSetName)
+	if err != nil {
+		return nil, err
+	}
+
+	modify(configSet, req.Parameters)
+
+	if err := store.UpdateConfigurationSet(configSet); err != nil {
+		return nil, err
+	}
+
+	return response.EmptyResponse(), nil
+}
 
 // CreateConfigurationSet creates a new configuration set for SESv2.
 func (s *SESv2Service) CreateConfigurationSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -85,37 +113,37 @@ func (s *SESv2Service) GetConfigurationSet(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"ConfigurationSetName": configSet.Name,
 	}
 
 	if configSet.SendingOptions != nil {
-		response["SendingOptions"] = map[string]interface{}{
+		resp["SendingOptions"] = map[string]interface{}{
 			"SendingEnabled": configSet.SendingOptions.SendingEnabled,
 		}
 	}
 
 	if configSet.ReputationOptions != nil {
-		response["ReputationOptions"] = map[string]interface{}{
+		resp["ReputationOptions"] = map[string]interface{}{
 			"ReputationMetricsEnabled": configSet.ReputationOptions.ReputationMetricsEnabled,
 		}
 	}
 
 	if configSet.DeliveryOptions != nil {
-		response["DeliveryOptions"] = map[string]interface{}{
+		resp["DeliveryOptions"] = map[string]interface{}{
 			"SendingPoolName":    configSet.DeliveryOptions.SendingPoolName,
 			"MaxDeliverySeconds": configSet.DeliveryOptions.MaxDeliverySeconds,
 		}
 	}
 
 	if configSet.TrackingOptions != nil {
-		response["TrackingOptions"] = map[string]interface{}{
+		resp["TrackingOptions"] = map[string]interface{}{
 			"CustomRedirectDomain": configSet.TrackingOptions.CustomRedirectDomain,
 			"HttpsPolicy":          configSet.TrackingOptions.HttpsPolicy,
 		}
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // DeleteConfigurationSet deletes the specified configuration set.
@@ -165,15 +193,15 @@ func (s *SESv2Service) ListConfigurationSets(ctx context.Context, reqCtx *reques
 		configSets = append(configSets, cs.Name)
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"ConfigurationSets": configSets,
 	}
 
 	if result.IsTruncated {
-		response["NextToken"] = result.NextMarker
+		resp["NextToken"] = result.NextMarker
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // CreateConfigurationSetEventDestination creates an event destination for a configuration set.
@@ -338,246 +366,99 @@ func (s *SESv2Service) DeleteConfigurationSetEventDestination(ctx context.Contex
 
 // PutConfigurationSetDeliveryOptions updates the delivery options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetDeliveryOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
-	if configSetName == "" {
-		return nil, ErrMissingParameter
-	}
-
-	configSet, err := store.GetConfigurationSet(configSetName)
-	if err != nil {
-		return nil, err
-	}
-
-	sendingPoolName := request.GetStringParam(req.Parameters, "SendingPoolName")
-	maxDeliverySeconds := request.GetIntParam(req.Parameters, "MaxDeliverySeconds")
-
-	if configSet.DeliveryOptions == nil {
-		configSet.DeliveryOptions = &sesv2store.DeliveryOptions{}
-	}
-
-	if sendingPoolName != "" {
-		configSet.DeliveryOptions.SendingPoolName = sendingPoolName
-	}
-	if maxDeliverySeconds > 0 {
-		configSet.DeliveryOptions.MaxDeliverySeconds = int32(maxDeliverySeconds)
-	}
-
-	if err := store.UpdateConfigurationSet(configSet); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+		if cs.DeliveryOptions == nil {
+			cs.DeliveryOptions = &sesv2store.DeliveryOptions{}
+		}
+		if v := request.GetStringParam(params, "SendingPoolName"); v != "" {
+			cs.DeliveryOptions.SendingPoolName = v
+		}
+		if v := request.GetIntParam(params, "MaxDeliverySeconds"); v > 0 {
+			cs.DeliveryOptions.MaxDeliverySeconds = int32(v)
+		}
+	})
 }
 
 // PutConfigurationSetReputationOptions updates the reputation options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetReputationOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
-	if configSetName == "" {
-		return nil, ErrMissingParameter
-	}
-
-	configSet, err := store.GetConfigurationSet(configSetName)
-	if err != nil {
-		return nil, err
-	}
-
-	reputationMetricsEnabled := request.GetBoolParam(req.Parameters, "ReputationMetricsEnabled")
-
-	if configSet.ReputationOptions == nil {
-		configSet.ReputationOptions = &sesv2store.ReputationOptions{}
-	}
-	configSet.ReputationOptions.ReputationMetricsEnabled = reputationMetricsEnabled
-
-	if err := store.UpdateConfigurationSet(configSet); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+		if cs.ReputationOptions == nil {
+			cs.ReputationOptions = &sesv2store.ReputationOptions{}
+		}
+		cs.ReputationOptions.ReputationMetricsEnabled = request.GetBoolParam(params, "ReputationMetricsEnabled")
+	})
 }
 
 // PutConfigurationSetSendingOptions updates the sending options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetSendingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
-	if configSetName == "" {
-		return nil, ErrMissingParameter
-	}
-
-	configSet, err := store.GetConfigurationSet(configSetName)
-	if err != nil {
-		return nil, err
-	}
-
-	sendingEnabled := request.GetBoolParam(req.Parameters, "SendingEnabled")
-
-	if configSet.SendingOptions == nil {
-		configSet.SendingOptions = &sesv2store.SendingOptions{}
-	}
-	configSet.SendingOptions.SendingEnabled = sendingEnabled
-
-	if err := store.UpdateConfigurationSet(configSet); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+		if cs.SendingOptions == nil {
+			cs.SendingOptions = &sesv2store.SendingOptions{}
+		}
+		cs.SendingOptions.SendingEnabled = request.GetBoolParam(params, "SendingEnabled")
+	})
 }
 
 // PutConfigurationSetSuppressionOptions updates the suppression options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetSuppressionOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
-	if configSetName == "" {
-		return nil, ErrMissingParameter
-	}
-
-	configSet, err := store.GetConfigurationSet(configSetName)
-	if err != nil {
-		return nil, err
-	}
-
-	suppressedReasons := request.GetStringList(req.Parameters, "SuppressedReasons")
-
-	if configSet.SuppressionOptions == nil {
-		configSet.SuppressionOptions = &sesv2store.SuppressionOptions{}
-	}
-	configSet.SuppressionOptions.SuppressedReasons = suppressedReasons
-
-	if err := store.UpdateConfigurationSet(configSet); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+		if cs.SuppressionOptions == nil {
+			cs.SuppressionOptions = &sesv2store.SuppressionOptions{}
+		}
+		cs.SuppressionOptions.SuppressedReasons = request.GetStringList(params, "SuppressedReasons")
+	})
 }
 
 // PutConfigurationSetTrackingOptions updates the tracking options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetTrackingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
-	if configSetName == "" {
-		return nil, ErrMissingParameter
-	}
-
-	configSet, err := store.GetConfigurationSet(configSetName)
-	if err != nil {
-		return nil, err
-	}
-
-	customRedirectDomain := request.GetStringParam(req.Parameters, "CustomRedirectDomain")
-	httpsPolicy := request.GetStringParam(req.Parameters, "HttpsPolicy")
-
-	if configSet.TrackingOptions == nil {
-		configSet.TrackingOptions = &sesv2store.TrackingOptions{}
-	}
-	if customRedirectDomain != "" {
-		configSet.TrackingOptions.CustomRedirectDomain = customRedirectDomain
-	}
-	if httpsPolicy != "" {
-		configSet.TrackingOptions.HttpsPolicy = httpsPolicy
-	}
-
-	if err := store.UpdateConfigurationSet(configSet); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+		if cs.TrackingOptions == nil {
+			cs.TrackingOptions = &sesv2store.TrackingOptions{}
+		}
+		if v := request.GetStringParam(params, "CustomRedirectDomain"); v != "" {
+			cs.TrackingOptions.CustomRedirectDomain = v
+		}
+		if v := request.GetStringParam(params, "HttpsPolicy"); v != "" {
+			cs.TrackingOptions.HttpsPolicy = v
+		}
+	})
 }
 
 // PutConfigurationSetVdmOptions updates the VDM options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetVdmOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
-	if configSetName == "" {
-		return nil, ErrMissingParameter
-	}
-
-	configSet, err := store.GetConfigurationSet(configSetName)
-	if err != nil {
-		return nil, err
-	}
-
-	if configSet.VdmOptions == nil {
-		configSet.VdmOptions = &sesv2store.VdmOptions{}
-	}
-
-	if dashboardOpts := request.GetMapParam(req.Parameters, "DashboardOptions"); dashboardOpts != nil {
-		if configSet.VdmOptions.DashboardOptions == nil {
-			configSet.VdmOptions.DashboardOptions = &sesv2store.VDMDashboardOptions{}
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+		if cs.VdmOptions == nil {
+			cs.VdmOptions = &sesv2store.VdmOptions{}
 		}
-		configSet.VdmOptions.DashboardOptions.EngagementMetrics = request.GetStringParam(dashboardOpts, "EngagementMetrics")
-	}
 
-	if guardianOpts := request.GetMapParam(req.Parameters, "GuardianOptions"); guardianOpts != nil {
-		if configSet.VdmOptions.GuardianOptions == nil {
-			configSet.VdmOptions.GuardianOptions = &sesv2store.VDMGuardianOptions{}
+		if dashboardOpts := request.GetMapParam(params, "DashboardOptions"); dashboardOpts != nil {
+			if cs.VdmOptions.DashboardOptions == nil {
+				cs.VdmOptions.DashboardOptions = &sesv2store.VDMDashboardOptions{}
+			}
+			cs.VdmOptions.DashboardOptions.EngagementMetrics = request.GetStringParam(dashboardOpts, "EngagementMetrics")
 		}
-		configSet.VdmOptions.GuardianOptions.OptimizedSharedDelivery = request.GetStringParam(guardianOpts, "OptimizedSharedDelivery")
-	}
 
-	if err := store.UpdateConfigurationSet(configSet); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+		if guardianOpts := request.GetMapParam(params, "GuardianOptions"); guardianOpts != nil {
+			if cs.VdmOptions.GuardianOptions == nil {
+				cs.VdmOptions.GuardianOptions = &sesv2store.VDMGuardianOptions{}
+			}
+			cs.VdmOptions.GuardianOptions.OptimizedSharedDelivery = request.GetStringParam(guardianOpts, "OptimizedSharedDelivery")
+		}
+	})
 }
 
 // PutConfigurationSetArchivingOptions updates the archiving options for a configuration set.
 func (s *SESv2Service) PutConfigurationSetArchivingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	configSetName := request.GetStringParam(req.Parameters, "ConfigurationSetName")
-	if configSetName == "" {
-		return nil, ErrMissingParameter
-	}
-
-	configSet, err := store.GetConfigurationSet(configSetName)
-	if err != nil {
-		return nil, err
-	}
-
-	if configSet.ArchivingOptions == nil {
-		configSet.ArchivingOptions = &sesv2store.ArchivingOptions{}
-	}
-
-	configSet.ArchivingOptions.Enabled = request.GetBoolParam(req.Parameters, "Enabled")
-	if targetArn := request.GetStringParam(req.Parameters, "TargetArn"); targetArn != "" {
-		configSet.ArchivingOptions.TargetArn = targetArn
-	}
-	if retentionPeriod := int32(request.GetIntParam(req.Parameters, "RetentionPeriod")); retentionPeriod > 0 {
-		configSet.ArchivingOptions.RetentionPeriod = retentionPeriod
-	}
-
-	if err := store.UpdateConfigurationSet(configSet); err != nil {
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return s.updateConfigSet(reqCtx, req, func(cs *sesv2store.ConfigurationSet, params map[string]interface{}) {
+		if cs.ArchivingOptions == nil {
+			cs.ArchivingOptions = &sesv2store.ArchivingOptions{}
+		}
+		cs.ArchivingOptions.Enabled = request.GetBoolParam(params, "Enabled")
+		if v := request.GetStringParam(params, "TargetArn"); v != "" {
+			cs.ArchivingOptions.TargetArn = v
+		}
+		if v := int32(request.GetIntParam(params, "RetentionPeriod")); v > 0 {
+			cs.ArchivingOptions.RetentionPeriod = v
+		}
+	})
 }

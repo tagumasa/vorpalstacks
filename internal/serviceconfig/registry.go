@@ -11,7 +11,9 @@ import (
 type PortMode string
 
 const (
-	PortModeFQDN       PortMode = "fqdn"
+	// PortModeFQDN routes all resources through a single shared listener using host-based routing.
+	PortModeFQDN PortMode = "fqdn"
+	// PortModeIndividual allocates a separate port for each resource.
 	PortModeIndividual PortMode = "individual"
 )
 

@@ -29,6 +29,7 @@ func (s *S3Service) GetObject(ctx context.Context, region, bucket, key string, m
 	return data, nil
 }
 
+// PutObject stores an object in S3 via the cross-service invoker.
 func (s *S3Service) PutObject(ctx context.Context, region, bucket, key string, data []byte, contentType string) error {
 	objs := s.s3Store.Objects(region)
 	_, err := objs.Put(ctx, bucket, key, bytes.NewReader(data), contentType, nil)
@@ -38,6 +39,7 @@ func (s *S3Service) PutObject(ctx context.Context, region, bucket, key string, d
 	return nil
 }
 
+// ListObjects lists objects in an S3 bucket via the cross-service invoker.
 func (s *S3Service) ListObjects(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]string, error) {
 	objs := s.s3Store.Objects(region)
 	if maxKeys <= 0 {

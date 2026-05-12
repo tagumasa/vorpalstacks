@@ -1,39 +1,43 @@
 package ec2
 
+import (
+	"vorpalstacks/internal/utils/aws/types"
+)
+
 // VPC represents an Amazon VPC.
 type VPC struct {
-	VpcId              string `json:"VpcId"`
-	CidrBlock          string `json:"CidrBlock"`
-	State              string `json:"State"`
-	OwnerId            string `json:"OwnerId"`
-	InstanceTenancy    string `json:"InstanceTenancy"`
-	EnableDnsSupport   bool   `json:"EnableDnsSupport"`
-	EnableDnsHostnames bool   `json:"EnableDnsHostnames"`
-	Tags               []Tag  `json:"Tags"`
+	VpcId              string      `json:"VpcId"`
+	CidrBlock          string      `json:"CidrBlock"`
+	State              string      `json:"State"`
+	OwnerId            string      `json:"OwnerId"`
+	InstanceTenancy    string      `json:"InstanceTenancy"`
+	EnableDnsSupport   bool        `json:"EnableDnsSupport"`
+	EnableDnsHostnames bool        `json:"EnableDnsHostnames"`
+	Tags               []types.Tag `json:"Tags"`
 }
 
 // Subnet represents a VPC subnet.
 type Subnet struct {
-	SubnetId            string `json:"SubnetId"`
-	VpcId               string `json:"VpcId"`
-	CidrBlock           string `json:"CidrBlock"`
-	AvailabilityZone    string `json:"AvailabilityZone"`
-	State               string `json:"State"`
-	OwnerId             string `json:"OwnerId"`
-	MapPublicIpOnLaunch bool   `json:"MapPublicIpOnLaunch"`
-	Tags                []Tag  `json:"Tags"`
+	SubnetId            string      `json:"SubnetId"`
+	VpcId               string      `json:"VpcId"`
+	CidrBlock           string      `json:"CidrBlock"`
+	AvailabilityZone    string      `json:"AvailabilityZone"`
+	State               string      `json:"State"`
+	OwnerId             string      `json:"OwnerId"`
+	MapPublicIpOnLaunch bool        `json:"MapPublicIpOnLaunch"`
+	Tags                []types.Tag `json:"Tags"`
 }
 
 // SecurityGroup represents a VPC security group.
 type SecurityGroup struct {
-	GroupId             string   `json:"GroupId"`
-	GroupName           string   `json:"GroupName"`
-	Description         string   `json:"Description"`
-	VpcId               string   `json:"VpcId"`
-	OwnerId             string   `json:"OwnerId"`
-	Tags                []Tag    `json:"Tags"`
-	IpPermissions       []IPRule `json:"IpPermissions"`
-	IpPermissionsEgress []IPRule `json:"IpPermissionsEgress"`
+	GroupId             string      `json:"GroupId"`
+	GroupName           string      `json:"GroupName"`
+	Description         string      `json:"Description"`
+	VpcId               string      `json:"VpcId"`
+	OwnerId             string      `json:"OwnerId"`
+	Tags                []types.Tag `json:"Tags"`
+	IpPermissions       []IPRule    `json:"IpPermissions"`
+	IpPermissionsEgress []IPRule    `json:"IpPermissionsEgress"`
 }
 
 // IPRule represents an IP permission rule for a security group.
@@ -59,10 +63,4 @@ type GroupPair struct {
 type IPRange struct {
 	CidrIp      string `json:"CidrIp,omitempty"`
 	Description string `json:"Description,omitempty"`
-}
-
-// Tag represents an EC2 resource tag.
-type Tag struct {
-	Key   string `json:"Key"`
-	Value string `json:"Value"`
 }

@@ -62,7 +62,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 
 	zone := &route53store.HostedZone{
 		ID:                     generateHostedZoneId(),
-		Name:                   normalizeZoneNameForCreate(name),
+		Name:                   route53store.NormalizeZoneName(name),
 		CallerReference:        callerRef,
 		Config:                 &route53store.HostedZoneConfig{Comment: comment, PrivateZone: privateZone},
 		ResourceRecordSetCount: 0,
@@ -81,18 +81,9 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 
 	// Idempotent: if same CallerReference already exists, return existing zone
 	if existing, err := st.HostedZones().GetByCallerReference(callerRef); err == nil && existing != nil {
-		nsItems := make([]interface{}, len(existing.NameServers))
-		for i, ns := range existing.NameServers {
-			nsItems[i] = ns
-		}
 		return map[string]interface{}{
-			"HostedZone": s.hostedZoneToResponse(existing),
-			"DelegationSet": delegationSetResponse{
-				NameServers: protocol.XMLElements{
-					ElementName: "NameServer",
-					Items:       nsItems,
-				},
-			},
+			"HostedZone":    s.hostedZoneToResponse(existing),
+			"DelegationSet": buildDelegationSetResponse(existing.NameServers, existing.DelegationSetID),
 		}, nil
 	}
 
@@ -150,21 +141,6 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		return nil, mapStoreError(err)
 	}
 
-	nsItems := make([]interface{}, len(nameServers))
-	for i, ns := range nameServers {
-		nsItems[i] = ns
-	}
-
-	dsResp := delegationSetResponse{
-		NameServers: protocol.XMLElements{
-			ElementName: "NameServer",
-			Items:       nsItems,
-		},
-	}
-	if zone.DelegationSetID != "" {
-		dsResp.ID = "/delegationset/" + zone.DelegationSetID
-	}
-
 	return map[string]interface{}{
 		"HostedZone": s.hostedZoneToResponse(zone),
 		"ChangeInfo": map[string]interface{}{
@@ -172,7 +148,7 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 			"Status":      "INSYNC",
 			"SubmittedAt": now.Format(time.RFC3339),
 		},
-		"DelegationSet": dsResp,
+		"DelegationSet": buildDelegationSetResponse(nameServers, zone.DelegationSetID),
 	}, nil
 }
 
@@ -193,20 +169,7 @@ func (s *Route53Service) GetHostedZone(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if len(zone.NameServers) > 0 {
-		nsItems := make([]interface{}, len(zone.NameServers))
-		for i, ns := range zone.NameServers {
-			nsItems[i] = ns
-		}
-		dsResp := delegationSetResponse{
-			NameServers: protocol.XMLElements{
-				ElementName: "NameServer",
-				Items:       nsItems,
-			},
-		}
-		if zone.DelegationSetID != "" {
-			dsResp.ID = "/delegationset/" + zone.DelegationSetID
-		}
-		result["DelegationSet"] = dsResp
+		result["DelegationSet"] = buildDelegationSetResponse(zone.NameServers, zone.DelegationSetID)
 	}
 
 	if len(zone.VPCs) > 0 {
@@ -429,14 +392,6 @@ func (s *Route53Service) hostedZoneToResponse(zone *route53store.HostedZone) map
 	}
 
 	return result
-}
-
-func normalizeZoneNameForCreate(name string) string {
-	name = strings.ToLower(name)
-	if !strings.HasSuffix(name, ".") {
-		name = name + "."
-	}
-	return name
 }
 
 // GetDNSSEC retrieves the DNSSEC signing status and configuration for a hosted zone.

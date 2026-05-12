@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"connectrpc.com/connect"
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -22,6 +23,7 @@ type AdminHandler struct {
 	sesv2connect.UnimplementedSESv2ServiceHandler
 	storageManager *storage.RegionStorageManager
 	accountId      string
+	stores         sync.Map // region → *sesv2store.SESv2Store
 }
 
 var _ sesv2connect.SESv2ServiceHandler = (*AdminHandler)(nil)
@@ -36,11 +38,16 @@ func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId str
 
 func (h *AdminHandler) getSESv2StoreFromHeader(header http.Header) (*sesv2store.SESv2Store, error) {
 	region := svccommon.GetRegionFromHeader(header)
+	if cached, ok := h.stores.Load(region); ok {
+		return cached.(*sesv2store.SESv2Store), nil
+	}
 	regionStorage, err := h.storageManager.GetStorage(region)
 	if err != nil {
 		return nil, err
 	}
-	return sesv2store.NewSESv2Store(regionStorage, h.accountId, region), nil
+	s := sesv2store.NewSESv2Store(regionStorage, h.accountId, region)
+	h.stores.Store(region, s)
+	return s, nil
 }
 
 // ListEmailIdentities returns a paginated list of email identities in the

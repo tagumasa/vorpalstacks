@@ -49,6 +49,9 @@ func (s *CachePolicyStore) Put(id string, cp *CachePolicy) error {
 
 // Create creates a new cache policy.
 func (s *CachePolicyStore) Create(name, comment string, config *CachePolicyConfig) (*CachePolicy, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	id, err := generateDistributionID()
 	if err != nil {
 		return nil, NewStoreError("create_cache_policy", err)
@@ -158,6 +161,9 @@ func (s *OriginRequestPolicyStore) Put(id string, orp *OriginRequestPolicy) erro
 
 // Create creates a new origin request policy.
 func (s *OriginRequestPolicyStore) Create(name, comment string, config *OriginRequestPolicyConfig) (*OriginRequestPolicy, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	id, err := generateDistributionID()
 	if err != nil {
 		return nil, NewStoreError("create_origin_request_policy", err)

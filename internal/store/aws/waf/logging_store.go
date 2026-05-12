@@ -24,7 +24,10 @@ func NewLoggingStore(store storage.BasicStorage) *LoggingStore {
 }
 
 // Create creates a new logging configuration.
-func (s *LoggingStore) Create(resourceArn string, logDestinationConfigs []string, logScope, logType string, loggingFilter *LoggingFilter, managedByFirewallManager bool, redactedFields []*FieldToMatch) (*LoggingConfiguration, error) {
+func (s *LoggingStore) Create(resourceArn string, logDestinationConfigs []string, logScope, logType string, loggingFilter *LoggingFilter, managedByFirewallManager bool, redactedFields []interface{}) (*LoggingConfiguration, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	config := &LoggingConfiguration{
 		ResourceArn:              resourceArn,
 		LogDestinationConfigs:    logDestinationConfigs,
@@ -49,24 +52,12 @@ func (s *LoggingStore) Create(resourceArn string, logDestinationConfigs []string
 	return config, nil
 }
 
-// Get retrieves a logging configuration by resource ARN.
-func (s *LoggingStore) Get(resourceArn string) (*LoggingConfiguration, error) {
-	var config LoggingConfiguration
-	if err := s.BaseStore.Get(resourceArn, &config); err != nil {
-		if common.IsNotFound(err) {
-			return nil, NewStoreError("get_logging_configuration", ErrNotFound)
-		}
-		return nil, NewStoreError("get_logging_configuration", err)
-	}
-	return &config, nil
-}
-
 // Update updates an existing logging configuration.
-func (s *LoggingStore) Update(resourceArn string, logDestinationConfigs []string, logScope, logType string, loggingFilter *LoggingFilter, managedByFirewallManager bool, redactedFields []*FieldToMatch) (*LoggingConfiguration, error) {
+func (s *LoggingStore) Update(resourceArn string, logDestinationConfigs []string, logScope, logType string, loggingFilter *LoggingFilter, managedByFirewallManager bool, redactedFields []interface{}) (*LoggingConfiguration, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	config, err := s.Get(resourceArn)
+	config, err := s.GetByResourceArn(resourceArn)
 	if err != nil {
 		return nil, err
 	}

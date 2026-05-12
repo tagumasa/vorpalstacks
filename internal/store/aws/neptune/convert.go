@@ -648,6 +648,7 @@ func ProtoToClusterEndpoint(p *pb.DBClusterEndpoint) *DBClusterEndpoint {
 	}
 }
 
+// EventToProto converts a domain Event to its protobuf representation.
 func EventToProto(e *Event) *pb.Event {
 	if e == nil {
 		return nil
@@ -666,6 +667,7 @@ func EventToProto(e *Event) *pb.Event {
 	return p
 }
 
+// ProtoToEvent converts a protobuf Event to its domain representation.
 func ProtoToEvent(p *pb.Event) *Event {
 	if p == nil {
 		return nil

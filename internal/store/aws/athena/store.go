@@ -307,6 +307,7 @@ func (s *NamedQueryStore) ListNamedQueries(workGroup string) ([]*NamedQuery, err
 	return namedQueries, err
 }
 
+// DeleteNamedQueriesByWorkGroup removes all named queries belonging to the given workgroup.
 func (s *NamedQueryStore) DeleteNamedQueriesByWorkGroup(workGroup string) error {
 	queries, err := s.ListNamedQueries(workGroup)
 	if err != nil {
@@ -408,6 +409,7 @@ func (s *PreparedStatementStore) ListPreparedStatements(workGroup string) ([]*Pr
 	return statements, nil
 }
 
+// DeletePreparedStatementsByWorkGroup removes all prepared statements belonging to the given workgroup.
 func (s *PreparedStatementStore) DeletePreparedStatementsByWorkGroup(workGroup string) error {
 	prefix := workGroup + ":"
 	result, err := common.ListProto[*pb.PreparedStatement](s.BaseStore, common.ListOptions{Prefix: prefix}, func() *pb.PreparedStatement { return &pb.PreparedStatement{} }, nil)
@@ -574,6 +576,7 @@ func (s *QueryExecutionStore) listQueryExecutionIDsByIndex(workGroup string, max
 	return ids, nil
 }
 
+// DeleteQueryExecutionsByWorkGroup removes all query executions for a workgroup and returns their IDs.
 func (s *QueryExecutionStore) DeleteQueryExecutionsByWorkGroup(workGroup string) ([]string, error) {
 	prefix := "#wg:" + workGroup + ":"
 	var ids []string
@@ -623,6 +626,7 @@ func (s *ResultStore) DeleteResult(queryExecutionId string) error {
 	return s.BaseStore.Delete(queryExecutionId)
 }
 
+// DeleteResultsByIDs removes query results for the given execution IDs.
 func (s *ResultStore) DeleteResultsByIDs(ids []string) {
 	for _, id := range ids {
 		_ = s.BaseStore.Delete(id)
@@ -829,6 +833,7 @@ func (s *TableStore) UpdateTable(catalog, database string, table *TableMetadata)
 	return s.PutProto(key, TableMetadataToProto(table))
 }
 
+// DeleteTablesByDatabase removes all table metadata entries for the given catalog and database.
 func (s *TableStore) DeleteTablesByDatabase(catalog, database string) error {
 	tables, err := s.ListTables(catalog, database)
 	if err != nil {
@@ -887,6 +892,7 @@ func (s *TableDataStore) DeleteTableData(catalog, database, table string) error 
 	return s.BaseStore.Delete(key)
 }
 
+// DeleteTableDataByDatabase removes all table data (rows) for the given catalog and database.
 func (s *TableDataStore) DeleteTableDataByDatabase(catalog, database string) error {
 	prefix := catalog + ":" + database + ":"
 	result, err := common.ListProto[*pb.StoredTable](s.BaseStore, common.ListOptions{Prefix: prefix}, func() *pb.StoredTable { return &pb.StoredTable{} }, nil)

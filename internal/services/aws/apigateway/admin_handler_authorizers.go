@@ -11,6 +11,7 @@ import (
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 )
 
+// CreateAuthorizer creates a new authorizer for a REST API.
 func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Request[pb.CreateAuthorizerRequest]) (*connect.Response[pb.Authorizer], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id and name are required"))
@@ -44,6 +45,7 @@ func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(toPbAuthorizer(created)), nil
 }
 
+// GetAuthorizers returns all authorizers for a REST API.
 func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[pb.GetAuthorizersRequest]) (*connect.Response[pb.Authorizers], error) {
 	if req.Msg.Restapiid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
@@ -64,6 +66,7 @@ func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(&pb.Authorizers{Items: items}), nil
 }
 
+// GetAuthorizer returns a single authorizer by ID.
 func (h *AdminHandler) GetAuthorizer(ctx context.Context, req *connect.Request[pb.GetAuthorizerRequest]) (*connect.Response[pb.Authorizer], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Authorizerid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id and authorizer_id are required"))
@@ -79,6 +82,7 @@ func (h *AdminHandler) GetAuthorizer(ctx context.Context, req *connect.Request[p
 	return connect.NewResponse(toPbAuthorizer(a)), nil
 }
 
+// DeleteAuthorizer removes an authorizer from a REST API.
 func (h *AdminHandler) DeleteAuthorizer(ctx context.Context, req *connect.Request[pb.DeleteAuthorizerRequest]) (*connect.Response[pbcommon.Empty], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Authorizerid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id and authorizer_id are required"))

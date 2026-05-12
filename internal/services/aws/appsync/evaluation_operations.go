@@ -92,6 +92,7 @@ func (s *AppSyncService) ListTypesByAssociation(ctx context.Context, reqCtx *req
 	return response, nil
 }
 
+// EvaluateCode executes an AppSync function resolver code snippet and returns the result.
 func (s *AppSyncService) EvaluateCode(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	var body struct {
 		Code     string          `json:"code"`

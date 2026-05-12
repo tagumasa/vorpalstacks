@@ -55,13 +55,7 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 	}
 
 	return map[string]interface{}{
-		"Summary": map[string]interface{}{
-			"Id":          ruleGroup.ID,
-			"Name":        ruleGroup.Name,
-			"ARN":         ruleGroup.ARN,
-			"Description": ruleGroup.Description,
-			"LockToken":   ruleGroup.LockToken,
-		},
+		"Summary": buildRuleGroupSummary(ruleGroup),
 	}, nil
 }
 
@@ -116,13 +110,7 @@ func (s *WAFv2Service) ListRuleGroups(ctx context.Context, reqCtx *request.Reque
 
 	ruleGroups := make([]interface{}, 0, len(result.RuleGroups))
 	for _, rg := range result.RuleGroups {
-		ruleGroups = append(ruleGroups, map[string]interface{}{
-			"Id":          rg.ID,
-			"Name":        rg.Name,
-			"ARN":         rg.ARN,
-			"Description": rg.Description,
-			"LockToken":   rg.LockToken,
-		})
+		ruleGroups = append(ruleGroups, buildRuleGroupSummary(rg))
 	}
 
 	resp := map[string]interface{}{
@@ -148,11 +136,30 @@ func (s *WAFv2Service) UpdateRuleGroup(ctx context.Context, reqCtx *request.Requ
 		return nil, validationError("LockToken is required")
 	}
 
-	capacity := int64(request.GetIntParam(req.Parameters, "Capacity"))
-	visibilityConfig := convertVisibilityConfig(request.GetMapParam(req.Parameters, "VisibilityConfig"))
-	rules := convertRules(req.Parameters["Rules"])
+	ruleGroup, err := stores.ruleGroups.Get(id)
+	if err != nil {
+		if wafstore.IsNotFound(err) {
+			return nil, notFoundError("RuleGroup")
+		}
+		return nil, err
+	}
 
-	ruleGroup, err := stores.ruleGroups.Update(id, lockToken, capacity, rules, visibilityConfig)
+	capacity := ruleGroup.Capacity
+	if c := int64(request.GetIntParam(req.Parameters, "Capacity")); c > 0 {
+		capacity = c
+	}
+	visibilityConfig := ruleGroup.VisibilityConfig
+	if vcRaw := req.Parameters["VisibilityConfig"]; vcRaw != nil {
+		if vc, ok := vcRaw.(map[string]interface{}); ok {
+			visibilityConfig = convertVisibilityConfig(vc)
+		}
+	}
+	var rules []*wafstore.Rule
+	if rulesRaw := req.Parameters["Rules"]; rulesRaw != nil {
+		rules = convertRules(rulesRaw)
+	}
+
+	ruleGroup, err = stores.ruleGroups.Update(id, lockToken, capacity, rules, visibilityConfig)
 	if err != nil {
 		if wafstore.IsLockTokenMismatch(err) {
 			return nil, lockTokenError()

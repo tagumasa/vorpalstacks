@@ -10,6 +10,22 @@ import (
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
+func parseRegularExpressionList(params map[string]interface{}) []string {
+	var patterns []string
+	if rpRaw := params["RegularExpressionList"]; rpRaw != nil {
+		if arr, ok := rpRaw.([]interface{}); ok {
+			for _, r := range arr {
+				if m, ok := r.(map[string]interface{}); ok {
+					if rs, ok := m["RegexString"].(string); ok {
+						patterns = append(patterns, rs)
+					}
+				}
+			}
+		}
+	}
+	return patterns
+}
+
 // CreateRegexPatternSet creates a new regex pattern set containing the specified regular expressions.
 func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stores, err := s.store(reqCtx)
@@ -25,19 +41,7 @@ func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *reques
 	_ = scope
 
 	description := request.GetStringParam(req.Parameters, "Description")
-
-	var regularPatterns []string
-	if rpRaw := req.Parameters["RegularExpressionList"]; rpRaw != nil {
-		if arr, ok := rpRaw.([]interface{}); ok {
-			for _, r := range arr {
-				if m, ok := r.(map[string]interface{}); ok {
-					if rs, ok := m["RegexString"].(string); ok {
-						regularPatterns = append(regularPatterns, rs)
-					}
-				}
-			}
-		}
-	}
+	regularPatterns := parseRegularExpressionList(req.Parameters)
 
 	id, err := generateID()
 	if err != nil {
@@ -59,13 +63,7 @@ func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *reques
 	}
 
 	return map[string]interface{}{
-		"Summary": map[string]interface{}{
-			"Id":          rps.ID,
-			"Name":        rps.Name,
-			"ARN":         rps.ARN,
-			"Description": rps.Description,
-			"LockToken":   rps.LockToken,
-		},
+		"Summary": buildRegexPatternSetSummary(rps),
 	}, nil
 }
 
@@ -123,13 +121,7 @@ func (s *WAFv2Service) ListRegexPatternSets(ctx context.Context, reqCtx *request
 
 	sets := make([]interface{}, 0, len(result.RegexPatternSets))
 	for _, rps := range result.RegexPatternSets {
-		sets = append(sets, map[string]interface{}{
-			"Id":          rps.ID,
-			"Name":        rps.Name,
-			"ARN":         rps.ARN,
-			"Description": rps.Description,
-			"LockToken":   rps.LockToken,
-		})
+		sets = append(sets, buildRegexPatternSetSummary(rps))
 	}
 
 	resp := map[string]interface{}{
@@ -155,18 +147,7 @@ func (s *WAFv2Service) UpdateRegexPatternSet(ctx context.Context, reqCtx *reques
 		return nil, validationError("LockToken is required")
 	}
 
-	var regularPatterns []string
-	if rpRaw := req.Parameters["RegularExpressionList"]; rpRaw != nil {
-		if arr, ok := rpRaw.([]interface{}); ok {
-			for _, r := range arr {
-				if m, ok := r.(map[string]interface{}); ok {
-					if rs, ok := m["RegexString"].(string); ok {
-						regularPatterns = append(regularPatterns, rs)
-					}
-				}
-			}
-		}
-	}
+	regularPatterns := parseRegularExpressionList(req.Parameters)
 
 	rps, err := stores.regexPatternSets.Update(id, lockToken, regularPatterns)
 	if err != nil {

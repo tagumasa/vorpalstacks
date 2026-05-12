@@ -130,12 +130,8 @@ func parseHealthCheckConfig(configMap map[string]interface{}, defaultPort int64)
 	if v := request.GetIntParam(configMap, "Port"); v > 0 {
 		config.Port = int64(v)
 	}
-
 	if v, ok := configMap["IPAddress"].(string); ok {
 		config.IPAddress = v
-	}
-	if v := request.GetIntParam(configMap, "Port"); v > 0 {
-		config.Port = int64(v)
 	}
 	if v, ok := configMap["ResourcePath"].(string); ok {
 		config.ResourcePath = v
@@ -232,12 +228,7 @@ func (s *Route53Service) buildHostedZonesListResponse(zones []*route53store.Host
 func (s *Route53Service) buildHealthChecksListResponse(healthChecks []*route53store.HealthCheck, isTruncated bool, nextMarker string) map[string]interface{} {
 	result := make([]interface{}, len(healthChecks))
 	for i, hc := range healthChecks {
-		result[i] = map[string]interface{}{
-			"Id":                 hc.ID,
-			"CallerReference":    hc.CallerReference,
-			"HealthCheckConfig":  s.healthCheckConfigToResponse(hc.HealthCheckConfig),
-			"HealthCheckVersion": hc.HealthCheckVersion,
-		}
+		result[i] = s.healthCheckToResponse(hc)
 	}
 	response := map[string]interface{}{
 		"HealthChecks": protocol.XMLElements{ElementName: "HealthCheck", Items: result},
@@ -247,4 +238,30 @@ func (s *Route53Service) buildHealthChecksListResponse(healthChecks []*route53st
 		response["NextMarker"] = nextMarker
 	}
 	return response
+}
+
+func buildDelegationSetResponse(nameServers []string, delegationSetID string) delegationSetResponse {
+	nsItems := make([]interface{}, len(nameServers))
+	for i, ns := range nameServers {
+		nsItems[i] = ns
+	}
+	dsResp := delegationSetResponse{
+		NameServers: protocol.XMLElements{
+			ElementName: "NameServer",
+			Items:       nsItems,
+		},
+	}
+	if delegationSetID != "" {
+		dsResp.ID = "/delegationset/" + delegationSetID
+	}
+	return dsResp
+}
+
+func (s *Route53Service) healthCheckToResponse(hc *route53store.HealthCheck) map[string]interface{} {
+	return map[string]interface{}{
+		"Id":                 hc.ID,
+		"CallerReference":    hc.CallerReference,
+		"HealthCheckConfig":  s.healthCheckConfigToResponse(hc.HealthCheckConfig),
+		"HealthCheckVersion": hc.HealthCheckVersion,
+	}
 }

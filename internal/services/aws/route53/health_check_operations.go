@@ -47,12 +47,7 @@ func (s *Route53Service) CreateHealthCheck(ctx context.Context, reqCtx *request.
 	}
 
 	return map[string]interface{}{
-		"HealthCheck": map[string]interface{}{
-			"Id":                 healthCheck.ID,
-			"CallerReference":    healthCheck.CallerReference,
-			"HealthCheckConfig":  s.healthCheckConfigToResponse(healthCheck.HealthCheckConfig),
-			"HealthCheckVersion": healthCheck.HealthCheckVersion,
-		},
+		"HealthCheck": s.healthCheckToResponse(healthCheck),
 	}, nil
 }
 
@@ -69,12 +64,7 @@ func (s *Route53Service) GetHealthCheck(ctx context.Context, reqCtx *request.Req
 	}
 
 	return map[string]interface{}{
-		"HealthCheck": map[string]interface{}{
-			"Id":                 healthCheck.ID,
-			"CallerReference":    healthCheck.CallerReference,
-			"HealthCheckConfig":  s.healthCheckConfigToResponse(healthCheck.HealthCheckConfig),
-			"HealthCheckVersion": healthCheck.HealthCheckVersion,
-		},
+		"HealthCheck": s.healthCheckToResponse(healthCheck),
 	}, nil
 }
 
@@ -144,12 +134,7 @@ func (s *Route53Service) UpdateHealthCheck(ctx context.Context, reqCtx *request.
 	}
 
 	return map[string]interface{}{
-		"HealthCheck": map[string]interface{}{
-			"Id":                 healthCheck.ID,
-			"CallerReference":    healthCheck.CallerReference,
-			"HealthCheckConfig":  s.healthCheckConfigToResponse(healthCheck.HealthCheckConfig),
-			"HealthCheckVersion": healthCheck.HealthCheckVersion,
-		},
+		"HealthCheck": s.healthCheckToResponse(healthCheck),
 	}, nil
 }
 

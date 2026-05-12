@@ -1,11 +1,6 @@
 package waf
 
-// Package waf provides WAF (Web Application Firewall) data store implementations
-// for vorpalstacks.
-
 import (
-	"encoding/json"
-
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -53,19 +48,15 @@ func (s *WebACLAssociationStore) GetByResourceArn(resourceArn string) (*WebACLAs
 
 // GetByWebACLArn retrieves all associations for a Web ACL.
 func (s *WebACLAssociationStore) GetByWebACLArn(webACLArn string) ([]*WebACLAssociation, error) {
-	var associations []*WebACLAssociation
-	err := s.ForEach(func(key string, value []byte) error {
-		var assoc WebACLAssociation
-		if err := json.Unmarshal(value, &assoc); err != nil {
-			return err
-		}
-		if assoc.WebACLArn == webACLArn {
-			associations = append(associations, &assoc)
-		}
-		return nil
-	})
+	all, err := common.ListAll[WebACLAssociation](s.BaseStore)
 	if err != nil {
 		return nil, NewStoreError("list_web_acl_associations", err)
+	}
+	var associations []*WebACLAssociation
+	for _, assoc := range all {
+		if assoc.WebACLArn == webACLArn {
+			associations = append(associations, assoc)
+		}
 	}
 	return associations, nil
 }

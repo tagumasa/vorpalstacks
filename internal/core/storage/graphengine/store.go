@@ -15,7 +15,8 @@ import (
 var (
 	idxEtypePrefix = []byte("idx_etype/")
 	ucPrefix       = []byte("uc/")
-	ErrNotFound    = errors.New("graphengine: not found")
+	// ErrNotFound is returned when a graph element is not found.
+	ErrNotFound = errors.New("graphengine: not found")
 )
 
 var (
@@ -33,18 +34,22 @@ var (
 	idxMetaPrefix  = []byte("idx_meta/")
 )
 
+// Cache wraps a Pebble shared cache for use across multiple DB instances.
 type Cache struct {
 	cache *pebble.Cache
 }
 
+// NewSharedCache creates a shared Pebble cache of the given size in bytes.
 func NewSharedCache(size int64) *Cache {
 	return &Cache{cache: pebble.NewCache(size)}
 }
 
+// Release decrements the cache reference count, freeing it when zero.
 func (c *Cache) Release() {
 	c.cache.Unref()
 }
 
+// Options configures graph engine initialisation.
 type Options struct {
 	CacheSize   int64
 	SyncMode    SyncMode
@@ -52,15 +57,20 @@ type Options struct {
 	SharedCache *Cache
 }
 
+// SyncMode controls write synchronisation behaviour for the graph engine.
 type SyncMode int
 
 const (
+	// SyncNormal triggers synchronous writes.
 	SyncNormal SyncMode = iota
+	// SyncNone disables synchronous writes for maximum throughput.
 	SyncNone
 )
 
+// DefaultCacheSize is the default Pebble block cache size (8 MiB).
 const DefaultCacheSize int64 = 8 << 20
 
+// DefaultOptions returns sensible defaults for graph engine initialisation.
 func DefaultOptions() Options {
 	return Options{
 		CacheSize: DefaultCacheSize,
@@ -68,6 +78,7 @@ func DefaultOptions() Options {
 	}
 }
 
+// DB is the graph database handle backed by Pebble key-value storage.
 type DB struct {
 	backend    kvBackend
 	dir        string
@@ -135,6 +146,7 @@ func Open(dir string, opts Options) (*DB, error) {
 	return d, nil
 }
 
+// Close persists counters and releases all underlying resources.
 func (d *DB) Close() error {
 	if d.closed.Swap(true) {
 		return nil
@@ -154,10 +166,12 @@ func (d *DB) Close() error {
 	return err
 }
 
+// Dir returns the filesystem path of the graph database.
 func (d *DB) Dir() string {
 	return d.dir
 }
 
+// Stats returns aggregated graph statistics including node/edge counts and disk usage.
 func (d *DB) Stats() *GraphStats {
 	labelCounts, _ := d.GetLabelCounts()
 	relCounts, _ := d.GetRelCounts()
@@ -176,14 +190,17 @@ func (d *DB) Stats() *GraphStats {
 	}
 }
 
+// CountNodes returns the total number of nodes in the graph.
 func (d *DB) CountNodes() int64 {
 	return int64(d.nodeCount.Load())
 }
 
+// CountEdges returns the total number of edges in the graph.
 func (d *DB) CountEdges() int64 {
 	return int64(d.edgeCount.Load())
 }
 
+// GetLabelCounts returns a map of label to node count for all labels in the graph.
 func (d *DB) GetLabelCounts() (map[string]int64, error) {
 	counts := make(map[string]int64)
 	lower := append([]byte(nil), idxLabelPrefix...)
@@ -214,6 +231,7 @@ func (d *DB) GetLabelCounts() (map[string]int64, error) {
 	return counts, nil
 }
 
+// GetRelCounts returns a map of edge type to edge count for all edge types in the graph.
 func (d *DB) GetRelCounts() (map[string]int64, error) {
 	counts := make(map[string]int64)
 	lower := append([]byte(nil), idxEtypePrefix...)

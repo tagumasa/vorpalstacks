@@ -2,6 +2,8 @@
 package sesv2
 
 import (
+	"crypto/rand"
+	"math/big"
 	"strings"
 	"sync"
 	"time"
@@ -142,10 +144,17 @@ func GenerateDkimAttributes(identityType string) *DkimAttributes {
 }
 
 func generateDkimToken() string {
-	const charset = "abcdefghijklmnopqrstuvwxyz"
-	b := make([]byte, 32)
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	const n = 32
+	b := make([]byte, n)
+	max := big.NewInt(int64(len(charset)))
 	for i := range b {
-		b[i] = charset[(time.Now().UnixNano()+int64(i))%int64(len(charset))]
+		r, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			b[i] = charset[i%len(charset)]
+			continue
+		}
+		b[i] = charset[r.Int64()]
 	}
 	return string(b)
 }
@@ -229,7 +238,7 @@ func (s *SESv2Store) CreateDedicatedIpPool(pool *DedicatedIpPool) error {
 func (s *SESv2Store) GetDedicatedIpPool(poolName string) (*DedicatedIpPool, error) {
 	var pool DedicatedIpPool
 	if err := s.ipPoolStore.Get(poolName, &pool); err != nil {
-		return nil, err
+		return nil, ErrDedicatedIpPoolNotFound
 	}
 	return &pool, nil
 }
@@ -249,11 +258,10 @@ func (s *SESv2Store) ListDedicatedIpPools(opts common.ListOptions) (*common.List
 
 // SuppressedDestination represents a suppressed email destination.
 type SuppressedDestination struct {
-	EmailAddress      string            `json:"emailAddress"`
-	Reason            string            `json:"reason"`
-	SuppressionReason string            `json:"suppressionReason"`
-	LastUpdateTime    string            `json:"lastUpdateTime"`
-	Attributes        map[string]string `json:"attributes,omitempty"`
+	EmailAddress   string            `json:"emailAddress"`
+	Reason         string            `json:"reason"`
+	LastUpdateTime string            `json:"lastUpdateTime"`
+	Attributes     map[string]string `json:"attributes,omitempty"`
 }
 
 // PutSuppressedDestination adds or updates a suppressed destination.

@@ -12,32 +12,41 @@ import (
 	"vorpalstacks/internal/utils/aws/types"
 )
 
-// ChangeTagsForResource adds or removes tags for a Route 53 resource.
-func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceType := request.GetStringParam(req.Parameters, "ResourceType")
-	resourceId := request.GetStringParam(req.Parameters, "ResourceId")
+// parseResourceParams validates and normalises ResourceType/ResourceId,
+// returning (normalisedType, bareId, resourceKey, error).
+func parseResourceParams(params map[string]interface{}) (string, string, string, error) {
+	resourceType := request.GetStringParam(params, "ResourceType")
+	resourceId := request.GetStringParam(params, "ResourceId")
 	if resourceId == "" {
-		resourceId = request.GetStringParam(req.Parameters, "ResourceID")
+		resourceId = request.GetStringParam(params, "ResourceID")
 	}
 
 	if resourceType == "" || resourceId == "" {
-		return nil, awserrors.NewAWSError("InvalidParameter", "ResourceType and ResourceId are required", 400)
+		return "", "", "", awserrors.NewAWSError("InvalidParameter", "ResourceType and ResourceId are required", 400)
 	}
 
 	normalizedType := strings.ToLower(resourceType)
 	if normalizedType != "hostedzone" && normalizedType != "healthcheck" {
-		return nil, awserrors.NewAWSError("InvalidParameter", "ResourceType must be 'hostedzone' or 'healthcheck'", 400)
+		return "", "", "", awserrors.NewAWSError("InvalidParameter", "ResourceType must be 'hostedzone' or 'healthcheck'", 400)
 	}
 
 	resourceId = strings.TrimPrefix(resourceId, "/hostedzone/")
 	resourceId = strings.TrimPrefix(resourceId, "/healthcheck/")
 
-	st, err := s.store(reqCtx)
+	return normalizedType, resourceId, normalizedType + "/" + resourceId, nil
+}
+
+// ChangeTagsForResource adds or removes tags for a Route 53 resource.
+func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	_, _, resourceKey, err := parseResourceParams(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 
-	resourceKey := normalizedType + "/" + resourceId
+	st, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
 
 	addTags := tags.ParseTagsWithKeyNames(req.Parameters, "AddTags", "Key", "Value")
 	if len(addTags) == 0 {
@@ -93,12 +102,6 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 		if err := st.Tags().Raw().Untag(resourceKey, removeTagKeys); err != nil {
 			return nil, awserrors.NewAWSError("UntagResource", err.Error(), 500)
 		}
-		if len(addTags) > 0 {
-			if err := st.Tags().Tag(resourceKey, addTags); err != nil {
-				return nil, awserrors.NewAWSError("TagResource", err.Error(), 500)
-			}
-		}
-		return response.EmptyResponse(), nil
 	}
 
 	return response.EmptyResponse(), nil
@@ -106,30 +109,15 @@ func (s *Route53Service) ChangeTagsForResource(ctx context.Context, reqCtx *requ
 
 // ListTagsForResource lists tags for a Route 53 resource.
 func (s *Route53Service) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceType := request.GetStringParam(req.Parameters, "ResourceType")
-	resourceId := request.GetStringParam(req.Parameters, "ResourceId")
-	if resourceId == "" {
-		resourceId = request.GetStringParam(req.Parameters, "ResourceID")
+	normalizedType, resourceId, resourceKey, err := parseResourceParams(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
-
-	if resourceType == "" || resourceId == "" {
-		return nil, awserrors.NewAWSError("InvalidParameter", "ResourceType and ResourceId are required", 400)
-	}
-
-	normalizedResourceType := strings.ToLower(resourceType)
-	if normalizedResourceType != "hostedzone" && normalizedResourceType != "healthcheck" {
-		return nil, awserrors.NewAWSError("InvalidParameter", "ResourceType must be 'hostedzone' or 'healthcheck'", 400)
-	}
-
-	resourceId = strings.TrimPrefix(resourceId, "/hostedzone/")
-	resourceId = strings.TrimPrefix(resourceId, "/healthcheck/")
 
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	resourceKey := normalizedResourceType + "/" + resourceId
 
 	tags, err := st.Tags().ListTagsForResource(resourceKey)
 	if err != nil {
@@ -146,19 +134,9 @@ func (s *Route53Service) ListTagsForResource(ctx context.Context, reqCtx *reques
 
 	return map[string]interface{}{
 		"ResourceTagSet": map[string]interface{}{
-			"ResourceType": normalizedResourceType,
-			"ResourceId":   extractResourceId(resourceId),
+			"ResourceType": normalizedType,
+			"ResourceId":   resourceId,
 			"Tags":         protocol.XMLElements{ElementName: "Tag", Items: tagItems},
 		},
 	}, nil
-}
-
-func extractResourceId(resourceId string) string {
-	if strings.HasPrefix(resourceId, "/") {
-		parts := strings.Split(strings.Trim(resourceId, "/"), "/")
-		if len(parts) > 0 {
-			return parts[len(parts)-1]
-		}
-	}
-	return resourceId
 }

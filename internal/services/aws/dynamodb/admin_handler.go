@@ -16,6 +16,7 @@ import (
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
+// AdminHandler implements the gRPC admin console handlers for DynamoDB.
 type AdminHandler struct {
 	dynamodbconnect.UnimplementedDynamoDBServiceHandler
 	storageManager *storage.RegionStorageManager
@@ -24,6 +25,7 @@ type AdminHandler struct {
 
 var _ dynamodbconnect.DynamoDBServiceHandler = (*AdminHandler)(nil)
 
+// NewAdminHandler creates a new DynamoDB admin handler.
 func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
 	return &AdminHandler{
 		storageManager: storageManager,
@@ -44,6 +46,7 @@ func (h *AdminHandler) getStore(headers http.Header) (dynamodbstore.DynamoDBStor
 	return dynamodbstore.NewDynamoDBStore(txnStorage, h.accountId, region), nil
 }
 
+// ListTables returns all DynamoDB table names for the admin console.
 func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.ListTablesInput]) (*connect.Response[pb.ListTablesOutput], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -72,6 +75,7 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 	}), nil
 }
 
+// DescribeTable returns detailed metadata for a single DynamoDB table.
 func (h *AdminHandler) DescribeTable(ctx context.Context, req *connect.Request[pb.DescribeTableInput]) (*connect.Response[pb.DescribeTableOutput], error) {
 	if req.Msg.GetTablename() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
@@ -92,6 +96,7 @@ func (h *AdminHandler) DescribeTable(ctx context.Context, req *connect.Request[p
 	}), nil
 }
 
+// CreateTable creates a new DynamoDB table from the admin console request.
 func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.CreateTableInput]) (*connect.Response[pb.CreateTableOutput], error) {
 	if req.Msg.GetTablename() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
@@ -154,6 +159,7 @@ func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
+// DeleteTable removes a DynamoDB table via the admin console.
 func (h *AdminHandler) DeleteTable(ctx context.Context, req *connect.Request[pb.DeleteTableInput]) (*connect.Response[pb.DeleteTableOutput], error) {
 	if req.Msg.GetTablename() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
@@ -192,6 +198,7 @@ func (h *AdminHandler) DeleteTable(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
+// NewConnectHandler returns the connect RPC path and handler for DynamoDB admin.
 func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
 	return dynamodbconnect.NewDynamoDBServiceHandler(NewAdminHandler(sm, accountID))
 }

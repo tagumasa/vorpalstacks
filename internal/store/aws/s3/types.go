@@ -314,6 +314,7 @@ type PartEncryptionInfo struct {
 	DataKey       []byte `json:"data_key,omitempty"`
 }
 
+// SSEObjectMetadata holds server-side encryption metadata for an S3 object.
 type SSEObjectMetadata struct {
 	EncryptionType      SSEType              `json:"encryption_type"`
 	EncryptedDataKey    []byte               `json:"encrypted_data_key,omitempty"`

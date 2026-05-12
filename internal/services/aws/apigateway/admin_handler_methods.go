@@ -11,6 +11,7 @@ import (
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 )
 
+// PutMethod creates or replaces a method on a resource.
 func (h *AdminHandler) PutMethod(ctx context.Context, req *connect.Request[pb.PutMethodRequest]) (*connect.Response[pb.Method], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Resourceid == "" || req.Msg.Httpmethod == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id, resource_id, and http_method are required"))
@@ -43,6 +44,7 @@ func (h *AdminHandler) PutMethod(ctx context.Context, req *connect.Request[pb.Pu
 	return connect.NewResponse(toPbMethod(created)), nil
 }
 
+// GetMethod returns a method configuration.
 func (h *AdminHandler) GetMethod(ctx context.Context, req *connect.Request[pb.GetMethodRequest]) (*connect.Response[pb.Method], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Resourceid == "" || req.Msg.Httpmethod == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id, resource_id, and http_method are required"))
@@ -58,6 +60,7 @@ func (h *AdminHandler) GetMethod(ctx context.Context, req *connect.Request[pb.Ge
 	return connect.NewResponse(toPbMethod(m)), nil
 }
 
+// DeleteMethod removes a method from a resource.
 func (h *AdminHandler) DeleteMethod(ctx context.Context, req *connect.Request[pb.DeleteMethodRequest]) (*connect.Response[pbcommon.Empty], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Resourceid == "" || req.Msg.Httpmethod == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id, resource_id, and http_method are required"))
@@ -72,6 +75,7 @@ func (h *AdminHandler) DeleteMethod(ctx context.Context, req *connect.Request[pb
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
+// PutIntegration creates or replaces an integration on a method.
 func (h *AdminHandler) PutIntegration(ctx context.Context, req *connect.Request[pb.PutIntegrationRequest]) (*connect.Response[pb.Integration], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Resourceid == "" || req.Msg.Httpmethod == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id, resource_id, and http_method are required"))
@@ -110,6 +114,7 @@ func (h *AdminHandler) PutIntegration(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(toPbIntegration(created)), nil
 }
 
+// GetIntegration returns a single integration.
 func (h *AdminHandler) GetIntegration(ctx context.Context, req *connect.Request[pb.GetIntegrationRequest]) (*connect.Response[pb.Integration], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Resourceid == "" || req.Msg.Httpmethod == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id, resource_id, and http_method are required"))
@@ -125,6 +130,7 @@ func (h *AdminHandler) GetIntegration(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(toPbIntegration(i)), nil
 }
 
+// DeleteIntegration removes an integration from a method.
 func (h *AdminHandler) DeleteIntegration(ctx context.Context, req *connect.Request[pb.DeleteIntegrationRequest]) (*connect.Response[pbcommon.Empty], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Resourceid == "" || req.Msg.Httpmethod == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id, resource_id, and http_method are required"))

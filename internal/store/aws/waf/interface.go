@@ -56,9 +56,8 @@ type WebACLAssociationStoreInterface interface {
 
 // LoggingStoreInterface defines operations for managing WAF logging configurations.
 type LoggingStoreInterface interface {
-	Create(resourceArn string, logDestinationConfigs []string, logScope, logType string, loggingFilter *LoggingFilter, managedByFirewallManager bool, redactedFields []*FieldToMatch) (*LoggingConfiguration, error)
-	Get(resourceArn string) (*LoggingConfiguration, error)
-	Update(resourceArn string, logDestinationConfigs []string, logScope, logType string, loggingFilter *LoggingFilter, managedByFirewallManager bool, redactedFields []*FieldToMatch) (*LoggingConfiguration, error)
+	Create(resourceArn string, logDestinationConfigs []string, logScope, logType string, loggingFilter *LoggingFilter, managedByFirewallManager bool, redactedFields []interface{}) (*LoggingConfiguration, error)
+	Update(resourceArn string, logDestinationConfigs []string, logScope, logType string, loggingFilter *LoggingFilter, managedByFirewallManager bool, redactedFields []interface{}) (*LoggingConfiguration, error)
 	Delete(resourceArn string) error
 	List(scope string, marker string, maxItems int) (*LoggingConfigurationListResult, error)
 	GetByResourceArn(resourceArn string) (*LoggingConfiguration, error)

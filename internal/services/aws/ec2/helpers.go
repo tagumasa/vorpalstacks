@@ -2,9 +2,13 @@ package ec2
 
 import (
 	"fmt"
+	"strconv"
 
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/tags"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
 	"vorpalstacks/internal/utils/aws/generators"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 const (
@@ -29,62 +33,151 @@ func GenerateSecurityGroupID() (string, error) {
 	return generators.GenerateIDWithPrefix(securityGroupPrefix, ec2IDSuffixLen)
 }
 
-// ParseTags extracts EC2 tags from request parameters.
-// Supports both flat Tag.N.Key/Tag.N.Value and TagSpecifications formats.
-func ParseTags(params map[string]interface{}) []ec2store.Tag {
-	tags := make([]ec2store.Tag, 0)
+// parseEC2Tags extracts EC2 tags from request parameters.
+// EC2 uses Tag.N.Key / Tag.N.Value format in the Query protocol.
+func parseEC2Tags(params map[string]interface{}) []types.Tag {
+	return tags.ParseTagsWithPrefix(params, "Tag")
+}
+
+// parseInt64Port parses a port string to int64, returning -1 for empty/invalid.
+// EC2 uses -1 to mean "all ports" (with protocol -1 meaning all protocols).
+func parseInt64Port(s string) int64 {
+	if s == "" {
+		return -1
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return -1
+	}
+	return n
+}
+
+// parseIPRules extracts IP permission rules from request parameters.
+// AWS SDK sends nested format:
+//   - IpPermissions.N.IpRanges.M.CidrIp
+//   - IpPermissions.N.IpRanges.M.Description
+//   - IpPermissions.N.Groups.M.GroupId
+//   - IpPermissions.N.Groups.M.UserId
+//   - IpPermissions.N.Ipv6Ranges.M.CidrIpv6
+func parseIPRules(params map[string]interface{}, prefix string) []ec2store.IPRule {
+	var rules []ec2store.IPRule
+
 	for i := 1; ; i++ {
-		key := getStringParam(params, fmt.Sprintf("Tag.%d.Key", i))
-		if key == "" {
+		ipProtocol := request.GetStringParam(params, fmt.Sprintf("%s.%d.IpProtocol", prefix, i))
+		if ipProtocol == "" {
 			break
 		}
-		value := getStringParam(params, fmt.Sprintf("Tag.%d.Value", i))
-		tags = append(tags, ec2store.Tag{Key: key, Value: value})
-	}
-	if len(tags) > 0 {
-		return tags
-	}
-	if tagList, ok := params["Tag"].([]interface{}); ok {
-		for _, t := range tagList {
-			if m, ok := t.(map[string]interface{}); ok {
-				k, _ := m["Key"].(string)
-				v, _ := m["Value"].(string)
-				if k != "" {
-					tags = append(tags, ec2store.Tag{Key: k, Value: v})
+
+		rule := ec2store.IPRule{
+			IpProtocol: ipProtocol,
+			FromPort:   parseInt64Port(request.GetStringParam(params, fmt.Sprintf("%s.%d.FromPort", prefix, i))),
+			ToPort:     parseInt64Port(request.GetStringParam(params, fmt.Sprintf("%s.%d.ToPort", prefix, i))),
+		}
+
+		ipPrefix := fmt.Sprintf("%s.%d.IpRanges", prefix, i)
+		for j := 1; ; j++ {
+			cidr := request.GetStringParam(params, fmt.Sprintf("%s.%d.CidrIp", ipPrefix, j))
+			if cidr == "" {
+				break
+			}
+			ipRange := ec2store.IPRange{CidrIp: cidr}
+			if desc := request.GetStringParam(params, fmt.Sprintf("%s.%d.Description", ipPrefix, j)); desc != "" {
+				ipRange.Description = desc
+			}
+			rule.IpRanges = append(rule.IpRanges, ipRange)
+		}
+
+		ipv6Prefix := fmt.Sprintf("%s.%d.Ipv6Ranges", prefix, i)
+		for j := 1; ; j++ {
+			cidr := request.GetStringParam(params, fmt.Sprintf("%s.%d.CidrIpv6", ipv6Prefix, j))
+			if cidr == "" {
+				break
+			}
+			ipRange := ec2store.IPRange{CidrIp: cidr}
+			if desc := request.GetStringParam(params, fmt.Sprintf("%s.%d.Description", ipv6Prefix, j)); desc != "" {
+				ipRange.Description = desc
+			}
+			rule.Ipv6Ranges = append(rule.Ipv6Ranges, ipRange)
+		}
+
+		groupPrefix := fmt.Sprintf("%s.%d.Groups", prefix, i)
+		for j := 1; ; j++ {
+			groupId := request.GetStringParam(params, fmt.Sprintf("%s.%d.GroupId", groupPrefix, j))
+			if groupId == "" {
+				groupName := request.GetStringParam(params, fmt.Sprintf("%s.%d.GroupName", groupPrefix, j))
+				if groupName == "" {
+					break
 				}
 			}
+			pair := ec2store.GroupPair{
+				GroupId:   groupId,
+				GroupName: request.GetStringParam(params, fmt.Sprintf("%s.%d.GroupName", groupPrefix, j)),
+				UserId:    request.GetStringParam(params, fmt.Sprintf("%s.%d.UserId", groupPrefix, j)),
+				VpcId:     request.GetStringParam(params, fmt.Sprintf("%s.%d.VpcId", groupPrefix, j)),
+			}
+			rule.UserIdGroupPairs = append(rule.UserIdGroupPairs, pair)
 		}
+
+		rules = append(rules, rule)
 	}
-	return tags
+
+	return rules
 }
 
-// getStringParam retrieves a string parameter, trying lowercase key first then title case.
-func getStringParam(params map[string]interface{}, key string) string {
-	for _, k := range []string{key, lowerFirst(key)} {
-		if v, ok := params[k]; ok {
-			if s, ok := v.(string); ok {
-				return s
+// ipRuleEquals checks if two IPRules match on protocol, ports, and all
+// ranges/groups. This is used for duplicate detection and rule revocation.
+func ipRuleEquals(a, b ec2store.IPRule) bool {
+	if a.IpProtocol != b.IpProtocol || a.FromPort != b.FromPort || a.ToPort != b.ToPort {
+		return false
+	}
+	if len(a.IpRanges) != len(b.IpRanges) || len(a.UserIdGroupPairs) != len(b.UserIdGroupPairs) || len(a.Ipv6Ranges) != len(b.Ipv6Ranges) {
+		return false
+	}
+	for _, ar := range a.IpRanges {
+		found := false
+		for _, br := range b.IpRanges {
+			if ar.CidrIp == br.CidrIp {
+				found = true
+				break
 			}
 		}
+		if !found {
+			return false
+		}
 	}
-	return ""
+	for _, ag := range a.UserIdGroupPairs {
+		found := false
+		for _, bg := range b.UserIdGroupPairs {
+			if ag.GroupId == bg.GroupId && ag.UserId == bg.UserId {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	for _, ar := range a.Ipv6Ranges {
+		found := false
+		for _, br := range b.Ipv6Ranges {
+			if ar.CidrIp == br.CidrIp {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
-// lowerFirst converts the first character of a string to lowercase.
-func lowerFirst(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-	return string([]byte{s[0] + 32}) + s[1:]
-}
-
-// mergeIPRules appends new rules to an existing rule set, avoiding duplicates
-// based on protocol, from/to port, and CIDR.
+// mergeIPRules appends new rules to an existing rule set, avoiding full duplicates.
 func mergeIPRules(existing []ec2store.IPRule, newRules ...ec2store.IPRule) []ec2store.IPRule {
 	for _, nr := range newRules {
 		duplicate := false
 		for _, er := range existing {
-			if er.IpProtocol == nr.IpProtocol && er.FromPort == nr.FromPort && er.ToPort == nr.ToPort {
+			if ipRuleEquals(er, nr) {
 				duplicate = true
 				break
 			}
@@ -102,7 +195,7 @@ func removeIPRules(existing []ec2store.IPRule, toRemove ...ec2store.IPRule) []ec
 	for _, er := range existing {
 		removed := false
 		for _, nr := range toRemove {
-			if er.IpProtocol == nr.IpProtocol && er.FromPort == nr.FromPort && er.ToPort == nr.ToPort {
+			if ipRuleEquals(er, nr) {
 				removed = true
 				break
 			}

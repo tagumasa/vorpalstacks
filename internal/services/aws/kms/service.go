@@ -36,6 +36,7 @@ type KMSService struct {
 	stores            sync.Map // region → *kmsStores
 }
 
+// SetPrincipalResolver registers the IAM principal resolver for grant validation.
 func (s *KMSService) SetPrincipalResolver(resolver eventbus.IAMPrincipalResolver) {
 	s.principalResolver = resolver
 }
@@ -368,6 +369,7 @@ type kmsBusAdapter struct {
 	*KMSService
 }
 
+// GenerateDataKey generates a data key encrypted under the specified KMS key.
 func (a *kmsBusAdapter) GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string) (*eventbus.KMSDataKeyResult, error) {
 	if a.hsmBackend == nil {
 		return nil, fmt.Errorf("KMS HSM backend not configured")
@@ -382,6 +384,7 @@ func (a *kmsBusAdapter) GenerateDataKey(ctx context.Context, keyID string, keySp
 	}, nil
 }
 
+// Decrypt decrypts ciphertext that was encrypted under a KMS key.
 func (a *kmsBusAdapter) Decrypt(ctx context.Context, keyID string, ciphertext []byte, encryptionContext map[string]string) ([]byte, error) {
 	if a.hsmBackend == nil {
 		return nil, fmt.Errorf("KMS HSM backend not configured")
@@ -393,6 +396,7 @@ func (a *kmsBusAdapter) Decrypt(ctx context.Context, keyID string, ciphertext []
 	return result.Plaintext, nil
 }
 
+// KeyExists reports whether the specified KMS key exists.
 func (a *kmsBusAdapter) KeyExists(ctx context.Context, keyID string) bool {
 	if a.hsmBackend == nil {
 		return false

@@ -21,8 +21,7 @@ import (
 // AdminHandler implements the CloudFront admin console gRPC-Web handler.
 type AdminHandler struct {
 	cloudfrontconnect.UnimplementedCloudFrontServiceHandler
-	store     storage.BasicStorage
-	accountId string
+	distStore *cloudfrontstore.DistributionStore
 }
 
 var _ cloudfrontconnect.CloudFrontServiceHandler = (*AdminHandler)(nil)
@@ -30,8 +29,7 @@ var _ cloudfrontconnect.CloudFrontServiceHandler = (*AdminHandler)(nil)
 // NewAdminHandler creates a new CloudFront admin handler with the given storage and account ID.
 func NewAdminHandler(store storage.BasicStorage, accountId string) *AdminHandler {
 	return &AdminHandler{
-		store:     store,
-		accountId: accountId,
+		distStore: cloudfrontstore.NewDistributionStore(store, accountId),
 	}
 }
 
@@ -107,9 +105,7 @@ func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Requ
 		},
 	}
 
-	distStore := cloudfrontstore.NewDistributionStore(h.store, h.accountId)
-
-	dist, err := distStore.Create(callerRef, storeConfig)
+	dist, err := h.distStore.Create(callerRef, storeConfig)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -127,14 +123,12 @@ func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Requ
 
 // ListDistributions returns all CloudFront distributions visible to the admin console.
 func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Request[pb.ListDistributionsRequest]) (*connect.Response[pb.ListDistributionsResult], error) {
-	distStore := cloudfrontstore.NewDistributionStore(h.store, h.accountId)
-
 	maxItems := int(req.Msg.Maxitems)
 	if maxItems <= 0 {
 		maxItems = 100
 	}
 
-	result, err := distStore.List(req.Msg.Marker, maxItems)
+	result, err := h.distStore.List(req.Msg.Marker, maxItems)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -175,9 +169,7 @@ func (h *AdminHandler) DeleteDistribution(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("id is required"))
 	}
 
-	distStore := cloudfrontstore.NewDistributionStore(h.store, h.accountId)
-
-	if err := distStore.Delete(req.Msg.Id); err != nil {
+	if err := h.distStore.Delete(req.Msg.Id); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 

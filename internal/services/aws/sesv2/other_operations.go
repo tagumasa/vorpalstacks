@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	pagination "vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -19,7 +18,44 @@ func parseStoredTime(s string) float64 {
 	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return float64(v)
 	}
-	return float64(time.Now().UTC().Unix())
+	return 0
+}
+
+func parseTopicsFromParams(params map[string]interface{}) []sesv2store.Topic {
+	topicsList := request.GetListParam(params, "Topics")
+	if len(topicsList) == 0 {
+		return nil
+	}
+	topics := make([]sesv2store.Topic, 0, len(topicsList))
+	for _, t := range topicsList {
+		topic := sesv2store.Topic{
+			TopicName:                 request.GetStringParam(t, "TopicName"),
+			DefaultSubscriptionStatus: request.GetStringParam(t, "DefaultSubscriptionStatus"),
+		}
+		if desc := request.GetStringParam(t, "Description"); desc != "" {
+			topic.Description = desc
+		}
+		if dn := request.GetStringParam(t, "DisplayName"); dn != "" {
+			topic.DisplayName = dn
+		}
+		topics = append(topics, topic)
+	}
+	return topics
+}
+
+func parseTopicPreferencesFromParams(params map[string]interface{}) []sesv2store.TopicPreference {
+	topicsList := request.GetListParam(params, "TopicPreferences")
+	if len(topicsList) == 0 {
+		return nil
+	}
+	prefs := make([]sesv2store.TopicPreference, 0, len(topicsList))
+	for _, tp := range topicsList {
+		prefs = append(prefs, sesv2store.TopicPreference{
+			TopicName:          request.GetStringParam(tp, "TopicName"),
+			SubscriptionStatus: request.GetStringParam(tp, "SubscriptionStatus"),
+		})
+	}
+	return prefs
 }
 
 // CreateDedicatedIpPool creates a new dedicated IP pool.
@@ -83,7 +119,7 @@ func (s *SESv2Service) GetDedicatedIpPool(ctx context.Context, reqCtx *request.R
 
 	pool, err := store.GetDedicatedIpPool(poolName)
 	if err != nil {
-		return nil, awserrors.NewNotFoundException("Dedicated IP pool not found")
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -172,10 +208,9 @@ func (s *SESv2Service) PutSuppressedDestination(ctx context.Context, reqCtx *req
 	}
 
 	dest := &sesv2store.SuppressedDestination{
-		EmailAddress:      emailAddress,
-		Reason:            reason,
-		SuppressionReason: reason,
-		LastUpdateTime:    fmt.Sprintf("%d", time.Now().UTC().Unix()),
+		EmailAddress:   emailAddress,
+		Reason:         reason,
+		LastUpdateTime: fmt.Sprintf("%d", time.Now().UTC().Unix()),
 	}
 
 	if err := store.PutSuppressedDestination(dest); err != nil {
@@ -259,25 +294,9 @@ func (s *SESv2Service) CreateContactList(ctx context.Context, reqCtx *request.Re
 
 	contactList := sesv2store.NewContactList(contactListName)
 	contactList.Description = description
+	contactList.Topics = parseTopicsFromParams(req.Parameters)
 
-	if topicsList := request.GetListParam(req.Parameters, "Topics"); len(topicsList) > 0 {
-		for _, t := range topicsList {
-			topic := sesv2store.Topic{
-				TopicName:                 request.GetStringParam(t, "TopicName"),
-				DefaultSubscriptionStatus: request.GetStringParam(t, "DefaultSubscriptionStatus"),
-			}
-			if desc := request.GetStringParam(t, "Description"); desc != "" {
-				topic.Description = desc
-			}
-			if dn := request.GetStringParam(t, "DisplayName"); dn != "" {
-				topic.DisplayName = dn
-			}
-			contactList.Topics = append(contactList.Topics, topic)
-		}
-	}
-
-	cl, err := store.CreateContactList(contactList)
-	if err != nil {
+	if _, err := store.CreateContactList(contactList); err != nil {
 		return nil, err
 	}
 
@@ -286,8 +305,6 @@ func (s *SESv2Service) CreateContactList(ctx context.Context, reqCtx *request.Re
 			return nil, err
 		}
 	}
-
-	_ = cl
 
 	return response.EmptyResponse(), nil
 }
@@ -306,7 +323,7 @@ func (s *SESv2Service) GetContactList(ctx context.Context, reqCtx *request.Reque
 
 	cl, err := store.GetContactList(contactListName)
 	if err != nil {
-		return nil, awserrors.NewNotFoundException("Contact list not found")
+		return nil, err
 	}
 
 	result := map[string]interface{}{
@@ -320,10 +337,17 @@ func (s *SESv2Service) GetContactList(ctx context.Context, reqCtx *request.Reque
 	if len(cl.Topics) > 0 {
 		topics := make([]map[string]interface{}, 0, len(cl.Topics))
 		for _, t := range cl.Topics {
-			topics = append(topics, map[string]interface{}{
+			topic := map[string]interface{}{
 				"TopicName":                 t.TopicName,
 				"DefaultSubscriptionStatus": t.DefaultSubscriptionStatus,
-			})
+			}
+			if t.DisplayName != "" {
+				topic["DisplayName"] = t.DisplayName
+			}
+			if t.Description != "" {
+				topic["Description"] = t.Description
+			}
+			topics = append(topics, topic)
 		}
 		result["Topics"] = topics
 	}
@@ -344,7 +368,7 @@ func (s *SESv2Service) DeleteContactList(ctx context.Context, reqCtx *request.Re
 	}
 
 	if err := store.DeleteContactList(contactListName); err != nil {
-		return nil, awserrors.NewNotFoundException("Contact list not found")
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -401,29 +425,15 @@ func (s *SESv2Service) UpdateContactList(ctx context.Context, reqCtx *request.Re
 
 	cl, err := store.GetContactList(contactListName)
 	if err != nil {
-		return nil, awserrors.NewNotFoundException("Contact list not found")
+		return nil, err
 	}
 
 	if description := request.GetStringParam(req.Parameters, "Description"); description != "" {
 		cl.Description = description
 	}
 
-	if topicsList := request.GetListParam(req.Parameters, "Topics"); len(topicsList) > 0 {
-		newTopics := make([]sesv2store.Topic, 0, len(topicsList))
-		for _, t := range topicsList {
-			topic := sesv2store.Topic{
-				TopicName:                 request.GetStringParam(t, "TopicName"),
-				DefaultSubscriptionStatus: request.GetStringParam(t, "DefaultSubscriptionStatus"),
-			}
-			if desc := request.GetStringParam(t, "Description"); desc != "" {
-				topic.Description = desc
-			}
-			if dn := request.GetStringParam(t, "DisplayName"); dn != "" {
-				topic.DisplayName = dn
-			}
-			newTopics = append(newTopics, topic)
-		}
-		cl.Topics = newTopics
+	if topics := parseTopicsFromParams(req.Parameters); len(topics) > 0 {
+		cl.Topics = topics
 	}
 
 	if err := store.UpdateContactList(cl); err != nil {
@@ -453,14 +463,7 @@ func (s *SESv2Service) CreateContact(ctx context.Context, reqCtx *request.Reques
 		contact.AttributesData = attrs
 	}
 
-	if topicPrefsList := request.GetListParam(req.Parameters, "TopicPreferences"); len(topicPrefsList) > 0 {
-		for _, tp := range topicPrefsList {
-			contact.TopicPreferences = append(contact.TopicPreferences, sesv2store.TopicPreference{
-				TopicName:          request.GetStringParam(tp, "TopicName"),
-				SubscriptionStatus: request.GetStringParam(tp, "SubscriptionStatus"),
-			})
-		}
-	}
+	contact.TopicPreferences = parseTopicPreferencesFromParams(req.Parameters)
 
 	if unsSubAll := request.GetBoolParam(req.Parameters, "UnsubscribeAll"); unsSubAll {
 		contact.UnsubscribeAll = true
@@ -489,7 +492,7 @@ func (s *SESv2Service) GetContact(ctx context.Context, reqCtx *request.RequestCo
 
 	contact, err := store.GetContact(contactListName, emailAddress)
 	if err != nil {
-		return nil, awserrors.NewNotFoundException("Contact not found")
+		return nil, err
 	}
 
 	result := map[string]interface{}{
@@ -531,7 +534,7 @@ func (s *SESv2Service) DeleteContact(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if err := store.DeleteContact(contactListName, emailAddress); err != nil {
-		return nil, awserrors.NewNotFoundException("Contact not found")
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -596,22 +599,15 @@ func (s *SESv2Service) UpdateContact(ctx context.Context, reqCtx *request.Reques
 
 	contact, err := store.GetContact(contactListName, emailAddress)
 	if err != nil {
-		return nil, awserrors.NewNotFoundException("Contact not found")
+		return nil, err
 	}
 
 	if attrs := request.GetStringParam(req.Parameters, "AttributesData"); attrs != "" {
 		contact.AttributesData = attrs
 	}
 
-	if topicPrefsList := request.GetListParam(req.Parameters, "TopicPreferences"); len(topicPrefsList) > 0 {
-		newPrefs := make([]sesv2store.TopicPreference, 0, len(topicPrefsList))
-		for _, tp := range topicPrefsList {
-			newPrefs = append(newPrefs, sesv2store.TopicPreference{
-				TopicName:          request.GetStringParam(tp, "TopicName"),
-				SubscriptionStatus: request.GetStringParam(tp, "SubscriptionStatus"),
-			})
-		}
-		contact.TopicPreferences = newPrefs
+	if prefs := parseTopicPreferencesFromParams(req.Parameters); len(prefs) > 0 {
+		contact.TopicPreferences = prefs
 	}
 
 	if unsSubAll := request.GetBoolParam(req.Parameters, "UnsubscribeAll"); unsSubAll {

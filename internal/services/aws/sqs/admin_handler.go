@@ -99,6 +99,7 @@ func NewConnectHandler(svc *SQSService) (string, http.Handler) {
 	return sqsconnect.NewSQSServiceHandler(NewAdminHandler(svc))
 }
 
+// CreateQueue creates an SQS queue via the admin console.
 func (h *AdminHandler) CreateQueue(ctx context.Context, req *connect.Request[pb.CreateQueueRequest]) (*connect.Response[pb.CreateQueueResult], error) {
 	if req.Msg.Queuename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("QueueName is required"))
@@ -130,6 +131,7 @@ func (h *AdminHandler) CreateQueue(ctx context.Context, req *connect.Request[pb.
 	}), nil
 }
 
+// DeleteQueue removes an SQS queue via the admin console.
 func (h *AdminHandler) DeleteQueue(ctx context.Context, req *connect.Request[pb.DeleteQueueRequest]) (*connect.Response[pbcommon.Empty], error) {
 	if req.Msg.Queueurl == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("QueueUrl is required"))

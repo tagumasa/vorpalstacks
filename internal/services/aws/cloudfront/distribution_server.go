@@ -217,7 +217,8 @@ func (s *DistributionServer) getDistributionStore() *cfstore.DistributionStore {
 	}
 	store, err := s.storageManager.GetStorage(s.region)
 	if err != nil {
-		return cfstore.NewDistributionStore(nil, s.accountID)
+		logs.Error("CloudFront distribution server: failed to get storage, returning empty store", logs.Err(err))
+		return s.distribution
 	}
 	s.distribution = cfstore.NewDistributionStore(store, s.accountID)
 	return s.distribution

@@ -23,9 +23,12 @@ type Props map[string]interface{}
 type Direction byte
 
 const (
+	// Outgoing traverses edges from source to target.
 	Outgoing Direction = 0x01
+	// Incoming traverses edges arriving at the node.
 	Incoming Direction = 0x02
-	Both     Direction = 0x03
+	// Both traverses edges in both directions.
+	Both Direction = 0x03
 )
 
 // Node represents a graph node with an optional set of labels and properties.

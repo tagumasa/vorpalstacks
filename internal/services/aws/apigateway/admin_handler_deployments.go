@@ -11,6 +11,7 @@ import (
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 )
 
+// CreateDeployment creates a new deployment for a REST API.
 func (h *AdminHandler) CreateDeployment(ctx context.Context, req *connect.Request[pb.CreateDeploymentRequest]) (*connect.Response[pb.Deployment], error) {
 	if req.Msg.Restapiid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
@@ -31,6 +32,7 @@ func (h *AdminHandler) CreateDeployment(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(toPbDeployment(created)), nil
 }
 
+// GetDeployments returns all deployments for a REST API.
 func (h *AdminHandler) GetDeployments(ctx context.Context, req *connect.Request[pb.GetDeploymentsRequest]) (*connect.Response[pb.Deployments], error) {
 	if req.Msg.Restapiid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
@@ -51,6 +53,7 @@ func (h *AdminHandler) GetDeployments(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(&pb.Deployments{Items: items}), nil
 }
 
+// GetDeployment returns a single deployment by ID.
 func (h *AdminHandler) GetDeployment(ctx context.Context, req *connect.Request[pb.GetDeploymentRequest]) (*connect.Response[pb.Deployment], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Deploymentid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id and deployment_id are required"))
@@ -66,6 +69,7 @@ func (h *AdminHandler) GetDeployment(ctx context.Context, req *connect.Request[p
 	return connect.NewResponse(toPbDeployment(d)), nil
 }
 
+// DeleteDeployment removes a deployment from a REST API.
 func (h *AdminHandler) DeleteDeployment(ctx context.Context, req *connect.Request[pb.DeleteDeploymentRequest]) (*connect.Response[pbcommon.Empty], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Deploymentid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id and deployment_id are required"))
@@ -80,6 +84,7 @@ func (h *AdminHandler) DeleteDeployment(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(&pbcommon.Empty{}), nil
 }
 
+// CreateStage creates a new stage for a REST API deployment.
 func (h *AdminHandler) CreateStage(ctx context.Context, req *connect.Request[pb.CreateStageRequest]) (*connect.Response[pb.Stage], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Deploymentid == "" || req.Msg.Stagename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id, deployment_id, and stage_name are required"))
@@ -104,6 +109,7 @@ func (h *AdminHandler) CreateStage(ctx context.Context, req *connect.Request[pb.
 	return connect.NewResponse(toPbStage(created)), nil
 }
 
+// GetStages returns all stages for a REST API.
 func (h *AdminHandler) GetStages(ctx context.Context, req *connect.Request[pb.GetStagesRequest]) (*connect.Response[pb.Stages], error) {
 	if req.Msg.Restapiid == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id is required"))
@@ -124,6 +130,7 @@ func (h *AdminHandler) GetStages(ctx context.Context, req *connect.Request[pb.Ge
 	return connect.NewResponse(&pb.Stages{Item: items}), nil
 }
 
+// GetStage returns a single stage by name.
 func (h *AdminHandler) GetStage(ctx context.Context, req *connect.Request[pb.GetStageRequest]) (*connect.Response[pb.Stage], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Stagename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id and stage_name are required"))
@@ -139,6 +146,7 @@ func (h *AdminHandler) GetStage(ctx context.Context, req *connect.Request[pb.Get
 	return connect.NewResponse(toPbStage(s)), nil
 }
 
+// DeleteStage removes a stage from a REST API.
 func (h *AdminHandler) DeleteStage(ctx context.Context, req *connect.Request[pb.DeleteStageRequest]) (*connect.Response[pbcommon.Empty], error) {
 	if req.Msg.Restapiid == "" || req.Msg.Stagename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("rest_api_id and stage_name are required"))

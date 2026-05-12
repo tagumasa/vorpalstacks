@@ -74,6 +74,7 @@ type busKMSClient struct {
 	bus eventbus.Bus
 }
 
+// GenerateDataKey generates a data key encrypted under an S3-managed KMS key.
 func (c *busKMSClient) GenerateDataKey(keyID string, keySpec string, encContext map[string]string) (*GenerateDataKeyResult, error) {
 	invoker := c.bus.KMSInvoker()
 	if invoker == nil {
@@ -89,6 +90,7 @@ func (c *busKMSClient) GenerateDataKey(keyID string, keySpec string, encContext 
 	}, nil
 }
 
+// Decrypt decrypts ciphertext using an S3-managed KMS key.
 func (c *busKMSClient) Decrypt(keyID string, ciphertext []byte, encContext map[string]string) ([]byte, error) {
 	invoker := c.bus.KMSInvoker()
 	if invoker == nil {
@@ -97,6 +99,7 @@ func (c *busKMSClient) Decrypt(keyID string, ciphertext []byte, encContext map[s
 	return invoker.Decrypt(context.Background(), keyID, ciphertext, encContext)
 }
 
+// KeyExists reports whether the specified KMS key exists.
 func (c *busKMSClient) KeyExists(keyID string) bool {
 	invoker := c.bus.KMSInvoker()
 	if invoker == nil {
