@@ -1,6 +1,6 @@
 module vorpalstacks
 
-go 1.25.9
+go 1.25.10
 
 require (
 	connectrpc.com/connect v1.19.1
@@ -114,4 +114,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/recolabs/gnata => github.com/tagumasa/gnata v0.0.0-20260329123011-e1c8f13de301
+replace github.com/recolabs/gnata => github.com/tagumasa/gnata v0.0.0-20260513132340-14ab41f6f495
