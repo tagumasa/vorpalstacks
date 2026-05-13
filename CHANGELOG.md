@@ -20,6 +20,10 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **Dispatcher: removed resilience wrapper** — The HTTP request dispatcher no longer wraps handler invocations in the resilience (circuit breaker, bulkhead, adaptive timeout) layer. The `resilience.ServiceResilienceConfig` parameter has been removed from `NewDispatcher` and `NewServer`.
 
+### Fixed
+
+- **S3: error handling for malformed XML, invalid part-number-marker, and unparseable redirect/routing codes** — Previously silently ignored parse errors; now returns proper `MalformedXML`/`InvalidArgument` (400) responses.
+
 ## [0.0.11]
 
 ### ⚠️ Breaking Changes

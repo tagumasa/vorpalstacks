@@ -574,7 +574,11 @@ func (o *ObjectOperations) ListParts(ctx context.Context, reqCtx *request.Reques
 
 	partNumberMarker := 0
 	if input.PartNumberMarker != "" {
-		partNumberMarker, _ = strconv.Atoi(input.PartNumberMarker)
+		var err error
+		partNumberMarker, err = strconv.Atoi(input.PartNumberMarker)
+		if err != nil {
+			return nil, NewInvalidArgumentError("Provided part-number-marker not an integer")
+		}
 	}
 
 	parts, nextPartNumberMarker, isTruncated, err := stores.objects.ListParts(ctx, input.Bucket, input.Key, input.UploadId, partNumberMarker, maxParts)

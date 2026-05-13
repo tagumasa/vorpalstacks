@@ -129,7 +129,10 @@ func (s *WebsiteServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 				}
 				code := http.StatusFound
 				if redirect.HTTPRedirectCode != nil {
-					_, _ = fmt.Sscanf(*redirect.HTTPRedirectCode, "%d", &code)
+					parsed := 0
+					if _, err := fmt.Sscanf(*redirect.HTTPRedirectCode, "%d", &parsed); err == nil && parsed > 0 {
+						code = parsed
+					}
 				}
 				http.Redirect(w, r, loc, code)
 				return
@@ -141,7 +144,10 @@ func (s *WebsiteServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 				}
 				code := http.StatusFound
 				if redirect.HTTPRedirectCode != nil {
-					_, _ = fmt.Sscanf(*redirect.HTTPRedirectCode, "%d", &code)
+					parsed := 0
+					if _, err := fmt.Sscanf(*redirect.HTTPRedirectCode, "%d", &parsed); err == nil && parsed > 0 {
+						code = parsed
+					}
 				}
 				http.Redirect(w, r, loc, code)
 				return
@@ -154,7 +160,10 @@ func (s *WebsiteServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 				loc := proto + "://" + *redirect.HostName + "/" + requestKey
 				code := http.StatusFound
 				if redirect.HTTPRedirectCode != nil {
-					_, _ = fmt.Sscanf(*redirect.HTTPRedirectCode, "%d", &code)
+					parsed := 0
+					if _, err := fmt.Sscanf(*redirect.HTTPRedirectCode, "%d", &parsed); err == nil && parsed > 0 {
+						code = parsed
+					}
 				}
 				http.Redirect(w, r, loc, code)
 				return
@@ -222,7 +231,7 @@ func routingRuleMatches(rr *s3store.RoutingRule, key string, httpCode int) bool 
 	if rr.Condition.HTTPErrorCodeReturnedEquals != nil {
 		var code int
 		_, _ = fmt.Sscanf(*rr.Condition.HTTPErrorCodeReturnedEquals, "%d", &code)
-		if code != httpCode {
+		if code == 0 || code != httpCode {
 			return false
 		}
 	}

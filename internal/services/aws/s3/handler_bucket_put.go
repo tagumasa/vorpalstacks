@@ -262,7 +262,11 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 	if bodyErr != nil {
 		return nil, http.StatusInternalServerError, bodyErr
 	}
-	_ = xml.Unmarshal(bodyBytes, &createConfig)
+	if len(bodyBytes) > 0 {
+		if err := xml.Unmarshal(bodyBytes, &createConfig); err != nil {
+			return nil, 0, ErrMalformedXML
+		}
+	}
 
 	if r.Header.Get("x-amz-bucket-object-lock-enabled") == "true" {
 		createConfig.ObjectLockEnabled = true
