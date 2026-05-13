@@ -11,7 +11,7 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"

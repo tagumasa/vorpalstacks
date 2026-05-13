@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.21.12
-// source: proto/storage/storage_neptune.proto
+// source: storage_neptune.proto
 
 package storage_neptune
 
@@ -32,7 +32,7 @@ type ServerlessV2ScalingConfiguration struct {
 
 func (x *ServerlessV2ScalingConfiguration) Reset() {
 	*x = ServerlessV2ScalingConfiguration{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[0]
+	mi := &file_storage_neptune_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +44,7 @@ func (x *ServerlessV2ScalingConfiguration) String() string {
 func (*ServerlessV2ScalingConfiguration) ProtoMessage() {}
 
 func (x *ServerlessV2ScalingConfiguration) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[0]
+	mi := &file_storage_neptune_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +57,7 @@ func (x *ServerlessV2ScalingConfiguration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServerlessV2ScalingConfiguration.ProtoReflect.Descriptor instead.
 func (*ServerlessV2ScalingConfiguration) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{0}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ServerlessV2ScalingConfiguration) GetMinCapacity() float64 {
@@ -85,7 +85,7 @@ type DBClusterRole struct {
 
 func (x *DBClusterRole) Reset() {
 	*x = DBClusterRole{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[1]
+	mi := &file_storage_neptune_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -97,7 +97,7 @@ func (x *DBClusterRole) String() string {
 func (*DBClusterRole) ProtoMessage() {}
 
 func (x *DBClusterRole) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[1]
+	mi := &file_storage_neptune_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -110,7 +110,7 @@ func (x *DBClusterRole) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBClusterRole.ProtoReflect.Descriptor instead.
 func (*DBClusterRole) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{1}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *DBClusterRole) GetRoleArn() string {
@@ -132,6 +132,58 @@ func (x *DBClusterRole) GetStatus() string {
 		return x.Status
 	}
 	return ""
+}
+
+type ClusterEndpoint struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Port          int32                  `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClusterEndpoint) Reset() {
+	*x = ClusterEndpoint{}
+	mi := &file_storage_neptune_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClusterEndpoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClusterEndpoint) ProtoMessage() {}
+
+func (x *ClusterEndpoint) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_neptune_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClusterEndpoint.ProtoReflect.Descriptor instead.
+func (*ClusterEndpoint) Descriptor() ([]byte, []int) {
+	return file_storage_neptune_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ClusterEndpoint) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *ClusterEndpoint) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
 }
 
 type DBCluster struct {
@@ -168,13 +220,14 @@ type DBCluster struct {
 	AccountId                        string                            `protobuf:"bytes,30,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 	Region                           string                            `protobuf:"bytes,31,opt,name=region,proto3" json:"region,omitempty"`
 	DbClusterArn                     string                            `protobuf:"bytes,32,opt,name=db_cluster_arn,json=dbClusterArn,proto3" json:"db_cluster_arn,omitempty"`
+	Endpoint                         *ClusterEndpoint                  `protobuf:"bytes,33,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
 
 func (x *DBCluster) Reset() {
 	*x = DBCluster{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[2]
+	mi := &file_storage_neptune_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -186,7 +239,7 @@ func (x *DBCluster) String() string {
 func (*DBCluster) ProtoMessage() {}
 
 func (x *DBCluster) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[2]
+	mi := &file_storage_neptune_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -199,7 +252,7 @@ func (x *DBCluster) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBCluster.ProtoReflect.Descriptor instead.
 func (*DBCluster) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{2}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DBCluster) GetDbClusterIdentifier() string {
@@ -426,6 +479,13 @@ func (x *DBCluster) GetDbClusterArn() string {
 	return ""
 }
 
+func (x *DBCluster) GetEndpoint() *ClusterEndpoint {
+	if x != nil {
+		return x.Endpoint
+	}
+	return nil
+}
+
 type DBInstance struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
 	DbInstanceIdentifier            string                 `protobuf:"bytes,1,opt,name=db_instance_identifier,json=dbInstanceIdentifier,proto3" json:"db_instance_identifier,omitempty"`
@@ -449,13 +509,14 @@ type DBInstance struct {
 	AccountId                       string                 `protobuf:"bytes,19,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 	Region                          string                 `protobuf:"bytes,20,opt,name=region,proto3" json:"region,omitempty"`
 	DbInstanceArn                   string                 `protobuf:"bytes,21,opt,name=db_instance_arn,json=dbInstanceArn,proto3" json:"db_instance_arn,omitempty"`
+	Endpoint                        *ClusterEndpoint       `protobuf:"bytes,22,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
 
 func (x *DBInstance) Reset() {
 	*x = DBInstance{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[3]
+	mi := &file_storage_neptune_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -467,7 +528,7 @@ func (x *DBInstance) String() string {
 func (*DBInstance) ProtoMessage() {}
 
 func (x *DBInstance) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[3]
+	mi := &file_storage_neptune_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -480,7 +541,7 @@ func (x *DBInstance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBInstance.ProtoReflect.Descriptor instead.
 func (*DBInstance) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{3}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DBInstance) GetDbInstanceIdentifier() string {
@@ -630,6 +691,13 @@ func (x *DBInstance) GetDbInstanceArn() string {
 	return ""
 }
 
+func (x *DBInstance) GetEndpoint() *ClusterEndpoint {
+	if x != nil {
+		return x.Endpoint
+	}
+	return nil
+}
+
 type DBClusterSnapshot struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	DbClusterSnapshotIdentifier string                 `protobuf:"bytes,1,opt,name=db_cluster_snapshot_identifier,json=dbClusterSnapshotIdentifier,proto3" json:"db_cluster_snapshot_identifier,omitempty"`
@@ -654,7 +722,7 @@ type DBClusterSnapshot struct {
 
 func (x *DBClusterSnapshot) Reset() {
 	*x = DBClusterSnapshot{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[4]
+	mi := &file_storage_neptune_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -666,7 +734,7 @@ func (x *DBClusterSnapshot) String() string {
 func (*DBClusterSnapshot) ProtoMessage() {}
 
 func (x *DBClusterSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[4]
+	mi := &file_storage_neptune_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -679,7 +747,7 @@ func (x *DBClusterSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBClusterSnapshot.ProtoReflect.Descriptor instead.
 func (*DBClusterSnapshot) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{4}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DBClusterSnapshot) GetDbClusterSnapshotIdentifier() string {
@@ -807,7 +875,7 @@ type DBClusterParameterGroup struct {
 
 func (x *DBClusterParameterGroup) Reset() {
 	*x = DBClusterParameterGroup{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[5]
+	mi := &file_storage_neptune_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -819,7 +887,7 @@ func (x *DBClusterParameterGroup) String() string {
 func (*DBClusterParameterGroup) ProtoMessage() {}
 
 func (x *DBClusterParameterGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[5]
+	mi := &file_storage_neptune_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -832,7 +900,7 @@ func (x *DBClusterParameterGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBClusterParameterGroup.ProtoReflect.Descriptor instead.
 func (*DBClusterParameterGroup) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{5}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DBClusterParameterGroup) GetDbClusterParameterGroupName() string {
@@ -883,7 +951,7 @@ type DBParameterGroup struct {
 
 func (x *DBParameterGroup) Reset() {
 	*x = DBParameterGroup{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[6]
+	mi := &file_storage_neptune_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -895,7 +963,7 @@ func (x *DBParameterGroup) String() string {
 func (*DBParameterGroup) ProtoMessage() {}
 
 func (x *DBParameterGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[6]
+	mi := &file_storage_neptune_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -908,7 +976,7 @@ func (x *DBParameterGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBParameterGroup.ProtoReflect.Descriptor instead.
 func (*DBParameterGroup) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{6}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DBParameterGroup) GetDbParameterGroupName() string {
@@ -958,7 +1026,7 @@ type Subnet struct {
 
 func (x *Subnet) Reset() {
 	*x = Subnet{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[7]
+	mi := &file_storage_neptune_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -970,7 +1038,7 @@ func (x *Subnet) String() string {
 func (*Subnet) ProtoMessage() {}
 
 func (x *Subnet) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[7]
+	mi := &file_storage_neptune_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -983,7 +1051,7 @@ func (x *Subnet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Subnet.ProtoReflect.Descriptor instead.
 func (*Subnet) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{7}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Subnet) GetSubnetIdentifier() string {
@@ -1028,7 +1096,7 @@ type DBSubnetGroup struct {
 
 func (x *DBSubnetGroup) Reset() {
 	*x = DBSubnetGroup{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[8]
+	mi := &file_storage_neptune_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1040,7 +1108,7 @@ func (x *DBSubnetGroup) String() string {
 func (*DBSubnetGroup) ProtoMessage() {}
 
 func (x *DBSubnetGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[8]
+	mi := &file_storage_neptune_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1053,7 +1121,7 @@ func (x *DBSubnetGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBSubnetGroup.ProtoReflect.Descriptor instead.
 func (*DBSubnetGroup) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{8}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DBSubnetGroup) GetDbSubnetGroupName() string {
@@ -1110,7 +1178,7 @@ type GlobalClusterMember struct {
 
 func (x *GlobalClusterMember) Reset() {
 	*x = GlobalClusterMember{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[9]
+	mi := &file_storage_neptune_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1122,7 +1190,7 @@ func (x *GlobalClusterMember) String() string {
 func (*GlobalClusterMember) ProtoMessage() {}
 
 func (x *GlobalClusterMember) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[9]
+	mi := &file_storage_neptune_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1135,7 +1203,7 @@ func (x *GlobalClusterMember) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GlobalClusterMember.ProtoReflect.Descriptor instead.
 func (*GlobalClusterMember) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{9}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GlobalClusterMember) GetDbClusterArn() string {
@@ -1185,7 +1253,7 @@ type GlobalCluster struct {
 
 func (x *GlobalCluster) Reset() {
 	*x = GlobalCluster{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[10]
+	mi := &file_storage_neptune_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1197,7 +1265,7 @@ func (x *GlobalCluster) String() string {
 func (*GlobalCluster) ProtoMessage() {}
 
 func (x *GlobalCluster) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[10]
+	mi := &file_storage_neptune_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1210,7 +1278,7 @@ func (x *GlobalCluster) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GlobalCluster.ProtoReflect.Descriptor instead.
 func (*GlobalCluster) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{10}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GlobalCluster) GetGlobalClusterIdentifier() string {
@@ -1307,7 +1375,7 @@ type EventSubscription struct {
 
 func (x *EventSubscription) Reset() {
 	*x = EventSubscription{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[11]
+	mi := &file_storage_neptune_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1319,7 +1387,7 @@ func (x *EventSubscription) String() string {
 func (*EventSubscription) ProtoMessage() {}
 
 func (x *EventSubscription) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[11]
+	mi := &file_storage_neptune_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1332,7 +1400,7 @@ func (x *EventSubscription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventSubscription.ProtoReflect.Descriptor instead.
 func (*EventSubscription) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{11}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *EventSubscription) GetCustSubscriptionId() string {
@@ -1413,7 +1481,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[12]
+	mi := &file_storage_neptune_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1425,7 +1493,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[12]
+	mi := &file_storage_neptune_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1438,7 +1506,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{12}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *Event) GetEventId() string {
@@ -1508,7 +1576,7 @@ type Parameter struct {
 
 func (x *Parameter) Reset() {
 	*x = Parameter{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[13]
+	mi := &file_storage_neptune_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1520,7 +1588,7 @@ func (x *Parameter) String() string {
 func (*Parameter) ProtoMessage() {}
 
 func (x *Parameter) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[13]
+	mi := &file_storage_neptune_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1533,7 +1601,7 @@ func (x *Parameter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Parameter.ProtoReflect.Descriptor instead.
 func (*Parameter) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{13}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Parameter) GetParameterName() string {
@@ -1616,7 +1684,7 @@ type Tag struct {
 
 func (x *Tag) Reset() {
 	*x = Tag{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[14]
+	mi := &file_storage_neptune_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1628,7 +1696,7 @@ func (x *Tag) String() string {
 func (*Tag) ProtoMessage() {}
 
 func (x *Tag) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[14]
+	mi := &file_storage_neptune_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1641,7 +1709,7 @@ func (x *Tag) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tag.ProtoReflect.Descriptor instead.
 func (*Tag) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{14}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Tag) GetKey() string {
@@ -1667,7 +1735,7 @@ type TagList struct {
 
 func (x *TagList) Reset() {
 	*x = TagList{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[15]
+	mi := &file_storage_neptune_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1679,7 +1747,7 @@ func (x *TagList) String() string {
 func (*TagList) ProtoMessage() {}
 
 func (x *TagList) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[15]
+	mi := &file_storage_neptune_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1692,7 +1760,7 @@ func (x *TagList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagList.ProtoReflect.Descriptor instead.
 func (*TagList) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{15}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *TagList) GetTags() []*Tag {
@@ -1718,7 +1786,7 @@ type DBClusterEndpoint struct {
 
 func (x *DBClusterEndpoint) Reset() {
 	*x = DBClusterEndpoint{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[16]
+	mi := &file_storage_neptune_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1730,7 +1798,7 @@ func (x *DBClusterEndpoint) String() string {
 func (*DBClusterEndpoint) ProtoMessage() {}
 
 func (x *DBClusterEndpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[16]
+	mi := &file_storage_neptune_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1743,7 +1811,7 @@ func (x *DBClusterEndpoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DBClusterEndpoint.ProtoReflect.Descriptor instead.
 func (*DBClusterEndpoint) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{16}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DBClusterEndpoint) GetDbClusterEndpointIdentifier() string {
@@ -1818,7 +1886,7 @@ type QueryState struct {
 
 func (x *QueryState) Reset() {
 	*x = QueryState{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[17]
+	mi := &file_storage_neptune_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1830,7 +1898,7 @@ func (x *QueryState) String() string {
 func (*QueryState) ProtoMessage() {}
 
 func (x *QueryState) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[17]
+	mi := &file_storage_neptune_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1843,7 +1911,7 @@ func (x *QueryState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryState.ProtoReflect.Descriptor instead.
 func (*QueryState) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{17}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *QueryState) GetQueryId() string {
@@ -1920,7 +1988,7 @@ type LoaderJob struct {
 
 func (x *LoaderJob) Reset() {
 	*x = LoaderJob{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[18]
+	mi := &file_storage_neptune_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1932,7 +2000,7 @@ func (x *LoaderJob) String() string {
 func (*LoaderJob) ProtoMessage() {}
 
 func (x *LoaderJob) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[18]
+	mi := &file_storage_neptune_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1945,7 +2013,7 @@ func (x *LoaderJob) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoaderJob.ProtoReflect.Descriptor instead.
 func (*LoaderJob) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{18}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *LoaderJob) GetLoadId() string {
@@ -2037,7 +2105,7 @@ type GraphStatistics struct {
 
 func (x *GraphStatistics) Reset() {
 	*x = GraphStatistics{}
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[19]
+	mi := &file_storage_neptune_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2049,7 +2117,7 @@ func (x *GraphStatistics) String() string {
 func (*GraphStatistics) ProtoMessage() {}
 
 func (x *GraphStatistics) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_neptune_proto_msgTypes[19]
+	mi := &file_storage_neptune_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2062,7 +2130,7 @@ func (x *GraphStatistics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GraphStatistics.ProtoReflect.Descriptor instead.
 func (*GraphStatistics) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_neptune_proto_rawDescGZIP(), []int{19}
+	return file_storage_neptune_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *GraphStatistics) GetActive() bool {
@@ -2142,18 +2210,21 @@ func (x *GraphStatistics) GetSignatureCount() int64 {
 	return 0
 }
 
-var File_proto_storage_storage_neptune_proto protoreflect.FileDescriptor
+var File_storage_neptune_proto protoreflect.FileDescriptor
 
-const file_proto_storage_storage_neptune_proto_rawDesc = "" +
+const file_storage_neptune_proto_rawDesc = "" +
 	"\n" +
-	"#proto/storage/storage_neptune.proto\x12\x0fstorage.neptune\x1a\x1fgoogle/protobuf/timestamp.proto\"h\n" +
+	"\x15storage_neptune.proto\x12\x0fstorage.neptune\x1a\x1fgoogle/protobuf/timestamp.proto\"h\n" +
 	" ServerlessV2ScalingConfiguration\x12!\n" +
 	"\fmin_capacity\x18\x01 \x01(\x01R\vminCapacity\x12!\n" +
 	"\fmax_capacity\x18\x02 \x01(\x01R\vmaxCapacity\"e\n" +
 	"\rDBClusterRole\x12\x19\n" +
 	"\brole_arn\x18\x01 \x01(\tR\aroleArn\x12!\n" +
 	"\ffeature_name\x18\x02 \x01(\tR\vfeatureName\x12\x16\n" +
-	"\x06status\x18\x03 \x01(\tR\x06status\"\xa3\r\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\"?\n" +
+	"\x0fClusterEndpoint\x12\x18\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x12\n" +
+	"\x04port\x18\x02 \x01(\x05R\x04port\"\xe1\r\n" +
 	"\tDBCluster\x122\n" +
 	"\x15db_cluster_identifier\x18\x01 \x01(\tR\x13dbClusterIdentifier\x12\x16\n" +
 	"\x06engine\x18\x02 \x01(\tR\x06engine\x12%\n" +
@@ -2189,7 +2260,8 @@ const file_proto_storage_storage_neptune_proto_rawDesc = "" +
 	"\n" +
 	"account_id\x18\x1e \x01(\tR\taccountId\x12\x16\n" +
 	"\x06region\x18\x1f \x01(\tR\x06region\x12$\n" +
-	"\x0edb_cluster_arn\x18  \x01(\tR\fdbClusterArn\"\x93\b\n" +
+	"\x0edb_cluster_arn\x18  \x01(\tR\fdbClusterArn\x12<\n" +
+	"\bendpoint\x18! \x01(\v2 .storage.neptune.ClusterEndpointR\bendpoint\"\xd1\b\n" +
 	"\n" +
 	"DBInstance\x124\n" +
 	"\x16db_instance_identifier\x18\x01 \x01(\tR\x14dbInstanceIdentifier\x122\n" +
@@ -2214,7 +2286,8 @@ const file_proto_storage_storage_neptune_proto_rawDesc = "" +
 	"\n" +
 	"account_id\x18\x13 \x01(\tR\taccountId\x12\x16\n" +
 	"\x06region\x18\x14 \x01(\tR\x06region\x12&\n" +
-	"\x0fdb_instance_arn\x18\x15 \x01(\tR\rdbInstanceArn\"\xb1\x05\n" +
+	"\x0fdb_instance_arn\x18\x15 \x01(\tR\rdbInstanceArn\x12<\n" +
+	"\bendpoint\x18\x16 \x01(\v2 .storage.neptune.ClusterEndpointR\bendpoint\"\xb1\x05\n" +
 	"\x11DBClusterSnapshot\x12C\n" +
 	"\x1edb_cluster_snapshot_identifier\x18\x01 \x01(\tR\x1bdbClusterSnapshotIdentifier\x122\n" +
 	"\x15db_cluster_identifier\x18\x02 \x01(\tR\x13dbClusterIdentifier\x12L\n" +
@@ -2382,94 +2455,97 @@ const file_proto_storage_storage_neptune_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01B2Z0vorpalstacks/internal/pb/storage/storage_neptuneb\x06proto3"
 
 var (
-	file_proto_storage_storage_neptune_proto_rawDescOnce sync.Once
-	file_proto_storage_storage_neptune_proto_rawDescData []byte
+	file_storage_neptune_proto_rawDescOnce sync.Once
+	file_storage_neptune_proto_rawDescData []byte
 )
 
-func file_proto_storage_storage_neptune_proto_rawDescGZIP() []byte {
-	file_proto_storage_storage_neptune_proto_rawDescOnce.Do(func() {
-		file_proto_storage_storage_neptune_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_storage_storage_neptune_proto_rawDesc), len(file_proto_storage_storage_neptune_proto_rawDesc)))
+func file_storage_neptune_proto_rawDescGZIP() []byte {
+	file_storage_neptune_proto_rawDescOnce.Do(func() {
+		file_storage_neptune_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_storage_neptune_proto_rawDesc), len(file_storage_neptune_proto_rawDesc)))
 	})
-	return file_proto_storage_storage_neptune_proto_rawDescData
+	return file_storage_neptune_proto_rawDescData
 }
 
-var file_proto_storage_storage_neptune_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
-var file_proto_storage_storage_neptune_proto_goTypes = []any{
+var file_storage_neptune_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_storage_neptune_proto_goTypes = []any{
 	(*ServerlessV2ScalingConfiguration)(nil), // 0: storage.neptune.ServerlessV2ScalingConfiguration
 	(*DBClusterRole)(nil),                    // 1: storage.neptune.DBClusterRole
-	(*DBCluster)(nil),                        // 2: storage.neptune.DBCluster
-	(*DBInstance)(nil),                       // 3: storage.neptune.DBInstance
-	(*DBClusterSnapshot)(nil),                // 4: storage.neptune.DBClusterSnapshot
-	(*DBClusterParameterGroup)(nil),          // 5: storage.neptune.DBClusterParameterGroup
-	(*DBParameterGroup)(nil),                 // 6: storage.neptune.DBParameterGroup
-	(*Subnet)(nil),                           // 7: storage.neptune.Subnet
-	(*DBSubnetGroup)(nil),                    // 8: storage.neptune.DBSubnetGroup
-	(*GlobalClusterMember)(nil),              // 9: storage.neptune.GlobalClusterMember
-	(*GlobalCluster)(nil),                    // 10: storage.neptune.GlobalCluster
-	(*EventSubscription)(nil),                // 11: storage.neptune.EventSubscription
-	(*Event)(nil),                            // 12: storage.neptune.Event
-	(*Parameter)(nil),                        // 13: storage.neptune.Parameter
-	(*Tag)(nil),                              // 14: storage.neptune.Tag
-	(*TagList)(nil),                          // 15: storage.neptune.TagList
-	(*DBClusterEndpoint)(nil),                // 16: storage.neptune.DBClusterEndpoint
-	(*QueryState)(nil),                       // 17: storage.neptune.QueryState
-	(*LoaderJob)(nil),                        // 18: storage.neptune.LoaderJob
-	(*GraphStatistics)(nil),                  // 19: storage.neptune.GraphStatistics
-	nil,                                      // 20: storage.neptune.LoaderJob.DetailsEntry
-	nil,                                      // 21: storage.neptune.GraphStatistics.LabelCountsEntry
-	nil,                                      // 22: storage.neptune.GraphStatistics.RelCountsEntry
-	(*timestamppb.Timestamp)(nil),            // 23: google.protobuf.Timestamp
+	(*ClusterEndpoint)(nil),                  // 2: storage.neptune.ClusterEndpoint
+	(*DBCluster)(nil),                        // 3: storage.neptune.DBCluster
+	(*DBInstance)(nil),                       // 4: storage.neptune.DBInstance
+	(*DBClusterSnapshot)(nil),                // 5: storage.neptune.DBClusterSnapshot
+	(*DBClusterParameterGroup)(nil),          // 6: storage.neptune.DBClusterParameterGroup
+	(*DBParameterGroup)(nil),                 // 7: storage.neptune.DBParameterGroup
+	(*Subnet)(nil),                           // 8: storage.neptune.Subnet
+	(*DBSubnetGroup)(nil),                    // 9: storage.neptune.DBSubnetGroup
+	(*GlobalClusterMember)(nil),              // 10: storage.neptune.GlobalClusterMember
+	(*GlobalCluster)(nil),                    // 11: storage.neptune.GlobalCluster
+	(*EventSubscription)(nil),                // 12: storage.neptune.EventSubscription
+	(*Event)(nil),                            // 13: storage.neptune.Event
+	(*Parameter)(nil),                        // 14: storage.neptune.Parameter
+	(*Tag)(nil),                              // 15: storage.neptune.Tag
+	(*TagList)(nil),                          // 16: storage.neptune.TagList
+	(*DBClusterEndpoint)(nil),                // 17: storage.neptune.DBClusterEndpoint
+	(*QueryState)(nil),                       // 18: storage.neptune.QueryState
+	(*LoaderJob)(nil),                        // 19: storage.neptune.LoaderJob
+	(*GraphStatistics)(nil),                  // 20: storage.neptune.GraphStatistics
+	nil,                                      // 21: storage.neptune.LoaderJob.DetailsEntry
+	nil,                                      // 22: storage.neptune.GraphStatistics.LabelCountsEntry
+	nil,                                      // 23: storage.neptune.GraphStatistics.RelCountsEntry
+	(*timestamppb.Timestamp)(nil),            // 24: google.protobuf.Timestamp
 }
-var file_proto_storage_storage_neptune_proto_depIdxs = []int32{
-	23, // 0: storage.neptune.DBCluster.cluster_create_time:type_name -> google.protobuf.Timestamp
-	23, // 1: storage.neptune.DBCluster.earliest_restorable_time:type_name -> google.protobuf.Timestamp
-	23, // 2: storage.neptune.DBCluster.latest_restorable_time:type_name -> google.protobuf.Timestamp
+var file_storage_neptune_proto_depIdxs = []int32{
+	24, // 0: storage.neptune.DBCluster.cluster_create_time:type_name -> google.protobuf.Timestamp
+	24, // 1: storage.neptune.DBCluster.earliest_restorable_time:type_name -> google.protobuf.Timestamp
+	24, // 2: storage.neptune.DBCluster.latest_restorable_time:type_name -> google.protobuf.Timestamp
 	1,  // 3: storage.neptune.DBCluster.associated_roles:type_name -> storage.neptune.DBClusterRole
 	0,  // 4: storage.neptune.DBCluster.serverless_v2_scaling_configuration:type_name -> storage.neptune.ServerlessV2ScalingConfiguration
-	23, // 5: storage.neptune.DBInstance.instance_create_time:type_name -> google.protobuf.Timestamp
-	23, // 6: storage.neptune.DBClusterSnapshot.snapshot_create_time:type_name -> google.protobuf.Timestamp
-	23, // 7: storage.neptune.DBClusterSnapshot.cluster_create_time:type_name -> google.protobuf.Timestamp
-	13, // 8: storage.neptune.DBClusterParameterGroup.parameters:type_name -> storage.neptune.Parameter
-	13, // 9: storage.neptune.DBParameterGroup.parameters:type_name -> storage.neptune.Parameter
-	7,  // 10: storage.neptune.DBSubnetGroup.subnets:type_name -> storage.neptune.Subnet
-	9,  // 11: storage.neptune.GlobalCluster.global_cluster_members:type_name -> storage.neptune.GlobalClusterMember
-	23, // 12: storage.neptune.EventSubscription.subscription_creation_time:type_name -> google.protobuf.Timestamp
-	23, // 13: storage.neptune.Event.date:type_name -> google.protobuf.Timestamp
-	14, // 14: storage.neptune.TagList.tags:type_name -> storage.neptune.Tag
-	23, // 15: storage.neptune.QueryState.start_time:type_name -> google.protobuf.Timestamp
-	23, // 16: storage.neptune.QueryState.end_time:type_name -> google.protobuf.Timestamp
-	23, // 17: storage.neptune.LoaderJob.submit_time:type_name -> google.protobuf.Timestamp
-	23, // 18: storage.neptune.LoaderJob.end_time:type_name -> google.protobuf.Timestamp
-	20, // 19: storage.neptune.LoaderJob.details:type_name -> storage.neptune.LoaderJob.DetailsEntry
-	21, // 20: storage.neptune.GraphStatistics.label_counts:type_name -> storage.neptune.GraphStatistics.LabelCountsEntry
-	22, // 21: storage.neptune.GraphStatistics.rel_counts:type_name -> storage.neptune.GraphStatistics.RelCountsEntry
-	22, // [22:22] is the sub-list for method output_type
-	22, // [22:22] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	2,  // 5: storage.neptune.DBCluster.endpoint:type_name -> storage.neptune.ClusterEndpoint
+	24, // 6: storage.neptune.DBInstance.instance_create_time:type_name -> google.protobuf.Timestamp
+	2,  // 7: storage.neptune.DBInstance.endpoint:type_name -> storage.neptune.ClusterEndpoint
+	24, // 8: storage.neptune.DBClusterSnapshot.snapshot_create_time:type_name -> google.protobuf.Timestamp
+	24, // 9: storage.neptune.DBClusterSnapshot.cluster_create_time:type_name -> google.protobuf.Timestamp
+	14, // 10: storage.neptune.DBClusterParameterGroup.parameters:type_name -> storage.neptune.Parameter
+	14, // 11: storage.neptune.DBParameterGroup.parameters:type_name -> storage.neptune.Parameter
+	8,  // 12: storage.neptune.DBSubnetGroup.subnets:type_name -> storage.neptune.Subnet
+	10, // 13: storage.neptune.GlobalCluster.global_cluster_members:type_name -> storage.neptune.GlobalClusterMember
+	24, // 14: storage.neptune.EventSubscription.subscription_creation_time:type_name -> google.protobuf.Timestamp
+	24, // 15: storage.neptune.Event.date:type_name -> google.protobuf.Timestamp
+	15, // 16: storage.neptune.TagList.tags:type_name -> storage.neptune.Tag
+	24, // 17: storage.neptune.QueryState.start_time:type_name -> google.protobuf.Timestamp
+	24, // 18: storage.neptune.QueryState.end_time:type_name -> google.protobuf.Timestamp
+	24, // 19: storage.neptune.LoaderJob.submit_time:type_name -> google.protobuf.Timestamp
+	24, // 20: storage.neptune.LoaderJob.end_time:type_name -> google.protobuf.Timestamp
+	21, // 21: storage.neptune.LoaderJob.details:type_name -> storage.neptune.LoaderJob.DetailsEntry
+	22, // 22: storage.neptune.GraphStatistics.label_counts:type_name -> storage.neptune.GraphStatistics.LabelCountsEntry
+	23, // 23: storage.neptune.GraphStatistics.rel_counts:type_name -> storage.neptune.GraphStatistics.RelCountsEntry
+	24, // [24:24] is the sub-list for method output_type
+	24, // [24:24] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
-func init() { file_proto_storage_storage_neptune_proto_init() }
-func file_proto_storage_storage_neptune_proto_init() {
-	if File_proto_storage_storage_neptune_proto != nil {
+func init() { file_storage_neptune_proto_init() }
+func file_storage_neptune_proto_init() {
+	if File_storage_neptune_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_storage_storage_neptune_proto_rawDesc), len(file_proto_storage_storage_neptune_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_neptune_proto_rawDesc), len(file_storage_neptune_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   23,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_proto_storage_storage_neptune_proto_goTypes,
-		DependencyIndexes: file_proto_storage_storage_neptune_proto_depIdxs,
-		MessageInfos:      file_proto_storage_storage_neptune_proto_msgTypes,
+		GoTypes:           file_storage_neptune_proto_goTypes,
+		DependencyIndexes: file_storage_neptune_proto_depIdxs,
+		MessageInfos:      file_storage_neptune_proto_msgTypes,
 	}.Build()
-	File_proto_storage_storage_neptune_proto = out.File
-	file_proto_storage_storage_neptune_proto_goTypes = nil
-	file_proto_storage_storage_neptune_proto_depIdxs = nil
+	File_storage_neptune_proto = out.File
+	file_storage_neptune_proto_goTypes = nil
+	file_storage_neptune_proto_depIdxs = nil
 }

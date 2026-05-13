@@ -10,7 +10,7 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/aws/types"
 )
@@ -94,10 +94,7 @@ func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {
 		}
 	}
 	if c.Endpoint != nil {
-		m["Endpoint"] = map[string]interface{}{
-			"Address": c.Endpoint.Address,
-			"Port":    c.Endpoint.Port,
-		}
+		m["Endpoint"] = fmt.Sprintf("%s:%d", c.Endpoint.Address, c.Endpoint.Port)
 	}
 	return m
 }
@@ -129,14 +126,18 @@ func enrichClusterWithTags(store neptunestore.NeptuneStoreInterface, cluster *ne
 	return m
 }
 
-func enrichClusterWithTagsAndEndpoint(store neptunestore.NeptuneStoreInterface, cluster *neptunestore.DBCluster, endpointAddr string, endpointPort int) map[string]interface{} {
-	m := enrichClusterWithTags(store, cluster)
-	if endpointAddr != "" && endpointPort > 0 {
-		m["Endpoint"] = fmt.Sprintf("%s:%d", endpointAddr, endpointPort)
-	} else if endpointAddr != "" {
-		m["Endpoint"] = endpointAddr
+// setClusterEndpoint persists the connection endpoint on the cluster.  It
+// constructs the address from endpointAddress, stores it in cluster.Endpoint,
+// and writes the update through to Pebble.
+func (s *NeptuneService) setClusterEndpoint(store neptunestore.NeptuneStoreInterface, cluster *neptunestore.DBCluster, enginePort int) {
+	addr := s.endpointAddress(cluster.DBClusterIdentifier)
+	if addr == "" || enginePort <= 0 {
+		return
 	}
-	return m
+	cluster.Endpoint = &neptunestore.Endpoint{Address: addr, Port: enginePort}
+	if err := store.UpdateCluster(cluster); err != nil {
+		logs.Warn("failed to persist cluster endpoint", logs.String("cluster", cluster.DBClusterIdentifier), logs.Err(err))
+	}
 }
 
 // CreateDBCluster creates a new Neptune DB cluster with the specified configuration.
@@ -227,6 +228,8 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
+	s.setClusterEndpoint(store, cluster, enginePort)
+
 	if tagList := getNeptuneTagList(params); len(tagList) > 0 {
 		storeTags := make([]types.Tag, 0, len(tagList))
 		for _, t := range tagList {
@@ -245,7 +248,7 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 		fmt.Sprintf("DB cluster %s created", id), []string{"creation"})
 
 	return map[string]interface{}{
-		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, s.endpointAddress(id), enginePort),
+		"DBCluster": enrichClusterWithTags(store, cluster),
 	}, nil
 }
 
@@ -401,21 +404,9 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		}
 	}
 
-	addr, port := s.clusterEndpointInfo(cluster.DBClusterIdentifier)
 	return map[string]interface{}{
-		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, addr, port),
+		"DBCluster": enrichClusterWithTags(store, cluster),
 	}, nil
-}
-
-func (s *NeptuneService) clusterEndpointInfo(clusterID string) (addr string, port int) {
-	if s.dataPlaneService == nil {
-		return "", 0
-	}
-	p, err := s.dataPlaneService.GetClusterPort(clusterID)
-	if err != nil || p == 0 {
-		return "", 0
-	}
-	return s.endpointAddress(clusterID), p
 }
 
 // DescribeDBClusters returns information about the specified DB cluster or lists
@@ -433,9 +424,8 @@ func (s *NeptuneService) DescribeDBClusters(ctx context.Context, reqCtx *request
 		if err != nil {
 			return nil, translateStoreError(err)
 		}
-		addr, port := s.clusterEndpointInfo(clusterID)
 		return map[string]interface{}{
-			"DBClusters": protocol.XMLElements{ElementName: "DBCluster", Items: []interface{}{enrichClusterWithTagsAndEndpoint(store, cluster, addr, port)}},
+			"DBClusters": protocol.XMLElements{ElementName: "DBCluster", Items: []interface{}{enrichClusterWithTags(store, cluster)}},
 		}, nil
 	}
 
@@ -446,8 +436,7 @@ func (s *NeptuneService) DescribeDBClusters(ctx context.Context, reqCtx *request
 
 	items := make([]interface{}, 0, len(clusters))
 	for _, c := range clusters {
-		addr, port := s.clusterEndpointInfo(c.DBClusterIdentifier)
-		items = append(items, enrichClusterWithTagsAndEndpoint(store, c, addr, port))
+		items = append(items, enrichClusterWithTags(store, c))
 	}
 
 	marker := request.GetStringParam(params, "Marker")
@@ -506,8 +495,10 @@ func (s *NeptuneService) StartDBCluster(ctx context.Context, reqCtx *request.Req
 		}
 	}
 
+	s.setClusterEndpoint(store, cluster, enginePort)
+
 	return map[string]interface{}{
-		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, s.endpointAddress(id), enginePort),
+		"DBCluster": enrichClusterWithTags(store, cluster),
 	}, nil
 }
 
@@ -545,7 +536,7 @@ func (s *NeptuneService) StopDBCluster(ctx context.Context, reqCtx *request.Requ
 	}
 
 	return map[string]interface{}{
-		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, "", 0),
+		"DBCluster": enrichClusterWithTags(store, cluster),
 	}, nil
 }
 
@@ -572,9 +563,8 @@ func (s *NeptuneService) FailoverDBCluster(ctx context.Context, reqCtx *request.
 		return nil, translateStoreError(err)
 	}
 
-	addr, port := s.clusterEndpointInfo(id)
 	return map[string]interface{}{
-		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, addr, port),
+		"DBCluster": enrichClusterWithTags(store, cluster),
 	}, nil
 }
 

@@ -13,7 +13,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/api"
 )
@@ -47,7 +46,6 @@ func newTestDispatcher(t *testing.T) *Dispatcher {
 		shapeStore,
 		memberStore,
 		configStore,
-		&resilience.ServiceResilienceConfig{},
 		storageMgr,
 		nil,
 		nil,

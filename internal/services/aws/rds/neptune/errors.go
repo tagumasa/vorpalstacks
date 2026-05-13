@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 )
 
 // translateStoreError converts a Neptune store-level sentinel error into the

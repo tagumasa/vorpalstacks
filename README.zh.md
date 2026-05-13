@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-> **注意：目前为测试版。** Vorpalstacks 正在积极开发中。已实现 32 个 AWS 服务，Go SDK 测试 2216 项、跨服务集成测试 29 项、WebSocket 测试 17 项（合计 2262 项，另有 Python 631 项、TypeScript 2028 项、C# 2019 项），但并未完全覆盖所有边界情况和 AWS 行为。可能存在破坏性变更。欢迎提交 Bug 报告和贡献。
+> **注意：目前为测试版。** Vorpalstacks 正在积极开发中。已实现 32 个 AWS 服务，Go SDK 测试 2215 项、跨服务集成测试 47 项、WebSocket 测试 17 项（合计 2279 项，另有 Python 631 项、TypeScript 2028 项、C# 2019 项），但并未完全覆盖所有边界情况和 AWS 行为。可能存在破坏性变更。欢迎提交 Bug 报告和贡献。
 
 轻量级 AWS 兼容边缘与本地云平台。
 
@@ -35,7 +35,7 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 - **轻量**：单一二进制文件，依赖极少
 - **持久存储**：基于 Pebble 的键值存储
 - **Docker 集成**：Lambda 函数在容器中运行
-- **服务间联动**：基于事件驱动的服务间通信（29 项跨服务集成测试验证）
+- **服务间联动**：基于事件驱动的服务间通信（47 项跨服务集成测试验证）
 - **TLS 支持**：可选 HTTPS，支持自动生成或自定义证书
 - **与 LocalStack 的对比**：技术比较请参阅 [docs/localstack_vs_vorpalstacks_report.md](docs/localstack_vs_vorpalstacks_report.md)
 
@@ -59,7 +59,7 @@ Vorpalstacks 的目标是在无法使用完整 AWS 连接的环境中运行 AWS 
 | Kinesis | 完整 | |
 | KMS | 完整 | |
 | Lambda | 较全面 | 不支持 Durable Functions 或代码签名 |
-| Neptune | 完整 | Property graph + RDF、openCypher/Gremlin、批量加载器 |
+| Neptune | 较全面 | 属性图、openCypher/Gremlin（HTTP + WebSocket）、批量加载。不支持 SPARQL/RDF |
 | Neptune Graph | 完整 | 34 个控制平面操作、openCypher、向量搜索 |
 | Route53 | 有限 | 仅 DNS 记录管理 |
 | S3 | 较全面 | 不支持分析、清单或 S3 Express |
@@ -233,7 +233,7 @@ DATA_PATH/
 
 Vorpalstacks 将全部 32 个服务实现为基于 PebbleDB 的原生 Go 二进制文件，避免了解释型语言和外部进程依赖的开销。
 
-这种架构使核心操作达到亚毫秒级延迟，可以在 CI/CD 流水线中直接运行大量 API 测试（Go SDK 2216 项 + 集成 29 项 + WS 17 项、Python 631 项、TypeScript 2028 项、C# 2019 项），无需容器化开销。
+这种架构使核心操作达到亚毫秒级延迟，可以在 CI/CD 流水线中直接运行大量 API 测试（Go SDK 2215 项 + 集成 47 项 + WS 17 项、Python 631 项、TypeScript 2028 项、C# 2019 项），无需容器化开销。
 
 ### 基准测试结果（参考值）
 

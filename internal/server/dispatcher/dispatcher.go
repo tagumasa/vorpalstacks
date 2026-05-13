@@ -13,7 +13,6 @@ import (
 	"vorpalstacks/internal/common/mock"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/http/classifier"
@@ -34,7 +33,6 @@ type Dispatcher struct {
 	shapeStore                *api.ShapeStore
 	memberStore               *api.MemberStore
 	configStore               *api.ConfigStore
-	builder                   *resilience.OperationResilienceBuilder
 	handlers                  map[string]Handler
 	storageManager            *storage.RegionStorageManager
 	iamStore                  iamstore.IAMStoreInterface
@@ -62,7 +60,6 @@ func NewDispatcher(
 	shapeStore *api.ShapeStore,
 	memberStore *api.MemberStore,
 	configStore *api.ConfigStore,
-	resilienceConfig *resilience.ServiceResilienceConfig,
 	storageMgr *storage.RegionStorageManager,
 	iamStore iamstore.IAMStoreInterface,
 	authorizer Authorizer,
@@ -76,7 +73,6 @@ func NewDispatcher(
 		shapeStore:           shapeStore,
 		memberStore:          memberStore,
 		configStore:          configStore,
-		builder:              resilience.NewOperationResilienceBuilder(resilienceConfig),
 		handlers:             make(map[string]Handler),
 		storageManager:       storageMgr,
 		iamStore:             iamStore,
@@ -115,11 +111,8 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 		}
 	}
 
-	wrapper := d.builder.BuildWrapper(serviceName, opName)
 	t0 := time.Now()
-	result, err := wrapper.ExecuteWithResult(httpCtx, func() (interface{}, error) {
-		return handler(httpCtx, reqCtx, parsedReq)
-	})
+	result, err := handler(httpCtx, reqCtx, parsedReq)
 	elapsed := time.Since(t0)
 	if elapsed > 100*time.Millisecond {
 		logs.Warn("executeHandler slow",

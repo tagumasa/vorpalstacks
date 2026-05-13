@@ -10,7 +10,7 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -338,8 +338,10 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 		}
 	}
 
+	s.setClusterEndpoint(store, cluster, enginePort)
+
 	return map[string]interface{}{
-		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, s.endpointAddress(clusterID), enginePort),
+		"DBCluster": enrichClusterWithTags(store, cluster),
 	}, nil
 }
 
@@ -412,8 +414,10 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 		}
 	}
 
+	s.setClusterEndpoint(store, cluster, enginePort)
+
 	return map[string]interface{}{
-		"DBCluster": enrichClusterWithTagsAndEndpoint(store, cluster, s.endpointAddress(clusterID), enginePort),
+		"DBCluster": enrichClusterWithTags(store, cluster),
 	}, nil
 }
 

@@ -6,7 +6,7 @@ import (
 
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 )
 
 var clusterDefaultParams = []map[string]interface{}{

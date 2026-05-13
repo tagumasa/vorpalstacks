@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gorilla/websocket"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"vorpalstacks/internal/common/handler"
@@ -21,7 +23,7 @@ import (
 	"vorpalstacks/internal/server/listener"
 	"vorpalstacks/internal/server/portalloc"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -412,11 +414,19 @@ func (s *NeptuneDataService) RestoreEngines() {
 }
 
 // DataPlaneHandler returns an HTTP handler for the specified cluster's data
-// plane. The handler injects the cluster's graph engine into the HTTP context
-// before forwarding to the main dispatcher, enabling per-cluster isolation on
-// dedicated listener ports.
+// plane. The handler detects WebSocket upgrade requests on /gremlin and
+// forwards them to the GremlinWSServer for TinkerPop protocol handling. All
+// other requests are injected with the cluster's graph engine context and
+// forwarded to the main HTTP dispatcher.
 func (s *NeptuneDataService) DataPlaneHandler(clusterID string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Route WebSocket upgrades on /gremlin to the TinkerPop handler
+		if r.URL.Path == "/gremlin" && websocket.IsWebSocketUpgrade(r) {
+			wsServer := NewGremlinWSServer(s)
+			wsServer.ServeHTTP(w, r, clusterID)
+			return
+		}
+
 		db := s.GetClusterEngine(clusterID)
 		if db == nil {
 			http.Error(w, fmt.Sprintf("cluster %s engine not available", clusterID), http.StatusServiceUnavailable)

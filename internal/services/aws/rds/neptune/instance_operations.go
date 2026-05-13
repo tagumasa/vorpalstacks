@@ -9,7 +9,8 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	"vorpalstacks/internal/core/logs"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -58,11 +59,15 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 	}
 
 	if clusterID != "" {
-		addr, port := s.clusterEndpointInfo(clusterID)
-		if addr != "" || port > 0 {
-			instance.Endpoint = &neptunestore.Endpoint{
-				Address: fmt.Sprintf("%s.%s.%s.neptune.amazonaws.com", id, s.accountID, s.region),
-				Port:    port,
+		if s.dataPlaneService != nil {
+			if port, err := s.dataPlaneService.GetClusterPort(clusterID); err == nil && port > 0 {
+				instance.Endpoint = &neptunestore.Endpoint{
+					Address: fmt.Sprintf("%s.%s.%s.neptune.amazonaws.com", id, s.accountID, s.region),
+					Port:    port,
+				}
+				if err := store.UpdateInstance(instance); err != nil {
+					logs.Warn("failed to persist instance endpoint", logs.String("instance", id), logs.Err(err))
+				}
 			}
 		}
 	}

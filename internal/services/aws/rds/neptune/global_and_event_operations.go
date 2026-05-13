@@ -10,7 +10,7 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 

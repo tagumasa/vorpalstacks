@@ -3,7 +3,7 @@
 // and streaming.
 //
 // NeptuneData is a sub-service of Neptune and shares the Neptune store
-// (internal/store/aws/neptune) for cluster metadata access.
+// (internal/store/aws/rds/neptune) for cluster metadata access.
 package neptunedata
 
 import (
@@ -22,7 +22,7 @@ import (
 	"vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/neptunedata"
 	neptunedataconnect "vorpalstacks/internal/pb/aws/neptunedata/neptunedataconnect"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 )
 
 // AdminHandler implements the Neptune Data API gRPC-Web admin console handler.

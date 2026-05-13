@@ -4,6 +4,22 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Neptune: TinkerPop Gremlin Server WebSocket protocol** — Neptune clusters now expose a native WebSocket endpoint at `/gremlin` supporting the TinkerPop Gremlin Server binary protocol with GraphSON v3 serialization. Clients can connect directly using Gremlin language drivers (e.g. `gremlinpython`, `Gremlin-JavaScript`) for real-time traversal evaluation against per-cluster graph engines.
+
+- **Neptune: Per-cluster data plane listeners** — Each Neptune DB cluster automatically opens an isolated graph engine with a dedicated HTTP listener on a dynamically allocated port. The data plane supports both REST (OpenCypher/Gremlin HTTP) and WebSocket protocols. Engines are restored automatically on server restart.
+
+- **Neptune: GraphSON v3 encoder/decoder** — Full GraphSON v3 type system support for TinkerPop-compliant serialization of vertices, edges, paths, maps, lists, and scalar types over WebSocket.
+
+- **Integration tests: Neptune direct protocol tests** — New test suite exercising raw HTTP POST and WebSocket paths bypassing the AWS SDK, covering OpenCypher queries, Gremlin HTTP queries, Gremlin WebSocket sessions, and GraphSON v3 response structure validation.
+
+### Changed
+
+- **Neptune service packages relocated under `rds/`** — Neptune, NeptuneData, and NeptuneGraph service implementations moved from `internal/services/aws/{neptune,neptunedata,neptunegraph}/` to `internal/services/aws/rds/{neptune,neptunedata,neptunegraph}/`. Neptune store moved from `internal/store/aws/neptune/` to `internal/store/aws/rds/neptune/`. All import paths updated accordingly.
+
+- **Dispatcher: removed resilience wrapper** — The HTTP request dispatcher no longer wraps handler invocations in the resilience (circuit breaker, bulkhead, adaptive timeout) layer. The `resilience.ServiceResilienceConfig` parameter has been removed from `NewDispatcher` and `NewServer`.
+
 ## [0.0.11]
 
 ### ⚠️ Breaking Changes

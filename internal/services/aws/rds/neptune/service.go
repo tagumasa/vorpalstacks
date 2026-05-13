@@ -4,6 +4,7 @@ package neptune
 import (
 	"context"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -13,9 +14,9 @@ import (
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
-	svcneptunedata "vorpalstacks/internal/services/aws/neptunedata"
+	svcneptunedata "vorpalstacks/internal/services/aws/rds/neptunedata"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	neptunestore "vorpalstacks/internal/store/aws/neptune"
+	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 )
 
 // NeptuneService handles incoming Neptune Management API requests.
@@ -54,6 +55,9 @@ func (s *NeptuneService) SetServerHost(host string) {
 // endpointAddress returns the hostname for a cluster's Endpoint field.
 func (s *NeptuneService) endpointAddress(clusterID string) string {
 	if s.serverHost != "" {
+		if host, _, err := net.SplitHostPort(s.serverHost); err == nil {
+			return host
+		}
 		return s.serverHost
 	}
 	return fmt.Sprintf("%s.cluster-%s.%s.neptune.amazonaws.com", clusterID, s.accountID, s.region)

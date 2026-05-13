@@ -18,7 +18,6 @@ import (
 
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/authorization"
@@ -78,31 +77,6 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("failed to load service configs: %w", err)
 	}
 
-	resilienceConfig := &resilience.ServiceResilienceConfig{
-		ServiceName: "aws-http-server",
-		DefaultCircuitBreaker: &resilience.CircuitBreakerConfig{
-			Name:             "default",
-			MaxFailures:      resilience.DefaultCircuitBreakerMaxFailures,
-			ResetTimeout:     resilience.DefaultCircuitBreakerResetTimeout,
-			HalfOpenMaxCalls: resilience.DefaultCircuitBreakerHalfOpenRequests,
-			SuccessThreshold: resilience.DefaultCircuitBreakerSuccessThreshold,
-		},
-		DefaultBulkhead: &resilience.BulkheadConfig{
-			Name:          "default",
-			MaxConcurrent: resilience.DefaultBulkheadMaxConcurrent,
-			MaxWait:       resilience.DefaultBulkheadTimeout,
-		},
-		DefaultAdaptiveTimeout: &resilience.AdaptiveTimeoutConfig{
-			Name:             "default",
-			InitialTimeout:   resilience.DefaultAdaptiveTimeoutDefault,
-			MinTimeout:       resilience.DefaultAdaptiveTimeoutMin,
-			MaxTimeout:       resilience.DefaultAdaptiveTimeoutMax,
-			SuccessThreshold: resilience.DefaultAdaptiveTimeoutSuccessThreshold,
-			FailureThreshold: resilience.DefaultAdaptiveTimeoutFailureThreshold,
-			AdjustmentFactor: resilience.DefaultAdaptiveAdjustmentFactor,
-		},
-	}
-
 	// Create IAM store (always needed for services and authorization)
 	iamStore := iam.NewIAMStore(globalStore, cfg.AccountID)
 
@@ -130,7 +104,6 @@ func NewServer(cfg *Config) (*Server, error) {
 		shapeStore,
 		memberStore,
 		configStore,
-		resilienceConfig,
 		storageMgr,
 		iamStore,
 		authorizer,

@@ -100,6 +100,9 @@ func ClusterToProto(c *DBCluster) *pb.DBCluster {
 	for _, role := range c.AssociatedRoles {
 		p.AssociatedRoles = append(p.AssociatedRoles, clusterRoleToProto(&role))
 	}
+	if c.Endpoint != nil {
+		p.Endpoint = &pb.ClusterEndpoint{Address: c.Endpoint.Address, Port: int32(c.Endpoint.Port)}
+	}
 	return p
 }
 
@@ -153,6 +156,9 @@ func ProtoToCluster(p *pb.DBCluster) *DBCluster {
 	for _, role := range p.GetAssociatedRoles() {
 		c.AssociatedRoles = append(c.AssociatedRoles, *protoToClusterRole(role))
 	}
+	if ep := p.GetEndpoint(); ep != nil {
+		c.Endpoint = &Endpoint{Address: ep.GetAddress(), Port: int(ep.GetPort())}
+	}
 	return c
 }
 
@@ -185,6 +191,9 @@ func InstanceToProto(i *DBInstance) *pb.DBInstance {
 	}
 	if i.InstanceCreateTime != nil {
 		p.InstanceCreateTime = timestamppb.New(*i.InstanceCreateTime)
+	}
+	if i.Endpoint != nil {
+		p.Endpoint = &pb.ClusterEndpoint{Address: i.Endpoint.Address, Port: int32(i.Endpoint.Port)}
 	}
 	return p
 }
@@ -219,6 +228,9 @@ func ProtoToInstance(p *pb.DBInstance) *DBInstance {
 	if p.InstanceCreateTime != nil {
 		t := p.InstanceCreateTime.AsTime()
 		i.InstanceCreateTime = &t
+	}
+	if ep := p.GetEndpoint(); ep != nil {
+		i.Endpoint = &Endpoint{Address: ep.GetAddress(), Port: int(ep.GetPort())}
 	}
 	return i
 }

@@ -354,5 +354,7 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 	results = append(results, r.runSNSToSQS(ic, ts))
 	results = append(results, r.runSNSToLambda(ic, ts))
 
+	results = append(results, r.RunNeptuneDirectProtocolTests()...)
+
 	return results
 }

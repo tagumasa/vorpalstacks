@@ -13,7 +13,7 @@ import (
 	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/neptune"
 	neptuneconnect "vorpalstacks/internal/pb/aws/neptune/neptuneconnect"
-	storeneptune "vorpalstacks/internal/store/aws/neptune"
+	storeneptune "vorpalstacks/internal/store/aws/rds/neptune"
 )
 
 // AdminHandler implements the Neptune Management API gRPC-Web admin console
