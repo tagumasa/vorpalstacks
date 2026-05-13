@@ -24,6 +24,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **S3: error handling for malformed XML, invalid part-number-marker, and unparseable redirect/routing codes** — Previously silently ignored parse errors; now returns proper `MalformedXML`/`InvalidArgument` (400) responses.
 
+- **Neptune: operational fixes for cluster modification, role removal, tag cleanup, and parameter ordering** — `ModifyDBCluster` now syncs `Endpoint.Port` on port change, creates new cluster before reparenting resources on rename (with rollback on failure). `RemoveRoleFromDBCluster` supports `FeatureName` filtering. `RemoveFromGlobalCluster` matches by cluster ID extracted from ARN. `CreateDBInstance` applies tags on creation. Delete operations for instances, snapshots, parameter groups, and subnet groups now cascade tag cleanup. Parameter lists and tags are sorted deterministically.
+
 ## [0.0.11]
 
 ### ⚠️ Breaking Changes
