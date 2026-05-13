@@ -15,7 +15,7 @@ import (
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage/graphengine"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
+	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 	"vorpalstacks/internal/utils/ntriples"
 )
 

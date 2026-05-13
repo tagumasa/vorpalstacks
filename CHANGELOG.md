@@ -16,7 +16,7 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ### Changed
 
-- **Neptune service packages relocated under `rds/`** — Neptune, NeptuneData, and NeptuneGraph service implementations moved from `internal/services/aws/{neptune,neptunedata,neptunegraph}/` to `internal/services/aws/rds/{neptune,neptunedata,neptunegraph}/`. Neptune store moved from `internal/store/aws/neptune/` to `internal/store/aws/rds/neptune/`. All import paths updated accordingly.
+- **Neptune service packages relocated under `rds/`** — Neptune, NeptuneData, and NeptuneGraph service implementations moved from `internal/services/aws/{neptune,neptunedata,neptunegraph}/` to `internal/services/aws/rds/{neptune,neptunedata,neptunegraph}/`. Neptune and NeptuneGraph stores moved from `internal/store/aws/{neptune,neptunegraph}/` to `internal/store/aws/rds/{neptune,neptunegraph}/`. All import paths updated accordingly.
 
 - **Dispatcher: removed resilience wrapper** — The HTTP request dispatcher no longer wraps handler invocations in the resilience (circuit breaker, bulkhead, adaptive timeout) layer. The `resilience.ServiceResilienceConfig` parameter has been removed from `NewDispatcher` and `NewServer`.
 

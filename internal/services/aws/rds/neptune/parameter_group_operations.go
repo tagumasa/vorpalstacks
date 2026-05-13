@@ -3,6 +3,7 @@ package neptune
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
@@ -97,6 +98,7 @@ func applyParameterModifications(existing []neptunestore.Parameter, mods []neptu
 	for _, p := range m {
 		result = append(result, p)
 	}
+	sort.Slice(result, func(i, j int) bool { return result[i].ParameterName < result[j].ParameterName })
 	return result
 }
 
@@ -157,9 +159,14 @@ func (s *NeptuneService) DeleteDBClusterParameterGroup(ctx context.Context, reqC
 	if err != nil {
 		return nil, err
 	}
+	pg, err := store.GetClusterParameterGroup(name)
+	if err != nil {
+		return nil, translateStoreError(err)
+	}
 	if err := store.DeleteClusterParameterGroup(name); err != nil {
 		return nil, translateStoreError(err)
 	}
+	removeTagsForResource(store, pg.ARN)
 	return map[string]interface{}{}, nil
 }
 
@@ -344,9 +351,14 @@ func (s *NeptuneService) DeleteDBParameterGroup(ctx context.Context, reqCtx *req
 	if err != nil {
 		return nil, err
 	}
+	pg, err := store.GetParameterGroup(name)
+	if err != nil {
+		return nil, translateStoreError(err)
+	}
 	if err := store.DeleteParameterGroup(name); err != nil {
 		return nil, translateStoreError(err)
 	}
+	removeTagsForResource(store, pg.ARN)
 	return map[string]interface{}{}, nil
 }
 

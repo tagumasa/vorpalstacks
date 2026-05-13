@@ -87,6 +87,8 @@ func (s *NeptuneService) DeleteDBClusterSnapshot(ctx context.Context, reqCtx *re
 		return nil, translateStoreError(err)
 	}
 
+	removeTagsForResource(store, snapshot.DBSnapshotArn)
+
 	recordEvent(store, "db-snapshot", snapshotID, snapshot.DBSnapshotArn,
 		fmt.Sprintf("DB cluster snapshot %s deleted", snapshotID), []string{"deletion"})
 

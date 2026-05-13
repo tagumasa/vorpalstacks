@@ -6,7 +6,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
+	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 )
 
 // CreatePrivateGraphEndpoint creates a VPC-private endpoint for accessing the specified graph.

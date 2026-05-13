@@ -352,6 +352,9 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 	if v := request.GetIntParam(params, "Port"); v > 0 {
 		cluster.Port = v
+		if cluster.Endpoint != nil {
+			cluster.Endpoint.Port = v
+		}
 	}
 	if v := request.GetIntParam(params, "BackupRetentionPeriod"); v > 0 {
 		cluster.BackupRetentionPeriod = v
@@ -388,19 +391,24 @@ func (s *NeptuneService) ModifyDBCluster(ctx context.Context, reqCtx *request.Re
 		return nil, translateStoreError(err)
 	}
 
+	if newPort := request.GetIntParam(params, "Port"); newPort > 0 {
+		s.setClusterEndpoint(store, cluster, newPort)
+	}
+
 	newID := request.GetStringParam(params, "NewDBClusterIdentifier")
 	if newID != "" && newID != id {
 		oldArn := cluster.DBClusterArn
 		oldID := cluster.DBClusterIdentifier
 		cluster.DBClusterIdentifier = newID
 		cluster.DBClusterArn = arnutil.NewARNBuilder(cluster.AccountID, cluster.Region).RDS().Cluster(newID)
-		reparentClusterResources(store, oldArn, cluster.DBClusterArn, oldID, newID)
 		if err := store.CreateCluster(cluster); err != nil {
+			cluster.DBClusterIdentifier = oldID
+			cluster.DBClusterArn = oldArn
 			return nil, translateStoreError(err)
 		}
+		reparentClusterResources(store, oldArn, cluster.DBClusterArn, oldID, newID)
 		if err := store.DeleteCluster(oldID); err != nil {
-			_ = store.DeleteCluster(newID)
-			return nil, translateStoreError(err)
+			logs.Warn("failed to delete old cluster after rename", logs.String("oldID", oldID), logs.Err(err))
 		}
 	}
 
@@ -619,6 +627,7 @@ func (s *NeptuneService) RemoveRoleFromDBCluster(ctx context.Context, reqCtx *re
 	if roleArn == "" {
 		return nil, fmt.Errorf("neptune: RoleArn is required")
 	}
+	featureName := request.GetStringParam(params, "FeatureName")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -633,7 +642,7 @@ func (s *NeptuneService) RemoveRoleFromDBCluster(ctx context.Context, reqCtx *re
 	found := false
 	filtered := make([]neptunestore.DBClusterRole, 0, len(cluster.AssociatedRoles))
 	for _, r := range cluster.AssociatedRoles {
-		if r.RoleArn == roleArn {
+		if r.RoleArn == roleArn && (featureName == "" || r.FeatureName == featureName) {
 			found = true
 			continue
 		}
@@ -650,11 +659,6 @@ func (s *NeptuneService) RemoveRoleFromDBCluster(ctx context.Context, reqCtx *re
 	return map[string]interface{}{}, nil
 }
 
-// cascadeDeleteClusterResources removes all instances, cluster endpoints, and tags
-// associated with the given cluster. Errors are logged but not returned so that
-// the cluster deletion itself always succeeds.
-// buildRestoredCluster constructs a DBCluster for restore-from-snapshot or
-// point-in-time restore, deriving defaults from the source when not overridden.
 func buildRestoredCluster(clusterID, engine, engineVersion string, params map[string]interface{}, now *time.Time, reqCtx *request.RequestContext) *neptunestore.DBCluster {
 	backupRetention := request.GetIntParam(params, "BackupRetentionPeriod")
 	if backupRetention == 0 {
@@ -714,6 +718,21 @@ func reparentClusterResources(store neptunestore.NeptuneStoreInterface, oldArn, 
 	}
 }
 
+// removeTagsForResource removes all tags associated with the given resource ARN.
+func removeTagsForResource(store neptunestore.NeptuneStoreInterface, resourceArn string) {
+	tags, err := store.GetTags(resourceArn)
+	if err != nil || len(tags) == 0 {
+		return
+	}
+	keys := make([]string, len(tags))
+	for i, t := range tags {
+		keys[i] = t.Key
+	}
+	if err := store.RemoveTags(resourceArn, keys); err != nil {
+		logs.Warn("failed to remove tags on delete", logs.String("arn", resourceArn), logs.Err(err))
+	}
+}
+
 func cascadeDeleteClusterResources(store neptunestore.NeptuneStoreInterface, cluster *neptunestore.DBCluster) {
 	clusterID := cluster.DBClusterIdentifier
 
@@ -726,16 +745,7 @@ func cascadeDeleteClusterResources(store neptunestore.NeptuneStoreInterface, clu
 				if delErr := store.DeleteInstance(inst.DBInstanceIdentifier); delErr != nil {
 					logs.Warn("cascade: failed to delete instance", logs.String("instance", inst.DBInstanceIdentifier), logs.Err(delErr))
 				} else {
-					tags, _ := store.GetTags(inst.DBInstanceArn)
-					if len(tags) > 0 {
-						keys := make([]string, len(tags))
-						for i, t := range tags {
-							keys[i] = t.Key
-						}
-						if tagErr := store.RemoveTags(inst.DBInstanceArn, keys); tagErr != nil {
-							logs.Warn("cascade: failed to remove instance tags", logs.String("instance", inst.DBInstanceIdentifier), logs.Err(tagErr))
-						}
-					}
+					removeTagsForResource(store, inst.DBInstanceArn)
 				}
 			}
 		}
@@ -752,14 +762,5 @@ func cascadeDeleteClusterResources(store neptunestore.NeptuneStoreInterface, clu
 		}
 	}
 
-	tags, _ := store.GetTags(cluster.DBClusterArn)
-	if len(tags) > 0 {
-		keys := make([]string, len(tags))
-		for i, t := range tags {
-			keys[i] = t.Key
-		}
-		if tagErr := store.RemoveTags(cluster.DBClusterArn, keys); tagErr != nil {
-			logs.Warn("cascade: failed to remove cluster tags", logs.String("cluster", clusterID), logs.Err(tagErr))
-		}
-	}
+	removeTagsForResource(store, cluster.DBClusterArn)
 }

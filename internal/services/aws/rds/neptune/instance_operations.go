@@ -12,6 +12,7 @@ import (
 	"vorpalstacks/internal/core/logs"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateDBInstance creates a new Neptune DB instance within a cluster.
@@ -75,6 +76,20 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 	recordEvent(store, "db-instance", id, instance.DBInstanceArn,
 		fmt.Sprintf("DB instance %s created", id), []string{"creation"})
 
+	if tagList := getNeptuneTagList(params); len(tagList) > 0 {
+		storeTags := make([]types.Tag, 0, len(tagList))
+		for _, t := range tagList {
+			key, _ := t["Key"].(string)
+			value, _ := t["Value"].(string)
+			if key != "" {
+				storeTags = append(storeTags, types.Tag{Key: key, Value: value})
+			}
+		}
+		if err := store.AddTags(instance.DBInstanceArn, storeTags); err != nil {
+			logs.Warn("failed to tag instance on create", logs.String("instance", id), logs.Err(err))
+		}
+	}
+
 	return map[string]interface{}{
 		"DBInstance": instance,
 	}, nil
@@ -103,6 +118,8 @@ func (s *NeptuneService) DeleteDBInstance(ctx context.Context, reqCtx *request.R
 	if err := store.DeleteInstance(id); err != nil {
 		return nil, translateStoreError(err)
 	}
+
+	removeTagsForResource(store, instance.DBInstanceArn)
 
 	recordEvent(store, "db-instance", id, instance.DBInstanceArn,
 		fmt.Sprintf("DB instance %s deleted", id), []string{"deletion"})

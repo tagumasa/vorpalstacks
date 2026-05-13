@@ -5,7 +5,7 @@ import (
 
 	"vorpalstacks/internal/core/logs"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
+	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 )
 
 var terminalTaskStatuses = map[string]bool{

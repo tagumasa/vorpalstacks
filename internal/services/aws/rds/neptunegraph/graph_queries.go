@@ -6,7 +6,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
+	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 	"vorpalstacks/internal/utils/timeutils"
 )
 

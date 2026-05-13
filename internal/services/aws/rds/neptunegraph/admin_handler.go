@@ -19,7 +19,7 @@ import (
 	pb "vorpalstacks/internal/pb/aws/neptunegraph"
 	neptunegraphconnect "vorpalstacks/internal/pb/aws/neptunegraph/neptunegraphconnect"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
+	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 )
 
 // AdminHandler provides gRPC-based admin console handlers for NeptuneGraph resources.

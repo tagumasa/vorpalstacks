@@ -1,7 +1,7 @@
 package neptunegraph
 
 import (
-	ngstore "vorpalstacks/internal/store/aws/neptunegraph"
+	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 )
 
 func graphToResponse(g *ngstore.Graph) map[string]interface{} {

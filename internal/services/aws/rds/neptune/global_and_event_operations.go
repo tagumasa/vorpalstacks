@@ -300,7 +300,7 @@ func (s *NeptuneService) RemoveFromGlobalCluster(ctx context.Context, reqCtx *re
 	}
 	filtered := make([]neptunestore.GlobalClusterMember, 0, len(gc.GlobalClusterMembers))
 	for _, m := range gc.GlobalClusterMembers {
-		if m.DBClusterArn != clusterID && m.GlobalClusterIdentifier != clusterID {
+		if clusterIDFromARN(m.DBClusterArn) != clusterID && m.DBClusterArn != clusterID && m.GlobalClusterIdentifier != clusterID {
 			filtered = append(filtered, m)
 		}
 	}

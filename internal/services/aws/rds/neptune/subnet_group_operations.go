@@ -189,11 +189,14 @@ func (s *NeptuneService) DeleteDBSubnetGroup(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-
+	sg, err := store.GetSubnetGroup(name)
+	if err != nil {
+		return nil, translateStoreError(err)
+	}
 	if err := store.DeleteSubnetGroup(name); err != nil {
 		return nil, translateStoreError(err)
 	}
-
+	removeTagsForResource(store, sg.ARN)
 	return map[string]interface{}{}, nil
 }
 

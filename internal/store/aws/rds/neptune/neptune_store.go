@@ -430,6 +430,7 @@ func (s *NeptuneStore) AddTags(resourceArn string, tags []types.Tag) error {
 	for k, v := range tagMap {
 		merged = append(merged, types.Tag{Key: k, Value: v})
 	}
+	sort.Slice(merged, func(i, j int) bool { return merged[i].Key < merged[j].Key })
 	return s.tags.PutProto(resourceArn, &pb.TagList{Tags: TagsToProto(merged)})
 }
 
