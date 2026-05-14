@@ -96,52 +96,49 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	// Load all secrets from the store without pagination, then apply
-	// filtering (IncludePlannedDeletion, Filters) and sorting in the handler
-	// before paginating with an offset-based NextToken. This avoids the
-	// previous bug where filtering was applied after store-level pagination,
-	// causing NextToken to never be returned.
-	result, err := store.ListSecrets(common.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
+	secretFilter := buildSecretFilter(includePlannedDeletion, filters)
 
-	filtered := result.Items
-	if !includePlannedDeletion {
-		kept := filtered[:0]
-		for _, sec := range filtered {
-			if sec.DeletedDate == nil && sec.ScheduledDeletionDate == nil {
-				kept = append(kept, sec)
-			}
-		}
-		filtered = kept
-	}
-
-	if len(filters) > 0 {
-		filtered = applySecretFilters(filtered, filters)
-	}
+	var secrets []*secretsmanagerstore.Secret
+	var nextMarker string
+	var isTruncated bool
 
 	if sortBy != "" {
-		sortSecrets(filtered, sortBy, sortOrder)
-	}
-
-	// Parse the offset from the NextToken (encoded as a decimal integer).
-	// Subsequent requests resume from where the previous page ended.
-	skipCount := 0
-	if nextToken != "" {
-		if n, err := fmt.Sscanf(nextToken, "%d", &skipCount); n != 1 || err != nil {
-			skipCount = 0
+		result, err := store.ListSecrets(common.ListOptions{}, secretFilter)
+		if err != nil {
+			return nil, err
 		}
+		sortSecrets(result.Items, sortBy, sortOrder)
+
+		skipCount := 0
+		if nextToken != "" {
+			if n, e := fmt.Sscanf(nextToken, "%d", &skipCount); n != 1 || e != nil {
+				skipCount = 0
+			}
+		}
+		paged := result.Items[skipCount:]
+		isTruncated = maxResults < len(paged)
+		if isTruncated {
+			paged = paged[:maxResults]
+		}
+		secrets = paged
+		if isTruncated {
+			nextMarker = fmt.Sprintf("%d", skipCount+maxResults)
+		}
+	} else {
+		result, err := store.ListSecrets(common.ListOptions{
+			Marker:   nextToken,
+			MaxItems: maxResults,
+		}, secretFilter)
+		if err != nil {
+			return nil, err
+		}
+		secrets = result.Items
+		nextMarker = result.NextMarker
+		isTruncated = result.IsTruncated
 	}
 
-	paged := filtered[skipCount:]
-	isTruncated := maxResults < len(paged)
-	if isTruncated {
-		paged = paged[:maxResults]
-	}
-
-	secretList := []interface{}{}
-	for _, secret := range paged {
+	secretList := make([]interface{}, 0, len(secrets))
+	for _, secret := range secrets {
 		entry := map[string]interface{}{
 			"ARN":                    secret.ARN,
 			"Name":                   secret.Name,
@@ -172,12 +169,34 @@ func (s *SecretsManagerService) ListSecrets(ctx context.Context, reqCtx *request
 		"SecretList": secretList,
 	}
 	if isTruncated {
-		pagination.SetNextToken(response, "NextToken", fmt.Sprintf("%d", skipCount+maxResults))
+		pagination.SetNextToken(response, "NextToken", nextMarker)
 	}
 	return response, nil
 }
 
-func applySecretFilters(secrets []*secretsmanagerstore.Secret, filters []map[string]interface{}) []*secretsmanagerstore.Secret {
+// buildSecretFilter creates a store-level filter callback that combines
+// IncludePlannedDeletion and the ListSecrets Filter parameter.
+// Returns nil when no filtering is needed (includePlannedDeletion=true, no filters).
+func buildSecretFilter(includePlannedDeletion bool, filters []map[string]interface{}) func(*secretsmanagerstore.Secret) bool {
+	needsDeletionCheck := !includePlannedDeletion
+	needsFilterCheck := len(filters) > 0
+	if !needsDeletionCheck && !needsFilterCheck {
+		return nil
+	}
+
+	return func(sec *secretsmanagerstore.Secret) bool {
+		if needsDeletionCheck && (sec.DeletedDate != nil || sec.ScheduledDeletionDate != nil) {
+			return false
+		}
+		if needsFilterCheck && !secretMatchesFilters(sec, filters) {
+			return false
+		}
+		return true
+	}
+}
+
+// secretMatchesFilters checks whether a single secret matches all filter criteria.
+func secretMatchesFilters(sec *secretsmanagerstore.Secret, filters []map[string]interface{}) bool {
 	for _, f := range filters {
 		key := request.GetStringParam(f, "Key")
 		values := request.GetStringList(f, "Values")
@@ -186,54 +205,51 @@ func applySecretFilters(secrets []*secretsmanagerstore.Secret, filters []map[str
 		}
 		switch key {
 		case "name":
-			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
-				return matchesAny(sec.Name, values, strings.Contains)
-			})
+			if !matchesAny(sec.Name, values, strings.Contains) {
+				return false
+			}
 		case "description":
-			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
-				return matchesAny(sec.Description, values, strings.Contains)
-			})
+			if !matchesAny(sec.Description, values, strings.Contains) {
+				return false
+			}
 		case "tag-key":
-			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
-				for _, v := range values {
-					if _, ok := sec.Tags[v]; ok {
-						return true
-					}
+			found := false
+			for _, v := range values {
+				if _, ok := sec.Tags[v]; ok {
+					found = true
+					break
 				}
+			}
+			if !found {
 				return false
-			})
+			}
 		case "tag-value":
-			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
-				for _, v := range values {
-					for _, tv := range sec.Tags {
-						if strings.Contains(tv, v) {
-							return true
-						}
+			found := false
+			for _, v := range values {
+				for _, tv := range sec.Tags {
+					if strings.Contains(tv, v) {
+						found = true
+						break
 					}
 				}
+				if found {
+					break
+				}
+			}
+			if !found {
 				return false
-			})
+			}
 		case "primary-region":
-			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
-				return matchesAny(sec.PrimaryRegion, values, func(a, b string) bool { return a == b })
-			})
+			if !matchesAny(sec.PrimaryRegion, values, func(a, b string) bool { return a == b }) {
+				return false
+			}
 		case "owning-service":
-			secrets = filterSecrets(secrets, func(sec *secretsmanagerstore.Secret) bool {
-				return matchesAny(sec.OwningService, values, func(a, b string) bool { return a == b })
-			})
+			if !matchesAny(sec.OwningService, values, func(a, b string) bool { return a == b }) {
+				return false
+			}
 		}
 	}
-	return secrets
-}
-
-func filterSecrets(secrets []*secretsmanagerstore.Secret, match func(*secretsmanagerstore.Secret) bool) []*secretsmanagerstore.Secret {
-	kept := secrets[:0]
-	for _, sec := range secrets {
-		if match(sec) {
-			kept = append(kept, sec)
-		}
-	}
-	return kept
+	return true
 }
 
 func matchesAny(s string, values []string, cmp func(string, string) bool) bool {

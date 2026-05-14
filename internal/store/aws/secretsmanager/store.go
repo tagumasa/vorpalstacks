@@ -337,10 +337,18 @@ func (s *SecretStore) DeleteSecret(name string) error {
 }
 
 // ListSecrets returns a list of secrets from the store using the specified list options.
-// Callers should filter soft-deleted secrets as needed.
-func (s *SecretStore) ListSecrets(opts common.ListOptions) (*common.ListResult[Secret], error) {
+// The filter callback is applied inside the Pebble iterator so that filtered-out items
+// do not count towards MaxItems, enabling true store-level pagination even with filters.
+// Pass nil to accept all named secrets.
+func (s *SecretStore) ListSecrets(opts common.ListOptions, filter func(*Secret) bool) (*common.ListResult[Secret], error) {
 	return common.List[Secret](s.BaseStore, opts, func(secret *Secret) bool {
-		return secret.Name != ""
+		if secret.Name == "" {
+			return false
+		}
+		if filter != nil && !filter(secret) {
+			return false
+		}
+		return true
 	})
 }
 

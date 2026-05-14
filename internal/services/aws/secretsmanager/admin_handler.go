@@ -60,7 +60,7 @@ func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.
 		MaxItems: int(maxResults),
 		Marker:   req.Msg.Nexttoken,
 	}
-	result, err := store.ListSecrets(opts)
+	result, err := store.ListSecrets(opts, nil)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}

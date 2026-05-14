@@ -18,7 +18,7 @@ type SecretStoreInterface interface {
 	GetSecretForMetadata(name string) (*Secret, error)
 	UpdateSecret(secret *Secret) (*Secret, error)
 	DeleteSecret(name string) error
-	ListSecrets(opts common.ListOptions) (*common.ListResult[Secret], error)
+	ListSecrets(opts common.ListOptions, filter func(*Secret) bool) (*common.ListResult[Secret], error)
 	GetSecretVersion(name, versionId string) (*SecretVersion, error)
 	GetSecretVersionByStage(name, stage string) (*SecretVersion, error)
 	ListSecretTags(name string) (map[string]string, error)
