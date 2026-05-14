@@ -34,14 +34,14 @@ func (s *AppSyncStore) getGraphqlApiNameByIndex(apiId string) (string, error) {
 	}
 
 	// Fallback: full scan for pre-index data.
-	apis, _, err := s.ListGraphqlApis(common.ListOptions{MaxItems: 10000}, "")
+	apis, err := common.ListMatching[GraphqlApi](s.graphqlApisStore, "", func(a *GraphqlApi) bool {
+		return a.ApiId == apiId
+	})
 	if err != nil {
 		return "", err
 	}
-	for _, api := range apis {
-		if api.ApiId == apiId {
-			return api.Name, nil
-		}
+	if len(apis) > 0 {
+		return apis[0].Name, nil
 	}
 	return "", ErrGraphqlApiNotFound
 }
@@ -170,6 +170,12 @@ func (s *AppSyncStore) UpdateGraphqlApiById(apiId string, update *GraphqlApi) (*
 	}
 	existing.WafWebAclArn = update.WafWebAclArn
 	existing.XrayEnabled = update.XrayEnabled
+
+	if oldName != existing.Name {
+		if s.graphqlApisStore.Exists(existing.Name) {
+			return nil, ErrGraphqlApiAlreadyExists
+		}
+	}
 
 	if err := s.graphqlApisStore.Put(existing.Name, existing); err != nil {
 		return nil, err
@@ -527,7 +533,7 @@ func (s *AppSyncStore) ListResolvers(apiId, typeName string, opts common.ListOpt
 // Performs a full scan filtered by functionId, then applies offset-based pagination
 // using the Marker as a decimal skip count.
 func (s *AppSyncStore) ListResolversByFunction(apiId, functionId string, opts common.ListOptions) ([]*Resolver, string, error) {
-	allResolvers, _, err := s.ListResolvers(apiId, "", common.ListOptions{MaxItems: 10000, Prefix: apiId + "/"})
+	allResolvers, err := common.ListMatching[Resolver](s.resolversStore, apiId+"/", nil)
 	if err != nil {
 		return nil, "", err
 	}
@@ -561,4 +567,9 @@ func (s *AppSyncStore) ListResolversByFunction(apiId, functionId string, opts co
 		return remaining[:opts.MaxItems], nextToken, nil
 	}
 	return remaining, "", nil
+}
+
+// GetAllResolversForApi returns all resolvers for an API without pagination limits.
+func (s *AppSyncStore) GetAllResolversForApi(apiId string) ([]*Resolver, error) {
+	return common.ListMatching[Resolver](s.resolversStore, apiId+"/", nil)
 }

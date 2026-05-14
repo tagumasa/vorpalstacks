@@ -484,7 +484,7 @@ func matchWildcardPattern(s, pattern string) bool {
 			}
 		}
 		if starIdx == -1 {
-			return s == pattern
+			return strings.HasSuffix(s, pattern)
 		}
 		fragment := pattern[:starIdx]
 		pattern = pattern[starIdx+1:]
@@ -706,7 +706,17 @@ func (s *EventsService) applyInputTransformer(payload map[string]interface{}, tr
 	template := transformer.InputTemplate
 	for key, value := range values {
 		placeholder := "<" + key + ">"
-		template = strings.ReplaceAll(template, placeholder, fmt.Sprintf("%v", value))
+		var valueStr string
+		switch v := value.(type) {
+		case string:
+			valueStr = v
+		case nil:
+			valueStr = "null"
+		default:
+			b, _ := json.Marshal(v)
+			valueStr = string(b)
+		}
+		template = strings.ReplaceAll(template, placeholder, valueStr)
 	}
 
 	// Try to parse as JSON, otherwise return as raw template

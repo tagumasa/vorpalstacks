@@ -197,11 +197,6 @@ func (s *AthenaService) ListWorkGroups(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	result, err := stores.workGroupStore.ListWorkGroups(storecommon.ListOptions{MaxItems: 10000})
-	if err != nil {
-		return nil, err
-	}
-	workGroups := result.Items
 
 	maxResults := 50
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxStr != "" {
@@ -210,35 +205,35 @@ func (s *AthenaService) ListWorkGroups(ctx context.Context, reqCtx *request.Requ
 		}
 	}
 
-	offset := 0
+	var marker string
 	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
-		if val, err := strconv.Atoi(nextToken); err == nil && val >= 0 {
-			offset = val
-		}
+		marker = nextToken
 	}
 
-	var workGroupSummaries []map[string]interface{}
-	for i, wg := range workGroups {
-		if i < offset {
-			continue
-		}
-		if len(workGroupSummaries) >= maxResults {
-			break
-		}
-		workGroupSummaries = append(workGroupSummaries, map[string]interface{}{
+	result, err := stores.workGroupStore.ListWorkGroups(storecommon.ListOptions{
+		Marker:   marker,
+		MaxItems: maxResults,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	workGroupSummaries := make([]map[string]interface{}, len(result.Items))
+	for i, wg := range result.Items {
+		workGroupSummaries[i] = map[string]interface{}{
 			"Name":         wg.Name,
 			"State":        wg.State,
 			"Description":  wg.Description,
 			"CreationTime": float64(wg.CreatedTime.Unix()) + float64(wg.CreatedTime.Nanosecond())/1e9,
-		})
+		}
 	}
 
 	resp := map[string]interface{}{
 		"WorkGroups": workGroupSummaries,
 	}
 
-	if offset+maxResults < len(workGroups) {
-		resp["NextToken"] = strconv.Itoa(offset + maxResults)
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
 	}
 
 	return resp, nil

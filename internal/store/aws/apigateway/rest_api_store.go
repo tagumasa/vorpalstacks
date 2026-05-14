@@ -36,6 +36,39 @@ func NewRestApiStore(store storage.BasicStorage, accountId, region string) *Rest
 	}
 }
 
+// ensureRestApiMaps initialises nil maps on a RestApi so that serialised
+// output is always a valid empty map rather than null.
+func ensureRestApiMaps(api *RestApi) {
+	if api.Resources == nil {
+		api.Resources = make(map[string]*Resource)
+	}
+	if api.Deployments == nil {
+		api.Deployments = make(map[string]*Deployment)
+	}
+	if api.Stages == nil {
+		api.Stages = make(map[string]*Stage)
+	}
+	if api.RequestValidators == nil {
+		api.RequestValidators = make(map[string]*RequestValidator)
+	}
+	if api.Models == nil {
+		api.Models = make(map[string]*Model)
+	}
+	if api.Authorizers == nil {
+		api.Authorizers = make(map[string]*Authorizer)
+	}
+}
+
+// updateLocked persists a RestApi under the caller's lock.
+// Validates existence and ensures maps before writing.
+func (s *RestApiStore) updateLocked(api *RestApi) error {
+	if !s.Exists(api.Id) {
+		return ErrRestApiNotFound
+	}
+	ensureRestApiMaps(api)
+	return s.Put(api.Id, api)
+}
+
 // Create creates a new REST API.
 func (s *RestApiStore) Create(api *RestApi) (*RestApi, error) {
 	if api.Id == "" {
@@ -80,36 +113,12 @@ func (s *RestApiStore) Get(apiId string) (*RestApi, error) {
 	return &api, nil
 }
 
-// Update updates an existing REST API.
+// Update updates an existing REST API. Acquires the store lock so that
+// callers from the service layer get an atomic write.
 func (s *RestApiStore) Update(api *RestApi) error {
-	if !s.Exists(api.Id) {
-		return ErrRestApiNotFound
-	}
-	ensureRestApiMaps(api)
-	return s.Put(api.Id, api)
-}
-
-// ensureRestApiMaps initialises nil maps on a RestApi so that serialised
-// output is always a valid empty map rather than null.
-func ensureRestApiMaps(api *RestApi) {
-	if api.Resources == nil {
-		api.Resources = make(map[string]*Resource)
-	}
-	if api.Deployments == nil {
-		api.Deployments = make(map[string]*Deployment)
-	}
-	if api.Stages == nil {
-		api.Stages = make(map[string]*Stage)
-	}
-	if api.RequestValidators == nil {
-		api.RequestValidators = make(map[string]*RequestValidator)
-	}
-	if api.Models == nil {
-		api.Models = make(map[string]*Model)
-	}
-	if api.Authorizers == nil {
-		api.Authorizers = make(map[string]*Authorizer)
-	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.updateLocked(api)
 }
 
 // Delete deletes a REST API.
@@ -150,11 +159,14 @@ func (s *RestApiStore) Tag(apiId string, inputTags map[string]string) error {
 
 	api.Tags = tags.Apply(api.Tags, tags.MapToTags(inputTags))
 
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // UntagResource removes tags from a REST API.
 func (s *RestApiStore) Untag(apiId string, tagKeys []string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	api, err := s.Get(apiId)
 	if err != nil {
 		return err
@@ -162,7 +174,7 @@ func (s *RestApiStore) Untag(apiId string, tagKeys []string) error {
 
 	api.Tags = tags.RemoveByTagKeys(api.Tags, tagKeys)
 
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // TagStage adds or updates tags on a specific stage of a REST API.
@@ -186,7 +198,7 @@ func (s *RestApiStore) TagStage(apiId, stageName string, inputTags map[string]st
 
 	stage.Tags = tags.Apply(stage.Tags, tags.MapToTags(inputTags))
 
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // UntagStage removes the specified tag keys from a stage of a REST API.
@@ -206,7 +218,7 @@ func (s *RestApiStore) UntagStage(apiId, stageName string, tagKeys []string) err
 
 	stage.Tags = tags.RemoveByTagKeys(stage.Tags, tagKeys)
 
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // GetStageTags returns the tags associated with a specific stage of a REST API.
@@ -252,7 +264,7 @@ func (s *RestApiStore) CreateRequestValidator(apiId string, validator *RequestVa
 	}
 	api.RequestValidators[validator.Id] = validator
 
-	if err := s.Update(api); err != nil {
+	if err := s.updateLocked(api); err != nil {
 		return nil, err
 	}
 
@@ -275,6 +287,9 @@ func (s *RestApiStore) GetRequestValidator(apiId, validatorId string) (*RequestV
 
 // UpdateRequestValidator updates a request validator.
 func (s *RestApiStore) UpdateRequestValidator(apiId string, validator *RequestValidator) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	api, err := s.Get(apiId)
 	if err != nil {
 		return err
@@ -285,11 +300,14 @@ func (s *RestApiStore) UpdateRequestValidator(apiId string, validator *RequestVa
 	}
 
 	api.RequestValidators[validator.Id] = validator
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // DeleteRequestValidator deletes a request validator.
 func (s *RestApiStore) DeleteRequestValidator(apiId, validatorId string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	api, err := s.Get(apiId)
 	if err != nil {
 		return err
@@ -300,7 +318,7 @@ func (s *RestApiStore) DeleteRequestValidator(apiId, validatorId string) error {
 	}
 
 	delete(api.RequestValidators, validatorId)
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // ListRequestValidators returns all request validators for a REST API.
@@ -342,7 +360,7 @@ func (s *RestApiStore) CreateModel(apiId string, model *Model) (*Model, error) {
 
 	api.Models[model.Name] = model
 
-	if err := s.Update(api); err != nil {
+	if err := s.updateLocked(api); err != nil {
 		return nil, err
 	}
 
@@ -365,6 +383,9 @@ func (s *RestApiStore) GetModel(apiId, modelName string) (*Model, error) {
 
 // DeleteModel deletes a model.
 func (s *RestApiStore) DeleteModel(apiId, modelName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	api, err := s.Get(apiId)
 	if err != nil {
 		return err
@@ -375,7 +396,7 @@ func (s *RestApiStore) DeleteModel(apiId, modelName string) error {
 	}
 
 	delete(api.Models, modelName)
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // ListModels returns all models for a REST API.
@@ -394,6 +415,9 @@ func (s *RestApiStore) ListModels(apiId string) ([]*Model, error) {
 
 // UpdateModel updates a model.
 func (s *RestApiStore) UpdateModel(apiId string, model *Model) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	api, err := s.Get(apiId)
 	if err != nil {
 		return err
@@ -405,7 +429,7 @@ func (s *RestApiStore) UpdateModel(apiId string, model *Model) error {
 
 	model.RestApiId = apiId
 	api.Models[model.Name] = model
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // CreateAuthorizer creates a new authorizer for a REST API.
@@ -428,7 +452,7 @@ func (s *RestApiStore) CreateAuthorizer(apiId string, authorizer *Authorizer) (*
 	}
 	api.Authorizers[authorizer.Id] = authorizer
 
-	if err := s.Update(api); err != nil {
+	if err := s.updateLocked(api); err != nil {
 		return nil, err
 	}
 
@@ -465,7 +489,7 @@ func (s *RestApiStore) UpdateAuthorizer(apiId string, authorizer *Authorizer) er
 
 	authorizer.RestApiId = apiId
 	api.Authorizers[authorizer.Id] = authorizer
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // DeleteAuthorizer deletes an authorizer.
@@ -483,7 +507,7 @@ func (s *RestApiStore) DeleteAuthorizer(apiId, authorizerId string) error {
 	}
 
 	delete(api.Authorizers, authorizerId)
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // ListAuthorizers returns all authorizers for a REST API.

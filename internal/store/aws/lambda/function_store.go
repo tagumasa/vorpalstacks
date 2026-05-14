@@ -193,6 +193,11 @@ func (s *FunctionStore) List(opts common.ListOptions) (*common.ListResult[Functi
 	return common.List[Function](s.BaseStore, opts, nil)
 }
 
+// ListAllFunctions returns all functions without pagination limits.
+func (s *FunctionStore) ListAllFunctions() ([]*Function, error) {
+	return common.ListMatching[Function](s.BaseStore, "", nil)
+}
+
 // ListByPrefix returns a list of Lambda functions filtered by name prefix.
 func (s *FunctionStore) ListByPrefix(prefix string) ([]*Function, error) {
 	var functions []*Function

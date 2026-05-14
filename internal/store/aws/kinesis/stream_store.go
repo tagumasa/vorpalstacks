@@ -107,15 +107,15 @@ func (s *KinesisStore) GetStreamByARN(streamARN string) (*Stream, error) {
 		}
 	}
 
-	result, err := s.ListStreams(common.ListOptions{MaxItems: 10000})
+	streams, err := common.ListMatching[Stream](s.BaseStore, "", func(stream *Stream) bool {
+		return normalizeARN(stream.StreamARN, s.accountID) == normalizedARN
+	})
 	if err != nil {
 		return nil, err
 	}
-	for _, stream := range result.Items {
-		if normalizeARN(stream.StreamARN, s.accountID) == normalizedARN {
-			_ = arnBucket.Put(arnKey, []byte(stream.StreamName))
-			return stream, nil
-		}
+	if len(streams) > 0 {
+		_ = arnBucket.Put(arnKey, []byte(streams[0].StreamName))
+		return streams[0], nil
 	}
 	return nil, ErrStreamNotFound
 }

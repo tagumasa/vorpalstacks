@@ -29,7 +29,7 @@ func (s *RestApiStore) PutMethod(apiId, resourceId string, method *Method) (*Met
 
 	resource.ResourceMethods[method.HttpMethod] = method
 
-	if err := s.Update(api); err != nil {
+	if err := s.updateLocked(api); err != nil {
 		return nil, err
 	}
 
@@ -71,7 +71,7 @@ func (s *RestApiStore) DeleteMethod(apiId, resourceId, httpMethod string) error 
 	}
 
 	delete(resource.ResourceMethods, httpMethod)
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // PutIntegration creates or updates an integration for a method.
@@ -104,7 +104,7 @@ func (s *RestApiStore) PutIntegration(apiId, resourceId, httpMethod string, inte
 
 	method.MethodIntegration = integration
 
-	return integration, s.Update(api)
+	return integration, s.updateLocked(api)
 }
 
 // GetIntegration retrieves an integration for a method.
@@ -142,7 +142,7 @@ func (s *RestApiStore) DeleteIntegration(apiId, resourceId, httpMethod string) e
 	}
 
 	method.MethodIntegration = nil
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // UpdateIntegration updates an integration for a method.
@@ -174,7 +174,7 @@ func (s *RestApiStore) UpdateIntegration(apiId, resourceId, httpMethod string, i
 	integration.ResourceId = resourceId
 	integration.HttpMethod = httpMethod
 	method.MethodIntegration = integration
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // PutIntegrationResponse creates or updates an integration response for a method.
@@ -207,7 +207,7 @@ func (s *RestApiStore) PutIntegrationResponse(apiId, resourceId, httpMethod, sta
 	}
 	method.MethodIntegration.IntegrationResponses[statusCode] = response
 
-	return response, s.Update(api)
+	return response, s.updateLocked(api)
 }
 
 // GetIntegrationResponse retrieves an integration response for a method.
@@ -250,7 +250,7 @@ func (s *RestApiStore) DeleteIntegrationResponse(apiId, resourceId, httpMethod, 
 	}
 
 	delete(method.MethodIntegration.IntegrationResponses, statusCode)
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // UpdateIntegrationResponse updates an integration response for a method.
@@ -283,7 +283,7 @@ func (s *RestApiStore) UpdateIntegrationResponse(apiId, resourceId, httpMethod, 
 	}
 
 	method.MethodIntegration.IntegrationResponses[statusCode] = response
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // PutMethodResponse creates or updates a method response for a method.
@@ -312,7 +312,7 @@ func (s *RestApiStore) PutMethodResponse(apiId, resourceId, httpMethod, statusCo
 	}
 	method.MethodResponses[statusCode] = response
 
-	if err := s.Update(api); err != nil {
+	if err := s.updateLocked(api); err != nil {
 		return nil, err
 	}
 	return response, nil
@@ -358,5 +358,5 @@ func (s *RestApiStore) DeleteMethodResponse(apiId, resourceId, httpMethod, statu
 	}
 
 	delete(method.MethodResponses, statusCode)
-	return s.Update(api)
+	return s.updateLocked(api)
 }

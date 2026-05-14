@@ -29,7 +29,7 @@ func (s *RestApiStore) CreateDeployment(apiId string, deployment *Deployment) (*
 	}
 	api.Deployments[deployment.Id] = deployment
 
-	if err := s.Update(api); err != nil {
+	if err := s.updateLocked(api); err != nil {
 		return nil, err
 	}
 
@@ -71,7 +71,7 @@ func (s *RestApiStore) DeleteDeployment(apiId, deploymentId string) error {
 	}
 
 	delete(api.Deployments, deploymentId)
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // ListDeployments returns all deployments for a REST API.
@@ -104,7 +104,7 @@ func (s *RestApiStore) UpdateDeployment(apiId string, deployment *Deployment) er
 
 	deployment.RestApiId = apiId
 	api.Deployments[deployment.Id] = deployment
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // CreateStage creates a new stage for a REST API.
@@ -144,7 +144,7 @@ func (s *RestApiStore) CreateStage(apiId string, stage *Stage) (*Stage, error) {
 
 	api.Stages[stage.StageName] = stage
 
-	if err := s.Update(api); err != nil {
+	if err := s.updateLocked(api); err != nil {
 		return nil, err
 	}
 
@@ -181,7 +181,7 @@ func (s *RestApiStore) UpdateStage(apiId string, stage *Stage) error {
 
 	stage.LastUpdatedDate = time.Now().UTC()
 	api.Stages[stage.StageName] = stage
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // DeleteStage deletes a stage from a REST API.
@@ -199,7 +199,7 @@ func (s *RestApiStore) DeleteStage(apiId, stageName string) error {
 	}
 
 	delete(api.Stages, stageName)
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // ListStages returns all stages for a REST API.

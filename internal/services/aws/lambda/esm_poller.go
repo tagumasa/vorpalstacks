@@ -12,7 +12,6 @@ import (
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
@@ -92,7 +91,6 @@ type esmPoller struct {
 	bus            eventbus.Bus
 	esmStore       *lambdastore.EventSourceStore
 	lambdaSvc      *LambdaService
-	accountID      string
 	region         string
 	storageManager *storage.RegionStorageManager
 	kinesisCP      map[string]string // "mappingUUID:streamName:shardID" -> lastSeqNum
@@ -204,7 +202,7 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 			newStore := &lambdaStore{
 				Functions:    lambdastore.NewFunctionStore(st, p.lambdaSvc.accountID, region),
 				Layers:       lambdastore.NewLayerStore(st, p.lambdaSvc.accountID, region),
-				EventSources: lambdastore.NewEventSourceStore(st, p.accountID, region),
+				EventSources: lambdastore.NewEventSourceStore(st, p.lambdaSvc.accountID, region),
 			}
 			if actual, loaded := p.lambdaSvc.storeCache.LoadOrStore(region, newStore); loaded {
 				esmStore = actual.(*lambdaStore).EventSources
@@ -217,7 +215,7 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 		return
 	}
 
-	result, err := esmStore.List(storecommon.ListOptions{MaxItems: 1000})
+	result, err := esmStore.ListAllMappings()
 	if err != nil {
 		p.log("failed to list event source mappings", "error", err)
 		return
@@ -226,9 +224,9 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 	type pollJob struct {
 		mapping *lambdastore.EventSourceMapping
 	}
-	jobs := make(chan pollJob, len(result.Items))
+	jobs := make(chan pollJob, len(result))
 	activeKinesisUUIDs := make(map[string]struct{})
-	for _, m := range result.Items {
+	for _, m := range result {
 		if m.State != "Enabled" {
 			continue
 		}
@@ -245,7 +243,7 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 
 	p.purgeStaleKinesisCheckpoints(activeKinesisUUIDs)
 
-	jobCount := len(result.Items)
+	jobCount := len(result)
 	workerCount := p.workers
 	if workerCount > jobCount {
 		workerCount = jobCount
@@ -372,7 +370,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 				"eventID":           fmt.Sprintf("%s:%s:%s", shard.ShardID, rec.SequenceNumber, mapping.UUID),
 				"awsRegion":         streamRegion,
 				"eventName":         "aws:kinesis:record",
-				"invokeIdentityArn": arnutil.NewARNBuilder(p.accountID, "").IAM().Role("vorpalstacks-lambda"),
+				"invokeIdentityArn": arnutil.NewARNBuilder(p.lambdaSvc.accountID, "").IAM().Role("vorpalstacks-lambda"),
 			})
 		}
 
@@ -447,9 +445,9 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		batchSize = maxSQSBatchSize
 	}
 
-	maxMessages := batchSize
-	if maxMessages > sqsReceiveMessageMax {
-		maxMessages = sqsReceiveMessageMax
+	perCallMax := sqsReceiveMessageMax
+	if perCallMax > batchSize {
+		perCallMax = batchSize
 	}
 
 	waitTime := defaultSQSWaitTimeSeconds
@@ -457,19 +455,39 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		waitTime = mapping.MaximumBatchingWindowInSeconds
 	}
 
-	messages, err := p.bus.SQSInvoker().ReceiveMessage(ctx, queueURL, maxMessages, nil, waitTime)
-	if err != nil {
-		p.log("sqs receive failed", "queue", queueName, "mapping", mapping.UUID, "error", err)
+	var allMessages []eventbus.ReceivedSQSMessage
+	remaining := batchSize
+	for remaining > 0 {
+		fetchCount := perCallMax
+		if fetchCount > remaining {
+			fetchCount = remaining
+		}
+
+		msgs, err := p.bus.SQSInvoker().ReceiveMessage(ctx, queueURL, fetchCount, nil, waitTime)
+		if err != nil {
+			p.log("sqs receive failed", "queue", queueName, "mapping", mapping.UUID, "error", err)
+			break
+		}
+
+		if len(msgs) == 0 {
+			break
+		}
+
+		allMessages = append(allMessages, msgs...)
+		remaining -= int32(len(msgs))
+
+		if int32(len(msgs)) < fetchCount {
+			break
+		}
+	}
+
+	if len(allMessages) == 0 {
 		return
 	}
 
-	if len(messages) == 0 {
-		return
-	}
-
-	records := make([]esmSQSRecord, 0, len(messages))
-	receiptHandles := make([]string, 0, len(messages))
-	for _, msg := range messages {
+	records := make([]esmSQSRecord, 0, len(allMessages))
+	receiptHandles := make([]string, 0, len(allMessages))
+	for _, msg := range allMessages {
 		records = append(records, receivedSQSMessageToRecord(msg, mapping.EventSourceArn, region))
 		receiptHandles = append(receiptHandles, msg.ReceiptHandle)
 	}

@@ -81,9 +81,9 @@ func (s *SESv2Store) DeleteContactList(name string) error {
 		return ErrContactListNotFound
 	}
 	prefix := "contact#" + name + "#"
-	result, err := common.List[Contact](s.contactStore, common.ListOptions{Prefix: prefix, MaxItems: 10000}, nil)
+	contacts, err := common.ListMatching[Contact](s.contactStore, prefix, nil)
 	if err == nil {
-		for _, c := range result.Items {
+		for _, c := range contacts {
 			if delErr := s.contactStore.Delete("contact#" + c.ContactListName + "#" + c.EmailAddress); delErr != nil {
 				logs.Warn("failed to delete contact during contact list deletion",
 					logs.String("email", c.EmailAddress), logs.Err(delErr))

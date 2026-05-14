@@ -218,6 +218,11 @@ func (s *AppSyncStore) ListTypes(apiId string, opts common.ListOptions) ([]*Type
 	return result.Items, nextToken, nil
 }
 
+// GetAllTypesForApi returns all types for an API without pagination limits.
+func (s *AppSyncStore) GetAllTypesForApi(apiId string) ([]*Type, error) {
+	return common.ListMatching[Type](s.typesStore, apiId+"/", nil)
+}
+
 // --- Schema Creation ---
 
 // SaveSchemaCreationStatus persists the status of a schema creation operation.

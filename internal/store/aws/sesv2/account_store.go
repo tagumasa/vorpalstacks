@@ -198,11 +198,11 @@ func (s *SESv2Store) DeleteEmailIdentityPolicy(identity, policyName string) erro
 func (s *SESv2Store) ListEmailIdentityPolicies(identity string) ([]*IdentityPolicy, error) {
 	arn := s.BuildIdentityArn(identity)
 	prefix := "policy#" + arn + "#"
-	result, err := common.List[IdentityPolicy](s.policyStore, common.ListOptions{Prefix: prefix, MaxItems: 100}, nil)
+	policies, err := common.ListMatching[IdentityPolicy](s.policyStore, prefix, nil)
 	if err != nil {
 		return nil, err
 	}
-	policies := make([]*IdentityPolicy, len(result.Items))
-	copy(policies, result.Items)
-	return policies, nil
+	result := make([]*IdentityPolicy, len(policies))
+	copy(result, policies)
+	return result, nil
 }

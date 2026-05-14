@@ -372,6 +372,107 @@ func ListAll[T any](store *BaseStore) ([]*T, error) {
 	return items, nil
 }
 
+// ListMatching retrieves all matching items from the store without pagination limits.
+// Use for internal lookups (index recovery, name search) where the result set is
+// expected to be small. For large result sets, use ForEachAll to bound memory usage.
+func ListMatching[T any](store *BaseStore, prefix string, filter FilterFunc[T]) ([]*T, error) {
+	var items []*T
+	err := store.ForEach(func(key string, value []byte) error {
+		if len(key) > 0 && key[0] == '#' {
+			return nil
+		}
+		if prefix != "" && !strings.HasPrefix(key, prefix) {
+			return nil
+		}
+		var item T
+		if err := json.Unmarshal(value, &item); err != nil {
+			return err
+		}
+		if filter != nil && !filter(&item) {
+			return nil
+		}
+		items = append(items, &item)
+		return nil
+	})
+	if err != nil {
+		return nil, NewStoreError(store.service, "list_matching", err)
+	}
+	return items, nil
+}
+
+// ListMatchingProto retrieves all matching protobuf items without pagination limits.
+// See ListMatching for usage guidelines.
+func ListMatchingProto[T proto.Message](store *BaseStore, prefix string, newFunc func() T, filter func(T) bool) ([]T, error) {
+	var items []T
+	err := store.ForEach(func(key string, value []byte) error {
+		if len(key) > 0 && key[0] == '#' {
+			return nil
+		}
+		if prefix != "" && !strings.HasPrefix(key, prefix) {
+			return nil
+		}
+		item := newFunc()
+		if err := proto.Unmarshal(value, item); err != nil {
+			return err
+		}
+		if filter != nil && !filter(item) {
+			return nil
+		}
+		items = append(items, item)
+		return nil
+	})
+	if err != nil {
+		return nil, NewStoreError(store.service, "list_matching_proto", err)
+	}
+	return items, nil
+}
+
+// forEachAllPageSize is the internal page size used by ForEachAll and ForEachAllProto
+// to bound memory usage while processing large result sets.
+const forEachAllPageSize = 100
+
+// ForEachAll iterates over all matching items in pages, calling handler for each.
+// Uses a fixed internal page size to bound memory. Stops if handler returns error.
+// Use for deletion, cleanup, and other large-scale processing.
+func ForEachAll[T any](store *BaseStore, prefix string, filter FilterFunc[T], handler func(*T) error) error {
+	opts := ListOptions{Prefix: prefix, MaxItems: forEachAllPageSize}
+	for {
+		result, err := List[T](store, opts, filter)
+		if err != nil {
+			return err
+		}
+		for _, item := range result.Items {
+			if err := handler(item); err != nil {
+				return err
+			}
+		}
+		if result.NextMarker == "" {
+			return nil
+		}
+		opts.Marker = result.NextMarker
+	}
+}
+
+// ForEachAllProto is the protobuf variant of ForEachAll.
+func ForEachAllProto[T proto.Message](store *BaseStore, prefix string, newFunc func() T, filter func(T) bool, handler func(T) error) error {
+	opts := ListOptions{Prefix: prefix, MaxItems: forEachAllPageSize}
+	for {
+		result, err := ListProto[T](store, opts, newFunc, filter)
+		if err != nil {
+			return err
+		}
+		for _, item := range result.Items {
+			if err := handler(item); err != nil {
+				return err
+			}
+		}
+		if result.NextMarker == "" {
+			return nil
+		}
+		opts.Marker = result.NextMarker
+	}
+}
+
 // GetOrCreateStore retrieves a cached store or creates a new one using the provided function.
 // This is a thread-safe pattern using sync.Map.LoadOrStore.
 func GetOrCreateStore[T any](stores *sync.Map, region string, createFn func() T) T {

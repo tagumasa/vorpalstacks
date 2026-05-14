@@ -192,6 +192,11 @@ func (s *EventSourceStore) List(opts common.ListOptions) (*common.ListResult[Eve
 	return common.List[EventSourceMapping](s.BaseStore, opts, nil)
 }
 
+// ListAllMappings returns all event source mappings without pagination limits.
+func (s *EventSourceStore) ListAllMappings() ([]*EventSourceMapping, error) {
+	return common.ListMatching[EventSourceMapping](s.BaseStore, "", nil)
+}
+
 // ListByFunction returns event source mappings for a specific function.
 func (s *EventSourceStore) ListByFunction(functionArn string) ([]*EventSourceMapping, error) {
 	s.mu.Lock()

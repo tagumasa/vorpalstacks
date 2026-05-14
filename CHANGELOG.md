@@ -26,6 +26,20 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **Neptune: operational fixes for cluster modification, role removal, tag cleanup, and parameter ordering** — `ModifyDBCluster` now syncs `Endpoint.Port` on port change, creates new cluster before reparenting resources on rename (with rollback on failure). `RemoveRoleFromDBCluster` supports `FeatureName` filtering. `RemoveFromGlobalCluster` matches by cluster ID extracted from ARN. `CreateDBInstance` applies tags on creation. Delete operations for instances, snapshots, parameter groups, and subnet groups now cascade tag cleanup. Parameter lists and tags are sorted deterministically.
 
+- **API Gateway: deadlock fix in cascading deletes and missing lock coverage** — `DeleteDomainName` and `DeleteUsagePlan` previously called back into `DeleteBasePathMapping`/`DeleteUsagePlanKey` (which acquire the same mutex), causing deadlock. Introduced `deleteBasePathMappingLocked`/`deleteUsagePlanKeyLocked` internal methods to avoid re-acquisition. Added missing mutex protection to `UpdateBasePathMapping`, `DeleteBasePathMapping`, `UpdateUsagePlan`, `DeleteUsagePlanKey`, and several `RestApiStore` mutation methods.
+
+- **AppSync: pipeline resolver before-template result propagation and rename collision** — Pipeline resolvers now parse and forward the before-step `RequestMappingTemplate` output to downstream functions via `$ctx.prev.result` (previously discarded). `UpdateApiById` and `UpdateGraphqlApiById` now reject name changes that would collide with an existing API.
+
+- **Athena: ListWorkGroups pagination** — Previously fetched up to 10,000 workgroups into memory and performed manual offset-based slicing, silently truncating results beyond the cap. Now delegates to the store's `Marker`/`MaxItems`/`NextMarker` pagination with the correct default page size of 50.
+
+- **Lambda: SQS event source batching, multi-region container naming, and Python runtime** — SQS polling now fetches in a loop to honor `BatchSize` up to 10,000 (previously capped at a single `ReceiveMessage` call of max 10). Container names include region to prevent collisions in multi-region deployments. `copyCodeToContainer` selects `index.py` for Python runtimes.
+
+- **EventBridge: wildcard suffix matching and InputTransformer value serialization** — Fixed `matchWildcardPattern` to use `strings.HasSuffix` when no `*` is present in the pattern. `applyInputTransformer` now JSON-serializes non-string placeholder values instead of using `fmt.Sprintf("%v")`.
+
+- **Lambda ESM poller: remove redundant accountID field** — `esmPoller.accountID` was a stale copy of `lambdaSvc.accountID`. All references now use the canonical source.
+
+- **Store: replace hardcoded pagination limits with generic utility functions** — Added `ListMatching`, `ListMatchingProto`, `ForEachAll`, `ForEachAllProto` to `common/base_store.go`. 17 call sites migrated from ad-hoc `MaxItems: 1000/10000` to the new APIs, eliminating arbitrary result caps on internal lookups and cleanup operations.
+
 ## [0.0.11]
 
 ### ⚠️ Breaking Changes

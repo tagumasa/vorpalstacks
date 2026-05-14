@@ -108,20 +108,13 @@ func (rc *rotationChecker) checkDueRotationsForRegion(ctx context.Context, regio
 		}
 	}
 
-	opts := common.ListOptions{MaxItems: 100}
-	result, err := common.List[secretsmanagerstore.Secret](store.GetBaseStore(), opts, nil)
-	if err != nil {
-		rc.logError("failed to list secrets for rotation check", logs.Err(err))
-		return
-	}
-
 	now := time.Now().UTC()
-	for _, sec := range result.Items {
+	handler := func(sec *secretsmanagerstore.Secret) error {
 		if !sec.RotationEnabled || sec.RotationLambdaARN == "" {
-			continue
+			return nil
 		}
 		if sec.DeletedDate != nil {
-			continue
+			return nil
 		}
 		if !sec.NextRotationDate.IsZero() && sec.NextRotationDate.Before(now) {
 			if err := rc.svc.executeRotation(ctx, store, sec); err != nil {
@@ -130,6 +123,10 @@ func (rc *rotationChecker) checkDueRotationsForRegion(ctx context.Context, regio
 					logs.Err(err))
 			}
 		}
+		return nil
+	}
+	if err := common.ForEachAll[secretsmanagerstore.Secret](store.GetBaseStore(), "", nil, handler); err != nil {
+		rc.logError("failed to list secrets for rotation check", logs.Err(err))
 	}
 }
 

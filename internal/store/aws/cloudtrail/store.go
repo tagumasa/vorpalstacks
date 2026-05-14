@@ -188,14 +188,14 @@ func (s *CloudTrailStore) GetTrailByARN(trailARN string) (*Trail, error) {
 		}
 	}
 
-	ctResult, err := s.ListTrails(common.ListOptions{MaxItems: 10000})
+	trails, err := common.ListMatchingProto[*pb.Trail](s.BaseStore, "", func() *pb.Trail { return &pb.Trail{} }, func(t *pb.Trail) bool {
+		return s.normalizeARN(t.TrailArn) == normalizedARN
+	})
 	if err != nil {
 		return nil, err
 	}
-	for _, trail := range ctResult.Items {
-		if s.normalizeARN(trail.TrailARN) == normalizedARN {
-			return trail, nil
-		}
+	if len(trails) > 0 {
+		return ProtoToTrail(trails[0]), nil
 	}
 	return nil, ErrTrailNotFound
 }

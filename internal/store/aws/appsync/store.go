@@ -254,14 +254,14 @@ func (s *AppSyncStore) getApiNameByIndex(apiId string) (string, error) {
 	}
 
 	// Fallback: full scan for pre-index data.
-	apis, _, err := s.ListApis(common.ListOptions{MaxItems: 10000})
+	apis, err := common.ListMatching[Api](s.apisStore, "", func(a *Api) bool {
+		return a.ApiId == apiId
+	})
 	if err != nil {
 		return "", err
 	}
-	for _, api := range apis {
-		if api.ApiId == apiId {
-			return api.Name, nil
-		}
+	if len(apis) > 0 {
+		return apis[0].Name, nil
 	}
 	return "", ErrApiNotFound
 }
@@ -309,6 +309,12 @@ func (s *AppSyncStore) UpdateApiById(apiId string, update *Api) (*Api, error) {
 	}
 	existing.WafWebAclArn = update.WafWebAclArn
 	existing.XrayEnabled = update.XrayEnabled
+
+	if oldName != existing.Name {
+		if s.apisStore.Exists(existing.Name) {
+			return nil, ErrApiAlreadyExists
+		}
+	}
 
 	if err := s.apisStore.Put(existing.Name, existing); err != nil {
 		return nil, err

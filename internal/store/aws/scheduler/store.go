@@ -130,14 +130,13 @@ func (s *SchedulerStore) DeleteScheduleGroup(ctx context.Context, name string) e
 		return ErrScheduleGroupNotFound
 	}
 
-	opts := common.ListOptions{MaxItems: 1000}
-	result, err := common.List[Schedule](s.schedulesStore, opts, func(sch *Schedule) bool {
+	schedules, err := common.ListMatching[Schedule](s.schedulesStore, "", func(sch *Schedule) bool {
 		return s.buildScheduleGroupARN(sch.GroupName) == arn
 	})
 	if err != nil {
 		return err
 	}
-	if len(result.Items) > 0 {
+	if len(schedules) > 0 {
 		return ErrScheduleGroupNotEmpty
 	}
 

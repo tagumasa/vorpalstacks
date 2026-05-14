@@ -15,7 +15,6 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
-	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/pkg/vtl"
 )
 
@@ -181,7 +180,7 @@ func (e *graphQLEngine) loadSchema(ctx context.Context, reqCtx *request.RequestC
 // buildResolverMap scans all resolvers for the given API and builds a
 // nested map: resolverMap[typeName][fieldName] -> *appsyncstore.Resolver.
 func (e *graphQLEngine) buildResolverMap(apiId string) (map[string]map[string]*appsyncstore.Resolver, error) {
-	resolvers, _, err := e.store.ListResolvers(apiId, "", common.ListOptions{MaxItems: 10000})
+	resolvers, err := e.store.GetAllResolversForApi(apiId)
 	if err != nil {
 		return nil, err
 	}
@@ -510,8 +509,13 @@ func (e *graphQLEngine) executePipelineResolver(
 		},
 	}
 
+	var result interface{} = map[string]interface{}{}
+
 	if resolver.RequestMappingTemplate != "" {
-		_, _ = engine.Transform(resolver.RequestMappingTemplate)
+		resStr, err := engine.Transform(resolver.RequestMappingTemplate)
+		if err != nil {
+			return nil, []graphqlError{{Message: fmt.Sprintf("Pipeline before template error: %v", err)}}
+		}
 		if engine.AppSyncCtx != nil && len(engine.AppSyncCtx.Errors) > 0 {
 			var errs []graphqlError
 			for _, ae := range engine.AppSyncCtx.Errors {
@@ -519,9 +523,15 @@ func (e *graphQLEngine) executePipelineResolver(
 			}
 			return nil, errs
 		}
+		if resStr != "" {
+			var parsed interface{}
+			if jsonErr := json.Unmarshal([]byte(resStr), &parsed); jsonErr != nil {
+				result = resStr
+			} else {
+				result = parsed
+			}
+		}
 	}
-
-	var result interface{} = map[string]interface{}{}
 
 	for _, functionId := range resolver.PipelineConfig.Functions {
 		fn, err := e.store.GetFunction(apiId, functionId)
@@ -534,7 +544,7 @@ func (e *graphQLEngine) executePipelineResolver(
 			Args:   args,
 			Source: parentSource,
 			Stash:  stash,
-			Result: result,
+			Prev:   map[string]interface{}{"result": result},
 			Info: &vtl.AppSyncFieldInfo{
 				FieldName:           fieldName,
 				ParentTypeName:      parentTypeName,

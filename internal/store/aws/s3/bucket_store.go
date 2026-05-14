@@ -121,12 +121,12 @@ func (s *BucketStore) atomicUpdate(name string, modify func(*Bucket) error) erro
 
 // List returns a list of all buckets in the store.
 func (s *BucketStore) List() ([]*Bucket, error) {
-	result, err := common.ListProto[*pb.Bucket](s.BaseStore, common.ListOptions{MaxItems: 10000}, func() *pb.Bucket { return &pb.Bucket{} }, nil)
+	items, err := common.ListMatchingProto[*pb.Bucket](s.BaseStore, "", func() *pb.Bucket { return &pb.Bucket{} }, nil)
 	if err != nil {
 		return nil, err
 	}
-	buckets := make([]*Bucket, len(result.Items))
-	for i, b := range result.Items {
+	buckets := make([]*Bucket, len(items))
+	for i, b := range items {
 		buckets[i] = ProtoToBucket(b)
 	}
 	return buckets, nil

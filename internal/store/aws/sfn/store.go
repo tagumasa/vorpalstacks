@@ -698,13 +698,12 @@ func (s *StepFunctionStore) nextVersionNumber(smArn string) int64 {
 }
 
 func (s *StepFunctionStore) recoverVersionCounter(smArn string) {
-	opts := common.ListOptions{Prefix: smArn + ":", MaxItems: 10000}
-	result, err := common.List[StateMachineVersion](s.versionsStore, opts, nil)
+	versions, err := common.ListMatching[StateMachineVersion](s.versionsStore, smArn+":", nil)
 	if err != nil {
 		return
 	}
 	var maxVersion int64
-	for _, v := range result.Items {
+	for _, v := range versions {
 		if v.Version > maxVersion {
 			maxVersion = v.Version
 		}
@@ -873,13 +872,12 @@ func (s *StepFunctionStore) NextMapRunSeq() int64 {
 }
 
 func (s *StepFunctionStore) recoverMapRunSeq() {
-	opts := common.ListOptions{MaxItems: 10000}
-	result, err := common.List[MapRun](s.mapRunsStore, opts, nil)
+	mapRuns, err := common.ListMatching[MapRun](s.mapRunsStore, "", nil)
 	if err != nil {
 		return
 	}
 	var maxSeq int64
-	for _, mr := range result.Items {
+	for _, mr := range mapRuns {
 		arn := mr.MapRunArn
 		if idx := strings.LastIndex(arn, "/mapRun-"); idx >= 0 {
 			rest := arn[idx+7:]
@@ -916,14 +914,9 @@ func (s *StepFunctionStore) GetMapRun(ctx context.Context, mapRunArn string) (*M
 
 // ListMapRunsByExecution returns all map runs for a given execution ARN.
 func (s *StepFunctionStore) ListMapRunsByExecution(ctx context.Context, executionArn string) ([]*MapRun, error) {
-	opts := common.ListOptions{Prefix: "", MaxItems: 10000}
-	result, err := common.List[MapRun](s.mapRunsStore, opts, func(mr *MapRun) bool {
+	return common.ListMatching[MapRun](s.mapRunsStore, "", func(mr *MapRun) bool {
 		return mr.ExecutionArn == executionArn
 	})
-	if err != nil {
-		return nil, err
-	}
-	return result.Items, nil
 }
 
 // ListAllMapRuns returns all map runs, optionally filtered by execution ARN.

@@ -35,6 +35,16 @@ func NewDomainStore(store storage.BasicStorage, accountId, region string) *Domai
 	}
 }
 
+// deleteBasePathMappingLocked removes a base path mapping without acquiring
+// the store lock. The caller must hold s.mu.
+func (s *DomainStore) deleteBasePathMappingLocked(domainName, basePath string) error {
+	key := "mapping#" + domainName + "#" + basePath
+	if !s.Exists(key) {
+		return ErrBasePathMappingNotFound
+	}
+	return s.BaseStore.Delete(key)
+}
+
 // CreateDomainName creates a new domain name for API Gateway.
 func (s *DomainStore) CreateDomainName(domain *DomainName) (*DomainName, error) {
 	if domain.DomainName == "" {
@@ -88,7 +98,7 @@ func (s *DomainStore) UpdateDomainName(domain *DomainName) error {
 	return s.Put("domain#"+domain.DomainName, domain)
 }
 
-// DeleteDomainName deletes a domain name.
+// DeleteDomainName deletes a domain name and its base path mappings.
 func (s *DomainStore) DeleteDomainName(domainName string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -97,13 +107,13 @@ func (s *DomainStore) DeleteDomainName(domainName string) error {
 		return ErrDomainNameNotFound
 	}
 
-	mappings, err := s.ListBasePathMappings(domainName, common.ListOptions{MaxItems: 1000})
-	if err == nil {
-		for _, mapping := range mappings.Items {
-			if err := s.DeleteBasePathMapping(domainName, mapping.BasePath); err != nil {
-				logs.Error("Failed to delete base path mapping", logs.String("domain", domainName), logs.String("basePath", mapping.BasePath), logs.Err(err))
-			}
+	if err := common.ForEachAll[BasePathMapping](s.BaseStore, "mapping#"+domainName+"#", nil, func(m *BasePathMapping) error {
+		if delErr := s.deleteBasePathMappingLocked(domainName, m.BasePath); delErr != nil {
+			logs.Error("Failed to delete base path mapping", logs.String("domain", domainName), logs.String("basePath", m.BasePath), logs.Err(delErr))
 		}
+		return nil
+	}); err != nil {
+		logs.Error("Failed to clean up base path mappings", logs.String("domain", domainName), logs.Err(err))
 	}
 
 	return s.BaseStore.Delete("domain#" + domainName)
@@ -156,6 +166,9 @@ func (s *DomainStore) GetBasePathMapping(domainName, basePath string) (*BasePath
 
 // UpdateBasePathMapping updates an existing base path mapping.
 func (s *DomainStore) UpdateBasePathMapping(domainName, basePath string, mapping *BasePathMapping) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	key := "mapping#" + domainName + "#" + basePath
 	if !s.Exists(key) {
 		return ErrBasePathMappingNotFound
@@ -166,11 +179,9 @@ func (s *DomainStore) UpdateBasePathMapping(domainName, basePath string, mapping
 
 // DeleteBasePathMapping deletes a base path mapping.
 func (s *DomainStore) DeleteBasePathMapping(domainName, basePath string) error {
-	key := "mapping#" + domainName + "#" + basePath
-	if !s.Exists(key) {
-		return ErrBasePathMappingNotFound
-	}
-	return s.BaseStore.Delete(key)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.deleteBasePathMappingLocked(domainName, basePath)
 }
 
 // ListBasePathMappings returns all base path mappings for a domain name.

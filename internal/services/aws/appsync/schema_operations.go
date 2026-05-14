@@ -15,7 +15,6 @@ import (
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/graphql"
 )
 
@@ -188,7 +187,7 @@ func collectSchemaSDL(store *appsyncstore.AppSyncStore, apiId string) string {
 		return ""
 	}
 
-	types, _, err := store.ListTypes(apiId, storecommon.ListOptions{MaxItems: 10000})
+	types, err := store.GetAllTypesForApi(apiId)
 	if err != nil || len(types) == 0 {
 		return sdl
 	}

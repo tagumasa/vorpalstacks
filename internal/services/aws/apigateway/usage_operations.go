@@ -705,11 +705,11 @@ func (s *APIGatewayService) GetUsage(ctx context.Context, reqCtx *request.Reques
 	if apiKeyId != "" {
 		apiKeys = []string{apiKeyId}
 	} else {
-		apiKeysResult, err := stores.usage.ListUsagePlanKeys(usagePlanId, common.ListOptions{MaxItems: 1000})
+		allKeys, err := common.ListMatching[store.UsagePlanKey](stores.usage.BaseStore, "usageplankey#"+usagePlanId+"#", nil)
 		if err != nil {
 			return nil, err
 		}
-		for _, key := range apiKeysResult.Items {
+		for _, key := range allKeys {
 			apiKeys = append(apiKeys, key.Id)
 		}
 	}

@@ -39,7 +39,7 @@ func (s *RestApiStore) CreateResource(apiId string, resource *Resource) (*Resour
 
 	api.Resources[resource.Id] = resource
 
-	if err := s.Update(api); err != nil {
+	if err := s.updateLocked(api); err != nil {
 		return nil, err
 	}
 
@@ -86,7 +86,7 @@ func (s *RestApiStore) DeleteResource(apiId, resourceId string) error {
 	}
 
 	delete(api.Resources, resourceId)
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // ListResources returns all resources for a REST API.
@@ -119,7 +119,7 @@ func (s *RestApiStore) UpdateResource(apiId string, resource *Resource) error {
 
 	resource.RestApiId = apiId
 	api.Resources[resource.Id] = resource
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // UpdateResourceCascade updates a resource and recalculates paths for all descendants.
@@ -141,7 +141,7 @@ func (s *RestApiStore) UpdateResourceCascade(apiId string, resource *Resource) e
 
 	s.recalculateDescendantPaths(api, resource)
 
-	return s.Update(api)
+	return s.updateLocked(api)
 }
 
 // recalculateDescendantPaths updates paths for all descendants of the given resource.

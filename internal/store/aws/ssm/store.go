@@ -249,27 +249,14 @@ func (s *Store) DeleteParameter(name string) error {
 		return ErrParameterNotFound
 	}
 
-	opts := common.ListOptions{MaxItems: 1000}
-	for {
-		result, err := common.List[ParameterVersion](s.historyStore, opts, func(pv *ParameterVersion) bool {
-			return pv.ParameterName == name
-		})
-		if err != nil {
-			return fmt.Errorf("failed to list parameter history: %w", err)
-		}
-		if len(result.Items) == 0 {
-			break
-		}
-		for _, pv := range result.Items {
-			hKey := s.historyKey(name, pv.Version)
-			if err := s.historyStore.Delete(hKey); err != nil {
-				return fmt.Errorf("failed to delete parameter history: %w", err)
-			}
-		}
-		if result.NextMarker == "" {
-			break
-		}
-		opts.Marker = result.NextMarker
+	err := common.ForEachAll[ParameterVersion](s.historyStore, name+":", func(pv *ParameterVersion) bool {
+		return pv.ParameterName == name
+	}, func(pv *ParameterVersion) error {
+		hKey := s.historyKey(name, pv.Version)
+		return s.historyStore.Delete(hKey)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete parameter history: %w", err)
 	}
 
 	if err := s.TagStore.Delete(name); err != nil {

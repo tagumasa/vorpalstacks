@@ -345,16 +345,15 @@ func EncodeBinaryValue(data []byte) string {
 
 // ListDeadLetterSourceQueues returns all queues that have the specified dead letter queue as their target.
 func (s *SQSStore) ListDeadLetterSourceQueues(dlqARN string) ([]*Queue, error) {
-	opts := common.ListOptions{MaxItems: 1000}
-	result, err := common.ListProto[*pb.Queue](s.BaseStore, opts, func() *pb.Queue { return &pb.Queue{} }, func(q *pb.Queue) bool {
+	items, err := common.ListMatchingProto[*pb.Queue](s.BaseStore, "", func() *pb.Queue { return &pb.Queue{} }, func(q *pb.Queue) bool {
 		return q.GetRedrivePolicy() != nil && q.GetRedrivePolicy().GetDeadLetterTargetArn() == dlqARN
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	queues := make([]*Queue, 0, len(result.Items))
-	for _, pbQueue := range result.Items {
+	queues := make([]*Queue, 0, len(items))
+	for _, pbQueue := range items {
 		queues = append(queues, ProtoToQueue(pbQueue))
 	}
 	return queues, nil
@@ -366,16 +365,9 @@ func (s *SQSStore) GetMessageCounts(queueURL string) (visible, notVisible, delay
 	defer s.msgMutex.RUnlock()
 
 	now := time.Now().UTC()
-	opts := common.ListOptions{Prefix: messagePrefix(queueURL), MaxItems: 10000} // scan limit — counts may be incomplete for queues exceeding 10,000 messages
+	prefix := messagePrefix(queueURL)
 
-	result, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
-		return true
-	})
-	if err != nil {
-		return 0, 0, 0
-	}
-
-	for _, msgPb := range result.Items {
+	err := common.ForEachAllProto[*pb.Message](s.messagesStore, prefix, func() *pb.Message { return &pb.Message{} }, nil, func(msgPb *pb.Message) error {
 		visibleAfter := protoToTime(msgPb.VisibleAfter)
 		receivedAt := protoToTime(msgPb.ReceivedAt)
 		if !visibleAfter.IsZero() && now.Before(visibleAfter) {
@@ -385,6 +377,10 @@ func (s *SQSStore) GetMessageCounts(queueURL string) (visible, notVisible, delay
 		} else {
 			visible++
 		}
+		return nil
+	})
+	if err != nil {
+		return 0, 0, 0
 	}
 	return visible, notVisible, delayed
 }

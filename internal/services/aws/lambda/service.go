@@ -115,7 +115,6 @@ func (s *LambdaService) StartESMPoller(ctx context.Context) {
 	}
 	s.esmPoller.esmStore = lambdastore.NewEventSourceStore(s.getRegionalStorage(s.region), s.accountID, s.region)
 	s.esmPoller.lambdaSvc = s
-	s.esmPoller.accountID = s.accountID
 	s.esmPoller.region = s.region
 	s.esmPoller.storageManager = s.storageManager
 	s.esmPoller.bus = s.bus
@@ -290,7 +289,7 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 		version = ver.Version
 	}
 
-	containerName := fmt.Sprintf("lambda-%s-%s", function.FunctionName, sanitizeForContainerName(version))
+	containerName := fmt.Sprintf("lambda-%s-%s-%s", region, function.FunctionName, sanitizeForContainerName(version))
 
 	containerID := function.ContainerID
 	if ver != nil && ver.ContainerID != "" {
@@ -380,7 +379,7 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 	return result.ID, nil
 }
 
-func (s *LambdaService) copyCodeToContainer(containerID string, code []byte) error {
+func (s *LambdaService) copyCodeToContainer(containerID string, code []byte, runtime lambdastore.Runtime) error {
 	ctx := context.Background()
 
 	reader, err := zip.NewReader(bytes.NewReader(code), int64(len(code)))
@@ -409,7 +408,11 @@ func (s *LambdaService) copyCodeToContainer(containerID string, code []byte) err
 		return nil
 	}
 
-	return s.dockerClient.CreateFileInContainer(ctx, containerID, "/var/task/index.js", code)
+	fallbackFile := "index.js"
+	if strings.HasPrefix(string(runtime), "python") {
+		fallbackFile = "index.py"
+	}
+	return s.dockerClient.CreateFileInContainer(ctx, containerID, fmt.Sprintf("/var/task/%s", fallbackFile), code)
 }
 
 func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lambdastore.Version, store *lambdastore.FunctionStore, region string, payload []byte) (*lambdastore.InvocationResult, error) {
@@ -427,7 +430,7 @@ func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lamb
 
 	code, err := s.loadCode(function.FunctionName, version, region)
 	if err == nil && len(code) > 0 {
-		if err := s.copyCodeToContainer(containerID, code); err != nil {
+		if err := s.copyCodeToContainer(containerID, code, function.Runtime); err != nil {
 			return nil, fmt.Errorf("failed to copy code to container: %w", err)
 		}
 	}
@@ -640,7 +643,7 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.Functions.List(storecommon.ListOptions{MaxItems: 1000})
+	result, err := store.Functions.ListAllFunctions()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list functions: %w", err)
 	}
@@ -654,7 +657,7 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 		},
 		"AccountUsage": map[string]interface{}{
 			"TotalCodeSize": 0,
-			"FunctionCount": len(result.Items),
+			"FunctionCount": len(result),
 		},
 	}, nil
 }

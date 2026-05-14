@@ -547,14 +547,9 @@ type ArchiveListResult struct {
 //   - []*Archive: The list of archives
 //   - error: An error if listing fails
 func (s *EventsStore) ListArchivesForEventBus(ctx context.Context, eventBusName string) ([]*Archive, error) {
-	opts := common.ListOptions{MaxItems: 1000}
-	result, err := common.List[Archive](s.archivesStore, opts, func(a *Archive) bool {
+	return common.ListMatching[Archive](s.archivesStore, "", func(a *Archive) bool {
 		return a.EventBusName == eventBusName
 	})
-	if err != nil {
-		return nil, err
-	}
-	return result.Items, nil
 }
 
 // Connection operations
@@ -746,20 +741,10 @@ func (s *EventsStore) StoreArchiveEvent(ctx context.Context, archiveName string,
 //   - error: An error if retrieval fails
 func (s *EventsStore) GetArchiveEvents(ctx context.Context, archiveName string, startTime, endTime time.Time) ([]*ArchivedEvent, error) {
 	prefix := archiveName + ":"
-	opts := common.ListOptions{
-		Prefix:   prefix,
-		MaxItems: 10000,
-	}
-
-	result, err := common.List[ArchivedEvent](s.archivedEventsStore, opts, func(e *ArchivedEvent) bool {
+	return common.ListMatching[ArchivedEvent](s.archivedEventsStore, prefix, func(e *ArchivedEvent) bool {
 		return (startTime.IsZero() || e.Timestamp.After(startTime) || e.Timestamp.Equal(startTime)) &&
 			(endTime.IsZero() || e.Timestamp.Before(endTime) || e.Timestamp.Equal(endTime))
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return result.Items, nil
 }
 
 // DeleteArchiveEvents deletes all archived events for an archive.
@@ -772,18 +757,10 @@ func (s *EventsStore) GetArchiveEvents(ctx context.Context, archiveName string, 
 //   - error: An error if deletion fails
 func (s *EventsStore) DeleteArchiveEvents(ctx context.Context, archiveName string) error {
 	prefix := archiveName + ":"
-	opts := common.ListOptions{Prefix: prefix, MaxItems: 100000}
-	result, err := common.List[ArchivedEvent](s.archivedEventsStore, opts, nil)
-	if err != nil {
-		return err
-	}
-	for _, e := range result.Items {
+	return common.ForEachAll[ArchivedEvent](s.archivedEventsStore, prefix, nil, func(e *ArchivedEvent) error {
 		key := prefix + fmt.Sprintf("%d:", e.Timestamp.UnixNano()) + e.ID
-		if err := s.archivedEventsStore.Delete(key); err != nil {
-			return err
-		}
-	}
-	return nil
+		return s.archivedEventsStore.Delete(key)
+	})
 }
 
 // CreateReplay creates a new event replay.

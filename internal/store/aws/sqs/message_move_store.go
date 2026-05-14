@@ -42,15 +42,14 @@ func (s *SQSStore) CancelMessageMoveTask(taskId string) (*MessageMoveTask, error
 
 // ListMessageMoveTasks lists all message move tasks for a source queue.
 func (s *SQSStore) ListMessageMoveTasks(sourceARN string) ([]*MessageMoveTask, error) {
-	opts := common.ListOptions{MaxItems: 100}
-	result, err := common.ListProto[*pb.MessageMoveTask](s.tasksStore, opts, func() *pb.MessageMoveTask { return &pb.MessageMoveTask{} }, func(t *pb.MessageMoveTask) bool {
+	items, err := common.ListMatchingProto[*pb.MessageMoveTask](s.tasksStore, "", func() *pb.MessageMoveTask { return &pb.MessageMoveTask{} }, func(t *pb.MessageMoveTask) bool {
 		return t.SourceQueueArn == sourceARN
 	})
 	if err != nil {
 		return nil, err
 	}
-	tasks := make([]*MessageMoveTask, len(result.Items))
-	for i, t := range result.Items {
+	tasks := make([]*MessageMoveTask, len(items))
+	for i, t := range items {
 		tasks[i] = ProtoToMessageMoveTask(t)
 	}
 	return tasks, nil

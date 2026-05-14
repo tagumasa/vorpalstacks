@@ -2,6 +2,7 @@ package apigateway
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -33,6 +34,19 @@ func NewUsageStore(store storage.BasicStorage, accountId, region string) *UsageS
 		accountId:  accountId,
 		region:     region,
 	}
+}
+
+// deleteUsagePlanKeyLocked removes a usage plan key without acquiring the
+// store lock. The caller must hold s.mu.
+func (s *UsageStore) deleteUsagePlanKeyLocked(usagePlanId, keyId string) error {
+	keyKey := "usageplankey#" + usagePlanId + "#" + keyId
+	if !s.Exists(keyKey) {
+		return ErrUsagePlanKeyNotFound
+	}
+	if err := s.BaseStore.DeleteByPrefix("usage#" + usagePlanId + "#" + keyId + "#"); err != nil {
+		logs.Warn("failed to delete usage records for usage plan key", logs.String("usagePlanId", usagePlanId), logs.String("keyId", keyId), logs.Err(err))
+	}
+	return s.BaseStore.Delete(keyKey)
 }
 
 // CreateApiKey creates a new API key.
@@ -143,13 +157,16 @@ func (s *UsageStore) GetUsagePlan(usagePlanId string) (*UsagePlan, error) {
 
 // UpdateUsagePlan updates an existing usage plan.
 func (s *UsageStore) UpdateUsagePlan(usagePlan *UsagePlan) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if !s.Exists("usageplan#" + usagePlan.Id) {
 		return ErrUsagePlanNotFound
 	}
 	return s.Put("usageplan#"+usagePlan.Id, usagePlan)
 }
 
-// DeleteUsagePlan deletes a usage plan.
+// DeleteUsagePlan deletes a usage plan and its associated keys.
 func (s *UsageStore) DeleteUsagePlan(usagePlanId string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -158,13 +175,13 @@ func (s *UsageStore) DeleteUsagePlan(usagePlanId string) error {
 		return ErrUsagePlanNotFound
 	}
 
-	keys, err := s.ListUsagePlanKeys(usagePlanId, common.ListOptions{MaxItems: 1000})
-	if err == nil {
-		for _, key := range keys.Items {
-			if delErr := s.DeleteUsagePlanKey(usagePlanId, key.Id); delErr != nil {
-				logs.Error("Failed to delete usage plan key", logs.String("usagePlanId", usagePlanId), logs.String("keyId", key.Id), logs.Err(delErr))
-			}
+	if err := common.ForEachAll[UsagePlanKey](s.BaseStore, "usageplankey#"+usagePlanId+"#", nil, func(k *UsagePlanKey) error {
+		if delErr := s.deleteUsagePlanKeyLocked(usagePlanId, k.Id); delErr != nil {
+			logs.Error("Failed to delete usage plan key", logs.String("usagePlanId", usagePlanId), logs.String("keyId", k.Id), logs.Err(delErr))
 		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to clean up usage plan keys: %w", err)
 	}
 
 	if err := s.BaseStore.DeleteByPrefix("usage#" + usagePlanId + "#"); err != nil {
@@ -221,14 +238,9 @@ func (s *UsageStore) GetUsagePlanKey(usagePlanId, keyId string) (*UsagePlanKey, 
 
 // DeleteUsagePlanKey deletes a usage plan key.
 func (s *UsageStore) DeleteUsagePlanKey(usagePlanId, keyId string) error {
-	keyKey := "usageplankey#" + usagePlanId + "#" + keyId
-	if !s.Exists(keyKey) {
-		return ErrUsagePlanKeyNotFound
-	}
-	if err := s.BaseStore.DeleteByPrefix("usage#" + usagePlanId + "#" + keyId + "#"); err != nil {
-		logs.Warn("failed to delete usage records for usage plan key", logs.String("usagePlanId", usagePlanId), logs.String("keyId", keyId), logs.Err(err))
-	}
-	return s.BaseStore.Delete(keyKey)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.deleteUsagePlanKeyLocked(usagePlanId, keyId)
 }
 
 // ListUsagePlanKeys returns all usage plan keys for a usage plan.
@@ -242,14 +254,14 @@ func (s *UsageStore) ListUsagePlanKeys(usagePlanId string, opts common.ListOptio
 
 // GetApiKeyByValue retrieves an API key by its value.
 func (s *UsageStore) GetApiKeyByValue(value string) (*ApiKey, error) {
-	keys, err := s.ListApiKeys(common.ListOptions{MaxItems: 1000})
+	keys, err := common.ListMatching[ApiKey](s.BaseStore, "apikey#", func(k *ApiKey) bool {
+		return k.Value == value
+	})
 	if err != nil {
 		return nil, err
 	}
-	for _, key := range keys.Items {
-		if key.Value == value {
-			return key, nil
-		}
+	if len(keys) > 0 {
+		return keys[0], nil
 	}
 	return nil, ErrApiKeyNotFound
 }
@@ -266,18 +278,18 @@ type UsageRecord struct {
 func (s *UsageStore) ListUsagePlansForAPIKey(apiKeyId string) ([]*UsagePlan, error) {
 	var plans []*UsagePlan
 
-	allPlans, err := s.ListUsagePlans(common.ListOptions{MaxItems: 1000})
+	allPlans, err := common.ListMatching[UsagePlan](s.BaseStore, "plan#", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, plan := range allPlans.Items {
-		keys, err := s.ListUsagePlanKeys(plan.Id, common.ListOptions{MaxItems: 1000})
+	for _, plan := range allPlans {
+		keys, err := common.ListMatching[UsagePlanKey](s.BaseStore, "usageplankey#"+plan.Id+"#", nil)
 		if err != nil {
 			logs.Error("Failed to list usage plan keys", logs.String("planId", plan.Id), logs.Err(err))
 			continue
 		}
-		for _, key := range keys.Items {
+		for _, key := range keys {
 			if key.Id == apiKeyId {
 				plans = append(plans, plan)
 				break

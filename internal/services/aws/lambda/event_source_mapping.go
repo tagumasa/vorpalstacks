@@ -172,17 +172,9 @@ func (s *LambdaService) ListEventSourceMappings(ctx context.Context, reqCtx *req
 
 	var allMappings []*lambdastore.EventSourceMapping
 	if hasFilter {
-		currentMarker := ""
-		for {
-			result, err := store.EventSources.List(common.ListOptions{Marker: currentMarker, MaxItems: 1000})
-			if err != nil {
-				return nil, err
-			}
-			allMappings = append(allMappings, result.Items...)
-			if !result.IsTruncated {
-				break
-			}
-			currentMarker = result.NextMarker
+		allMappings, err = store.EventSources.ListAllMappings()
+		if err != nil {
+			return nil, err
 		}
 	} else {
 		result, err := store.EventSources.List(common.ListOptions{Marker: marker, MaxItems: maxItems})
