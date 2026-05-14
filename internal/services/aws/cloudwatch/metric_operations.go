@@ -9,6 +9,17 @@ import (
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 
+func getMetricStringParam(params map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if v, ok := params[key]; ok {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return ""
+}
+
 // PutMetricData publishes metric data points to CloudWatch.
 func (s *CloudWatchService) PutMetricData(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namespace := request.GetStringParam(req.Parameters, "Namespace")
@@ -106,25 +117,29 @@ func (s *CloudWatchService) GetMetricStatistics(ctx context.Context, reqCtx *req
 
 // ListMetrics returns a list of available metrics.
 func (s *CloudWatchService) ListMetrics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	namespace := request.GetStringParam(req.Parameters, "Namespace")
-	if namespace == "" {
-		namespace = request.GetStringParam(req.Parameters, "namespace")
-	}
-	metricName := request.GetStringParam(req.Parameters, "MetricName")
-	if metricName == "" {
-		metricName = request.GetStringParam(req.Parameters, "metricName")
-	}
+	namespace := getMetricStringParam(req.Parameters, "Namespace", "namespace")
+	metricName := getMetricStringParam(req.Parameters, "MetricName", "metricName")
 
 	dimensions := parseDimensions(req.Parameters["Dimensions"], req.Parameters["dimensions"])
+	nextToken := getMetricStringParam(req.Parameters, "NextToken", "nextToken")
+	maxResults := 500
+	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 {
+		maxResults = mr
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	metrics, err := store.metrics.ListMetrics(namespace, metricName, dimensions)
+
+	metrics, nextMarker, isTruncated, err := store.metrics.ListMetricsPaginated(namespace, metricName, dimensions, nextToken, maxResults)
 	if err != nil {
 		return nil, err
 	}
 
-	return buildListMetricsResponse(namespace, metrics), nil
+	result := buildListMetricsResponse(namespace, metrics)
+	if isTruncated {
+		result["NextToken"] = nextMarker
+	}
+	return result, nil
 }

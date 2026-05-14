@@ -151,6 +151,12 @@ func (s *AlarmStore) ListAlarms(alarmNamePrefix string) ([]*Alarm, error) {
 	return alarms, nil
 }
 
+// ListAlarmsPaginated returns a paginated list of CloudWatch alarms with optional filter.
+func (s *AlarmStore) ListAlarmsPaginated(alarmNamePrefix string, opts common.ListOptions, filter func(*Alarm) bool) (*common.ListResult[Alarm], error) {
+	opts.Prefix = s.buildAlarmKey(alarmNamePrefix)
+	return common.List[Alarm](s.BaseStore, opts, filter)
+}
+
 // SetAlarmState updates the state of a CloudWatch alarm.
 func (s *AlarmStore) SetAlarmState(name, state, reason string) error {
 	s.mu.Lock()
@@ -215,6 +221,18 @@ func (s *AlarmStore) ListAlarmHistory(alarmName string, historyItemType string) 
 	}
 
 	return entries, nil
+}
+
+// ListAlarmHistoryPaginated returns a paginated list of alarm history entries.
+func (s *AlarmStore) ListAlarmHistoryPaginated(alarmName, historyItemType string, opts common.ListOptions) (*common.ListResult[AlarmHistoryEntry], error) {
+	opts.Prefix = alarmHistoryPrefix(alarmName)
+	var filter func(*AlarmHistoryEntry) bool
+	if historyItemType != "" {
+		filter = func(e *AlarmHistoryEntry) bool {
+			return e.HistoryItemType == historyItemType
+		}
+	}
+	return common.List[AlarmHistoryEntry](s.BaseStore, opts, filter)
 }
 
 func alarmHistoryKey(alarmName string, timestamp int64) string {

@@ -3,7 +3,9 @@ package cloudwatch
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // PutDashboard creates or updates a CloudWatch dashboard.
@@ -63,13 +65,16 @@ func (s *CloudWatchService) ListDashboards(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	dashboards, err := stores.dashboards.ListDashboards(prefix)
+	marker := pagination.GetMarker(req.Parameters)
+	opts := common.ListOptions{Marker: marker, MaxItems: 1000}
+
+	result, err := stores.dashboards.ListDashboardsPaginated(prefix, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	entries := make([]map[string]interface{}, 0, len(dashboards))
-	for _, d := range dashboards {
+	entries := make([]map[string]interface{}, 0, len(result.Items))
+	for _, d := range result.Items {
 		entries = append(entries, map[string]interface{}{
 			"DashboardName": d.Name,
 			"DashboardArn":  d.ARN,
@@ -81,9 +86,13 @@ func (s *CloudWatchService) ListDashboards(ctx context.Context, reqCtx *request.
 		entries = []map[string]interface{}{}
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"DashboardEntries": entries,
-	}, nil
+	}
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+	return resp, nil
 }
 
 // DeleteDashboards deletes one or more CloudWatch dashboards.

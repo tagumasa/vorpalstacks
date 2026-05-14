@@ -677,6 +677,60 @@ func (s *MetricChunkStore) ListMetrics(namespace, metricName string, dimensions 
 	return metrics, nil
 }
 
+// ListMetricsPaginated returns a paginated list of metrics matching the specified criteria.
+// Since metrics are stored in filesystem chunks (not Pebble), pagination is applied
+// after collecting and deduplicating unique metrics.
+func (s *MetricChunkStore) ListMetricsPaginated(namespace, metricName string, dimensions []Dimension, marker string, maxItems int) ([]MetricDatum, string, bool, error) {
+	allMetrics, err := s.ListMetrics(namespace, metricName, dimensions)
+	if err != nil {
+		return nil, "", false, err
+	}
+
+	type metricWithKey struct {
+		datum MetricDatum
+		key   string
+	}
+	entries := make([]metricWithKey, len(allMetrics))
+	for i, m := range allMetrics {
+		dimsKey := ""
+		for _, d := range m.Dimensions {
+			dimsKey += d.Name + "=" + d.Value + ","
+		}
+		entries[i] = metricWithKey{
+			datum: m,
+			key:   m.Namespace + "#" + m.MetricName + "#" + dimsKey,
+		}
+	}
+
+	startIdx := 0
+	if marker != "" {
+		for i, e := range entries {
+			if e.key == marker {
+				startIdx = i + 1
+				break
+			}
+		}
+	}
+
+	endIdx := len(entries)
+	if maxItems > 0 && startIdx+maxItems < endIdx {
+		endIdx = startIdx + maxItems
+	}
+
+	result := make([]MetricDatum, endIdx-startIdx)
+	for i := startIdx; i < endIdx; i++ {
+		result[i-startIdx] = entries[i].datum
+	}
+
+	isTruncated := endIdx < len(entries)
+	nextToken := ""
+	if isTruncated {
+		nextToken = entries[endIdx-1].key
+	}
+
+	return result, nextToken, isTruncated, nil
+}
+
 func (s *MetricChunkStore) listMetricsFromDir(chunkDir, namespace, metricName string, dimensions []Dimension, seen map[string]bool, metrics *[]MetricDatum) {
 	nsEntries, err := os.ReadDir(chunkDir)
 	if err != nil {

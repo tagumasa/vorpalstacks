@@ -117,6 +117,12 @@ func (s *DashboardStore) ListDashboards(prefix string) ([]*Dashboard, error) {
 	return dashboards, nil
 }
 
+// ListDashboardsPaginated returns a paginated list of dashboards matching the given prefix.
+func (s *DashboardStore) ListDashboardsPaginated(prefix string, opts common.ListOptions) (*common.ListResult[Dashboard], error) {
+	opts.Prefix = dashboardKey(prefix)
+	return common.List[Dashboard](s.BaseStore, opts, nil)
+}
+
 func dashboardKey(name string) string {
 	return "dashboard:" + name
 }

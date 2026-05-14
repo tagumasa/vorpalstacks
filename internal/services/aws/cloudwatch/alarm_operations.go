@@ -6,11 +6,13 @@ import (
 	"strconv"
 	"time"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
+	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/aws/types"
 )
 
@@ -338,31 +340,37 @@ func (s *CloudWatchService) DescribeAlarms(ctx context.Context, reqCtx *request.
 				alarms = append(alarms, alarm)
 			}
 		}
-	} else {
-		alarms, err = store.alarms.ListAlarms(alarmNamePrefix)
-		if err != nil {
-			return nil, err
-		}
+		return s.buildDescribeAlarmsResponse(alarms, alarmTypes, ""), nil
 	}
 
+	marker := pagination.GetMarker(req.Parameters)
+	maxRecords := pagination.GetMaxItems(req.Parameters, 100)
+
+	var typeFilter func(*cwstore.Alarm) bool
 	if len(alarmTypes) > 0 {
 		typeSet := make(map[string]bool)
 		for _, t := range alarmTypes {
 			typeSet[t] = true
 		}
-		filtered := make([]*cwstore.Alarm, 0, len(alarms))
-		for _, alarm := range alarms {
-			alarmType := alarm.AlarmType
-			if alarmType == "" {
-				alarmType = cwstore.AlarmTypeMetricAlarm
+		typeFilter = func(a *cwstore.Alarm) bool {
+			at := a.AlarmType
+			if at == "" {
+				at = cwstore.AlarmTypeMetricAlarm
 			}
-			if typeSet[alarmType] {
-				filtered = append(filtered, alarm)
-			}
+			return typeSet[at]
 		}
-		alarms = filtered
 	}
 
+	opts := common.ListOptions{Marker: marker, MaxItems: maxRecords}
+	result, err := store.alarms.ListAlarmsPaginated(alarmNamePrefix, opts, typeFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildDescribeAlarmsResponse(result.Items, alarmTypes, result.NextMarker), nil
+}
+
+func (s *CloudWatchService) buildDescribeAlarmsResponse(alarms []*cwstore.Alarm, alarmTypes []string, nextToken string) map[string]interface{} {
 	metricAlarms := make([]map[string]interface{}, 0)
 	compositeAlarms := make([]map[string]interface{}, 0)
 	for _, alarm := range alarms {
@@ -373,10 +381,15 @@ func (s *CloudWatchService) DescribeAlarms(ctx context.Context, reqCtx *request.
 			metricAlarms = append(metricAlarms, resp)
 		}
 	}
-	return map[string]interface{}{
+
+	response := map[string]interface{}{
 		"MetricAlarms":    metricAlarms,
 		"CompositeAlarms": compositeAlarms,
-	}, nil
+	}
+	if nextToken != "" {
+		response["NextToken"] = nextToken
+	}
+	return response
 }
 
 // DescribeAlarmsForMetric returns alarms for a specific metric.
@@ -395,32 +408,37 @@ func (s *CloudWatchService) DescribeAlarmsForMetric(ctx context.Context, reqCtx 
 		return nil, err
 	}
 
-	alarms, err := store.alarms.ListAlarms("")
+	marker := pagination.GetMarker(req.Parameters)
+	maxRecords := pagination.GetMaxItems(req.Parameters, 100)
+
+	filter := func(a *cwstore.Alarm) bool {
+		if a.Namespace != namespace || a.MetricName != metricName {
+			return false
+		}
+		if len(dimensions) > 0 && len(a.Dimensions) > 0 {
+			return dimensionsMatch(a.Dimensions, dimensions)
+		}
+		return true
+	}
+
+	opts := common.ListOptions{Marker: marker, MaxItems: maxRecords}
+	result, err := store.alarms.ListAlarmsPaginated("", opts, filter)
 	if err != nil {
 		return nil, err
 	}
 
-	var matchedAlarms []*cwstore.Alarm
-	for _, alarm := range alarms {
-		if alarm.Namespace == namespace && alarm.MetricName == metricName {
-			if len(dimensions) > 0 && len(alarm.Dimensions) > 0 {
-				if dimensionsMatch(alarm.Dimensions, dimensions) {
-					matchedAlarms = append(matchedAlarms, alarm)
-				}
-			} else {
-				matchedAlarms = append(matchedAlarms, alarm)
-			}
-		}
-	}
-
-	metricAlarms := make([]map[string]interface{}, len(matchedAlarms))
-	for i, alarm := range matchedAlarms {
+	metricAlarms := make([]map[string]interface{}, len(result.Items))
+	for i, alarm := range result.Items {
 		metricAlarms[i] = alarmToResponse(alarm)
 	}
 
-	return map[string]interface{}{
+	response := map[string]interface{}{
 		"MetricAlarms": metricAlarms,
-	}, nil
+	}
+	if result.NextMarker != "" {
+		response["NextToken"] = result.NextMarker
+	}
+	return response, nil
 }
 
 func dimensionsMatch(a, b []cwstore.Dimension) bool {
@@ -650,13 +668,17 @@ func (s *CloudWatchService) DescribeAlarmHistory(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	entries, err := store.alarms.ListAlarmHistory(alarmName, historyItemType)
+	marker := pagination.GetMarker(req.Parameters)
+	maxRecords := pagination.GetMaxItems(req.Parameters, 100)
+
+	opts := common.ListOptions{Marker: marker, MaxItems: maxRecords}
+	result, err := store.alarms.ListAlarmHistoryPaginated(alarmName, historyItemType, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]map[string]interface{}, 0, len(entries))
-	for _, entry := range entries {
+	items := make([]map[string]interface{}, 0, len(result.Items))
+	for _, entry := range result.Items {
 		item := map[string]interface{}{
 			"AlarmName":       entry.AlarmName,
 			"AlarmType":       entry.AlarmType,
@@ -670,9 +692,13 @@ func (s *CloudWatchService) DescribeAlarmHistory(ctx context.Context, reqCtx *re
 		items = append(items, item)
 	}
 
-	return map[string]interface{}{
+	response := map[string]interface{}{
 		"AlarmHistoryItems": items,
-	}, nil
+	}
+	if result.NextMarker != "" {
+		response["NextToken"] = result.NextMarker
+	}
+	return response, nil
 }
 
 // PutCompositeAlarm creates or updates a composite alarm.
