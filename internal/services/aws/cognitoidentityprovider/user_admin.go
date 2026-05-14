@@ -8,6 +8,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	"vorpalstacks/internal/store/aws/common"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -177,19 +178,6 @@ func (s *CognitoService) ListUsers(ctx context.Context, reqCtx *request.RequestC
 	if err != nil {
 		return nil, err
 	}
-	users, err := store.ListUsers(userPoolID)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	filter := req.GetParam("Filter")
-	userList := make([]map[string]interface{}, 0)
-	for _, user := range users {
-		if filter != "" && !matchUserFilter(user, filter) {
-			continue
-		}
-		userList = append(userList, formatUser(user))
-	}
 
 	maxResults := request.GetIntParam(req.Parameters, "Limit")
 	if maxResults <= 0 || maxResults > 60 {
@@ -197,26 +185,34 @@ func (s *CognitoService) ListUsers(ctx context.Context, reqCtx *request.RequestC
 	}
 	paginationToken := request.GetStringParam(req.Parameters, "PaginationToken")
 
-	started := paginationToken == ""
-	result := make([]map[string]interface{}, 0, maxResults)
-	for _, u := range userList {
-		if !started {
-			if u["Username"] == paginationToken {
-				started = true
-			}
-			continue
-		}
-		result = append(result, u)
-		if len(result) >= maxResults {
-			break
+	opts := common.ListOptions{
+		MaxItems: maxResults,
+		Marker:   paginationToken,
+	}
+
+	filterStr := req.GetParam("Filter")
+	var filterFunc func(*cognitostore.User) bool
+	if filterStr != "" {
+		filterFunc = func(user *cognitostore.User) bool {
+			return matchUserFilter(user, filterStr)
 		}
 	}
 
-	resp := map[string]interface{}{
-		"Users": result,
+	result, err := store.ListUsersPaginated(userPoolID, opts, filterFunc)
+	if err != nil {
+		return nil, ErrInternalError
 	}
-	if len(result) >= maxResults && len(result) > 0 {
-		resp["PaginationToken"] = result[len(result)-1]["Username"]
+
+	userList := make([]map[string]interface{}, 0, len(result.Items))
+	for _, user := range result.Items {
+		userList = append(userList, formatUser(user))
+	}
+
+	resp := map[string]interface{}{
+		"Users": userList,
+	}
+	if result.NextMarker != "" {
+		resp["PaginationToken"] = result.NextMarker
 	}
 
 	return resp, nil

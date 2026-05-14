@@ -6,6 +6,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // CreateUserPool creates a new Cognito user pool.
@@ -117,26 +118,25 @@ func (s *CognitoService) ListUserPools(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	userPools, err := store.ListUserPools()
+
+	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
+	if maxResults <= 0 || maxResults > 60 {
+		maxResults = 60
+	}
+	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+
+	opts := common.ListOptions{
+		MaxItems: maxResults,
+		Marker:   nextToken,
+	}
+
+	result, err := store.ListUserPoolsPaginated(opts)
 	if err != nil {
 		return nil, ErrInternalError
 	}
 
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 || maxResults > 50 {
-		maxResults = 50
-	}
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
-
-	pools := make([]map[string]interface{}, 0)
-	started := nextToken == ""
-	for _, pool := range userPools {
-		if !started {
-			if pool.ID == nextToken {
-				started = true
-			}
-			continue
-		}
+	pools := make([]map[string]interface{}, 0, len(result.Items))
+	for _, pool := range result.Items {
 		pools = append(pools, map[string]interface{}{
 			"Id":               pool.ID,
 			"Name":             pool.Name,
@@ -145,19 +145,16 @@ func (s *CognitoService) ListUserPools(ctx context.Context, reqCtx *request.Requ
 			"CreationDate":     pool.CreationDate.Unix(),
 			"LastModifiedDate": pool.LastModifiedDate.Unix(),
 		})
-		if len(pools) >= maxResults {
-			break
-		}
 	}
 
-	result := map[string]interface{}{
+	resp := map[string]interface{}{
 		"UserPools": pools,
 	}
-	if len(pools) >= maxResults && len(pools) > 0 {
-		result["NextToken"] = pools[len(pools)-1]["Id"]
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
 	}
 
-	return result, nil
+	return resp, nil
 }
 
 // GetUserPoolMfaConfig retrieves the multi-factor authentication configuration for a Cognito user pool.

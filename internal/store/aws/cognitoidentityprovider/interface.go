@@ -1,6 +1,7 @@
 package cognitoidentityprovider
 
 import (
+	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/aws/types"
 )
 
@@ -26,6 +27,7 @@ type UserPoolOperations interface {
 	UpdateUserPool(userPool *UserPool) error
 	DeleteUserPool(userPoolID string) error
 	ListUserPools() ([]*UserPool, error)
+	ListUserPoolsPaginated(opts common.ListOptions) (*common.ListResult[UserPool], error)
 }
 
 // UserOperations defines operations for managing users.
@@ -36,6 +38,7 @@ type UserOperations interface {
 	UpdateUser(user *User) error
 	DeleteUser(userPoolID, username string) error
 	ListUsers(userPoolID string) ([]*User, error)
+	ListUsersPaginated(userPoolID string, opts common.ListOptions, filter func(*User) bool) (*common.ListResult[User], error)
 }
 
 // GroupOperations defines operations for managing groups.
@@ -45,6 +48,7 @@ type GroupOperations interface {
 	UpdateGroup(group *Group) error
 	DeleteGroup(userPoolID, groupName string) error
 	ListGroups(userPoolID string) ([]*Group, error)
+	ListGroupsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[Group], error)
 	AddUserToGroup(userPoolID, groupName, username string) error
 	RemoveUserFromGroup(userPoolID, groupName, username string) error
 	ListGroupsForUser(userPoolID, username string) ([]*Group, error)
@@ -59,6 +63,7 @@ type ClientOperations interface {
 	UpdateUserPoolClient(client *UserPoolClient) error
 	DeleteUserPoolClient(userPoolID, clientID string) error
 	ListUserPoolClients(userPoolID string) ([]*UserPoolClient, error)
+	ListUserPoolClientsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserPoolClient], error)
 	GetUserPoolByClientID(clientID string) (*UserPool, error)
 }
 
@@ -117,6 +122,7 @@ type ResourceServerOperations interface {
 	UpdateResourceServer(rs *ResourceServer) error
 	DeleteResourceServer(userPoolID, identifier string) error
 	ListResourceServers(userPoolID string) ([]*ResourceServer, error)
+	ListResourceServersPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[ResourceServer], error)
 }
 
 // IdentityProviderOperations defines operations for managing identity providers.
@@ -126,4 +132,5 @@ type IdentityProviderOperations interface {
 	UpdateIdentityProvider(ip *IdentityProvider) error
 	DeleteIdentityProvider(userPoolID, providerName string) error
 	ListIdentityProviders(userPoolID string) ([]*IdentityProvider, error)
+	ListIdentityProvidersPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[IdentityProvider], error)
 }

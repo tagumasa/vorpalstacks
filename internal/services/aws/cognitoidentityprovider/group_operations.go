@@ -6,6 +6,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // CreateGroup creates a group in a Cognito user pool.
@@ -112,37 +113,32 @@ func (s *CognitoService) ListGroups(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	groups, err := store.ListGroups(userPoolID)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
 	maxResults := request.GetIntParam(req.Parameters, "Limit")
 	if maxResults <= 0 || maxResults > 60 {
 		maxResults = 60
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 
-	started := nextToken == ""
-	groupList := make([]map[string]interface{}, 0, maxResults)
-	for _, group := range groups {
-		if !started {
-			if group.Name == nextToken {
-				started = true
-			}
-			continue
-		}
+	opts := common.ListOptions{
+		MaxItems: maxResults,
+		Marker:   nextToken,
+	}
+
+	result, err := store.ListGroupsPaginated(userPoolID, opts)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+
+	groupList := make([]map[string]interface{}, 0, len(result.Items))
+	for _, group := range result.Items {
 		groupList = append(groupList, formatGroup(group))
-		if len(groupList) >= maxResults {
-			break
-		}
 	}
 
 	resp := map[string]interface{}{
 		"Groups": groupList,
 	}
-	if len(groupList) >= maxResults && len(groupList) > 0 {
-		resp["NextToken"] = groupList[len(groupList)-1]["GroupName"]
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
 	}
 
 	return resp, nil

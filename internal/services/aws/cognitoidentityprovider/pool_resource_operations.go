@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/config"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // CreateUserPoolDomain creates a new domain for a user pool.
@@ -267,19 +268,35 @@ func (s *CognitoService) ListResourceServers(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	servers, err := store.ListResourceServers(userPoolID)
+	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
+	if maxResults <= 0 || maxResults > 50 {
+		maxResults = 50
+	}
+	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+
+	opts := common.ListOptions{
+		MaxItems: maxResults,
+		Marker:   nextToken,
+	}
+
+	result, err := store.ListResourceServersPaginated(userPoolID, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(servers))
-	for _, rs := range servers {
+	items := make([]interface{}, 0, len(result.Items))
+	for _, rs := range result.Items {
 		items = append(items, formatResourceServer(rs))
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"ResourceServers": items,
-	}, nil
+	}
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+
+	return resp, nil
 }
 
 // CreateIdentityProvider adds a new identity provider to a user pool.
@@ -421,19 +438,35 @@ func (s *CognitoService) ListIdentityProviders(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	providers, err := store.ListIdentityProviders(userPoolID)
+	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
+	if maxResults <= 0 || maxResults > 50 {
+		maxResults = 50
+	}
+	nextToken := request.GetStringParam(req.Parameters, "NextToken")
+
+	opts := common.ListOptions{
+		MaxItems: maxResults,
+		Marker:   nextToken,
+	}
+
+	result, err := store.ListIdentityProvidersPaginated(userPoolID, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(providers))
-	for _, ip := range providers {
+	items := make([]interface{}, 0, len(result.Items))
+	for _, ip := range result.Items {
 		items = append(items, formatIdentityProvider(ip))
 	}
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"Providers": items,
-	}, nil
+	}
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+
+	return resp, nil
 }
 
 // GetCSVHeader returns the CSV headers for importing users into a user pool.

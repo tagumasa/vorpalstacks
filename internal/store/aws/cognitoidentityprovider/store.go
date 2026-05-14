@@ -150,6 +150,38 @@ func (s *CognitoStore) DeleteUserPool(userPoolID string) error {
 	return s.BaseStore.Delete(userPoolID)
 }
 
+// ListUsersPaginated lists users in a Cognito user pool with server-side pagination.
+// The filter callback is applied during iteration; filtered-out items do not count
+// toward MaxItems, allowing efficient pagination even with selective filters.
+func (s *CognitoStore) ListUsersPaginated(userPoolID string, opts common.ListOptions, filter func(*User) bool) (*common.ListResult[User], error) {
+	opts.Prefix = userPoolID + "#"
+	return common.List[User](s.usersStore, opts, filter)
+}
+
+// ListGroupsPaginated lists groups in a Cognito user pool with server-side pagination.
+func (s *CognitoStore) ListGroupsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[Group], error) {
+	opts.Prefix = userPoolID + "#"
+	return common.List[Group](s.groupsStore, opts, nil)
+}
+
+// ListUserPoolClientsPaginated lists clients for a Cognito user pool with server-side pagination.
+func (s *CognitoStore) ListUserPoolClientsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserPoolClient], error) {
+	opts.Prefix = userPoolID + "#"
+	return common.List[UserPoolClient](s.clientsStore, opts, nil)
+}
+
+// ListResourceServersPaginated lists resource servers for a user pool with server-side pagination.
+func (s *CognitoStore) ListResourceServersPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[ResourceServer], error) {
+	opts.Prefix = resourceServerPrefix(userPoolID)
+	return common.List[ResourceServer](s.BaseStore, opts, nil)
+}
+
+// ListIdentityProvidersPaginated lists identity providers for a user pool with server-side pagination.
+func (s *CognitoStore) ListIdentityProvidersPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[IdentityProvider], error) {
+	opts.Prefix = identityProviderPrefix(userPoolID)
+	return common.List[IdentityProvider](s.BaseStore, opts, nil)
+}
+
 // ListUserPools lists all Cognito user pools.
 func (s *CognitoStore) ListUserPools() ([]*UserPool, error) {
 	var userPools []*UserPool

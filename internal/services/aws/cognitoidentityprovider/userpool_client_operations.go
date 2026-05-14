@@ -8,6 +8,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // CreateUserPoolClient creates a user pool client for a Cognito user pool.
@@ -163,10 +164,6 @@ func (s *CognitoService) ListUserPoolClients(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-	clients, err := store.ListUserPoolClients(userPoolID)
-	if err != nil {
-		return nil, ErrInternalError
-	}
 
 	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
 	if maxResults <= 0 || maxResults > 60 {
@@ -174,26 +171,26 @@ func (s *CognitoService) ListUserPoolClients(ctx context.Context, reqCtx *reques
 	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 
-	started := nextToken == ""
-	clientList := make([]map[string]interface{}, 0, maxResults)
-	for _, client := range clients {
-		if !started {
-			if client.ClientID == nextToken {
-				started = true
-			}
-			continue
-		}
+	opts := common.ListOptions{
+		MaxItems: maxResults,
+		Marker:   nextToken,
+	}
+
+	result, err := store.ListUserPoolClientsPaginated(userPoolID, opts)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+
+	clientList := make([]map[string]interface{}, 0, len(result.Items))
+	for _, client := range result.Items {
 		clientList = append(clientList, formatUserPoolClientSummary(client))
-		if len(clientList) >= maxResults {
-			break
-		}
 	}
 
 	resp := map[string]interface{}{
 		"UserPoolClients": clientList,
 	}
-	if len(clientList) >= maxResults && len(clientList) > 0 {
-		resp["NextToken"] = clientList[len(clientList)-1]["ClientId"]
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
 	}
 
 	return resp, nil
