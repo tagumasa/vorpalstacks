@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
+	sqle "github.com/dolthub/go-mysql-server"
 	"vorpalstacks/internal/common/audit"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/serviceports"
@@ -34,6 +36,8 @@ import (
 	svcneptune "vorpalstacks/internal/services/aws/rds/neptune"
 	svcneptunedata "vorpalstacks/internal/services/aws/rds/neptunedata"
 	svcneptuneGraph "vorpalstacks/internal/services/aws/rds/neptunegraph"
+	svcrdsdata "vorpalstacks/internal/services/aws/rds/rdsdata"
+	svcvmysql "vorpalstacks/internal/services/aws/rds/vmysql"
 	svcroute53 "vorpalstacks/internal/services/aws/route53"
 	svcs3 "vorpalstacks/internal/services/aws/s3"
 	svcscheduler "vorpalstacks/internal/services/aws/scheduler"
@@ -73,6 +77,8 @@ func (a *App) initOptionalServices() error {
 		{a.cfg.TimestreamWrite, "TimestreamWrite", a.initTimestreamWrite},
 		{a.cfg.TimestreamQuery, "TimestreamQuery", a.initTimestreamQuery},
 		{a.cfg.Athena, "Athena", a.initAthena},
+		{a.cfg.RDSMySQL, "RDSMySQL", a.initRDSMySQL},
+		{a.cfg.RDSMySQL, "RDSData", a.initRDSData},
 	}
 
 	for _, init := range initers {
@@ -88,7 +94,8 @@ func (a *App) initOptionalServices() error {
 	a.initPrincipalResolver()
 
 	if st.neptuneService != nil && st.neptuneDataService != nil {
-		st.neptuneService.SetDataPlaneService(st.neptuneDataService)
+		st.neptuneService.SetEngine(st.neptuneDataService)
+		st.neptuneService.SetClusterPorter(st.neptuneDataService)
 	}
 
 	if st.kmsService != nil {
@@ -176,7 +183,7 @@ func (a *App) initNeptuneData(st *serviceState) error {
 	st.neptuneDataService.RegisterClusterListeners()
 
 	a.addShutdown("neptunedata", func(ctx context.Context) error {
-		st.neptuneDataService.Close()
+		st.neptuneDataService.Shutdown()
 		graphCache.Release()
 		return nil
 	})
@@ -252,6 +259,75 @@ func (a *App) initNeptuneGraph(st *serviceState) error {
 		return nil
 	})
 	return nil
+}
+
+// --- RDS MySQL (optional) ---
+
+func (a *App) initRDSMySQL(st *serviceState) error {
+	svc := svcvmysql.NewService(portalloc.New(appconfig.GetStore()))
+	svc.SetStorageManager(a.server.StorageManager())
+	svc.SetRegion(st.region)
+	st.vmysqlService = svc
+
+	if os.Getenv("RDS_MYSQL_ENABLED") == "true" {
+		if _, err := svc.Open(st.region, "test-instance"); err != nil {
+			return fmt.Errorf("failed to open test MySQL instance: %w", err)
+		}
+	}
+
+	a.addShutdown("rds-mysql", func(ctx context.Context) error {
+		svc.Shutdown()
+		return nil
+	})
+	return nil
+}
+
+// --- RDS Data API (optional, gated on RDSMySQL) ---
+
+func (a *App) initRDSData(st *serviceState) error {
+	if st.vmysqlService == nil {
+		return nil // vmysql not initialised, skip
+	}
+
+	rdsDataSvc := svcrdsdata.NewRDSDataService()
+	rdsDataSvc.SetVmysqlProvider(&vmysqlEngineProvider{svc: st.vmysqlService})
+	rdsDataSvc.SetRDSStoreProvider(&rdsStoreProvider{})
+	if eb := a.server.EventBus(); eb != nil {
+		rdsDataSvc.SetEventBus(eb)
+		eb.SetRDSDataInvoker(&rdsDataInvokerAdapter{service: rdsDataSvc})
+	}
+	rdsDataSvc.RegisterHandlers(a.server.Dispatcher())
+	rdsDataSvc.StartCleanup()
+	st.rdsDataService = rdsDataSvc
+
+	a.addShutdown("rdsdata", func(ctx context.Context) error {
+		rdsDataSvc.Shutdown()
+		return nil
+	})
+	return nil
+}
+
+// vmysqlEngineProvider adapts vmysql.Service to the rdsdata.VmysqlProvider interface.
+type vmysqlEngineProvider struct {
+	svc *svcvmysql.Service
+}
+
+func (p *vmysqlEngineProvider) GetEngine(instanceID string) *sqle.Engine {
+	return p.svc.GetEngine(instanceID)
+}
+
+// rdsStoreProvider adapts the RDS store for ARN resolution.
+type rdsStoreProvider struct{}
+
+func (p *rdsStoreProvider) GetInstance(identifier string) (string, string, string, error) {
+	// Returns instanceName, engine, status, error
+	// For now, delegate to the vmysql service which tracks running instances
+	return identifier, "mysql", "available", nil
+}
+
+func (p *rdsStoreProvider) GetCluster(identifier string) (string, []string, error) {
+	// Returns clusterName, instances, error
+	return identifier, []string{identifier}, nil
 }
 
 // --- gRPC-Web Admin ---

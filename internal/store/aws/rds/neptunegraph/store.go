@@ -96,7 +96,10 @@ func (s *NeptuneGraphStore) UpdateGraph(graph *Graph) error {
 	return s.graphs.Update(graph)
 }
 
-// DeleteGraph removes a graph and all associated queries, snapshots, and export task indices.
+// DeleteGraph removes a graph and its associated queries and export task
+// indices. Snapshot data and its graph-index entries are preserved so
+// that ListGraphSnapshots(graphId) remains functional after the graph
+// is deleted, matching AWS behaviour.
 func (s *NeptuneGraphStore) DeleteGraph(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -108,9 +111,6 @@ func (s *NeptuneGraphStore) DeleteGraph(id string) error {
 	}
 	if err := s.queries.DeleteByPrefix(id + "/"); err != nil {
 		logs.Warn("Failed to delete queries for graph", logs.String("graphId", id), logs.Err(err))
-	}
-	if err := s.snapshotsByGraph.DeleteByPrefix(id + "/"); err != nil {
-		logs.Warn("Failed to delete snapshots for graph", logs.String("graphId", id), logs.Err(err))
 	}
 	if err := s.exportTasksByGraph.DeleteByPrefix(id + "/"); err != nil {
 		logs.Warn("Failed to delete export tasks for graph", logs.String("graphId", id), logs.Err(err))

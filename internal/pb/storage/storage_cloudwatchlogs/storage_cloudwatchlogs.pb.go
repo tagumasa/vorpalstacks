@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.21.12
-// source: proto/storage/storage_cloudwatchlogs.proto
+// source: storage_cloudwatchlogs.proto
 
 package storage_cloudwatchlogs
 
@@ -39,7 +39,7 @@ type LogGroup struct {
 
 func (x *LogGroup) Reset() {
 	*x = LogGroup{}
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[0]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -51,7 +51,7 @@ func (x *LogGroup) String() string {
 func (*LogGroup) ProtoMessage() {}
 
 func (x *LogGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[0]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -64,7 +64,7 @@ func (x *LogGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogGroup.ProtoReflect.Descriptor instead.
 func (*LogGroup) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{0}
+	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *LogGroup) GetName() string {
@@ -153,7 +153,7 @@ type LogStream struct {
 
 func (x *LogStream) Reset() {
 	*x = LogStream{}
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[1]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -165,7 +165,7 @@ func (x *LogStream) String() string {
 func (*LogStream) ProtoMessage() {}
 
 func (x *LogStream) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[1]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -178,7 +178,7 @@ func (x *LogStream) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogStream.ProtoReflect.Descriptor instead.
 func (*LogStream) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{1}
+	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *LogStream) GetName() string {
@@ -252,7 +252,7 @@ type ChunkMeta struct {
 
 func (x *ChunkMeta) Reset() {
 	*x = ChunkMeta{}
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[2]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -264,7 +264,7 @@ func (x *ChunkMeta) String() string {
 func (*ChunkMeta) ProtoMessage() {}
 
 func (x *ChunkMeta) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[2]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -277,7 +277,7 @@ func (x *ChunkMeta) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChunkMeta.ProtoReflect.Descriptor instead.
 func (*ChunkMeta) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{2}
+	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ChunkMeta) GetChunkId() string {
@@ -342,7 +342,7 @@ type MetricFilter struct {
 
 func (x *MetricFilter) Reset() {
 	*x = MetricFilter{}
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[3]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -354,7 +354,7 @@ func (x *MetricFilter) String() string {
 func (*MetricFilter) ProtoMessage() {}
 
 func (x *MetricFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[3]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -367,7 +367,7 @@ func (x *MetricFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricFilter.ProtoReflect.Descriptor instead.
 func (*MetricFilter) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{3}
+	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *MetricFilter) GetName() string {
@@ -418,7 +418,7 @@ type MetricTransformation struct {
 
 func (x *MetricTransformation) Reset() {
 	*x = MetricTransformation{}
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[4]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -430,7 +430,7 @@ func (x *MetricTransformation) String() string {
 func (*MetricTransformation) ProtoMessage() {}
 
 func (x *MetricTransformation) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[4]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -443,7 +443,7 @@ func (x *MetricTransformation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricTransformation.ProtoReflect.Descriptor instead.
 func (*MetricTransformation) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{4}
+	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *MetricTransformation) GetMetricName() string {
@@ -496,7 +496,7 @@ type SubscriptionFilter struct {
 
 func (x *SubscriptionFilter) Reset() {
 	*x = SubscriptionFilter{}
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[5]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -508,7 +508,7 @@ func (x *SubscriptionFilter) String() string {
 func (*SubscriptionFilter) ProtoMessage() {}
 
 func (x *SubscriptionFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[5]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -521,7 +521,7 @@ func (x *SubscriptionFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscriptionFilter.ProtoReflect.Descriptor instead.
 func (*SubscriptionFilter) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{5}
+	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SubscriptionFilter) GetLogGroupName() string {
@@ -583,7 +583,7 @@ type LogEntry struct {
 
 func (x *LogEntry) Reset() {
 	*x = LogEntry{}
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[6]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -595,7 +595,7 @@ func (x *LogEntry) String() string {
 func (*LogEntry) ProtoMessage() {}
 
 func (x *LogEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[6]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -608,7 +608,7 @@ func (x *LogEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogEntry.ProtoReflect.Descriptor instead.
 func (*LogEntry) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{6}
+	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *LogEntry) GetTimestamp() int64 {
@@ -640,7 +640,7 @@ type Destination struct {
 
 func (x *Destination) Reset() {
 	*x = Destination{}
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[7]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -652,7 +652,7 @@ func (x *Destination) String() string {
 func (*Destination) ProtoMessage() {}
 
 func (x *Destination) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_storage_storage_cloudwatchlogs_proto_msgTypes[7]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -665,7 +665,7 @@ func (x *Destination) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Destination.ProtoReflect.Descriptor instead.
 func (*Destination) Descriptor() ([]byte, []int) {
-	return file_proto_storage_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{7}
+	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Destination) GetName() string {
@@ -717,11 +717,11 @@ func (x *Destination) GetTags() map[string]string {
 	return nil
 }
 
-var File_proto_storage_storage_cloudwatchlogs_proto protoreflect.FileDescriptor
+var File_storage_cloudwatchlogs_proto protoreflect.FileDescriptor
 
-const file_proto_storage_storage_cloudwatchlogs_proto_rawDesc = "" +
+const file_storage_cloudwatchlogs_proto_rawDesc = "" +
 	"\n" +
-	"*proto/storage/storage_cloudwatchlogs.proto\x12\x16storage.cloudwatchlogs\"\xa6\x03\n" +
+	"\x1cstorage_cloudwatchlogs.proto\x12\x16storage.cloudwatchlogs\"\xa6\x03\n" +
 	"\bLogGroup\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
 	"\x03arn\x18\x02 \x01(\tR\x03arn\x12\x16\n" +
@@ -801,19 +801,19 @@ const file_proto_storage_storage_cloudwatchlogs_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B9Z7vorpalstacks/internal/pb/storage/storage_cloudwatchlogsb\x06proto3"
 
 var (
-	file_proto_storage_storage_cloudwatchlogs_proto_rawDescOnce sync.Once
-	file_proto_storage_storage_cloudwatchlogs_proto_rawDescData []byte
+	file_storage_cloudwatchlogs_proto_rawDescOnce sync.Once
+	file_storage_cloudwatchlogs_proto_rawDescData []byte
 )
 
-func file_proto_storage_storage_cloudwatchlogs_proto_rawDescGZIP() []byte {
-	file_proto_storage_storage_cloudwatchlogs_proto_rawDescOnce.Do(func() {
-		file_proto_storage_storage_cloudwatchlogs_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_storage_storage_cloudwatchlogs_proto_rawDesc), len(file_proto_storage_storage_cloudwatchlogs_proto_rawDesc)))
+func file_storage_cloudwatchlogs_proto_rawDescGZIP() []byte {
+	file_storage_cloudwatchlogs_proto_rawDescOnce.Do(func() {
+		file_storage_cloudwatchlogs_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_storage_cloudwatchlogs_proto_rawDesc), len(file_storage_cloudwatchlogs_proto_rawDesc)))
 	})
-	return file_proto_storage_storage_cloudwatchlogs_proto_rawDescData
+	return file_storage_cloudwatchlogs_proto_rawDescData
 }
 
-var file_proto_storage_storage_cloudwatchlogs_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-var file_proto_storage_storage_cloudwatchlogs_proto_goTypes = []any{
+var file_storage_cloudwatchlogs_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_storage_cloudwatchlogs_proto_goTypes = []any{
 	(*LogGroup)(nil),             // 0: storage.cloudwatchlogs.LogGroup
 	(*LogStream)(nil),            // 1: storage.cloudwatchlogs.LogStream
 	(*ChunkMeta)(nil),            // 2: storage.cloudwatchlogs.ChunkMeta
@@ -825,7 +825,7 @@ var file_proto_storage_storage_cloudwatchlogs_proto_goTypes = []any{
 	nil,                          // 8: storage.cloudwatchlogs.LogGroup.TagsEntry
 	nil,                          // 9: storage.cloudwatchlogs.Destination.TagsEntry
 }
-var file_proto_storage_storage_cloudwatchlogs_proto_depIdxs = []int32{
+var file_storage_cloudwatchlogs_proto_depIdxs = []int32{
 	8, // 0: storage.cloudwatchlogs.LogGroup.tags:type_name -> storage.cloudwatchlogs.LogGroup.TagsEntry
 	4, // 1: storage.cloudwatchlogs.MetricFilter.metric_transformations:type_name -> storage.cloudwatchlogs.MetricTransformation
 	9, // 2: storage.cloudwatchlogs.Destination.tags:type_name -> storage.cloudwatchlogs.Destination.TagsEntry
@@ -836,26 +836,26 @@ var file_proto_storage_storage_cloudwatchlogs_proto_depIdxs = []int32{
 	0, // [0:3] is the sub-list for field type_name
 }
 
-func init() { file_proto_storage_storage_cloudwatchlogs_proto_init() }
-func file_proto_storage_storage_cloudwatchlogs_proto_init() {
-	if File_proto_storage_storage_cloudwatchlogs_proto != nil {
+func init() { file_storage_cloudwatchlogs_proto_init() }
+func file_storage_cloudwatchlogs_proto_init() {
+	if File_storage_cloudwatchlogs_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_storage_storage_cloudwatchlogs_proto_rawDesc), len(file_proto_storage_storage_cloudwatchlogs_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_cloudwatchlogs_proto_rawDesc), len(file_storage_cloudwatchlogs_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_proto_storage_storage_cloudwatchlogs_proto_goTypes,
-		DependencyIndexes: file_proto_storage_storage_cloudwatchlogs_proto_depIdxs,
-		MessageInfos:      file_proto_storage_storage_cloudwatchlogs_proto_msgTypes,
+		GoTypes:           file_storage_cloudwatchlogs_proto_goTypes,
+		DependencyIndexes: file_storage_cloudwatchlogs_proto_depIdxs,
+		MessageInfos:      file_storage_cloudwatchlogs_proto_msgTypes,
 	}.Build()
-	File_proto_storage_storage_cloudwatchlogs_proto = out.File
-	file_proto_storage_storage_cloudwatchlogs_proto_goTypes = nil
-	file_proto_storage_storage_cloudwatchlogs_proto_depIdxs = nil
+	File_storage_cloudwatchlogs_proto = out.File
+	file_storage_cloudwatchlogs_proto_goTypes = nil
+	file_storage_cloudwatchlogs_proto_depIdxs = nil
 }

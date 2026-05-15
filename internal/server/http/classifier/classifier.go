@@ -203,6 +203,7 @@ func (c *Classifier) serviceFromSigningService(r *http.Request, bodyBytes []byte
 		"wafv2":             "wafv2",
 		"events":            "eventbridge",
 		"rds":               "neptune",
+		"rds-data":          "rdsdata",
 		"neptune-db":        "neptunedata",
 		"neptune-graph":     "neptunegraph",
 	}
@@ -324,6 +325,10 @@ func isIPAddress(s string) bool {
 }
 
 func (c *Classifier) determineOperation(r *http.Request, bodyBytes []byte, cr *ClassifiedRequest) string {
+	if op := rdsDataOperationFromPath(r.URL.Path); op != "" {
+		return op
+	}
+
 	xAmzTarget := r.Header.Get("X-Amz-Target")
 	if xAmzTarget != "" {
 		parts := strings.Split(xAmzTarget, ".")

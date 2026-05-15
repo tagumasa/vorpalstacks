@@ -22,6 +22,8 @@ import (
 	svcneptune "vorpalstacks/internal/services/aws/rds/neptune"
 	svcneptunedata "vorpalstacks/internal/services/aws/rds/neptunedata"
 	svcneptuneGraph "vorpalstacks/internal/services/aws/rds/neptunegraph"
+	svcrdsdata "vorpalstacks/internal/services/aws/rds/rdsdata"
+	svcvmysql "vorpalstacks/internal/services/aws/rds/vmysql"
 	svcroute53 "vorpalstacks/internal/services/aws/route53"
 	svcs3 "vorpalstacks/internal/services/aws/s3"
 	svcscheduler "vorpalstacks/internal/services/aws/scheduler"
@@ -79,6 +81,8 @@ type serviceState struct {
 	timestreamQueryService *svctimestreamquery.TimestreamQueryService
 	wafv2Service           *svcwafv2.WAFv2Service
 	athenaService          *svcathena.AthenaService
+	vmysqlService          *svcvmysql.Service
+	rdsDataService         *svcrdsdata.RDSDataService
 
 	sqsStoreInstance     *storesqs.SQSStore
 	snsStoreInstance     *storesns.SNSStore

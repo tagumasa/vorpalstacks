@@ -3,7 +3,7 @@ module vorpalstacks-sdk-tests
 go 1.25.9
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.41.6
+	github.com/aws/aws-sdk-go-v2 v1.41.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.16
 	github.com/aws/aws-sdk-go-v2/service/acm v1.38.2
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.39.2
@@ -25,6 +25,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.44.4
 	github.com/aws/aws-sdk-go-v2/service/neptunedata v1.17.6
 	github.com/aws/aws-sdk-go-v2/service/neptunegraph v1.21.22
+	github.com/aws/aws-sdk-go-v2/service/rdsdata v1.32.23
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.62.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.99.1
 	github.com/aws/aws-sdk-go-v2/service/scheduler v1.17.23
@@ -38,7 +39,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/timestreamquery v1.36.15
 	github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.35.21
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.71.4
-	github.com/aws/smithy-go v1.25.0
+	github.com/aws/smithy-go v1.25.1
 	github.com/gorilla/websocket v1.5.3
 )
 
@@ -46,8 +47,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.9 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.15 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.22 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.22 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.22 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.23 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.23 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.23 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.14 // indirect

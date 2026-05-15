@@ -64,6 +64,7 @@ var Services = []ServiceDef{
 	{Name: "wafv2", EnvVar: "WAFv2_ENABLED", Category: "security"},
 	{Name: "route53", EnvVar: "ROUTE53_ENABLED", Category: "networking"},
 	{Name: "lambda_url", EnvVar: "LAMBDA_ENABLED", PortKey: "ports.lambda_url", Category: "compute", HostSuffix: "lambda-url.{region}.on.aws", SupportsFQDN: true},
+	{Name: "rdsdata", EnvVar: "RDS_DATA_ENABLED", Category: "database"},
 }
 
 // defaultPortMode returns the default port mode for this service.

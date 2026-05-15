@@ -427,14 +427,88 @@ func (e *graphQLEngine) dispatchOpenSearch(
 	return result, nil
 }
 
-// dispatchRDS forwards queries to an RDS Data API endpoint.
+// dispatchRDS forwards SQL queries to the RDS Data API via the EventBus
+// RDSDataInvoker. It extracts SQL statements from the VTL or JS resolver
+// payload and executes them against the configured RDS instance.
 func (e *graphQLEngine) dispatchRDS(
 	ctx context.Context,
 	reqCtx *request.RequestContext,
 	ds *appsyncstore.DataSource,
 	payload interface{},
 ) (interface{}, error) {
-	return nil, fmt.Errorf("RDS data source not yet implemented")
+	if e.bus == nil {
+		return nil, fmt.Errorf("event bus not configured for RDS invocation")
+	}
+
+	busImpl, ok := e.bus.(*busPublisherAdapter)
+	if !ok || busImpl == nil {
+		return nil, fmt.Errorf("event bus adapter not available for RDS invocation")
+	}
+
+	invoker := busImpl.bus.RDSDataInvoker()
+	if invoker == nil {
+		return nil, fmt.Errorf("RDSData invoker not configured on event bus")
+	}
+
+	if ds.RelationalDatabaseConfig == nil || ds.RelationalDatabaseConfig.RdsHttpEndpointConfig == nil {
+		return nil, fmt.Errorf("RDS data source has no endpoint config")
+	}
+
+	rdsCfg := ds.RelationalDatabaseConfig.RdsHttpEndpointConfig
+	resourceArn := rdsCfg.DbClusterIdentifier
+	secretArn := rdsCfg.AwsSecretStoreArn
+	database := rdsCfg.DatabaseName
+	schema := rdsCfg.Schema
+
+	// Extract SQL from payload (VTL format: {version, statements[]})
+	payloadMap, ok := toMap(payload)
+	if !ok {
+		return nil, fmt.Errorf("RDS payload must be a JSON object")
+	}
+
+	statements := extractStatements(payloadMap)
+	if len(statements) == 0 {
+		return nil, fmt.Errorf("no SQL statements in payload")
+	}
+	if len(statements) > 2 {
+		return nil, fmt.Errorf("maximum 2 SQL statements allowed per request")
+	}
+
+	// Execute first statement and return result
+	result, err := invoker.ExecuteStatement(ctx, resourceArn, secretArn, database, schema, statements[0], false, "")
+	if err != nil {
+		return nil, fmt.Errorf("RDS execution failed: %w", err)
+	}
+
+	return result, nil
+}
+
+// extractStatements pulls SQL strings from VTL or JS resolver payloads.
+func extractStatements(payload map[string]interface{}) []string {
+	// VTL format: {"version":"2018-05-29","statements":["SELECT ..."]}
+	if stmts, ok := payload["statements"]; ok {
+		if stmtList, ok := stmts.([]interface{}); ok {
+			var result []string
+			for _, s := range stmtList {
+				if str, ok := s.(string); ok && str != "" {
+					result = append(result, str)
+				}
+			}
+			return result
+		}
+	}
+
+	// JS resolver format: {"sql":"SELECT ..."}
+	if sql, ok := payload["sql"].(string); ok && sql != "" {
+		return []string{sql}
+	}
+
+	// Direct sql field
+	if sql := request.GetStringParam(payload, "sql"); sql != "" {
+		return []string{sql}
+	}
+
+	return nil
 }
 
 // --- Event types ---

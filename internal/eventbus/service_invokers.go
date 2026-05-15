@@ -225,3 +225,14 @@ type LogsInvoker interface {
 	EnsureLogStream(ctx context.Context, region, logGroupName, logStreamName string) error
 	PutLogEvents(ctx context.Context, region, logGroupName, logStreamName string, entries []LogsLogEntry) error
 }
+
+// RDSDataInvoker provides RDS Data API SQL execution for cross-service consumers
+// (e.g. AppSync RELATIONAL_DATABASE resolvers). Consumers call these methods
+// instead of holding a direct reference to the RDS Data service.
+type RDSDataInvoker interface {
+	ExecuteStatement(ctx context.Context, resourceArn, secretArn, database, schema, sql string, includeResultMetadata bool, formatRecordsAs string) (interface{}, error)
+	BatchExecuteStatement(ctx context.Context, resourceArn, secretArn, database, schema, sql string, parameterSets [][]interface{}) (interface{}, error)
+	BeginTransaction(ctx context.Context, resourceArn, secretArn, database, schema string) (string, error)
+	CommitTransaction(ctx context.Context, resourceArn, secretArn, transactionId string) error
+	RollbackTransaction(ctx context.Context, resourceArn, secretArn, transactionId string) error
+}

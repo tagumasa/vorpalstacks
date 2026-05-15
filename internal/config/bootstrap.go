@@ -64,6 +64,7 @@ type BootstrapConfig struct {
 	WAFv2           bool
 	Route53         bool
 	EC2             bool
+	RDSMySQL        bool
 }
 
 // LoadBootstrapConfig reads all bootstrap configuration from environment variables
@@ -127,6 +128,7 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		WAFv2:           envBool("WAFV2_ENABLED", true),
 		Route53:         envBool("ROUTE53_ENABLED", true),
 		EC2:             envBool("EC2_ENABLED", true),
+		RDSMySQL:        envBool("RDS_MYSQL_ENABLED", false),
 	}
 }
 

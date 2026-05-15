@@ -84,13 +84,18 @@ func NewNeptuneGraphService(accountID, region, dataPath string) *NeptuneGraphSer
 // Close shuts down all active graph engines and releases associated resources.
 func (s *NeptuneGraphService) Close() {
 	s.enginesMu.Lock()
+	entries := make(map[string]*engineEntry, len(s.activeEngines))
 	for id, entry := range s.activeEngines {
 		entry.stopped = true
+		entries[id] = entry
+	}
+	s.activeEngines = make(map[string]*engineEntry)
+	s.enginesMu.Unlock()
+
+	for _, entry := range entries {
 		entry.wg.Wait()
 		entry.db.Close()
-		delete(s.activeEngines, id)
 	}
-	s.enginesMu.Unlock()
 	s.taskWg.Wait()
 }
 
@@ -556,13 +561,18 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 	}
 
 	s.enginesMu.Lock()
-	if entry, ok := s.activeEngines[graphID]; ok {
-		entry.stopped = true
-		entry.wg.Wait()
-		entry.db.Close()
+	var engineEntry *engineEntry
+	if e, ok := s.activeEngines[graphID]; ok {
+		e.stopped = true
+		engineEntry = e
 		delete(s.activeEngines, graphID)
 	}
 	s.enginesMu.Unlock()
+
+	if engineEntry != nil {
+		engineEntry.wg.Wait()
+		engineEntry.db.Close()
+	}
 
 	if snapshotID != "" {
 		srcBkt, srcErr := s.graphBucket(graphID)
@@ -672,13 +682,18 @@ func (s *NeptuneGraphService) StopGraph(ctx context.Context, reqCtx *request.Req
 	}
 
 	s.enginesMu.Lock()
-	if entry, ok := s.activeEngines[graphID]; ok {
-		entry.stopped = true
-		entry.wg.Wait()
-		entry.db.Close()
+	var entry *engineEntry
+	if e, ok := s.activeEngines[graphID]; ok {
+		e.stopped = true
+		entry = e
 		delete(s.activeEngines, graphID)
 	}
 	s.enginesMu.Unlock()
+
+	if entry != nil {
+		entry.wg.Wait()
+		entry.db.Close()
+	}
 
 	graph.Status = "STOPPED"
 	graph.Endpoint = ""
@@ -720,12 +735,12 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 
 	s.enginesMu.RLock()
 	entry, ok := s.activeEngines[graphID]
+	s.enginesMu.RUnlock()
 
 	if ok {
 		entry.mu.Lock()
 		if err := entry.db.Clear(); err != nil {
 			entry.mu.Unlock()
-			s.enginesMu.RUnlock()
 
 			graph.Status = "FAILED"
 			graph.StatusReason = err.Error()
@@ -738,7 +753,6 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 		}
 		entry.mu.Unlock()
 	}
-	s.enginesMu.RUnlock()
 
 	graph.Status = "AVAILABLE"
 	if err := store.UpdateGraph(graph); err != nil {

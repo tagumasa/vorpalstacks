@@ -113,8 +113,40 @@ func lookupServiceByPath(path string) string {
 	if isAppSyncPath(path) {
 		return "appsync"
 	}
+	if isRDSDataPath(path) {
+		return "rdsdata"
+	}
 	if request.IsNeptuneGraphPath(path) {
 		return "neptunegraph"
 	}
 	return ""
+}
+
+func isRDSDataPath(path string) bool {
+	switch path {
+	case "/Execute", "/BatchExecute", "/ExecuteSql",
+		"/BeginTransaction", "/CommitTransaction", "/RollbackTransaction":
+		return true
+	default:
+		return false
+	}
+}
+
+func rdsDataOperationFromPath(path string) string {
+	switch path {
+	case "/Execute":
+		return "ExecuteStatement"
+	case "/BatchExecute":
+		return "BatchExecuteStatement"
+	case "/ExecuteSql":
+		return "ExecuteSql"
+	case "/BeginTransaction":
+		return "BeginTransaction"
+	case "/CommitTransaction":
+		return "CommitTransaction"
+	case "/RollbackTransaction":
+		return "RollbackTransaction"
+	default:
+		return ""
+	}
 }

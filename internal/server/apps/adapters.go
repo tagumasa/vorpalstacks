@@ -543,6 +543,39 @@ type neptuneGraphInvokerAdapter struct {
 	}
 }
 
+// rdsDataInvokerAdapter adapts the RDS Data API service to the eventbus.RDSDataInvoker
+// interface, so that cross-service consumers (e.g. AppSync GraphQL resolvers)
+// execute SQL through the bus instead of holding a direct service reference.
+type rdsDataInvokerAdapter struct {
+	service interface {
+		ExecuteStatementForInvoker(ctx context.Context, resourceArn, secretArn, database, schema, sql string, includeResultMetadata bool, formatRecordsAs string) (interface{}, error)
+		BeginTransactionForInvoker(ctx context.Context, resourceArn, secretArn, database, schema string) (string, error)
+		CommitTransactionForInvoker(ctx context.Context, resourceArn, secretArn, transactionId string) error
+		RollbackTransactionForInvoker(ctx context.Context, resourceArn, secretArn, transactionId string) error
+	}
+}
+
+func (a *rdsDataInvokerAdapter) ExecuteStatement(ctx context.Context, resourceArn, secretArn, database, schema, sql string, includeResultMetadata bool, formatRecordsAs string) (interface{}, error) {
+	return a.service.ExecuteStatementForInvoker(ctx, resourceArn, secretArn, database, schema, sql, includeResultMetadata, formatRecordsAs)
+}
+
+func (a *rdsDataInvokerAdapter) BatchExecuteStatement(ctx context.Context, resourceArn, secretArn, database, schema, sql string, parameterSets [][]interface{}) (interface{}, error) {
+	// Batch is delegated as repeated single executions
+	return nil, fmt.Errorf("batch execute not yet supported via invoker")
+}
+
+func (a *rdsDataInvokerAdapter) BeginTransaction(ctx context.Context, resourceArn, secretArn, database, schema string) (string, error) {
+	return a.service.BeginTransactionForInvoker(ctx, resourceArn, secretArn, database, schema)
+}
+
+func (a *rdsDataInvokerAdapter) CommitTransaction(ctx context.Context, resourceArn, secretArn, transactionId string) error {
+	return a.service.CommitTransactionForInvoker(ctx, resourceArn, secretArn, transactionId)
+}
+
+func (a *rdsDataInvokerAdapter) RollbackTransaction(ctx context.Context, resourceArn, secretArn, transactionId string) error {
+	return a.service.RollbackTransactionForInvoker(ctx, resourceArn, secretArn, transactionId)
+}
+
 type wafInvokerAdapter struct {
 	store *wafstore.WebACLAssociationStore
 }

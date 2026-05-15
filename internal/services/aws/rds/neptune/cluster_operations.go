@@ -220,8 +220,8 @@ func (s *NeptuneService) CreateDBCluster(ctx context.Context, reqCtx *request.Re
 	}
 
 	var enginePort int
-	if s.dataPlaneService != nil {
-		if port, err := s.dataPlaneService.OpenClusterEngine(reqCtx.GetRegion(), id); err != nil {
+	if s.engine != nil {
+		if port, err := s.engine.Open(reqCtx.GetRegion(), id); err != nil {
 			logs.Warn("failed to open cluster engine", logs.String("cluster", id), logs.Err(err))
 		} else {
 			enginePort = port
@@ -308,8 +308,8 @@ func (s *NeptuneService) DeleteDBCluster(ctx context.Context, reqCtx *request.Re
 
 	cascadeDeleteClusterResources(store, cluster)
 
-	if s.dataPlaneService != nil {
-		if err := s.dataPlaneService.CloseClusterEngine(id); err != nil {
+	if s.engine != nil {
+		if err := s.engine.Close(id); err != nil {
 			logs.Warn("failed to close cluster engine", logs.String("cluster", id), logs.Err(err))
 		}
 	}
@@ -495,8 +495,8 @@ func (s *NeptuneService) StartDBCluster(ctx context.Context, reqCtx *request.Req
 	}
 
 	var enginePort int
-	if s.dataPlaneService != nil {
-		if port, err := s.dataPlaneService.OpenClusterEngine(reqCtx.GetRegion(), id); err != nil {
+	if s.engine != nil {
+		if port, err := s.engine.Open(reqCtx.GetRegion(), id); err != nil {
 			logs.Warn("failed to open cluster engine on start", logs.String("cluster", id), logs.Err(err))
 		} else {
 			enginePort = port
@@ -532,8 +532,8 @@ func (s *NeptuneService) StopDBCluster(ctx context.Context, reqCtx *request.Requ
 		return nil, fmt.Errorf("neptune: DBCluster %s is not in available state (current: %s)", id, cluster.Status)
 	}
 
-	if s.dataPlaneService != nil {
-		if err := s.dataPlaneService.CloseClusterEngine(id); err != nil {
+	if s.engine != nil {
+		if err := s.engine.Close(id); err != nil {
 			logs.Warn("failed to close cluster engine on stop", logs.String("cluster", id), logs.Err(err))
 		}
 	}

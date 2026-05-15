@@ -34,6 +34,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | Neptune | 97 | 100% | ✅ Perfect |
 | NeptuneData | 168 | 100% | ✅ Perfect |
 | NeptuneGraph | 47 | 100% | ✅ Perfect |
+| RDS Data | 17 | 100% | ✅ Perfect |
 | Route53 | 44 | 100% | ✅ Perfect |
 | S3 | 90 | 100% | ✅ Perfect |
 | Scheduler | 38 | 100% | ✅ Perfect |
@@ -48,7 +49,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | WAF | Removed | No longer a supported service |
 | WAFv2 | 61 | 100% | ✅ Perfect |
 
-**Overall: 2279/2279 tests passing (100%) — 2215 SDK + 47 integration + 17 WebSocket**
+**Overall: 2296/2296 tests passing (100%) — 2232 SDK + 47 integration + 17 WebSocket**
 
 *CloudTrail audit tests require `VS_AUDIT_ENABLED=true`.*
 
@@ -141,6 +142,7 @@ waf
 neptune
 neptunedata
 neptunegraph
+rdsdata
 ```
 
 ### Options

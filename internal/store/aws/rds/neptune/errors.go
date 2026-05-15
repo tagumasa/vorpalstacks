@@ -1,48 +1,32 @@
 package neptune
 
-import "errors"
+import (
+	"errors"
+
+	rds "vorpalstacks/internal/store/aws/rds"
+)
 
 var (
-	// ErrDBClusterNotFound is returned when a DB cluster cannot be found by its identifier.
-	ErrDBClusterNotFound = errors.New("neptune: DBCluster not found")
-	// ErrDBInstanceNotFound is returned when a DB instance cannot be found by its identifier.
-	ErrDBInstanceNotFound = errors.New("neptune: DBInstance not found")
-	// ErrDBClusterSnapshotNotFound is returned when a cluster snapshot cannot be found.
-	ErrDBClusterSnapshotNotFound = errors.New("neptune: DBClusterSnapshot not found")
-	// ErrDBClusterParameterGroupNotFound is returned when a cluster parameter group cannot be found.
-	ErrDBClusterParameterGroupNotFound = errors.New("neptune: DBClusterParameterGroup not found")
-	// ErrDBParameterGroupNotFound is returned when a DB parameter group cannot be found.
-	ErrDBParameterGroupNotFound = errors.New("neptune: DBParameterGroup not found")
-	// ErrDBSubnetGroupNotFound is returned when a DB subnet group cannot be found.
-	ErrDBSubnetGroupNotFound = errors.New("neptune: DBSubnetGroup not found")
-	// ErrGlobalClusterNotFound is returned when a global cluster cannot be found.
-	ErrGlobalClusterNotFound = errors.New("neptune: GlobalCluster not found")
-	// ErrEventSubscriptionNotFound is returned when an event subscription cannot be found.
-	ErrEventSubscriptionNotFound = errors.New("neptune: EventSubscription not found")
-	// ErrDBClusterEndpointNotFound is returned when a cluster endpoint cannot be found.
-	ErrDBClusterEndpointNotFound = errors.New("neptune: DBClusterEndpoint not found")
-	// ErrEventNotFound is returned when an event cannot be found by its identifier.
-	ErrEventNotFound = errors.New("neptune: Event not found")
-	// ErrDBClusterAlreadyExists is returned when a DB cluster with the given identifier already exists.
-	ErrDBClusterAlreadyExists = errors.New("neptune: DBCluster already exists")
-	// ErrDBInstanceAlreadyExists is returned when a DB instance with the given identifier already exists.
-	ErrDBInstanceAlreadyExists = errors.New("neptune: DBInstance already exists")
-	// ErrDBClusterSnapshotAlreadyExists is returned when a cluster snapshot with the given identifier already exists.
-	ErrDBClusterSnapshotAlreadyExists = errors.New("neptune: DBClusterSnapshot already exists")
-	// ErrDBClusterParameterGroupAlreadyExists is returned when a cluster parameter group with the given name already exists.
-	ErrDBClusterParameterGroupAlreadyExists = errors.New("neptune: DBClusterParameterGroup already exists")
-	// ErrDBParameterGroupAlreadyExists is returned when a DB parameter group with the given name already exists.
-	ErrDBParameterGroupAlreadyExists = errors.New("neptune: DBParameterGroup already exists")
-	// ErrDBSubnetGroupAlreadyExists is returned when a DB subnet group with the given name already exists.
-	ErrDBSubnetGroupAlreadyExists = errors.New("neptune: DBSubnetGroup already exists")
-	// ErrGlobalClusterAlreadyExists is returned when a global cluster with the given identifier already exists.
-	ErrGlobalClusterAlreadyExists = errors.New("neptune: GlobalCluster already exists")
-	// ErrEventSubscriptionAlreadyExists is returned when an event subscription with the given name already exists.
-	ErrEventSubscriptionAlreadyExists = errors.New("neptune: EventSubscription already exists")
-	// ErrDBClusterEndpointAlreadyExists is returned when a cluster endpoint with the given identifier already exists.
+	ErrDBClusterNotFound                    = rds.ErrDBClusterNotFound
+	ErrDBInstanceNotFound                   = rds.ErrDBInstanceNotFound
+	ErrDBClusterSnapshotNotFound            = rds.ErrDBClusterSnapshotNotFound
+	ErrDBClusterParameterGroupNotFound      = rds.ErrDBClusterParameterGroupNotFound
+	ErrDBParameterGroupNotFound             = rds.ErrDBParameterGroupNotFound
+	ErrDBSubnetGroupNotFound                = rds.ErrDBSubnetGroupNotFound
+	ErrGlobalClusterNotFound                = rds.ErrGlobalClusterNotFound
+	ErrEventSubscriptionNotFound            = rds.ErrEventSubscriptionNotFound
+	ErrEventNotFound                        = rds.ErrEventNotFound
+	ErrDBClusterAlreadyExists               = rds.ErrDBClusterAlreadyExists
+	ErrDBInstanceAlreadyExists              = rds.ErrDBInstanceAlreadyExists
+	ErrDBClusterSnapshotAlreadyExists       = rds.ErrDBClusterSnapshotAlreadyExists
+	ErrDBClusterParameterGroupAlreadyExists = rds.ErrDBClusterParameterGroupAlreadyExists
+	ErrDBParameterGroupAlreadyExists        = rds.ErrDBParameterGroupAlreadyExists
+	ErrDBSubnetGroupAlreadyExists           = rds.ErrDBSubnetGroupAlreadyExists
+	ErrGlobalClusterAlreadyExists           = rds.ErrGlobalClusterAlreadyExists
+	ErrEventSubscriptionAlreadyExists       = rds.ErrEventSubscriptionAlreadyExists
+	ErrEventAlreadyExists                   = rds.ErrEventAlreadyExists
+	ErrInvalidParameterGroupState           = rds.ErrInvalidParameterGroupState
+
+	ErrDBClusterEndpointNotFound      = errors.New("neptune: DBClusterEndpoint not found")
 	ErrDBClusterEndpointAlreadyExists = errors.New("neptune: DBClusterEndpoint already exists")
-	// ErrEventAlreadyExists is returned when an event with the given identifier already exists.
-	ErrEventAlreadyExists = errors.New("neptune: Event already exists")
-	// ErrInvalidParameterGroupState is returned when a parameter group is not in a valid state for the requested operation.
-	ErrInvalidParameterGroupState = errors.New("neptune: InvalidDBClusterParameterGroupState")
 )

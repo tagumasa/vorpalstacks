@@ -144,6 +144,7 @@ type Bus interface {
 	CloudWatchMetricInvoker() CloudWatchMetricInvoker
 	CloudTrailInvoker() CloudTrailInvoker
 	LogsInvoker() LogsInvoker
+	RDSDataInvoker() RDSDataInvoker
 	SetLambdaInvoker(invoker LambdaInvoker)
 	SetSQSInvoker(invoker SQSInvoker)
 	SetSNSInvoker(invoker SNSInvoker)
@@ -158,6 +159,7 @@ type Bus interface {
 	SetCloudWatchMetricInvoker(invoker CloudWatchMetricInvoker)
 	SetCloudTrailInvoker(invoker CloudTrailInvoker)
 	SetLogsInvoker(invoker LogsInvoker)
+	SetRDSDataInvoker(invoker RDSDataInvoker)
 }
 
 // EventBus is the central implementation of the Bus interface, managing
@@ -195,6 +197,7 @@ type EventBus struct {
 	cloudWatchMetricInvoker CloudWatchMetricInvoker
 	cloudTrailInvoker       CloudTrailInvoker
 	logsInvoker             LogsInvoker
+	rdsDataInvoker          RDSDataInvoker
 	nextSubID               atomic.Int64
 	asyncCh                 chan *OutboxEntry
 	directCh                chan *directDispatch
@@ -677,6 +680,12 @@ func (b *EventBus) SetLogsInvoker(invoker LogsInvoker) { b.logsInvoker = invoker
 
 // LogsInvoker returns the configured CloudWatch Logs invoker.
 func (b *EventBus) LogsInvoker() LogsInvoker { return b.logsInvoker }
+
+// SetRDSDataInvoker sets the RDS Data API invoker for cross-service SQL execution.
+func (b *EventBus) SetRDSDataInvoker(invoker RDSDataInvoker) { b.rdsDataInvoker = invoker }
+
+// RDSDataInvoker returns the configured RDS Data API invoker.
+func (b *EventBus) RDSDataInvoker() RDSDataInvoker { return b.rdsDataInvoker }
 
 // RoleResolver returns the configured RoleResolver, or nil if none was set.
 func (b *EventBus) RoleResolver() RoleResolver {

@@ -60,8 +60,8 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 	}
 
 	if clusterID != "" {
-		if s.dataPlaneService != nil {
-			if port, err := s.dataPlaneService.GetClusterPort(clusterID); err == nil && port > 0 {
+		if s.porter != nil {
+			if port, err := s.porter.GetPort(clusterID); err == nil && port > 0 {
 				instance.Endpoint = &neptunestore.Endpoint{
 					Address: fmt.Sprintf("%s.%s.%s.neptune.amazonaws.com", id, s.accountID, s.region),
 					Port:    port,

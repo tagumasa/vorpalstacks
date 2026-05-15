@@ -332,8 +332,8 @@ func (s *NeptuneService) RestoreDBClusterFromSnapshot(ctx context.Context, reqCt
 	}
 
 	var enginePort int
-	if s.dataPlaneService != nil {
-		if port, err := s.dataPlaneService.OpenClusterEngine(reqCtx.GetRegion(), clusterID); err != nil {
+	if s.engine != nil {
+		if port, err := s.engine.Open(reqCtx.GetRegion(), clusterID); err != nil {
 			logs.Warn("failed to open cluster engine on snapshot restore", logs.String("cluster", clusterID), logs.Err(err))
 		} else {
 			enginePort = port
@@ -408,8 +408,8 @@ func (s *NeptuneService) RestoreDBClusterToPointInTime(ctx context.Context, reqC
 	}
 
 	var enginePort int
-	if s.dataPlaneService != nil {
-		if port, err := s.dataPlaneService.OpenClusterEngine(reqCtx.GetRegion(), clusterID); err != nil {
+	if s.engine != nil {
+		if port, err := s.engine.Open(reqCtx.GetRegion(), clusterID); err != nil {
 			logs.Warn("failed to open cluster engine on restore", logs.String("cluster", clusterID), logs.Err(err))
 		} else {
 			enginePort = port

@@ -14,21 +14,21 @@ import (
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
-	svcneptunedata "vorpalstacks/internal/services/aws/rds/neptunedata"
+	rdssvc "vorpalstacks/internal/services/aws/rds"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 )
 
-// NeptuneService handles incoming Neptune Management API requests.
 type NeptuneService struct {
-	accountID        string
-	region           string
-	serverHost       string
-	storageManager   *storage.RegionStorageManager
-	stores           sync.Map
-	eventBus         *eventbus.EventBus
-	cancelCleanup    context.CancelFunc
-	dataPlaneService *svcneptunedata.NeptuneDataService
+	accountID      string
+	region         string
+	serverHost     string
+	storageManager *storage.RegionStorageManager
+	stores         sync.Map
+	eventBus       *eventbus.EventBus
+	cancelCleanup  context.CancelFunc
+	engine         rdssvc.Engine
+	porter         rdssvc.GetPorter
 }
 
 // NewNeptuneService creates a new NeptuneService for the specified account and
@@ -101,10 +101,12 @@ func (s *NeptuneService) SetEventBus(bus *eventbus.EventBus) {
 	s.eventBus = bus
 }
 
-// SetDataPlaneService injects the NeptuneDataService for per-cluster engine
-// lifecycle management (open/close on create/delete).
-func (s *NeptuneService) SetDataPlaneService(dp *svcneptunedata.NeptuneDataService) {
-	s.dataPlaneService = dp
+func (s *NeptuneService) SetEngine(e rdssvc.Engine) {
+	s.engine = e
+}
+
+func (s *NeptuneService) SetClusterPorter(p rdssvc.GetPorter) {
+	s.porter = p
 }
 
 // GetStoreForRegion returns the cached Neptune store for the given region,

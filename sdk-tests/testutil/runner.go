@@ -81,6 +81,7 @@ func init() {
 	RegisterService("neptunedata", CategorySDK, (*TestRunner).RunNeptunedataTests)
 	RegisterService("neptunegraph", CategorySDK, (*TestRunner).RunNeptunegraphTests)
 	RegisterService("appsync", CategorySDK, (*TestRunner).RunAppSyncTests)
+	RegisterService("rdsdata", CategorySDK, (*TestRunner).RunRDSDataTests)
 	RegisterService("appsync-ws", CategoryWS, (*TestRunner).RunAppSyncWSTests)
 	RegisterService("integration", CategoryIntegration, (*TestRunner).RunIntegrationTests)
 	RegisterService("cloudtrail-audit", CategoryIntegration, (*TestRunner).RunCloudTrailAuditIntegrationTests)

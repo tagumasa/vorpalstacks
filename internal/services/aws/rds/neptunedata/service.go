@@ -22,9 +22,15 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 	"vorpalstacks/internal/server/listener"
 	"vorpalstacks/internal/server/portalloc"
+	rdssvc "vorpalstacks/internal/services/aws/rds"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	"vorpalstacks/internal/utils/timeutils"
+)
+
+var (
+	_ rdssvc.Engine    = (*NeptuneDataService)(nil)
+	_ rdssvc.GetPorter = (*NeptuneDataService)(nil)
 )
 
 const (
@@ -100,17 +106,22 @@ func NewNeptuneDataService(allocator *portalloc.Allocator) *NeptuneDataService {
 
 // Close stops the background query-state cleanup goroutine and closes all
 // per-cluster graph engines.
-func (s *NeptuneDataService) Close() {
+func (s *NeptuneDataService) Shutdown() {
 	if s.cancelCleanup != nil {
 		s.cancelCleanup()
 	}
 	s.loaderWg.Wait()
 	s.enginesMu.Lock()
+	engines := make(map[string]*clusterEngineEntry, len(s.activeEngines))
 	for id, entry := range s.activeEngines {
-		entry.db.Close()
-		delete(s.activeEngines, id)
+		engines[id] = entry
 	}
+	s.activeEngines = make(map[string]*clusterEngineEntry)
 	s.enginesMu.Unlock()
+
+	for _, entry := range engines {
+		entry.db.Close()
+	}
 }
 
 // cleanupExpiredQueries periodically scans all per-region stores and deletes
@@ -234,13 +245,13 @@ func (s *NeptuneDataService) SetStorageManager(sm *storage.RegionStorageManager)
 }
 
 // SetGraphCache injects a shared graph node/edge cache used by all per-cluster
-// engines. Must be called before OpenClusterEngine or RestoreEngines.
+// engines. Must be called before Open or RestoreEngines.
 func (s *NeptuneDataService) SetGraphCache(cache *graphengine.Cache) {
 	s.graphCache = cache
 }
 
 // SetListenerManager injects the listener manager for dynamic per-cluster
-// listener registration. Must be called before OpenClusterEngine or RestoreEngines.
+// listener registration. Must be called before Open or RestoreEngines.
 func (s *NeptuneDataService) SetListenerManager(lm *listener.Manager) {
 	s.listenerManager = lm
 }
@@ -303,10 +314,10 @@ func (s *NeptuneDataService) clusterBucket(region, clusterID string) (storage.Ba
 	return bb, nil
 }
 
-// OpenClusterEngine creates and opens a new isolated graph engine for the
+// Open creates and opens a new isolated graph engine for the
 // given cluster in the specified region. The engine is stored in the
 // activeEngines map. Returns the dynamically allocated port number.
-func (s *NeptuneDataService) OpenClusterEngine(region, clusterID string) (int, error) {
+func (s *NeptuneDataService) Open(region, clusterID string) (int, error) {
 	bucket, err := s.clusterBucket(region, clusterID)
 	if err != nil {
 		return 0, fmt.Errorf("neptunedata: failed to get cluster bucket: %w", err)
@@ -340,9 +351,9 @@ func (s *NeptuneDataService) OpenClusterEngine(region, clusterID string) (int, e
 	return port, nil
 }
 
-// CloseClusterEngine closes the graph engine for the given cluster and
+// Close closes the graph engine for the given cluster and
 // releases its dynamically allocated port.
-func (s *NeptuneDataService) CloseClusterEngine(clusterID string) error {
+func (s *NeptuneDataService) Close(clusterID string) error {
 	s.enginesMu.Lock()
 	entry, ok := s.activeEngines[clusterID]
 	if ok {
@@ -380,10 +391,18 @@ func (s *NeptuneDataService) GetClusterEngine(clusterID string) *graphengine.DB 
 	return entry.db
 }
 
-// GetClusterPort returns the allocated listener port for a cluster.
-func (s *NeptuneDataService) GetClusterPort(clusterID string) (int, error) {
+// GetPort returns the allocated listener port for a cluster.
+func (s *NeptuneDataService) GetPort(clusterID string) (int, error) {
+	s.enginesMu.RLock()
+	_, exists := s.activeEngines[clusterID]
+	s.enginesMu.RUnlock()
+	if !exists {
+		return 0, fmt.Errorf("neptunedata: cluster %s has no active engine", clusterID)
+	}
 	return s.portAllocator.Get("neptunedata", clusterID)
 }
+
+func (s *NeptuneDataService) EngineType() string { return "neptune" }
 
 // RestoreEngines reopens graph engines for all existing clusters after a
 // service restart. Reads cluster IDs from the Neptune store.
@@ -407,7 +426,7 @@ func (s *NeptuneDataService) RestoreEngines() {
 		if c.Status != "available" {
 			continue
 		}
-		if _, err := s.OpenClusterEngine(s.region, c.DBClusterIdentifier); err != nil {
+		if _, err := s.Open(s.region, c.DBClusterIdentifier); err != nil {
 			logs.Warn("failed to restore cluster engine", logs.String("cluster", c.DBClusterIdentifier), logs.Err(err))
 		}
 	}

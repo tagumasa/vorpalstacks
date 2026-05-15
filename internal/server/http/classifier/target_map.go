@@ -31,6 +31,7 @@ func lookupServiceByTarget(target string) string {
 		"AWSWAF_20150824":                   "waf",
 		"CloudTrail_20131101":               "cloudtrail",
 		"AWSSTS":                            "sts",
+		"RDSDataService":                    "rdsdata",
 	}
 
 	lowercase := map[string]string{
