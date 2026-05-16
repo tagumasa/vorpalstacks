@@ -50,6 +50,7 @@ func newTestDispatcher(t *testing.T) *Dispatcher {
 		nil,
 		nil,
 		"000000000000",
+		false,
 	)
 }
 

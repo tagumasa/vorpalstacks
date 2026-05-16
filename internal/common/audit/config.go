@@ -14,7 +14,7 @@ type AuditConfig struct {
 // LoadConfig loads the audit configuration from environment variables.
 func LoadConfig() *AuditConfig {
 	return &AuditConfig{
-		Enabled: getEnvBool("VS_AUDIT_ENABLED", false),
+		Enabled: getEnvBool("CLOUDTRAIL_ENABLED", false),
 	}
 }
 

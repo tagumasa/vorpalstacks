@@ -49,13 +49,21 @@ This document describes configuration options for Vorpalstacks.
 
 ### CloudTrail Audit Logging
 
+CloudTrail audit logging is controlled by `CLOUDTRAIL_ENABLED`. When enabled, the CloudTrail service API and audit event recording are both activated. There is no separate audit flag.
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VS_AUDIT_ENABLED` | `false` | Enable CloudTrail-compatible audit logging |
+| `CLOUDTRAIL_ENABLED` | `false` | Enable CloudTrail service and audit logging |
 
 ### Service Enablement
 
-All services can be enabled/disabled individually via environment variables. Set to `false` to disable a service.
+All services can be enabled/disabled individually via environment variables. Set to `false` to disable a service. Use `ALL_SERVICES_ENABLED=true` to force-enable every service at once.
+
+#### Quick-Enable All Services
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ALL_SERVICES_ENABLED` | `false` | Force-enable all services (overrides individual `*_ENABLED` flags) |
 
 #### Required Services (default: `true`)
 
@@ -63,7 +71,6 @@ All services can be enabled/disabled individually via environment variables. Set
 |----------|---------|---------|
 | `ACM_ENABLED` | `true` | AWS Certificate Manager |
 | `APIGATEWAY_ENABLED` | `true` | API Gateway |
-| `CLOUDTRAIL_ENABLED` | `true` | CloudTrail |
 | `CLOUDWATCH_ENABLED` | `true` | CloudWatch |
 | `LOGS_ENABLED` | `true` | CloudWatch Logs |
 | `COGNITO_ENABLED` | `true` | Cognito IDP |
@@ -84,16 +91,19 @@ All services can be enabled/disabled individually via environment variables. Set
 | `STS_ENABLED` | `true` | Security Token Service |
 | `IAM_ENABLED` | `true` | Identity and Access Management |
 
-#### Optional Services (default: `true`)
+#### Optional Services
 
 | Variable | Default | Service |
 |----------|---------|---------|
 | `ATHENA_ENABLED` | `true` | Athena |
 | `APPSYNC_ENABLED` | `true` | AppSync |
 | `CLOUDFRONT_ENABLED` | `true` | CloudFront |
+| `CLOUDTRAIL_ENABLED` | `false` | CloudTrail (audit logging) |
+| `EC2_ENABLED` | `true` | EC2 |
 | `NEPTUNE_ENABLED` | `true` | Neptune |
 | `NEPTUNE_DATA_ENABLED` | `true` | Neptune Data (Gremlin/SPARQL) |
 | `NEPTUNE_GRAPH_ENABLED` | `true` | Neptune Graph |
+| `RDS_MYSQL_ENABLED` | `false` | RDS MySQL (vmysql engine) |
 | `ROUTE53_ENABLED` | `true` | Route53 |
 | `TIMESTREAM_QUERY_ENABLED` | `true` | Timestream Query |
 | `TIMESTREAM_WRITE_ENABLED` | `true` | Timestream Write |
@@ -295,7 +305,6 @@ Priority order: **Store (persistent) > Environment variable > Default**
 
 | Key | Type | Default | Env Var | Description |
 |-----|------|---------|---------|-------------|
-| `features.audit_enabled` | BOOL | `false` | `VS_AUDIT_ENABLED` | CloudTrail audit logging |
 | `features.signature_verification` | BOOL | `true` | `SIGNATURE_VERIFICATION_ENABLED` | AWS signature verification |
 | `features.route53_dns` | BOOL | `false` | `ROUTE53_DNS_ENABLED` | Route53 DNS server |
 
@@ -464,7 +473,6 @@ SIGNATURE_VERIFICATION_ENABLED=false
 # Required Services (all default to true, listed for reference)
 # ACM_ENABLED=true
 # APIGATEWAY_ENABLED=true
-# CLOUDTRAIL_ENABLED=true
 # CLOUDWATCH_ENABLED=true
 # LOGS_ENABLED=true
 # COGNITO_ENABLED=true
@@ -485,7 +493,7 @@ SIGNATURE_VERIFICATION_ENABLED=false
 # STS_ENABLED=true
 # IAM_ENABLED=true
 
-# Optional Services (all default to true, listed for reference)
+# Optional Services (most default to true, listed for reference)
 # ATHENA_ENABLED=true
 # APPSYNC_ENABLED=true
 # CLOUDFRONT_ENABLED=true
@@ -496,6 +504,13 @@ SIGNATURE_VERIFICATION_ENABLED=false
 # TIMESTREAM_QUERY_ENABLED=true
 # TIMESTREAM_WRITE_ENABLED=true
 # WAFV2_ENABLED=true
+
+# Optional Services (default: false, must be explicitly enabled)
+# CLOUDTRAIL_ENABLED=true
+# RDS_MYSQL_ENABLED=true
+
+# Or enable everything at once:
+# ALL_SERVICES_ENABLED=true
 
 # Route53 DNS (default: false)
 # ROUTE53_DNS_ENABLED=false

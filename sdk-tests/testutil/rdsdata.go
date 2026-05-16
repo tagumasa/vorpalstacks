@@ -37,6 +37,21 @@ func (r *TestRunner) initRDSData() (*rdsDataTestContext, error) {
 
 func ptrStr(v string) *string { return &v }
 
+func (tc *rdsDataTestContext) dropTestDB() error {
+	tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
+		ResourceArn: &tc.resourceArn,
+		SecretArn:   &tc.secretArn,
+		Database:    &tc.database,
+		Sql:         ptrStr("DROP TABLE IF EXISTS sdk_test"),
+	})
+	_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
+		ResourceArn: &tc.resourceArn,
+		SecretArn:   &tc.secretArn,
+		Sql:         ptrStr("DROP DATABASE IF EXISTS " + tc.database),
+	})
+	return err
+}
+
 func (r *TestRunner) RunRDSDataTests() []TestResult {
 	tc, err := r.initRDSData()
 	if err != nil {
@@ -49,6 +64,10 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 	}
 
 	var results []TestResult
+
+	// Idempotent cleanup: drop stale data from prior runs so that
+	// CREATE DATABASE / CREATE TABLE never collide with leftovers.
+	_ = tc.dropTestDB()
 
 	results = append(results, r.RunTest("rdsdata", "ExecuteStatement_CreateDatabase", func() error {
 		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{

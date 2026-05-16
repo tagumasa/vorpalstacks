@@ -1,8 +1,8 @@
 # Implemented Services
 
-**Last Updated**: 2026-04-21
+**Last Updated**: 2026-05-16
 **Total**: 32 AWS services
-**SDK Tests**: 2262 (2216 SDK + 29 integration + 17 WebSocket)
+**SDK Tests**: 2,296 passed, 0 failed (2,232 SDK + 47 integration + 17 WebSocket)
 
 ---
 
@@ -16,13 +16,12 @@
 
 ## AWS Services
 
-### Required Services (22, default: enabled)
+### Required Services (21, default: enabled)
 
 | Service | Coverage | Notes |
 |---------|----------|-------|
 | ACM | Full | |
 | API Gateway | Broad | No client certificates, documentation, or SDK generation |
-| CloudTrail | Broad | No event data stores or SQL queries |
 | CloudWatch Metrics | Broad | No metric streams or anomaly detection |
 | CloudWatch Logs | Selective | No Logs Insights queries or export |
 | Cognito IDP | Selective | No external IdP |
@@ -43,20 +42,23 @@
 | SSM | Selective | Parameter Store only |
 | STS | Full | |
 
-### Optional Services (10, default: enabled)
+### Optional Services (11)
 
-| Service | Coverage | Notes |
-|---------|----------|-------|
-| Athena | Broad | No capacity reservations or notebook sessions. TEST_MODE: query execution history is purged at startup |
-| AppSync | Broad | GraphQL API with VTL resolvers, real-time subscriptions |
-| CloudFront | Selective | No actual edge traffic distribution |
-| Neptune | Full | Property graph + RDF, openCypher/Gremlin, bulk loader, management API |
-| NeptuneData | Broad | Gremlin/SPARQL query endpoint |
-| NeptuneGraph | Broad | Graph engine with graph/SPARQL/neptune-analytics APIs |
-| Route53 | Selective | DNS record management only |
-| Timestream Query | Broad | SQL query engine |
-| Timestream Write | Broad | Time-series data ingestion |
-| WAFv2 | Broad | |
+| Service | Coverage | Default | Notes |
+|---------|----------|---------|-------|
+| Athena | Broad | enabled | No capacity reservations or notebook sessions. TEST_MODE: query execution history is purged at startup |
+| AppSync | Broad | enabled | GraphQL API with VTL resolvers, real-time subscriptions |
+| CloudFront | Selective | enabled | No actual edge traffic distribution |
+| CloudTrail | Broad | **disabled** | Audit logging. No event data stores or SQL queries |
+| EC2 | Selective | enabled | Basic instance management |
+| Neptune | Full | enabled | Property graph + RDF, openCypher/Gremlin, bulk loader, management API |
+| NeptuneData | Broad | enabled | Gremlin/SPARQL query endpoint |
+| NeptuneGraph | Broad | enabled | Graph engine with graph/SPARQL/neptune-analytics APIs |
+| RDS Data | Full | **disabled** | MySQL-compatible SQL via vmysql engine (requires `RDS_MYSQL_ENABLED=true` or `ALL_SERVICES_ENABLED=true`) |
+| Route53 | Selective | enabled | DNS record management only |
+| Timestream Query | Broad | enabled | SQL query engine |
+| Timestream Write | Broad | enabled | Time-series data ingestion |
+| WAFv2 | Broad | enabled | |
 
 ### Service Scope
 
@@ -81,7 +83,7 @@
 ### Cross-Cutting Features
 
 - **IAM Authorization**: Policy-based access control (env: `AUTHORIZATION_ENABLED`)
-- **CloudTrail Audit Logging**: API operation recording (env: `VS_AUDIT_ENABLED`)
+- **CloudTrail Audit Logging**: API operation recording (env: `CLOUDTRAIL_ENABLED`)
 - **gRPC-Web Admin API**: Connect-RPC admin interface on port 50090 (env: `GRPC_WEB_PORT`)
 
 ---

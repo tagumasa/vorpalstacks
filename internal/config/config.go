@@ -245,14 +245,6 @@ func BaseURL() string {
 	return GetString("endpoints.base_url")
 }
 
-// AuditEnabled returns whether audit logging is enabled.
-//
-// Returns:
-//   - bool: True if audit logging is enabled
-func AuditEnabled() bool {
-	return GetBool("features.audit_enabled")
-}
-
 // SignatureVerificationEnabled returns whether AWS signature verification is enabled.
 //
 // Returns:

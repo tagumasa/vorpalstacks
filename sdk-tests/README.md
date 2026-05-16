@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 32 AWS services with 2279 test cases (2215 SDK + 47 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests for 32 AWS services with 2296 test cases (2232 SDK + 47 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -49,9 +49,9 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | WAF | Removed | No longer a supported service |
 | WAFv2 | 61 | 100% | ✅ Perfect |
 
-**Overall: 2296/2296 tests passing (100%) — 2232 SDK + 47 integration + 17 WebSocket**
+**Overall: 2,296/2,296 tests passing (100%) — 2,232 SDK + 47 integration + 17 WebSocket**
 
-*CloudTrail audit tests require `VS_AUDIT_ENABLED=true`.*
+*CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 
 ## Prerequisites
 
@@ -83,18 +83,18 @@ SIGNATURE_VERIFICATION_ENABLED=false PORT=50080 DATA_PATH=./data TEST_MODE=true 
 
 ### Start with CloudTrail Audit Enabled
 
-To run CloudTrail audit integration tests, set `VS_AUDIT_ENABLED=true`:
+To run CloudTrail audit integration tests, set `CLOUDTRAIL_ENABLED=true` (or use `ALL_SERVICES_ENABLED=true` to enable everything):
 
 ```bash
 pkill -9 vorpalstacks 2>/dev/null; sleep 1
 rm -rf data/us-east-1 data/global
-SIGNATURE_VERIFICATION_ENABLED=false VS_AUDIT_ENABLED=true PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
+ALL_SERVICES_ENABLED=true SIGNATURE_VERIFICATION_ENABLED=false PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
 ```
 
 Then run tests with the env var:
 
 ```bash
-VS_AUDIT_ENABLED=true ./sdk-tests/tmp/sdk-tests-all -service all -v
+CLOUDTRAIL_ENABLED=true ./sdk-tests/tmp/sdk-tests-all -service all -v
 ```
 
 ### Run Tests
@@ -258,7 +258,7 @@ In addition to per-service SDK tests, cross-service integration tests verify end
 
 ### Verification Methods
 
-3 tests verify that CloudTrail captures audit events from cross-service operations. These require `VS_AUDIT_ENABLED=true` at server startup; without it they are automatically skipped.
+3 tests verify that CloudTrail captures audit events from cross-service operations. These require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`) at server startup; without it they are automatically skipped.
 
 | Test | What It Verifies |
 |------|-----------------|
@@ -270,10 +270,10 @@ In addition to per-service SDK tests, cross-service integration tests verify end
 
 ```bash
 # Start server with audit enabled
-SIGNATURE_VERIFICATION_ENABLED=false VS_AUDIT_ENABLED=true PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
+ALL_SERVICES_ENABLED=true SIGNATURE_VERIFICATION_ENABLED=false PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
 
 # Run audit tests
-VS_AUDIT_ENABLED=true ./sdk-tests/tmp/sdk-tests-all -service cloudtrail-audit -v
+CLOUDTRAIL_ENABLED=true ./sdk-tests/tmp/sdk-tests-all -service cloudtrail-audit -v
 ```
 
 ## Adding New Tests

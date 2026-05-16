@@ -377,10 +377,10 @@ func postRaw(url string, body map[string]string) (map[string]interface{}, error)
 // --- WebSocket helpers ---
 
 type gremlinWSRequest struct {
-	RequestID string            `json:"requestId"`
-	Op        string            `json:"op"`
-	Processor string            `json:"processor"`
-	Args      gremlinWSArgs     `json:"args"`
+	RequestID string        `json:"requestId"`
+	Op        string        `json:"op"`
+	Processor string        `json:"processor"`
+	Args      gremlinWSArgs `json:"args"`
 }
 
 type gremlinWSArgs struct {
@@ -398,8 +398,8 @@ type gremlinWSResponse struct {
 }
 
 type wsStatusMsg struct {
-	Code    int                    `json:"code"`
-	Message string                 `json:"message"`
+	Code       int                    `json:"code"`
+	Message    string                 `json:"message"`
 	Attributes map[string]interface{} `json:"attributes"`
 }
 

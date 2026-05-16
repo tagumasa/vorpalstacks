@@ -20,7 +20,7 @@ const (
 )
 
 func isAuditEnabled() bool {
-	v := os.Getenv("VS_AUDIT_ENABLED")
+	v := os.Getenv("CLOUDTRAIL_ENABLED")
 	return v == "true" || v == "1"
 }
 
@@ -46,7 +46,7 @@ func (r *TestRunner) newAuditClients() (*auditClients, error) {
 }
 
 func (r *TestRunner) RunCloudTrailAuditIntegrationTests() []TestResult {
-	const skipReason = "VS_AUDIT_ENABLED=true is required for audit integration tests"
+	const skipReason = "CLOUDTRAIL_ENABLED=true is required for audit integration tests"
 	var results []TestResult
 
 	if !isAuditEnabled() {

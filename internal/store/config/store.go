@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/serviceports"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
@@ -264,6 +265,42 @@ func (s *Store) ListResourcePorts(servicePortKey string) (map[string]int, error)
 		}
 		resourceID := strings.TrimPrefix(key, prefix)
 		result[resourceID] = port
+		return nil
+	})
+	return result, err
+}
+
+// ListAllResourcePorts returns all port allocations across all service keys.
+// Only includes entries whose value is an integer within the dynamic port range.
+func (s *Store) ListAllResourcePorts() (map[string]map[string]int, error) {
+	result := make(map[string]map[string]int)
+	err := s.BaseStore.ForEach(func(key string, value []byte) error {
+		var entry ConfigEntry
+		if err := json.Unmarshal(value, &entry); err != nil {
+			return nil
+		}
+		port := 0
+		switch v := entry.Value.(type) {
+		case float64:
+			port = int(v)
+		case int:
+			port = v
+		default:
+			return nil
+		}
+		if port < serviceports.DynamicRangeStart || port > serviceports.DynamicRangeEnd {
+			return nil
+		}
+		dot := strings.Index(key, ".")
+		if dot < 0 {
+			return nil
+		}
+		svcKey := key[:dot]
+		resID := key[dot+1:]
+		if result[svcKey] == nil {
+			result[svcKey] = make(map[string]int)
+		}
+		result[svcKey][resID] = port
 		return nil
 	})
 	return result, err

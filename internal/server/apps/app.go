@@ -226,10 +226,11 @@ type grpcWebStarter interface {
 // New creates the App, initialising the HTTP server and all services.
 func New(cfg *Config) (*App, error) {
 	serverCfg := &chihttp.Config{
-		Port:      cfg.Port,
-		BindAddr:  cfg.BindAddr,
-		DataPath:  cfg.DataPath,
-		AccountID: cfg.AccountID,
+		Port:              cfg.Port,
+		BindAddr:          cfg.BindAddr,
+		DataPath:          cfg.DataPath,
+		AccountID:         cfg.AccountID,
+		CloudTrailEnabled: cfg.CloudTrail,
 		SignatureConfig: chihttp.SignatureConfig{
 			Enabled:         cfg.SignatureVerification,
 			Region:          cfg.Region,
@@ -287,10 +288,11 @@ func New(cfg *Config) (*App, error) {
 // storage. This is the production entry point used by main.go.
 func NewWithStorage(cfg *Config, sm *storage.RegionStorageManager) (*App, error) {
 	serverCfg := &chihttp.Config{
-		Port:      cfg.Port,
-		BindAddr:  cfg.BindAddr,
-		DataPath:  cfg.DataPath,
-		AccountID: cfg.AccountID,
+		Port:              cfg.Port,
+		BindAddr:          cfg.BindAddr,
+		DataPath:          cfg.DataPath,
+		AccountID:         cfg.AccountID,
+		CloudTrailEnabled: cfg.CloudTrail,
 		SignatureConfig: chihttp.SignatureConfig{
 			Enabled:         cfg.SignatureVerification,
 			Region:          cfg.Region,

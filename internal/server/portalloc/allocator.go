@@ -18,10 +18,13 @@ type PortStore interface {
 	SetResourcePort(serviceKey, resourceID string, port int) error
 	DeleteResourcePort(serviceKey, resourceID string) error
 	ListResourcePorts(serviceKey string) (map[string]int, error)
+	ListAllResourcePorts() (map[string]map[string]int, error)
 }
 
 // Allocator manages dynamic port allocation within [start, end].
 // Pebble is the single source of truth. It is safe for concurrent use.
+// A single Allocator instance must be shared across all services so that
+// findFreePort can avoid collisions between different service keys.
 type Allocator struct {
 	store PortStore
 	start int
@@ -55,7 +58,7 @@ func (a *Allocator) Get(serviceKey, resourceID string) (int, error) {
 		return port, nil
 	}
 
-	port, err = a.findFreePort(serviceKey)
+	port, err = a.findFreePort()
 	if err != nil {
 		return 0, err
 	}
@@ -76,14 +79,17 @@ func (a *Allocator) Release(serviceKey, resourceID string) error {
 }
 
 // findFreePort scans the range [start, end] and returns the first port not
-// allocated to any resource under the same serviceKey. Caller must hold a.mu.
-func (a *Allocator) findFreePort(serviceKey string) (int, error) {
+// allocated to any resource across all registered service keys.
+// Caller must hold a.mu.
+func (a *Allocator) findFreePort() (int, error) {
 	used := make(map[int]bool)
-	existing, err := a.store.ListResourcePorts(serviceKey)
+	allPorts, err := a.store.ListAllResourcePorts()
 	if err == nil {
-		for _, port := range existing {
-			if port >= a.start && port <= a.end {
-				used[port] = true
+		for _, resources := range allPorts {
+			for _, port := range resources {
+				if port >= a.start && port <= a.end {
+					used[port] = true
+				}
 			}
 		}
 	}

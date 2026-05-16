@@ -69,13 +69,17 @@ type BootstrapConfig struct {
 
 // LoadBootstrapConfig reads all bootstrap configuration from environment variables
 // and returns a populated BootstrapConfig. Defaults come from serviceports constants.
+//
+// When ALL_SERVICES_ENABLED is set to "true", every service flag is forced on
+// regardless of its individual *_ENABLED variable. This avoids forgetting to
+// enable a specific optional service (e.g. RDS_MYSQL_ENABLED) during testing.
 func LoadBootstrapConfig() *BootstrapConfig {
 	accountId := os.Getenv("AWS_ACCOUNT_ID")
 	if accountId == "" {
 		accountId = "000000000000"
 	}
 
-	return &BootstrapConfig{
+	cfg := &BootstrapConfig{
 		Port:                  envOrInt("PORT", serviceports.HTTP),
 		GRPCWebPort:           envOrInt("GRPC_WEB_PORT", serviceports.GRPCWeb),
 		DataPath:              envOr("DATA_PATH", "./data"),
@@ -108,7 +112,7 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		SSM:             envBool("SSM_ENABLED", true),
 		SESv2:           envBool("SESV2_ENABLED", true),
 		Scheduler:       envBool("SCHEDULER_ENABLED", true),
-		CloudTrail:      envBool("CLOUDTRAIL_ENABLED", true),
+		CloudTrail:      envBool("CLOUDTRAIL_ENABLED", false),
 		ACM:             envBool("ACM_ENABLED", true),
 		CloudWatch:      envBool("CLOUDWATCH_ENABLED", true),
 		DynamoDB:        envBool("DYNAMODB_ENABLED", true),
@@ -130,6 +134,45 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		EC2:             envBool("EC2_ENABLED", true),
 		RDSMySQL:        envBool("RDS_MYSQL_ENABLED", false),
 	}
+
+	if envBool("ALL_SERVICES_ENABLED", false) {
+		cfg.SNS = true
+		cfg.SQS = true
+		cfg.Lambda = true
+		cfg.Events = true
+		cfg.Logs = true
+		cfg.Kinesis = true
+		cfg.StepFunctions = true
+		cfg.APIGateway = true
+		cfg.Cognito = true
+		cfg.CognitoIdentity = true
+		cfg.SSM = true
+		cfg.SESv2 = true
+		cfg.Scheduler = true
+		cfg.CloudTrail = true
+		cfg.ACM = true
+		cfg.CloudWatch = true
+		cfg.DynamoDB = true
+		cfg.KMS = true
+		cfg.S3 = true
+		cfg.SecretsManager = true
+		cfg.STS = true
+		cfg.IAM = true
+		cfg.TimestreamWrite = true
+		cfg.TimestreamQuery = true
+		cfg.Athena = true
+		cfg.AppSync = true
+		cfg.Neptune = true
+		cfg.NeptuneData = true
+		cfg.NeptuneGraph = true
+		cfg.CloudFront = true
+		cfg.WAFv2 = true
+		cfg.Route53 = true
+		cfg.EC2 = true
+		cfg.RDSMySQL = true
+	}
+
+	return cfg
 }
 
 func envOr(key, defaultVal string) string {

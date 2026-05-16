@@ -310,7 +310,9 @@ func (s *IAMService) DeleteUserPermissionsBoundary(ctx context.Context, reqCtx *
 	return response.EmptyResponse(), nil
 }
 
-// GetAccountAuthorizationDetails retrieves information about all IAM users, groups, roles, and policies in the account, including their relationships.
+// GetAccountAuthorizationDetails retrieves information about all IAM users, groups,
+// roles, and policies in the account, including their relationships.
+// Supports pagination via Marker and MaxItems.
 func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	filterParam := request.GetStringList(req.Parameters, "Filter")
 	filters := make(map[string]bool)
@@ -324,21 +326,28 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 		filters["LocalManagedPolicy"] = true
 	}
 
+	marker := pagination.GetMarker(req.Parameters)
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := map[string]interface{}{
-		"IsTruncated": false,
+	type section struct {
+		key    string
+		filter string
+		items  []interface{}
+		marker func(i int) string
 	}
+	sections := make([]section, 0, 4)
 
 	if filters["User"] {
 		users, err := listAllUsers(store, "")
 		if err != nil {
 			return nil, err
 		}
-		userDetails := make([]interface{}, 0, len(users))
+		items := make([]interface{}, 0, len(users))
 		for _, user := range users {
 			detail := map[string]interface{}{
 				"UserId":     user.ID,
@@ -347,7 +356,6 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 				"Arn":        user.Arn,
 				"CreateDate": user.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 			}
-
 			groupNames, _ := store.UserGroups().ListGroupsForUser(user.UserName)
 			groupList := make([]interface{}, 0, len(groupNames))
 			for _, gn := range groupNames {
@@ -362,10 +370,12 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 			detail["GroupList"] = groupList
 			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeUser, user.UserName)
 			detail["UserPolicyList"] = buildInlinePolicyList(store, PrincipalTypeUser, user.UserName)
-
-			userDetails = append(userDetails, detail)
+			items = append(items, detail)
 		}
-		resp["UserDetailList"] = userDetails
+		sections = append(sections, section{
+			key: "UserDetailList", filter: "User", items: items,
+			marker: func(i int) string { return "user:" + users[i].UserName },
+		})
 	}
 
 	if filters["Group"] {
@@ -373,7 +383,7 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 		if err != nil {
 			return nil, err
 		}
-		groupDetails := make([]interface{}, 0, len(groups))
+		items := make([]interface{}, 0, len(groups))
 		for _, group := range groups {
 			detail := map[string]interface{}{
 				"GroupId":    group.ID,
@@ -384,9 +394,12 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 			}
 			detail["GroupPolicyList"] = buildInlinePolicyList(store, PrincipalTypeGroup, group.GroupName)
 			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeGroup, group.GroupName)
-			groupDetails = append(groupDetails, detail)
+			items = append(items, detail)
 		}
-		resp["GroupDetailList"] = groupDetails
+		sections = append(sections, section{
+			key: "GroupDetailList", filter: "Group", items: items,
+			marker: func(i int) string { return "group:" + groups[i].GroupName },
+		})
 	}
 
 	if filters["Role"] {
@@ -394,7 +407,7 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 		if err != nil {
 			return nil, err
 		}
-		roleDetails := make([]interface{}, 0, len(roles))
+		items := make([]interface{}, 0, len(roles))
 		for _, role := range roles {
 			detail := map[string]interface{}{
 				"RoleId":                   role.ID,
@@ -406,9 +419,12 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 			}
 			detail["RolePolicyList"] = buildInlinePolicyList(store, PrincipalTypeRole, role.RoleName)
 			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeRole, role.RoleName)
-			roleDetails = append(roleDetails, detail)
+			items = append(items, detail)
 		}
-		resp["RoleDetailList"] = roleDetails
+		sections = append(sections, section{
+			key: "RoleDetailList", filter: "Role", items: items,
+			marker: func(i int) string { return "role:" + roles[i].RoleName },
+		})
 	}
 
 	if filters["LocalManagedPolicy"] {
@@ -416,9 +432,9 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 		if err != nil {
 			return nil, err
 		}
-		policyList := make([]interface{}, 0, len(policies))
+		items := make([]interface{}, 0, len(policies))
 		for _, policy := range policies {
-			policyList = append(policyList, map[string]interface{}{
+			items = append(items, map[string]interface{}{
 				"PolicyName":       policy.PolicyName,
 				"PolicyId":         policy.ID,
 				"Arn":              policy.Arn,
@@ -426,7 +442,60 @@ func (s *IAMService) GetAccountAuthorizationDetails(ctx context.Context, reqCtx 
 				"DefaultVersionId": policy.DefaultVersionId,
 			})
 		}
-		resp["Policies"] = policyList
+		sections = append(sections, section{
+			key: "Policies", filter: "LocalManagedPolicy", items: items,
+			marker: func(i int) string { return "policy:" + policies[i].Arn },
+		})
+	}
+
+	// Apply pagination across all sections combined.
+	// Marker format: "<sectionType>:<itemName>" (e.g. "user:admin", "role:MyRole").
+	resp := map[string]interface{}{}
+	skipUntilMarker := marker != ""
+	count := 0
+	isTruncated := false
+	nextMarker := ""
+
+	for _, sec := range sections {
+		// Always emit the key so AWS SDK deserialisation gets an empty list
+		// instead of null for skipped/partial sections.
+		secItems := make([]interface{}, 0)
+
+		for i, item := range sec.items {
+			itemMarker := sec.marker(i)
+
+			if skipUntilMarker {
+				if itemMarker == marker {
+					skipUntilMarker = false
+				}
+				continue
+			}
+
+			if count >= maxItems {
+				isTruncated = true
+				nextMarker = itemMarker
+				break
+			}
+			secItems = append(secItems, item)
+			count++
+		}
+
+		resp[sec.key] = secItems
+
+		if isTruncated {
+			break
+		}
+	}
+
+	if skipUntilMarker {
+		for _, sec := range sections {
+			resp[sec.key] = []interface{}{}
+		}
+	}
+
+	resp["IsTruncated"] = isTruncated
+	if isTruncated && nextMarker != "" {
+		resp["Marker"] = nextMarker
 	}
 
 	return resp, nil

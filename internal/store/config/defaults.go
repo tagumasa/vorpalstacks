@@ -123,15 +123,6 @@ func loadDefaults() map[string]ConfigEntry {
 		},
 
 		// Feature Flags
-		"features.audit_enabled": {
-			Key:         "features.audit_enabled",
-			Value:       false,
-			Type:        ConfigTypeBool,
-			Description: "CloudTrail audit logging",
-			ReadOnly:    false,
-			EnvVar:      "VS_AUDIT_ENABLED",
-			Category:    CategoryFeatures,
-		},
 		"features.signature_verification": {
 			Key:         "features.signature_verification",
 			Value:       true,

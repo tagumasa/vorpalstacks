@@ -17,13 +17,13 @@ func TestAuditConfig(t *testing.T) {
 	})
 
 	t.Run("LoadConfig reads environment variable", func(t *testing.T) {
-		t.Setenv("VS_AUDIT_ENABLED", "true")
+		t.Setenv("CLOUDTRAIL_ENABLED", "true")
 		cfg := LoadConfig()
 		assert.True(t, cfg.Enabled)
 	})
 
 	t.Run("LoadConfig handles invalid env value", func(t *testing.T) {
-		t.Setenv("VS_AUDIT_ENABLED", "invalid")
+		t.Setenv("CLOUDTRAIL_ENABLED", "invalid")
 		cfg := LoadConfig()
 		assert.False(t, cfg.Enabled)
 	})

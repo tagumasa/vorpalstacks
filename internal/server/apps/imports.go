@@ -2,6 +2,7 @@ package apps
 
 import (
 	"vorpalstacks/internal/client/mobyclient"
+	"vorpalstacks/internal/server/portalloc"
 	svcacm "vorpalstacks/internal/services/aws/acm"
 	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
 	svcappsync "vorpalstacks/internal/services/aws/appsync"
@@ -83,6 +84,7 @@ type serviceState struct {
 	athenaService          *svcathena.AthenaService
 	vmysqlService          *svcvmysql.Service
 	rdsDataService         *svcrdsdata.RDSDataService
+	portAllocator          *portalloc.Allocator
 
 	sqsStoreInstance     *storesqs.SQSStore
 	snsStoreInstance     *storesns.SNSStore

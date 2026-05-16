@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/common/audit"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/mock"
@@ -36,7 +35,7 @@ type Dispatcher struct {
 	handlers                  map[string]Handler
 	storageManager            *storage.RegionStorageManager
 	iamStore                  iamstore.IAMStoreInterface
-	auditConfig               *audit.AuditConfig
+	auditConfig               bool
 	serviceModeCache          map[string]api.ServiceMode
 	serviceModeCacheMu        sync.RWMutex
 	handlersMu                sync.RWMutex
@@ -64,6 +63,7 @@ func NewDispatcher(
 	iamStore iamstore.IAMStoreInterface,
 	authorizer Authorizer,
 	accountID string,
+	cloudTrailEnabled bool,
 ) *Dispatcher {
 	authEnabled := os.Getenv("AUTHORIZATION_ENABLED") == "true"
 
@@ -76,7 +76,7 @@ func NewDispatcher(
 		handlers:             make(map[string]Handler),
 		storageManager:       storageMgr,
 		iamStore:             iamStore,
-		auditConfig:          audit.DefaultConfig(),
+		auditConfig:          cloudTrailEnabled,
 		serviceModeCache:     make(map[string]api.ServiceMode),
 		handlerExists:        make(map[string]bool),
 		mockGenerator:        mock.NewGenerator(shapeStore, memberStore),

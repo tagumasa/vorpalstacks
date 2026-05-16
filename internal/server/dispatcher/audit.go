@@ -13,7 +13,7 @@ import (
 type CloudTrailRecorderFactory func(region, accountID string) request.AuditRecorder
 
 func (d *Dispatcher) recordAudit(serviceName, operation string, reqCtx *request.RequestContext, req *request.ParsedRequest, response interface{}, err error) {
-	if !d.auditConfig.Enabled {
+	if !d.auditConfig {
 		return
 	}
 

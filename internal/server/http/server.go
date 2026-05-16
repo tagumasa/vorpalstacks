@@ -108,6 +108,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		iamStore,
 		authorizer,
 		cfg.AccountID,
+		cfg.CloudTrailEnabled,
 	)
 
 	serviceIndex, err := router.NewServiceIndex(serviceStore, operationStore)

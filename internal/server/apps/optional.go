@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	sqle "github.com/dolthub/go-mysql-server"
@@ -61,6 +60,7 @@ import (
 // were already initialised.
 func (a *App) initOptionalServices() error {
 	st := a.state
+	st.portAllocator = portalloc.New(appconfig.GetStore())
 
 	initers := []struct {
 		enabled bool
@@ -89,8 +89,10 @@ func (a *App) initOptionalServices() error {
 		}
 	}
 
-	a.initCloudTrailRecorderFactory(st)
-	a.injectS3AuditRecorder(st)
+	if a.cfg.CloudTrail {
+		a.initCloudTrailRecorderFactory(st)
+		a.injectS3AuditRecorder(st)
+	}
 	a.initPrincipalResolver()
 
 	if st.neptuneService != nil && st.neptuneDataService != nil {
@@ -168,9 +170,8 @@ func (a *App) initNeptune(st *serviceState) error {
 // --- NeptuneData (optional) ---
 
 func (a *App) initNeptuneData(st *serviceState) error {
-	allocator := portalloc.New(appconfig.GetStore())
 	graphCache := graphengine.NewSharedCache(graphengine.DefaultCacheSize)
-	st.neptuneDataService = svcneptunedata.NewNeptuneDataService(allocator)
+	st.neptuneDataService = svcneptunedata.NewNeptuneDataService(st.portAllocator)
 	st.neptuneDataService.SetStorageManager(a.server.StorageManager())
 	st.neptuneDataService.SetGraphCache(graphCache)
 	st.neptuneDataService.SetListenerManager(a.lm)
@@ -264,15 +265,13 @@ func (a *App) initNeptuneGraph(st *serviceState) error {
 // --- RDS MySQL (optional) ---
 
 func (a *App) initRDSMySQL(st *serviceState) error {
-	svc := svcvmysql.NewService(portalloc.New(appconfig.GetStore()))
+	svc := svcvmysql.NewService(st.portAllocator)
 	svc.SetStorageManager(a.server.StorageManager())
 	svc.SetRegion(st.region)
 	st.vmysqlService = svc
 
-	if os.Getenv("RDS_MYSQL_ENABLED") == "true" {
-		if _, err := svc.Open(st.region, "test-instance"); err != nil {
-			return fmt.Errorf("failed to open test MySQL instance: %w", err)
-		}
+	if _, err := svc.Open(st.region, "test-instance"); err != nil {
+		return fmt.Errorf("failed to open test MySQL instance: %w", err)
 	}
 
 	a.addShutdown("rds-mysql", func(ctx context.Context) error {
