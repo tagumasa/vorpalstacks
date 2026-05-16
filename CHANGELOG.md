@@ -14,6 +14,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **S3: streaming chunked encryption** — New `EncryptStream`/`DecryptChunked` methods in `EncryptionManager` read plaintext from `io.Reader` in 64 MB chunks, encrypt each with AES-GCM, and record per-chunk `PartEncryptionInfos` in SSE metadata. `PutObject` and `CopyObject` now stream through encryption without buffering the entire body in memory.
 
+- **S3 web console: 3-panel object browser** — Bucket list now navigates into a prefix-aware object browser with breadcrumb navigation, folder traversal, file upload/download, copy, single and batch delete, and a detail panel with JSON/RAW/HEADERS tabs. Text and image file preview supported. `DeleteBucket` guarded against non-empty buckets.
+
 ### Changed
 
 - **Neptune service packages relocated under `rds/`** — Neptune, NeptuneData, NeptuneGraph implementations moved from `internal/services/aws/{neptune,neptunedata,neptunegraph}/` to `internal/services/aws/rds/{neptune,neptunedata,neptunegraph}/`. Stores moved to `internal/store/aws/rds/`. All import paths updated.
@@ -51,6 +53,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 - **RDS Data API SDK tests: idempotent cleanup** — Drops stale databases/tables before each run to prevent `CREATE DATABASE` collisions.
 
 - **S3: unified non-versioned storage keys** — Non-versioned objects now use `bucket#key#null` consistently instead of `bucket#key`, eliminating dual-key fallback paths throughout `ObjectStore`. `ListParts` replaced redundant `countSkipped` with inline counter.
+
+- **Web console: Splitter horizontal drag direction inverted** — Dragging a horizontal splitter downward now correctly expands the panel instead of shrinking it. Login and setup pages add `useEffect` cleanup flags to prevent state updates after unmount.
 
 ## [0.0.11]
 

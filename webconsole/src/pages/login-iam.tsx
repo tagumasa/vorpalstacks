@@ -17,11 +17,13 @@ export function LoginIAMPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     authClient.isRootInitialized({}).then((res) => {
-      if (!res.isInitialized) {
+      if (!cancelled && !res.isInitialized) {
         navigate("/setup", { replace: true });
       }
     }).catch(() => {});
+    return () => { cancelled = true; };
   }, [navigate]);
 
   async function handleSubmit(e: FormEvent) {

@@ -48,10 +48,10 @@ export function Splitter({
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      const delta =
-        direction === "vertical"
+      const raw = direction === "vertical"
           ? e.clientX - startPos.current
           : e.clientY - startPos.current;
+      const delta = direction === "horizontal" ? -raw : raw;
       const next = Math.min(maxSize, Math.max(minSize, startSize.current + delta));
       setSize(next);
     };

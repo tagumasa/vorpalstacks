@@ -89,8 +89,25 @@ func (h *AdminHandler) DeleteBucket(ctx context.Context, req *connect.Request[pb
 	}
 
 	bucketStore := h.getBucketStoreFromHeaders(req.Header())
-	if bucketStore == nil {
+	objectStore := h.getObjectStore(req.Header())
+	if bucketStore == nil || objectStore == nil {
 		return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("storage unavailable"))
+	}
+
+	count, err := objectStore.CountByBucket(req.Msg.Bucket)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+	if count > 0 {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("bucket is not empty: contains %d object(s), delete all objects first", count))
+	}
+
+	multipartCount, err := objectStore.CountMultipartUploadsByBucket(req.Msg.Bucket)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+	if multipartCount > 0 {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("bucket has %d incomplete multipart upload(s)", multipartCount))
 	}
 
 	if err := bucketStore.Delete(req.Msg.Bucket); err != nil {

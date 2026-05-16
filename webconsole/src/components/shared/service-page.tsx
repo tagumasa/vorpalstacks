@@ -14,6 +14,18 @@ import { Splitter } from "./splitter";
 import { transport } from "@/lib/transport";
 import { useListKey, useListInvalidator } from "@/lib/use-service-list";
 
+// ─── Helpers ────────────────────────────────────────────────────
+
+/** Extract a human-readable message from Connect RPC errors or plain Error. */
+function formatError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err !== null && "message" in err) {
+    const msg = (err as { message: unknown }).message;
+    if (typeof msg === "string" && msg) return msg;
+  }
+  return String(err);
+}
+
 // ─── Layout ─────────────────────────────────────────────────────
 
 interface ServicePageLayoutProps {
@@ -58,7 +70,7 @@ export function ServicePageLayout({
     return (
       <div className="content-area">
         <PageHeader icon={icon} title={title} />
-        <div className="error-state">{t("common.failedToLoad", { error: String(error) })}</div>
+        <div className="error-state">{t("common.failedToLoad", { error: formatError(error) })}</div>
       </div>
     );
   }
@@ -200,7 +212,7 @@ export function ServiceCreateModal({
   return (
     <Modal open={open} onClose={onClose}>
       <h2>{title}</h2>
-      {error && <div className="modal-error">{String(error)}</div>}
+      {error && <div className="modal-error">{formatError(error)}</div>}
       {children}
       <div className="modal-actions">
         <button className="btn btn-secondary" onClick={onClose}>
@@ -247,7 +259,7 @@ export function ServiceDeleteDialog({
       <p>
         {t("confirm.confirmDelete")} <strong>{name}</strong>?
       </p>
-      {error && <div className="modal-error">{String(error)}</div>}
+      {error && <div className="modal-error">{formatError(error)}</div>}
       <div className="modal-actions">
         <button className="btn btn-secondary" onClick={onClose}>
           {t("common.cancel")}
@@ -343,8 +355,7 @@ export function BooleanCell({ getValue }: { getValue: () => unknown }) {
 // ─── Hook ───────────────────────────────────────────────────────
 
 export function useServiceClient<S extends DescService>(service: S) {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const client = useMemo(() => createClient(service, transport), []);
+  const client = useMemo(() => createClient(service, transport), [service]);
   const invalidate = useListInvalidator();
   return { client, invalidate, useListKey };
 }
