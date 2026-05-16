@@ -1,6 +1,8 @@
 package vmysql
 
 import (
+	"fmt"
+
 	"github.com/dolthub/go-mysql-server/sql"
 	"github.com/dolthub/go-mysql-server/sql/types"
 	"github.com/dolthub/vitess/go/vt/proto/query"
@@ -254,6 +256,114 @@ func (s *pebbleAutoIncSetter) AcquireAutoIncrementLock(ctx *sql.Context) (func()
 }
 
 func (s *pebbleAutoIncSetter) Close(ctx *sql.Context) error { return nil }
+
+// --- IndexAlterableTable ---
+
+func (t *pebbleTable) CreateIndex(ctx *sql.Context, indexDef sql.IndexDef) error {
+	columns := make([]string, len(indexDef.Columns))
+	for i, col := range indexDef.Columns {
+		columns[i] = col.Name
+	}
+	return t.store.CreateIndex(ctx, t.dbName, t.name, indexDef.Name, columns, indexDef.IsUnique())
+}
+
+func (t *pebbleTable) DropIndex(ctx *sql.Context, indexName string) error {
+	return t.store.DropIndex(ctx, t.dbName, t.name, indexName)
+}
+
+func (t *pebbleTable) RenameIndex(ctx *sql.Context, fromIndexName string, toIndexName string) error {
+	indexes, err := t.store.ListIndexes(ctx, t.dbName, t.name)
+	if err != nil {
+		return err
+	}
+	for _, idx := range indexes {
+		if idx.Name == fromIndexName {
+			if err := t.store.CreateIndex(ctx, t.dbName, t.name, toIndexName, idx.Columns, idx.Unique); err != nil {
+				return err
+			}
+			return t.store.DropIndex(ctx, t.dbName, t.name, fromIndexName)
+		}
+	}
+	return fmt.Errorf("index %s not found", fromIndexName)
+}
+
+// --- TruncateableTable ---
+
+func (t *pebbleTable) Truncate(ctx *sql.Context) (int, error) {
+	return t.store.TruncateTable(ctx, t.dbName, t.name)
+}
+
+// --- IndexAddressableTable ---
+
+func (t *pebbleTable) GetIndexes(ctx *sql.Context) ([]sql.Index, error) {
+	defs, err := t.store.ListIndexes(ctx, t.dbName, t.name)
+	if err != nil {
+		return nil, err
+	}
+	indexes := make([]sql.Index, len(defs))
+	for i, def := range defs {
+		indexes[i] = &pebbleIndex{
+			db:    t.dbName,
+			table: t.name,
+			def:   def,
+			sch:   t.sqlSch,
+		}
+	}
+	return indexes, nil
+}
+
+func (t *pebbleTable) IndexedAccess(ctx *sql.Context, lookup sql.IndexLookup) sql.IndexedTable {
+	return nil
+}
+
+func (t *pebbleTable) PreciseMatch() bool { return false }
+
+// pebbleIndex adapts rdbengine.IndexDef to sql.Index.
+type pebbleIndex struct {
+	db    string
+	table string
+	def   rdbengine.IndexDef
+	sch   sql.Schema
+}
+
+func (i *pebbleIndex) ID() string       { return i.def.Name }
+func (i *pebbleIndex) Database() string { return i.db }
+func (i *pebbleIndex) Table() string    { return i.table }
+func (i *pebbleIndex) Expressions() []string {
+	exprs := make([]string, len(i.def.Columns))
+	for j, col := range i.def.Columns {
+		exprs[j] = i.table + "." + col
+	}
+	return exprs
+}
+func (i *pebbleIndex) IsUnique() bool                                 { return i.def.Unique }
+func (i *pebbleIndex) IsSpatial() bool                                { return false }
+func (i *pebbleIndex) IsFullText() bool                               { return false }
+func (i *pebbleIndex) IsVector() bool                                 { return false }
+func (i *pebbleIndex) Comment() string                                { return "" }
+func (i *pebbleIndex) IndexType() string                              { return "BTREE" }
+func (i *pebbleIndex) IsGenerated() bool                              { return false }
+func (i *pebbleIndex) CanSupport(_ *sql.Context, _ ...sql.Range) bool { return false }
+func (i *pebbleIndex) CanSupportOrderBy(_ sql.Expression) bool        { return false }
+func (i *pebbleIndex) PrefixLengths() []uint16                        { return nil }
+
+func (i *pebbleIndex) ColumnExpressionTypes() []sql.ColumnExpressionType {
+	cets := make([]sql.ColumnExpressionType, len(i.def.Columns))
+	for j, col := range i.def.Columns {
+		var typ sql.Type = types.Text
+		for _, c := range i.sch {
+			if c.Name == col {
+				typ = c.Type
+				break
+			}
+		}
+		cets[j] = sql.ColumnExpressionType{
+			Expression: i.table + "." + col,
+			Type:       typ,
+		}
+	}
+	return cets
+}
 
 // encodeSQLPK extracts the primary key from a sql.Row and encodes it.
 // go-mysql-server returns different Go types for the same column across

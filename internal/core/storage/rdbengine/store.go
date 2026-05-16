@@ -233,6 +233,61 @@ func (s *Store) DeleteRow(ctx context.Context, db, table string, pk []byte) erro
 	return nil
 }
 
+// TruncateTable removes all rows from a table and returns the count deleted.
+func (s *Store) TruncateTable(ctx context.Context, db, table string) (int, error) {
+	if err := s.checkOpen(); err != nil {
+		return 0, err
+	}
+
+	mu := s.TableLock(db, table)
+	mu.Lock()
+	defer mu.Unlock()
+
+	tblKey := catalogTableKey(s.engine, db, table)
+	if !s.backend.has(tblKey) {
+		return 0, ErrNotFound
+	}
+
+	prefix := rowKeyPrefix(s.engine, db, table)
+	end := rowEndKey(s.engine, db, table)
+
+	iter := s.backend.newIter(prefix, end)
+	defer iter.close()
+
+	count := 0
+	for iter.first(); iter.valid(); iter.next() {
+		count++
+	}
+	if iter.err() != nil {
+		return 0, fmtErr("truncate_table scan", iter.err())
+	}
+
+	batch := s.backend.newBatch()
+	defer batch.close()
+
+	batch.deleteRange(prefix, end)
+
+	indexes, err := s.listIndexDefs(db, table)
+	if err != nil {
+		return 0, err
+	}
+	for _, idx := range indexes {
+		idxStart := indexKeyPrefix(s.engine, db, table, idx.Name)
+		idxEnd := indexEndKey(s.engine, db, table, idx.Name)
+		batch.deleteRange(idxStart, idxEnd)
+		if idx.Unique {
+			uniqStart := uniqueKeyPrefix(s.engine, db, table, idx.Name)
+			uniqEnd := uniqueEndKey(s.engine, db, table, idx.Name)
+			batch.deleteRange(uniqStart, uniqEnd)
+		}
+	}
+
+	if err := batch.commit(); err != nil {
+		return 0, fmtErr("truncate_table commit", err)
+	}
+	return count, nil
+}
+
 // scanRowIter iterates over row key-value pairs in Pebble key order.
 type scanRowIter struct {
 	schema   *TableSchema

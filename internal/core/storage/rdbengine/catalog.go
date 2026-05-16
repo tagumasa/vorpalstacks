@@ -250,3 +250,11 @@ func (s *Store) listIndexDefs(db, table string) ([]IndexDef, error) {
 	}
 	return defs, nil
 }
+
+// ListIndexes returns all index definitions for a table.
+func (s *Store) ListIndexes(ctx context.Context, db, table string) ([]IndexDef, error) {
+	if err := s.checkOpen(); err != nil {
+		return nil, err
+	}
+	return s.listIndexDefs(db, table)
+}
