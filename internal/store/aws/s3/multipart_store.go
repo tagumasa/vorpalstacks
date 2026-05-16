@@ -132,9 +132,11 @@ func (s *ObjectStore) ListParts(ctx context.Context, bucket, key, uploadId strin
 	result := make([]ObjectPart, 0)
 	nextPartNumberMarker := 0
 	isTruncated := false
+	skipped := 0
 
 	for _, p := range parts {
 		if p.PartNumber <= partNumberMarker {
+			skipped++
 			continue
 		}
 		result = append(result, ObjectPart{
@@ -143,7 +145,7 @@ func (s *ObjectStore) ListParts(ctx context.Context, bucket, key, uploadId strin
 			Size:       p.Size,
 		})
 		if len(result) >= maxParts {
-			if len(parts) > len(result)+countSkipped(parts, partNumberMarker) {
+			if len(parts) > len(result)+skipped {
 				isTruncated = true
 				nextPartNumberMarker = result[len(result)-1].PartNumber
 			}
@@ -152,16 +154,6 @@ func (s *ObjectStore) ListParts(ctx context.Context, bucket, key, uploadId strin
 	}
 
 	return result, nextPartNumberMarker, isTruncated, nil
-}
-
-func countSkipped(parts []storage.PartInfo, partNumberMarker int) int {
-	count := 0
-	for _, p := range parts {
-		if p.PartNumber <= partNumberMarker {
-			count++
-		}
-	}
-	return count
 }
 
 // CompleteMultipartUpload completes a multipart upload by assembling the parts.
@@ -252,7 +244,7 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 			return nil, err
 		}
 	} else {
-		storageKey := s.storageKey(bucket, key)
+		storageKey := s.versionedStorageKey(bucket, key, "null")
 		if err := s.BaseStore.PutProto(storageKey, ObjectToProto(obj)); err != nil {
 			return nil, err
 		}

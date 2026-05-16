@@ -21,14 +21,8 @@ func (s *ObjectStore) List(bucket, prefix, delimiter, marker string, maxKeys int
 	started := marker == ""
 	skipUntilNewKey := ""
 	hasMore := false
-	wasVersioned := s.wasVersioned(bucket)
-
-	var searchPrefix string
-	if wasVersioned {
-		searchPrefix = bucket + "#" + prefix
-	} else {
-		searchPrefix = s.storageKey(bucket, prefix)
-	}
+	isVersioned := s.isVersioningEnabled(bucket)
+	searchPrefix := bucket + "#" + prefix
 
 	err := s.ScanPrefix(searchPrefix, func(key string, value []byte) error {
 		var pbObj pb.Object
@@ -53,11 +47,11 @@ func (s *ObjectStore) List(bucket, prefix, delimiter, marker string, maxKeys int
 			return nil
 		}
 
-		if wasVersioned && strings.HasSuffix(key, "#_latest") {
+		if isVersioned && strings.HasSuffix(key, "#_latest") {
 			return nil
 		}
 
-		if wasVersioned && !obj.IsLatest {
+		if isVersioned && !obj.IsLatest {
 			return nil
 		}
 
@@ -228,7 +222,7 @@ func (s *ObjectStore) CountByBucket(bucket string) (int, error) {
 		return count, err
 	}
 
-	prefix := s.storageKey(bucket, "")
+	prefix := bucket + "#"
 	err := s.ScanPrefix(prefix, func(key string, value []byte) error {
 		var pbObj pb.Object
 		if err := proto.Unmarshal(value, &pbObj); err != nil {

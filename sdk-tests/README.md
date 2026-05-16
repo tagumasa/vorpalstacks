@@ -68,7 +68,7 @@ When `TEST_MODE=true`, the server seeds delegated tokens (e.g. `dummy-trade-in-t
 ```bash
 cd sdk-tests
 go mod tidy
-go build -o sdk-tests-test .
+go build -o sdk-tests-all .
 ```
 
 ## Usage
@@ -78,7 +78,7 @@ go build -o sdk-tests-test .
 ```bash
 # From project root
 pkill -9 vorpalstacks 2>/dev/null; sleep 1
-SIGNATURE_VERIFICATION_ENABLED=false PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
+ALL_SERVICES_ENABLED=true SIGNATURE_VERIFICATION_ENABLED=false PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
 ```
 
 ### Start with CloudTrail Audit Enabled
@@ -94,20 +94,20 @@ ALL_SERVICES_ENABLED=true SIGNATURE_VERIFICATION_ENABLED=false PORT=50080 DATA_P
 Then run tests with the env var:
 
 ```bash
-CLOUDTRAIL_ENABLED=true ./sdk-tests/tmp/sdk-tests-all -service all -v
+ALL_SERVICES_ENABLED=true ./sdk-tests/sdk-tests-all -service all -v
 ```
 
 ### Run Tests
 
 ```bash
 # Test specific service
-./sdk-tests-test -service cognito -v
+./sdk-tests-all -service cognito -v
 
 # Test multiple services
-./sdk-tests-test -service cognito,kinesis,acm -v
+./sdk-tests-all -service cognito,kinesis,acm -v
 
 # Test all services
-./sdk-tests-test -service all -v
+ALL_SERVICES_ENABLED=true ./sdk-tests-all -service all -v
 ```
 
 ### Available Services
@@ -164,7 +164,7 @@ rdsdata
 
 ```bash
 cd sdk-tests
-./sdk-tests-test -service lambda -v
+./sdk-tests-all -service lambda -v
 ```
 
 Output:
@@ -186,13 +186,13 @@ Summary: 22 passed, 1 failed
 ### Example 2: Test with Custom Endpoint
 
 ```bash
-./sdk-tests-test -endpoint http://localhost:9000 -service dynamodb -v
+./sdk-tests-all -endpoint http://localhost:9000 -service dynamodb -v
 ```
 
 ### Example 3: Test Multiple Services
 
 ```bash
-./sdk-tests-test -service sqs,sns,kms -v
+./sdk-tests-all -service sqs,sns,kms -v
 ```
 
 ## Test Structure
@@ -228,7 +228,7 @@ In addition to per-service SDK tests, cross-service integration tests verify end
 
 ```bash
 # From project root — server must be running
-./sdk-tests/tmp/sdk-tests-all -service integration -endpoint http://127.0.0.1:50080
+./sdk-tests/sdk-tests-all -service integration -endpoint http://127.0.0.1:50080
 ```
 
 ### Test Matrix
@@ -273,7 +273,7 @@ In addition to per-service SDK tests, cross-service integration tests verify end
 ALL_SERVICES_ENABLED=true SIGNATURE_VERIFICATION_ENABLED=false PORT=50080 DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
 
 # Run audit tests
-CLOUDTRAIL_ENABLED=true ./sdk-tests/tmp/sdk-tests-all -service cloudtrail-audit -v
+ALL_SERVICES_ENABLED=true ./sdk-tests/sdk-tests-all -service cloudtrail-audit -v
 ```
 
 ## Adding New Tests
@@ -305,8 +305,8 @@ CLOUDTRAIL_ENABLED=true ./sdk-tests/tmp/sdk-tests-all -service cloudtrail-audit 
 
 6. Build and test:
    ```bash
-   go build -o sdk-tests-test .
-   ./sdk-tests-test -service myservice -v
+   go build -o sdk-tests-all .
+   ./sdk-tests-all -service myservice -v
    ```
 
 ## Output Formats

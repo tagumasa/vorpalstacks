@@ -37,7 +37,7 @@ func (s *ObjectStore) updateObjectMetadata(bucket, key string, mutate func(obj *
 		}
 		return nil
 	}
-	storageKey := s.storageKey(bucket, key)
+	storageKey := s.versionedStorageKey(bucket, key, "null")
 	return s.BaseStore.PutProto(storageKey, ObjectToProto(obj))
 }
 

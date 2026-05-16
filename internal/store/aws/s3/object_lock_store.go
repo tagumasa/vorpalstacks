@@ -34,7 +34,7 @@ func (s *ObjectStore) updateObjectLockMetadata(ctx context.Context, bucket, key,
 		}
 		storageKey = s.versionedStorageKey(bucket, key, vid)
 	} else {
-		storageKey = s.storageKey(bucket, key)
+		storageKey = s.versionedStorageKey(bucket, key, "null")
 	}
 
 	if err := s.BaseStore.PutProto(storageKey, ObjectToProto(obj)); err != nil {

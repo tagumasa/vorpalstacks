@@ -12,6 +12,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **`ALL_SERVICES_ENABLED` environment variable** — Set to `true` to force-enable every service at once, overriding individual `*_ENABLED` flags. Simplifies development and CI setup.
 
+- **S3: streaming chunked encryption** — New `EncryptStream`/`DecryptChunked` methods in `EncryptionManager` read plaintext from `io.Reader` in 64 MB chunks, encrypt each with AES-GCM, and record per-chunk `PartEncryptionInfos` in SSE metadata. `PutObject` and `CopyObject` now stream through encryption without buffering the entire body in memory.
+
 ### Changed
 
 - **Neptune service packages relocated under `rds/`** — Neptune, NeptuneData, NeptuneGraph implementations moved from `internal/services/aws/{neptune,neptunedata,neptunegraph}/` to `internal/services/aws/rds/{neptune,neptunedata,neptunegraph}/`. Stores moved to `internal/store/aws/rds/`. All import paths updated.
@@ -21,6 +23,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 - **CloudTrail audit config unified to `CLOUDTRAIL_ENABLED`** — Replaces `VS_AUDIT_ENABLED` and `features.audit_enabled`. CloudTrail is now Optional (default `false`); the flag is propagated at startup rather than read at runtime. `ALL_SERVICES_ENABLED=true` overrides to enabled.
 
 - **AppSync: RELATIONAL_DATABASE data source dispatch** — `dispatchRDS` now executes SQL through the EventBus `RDSDataInvoker` instead of returning stub responses. VTL (`statements` array) and JS resolver (`sql` field) payload formats both supported.
+
+- **SDK tests: binary name and env vars** — Test binary renamed to `sdk-tests-all`. `ALL_SERVICES_ENABLED=true` replaces per-service flags in README instructions. `isAuditEnabled` now recognizes `ALL_SERVICES_ENABLED`.
 
 ### Fixed
 
@@ -45,6 +49,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 - **Port allocator: cross-service port collisions** — Single shared `Allocator` instance scans all service keys via `ListAllResourcePorts` when finding a free port.
 
 - **RDS Data API SDK tests: idempotent cleanup** — Drops stale databases/tables before each run to prevent `CREATE DATABASE` collisions.
+
+- **S3: unified non-versioned storage keys** — Non-versioned objects now use `bucket#key#null` consistently instead of `bucket#key`, eliminating dual-key fallback paths throughout `ObjectStore`. `ListParts` replaced redundant `countSkipped` with inline counter.
 
 ## [0.0.11]
 

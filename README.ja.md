@@ -129,9 +129,13 @@ make test
 ### SDKテスト（AWS Go SDK v2）
 
 ```bash
+# サーバー起動
+ALL_SERVICES_ENABLED=true SIGNATURE_VERIFICATION_ENABLED=false DATA_PATH=./data TEST_MODE=true tmp/vorpalstacks > tmp/server.log 2>&1 &
+
+# ビルドとテスト実行
 cd sdk-tests
 go build -o sdk-tests-all .
-./sdk-tests-all -service all -endpoint http://127.0.0.1:50080 -v
+ALL_SERVICES_ENABLED=true ./sdk-tests-all -service all -v
 ```
 
 ### CLI統合テスト

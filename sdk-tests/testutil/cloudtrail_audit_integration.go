@@ -20,8 +20,13 @@ const (
 )
 
 func isAuditEnabled() bool {
-	v := os.Getenv("CLOUDTRAIL_ENABLED")
-	return v == "true" || v == "1"
+	if v := os.Getenv("CLOUDTRAIL_ENABLED"); v == "true" || v == "1" {
+		return true
+	}
+	if v := os.Getenv("ALL_SERVICES_ENABLED"); v == "true" || v == "1" {
+		return true
+	}
+	return false
 }
 
 type auditClients struct {

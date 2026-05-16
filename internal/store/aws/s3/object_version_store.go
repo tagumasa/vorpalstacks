@@ -68,8 +68,7 @@ func (s *ObjectStore) GetWithVersion(ctx context.Context, bucket, key, versionId
 			return nil, nil, ErrObjectNotFound
 		}
 	} else {
-		storageKey := s.storageKey(bucket, key)
-		if err = s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
+		if err = s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &pbObj); err != nil {
 			return nil, nil, ErrObjectNotFound
 		}
 	}
@@ -151,7 +150,7 @@ func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string,
 			s.keyLocker.Delete(lockKey)
 		}()
 
-		storageKey := s.storageKey(bucket, key)
+		storageKey := s.versionedStorageKey(bucket, key, "null")
 		if err := s.BaseStore.PutProto(storageKey, ObjectToProto(obj)); err != nil {
 			return nil, err
 		}
@@ -254,7 +253,7 @@ func (s *ObjectStore) DeleteWithVersion(ctx context.Context, bucket, key, versio
 	if err := s.blobStore.Delete(ctx, bucket, key); err != nil {
 		return nil, err
 	}
-	storageKey := s.storageKey(bucket, key)
+	storageKey := s.versionedStorageKey(bucket, key, "null")
 	if err := s.BaseStore.Delete(storageKey); err != nil {
 		return nil, err
 	}
@@ -278,17 +277,10 @@ func (s *ObjectStore) HeadWithVersion(ctx context.Context, bucket, key, versionI
 			storageKey = s.latestKeyStorageKey(bucket, key)
 		}
 		if err = s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
-			nullKey := s.versionedStorageKey(bucket, key, "null")
-			if err = s.BaseStore.GetProto(nullKey, &pbObj); err != nil {
-				fallbackKey := s.storageKey(bucket, key)
-				if err = s.BaseStore.GetProto(fallbackKey, &pbObj); err != nil {
-					return nil, ErrObjectNotFound
-				}
-			}
+			return nil, ErrObjectNotFound
 		}
 	} else {
-		storageKey := s.storageKey(bucket, key)
-		if err = s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
+		if err = s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &pbObj); err != nil {
 			return nil, ErrObjectNotFound
 		}
 	}
@@ -347,8 +339,7 @@ func (s *ObjectStore) GetRangeWithVersion(ctx context.Context, bucket, key, vers
 			return nil, nil, ErrObjectNotFound
 		}
 	} else {
-		storageKey := s.storageKey(bucket, key)
-		if err = s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
+		if err = s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &pbObj); err != nil {
 			return nil, nil, ErrObjectNotFound
 		}
 	}
@@ -407,7 +398,7 @@ func (s *ObjectStore) SetACLWithVersion(bucket, key, versionId string, acp *Acce
 			storageKey = s.latestKeyStorageKey(bucket, key)
 		}
 	} else {
-		storageKey = s.storageKey(bucket, key)
+		storageKey = s.versionedStorageKey(bucket, key, "null")
 	}
 
 	var pbObj pb.Object
@@ -457,7 +448,7 @@ func (s *ObjectStore) GetACLWithVersion(bucket, key, versionId string) (*AccessC
 			storageKey = s.latestKeyStorageKey(bucket, key)
 		}
 	} else {
-		storageKey = s.storageKey(bucket, key)
+		storageKey = s.versionedStorageKey(bucket, key, "null")
 	}
 
 	if err := s.BaseStore.GetProto(storageKey, &pbObj); err != nil {

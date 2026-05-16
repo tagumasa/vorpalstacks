@@ -86,10 +86,6 @@ func (s *ObjectStore) Close() {
 	}
 }
 
-func (s *ObjectStore) storageKey(bucket, key string) string {
-	return bucket + "#" + key
-}
-
 func (s *ObjectStore) versionedStorageKey(bucket, key, versionId string) string {
 	if versionId == "" {
 		versionId = "null"
@@ -145,53 +141,22 @@ func (s *ObjectStore) Get(ctx context.Context, bucket, key string) (io.ReadClose
 	return s.GetWithVersion(ctx, bucket, key, "")
 }
 
-func (s *ObjectStore) wasVersioned(bucket string) bool {
-	b, err := s.bucketStore.Get(bucket)
-	if err != nil {
-		return false
-	}
-	return b.VersioningStatus == BucketVersioningEnabled || b.VersioningStatus == "Suspended"
-}
-
 // GetMetadata retrieves metadata for an object.
 func (s *ObjectStore) GetMetadata(bucket, key string) (*Object, error) {
 	var obj pb.Object
-	var err error
 
-	b, bucketErr := s.bucketStore.Get(bucket)
-	versioningEnabled := bucketErr == nil && b.VersioningStatus == BucketVersioningEnabled
-	versioningSuspended := bucketErr == nil && b.VersioningStatus == "Suspended"
-
-	if versioningEnabled {
-		storageKey := s.latestKeyStorageKey(bucket, key)
-		if err = s.BaseStore.GetProto(storageKey, &obj); err != nil {
-			storageKey = s.versionedStorageKey(bucket, key, "null")
-			if err = s.BaseStore.GetProto(storageKey, &obj); err != nil {
-				storageKey = s.storageKey(bucket, key)
-				if err = s.BaseStore.GetProto(storageKey, &obj); err != nil {
-					return nil, err
-				}
-			}
-		}
-		if obj.IsDeleteMarker {
-			return nil, ErrObjectNotFound
-		}
-	} else if versioningSuspended {
-		latestKey := s.latestKeyStorageKey(bucket, key)
-		if err = s.BaseStore.GetProto(latestKey, &obj); err != nil {
-			storageKey := s.storageKey(bucket, key)
-			if err = s.BaseStore.GetProto(storageKey, &obj); err != nil {
-				return nil, err
-			}
-		}
-		if obj.IsDeleteMarker {
-			return nil, ErrObjectNotFound
-		}
-	} else {
-		storageKey := s.storageKey(bucket, key)
-		if err = s.BaseStore.GetProto(storageKey, &obj); err != nil {
+	if s.isVersioningEnabled(bucket) {
+		if err := s.BaseStore.GetProto(s.latestKeyStorageKey(bucket, key), &obj); err != nil {
 			return nil, err
 		}
+	} else {
+		if err := s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &obj); err != nil {
+			return nil, err
+		}
+	}
+
+	if obj.IsDeleteMarker {
+		return nil, ErrObjectNotFound
 	}
 	return ProtoToObject(&obj), nil
 }
@@ -255,16 +220,16 @@ func newObject(key, bucket, contentType string, metadata map[string]string, vers
 // SetStorageClass updates the storage class of an object.
 func (s *ObjectStore) SetStorageClass(bucket, key, versionId string, storageClass ObjectStorageClass) error {
 	return s.keyLocker.WithLock(bucket+"#"+key, func() error {
-		var obj pb.Object
-		storageKey := s.storageKey(bucket, key)
+		var storageKey string
 		if versionId != "" {
 			storageKey = s.versionedStorageKey(bucket, key, versionId)
+		} else if s.isVersioningEnabled(bucket) {
+			storageKey = s.latestKeyStorageKey(bucket, key)
 		} else {
-			b, bucketErr := s.bucketStore.Get(bucket)
-			if bucketErr == nil && (b.VersioningStatus == BucketVersioningEnabled || b.VersioningStatus == "Suspended") {
-				storageKey = s.latestKeyStorageKey(bucket, key)
-			}
+			storageKey = s.versionedStorageKey(bucket, key, "null")
 		}
+
+		var obj pb.Object
 		if err := s.BaseStore.GetProto(storageKey, &obj); err != nil {
 			return err
 		}

@@ -56,26 +56,37 @@ func (h *S3Handler) handleSelectObjectContent(ctx *request.RequestContext, r *ht
 		}
 		objReader.Close()
 
+		var customerKey []byte
 		if obj.SSEMetadata.EncryptionType == s3store.SSETypeCustomer {
 			if input.SSECustomerKey == "" {
 				return nil, nil, http.StatusBadRequest, fmt.Errorf("customer key is required for SSE-C encrypted object")
 			}
-			customerKey, err := h.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
+			customerKey, err = h.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
 			if err != nil {
 				return nil, nil, http.StatusBadRequest, fmt.Errorf("invalid SSE-C customer key: %w", err)
 			}
-			decResult, err := h.svc.encryptionManager.DecryptWithCustomerKey(encryptedData, obj.SSEMetadata, bucket, key, customerKey)
-			if err != nil {
-				return nil, nil, http.StatusInternalServerError, fmt.Errorf("failed to decrypt data: %w", err)
-			}
-			dataReader = bytes.NewReader(decResult.DecryptedData)
-		} else {
-			decResult, err := h.svc.encryptionManager.Decrypt(encryptedData, obj.SSEMetadata, bucket, key)
-			if err != nil {
-				return nil, nil, http.StatusInternalServerError, fmt.Errorf("failed to decrypt data: %w", err)
-			}
-			dataReader = bytes.NewReader(decResult.DecryptedData)
 		}
+
+		var plainData []byte
+		if len(obj.SSEMetadata.PartEncryptionInfos) > 0 {
+			plainData, err = h.svc.encryptionManager.DecryptChunked(encryptedData, obj.SSEMetadata, bucket, key, customerKey)
+		} else if customerKey != nil {
+			decResult, decErr := h.svc.encryptionManager.DecryptWithCustomerKey(encryptedData, obj.SSEMetadata, bucket, key, customerKey)
+			if decErr != nil {
+				return nil, nil, http.StatusInternalServerError, fmt.Errorf("failed to decrypt data: %w", decErr)
+			}
+			plainData = decResult.DecryptedData
+		} else {
+			decResult, decErr := h.svc.encryptionManager.Decrypt(encryptedData, obj.SSEMetadata, bucket, key)
+			if decErr != nil {
+				return nil, nil, http.StatusInternalServerError, fmt.Errorf("failed to decrypt data: %w", decErr)
+			}
+			plainData = decResult.DecryptedData
+		}
+		if err != nil {
+			return nil, nil, http.StatusInternalServerError, fmt.Errorf("failed to decrypt data: %w", err)
+		}
+		dataReader = bytes.NewReader(plainData)
 	}
 
 	engine, err := NewSelectEngine(&input)

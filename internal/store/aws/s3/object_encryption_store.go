@@ -91,7 +91,7 @@ func (s *ObjectStore) PutEncryptedWithVersioning(ctx context.Context, bucket, ke
 			return nil, err
 		}
 	} else {
-		storageKey := s.storageKey(bucket, key)
+		storageKey := s.versionedStorageKey(bucket, key, "null")
 		if err := s.BaseStore.PutProto(storageKey, ObjectToProto(obj)); err != nil {
 			return nil, err
 		}
@@ -120,8 +120,7 @@ func (s *ObjectStore) GetEncrypted(ctx context.Context, bucket, key, versionId s
 			return nil, nil, ErrObjectNotFound
 		}
 	} else {
-		storageKey := s.storageKey(bucket, key)
-		if err = s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
+		if err = s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &pbObj); err != nil {
 			return nil, nil, ErrObjectNotFound
 		}
 	}

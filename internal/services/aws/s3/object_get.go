@@ -121,36 +121,15 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 			return nil, fmt.Errorf("failed to read encrypted data: %w", err)
 		}
 
+		decryptedData, unencryptedSize, err = o.decryptObjectData(encryptedData, obj.SSEMetadata, input)
+		if err != nil {
+			return nil, err
+		}
+
 		if obj.SSEMetadata.EncryptionType == s3store.SSETypeCustomer {
-			if input.SSECustomerKey == "" {
-				return nil, awserrors.NewAWSError("InvalidRequest", "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object.", http.StatusBadRequest)
-			}
-			customerKey, err := o.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
-			if err != nil {
-				return nil, ErrInvalidSSECustomerKey
-			}
-			decResult, err := o.svc.encryptionManager.DecryptWithCustomerKey(encryptedData, obj.SSEMetadata, input.Bucket, input.Key, customerKey)
-			if err != nil {
-				return nil, ErrInvalidSSECustomerKey
-			}
-			decryptedData = decResult.DecryptedData
-			unencryptedSize = obj.SSEMetadata.UnencryptedSize
 			output.SSECustomerAlgorithm = "AES256"
 			output.SSECustomerKeyMD5 = input.SSECustomerKeyMD5
 		} else {
-			if len(obj.SSEMetadata.PartEncryptionInfos) > 0 {
-				decryptedData, err = o.decryptMultipartParts(encryptedData, obj.SSEMetadata, input.Bucket, input.Key)
-				if err != nil {
-					return nil, fmt.Errorf("failed to decrypt multipart data: %w", err)
-				}
-			} else {
-				decResult, err := o.svc.encryptionManager.Decrypt(encryptedData, obj.SSEMetadata, input.Bucket, input.Key)
-				if err != nil {
-					return nil, fmt.Errorf("failed to decrypt data: %w", err)
-				}
-				decryptedData = decResult.DecryptedData
-			}
-			unencryptedSize = obj.SSEMetadata.UnencryptedSize
 			output.ServerSideEncryption = string(obj.SSEMetadata.EncryptionType)
 			output.SSEKMSKeyId = obj.SSEMetadata.KMSKeyID
 		}
@@ -486,4 +465,46 @@ func (o *ObjectOperations) decryptMultipartParts(combinedEncrypted []byte, sseMe
 	}
 
 	return result.Bytes(), nil
+}
+
+func (o *ObjectOperations) decryptObjectData(encryptedData []byte, sseMeta *s3store.SSEObjectMetadata, input *GetObjectInput) ([]byte, int64, error) {
+	unencryptedSize := sseMeta.UnencryptedSize
+
+	if sseMeta.EncryptionType == s3store.SSETypeCustomer {
+		if input.SSECustomerKey == "" {
+			return nil, 0, awserrors.NewAWSError("InvalidRequest", "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object.", http.StatusBadRequest)
+		}
+		customerKey, err := o.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5)
+		if err != nil {
+			return nil, 0, ErrInvalidSSECustomerKey
+		}
+
+		var plainData []byte
+		if len(sseMeta.PartEncryptionInfos) > 0 {
+			plainData, err = o.svc.encryptionManager.DecryptChunked(encryptedData, sseMeta, input.Bucket, input.Key, customerKey)
+		} else {
+			decResult, decErr := o.svc.encryptionManager.DecryptWithCustomerKey(encryptedData, sseMeta, input.Bucket, input.Key, customerKey)
+			if decErr != nil {
+				return nil, 0, ErrInvalidSSECustomerKey
+			}
+			plainData = decResult.DecryptedData
+		}
+		return plainData, unencryptedSize, nil
+	}
+
+	var plainData []byte
+	var err error
+	if len(sseMeta.PartEncryptionInfos) > 0 {
+		plainData, err = o.svc.encryptionManager.DecryptChunked(encryptedData, sseMeta, input.Bucket, input.Key, nil)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to decrypt chunked data: %w", err)
+		}
+	} else {
+		decResult, decErr := o.svc.encryptionManager.Decrypt(encryptedData, sseMeta, input.Bucket, input.Key)
+		if decErr != nil {
+			return nil, 0, fmt.Errorf("failed to decrypt data: %w", decErr)
+		}
+		plainData = decResult.DecryptedData
+	}
+	return plainData, unencryptedSize, nil
 }

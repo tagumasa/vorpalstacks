@@ -117,26 +117,12 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if o.svc.encryptionManager.ShouldEncrypt(encryptionType, bucket.EncryptionConfig) {
-		data, err := io.ReadAll(input.Body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read request body: %w", err)
-		}
-
-		encResult, err := o.svc.encryptionManager.EncryptWithCustomerKey(data, encryptionType, bucket.EncryptionConfig, input.Bucket, input.Key, input.SSEKMSKeyId, customerKey)
+		encResult, err := o.svc.encryptionManager.EncryptStream(input.Body, encryptionType, bucket.EncryptionConfig, input.Bucket, input.Key, input.SSEKMSKeyId, customerKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to encrypt data: %w", err)
 		}
 
-		sseMetadata := &s3store.SSEObjectMetadata{
-			EncryptionType:   s3store.SSEType(encResult.EncryptionType),
-			EncryptedDataKey: encResult.EncryptedDataKey,
-			ContentNonce:     encResult.ContentNonce,
-			KMSKeyID:         encResult.KMSKeyID,
-			UnencryptedMD5:   encResult.UnencryptedMD5,
-			UnencryptedSize:  encResult.UnencryptedSize,
-		}
-
-		obj, err = stores.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, input.ContentType, input.Metadata, sseMetadata, storageClass, sysMeta)
+		obj, err = stores.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, input.ContentType, input.Metadata, encResult.SSEMetadata, storageClass, sysMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -146,8 +132,8 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 		return &PutObjectOutput{
 			ETag:                 formatETag(obj.ETag),
 			VersionId:            obj.VersionID,
-			ServerSideEncryption: string(encResult.EncryptionType),
-			SSEKMSKeyId:          encResult.KMSKeyID,
+			ServerSideEncryption: string(encResult.SSEMetadata.EncryptionType),
+			SSEKMSKeyId:          encResult.SSEMetadata.KMSKeyID,
 		}, nil
 	}
 
@@ -233,7 +219,7 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrEntityTooLarge
 	}
 
-	var data []byte
+	var srcReader io.Reader
 	if srcObj.SSEMetadata != nil || input.CopySourceSSECustomerKey != "" {
 		getInput := &GetObjectInput{
 			Bucket:               srcBucket,
@@ -247,11 +233,8 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		if err != nil {
 			return nil, err
 		}
-		data, err = io.ReadAll(getOutput.Body)
-		getOutput.Body.Close()
-		if err != nil {
-			return nil, err
-		}
+		defer getOutput.Body.Close()
+		srcReader = getOutput.Body
 	} else {
 		var reader io.ReadCloser
 		if srcVersionId != "" {
@@ -262,11 +245,8 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		if err != nil {
 			return nil, err
 		}
-		data, err = io.ReadAll(reader)
-		reader.Close()
-		if err != nil {
-			return nil, err
-		}
+		defer reader.Close()
+		srcReader = reader
 	}
 
 	bucketEncryption, err := stores.buckets.GetEncryptionConfiguration(input.Bucket)
@@ -309,25 +289,16 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 			}
 		}
 
-		encResult, err := o.svc.encryptionManager.EncryptWithCustomerKey(data, targetEncryptionType, bucketEncryption, input.Bucket, input.Key, targetKMSKeyID, customerKey)
+		encResult, err := o.svc.encryptionManager.EncryptStream(srcReader, targetEncryptionType, bucketEncryption, input.Bucket, input.Key, targetKMSKeyID, customerKey)
 		if err != nil {
 			return nil, err
-		}
-
-		sseMetadata := &s3store.SSEObjectMetadata{
-			EncryptionType:   s3store.SSEType(targetEncryptionType),
-			EncryptedDataKey: encResult.EncryptedDataKey,
-			ContentNonce:     encResult.ContentNonce,
-			KMSKeyID:         encResult.KMSKeyID,
-			UnencryptedMD5:   encResult.UnencryptedMD5,
-			UnencryptedSize:  encResult.UnencryptedSize,
 		}
 
 		targetStorageClass := srcObj.StorageClass
 		if targetStorageClass == "" {
 			targetStorageClass = s3store.StorageClassStandard
 		}
-		obj, err = stores.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, contentType, metadata, sseMetadata, targetStorageClass, nil)
+		obj, err = stores.objects.PutEncrypted(ctx, input.Bucket, input.Key, encResult.EncryptedData, contentType, metadata, encResult.SSEMetadata, targetStorageClass, nil)
 		if err != nil {
 			return nil, err
 		}
