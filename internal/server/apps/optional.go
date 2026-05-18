@@ -32,6 +32,7 @@ import (
 	svckinesis "vorpalstacks/internal/services/aws/kinesis"
 	svckms "vorpalstacks/internal/services/aws/kms"
 	svclambda "vorpalstacks/internal/services/aws/lambda"
+	svcrds "vorpalstacks/internal/services/aws/rds"
 	svcneptune "vorpalstacks/internal/services/aws/rds/neptune"
 	svcneptunedata "vorpalstacks/internal/services/aws/rds/neptunedata"
 	svcneptuneGraph "vorpalstacks/internal/services/aws/rds/neptunegraph"
@@ -52,6 +53,7 @@ import (
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	storerds "vorpalstacks/internal/store/aws/rds"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -401,14 +403,32 @@ func (a *App) initGRPCWebAdmin() {
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svctimestreamwrite.NewConnectHandler(sm, aid, dp)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svcneptune.NewConnectHandler(st.neptuneService, aid)
-	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcneptuneGraph.NewConnectHandler(st.neptuneGraphService, aid)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	if st.neptuneDataService != nil {
 		p, h = svcneptunedata.NewConnectHandler(st.neptuneDataService)
 		handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	}
+	// RDS admin handler — serves both Neptune and MySQL data via the common
+	// RDS store. Wraps NeptuneService.GetStoreForRegion to satisfy the
+	// StoreProvider function signature.
+	p, h = svcrds.NewConnectHandler(
+		svcrds.StoreProvider(func(region string) (storerds.StoreInterface, error) {
+			return st.neptuneService.GetStoreForRegion(region)
+		}),
+		svcrds.EngineProvider(func(engineType string) (svcrds.Engine, error) {
+			switch engineType {
+			case "mysql":
+				if st.vmysqlService != nil {
+					return st.vmysqlService, nil
+				}
+				return nil, fmt.Errorf("mysql engine not available")
+			default:
+				return nil, fmt.Errorf("unsupported engine: %s", engineType)
+			}
+		}),
+		aid)
+	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcappsync.NewConnectHandler(st.appSyncService, sm)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 

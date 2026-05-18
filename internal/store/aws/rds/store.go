@@ -345,6 +345,10 @@ func (s *RDSStore) ListEventSubscriptions() ([]*EventSubscription, error) {
 	return s.eventSubs.List()
 }
 
+func (s *RDSStore) ListClusterEndpoints(clusterID string) ([]*DBClusterEndpoint, error) {
+	return nil, nil
+}
+
 func (s *RDSStore) AddTags(resourceArn string, tags []types.Tag) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

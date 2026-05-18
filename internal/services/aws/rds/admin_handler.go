@@ -1,51 +1,58 @@
-package neptune
+// Package rds provides the RDS admin console handler that serves management
+// RPCs for both Neptune and MySQL database engines via the gRPC-Web admin
+// interface. It delegates data access to the common RDS store layer.
+package rds
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-
-	svcerrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/utils/timeutils"
+	"time"
 
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	pb "vorpalstacks/internal/pb/aws/neptune"
-	neptuneconnect "vorpalstacks/internal/pb/aws/neptune/neptuneconnect"
-	storeneptune "vorpalstacks/internal/store/aws/rds/neptune"
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/core/logs"
+	pbcommon "vorpalstacks/internal/pb/aws/common"
+	pb "vorpalstacks/internal/pb/aws/rds"
+	rdsconnect "vorpalstacks/internal/pb/aws/rds/rdsconnect"
+	storerds "vorpalstacks/internal/store/aws/rds"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/types"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
-// AdminHandler implements the Neptune Management API gRPC-Web admin console
-// handler. It exposes List/Describe operations for the Flutter management UI,
-// delegating data access to the NeptuneStore via the shared NeptuneService
-// per-region cache.
+// StoreProvider returns the RDS store for a given region. This decouples the
+// admin handler from any specific service (NeptuneService, etc.), allowing it
+// to serve data from all RDS engines through the common store interface.
+type StoreProvider func(region string) (storerds.StoreInterface, error)
+
+// EngineProvider supplies per-engine lifecycle managers keyed by engine type.
+type EngineProvider func(engineType string) (Engine, error)
+
+// AdminHandler implements the RDS Management API gRPC-Web admin console
+// handler. It exposes Describe/Create/Delete operations for the management UI,
+// serving both Neptune and MySQL database engines through the common RDS store
+// interface.
 type AdminHandler struct {
-	neptuneconnect.UnimplementedNeptuneServiceHandler
-	service   *NeptuneService
+	rdsconnect.UnimplementedRDSServiceHandler
+	stores    StoreProvider
+	engines   EngineProvider
 	accountId string
 }
 
-var _ neptuneconnect.NeptuneServiceHandler = (*AdminHandler)(nil)
+var _ rdsconnect.RDSServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Neptune admin console handler backed by the
-// given service instance, ensuring the same per-region cached stores are used
-// as the HTTP API handlers.
-func NewAdminHandler(svc *NeptuneService, accountId string) *AdminHandler {
-	return &AdminHandler{service: svc, accountId: accountId}
+// NewAdminHandler creates a new RDS admin console handler backed by the given
+// store provider and engine provider.
+func NewAdminHandler(stores StoreProvider, engines EngineProvider, accountId string) *AdminHandler {
+	return &AdminHandler{stores: stores, engines: engines, accountId: accountId}
 }
 
-func (h *AdminHandler) getStore(header http.Header) (*storeneptune.NeptuneStore, error) {
+func (h *AdminHandler) getStore(header http.Header) (storerds.StoreInterface, error) {
 	region := svccommon.GetRegionFromHeader(header)
-	store, err := h.service.GetStoreForRegion(region)
-	if err != nil {
-		return nil, err
-	}
-	s, ok := store.(*storeneptune.NeptuneStore)
-	if !ok {
-		return nil, fmt.Errorf("unexpected store type: %T", store)
-	}
-	return s, nil
+	return h.stores(region)
 }
 
 // DescribeDBClusters returns information about DB clusters, optionally filtered
@@ -97,6 +104,105 @@ func (h *AdminHandler) DescribeDBInstances(ctx context.Context, req *connect.Req
 
 	return connect.NewResponse(&pb.DBInstanceMessage{
 		Dbinstances: pbInstances,
+	}), nil
+}
+
+// CreateDBInstance creates a new DB instance. For MySQL engine instances the
+// vmysql engine is started on a dynamically allocated port.
+func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Request[pb.CreateDBInstanceMessage]) (*connect.Response[pb.CreateDBInstanceResult], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	region := svccommon.GetRegionFromHeader(req.Header())
+	id := req.Msg.Dbinstanceidentifier
+	if id == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DBInstanceIdentifier is required"))
+	}
+	engine := req.Msg.Engine
+	if engine == "" {
+		engine = "mysql"
+	}
+
+	now := time.Now()
+	instance := &storerds.DBInstance{
+		DBInstanceIdentifier:       id,
+		DBClusterIdentifier:        req.Msg.Dbclusteridentifier,
+		Engine:                     engine,
+		EngineVersion:              req.Msg.Engineversion,
+		DBInstanceClass:            req.Msg.Dbinstanceclass,
+		DBInstanceStatus:           "creating",
+		AvailabilityZone:           req.Msg.Availabilityzone,
+		PreferredMaintenanceWindow: req.Msg.Preferredmaintenancewindow,
+		DBParameterGroupName:       req.Msg.Dbparametergroupname,
+		DBSubnetGroupName:          req.Msg.Dbsubnetgroupname,
+		PubliclyAccessible:         req.Msg.Publiclyaccessible,
+		AutoMinorVersionUpgrade:    req.Msg.Autominorversionupgrade,
+		InstanceCreateTime:         &now,
+		AccountID:                  h.accountId,
+		Region:                     region,
+		DBInstanceArn:              arnutil.NewARNBuilder(h.accountId, region).RDS().DBInstance(id),
+	}
+
+	if err := store.CreateInstance(instance); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	if eng, engErr := h.engines(engine); engErr == nil {
+		if port, openErr := eng.Open(region, id); openErr != nil {
+			logs.Warn("rds-admin: failed to start engine for instance",
+				logs.String("instance", id), logs.Err(openErr))
+		} else {
+			instance.Endpoint = &storerds.Endpoint{
+				Address: fmt.Sprintf("%s.%s.%s.rds.amazonaws.com", id, h.accountId, region),
+				Port:    port,
+			}
+			if err := store.UpdateInstance(instance); err != nil {
+				logs.Warn("rds-admin: failed to persist instance endpoint",
+					logs.String("instance", id), logs.Err(err))
+			}
+		}
+	}
+
+	instance.DBInstanceStatus = "available"
+	if err := store.UpdateInstance(instance); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pb.CreateDBInstanceResult{
+		Dbinstance: instanceToPb(instance, h.accountId),
+	}), nil
+}
+
+// DeleteDBInstance deletes a DB instance and stops its engine if running.
+func (h *AdminHandler) DeleteDBInstance(ctx context.Context, req *connect.Request[pb.DeleteDBInstanceMessage]) (*connect.Response[pb.DeleteDBInstanceResult], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	id := req.Msg.Dbinstanceidentifier
+	if id == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DBInstanceIdentifier is required"))
+	}
+
+	instance, err := store.GetInstance(id)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	if eng, engErr := h.engines(instance.Engine); engErr == nil {
+		eng.Close(id)
+	}
+
+	instance.DBInstanceStatus = "deleting"
+	if err := store.DeleteInstance(id); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pb.DeleteDBInstanceResult{
+		Dbinstance: instanceToPb(instance, h.accountId),
 	}), nil
 }
 
@@ -259,34 +365,7 @@ func (h *AdminHandler) DescribeEventSubscriptions(ctx context.Context, req *conn
 	}), nil
 }
 
-// DescribeDBClusterEndpoints returns information about cluster endpoints,
-// optionally filtered by cluster or endpoint identifier.
-func (h *AdminHandler) DescribeDBClusterEndpoints(ctx context.Context, req *connect.Request[pb.DescribeDBClusterEndpointsMessage]) (*connect.Response[pb.DBClusterEndpointMessage], error) {
-	store, err := h.getStore(req.Header())
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	clusterID := req.Msg.Dbclusteridentifier
-	endpoints, err := store.ListClusterEndpoints(clusterID)
-	if err != nil {
-		return nil, svcerrors.StoreErrorToGRPC(err)
-	}
-
-	pbEndpoints := make([]*pb.DBClusterEndpoint, 0, len(endpoints))
-	for _, ep := range endpoints {
-		if req.Msg.Dbclusterendpointidentifier != "" && ep.DBClusterEndpointIdentifier != req.Msg.Dbclusterendpointidentifier {
-			continue
-		}
-		pbEndpoints = append(pbEndpoints, clusterEndpointToPb(ep))
-	}
-
-	return connect.NewResponse(&pb.DBClusterEndpointMessage{
-		Dbclusterendpoints: pbEndpoints,
-	}), nil
-}
-
-// ListTagsForResource returns the tags associated with a Neptune resource.
+// ListTagsForResource returns the tags associated with an RDS resource.
 func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Request[pb.ListTagsForResourceMessage]) (*connect.Response[pb.TagListMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -308,30 +387,100 @@ func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Req
 	}), nil
 }
 
-// DescribeDBEngineVersions returns the available Neptune engine versions.
+// AddTagsToResource adds metadata tags to an RDS resource.
+func (h *AdminHandler) AddTagsToResource(ctx context.Context, req *connect.Request[pb.AddTagsToResourceMessage]) (*connect.Response[pbcommon.Empty], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	tags := make([]types.Tag, len(req.Msg.Tags))
+	for i, t := range req.Msg.Tags {
+		tags[i] = types.Tag{Key: t.Key, Value: t.Value}
+	}
+
+	if err := store.AddTags(req.Msg.Resourcename, tags); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// RemoveTagsFromResource removes metadata tags from an RDS resource.
+func (h *AdminHandler) RemoveTagsFromResource(ctx context.Context, req *connect.Request[pb.RemoveTagsFromResourceMessage]) (*connect.Response[pbcommon.Empty], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	if err := store.RemoveTags(req.Msg.Resourcename, req.Msg.Tagkeys); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pbcommon.Empty{}), nil
+}
+
+// DescribeDBEngineVersions returns the available RDS engine versions for both
+// Neptune and MySQL engines.
 func (h *AdminHandler) DescribeDBEngineVersions(ctx context.Context, req *connect.Request[pb.DescribeDBEngineVersionsMessage]) (*connect.Response[pb.DBEngineVersionMessage], error) {
-	return connect.NewResponse(&pb.DBEngineVersionMessage{
-		Dbengineversions: []*pb.DBEngineVersion{
-			{
-				Engine:                 "neptune",
-				Engineversion:          "1.3.2.0",
-				Dbparametergroupfamily: "neptune1",
-			},
-			{
-				Engine:                 "neptune",
-				Engineversion:          "1.3.1.0",
-				Dbparametergroupfamily: "neptune1",
-			},
-			{
-				Engine:                 "neptune",
-				Engineversion:          "1.2.1.0",
-				Dbparametergroupfamily: "neptune1",
-			},
+	versions := []*pb.DBEngineVersion{
+		// Neptune engine versions
+		{
+			Engine:                 "neptune",
+			Engineversion:          "1.3.2.0",
+			Dbparametergroupfamily: "neptune1",
 		},
+		{
+			Engine:                 "neptune",
+			Engineversion:          "1.3.1.0",
+			Dbparametergroupfamily: "neptune1",
+		},
+		{
+			Engine:                 "neptune",
+			Engineversion:          "1.2.1.0",
+			Dbparametergroupfamily: "neptune1",
+		},
+		// MySQL engine versions
+		{
+			Engine:                     "mysql",
+			Engineversion:              "8.0.40",
+			Dbparametergroupfamily:     "mysql8.0",
+			Dbenginedescription:        "MySQL 8.0",
+			Dbengineversiondescription: "MySQL 8.0.40",
+		},
+		{
+			Engine:                     "mysql",
+			Engineversion:              "8.0.39",
+			Dbparametergroupfamily:     "mysql8.0",
+			Dbenginedescription:        "MySQL 8.0",
+			Dbengineversiondescription: "MySQL 8.0.39",
+		},
+		{
+			Engine:                     "mysql",
+			Engineversion:              "8.4.3",
+			Dbparametergroupfamily:     "mysql8.4",
+			Dbenginedescription:        "MySQL 8.4",
+			Dbengineversiondescription: "MySQL 8.4.3",
+		},
+	}
+
+	// Filter by engine if requested
+	if req.Msg.Engine != "" {
+		filtered := make([]*pb.DBEngineVersion, 0)
+		for _, v := range versions {
+			if v.Engine == req.Msg.Engine {
+				filtered = append(filtered, v)
+			}
+		}
+		versions = filtered
+	}
+
+	return connect.NewResponse(&pb.DBEngineVersionMessage{
+		Dbengineversions: versions,
 	}), nil
 }
 
-// DescribeEventCategories returns the event categories for Neptune source types.
+// DescribeEventCategories returns the event categories for RDS source types.
 func (h *AdminHandler) DescribeEventCategories(ctx context.Context, req *connect.Request[pb.DescribeEventCategoriesMessage]) (*connect.Response[pb.EventCategoriesMessage], error) {
 	return connect.NewResponse(&pb.EventCategoriesMessage{
 		Eventcategoriesmaplist: []*pb.EventCategoriesMap{
@@ -343,13 +492,13 @@ func (h *AdminHandler) DescribeEventCategories(ctx context.Context, req *connect
 	}), nil
 }
 
-// DescribeEvents returns Neptune events from the per-region store.
+// DescribeEvents returns RDS events from the per-region store.
 func (h *AdminHandler) DescribeEvents(ctx context.Context, req *connect.Request[pb.DescribeEventsMessage]) (*connect.Response[pb.EventsMessage], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
-	result, err := store.ListEvents(storeneptune.EventListOptions{})
+	result, err := store.ListEvents(storerds.EventListOptions{})
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -391,14 +540,34 @@ func (h *AdminHandler) DescribePendingMaintenanceActions(ctx context.Context, re
 }
 
 // DescribeOrderableDBInstanceOptions returns the available DB instance classes
-// for Neptune.
+// for RDS engines.
 func (h *AdminHandler) DescribeOrderableDBInstanceOptions(ctx context.Context, req *connect.Request[pb.DescribeOrderableDBInstanceOptionsMessage]) (*connect.Response[pb.OrderableDBInstanceOptionsMessage], error) {
+	options := []*pb.OrderableDBInstanceOption{
+		// Neptune options
+		{Engine: "neptune", Engineversion: "1.4.0.1", Dbinstanceclass: "db.t3.medium", Licensemodel: "bring-your-own-license", Vpc: true},
+		{Engine: "neptune", Engineversion: "1.4.0.1", Dbinstanceclass: "db.r5.large", Licensemodel: "bring-your-own-license", Vpc: true},
+		{Engine: "neptune", Engineversion: "1.4.0.1", Dbinstanceclass: "db.r5.xlarge", Licensemodel: "bring-your-own-license", Vpc: true},
+		// MySQL options
+		{Engine: "mysql", Engineversion: "8.0.40", Dbinstanceclass: "db.t3.micro", Licensemodel: "general-public-license", Vpc: true},
+		{Engine: "mysql", Engineversion: "8.0.40", Dbinstanceclass: "db.t3.small", Licensemodel: "general-public-license", Vpc: true},
+		{Engine: "mysql", Engineversion: "8.0.40", Dbinstanceclass: "db.t3.medium", Licensemodel: "general-public-license", Vpc: true},
+		{Engine: "mysql", Engineversion: "8.0.40", Dbinstanceclass: "db.r5.large", Licensemodel: "general-public-license", Vpc: true},
+		{Engine: "mysql", Engineversion: "8.0.40", Dbinstanceclass: "db.r5.xlarge", Licensemodel: "general-public-license", Vpc: true},
+	}
+
+	// Filter by engine if requested
+	if req.Msg.Engine != "" {
+		filtered := make([]*pb.OrderableDBInstanceOption, 0)
+		for _, o := range options {
+			if o.Engine == req.Msg.Engine {
+				filtered = append(filtered, o)
+			}
+		}
+		options = filtered
+	}
+
 	return connect.NewResponse(&pb.OrderableDBInstanceOptionsMessage{
-		Orderabledbinstanceoptions: []*pb.OrderableDBInstanceOption{
-			{Engine: "neptune", Engineversion: "1.4.0.1", Dbinstanceclass: "db.t3.medium", Licensemodel: "bring-your-own-license", Vpc: true},
-			{Engine: "neptune", Engineversion: "1.4.0.1", Dbinstanceclass: "db.r5.large", Licensemodel: "bring-your-own-license", Vpc: true},
-			{Engine: "neptune", Engineversion: "1.4.0.1", Dbinstanceclass: "db.r5.xlarge", Licensemodel: "bring-your-own-license", Vpc: true},
-		},
+		Orderabledbinstanceoptions: options,
 	}), nil
 }
 
@@ -412,8 +581,54 @@ func (h *AdminHandler) DescribeValidDBInstanceModifications(ctx context.Context,
 	}), nil
 }
 
-// DescribeDBClusterParameters returns the parameters of a DB cluster
-// parameter group, including system defaults and any user modifications.
+// DescribeDBClusterSnapshotAttributes returns the attributes of a DB cluster
+// snapshot. Currently returns an empty attribute list.
+func (h *AdminHandler) DescribeDBClusterSnapshotAttributes(ctx context.Context, req *connect.Request[pb.DescribeDBClusterSnapshotAttributesMessage]) (*connect.Response[pb.DescribeDBClusterSnapshotAttributesResult], error) {
+	return connect.NewResponse(&pb.DescribeDBClusterSnapshotAttributesResult{
+		Dbclustersnapshotattributesresult: &pb.DBClusterSnapshotAttributesResult{
+			Dbclustersnapshotattributes: []*pb.DBClusterSnapshotAttribute{},
+		},
+	}), nil
+}
+
+// DescribeDBClusterEndpoints returns cluster endpoints filtered by cluster or
+// endpoint identifier.
+func (h *AdminHandler) DescribeDBClusterEndpoints(ctx context.Context, req *connect.Request[pb.DescribeDBClusterEndpointsMessage]) (*connect.Response[pb.DBClusterEndpointMessage], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	clusterID := req.Msg.Dbclusteridentifier
+	endpoints, err := store.ListClusterEndpoints(clusterID)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	pbEndpoints := make([]*pb.DBClusterEndpoint, 0, len(endpoints))
+	for _, ep := range endpoints {
+		if req.Msg.Dbclusterendpointidentifier != "" && ep.DBClusterEndpointIdentifier != req.Msg.Dbclusterendpointidentifier {
+			continue
+		}
+		pbEndpoints = append(pbEndpoints, &pb.DBClusterEndpoint{
+			Dbclusterendpointidentifier: ep.DBClusterEndpointIdentifier,
+			Dbclusteridentifier:         ep.DBClusterIdentifier,
+			Endpoint:                    ep.Endpoint,
+			Status:                      ep.Status,
+			Endpointtype:                ep.EndpointType,
+			Excludedmembers:             ep.ExcludedMembers,
+			Staticmembers:               ep.StaticMembers,
+			Dbclusterendpointarn:        ep.DBClusterEndpointArn,
+		})
+	}
+
+	return connect.NewResponse(&pb.DBClusterEndpointMessage{
+		Dbclusterendpoints: pbEndpoints,
+	}), nil
+}
+
+// DescribeDBClusterParameters returns the parameters of a DB cluster parameter
+// group, including system defaults and user modifications.
 func (h *AdminHandler) DescribeDBClusterParameters(ctx context.Context, req *connect.Request[pb.DescribeDBClusterParametersMessage]) (*connect.Response[pb.DBClusterParameterGroupDetails], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -428,7 +643,7 @@ func (h *AdminHandler) DescribeDBClusterParameters(ctx context.Context, req *con
 		{"neptune_query_timeout", "120000", "Query execution timeout in milliseconds", "system", "dynamic", "integer", "true"},
 		{"neptune_enable_audit_log", "0", "Enable audit logging", "system", "static", "boolean", "true"},
 	}
-	userMods := make(map[string]storeneptune.Parameter, len(pg.Parameters))
+	userMods := make(map[string]storerds.Parameter, len(pg.Parameters))
 	for _, p := range pg.Parameters {
 		userMods[p.ParameterName] = p
 	}
@@ -476,8 +691,7 @@ func (h *AdminHandler) DescribeDBClusterParameters(ctx context.Context, req *con
 	}), nil
 }
 
-// DescribeDBParameters returns the parameters of a DB parameter group,
-// including system defaults and any user modifications.
+// DescribeDBParameters returns the parameters of a DB parameter group.
 func (h *AdminHandler) DescribeDBParameters(ctx context.Context, req *connect.Request[pb.DescribeDBParametersMessage]) (*connect.Response[pb.DBParameterGroupDetails], error) {
 	store, err := h.getStore(req.Header())
 	if err != nil {
@@ -491,7 +705,7 @@ func (h *AdminHandler) DescribeDBParameters(ctx context.Context, req *connect.Re
 	defaultParams := []struct{ name, value, desc, source, apply, dtype, modifiable string }{
 		{"neptune_query_timeout", "120000", "Query execution timeout", "system", "dynamic", "integer", "true"},
 	}
-	userMods := make(map[string]storeneptune.Parameter, len(pg.Parameters))
+	userMods := make(map[string]storerds.Parameter, len(pg.Parameters))
 	for _, p := range pg.Parameters {
 		userMods[p.ParameterName] = p
 	}
@@ -539,49 +753,37 @@ func (h *AdminHandler) DescribeDBParameters(ctx context.Context, req *connect.Re
 	}), nil
 }
 
-// DescribeEngineDefaultClusterParameters returns the default engine
-// parameters for a cluster parameter group family.
+// DescribeEngineDefaultClusterParameters returns the default engine parameters
+// for a cluster parameter group family.
 func (h *AdminHandler) DescribeEngineDefaultClusterParameters(ctx context.Context, req *connect.Request[pb.DescribeEngineDefaultClusterParametersMessage]) (*connect.Response[pb.DescribeEngineDefaultClusterParametersResult], error) {
-	pbParams := []*pb.Parameter{
-		{Parametername: "neptune_query_timeout", Parametervalue: "120000", Description: "Query execution timeout in milliseconds", Source: "system", Applytype: "dynamic", Datatype: "integer", Ismodifiable: true},
-		{Parametername: "neptune_enable_audit_log", Parametervalue: "0", Description: "Enable audit logging", Source: "system", Applytype: "static", Datatype: "boolean", Ismodifiable: true},
-	}
 	return connect.NewResponse(&pb.DescribeEngineDefaultClusterParametersResult{
 		Enginedefaults: &pb.EngineDefaults{
 			Dbparametergroupfamily: "neptune1",
-			Marker:                 "",
-			Parameters:             pbParams,
+			Parameters: []*pb.Parameter{
+				{Parametername: "neptune_query_timeout", Parametervalue: "120000", Description: "Query execution timeout in milliseconds", Source: "system", Applytype: "dynamic", Datatype: "integer", Ismodifiable: true},
+				{Parametername: "neptune_enable_audit_log", Parametervalue: "0", Description: "Enable audit logging", Source: "system", Applytype: "static", Datatype: "boolean", Ismodifiable: true},
+			},
 		},
 	}), nil
 }
 
-// DescribeEngineDefaultParameters returns the default engine parameters for
-// a DB parameter group family.
+// DescribeEngineDefaultParameters returns the default engine parameters for a
+// DB parameter group family.
 func (h *AdminHandler) DescribeEngineDefaultParameters(ctx context.Context, req *connect.Request[pb.DescribeEngineDefaultParametersMessage]) (*connect.Response[pb.DescribeEngineDefaultParametersResult], error) {
-	pbParams := []*pb.Parameter{
-		{Parametername: "neptune_query_timeout", Parametervalue: "120000", Description: "Query execution timeout", Source: "system", Applytype: "dynamic", Datatype: "integer", Ismodifiable: true},
-	}
 	return connect.NewResponse(&pb.DescribeEngineDefaultParametersResult{
 		Enginedefaults: &pb.EngineDefaults{
 			Dbparametergroupfamily: "neptune1",
-			Marker:                 "",
-			Parameters:             pbParams,
+			Parameters: []*pb.Parameter{
+				{Parametername: "neptune_query_timeout", Parametervalue: "120000", Description: "Query execution timeout", Source: "system", Applytype: "dynamic", Datatype: "integer", Ismodifiable: true},
+			},
 		},
 	}), nil
 }
 
-// DescribeDBClusterSnapshotAttributes returns the attributes of a DB cluster
-// snapshot. Currently returns an empty attribute list.
-func (h *AdminHandler) DescribeDBClusterSnapshotAttributes(ctx context.Context, req *connect.Request[pb.DescribeDBClusterSnapshotAttributesMessage]) (*connect.Response[pb.DescribeDBClusterSnapshotAttributesResult], error) {
-	return connect.NewResponse(&pb.DescribeDBClusterSnapshotAttributesResult{
-		Dbclustersnapshotattributesresult: &pb.DBClusterSnapshotAttributesResult{
-			Dbclustersnapshotattributes: []*pb.DBClusterSnapshotAttribute{},
-		},
-	}), nil
-}
+// --- Domain-to-proto conversion helpers ---
 
-// clusterToPb converts a domain DBCluster to the AWS API protobuf DBCluster.
-func clusterToPb(c *storeneptune.DBCluster, accountId string) *pb.DBCluster {
+// clusterToPb converts a domain DBCluster to the RDS API protobuf DBCluster.
+func clusterToPb(c *storerds.DBCluster, accountId string) *pb.DBCluster {
 	p := &pb.DBCluster{
 		Dbclusteridentifier:              c.DBClusterIdentifier,
 		Engine:                           c.Engine,
@@ -633,8 +835,8 @@ func clusterToPb(c *storeneptune.DBCluster, accountId string) *pb.DBCluster {
 	return p
 }
 
-// instanceToPb converts a domain DBInstance to the AWS API protobuf DBInstance.
-func instanceToPb(i *storeneptune.DBInstance, accountId string) *pb.DBInstance {
+// instanceToPb converts a domain DBInstance to the RDS API protobuf DBInstance.
+func instanceToPb(i *storerds.DBInstance, accountId string) *pb.DBInstance {
 	p := &pb.DBInstance{
 		Dbinstanceidentifier:             i.DBInstanceIdentifier,
 		Dbclusteridentifier:              i.DBClusterIdentifier,
@@ -654,11 +856,17 @@ func instanceToPb(i *storeneptune.DBInstance, accountId string) *pb.DBInstance {
 	if i.InstanceCreateTime != nil {
 		p.Instancecreatetime = i.InstanceCreateTime.Format(timeutils.ISO8601UTCFormat)
 	}
+	if i.Endpoint != nil {
+		p.Endpoint = &pb.Endpoint{
+			Address: i.Endpoint.Address,
+			Port:    int32(i.Endpoint.Port),
+		}
+	}
 	return p
 }
 
-// snapshotToPb converts a domain DBClusterSnapshot to the AWS API protobuf type.
-func snapshotToPb(s *storeneptune.DBClusterSnapshot, accountId string) *pb.DBClusterSnapshot {
+// snapshotToPb converts a domain DBClusterSnapshot to the RDS API protobuf type.
+func snapshotToPb(s *storerds.DBClusterSnapshot, accountId string) *pb.DBClusterSnapshot {
 	p := &pb.DBClusterSnapshot{
 		Dbclustersnapshotidentifier: s.DBClusterSnapshotIdentifier,
 		Dbclusteridentifier:         s.DBClusterIdentifier,
@@ -681,8 +889,8 @@ func snapshotToPb(s *storeneptune.DBClusterSnapshot, accountId string) *pb.DBClu
 }
 
 // clusterParamGroupToPb converts a domain DBClusterParameterGroup to the
-// AWS API protobuf type.
-func clusterParamGroupToPb(g *storeneptune.DBClusterParameterGroup) *pb.DBClusterParameterGroup {
+// RDS API protobuf type.
+func clusterParamGroupToPb(g *storerds.DBClusterParameterGroup) *pb.DBClusterParameterGroup {
 	return &pb.DBClusterParameterGroup{
 		Dbclusterparametergroupname: g.DBClusterParameterGroupName,
 		Dbparametergroupfamily:      g.DBParameterGroupFamily,
@@ -691,8 +899,8 @@ func clusterParamGroupToPb(g *storeneptune.DBClusterParameterGroup) *pb.DBCluste
 	}
 }
 
-// paramGroupToPb converts a domain DBParameterGroup to the AWS API protobuf type.
-func paramGroupToPb(g *storeneptune.DBParameterGroup) *pb.DBParameterGroup {
+// paramGroupToPb converts a domain DBParameterGroup to the RDS API protobuf type.
+func paramGroupToPb(g *storerds.DBParameterGroup) *pb.DBParameterGroup {
 	return &pb.DBParameterGroup{
 		Dbparametergroupname:   g.DBParameterGroupName,
 		Dbparametergroupfamily: g.DBParameterGroupFamily,
@@ -701,8 +909,8 @@ func paramGroupToPb(g *storeneptune.DBParameterGroup) *pb.DBParameterGroup {
 	}
 }
 
-// subnetGroupToPb converts a domain DBSubnetGroup to the AWS API protobuf type.
-func subnetGroupToPb(g *storeneptune.DBSubnetGroup) *pb.DBSubnetGroup {
+// subnetGroupToPb converts a domain DBSubnetGroup to the RDS API protobuf type.
+func subnetGroupToPb(g *storerds.DBSubnetGroup) *pb.DBSubnetGroup {
 	p := &pb.DBSubnetGroup{
 		Dbsubnetgroupname:        g.DBSubnetGroupName,
 		Dbsubnetgroupdescription: g.DBSubnetGroupDescription,
@@ -720,8 +928,8 @@ func subnetGroupToPb(g *storeneptune.DBSubnetGroup) *pb.DBSubnetGroup {
 	return p
 }
 
-// globalClusterToPb converts a domain GlobalCluster to the AWS API protobuf type.
-func globalClusterToPb(c *storeneptune.GlobalCluster) *pb.GlobalCluster {
+// globalClusterToPb converts a domain GlobalCluster to the RDS API protobuf type.
+func globalClusterToPb(c *storerds.GlobalCluster) *pb.GlobalCluster {
 	p := &pb.GlobalCluster{
 		Globalclusteridentifier: c.GlobalClusterIdentifier,
 		Globalclusterresourceid: c.GlobalClusterResourceId,
@@ -742,9 +950,9 @@ func globalClusterToPb(c *storeneptune.GlobalCluster) *pb.GlobalCluster {
 	return p
 }
 
-// eventSubscriptionToPb converts a domain EventSubscription to the AWS API
+// eventSubscriptionToPb converts a domain EventSubscription to the RDS API
 // protobuf type.
-func eventSubscriptionToPb(s *storeneptune.EventSubscription) *pb.EventSubscription {
+func eventSubscriptionToPb(s *storerds.EventSubscription) *pb.EventSubscription {
 	p := &pb.EventSubscription{
 		Custsubscriptionid:   s.CustSubscriptionId,
 		Snstopicarn:          s.SnsTopicArn,
@@ -758,22 +966,7 @@ func eventSubscriptionToPb(s *storeneptune.EventSubscription) *pb.EventSubscript
 	return p
 }
 
-// clusterEndpointToPb converts a domain DBClusterEndpoint to the AWS API
-// protobuf type.
-func clusterEndpointToPb(ep *storeneptune.DBClusterEndpoint) *pb.DBClusterEndpoint {
-	return &pb.DBClusterEndpoint{
-		Dbclusterendpointidentifier: ep.DBClusterEndpointIdentifier,
-		Dbclusteridentifier:         ep.DBClusterIdentifier,
-		Endpoint:                    ep.Endpoint,
-		Status:                      ep.Status,
-		Endpointtype:                ep.EndpointType,
-		Excludedmembers:             ep.ExcludedMembers,
-		Staticmembers:               ep.StaticMembers,
-		Dbclusterendpointarn:        ep.DBClusterEndpointArn,
-	}
-}
-
-// NewConnectHandler creates a gRPC-Web connect handler for the Neptune admin console.
-func NewConnectHandler(svc *NeptuneService, accountID string) (string, http.Handler) {
-	return neptuneconnect.NewNeptuneServiceHandler(NewAdminHandler(svc, accountID))
+// NewConnectHandler creates a gRPC-Web connect handler for the RDS admin console.
+func NewConnectHandler(stores StoreProvider, engines EngineProvider, accountID string) (string, http.Handler) {
+	return rdsconnect.NewRDSServiceHandler(NewAdminHandler(stores, engines, accountID))
 }

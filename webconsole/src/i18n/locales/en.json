@@ -20,7 +20,13 @@
     "no": "No",
     "optional": "(optional)",
     "invalidJson": "Invalid JSON in {{field}}",
-    "add": "Add"
+    "add": "Add",
+    "selectAll": "Select all",
+    "selectedCount": "{{count}} selected",
+    "deleteSelected": "Delete selected",
+    "noItemSelected": "Select an item to view details",
+    "save": "Save",
+    "saving": "Saving..."
   },
   "header": {
     "online": "ONLINE :8080",
@@ -147,6 +153,7 @@
       "title": "DynamoDB",
       "countLabel": "tables",
       "create": "Create table",
+      "createItem": "Create",
       "delete": "Delete table",
       "nameField": "Table Name",
       "placeholder": "my-table",
@@ -182,7 +189,43 @@
         "pk": "PK",
         "sk": "SK",
         "value": "Value"
-      }
+      },
+      "addAttribute": "Add Attribute",
+      "addItem": "Add Item",
+      "attributeName": "Attribute Name",
+      "attributeType": "Type",
+      "attributeValue": "Value",
+      "batchDelete": "Batch Delete",
+      "batchDeleteConfirm": "Delete {count} selected item(s)?",
+      "batchDeleteResult": "Deleted {count} item(s)",
+      "deleteSelected": "Delete Selected",
+      "failed": "failed",
+      "jsonInput": "JSON",
+      "loadMore": "Load more",
+      "noItemSelected": "Select an item to view details",
+      "scalarTypeB": "Binary (B)",
+      "scalarTypeN": "Number (N)",
+      "scalarTypeS": "String (S)",
+      "selectAll": "Select all",
+      "selectedCount": "{count} selected",
+      "structuredForm": "Structured",
+      "tabAttributes": "Attributes",
+      "tabJson": "JSON",
+      "tablesLabel": "Tables",
+      "keyAttribute": "Key attribute (required)",
+      "editItem": "Edit Item",
+      "saveChanges": "Save",
+      "saving": "Saving...",
+      "typeLabelS": "String (S)",
+      "typeLabelN": "Number (N)",
+      "typeLabelB": "Binary (B)",
+      "typeLabelBOOL": "Boolean",
+      "typeLabelNULL": "Null",
+      "typeLabelSS": "String Set",
+      "typeLabelNS": "Number Set",
+      "typeLabelL": "List",
+      "typeLabelM": "Map",
+      "jsonPlaceholderPlain": "{\"pk\": \"value\", \"count\": 42}"
     },
     "lambda": {
       "title": "Lambda",
@@ -227,7 +270,8 @@
       "stateHeader": "State",
       "lastModifiedHeader": "Last Modified",
       "packageTypeHeader": "Package",
-      "arnHeader": "ARN"
+      "arnHeader": "ARN",
+      "descriptionLabel": "Description"
     },
     "iam": {
       "title": "IAM",
@@ -262,7 +306,10 @@
       "roleLastUsedHeader": "Last Used",
       "policyCreatedHeader": "Created",
       "policyUpdatedHeader": "Updated",
-      "policyDescriptionHeader": "Description"
+      "policyDescriptionHeader": "Description",
+      "userNameLabel": "User Name",
+      "roleNameLabel": "Role Name",
+      "assumePolicyLabel": "Assume Role Policy"
     },
     "sns": {
       "title": "SNS",
@@ -387,7 +434,15 @@
       "thresholdHeader": "Threshold",
       "periodHeader": "Period",
       "evaluationPeriodsHeader": "Eval Periods",
-      "statisticHeader": "Statistic"
+      "statisticHeader": "Statistic",
+      "alarmNameLabel": "Alarm Name",
+      "alarmNamePlaceholder": "my-alarm",
+      "comparisonLabel": "Comparison",
+      "comparisonHeader": "Comparison",
+      "descriptionLabel": "Description",
+      "descriptionHeader": "Description",
+      "evalPeriodsLabel": "Evaluation Periods",
+      "evalPeriodsHeader": "Eval Periods"
     },
     "eventbridge": {
       "title": "EventBridge",
@@ -431,7 +486,8 @@
       "scheduleExpressionHeader": "Schedule",
       "ruleDescriptionHeader": "Description",
       "lastModifiedHeader": "Last Modified",
-      "targetHeader": "Target"
+      "targetHeader": "Target",
+      "roleArnPlaceholder": "arn:aws:iam::account:role/schedule-role"
     },
     "sfn": {
       "title": "Step Functions",
@@ -564,7 +620,9 @@
       "zoneIdHeader": "Zone ID",
       "recordsHeader": "Records",
       "commentHeader": "Comment",
-      "privateHeader": "Private"
+      "privateHeader": "Private",
+      "privateZoneLabel": "Private Zone",
+      "recordCountHeader": "Records"
     },
     "acm": {
       "title": "ACM",
@@ -603,7 +661,15 @@
       },
       "keyAlgorithmHeader": "Key Algorithm",
       "inUseHeader": "In Use",
-      "certArnHeader": "ARN"
+      "certArnHeader": "ARN",
+      "placeholder": "example.com",
+      "altNamesLabel": "Alternative Names",
+      "altNamesPlaceholder": "www.example.com, api.example.com",
+      "validationLabel": "Validation Method",
+      "keyAlgoLabel": "Key Algorithm",
+      "keyAlgoHeader": "Key Algorithm",
+      "notBeforeHeader": "Not Before",
+      "notAfterHeader": "Not After"
     },
     "wafv2": {
       "title": "WAF",
@@ -698,7 +764,15 @@
       "poolNameHeader": "Pool Name",
       "poolIdHeader": "Pool ID",
       "statusHeader": "Status",
-      "creationDateHeader": "Created"
+      "creationDateHeader": "Created",
+      "idHeader": "Pool ID",
+      "nameHeader": "Pool Name",
+      "createdHeader": "Created",
+      "pwMinLengthLabel": "Minimum Password Length",
+      "pwRequireUpperLabel": "Require Uppercase",
+      "pwRequireLowerLabel": "Require Lowercase",
+      "pwRequireNumbersLabel": "Require Numbers",
+      "pwRequireSymbolsLabel": "Require Symbols"
     },
     "cognitoidentity": {
       "title": "Cognito Identity",
@@ -750,7 +824,9 @@
       "descriptionHeader": "Description",
       "createdHeader": "Created",
       "endpointHeader": "Endpoint",
-      "apiStatusHeader": "Status"
+      "apiStatusHeader": "Status",
+      "idHeader": "API ID",
+      "nameHeader": "API Name"
     },
     "timestream": {
       "title": "Timestream",
@@ -819,13 +895,40 @@
       "encryptedHeader": "Encrypted",
       "endpointHeader": "Endpoint",
       "readerEndpointHeader": "Reader Endpoint",
-      "arnHeader": "ARN"
+      "arnHeader": "ARN",
+      "instanceClassHeader": "Instance Class"
+    },
+    "rds": {
+      "title": "RDS",
+      "instanceIdHeader": "Instance ID",
+      "statusHeader": "Status",
+      "engineHeader": "Engine",
+      "instanceClassHeader": "Instance Class",
+      "clusterIdHeader": "Cluster ID",
+      "tabs": {
+        "instances": "Instances",
+        "clusters": "Clusters"
+      },
+      "engineVersionHeader": "Engine Version",
+      "encryptedHeader": "Encrypted",
+      "createdHeader": "Created"
     },
     "sts": {
       "title": "STS — Caller Identity",
       "accountLabel": "Account",
       "userIdLabel": "User ID",
       "arnLabel": "ARN"
+    },
+    "cognitoIdentity": {
+      "title": "Cognito Identity",
+      "countLabel": "identity pools",
+      "create": "Create identity pool",
+      "delete": "Delete identity pool",
+      "nameField": "Pool Name",
+      "placeholder": "my-identity-pool",
+      "poolIdHeader": "Pool ID",
+      "poolNameHeader": "Pool Name",
+      "tagsLabel": "Tags"
     }
   },
   "export": {

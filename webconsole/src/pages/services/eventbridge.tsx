@@ -1,6 +1,6 @@
 /**
- * EventBridge service page. Tabbed view for event buses and rules with
- * create/delete operations for buses and custom detail panels.
+ * EventBridge service page — 3-panel inspector layout with tabs.
+ * Tabbed view for event buses, rules, and schedules.
  */
 import { useState } from "react";
 import type { TFunction } from "i18next";
@@ -13,148 +13,64 @@ import { CreateEventBusRequestSchema } from "@/gen/cloudwatchevents_pb";
 import { SchedulerService, type ScheduleSummary } from "@/gen/scheduler_pb";
 import { CreateScheduleInputSchema, FlexibleTimeWindowSchema, TargetSchema } from "@/gen/scheduler_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import {
-  ServicePageLayout,
-  SplitPane,
-  ServiceCreateModal,
-  ServiceDeleteDialog,
-  MonoCell,
-  SmallMonoCell,
-  DateCell,
-  useServiceClient,
-} from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, useServiceClient } from "@/components/shared/service-page";
+import { checkboxColumn, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
+import { DataTable } from "@/components/shared/data-table";
+import { Splitter } from "@/components/shared/splitter";
 import { JsonViewer } from "@/components/shared/json-viewer";
 
-/** Column definitions for the EventBridge event bus table. */
 const getBusColumns = (t: TFunction): ColumnDef<EventBus, any>[] => [
   { accessorKey: "name", header: t("services.eventbridge.busNameHeader"), cell: MonoCell },
   { accessorKey: "arn", header: t("services.eventbridge.arnHeader"), cell: SmallMonoCell },
 ];
 
-/** Column definitions for the EventBridge rule table. */
 const getRuleColumns = (t: TFunction): ColumnDef<Rule, any>[] => [
   { accessorKey: "name", header: t("services.eventbridge.ruleNameHeader"), cell: MonoCell },
   { accessorKey: "eventbusname", header: t("services.eventbridge.eventBusHeader"), cell: MonoCell },
-  {
-    accessorKey: "state",
-    header: t("services.eventbridge.stateHeader"),
-    cell: ({ getValue }) => {
-      const s = getValue() as RuleState;
-      return s === RuleState.ENABLED
-        ? <span className="badge badge-green">{t("services.eventbridge.stateEnabled")}</span>
-        : s === RuleState.DISABLED
-          ? <span className="badge badge-red">{t("services.eventbridge.stateDisabled")}</span>
-          : <span className="badge">{String(s)}</span>;
-    },
-    size: 80,
-  },
+  { accessorKey: "state", header: t("services.eventbridge.stateHeader"), cell: ({ getValue }) => { const s = getValue() as RuleState; return s === RuleState.ENABLED ? <span className="badge badge-green">{t("services.eventbridge.stateEnabled")}</span> : s === RuleState.DISABLED ? <span className="badge badge-red">{t("services.eventbridge.stateDisabled")}</span> : <span className="badge">{String(s)}</span>; }, size: 80 },
   { accessorKey: "scheduleexpression", header: t("services.eventbridge.scheduleExpressionHeader"), cell: ({ getValue }) => (getValue() as string) || "\u2014" },
   { accessorKey: "description", header: t("services.eventbridge.ruleDescriptionHeader"), cell: ({ getValue }) => (getValue() as string) || "\u2014" },
 ];
 
-/** Column definitions for the EventBridge Scheduler schedule table. */
 const getScheduleColumns = (t: TFunction): ColumnDef<ScheduleSummary, any>[] => [
   { accessorKey: "name", header: t("services.eventbridge.scheduleNameHeader"), cell: MonoCell },
   { accessorKey: "groupname", header: t("services.eventbridge.groupHeader"), cell: ({ getValue }) => (getValue() as string) || t("services.eventbridge.defaultGroup") },
-  { accessorKey: "state", header: t("services.eventbridge.stateHeader"), cell: ({ getValue }) => {
-    const s = getValue() as string;
-    return s ? <span className={`badge ${s === "ENABLED" ? "badge-green" : "badge-red"}`}>{s}</span> : "\u2014";
-  }, size: 90 },
+  { accessorKey: "state", header: t("services.eventbridge.stateHeader"), cell: ({ getValue }) => { const s = getValue() as string; return s ? <span className={`badge ${s === "ENABLED" ? "badge-green" : "badge-red"}`}>{s}</span> : "\u2014"; }, size: 90 },
   { accessorKey: "target", header: t("services.eventbridge.targetHeader"), cell: ({ getValue }) => { const tgt = getValue(); return tgt ? String(tgt) : "\u2014"; }, size: 120 },
   { accessorKey: "creationdate", header: t("services.eventbridge.createdHeader"), cell: DateCell },
   { accessorKey: "lastmodificationdate", header: t("services.eventbridge.lastModifiedHeader"), cell: DateCell },
 ];
 
-/** Detail panel for an EventBridge event bus. */
-function EventBusDetail({ item }: { item: EventBus }) {
-  const { t } = useTranslation();
-  return (
-    <div className="detail-body">
-      <section className="detail-section">
-        <h3>{t("common.general")}</h3>
-        <div className="detail-field"><span className="detail-label">{t("services.eventbridge.detail.nameLabel")}</span><span className="cell-mono">{item.name}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.eventbridge.detail.arnLabel")}</span><span className="cell-mono" style={{ fontSize: 11 }}>{item.arn || "\u2014"}</span></div>
-      </section>
-      {item.policy && (
-        <section className="detail-section">
-          <h3>{t("services.eventbridge.detail.resourcePolicySection")}</h3>
-          <JsonViewer data={(() => { try { return JSON.parse(item.policy); } catch { return item.policy; } })()} />
-        </section>
-      )}
-      <section className="detail-section">
-        <h3>{t("common.rawJson")}</h3>
-        <JsonViewer data={item} />
-      </section>
-    </div>
-  );
-}
-
-/** Detail panel for an EventBridge rule. */
-function RuleDetail({ item }: { item: Rule }) {
-  const { t } = useTranslation();
-  let parsedPattern: Record<string, unknown> | null = null;
-  if (item.eventpattern) {
-    try { parsedPattern = JSON.parse(item.eventpattern); } catch { /* not JSON */ }
-  }
-
-  return (
-    <div className="detail-body">
-      <section className="detail-section">
-        <h3>{t("common.general")}</h3>
-        <div className="detail-field"><span className="detail-label">{t("services.eventbridge.detail.nameLabel")}</span><span className="cell-mono">{item.name}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.eventbridge.detail.arnLabel")}</span><span className="cell-mono" style={{ fontSize: 11 }}>{item.arn || "\u2014"}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.eventbridge.detail.eventBusLabel")}</span><span className="cell-mono">{item.eventbusname || "\u2014"}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.eventbridge.detail.stateLabel")}</span>
-          {item.state === RuleState.ENABLED
-            ? <span className="badge badge-green">{t("services.eventbridge.stateEnabled")}</span>
-            : <span className="badge badge-red">{t("services.eventbridge.stateDisabled")}</span>}
-        </div>
-        <div className="detail-field"><span className="detail-label">{t("services.eventbridge.detail.descriptionLabel")}</span><span>{item.description || "\u2014"}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.eventbridge.detail.managedByLabel")}</span><span>{item.managedby || "\u2014"}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.eventbridge.detail.roleArnLabel")}</span><span className="cell-mono" style={{ fontSize: 11 }}>{item.rolearn || "\u2014"}</span></div>
-      </section>
-
-      {item.scheduleexpression && (
-        <section className="detail-section">
-          <h3>{t("services.eventbridge.detail.scheduleExpressionSection")}</h3>
-          <pre className="code-block" style={{ margin: 0 }}>{item.scheduleexpression}</pre>
-        </section>
-      )}
-
-      {item.eventpattern && (
-        <section className="detail-section">
-          <h3>{t("services.eventbridge.detail.eventPatternSection")}</h3>
-          {parsedPattern
-            ? <JsonViewer data={parsedPattern} />
-            : <pre className="code-block" style={{ margin: 0 }}>{item.eventpattern}</pre>}
-        </section>
-      )}
-
-      <section className="detail-section">
-        <h3>{t("common.rawJson")}</h3>
-        <JsonViewer data={item} />
-      </section>
-    </div>
-  );
-}
-
-/** Tab key type for the EventBridge page. */
 type TabKey = "buses" | "rules" | "schedules";
+type DetailTab = "detail" | "json";
 
-/** EventBridge service page with tabbed buses/rules/schedules view and CRUD for buses and schedules. */
 export function EventBridgePage() {
   const { t } = useTranslation();
   const busColumns = getBusColumns(t);
   const ruleColumns = getRuleColumns(t);
   const scheduleColumns = getScheduleColumns(t);
+
   const [tab, setTab] = useState<TabKey>("buses");
+
+  /* Selection state — one per tab */
+  const busSelection = useSelection<string>();
+  const scheduleSelection = useSelection<string>();
+
+  /* Detail state — one selected item per tab */
   const [selectedBus, setSelectedBus] = useState<EventBus | null>(null);
   const [selectedRule, setSelectedRule] = useState<Rule | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleSummary | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>("detail");
+
+  /* Modal state */
   const [showCreateBus, setShowCreateBus] = useState(false);
   const [showDeleteBus, setShowDeleteBus] = useState(false);
+  const [showBatchDeleteBus, setShowBatchDeleteBus] = useState(false);
   const [showCreateSchedule, setShowCreateSchedule] = useState(false);
   const [showDeleteSchedule, setShowDeleteSchedule] = useState(false);
+  const [showBatchDeleteSchedule, setShowBatchDeleteSchedule] = useState(false);
+
+  /* Form state */
   const [formBusName, setFormBusName] = useState("");
   const [formEventSource, setFormEventSource] = useState("");
   const [formScheduleName, setFormScheduleName] = useState("");
@@ -170,32 +86,9 @@ export function EventBridgePage() {
   const { queryKey: rulesKey } = useListKey("eventbridge-rules");
   const { queryKey: schedulesKey } = useListKey("eventbridge-schedules");
 
-  const busesQ = useQuery({
-    queryKey: busesKey,
-    queryFn: async () => {
-      const resp = await client.listEventBuses({});
-      return dropEmpty(resp.eventbuses ?? [], "name");
-    },
-    refetchInterval: REFETCH_INTERVAL,
-  });
-
-  const rulesQ = useQuery({
-    queryKey: rulesKey,
-    queryFn: async () => {
-      const resp = await client.listRules({});
-      return dropEmpty(resp.rules ?? [], "name");
-    },
-    refetchInterval: REFETCH_INTERVAL,
-  });
-
-  const schedulesQ = useQuery({
-    queryKey: schedulesKey,
-    queryFn: async () => {
-      const resp = await schedulerClient.listSchedules({});
-      return dropEmpty(resp.schedules ?? [], "name");
-    },
-    refetchInterval: REFETCH_INTERVAL,
-  });
+  const busesQ = useQuery({ queryKey: busesKey, queryFn: async () => { const resp = await client.listEventBuses({}); return dropEmpty(resp.eventbuses ?? [], "name"); }, refetchInterval: REFETCH_INTERVAL });
+  const rulesQ = useQuery({ queryKey: rulesKey, queryFn: async () => { const resp = await client.listRules({}); return dropEmpty(resp.rules ?? [], "name"); }, refetchInterval: REFETCH_INTERVAL });
+  const schedulesQ = useQuery({ queryKey: schedulesKey, queryFn: async () => { const resp = await schedulerClient.listSchedules({}); return dropEmpty(resp.schedules ?? [], "name"); }, refetchInterval: REFETCH_INTERVAL });
 
   const query = tab === "buses" ? busesQ : tab === "rules" ? rulesQ : schedulesQ;
   const buses = busesQ.data ?? [];
@@ -203,63 +96,29 @@ export function EventBridgePage() {
   const schedules = schedulesQ.data ?? [];
 
   const createBusMutation = useMutation({
-    mutationFn: () =>
-      client.createEventBus(
-        create(CreateEventBusRequestSchema, {
-          name: formBusName,
-          ...(formEventSource ? { eventsourcename: formEventSource } : {}),
-        }),
-      ),
-    onSuccess: () => {
-      invalidate(busesKey);
-      setShowCreateBus(false);
-      setFormBusName("");
-      setFormEventSource("");
-    },
+    mutationFn: () => client.createEventBus(create(CreateEventBusRequestSchema, { name: formBusName, ...(formEventSource ? { eventsourcename: formEventSource } : {}) })),
+    onSuccess: () => { invalidate(busesKey); setShowCreateBus(false); setFormBusName(""); setFormEventSource(""); },
   });
-
   const deleteBusMutation = useMutation({
-    mutationFn: (busName: string) =>
-      client.deleteEventBus({ name: busName }),
-    onSuccess: () => {
-      invalidate(busesKey);
-      setShowDeleteBus(false);
-      setSelectedBus(null);
-    },
+    mutationFn: (name: string) => client.deleteEventBus({ name }),
+    onSuccess: () => { invalidate(busesKey); setShowDeleteBus(false); setSelectedBus(null); busSelection.clear(); },
+  });
+  const batchDeleteBusMutation = useMutation({
+    mutationFn: async (names: string[]) => Promise.allSettled(names.map((n) => client.deleteEventBus({ name: n }))),
+    onSuccess: (_d, names) => { invalidate(busesKey); setShowBatchDeleteBus(false); busSelection.clear(); setSelectedBus((p) => (p && names.includes(p.name) ? null : p)); },
   });
 
   const createScheduleMutation = useMutation({
-    mutationFn: () =>
-      schedulerClient.createSchedule(
-        create(CreateScheduleInputSchema, {
-          name: formScheduleName,
-          scheduleexpression: formScheduleExpression,
-          groupname: formScheduleGroup,
-          description: formScheduleDesc,
-          flexibletimewindow: create(FlexibleTimeWindowSchema, { mode: "OFF" }),
-          target: create(TargetSchema, { arn: formTargetArn, rolearn: formRoleArn }),
-        }),
-      ),
-    onSuccess: () => {
-      invalidate(schedulesKey);
-      setShowCreateSchedule(false);
-      setFormScheduleName("");
-      setFormScheduleExpression("rate(5 minutes)");
-      setFormScheduleGroup("");
-      setFormScheduleDesc("");
-      setFormTargetArn("");
-      setFormRoleArn("");
-    },
+    mutationFn: () => schedulerClient.createSchedule(create(CreateScheduleInputSchema, { name: formScheduleName, scheduleexpression: formScheduleExpression, groupname: formScheduleGroup, description: formScheduleDesc, flexibletimewindow: create(FlexibleTimeWindowSchema, { mode: "OFF" }), target: create(TargetSchema, { arn: formTargetArn, rolearn: formRoleArn }) })),
+    onSuccess: () => { invalidate(schedulesKey); setShowCreateSchedule(false); setFormScheduleName(""); setFormScheduleExpression("rate(5 minutes)"); setFormScheduleGroup(""); setFormScheduleDesc(""); setFormTargetArn(""); setFormRoleArn(""); },
   });
-
   const deleteScheduleMutation = useMutation({
-    mutationFn: (item: ScheduleSummary) =>
-      schedulerClient.deleteSchedule({ name: item.name, groupname: item.groupname }),
-    onSuccess: () => {
-      invalidate(schedulesKey);
-      setShowDeleteSchedule(false);
-      setSelectedSchedule(null);
-    },
+    mutationFn: (item: ScheduleSummary) => schedulerClient.deleteSchedule({ name: item.name, groupname: item.groupname }),
+    onSuccess: () => { invalidate(schedulesKey); setShowDeleteSchedule(false); setSelectedSchedule(null); scheduleSelection.clear(); },
+  });
+  const batchDeleteScheduleMutation = useMutation({
+    mutationFn: async (items: ScheduleSummary[]) => Promise.allSettled(items.map((s) => schedulerClient.deleteSchedule({ name: s.name, groupname: s.groupname }))),
+    onSuccess: (_d, deletedItems) => { invalidate(schedulesKey); setShowBatchDeleteSchedule(false); scheduleSelection.clear(); const deletedNames = new Set(deletedItems.map((s) => s.name)); setSelectedSchedule((p) => (p && deletedNames.has(p.name) ? null : p)); },
   });
 
   const tabs = [
@@ -268,193 +127,124 @@ export function EventBridgePage() {
     { key: "schedules" as TabKey, label: t("services.eventbridge.tabs.schedules"), count: schedules.length },
   ];
 
+  const handleTabChange = (k: string) => { setTab(k as TabKey); setSelectedBus(null); setSelectedRule(null); setSelectedSchedule(null); setDetailTab("detail"); busSelection.clear(); scheduleSelection.clear(); };
+
+  /* Detail panel renderers */
+  const renderBusDetail = () => {
+    if (!selectedBus) return <DetailEmpty message={t("common.noItemSelected")} />;
+    return (
+      <DetailPanel title={selectedBus.name} titleIcon="📡" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDeleteBus(true)}>{t("common.delete")}</button>}>
+        {detailTab === "detail" ? (
+          <table className="settings-table" style={{ width: "100%" }}><tbody>
+            <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedBus.name}</td></tr>
+            <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedBus.arn || "\u2014"}</td></tr>
+            {selectedBus.policy && <tr><td style={{ fontWeight: 600 }}>Policy</td><td><JsonViewer data={(() => { try { return JSON.parse(selectedBus.policy); } catch { return selectedBus.policy; } })()} /></td></tr>}
+          </tbody></table>
+        ) : <JsonViewer data={selectedBus} />}
+      </DetailPanel>
+    );
+  };
+
+  const renderRuleDetail = () => {
+    if (!selectedRule) return <DetailEmpty message={t("common.noItemSelected")} />;
+    let parsedPattern: Record<string, unknown> | null = null;
+    if (selectedRule.eventpattern) { try { parsedPattern = JSON.parse(selectedRule.eventpattern); } catch { /* not JSON */ } }
+    return (
+      <DetailPanel title={selectedRule.name} titleIcon="📋" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)}>
+        {detailTab === "detail" ? (
+          <table className="settings-table" style={{ width: "100%" }}><tbody>
+            <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedRule.name}</td></tr>
+            <tr><td style={{ fontWeight: 600 }}>Event Bus</td><td className="cell-mono">{selectedRule.eventbusname || "\u2014"}</td></tr>
+            <tr><td style={{ fontWeight: 600 }}>State</td><td>{selectedRule.state === RuleState.ENABLED ? <span className="badge badge-green">{t("services.eventbridge.stateEnabled")}</span> : <span className="badge badge-red">{t("services.eventbridge.stateDisabled")}</span>}</td></tr>
+            <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedRule.description || "\u2014"}</td></tr>
+            {selectedRule.scheduleexpression && <tr><td style={{ fontWeight: 600 }}>Schedule</td><td className="cell-mono">{selectedRule.scheduleexpression}</td></tr>}
+            {selectedRule.rolearn && <tr><td style={{ fontWeight: 600 }}>Role ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedRule.rolearn}</td></tr>}
+            {selectedRule.eventpattern && <tr><td style={{ fontWeight: 600 }}>Event Pattern</td><td>{parsedPattern ? <JsonViewer data={parsedPattern} /> : <pre className="code-block" style={{ margin: 0 }}>{selectedRule.eventpattern}</pre>}</td></tr>}
+          </tbody></table>
+        ) : <JsonViewer data={selectedRule} />}
+      </DetailPanel>
+    );
+  };
+
+  const renderScheduleDetail = () => {
+    if (!selectedSchedule) return <DetailEmpty message={t("common.noItemSelected")} />;
+    return (
+      <DetailPanel title={selectedSchedule.name} titleIcon="⏰" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDeleteSchedule(true)}>{t("common.delete")}</button>}>
+        {detailTab === "detail" ? (
+          <table className="settings-table" style={{ width: "100%" }}><tbody>
+            <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedSchedule.name}</td></tr>
+            <tr><td style={{ fontWeight: 600 }}>Group</td><td>{selectedSchedule.groupname || t("services.eventbridge.defaultGroup")}</td></tr>
+            <tr><td style={{ fontWeight: 600 }}>State</td><td><span className="badge">{String(selectedSchedule.state || "\u2014")}</span></td></tr>
+            <tr><td style={{ fontWeight: 600 }}>Target</td><td>{selectedSchedule.target ? String(selectedSchedule.target) : "\u2014"}</td></tr>
+            {selectedSchedule.creationdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedSchedule.creationdate).toLocaleString()}</td></tr>}
+            {selectedSchedule.lastmodificationdate && <tr><td style={{ fontWeight: 600 }}>Modified</td><td>{new Date(selectedSchedule.lastmodificationdate).toLocaleString()}</td></tr>}
+          </tbody></table>
+        ) : <JsonViewer data={selectedSchedule} />}
+      </DetailPanel>
+    );
+  };
+
+  const selectedScheduleItems = schedules.filter((s) => scheduleSelection.selected.has(s.name));
+
   return (
-    <ServicePageLayout
-      icon="📡"
-      title={t("services.eventbridge.title")}
-      isLoading={query.isLoading}
-      error={query.error}
-      tabs={tabs}
-      activeTab={tab}
-      onTabChange={(k) => { setTab(k as TabKey); setSelectedBus(null); setSelectedRule(null); setSelectedSchedule(null); }}
-      actions={
-        tab === "buses" ? (
-          <>
-            <button className="btn btn-primary" onClick={() => setShowCreateBus(true)}>
-              {t("services.eventbridge.create")}
-            </button>
-            {selectedBus && (
-              <button className="btn btn-danger" onClick={() => setShowDeleteBus(true)}>
-                {t("common.delete")}
-              </button>
-            )}
-          </>
-        ) : tab === "schedules" ? (
-          <>
-            <button className="btn btn-primary" onClick={() => setShowCreateSchedule(true)}>
-              {t("services.scheduler.create")}
-            </button>
-            {selectedSchedule && (
-              <button className="btn btn-danger" onClick={() => setShowDeleteSchedule(true)}>
-                {t("common.delete")}
-              </button>
-            )}
-          </>
-        ) : undefined
-      }
-    >
+    <ServicePageLayout icon="📡" title={t("services.eventbridge.title")} isLoading={query.isLoading} error={query.error} tabs={tabs} activeTab={tab} onTabChange={handleTabChange} actions={
+      tab === "buses" ? (<>
+        <button className="btn btn-primary" onClick={() => setShowCreateBus(true)}>{t("services.eventbridge.create")}</button>
+        <button className="btn btn-danger" disabled={busSelection.selected.size === 0} onClick={() => setShowBatchDeleteBus(true)}>{t("common.deleteSelected")}{busSelection.selected.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({busSelection.selected.size})</span>}</button>
+      </>) : tab === "schedules" ? (<>
+        <button className="btn btn-primary" onClick={() => setShowCreateSchedule(true)}>{t("services.scheduler.create")}</button>
+        <button className="btn btn-danger" disabled={scheduleSelection.selected.size === 0} onClick={() => setShowBatchDeleteSchedule(true)}>{t("common.deleteSelected")}{scheduleSelection.selected.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({scheduleSelection.selected.size})</span>}</button>
+      </>) : undefined
+    }>
+      {/* Buses tab */}
       {tab === "buses" && (
-        <SplitPane
-          columns={busColumns}
-          data={buses}
-          getRowId={(row) => row.name}
-          onRowClick={setSelectedBus}
-          selectedId={selectedBus?.name}
-          selected={selectedBus}
-          detailTitle={selectedBus?.name}
-          onDetailClose={() => setSelectedBus(null)}
-          DetailComponent={EventBusDetail}
-        />
+        buses.length > 0 ? (
+          <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-eb-buses">
+            <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<EventBus>(busSelection.selected, busSelection.toggle, () => busSelection.toggleAll(buses.map((b) => b.name)), buses.map((b) => b.name), t, (row) => row.name), ...busColumns]} data={buses} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedBus(row); setDetailTab("detail"); }} selectedId={selectedBus?.name} /></div>
+            {renderBusDetail()}
+          </Splitter>
+        ) : <div className="empty-state">{t("common.noData")}</div>
       )}
+
+      {/* Rules tab */}
       {tab === "rules" && (
-        <SplitPane
-          columns={ruleColumns}
-          data={rules}
-          getRowId={(row) => row.name}
-          onRowClick={setSelectedRule}
-          selectedId={selectedRule?.name}
-          selected={selectedRule}
-          detailTitle={selectedRule?.name}
-          onDetailClose={() => setSelectedRule(null)}
-          DetailComponent={RuleDetail}
-        />
+        rules.length > 0 ? (
+          <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-eb-rules">
+            <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={ruleColumns} data={rules} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedRule(row); setDetailTab("detail"); }} selectedId={selectedRule?.name} /></div>
+            {renderRuleDetail()}
+          </Splitter>
+        ) : <div className="empty-state">{t("common.noData")}</div>
       )}
+
+      {/* Schedules tab */}
       {tab === "schedules" && (
-        <SplitPane
-          columns={scheduleColumns}
-          data={schedules}
-          getRowId={(row) => row.name}
-          onRowClick={setSelectedSchedule}
-          selectedId={selectedSchedule?.name}
-          selected={selectedSchedule}
-          detailTitle={selectedSchedule?.name}
-          onDetailClose={() => setSelectedSchedule(null)}
-        />
+        schedules.length > 0 ? (
+          <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-eb-schedules">
+            <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<ScheduleSummary>(scheduleSelection.selected, scheduleSelection.toggle, () => scheduleSelection.toggleAll(schedules.map((s) => s.name)), schedules.map((s) => s.name), t, (row) => row.name), ...scheduleColumns]} data={schedules} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedSchedule(row); setDetailTab("detail"); }} selectedId={selectedSchedule?.name} /></div>
+            {renderScheduleDetail()}
+          </Splitter>
+        ) : <div className="empty-state">{t("common.noData")}</div>
       )}
 
-      <ServiceCreateModal
-        open={showCreateBus}
-        onClose={() => setShowCreateBus(false)}
-        title={t("services.eventbridge.create")}
-        error={createBusMutation.error}
-        isPending={createBusMutation.isPending}
-        onCreate={() => createBusMutation.mutate()}
-        disabled={!formBusName}
-      >
-        <label>
-          {t("services.eventbridge.nameField")}
-          <input
-            value={formBusName}
-            onChange={(e) => setFormBusName(e.target.value)}
-            placeholder={t("services.eventbridge.placeholder")}
-            className="modal-input"
-          />
-        </label>
-        <label>
-          {t("services.eventbridge.eventSourceLabel")}
-          <input
-            value={formEventSource}
-            onChange={(e) => setFormEventSource(e.target.value)}
-            placeholder={t("services.eventbridge.eventSourcePlaceholder")}
-            className="modal-input"
-          />
-        </label>
+      {/* Bus modals */}
+      <ServiceCreateModal open={showCreateBus} onClose={() => setShowCreateBus(false)} title={t("services.eventbridge.create")} error={createBusMutation.error} isPending={createBusMutation.isPending} onCreate={() => createBusMutation.mutate()} disabled={!formBusName}>
+        <label>{t("services.eventbridge.nameField")}<input value={formBusName} onChange={(e) => setFormBusName(e.target.value)} placeholder={t("services.eventbridge.placeholder")} className="modal-input" /></label>
+        <label>{t("services.eventbridge.eventSourceLabel")}<input value={formEventSource} onChange={(e) => setFormEventSource(e.target.value)} placeholder={t("services.eventbridge.eventSourcePlaceholder")} className="modal-input" /></label>
       </ServiceCreateModal>
+      <ServiceDeleteDialog open={showDeleteBus && !!selectedBus} title={t("services.eventbridge.delete")} name={selectedBus?.name} error={deleteBusMutation.error} isPending={deleteBusMutation.isPending} onConfirm={() => selectedBus && deleteBusMutation.mutate(selectedBus.name)} onClose={() => setShowDeleteBus(false)} />
+      <ServiceDeleteDialog open={showBatchDeleteBus} title={t("common.deleteSelected")} name={`${busSelection.selected.size} ${t("services.eventbridge.tabs.buses")}`} error={batchDeleteBusMutation.error} isPending={batchDeleteBusMutation.isPending} onConfirm={() => batchDeleteBusMutation.mutate(Array.from(busSelection.selected))} onClose={() => setShowBatchDeleteBus(false)} />
 
-      <ServiceDeleteDialog
-        open={showDeleteBus && !!selectedBus}
-        title={t("services.eventbridge.delete")}
-        name={selectedBus?.name}
-        error={deleteBusMutation.error}
-        isPending={deleteBusMutation.isPending}
-        onConfirm={() => selectedBus && deleteBusMutation.mutate(selectedBus.name)}
-        onClose={() => setShowDeleteBus(false)}
-      />
-
-      <ServiceCreateModal
-        open={showCreateSchedule}
-        onClose={() => setShowCreateSchedule(false)}
-        title={t("services.scheduler.create")}
-        error={createScheduleMutation.error}
-        isPending={createScheduleMutation.isPending}
-        onCreate={() => createScheduleMutation.mutate()}
-        disabled={!formScheduleName || !formScheduleExpression || !formTargetArn || !formRoleArn}
-      >
-        <label>
-          {t("services.scheduler.nameField")}
-          <input
-            value={formScheduleName}
-            onChange={(e) => setFormScheduleName(e.target.value)}
-            placeholder={t("services.scheduler.placeholder")}
-            className="modal-input"
-          />
-        </label>
-        <label>
-          {t("services.scheduler.scheduleLabel")}
-          <input
-            value={formScheduleExpression}
-            onChange={(e) => setFormScheduleExpression(e.target.value)}
-            placeholder={t("services.scheduler.schedulePlaceholder")}
-            className="modal-input"
-          />
-        </label>
-        <label>
-          {t("services.scheduler.groupLabel")}
-          <input
-            value={formScheduleGroup}
-            onChange={(e) => setFormScheduleGroup(e.target.value)}
-            placeholder={t("services.scheduler.groupPlaceholder")}
-            className="modal-input"
-          />
-        </label>
-        <label>
-          {t("services.scheduler.descriptionLabel")}
-          <input
-            value={formScheduleDesc}
-            onChange={(e) => setFormScheduleDesc(e.target.value)}
-            placeholder={t("services.scheduler.descriptionPlaceholder")}
-            className="modal-input"
-          />
-        </label>
-        <label>
-          {t("services.scheduler.targetLabel")}
-          <input
-            value={formTargetArn}
-            onChange={(e) => setFormTargetArn(e.target.value)}
-            placeholder={t("services.eventbridge.targetArnPlaceholder")}
-            className="modal-input"
-          />
-        </label>
-        <label>
-          {t("services.sfn.roleArnLabel")}
-          <input
-            value={formRoleArn}
-            onChange={(e) => setFormRoleArn(e.target.value)}
-            placeholder={t("services.eventbridge.roleArnPlaceholder")}
-            className="modal-input"
-          />
-        </label>
+      {/* Schedule modals */}
+      <ServiceCreateModal open={showCreateSchedule} onClose={() => setShowCreateSchedule(false)} title={t("services.scheduler.create")} error={createScheduleMutation.error} isPending={createScheduleMutation.isPending} onCreate={() => createScheduleMutation.mutate()} disabled={!formScheduleName || !formScheduleExpression || !formTargetArn || !formRoleArn}>
+        <label>{t("services.scheduler.nameField")}<input value={formScheduleName} onChange={(e) => setFormScheduleName(e.target.value)} placeholder={t("services.scheduler.placeholder")} className="modal-input" /></label>
+        <label>{t("services.scheduler.scheduleLabel")}<input value={formScheduleExpression} onChange={(e) => setFormScheduleExpression(e.target.value)} placeholder={t("services.scheduler.schedulePlaceholder")} className="modal-input" /></label>
+        <label>{t("services.scheduler.groupLabel")}<input value={formScheduleGroup} onChange={(e) => setFormScheduleGroup(e.target.value)} placeholder={t("services.scheduler.groupPlaceholder")} className="modal-input" /></label>
+        <label>{t("services.scheduler.descriptionLabel")}<input value={formScheduleDesc} onChange={(e) => setFormScheduleDesc(e.target.value)} placeholder={t("services.scheduler.descriptionPlaceholder")} className="modal-input" /></label>
+        <label>{t("services.scheduler.targetLabel")}<input value={formTargetArn} onChange={(e) => setFormTargetArn(e.target.value)} placeholder={t("services.eventbridge.targetArnPlaceholder")} className="modal-input" /></label>
+        <label>{t("services.sfn.roleArnLabel")}<input value={formRoleArn} onChange={(e) => setFormRoleArn(e.target.value)} placeholder={t("services.eventbridge.roleArnPlaceholder")} className="modal-input" /></label>
       </ServiceCreateModal>
-
-      <ServiceDeleteDialog
-        open={showDeleteSchedule && !!selectedSchedule}
-        title={t("services.scheduler.delete")}
-        name={selectedSchedule?.name}
-        error={deleteScheduleMutation.error}
-        isPending={deleteScheduleMutation.isPending}
-        onConfirm={() => selectedSchedule && deleteScheduleMutation.mutate(selectedSchedule)}
-        onClose={() => setShowDeleteSchedule(false)}
-      />
+      <ServiceDeleteDialog open={showDeleteSchedule && !!selectedSchedule} title={t("services.scheduler.delete")} name={selectedSchedule?.name} error={deleteScheduleMutation.error} isPending={deleteScheduleMutation.isPending} onConfirm={() => selectedSchedule && deleteScheduleMutation.mutate(selectedSchedule)} onClose={() => setShowDeleteSchedule(false)} />
+      <ServiceDeleteDialog open={showBatchDeleteSchedule} title={t("common.deleteSelected")} name={`${scheduleSelection.selected.size} ${t("services.eventbridge.tabs.schedules")}`} error={batchDeleteScheduleMutation.error} isPending={batchDeleteScheduleMutation.isPending} onConfirm={() => batchDeleteScheduleMutation.mutate(selectedScheduleItems)} onClose={() => setShowBatchDeleteSchedule(false)} />
     </ServicePageLayout>
   );
 }

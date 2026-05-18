@@ -20,7 +20,13 @@
     "no": "いいえ",
     "optional": "（省略可）",
     "invalidJson": "{{field}}のJSONが不正です",
-    "add": "追加"
+    "add": "追加",
+    "selectAll": "全選択",
+    "selectedCount": "{{count}}件選択",
+    "deleteSelected": "選択を削除",
+    "noItemSelected": "アイテムを選択して詳細を表示",
+    "save": "保存",
+    "saving": "保存中..."
   },
   "header": {
     "online": "オンライン :8080",
@@ -147,6 +153,7 @@
       "title": "DynamoDB",
       "countLabel": "テーブル",
       "create": "テーブルを作成",
+      "createItem": "作成",
       "delete": "テーブルを削除",
       "nameField": "テーブル名",
       "placeholder": "my-table",
@@ -182,7 +189,43 @@
         "pk": "PK",
         "sk": "SK",
         "value": "値"
-      }
+      },
+      "addAttribute": "属性を追加",
+      "addItem": "アイテム追加",
+      "attributeName": "属性名",
+      "attributeType": "型",
+      "attributeValue": "値",
+      "batchDelete": "一括削除",
+      "batchDeleteConfirm": "{count}件のアイテムを削除しますか？",
+      "batchDeleteResult": "{count}件削除しました",
+      "deleteSelected": "選択削除",
+      "failed": "失敗",
+      "jsonInput": "JSON",
+      "loadMore": "もっと読み込む",
+      "noItemSelected": "アイテムを選択して詳細を表示",
+      "scalarTypeB": "バイナリ (B)",
+      "scalarTypeN": "数値 (N)",
+      "scalarTypeS": "文字列 (S)",
+      "selectAll": "全選択",
+      "selectedCount": "{count}件選択",
+      "structuredForm": "フォーム",
+      "tabAttributes": "属性",
+      "tabJson": "JSON",
+      "tablesLabel": "テーブル一覧",
+      "keyAttribute": "キー属性（必須）",
+      "editItem": "アイテム編集",
+      "saveChanges": "保存",
+      "saving": "保存中...",
+      "typeLabelS": "文字列 (S)",
+      "typeLabelN": "数値 (N)",
+      "typeLabelB": "バイナリ (B)",
+      "typeLabelBOOL": "ブール",
+      "typeLabelNULL": "Null",
+      "typeLabelSS": "文字列セット",
+      "typeLabelNS": "数値セット",
+      "typeLabelL": "リスト",
+      "typeLabelM": "マップ",
+      "jsonPlaceholderPlain": "{\"pk\": \"値\", \"count\": 42}"
     },
     "lambda": {
       "title": "Lambda",
@@ -227,7 +270,8 @@
       "stateHeader": "状態",
       "lastModifiedHeader": "最終更新",
       "packageTypeHeader": "パッケージ",
-      "arnHeader": "ARN"
+      "arnHeader": "ARN",
+      "descriptionLabel": "説明"
     },
     "iam": {
       "title": "IAM",
@@ -262,7 +306,10 @@
       "roleLastUsedHeader": "最終使用",
       "policyCreatedHeader": "作成日",
       "policyUpdatedHeader": "更新日",
-      "policyDescriptionHeader": "説明"
+      "policyDescriptionHeader": "説明",
+      "userNameLabel": "ユーザー名",
+      "roleNameLabel": "ロール名",
+      "assumePolicyLabel": "Assume Role ポリシー"
     },
     "sns": {
       "title": "SNS",
@@ -387,7 +434,15 @@
       "thresholdHeader": "閾値",
       "periodHeader": "期間",
       "evaluationPeriodsHeader": "評価期間",
-      "statisticHeader": "統計"
+      "statisticHeader": "統計",
+      "alarmNameLabel": "アラーム名",
+      "alarmNamePlaceholder": "my-alarm",
+      "comparisonLabel": "比較",
+      "comparisonHeader": "比較",
+      "descriptionLabel": "説明",
+      "descriptionHeader": "説明",
+      "evalPeriodsLabel": "評価期間",
+      "evalPeriodsHeader": "評価期間"
     },
     "eventbridge": {
       "title": "EventBridge",
@@ -431,7 +486,8 @@
       "scheduleExpressionHeader": "スケジュール",
       "ruleDescriptionHeader": "説明",
       "lastModifiedHeader": "最終更新",
-      "targetHeader": "ターゲット"
+      "targetHeader": "ターゲット",
+      "roleArnPlaceholder": "arn:aws:iam::account:role/schedule-role"
     },
     "sfn": {
       "title": "Step Functions",
@@ -564,7 +620,9 @@
       "zoneIdHeader": "ゾーン ID",
       "recordsHeader": "レコード",
       "commentHeader": "コメント",
-      "privateHeader": "プライベート"
+      "privateHeader": "プライベート",
+      "privateZoneLabel": "プライベートゾーン",
+      "recordCountHeader": "レコード数"
     },
     "acm": {
       "title": "ACM",
@@ -603,7 +661,15 @@
       },
       "keyAlgorithmHeader": "鍵アルゴリズム",
       "inUseHeader": "使用中",
-      "certArnHeader": "ARN"
+      "certArnHeader": "ARN",
+      "placeholder": "example.com",
+      "altNamesLabel": "代替名",
+      "altNamesPlaceholder": "www.example.com, api.example.com",
+      "validationLabel": "検証方法",
+      "keyAlgoLabel": "キーアルゴリズム",
+      "keyAlgoHeader": "キーアルゴリズム",
+      "notBeforeHeader": "開始日",
+      "notAfterHeader": "終了日"
     },
     "wafv2": {
       "title": "WAF",
@@ -698,7 +764,15 @@
       "poolNameHeader": "プール名",
       "poolIdHeader": "プール ID",
       "statusHeader": "ステータス",
-      "creationDateHeader": "作成日"
+      "creationDateHeader": "作成日",
+      "idHeader": "プールID",
+      "nameHeader": "プール名",
+      "createdHeader": "作成日",
+      "pwMinLengthLabel": "パスワード最小長",
+      "pwRequireUpperLabel": "大文字必須",
+      "pwRequireLowerLabel": "小文字必須",
+      "pwRequireNumbersLabel": "数字必須",
+      "pwRequireSymbolsLabel": "記号必須"
     },
     "cognitoidentity": {
       "title": "Cognito Identity",
@@ -750,7 +824,9 @@
       "descriptionHeader": "説明",
       "createdHeader": "作成日時",
       "endpointHeader": "エンドポイント",
-      "apiStatusHeader": "ステータス"
+      "apiStatusHeader": "ステータス",
+      "idHeader": "API ID",
+      "nameHeader": "API名"
     },
     "timestream": {
       "title": "Timestream",
@@ -819,13 +895,40 @@
       "encryptedHeader": "暗号化",
       "endpointHeader": "エンドポイント",
       "readerEndpointHeader": "リーダーエンドポイント",
-      "arnHeader": "ARN"
+      "arnHeader": "ARN",
+      "instanceClassHeader": "インスタンスクラス"
+    },
+    "rds": {
+      "title": "RDS",
+      "instanceIdHeader": "インスタンス ID",
+      "statusHeader": "ステータス",
+      "engineHeader": "エンジン",
+      "instanceClassHeader": "インスタンスクラス",
+      "clusterIdHeader": "クラスタ ID",
+      "tabs": {
+        "instances": "インスタンス",
+        "clusters": "クラスタ"
+      },
+      "engineVersionHeader": "エンジンバージョン",
+      "encryptedHeader": "暗号化",
+      "createdHeader": "作成日"
     },
     "sts": {
       "title": "STS — 呼び出し元 ID",
       "accountLabel": "アカウント",
       "userIdLabel": "ユーザー ID",
       "arnLabel": "ARN"
+    },
+    "cognitoIdentity": {
+      "title": "Cognito Identity",
+      "countLabel": "IDプール",
+      "create": "IDプール作成",
+      "delete": "IDプール削除",
+      "nameField": "プール名",
+      "placeholder": "my-identity-pool",
+      "poolIdHeader": "プールID",
+      "poolNameHeader": "プール名",
+      "tagsLabel": "タグ"
     }
   },
   "export": {
@@ -840,6 +943,8 @@
     "tabMappings": "ポートマッピング",
     "tabServices": "サービス",
     "save": "変更を保存",
+    "saved": "✓ 保存しました",
+    "saveFailed": "✗ 保存に失敗しました",
     "reset": "デフォルトに戻す",
     "immediateNote": "✓ 変更は即時反映されます",
     "saveNote": "Saveボタンで一括保存されます。一部の変更には再起動が必要です。",

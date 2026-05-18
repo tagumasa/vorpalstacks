@@ -36,6 +36,7 @@ export const SERVICE_CATALOG: ServiceEntry[] = [
   { id: "kms", displayName: "KMS", icon: "🔑", category: "Security", backendServices: ["KMS"], hasPage: true },
   { id: "lambda", displayName: "Lambda", icon: "⚡", category: "Compute", backendServices: ["Lambda"], hasPage: true },
   { id: "neptune", displayName: "Neptune", icon: "🔮", category: "Database", backendServices: ["Neptune", "NeptuneData", "NeptuneGraph"], hasPage: true },
+  { id: "rds", displayName: "RDS", icon: "🗄️", category: "Database", backendServices: ["RDS"], hasPage: true },
   { id: "route53", displayName: "Route 53", icon: "🌐", category: "Networking", backendServices: ["Route53"], hasPage: true },
   { id: "s3", displayName: "S3", icon: "📦", category: "Storage", backendServices: ["S3"], hasPage: true },
   { id: "secretsmanager", displayName: "Secrets Manager", icon: "🗝️", category: "Security", backendServices: ["SecretsManager"], hasPage: true },

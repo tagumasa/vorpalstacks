@@ -157,6 +157,17 @@ type GlobalClusterMember struct {
 	GlobalClusterIdentifier string   `json:"GlobalClusterIdentifier,omitempty"`
 }
 
+type DBClusterEndpoint struct {
+	DBClusterEndpointIdentifier string   `json:"DBClusterEndpointIdentifier"`
+	DBClusterIdentifier         string   `json:"DBClusterIdentifier"`
+	Endpoint                    string   `json:"Endpoint"`
+	Status                      string   `json:"Status"`
+	EndpointType                string   `json:"EndpointType"`
+	ExcludedMembers             []string `json:"ExcludedMembers,omitempty"`
+	StaticMembers               []string `json:"StaticMembers,omitempty"`
+	DBClusterEndpointArn        string   `json:"DBClusterEndpointArn,omitempty"`
+}
+
 type EventSubscription struct {
 	CustSubscriptionId       string     `json:"CustSubscriptionId"`
 	SnsTopicArn              string     `json:"SnsTopicArn"`

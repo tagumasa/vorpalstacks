@@ -1,49 +1,79 @@
 /**
- * SNS service page. Lists topics with create/delete operations.
+ * SNS service page — 3-panel inspector layout.
+ *
+ * Panel 1 (toolbar): Breadcrumb navigation
+ * Panel 2 (table):   Topic list with checkbox multi-select
+ * Panel 3 (detail):  Topic detail (ARN + JSON view)
  */
 import { useState } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { TFunction } from "i18next";
 import { create } from "@bufbuild/protobuf";
 import { SNSService } from "@/gen/sns_pb";
 import { CreateTopicInputSchema } from "@/gen/sns_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
 import {
   ServicePageLayout,
-  SplitPane,
   ServiceCreateModal,
   ServiceDeleteDialog,
   SmallMonoCell,
   useServiceClient,
 } from "@/components/shared/service-page";
+import {
+  checkboxColumn,
+  Breadcrumb,
+  SelectionBadge,
+  DetailPanel,
+  DetailEmpty,
+  useSelection,
+} from "@/components/shared/inspector";
+import { DataTable } from "@/components/shared/data-table";
+import { Splitter } from "@/components/shared/splitter";
+import { JsonViewer } from "@/components/shared/json-viewer";
 
-/** Derived row shape for the SNS topic list table. */
+// ─── Row Type ───────────────────────────────────────────────────
+
 interface TableRow {
   topicarn: string;
 }
 
-/** Column definitions for the SNS topic table. */
+// ─── Column Definitions ─────────────────────────────────────────
+
 const getColumns = (t: TFunction): ColumnDef<TableRow, any>[] => [
   { accessorKey: "topicarn", header: t("services.sns.topicArnHeader"), cell: SmallMonoCell },
 ];
 
-/** SNS service page with list, create, and delete operations. */
+// ─── Detail panel tab ───────────────────────────────────────────
+
+type DetailTab = "detail" | "json";
+
+// ─── SNS Page ───────────────────────────────────────────────────
+
 export function SNSPage() {
   const { t } = useTranslation();
+  const { client, invalidate } = useServiceClient(SNSService);
+  const { queryKey } = useListKey("sns");
   const columns = getColumns(t);
+
+  // ── Selection state ──────────────────────────────────────────
+  const { selected: selectedArns, toggle: toggleArn, toggleAll: toggleAllArns, clear: clearSelection } = useSelection<string>();
   const [selectedItem, setSelectedItem] = useState<TableRow | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>("detail");
+
+  // ── Modals ───────────────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showBatchDelete, setShowBatchDelete] = useState(false);
+
+  // ── Create form state ────────────────────────────────────────
   const [formName, setFormName] = useState("");
   const [formFifo, setFormFifo] = useState(false);
   const [formDisplayName, setFormDisplayName] = useState("");
   const [formTags, setFormTags] = useState("");
 
-  const { client, invalidate } = useServiceClient(SNSService);
-  const { queryKey } = useListKey("sns");
-
+  // ── Data ─────────────────────────────────────────────────────
   const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: () => client.listTopics({}),
@@ -51,12 +81,11 @@ export function SNSPage() {
   });
 
   const items: TableRow[] = dropEmpty(
-    (data?.topics ?? []).map((topic) => ({
-      topicarn: topic.topicarn,
-    })),
+    (data?.topics ?? []).map((topic) => ({ topicarn: topic.topicarn })),
     "topicarn",
   );
 
+  // ── Mutations ────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: () => {
       const attributes: Record<string, string> = {};
@@ -90,14 +119,91 @@ export function SNSPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (topicarn: string) =>
-      client.deleteTopic({ topicarn }),
+    mutationFn: (topicarn: string) => client.deleteTopic({ topicarn }),
     onSuccess: () => {
       invalidate(queryKey);
       setShowDelete(false);
       setSelectedItem(null);
+      clearSelection();
     },
   });
+
+  const batchDeleteMutation = useMutation({
+    mutationFn: async (arns: string[]) => {
+      const results = await Promise.allSettled(
+        arns.map((arn) => client.deleteTopic({ topicarn: arn }))
+      );
+      return results;
+    },
+    onSuccess: (_data, arns) => {
+      invalidate(queryKey);
+      setShowBatchDelete(false);
+      clearSelection();
+      setSelectedItem((prev) => (prev && arns.includes(prev.topicarn) ? null : prev));
+    },
+  });
+
+  // ── Handlers ─────────────────────────────────────────────────
+
+  const handleRowClick = (row: TableRow) => {
+    setSelectedItem(row);
+    setDetailTab("detail");
+  };
+
+  const allIds = items.map((i) => i.topicarn);
+
+  /** Extract topic name from ARN for display. */
+  const topicName = (arn: string) => {
+    const parts = arn.split(":");
+    return parts[5] ?? arn;
+  };
+
+  // ── Detail Panel ─────────────────────────────────────────────
+
+  const renderDetailPanel = () => {
+    if (!selectedItem) {
+      return <DetailEmpty message={t("common.noItemSelected")} />;
+    }
+
+    const detailTabs = [
+      { key: "detail", label: "Detail" },
+      { key: "json", label: t("common.rawJson") },
+    ];
+
+    return (
+      <DetailPanel
+        title={topicName(selectedItem.topicarn)}
+        titleIcon="📢"
+        tabs={detailTabs}
+        activeTab={detailTab}
+        onTabChange={(k) => setDetailTab(k as DetailTab)}
+        actions={
+          <button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>
+            {t("common.delete")}
+          </button>
+        }
+      >
+        {detailTab === "detail" ? (
+          <table className="settings-table" style={{ width: "100%" }}>
+            <tbody>
+              <tr>
+                <td style={{ width: 120, fontWeight: 600 }}>ARN</td>
+                <td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.topicarn}</td>
+              </tr>
+              <tr>
+                <td style={{ fontWeight: 600 }}>Name</td>
+                <td className="cell-mono">{topicName(selectedItem.topicarn)}</td>
+              </tr>
+            </tbody>
+          </table>
+        ) : (
+          <JsonViewer data={selectedItem} />
+        )}
+      </DetailPanel>
+    );
+  };
+
+  // ── Render ───────────────────────────────────────────────────
 
   return (
     <ServicePageLayout
@@ -112,24 +218,46 @@ export function SNSPage() {
           <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
             {t("services.sns.create")}
           </button>
-          {selectedItem && (
-            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
-              {t("common.delete")}
-            </button>
-          )}
+          <button
+            className="btn btn-danger"
+            disabled={selectedArns.size === 0}
+            onClick={() => setShowBatchDelete(true)}
+          >
+            {t("common.deleteSelected")}
+            {selectedArns.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedArns.size})</span>}
+          </button>
         </>
       }
     >
-      <SplitPane
-        columns={columns}
-        data={items}
-        getRowId={(row) => row.topicarn}
-        onRowClick={setSelectedItem}
-        selectedId={selectedItem?.topicarn}
-        selected={selectedItem}
-        detailTitle={selectedItem?.topicarn}
-        onDetailClose={() => setSelectedItem(null)}
-      />
+      <div className="inspector-toolbar">
+        <Breadcrumb parts={[
+          { label: t("services.sns.title") },
+          { label: t("services.sns.countLabel") },
+        ]} />
+        <div className="toolbar-selection-info">
+          <SelectionBadge count={selectedArns.size} label={t("common.selectedCount", { count: selectedArns.size })} />
+        </div>
+      </div>
+
+      {items.length > 0 ? (
+        <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-sns">
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+            <DataTable
+              columns={[
+                checkboxColumn<TableRow>(selectedArns, toggleArn, () => toggleAllArns(allIds), allIds, t, (row) => row.topicarn),
+                ...columns,
+              ]}
+              data={items}
+              getRowId={(row) => row.topicarn}
+              onRowClick={handleRowClick}
+              selectedId={selectedItem?.topicarn}
+            />
+          </div>
+          {renderDetailPanel()}
+        </Splitter>
+      ) : (
+        <div className="empty-state">{t("common.noData")}</div>
+      )}
 
       <ServiceCreateModal
         open={showCreate}
@@ -142,40 +270,19 @@ export function SNSPage() {
       >
         <label>
           {t("services.sns.nameField")}
-          <input
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-            placeholder={t("services.sns.placeholder")}
-            className="modal-input"
-          />
+          <input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t("services.sns.placeholder")} className="modal-input" />
         </label>
         <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={formFifo}
-            onChange={(e) => setFormFifo(e.target.checked)}
-          />
+          <input type="checkbox" checked={formFifo} onChange={(e) => setFormFifo(e.target.checked)} />
           {t("services.sns.fifoLabel")}
         </label>
         <label>
           {t("services.sns.displayNameLabel")}
-          <input
-            value={formDisplayName}
-            onChange={(e) => setFormDisplayName(e.target.value)}
-            placeholder={t("services.sns.displayNamePlaceholder")}
-            className="modal-input"
-          />
+          <input value={formDisplayName} onChange={(e) => setFormDisplayName(e.target.value)} placeholder={t("services.sns.displayNamePlaceholder")} className="modal-input" />
         </label>
         <label>
           {t("services.sns.tagsLabel")}
-          <textarea
-            value={formTags}
-            onChange={(e) => setFormTags(e.target.value)}
-            placeholder='{"key":"value"}'
-            rows={3}
-            className="modal-input"
-            style={{ fontFamily: "monospace", fontSize: "0.85em" }}
-          />
+          <textarea value={formTags} onChange={(e) => setFormTags(e.target.value)} placeholder='{"key":"value"}' rows={3} className="modal-input" style={{ fontFamily: "monospace", fontSize: "0.85em" }} />
         </label>
       </ServiceCreateModal>
 
@@ -187,6 +294,16 @@ export function SNSPage() {
         isPending={deleteMutation.isPending}
         onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.topicarn)}
         onClose={() => setShowDelete(false)}
+      />
+
+      <ServiceDeleteDialog
+        open={showBatchDelete}
+        title={t("common.deleteSelected")}
+        name={`${selectedArns.size} ${t("services.sns.countLabel")}`}
+        error={batchDeleteMutation.error}
+        isPending={batchDeleteMutation.isPending}
+        onConfirm={() => batchDeleteMutation.mutate(Array.from(selectedArns))}
+        onClose={() => setShowBatchDelete(false)}
       />
     </ServicePageLayout>
   );

@@ -34,6 +34,7 @@ const STSPage = lazy(() => import("./sts").then((m) => ({ default: m.STSPage }))
 const AppSyncPage = lazy(() => import("./appsync").then((m) => ({ default: m.AppSyncPage })));
 const TimestreamPage = lazy(() => import("./timestream").then((m) => ({ default: m.TimestreamPage })));
 const NeptunePage = lazy(() => import("./neptune").then((m) => ({ default: m.NeptunePage })));
+const RDSPage = lazy(() => import("./rds").then((m) => ({ default: m.RDSPage })));
 const ACMPage = lazy(() => import("./acm").then((m) => ({ default: m.ACMPage })));
 const Route53Page = lazy(() => import("./route53").then((m) => ({ default: m.Route53Page })));
 const SecretsManagerPage = lazy(() => import("./secretsmanager").then((m) => ({ default: m.SecretsManagerPage })));
@@ -64,6 +65,7 @@ const PAGES: Record<string, React.ComponentType> = {
   appsync: AppSyncPage,
   timestream: TimestreamPage,
   neptune: NeptunePage,
+  rds: RDSPage,
   acm: ACMPage,
   route53: Route53Page,
   secretsmanager: SecretsManagerPage,

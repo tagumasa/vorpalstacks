@@ -1,6 +1,5 @@
 /**
- * CloudFront service page. Lists distributions with create/delete operations and a
- * custom detail panel showing origins, aliases, and cache behaviours.
+ * CloudFront service page — 3-panel inspector layout.
  */
 import { useState } from "react";
 import type { TFunction } from "i18next";
@@ -11,287 +10,114 @@ import { create } from "@bufbuild/protobuf";
 import { CloudFrontService, type DistributionSummary, ViewerProtocolPolicy } from "@/gen/cloudfront_pb";
 import { CreateDistributionRequestSchema, DistributionConfigSchema, OriginsSchema, OriginSchema, DefaultCacheBehaviorSchema } from "@/gen/cloudfront_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import {
-  ServicePageLayout,
-  SplitPane,
-  ServiceCreateModal,
-  ServiceDeleteDialog,
-  MonoCell,
-  FallbackCell,
-  BooleanBadge,
-  BooleanCell,
-  DateCell,
-  fmtDate,
-  useServiceClient,
-} from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, FallbackCell, BooleanCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
+import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
+import { DataTable } from "@/components/shared/data-table";
+import { Splitter } from "@/components/shared/splitter";
 import { JsonViewer } from "@/components/shared/json-viewer";
 
-/** Column definitions for the CloudFront distribution table. */
 const getColumns = (t: TFunction): ColumnDef<DistributionSummary, any>[] => [
   { accessorKey: "id", header: t("services.cloudfront.distributionIdHeader"), cell: MonoCell },
   { accessorKey: "domainname", header: t("services.cloudfront.domainHeader"), cell: MonoCell },
   { accessorKey: "status", header: t("services.cloudfront.statusHeader"), size: 100 },
-  {
-    accessorKey: "enabled",
-    header: t("services.cloudfront.enabledHeader"),
-    cell: BooleanCell,
-    size: 80,
-  },
+  { accessorKey: "enabled", header: t("services.cloudfront.enabledHeader"), cell: BooleanCell, size: 80 },
   { accessorKey: "lastmodifiedtime", header: t("services.cloudfront.lastModifiedHeader"), cell: DateCell },
   { accessorKey: "comment", header: t("services.cloudfront.commentHeader"), cell: FallbackCell },
 ];
 
-/** Detail panel for a CloudFront distribution. */
-function CloudFrontDetail({ item }: { item: DistributionSummary }) {
-  const { t } = useTranslation();
-  const origins = item.origins?.items ?? [];
-  const aliases = item.aliases?.items ?? [];
-  const cacheBehaviors = item.cachebehaviors?.items ?? [];
-  const defBehavior = item.defaultcachebehavior;
+type DetailTab = "detail" | "json";
 
-  return (
-    <div className="detail-body">
-      <section className="detail-section">
-        <h3>{t("common.general")}</h3>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.idLabel")}</span><span className="cell-mono">{item.id}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.arnLabel")}</span><span className="cell-mono" style={{ fontSize: 11 }}>{item.arn || "\u2014"}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.domainLabel")}</span><span className="cell-mono">{item.domainname || "\u2014"}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.statusLabel")}</span><span>{item.status || "\u2014"}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.enabledLabel")}</span><BooleanBadge value={item.enabled} /></div>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.ipv6Label")}</span><BooleanBadge value={item.isipv6enabled} /></div>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.stagingLabel")}</span><BooleanBadge value={item.staging} /></div>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.commentLabel")}</span><span>{item.comment || "\u2014"}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.etagLabel")}</span><span className="cell-mono">{item.etag || "\u2014"}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.lastModifiedLabel")}</span><span>{fmtDate(item.lastmodifiedtime)}</span></div>
-        <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.webAclIdLabel")}</span><span className="cell-mono">{item.webaclid || "\u2014"}</span></div>
-      </section>
-
-      {aliases.length > 0 && (
-        <section className="detail-section">
-          <h3>{t("services.cloudfront.detail.aliasesSection")} ({aliases.length})</h3>
-          {aliases.map((a, i) => (
-            <div key={i} className="detail-field"><span className="detail-label">{i + 1}</span><span className="cell-mono">{a}</span></div>
-          ))}
-        </section>
-      )}
-
-      {origins.length > 0 && (
-        <section className="detail-section">
-          <h3>{t("services.cloudfront.detail.originsSection")} ({origins.length})</h3>
-          {origins.map((o) => (
-            <div key={o.id} className="detail-field">
-              <span className="detail-label">{o.id}</span>
-              <span className="cell-mono">{o.domainname || "\u2014"}</span>
-            </div>
-          ))}
-        </section>
-      )}
-
-      {defBehavior && (
-        <section className="detail-section">
-          <h3>{t("services.cloudfront.detail.defaultCacheBehaviourSection")}</h3>
-          <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.targetOriginLabel")}</span><span className="cell-mono">{defBehavior.targetoriginid || "\u2014"}</span></div>
-          <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.viewerProtocolLabel")}</span><span>{String(defBehavior.viewerprotocolpolicy) || "\u2014"}</span></div>
-          <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.allowedMethodsLabel")}</span><span>{defBehavior.allowedmethods?.items?.join(", ") || "\u2014"}</span></div>
-        </section>
-      )}
-
-      {cacheBehaviors.length > 0 && (
-        <section className="detail-section">
-          <h3>{t("services.cloudfront.detail.cacheBehavioursSection")} ({cacheBehaviors.length})</h3>
-          {cacheBehaviors.map((cb) => (
-            <div key={cb.pathpattern} className="detail-field">
-              <span className="detail-label">{cb.pathpattern}</span>
-              <span className="cell-mono">{cb.targetoriginid || "\u2014"}</span>
-            </div>
-          ))}
-        </section>
-      )}
-
-      {item.viewercertificate && (
-        <section className="detail-section">
-          <h3>{t("services.cloudfront.detail.viewerCertificateSection")}</h3>
-          {(() => {
-            const cert = item.viewercertificate;
-            return (
-              <>
-                <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.certificateSourceLabel")}</span><span>{String(cert?.certificatesource ?? "") || "\u2014"}</span></div>
-                <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.minimumProtocolLabel")}</span><span>{String(cert?.minimumprotocolversion ?? "") || "\u2014"}</span></div>
-                <div className="detail-field"><span className="detail-label">{t("services.cloudfront.detail.sslSupportLabel")}</span><span>{String(cert?.sslsupportmethod ?? "") || "\u2014"}</span></div>
-              </>
-            );
-          })()}
-        </section>
-      )}
-
-      <section className="detail-section">
-        <h3>{t("common.rawJson")}</h3>
-        <JsonViewer data={item} />
-      </section>
-    </div>
-  );
-}
-
-/** CloudFront service page with distribution list, detail, and delete operations. */
 export function CloudFrontPage() {
   const { t } = useTranslation();
+  const { client, invalidate } = useServiceClient(CloudFrontService);
+  const { queryKey } = useListKey("cloudfront");
   const columns = getColumns(t);
+
+  const { selected: selectedIds, toggle, toggleAll: toggleAll_, clear: clearSelection } = useSelection<string>();
   const [selectedItem, setSelectedItem] = useState<DistributionSummary | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>("detail");
   const [showCreate, setShowCreate] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showBatchDelete, setShowBatchDelete] = useState(false);
   const [formOriginDomain, setFormOriginDomain] = useState("");
   const [formOriginId, setFormOriginId] = useState("");
   const [formComment, setFormComment] = useState("");
   const [formEnabled, setFormEnabled] = useState(true);
 
-  const { client, invalidate } = useServiceClient(CloudFrontService);
-  const { queryKey } = useListKey("cloudfront");
-
-  const { data, isLoading, error } = useQuery({
-    queryKey,
-    queryFn: async () => {
-      const resp = await client.listDistributions({});
-      return dropEmpty(resp.distributionlist?.items ?? [], "id");
-    },
-    refetchInterval: REFETCH_INTERVAL,
-  });
-
-  const items: DistributionSummary[] = data ?? [];
+  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listDistributions({}), refetchInterval: REFETCH_INTERVAL });
+  const items: DistributionSummary[] = dropEmpty(data?.distributionlist?.items ?? [], "id");
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      client.createDistribution(
-        create(CreateDistributionRequestSchema, {
-          distributionconfig: create(DistributionConfigSchema, {
-            enabled: formEnabled,
-            comment: formComment,
-            origins: create(OriginsSchema, {
-              quantity: 1,
-              items: [
-                create(OriginSchema, {
-                  id: formOriginId || "default-origin",
-                  domainname: formOriginDomain,
-                }),
-              ],
-            }),
-            defaultcachebehavior: create(DefaultCacheBehaviorSchema, {
-              targetoriginid: formOriginId || "default-origin",
-              viewerprotocolpolicy: ViewerProtocolPolicy.ALLOW_ALL,
-            }),
-          }),
-        }),
-      ),
-    onSuccess: () => {
-      invalidate(queryKey);
-      setShowCreate(false);
-      setFormOriginDomain("");
-      setFormOriginId("");
-      setFormComment("");
-      setFormEnabled(true);
-    },
+    mutationFn: () => client.createDistribution(create(CreateDistributionRequestSchema, {
+      distributionconfig: create(DistributionConfigSchema, {
+        enabled: formEnabled, comment: formComment,
+        origins: create(OriginsSchema, { items: [create(OriginSchema, { id: formOriginId || "1", domainname: formOriginDomain })] }),
+        defaultcachebehavior: create(DefaultCacheBehaviorSchema, { targetoriginid: formOriginId || "1", viewerprotocolpolicy: ViewerProtocolPolicy.ALLOW_ALL }),
+      }),
+    })),
+    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormOriginDomain(""); setFormOriginId(""); setFormComment(""); setFormEnabled(true); },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (dist: DistributionSummary) =>
-      client.deleteDistribution({
-        id: dist.id,
-        ifmatch: dist.etag,
-      }),
-    onSuccess: () => {
-      invalidate(queryKey);
-      setShowDelete(false);
-      setSelectedItem(null);
-    },
+    mutationFn: (dist: DistributionSummary) => client.deleteDistribution({ id: dist.id, ifmatch: dist.etag }),
+    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
+  const batchDeleteMutation = useMutation({
+    mutationFn: async (dists: DistributionSummary[]) => Promise.allSettled(dists.map((d) => client.deleteDistribution({ id: d.id, ifmatch: d.etag }))),
+    onSuccess: (_d, dists) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); const deletedIds = new Set(dists.map((d) => d.id)); setSelectedItem((p) => (p && deletedIds.has(p.id) ? null : p)); },
+  });
+
+  const handleRowClick = (row: DistributionSummary) => { setSelectedItem(row); setDetailTab("detail"); };
+  const allIds = items.map((i) => i.id);
+  const selectedDists = items.filter((i) => selectedIds.has(i.id));
+
+  const renderDetailPanel = () => {
+    if (!selectedItem) return <DetailEmpty message={t("common.noItemSelected")} />;
+    const origins = selectedItem.origins?.items ?? [];
+    const aliases = selectedItem.aliases?.items ?? [];
+    return (
+      <DetailPanel title={selectedItem.id} titleIcon="☁️" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
+        {detailTab === "detail" ? (
+          <div className="detail-body">
+            <section className="detail-section">
+              <h3>{t("common.general")}</h3>
+              <div className="detail-field"><span className="detail-label">ID</span><span className="cell-mono">{selectedItem.id}</span></div>
+              <div className="detail-field"><span className="detail-label">Domain</span><span className="cell-mono">{selectedItem.domainname || "\u2014"}</span></div>
+              <div className="detail-field"><span className="detail-label">Status</span><span>{selectedItem.status || "\u2014"}</span></div>
+              <div className="detail-field"><span className="detail-label">Enabled</span><span>{selectedItem.enabled ? "Yes" : "No"}</span></div>
+              {selectedItem.comment && <div className="detail-field"><span className="detail-label">Comment</span><span>{selectedItem.comment}</span></div>}
+              {selectedItem.lastmodifiedtime && <div className="detail-field"><span className="detail-label">Modified</span><span>{fmtDate(selectedItem.lastmodifiedtime)}</span></div>}
+            </section>
+            {aliases.length > 0 && <section className="detail-section"><h3>Aliases ({aliases.length})</h3>{aliases.map((a, i) => <div key={i} className="detail-field"><span className="cell-mono">{a}</span></div>)}</section>}
+            {origins.length > 0 && <section className="detail-section"><h3>Origins ({origins.length})</h3>{origins.map((o) => <div key={o.id} className="detail-field"><span className="detail-label">{o.id}</span><span className="cell-mono">{o.domainname || "\u2014"}</span></div>)}</section>}
+          </div>
+        ) : <JsonViewer data={selectedItem} />}
+      </DetailPanel>
+    );
+  };
+
   return (
-    <ServicePageLayout
-      icon="☁️"
-      title={t("services.cloudfront.title")}
-      isLoading={isLoading}
-      error={error}
-      count={items.length}
-      countLabel={t("services.cloudfront.countLabel")}
-      actions={
-        <>
-          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
-            {t("services.cloudfront.create")}
-          </button>
-          {selectedItem && (
-            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
-              {t("services.cloudfront.delete")}
-            </button>
-          )}
-        </>
-      }
-    >
-      <SplitPane
-        columns={columns}
-        data={items}
-        getRowId={(row) => row.id}
-        onRowClick={setSelectedItem}
-        selectedId={selectedItem?.id}
-        selected={selectedItem}
-        detailTitle={selectedItem?.id}
-        onDetailClose={() => setSelectedItem(null)}
-        DetailComponent={CloudFrontDetail}
-      />
+    <ServicePageLayout icon="☁️" title={t("services.cloudfront.title")} isLoading={isLoading} error={error} count={items.length} countLabel={t("services.cloudfront.countLabel")} actions={<>
+      <button className="btn btn-primary" onClick={() => setShowCreate(true)}>{t("services.cloudfront.create")}</button>
+      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedIds.size})</span>}</button>
+    </>}>
+      <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.cloudfront.title") }, { label: t("services.cloudfront.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
+      {items.length > 0 ? (
+        <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-cf">
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<DistributionSummary>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} /></div>
+          {renderDetailPanel()}
+        </Splitter>
+      ) : <div className="empty-state">{t("common.noData")}</div>}
 
-      <ServiceCreateModal
-        open={showCreate}
-        onClose={() => setShowCreate(false)}
-        title={t("services.cloudfront.create")}
-        error={createMutation.error}
-        isPending={createMutation.isPending}
-        onCreate={() => createMutation.mutate()}
-        disabled={!formOriginDomain}
-      >
-        <label>
-          {t("services.cloudfront.originDomainLabel")}
-          <input
-            value={formOriginDomain}
-            onChange={(e) => setFormOriginDomain(e.target.value)}
-            placeholder={t("services.cloudfront.originDomainPlaceholder")}
-            className="modal-input"
-          />
-        </label>
-        <label>
-          {t("services.cloudfront.originIdLabel")}
-          <input
-            value={formOriginId}
-            onChange={(e) => setFormOriginId(e.target.value)}
-            placeholder={t("services.cloudfront.originIdPlaceholder")}
-            className="modal-input"
-          />
-        </label>
-        <label>
-          {t("services.cloudfront.commentLabel")}
-          <input
-            value={formComment}
-            onChange={(e) => setFormComment(e.target.value)}
-            placeholder={t("services.cloudfront.commentPlaceholder")}
-            className="modal-input"
-          />
-        </label>
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={formEnabled}
-            onChange={(e) => setFormEnabled(e.target.checked)}
-          />
-          {t("services.cloudfront.enabledLabel")}
-        </label>
+      <ServiceCreateModal open={showCreate} onClose={() => setShowCreate(false)} title={t("services.cloudfront.create")} error={createMutation.error} isPending={createMutation.isPending} onCreate={() => createMutation.mutate()} disabled={!formOriginDomain}>
+        <label>{t("services.cloudfront.originDomainLabel")}<input value={formOriginDomain} onChange={(e) => setFormOriginDomain(e.target.value)} placeholder={t("services.cloudfront.originDomainPlaceholder")} className="modal-input" /></label>
+        <label>{t("services.cloudfront.originIdLabel")}<input value={formOriginId} onChange={(e) => setFormOriginId(e.target.value)} placeholder={t("services.cloudfront.originIdPlaceholder")} className="modal-input" /></label>
+        <label>{t("services.cloudfront.commentLabel")}<input value={formComment} onChange={(e) => setFormComment(e.target.value)} placeholder={t("common.optional")} className="modal-input" /></label>
+        <label className="checkbox-label"><input type="checkbox" checked={formEnabled} onChange={(e) => setFormEnabled(e.target.checked)} />{t("services.cloudfront.enabledLabel")}</label>
       </ServiceCreateModal>
-
-      <ServiceDeleteDialog
-        open={showDelete && !!selectedItem}
-        title={t("services.cloudfront.delete")}
-        name={selectedItem?.id}
-        error={deleteMutation.error}
-        isPending={deleteMutation.isPending}
-        onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem)}
-        onClose={() => setShowDelete(false)}
-      />
+      <ServiceDeleteDialog open={showDelete && !!selectedItem} title={t("services.cloudfront.delete")} name={selectedItem?.id} error={deleteMutation.error} isPending={deleteMutation.isPending} onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem)} onClose={() => setShowDelete(false)} />
+      <ServiceDeleteDialog open={showBatchDelete} title={t("common.deleteSelected")} name={`${selectedIds.size} ${t("services.cloudfront.countLabel")}`} error={batchDeleteMutation.error} isPending={batchDeleteMutation.isPending} onConfirm={() => batchDeleteMutation.mutate(selectedDists)} onClose={() => setShowBatchDelete(false)} />
     </ServicePageLayout>
   );
 }

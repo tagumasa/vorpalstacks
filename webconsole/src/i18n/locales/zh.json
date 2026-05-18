@@ -20,7 +20,13 @@
     "no": "否",
     "optional": "（可选）",
     "invalidJson": "{{field}}的JSON格式无效",
-    "add": "添加"
+    "add": "添加",
+    "selectAll": "全选",
+    "selectedCount": "已选{{count}}项",
+    "deleteSelected": "删除所选",
+    "noItemSelected": "选择项目查看详情",
+    "save": "保存",
+    "saving": "保存中..."
   },
   "header": {
     "online": "在线 :8080",
@@ -147,6 +153,7 @@
       "title": "DynamoDB",
       "countLabel": "表",
       "create": "创建表",
+      "createItem": "创建",
       "delete": "删除表",
       "nameField": "表名称",
       "placeholder": "my-table",
@@ -182,7 +189,43 @@
         "pk": "PK",
         "sk": "SK",
         "value": "值"
-      }
+      },
+      "addAttribute": "添加属性",
+      "addItem": "添加项目",
+      "attributeName": "属性名",
+      "attributeType": "类型",
+      "attributeValue": "值",
+      "batchDelete": "批量删除",
+      "batchDeleteConfirm": "确定删除{count}个项目吗？",
+      "batchDeleteResult": "已删除{count}个项目",
+      "deleteSelected": "删除所选",
+      "failed": "失败",
+      "jsonInput": "JSON",
+      "loadMore": "加载更多",
+      "noItemSelected": "选择项目以查看详情",
+      "scalarTypeB": "二进制 (B)",
+      "scalarTypeN": "数字 (N)",
+      "scalarTypeS": "字符串 (S)",
+      "selectAll": "全选",
+      "selectedCount": "已选{count}项",
+      "structuredForm": "表单",
+      "tabAttributes": "属性",
+      "tabJson": "JSON",
+      "tablesLabel": "表列表",
+      "keyAttribute": "键属性（必填）",
+      "editItem": "编辑项",
+      "saveChanges": "保存",
+      "saving": "保存中...",
+      "typeLabelS": "字符串 (S)",
+      "typeLabelN": "数字 (N)",
+      "typeLabelB": "二进制 (B)",
+      "typeLabelBOOL": "布尔",
+      "typeLabelNULL": "Null",
+      "typeLabelSS": "字符串集",
+      "typeLabelNS": "数字集",
+      "typeLabelL": "列表",
+      "typeLabelM": "映射",
+      "jsonPlaceholderPlain": "{\"pk\": \"值\", \"count\": 42}"
     },
     "lambda": {
       "title": "Lambda",
@@ -227,7 +270,8 @@
       "stateHeader": "状态",
       "lastModifiedHeader": "最后修改",
       "packageTypeHeader": "包类型",
-      "arnHeader": "ARN"
+      "arnHeader": "ARN",
+      "descriptionLabel": "描述"
     },
     "iam": {
       "title": "IAM",
@@ -262,7 +306,10 @@
       "roleLastUsedHeader": "上次使用",
       "policyCreatedHeader": "创建时间",
       "policyUpdatedHeader": "更新时间",
-      "policyDescriptionHeader": "描述"
+      "policyDescriptionHeader": "描述",
+      "userNameLabel": "用户名",
+      "roleNameLabel": "角色名",
+      "assumePolicyLabel": "Assume Role 策略"
     },
     "sns": {
       "title": "SNS",
@@ -387,7 +434,15 @@
       "thresholdHeader": "阈值",
       "periodHeader": "周期",
       "evaluationPeriodsHeader": "评估周期",
-      "statisticHeader": "统计"
+      "statisticHeader": "统计",
+      "alarmNameLabel": "告警名称",
+      "alarmNamePlaceholder": "my-alarm",
+      "comparisonLabel": "比较",
+      "comparisonHeader": "比较",
+      "descriptionLabel": "描述",
+      "descriptionHeader": "描述",
+      "evalPeriodsLabel": "评估周期",
+      "evalPeriodsHeader": "评估周期"
     },
     "eventbridge": {
       "title": "EventBridge",
@@ -431,7 +486,8 @@
       "scheduleExpressionHeader": "计划",
       "ruleDescriptionHeader": "描述",
       "lastModifiedHeader": "最后修改",
-      "targetHeader": "目标"
+      "targetHeader": "目标",
+      "roleArnPlaceholder": "arn:aws:iam::account:role/schedule-role"
     },
     "sfn": {
       "title": "Step Functions",
@@ -564,7 +620,9 @@
       "zoneIdHeader": "区域 ID",
       "recordsHeader": "记录",
       "commentHeader": "备注",
-      "privateHeader": "私有"
+      "privateHeader": "私有",
+      "privateZoneLabel": "私有区域",
+      "recordCountHeader": "记录数"
     },
     "acm": {
       "title": "ACM",
@@ -603,7 +661,15 @@
       },
       "keyAlgorithmHeader": "密钥算法",
       "inUseHeader": "使用中",
-      "certArnHeader": "ARN"
+      "certArnHeader": "ARN",
+      "placeholder": "example.com",
+      "altNamesLabel": "备用名称",
+      "altNamesPlaceholder": "www.example.com, api.example.com",
+      "validationLabel": "验证方式",
+      "keyAlgoLabel": "密钥算法",
+      "keyAlgoHeader": "密钥算法",
+      "notBeforeHeader": "生效日期",
+      "notAfterHeader": "到期日期"
     },
     "wafv2": {
       "title": "WAF",
@@ -698,7 +764,15 @@
       "poolNameHeader": "用户池名称",
       "poolIdHeader": "用户池 ID",
       "statusHeader": "状态",
-      "creationDateHeader": "创建时间"
+      "creationDateHeader": "创建时间",
+      "idHeader": "用户池 ID",
+      "nameHeader": "用户池名称",
+      "createdHeader": "创建时间",
+      "pwMinLengthLabel": "密码最小长度",
+      "pwRequireUpperLabel": "需要大写字母",
+      "pwRequireLowerLabel": "需要小写字母",
+      "pwRequireNumbersLabel": "需要数字",
+      "pwRequireSymbolsLabel": "需要符号"
     },
     "cognitoidentity": {
       "title": "Cognito Identity",
@@ -750,7 +824,9 @@
       "descriptionHeader": "描述",
       "createdHeader": "创建时间",
       "endpointHeader": "端点",
-      "apiStatusHeader": "状态"
+      "apiStatusHeader": "状态",
+      "idHeader": "API ID",
+      "nameHeader": "API 名称"
     },
     "timestream": {
       "title": "Timestream",
@@ -819,13 +895,40 @@
       "encryptedHeader": "加密",
       "endpointHeader": "端点",
       "readerEndpointHeader": "读取端点",
-      "arnHeader": "ARN"
+      "arnHeader": "ARN",
+      "instanceClassHeader": "实例类型"
+    },
+    "rds": {
+      "title": "RDS",
+      "instanceIdHeader": "实例 ID",
+      "statusHeader": "状态",
+      "engineHeader": "引擎",
+      "instanceClassHeader": "实例类型",
+      "clusterIdHeader": "集群 ID",
+      "tabs": {
+        "instances": "实例",
+        "clusters": "集群"
+      },
+      "engineVersionHeader": "引擎版本",
+      "encryptedHeader": "加密",
+      "createdHeader": "创建时间"
     },
     "sts": {
       "title": "STS — 调用方身份",
       "accountLabel": "账户",
       "userIdLabel": "用户 ID",
       "arnLabel": "ARN"
+    },
+    "cognitoIdentity": {
+      "title": "Cognito Identity",
+      "countLabel": "身份池",
+      "create": "创建身份池",
+      "delete": "删除身份池",
+      "nameField": "池名称",
+      "placeholder": "my-identity-pool",
+      "poolIdHeader": "池 ID",
+      "poolNameHeader": "池名称",
+      "tagsLabel": "标签"
     }
   },
   "export": {
@@ -840,6 +943,8 @@
     "tabMappings": "端口映射",
     "tabServices": "服务",
     "save": "保存更改",
+    "saved": "✓ 已保存",
+    "saveFailed": "✗ 保存失败",
     "reset": "恢复默认",
     "immediateNote": "✓ 更改立即生效",
     "saveNote": "按下Save按钮后统一保存。部分更改可能需要重启服务器。",

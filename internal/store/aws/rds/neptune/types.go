@@ -4,16 +4,7 @@ import (
 	rds "vorpalstacks/internal/store/aws/rds"
 )
 
-type DBClusterEndpoint struct {
-	DBClusterEndpointIdentifier string   `json:"DBClusterEndpointIdentifier"`
-	DBClusterIdentifier         string   `json:"DBClusterIdentifier"`
-	Endpoint                    string   `json:"Endpoint"`
-	Status                      string   `json:"Status"`
-	EndpointType                string   `json:"EndpointType"`
-	ExcludedMembers             []string `json:"ExcludedMembers,omitempty"`
-	StaticMembers               []string `json:"StaticMembers,omitempty"`
-	DBClusterEndpointArn        string   `json:"DBClusterEndpointArn,omitempty"`
-}
+type DBClusterEndpoint = rds.DBClusterEndpoint
 
 type Endpoint = rds.Endpoint
 type DBCluster = rds.DBCluster

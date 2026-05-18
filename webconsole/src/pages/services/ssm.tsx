@@ -1,11 +1,15 @@
 /**
- * SSM Parameter Store service page. Lists parameters with create/delete CRUD.
+ * SSM Parameter Store service page — 3-panel inspector layout.
+ *
+ * Panel 1 (toolbar): Breadcrumb navigation
+ * Panel 2 (table):   Parameter list with checkbox multi-select
+ * Panel 3 (detail):  Inline parameter detail with View=Edit (Structured + JSON tabs)
  */
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { TFunction } from "i18next";
 import { create } from "@bufbuild/protobuf";
 import {
   SSMService,
@@ -18,15 +22,32 @@ import {
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
 import {
   ServicePageLayout,
-  SplitPane,
   ServiceCreateModal,
   ServiceDeleteDialog,
   MonoCell,
   DateCell,
   useServiceClient,
 } from "@/components/shared/service-page";
+import {
+  checkboxColumn,
+  Breadcrumb,
+  SelectionBadge,
+  DetailPanel,
+  DetailEmpty,
+  useSelection,
+} from "@/components/shared/inspector";
+import { DataTable } from "@/components/shared/data-table";
+import { Splitter } from "@/components/shared/splitter";
+import { JsonViewer } from "@/components/shared/json-viewer";
 
-/** Column definitions for the SSM parameter table. */
+// ─── Column Definitions ─────────────────────────────────────────
+
+const PARAM_TYPES = [
+  { value: ParameterType.STRING, i18nKey: "services.ssm.paramTypeString" },
+  { value: ParameterType.SECURE_STRING, i18nKey: "services.ssm.paramTypeSecureString" },
+  { value: ParameterType.STRING_LIST, i18nKey: "services.ssm.paramTypeStringList" },
+];
+
 const getColumns = (t: TFunction): ColumnDef<ParameterMetadata, any>[] => [
   { accessorKey: "name", header: t("services.ssm.nameHeader"), cell: MonoCell },
   {
@@ -57,33 +78,43 @@ const getColumns = (t: TFunction): ColumnDef<ParameterMetadata, any>[] => [
     },
     size: 90,
   },
-  { accessorKey: "description", header: t("services.ssm.descriptionHeader"), cell: ({ getValue }) => (getValue() as string) || "\u2014" },
-  { accessorKey: "datatype", header: t("services.ssm.dataTypeHeader"), cell: ({ getValue }) => (getValue() as string) || "text" },
+  {
+    accessorKey: "description",
+    header: t("services.ssm.descriptionHeader"),
+    cell: ({ getValue }) => (getValue() as string) || "\u2014",
+  },
   { accessorKey: "lastmodifieddate", header: t("services.ssm.lastModifiedHeader"), cell: DateCell },
 ];
 
-/** Available parameter types for the create form. */
-const PARAM_TYPES = [
-  { value: ParameterType.STRING, i18nKey: "services.ssm.paramTypeString" },
-  { value: ParameterType.SECURE_STRING, i18nKey: "services.ssm.paramTypeSecureString" },
-  { value: ParameterType.STRING_LIST, i18nKey: "services.ssm.paramTypeStringList" },
-];
+// ─── Detail panel tab ───────────────────────────────────────────
 
-/** SSM Parameter Store page with list, create, and delete operations. */
+type DetailTab = "detail" | "json";
+
+// ─── SSM Page ───────────────────────────────────────────────────
+
 export function SSMPage() {
   const { t } = useTranslation();
+  const { client, invalidate } = useServiceClient(SSMService);
+  const { queryKey } = useListKey("ssm");
   const columns = getColumns(t);
+
+  // ── Selection state ──────────────────────────────────────────
+  const { selected: selectedNames, toggle: toggleName, toggleAll: toggleAllNames, clear: clearSelection } = useSelection<string>();
   const [selectedItem, setSelectedItem] = useState<ParameterMetadata | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>("detail");
+
+  // ── Modals ───────────────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showBatchDelete, setShowBatchDelete] = useState(false);
+
+  // ── Create form state ────────────────────────────────────────
   const [formName, setFormName] = useState("");
   const [formValue, setFormValue] = useState("");
   const [formType, setFormType] = useState(ParameterType.STRING);
   const [formDesc, setFormDesc] = useState("");
 
-  const { client, invalidate } = useServiceClient(SSMService);
-  const { queryKey } = useListKey("ssm");
-
+  // ── Data ─────────────────────────────────────────────────────
   const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: () => client.describeParameters({}),
@@ -92,6 +123,7 @@ export function SSMPage() {
 
   const items: ParameterMetadata[] = dropEmpty(data?.parameters ?? [], "name");
 
+  // ── Mutations ────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: () =>
       client.putParameter(
@@ -121,8 +153,115 @@ export function SSMPage() {
       invalidate(queryKey);
       setShowDelete(false);
       setSelectedItem(null);
+      clearSelection();
     },
   });
+
+  const batchDeleteMutation = useMutation({
+    mutationFn: async (names: string[]) => {
+      const results = await Promise.allSettled(
+        names.map((name) =>
+          client.deleteParameter(create(DeleteParameterRequestSchema, { name }))
+        ),
+      );
+      return results;
+    },
+    onSuccess: (_data, names) => {
+      invalidate(queryKey);
+      setShowBatchDelete(false);
+      clearSelection();
+      setSelectedItem((prev) => (prev && names.includes(prev.name) ? null : prev));
+    },
+  });
+
+  // ── Handlers ─────────────────────────────────────────────────
+
+  const handleRowClick = useCallback((row: ParameterMetadata) => {
+    setSelectedItem(row);
+    setDetailTab("detail");
+  }, []);
+
+  const allIds = items.map((i) => i.name);
+
+  // ── Breadcrumb ───────────────────────────────────────────────
+
+  const breadcrumb = (
+    <Breadcrumb parts={[
+      { label: t("services.ssm.title") },
+      { label: t("services.ssm.countLabel") },
+    ]} />
+  );
+
+  const selectionInfo = (
+    <SelectionBadge count={selectedNames.size} label={t("common.selectedCount", { count: selectedNames.size })} />
+  );
+
+  // ── Detail Panel ─────────────────────────────────────────────
+
+  const renderDetailPanel = () => {
+    if (!selectedItem) {
+      return <DetailEmpty message={t("common.noItemSelected")} />;
+    }
+
+    const detailTabs = [
+      { key: "detail", label: t("services.ssm.title").split(" ")[0] ?? "Detail" },
+      { key: "json", label: t("common.rawJson") ?? "JSON" },
+    ];
+
+    return (
+      <DetailPanel
+        title={selectedItem.name}
+        titleIcon="📋"
+        tabs={detailTabs}
+        activeTab={detailTab}
+        onTabChange={(k) => setDetailTab(k as DetailTab)}
+        actions={
+          <button
+            className="btn btn-danger btn-sm"
+            onClick={() => setShowDelete(true)}
+          >
+            {t("common.delete")}
+          </button>
+        }
+      >
+        {detailTab === "detail" ? (
+          <table className="settings-table" style={{ width: "100%" }}>
+            <tbody>
+              <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
+              <tr><td style={{ fontWeight: 600 }}>Type</td><td>{(() => {
+                const labels: Record<number, string> = {
+                  [ParameterType.SECURE_STRING]: t("services.ssm.paramTypeSecureString"),
+                  [ParameterType.STRING_LIST]: t("services.ssm.paramTypeStringList"),
+                  [ParameterType.STRING]: t("services.ssm.paramTypeString"),
+                };
+                return labels[selectedItem.type] ?? String(selectedItem.type);
+              })()}</td></tr>
+              <tr><td style={{ fontWeight: 600 }}>Version</td><td>{selectedItem.version}</td></tr>
+              <tr><td style={{ fontWeight: 600 }}>Tier</td><td>{(() => {
+                const labels: Record<number, string> = {
+                  [ParameterTier.STANDARD]: t("services.ssm.tierStandard"),
+                  [ParameterTier.ADVANCED]: t("services.ssm.tierAdvanced"),
+                  [ParameterTier.INTELLIGENT_TIERING]: t("services.ssm.tierIntelligent"),
+                };
+                return labels[selectedItem.tier] ?? String(selectedItem.tier);
+              })()}</td></tr>
+              {selectedItem.description && (
+                <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedItem.description}</td></tr>
+              )}
+              <tr><td style={{ fontWeight: 600 }}>Data Type</td><td>{selectedItem.datatype || "text"}</td></tr>
+              {selectedItem.lastmodifieddate && (
+                <tr><td style={{ fontWeight: 600 }}>Last Modified</td><td>{new Date(selectedItem.lastmodifieddate).toLocaleString()}</td></tr>
+              )}
+            </tbody>
+          </table>
+        ) : (
+          <JsonViewer data={selectedItem} />
+        )}
+      </DetailPanel>
+    );
+  };
+
+  // ── Render ───────────────────────────────────────────────────
 
   return (
     <ServicePageLayout
@@ -137,24 +276,53 @@ export function SSMPage() {
           <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
             {t("services.ssm.create")}
           </button>
-          {selectedItem && (
-            <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
-              {t("common.delete")}
-            </button>
-          )}
+          <button
+            className="btn btn-danger"
+            disabled={selectedNames.size === 0}
+            onClick={() => setShowBatchDelete(true)}
+          >
+            {t("common.deleteSelected")}
+            {selectedNames.size > 0 && (
+              <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedNames.size})</span>
+            )}
+          </button>
         </>
       }
     >
-      <SplitPane
-        columns={columns}
-        data={items}
-        getRowId={(row) => row.name}
-        onRowClick={setSelectedItem}
-        selectedId={selectedItem?.name}
-        selected={selectedItem}
-        detailTitle={selectedItem?.name}
-        onDetailClose={() => setSelectedItem(null)}
-      />
+      {/* Inspector toolbar */}
+      <div className="inspector-toolbar">
+        {breadcrumb}
+        <div className="toolbar-selection-info">{selectionInfo}</div>
+      </div>
+
+      {/* Table + detail split */}
+      {items.length > 0 ? (
+        <Splitter
+          direction="horizontal"
+          initialSize={240}
+          minSize={80}
+          maxSize={600}
+          storageKey="vs-split-ssm"
+        >
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+            <DataTable
+              columns={[
+                checkboxColumn<ParameterMetadata>(selectedNames, toggleName, () => toggleAllNames(allIds), allIds, t, (row) => row.name),
+                ...columns,
+              ]}
+              data={items}
+              getRowId={(row) => row.name}
+              onRowClick={handleRowClick}
+              selectedId={selectedItem?.name}
+            />
+          </div>
+          {renderDetailPanel()}
+        </Splitter>
+      ) : (
+        <div className="empty-state">{t("common.noData")}</div>
+      )}
+
+      {/* ── Modals ──────────────────────────────────────────── */}
 
       <ServiceCreateModal
         open={showCreate}
@@ -167,45 +335,23 @@ export function SSMPage() {
       >
         <label>
           {t("services.ssm.nameField")}
-          <input
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-            placeholder={t("services.ssm.placeholder")}
-            className="modal-input"
-          />
+          <input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t("services.ssm.placeholder")} className="modal-input" />
         </label>
         <label>
           {t("services.ssm.valueLabel")}
-          <textarea
-            value={formValue}
-            onChange={(e) => setFormValue(e.target.value)}
-            placeholder={t("services.ssm.valuePlaceholder")}
-            className="modal-textarea"
-            rows={3}
-          />
+          <textarea value={formValue} onChange={(e) => setFormValue(e.target.value)} placeholder={t("services.ssm.valuePlaceholder")} className="modal-textarea" rows={3} />
         </label>
         <label>
           {t("services.ssm.typeLabel")}
-          <select
-            value={formType}
-            onChange={(e) => setFormType(Number(e.target.value))}
-            className="modal-select"
-          >
+          <select value={formType} onChange={(e) => setFormType(Number(e.target.value))} className="modal-select">
             {PARAM_TYPES.map((pt) => (
-              <option key={pt.value} value={pt.value}>
-                {t(pt.i18nKey)}
-              </option>
+              <option key={pt.value} value={pt.value}>{t(pt.i18nKey)}</option>
             ))}
           </select>
         </label>
         <label>
           {t("services.ssm.descLabel")}
-          <input
-            value={formDesc}
-            onChange={(e) => setFormDesc(e.target.value)}
-            placeholder={t("services.ssm.descPlaceholder")}
-            className="modal-input"
-          />
+          <input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder={t("services.ssm.descPlaceholder")} className="modal-input" />
         </label>
       </ServiceCreateModal>
 
@@ -217,6 +363,17 @@ export function SSMPage() {
         isPending={deleteMutation.isPending}
         onConfirm={() => selectedItem && deleteMutation.mutate(selectedItem.name)}
         onClose={() => setShowDelete(false)}
+      />
+
+      {/* Batch Delete */}
+      <ServiceDeleteDialog
+        open={showBatchDelete}
+        title={t("common.deleteSelected")}
+        name={`${selectedNames.size} ${t("services.ssm.countLabel")}`}
+        error={batchDeleteMutation.error}
+        isPending={batchDeleteMutation.isPending}
+        onConfirm={() => batchDeleteMutation.mutate(Array.from(selectedNames))}
+        onClose={() => setShowBatchDelete(false)}
       />
     </ServicePageLayout>
   );

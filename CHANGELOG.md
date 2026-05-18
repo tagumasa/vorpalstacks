@@ -16,6 +16,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **S3 web console: 3-panel object browser** — Bucket list now navigates into a prefix-aware object browser with breadcrumb navigation, folder traversal, file upload/download, copy, single and batch delete, and a detail panel with JSON/RAW/HEADERS tabs. Text and image file preview supported. `DeleteBucket` guarded against non-empty buckets.
 
+- **RDS web console: instance management with engine lifecycle** — New RDS service page provides instance CRUD with Create (starts MySQL engine), Delete (stops engine), and full inspector layout. Admin RPCs refactored from Neptune-specific handler into a shared `rds/admin_handler.go` using `StoreProvider`/`EngineProvider` function types, serving both Neptune and MySQL engines. Neptune's `admin_handler.go` deleted; registration updated in `optional.go`.
+
 ### Changed
 
 - **Neptune service packages relocated under `rds/`** — Neptune, NeptuneData, NeptuneGraph implementations moved from `internal/services/aws/{neptune,neptunedata,neptunegraph}/` to `internal/services/aws/rds/{neptune,neptunedata,neptunegraph}/`. Stores moved to `internal/store/aws/rds/`. All import paths updated.
@@ -27,6 +29,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 - **AppSync: RELATIONAL_DATABASE data source dispatch** — `dispatchRDS` now executes SQL through the EventBus `RDSDataInvoker` instead of returning stub responses. VTL (`statements` array) and JS resolver (`sql` field) payload formats both supported.
 
 - **SDK tests: binary name and env vars** — Test binary renamed to `sdk-tests-all`. `ALL_SERVICES_ENABLED=true` replaces per-service flags in README instructions. `isAuditEnabled` now recognizes `ALL_SERVICES_ENABLED`.
+
+- **Web console: all 18 service pages migrated to 3-panel inspector layout** — ACM, API Gateway, AppSync, Athena, CloudFront, CloudTrail, CloudWatch, CloudWatch Logs, Cognito, Cognito Identity, DynamoDB, EventBridge, IAM, Kinesis, KMS, Lambda, Neptune, Route 53, Secrets Manager, SES, Step Functions, SNS, SQS, SSM, Timestream, WAFv2 — all pages replaced `SplitPane` with `DataTable` + `Splitter` + `inspector` components (`Breadcrumb`, `SelectionBadge`, `DetailPanel`, `DetailEmpty`, `useSelection`, `checkboxColumn`). DynamoDB adds nested table→items navigation with structured attribute editor. CloudWatch adds alarm create dialog.
 
 ### Fixed
 
@@ -55,6 +59,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 - **S3: unified non-versioned storage keys** — Non-versioned objects now use `bucket#key#null` consistently instead of `bucket#key`, eliminating dual-key fallback paths throughout `ObjectStore`. `ListParts` replaced redundant `countSkipped` with inline counter.
 
 - **Web console: Splitter horizontal drag direction inverted** — Dragging a horizontal splitter downward now correctly expands the panel instead of shrinking it. Login and setup pages add `useEffect` cleanup flags to prevent state updates after unmount.
+
+- **i18n: missing `saved`/`saveFailed` keys in Japanese and Chinese locales** — Settings page save feedback messages were falling back to key names in `ja` and `zh` locales. Keys added.
 
 ## [0.0.11]
 

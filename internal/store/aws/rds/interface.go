@@ -15,6 +15,7 @@ type StoreInterface interface {
 	SubnetGroupOps
 	GlobalClusterOps
 	EventSubscriptionOps
+	ClusterEndpointOps
 	EventOps
 	TagOps
 }
@@ -81,6 +82,10 @@ type EventSubscriptionOps interface {
 	UpdateEventSubscription(sub *EventSubscription) error
 	DeleteEventSubscription(name string) error
 	ListEventSubscriptions() ([]*EventSubscription, error)
+}
+
+type ClusterEndpointOps interface {
+	ListClusterEndpoints(clusterID string) ([]*DBClusterEndpoint, error)
 }
 
 type TagOps interface {
