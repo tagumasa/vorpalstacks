@@ -11,10 +11,15 @@ export function setTransportRegion(r: string) {
   currentRegion = r;
 }
 
+/** Returns the application base path by reading the <base> tag or falling back to /webconsole/. */
+function getBasePath(): string {
+  return document.querySelector("base")?.getAttribute("href") ?? "/webconsole/";
+}
+
 /**
  * Auth interceptor: attaches Authorization header with JWT bearer token
  * to every outgoing request. On 401 response, clears stored tokens
- * and redirects to the login page.
+ * and redirects to the login page using the SPA basename.
  */
 const authInterceptor: Interceptor = (next) => async (req) => {
   const token = getToken();
@@ -23,10 +28,10 @@ const authInterceptor: Interceptor = (next) => async (req) => {
   }
   try {
     return await next(req);
-  } catch (err: any) {
-    if (err?.code === "unauthenticated") {
+  } catch (err: unknown) {
+    if (err instanceof Error && "code" in err && (err as { code: string }).code === "unauthenticated") {
       clearTokens();
-      window.location.href = "/login";
+      window.location.href = getBasePath() + "login";
     }
     throw err;
   }
@@ -50,7 +55,7 @@ const telemetryInterceptor: Interceptor = (next) => async (req) => {
   const start = performance.now();
   try {
     return await next(req);
-  } catch (err: any) {
+  } catch (err: unknown) {
     recordError();
     throw err;
   } finally {

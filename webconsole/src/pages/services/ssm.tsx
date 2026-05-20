@@ -26,6 +26,7 @@ import {
   ServiceDeleteDialog,
   MonoCell,
   DateCell,
+  fmtDate,
   useServiceClient,
 } from "@/components/shared/service-page";
 import {
@@ -93,7 +94,7 @@ type DetailTab = "detail" | "json";
 // ─── SSM Page ───────────────────────────────────────────────────
 
 export function SSMPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { client, invalidate } = useServiceClient(SSMService);
   const { queryKey } = useListKey("ssm");
   const columns = getColumns(t);
@@ -250,7 +251,7 @@ export function SSMPage() {
               )}
               <tr><td style={{ fontWeight: 600 }}>Data Type</td><td>{selectedItem.datatype || "text"}</td></tr>
               {selectedItem.lastmodifieddate && (
-                <tr><td style={{ fontWeight: 600 }}>Last Modified</td><td>{new Date(selectedItem.lastmodifieddate).toLocaleString()}</td></tr>
+                <tr><td style={{ fontWeight: 600 }}>Last Modified</td><td>{fmtDate(selectedItem.lastmodifieddate, i18n.language)}</td></tr>
               )}
             </tbody>
           </table>

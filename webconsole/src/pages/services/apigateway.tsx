@@ -10,7 +10,7 @@ import { create } from "@bufbuild/protobuf";
 import { APIGatewayService, type RestApi, EndpointType } from "@/gen/apigateway_pb";
 import { CreateRestApiRequestSchema, EndpointConfigurationSchema } from "@/gen/apigateway_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, DateCell, FallbackCell, useServiceClient } from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, DateCell, FallbackCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Splitter } from "@/components/shared/splitter";
@@ -26,7 +26,7 @@ const getColumns = (t: TFunction): ColumnDef<RestApi, any>[] => [
 type DetailTab = "detail" | "json";
 
 export function APIGatewayPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { client, invalidate } = useServiceClient(APIGatewayService);
   const { queryKey } = useListKey("apigateway");
   const columns = getColumns(t);
@@ -71,7 +71,7 @@ export function APIGatewayPage() {
             <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>ID</td><td className="cell-mono">{selectedItem.id}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedItem.description || "\u2014"}</td></tr>
-            {selectedItem.createddate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedItem.createddate).toLocaleString()}</td></tr>}
+            {selectedItem.createddate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.createddate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>

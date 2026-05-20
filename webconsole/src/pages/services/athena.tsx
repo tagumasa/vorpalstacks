@@ -21,6 +21,7 @@ import {
   MonoCell,
   DateCell,
   FallbackCell,
+  fmtDate,
   useServiceClient,
 } from "@/components/shared/service-page";
 import {
@@ -59,7 +60,7 @@ type DetailTab = "detail" | "json";
 // ─── Athena Page ────────────────────────────────────────────────
 
 export function AthenaPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { client, invalidate } = useServiceClient(AthenaService);
   const { queryKey } = useListKey("athena");
   const columns = getColumns(t);
@@ -170,7 +171,7 @@ export function AthenaPage() {
               <tr><td style={{ fontWeight: 600 }}>Engine Version</td><td>{selectedItem.engineversion ? String(selectedItem.engineversion) : "\u2014"}</td></tr>
               <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedItem.description || "\u2014"}</td></tr>
               {selectedItem.creationtime && (
-                <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedItem.creationtime).toLocaleString()}</td></tr>
+                <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.creationtime, i18n.language)}</td></tr>
               )}
             </tbody>
           </table>

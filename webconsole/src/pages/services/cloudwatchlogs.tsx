@@ -45,9 +45,10 @@ export function CloudWatchLogsPage() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const req: Record<string, any> = { loggroupname: formName };
-      if (formKmsKeyId) req.kmskeyid = formKmsKeyId;
-      await client.createLogGroup(create(CreateLogGroupRequestSchema, req));
+      await client.createLogGroup(create(CreateLogGroupRequestSchema, {
+        loggroupname: formName,
+        kmskeyid: formKmsKeyId || undefined,
+      }));
       if (formRetentionDays) {
         await client.putRetentionPolicy(create(PutRetentionPolicyRequestSchema, { loggroupname: formName, retentionindays: Number(formRetentionDays) }));
       }

@@ -10,7 +10,7 @@ import { create } from "@bufbuild/protobuf";
 import { TimestreamWriteService } from "@/gen/timestreamwrite_pb";
 import { CreateDatabaseRequestSchema } from "@/gen/timestreamwrite_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, useServiceClient } from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Splitter } from "@/components/shared/splitter";
@@ -34,7 +34,7 @@ const getColumns = (t: TFunction): ColumnDef<TableRow, any>[] => [
 type DetailTab = "detail" | "json";
 
 export function TimestreamPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { client, invalidate } = useServiceClient(TimestreamWriteService);
   const { queryKey } = useListKey("timestream");
   const columns = getColumns(t);
@@ -54,7 +54,11 @@ export function TimestreamPage() {
   const items: TableRow[] = dropEmpty((data?.databases ?? []).map((db) => ({ databasename: db.databasename, arn: db.arn, tablecount: Number(db.tablecount ?? 0), creationtime: db.creationtime ?? "", lastupdatedtime: db.lastupdatedtime ?? "" })), "databasename");
 
   const createMutation = useMutation({
-    mutationFn: () => { const req: Record<string, any> = { databasename: formName, magneticretentiondays: formMagneticRetentionDays, memoryretentionhours: formMemoryRetentionHours }; if (formKmsKeyId) req.kmskeyid = formKmsKeyId; return client.createDatabase(create(CreateDatabaseRequestSchema, req)); },
+    mutationFn: () =>
+      client.createDatabase(create(CreateDatabaseRequestSchema, {
+        databasename: formName,
+        kmskeyid: formKmsKeyId || undefined,
+      })),
     onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormKmsKeyId(""); setFormMagneticRetentionDays(365); setFormMemoryRetentionHours(24); },
   });
 
@@ -79,8 +83,8 @@ export function TimestreamPage() {
           <table className="settings-table" style={{ width: "100%" }}><tbody>
             <tr><td style={{ width: 140, fontWeight: 600 }}>Database</td><td className="cell-mono">{selectedItem.databasename}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Tables</td><td>{selectedItem.tablecount}</td></tr>
-            {selectedItem.creationtime && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedItem.creationtime).toLocaleString()}</td></tr>}
-            {selectedItem.lastupdatedtime && <tr><td style={{ fontWeight: 600 }}>Updated</td><td>{new Date(selectedItem.lastupdatedtime).toLocaleString()}</td></tr>}
+            {selectedItem.creationtime && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.creationtime, i18n.language)}</td></tr>}
+            {selectedItem.lastupdatedtime && <tr><td style={{ fontWeight: 600 }}>Updated</td><td>{fmtDate(selectedItem.lastupdatedtime, i18n.language)}</td></tr>}
             <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.arn}</td></tr>
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}

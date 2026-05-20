@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { NeptuneService, type DBInstance, type DBCluster } from "@/gen/neptune_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import { ServicePageLayout, MonoCell, BooleanBadge, DateCell, useServiceClient } from "@/components/shared/service-page";
+import { ServicePageLayout, MonoCell, BooleanBadge, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { DetailPanel, DetailEmpty } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Splitter } from "@/components/shared/splitter";
@@ -37,7 +37,7 @@ const getClusterColumns = (t: TFunction): ColumnDef<DBCluster, any>[] => [
 ];
 
 export function NeptunePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const instanceColumns = getInstanceColumns(t);
   const clusterColumns = getClusterColumns(t);
 
@@ -97,7 +97,7 @@ export function NeptunePage() {
             <tr><td style={{ fontWeight: 600 }}>Encrypted</td><td><BooleanBadge value={selectedCluster.storageencrypted} /></td></tr>
             {selectedCluster.endpoint && <tr><td style={{ fontWeight: 600 }}>Endpoint</td><td className="cell-mono">{selectedCluster.endpoint}</td></tr>}
             {selectedCluster.readerendpoint && <tr><td style={{ fontWeight: 600 }}>Reader</td><td className="cell-mono">{selectedCluster.readerendpoint}</td></tr>}
-            {selectedCluster.clustercreatetime && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedCluster.clustercreatetime).toLocaleString()}</td></tr>}
+            {selectedCluster.clustercreatetime && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedCluster.clustercreatetime, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedCluster} />}
       </DetailPanel>

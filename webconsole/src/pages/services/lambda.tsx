@@ -9,7 +9,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { LambdaService, Runtime, CreateFunctionRequestSchema, FunctionCodeSchema, type FunctionConfiguration } from "@/gen/lambda_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, BadgeCell, useServiceClient } from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, BadgeCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Splitter } from "@/components/shared/splitter";
@@ -58,7 +58,7 @@ const getColumns = (t: TFunction): ColumnDef<FunctionConfiguration, any>[] => [
 type DetailTab = "detail" | "json";
 
 export function LambdaPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { client, invalidate } = useServiceClient(LambdaService);
   const { queryKey } = useListKey("lambda");
   const columns = getColumns(t);
@@ -126,7 +126,7 @@ export function LambdaPage() {
             <tr><td style={{ fontWeight: 600 }}>Code Size</td><td>{selectedItem.codesize ? `${selectedItem.codesize} bytes` : "\u2014"}</td></tr>
             {selectedItem.description && <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedItem.description}</td></tr>}
             {selectedItem.functionarn && <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.functionarn}</td></tr>}
-            {selectedItem.lastmodified && <tr><td style={{ fontWeight: 600 }}>Modified</td><td>{new Date(selectedItem.lastmodified).toLocaleString()}</td></tr>}
+            {selectedItem.lastmodified && <tr><td style={{ fontWeight: 600 }}>Modified</td><td>{fmtDate(selectedItem.lastmodified, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>

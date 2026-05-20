@@ -10,7 +10,7 @@ import { create } from "@bufbuild/protobuf";
 import { SFNService, type StateMachineListItem, StateMachineType } from "@/gen/sfn_pb";
 import { CreateStateMachineInputSchema } from "@/gen/sfn_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, useServiceClient } from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Splitter } from "@/components/shared/splitter";
@@ -33,7 +33,7 @@ const getColumns = (t: TFunction): ColumnDef<StateMachineListItem, any>[] => [
 type DetailTab = "detail" | "json";
 
 export function SFNPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { client, invalidate } = useServiceClient(SFNService);
   const { queryKey } = useListKey("sfn");
   const columns = getColumns(t);
@@ -80,7 +80,7 @@ export function SFNPage() {
             <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Type</td><td><span className="badge">{typeLabel}</span></td></tr>
             <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.statemachinearn}</td></tr>
-            {selectedItem.creationdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedItem.creationdate).toLocaleString()}</td></tr>}
+            {selectedItem.creationdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.creationdate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>

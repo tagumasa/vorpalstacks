@@ -7,6 +7,7 @@ import { SetupPage } from "@/pages/setup";
 import { AppShell } from "@/components/layout/app-shell";
 import { ServiceRoute } from "@/pages/services/_router";
 import { SettingsPage } from "@/pages/settings";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) {
@@ -56,7 +57,7 @@ export const router = createBrowserRouter(
       children: [
         { index: true, element: <DashboardPage /> },
         { path: "settings", element: <SettingsPage /> },
-        { path: "services/:serviceId", element: <ServiceRoute /> },
+        { path: "services/:serviceId", element: <ErrorBoundary><ServiceRoute /></ErrorBoundary> },
       ],
     },
   ],

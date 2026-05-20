@@ -13,7 +13,7 @@ import { CreateEventBusRequestSchema } from "@/gen/cloudwatchevents_pb";
 import { SchedulerService, type ScheduleSummary } from "@/gen/scheduler_pb";
 import { CreateScheduleInputSchema, FlexibleTimeWindowSchema, TargetSchema } from "@/gen/scheduler_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, useServiceClient } from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Splitter } from "@/components/shared/splitter";
@@ -45,7 +45,7 @@ type TabKey = "buses" | "rules" | "schedules";
 type DetailTab = "detail" | "json";
 
 export function EventBridgePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const busColumns = getBusColumns(t);
   const ruleColumns = getRuleColumns(t);
   const scheduleColumns = getScheduleColumns(t);
@@ -176,8 +176,8 @@ export function EventBridgePage() {
             <tr><td style={{ fontWeight: 600 }}>Group</td><td>{selectedSchedule.groupname || t("services.eventbridge.defaultGroup")}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>State</td><td><span className="badge">{String(selectedSchedule.state || "\u2014")}</span></td></tr>
             <tr><td style={{ fontWeight: 600 }}>Target</td><td>{selectedSchedule.target ? String(selectedSchedule.target) : "\u2014"}</td></tr>
-            {selectedSchedule.creationdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedSchedule.creationdate).toLocaleString()}</td></tr>}
-            {selectedSchedule.lastmodificationdate && <tr><td style={{ fontWeight: 600 }}>Modified</td><td>{new Date(selectedSchedule.lastmodificationdate).toLocaleString()}</td></tr>}
+            {selectedSchedule.creationdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedSchedule.creationdate, i18n.language)}</td></tr>}
+            {selectedSchedule.lastmodificationdate && <tr><td style={{ fontWeight: 600 }}>Modified</td><td>{fmtDate(selectedSchedule.lastmodificationdate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedSchedule} />}
       </DetailPanel>

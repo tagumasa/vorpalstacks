@@ -9,7 +9,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { IAMService, type User, type Role, type Policy, CreateUserRequestSchema, CreateRoleRequestSchema } from "@/gen/iam_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, FallbackCell, useServiceClient } from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, FallbackCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Splitter } from "@/components/shared/splitter";
@@ -40,7 +40,7 @@ const getPolicyColumns = (t: TFunction): ColumnDef<Policy, any>[] => [
 ];
 
 export function IAMPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const userColumns = getUserColumns(t);
   const roleColumns = getRoleColumns(t);
   const policyColumns = getPolicyColumns(t);
@@ -124,8 +124,8 @@ export function IAMPage() {
             <tr><td style={{ width: 140, fontWeight: 600 }}>Username</td><td className="cell-mono">{selectedUser.username}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedUser.arn}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Path</td><td>{selectedUser.path || "/"}</td></tr>
-            {selectedUser.createdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedUser.createdate).toLocaleString()}</td></tr>}
-            {selectedUser.passwordlastused && <tr><td style={{ fontWeight: 600 }}>Last Login</td><td>{new Date(selectedUser.passwordlastused).toLocaleString()}</td></tr>}
+            {selectedUser.createdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedUser.createdate, i18n.language)}</td></tr>}
+            {selectedUser.passwordlastused && <tr><td style={{ fontWeight: 600 }}>Last Login</td><td>{fmtDate(selectedUser.passwordlastused, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedUser} />}
       </DetailPanel>
@@ -142,7 +142,7 @@ export function IAMPage() {
             <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedRole.arn}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedRole.description || "\u2014"}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Path</td><td>{selectedRole.path || "/"}</td></tr>
-            {selectedRole.createdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedRole.createdate).toLocaleString()}</td></tr>}
+            {selectedRole.createdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedRole.createdate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedRole} />}
       </DetailPanel>
@@ -158,8 +158,8 @@ export function IAMPage() {
             <tr><td style={{ width: 140, fontWeight: 600 }}>Policy</td><td className="cell-mono">{selectedPolicy.policyname}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedPolicy.arn}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Attachments</td><td>{selectedPolicy.attachmentcount ?? 0}</td></tr>
-            {selectedPolicy.createdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedPolicy.createdate).toLocaleString()}</td></tr>}
-            {selectedPolicy.updatedate && <tr><td style={{ fontWeight: 600 }}>Updated</td><td>{new Date(selectedPolicy.updatedate).toLocaleString()}</td></tr>}
+            {selectedPolicy.createdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedPolicy.createdate, i18n.language)}</td></tr>}
+            {selectedPolicy.updatedate && <tr><td style={{ fontWeight: 600 }}>Updated</td><td>{fmtDate(selectedPolicy.updatedate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedPolicy} />}
       </DetailPanel>

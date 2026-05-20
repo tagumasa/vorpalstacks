@@ -36,6 +36,10 @@ import {
   MonoCell,
   useServiceClient,
 } from "@/components/shared/service-page";
+import {
+  checkboxColumn,
+  useSelection,
+} from "@/components/shared/inspector";
 import { JsonViewer } from "@/components/shared/json-viewer";
 import { DataTable } from "@/components/shared/data-table";
 import { Modal } from "@/components/shared/modal";
@@ -103,46 +107,7 @@ interface ItemRow {
   item: Record<string, AttributeValue>;
 }
 
-// ─── Checkbox column builder ────────────────────────────────────
 
-function checkboxColumn<T>(
-  selectedIds: Set<string>,
-  onToggle: (id: string) => void,
-  onToggleAll: () => void,
-  allIds: string[],
-  t: TFunction,
-): ColumnDef<T, any> {
-  const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
-  const someSelected = !allSelected && allIds.some((id) => selectedIds.has(id));
-  return {
-    id: "select",
-    size: 40,
-    header: () => (
-      <input
-        type="checkbox"
-        checked={allSelected}
-        ref={(el) => {
-          if (el) el.indeterminate = someSelected;
-        }}
-        onChange={onToggleAll}
-        title={t("services.dynamodb.selectAll")}
-        onClick={(e) => e.stopPropagation()}
-      />
-    ),
-    cell: ({ row }) => {
-      const orig = row.original as Record<string, unknown>;
-      const rid = (orig.keyJson as string) ?? (orig.name as string) ?? row.id;
-      return (
-        <input
-          type="checkbox"
-          checked={selectedIds.has(rid)}
-          onChange={() => onToggle(rid)}
-          onClick={(e) => e.stopPropagation()}
-        />
-      );
-    },
-  };
-}
 
 // ─── View state ─────────────────────────────────────────────────
 
@@ -349,13 +314,23 @@ export function DynamoDBPage() {
   const [view, setView] = useState<ViewState>({ type: "tables" });
 
   // ── Table list selection ──────────────────────────────────────
-  const [selectedTableNames, setSelectedTableNames] = useState<Set<string>>(new Set());
+  const {
+    selected: selectedTableNames,
+    toggle: toggleTable,
+    toggleAll: toggleAllTables,
+    clear: clearTableSelection,
+  } = useSelection<string>();
 
   // ── Item selection (single click for detail) ──────────────────
   const [selectedItem, setSelectedItem] = useState<ItemRow | null>(null);
 
   // ── Item checkbox multi-select ────────────────────────────────
-  const [selectedItemKeys, setSelectedItemKeys] = useState<Set<string>>(new Set());
+  const {
+    selected: selectedItemKeys,
+    toggle: toggleItem,
+    toggleAll: toggleAllItems,
+    clear: clearItemSelection,
+  } = useSelection<string>();
 
   // ── Detail panel tab ──────────────────────────────────────────
   const [detailTab, setDetailTab] = useState<DetailTab>("edit");
@@ -479,7 +454,7 @@ export function DynamoDBPage() {
   const navigateToTable = useCallback((name: string) => {
     setView({ type: "items", tableName: name });
     setSelectedItem(null);
-    setSelectedItemKeys(new Set());
+    clearItemSelection();
     setDetailTab("edit");
     setLastEvaluatedKey(undefined);
     setAccumulatedItems([]);
@@ -489,9 +464,9 @@ export function DynamoDBPage() {
 
   const navigateToTables = useCallback(() => {
     setView({ type: "tables" });
-    setSelectedTableNames(new Set());
+    clearTableSelection();
     setSelectedItem(null);
-    setSelectedItemKeys(new Set());
+    clearItemSelection();
     setBatchResult(null);
   }, []);
 
@@ -503,40 +478,9 @@ export function DynamoDBPage() {
 
   // ── Checkbox toggle helpers ───────────────────────────────────
 
-  const toggleTable = (name: string) => {
-    setSelectedTableNames((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  };
-
-  const toggleAllTables = () => {
-    if (selectedTableNames.size === tables.length) {
-      setSelectedTableNames(new Set());
-    } else {
-      setSelectedTableNames(new Set(tables.map((t) => t.name)));
-    }
-  };
-
-  const toggleItem = (keyJson: string) => {
-    setSelectedItemKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(keyJson)) next.delete(keyJson);
-      else next.add(keyJson);
-      return next;
-    });
-  };
-
-  const toggleAllItems = () => {
-    const allKeys = allItems.map((i) => i.keyJson);
-    if (selectedItemKeys.size === allKeys.length && allKeys.length > 0) {
-      setSelectedItemKeys(new Set());
-    } else {
-      setSelectedItemKeys(new Set(allKeys));
-    }
-  };
+  /** Derived IDs for checkbox column toggle-all helpers. */
+  const allTableIds = tables.map((tbl) => tbl.name);
+  const allItemIds = allItems.map((i) => i.keyJson);
 
   // ── Table mutations ───────────────────────────────────────────
 
@@ -604,11 +548,7 @@ export function DynamoDBPage() {
       invalidateItems();
       setShowDeleteItem(false);
       setSelectedItem(null);
-      setSelectedItemKeys((prev) => {
-        const next = new Set(prev);
-        if (selectedItem) next.delete(selectedItem.keyJson);
-        return next;
-      });
+      if (selectedItem) toggleItem(selectedItem.keyJson);
     },
   });
 
@@ -636,7 +576,7 @@ export function DynamoDBPage() {
     );
 
     invalidateItems();
-    setSelectedItemKeys(new Set());
+    clearItemSelection();
     setSelectedItem(null);
     setShowDeleteItems(false);
 
@@ -1173,7 +1113,7 @@ export function DynamoDBPage() {
         /* Table list — full width with checkbox */
         <DataTable
           columns={[
-            checkboxColumn<TableRow>(selectedTableNames, toggleTable, toggleAllTables, tables.map((t) => t.name), t),
+            checkboxColumn<TableRow>(selectedTableNames, toggleTable, () => toggleAllTables(allTableIds), allTableIds, t, (row) => row.name),
             ...tableColumns(t),
           ]}
           data={tables}
@@ -1193,7 +1133,7 @@ export function DynamoDBPage() {
             {allItems.length > 0 ? (
               <DataTable
                 columns={[
-                  checkboxColumn<ItemRow>(selectedItemKeys, toggleItem, toggleAllItems, allItems.map((i) => i.keyJson), t),
+                  checkboxColumn<ItemRow>(selectedItemKeys, toggleItem, () => toggleAllItems(allItemIds), allItemIds, t, (row) => row.keyJson),
                   ...itemColumns,
                 ]}
                 data={allItems}
@@ -1314,7 +1254,7 @@ export function DynamoDBPage() {
             ? t("services.dynamodb.batchDeleteResult", { count: succeeded })
             : `${t("services.dynamodb.batchDeleteResult", { count: succeeded })} (${failed} ${t("services.dynamodb.failed")})`);
           invalidate(queryKey);
-          setSelectedTableNames(new Set());
+          clearTableSelection();
           setShowDeleteTables(false);
           setTimeout(() => setBatchResult(null), 5000);
         }}

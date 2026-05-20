@@ -10,7 +10,7 @@ import { create } from "@bufbuild/protobuf";
 import { SecretsManagerService, type SecretListEntry } from "@/gen/secretsmanager_pb";
 import { CreateSecretRequestSchema } from "@/gen/secretsmanager_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, FallbackCell, BooleanCell, useServiceClient } from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, FallbackCell, BooleanCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Splitter } from "@/components/shared/splitter";
@@ -28,7 +28,7 @@ const getColumns = (t: TFunction): ColumnDef<SecretListEntry, any>[] => [
 type DetailTab = "detail" | "json";
 
 export function SecretsManagerPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { client, invalidate } = useServiceClient(SecretsManagerService);
   const { queryKey } = useListKey("secretsmanager");
   const columns = getColumns(t);
@@ -48,7 +48,13 @@ export function SecretsManagerPage() {
   const items: SecretListEntry[] = dropEmpty(data?.secretlist ?? [], "name");
 
   const createMutation = useMutation({
-    mutationFn: () => { const req: Record<string, any> = { name: formName, description: formDesc, secretstring: formSecretValue }; if (formKmsKeyId) req.kmskeyid = formKmsKeyId; return client.createSecret(create(CreateSecretRequestSchema, req)); },
+    mutationFn: () =>
+      client.createSecret(create(CreateSecretRequestSchema, {
+        name: formName,
+        description: formDesc,
+        secretstring: formSecretValue,
+        kmskeyid: formKmsKeyId || undefined,
+      })),
     onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormDesc(""); setFormSecretValue(""); setFormKmsKeyId(""); },
   });
 
@@ -75,7 +81,7 @@ export function SecretsManagerPage() {
             <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedItem.description || "\u2014"}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Rotation</td><td>{selectedItem.rotationenabled ? "Enabled" : "Disabled"}</td></tr>
             {selectedItem.kmskeyid && <tr><td style={{ fontWeight: 600 }}>KMS Key</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.kmskeyid}</td></tr>}
-            {selectedItem.createddate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedItem.createddate).toLocaleString()}</td></tr>}
+            {selectedItem.createddate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.createddate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>

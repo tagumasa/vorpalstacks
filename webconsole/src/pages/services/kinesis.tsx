@@ -10,7 +10,7 @@ import { create } from "@bufbuild/protobuf";
 import { KinesisService, type StreamSummary, StreamMode } from "@/gen/kinesis_pb";
 import { CreateStreamInputSchema, StreamModeDetailsSchema } from "@/gen/kinesis_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, useServiceClient } from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Splitter } from "@/components/shared/splitter";
@@ -26,7 +26,7 @@ const getColumns = (t: TFunction): ColumnDef<StreamSummary, any>[] => [
 type DetailTab = "detail" | "json";
 
 export function KinesisPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { client, invalidate } = useServiceClient(KinesisService);
   const { queryKey } = useListKey("kinesis");
   const columns = getColumns(t);
@@ -71,7 +71,7 @@ export function KinesisPage() {
             <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.streamname}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Status</td><td><span className="badge">{String(selectedItem.streamstatus)}</span></td></tr>
             <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.streamarn}</td></tr>
-            {selectedItem.streamcreationtimestamp && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedItem.streamcreationtimestamp).toLocaleString()}</td></tr>}
+            {selectedItem.streamcreationtimestamp && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.streamcreationtimestamp, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>

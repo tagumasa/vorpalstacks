@@ -10,7 +10,7 @@ import { create } from "@bufbuild/protobuf";
 import { CognitoIdentityProviderService, VerifiedAttributeType } from "@/gen/cognitoidentityprovider_pb";
 import { CreateUserPoolRequestSchema, PasswordPolicyTypeSchema, UserPoolPolicyTypeSchema } from "@/gen/cognitoidentityprovider_pb";
 import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
-import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, BadgeCell, useServiceClient } from "@/components/shared/service-page";
+import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, BadgeCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Splitter } from "@/components/shared/splitter";
@@ -28,7 +28,7 @@ const getColumns = (t: TFunction): ColumnDef<TableRow, any>[] => [
 type DetailTab = "detail" | "json";
 
 export function CognitoPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { client, invalidate } = useServiceClient(CognitoIdentityProviderService);
   const { queryKey } = useListKey("cognito");
   const columns = getColumns(t);
@@ -81,8 +81,8 @@ export function CognitoPage() {
             <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Pool ID</td><td className="cell-mono">{selectedItem.id}</td></tr>
             <tr><td style={{ fontWeight: 600 }}>Status</td><td><span className="badge">{selectedItem.status}</span></td></tr>
-            {selectedItem.creationdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{new Date(selectedItem.creationdate).toLocaleString()}</td></tr>}
-            {selectedItem.lastmodifieddate && <tr><td style={{ fontWeight: 600 }}>Last Modified</td><td>{new Date(selectedItem.lastmodifieddate).toLocaleString()}</td></tr>}
+            {selectedItem.creationdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.creationdate, i18n.language)}</td></tr>}
+            {selectedItem.lastmodifieddate && <tr><td style={{ fontWeight: 600 }}>Last Modified</td><td>{fmtDate(selectedItem.lastmodifieddate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>

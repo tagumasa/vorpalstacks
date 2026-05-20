@@ -6,7 +6,6 @@
  * Panel 3 (detail):  Object metadata JSON/RAW/HEADERS tabs (drag-split bottom panel)
  */
 import { useState, useCallback, type ChangeEvent } from "react";
-import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -36,10 +35,15 @@ import {
   DateCell,
   useServiceClient,
 } from "@/components/shared/service-page";
+import {
+  checkboxColumn,
+  useSelection,
+} from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Modal } from "@/components/shared/modal";
 import { Splitter } from "@/components/shared/splitter";
 import { JsonViewer } from "@/components/shared/json-viewer";
+import { formatBytes } from "@/lib/format";
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -87,13 +91,9 @@ function isImageFile(key: string): boolean {
   return IMAGE_EXTENSIONS.has(getExtension(key));
 }
 
+/** Format bytes for display in the object table, falling back to the shared formatBytes. */
 function formatSize(bytes: bigint | number): string {
-  const b = Number(bytes);
-  if (b === 0) return "0 B";
-  if (b < 1024) return `${b} B`;
-  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
-  if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  return formatBytes(bytes);
 }
 
 function fileNameFromKey(key: string): string {
@@ -148,45 +148,7 @@ function toObjectRows(
   return [...folders, ...files];
 }
 
-// ─── Checkbox column builder ────────────────────────────────────
 
-function checkboxColumn<T>(
-  selectedIds: Set<string>,
-  onToggle: (id: string) => void,
-  onToggleAll: () => void,
-  allIds: string[],
-  t: TFunction,
-): ColumnDef<T, any> {
-  const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
-  const someSelected = !allSelected && allIds.some((id) => selectedIds.has(id));
-  return {
-    id: "select",
-    size: 40,
-    header: () => (
-      <input
-        type="checkbox"
-        checked={allSelected}
-        ref={(el) => {
-          if (el) el.indeterminate = someSelected;
-        }}
-        onChange={onToggleAll}
-        title={t("services.s3.selectAll")}
-        onClick={(e) => e.stopPropagation()}
-      />
-    ),
-    cell: ({ row }) => {
-      const rid = (row.original as Record<string, string>).id ?? row.id;
-      return (
-        <input
-          type="checkbox"
-          checked={selectedIds.has(rid)}
-          onChange={() => onToggle(rid)}
-          onClick={(e) => e.stopPropagation()}
-        />
-      );
-    },
-  };
-}
 
 // ─── View state ─────────────────────────────────────────────────
 
@@ -208,7 +170,14 @@ export function S3Page() {
 
   // ── View state ───────────────────────────────────────────────
   const [view, setView] = useState<ViewState>({ type: "buckets" });
-  const [selectedBucketNames, setSelectedBucketNames] = useState<Set<string>>(new Set());
+
+  // ── Bucket checkbox multi-select ─────────────────────────────
+  const {
+    selected: selectedBucketNames,
+    toggle: toggleBucket,
+    toggleAll: toggleAllBuckets,
+    clear: clearBucketSelection,
+  } = useSelection<string>();
 
   // ── Object browsing state ────────────────────────────────────
   const [prefix, setPrefix] = useState("");
@@ -220,7 +189,12 @@ export function S3Page() {
   const [selectedObject, setSelectedObject] = useState<ObjectRow | null>(null);
 
   // ── Object checkbox multi-select ─────────────────────────────
-  const [selectedObjectIds, setSelectedObjectIds] = useState<Set<string>>(new Set());
+  const {
+    selected: selectedObjectIds,
+    toggle: toggleObject,
+    toggleAll: toggleAllObjects,
+    clear: clearObjectSelection,
+  } = useSelection<string>();
 
   // ── Detail panel tab ─────────────────────────────────────────
   const [detailTab, setDetailTab] = useState<DetailTab>("json");
@@ -290,15 +264,15 @@ export function S3Page() {
     setAccumulatedObjects([]);
     setAccumulatedPrefixes([]);
     setSelectedObject(null);
-    setSelectedObjectIds(new Set());
+    clearObjectSelection();
     setDetailTab("json");
   }, []);
 
   const navigateToBuckets = useCallback(() => {
     setView({ type: "buckets" });
-    setSelectedBucketNames(new Set());
+    clearBucketSelection();
     setSelectedObject(null);
-    setSelectedObjectIds(new Set());
+    clearObjectSelection();
   }, []);
 
   const handleBreadcrumb = useCallback((index: number) => {
@@ -312,7 +286,7 @@ export function S3Page() {
     setAccumulatedObjects([]);
     setAccumulatedPrefixes([]);
     setSelectedObject(null);
-    setSelectedObjectIds(new Set());
+    clearObjectSelection();
   }, [prefix]);
 
   const handleFolderClick = useCallback((folderPrefix: string) => {
@@ -321,7 +295,7 @@ export function S3Page() {
     setAccumulatedObjects([]);
     setAccumulatedPrefixes([]);
     setSelectedObject(null);
-    setSelectedObjectIds(new Set());
+    clearObjectSelection();
   }, []);
 
   const handleLoadMore = () => {
@@ -337,42 +311,10 @@ export function S3Page() {
     setAccumulatedPrefixes([]);
   }, [queryClient, objectQueryKey]);
 
-  // ── Checkbox toggle helpers ──────────────────────────────────
+  // ── Derived toggle helpers for checkbox columns ──────────────
 
-  const toggleBucket = (name: string) => {
-    setSelectedBucketNames((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  };
-
-  const toggleAllBuckets = () => {
-    if (selectedBucketNames.size === buckets.length) {
-      setSelectedBucketNames(new Set());
-    } else {
-      setSelectedBucketNames(new Set(buckets.map((b) => b.name)));
-    }
-  };
-
-  const toggleObject = (id: string) => {
-    setSelectedObjectIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAllObjects = () => {
-    const allIds = objectRows.map((r) => r.id);
-    if (selectedObjectIds.size === allIds.length && allIds.length > 0) {
-      setSelectedObjectIds(new Set());
-    } else {
-      setSelectedObjectIds(new Set(allIds));
-    }
-  };
+  const allBucketIds = buckets.map((b) => b.name);
+  const allObjectIds = objectRows.map((r) => r.id);
 
   // ── Preview query ────────────────────────────────────────────
 
@@ -410,7 +352,7 @@ export function S3Page() {
     onSuccess: () => {
       invalidate(queryKey);
       setShowDeleteBuckets(false);
-      setSelectedBucketNames(new Set());
+      clearBucketSelection();
     },
   });
 
@@ -465,7 +407,7 @@ export function S3Page() {
       invalidateObjects();
       setShowDeleteObj(false);
       setSelectedObject(null);
-      setSelectedObjectIds(new Set());
+      clearObjectSelection();
     },
   });
 
@@ -483,7 +425,7 @@ export function S3Page() {
     onSuccess: () => {
       invalidateObjects();
       setSelectedObject(null);
-      setSelectedObjectIds(new Set());
+      clearObjectSelection();
     },
   });
 
@@ -507,7 +449,7 @@ export function S3Page() {
   // ── Column definitions ───────────────────────────────────────
 
   const bucketColumns: ColumnDef<Bucket, any>[] = [
-    checkboxColumn<Bucket>(selectedBucketNames, toggleBucket, toggleAllBuckets, buckets.map((b) => b.name), t),
+    checkboxColumn<Bucket>(selectedBucketNames, toggleBucket, () => toggleAllBuckets(allBucketIds), allBucketIds, t, (row) => row.name),
     { accessorKey: "name", header: t("services.s3.bucketNameHeader"), cell: MonoCell },
     { accessorKey: "bucketregion", header: t("services.s3.regionHeader"), size: 100 },
     { accessorKey: "bucketarn", header: t("services.s3.arnHeader"), cell: SmallMonoCell },
@@ -515,7 +457,7 @@ export function S3Page() {
   ];
 
   const objectColumns: ColumnDef<ObjectRow, any>[] = [
-    checkboxColumn<ObjectRow>(selectedObjectIds, toggleObject, toggleAllObjects, objectRows.map((r) => r.id), t),
+    checkboxColumn<ObjectRow>(selectedObjectIds, toggleObject, () => toggleAllObjects(allObjectIds), allObjectIds, t, (row) => row.id),
     {
       accessorKey: "displayKey",
       header: t("services.s3.keyHeader"),
