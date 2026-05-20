@@ -943,8 +943,6 @@
     "tabMappings": "ポートマッピング",
     "tabServices": "サービス",
     "save": "変更を保存",
-    "saved": "✓ 保存しました",
-    "saveFailed": "✗ 保存に失敗しました",
     "reset": "デフォルトに戻す",
     "immediateNote": "✓ 変更は即時反映されます",
     "saveNote": "Saveボタンで一括保存されます。一部の変更には再起動が必要です。",

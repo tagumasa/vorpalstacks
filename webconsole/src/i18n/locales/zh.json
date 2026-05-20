@@ -943,8 +943,6 @@
     "tabMappings": "端口映射",
     "tabServices": "服务",
     "save": "保存更改",
-    "saved": "✓ 已保存",
-    "saveFailed": "✗ 保存失败",
     "reset": "恢复默认",
     "immediateNote": "✓ 更改立即生效",
     "saveNote": "按下Save按钮后统一保存。部分更改可能需要重启服务器。",
