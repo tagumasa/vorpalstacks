@@ -178,7 +178,7 @@ export function SESPage() {
     const statusLabel = VERIFICATION_STATUS_I18N[selectedItem.verificationstatus] ? t(VERIFICATION_STATUS_I18N[selectedItem.verificationstatus]!) : String(selectedItem.verificationstatus);
 
     const detailTabs = [
-      { key: "detail", label: "Detail" },
+      { key: "detail", label: t("common.tabDetail") },
       { key: "json", label: t("common.rawJson") },
     ];
 
@@ -196,12 +196,12 @@ export function SESPage() {
         }
       >
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}>
+          <table className="settings-table">
             <tbody>
-              <tr><td style={{ width: 140, fontWeight: 600 }}>Identity</td><td className="cell-mono">{selectedItem.identityname}</td></tr>
-              <tr><td style={{ fontWeight: 600 }}>Type</td><td><span className="badge">{typeLabel}</span></td></tr>
-              <tr><td style={{ fontWeight: 600 }}>Verification</td><td><span className="badge">{statusLabel}</span></td></tr>
-              <tr><td style={{ fontWeight: 600 }}>Sending Enabled</td><td><BooleanBadge value={selectedItem.sendingenabled} /></td></tr>
+              <tr><td className="detail-label-fixed">Identity</td><td className="cell-mono">{selectedItem.identityname}</td></tr>
+              <tr><td className="detail-label">Type</td><td><span className="badge">{typeLabel}</span></td></tr>
+              <tr><td className="detail-label">Verification</td><td><span className="badge">{statusLabel}</span></td></tr>
+              <tr><td className="detail-label">Sending Enabled</td><td><BooleanBadge value={selectedItem.sendingenabled} /></td></tr>
             </tbody>
           </table>
         ) : (
@@ -232,7 +232,7 @@ export function SESPage() {
             onClick={() => setShowBatchDelete(true)}
           >
             {t("common.deleteSelected")}
-            {selectedNames.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedNames.size})</span>}
+            {selectedNames.size > 0 && <span className="batch-count">({selectedNames.size})</span>}
           </button>
         </>
       }
@@ -249,7 +249,7 @@ export function SESPage() {
 
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-ses">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <div className="flex-fill-scroll">
             <DataTable
               columns={[
                 checkboxColumn<IdentityInfo>(selectedNames, toggleName, () => toggleAllNames(allIds), allIds, t, (row) => row.identityname),

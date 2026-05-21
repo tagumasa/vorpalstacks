@@ -74,13 +74,13 @@ export function SFNPage() {
     if (!selectedItem) return <DetailEmpty message={t("common.noItemSelected")} />;
     const typeLabel = SFN_TYPE_LABELS[selectedItem.type] ?? String(selectedItem.type);
     return (
-      <DetailPanel title={selectedItem.name} titleIcon="🔀" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedItem.name} titleIcon="🔀" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Type</td><td><span className="badge">{typeLabel}</span></td></tr>
-            <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.statemachinearn}</td></tr>
-            {selectedItem.creationdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.creationdate, i18n.language)}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
+            <tr><td className="detail-label">Type</td><td><span className="badge">{typeLabel}</span></td></tr>
+            <tr><td className="detail-label">ARN</td><td className="cell-mono cell-long">{selectedItem.statemachinearn}</td></tr>
+            {selectedItem.creationdate && <tr><td className="detail-label">Created</td><td>{fmtDate(selectedItem.creationdate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>
@@ -90,12 +90,12 @@ export function SFNPage() {
   return (
     <ServicePageLayout icon="🔀" title={t("services.sfn.title")} isLoading={isLoading} error={error} count={items.length} countLabel={t("services.sfn.countLabel")} actions={<>
       <button className="btn btn-primary" onClick={() => setShowCreate(true)}>{t("services.sfn.create")}</button>
-      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedIds.size})</span>}</button>
+      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span className="batch-count">({selectedIds.size})</span>}</button>
     </>}>
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.sfn.title") }, { label: t("services.sfn.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-sfn">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<StateMachineListItem>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.statemachinearn), ...columns]} data={items} getRowId={(row) => row.statemachinearn} onRowClick={handleRowClick} selectedId={selectedItem?.statemachinearn} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<StateMachineListItem>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.statemachinearn), ...columns]} data={items} getRowId={(row) => row.statemachinearn} onRowClick={handleRowClick} selectedId={selectedItem?.statemachinearn} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

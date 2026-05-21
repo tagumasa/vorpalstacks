@@ -26,7 +26,12 @@
     "deleteSelected": "Delete selected",
     "noItemSelected": "Select an item to view details",
     "save": "Save",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "filter": "Filter...",
+    "tabDetail": "Detail",
+    "export": "Export",
+    "exportJson": "Export JSON",
+    "exportCsv": "Export CSV"
   },
   "header": {
     "online": "ONLINE :8080",
@@ -896,7 +901,14 @@
       "endpointHeader": "Endpoint",
       "readerEndpointHeader": "Reader Endpoint",
       "arnHeader": "ARN",
-      "instanceClassHeader": "Instance Class"
+      "instanceClassHeader": "Instance Class",
+      "createInstance": "Create DB Instance",
+      "createCluster": "Create DB Cluster",
+      "deleteInstance": "Delete DB Instance",
+      "deleteCluster": "Delete DB Cluster",
+      "instanceIdField": "Instance Identifier",
+      "instanceClassField": "Instance Class",
+      "clusterIdField": "Cluster Identifier"
     },
     "rds": {
       "title": "RDS",
@@ -911,7 +923,18 @@
       },
       "engineVersionHeader": "Engine Version",
       "encryptedHeader": "Encrypted",
-      "createdHeader": "Created"
+      "createdHeader": "Created",
+      "createInstance": "Create DB Instance",
+      "createCluster": "Create DB Cluster",
+      "deleteInstance": "Delete DB Instance",
+      "deleteCluster": "Delete DB Cluster",
+      "instanceIdField": "Instance Identifier",
+      "clusterIdField": "Cluster Identifier",
+      "engineField": "Engine",
+      "instanceClassField": "Instance Class",
+      "storageField": "Allocated Storage (GB)",
+      "usernameField": "Master Username",
+      "passwordField": "Master Password"
     },
     "sts": {
       "title": "STS — Caller Identity",
@@ -1047,5 +1070,13 @@
       "shutdownDesc": "Gracefully shut down the server. This action cannot be undone.",
       "toggle": "⚠ Danger Zone"
     }
+  },
+  "inspector": {
+    "title": "Inspector",
+    "filter": "Key prefix filter...",
+    "key": "Key",
+    "value": "Value",
+    "typeHeader": "Type",
+    "countLabel": "entries"
   }
 }

@@ -99,19 +99,19 @@ export function CloudWatchPage() {
     const statKey = STATISTIC_I18N[selectedItem.statistic];
     const compKey = COMPARISON_I18N[selectedItem.comparisonoperator];
     return (
-      <DetailPanel title={selectedItem.alarmname} titleIcon="📊" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedItem.alarmname} titleIcon="📊" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Alarm</td><td className="cell-mono">{selectedItem.alarmname}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>State</td><td><span className="badge">{stateKey ? t(stateKey) ?? String(selectedItem.statevalue) : String(selectedItem.statevalue)}</span></td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Metric</td><td>{selectedItem.metricname || "\u2014"}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Namespace</td><td>{selectedItem.namespace || "\u2014"}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Statistic</td><td>{statKey ? t(statKey) ?? String(selectedItem.statistic) : String(selectedItem.statistic)}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Period</td><td>{selectedItem.period}s</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Eval Periods</td><td>{selectedItem.evaluationperiods}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Threshold</td><td>{selectedItem.threshold}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Comparison</td><td>{compKey ? t(compKey) ?? String(selectedItem.comparisonoperator) : String(selectedItem.comparisonoperator)}</td></tr>
-            {selectedItem.alarmdescription && <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedItem.alarmdescription}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Alarm</td><td className="cell-mono">{selectedItem.alarmname}</td></tr>
+            <tr><td className="detail-label">State</td><td><span className="badge">{stateKey ? t(stateKey) ?? String(selectedItem.statevalue) : String(selectedItem.statevalue)}</span></td></tr>
+            <tr><td className="detail-label">Metric</td><td>{selectedItem.metricname || "\u2014"}</td></tr>
+            <tr><td className="detail-label">Namespace</td><td>{selectedItem.namespace || "\u2014"}</td></tr>
+            <tr><td className="detail-label">Statistic</td><td>{statKey ? t(statKey) ?? String(selectedItem.statistic) : String(selectedItem.statistic)}</td></tr>
+            <tr><td className="detail-label">Period</td><td>{selectedItem.period}s</td></tr>
+            <tr><td className="detail-label">Eval Periods</td><td>{selectedItem.evaluationperiods}</td></tr>
+            <tr><td className="detail-label">Threshold</td><td>{selectedItem.threshold}</td></tr>
+            <tr><td className="detail-label">Comparison</td><td>{compKey ? t(compKey) ?? String(selectedItem.comparisonoperator) : String(selectedItem.comparisonoperator)}</td></tr>
+            {selectedItem.alarmdescription && <tr><td className="detail-label">Description</td><td>{selectedItem.alarmdescription}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>
@@ -121,12 +121,12 @@ export function CloudWatchPage() {
   return (
     <ServicePageLayout icon="📊" title={t("services.cloudwatch.title")} isLoading={isLoading} error={error} count={items.length} countLabel={t("services.cloudwatch.countLabel")} actions={<>
       <button className="btn btn-primary" onClick={() => setShowCreate(true)}>{t("services.cloudwatch.create")}</button>
-      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedIds.size})</span>}</button>
+      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span className="batch-count">({selectedIds.size})</span>}</button>
     </>}>
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.cloudwatch.title") }, { label: t("services.cloudwatch.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-cw">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<MetricAlarm>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.alarmname), ...columns]} data={items} getRowId={(row) => row.alarmname} onRowClick={handleRowClick} selectedId={selectedItem?.alarmname} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<MetricAlarm>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.alarmname), ...columns]} data={items} getRowId={(row) => row.alarmname} onRowClick={handleRowClick} selectedId={selectedItem?.alarmname} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

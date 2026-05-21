@@ -75,14 +75,14 @@ export function CognitoPage() {
   const renderDetailPanel = () => {
     if (!selectedItem) return <DetailEmpty message={t("common.noItemSelected")} />;
     return (
-      <DetailPanel title={selectedItem.name} titleIcon="🔐" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedItem.name} titleIcon="🔐" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Pool ID</td><td className="cell-mono">{selectedItem.id}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Status</td><td><span className="badge">{selectedItem.status}</span></td></tr>
-            {selectedItem.creationdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.creationdate, i18n.language)}</td></tr>}
-            {selectedItem.lastmodifieddate && <tr><td style={{ fontWeight: 600 }}>Last Modified</td><td>{fmtDate(selectedItem.lastmodifieddate, i18n.language)}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
+            <tr><td className="detail-label">Pool ID</td><td className="cell-mono">{selectedItem.id}</td></tr>
+            <tr><td className="detail-label">Status</td><td><span className="badge">{selectedItem.status}</span></td></tr>
+            {selectedItem.creationdate && <tr><td className="detail-label">Created</td><td>{fmtDate(selectedItem.creationdate, i18n.language)}</td></tr>}
+            {selectedItem.lastmodifieddate && <tr><td className="detail-label">Last Modified</td><td>{fmtDate(selectedItem.lastmodifieddate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>
@@ -92,12 +92,12 @@ export function CognitoPage() {
   return (
     <ServicePageLayout icon="🔐" title={t("services.cognito.title")} isLoading={isLoading} error={error} count={items.length} countLabel={t("services.cognito.countLabel")} actions={<>
       <button className="btn btn-primary" onClick={() => setShowCreate(true)}>{t("services.cognito.create")}</button>
-      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedIds.size})</span>}</button>
+      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span className="batch-count">({selectedIds.size})</span>}</button>
     </>}>
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.cognito.title") }, { label: t("services.cognito.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-cognito">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<TableRow>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<TableRow>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

@@ -133,12 +133,12 @@ export function EventBridgePage() {
   const renderBusDetail = () => {
     if (!selectedBus) return <DetailEmpty message={t("common.noItemSelected")} />;
     return (
-      <DetailPanel title={selectedBus.name} titleIcon="📡" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDeleteBus(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedBus.name} titleIcon="📡" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDeleteBus(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedBus.name}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedBus.arn || "\u2014"}</td></tr>
-            {selectedBus.policy && <tr><td style={{ fontWeight: 600 }}>Policy</td><td><JsonViewer data={(() => { try { return JSON.parse(selectedBus.policy); } catch { return selectedBus.policy; } })()} /></td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Name</td><td className="cell-mono">{selectedBus.name}</td></tr>
+            <tr><td className="detail-label">ARN</td><td className="cell-mono cell-long">{selectedBus.arn || "\u2014"}</td></tr>
+            {selectedBus.policy && <tr><td className="detail-label">Policy</td><td><JsonViewer data={(() => { try { return JSON.parse(selectedBus.policy); } catch { return selectedBus.policy; } })()} /></td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedBus} />}
       </DetailPanel>
@@ -150,16 +150,16 @@ export function EventBridgePage() {
     let parsedPattern: Record<string, unknown> | null = null;
     if (selectedRule.eventpattern) { try { parsedPattern = JSON.parse(selectedRule.eventpattern); } catch { /* not JSON */ } }
     return (
-      <DetailPanel title={selectedRule.name} titleIcon="📋" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)}>
+      <DetailPanel title={selectedRule.name} titleIcon="📋" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedRule.name}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Event Bus</td><td className="cell-mono">{selectedRule.eventbusname || "\u2014"}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>State</td><td>{selectedRule.state === RuleState.ENABLED ? <span className="badge badge-green">{t("services.eventbridge.stateEnabled")}</span> : <span className="badge badge-red">{t("services.eventbridge.stateDisabled")}</span>}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedRule.description || "\u2014"}</td></tr>
-            {selectedRule.scheduleexpression && <tr><td style={{ fontWeight: 600 }}>Schedule</td><td className="cell-mono">{selectedRule.scheduleexpression}</td></tr>}
-            {selectedRule.rolearn && <tr><td style={{ fontWeight: 600 }}>Role ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedRule.rolearn}</td></tr>}
-            {selectedRule.eventpattern && <tr><td style={{ fontWeight: 600 }}>Event Pattern</td><td>{parsedPattern ? <JsonViewer data={parsedPattern} /> : <pre className="code-block" style={{ margin: 0 }}>{selectedRule.eventpattern}</pre>}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Name</td><td className="cell-mono">{selectedRule.name}</td></tr>
+            <tr><td className="detail-label">Event Bus</td><td className="cell-mono">{selectedRule.eventbusname || "\u2014"}</td></tr>
+            <tr><td className="detail-label">State</td><td>{selectedRule.state === RuleState.ENABLED ? <span className="badge badge-green">{t("services.eventbridge.stateEnabled")}</span> : <span className="badge badge-red">{t("services.eventbridge.stateDisabled")}</span>}</td></tr>
+            <tr><td className="detail-label">Description</td><td>{selectedRule.description || "\u2014"}</td></tr>
+            {selectedRule.scheduleexpression && <tr><td className="detail-label">Schedule</td><td className="cell-mono">{selectedRule.scheduleexpression}</td></tr>}
+            {selectedRule.rolearn && <tr><td className="detail-label">Role ARN</td><td className="cell-mono cell-long">{selectedRule.rolearn}</td></tr>}
+            {selectedRule.eventpattern && <tr><td className="detail-label">Event Pattern</td><td>{parsedPattern ? <JsonViewer data={parsedPattern} /> : <pre className="code-block" style={{ margin: 0 }}>{selectedRule.eventpattern}</pre>}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedRule} />}
       </DetailPanel>
@@ -169,15 +169,15 @@ export function EventBridgePage() {
   const renderScheduleDetail = () => {
     if (!selectedSchedule) return <DetailEmpty message={t("common.noItemSelected")} />;
     return (
-      <DetailPanel title={selectedSchedule.name} titleIcon="⏰" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDeleteSchedule(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedSchedule.name} titleIcon="⏰" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDeleteSchedule(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedSchedule.name}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Group</td><td>{selectedSchedule.groupname || t("services.eventbridge.defaultGroup")}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>State</td><td><span className="badge">{String(selectedSchedule.state || "\u2014")}</span></td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Target</td><td>{selectedSchedule.target ? String(selectedSchedule.target) : "\u2014"}</td></tr>
-            {selectedSchedule.creationdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedSchedule.creationdate, i18n.language)}</td></tr>}
-            {selectedSchedule.lastmodificationdate && <tr><td style={{ fontWeight: 600 }}>Modified</td><td>{fmtDate(selectedSchedule.lastmodificationdate, i18n.language)}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Name</td><td className="cell-mono">{selectedSchedule.name}</td></tr>
+            <tr><td className="detail-label">Group</td><td>{selectedSchedule.groupname || t("services.eventbridge.defaultGroup")}</td></tr>
+            <tr><td className="detail-label">State</td><td><span className="badge">{String(selectedSchedule.state || "\u2014")}</span></td></tr>
+            <tr><td className="detail-label">Target</td><td>{selectedSchedule.target ? String(selectedSchedule.target) : "\u2014"}</td></tr>
+            {selectedSchedule.creationdate && <tr><td className="detail-label">Created</td><td>{fmtDate(selectedSchedule.creationdate, i18n.language)}</td></tr>}
+            {selectedSchedule.lastmodificationdate && <tr><td className="detail-label">Modified</td><td>{fmtDate(selectedSchedule.lastmodificationdate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedSchedule} />}
       </DetailPanel>
@@ -190,17 +190,17 @@ export function EventBridgePage() {
     <ServicePageLayout icon="📡" title={t("services.eventbridge.title")} isLoading={query.isLoading} error={query.error} tabs={tabs} activeTab={tab} onTabChange={handleTabChange} actions={
       tab === "buses" ? (<>
         <button className="btn btn-primary" onClick={() => setShowCreateBus(true)}>{t("services.eventbridge.create")}</button>
-        <button className="btn btn-danger" disabled={busSelection.selected.size === 0} onClick={() => setShowBatchDeleteBus(true)}>{t("common.deleteSelected")}{busSelection.selected.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({busSelection.selected.size})</span>}</button>
+        <button className="btn btn-danger" disabled={busSelection.selected.size === 0} onClick={() => setShowBatchDeleteBus(true)}>{t("common.deleteSelected")}{busSelection.selected.size > 0 && <span className="batch-count">({busSelection.selected.size})</span>}</button>
       </>) : tab === "schedules" ? (<>
         <button className="btn btn-primary" onClick={() => setShowCreateSchedule(true)}>{t("services.scheduler.create")}</button>
-        <button className="btn btn-danger" disabled={scheduleSelection.selected.size === 0} onClick={() => setShowBatchDeleteSchedule(true)}>{t("common.deleteSelected")}{scheduleSelection.selected.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({scheduleSelection.selected.size})</span>}</button>
+        <button className="btn btn-danger" disabled={scheduleSelection.selected.size === 0} onClick={() => setShowBatchDeleteSchedule(true)}>{t("common.deleteSelected")}{scheduleSelection.selected.size > 0 && <span className="batch-count">({scheduleSelection.selected.size})</span>}</button>
       </>) : undefined
     }>
       {/* Buses tab */}
       {tab === "buses" && (
         buses.length > 0 ? (
           <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-eb-buses">
-            <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<EventBus>(busSelection.selected, busSelection.toggle, () => busSelection.toggleAll(buses.map((b) => b.name)), buses.map((b) => b.name), t, (row) => row.name), ...busColumns]} data={buses} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedBus(row); setDetailTab("detail"); }} selectedId={selectedBus?.name} /></div>
+            <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<EventBus>(busSelection.selected, busSelection.toggle, () => busSelection.toggleAll(buses.map((b) => b.name)), buses.map((b) => b.name), t, (row) => row.name), ...busColumns]} data={buses} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedBus(row); setDetailTab("detail"); }} selectedId={selectedBus?.name} /></div>
             {renderBusDetail()}
           </Splitter>
         ) : <div className="empty-state">{t("common.noData")}</div>
@@ -210,7 +210,7 @@ export function EventBridgePage() {
       {tab === "rules" && (
         rules.length > 0 ? (
           <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-eb-rules">
-            <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={ruleColumns} data={rules} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedRule(row); setDetailTab("detail"); }} selectedId={selectedRule?.name} /></div>
+            <div className="flex-fill-scroll"><DataTable columns={ruleColumns} data={rules} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedRule(row); setDetailTab("detail"); }} selectedId={selectedRule?.name} /></div>
             {renderRuleDetail()}
           </Splitter>
         ) : <div className="empty-state">{t("common.noData")}</div>
@@ -220,7 +220,7 @@ export function EventBridgePage() {
       {tab === "schedules" && (
         schedules.length > 0 ? (
           <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-eb-schedules">
-            <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<ScheduleSummary>(scheduleSelection.selected, scheduleSelection.toggle, () => scheduleSelection.toggleAll(schedules.map((s) => s.name)), schedules.map((s) => s.name), t, (row) => row.name), ...scheduleColumns]} data={schedules} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedSchedule(row); setDetailTab("detail"); }} selectedId={selectedSchedule?.name} /></div>
+            <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<ScheduleSummary>(scheduleSelection.selected, scheduleSelection.toggle, () => scheduleSelection.toggleAll(schedules.map((s) => s.name)), schedules.map((s) => s.name), t, (row) => row.name), ...scheduleColumns]} data={schedules} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedSchedule(row); setDetailTab("detail"); }} selectedId={selectedSchedule?.name} /></div>
             {renderScheduleDetail()}
           </Splitter>
         ) : <div className="empty-state">{t("common.noData")}</div>

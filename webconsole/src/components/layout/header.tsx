@@ -43,9 +43,7 @@ export function Header() {
   return (
     <header className="header">
       <div className="header-logo">
-        <button className="header-hamburger" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
-          ☰
-        </button>
+        <button className="header-hamburger icon-hamburger" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} />
         VORPALSTACKS<span className="sub">Inspector {__APP_VERSION__}</span>
       </div>
       <div className="header-controls">
@@ -54,13 +52,13 @@ export function Header() {
           {online ? t("header.online") : t("header.offline")}
         </span>
         <div className="header-separator" />
-        <button className="header-btn" onClick={cycleTheme} title={t("header.theme")}>
-          {"🎨"} {themeLabel}
+        <button className="header-btn icon-theme" onClick={cycleTheme} title={t("header.theme")}>
+          {themeLabel}
         </button>
         <Dropdown
           trigger={
-            <button className="header-btn" title={t("header.region")}>
-              {"🌐"} {REGION_LABELS[region] ?? region}
+            <button className="header-btn icon-region" title={t("header.region")}>
+              {REGION_LABELS[region] ?? region}
             </button>
           }
         >
@@ -74,9 +72,7 @@ export function Header() {
             </div>
           ))}
         </Dropdown>
-        <button className="header-btn" title={t("header.settings")} onClick={() => navigate("/settings")}>
-          {"⚙"}
-        </button>
+        <button className="header-btn icon-settings" title={t("header.settings")} onClick={() => navigate("/settings")} />
         <Dropdown
           trigger={
             <button className="header-btn" title={t("header.language")}>
@@ -95,9 +91,7 @@ export function Header() {
           ))}
         </Dropdown>
         <div className="header-separator" />
-        <button className="header-btn" title={t("header.logout")} onClick={handleLogout}>
-          {"🚪"}
-        </button>
+        <button className="header-btn icon-logout" title={t("header.logout")} onClick={handleLogout} />
       </div>
     </header>
   );

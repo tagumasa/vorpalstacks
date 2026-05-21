@@ -26,7 +26,12 @@
     "deleteSelected": "删除所选",
     "noItemSelected": "选择项目查看详情",
     "save": "保存",
-    "saving": "保存中..."
+    "saving": "保存中...",
+    "filter": "筛选...",
+    "tabDetail": "详情",
+    "export": "导出",
+    "exportJson": "导出 JSON",
+    "exportCsv": "导出 CSV"
   },
   "header": {
     "online": "在线 :8080",
@@ -896,7 +901,14 @@
       "endpointHeader": "端点",
       "readerEndpointHeader": "读取端点",
       "arnHeader": "ARN",
-      "instanceClassHeader": "实例类型"
+      "instanceClassHeader": "实例类型",
+      "createInstance": "创建数据库实例",
+      "createCluster": "创建数据库集群",
+      "deleteInstance": "删除数据库实例",
+      "deleteCluster": "删除数据库集群",
+      "instanceIdField": "实例标识符",
+      "instanceClassField": "实例类型",
+      "clusterIdField": "集群标识符"
     },
     "rds": {
       "title": "RDS",
@@ -911,7 +923,18 @@
       },
       "engineVersionHeader": "引擎版本",
       "encryptedHeader": "加密",
-      "createdHeader": "创建时间"
+      "createdHeader": "创建时间",
+      "createInstance": "创建数据库实例",
+      "createCluster": "创建数据库集群",
+      "deleteInstance": "删除数据库实例",
+      "deleteCluster": "删除数据库集群",
+      "instanceIdField": "实例标识符",
+      "clusterIdField": "集群标识符",
+      "engineField": "引擎",
+      "instanceClassField": "实例类",
+      "storageField": "分配存储 (GB)",
+      "usernameField": "主用户名",
+      "passwordField": "主密码"
     },
     "sts": {
       "title": "STS — 调用方身份",
@@ -943,6 +966,8 @@
     "tabMappings": "端口映射",
     "tabServices": "服务",
     "save": "保存更改",
+    "saved": "✓ 已保存",
+    "saveFailed": "✗ 保存失败",
     "reset": "恢复默认",
     "immediateNote": "✓ 更改立即生效",
     "saveNote": "按下Save按钮后统一保存。部分更改可能需要重启服务器。",
@@ -1045,5 +1070,13 @@
       "shutdownDesc": "优雅地关闭服务器。此操作不可撤销。",
       "toggle": "⚠ 危险区域"
     }
+  },
+  "inspector": {
+    "title": "检查器",
+    "filter": "键前缀筛选...",
+    "key": "键",
+    "value": "值",
+    "typeHeader": "类型",
+    "countLabel": "条目"
   }
 }

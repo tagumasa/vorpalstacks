@@ -146,7 +146,7 @@ export function AthenaPage() {
 
     const stateLabel = WORKGROUP_STATE_I18N[selectedItem.state] ? t(WORKGROUP_STATE_I18N[selectedItem.state]!) : String(selectedItem.state);
     const detailTabs = [
-      { key: "detail", label: "Detail" },
+      { key: "detail", label: t("common.tabDetail") },
       { key: "json", label: t("common.rawJson") },
     ];
 
@@ -164,14 +164,14 @@ export function AthenaPage() {
         }
       >
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}>
+          <table className="settings-table">
             <tbody>
-              <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
-              <tr><td style={{ fontWeight: 600 }}>State</td><td><span className="badge">{stateLabel}</span></td></tr>
-              <tr><td style={{ fontWeight: 600 }}>Engine Version</td><td>{selectedItem.engineversion ? String(selectedItem.engineversion) : "\u2014"}</td></tr>
-              <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedItem.description || "\u2014"}</td></tr>
+              <tr><td className="detail-label-fixed">Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
+              <tr><td className="detail-label">State</td><td><span className="badge">{stateLabel}</span></td></tr>
+              <tr><td className="detail-label">Engine Version</td><td>{selectedItem.engineversion ? String(selectedItem.engineversion) : "\u2014"}</td></tr>
+              <tr><td className="detail-label">Description</td><td>{selectedItem.description || "\u2014"}</td></tr>
               {selectedItem.creationtime && (
-                <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.creationtime, i18n.language)}</td></tr>
+                <tr><td className="detail-label">Created</td><td>{fmtDate(selectedItem.creationtime, i18n.language)}</td></tr>
               )}
             </tbody>
           </table>
@@ -203,7 +203,7 @@ export function AthenaPage() {
             onClick={() => setShowBatchDelete(true)}
           >
             {t("common.deleteSelected")}
-            {selectedNames.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedNames.size})</span>}
+            {selectedNames.size > 0 && <span className="batch-count">({selectedNames.size})</span>}
           </button>
         </>
       }
@@ -220,7 +220,7 @@ export function AthenaPage() {
 
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-athena">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <div className="flex-fill-scroll">
             <DataTable
               columns={[
                 checkboxColumn<WorkGroupSummary>(selectedNames, toggleName, () => toggleAllNames(allIds), allIds, t, (row) => row.name),

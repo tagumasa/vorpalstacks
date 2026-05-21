@@ -57,6 +57,15 @@ export function Sidebar() {
         </div>
       ))}
       <div className="sidebar-spacer" />
+      <div className="sidebar-section-divider" />
+      <div
+        className={`sidebar-item${location.pathname === "/inspector" ? " active" : ""}`}
+        onClick={() => navigate("/inspector")}
+      >
+        <span className="icon">🔍</span>
+        {t("inspector.title")}
+      </div>
+      <div className="sidebar-section-divider" />
       <div className="sidebar-danger">
         <button
           className="sidebar-danger-toggle"
@@ -103,7 +112,7 @@ export function Sidebar() {
             disabled={shutdownConfirm !== "SHUTDOWN" || shutdownMut.isPending}
             onClick={() => shutdownMut.mutate()}
           >
-            {shutdownMut.isPending ? "..." : t("settings.danger.shutdown")}
+            {shutdownMut.isPending ? t("common.loading") : t("settings.danger.shutdown")}
           </button>
         </div>
       </Modal>

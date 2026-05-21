@@ -114,19 +114,19 @@ export function LambdaPage() {
     if (!selectedItem) return <DetailEmpty message={t("common.noItemSelected")} />;
     const rt = RUNTIME_LABELS[selectedItem.runtime] ?? String(selectedItem.runtime);
     return (
-      <DetailPanel title={selectedItem.functionname} titleIcon="⚡" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedItem.functionname} titleIcon="⚡" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Function</td><td className="cell-mono">{selectedItem.functionname}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Runtime</td><td><span className="badge">{rt}</span></td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Handler</td><td className="cell-mono">{selectedItem.handler || "\u2014"}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Memory</td><td>{selectedItem.memorysize} MB</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Timeout</td><td>{selectedItem.timeout}s</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>State</td><td><span className="badge">{selectedItem.state || "\u2014"}</span></td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Code Size</td><td>{selectedItem.codesize ? `${selectedItem.codesize} bytes` : "\u2014"}</td></tr>
-            {selectedItem.description && <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedItem.description}</td></tr>}
-            {selectedItem.functionarn && <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.functionarn}</td></tr>}
-            {selectedItem.lastmodified && <tr><td style={{ fontWeight: 600 }}>Modified</td><td>{fmtDate(selectedItem.lastmodified, i18n.language)}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Function</td><td className="cell-mono">{selectedItem.functionname}</td></tr>
+            <tr><td className="detail-label">Runtime</td><td><span className="badge">{rt}</span></td></tr>
+            <tr><td className="detail-label">Handler</td><td className="cell-mono">{selectedItem.handler || "\u2014"}</td></tr>
+            <tr><td className="detail-label">Memory</td><td>{selectedItem.memorysize} MB</td></tr>
+            <tr><td className="detail-label">Timeout</td><td>{selectedItem.timeout}s</td></tr>
+            <tr><td className="detail-label">State</td><td><span className="badge">{selectedItem.state || "\u2014"}</span></td></tr>
+            <tr><td className="detail-label">Code Size</td><td>{selectedItem.codesize ? `${selectedItem.codesize} bytes` : "\u2014"}</td></tr>
+            {selectedItem.description && <tr><td className="detail-label">Description</td><td>{selectedItem.description}</td></tr>}
+            {selectedItem.functionarn && <tr><td className="detail-label">ARN</td><td className="cell-mono cell-long">{selectedItem.functionarn}</td></tr>}
+            {selectedItem.lastmodified && <tr><td className="detail-label">Modified</td><td>{fmtDate(selectedItem.lastmodified, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>
@@ -136,12 +136,12 @@ export function LambdaPage() {
   return (
     <ServicePageLayout icon="⚡" title={t("services.lambda.title")} isLoading={isLoading} error={error} count={items.length} countLabel={t("services.lambda.countLabel")} actions={<>
       <button className="btn btn-primary" onClick={() => setShowCreate(true)}>{t("services.lambda.create")}</button>
-      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedIds.size})</span>}</button>
+      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span className="batch-count">({selectedIds.size})</span>}</button>
     </>}>
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.lambda.title") }, { label: t("services.lambda.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-lambda">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<FunctionConfiguration>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.functionname), ...columns]} data={items} getRowId={(row) => row.functionname} onRowClick={handleRowClick} selectedId={selectedItem?.functionname} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<FunctionConfiguration>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.functionname), ...columns]} data={items} getRowId={(row) => row.functionname} onRowClick={handleRowClick} selectedId={selectedItem?.functionname} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

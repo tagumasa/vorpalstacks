@@ -166,7 +166,7 @@ export function SNSPage() {
     }
 
     const detailTabs = [
-      { key: "detail", label: "Detail" },
+      { key: "detail", label: t("common.tabDetail") },
       { key: "json", label: t("common.rawJson") },
     ];
 
@@ -184,14 +184,14 @@ export function SNSPage() {
         }
       >
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}>
+          <table className="settings-table">
             <tbody>
               <tr>
-                <td style={{ width: 120, fontWeight: 600 }}>ARN</td>
-                <td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.topicarn}</td>
+                <td className="detail-label-sm">ARN</td>
+                <td className="cell-mono cell-long">{selectedItem.topicarn}</td>
               </tr>
               <tr>
-                <td style={{ fontWeight: 600 }}>Name</td>
+                <td className="detail-label">Name</td>
                 <td className="cell-mono">{topicName(selectedItem.topicarn)}</td>
               </tr>
             </tbody>
@@ -224,7 +224,7 @@ export function SNSPage() {
             onClick={() => setShowBatchDelete(true)}
           >
             {t("common.deleteSelected")}
-            {selectedArns.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedArns.size})</span>}
+            {selectedArns.size > 0 && <span className="batch-count">({selectedArns.size})</span>}
           </button>
         </>
       }
@@ -241,7 +241,7 @@ export function SNSPage() {
 
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-sns">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <div className="flex-fill-scroll">
             <DataTable
               columns={[
                 checkboxColumn<TableRow>(selectedArns, toggleArn, () => toggleAllArns(allIds), allIds, t, (row) => row.topicarn),

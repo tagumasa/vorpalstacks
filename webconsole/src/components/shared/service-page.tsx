@@ -170,9 +170,7 @@ export function SplitPane<T>({
       <div className="split-detail">
         <div className="detail-header">
           <h2>{detailTitle ?? ""}</h2>
-          <button className="detail-close" onClick={onDetailClose}>
-            ✕
-          </button>
+          <button className="detail-close icon-close" onClick={onDetailClose} />
         </div>
         {DetailComponent ? (
           <DetailComponent item={selected} />
@@ -284,7 +282,7 @@ export function MonoCell({ getValue }: { getValue: () => unknown }) {
 
 export function SmallMonoCell({ getValue }: { getValue: () => unknown }) {
   return (
-    <span className="cell-mono" style={{ fontSize: "0.85em" }}>
+    <span className="cell-mono cell-long">
       {getValue() as string}
     </span>
   );

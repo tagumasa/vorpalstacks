@@ -464,7 +464,7 @@ export function S3Page() {
       cell: ({ getValue, row }) => {
         const v = getValue() as string;
         return row.original.isFolder ? (
-          <span className="cell-mono" style={{ cursor: "pointer" }}>📁 {v}</span>
+          <span className="cell-mono bucket-name-link">📁 {v}</span>
         ) : (
           <span className="cell-mono">{v}</span>
         );
@@ -546,13 +546,13 @@ export function S3Page() {
             return <div className="detail-panel-empty">{t("services.s3.previewNotAvailable")}</div>;
           }
           if (previewError) {
-            return <div className="detail-panel-empty" style={{ color: "var(--accent-red)" }}>{String(previewError)}</div>;
+            return <div className="detail-panel-empty preview-error">{String(previewError)}</div>;
           }
           if (!previewData) return <div className="detail-panel-empty">{previewFetching ? t("common.loading") : "No data"}</div>;
           const bodyBytes = previewData.body as Uint8Array;
           const text = new TextDecoder().decode(bodyBytes);
           return (
-            <pre className="code-block" style={{ padding: 8, fontSize: 12, maxHeight: "100%", overflow: "auto" }}>
+            <pre className="code-block preview-code">
               {text}
             </pre>
           );
@@ -636,9 +636,7 @@ export function S3Page() {
           >
             {t("common.delete")}
             {selectedBucketNames.size > 0 && (
-              <span style={{ marginLeft: 4, opacity: 0.8 }}>
-                ({selectedBucketNames.size})
-              </span>
+              <span className="batch-count">({selectedBucketNames.size})</span>
             )}
           </button>
         </>
@@ -661,9 +659,7 @@ export function S3Page() {
         >
           {t("services.s3.deleteSelected")}
           {selectedObjectIds.size > 0 && (
-            <span style={{ marginLeft: 4, opacity: 0.8 }}>
-              ({selectedObjectIds.size})
-            </span>
+            <span className="batch-count">({selectedObjectIds.size})</span>
           )}
         </button>
       </>
@@ -732,7 +728,7 @@ export function S3Page() {
             maxSize={600}
             storageKey="vs-split-s3-detail"
           >
-            <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+            <div className="scroll-panel">
               <DataTable
                 columns={objectColumns}
                 data={objectRows}
@@ -741,7 +737,7 @@ export function S3Page() {
                 selectedId={selectedObject?.id}
               />
               {nextToken && (
-                <div style={{ textAlign: "center", padding: 8 }}>
+                <div className="load-more">
                   <button
                     className="btn btn-secondary btn-sm"
                     onClick={handleLoadMore}
@@ -835,7 +831,7 @@ export function S3Page() {
             />
           </label>
         )}
-        <div style={{ fontSize: "0.85em", color: "var(--text-muted)" }}>
+        <div className="footer-note">
           {t("services.s3.uploadPath")}: {prefix}[{uploadKey || "..."}]
         </div>
         <div className="modal-actions">

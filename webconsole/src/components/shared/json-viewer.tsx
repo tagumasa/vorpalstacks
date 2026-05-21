@@ -39,7 +39,7 @@ function JsonEntry({ keyName, value, depth }: { keyName: string; value: unknown;
       {isObject ? (
         <>
           <div className="json-key-row" onClick={() => setExpanded(!expanded)}>
-            <span className="json-toggle">{expanded ? "▼" : "▶"}</span>
+            <span className={`json-toggle ${expanded ? "icon-toggle-open" : "icon-toggle-closed"}`} />
             <span className="json-key">{keyName}</span>
             <span className="json-type">
               {isArray ? `Array[${(value as unknown[]).length}]` : "Object"}

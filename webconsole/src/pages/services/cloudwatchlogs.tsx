@@ -72,12 +72,12 @@ export function CloudWatchLogsPage() {
   const renderDetailPanel = () => {
     if (!selectedItem) return <DetailEmpty message={t("common.noItemSelected")} />;
     return (
-      <DetailPanel title={selectedItem.loggroupname} titleIcon="📜" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedItem.loggroupname} titleIcon="📜" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.loggroupname}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Class</td><td>{selectedItem.loggroupclass || "\u2014"}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.loggrouparn}</td></tr>
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Name</td><td className="cell-mono">{selectedItem.loggroupname}</td></tr>
+            <tr><td className="detail-label">Class</td><td>{selectedItem.loggroupclass || "\u2014"}</td></tr>
+            <tr><td className="detail-label">ARN</td><td className="cell-mono cell-long">{selectedItem.loggrouparn}</td></tr>
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>
@@ -87,12 +87,12 @@ export function CloudWatchLogsPage() {
   return (
     <ServicePageLayout icon="📜" title={t("services.cloudwatchlogs.title")} isLoading={isLoading} error={error} count={items.length} countLabel={t("services.cloudwatchlogs.countLabel")} actions={<>
       <button className="btn btn-primary" onClick={() => setShowCreate(true)}>{t("services.cloudwatchlogs.create")}</button>
-      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedIds.size})</span>}</button>
+      <button className="btn btn-danger" disabled={selectedIds.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedIds.size > 0 && <span className="batch-count">({selectedIds.size})</span>}</button>
     </>}>
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.cloudwatchlogs.title") }, { label: t("services.cloudwatchlogs.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-cwlogs">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<LogGroupSummary>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.loggroupname), ...columns]} data={items} getRowId={(row) => row.loggroupname} onRowClick={handleRowClick} selectedId={selectedItem?.loggroupname} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<LogGroupSummary>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.loggroupname), ...columns]} data={items} getRowId={(row) => row.loggroupname} onRowClick={handleRowClick} selectedId={selectedItem?.loggroupname} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

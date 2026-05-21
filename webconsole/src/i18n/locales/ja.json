@@ -26,7 +26,12 @@
     "deleteSelected": "選択を削除",
     "noItemSelected": "アイテムを選択して詳細を表示",
     "save": "保存",
-    "saving": "保存中..."
+    "saving": "保存中...",
+    "filter": "フィルター...",
+    "tabDetail": "詳細",
+    "export": "エクスポート",
+    "exportJson": "JSONでエクスポート",
+    "exportCsv": "CSVでエクスポート"
   },
   "header": {
     "online": "オンライン :8080",
@@ -896,7 +901,14 @@
       "endpointHeader": "エンドポイント",
       "readerEndpointHeader": "リーダーエンドポイント",
       "arnHeader": "ARN",
-      "instanceClassHeader": "インスタンスクラス"
+      "instanceClassHeader": "インスタンスクラス",
+      "createInstance": "DBインスタンス作成",
+      "createCluster": "DBクラスター作成",
+      "deleteInstance": "DBインスタンス削除",
+      "deleteCluster": "DBクラスター削除",
+      "instanceIdField": "インスタンス識別子",
+      "instanceClassField": "インスタンスクラス",
+      "clusterIdField": "クラスター識別子"
     },
     "rds": {
       "title": "RDS",
@@ -911,7 +923,18 @@
       },
       "engineVersionHeader": "エンジンバージョン",
       "encryptedHeader": "暗号化",
-      "createdHeader": "作成日"
+      "createdHeader": "作成日",
+      "createInstance": "DBインスタンス作成",
+      "createCluster": "DBクラスター作成",
+      "deleteInstance": "DBインスタンス削除",
+      "deleteCluster": "DBクラスター削除",
+      "instanceIdField": "インスタンス識別子",
+      "clusterIdField": "クラスター識別子",
+      "engineField": "エンジン",
+      "instanceClassField": "インスタンスクラス",
+      "storageField": "割り当てストレージ (GB)",
+      "usernameField": "マスターユーザー名",
+      "passwordField": "マスターパスワード"
     },
     "sts": {
       "title": "STS — 呼び出し元 ID",
@@ -943,6 +966,8 @@
     "tabMappings": "ポートマッピング",
     "tabServices": "サービス",
     "save": "変更を保存",
+    "saved": "✓ 保存しました",
+    "saveFailed": "✗ 保存に失敗しました",
     "reset": "デフォルトに戻す",
     "immediateNote": "✓ 変更は即時反映されます",
     "saveNote": "Saveボタンで一括保存されます。一部の変更には再起動が必要です。",
@@ -1045,5 +1070,13 @@
       "shutdownDesc": "サーバーをグレースフルに停止します。この操作は取り消せません。",
       "toggle": "⚠ 危険ゾーン"
     }
+  },
+  "inspector": {
+    "title": "インスペクター",
+    "filter": "キープレフィックスで絞り込み...",
+    "key": "キー",
+    "value": "値",
+    "typeHeader": "タイプ",
+    "countLabel": "件"
   }
 }

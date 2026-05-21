@@ -82,16 +82,16 @@ export function ACMPage() {
     if (!selectedItem) return <DetailEmpty message={t("common.noItemSelected")} />;
     const keyAlgo = KEY_ALGO_LABELS[selectedItem.keyalgorithm] ?? String(selectedItem.keyalgorithm);
     return (
-      <DetailPanel title={selectedItem.domainname} titleIcon="🔒" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedItem.domainname} titleIcon="🔒" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Domain</td><td className="cell-mono">{selectedItem.domainname}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Status</td><td><span className="badge">{String(selectedItem.status)}</span></td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Type</td><td>{selectedItem.type || "\u2014"}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Key Algorithm</td><td>{keyAlgo}</td></tr>
-            {selectedItem.certificatearn && <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.certificatearn}</td></tr>}
-            {selectedItem.notbefore && <tr><td style={{ fontWeight: 600 }}>Not Before</td><td>{fmtDate(selectedItem.notbefore)}</td></tr>}
-            {selectedItem.notafter && <tr><td style={{ fontWeight: 600 }}>Not After</td><td>{fmtDate(selectedItem.notafter)}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Domain</td><td className="cell-mono">{selectedItem.domainname}</td></tr>
+            <tr><td className="detail-label">Status</td><td><span className="badge">{String(selectedItem.status)}</span></td></tr>
+            <tr><td className="detail-label">Type</td><td>{selectedItem.type || "\u2014"}</td></tr>
+            <tr><td className="detail-label">Key Algorithm</td><td>{keyAlgo}</td></tr>
+            {selectedItem.certificatearn && <tr><td className="detail-label">ARN</td><td className="cell-mono cell-long">{selectedItem.certificatearn}</td></tr>}
+            {selectedItem.notbefore && <tr><td className="detail-label">Not Before</td><td>{fmtDate(selectedItem.notbefore)}</td></tr>}
+            {selectedItem.notafter && <tr><td className="detail-label">Not After</td><td>{fmtDate(selectedItem.notafter)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>
@@ -101,12 +101,12 @@ export function ACMPage() {
   return (
     <ServicePageLayout icon="🔒" title={t("services.acm.title")} isLoading={isLoading} error={error} count={items.length} countLabel={t("services.acm.countLabel")} actions={<>
       <button className="btn btn-primary" onClick={() => setShowCreate(true)}>{t("services.acm.create")}</button>
-      <button className="btn btn-danger" disabled={selectedArns.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedArns.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedArns.size})</span>}</button>
+      <button className="btn btn-danger" disabled={selectedArns.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedArns.size > 0 && <span className="batch-count">({selectedArns.size})</span>}</button>
     </>}>
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.acm.title") }, { label: t("services.acm.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedArns.size} label={t("common.selectedCount", { count: selectedArns.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-acm">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<CertificateSummary>(selectedArns, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.certificatearn), ...columns]} data={items} getRowId={(row) => row.certificatearn} onRowClick={handleRowClick} selectedId={selectedItem?.certificatearn} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<CertificateSummary>(selectedArns, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.certificatearn), ...columns]} data={items} getRowId={(row) => row.certificatearn} onRowClick={handleRowClick} selectedId={selectedItem?.certificatearn} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

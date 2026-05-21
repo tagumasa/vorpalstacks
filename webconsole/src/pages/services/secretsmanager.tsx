@@ -74,14 +74,14 @@ export function SecretsManagerPage() {
   const renderDetailPanel = () => {
     if (!selectedItem) return <DetailEmpty message={t("common.noItemSelected")} />;
     return (
-      <DetailPanel title={selectedItem.name} titleIcon="🗝️" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedItem.name} titleIcon="🗝️" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedItem.description || "\u2014"}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Rotation</td><td>{selectedItem.rotationenabled ? "Enabled" : "Disabled"}</td></tr>
-            {selectedItem.kmskeyid && <tr><td style={{ fontWeight: 600 }}>KMS Key</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.kmskeyid}</td></tr>}
-            {selectedItem.createddate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedItem.createddate, i18n.language)}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
+            <tr><td className="detail-label">Description</td><td>{selectedItem.description || "\u2014"}</td></tr>
+            <tr><td className="detail-label">Rotation</td><td>{selectedItem.rotationenabled ? "Enabled" : "Disabled"}</td></tr>
+            {selectedItem.kmskeyid && <tr><td className="detail-label">KMS Key</td><td className="cell-mono cell-long">{selectedItem.kmskeyid}</td></tr>}
+            {selectedItem.createddate && <tr><td className="detail-label">Created</td><td>{fmtDate(selectedItem.createddate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedItem} />}
       </DetailPanel>
@@ -91,12 +91,12 @@ export function SecretsManagerPage() {
   return (
     <ServicePageLayout icon="🗝️" title={t("services.secretsmanager.title")} isLoading={isLoading} error={error} count={items.length} countLabel={t("services.secretsmanager.countLabel")} actions={<>
       <button className="btn btn-primary" onClick={() => setShowCreate(true)}>{t("services.secretsmanager.create")}</button>
-      <button className="btn btn-danger" disabled={selectedNames.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedNames.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedNames.size})</span>}</button>
+      <button className="btn btn-danger" disabled={selectedNames.size === 0} onClick={() => setShowBatchDelete(true)}>{t("common.deleteSelected")}{selectedNames.size > 0 && <span className="batch-count">({selectedNames.size})</span>}</button>
     </>}>
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.secretsmanager.title") }, { label: t("services.secretsmanager.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedNames.size} label={t("common.selectedCount", { count: selectedNames.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-secretsmanager">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<SecretListEntry>(selectedNames, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.name), ...columns]} data={items} getRowId={(row) => row.name} onRowClick={handleRowClick} selectedId={selectedItem?.name} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<SecretListEntry>(selectedNames, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.name), ...columns]} data={items} getRowId={(row) => row.name} onRowClick={handleRowClick} selectedId={selectedItem?.name} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

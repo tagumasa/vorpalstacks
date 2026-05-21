@@ -118,14 +118,14 @@ export function IAMPage() {
   const renderUserDetail = () => {
     if (!selectedUser) return <DetailEmpty message={t("common.noItemSelected")} />;
     return (
-      <DetailPanel title={selectedUser.username} titleIcon="👤" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDeleteUser(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedUser.username} titleIcon="👤" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDeleteUser(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Username</td><td className="cell-mono">{selectedUser.username}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedUser.arn}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Path</td><td>{selectedUser.path || "/"}</td></tr>
-            {selectedUser.createdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedUser.createdate, i18n.language)}</td></tr>}
-            {selectedUser.passwordlastused && <tr><td style={{ fontWeight: 600 }}>Last Login</td><td>{fmtDate(selectedUser.passwordlastused, i18n.language)}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Username</td><td className="cell-mono">{selectedUser.username}</td></tr>
+            <tr><td className="detail-label">ARN</td><td className="cell-mono cell-long">{selectedUser.arn}</td></tr>
+            <tr><td className="detail-label">Path</td><td>{selectedUser.path || "/"}</td></tr>
+            {selectedUser.createdate && <tr><td className="detail-label">Created</td><td>{fmtDate(selectedUser.createdate, i18n.language)}</td></tr>}
+            {selectedUser.passwordlastused && <tr><td className="detail-label">Last Login</td><td>{fmtDate(selectedUser.passwordlastused, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedUser} />}
       </DetailPanel>
@@ -135,14 +135,14 @@ export function IAMPage() {
   const renderRoleDetail = () => {
     if (!selectedRole) return <DetailEmpty message={t("common.noItemSelected")} />;
     return (
-      <DetailPanel title={selectedRole.rolename} titleIcon="🔑" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDeleteRole(true)}>{t("common.delete")}</button>}>
+      <DetailPanel title={selectedRole.rolename} titleIcon="🔑" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)} actions={<button className="btn btn-danger btn-sm" onClick={() => setShowDeleteRole(true)}>{t("common.delete")}</button>}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Role</td><td className="cell-mono">{selectedRole.rolename}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedRole.arn}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedRole.description || "\u2014"}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Path</td><td>{selectedRole.path || "/"}</td></tr>
-            {selectedRole.createdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedRole.createdate, i18n.language)}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Role</td><td className="cell-mono">{selectedRole.rolename}</td></tr>
+            <tr><td className="detail-label">ARN</td><td className="cell-mono cell-long">{selectedRole.arn}</td></tr>
+            <tr><td className="detail-label">Description</td><td>{selectedRole.description || "\u2014"}</td></tr>
+            <tr><td className="detail-label">Path</td><td>{selectedRole.path || "/"}</td></tr>
+            {selectedRole.createdate && <tr><td className="detail-label">Created</td><td>{fmtDate(selectedRole.createdate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedRole} />}
       </DetailPanel>
@@ -152,14 +152,14 @@ export function IAMPage() {
   const renderPolicyDetail = () => {
     if (!selectedPolicy) return <DetailEmpty message={t("common.noItemSelected")} />;
     return (
-      <DetailPanel title={selectedPolicy.policyname} titleIcon="📜" tabs={[{ key: "detail", label: "Detail" }, { key: "json", label: t("common.rawJson") ?? "JSON" }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)}>
+      <DetailPanel title={selectedPolicy.policyname} titleIcon="📜" tabs={[{ key: "detail", label: t("common.tabDetail") }, { key: "json", label: t("common.rawJson") }]} activeTab={detailTab} onTabChange={(k) => setDetailTab(k as DetailTab)}>
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}><tbody>
-            <tr><td style={{ width: 140, fontWeight: 600 }}>Policy</td><td className="cell-mono">{selectedPolicy.policyname}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>ARN</td><td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedPolicy.arn}</td></tr>
-            <tr><td style={{ fontWeight: 600 }}>Attachments</td><td>{selectedPolicy.attachmentcount ?? 0}</td></tr>
-            {selectedPolicy.createdate && <tr><td style={{ fontWeight: 600 }}>Created</td><td>{fmtDate(selectedPolicy.createdate, i18n.language)}</td></tr>}
-            {selectedPolicy.updatedate && <tr><td style={{ fontWeight: 600 }}>Updated</td><td>{fmtDate(selectedPolicy.updatedate, i18n.language)}</td></tr>}
+          <table className="settings-table"><tbody>
+            <tr><td className="detail-label-fixed">Policy</td><td className="cell-mono">{selectedPolicy.policyname}</td></tr>
+            <tr><td className="detail-label">ARN</td><td className="cell-mono cell-long">{selectedPolicy.arn}</td></tr>
+            <tr><td className="detail-label">Attachments</td><td>{selectedPolicy.attachmentcount ?? 0}</td></tr>
+            {selectedPolicy.createdate && <tr><td className="detail-label">Created</td><td>{fmtDate(selectedPolicy.createdate, i18n.language)}</td></tr>}
+            {selectedPolicy.updatedate && <tr><td className="detail-label">Updated</td><td>{fmtDate(selectedPolicy.updatedate, i18n.language)}</td></tr>}
           </tbody></table>
         ) : <JsonViewer data={selectedPolicy} />}
       </DetailPanel>
@@ -170,29 +170,29 @@ export function IAMPage() {
     <ServicePageLayout icon="👤" title={t("services.iam.title")} isLoading={query.isLoading} error={query.error} tabs={tabs} activeTab={tab} onTabChange={handleTabChange} actions={
       tab === "users" ? (<>
         <button className="btn btn-primary" onClick={() => setShowCreateUser(true)}>{t("services.iam.createUser")}</button>
-        <button className="btn btn-danger" disabled={userSel.selected.size === 0} onClick={() => setShowBatchDeleteUser(true)}>{t("common.deleteSelected")}{userSel.selected.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({userSel.selected.size})</span>}</button>
+        <button className="btn btn-danger" disabled={userSel.selected.size === 0} onClick={() => setShowBatchDeleteUser(true)}>{t("common.deleteSelected")}{userSel.selected.size > 0 && <span className="batch-count">({userSel.selected.size})</span>}</button>
       </>) : tab === "roles" ? (<>
         <button className="btn btn-primary" onClick={() => setShowCreateRole(true)}>{t("services.iam.createRole")}</button>
-        <button className="btn btn-danger" disabled={roleSel.selected.size === 0} onClick={() => setShowBatchDeleteRole(true)}>{t("common.deleteSelected")}{roleSel.selected.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({roleSel.selected.size})</span>}</button>
+        <button className="btn btn-danger" disabled={roleSel.selected.size === 0} onClick={() => setShowBatchDeleteRole(true)}>{t("common.deleteSelected")}{roleSel.selected.size > 0 && <span className="batch-count">({roleSel.selected.size})</span>}</button>
       </>) : undefined
     }>
       {tab === "users" && (users.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-iam-users">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<User>(userSel.selected, userSel.toggle, () => userSel.toggleAll(users.map((u) => u.username)), users.map((u) => u.username), t, (row) => row.username), ...userColumns]} data={users} getRowId={(row) => row.username} onRowClick={(row) => { setSelectedUser(row); setDetailTab("detail"); }} selectedId={selectedUser?.username} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<User>(userSel.selected, userSel.toggle, () => userSel.toggleAll(users.map((u) => u.username)), users.map((u) => u.username), t, (row) => row.username), ...userColumns]} data={users} getRowId={(row) => row.username} onRowClick={(row) => { setSelectedUser(row); setDetailTab("detail"); }} selectedId={selectedUser?.username} /></div>
           {renderUserDetail()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>)}
 
       {tab === "roles" && (roles.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-iam-roles">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={[checkboxColumn<Role>(roleSel.selected, roleSel.toggle, () => roleSel.toggleAll(roles.map((r) => r.rolename)), roles.map((r) => r.rolename), t, (row) => row.rolename), ...roleColumns]} data={roles} getRowId={(row) => row.rolename} onRowClick={(row) => { setSelectedRole(row); setDetailTab("detail"); }} selectedId={selectedRole?.rolename} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<Role>(roleSel.selected, roleSel.toggle, () => roleSel.toggleAll(roles.map((r) => r.rolename)), roles.map((r) => r.rolename), t, (row) => row.rolename), ...roleColumns]} data={roles} getRowId={(row) => row.rolename} onRowClick={(row) => { setSelectedRole(row); setDetailTab("detail"); }} selectedId={selectedRole?.rolename} /></div>
           {renderRoleDetail()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>)}
 
       {tab === "policies" && (policies.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-iam-policies">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}><DataTable columns={policyColumns} data={policies} getRowId={(row) => row.policyname} onRowClick={(row) => { setSelectedPolicy(row); setDetailTab("detail"); }} selectedId={selectedPolicy?.policyname} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={policyColumns} data={policies} getRowId={(row) => row.policyname} onRowClick={(row) => { setSelectedPolicy(row); setDetailTab("detail"); }} selectedId={selectedPolicy?.policyname} /></div>
           {renderPolicyDetail()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>)}

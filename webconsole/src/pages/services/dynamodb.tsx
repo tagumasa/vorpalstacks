@@ -443,7 +443,7 @@ export function DynamoDBPage() {
       header: attr,
       cell: ({ row }: { row: { original: ItemRow } }) => {
         const av = row.original.item[attr];
-        return av ? <span className="cell-mono">{fmtAttr(av)}</span> : <span style={{ color: "var(--text-muted)" }}>—</span>;
+        return av ? <span className="cell-mono">{fmtAttr(av)}</span> : <span className="attr-mute-inline">—</span>;
       },
       size: 120,
     })),
@@ -789,37 +789,33 @@ export function DynamoDBPage() {
       borderRadius: 3, flexShrink: 0,
     };
 
-    const childRowStyle: React.CSSProperties = {
-      display: "flex", gap: 6, alignItems: "center", marginBottom: 3, fontSize: 12,
-    };
-
     const renderChildRow = (parentIdx: number, child: AttrRow, ci: number, parentType: "L" | "M") => (
-      <div key={ci} style={{ ...childRowStyle, paddingLeft: 16 }}>
+      <div key={ci} className="attr-row attr-row--child">
         {parentType === "M" ? (
           <input
             value={child.name}
             onChange={(e) => updateChildRow(parentIdx, ci, "name", e.target.value)}
             placeholder="key"
-            style={{ flex: "0 0 80px", height: 28, fontSize: 11, padding: "2px 4px", border: "1px solid var(--border-dim)", background: "var(--bg-tertiary)", color: "var(--text-primary)", borderRadius: 3, fontFamily: "monospace" }}
+            className="attr-input attr-input--narrow"
           />
         ) : (
-          <span style={{ flex: "0 0 24px", textAlign: "center", color: "var(--text-muted)", fontSize: 10 }}>{ci}</span>
+          <span className="attr-index">{ci}</span>
         )}
         <select
           value={child.type}
           onChange={(e) => updateChildRow(parentIdx, ci, "type", e.target.value as AttrType)}
-          style={{ width: 100, height: 28, fontSize: 11, padding: "2px 4px", border: "1px solid var(--border-dim)", background: "var(--bg-tertiary)", color: "var(--text-primary)", borderRadius: 3 }}
+          className="attr-input attr-input--value"
         >
           {ATTR_TYPES.map((at) => (
             <option key={at} value={at}>{t(`services.dynamodb.${TYPE_LABEL_KEYS[at]}`)}</option>
           ))}
         </select>
         {child.type === "BOOL" ? (
-          <input type="checkbox" checked={child.value === "true"} onChange={(e) => updateChildRow(parentIdx, ci, "value", e.target.checked ? "true" : "false")} style={{ margin: 0, width: 16, height: 16 }} />
+          <input type="checkbox" checked={child.value === "true"} onChange={(e) => updateChildRow(parentIdx, ci, "value", e.target.checked ? "true" : "false")} className="attr-checkbox" />
         ) : child.type === "NULL" ? (
-          <span style={{ color: "var(--text-muted)", fontSize: 11 }}>null</span>
+          <span className="attr-null">null</span>
         ) : (child.type === "L" || child.type === "M") ? (
-          <span style={{ flex: 1, color: "var(--text-muted)", fontSize: 10 }}>{child.type === "L" ? `[${child.children?.length ?? 0} items]` : `{${child.children?.length ?? 0} entries}`}</span>
+          <span className="attr-count">{child.type === "L" ? `[${child.children?.length ?? 0} items]` : `{${child.children?.length ?? 0} entries}`}</span>
         ) : (
           <input value={child.value} onChange={(e) => updateChildRow(parentIdx, ci, "value", e.target.value)} placeholder={typePlaceholder(child.type)} style={cellInputStyle(false)} />
         )}
@@ -832,9 +828,9 @@ export function DynamoDBPage() {
       const isListOrMap = row.type === "L" || row.type === "M";
       return (
         <div key={i} style={{ marginBottom: isListOrMap ? 6 : 0 }}>
-          <div style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12 }}>
+          <div className="attr-row">
             {isKey ? (
-              <span className="cell-mono" style={{ flex: "0 0 100px", color: "var(--accent)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis" }} title={t("services.dynamodb.keyAttribute")}>
+              <span className="cell-mono attr-name" title={t("services.dynamodb.keyAttribute")}>
                 {row.name}
               </span>
             ) : (
@@ -842,36 +838,36 @@ export function DynamoDBPage() {
                 value={row.name}
                 onChange={(e) => updateAttrRow(i, "name", e.target.value)}
                 placeholder={t("services.dynamodb.attributeName")}
-                style={{ flex: "0 0 100px", height: 28, fontSize: 11, padding: "2px 4px", border: "1px solid var(--border-dim)", background: "var(--bg-tertiary)", color: "var(--text-primary)", borderRadius: 3, fontFamily: "monospace" }}
+                className="attr-input"
               />
             )}
             <select
               value={row.type}
               onChange={(e) => updateAttrRow(i, "type", e.target.value as AttrType)}
               disabled={isKey}
-              style={{ width: 110, height: 28, fontSize: 11, padding: "2px 4px", border: "1px solid var(--border-dim)", background: "var(--bg-tertiary)", color: "var(--text-primary)", borderRadius: 3 }}
+              className="attr-input attr-input--wide"
             >
               {ATTR_TYPES.map((at) => (
                 <option key={at} value={at}>{t(`services.dynamodb.${TYPE_LABEL_KEYS[at]}`)}</option>
               ))}
             </select>
             {isListOrMap ? (
-              <span style={{ flex: 1, color: "var(--text-muted)", fontSize: 10 }}>
+              <span className="attr-count">
                 {row.type === "L" ? `[${row.children?.length ?? 0} items]` : `{${row.children?.length ?? 0} entries}`}
               </span>
             ) : row.type === "BOOL" ? (
-              <input type="checkbox" checked={row.value === "true"} onChange={(e) => updateAttrRow(i, "value", e.target.checked ? "true" : "false")} style={{ margin: 0, width: 16, height: 16 }} />
+              <input type="checkbox" checked={row.value === "true"} onChange={(e) => updateAttrRow(i, "value", e.target.checked ? "true" : "false")} className="attr-checkbox" />
             ) : row.type === "NULL" ? (
-              <span style={{ color: "var(--text-muted)", fontSize: 11 }}>null</span>
+              <span className="attr-null">null</span>
             ) : (
               <input value={row.value} onChange={(e) => updateAttrRow(i, "value", e.target.value)} placeholder={typePlaceholder(row.type)} style={cellInputStyle(false)} />
             )}
             {!isKey && <button onClick={() => removeAttrRow(i)} title={t("common.delete")} style={delBtnStyle}>✕</button>}
           </div>
           {isListOrMap && (
-            <div style={{ marginTop: 2, marginLeft: 8, paddingLeft: 8, borderLeft: "2px solid var(--border-dim)" }}>
+            <div className="attr-nested-border">
               {(row.children ?? []).map((child, ci) => renderChildRow(i, child, ci, row.type as "L" | "M"))}
-              <button onClick={() => addChildRow(i)} style={{ marginTop: 2, fontSize: 10, padding: "1px 8px", height: 24, cursor: "pointer", border: "1px solid var(--border-dim)", background: "var(--bg-tertiary)", color: "var(--text-primary)", borderRadius: 3 }}>
+              <button onClick={() => addChildRow(i)} className="attr-add-btn">
                 + {row.type === "L" ? t("services.dynamodb.addItem") || "item" : t("services.dynamodb.addAttribute") || "entry"}
               </button>
             </div>
@@ -889,14 +885,14 @@ export function DynamoDBPage() {
       });
 
       return (
-        <div style={{ padding: "4px 0" }}>
+        <div className="attr-section">
           {keyRows.length > 0 && (
-            <div style={{ marginBottom: 6, paddingBottom: 6, borderBottom: "1px solid var(--border-dim)" }}>
+            <div className="attr-section-head">
               {keyRows.map((idx) => attrRows[idx] ? renderAttrRow(attrRows[idx], idx) : null)}
             </div>
           )}
           {nonKeyRows.map((idx) => attrRows[idx] ? renderAttrRow(attrRows[idx], idx) : null)}
-          <button onClick={addAttrRow} style={{ marginTop: 4, fontSize: 11, padding: "2px 10px", height: 28, cursor: "pointer", border: "1px solid var(--border-dim)", background: "var(--bg-tertiary)", color: "var(--text-primary)", borderRadius: 3 }}>
+          <button onClick={addAttrRow} className="attr-section-add">
             + {t("services.dynamodb.addAttribute")}
           </button>
         </div>
@@ -982,7 +978,7 @@ export function DynamoDBPage() {
             )}
           </div>
         </div>
-        {jsonError && <div className="modal-error" style={{ margin: "4px 8px" }}>{jsonError}</div>}
+        {jsonError && <div className="modal-error json-error-inline">{jsonError}</div>}
         <div className="detail-body">
           {detailTab === "edit"
             ? renderEditForm()
@@ -990,7 +986,7 @@ export function DynamoDBPage() {
               <textarea
                 value={itemJson}
                 onChange={(e) => setItemJson(e.target.value)}
-                style={{ width: "100%", height: "100%", minHeight: 200, fontFamily: "monospace", fontSize: 12, padding: 8, border: "1px solid var(--border-dim)", background: "var(--bg-tertiary)", color: "var(--text-primary)", borderRadius: 4, resize: "vertical" }}
+                className="json-editor"
               />
             )}
         </div>
@@ -1014,9 +1010,7 @@ export function DynamoDBPage() {
           >
             {t("common.delete")}
             {selectedTableNames.size > 0 && (
-              <span style={{ marginLeft: 4, opacity: 0.8 }}>
-                ({selectedTableNames.size})
-              </span>
+              <span className="badge-count">({selectedTableNames.size})</span>
             )}
           </button>
         </>
@@ -1034,9 +1028,7 @@ export function DynamoDBPage() {
         >
           {t("services.dynamodb.deleteSelected")}
           {selectedItemKeys.size > 0 && (
-            <span style={{ marginLeft: 4, opacity: 0.8 }}>
-              ({selectedItemKeys.size})
-            </span>
+            <span className="badge-count">({selectedItemKeys.size})</span>
           )}
         </button>
       </>
@@ -1101,7 +1093,7 @@ export function DynamoDBPage() {
             </span>
           )}
           {batchResult && (
-            <span className="selection-count" style={{ color: "var(--accent-green)" }}>
+            <span className="selection-count selection-count--green">
               {batchResult}
             </span>
           )}
@@ -1129,7 +1121,7 @@ export function DynamoDBPage() {
           maxSize={600}
           storageKey="vs-split-dynamodb-detail"
         >
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <div className="scroll-panel">
             {allItems.length > 0 ? (
               <DataTable
                 columns={[
@@ -1145,8 +1137,7 @@ export function DynamoDBPage() {
               <div className="empty-state">
                 {t("services.dynamodb.detail.noItems")}
                 <button
-                  className="btn btn-primary btn-sm"
-                  style={{ marginLeft: 12 }}
+                  className="btn btn-primary btn-sm attr-sk"
                   onClick={openAddItemModal}
                 >
                   {t("services.dynamodb.addItem")}
@@ -1154,7 +1145,7 @@ export function DynamoDBPage() {
               </div>
             )}
             {nextEvalKey && (
-              <div style={{ textAlign: "center", padding: 8 }}>
+              <div className="load-more">
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={handleLoadMore}
@@ -1283,7 +1274,7 @@ export function DynamoDBPage() {
         <h2>{t("services.dynamodb.addItem")}</h2>
 
         {/* Tab switcher */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+        <div className="attr-row-head--flex attr-tab-bar">
           <button
             className={`detail-tab ${putItemTab === "structured" ? "active" : ""}`}
             onClick={switchToStructured}
@@ -1304,9 +1295,9 @@ export function DynamoDBPage() {
         {putItemTab === "structured" ? (
           <div>
             {/* PK/SK info */}
-            <div style={{ marginBottom: 8, fontSize: "0.85em", color: "var(--text-muted)" }}>
+            <div className="footer-note attr-info-bar">
               <span>PK: <strong className="cell-mono">{pkName}</strong></span>
-              {skName && <span style={{ marginLeft: 12 }}>SK: <strong className="cell-mono">{skName}</strong></span>}
+              {skName && <span className="attr-sk">SK: <strong className="cell-mono">{skName}</strong></span>}
             </div>
 
             {/* Attribute rows */}
@@ -1315,58 +1306,56 @@ export function DynamoDBPage() {
               const isListOrMap = row.type === "L" || row.type === "M";
               return (
               <div key={i} style={{ marginBottom: 4 }}>
-                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <div className="attr-row-head">
                   <input
                     value={row.name}
                     onChange={(e) => updateAttrRow(i, "name", e.target.value)}
                     placeholder={t("services.dynamodb.attributeName")}
-                    className="modal-input"
-                    style={{ flex: 1 }}
+                    className="modal-input attr-row-input"
                     readOnly={isKey}
                     title={isKey ? t("services.dynamodb.keyAttribute") : undefined}
                   />
                   <select
                     value={row.type}
                     onChange={(e) => updateAttrRow(i, "type", e.target.value as AttrType)}
-                    className="modal-input"
-                    style={{ width: 120 }}
+                    className="modal-input attr-row-enum"
                   >
                     {ATTR_TYPES.map((at) => (
                       <option key={at} value={at}>{t(`services.dynamodb.${TYPE_LABEL_KEYS[at]}`)}</option>
                     ))}
                   </select>
-                  {!isKey && <button className="btn btn-secondary btn-sm" onClick={() => removeAttrRow(i)} style={{ padding: "2px 8px" }}>✕</button>}
+                  {!isKey && <button className="btn btn-secondary btn-sm attr-remove-btn" onClick={() => removeAttrRow(i)}>✕</button>}
                 </div>
                 {isListOrMap ? (
-                  <div style={{ marginTop: 2, marginLeft: 8, paddingLeft: 8, borderLeft: "2px solid var(--border-dim)" }}>
+                  <div className="attr-nested-border">
                     {(row.children ?? []).map((child, ci) => (
-                      <div key={ci} style={{ display: "flex", gap: 4, alignItems: "center", marginBottom: 3 }}>
+                      <div key={ci} className="attr-child-row">
                         {row.type === "M" ? (
-                          <input value={child.name} onChange={(e) => updateChildRow(i, ci, "name", e.target.value)} placeholder="key" className="modal-input" style={{ width: 100 }} />
+                          <input value={child.name} onChange={(e) => updateChildRow(i, ci, "name", e.target.value)} placeholder="key" className="modal-input attr-enum-input" />
                         ) : (
-                          <span style={{ width: 24, textAlign: "center", color: "var(--text-muted)", fontSize: 10 }}>{ci}</span>
+                          <span className="attr-enum">{ci}</span>
                         )}
-                        <select value={child.type} onChange={(e) => updateChildRow(i, ci, "type", e.target.value as AttrType)} className="modal-input" style={{ width: 100 }}>
+                        <select value={child.type} onChange={(e) => updateChildRow(i, ci, "type", e.target.value as AttrType)} className="modal-input attr-enum-input">
                           {ATTR_TYPES.map((at) => (<option key={at} value={at}>{t(`services.dynamodb.${TYPE_LABEL_KEYS[at]}`)}</option>))}
                         </select>
                         {child.type === "BOOL" ? (
                           <input type="checkbox" checked={child.value === "true"} onChange={(e) => updateChildRow(i, ci, "value", e.target.checked ? "true" : "false")} />
                         ) : child.type === "NULL" ? (
-                          <span style={{ color: "var(--text-muted)", fontSize: 11 }}>null</span>
+                          <span className="attr-null">null</span>
                         ) : (child.type === "L" || child.type === "M") ? (
-                          <span style={{ flex: 1, color: "var(--text-muted)", fontSize: 10 }}>{child.type === "L" ? `[${child.children?.length ?? 0}]` : `{${child.children?.length ?? 0}}`}</span>
+                          <span className="attr-count">{child.type === "L" ? `[${child.children?.length ?? 0}]` : `{${child.children?.length ?? 0}}`}</span>
                         ) : (
-                          <input value={child.value} onChange={(e) => updateChildRow(i, ci, "value", e.target.value)} placeholder={typePlaceholder(child.type)} className="modal-input" style={{ flex: 1 }} />
+                          <input value={child.value} onChange={(e) => updateChildRow(i, ci, "value", e.target.value)} placeholder={typePlaceholder(child.type)} className="modal-input attr-row-input" />
                         )}
-                        <button className="btn btn-secondary btn-sm" onClick={() => removeChildRow(i, ci)} style={{ padding: "2px 8px" }}>✕</button>
+                        <button className="btn btn-secondary btn-sm attr-remove-btn" onClick={() => removeChildRow(i, ci)}>✕</button>
                       </div>
                     ))}
-                    <button className="btn btn-secondary btn-sm" onClick={() => addChildRow(i)} style={{ marginTop: 2, fontSize: 10 }}>
+                    <button className="btn btn-secondary btn-sm attr-add-btn" onClick={() => addChildRow(i)}>
                       + {row.type === "L" ? "item" : "entry"}
                     </button>
                   </div>
                 ) : row.type === "BOOL" ? (
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, fontSize: 13 }}>
+                  <label className="attr-label">
                     <input
                       type="checkbox"
                       checked={row.value === "true"}
@@ -1379,19 +1368,18 @@ export function DynamoDBPage() {
                     value={row.value}
                     onChange={(e) => updateAttrRow(i, "value", e.target.value)}
                     placeholder={typePlaceholder(row.type)}
-                    className="modal-input"
-                    style={{ width: "100%", marginTop: 2 }}
+                    className="modal-input attr-input-full"
                   />
                 )}
               </div>
               );
             })}
 
-            <button className="btn btn-secondary btn-sm" onClick={addAttrRow} style={{ marginTop: 4 }}>
+            <button className="btn btn-secondary btn-sm attr-add-sm" onClick={addAttrRow}>
               {t("services.dynamodb.addAttribute")}
             </button>
 
-            <div className="modal-actions" style={{ marginTop: 12 }}>
+            <div className="modal-actions modal-actions--spaced">
               <button className="btn btn-secondary" onClick={() => { setShowAddItem(false); setJsonError(""); }}>
                 {t("common.cancel")}
               </button>
@@ -1410,9 +1398,8 @@ export function DynamoDBPage() {
               value={itemJson}
               onChange={(e) => setItemJson(e.target.value)}
               placeholder={t("services.dynamodb.jsonPlaceholderPlain")}
-              className="modal-input"
+              className="modal-input attr-monospace"
               rows={8}
-              style={{ fontFamily: "monospace", fontSize: 12 }}
             />
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => { setShowAddItem(false); setJsonError(""); }}>

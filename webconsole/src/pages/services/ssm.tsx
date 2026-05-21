@@ -206,7 +206,7 @@ export function SSMPage() {
 
     const detailTabs = [
       { key: "detail", label: t("services.ssm.title").split(" ")[0] ?? "Detail" },
-      { key: "json", label: t("common.rawJson") ?? "JSON" },
+      { key: "json", label: t("common.rawJson") },
     ];
 
     return (
@@ -226,10 +226,10 @@ export function SSMPage() {
         }
       >
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}>
+          <table className="settings-table">
             <tbody>
-              <tr><td style={{ width: 140, fontWeight: 600 }}>Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
-              <tr><td style={{ fontWeight: 600 }}>Type</td><td>{(() => {
+              <tr><td className="detail-label-fixed">Name</td><td className="cell-mono">{selectedItem.name}</td></tr>
+              <tr><td className="detail-label">Type</td><td>{(() => {
                 const labels: Record<number, string> = {
                   [ParameterType.SECURE_STRING]: t("services.ssm.paramTypeSecureString"),
                   [ParameterType.STRING_LIST]: t("services.ssm.paramTypeStringList"),
@@ -237,8 +237,8 @@ export function SSMPage() {
                 };
                 return labels[selectedItem.type] ?? String(selectedItem.type);
               })()}</td></tr>
-              <tr><td style={{ fontWeight: 600 }}>Version</td><td>{selectedItem.version}</td></tr>
-              <tr><td style={{ fontWeight: 600 }}>Tier</td><td>{(() => {
+              <tr><td className="detail-label">Version</td><td>{selectedItem.version}</td></tr>
+              <tr><td className="detail-label">Tier</td><td>{(() => {
                 const labels: Record<number, string> = {
                   [ParameterTier.STANDARD]: t("services.ssm.tierStandard"),
                   [ParameterTier.ADVANCED]: t("services.ssm.tierAdvanced"),
@@ -247,11 +247,11 @@ export function SSMPage() {
                 return labels[selectedItem.tier] ?? String(selectedItem.tier);
               })()}</td></tr>
               {selectedItem.description && (
-                <tr><td style={{ fontWeight: 600 }}>Description</td><td>{selectedItem.description}</td></tr>
+                <tr><td className="detail-label">Description</td><td>{selectedItem.description}</td></tr>
               )}
-              <tr><td style={{ fontWeight: 600 }}>Data Type</td><td>{selectedItem.datatype || "text"}</td></tr>
+              <tr><td className="detail-label">Data Type</td><td>{selectedItem.datatype || "text"}</td></tr>
               {selectedItem.lastmodifieddate && (
-                <tr><td style={{ fontWeight: 600 }}>Last Modified</td><td>{fmtDate(selectedItem.lastmodifieddate, i18n.language)}</td></tr>
+                <tr><td className="detail-label">Last Modified</td><td>{fmtDate(selectedItem.lastmodifieddate, i18n.language)}</td></tr>
               )}
             </tbody>
           </table>
@@ -284,7 +284,7 @@ export function SSMPage() {
           >
             {t("common.deleteSelected")}
             {selectedNames.size > 0 && (
-              <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedNames.size})</span>
+              <span className="batch-count">({selectedNames.size})</span>
             )}
           </button>
         </>
@@ -305,8 +305,9 @@ export function SSMPage() {
           maxSize={600}
           storageKey="vs-split-ssm"
         >
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <div className="flex-fill-scroll">
             <DataTable
+              exportName="ssm"
               columns={[
                 checkboxColumn<ParameterMetadata>(selectedNames, toggleName, () => toggleAllNames(allIds), allIds, t, (row) => row.name),
                 ...columns,

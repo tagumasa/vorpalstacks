@@ -18,6 +18,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **RDS web console: instance management with engine lifecycle** — New RDS service page provides instance CRUD with Create (starts MySQL engine), Delete (stops engine), and full inspector layout. Admin RPCs refactored from Neptune-specific handler into a shared `rds/admin_handler.go` using `StoreProvider`/`EngineProvider` function types, serving both Neptune and MySQL engines. Neptune's `admin_handler.go` deleted; registration updated in `optional.go`.
 
+- **Web console: Inspector page** — New PebbleDB key browser accessible from the sidebar. Displays key/value pairs with prefix filtering and type indicators.
+
 ### Changed
 
 - **Neptune service packages relocated under `rds/`** — Neptune, NeptuneData, NeptuneGraph implementations moved from `internal/services/aws/{neptune,neptunedata,neptunegraph}/` to `internal/services/aws/rds/{neptune,neptunedata,neptunegraph}/`. Stores moved to `internal/store/aws/rds/`. All import paths updated.
@@ -30,7 +32,7 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **SDK tests: binary name and env vars** — Test binary renamed to `sdk-tests-all`. `ALL_SERVICES_ENABLED=true` replaces per-service flags in README instructions. `isAuditEnabled` now recognizes `ALL_SERVICES_ENABLED`.
 
-- **Web console: all 18 service pages migrated to 3-panel inspector layout** — ACM, API Gateway, AppSync, Athena, CloudFront, CloudTrail, CloudWatch, CloudWatch Logs, Cognito, Cognito Identity, DynamoDB, EventBridge, IAM, Kinesis, KMS, Lambda, Neptune, Route 53, Secrets Manager, SES, Step Functions, SNS, SQS, SSM, Timestream, WAFv2 — all pages replaced `SplitPane` with `DataTable` + `Splitter` + `inspector` components (`Breadcrumb`, `SelectionBadge`, `DetailPanel`, `DetailEmpty`, `useSelection`, `checkboxColumn`). DynamoDB adds nested table→items navigation with structured attribute editor. CloudWatch adds alarm create dialog.
+- **Web console: all 18 service pages migrated to 3-panel inspector layout** — ACM, API Gateway, AppSync, Athena, CloudFront, CloudTrail, CloudWatch, CloudWatch Logs, Cognito, Cognito Identity, DynamoDB, EventBridge, IAM, Kinesis, KMS, Lambda, Neptune, Route 53, Secrets Manager, SES, Step Functions, SNS, SQS, SSM, Timestream, WAFv2 — all pages replaced `SplitPane` with `DataTable` + `Splitter` + `inspector` components (`Breadcrumb`, `SelectionBadge`, `DetailPanel`, `DetailEmpty`, `useSelection`, `checkboxColumn`). DynamoDB adds nested table→items navigation with structured attribute editor. CloudWatch adds alarm create dialog. Inline styles replaced with CSS classes across all pages. Header icons migrated to CSS `::before` pseudo-elements. DataTable gains global text filter and JSON/CSV export. Modal gains focus trap, Escape dismiss, and `aria-modal` accessibility. Neptune and RDS pages add Create/Delete Instance/Cluster mutations with batch delete.
 
 ### Fixed
 
@@ -60,7 +62,7 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **Web console: Splitter horizontal drag direction inverted** — Dragging a horizontal splitter downward now correctly expands the panel instead of shrinking it. Login and setup pages add `useEffect` cleanup flags to prevent state updates after unmount.
 
-- **i18n: missing `saved`/`saveFailed` keys in Japanese and Chinese locales** — Settings page save feedback messages were falling back to key names in `ja` and `zh` locales. Keys added.
+- **i18n: missing translation keys** — `saved`/`saveFailed` (Settings), `filter`/`export`/`tabDetail` (common), Inspector section, and Neptune/RDS CRUD field labels added across all three locales (en, ja, zh).
 
 ## [0.0.11]
 

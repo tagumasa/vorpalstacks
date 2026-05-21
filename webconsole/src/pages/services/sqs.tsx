@@ -156,7 +156,7 @@ export function SQSPage() {
     }
 
     const detailTabs = [
-      { key: "detail", label: "Detail" },
+      { key: "detail", label: t("common.tabDetail") },
       { key: "json", label: t("common.rawJson") },
     ];
 
@@ -174,15 +174,15 @@ export function SQSPage() {
         }
       >
         {detailTab === "detail" ? (
-          <table className="settings-table" style={{ width: "100%" }}>
+          <table className="settings-table">
             <tbody>
               <tr>
-                <td style={{ width: 120, fontWeight: 600 }}>Name</td>
+                <td className="detail-label-sm">Name</td>
                 <td className="cell-mono">{selectedItem.name}</td>
               </tr>
               <tr>
-                <td style={{ fontWeight: 600 }}>URL</td>
-                <td className="cell-mono" style={{ fontSize: "0.85em" }}>{selectedItem.url}</td>
+                <td className="detail-label">URL</td>
+                <td className="cell-mono cell-long">{selectedItem.url}</td>
               </tr>
             </tbody>
           </table>
@@ -214,7 +214,7 @@ export function SQSPage() {
             onClick={() => setShowBatchDelete(true)}
           >
             {t("common.deleteSelected")}
-            {selectedUrls.size > 0 && <span style={{ marginLeft: 4, opacity: 0.8 }}>({selectedUrls.size})</span>}
+            {selectedUrls.size > 0 && <span className="batch-count">({selectedUrls.size})</span>}
           </button>
         </>
       }
@@ -231,7 +231,7 @@ export function SQSPage() {
 
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-sqs">
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <div className="flex-fill-scroll">
             <DataTable
               columns={[
                 checkboxColumn<TableRow>(selectedUrls, toggleUrl, () => toggleAllUrls(allIds), allIds, t, (row) => row.url),
