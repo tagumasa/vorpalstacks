@@ -57,6 +57,71 @@ func (s *Store) TableLock(db, table string) *sync.Mutex {
 	return v.(*sync.Mutex)
 }
 
+// TxnBatch is an atomic write batch for transaction support. Writes are
+// accumulated and only persisted when Commit is called. Rollback discards all.
+type TxnBatch struct {
+	store  *Store
+	batch  kvBatch
+	closed bool
+}
+
+func (tb *TxnBatch) Commit() error {
+	if tb.closed {
+		return fmtErr("txn_batch commit", errors.New("batch already closed"))
+	}
+	tb.closed = true
+	return tb.batch.commit()
+}
+
+func (tb *TxnBatch) Rollback() {
+	if tb.closed {
+		return
+	}
+	tb.closed = true
+	tb.batch.close()
+}
+
+func (s *Store) NewTxnBatch() *TxnBatch {
+	return &TxnBatch{store: s, batch: s.backend.newBatch()}
+}
+
+func (s *Store) TxnInsertRow(tb *TxnBatch, db, table string, pk []byte, row Row) error {
+	if err := s.checkOpen(); err != nil {
+		return err
+	}
+	key := rowKey(s.engine, db, table, pk)
+	data, err := encodeRow(row)
+	if err != nil {
+		return fmtErr("txn_insert encode", err)
+	}
+	tb.batch.put(key, data)
+	s.appendIndexEntries(tb.batch, db, table, pk, row)
+	return nil
+}
+
+func (s *Store) TxnUpdateRow(tb *TxnBatch, db, table string, pk []byte, row Row) error {
+	if err := s.checkOpen(); err != nil {
+		return err
+	}
+	key := rowKey(s.engine, db, table, pk)
+	data, err := encodeRow(row)
+	if err != nil {
+		return fmtErr("txn_update encode", err)
+	}
+	tb.batch.put(key, data)
+	s.appendIndexEntries(tb.batch, db, table, pk, row)
+	return nil
+}
+
+func (s *Store) TxnDeleteRow(tb *TxnBatch, db, table string, pk []byte) error {
+	if err := s.checkOpen(); err != nil {
+		return err
+	}
+	key := rowKey(s.engine, db, table, pk)
+	tb.batch.del(key)
+	return nil
+}
+
 // GetRow retrieves a single row by primary key.
 func (s *Store) GetRow(ctx context.Context, db, table string, pk []byte) (Row, error) {
 	if err := s.checkOpen(); err != nil {

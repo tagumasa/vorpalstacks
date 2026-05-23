@@ -10,6 +10,7 @@ import (
 	"time"
 
 	sqle "github.com/dolthub/go-mysql-server"
+	"github.com/dolthub/go-mysql-server/sql"
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/common/handler"
@@ -26,6 +27,7 @@ type staleEntry struct {
 	created  time.Time
 	database string
 	schema   string
+	sqlCtx   *sql.Context
 }
 
 // RDSDataService implements the RDS Data API HTTP operations.
@@ -38,9 +40,10 @@ type RDSDataService struct {
 	cancelCleanup  context.CancelFunc
 }
 
-// VmysqlProvider returns the sqle.Engine for a given instance ID.
+// VmysqlProvider returns engine information for a given instance ID.
 type VmysqlProvider interface {
 	GetEngine(instanceID string) *sqle.Engine
+	NewContext(instanceID string, database string) *sql.Context
 }
 
 // RDSStoreProvider resolves resourceArn to instance identifiers.
@@ -120,6 +123,7 @@ func (s *RDSDataService) ExecuteStatement(ctx context.Context, reqCtx *request.R
 	}
 
 	database := input.Database
+	var txCtx *sql.Context
 	if input.TransactionID != "" {
 		s.mu.RLock()
 		entry, ok := s.transactions[input.TransactionID]
@@ -130,6 +134,7 @@ func (s *RDSDataService) ExecuteStatement(ctx context.Context, reqCtx *request.R
 		if entry.database != "" {
 			database = entry.database
 		}
+		txCtx = entry.sqlCtx
 	}
 
 	sqlStr := input.Sql
@@ -137,7 +142,11 @@ func (s *RDSDataService) ExecuteStatement(ctx context.Context, reqCtx *request.R
 		sqlStr = substituteParameters(sqlStr, input.Parameters)
 	}
 
-	result, err := executeSQL(engine, sqlStr, database, input.IncludeResultMetadata, input.FormatRecordsAs)
+	sqlCtx := txCtx
+	if sqlCtx == nil {
+		sqlCtx = newSQLContext(database)
+	}
+	result, err := executeSQL(engine, sqlCtx, sqlStr, input.IncludeResultMetadata, input.FormatRecordsAs)
 	if err != nil {
 		return nil, badRequest(fmt.Sprintf("SQL execution failed: %v", err))
 	}
@@ -171,6 +180,7 @@ func (s *RDSDataService) BatchExecuteStatement(ctx context.Context, reqCtx *requ
 	}
 
 	database := input.Database
+	var txCtx *sql.Context
 	if input.TransactionID != "" {
 		s.mu.RLock()
 		entry, ok := s.transactions[input.TransactionID]
@@ -181,11 +191,16 @@ func (s *RDSDataService) BatchExecuteStatement(ctx context.Context, reqCtx *requ
 		if entry.database != "" {
 			database = entry.database
 		}
+		txCtx = entry.sqlCtx
 	}
 
 	var results []UpdateResult
 	if len(input.ParameterSets) == 0 {
-		res, err := executeSQL(engine, input.Sql, database, false, "")
+		sqlCtx := txCtx
+		if sqlCtx == nil {
+			sqlCtx = newSQLContext(database)
+		}
+		res, err := executeSQL(engine, sqlCtx, input.Sql, false, "")
 		if err != nil {
 			return nil, badRequest(fmt.Sprintf("SQL execution failed: %v", err))
 		}
@@ -193,7 +208,11 @@ func (s *RDSDataService) BatchExecuteStatement(ctx context.Context, reqCtx *requ
 	} else {
 		for _, params := range input.ParameterSets {
 			sqlWithParams := substituteParameters(input.Sql, params)
-			res, err := executeSQL(engine, sqlWithParams, database, false, "")
+			sqlCtx := txCtx
+			if sqlCtx == nil {
+				sqlCtx = newSQLContext(database)
+			}
+			res, err := executeSQL(engine, sqlCtx, sqlWithParams, false, "")
 			if err != nil {
 				return nil, badRequest(fmt.Sprintf("SQL execution failed for parameter set: %v", err))
 			}
@@ -232,7 +251,7 @@ func (s *RDSDataService) ExecuteSql(ctx context.Context, reqCtx *request.Request
 	statements := splitSQL(input.Sql)
 	var sqlResults []SqlStatementResult
 	for _, stmt := range statements {
-		res, err := executeSQL(engine, stmt, input.Database, true, "")
+		res, err := executeSQL(engine, newSQLContext(input.Database), stmt, true, "")
 		if err != nil {
 			return nil, badRequest(fmt.Sprintf("SQL execution failed: %v", err))
 		}
@@ -276,12 +295,24 @@ func (s *RDSDataService) BeginTransaction(ctx context.Context, reqCtx *request.R
 		return nil, invalidParam("secretArn is required")
 	}
 
-	engine, _, err := s.resolveEngine(input.ResourceArn)
+	engine, instanceID, err := s.resolveEngine(input.ResourceArn)
 	if err != nil {
 		return nil, err
 	}
 	if err := s.validateCredentials(ctx, input.SecretArn); err != nil {
 		return nil, err
+	}
+
+	var sqlCtx *sql.Context
+	if s.vmysqlProvider != nil {
+		sqlCtx = s.vmysqlProvider.NewContext(instanceID, input.Database)
+	}
+	if sqlCtx == nil {
+		sqlCtx = newSQLContext(input.Database)
+	}
+
+	if _, err := executeSQL(engine, sqlCtx, "START TRANSACTION", false, ""); err != nil {
+		return nil, badRequest(fmt.Sprintf("begin transaction failed: %v", err))
 	}
 
 	txID := uuid.New().String()
@@ -291,6 +322,7 @@ func (s *RDSDataService) BeginTransaction(ctx context.Context, reqCtx *request.R
 		created:  time.Now(),
 		database: input.Database,
 		schema:   input.Schema,
+		sqlCtx:   sqlCtx,
 	}
 	s.mu.Unlock()
 
@@ -329,7 +361,11 @@ func (s *RDSDataService) CommitTransaction(ctx context.Context, reqCtx *request.
 		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", input.TransactionID))
 	}
 
-	if _, err := executeSQL(entry.engine, "COMMIT", entry.database, false, ""); err != nil {
+	commitCtx := entry.sqlCtx
+	if commitCtx == nil {
+		commitCtx = newSQLContext(entry.database)
+	}
+	if _, err := executeSQL(entry.engine, commitCtx, "COMMIT", false, ""); err != nil {
 		return nil, badRequest(fmt.Sprintf("commit failed: %v", err))
 	}
 
@@ -368,7 +404,11 @@ func (s *RDSDataService) RollbackTransaction(ctx context.Context, reqCtx *reques
 		return nil, transactionNotFound(fmt.Sprintf("transaction %s not found or expired", input.TransactionID))
 	}
 
-	if _, err := executeSQL(entry.engine, "ROLLBACK", entry.database, false, ""); err != nil {
+	rollbackCtx := entry.sqlCtx
+	if rollbackCtx == nil {
+		rollbackCtx = newSQLContext(entry.database)
+	}
+	if _, err := executeSQL(entry.engine, rollbackCtx, "ROLLBACK", false, ""); err != nil {
 		return nil, badRequest(fmt.Sprintf("rollback failed: %v", err))
 	}
 

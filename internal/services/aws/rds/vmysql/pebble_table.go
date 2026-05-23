@@ -182,6 +182,9 @@ func (i *pebbleInserter) StatementComplete(ctx *sql.Context) error         { ret
 func (i *pebbleInserter) Insert(ctx *sql.Context, row sql.Row) error {
 	pk := encodeSQLPK(i.table.schema, row)
 	engineRow := sqlRowToEngineRow(row, i.table.sqlSch, i.table.schema)
+	if sess := sessionFromCtx(ctx); sess != nil && sess.isInTx() {
+		return sess.txnInsertRow(i.table.dbName, i.table.name, pk, engineRow)
+	}
 	return i.table.store.InsertRow(ctx, i.table.dbName, i.table.name, pk, engineRow)
 }
 func (i *pebbleInserter) Close(ctx *sql.Context) error { return nil }
@@ -202,6 +205,9 @@ func (d *pebbleDeleter) DiscardChanges(ctx *sql.Context, err error) error { retu
 func (d *pebbleDeleter) StatementComplete(ctx *sql.Context) error         { return nil }
 func (d *pebbleDeleter) Delete(ctx *sql.Context, row sql.Row) error {
 	pk := encodeSQLPK(d.table.schema, row)
+	if sess := sessionFromCtx(ctx); sess != nil && sess.isInTx() {
+		return sess.txnDeleteRow(d.table.dbName, d.table.name, pk)
+	}
 	return d.table.store.DeleteRow(ctx, d.table.dbName, d.table.name, pk)
 }
 func (d *pebbleDeleter) Close(ctx *sql.Context) error { return nil }
@@ -223,6 +229,9 @@ func (u *pebbleUpdater) StatementComplete(ctx *sql.Context) error         { retu
 func (u *pebbleUpdater) Update(ctx *sql.Context, old sql.Row, new sql.Row) error {
 	pk := encodeSQLPK(u.table.schema, old)
 	engineRow := sqlRowToEngineRow(new, u.table.sqlSch, u.table.schema)
+	if sess := sessionFromCtx(ctx); sess != nil && sess.isInTx() {
+		return sess.txnUpdateRow(u.table.dbName, u.table.name, pk, engineRow)
+	}
 	return u.table.store.UpdateRow(ctx, u.table.dbName, u.table.name, pk, engineRow)
 }
 func (u *pebbleUpdater) Close(ctx *sql.Context) error { return nil }

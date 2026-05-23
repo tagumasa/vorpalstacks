@@ -634,9 +634,9 @@ func toInt(val interface{}) int {
 // track query state, and return results.
 func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *request.RequestContext, req *request.ParsedRequest, graphID string, entry *engineEntry, store *ngstore.NeptuneGraphStore) (interface{}, error) {
 	var params struct {
-		Query      string `json:"query"`
-		Language   string `json:"language"`
-		Parameters string `json:"parameters"`
+		Query      string          `json:"query"`
+		Language   string          `json:"language"`
+		Parameters json.RawMessage `json:"parameters"`
 	}
 	if err := json.Unmarshal(req.Body, &params); err != nil {
 		return nil, newValidationException("BAD_REQUEST", "invalid request body")
@@ -654,8 +654,8 @@ func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *req
 	}
 
 	var cypherParams map[string]any
-	if len(params.Parameters) > 0 && strings.TrimSpace(params.Parameters) != "" {
-		if err := json.Unmarshal([]byte(params.Parameters), &cypherParams); err != nil {
+	if len(params.Parameters) > 0 {
+		if err := json.Unmarshal(params.Parameters, &cypherParams); err != nil {
 			return nil, newValidationException("BAD_REQUEST", fmt.Sprintf("invalid parameters: %v", err))
 		}
 	}

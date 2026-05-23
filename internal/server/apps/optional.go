@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sqle "github.com/dolthub/go-mysql-server"
+	"github.com/dolthub/go-mysql-server/sql"
 	"vorpalstacks/internal/common/audit"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/serviceports"
@@ -315,6 +316,10 @@ type vmysqlEngineProvider struct {
 
 func (p *vmysqlEngineProvider) GetEngine(instanceID string) *sqle.Engine {
 	return p.svc.GetEngine(instanceID)
+}
+
+func (p *vmysqlEngineProvider) NewContext(instanceID string, database string) *sql.Context {
+	return p.svc.NewContext(instanceID, database)
 }
 
 // rdsStoreProvider adapts the RDS store for ARN resolution.

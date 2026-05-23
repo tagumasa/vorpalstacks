@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"connectrpc.com/connect"
@@ -684,6 +685,7 @@ func (h *AdminHandler) DescribeDBClusterParameters(ctx context.Context, req *con
 			Ismodifiable:   p.IsModifiable,
 		})
 	}
+	sort.Slice(pbParams, func(i, j int) bool { return pbParams[i].Parametername < pbParams[j].Parametername })
 
 	return connect.NewResponse(&pb.DBClusterParameterGroupDetails{
 		Parameters: pbParams,
@@ -746,6 +748,7 @@ func (h *AdminHandler) DescribeDBParameters(ctx context.Context, req *connect.Re
 			Ismodifiable:   p.IsModifiable,
 		})
 	}
+	sort.Slice(pbParams, func(i, j int) bool { return pbParams[i].Parametername < pbParams[j].Parametername })
 
 	return connect.NewResponse(&pb.DBParameterGroupDetails{
 		Parameters: pbParams,

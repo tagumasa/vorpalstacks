@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -11,21 +12,24 @@ import (
 	"github.com/dolthub/go-mysql-server/sql"
 )
 
-// executeSQL runs a SQL string on the given engine and returns a formatted response.
-func executeSQL(engine *sqle.Engine, sqlStr, database string, includeMetadata bool, formatRecordsAs string) (*ExecuteStatementResponse, error) {
+func newSQLContext(database string) *sql.Context {
 	ctx := sql.NewContext(context.Background())
 	if database != "" {
 		ctx.SetCurrentDatabase(database)
 	}
+	return ctx
+}
 
-	schema, rowIter, _, err := engine.Query(ctx, sqlStr)
+// executeSQL runs a SQL string on the given engine and returns a formatted response.
+func executeSQL(engine *sqle.Engine, sqlCtx *sql.Context, sqlStr string, includeMetadata bool, formatRecordsAs string) (*ExecuteStatementResponse, error) {
+	schema, rowIter, _, err := engine.Query(sqlCtx, sqlStr)
 	if err != nil {
 		return nil, err
 	}
 
 	var rows []sql.Row
 	if rowIter != nil {
-		rows, err = sql.RowIterToRows(ctx, rowIter)
+		rows, err = sql.RowIterToRows(sqlCtx, rowIter)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read rows: %w", err)
 		}
@@ -299,17 +303,54 @@ func splitSQL(sqlStr string) []string {
 }
 
 // substituteParameters replaces named parameters (:name) in SQL with values.
+// It uses word-boundary matching to avoid partial replacement (e.g. :id
+// matching inside :id2) and skips occurrences inside string literals.
 func substituteParameters(sqlStr string, params []SqlParameter) string {
 	result := sqlStr
 	for _, p := range params {
 		if p.Name == "" || p.Value == nil {
 			continue
 		}
-		placeholder := ":" + p.Name
 		replacement := fieldToSQLString(p.Value)
-		result = strings.ReplaceAll(result, placeholder, replacement)
+		// Match :name only at word boundaries so :id does not match :id2.
+		pattern := regexp.MustCompile(`\b` + regexp.QuoteMeta(":"+p.Name) + `\b`)
+		result = replaceOutsideStrings(result, pattern, replacement)
 	}
 	return result
+}
+
+// replaceOutsideStrings replaces all matches of re in s, but only in parts
+// outside single-quoted string literals.
+func replaceOutsideStrings(s string, re *regexp.Regexp, replacement string) string {
+	var b strings.Builder
+	inString := false
+	i := 0
+	for i < len(s) {
+		if s[i] == '\'' {
+			// Check for escaped quote ''
+			if inString && i+1 < len(s) && s[i+1] == '\'' {
+				b.WriteString("''")
+				i += 2
+				continue
+			}
+			b.WriteByte(s[i])
+			inString = !inString
+			i++
+			continue
+		}
+		if !inString {
+			// Try to match the pattern at this position
+			loc := re.FindStringIndex(s[i:])
+			if loc != nil && loc[0] == 0 {
+				b.WriteString(replacement)
+				i += loc[1]
+				continue
+			}
+		}
+		b.WriteByte(s[i])
+		i++
+	}
+	return b.String()
 }
 
 func fieldToSQLString(f *Field) string {

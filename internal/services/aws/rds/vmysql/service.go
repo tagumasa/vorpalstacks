@@ -107,7 +107,7 @@ func (s *Service) Open(region, instanceID string) (int, error) {
 		return sql.NewContext(ctx, opts...)
 	}
 	sessionBuilder := func(ctx context.Context, conn *mysql.Conn, addr string) (sql.Session, error) {
-		return sql.NewBaseSession(), nil
+		return newPebbleSession(sql.NewBaseSession(), provider, store), nil
 	}
 
 	cfg := server.Config{
@@ -218,6 +218,16 @@ func (s *Service) GetEngine(instanceID string) *sqle.Engine {
 		return entry.engine
 	}
 	return nil
+}
+
+func (s *Service) NewContext(instanceID string, database string) *sql.Context {
+	s.mu.Lock()
+	entry, ok := s.instances[instanceID]
+	s.mu.Unlock()
+	if !ok {
+		return nil
+	}
+	return newEngineContext(entry.engine, entry.provider, entry.store, database)
 }
 
 type noopListener struct{}

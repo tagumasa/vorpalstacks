@@ -345,6 +345,9 @@ func (s *RDSStore) ListEventSubscriptions() ([]*EventSubscription, error) {
 	return s.eventSubs.List()
 }
 
+// ListClusterEndpoints returns cluster endpoints filtered by cluster ID.
+// The base implementation returns an empty list; NeptuneStore overrides this
+// with its own ProtoStore-backed implementation.
 func (s *RDSStore) ListClusterEndpoints(clusterID string) ([]*DBClusterEndpoint, error) {
 	return nil, nil
 }
