@@ -47,12 +47,13 @@ func NewItemStore(store storage.BasicStorage, tableStore *TableStore) *ItemStore
 	if tableStore != nil {
 		region = tableStore.region
 	}
-	return &ItemStore{
+	s := &ItemStore{
 		BaseStore:  common.NewBaseStore(store.Bucket(itemBucketName(region)), "dynamodb_items"),
 		tableStore: tableStore,
 		storage:    store,
 		region:     region,
 	}
+	return s
 }
 
 func (s *ItemStore) buildItemKey(tableName string, key map[string]*AttributeValue) string {
@@ -77,10 +78,10 @@ func (s *ItemStore) buildItemKey(tableName string, key map[string]*AttributeValu
 		if skValue == "" {
 			return ""
 		}
-		return fmt.Sprintf("%s#%s#%s", tableName, pkValue, skValue)
+		return fmt.Sprintf("%s"+keySep+"%s"+keySep+"%s", tableName, pkValue, skValue)
 	}
 
-	return fmt.Sprintf("%s#%s", tableName, pkValue)
+	return fmt.Sprintf("%s"+keySep+"%s", tableName, pkValue)
 }
 
 // Get retrieves a DynamoDB item by table name and key.
@@ -156,7 +157,7 @@ func (s *ItemStore) Exists(tableName string, key map[string]*AttributeValue) boo
 
 // List returns a list of DynamoDB items with pagination.
 func (s *ItemStore) List(tableName string, marker string, limit int) ([]*Item, string, error) {
-	prefix := tableName + "#"
+	prefix := tableName + keySep
 	var items []*Item
 	var lastKey string
 
@@ -188,10 +189,35 @@ func (s *ItemStore) List(tableName string, marker string, limit int) ([]*Item, s
 	return items, lastKey, nil
 }
 
+// ScanOptions controls the behaviour of a storage-level scan.
+type ScanOptions struct {
+	Limit  int
+	Marker string
+}
+
 // Scan scans all items in a DynamoDB table.
 func (s *ItemStore) Scan(tableName string, fn func(item *Item) error) error {
-	prefix := tableName + "#"
-	return s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+	_, err := s.ScanWithOptions(tableName, ScanOptions{}, func(item *Item) error {
+		return fn(item)
+	})
+	return err
+}
+
+// ScanWithOptions scans items with limit and marker support for pagination.
+func (s *ItemStore) ScanWithOptions(tableName string, opts ScanOptions, fn func(item *Item) error) (string, error) {
+	prefix := tableName + keySep
+	var lastKey string
+	count := 0
+
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		if opts.Marker != "" && key <= opts.Marker {
+			return nil
+		}
+		if opts.Limit > 0 && count >= opts.Limit {
+			lastKey = key
+			return errScanLimitReached
+		}
+
 		var pbItem pb.Item
 		if err := proto.Unmarshal(value, &pbItem); err != nil {
 			return err
@@ -201,8 +227,14 @@ func (s *ItemStore) Scan(tableName string, fn func(item *Item) error) error {
 			Key:        protoToAttributeValueMapDirect(pbItem.Key),
 			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
 		}
+		count++
 		return fn(item)
 	})
+
+	if err != nil && !errors.Is(err, errScanLimitReached) {
+		return "", err
+	}
+	return lastKey, nil
 }
 
 // ScanByPartitionKey scans items with a specific partition key value.
@@ -211,25 +243,31 @@ func (s *ItemStore) ScanByPartitionKey(tableName, partitionKeyValue string, fn f
 	if err != nil {
 		return err
 	}
-	return s.scanByPartitionKeyWithTable(tableName, table, partitionKeyValue, fn)
+	_, err = s.scanByPartitionKeyWithTable(tableName, table, partitionKeyValue, ScanOptions{}, fn)
+	return err
 }
 
 // ScanByPartitionKeyWithTable scans items with a specific partition key value using a pre-fetched table,
 // avoiding a redundant table store lookup.
-func (s *ItemStore) ScanByPartitionKeyWithTable(tableName string, table *Table, partitionKeyValue string, fn func(item *Item) error) error {
-	return s.scanByPartitionKeyWithTable(tableName, table, partitionKeyValue, fn)
+func (s *ItemStore) ScanByPartitionKeyWithTable(tableName string, table *Table, partitionKeyValue string, opts ScanOptions, fn func(item *Item) error) (string, error) {
+	return s.scanByPartitionKeyWithTable(tableName, table, partitionKeyValue, opts, fn)
 }
 
-func (s *ItemStore) scanByPartitionKeyWithTable(tableName string, table *Table, partitionKeyValue string, fn func(item *Item) error) error {
-	prefix := tableName + "#" + partitionKeyValue
+func (s *ItemStore) scanByPartitionKeyWithTable(tableName string, table *Table, partitionKeyValue string, opts ScanOptions, fn func(item *Item) error) (string, error) {
+	prefix := tableName + keySep + partitionKeyValue
 	hasSortKey := s.tableStore.GetSortKey(table) != ""
 	if hasSortKey {
-		prefix += "#"
+		prefix += keySep
 	}
 
 	pkName := s.tableStore.GetPartitionKey(table)
+	var lastKey string
+	count := 0
 
-	return s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		if opts.Marker != "" && key <= opts.Marker {
+			return nil
+		}
 		var pbItem pb.Item
 		if err := proto.Unmarshal(value, &pbItem); err != nil {
 			return err
@@ -239,20 +277,28 @@ func (s *ItemStore) scanByPartitionKeyWithTable(tableName string, table *Table, 
 			Key:        protoToAttributeValueMapDirect(pbItem.Key),
 			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
 		}
-		if !hasSortKey {
-			itemPkValue := attributeValueToString(item.Key[pkName])
-			if itemPkValue != partitionKeyValue {
-				return nil
-			}
+		itemPkValue := attributeValueToString(item.Key[pkName])
+		if itemPkValue != partitionKeyValue {
+			return nil
 		}
+		if opts.Limit > 0 && count >= opts.Limit {
+			lastKey = key
+			return errScanLimitReached
+		}
+		count++
 		return fn(item)
 	})
+
+	if err != nil && !errors.Is(err, errScanLimitReached) {
+		return "", err
+	}
+	return lastKey, nil
 }
 
 // Count returns the number of items in a DynamoDB table.
 func (s *ItemStore) Count(tableName string) (int64, error) {
 	var count int64
-	prefix := tableName + "#"
+	prefix := tableName + keySep
 	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
 		count++
 		return nil
@@ -265,7 +311,7 @@ func (s *ItemStore) Count(tableName string) (int64, error) {
 // If index cleanup fails, orphan index entries may remain, but this is
 // preferable to losing GSI/LSI data while items still exist.
 func (s *ItemStore) DeleteAllForTable(tableName string) error {
-	prefix := tableName + "#"
+	prefix := tableName + keySep
 
 	const batchSize = 1000
 	var keysBatch []string
@@ -315,6 +361,9 @@ func (s *ItemStore) DeleteAllForTable(tableName string) error {
 	}
 	if err := s.tableStore.UpdateTableSize(tableName, -table.TableSizeBytes); err != nil {
 		return fmt.Errorf("reset table size after delete all: %w", err)
+	}
+	if err := s.tableStore.UpdateItemCount(tableName, -table.ItemCount); err != nil {
+		return fmt.Errorf("reset item count after delete all: %w", err)
 	}
 	return nil
 }

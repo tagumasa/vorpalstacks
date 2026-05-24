@@ -387,6 +387,10 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 		}
 
 		if updateExpr != "" {
+			paths := extractUpdatedPaths(updateExpr, parseExpressionAttributeNames(req.Parameters))
+			if err := validateNotKeyAttributes(table, paths); err != nil {
+				return err
+			}
 			var err error
 			updatedAttrNames, err = applyUpdateExpressionWithTracking(item.Attributes, updateExpr, parseExpressionAttributeNames(req.Parameters), parseExpressionAttributeValues(req.Parameters))
 			if err != nil {
@@ -396,6 +400,15 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 				return err
 			}
 		} else if attrs != nil {
+			var attrNames []string
+			if attrMap, ok := attrs.(map[string]interface{}); ok {
+				for k := range attrMap {
+					attrNames = append(attrNames, k)
+				}
+			}
+			if err := validateNotKeyAttributes(table, attrNames); err != nil {
+				return err
+			}
 			updatedAttrNames, err = applyAttributeUpdatesWithTracking(item.Attributes, attrs)
 			if err != nil {
 				return err

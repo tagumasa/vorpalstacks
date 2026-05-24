@@ -16,7 +16,7 @@ type pebbleTransaction struct {
 
 var _ sql.Transaction = (*pebbleTransaction)(nil)
 
-func (t *pebbleTransaction) String() string  { return "pebble-vmysql transaction" }
+func (t *pebbleTransaction) String() string   { return "pebble-vmysql transaction" }
 func (t *pebbleTransaction) IsReadOnly() bool { return t.readOnly }
 
 type pebbleSession struct {

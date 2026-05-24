@@ -58,7 +58,7 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **RDS Data API SDK tests: idempotent cleanup** — Drops stale databases/tables before each run to prevent `CREATE DATABASE` collisions.
 
-- **S3: PebbleDB key delimiter migrated to null byte** — Internal storage key separator changed from `#` to `\x00` to eliminate collision risk with S3 object keys containing `#`. One-time automatic migration on startup; non-versioned objects use `bucket\x00key\x00null` consistently, replacing the previous `bucket#key` / `bucket#key#null` dual-path fallback. `ListParts` replaced redundant `countSkipped` with inline counter.
+- **S3: PebbleDB key delimiter changed to null byte** — Internal storage key separator changed from `#` to `\x00` to eliminate collision risk with S3 object keys containing `#`. Non-versioned objects use `bucket\x00key\x00null` consistently, replacing the previous `bucket#key` / `bucket#key#null` dual-path fallback. `ListParts` replaced redundant `countSkipped` with inline counter.
 
 - **S3: KeyLocker mutex safety** — Removed unsafe `Delete` calls on persistent lock keys (`bucket\x00key`). Only transient multipart upload IDs retain `Delete`, preventing a race where concurrent goroutines could acquire different mutex instances after an unlock-delete-lock sequence.
 
@@ -73,6 +73,18 @@ All notable changes to Vorpalstacks will be documented in this file.
 - **S3: CreateMultipartUpload resource cleanup** — Blob store multipart uploads are now aborted on metadata persistence failure, preventing orphaned upload state.
 
 - **S3: object lock operations avoid blob reads** — Lock, legal hold, and retention operations now use lightweight `getVersionedObjectMeta` instead of full `GetWithVersion`, eliminating unnecessary blob I/O.
+
+- **DynamoDB: PebbleDB key delimiter changed to null byte** — Internal storage key separator changed from `#` to `\x00` to eliminate collision risk with DynamoDB table/key names containing `#`. Affects item, GSI index, and LSI index buckets.
+
+- **DynamoDB: key attribute update rejection** — `UpdateItem` and `TransactWriteItems` Update now reject attempts to modify partition key or sort key attributes via `UpdateExpression` or `AttributeUpdates`, matching AWS behavior (`ValidationException: Cannot update attribute … This attribute is part of the key schema`).
+
+- **DynamoDB: item size calculation** — Number size now uses AWS formula (significant digit pairs → 1 byte, minimum 1 byte) instead of raw string length. Map and List types include 3-byte overhead matching AWS accounting.
+
+- **DynamoDB: storage-level scan pagination** — New `ScanWithOptions` with `Limit`/`Marker` pushed to the PebbleDB scan layer, avoiding full-table loads into memory. `Query` and `Scan` operations use store-level limits where possible.
+
+- **DynamoDB: TransactWriteItems ConditionCheck conflict detection** — Write operations now detect conflicts with preceding `ConditionCheck` on the same key within the same transaction, matching AWS validation behavior.
+
+- **DynamoDB: DeleteAllForTable item count reset** — `DeleteAllForTable` now resets `ItemCount` to zero after deleting all items, keeping table metadata consistent.
 
 - **Web console: Splitter horizontal drag direction inverted** — Dragging a horizontal splitter downward now correctly expands the panel instead of shrinking it. Login and setup pages add `useEffect` cleanup flags to prevent state updates after unmount.
 

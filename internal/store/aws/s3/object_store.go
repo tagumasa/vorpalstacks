@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -82,8 +81,6 @@ func NewObjectStore(store storage.BasicStorage, blobStore storage.BlobStore, buc
 		cache.Delete(bucket)
 		os.keyLocker.DeleteByPrefix(bucket + keySep)
 	})
-
-	os.migrateKeyDelimiter(store, region)
 
 	return os, nil
 }
@@ -245,49 +242,4 @@ func (s *ObjectStore) SetStorageClass(bucket, key, versionId string, storageClas
 		obj.StorageClass = objectStorageClassToProto(storageClass)
 		return s.BaseStore.PutProto(storageKey, &obj)
 	})
-}
-
-const migrationFlagKey = "__key_delimiter_migrated_v1"
-
-func (s *ObjectStore) migrateKeyDelimiter(store storage.BasicStorage, region string) {
-	objBucket := store.Bucket(objectBucketName(region))
-	mpIdxBucket := store.Bucket(multipartIndexBucketName(region))
-
-	flag, _ := objBucket.Get([]byte(migrationFlagKey))
-	if flag != nil {
-		return
-	}
-
-	oldSep := "#"
-	migrated := 0
-
-	for _, bucket := range []storage.Bucket{objBucket, mpIdxBucket} {
-		iter := bucket.ScanPrefix(nil)
-		for iter.Next() {
-			k := iter.Key()
-			if string(k) == migrationFlagKey {
-				continue
-			}
-			if !bytes.Contains(k, []byte(oldSep)) {
-				continue
-			}
-			v := iter.Value()
-			newKey := bytes.ReplaceAll(k, []byte(oldSep), []byte(keySep))
-			if err := bucket.Put(newKey, v); err != nil {
-				slog.Error("s3 migration: failed to write new key", "old", string(k), "error", err)
-				continue
-			}
-			if err := bucket.Delete(k); err != nil {
-				slog.Error("s3 migration: failed to delete old key", "old", string(k), "error", err)
-			}
-			migrated++
-		}
-		iter.Close()
-	}
-
-	objBucket.Put([]byte(migrationFlagKey), []byte("1"))
-
-	if migrated > 0 {
-		slog.Info("s3: migrated key delimiter", "region", region, "keys", migrated)
-	}
 }

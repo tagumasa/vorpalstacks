@@ -83,7 +83,7 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 				allItems = filterBySortKeyCondition(allItems, sortKeyCondition)
 			}
 		} else {
-			err = store.Items().Scan(tableName, func(item *dbstore.Item) error {
+			_, err = store.Items().ScanWithOptions(tableName, dbstore.ScanOptions{Limit: limit + 1}, func(item *dbstore.Item) error {
 				allItems = append(allItems, item)
 				return nil
 			})
@@ -94,7 +94,11 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 	} else {
 		hashKeyValue, sortKeyCondition := extractPrimaryKeyCondition(table, keyCondExpr, exprAttrNames, exprAttrValues)
 		if hashKeyValue != "" {
-			err = store.Items().ScanByPartitionKeyWithTable(tableName, table, hashKeyValue, func(item *dbstore.Item) error {
+			pkOpts := dbstore.ScanOptions{}
+			if sortKeyCondition == nil && exclusiveStartKey == nil {
+				pkOpts.Limit = limit + 1
+			}
+			_, err = store.Items().ScanByPartitionKeyWithTable(tableName, table, hashKeyValue, pkOpts, func(item *dbstore.Item) error {
 				allItems = append(allItems, item)
 				return nil
 			})
@@ -106,7 +110,11 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 			}
 			alreadySortedAscending = true
 		} else {
-			err = store.Items().Scan(tableName, func(item *dbstore.Item) error {
+			scanOpts := dbstore.ScanOptions{}
+			if exclusiveStartKey == nil {
+				scanOpts.Limit = limit
+			}
+			_, err = store.Items().ScanWithOptions(tableName, scanOpts, func(item *dbstore.Item) error {
 				allItems = append(allItems, item)
 				return nil
 			})
@@ -222,7 +230,11 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 	var allItems []*dbstore.Item
-	err = store.Items().Scan(tableName, func(item *dbstore.Item) error {
+	scanLimit := limit + 1
+	if exclusiveStartKey != nil {
+		scanLimit = 0
+	}
+	_, err = store.Items().ScanWithOptions(tableName, dbstore.ScanOptions{Limit: scanLimit}, func(item *dbstore.Item) error {
 		allItems = append(allItems, item)
 		return nil
 	})

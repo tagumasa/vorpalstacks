@@ -53,8 +53,9 @@ type ItemStoreInterface interface {
 	Exists(tableName string, key map[string]*AttributeValue) bool
 	List(tableName string, marker string, limit int) ([]*Item, string, error)
 	Scan(tableName string, fn func(item *Item) error) error
+	ScanWithOptions(tableName string, opts ScanOptions, fn func(item *Item) error) (string, error)
 	ScanByPartitionKey(tableName, partitionKeyValue string, fn func(item *Item) error) error
-	ScanByPartitionKeyWithTable(tableName string, table *Table, partitionKeyValue string, fn func(item *Item) error) error
+	ScanByPartitionKeyWithTable(tableName string, table *Table, partitionKeyValue string, opts ScanOptions, fn func(item *Item) error) (string, error)
 	Count(tableName string) (int64, error)
 	DeleteAllForTable(tableName string) error
 }

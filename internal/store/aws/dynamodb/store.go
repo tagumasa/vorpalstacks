@@ -13,6 +13,10 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
 )
 
+const KeySep = "\x00"
+
+const keySep = KeySep
+
 // DynamoDBStore provides a unified interface to all DynamoDB store components.
 type DynamoDBStore struct {
 	tables       *TableStore
@@ -287,10 +291,10 @@ func buildItemKeyFromTable(tableName string, key map[string]*AttributeValue, tab
 		if skValue == "" {
 			return ""
 		}
-		return tableName + "#" + pkValue + "#" + skValue
+		return tableName + keySep + pkValue + keySep + skValue
 	}
 
-	return tableName + "#" + pkValue
+	return tableName + keySep + pkValue
 }
 
 func attributeValueToString(av *AttributeValue) string {
@@ -454,9 +458,9 @@ func (t *DynamoDBTxn) buildGSIIndexKey(table *Table, gsi *GlobalSecondaryIndex, 
 		if rangeValue == "" {
 			return ""
 		}
-		return table.Name + "#" + gsi.IndexName + "#" + hashValue + "#" + rangeValue + "#" + primaryKey
+		return table.Name + keySep + gsi.IndexName + keySep + hashValue + keySep + rangeValue + keySep + primaryKey
 	}
-	return table.Name + "#" + gsi.IndexName + "#" + hashValue + "#" + primaryKey
+	return table.Name + keySep + gsi.IndexName + keySep + hashValue + keySep + primaryKey
 }
 
 func (t *DynamoDBTxn) buildLSIIndexKey(table *Table, lsi *LocalSecondaryIndex, item *Item) string {
@@ -490,7 +494,7 @@ func (t *DynamoDBTxn) buildLSIIndexKey(table *Table, lsi *LocalSecondaryIndex, i
 		return ""
 	}
 
-	return table.Name + "#" + lsi.IndexName + "#" + hashValue + "#" + rangeValue + "#" + primaryKey
+	return table.Name + keySep + lsi.IndexName + keySep + hashValue + keySep + rangeValue + keySep + primaryKey
 }
 
 func (t *DynamoDBTxn) getAttributeValueForIndex(item *Item, attrName string) string {
@@ -522,7 +526,7 @@ func (t *DynamoDBTxn) QueryByLSI(tableName, indexName, hashKeyValue string, opts
 }
 
 func (t *DynamoDBTxn) queryByIndex(tableName, indexName, hashKeyValue, bucketName string, opts IndexQueryOptions) ([]*Item, error) {
-	prefix := tableName + "#" + indexName + "#" + hashKeyValue + "#"
+	prefix := tableName + keySep + indexName + keySep + hashKeyValue + keySep
 	bucket := t.txn.Bucket(bucketName)
 	iter := bucket.ScanPrefix([]byte(prefix))
 	defer iter.Close()
@@ -576,7 +580,7 @@ type IndexQueryOptions struct {
 
 // Scan scans all items in a table within the transaction.
 func (t *DynamoDBTxn) Scan(tableName string, fn func(item *Item) error) error {
-	prefix := tableName + "#"
+	prefix := tableName + keySep
 	bucket := t.txn.Bucket(itemBucketName(t.region()))
 	iter := bucket.ScanPrefix([]byte(prefix))
 	defer iter.Close()
@@ -605,13 +609,11 @@ func (t *DynamoDBTxn) ScanByPartitionKey(tableName, partitionKeyValue string, fn
 		return fmt.Errorf("get table %s for ScanByPartitionKey: %w", tableName, err)
 	}
 
-	prefix := tableName + "#" + partitionKeyValue
-	hasSortKey := false
+	prefix := tableName + keySep + partitionKeyValue
 	pkName := ""
 	for _, ks := range table.KeySchema {
 		if ks.KeyType == KeyTypeRange {
-			prefix += "#"
-			hasSortKey = true
+			prefix += keySep
 			break
 		}
 		if ks.KeyType == KeyTypeHash {
@@ -633,11 +635,9 @@ func (t *DynamoDBTxn) ScanByPartitionKey(tableName, partitionKeyValue string, fn
 			Key:        protoToAttributeValueMapDirect(pbItem.Key),
 			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
 		}
-		if !hasSortKey {
-			itemPkValue := attributeValueToString(item.Key[pkName])
-			if itemPkValue != partitionKeyValue {
-				continue
-			}
+		itemPkValue := attributeValueToString(item.Key[pkName])
+		if itemPkValue != partitionKeyValue {
+			continue
 		}
 		if err := fn(item); err != nil {
 			return err
@@ -651,15 +651,15 @@ func (t *DynamoDBTxn) ScanByPartitionKey(tableName, partitionKeyValue string, fn
 // exports, imports, tags, and global table entries.
 // It does NOT check DeletionProtectionEnabled — that is the caller's responsibility.
 func (t *DynamoDBTxn) DeleteTableCascade(name string) error {
-	if err := t.deleteAllByPrefix(itemBucketName(t.region()), name+"#"); err != nil {
+	if err := t.deleteAllByPrefix(itemBucketName(t.region()), name+keySep); err != nil {
 		return fmt.Errorf("delete items for table %s: %w", name, err)
 	}
 
-	if err := t.deleteAllByPrefix(gsiIndexBucketName(t.region()), name+"#"); err != nil {
+	if err := t.deleteAllByPrefix(gsiIndexBucketName(t.region()), name+keySep); err != nil {
 		return fmt.Errorf("delete GSI index entries for table %s: %w", name, err)
 	}
 
-	if err := t.deleteAllByPrefix(lsiIndexBucketName(t.region()), name+"#"); err != nil {
+	if err := t.deleteAllByPrefix(lsiIndexBucketName(t.region()), name+keySep); err != nil {
 		return fmt.Errorf("delete LSI index entries for table %s: %w", name, err)
 	}
 

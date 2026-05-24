@@ -167,7 +167,8 @@ func (s *DynamoDBService) TransactWriteItems(ctx context.Context, reqCtx *reques
 }
 
 func parseTransactWriteItems(s *DynamoDBService, store dbstore.DynamoDBStoreInterface, transactItems []interface{}, cancellationReasons []CancellationReason) ([]writeOperation, error) {
-	usedKeys := make(map[string]bool)
+	usedWriteKeys := make(map[string]bool)
+	usedConditionKeys := make(map[string]bool)
 	var operations []writeOperation
 
 	for idx, item := range transactItems {
@@ -177,7 +178,7 @@ func parseTransactWriteItems(s *DynamoDBService, store dbstore.DynamoDBStoreInte
 			return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
 		}
 
-		op, err := parseWriteOperation(s, store, idx, itemMap, usedKeys, cancellationReasons)
+		op, err := parseWriteOperation(s, store, idx, itemMap, usedWriteKeys, usedConditionKeys, cancellationReasons)
 		if err != nil {
 			return nil, err
 		}
@@ -189,7 +190,7 @@ func parseTransactWriteItems(s *DynamoDBService, store dbstore.DynamoDBStoreInte
 	return operations, nil
 }
 
-func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterface, idx int, itemMap map[string]interface{}, usedKeys map[string]bool, cancellationReasons []CancellationReason) (*writeOperation, error) {
+func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterface, idx int, itemMap map[string]interface{}, usedWriteKeys map[string]bool, usedConditionKeys map[string]bool, cancellationReasons []CancellationReason) (*writeOperation, error) {
 	for _, opType := range []string{"Put", "Update", "Delete", "ConditionCheck"} {
 		opMap, ok := itemMap[opType].(map[string]interface{})
 		if !ok {
@@ -219,12 +220,18 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		}
 
 		keyStr := buildKeyString(tableName, key)
-		if opType != "ConditionCheck" {
-			if usedKeys[keyStr] {
+		if opType == "ConditionCheck" {
+			if usedWriteKeys[keyStr] {
 				cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
 				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
 			}
-			usedKeys[keyStr] = true
+			usedConditionKeys[keyStr] = true
+		} else {
+			if usedWriteKeys[keyStr] || usedConditionKeys[keyStr] {
+				cancellationReasons[idx] = CancellationReason{Code: "ValidationError"}
+				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+			}
+			usedWriteKeys[keyStr] = true
 		}
 
 		op := &writeOperation{
@@ -437,6 +444,14 @@ func executeUpdateOp(dbTxn *dbstore.DynamoDBTxn, op writeOperation, exists bool)
 
 	updateExpr := request.GetStringParam(op.updateReq, "UpdateExpression")
 	if updateExpr != "" {
+		table, tableErr := dbTxn.GetTable(op.tableName)
+		if tableErr == nil {
+			names := op.exprAttrNames
+			paths := extractUpdatedPaths(updateExpr, names)
+			if err := validateNotKeyAttributes(table, paths); err != nil {
+				return err
+			}
+		}
 		if err := applyUpdateExpression(attrs, updateExpr, op.exprAttrNames, op.exprAttrValues); err != nil {
 			return fmt.Errorf("apply update expression %s: %w", op.tableName, err)
 		}

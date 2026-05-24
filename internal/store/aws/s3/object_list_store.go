@@ -47,7 +47,7 @@ func (s *ObjectStore) List(bucket, prefix, delimiter, marker string, maxKeys int
 			return nil
 		}
 
-		if isVersioned && strings.HasSuffix(key, keySep + "_latest") {
+		if isVersioned && strings.HasSuffix(key, keySep+"_latest") {
 			return nil
 		}
 
@@ -128,7 +128,7 @@ func (s *ObjectStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, v
 		}
 		obj := ProtoToObject(&pbObj)
 
-		if strings.HasSuffix(key, keySep + "_latest") {
+		if strings.HasSuffix(key, keySep+"_latest") {
 			return nil
 		}
 
@@ -211,7 +211,7 @@ func (s *ObjectStore) CountByBucket(bucket string) (int, error) {
 			}
 			obj := ProtoToObject(&pbObj)
 
-			if strings.HasSuffix(key, keySep + "_latest") {
+			if strings.HasSuffix(key, keySep+"_latest") {
 				if !obj.IsDeleteMarker && !seenKeys[obj.Key] {
 					seenKeys[obj.Key] = true
 					count++

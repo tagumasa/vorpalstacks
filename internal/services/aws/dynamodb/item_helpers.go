@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"fmt"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -8,6 +9,28 @@ import (
 )
 
 const maxItemSizeBytes = 400 * 1024
+
+func isKeyAttribute(table *dbstore.Table, attrName string) bool {
+	for _, ks := range table.KeySchema {
+		if ks.AttributeName == attrName {
+			return true
+		}
+	}
+	return false
+}
+
+func validateNotKeyAttributes(table *dbstore.Table, paths []string) error {
+	for _, p := range paths {
+		if isKeyAttribute(table, p) {
+			return NewAPIError(
+				"com.amazon.coral.validate#ValidationException",
+				fmt.Sprintf("One or more parameter values were invalid: Cannot update attribute %s. This attribute is part of the key schema", p),
+				400,
+			)
+		}
+	}
+	return nil
+}
 
 func getReturnConsumedCapacity(params map[string]interface{}) string {
 	return request.GetStringParam(params, "ReturnConsumedCapacity")
@@ -72,7 +95,7 @@ func calculateAttributeValueSize(av *dbstore.AttributeValue) int64 {
 		return int64(len(*av.S))
 	}
 	if av.N != nil {
-		return int64(len(*av.N))
+		return calculateNumberSize(*av.N)
 	}
 	if av.B != nil {
 		return int64(len(av.B))
@@ -93,7 +116,7 @@ func calculateAttributeValueSize(av *dbstore.AttributeValue) int64 {
 	if av.NS != nil {
 		var size int64
 		for _, n := range av.NS {
-			size += int64(len(n))
+			size += calculateNumberSize(n)
 		}
 		return size
 	}
@@ -105,7 +128,7 @@ func calculateAttributeValueSize(av *dbstore.AttributeValue) int64 {
 		return size
 	}
 	if av.M != nil {
-		var size int64
+		var size int64 = 3
 		for k, v := range av.M {
 			size += int64(len(k))
 			size += calculateAttributeValueSize(v)
@@ -113,13 +136,31 @@ func calculateAttributeValueSize(av *dbstore.AttributeValue) int64 {
 		return size
 	}
 	if av.L != nil {
-		var size int64
+		var size int64 = 3
 		for _, v := range av.L {
 			size += calculateAttributeValueSize(v)
 		}
 		return size
 	}
 	return 0
+}
+
+// calculateNumberSize returns the size in bytes for a DynamoDB Number value.
+// AWS counts each pair of significant digits as 1 byte, minimum 1 byte.
+func calculateNumberSize(numStr string) int64 {
+	if numStr == "" {
+		return 1
+	}
+	significantDigits := 0
+	for _, c := range numStr {
+		if c >= '0' && c <= '9' {
+			significantDigits++
+		}
+	}
+	if significantDigits == 0 {
+		return 1
+	}
+	return int64((significantDigits + 1) / 2)
 }
 
 func validateKeyValueNotEmpty(key map[string]*dbstore.AttributeValue) bool {

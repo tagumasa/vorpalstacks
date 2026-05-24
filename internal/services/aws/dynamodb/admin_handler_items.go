@@ -288,19 +288,19 @@ func (h *AdminHandler) buildItemMarker(store dbstore.DynamoDBStoreInterface, tab
 
 	pkValue := avToString(key[pkName])
 	if pkValue == "" {
-		return tableName + "#", nil
+		return tableName + dbstore.KeySep, nil
 	}
 
 	if skName != "" {
 		if key[skName] != nil {
 			skValue := avToString(key[skName])
 			if skValue != "" {
-				return tableName + "#" + pkValue + "#" + skValue, nil
+				return tableName + dbstore.KeySep + pkValue + dbstore.KeySep + skValue, nil
 			}
 		}
 	}
 
-	return tableName + "#" + pkValue, nil
+	return tableName + dbstore.KeySep + pkValue, nil
 }
 
 func avToString(av *dbstore.AttributeValue) string {

@@ -13,6 +13,66 @@ func applyUpdateExpression(attrs map[string]*dbstore.AttributeValue, expr string
 	return err
 }
 
+// extractUpdatedPaths analyses an UpdateExpression and returns the top-level
+// attribute names that would be modified, without executing the update.
+func extractUpdatedPaths(expr string, names map[string]string) []string {
+	tokens := tokenizeUpdateExpression(expr)
+	var paths []string
+	i := 0
+	for i < len(tokens) {
+		action := tokens[i]
+		switch action {
+		case "SET":
+			i++
+			for i < len(tokens) && tokens[i] != "REMOVE" && tokens[i] != "ADD" && tokens[i] != "DELETE" {
+				path := resolveName(tokens[i], names)
+				paths = append(paths, getTopLevelAttr(path))
+				j := i + 3
+				for j < len(tokens) && (tokens[j] == "+" || tokens[j] == "-" || tokens[j] == "*") && j+1 < len(tokens) {
+					j += 2
+				}
+				i = j
+				if i < len(tokens) && tokens[i] == "," {
+					i++
+				}
+			}
+		case "REMOVE":
+			i++
+			for i < len(tokens) && tokens[i] != "SET" && tokens[i] != "ADD" && tokens[i] != "DELETE" {
+				path := resolveName(tokens[i], names)
+				paths = append(paths, getTopLevelAttr(path))
+				i++
+				if i < len(tokens) && tokens[i] == "," {
+					i++
+				}
+			}
+		case "ADD":
+			i++
+			for i < len(tokens) && tokens[i] != "SET" && tokens[i] != "REMOVE" && tokens[i] != "DELETE" {
+				attrName := resolveName(tokens[i], names)
+				paths = append(paths, attrName)
+				i += 2
+				if i < len(tokens) && tokens[i] == "," {
+					i++
+				}
+			}
+		case "DELETE":
+			i++
+			for i < len(tokens) && tokens[i] != "SET" && tokens[i] != "REMOVE" && tokens[i] != "ADD" {
+				attrName := resolveName(tokens[i], names)
+				paths = append(paths, attrName)
+				i += 2
+				if i < len(tokens) && tokens[i] == "," {
+					i++
+				}
+			}
+		default:
+			return paths
+		}
+	}
+	return paths
+}
+
 func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) ([]string, error) {
 	var updatedAttrs []string
 	tokens := tokenizeUpdateExpression(expr)
