@@ -10,6 +10,13 @@ import "sync"
 // Each key gets its own mutex, so concurrent operations on different keys do
 // not block each other. Mutex entries are created on demand via
 // sync.Map.LoadOrStore and retained for the lifetime of the KeyLocker.
+//
+// Delete must ONLY be called for truly transient keys (e.g. multipart upload
+// IDs that are never reused after completion). For persistent keys (e.g.
+// bucket\x00key), never call Delete — the mutex must remain in the map so
+// that concurrent goroutines always acquire the same mutex instance. Calling
+// Unlock followed by Delete on a key where another goroutine is waiting
+// creates a new mutex on the next Lock call, breaking mutual exclusion.
 type KeyLocker struct {
 	mu sync.Map
 }

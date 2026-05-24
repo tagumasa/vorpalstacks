@@ -35,7 +35,7 @@ func (s *ObjectStore) PutEncryptedWithVersioning(ctx context.Context, bucket, ke
 	if !isDeleteMarker && encryptedData != nil {
 		reader := io.NopCloser(bytes.NewReader(encryptedData))
 		if isVersioned {
-			blobMetaResult, err = s.blobStore.Put(ctx, bucket, key+"#"+versionId, reader, blobMeta)
+			blobMetaResult, err = s.blobStore.Put(ctx, bucket, key+keySep+versionId, reader, blobMeta)
 		} else {
 			blobMetaResult, err = s.blobStore.Put(ctx, bucket, key, reader, blobMeta)
 		}

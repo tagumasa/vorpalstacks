@@ -42,15 +42,19 @@ func (s *ObjectStore) CreateMultipartUpload(ctx context.Context, bucket, key str
 
 	data, err := proto.Marshal(MultipartUploadToProto(upload))
 	if err != nil {
+		s.blobStore.AbortMultipartUpload(ctx, bucket, key, uploadId)
 		return nil, err
 	}
 
 	if err := s.storage.Bucket(multipartBucketName(s.region)).Put([]byte(s.multipartKey(uploadId)), data); err != nil {
+		s.blobStore.AbortMultipartUpload(ctx, bucket, key, uploadId)
 		return nil, err
 	}
 
 	indexKey := s.multipartIndexKey(bucket, key, uploadId)
 	if err := s.storage.Bucket(multipartIndexBucketName(s.region)).Put([]byte(indexKey), []byte{}); err != nil {
+		s.storage.Bucket(multipartBucketName(s.region)).Delete([]byte(s.multipartKey(uploadId)))
+		s.blobStore.AbortMultipartUpload(ctx, bucket, key, uploadId)
 		return nil, err
 	}
 
@@ -60,7 +64,10 @@ func (s *ObjectStore) CreateMultipartUpload(ctx context.Context, bucket, key str
 // GetMultipartUpload retrieves a multipart upload by its upload ID.
 func (s *ObjectStore) GetMultipartUpload(uploadId string) (*MultipartUpload, error) {
 	data, err := s.storage.Bucket(multipartBucketName(s.region)).Get([]byte(s.multipartKey(uploadId)))
-	if err != nil || data == nil {
+	if err != nil {
+		return nil, ErrUploadNotFound
+	}
+	if data == nil {
 		return nil, ErrUploadNotFound
 	}
 
@@ -158,6 +165,13 @@ func (s *ObjectStore) ListParts(ctx context.Context, bucket, key, uploadId strin
 
 // CompleteMultipartUpload completes a multipart upload by assembling the parts.
 func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, uploadId string, parts []ObjectPart) (*Object, error) {
+	lockKey := "multipart#" + uploadId
+	s.keyLocker.Lock(lockKey)
+	defer func() {
+		s.keyLocker.Unlock(lockKey)
+		s.keyLocker.Delete(lockKey)
+	}()
+
 	upload, err := s.GetMultipartUpload(uploadId)
 	if err != nil {
 		return nil, err
@@ -182,7 +196,7 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 
 	blobKey := key
 	if versionId != "null" {
-		blobKey = key + "#" + versionId
+		blobKey = key + keySep + versionId
 	}
 
 	blobMeta, err := s.blobStore.CompleteMultipartUpload(ctx, bucket, blobKey, uploadId, blobParts)
@@ -282,7 +296,7 @@ func (s *ObjectStore) ListMultipartUploads(bucket, prefix, keyMarker, uploadIdMa
 	started := keyMarker == "" && uploadIdMarker == ""
 	hasMore := false
 
-	indexPrefix := bucket + "#"
+	indexPrefix := bucket + keySep
 	prefixLen := len(indexPrefix)
 	iter := s.storage.Bucket(multipartIndexBucketName(s.region)).ScanPrefix([]byte(indexPrefix))
 	defer iter.Close()
@@ -290,7 +304,7 @@ func (s *ObjectStore) ListMultipartUploads(bucket, prefix, keyMarker, uploadIdMa
 	for iter.Next() {
 		indexKey := string(iter.Key())
 
-		lastSep := strings.LastIndex(indexKey, "#")
+		lastSep := strings.LastIndex(indexKey, keySep)
 		if lastSep <= prefixLen-1 {
 			continue
 		}

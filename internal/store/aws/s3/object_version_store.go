@@ -17,12 +17,9 @@ import (
 // persisted first, then the previous latest's IsLatest flag is cleared.
 // This avoids leaving no latest if the old-version update fails.
 func (s *ObjectStore) putVersionedObject(bucket, key, versionId string, obj *Object) error {
-	lockKey := bucket + "#" + key
+	lockKey := bucket + keySep + key
 	s.keyLocker.Lock(lockKey)
-	defer func() {
-		s.keyLocker.Unlock(lockKey)
-		s.keyLocker.Delete(lockKey)
-	}()
+	defer s.keyLocker.Unlock(lockKey)
 
 	latestKey := s.latestKeyStorageKey(bucket, key)
 
@@ -121,7 +118,7 @@ func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string,
 	var err error
 	if !isDeleteMarker && reader != nil {
 		if isVersioned {
-			blobMetaResult, err = s.blobStore.Put(ctx, bucket, key+"#"+versionId, reader, blobMeta)
+			blobMetaResult, err = s.blobStore.Put(ctx, bucket, key+keySep+versionId, reader, blobMeta)
 		} else {
 			blobMetaResult, err = s.blobStore.Put(ctx, bucket, key, reader, blobMeta)
 		}
@@ -143,12 +140,9 @@ func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string,
 			return nil, err
 		}
 	} else {
-		lockKey := bucket + "#" + key
+		lockKey := bucket + keySep + key
 		s.keyLocker.Lock(lockKey)
-		defer func() {
-			s.keyLocker.Unlock(lockKey)
-			s.keyLocker.Delete(lockKey)
-		}()
+		defer s.keyLocker.Unlock(lockKey)
 
 		storageKey := s.versionedStorageKey(bucket, key, "null")
 		if err := s.BaseStore.PutProto(storageKey, ObjectToProto(obj)); err != nil {
@@ -165,12 +159,9 @@ func (s *ObjectStore) PutWithVersioning(ctx context.Context, bucket, key string,
 func (s *ObjectStore) DeleteWithVersion(ctx context.Context, bucket, key, versionId string) (*Object, error) {
 	if versionId != "" {
 		if s.isVersioningEnabled(bucket) {
-			lockKey := bucket + "#" + key
+			lockKey := bucket + keySep + key
 			s.keyLocker.Lock(lockKey)
-			defer func() {
-				s.keyLocker.Unlock(lockKey)
-				s.keyLocker.Delete(lockKey)
-			}()
+			defer s.keyLocker.Unlock(lockKey)
 
 			latestKey := s.latestKeyStorageKey(bucket, key)
 			var latestObj pb.Object
@@ -189,10 +180,10 @@ func (s *ObjectStore) DeleteWithVersion(ctx context.Context, bucket, key, versio
 			}
 
 			if isLatest {
-				prefix := bucket + "#" + key + "#"
+				prefix := bucket + keySep + key + keySep
 				var remainingVersions []*Object
 				err := s.ScanPrefix(prefix, func(k string, v []byte) error {
-					if strings.HasSuffix(k, "#_latest") {
+					if strings.HasSuffix(k, keySep+"_latest") {
 						return nil
 					}
 					var pbObj pb.Object
@@ -215,6 +206,15 @@ func (s *ObjectStore) DeleteWithVersion(ctx context.Context, bucket, key, versio
 					for _, v := range remainingVersions {
 						if newLatest == nil || v.LastModified.After(newLatest.LastModified) {
 							newLatest = v
+						}
+					}
+					for _, v := range remainingVersions {
+						if v != newLatest {
+							v.IsLatest = false
+							vk := s.versionedStorageKey(bucket, key, v.VersionID)
+							if err := s.BaseStore.PutProto(vk, ObjectToProto(v)); err != nil {
+								return nil, err
+							}
 						}
 					}
 					if newLatest != nil {
@@ -319,6 +319,41 @@ func (s *ObjectStore) HeadWithVersion(ctx context.Context, bucket, key, versionI
 	return obj, nil
 }
 
+// getVersionedObjectMeta reads object metadata from Pebble only, without
+// touching the blob store. Suitable for callers that need the Object struct
+// (e.g. lock/retention metadata) but not the blob data or blob-derived
+// metadata (size, ETag from blob).
+func (s *ObjectStore) getVersionedObjectMeta(bucket, key, versionId string) (*Object, error) {
+	var pbObj pb.Object
+
+	isVersioned := s.isVersioningEnabled(bucket)
+	effectiveVersionId := versionId
+	if !isVersioned && versionId == "null" {
+		effectiveVersionId = ""
+	}
+
+	var storageKey string
+	if effectiveVersionId != "" || isVersioned {
+		storageKey = s.versionedStorageKey(bucket, key, effectiveVersionId)
+		if effectiveVersionId == "" {
+			storageKey = s.latestKeyStorageKey(bucket, key)
+		}
+	} else {
+		storageKey = s.versionedStorageKey(bucket, key, "null")
+	}
+
+	if err := s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
+		return nil, ErrObjectNotFound
+	}
+
+	obj := ProtoToObject(&pbObj)
+	if obj.IsDeleteMarker {
+		return nil, ErrObjectNotFound
+	}
+
+	return obj, nil
+}
+
 // GetRangeWithVersion retrieves a range of bytes from a specific version of an object.
 func (s *ObjectStore) GetRangeWithVersion(ctx context.Context, bucket, key, versionId string, offset, length int64) (io.ReadCloser, *Object, error) {
 	var pbObj pb.Object
@@ -378,12 +413,9 @@ func (s *ObjectStore) GetRangeWithVersion(ctx context.Context, bucket, key, vers
 // When no explicit versionId is given on a versioned bucket the latest version is
 // updated. Both the versioned record and the _latest pointer are kept in sync.
 func (s *ObjectStore) SetACLWithVersion(bucket, key, versionId string, acp *AccessControlPolicy) error {
-	lockKey := bucket + "#" + key
+	lockKey := bucket + keySep + key
 	s.keyLocker.Lock(lockKey)
-	defer func() {
-		s.keyLocker.Unlock(lockKey)
-		s.keyLocker.Delete(lockKey)
-	}()
+	defer s.keyLocker.Unlock(lockKey)
 
 	isVersioned := s.isVersioningEnabled(bucket)
 	effectiveVersionId := versionId

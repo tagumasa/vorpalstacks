@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -99,6 +100,8 @@ func (s *HybridBlobStore) UploadPart(ctx context.Context, bucket, key, uploadID 
 func (s *HybridBlobStore) CompleteMultipartUpload(ctx context.Context, bucket, key, uploadID string, parts []PartInfo) (*BlobMetadata, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	sort.Slice(parts, func(i, j int) bool { return parts[i].PartNumber < parts[j].PartNumber })
 
 	var combined bytes.Buffer
 	var partHashes bytes.Buffer

@@ -359,6 +359,7 @@ func (o *ObjectOperations) UploadPartCopy(ctx context.Context, reqCtx *request.R
 			Bucket:               srcBucket,
 			Key:                  srcKey,
 			VersionId:            srcVersionId,
+			Range:                input.CopySourceRange,
 			SSECustomerAlgorithm: input.CopySourceSSECustomerAlgo,
 			SSECustomerKey:       input.CopySourceSSECustomerKey,
 			SSECustomerKeyMD5:    input.CopySourceSSECustomerMD5,

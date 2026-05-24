@@ -9,12 +9,9 @@ import (
 // callback, then writes back to both the versioned record and the _latest
 // pointer when versioning is enabled.
 func (s *ObjectStore) updateObjectMetadata(bucket, key string, mutate func(obj *Object)) error {
-	lockKey := bucket + "#" + key
+	lockKey := bucket + keySep + key
 	s.keyLocker.Lock(lockKey)
-	defer func() {
-		s.keyLocker.Unlock(lockKey)
-		s.keyLocker.Delete(lockKey)
-	}()
+	defer s.keyLocker.Unlock(lockKey)
 
 	obj, err := s.GetMetadata(bucket, key)
 	if err != nil {

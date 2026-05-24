@@ -194,7 +194,7 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 		} else {
 			reader.Close()
 			var getErr error
-			rangeReader, _, getErr = stores.objects.GetRange(ctx, input.Bucket, input.Key, offset, length)
+			rangeReader, _, getErr = stores.objects.GetRangeWithVersion(ctx, input.Bucket, input.Key, input.VersionId, offset, length)
 			if getErr != nil {
 				return nil, getErr
 			}

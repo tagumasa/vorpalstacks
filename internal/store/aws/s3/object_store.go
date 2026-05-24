@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -23,6 +24,12 @@ func objectBucketName(region string) string {
 func multipartBucketName(region string) string {
 	return "s3_multipart-" + region
 }
+
+const (
+	// keySep is the internal delimiter for Pebble storage keys. Using \x00
+	// avoids collisions with S3 object keys, which cannot contain null bytes.
+	keySep = "\x00"
+)
 
 var (
 	// ErrObjectNotFound is returned when the specified object does not exist.
@@ -73,8 +80,10 @@ func NewObjectStore(store storage.BasicStorage, blobStore storage.BlobStore, buc
 
 	bucketStore.SetOnDeleteCallback(func(bucket string) {
 		cache.Delete(bucket)
-		os.keyLocker.DeleteByPrefix(bucket + "#")
+		os.keyLocker.DeleteByPrefix(bucket + keySep)
 	})
+
+	os.migrateKeyDelimiter(store, region)
 
 	return os, nil
 }
@@ -90,11 +99,11 @@ func (s *ObjectStore) versionedStorageKey(bucket, key, versionId string) string 
 	if versionId == "" {
 		versionId = "null"
 	}
-	return bucket + "#" + key + "#" + versionId
+	return bucket + keySep + key + keySep + versionId
 }
 
 func (s *ObjectStore) latestKeyStorageKey(bucket, key string) string {
-	return bucket + "#" + key + "#_latest"
+	return bucket + keySep + key + keySep + "_latest"
 }
 
 func (s *ObjectStore) generateVersionId() string {
@@ -123,7 +132,7 @@ func multipartIndexBucketName(region string) string {
 }
 
 func (s *ObjectStore) multipartIndexKey(bucket, key, uploadId string) string {
-	return bucket + "#" + key + "#" + uploadId
+	return bucket + keySep + key + keySep + uploadId
 }
 
 func validateS3Key(key string) error {
@@ -219,7 +228,7 @@ func newObject(key, bucket, contentType string, metadata map[string]string, vers
 
 // SetStorageClass updates the storage class of an object.
 func (s *ObjectStore) SetStorageClass(bucket, key, versionId string, storageClass ObjectStorageClass) error {
-	return s.keyLocker.WithLock(bucket+"#"+key, func() error {
+	return s.keyLocker.WithLock(bucket+keySep+key, func() error {
 		var storageKey string
 		if versionId != "" {
 			storageKey = s.versionedStorageKey(bucket, key, versionId)
@@ -236,4 +245,49 @@ func (s *ObjectStore) SetStorageClass(bucket, key, versionId string, storageClas
 		obj.StorageClass = objectStorageClassToProto(storageClass)
 		return s.BaseStore.PutProto(storageKey, &obj)
 	})
+}
+
+const migrationFlagKey = "__key_delimiter_migrated_v1"
+
+func (s *ObjectStore) migrateKeyDelimiter(store storage.BasicStorage, region string) {
+	objBucket := store.Bucket(objectBucketName(region))
+	mpIdxBucket := store.Bucket(multipartIndexBucketName(region))
+
+	flag, _ := objBucket.Get([]byte(migrationFlagKey))
+	if flag != nil {
+		return
+	}
+
+	oldSep := "#"
+	migrated := 0
+
+	for _, bucket := range []storage.Bucket{objBucket, mpIdxBucket} {
+		iter := bucket.ScanPrefix(nil)
+		for iter.Next() {
+			k := iter.Key()
+			if string(k) == migrationFlagKey {
+				continue
+			}
+			if !bytes.Contains(k, []byte(oldSep)) {
+				continue
+			}
+			v := iter.Value()
+			newKey := bytes.ReplaceAll(k, []byte(oldSep), []byte(keySep))
+			if err := bucket.Put(newKey, v); err != nil {
+				slog.Error("s3 migration: failed to write new key", "old", string(k), "error", err)
+				continue
+			}
+			if err := bucket.Delete(k); err != nil {
+				slog.Error("s3 migration: failed to delete old key", "old", string(k), "error", err)
+			}
+			migrated++
+		}
+		iter.Close()
+	}
+
+	objBucket.Put([]byte(migrationFlagKey), []byte("1"))
+
+	if migrated > 0 {
+		slog.Info("s3: migrated key delimiter", "region", region, "keys", migrated)
+	}
 }

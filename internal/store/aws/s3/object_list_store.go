@@ -22,7 +22,7 @@ func (s *ObjectStore) List(bucket, prefix, delimiter, marker string, maxKeys int
 	skipUntilNewKey := ""
 	hasMore := false
 	isVersioned := s.isVersioningEnabled(bucket)
-	searchPrefix := bucket + "#" + prefix
+	searchPrefix := bucket + keySep + prefix
 
 	err := s.ScanPrefix(searchPrefix, func(key string, value []byte) error {
 		var pbObj pb.Object
@@ -47,7 +47,7 @@ func (s *ObjectStore) List(bucket, prefix, delimiter, marker string, maxKeys int
 			return nil
 		}
 
-		if isVersioned && strings.HasSuffix(key, "#_latest") {
+		if isVersioned && strings.HasSuffix(key, keySep + "_latest") {
 			return nil
 		}
 
@@ -119,7 +119,7 @@ func (s *ObjectStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, v
 	skipUntilNewKey := ""
 	hasMore := false
 
-	searchPrefix := bucket + "#" + prefix
+	searchPrefix := bucket + keySep + prefix
 
 	err := s.ScanPrefix(searchPrefix, func(key string, value []byte) error {
 		var pbObj pb.Object
@@ -128,7 +128,7 @@ func (s *ObjectStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, v
 		}
 		obj := ProtoToObject(&pbObj)
 
-		if strings.HasSuffix(key, "#_latest") {
+		if strings.HasSuffix(key, keySep + "_latest") {
 			return nil
 		}
 
@@ -202,7 +202,7 @@ func (s *ObjectStore) CountByBucket(bucket string) (int, error) {
 	isVersioned := s.isVersioningEnabled(bucket)
 
 	if isVersioned {
-		latestPrefix := bucket + "#"
+		latestPrefix := bucket + keySep
 		seenKeys := make(map[string]bool)
 		err := s.ScanPrefix(latestPrefix, func(key string, value []byte) error {
 			var pbObj pb.Object
@@ -211,7 +211,7 @@ func (s *ObjectStore) CountByBucket(bucket string) (int, error) {
 			}
 			obj := ProtoToObject(&pbObj)
 
-			if strings.HasSuffix(key, "#_latest") {
+			if strings.HasSuffix(key, keySep + "_latest") {
 				if !obj.IsDeleteMarker && !seenKeys[obj.Key] {
 					seenKeys[obj.Key] = true
 					count++
@@ -222,7 +222,7 @@ func (s *ObjectStore) CountByBucket(bucket string) (int, error) {
 		return count, err
 	}
 
-	prefix := bucket + "#"
+	prefix := bucket + keySep
 	err := s.ScanPrefix(prefix, func(key string, value []byte) error {
 		var pbObj pb.Object
 		if err := proto.Unmarshal(value, &pbObj); err != nil {
@@ -240,7 +240,7 @@ func (s *ObjectStore) CountByBucket(bucket string) (int, error) {
 // CountMultipartUploadsByBucket returns the number of in-progress multipart uploads in a bucket.
 func (s *ObjectStore) CountMultipartUploadsByBucket(bucket string) (int, error) {
 	count := 0
-	prefix := bucket + "#"
+	prefix := bucket + keySep
 	err := s.storage.Bucket(multipartIndexBucketName(s.region)).ForEach(func(k, v []byte) error {
 		if strings.HasPrefix(string(k), prefix) {
 			count++

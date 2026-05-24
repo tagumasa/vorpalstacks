@@ -10,14 +10,11 @@ import (
 // the mutation via the callback, writes back the versioned record, and only
 // updates the _latest pointer when the modified version is the current latest.
 func (s *ObjectStore) updateObjectLockMetadata(ctx context.Context, bucket, key, versionId string, mutate func(obj *Object)) error {
-	lockKey := bucket + "#" + key
+	lockKey := bucket + keySep + key
 	s.keyLocker.Lock(lockKey)
-	defer func() {
-		s.keyLocker.Unlock(lockKey)
-		s.keyLocker.Delete(lockKey)
-	}()
+	defer s.keyLocker.Unlock(lockKey)
 
-	_, obj, err := s.GetWithVersion(ctx, bucket, key, versionId)
+	obj, err := s.getVersionedObjectMeta(bucket, key, versionId)
 	if err != nil {
 		return err
 	}
@@ -60,7 +57,7 @@ func (s *ObjectStore) SetObjectLegalHold(ctx context.Context, bucket, key, versi
 
 // GetObjectLegalHold retrieves the legal hold status for an object version.
 func (s *ObjectStore) GetObjectLegalHold(ctx context.Context, bucket, key, versionId string) (*ObjectLockLegalHold, error) {
-	_, obj, err := s.GetWithVersion(ctx, bucket, key, versionId)
+	obj, err := s.getVersionedObjectMeta(bucket, key, versionId)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +78,7 @@ func (s *ObjectStore) SetObjectRetention(ctx context.Context, bucket, key, versi
 
 // GetObjectRetention retrieves the retention policy for an object version.
 func (s *ObjectStore) GetObjectRetention(ctx context.Context, bucket, key, versionId string) (*ObjectLockRetention, error) {
-	_, obj, err := s.GetWithVersion(ctx, bucket, key, versionId)
+	obj, err := s.getVersionedObjectMeta(bucket, key, versionId)
 	if err != nil {
 		return nil, err
 	}
