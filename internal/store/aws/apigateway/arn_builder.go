@@ -5,7 +5,7 @@ import (
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-// ARNBuilder wraps svcarn.APIGatewayBuilder for backward compatibility
+// ARNBuilder wraps svcarn.APIGatewayBuilder for ARN construction
 type ARNBuilder struct {
 	builder *svcarn.APIGatewayBuilder
 }

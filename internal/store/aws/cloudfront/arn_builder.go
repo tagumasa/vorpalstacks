@@ -5,7 +5,7 @@ import (
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-// ARNBuilder wraps svcarn.CloudFrontBuilder for backward compatibility
+// ARNBuilder wraps svcarn.CloudFrontBuilder for ARN construction
 type ARNBuilder struct {
 	builder *svcarn.CloudFrontBuilder
 }

@@ -33,9 +33,10 @@ func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId str
 }
 
 type adminStores struct {
-	restApis *apigatewaystore.RestApiStore
-	usage    *apigatewaystore.UsageStore
-	domains  *apigatewaystore.DomainStore
+	restApis  *apigatewaystore.RestApiStore
+	usage     *apigatewaystore.UsageStore
+	domains   *apigatewaystore.DomainStore
+	keyLocker storecommon.KeyLocker
 }
 
 func (h *AdminHandler) getStores(headers http.Header) (*adminStores, error) {

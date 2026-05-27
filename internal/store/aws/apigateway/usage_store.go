@@ -278,7 +278,7 @@ type UsageRecord struct {
 func (s *UsageStore) ListUsagePlansForAPIKey(apiKeyId string) ([]*UsagePlan, error) {
 	var plans []*UsagePlan
 
-	allPlans, err := common.ListMatching[UsagePlan](s.BaseStore, "plan#", nil)
+	allPlans, err := common.ListMatching[UsagePlan](s.BaseStore, "usageplan#", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -345,10 +345,7 @@ func (s *UsageStore) RecordUsage(record *UsageRecord) error {
 	key := "usage#" + record.UsagePlanID + "#" + record.APIKeyID + "#" + record.Date
 
 	s.keyLocker.Lock(key)
-	defer func() {
-		s.keyLocker.Unlock(key)
-		s.keyLocker.Delete(key)
-	}()
+	defer s.keyLocker.Unlock(key)
 
 	existing, err := s.GetUsage(record.UsagePlanID, record.APIKeyID, record.Date)
 	if err != nil {

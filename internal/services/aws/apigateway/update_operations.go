@@ -19,6 +19,10 @@ func (s *APIGatewayService) UpdateResource(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
 	resource, err := stores.restApis.GetResource(apiId, resourceId)
 	if err != nil {
 		return nil, ErrNotFoundException
@@ -65,6 +69,10 @@ func (s *APIGatewayService) UpdateMethod(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
 	method, err := stores.restApis.GetMethod(apiId, resourceId, httpMethod)
 	if err != nil {
 		return nil, ErrNotFoundException
@@ -110,6 +118,10 @@ func (s *APIGatewayService) UpdateIntegration(ctx context.Context, reqCtx *reque
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
 	integration, err := stores.restApis.GetIntegration(apiId, resourceId, httpMethod)
 	if err != nil {
 		return nil, ErrNotFoundException
@@ -168,6 +180,10 @@ func (s *APIGatewayService) UpdateIntegrationResponse(ctx context.Context, reqCt
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
 	response, err := stores.restApis.GetIntegrationResponse(apiId, resourceId, httpMethod, statusCode)
 	if err != nil {
 		return nil, ErrNotFoundException
@@ -205,6 +221,10 @@ func (s *APIGatewayService) UpdateDeployment(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
 	deployment, err := stores.restApis.GetDeployment(apiId, deploymentId)
 	if err != nil {
 		return nil, ErrNotFoundException
@@ -240,6 +260,10 @@ func (s *APIGatewayService) UpdateModel(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
 	model, err := stores.restApis.GetModel(apiId, modelName)
 	if err != nil {
 		return nil, ErrNotFoundException

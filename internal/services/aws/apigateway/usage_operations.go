@@ -122,6 +122,10 @@ func (s *APIGatewayService) UpdateApiKey(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiKeyId)
+	defer stores.keyLocker.Unlock(apiKeyId)
+
 	apiKey, err := stores.usage.GetApiKey(apiKeyId)
 	if err != nil {
 		return nil, toApiGatewayError(err)
@@ -384,6 +388,10 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(usagePlanId)
+	defer stores.keyLocker.Unlock(usagePlanId)
+
 	usagePlan, err := stores.usage.GetUsagePlan(usagePlanId)
 	if err != nil {
 		return nil, toApiGatewayError(err)

@@ -6,7 +6,7 @@ import (
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-// ARNBuilder wraps svcarn.Route53Builder for backward compatibility
+// ARNBuilder wraps svcarn.Route53Builder for ARN construction
 type ARNBuilder struct {
 	builder *svcarn.Route53Builder
 }

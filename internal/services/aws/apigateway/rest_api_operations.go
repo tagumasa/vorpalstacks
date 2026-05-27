@@ -170,6 +170,10 @@ func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
 	api, err := stores.restApis.Get(apiId)
 	if err != nil {
 		return nil, ErrNotFoundException

@@ -15,9 +15,10 @@ import (
 
 // apiGatewayStores holds the various API Gateway stores.
 type apiGatewayStores struct {
-	restApis *apigatewaystore.RestApiStore
-	usage    *apigatewaystore.UsageStore
-	domains  *apigatewaystore.DomainStore
+	restApis  *apigatewaystore.RestApiStore
+	usage     *apigatewaystore.UsageStore
+	domains   *apigatewaystore.DomainStore
+	keyLocker storecommon.KeyLocker
 }
 
 // APIGatewayService provides AWS API Gateway operations.

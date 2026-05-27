@@ -40,7 +40,7 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **Neptune: operational fixes** — `ModifyDBCluster` syncs `Endpoint.Port` on change, creates new cluster before reparenting on rename. `RemoveRoleFromDBCluster` supports `FeatureName` filtering. Delete operations cascade tag cleanup. Parameter lists and tags sorted deterministically. NeptuneGraph `Close`/`DeleteGraph`/`StopGraph`/`ResetGraph` release mutex before `wg.Wait`/`db.Close`. NeptuneDataService `Close` refactored to close engines outside lock. NeptuneGraph `executeCypherQuery` parses `parameters` as `json.RawMessage` instead of `string`, fixing double-encoding of nested JSON. RDS admin handler sorts parameter results deterministically.
 
-- **API Gateway: deadlock in cascading deletes** — `DeleteDomainName`/`DeleteUsagePlan` called back into methods acquiring the same mutex. Internal `*Locked` variants prevent re-acquisition. Missing mutex added to `UpdateBasePathMapping`, `DeleteBasePathMapping`, `UpdateUsagePlan`, `DeleteUsagePlanKey`, and `RestApiStore` mutations.
+- **API Gateway: deadlock in cascading deletes** — `DeleteDomainName`/`DeleteUsagePlan` called back into methods acquiring the same mutex. Internal `*Locked` variants prevent re-acquisition. Missing mutex added to `UpdateBasePathMapping`, `DeleteBasePathMapping`, `UpdateUsagePlan`, `DeleteUsagePlanKey`, and `RestApiStore` mutations. All Update operations now acquire `keyLocker` before reading. `CloneSnapshot` propagates JSON marshal errors instead of silently falling back to shallow copies. Root resource (`/`) deletion rejected at store level. `RecordUsage` no longer leaks lock entries.
 
 - **AppSync: pipeline resolver result propagation and rename collision** — Pipeline resolvers forward before-step `RequestMappingTemplate` output to downstream functions via `$ctx.prev.result`. `UpdateApiById`/`UpdateGraphqlApiById` reject name collisions.
 
@@ -85,6 +85,8 @@ All notable changes to Vorpalstacks will be documented in this file.
 - **DynamoDB: TransactWriteItems ConditionCheck conflict detection** — Write operations now detect conflicts with preceding `ConditionCheck` on the same key within the same transaction, matching AWS validation behavior.
 
 - **DynamoDB: DeleteAllForTable item count reset** — `DeleteAllForTable` now resets `ItemCount` to zero after deleting all items, keeping table metadata consistent.
+
+- **API Gateway: UsagePlan list key prefix** — `ListUsagePlansForAPIKey` used `"plan#"` instead of `"usageplan#"`, returning zero results for linked API keys.
 
 - **Web console: Splitter horizontal drag direction inverted** — Dragging a horizontal splitter downward now correctly expands the panel instead of shrinking it. Login and setup pages add `useEffect` cleanup flags to prevent state updates after unmount.
 

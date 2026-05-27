@@ -111,8 +111,14 @@ func (s *APIGatewayService) DeleteResource(ctx context.Context, reqCtx *request.
 	}
 	if err := stores.restApis.DeleteResource(apiId, resourceId); err != nil {
 		var storeErr *common.StoreError
-		if errors.As(err, &storeErr) && strings.Contains(storeErr.Err.Error(), "cannot delete resource with child resources") {
-			return nil, NewBadRequestException("Resource has child resources")
+		if errors.As(err, &storeErr) {
+			msg := storeErr.Err.Error()
+			if strings.Contains(msg, "cannot delete resource with child resources") {
+				return nil, NewBadRequestException("Resource has child resources")
+			}
+			if strings.Contains(msg, "cannot delete the root resource") {
+				return nil, NewBadRequestException("Cannot delete the root resource")
+			}
 		}
 		return nil, ErrNotFoundException
 	}

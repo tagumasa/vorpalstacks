@@ -9,7 +9,7 @@ import (
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
-	"vorpalstacks/internal/store/aws/common"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // GetRestApis returns all REST APIs.
@@ -23,7 +23,7 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 	if limit <= 0 {
 		limit = 100
 	}
-	result, err := stores.restApis.List(common.ListOptions{
+	result, err := stores.restApis.List(storecommon.ListOptions{
 		Marker:   req.Msg.Position,
 		MaxItems: limit,
 	})

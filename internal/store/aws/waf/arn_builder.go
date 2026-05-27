@@ -4,7 +4,7 @@ import (
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-// ARNBuilder wraps svcarn.WAFBuilder for backward compatibility
+// ARNBuilder wraps svcarn.WAFBuilder for ARN construction
 type ARNBuilder struct {
 	builder *svcarn.WAFBuilder
 }

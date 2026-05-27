@@ -261,6 +261,10 @@ func (s *APIGatewayService) UpdateStage(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
 	stage, err := stores.restApis.GetStage(apiId, stageName)
 	if err != nil {
 		return nil, toApiGatewayError(err)

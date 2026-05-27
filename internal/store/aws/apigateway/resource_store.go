@@ -74,6 +74,10 @@ func (s *RestApiStore) DeleteResource(apiId, resourceId string) error {
 		return ErrResourceNotFound
 	}
 
+	if resource := api.Resources[resourceId]; resource.Path == "/" {
+		return common.NewStoreError("apigateway", "delete_resource", errors.New("cannot delete the root resource"))
+	}
+
 	childResourceIds := []string{}
 	for _, resource := range api.Resources {
 		if resource.ParentId == resourceId {

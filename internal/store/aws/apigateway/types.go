@@ -3,6 +3,7 @@ package apigateway
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/utils/aws/types"
@@ -128,55 +129,65 @@ type Deployment struct {
 
 // CloneSnapshot creates a deep copy of the API configuration suitable for
 // storing as a deployment snapshot.
-func CloneSnapshot(api *RestApi) *DeploymentSnapshot {
-	if api == nil {
-		return nil
+func CloneSnapshot(api *RestApi) (*DeploymentSnapshot, error) {
+	resources, err := deepCopyResources(api.Resources)
+	if err != nil {
+		return nil, fmt.Errorf("clone resources: %w", err)
+	}
+	authorizers, err := deepCopyAuthorizers(api.Authorizers)
+	if err != nil {
+		return nil, fmt.Errorf("clone authorizers: %w", err)
+	}
+	validators, err := deepCopyRequestValidators(api.RequestValidators)
+	if err != nil {
+		return nil, fmt.Errorf("clone validators: %w", err)
+	}
+	models, err := deepCopyModels(api.Models)
+	if err != nil {
+		return nil, fmt.Errorf("clone models: %w", err)
 	}
 	snap := &DeploymentSnapshot{
-		Resources:         deepCopyResources(api.Resources),
-		Authorizers:       deepCopyAuthorizers(api.Authorizers),
-		RequestValidators: deepCopyRequestValidators(api.RequestValidators),
-		Models:            deepCopyModels(api.Models),
+		Resources:         resources,
+		Authorizers:       authorizers,
+		RequestValidators: validators,
+		Models:            models,
 	}
-	return snap
+	return snap, nil
 }
 
-func deepCopyResources(src map[string]*Resource) map[string]*Resource {
+func deepCopyResources(src map[string]*Resource) (map[string]*Resource, error) {
 	return deepCopyMap(src, func() *Resource { return &Resource{} })
 }
 
-func deepCopyAuthorizers(src map[string]*Authorizer) map[string]*Authorizer {
+func deepCopyAuthorizers(src map[string]*Authorizer) (map[string]*Authorizer, error) {
 	return deepCopyMap(src, func() *Authorizer { return &Authorizer{} })
 }
 
-func deepCopyRequestValidators(src map[string]*RequestValidator) map[string]*RequestValidator {
+func deepCopyRequestValidators(src map[string]*RequestValidator) (map[string]*RequestValidator, error) {
 	return deepCopyMap(src, func() *RequestValidator { return &RequestValidator{} })
 }
 
-func deepCopyModels(src map[string]*Model) map[string]*Model {
+func deepCopyModels(src map[string]*Model) (map[string]*Model, error) {
 	return deepCopyMap(src, func() *Model { return &Model{} })
 }
 
-// deepCopyMap creates a deep copy of a map using JSON round-trip serialisation.
-func deepCopyMap[T any](src map[string]*T, newFn func() *T) map[string]*T {
+func deepCopyMap[T any](src map[string]*T, newFn func() *T) (map[string]*T, error) {
 	if src == nil {
-		return nil
+		return nil, nil
 	}
 	dst := make(map[string]*T, len(src))
 	for k, v := range src {
 		data, err := json.Marshal(v)
 		if err != nil {
-			dst[k] = v
-			continue
+			return nil, fmt.Errorf("marshal key %q: %w", k, err)
 		}
 		cp := newFn()
 		if err := json.Unmarshal(data, cp); err != nil {
-			dst[k] = v
-			continue
+			return nil, fmt.Errorf("unmarshal key %q: %w", k, err)
 		}
 		dst[k] = cp
 	}
-	return dst
+	return dst, nil
 }
 
 // Stage represents an API Gateway stage.
