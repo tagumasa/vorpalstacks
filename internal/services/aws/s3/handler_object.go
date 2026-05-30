@@ -130,12 +130,25 @@ func (h *S3Handler) handleDeleteObjects(ctx *request.RequestContext, r *http.Req
 		return nil, http.StatusInternalServerError, err
 	}
 
-	action := "s3:DeleteObject"
-	if err := h.checkAccess(ctx, r, stores, action, bucket, ""); err != nil {
+	if err := h.checkAccess(ctx, r, stores, "s3:DeleteObject", bucket, ""); err != nil {
 		return nil, http.StatusForbidden, err
 	}
 
-	result, err := h.objectOps.HandleDeleteObjects(r.Context(), ctx, stores, bucket, body)
+	var deleteReq Delete
+	if err := request.NewSafeXMLDecoder(body).Decode(&deleteReq); err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	for _, obj := range deleteReq.Objects {
+		if err := h.checkAccess(ctx, r, stores, "s3:DeleteObject", bucket, obj.Key); err != nil {
+			return nil, http.StatusForbidden, err
+		}
+	}
+
+	result, err := h.objectOps.DeleteObjects(r.Context(), ctx, stores, &DeleteObjectsInput{
+		Bucket: bucket,
+		Delete: &deleteReq,
+	})
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}

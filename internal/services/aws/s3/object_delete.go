@@ -2,7 +2,6 @@ package s3
 
 import (
 	"context"
-	"io"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/eventbus"
@@ -130,17 +129,4 @@ func (o *ObjectOperations) DeleteObjects(ctx context.Context, reqCtx *request.Re
 		Deleted: deleted,
 		Error:   errors,
 	}, nil
-}
-
-// HandleDeleteObjects handles the DeleteObjects API request.
-func (o *ObjectOperations) HandleDeleteObjects(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, bucket string, body io.Reader) (*DeleteObjectsOutput, error) {
-	var deleteReq Delete
-	if err := request.NewSafeXMLDecoder(body).Decode(&deleteReq); err != nil {
-		return nil, err
-	}
-
-	return o.DeleteObjects(ctx, reqCtx, stores, &DeleteObjectsInput{
-		Bucket: bucket,
-		Delete: &deleteReq,
-	})
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -127,10 +128,23 @@ func (s *ObjectStore) UploadPart(ctx context.Context, bucket, key, uploadId stri
 
 // ListParts lists the parts of a multipart upload.
 func (s *ObjectStore) ListParts(ctx context.Context, bucket, key, uploadId string, partNumberMarker int, maxParts int) ([]ObjectPart, int, bool, error) {
-	if _, err := s.GetMultipartUpload(uploadId); err != nil {
-		return nil, 0, false, fmt.Errorf("upload not found: %w", err)
+	upload, err := s.GetMultipartUpload(uploadId)
+	if err != nil {
+		return nil, 0, false, err
 	}
 
+	if upload.BucketName != bucket || upload.Key != key {
+		return nil, 0, false, ErrUploadNotFound
+	}
+
+	if len(upload.Parts) == 0 {
+		return s.listPartsFromBlob(ctx, bucket, key, uploadId, partNumberMarker, maxParts)
+	}
+
+	return listPartsFromUpload(upload.Parts, partNumberMarker, maxParts)
+}
+
+func (s *ObjectStore) listPartsFromBlob(ctx context.Context, bucket, key, uploadId string, partNumberMarker int, maxParts int) ([]ObjectPart, int, bool, error) {
 	parts, err := s.blobStore.ListParts(ctx, bucket, key, uploadId)
 	if err != nil {
 		return nil, 0, false, err
@@ -161,6 +175,30 @@ func (s *ObjectStore) ListParts(ctx context.Context, bucket, key, uploadId strin
 	}
 
 	return result, nextPartNumberMarker, isTruncated, nil
+}
+
+func listPartsFromUpload(parts []ObjectPart, partNumberMarker int, maxParts int) ([]ObjectPart, int, bool, error) {
+	sorted := make([]ObjectPart, len(parts))
+	copy(sorted, parts)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].PartNumber < sorted[j].PartNumber
+	})
+
+	result := make([]ObjectPart, 0, maxParts)
+	nextPartNumberMarker := 0
+
+	for _, p := range sorted {
+		if p.PartNumber <= partNumberMarker {
+			continue
+		}
+		if len(result) >= maxParts {
+			nextPartNumberMarker = result[len(result)-1].PartNumber
+			return result, nextPartNumberMarker, true, nil
+		}
+		result = append(result, p)
+	}
+
+	return result, 0, false, nil
 }
 
 // CompleteMultipartUpload completes a multipart upload by assembling the parts.

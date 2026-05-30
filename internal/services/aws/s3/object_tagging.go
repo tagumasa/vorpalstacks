@@ -22,6 +22,10 @@ func (o *ObjectOperations) PutObjectTagging(ctx context.Context, reqCtx *request
 		return err
 	}
 
+	if err := validateObjectKey(input.Key); err != nil {
+		return err
+	}
+
 	if err := validateTags(input.Tags); err != nil {
 		return err
 	}

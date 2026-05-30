@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -406,16 +407,47 @@ func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *requ
 			if obj.SSEMetadata != nil && len(obj.SSEMetadata.PartEncryptionInfos) > 0 {
 				partInfos := obj.SSEMetadata.PartEncryptionInfos
 				totalParts := int32(len(partInfos))
-				output.ObjectParts = &GetObjectAttributesParts{
-					IsTruncated:     false,
-					MaxParts:        input.MaxParts,
-					TotalPartsCount: totalParts,
+
+				partNumberStart := int32(0)
+				if input.PartNumberMarker != "" {
+					if parsed, pErr := strconv.ParseInt(input.PartNumberMarker, 10, 32); pErr == nil && parsed > 0 {
+						partNumberStart = int32(parsed)
+					}
 				}
+
+				maxParts := input.MaxParts
+				if maxParts <= 0 {
+					maxParts = 1000
+				}
+
+				var filteredParts []GetObjectAttributesPart
 				for i, pi := range partInfos {
-					output.ObjectParts.Parts = append(output.ObjectParts.Parts, GetObjectAttributesPart{
-						PartNumber: int32(i + 1),
+					pn := int32(i + 1)
+					if pn <= partNumberStart {
+						continue
+					}
+					if int32(len(filteredParts)) >= maxParts {
+						break
+					}
+					filteredParts = append(filteredParts, GetObjectAttributesPart{
+						PartNumber: pn,
 						Size:       pi.PlainSize,
 					})
+				}
+
+				isTruncated := int32(len(partInfos)) > partNumberStart+int32(len(filteredParts))
+				var nextMarker string
+				if isTruncated && len(filteredParts) > 0 {
+					nextMarker = strconv.FormatInt(int64(filteredParts[len(filteredParts)-1].PartNumber), 10)
+				}
+
+				output.ObjectParts = &GetObjectAttributesParts{
+					IsTruncated:          isTruncated,
+					MaxParts:             maxParts,
+					NextPartNumberMarker: nextMarker,
+					PartNumberMarker:     input.PartNumberMarker,
+					Parts:                filteredParts,
+					TotalPartsCount:      totalParts,
 				}
 			}
 		case "Checksum":

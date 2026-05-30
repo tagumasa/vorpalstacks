@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/logs"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
@@ -143,6 +144,7 @@ func (s *AppSyncService) DisassociateSourceGraphqlApi(ctx context.Context, reqCt
 	}
 
 	go func() {
+		defer func() { resilience.RecoverPanic("appsync DisassociateSourceGraphqlApi async cleanup") }()
 		time.Sleep(5 * time.Second)
 		if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
 			logs.Warn("async deletion of source API association failed",
@@ -261,6 +263,7 @@ func (s *AppSyncService) DisassociateMergedGraphqlApi(ctx context.Context, reqCt
 
 	mergedApiId := assoc.MergedApiId
 	go func() {
+		defer func() { resilience.RecoverPanic("appsync DisassociateMergedGraphqlApi async cleanup") }()
 		time.Sleep(5 * time.Second)
 		if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
 			logs.Warn("async deletion of merged API association failed",

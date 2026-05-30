@@ -80,6 +80,14 @@ func (o *ObjectOperations) GetObjectAcl(ctx context.Context, reqCtx *request.Req
 // PutObjectAcl sets the Access Control List for an object.
 // Accepts either a canned ACL string, an AccessControlPolicy, or individual grant headers.
 func (o *ObjectOperations) PutObjectAcl(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *PutObjectAclInput) error {
+	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
+		return err
+	}
+
+	if err := validateObjectKey(input.Key); err != nil {
+		return err
+	}
+
 	owner := &s3store.ACLOwner{ID: o.svc.accountID, DisplayName: o.svc.accountID}
 
 	var acp *s3store.AccessControlPolicy

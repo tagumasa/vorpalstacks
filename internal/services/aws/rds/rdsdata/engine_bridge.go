@@ -312,11 +312,50 @@ func substituteParameters(sqlStr string, params []SqlParameter) string {
 			continue
 		}
 		replacement := fieldToSQLString(p.Value)
-		// Match :name only at word boundaries so :id does not match :id2.
-		pattern := regexp.MustCompile(`\b` + regexp.QuoteMeta(":"+p.Name) + `\b`)
-		result = replaceOutsideStrings(result, pattern, replacement)
+		// \b cannot anchor before : because : is a non-word character; use (^|\W) instead.
+		pattern := regexp.MustCompile(`(^|\W)` + regexp.QuoteMeta(":"+p.Name) + `($|\W)`)
+		result = replaceOutsideStringsWithCapture(result, pattern, replacement)
 	}
 	return result
+}
+
+// replaceOutsideStringsWithCapture is like replaceOutsideStrings but preserves
+// the captured boundary characters around the match.
+func replaceOutsideStringsWithCapture(s string, re *regexp.Regexp, replacement string) string {
+	var b strings.Builder
+	inString := false
+	i := 0
+	for i < len(s) {
+		if s[i] == '\'' {
+			if inString && i+1 < len(s) && s[i+1] == '\'' {
+				b.WriteString("''")
+				i += 2
+				continue
+			}
+			b.WriteByte(s[i])
+			inString = !inString
+			i++
+			continue
+		}
+		if !inString {
+			loc := re.FindStringSubmatchIndex(s[i:])
+			if loc != nil && loc[0] == 0 {
+				// loc[2:4] = group 1 (leading boundary), loc[4:6] = group 2 (trailing boundary)
+				if loc[2] >= 0 && loc[3] > loc[2] {
+					b.WriteString(s[i+loc[2] : i+loc[3]])
+				}
+				b.WriteString(replacement)
+				if loc[4] >= 0 && loc[5] > loc[4] {
+					b.WriteString(s[i+loc[4] : i+loc[5]])
+				}
+				i += loc[1]
+				continue
+			}
+		}
+		b.WriteByte(s[i])
+		i++
+	}
+	return b.String()
 }
 
 // replaceOutsideStrings replaces all matches of re in s, but only in parts

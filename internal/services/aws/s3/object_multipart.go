@@ -3,6 +3,7 @@ package s3
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -265,6 +266,13 @@ func (o *ObjectOperations) UploadPart(ctx context.Context, reqCtx *request.Reque
 		plainSize = encResult.PlainSize
 		contentNonce = encResult.ContentNonce
 		dataKey = encResult.DataKey
+	} else {
+		data, err := io.ReadAll(input.Body)
+		if err != nil {
+			return nil, err
+		}
+		plainSize = int64(len(data))
+		reader = bytes.NewReader(data)
 	}
 
 	part, err := stores.objects.UploadPart(ctx, input.Bucket, input.Key, input.UploadId, input.PartNumber, reader, encryptedSize, plainSize, contentNonce, dataKey)
@@ -584,7 +592,10 @@ func (o *ObjectOperations) ListParts(ctx context.Context, reqCtx *request.Reques
 
 	parts, nextPartNumberMarker, isTruncated, err := stores.objects.ListParts(ctx, input.Bucket, input.Key, input.UploadId, partNumberMarker, maxParts)
 	if err != nil {
-		return nil, ErrNoSuchUpload
+		if errors.Is(err, s3store.ErrUploadNotFound) {
+			return nil, ErrNoSuchUpload
+		}
+		return nil, err
 	}
 
 	var outputParts []*Part

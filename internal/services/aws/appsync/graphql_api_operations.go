@@ -128,7 +128,9 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 		ResolverCountLimit:                int32(request.GetIntParam(req.Parameters, "resolverCountLimit")),
 		UserPoolConfig:                    parseUserPoolConfig(req.Parameters),
 		WafWebAclArn:                      request.GetStringParam(req.Parameters, "wafWebAclArn"),
-		XrayEnabled:                       request.GetBoolParam(req.Parameters, "xrayEnabled"),
+	}
+	if request.HasParam(req.Parameters, "xrayEnabled") {
+		api.XrayEnabled = request.GetBoolParam(req.Parameters, "xrayEnabled")
 	}
 
 	updated, err := store.UpdateGraphqlApiById(apiId, api)

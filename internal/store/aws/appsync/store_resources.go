@@ -349,6 +349,17 @@ func (s *AppSyncStore) DeleteApiCache(apiId string) error {
 
 // CreateDomainName persists a new domain name configuration.
 func (s *AppSyncStore) CreateDomainName(domainName *DomainNameConfig) error {
+	if domainName.DomainName == "" {
+		return common.NewStoreError(s.domainNamesStore.Service(), "create_domain_name", common.ErrInvalidInput)
+	}
+
+	s.createMu.Lock()
+	defer s.createMu.Unlock()
+
+	if s.domainNamesStore.Exists(domainName.DomainName) {
+		return ErrDomainNameAlreadyExists
+	}
+
 	return s.domainNamesStore.Put(domainName.DomainName, domainName)
 }
 
