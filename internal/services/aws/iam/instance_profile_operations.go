@@ -3,6 +3,8 @@ package iam
 
 import (
 	"context"
+	"errors"
+
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -34,7 +36,10 @@ func (s *IAMService) CreateInstanceProfile(ctx context.Context, reqCtx *request.
 	}
 	profile, err := store.InstanceProfiles().Create(instanceProfileName, path, s.accountID, newTags)
 	if err != nil {
-		return nil, NewInstanceProfileAlreadyExistsError(instanceProfileName)
+		if errors.Is(err, iamstore.ErrInstanceProfileAlreadyExists) {
+			return nil, NewInstanceProfileAlreadyExistsError(instanceProfileName)
+		}
+		return nil, err
 	}
 
 	return map[string]interface{}{

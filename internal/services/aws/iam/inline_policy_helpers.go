@@ -126,6 +126,9 @@ func deleteInlinePolicy(ctx context.Context, s *IAMService, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
+	if !ops.existsFn(store, principalName) {
+		return nil, ops.notFoundFn(principalName)
+	}
 	if !store.InlinePolicies().Exists(ops.principalType, principalName, policyName) {
 		return nil, NewNoSuchPolicyError(policyName)
 	}

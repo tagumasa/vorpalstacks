@@ -45,6 +45,9 @@ func (s *IAMService) CreateUser(ctx context.Context, reqCtx *request.RequestCont
 	if userName == "" {
 		return nil, NewInvalidInputError("UserName", "cannot be empty")
 	}
+	if !entityNamePattern.MatchString(userName) {
+		return nil, NewInvalidInputError("UserName", "must be 1 to 64 alphanumeric characters or any of +=,.@-_")
+	}
 
 	path := request.GetStringParam(req.Parameters, "Path")
 	if path == "" {

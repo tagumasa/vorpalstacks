@@ -15,7 +15,9 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-var roleNamePattern = regexp.MustCompile(`^[\w+=,.@-]{1,64}$`)
+// entityNamePattern validates IAM entity names (users, groups, roles, instance profiles).
+// AWS allows alphanumeric characters plus +=,.@- with length 1-64.
+var entityNamePattern = regexp.MustCompile(`^[\w+=,.@-]{1,64}$`)
 
 // CreateRole creates a new IAM role.
 // RoleName is required and must not be empty.
@@ -27,7 +29,7 @@ func (s *IAMService) CreateRole(ctx context.Context, reqCtx *request.RequestCont
 	if roleName == "" {
 		return nil, NewInvalidInputError("RoleName", "cannot be empty")
 	}
-	if !roleNamePattern.MatchString(roleName) {
+	if !entityNamePattern.MatchString(roleName) {
 		return nil, NewInvalidInputError("RoleName", "must be 1 to 64 alphanumeric characters or any of +=,.@-_")
 	}
 

@@ -19,6 +19,9 @@ func (s *IAMService) CreateGroup(ctx context.Context, reqCtx *request.RequestCon
 	if groupName == "" {
 		return nil, NewInvalidInputError("GroupName", "cannot be empty")
 	}
+	if !entityNamePattern.MatchString(groupName) {
+		return nil, NewInvalidInputError("GroupName", "must be 1 to 64 alphanumeric characters or any of +=,.@-_")
+	}
 
 	path := request.GetStringParam(req.Parameters, "Path")
 	if path == "" {

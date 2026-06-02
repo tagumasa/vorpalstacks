@@ -27,6 +27,11 @@ func (s *IAMService) CreateAccountAlias(ctx context.Context, reqCtx *request.Req
 
 // DeleteAccountAlias removes the account alias for the AWS account.
 func (s *IAMService) DeleteAccountAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	accountAlias := request.GetStringParam(req.Parameters, "AccountAlias")
+	if accountAlias == "" {
+		return nil, NewValidationError("AccountAlias")
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

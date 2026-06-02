@@ -176,7 +176,7 @@ func (s *DynamoDBService) executePartiQLSelectInTxn(ctx context.Context, reqCtx 
 
 	var items []*dbstore.Item
 
-	pkName := getPartitionKeyNameFromTable(table)
+	pkName := getHashKeyName(table)
 	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
 
 	if pkValue != "" {
@@ -281,7 +281,7 @@ func (s *DynamoDBService) executePartiQLUpdateInTxn(ctx context.Context, reqCtx 
 
 	var items []*dbstore.Item
 
-	pkName := getPartitionKeyNameFromTable(table)
+	pkName := getHashKeyName(table)
 	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
 
 	if pkValue != "" {
@@ -365,7 +365,7 @@ func (s *DynamoDBService) executePartiQLDeleteInTxn(ctx context.Context, reqCtx 
 
 	var items []*dbstore.Item
 
-	pkName := getPartitionKeyNameFromTable(table)
+	pkName := getHashKeyName(table)
 	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
 
 	if pkValue != "" {
@@ -415,15 +415,6 @@ func (s *DynamoDBService) executePartiQLDeleteInTxn(ctx context.Context, reqCtx 
 		"Count":        deletedCount,
 		"ScannedCount": scannedCount,
 	}, nil
-}
-
-func getPartitionKeyNameFromTable(table *dbstore.Table) string {
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == dbstore.KeyTypeHash {
-			return ks.AttributeName
-		}
-	}
-	return ""
 }
 
 // BatchExecuteStatement executes multiple PartiQL statements in a batch.

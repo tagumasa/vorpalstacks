@@ -82,7 +82,7 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 
 	var items []*dbstore.Item
 
-	pkName := getPartitionKeyName(table)
+	pkName := getHashKeyName(table)
 	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
 
 	if pkValue != "" {
@@ -406,15 +406,6 @@ func buildKeyFromSchema(keySchema []*dbstore.KeySchemaElement, itemData map[stri
 		return nil
 	}
 	return key
-}
-
-func getPartitionKeyName(table *dbstore.Table) string {
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == dbstore.KeyTypeHash {
-			return ks.AttributeName
-		}
-	}
-	return ""
 }
 
 func extractPartitionKeyFromWhere(expr sqlparser.Expr, pkName string, params *partiQLParams) string {
