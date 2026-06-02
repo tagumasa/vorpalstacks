@@ -265,10 +265,10 @@ func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]int
 	}
 
 	response := map[string]interface{}{
-		"id":              api.Id,
-		"name":            api.Name,
-		"createdDate":     timeutils.FormatEpochSeconds(api.CreatedDate),
-		"rootResourceId":  rootResourceId,
+		"id":             api.Id,
+		"name":           api.Name,
+		"createdDate":    timeutils.FormatEpochSeconds(api.CreatedDate),
+		"rootResourceId": rootResourceId,
 	}
 
 	if api.Description != "" {

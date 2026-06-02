@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
