@@ -11,7 +11,6 @@ import (
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/secretsmanager"
 	secretsmanagerconnect "vorpalstacks/internal/pb/aws/secretsmanager/secretsmanagerconnect"
 	"vorpalstacks/internal/store/aws/common"
@@ -19,29 +18,31 @@ import (
 )
 
 // AdminHandler implements the Secrets Manager admin console gRPC-Web handler.
+// It delegates to the shared SecretsManagerService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	secretsmanagerconnect.UnimplementedSecretsManagerServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *SecretsManagerService
 }
 
 var _ secretsmanagerconnect.SecretsManagerServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Secrets Manager admin handler with the given storage manager and account ID.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
+// NewAdminHandler creates a new Secrets Manager admin handler backed by the
+// given service instance.
+func NewAdminHandler(svc *SecretsManagerService) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
+		service: svc,
 	}
 }
 
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*secretsmanagerstore.SecretStore, error) {
 	region := svccommon.GetRegionFromHeader(headers)
-	regionStorage, err := h.storageManager.GetStorage(region)
+	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, err
 	}
-	return secretsmanagerstore.NewSecretStore(regionStorage, h.accountId, region), nil
+	return store.(*secretsmanagerstore.SecretStore), nil
 }
 
 // ListSecrets returns all Secrets Manager secrets visible to the admin console.
@@ -182,6 +183,6 @@ func (h *AdminHandler) DeleteSecret(ctx context.Context, req *connect.Request[pb
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Secrets Manager admin console.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return secretsmanagerconnect.NewSecretsManagerServiceHandler(NewAdminHandler(sm, accountID))
+func NewConnectHandler(svc *SecretsManagerService) (string, http.Handler) {
+	return secretsmanagerconnect.NewSecretsManagerServiceHandler(NewAdminHandler(svc))
 }

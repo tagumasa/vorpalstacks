@@ -9,7 +9,6 @@ import (
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudtrail"
 	cloudtrailconnect "vorpalstacks/internal/pb/aws/cloudtrail/cloudtrailconnect"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
@@ -17,29 +16,28 @@ import (
 )
 
 // AdminHandler implements the CloudTrail admin console gRPC-Web handler.
+// It delegates to the shared CloudTrailService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	cloudtrailconnect.UnimplementedCloudTrailServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *CloudTrailService
 }
 
 var _ cloudtrailconnect.CloudTrailServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new CloudTrail admin handler with the given storage manager and account ID.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
+// NewAdminHandler creates a new CloudTrail admin handler backed by the given
+// service instance, ensuring the same per-region cached stores are used as
+// the HTTP API handlers.
+func NewAdminHandler(svc *CloudTrailService) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
+		service: svc,
 	}
 }
 
-func (h *AdminHandler) getStoreFromHeader(header http.Header) (*cloudtrailstore.CloudTrailStore, error) {
+func (h *AdminHandler) getStoreFromHeader(header http.Header) (cloudtrailstore.CloudTrailStoreInterface, error) {
 	region := svccommon.GetRegionFromHeader(header)
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return cloudtrailstore.NewCloudTrailStore(regionStorage, h.accountId, region), nil
+	return h.service.GetStoreForRegion(region)
 }
 
 // ListTrails retrieves CloudTrail trails with pagination support.
@@ -141,6 +139,6 @@ func (h *AdminHandler) DeleteTrail(ctx context.Context, req *connect.Request[pb.
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the CloudTrail admin console.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return cloudtrailconnect.NewCloudTrailServiceHandler(NewAdminHandler(sm, accountID))
+func NewConnectHandler(svc *CloudTrailService) (string, http.Handler) {
+	return cloudtrailconnect.NewCloudTrailServiceHandler(NewAdminHandler(svc))
 }

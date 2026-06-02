@@ -70,6 +70,14 @@ func (s *SecretsManagerService) StopRotationChecker() {
 	}
 }
 
+// GetStoreForRegion returns the cached SecretStore for the given region.
+func (s *SecretsManagerService) GetStoreForRegion(region string) (secretsmanagerstore.SecretStoreInterface, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(secretsmanagerstore.SecretStoreInterface), nil
+	}
+	return nil, fmt.Errorf("secretsmanager store not initialised for region %s", region)
+}
+
 func (s *SecretsManagerService) store(reqCtx *request.RequestContext) (secretsmanagerstore.SecretStoreInterface, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (secretsmanagerstore.SecretStoreInterface, error) {
 		storage, err := reqCtx.GetStorage()

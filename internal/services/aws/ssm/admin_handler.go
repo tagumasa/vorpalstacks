@@ -11,36 +11,37 @@ import (
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/ssm"
 	ssmconnect "vorpalstacks/internal/pb/aws/ssm/ssmconnect"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
 // AdminHandler implements the SSM admin console gRPC-Web handler.
+// It delegates to the shared SSMService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	ssmconnect.UnimplementedSSMServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *SSMService
 }
 
 var _ ssmconnect.SSMServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new SSM admin handler with the given storage manager and account ID.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
+// NewAdminHandler creates a new SSM admin handler backed by the given
+// service instance.
+func NewAdminHandler(svc *SSMService) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
+		service: svc,
 	}
 }
 
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*ssmstore.Store, error) {
 	region := svccommon.GetRegionFromHeader(headers)
-	regionStorage, err := h.storageManager.GetStorage(region)
+	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, err
 	}
-	return ssmstore.NewStore(regionStorage, h.accountId, region), nil
+	return store.(*ssmstore.Store), nil
 }
 
 // DescribeParameters retrieves SSM parameters from the store, applying optional filters and pagination.
@@ -185,6 +186,6 @@ func (h *AdminHandler) DeleteParameter(ctx context.Context, req *connect.Request
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the SSM admin console.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return ssmconnect.NewSSMServiceHandler(NewAdminHandler(sm, accountID))
+func NewConnectHandler(svc *SSMService) (string, http.Handler) {
+	return ssmconnect.NewSSMServiceHandler(NewAdminHandler(svc))
 }

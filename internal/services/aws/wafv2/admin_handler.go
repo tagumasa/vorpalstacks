@@ -9,36 +9,33 @@ import (
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/wafv2"
 	wafv2connect "vorpalstacks/internal/pb/aws/wafv2/wafv2connect"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
 // AdminHandler implements the WAFv2 admin console gRPC-Web handler.
+// It delegates to the shared WAFv2Service store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	wafv2connect.UnimplementedWAFV2ServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *WAFv2Service
 }
 
 var _ wafv2connect.WAFV2ServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new WAFv2 admin handler with the given storage manager and account ID.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
+// NewAdminHandler creates a new WAFv2 admin handler backed by the given
+// service instance.
+func NewAdminHandler(svc *WAFv2Service) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
+		service: svc,
 	}
 }
 
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*wafstore.WebACLStore, error) {
 	region := svccommon.GetRegionFromHeader(headers)
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return wafstore.NewWebACLStore(regionStorage, h.accountId, region), nil
+	return h.service.GetWebACLStoreForRegion(region)
 }
 
 // ListWebACLs returns a paginated list of WebACL summaries via the admin console gRPC-Web interface.
@@ -152,6 +149,6 @@ func (h *AdminHandler) DeleteWebACL(ctx context.Context, req *connect.Request[pb
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the WAFv2 admin console.
-func NewConnectHandler(storageManager *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return wafv2connect.NewWAFV2ServiceHandler(NewAdminHandler(storageManager, accountID))
+func NewConnectHandler(svc *WAFv2Service) (string, http.Handler) {
+	return wafv2connect.NewWAFV2ServiceHandler(NewAdminHandler(svc))
 }

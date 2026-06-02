@@ -35,6 +35,14 @@ func NewSSMServiceWithKMS(accountID string, kmsEncryptor common.KMSEncryptor) *S
 	}
 }
 
+// GetStoreForRegion returns the cached SSMStore for the given region.
+func (s *SSMService) GetStoreForRegion(region string) (ssmstore.SSMStoreInterface, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(ssmstore.SSMStoreInterface), nil
+	}
+	return nil, fmt.Errorf("ssm store not initialised for region %s", region)
+}
+
 func (s *SSMService) store(reqCtx *request.RequestContext) (ssmstore.SSMStoreInterface, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (ssmstore.SSMStoreInterface, error) {
 		storage, err := reqCtx.GetStorage()

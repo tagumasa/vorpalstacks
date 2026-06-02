@@ -37,6 +37,16 @@ func (s *CloudTrailService) GetEventStore(store storage.BasicStorage, region str
 	return st
 }
 
+// GetStoreForRegion returns the cached CloudTrail store for the given region.
+// Used by the admin console handler to share the same store instances as the
+// HTTP API handlers.
+func (s *CloudTrailService) GetStoreForRegion(region string) (cloudtrailstore.CloudTrailStoreInterface, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(cloudtrailstore.CloudTrailStoreInterface), nil
+	}
+	return nil, fmt.Errorf("cloudtrail store not initialised for region %s", region)
+}
+
 func (s *CloudTrailService) store(reqCtx *request.RequestContext) (cloudtrailstore.CloudTrailStoreInterface, error) {
 	st, err := storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (cloudtrailstore.CloudTrailStoreInterface, error) {
 		storage, err := reqCtx.GetStorage()

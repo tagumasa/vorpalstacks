@@ -495,6 +495,39 @@ func (o *cryptoOps) generateDataKeyBytes(keySpec string, numberOfBytes int) ([]b
 	return plaintext, nil
 }
 
+// generateDataKey generates a new data key for envelope encryption using the
+// specified KMS key.  The caller must hold the read lock (or an equivalent
+// guarantee that the key map is stable).
+func (c *cryptoOps) generateDataKey(keyID string, keySpec string, numberOfBytes int, encryptionContext map[string]string) (*GenerateDataKeyResult, error) {
+	key, exists := c.keys[keyID]
+	if !exists {
+		return nil, ErrKeyNotFound
+	}
+
+	if key.symmetric == nil {
+		return nil, ErrEncryptFailed
+	}
+
+	plaintext, err := c.generateDataKeyBytes(keySpec, numberOfBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	ciphertext, err := aesEncrypt(key.symmetric, plaintext, serializeEncryptionContext(encryptionContext))
+	if err != nil {
+		return nil, err
+	}
+
+	ciphertextWithKeyID := prependKeyIDToCiphertext(keyID, ciphertext)
+
+	return &GenerateDataKeyResult{
+		Plaintext:      plaintext,
+		Ciphertext:     ciphertextWithKeyID,
+		PlaintextCRC32: computeCRC32(plaintext),
+		KeyID:          keyID,
+	}, nil
+}
+
 func prependKeyIDToCiphertext(keyID string, ciphertext []byte) []byte {
 	keyIDBytes := []byte(keyID)
 	result := make([]byte, 2+len(keyIDBytes)+len(ciphertext))

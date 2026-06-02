@@ -11,7 +11,6 @@ import (
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/timestreamwrite"
 	timestreamwriteconnect "vorpalstacks/internal/pb/aws/timestreamwrite/timestreamwriteconnect"
@@ -22,41 +21,32 @@ import (
 // AdminHandler implements the Timestream Write gRPC-Web admin console handler.
 // It exposes list operations for databases and tables for the Flutter
 // management UI.
+// It delegates to the shared TimestreamWriteService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	timestreamwriteconnect.UnimplementedTimestreamWriteServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
-	dataPath       string
+	service *TimestreamWriteService
 }
 
 var _ timestreamwriteconnect.TimestreamWriteServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Timestream Write admin console handler.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId, dataPath string) *AdminHandler {
+// NewAdminHandler creates a new Timestream Write admin console handler backed
+// by the given service instance.
+func NewAdminHandler(svc *TimestreamWriteService) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
-		dataPath:       dataPath,
+		service: svc,
 	}
 }
 
 func (h *AdminHandler) getStoreFromHeader(header http.Header) (*timestreamstore.Store, error) {
 	region := svccommon.GetRegionFromHeader(header)
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return timestreamstore.NewStore(regionStorage, h.accountId, region), nil
+	return h.service.GetDatabaseStoreForRegion(region)
 }
 
 func (h *AdminHandler) getTableStoreFromHeader(header http.Header) (*timestreamstore.TableStore, error) {
 	region := svccommon.GetRegionFromHeader(header)
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	dbStore := timestreamstore.NewStore(regionStorage, h.accountId, region)
-	return timestreamstore.NewTableStore(regionStorage, dbStore, h.accountId, region), nil
+	return h.service.GetTableStoreForRegion(region)
 }
 
 // ListDatabases returns a paginated list of Timestream databases in the
@@ -186,6 +176,6 @@ func (h *AdminHandler) DeleteDatabase(ctx context.Context, req *connect.Request[
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Timestream Write admin console.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID, dataPath string) (string, http.Handler) {
-	return timestreamwriteconnect.NewTimestreamWriteServiceHandler(NewAdminHandler(sm, accountID, dataPath))
+func NewConnectHandler(svc *TimestreamWriteService) (string, http.Handler) {
+	return timestreamwriteconnect.NewTimestreamWriteServiceHandler(NewAdminHandler(svc))
 }

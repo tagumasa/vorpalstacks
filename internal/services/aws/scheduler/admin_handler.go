@@ -12,7 +12,6 @@ import (
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/scheduler"
 	schedulerconnect "vorpalstacks/internal/pb/aws/scheduler/schedulerconnect"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
@@ -30,27 +29,25 @@ func parseTime(s string) (time.Time, error) {
 
 // AdminHandler provides EventBridge Scheduler service administration functionality.
 // It implements the SchedulerServiceHandler interface for gRPC-Web communication.
+// It delegates to the shared SchedulerService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	schedulerconnect.UnimplementedSchedulerServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *SchedulerService
 }
 
-// NewAdminHandler creates a new EventBridge Scheduler AdminHandler.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
+// NewAdminHandler creates a new EventBridge Scheduler AdminHandler backed by
+// the given service instance.
+func NewAdminHandler(svc *SchedulerService) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
+		service: svc,
 	}
 }
 
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*schedulerstore.SchedulerStore, error) {
 	region := svccommon.GetRegionFromHeader(headers)
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return schedulerstore.NewSchedulerStore(regionStorage, h.accountId, region), nil
+	return h.service.GetStoreForRegion(region)
 }
 
 // ListSchedules retrieves schedules from the store with optional filtering and pagination.
@@ -177,6 +174,6 @@ func (h *AdminHandler) DeleteSchedule(ctx context.Context, req *connect.Request[
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Scheduler admin console.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return schedulerconnect.NewSchedulerServiceHandler(NewAdminHandler(sm, accountID))
+func NewConnectHandler(svc *SchedulerService) (string, http.Handler) {
+	return schedulerconnect.NewSchedulerServiceHandler(NewAdminHandler(svc))
 }

@@ -11,7 +11,6 @@ import (
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/lambda"
 	lambdaconnect "vorpalstacks/internal/pb/aws/lambda/lambdaconnect"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -20,31 +19,29 @@ import (
 
 // AdminHandler provides Lambda service administration functionality.
 // It implements the LambdaServiceHandler interface for gRPC-Web communication.
+// It delegates to the shared LambdaService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	lambdaconnect.UnimplementedLambdaServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *LambdaService
 }
 
 var _ lambdaconnect.LambdaServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Lambda AdminHandler.
-// It initialises the handler with the provided storage manager and account ID.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
+// NewAdminHandler creates a new Lambda AdminHandler backed by the given
+// service instance, ensuring the same per-region cached stores are used as
+// the HTTP API handlers.
+func NewAdminHandler(svc *LambdaService) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
+		service: svc,
 	}
 }
 
 // getStoreFromHeader extracts the region from request headers and returns a FunctionStore.
 func (h *AdminHandler) getStoreFromHeader(header http.Header) (*lambdastore.FunctionStore, error) {
 	region := svccommon.GetRegionFromHeader(header)
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return lambdastore.NewFunctionStore(regionStorage, h.accountId, region), nil
+	return h.service.GetFunctionStoreForRegion(region), nil
 }
 
 // ListFunctions lists the Lambda functions in the region.
@@ -209,6 +206,6 @@ func functionToProto(f *lambdastore.Function) *pb.FunctionConfiguration {
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Lambda admin console.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return lambdaconnect.NewLambdaServiceHandler(NewAdminHandler(sm, accountID))
+func NewConnectHandler(svc *LambdaService) (string, http.Handler) {
+	return lambdaconnect.NewLambdaServiceHandler(NewAdminHandler(svc))
 }

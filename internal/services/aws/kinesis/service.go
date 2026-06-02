@@ -42,8 +42,20 @@ func (s *KinesisService) store(reqCtx *request.RequestContext) (*kinesisstore.Ki
 		if !ok {
 			return nil, fmt.Errorf("storage does not support TransactionalStorageWith2PC")
 		}
+
 		return kinesisstore.NewKinesisStore(tstore, reqCtx.GetAccountID(), reqCtx.GetRegion()), nil
 	})
+}
+
+// getStoreForRegion returns the cached KinesisStore for the given region.
+// Returns an error if no store has been initialised for that region
+// (the store cache is populated by SetKinesisStore or lazily by the
+// HTTP API handler's store() method).
+func (s *KinesisService) getStoreForRegion(region string) (*kinesisstore.KinesisStore, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(*kinesisstore.KinesisStore), nil
+	}
+	return nil, fmt.Errorf("kinesis store not initialised for region %s", region)
 }
 
 // RegisterHandlers registers the Kinesis service handlers with the dispatcher.

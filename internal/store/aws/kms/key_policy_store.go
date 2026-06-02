@@ -126,10 +126,10 @@ func (s *KeyPolicyStore) Delete(keyID, policyName string) error {
 	}
 
 	key := keyPolicyKey(keyID, policyName)
-	if !s.bucket.Has([]byte(key)) {
-		return NewStoreError("delete_key_policy", ErrKeyPolicyNotFound)
-	}
 	return s.kl.WithLock(keyID, func() error {
+		if !s.bucket.Has([]byte(key)) {
+			return NewStoreError("delete_key_policy", ErrKeyPolicyNotFound)
+		}
 		return s.bucket.Delete([]byte(key))
 	})
 }

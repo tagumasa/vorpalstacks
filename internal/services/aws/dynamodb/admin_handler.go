@@ -10,40 +10,34 @@ import (
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/dynamodb"
 	dynamodbconnect "vorpalstacks/internal/pb/aws/dynamodb/dynamodbconnect"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 // AdminHandler implements the gRPC admin console handlers for DynamoDB.
+// It delegates to the shared DynamoDBService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	dynamodbconnect.UnimplementedDynamoDBServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *DynamoDBService
 }
 
 var _ dynamodbconnect.DynamoDBServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new DynamoDB admin handler.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
+// NewAdminHandler creates a new DynamoDB admin handler backed by the given
+// service instance, ensuring the same per-region cached stores are used as
+// the HTTP API handlers.
+func NewAdminHandler(svc *DynamoDBService) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
+		service: svc,
 	}
 }
 
 func (h *AdminHandler) getStore(headers http.Header) (dynamodbstore.DynamoDBStoreInterface, error) {
 	region := svccommon.GetRegionFromHeader(headers)
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	txnStorage, ok := regionStorage.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		return nil, fmt.Errorf("storage does not support transactions")
-	}
-	return dynamodbstore.NewDynamoDBStore(txnStorage, h.accountId, region), nil
+	return h.service.GetCachedStoreForRegion(region)
 }
 
 // ListTables returns all DynamoDB table names for the admin console.
@@ -199,6 +193,6 @@ func (h *AdminHandler) DeleteTable(ctx context.Context, req *connect.Request[pb.
 }
 
 // NewConnectHandler returns the connect RPC path and handler for DynamoDB admin.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return dynamodbconnect.NewDynamoDBServiceHandler(NewAdminHandler(sm, accountID))
+func NewConnectHandler(svc *DynamoDBService) (string, http.Handler) {
+	return dynamodbconnect.NewDynamoDBServiceHandler(NewAdminHandler(svc))
 }

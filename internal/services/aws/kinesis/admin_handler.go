@@ -7,46 +7,40 @@ import (
 	"net/http"
 
 	svcerrors "vorpalstacks/internal/common/errors"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/kinesis"
 	kinesisconnect "vorpalstacks/internal/pb/aws/kinesis/kinesisconnect"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
 // AdminHandler implements the Kinesis admin console gRPC-Web handler.
+// It delegates to the shared KinesisService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers
+// and the admin console gRPC-Web handlers.
 type AdminHandler struct {
 	kinesisconnect.UnimplementedKinesisServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *KinesisService
 }
 
 var _ kinesisconnect.KinesisServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Kinesis admin handler with the given storage manager and account ID.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
+// NewAdminHandler creates a new Kinesis admin handler backed by the given
+// service instance, ensuring the same per-region cached stores are used as
+// the HTTP API handlers.
+func NewAdminHandler(svc *KinesisService) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
+		service: svc,
 	}
 }
 
 func (h *AdminHandler) getKinesisStoreByRegion(region string) (*kinesisstore.KinesisStore, error) {
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	tstore, ok := regionStorage.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		return nil, fmt.Errorf("storage does not support transactions")
-	}
-	return kinesisstore.NewKinesisStore(tstore, h.accountId, region), nil
+	return h.service.getStoreForRegion(region)
 }
 
 // ListStreams returns a list of Kinesis stream names via the admin console gRPC-Web interface.
@@ -295,6 +289,6 @@ func (h *AdminHandler) DeleteStream(ctx context.Context, req *connect.Request[pb
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Kinesis admin console.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return kinesisconnect.NewKinesisServiceHandler(NewAdminHandler(sm, accountID))
+func NewConnectHandler(svc *KinesisService) (string, http.Handler) {
+	return kinesisconnect.NewKinesisServiceHandler(NewAdminHandler(svc))
 }

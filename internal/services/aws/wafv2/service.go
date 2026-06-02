@@ -42,6 +42,14 @@ func NewWAFv2Service(accountID, region string) *WAFv2Service {
 	return &WAFv2Service{}
 }
 
+// GetWebACLStoreForRegion returns the cached WebACLStore for the given region.
+func (s *WAFv2Service) GetWebACLStoreForRegion(region string) (*wafstore.WebACLStore, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(*wafv2Stores).webACLs, nil
+	}
+	return nil, fmt.Errorf("wafv2 store not initialised for region %s", region)
+}
+
 func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*wafv2Stores, error) {
 		storage, err := reqCtx.GetStorage()

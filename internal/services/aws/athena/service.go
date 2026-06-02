@@ -3,6 +3,7 @@ package athena
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -73,6 +74,14 @@ func (s *AthenaService) getAndRemoveCancelFunc(id string) (context.CancelFunc, b
 	delete(s.cancelFuncs, id)
 	s.cancelMu.Unlock()
 	return fn, ok
+}
+
+// GetWorkGroupStoreForRegion returns the cached WorkGroupStore for the given region.
+func (s *AthenaService) GetWorkGroupStoreForRegion(region string) (*athena.WorkGroupStore, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(*athenaStores).workGroupStore, nil
+	}
+	return nil, fmt.Errorf("athena store not initialised for region %s", region)
 }
 
 func (s *AthenaService) store(reqCtx *request.RequestContext) (*athenaStores, error) {

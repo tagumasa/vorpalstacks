@@ -46,6 +46,14 @@ func NewTimestreamQueryService(accountID, serverHost, dataPath string) *Timestre
 	}
 }
 
+// GetScheduledQueryStoreForRegion returns the cached ScheduledQueryStore for the given region.
+func (s *TimestreamQueryService) GetScheduledQueryStoreForRegion(region string) (*tsstore.ScheduledQueryStore, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(*tsQueryStores).scheduledQueryStore, nil
+	}
+	return nil, fmt.Errorf("timestream query store not initialised for region %s", region)
+}
+
 func (s *TimestreamQueryService) store(ctx *request.RequestContext) (*tsQueryStores, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, ctx.GetRegion(), func() (*tsQueryStores, error) {
 		storage, err := ctx.GetStorage()

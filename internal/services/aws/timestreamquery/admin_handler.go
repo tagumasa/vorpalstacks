@@ -10,7 +10,6 @@ import (
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/timestreamquery"
 	timestreamqueryconnect "vorpalstacks/internal/pb/aws/timestreamquery/timestreamqueryconnect"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
@@ -18,34 +17,29 @@ import (
 
 // AdminHandler provides Timestream Query service administration functionality.
 // It implements the TimestreamQueryServiceHandler interface for gRPC-Web communication.
+// It delegates to the shared TimestreamQueryService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	timestreamqueryconnect.UnimplementedTimestreamQueryServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
-	dataPath       string
+	service *TimestreamQueryService
 }
 
 var _ timestreamqueryconnect.TimestreamQueryServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Timestream Query AdminHandler.
-// It initialises the handler with the provided storage manager, account ID, and data path.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId, dataPath string) *AdminHandler {
+// NewAdminHandler creates a new Timestream Query AdminHandler backed by the
+// given service instance.
+func NewAdminHandler(svc *TimestreamQueryService) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
-		dataPath:       dataPath,
+		service: svc,
 	}
 }
 
-// getScheduledQueryStore retrieves the Timestream Query scheduled query store for the request.
-// It extracts the region from the request header and creates a new ScheduledQueryStore instance.
+// getScheduledQueryStore retrieves the Timestream Query scheduled query store
+// for the request region from the shared service cache.
 func (h *AdminHandler) getScheduledQueryStore(req *connect.Request[pb.ListScheduledQueriesRequest]) (*timestreamstore.ScheduledQueryStore, error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return timestreamstore.NewScheduledQueryStore(regionStorage, h.accountId, region), nil
+	return h.service.GetScheduledQueryStoreForRegion(region)
 }
 
 // ListScheduledQueries lists scheduled queries in Timestream Query.
@@ -82,6 +76,6 @@ func (h *AdminHandler) ListScheduledQueries(ctx context.Context, req *connect.Re
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Timestream Query admin console.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID, dataPath string) (string, http.Handler) {
-	return timestreamqueryconnect.NewTimestreamQueryServiceHandler(NewAdminHandler(sm, accountID, dataPath))
+func NewConnectHandler(svc *TimestreamQueryService) (string, http.Handler) {
+	return timestreamqueryconnect.NewTimestreamQueryServiceHandler(NewAdminHandler(svc))
 }

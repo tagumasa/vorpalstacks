@@ -41,6 +41,22 @@ func NewTimestreamWriteService(accountID, serverHost, dataPath string) *Timestre
 	}
 }
 
+// GetDatabaseStoreForRegion returns the cached Store (database-level) for the given region.
+func (s *TimestreamWriteService) GetDatabaseStoreForRegion(region string) (*tsstore.Store, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(*tsWriteStores).store, nil
+	}
+	return nil, fmt.Errorf("timestream write store not initialised for region %s", region)
+}
+
+// GetTableStoreForRegion returns the cached TableStore for the given region.
+func (s *TimestreamWriteService) GetTableStoreForRegion(region string) (*tsstore.TableStore, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(*tsWriteStores).tableStore, nil
+	}
+	return nil, fmt.Errorf("timestream write store not initialised for region %s", region)
+}
+
 func (s *TimestreamWriteService) store(ctx *request.RequestContext) (*tsWriteStores, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, ctx.GetRegion(), func() (*tsWriteStores, error) {
 		storage, err := ctx.GetStorage()

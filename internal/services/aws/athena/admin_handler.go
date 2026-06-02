@@ -11,7 +11,6 @@ import (
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/athena"
 	athenaconnect "vorpalstacks/internal/pb/aws/athena/athenaconnect"
 	athenastore "vorpalstacks/internal/store/aws/athena"
@@ -19,29 +18,27 @@ import (
 )
 
 // AdminHandler implements the Athena admin console gRPC-Web handler.
+// It delegates to the shared AthenaService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	athenaconnect.UnimplementedAthenaServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
+	service *AthenaService
 }
 
 var _ athenaconnect.AthenaServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Athena admin handler with the given storage manager and account ID.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
+// NewAdminHandler creates a new Athena admin handler backed by the given
+// service instance.
+func NewAdminHandler(svc *AthenaService) *AdminHandler {
 	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
+		service: svc,
 	}
 }
 
 func (h *AdminHandler) getWorkGroupStoreFromHeaders(headers http.Header) (*athenastore.WorkGroupStore, error) {
 	region := svccommon.GetRegionFromHeader(headers)
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	return athenastore.NewWorkGroupStore(regionStorage, h.accountId, region), nil
+	return h.service.GetWorkGroupStoreForRegion(region)
 }
 
 // CreateWorkGroup creates a new Athena work group via the admin console gRPC-Web interface.
@@ -148,6 +145,6 @@ func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Athena admin console.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return athenaconnect.NewAthenaServiceHandler(NewAdminHandler(sm, accountID))
+func NewConnectHandler(svc *AthenaService) (string, http.Handler) {
+	return athenaconnect.NewAthenaServiceHandler(NewAdminHandler(svc))
 }

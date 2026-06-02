@@ -51,6 +51,17 @@ func (s *DynamoDBService) GetStoreForRegion(region string) (dynamodbstore.Dynamo
 	return s.busStoreFactory.GetStore(region)
 }
 
+// GetCachedStoreForRegion returns the cached DynamoDB store from the HTTP API
+// handler's per-region cache. Returns an error if no store has been initialised
+// for that region yet (the cache is populated lazily by store() on first HTTP
+// API request to that region).
+func (s *DynamoDBService) GetCachedStoreForRegion(region string) (dynamodbstore.DynamoDBStoreInterface, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(dynamodbstore.DynamoDBStoreInterface), nil
+	}
+	return nil, fmt.Errorf("dynamodb store not initialised for region %s", region)
+}
+
 func (s *DynamoDBService) store(reqCtx *request.RequestContext) (dynamodbstore.DynamoDBStoreInterface, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (dynamodbstore.DynamoDBStoreInterface, error) {
 		basicStorage, err := reqCtx.GetStorage()

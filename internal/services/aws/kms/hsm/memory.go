@@ -123,35 +123,7 @@ func (b *MemoryBackend) VerifyMAC(keyID string, message, macValue []byte, algori
 func (b *MemoryBackend) GenerateDataKey(keyID string, keySpec string, numberOfBytes int, encryptionContext map[string]string) (*GenerateDataKeyResult, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-
-	_, exists := b.keys[keyID]
-	if !exists {
-		return nil, ErrKeyNotFound
-	}
-
-	key := b.keys[keyID]
-	if key.symmetric == nil {
-		return nil, ErrEncryptFailed
-	}
-
-	plaintext, err := b.generateDataKeyBytes(keySpec, numberOfBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	ciphertext, err := aesEncrypt(key.symmetric, plaintext, serializeEncryptionContext(encryptionContext))
-	if err != nil {
-		return nil, err
-	}
-
-	ciphertextWithKeyID := prependKeyIDToCiphertext(keyID, ciphertext)
-
-	return &GenerateDataKeyResult{
-		Plaintext:      plaintext,
-		Ciphertext:     ciphertextWithKeyID,
-		PlaintextCRC32: computeCRC32(plaintext),
-		KeyID:          keyID,
-	}, nil
+	return b.cryptoOps.generateDataKey(keyID, keySpec, numberOfBytes, encryptionContext)
 }
 
 // GetPublicKey retrieves the public key for an RSA or ECDSA key.
