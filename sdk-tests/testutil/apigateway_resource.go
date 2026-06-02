@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 )
 
-func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
+func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *apigateway.Client, apiID, rootResourceID string) []TestResult {
 	var results []TestResult
 
 	var resourceID string
@@ -21,7 +21,7 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 		}
 		resp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
 			RestApiId: aws.String(apiID),
-			ParentId:  aws.String(apiID),
+			ParentId:  aws.String(rootResourceID),
 			PathPart:  aws.String("test"),
 		})
 		if err != nil {
@@ -36,7 +36,7 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 		if resp.Path == nil || *resp.Path != "/test" {
 			return fmt.Errorf("path mismatch, got %v", resp.Path)
 		}
-		if resp.ParentId == nil || *resp.ParentId != apiID {
+		if resp.ParentId == nil || *resp.ParentId != rootResourceID {
 			return fmt.Errorf("parentId mismatch, got %v", resp.ParentId)
 		}
 		resourceID = *resp.Id
@@ -517,7 +517,7 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 
 		usersResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
 			RestApiId: createResp.Id,
-			ParentId:  createResp.Id,
+			ParentId:  createResp.RootResourceId,
 			PathPart:  aws.String("users"),
 		})
 		if err != nil {
@@ -560,7 +560,7 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 
 		parentResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
 			RestApiId: createResp.Id,
-			ParentId:  createResp.Id,
+			ParentId:  createResp.RootResourceId,
 			PathPart:  aws.String("items"),
 		})
 		if err != nil {
@@ -615,7 +615,7 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 
 		_, err = client.CreateResource(ctx, &apigateway.CreateResourceInput{
 			RestApiId: createResp.Id,
-			ParentId:  createResp.Id,
+			ParentId:  createResp.RootResourceId,
 			PathPart:  aws.String("dup"),
 		})
 		if err != nil {
@@ -624,7 +624,7 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 
 		_, err = client.CreateResource(ctx, &apigateway.CreateResourceInput{
 			RestApiId: createResp.Id,
-			ParentId:  createResp.Id,
+			ParentId:  createResp.RootResourceId,
 			PathPart:  aws.String("dup"),
 		})
 		if err := AssertErrorContains(err, "ConflictException"); err != nil {

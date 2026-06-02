@@ -44,6 +44,16 @@ func (s *APIGatewayService) CreateAuthorizer(ctx context.Context, reqCtx *reques
 	if v := request.GetStringParam(req.Parameters, "authorizerUri"); v != "" {
 		authorizer.AuthorizerUri = v
 	}
+
+	// authorizerUri is required for TOKEN/REQUEST; COGNITO_USER_POOLS uses providerARNs.
+	if authType != "COGNITO_USER_POOLS" && authorizer.AuthorizerUri == "" {
+		return nil, NewBadRequestException("authorizerUri is required for " + authType + " authorizers")
+	}
+
+	// Default identitySource for TOKEN/REQUEST (AWS defaults to this header).
+	if authorizer.IdentitySource == "" && authType != "COGNITO_USER_POOLS" {
+		authorizer.IdentitySource = "method.request.header.Authorization"
+	}
 	if v := request.GetStringParam(req.Parameters, "authorizerCredentials"); v != "" {
 		authorizer.AuthorizerCredentials = v
 	}
@@ -119,6 +129,10 @@ func (s *APIGatewayService) UpdateAuthorizer(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId + ":" + authorizerId)
+	defer stores.keyLocker.Unlock(apiId + ":" + authorizerId)
+
 	existing, err := stores.restApis.GetAuthorizer(apiId, authorizerId)
 	if err != nil {
 		return nil, toApiGatewayError(err)
@@ -141,7 +155,11 @@ func (s *APIGatewayService) UpdateAuthorizer(ctx context.Context, reqCtx *reques
 		case "/identityValidationExpression":
 			existing.IdentityValidationExpression = po.Value
 		case "/authorizerResultTtlInSeconds":
-			existing.AuthorizerResultTtlInSeconds = int32(parseInt64(po.Value))
+			v, err := parseInt64(po.Value)
+			if err != nil {
+				return nil, NewBadRequestException("invalid authorizerResultTtlInSeconds: not a number")
+			}
+			existing.AuthorizerResultTtlInSeconds = int32(v)
 		}
 	}
 
@@ -185,6 +203,12 @@ func (s *APIGatewayService) GetAuthorizers(ctx context.Context, reqCtx *request.
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
+	limit := request.GetIntParam(req.Parameters, "limit")
+	if limit <= 0 {
+		limit = 25
+	}
+	position := request.GetStringParam(req.Parameters, "position")
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -199,9 +223,14 @@ func (s *APIGatewayService) GetAuthorizers(ctx context.Context, reqCtx *request.
 		items = append(items, s.toAuthorizerResponse(a))
 	}
 
-	return map[string]interface{}{
-		"item": items,
-	}, nil
+	page, nextPos := paginateItems(items, position, limit)
+	result := map[string]interface{}{
+		"item": page,
+	}
+	if nextPos != "" {
+		result["position"] = nextPos
+	}
+	return result, nil
 }
 
 func (s *APIGatewayService) toAuthorizerResponse(a *store.Authorizer) map[string]interface{} {

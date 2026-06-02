@@ -346,6 +346,10 @@ func (s *APIGatewayService) UpdateBasePathMapping(ctx context.Context, reqCtx *r
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(domainName + ":" + basePath)
+	defer stores.keyLocker.Unlock(domainName + ":" + basePath)
+
 	mapping, err := stores.domains.GetBasePathMapping(domainName, basePath)
 	if err != nil {
 		return nil, ErrNotFoundException

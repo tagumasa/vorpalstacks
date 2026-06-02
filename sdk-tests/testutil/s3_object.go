@@ -176,6 +176,52 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 		return nil
 	}))
 
+	results = append(results, r.RunTest("s3", "CopyObject_MetadataDirective_REPLACEMetadata", func() error {
+		_, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket:   aws.String(bucketName),
+			Key:      aws.String("metadata-src.txt"),
+			Body:     strings.NewReader("original content"),
+			Metadata: map[string]string{"custom-key": "original-value"},
+		})
+		if err != nil {
+			return fmt.Errorf("PutObject source failed: %w", err)
+		}
+
+		_, err = client.CopyObject(ctx, &s3.CopyObjectInput{
+			Bucket:            aws.String(bucketName),
+			Key:               aws.String("metadata-dest.txt"),
+			CopySource:        aws.String(bucketName + "/metadata-src.txt"),
+			MetadataDirective: types.MetadataDirectiveReplace,
+			Metadata:          map[string]string{"replaced-key": "new-value"},
+		})
+		if err != nil {
+			return fmt.Errorf("CopyObject with REPLACE failed: %w", err)
+		}
+
+		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String("metadata-dest.txt"),
+		})
+		if err != nil {
+			return fmt.Errorf("GetObject dest failed: %w", err)
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("ReadAll failed: %w", err)
+		}
+		if string(body) != "original content" {
+			return fmt.Errorf("expected body content unchanged with REPLACE, got %q", string(body))
+		}
+		if resp.Metadata["replaced-key"] != "new-value" {
+			return fmt.Errorf("expected metadata replaced-key=new-value, got %v", resp.Metadata["replaced-key"])
+		}
+		if _, hasOldKey := resp.Metadata["custom-key"]; hasOldKey {
+			return fmt.Errorf("expected old metadata custom-key to be removed with REPLACE, got %v", resp.Metadata["custom-key"])
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("s3", "PutObject_GetObject_ContentVerification", func() error {
 		content := "verification content"
 		_, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -451,6 +497,19 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 		})
 		if err != nil {
 			return fmt.Errorf("DeleteObject on non-existent key should not error, got: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "DeleteObject_VersionIdOnNonVersionedBucket", func() error {
+		// Deleting with VersionId on a non-versioned bucket should return an error
+		_, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{
+			Bucket:    aws.String(bucketName),
+			Key:       aws.String("versioned-delete-test.txt"),
+			VersionId: aws.String("test-version-id"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error when DeleteObject has VersionId on non-versioned bucket, got nil")
 		}
 		return nil
 	}))

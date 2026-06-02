@@ -238,6 +238,7 @@ func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *re
 				}
 			}
 			if token != "" {
+				result["principalId"] = "test-user"
 				result["authorization"] = map[string]interface{}{
 					"principalId": []string{"test-user"},
 				}
@@ -248,11 +249,13 @@ func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *re
 			}
 		}
 	case "REQUEST":
+		result["principalId"] = "test-user"
 		result["authorization"] = map[string]interface{}{
 			"principalId": []string{"test-user"},
 		}
 		result["policy"] = buildTestPolicy(authorizer, apiId)
 	case "AWS_IAM":
+		result["principalId"] = "test-user"
 		result["authorization"] = map[string]interface{}{
 			"principalId": []string{"test-user"},
 		}

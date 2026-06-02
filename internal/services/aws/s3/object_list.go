@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -9,13 +10,23 @@ import (
 	"vorpalstacks/internal/common/request"
 )
 
+// s3Encode applies URL percent-encoding when encodingType is "url", otherwise
+// returns the value unchanged (already XML-escaped by the caller).
+func s3Encode(value, encodingType string) string {
+	if encodingType == "url" {
+		return url.QueryEscape(value)
+	}
+	return value
+}
+
 // ListObjectsInput contains the input parameters for the ListObjects operation.
 type ListObjectsInput struct {
-	Bucket    string
-	Delimiter string
-	Prefix    string
-	MaxKeys   int
-	Marker    string
+	Bucket       string
+	Delimiter    string
+	Prefix       string
+	MaxKeys      int
+	Marker       string
+	EncodingType string
 }
 
 // ListObjectsOutput contains the output from the ListObjects operation.
@@ -23,6 +34,7 @@ type ListObjectsOutput struct {
 	Contents       []*ObjectContent
 	CommonPrefixes []CommonPrefix
 	Delimiter      string
+	EncodingType   string
 	IsTruncated    bool
 	Marker         string
 	MaxKeys        int
@@ -34,11 +46,12 @@ type ListObjectsOutput struct {
 // ToXML converts the ListObjectsOutput to XML format.
 func (o *ListObjectsOutput) ToXML() string {
 	var result strings.Builder
+	enc := o.EncodingType
 	result.WriteString(`<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`)
 	for _, c := range o.Contents {
 		result.WriteString(`<Contents>`)
 		result.WriteString(`<Key>`)
-		result.WriteString(xmlEscape(c.Key))
+		result.WriteString(s3Encode(xmlEscape(c.Key), enc))
 		result.WriteString(`</Key><LastModified>`)
 		result.WriteString(c.LastModified.Format(time.RFC3339))
 		result.WriteString(`</LastModified><ETag>`)
@@ -49,13 +62,13 @@ func (o *ListObjectsOutput) ToXML() string {
 		result.WriteString(c.StorageClass)
 		result.WriteString(`</StorageClass></Contents>`)
 	}
-	writeCommonPrefixesXML(&result, o.CommonPrefixes)
+	writeCommonPrefixesXML(&result, o.CommonPrefixes, enc)
 	result.WriteString(`<Delimiter>`)
-	result.WriteString(xmlEscape(o.Delimiter))
+	result.WriteString(s3Encode(xmlEscape(o.Delimiter), enc))
 	result.WriteString(`</Delimiter><IsTruncated>`)
 	result.WriteString(strconv.FormatBool(o.IsTruncated))
 	result.WriteString(`</IsTruncated><Marker>`)
-	result.WriteString(xmlEscape(o.Marker))
+	result.WriteString(s3Encode(xmlEscape(o.Marker), enc))
 	result.WriteString(`</Marker><MaxKeys>`)
 	result.WriteString(strconv.Itoa(o.MaxKeys))
 	result.WriteString(`</MaxKeys><Name>`)
@@ -63,12 +76,18 @@ func (o *ListObjectsOutput) ToXML() string {
 	result.WriteString(`</Name>`)
 	if o.NextMarker != "" {
 		result.WriteString(`<NextMarker>`)
-		result.WriteString(xmlEscape(o.NextMarker))
+		result.WriteString(s3Encode(xmlEscape(o.NextMarker), enc))
 		result.WriteString(`</NextMarker>`)
 	}
 	result.WriteString(`<Prefix>`)
-	result.WriteString(xmlEscape(o.Prefix))
-	result.WriteString(`</Prefix></ListBucketResult>`)
+	result.WriteString(s3Encode(xmlEscape(o.Prefix), enc))
+	result.WriteString(`</Prefix>`)
+	if enc != "" {
+		result.WriteString(`<EncodingType>`)
+		result.WriteString(enc)
+		result.WriteString(`</EncodingType>`)
+	}
+	result.WriteString(`</ListBucketResult>`)
 	return result.String()
 }
 
@@ -87,10 +106,10 @@ type CommonPrefix struct {
 	Prefix string `xml:"Prefix"`
 }
 
-func writeCommonPrefixesXML(builder *strings.Builder, prefixes []CommonPrefix) {
+func writeCommonPrefixesXML(builder *strings.Builder, prefixes []CommonPrefix, encodingType string) {
 	for _, p := range prefixes {
 		builder.WriteString(`<CommonPrefixes><Prefix>`)
-		builder.WriteString(xmlEscape(p.Prefix))
+		builder.WriteString(s3Encode(xmlEscape(p.Prefix), encodingType))
 		builder.WriteString(`</Prefix></CommonPrefixes>`)
 	}
 }
@@ -119,6 +138,7 @@ func (o *ObjectOperations) ListObjects(ctx context.Context, reqCtx *request.Requ
 		Contents:       buildObjectContents(result.Objects),
 		CommonPrefixes: commonPrefixes,
 		Delimiter:      input.Delimiter,
+		EncodingType:   input.EncodingType,
 		IsTruncated:    result.IsTruncated,
 		Marker:         input.Marker,
 		MaxKeys:        input.MaxKeys,
@@ -136,6 +156,7 @@ type ListObjectsV2Input struct {
 	MaxKeys           int
 	ContinuationToken string
 	StartAfter        string
+	EncodingType      string
 }
 
 // ListObjectsV2Output contains the output from the ListObjectsV2 operation.
@@ -143,6 +164,7 @@ type ListObjectsV2Output struct {
 	Contents              []*ObjectContent
 	CommonPrefixes        []CommonPrefix
 	Delimiter             string
+	EncodingType          string
 	IsTruncated           bool
 	KeyCount              int
 	MaxKeys               int
@@ -155,11 +177,12 @@ type ListObjectsV2Output struct {
 // ToXML converts the ListObjectsV2Output to XML format.
 func (o *ListObjectsV2Output) ToXML() string {
 	var result strings.Builder
+	enc := o.EncodingType
 	result.WriteString(`<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`)
 	for _, c := range o.Contents {
 		result.WriteString(`<Contents>`)
 		result.WriteString(`<Key>`)
-		result.WriteString(xmlEscape(c.Key))
+		result.WriteString(s3Encode(xmlEscape(c.Key), enc))
 		result.WriteString(`</Key><LastModified>`)
 		result.WriteString(c.LastModified.Format(time.RFC3339))
 		result.WriteString(`</LastModified><ETag>`)
@@ -170,9 +193,9 @@ func (o *ListObjectsV2Output) ToXML() string {
 		result.WriteString(c.StorageClass)
 		result.WriteString(`</StorageClass></Contents>`)
 	}
-	writeCommonPrefixesXML(&result, o.CommonPrefixes)
+	writeCommonPrefixesXML(&result, o.CommonPrefixes, enc)
 	result.WriteString(`<Delimiter>`)
-	result.WriteString(xmlEscape(o.Delimiter))
+	result.WriteString(s3Encode(xmlEscape(o.Delimiter), enc))
 	result.WriteString(`</Delimiter><IsTruncated>`)
 	result.WriteString(strconv.FormatBool(o.IsTruncated))
 	result.WriteString(`</IsTruncated><KeyCount>`)
@@ -188,12 +211,17 @@ func (o *ListObjectsV2Output) ToXML() string {
 		result.WriteString(`</NextContinuationToken>`)
 	}
 	result.WriteString(`<Prefix>`)
-	result.WriteString(xmlEscape(o.Prefix))
+	result.WriteString(s3Encode(xmlEscape(o.Prefix), enc))
 	result.WriteString(`</Prefix>`)
 	if o.StartAfter != "" {
 		result.WriteString(`<StartAfter>`)
-		result.WriteString(xmlEscape(o.StartAfter))
+		result.WriteString(s3Encode(xmlEscape(o.StartAfter), enc))
 		result.WriteString(`</StartAfter>`)
+	}
+	if enc != "" {
+		result.WriteString(`<EncodingType>`)
+		result.WriteString(enc)
+		result.WriteString(`</EncodingType>`)
 	}
 	result.WriteString(`</ListBucketResult>`)
 	return result.String()
@@ -229,6 +257,7 @@ func (o *ObjectOperations) ListObjectsV2(ctx context.Context, reqCtx *request.Re
 		Contents:       contents,
 		CommonPrefixes: commonPrefixes,
 		Delimiter:      input.Delimiter,
+		EncodingType:   input.EncodingType,
 		IsTruncated:    result.IsTruncated,
 		KeyCount:       len(contents) + len(commonPrefixes),
 		MaxKeys:        input.MaxKeys,
@@ -255,6 +284,7 @@ type ListObjectVersionsInput struct {
 	MaxKeys         int
 	KeyMarker       string
 	VersionIdMarker string
+	EncodingType    string
 }
 
 // ListObjectVersionsOutput contains the output from the ListObjectVersions operation.
@@ -263,6 +293,7 @@ type ListObjectVersionsOutput struct {
 	DeleteMarkers       []*DeleteMarkerEntry
 	CommonPrefixes      []CommonPrefix
 	Delimiter           string
+	EncodingType        string
 	IsTruncated         bool
 	KeyMarker           string
 	MaxKeys             int
@@ -297,15 +328,16 @@ type DeleteMarkerEntry struct {
 // ToXML converts the ListObjectVersionsOutput to XML format.
 func (o *ListObjectVersionsOutput) ToXML() string {
 	var result strings.Builder
+	enc := o.EncodingType
 	result.WriteString(`<ListVersionsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`)
 	result.WriteString(`<Name>`)
 	result.WriteString(xmlEscape(o.Name))
 	result.WriteString(`</Name><Prefix>`)
-	result.WriteString(xmlEscape(o.Prefix))
+	result.WriteString(s3Encode(xmlEscape(o.Prefix), enc))
 	result.WriteString(`</Prefix>`)
 	if o.KeyMarker != "" {
 		result.WriteString(`<KeyMarker>`)
-		result.WriteString(xmlEscape(o.KeyMarker))
+		result.WriteString(s3Encode(xmlEscape(o.KeyMarker), enc))
 		result.WriteString(`</KeyMarker>`)
 	}
 	if o.VersionIdMarker != "" {
@@ -315,7 +347,7 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 	}
 	if o.NextKeyMarker != "" {
 		result.WriteString(`<NextKeyMarker>`)
-		result.WriteString(xmlEscape(o.NextKeyMarker))
+		result.WriteString(s3Encode(xmlEscape(o.NextKeyMarker), enc))
 		result.WriteString(`</NextKeyMarker>`)
 	}
 	if o.NextVersionIdMarker != "" {
@@ -328,12 +360,12 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 	result.WriteString(`</MaxKeys><IsTruncated>`)
 	result.WriteString(strconv.FormatBool(o.IsTruncated))
 	result.WriteString(`</IsTruncated><Delimiter>`)
-	result.WriteString(xmlEscape(o.Delimiter))
+	result.WriteString(s3Encode(xmlEscape(o.Delimiter), enc))
 	result.WriteString(`</Delimiter>`)
 
 	for _, v := range o.Versions {
 		result.WriteString(`<Version><Key>`)
-		result.WriteString(xmlEscape(v.Key))
+		result.WriteString(s3Encode(xmlEscape(v.Key), enc))
 		result.WriteString(`</Key><VersionId>`)
 		result.WriteString(xmlEscape(v.VersionId))
 		result.WriteString(`</VersionId><IsLatest>`)
@@ -351,7 +383,7 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 
 	for _, d := range o.DeleteMarkers {
 		result.WriteString(`<DeleteMarker><Key>`)
-		result.WriteString(xmlEscape(d.Key))
+		result.WriteString(s3Encode(xmlEscape(d.Key), enc))
 		result.WriteString(`</Key><VersionId>`)
 		result.WriteString(xmlEscape(d.VersionId))
 		result.WriteString(`</VersionId><IsLatest>`)
@@ -361,8 +393,13 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 		result.WriteString(`</LastModified></DeleteMarker>`)
 	}
 
-	writeCommonPrefixesXML(&result, o.CommonPrefixes)
+	writeCommonPrefixesXML(&result, o.CommonPrefixes, enc)
 
+	if enc != "" {
+		result.WriteString(`<EncodingType>`)
+		result.WriteString(enc)
+		result.WriteString(`</EncodingType>`)
+	}
 	result.WriteString(`</ListVersionsResult>`)
 	return result.String()
 }
@@ -416,6 +453,7 @@ func (o *ObjectOperations) ListObjectVersions(ctx context.Context, reqCtx *reque
 		DeleteMarkers:       deleteMarkers,
 		CommonPrefixes:      commonPrefixes,
 		Delimiter:           input.Delimiter,
+		EncodingType:        input.EncodingType,
 		IsTruncated:         result.IsTruncated,
 		KeyMarker:           input.KeyMarker,
 		MaxKeys:             input.MaxKeys,

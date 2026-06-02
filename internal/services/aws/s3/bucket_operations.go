@@ -114,13 +114,13 @@ func (o *BucketOperations) CreateBucket(ctx *request.RequestContext, input *Crea
 			return nil, err
 		}
 		bucket.ACL = acp
-		if err := store.buckets.Put(bucket); err != nil {
-			return nil, err
-		}
 	}
 
 	if input.ObjectLockEnabledForBucket {
 		bucket.ObjectLockEnabled = true
+	}
+
+	if input.ACL != "" || input.ObjectLockEnabledForBucket {
 		if err := store.buckets.Put(bucket); err != nil {
 			return nil, err
 		}

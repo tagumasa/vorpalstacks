@@ -862,7 +862,7 @@ func (o *ListMultipartUploadsOutput) ToXML() string {
 		result.WriteString(u.Initiated.Format(time.RFC3339))
 		result.WriteString(`</Initiated></Upload>`)
 	}
-	writeCommonPrefixesXML(&result, o.CommonPrefixes)
+	writeCommonPrefixesXML(&result, o.CommonPrefixes, "")
 	result.WriteString(`</ListMultipartUploadsResult>`)
 	return result.String()
 }

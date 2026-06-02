@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 )
 
-func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
+func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, client *apigateway.Client, apiID, rootResourceID string) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("apigateway", "PutMethod_AuthorizationTypes", func() error {
@@ -25,7 +25,7 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 
 		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
 			RestApiId: createResp.Id,
-			ParentId:  createResp.Id,
+			ParentId:  createResp.RootResourceId,
 			PathPart:  aws.String("secure"),
 		})
 		if err != nil {
@@ -69,7 +69,7 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 
 		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
 			RestApiId: createResp.Id,
-			ParentId:  createResp.Id,
+			ParentId:  createResp.RootResourceId,
 			PathPart:  aws.String("invalid-auth"),
 		})
 		if err != nil {
@@ -100,7 +100,7 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 
 		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
 			RestApiId: createResp.Id,
-			ParentId:  createResp.Id,
+			ParentId:  createResp.RootResourceId,
 			PathPart:  aws.String("inttest"),
 		})
 		if err != nil {
@@ -123,12 +123,20 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			types.IntegrationTypeHttpProxy,
 			types.IntegrationTypeAwsProxy,
 		} {
-			_, err = client.PutIntegration(ctx, &apigateway.PutIntegrationInput{
+			input := &apigateway.PutIntegrationInput{
 				RestApiId:  createResp.Id,
 				ResourceId: resResp.Id,
 				HttpMethod: aws.String("POST"),
 				Type:       intType,
-			})
+			}
+			// URI is required for all non-MOCK integration types.
+			if intType != types.IntegrationTypeMock {
+				input.Uri = aws.String("http://example.com/test")
+			}
+			if intType == types.IntegrationTypeAws || intType == types.IntegrationTypeAwsProxy {
+				input.IntegrationHttpMethod = aws.String("POST")
+			}
+			_, err = client.PutIntegration(ctx, input)
 			if err != nil {
 				return fmt.Errorf("put integration type %s: %v", intType, err)
 			}
@@ -153,7 +161,7 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 		}
 		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
 			RestApiId: aws.String(apiID),
-			ParentId:  aws.String(apiID),
+			ParentId:  aws.String(rootResourceID),
 			PathPart:  aws.String("mock"),
 		})
 		if err != nil {
@@ -198,7 +206,7 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 		return nil
 	}))
 
-	results = append(results, r.vtlTests(ctx, client, apiID)...)
+	results = append(results, r.vtlTests(ctx, client, apiID, rootResourceID)...)
 
 	results = append(results, r.RunTest("apigateway", "MethodWithIntegration_FullLifecycle", func() error {
 		lcAPI := fmt.Sprintf("LcAPI-%d", time.Now().UnixNano())
@@ -212,7 +220,7 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 
 		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
 			RestApiId: createResp.Id,
-			ParentId:  createResp.Id,
+			ParentId:  createResp.RootResourceId,
 			PathPart:  aws.String("lifecycle"),
 		})
 		if err != nil {

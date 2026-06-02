@@ -275,6 +275,9 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		contentType = srcObj.ContentType
 	}
 	metadata := input.Metadata
+	if input.MetadataDirective != "" && input.MetadataDirective != "COPY" && input.MetadataDirective != "REPLACE" {
+		return nil, NewInvalidArgumentError(fmt.Sprintf("invalid MetadataDirective: %s (must be COPY or REPLACE)", input.MetadataDirective))
+	}
 	if input.MetadataDirective != "REPLACE" {
 		metadata = srcObj.Metadata
 	}

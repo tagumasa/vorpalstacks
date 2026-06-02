@@ -420,6 +420,14 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			CopySourceSSECustomerKey:  r.Header.Get("x-amz-copy-source-server-side-encryption-customer-key"),
 			CopySourceSSECustomerMD5:  r.Header.Get("x-amz-copy-source-server-side-encryption-customer-key-MD5"),
 		}
+		for k, v := range r.Header {
+			if strings.HasPrefix(k, "X-Amz-Meta-") {
+				if input.Metadata == nil {
+					input.Metadata = make(map[string]string)
+				}
+				input.Metadata[strings.TrimPrefix(k, "X-Amz-Meta-")] = v[0]
+			}
+		}
 		result, err := o.CopyObject(ctx, reqCtx, stores, input)
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err

@@ -111,13 +111,14 @@ func (o *ObjectOperations) DeleteObjects(ctx context.Context, reqCtx *request.Re
 			deletedObj := DeletedObject{
 				Key: obj.Key,
 			}
-			if obj.VersionId != "" {
-				deletedObj.VersionId = obj.VersionId
-			}
 			if marker != nil {
 				deletedObj.DeleteMarker = true
 				deletedObj.DeleteMarkerId = marker.VersionID
+				deletedObj.VersionId = marker.VersionID
 				o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, marker.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
+			} else if obj.VersionId != "" {
+				deletedObj.VersionId = obj.VersionId
+				o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, "", "", eventbus.S3ObjectRemovedDelete)
 			} else {
 				o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, "", "", eventbus.S3ObjectRemovedDelete)
 			}

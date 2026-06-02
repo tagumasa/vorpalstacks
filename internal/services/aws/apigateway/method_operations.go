@@ -33,6 +33,11 @@ func (s *APIGatewayService) PutMethod(ctx context.Context, reqCtx *request.Reque
 		return nil, NewBadRequestException("Invalid authorization type: " + authorizationType)
 	}
 
+	// AWS requires authorizerId when authorizationType is COGNITO_USER_POOLS.
+	if authorizationType == "COGNITO_USER_POOLS" && request.GetStringParam(req.Parameters, "authorizerId") == "" {
+		return nil, NewBadRequestException("authorizerId is required when authorizationType is COGNITO_USER_POOLS")
+	}
+
 	method := &store.Method{
 		HttpMethod:         httpMethod,
 		AuthorizationType:  authorizationType,

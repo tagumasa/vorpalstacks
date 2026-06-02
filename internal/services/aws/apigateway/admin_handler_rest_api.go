@@ -134,7 +134,11 @@ func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[p
 		case "/policy":
 			api.Policy = po.Value
 		case "/minimumCompressionSize":
-			api.MinimumCompressionSize = parseInt32(po.Value)
+			v, err := parseInt32(po.Value)
+			if err != nil {
+				return nil, NewBadRequestException("invalid minimumCompressionSize: not a number")
+			}
+			api.MinimumCompressionSize = v
 		}
 	}
 

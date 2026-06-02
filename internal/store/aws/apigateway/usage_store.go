@@ -55,7 +55,7 @@ func (s *UsageStore) CreateApiKey(apiKey *ApiKey) (*ApiKey, error) {
 		apiKey.Id = s.arnBuilder.GenerateApiKeyId()
 	}
 	if apiKey.Name == "" {
-		return nil, ErrInvalidParameter
+		apiKey.Name = generateId("auto_", 16)
 	}
 
 	s.mu.Lock()

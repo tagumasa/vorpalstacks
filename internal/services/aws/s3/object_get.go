@@ -323,6 +323,7 @@ type GetObjectAttributesInput struct {
 // GetObjectAttributesOutput contains the output from the GetObjectAttributes operation.
 type GetObjectAttributesOutput struct {
 	XMLName      xml.Name                     `xml:"GetObjectAttributesOutput"`
+	VersionId    string                       `xml:"VersionId,omitempty"`
 	ETag         string                       `xml:"ETag,omitempty"`
 	ObjectSize   int64                        `xml:"ObjectSize,omitempty"`
 	StorageClass string                       `xml:"StorageClass,omitempty"`
@@ -389,6 +390,7 @@ func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *requ
 	}
 
 	output := &GetObjectAttributesOutput{
+		VersionId:    obj.VersionID,
 		ETag:         formatETag(obj.ETag),
 		ObjectSize:   objectSize,
 		StorageClass: string(obj.StorageClass),

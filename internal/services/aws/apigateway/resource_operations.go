@@ -133,6 +133,12 @@ func (s *APIGatewayService) GetResources(ctx context.Context, reqCtx *request.Re
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
+	limit := request.GetIntParam(req.Parameters, "limit")
+	if limit <= 0 {
+		limit = 25
+	}
+	position := request.GetStringParam(req.Parameters, "position")
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -147,9 +153,14 @@ func (s *APIGatewayService) GetResources(ctx context.Context, reqCtx *request.Re
 		items = append(items, s.toResourceResponse(r))
 	}
 
-	return map[string]interface{}{
-		"item": items,
-	}, nil
+	page, nextPos := paginateItems(items, position, limit)
+	result := map[string]interface{}{
+		"item": page,
+	}
+	if nextPos != "" {
+		result["position"] = nextPos
+	}
+	return result, nil
 }
 
 func (s *APIGatewayService) toResourceResponse(r *store.Resource) map[string]interface{} {

@@ -34,6 +34,7 @@ func (s *APIGatewayService) CreateRequestValidator(ctx context.Context, reqCtx *
 	if err != nil {
 		return nil, err
 	}
+
 	created, err := stores.restApis.CreateRequestValidator(apiId, validator)
 	if err != nil {
 		return nil, err
@@ -114,6 +115,10 @@ func (s *APIGatewayService) UpdateRequestValidator(ctx context.Context, reqCtx *
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId + ":" + validatorId)
+	defer stores.keyLocker.Unlock(apiId + ":" + validatorId)
+
 	validator, err := stores.restApis.GetRequestValidator(apiId, validatorId)
 	if err != nil {
 		return nil, ErrNotFoundException
@@ -144,6 +149,12 @@ func (s *APIGatewayService) GetRequestValidators(ctx context.Context, reqCtx *re
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
+	limit := request.GetIntParam(req.Parameters, "limit")
+	if limit <= 0 {
+		limit = 25
+	}
+	position := request.GetStringParam(req.Parameters, "position")
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -158,9 +169,14 @@ func (s *APIGatewayService) GetRequestValidators(ctx context.Context, reqCtx *re
 		items = append(items, s.toRequestValidatorResponse(v))
 	}
 
-	return map[string]interface{}{
-		"item": items,
-	}, nil
+	page, nextPos := paginateItems(items, position, limit)
+	result := map[string]interface{}{
+		"item": page,
+	}
+	if nextPos != "" {
+		result["position"] = nextPos
+	}
+	return result, nil
 }
 
 func (s *APIGatewayService) toRequestValidatorResponse(v *store.RequestValidator) map[string]interface{} {
@@ -189,6 +205,9 @@ func (s *APIGatewayService) CreateModel(ctx context.Context, reqCtx *request.Req
 		Description: request.GetStringParam(req.Parameters, "description"),
 		Schema:      request.GetStringParam(req.Parameters, "schema"),
 		ContentType: request.GetStringParam(req.Parameters, "contentType"),
+	}
+	if model.ContentType == "" {
+		model.ContentType = "application/json"
 	}
 
 	stores, err := s.store(reqCtx)
@@ -263,6 +282,12 @@ func (s *APIGatewayService) GetModels(ctx context.Context, reqCtx *request.Reque
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
+	limit := request.GetIntParam(req.Parameters, "limit")
+	if limit <= 0 {
+		limit = 25
+	}
+	position := request.GetStringParam(req.Parameters, "position")
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -277,9 +302,14 @@ func (s *APIGatewayService) GetModels(ctx context.Context, reqCtx *request.Reque
 		items = append(items, s.toModelResponse(m))
 	}
 
-	return map[string]interface{}{
-		"item": items,
-	}, nil
+	page, nextPos := paginateItems(items, position, limit)
+	result := map[string]interface{}{
+		"item": page,
+	}
+	if nextPos != "" {
+		result["position"] = nextPos
+	}
+	return result, nil
 }
 
 func (s *APIGatewayService) toModelResponse(m *store.Model) map[string]interface{} {

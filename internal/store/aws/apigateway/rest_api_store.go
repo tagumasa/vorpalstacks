@@ -90,7 +90,7 @@ func (s *RestApiStore) Create(api *RestApi) (*RestApi, error) {
 	ensureRestApiMaps(api)
 
 	rootResource := &Resource{
-		Id:              api.Id,
+		Id:              s.arnBuilder.GenerateResourceId(),
 		RestApiId:       api.Id,
 		Path:            "/",
 		ResourceMethods: make(map[string]*Method),

@@ -20,10 +20,10 @@ type vtlTest struct {
 	respTmpl string
 }
 
-func (r *TestRunner) invokeMock(ctx context.Context, client *apigateway.Client, apiID, pathPart, template, body string, respTmpl string) (string, error) {
+func (r *TestRunner) invokeMock(ctx context.Context, client *apigateway.Client, apiID, rootResourceID, pathPart, template, body string, respTmpl string) (string, error) {
 	resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
 		RestApiId: aws.String(apiID),
-		ParentId:  aws.String(apiID),
+		ParentId:  aws.String(rootResourceID),
 		PathPart:  aws.String(pathPart),
 	})
 	if err != nil {
@@ -89,7 +89,7 @@ func (r *TestRunner) invokeMock(ctx context.Context, client *apigateway.Client, 
 	return *resp.Body, nil
 }
 
-func (r *TestRunner) vtlTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
+func (r *TestRunner) vtlTests(ctx context.Context, client *apigateway.Client, apiID, rootResourceID string) []TestResult {
 	var results []TestResult
 
 	tests := []vtlTest{
@@ -538,7 +538,7 @@ func (r *TestRunner) vtlTests(ctx context.Context, client *apigateway.Client, ap
 				return fmt.Errorf("API ID not available")
 			}
 			pathPart := fmt.Sprintf("vtl-%d", time.Now().UnixNano())
-			body, err := r.invokeMock(ctx, client, apiID, pathPart, tc.template, tc.body, tc.respTmpl)
+			body, err := r.invokeMock(ctx, client, apiID, rootResourceID, pathPart, tc.template, tc.body, tc.respTmpl)
 			if err != nil {
 				return err
 			}

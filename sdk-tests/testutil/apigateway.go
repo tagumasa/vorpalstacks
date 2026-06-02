@@ -31,6 +31,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 
 	apiName := fmt.Sprintf("TestAPI-%d", time.Now().UnixNano())
 	var apiID string
+	var rootResourceID string
 
 	results = append(results, r.RunTest("apigateway", "CreateRestApi", func() error {
 		resp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
@@ -43,13 +44,17 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 		if resp.Id == nil {
 			return fmt.Errorf("API ID is nil")
 		}
+		if resp.RootResourceId == nil {
+			return fmt.Errorf("root resource ID is nil")
+		}
 		apiID = *resp.Id
+		rootResourceID = *resp.RootResourceId
 		return nil
 	}))
 
 	results = append(results, r.runAPIGatewayRestApiTests(ctx, client, apiID, apiName)...)
-	results = append(results, r.runAPIGatewayResourceTests(ctx, client, apiID)...)
-	results = append(results, r.runAPIGatewayMethodLifecycleTests(ctx, client, apiID)...)
+	results = append(results, r.runAPIGatewayResourceTests(ctx, client, apiID, rootResourceID)...)
+	results = append(results, r.runAPIGatewayMethodLifecycleTests(ctx, client, apiID, rootResourceID)...)
 	results = append(results, r.runAPIGatewayDeploymentTests(ctx, client, apiID)...)
 	results = append(results, r.runAPIGatewayValidatorTests(ctx, client, apiID)...)
 	results = append(results, r.runAPIGatewayModelTests(ctx, client, apiID)...)
@@ -58,6 +63,7 @@ func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 	results = append(results, r.runAPIGatewayUsagePlanTests(ctx, client, apiID)...)
 	results = append(results, r.runAPIGatewayDomainTests(ctx, client, apiID)...)
 	results = append(results, r.runAPIGatewayEdgeTests(ctx, client, apiID)...)
+	results = append(results, r.runAPIGatewayValidationTests(ctx, client, apiID)...)
 
 	results = append(results, r.RunTest("apigateway", "DeleteRestApi", func() error {
 		if apiID == "" {

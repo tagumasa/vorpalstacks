@@ -22,6 +22,10 @@ func (o *BucketOperations) PutBucketPolicy(ctx *request.RequestContext, input *P
 		return err
 	}
 
+	if !json.Valid([]byte(input.Policy)) {
+		return ErrMalformedXML
+	}
+
 	publicAccessBlock, _ := store.buckets.GetPublicAccessBlock(input.Bucket)
 	if publicAccessBlock != nil && publicAccessBlock.BlockPublicPolicy {
 		if policyContainsPublicAccess(input.Policy) {

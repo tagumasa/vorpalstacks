@@ -185,6 +185,17 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		return nil
 	}))
 
+	results = append(results, r.RunTest("s3", "PutBucketPolicy_InvalidJSON", func() error {
+		_, err := client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+			Bucket: aws.String(bucketName),
+			Policy: aws.String("{invalid json"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for invalid JSON policy, got nil")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("s3", "PutBucketCors", func() error {
 		_, err := client.PutBucketCors(ctx, &s3.PutBucketCorsInput{
 			Bucket: aws.String(bucketName),

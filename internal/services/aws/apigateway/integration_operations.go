@@ -25,6 +25,25 @@ func (s *APIGatewayService) PutIntegration(ctx context.Context, reqCtx *request.
 		return nil, NewBadRequestException("type is required")
 	}
 
+	validIntegrationTypes := map[string]bool{
+		"HTTP": true, "HTTP_PROXY": true,
+		"AWS": true, "AWS_PROXY": true,
+		"MOCK": true,
+	}
+	if !validIntegrationTypes[integrationType] {
+		return nil, NewBadRequestException("Invalid integration type: " + integrationType)
+	}
+
+	// uri is required for all types except MOCK.
+	if integrationType != "MOCK" && request.GetStringParam(req.Parameters, "uri") == "" {
+		return nil, NewBadRequestException("uri is required for " + integrationType + " integration")
+	}
+
+	// integrationHttpMethod is required for AWS (non-proxy) integrations.
+	if integrationType == "AWS" && request.GetStringParam(req.Parameters, "integrationHttpMethod") == "" {
+		return nil, NewBadRequestException("integrationHttpMethod is required for AWS integration")
+	}
+
 	integration := &store.Integration{
 		Type:                  integrationType,
 		IntegrationHttpMethod: request.GetStringParam(req.Parameters, "integrationHttpMethod"),

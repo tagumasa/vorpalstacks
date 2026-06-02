@@ -28,6 +28,10 @@ func (s *APIGatewayService) CreateDeployment(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
 	created, err := stores.restApis.CreateDeployment(apiId, deployment)
 	if err != nil {
 		return nil, err
@@ -111,6 +115,12 @@ func (s *APIGatewayService) GetDeployments(ctx context.Context, reqCtx *request.
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
+	limit := request.GetIntParam(req.Parameters, "limit")
+	if limit <= 0 {
+		limit = 25
+	}
+	position := request.GetStringParam(req.Parameters, "position")
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -125,9 +135,14 @@ func (s *APIGatewayService) GetDeployments(ctx context.Context, reqCtx *request.
 		items = append(items, s.toDeploymentResponse(d))
 	}
 
-	return map[string]interface{}{
-		"item": items,
-	}, nil
+	page, nextPos := paginateItems(items, position, limit)
+	result := map[string]interface{}{
+		"item": page,
+	}
+	if nextPos != "" {
+		result["position"] = nextPos
+	}
+	return result, nil
 }
 
 func (s *APIGatewayService) toDeploymentResponse(d *store.Deployment) map[string]interface{} {
@@ -162,6 +177,10 @@ func (s *APIGatewayService) CreateStage(ctx context.Context, reqCtx *request.Req
 		CacheClusterEnabled: request.GetBoolParam(req.Parameters, "cacheClusterEnabled"),
 		CacheClusterSize:    request.GetStringParam(req.Parameters, "cacheClusterSize"),
 		TracingEnabled:      request.GetBoolParam(req.Parameters, "tracingEnabled"),
+	}
+
+	if stage.DeploymentId == "" {
+		return nil, NewBadRequestException("deploymentId is required")
 	}
 
 	if variables, ok := req.Parameters["variables"].(map[string]interface{}); ok {
@@ -324,6 +343,12 @@ func (s *APIGatewayService) GetStages(ctx context.Context, reqCtx *request.Reque
 		return nil, NewBadRequestException("restApiId is required")
 	}
 
+	limit := request.GetIntParam(req.Parameters, "limit")
+	if limit <= 0 {
+		limit = 25
+	}
+	position := request.GetStringParam(req.Parameters, "position")
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -338,9 +363,14 @@ func (s *APIGatewayService) GetStages(ctx context.Context, reqCtx *request.Reque
 		items = append(items, s.toStageResponse(st))
 	}
 
-	return map[string]interface{}{
-		"item": items,
-	}, nil
+	page, nextPos := paginateItems(items, position, limit)
+	result := map[string]interface{}{
+		"item": page,
+	}
+	if nextPos != "" {
+		result["position"] = nextPos
+	}
+	return result, nil
 }
 
 func (s *APIGatewayService) toStageResponse(st *store.Stage) map[string]interface{} {

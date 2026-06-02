@@ -25,6 +25,9 @@ func (o *BucketOperations) PutBucketVersioning(ctx *request.RequestContext, inpu
 	if err != nil {
 		return err
 	}
+	if !store.buckets.Exists(input.Bucket) {
+		return ErrNoSuchBucket
+	}
 	return store.buckets.SetVersioning(input.Bucket, status)
 }
 

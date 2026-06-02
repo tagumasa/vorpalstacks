@@ -231,14 +231,8 @@ func (s *ObjectStore) DeleteWithVersion(ctx context.Context, bucket, key, versio
 			}
 			return nil, nil
 		} else {
-			if err := s.blobStore.Delete(ctx, bucket, key); err != nil {
-				return nil, err
-			}
-			storageKey := s.versionedStorageKey(bucket, key, versionId)
-			if err := s.BaseStore.Delete(storageKey); err != nil {
-				return nil, err
-			}
-			return nil, nil
+			// VersionId specified but versioning not enabled — AWS returns InvalidArgument
+			return nil, fmt.Errorf("versioning is not enabled on this bucket")
 		}
 	}
 

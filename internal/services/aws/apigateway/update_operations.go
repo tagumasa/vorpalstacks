@@ -32,6 +32,19 @@ func (s *APIGatewayService) UpdateResource(ctx context.Context, reqCtx *request.
 	for _, po := range ops {
 		switch po.Path {
 		case "/pathPart":
+			if po.Value == "" {
+				return nil, NewBadRequestException("pathPart cannot be empty")
+			}
+			// Check for path collision with siblings under the same parent.
+			siblings, err := stores.restApis.ListResources(apiId)
+			if err != nil {
+				return nil, err
+			}
+			for _, sib := range siblings {
+				if sib.Id != resourceId && sib.ParentId == resource.ParentId && sib.PathPart == po.Value {
+					return nil, NewConflictException("pathPart already exists under this parent")
+				}
+			}
 			resource.PathPart = po.Value
 			if resource.ParentId == "" {
 				resource.Path = "/" + po.Value
@@ -148,7 +161,11 @@ func (s *APIGatewayService) UpdateIntegration(ctx context.Context, reqCtx *reque
 		case "/connectionId":
 			integration.ConnectionId = po.Value
 		case "/timeoutInMillis":
-			integration.TimeoutInMillis = parseInt32(po.Value)
+			v, err := parseInt32(po.Value)
+			if err != nil {
+				return nil, NewBadRequestException("invalid timeoutInMillis: not a number")
+			}
+			integration.TimeoutInMillis = v
 		}
 	}
 

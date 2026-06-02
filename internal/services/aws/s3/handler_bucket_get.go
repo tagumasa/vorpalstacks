@@ -155,6 +155,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 			Prefix:          query.Get("prefix"),
 			KeyMarker:       query.Get("key-marker"),
 			VersionIdMarker: query.Get("version-id-marker"),
+			EncodingType:    query.Get("encoding-type"),
 		}
 		if maxKeys := query.Get("max-keys"); maxKeys != "" {
 			mk, err := strconv.Atoi(maxKeys)
@@ -199,6 +200,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 			Prefix:            query.Get("prefix"),
 			ContinuationToken: query.Get("continuation-token"),
 			StartAfter:        query.Get("start-after"),
+			EncodingType:      query.Get("encoding-type"),
 		}
 		if maxKeys := query.Get("max-keys"); maxKeys != "" {
 			mk, err := strconv.Atoi(maxKeys)
@@ -216,10 +218,11 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 		return nil, http.StatusForbidden, err
 	}
 	input := &ListObjectsInput{
-		Bucket:    bucket,
-		Delimiter: query.Get("delimiter"),
-		Prefix:    query.Get("prefix"),
-		Marker:    query.Get("marker"),
+		Bucket:       bucket,
+		Delimiter:    query.Get("delimiter"),
+		Prefix:       query.Get("prefix"),
+		Marker:       query.Get("marker"),
+		EncodingType: query.Get("encoding-type"),
 	}
 	if maxKeys := query.Get("max-keys"); maxKeys != "" {
 		mk, err := strconv.Atoi(maxKeys)

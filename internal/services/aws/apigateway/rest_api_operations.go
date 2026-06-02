@@ -41,14 +41,13 @@ func resolveBinaryMediaTypeToRemove(path, value string, current []string) string
 
 // removeString returns a new slice with all occurrences of target removed.
 func removeString(slice []string, target string) []string {
-	n := 0
+	result := make([]string, 0, len(slice))
 	for _, s := range slice {
 		if s != target {
-			slice[n] = s
-			n++
+			result = append(result, s)
 		}
 	}
-	return slice[:n]
+	return result
 }
 
 func getRestApiId(req *request.ParsedRequest) string {
@@ -103,6 +102,11 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 					api.EndpointConfiguration.Types = append(api.EndpointConfiguration.Types, ts)
 				}
 			}
+		}
+	}
+	if api.EndpointConfiguration == nil || len(api.EndpointConfiguration.Types) == 0 {
+		api.EndpointConfiguration = &store.EndpointConfiguration{
+			Types: []string{"REGIONAL"},
 		}
 	}
 
@@ -192,7 +196,11 @@ func (s *APIGatewayService) UpdateRestApi(ctx context.Context, reqCtx *request.R
 		case po.Path == "/policy":
 			api.Policy = po.Value
 		case po.Path == "/minimumCompressionSize":
-			api.MinimumCompressionSize = parseInt32(po.Value)
+			v, err := parseInt32(po.Value)
+			if err != nil {
+				return nil, NewBadRequestException("invalid minimumCompressionSize: not a number")
+			}
+			api.MinimumCompressionSize = v
 		case strings.HasPrefix(po.Path, "/binaryMediaTypes"):
 			if po.Op == "add" {
 				if !containsAny(api.BinaryMediaTypes, po.Value) {
@@ -248,11 +256,19 @@ func (s *APIGatewayService) GetRestApis(ctx context.Context, reqCtx *request.Req
 }
 
 func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]interface{} {
+	var rootResourceId string
+	for _, res := range api.Resources {
+		if res.Path == "/" {
+			rootResourceId = res.Id
+			break
+		}
+	}
+
 	response := map[string]interface{}{
-		"id":             api.Id,
-		"name":           api.Name,
-		"createdDate":    timeutils.FormatEpochSeconds(api.CreatedDate),
-		"rootResourceId": api.Id,
+		"id":              api.Id,
+		"name":            api.Name,
+		"createdDate":     timeutils.FormatEpochSeconds(api.CreatedDate),
+		"rootResourceId":  rootResourceId,
 	}
 
 	if api.Description != "" {

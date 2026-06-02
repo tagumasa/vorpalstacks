@@ -135,6 +135,13 @@ func (r *TestRunner) dynamoDBTransactionEdgeCaseTests(ctx context.Context, clien
 				"val": &types.AttributeValueMemberN{Value: "10"},
 			},
 		})
+		client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(twTable),
+			Item: map[string]types.AttributeValue{
+				"id":  &types.AttributeValueMemberS{Value: "checker"},
+				"val": &types.AttributeValueMemberN{Value: "1"},
+			},
+		})
 
 		_, err = client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
 			TransactItems: []types.TransactWriteItem{
@@ -162,7 +169,7 @@ func (r *TestRunner) dynamoDBTransactionEdgeCaseTests(ctx context.Context, clien
 					ConditionCheck: &types.ConditionCheck{
 						TableName: aws.String(twTable),
 						Key: map[string]types.AttributeValue{
-							"id": &types.AttributeValueMemberS{Value: "t1"},
+							"id": &types.AttributeValueMemberS{Value: "checker"},
 						},
 						ConditionExpression: aws.String("attribute_exists(id)"),
 					},

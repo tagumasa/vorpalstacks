@@ -16,13 +16,8 @@ import (
 
 // CreateApiKey creates a new API key in API Gateway.
 func (s *APIGatewayService) CreateApiKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-
 	apiKey := &store.ApiKey{
-		Name:        name,
+		Name:        request.GetStringParam(req.Parameters, "name"),
 		Description: request.GetStringParam(req.Parameters, "description"),
 		Enabled:     true,
 		CustomerId:  request.GetStringParam(req.Parameters, "customerId"),
@@ -407,7 +402,11 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 			if usagePlan.Quota == nil {
 				usagePlan.Quota = &store.Quota{}
 			}
-			usagePlan.Quota.Limit = parseInt64(po.Value)
+			if v, err := parseInt64(po.Value); err != nil {
+				return nil, NewBadRequestException("invalid quota limit: not a number")
+			} else {
+				usagePlan.Quota.Limit = v
+			}
 		case "/quota/period":
 			if usagePlan.Quota == nil {
 				usagePlan.Quota = &store.Quota{}
@@ -417,17 +416,29 @@ func (s *APIGatewayService) UpdateUsagePlan(ctx context.Context, reqCtx *request
 			if usagePlan.Quota == nil {
 				usagePlan.Quota = &store.Quota{}
 			}
-			usagePlan.Quota.Offset = parseInt64(po.Value)
+			if v, err := parseInt64(po.Value); err != nil {
+				return nil, NewBadRequestException("invalid quota offset: not a number")
+			} else {
+				usagePlan.Quota.Offset = v
+			}
 		case "/throttle/burstLimit":
 			if usagePlan.Throttle == nil {
 				usagePlan.Throttle = &store.Throttle{}
 			}
-			usagePlan.Throttle.BurstLimit = parseInt64(po.Value)
+			if v, err := parseInt64(po.Value); err != nil {
+				return nil, NewBadRequestException("invalid throttle burstLimit: not a number")
+			} else {
+				usagePlan.Throttle.BurstLimit = v
+			}
 		case "/throttle/rateLimit":
 			if usagePlan.Throttle == nil {
 				usagePlan.Throttle = &store.Throttle{}
 			}
-			usagePlan.Throttle.RateLimit = parseFloat64(po.Value)
+			if v, err := parseFloat64(po.Value); err != nil {
+				return nil, NewBadRequestException("invalid throttle rateLimit: not a number")
+			} else {
+				usagePlan.Throttle.RateLimit = v
+			}
 		}
 	}
 

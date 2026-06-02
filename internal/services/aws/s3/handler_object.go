@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
@@ -101,7 +102,11 @@ func (h *S3Handler) handleSelectObjectContent(ctx *request.RequestContext, r *ht
 
 	go func() {
 		defer pw.Close()
-		defer func() { recover() }()
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("s3: panic in SelectObjectContent goroutine", logs.Any("panic", r))
+			}
+		}()
 		writer := NewSelectEventStreamWriter(pw, input.RequestProgress)
 		if err := engine.Execute(ctx, dataReader, writer); err != nil {
 			pw.CloseWithError(err)
