@@ -70,12 +70,22 @@ func (s *SecretsManagerService) StopRotationChecker() {
 	}
 }
 
-// GetStoreForRegion returns the cached SecretStore for the given region.
+// GetStoreForRegion returns the cached SecretStore for the given region,
+// creating a new store instance if not already cached.
 func (s *SecretsManagerService) GetStoreForRegion(region string) (secretsmanagerstore.SecretStoreInterface, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(secretsmanagerstore.SecretStoreInterface), nil
 	}
-	return nil, fmt.Errorf("secretsmanager store not initialised for region %s", region)
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("secretsmanager storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store := secretsmanagerstore.NewSecretStore(st, s.accountID, region)
+	actual, _ := s.stores.LoadOrStore(region, store)
+	return actual.(secretsmanagerstore.SecretStoreInterface), nil
 }
 
 func (s *SecretsManagerService) store(reqCtx *request.RequestContext) (secretsmanagerstore.SecretStoreInterface, error) {

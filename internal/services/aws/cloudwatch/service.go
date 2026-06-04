@@ -116,6 +116,39 @@ func (s *CloudWatchService) store(reqCtx *request.RequestContext) (*cloudwatchSt
 	return stores, nil
 }
 
+// GetStoreForRegion returns the cached CloudWatch stores for the given region,
+// creating a new store instance if not already cached.
+func (s *CloudWatchService) GetStoreForRegion(region string) (*cloudwatchStores, error) {
+	if v, ok := s.stores.Load(region); ok {
+		if typed, ok := v.(*cloudwatchStores); ok {
+			return typed, nil
+		}
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("cloudwatch storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	metricStore, err := cwstore.NewMetricChunkStoreWithIndex(st, region, s.dataPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metric store: %w", err)
+	}
+	stores := &cloudwatchStores{
+		metrics:    metricStore,
+		alarms:     cwstore.NewAlarmStore(st, s.accountID, region),
+		dashboards: cwstore.NewDashboardStore(st, s.accountID, region),
+	}
+	if actual, loaded := s.stores.LoadOrStore(region, stores); loaded {
+		metricStore.Close()
+		if typed, ok := actual.(*cloudwatchStores); ok {
+			return typed, nil
+		}
+	}
+	return stores, nil
+}
+
 // RegisterHandlers registers CloudWatch handlers with the dispatcher.
 func (s *CloudWatchService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("monitoring", "PutMetricData", s.PutMetricData)

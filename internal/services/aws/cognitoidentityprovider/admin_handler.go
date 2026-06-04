@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cognitoidentityprovider"
 	"vorpalstacks/internal/pb/aws/cognitoidentityprovider/cognitoidentityproviderconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -18,20 +18,33 @@ import (
 )
 
 // AdminHandler provides Cognito Identity Provider service administration functionality.
+// It delegates to the shared CognitoService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	cognitoidentityproviderconnect.UnimplementedCognitoIdentityProviderServiceHandler
-	store *cognitostore.CognitoStore
+	service *CognitoService
 }
 
 var _ cognitoidentityproviderconnect.CognitoIdentityProviderServiceHandler = (*AdminHandler)(nil)
 
 // NewAdminHandler creates a new Cognito Identity Provider AdminHandler.
-func NewAdminHandler(store *cognitostore.CognitoStore) *AdminHandler {
-	return &AdminHandler{store: store}
+func NewAdminHandler(svc *CognitoService) *AdminHandler {
+	return &AdminHandler{service: svc}
+}
+
+func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (cognitostore.CognitoStoreInterface, error) {
+	region := svccommon.GetRegionFromHeader(headers)
+	return h.service.GetStoreForRegion(region)
 }
 
 // ListUserPools lists user pools in Cognito Identity Provider with pagination.
 func (h *AdminHandler) ListUserPools(ctx context.Context, req *connect.Request[pb.ListUserPoolsRequest]) (*connect.Response[pb.ListUserPoolsResponse], error) {
+	store, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	maxResults := int(req.Msg.Maxresults)
 	if maxResults <= 0 {
 		maxResults = 60
@@ -42,7 +55,7 @@ func (h *AdminHandler) ListUserPools(ctx context.Context, req *connect.Request[p
 		Marker:   req.Msg.Nexttoken,
 	}
 
-	result, err := h.store.ListUserPoolsPaginated(opts)
+	result, err := store.ListUserPoolsPaginated(opts)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -70,6 +83,11 @@ func (h *AdminHandler) ListUserPools(ctx context.Context, req *connect.Request[p
 
 // CreateUserPool creates a new Cognito user pool via the admin console.
 func (h *AdminHandler) CreateUserPool(ctx context.Context, req *connect.Request[pb.CreateUserPoolRequest]) (*connect.Response[pb.CreateUserPoolResponse], error) {
+	store, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if req.Msg.GetPoolname() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PoolName is required"))
 	}
@@ -78,7 +96,7 @@ func (h *AdminHandler) CreateUserPool(ctx context.Context, req *connect.Request[
 		Name: req.Msg.GetPoolname(),
 	}
 
-	result, err := h.store.CreateUserPool(pool)
+	result, err := store.CreateUserPool(pool)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -93,11 +111,16 @@ func (h *AdminHandler) CreateUserPool(ctx context.Context, req *connect.Request[
 
 // DeleteUserPool deletes a Cognito user pool via the admin console.
 func (h *AdminHandler) DeleteUserPool(ctx context.Context, req *connect.Request[pb.DeleteUserPoolRequest]) (*connect.Response[pbcommon.Empty], error) {
+	store, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if req.Msg.GetUserpoolid() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserPoolId is required"))
 	}
 
-	if err := h.store.DeleteUserPool(req.Msg.GetUserpoolid()); err != nil {
+	if err := store.DeleteUserPool(req.Msg.GetUserpoolid()); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -105,6 +128,6 @@ func (h *AdminHandler) DeleteUserPool(ctx context.Context, req *connect.Request[
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Cognito Identity Provider admin console.
-func NewConnectHandler(st storage.BasicStorage, accountID, region string) (string, http.Handler) {
-	return cognitoidentityproviderconnect.NewCognitoIdentityProviderServiceHandler(NewAdminHandler(cognitostore.NewCognitoStore(st, accountID, region)))
+func NewConnectHandler(svc *CognitoService) (string, http.Handler) {
+	return cognitoidentityproviderconnect.NewCognitoIdentityProviderServiceHandler(NewAdminHandler(svc))
 }

@@ -5,37 +5,49 @@ import (
 	"fmt"
 	"net/http"
 
+	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/kms"
 	"vorpalstacks/internal/pb/aws/kms/kmsconnect"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
 // AdminHandler implements the KMS admin console gRPC-Web handler.
+// It delegates to the shared KMSService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	kmsconnect.UnimplementedKMSServiceHandler
-	store *kmsstore.KeyStore
+	service *KMSService
 }
 
 var _ kmsconnect.KMSServiceHandler = (*AdminHandler)(nil)
 
 // NewAdminHandler creates a new KMS admin handler with the given key store.
-func NewAdminHandler(store *kmsstore.KeyStore) *AdminHandler {
-	return &AdminHandler{store: store}
+func NewAdminHandler(svc *KMSService) *AdminHandler {
+	return &AdminHandler{service: svc}
+}
+
+func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*kmsStores, error) {
+	region := svccommon.GetRegionFromHeader(headers)
+	return h.service.GetStoreForRegion(region)
 }
 
 // ListKeys retrieves all KMS keys from the key store with pagination.
 func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.ListKeysRequest]) (*connect.Response[pb.ListKeysResponse], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
 	limit := int(req.Msg.Limit)
 	if limit <= 0 {
 		limit = 100
 	}
-	result, err := h.store.List(req.Msg.Marker, limit)
+	result, err := stores.keys.List(req.Msg.Marker, limit)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -57,6 +69,10 @@ func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.Lis
 
 // CreateKey creates a new KMS key via the admin console.
 func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.CreateKeyRequest]) (*connect.Response[pb.CreateKeyResponse], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
 	keyUsage := kmsstore.KeyUsageEncryptDecrypt
 	switch req.Msg.GetKeyusage() {
 	case pb.KeyUsageType_KEY_USAGE_TYPE_SIGN_VERIFY:
@@ -94,7 +110,7 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	key, err := h.store.Create(keyID, keyUsage, keySpec, req.Msg.GetDescription(), origin, req.Msg.GetMultiregion())
+	key, err := stores.keys.Create(keyID, keyUsage, keySpec, req.Msg.GetDescription(), origin, req.Msg.GetMultiregion())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -118,6 +134,11 @@ func (h *AdminHandler) CreateKey(ctx context.Context, req *connect.Request[pb.Cr
 
 // ScheduleKeyDeletion schedules a KMS key for deletion via the admin console.
 func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Request[pb.ScheduleKeyDeletionRequest]) (*connect.Response[pb.ScheduleKeyDeletionResponse], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if req.Msg.GetKeyid() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("KeyId is required"))
 	}
@@ -127,11 +148,11 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 		pendingDays = 30
 	}
 
-	if err := h.store.ScheduleDeletion(req.Msg.GetKeyid(), pendingDays); err != nil {
+	if err := stores.keys.ScheduleDeletion(req.Msg.GetKeyid(), pendingDays); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	key, err := h.store.Get(req.Msg.GetKeyid())
+	key, err := stores.keys.Get(req.Msg.GetKeyid())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -146,6 +167,6 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Kms admin console.
-func NewConnectHandler(st storage.BasicStorage, accountID, region string) (string, http.Handler) {
-	return kmsconnect.NewKMSServiceHandler(NewAdminHandler(kmsstore.NewKeyStore(st, accountID, region)))
+func NewConnectHandler(svc *KMSService) (string, http.Handler) {
+	return kmsconnect.NewKMSServiceHandler(NewAdminHandler(svc))
 }

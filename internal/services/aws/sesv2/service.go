@@ -7,14 +7,16 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
 
 // SESv2Service provides SES v2 email service operations.
 type SESv2Service struct {
-	accountID string
-	stores    sync.Map // region → sesv2store.SESv2StoreInterface
+	accountID      string
+	stores         sync.Map // region → sesv2store.SESv2StoreInterface
+	storageManager *storage.RegionStorageManager
 }
 
 // NewSESv2Service creates a new SES v2 service instance.
@@ -22,6 +24,11 @@ func NewSESv2Service(accountID string) *SESv2Service {
 	return &SESv2Service{
 		accountID: accountID,
 	}
+}
+
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *SESv2Service) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
 }
 
 func (s *SESv2Service) store(reqCtx *request.RequestContext) (sesv2store.SESv2StoreInterface, error) {
@@ -32,6 +39,24 @@ func (s *SESv2Service) store(reqCtx *request.RequestContext) (sesv2store.SESv2St
 		}
 		return sesv2store.NewSESv2Store(storage, s.accountID, reqCtx.GetRegion()), nil
 	})
+}
+
+// GetStoreForRegion returns the cached SES v2 store for the given region,
+// creating a new store instance if not already cached.
+func (s *SESv2Service) GetStoreForRegion(region string) (sesv2store.SESv2StoreInterface, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(sesv2store.SESv2StoreInterface), nil
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("sesv2 storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store := sesv2store.NewSESv2Store(st, s.accountID, region)
+	actual, _ := s.stores.LoadOrStore(region, store)
+	return actual.(sesv2store.SESv2StoreInterface), nil
 }
 
 // RegisterHandlers registers the SES v2 service handlers with the dispatcher.

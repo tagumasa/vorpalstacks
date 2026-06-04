@@ -134,6 +134,7 @@ func (a *App) initAthena(st *serviceState) error {
 func (a *App) initAppSync(st *serviceState) error {
 	st.appSyncService = svcappsync.NewAppSyncService(st.accountID)
 	st.appSyncService.SetEventBus(a.server.EventBus())
+	st.appSyncService.SetStorageManager(a.server.StorageManager())
 	st.appSyncService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("appsync", func(ctx context.Context) error {
 		st.appSyncService.ShutdownEventServer()
@@ -345,20 +346,19 @@ func (a *App) initGRPCWebAdmin() {
 	aid := st.accountID
 	reg := st.region
 	dp := a.cfg.DataPath
-	sm := a.server.StorageManager()
 
 	handlers := make([]grpcweb.HandlerRegistration, 0, 32)
 
 	var p string
 	var h http.Handler
 
-	p, h = svcacm.NewConnectHandler(a.server.Storage(), aid, reg)
+	p, h = svcacm.NewConnectHandler(st.acmService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svcapigateway.NewConnectHandler(sm, aid)
+	p, h = svcapigateway.NewConnectHandler(st.apiGatewayService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svccloudfront.NewConnectHandler(a.server.Storage(), aid)
+	p, h = svccloudfront.NewConnectHandler(st.cloudFrontService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svcroute53.NewConnectHandler(a.server.Storage(), aid)
+	p, h = svcroute53.NewConnectHandler(st.route53Service)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcsecretsmanager.NewConnectHandler(st.secretsManagerService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
@@ -386,21 +386,21 @@ func (a *App) initGRPCWebAdmin() {
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcsns.NewConnectHandler(st.snsService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svciam.NewConnectHandler(a.server.Storage(), aid)
+	p, h = svciam.NewConnectHandler(st.iamService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svckms.NewConnectHandler(a.server.Storage(), aid, reg)
+	p, h = svckms.NewConnectHandler(st.kmsService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svccloudwatch.NewConnectHandler(a.server.Storage(), aid, reg, dp)
+	p, h = svccloudwatch.NewConnectHandler(st.cloudWatchService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svccognito.NewConnectHandler(a.server.Storage(), aid, reg)
+	p, h = svccognito.NewConnectHandler(st.cognitoService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svccognitoidentity.NewConnectHandler(a.server.Storage(), aid, reg)
+	p, h = svccognitoidentity.NewConnectHandler(st.cognitoIdentityService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcathena.NewConnectHandler(st.athenaService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svccloudtrail.NewConnectHandler(st.cloudTrailService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svcsesv2.NewConnectHandler(sm, aid)
+	p, h = svcsesv2.NewConnectHandler(st.sesv2Service)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 	p, h = svcssm.NewConnectHandler(st.ssmService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
@@ -434,7 +434,7 @@ func (a *App) initGRPCWebAdmin() {
 		}),
 		aid)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
-	p, h = svcappsync.NewConnectHandler(st.appSyncService, sm)
+	p, h = svcappsync.NewConnectHandler(st.appSyncService)
 	handlers = append(handlers, grpcweb.HandlerRegistration{Path: p, Handler: h})
 
 	grpcweb.RegisterAdminHandlers(grpcWebServer, a.server.Storage(), aid, reg, dp, handlers, a.server.TriggerShutdown)
@@ -559,10 +559,7 @@ func (a *App) registerListeners() {
 	}
 
 	if st.apiGatewayService != nil && st.lambdaService != nil {
-		st.apiGatewayService.InitRuntimeServer(
-			a.server.StorageManager(),
-			a.server.EventBus(),
-		)
+		st.apiGatewayService.InitRuntimeServer(a.server.EventBus())
 		if handler := st.apiGatewayService.RuntimeHandler(); handler != nil {
 			a.server.RegisterAPIGatewayRuntimeHandler(handler)
 			a.registerListener(listener.ListenerConfig{

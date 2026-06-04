@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cognitoidentity"
 	"vorpalstacks/internal/pb/aws/cognitoidentity/cognitoidentityconnect"
 	"vorpalstacks/internal/pb/aws/common"
@@ -17,20 +17,33 @@ import (
 )
 
 // AdminHandler provides Cognito Identity service administration functionality.
+// It delegates to the shared CognitoIdentityService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	cognitoidentityconnect.UnimplementedCognitoIdentityServiceHandler
-	store *cognitoidentitystore.CognitoIdentityStore
+	service *CognitoIdentityService
 }
 
 var _ cognitoidentityconnect.CognitoIdentityServiceHandler = (*AdminHandler)(nil)
 
 // NewAdminHandler creates a new Cognito Identity AdminHandler.
-func NewAdminHandler(store *cognitoidentitystore.CognitoIdentityStore) *AdminHandler {
-	return &AdminHandler{store: store}
+func NewAdminHandler(svc *CognitoIdentityService) *AdminHandler {
+	return &AdminHandler{service: svc}
+}
+
+func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (cognitoidentitystore.CognitoIdentityStoreInterface, error) {
+	region := svccommon.GetRegionFromHeader(headers)
+	return h.service.GetStoreForRegion(region)
 }
 
 // ListIdentityPools lists identity pools in Cognito Identity with pagination.
 func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Request[pb.ListIdentityPoolsInput]) (*connect.Response[pb.ListIdentityPoolsResponse], error) {
+	store, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	maxResults := int(req.Msg.Maxresults)
 	if maxResults <= 0 {
 		maxResults = 60
@@ -41,7 +54,7 @@ func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Reque
 		Marker:   req.Msg.Nexttoken,
 	}
 
-	result, err := h.store.ListIdentityPools(opts)
+	result, err := store.ListIdentityPools(opts)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -62,14 +75,21 @@ func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Reque
 
 // CreateIdentityPool creates a new Cognito Identity Pool via the admin console.
 func (h *AdminHandler) CreateIdentityPool(ctx context.Context, req *connect.Request[pb.CreateIdentityPoolInput]) (*connect.Response[pb.IdentityPool], error) {
+	store, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if req.Msg.GetIdentitypoolname() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("IdentityPoolName is required"))
 	}
 
+	region := svccommon.GetRegionFromHeader(req.Header())
+
 	pool := cognitoidentitystore.NewIdentityPool(
 		req.Msg.GetIdentitypoolname(),
 		req.Msg.GetAllowunauthenticatedidentities(),
-		h.store.Region(),
+		region,
 	)
 
 	if req.Msg.GetAllowclassicflow() {
@@ -100,7 +120,7 @@ func (h *AdminHandler) CreateIdentityPool(ctx context.Context, req *connect.Requ
 		pool.Tags = t
 	}
 
-	created, err := h.store.CreateIdentityPool(pool)
+	created, err := store.CreateIdentityPool(pool)
 	if err != nil {
 		if errors.Is(err, cognitoidentitystore.ErrIdentityPoolAlreadyExists) {
 			return nil, connect.NewError(connect.CodeAlreadyExists, err)
@@ -142,11 +162,16 @@ func (h *AdminHandler) CreateIdentityPool(ctx context.Context, req *connect.Requ
 
 // DeleteIdentityPool deletes a Cognito Identity Pool via the admin console.
 func (h *AdminHandler) DeleteIdentityPool(ctx context.Context, req *connect.Request[pb.DeleteIdentityPoolInput]) (*connect.Response[common.Empty], error) {
+	store, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if req.Msg.GetIdentitypoolid() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("IdentityPoolId is required"))
 	}
 
-	if err := h.store.DeleteIdentityPool(req.Msg.GetIdentitypoolid()); err != nil {
+	if err := store.DeleteIdentityPool(req.Msg.GetIdentitypoolid()); err != nil {
 		if errors.Is(err, cognitoidentitystore.ErrIdentityPoolNotFound) {
 			return nil, connect.NewError(connect.CodeNotFound, err)
 		}
@@ -157,6 +182,6 @@ func (h *AdminHandler) DeleteIdentityPool(ctx context.Context, req *connect.Requ
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Cognito Identity admin console.
-func NewConnectHandler(st storage.BasicStorage, accountID, region string) (string, http.Handler) {
-	return cognitoidentityconnect.NewCognitoIdentityServiceHandler(NewAdminHandler(cognitoidentitystore.NewCognitoIdentityStore(st, accountID, region)))
+func NewConnectHandler(svc *CognitoIdentityService) (string, http.Handler) {
+	return cognitoidentityconnect.NewCognitoIdentityServiceHandler(NewAdminHandler(svc))
 }

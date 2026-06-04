@@ -4,56 +4,39 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync"
 
 	"connectrpc.com/connect"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/sesv2"
 	sesv2connect "vorpalstacks/internal/pb/aws/sesv2/sesv2connect"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
 
-// AdminHandler implements the SESv2 gRPC-Web admin console handler. It exposes
-// list operations for email identities for the Flutter management UI.
+// AdminHandler implements the SESv2 gRPC-Web admin console handler.
 type AdminHandler struct {
 	sesv2connect.UnimplementedSESv2ServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
-	stores         sync.Map // region → *sesv2store.SESv2Store
+	service *SESv2Service
 }
 
 var _ sesv2connect.SESv2ServiceHandler = (*AdminHandler)(nil)
 
 // NewAdminHandler creates a new SESv2 admin console handler.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
-	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
-	}
+func NewAdminHandler(svc *SESv2Service) *AdminHandler {
+	return &AdminHandler{service: svc}
 }
 
-func (h *AdminHandler) getSESv2StoreFromHeader(header http.Header) (*sesv2store.SESv2Store, error) {
-	region := svccommon.GetRegionFromHeader(header)
-	if cached, ok := h.stores.Load(region); ok {
-		return cached.(*sesv2store.SESv2Store), nil
-	}
-	regionStorage, err := h.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	s := sesv2store.NewSESv2Store(regionStorage, h.accountId, region)
-	h.stores.Store(region, s)
-	return s, nil
+func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (sesv2store.SESv2StoreInterface, error) {
+	region := svccommon.GetRegionFromHeader(headers)
+	return h.service.GetStoreForRegion(region)
 }
 
 // ListEmailIdentities returns a paginated list of email identities in the
 // requested region.
 func (h *AdminHandler) ListEmailIdentities(ctx context.Context, req *connect.Request[pb.ListEmailIdentitiesRequest]) (*connect.Response[pb.ListEmailIdentitiesResponse], error) {
-	store, err := h.getSESv2StoreFromHeader(req.Header())
+	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -99,7 +82,7 @@ func (h *AdminHandler) CreateEmailIdentity(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("EmailIdentity is required"))
 	}
 
-	store, err := h.getSESv2StoreFromHeader(req.Header())
+	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -133,7 +116,7 @@ func (h *AdminHandler) DeleteEmailIdentity(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("EmailIdentity is required"))
 	}
 
-	store, err := h.getSESv2StoreFromHeader(req.Header())
+	store, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -146,8 +129,8 @@ func (h *AdminHandler) DeleteEmailIdentity(ctx context.Context, req *connect.Req
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Sesv2 admin console.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return sesv2connect.NewSESv2ServiceHandler(NewAdminHandler(sm, accountID))
+func NewConnectHandler(svc *SESv2Service) (string, http.Handler) {
+	return sesv2connect.NewSESv2ServiceHandler(NewAdminHandler(svc))
 }
 
 func verificationStatusToProto(dkim *sesv2store.DkimAttributes) pb.VerificationStatus {

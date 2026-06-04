@@ -98,6 +98,24 @@ func (s *CognitoService) store(reqCtx *request.RequestContext) (cognitostore.Cog
 	})
 }
 
+// GetStoreForRegion returns the cached Cognito store for the given region,
+// creating a new store instance if not already cached.
+func (s *CognitoService) GetStoreForRegion(region string) (cognitostore.CognitoStoreInterface, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(cognitostore.CognitoStoreInterface), nil
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("cognito idp storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store := cognitostore.NewCognitoStore(st, s.accountID, region)
+	actual, _ := s.stores.LoadOrStore(region, store)
+	return actual.(cognitostore.CognitoStoreInterface), nil
+}
+
 // RegisterHandlers registers the Cognito handlers with the dispatcher.
 func (s *CognitoService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cognito-idp", "CreateUserPool", s.CreateUserPool)

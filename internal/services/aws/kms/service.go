@@ -12,6 +12,7 @@ import (
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -34,11 +35,17 @@ type KMSService struct {
 	principalResolver eventbus.IAMPrincipalResolver
 	accountID         string
 	stores            sync.Map // region → *kmsStores
+	storageManager    *storage.RegionStorageManager
 }
 
 // SetPrincipalResolver registers the IAM principal resolver for grant validation.
 func (s *KMSService) SetPrincipalResolver(resolver eventbus.IAMPrincipalResolver) {
 	s.principalResolver = resolver
+}
+
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *KMSService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
 }
 
 // NewKMSService creates a new KMS service instance.
@@ -63,6 +70,29 @@ func (s *KMSService) store(reqCtx *request.RequestContext) (*kmsStores, error) {
 			keyPolicies: kmsstore.NewKeyPolicyStore(storage, reqCtx.GetRegion()),
 		}, nil
 	})
+}
+
+// GetStoreForRegion returns the cached KMS stores for the given region,
+// creating new store instances if not already cached.
+func (s *KMSService) GetStoreForRegion(region string) (*kmsStores, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(*kmsStores), nil
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("kms storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	stores := &kmsStores{
+		keys:        kmsstore.NewKeyStore(st, s.accountID, region),
+		aliases:     kmsstore.NewAliasStore(st, s.accountID, region),
+		grants:      kmsstore.NewGrantStore(st, s.accountID, region),
+		keyPolicies: kmsstore.NewKeyPolicyStore(st, region),
+	}
+	actual, _ := s.stores.LoadOrStore(region, stores)
+	return actual.(*kmsStores), nil
 }
 
 // RegisterHandlers registers the KMS service handlers with the dispatcher.

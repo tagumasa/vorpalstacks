@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/utils/timeutils"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/acm"
 	acmconnect "vorpalstacks/internal/pb/aws/acm/acmconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -18,29 +18,40 @@ import (
 )
 
 // AdminHandler implements the ACM admin console gRPC-Web handler.
+// It delegates to the shared ACMService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	acmconnect.UnimplementedACMServiceHandler
-	store      acmstore.CertificateStoreInterface
-	arnBuilder *acmstore.ARNBuilder
-	accountID  string
+	service *ACMService
 }
 
 var _ acmconnect.ACMServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new ACM admin handler backed by the given certificate store.
-func NewAdminHandler(store acmstore.CertificateStoreInterface, arnBuilder *acmstore.ARNBuilder, accountID string) *AdminHandler {
-	return &AdminHandler{store: store, arnBuilder: arnBuilder, accountID: accountID}
+// NewAdminHandler creates a new ACM admin handler backed by the given service instance.
+func NewAdminHandler(svc *ACMService) *AdminHandler {
+	return &AdminHandler{service: svc}
+}
+
+func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*acmStores, error) {
+	region := svccommon.GetRegionFromHeader(headers)
+	return h.service.GetStoreForRegion(region)
 }
 
 // ListCertificates returns all ACM certificates visible to the admin console.
 func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Request[pb.ListCertificatesRequest]) (*connect.Response[pb.ListCertificatesResponse], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	marker := req.Msg.GetNexttoken()
 	maxItems := int(req.Msg.GetMaxitems())
 	if maxItems <= 0 {
 		maxItems = 100
 	}
 
-	result, err := h.store.List(marker, maxItems)
+	result, err := stores.certificates.List(marker, maxItems)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -87,12 +98,17 @@ func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Reques
 
 // RequestCertificate creates a new ACM certificate request with the given domain name.
 func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Request[pb.RequestCertificateRequest]) (*connect.Response[pb.RequestCertificateResponse], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if req.Msg.Domainname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DomainName is required"))
 	}
 
 	certId := acmstore.GenerateCertificateId()
-	certArn := h.arnBuilder.BuildCertificateARN(certId)
+	certArn := stores.arnBuilder.BuildCertificateARN(certId)
 
 	cert := &acmstore.Certificate{
 		CertificateArn:          certArn,
@@ -102,7 +118,7 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 		Type:                    "AMAZON_ISSUED",
 		KeyAlgorithm:            "RSA_2048",
 		RenewalEligibility:      "INELIGIBLE",
-		AccountID:               h.accountID,
+		AccountID:               h.service.accountID,
 	}
 	if req.Msg.Keyalgorithm != 0 {
 		cert.KeyAlgorithm = keyAlgorithmFromProto(req.Msg.Keyalgorithm)
@@ -117,7 +133,7 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 		}
 	}
 
-	if err := h.store.Create(cert); err != nil {
+	if err := stores.certificates.Create(cert); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -128,11 +144,16 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 
 // DeleteCertificate deletes an ACM certificate by its ARN.
 func (h *AdminHandler) DeleteCertificate(ctx context.Context, req *connect.Request[pb.DeleteCertificateRequest]) (*connect.Response[pbcommon.Empty], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if req.Msg.Certificatearn == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("CertificateArn is required"))
 	}
 
-	if err := h.store.Delete(req.Msg.Certificatearn); err != nil {
+	if err := stores.certificates.Delete(req.Msg.Certificatearn); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -140,9 +161,8 @@ func (h *AdminHandler) DeleteCertificate(ctx context.Context, req *connect.Reque
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Acm admin console.
-func NewConnectHandler(st storage.BasicStorage, accountID, region string) (string, http.Handler) {
-	store := acmstore.NewCertificateStore(st, accountID, region)
-	return acmconnect.NewACMServiceHandler(NewAdminHandler(store, acmstore.NewARNBuilder(accountID, region), accountID))
+func NewConnectHandler(svc *ACMService) (string, http.Handler) {
+	return acmconnect.NewACMServiceHandler(NewAdminHandler(svc))
 }
 
 func certificateStatusToProto(status string) pb.CertificateStatus {

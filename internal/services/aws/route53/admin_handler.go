@@ -11,7 +11,6 @@ import (
 	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/route53"
 	route53connect "vorpalstacks/internal/pb/aws/route53/route53connect"
 	route53store "vorpalstacks/internal/store/aws/route53"
@@ -20,23 +19,27 @@ import (
 // AdminHandler implements the Route 53 admin console gRPC-Web handler.
 type AdminHandler struct {
 	route53connect.UnimplementedRoute53ServiceHandler
-	store     storage.BasicStorage
-	accountId string
+	service *Route53Service
 }
 
 var _ route53connect.Route53ServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new Route 53 admin handler with the given storage and account ID.
-func NewAdminHandler(store storage.BasicStorage, accountId string) *AdminHandler {
-	return &AdminHandler{
-		store:     store,
-		accountId: accountId,
-	}
+// NewAdminHandler creates a new Route 53 admin handler.
+func NewAdminHandler(svc *Route53Service) *AdminHandler {
+	return &AdminHandler{service: svc}
+}
+
+func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*route53store.Route53Stores, error) {
+	region := svccommon.GetRegionFromHeader(headers)
+	return h.service.GetStoreForRegion(region)
 }
 
 // ListHostedZones returns all Route 53 hosted zones visible to the admin console.
 func (h *AdminHandler) ListHostedZones(ctx context.Context, req *connect.Request[pb.ListHostedZonesRequest]) (*connect.Response[pb.ListHostedZonesResponse], error) {
-	zoneStore := route53store.NewHostedZoneStore(h.store, h.accountId)
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
 
 	maxItems := 100
 	if req.Msg.Maxitems != "" {
@@ -49,7 +52,7 @@ func (h *AdminHandler) ListHostedZones(ctx context.Context, req *connect.Request
 		}
 	}
 
-	result, err := zoneStore.List(req.Msg.Marker, maxItems)
+	result, err := stores.HostedZones().List(req.Msg.Marker, maxItems)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -69,12 +72,14 @@ func (h *AdminHandler) ListHostedZones(ctx context.Context, req *connect.Request
 
 // CreateHostedZone creates a new Route 53 hosted zone via the admin console.
 func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Request[pb.CreateHostedZoneRequest]) (*connect.Response[pb.CreateHostedZoneResponse], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if req.Msg.Name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
 	}
-
-	zoneStore := route53store.NewHostedZoneStore(h.store, h.accountId)
-	recordSetStore := route53store.NewRecordSetStore(h.store)
 
 	zoneName := route53store.NormalizeZoneName(req.Msg.Name)
 	nameServers := generateNameServers(4)
@@ -96,7 +101,7 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 		ID:              generateHostedZoneId(),
 		Name:            zoneName,
 		CallerReference: req.Msg.Callerreference,
-		AccountID:       h.accountId,
+		AccountID:       h.service.accountID,
 		NameServers:     nameServers,
 		Config:          &route53store.HostedZoneConfig{Comment: comment, PrivateZone: privateZone},
 		Private:         privateZone,
@@ -110,7 +115,7 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 		}}
 	}
 
-	if err := zoneStore.Create(zone); err != nil {
+	if err := stores.HostedZones().Create(zone); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -118,7 +123,7 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 	for i, ns := range nameServers {
 		nsRecords[i] = &route53store.ResourceRecord{Value: ns}
 	}
-	if err := recordSetStore.Create(zone.ID, &route53store.ResourceRecordSet{
+	if err := stores.RecordSets().Create(zone.ID, &route53store.ResourceRecordSet{
 		Name:            zoneName,
 		Type:            "NS",
 		TTL:             172800,
@@ -127,7 +132,7 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	if err := recordSetStore.Create(zone.ID, &route53store.ResourceRecordSet{
+	if err := stores.RecordSets().Create(zone.ID, &route53store.ResourceRecordSet{
 		Name: zoneName,
 		Type: "SOA",
 		TTL:  900,
@@ -139,7 +144,7 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 	}
 
 	zone.ResourceRecordSetCount = 2
-	if err := zoneStore.Update(zone); err != nil {
+	if err := stores.HostedZones().Update(zone); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -150,13 +155,16 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 
 // DeleteHostedZone deletes a Route 53 hosted zone via the admin console.
 func (h *AdminHandler) DeleteHostedZone(ctx context.Context, req *connect.Request[pb.DeleteHostedZoneRequest]) (*connect.Response[pb.DeleteHostedZoneResponse], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if req.Msg.Id == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("id is required"))
 	}
 
-	zoneStore := route53store.NewHostedZoneStore(h.store, h.accountId)
-
-	if err := zoneStore.Delete(req.Msg.Id); err != nil {
+	if err := stores.HostedZones().Delete(req.Msg.Id); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -181,8 +189,8 @@ func toPbHostedZone(z *route53store.HostedZone) *pb.HostedZone {
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Route53 admin console.
-func NewConnectHandler(store storage.BasicStorage, accountID string) (string, http.Handler) {
-	return route53connect.NewRoute53ServiceHandler(NewAdminHandler(store, accountID))
+func NewConnectHandler(svc *Route53Service) (string, http.Handler) {
+	return route53connect.NewRoute53ServiceHandler(NewAdminHandler(svc))
 }
 
 // protoVPCRegionToAWS converts a proto VPCRegion enum name (e.g. "V_P_C_REGION_US_EAST_1")

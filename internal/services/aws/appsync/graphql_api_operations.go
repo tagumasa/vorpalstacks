@@ -113,6 +113,24 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 	name := request.GetStringParam(req.Parameters, "name")
 	authType := request.GetStringParam(req.Parameters, "authenticationType")
 
+	// Fetch existing to preserve fields that were not provided in the request.
+	// Without this, WafWebAclArn and XrayEnabled would be overwritten with
+	// Go zero values on every update call that omits them.
+	existing, err := store.GetGraphqlApiById(apiId)
+	if err != nil {
+		return mapStoreError(err)
+	}
+
+	wafWebAclArn := existing.WafWebAclArn
+	if request.HasParam(req.Parameters, "wafWebAclArn") {
+		wafWebAclArn = request.GetStringParam(req.Parameters, "wafWebAclArn")
+	}
+
+	xrayEnabled := existing.XrayEnabled
+	if request.HasParam(req.Parameters, "xrayEnabled") {
+		xrayEnabled = request.GetBoolParam(req.Parameters, "xrayEnabled")
+	}
+
 	api := &appsyncstore.GraphqlApi{
 		Name:                              name,
 		AuthenticationType:                authType,
@@ -127,10 +145,8 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 		QueryDepthLimit:                   int32(request.GetIntParam(req.Parameters, "queryDepthLimit")),
 		ResolverCountLimit:                int32(request.GetIntParam(req.Parameters, "resolverCountLimit")),
 		UserPoolConfig:                    parseUserPoolConfig(req.Parameters),
-		WafWebAclArn:                      request.GetStringParam(req.Parameters, "wafWebAclArn"),
-	}
-	if request.HasParam(req.Parameters, "xrayEnabled") {
-		api.XrayEnabled = request.GetBoolParam(req.Parameters, "xrayEnabled")
+		WafWebAclArn:                      wafWebAclArn,
+		XrayEnabled:                       xrayEnabled,
 	}
 
 	updated, err := store.UpdateGraphqlApiById(apiId, api)

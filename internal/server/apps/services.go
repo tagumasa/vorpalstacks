@@ -117,6 +117,7 @@ func (a *App) newServiceState() *serviceState {
 
 func (a *App) initACM(st *serviceState) error {
 	st.acmService = svcacm.NewACMService(st.accountID, st.region)
+	st.acmService.SetStorageManager(a.server.StorageManager())
 	st.acmService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }
@@ -125,6 +126,7 @@ func (a *App) initACM(st *serviceState) error {
 
 func (a *App) initAPIGateway(st *serviceState) error {
 	st.apiGatewayService = svcapigateway.NewAPIGatewayService(st.accountID, st.region)
+	st.apiGatewayService.SetStorageManager(a.server.StorageManager())
 	st.apiGatewayService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }
@@ -133,6 +135,7 @@ func (a *App) initAPIGateway(st *serviceState) error {
 
 func (a *App) initCloudTrail(st *serviceState) error {
 	st.cloudTrailService = svccloudtrail.NewCloudTrailService(st.accountID, st.region)
+	st.cloudTrailService.SetStorageManager(a.server.StorageManager())
 	st.cloudTrailService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }
@@ -172,6 +175,7 @@ func (a *App) initCognito(st *serviceState) error {
 
 func (a *App) initCognitoIdentity(st *serviceState) error {
 	st.cognitoIdentityService = svccognitoidentity.NewCognitoIdentityService(st.accountID, st.region)
+	st.cognitoIdentityService.SetStorageManager(a.server.StorageManager())
 	st.cognitoIdentityService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }
@@ -216,6 +220,7 @@ func (a *App) initEventBridge(st *serviceState) error {
 
 func (a *App) initIAM(st *serviceState) error {
 	st.iamService = svciam.NewIAMService(st.accountID)
+	st.iamService.SetStorageManager(a.server.StorageManager())
 	st.iamService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("iam", func(ctx context.Context) error {
 		st.iamService.WaitForReport()
@@ -269,6 +274,7 @@ func (a *App) initKMS(st *serviceState) error {
 		return fmt.Errorf("failed to create persistent HSM backend: %w", err)
 	}
 	st.kmsService = svckms.NewKMSService(st.accountID, st.region, hsmBackend)
+	st.kmsService.SetStorageManager(a.server.StorageManager())
 	st.kmsService.RegisterHandlers(a.server.Dispatcher())
 	a.server.EventBus().SetKMSInvoker(st.kmsService.KMSBusInvoker())
 
@@ -344,6 +350,7 @@ func (a *App) initSecretsManager(st *serviceState) error {
 
 func (a *App) initSESv2(st *serviceState) error {
 	st.sesv2Service = svcsesv2.NewSESv2Service(st.accountID)
+	st.sesv2Service.SetStorageManager(a.server.StorageManager())
 	st.sesv2Service.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }
@@ -397,6 +404,7 @@ func (a *App) initSQS(st *serviceState) error {
 
 func (a *App) initSSM(st *serviceState) error {
 	st.ssmService = svcssm.NewSSMServiceWithKMS(st.accountID, st.kmsService)
+	st.ssmService.SetStorageManager(a.server.StorageManager())
 	st.ssmService.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }

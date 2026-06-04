@@ -1,6 +1,7 @@
 package apigateway
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -23,10 +24,11 @@ type apiGatewayStores struct {
 
 // APIGatewayService provides AWS API Gateway operations.
 type APIGatewayService struct {
-	accountID     string
-	region        string
-	stores        sync.Map // region → *apiGatewayStores
-	runtimeServer *svcapigatewayruntime.RuntimeServer
+	accountID      string
+	region         string
+	stores         sync.Map // region → *apiGatewayStores
+	storageManager *storage.RegionStorageManager
+	runtimeServer  *svcapigatewayruntime.RuntimeServer
 }
 
 // NewAPIGatewayService creates a new API Gateway service instance.
@@ -37,22 +39,26 @@ func NewAPIGatewayService(accountID, region string) *APIGatewayService {
 	}
 }
 
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *APIGatewayService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
 // InitRuntimeServer creates the runtime server using the same stores as the
-// management service. The runtime server is owned by this service and must be
-// initialised exactly once before use.
-func (s *APIGatewayService) InitRuntimeServer(
-	storageManager *storage.RegionStorageManager,
-	bus eventbus.Bus,
-) {
-	storage, err := storageManager.GetStorage(s.region)
+// management service.
+func (s *APIGatewayService) InitRuntimeServer(bus eventbus.Bus) {
+	if s.storageManager == nil {
+		return
+	}
+	st, err := s.storageManager.GetStorage(s.region)
 	if err != nil {
 		return
 	}
 
 	stores := &apiGatewayStores{
-		restApis: apigatewaystore.NewRestApiStore(storage, s.accountID, s.region),
-		usage:    apigatewaystore.NewUsageStore(storage, s.accountID, s.region),
-		domains:  apigatewaystore.NewDomainStore(storage, s.accountID, s.region),
+		restApis: apigatewaystore.NewRestApiStore(st, s.accountID, s.region),
+		usage:    apigatewaystore.NewUsageStore(st, s.accountID, s.region),
+		domains:  apigatewaystore.NewDomainStore(st, s.accountID, s.region),
 	}
 	if actual, loaded := s.stores.LoadOrStore(s.region, stores); loaded {
 		stores = actual.(*apiGatewayStores)
@@ -90,6 +96,26 @@ func (s *APIGatewayService) store(reqCtx *request.RequestContext) (*apiGatewaySt
 			domains:  apigatewaystore.NewDomainStore(st, s.accountID, reqCtx.GetRegion()),
 		}, nil
 	})
+}
+
+func (s *APIGatewayService) GetStoreForRegion(region string) (*apiGatewayStores, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(*apiGatewayStores), nil
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("apigateway storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	stores := &apiGatewayStores{
+		restApis: apigatewaystore.NewRestApiStore(st, s.accountID, region),
+		usage:    apigatewaystore.NewUsageStore(st, s.accountID, region),
+		domains:  apigatewaystore.NewDomainStore(st, s.accountID, region),
+	}
+	actual, _ := s.stores.LoadOrStore(region, stores)
+	return actual.(*apiGatewayStores), nil
 }
 
 // RegisterHandlers registers the API Gateway service handlers with the dispatcher.

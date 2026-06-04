@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
+	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudfront"
 	cloudfrontconnect "vorpalstacks/internal/pb/aws/cloudfront/cloudfrontconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -19,22 +19,33 @@ import (
 )
 
 // AdminHandler implements the CloudFront admin console gRPC-Web handler.
+// It delegates to the shared CloudFrontService store cache so that the same
+// global store instance is used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
 type AdminHandler struct {
 	cloudfrontconnect.UnimplementedCloudFrontServiceHandler
-	distStore *cloudfrontstore.DistributionStore
+	service *CloudFrontService
 }
 
 var _ cloudfrontconnect.CloudFrontServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new CloudFront admin handler with the given storage and account ID.
-func NewAdminHandler(store storage.BasicStorage, accountId string) *AdminHandler {
-	return &AdminHandler{
-		distStore: cloudfrontstore.NewDistributionStore(store, accountId),
-	}
+// NewAdminHandler creates a new CloudFront admin handler.
+func NewAdminHandler(svc *CloudFrontService) *AdminHandler {
+	return &AdminHandler{service: svc}
+}
+
+func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*cloudfrontStores, error) {
+	region := svccommon.GetRegionFromHeader(headers)
+	return h.service.GetStoreForRegion(region)
 }
 
 // CreateDistribution creates a new CloudFront distribution with minimal required configuration.
 func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Request[pb.CreateDistributionRequest]) (*connect.Response[pb.CreateDistributionResult], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	cfg := req.Msg.GetDistributionconfig()
 	if cfg == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("distributionconfig is required"))
@@ -105,7 +116,7 @@ func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Requ
 		},
 	}
 
-	dist, err := h.distStore.Create(callerRef, storeConfig)
+	dist, err := stores.distributions.Create(callerRef, storeConfig)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -123,12 +134,17 @@ func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Requ
 
 // ListDistributions returns all CloudFront distributions visible to the admin console.
 func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Request[pb.ListDistributionsRequest]) (*connect.Response[pb.ListDistributionsResult], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	maxItems := int(req.Msg.Maxitems)
 	if maxItems <= 0 {
 		maxItems = 100
 	}
 
-	result, err := h.distStore.List(req.Msg.Marker, maxItems)
+	result, err := stores.distributions.List(req.Msg.Marker, maxItems)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -165,11 +181,16 @@ func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Reque
 
 // DeleteDistribution deletes a CloudFront distribution via the admin console.
 func (h *AdminHandler) DeleteDistribution(ctx context.Context, req *connect.Request[pb.DeleteDistributionRequest]) (*connect.Response[pbcommon.Empty], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if req.Msg.Id == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("id is required"))
 	}
 
-	if err := h.distStore.Delete(req.Msg.Id); err != nil {
+	if err := stores.distributions.Delete(req.Msg.Id); err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
@@ -177,6 +198,6 @@ func (h *AdminHandler) DeleteDistribution(ctx context.Context, req *connect.Requ
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Cloudfront admin console.
-func NewConnectHandler(store storage.BasicStorage, accountID string) (string, http.Handler) {
-	return cloudfrontconnect.NewCloudFrontServiceHandler(NewAdminHandler(store, accountID))
+func NewConnectHandler(svc *CloudFrontService) (string, http.Handler) {
+	return cloudfrontconnect.NewCloudFrontServiceHandler(NewAdminHandler(svc))
 }

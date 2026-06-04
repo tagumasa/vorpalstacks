@@ -92,6 +92,39 @@ func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontSt
 	})
 }
 
+// GetStoreForRegion returns the cached CloudFront stores. CloudFront is a
+// global service, so the region parameter is ignored and the single cached
+// instance is always returned.
+func (s *CloudFrontService) GetStoreForRegion(_ string) (*cloudfrontStores, error) {
+	if v, ok := s.stores.Load("global"); ok {
+		return v.(*cloudfrontStores), nil
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("cloudfront storage manager not initialised")
+	}
+	st, err := s.storageManager.GetGlobalStorage()
+	if err != nil {
+		return nil, err
+	}
+	arnBuilder := cloudfrontstore.NewARNBuilder(s.accountID)
+	cacheStore := cloudfrontstore.NewCachePolicyStore(st, s.accountID)
+	orpStore := cloudfrontstore.NewOriginRequestPolicyStore(st, s.accountID)
+	s.seedManagedPolicies.Do(func() {
+		cloudfrontstore.SeedManagedPolicies(cacheStore, orpStore)
+	})
+	stores := &cloudfrontStores{
+		distributions:           cloudfrontstore.NewDistributionStore(st, s.accountID),
+		cachePolicies:           cacheStore,
+		originRequestPolicies:   orpStore,
+		originAccessControls:    cloudfrontstore.NewOriginAccessControlStore(st, s.accountID),
+		responseHeadersPolicies: cloudfrontstore.NewResponseHeadersPolicyStore(st, s.accountID),
+		tags:                    cloudfrontstore.NewTagStore(st),
+		arnBuilder:              arnBuilder,
+	}
+	actual, _ := s.stores.LoadOrStore("global", stores)
+	return actual.(*cloudfrontStores), nil
+}
+
 // SetWAFInvoker injects the WAF invoker for cross-service WebACL association.
 func (s *CloudFrontService) SetWAFInvoker(invoker eventbus.WAFInvoker) {
 	s.wafInvoker = invoker

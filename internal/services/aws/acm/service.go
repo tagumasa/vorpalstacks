@@ -2,10 +2,12 @@
 package acm
 
 import (
+	"fmt"
 	"sync"
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	acmstore "vorpalstacks/internal/store/aws/acm"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -18,9 +20,10 @@ type acmStores struct {
 
 // ACMService provides ACM (AWS Certificate Manager) operations for managing certificates.
 type ACMService struct {
-	accountID string
-	region    string
-	stores    sync.Map // region → *acmStores
+	accountID      string
+	region         string
+	stores         sync.Map // region → *acmStores
+	storageManager *storage.RegionStorageManager
 }
 
 // NewACMService creates a new ACM service instance with the given storage, account ID, and region.
@@ -29,6 +32,11 @@ func NewACMService(accountID, region string) *ACMService {
 		accountID: accountID,
 		region:    region,
 	}
+}
+
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *ACMService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
 }
 
 func (s *ACMService) store(reqCtx *request.RequestContext) (*acmStores, error) {
@@ -42,6 +50,27 @@ func (s *ACMService) store(reqCtx *request.RequestContext) (*acmStores, error) {
 			arnBuilder:   acmstore.NewARNBuilder(s.accountID, reqCtx.GetRegion()),
 		}, nil
 	})
+}
+
+// GetStoreForRegion returns the cached ACM stores for the given region,
+// creating a new store instance if not already cached.
+func (s *ACMService) GetStoreForRegion(region string) (*acmStores, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(*acmStores), nil
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("acm storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	stores := &acmStores{
+		certificates: acmstore.NewCertificateStore(st, s.accountID, region),
+		arnBuilder:   acmstore.NewARNBuilder(s.accountID, region),
+	}
+	actual, _ := s.stores.LoadOrStore(region, stores)
+	return actual.(*acmStores), nil
 }
 
 // RegisterHandlers registers all ACM operation handlers with the dispatcher.

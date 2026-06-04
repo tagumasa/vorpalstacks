@@ -8,7 +8,6 @@ import (
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/core/storage"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/iam"
 	"vorpalstacks/internal/pb/aws/iam/iamconnect"
@@ -43,16 +42,16 @@ var _ iamconnect.IAMServiceHandler = (*AdminHandler)(nil)
 // AdminHandler implements the IAM admin console gRPC-Web handler.
 type AdminHandler struct {
 	iamconnect.UnimplementedIAMServiceHandler
-	store    storage.BasicStorage
-	storeObj *iamstore.IAMStore
+	service *IAMService
 }
 
-// NewAdminHandler creates a new IAM admin handler with the given storage and account ID.
-func NewAdminHandler(store storage.BasicStorage, accountID string) *AdminHandler {
-	return &AdminHandler{
-		store:    store,
-		storeObj: iamstore.GetOrCreateGlobalStore(store, accountID),
-	}
+// NewAdminHandler creates a new IAM admin handler.
+func NewAdminHandler(svc *IAMService) *AdminHandler {
+	return &AdminHandler{service: svc}
+}
+
+func (h *AdminHandler) getStore() (*iamstore.IAMStore, error) {
+	return h.service.GetStoreForRegion("")
 }
 
 func storeErr(err error) error {
@@ -103,10 +102,14 @@ func storeErr(err error) error {
 
 // GetUser returns a single IAM user by name.
 func (h *AdminHandler) GetUser(ctx context.Context, req *connect.Request[pb.GetUserRequest]) (*connect.Response[pb.GetUserResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Username == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
 	}
-	user, err := h.storeObj.Users().Get(req.Msg.Username)
+	user, err := stores.Users().Get(req.Msg.Username)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -115,9 +118,13 @@ func (h *AdminHandler) GetUser(ctx context.Context, req *connect.Request[pb.GetU
 
 // ListUsers returns a paginated list of IAM users via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.ListUsersRequest]) (*connect.Response[pb.ListUsersResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	maxItems := defaultMaxItems(req.Msg.Maxitems)
 
-	result, err := h.storeObj.Users().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
+	result, err := stores.Users().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -136,13 +143,17 @@ func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.Li
 
 // CreateUser creates a new IAM user via the admin console gRPC-Web interface.
 func (h *AdminHandler) CreateUser(ctx context.Context, req *connect.Request[pb.CreateUserRequest]) (*connect.Response[pb.CreateUserResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Username == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
 	}
 
 	tags := pbTagsToStoreTags(req.Msg.Tags)
 
-	user, err := h.storeObj.Users().Create(req.Msg.Username, req.Msg.Path, h.storeObj.AccountID(), tags)
+	user, err := stores.Users().Create(req.Msg.Username, req.Msg.Path, stores.AccountID(), tags)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -154,11 +165,15 @@ func (h *AdminHandler) CreateUser(ctx context.Context, req *connect.Request[pb.C
 
 // UpdateUser updates an existing IAM user.
 func (h *AdminHandler) UpdateUser(ctx context.Context, req *connect.Request[pb.UpdateUserRequest]) (*connect.Response[pbcommon.Empty], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Username == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
 	}
 
-	if err := h.storeObj.RenameUser(req.Msg.Username, req.Msg.Newusername, req.Msg.Newpath); err != nil {
+	if err := stores.RenameUser(req.Msg.Username, req.Msg.Newusername, req.Msg.Newpath); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -167,11 +182,15 @@ func (h *AdminHandler) UpdateUser(ctx context.Context, req *connect.Request[pb.U
 
 // DeleteUser deletes an IAM user via the admin console gRPC-Web interface.
 func (h *AdminHandler) DeleteUser(ctx context.Context, req *connect.Request[pb.DeleteUserRequest]) (*connect.Response[pbcommon.Empty], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Username == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
 	}
 
-	if err := h.storeObj.Users().Delete(req.Msg.Username); err != nil {
+	if err := stores.Users().Delete(req.Msg.Username); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -182,10 +201,14 @@ func (h *AdminHandler) DeleteUser(ctx context.Context, req *connect.Request[pb.D
 
 // GetRole returns a single IAM role by name.
 func (h *AdminHandler) GetRole(ctx context.Context, req *connect.Request[pb.GetRoleRequest]) (*connect.Response[pb.GetRoleResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Rolename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
 	}
-	role, err := h.storeObj.Roles().Get(req.Msg.Rolename)
+	role, err := stores.Roles().Get(req.Msg.Rolename)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -194,9 +217,13 @@ func (h *AdminHandler) GetRole(ctx context.Context, req *connect.Request[pb.GetR
 
 // ListRoles returns a paginated list of IAM roles via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.ListRolesRequest]) (*connect.Response[pb.ListRolesResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	maxItems := defaultMaxItems(req.Msg.Maxitems)
 
-	result, err := h.storeObj.Roles().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
+	result, err := stores.Roles().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -215,6 +242,10 @@ func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.Li
 
 // CreateRole creates a new IAM role via the admin console gRPC-Web interface.
 func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.CreateRoleRequest]) (*connect.Response[pb.CreateRoleResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Rolename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
 	}
@@ -229,10 +260,10 @@ func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.C
 		maxSessionDuration = 3600
 	}
 
-	role, err := h.storeObj.Roles().Create(
+	role, err := stores.Roles().Create(
 		req.Msg.Rolename,
 		req.Msg.Path,
-		h.storeObj.AccountID(),
+		stores.AccountID(),
 		req.Msg.Assumerolepolicydocument,
 		req.Msg.Description,
 		maxSessionDuration,
@@ -249,11 +280,15 @@ func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.C
 
 // UpdateRole updates an existing IAM role.
 func (h *AdminHandler) UpdateRole(ctx context.Context, req *connect.Request[pb.UpdateRoleRequest]) (*connect.Response[pb.UpdateRoleResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Rolename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
 	}
 
-	if err := h.storeObj.UpdateRoleFields(req.Msg.Rolename, req.Msg.Description, int(req.Msg.Maxsessionduration)); err != nil {
+	if err := stores.UpdateRoleFields(req.Msg.Rolename, req.Msg.Description, int(req.Msg.Maxsessionduration)); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -262,11 +297,15 @@ func (h *AdminHandler) UpdateRole(ctx context.Context, req *connect.Request[pb.U
 
 // DeleteRole deletes an IAM role via the admin console gRPC-Web interface.
 func (h *AdminHandler) DeleteRole(ctx context.Context, req *connect.Request[pb.DeleteRoleRequest]) (*connect.Response[pbcommon.Empty], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Rolename == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
 	}
 
-	if err := h.storeObj.Roles().Delete(req.Msg.Rolename); err != nil {
+	if err := stores.Roles().Delete(req.Msg.Rolename); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -277,10 +316,14 @@ func (h *AdminHandler) DeleteRole(ctx context.Context, req *connect.Request[pb.D
 
 // GetPolicy returns a single IAM policy by ARN.
 func (h *AdminHandler) GetPolicy(ctx context.Context, req *connect.Request[pb.GetPolicyRequest]) (*connect.Response[pb.GetPolicyResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Policyarn == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyArn is required"))
 	}
-	policy, err := h.storeObj.Policies().Get(req.Msg.Policyarn)
+	policy, err := stores.Policies().Get(req.Msg.Policyarn)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -289,6 +332,10 @@ func (h *AdminHandler) GetPolicy(ctx context.Context, req *connect.Request[pb.Ge
 
 // ListPolicies returns a paginated list of IAM policies via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb.ListPoliciesRequest]) (*connect.Response[pb.ListPoliciesResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	maxItems := defaultMaxItems(req.Msg.Maxitems)
 
 	scope := "Local"
@@ -298,7 +345,7 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 		scope = "All"
 	}
 
-	result, err := h.storeObj.Policies().List(scope, req.Msg.Pathprefix, req.Msg.Onlyattached, req.Msg.Marker, maxItems)
+	result, err := stores.Policies().List(scope, req.Msg.Pathprefix, req.Msg.Onlyattached, req.Msg.Marker, maxItems)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -317,6 +364,10 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 
 // CreatePolicy creates a new IAM managed policy.
 func (h *AdminHandler) CreatePolicy(ctx context.Context, req *connect.Request[pb.CreatePolicyRequest]) (*connect.Response[pb.CreatePolicyResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Policyname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyName is required"))
 	}
@@ -326,7 +377,7 @@ func (h *AdminHandler) CreatePolicy(ctx context.Context, req *connect.Request[pb
 
 	tags := pbTagsToStoreTags(req.Msg.Tags)
 
-	policy, err := h.storeObj.Policies().Create(req.Msg.Policyname, req.Msg.Path, h.storeObj.AccountID(), req.Msg.Policydocument, req.Msg.Description, tags)
+	policy, err := stores.Policies().Create(req.Msg.Policyname, req.Msg.Path, stores.AccountID(), req.Msg.Policydocument, req.Msg.Description, tags)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -336,11 +387,15 @@ func (h *AdminHandler) CreatePolicy(ctx context.Context, req *connect.Request[pb
 
 // DeletePolicy deletes an IAM managed policy.
 func (h *AdminHandler) DeletePolicy(ctx context.Context, req *connect.Request[pb.DeletePolicyRequest]) (*connect.Response[pbcommon.Empty], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Policyarn == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyArn is required"))
 	}
 
-	if err := h.storeObj.Policies().Delete(req.Msg.Policyarn); err != nil {
+	if err := stores.Policies().Delete(req.Msg.Policyarn); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -351,10 +406,14 @@ func (h *AdminHandler) DeletePolicy(ctx context.Context, req *connect.Request[pb
 
 // GetGroup returns a single IAM group by name.
 func (h *AdminHandler) GetGroup(ctx context.Context, req *connect.Request[pb.GetGroupRequest]) (*connect.Response[pb.GetGroupResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Groupname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
 	}
-	group, err := h.storeObj.Groups().Get(req.Msg.Groupname)
+	group, err := stores.Groups().Get(req.Msg.Groupname)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -363,9 +422,13 @@ func (h *AdminHandler) GetGroup(ctx context.Context, req *connect.Request[pb.Get
 
 // ListGroups returns a paginated list of IAM groups.
 func (h *AdminHandler) ListGroups(ctx context.Context, req *connect.Request[pb.ListGroupsRequest]) (*connect.Response[pb.ListGroupsResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	maxItems := defaultMaxItems(req.Msg.Maxitems)
 
-	result, err := h.storeObj.Groups().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
+	result, err := stores.Groups().List(req.Msg.Pathprefix, req.Msg.Marker, maxItems)
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -384,11 +447,15 @@ func (h *AdminHandler) ListGroups(ctx context.Context, req *connect.Request[pb.L
 
 // CreateGroup creates a new IAM group.
 func (h *AdminHandler) CreateGroup(ctx context.Context, req *connect.Request[pb.CreateGroupRequest]) (*connect.Response[pb.CreateGroupResponse], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Groupname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
 	}
 
-	group, err := h.storeObj.Groups().Create(req.Msg.Groupname, req.Msg.Path, h.storeObj.AccountID())
+	group, err := stores.Groups().Create(req.Msg.Groupname, req.Msg.Path, stores.AccountID())
 	if err != nil {
 		return nil, storeErr(err)
 	}
@@ -398,11 +465,15 @@ func (h *AdminHandler) CreateGroup(ctx context.Context, req *connect.Request[pb.
 
 // UpdateGroup updates an existing IAM group.
 func (h *AdminHandler) UpdateGroup(ctx context.Context, req *connect.Request[pb.UpdateGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Groupname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
 	}
 
-	if err := h.storeObj.RenameGroup(req.Msg.Groupname, req.Msg.Newgroupname, req.Msg.Newpath); err != nil {
+	if err := stores.RenameGroup(req.Msg.Groupname, req.Msg.Newgroupname, req.Msg.Newpath); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -411,11 +482,15 @@ func (h *AdminHandler) UpdateGroup(ctx context.Context, req *connect.Request[pb.
 
 // DeleteGroup deletes an IAM group.
 func (h *AdminHandler) DeleteGroup(ctx context.Context, req *connect.Request[pb.DeleteGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
+	stores, err := h.getStore()
+	if err != nil {
+		return nil, storeErr(err)
+	}
 	if req.Msg.Groupname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
 	}
 
-	if err := h.storeObj.Groups().Delete(req.Msg.Groupname); err != nil {
+	if err := stores.Groups().Delete(req.Msg.Groupname); err != nil {
 		return nil, storeErr(err)
 	}
 
@@ -529,6 +604,6 @@ func toPbGroup(group *iamstore.Group) *pb.Group {
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the Iam admin console.
-func NewConnectHandler(store storage.BasicStorage, accountID string) (string, http.Handler) {
-	return iamconnect.NewIAMServiceHandler(NewAdminHandler(store, accountID))
+func NewConnectHandler(svc *IAMService) (string, http.Handler) {
+	return iamconnect.NewIAMServiceHandler(NewAdminHandler(svc))
 }

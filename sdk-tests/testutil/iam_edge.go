@@ -250,5 +250,36 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("iam", "Error_DeleteInlinePolicyNonExistentUser", func() error {
+		_, err := tc.client.DeleteUserPolicy(tc.ctx, &iam.DeleteUserPolicyInput{
+			UserName:   aws.String("NonExistentUser-" + tc.ts),
+			PolicyName: aws.String("SomePolicy"),
+		})
+		if err := AssertErrorContains(err, "NoSuchEntity"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "Error_CreateUserInvalidName", func() error {
+		_, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{
+			UserName: aws.String("invalid user!@#$"),
+		})
+		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "Error_CreateGroupInvalidName", func() error {
+		_, err := tc.client.CreateGroup(tc.ctx, &iam.CreateGroupInput{
+			GroupName: aws.String("invalid group!@#$"),
+		})
+		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	return results
 }

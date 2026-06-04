@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -17,6 +18,7 @@ import (
 type IAMService struct {
 	accountID             string
 	stores                sync.Map // global — single cached instance
+	storageManager        *storage.RegionStorageManager
 	cloudTrailInvoker     eventbus.CloudTrailInvoker
 	reportWg              sync.WaitGroup
 	credentialReportMu    sync.RWMutex
@@ -37,6 +39,11 @@ func (s *IAMService) SetCloudTrailInvoker(invoker eventbus.CloudTrailInvoker) {
 	s.cloudTrailInvoker = invoker
 }
 
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *IAMService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
 func (s *IAMService) store(reqCtx *request.RequestContext) (*iamstore.IAMStore, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, "global", func() (*iamstore.IAMStore, error) {
 		storage, err := reqCtx.GetGlobalStorage()
@@ -45,6 +52,24 @@ func (s *IAMService) store(reqCtx *request.RequestContext) (*iamstore.IAMStore, 
 		}
 		return iamstore.GetOrCreateGlobalStore(storage, s.accountID), nil
 	})
+}
+
+// GetStoreForRegion returns the cached IAM store.
+// IAM is a global service — the region parameter is ignored.
+func (s *IAMService) GetStoreForRegion(_ string) (*iamstore.IAMStore, error) {
+	if v, ok := s.stores.Load("global"); ok {
+		return v.(*iamstore.IAMStore), nil
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("IAM storage manager not initialised")
+	}
+	st, err := s.storageManager.GetGlobalStorage()
+	if err != nil {
+		return nil, err
+	}
+	store := iamstore.GetOrCreateGlobalStore(st, s.accountID)
+	actual, _ := s.stores.LoadOrStore("global", store)
+	return actual.(*iamstore.IAMStore), nil
 }
 
 // RegisterHandlers registers all IAM operation handlers with the dispatcher.

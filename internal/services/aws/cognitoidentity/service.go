@@ -7,15 +7,17 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // CognitoIdentityService provides Cognito Identity service operations.
 type CognitoIdentityService struct {
-	accountID string
-	region    string
-	stores    sync.Map // region → cognitoidentitystore.CognitoIdentityStoreInterface
+	accountID      string
+	region         string
+	stores         sync.Map // region → cognitoidentitystore.CognitoIdentityStoreInterface
+	storageManager *storage.RegionStorageManager
 }
 
 // NewCognitoIdentityService creates a new Cognito Identity service.
@@ -26,6 +28,11 @@ func NewCognitoIdentityService(accountID, region string) *CognitoIdentityService
 	}
 }
 
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *CognitoIdentityService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
 func (s *CognitoIdentityService) store(reqCtx *request.RequestContext) (cognitoidentitystore.CognitoIdentityStoreInterface, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (cognitoidentitystore.CognitoIdentityStoreInterface, error) {
 		storage, err := reqCtx.GetStorage()
@@ -34,6 +41,24 @@ func (s *CognitoIdentityService) store(reqCtx *request.RequestContext) (cognitoi
 		}
 		return cognitoidentitystore.NewCognitoIdentityStore(storage, s.accountID, reqCtx.GetRegion()), nil
 	})
+}
+
+// GetStoreForRegion returns the cached CognitoIdentity store for the given region,
+// creating a new store instance if not already cached.
+func (s *CognitoIdentityService) GetStoreForRegion(region string) (cognitoidentitystore.CognitoIdentityStoreInterface, error) {
+	if v, ok := s.stores.Load(region); ok {
+		return v.(cognitoidentitystore.CognitoIdentityStoreInterface), nil
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("cognito identity storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store := cognitoidentitystore.NewCognitoIdentityStore(st, s.accountID, region)
+	actual, _ := s.stores.LoadOrStore(region, store)
+	return actual.(cognitoidentitystore.CognitoIdentityStoreInterface), nil
 }
 
 // RegisterHandlers registers the Cognito Identity handlers with the dispatcher.

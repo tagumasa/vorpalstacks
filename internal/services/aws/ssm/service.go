@@ -9,15 +9,17 @@ import (
 	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
 // SSMService provides AWS Systems Manager Parameter Store operations.
 type SSMService struct {
-	accountID    string
-	kmsEncryptor common.KMSEncryptor
-	stores       sync.Map // region → ssmstore.SSMStoreInterface
+	accountID      string
+	kmsEncryptor   common.KMSEncryptor
+	stores         sync.Map // region → ssmstore.SSMStoreInterface
+	storageManager *storage.RegionStorageManager
 }
 
 // NewSSMService creates a new SSM service instance.
@@ -35,12 +37,27 @@ func NewSSMServiceWithKMS(accountID string, kmsEncryptor common.KMSEncryptor) *S
 	}
 }
 
-// GetStoreForRegion returns the cached SSMStore for the given region.
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *SSMService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
+// GetStoreForRegion returns the cached SSMStore for the given region,
+// creating a new store instance if not already cached.
 func (s *SSMService) GetStoreForRegion(region string) (ssmstore.SSMStoreInterface, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(ssmstore.SSMStoreInterface), nil
 	}
-	return nil, fmt.Errorf("ssm store not initialised for region %s", region)
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("ssm storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store := ssmstore.NewStore(st, s.accountID, region)
+	actual, _ := s.stores.LoadOrStore(region, store)
+	return actual.(ssmstore.SSMStoreInterface), nil
 }
 
 func (s *SSMService) store(reqCtx *request.RequestContext) (ssmstore.SSMStoreInterface, error) {

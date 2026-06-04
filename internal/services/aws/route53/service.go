@@ -98,6 +98,16 @@ func (s *Route53Service) ChangeStore() *route53store.ChangeStore {
 	return s.dnsStores.Changes().Raw()
 }
 
+// GetStoreForRegion returns the Route53 store for the given region.
+// Route53 is a global service — the region parameter is ignored and the
+// singleton dnsStores initialised in the constructor is returned.
+func (s *Route53Service) GetStoreForRegion(_ string) (*route53store.Route53Stores, error) {
+	if s.dnsStores == nil {
+		return nil, fmt.Errorf("Route53 service not initialised")
+	}
+	return s.dnsStores, nil
+}
+
 // ARNBuilder returns the ARN builder.
 func (s *Route53Service) ARNBuilder() *route53store.ARNBuilder {
 	return s.dnsStores.ARNBuilder()

@@ -17,12 +17,13 @@ import (
 // Implements control-plane CRUD for Event APIs (v2), GraphQL APIs (v1),
 // channel namespaces, data sources, resolvers, GraphQL execution, and tag operations.
 type AppSyncService struct {
-	accountID   string
-	stores      sync.Map
-	bus         eventbus.Bus
-	schemaCache sync.Map
-	schemaWg    sync.WaitGroup
-	eventServer *EventServer
+	accountID      string
+	stores         sync.Map
+	bus            eventbus.Bus
+	schemaCache    sync.Map
+	schemaWg       sync.WaitGroup
+	eventServer    *EventServer
+	storageManager *storage.RegionStorageManager
 }
 
 // NewAppSyncService creates a new AppSync service instance scoped to the given account.
@@ -38,6 +39,11 @@ func NewAppSyncService(accountID string) *AppSyncService {
 func (s *AppSyncService) SetEventBus(bus eventbus.Bus) {
 	s.bus = bus
 	s.eventServer.SetEventBus(bus)
+}
+
+// SetStorageManager injects the storage manager for admin console store access.
+func (s *AppSyncService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
 }
 
 // EventServerHandler returns an http.Handler for the AppSync events server
@@ -56,14 +62,20 @@ func (s *AppSyncService) ShutdownEventServer() {
 // GetStoreForRegion returns the cached AppSync store for the given region,
 // creating one if not already cached. Used by both HTTP handlers and the
 // admin console to ensure a single store instance per region.
-func (s *AppSyncService) GetStoreForRegion(region string, rs storage.BasicStorage) *appsyncstore.AppSyncStore {
-	key := region
-	if cached, ok := s.stores.Load(key); ok {
-		return cached.(*appsyncstore.AppSyncStore)
+func (s *AppSyncService) GetStoreForRegion(region string) (*appsyncstore.AppSyncStore, error) {
+	if cached, ok := s.stores.Load(region); ok {
+		return cached.(*appsyncstore.AppSyncStore), nil
+	}
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("appsync storage manager not initialised")
+	}
+	rs, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
 	}
 	store := appsyncstore.NewAppSyncStore(rs, s.accountID, region)
-	actual, _ := s.stores.LoadOrStore(key, store)
-	return actual.(*appsyncstore.AppSyncStore)
+	actual, _ := s.stores.LoadOrStore(region, store)
+	return actual.(*appsyncstore.AppSyncStore), nil
 }
 
 func (s *AppSyncService) store(reqCtx *request.RequestContext) (*appsyncstore.AppSyncStore, error) {

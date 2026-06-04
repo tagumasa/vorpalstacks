@@ -95,12 +95,22 @@ func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.
 	return eventbus.HandlerResult{}
 }
 
-// GetStoreForRegion returns the cached SchedulerStore for the given region.
+// GetStoreForRegion returns the cached SchedulerStore for the given region,
+// creating a new store instance if not already cached.
 func (s *SchedulerService) GetStoreForRegion(region string) (*schedulerstore.SchedulerStore, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(*schedulerstore.SchedulerStore), nil
 	}
-	return nil, fmt.Errorf("scheduler store not initialised for region %s", region)
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("scheduler storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store := schedulerstore.NewSchedulerStore(st, s.accountID, region)
+	actual, _ := s.stores.LoadOrStore(region, store)
+	return actual.(*schedulerstore.SchedulerStore), nil
 }
 
 func (s *SchedulerService) store(ctx *request.RequestContext) (*schedulerstore.SchedulerStore, error) {

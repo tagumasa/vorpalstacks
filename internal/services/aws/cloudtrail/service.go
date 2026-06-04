@@ -14,9 +14,10 @@ import (
 
 // CloudTrailService provides AWS CloudTrail operations.
 type CloudTrailService struct {
-	accountID string
-	region    string
-	stores    sync.Map // region → cloudtrailstore.CloudTrailStoreInterface
+	accountID      string
+	region         string
+	stores         sync.Map // region → cloudtrailstore.CloudTrailStoreInterface
+	storageManager *storage.RegionStorageManager
 }
 
 // NewCloudTrailService creates a new CloudTrail service instance.
@@ -25,6 +26,11 @@ func NewCloudTrailService(accountID, region string) *CloudTrailService {
 		accountID: accountID,
 		region:    region,
 	}
+}
+
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *CloudTrailService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
 }
 
 // GetEventStore returns the shared CloudTrail event store for the given region.
@@ -37,14 +43,22 @@ func (s *CloudTrailService) GetEventStore(store storage.BasicStorage, region str
 	return st
 }
 
-// GetStoreForRegion returns the cached CloudTrail store for the given region.
-// Used by the admin console handler to share the same store instances as the
-// HTTP API handlers.
+// GetStoreForRegion returns the cached CloudTrail store for the given region,
+// creating a new store instance if not already cached.
 func (s *CloudTrailService) GetStoreForRegion(region string) (cloudtrailstore.CloudTrailStoreInterface, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(cloudtrailstore.CloudTrailStoreInterface), nil
 	}
-	return nil, fmt.Errorf("cloudtrail store not initialised for region %s", region)
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("cloudtrail storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	store := cloudtrailstore.NewCloudTrailStore(st, s.accountID, region)
+	actual, _ := s.stores.LoadOrStore(region, store)
+	return actual.(cloudtrailstore.CloudTrailStoreInterface), nil
 }
 
 func (s *CloudTrailService) store(reqCtx *request.RequestContext) (cloudtrailstore.CloudTrailStoreInterface, error) {
@@ -58,34 +72,20 @@ func (s *CloudTrailService) store(reqCtx *request.RequestContext) (cloudtrailsto
 	return st, err
 }
 
-// RegisterHandlers registers the CloudTrail service handlers with the dispatcher.
+// RegisterHandlers registers CloudTrail operation handlers with the dispatcher.
 func (s *CloudTrailService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudtrail", "CreateTrail", s.CreateTrail)
-	d.RegisterHandlerForService("cloudtrail", "DeleteTrail", s.DeleteTrail)
-	d.RegisterHandlerForService("cloudtrail", "UpdateTrail", s.UpdateTrail)
-	d.RegisterHandlerForService("cloudtrail", "DescribeTrails", s.DescribeTrails)
 	d.RegisterHandlerForService("cloudtrail", "GetTrail", s.GetTrail)
-	d.RegisterHandlerForService("cloudtrail", "GetTrailStatus", s.GetTrailStatus)
-	d.RegisterHandlerForService("cloudtrail", "ListTrails", s.ListTrails)
+	d.RegisterHandlerForService("cloudtrail", "UpdateTrail", s.UpdateTrail)
+	d.RegisterHandlerForService("cloudtrail", "DeleteTrail", s.DeleteTrail)
 	d.RegisterHandlerForService("cloudtrail", "StartLogging", s.StartLogging)
 	d.RegisterHandlerForService("cloudtrail", "StopLogging", s.StopLogging)
-
+	d.RegisterHandlerForService("cloudtrail", "GetTrailStatus", s.GetTrailStatus)
+	d.RegisterHandlerForService("cloudtrail", "ListTrails", s.ListTrails)
+	d.RegisterHandlerForService("cloudtrail", "AddTags", s.AddTags)
+	d.RegisterHandlerForService("cloudtrail", "RemoveTags", s.RemoveTags)
+	d.RegisterHandlerForService("cloudtrail", "ListTags", s.ListTags)
 	d.RegisterHandlerForService("cloudtrail", "LookupEvents", s.LookupEvents)
-	d.RegisterHandlerForService("cloudtrail", "ListPublicKeys", s.ListPublicKeys)
-
 	d.RegisterHandlerForService("cloudtrail", "GetEventSelectors", s.GetEventSelectors)
 	d.RegisterHandlerForService("cloudtrail", "PutEventSelectors", s.PutEventSelectors)
-	d.RegisterHandlerForService("cloudtrail", "GetInsightSelectors", s.GetInsightSelectors)
-	d.RegisterHandlerForService("cloudtrail", "PutInsightSelectors", s.PutInsightSelectors)
-
-	d.RegisterHandlerForService("cloudtrail", "AddTags", s.AddTags)
-	d.RegisterHandlerForService("cloudtrail", "TagResource", s.AddTags)
-	d.RegisterHandlerForService("cloudtrail", "RemoveTags", s.RemoveTags)
-	d.RegisterHandlerForService("cloudtrail", "UntagResource", s.RemoveTags)
-	d.RegisterHandlerForService("cloudtrail", "ListTags", s.ListTags)
-	d.RegisterHandlerForService("cloudtrail", "ListTagsForResource", s.ListTags)
-
-	d.RegisterHandlerForService("cloudtrail", "GetResourcePolicy", s.GetResourcePolicy)
-	d.RegisterHandlerForService("cloudtrail", "PutResourcePolicy", s.PutResourcePolicy)
-	d.RegisterHandlerForService("cloudtrail", "DeleteResourcePolicy", s.DeleteResourcePolicy)
 }

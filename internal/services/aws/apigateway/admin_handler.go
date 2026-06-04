@@ -3,55 +3,30 @@ package apigateway
 import (
 	"errors"
 	"net/http"
-	"sync"
 
 	"connectrpc.com/connect"
 
 	svccommon "vorpalstacks/internal/common"
-	"vorpalstacks/internal/core/storage"
 	apigatewayconnect "vorpalstacks/internal/pb/aws/apigateway/apigatewayconnect"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // AdminHandler implements the gRPC admin console handlers for API Gateway.
 type AdminHandler struct {
 	apigatewayconnect.UnimplementedAPIGatewayServiceHandler
-	storageManager *storage.RegionStorageManager
-	accountId      string
-	stores         sync.Map
+	service *APIGatewayService
 }
 
 var _ apigatewayconnect.APIGatewayServiceHandler = (*AdminHandler)(nil)
 
 // NewAdminHandler creates a new API Gateway admin handler.
-func NewAdminHandler(storageManager *storage.RegionStorageManager, accountId string) *AdminHandler {
-	return &AdminHandler{
-		storageManager: storageManager,
-		accountId:      accountId,
-	}
+func NewAdminHandler(svc *APIGatewayService) *AdminHandler {
+	return &AdminHandler{service: svc}
 }
 
-type adminStores struct {
-	restApis  *apigatewaystore.RestApiStore
-	usage     *apigatewaystore.UsageStore
-	domains   *apigatewaystore.DomainStore
-	keyLocker storecommon.KeyLocker
-}
-
-func (h *AdminHandler) getStores(headers http.Header) (*adminStores, error) {
+func (h *AdminHandler) getStores(headers http.Header) (*apiGatewayStores, error) {
 	region := svccommon.GetRegionFromHeader(headers)
-	return storecommon.GetOrCreateStoreE(&h.stores, region, func() (*adminStores, error) {
-		regionStorage, err := h.storageManager.GetStorage(region)
-		if err != nil {
-			return nil, err
-		}
-		return &adminStores{
-			restApis: apigatewaystore.NewRestApiStore(regionStorage, h.accountId, region),
-			usage:    apigatewaystore.NewUsageStore(regionStorage, h.accountId, region),
-			domains:  apigatewaystore.NewDomainStore(regionStorage, h.accountId, region),
-		}, nil
-	})
+	return h.service.GetStoreForRegion(region)
 }
 
 func storeErr(err error) error {
@@ -107,6 +82,6 @@ func storeErr(err error) error {
 }
 
 // NewConnectHandler returns the connect RPC path and handler for API Gateway admin.
-func NewConnectHandler(sm *storage.RegionStorageManager, accountID string) (string, http.Handler) {
-	return apigatewayconnect.NewAPIGatewayServiceHandler(NewAdminHandler(sm, accountID))
+func NewConnectHandler(svc *APIGatewayService) (string, http.Handler) {
+	return apigatewayconnect.NewAPIGatewayServiceHandler(NewAdminHandler(svc))
 }

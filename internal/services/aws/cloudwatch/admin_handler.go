@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"net/http"
 
+	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/utils/timeutils"
 
 	"connectrpc.com/connect"
 
-	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/aws/cloudwatch"
 	cloudwatchconnect "vorpalstacks/internal/pb/aws/cloudwatch/cloudwatchconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -21,27 +21,32 @@ import (
 
 // AdminHandler implements the CloudWatch gRPC-Web admin console handler. It
 // exposes list and describe operations for alarms and metrics for the Flutter
-// management UI.
+// management UI. It delegates to the shared CloudWatchService store cache.
 type AdminHandler struct {
 	cloudwatchconnect.UnimplementedCloudWatchServiceHandler
-	alarmStore  *cloudwatchstore.AlarmStore
-	metricStore *cloudwatchstore.MetricChunkStore
+	service *CloudWatchService
 }
 
 var _ cloudwatchconnect.CloudWatchServiceHandler = (*AdminHandler)(nil)
 
-// NewAdminHandler creates a new CloudWatch admin console handler backed by the
-// given alarm and metric stores.
-func NewAdminHandler(alarmStore *cloudwatchstore.AlarmStore, metricStore *cloudwatchstore.MetricChunkStore) *AdminHandler {
-	return &AdminHandler{
-		alarmStore:  alarmStore,
-		metricStore: metricStore,
-	}
+// NewAdminHandler creates a new CloudWatch admin console handler.
+func NewAdminHandler(svc *CloudWatchService) *AdminHandler {
+	return &AdminHandler{service: svc}
+}
+
+func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*cloudwatchStores, error) {
+	region := svccommon.GetRegionFromHeader(headers)
+	return h.service.GetStoreForRegion(region)
 }
 
 // ListMetrics lists the specified metrics within a namespace, optionally
 // filtered by metric name and dimensions.
 func (h *AdminHandler) ListMetrics(ctx context.Context, req *connect.Request[pb.ListMetricsInput]) (*connect.Response[pb.ListMetricsOutput], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	var dimensions []cloudwatchstore.Dimension
 	for _, d := range req.Msg.Dimensions {
 		dimensions = append(dimensions, cloudwatchstore.Dimension{
@@ -50,7 +55,7 @@ func (h *AdminHandler) ListMetrics(ctx context.Context, req *connect.Request[pb.
 		})
 	}
 
-	metrics, err := h.metricStore.ListMetrics(req.Msg.Namespace, req.Msg.Metricname, dimensions)
+	metrics, err := stores.metrics.ListMetrics(req.Msg.Namespace, req.Msg.Metricname, dimensions)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -78,7 +83,12 @@ func (h *AdminHandler) ListMetrics(ctx context.Context, req *connect.Request[pb.
 
 // DescribeAlarms retrieves the alarms for the specified alarm name prefix.
 func (h *AdminHandler) DescribeAlarms(ctx context.Context, req *connect.Request[pb.DescribeAlarmsInput]) (*connect.Response[pb.DescribeAlarmsOutput], error) {
-	alarms, err := h.alarmStore.ListAlarms(req.Msg.Alarmnameprefix)
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	alarms, err := stores.alarms.ListAlarms(req.Msg.Alarmnameprefix)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
@@ -174,6 +184,10 @@ func toPbStateValue(state string) pb.StateValue {
 // PutMetricAlarm creates or updates a CloudWatch metric alarm via the admin
 // console gRPC-Web interface.
 func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[pb.PutMetricAlarmInput]) (*connect.Response[pbcommon.Empty], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
 	if req.Msg.Alarmname == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AlarmName is required"))
 	}
@@ -210,13 +224,13 @@ func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[
 	alarm.OKActions = req.Msg.Okactions
 	alarm.InsufficientDataActions = req.Msg.Insufficientdataactions
 
-	created, err := h.alarmStore.CreateAlarm(alarm)
+	created, err := stores.alarms.CreateAlarm(alarm)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
 	if len(created.Tags) > 0 {
-		if err := h.alarmStore.Tag(created.ARN, created.Tags); err != nil {
+		if err := stores.alarms.Tag(created.ARN, created.Tags); err != nil {
 			return nil, svcerrors.StoreErrorToGRPC(err)
 		}
 	}
@@ -227,12 +241,17 @@ func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[
 // DeleteAlarms deletes one or more CloudWatch alarms via the admin console
 // gRPC-Web interface.
 func (h *AdminHandler) DeleteAlarms(ctx context.Context, req *connect.Request[pb.DeleteAlarmsInput]) (*connect.Response[pbcommon.Empty], error) {
+	stores, err := h.getStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
 	if len(req.Msg.Alarmnames) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AlarmNames is required"))
 	}
 
 	for _, name := range req.Msg.Alarmnames {
-		if err := h.alarmStore.DeleteAlarm(name); err != nil {
+		if err := stores.alarms.DeleteAlarm(name); err != nil {
 			return nil, svcerrors.StoreErrorToGRPC(err)
 		}
 	}
@@ -279,6 +298,6 @@ func fromPbStatistic(stat pb.Statistic) string {
 }
 
 // NewConnectHandler creates a gRPC-Web connect handler for the CloudWatch admin console.
-func NewConnectHandler(st storage.BasicStorage, accountID, region, dataPath string) (string, http.Handler) {
-	return cloudwatchconnect.NewCloudWatchServiceHandler(NewAdminHandler(cloudwatchstore.NewAlarmStore(st, accountID, region), cloudwatchstore.NewMetricChunkStore(st, region, dataPath)))
+func NewConnectHandler(svc *CloudWatchService) (string, http.Handler) {
+	return cloudwatchconnect.NewCloudWatchServiceHandler(NewAdminHandler(svc))
 }

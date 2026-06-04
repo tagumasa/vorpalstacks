@@ -97,13 +97,29 @@ func (s *AppSyncService) UpdateApi(ctx context.Context, reqCtx *request.RequestC
 		return nil, NewBadRequestException("apiId is required")
 	}
 
+	// Fetch existing to preserve fields that were not provided in the request.
+	// Without this, WafWebAclArn and XrayEnabled would be overwritten with
+	// Go zero values on every update call that omits them.
+	existing, err := store.GetApiById(apiId)
+	if err != nil {
+		return mapStoreError(err)
+	}
+
+	wafWebAclArn := existing.WafWebAclArn
+	if request.HasParam(req.Parameters, "wafWebAclArn") {
+		wafWebAclArn = request.GetStringParam(req.Parameters, "wafWebAclArn")
+	}
+
+	xrayEnabled := existing.XrayEnabled
+	if request.HasParam(req.Parameters, "xrayEnabled") {
+		xrayEnabled = request.GetBoolParam(req.Parameters, "xrayEnabled")
+	}
+
 	api := &appsyncstore.Api{
 		Name:         request.GetStringParam(req.Parameters, "name"),
 		OwnerContact: request.GetStringParam(req.Parameters, "ownerContact"),
-		WafWebAclArn: request.GetStringParam(req.Parameters, "wafWebAclArn"),
-	}
-	if request.HasParam(req.Parameters, "xrayEnabled") {
-		api.XrayEnabled = request.GetBoolParam(req.Parameters, "xrayEnabled")
+		WafWebAclArn: wafWebAclArn,
+		XrayEnabled:  xrayEnabled,
 	}
 
 	if eventConfig, err := parseEventConfig(req.Parameters); err == nil {
