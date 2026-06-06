@@ -287,4 +287,7 @@ func (s *EventsService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("eventbridge", "ListApiDestinations", s.ListApiDestinations)
 
 	d.RegisterHandlerForService("eventbridge", "TestEventPattern", s.TestEventPattern)
+
+	d.RegisterHandlerForService("eventbridge", "PutPermission", s.PutPermission)
+	d.RegisterHandlerForService("eventbridge", "RemovePermission", s.RemovePermission)
 }

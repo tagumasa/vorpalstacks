@@ -465,8 +465,8 @@ func (s *SESv2Service) CreateContact(ctx context.Context, reqCtx *request.Reques
 
 	contact.TopicPreferences = parseTopicPreferencesFromParams(req.Parameters)
 
-	if unsSubAll := request.GetBoolParam(req.Parameters, "UnsubscribeAll"); unsSubAll {
-		contact.UnsubscribeAll = true
+	if _, ok := req.Parameters["UnsubscribeAll"]; ok {
+		contact.UnsubscribeAll = request.GetBoolParam(req.Parameters, "UnsubscribeAll")
 	}
 
 	if _, err := store.CreateContact(contact); err != nil {
@@ -610,8 +610,8 @@ func (s *SESv2Service) UpdateContact(ctx context.Context, reqCtx *request.Reques
 		contact.TopicPreferences = prefs
 	}
 
-	if unsSubAll := request.GetBoolParam(req.Parameters, "UnsubscribeAll"); unsSubAll {
-		contact.UnsubscribeAll = true
+	if _, ok := req.Parameters["UnsubscribeAll"]; ok {
+		contact.UnsubscribeAll = request.GetBoolParam(req.Parameters, "UnsubscribeAll")
 	}
 
 	if err := store.UpdateContact(contact); err != nil {

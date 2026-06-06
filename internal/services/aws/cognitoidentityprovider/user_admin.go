@@ -179,6 +179,10 @@ func (s *CognitoService) ListUsers(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
+	if _, err := store.GetUserPool(userPoolID); err != nil {
+		return nil, ErrResourceNotFound
+	}
+
 	maxResults := request.GetIntParam(req.Parameters, "Limit")
 	if maxResults <= 0 || maxResults > 60 {
 		maxResults = 60

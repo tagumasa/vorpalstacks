@@ -31,6 +31,10 @@ func (s *KinesisService) kinesisTagConfig(store *kinesisstore.KinesisStore, req 
 			}
 			return stream.StreamName
 		},
+		ValidateResource: func(ctx context.Context, resourceKey string) error {
+			_, err := store.GetStream(resourceKey)
+			return err
+		},
 		ParseTags: func(params map[string]interface{}) []types.Tag {
 			return tags.ParseTags(params, "Tags")
 		},

@@ -436,7 +436,7 @@ func (s *LambdaService) DeleteAlias(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 	if err := store.Functions.DeleteAlias(functionName, aliasName); err != nil {
-		return nil, err
+		return nil, NewResourceNotFound("Alias", aliasName)
 	}
 
 	return response.EmptyResponse(), nil

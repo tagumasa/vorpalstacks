@@ -35,12 +35,11 @@ func dynamodbTagConfig(store dynamodbstore.DynamoDBStoreInterface) tagutil.TagHa
 		ResourceKey: func(rawKey string) string {
 			return svcarn.ParseTableARN(rawKey)
 		},
-		ValidateResource: func(_ context.Context, rawKey string) error {
-			tableName := svcarn.ParseTableARN(rawKey)
-			if tableName == "" {
+		ValidateResource: func(_ context.Context, resourceKey string) error {
+			if resourceKey == "" {
 				return ErrResourceNotFound
 			}
-			if _, err := store.Tables().Get(tableName); err != nil {
+			if _, err := store.Tables().Get(resourceKey); err != nil {
 				return ErrResourceNotFound
 			}
 			return nil

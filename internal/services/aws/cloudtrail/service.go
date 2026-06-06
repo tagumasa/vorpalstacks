@@ -88,4 +88,11 @@ func (s *CloudTrailService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudtrail", "LookupEvents", s.LookupEvents)
 	d.RegisterHandlerForService("cloudtrail", "GetEventSelectors", s.GetEventSelectors)
 	d.RegisterHandlerForService("cloudtrail", "PutEventSelectors", s.PutEventSelectors)
+	d.RegisterHandlerForService("cloudtrail", "DescribeTrails", s.DescribeTrails)
+	d.RegisterHandlerForService("cloudtrail", "ListPublicKeys", s.ListPublicKeys)
+	d.RegisterHandlerForService("cloudtrail", "GetInsightSelectors", s.GetInsightSelectors)
+	d.RegisterHandlerForService("cloudtrail", "PutInsightSelectors", s.PutInsightSelectors)
+	d.RegisterHandlerForService("cloudtrail", "GetResourcePolicy", s.GetResourcePolicy)
+	d.RegisterHandlerForService("cloudtrail", "PutResourcePolicy", s.PutResourcePolicy)
+	d.RegisterHandlerForService("cloudtrail", "DeleteResourcePolicy", s.DeleteResourcePolicy)
 }

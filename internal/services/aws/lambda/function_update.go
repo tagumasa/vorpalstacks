@@ -235,7 +235,10 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		if IsLambdaError(err) {
+			return nil, err
+		}
+		return nil, ErrResourceNotFound
 	}
 
 	return s.toFunctionConfiguration(function), nil

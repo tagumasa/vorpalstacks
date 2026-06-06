@@ -101,7 +101,7 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 		}
 		key, err := stores.keys.Get(resolvedKeyID)
 		if err != nil {
-			return nil, err
+			return nil, NewKeyNotFoundError(resolvedKeyID)
 		}
 		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", key.KeyID, encryptionContext); err != nil {
 			return nil, err

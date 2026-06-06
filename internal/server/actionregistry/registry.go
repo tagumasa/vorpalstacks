@@ -2,10 +2,14 @@ package actionregistry
 
 import "sync"
 
-// ActionRegistry maps AWS actions to their service names.
+// ActionRegistry maps AWS actions to their service names. Multiple
+// services may register the same action (e.g. TagResource for both
+// SNS and Neptune). Lookup returns the last registered service, while
+// LookupAll returns all candidates for disambiguation by the classifier.
 type ActionRegistry struct {
 	mu      sync.RWMutex
 	actions map[string]string
+	all     map[string][]string
 }
 
 var globalActionRegistry = NewActionRegistry()
@@ -14,6 +18,7 @@ var globalActionRegistry = NewActionRegistry()
 func NewActionRegistry() *ActionRegistry {
 	r := &ActionRegistry{
 		actions: make(map[string]string),
+		all:     make(map[string][]string),
 	}
 	r.initDefaults()
 	return r
@@ -30,14 +35,31 @@ func (r *ActionRegistry) Register(service string, actions []string) {
 	defer r.mu.Unlock()
 	for _, action := range actions {
 		r.actions[action] = service
+		r.all[action] = append(r.all[action], service)
 	}
 }
 
-// Lookup returns the service name for a given action.
+// Lookup returns the last registered service name for a given action.
+// For actions registered by a single service this is deterministic.
 func (r *ActionRegistry) Lookup(action string) string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.actions[action]
+}
+
+// LookupAll returns all service names that registered the given action,
+// in registration order. The classifier uses this to disambiguate when
+// multiple services share an action name.
+func (r *ActionRegistry) LookupAll(action string) []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	candidates := r.all[action]
+	if candidates == nil {
+		return nil
+	}
+	result := make([]string, len(candidates))
+	copy(result, candidates)
+	return result
 }
 
 func (r *ActionRegistry) initDefaults() {
@@ -142,7 +164,9 @@ func (r *ActionRegistry) initDefaults() {
 		"UpdateApiDestination", "ListApiDestinations",
 		"StartReplay", "DescribeReplay", "ListReplays", "CancelReplay",
 		"TestEventPattern",
-		"TagResource", "UntagResource", "ListTagsForResource",
+		// TagResource, UntagResource, ListTagsForResource intentionally
+		// excluded: EventBridge uses JSON-RPC (X-Amz-Target), never
+		// action-based routing. These would overwrite SNS Query entries.
 	})
 
 	r.Register("states", []string{
@@ -172,7 +196,9 @@ func (r *ActionRegistry) initDefaults() {
 		"GetEventSelectors", "PutEventSelectors",
 		"GetInsightSelectors", "PutInsightSelectors",
 		"AddTags", "RemoveTags", "ListTags",
-		"TagResource", "UntagResource", "ListTagsForResource",
+		// TagResource, UntagResource, ListTagsForResource intentionally
+		// excluded: CloudTrail uses JSON-RPC (X-Amz-Target), never
+		// action-based routing. These would overwrite SNS Query entries.
 		"LookupEvents", "ListPublicKeys",
 		"GetResourcePolicy", "PutResourcePolicy", "DeleteResourcePolicy",
 	})
@@ -185,8 +211,14 @@ func (r *ActionRegistry) initDefaults() {
 		"CreateAlias", "DeleteAlias", "GetAlias", "UpdateAlias", "ListAliases",
 		"PublishLayerVersion", "DeleteLayerVersion", "GetLayerVersion", "ListLayers", "ListLayerVersions",
 		"CreateEventSourceMapping", "DeleteEventSourceMapping", "GetEventSourceMapping", "UpdateEventSourceMapping", "ListEventSourceMappings",
-		"AddPermission", "RemovePermission", "GetPolicy",
-		"TagResource", "UntagResource", "ListTags",
+		// Note: AddPermission, RemovePermission, TagResource, UntagResource,
+		// and ListTags are NOT registered here because Lambda uses REST-JSON
+		// paths (e.g. /2015-03-31/functions/.../tags). These actions are
+		// always routed via path lookup or signing service, never via
+		// ActionRegistry. Registering them would overwrite SNS's entries for
+		// the same action names, causing misrouting for SNS Query protocol
+		// requests (see classifier.serviceFromAction).
+		"GetPolicy",
 		"PutFunctionConcurrency", "GetFunctionConcurrency", "DeleteFunctionConcurrency",
 		"PutProvisionedConcurrencyConfig", "GetProvisionedConcurrencyConfig", "DeleteProvisionedConcurrencyConfig", "ListProvisionedConcurrencyConfigs",
 		"PutFunctionEventInvokeConfig", "GetFunctionEventInvokeConfig", "DeleteFunctionEventInvokeConfig", "ListFunctionEventInvokeConfigs",
@@ -232,4 +264,9 @@ func (r *ActionRegistry) initDefaults() {
 // LookupServiceByAction returns the service name for a given action using the global registry.
 func LookupServiceByAction(action string) string {
 	return globalActionRegistry.Lookup(action)
+}
+
+// LookupAllServicesByAction returns all service names that registered the given action.
+func LookupAllServicesByAction(action string) []string {
+	return globalActionRegistry.LookupAll(action)
 }

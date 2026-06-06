@@ -65,6 +65,10 @@ func (s *SNSService) CreateTopic(ctx context.Context, reqCtx *request.RequestCon
 		}
 	}
 
+	if topic.FifoTopic && !strings.HasSuffix(name, ".fifo") {
+		return nil, awserrors.NewInvalidParameterException("FIFO Topic names must end with \".fifo\"")
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

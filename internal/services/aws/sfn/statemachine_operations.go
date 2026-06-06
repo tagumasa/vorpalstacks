@@ -453,6 +453,10 @@ func (s *StepFunctionService) ListExecutions(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
+	_, err = store.GetStateMachine(ctx, stateMachineArn)
+	if err != nil {
+		return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + stateMachineArn)
+	}
 	result, err := store.ListExecutions(ctx, stateMachineArn, statusFilter, limit, nextToken)
 	if err != nil {
 		return nil, err
@@ -495,6 +499,10 @@ func (s *StepFunctionService) GetExecutionHistory(ctx context.Context, reqCtx *r
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+	_, err = store.GetExecution(ctx, arn)
+	if err != nil {
+		return nil, NewExecutionDoesNotExist("Execution Does not exist: " + arn)
 	}
 	events, nextTokenResult, err := store.GetExecutionHistory(ctx, arn, limit, nextToken)
 	if err != nil {
@@ -548,6 +556,9 @@ func (s *StepFunctionService) DeleteActivity(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 	if err := store.DeleteActivity(ctx, arn); err != nil {
+		if errors.Is(err, sfnstore.ErrActivityNotFound) {
+			return nil, NewActivityDoesNotExist("Activity Does not exist: " + arn)
+		}
 		return nil, err
 	}
 

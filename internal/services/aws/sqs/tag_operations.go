@@ -25,8 +25,8 @@ func sqsMapError(err error) error {
 func sqsTagConfig(store sqsstore.SQSStoreInterface) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.SQSConfig,
-		ValidateResource: func(ctx context.Context, rawKey string) error {
-			_, err := store.GetQueue(rawKey)
+		ValidateResource: func(ctx context.Context, resourceKey string) error {
+			_, err := store.GetQueue(resourceKey)
 			if err != nil {
 				return convertStoreError(err)
 			}

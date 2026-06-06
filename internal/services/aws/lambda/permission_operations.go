@@ -82,7 +82,7 @@ func (s *LambdaService) RemovePermission(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 	if err := store.Functions.RemovePolicy(functionName, statementId); err != nil {
-		return nil, err
+		return nil, NewResourceNotFound("Function", functionName)
 	}
 
 	return response.EmptyResponse(), nil

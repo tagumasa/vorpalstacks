@@ -3,6 +3,7 @@ package cloudwatch
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
+	awserrors "vorpalstacks/internal/common/errors"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/utils/aws/types"
@@ -262,6 +264,15 @@ func (s *CloudWatchService) PutMetricAlarm(ctx context.Context, reqCtx *request.
 
 	if alarm.ComparisonOperator == "" {
 		alarm.ComparisonOperator = "GreaterThanOrEqualToThreshold"
+	}
+	validOps := map[string]bool{
+		"GreaterThanOrEqualToThreshold": true,
+		"GreaterThanThreshold":          true,
+		"LessThanThreshold":             true,
+		"LessThanOrEqualToThreshold":    true,
+	}
+	if !validOps[alarm.ComparisonOperator] {
+		return nil, awserrors.NewInvalidParameterValueException(fmt.Sprintf("Invalid ComparisonOperator: %s", alarm.ComparisonOperator))
 	}
 	if alarm.EvaluationPeriods == 0 {
 		alarm.EvaluationPeriods = 1

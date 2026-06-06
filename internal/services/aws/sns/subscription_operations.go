@@ -219,6 +219,10 @@ func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
+	if _, err := store.GetTopic(topicArn); err != nil {
+		return nil, awserrors.NewNotFoundException("Topic not found: " + topicArn)
+	}
+
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 	result, err := store.ListSubscriptionsByTopic(topicArn, common.ListOptions{Marker: nextToken})
 	if err != nil {

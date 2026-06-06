@@ -152,6 +152,9 @@ func (s *SQSService) CreateQueue(ctx context.Context, reqCtx *request.RequestCon
 	if queueName == "" {
 		return nil, ErrMissingParameter
 	}
+	if !isValidQueueName(queueName) {
+		return nil, ErrInvalidQueueName
+	}
 
 	queue := sqsstore.NewQueue(queueName, reqCtx.GetRegion(), reqCtx.GetAccountID())
 
@@ -161,6 +164,12 @@ func (s *SQSService) CreateQueue(ctx context.Context, reqCtx *request.RequestCon
 	}
 	if err := applyQueueAttributes(attrs, queue); err != nil {
 		return nil, err
+	}
+
+	// FifoQueue=true requires the queue name to end with ".fifo".
+	// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_CreateQueue.html
+	if queue.FifoQueue && !strings.HasSuffix(queueName, ".fifo") {
+		return nil, ErrInvalidParameterValue
 	}
 
 	queue.Tags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
@@ -622,4 +631,22 @@ func buildPolicyFromPermissions(queueARN string, permissions map[string]*sqsstor
 		return ""
 	}
 	return string(b)
+}
+
+func isValidQueueName(name string) bool {
+	if len(name) == 0 || len(name) > 80 {
+		return false
+	}
+	for _, c := range name {
+		if c == '.' {
+			if !strings.HasSuffix(name, ".fifo") {
+				return false
+			}
+			continue
+		}
+		if !(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9') && c != '-' && c != '_' {
+			return false
+		}
+	}
+	return true
 }

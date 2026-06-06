@@ -71,7 +71,7 @@ func (s *APIGatewayService) PutMethod(ctx context.Context, reqCtx *request.Reque
 	}
 	created, err := stores.restApis.PutMethod(apiId, resourceId, method)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	return s.toMethodResponse(created), nil

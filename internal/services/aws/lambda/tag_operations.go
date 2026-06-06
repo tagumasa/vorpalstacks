@@ -13,6 +13,17 @@ import (
 func lambdaTagConfig(s *LambdaService, reqCtx *request.RequestContext) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.LambdaConfig,
+		MapError: func(err error) error {
+			switch e := err.(type) {
+			case *tagutil.MissingResourceError:
+				return NewInvalidParameter("Resource", e.Param+" is required")
+			case *tagutil.MissingTagsError:
+				return NewInvalidParameter("Tags", e.Param+" is required")
+			case *tagutil.MissingTagKeysError:
+				return NewInvalidParameter("TagKeys", e.Param+" is required")
+			}
+			return err
+		},
 		ResourceKey: func(rawKey string) string {
 			return svcarn.ExtractFunctionNameFromARN(rawKey)
 		},
@@ -47,13 +58,12 @@ func lambdaTagConfig(s *LambdaService, reqCtx *request.RequestContext) tagutil.T
 			}
 			return result
 		},
-		ValidateResource: func(ctx context.Context, rawKey string) error {
+		ValidateResource: func(ctx context.Context, resourceKey string) error {
 			store, err := s.store(reqCtx)
 			if err != nil {
 				return err
 			}
-			functionName := svcarn.ExtractFunctionNameFromARN(rawKey)
-			_, err = store.Functions.Get(functionName)
+			_, err = store.Functions.Get(resourceKey)
 			if err != nil {
 				return ErrResourceNotFound
 			}

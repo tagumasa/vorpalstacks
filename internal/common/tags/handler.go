@@ -84,7 +84,7 @@ func HandleTag(ctx context.Context, req *request.ParsedRequest, cfg TagHandlerCo
 	}
 
 	if cfg.ValidateResource != nil {
-		if err := cfg.ValidateResource(ctx, rawKey); err != nil {
+		if err := cfg.ValidateResource(ctx, resourceKey); err != nil {
 			return nil, applyMapError(cfg, err)
 		}
 	}
@@ -131,7 +131,7 @@ func HandleUntag(ctx context.Context, req *request.ParsedRequest, cfg TagHandler
 	}
 
 	if cfg.ValidateResource != nil {
-		if err := cfg.ValidateResource(ctx, rawKey); err != nil {
+		if err := cfg.ValidateResource(ctx, resourceKey); err != nil {
 			return nil, applyMapError(cfg, err)
 		}
 	}
@@ -174,7 +174,7 @@ func HandleList(ctx context.Context, req *request.ParsedRequest, cfg TagHandlerC
 	}
 
 	if cfg.ValidateResource != nil {
-		if err := cfg.ValidateResource(ctx, rawKey); err != nil {
+		if err := cfg.ValidateResource(ctx, resourceKey); err != nil {
 			return nil, applyMapError(cfg, err)
 		}
 	}

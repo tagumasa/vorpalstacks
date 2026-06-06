@@ -42,7 +42,7 @@ func (s *ACMService) acmTagConfig(stores *acmStores, arn string) tagutil.TagHand
 		ResourceKey: func(rawKey string) string {
 			return arn
 		},
-		ValidateResource: func(ctx context.Context, rawKey string) error {
+		ValidateResource: func(ctx context.Context, resourceKey string) error {
 			_, err := stores.certificates.Get(arn)
 			if err != nil {
 				if acmstorelib.IsNotFound(err) {

@@ -405,6 +405,9 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 	}
 	history, nextMarker, isTruncated, err := store.GetParameterHistory(name, maxResults, nextToken)
 	if err != nil {
+		if errors.Is(err, ssmstore.ErrParameterNotFound) {
+			return nil, ErrParameterNotFound
+		}
 		return nil, err
 	}
 

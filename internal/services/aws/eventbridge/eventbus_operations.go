@@ -2,6 +2,8 @@ package eventbridge
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
@@ -212,4 +214,174 @@ func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.Requ
 	}
 
 	return eventBusToMap(eventBus), nil
+}
+
+// PutPermission adds a resource policy statement to the specified event bus,
+// granting the given principal permission to put events. Supports two modes:
+// (1) individual parameters (Principal, StatementId, Action, Condition) and
+// (2) a complete policy document via the Policy parameter.
+func (s *EventsService) PutPermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	busName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
+	if busName == "" {
+		busName = "default"
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	eventBus, err := store.GetEventBus(ctx, busName)
+	if err != nil {
+		return nil, mapStoreError(err, busName)
+	}
+
+	// Mode 1: Full policy document provided via the Policy parameter.
+	if policyStr, ok := req.Parameters["Policy"].(string); ok && policyStr != "" {
+		var policyDoc map[string]interface{}
+		if err := json.Unmarshal([]byte(policyStr), &policyDoc); err != nil {
+			return nil, awserrors.NewValidationException("Invalid policy document")
+		}
+		if _, ok := policyDoc["Version"]; !ok {
+			policyDoc["Version"] = "2012-10-17"
+		}
+		policyBytes, err := json.Marshal(policyDoc)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal policy: %w", err)
+		}
+		eventBus.Policy = string(policyBytes)
+		if err := store.UpdateEventBus(ctx, eventBus); err != nil {
+			return nil, err
+		}
+		return response.EmptyResponse(), nil
+	}
+
+	// Mode 2: Individual parameters (Principal, StatementId, Action, Condition).
+	principal := request.GetStringParam(req.Parameters, "Principal")
+	statementID := request.GetStringParam(req.Parameters, "StatementId")
+	action := request.GetStringParam(req.Parameters, "Action")
+	if action == "" {
+		action = "events:PutEvents"
+	}
+
+	if principal == "" || statementID == "" {
+		return nil, awserrors.NewValidationException("Principal and StatementId are required")
+	}
+
+	var policyDoc map[string]interface{}
+	if eventBus.Policy != "" {
+		if err := json.Unmarshal([]byte(eventBus.Policy), &policyDoc); err != nil {
+			policyDoc = make(map[string]interface{})
+		}
+	}
+	if _, ok := policyDoc["Version"]; !ok {
+		policyDoc["Version"] = "2012-10-17"
+	}
+
+	statement := map[string]interface{}{
+		"Sid":       statementID,
+		"Effect":    "Allow",
+		"Principal": map[string]interface{}{"AWS": principal},
+		"Action":    action,
+		"Resource":  eventBus.ARN,
+	}
+	if condition, ok := req.Parameters["Condition"].(string); ok && condition != "" {
+		var cond map[string]interface{}
+		if err := json.Unmarshal([]byte(condition), &cond); err == nil {
+			statement["Condition"] = cond
+		}
+	}
+
+	statements, _ := policyDoc["Statement"].([]interface{})
+	replaced := false
+	for i, s := range statements {
+		if stmt, ok := s.(map[string]interface{}); ok {
+			if sid, _ := stmt["Sid"].(string); sid == statementID {
+				statements[i] = statement
+				replaced = true
+				break
+			}
+		}
+	}
+	if !replaced {
+		statements = append(statements, statement)
+	}
+	policyDoc["Statement"] = statements
+
+	policyBytes, err := json.Marshal(policyDoc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal policy: %w", err)
+	}
+	eventBus.Policy = string(policyBytes)
+
+	if err := store.UpdateEventBus(ctx, eventBus); err != nil {
+		return nil, err
+	}
+
+	return response.EmptyResponse(), nil
+}
+
+// RemovePermission removes a resource policy statement from the specified
+// event bus identified by its StatementId.
+func (s *EventsService) RemovePermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	busName := request.GetParamLowerFirst(req.Parameters, "EventBusName")
+	if busName == "" {
+		busName = "default"
+	}
+
+	statementID := request.GetStringParam(req.Parameters, "StatementId")
+	if statementID == "" {
+		return nil, awserrors.NewValidationException("StatementId is required")
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	eventBus, err := store.GetEventBus(ctx, busName)
+	if err != nil {
+		return nil, mapStoreError(err, busName)
+	}
+
+	if eventBus.Policy == "" {
+		return response.EmptyResponse(), nil
+	}
+
+	var policyDoc map[string]interface{}
+	if err := json.Unmarshal([]byte(eventBus.Policy), &policyDoc); err != nil {
+		return response.EmptyResponse(), nil
+	}
+
+	statements, ok := policyDoc["Statement"].([]interface{})
+	if !ok {
+		return response.EmptyResponse(), nil
+	}
+
+	filtered := make([]interface{}, 0, len(statements))
+	for _, s := range statements {
+		if stmt, ok := s.(map[string]interface{}); ok {
+			if sid, _ := stmt["Sid"].(string); sid != statementID {
+				filtered = append(filtered, s)
+			}
+		}
+	}
+
+	if len(filtered) == 0 {
+		delete(policyDoc, "Statement")
+	} else {
+		policyDoc["Statement"] = filtered
+	}
+
+	policyBytes, err := json.Marshal(policyDoc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal policy: %w", err)
+	}
+	eventBus.Policy = string(policyBytes)
+
+	if err := store.UpdateEventBus(ctx, eventBus); err != nil {
+		return nil, err
+	}
+
+	return response.EmptyResponse(), nil
 }

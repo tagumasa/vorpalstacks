@@ -324,6 +324,9 @@ func (s *EventsService) ListTargetsByRule(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
+	if _, err := store.GetRule(ctx, eventBusName, ruleName); err != nil {
+		return nil, awserrors.NewResourceNotFoundException("Rule", ruleName)
+	}
 	result, err := store.ListTargetsByRule(ctx, eventBusName, ruleName, limit, nextToken)
 	if err != nil {
 		return nil, err

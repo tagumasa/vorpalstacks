@@ -169,7 +169,7 @@ func (c *Classifier) determineServiceName(r *http.Request, bodyBytes []byte, cr 
 	if svc := c.serviceFromTarget(r); svc != "" {
 		return svc
 	}
-	if svc := c.serviceFromAction(r, bodyBytes); svc != "" {
+	if svc := c.serviceFromActionWithVersion(r, bodyBytes); svc != "" {
 		return svc
 	}
 	if svc := c.serviceFromHost(r); svc != "" {
@@ -264,21 +264,84 @@ func (c *Classifier) serviceFromTarget(r *http.Request) string {
 	return svc
 }
 
-func (c *Classifier) serviceFromAction(r *http.Request, bodyBytes []byte) string {
+// serviceFromActionWithVersion is like serviceFromAction but uses the
+// API Version parameter to disambiguate when multiple services register
+// the same action. Query-protocol services include a Version parameter
+// (e.g. Version=2010-03-31 for SNS, Version=2014-10-31 for Neptune).
+func (c *Classifier) serviceFromActionWithVersion(r *http.Request, bodyBytes []byte) string {
 	action := r.URL.Query().Get("Action")
+	version := r.URL.Query().Get("Version")
 	if action == "" && len(bodyBytes) > 0 {
 		if values, err := url.ParseQuery(string(bodyBytes)); err == nil {
-			action = values.Get("Action")
+			if action == "" {
+				action = values.Get("Action")
+			}
+			if version == "" {
+				version = values.Get("Version")
+			}
 		}
 	}
 	if action == "" {
 		return ""
 	}
-	if svc := actionregistry.LookupServiceByAction(action); svc != "" {
-		return svc
+
+	candidates := actionregistry.LookupAllServicesByAction(action)
+	if len(candidates) == 0 {
+		if c.index != nil {
+			return c.index.FindServiceByActionPriority(action)
+		}
+		return ""
 	}
-	if c.index != nil {
-		return c.index.FindServiceByActionPriority(action)
+	if len(candidates) == 1 {
+		return candidates[0]
+	}
+
+	if version != "" {
+		if svc := matchServiceByVersion(candidates, version); svc != "" {
+			return svc
+		}
+	}
+
+	return candidates[0]
+}
+
+var serviceVersions = map[string]map[string]string{
+	"sns": {
+		"2010-03-31": "sns",
+	},
+	"neptune": {
+		"2014-10-31": "neptune",
+	},
+	"sqs": {
+		"2012-11-05": "sqs",
+	},
+	"iam": {
+		"2010-05-08": "iam",
+	},
+	"sts": {
+		"2011-06-15": "sts",
+	},
+	"acm": {
+		"2015-12-08": "acm",
+	},
+	"kms": {
+		"2014-11-01": "kms",
+	},
+	"states": {
+		"2016-11-23": "states",
+	},
+	"monitoring": {
+		"2010-08-01": "monitoring",
+	},
+}
+
+func matchServiceByVersion(candidates []string, version string) string {
+	for _, svc := range candidates {
+		if versions, ok := serviceVersions[svc]; ok {
+			if _, match := versions[version]; match {
+				return svc
+			}
+		}
 	}
 	return ""
 }

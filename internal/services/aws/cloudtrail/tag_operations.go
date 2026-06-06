@@ -36,8 +36,8 @@ func cloudTrailTagConfig(store cloudtrailstore.CloudTrailStoreInterface, mapErr 
 			}
 			return trail.Name
 		},
-		ValidateResource: func(_ context.Context, rawKey string) error {
-			_, err := store.GetTrailByARN(rawKey)
+		ValidateResource: func(_ context.Context, resourceKey string) error {
+			_, err := store.GetTrail(resourceKey)
 			if err != nil {
 				return mapErr(err)
 			}

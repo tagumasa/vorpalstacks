@@ -89,7 +89,7 @@ func (s *APIGatewayService) PutIntegration(ctx context.Context, reqCtx *request.
 	}
 	created, err := stores.restApis.PutIntegration(apiId, resourceId, httpMethod, integration)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	return s.toIntegrationResponse(created), nil

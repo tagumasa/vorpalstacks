@@ -148,6 +148,95 @@ func (s *LogsService) ListLogStreams(ctx context.Context, reqCtx *request.Reques
 
 // --- PutLogEvents ---
 
+const (
+	// maxEventsTimeSpan is the maximum allowed time span (in milliseconds)
+	// for a single PutLogEvents batch. AWS rejects the entire batch if the
+	// span between the earliest and latest event exceeds 24 hours.
+	maxEventsTimeSpan int64 = 24 * 60 * 60 * 1000
+
+	// tooNewThreshold is the maximum future offset (in milliseconds) for
+	// an event timestamp. Events more than 2 hours in the future are
+	// rejected individually.
+	tooNewThreshold int64 = 2 * 60 * 60 * 1000
+
+	// tooOldThreshold is the maximum age (in milliseconds) for an event
+	// timestamp. Events older than 14 days are rejected individually.
+	tooOldThreshold int64 = 14 * 24 * 60 * 60 * 1000
+)
+
+// validateLogEvents checks that log events satisfy the PutLogEvents
+// constraints required by AWS CloudWatch Logs:
+//   - Events must be in chronological order (by timestamp).
+//   - The time span of the batch must not exceed 24 hours.
+//   - Events more than 2 hours in the future or older than 14 days are
+//     individually rejected.
+//
+// Returns the filtered valid events and, if any events were rejected, a map
+// suitable for inclusion in the response as rejectedLogEventsInfo.
+func validateLogEvents(events []logsstore.LogEntry) ([]logsstore.LogEntry, map[string]interface{}, error) {
+	now := time.Now().UnixMilli()
+
+	// Separate valid, too-old, and too-new events. Determine the batch
+	// time span from valid events only.
+	var valid []logsstore.LogEntry
+	var tooOldEndIndex, tooNewStartIndex int
+
+	for i, e := range events {
+		if e.Timestamp > now+tooNewThreshold {
+			if tooNewStartIndex == 0 || i < tooNewStartIndex {
+				tooNewStartIndex = i
+			}
+			continue
+		}
+		if e.Timestamp < now-tooOldThreshold {
+			tooOldEndIndex = i + 1
+			continue
+		}
+		valid = append(valid, e)
+	}
+
+	if len(valid) == 0 {
+		rejected := buildRejectedInfo(tooOldEndIndex, tooNewStartIndex, len(events))
+		return nil, rejected, nil
+	}
+
+	// Check 24-hour time span across valid events.
+	span := valid[len(valid)-1].Timestamp - valid[0].Timestamp
+	if span > maxEventsTimeSpan {
+		return nil, nil, awserrors.NewAWSError("InvalidParameterException",
+			"Events span must not exceed 24 hours", 400)
+	}
+
+	// Check chronological order. The first pair that is out of order
+	// causes the entire batch to fail.
+	for i := 1; i < len(valid); i++ {
+		if valid[i].Timestamp < valid[i-1].Timestamp {
+			return nil, nil, awserrors.NewAWSError("InvalidParameterException",
+				"log events in the batch must be in chronological order", 400)
+		}
+	}
+
+	rejected := buildRejectedInfo(tooOldEndIndex, tooNewStartIndex, len(events))
+	return valid, rejected, nil
+}
+
+// buildRejectedInfo constructs the rejectedLogEventsInfo map from the
+// computed too-old and too-new indices. If no events were rejected an
+// empty map is returned.
+func buildRejectedInfo(tooOldEndIndex, tooNewStartIndex, totalEvents int) map[string]interface{} {
+	if tooOldEndIndex == 0 && tooNewStartIndex == 0 {
+		return nil
+	}
+	info := make(map[string]interface{})
+	if tooOldEndIndex > 0 {
+		info["tooOldLogEventEndIndex"] = tooOldEndIndex
+	}
+	if tooNewStartIndex > 0 {
+		info["tooNewLogEventStartIndex"] = tooNewStartIndex
+	}
+	return info
+}
+
 // PutLogEvents uploads log events to the specified CloudWatch Logs log stream.
 func (s *LogsService) PutLogEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
@@ -179,18 +268,37 @@ func (s *LogsService) PutLogEvents(ctx context.Context, reqCtx *request.RequestC
 		return nil, ErrMissingParameter
 	}
 
-	nextToken, err := store.PutLogEvents(logGroupName, logStreamName, events)
+	// Validate timestamp ordering, time span, and age constraints
+	// per AWS CloudWatch Logs PutLogEvents specification.
+	validEvents, rejectedInfo, valErr := validateLogEvents(events)
+	if valErr != nil {
+		return nil, valErr
+	}
+	if len(validEvents) == 0 {
+		// All events were rejected (too old or too new); nothing to write.
+		resp := map[string]interface{}{"nextSequenceToken": ""}
+		if len(rejectedInfo) > 0 {
+			resp["rejectedLogEventsInfo"] = rejectedInfo
+		}
+		return resp, nil
+	}
+
+	nextToken, err := store.PutLogEvents(logGroupName, logStreamName, validEvents)
 	if err != nil {
 		return nil, mapStoreError(err)
 	}
 
 	region := reqCtx.GetRegion()
-	s.evaluateMetricFilters(store, region, logGroupName, events)
-	s.deliverSubscriptionEvents(store, region, logGroupName, logStreamName, events)
+	s.evaluateMetricFilters(store, region, logGroupName, validEvents)
+	s.deliverSubscriptionEvents(store, region, logGroupName, logStreamName, validEvents)
 
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"nextSequenceToken": nextToken,
-	}, nil
+	}
+	if len(rejectedInfo) > 0 {
+		resp["rejectedLogEventsInfo"] = rejectedInfo
+	}
+	return resp, nil
 }
 
 func parseLogEvents(req *request.ParsedRequest) []logsstore.LogEntry {

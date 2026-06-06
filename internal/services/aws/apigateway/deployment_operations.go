@@ -34,7 +34,7 @@ func (s *APIGatewayService) CreateDeployment(ctx context.Context, reqCtx *reques
 
 	created, err := stores.restApis.CreateDeployment(apiId, deployment)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	stageName := request.GetStringParam(req.Parameters, "stageName")
@@ -45,7 +45,7 @@ func (s *APIGatewayService) CreateDeployment(ctx context.Context, reqCtx *reques
 			Description:  "Auto-created stage",
 		}
 		if _, err := stores.restApis.CreateStage(apiId, stage); err != nil {
-			return nil, err
+			return nil, toApiGatewayError(err)
 		}
 	}
 

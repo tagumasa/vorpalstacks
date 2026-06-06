@@ -78,7 +78,7 @@ func (s *LambdaService) DeleteFunctionUrlConfig(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 	if err := store.Functions.DeleteFunctionUrlConfig(functionName); err != nil {
-		return nil, err
+		return nil, NewResourceNotFound("Function", functionName)
 	}
 
 	return response.EmptyResponse(), nil

@@ -145,7 +145,7 @@ func (s *APIGatewayService) GetResources(ctx context.Context, reqCtx *request.Re
 	}
 	resources, err := stores.restApis.ListResources(apiId)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	items := make([]interface{}, 0, len(resources))
