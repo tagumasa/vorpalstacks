@@ -44,6 +44,9 @@ func convertStoreError(err error) error {
 	if errors.Is(err, sqsstore.ErrInvalidTagValue) {
 		return ErrInvalidTagValue
 	}
+	if errors.Is(err, sqsstore.ErrInvalidQueueName) {
+		return ErrInvalidQueueName
+	}
 	return err
 }
 

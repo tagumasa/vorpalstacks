@@ -3,6 +3,7 @@ package lambda
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"vorpalstacks/internal/common/request"
@@ -67,9 +68,9 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 
 // RemovePermission removes a permission from a Lambda function's resource-based policy.
 func (s *LambdaService) RemovePermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	function, err := s.validateAndGetFunction(reqCtx, req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	statementId := request.GetStringParam(req.Parameters, "StatementId")
@@ -81,8 +82,11 @@ func (s *LambdaService) RemovePermission(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Functions.RemovePolicy(functionName, statementId); err != nil {
-		return nil, NewResourceNotFound("Function", functionName)
+	if err := store.Functions.RemovePolicy(function.FunctionName, statementId); err != nil {
+		if errors.Is(err, lambdastore.ErrPolicyNotFound) {
+			return nil, NewResourceNotFound("Statement", statementId)
+		}
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil

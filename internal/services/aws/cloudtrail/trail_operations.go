@@ -218,7 +218,7 @@ func (s *CloudTrailService) DescribeTrails(ctx context.Context, reqCtx *request.
 		if arr, ok := trailNameListRaw.([]interface{}); ok && len(arr) > 0 {
 			for _, name := range arr {
 				if nameStr, ok := name.(string); ok {
-				trail, err := store.ResolveTrail(nameStr)
+					trail, err := store.ResolveTrail(nameStr)
 					if err != nil {
 						continue
 					}

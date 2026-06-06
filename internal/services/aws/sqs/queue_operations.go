@@ -633,20 +633,35 @@ func buildPolicyFromPermissions(queueARN string, permissions map[string]*sqsstor
 	return string(b)
 }
 
+// isValidQueueName checks whether a queue name meets the SQS naming rules.
+// Queue names must consist of alphanumeric characters, hyphens, and underscores.
+// Only FIFO queues may include the ".fifo" suffix; no other dots are permitted.
+// This must remain consistent with the store-layer regex in
+// internal/store/aws/sqs/validation_store.go.
 func isValidQueueName(name string) bool {
 	if len(name) == 0 || len(name) > 80 {
 		return false
 	}
-	for _, c := range name {
-		if c == '.' {
-			if !strings.HasSuffix(name, ".fifo") {
+	if strings.HasSuffix(name, ".fifo") {
+		prefix := name[:len(name)-5]
+		if len(prefix) == 0 {
+			return false
+		}
+		for _, c := range prefix {
+			if !isAlphanumeric(c) && c != '-' && c != '_' {
 				return false
 			}
-			continue
 		}
-		if !(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9') && c != '-' && c != '_' {
+		return true
+	}
+	for _, c := range name {
+		if !isAlphanumeric(c) && c != '-' && c != '_' {
 			return false
 		}
 	}
 	return true
+}
+
+func isAlphanumeric(c rune) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 }

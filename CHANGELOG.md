@@ -20,6 +20,10 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 - **Web console: Inspector page** — New PebbleDB key browser accessible from the sidebar. Displays key/value pairs with prefix filtering and type indicators.
 
+- **API Gateway: validation and pagination for list operations** — `GetAuthorizers`, `GetDeployments`, `GetStages`, `GetResources`, and `GetRequestValidators` now support `limit` and `position` pagination parameters. `UpdateRestApi` and `UpdateAuthorizer` return proper errors for invalid input. `CreateAuthorizer` validates `authorizerUri`, `CreateStage` validates `deploymentId`. Helper functions for integer and float parsing now return errors on invalid values instead of silently defaulting.
+
+- **AppSync: xrayEnabled parameter handling and hardened error mapping** — `UpdateApi` and `UpdateGraphqlApi` conditionally apply the `xrayEnabled` flag based on request input. `mapStoreError` refactored to use `errors.Is` for sentinel error unwrapping across all operations. Async GraphQL API disassociation includes resilience recovery on panic. `CreateDomainName` validates non-empty domain names before persisting.
+
 ### Changed
 
 - **Neptune service packages relocated under `rds/`** — Neptune, NeptuneData, NeptuneGraph implementations moved from `internal/services/aws/{neptune,neptunedata,neptunegraph}/` to `internal/services/aws/rds/{neptune,neptunedata,neptunegraph}/`. Stores moved to `internal/store/aws/rds/`. All import paths updated.
@@ -33,6 +37,12 @@ All notable changes to Vorpalstacks will be documented in this file.
 - **SDK tests: binary name and env vars** — Test binary renamed to `sdk-tests-all`. `ALL_SERVICES_ENABLED=true` replaces per-service flags in README instructions. `isAuditEnabled` now recognizes `ALL_SERVICES_ENABLED`.
 
 - **Web console: all 18 service pages migrated to 3-panel inspector layout** — ACM, API Gateway, AppSync, Athena, CloudFront, CloudTrail, CloudWatch, CloudWatch Logs, Cognito, Cognito Identity, DynamoDB, EventBridge, IAM, Kinesis, KMS, Lambda, Neptune, Route 53, Secrets Manager, SES, Step Functions, SNS, SQS, SSM, Timestream, WAFv2 — all pages replaced `SplitPane` with `DataTable` + `Splitter` + `inspector` components (`Breadcrumb`, `SelectionBadge`, `DetailPanel`, `DetailEmpty`, `useSelection`, `checkboxColumn`). DynamoDB adds nested table→items navigation with structured attribute editor. CloudWatch adds alarm create dialog. Inline styles replaced with CSS classes across all pages. Header icons migrated to CSS `::before` pseudo-elements. DataTable gains global text filter and JSON/CSV export. Modal gains focus trap, Escape dismiss, and `aria-modal` accessibility. Neptune and RDS pages add Create/Delete Instance/Cluster mutations with batch delete.
+
+- **Admin handlers: unified service instance pattern** — All AWS service admin handlers (ACM, API Gateway, AppSync, Athena, CloudFront, CloudTrail, CloudWatch, DynamoDB, Kinesis, Lambda, Secrets Manager, SSM, WAFv2, Timestream) refactored to accept shared service instances in constructors instead of directly referencing `StorageManager`. This provides consistent per-region cached store access and eliminates redundant storage manager lookups across admin RPCs.
+
+- **DynamoDB: partition key retrieval consolidated** — Replaced `getPartitionKeyName` and `getPartitionKeyNameFromTable` with unified `getHashKeyName`, removing redundant functions for clearer hash key resolution.
+
+- **SDK tests: total count updated to 2,308** — README files revised across all three locales (EN/JA/ZH) to reflect current passing test count.
 
 ### Fixed
 
