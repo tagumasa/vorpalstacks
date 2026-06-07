@@ -370,14 +370,14 @@ func (s *StepFunctionService) UpdateMapRun(ctx context.Context, reqCtx *request.
 		return nil, NewMapRunDoesNotExist("Map Run does not exist: " + mapRunArn)
 	}
 
-	if maxConcurrency := request.GetIntParam(req.Parameters, "maxConcurrency"); maxConcurrency > 0 {
-		mr.MaxConcurrency = int64(maxConcurrency)
+	if _, ok := req.Parameters["maxConcurrency"]; ok {
+		mr.MaxConcurrency = int64(request.GetIntParam(req.Parameters, "maxConcurrency"))
 	}
-	if toleratedCount := request.GetInt64Param(req.Parameters, "toleratedFailureCount"); toleratedCount > 0 {
-		mr.ToleratedFailureCount = toleratedCount
+	if _, ok := req.Parameters["toleratedFailureCount"]; ok {
+		mr.ToleratedFailureCount = request.GetInt64Param(req.Parameters, "toleratedFailureCount")
 	}
-	if toleratedPct := float32(request.GetFloatParam(req.Parameters, "toleratedFailurePercentage")); toleratedPct > 0 {
-		mr.ToleratedFailurePercentage = toleratedPct
+	if _, ok := req.Parameters["toleratedFailurePercentage"]; ok {
+		mr.ToleratedFailurePercentage = float32(request.GetFloatParam(req.Parameters, "toleratedFailurePercentage"))
 	}
 
 	if err := store.UpdateMapRun(ctx, mr); err != nil {

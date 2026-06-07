@@ -90,8 +90,8 @@ func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.Reque
 		archive.EventPattern = pattern
 	}
 
-	if retention := int32(request.GetIntParam(req.Parameters, "RetentionDays")); retention > 0 {
-		archive.RetentionDays = retention
+	if _, ok := req.Parameters["RetentionDays"]; ok {
+		archive.RetentionDays = int32(request.GetIntParam(req.Parameters, "RetentionDays"))
 	}
 
 	if err := store.CreateArchive(ctx, archive); err != nil {
@@ -208,8 +208,8 @@ func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.Reque
 		}
 		archive.EventPattern = pattern
 	}
-	if retention := int32(request.GetIntParam(req.Parameters, "RetentionDays")); retention > 0 {
-		archive.RetentionDays = retention
+	if _, ok := req.Parameters["RetentionDays"]; ok {
+		archive.RetentionDays = int32(request.GetIntParam(req.Parameters, "RetentionDays"))
 	}
 
 	if err := store.UpdateArchive(ctx, archive); err != nil {

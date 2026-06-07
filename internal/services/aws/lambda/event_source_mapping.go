@@ -117,20 +117,20 @@ func (s *LambdaService) UpdateEventSourceMapping(ctx context.Context, reqCtx *re
 			mapping.State = "Disabled"
 		}
 	}
-	if maxBatchWindow := request.GetIntParam(req.Parameters, "MaximumBatchingWindowInSeconds"); maxBatchWindow > 0 {
-		mapping.MaximumBatchingWindowInSeconds = int32(maxBatchWindow)
+	if _, ok := req.Parameters["MaximumBatchingWindowInSeconds"]; ok {
+		mapping.MaximumBatchingWindowInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumBatchingWindowInSeconds"))
 	}
 	if parallelFactor := request.GetIntParam(req.Parameters, "ParallelizationFactor"); parallelFactor > 0 {
 		mapping.ParallelizationFactor = int32(parallelFactor)
 	}
-	if maxRecordAge := request.GetIntParam(req.Parameters, "MaximumRecordAgeInSeconds"); maxRecordAge > 0 {
-		mapping.MaximumRecordAgeInSeconds = int32(maxRecordAge)
+	if _, ok := req.Parameters["MaximumRecordAgeInSeconds"]; ok {
+		mapping.MaximumRecordAgeInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumRecordAgeInSeconds"))
 	}
 	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
 		mapping.MaximumRetryAttempts = int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
 	}
-	if tumblingWindow := request.GetIntParam(req.Parameters, "TumblingWindowInSeconds"); tumblingWindow > 0 {
-		mapping.TumblingWindowInSeconds = int32(tumblingWindow)
+	if _, ok := req.Parameters["TumblingWindowInSeconds"]; ok {
+		mapping.TumblingWindowInSeconds = int32(request.GetIntParam(req.Parameters, "TumblingWindowInSeconds"))
 	}
 	if _, ok := req.Parameters["BisectBatchOnFunctionError"]; ok {
 		mapping.BisectBatchOnFunctionError = request.GetBoolParam(req.Parameters, "BisectBatchOnFunctionError")

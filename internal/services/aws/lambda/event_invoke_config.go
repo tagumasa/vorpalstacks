@@ -189,7 +189,7 @@ func (s *LambdaService) toEventInvokeConfig(c *lambdastore.EventInvokeConfig) ma
 		"LastModified": float64(c.LastModified.Unix()),
 	}
 
-	if c.MaximumEventAgeInSeconds >= 0 {
+	if c.MaximumEventAgeInSeconds > 0 {
 		result["MaximumEventAgeInSeconds"] = c.MaximumEventAgeInSeconds
 	}
 	if c.MaximumRetryAttempts >= 0 {
