@@ -283,6 +283,8 @@ func extractLambdaEventInvokeConfigOperation(path, method string) string {
 		switch method {
 		case "PUT":
 			return "PutFunctionEventInvokeConfig"
+		case "POST":
+			return "UpdateFunctionEventInvokeConfig"
 		case "GET":
 			return "GetFunctionEventInvokeConfig"
 		case "DELETE":

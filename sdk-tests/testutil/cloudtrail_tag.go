@@ -23,6 +23,9 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 		if err != nil {
 			return err
 		}
+		if createResp.TrailARN == nil {
+			return fmt.Errorf("CreateTrail did not return TrailARN")
+		}
 
 		_, err = tc.client.AddTags(tc.ctx, &cloudtrail.AddTagsInput{
 			ResourceId: createResp.TrailARN,
@@ -115,6 +118,9 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 		if err != nil {
 			return fmt.Errorf("get trail: %v", err)
 		}
+		if resp.Trail == nil || resp.Trail.TrailARN == nil {
+			return fmt.Errorf("GetTrail returned nil Trail or TrailARN")
+		}
 
 		listResp, err := tc.client.ListTags(tc.ctx, &cloudtrail.ListTagsInput{
 			ResourceIdList: []string{*resp.Trail.TrailARN},
@@ -138,6 +144,9 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 		})
 		if err != nil {
 			return err
+		}
+		if createResp.TrailARN == nil {
+			return fmt.Errorf("CreateTrail did not return TrailARN")
 		}
 
 		_, err = tc.client.AddTags(tc.ctx, &cloudtrail.AddTagsInput{
@@ -192,6 +201,9 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 		if err != nil {
 			return err
 		}
+		if createResp.TrailARN == nil {
+			return fmt.Errorf("CreateTrail did not return TrailARN")
+		}
 
 		resp, err := tc.client.ListTags(tc.ctx, &cloudtrail.ListTagsInput{
 			ResourceIdList: []string{*createResp.TrailARN},
@@ -229,6 +241,9 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 		})
 		if err != nil {
 			return err
+		}
+		if createResp.TrailARN == nil {
+			return fmt.Errorf("CreateTrail did not return TrailARN")
 		}
 
 		_, err = tc.client.RemoveTags(tc.ctx, &cloudtrail.RemoveTagsInput{

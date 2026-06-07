@@ -253,6 +253,90 @@ func runLambdaConfigTests(
 				}
 				return nil
 			}))
+
+			results = append(results, r.RunTest("lambda", "UpdateFunctionEventInvokeConfig_PartialUpdate", func() error {
+				resp, err := client.PutFunctionEventInvokeConfig(ctx, &lambda.PutFunctionEventInvokeConfigInput{
+					FunctionName:             aws.String(eicFuncName),
+					MaximumEventAgeInSeconds: aws.Int32(3600),
+					MaximumRetryAttempts:     aws.Int32(2),
+				})
+				if err != nil {
+					return err
+				}
+				if resp.MaximumRetryAttempts == nil || *resp.MaximumRetryAttempts != 2 {
+					return fmt.Errorf("setup: MaximumRetryAttempts mismatch, got %v", resp.MaximumRetryAttempts)
+				}
+
+				updateResp, err := client.UpdateFunctionEventInvokeConfig(ctx, &lambda.UpdateFunctionEventInvokeConfigInput{
+					FunctionName:         aws.String(eicFuncName),
+					MaximumRetryAttempts: aws.Int32(0),
+				})
+				if err != nil {
+					return err
+				}
+				if updateResp.MaximumRetryAttempts == nil || *updateResp.MaximumRetryAttempts != 0 {
+					return fmt.Errorf("MaximumRetryAttempts not updated, got %v", updateResp.MaximumRetryAttempts)
+				}
+				if updateResp.MaximumEventAgeInSeconds == nil || *updateResp.MaximumEventAgeInSeconds != 3600 {
+					return fmt.Errorf("MaximumEventAgeInSeconds should be preserved, got %v", updateResp.MaximumEventAgeInSeconds)
+				}
+				return nil
+			}))
+
+			results = append(results, r.RunTest("lambda", "UpdateFunctionEventInvokeConfig_CreateIfAbsent", func() error {
+				updateResp, err := client.UpdateFunctionEventInvokeConfig(ctx, &lambda.UpdateFunctionEventInvokeConfigInput{
+					FunctionName:         aws.String(eicFuncName),
+					MaximumRetryAttempts: aws.Int32(1),
+				})
+				if err != nil {
+					return err
+				}
+				if updateResp.MaximumRetryAttempts == nil || *updateResp.MaximumRetryAttempts != 1 {
+					return fmt.Errorf("MaximumRetryAttempts mismatch, got %v", updateResp.MaximumRetryAttempts)
+				}
+				return nil
+			}))
+
+			results = append(results, r.RunTest("lambda", "UpdateFunctionEventInvokeConfig_DestinationAtomic", func() error {
+				onSuccessArn := fmt.Sprintf("arn:aws:lambda:us-east-1:000000000000:function:dest-%d", time.Now().UnixNano())
+				onFailureArn := fmt.Sprintf("arn:aws:sqs:us-east-1:000000000000:dest-%d", time.Now().UnixNano())
+				_, err := client.PutFunctionEventInvokeConfig(ctx, &lambda.PutFunctionEventInvokeConfigInput{
+					FunctionName: aws.String(eicFuncName),
+					DestinationConfig: &types.DestinationConfig{
+						OnSuccess: &types.OnSuccess{
+							Destination: aws.String(onSuccessArn),
+						},
+						OnFailure: &types.OnFailure{
+							Destination: aws.String(onFailureArn),
+						},
+					},
+				})
+				if err != nil {
+					return err
+				}
+
+				resp, err := client.UpdateFunctionEventInvokeConfig(ctx, &lambda.UpdateFunctionEventInvokeConfigInput{
+					FunctionName: aws.String(eicFuncName),
+					DestinationConfig: &types.DestinationConfig{
+						OnSuccess: &types.OnSuccess{
+							Destination: aws.String(onSuccessArn),
+						},
+					},
+				})
+				if err != nil {
+					return err
+				}
+				if resp.DestinationConfig == nil {
+					return fmt.Errorf("DestinationConfig is nil")
+				}
+				if resp.DestinationConfig.OnSuccess == nil || *resp.DestinationConfig.OnSuccess.Destination != onSuccessArn {
+					return fmt.Errorf("OnSuccess mismatch, got %v", resp.DestinationConfig.OnSuccess)
+				}
+				if resp.DestinationConfig.OnFailure != nil {
+					return fmt.Errorf("OnFailure should be nil (atomic replacement), got %v", resp.DestinationConfig.OnFailure)
+				}
+				return nil
+			}))
 		}
 	}
 

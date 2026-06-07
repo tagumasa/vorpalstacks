@@ -231,6 +231,10 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 			return err
 		}
 
+		if createResp.TrailARN == nil {
+			return fmt.Errorf("CreateTrail did not return TrailARN")
+		}
+
 		resp, err := tc.client.DescribeTrails(tc.ctx, &cloudtrail.DescribeTrailsInput{
 			TrailNameList: []string{*createResp.TrailARN},
 		})
@@ -380,7 +384,10 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
-		if resp.Trail == nil || resp.Trail.S3BucketName == nil || *resp.Trail.S3BucketName != "updated-verify-bucket" {
+		if resp.Trail == nil {
+			return fmt.Errorf("GetTrail returned nil Trail")
+		}
+		if resp.Trail.S3BucketName == nil || *resp.Trail.S3BucketName != "updated-verify-bucket" {
 			return fmt.Errorf("S3 bucket name not updated, got %v", resp.Trail.S3BucketName)
 		}
 		return nil

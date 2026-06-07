@@ -176,14 +176,13 @@ const (
 func validateLogEvents(events []logsstore.LogEntry) ([]logsstore.LogEntry, map[string]interface{}, error) {
 	now := time.Now().UnixMilli()
 
-	// Separate valid, too-old, and too-new events. Determine the batch
-	// time span from valid events only.
 	var valid []logsstore.LogEntry
-	var tooOldEndIndex, tooNewStartIndex int
+	var tooOldEndIndex int
+	tooNewStartIndex := -1
 
 	for i, e := range events {
 		if e.Timestamp > now+tooNewThreshold {
-			if tooNewStartIndex == 0 || i < tooNewStartIndex {
+			if tooNewStartIndex == -1 || i < tooNewStartIndex {
 				tooNewStartIndex = i
 			}
 			continue
@@ -200,15 +199,12 @@ func validateLogEvents(events []logsstore.LogEntry) ([]logsstore.LogEntry, map[s
 		return nil, rejected, nil
 	}
 
-	// Check 24-hour time span across valid events.
 	span := valid[len(valid)-1].Timestamp - valid[0].Timestamp
 	if span > maxEventsTimeSpan {
 		return nil, nil, awserrors.NewAWSError("InvalidParameterException",
 			"Events span must not exceed 24 hours", 400)
 	}
 
-	// Check chronological order. The first pair that is out of order
-	// causes the entire batch to fail.
 	for i := 1; i < len(valid); i++ {
 		if valid[i].Timestamp < valid[i-1].Timestamp {
 			return nil, nil, awserrors.NewAWSError("InvalidParameterException",
@@ -224,14 +220,14 @@ func validateLogEvents(events []logsstore.LogEntry) ([]logsstore.LogEntry, map[s
 // computed too-old and too-new indices. If no events were rejected an
 // empty map is returned.
 func buildRejectedInfo(tooOldEndIndex, tooNewStartIndex, totalEvents int) map[string]interface{} {
-	if tooOldEndIndex == 0 && tooNewStartIndex == 0 {
+	if tooOldEndIndex == 0 && tooNewStartIndex == -1 {
 		return nil
 	}
 	info := make(map[string]interface{})
 	if tooOldEndIndex > 0 {
 		info["tooOldLogEventEndIndex"] = tooOldEndIndex
 	}
-	if tooNewStartIndex > 0 {
+	if tooNewStartIndex >= 0 {
 		info["tooNewLogEventStartIndex"] = tooNewStartIndex
 	}
 	return info

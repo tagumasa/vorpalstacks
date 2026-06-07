@@ -22,8 +22,8 @@ func (s *LambdaService) PutFunctionEventInvokeConfig(ctx context.Context, reqCtx
 
 	config := &lambdastore.EventInvokeConfig{}
 
-	if maxEventAge := request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds"); maxEventAge > 0 {
-		config.MaximumEventAgeInSeconds = int32(maxEventAge)
+	if _, ok := req.Parameters["MaximumEventAgeInSeconds"]; ok {
+		config.MaximumEventAgeInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds"))
 	}
 	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
 		config.MaximumRetryAttempts = int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
@@ -132,6 +132,56 @@ func (s *LambdaService) ListFunctionEventInvokeConfigs(ctx context.Context, reqC
 	}, nil
 }
 
+// UpdateFunctionEventInvokeConfig updates the configuration for asynchronous invocation
+// of the specified Lambda function. Only fields provided in the request are modified;
+// existing values for unprovided fields are preserved. DestinationConfig is replaced
+// atomically when provided. If no config exists for the qualifier, a new one is created.
+func (s *LambdaService) UpdateFunctionEventInvokeConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	functionName := request.GetStringParam(req.Parameters, "FunctionName")
+	if functionName == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
+
+	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
+	if qualifier == "" {
+		qualifier = "$LATEST"
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Attempt to load existing config; if not found, create a blank one.
+	config, err := store.Functions.GetEventInvokeConfig(functionName, qualifier)
+	if err != nil && err != lambdastore.ErrEventInvokeConfigNotFound && err != lambdastore.ErrFunctionNotFound {
+		return nil, err
+	}
+	if config == nil {
+		config = &lambdastore.EventInvokeConfig{}
+	}
+
+	// Overwrite only the fields that were explicitly provided in the request.
+	if _, ok := req.Parameters["MaximumEventAgeInSeconds"]; ok {
+		config.MaximumEventAgeInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds"))
+	}
+	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
+		config.MaximumRetryAttempts = int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+	}
+	if destMap := request.GetMapParam(req.Parameters, "DestinationConfig"); destMap != nil {
+		config.DestinationConfig = parseDestinationConfig(destMap)
+	}
+
+	if err := store.Functions.SetEventInvokeConfig(functionName, qualifier, config); err != nil {
+		if err == lambdastore.ErrFunctionNotFound {
+			return nil, ErrResourceNotFound
+		}
+		return nil, err
+	}
+
+	return s.toEventInvokeConfig(config), nil
+}
+
 func (s *LambdaService) toEventInvokeConfig(c *lambdastore.EventInvokeConfig) map[string]interface{} {
 	result := map[string]interface{}{
 		"FunctionName": c.FunctionName,
@@ -139,7 +189,7 @@ func (s *LambdaService) toEventInvokeConfig(c *lambdastore.EventInvokeConfig) ma
 		"LastModified": float64(c.LastModified.Unix()),
 	}
 
-	if c.MaximumEventAgeInSeconds > 0 {
+	if c.MaximumEventAgeInSeconds >= 0 {
 		result["MaximumEventAgeInSeconds"] = c.MaximumEventAgeInSeconds
 	}
 	if c.MaximumRetryAttempts >= 0 {
