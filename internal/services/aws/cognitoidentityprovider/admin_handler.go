@@ -92,9 +92,8 @@ func (h *AdminHandler) CreateUserPool(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PoolName is required"))
 	}
 
-	pool := &cognitostore.UserPool{
-		Name: req.Msg.GetPoolname(),
-	}
+	region := svccommon.GetRegionFromHeader(req.Header())
+	pool := cognitostore.NewUserPool(req.Msg.GetPoolname(), region)
 
 	result, err := store.CreateUserPool(pool)
 	if err != nil {

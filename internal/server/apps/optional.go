@@ -117,6 +117,7 @@ func (a *App) initOptionalServices() error {
 func (a *App) initAthena(st *serviceState) error {
 	athenaService := svcathena.NewAthenaService(st.accountID)
 	athenaService.SetRegion(st.region)
+	athenaService.SetStorageManager(a.server.StorageManager())
 	st.athenaService = athenaService
 	if eb := a.server.EventBus(); eb != nil {
 		st.athenaService.SetS3Invoker(eb.S3Invoker())
@@ -219,6 +220,7 @@ func (a *App) initRoute53(st *serviceState) error {
 
 func (a *App) initTimestreamQuery(st *serviceState) error {
 	timestreamQueryService := svctimestreamquery.NewTimestreamQueryService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
+	timestreamQueryService.SetStorageManager(a.server.StorageManager())
 	st.timestreamQueryService = timestreamQueryService
 	timestreamQueryService.RegisterHandlers(a.server.Dispatcher())
 	return nil
@@ -228,6 +230,7 @@ func (a *App) initTimestreamQuery(st *serviceState) error {
 
 func (a *App) initTimestreamWrite(st *serviceState) error {
 	timestreamWriteService := svctimestreamwrite.NewTimestreamWriteService(st.accountID, a.cfg.ServerHost(), a.cfg.DataPath)
+	timestreamWriteService.SetStorageManager(a.server.StorageManager())
 	timestreamWriteService.RegisterHandlers(a.server.Dispatcher())
 	st.timestreamWriteService = timestreamWriteService
 	a.addShutdown("timestreamwrite", func(ctx context.Context) error {
@@ -241,6 +244,7 @@ func (a *App) initTimestreamWrite(st *serviceState) error {
 
 func (a *App) initWAFv2(st *serviceState) error {
 	st.wafv2Service = svcwafv2.NewWAFv2Service(st.accountID, st.region)
+	st.wafv2Service.SetStorageManager(a.server.StorageManager())
 	st.wafv2Service.RegisterHandlers(a.server.Dispatcher())
 	return nil
 }

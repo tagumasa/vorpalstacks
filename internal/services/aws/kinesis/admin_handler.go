@@ -43,7 +43,7 @@ func (h *AdminHandler) getKinesisStoreByRegion(region string) (*kinesisstore.Kin
 	return h.service.getStoreForRegion(region)
 }
 
-// ListStreams returns a list of Kinesis stream names via the admin console gRPC-Web interface.
+// ListStreams returns a list of Kinesis streams via the admin console gRPC-Web interface.
 func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.ListStreamsInput]) (*connect.Response[pb.ListStreamsOutput], error) {
 	region := svccommon.GetRegionFromHeader(req.Header())
 	store, err := h.getKinesisStoreByRegion(region)
@@ -64,14 +64,27 @@ func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.
 	}
 
 	streamNames := make([]string, len(result.Items))
+	summaries := make([]*pb.StreamSummary, len(result.Items))
 	for i, s := range result.Items {
 		streamNames[i] = s.StreamName
+		summaries[i] = &pb.StreamSummary{
+			Streamname:              s.StreamName,
+			Streamarn:               s.StreamARN,
+			Streamstatus:            toPbStreamStatus(s.StreamStatus),
+			Streamcreationtimestamp: s.CreatedAt.Format(timeutils.ISO8601UTCFormat),
+		}
+		if s.StreamModeDetails != nil {
+			summaries[i].Streammodedetails = &pb.StreamModeDetails{
+				Streammode: toPbStreamMode(s.StreamModeDetails.StreamMode),
+			}
+		}
 	}
 
 	return connect.NewResponse(&pb.ListStreamsOutput{
-		Streamnames:    streamNames,
-		Hasmorestreams: result.IsTruncated,
-		Nexttoken:      result.NextMarker,
+		Streamnames:     streamNames,
+		Streamsummaries: summaries,
+		Hasmorestreams:  result.IsTruncated,
+		Nexttoken:       result.NextMarker,
 	}), nil
 }
 

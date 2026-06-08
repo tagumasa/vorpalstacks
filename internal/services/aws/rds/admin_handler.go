@@ -207,6 +207,90 @@ func (h *AdminHandler) DeleteDBInstance(ctx context.Context, req *connect.Reques
 	}), nil
 }
 
+// CreateDBCluster creates a new DB cluster.
+func (h *AdminHandler) CreateDBCluster(ctx context.Context, req *connect.Request[pb.CreateDBClusterMessage]) (*connect.Response[pb.CreateDBClusterResult], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	region := svccommon.GetRegionFromHeader(req.Header())
+	id := req.Msg.Dbclusteridentifier
+	if id == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DBClusterIdentifier is required"))
+	}
+	engine := req.Msg.Engine
+	if engine == "" {
+		engine = "aurora-mysql"
+	}
+
+	now := time.Now()
+	cluster := &storerds.DBCluster{
+		DBClusterIdentifier:         id,
+		Engine:                      engine,
+		EngineVersion:               req.Msg.Engineversion,
+		Status:                      "creating",
+		MasterUsername:              req.Msg.Masterusername,
+		DatabaseName:                req.Msg.Databasename,
+		Port:                        int(req.Msg.Port),
+		BackupRetentionPeriod:       int(req.Msg.Backupretentionperiod),
+		AvailabilityZones:          req.Msg.Availabilityzones,
+		DBSubnetGroupName:           req.Msg.Dbsubnetgroupname,
+		DBClusterParameterGroupName: req.Msg.Dbclusterparametergroupname,
+		StorageEncrypted:            req.Msg.Storageencrypted,
+		CopyTagsToSnapshot:          req.Msg.Copytagstosnapshot,
+		DeletionProtection:          req.Msg.Deletionprotection,
+		EnabledCloudwatchLogsExports: req.Msg.Enablecloudwatchlogsexports,
+		IAMDatabaseAuthenticationEnabled: req.Msg.Enableiamdatabaseauthentication,
+		ClusterCreateTime:           &now,
+		AccountID:                   h.accountId,
+		Region:                      region,
+		DBClusterArn:                arnutil.NewARNBuilder(h.accountId, region).RDS().Cluster(id),
+	}
+
+	if err := store.CreateCluster(cluster); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	cluster.Status = "available"
+	if err := store.UpdateCluster(cluster); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pb.CreateDBClusterResult{
+		Dbcluster: clusterToPb(cluster, h.accountId),
+	}), nil
+}
+
+// DeleteDBCluster deletes a DB cluster.
+func (h *AdminHandler) DeleteDBCluster(ctx context.Context, req *connect.Request[pb.DeleteDBClusterMessage]) (*connect.Response[pb.DeleteDBClusterResult], error) {
+	store, err := h.getStore(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	id := req.Msg.Dbclusteridentifier
+	if id == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("DBClusterIdentifier is required"))
+	}
+
+	cluster, err := store.GetCluster(id)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	cluster.Status = "deleting"
+	_ = store.UpdateCluster(cluster)
+
+	if err := store.DeleteCluster(id); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pb.DeleteDBClusterResult{
+		Dbcluster: clusterToPb(cluster, h.accountId),
+	}), nil
+}
+
 // DescribeDBClusterSnapshots returns information about DB cluster snapshots,
 // optionally filtered by snapshot or cluster identifier.
 func (h *AdminHandler) DescribeDBClusterSnapshots(ctx context.Context, req *connect.Request[pb.DescribeDBClusterSnapshotsMessage]) (*connect.Response[pb.DBClusterSnapshotMessage], error) {

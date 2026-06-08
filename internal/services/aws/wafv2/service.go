@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 	awserrors "vorpalstacks/internal/utils/aws/errors"
@@ -34,20 +35,47 @@ type wafv2Stores struct {
 
 // WAFv2Service implements the AWS WAF v2 API operations.
 type WAFv2Service struct {
-	stores sync.Map // region → *wafv2Stores
+	accountID      string
+	region         string
+	stores         sync.Map // region → *wafv2Stores
+	storageManager *storage.RegionStorageManager
 }
 
 // NewWAFv2Service creates a new WAFv2Service instance.
 func NewWAFv2Service(accountID, region string) *WAFv2Service {
-	return &WAFv2Service{}
+	return &WAFv2Service{accountID: accountID, region: region}
 }
 
-// GetWebACLStoreForRegion returns the cached WebACLStore for the given region.
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *WAFv2Service) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
+// GetWebACLStoreForRegion returns the cached WebACLStore for the given region,
+// creating a new store group if not already cached.
 func (s *WAFv2Service) GetWebACLStoreForRegion(region string) (*wafstore.WebACLStore, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(*wafv2Stores).webACLs, nil
 	}
-	return nil, fmt.Errorf("wafv2 store not initialised for region %s", region)
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("wafv2 storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
+	}
+	stores := &wafv2Stores{
+		webACLs:          wafstore.NewWebACLStore(st, s.accountID, region),
+		ruleGroups:       wafstore.NewRuleGroupStore(st, s.accountID, region),
+		ipSets:           wafstore.NewIPSetStore(st, s.accountID, region),
+		regexPatternSets: wafstore.NewRegexPatternSetStore(st, s.accountID, region),
+		associations:     wafstore.NewWebACLAssociationStore(st),
+		loggingConfigs:   wafstore.NewLoggingStore(st),
+		tags:             storecommon.NewTagStoreWithRegion(st, "wafv2", region),
+		arnBuilder:       wafstore.NewARNBuilder(s.accountID, region),
+	}
+	actual, _ := s.stores.LoadOrStore(region, stores)
+	return actual.(*wafv2Stores).webACLs, nil
 }
 
 func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, error) {

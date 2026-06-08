@@ -10,6 +10,7 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -29,11 +30,12 @@ type tsQueryStores struct {
 
 // Service represents the Timestream Query service.
 type TimestreamQueryService struct {
-	accountID    string
-	serverHost   string
-	dataPath     string
-	preprocessor *sqlparser.Preprocessor
-	stores       sync.Map // region → *tsQueryStores
+	accountID      string
+	serverHost     string
+	dataPath       string
+	preprocessor   *sqlparser.Preprocessor
+	stores         sync.Map // region → *tsQueryStores
+	storageManager *storage.RegionStorageManager
 }
 
 // NewService creates a new Timestream Query service.
@@ -46,12 +48,49 @@ func NewTimestreamQueryService(accountID, serverHost, dataPath string) *Timestre
 	}
 }
 
-// GetScheduledQueryStoreForRegion returns the cached ScheduledQueryStore for the given region.
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *TimestreamQueryService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
+func (s *TimestreamQueryService) createStoreGroup(region string) (*tsQueryStores, error) {
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("timestream query storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
+	}
+	dbStore := tsstore.NewStore(st, s.accountID, region)
+	tableStore := tsstore.NewTableStore(st, dbStore, s.accountID, region)
+	recordStore, err := tsstore.NewRecordStoreWithIndex(st, tableStore, region, s.dataPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create record store: %w", err)
+	}
+	return &tsQueryStores{
+		recordStore:            recordStore,
+		tableStore:             tableStore,
+		dbStore:                dbStore,
+		scheduledQueryStore:    tsstore.NewScheduledQueryStore(st, s.accountID, region),
+		scheduledQueryRunStore: tsstore.NewScheduledQueryRunStore(st, region),
+		accountSettingsStore:   tsstore.NewAccountSettingsStore(st, s.accountID, region),
+		queryInfoStore:         storecommon.NewBaseStore(st.Bucket("timestream-query-info-"+region), "timestream-query"),
+		arnBuilder:             svcarn.NewARNBuilder(s.accountID, region),
+	}, nil
+}
+
+// GetScheduledQueryStoreForRegion returns the cached ScheduledQueryStore for the
+// given region, creating a new store group if not already cached.
 func (s *TimestreamQueryService) GetScheduledQueryStoreForRegion(region string) (*tsstore.ScheduledQueryStore, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(*tsQueryStores).scheduledQueryStore, nil
 	}
-	return nil, fmt.Errorf("timestream query store not initialised for region %s", region)
+	stores, err := s.createStoreGroup(region)
+	if err != nil {
+		return nil, err
+	}
+	actual, _ := s.stores.LoadOrStore(region, stores)
+	return actual.(*tsQueryStores).scheduledQueryStore, nil
 }
 
 func (s *TimestreamQueryService) store(ctx *request.RequestContext) (*tsQueryStores, error) {

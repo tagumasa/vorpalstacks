@@ -51,15 +51,28 @@ func (s *DynamoDBService) GetStoreForRegion(region string) (dynamodbstore.Dynamo
 	return s.busStoreFactory.GetStore(region)
 }
 
-// GetCachedStoreForRegion returns the cached DynamoDB store from the HTTP API
-// handler's per-region cache. Returns an error if no store has been initialised
-// for that region yet (the cache is populated lazily by store() on first HTTP
-// API request to that region).
+// GetCachedStoreForRegion returns the cached DynamoDB store for the given
+// region, creating a new store instance if not already cached. This ensures
+// the admin console handlers work without requiring a prior HTTP API request
+// to initialise the store.
 func (s *DynamoDBService) GetCachedStoreForRegion(region string) (dynamodbstore.DynamoDBStoreInterface, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(dynamodbstore.DynamoDBStoreInterface), nil
 	}
-	return nil, fmt.Errorf("dynamodb store not initialised for region %s", region)
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("dynamodb storage manager not initialised")
+	}
+	basicStorage, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
+	}
+	txnStorage, ok := basicStorage.(storage.TransactionalStorageWith2PC)
+	if !ok {
+		return nil, fmt.Errorf("storage does not implement TransactionalStorageWith2PC")
+	}
+	store := dynamodbstore.NewDynamoDBStore(txnStorage, s.accountID, region)
+	actual, _ := s.stores.LoadOrStore(region, store)
+	return actual.(dynamodbstore.DynamoDBStoreInterface), nil
 }
 
 func (s *DynamoDBService) store(reqCtx *request.RequestContext) (dynamodbstore.DynamoDBStoreInterface, error) {

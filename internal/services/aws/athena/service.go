@@ -10,6 +10,7 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/store/aws/athena"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -32,15 +33,16 @@ const cleanupInterval = 24 * time.Hour
 
 // AthenaService provides AWS Athena operations.
 type AthenaService struct {
-	accountID      string
-	s3Invoker      eventbus.S3Invoker
-	region         string
-	testMode       bool
-	asyncWg        sync.WaitGroup
-	cancelMu       sync.Mutex
-	cancelFuncs    map[string]context.CancelFunc
-	stores         sync.Map
-	regionCleanups sync.Map
+	accountID       string
+	s3Invoker       eventbus.S3Invoker
+	region          string
+	testMode        bool
+	asyncWg         sync.WaitGroup
+	cancelMu        sync.Mutex
+	cancelFuncs     map[string]context.CancelFunc
+	stores          sync.Map
+	regionCleanups  sync.Map
+	storageManager  *storage.RegionStorageManager
 }
 
 // NewAthenaService creates a new Athena service instance.
@@ -62,6 +64,11 @@ func (s *AthenaService) SetRegion(region string) {
 	s.region = region
 }
 
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *AthenaService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
 func (s *AthenaService) setCancelFunc(id string, fn context.CancelFunc) {
 	s.cancelMu.Lock()
 	s.cancelFuncs[id] = fn
@@ -76,12 +83,32 @@ func (s *AthenaService) getAndRemoveCancelFunc(id string) (context.CancelFunc, b
 	return fn, ok
 }
 
-// GetWorkGroupStoreForRegion returns the cached WorkGroupStore for the given region.
+// GetWorkGroupStoreForRegion returns the cached WorkGroupStore for the given
+// region, creating a new store group if not already cached.
 func (s *AthenaService) GetWorkGroupStoreForRegion(region string) (*athena.WorkGroupStore, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(*athenaStores).workGroupStore, nil
 	}
-	return nil, fmt.Errorf("athena store not initialised for region %s", region)
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("athena storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
+	}
+	stores := &athenaStores{
+		workGroupStore:         athena.NewWorkGroupStore(st, s.accountID, region),
+		namedQueryStore:        athena.NewNamedQueryStore(st, region),
+		preparedStatementStore: athena.NewPreparedStatementStore(st, region),
+		queryExecutionStore:    athena.NewQueryExecutionStore(st, region),
+		resultStore:            athena.NewResultStore(st, region),
+		dataCatalogStore:       athena.NewDataCatalogStore(st, region),
+		databaseStore:          athena.NewDatabaseStore(st, region),
+		tableStore:             athena.NewTableStore(st, region),
+		tableDataStore:         athena.NewTableDataStore(st, region),
+	}
+	actual, _ := s.stores.LoadOrStore(region, stores)
+	return actual.(*athenaStores).workGroupStore, nil
 }
 
 func (s *AthenaService) store(reqCtx *request.RequestContext) (*athenaStores, error) {

@@ -11,6 +11,7 @@ import (
 
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
@@ -25,11 +26,12 @@ type tsWriteStores struct {
 
 // Service provides AWS Timestream Write operations.
 type TimestreamWriteService struct {
-	accountID  string
-	serverHost string
-	dataPath   string
-	stores     sync.Map // region → *tsWriteStores
-	batchWg    sync.WaitGroup
+	accountID      string
+	serverHost     string
+	dataPath       string
+	stores         sync.Map // region → *tsWriteStores
+	batchWg        sync.WaitGroup
+	storageManager *storage.RegionStorageManager
 }
 
 // NewService creates a new Timestream Write service instance.
@@ -41,20 +43,59 @@ func NewTimestreamWriteService(accountID, serverHost, dataPath string) *Timestre
 	}
 }
 
-// GetDatabaseStoreForRegion returns the cached Store (database-level) for the given region.
+// SetStorageManager injects the region storage manager for lazy store creation.
+func (s *TimestreamWriteService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
+}
+
+func (s *TimestreamWriteService) createStoreGroup(region string) (*tsWriteStores, error) {
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("timestream write storage manager not initialised")
+	}
+	st, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
+	}
+	tsStore := tsstore.NewStore(st, s.accountID, region)
+	tableStore := tsstore.NewTableStore(st, tsStore, s.accountID, region)
+	recordStore, err := tsstore.NewRecordStoreWithIndex(st, tableStore, region, s.dataPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create record store: %w", err)
+	}
+	return &tsWriteStores{
+		store:          tsStore,
+		tableStore:     tableStore,
+		recordStore:    recordStore,
+		batchLoadStore: tsstore.NewBatchLoadTaskStore(st, tableStore, region),
+	}, nil
+}
+
+// GetDatabaseStoreForRegion returns the cached Store (database-level) for the given region,
+// creating a new store group if not already cached.
 func (s *TimestreamWriteService) GetDatabaseStoreForRegion(region string) (*tsstore.Store, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(*tsWriteStores).store, nil
 	}
-	return nil, fmt.Errorf("timestream write store not initialised for region %s", region)
+	stores, err := s.createStoreGroup(region)
+	if err != nil {
+		return nil, err
+	}
+	actual, _ := s.stores.LoadOrStore(region, stores)
+	return actual.(*tsWriteStores).store, nil
 }
 
-// GetTableStoreForRegion returns the cached TableStore for the given region.
+// GetTableStoreForRegion returns the cached TableStore for the given region,
+// creating a new store group if not already cached.
 func (s *TimestreamWriteService) GetTableStoreForRegion(region string) (*tsstore.TableStore, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(*tsWriteStores).tableStore, nil
 	}
-	return nil, fmt.Errorf("timestream write store not initialised for region %s", region)
+	stores, err := s.createStoreGroup(region)
+	if err != nil {
+		return nil, err
+	}
+	actual, _ := s.stores.LoadOrStore(region, stores)
+	return actual.(*tsWriteStores).tableStore, nil
 }
 
 func (s *TimestreamWriteService) store(ctx *request.RequestContext) (*tsWriteStores, error) {
