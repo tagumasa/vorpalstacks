@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { APIGatewayService, type RestApi, EndpointType } from "@/gen/apigateway_pb";
 import { CreateRestApiRequestSchema, EndpointConfigurationSchema } from "@/gen/apigateway_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, DateCell, FallbackCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -27,7 +27,7 @@ type DetailTab = "detail" | "json";
 
 export function APIGatewayPage() {
   const { t, i18n } = useTranslation();
-  const { client, invalidate } = useServiceClient(APIGatewayService);
+  const { client } = useServiceClient(APIGatewayService);
   const { queryKey } = useListKey("apigateway");
   const columns = getColumns(t);
 
@@ -41,22 +41,28 @@ export function APIGatewayPage() {
   const [formDesc, setFormDesc] = useState("");
   const [formEndpointType, setFormEndpointType] = useState<EndpointType>(EndpointType.REGIONAL);
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.getRestApis({}), refetchInterval: REFETCH_INTERVAL });
-  const items: RestApi[] = dropEmpty(data?.items ?? [], "id");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<RestApi, Awaited<ReturnType<typeof client.getRestApis>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.getRestApis({ position: token || undefined, limit: 1000 }),
+    getItems: (r) => r.items ?? [],
+    getNextToken: (r) => r.position ?? "",
+  });
+  const items = dropEmpty(rawItems, "id");
+  
 
   const createMutation = useMutation({
     mutationFn: () => client.createRestApi(create(CreateRestApiRequestSchema, { name: formName, description: formDesc, endpointconfiguration: create(EndpointConfigurationSchema, { types: [formEndpointType] }) })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormDesc(""); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormDesc(""); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => client.deleteRestApi({ restapiid: id }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => Promise.allSettled(ids.map((id) => client.deleteRestApi({ restapiid: id }))),
-    onSuccess: (_d, ids) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && ids.includes(p.id) ? null : p)); },
+    onSuccess: (_d, ids) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && ids.includes(p.id) ? null : p)); },
   });
 
   const handleRowClick = (row: RestApi) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -86,7 +92,7 @@ export function APIGatewayPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.apigateway.title") }, { label: t("services.apigateway.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-apigw">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<RestApi>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<RestApi>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

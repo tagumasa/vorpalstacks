@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { CloudTrailService, type TrailInfo } from "@/gen/cloudtrail_pb";
 import { CreateTrailRequestSchema } from "@/gen/cloudtrail_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -26,7 +26,7 @@ type DetailTab = "detail" | "json";
 
 export function CloudTrailPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(CloudTrailService);
+  const { client } = useServiceClient(CloudTrailService);
   const { queryKey } = useListKey("cloudtrail");
   const columns = getColumns(t);
 
@@ -41,22 +41,28 @@ export function CloudTrailPage() {
   const [formMultiRegion, setFormMultiRegion] = useState(true);
   const [formGlobalEvents, setFormGlobalEvents] = useState(true);
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listTrails({}), refetchInterval: REFETCH_INTERVAL });
-  const items: TrailInfo[] = dropEmpty(data?.trails ?? [], "name");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<TrailInfo, Awaited<ReturnType<typeof client.listTrails>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listTrails({ nexttoken: token || undefined }),
+    getItems: (r) => r.trails ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const items = dropEmpty(rawItems, "name");
+  
 
   const createMutation = useMutation({
     mutationFn: () => client.createTrail(create(CreateTrailRequestSchema, { name: formName, s3bucketname: formS3Bucket, ismultiregiontrail: formMultiRegion, includeglobalserviceevents: formGlobalEvents })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormS3Bucket(""); setFormMultiRegion(true); setFormGlobalEvents(true); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormS3Bucket(""); setFormMultiRegion(true); setFormGlobalEvents(true); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (name: string) => client.deleteTrail({ name }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (names: string[]) => Promise.allSettled(names.map((n) => client.deleteTrail({ name: n }))),
-    onSuccess: (_d, names) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.name) ? null : p)); },
+    onSuccess: (_d, names) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.name) ? null : p)); },
   });
 
   const handleRowClick = (row: TrailInfo) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -85,7 +91,7 @@ export function CloudTrailPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.cloudtrail.title") }, { label: t("services.cloudtrail.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedNames.size} label={t("common.selectedCount", { count: selectedNames.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-cloudtrail">
-          <div className="flex-fill-scroll"><DataTable exportName="cloudtrail" columns={[checkboxColumn<TrailInfo>(selectedNames, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.name), ...columns]} data={items} getRowId={(row) => row.name} onRowClick={handleRowClick} selectedId={selectedItem?.name} /></div>
+          <div className="flex-fill-scroll"><DataTable exportName="cloudtrail" columns={[checkboxColumn<TrailInfo>(selectedNames, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.name), ...columns]} data={items} getRowId={(row) => row.name} onRowClick={handleRowClick} selectedId={selectedItem?.name} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

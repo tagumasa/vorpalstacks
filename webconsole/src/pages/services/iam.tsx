@@ -4,11 +4,11 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { IAMService, type User, type Role, type Policy, CreateUserRequestSchema, CreateRoleRequestSchema } from "@/gen/iam_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, FallbackCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -67,44 +67,51 @@ export function IAMPage() {
   const [formRolePath, setFormRolePath] = useState("");
   const [formAssumePolicy, setFormAssumePolicy] = useState(JSON.stringify({ Version: "2012-10-17", Statement: [{ Effect: "Allow", Principal: { Service: "lambda.amazonaws.com" }, Action: "sts:AssumeRole" }] }, null, 2));
 
-  const { client, invalidate } = useServiceClient(IAMService);
+  const { client } = useServiceClient(IAMService);
   const { queryKey: usersKey } = useListKey("iam-users");
   const { queryKey: rolesKey } = useListKey("iam-roles");
   const { queryKey: policiesKey } = useListKey("iam-policies");
 
-  const usersQ = useQuery({ queryKey: usersKey, queryFn: async () => { const r = await client.listUsers({}); return dropEmpty(r.users ?? [], "username"); }, refetchInterval: REFETCH_INTERVAL });
-  const rolesQ = useQuery({ queryKey: rolesKey, queryFn: async () => { const r = await client.listRoles({}); return dropEmpty(r.roles ?? [], "rolename"); }, refetchInterval: REFETCH_INTERVAL });
-  const policiesQ = useQuery({ queryKey: policiesKey, queryFn: async () => { const r = await client.listPolicies({}); return dropEmpty(r.policies ?? [], "policyname"); }, refetchInterval: REFETCH_INTERVAL });
+  const usersList = usePaginatedList<User, Awaited<ReturnType<typeof client.listUsers>>>({
+    queryKeyBase: usersKey, fetchPage: (token) => client.listUsers({ marker: token || undefined }), getItems: (r) => r.users ?? [], getNextToken: (r) => r.marker ?? "",
+  });
+  const rolesList = usePaginatedList<Role, Awaited<ReturnType<typeof client.listRoles>>>({
+    queryKeyBase: rolesKey, fetchPage: (token) => client.listRoles({ marker: token || undefined }), getItems: (r) => r.roles ?? [], getNextToken: (r) => r.marker ?? "",
+  });
+  const policiesList = usePaginatedList<Policy, Awaited<ReturnType<typeof client.listPolicies>>>({
+    queryKeyBase: policiesKey, fetchPage: (token) => client.listPolicies({ marker: token || undefined }), getItems: (r) => r.policies ?? [], getNextToken: (r) => r.marker ?? "",
+  });
 
-  const query = tab === "users" ? usersQ : tab === "roles" ? rolesQ : policiesQ;
-  const users = usersQ.data ?? [];
-  const roles = rolesQ.data ?? [];
-  const policies = policiesQ.data ?? [];
+  const users = dropEmpty(usersList.items, "username");
+  const roles = dropEmpty(rolesList.items, "rolename");
+  const policies = dropEmpty(policiesList.items, "policyname");
+
+  const query = tab === "users" ? usersList : tab === "roles" ? rolesList : policiesList;
 
   const createUserMutation = useMutation({
     mutationFn: () => client.createUser(create(CreateUserRequestSchema, { username: formUserName, path: formUserPath || undefined })),
-    onSuccess: () => { invalidate(usersKey); setShowCreateUser(false); setFormUserName(""); setFormUserPath(""); },
+    onSuccess: () => { usersList.invalidate(); setShowCreateUser(false); setFormUserName(""); setFormUserPath(""); },
   });
   const deleteUserMutation = useMutation({
     mutationFn: (name: string) => client.deleteUser({ username: name }),
-    onSuccess: () => { invalidate(usersKey); setShowDeleteUser(false); setSelectedUser(null); userSel.clear(); },
+    onSuccess: () => { usersList.invalidate(); setShowDeleteUser(false); setSelectedUser(null); userSel.clear(); },
   });
   const batchDeleteUserMutation = useMutation({
     mutationFn: async (names: string[]) => Promise.allSettled(names.map((n) => client.deleteUser({ username: n }))),
-    onSuccess: (_d, names) => { invalidate(usersKey); setShowBatchDeleteUser(false); userSel.clear(); setSelectedUser((p) => (p && names.includes(p.username) ? null : p)); },
+    onSuccess: (_d, names) => { usersList.invalidate(); setShowBatchDeleteUser(false); userSel.clear(); setSelectedUser((p) => (p && names.includes(p.username) ? null : p)); },
   });
 
   const createRoleMutation = useMutation({
     mutationFn: () => client.createRole(create(CreateRoleRequestSchema, { rolename: formRoleName, path: formRolePath || undefined, assumerolepolicydocument: formAssumePolicy })),
-    onSuccess: () => { invalidate(rolesKey); setShowCreateRole(false); setFormRoleName(""); setFormRolePath(""); },
+    onSuccess: () => { rolesList.invalidate(); setShowCreateRole(false); setFormRoleName(""); setFormRolePath(""); },
   });
   const deleteRoleMutation = useMutation({
     mutationFn: (name: string) => client.deleteRole({ rolename: name }),
-    onSuccess: () => { invalidate(rolesKey); setShowDeleteRole(false); setSelectedRole(null); roleSel.clear(); },
+    onSuccess: () => { rolesList.invalidate(); setShowDeleteRole(false); setSelectedRole(null); roleSel.clear(); },
   });
   const batchDeleteRoleMutation = useMutation({
     mutationFn: async (names: string[]) => Promise.allSettled(names.map((n) => client.deleteRole({ rolename: n }))),
-    onSuccess: (_d, names) => { invalidate(rolesKey); setShowBatchDeleteRole(false); roleSel.clear(); setSelectedRole((p) => (p && names.includes(p.rolename) ? null : p)); },
+    onSuccess: (_d, names) => { rolesList.invalidate(); setShowBatchDeleteRole(false); roleSel.clear(); setSelectedRole((p) => (p && names.includes(p.rolename) ? null : p)); },
   });
 
   const tabs = [
@@ -178,21 +185,21 @@ export function IAMPage() {
     }>
       {tab === "users" && (users.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-iam-users">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<User>(userSel.selected, userSel.toggle, () => userSel.toggleAll(users.map((u) => u.username)), users.map((u) => u.username), t, (row) => row.username), ...userColumns]} data={users} getRowId={(row) => row.username} onRowClick={(row) => { setSelectedUser(row); setDetailTab("detail"); }} selectedId={selectedUser?.username} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<User>(userSel.selected, userSel.toggle, () => userSel.toggleAll(users.map((u) => u.username)), users.map((u) => u.username), t, (row) => row.username), ...userColumns]} data={users} getRowId={(row) => row.username} onRowClick={(row) => { setSelectedUser(row); setDetailTab("detail"); }} selectedId={selectedUser?.username} hasMore={usersList.hasMore} onLoadMore={usersList.loadMore} loadingMore={usersList.isFetchingMore} /></div>
           {renderUserDetail()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>)}
 
       {tab === "roles" && (roles.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-iam-roles">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<Role>(roleSel.selected, roleSel.toggle, () => roleSel.toggleAll(roles.map((r) => r.rolename)), roles.map((r) => r.rolename), t, (row) => row.rolename), ...roleColumns]} data={roles} getRowId={(row) => row.rolename} onRowClick={(row) => { setSelectedRole(row); setDetailTab("detail"); }} selectedId={selectedRole?.rolename} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<Role>(roleSel.selected, roleSel.toggle, () => roleSel.toggleAll(roles.map((r) => r.rolename)), roles.map((r) => r.rolename), t, (row) => row.rolename), ...roleColumns]} data={roles} getRowId={(row) => row.rolename} onRowClick={(row) => { setSelectedRole(row); setDetailTab("detail"); }} selectedId={selectedRole?.rolename} hasMore={rolesList.hasMore} onLoadMore={rolesList.loadMore} loadingMore={rolesList.isFetchingMore} /></div>
           {renderRoleDetail()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>)}
 
       {tab === "policies" && (policies.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-iam-policies">
-          <div className="flex-fill-scroll"><DataTable columns={policyColumns} data={policies} getRowId={(row) => row.policyname} onRowClick={(row) => { setSelectedPolicy(row); setDetailTab("detail"); }} selectedId={selectedPolicy?.policyname} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={policyColumns} data={policies} getRowId={(row) => row.policyname} onRowClick={(row) => { setSelectedPolicy(row); setDetailTab("detail"); }} selectedId={selectedPolicy?.policyname} hasMore={policiesList.hasMore} onLoadMore={policiesList.loadMore} loadingMore={policiesList.isFetchingMore} /></div>
           {renderPolicyDetail()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>)}

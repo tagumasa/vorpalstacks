@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { SecretsManagerService, type SecretListEntry } from "@/gen/secretsmanager_pb";
 import { CreateSecretRequestSchema } from "@/gen/secretsmanager_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, FallbackCell, BooleanCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -29,7 +29,7 @@ type DetailTab = "detail" | "json";
 
 export function SecretsManagerPage() {
   const { t, i18n } = useTranslation();
-  const { client, invalidate } = useServiceClient(SecretsManagerService);
+  const { client } = useServiceClient(SecretsManagerService);
   const { queryKey } = useListKey("secretsmanager");
   const columns = getColumns(t);
 
@@ -44,8 +44,14 @@ export function SecretsManagerPage() {
   const [formSecretValue, setFormSecretValue] = useState("");
   const [formKmsKeyId, setFormKmsKeyId] = useState("");
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listSecrets({}), refetchInterval: REFETCH_INTERVAL });
-  const items: SecretListEntry[] = dropEmpty(data?.secretlist ?? [], "name");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<SecretListEntry, Awaited<ReturnType<typeof client.listSecrets>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listSecrets({ nexttoken: token || undefined }),
+    getItems: (r) => r.secretlist ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const items = dropEmpty(rawItems, "name");
+  
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -55,17 +61,17 @@ export function SecretsManagerPage() {
         secretstring: formSecretValue,
         kmskeyid: formKmsKeyId || undefined,
       })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormDesc(""); setFormSecretValue(""); setFormKmsKeyId(""); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormDesc(""); setFormSecretValue(""); setFormKmsKeyId(""); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (secretName: string) => client.deleteSecret({ secretid: secretName, forcedeletewithoutrecovery: true }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (names: string[]) => Promise.allSettled(names.map((n) => client.deleteSecret({ secretid: n, forcedeletewithoutrecovery: true }))),
-    onSuccess: (_d, names) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.name) ? null : p)); },
+    onSuccess: (_d, names) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.name) ? null : p)); },
   });
 
   const handleRowClick = (row: SecretListEntry) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -96,7 +102,7 @@ export function SecretsManagerPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.secretsmanager.title") }, { label: t("services.secretsmanager.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedNames.size} label={t("common.selectedCount", { count: selectedNames.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-secretsmanager">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<SecretListEntry>(selectedNames, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.name), ...columns]} data={items} getRowId={(row) => row.name} onRowClick={handleRowClick} selectedId={selectedItem?.name} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<SecretListEntry>(selectedNames, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.name), ...columns]} data={items} getRowId={(row) => row.name} onRowClick={handleRowClick} selectedId={selectedItem?.name} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

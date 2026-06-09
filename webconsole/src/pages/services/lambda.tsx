@@ -4,11 +4,11 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { LambdaService, Runtime, CreateFunctionRequestSchema, FunctionCodeSchema, type FunctionConfiguration } from "@/gen/lambda_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, BadgeCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -59,7 +59,7 @@ type DetailTab = "detail" | "json";
 
 export function LambdaPage() {
   const { t, i18n } = useTranslation();
-  const { client, invalidate } = useServiceClient(LambdaService);
+  const { client } = useServiceClient(LambdaService);
   const { queryKey } = useListKey("lambda");
   const columns = getColumns(t);
 
@@ -80,8 +80,14 @@ export function LambdaPage() {
   const [formS3Bucket, setFormS3Bucket] = useState("");
   const [formS3Key, setFormS3Key] = useState("");
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listFunctions({}), refetchInterval: REFETCH_INTERVAL });
-  const items: FunctionConfiguration[] = dropEmpty(data?.functions ?? [], "functionname");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<FunctionConfiguration, Awaited<ReturnType<typeof client.listFunctions>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listFunctions({ marker: token || undefined }),
+    getItems: (r) => r.functions ?? [],
+    getNextToken: (r) => r.nextmarker ?? "",
+  });
+  const items = dropEmpty(rawItems, "functionname");
+  
 
   const createMutation = useMutation({
     mutationFn: () => {
@@ -94,17 +100,17 @@ export function LambdaPage() {
         environment: Object.keys(envVars).length > 0 ? { variables: envVars } : undefined,
       }));
     },
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormHandler("index.handler"); setFormRole(""); setFormMemory(128); setFormTimeout(3); setFormDescription(""); setFormEnvVars(""); setFormS3Bucket(""); setFormS3Key(""); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormHandler("index.handler"); setFormRole(""); setFormMemory(128); setFormTimeout(3); setFormDescription(""); setFormEnvVars(""); setFormS3Bucket(""); setFormS3Key(""); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (name: string) => client.deleteFunction({ functionname: name }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (names: string[]) => Promise.allSettled(names.map((n) => client.deleteFunction({ functionname: n }))),
-    onSuccess: (_d, names) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.functionname) ? null : p)); },
+    onSuccess: (_d, names) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.functionname) ? null : p)); },
   });
 
   const handleRowClick = (row: FunctionConfiguration) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -141,7 +147,7 @@ export function LambdaPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.lambda.title") }, { label: t("services.lambda.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-lambda">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<FunctionConfiguration>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.functionname), ...columns]} data={items} getRowId={(row) => row.functionname} onRowClick={handleRowClick} selectedId={selectedItem?.functionname} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<FunctionConfiguration>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.functionname), ...columns]} data={items} getRowId={(row) => row.functionname} onRowClick={handleRowClick} selectedId={selectedItem?.functionname} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

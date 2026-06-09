@@ -31,7 +31,8 @@
     "tabDetail": "詳細",
     "export": "エクスポート",
     "exportJson": "JSONでエクスポート",
-    "exportCsv": "CSVでエクスポート"
+    "exportCsv": "CSVでエクスポート",
+    "loadMore": "もっと読み込む"
   },
   "header": {
     "online": "オンライン :8080",
@@ -130,7 +131,6 @@
       "previewNotAvailable": "このファイル形式はプレビューできません",
       "previewTooLarge": "ファイルが大きすぎてプレビューできません",
       "emptyBucket": "バケットは空です",
-      "loadMore": "もっと読み込む...",
       "backToBuckets": "バケット一覧",
       "selectedCount": "{{count}}件選択中",
       "selectAll": "全て選択",
@@ -206,7 +206,6 @@
       "deleteSelected": "選択削除",
       "failed": "失敗",
       "jsonInput": "JSON",
-      "loadMore": "もっと読み込む",
       "noItemSelected": "アイテムを選択して詳細を表示",
       "scalarTypeB": "バイナリ (B)",
       "scalarTypeN": "数値 (N)",
@@ -1006,6 +1005,7 @@
       "tls": "TLS設定",
       "dynamicRange": "動的ポート範囲",
       "listenerPorts": "リスナーポート",
+      "endpoints": "エンドポイント",
       "bindMode": "バインドモード",
       "session": "セッション"
     },

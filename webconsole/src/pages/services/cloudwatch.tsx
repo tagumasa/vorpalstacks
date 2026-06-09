@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { CloudWatchService, type MetricAlarm, StateValue, ComparisonOperator, Statistic } from "@/gen/cloudwatch_pb";
 import { PutMetricAlarmInputSchema } from "@/gen/cloudwatch_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, FallbackCell, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -52,7 +52,7 @@ type DetailTab = "detail" | "json";
 
 export function CloudWatchPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(CloudWatchService);
+  const { client } = useServiceClient(CloudWatchService);
   const { queryKey } = useListKey("cloudwatch");
   const columns = getColumns(t);
 
@@ -72,22 +72,28 @@ export function CloudWatchPage() {
   const [formComp, setFormComp] = useState(ComparisonOperator.GREATERTHANTHRESHOLD);
   const [formDesc, setFormDesc] = useState("");
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.describeAlarms({}), refetchInterval: REFETCH_INTERVAL });
-  const items: MetricAlarm[] = dropEmpty(data?.metricalarms ?? [], "alarmname");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<MetricAlarm, Awaited<ReturnType<typeof client.describeAlarms>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.describeAlarms({ nexttoken: token || undefined }),
+    getItems: (r) => r.metricalarms ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const items = dropEmpty(rawItems, "alarmname");
+  
 
   const createMutation = useMutation({
     mutationFn: () => client.putMetricAlarm(create(PutMetricAlarmInputSchema, { alarmname: formName, metricname: formMetric, namespace: formNamespace, statistic: formStat, period: formPeriod, evaluationperiods: formEvalPeriods, threshold: formThreshold, comparisonoperator: formComp, alarmdescription: formDesc })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormMetric(""); setFormNamespace(""); setFormDesc(""); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormMetric(""); setFormNamespace(""); setFormDesc(""); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (name: string) => client.deleteAlarms({ alarmnames: [name] }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (names: string[]) => Promise.allSettled(names.map((n) => client.deleteAlarms({ alarmnames: [n] }))),
-    onSuccess: (_d, names) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.alarmname) ? null : p)); },
+    onSuccess: (_d, names) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.alarmname) ? null : p)); },
   });
 
   const handleRowClick = (row: MetricAlarm) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -126,7 +132,7 @@ export function CloudWatchPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.cloudwatch.title") }, { label: t("services.cloudwatch.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-cw">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<MetricAlarm>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.alarmname), ...columns]} data={items} getRowId={(row) => row.alarmname} onRowClick={handleRowClick} selectedId={selectedItem?.alarmname} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<MetricAlarm>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.alarmname), ...columns]} data={items} getRowId={(row) => row.alarmname} onRowClick={handleRowClick} selectedId={selectedItem?.alarmname} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { CloudFrontService, type DistributionSummary, ViewerProtocolPolicy } from "@/gen/cloudfront_pb";
 import { CreateDistributionRequestSchema, DistributionConfigSchema, OriginsSchema, OriginSchema, DefaultCacheBehaviorSchema } from "@/gen/cloudfront_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, FallbackCell, BooleanCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -29,7 +29,7 @@ type DetailTab = "detail" | "json";
 
 export function CloudFrontPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(CloudFrontService);
+  const { client } = useServiceClient(CloudFrontService);
   const { queryKey } = useListKey("cloudfront");
   const columns = getColumns(t);
 
@@ -44,8 +44,13 @@ export function CloudFrontPage() {
   const [formComment, setFormComment] = useState("");
   const [formEnabled, setFormEnabled] = useState(true);
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listDistributions({}), refetchInterval: REFETCH_INTERVAL });
-  const items: DistributionSummary[] = dropEmpty(data?.distributionlist?.items ?? [], "id");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<DistributionSummary, Awaited<ReturnType<typeof client.listDistributions>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listDistributions({ marker: token || undefined }),
+    getItems: (r) => r.distributionlist?.items ?? [],
+    getNextToken: (r) => r.distributionlist?.nextmarker ?? "",
+  });
+  const items = dropEmpty(rawItems, "id");
 
   const createMutation = useMutation({
     mutationFn: () => client.createDistribution(create(CreateDistributionRequestSchema, {
@@ -55,17 +60,17 @@ export function CloudFrontPage() {
         defaultcachebehavior: create(DefaultCacheBehaviorSchema, { targetoriginid: formOriginId || "1", viewerprotocolpolicy: ViewerProtocolPolicy.ALLOW_ALL }),
       }),
     })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormOriginDomain(""); setFormOriginId(""); setFormComment(""); setFormEnabled(true); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormOriginDomain(""); setFormOriginId(""); setFormComment(""); setFormEnabled(true); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (dist: DistributionSummary) => client.deleteDistribution({ id: dist.id, ifmatch: dist.etag }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (dists: DistributionSummary[]) => Promise.allSettled(dists.map((d) => client.deleteDistribution({ id: d.id, ifmatch: d.etag }))),
-    onSuccess: (_d, dists) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); const deletedIds = new Set(dists.map((d) => d.id)); setSelectedItem((p) => (p && deletedIds.has(p.id) ? null : p)); },
+    onSuccess: (_d, dists) => { invalidateList(); setShowBatchDelete(false); clearSelection(); const deletedIds = new Set(dists.map((d) => d.id)); setSelectedItem((p) => (p && deletedIds.has(p.id) ? null : p)); },
   });
 
   const handleRowClick = (row: DistributionSummary) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -105,7 +110,7 @@ export function CloudFrontPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.cloudfront.title") }, { label: t("services.cloudfront.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-cf">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<DistributionSummary>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<DistributionSummary>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

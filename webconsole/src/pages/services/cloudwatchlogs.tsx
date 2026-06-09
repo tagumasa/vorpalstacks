@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { CloudWatchLogsService, type LogGroupSummary } from "@/gen/cloudwatchlogs_pb";
 import { CreateLogGroupRequestSchema, PutRetentionPolicyRequestSchema } from "@/gen/cloudwatchlogs_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -26,7 +26,7 @@ type DetailTab = "detail" | "json";
 
 export function CloudWatchLogsPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(CloudWatchLogsService);
+  const { client } = useServiceClient(CloudWatchLogsService);
   const { queryKey } = useListKey("cloudwatchlogs");
   const columns = getColumns(t);
 
@@ -40,8 +40,13 @@ export function CloudWatchLogsPage() {
   const [formKmsKeyId, setFormKmsKeyId] = useState("");
   const [formRetentionDays, setFormRetentionDays] = useState("");
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listLogGroups({}), refetchInterval: REFETCH_INTERVAL });
-  const items: LogGroupSummary[] = dropEmpty(data?.loggroups ?? [], "loggroupname");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<LogGroupSummary, Awaited<ReturnType<typeof client.listLogGroups>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listLogGroups({ nexttoken: token || undefined, limit: 1000 }),
+    getItems: (r) => r.loggroups ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const items = dropEmpty(rawItems, "loggroupname");
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -53,17 +58,17 @@ export function CloudWatchLogsPage() {
         await client.putRetentionPolicy(create(PutRetentionPolicyRequestSchema, { loggroupname: formName, retentionindays: Number(formRetentionDays) }));
       }
     },
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormKmsKeyId(""); setFormRetentionDays(""); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormKmsKeyId(""); setFormRetentionDays(""); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (name: string) => client.deleteLogGroup({ loggroupname: name }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (names: string[]) => Promise.allSettled(names.map((name) => client.deleteLogGroup({ loggroupname: name }))),
-    onSuccess: (_d, names) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.loggroupname) ? null : p)); },
+    onSuccess: (_d, names) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.loggroupname) ? null : p)); },
   });
 
   const handleRowClick = (row: LogGroupSummary) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -92,7 +97,7 @@ export function CloudWatchLogsPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.cloudwatchlogs.title") }, { label: t("services.cloudwatchlogs.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-cwlogs">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<LogGroupSummary>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.loggroupname), ...columns]} data={items} getRowId={(row) => row.loggroupname} onRowClick={handleRowClick} selectedId={selectedItem?.loggroupname} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<LogGroupSummary>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.loggroupname), ...columns]} data={items} getRowId={(row) => row.loggroupname} onRowClick={handleRowClick} selectedId={selectedItem?.loggroupname} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

@@ -31,7 +31,8 @@
     "tabDetail": "详情",
     "export": "导出",
     "exportJson": "导出 JSON",
-    "exportCsv": "导出 CSV"
+    "exportCsv": "导出 CSV",
+    "loadMore": "加载更多"
   },
   "header": {
     "online": "在线 :8080",
@@ -130,7 +131,6 @@
       "previewNotAvailable": "此文件类型不支持预览",
       "previewTooLarge": "文件过大无法预览",
       "emptyBucket": "此存储桶为空",
-      "loadMore": "加载更多...",
       "backToBuckets": "存储桶列表",
       "selectedCount": "已选 {{count}} 项",
       "selectAll": "全选",
@@ -206,7 +206,6 @@
       "deleteSelected": "删除所选",
       "failed": "失败",
       "jsonInput": "JSON",
-      "loadMore": "加载更多",
       "noItemSelected": "选择项目以查看详情",
       "scalarTypeB": "二进制 (B)",
       "scalarTypeN": "数字 (N)",
@@ -1006,6 +1005,7 @@
       "tls": "TLS配置",
       "dynamicRange": "动态端口范围",
       "listenerPorts": "监听端口",
+      "endpoints": "端点",
       "bindMode": "绑定模式",
       "session": "会话"
     },

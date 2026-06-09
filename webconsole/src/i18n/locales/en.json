@@ -31,7 +31,8 @@
     "tabDetail": "Detail",
     "export": "Export",
     "exportJson": "Export JSON",
-    "exportCsv": "Export CSV"
+    "exportCsv": "Export CSV",
+    "loadMore": "Load more"
   },
   "header": {
     "online": "ONLINE :8080",
@@ -130,7 +131,6 @@
       "previewNotAvailable": "Preview not available for this file type",
       "previewTooLarge": "File too large for preview",
       "emptyBucket": "This bucket is empty",
-      "loadMore": "Load more...",
       "backToBuckets": "Buckets",
       "selectedCount": "{{count}} selected",
       "selectAll": "Select all",
@@ -206,7 +206,6 @@
       "deleteSelected": "Delete Selected",
       "failed": "failed",
       "jsonInput": "JSON",
-      "loadMore": "Load more",
       "noItemSelected": "Select an item to view details",
       "scalarTypeB": "Binary (B)",
       "scalarTypeN": "Number (N)",
@@ -1006,6 +1005,7 @@
       "tls": "TLS Configuration",
       "dynamicRange": "Dynamic Port Range",
       "listenerPorts": "Listener Ports",
+      "endpoints": "Endpoints",
       "bindMode": "Bind Mode",
       "session": "Session"
     },

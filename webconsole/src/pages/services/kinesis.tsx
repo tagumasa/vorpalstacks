@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { KinesisService, type StreamSummary, StreamMode } from "@/gen/kinesis_pb";
 import { CreateStreamInputSchema, StreamModeDetailsSchema } from "@/gen/kinesis_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -27,7 +27,7 @@ type DetailTab = "detail" | "json";
 
 export function KinesisPage() {
   const { t, i18n } = useTranslation();
-  const { client, invalidate } = useServiceClient(KinesisService);
+  const { client } = useServiceClient(KinesisService);
   const { queryKey } = useListKey("kinesis");
   const columns = getColumns(t);
 
@@ -41,22 +41,27 @@ export function KinesisPage() {
   const [formShardCount, setFormShardCount] = useState("1");
   const [formStreamMode, setFormStreamMode] = useState(StreamMode.PROVISIONED);
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listStreams({}), refetchInterval: REFETCH_INTERVAL });
-  const items: StreamSummary[] = dropEmpty(data?.streamsummaries ?? [], "streamname");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<StreamSummary, Awaited<ReturnType<typeof client.listStreams>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listStreams({ exclusivestartstreamname: token || undefined, limit: 1000 }),
+    getItems: (r) => r.streamsummaries ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const items = dropEmpty(rawItems, "streamname");
 
   const createMutation = useMutation({
     mutationFn: () => client.createStream(create(CreateStreamInputSchema, { streamname: formName, shardcount: parseInt(formShardCount, 10) || 1, streammodedetails: create(StreamModeDetailsSchema, { streammode: formStreamMode }) })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormShardCount("1"); setFormStreamMode(StreamMode.PROVISIONED); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormShardCount("1"); setFormStreamMode(StreamMode.PROVISIONED); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (name: string) => client.deleteStream({ streamname: name }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (names: string[]) => Promise.allSettled(names.map((name) => client.deleteStream({ streamname: name }))),
-    onSuccess: (_d, names) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.streamname) ? null : p)); },
+    onSuccess: (_d, names) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.streamname) ? null : p)); },
   });
 
   const handleRowClick = (row: StreamSummary) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -86,7 +91,7 @@ export function KinesisPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.kinesis.title") }, { label: t("services.kinesis.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-kinesis">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<StreamSummary>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.streamname), ...columns]} data={items} getRowId={(row) => row.streamname} onRowClick={handleRowClick} selectedId={selectedItem?.streamname} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<StreamSummary>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.streamname), ...columns]} data={items} getRowId={(row) => row.streamname} onRowClick={handleRowClick} selectedId={selectedItem?.streamname} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

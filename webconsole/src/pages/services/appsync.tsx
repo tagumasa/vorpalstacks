@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { AppSyncService, type GraphqlApi, AuthenticationType } from "@/gen/appsync_pb";
 import { CreateGraphqlApiRequestSchema, DeleteGraphqlApiRequestSchema } from "@/gen/appsync_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -33,7 +33,7 @@ type DetailTab = "detail" | "json";
 
 export function AppSyncPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(AppSyncService);
+  const { client } = useServiceClient(AppSyncService);
   const { queryKey } = useListKey("appsync");
   const columns = getColumns(t);
 
@@ -46,22 +46,28 @@ export function AppSyncPage() {
   const [formName, setFormName] = useState("");
   const [formAuthType, setFormAuthType] = useState<AuthenticationType>(AuthenticationType.API_KEY);
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listGraphqlApis({}), refetchInterval: REFETCH_INTERVAL });
-  const items: GraphqlApi[] = dropEmpty(data?.graphqlapis ?? [], "apiid");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<GraphqlApi, Awaited<ReturnType<typeof client.listGraphqlApis>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listGraphqlApis({ nexttoken: token || undefined }),
+    getItems: (r) => r.graphqlapis ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const items = dropEmpty(rawItems, "apiid");
+  
 
   const createMutation = useMutation({
     mutationFn: () => client.createGraphqlApi(create(CreateGraphqlApiRequestSchema, { name: formName, authenticationtype: formAuthType })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (apiId: string) => client.deleteGraphqlApi(create(DeleteGraphqlApiRequestSchema, { apiid: apiId })),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => Promise.allSettled(ids.map((id) => client.deleteGraphqlApi(create(DeleteGraphqlApiRequestSchema, { apiid: id })))),
-    onSuccess: (_d, ids) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && ids.includes(p.apiid) ? null : p)); },
+    onSuccess: (_d, ids) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && ids.includes(p.apiid) ? null : p)); },
   });
 
   const handleRowClick = (row: GraphqlApi) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -92,7 +98,7 @@ export function AppSyncPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.appsync.title") }, { label: t("services.appsync.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-appsync">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<GraphqlApi>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.apiid), ...columns]} data={items} getRowId={(row) => row.apiid} onRowClick={handleRowClick} selectedId={selectedItem?.apiid} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<GraphqlApi>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.apiid), ...columns]} data={items} getRowId={(row) => row.apiid} onRowClick={handleRowClick} selectedId={selectedItem?.apiid} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

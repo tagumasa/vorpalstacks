@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { TimestreamWriteService } from "@/gen/timestreamwrite_pb";
 import { CreateDatabaseRequestSchema } from "@/gen/timestreamwrite_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -35,7 +35,7 @@ type DetailTab = "detail" | "json";
 
 export function TimestreamPage() {
   const { t, i18n } = useTranslation();
-  const { client, invalidate } = useServiceClient(TimestreamWriteService);
+  const { client } = useServiceClient(TimestreamWriteService);
   const { queryKey } = useListKey("timestream");
   const columns = getColumns(t);
 
@@ -50,8 +50,13 @@ export function TimestreamPage() {
   const [formMagneticRetentionDays, setFormMagneticRetentionDays] = useState(365);
   const [formMemoryRetentionHours, setFormMemoryRetentionHours] = useState(24);
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listDatabases({}), refetchInterval: REFETCH_INTERVAL });
-  const items: TableRow[] = dropEmpty((data?.databases ?? []).map((db) => ({ databasename: db.databasename, arn: db.arn, tablecount: Number(db.tablecount ?? 0), creationtime: db.creationtime ?? "", lastupdatedtime: db.lastupdatedtime ?? "" })), "databasename");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<TableRow, Awaited<ReturnType<typeof client.listDatabases>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listDatabases({ nexttoken: token || undefined }),
+    getItems: (r) => (r.databases ?? []).map((db) => ({ databasename: db.databasename, arn: db.arn, tablecount: Number(db.tablecount ?? 0), creationtime: db.creationtime ?? "", lastupdatedtime: db.lastupdatedtime ?? "" })),
+    getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const items = dropEmpty(rawItems, "databasename");
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -59,17 +64,17 @@ export function TimestreamPage() {
         databasename: formName,
         kmskeyid: formKmsKeyId || undefined,
       })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormKmsKeyId(""); setFormMagneticRetentionDays(365); setFormMemoryRetentionHours(24); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormKmsKeyId(""); setFormMagneticRetentionDays(365); setFormMemoryRetentionHours(24); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (name: string) => client.deleteDatabase({ databasename: name }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (names: string[]) => Promise.allSettled(names.map((n) => client.deleteDatabase({ databasename: n }))),
-    onSuccess: (_d, names) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.databasename) ? null : p)); },
+    onSuccess: (_d, names) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && names.includes(p.databasename) ? null : p)); },
   });
 
   const handleRowClick = (row: TableRow) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -100,7 +105,7 @@ export function TimestreamPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.timestream.title") }, { label: t("services.timestream.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-ts">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<TableRow>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.databasename), ...columns]} data={items} getRowId={(row) => row.databasename} onRowClick={handleRowClick} selectedId={selectedItem?.databasename} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<TableRow>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.databasename), ...columns]} data={items} getRowId={(row) => row.databasename} onRowClick={handleRowClick} selectedId={selectedItem?.databasename} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

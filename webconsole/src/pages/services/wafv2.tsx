@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { WAFV2Service, type WebACLSummary, Scope } from "@/gen/wafv2_pb";
 import { CreateWebACLRequestSchema } from "@/gen/wafv2_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, FallbackCell, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -29,7 +29,7 @@ type DetailTab = "detail" | "json";
 
 export function WAFv2Page() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(WAFV2Service);
+  const { client } = useServiceClient(WAFV2Service);
   const { queryKey } = useListKey("wafv2");
   const columns = getColumns(t);
 
@@ -44,29 +44,43 @@ export function WAFv2Page() {
   const [formDescription, setFormDescription] = useState("");
   const [formDefaultAction, setFormDefaultAction] = useState<"allow" | "block">("allow");
 
-  const { data, isLoading, error } = useQuery({
-    queryKey,
-    queryFn: async () => {
-      const [regional, cloudfront] = await Promise.all([client.listWebACLs({ scope: Scope.REGIONAL }), client.listWebACLs({ scope: Scope.CLOUDFRONT })]);
-      return [...(regional.webacls ?? []).map((acl) => ({ ...acl, _scope: Scope.REGIONAL })), ...(cloudfront.webacls ?? []).map((acl) => ({ ...acl, _scope: Scope.CLOUDFRONT }))];
-    },
-    refetchInterval: REFETCH_INTERVAL,
+  const regionalList = usePaginatedList<WebACLItem, Awaited<ReturnType<typeof client.listWebACLs>>>({
+    queryKeyBase: [...queryKey, "regional"],
+    fetchPage: (token) => client.listWebACLs({ scope: Scope.REGIONAL, nextmarker: token || undefined }),
+    getItems: (r) => (r.webacls ?? []).map((acl) => ({ ...acl, _scope: Scope.REGIONAL })),
+    getNextToken: (r) => r.nextmarker ?? "",
   });
-  const items: WebACLItem[] = dropEmpty(data ?? [], "id");
+  const cloudfrontList = usePaginatedList<WebACLItem, Awaited<ReturnType<typeof client.listWebACLs>>>({
+    queryKeyBase: [...queryKey, "cloudfront"],
+    fetchPage: (token) => client.listWebACLs({ scope: Scope.CLOUDFRONT, nextmarker: token || undefined }),
+    getItems: (r) => (r.webacls ?? []).map((acl) => ({ ...acl, _scope: Scope.CLOUDFRONT })),
+    getNextToken: (r) => r.nextmarker ?? "",
+  });
+
+  const items = dropEmpty([...regionalList.items, ...cloudfrontList.items], "id");
+  const isLoading = regionalList.isLoading || cloudfrontList.isLoading;
+  const error = regionalList.error || cloudfrontList.error;
+  const hasMore = regionalList.hasMore || cloudfrontList.hasMore;
+  const loadMore = () => {
+    if (regionalList.hasMore) regionalList.loadMore();
+    else if (cloudfrontList.hasMore) cloudfrontList.loadMore();
+  };
+  const isFetchingMore = regionalList.isFetchingMore || cloudfrontList.isFetchingMore;
+  const invalidateList = () => { regionalList.invalidate(); cloudfrontList.invalidate(); };
 
   const createMutation = useMutation({
     mutationFn: () => client.createWebACL(create(CreateWebACLRequestSchema, { name: formName, scope: formScope, description: formDescription, defaultaction: formDefaultAction === "allow" ? { allow: {} } : { block: {} }, visibilityconfig: { sampledrequestsenabled: false, cloudwatchmetricsenabled: false, metricname: formName } })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormScope(Scope.REGIONAL); setFormDescription(""); setFormDefaultAction("allow"); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormScope(Scope.REGIONAL); setFormDescription(""); setFormDefaultAction("allow"); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (acl: WebACLItem) => client.deleteWebACL({ id: acl.id, name: acl.name, scope: acl._scope, locktoken: acl.locktoken }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (acls: WebACLItem[]) => Promise.allSettled(acls.map((acl) => client.deleteWebACL({ id: acl.id, name: acl.name, scope: acl._scope, locktoken: acl.locktoken }))),
-    onSuccess: (_d, acls) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); const deletedIds = new Set(acls.map((a) => a.id)); setSelectedItem((p) => (p && deletedIds.has(p.id) ? null : p)); },
+    onSuccess: (_d, acls) => { invalidateList(); setShowBatchDelete(false); clearSelection(); const deletedIds = new Set(acls.map((a) => a.id)); setSelectedItem((p) => (p && deletedIds.has(p.id) ? null : p)); },
   });
 
   const handleRowClick = (row: WebACLItem) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -99,7 +113,7 @@ export function WAFv2Page() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.wafv2.title") }, { label: t("services.wafv2.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-wafv2">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<WebACLItem>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<WebACLItem>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

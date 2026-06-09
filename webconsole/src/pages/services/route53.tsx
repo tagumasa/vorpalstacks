@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { Route53Service, type HostedZone } from "@/gen/route53_pb";
 import { CreateHostedZoneRequestSchema, HostedZoneConfigSchema } from "@/gen/route53_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -27,7 +27,7 @@ type DetailTab = "detail" | "json";
 
 export function Route53Page() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(Route53Service);
+  const { client } = useServiceClient(Route53Service);
   const { queryKey } = useListKey("route53");
   const columns = getColumns(t);
 
@@ -41,22 +41,28 @@ export function Route53Page() {
   const [formComment, setFormComment] = useState("");
   const [formPrivate, setFormPrivate] = useState(false);
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listHostedZones({}), refetchInterval: REFETCH_INTERVAL });
-  const items: HostedZone[] = dropEmpty(data?.hostedzones ?? [], "id");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<HostedZone, Awaited<ReturnType<typeof client.listHostedZones>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listHostedZones({ marker: token || undefined }),
+    getItems: (r) => r.hostedzones ?? [],
+    getNextToken: (r) => r.nextmarker ?? "",
+  });
+  const items = dropEmpty(rawItems, "id");
+  
 
   const createMutation = useMutation({
     mutationFn: () => client.createHostedZone(create(CreateHostedZoneRequestSchema, { callerreference: `vs-${Date.now()}`, name: formName, hostedzoneconfig: create(HostedZoneConfigSchema, { comment: formComment, privatezone: formPrivate }) })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormComment(""); setFormPrivate(false); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormComment(""); setFormPrivate(false); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (zoneId: string) => client.deleteHostedZone({ id: zoneId }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => Promise.allSettled(ids.map((id) => client.deleteHostedZone({ id }))),
-    onSuccess: (_d, ids) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && ids.includes(p.id) ? null : p)); },
+    onSuccess: (_d, ids) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && ids.includes(p.id) ? null : p)); },
   });
 
   const handleRowClick = (row: HostedZone) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -87,7 +93,7 @@ export function Route53Page() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.route53.title") }, { label: t("services.route53.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-route53">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<HostedZone>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<HostedZone>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.id), ...columns]} data={items} getRowId={(row) => row.id} onRowClick={handleRowClick} selectedId={selectedItem?.id} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

@@ -8,12 +8,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { AthenaService, type WorkGroupSummary, WorkGroupState } from "@/gen/athena_pb";
 import { CreateWorkGroupInputSchema } from "@/gen/athena_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import {
   ServicePageLayout,
   ServiceCreateModal,
@@ -61,7 +61,7 @@ type DetailTab = "detail" | "json";
 
 export function AthenaPage() {
   const { t, i18n } = useTranslation();
-  const { client, invalidate } = useServiceClient(AthenaService);
+  const { client } = useServiceClient(AthenaService);
   const { queryKey } = useListKey("athena");
   const columns = getColumns(t);
 
@@ -80,13 +80,13 @@ export function AthenaPage() {
   const [formDescription, setFormDescription] = useState("");
 
   // ── Data ─────────────────────────────────────────────────────
-  const { data, isLoading, error } = useQuery({
-    queryKey,
-    queryFn: () => client.listWorkGroups({}),
-    refetchInterval: REFETCH_INTERVAL,
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<WorkGroupSummary, Awaited<ReturnType<typeof client.listWorkGroups>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listWorkGroups({ nexttoken: token || undefined }),
+    getItems: (r) => r.workgroups ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
   });
-
-  const items: WorkGroupSummary[] = dropEmpty(data?.workgroups ?? [], "name");
+  const items = dropEmpty(rawItems, "name");
 
   // ── Mutations ────────────────────────────────────────────────
   const createMutation = useMutation({
@@ -95,7 +95,7 @@ export function AthenaPage() {
         create(CreateWorkGroupInputSchema, { name: formName, description: formDescription }),
       ),
     onSuccess: () => {
-      invalidate(queryKey);
+      invalidateList();
       setShowCreate(false);
       setFormName("");
       setFormDescription("");
@@ -106,7 +106,7 @@ export function AthenaPage() {
     mutationFn: (workgroupName: string) =>
       client.deleteWorkGroup({ workgroup: workgroupName, recursivedeleteoption: true }),
     onSuccess: () => {
-      invalidate(queryKey);
+      invalidateList();
       setShowDelete(false);
       setSelectedItem(null);
       clearSelection();
@@ -121,7 +121,7 @@ export function AthenaPage() {
       return results;
     },
     onSuccess: (_data, names) => {
-      invalidate(queryKey);
+      invalidateList();
       setShowBatchDelete(false);
       clearSelection();
       setSelectedItem((prev) => (prev && names.includes(prev.name) ? null : prev));
@@ -230,6 +230,7 @@ export function AthenaPage() {
               getRowId={(row) => row.name}
               onRowClick={handleRowClick}
               selectedId={selectedItem?.name}
+              hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore}
             />
           </div>
           {renderDetailPanel()}

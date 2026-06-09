@@ -8,12 +8,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { SESv2Service, type IdentityInfo, IdentityType, VerificationStatus } from "@/gen/sesv2_pb";
 import { CreateEmailIdentityRequestSchema } from "@/gen/sesv2_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import {
   ServicePageLayout,
   ServiceCreateModal,
@@ -88,7 +88,7 @@ type DetailTab = "detail" | "json";
 
 export function SESPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(SESv2Service);
+  const { client } = useServiceClient(SESv2Service);
   const { queryKey } = useListKey("ses");
   const columns = getColumns(t);
 
@@ -107,13 +107,13 @@ export function SESPage() {
   const [formConfigSetName, setFormConfigSetName] = useState("");
 
   // ── Data ─────────────────────────────────────────────────────
-  const { data, isLoading, error } = useQuery({
-    queryKey,
-    queryFn: () => client.listEmailIdentities({}),
-    refetchInterval: REFETCH_INTERVAL,
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<IdentityInfo, Awaited<ReturnType<typeof client.listEmailIdentities>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listEmailIdentities({ nexttoken: token || undefined }),
+    getItems: (r) => r.emailidentities ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
   });
-
-  const items: IdentityInfo[] = dropEmpty(data?.emailidentities ?? [], "identityname");
+  const items = dropEmpty(rawItems, "identityname");
 
   // ── Mutations ────────────────────────────────────────────────
   const createMutation = useMutation({
@@ -125,7 +125,7 @@ export function SESPage() {
         }),
       ),
     onSuccess: () => {
-      invalidate(queryKey);
+      invalidateList();
       setShowCreate(false);
       setFormIdentity("");
       setFormConfigSetName("");
@@ -136,7 +136,7 @@ export function SESPage() {
     mutationFn: (identity: string) =>
       client.deleteEmailIdentity({ emailidentity: identity }),
     onSuccess: () => {
-      invalidate(queryKey);
+      invalidateList();
       setShowDelete(false);
       setSelectedItem(null);
       clearSelection();
@@ -151,7 +151,7 @@ export function SESPage() {
       return results;
     },
     onSuccess: (_data, identities) => {
-      invalidate(queryKey);
+      invalidateList();
       setShowBatchDelete(false);
       clearSelection();
       setSelectedItem((prev) => (prev && identities.includes(prev.identityname) ? null : prev));
@@ -259,6 +259,7 @@ export function SESPage() {
               getRowId={(row) => row.identityname}
               onRowClick={handleRowClick}
               selectedId={selectedItem?.identityname}
+              hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore}
             />
           </div>
           {renderDetailPanel()}

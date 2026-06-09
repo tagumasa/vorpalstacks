@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { ACMService, type CertificateSummary, KeyAlgorithm, ValidationMethod } from "@/gen/acm_pb";
 import { RequestCertificateRequestSchema } from "@/gen/acm_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -37,7 +37,7 @@ type DetailTab = "detail" | "json";
 
 export function ACMPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(ACMService);
+  const { client } = useServiceClient(ACMService);
   const { queryKey } = useListKey("acm");
   const columns = getColumns(t);
 
@@ -52,8 +52,14 @@ export function ACMPage() {
   const [formValidation, setFormValidation] = useState<ValidationMethod>(ValidationMethod.DNS);
   const [formKeyAlgo, setFormKeyAlgo] = useState<KeyAlgorithm>(KeyAlgorithm.RSA_2048);
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listCertificates({}), refetchInterval: REFETCH_INTERVAL });
-  const items: CertificateSummary[] = dropEmpty(data?.certificatesummarylist ?? [], "certificatearn");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<CertificateSummary, Awaited<ReturnType<typeof client.listCertificates>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listCertificates({ nexttoken: token || undefined }),
+    getItems: (r) => r.certificatesummarylist ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const items = dropEmpty(rawItems, "certificatearn");
+  
 
   const createMutation = useMutation({
     mutationFn: () => client.requestCertificate(create(RequestCertificateRequestSchema, {
@@ -62,17 +68,17 @@ export function ACMPage() {
       validationmethod: formValidation,
       keyalgorithm: formKeyAlgo,
     })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormDomain(""); setFormAltNames(""); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormDomain(""); setFormAltNames(""); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (arn: string) => client.deleteCertificate({ certificatearn: arn }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (arns: string[]) => Promise.allSettled(arns.map((arn) => client.deleteCertificate({ certificatearn: arn }))),
-    onSuccess: (_d, arns) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && arns.includes(p.certificatearn) ? null : p)); },
+    onSuccess: (_d, arns) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && arns.includes(p.certificatearn) ? null : p)); },
   });
 
   const handleRowClick = (row: CertificateSummary) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -106,7 +112,7 @@ export function ACMPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.acm.title") }, { label: t("services.acm.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedArns.size} label={t("common.selectedCount", { count: selectedArns.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-acm">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<CertificateSummary>(selectedArns, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.certificatearn), ...columns]} data={items} getRowId={(row) => row.certificatearn} onRowClick={handleRowClick} selectedId={selectedItem?.certificatearn} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<CertificateSummary>(selectedArns, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.certificatearn), ...columns]} data={items} getRowId={(row) => row.certificatearn} onRowClick={handleRowClick} selectedId={selectedItem?.certificatearn} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

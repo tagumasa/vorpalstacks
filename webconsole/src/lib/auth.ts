@@ -27,6 +27,11 @@ export function clearTokens() {
   localStorage.removeItem(ID_TOKEN_KEY);
 }
 
+/** Returns the stored refresh token, or null if not available. */
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
 /** Returns true if an access token is present in storage. */
 export function isAuthenticated(): boolean {
   return !!getToken();

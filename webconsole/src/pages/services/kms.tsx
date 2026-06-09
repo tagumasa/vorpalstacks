@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { KMSService, type KeyListEntry, KeyUsageType, KeySpec, OriginType } from "@/gen/kms_pb";
 import { CreateKeyRequestSchema, ScheduleKeyDeletionRequestSchema } from "@/gen/kms_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -46,7 +46,7 @@ type DetailTab = "detail" | "json";
 
 export function KMSPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(KMSService);
+  const { client } = useServiceClient(KMSService);
   const { queryKey } = useListKey("kms");
   const columns = getColumns(t);
 
@@ -62,22 +62,28 @@ export function KMSPage() {
   const [formOrigin, setFormOrigin] = useState(OriginType.AWS_KMS);
   const [formMultiRegion, setFormMultiRegion] = useState(false);
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listKeys({}), refetchInterval: REFETCH_INTERVAL });
-  const items: KeyListEntry[] = dropEmpty(data?.keys ?? [], "keyid");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<KeyListEntry, Awaited<ReturnType<typeof client.listKeys>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listKeys({ marker: token || undefined, limit: 1000 }),
+    getItems: (r) => r.keys ?? [],
+    getNextToken: (r) => r.nextmarker ?? "",
+  });
+  const items = dropEmpty(rawItems, "keyid");
+  
 
   const createMutation = useMutation({
     mutationFn: () => client.createKey(create(CreateKeyRequestSchema, { description: formDesc, keyspec: formKeySpec, keyusage: formKeyUsage, origin: formOrigin, multiregion: formMultiRegion })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormDesc(""); setFormKeySpec(KeySpec.SYMMETRIC_DEFAULT); setFormKeyUsage(KeyUsageType.ENCRYPT_DECRYPT); setFormOrigin(OriginType.AWS_KMS); setFormMultiRegion(false); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormDesc(""); setFormKeySpec(KeySpec.SYMMETRIC_DEFAULT); setFormKeyUsage(KeyUsageType.ENCRYPT_DECRYPT); setFormOrigin(OriginType.AWS_KMS); setFormMultiRegion(false); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (keyId: string) => client.scheduleKeyDeletion(create(ScheduleKeyDeletionRequestSchema, { keyid: keyId, pendingwindowindays: 7 })),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => Promise.allSettled(ids.map((id) => client.scheduleKeyDeletion(create(ScheduleKeyDeletionRequestSchema, { keyid: id, pendingwindowindays: 7 })))),
-    onSuccess: (_d, ids) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && ids.includes(p.keyid) ? null : p)); },
+    onSuccess: (_d, ids) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && ids.includes(p.keyid) ? null : p)); },
   });
 
   const handleRowClick = (row: KeyListEntry) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -105,7 +111,7 @@ export function KMSPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.kms.title") }, { label: t("services.kms.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-kms">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<KeyListEntry>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.keyid), ...columns]} data={items} getRowId={(row) => row.keyid} onRowClick={handleRowClick} selectedId={selectedItem?.keyid} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<KeyListEntry>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.keyid), ...columns]} data={items} getRowId={(row) => row.keyid} onRowClick={handleRowClick} selectedId={selectedItem?.keyid} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

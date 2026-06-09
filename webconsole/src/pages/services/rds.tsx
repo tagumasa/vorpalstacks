@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { RDSService, type DBInstance, type DBCluster } from "@/gen/rds_pb";
 import { CreateDBInstanceMessageSchema, DeleteDBInstanceMessageSchema, CreateDBClusterMessageSchema, DeleteDBClusterMessageSchema } from "@/gen/rds_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, BooleanBadge, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -73,19 +73,23 @@ export function RDSPage() {
   const clusterSel = useSelection<string>();
   const selectedIds = tab === "instances" ? instSel.selected : clusterSel.selected;
 
-  const { client, invalidate } = useServiceClient(RDSService);
+  const { client } = useServiceClient(RDSService);
   const { queryKey: instKey } = useListKey("rds-instances");
   const { queryKey: clusterKey } = useListKey("rds-clusters");
 
-  const instQ = useQuery({ queryKey: instKey, queryFn: async () => { const r = await client.describeDBInstances({}); return dropEmpty(r.dbinstances ?? [], "dbinstanceidentifier"); }, refetchInterval: REFETCH_INTERVAL });
-  const clusterQ = useQuery({ queryKey: clusterKey, queryFn: async () => { const r = await client.describeDBClusters({}); return dropEmpty(r.dbclusters ?? [], "dbclusteridentifier"); }, refetchInterval: REFETCH_INTERVAL });
+  const instList = usePaginatedList<DBInstance, Awaited<ReturnType<typeof client.describeDBInstances>>>({
+    queryKeyBase: instKey, fetchPage: (token) => client.describeDBInstances({ marker: token || undefined }), getItems: (r) => r.dbinstances ?? [], getNextToken: (r) => r.marker ?? "",
+  });
+  const clusterList = usePaginatedList<DBCluster, Awaited<ReturnType<typeof client.describeDBClusters>>>({
+    queryKeyBase: clusterKey, fetchPage: (token) => client.describeDBClusters({ marker: token || undefined }), getItems: (r) => r.dbclusters ?? [], getNextToken: (r) => r.marker ?? "",
+  });
 
-  const query = tab === "instances" ? instQ : clusterQ;
-  const allInstances = instQ.data ?? [];
-  const allClusters = clusterQ.data ?? [];
+  const query = tab === "instances" ? instList : clusterList;
+  const allInstances = dropEmpty(instList.items, "dbinstanceidentifier");
+  const allClusters = dropEmpty(clusterList.items, "dbclusteridentifier");
 
-  const instances = engineFilter === "all" ? allInstances : allInstances.filter((i: DBInstance) => i.engine === engineFilter);
-  const clusters = engineFilter === "all" ? allClusters : allClusters.filter((c: DBCluster) => c.engine === engineFilter);
+  const instances = engineFilter === "all" ? allInstances.filter((i: DBInstance) => i.engine !== "neptune") : allInstances.filter((i: DBInstance) => i.engine === engineFilter);
+  const clusters = engineFilter === "all" ? allClusters.filter((c: DBCluster) => c.engine !== "neptune") : allClusters.filter((c: DBCluster) => c.engine === engineFilter);
 
   const tabs = [
     { key: "instances" as TabKey, label: t("services.rds.tabs.instances"), count: instances.length },
@@ -100,17 +104,17 @@ export function RDSPage() {
       dbinstanceidentifier: formInstId, engine: formInstEngine, dbinstanceclass: formInstClass,
       allocatedstorage: formInstStorage, masterusername: formInstUser, masteruserpassword: formInstPass,
     })),
-    onSuccess: () => { invalidate(instKey); setShowCreateInst(false); resetInstForm(); },
+    onSuccess: () => { instList.invalidate(); setShowCreateInst(false); resetInstForm(); },
   });
 
   const deleteInstMut = useMutation({
     mutationFn: (id: string) => client.deleteDBInstance(create(DeleteDBInstanceMessageSchema, { dbinstanceidentifier: id })),
-    onSuccess: () => { invalidate(instKey); setShowDeleteInst(false); setSelectedInstance(null); instSel.clear(); },
+    onSuccess: () => { instList.invalidate(); setShowDeleteInst(false); setSelectedInstance(null); instSel.clear(); },
   });
 
   const batchDeleteInstMut = useMutation({
     mutationFn: async (ids: string[]) => Promise.allSettled(ids.map((id) => client.deleteDBInstance(create(DeleteDBInstanceMessageSchema, { dbinstanceidentifier: id })))),
-    onSuccess: (_d, ids) => { invalidate(instKey); setShowBatchDelete(false); instSel.clear(); setSelectedInstance((p) => (p && ids.includes(p.dbinstanceidentifier) ? null : p)); },
+    onSuccess: (_d, ids) => { instList.invalidate(); setShowBatchDelete(false); instSel.clear(); setSelectedInstance((p) => (p && ids.includes(p.dbinstanceidentifier) ? null : p)); },
   });
 
   // Cluster CRUD mutations
@@ -118,17 +122,17 @@ export function RDSPage() {
     mutationFn: () => client.createDBCluster(create(CreateDBClusterMessageSchema, {
       dbclusteridentifier: formClusterId, engine: formClusterEngine, masterusername: formClusterUser, masteruserpassword: formClusterPass,
     })),
-    onSuccess: () => { invalidate(clusterKey); setShowCreateCluster(false); resetClusterForm(); },
+    onSuccess: () => { clusterList.invalidate(); setShowCreateCluster(false); resetClusterForm(); },
   });
 
   const deleteClusterMut = useMutation({
     mutationFn: (id: string) => client.deleteDBCluster(create(DeleteDBClusterMessageSchema, { dbclusteridentifier: id })),
-    onSuccess: () => { invalidate(clusterKey); setShowDeleteCluster(false); setSelectedCluster(null); clusterSel.clear(); },
+    onSuccess: () => { clusterList.invalidate(); setShowDeleteCluster(false); setSelectedCluster(null); clusterSel.clear(); },
   });
 
   const batchDeleteClusterMut = useMutation({
     mutationFn: async (ids: string[]) => Promise.allSettled(ids.map((id) => client.deleteDBCluster(create(DeleteDBClusterMessageSchema, { dbclusteridentifier: id })))),
-    onSuccess: (_d, ids) => { invalidate(clusterKey); setShowBatchDelete(false); clusterSel.clear(); setSelectedCluster((p) => (p && ids.includes(p.dbclusteridentifier) ? null : p)); },
+    onSuccess: (_d, ids) => { clusterList.invalidate(); setShowBatchDelete(false); clusterSel.clear(); setSelectedCluster((p) => (p && ids.includes(p.dbclusteridentifier) ? null : p)); },
   });
 
   const resetInstForm = () => { setFormInstId(""); setFormInstEngine("mysql"); setFormInstClass("db.t3.micro"); setFormInstStorage(20); setFormInstUser("admin"); setFormInstPass(""); };
@@ -183,7 +187,7 @@ export function RDSPage() {
     </>}>
       <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "4px 12px", borderBottom: "1px solid var(--border)" }}>
         <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Engine:</span>
-        {(["all", "neptune", "mysql"] as const).map((eng) => (
+        {(["all", "mysql", "postgres"] as const).map((eng) => (
           <button key={eng} className={`btn btn-sm ${engineFilter === eng ? "btn-primary" : ""}`} onClick={() => setEngineFilter(eng)} style={{ padding: "2px 8px", fontSize: 11 }}>
             {eng === "all" ? "All" : eng.charAt(0).toUpperCase() + eng.slice(1)}
           </button>
@@ -191,14 +195,14 @@ export function RDSPage() {
       </div>
       {tab === "instances" && (instances.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-rds-inst">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<DBInstance>(instSel.selected, instSel.toggle, () => instSel.toggleAll(allInstIds), allInstIds, t, (row) => row.dbinstanceidentifier), ...instanceColumns]} data={instances} getRowId={(row) => row.dbinstanceidentifier} onRowClick={(row) => { setSelectedInstance(row); setDetailTab("detail"); }} selectedId={selectedInstance?.dbinstanceidentifier} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<DBInstance>(instSel.selected, instSel.toggle, () => instSel.toggleAll(allInstIds), allInstIds, t, (row) => row.dbinstanceidentifier), ...instanceColumns]} data={instances} getRowId={(row) => row.dbinstanceidentifier} onRowClick={(row) => { setSelectedInstance(row); setDetailTab("detail"); }} selectedId={selectedInstance?.dbinstanceidentifier} hasMore={instList.hasMore} onLoadMore={instList.loadMore} loadingMore={instList.isFetchingMore} /></div>
           {renderInstanceDetail()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>)}
 
       {tab === "clusters" && (clusters.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-rds-cluster">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<DBCluster>(clusterSel.selected, clusterSel.toggle, () => clusterSel.toggleAll(allClusterIds), allClusterIds, t, (row) => row.dbclusteridentifier), ...clusterColumns]} data={clusters} getRowId={(row) => row.dbclusteridentifier} onRowClick={(row) => { setSelectedCluster(row); setDetailTab("detail"); }} selectedId={selectedCluster?.dbclusteridentifier} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<DBCluster>(clusterSel.selected, clusterSel.toggle, () => clusterSel.toggleAll(allClusterIds), allClusterIds, t, (row) => row.dbclusteridentifier), ...clusterColumns]} data={clusters} getRowId={(row) => row.dbclusteridentifier} onRowClick={(row) => { setSelectedCluster(row); setDetailTab("detail"); }} selectedId={selectedCluster?.dbclusteridentifier} hasMore={clusterList.hasMore} onLoadMore={clusterList.loadMore} loadingMore={clusterList.isFetchingMore} /></div>
           {renderClusterDetail()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>)}

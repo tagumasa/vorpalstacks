@@ -28,7 +28,7 @@ import {
   DeleteItemInputSchema,
   DescribeTableInputSchema,
 } from "@/gen/dynamodb_pb";
-import { useListKey, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, usePaginatedList } from "@/lib/use-service-list";
 import {
   ServicePageLayout,
   ServiceCreateModal,
@@ -306,7 +306,7 @@ const tableColumns = (t: TFunction): ColumnDef<TableRow, any>[] => [
 
 export function DynamoDBPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(DynamoDBService);
+  const { client } = useServiceClient(DynamoDBService);
   const queryClient = useQueryClient();
   const { queryKey } = useListKey("dynamodb");
 
@@ -365,13 +365,11 @@ export function DynamoDBPage() {
   const [batchResult, setBatchResult] = useState<string | null>(null);
 
   // ── Table list query ──────────────────────────────────────────
-  const { data, isLoading, error } = useQuery({
-    queryKey,
-    queryFn: () => client.listTables({}),
-    refetchInterval: REFETCH_INTERVAL,
+  const tableList = usePaginatedList<string, Awaited<ReturnType<typeof client.listTables>>>({
+    queryKeyBase: queryKey, fetchPage: (token) => client.listTables({ exclusivestarttablename: token || undefined }), getItems: (r) => r.tablenames ?? [], getNextToken: (r) => r.lastevaluatedtablename ?? "",
   });
 
-  const tables: TableRow[] = (data?.tablenames ?? []).map((name) => ({ name }));
+  const tables: TableRow[] = tableList.items.map((name) => ({ name }));
 
   // ── DescribeTable query (items view) ──────────────────────────
   const activeTableName = view.type === "items" ? view.tableName : "";
@@ -380,7 +378,6 @@ export function DynamoDBPage() {
     queryKey: ["dynamodb", "describe", activeTableName],
     queryFn: () => client.describeTable(create(DescribeTableInputSchema, { tablename: activeTableName })),
     enabled: view.type === "items",
-    refetchInterval: REFETCH_INTERVAL,
   });
 
   const keySchema = descData?.table?.keyschema ?? [];
@@ -405,7 +402,6 @@ export function DynamoDBPage() {
         exclusivestartkey: lastEvaluatedKey,
       })),
     enabled: view.type === "items" && !!keySchema.length,
-    refetchInterval: REFETCH_INTERVAL,
   });
 
   const currentItems: ItemRow[] = (scanData?.items ?? []).map((entry) => {
@@ -501,7 +497,7 @@ export function DynamoDBPage() {
         }),
       ),
     onSuccess: () => {
-      invalidate(queryKey);
+      tableList.invalidate();
       setShowCreate(false);
       setFormName("");
       setFormPkName("pk");
@@ -516,7 +512,7 @@ export function DynamoDBPage() {
     mutationFn: (tablename: string) =>
       client.deleteTable(create(DeleteTableInputSchema, { tablename })),
     onSuccess: () => {
-      invalidate(queryKey);
+      tableList.invalidate();
     },
   });
 
@@ -1072,8 +1068,8 @@ export function DynamoDBPage() {
     <ServicePageLayout
       icon="🗃️"
       title={t("services.dynamodb.title")}
-      isLoading={isLoading && view.type === "tables"}
-      error={error}
+      isLoading={tableList.isLoading && view.type === "tables"}
+      error={tableList.error}
       count={view.type === "tables" ? tables.length : undefined}
       countLabel={t("services.dynamodb.countLabel")}
       actions={renderActions()}
@@ -1111,6 +1107,9 @@ export function DynamoDBPage() {
           data={tables}
           getRowId={(row) => row.name}
           onRowClick={handleTableRowClick}
+          hasMore={tableList.hasMore}
+          onLoadMore={tableList.loadMore}
+          loadingMore={tableList.isFetchingMore}
         />
       ) : (
         /* Items view — always show Splitter */
@@ -1151,7 +1150,7 @@ export function DynamoDBPage() {
                   onClick={handleLoadMore}
                   disabled={scanFetching}
                 >
-                  {scanFetching ? t("common.loading") : t("services.dynamodb.loadMore")}
+                  {scanFetching ? t("common.loading") : t("common.loadMore")}
                 </button>
               </div>
             )}
@@ -1244,7 +1243,7 @@ export function DynamoDBPage() {
           setBatchResult(failed === 0
             ? t("services.dynamodb.batchDeleteResult", { count: succeeded })
             : `${t("services.dynamodb.batchDeleteResult", { count: succeeded })} (${failed} ${t("services.dynamodb.failed")})`);
-          invalidate(queryKey);
+          tableList.invalidate();
           clearTableSelection();
           setShowDeleteTables(false);
           setTimeout(() => setBatchResult(null), 5000);

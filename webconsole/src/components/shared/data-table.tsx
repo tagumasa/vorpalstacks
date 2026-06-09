@@ -29,6 +29,12 @@ interface DataTableProps<T> {
   emptyMessage?: string;
   /** Filename prefix for export (e.g. "ssm", "rds"). */
   exportName?: string;
+  /** When true, shows a "Load more" button at the bottom. */
+  hasMore?: boolean;
+  /** Callback when "Load more" is clicked. */
+  onLoadMore?: () => void;
+  /** Whether more data is currently being fetched. */
+  loadingMore?: boolean;
 }
 
 type ExportFormat = "json" | "csv";
@@ -44,7 +50,7 @@ function downloadBlob(content: string, filename: string, mime: string) {
 }
 
 /** Renders a paginated, sortable, filterable table with optional row click selection and data export. */
-export function DataTable<T>({ columns, data, onRowClick, selectedId, getRowId, pageSize = 50, emptyMessage, exportName }: DataTableProps<T>) {
+export function DataTable<T>({ columns, data, onRowClick, selectedId, getRowId, pageSize = 50, emptyMessage, exportName, hasMore, onLoadMore, loadingMore }: DataTableProps<T>) {
   const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -184,6 +190,13 @@ export function DataTable<T>({ columns, data, onRowClick, selectedId, getRowId, 
             disabled={!table.getCanNextPage()}
           >
             {t("common.next")}
+          </button>
+        </div>
+      )}
+      {hasMore && (
+        <div className="load-more">
+          <button className="btn btn-secondary btn-sm" onClick={() => onLoadMore?.()} disabled={loadingMore}>
+            {loadingMore ? t("common.loading") : t("common.loadMore")}
           </button>
         </div>
       )}

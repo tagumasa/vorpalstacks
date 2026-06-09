@@ -8,12 +8,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { SNSService } from "@/gen/sns_pb";
 import { CreateTopicInputSchema } from "@/gen/sns_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import {
   ServicePageLayout,
   ServiceCreateModal,
@@ -53,7 +53,7 @@ type DetailTab = "detail" | "json";
 
 export function SNSPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(SNSService);
+  const { client } = useServiceClient(SNSService);
   const { queryKey } = useListKey("sns");
   const columns = getColumns(t);
 
@@ -74,16 +74,13 @@ export function SNSPage() {
   const [formTags, setFormTags] = useState("");
 
   // ── Data ─────────────────────────────────────────────────────
-  const { data, isLoading, error } = useQuery({
-    queryKey,
-    queryFn: () => client.listTopics({}),
-    refetchInterval: REFETCH_INTERVAL,
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<TableRow, Awaited<ReturnType<typeof client.listTopics>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listTopics({ nexttoken: token || undefined }),
+    getItems: (r) => (r.topics ?? []).map((topic) => ({ topicarn: topic.topicarn })),
+    getNextToken: (r) => r.nexttoken ?? "",
   });
-
-  const items: TableRow[] = dropEmpty(
-    (data?.topics ?? []).map((topic) => ({ topicarn: topic.topicarn })),
-    "topicarn",
-  );
+  const items = dropEmpty(rawItems, "topicarn");
 
   // ── Mutations ────────────────────────────────────────────────
   const createMutation = useMutation({
@@ -109,7 +106,7 @@ export function SNSPage() {
       );
     },
     onSuccess: () => {
-      invalidate(queryKey);
+      invalidateList();
       setShowCreate(false);
       setFormName("");
       setFormFifo(false);
@@ -121,7 +118,7 @@ export function SNSPage() {
   const deleteMutation = useMutation({
     mutationFn: (topicarn: string) => client.deleteTopic({ topicarn }),
     onSuccess: () => {
-      invalidate(queryKey);
+      invalidateList();
       setShowDelete(false);
       setSelectedItem(null);
       clearSelection();
@@ -136,7 +133,7 @@ export function SNSPage() {
       return results;
     },
     onSuccess: (_data, arns) => {
-      invalidate(queryKey);
+      invalidateList();
       setShowBatchDelete(false);
       clearSelection();
       setSelectedItem((prev) => (prev && arns.includes(prev.topicarn) ? null : prev));
@@ -251,6 +248,7 @@ export function SNSPage() {
               getRowId={(row) => row.topicarn}
               onRowClick={handleRowClick}
               selectedId={selectedItem?.topicarn}
+              hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore}
             />
           </div>
           {renderDetailPanel()}

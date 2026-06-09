@@ -1,7 +1,8 @@
 import { createConnectTransport } from "@connectrpc/connect-web";
-import type { Interceptor } from "@connectrpc/connect";
-import { getToken, clearTokens } from "./auth";
+import { createClient, type Interceptor } from "@connectrpc/connect";
+import { getToken, getRefreshToken, setTokens, clearTokens } from "./auth";
 import { recordRequest, recordError, recordLatency } from "./metrics-store";
+import { AdminAuthService } from "@/gen/admin_auth_pb";
 
 /** Current region injected into every outgoing request header. */
 let currentRegion = "us-east-1";
@@ -16,10 +17,15 @@ function getBasePath(): string {
   return document.querySelector("base")?.getAttribute("href") ?? "/webconsole/";
 }
 
+/** Set when a refresh is in-flight to prevent concurrent refresh attempts. */
+let refreshing = false;
+
 /**
  * Auth interceptor: attaches Authorization header with JWT bearer token
- * to every outgoing request. On 401 response, clears stored tokens
- * and redirects to the login page using the SPA basename.
+ * to every outgoing request. On 401 response, attempts to refresh the token
+ * using the stored refresh token. If refresh succeeds, retries the original
+ * request with the new token. If refresh fails, clears stored tokens
+ * and redirects to the login page.
  */
 const authInterceptor: Interceptor = (next) => async (req) => {
   const token = getToken();
@@ -30,6 +36,25 @@ const authInterceptor: Interceptor = (next) => async (req) => {
     return await next(req);
   } catch (err: unknown) {
     if (err instanceof Error && "code" in err && (err as { code: string }).code === "unauthenticated") {
+      if (refreshing) {
+        clearTokens();
+        window.location.href = getBasePath() + "login";
+        throw err;
+      }
+      const refreshToken = getRefreshToken();
+      if (refreshToken) {
+        refreshing = true;
+        try {
+          const refreshClient = createClient(AdminAuthService, transport);
+          const res = await refreshClient.refreshToken({ refreshToken });
+          setTokens(res.accessToken, res.refreshToken, res.idToken);
+          req.header.set("Authorization", `Bearer ${res.accessToken}`);
+          refreshing = false;
+          return next(req);
+        } catch {
+          refreshing = false;
+        }
+      }
       clearTokens();
       window.location.href = getBasePath() + "login";
     }

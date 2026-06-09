@@ -8,11 +8,11 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { SQSService, CreateQueueRequestSchema } from "@/gen/sqs_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import {
   ServicePageLayout,
   ServiceCreateModal,
@@ -61,7 +61,7 @@ type DetailTab = "detail" | "json";
 
 export function SQSPage() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(SQSService);
+  const { client } = useServiceClient(SQSService);
   const { queryKey } = useListKey("sqs");
   const columns = getColumns(t);
 
@@ -82,16 +82,13 @@ export function SQSPage() {
   const [formDelaySeconds, setFormDelaySeconds] = useState("0");
 
   // ── Data ─────────────────────────────────────────────────────
-  const { data, isLoading, error } = useQuery({
-    queryKey,
-    queryFn: () => client.listQueues({}),
-    refetchInterval: REFETCH_INTERVAL,
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<TableRow, Awaited<ReturnType<typeof client.listQueues>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listQueues({ nexttoken: token || undefined }),
+    getItems: (r) => (r.queueurls ?? []).map((url) => ({ url, name: queueNameFromUrl(url) })),
+    getNextToken: (r) => r.nexttoken ?? "",
   });
-
-  const items: TableRow[] = dropEmpty(
-    (data?.queueurls ?? []).map((url) => ({ url, name: queueNameFromUrl(url) })),
-    "url",
-  );
+  const items = dropEmpty(rawItems, "url");
 
   // ── Mutations ────────────────────────────────────────────────
   const createMutation = useMutation({
@@ -105,7 +102,7 @@ export function SQSPage() {
         },
       })),
     onSuccess: () => {
-      invalidate(queryKey);
+      invalidateList();
       setShowCreate(false);
       setFormName("");
       setFormVisibilityTimeout("30");
@@ -117,7 +114,7 @@ export function SQSPage() {
   const deleteMutation = useMutation({
     mutationFn: (queueUrl: string) => client.deleteQueue({ queueurl: queueUrl }),
     onSuccess: () => {
-      invalidate(queryKey);
+      invalidateList();
       setShowDelete(false);
       setSelectedItem(null);
       clearSelection();
@@ -132,7 +129,7 @@ export function SQSPage() {
       return results;
     },
     onSuccess: (_data, urls) => {
-      invalidate(queryKey);
+      invalidateList();
       setShowBatchDelete(false);
       clearSelection();
       setSelectedItem((prev) => (prev && urls.includes(prev.url) ? null : prev));
@@ -241,6 +238,7 @@ export function SQSPage() {
               getRowId={(row) => row.url}
               onRowClick={handleRowClick}
               selectedId={selectedItem?.url}
+              hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore}
             />
           </div>
           {renderDetailPanel()}

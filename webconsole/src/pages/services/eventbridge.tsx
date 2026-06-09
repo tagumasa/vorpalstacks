@@ -5,14 +5,14 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { CloudWatchEventsService, type EventBus, type Rule, RuleState } from "@/gen/cloudwatchevents_pb";
 import { CreateEventBusRequestSchema } from "@/gen/cloudwatchevents_pb";
 import { SchedulerService, type ScheduleSummary } from "@/gen/scheduler_pb";
 import { CreateScheduleInputSchema, FlexibleTimeWindowSchema, TargetSchema } from "@/gen/scheduler_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -80,45 +80,52 @@ export function EventBridgePage() {
   const [formTargetArn, setFormTargetArn] = useState("");
   const [formRoleArn, setFormRoleArn] = useState("");
 
-  const { client, invalidate } = useServiceClient(CloudWatchEventsService);
+  const { client } = useServiceClient(CloudWatchEventsService);
   const { client: schedulerClient } = useServiceClient(SchedulerService);
   const { queryKey: busesKey } = useListKey("eventbridge-buses");
   const { queryKey: rulesKey } = useListKey("eventbridge-rules");
   const { queryKey: schedulesKey } = useListKey("eventbridge-schedules");
 
-  const busesQ = useQuery({ queryKey: busesKey, queryFn: async () => { const resp = await client.listEventBuses({}); return dropEmpty(resp.eventbuses ?? [], "name"); }, refetchInterval: REFETCH_INTERVAL });
-  const rulesQ = useQuery({ queryKey: rulesKey, queryFn: async () => { const resp = await client.listRules({}); return dropEmpty(resp.rules ?? [], "name"); }, refetchInterval: REFETCH_INTERVAL });
-  const schedulesQ = useQuery({ queryKey: schedulesKey, queryFn: async () => { const resp = await schedulerClient.listSchedules({}); return dropEmpty(resp.schedules ?? [], "name"); }, refetchInterval: REFETCH_INTERVAL });
+  const busesList = usePaginatedList<EventBus, Awaited<ReturnType<typeof client.listEventBuses>>>({
+    queryKeyBase: busesKey, fetchPage: (token) => client.listEventBuses({ nexttoken: token || undefined }), getItems: (r) => r.eventbuses ?? [], getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const rulesList = usePaginatedList<Rule, Awaited<ReturnType<typeof client.listRules>>>({
+    queryKeyBase: rulesKey, fetchPage: (token) => client.listRules({ nexttoken: token || undefined }), getItems: (r) => r.rules ?? [], getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const schedulesList = usePaginatedList<ScheduleSummary, Awaited<ReturnType<typeof schedulerClient.listSchedules>>>({
+    queryKeyBase: schedulesKey, fetchPage: (token) => schedulerClient.listSchedules({ nexttoken: token || undefined }), getItems: (r) => r.schedules ?? [], getNextToken: (r) => r.nexttoken ?? "",
+  });
 
-  const query = tab === "buses" ? busesQ : tab === "rules" ? rulesQ : schedulesQ;
-  const buses = busesQ.data ?? [];
-  const rules = rulesQ.data ?? [];
-  const schedules = schedulesQ.data ?? [];
+  const buses = dropEmpty(busesList.items, "name");
+  const rules = dropEmpty(rulesList.items, "name");
+  const schedules = dropEmpty(schedulesList.items, "name");
+
+  const query = tab === "buses" ? busesList : tab === "rules" ? rulesList : schedulesList;
 
   const createBusMutation = useMutation({
     mutationFn: () => client.createEventBus(create(CreateEventBusRequestSchema, { name: formBusName, ...(formEventSource ? { eventsourcename: formEventSource } : {}) })),
-    onSuccess: () => { invalidate(busesKey); setShowCreateBus(false); setFormBusName(""); setFormEventSource(""); },
+    onSuccess: () => { busesList.invalidate(); setShowCreateBus(false); setFormBusName(""); setFormEventSource(""); },
   });
   const deleteBusMutation = useMutation({
     mutationFn: (name: string) => client.deleteEventBus({ name }),
-    onSuccess: () => { invalidate(busesKey); setShowDeleteBus(false); setSelectedBus(null); busSelection.clear(); },
+    onSuccess: () => { busesList.invalidate(); setShowDeleteBus(false); setSelectedBus(null); busSelection.clear(); },
   });
   const batchDeleteBusMutation = useMutation({
     mutationFn: async (names: string[]) => Promise.allSettled(names.map((n) => client.deleteEventBus({ name: n }))),
-    onSuccess: (_d, names) => { invalidate(busesKey); setShowBatchDeleteBus(false); busSelection.clear(); setSelectedBus((p) => (p && names.includes(p.name) ? null : p)); },
+    onSuccess: (_d, names) => { busesList.invalidate(); setShowBatchDeleteBus(false); busSelection.clear(); setSelectedBus((p) => (p && names.includes(p.name) ? null : p)); },
   });
 
   const createScheduleMutation = useMutation({
     mutationFn: () => schedulerClient.createSchedule(create(CreateScheduleInputSchema, { name: formScheduleName, scheduleexpression: formScheduleExpression, groupname: formScheduleGroup, description: formScheduleDesc, flexibletimewindow: create(FlexibleTimeWindowSchema, { mode: "OFF" }), target: create(TargetSchema, { arn: formTargetArn, rolearn: formRoleArn }) })),
-    onSuccess: () => { invalidate(schedulesKey); setShowCreateSchedule(false); setFormScheduleName(""); setFormScheduleExpression("rate(5 minutes)"); setFormScheduleGroup(""); setFormScheduleDesc(""); setFormTargetArn(""); setFormRoleArn(""); },
+    onSuccess: () => { schedulesList.invalidate(); setShowCreateSchedule(false); setFormScheduleName(""); setFormScheduleExpression("rate(5 minutes)"); setFormScheduleGroup(""); setFormScheduleDesc(""); setFormTargetArn(""); setFormRoleArn(""); },
   });
   const deleteScheduleMutation = useMutation({
     mutationFn: (item: ScheduleSummary) => schedulerClient.deleteSchedule({ name: item.name, groupname: item.groupname }),
-    onSuccess: () => { invalidate(schedulesKey); setShowDeleteSchedule(false); setSelectedSchedule(null); scheduleSelection.clear(); },
+    onSuccess: () => { schedulesList.invalidate(); setShowDeleteSchedule(false); setSelectedSchedule(null); scheduleSelection.clear(); },
   });
   const batchDeleteScheduleMutation = useMutation({
     mutationFn: async (items: ScheduleSummary[]) => Promise.allSettled(items.map((s) => schedulerClient.deleteSchedule({ name: s.name, groupname: s.groupname }))),
-    onSuccess: (_d, deletedItems) => { invalidate(schedulesKey); setShowBatchDeleteSchedule(false); scheduleSelection.clear(); const deletedNames = new Set(deletedItems.map((s) => s.name)); setSelectedSchedule((p) => (p && deletedNames.has(p.name) ? null : p)); },
+    onSuccess: (_d, deletedItems) => { schedulesList.invalidate(); setShowBatchDeleteSchedule(false); scheduleSelection.clear(); const deletedNames = new Set(deletedItems.map((s) => s.name)); setSelectedSchedule((p) => (p && deletedNames.has(p.name) ? null : p)); },
   });
 
   const tabs = [
@@ -200,7 +207,7 @@ export function EventBridgePage() {
       {tab === "buses" && (
         buses.length > 0 ? (
           <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-eb-buses">
-            <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<EventBus>(busSelection.selected, busSelection.toggle, () => busSelection.toggleAll(buses.map((b) => b.name)), buses.map((b) => b.name), t, (row) => row.name), ...busColumns]} data={buses} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedBus(row); setDetailTab("detail"); }} selectedId={selectedBus?.name} /></div>
+            <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<EventBus>(busSelection.selected, busSelection.toggle, () => busSelection.toggleAll(buses.map((b) => b.name)), buses.map((b) => b.name), t, (row) => row.name), ...busColumns]} data={buses} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedBus(row); setDetailTab("detail"); }} selectedId={selectedBus?.name} hasMore={busesList.hasMore} onLoadMore={busesList.loadMore} loadingMore={busesList.isFetchingMore} /></div>
             {renderBusDetail()}
           </Splitter>
         ) : <div className="empty-state">{t("common.noData")}</div>
@@ -210,7 +217,7 @@ export function EventBridgePage() {
       {tab === "rules" && (
         rules.length > 0 ? (
           <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-eb-rules">
-            <div className="flex-fill-scroll"><DataTable columns={ruleColumns} data={rules} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedRule(row); setDetailTab("detail"); }} selectedId={selectedRule?.name} /></div>
+            <div className="flex-fill-scroll"><DataTable columns={ruleColumns} data={rules} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedRule(row); setDetailTab("detail"); }} selectedId={selectedRule?.name} hasMore={rulesList.hasMore} onLoadMore={rulesList.loadMore} loadingMore={rulesList.isFetchingMore} /></div>
             {renderRuleDetail()}
           </Splitter>
         ) : <div className="empty-state">{t("common.noData")}</div>
@@ -220,7 +227,7 @@ export function EventBridgePage() {
       {tab === "schedules" && (
         schedules.length > 0 ? (
           <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-eb-schedules">
-            <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<ScheduleSummary>(scheduleSelection.selected, scheduleSelection.toggle, () => scheduleSelection.toggleAll(schedules.map((s) => s.name)), schedules.map((s) => s.name), t, (row) => row.name), ...scheduleColumns]} data={schedules} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedSchedule(row); setDetailTab("detail"); }} selectedId={selectedSchedule?.name} /></div>
+            <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<ScheduleSummary>(scheduleSelection.selected, scheduleSelection.toggle, () => scheduleSelection.toggleAll(schedules.map((s) => s.name)), schedules.map((s) => s.name), t, (row) => row.name), ...scheduleColumns]} data={schedules} getRowId={(row) => row.name} onRowClick={(row) => { setSelectedSchedule(row); setDetailTab("detail"); }} selectedId={selectedSchedule?.name} hasMore={schedulesList.hasMore} onLoadMore={schedulesList.loadMore} loadingMore={schedulesList.isFetchingMore} /></div>
             {renderScheduleDetail()}
           </Splitter>
         ) : <div className="empty-state">{t("common.noData")}</div>

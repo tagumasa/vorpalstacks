@@ -4,12 +4,12 @@
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import { SFNService, type StateMachineListItem, StateMachineType } from "@/gen/sfn_pb";
 import { CreateStateMachineInputSchema } from "@/gen/sfn_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import { ServicePageLayout, ServiceCreateModal, ServiceDeleteDialog, MonoCell, SmallMonoCell, DateCell, fmtDate, useServiceClient } from "@/components/shared/service-page";
 import { checkboxColumn, Breadcrumb, SelectionBadge, DetailPanel, DetailEmpty, useSelection } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
@@ -34,7 +34,7 @@ type DetailTab = "detail" | "json";
 
 export function SFNPage() {
   const { t, i18n } = useTranslation();
-  const { client, invalidate } = useServiceClient(SFNService);
+  const { client } = useServiceClient(SFNService);
   const { queryKey } = useListKey("sfn");
   const columns = getColumns(t);
 
@@ -49,22 +49,28 @@ export function SFNPage() {
   const [formRoleArn, setFormRoleArn] = useState("");
   const [formType, setFormType] = useState(StateMachineType.STANDARD);
 
-  const { data, isLoading, error } = useQuery({ queryKey, queryFn: () => client.listStateMachines({}), refetchInterval: REFETCH_INTERVAL });
-  const items: StateMachineListItem[] = dropEmpty(data?.statemachines ?? [], "name");
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<StateMachineListItem, Awaited<ReturnType<typeof client.listStateMachines>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.listStateMachines({ nexttoken: token || undefined }),
+    getItems: (r) => r.statemachines ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
+  });
+  const items = dropEmpty(rawItems, "name");
+  
 
   const createMutation = useMutation({
     mutationFn: () => client.createStateMachine(create(CreateStateMachineInputSchema, { name: formName, definition: formDefinition, rolearn: formRoleArn, type: formType })),
-    onSuccess: () => { invalidate(queryKey); setShowCreate(false); setFormName(""); setFormRoleArn(""); setFormType(StateMachineType.STANDARD); setFormDefinition(DEFAULT_DEFINITION); },
+    onSuccess: () => { invalidateList(); setShowCreate(false); setFormName(""); setFormRoleArn(""); setFormType(StateMachineType.STANDARD); setFormDefinition(DEFAULT_DEFINITION); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (arn: string) => client.deleteStateMachine({ statemachinearn: arn }),
-    onSuccess: () => { invalidate(queryKey); setShowDelete(false); setSelectedItem(null); clearSelection(); },
+    onSuccess: () => { invalidateList(); setShowDelete(false); setSelectedItem(null); clearSelection(); },
   });
 
   const batchDeleteMutation = useMutation({
     mutationFn: async (arns: string[]) => Promise.allSettled(arns.map((arn) => client.deleteStateMachine({ statemachinearn: arn }))),
-    onSuccess: (_d, arns) => { invalidate(queryKey); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && arns.includes(p.statemachinearn) ? null : p)); },
+    onSuccess: (_d, arns) => { invalidateList(); setShowBatchDelete(false); clearSelection(); setSelectedItem((p) => (p && arns.includes(p.statemachinearn) ? null : p)); },
   });
 
   const handleRowClick = (row: StateMachineListItem) => { setSelectedItem(row); setDetailTab("detail"); };
@@ -95,7 +101,7 @@ export function SFNPage() {
       <div className="inspector-toolbar"><Breadcrumb parts={[{ label: t("services.sfn.title") }, { label: t("services.sfn.countLabel") }]} /><div className="toolbar-selection-info"><SelectionBadge count={selectedIds.size} label={t("common.selectedCount", { count: selectedIds.size })} /></div></div>
       {items.length > 0 ? (
         <Splitter direction="horizontal" initialSize={240} minSize={80} maxSize={600} storageKey="vs-split-sfn">
-          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<StateMachineListItem>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.statemachinearn), ...columns]} data={items} getRowId={(row) => row.statemachinearn} onRowClick={handleRowClick} selectedId={selectedItem?.statemachinearn} /></div>
+          <div className="flex-fill-scroll"><DataTable columns={[checkboxColumn<StateMachineListItem>(selectedIds, toggle, () => toggleAll_(allIds), allIds, t, (row) => row.statemachinearn), ...columns]} data={items} getRowId={(row) => row.statemachinearn} onRowClick={handleRowClick} selectedId={selectedItem?.statemachinearn} hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore} /></div>
           {renderDetailPanel()}
         </Splitter>
       ) : <div className="empty-state">{t("common.noData")}</div>}

@@ -25,7 +25,7 @@ import {
   type Object$,
   type CommonPrefix,
 } from "@/gen/s3_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import {
   ServicePageLayout,
   ServiceCreateModal,
@@ -164,7 +164,7 @@ type DetailTab = "json" | "raw" | "headers";
 
 export function S3Page() {
   const { t } = useTranslation();
-  const { client, invalidate } = useServiceClient(S3Service);
+  const { client } = useServiceClient(S3Service);
   const queryClient = useQueryClient();
   const { queryKey } = useListKey("s3");
 
@@ -215,13 +215,11 @@ export function S3Page() {
   const [copyDestKey, setCopyDestKey] = useState("");
 
   // ── Bucket list query ────────────────────────────────────────
-  const { data: bucketData, isLoading, error } = useQuery({
-    queryKey,
-    queryFn: () => client.listBuckets({}),
-    refetchInterval: REFETCH_INTERVAL,
+  const bucketList = usePaginatedList<Bucket, Awaited<ReturnType<typeof client.listBuckets>>>({
+    queryKeyBase: queryKey, fetchPage: (token) => client.listBuckets({ continuationtoken: token || undefined }), getItems: (r) => r.buckets ?? [], getNextToken: (r) => r.continuationtoken ?? "",
   });
 
-  const buckets: Bucket[] = dropEmpty(bucketData?.buckets ?? [], "name");
+  const buckets: Bucket[] = dropEmpty(bucketList.items, "name");
 
   // ── Object list query (only in objects view) ─────────────────
   const activeBucket = view.type === "objects" ? view.bucket.name : "";
@@ -240,7 +238,6 @@ export function S3Page() {
         }),
       ),
     enabled: view.type === "objects",
-    refetchInterval: REFETCH_INTERVAL,
   });
 
   const allPrefixes = listData?.commonprefixes ?? [];
@@ -339,7 +336,7 @@ export function S3Page() {
         objectownership: ObjectOwnership[formOwnership as keyof typeof ObjectOwnership] ?? ObjectOwnership.BUCKETOWNERENFORCED,
       })),
     onSuccess: () => {
-      invalidate(queryKey);
+      bucketList.invalidate();
       setShowCreate(false);
       setFormBucket("");
       setFormOwnership("BUCKETOWNERENFORCED");
@@ -350,7 +347,7 @@ export function S3Page() {
     mutationFn: (bucket: string) =>
       client.deleteBucket(create(DeleteBucketRequestSchema, { bucket })),
     onSuccess: () => {
-      invalidate(queryKey);
+      bucketList.invalidate();
       setShowDeleteBuckets(false);
       clearBucketSelection();
     },
@@ -686,8 +683,8 @@ export function S3Page() {
     <ServicePageLayout
       icon="📦"
       title={t("services.s3.title")}
-      isLoading={isLoading && view.type === "buckets"}
-      error={error}
+      isLoading={bucketList.isLoading && view.type === "buckets"}
+      error={bucketList.error}
       count={view.type === "buckets" ? buckets.length : undefined}
       countLabel={t("services.s3.countLabel")}
       actions={renderActions()}
@@ -717,6 +714,9 @@ export function S3Page() {
           data={buckets}
           getRowId={(row) => row.name}
           onRowClick={handleBucketRowClick}
+          hasMore={bucketList.hasMore}
+          onLoadMore={bucketList.loadMore}
+          loadingMore={bucketList.isFetchingMore}
         />
       ) : (
         /* Object browser — table + bottom detail panel (drag split) */
@@ -743,7 +743,7 @@ export function S3Page() {
                     onClick={handleLoadMore}
                     disabled={listFetching}
                   >
-                    {listFetching ? t("common.loading") : t("services.s3.loadMore")}
+                    {listFetching ? t("common.loading") : t("common.loadMore")}
                   </button>
                 </div>
               )}

@@ -8,7 +8,7 @@
 import { useState, useCallback } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { create } from "@bufbuild/protobuf";
 import {
@@ -19,7 +19,7 @@ import {
   ParameterType,
   ParameterTier,
 } from "@/gen/ssm_pb";
-import { useListKey, dropEmpty, REFETCH_INTERVAL } from "@/lib/use-service-list";
+import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import {
   ServicePageLayout,
   ServiceCreateModal,
@@ -95,7 +95,7 @@ type DetailTab = "detail" | "json";
 
 export function SSMPage() {
   const { t, i18n } = useTranslation();
-  const { client, invalidate } = useServiceClient(SSMService);
+  const { client } = useServiceClient(SSMService);
   const { queryKey } = useListKey("ssm");
   const columns = getColumns(t);
 
@@ -116,13 +116,13 @@ export function SSMPage() {
   const [formDesc, setFormDesc] = useState("");
 
   // ── Data ─────────────────────────────────────────────────────
-  const { data, isLoading, error } = useQuery({
-    queryKey,
-    queryFn: () => client.describeParameters({}),
-    refetchInterval: REFETCH_INTERVAL,
+  const { items: rawItems, hasMore, loadMore, isFetchingMore, isLoading, error, invalidate: invalidateList } = usePaginatedList<ParameterMetadata, Awaited<ReturnType<typeof client.describeParameters>>>({
+    queryKeyBase: queryKey,
+    fetchPage: (token) => client.describeParameters({ nexttoken: token || undefined }),
+    getItems: (r) => r.parameters ?? [],
+    getNextToken: (r) => r.nexttoken ?? "",
   });
-
-  const items: ParameterMetadata[] = dropEmpty(data?.parameters ?? [], "name");
+  const items = dropEmpty(rawItems, "name");
 
   // ── Mutations ────────────────────────────────────────────────
   const createMutation = useMutation({
@@ -138,7 +138,7 @@ export function SSMPage() {
         }),
       ),
     onSuccess: () => {
-      invalidate(queryKey);
+      invalidateList();
       setShowCreate(false);
       setFormName("");
       setFormValue("");
@@ -151,7 +151,7 @@ export function SSMPage() {
     mutationFn: (name: string) =>
       client.deleteParameter(create(DeleteParameterRequestSchema, { name })),
     onSuccess: () => {
-      invalidate(queryKey);
+      invalidateList();
       setShowDelete(false);
       setSelectedItem(null);
       clearSelection();
@@ -168,7 +168,7 @@ export function SSMPage() {
       return results;
     },
     onSuccess: (_data, names) => {
-      invalidate(queryKey);
+      invalidateList();
       setShowBatchDelete(false);
       clearSelection();
       setSelectedItem((prev) => (prev && names.includes(prev.name) ? null : prev));
@@ -316,6 +316,7 @@ export function SSMPage() {
               getRowId={(row) => row.name}
               onRowClick={handleRowClick}
               selectedId={selectedItem?.name}
+              hasMore={hasMore} onLoadMore={loadMore} loadingMore={isFetchingMore}
             />
           </div>
           {renderDetailPanel()}
