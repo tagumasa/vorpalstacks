@@ -27,6 +27,18 @@ import {
 } from "@/gen/s3_pb";
 import { useListKey, dropEmpty, usePaginatedList } from "@/lib/use-service-list";
 import {
+  type ObjectRow,
+  toObjectRows,
+  isTextFile,
+  isImageFile,
+  inferContentType,
+  fileNameFromKey,
+  MAX_UPLOAD_BYTES,
+  MAX_TEXT_PREVIEW,
+  MAX_IMAGE_PREVIEW,
+  LIST_PAGE_SIZE,
+} from "@/lib/s3-helpers";
+import {
   ServicePageLayout,
   ServiceCreateModal,
   ServiceDeleteDialog,
@@ -37,120 +49,18 @@ import {
 } from "@/components/shared/service-page";
 import {
   checkboxColumn,
+  Breadcrumb,
+  SelectionBadge,
+  DetailPanel,
+  DetailEmpty,
   useSelection,
 } from "@/components/shared/inspector";
 import { DataTable } from "@/components/shared/data-table";
 import { Modal } from "@/components/shared/modal";
 import { Splitter } from "@/components/shared/splitter";
 import { JsonViewer } from "@/components/shared/json-viewer";
-import { formatBytes } from "@/lib/format";
 
 // ─── Constants ──────────────────────────────────────────────────
-
-const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
-const MAX_TEXT_PREVIEW = 256 * 1024;
-const MAX_IMAGE_PREVIEW = 5 * 1024 * 1024;
-const LIST_PAGE_SIZE = 100;
-
-const TEXT_EXTENSIONS = new Set([
-  ".txt", ".json", ".csv", ".md", ".xml", ".log", ".yaml", ".yml",
-  ".toml", ".ini", ".cfg", ".conf", ".html", ".css", ".js", ".ts",
-  ".go", ".py", ".rs", ".java", ".sh", ".bash", ".zsh", ".env",
-]);
-
-const IMAGE_EXTENSIONS = new Set([
-  ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico", ".bmp",
-]);
-
-const MIME_MAP: Record<string, string> = {
-  ".json": "application/json", ".csv": "text/csv", ".xml": "application/xml",
-  ".html": "text/html", ".css": "text/css", ".js": "application/javascript",
-  ".ts": "application/typescript", ".md": "text/markdown", ".yaml": "application/x-yaml",
-  ".yml": "application/x-yaml", ".txt": "text/plain", ".png": "image/png",
-  ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif",
-  ".svg": "image/svg+xml", ".webp": "image/webp", ".pdf": "application/pdf",
-};
-
-// ─── Helpers ────────────────────────────────────────────────────
-
-function getExtension(key: string): string {
-  const lastDot = key.lastIndexOf(".");
-  if (lastDot === -1) return "";
-  return key.slice(lastDot).toLowerCase();
-}
-
-function inferContentType(filename: string): string {
-  return MIME_MAP[getExtension(filename)] ?? "application/octet-stream";
-}
-
-function isTextFile(key: string): boolean {
-  return TEXT_EXTENSIONS.has(getExtension(key));
-}
-
-function isImageFile(key: string): boolean {
-  return IMAGE_EXTENSIONS.has(getExtension(key));
-}
-
-/** Format bytes for display in the object table, falling back to the shared formatBytes. */
-function formatSize(bytes: bigint | number): string {
-  return formatBytes(bytes);
-}
-
-function fileNameFromKey(key: string): string {
-  const idx = key.lastIndexOf("/");
-  return idx === -1 ? key : key.slice(idx + 1);
-}
-
-function stripTrailingSlash(s: string): string {
-  return s.endsWith("/") ? s.slice(0, -1) : s;
-}
-
-// ─── Unified row type for object table (folders + files) ────────
-
-interface ObjectRow {
-  id: string;
-  key: string;
-  displayKey: string;
-  size: string;
-  lastModified: string;
-  storageClass: string;
-  isFolder: boolean;
-  rawSize: bigint;
-}
-
-function toObjectRows(
-  prefixes: CommonPrefix[],
-  objects: Object$[],
-  currentPrefix: string,
-): ObjectRow[] {
-  const folders: ObjectRow[] = prefixes.map((p) => ({
-    id: `folder:${p.prefix}`,
-    key: p.prefix,
-    displayKey: stripTrailingSlash(p.prefix.slice(currentPrefix.length)),
-    size: "—",
-    lastModified: "—",
-    storageClass: "—",
-    isFolder: true,
-    rawSize: 0n,
-  }));
-  const files: ObjectRow[] = objects
-    .filter((o) => o.key !== currentPrefix)
-    .map((o) => ({
-      id: `file:${o.key}`,
-      key: o.key,
-      displayKey: o.key.slice(currentPrefix.length),
-      size: formatSize(o.size),
-      lastModified: o.lastmodified,
-      storageClass: String(o.storageclass ?? "STANDARD"),
-      isFolder: false,
-      rawSize: o.size,
-    }));
-  return [...folders, ...files];
-}
-
-
-
-// ─── View state ─────────────────────────────────────────────────
 
 type ViewState =
   | { type: "buckets" }
@@ -474,65 +384,42 @@ export function S3Page() {
 
   // ── Breadcrumb rendering ─────────────────────────────────────
 
-  const breadcrumbParts = prefix.split("/").filter(Boolean);
+   const breadcrumbPrefixes = prefix.split("/").filter(Boolean);
 
-  const renderBreadcrumb = () => {
-    if (view.type === "buckets") {
-      return (
-        <div className="toolbar-breadcrumb">
-          S3 / <span className="breadcrumb-current">{t("services.s3.backToBuckets")}</span>
-        </div>
-      );
-    }
-    return (
-      <div className="toolbar-breadcrumb">
-        <button className="breadcrumb-link" onClick={navigateToBuckets}>
-          {t("services.s3.backToBuckets")}
-        </button>
-        <span className="breadcrumb-sep">/</span>
-        <span className="breadcrumb-current">{view.bucket.name}</span>
-        {breadcrumbParts.length > 0 && (
-          <>
-            <span className="breadcrumb-sep">/</span>
-            <button className="breadcrumb-link" onClick={() => handleBreadcrumb(-1)}>
-              {t("services.s3.root")}
-            </button>
-          </>
-        )}
-        {breadcrumbParts.map((part, i) => (
-          <span key={i}>
-            <span className="breadcrumb-sep">/</span>
-            {i < breadcrumbParts.length - 1 ? (
-              <button className="breadcrumb-link" onClick={() => handleBreadcrumb(i)}>
-                {part}
-              </button>
-            ) : (
-              <span className="breadcrumb-current">{part}</span>
-            )}
-          </span>
-        ))}
-      </div>
-    );
-  };
+   const breadcrumbParts = view.type === "buckets"
+     ? [{ label: t("services.s3.title") }, { label: t("services.s3.backToBuckets") }]
+     : [
+         { label: t("services.s3.backToBuckets"), onClick: navigateToBuckets },
+         { label: view.bucket.name },
+         ...(breadcrumbPrefixes.length > 0
+           ? [{ label: t("services.s3.root"), onClick: () => handleBreadcrumb(-1) }]
+           : []),
+         ...breadcrumbPrefixes.map((part, i) =>
+           i < breadcrumbPrefixes.length - 1
+             ? { label: part, onClick: () => handleBreadcrumb(i) }
+             : { label: part },
+         ),
+       ];
 
   // ── Detail panel rendering ───────────────────────────────────
 
   const renderDetailPanel = () => {
     if (!selectedFile) {
-      return (
-        <div className="detail-panel-empty">
-          {t("services.s3.noObjectSelected")}
-        </div>
-      );
+      return <DetailEmpty message={t("services.s3.noObjectSelected")} />;
     }
 
-    // Build JSON data for the selected object
     const jsonObj: Record<string, unknown> = {
       Key: selectedFile.key,
       Size: Number(selectedFile.rawSize),
       StorageClass: selectedFile.storageClass,
       LastModified: selectedFile.lastModified,
     };
+
+    const detailTabs = [
+      { key: "json", label: t("services.s3.tabJson") },
+      { key: "raw", label: t("services.s3.tabRaw") },
+      { key: "headers", label: t("services.s3.tabHeaders") },
+    ];
 
     const renderTabContent = () => {
       switch (detailTab) {
@@ -565,30 +452,14 @@ export function S3Page() {
     };
 
     return (
-      <div className="detail-panel-content">
-        <div className="detail-header">
-          <span className="detail-title">📄 {selectedFile.displayKey}</span>
-          <div className="detail-tabs">
-            <button
-              className={`detail-tab ${detailTab === "json" ? "active" : ""}`}
-              onClick={() => setDetailTab("json")}
-            >
-              {t("services.s3.tabJson")}
-            </button>
-            <button
-              className={`detail-tab ${detailTab === "raw" ? "active" : ""}`}
-              onClick={() => setDetailTab("raw")}
-            >
-              {t("services.s3.tabRaw")}
-            </button>
-            <button
-              className={`detail-tab ${detailTab === "headers" ? "active" : ""}`}
-              onClick={() => setDetailTab("headers")}
-            >
-              {t("services.s3.tabHeaders")}
-            </button>
-          </div>
-          <div className="detail-actions">
+      <DetailPanel
+        title={selectedFile.displayKey}
+        titleIcon="📄"
+        tabs={detailTabs}
+        activeTab={detailTab}
+        onTabChange={(k) => setDetailTab(k as typeof detailTab)}
+        actions={
+          <>
             <button
               className="btn btn-primary btn-sm"
               disabled={downloadMutation.isPending}
@@ -608,12 +479,11 @@ export function S3Page() {
             >
               {t("common.delete")}
             </button>
-          </div>
-        </div>
-        <div className="detail-body">
-          {renderTabContent()}
-        </div>
-      </div>
+          </>
+        }
+      >
+        {renderTabContent()}
+      </DetailPanel>
     );
   };
 
@@ -691,19 +561,10 @@ export function S3Page() {
     >
       {/* Breadcrumb toolbar */}
       <div className="inspector-toolbar">
-        {renderBreadcrumb()}
-        <div className="toolbar-selection-info">
-          {view.type === "buckets" && selectedBucketNames.size > 0 && (
-            <span className="selection-count">
-              {t("services.s3.selectedCount", { count: selectedBucketNames.size })}
-            </span>
-          )}
-          {view.type === "objects" && selectedObjectIds.size > 0 && (
-            <span className="selection-count">
-              {t("services.s3.selectedCount", { count: selectedObjectIds.size })}
-            </span>
-          )}
-        </div>
+         <Breadcrumb parts={breadcrumbParts} />
+         <div className="toolbar-selection-info">
+           <SelectionBadge count={view.type === "buckets" ? selectedBucketNames.size : selectedObjectIds.size} label={t("services.s3.selectedCount", { count: view.type === "buckets" ? selectedBucketNames.size : selectedObjectIds.size })} />
+         </div>
       </div>
 
       {/* Main content area */}
