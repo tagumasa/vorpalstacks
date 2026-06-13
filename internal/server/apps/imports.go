@@ -17,6 +17,8 @@ import (
 	svcec2 "vorpalstacks/internal/services/aws/ec2"
 	svcevents "vorpalstacks/internal/services/aws/eventbridge"
 	svciam "vorpalstacks/internal/services/aws/iam"
+	svciot "vorpalstacks/internal/services/aws/iot"
+	svciotevents "vorpalstacks/internal/services/aws/iotevents"
 	svckinesis "vorpalstacks/internal/services/aws/kinesis"
 	svckms "vorpalstacks/internal/services/aws/kms"
 	svclambda "vorpalstacks/internal/services/aws/lambda"
@@ -60,6 +62,8 @@ type serviceState struct {
 	ec2Service             *svcec2.EC2Service
 	eventBridgeService     *svcevents.EventsService
 	iamService             *svciam.IAMService
+	iotService             *svciot.IoTService
+	iotEventsService       *svciotevents.IoTEventsService
 	kinesisService         *svckinesis.KinesisService
 	kmsService             *svckms.KMSService
 	lambdaService          *svclambda.LambdaService

@@ -75,6 +75,8 @@ type Config struct {
 	TimestreamWrite bool
 	WAFv2           bool
 	RDSMySQL        bool
+	IoT             bool
+	IoTEvents       bool
 }
 
 // FromBootstrap converts a BootstrapConfig into an apps.Config.
@@ -113,6 +115,8 @@ func FromBootstrap(bc *appconfig.BootstrapConfig) *Config {
 		EC2:                   bc.EC2,
 		RDSMySQL:              bc.RDSMySQL,
 		EventBridge:           bc.Events,
+		IoT:                   bc.IoT,
+		IoTEvents:             bc.IoTEvents,
 		Kinesis:               bc.Kinesis,
 		KMS:                   bc.KMS,
 		Lambda:                bc.Lambda,
@@ -164,6 +168,8 @@ func (c *Config) PrintStartupBanner() {
 		{"STS", c.STS}, {"TimestreamQuery", c.TimestreamQuery},
 		{"TimestreamWrite", c.TimestreamWrite}, {"WAFv2", c.WAFv2},
 		{"RDSMySQL", c.RDSMySQL},
+		{"IoT", c.IoT},
+		{"IoTEvents", c.IoTEvents},
 	}
 	fmt.Print("Services:")
 	for _, s := range services {

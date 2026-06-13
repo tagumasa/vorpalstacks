@@ -1,0 +1,60 @@
+package iot
+
+import awserrors "vorpalstacks/internal/common/errors"
+
+// Resource not found errors (HTTP 404).
+var (
+	ErrThingNotFound              = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
+	ErrThingAlreadyExists         = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+	ErrThingTypeNotFound          = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
+	ErrThingTypeAlreadyExists     = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+	ErrThingGroupNotFound         = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
+	ErrThingGroupAlreadyExists    = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+	ErrBillingGroupNotFound       = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
+	ErrBillingGroupAlreadyExists  = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+	ErrCertificateNotFound        = awserrors.NewAWSError("ResourceNotFoundException", "The specified certificate does not exist.", 404)
+	ErrCertificateAlreadyExists   = awserrors.NewAWSError("ResourceAlreadyExistsException", "The certificate already exists.", 409)
+	ErrPolicyNotFound             = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
+	ErrPolicyVersionNotFound     = awserrors.NewAWSError("ResourceNotFoundException", "The specified policy version does not exist.", 404)
+	ErrPolicyAlreadyExists        = awserrors.NewAWSError("ResourceAlreadyExistsException", "The policy already exists.", 409)
+	ErrRuleNotFound               = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
+	ErrRuleAlreadyExists          = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+	ErrJobNotFound                = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
+	ErrJobAlreadyExists           = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+	ErrJobExecutionNotFound       = awserrors.NewAWSError("ResourceNotFoundException", "JobExecution not found.", 404)
+	ErrShadowNotFound             = awserrors.NewAWSError("ResourceNotFoundException", "No shadow exists for the specified thing.", 404)
+	ErrAuthorizerNotFound         = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
+	ErrAuthorizerAlreadyExists    = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+	ErrRoleAliasNotFound          = awserrors.NewAWSError("ResourceNotFoundException", "The specified role alias does not exist.", 404)
+	ErrRoleAliasAlreadyExists     = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+	ErrTemplateNotFound           = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 409)
+	ErrTemplateAlreadyExists      = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+	ErrDetectorModelNotFound      = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
+	ErrDetectorModelAlreadyExists = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+	ErrInputNotFound              = awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
+	ErrInputAlreadyExists         = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+)
+
+// Request validation errors (HTTP 400).
+var (
+	ErrInvalidRequest        = awserrors.NewAWSError("InvalidRequestException", "The request is not valid.", 400)
+	ErrMissingParam          = awserrors.NewAWSError("InvalidRequestException", "The request must contain the required parameter.", 400)
+	ErrInvalidCertStatus     = awserrors.NewAWSError("InvalidRequestException", "Certificate must be deactivated (status INACTIVE) before deletion.", 400)
+	ErrCertHasAttachments    = awserrors.NewAWSError("InvalidRequestException", "Certificate has attached entities and cannot be deleted.", 400)
+	ErrShadowTooLarge        = awserrors.NewAWSError("InvalidRequestException", "The shadow document exceeds the maximum size of 8KB.", 400)
+	ErrResourceAlreadyExists = awserrors.NewAWSError("ResourceAlreadyExistsException", "The resource already exists.", 409)
+)
+
+// Conflict errors (HTTP 409).
+var (
+	ErrVersionConflict     = awserrors.NewAWSError("ConflictException", "The specified version does not match the version of the shadow document.", 409)
+	ErrCertificateConflict = awserrors.NewAWSError("CertificateConflictException", "The certificate is in an invalid state for the requested operation.", 409)
+	ErrDeleteConflict      = awserrors.NewAWSError("DeleteConflictException", "The resource cannot be deleted.", 409)
+)
+
+// Throttling / state transition errors.
+var (
+	ErrThrottling             = awserrors.NewAWSError("ThrottlingException", "Rate exceeded.", 429)
+	ErrInvalidStateTransition = awserrors.NewAWSError("InvalidStateTransitionException", "An invalid state transition was attempted.", 400)
+	ErrInternalFailure        = awserrors.NewAWSError("InternalFailureException", "An internal error occurred.", 500)
+)

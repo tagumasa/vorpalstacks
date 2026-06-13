@@ -26,6 +26,8 @@ const (
 	LambdaURL = 50105
 	// AppSync is the AppSync GraphQL API port.
 	AppSync = 50106
+	// IotMQTT is the IoT Core MQTT broker port.
+	IotMQTT = 50107
 )
 
 const (

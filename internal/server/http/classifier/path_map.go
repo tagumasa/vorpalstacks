@@ -119,6 +119,12 @@ func lookupServiceByPath(path string) string {
 	if request.IsNeptuneGraphPath(path) {
 		return "neptunegraph"
 	}
+	if isIoTEventsPath(path) {
+		return "iotevents"
+	}
+	if isIoTPath(path) {
+		return "iot"
+	}
 	return ""
 }
 
@@ -149,4 +155,45 @@ func rdsDataOperationFromPath(path string) string {
 	default:
 		return ""
 	}
+}
+
+// iotPathPrefixes lists the URL path prefixes used by the AWS IoT Core
+// REST-JSON control plane API.
+var iotPathPrefixes = []string{
+	"/things", "/thing-groups", "/thing-types", "/billing-groups",
+	"/certificates", "/certificate", "/keys-and-certificate",
+	"/policies", "/policy-principals", "/principal-policies",
+	"/principals", "/target-policies", "/attached-policies",
+	"/rules", "/jobs", "/endpoint", "/role-aliases",
+	"/tags", "/untag", "/authorizers", "/authorizer/",
+	"/provisioning-templates", "/provisioning-template",
+	"/domainConfigurations", "/domainConfiguration",
+	"/indexing", "/active-violations", "/violation-events",
+	"/behavior-model-training", "/security-profiles",
+	"/messages", "/destinations", "/effective-policies",
+}
+
+func isIoTPath(path string) bool {
+	for _, prefix := range iotPathPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// ioteventsPathPrefixes lists the URL path prefixes used by the AWS IoT Events
+// REST-JSON control plane API.
+var ioteventsPathPrefixes = []string{
+	"/detector-models",
+	"/inputs",
+}
+
+func isIoTEventsPath(path string) bool {
+	for _, prefix := range ioteventsPathPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	return false
 }

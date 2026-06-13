@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	sqle "github.com/dolthub/go-mysql-server"
@@ -30,6 +31,11 @@ import (
 	svcdynamodb "vorpalstacks/internal/services/aws/dynamodb"
 	svcevents "vorpalstacks/internal/services/aws/eventbridge"
 	svciam "vorpalstacks/internal/services/aws/iam"
+	svciot "vorpalstacks/internal/services/aws/iot"
+	"vorpalstacks/internal/services/aws/iot/broker"
+	"vorpalstacks/internal/services/aws/iot/ca"
+	"vorpalstacks/internal/services/aws/iot/rules/actions"
+	svciotevents "vorpalstacks/internal/services/aws/iotevents"
 	svckinesis "vorpalstacks/internal/services/aws/kinesis"
 	svckms "vorpalstacks/internal/services/aws/kms"
 	svclambda "vorpalstacks/internal/services/aws/lambda"
@@ -82,6 +88,8 @@ func (a *App) initOptionalServices() error {
 		{a.cfg.Athena, "Athena", a.initAthena},
 		{a.cfg.RDSMySQL, "RDSMySQL", a.initRDSMySQL},
 		{a.cfg.RDSMySQL, "RDSData", a.initRDSData},
+		{a.cfg.IoT, "IoT", a.initIoT},
+		{a.cfg.IoTEvents, "IoTEvents", a.initIoTEvents},
 	}
 
 	for _, init := range initers {
@@ -339,6 +347,53 @@ func (p *rdsStoreProvider) GetInstance(identifier string) (string, string, strin
 func (p *rdsStoreProvider) GetCluster(identifier string) (string, []string, error) {
 	// Returns clusterName, instances, error
 	return identifier, []string{identifier}, nil
+}
+
+// --- IoT (optional) ---
+
+func (a *App) initIoT(st *serviceState) error {
+	iotService := svciot.NewIoTService(st.accountID)
+	iotService.SetStorageManager(a.server.StorageManager())
+
+	eb := a.server.EventBus()
+	if eb != nil {
+		iotService.SetEventBus(eb)
+		disp := actions.NewDispatcher(eb, nil)
+		iotService.SetActionDispatcher(disp)
+	}
+
+	regionalStorage, err := a.server.StorageManager().GetStorage(st.region)
+	if err != nil {
+		return fmt.Errorf("failed to get regional storage for IoT CA: %w", err)
+	}
+
+	certAuth, err := ca.NewCertificateAuthority(regionalStorage)
+	if err != nil {
+		return fmt.Errorf("failed to create IoT CA: %w", err)
+	}
+	iotService.SetCA(certAuth)
+
+	mqttBroker := broker.NewBroker(certAuth, nil)
+	iotService.SetBroker(mqttBroker)
+
+	if os.Getenv("TEST_MODE") != "true" {
+		mqttPort := serviceports.IotMQTT
+		if err := mqttBroker.Start(mqttPort); err != nil {
+			return fmt.Errorf("failed to start MQTT broker on port %d: %w", mqttPort, err)
+		}
+	}
+
+	st.iotService = iotService
+	st.iotService.RegisterHandlers(a.server.Dispatcher())
+	return nil
+}
+
+func (a *App) initIoTEvents(st *serviceState) error {
+	iotEventsService := svciotevents.NewIoTEventsService(st.accountID, st.region)
+	iotEventsService.SetStorageManager(a.server.StorageManager())
+	st.iotEventsService = iotEventsService
+	st.iotEventsService.RegisterHandlers(a.server.Dispatcher())
+	return nil
 }
 
 // --- gRPC-Web Admin ---

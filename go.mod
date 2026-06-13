@@ -1,6 +1,6 @@
 module vorpalstacks
 
-go 1.25.10
+go 1.25.11
 
 require (
 	connectrpc.com/connect v1.19.1
@@ -18,6 +18,7 @@ require (
 	github.com/miekg/dns v1.1.72
 	github.com/moby/moby/api v1.54.2
 	github.com/moby/moby/client v0.4.1
+	github.com/mochi-mqtt/server/v2 v2.7.9
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/parquet-go/parquet-go v0.28.0
 	github.com/recolabs/gnata v0.1.2
@@ -97,6 +98,7 @@ require (
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
+	github.com/rs/xid v1.4.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tetratelabs/wazero v1.8.2 // indirect

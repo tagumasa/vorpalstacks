@@ -39,4 +39,6 @@ func init() {
 	RegisterRESTParser(&neptunedataRESTParser{})
 	RegisterRESTParser(&appSyncRESTParser{})
 	RegisterRESTParser(&neptuneGraphRESTParser{})
+	RegisterRESTParser(&iotRESTParser{})
+	RegisterRESTParser(&iotEventsRESTParser{})
 }

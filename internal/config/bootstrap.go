@@ -65,6 +65,8 @@ type BootstrapConfig struct {
 	Route53         bool
 	EC2             bool
 	RDSMySQL        bool
+	IoT             bool
+	IoTEvents       bool
 }
 
 // LoadBootstrapConfig reads all bootstrap configuration from environment variables
@@ -133,6 +135,8 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		Route53:         envBool("ROUTE53_ENABLED", true),
 		EC2:             envBool("EC2_ENABLED", true),
 		RDSMySQL:        envBool("RDS_MYSQL_ENABLED", false),
+		IoT:             envBool("IOT_ENABLED", false),
+		IoTEvents:       envBool("IOT_EVENTS_ENABLED", false),
 	}
 
 	if envBool("ALL_SERVICES_ENABLED", false) {
@@ -170,6 +174,8 @@ func LoadBootstrapConfig() *BootstrapConfig {
 		cfg.Route53 = true
 		cfg.EC2 = true
 		cfg.RDSMySQL = true
+		cfg.IoT = true
+		cfg.IoTEvents = true
 	}
 
 	return cfg
