@@ -353,13 +353,16 @@ func (s *IoTService) GetEffectivePolicies(ctx context.Context, reqCtx *request.R
 	}
 	addPolicies(principalPolicies)
 
+	region := reqCtx.GetRegion()
 	things, _ := store.ListThingsForPrincipal(principal)
-	for _, thing := range things {
-		thingPolicies, _ := store.ListPoliciesForPrincipal(thing)
+	for _, thingName := range things {
+		thingARN := iotstore.BuildThingARN(s.accountID, region, thingName)
+		thingPolicies, _ := store.ListPoliciesForPrincipal(thingARN)
 		addPolicies(thingPolicies)
-		groups, _ := store.ListGroupsForThing(thing)
-		for _, group := range groups {
-			groupPolicies, _ := store.ListPoliciesForPrincipal(group)
+		groups, _ := store.ListGroupsForThing(thingName)
+		for _, groupName := range groups {
+			groupARN := iotstore.BuildThingGroupARN(s.accountID, region, groupName)
+			groupPolicies, _ := store.ListPoliciesForPrincipal(groupARN)
 			addPolicies(groupPolicies)
 		}
 	}

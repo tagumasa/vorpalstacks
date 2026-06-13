@@ -552,7 +552,7 @@ func (s *IotStore) ListShadowNames(thingName string) ([]string, error) {
 		parts := strings.SplitN(key[len(prefix):], "/", 2)
 		name := parts[0]
 		if name == "$current" {
-			name = "classic"
+			return nil
 		}
 		if !seen[name] {
 			seen[name] = true

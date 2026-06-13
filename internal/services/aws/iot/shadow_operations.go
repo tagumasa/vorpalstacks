@@ -69,7 +69,8 @@ func (s *IoTService) UpdateThingShadow(ctx context.Context, reqCtx *request.Requ
 	}
 
 	var payload struct {
-		State shadowState `json:"state"`
+		State   shadowState `json:"state"`
+		Version *int64      `json:"version"`
 	}
 	if err := json.Unmarshal(req.Body, &payload); err != nil {
 		return nil, iotstore.ErrInvalidRequest
@@ -77,7 +78,12 @@ func (s *IoTService) UpdateThingShadow(ctx context.Context, reqCtx *request.Requ
 	incoming := payload.State
 
 	var clientVersion int64
-	if raw := request.GetParamCaseInsensitive(req.Parameters, "version"); raw != "" {
+	// Prefer the version from the parsed body JSON (correct source for
+	// REST-JSON protocol). Fall back to req.Parameters for clients that
+	// send version as a query parameter or via awsJson1_1 protocol.
+	if payload.Version != nil {
+		clientVersion = *payload.Version
+	} else if raw := request.GetParamCaseInsensitive(req.Parameters, "version"); raw != "" {
 		if n, _ := fmt.Sscanf(raw, "%d", &clientVersion); n != 1 {
 			return nil, iotstore.ErrInvalidRequest
 		}

@@ -205,8 +205,17 @@ func (s *IoTService) ListThings(ctx context.Context, reqCtx *request.RequestCont
 		return nil, err
 	}
 
+	attributeName := request.GetParamCaseInsensitive(req.Parameters, "attributeName")
+	attributeValue := request.GetParamCaseInsensitive(req.Parameters, "attributeValue")
+
 	things := make([]map[string]interface{}, 0, len(result.Items))
 	for _, t := range result.Items {
+		if attributeName != "" {
+			val, exists := t.Attributes[attributeName]
+			if !exists || val != attributeValue {
+				continue
+			}
+		}
 		things = append(things, map[string]interface{}{
 			"thingName":        t.ThingName,
 			"thingArn":         t.ThingARN,
