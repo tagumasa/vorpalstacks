@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests for 32 AWS services with 2308 test cases (2244 SDK + 47 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests for 32 AWS services with 2311 test cases (2247 SDK + 47 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -30,7 +30,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | IAM | 152 | 100% | ✅ Perfect |
 | Kinesis | 51 | 100% | ✅ Perfect |
 | KMS | 97 | 100% | ✅ Perfect |
-| Lambda | 68 | 100% | ✅ Perfect |
+| Lambda | 71 | 100% | ✅ Perfect |
 | Neptune | 97 | 100% | ✅ Perfect |
 | NeptuneData | 168 | 100% | ✅ Perfect |
 | NeptuneGraph | 47 | 100% | ✅ Perfect |
@@ -49,7 +49,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 | WAF | Removed | No longer a supported service |
 | WAFv2 | 61 | 100% | ✅ Perfect |
 
-**Overall: 2,308/2,308 tests passing (100%) — 2,244 SDK + 47 integration + 17 WebSocket**
+**Overall: 2,311/2,311 tests passing (100%) — 2,247 SDK + 47 integration + 17 WebSocket**
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

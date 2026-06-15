@@ -7,7 +7,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
-	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 type Thing struct {
@@ -60,6 +59,8 @@ type ThingType struct {
 	Version             int64
 	CreationDate        time.Time
 	LastModifiedDate    time.Time
+	Deprecated          bool
+	DeprecationDate     time.Time
 }
 
 type ThingTypeProperty struct {
@@ -88,6 +89,8 @@ func ThingTypeToProto(t *ThingType) *pb.ThingType {
 		Version:             t.Version,
 		CreationDate:        timeToProto(t.CreationDate),
 		LastModifiedDate:    timeToProto(t.LastModifiedDate),
+		Deprecated:          t.Deprecated,
+		DeprecationDate:     timeToProto(t.DeprecationDate),
 	}
 }
 
@@ -109,6 +112,8 @@ func ProtoToThingType(p *pb.ThingType) *ThingType {
 		Version:             p.Version,
 		CreationDate:        protoToTime(p.CreationDate),
 		LastModifiedDate:    protoToTime(p.LastModifiedDate),
+		Deprecated:          p.Deprecated,
+		DeprecationDate:     protoToTime(p.DeprecationDate),
 	}
 }
 
@@ -154,6 +159,7 @@ type BillingGroup struct {
 	Tags             map[string]string
 	CreationDate     time.Time
 	LastModifiedDate time.Time
+	Version          int64
 }
 
 func BillingGroupToProto(g *BillingGroup) *pb.BillingGroup {
@@ -161,6 +167,7 @@ func BillingGroupToProto(g *BillingGroup) *pb.BillingGroup {
 		GroupName: g.GroupName, GroupArn: g.GroupARN, GroupId: g.GroupID,
 		Description: g.Description, Attributes: g.Attributes, Tags: g.Tags,
 		CreationDate: timeToProto(g.CreationDate), LastModifiedDate: timeToProto(g.LastModifiedDate),
+		Version: g.Version,
 	}
 }
 
@@ -169,6 +176,7 @@ func ProtoToBillingGroup(p *pb.BillingGroup) *BillingGroup {
 		GroupName: p.GroupName, GroupARN: p.GroupArn, GroupID: p.GroupId,
 		Description: p.Description, Attributes: p.Attributes, Tags: p.Tags,
 		CreationDate: protoToTime(p.CreationDate), LastModifiedDate: protoToTime(p.LastModifiedDate),
+		Version: p.Version,
 	}
 }
 
@@ -245,14 +253,27 @@ type TopicRule struct {
 	SQL              string
 	CreatedAt        string
 	AwsIotSqlVersion string
+	Actions          map[string]interface{}
+	ErrorAction      map[string]interface{}
 }
 
 func RuleToProto(r *TopicRule) *pb.TopicRule {
-	return &pb.TopicRule{
+	p := &pb.TopicRule{
 		RuleName: r.RuleName, Arn: r.ARN, TopicPattern: r.TopicPattern,
 		Description: r.Description, RuleDisabled: r.RuleDisabled,
 		Sql: r.SQL, CreatedAt: r.CreatedAt, AwsIotSqlVersion: r.AwsIotSqlVersion,
 	}
+	if r.Actions != nil {
+		if s, err := mapToStruct(r.Actions); err == nil {
+			p.Actions = s
+		}
+	}
+	if r.ErrorAction != nil {
+		if s, err := mapToStruct(r.ErrorAction); err == nil {
+			p.ErrorAction = s
+		}
+	}
+	return p
 }
 
 func ProtoToRule(p *pb.TopicRule) *TopicRule {
@@ -260,6 +281,8 @@ func ProtoToRule(p *pb.TopicRule) *TopicRule {
 		RuleName: p.RuleName, ARN: p.Arn, TopicPattern: p.TopicPattern,
 		Description: p.Description, RuleDisabled: p.RuleDisabled,
 		SQL: p.Sql, CreatedAt: p.CreatedAt, AwsIotSqlVersion: p.AwsIotSqlVersion,
+		Actions:     structToMap(p.Actions),
+		ErrorAction: structToMap(p.ErrorAction),
 	}
 }
 
@@ -276,6 +299,8 @@ type Job struct {
 	Status          string
 	TargetSelection string
 	Tags            map[string]string
+	Document        string
+	Targets         []string
 }
 
 func JobToProto(j *Job) *pb.Job {
@@ -285,6 +310,7 @@ func JobToProto(j *Job) *pb.Job {
 		CreatedAt: timeToProto(j.CreatedAt), LastUpdatedAt: timeToProto(j.LastUpdatedAt),
 		CompletedAt: j.CompletedAt, JobTemplateArn: j.JobTemplateARN,
 		Status: j.Status, TargetSelection: j.TargetSelection, Tags: j.Tags,
+		Document: j.Document, Targets: j.Targets,
 	}
 }
 
@@ -295,6 +321,7 @@ func ProtoToJob(p *pb.Job) *Job {
 		CreatedAt: protoToTime(p.CreatedAt), LastUpdatedAt: protoToTime(p.LastUpdatedAt),
 		CompletedAt: p.CompletedAt, JobTemplateARN: p.JobTemplateArn,
 		Status: p.Status, TargetSelection: p.TargetSelection, Tags: p.Tags,
+		Document: p.Document, Targets: p.Targets,
 	}
 }
 
@@ -360,7 +387,7 @@ type RoleAlias struct {
 	RoleAlias                 string
 	RoleAliasARN              string
 	RoleARN                   string
-	CredentialDurationSeconds string
+	CredentialDurationSeconds int64
 	Owner                     string
 	CreationDate              time.Time
 	LastModifiedDate          time.Time
@@ -492,71 +519,6 @@ func protoToTime(p *timestamppb.Timestamp) time.Time {
 	return p.AsTime()
 }
 
-// BuildThingARN constructs an ARN for an IoT thing.
-func BuildThingARN(accountID, region, thingName string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("thing/%s", thingName))
-}
-
-// BuildCertificateARN constructs an ARN for an IoT certificate.
-func BuildCertificateARN(accountID, region, certID string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("cert/%s", certID))
-}
-
-// BuildPolicyARN constructs an ARN for an IoT policy.
-func BuildPolicyARN(accountID, region, policyName string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("policy/%s", policyName))
-}
-
-// BuildRuleARN constructs an ARN for an IoT topic rule.
-func BuildRuleARN(accountID, region, ruleName string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("rule/%s", ruleName))
-}
-
-// BuildJobARN constructs an ARN for an IoT job.
-func BuildJobARN(accountID, region, jobID string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("job/%s", jobID))
-}
-
-// BuildThingTypeARN constructs an ARN for an IoT thing type.
-func BuildThingTypeARN(accountID, region, name string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("thingtype/%s", name))
-}
-
-// BuildThingGroupARN constructs an ARN for an IoT thing group.
-func BuildThingGroupARN(accountID, region, name string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("thinggroup/%s", name))
-}
-
-// BuildRoleAliasARN constructs an ARN for an IoT role alias.
-func BuildRoleAliasARN(accountID, region, alias string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("rolealias/%s", alias))
-}
-
-// BuildBillingGroupARN constructs an ARN for an IoT billing group.
-func BuildBillingGroupARN(accountID, region, name string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("billinggroup/%s", name))
-}
-
-// BuildAuthorizerARN constructs an ARN for an IoT custom authorizer.
-func BuildAuthorizerARN(accountID, region, name string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("authorizer/%s", name))
-}
-
-// BuildProvisioningTemplateARN constructs an ARN for a fleet provisioning template.
-func BuildProvisioningTemplateARN(accountID, region, name string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iot", fmt.Sprintf("provisioningtemplate/%s", name))
-}
-
-// BuildDetectorModelARN constructs an ARN for an IoT Events detector model.
-func BuildDetectorModelARN(accountID, region, name string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iotevents", fmt.Sprintf("detectorModel/%s", name))
-}
-
-// BuildInputARN constructs an ARN for an IoT Events input.
-func BuildInputARN(accountID, region, name string) string {
-	return svcarn.NewARNBuilder(accountID, region).Build("iotevents", fmt.Sprintf("input/%s", name))
-}
-
 // DetectorModel represents an IoT Events detector model.
 type DetectorModel struct {
 	DetectorModelName        string
@@ -585,6 +547,373 @@ type Input struct {
 	Status           string
 }
 
+// SecurityProfile represents a Device Defender security profile.
+type SecurityProfile struct {
+	SecurityProfileName         string
+	SecurityProfileARN          string
+	SecurityProfileDescription  string
+	Behaviors                   []*Behavior
+	AlertTargets                map[string]*AlertTarget
+	AdditionalMetricsToRetainV2 []string
+	Version                     int64
+	CreationDate                time.Time
+	LastModifiedDate            time.Time
+	Tags                        map[string]string
+}
+
+// AlertTarget represents an alert destination for security profile violations.
+type AlertTarget struct {
+	AlertTargetARN string
+	RoleARN        string
+}
+
+// Behavior represents a security profile behaviour definition.
+type Behavior struct {
+	Name            string
+	Metric          string
+	MetricDimension string
+	Criteria        *BehaviorCriteria
+	SuppressAlerts  bool
+	ExportMetric    bool
+}
+
+// BehaviorCriteria defines the conditions that trigger a behaviour alert.
+type BehaviorCriteria struct {
+	ComparisonOperator           string
+	Value                        float64
+	DurationSeconds              int64
+	ConsecutiveDatapointsToAlarm int64
+	ConsecutiveDatapointsToClear int64
+	StatisticalThreshold         *StatisticalThreshold
+	MLDetectionConfig            *MachineLearningDetectionConfig
+}
+
+// StatisticalThreshold configures statistical anomaly detection.
+type StatisticalThreshold struct {
+	Statistic string
+}
+
+// MachineLearningDetectionConfig configures ML-based anomaly detection.
+type MachineLearningDetectionConfig struct {
+	ConfidenceLevel string
+}
+
+// MetricValue represents a metric measurement in a violation event.
+type MetricValue struct {
+	Count   int64
+	Cidrs   []string
+	Ports   []int64
+	Number  float64
+	Numbers []float64
+	Strings []string
+}
+
+// ViolationEvent represents a Device Defender violation event.
+type ViolationEvent struct {
+	ViolationID                  string
+	ThingName                    string
+	SecurityProfileName          string
+	Behavior                     *Behavior
+	MetricValue                  *MetricValue
+	ViolationEventType           string
+	VerificationState            string
+	VerificationStateDescription string
+	ViolationEventTime           time.Time
+}
+
+// DomainConfiguration represents an IoT domain configuration.
+type DomainConfiguration struct {
+	DomainConfigurationName   string
+	DomainConfigurationARN    string
+	DomainName                string
+	ServerCertificateARNs     []string
+	ValidationCertificateARN  string
+	AuthorizerConfig          string
+	ServiceType               string
+	DomainConfigurationStatus string
+	AuthenticationType        string
+	ApplicationProtocol       string
+	CreationDate              time.Time
+	LastModifiedDate          time.Time
+	Tags                      map[string]string
+}
+
+// IndexingConfiguration represents the IoT thing indexing configuration.
+type IndexingConfiguration struct {
+	ThingIndexingMode                 string
+	ThingGroupIndexingMode            string
+	ThingConnectivityIndexingMode     string
+	DeviceDefenderIndexingMode        string
+	NamedShadowIndexingMode           string
+	ManagedFields                     []string
+	CustomFields                      []string
+	ThingIndexingConfigurationVersion string
+}
+
+// ProvisioningTemplateVersion represents a version of a provisioning template.
+type ProvisioningTemplateVersion struct {
+	VersionID        string
+	CreationDate     time.Time
+	IsDefaultVersion bool
+	TemplateBody     string
+}
+
+func SecurityProfileToProto(s *SecurityProfile) (*pb.SecurityProfile, error) {
+	pbBehaviors := make([]*pb.Behavior, 0, len(s.Behaviors))
+	for _, b := range s.Behaviors {
+		pbBehavior, err := BehaviorToProto(b)
+		if err != nil {
+			return nil, fmt.Errorf("behavior %s: %w", b.Name, err)
+		}
+		pbBehaviors = append(pbBehaviors, pbBehavior)
+	}
+	pbAlertTargets := make(map[string]*pb.AlertTarget, len(s.AlertTargets))
+	for k, v := range s.AlertTargets {
+		pbAlertTargets[k] = &pb.AlertTarget{
+			AlertTargetArn: v.AlertTargetARN,
+			RoleArn:        v.RoleARN,
+		}
+	}
+	return &pb.SecurityProfile{
+		SecurityProfileName:         s.SecurityProfileName,
+		SecurityProfileArn:          s.SecurityProfileARN,
+		SecurityProfileDescription:  s.SecurityProfileDescription,
+		Behaviors:                   pbBehaviors,
+		AlertTargets:                pbAlertTargets,
+		AdditionalMetricsToRetainV2: s.AdditionalMetricsToRetainV2,
+		Version:                     s.Version,
+		CreationDate:                timeToProto(s.CreationDate),
+		LastModifiedDate:            timeToProto(s.LastModifiedDate),
+		Tags:                        s.Tags,
+	}, nil
+}
+
+func ProtoToSecurityProfile(p *pb.SecurityProfile) *SecurityProfile {
+	domainBehaviors := make([]*Behavior, 0, len(p.Behaviors))
+	for _, b := range p.Behaviors {
+		domainBehaviors = append(domainBehaviors, ProtoToBehavior(b))
+	}
+	domainAlertTargets := make(map[string]*AlertTarget, len(p.AlertTargets))
+	for k, v := range p.AlertTargets {
+		domainAlertTargets[k] = &AlertTarget{
+			AlertTargetARN: v.AlertTargetArn,
+			RoleARN:        v.RoleArn,
+		}
+	}
+	return &SecurityProfile{
+		SecurityProfileName:         p.SecurityProfileName,
+		SecurityProfileARN:          p.SecurityProfileArn,
+		SecurityProfileDescription:  p.SecurityProfileDescription,
+		Behaviors:                   domainBehaviors,
+		AlertTargets:                domainAlertTargets,
+		AdditionalMetricsToRetainV2: p.AdditionalMetricsToRetainV2,
+		Version:                     p.Version,
+		CreationDate:                protoToTime(p.CreationDate),
+		LastModifiedDate:            protoToTime(p.LastModifiedDate),
+		Tags:                        p.Tags,
+	}
+}
+
+func BehaviorToProto(b *Behavior) (*pb.Behavior, error) {
+	var pbCriteria *pb.BehaviorCriteria
+	if b.Criteria != nil {
+		pbCriteria = &pb.BehaviorCriteria{
+			ComparisonOperator:           b.Criteria.ComparisonOperator,
+			Value:                        b.Criteria.Value,
+			DurationSeconds:              b.Criteria.DurationSeconds,
+			ConsecutiveDatapointsToAlarm: b.Criteria.ConsecutiveDatapointsToAlarm,
+			ConsecutiveDatapointsToClear: b.Criteria.ConsecutiveDatapointsToClear,
+		}
+		if b.Criteria.StatisticalThreshold != nil {
+			pbCriteria.StatisticalThreshold = &pb.StatisticalThreshold{
+				Statistic: b.Criteria.StatisticalThreshold.Statistic,
+			}
+		}
+		if b.Criteria.MLDetectionConfig != nil {
+			pbCriteria.MlDetectionConfig = &pb.MachineLearningDetectionConfig{
+				ConfidenceLevel: b.Criteria.MLDetectionConfig.ConfidenceLevel,
+			}
+		}
+	}
+	return &pb.Behavior{
+		Name:            b.Name,
+		Metric:          b.Metric,
+		MetricDimension: b.MetricDimension,
+		Criteria:        pbCriteria,
+		SuppressAlerts:  b.SuppressAlerts,
+		ExportMetric:    b.ExportMetric,
+	}, nil
+}
+
+func ProtoToBehavior(p *pb.Behavior) *Behavior {
+	var domainCriteria *BehaviorCriteria
+	if p.Criteria != nil {
+		domainCriteria = &BehaviorCriteria{
+			ComparisonOperator:           p.Criteria.ComparisonOperator,
+			Value:                        p.Criteria.Value,
+			DurationSeconds:              p.Criteria.DurationSeconds,
+			ConsecutiveDatapointsToAlarm: p.Criteria.ConsecutiveDatapointsToAlarm,
+			ConsecutiveDatapointsToClear: p.Criteria.ConsecutiveDatapointsToClear,
+		}
+		if p.Criteria.StatisticalThreshold != nil {
+			domainCriteria.StatisticalThreshold = &StatisticalThreshold{
+				Statistic: p.Criteria.StatisticalThreshold.Statistic,
+			}
+		}
+		if p.Criteria.MlDetectionConfig != nil {
+			domainCriteria.MLDetectionConfig = &MachineLearningDetectionConfig{
+				ConfidenceLevel: p.Criteria.MlDetectionConfig.ConfidenceLevel,
+			}
+		}
+	}
+	return &Behavior{
+		Name:            p.Name,
+		Metric:          p.Metric,
+		MetricDimension: p.MetricDimension,
+		Criteria:        domainCriteria,
+		SuppressAlerts:  p.SuppressAlerts,
+		ExportMetric:    p.ExportMetric,
+	}
+}
+
+func MetricValueToProto(m *MetricValue) *pb.MetricValue {
+	return &pb.MetricValue{
+		Count:   m.Count,
+		Cidrs:   m.Cidrs,
+		Ports:   m.Ports,
+		Number:  m.Number,
+		Numbers: m.Numbers,
+		Strings: m.Strings,
+	}
+}
+
+func ProtoToMetricValue(p *pb.MetricValue) *MetricValue {
+	return &MetricValue{
+		Count:   p.Count,
+		Cidrs:   p.Cidrs,
+		Ports:   p.Ports,
+		Number:  p.Number,
+		Numbers: p.Numbers,
+		Strings: p.Strings,
+	}
+}
+
+func ViolationEventToProto(v *ViolationEvent) (*pb.ViolationEvent, error) {
+	var pbBehavior *pb.Behavior
+	if v.Behavior != nil {
+		b, err := BehaviorToProto(v.Behavior)
+		if err != nil {
+			return nil, fmt.Errorf("behavior: %w", err)
+		}
+		pbBehavior = b
+	}
+	return &pb.ViolationEvent{
+		ViolationId:                  v.ViolationID,
+		ThingName:                    v.ThingName,
+		SecurityProfileName:          v.SecurityProfileName,
+		Behavior:                     pbBehavior,
+		MetricValue:                  MetricValueToProto(v.MetricValue),
+		ViolationEventType:           v.ViolationEventType,
+		VerificationState:            v.VerificationState,
+		VerificationStateDescription: v.VerificationStateDescription,
+		ViolationEventTime:           timeToProto(v.ViolationEventTime),
+	}, nil
+}
+
+func ProtoToViolationEvent(p *pb.ViolationEvent) *ViolationEvent {
+	return &ViolationEvent{
+		ViolationID:                  p.ViolationId,
+		ThingName:                    p.ThingName,
+		SecurityProfileName:          p.SecurityProfileName,
+		Behavior:                     ProtoToBehavior(p.Behavior),
+		MetricValue:                  ProtoToMetricValue(p.MetricValue),
+		ViolationEventType:           p.ViolationEventType,
+		VerificationState:            p.VerificationState,
+		VerificationStateDescription: p.VerificationStateDescription,
+		ViolationEventTime:           protoToTime(p.ViolationEventTime),
+	}
+}
+
+func DomainConfigurationToProto(d *DomainConfiguration) (*pb.DomainConfiguration, error) {
+	return &pb.DomainConfiguration{
+		DomainConfigurationName:   d.DomainConfigurationName,
+		DomainConfigurationArn:    d.DomainConfigurationARN,
+		DomainName:                d.DomainName,
+		ServerCertificateArns:     d.ServerCertificateARNs,
+		ValidationCertificateArn:  d.ValidationCertificateARN,
+		AuthorizerConfig:          d.AuthorizerConfig,
+		ServiceType:               d.ServiceType,
+		DomainConfigurationStatus: d.DomainConfigurationStatus,
+		AuthenticationType:        d.AuthenticationType,
+		ApplicationProtocol:       d.ApplicationProtocol,
+		CreationDate:              timeToProto(d.CreationDate),
+		LastModifiedDate:          timeToProto(d.LastModifiedDate),
+		Tags:                      d.Tags,
+	}, nil
+}
+
+func ProtoToDomainConfiguration(p *pb.DomainConfiguration) *DomainConfiguration {
+	return &DomainConfiguration{
+		DomainConfigurationName:   p.DomainConfigurationName,
+		DomainConfigurationARN:    p.DomainConfigurationArn,
+		DomainName:                p.DomainName,
+		ServerCertificateARNs:     p.ServerCertificateArns,
+		ValidationCertificateARN:  p.ValidationCertificateArn,
+		AuthorizerConfig:          p.AuthorizerConfig,
+		ServiceType:               p.ServiceType,
+		DomainConfigurationStatus: p.DomainConfigurationStatus,
+		AuthenticationType:        p.AuthenticationType,
+		ApplicationProtocol:       p.ApplicationProtocol,
+		CreationDate:              protoToTime(p.CreationDate),
+		LastModifiedDate:          protoToTime(p.LastModifiedDate),
+		Tags:                      p.Tags,
+	}
+}
+
+func IndexingConfigurationToProto(i *IndexingConfiguration) *pb.IndexingConfiguration {
+	return &pb.IndexingConfiguration{
+		ThingIndexingMode:                 i.ThingIndexingMode,
+		ThingGroupIndexingMode:            i.ThingGroupIndexingMode,
+		ThingConnectivityIndexingMode:     i.ThingConnectivityIndexingMode,
+		DeviceDefenderIndexingMode:        i.DeviceDefenderIndexingMode,
+		NamedShadowIndexingMode:           i.NamedShadowIndexingMode,
+		ManagedFields:                     i.ManagedFields,
+		CustomFields:                      i.CustomFields,
+		ThingIndexingConfigurationVersion: i.ThingIndexingConfigurationVersion,
+	}
+}
+
+func ProtoToIndexingConfiguration(p *pb.IndexingConfiguration) *IndexingConfiguration {
+	return &IndexingConfiguration{
+		ThingIndexingMode:                 p.ThingIndexingMode,
+		ThingGroupIndexingMode:            p.ThingGroupIndexingMode,
+		ThingConnectivityIndexingMode:     p.ThingConnectivityIndexingMode,
+		DeviceDefenderIndexingMode:        p.DeviceDefenderIndexingMode,
+		NamedShadowIndexingMode:           p.NamedShadowIndexingMode,
+		ManagedFields:                     p.ManagedFields,
+		CustomFields:                      p.CustomFields,
+		ThingIndexingConfigurationVersion: p.ThingIndexingConfigurationVersion,
+	}
+}
+
+func ProvisioningTemplateVersionToProto(v *ProvisioningTemplateVersion) (*pb.ProvisioningTemplateVersion, error) {
+	return &pb.ProvisioningTemplateVersion{
+		VersionId:        v.VersionID,
+		CreationDate:     timeToProto(v.CreationDate),
+		IsDefaultVersion: v.IsDefaultVersion,
+		TemplateBody:     v.TemplateBody,
+	}, nil
+}
+
+func ProtoToProvisioningTemplateVersion(p *pb.ProvisioningTemplateVersion) *ProvisioningTemplateVersion {
+	return &ProvisioningTemplateVersion{
+		VersionID:        p.VersionId,
+		CreationDate:     protoToTime(p.CreationDate),
+		IsDefaultVersion: p.IsDefaultVersion,
+		TemplateBody:     p.TemplateBody,
+	}
+}
+
 func mapToStruct(m map[string]interface{}) (*structpb.Struct, error) {
 	if m == nil {
 		return nil, nil
@@ -601,4 +930,12 @@ func structToMap(s *structpb.Struct) map[string]interface{} {
 		return nil
 	}
 	return s.AsMap()
+}
+
+func mapKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }

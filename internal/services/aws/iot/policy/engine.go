@@ -3,6 +3,7 @@ package policy
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -96,25 +97,12 @@ func evaluateCondition(conditions map[string]map[string]string, req *EvaluateReq
 				continue
 			}
 
-			switch op {
-			case "StringEquals":
-				if actual != value {
-					return false, nil
-				}
-			case "StringNotEquals":
-				if actual == value {
-					return false, nil
-				}
-			case "StringLike":
-				if !wildcardMatch(actual, value) {
-					return false, nil
-				}
-			case "StringNotLike":
-				if wildcardMatch(actual, value) {
-					return false, nil
-				}
-			default:
+			fn, ok := conditionOperators[op]
+			if !ok {
 				return false, fmt.Errorf("unsupported condition operator: %s", op)
+			}
+			if !fn(actual, value) {
+				return false, nil
 			}
 		}
 	}
@@ -122,23 +110,27 @@ func evaluateCondition(conditions map[string]map[string]string, req *EvaluateReq
 }
 
 func wildcardMatch(s, pattern string) bool {
-	if pattern == "*" {
-		return true
-	}
-	if !strings.Contains(pattern, "*") {
-		return s == pattern
-	}
-	parts := strings.Split(pattern, "*")
-	if len(parts) == 2 {
-		if parts[0] == "" {
-			return strings.HasSuffix(s, parts[1])
+	return wildcardToRegexp(pattern).MatchString(s)
+}
+
+// wildcardToRegexp compiles an AWS wildcard pattern into an anchored regexp.
+// * → .* (match any characters), all other characters are escaped.
+func wildcardToRegexp(pattern string) *regexp.Regexp {
+	var buf strings.Builder
+	buf.Grow(len(pattern) + 8)
+	buf.WriteString("^")
+	for _, ch := range pattern {
+		if ch == '*' {
+			buf.WriteString(".*")
+		} else if strings.ContainsRune(`\.+?()[]{}^$|`, ch) {
+			buf.WriteByte('\\')
+			buf.WriteRune(ch)
+		} else {
+			buf.WriteRune(ch)
 		}
-		if parts[1] == "" {
-			return strings.HasPrefix(s, parts[0])
-		}
-		return strings.HasPrefix(s, parts[0]) && strings.HasSuffix(s, parts[1])
 	}
-	return true
+	buf.WriteString("$")
+	return regexp.MustCompile(buf.String())
 }
 
 func topicMatch(resource, pattern string) bool {

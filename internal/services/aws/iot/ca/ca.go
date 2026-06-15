@@ -4,7 +4,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -25,15 +24,17 @@ const (
 )
 
 type CertificateAuthority struct {
-	bucket  storage.Bucket
-	mu      sync.RWMutex
-	rootCA  *x509.Certificate
-	rootKey *ecdsa.PrivateKey
+	bucket       storage.Bucket
+	mu           sync.RWMutex
+	rootCA       *x509.Certificate
+	rootKey      *ecdsa.PrivateKey
+	revokedCerts map[string]struct{}
 }
 
 func NewCertificateAuthority(s storage.BasicStorage) (*CertificateAuthority, error) {
 	ca := &CertificateAuthority{
-		bucket: s.Bucket(caBucketName),
+		bucket:       s.Bucket(caBucketName),
+		revokedCerts: make(map[string]struct{}),
 	}
 	if err := ca.loadOrCreateRootCA(); err != nil {
 		return nil, fmt.Errorf("failed to initialise CA: %w", err)
@@ -153,7 +154,7 @@ func (ca *CertificateAuthority) IssueCertificate() (certPEM string, keyPEM strin
 		return "", "", "", "", fmt.Errorf("failed to issue certificate: %w", err)
 	}
 
-	return string(encodeCertPEM(certBytes)), string(encodeKeyPEM(key)), string(encodePublicKeyPEM(key)), hashCertificateID(certBytes), nil
+	return string(encodeCertPEM(certBytes)), string(encodeKeyPEM(key)), string(encodePublicKeyPEM(key)), CertIDFromDER(certBytes), nil
 }
 
 func (ca *CertificateAuthority) IssueCertificateFromCSR(csrPEM string) (certPEM string, certificateID string, err error) {
@@ -193,7 +194,7 @@ func (ca *CertificateAuthority) IssueCertificateFromCSR(csrPEM string) (certPEM 
 		return "", "", fmt.Errorf("failed to issue certificate from CSR: %w", err)
 	}
 
-	return string(encodeCertPEM(certBytes)), hashCertificateID(certBytes), nil
+	return string(encodeCertPEM(certBytes)), CertIDFromDER(certBytes), nil
 }
 
 func (ca *CertificateAuthority) VerifyCertificate(certPEM string) error {
@@ -220,19 +221,23 @@ func (ca *CertificateAuthority) VerifyCertificate(certPEM string) error {
 	return nil
 }
 
-func (ca *CertificateAuthority) IsCertificateRevoked(_ string) bool {
-	return false
+func (ca *CertificateAuthority) IsCertificateRevoked(certID string) bool {
+	ca.mu.RLock()
+	defer ca.mu.RUnlock()
+	_, revoked := ca.revokedCerts[certID]
+	return revoked
+}
+
+func (ca *CertificateAuthority) RevokeCertificate(certID string) {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+	ca.revokedCerts[certID] = struct{}{}
 }
 
 func generateSerialNumber() *big.Int {
 	limit := new(big.Int).Lsh(big.NewInt(1), 128)
 	n, _ := rand.Int(rand.Reader, limit)
 	return n
-}
-
-func hashCertificateID(certBytes []byte) string {
-	h := sha256.Sum256(certBytes)
-	return fmt.Sprintf("%x", h)
 }
 
 func parsePEMCertificate(data []byte) (*x509.Certificate, error) {

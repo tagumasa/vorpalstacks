@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
-	"encoding/pem"
+	"log/slog"
 
 	mqtt "github.com/mochi-mqtt/server/v2"
 	"github.com/mochi-mqtt/server/v2/packets"
@@ -46,30 +46,36 @@ func (h *AuthHook) Provides(b byte) bool {
 // connection.
 func (h *AuthHook) OnConnectAuthenticate(cl *mqtt.Client, _ packets.Packet) bool {
 	if h.provider == nil {
+		slog.Warn("mqtt auth denied", "reason", "no provider")
 		return false
 	}
 
 	certID := extractCertificateID(cl)
 	if certID == "" {
+		slog.Warn("mqtt auth denied", "client_id", cl.ID, "reason", "no certificate")
 		return false
 	}
 
 	store := h.provider.GetStore()
 	if store == nil {
+		slog.Warn("mqtt auth denied", "cert_id", certID, "reason", "no store")
 		return false
 	}
 
 	cert, err := store.GetCertificate(certID)
 	if err != nil {
+		slog.Warn("mqtt auth denied", "cert_id", certID, "reason", "certificate lookup failed", "error", err)
 		return false
 	}
 
 	if cert.Status != "ACTIVE" {
+		slog.Warn("mqtt auth denied", "cert_id", certID, "reason", "certificate not active", "status", cert.Status)
 		return false
 	}
 
 	policies := getPoliciesForPrincipal(store, certID)
 	if len(policies) == 0 {
+		slog.Warn("mqtt auth denied", "cert_id", certID, "reason", "no policies attached")
 		return false
 	}
 
@@ -79,7 +85,12 @@ func (h *AuthHook) OnConnectAuthenticate(cl *mqtt.Client, _ packets.Packet) bool
 		Resource: cl.ID,
 		ClientID: cl.ID,
 	})
-	if err != nil || !allowed {
+	if err != nil {
+		slog.Warn("mqtt auth denied", "cert_id", certID, "reason", "policy evaluation error", "error", err)
+		return false
+	}
+	if !allowed {
+		slog.Warn("mqtt auth denied", "cert_id", certID, "reason", "iot:Connect denied by policy")
 		return false
 	}
 
@@ -91,11 +102,13 @@ func (h *AuthHook) OnConnectAuthenticate(cl *mqtt.Client, _ packets.Packet) bool
 // whether the requested topic operation is permitted.
 func (h *AuthHook) OnACLCheck(cl *mqtt.Client, topic string, write bool) bool {
 	if h.provider == nil {
+		slog.Warn("mqtt acl denied", "client_id", cl.ID, "topic", topic, "action", "unknown", "reason", "no provider")
 		return false
 	}
 
 	certID := string(cl.Properties.Username)
 	if certID == "" {
+		slog.Warn("mqtt acl denied", "client_id", cl.ID, "topic", topic, "reason", "no certificate id")
 		return false
 	}
 
@@ -106,11 +119,13 @@ func (h *AuthHook) OnACLCheck(cl *mqtt.Client, topic string, write bool) bool {
 
 	store := h.provider.GetStore()
 	if store == nil {
+		slog.Warn("mqtt acl denied", "cert_id", certID, "topic", topic, "action", action, "reason", "no store")
 		return false
 	}
 
 	policies := getPoliciesForPrincipal(store, certID)
 	if len(policies) == 0 {
+		slog.Warn("mqtt acl denied", "cert_id", certID, "topic", topic, "action", action, "reason", "no policies attached")
 		return false
 	}
 
@@ -122,6 +137,12 @@ func (h *AuthHook) OnACLCheck(cl *mqtt.Client, topic string, write bool) bool {
 		Topic:    topic,
 	})
 	if err != nil {
+		slog.Warn("mqtt acl denied", "cert_id", certID, "topic", topic, "action", action, "reason", "policy evaluation error", "error", err)
+		return false
+	}
+
+	if !allowed {
+		slog.Warn("mqtt acl denied", "cert_id", certID, "topic", topic, "action", action, "reason", "denied by policy")
 		return false
 	}
 
@@ -151,9 +172,14 @@ func extractCertificateID(cl *mqtt.Client) string {
 	return hex.EncodeToString(fingerprint[:])
 }
 
+type policyLookup interface {
+	iotstore.PolicyOps
+	iotstore.PolicyAttachmentOps
+}
+
 // getPoliciesForPrincipal retrieves all policies and parses them for
 // evaluation. In a full implementation this would filter by attachment.
-func getPoliciesForPrincipal(store iotstore.IotStoreInterface, certID string) []*policy.PolicyVersion {
+func getPoliciesForPrincipal(store policyLookup, certID string) []*policy.PolicyVersion {
 	policyNames, err := store.ListPoliciesForPrincipal(certID)
 	if err != nil || len(policyNames) == 0 {
 		return nil
@@ -172,17 +198,6 @@ func getPoliciesForPrincipal(store iotstore.IotStoreInterface, certID string) []
 		result = append(result, pv)
 	}
 	return result
-}
-
-// GetCertificateIDFromPEM computes the SHA-256 fingerprint of a PEM-encoded
-// certificate, matching the format used by AWS IoT for certificate IDs.
-func GetCertificateIDFromPEM(certPEM string) string {
-	block, _ := pem.Decode([]byte(certPEM))
-	if block == nil {
-		return ""
-	}
-	fingerprint := sha256.Sum256(block.Bytes)
-	return hex.EncodeToString(fingerprint[:])
 }
 
 // GetCertificateIDFromX509 computes the SHA-256 fingerprint of an X.509

@@ -7,44 +7,51 @@ import (
 
 type iotRESTParser struct{}
 
+func pathHasRoutePrefix(path, prefix string) bool {
+	return path == prefix || strings.HasPrefix(path, prefix+"/")
+}
+
 func (p *iotRESTParser) MatchPath(path string) bool {
-	return strings.HasPrefix(path, "/things") ||
-		strings.HasPrefix(path, "/thing-groups") ||
-		strings.HasPrefix(path, "/thing-types") ||
-		strings.HasPrefix(path, "/billing-groups") ||
-		strings.HasPrefix(path, "/certificates") ||
-		strings.HasPrefix(path, "/certificate") ||
-		strings.HasPrefix(path, "/keys-and-certificate") ||
-		strings.HasPrefix(path, "/policies") ||
-		strings.HasPrefix(path, "/policy-principals") ||
-		strings.HasPrefix(path, "/principal-policies") ||
-		strings.HasPrefix(path, "/principals") ||
-		strings.HasPrefix(path, "/target-policies") ||
-		strings.HasPrefix(path, "/attached-policies") ||
-		strings.HasPrefix(path, "/rules") ||
-		strings.HasPrefix(path, "/jobs") ||
-		strings.HasPrefix(path, "/endpoint") ||
-		strings.HasPrefix(path, "/role-aliases") ||
-		strings.HasPrefix(path, "/tags") ||
-		strings.HasPrefix(path, "/untag") ||
-		strings.HasPrefix(path, "/authorizers") ||
-		strings.HasPrefix(path, "/authorizer/") ||
-		strings.HasPrefix(path, "/provisioning-templates") ||
-		strings.HasPrefix(path, "/provisioning-template") ||
-		strings.HasPrefix(path, "/domainConfigurations") ||
-		strings.HasPrefix(path, "/domainConfiguration") ||
-		strings.HasPrefix(path, "/indexing") ||
-		strings.HasPrefix(path, "/active-violations") ||
-		strings.HasPrefix(path, "/violation-events") ||
-		strings.HasPrefix(path, "/behavior-model-training") ||
-		strings.HasPrefix(path, "/security-profiles") ||
-		strings.HasPrefix(path, "/detector-models") ||
-		strings.HasPrefix(path, "/detector-model") ||
-		strings.HasPrefix(path, "/inputs") ||
-		strings.HasPrefix(path, "/input/") ||
-		strings.HasPrefix(path, "/messages") ||
-		strings.HasPrefix(path, "/destinations") ||
-		strings.HasPrefix(path, "/effective-policies")
+	return pathHasRoutePrefix(path, "/things") ||
+		pathHasRoutePrefix(path, "/thing-groups") ||
+		pathHasRoutePrefix(path, "/thing-types") ||
+		pathHasRoutePrefix(path, "/billing-groups") ||
+		pathHasRoutePrefix(path, "/certificates") ||
+		path == "/certificate/register" ||
+		path == "/keys-and-certificate" ||
+		pathHasRoutePrefix(path, "/policies") ||
+		pathHasRoutePrefix(path, "/policy-principals") ||
+		pathHasRoutePrefix(path, "/principal-policies") ||
+		path == "/principals/things" ||
+		pathHasRoutePrefix(path, "/target-policies") ||
+		pathHasRoutePrefix(path, "/attached-policies") ||
+		pathHasRoutePrefix(path, "/rules") ||
+		pathHasRoutePrefix(path, "/jobs") ||
+		path == "/endpoint" ||
+		pathHasRoutePrefix(path, "/role-aliases") ||
+		path == "/tags" ||
+		path == "/untag" ||
+		pathHasRoutePrefix(path, "/authorizers") ||
+		strings.HasPrefix(path, "/authorizer/") &&
+			len(path) > len("/authorizer/") ||
+		pathHasRoutePrefix(path, "/provisioning-templates") ||
+		strings.HasPrefix(path, "/provisioning-template/") &&
+			len(path) > len("/provisioning-template/") ||
+		pathHasRoutePrefix(path, "/domainConfigurations") ||
+		strings.HasPrefix(path, "/domainConfiguration/") &&
+			len(path) > len("/domainConfiguration/") ||
+		path == "/indexing" ||
+		pathHasRoutePrefix(path, "/active-violations") ||
+		pathHasRoutePrefix(path, "/violation-events") ||
+		path == "/behavior-model-training/summaries" ||
+		pathHasRoutePrefix(path, "/security-profiles") ||
+		path == "/security-profile-behaviors/validate" ||
+		pathHasRoutePrefix(path, "/security-profiles-for-target") ||
+		pathHasRoutePrefix(path, "/detector-models") ||
+		pathHasRoutePrefix(path, "/inputs") ||
+		path == "/messages" ||
+		pathHasRoutePrefix(path, "/destinations") ||
+		path == "/effective-policies"
 }
 
 func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
@@ -95,6 +102,8 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 		}
 	case path == "/certificates" && method == http.MethodGet:
 		return "ListCertificates"
+	case path == "/certificates" && method == http.MethodPost:
+		return "CreateCertificateFromCsr"
 	case strings.HasPrefix(path, "/certificates/") && len(parts) >= 3 && parts[2] == "csr" && method == http.MethodPost:
 		return "CreateCertificateFromCsr"
 
@@ -145,9 +154,9 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 			return "ReplaceTopicRule"
 		case len(parts) == 2 && method == http.MethodDelete:
 			return "DeleteTopicRule"
-		case len(parts) == 3 && parts[2] == "enable" && method == http.MethodGet:
+		case len(parts) == 3 && parts[2] == "enable" && (method == http.MethodGet || method == http.MethodPost):
 			return "EnableTopicRule"
-		case len(parts) == 3 && parts[2] == "disable" && method == http.MethodGet:
+		case len(parts) == 3 && parts[2] == "disable" && (method == http.MethodGet || method == http.MethodPost):
 			return "DisableTopicRule"
 		}
 
@@ -157,11 +166,13 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 		return "ListJobs"
 	case strings.HasPrefix(path, "/jobs/") && len(parts) >= 2:
 		switch {
+		case len(parts) == 2 && method == http.MethodPut:
+			return "CreateJob"
 		case len(parts) == 2 && method == http.MethodGet:
 			return "DescribeJob"
 		case len(parts) == 2 && method == http.MethodDelete:
 			return "DeleteJob"
-		case len(parts) == 3 && parts[2] == "cancel" && method == http.MethodPost:
+		case len(parts) == 3 && parts[2] == "cancel" && (method == http.MethodPost || method == http.MethodPut):
 			return "CancelJob"
 		case len(parts) == 3 && parts[2] == "job-document" && method == http.MethodGet:
 			return "GetJobDocument"
@@ -178,9 +189,11 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 		return "CreateRoleAlias"
 	case strings.HasPrefix(path, "/role-aliases/") && len(parts) >= 2:
 		switch {
+		case len(parts) == 2 && method == http.MethodPost:
+			return "CreateRoleAlias"
 		case len(parts) == 2 && method == http.MethodGet:
 			return "DescribeRoleAlias"
-		case len(parts) == 2 && method == http.MethodPatch:
+		case len(parts) == 2 && (method == http.MethodPatch || method == http.MethodPut):
 			return "UpdateRoleAlias"
 		case len(parts) == 2 && method == http.MethodDelete:
 			return "DeleteRoleAlias"
@@ -242,9 +255,11 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 		return "ListAuthorizers"
 	case strings.HasPrefix(path, "/authorizer/") && len(parts) >= 2:
 		switch {
+		case len(parts) == 2 && method == http.MethodPost:
+			return "CreateAuthorizer"
 		case len(parts) == 2 && method == http.MethodGet:
 			return "DescribeAuthorizer"
-		case len(parts) == 2 && method == http.MethodPatch:
+		case len(parts) == 2 && (method == http.MethodPatch || method == http.MethodPut):
 			return "UpdateAuthorizer"
 		case len(parts) == 2 && method == http.MethodDelete:
 			return "DeleteAuthorizer"
@@ -261,8 +276,10 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 		return "ListDomainConfigurations"
 	case path == "/domainConfigurations" && method == http.MethodPost:
 		return "CreateDomainConfiguration"
-	case strings.HasPrefix(path, "/domainConfiguration/") && len(parts) >= 2:
+	case strings.HasPrefix(path, "/domainConfigurations/") && len(parts) >= 2:
 		switch {
+		case len(parts) == 2 && method == http.MethodPost:
+			return "CreateDomainConfiguration"
 		case len(parts) == 2 && method == http.MethodGet:
 			return "DescribeDomainConfiguration"
 		case len(parts) == 2 && method == http.MethodPatch:
@@ -283,8 +300,26 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 	case path == "/behavior-model-training/summaries" && method == http.MethodGet:
 		return "GetBehaviorModelTrainingSummaries"
 
-	case strings.HasPrefix(path, "/provisioning-templates") && method == http.MethodGet:
+	case path == "/security-profile-behaviors/validate" && method == http.MethodPost:
+		return "ValidateSecurityProfileBehaviors"
+	case path == "/security-profiles" && method == http.MethodGet:
+		return "ListSecurityProfiles"
+	case strings.HasPrefix(path, "/security-profiles/") && len(parts) >= 2:
+		switch {
+		case len(parts) == 2 && method == http.MethodPost:
+			return "CreateSecurityProfile"
+		case len(parts) == 2 && method == http.MethodGet:
+			return "DescribeSecurityProfile"
+		case len(parts) == 2 && method == http.MethodPatch:
+			return "UpdateSecurityProfile"
+		case len(parts) == 2 && method == http.MethodDelete:
+			return "DeleteSecurityProfile"
+		}
+
+	case path == "/provisioning-templates" && method == http.MethodGet:
 		return "ListProvisioningTemplates"
+	case path == "/provisioning-templates" && method == http.MethodPost:
+		return "CreateProvisioningTemplate"
 	case strings.HasPrefix(path, "/provisioning-templates/") && len(parts) >= 2:
 		switch {
 		case len(parts) == 2 && method == http.MethodPost:
@@ -301,6 +336,34 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 
 	case path == "/messages" && method == http.MethodPost:
 		return "BatchPutMessage"
+
+	case path == "/detector-models" && method == http.MethodGet:
+		return "ListDetectorModels"
+	case path == "/detector-models" && method == http.MethodPost:
+		return "CreateDetectorModel"
+	case strings.HasPrefix(path, "/detector-models/") && len(parts) >= 2:
+		switch {
+		case len(parts) == 2 && method == http.MethodGet:
+			return "DescribeDetectorModel"
+		case len(parts) == 2 && method == http.MethodPatch:
+			return "UpdateDetectorModel"
+		case len(parts) == 2 && method == http.MethodDelete:
+			return "DeleteDetectorModel"
+		}
+
+	case path == "/inputs" && method == http.MethodGet:
+		return "ListInputs"
+	case path == "/inputs" && method == http.MethodPost:
+		return "CreateInput"
+	case strings.HasPrefix(path, "/inputs/") && len(parts) >= 2:
+		switch {
+		case len(parts) == 2 && method == http.MethodGet:
+			return "DescribeInput"
+		case len(parts) == 2 && method == http.MethodPatch:
+			return "UpdateInput"
+		case len(parts) == 2 && method == http.MethodDelete:
+			return "DeleteInput"
+		}
 
 	case path == "/effective-policies" && method == http.MethodPost:
 		return "GetEffectivePolicies"
@@ -352,8 +415,14 @@ func (p *iotRESTParser) ExtractPathParams(r *http.Request, params map[string]int
 		params["authorizerName"] = parts[1]
 	case strings.HasPrefix(path, "/provisioning-templates/") && len(parts) >= 2:
 		params["templateName"] = parts[1]
-	case strings.HasPrefix(path, "/domainConfiguration/") && len(parts) >= 2:
+	case strings.HasPrefix(path, "/domainConfigurations/") && len(parts) >= 2:
 		params["domainConfigurationName"] = parts[1]
+	case strings.HasPrefix(path, "/security-profiles/") && len(parts) >= 2:
+		params["securityProfileName"] = parts[1]
+	case strings.HasPrefix(path, "/detector-models/") && len(parts) >= 2:
+		params["detectorModelName"] = parts[1]
+	case strings.HasPrefix(path, "/inputs/") && len(parts) >= 2:
+		params["inputName"] = parts[1]
 	case strings.HasPrefix(path, "/policy-principals/") && len(parts) >= 2:
 		params["policyName"] = parts[1]
 	case strings.HasPrefix(path, "/target-policies/") && len(parts) >= 2:

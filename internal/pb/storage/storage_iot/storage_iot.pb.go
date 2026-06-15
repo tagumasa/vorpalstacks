@@ -144,6 +144,8 @@ type ThingType struct {
 	Version             int64                  `protobuf:"varint,7,opt,name=version,proto3" json:"version,omitempty"`
 	CreationDate        *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
 	LastModifiedDate    *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=last_modified_date,json=lastModifiedDate,proto3" json:"last_modified_date,omitempty"`
+	Deprecated          bool                   `protobuf:"varint,10,opt,name=deprecated,proto3" json:"deprecated,omitempty"`
+	DeprecationDate     *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=deprecation_date,json=deprecationDate,proto3" json:"deprecation_date,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -237,6 +239,20 @@ func (x *ThingType) GetCreationDate() *timestamppb.Timestamp {
 func (x *ThingType) GetLastModifiedDate() *timestamppb.Timestamp {
 	if x != nil {
 		return x.LastModifiedDate
+	}
+	return nil
+}
+
+func (x *ThingType) GetDeprecated() bool {
+	if x != nil {
+		return x.Deprecated
+	}
+	return false
+}
+
+func (x *ThingType) GetDeprecationDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DeprecationDate
 	}
 	return nil
 }
@@ -446,6 +462,7 @@ type BillingGroup struct {
 	Tags             map[string]string      `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	CreationDate     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
 	LastModifiedDate *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=last_modified_date,json=lastModifiedDate,proto3" json:"last_modified_date,omitempty"`
+	Version          int64                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -534,6 +551,13 @@ func (x *BillingGroup) GetLastModifiedDate() *timestamppb.Timestamp {
 		return x.LastModifiedDate
 	}
 	return nil
+}
+
+func (x *BillingGroup) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 // Certificate represents an IoT device certificate.
@@ -890,6 +914,8 @@ type Job struct {
 	StartedAt          *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
 	ForceCanceledAt    *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=force_canceled_at,json=forceCanceledAt,proto3" json:"force_canceled_at,omitempty"`
 	Tags               map[string]string      `protobuf:"bytes,16,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Document           string                 `protobuf:"bytes,17,opt,name=document,proto3" json:"document,omitempty"`
+	Targets            []string               `protobuf:"bytes,18,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1032,6 +1058,20 @@ func (x *Job) GetForceCanceledAt() *timestamppb.Timestamp {
 func (x *Job) GetTags() map[string]string {
 	if x != nil {
 		return x.Tags
+	}
+	return nil
+}
+
+func (x *Job) GetDocument() string {
+	if x != nil {
+		return x.Document
+	}
+	return ""
+}
+
+func (x *Job) GetTargets() []string {
+	if x != nil {
+		return x.Targets
 	}
 	return nil
 }
@@ -1361,7 +1401,7 @@ type RoleAlias struct {
 	RoleAlias                 string                 `protobuf:"bytes,1,opt,name=role_alias,json=roleAlias,proto3" json:"role_alias,omitempty"`
 	RoleAliasArn              string                 `protobuf:"bytes,2,opt,name=role_alias_arn,json=roleAliasArn,proto3" json:"role_alias_arn,omitempty"`
 	RoleArn                   string                 `protobuf:"bytes,3,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
-	CredentialDurationSeconds string                 `protobuf:"bytes,4,opt,name=credential_duration_seconds,json=credentialDurationSeconds,proto3" json:"credential_duration_seconds,omitempty"`
+	CredentialDurationSeconds int64                  `protobuf:"varint,4,opt,name=credential_duration_seconds,json=credentialDurationSeconds,proto3" json:"credential_duration_seconds,omitempty"`
 	Owner                     string                 `protobuf:"bytes,5,opt,name=owner,proto3" json:"owner,omitempty"`
 	CreationDate              *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
 	LastModifiedDate          *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_modified_date,json=lastModifiedDate,proto3" json:"last_modified_date,omitempty"`
@@ -1420,11 +1460,11 @@ func (x *RoleAlias) GetRoleArn() string {
 	return ""
 }
 
-func (x *RoleAlias) GetCredentialDurationSeconds() string {
+func (x *RoleAlias) GetCredentialDurationSeconds() int64 {
 	if x != nil {
 		return x.CredentialDurationSeconds
 	}
-	return ""
+	return 0
 }
 
 func (x *RoleAlias) GetOwner() string {
@@ -1799,6 +1839,949 @@ func (x *Input) GetStatus() string {
 	return ""
 }
 
+// SecurityProfile represents a Device Defender security profile.
+type SecurityProfile struct {
+	state                       protoimpl.MessageState  `protogen:"open.v1"`
+	SecurityProfileName         string                  `protobuf:"bytes,1,opt,name=security_profile_name,json=securityProfileName,proto3" json:"security_profile_name,omitempty"`
+	SecurityProfileArn          string                  `protobuf:"bytes,2,opt,name=security_profile_arn,json=securityProfileArn,proto3" json:"security_profile_arn,omitempty"`
+	SecurityProfileDescription  string                  `protobuf:"bytes,3,opt,name=security_profile_description,json=securityProfileDescription,proto3" json:"security_profile_description,omitempty"`
+	Behaviors                   []*Behavior             `protobuf:"bytes,4,rep,name=behaviors,proto3" json:"behaviors,omitempty"`
+	AlertTargets                map[string]*AlertTarget `protobuf:"bytes,5,rep,name=alert_targets,json=alertTargets,proto3" json:"alert_targets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	AdditionalMetricsToRetainV2 []string                `protobuf:"bytes,6,rep,name=additional_metrics_to_retain_v2,json=additionalMetricsToRetainV2,proto3" json:"additional_metrics_to_retain_v2,omitempty"`
+	Version                     int64                   `protobuf:"varint,7,opt,name=version,proto3" json:"version,omitempty"`
+	CreationDate                *timestamppb.Timestamp  `protobuf:"bytes,8,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
+	LastModifiedDate            *timestamppb.Timestamp  `protobuf:"bytes,9,opt,name=last_modified_date,json=lastModifiedDate,proto3" json:"last_modified_date,omitempty"`
+	Tags                        map[string]string       `protobuf:"bytes,10,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
+}
+
+func (x *SecurityProfile) Reset() {
+	*x = SecurityProfile{}
+	mi := &file_storage_iot_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecurityProfile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecurityProfile) ProtoMessage() {}
+
+func (x *SecurityProfile) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecurityProfile.ProtoReflect.Descriptor instead.
+func (*SecurityProfile) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *SecurityProfile) GetSecurityProfileName() string {
+	if x != nil {
+		return x.SecurityProfileName
+	}
+	return ""
+}
+
+func (x *SecurityProfile) GetSecurityProfileArn() string {
+	if x != nil {
+		return x.SecurityProfileArn
+	}
+	return ""
+}
+
+func (x *SecurityProfile) GetSecurityProfileDescription() string {
+	if x != nil {
+		return x.SecurityProfileDescription
+	}
+	return ""
+}
+
+func (x *SecurityProfile) GetBehaviors() []*Behavior {
+	if x != nil {
+		return x.Behaviors
+	}
+	return nil
+}
+
+func (x *SecurityProfile) GetAlertTargets() map[string]*AlertTarget {
+	if x != nil {
+		return x.AlertTargets
+	}
+	return nil
+}
+
+func (x *SecurityProfile) GetAdditionalMetricsToRetainV2() []string {
+	if x != nil {
+		return x.AdditionalMetricsToRetainV2
+	}
+	return nil
+}
+
+func (x *SecurityProfile) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *SecurityProfile) GetCreationDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreationDate
+	}
+	return nil
+}
+
+func (x *SecurityProfile) GetLastModifiedDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastModifiedDate
+	}
+	return nil
+}
+
+func (x *SecurityProfile) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+// AlertTarget represents an alert destination for security profile violations.
+type AlertTarget struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AlertTargetArn string                 `protobuf:"bytes,1,opt,name=alert_target_arn,json=alertTargetArn,proto3" json:"alert_target_arn,omitempty"`
+	RoleArn        string                 `protobuf:"bytes,2,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *AlertTarget) Reset() {
+	*x = AlertTarget{}
+	mi := &file_storage_iot_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AlertTarget) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AlertTarget) ProtoMessage() {}
+
+func (x *AlertTarget) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AlertTarget.ProtoReflect.Descriptor instead.
+func (*AlertTarget) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *AlertTarget) GetAlertTargetArn() string {
+	if x != nil {
+		return x.AlertTargetArn
+	}
+	return ""
+}
+
+func (x *AlertTarget) GetRoleArn() string {
+	if x != nil {
+		return x.RoleArn
+	}
+	return ""
+}
+
+// Behavior represents a security profile behavior definition.
+type Behavior struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Name            string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Metric          string                 `protobuf:"bytes,2,opt,name=metric,proto3" json:"metric,omitempty"`
+	Criteria        *BehaviorCriteria      `protobuf:"bytes,3,opt,name=criteria,proto3" json:"criteria,omitempty"`
+	SuppressAlerts  bool                   `protobuf:"varint,4,opt,name=suppress_alerts,json=suppressAlerts,proto3" json:"suppress_alerts,omitempty"`
+	ExportMetric    bool                   `protobuf:"varint,5,opt,name=export_metric,json=exportMetric,proto3" json:"export_metric,omitempty"`
+	MetricDimension string                 `protobuf:"bytes,6,opt,name=metric_dimension,json=metricDimension,proto3" json:"metric_dimension,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *Behavior) Reset() {
+	*x = Behavior{}
+	mi := &file_storage_iot_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Behavior) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Behavior) ProtoMessage() {}
+
+func (x *Behavior) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Behavior.ProtoReflect.Descriptor instead.
+func (*Behavior) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *Behavior) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Behavior) GetMetric() string {
+	if x != nil {
+		return x.Metric
+	}
+	return ""
+}
+
+func (x *Behavior) GetCriteria() *BehaviorCriteria {
+	if x != nil {
+		return x.Criteria
+	}
+	return nil
+}
+
+func (x *Behavior) GetSuppressAlerts() bool {
+	if x != nil {
+		return x.SuppressAlerts
+	}
+	return false
+}
+
+func (x *Behavior) GetExportMetric() bool {
+	if x != nil {
+		return x.ExportMetric
+	}
+	return false
+}
+
+func (x *Behavior) GetMetricDimension() string {
+	if x != nil {
+		return x.MetricDimension
+	}
+	return ""
+}
+
+// BehaviorCriteria defines the conditions that trigger a behaviour alert.
+type BehaviorCriteria struct {
+	state                        protoimpl.MessageState          `protogen:"open.v1"`
+	ComparisonOperator           string                          `protobuf:"bytes,1,opt,name=comparison_operator,json=comparisonOperator,proto3" json:"comparison_operator,omitempty"`
+	Value                        float64                         `protobuf:"fixed64,2,opt,name=value,proto3" json:"value,omitempty"`
+	DurationSeconds              int64                           `protobuf:"varint,3,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	ConsecutiveDatapointsToAlarm int64                           `protobuf:"varint,4,opt,name=consecutive_datapoints_to_alarm,json=consecutiveDatapointsToAlarm,proto3" json:"consecutive_datapoints_to_alarm,omitempty"`
+	ConsecutiveDatapointsToClear int64                           `protobuf:"varint,5,opt,name=consecutive_datapoints_to_clear,json=consecutiveDatapointsToClear,proto3" json:"consecutive_datapoints_to_clear,omitempty"`
+	StatisticalThreshold         *StatisticalThreshold           `protobuf:"bytes,6,opt,name=statistical_threshold,json=statisticalThreshold,proto3" json:"statistical_threshold,omitempty"`
+	MlDetectionConfig            *MachineLearningDetectionConfig `protobuf:"bytes,7,opt,name=ml_detection_config,json=mlDetectionConfig,proto3" json:"ml_detection_config,omitempty"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
+}
+
+func (x *BehaviorCriteria) Reset() {
+	*x = BehaviorCriteria{}
+	mi := &file_storage_iot_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BehaviorCriteria) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BehaviorCriteria) ProtoMessage() {}
+
+func (x *BehaviorCriteria) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BehaviorCriteria.ProtoReflect.Descriptor instead.
+func (*BehaviorCriteria) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *BehaviorCriteria) GetComparisonOperator() string {
+	if x != nil {
+		return x.ComparisonOperator
+	}
+	return ""
+}
+
+func (x *BehaviorCriteria) GetValue() float64 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
+func (x *BehaviorCriteria) GetDurationSeconds() int64 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
+}
+
+func (x *BehaviorCriteria) GetConsecutiveDatapointsToAlarm() int64 {
+	if x != nil {
+		return x.ConsecutiveDatapointsToAlarm
+	}
+	return 0
+}
+
+func (x *BehaviorCriteria) GetConsecutiveDatapointsToClear() int64 {
+	if x != nil {
+		return x.ConsecutiveDatapointsToClear
+	}
+	return 0
+}
+
+func (x *BehaviorCriteria) GetStatisticalThreshold() *StatisticalThreshold {
+	if x != nil {
+		return x.StatisticalThreshold
+	}
+	return nil
+}
+
+func (x *BehaviorCriteria) GetMlDetectionConfig() *MachineLearningDetectionConfig {
+	if x != nil {
+		return x.MlDetectionConfig
+	}
+	return nil
+}
+
+// StatisticalThreshold configures statistical anomaly detection.
+type StatisticalThreshold struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Statistic     string                 `protobuf:"bytes,1,opt,name=statistic,proto3" json:"statistic,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StatisticalThreshold) Reset() {
+	*x = StatisticalThreshold{}
+	mi := &file_storage_iot_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StatisticalThreshold) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StatisticalThreshold) ProtoMessage() {}
+
+func (x *StatisticalThreshold) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StatisticalThreshold.ProtoReflect.Descriptor instead.
+func (*StatisticalThreshold) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *StatisticalThreshold) GetStatistic() string {
+	if x != nil {
+		return x.Statistic
+	}
+	return ""
+}
+
+// MachineLearningDetectionConfig configures ML-based anomaly detection.
+type MachineLearningDetectionConfig struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	ConfidenceLevel string                 `protobuf:"bytes,1,opt,name=confidence_level,json=confidenceLevel,proto3" json:"confidence_level,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *MachineLearningDetectionConfig) Reset() {
+	*x = MachineLearningDetectionConfig{}
+	mi := &file_storage_iot_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MachineLearningDetectionConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MachineLearningDetectionConfig) ProtoMessage() {}
+
+func (x *MachineLearningDetectionConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MachineLearningDetectionConfig.ProtoReflect.Descriptor instead.
+func (*MachineLearningDetectionConfig) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *MachineLearningDetectionConfig) GetConfidenceLevel() string {
+	if x != nil {
+		return x.ConfidenceLevel
+	}
+	return ""
+}
+
+// MetricValue represents a metric measurement in a violation event.
+type MetricValue struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Count         int64                  `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
+	Cidrs         []string               `protobuf:"bytes,2,rep,name=cidrs,proto3" json:"cidrs,omitempty"`
+	Ports         []int64                `protobuf:"varint,3,rep,packed,name=ports,proto3" json:"ports,omitempty"`
+	Number        float64                `protobuf:"fixed64,4,opt,name=number,proto3" json:"number,omitempty"`
+	Numbers       []float64              `protobuf:"fixed64,5,rep,packed,name=numbers,proto3" json:"numbers,omitempty"`
+	Strings       []string               `protobuf:"bytes,6,rep,name=strings,proto3" json:"strings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MetricValue) Reset() {
+	*x = MetricValue{}
+	mi := &file_storage_iot_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MetricValue) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MetricValue) ProtoMessage() {}
+
+func (x *MetricValue) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MetricValue.ProtoReflect.Descriptor instead.
+func (*MetricValue) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *MetricValue) GetCount() int64 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+func (x *MetricValue) GetCidrs() []string {
+	if x != nil {
+		return x.Cidrs
+	}
+	return nil
+}
+
+func (x *MetricValue) GetPorts() []int64 {
+	if x != nil {
+		return x.Ports
+	}
+	return nil
+}
+
+func (x *MetricValue) GetNumber() float64 {
+	if x != nil {
+		return x.Number
+	}
+	return 0
+}
+
+func (x *MetricValue) GetNumbers() []float64 {
+	if x != nil {
+		return x.Numbers
+	}
+	return nil
+}
+
+func (x *MetricValue) GetStrings() []string {
+	if x != nil {
+		return x.Strings
+	}
+	return nil
+}
+
+// ViolationEvent represents a Device Defender violation event.
+type ViolationEvent struct {
+	state                        protoimpl.MessageState `protogen:"open.v1"`
+	ViolationId                  string                 `protobuf:"bytes,1,opt,name=violation_id,json=violationId,proto3" json:"violation_id,omitempty"`
+	ThingName                    string                 `protobuf:"bytes,2,opt,name=thing_name,json=thingName,proto3" json:"thing_name,omitempty"`
+	SecurityProfileName          string                 `protobuf:"bytes,3,opt,name=security_profile_name,json=securityProfileName,proto3" json:"security_profile_name,omitempty"`
+	Behavior                     *Behavior              `protobuf:"bytes,4,opt,name=behavior,proto3" json:"behavior,omitempty"`
+	MetricValue                  *MetricValue           `protobuf:"bytes,5,opt,name=metric_value,json=metricValue,proto3" json:"metric_value,omitempty"`
+	ViolationEventType           string                 `protobuf:"bytes,6,opt,name=violation_event_type,json=violationEventType,proto3" json:"violation_event_type,omitempty"`
+	VerificationState            string                 `protobuf:"bytes,7,opt,name=verification_state,json=verificationState,proto3" json:"verification_state,omitempty"`
+	VerificationStateDescription string                 `protobuf:"bytes,8,opt,name=verification_state_description,json=verificationStateDescription,proto3" json:"verification_state_description,omitempty"`
+	ViolationEventTime           *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=violation_event_time,json=violationEventTime,proto3" json:"violation_event_time,omitempty"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
+}
+
+func (x *ViolationEvent) Reset() {
+	*x = ViolationEvent{}
+	mi := &file_storage_iot_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ViolationEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ViolationEvent) ProtoMessage() {}
+
+func (x *ViolationEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ViolationEvent.ProtoReflect.Descriptor instead.
+func (*ViolationEvent) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ViolationEvent) GetViolationId() string {
+	if x != nil {
+		return x.ViolationId
+	}
+	return ""
+}
+
+func (x *ViolationEvent) GetThingName() string {
+	if x != nil {
+		return x.ThingName
+	}
+	return ""
+}
+
+func (x *ViolationEvent) GetSecurityProfileName() string {
+	if x != nil {
+		return x.SecurityProfileName
+	}
+	return ""
+}
+
+func (x *ViolationEvent) GetBehavior() *Behavior {
+	if x != nil {
+		return x.Behavior
+	}
+	return nil
+}
+
+func (x *ViolationEvent) GetMetricValue() *MetricValue {
+	if x != nil {
+		return x.MetricValue
+	}
+	return nil
+}
+
+func (x *ViolationEvent) GetViolationEventType() string {
+	if x != nil {
+		return x.ViolationEventType
+	}
+	return ""
+}
+
+func (x *ViolationEvent) GetVerificationState() string {
+	if x != nil {
+		return x.VerificationState
+	}
+	return ""
+}
+
+func (x *ViolationEvent) GetVerificationStateDescription() string {
+	if x != nil {
+		return x.VerificationStateDescription
+	}
+	return ""
+}
+
+func (x *ViolationEvent) GetViolationEventTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ViolationEventTime
+	}
+	return nil
+}
+
+// DomainConfiguration represents an IoT domain configuration.
+type DomainConfiguration struct {
+	state                     protoimpl.MessageState `protogen:"open.v1"`
+	DomainConfigurationName   string                 `protobuf:"bytes,1,opt,name=domain_configuration_name,json=domainConfigurationName,proto3" json:"domain_configuration_name,omitempty"`
+	DomainConfigurationArn    string                 `protobuf:"bytes,2,opt,name=domain_configuration_arn,json=domainConfigurationArn,proto3" json:"domain_configuration_arn,omitempty"`
+	DomainName                string                 `protobuf:"bytes,3,opt,name=domain_name,json=domainName,proto3" json:"domain_name,omitempty"`
+	ServerCertificateArns     []string               `protobuf:"bytes,4,rep,name=server_certificate_arns,json=serverCertificateArns,proto3" json:"server_certificate_arns,omitempty"`
+	ValidationCertificateArn  string                 `protobuf:"bytes,5,opt,name=validation_certificate_arn,json=validationCertificateArn,proto3" json:"validation_certificate_arn,omitempty"`
+	AuthorizerConfig          string                 `protobuf:"bytes,6,opt,name=authorizer_config,json=authorizerConfig,proto3" json:"authorizer_config,omitempty"`
+	ServiceType               string                 `protobuf:"bytes,7,opt,name=service_type,json=serviceType,proto3" json:"service_type,omitempty"`
+	DomainConfigurationStatus string                 `protobuf:"bytes,8,opt,name=domain_configuration_status,json=domainConfigurationStatus,proto3" json:"domain_configuration_status,omitempty"`
+	AuthenticationType        string                 `protobuf:"bytes,9,opt,name=authentication_type,json=authenticationType,proto3" json:"authentication_type,omitempty"`
+	ApplicationProtocol       string                 `protobuf:"bytes,10,opt,name=application_protocol,json=applicationProtocol,proto3" json:"application_protocol,omitempty"`
+	CreationDate              *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
+	LastModifiedDate          *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=last_modified_date,json=lastModifiedDate,proto3" json:"last_modified_date,omitempty"`
+	Tags                      map[string]string      `protobuf:"bytes,13,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *DomainConfiguration) Reset() {
+	*x = DomainConfiguration{}
+	mi := &file_storage_iot_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DomainConfiguration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DomainConfiguration) ProtoMessage() {}
+
+func (x *DomainConfiguration) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DomainConfiguration.ProtoReflect.Descriptor instead.
+func (*DomainConfiguration) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *DomainConfiguration) GetDomainConfigurationName() string {
+	if x != nil {
+		return x.DomainConfigurationName
+	}
+	return ""
+}
+
+func (x *DomainConfiguration) GetDomainConfigurationArn() string {
+	if x != nil {
+		return x.DomainConfigurationArn
+	}
+	return ""
+}
+
+func (x *DomainConfiguration) GetDomainName() string {
+	if x != nil {
+		return x.DomainName
+	}
+	return ""
+}
+
+func (x *DomainConfiguration) GetServerCertificateArns() []string {
+	if x != nil {
+		return x.ServerCertificateArns
+	}
+	return nil
+}
+
+func (x *DomainConfiguration) GetValidationCertificateArn() string {
+	if x != nil {
+		return x.ValidationCertificateArn
+	}
+	return ""
+}
+
+func (x *DomainConfiguration) GetAuthorizerConfig() string {
+	if x != nil {
+		return x.AuthorizerConfig
+	}
+	return ""
+}
+
+func (x *DomainConfiguration) GetServiceType() string {
+	if x != nil {
+		return x.ServiceType
+	}
+	return ""
+}
+
+func (x *DomainConfiguration) GetDomainConfigurationStatus() string {
+	if x != nil {
+		return x.DomainConfigurationStatus
+	}
+	return ""
+}
+
+func (x *DomainConfiguration) GetAuthenticationType() string {
+	if x != nil {
+		return x.AuthenticationType
+	}
+	return ""
+}
+
+func (x *DomainConfiguration) GetApplicationProtocol() string {
+	if x != nil {
+		return x.ApplicationProtocol
+	}
+	return ""
+}
+
+func (x *DomainConfiguration) GetCreationDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreationDate
+	}
+	return nil
+}
+
+func (x *DomainConfiguration) GetLastModifiedDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastModifiedDate
+	}
+	return nil
+}
+
+func (x *DomainConfiguration) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+// IndexingConfiguration represents the IoT thing indexing configuration.
+type IndexingConfiguration struct {
+	state                             protoimpl.MessageState `protogen:"open.v1"`
+	ThingIndexingMode                 string                 `protobuf:"bytes,1,opt,name=thing_indexing_mode,json=thingIndexingMode,proto3" json:"thing_indexing_mode,omitempty"`
+	ThingGroupIndexingMode            string                 `protobuf:"bytes,2,opt,name=thing_group_indexing_mode,json=thingGroupIndexingMode,proto3" json:"thing_group_indexing_mode,omitempty"`
+	ThingConnectivityIndexingMode     string                 `protobuf:"bytes,3,opt,name=thing_connectivity_indexing_mode,json=thingConnectivityIndexingMode,proto3" json:"thing_connectivity_indexing_mode,omitempty"`
+	DeviceDefenderIndexingMode        string                 `protobuf:"bytes,4,opt,name=device_defender_indexing_mode,json=deviceDefenderIndexingMode,proto3" json:"device_defender_indexing_mode,omitempty"`
+	NamedShadowIndexingMode           string                 `protobuf:"bytes,5,opt,name=named_shadow_indexing_mode,json=namedShadowIndexingMode,proto3" json:"named_shadow_indexing_mode,omitempty"`
+	ManagedFields                     []string               `protobuf:"bytes,6,rep,name=managed_fields,json=managedFields,proto3" json:"managed_fields,omitempty"`
+	CustomFields                      []string               `protobuf:"bytes,7,rep,name=custom_fields,json=customFields,proto3" json:"custom_fields,omitempty"`
+	ThingIndexingConfigurationVersion string                 `protobuf:"bytes,8,opt,name=thing_indexing_configuration_version,json=thingIndexingConfigurationVersion,proto3" json:"thing_indexing_configuration_version,omitempty"`
+	unknownFields                     protoimpl.UnknownFields
+	sizeCache                         protoimpl.SizeCache
+}
+
+func (x *IndexingConfiguration) Reset() {
+	*x = IndexingConfiguration{}
+	mi := &file_storage_iot_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IndexingConfiguration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IndexingConfiguration) ProtoMessage() {}
+
+func (x *IndexingConfiguration) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IndexingConfiguration.ProtoReflect.Descriptor instead.
+func (*IndexingConfiguration) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *IndexingConfiguration) GetThingIndexingMode() string {
+	if x != nil {
+		return x.ThingIndexingMode
+	}
+	return ""
+}
+
+func (x *IndexingConfiguration) GetThingGroupIndexingMode() string {
+	if x != nil {
+		return x.ThingGroupIndexingMode
+	}
+	return ""
+}
+
+func (x *IndexingConfiguration) GetThingConnectivityIndexingMode() string {
+	if x != nil {
+		return x.ThingConnectivityIndexingMode
+	}
+	return ""
+}
+
+func (x *IndexingConfiguration) GetDeviceDefenderIndexingMode() string {
+	if x != nil {
+		return x.DeviceDefenderIndexingMode
+	}
+	return ""
+}
+
+func (x *IndexingConfiguration) GetNamedShadowIndexingMode() string {
+	if x != nil {
+		return x.NamedShadowIndexingMode
+	}
+	return ""
+}
+
+func (x *IndexingConfiguration) GetManagedFields() []string {
+	if x != nil {
+		return x.ManagedFields
+	}
+	return nil
+}
+
+func (x *IndexingConfiguration) GetCustomFields() []string {
+	if x != nil {
+		return x.CustomFields
+	}
+	return nil
+}
+
+func (x *IndexingConfiguration) GetThingIndexingConfigurationVersion() string {
+	if x != nil {
+		return x.ThingIndexingConfigurationVersion
+	}
+	return ""
+}
+
+// ProvisioningTemplateVersion represents a version of a provisioning template.
+type ProvisioningTemplateVersion struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	VersionId        string                 `protobuf:"bytes,1,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty"`
+	CreationDate     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
+	IsDefaultVersion bool                   `protobuf:"varint,3,opt,name=is_default_version,json=isDefaultVersion,proto3" json:"is_default_version,omitempty"`
+	TemplateBody     string                 `protobuf:"bytes,4,opt,name=template_body,json=templateBody,proto3" json:"template_body,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ProvisioningTemplateVersion) Reset() {
+	*x = ProvisioningTemplateVersion{}
+	mi := &file_storage_iot_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProvisioningTemplateVersion) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProvisioningTemplateVersion) ProtoMessage() {}
+
+func (x *ProvisioningTemplateVersion) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_iot_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProvisioningTemplateVersion.ProtoReflect.Descriptor instead.
+func (*ProvisioningTemplateVersion) Descriptor() ([]byte, []int) {
+	return file_storage_iot_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ProvisioningTemplateVersion) GetVersionId() string {
+	if x != nil {
+		return x.VersionId
+	}
+	return ""
+}
+
+func (x *ProvisioningTemplateVersion) GetCreationDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreationDate
+	}
+	return nil
+}
+
+func (x *ProvisioningTemplateVersion) GetIsDefaultVersion() bool {
+	if x != nil {
+		return x.IsDefaultVersion
+	}
+	return false
+}
+
+func (x *ProvisioningTemplateVersion) GetTemplateBody() string {
+	if x != nil {
+		return x.TemplateBody
+	}
+	return ""
+}
+
 var File_storage_iot_proto protoreflect.FileDescriptor
 
 const file_storage_iot_proto_rawDesc = "" +
@@ -1819,7 +2802,7 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x12last_modified_date\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x87\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xee\x04\n" +
 	"\tThingType\x12&\n" +
 	"\x0fthing_type_name\x18\x01 \x01(\tR\rthingTypeName\x12$\n" +
 	"\x0ething_type_arn\x18\x02 \x01(\tR\fthingTypeArn\x12\"\n" +
@@ -1829,7 +2812,12 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x04tags\x18\x06 \x03(\v2 .storage.iot.ThingType.TagsEntryR\x04tags\x12\x18\n" +
 	"\aversion\x18\a \x01(\x03R\aversion\x12?\n" +
 	"\rcreation_date\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12H\n" +
-	"\x12last_modified_date\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x1a7\n" +
+	"\x12last_modified_date\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x12\x1e\n" +
+	"\n" +
+	"deprecated\x18\n" +
+	" \x01(\bR\n" +
+	"deprecated\x12E\n" +
+	"\x10deprecation_date\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x0fdeprecationDate\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa1\x01\n" +
@@ -1861,7 +2849,7 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8e\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa8\x04\n" +
 	"\fBillingGroup\x12\x1d\n" +
 	"\n" +
 	"group_name\x18\x01 \x01(\tR\tgroupName\x12\x1b\n" +
@@ -1873,7 +2861,8 @@ const file_storage_iot_proto_rawDesc = "" +
 	"attributes\x127\n" +
 	"\x04tags\x18\x06 \x03(\v2#.storage.iot.BillingGroup.TagsEntryR\x04tags\x12?\n" +
 	"\rcreation_date\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12H\n" +
-	"\x12last_modified_date\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x1a=\n" +
+	"\x12last_modified_date\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x12\x18\n" +
+	"\aversion\x18\t \x01(\x03R\aversion\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
@@ -1917,7 +2906,7 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x13aws_iot_sql_version\x18\b \x01(\tR\x10awsIotSqlVersion\x121\n" +
 	"\aactions\x18\t \x01(\v2\x17.google.protobuf.StructR\aactions\x12:\n" +
 	"\ferror_action\x18\n" +
-	" \x01(\v2\x17.google.protobuf.StructR\verrorAction\"\x80\x06\n" +
+	" \x01(\v2\x17.google.protobuf.StructR\verrorAction\"\xb6\x06\n" +
 	"\x03Job\x12\x17\n" +
 	"\ajob_arn\x18\x01 \x01(\tR\x06jobArn\x12\x15\n" +
 	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12 \n" +
@@ -1937,7 +2926,9 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\n" +
 	"started_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12F\n" +
 	"\x11force_canceled_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\x0fforceCanceledAt\x12.\n" +
-	"\x04tags\x18\x10 \x03(\v2\x1a.storage.iot.Job.TagsEntryR\x04tags\x1a7\n" +
+	"\x04tags\x18\x10 \x03(\v2\x1a.storage.iot.Job.TagsEntryR\x04tags\x12\x1a\n" +
+	"\bdocument\x18\x11 \x01(\tR\bdocument\x12\x18\n" +
+	"\atargets\x18\x12 \x03(\tR\atargets\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe6\x02\n" +
@@ -1980,7 +2971,7 @@ const file_storage_iot_proto_rawDesc = "" +
 	"role_alias\x18\x01 \x01(\tR\troleAlias\x12$\n" +
 	"\x0erole_alias_arn\x18\x02 \x01(\tR\froleAliasArn\x12\x19\n" +
 	"\brole_arn\x18\x03 \x01(\tR\aroleArn\x12>\n" +
-	"\x1bcredential_duration_seconds\x18\x04 \x01(\tR\x19credentialDurationSeconds\x12\x14\n" +
+	"\x1bcredential_duration_seconds\x18\x04 \x01(\x03R\x19credentialDurationSeconds\x12\x14\n" +
 	"\x05owner\x18\x05 \x01(\tR\x05owner\x12?\n" +
 	"\rcreation_date\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12H\n" +
 	"\x12last_modified_date\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\"\xde\x04\n" +
@@ -2028,7 +3019,99 @@ const file_storage_iot_proto_rawDesc = "" +
 	"\x06status\x18\b \x01(\tR\x06status\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B.Z,vorpalstacks/internal/pb/storage/storage_iotb\x06proto3"
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfe\x05\n" +
+	"\x0fSecurityProfile\x122\n" +
+	"\x15security_profile_name\x18\x01 \x01(\tR\x13securityProfileName\x120\n" +
+	"\x14security_profile_arn\x18\x02 \x01(\tR\x12securityProfileArn\x12@\n" +
+	"\x1csecurity_profile_description\x18\x03 \x01(\tR\x1asecurityProfileDescription\x123\n" +
+	"\tbehaviors\x18\x04 \x03(\v2\x15.storage.iot.BehaviorR\tbehaviors\x12S\n" +
+	"\ralert_targets\x18\x05 \x03(\v2..storage.iot.SecurityProfile.AlertTargetsEntryR\falertTargets\x12D\n" +
+	"\x1fadditional_metrics_to_retain_v2\x18\x06 \x03(\tR\x1badditionalMetricsToRetainV2\x12\x18\n" +
+	"\aversion\x18\a \x01(\x03R\aversion\x12?\n" +
+	"\rcreation_date\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12H\n" +
+	"\x12last_modified_date\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x12:\n" +
+	"\x04tags\x18\n" +
+	" \x03(\v2&.storage.iot.SecurityProfile.TagsEntryR\x04tags\x1aY\n" +
+	"\x11AlertTargetsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
+	"\x05value\x18\x02 \x01(\v2\x18.storage.iot.AlertTargetR\x05value:\x028\x01\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"R\n" +
+	"\vAlertTarget\x12(\n" +
+	"\x10alert_target_arn\x18\x01 \x01(\tR\x0ealertTargetArn\x12\x19\n" +
+	"\brole_arn\x18\x02 \x01(\tR\aroleArn\"\xea\x01\n" +
+	"\bBehavior\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
+	"\x06metric\x18\x02 \x01(\tR\x06metric\x129\n" +
+	"\bcriteria\x18\x03 \x01(\v2\x1d.storage.iot.BehaviorCriteriaR\bcriteria\x12'\n" +
+	"\x0fsuppress_alerts\x18\x04 \x01(\bR\x0esuppressAlerts\x12#\n" +
+	"\rexport_metric\x18\x05 \x01(\bR\fexportMetric\x12)\n" +
+	"\x10metric_dimension\x18\x06 \x01(\tR\x0fmetricDimension\"\xc7\x03\n" +
+	"\x10BehaviorCriteria\x12/\n" +
+	"\x13comparison_operator\x18\x01 \x01(\tR\x12comparisonOperator\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value\x12)\n" +
+	"\x10duration_seconds\x18\x03 \x01(\x03R\x0fdurationSeconds\x12E\n" +
+	"\x1fconsecutive_datapoints_to_alarm\x18\x04 \x01(\x03R\x1cconsecutiveDatapointsToAlarm\x12E\n" +
+	"\x1fconsecutive_datapoints_to_clear\x18\x05 \x01(\x03R\x1cconsecutiveDatapointsToClear\x12V\n" +
+	"\x15statistical_threshold\x18\x06 \x01(\v2!.storage.iot.StatisticalThresholdR\x14statisticalThreshold\x12[\n" +
+	"\x13ml_detection_config\x18\a \x01(\v2+.storage.iot.MachineLearningDetectionConfigR\x11mlDetectionConfig\"4\n" +
+	"\x14StatisticalThreshold\x12\x1c\n" +
+	"\tstatistic\x18\x01 \x01(\tR\tstatistic\"K\n" +
+	"\x1eMachineLearningDetectionConfig\x12)\n" +
+	"\x10confidence_level\x18\x01 \x01(\tR\x0fconfidenceLevel\"\x9b\x01\n" +
+	"\vMetricValue\x12\x14\n" +
+	"\x05count\x18\x01 \x01(\x03R\x05count\x12\x14\n" +
+	"\x05cidrs\x18\x02 \x03(\tR\x05cidrs\x12\x14\n" +
+	"\x05ports\x18\x03 \x03(\x03R\x05ports\x12\x16\n" +
+	"\x06number\x18\x04 \x01(\x01R\x06number\x12\x18\n" +
+	"\anumbers\x18\x05 \x03(\x01R\anumbers\x12\x18\n" +
+	"\astrings\x18\x06 \x03(\tR\astrings\"\xeb\x03\n" +
+	"\x0eViolationEvent\x12!\n" +
+	"\fviolation_id\x18\x01 \x01(\tR\vviolationId\x12\x1d\n" +
+	"\n" +
+	"thing_name\x18\x02 \x01(\tR\tthingName\x122\n" +
+	"\x15security_profile_name\x18\x03 \x01(\tR\x13securityProfileName\x121\n" +
+	"\bbehavior\x18\x04 \x01(\v2\x15.storage.iot.BehaviorR\bbehavior\x12;\n" +
+	"\fmetric_value\x18\x05 \x01(\v2\x18.storage.iot.MetricValueR\vmetricValue\x120\n" +
+	"\x14violation_event_type\x18\x06 \x01(\tR\x12violationEventType\x12-\n" +
+	"\x12verification_state\x18\a \x01(\tR\x11verificationState\x12D\n" +
+	"\x1everification_state_description\x18\b \x01(\tR\x1cverificationStateDescription\x12L\n" +
+	"\x14violation_event_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x12violationEventTime\"\x9a\x06\n" +
+	"\x13DomainConfiguration\x12:\n" +
+	"\x19domain_configuration_name\x18\x01 \x01(\tR\x17domainConfigurationName\x128\n" +
+	"\x18domain_configuration_arn\x18\x02 \x01(\tR\x16domainConfigurationArn\x12\x1f\n" +
+	"\vdomain_name\x18\x03 \x01(\tR\n" +
+	"domainName\x126\n" +
+	"\x17server_certificate_arns\x18\x04 \x03(\tR\x15serverCertificateArns\x12<\n" +
+	"\x1avalidation_certificate_arn\x18\x05 \x01(\tR\x18validationCertificateArn\x12+\n" +
+	"\x11authorizer_config\x18\x06 \x01(\tR\x10authorizerConfig\x12!\n" +
+	"\fservice_type\x18\a \x01(\tR\vserviceType\x12>\n" +
+	"\x1bdomain_configuration_status\x18\b \x01(\tR\x19domainConfigurationStatus\x12/\n" +
+	"\x13authentication_type\x18\t \x01(\tR\x12authenticationType\x121\n" +
+	"\x14application_protocol\x18\n" +
+	" \x01(\tR\x13applicationProtocol\x12?\n" +
+	"\rcreation_date\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12H\n" +
+	"\x12last_modified_date\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\x10lastModifiedDate\x12>\n" +
+	"\x04tags\x18\r \x03(\v2*.storage.iot.DomainConfiguration.TagsEntryR\x04tags\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe8\x03\n" +
+	"\x15IndexingConfiguration\x12.\n" +
+	"\x13thing_indexing_mode\x18\x01 \x01(\tR\x11thingIndexingMode\x129\n" +
+	"\x19thing_group_indexing_mode\x18\x02 \x01(\tR\x16thingGroupIndexingMode\x12G\n" +
+	" thing_connectivity_indexing_mode\x18\x03 \x01(\tR\x1dthingConnectivityIndexingMode\x12A\n" +
+	"\x1ddevice_defender_indexing_mode\x18\x04 \x01(\tR\x1adeviceDefenderIndexingMode\x12;\n" +
+	"\x1anamed_shadow_indexing_mode\x18\x05 \x01(\tR\x17namedShadowIndexingMode\x12%\n" +
+	"\x0emanaged_fields\x18\x06 \x03(\tR\rmanagedFields\x12#\n" +
+	"\rcustom_fields\x18\a \x03(\tR\fcustomFields\x12O\n" +
+	"$thing_indexing_configuration_version\x18\b \x01(\tR!thingIndexingConfigurationVersion\"\xd0\x01\n" +
+	"\x1bProvisioningTemplateVersion\x12\x1d\n" +
+	"\n" +
+	"version_id\x18\x01 \x01(\tR\tversionId\x12?\n" +
+	"\rcreation_date\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\fcreationDate\x12,\n" +
+	"\x12is_default_version\x18\x03 \x01(\bR\x10isDefaultVersion\x12#\n" +
+	"\rtemplate_body\x18\x04 \x01(\tR\ftemplateBodyB.Z,vorpalstacks/internal/pb/storage/storage_iotb\x06proto3"
 
 var (
 	file_storage_iot_proto_rawDescOnce sync.Once
@@ -2042,91 +3125,122 @@ func file_storage_iot_proto_rawDescGZIP() []byte {
 	return file_storage_iot_proto_rawDescData
 }
 
-var file_storage_iot_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_storage_iot_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
 var file_storage_iot_proto_goTypes = []any{
-	(*Thing)(nil),                 // 0: storage.iot.Thing
-	(*ThingType)(nil),             // 1: storage.iot.ThingType
-	(*ThingTypeProperty)(nil),     // 2: storage.iot.ThingTypeProperty
-	(*ThingGroup)(nil),            // 3: storage.iot.ThingGroup
-	(*BillingGroup)(nil),          // 4: storage.iot.BillingGroup
-	(*Certificate)(nil),           // 5: storage.iot.Certificate
-	(*Policy)(nil),                // 6: storage.iot.Policy
-	(*TopicRule)(nil),             // 7: storage.iot.TopicRule
-	(*Job)(nil),                   // 8: storage.iot.Job
-	(*JobExecution)(nil),          // 9: storage.iot.JobExecution
-	(*ShadowDocument)(nil),        // 10: storage.iot.ShadowDocument
-	(*Authorizer)(nil),            // 11: storage.iot.Authorizer
-	(*RoleAlias)(nil),             // 12: storage.iot.RoleAlias
-	(*ProvisioningTemplate)(nil),  // 13: storage.iot.ProvisioningTemplate
-	(*DetectorModel)(nil),         // 14: storage.iot.DetectorModel
-	(*Input)(nil),                 // 15: storage.iot.Input
-	nil,                           // 16: storage.iot.Thing.AttributesEntry
-	nil,                           // 17: storage.iot.ThingType.TagsEntry
-	nil,                           // 18: storage.iot.ThingGroup.AttributesEntry
-	nil,                           // 19: storage.iot.ThingGroup.TagsEntry
-	nil,                           // 20: storage.iot.BillingGroup.AttributesEntry
-	nil,                           // 21: storage.iot.BillingGroup.TagsEntry
-	nil,                           // 22: storage.iot.Job.TagsEntry
-	nil,                           // 23: storage.iot.ProvisioningTemplate.TagsEntry
-	nil,                           // 24: storage.iot.DetectorModel.TagsEntry
-	nil,                           // 25: storage.iot.Input.TagsEntry
-	(*timestamppb.Timestamp)(nil), // 26: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),       // 27: google.protobuf.Struct
+	(*Thing)(nil),                          // 0: storage.iot.Thing
+	(*ThingType)(nil),                      // 1: storage.iot.ThingType
+	(*ThingTypeProperty)(nil),              // 2: storage.iot.ThingTypeProperty
+	(*ThingGroup)(nil),                     // 3: storage.iot.ThingGroup
+	(*BillingGroup)(nil),                   // 4: storage.iot.BillingGroup
+	(*Certificate)(nil),                    // 5: storage.iot.Certificate
+	(*Policy)(nil),                         // 6: storage.iot.Policy
+	(*TopicRule)(nil),                      // 7: storage.iot.TopicRule
+	(*Job)(nil),                            // 8: storage.iot.Job
+	(*JobExecution)(nil),                   // 9: storage.iot.JobExecution
+	(*ShadowDocument)(nil),                 // 10: storage.iot.ShadowDocument
+	(*Authorizer)(nil),                     // 11: storage.iot.Authorizer
+	(*RoleAlias)(nil),                      // 12: storage.iot.RoleAlias
+	(*ProvisioningTemplate)(nil),           // 13: storage.iot.ProvisioningTemplate
+	(*DetectorModel)(nil),                  // 14: storage.iot.DetectorModel
+	(*Input)(nil),                          // 15: storage.iot.Input
+	(*SecurityProfile)(nil),                // 16: storage.iot.SecurityProfile
+	(*AlertTarget)(nil),                    // 17: storage.iot.AlertTarget
+	(*Behavior)(nil),                       // 18: storage.iot.Behavior
+	(*BehaviorCriteria)(nil),               // 19: storage.iot.BehaviorCriteria
+	(*StatisticalThreshold)(nil),           // 20: storage.iot.StatisticalThreshold
+	(*MachineLearningDetectionConfig)(nil), // 21: storage.iot.MachineLearningDetectionConfig
+	(*MetricValue)(nil),                    // 22: storage.iot.MetricValue
+	(*ViolationEvent)(nil),                 // 23: storage.iot.ViolationEvent
+	(*DomainConfiguration)(nil),            // 24: storage.iot.DomainConfiguration
+	(*IndexingConfiguration)(nil),          // 25: storage.iot.IndexingConfiguration
+	(*ProvisioningTemplateVersion)(nil),    // 26: storage.iot.ProvisioningTemplateVersion
+	nil,                                    // 27: storage.iot.Thing.AttributesEntry
+	nil,                                    // 28: storage.iot.ThingType.TagsEntry
+	nil,                                    // 29: storage.iot.ThingGroup.AttributesEntry
+	nil,                                    // 30: storage.iot.ThingGroup.TagsEntry
+	nil,                                    // 31: storage.iot.BillingGroup.AttributesEntry
+	nil,                                    // 32: storage.iot.BillingGroup.TagsEntry
+	nil,                                    // 33: storage.iot.Job.TagsEntry
+	nil,                                    // 34: storage.iot.ProvisioningTemplate.TagsEntry
+	nil,                                    // 35: storage.iot.DetectorModel.TagsEntry
+	nil,                                    // 36: storage.iot.Input.TagsEntry
+	nil,                                    // 37: storage.iot.SecurityProfile.AlertTargetsEntry
+	nil,                                    // 38: storage.iot.SecurityProfile.TagsEntry
+	nil,                                    // 39: storage.iot.DomainConfiguration.TagsEntry
+	(*timestamppb.Timestamp)(nil),          // 40: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),                // 41: google.protobuf.Struct
 }
 var file_storage_iot_proto_depIdxs = []int32{
-	16, // 0: storage.iot.Thing.attributes:type_name -> storage.iot.Thing.AttributesEntry
-	26, // 1: storage.iot.Thing.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 2: storage.iot.Thing.last_modified_date:type_name -> google.protobuf.Timestamp
+	27, // 0: storage.iot.Thing.attributes:type_name -> storage.iot.Thing.AttributesEntry
+	40, // 1: storage.iot.Thing.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 2: storage.iot.Thing.last_modified_date:type_name -> google.protobuf.Timestamp
 	2,  // 3: storage.iot.ThingType.thing_type_properties:type_name -> storage.iot.ThingTypeProperty
-	17, // 4: storage.iot.ThingType.tags:type_name -> storage.iot.ThingType.TagsEntry
-	26, // 5: storage.iot.ThingType.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 6: storage.iot.ThingType.last_modified_date:type_name -> google.protobuf.Timestamp
-	18, // 7: storage.iot.ThingGroup.attributes:type_name -> storage.iot.ThingGroup.AttributesEntry
-	19, // 8: storage.iot.ThingGroup.tags:type_name -> storage.iot.ThingGroup.TagsEntry
-	26, // 9: storage.iot.ThingGroup.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 10: storage.iot.ThingGroup.last_modified_date:type_name -> google.protobuf.Timestamp
-	20, // 11: storage.iot.BillingGroup.attributes:type_name -> storage.iot.BillingGroup.AttributesEntry
-	21, // 12: storage.iot.BillingGroup.tags:type_name -> storage.iot.BillingGroup.TagsEntry
-	26, // 13: storage.iot.BillingGroup.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 14: storage.iot.BillingGroup.last_modified_date:type_name -> google.protobuf.Timestamp
-	26, // 15: storage.iot.Certificate.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 16: storage.iot.Certificate.last_modified_date:type_name -> google.protobuf.Timestamp
-	26, // 17: storage.iot.Certificate.transfer_date:type_name -> google.protobuf.Timestamp
-	26, // 18: storage.iot.Policy.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 19: storage.iot.Policy.last_modified_date:type_name -> google.protobuf.Timestamp
-	27, // 20: storage.iot.TopicRule.actions:type_name -> google.protobuf.Struct
-	27, // 21: storage.iot.TopicRule.error_action:type_name -> google.protobuf.Struct
-	26, // 22: storage.iot.Job.created_at:type_name -> google.protobuf.Timestamp
-	26, // 23: storage.iot.Job.last_updated_at:type_name -> google.protobuf.Timestamp
-	26, // 24: storage.iot.Job.scheduled_job_launch:type_name -> google.protobuf.Timestamp
-	26, // 25: storage.iot.Job.started_at:type_name -> google.protobuf.Timestamp
-	26, // 26: storage.iot.Job.force_canceled_at:type_name -> google.protobuf.Timestamp
-	22, // 27: storage.iot.Job.tags:type_name -> storage.iot.Job.TagsEntry
-	27, // 28: storage.iot.JobExecution.status_details:type_name -> google.protobuf.Struct
-	26, // 29: storage.iot.ShadowDocument.version:type_name -> google.protobuf.Timestamp
-	26, // 30: storage.iot.ShadowDocument.timestamp:type_name -> google.protobuf.Timestamp
-	26, // 31: storage.iot.Authorizer.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 32: storage.iot.Authorizer.last_modified_date:type_name -> google.protobuf.Timestamp
-	26, // 33: storage.iot.RoleAlias.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 34: storage.iot.RoleAlias.last_modified_date:type_name -> google.protobuf.Timestamp
-	27, // 35: storage.iot.ProvisioningTemplate.pre_provisioning_hook:type_name -> google.protobuf.Struct
-	27, // 36: storage.iot.ProvisioningTemplate.template_body:type_name -> google.protobuf.Struct
-	23, // 37: storage.iot.ProvisioningTemplate.tags:type_name -> storage.iot.ProvisioningTemplate.TagsEntry
-	26, // 38: storage.iot.ProvisioningTemplate.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 39: storage.iot.ProvisioningTemplate.last_modified_date:type_name -> google.protobuf.Timestamp
-	27, // 40: storage.iot.DetectorModel.detector_model_definition:type_name -> google.protobuf.Struct
-	24, // 41: storage.iot.DetectorModel.tags:type_name -> storage.iot.DetectorModel.TagsEntry
-	26, // 42: storage.iot.DetectorModel.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 43: storage.iot.DetectorModel.last_modified_date:type_name -> google.protobuf.Timestamp
-	27, // 44: storage.iot.Input.input_definition:type_name -> google.protobuf.Struct
-	25, // 45: storage.iot.Input.tags:type_name -> storage.iot.Input.TagsEntry
-	26, // 46: storage.iot.Input.creation_date:type_name -> google.protobuf.Timestamp
-	26, // 47: storage.iot.Input.last_modified_date:type_name -> google.protobuf.Timestamp
-	48, // [48:48] is the sub-list for method output_type
-	48, // [48:48] is the sub-list for method input_type
-	48, // [48:48] is the sub-list for extension type_name
-	48, // [48:48] is the sub-list for extension extendee
-	0,  // [0:48] is the sub-list for field type_name
+	28, // 4: storage.iot.ThingType.tags:type_name -> storage.iot.ThingType.TagsEntry
+	40, // 5: storage.iot.ThingType.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 6: storage.iot.ThingType.last_modified_date:type_name -> google.protobuf.Timestamp
+	40, // 7: storage.iot.ThingType.deprecation_date:type_name -> google.protobuf.Timestamp
+	29, // 8: storage.iot.ThingGroup.attributes:type_name -> storage.iot.ThingGroup.AttributesEntry
+	30, // 9: storage.iot.ThingGroup.tags:type_name -> storage.iot.ThingGroup.TagsEntry
+	40, // 10: storage.iot.ThingGroup.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 11: storage.iot.ThingGroup.last_modified_date:type_name -> google.protobuf.Timestamp
+	31, // 12: storage.iot.BillingGroup.attributes:type_name -> storage.iot.BillingGroup.AttributesEntry
+	32, // 13: storage.iot.BillingGroup.tags:type_name -> storage.iot.BillingGroup.TagsEntry
+	40, // 14: storage.iot.BillingGroup.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 15: storage.iot.BillingGroup.last_modified_date:type_name -> google.protobuf.Timestamp
+	40, // 16: storage.iot.Certificate.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 17: storage.iot.Certificate.last_modified_date:type_name -> google.protobuf.Timestamp
+	40, // 18: storage.iot.Certificate.transfer_date:type_name -> google.protobuf.Timestamp
+	40, // 19: storage.iot.Policy.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 20: storage.iot.Policy.last_modified_date:type_name -> google.protobuf.Timestamp
+	41, // 21: storage.iot.TopicRule.actions:type_name -> google.protobuf.Struct
+	41, // 22: storage.iot.TopicRule.error_action:type_name -> google.protobuf.Struct
+	40, // 23: storage.iot.Job.created_at:type_name -> google.protobuf.Timestamp
+	40, // 24: storage.iot.Job.last_updated_at:type_name -> google.protobuf.Timestamp
+	40, // 25: storage.iot.Job.scheduled_job_launch:type_name -> google.protobuf.Timestamp
+	40, // 26: storage.iot.Job.started_at:type_name -> google.protobuf.Timestamp
+	40, // 27: storage.iot.Job.force_canceled_at:type_name -> google.protobuf.Timestamp
+	33, // 28: storage.iot.Job.tags:type_name -> storage.iot.Job.TagsEntry
+	41, // 29: storage.iot.JobExecution.status_details:type_name -> google.protobuf.Struct
+	40, // 30: storage.iot.ShadowDocument.version:type_name -> google.protobuf.Timestamp
+	40, // 31: storage.iot.ShadowDocument.timestamp:type_name -> google.protobuf.Timestamp
+	40, // 32: storage.iot.Authorizer.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 33: storage.iot.Authorizer.last_modified_date:type_name -> google.protobuf.Timestamp
+	40, // 34: storage.iot.RoleAlias.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 35: storage.iot.RoleAlias.last_modified_date:type_name -> google.protobuf.Timestamp
+	41, // 36: storage.iot.ProvisioningTemplate.pre_provisioning_hook:type_name -> google.protobuf.Struct
+	41, // 37: storage.iot.ProvisioningTemplate.template_body:type_name -> google.protobuf.Struct
+	34, // 38: storage.iot.ProvisioningTemplate.tags:type_name -> storage.iot.ProvisioningTemplate.TagsEntry
+	40, // 39: storage.iot.ProvisioningTemplate.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 40: storage.iot.ProvisioningTemplate.last_modified_date:type_name -> google.protobuf.Timestamp
+	41, // 41: storage.iot.DetectorModel.detector_model_definition:type_name -> google.protobuf.Struct
+	35, // 42: storage.iot.DetectorModel.tags:type_name -> storage.iot.DetectorModel.TagsEntry
+	40, // 43: storage.iot.DetectorModel.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 44: storage.iot.DetectorModel.last_modified_date:type_name -> google.protobuf.Timestamp
+	41, // 45: storage.iot.Input.input_definition:type_name -> google.protobuf.Struct
+	36, // 46: storage.iot.Input.tags:type_name -> storage.iot.Input.TagsEntry
+	40, // 47: storage.iot.Input.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 48: storage.iot.Input.last_modified_date:type_name -> google.protobuf.Timestamp
+	18, // 49: storage.iot.SecurityProfile.behaviors:type_name -> storage.iot.Behavior
+	37, // 50: storage.iot.SecurityProfile.alert_targets:type_name -> storage.iot.SecurityProfile.AlertTargetsEntry
+	40, // 51: storage.iot.SecurityProfile.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 52: storage.iot.SecurityProfile.last_modified_date:type_name -> google.protobuf.Timestamp
+	38, // 53: storage.iot.SecurityProfile.tags:type_name -> storage.iot.SecurityProfile.TagsEntry
+	19, // 54: storage.iot.Behavior.criteria:type_name -> storage.iot.BehaviorCriteria
+	20, // 55: storage.iot.BehaviorCriteria.statistical_threshold:type_name -> storage.iot.StatisticalThreshold
+	21, // 56: storage.iot.BehaviorCriteria.ml_detection_config:type_name -> storage.iot.MachineLearningDetectionConfig
+	18, // 57: storage.iot.ViolationEvent.behavior:type_name -> storage.iot.Behavior
+	22, // 58: storage.iot.ViolationEvent.metric_value:type_name -> storage.iot.MetricValue
+	40, // 59: storage.iot.ViolationEvent.violation_event_time:type_name -> google.protobuf.Timestamp
+	40, // 60: storage.iot.DomainConfiguration.creation_date:type_name -> google.protobuf.Timestamp
+	40, // 61: storage.iot.DomainConfiguration.last_modified_date:type_name -> google.protobuf.Timestamp
+	39, // 62: storage.iot.DomainConfiguration.tags:type_name -> storage.iot.DomainConfiguration.TagsEntry
+	40, // 63: storage.iot.ProvisioningTemplateVersion.creation_date:type_name -> google.protobuf.Timestamp
+	17, // 64: storage.iot.SecurityProfile.AlertTargetsEntry.value:type_name -> storage.iot.AlertTarget
+	65, // [65:65] is the sub-list for method output_type
+	65, // [65:65] is the sub-list for method input_type
+	65, // [65:65] is the sub-list for extension type_name
+	65, // [65:65] is the sub-list for extension extendee
+	0,  // [0:65] is the sub-list for field type_name
 }
 
 func init() { file_storage_iot_proto_init() }
@@ -2140,7 +3254,7 @@ func file_storage_iot_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_iot_proto_rawDesc), len(file_storage_iot_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   26,
+			NumMessages:   40,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

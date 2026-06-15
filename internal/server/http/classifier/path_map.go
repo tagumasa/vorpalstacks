@@ -170,6 +170,10 @@ var iotPathPrefixes = []string{
 	"/domainConfigurations", "/domainConfiguration",
 	"/indexing", "/active-violations", "/violation-events",
 	"/behavior-model-training", "/security-profiles",
+	"/security-profile-behaviors",
+	"/security-profiles-for-target",
+	"/detector-models", "/detector-model/",
+	"/inputs", "/input/",
 	"/messages", "/destinations", "/effective-policies",
 }
 
@@ -182,18 +186,8 @@ func isIoTPath(path string) bool {
 	return false
 }
 
-// ioteventsPathPrefixes lists the URL path prefixes used by the AWS IoT Events
-// REST-JSON control plane API.
-var ioteventsPathPrefixes = []string{
-	"/detector-models",
-	"/inputs",
-}
+var ioteventsPathPrefixes = []string{}
 
 func isIoTEventsPath(path string) bool {
-	for _, prefix := range ioteventsPathPrefixes {
-		if strings.HasPrefix(path, prefix) {
-			return true
-		}
-	}
 	return false
 }

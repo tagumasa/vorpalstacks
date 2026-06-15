@@ -21,17 +21,21 @@ func (s *IoTService) CreateJob(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	if _, err := store.GetJob(jobID); err == nil {
-		return nil, iotstore.ErrResourceAlreadyExists
-	}
-
 	job := &iotstore.Job{
 		JobID:           jobID,
 		Description:     request.GetParamCaseInsensitive(req.Parameters, "description"),
+		Document:        request.GetParamCaseInsensitive(req.Parameters, "document"),
+		Targets:         request.GetStringList(req.Parameters, "targets"),
 		Status:          "QUEUED",
 		TargetSelection: request.GetParamCaseInsensitive(req.Parameters, "targetSelection"),
 		CreatedAt:       time.Now().UTC(),
 		LastUpdatedAt:   time.Now().UTC(),
+	}
+
+	if job.TargetSelection != "" {
+		if err := ValidateTargetSelection(job.TargetSelection); err != nil {
+			return nil, err
+		}
 	}
 
 	tags := parseTags(req.Parameters)
@@ -41,18 +45,10 @@ func (s *IoTService) CreateJob(ctx context.Context, reqCtx *request.RequestConte
 
 	created, err := store.CreateJob(job)
 	if err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
-	return map[string]interface{}{
-		"jobId":            created.JobID,
-		"jobArn":           created.JobARN,
-		"description":      created.Description,
-		"status":           created.Status,
-		"targetSelection":  created.TargetSelection,
-		"creationDate":     created.CreatedAt.Unix(),
-		"lastModifiedDate": created.LastUpdatedAt.Unix(),
-	}, nil
+	return jobResponse(created), nil
 }
 
 // DescribeJob retrieves details of a job including its status and configuration.
@@ -72,15 +68,20 @@ func (s *IoTService) DescribeJob(ctx context.Context, reqCtx *request.RequestCon
 		return nil, iotstore.ErrJobNotFound
 	}
 
+	jobMap := map[string]interface{}{
+		"jobId":           job.JobID,
+		"jobArn":          job.JobARN,
+		"description":     job.Description,
+		"status":          job.Status,
+		"targetSelection": job.TargetSelection,
+		"targets":         job.Targets,
+		"version":         job.Version,
+		"createdAt":       job.CreatedAt.Unix(),
+		"lastUpdatedAt":   job.LastUpdatedAt.Unix(),
+	}
 	return map[string]interface{}{
-		"jobId":            job.JobID,
-		"jobArn":           job.JobARN,
-		"description":      job.Description,
-		"status":           job.Status,
-		"targetSelection":  job.TargetSelection,
-		"version":          job.Version,
-		"creationDate":     job.CreatedAt.Unix(),
-		"lastModifiedDate": job.LastUpdatedAt.Unix(),
+		"job":      jobMap,
+		"document": job.Document,
 	}, nil
 }
 
@@ -97,7 +98,7 @@ func (s *IoTService) DeleteJob(ctx context.Context, reqCtx *request.RequestConte
 	}
 
 	if err := store.DeleteJob(jobID); err != nil {
-		return nil, iotstore.ErrJobNotFound
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -110,17 +111,13 @@ func (s *IoTService) ListJobs(ctx context.Context, reqCtx *request.RequestContex
 		return nil, err
 	}
 
-	jobs, err := store.ListJobs(parseListOptions(req.Parameters))
+	jobs, err := store.ListJobs(parseListOptions(req.Parameters), request.GetParamCaseInsensitive(req.Parameters, "status"))
 	if err != nil {
 		return nil, err
 	}
 
-	statusFilter := request.GetParamCaseInsensitive(req.Parameters, "status")
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]interface{}, 0, len(jobs.Items))
 	for _, j := range jobs.Items {
-		if statusFilter != "" && j.Status != statusFilter {
-			continue
-		}
 		result = append(result, map[string]interface{}{
 			"jobId":            j.JobID,
 			"jobArn":           j.JobARN,
@@ -132,13 +129,7 @@ func (s *IoTService) ListJobs(ctx context.Context, reqCtx *request.RequestContex
 		})
 	}
 
-	resp := map[string]interface{}{
-		"jobs": result,
-	}
-	if jobs.NextMarker != "" {
-		resp["nextToken"] = jobs.NextMarker
-	}
-	return resp, nil
+	return listResponse("jobs", result, jobs.NextMarker), nil
 }
 
 // CancelJob cancels a running or queued job.
@@ -153,16 +144,10 @@ func (s *IoTService) CancelJob(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	job, err := store.GetJob(jobID)
+	opts := iotstore.JobUpdateOpts{Status: "CANCELLED"}
+	job, err := store.UpdateJob(jobID, opts)
 	if err != nil {
-		return nil, iotstore.ErrJobNotFound
-	}
-
-	job.Status = "CANCELED"
-	job.LastUpdatedAt = time.Now().UTC()
-
-	if err := store.UpdateJob(job); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -192,7 +177,7 @@ func (s *IoTService) GetJobDocument(ctx context.Context, reqCtx *request.Request
 	}
 
 	return map[string]interface{}{
-		"document": job.Description,
+		"document": job.Document,
 	}, nil
 }
 
@@ -208,22 +193,13 @@ func (s *IoTService) UpdateJob(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	job, err := store.GetJob(jobID)
+	opts := iotstore.JobUpdateOpts{
+		Description: request.GetParamCaseInsensitive(req.Parameters, "description"),
+		Status:      request.GetParamCaseInsensitive(req.Parameters, "status"),
+	}
+	_, err = store.UpdateJob(jobID, opts)
 	if err != nil {
-		return nil, iotstore.ErrJobNotFound
-	}
-
-	if desc := request.GetParamCaseInsensitive(req.Parameters, "description"); desc != "" {
-		job.Description = desc
-	}
-	if status := request.GetParamCaseInsensitive(req.Parameters, "status"); status != "" {
-		job.Status = status
-	}
-
-	job.LastUpdatedAt = time.Now().UTC()
-
-	if err := store.UpdateJob(job); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil

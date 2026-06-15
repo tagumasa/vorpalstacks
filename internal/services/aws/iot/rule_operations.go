@@ -2,11 +2,25 @@ package iot
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"vorpalstacks/internal/common/request"
 	iotstore "vorpalstacks/internal/store/aws/iot"
-)
+)// actionsToList converts a flat action map (keyed by type) into a list of
+// single-key maps, matching the AWS IoT rule action representation.
+func actionsToList(m map[string]interface{}) []map[string]interface{} {
+	if len(m) == 0 {
+		return nil
+	}
+	result := make([]map[string]interface{}, 0, len(m))
+	for k, v := range m {
+		result = append(result, map[string]interface{}{k: v})
+	}
+	return result
+}
+
+
 
 func (s *IoTService) CreateTopicRule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	ruleName := request.GetParamCaseInsensitive(req.Parameters, "ruleName")
@@ -17,10 +31,6 @@ func (s *IoTService) CreateTopicRule(ctx context.Context, reqCtx *request.Reques
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
-	}
-
-	if _, err := store.GetRule(ruleName); err == nil {
-		return nil, iotstore.ErrResourceAlreadyExists
 	}
 
 	props := unwrapProps(req.Parameters, "topicRulePayload")
@@ -34,9 +44,33 @@ func (s *IoTService) CreateTopicRule(ctx context.Context, reqCtx *request.Reques
 	}
 	rule.RuleDisabled = request.GetBoolParam(props, "ruleDisabled")
 
+	// Extract action configurations from the topicRulePayload.
+	// AWS IoT sends actions as a list of action objects; internally stored as a map
+	// keyed by action type (e.g., "lambda", "sns", "sqs").
+	if actionsList := request.GetListParamLowerFirst(props, "actions"); len(actionsList) > 0 {
+		actionsMap := make(map[string]interface{})
+		for _, item := range actionsList {
+				for k, v := range item {
+					actionsMap[k] = v
+				}
+			}
+		rule.Actions = actionsMap
+	} else if actionsMap := request.GetMapParamCaseInsensitive(props, "actions"); actionsMap != nil {
+		rule.Actions = actionsMap
+	}
+	if ea := request.GetMapParamCaseInsensitive(props, "errorAction"); ea != nil {
+		rule.ErrorAction = ea
+	}
+
 	created, err := store.CreateRule(rule)
 	if err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
+	}
+
+	if !created.RuleDisabled && s.executor != nil && len(created.Actions) > 0 {
+		if err := s.executor.AddRule(created.RuleName, created.TopicPattern, created.SQL, actionsToList(created.Actions)); err != nil {
+			slog.Warn("rule created but executor registration failed", "rule", created.RuleName, "error", err)
+		}
 	}
 
 	return map[string]interface{}{
@@ -75,22 +109,32 @@ func (s *IoTService) ReplaceTopicRule(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	existing, err := store.GetRule(ruleName)
-	if err != nil {
-		return nil, iotstore.ErrRuleNotFound
-	}
-
 	props := unwrapProps(req.Parameters, "topicRulePayload")
+	disabled := request.GetBoolParam(props, "ruleDisabled")
+	actionsMap := extractActionsFromProps(props)
+	errorAction := request.GetMapParamCaseInsensitive(props, "errorAction")
 
-	existing.SQL = request.GetParamCaseInsensitive(props, "sql")
-	existing.Description = request.GetParamCaseInsensitive(props, "description")
-	if ver := request.GetParamCaseInsensitive(props, "awsIotSqlVersion"); ver != "" {
-		existing.AwsIotSqlVersion = ver
+	opts := iotstore.RuleUpdateOpts{
+		SQL:              request.GetParamCaseInsensitive(props, "sql"),
+		Description:      request.GetParamCaseInsensitive(props, "description"),
+		AwsIotSqlVersion: request.GetParamCaseInsensitive(props, "awsIotSqlVersion"),
+		RuleDisabled:     &disabled,
+		Actions:          actionsMap,
+		ErrorAction:      errorAction,
 	}
-	existing.RuleDisabled = request.GetBoolParam(props, "ruleDisabled")
 
-	if err := store.UpdateRule(existing); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+	updated, err := store.UpdateRule(ruleName, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.executor != nil {
+		s.executor.RemoveRule(ruleName)
+		if !updated.RuleDisabled && updated.SQL != "" && len(updated.Actions) > 0 {
+			if err := s.executor.AddRule(updated.RuleName, updated.TopicPattern, updated.SQL, actionsToList(updated.Actions)); err != nil {
+				slog.Warn("rule replaced but executor registration failed", "rule", ruleName, "error", err)
+			}
+		}
 	}
 
 	return map[string]interface{}{}, nil
@@ -108,7 +152,11 @@ func (s *IoTService) DeleteTopicRule(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if err := store.DeleteRule(ruleName); err != nil {
-		return nil, iotstore.ErrRuleNotFound
+		return nil, err
+	}
+
+	if s.executor != nil {
+		s.executor.RemoveRule(ruleName)
 	}
 
 	return map[string]interface{}{}, nil
@@ -130,13 +178,7 @@ func (s *IoTService) ListTopicRules(ctx context.Context, reqCtx *request.Request
 		items = append(items, ruleToResponse(r))
 	}
 
-	resp := map[string]interface{}{
-		"rules": items,
-	}
-	if rules.NextMarker != "" {
-		resp["nextToken"] = rules.NextMarker
-	}
-	return resp, nil
+	return listResponse("rules", items, rules.NextMarker), nil
 }
 
 func (s *IoTService) EnableTopicRule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -150,14 +192,17 @@ func (s *IoTService) EnableTopicRule(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	rule, err := store.GetRule(ruleName)
+	disabled := false
+	opts := iotstore.RuleUpdateOpts{RuleDisabled: &disabled}
+	updated, err := store.UpdateRule(ruleName, opts)
 	if err != nil {
-		return nil, iotstore.ErrRuleNotFound
+		return nil, err
 	}
 
-	rule.RuleDisabled = false
-	if err := store.UpdateRule(rule); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+	if s.executor != nil && updated.SQL != "" {
+		if err := s.executor.AddRule(updated.RuleName, updated.TopicPattern, updated.SQL, actionsToList(updated.Actions)); err != nil {
+			slog.Warn("rule enabled but executor registration failed", "rule", ruleName, "error", err)
+		}
 	}
 
 	return map[string]interface{}{}, nil
@@ -174,14 +219,15 @@ func (s *IoTService) DisableTopicRule(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	rule, err := store.GetRule(ruleName)
+	disabled := true
+	opts := iotstore.RuleUpdateOpts{RuleDisabled: &disabled}
+	_, err = store.UpdateRule(ruleName, opts)
 	if err != nil {
-		return nil, iotstore.ErrRuleNotFound
+		return nil, err
 	}
 
-	rule.RuleDisabled = true
-	if err := store.UpdateRule(rule); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+	if s.executor != nil {
+		s.executor.RemoveRule(ruleName)
 	}
 
 	return map[string]interface{}{}, nil
@@ -192,7 +238,7 @@ func (s *IoTService) GetTopicRule(ctx context.Context, reqCtx *request.RequestCo
 }
 
 func ruleToResponse(r *iotstore.TopicRule) map[string]interface{} {
-	return map[string]interface{}{
+	resp := map[string]interface{}{
 		"ruleArn":          r.ARN,
 		"ruleName":         r.RuleName,
 		"sql":              r.SQL,
@@ -202,4 +248,26 @@ func ruleToResponse(r *iotstore.TopicRule) map[string]interface{} {
 		"createdAt":        r.CreatedAt,
 		"awsIotSqlVersion": r.AwsIotSqlVersion,
 	}
+	if len(r.Actions) > 0 {
+		resp["actions"] = r.Actions
+	}
+	if len(r.ErrorAction) > 0 {
+		resp["errorAction"] = r.ErrorAction
+	}
+	return resp
+}
+
+// extractActionsFromProps extracts action configurations from a topicRulePayload.
+// AWS IoT sends actions as a list of single-key maps; this converts to a flat map.
+func extractActionsFromProps(props map[string]interface{}) map[string]interface{} {
+	if actionsList := request.GetListParamLowerFirst(props, "actions"); len(actionsList) > 0 {
+		actionsMap := make(map[string]interface{})
+		for _, item := range actionsList {
+			for k, v := range item {
+				actionsMap[k] = v
+			}
+		}
+		return actionsMap
+	}
+	return request.GetMapParamCaseInsensitive(props, "actions")
 }

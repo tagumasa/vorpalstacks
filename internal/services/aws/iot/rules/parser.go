@@ -255,6 +255,10 @@ func (l *Lexer) NextToken() Token {
 		l.pos += 2
 		return Token{Kind: TokenLTE, Value: "<=", Pos: l.pos - 2}
 	}
+	if ch == '<' && l.pos+1 < len(l.input) && l.input[l.pos+1] == '>' {
+		l.pos += 2
+		return Token{Kind: TokenNEQ, Value: "<>", Pos: l.pos - 2}
+	}
 	if ch == '<' {
 		l.pos++
 		return Token{Kind: TokenLT, Value: "<", Pos: l.pos - 1}
@@ -266,10 +270,6 @@ func (l *Lexer) NextToken() Token {
 	if ch == '>' {
 		l.pos++
 		return Token{Kind: TokenGT, Value: ">", Pos: l.pos - 1}
-	}
-	if ch == '<' && l.pos+1 < len(l.input) && l.input[l.pos+1] == '>' {
-		l.pos += 2
-		return Token{Kind: TokenNEQ, Value: "<>", Pos: l.pos - 2}
 	}
 	if ch == '=' {
 		l.pos++
@@ -397,38 +397,34 @@ func (p *Parser) next() Token {
 	return tok
 }
 
-func (p *Parser) expect(kind TokenKind) Token {
+func (p *Parser) expect(kind TokenKind) (Token, error) {
 	tok := p.next()
 	if tok.Kind != kind {
-		panic(fmt.Sprintf("parser: expected %s, got %s at pos %d", tokenName(kind), tok, tok.Pos))
+		return tok, fmt.Errorf("parser: expected %s, got %s at pos %d", tokenName(kind), tok, tok.Pos)
 	}
-	return tok
+	return tok, nil
 }
 
-// Parse parses the SQL SELECT expression, recovering from any internal panic
-// and returning it as an error instead.
 func (p *Parser) Parse() (result *SelectExpr, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			if parseErr, ok := r.(error); ok {
-				err = fmt.Errorf("SQL parse error: %w", parseErr)
-			} else {
-				err = fmt.Errorf("SQL parse error: %v", r)
-			}
-		}
-	}()
 	result, err = p.parseSelect()
 	return
 }
 
 func (p *Parser) parseSelect() (*SelectExpr, error) {
-	p.expect(TokenSelect)
+	if _, err := p.expect(TokenSelect); err != nil {
+		return nil, err
+	}
 	fields, err := p.parseSelectFields()
 	if err != nil {
 		return nil, err
 	}
-	p.expect(TokenFrom)
-	topicTok := p.expect(TokenString)
+	if _, err := p.expect(TokenFrom); err != nil {
+		return nil, err
+	}
+	topicTok, err := p.expect(TokenString)
+	if err != nil {
+		return nil, err
+	}
 	fromTopic := topicTok.Value
 
 	var where Expr
@@ -456,7 +452,10 @@ func (p *Parser) parseSelectFields() ([]SelectField, error) {
 		alias := ""
 		if p.peek.Kind == TokenIdent && strings.ToUpper(p.peek.Value) == "AS" {
 			p.next()
-			aliasTok := p.expect(TokenIdent)
+			aliasTok, err := p.expect(TokenIdent)
+			if err != nil {
+				return nil, err
+			}
 			alias = aliasTok.Value
 		}
 		fields = append(fields, SelectField{Expression: expr, Alias: alias})
@@ -611,7 +610,9 @@ func (p *Parser) parsePrimary() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		p.expect(TokenRParen)
+		if _, err := p.expect(TokenRParen); err != nil {
+			return nil, err
+		}
 		return expr, nil
 	case TokenLBracket:
 		p.next()
@@ -619,7 +620,9 @@ func (p *Parser) parsePrimary() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		p.expect(TokenRBracket)
+		if _, err := p.expect(TokenRBracket); err != nil {
+			return nil, err
+		}
 		return expr, nil
 	case TokenIdent:
 		p.next()
@@ -641,11 +644,20 @@ func (p *Parser) parsePrimary() (Expr, error) {
 }
 
 func (p *Parser) parseFunctionCall(name string) (Expr, error) {
-	p.expect(TokenLParen)
+	if _, err := p.expect(TokenLParen); err != nil {
+		return nil, err
+	}
+
+	if strings.ToUpper(name) == "CAST" {
+		return p.parseCastCall()
+	}
+
 	var args []Expr
 	for p.peek.Kind != TokenRParen {
 		if len(args) > 0 {
-			p.expect(TokenComma)
+			if _, err := p.expect(TokenComma); err != nil {
+				return nil, err
+			}
 		}
 		arg, err := p.parseExpr()
 		if err != nil {
@@ -653,15 +665,42 @@ func (p *Parser) parseFunctionCall(name string) (Expr, error) {
 		}
 		args = append(args, arg)
 	}
-	p.expect(TokenRParen)
+	if _, err := p.expect(TokenRParen); err != nil {
+		return nil, err
+	}
 	return &FunctionCall{Name: name, Args: args}, nil
+}
+
+func (p *Parser) parseCastCall() (Expr, error) {
+	val, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if p.peek.Kind == TokenComma {
+		p.next()
+	} else if p.peek.Kind == TokenIdent && strings.ToUpper(p.peek.Value) == "AS" {
+		p.next()
+	} else {
+		return nil, fmt.Errorf("expected AS or ',' in cast(), got %v", p.peek)
+	}
+	typExpr, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := p.expect(TokenRParen); err != nil {
+		return nil, err
+	}
+	return &FunctionCall{Name: "CAST", Args: []Expr{val, typExpr}}, nil
 }
 
 func (p *Parser) parseJsonPath(prefix string) (Expr, error) {
 	parts := []string{prefix}
 	for p.peek.Kind == TokenDot {
 		p.next()
-		partTok := p.expect(TokenIdent)
+		partTok, err := p.expect(TokenIdent)
+		if err != nil {
+			return nil, err
+		}
 		parts = append(parts, partTok.Value)
 	}
 	return &JsonPath{Path: parts}, nil

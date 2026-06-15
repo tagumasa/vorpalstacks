@@ -259,6 +259,57 @@ func (r *ActionRegistry) initDefaults() {
 		"AuthorizeSecurityGroupIngress", "AuthorizeSecurityGroupEgress",
 		"RevokeSecurityGroupIngress", "RevokeSecurityGroupEgress",
 	})
+	r.Register("iot", []string{
+		// Things
+		"CreateThing", "DescribeThing", "UpdateThing", "DeleteThing", "ListThings", "ListThingsForThingType",
+		// Thing Types
+		"CreateThingType", "DescribeThingType", "UpdateThingType", "DeleteThingType", "DeprecateThingType", "ListThingTypes",
+		// Thing Groups
+		"CreateThingGroup", "DescribeThingGroup", "UpdateThingGroup", "DeleteThingGroup", "ListThingGroups",
+		"ListThingGroupsForThing", "ListThingsInThingGroup", "AddThingToThingGroup", "RemoveThingFromThingGroup",
+		// Thing Shadow
+		"GetThingShadow", "UpdateThingShadow", "DeleteThingShadow", "ListNamedShadowsForThing",
+		// Certificates
+		"CreateKeysAndCertificate", "DescribeCertificate", "UpdateCertificate", "DeleteCertificate",
+		"ListCertificates", "RegisterCertificate", "CreateCertificateFromCsr",
+		// Policies
+		"CreatePolicy", "GetPolicy", "DeletePolicy", "ListPolicies", "AttachPolicy", "DetachPolicy",
+		"AttachThingPrincipal", "DetachThingPrincipal", "ListPolicyPrincipals", "ListPrincipalPolicies",
+		"ListAttachedPolicies", "ListThingPrincipals", "ListPrincipalThings", "GetEffectivePolicies",
+		"ListPolicyVersions", "GetPolicyVersion",
+		// Rules
+		"CreateTopicRule", "DescribeTopicRule", "DeleteTopicRule", "ListTopicRules", "ReplaceTopicRule",
+		"EnableTopicRule", "DisableTopicRule", "GetTopicRule",
+		// Jobs
+		"CreateJob", "DescribeJob", "DeleteJob", "ListJobs", "UpdateJob", "CancelJob", "GetJobDocument",
+		// Billing Groups
+		"CreateBillingGroup", "DescribeBillingGroup", "UpdateBillingGroup", "DeleteBillingGroup", "ListBillingGroups",
+		// Role Aliases
+		"CreateRoleAlias", "DescribeRoleAlias", "UpdateRoleAlias", "DeleteRoleAlias", "ListRoleAliases",
+		// Authorizers
+		"CreateAuthorizer", "DescribeAuthorizer", "UpdateAuthorizer", "DeleteAuthorizer", "ListAuthorizers",
+		// Provisioning Templates
+		"CreateProvisioningTemplate", "DescribeProvisioningTemplate", "UpdateProvisioningTemplate",
+		"DeleteProvisioningTemplate", "ListProvisioningTemplates", "ListProvisioningTemplateVersions",
+		// Domain Configuration
+		"CreateDomainConfiguration", "DescribeDomainConfiguration", "UpdateDomainConfiguration",
+		"DeleteDomainConfiguration", "ListDomainConfigurations", "DescribeEndpoint",
+		// Indexing Configuration
+		"GetIndexingConfiguration", "UpdateIndexingConfiguration",
+		// Device Defender
+		"CreateSecurityProfile", "DescribeSecurityProfile", "UpdateSecurityProfile", "DeleteSecurityProfile",
+		"ListSecurityProfiles", "ValidateSecurityProfileBehaviors",
+		"ListActiveViolations", "ListViolationEvents", "GetBehaviorModelTrainingSummaries",
+		// Tags
+		"TagResource", "UntagResource", "ListTagsForResource",
+		// Messaging
+		"BatchPutMessage",
+		// Detector Models (IoT Core device defender, not IoT Events)
+		"CreateDetectorModel", "DescribeDetectorModel", "DeleteDetectorModel",
+		"ListDetectorModels", "UpdateDetectorModel",
+		// Inputs (IoT Core device defender)
+		"CreateInput", "DescribeInput", "DeleteInput", "ListInputs", "UpdateInput",
+	})
 }
 
 // LookupServiceByAction returns the service name for a given action using the global registry.

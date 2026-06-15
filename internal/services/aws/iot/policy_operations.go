@@ -21,10 +21,6 @@ func (s *IoTService) CreatePolicy(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	if _, err := store.GetPolicy(policyName); err == nil {
-		return nil, iotstore.ErrPolicyAlreadyExists
-	}
-
 	p := &iotstore.Policy{
 		PolicyName:       policyName,
 		PolicyDocument:   policyDoc,
@@ -35,7 +31,7 @@ func (s *IoTService) CreatePolicy(ctx context.Context, reqCtx *request.RequestCo
 
 	created, err := store.CreatePolicy(p)
 	if err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -44,7 +40,7 @@ func (s *IoTService) CreatePolicy(ctx context.Context, reqCtx *request.RequestCo
 		"policyDocument":   created.PolicyDocument,
 		"creationDate":     created.CreationDate.Unix(),
 		"lastModifiedDate": created.LastModifiedDate.Unix(),
-			"defaultVersionId": fmt.Sprintf("%d", created.Version),
+		"defaultVersionId": fmt.Sprintf("%d", created.Version),
 	}, nil
 }
 
@@ -70,7 +66,7 @@ func (s *IoTService) GetPolicy(ctx context.Context, reqCtx *request.RequestConte
 		"policyDocument":   p.PolicyDocument,
 		"creationDate":     p.CreationDate.Unix(),
 		"lastModifiedDate": p.LastModifiedDate.Unix(),
-			"defaultVersionId": fmt.Sprintf("%d", p.Version),
+		"defaultVersionId": fmt.Sprintf("%d", p.Version),
 	}, nil
 }
 
@@ -86,7 +82,7 @@ func (s *IoTService) DeletePolicy(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	if err := store.DeletePolicy(policyName); err != nil {
-		return nil, iotstore.ErrPolicyNotFound
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -114,13 +110,7 @@ func (s *IoTService) ListPolicies(ctx context.Context, reqCtx *request.RequestCo
 		})
 	}
 
-	resp := map[string]interface{}{
-		"policies": items,
-	}
-	if policies.NextMarker != "" {
-		resp["nextToken"] = policies.NextMarker
-	}
-	return resp, nil
+	return listResponse("policies", items, policies.NextMarker), nil
 }
 
 func (s *IoTService) AttachPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -135,12 +125,8 @@ func (s *IoTService) AttachPolicy(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	if _, err := store.GetPolicy(policyName); err != nil {
-		return nil, iotstore.ErrPolicyNotFound
-	}
-
 	if err := store.AttachPolicyToPrincipal(policyName, target); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -159,7 +145,7 @@ func (s *IoTService) DetachPolicy(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	if err := store.DetachPolicyFromPrincipal(policyName, target); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -177,12 +163,8 @@ func (s *IoTService) AttachThingPrincipal(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	if _, err := store.GetThing(thingName); err != nil {
-		return nil, iotstore.ErrThingNotFound
-	}
-
 	if err := store.AttachThingPrincipal(thingName, principal); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -201,7 +183,7 @@ func (s *IoTService) DetachThingPrincipal(ctx context.Context, reqCtx *request.R
 	}
 
 	if err := store.DetachThingPrincipal(thingName, principal); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -229,11 +211,8 @@ func (s *IoTService) ListPolicyPrincipals(ctx context.Context, reqCtx *request.R
 }
 
 func (s *IoTService) ListPrincipalPolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	principal := request.GetParamCaseInsensitive(req.Parameters, "principal")
-	if principal == "" {
-		principal = request.GetParamCaseInsensitive(req.Parameters, "target")
-	}
-	if principal == "" {
+	principal, ok := principalFromParams(req.Parameters)
+	if !ok {
 		return nil, iotstore.ErrMissingParam
 	}
 
@@ -431,7 +410,7 @@ func (s *IoTService) GetPolicyVersion(ctx context.Context, reqCtx *request.Reque
 		"policyName":       p.PolicyName,
 		"policyArn":        p.PolicyARN,
 		"policyDocument":   p.PolicyDocument,
-			"versionId":        fmt.Sprintf("%d", p.Version),
+		"versionId":        fmt.Sprintf("%d", p.Version),
 		"isDefaultVersion": true,
 		"createDate":       p.CreationDate.Unix(),
 	}, nil

@@ -2,12 +2,10 @@ package iot
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/pem"
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/services/aws/iot/ca"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
@@ -19,16 +17,12 @@ func (s *IoTService) CreateKeysAndCertificate(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	certPEM, keyPEM, pubKeyPEM, certID, err := s.ca.IssueCertificate()
+	certPEM, keyPEM, pubKeyPEM, certID, err := s.deps.CA.IssueCertificate()
 	if err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
-	setActive := request.GetBoolParam(req.Parameters, "setAsActive")
-	status := "INACTIVE"
-	if setActive {
-		status = "ACTIVE"
-	}
+	status := boolToActiveStatus(request.GetBoolParam(req.Parameters, "setAsActive"))
 
 	cert := &iotstore.Certificate{
 		CertificateID:    certID,
@@ -41,7 +35,7 @@ func (s *IoTService) CreateKeysAndCertificate(ctx context.Context, reqCtx *reque
 
 	created, err := store.CreateCertificate(cert)
 	if err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -76,18 +70,7 @@ func (s *IoTService) DescribeCertificate(ctx context.Context, reqCtx *request.Re
 		return nil, iotstore.ErrCertificateNotFound
 	}
 
-	return map[string]interface{}{
-		"certificateDescription": map[string]interface{}{
-			"certificateArn":   cert.CertificateARN,
-			"certificateId":    cert.CertificateID,
-			"certificatePem":   cert.CertificatePEM,
-			"status":           cert.Status,
-			"certificateMode":  cert.CertificateMode,
-			"creationDate":     cert.CreationDate.Unix(),
-			"lastModifiedDate": cert.LastModifiedDate.Unix(),
-			"caCertificateId":  cert.CaCertificateID,
-		},
-	}, nil
+	return certificateDetailResponse(cert), nil
 }
 
 // UpdateCertificate changes the status of a certificate (ACTIVE, INACTIVE, REVOKED).
@@ -107,24 +90,20 @@ func (s *IoTService) UpdateCertificate(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	cert, err := store.GetCertificate(certID)
+	opts := iotstore.CertificateUpdateOpts{NewStatus: newStatus}
+	_, err = store.UpdateCertificate(certID, opts)
 	if err != nil {
-		return nil, iotstore.ErrCertificateNotFound
+		return nil, err
 	}
 
-	cert.Status = newStatus
-	cert.LastModifiedDate = time.Now().UTC()
-
-	if err := store.UpdateCertificate(cert); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+	if newStatus == "REVOKED" && s.deps.CA != nil {
+		s.deps.CA.RevokeCertificate(certID)
 	}
 
 	return map[string]interface{}{}, nil
 }
 
 // DeleteCertificate removes a certificate that has no attached entities.
-// Returns InvalidRequestException if the certificate still has policies or
-// things attached.
 func (s *IoTService) DeleteCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	certID := request.GetParamCaseInsensitive(req.Parameters, "certificateId")
 	if certID == "" {
@@ -136,32 +115,8 @@ func (s *IoTService) DeleteCertificate(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	cert, err := store.GetCertificate(certID)
-	if err != nil {
-		return nil, iotstore.ErrCertificateNotFound
-	}
-
-	if cert.Status != "INACTIVE" {
-		return nil, iotstore.ErrInvalidCertStatus
-	}
-
-	// Policies may be attached by either certID or certARN; check both to
-	// prevent dangling references in policyAttachBase.
-	certARN := cert.CertificateARN
-	policiesByID, _ := store.ListPoliciesForPrincipal(certID)
-	policiesByARN, _ := store.ListPoliciesForPrincipal(certARN)
-	if len(policiesByID) > 0 || len(policiesByARN) > 0 {
-		return nil, iotstore.ErrCertHasAttachments
-	}
-
-	thingsByID, _ := store.ListThingsForPrincipal(certID)
-	thingsByARN, _ := store.ListThingsForPrincipal(certARN)
-	if len(thingsByID) > 0 || len(thingsByARN) > 0 {
-		return nil, iotstore.ErrCertHasAttachments
-	}
-
 	if err := store.DeleteCertificate(certID); err != nil {
-		return nil, iotstore.ErrCertificateNotFound
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -181,22 +136,10 @@ func (s *IoTService) ListCertificates(ctx context.Context, reqCtx *request.Reque
 
 	items := make([]map[string]interface{}, 0, len(certs.Items))
 	for _, c := range certs.Items {
-		items = append(items, map[string]interface{}{
-			"certificateArn":  c.CertificateARN,
-			"certificateId":   c.CertificateID,
-			"status":          c.Status,
-			"certificateMode": c.CertificateMode,
-			"creationDate":    c.CreationDate.Unix(),
-		})
+		items = append(items, certificateResponse(c))
 	}
 
-	resp := map[string]interface{}{
-		"certificates": items,
-	}
-	if certs.NextMarker != "" {
-		resp["nextToken"] = certs.NextMarker
-	}
-	return resp, nil
+	return listResponse("certificates", items, certs.NextMarker), nil
 }
 
 // RegisterCertificate registers an existing PEM certificate without CA signing.
@@ -211,12 +154,8 @@ func (s *IoTService) RegisterCertificate(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	certID := computeCertID(certPEM)
-
-	status := "INACTIVE"
-	if request.GetBoolParam(req.Parameters, "setAsActive") {
-		status = "ACTIVE"
-	}
+	certID := ca.ComputeCertID(certPEM)
+	status := boolToActiveStatus(request.GetBoolParam(req.Parameters, "setAsActive"))
 
 	cert := &iotstore.Certificate{
 		CertificateID:    certID,
@@ -229,7 +168,7 @@ func (s *IoTService) RegisterCertificate(ctx context.Context, reqCtx *request.Re
 
 	created, err := store.CreateCertificate(cert)
 	if err != nil {
-		return nil, iotstore.ErrCertificateAlreadyExists
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -245,9 +184,9 @@ func (s *IoTService) CreateCertificateFromCsr(ctx context.Context, reqCtx *reque
 		return nil, iotstore.ErrMissingParam
 	}
 
-	certPEM, certID, err := s.ca.IssueCertificateFromCSR(csrPEM)
+	certPEM, certID, err := s.deps.CA.IssueCertificateFromCSR(csrPEM)
 	if err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -255,10 +194,7 @@ func (s *IoTService) CreateCertificateFromCsr(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	status := "INACTIVE"
-	if request.GetBoolParam(req.Parameters, "setAsActive") {
-		status = "ACTIVE"
-	}
+	status := boolToActiveStatus(request.GetBoolParam(req.Parameters, "setAsActive"))
 
 	cert := &iotstore.Certificate{
 		CertificateID:    certID,
@@ -271,7 +207,7 @@ func (s *IoTService) CreateCertificateFromCsr(ctx context.Context, reqCtx *reque
 
 	created, err := store.CreateCertificate(cert)
 	if err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -283,18 +219,8 @@ func (s *IoTService) CreateCertificateFromCsr(ctx context.Context, reqCtx *reque
 
 func isValidCertStatus(status string) bool {
 	switch status {
-	case "ACTIVE", "INACTIVE", "REVOKED", "PENDING_TRANSFER", "PENDING_ACTIVATION":
+	case "ACTIVE", "INACTIVE", "REVOKED", "PENDING_TRANSFER", "REGISTER_INACTIVE", "PENDING_ACTIVATION":
 		return true
 	}
 	return false
-}
-
-func computeCertID(certPEM string) string {
-	block, _ := pem.Decode([]byte(certPEM))
-	if block == nil {
-		h := sha256.Sum256([]byte(certPEM))
-		return hex.EncodeToString(h[:])
-	}
-	h := sha256.Sum256(block.Bytes)
-	return hex.EncodeToString(h[:])
 }

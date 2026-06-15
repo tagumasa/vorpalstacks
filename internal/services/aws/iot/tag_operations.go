@@ -10,7 +10,7 @@ import (
 )
 
 // iotTagConfig builds a TagHandlerConfig backed by the IoT store.
-func iotTagConfig(store iotstore.IotStoreInterface) tagutil.TagHandlerConfig {
+func iotTagConfig(store iotstore.TagOps) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardConfig,
 		TagFunc: func(_ context.Context, resourceKey string, tags []types.Tag) error {
@@ -75,40 +75,20 @@ func (s *IoTService) ListTagsForResource(ctx context.Context, reqCtx *request.Re
 	return tagutil.HandleList(ctx, req, iotTagConfig(store))
 }
 
-// ListActiveViolations lists active Device Defender violations.
 func (s *IoTService) ListActiveViolations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return map[string]interface{}{
 		"activeViolations": []map[string]interface{}{},
 	}, nil
 }
 
-// ListViolationEvents lists Device Defender violation events.
 func (s *IoTService) ListViolationEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return map[string]interface{}{
 		"violationEvents": []map[string]interface{}{},
 	}, nil
 }
 
-// GetBehaviorModelTrainingSummaries retrieves ML model training summaries.
 func (s *IoTService) GetBehaviorModelTrainingSummaries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return map[string]interface{}{
 		"summaries": []map[string]interface{}{},
 	}, nil
-}
-
-// ValidateSecurityProfileBehaviors validates security profile behaviours.
-func (s *IoTService) ValidateSecurityProfileBehaviors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{
-		"valid": true,
-	}, nil
-}
-
-// DescribeSecurityProfile retrieves a Device Defender security profile.
-func (s *IoTService) DescribeSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{}, nil
-}
-
-// UpdateSecurityProfile updates a Device Defender security profile.
-func (s *IoTService) UpdateSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return map[string]interface{}{}, nil
 }

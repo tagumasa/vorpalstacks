@@ -1,15 +1,112 @@
 package rules
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 
-// ActionDispatcher dispatches a rule action with the extracted payload fields.
-type ActionDispatcher func(ruleName string, topic string, payload map[string]interface{}) error
+const defaultDispatchTimeout = 30 * time.Second
+
+// ActionDispatcher dispatches rule actions with the extracted payload fields.
+// Each action in the actions list is dispatched by its type (lambda, sns, sqs, etc.).
+type ActionDispatcher func(ruleName string, topic string, actions []map[string]interface{}, payload map[string]interface{}) error
+
+// dispatchTask represents a single rule-fire action queued for the worker pool.
+type dispatchTask struct {
+	ruleName string
+	topic    string
+	actions  []map[string]interface{}
+	payload  map[string]interface{}
+}
+
+// workerPool provides a bounded pool of goroutines for rule dispatch.
+type workerPool struct {
+	queue      chan dispatchTask
+	dispatcher ActionDispatcher
+	wg         sync.WaitGroup
+	ctx        context.Context
+	cancelFn   context.CancelFunc
+	logger     *slog.Logger
+}
+
+func newWorkerPool(size, queueDepth int, dispatcher ActionDispatcher, logger *slog.Logger) *workerPool {
+	ctx, cancelFn := context.WithCancel(context.Background())
+	return &workerPool{
+		queue:      make(chan dispatchTask, queueDepth),
+		dispatcher: dispatcher,
+		ctx:        ctx,
+		cancelFn:   cancelFn,
+		logger:     logger,
+	}
+}
+
+func (p *workerPool) Start(workers int) {
+	for i := 0; i < workers; i++ {
+		p.wg.Add(1)
+		go p.worker()
+	}
+}
+
+func (p *workerPool) worker() {
+	defer p.wg.Done()
+	for task := range p.queue {
+		p.execute(task)
+	}
+}
+
+func (p *workerPool) execute(task dispatchTask) {
+	defer func() {
+		if r := recover(); r != nil {
+			if p.logger != nil {
+				p.logger.Error("rule dispatch panic recovered", "rule", task.ruleName, "panic", r)
+			}
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(p.ctx, defaultDispatchTimeout)
+	defer cancel()
+
+	if p.dispatcher == nil {
+		return
+	}
+	if err := p.dispatcher(task.ruleName, task.topic, task.actions, task.payload); err != nil {
+		if ctx.Err() == nil && p.logger != nil {
+			p.logger.Error("action dispatch failed", "rule", task.ruleName, "error", err)
+		}
+	}
+}
+
+func (p *workerPool) Stop(timeout time.Duration) {
+	close(p.queue)
+	done := make(chan struct{})
+	go func() {
+		p.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(timeout):
+		if p.logger != nil {
+			p.logger.Warn("worker pool stop timed out, some tasks may be lost")
+		}
+	}
+	p.cancelFn()
+}
+
+func (p *workerPool) Enqueue(task dispatchTask) error {
+	select {
+	case p.queue <- task:
+		return nil
+	case <-p.ctx.Done():
+		return fmt.Errorf("worker pool shut down")
+	}
+}
 
 // Executor evaluates incoming MQTT messages against active rules and dispatches
 // matching messages to the action dispatcher.
@@ -18,6 +115,8 @@ type Executor struct {
 	rules      map[string]*ActiveRule
 	dispatcher ActionDispatcher
 	logger     *slog.Logger
+	pool       *workerPool
+	poolSize   int
 }
 
 // ActiveRule represents a compiled rule bound to a topic pattern.
@@ -25,20 +124,69 @@ type ActiveRule struct {
 	RuleName     string
 	TopicPattern string
 	SQL          string
+	Actions      []map[string]interface{}
 	Parsed       *SelectExpr
 }
 
-// NewExecutor creates a rules executor backed by the given action dispatcher.
-func NewExecutor(dispatcher ActionDispatcher, logger *slog.Logger) *Executor {
-	return &Executor{
-		rules:      make(map[string]*ActiveRule),
-		dispatcher: dispatcher,
-		logger:     logger,
+// ExecutorOption configures the Executor.
+type ExecutorOption func(*Executor)
+
+// WithPoolSize sets the worker pool size. If 0, defaults to runtime.NumCPU() * 2.
+func WithPoolSize(n int) ExecutorOption {
+	return func(e *Executor) {
+		if n > 0 {
+			e.poolSize = n
+		}
 	}
 }
 
+// NewExecutor creates a rules executor backed by the given action dispatcher.
+func NewExecutor(dispatcher ActionDispatcher, logger *slog.Logger, opts ...ExecutorOption) *Executor {
+	e := &Executor{
+		rules:      make(map[string]*ActiveRule),
+		dispatcher: dispatcher,
+		logger:     logger,
+		poolSize:   runtime.NumCPU() * 2,
+	}
+	for _, o := range opts {
+		o(e)
+	}
+	return e
+}
+
+// Start initialises the worker pool and makes the executor ready to process messages.
+func (e *Executor) Start() {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.pool != nil {
+		return
+	}
+	e.pool = newWorkerPool(e.poolSize, e.poolSize*4, e.dispatcher, e.logger)
+	e.pool.Start(e.poolSize)
+}
+
+// Stop drains and shuts down the worker pool.
+func (e *Executor) Stop() {
+	e.mu.Lock()
+	pool := e.pool
+	e.pool = nil
+	e.mu.Unlock()
+	if pool != nil {
+		pool.Stop(5 * time.Second)
+	}
+}
+
+// RulesCount returns the number of active rules.
+func (e *Executor) RulesCount() int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return len(e.rules)
+}
+
 // AddRule compiles the SQL and registers a new active rule.
-func (e *Executor) AddRule(ruleName, topicPattern, sql string) error {
+// The topic pattern is extracted from the SQL FROM clause; the topicPattern
+// parameter is used only when the SQL has no FROM clause (e.g. for testing).
+func (e *Executor) AddRule(ruleName, topicPattern, sql string, actions []map[string]interface{}) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -48,12 +196,17 @@ func (e *Executor) AddRule(ruleName, topicPattern, sql string) error {
 		return fmt.Errorf("failed to parse rule SQL: %w", err)
 	}
 
-	e.rules[ruleName] = &ActiveRule{
-		RuleName:     ruleName,
-		TopicPattern: topicPattern,
-		SQL:          sql,
-		Parsed:       parsed,
+	if parsed.FromTopic != "" {
+		topicPattern = parsed.FromTopic
 	}
+
+	e.rules[ruleName] = &ActiveRule{
+			RuleName:     ruleName,
+			TopicPattern: topicPattern,
+			SQL:          sql,
+			Actions:      actions,
+			Parsed:       parsed,
+		}
 
 	return nil
 }
@@ -106,22 +259,15 @@ func (e *Executor) evaluateAndDispatch(rule *ActiveRule, topic string, data map[
 		}
 	}
 
-	_, output, err := EvaluateSQL(rule.SQL, data, topic, "")
-	if err != nil {
-		if e.logger != nil {
-			e.logger.Error("rule SQL evaluation failed", "rule", rule.RuleName, "error", err)
-		}
-		return
-	}
+	output := extractSelectedFields(rule.Parsed, data)
 
-	if e.dispatcher != nil {
-		go func() {
-			if err := e.dispatcher(rule.RuleName, topic, output); err != nil {
-				if e.logger != nil {
-					e.logger.Error("action dispatch failed", "rule", rule.RuleName, "error", err)
-				}
-			}
-		}()
+	if e.pool != nil {
+		e.pool.Enqueue(dispatchTask{
+			ruleName: rule.RuleName,
+			topic:    topic,
+			actions:  rule.Actions,
+			payload:  output,
+		})
 	}
 }
 

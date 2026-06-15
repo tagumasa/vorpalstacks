@@ -5,117 +5,195 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 )
 
+// IotStoreInterface is the composition of all per-entity Ops interfaces.
+// Callers should depend on the narrowest interface needed (ISP/SOLID).
 type IotStoreInterface interface {
-	// Things
+	ThingOps
+	ThingTypeOps
+	ThingGroupOps
+	BillingGroupOps
+	CertificateOps
+	PolicyOps
+	TopicRuleOps
+	RoleAliasOps
+	JobOps
+	ShadowOps
+	AuthorizerOps
+	ProvisioningTemplateOps
+	DetectorModelOps
+	InputOps
+	SecurityProfileOps
+	ViolationOps
+	DomainConfigOps
+	IndexingConfigOps
+	ProvisioningTemplateVersionOps
+	TagOps
+	PolicyAttachmentOps
+	ThingPrincipalOps
+	MetaOps
+}
+
+type ThingOps interface {
 	CreateThing(thing *Thing) (*Thing, error)
 	GetThing(thingName string) (*Thing, error)
-	UpdateThing(thing *Thing) error
+	UpdateThing(thingName string, opts ThingUpdateOpts) (*Thing, error)
 	DeleteThing(thingName string) error
-	ListThings(opts common.ListOptions) (*common.ListResult[Thing], error)
+	ListThings(opts common.ListOptions, attributeName, attributeValue string) (*common.ListResult[Thing], error)
 	ListThingsForThingType(thingTypeName string, opts common.ListOptions) (*common.ListResult[Thing], error)
+}
 
-	// ThingTypes
+type ThingTypeOps interface {
 	CreateThingType(tt *ThingType) (*ThingType, error)
 	GetThingType(name string) (*ThingType, error)
-	UpdateThingType(tt *ThingType) error
+	UpdateThingType(name string, opts ThingTypeUpdateOpts) (*ThingType, error)
+	SetThingTypeDeprecation(name string, deprecated bool) (*ThingType, error)
 	DeleteThingType(name string) error
 	ListThingTypes(opts common.ListOptions) (*common.ListResult[ThingType], error)
+}
 
-	// ThingGroups
+type ThingGroupOps interface {
 	CreateThingGroup(group *ThingGroup) (*ThingGroup, error)
 	GetThingGroup(name string) (*ThingGroup, error)
-	UpdateThingGroup(group *ThingGroup) error
+	UpdateThingGroup(groupName string, opts ThingGroupUpdateOpts) (*ThingGroup, error)
 	DeleteThingGroup(name string) error
-	ListThingGroups(opts common.ListOptions) (*common.ListResult[ThingGroup], error)
+	ListThingGroups(opts common.ListOptions, parentGroupName string) (*common.ListResult[ThingGroup], error)
+}
 
-	// BillingGroups
+type BillingGroupOps interface {
 	CreateBillingGroup(bg *BillingGroup) (*BillingGroup, error)
 	GetBillingGroup(name string) (*BillingGroup, error)
-	UpdateBillingGroup(bg *BillingGroup) error
+	UpdateBillingGroup(name string, opts BillingGroupUpdateOpts) (*BillingGroup, error)
 	DeleteBillingGroup(name string) error
 	ListBillingGroups(opts common.ListOptions) (*common.ListResult[BillingGroup], error)
+}
 
-	// Certificates
+type CertificateOps interface {
 	CreateCertificate(cert *Certificate) (*Certificate, error)
 	GetCertificate(certificateID string) (*Certificate, error)
-	UpdateCertificate(cert *Certificate) error
+	UpdateCertificate(certID string, opts CertificateUpdateOpts) (*Certificate, error)
 	DeleteCertificate(certificateID string) error
 	ListCertificates(opts common.ListOptions) (*common.ListResult[Certificate], error)
+}
 
-	// Policies
+type PolicyOps interface {
 	CreatePolicy(policy *Policy) (*Policy, error)
 	GetPolicy(policyName string) (*Policy, error)
 	DeletePolicy(policyName string) error
 	ListPolicies(opts common.ListOptions) (*common.ListResult[Policy], error)
+}
 
-	// TopicRules
+type TopicRuleOps interface {
 	CreateRule(rule *TopicRule) (*TopicRule, error)
 	GetRule(ruleName string) (*TopicRule, error)
-	UpdateRule(rule *TopicRule) error
+	UpdateRule(ruleName string, opts RuleUpdateOpts) (*TopicRule, error)
 	DeleteRule(ruleName string) error
 	ListRules(opts common.ListOptions) (*common.ListResult[TopicRule], error)
+}
 
-	// RoleAliases
+type RoleAliasOps interface {
 	CreateRoleAlias(ra *RoleAlias) (*RoleAlias, error)
 	GetRoleAlias(alias string) (*RoleAlias, error)
-	UpdateRoleAlias(ra *RoleAlias) error
+	UpdateRoleAlias(alias string, opts RoleAliasUpdateOpts) (*RoleAlias, error)
 	DeleteRoleAlias(alias string) error
 	ListRoleAliases(opts common.ListOptions) (*common.ListResult[RoleAlias], error)
+}
 
-	// Jobs
+type JobOps interface {
 	CreateJob(job *Job) (*Job, error)
 	GetJob(jobID string) (*Job, error)
-	UpdateJob(job *Job) error
+	UpdateJob(jobID string, opts JobUpdateOpts) (*Job, error)
 	DeleteJob(jobID string) error
-	ListJobs(opts common.ListOptions) (*common.ListResult[Job], error)
+	ListJobs(opts common.ListOptions, statusFilter string) (*common.ListResult[Job], error)
+}
 
-	// Shadows
+type ShadowOps interface {
 	GetShadow(thingName, shadowName string) (*ShadowDocument, error)
+	UpdateShadow(thingName, shadowName string, incoming ShadowState, clientVersion int64) (*ShadowUpdateResult, error)
 	PutShadow(thingName, shadowName string, doc *ShadowDocument) error
 	PutShadowWithVersion(thingName, shadowName string, doc *ShadowDocument, clientVersion int64) error
 	DeleteShadow(thingName, shadowName string) error
 	ListShadowNames(thingName string) ([]string, error)
+}
 
-	// Authorizers
+type AuthorizerOps interface {
 	CreateAuthorizer(a *Authorizer) (*Authorizer, error)
 	GetAuthorizer(name string) (*Authorizer, error)
-	UpdateAuthorizer(a *Authorizer) error
+	UpdateAuthorizer(name string, opts AuthorizerUpdateOpts) (*Authorizer, error)
 	DeleteAuthorizer(name string) error
 	ListAuthorizers(opts common.ListOptions) (*common.ListResult[Authorizer], error)
+}
 
-	// ProvisioningTemplates
+type ProvisioningTemplateOps interface {
 	CreateProvisioningTemplate(t *ProvisioningTemplate) (*ProvisioningTemplate, error)
 	GetProvisioningTemplate(name string) (*ProvisioningTemplate, error)
-	UpdateProvisioningTemplate(t *ProvisioningTemplate) error
+	UpdateProvisioningTemplate(name string, opts ProvisioningTemplateUpdateOpts) (*ProvisioningTemplate, error)
 	DeleteProvisioningTemplate(name string) error
 	ListProvisioningTemplates(opts common.ListOptions) (*common.ListResult[ProvisioningTemplate], error)
+}
 
-	// DetectorModels
+type DetectorModelOps interface {
 	CreateDetectorModel(d *DetectorModel) (*DetectorModel, error)
 	GetDetectorModel(name string) (*DetectorModel, error)
 	UpdateDetectorModel(d *DetectorModel) error
 	DeleteDetectorModel(name string) error
 	ListDetectorModels(opts common.ListOptions) (*common.ListResult[DetectorModel], error)
+}
 
-	// Inputs
+type InputOps interface {
 	CreateInput(i *Input) (*Input, error)
 	GetInput(name string) (*Input, error)
 	UpdateInput(i *Input) error
 	DeleteInput(name string) error
 	ListInputs(opts common.ListOptions) (*common.ListResult[Input], error)
+}
 
-	// Tags (via embedded TagStore)
+type SecurityProfileOps interface {
+	CreateSecurityProfile(sp *SecurityProfile) (*SecurityProfile, error)
+	GetSecurityProfile(name string) (*SecurityProfile, error)
+	UpdateSecurityProfile(name string, sp *SecurityProfile) error
+	DeleteSecurityProfile(name string) error
+	ListSecurityProfiles(opts common.ListOptions) (*common.ListResult[SecurityProfile], error)
+}
+
+type ViolationOps interface {
+	ListActiveViolations(thingName string) ([]*ViolationEvent, error)
+	ListViolationEvents(opts common.ListOptions, securityProfileName, thingName string) ([]*ViolationEvent, error)
+}
+
+type DomainConfigOps interface {
+	CreateDomainConfiguration(dc *DomainConfiguration) (*DomainConfiguration, error)
+	GetDomainConfiguration(name string) (*DomainConfiguration, error)
+	UpdateDomainConfiguration(name string, dc *DomainConfiguration) error
+	DeleteDomainConfiguration(name string) error
+	ListDomainConfigurations(opts common.ListOptions) (*common.ListResult[DomainConfiguration], error)
+}
+
+type IndexingConfigOps interface {
+	GetIndexingConfiguration() (*IndexingConfiguration, error)
+	UpdateIndexingConfiguration(ic *IndexingConfiguration) error
+}
+
+type ProvisioningTemplateVersionOps interface {
+	CreateProvisioningTemplateVersion(name string, v *ProvisioningTemplateVersion) (*ProvisioningTemplateVersion, error)
+	GetProvisioningTemplateVersion(name, versionID string) (*ProvisioningTemplateVersion, error)
+	DeleteProvisioningTemplateVersion(name, versionID string) error
+	ListProvisioningTemplateVersions(name string, opts common.ListOptions) ([]*ProvisioningTemplateVersion, error)
+}
+
+type TagOps interface {
 	ListTags(resourceARN string) (map[string]string, error)
 	TagResource(resourceARN string, tags map[string]string) error
 	UntagResource(resourceARN string, tagKeys []string) error
+}
 
-	// Policy Attachments
+type PolicyAttachmentOps interface {
 	AttachPolicyToPrincipal(policyName, principal string) error
 	DetachPolicyFromPrincipal(policyName, principal string) error
 	ListPrincipalsForPolicy(policyName string) ([]string, error)
 	ListPoliciesForPrincipal(principal string) ([]string, error)
+}
 
-	// Thing Principal Attachments
+type ThingPrincipalOps interface {
 	AttachThingPrincipal(thingName, principal string) error
 	DetachThingPrincipal(thingName, principal string) error
 	ListPrincipalsForThing(thingName string) ([]string, error)
@@ -124,7 +202,9 @@ type IotStoreInterface interface {
 	ListThingsInGroup(groupName string) ([]string, error)
 	ListGroupsForThing(thingName string) ([]string, error)
 	ListThingsForPrincipal(principal string) ([]string, error)
+}
 
+type MetaOps interface {
 	Storage() storage.BasicStorage
 	GetAccountID() string
 	GetRegion() string

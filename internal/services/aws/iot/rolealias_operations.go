@@ -2,6 +2,7 @@ package iot
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -15,18 +16,16 @@ func (s *IoTService) CreateRoleAlias(ctx context.Context, reqCtx *request.Reques
 		return nil, iotstore.ErrMissingParam
 	}
 
-	credentialDuration := request.GetParamCaseInsensitive(req.Parameters, "credentialDurationSeconds")
-	if credentialDuration == "" {
-		credentialDuration = "3600"
+	credentialDuration := int64(3600)
+	if cdStr := request.GetParamCaseInsensitive(req.Parameters, "credentialDurationSeconds"); cdStr != "" {
+		if parsed, err := strconv.ParseInt(cdStr, 10, 64); err == nil {
+			credentialDuration = parsed
+		}
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
-	}
-
-	if _, err := store.GetRoleAlias(roleAlias); err == nil {
-		return nil, iotstore.ErrResourceAlreadyExists
 	}
 
 	ra := &iotstore.RoleAlias{
@@ -69,16 +68,7 @@ func (s *IoTService) DescribeRoleAlias(ctx context.Context, reqCtx *request.Requ
 		return nil, iotstore.ErrRoleAliasNotFound
 	}
 
-	return map[string]interface{}{
-		"roleAliasDescription": map[string]interface{}{
-			"roleAlias":                 ra.RoleAlias,
-			"roleAliasArn":              ra.RoleAliasARN,
-			"roleArn":                   ra.RoleARN,
-			"credentialDurationSeconds": ra.CredentialDurationSeconds,
-			"creationDate":              ra.CreationDate.Unix(),
-			"lastModifiedDate":          ra.LastModifiedDate.Unix(),
-		},
-	}, nil
+	return roleAliasResponse(ra), nil
 }
 
 func (s *IoTService) UpdateRoleAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -92,21 +82,17 @@ func (s *IoTService) UpdateRoleAlias(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	ra, err := store.GetRoleAlias(roleAlias)
+	var opts iotstore.RoleAliasUpdateOpts
+	opts.RoleARN = request.GetParamCaseInsensitive(req.Parameters, "roleArn")
+	if cdStr := request.GetParamCaseInsensitive(req.Parameters, "credentialDurationSeconds"); cdStr != "" {
+		if parsed, err := strconv.ParseInt(cdStr, 10, 64); err == nil {
+			opts.DurationSeconds = parsed
+		}
+	}
+
+	ra, err := store.UpdateRoleAlias(roleAlias, opts)
 	if err != nil {
-		return nil, iotstore.ErrRoleAliasNotFound
-	}
-
-	if roleARN := request.GetParamCaseInsensitive(req.Parameters, "roleArn"); roleARN != "" {
-		ra.RoleARN = roleARN
-	}
-	if dur := request.GetParamCaseInsensitive(req.Parameters, "credentialDurationSeconds"); dur != "" {
-		ra.CredentialDurationSeconds = dur
-	}
-	ra.LastModifiedDate = time.Now().UTC()
-
-	if err := store.UpdateRoleAlias(ra); err != nil {
-		return nil, iotstore.ErrInvalidRequest
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -128,7 +114,7 @@ func (s *IoTService) DeleteRoleAlias(ctx context.Context, reqCtx *request.Reques
 	}
 
 	if err := store.DeleteRoleAlias(roleAlias); err != nil {
-		return nil, iotstore.ErrRoleAliasNotFound
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil

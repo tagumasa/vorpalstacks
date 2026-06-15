@@ -352,14 +352,10 @@ func (p *rdsStoreProvider) GetCluster(identifier string) (string, []string, erro
 // --- IoT (optional) ---
 
 func (a *App) initIoT(st *serviceState) error {
-	iotService := svciot.NewIoTService(st.accountID)
-	iotService.SetStorageManager(a.server.StorageManager())
-
 	eb := a.server.EventBus()
+	var disp *actions.Dispatcher
 	if eb != nil {
-		iotService.SetEventBus(eb)
-		disp := actions.NewDispatcher(eb, nil)
-		iotService.SetActionDispatcher(disp)
+		disp = actions.NewDispatcher(eb, nil)
 	}
 
 	regionalStorage, err := a.server.StorageManager().GetStorage(st.region)
@@ -371,10 +367,17 @@ func (a *App) initIoT(st *serviceState) error {
 	if err != nil {
 		return fmt.Errorf("failed to create IoT CA: %w", err)
 	}
-	iotService.SetCA(certAuth)
 
 	mqttBroker := broker.NewBroker(certAuth, nil)
-	iotService.SetBroker(mqttBroker)
+
+	iotService := svciot.NewIoTService(st.accountID)
+	iotService.Init(svciot.IoTServiceDeps{
+		StorageManager:   a.server.StorageManager(),
+		CA:               certAuth,
+		Broker:           mqttBroker,
+		EventBus:         eb,
+		ActionDispatcher: disp,
+	})
 
 	if os.Getenv("TEST_MODE") != "true" {
 		mqttPort := serviceports.IotMQTT
@@ -385,6 +388,10 @@ func (a *App) initIoT(st *serviceState) error {
 
 	st.iotService = iotService
 	st.iotService.RegisterHandlers(a.server.Dispatcher())
+	a.addShutdown("iot", func(ctx context.Context) error {
+		iotService.Shutdown()
+		return nil
+	})
 	return nil
 }
 

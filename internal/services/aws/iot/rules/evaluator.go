@@ -3,7 +3,7 @@ package rules
 import (
 	"encoding/json"
 	"fmt"
-	"math"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +15,10 @@ type Evaluator struct {
 	ClientID  string
 	Timestamp time.Time
 }
+
+type unknownValue struct{}
+
+func (unknownValue) String() string { return "UNKNOWN" }
 
 func NewEvaluator(payload map[string]interface{}, topic, clientID string) *Evaluator {
 	return &Evaluator{
@@ -61,7 +65,7 @@ func (e *Evaluator) resolveIdentifier(name string) (interface{}, error) {
 	if val, ok := e.Payload[name]; ok {
 		return val, nil
 	}
-	return nil, nil
+	return unknownValue{}, nil
 }
 
 func (e *Evaluator) resolveJsonPath(path []string) (interface{}, error) {
@@ -70,7 +74,7 @@ func (e *Evaluator) resolveJsonPath(path []string) (interface{}, error) {
 	}
 	current, ok := e.Payload[path[0]]
 	if !ok {
-		return nil, nil
+		return unknownValue{}, nil
 	}
 	for _, part := range path[1:] {
 		current = navigateJSON(current, part)
@@ -143,41 +147,11 @@ func (e *Evaluator) evalBinary(expr *BinaryExpr) (interface{}, error) {
 		return nil, err
 	}
 
-	switch expr.Op {
-	case "=":
-		return compareEqual(left, right), nil
-	case "!=", "<>":
-		return !compareEqual(left, right), nil
-	case "<":
-		return compareNumeric(left, right, -1), nil
-	case ">":
-		return compareNumeric(left, right, 1), nil
-	case "<=":
-		return !compareNumeric(left, right, 1), nil
-	case ">=":
-		return !compareNumeric(left, right, -1), nil
-	case "LIKE":
-		return matchLike(toString(left), toString(right)), nil
-	case "+":
-		return toFloat(left) + toFloat(right), nil
-	case "-":
-		return toFloat(left) - toFloat(right), nil
-	case "*":
-		return toFloat(left) * toFloat(right), nil
-	case "/":
-		if toFloat(right) == 0 {
-			return nil, fmt.Errorf("evaluator: division by zero")
-		}
-		return toFloat(left) / toFloat(right), nil
-	case "%":
-		return math.Mod(toFloat(left), toFloat(right)), nil
-	case "IS NULL":
-		return left == nil, nil
-	case "IS NOT NULL":
-		return left != nil, nil
-	default:
+	op, ok := binaryOps[expr.Op]
+	if !ok {
 		return nil, fmt.Errorf("evaluator: unknown operator %s", expr.Op)
 	}
+	return op(left, right)
 }
 
 func (e *Evaluator) evalUnary(expr *UnaryExpr) (interface{}, error) {
@@ -201,122 +175,11 @@ func (e *Evaluator) evalUnary(expr *UnaryExpr) (interface{}, error) {
 
 func (e *Evaluator) evalFunction(call *FunctionCall) (interface{}, error) {
 	name := strings.ToLower(call.Name)
-	switch name {
-	case "topic":
-		return e.Topic, nil
-	case "timestamp":
-		return e.Timestamp.Unix(), nil
-	case "clientid":
-		return e.ClientID, nil
-	case "concat":
-		var parts []string
-		for _, arg := range call.Args {
-			val, err := e.Eval(arg)
-			if err != nil {
-				return nil, err
-			}
-			parts = append(parts, toString(val))
-		}
-		return strings.Join(parts, ""), nil
-	case "length":
-		if len(call.Args) < 1 {
-			return nil, fmt.Errorf("evaluator: length() requires 1 argument")
-		}
-		val, err := e.Eval(call.Args[0])
-		if err != nil {
-			return nil, err
-		}
-		switch v := val.(type) {
-		case string:
-			return float64(len(v)), nil
-		case []interface{}:
-			return float64(len(v)), nil
-		case map[string]interface{}:
-			return float64(len(v)), nil
-		default:
-			return float64(len(toString(v))), nil
-		}
-	case "upper":
-		if len(call.Args) < 1 {
-			return nil, nil
-		}
-		val, err := e.Eval(call.Args[0])
-		if err != nil {
-			return nil, err
-		}
-		return strings.ToUpper(toString(val)), nil
-	case "lower":
-		if len(call.Args) < 1 {
-			return nil, nil
-		}
-		val, err := e.Eval(call.Args[0])
-		if err != nil {
-			return nil, err
-		}
-		return strings.ToLower(toString(val)), nil
-	case "trim":
-		if len(call.Args) < 1 {
-			return nil, nil
-		}
-		val, err := e.Eval(call.Args[0])
-		if err != nil {
-			return nil, err
-		}
-		return strings.TrimSpace(toString(val)), nil
-	case "replace":
-		if len(call.Args) < 3 {
-			return nil, nil
-		}
-		str, _ := e.Eval(call.Args[0])
-		old, _ := e.Eval(call.Args[1])
-		repl, _ := e.Eval(call.Args[2])
-		return strings.ReplaceAll(toString(str), toString(old), toString(repl)), nil
-	case "substring":
-		if len(call.Args) < 2 {
-			return nil, nil
-		}
-		str, _ := e.Eval(call.Args[0])
-		startVal, _ := e.Eval(call.Args[1])
-		start := int(toFloat(startVal))
-		s := toString(str)
-		length := len(s) - start
-		if len(call.Args) >= 3 {
-			lenVal, _ := e.Eval(call.Args[2])
-			length = int(toFloat(lenVal))
-		}
-		if start < 0 {
-			return "", nil
-		}
-		if start+length > len(s) {
-			return s[start:], nil
-		}
-		if length < 0 {
-			return s[start:], nil
-		}
-		return s[start : start+length], nil
-	case "cast":
-		return nil, fmt.Errorf("evaluator: cast() not yet implemented")
-	case "abs":
-		if len(call.Args) < 1 {
-			return nil, nil
-		}
-		val, _ := e.Eval(call.Args[0])
-		return math.Abs(toFloat(val)), nil
-	case "ceil":
-		if len(call.Args) < 1 {
-			return nil, nil
-		}
-		val, _ := e.Eval(call.Args[0])
-		return math.Ceil(toFloat(val)), nil
-	case "floor":
-		if len(call.Args) < 1 {
-			return nil, nil
-		}
-		val, _ := e.Eval(call.Args[0])
-		return math.Floor(toFloat(val)), nil
-	default:
+	handler, ok := functionHandlers[name]
+	if !ok {
 		return nil, fmt.Errorf("evaluator: unknown function %s", name)
 	}
+	return handler(e, call.Args)
 }
 
 func toBool(val interface{}) bool {
@@ -392,9 +255,17 @@ func toString(val interface{}) string {
 	}
 }
 
+func isUnknown(v interface{}) bool {
+	_, ok := v.(unknownValue)
+	return ok
+}
+
 func compareEqual(a, b interface{}) bool {
+	if isUnknown(a) || isUnknown(b) {
+		return false
+	}
 	if a == nil && b == nil {
-		return true
+		return false
 	}
 	if a == nil || b == nil {
 		return false
@@ -416,28 +287,27 @@ func compareNumeric(a, b interface{}, direction int) bool {
 }
 
 func matchLike(text, pattern string) bool {
-	parts := strings.Split(pattern, "%")
-	if len(parts) == 1 {
-		return text == pattern
+	var sb strings.Builder
+	sb.WriteString("^")
+	for _, ch := range pattern {
+		switch ch {
+		case '%':
+			sb.WriteString(".*")
+		case '_':
+			sb.WriteString(".")
+		case '\\', '.', '+', '*', '?', '(', ')', '[', ']', '{', '}', '^', '$', '|':
+			sb.WriteByte('\\')
+			sb.WriteRune(ch)
+		default:
+			sb.WriteRune(ch)
+		}
 	}
-	result := true
-	for i, part := range parts {
-		if part == "" {
-			continue
-		}
-		idx := strings.Index(text, part)
-		if idx < 0 {
-			return false
-		}
-		if i == 0 && idx > 0 {
-			return false
-		}
-		if i == len(parts)-1 && idx+len(part) != len(text) {
-			return false
-		}
-		text = text[idx+len(part):]
+	sb.WriteString("$")
+	re, err := regexp.Compile(sb.String())
+	if err != nil {
+		return false
 	}
-	return result
+	return re.MatchString(text)
 }
 
 func EvaluateSQL(sql string, payload map[string]interface{}, topic, clientID string) (*SelectExpr, map[string]interface{}, error) {
@@ -482,10 +352,7 @@ func topicMatches(pattern, topic string) bool {
 func matchTopicParts(pattern, topic []string, pi, ti int) bool {
 	for pi < len(pattern) && ti < len(topic) {
 		if pattern[pi] == "#" {
-			if pi != len(pattern)-1 {
-				return false
-			}
-			return true
+			return pi == len(pattern)-1
 		}
 		if pattern[pi] == "+" || pattern[pi] == topic[ti] {
 			pi++
@@ -498,4 +365,40 @@ func matchTopicParts(pattern, topic []string, pi, ti int) bool {
 		return true
 	}
 	return pi == len(pattern) && ti == len(topic)
+}
+
+func evalExprName(expr Expr) string {
+	switch e := expr.(type) {
+	case *Identifier:
+		return e.Name
+	case *StringLiteral:
+		return e.Value
+	default:
+		return fmt.Sprintf("%v", expr)
+	}
+}
+
+func (e *Evaluator) castValue(val interface{}, typeName string) (interface{}, error) {
+	switch typeName {
+	case "STRING":
+		return toString(val), nil
+	case "NUMERIC", "NUMBER", "DOUBLE", "FLOAT":
+		return toFloat(val), nil
+	case "BOOLEAN", "BOOL":
+		return toBool(val), nil
+	case "TIMESTAMP", "DATETIME":
+		s := toString(val)
+		t, err := time.Parse(time.RFC3339, s)
+		if err != nil {
+			t, err = time.Parse("2006-01-02T15:04:05", s)
+			if err != nil {
+				return nil, fmt.Errorf("cast to TIMESTAMP: cannot parse %q", s)
+			}
+		}
+		return t, nil
+	case "INT", "INTEGER":
+		return int64(toFloat(val)), nil
+	default:
+		return nil, fmt.Errorf("cast: unsupported type %q", typeName)
+	}
 }

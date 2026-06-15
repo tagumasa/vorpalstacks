@@ -57,13 +57,28 @@ type ActionConfig struct {
 // Dispatcher routes evaluated rule payloads to the appropriate action handler
 // using EventBus invokers for cross-service communication.
 type Dispatcher struct {
-	bus    eventbus.Bus
-	logger *slog.Logger
+	bus           eventbus.Bus
+	logger        *slog.Logger
+	RepublishFn   func(ctx context.Context, topic string, payload map[string]interface{}) error
+	BatchPutMsgFn func(ctx context.Context, messages []map[string]interface{}) error
+	HTTPPostFn    func(ctx context.Context, url string, payload []byte) error
 }
 
 // NewDispatcher creates a new action dispatcher backed by the given EventBus.
 func NewDispatcher(bus eventbus.Bus, logger *slog.Logger) *Dispatcher {
 	return &Dispatcher{bus: bus, logger: logger}
+}
+
+func (d *Dispatcher) SetRepublishFn(fn func(context.Context, string, map[string]interface{}) error) {
+	d.RepublishFn = fn
+}
+
+func (d *Dispatcher) SetBatchPutMessageFn(fn func(context.Context, []map[string]interface{}) error) {
+	d.BatchPutMsgFn = fn
+}
+
+func (d *Dispatcher) SetHTTPPostFn(fn func(context.Context, string, []byte) error) {
+	d.HTTPPostFn = fn
 }
 
 // Dispatch sends a rule payload to the configured target action.
@@ -72,52 +87,45 @@ func (d *Dispatcher) Dispatch(ctx context.Context, config *ActionConfig, topic s
 		return fmt.Errorf("event bus not configured for IoT rules dispatcher")
 	}
 
-	payloadJSON, _ := json.Marshal(payload)
-	payloadStr := string(payloadJSON)
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		if d.logger != nil {
+			d.logger.Error("failed to marshal IoT rule payload", "error", err)
+		}
+		return fmt.Errorf("failed to marshal rule payload: %w", err)
+	}
 
-	switch config.Type {
-	case "lambda":
-		return d.dispatchLambda(ctx, config, payloadStr)
-	case "sqs":
-		return d.dispatchSQS(ctx, config, payloadStr)
-	case "sns":
-		return d.dispatchSNS(ctx, config, topic, payloadStr)
-	case "dynamodb":
-		return d.dispatchDynamoDB(ctx, config, payload)
-	case "s3":
-		return d.dispatchS3(ctx, config, payloadJSON)
-	case "kinesis":
-		return d.dispatchKinesis(ctx, config, payloadJSON)
-	case "cloudwatch":
-		return d.dispatchCloudWatch(ctx, config, payload)
-	case "cloudwatchLogs":
-		return d.dispatchCloudWatchLogs(ctx, config, payloadStr)
-	case "eventbridge":
-		return d.dispatchEventBridge(ctx, config, payload)
-	case "republish":
-		return fmt.Errorf("republish action requires broker access, use inline dispatch")
-	default:
+	ap := &ActionPayload{
+		Topic:      topic,
+		Raw:        payload,
+		JSONBytes:  payloadJSON,
+		JSONString: string(payloadJSON),
+	}
+
+	handler, ok := actionRegistry[config.Type]
+	if !ok {
 		if d.logger != nil {
 			d.logger.Warn("unsupported IoT rule action type", "type", config.Type)
 		}
 		return fmt.Errorf("unsupported action type: %s", config.Type)
 	}
+	return handler(d, ctx, config, ap)
 }
 
-func (d *Dispatcher) dispatchLambda(ctx context.Context, config *ActionConfig, payload string) error {
+func (d *Dispatcher) dispatchLambda(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	invoker := d.bus.LambdaInvoker()
 	if invoker == nil {
 		return fmt.Errorf("lambda invoker not available")
 	}
 
-	_, _, err := invoker.InvokeForGateway(ctx, config.FunctionName, []byte(payload))
+	_, _, err := invoker.InvokeForGateway(ctx, config.FunctionName, []byte(p.JSONString))
 	if err != nil {
 		return fmt.Errorf("lambda invocation failed: %w", err)
 	}
 	return nil
 }
 
-func (d *Dispatcher) dispatchSQS(ctx context.Context, config *ActionConfig, payload string) error {
+func (d *Dispatcher) dispatchSQS(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	invoker := d.bus.SQSInvoker()
 	if invoker == nil {
 		return fmt.Errorf("sqs invoker not available")
@@ -138,14 +146,14 @@ func (d *Dispatcher) dispatchSQS(ctx context.Context, config *ActionConfig, payl
 		}
 	}
 
-	_, _, err = invoker.SendMessage(ctx, queueURL, payload, eventbus.SQSSendOptions{})
+	_, _, err = invoker.SendMessage(ctx, queueURL, p.JSONString, eventbus.SQSSendOptions{})
 	if err != nil {
 		return fmt.Errorf("sqs send failed: %w", err)
 	}
 	return nil
 }
 
-func (d *Dispatcher) dispatchSNS(ctx context.Context, config *ActionConfig, topic string, payload string) error {
+func (d *Dispatcher) dispatchSNS(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	invoker := d.bus.SNSInvoker()
 	if invoker == nil {
 		return fmt.Errorf("sns invoker not available")
@@ -156,14 +164,14 @@ func (d *Dispatcher) dispatchSNS(ctx context.Context, config *ActionConfig, topi
 		topicARN = config.TargetARN
 	}
 
-	_, err := invoker.PublishToTopic(ctx, topicARN, payload, "", nil)
+	_, err := invoker.PublishToTopic(ctx, topicARN, p.JSONString, "", nil)
 	if err != nil {
 		return fmt.Errorf("sns publish failed: %w", err)
 	}
 	return nil
 }
 
-func (d *Dispatcher) dispatchDynamoDB(ctx context.Context, config *ActionConfig, payload map[string]interface{}) error {
+func (d *Dispatcher) dispatchDynamoDB(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	invoker := d.bus.DynamoDBInvoker()
 	if invoker == nil {
 		return fmt.Errorf("dynamodb invoker not available")
@@ -184,16 +192,16 @@ func (d *Dispatcher) dispatchDynamoDB(ctx context.Context, config *ActionConfig,
 
 	// Use the entire payload as item attributes. Derive a partition key
 	// from the "id" field or generate one.
-	key := deriveDynamoDBKey(payload)
+	key := deriveDynamoDBKey(p.Raw)
 
-	_, err := invoker.PutItem(ctx, "", tableName, key, payload)
+	_, err := invoker.PutItem(ctx, "", tableName, key, p.Raw)
 	if err != nil {
 		return fmt.Errorf("dynamodb put failed: %w", err)
 	}
 	return nil
 }
 
-func (d *Dispatcher) dispatchS3(ctx context.Context, config *ActionConfig, payload []byte) error {
+func (d *Dispatcher) dispatchS3(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	invoker := d.bus.S3Invoker()
 	if invoker == nil {
 		return fmt.Errorf("s3 invoker not available")
@@ -204,14 +212,14 @@ func (d *Dispatcher) dispatchS3(ctx context.Context, config *ActionConfig, paylo
 		key = fmt.Sprintf("iot-rules/%s/%d.json", config.Type, time.Now().UnixNano())
 	}
 
-	err := invoker.PutObject(ctx, "", config.BucketName, key, payload, "application/json")
+	err := invoker.PutObject(ctx, "", config.BucketName, key, p.JSONBytes, "application/json")
 	if err != nil {
 		return fmt.Errorf("s3 put failed: %w", err)
 	}
 	return nil
 }
 
-func (d *Dispatcher) dispatchKinesis(ctx context.Context, config *ActionConfig, payload []byte) error {
+func (d *Dispatcher) dispatchKinesis(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	invoker := d.bus.KinesisInvoker()
 	if invoker == nil {
 		return fmt.Errorf("kinesis invoker not available")
@@ -230,14 +238,14 @@ func (d *Dispatcher) dispatchKinesis(ctx context.Context, config *ActionConfig, 
 	}
 
 	partitionKey := fmt.Sprintf("%d", time.Now().UnixNano())
-	_, err := invoker.PutRecord(ctx, streamName, partitionKey, payload)
+	_, err := invoker.PutRecord(ctx, streamName, partitionKey, p.JSONBytes)
 	if err != nil {
 		return fmt.Errorf("kinesis put record failed: %w", err)
 	}
 	return nil
 }
 
-func (d *Dispatcher) dispatchCloudWatch(ctx context.Context, config *ActionConfig, payload map[string]interface{}) error {
+func (d *Dispatcher) dispatchCloudWatch(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	invoker := d.bus.CloudWatchMetricInvoker()
 	if invoker == nil {
 		return fmt.Errorf("cloudwatch metric invoker not available")
@@ -254,7 +262,7 @@ func (d *Dispatcher) dispatchCloudWatch(ctx context.Context, config *ActionConfi
 	}
 
 	var value float64 = 1
-	if v, ok := payload["value"].(float64); ok {
+	if v, ok := p.Raw["value"].(float64); ok {
 		value = v
 	}
 
@@ -265,7 +273,7 @@ func (d *Dispatcher) dispatchCloudWatch(ctx context.Context, config *ActionConfi
 	return nil
 }
 
-func (d *Dispatcher) dispatchCloudWatchLogs(ctx context.Context, config *ActionConfig, payload string) error {
+func (d *Dispatcher) dispatchCloudWatchLogs(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	invoker := d.bus.LogsInvoker()
 	if invoker == nil {
 		return fmt.Errorf("cloudwatch logs invoker not available")
@@ -289,7 +297,7 @@ func (d *Dispatcher) dispatchCloudWatchLogs(ctx context.Context, config *ActionC
 	}
 
 	entries := []eventbus.LogsLogEntry{
-		{Timestamp: time.Now().UnixMilli(), Message: payload},
+		{Timestamp: time.Now().UnixMilli(), Message: p.JSONString},
 	}
 	if err := invoker.PutLogEvents(ctx, "", logGroup, logStream, entries); err != nil {
 		return fmt.Errorf("cloudwatch logs put failed: %w", err)
@@ -297,13 +305,13 @@ func (d *Dispatcher) dispatchCloudWatchLogs(ctx context.Context, config *ActionC
 	return nil
 }
 
-func (d *Dispatcher) dispatchEventBridge(ctx context.Context, config *ActionConfig, payload map[string]interface{}) error {
+func (d *Dispatcher) dispatchEventBridge(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	invoker := d.bus.EventsInvoker()
 	if invoker == nil {
 		return fmt.Errorf("eventbridge invoker not available")
 	}
 
-	err := invoker.PutEvent(ctx, config.TargetARN, payload)
+	err := invoker.PutEvent(ctx, config.TargetARN, p.Raw)
 	if err != nil {
 		return fmt.Errorf("eventbridge put event failed: %w", err)
 	}
@@ -319,4 +327,54 @@ func deriveDynamoDBKey(payload map[string]interface{}) map[string]interface{} {
 	return map[string]interface{}{
 		"id": fmt.Sprintf("%d", time.Now().UnixNano()),
 	}
+}
+
+func (d *Dispatcher) dispatchRepublish(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
+	if d.RepublishFn == nil {
+		return fmt.Errorf("republish: not configured")
+	}
+	topic := config.RepublishTopic
+	if topic == "" {
+		topic = config.TopicARN
+	}
+	if topic == "" {
+		return fmt.Errorf("republish: no topic specified")
+	}
+	return d.RepublishFn(ctx, topic, p.Raw)
+}
+
+func (d *Dispatcher) dispatchStepFunctions(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
+	events := d.bus.EventsInvoker()
+	if events == nil {
+		return fmt.Errorf("stepFunctions: events invoker not available")
+	}
+	event := map[string]interface{}{
+		"input":           p.JSONString,
+		"stateMachineArn": config.TargetARN,
+	}
+	key := fmt.Sprintf("iot-rule/%d", time.Now().UnixNano())
+	return events.PutEvent(ctx, key, event)
+}
+
+func (d *Dispatcher) dispatchIoTEvents(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
+	if d.BatchPutMsgFn == nil {
+		return fmt.Errorf("iotEvents: not configured")
+	}
+	msg := map[string]interface{}{
+		"messageId": fmt.Sprintf("rule-%d", time.Now().UnixNano()),
+		"inputName": config.Extra["inputName"],
+		"payload":   p.Raw,
+	}
+	return d.BatchPutMsgFn(ctx, []map[string]interface{}{msg})
+}
+
+func (d *Dispatcher) dispatchHTTP(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
+	if d.HTTPPostFn == nil {
+		return fmt.Errorf("http: not configured")
+	}
+	url, _ := config.Extra["url"].(string)
+	if url == "" {
+		return fmt.Errorf("http: no url specified")
+	}
+	return d.HTTPPostFn(ctx, url, p.JSONBytes)
 }

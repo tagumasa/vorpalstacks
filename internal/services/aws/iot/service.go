@@ -2,6 +2,9 @@
 package iot
 
 import (
+	"context"
+	"errors"
+	"log/slog"
 	"sync"
 
 	"vorpalstacks/internal/common/handler"
@@ -9,51 +12,137 @@ import (
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/iot/broker"
 	"vorpalstacks/internal/services/aws/iot/ca"
+	"vorpalstacks/internal/services/aws/iot/rules"
 	"vorpalstacks/internal/services/aws/iot/rules/actions"
+	storecommon "vorpalstacks/internal/store/aws/common"
+	iotstore "vorpalstacks/internal/store/aws/iot"
 )
+
+// ErrNotInitialised is returned when the service is accessed before Init.
+var ErrNotInitialised = errors.New("iot service not initialised")
+
+// IoTServiceDeps holds all dependencies required for IoTService initialisation.
+type IoTServiceDeps struct {
+	StorageManager   *storage.RegionStorageManager
+	CA               *ca.CertificateAuthority
+	Broker           *broker.Broker
+	EventBus         eventbus.Bus
+	ActionDispatcher *actions.Dispatcher
+}
 
 // IoTService provides AWS IoT Core operations for managing things,
 // certificates, policies, shadows, rules, and jobs.
 type IoTService struct {
-	storageManager *storage.RegionStorageManager
-	accountID      string
-	stores         sync.Map
-	ca             *ca.CertificateAuthority
-	broker         *broker.Broker
-	bus            eventbus.Bus
-	actionDisp     *actions.Dispatcher
+	accountID    string
+	stores       sync.Map
+	deps         IoTServiceDeps
+	executor     *rules.Executor
+	stateMachine *detectorStateMachine
+	once         sync.Once
+	initialised  bool
 }
 
 // NewIoTService creates a new IoT Core service instance.
+// Call Init before using the service.
 func NewIoTService(accountID string) *IoTService {
 	return &IoTService{
 		accountID: accountID,
 	}
 }
 
-// SetStorageManager injects the region storage manager for admin console access.
-func (s *IoTService) SetStorageManager(sm *storage.RegionStorageManager) {
-	s.storageManager = sm
+// Init sets all dependencies atomically, guarded by sync.Once.
+// Must be called before RegisterHandlers or any operation.
+// Calling Init multiple times is safe and idempotent.
+func (s *IoTService) Init(deps IoTServiceDeps) {
+	s.once.Do(func() {
+		s.deps = deps
+
+		if deps.ActionDispatcher != nil && deps.StorageManager != nil {
+			dispatchFn := s.makeActionDispatcher(deps.ActionDispatcher)
+			s.executor = rules.NewExecutor(dispatchFn, slog.Default())
+			s.executor.Start()
+			s.hydrateRules()
+
+			s.stateMachine = newDetectorStateMachine(func(modelName, key, actionType string, payload map[string]interface{}) {
+				slog.Debug("detector action", "model", modelName, "key", key, "action", actionType)
+			})
+		}
+
+		s.initialised = true
+	})
 }
 
-// SetCA injects the built-in certificate authority for certificate operations.
-func (s *IoTService) SetCA(certAuth *ca.CertificateAuthority) {
-	s.ca = certAuth
+func (s *IoTService) hydrateRules() {
+	if s.executor == nil || s.deps.StorageManager == nil {
+		return
+	}
+	stores := s.deps.StorageManager.ListRegions()
+	if len(stores) == 0 {
+		return
+	}
+	defaultRegion := stores[0]
+	st, err := s.deps.StorageManager.GetStorage(defaultRegion)
+	if err != nil {
+		slog.Warn("failed to get storage for IoT rules hydrate", "region", defaultRegion, "error", err)
+		return
+	}
+	store := iotstore.NewIotStore(st, s.accountID, defaultRegion)
+
+	var allRules []iotstore.TopicRule
+	var opts storecommon.ListOptions
+	for {
+		result, err := store.ListRules(opts)
+		if err != nil {
+			slog.Warn("failed to list rules for hydrate", "error", err)
+			break
+		}
+		for _, r := range result.Items {
+			allRules = append(allRules, *r)
+		}
+		if result.NextMarker == "" {
+			break
+		}
+		opts.Marker = result.NextMarker
+	}
+
+	for _, r := range allRules {
+		if !r.RuleDisabled && r.SQL != "" {
+			if err := s.executor.AddRule(r.RuleName, r.TopicPattern, r.SQL, actionsToList(r.Actions)); err != nil {
+				slog.Warn("failed to hydrate rule", "rule", r.RuleName, "error", err)
+			}
+		}
+	}
+	if len(allRules) > 0 {
+		slog.Info("hydrated IoT rules executor", "total", len(allRules), "active", s.executor.RulesCount())
+	}
 }
 
-// SetBroker injects the MQTT broker for shadow delta publishing.
-func (s *IoTService) SetBroker(b *broker.Broker) {
-	s.broker = b
+func (s *IoTService) Shutdown() {
+	if s.executor != nil {
+		s.executor.Stop()
+	}
 }
 
-// SetEventBus injects the event bus for cross-service action dispatching.
-func (s *IoTService) SetEventBus(bus eventbus.Bus) {
-	s.bus = bus
+func (s *IoTService) Executor() *rules.Executor {
+	return s.executor
 }
 
-// SetActionDispatcher injects the rules action dispatcher.
-func (s *IoTService) SetActionDispatcher(d *actions.Dispatcher) {
-	s.actionDisp = d
+func (s *IoTService) makeActionDispatcher(d *actions.Dispatcher) rules.ActionDispatcher {
+	return func(ruleName, topic string, actionList []map[string]interface{}, payload map[string]interface{}) error {
+		ctx := context.Background()
+		for _, action := range actionList {
+			for actionType, cfg := range action {
+				ac := &actions.ActionConfig{Type: actionType}
+				if m, ok := cfg.(map[string]interface{}); ok {
+					ac.Extra = m
+				}
+				if err := d.Dispatch(ctx, ac, topic, payload); err != nil {
+					slog.Warn("rule action dispatch failed", "rule", ruleName, "type", actionType, "error", err)
+				}
+			}
+		}
+		return nil
+	}
 }
 
 // RegisterHandlers registers all IoT operation handlers with the dispatcher.
@@ -178,6 +267,25 @@ func (s *IoTService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("iot", "ListViolationEvents", s.ListViolationEvents)
 	d.RegisterHandlerForService("iot", "GetBehaviorModelTrainingSummaries", s.GetBehaviorModelTrainingSummaries)
 	d.RegisterHandlerForService("iot", "ValidateSecurityProfileBehaviors", s.ValidateSecurityProfileBehaviors)
+	d.RegisterHandlerForService("iot", "CreateSecurityProfile", s.CreateSecurityProfile)
 	d.RegisterHandlerForService("iot", "DescribeSecurityProfile", s.DescribeSecurityProfile)
 	d.RegisterHandlerForService("iot", "UpdateSecurityProfile", s.UpdateSecurityProfile)
+	d.RegisterHandlerForService("iot", "DeleteSecurityProfile", s.DeleteSecurityProfile)
+	d.RegisterHandlerForService("iot", "ListSecurityProfiles", s.ListSecurityProfiles)
+
+	// DetectorModel operations (IoT Events integration)
+	d.RegisterHandlerForService("iot", "CreateDetectorModel", s.CreateDetectorModel)
+	d.RegisterHandlerForService("iot", "DescribeDetectorModel", s.DescribeDetectorModel)
+	d.RegisterHandlerForService("iot", "UpdateDetectorModel", s.UpdateDetectorModel)
+	d.RegisterHandlerForService("iot", "DeleteDetectorModel", s.DeleteDetectorModel)
+	d.RegisterHandlerForService("iot", "ListDetectorModels", s.ListDetectorModels)
+
+	// Input operations (IoT Events integration)
+	d.RegisterHandlerForService("iot", "CreateInput", s.CreateInput)
+	d.RegisterHandlerForService("iot", "DescribeInput", s.DescribeInput)
+	d.RegisterHandlerForService("iot", "UpdateInput", s.UpdateInput)
+	d.RegisterHandlerForService("iot", "DeleteInput", s.DeleteInput)
+	d.RegisterHandlerForService("iot", "ListInputs", s.ListInputs)
+
+	d.RegisterHandlerForService("iot", "BatchPutMessage", s.BatchPutMessage)
 }
