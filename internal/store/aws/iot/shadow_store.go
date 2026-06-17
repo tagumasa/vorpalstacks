@@ -1,10 +1,11 @@
 package iot
 
 import (
-		"strings"
-	"vorpalstacks/internal/store/aws/common"
+	"strings"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func shadowKey(thingName, shadowName string) string {
 	if shadowName == "" || shadowName == "classic" {
 		return thingName + "/$current"

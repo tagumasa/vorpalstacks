@@ -2,9 +2,10 @@ package iot
 
 import (
 	"time"
-	"vorpalstacks/internal/store/aws/common"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreateJob(job *Job) (*Job, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -58,7 +59,12 @@ func (s *IotStore) UpdateJob(jobID string, opts JobUpdateOpts) (*Job, error) {
 		existing.Description = opts.Description
 	}
 	if opts.Status != "" {
-		existing.Status = opts.Status
+		switch opts.Status {
+		case "IN_PROGRESS", "CANCELED", "COMPLETED", "QUEUED":
+			existing.Status = opts.Status
+		default:
+			return nil, ErrInvalidRequest
+		}
 	}
 	existing.LastUpdatedAt = time.Now().UTC()
 	return existing, s.jobPS.Update(existing)

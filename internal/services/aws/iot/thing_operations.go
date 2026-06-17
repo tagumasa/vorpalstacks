@@ -134,17 +134,7 @@ func (s *IoTService) ListThings(ctx context.Context, reqCtx *request.RequestCont
 
 	things := make([]map[string]interface{}, 0, len(result.Items))
 	for _, t := range result.Items {
-		things = append(things, map[string]interface{}{
-			"thingName":        t.ThingName,
-			"thingArn":         t.ThingARN,
-			"thingId":          t.ThingID,
-			"thingTypeName":    t.ThingTypeName,
-			"attributes":       t.Attributes,
-			"attributeNames":   t.AttributeNames,
-			"version":          t.Version,
-			"creationDate":     t.CreationDate.Unix(),
-			"lastModifiedDate": t.LastModifiedDate.Unix(),
-		})
+		things = append(things, thingResponse(t))
 	}
 
 	return listResponse("things", things, result.NextMarker), nil
@@ -170,15 +160,7 @@ func (s *IoTService) ListThingsForThingType(ctx context.Context, reqCtx *request
 
 	things := make([]map[string]interface{}, 0, len(result.Items))
 	for _, t := range result.Items {
-		things = append(things, map[string]interface{}{
-			"thingName":      t.ThingName,
-			"thingArn":       t.ThingARN,
-			"thingId":        t.ThingID,
-			"thingTypeName":  t.ThingTypeName,
-			"attributes":     t.Attributes,
-			"attributeNames": t.AttributeNames,
-			"version":        t.Version,
-		})
+		things = append(things, thingResponse(t))
 	}
 
 	return listResponse("things", things, result.NextMarker), nil
@@ -191,6 +173,6 @@ func (s *IoTService) store(reqCtx *request.RequestContext) (iotstore.IotStoreInt
 		if err != nil {
 			return nil, err
 		}
-		return iotstore.NewIotStore(st, s.accountID, reqCtx.GetRegion()), nil
+		return iotstore.NewIotStore(st, s.accountID, reqCtx.GetRegion(), nil), nil
 	})
 }

@@ -37,4 +37,3 @@ func TestIoTServiceInitConcurrent(t *testing.T) {
 		t.Error("expected initialised=true after concurrent Init")
 	}
 }
-

@@ -1,12 +1,13 @@
 package iot
 
 import (
-		"github.com/google/uuid"
-	"time"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
-	"vorpalstacks/internal/store/aws/common"
+	"time"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreateProvisioningTemplate(t *ProvisioningTemplate) (*ProvisioningTemplate, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

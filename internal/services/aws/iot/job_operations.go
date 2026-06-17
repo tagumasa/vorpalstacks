@@ -68,17 +68,8 @@ func (s *IoTService) DescribeJob(ctx context.Context, reqCtx *request.RequestCon
 		return nil, iotstore.ErrJobNotFound
 	}
 
-	jobMap := map[string]interface{}{
-		"jobId":           job.JobID,
-		"jobArn":          job.JobARN,
-		"description":     job.Description,
-		"status":          job.Status,
-		"targetSelection": job.TargetSelection,
-		"targets":         job.Targets,
-		"version":         job.Version,
-		"createdAt":       job.CreatedAt.Unix(),
-		"lastUpdatedAt":   job.LastUpdatedAt.Unix(),
-	}
+	jobMap := jobResponse(job)
+	jobMap["version"] = job.Version
 	return map[string]interface{}{
 		"job":      jobMap,
 		"document": job.Document,
@@ -118,15 +109,7 @@ func (s *IoTService) ListJobs(ctx context.Context, reqCtx *request.RequestContex
 
 	result := make([]map[string]interface{}, 0, len(jobs.Items))
 	for _, j := range jobs.Items {
-		result = append(result, map[string]interface{}{
-			"jobId":            j.JobID,
-			"jobArn":           j.JobARN,
-			"description":      j.Description,
-			"status":           j.Status,
-			"targetSelection":  j.TargetSelection,
-			"creationDate":     j.CreatedAt.Unix(),
-			"lastModifiedDate": j.LastUpdatedAt.Unix(),
-		})
+		result = append(result, jobResponse(j))
 	}
 
 	return listResponse("jobs", result, jobs.NextMarker), nil
@@ -144,18 +127,26 @@ func (s *IoTService) CancelJob(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	opts := iotstore.JobUpdateOpts{Status: "CANCELLED"}
-	job, err := store.UpdateJob(jobID, opts)
+	job, err := store.GetJob(jobID)
+	if err != nil {
+		return nil, err
+	}
+	if job.Status != "IN_PROGRESS" && job.Status != "QUEUED" {
+		return nil, iotstore.ErrInvalidRequest
+	}
+
+	opts := iotstore.JobUpdateOpts{Status: "CANCELED"}
+	job, err = store.UpdateJob(jobID, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"jobId":            job.JobID,
-		"jobArn":           job.JobARN,
-		"description":      job.Description,
-		"status":           job.Status,
-		"lastModifiedDate": job.LastUpdatedAt.Unix(),
+		"jobId":         job.JobID,
+		"jobArn":        job.JobARN,
+		"description":   job.Description,
+		"status":        job.Status,
+		"lastUpdatedAt": job.LastUpdatedAt.Unix(),
 	}, nil
 }
 

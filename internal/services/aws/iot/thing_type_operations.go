@@ -129,15 +129,7 @@ func (s *IoTService) ListThingTypes(ctx context.Context, reqCtx *request.Request
 
 	types := make([]map[string]interface{}, 0, len(result.Items))
 	for _, t := range result.Items {
-		types = append(types, map[string]interface{}{
-			"thingTypeName":    t.ThingTypeName,
-			"thingTypeArn":     t.ThingTypeARN,
-			"thingTypeId":      t.ThingTypeID,
-			"description":      t.Description,
-			"version":          t.Version,
-			"creationDate":     t.CreationDate.Unix(),
-			"lastModifiedDate": t.LastModifiedDate.Unix(),
-		})
+		types = append(types, thingTypeResponse(t))
 	}
 
 	return listResponse("thingTypes", types, result.NextMarker), nil

@@ -170,3 +170,35 @@ func TestCastInt(t *testing.T) {
 		t.Errorf("cast(42.7 AS INT) = %v, want 42", v)
 	}
 }
+
+func TestFnUpperRequiresArgument(t *testing.T) {
+	_, _, err := EvaluateSQL("SELECT upper() as u FROM 't'", map[string]interface{}{}, "t", "c")
+	if err == nil {
+		t.Fatal("upper() with no args should return error")
+	}
+}
+
+func TestFnLowerRequiresArgument(t *testing.T) {
+	_, _, err := EvaluateSQL("SELECT lower() as l FROM 't'", map[string]interface{}{}, "t", "c")
+	if err == nil {
+		t.Fatal("lower() with no args should return error")
+	}
+}
+
+func TestFnUpperLowerHappyPath(t *testing.T) {
+	_, result, err := EvaluateSQL(
+		"SELECT upper('hello') as u, lower('WORLD') as l FROM 't'",
+		map[string]interface{}{}, "t", "c",
+	)
+	if err != nil {
+		t.Fatalf("eval error: %v", err)
+	}
+	u, _ := result["u"].(string)
+	if u != "HELLO" {
+		t.Errorf("upper('hello') = %q, want HELLO", u)
+	}
+	l, _ := result["l"].(string)
+	if l != "world" {
+		t.Errorf("lower('WORLD') = %q, want world", l)
+	}
+}

@@ -58,15 +58,7 @@ func (s *IoTService) DescribeProvisioningTemplate(ctx context.Context, reqCtx *r
 		return nil, iotstore.ErrTemplateNotFound
 	}
 
-	return map[string]interface{}{
-		"templateName":        tmpl.TemplateName,
-		"templateArn":         tmpl.TemplateARN,
-		"description":         tmpl.Description,
-		"enabled":             tmpl.Enabled,
-		"provisioningRoleArn": tmpl.ProvisioningRoleARN,
-		"creationDate":        tmpl.CreationDate.Unix(),
-		"lastModifiedDate":    tmpl.LastModifiedDate.Unix(),
-	}, nil
+	return provisioningTemplateResponse(tmpl), nil
 }
 
 // UpdateProvisioningTemplate modifies a provisioning template.
@@ -131,15 +123,7 @@ func (s *IoTService) ListProvisioningTemplates(ctx context.Context, reqCtx *requ
 
 	result := make([]map[string]interface{}, 0, len(templates.Items))
 	for _, t := range templates.Items {
-		result = append(result, map[string]interface{}{
-			"templateName":        t.TemplateName,
-			"templateArn":         t.TemplateARN,
-			"description":         t.Description,
-			"enabled":             t.Enabled,
-			"provisioningRoleArn": t.ProvisioningRoleARN,
-			"creationDate":        t.CreationDate.Unix(),
-			"lastModifiedDate":    t.LastModifiedDate.Unix(),
-		})
+		result = append(result, provisioningTemplateResponse(t))
 	}
 
 	return listResponse("templates", result, templates.NextMarker), nil

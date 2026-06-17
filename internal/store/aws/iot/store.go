@@ -1,6 +1,7 @@
 package iot
 
 import (
+	"context"
 	"sync"
 
 	"google.golang.org/protobuf/proto"
@@ -9,6 +10,7 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
+
 type IotStore struct {
 	thingsBase           *common.BaseStore
 	thingTypesBase       *common.BaseStore
@@ -52,17 +54,17 @@ type IotStore struct {
 	domainConfigPS    *common.ProtoStore[DomainConfiguration]
 	violationEventPS  *common.ProtoStore[ViolationEvent]
 	*common.TagStore
-	storage    storage.BasicStorage
-	ts         storage.TransactionalStorage
-	rs         string
-	arnBuilder *svcarn.ARNBuilder
-	accountID  string
-	region     string
-	mu         sync.RWMutex
+	storage      storage.BasicStorage
+	ts           storage.TransactionalStorage
+	rs           string
+	arnBuilder   *svcarn.ARNBuilder
+	accountID    string
+	region       string
+	mu           sync.RWMutex
+	stateMachine *DetectorStateMachine
 }
 
-
-func NewIotStore(store storage.BasicStorage, accountID, region string) *IotStore {
+func NewIotStore(store storage.BasicStorage, accountID, region string, onAction func(string, string, string, map[string]interface{})) *IotStore {
 	bp := "-" + region
 	s := &IotStore{
 		thingsBase:           common.NewBaseStore(store.Bucket("iot-things"+bp), "iot-things"),
@@ -98,6 +100,7 @@ func NewIotStore(store storage.BasicStorage, accountID, region string) *IotStore
 	}
 	s.ts, _ = store.(storage.TransactionalStorage)
 	initProtoStores(s)
+	s.stateMachine = NewDetectorStateMachine(onAction)
 	return s
 }
 
@@ -229,3 +232,31 @@ func (s *IotStore) GetRegion() string {
 	return s.region
 }
 
+// LoadDetectorModel registers a detector model in the state machine for
+// event evaluation. No-op if no state machine is initialised.
+func (s *IotStore) LoadDetectorModel(dm *DetectorModel) {
+	if s.stateMachine != nil {
+		s.stateMachine.LoadModel(dm)
+	}
+}
+
+// UnloadModel removes a detector model and its instances from the state machine.
+func (s *IotStore) UnloadModel(name string) {
+	if s.stateMachine != nil {
+		s.stateMachine.UnloadModel(name)
+	}
+}
+
+// BatchEvaluate processes a batch of input messages against all loaded detector
+// models via the state machine. Returns error entries for failed evaluations.
+func (s *IotStore) BatchEvaluate(ctx context.Context, messages []InputMessage) []map[string]interface{} {
+	if s.stateMachine == nil {
+		return nil
+	}
+	return s.stateMachine.BatchEvaluate(ctx, messages)
+}
+
+// StateMachine returns the underlying DetectorStateMachine, or nil if not initialised.
+func (s *IotStore) StateMachine() *DetectorStateMachine {
+	return s.stateMachine
+}

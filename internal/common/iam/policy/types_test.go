@@ -115,6 +115,42 @@ func TestPrincipalMatches(t *testing.T) {
 			arn:       "arn:aws:iam::123456789012:user/test",
 			expected:  true,
 		},
+		{
+			name:      "service principal exact match",
+			principal: &Principal{Service: StringList{"lambda.amazonaws.com"}},
+			arn:       "lambda.amazonaws.com",
+			expected:  true,
+		},
+		{
+			name:      "service principal assumed-role session match",
+			principal: &Principal{Service: StringList{"lambda.amazonaws.com"}},
+			arn:       "arn:aws:sts::123456789012:assumed-role/AWSServiceRoleForLambda/lambda.amazonaws.com",
+			expected:  true,
+		},
+		{
+			name:      "service principal rejects role name with service suffix",
+			principal: &Principal{Service: StringList{"lambda.amazonaws.com"}},
+			arn:       "arn:aws:iam::123456789012:role/evil-lambda.amazonaws.com",
+			expected:  false,
+		},
+		{
+			name:      "service principal rejects unrelated arn",
+			principal: &Principal{Service: StringList{"lambda.amazonaws.com"}},
+			arn:       "arn:aws:iam::123456789012:user/attacker",
+			expected:  false,
+		},
+		{
+			name:      "federated principal exact match",
+			principal: &Principal{Federated: StringList{"cognito-identity.amazonaws.com"}},
+			arn:       "cognito-identity.amazonaws.com",
+			expected:  true,
+		},
+		{
+			name:      "federated principal rejects suffix-only attack",
+			principal: &Principal{Federated: StringList{"cognito-identity.amazonaws.com"}},
+			arn:       "arn:aws:iam::123456789012:role/fake-cognito-identity.amazonaws.com",
+			expected:  false,
+		},
 	}
 
 	for _, tt := range tests {

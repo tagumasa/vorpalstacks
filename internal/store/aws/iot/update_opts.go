@@ -70,7 +70,7 @@ type RuleUpdateOpts struct {
 	SQL              string
 	Description      string
 	AwsIotSqlVersion string
-	RuleDisabled     *bool                   // nil = no change; used by ReplaceTopicRule
-	Actions          map[string]interface{}  // nil = no change
-	ErrorAction      map[string]interface{}  // nil = no change
+	RuleDisabled     *bool                  // nil = no change; used by ReplaceTopicRule
+	Actions          map[string]interface{} // nil = no change
+	ErrorAction      map[string]interface{} // nil = no change
 }

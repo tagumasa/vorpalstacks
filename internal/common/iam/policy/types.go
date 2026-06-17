@@ -3,6 +3,7 @@ package policy
 
 import (
 	"encoding/json"
+	"strings"
 )
 
 // Effect represents whether a policy statement allows or denies access.
@@ -137,7 +138,9 @@ func (rl *ResourceList) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Matches checks if the principal matches the given ARN.
+// Matches checks if the principal matches the given ARN. Each principal
+// category (AWS, Service, Federated, Account) is consulted; an empty
+// Principal matches every request.
 func (p *Principal) Matches(principalArn string) bool {
 	if p == nil {
 		return true
@@ -153,7 +156,41 @@ func (p *Principal) Matches(principalArn string) bool {
 			return true
 		}
 	}
+	for _, sp := range p.Service {
+		if sp == "*" || sp == principalArn || serviceMatchesPrincipal(sp, principalArn) {
+			return true
+		}
+	}
+	for _, fp := range p.Federated {
+		if fp == "*" || fp == principalArn || serviceMatchesPrincipal(fp, principalArn) {
+			return true
+		}
+	}
+	for _, ap := range p.Account {
+		if ap == "*" || ap == principalArn {
+			return true
+		}
+	}
 	return false
+}
+
+// serviceMatchesPrincipal reports whether a bare service principal name
+// (e.g. "lambda.amazonaws.com") matches a request principal expressed as
+// a fully-qualified assumed-role or federated-user ARN.
+//
+// AWS service principals appear in assumed-role session ARNs in the
+// session-name component, always preceded by a path separator, e.g.
+// "arn:aws:sts::123:assumed-role/AWSServiceRoleForLambda/lambda.amazonaws.com".
+// Requiring the leading "/" prevents false positives on adversary-controlled
+// resource names such as "arn:aws:iam::123:role/evil-lambda.amazonaws.com".
+func serviceMatchesPrincipal(serviceName, principalArn string) bool {
+	if principalArn == "" {
+		return false
+	}
+	if serviceName == principalArn {
+		return true
+	}
+	return strings.HasSuffix(principalArn, "/"+serviceName)
 }
 
 // Matches checks if the action list contains the given action.

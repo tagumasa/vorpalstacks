@@ -3,6 +3,7 @@ package iot
 import (
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
 )
+
 func (s *IotStore) GetIndexingConfiguration() (*IndexingConfiguration, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

@@ -33,16 +33,16 @@ const cleanupInterval = 24 * time.Hour
 
 // AthenaService provides AWS Athena operations.
 type AthenaService struct {
-	accountID       string
-	s3Invoker       eventbus.S3Invoker
-	region          string
-	testMode        bool
-	asyncWg         sync.WaitGroup
-	cancelMu        sync.Mutex
-	cancelFuncs     map[string]context.CancelFunc
-	stores          sync.Map
-	regionCleanups  sync.Map
-	storageManager  *storage.RegionStorageManager
+	accountID      string
+	s3Invoker      eventbus.S3Invoker
+	region         string
+	testMode       bool
+	asyncWg        sync.WaitGroup
+	cancelMu       sync.Mutex
+	cancelFuncs    map[string]context.CancelFunc
+	stores         sync.Map
+	regionCleanups sync.Map
+	storageManager *storage.RegionStorageManager
 }
 
 // NewAthenaService creates a new Athena service instance.

@@ -3,6 +3,7 @@ package iot
 import (
 	"context"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	iotstore "vorpalstacks/internal/store/aws/iot"
@@ -41,7 +42,7 @@ func iotTagConfig(store iotstore.TagOps) tagutil.TagHandlerConfig {
 		},
 		MapError: func(err error) error {
 			if _, ok := err.(*tagutil.MissingResourceError); ok {
-				return iotstore.ErrMissingParam
+				return awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
 			}
 			return err
 		},

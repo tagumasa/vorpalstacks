@@ -1,10 +1,11 @@
 package iot
 
 import (
-	"strings"
 	"context"
+	"strings"
 	"vorpalstacks/internal/core/storage"
 )
+
 func (s *IotStore) AttachThingPrincipal(thingName, principal string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

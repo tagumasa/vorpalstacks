@@ -78,6 +78,9 @@ func opDiv(left, right interface{}) (interface{}, error) {
 }
 
 func opMod(left, right interface{}) (interface{}, error) {
+	if toFloat(right) == 0 {
+		return nil, fmt.Errorf("evaluator: modulo by zero")
+	}
 	return math.Mod(toFloat(left), toFloat(right)), nil
 }
 

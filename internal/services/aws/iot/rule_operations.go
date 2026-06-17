@@ -7,7 +7,9 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	iotstore "vorpalstacks/internal/store/aws/iot"
-)// actionsToList converts a flat action map (keyed by type) into a list of
+)
+
+// actionsToList converts a flat action map (keyed by type) into a list of
 // single-key maps, matching the AWS IoT rule action representation.
 func actionsToList(m map[string]interface{}) []map[string]interface{} {
 	if len(m) == 0 {
@@ -19,8 +21,6 @@ func actionsToList(m map[string]interface{}) []map[string]interface{} {
 	}
 	return result
 }
-
-
 
 func (s *IoTService) CreateTopicRule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	ruleName := request.GetParamCaseInsensitive(req.Parameters, "ruleName")
@@ -45,19 +45,7 @@ func (s *IoTService) CreateTopicRule(ctx context.Context, reqCtx *request.Reques
 	rule.RuleDisabled = request.GetBoolParam(props, "ruleDisabled")
 
 	// Extract action configurations from the topicRulePayload.
-	// AWS IoT sends actions as a list of action objects; internally stored as a map
-	// keyed by action type (e.g., "lambda", "sns", "sqs").
-	if actionsList := request.GetListParamLowerFirst(props, "actions"); len(actionsList) > 0 {
-		actionsMap := make(map[string]interface{})
-		for _, item := range actionsList {
-				for k, v := range item {
-					actionsMap[k] = v
-				}
-			}
-		rule.Actions = actionsMap
-	} else if actionsMap := request.GetMapParamCaseInsensitive(props, "actions"); actionsMap != nil {
-		rule.Actions = actionsMap
-	}
+	rule.Actions = extractActionsFromProps(props)
 	if ea := request.GetMapParamCaseInsensitive(props, "errorAction"); ea != nil {
 		rule.ErrorAction = ea
 	}
@@ -199,7 +187,7 @@ func (s *IoTService) EnableTopicRule(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	if s.executor != nil && updated.SQL != "" {
+	if s.executor != nil && updated.SQL != "" && len(updated.Actions) > 0 {
 		if err := s.executor.AddRule(updated.RuleName, updated.TopicPattern, updated.SQL, actionsToList(updated.Actions)); err != nil {
 			slog.Warn("rule enabled but executor registration failed", "rule", ruleName, "error", err)
 		}

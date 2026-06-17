@@ -1,11 +1,12 @@
 package iot
 
 import (
-	"time"
 	"google.golang.org/protobuf/proto"
-	"vorpalstacks/internal/store/aws/common"
+	"time"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreateSecurityProfile(sp *SecurityProfile) (*SecurityProfile, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

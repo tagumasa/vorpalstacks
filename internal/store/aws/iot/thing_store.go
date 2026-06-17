@@ -1,23 +1,30 @@
 package iot
 
 import (
-	"vorpalstacks/internal/core/storage"
-		"github.com/google/uuid"
-	"strings"
-	"time"
 	"context"
 	"errors"
-	"vorpalstacks/internal/store/aws/common"
+	"github.com/google/uuid"
+	"strings"
+	"time"
+	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreateThing(thing *Thing) (*Thing, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if thing.ThingName == "" {
 		return nil, ErrInvalidRequest
 	}
-	if thing.ThingTypeName != "" && !s.thingTypesBase.Exists(thing.ThingTypeName) {
-		return nil, ErrThingTypeNotFound
+	if thing.ThingTypeName != "" {
+		tt := &pb.ThingType{}
+		if err := s.thingTypesBase.GetProto(thing.ThingTypeName, tt); err != nil {
+			return nil, ErrThingTypeNotFound
+		}
+		if tt.Deprecated {
+			return nil, ErrInvalidRequest
+		}
 	}
 	if thing.ThingID == "" {
 		thing.ThingID = uuid.New().String()
@@ -40,8 +47,12 @@ func (s *IotStore) UpdateThing(thingName string, opts ThingUpdateOpts) (*Thing, 
 	if opts.RemoveThingType {
 		existing.ThingTypeName = ""
 	} else if opts.ThingTypeName != "" {
-		if !s.thingTypesBase.Exists(opts.ThingTypeName) {
+		tt := &pb.ThingType{}
+		if err := s.thingTypesBase.GetProto(opts.ThingTypeName, tt); err != nil {
 			return nil, ErrThingTypeNotFound
+		}
+		if tt.Deprecated {
+			return nil, ErrInvalidRequest
 		}
 		existing.ThingTypeName = opts.ThingTypeName
 	}

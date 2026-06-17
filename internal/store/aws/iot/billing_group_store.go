@@ -1,11 +1,12 @@
 package iot
 
 import (
-		"github.com/google/uuid"
+	"github.com/google/uuid"
 	"time"
-	"vorpalstacks/internal/store/aws/common"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreateBillingGroup(bg *BillingGroup) (*BillingGroup, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -71,5 +72,3 @@ func (s *IotStore) ListBillingGroups(opts common.ListOptions) (*common.ListResul
 		NextMarker: result.NextMarker,
 	}, nil
 }
-
-// CreateAuthorizer persists a new custom authorizer.

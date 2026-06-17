@@ -42,14 +42,7 @@ func (s *IoTService) CreateRoleAlias(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"roleAlias":                 created.RoleAlias,
-		"roleAliasArn":              created.RoleAliasARN,
-		"roleArn":                   created.RoleARN,
-		"credentialDurationSeconds": created.CredentialDurationSeconds,
-		"creationDate":              created.CreationDate.Unix(),
-		"lastModifiedDate":          created.LastModifiedDate.Unix(),
-	}, nil
+	return roleAliasResponse(created), nil
 }
 
 func (s *IoTService) DescribeRoleAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {

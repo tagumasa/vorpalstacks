@@ -207,26 +207,43 @@ func (e *PolicyEvaluator) Evaluate(ctx *EvaluationContext, policies []*Document)
 }
 
 func (e *PolicyEvaluator) evaluatePolicy(ctx *EvaluationContext, policy *Document) *Decision {
+	// Scan ALL statements so that an explicit Deny always wins over an
+	// Allow within the same policy, regardless of statement order. Returning
+	// on the first match would let an earlier Allow short-circuit a later
+	// Deny for the same (principal, action, resource) tuple.
+	hasAllow := false
+	hasDeny := false
+	var matchedAllowSid string
 	for _, stmt := range policy.Statement {
-		matches := e.statementMatches(ctx, &stmt)
-		if matches {
-			if stmt.Effect == EffectDeny {
-				return &Decision{
-					Effect:     DecisionEffectDeny,
-					MatchedSid: stmt.Sid,
-					Reason:     "Explicit deny",
-				}
-			}
-			return &Decision{
-				Effect:     DecisionEffectAllow,
-				MatchedSid: stmt.Sid,
-				Reason:     "Allowed by statement",
+		if !e.statementMatches(ctx, &stmt) {
+			continue
+		}
+		if stmt.Effect == EffectDeny {
+			hasDeny = true
+		} else {
+			hasAllow = true
+			if matchedAllowSid == "" {
+				matchedAllowSid = stmt.Sid
 			}
 		}
 	}
-	return &Decision{
-		Effect: DecisionEffectDefaultDeny,
-		Reason: "No matching statement",
+	switch {
+	case hasDeny:
+		return &Decision{
+			Effect: DecisionEffectDeny,
+			Reason: "Explicit deny",
+		}
+	case hasAllow:
+		return &Decision{
+			Effect:     DecisionEffectAllow,
+			MatchedSid: matchedAllowSid,
+			Reason:     "Allowed by statement",
+		}
+	default:
+		return &Decision{
+			Effect: DecisionEffectDefaultDeny,
+			Reason: "No matching statement",
+		}
 	}
 }
 

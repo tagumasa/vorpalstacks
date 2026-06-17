@@ -139,15 +139,7 @@ func (s *IoTService) ListAuthorizers(ctx context.Context, reqCtx *request.Reques
 
 	result := make([]map[string]interface{}, 0, len(auths.Items))
 	for _, a := range auths.Items {
-		result = append(result, map[string]interface{}{
-			"authorizerName":        a.AuthorizerName,
-			"authorizerArn":         a.AuthorizerARN,
-			"authorizerFunctionArn": a.AuthorizerFunctionARN,
-			"tokenKeyName":          a.TokenName,
-			"status":                boolToActiveStatus(a.Status),
-			"creationDate":          a.CreationDate.Unix(),
-			"lastModifiedDate":      a.LastModifiedDate.Unix(),
-		})
+		result = append(result, authorizerResponse(a))
 	}
 
 	return listResponse("authorizers", result, auths.NextMarker), nil

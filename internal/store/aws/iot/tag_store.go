@@ -1,7 +1,7 @@
 package iot
 
-import (
-)
+import ()
+
 func (s *IotStore) ListTags(resourceARN string) (map[string]string, error) {
 	return s.TagStore.List(resourceARN)
 }

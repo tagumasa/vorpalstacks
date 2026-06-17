@@ -2,9 +2,13 @@
 package iot
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"net/http"
 	"sync"
 
 	"vorpalstacks/internal/common/handler"
@@ -33,13 +37,12 @@ type IoTServiceDeps struct {
 // IoTService provides AWS IoT Core operations for managing things,
 // certificates, policies, shadows, rules, and jobs.
 type IoTService struct {
-	accountID    string
-	stores       sync.Map
-	deps         IoTServiceDeps
-	executor     *rules.Executor
-	stateMachine *detectorStateMachine
-	once         sync.Once
-	initialised  bool
+	accountID   string
+	stores      sync.Map
+	deps        IoTServiceDeps
+	executor    *rules.Executor
+	once        sync.Once
+	initialised bool
 }
 
 // NewIoTService creates a new IoT Core service instance.
@@ -61,12 +64,15 @@ func (s *IoTService) Init(deps IoTServiceDeps) {
 			dispatchFn := s.makeActionDispatcher(deps.ActionDispatcher)
 			s.executor = rules.NewExecutor(dispatchFn, slog.Default())
 			s.executor.Start()
-			s.hydrateRules()
+		}
 
-			s.stateMachine = newDetectorStateMachine(func(modelName, key, actionType string, payload map[string]interface{}) {
-				slog.Debug("detector action", "model", modelName, "key", key, "action", actionType)
+		if deps.Broker != nil && s.executor != nil {
+			deps.Broker.SetMessageHandler(func(_ string, topic string, payload []byte) {
+				s.executor.OnMessage(topic, payload)
 			})
 		}
+
+		s.hydrateRules()
 
 		s.initialised = true
 	})
@@ -80,29 +86,30 @@ func (s *IoTService) hydrateRules() {
 	if len(stores) == 0 {
 		return
 	}
-	defaultRegion := stores[0]
-	st, err := s.deps.StorageManager.GetStorage(defaultRegion)
-	if err != nil {
-		slog.Warn("failed to get storage for IoT rules hydrate", "region", defaultRegion, "error", err)
-		return
-	}
-	store := iotstore.NewIotStore(st, s.accountID, defaultRegion)
-
 	var allRules []iotstore.TopicRule
-	var opts storecommon.ListOptions
-	for {
-		result, err := store.ListRules(opts)
+	for _, region := range stores {
+		st, err := s.deps.StorageManager.GetStorage(region)
 		if err != nil {
-			slog.Warn("failed to list rules for hydrate", "error", err)
-			break
+			slog.Warn("failed to get storage for IoT rules hydrate", "region", region, "error", err)
+			continue
 		}
-		for _, r := range result.Items {
-			allRules = append(allRules, *r)
+		store := iotstore.NewIotStore(st, s.accountID, region, nil)
+
+		var opts storecommon.ListOptions
+		for {
+			result, err := store.ListRules(opts)
+			if err != nil {
+				slog.Warn("failed to list rules for hydrate", "region", region, "error", err)
+				break
+			}
+			for _, r := range result.Items {
+				allRules = append(allRules, *r)
+			}
+			if result.NextMarker == "" {
+				break
+			}
+			opts.Marker = result.NextMarker
 		}
-		if result.NextMarker == "" {
-			break
-		}
-		opts.Marker = result.NextMarker
 	}
 
 	for _, r := range allRules {
@@ -127,14 +134,20 @@ func (s *IoTService) Executor() *rules.Executor {
 	return s.executor
 }
 
+func (s *IoTService) Broker() *broker.Broker {
+	return s.deps.Broker
+}
+
 func (s *IoTService) makeActionDispatcher(d *actions.Dispatcher) rules.ActionDispatcher {
 	return func(ruleName, topic string, actionList []map[string]interface{}, payload map[string]interface{}) error {
 		ctx := context.Background()
 		for _, action := range actionList {
 			for actionType, cfg := range action {
-				ac := &actions.ActionConfig{Type: actionType}
+				var ac *actions.ActionConfig
 				if m, ok := cfg.(map[string]interface{}); ok {
-					ac.Extra = m
+					ac = actions.NewActionConfigFromMap(actionType, m)
+				} else {
+					ac = &actions.ActionConfig{Type: actionType}
 				}
 				if err := d.Dispatch(ctx, ac, topic, payload); err != nil {
 					slog.Warn("rule action dispatch failed", "rule", ruleName, "type", actionType, "error", err)
@@ -143,6 +156,51 @@ func (s *IoTService) makeActionDispatcher(d *actions.Dispatcher) rules.ActionDis
 		}
 		return nil
 	}
+}
+
+// WireActionCallbacks connects the rule action dispatcher callbacks to
+// their concrete implementations. Must be called after both IoT and IoT
+// Events services have been initialised, because the dispatcher is
+// created in initIoT but the IoT Events state machine (needed for
+// BatchPutMessage) is only available after initIoTEvents completes.
+// batchPutFn should resolve the IoT Events state machine and evaluate
+// messages; pass nil to leave BatchPutMessage unwired.
+func (s *IoTService) WireActionCallbacks(brk *broker.Broker, batchPutFn func(ctx context.Context, messages []map[string]interface{}) error) {
+	d := s.deps.ActionDispatcher
+	if d == nil {
+		return
+	}
+
+	if brk != nil {
+		d.SetRepublishFn(func(ctx context.Context, topic string, payload map[string]interface{}) error {
+			data, err := json.Marshal(payload)
+			if err != nil {
+				return err
+			}
+			return brk.Publish(topic, data)
+		})
+	}
+
+	if batchPutFn != nil {
+		d.SetBatchPutMessageFn(batchPutFn)
+	}
+
+	d.SetHTTPPostFn(func(ctx context.Context, url string, payload []byte) error {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
+		if resp.StatusCode >= 400 {
+			return fmt.Errorf("http action: %s returned status %d", url, resp.StatusCode)
+		}
+		return nil
+	})
 }
 
 // RegisterHandlers registers all IoT operation handlers with the dispatcher.
@@ -272,20 +330,26 @@ func (s *IoTService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("iot", "UpdateSecurityProfile", s.UpdateSecurityProfile)
 	d.RegisterHandlerForService("iot", "DeleteSecurityProfile", s.DeleteSecurityProfile)
 	d.RegisterHandlerForService("iot", "ListSecurityProfiles", s.ListSecurityProfiles)
+}
 
-	// DetectorModel operations (IoT Events integration)
-	d.RegisterHandlerForService("iot", "CreateDetectorModel", s.CreateDetectorModel)
-	d.RegisterHandlerForService("iot", "DescribeDetectorModel", s.DescribeDetectorModel)
-	d.RegisterHandlerForService("iot", "UpdateDetectorModel", s.UpdateDetectorModel)
-	d.RegisterHandlerForService("iot", "DeleteDetectorModel", s.DeleteDetectorModel)
-	d.RegisterHandlerForService("iot", "ListDetectorModels", s.ListDetectorModels)
+// IoTAuthBrokerProvider implements broker.AuthProvider by delegating to the
+// IoTService for per-region store and CA access.
+type IoTAuthBrokerProvider struct {
+	Service *IoTService
+}
 
-	// Input operations (IoT Events integration)
-	d.RegisterHandlerForService("iot", "CreateInput", s.CreateInput)
-	d.RegisterHandlerForService("iot", "DescribeInput", s.DescribeInput)
-	d.RegisterHandlerForService("iot", "UpdateInput", s.UpdateInput)
-	d.RegisterHandlerForService("iot", "DeleteInput", s.DeleteInput)
-	d.RegisterHandlerForService("iot", "ListInputs", s.ListInputs)
+func (p *IoTAuthBrokerProvider) GetCA() *ca.CertificateAuthority {
+	return p.Service.deps.CA
+}
 
-	d.RegisterHandlerForService("iot", "BatchPutMessage", s.BatchPutMessage)
+func (p *IoTAuthBrokerProvider) GetStore() iotstore.IotStoreInterface {
+	stores := p.Service.deps.StorageManager.ListRegions()
+	if len(stores) == 0 {
+		return nil
+	}
+	st, err := p.Service.deps.StorageManager.GetStorage(stores[0])
+	if err != nil {
+		return nil
+	}
+	return iotstore.NewIotStore(st, p.Service.accountID, stores[0], nil)
 }

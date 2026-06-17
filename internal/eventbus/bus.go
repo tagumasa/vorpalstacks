@@ -447,6 +447,13 @@ func (b *EventBus) Publish(ctx context.Context, event Event) error {
 		return b.dispatchAsyncDirect(ctx, event)
 	}
 
+	// The async worker deserialises outbox entries via the registry; a
+	// nil registry would silently fail every event. Fail fast here so
+	// the misconfiguration is visible to the caller.
+	if b.registry == nil {
+		return fmt.Errorf("eventbus: outbox configured without EventRegistry")
+	}
+
 	serialized, err := SerializeEvent(event)
 	if err != nil {
 		return fmt.Errorf("eventbus: failed to serialize event: %w", err)

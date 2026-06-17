@@ -43,5 +43,11 @@ func (r *TestRunner) RunIoTTests() []TestResult {
 	results = append(results, r.runIoTCertTests(tc)...)
 	results = append(results, r.runIoTPolicyTests(tc)...)
 	results = append(results, r.runIoTParamFixTests(tc)...)
+	results = append(results, r.runIoTJobTests(tc)...)
+	results = append(results, r.runIoTGroupTests(tc)...)
+	results = append(results, r.runIoTAuthorizerTests(tc)...)
+	results = append(results, r.runIoTSecurityProfileTests(tc)...)
+	results = append(results, r.runIoTDomainConfigTests(tc)...)
+	results = append(results, r.runIoTProvisioningTemplateTests(tc)...)
 	return results
 }

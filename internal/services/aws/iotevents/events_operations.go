@@ -60,6 +60,11 @@ func (s *IoTEventsService) CreateDetectorModel(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	// Load the model into the state machine for event evaluation.
+	if concrete, ok := store.(*iotstore.IotStore); ok {
+		concrete.LoadDetectorModel(created)
+	}
+
 	if tags := tagutil.ParseTagsAsMap(req.Parameters, "tags"); len(tags) > 0 {
 		_ = store.TagResource(created.DetectorModelARN, tags)
 	}
@@ -134,6 +139,10 @@ func (s *IoTEventsService) UpdateDetectorModel(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
+	if concrete, ok := store.(*iotstore.IotStore); ok {
+		concrete.LoadDetectorModel(existing)
+	}
+
 	return map[string]interface{}{
 		"detectorModelConfiguration": detectorModelConfig(existing),
 	}, nil
@@ -157,6 +166,10 @@ func (s *IoTEventsService) DeleteDetectorModel(ctx context.Context, reqCtx *requ
 
 	if err := store.DeleteDetectorModel(name); err != nil {
 		return nil, err
+	}
+
+	if concrete, ok := store.(*iotstore.IotStore); ok {
+		concrete.UnloadModel(name)
 	}
 
 	return map[string]interface{}{}, nil

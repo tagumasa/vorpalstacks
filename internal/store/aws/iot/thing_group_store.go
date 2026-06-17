@@ -1,15 +1,16 @@
 package iot
 
 import (
-		"github.com/google/uuid"
-	"time"
-	"strings"
 	"context"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
+	"strings"
+	"time"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/store/aws/common"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreateThingGroup(group *ThingGroup) (*ThingGroup, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -106,7 +107,6 @@ func (s *IotStore) UpdateThingGroup(groupName string, opts ThingGroupUpdateOpts)
 	return existing, s.thingGroupPS.Update(existing)
 }
 
-// CreateBillingGroup persists a new billing group.
 func (s *IotStore) AddThingToThingGroup(thingName, groupName string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

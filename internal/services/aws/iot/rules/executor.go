@@ -201,12 +201,12 @@ func (e *Executor) AddRule(ruleName, topicPattern, sql string, actions []map[str
 	}
 
 	e.rules[ruleName] = &ActiveRule{
-			RuleName:     ruleName,
-			TopicPattern: topicPattern,
-			SQL:          sql,
-			Actions:      actions,
-			Parsed:       parsed,
-		}
+		RuleName:     ruleName,
+		TopicPattern: topicPattern,
+		SQL:          sql,
+		Actions:      actions,
+		Parsed:       parsed,
+	}
 
 	return nil
 }
@@ -259,7 +259,7 @@ func (e *Executor) evaluateAndDispatch(rule *ActiveRule, topic string, data map[
 		}
 	}
 
-	output := extractSelectedFields(rule.Parsed, data)
+	output := extractSelectedFields(rule.Parsed, data, topic, "")
 
 	if e.pool != nil {
 		e.pool.Enqueue(dispatchTask{
@@ -279,6 +279,10 @@ func shouldFilter(result interface{}) bool {
 		return v == 0
 	case nil:
 		return true
+	case unknownValue:
+		// SQL three-valued logic: UNKNOWN in a WHERE clause is treated as
+		// false, which means the row is filtered out.
+		return true
 	default:
 		return false
 	}
@@ -289,7 +293,7 @@ func TopicMatches(topic, pattern string) bool {
 	return MatchTopicFilter(pattern, topic)
 }
 
-func extractSelectedFields(stmt *SelectExpr, data map[string]interface{}) map[string]interface{} {
+func extractSelectedFields(stmt *SelectExpr, data map[string]interface{}, topic, clientID string) map[string]interface{} {
 	if len(stmt.Fields) == 0 {
 		return data
 	}
@@ -301,7 +305,7 @@ func extractSelectedFields(stmt *SelectExpr, data map[string]interface{}) map[st
 	}
 
 	output := make(map[string]interface{})
-	eval := NewEvaluator(data, "", "")
+	eval := NewEvaluator(data, topic, clientID)
 	for _, f := range stmt.Fields {
 		name := f.Alias
 		if name == "" {

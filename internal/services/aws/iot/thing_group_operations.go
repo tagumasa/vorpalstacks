@@ -133,15 +133,7 @@ func (s *IoTService) ListThingGroups(ctx context.Context, reqCtx *request.Reques
 
 	groups := make([]map[string]interface{}, 0, len(result.Items))
 	for _, g := range result.Items {
-		groups = append(groups, map[string]interface{}{
-			"thingGroupName":   g.GroupName,
-			"thingGroupArn":    g.GroupARN,
-			"thingGroupId":     g.GroupID,
-			"parentGroupName":  g.ParentGroupName,
-			"description":      g.Description,
-			"creationDate":     g.CreationDate.Unix(),
-			"lastModifiedDate": g.LastModifiedDate.Unix(),
-		})
+		groups = append(groups, thingGroupResponse(g))
 	}
 
 	return listResponse("thingGroups", groups, result.NextMarker), nil
@@ -204,9 +196,7 @@ func (s *IoTService) ListThingsInThingGroup(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"things": things,
-	}, nil
+	return paginatedStrings("things", things, req.Parameters), nil
 }
 
 // ListThingGroupsForThing returns groups containing the specified thing.
@@ -233,7 +223,5 @@ func (s *IoTService) ListThingGroupsForThing(ctx context.Context, reqCtx *reques
 		})
 	}
 
-	return map[string]interface{}{
-		"thingGroups": result,
-	}, nil
+	return paginatedMaps("thingGroups", result, req.Parameters), nil
 }

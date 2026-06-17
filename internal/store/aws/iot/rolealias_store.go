@@ -2,9 +2,10 @@ package iot
 
 import (
 	"time"
-	"vorpalstacks/internal/store/aws/common"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreateRoleAlias(ra *RoleAlias) (*RoleAlias, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

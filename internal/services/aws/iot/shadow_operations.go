@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"time"
 
@@ -106,15 +107,15 @@ func (s *IoTService) UpdateThingShadow(ctx context.Context, reqCtx *request.Requ
 			"thingName": thingName,
 		})
 		if err != nil {
-			fmt.Printf("[iot] shadow delta marshal error: %v\n", err)
+			slog.Error("shadow delta marshal error", "error", err)
 		} else if pubErr := s.deps.Broker.Publish(deltaTopic, deltaPayload); pubErr != nil {
-			fmt.Printf("[iot] shadow delta publish error: %v\n", pubErr)
+			slog.Error("shadow delta publish error", "error", pubErr)
 		}
 	}
 
 	var respState iotstore.ShadowState
 	if unmarshalErr := json.Unmarshal([]byte(result.Document.State), &respState); unmarshalErr != nil {
-		fmt.Printf("[iot] shadow state unmarshal error: %v\n", unmarshalErr)
+		slog.Error("shadow state unmarshal error", "error", unmarshalErr)
 	}
 
 	return map[string]interface{}{

@@ -3,11 +3,11 @@ package broker
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"sync/atomic"
 
 	mqtt "github.com/mochi-mqtt/server/v2"
-	"github.com/mochi-mqtt/server/v2/hooks/auth"
 	"github.com/mochi-mqtt/server/v2/listeners"
 	"github.com/mochi-mqtt/server/v2/packets"
 
@@ -17,13 +17,14 @@ import (
 type MessageHandler func(clientID string, topic string, payload []byte)
 
 type Broker struct {
-	server    *mqtt.Server
-	handler   MessageHandler
-	ca        *ca.CertificateAuthority
-	running   atomic.Bool
-	ctx       context.Context
-	cancel    context.CancelFunc
-	closeOnce sync.Once
+	server       *mqtt.Server
+	handler      MessageHandler
+	ca           *ca.CertificateAuthority
+	authProvider AuthProvider
+	running      atomic.Bool
+	ctx          context.Context
+	cancel       context.CancelFunc
+	closeOnce    sync.Once
 }
 
 func NewBroker(certificateAuthority *ca.CertificateAuthority, handler MessageHandler) *Broker {
@@ -36,6 +37,18 @@ func NewBroker(certificateAuthority *ca.CertificateAuthority, handler MessageHan
 	}
 }
 
+// SetAuthProvider configures the broker to use certificate and policy
+// authentication. Must be called before Start.
+func (b *Broker) SetAuthProvider(provider AuthProvider) {
+	b.authProvider = provider
+}
+
+// SetMessageHandler configures the handler invoked for every published
+// MQTT message. Must be called before Start.
+func (b *Broker) SetMessageHandler(handler MessageHandler) {
+	b.handler = handler
+}
+
 func (b *Broker) Start(port int) error {
 	if !b.running.CompareAndSwap(false, true) {
 		return fmt.Errorf("broker already running")
@@ -45,7 +58,13 @@ func (b *Broker) Start(port int) error {
 		InlineClient: true,
 	})
 
-	_ = b.server.AddHook(new(auth.AllowHook), nil)
+	if b.authProvider != nil {
+		_ = b.server.AddHook(NewAuthHook(b.authProvider), nil)
+	} else {
+		// allowAllHook permits all connections when no AuthProvider is configured.
+		allowAll := &allowAllHook{}
+		_ = b.server.AddHook(allowAll, nil)
+	}
 	_ = b.server.AddHook(&iotHook{
 		handler: b.handler,
 	}, nil)
@@ -63,11 +82,11 @@ func (b *Broker) Start(port int) error {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Printf("IoT MQTT broker panic recovered: %v\n", r)
+				slog.Error("IoT MQTT broker panic recovered", "panic", r)
 			}
 		}()
 		if err := b.server.Serve(); err != nil && b.running.Load() {
-			fmt.Printf("IoT MQTT broker stopped: %v\n", err)
+			slog.Error("IoT MQTT broker stopped", "error", err)
 		}
 	}()
 
@@ -121,4 +140,21 @@ func (h *iotHook) OnPublished(cl *mqtt.Client, pk packets.Packet) {
 	if h.handler != nil {
 		h.handler(cl.ID, pk.TopicName, pk.Payload)
 	}
+}
+
+// allowAllHook permits all MQTT connections (used when no AuthProvider is set).
+type allowAllHook struct {
+	mqtt.HookBase
+}
+
+func (h *allowAllHook) Provides(b byte) bool {
+	return b == mqtt.OnConnectAuthenticate || b == mqtt.OnACLCheck
+}
+
+func (h *allowAllHook) OnConnectAuthenticate(cl *mqtt.Client, pk packets.Packet) bool {
+	return true
+}
+
+func (h *allowAllHook) OnACLCheck(cl *mqtt.Client, topic string, write bool) bool {
+	return true
 }

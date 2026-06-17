@@ -24,17 +24,15 @@ const (
 )
 
 type CertificateAuthority struct {
-	bucket       storage.Bucket
-	mu           sync.RWMutex
-	rootCA       *x509.Certificate
-	rootKey      *ecdsa.PrivateKey
-	revokedCerts map[string]struct{}
+	bucket  storage.Bucket
+	mu      sync.RWMutex
+	rootCA  *x509.Certificate
+	rootKey *ecdsa.PrivateKey
 }
 
 func NewCertificateAuthority(s storage.BasicStorage) (*CertificateAuthority, error) {
 	ca := &CertificateAuthority{
-		bucket:       s.Bucket(caBucketName),
-		revokedCerts: make(map[string]struct{}),
+		bucket: s.Bucket(caBucketName),
 	}
 	if err := ca.loadOrCreateRootCA(); err != nil {
 		return nil, fmt.Errorf("failed to initialise CA: %w", err)
@@ -219,19 +217,6 @@ func (ca *CertificateAuthority) VerifyCertificate(certPEM string) error {
 		return err
 	}
 	return nil
-}
-
-func (ca *CertificateAuthority) IsCertificateRevoked(certID string) bool {
-	ca.mu.RLock()
-	defer ca.mu.RUnlock()
-	_, revoked := ca.revokedCerts[certID]
-	return revoked
-}
-
-func (ca *CertificateAuthority) RevokeCertificate(certID string) {
-	ca.mu.Lock()
-	defer ca.mu.Unlock()
-	ca.revokedCerts[certID] = struct{}{}
 }
 
 func generateSerialNumber() *big.Int {

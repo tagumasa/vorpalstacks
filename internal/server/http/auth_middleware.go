@@ -38,7 +38,9 @@ func SignatureMiddleware(cfg SignatureConfig, c *classifier.Classifier, sessionR
 
 			cr, err := c.Classify(r)
 			if err != nil {
-				next.ServeHTTP(w, r)
+				// Fail-closed: a classifier bug must not silently let
+				// unauthenticated traffic through.
+				http.Error(w, "Forbidden: Request classification failed", http.StatusForbidden)
 				return
 			}
 			if cr == nil || cr.ServiceName == "" {
@@ -46,7 +48,11 @@ func SignatureMiddleware(cfg SignatureConfig, c *classifier.Classifier, sessionR
 				return
 			}
 
-			if isUnauthenticatedOperation(r) {
+			// The unauthenticated bypass applies ONLY to the STS service
+			// (AssumeRoleWithSAML / AssumeRoleWithWebIdentity). Without
+			// the service check, any client could bypass SigV4 by sending
+			// a form-encoded body with Action=AssumeRoleWithSAML.
+			if cr.ServiceName == "sts" && isUnauthenticatedOperation(r) {
 				next.ServeHTTP(w, r)
 				return
 			}

@@ -3,6 +3,7 @@ package iot
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -34,14 +35,7 @@ func (s *IoTService) CreatePolicy(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"policyName":       created.PolicyName,
-		"policyArn":        created.PolicyARN,
-		"policyDocument":   created.PolicyDocument,
-		"creationDate":     created.CreationDate.Unix(),
-		"lastModifiedDate": created.LastModifiedDate.Unix(),
-		"defaultVersionId": fmt.Sprintf("%d", created.Version),
-	}, nil
+	return policyResponse(created), nil
 }
 
 func (s *IoTService) GetPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -60,14 +54,7 @@ func (s *IoTService) GetPolicy(ctx context.Context, reqCtx *request.RequestConte
 		return nil, iotstore.ErrPolicyNotFound
 	}
 
-	return map[string]interface{}{
-		"policyName":       p.PolicyName,
-		"policyArn":        p.PolicyARN,
-		"policyDocument":   p.PolicyDocument,
-		"creationDate":     p.CreationDate.Unix(),
-		"lastModifiedDate": p.LastModifiedDate.Unix(),
-		"defaultVersionId": fmt.Sprintf("%d", p.Version),
-	}, nil
+	return policyResponse(p), nil
 }
 
 func (s *IoTService) DeletePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -101,13 +88,9 @@ func (s *IoTService) ListPolicies(ctx context.Context, reqCtx *request.RequestCo
 
 	items := make([]map[string]interface{}, 0, len(policies.Items))
 	for _, p := range policies.Items {
-		items = append(items, map[string]interface{}{
-			"policyName":       p.PolicyName,
-			"policyArn":        p.PolicyARN,
-			"creationDate":     p.CreationDate.Unix(),
-			"lastModifiedDate": p.LastModifiedDate.Unix(),
-			"defaultVersionId": fmt.Sprintf("%d", p.Version),
-		})
+		resp := policyResponse(p)
+		delete(resp, "policyDocument")
+		items = append(items, resp)
 	}
 
 	return listResponse("policies", items, policies.NextMarker), nil
@@ -333,15 +316,31 @@ func (s *IoTService) GetEffectivePolicies(ctx context.Context, reqCtx *request.R
 	addPolicies(principalPolicies)
 
 	region := reqCtx.GetRegion()
-	things, _ := store.ListThingsForPrincipal(principal)
+	things, err := store.ListThingsForPrincipal(principal)
+	if err != nil {
+		slog.Warn("GetEffectivePolicies: failed to list things for principal", "principal", principal, "error", err)
+		return nil, fmt.Errorf("failed to list things for principal: %w", err)
+	}
 	for _, thingName := range things {
 		thingARN := iotstore.BuildThingARN(s.accountID, region, thingName)
-		thingPolicies, _ := store.ListPoliciesForPrincipal(thingARN)
+		thingPolicies, err := store.ListPoliciesForPrincipal(thingARN)
+		if err != nil {
+			slog.Warn("GetEffectivePolicies: failed to list policies for thing", "thing", thingARN, "error", err)
+			continue
+		}
 		addPolicies(thingPolicies)
-		groups, _ := store.ListGroupsForThing(thingName)
+		groups, err := store.ListGroupsForThing(thingName)
+		if err != nil {
+			slog.Warn("GetEffectivePolicies: failed to list groups for thing", "thing", thingName, "error", err)
+			continue
+		}
 		for _, groupName := range groups {
 			groupARN := iotstore.BuildThingGroupARN(s.accountID, region, groupName)
-			groupPolicies, _ := store.ListPoliciesForPrincipal(groupARN)
+			groupPolicies, err := store.ListPoliciesForPrincipal(groupARN)
+			if err != nil {
+				slog.Warn("GetEffectivePolicies: failed to list policies for group", "group", groupARN, "error", err)
+				continue
+			}
 			addPolicies(groupPolicies)
 		}
 	}

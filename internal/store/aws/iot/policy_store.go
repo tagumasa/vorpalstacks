@@ -1,12 +1,13 @@
 package iot
 
 import (
-	"strings"
 	"context"
+	"strings"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/store/aws/common"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreatePolicy(policy *Policy) (*Policy, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

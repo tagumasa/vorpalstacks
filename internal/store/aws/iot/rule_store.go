@@ -1,9 +1,10 @@
 package iot
 
 import (
-	"vorpalstacks/internal/store/aws/common"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreateRule(rule *TopicRule) (*TopicRule, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

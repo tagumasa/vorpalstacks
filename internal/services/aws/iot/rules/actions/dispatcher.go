@@ -329,6 +329,52 @@ func deriveDynamoDBKey(payload map[string]interface{}) map[string]interface{} {
 	}
 }
 
+// NewActionConfigFromMap builds an ActionConfig from an action type string and
+// the raw configuration map extracted from a TopicRule action payload. The
+// map keys follow the AWS IoT action field names (e.g. "functionArn",
+// "queueUrl", "targetArn").
+func NewActionConfigFromMap(actionType string, m map[string]interface{}) *ActionConfig {
+	ac := &ActionConfig{Type: actionType, Extra: m}
+	switch actionType {
+	case "lambda":
+		ac.FunctionName = strFromMap(m, "functionArn", "functionName")
+	case "sqs":
+		ac.QueueURL = strFromMap(m, "queueUrl")
+		ac.TargetARN = strFromMap(m, "queueArn")
+	case "sns":
+		ac.TopicARN = strFromMap(m, "targetArn", "topicArn")
+		ac.TargetARN = ac.TopicARN
+	case "dynamodb":
+		ac.TableName = strFromMap(m, "tableName")
+		ac.TargetARN = strFromMap(m, "tableArn")
+	case "s3":
+		ac.BucketName = strFromMap(m, "bucketName")
+		ac.ObjectKey = strFromMap(m, "key")
+	case "kinesis":
+		ac.StreamName = strFromMap(m, "streamName")
+		ac.TargetARN = strFromMap(m, "streamArn")
+	case "republish":
+		ac.RepublishTopic = strFromMap(m, "topic")
+	case "stepFunctions":
+		ac.TargetARN = strFromMap(m, "stateMachineArn")
+	case "eventbridge":
+		ac.TargetARN = strFromMap(m, "eventBusArn")
+	}
+	if ac.RoleARN == "" {
+		ac.RoleARN = strFromMap(m, "roleArn")
+	}
+	return ac
+}
+
+func strFromMap(m map[string]interface{}, keys ...string) string {
+	for _, k := range keys {
+		if v, ok := m[k].(string); ok && v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 func (d *Dispatcher) dispatchRepublish(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	if d.RepublishFn == nil {
 		return fmt.Errorf("republish: not configured")

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cockroachdb/pebble/v2"
@@ -21,6 +22,12 @@ const (
 type PebbleOutboxStore struct {
 	db  *pebble.DB
 	log logs.Logger
+
+	// statusMu provides per-eventID mutual exclusion so that
+	// UpdateStatus's read-modify-write is atomic across concurrent
+	// workers. Pebble does not provide native compare-and-set, so we
+	// serialise the CAS in-process.
+	statusMu sync.Map
 }
 
 // NewPebbleOutboxStore creates a new PebbleOutboxStore backed by the given
@@ -30,6 +37,10 @@ func NewPebbleOutboxStore(db *pebble.DB) *PebbleOutboxStore {
 }
 
 // Write persists an outbox entry and its creation-time index key.
+// The entry write is fsynced so the outbox's at-least-once durability
+// guarantee holds across crashes. The index write is left NoSync
+// because the index is only an optimisation for cleanup scans; a stale
+// or missing index entry is recovered by a full scan on demand.
 func (s *PebbleOutboxStore) Write(ctx context.Context, entry *OutboxEntry) error {
 	key := outboxKey(entry.EventID)
 
@@ -38,7 +49,7 @@ func (s *PebbleOutboxStore) Write(ctx context.Context, entry *OutboxEntry) error
 		return fmt.Errorf("pebble outbox: marshal: %w", err)
 	}
 
-	if err := s.db.Set(key, val, pebble.NoSync); err != nil {
+	if err := s.db.Set(key, val, pebble.Sync); err != nil {
 		return fmt.Errorf("pebble outbox: write: %w", err)
 	}
 
@@ -70,9 +81,35 @@ func (s *PebbleOutboxStore) Read(ctx context.Context, eventID string) (*OutboxEn
 	return &entry, nil
 }
 
-// UpdateStatus atomically transitions an entry's status from 'from' to 'to'
-// using a compare-and-swap approach.
+// UpdateStatus atomically transitions an entry's status from 'from' to 'to'.
+// Atomicity is guaranteed by a per-eventID in-process lock, because Pebble
+// does not provide native compare-and-set semantics.
+//
+// When the destination status is terminal (Delivered or Failed) the
+// per-eventID mutex is dropped from the statusMu map after the lock is
+// released so the map cannot grow without bound over the lifetime of the
+// process. The map entry is removed only after the lock is released so
+// that any concurrent goroutine already blocked on the same mutex keeps
+// the old pointer and wakes up correctly; new callers will allocate a
+// fresh mutex, which is safe because terminal events must not transition
+// again.
 func (s *PebbleOutboxStore) UpdateStatus(ctx context.Context, eventID string, from, to OutboxStatus) (bool, error) {
+	transitioned, err := s.transitionUnderLock(eventID, from, to)
+	if err != nil {
+		return false, err
+	}
+	if transitioned && (to == OutboxDelivered || to == OutboxFailed) {
+		s.statusMu.Delete(eventID)
+	}
+	return transitioned, nil
+}
+
+// transitionUnderLock performs the compare-and-set under the per-eventID
+// mutex and reports whether the transition actually occurred.
+func (s *PebbleOutboxStore) transitionUnderLock(eventID string, from, to OutboxStatus) (bool, error) {
+	unlock := s.lockEvent(eventID)
+	defer unlock()
+
 	key := outboxKey(eventID)
 
 	val, closer, err := s.db.Get(key)
@@ -104,11 +141,21 @@ func (s *PebbleOutboxStore) UpdateStatus(ctx context.Context, eventID string, fr
 		return false, fmt.Errorf("pebble outbox: marshal for CAS: %w", err)
 	}
 
-	if err := s.db.Set(key, newVal, pebble.NoSync); err != nil {
+	if err := s.db.Set(key, newVal, pebble.Sync); err != nil {
 		return false, fmt.Errorf("pebble outbox: write for CAS: %w", err)
 	}
 
 	return true, nil
+}
+
+// lockEvent acquires a per-eventID mutex and returns an unlock function.
+// UpdateStatus drops the mutex from the map once the event reaches a
+// terminal state so the map remains bounded.
+func (s *PebbleOutboxStore) lockEvent(eventID string) func() {
+	v, _ := s.statusMu.LoadOrStore(eventID, &sync.Mutex{})
+	mu := v.(*sync.Mutex)
+	mu.Lock()
+	return mu.Unlock
 }
 
 // UpdateEntry unconditionally overwrites the stored outbox entry.

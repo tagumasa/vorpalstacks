@@ -302,13 +302,25 @@ func (r *ActionRegistry) initDefaults() {
 		"ListActiveViolations", "ListViolationEvents", "GetBehaviorModelTrainingSummaries",
 		// Tags
 		"TagResource", "UntagResource", "ListTagsForResource",
-		// Messaging
-		"BatchPutMessage",
-		// Detector Models (IoT Core device defender, not IoT Events)
+		// Detector Models (IoT Events - also registered under iotevents)
 		"CreateDetectorModel", "DescribeDetectorModel", "DeleteDetectorModel",
 		"ListDetectorModels", "UpdateDetectorModel",
-		// Inputs (IoT Core device defender)
+		// Inputs (IoT Events - also registered under iotevents)
 		"CreateInput", "DescribeInput", "DeleteInput", "ListInputs", "UpdateInput",
+	})
+}
+
+func init() {
+	globalActionRegistry.Register("iotevents", []string{
+		// Detector Models (IoT Events)
+		"CreateDetectorModel", "DescribeDetectorModel", "DeleteDetectorModel",
+		"ListDetectorModels", "UpdateDetectorModel",
+		// Inputs (IoT Events)
+		"CreateInput", "DescribeInput", "DeleteInput", "ListInputs", "UpdateInput",
+		// Messaging (IoT Events Data)
+		"BatchPutMessage",
+		// Tags
+		"TagResource", "UntagResource", "ListTagsForResource",
 	})
 }
 

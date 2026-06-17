@@ -54,6 +54,8 @@ github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.29 h1:hiME6pBzC7OTl
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.29/go.mod h1:G7RP+uhagpKtKhd1BM9N6JQqjCcGEU47K5lBVZQyRQw=
 github.com/aws/aws-sdk-go-v2/service/iot v1.75.4 h1:2N2OuBTrqPP7l72vDOb1eohSicREa0oRcG5h6g4Gvik=
 github.com/aws/aws-sdk-go-v2/service/iot v1.75.4/go.mod h1:LG1/n+K6upjPMVrrxTXYIwDj8OffwwIYwtAJ6/x/hjY=
+github.com/aws/aws-sdk-go-v2/service/iotevents v1.34.2 h1:RTD07yMhtjQbmGeCLHa4PRxO6wCWSDxXeDRp+/AWEfI=
+github.com/aws/aws-sdk-go-v2/service/iotevents v1.34.2/go.mod h1:97p7ZiSFDTxs36xui7EiS1SfQqa7IOFGK0F3cEquL/E=
 github.com/aws/aws-sdk-go-v2/service/kinesis v1.44.2 h1:LQcm6uSXMemcKEPeY22fVxkvzM3N4/fIevKMKJkPnNU=
 github.com/aws/aws-sdk-go-v2/service/kinesis v1.44.2/go.mod h1:XMTQUQroGEYrkxh3Ns1g6P5TTka2oY0KzlNkxAW865c=
 github.com/aws/aws-sdk-go-v2/service/kms v1.53.4 h1:PEgVSsWtR8NNxsDxFL2Ywisi7R+1EFQARGsT4q3mWwI=

@@ -269,3 +269,90 @@ func TestExecutorEndToEnd_ReplaceRule(t *testing.T) {
 		t.Errorf("after replace: dispatched = %d, want 2", dispatched.Load())
 	}
 }
+
+func TestShouldFilter_UnknownValue(t *testing.T) {
+	cases := []struct {
+		input  interface{}
+		want   bool
+		reason string
+	}{
+		{unknownValue{}, true, "SQL three-valued logic: UNKNOWN treated as false"},
+		{true, false, "true passes through"},
+		{false, true, "false is filtered out"},
+		{float64(0), true, "zero is filtered out"},
+		{float64(1), false, "non-zero passes through"},
+		{nil, true, "nil is filtered out"},
+		{"", false, "non-empty string passes through"},
+	}
+	for _, c := range cases {
+		got := shouldFilter(c.input)
+		if got != c.want {
+			t.Errorf("shouldFilter(%v) = %v, want %v (%s)", c.input, got, c.want, c.reason)
+		}
+	}
+}
+
+func TestExtractSelectedFields_TopicPropagation(t *testing.T) {
+	data := map[string]interface{}{
+		"temperature": 25.5,
+		"humidity":    60.0,
+	}
+
+	stmt := &SelectExpr{
+		Fields: []SelectField{
+			{Expression: &Identifier{Name: "temperature"}, Alias: "temp"},
+			{Expression: &Identifier{Name: "humidity"}, Alias: "hum"},
+		},
+	}
+
+	result := extractSelectedFields(stmt, data, "sensor/data", "client-42")
+
+	if result["temp"] != 25.5 {
+		t.Errorf("expected temp=25.5, got %v", result["temp"])
+	}
+	if result["hum"] != 60.0 {
+		t.Errorf("expected hum=60.0, got %v", result["hum"])
+	}
+	if _, exists := result["temperature"]; exists {
+		t.Error("expected original field 'temperature' to NOT be present (aliased to 'temp')")
+	}
+	if _, exists := result["humidity"]; exists {
+		t.Error("expected original field 'humidity' to NOT be present (aliased to 'hum')")
+	}
+}
+
+func TestExtractSelectedFields_StarReturnsAll(t *testing.T) {
+	data := map[string]interface{}{
+		"temperature": 25.5,
+		"humidity":    60.0,
+	}
+
+	stmt := &SelectExpr{
+		Fields: []SelectField{
+			{Expression: &StarExpr{}},
+		},
+	}
+
+	result := extractSelectedFields(stmt, data, "sensor/data", "client-42")
+
+	if result["temperature"] != 25.5 {
+		t.Errorf("expected temperature=25.5, got %v", result["temperature"])
+	}
+	if result["humidity"] != 60.0 {
+		t.Errorf("expected humidity=60.0, got %v", result["humidity"])
+	}
+}
+
+func TestExtractSelectedFields_NoFieldsReturnsAll(t *testing.T) {
+	data := map[string]interface{}{
+		"temperature": 25.5,
+	}
+
+	stmt := &SelectExpr{}
+
+	result := extractSelectedFields(stmt, data, "sensor/data", "client-42")
+
+	if result["temperature"] != 25.5 {
+		t.Errorf("expected temperature=25.5, got %v", result["temperature"])
+	}
+}

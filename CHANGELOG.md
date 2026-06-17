@@ -6,6 +6,12 @@ All notable changes to Vorpalstacks will be documented in this file.
 
 ### Added
 
+- **IoT Events: detector model state machine and BatchPutMessage data-plane** — Detector models now evaluate input messages with `onInput` transition and `onEnter`/`onExit` lifecycle actions, dispatching to SQS/SNS/Lambda/Republish via the EventBus. Models are hydrated on startup and reloaded on Create/Update. Detector/input/`BatchPutMessage` operations migrated from the `iot` package into `iotevents`; the state machine moved to the IoT store layer.
+
+- **IoT MQTT broker: certificate + policy authentication** — Replaces the permissive `AllowHook` with SHA-256 certificate-fingerprint authentication enforcing `iot:Connect`, and `iot:Publish`/`iot:Subscribe` ACL checks against attached IoT policies.
+
+- **IoT rules: `IN`/`NOT IN` operator and typed action configs** — Rule SQL supports `IN`/`NOT IN`; `NOT` is now a true unary operator. `NewActionConfigFromMap` builds typed action configs from AWS field names, and rule actions can bridge to the IoT Events state machine and an HTTP POST action.
+
 - **Neptune: TinkerPop Gremlin Server WebSocket, per-cluster listeners, GraphSON v3** — Neptune clusters now expose a native WebSocket endpoint at `/gremlin` supporting the TinkerPop Gremlin Server binary protocol with GraphSON v3 serialization. Each cluster automatically opens an isolated graph engine with a dedicated HTTP listener on a dynamically allocated port, supporting both REST (OpenCypher/Gremlin HTTP) and WebSocket protocols. Engines are restored on restart. New integration test suite exercises raw HTTP and WebSocket paths bypassing the AWS SDK.
 
 - **RDS: embedded MySQL engine, shared store layer, Data API** — New `rdbengine` package provides an embedded relational database engine backed by Pebble KV storage with row-level CRUD, secondary indexes, unique constraints, catalog management, and type-aware column encoding. The `vmysql` service exposes each RDS MySQL instance as an isolated `go-mysql-server` engine with a dynamically allocated TCP listener (`RDS_MYSQL_ENABLED=true`). New `internal/store/aws/rds/` provides protobuf-backed generic stores for DBCluster, DBInstance, snapshots, parameter groups, and tags, shared by Neptune and future RDS engines. `rdsdata` service implements 6 RDS Data API operations (`ExecuteStatement`, `BatchExecuteStatement`, `ExecuteSql`, `BeginTransaction`, `CommitTransaction`, `RollbackTransaction`) executing SQL against vmysql instances, with named parameter substitution, column metadata, `formatRecordsAs=JSON`, and transaction management (5-min TTL, background reaper). Transactions now use a real `TxnBatch` (atomic Pebble batch) through a `pebbleSession` implementing `sql.TransactionSession`, so `BEGIN`/`COMMIT`/`ROLLBACK` are genuinely isolated. `substituteParameters` uses word-boundary regex and skips replacement inside string literals. SDK tests: 16 cases.
@@ -45,6 +51,16 @@ All notable changes to Vorpalstacks will be documented in this file.
 - **SDK tests: total count updated to 2,308** — README files revised across all three locales (EN/JA/ZH) to reflect current passing test count.
 
 ### Fixed
+
+- **IAM: `aws:*` condition keys now resolve correctly** — The condition evaluator compared the already-resolved value (e.g. an IP) as if it were a fresh key, so every `aws:*` condition spuriously failed. Now compares the resolved value directly.
+
+- **IAM: explicit Deny wins within a policy regardless of statement order** — `evaluatePolicy` scans all statements instead of returning on the first match. Principal matching now also covers Service/Federated/Account categories.
+
+- **Auth middleware: SigV4 bypass restricted to STS** — Previously any client could bypass signature verification with a form-encoded `Action=AssumeRoleWithSAML` body; now requires `ServiceName == "sts"`, and classification failures fail-closed with 403.
+
+- **EventBus outbox: durability, atomicity, fail-fast** — Outbox writes now `pebble.Sync` for crash-safe at-least-once delivery; `UpdateStatus` serializes its read-modify-write behind a per-eventID mutex (Pebble has no native CAS); `Publish` fails fast when an outbox lacks an `EventRegistry`. Conditional policy statements are handled fail-closed.
+
+- **Tag store: NUL-byte rejection** — `Tag` rejects keys/values containing the `\x00` separator, preventing `FindByTag` corruption.
 
 - **S3: error handling for malformed XML, invalid part-number-marker, and unparseable redirect/routing codes** — Previously silently ignored parse errors; now returns proper `MalformedXML`/`InvalidArgument` (400).
 

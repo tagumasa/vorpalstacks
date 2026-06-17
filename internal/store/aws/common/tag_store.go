@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -72,9 +73,19 @@ func (t *TagStore) ListAsSlice(resourceKey string) ([]types.Tag, error) {
 // Tag merges the given tags into the existing tags for a resource.
 // Existing tag keys are overwritten; new tag keys are added.
 // For overwritten keys, stale index entries are removed before inserting new ones.
+//
+// Tag keys and values MUST NOT contain the NUL byte (\x00). The byte is
+// used as the index-segment separator and would corrupt resource-key
+// extraction in FindByTag. AWS itself rejects NUL in tag values, so
+// this guard primarily defends internal consistency.
 func (t *TagStore) Tag(resourceKey string, newTags map[string]string) error {
 	if len(newTags) == 0 {
 		return nil
+	}
+	for k, v := range newTags {
+		if strings.ContainsRune(k, '\x00') || strings.ContainsRune(v, '\x00') {
+			return fmt.Errorf("tagstore: tag key or value contains forbidden NUL byte (key=%q)", k)
+		}
 	}
 
 	t.mu.Lock()

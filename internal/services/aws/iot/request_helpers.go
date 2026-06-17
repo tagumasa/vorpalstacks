@@ -2,6 +2,7 @@ package iot
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -55,7 +56,9 @@ func parseAttributePayload(params map[string]interface{}) (map[string]string, bo
 	return attrs, true, false
 }
 
-// mapKeys returns the keys of a string map as a sorted slice.
+// mapKeys returns the keys of a string map as an unordered slice.
+// Map iteration order is non-deterministic in Go; callers that require
+// stable ordering must sort the result themselves.
 func mapKeys(m map[string]string) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
@@ -108,6 +111,52 @@ func listResponse(key string, items []map[string]interface{}, nextMarker string)
 	return resp
 }
 
+func paginatedStrings(key string, items []string, params map[string]interface{}) map[string]interface{} {
+	offset := 0
+	if token := request.GetParamCaseInsensitive(params, "nextToken"); token != "" {
+		if n, err := strconv.Atoi(token); err == nil && n >= 0 {
+			offset = n
+		}
+	}
+	max := len(items)
+	if m := request.GetIntParam(params, "maxResults"); m > 0 {
+		max = m
+	}
+	end := offset + max
+	if end > len(items) {
+		end = len(items)
+	}
+	page := items[offset:end]
+	resp := map[string]interface{}{key: page}
+	if end < len(items) {
+		resp["nextToken"] = strconv.Itoa(end)
+	}
+	return resp
+}
+
+func paginatedMaps(key string, items []map[string]interface{}, params map[string]interface{}) map[string]interface{} {
+	offset := 0
+	if token := request.GetParamCaseInsensitive(params, "nextToken"); token != "" {
+		if n, err := strconv.Atoi(token); err == nil && n >= 0 {
+			offset = n
+		}
+	}
+	max := len(items)
+	if m := request.GetIntParam(params, "maxResults"); m > 0 {
+		max = m
+	}
+	end := offset + max
+	if end > len(items) {
+		end = len(items)
+	}
+	page := items[offset:end]
+	resp := map[string]interface{}{key: page}
+	if end < len(items) {
+		resp["nextToken"] = strconv.Itoa(end)
+	}
+	return resp
+}
+
 func boolToActiveStatus(active bool) string {
 	if active {
 		return "ACTIVE"
@@ -124,6 +173,7 @@ func principalFromParams(params map[string]interface{}) (string, bool) {
 	}
 	return "", false
 }
+
 // strVal extracts a string value from an interface{}, returning empty string for nil or non-string.
 func strVal(v interface{}) string {
 	if v == nil {

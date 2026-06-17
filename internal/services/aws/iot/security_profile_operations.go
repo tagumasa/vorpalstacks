@@ -20,35 +20,17 @@ func (s *IoTService) CreateSecurityProfile(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	bStr := request.GetParamCaseInsensitive(req.Parameters, "behaviors")
-	var behaviors []*iotstore.Behavior
-	if bStr != "" {
-		behaviors, err = parseBehaviors(bStr)
-	} else if bRaw := req.Parameters["behaviors"]; bRaw != nil {
-		behaviors, err = parseBehaviorsParam(bRaw)
-	}
+	behaviors, err := parseDualForm(req.Parameters, "behaviors", parseBehaviors, parseBehaviorsParam)
 	if err != nil {
 		return nil, iotstore.ErrInvalidRequest
 	}
 
-	aStr := request.GetParamCaseInsensitive(req.Parameters, "alertTargets")
-	var alertTargets map[string]*iotstore.AlertTarget
-	if aStr != "" {
-		alertTargets, err = parseAlertTargets(aStr)
-	} else if aRaw := req.Parameters["alertTargets"]; aRaw != nil {
-		alertTargets, err = parseAlertTargetsParam(aRaw)
-	}
+	alertTargets, err := parseDualForm(req.Parameters, "alertTargets", parseAlertTargets, parseAlertTargetsParam)
 	if err != nil {
 		return nil, iotstore.ErrInvalidRequest
 	}
 
-	mStr := request.GetParamCaseInsensitive(req.Parameters, "additionalMetricsToRetainVersionTwo")
-	var metrics []string
-	if mStr != "" {
-		metrics = parseStringList(mStr)
-	} else if mRaw := req.Parameters["additionalMetricsToRetainVersionTwo"]; mRaw != nil {
-		metrics = parseMetricsParam(mRaw)
-	}
+	metrics := parseDualFormNoError(req.Parameters, "additionalMetricsToRetainVersionTwo", parseStringList, parseMetricsParam)
 
 	sp := &iotstore.SecurityProfile{
 		SecurityProfileName:         name,
@@ -113,38 +95,20 @@ func (s *IoTService) UpdateSecurityProfile(ctx context.Context, reqCtx *request.
 		existing.SecurityProfileDescription = desc
 	}
 
-	if bStr := request.GetParamCaseInsensitive(req.Parameters, "behaviors"); bStr != "" {
-		behaviors, err := parseBehaviors(bStr)
-		if err != nil {
-			return nil, iotstore.ErrInvalidRequest
-		}
-		existing.Behaviors = behaviors
-	} else if bRaw := req.Parameters["behaviors"]; bRaw != nil {
-		behaviors, err := parseBehaviorsParam(bRaw)
-		if err != nil {
-			return nil, iotstore.ErrInvalidRequest
-		}
+	if behaviors, err := parseDualForm(req.Parameters, "behaviors", parseBehaviors, parseBehaviorsParam); err != nil {
+		return nil, iotstore.ErrInvalidRequest
+	} else if behaviors != nil {
 		existing.Behaviors = behaviors
 	}
 
-	if aStr := request.GetParamCaseInsensitive(req.Parameters, "alertTargets"); aStr != "" {
-		alertTargets, err := parseAlertTargets(aStr)
-		if err != nil {
-			return nil, iotstore.ErrInvalidRequest
-		}
-		existing.AlertTargets = alertTargets
-	} else if aRaw := req.Parameters["alertTargets"]; aRaw != nil {
-		alertTargets, err := parseAlertTargetsParam(aRaw)
-		if err != nil {
-			return nil, iotstore.ErrInvalidRequest
-		}
+	if alertTargets, err := parseDualForm(req.Parameters, "alertTargets", parseAlertTargets, parseAlertTargetsParam); err != nil {
+		return nil, iotstore.ErrInvalidRequest
+	} else if alertTargets != nil {
 		existing.AlertTargets = alertTargets
 	}
 
-	if mStr := request.GetParamCaseInsensitive(req.Parameters, "additionalMetricsToRetain"); mStr != "" {
-		existing.AdditionalMetricsToRetainV2 = parseStringList(mStr)
-	} else if mRaw := req.Parameters["additionalMetricsToRetain"]; mRaw != nil {
-		existing.AdditionalMetricsToRetainV2 = parseMetricsParam(mRaw)
+	if metrics := parseDualFormNoError(req.Parameters, "additionalMetricsToRetainVersionTwo", parseStringList, parseMetricsParam); metrics != nil {
+		existing.AdditionalMetricsToRetainV2 = metrics
 	}
 
 	existing.Version++
@@ -264,6 +228,28 @@ func (s *IoTService) ValidateSecurityProfileBehaviors(ctx context.Context, reqCt
 		result["validationMessages"] = msgs
 	}
 	return result, nil
+}
+
+func parseDualForm[T any](params map[string]interface{}, key string, fromJSON func(string) (T, error), fromParam func(interface{}) (T, error)) (T, error) {
+	var zero T
+	if strVal := request.GetParamCaseInsensitive(params, key); strVal != "" {
+		return fromJSON(strVal)
+	}
+	if rawVal := params[key]; rawVal != nil {
+		return fromParam(rawVal)
+	}
+	return zero, nil
+}
+
+func parseDualFormNoError[T any](params map[string]interface{}, key string, fromJSON func(string) T, fromParam func(interface{}) T) T {
+	if strVal := request.GetParamCaseInsensitive(params, key); strVal != "" {
+		return fromJSON(strVal)
+	}
+	if rawVal := params[key]; rawVal != nil {
+		return fromParam(rawVal)
+	}
+	var zero T
+	return zero
 }
 
 func parseBehaviors(jsonStr string) ([]*iotstore.Behavior, error) {
@@ -421,5 +407,3 @@ func securityProfileToResponse(sp *iotstore.SecurityProfile) map[string]interfac
 		"lastModifiedDate":                    sp.LastModifiedDate.Unix(),
 	}
 }
-
-

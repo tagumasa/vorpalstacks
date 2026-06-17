@@ -70,7 +70,7 @@ func fnLength(e *Evaluator, args []Expr) (interface{}, error) {
 
 func fnUpper(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 1 {
-		return nil, nil
+		return nil, fmt.Errorf("upper() requires at least 1 argument")
 	}
 	val, err := e.Eval(args[0])
 	if err != nil {
@@ -81,7 +81,7 @@ func fnUpper(e *Evaluator, args []Expr) (interface{}, error) {
 
 func fnLower(e *Evaluator, args []Expr) (interface{}, error) {
 	if len(args) < 1 {
-		return nil, nil
+		return nil, fmt.Errorf("lower() requires at least 1 argument")
 	}
 	val, err := e.Eval(args[0])
 	if err != nil {

@@ -40,6 +40,11 @@ type (
 		Name string
 		Args []Expr
 	}
+	InExpr struct {
+		Expr   Expr
+		Not    bool
+		Values []Expr
+	}
 	StarExpr struct{}
 )
 
@@ -52,6 +57,7 @@ func (*JsonPath) exprNode()      {}
 func (*BinaryExpr) exprNode()    {}
 func (*UnaryExpr) exprNode()     {}
 func (*FunctionCall) exprNode()  {}
+func (*InExpr) exprNode()        {}
 func (*StarExpr) exprNode()      {}
 
 type TokenKind int
@@ -81,6 +87,7 @@ const (
 	TokenLTE
 	TokenGTE
 	TokenLike
+	TokenIn
 	TokenIs
 	TokenNull
 	TokenPlus
@@ -156,6 +163,8 @@ func tokenName(k TokenKind) string {
 		return ">="
 	case TokenLike:
 		return "LIKE"
+	case TokenIn:
+		return "IN"
 	case TokenIs:
 		return "IS"
 	case TokenNull:
@@ -320,6 +329,8 @@ func (l *Lexer) readIdent() Token {
 		kind = TokenNot
 	case "LIKE":
 		kind = TokenLike
+	case "IN":
+		kind = TokenIn
 	case "IS":
 		kind = TokenIs
 	case "NULL":
@@ -544,8 +555,43 @@ func (p *Parser) parseComparison() (Expr, error) {
 			return &BinaryExpr{Op: "IS NULL", Left: left, Right: &NullLiteral{}}, nil
 		}
 		return nil, fmt.Errorf("parser: expected NULL or NOT after IS")
+	case TokenIn:
+		return p.parseInExpr(left, false)
+	case TokenNot:
+		p.next()
+		if p.peek.Kind == TokenIn {
+			return p.parseInExpr(left, true)
+		}
+		return nil, fmt.Errorf("parser: expected IN after NOT")
 	}
 	return left, nil
+}
+
+func (p *Parser) parseInExpr(left Expr, negated bool) (Expr, error) {
+	p.next()
+	if p.peek.Kind != TokenLParen {
+		return nil, fmt.Errorf("parser: expected '(' after IN")
+	}
+	p.next()
+	var values []Expr
+	for p.peek.Kind != TokenRParen && p.peek.Kind != TokenEOF {
+		if len(values) > 0 {
+			if p.peek.Kind != TokenComma {
+				return nil, fmt.Errorf("parser: expected ',' or ')' in IN list")
+			}
+			p.next()
+		}
+		val, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		values = append(values, val)
+	}
+	if p.peek.Kind != TokenRParen {
+		return nil, fmt.Errorf("parser: expected ')' to close IN list")
+	}
+	p.next()
+	return &InExpr{Expr: left, Not: negated, Values: values}, nil
 }
 
 func (p *Parser) parseAddSub() (Expr, error) {

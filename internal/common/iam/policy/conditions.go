@@ -197,8 +197,12 @@ func (ce *ConditionEvaluator) Evaluate(conditions ConditionMap, context *Evaluat
 		}
 
 		for key, values := range keyValues {
-			resolvedKey := context.ResolveVariable(key)
-			if !ce.evaluateOperator(op, resolvedKey, values, context) {
+			// Resolve once at the caller; evaluateOperator must NOT
+			// re-resolve via GetContextValue because that would treat the
+			// already-resolved value (e.g. "1.2.3.4") as a fresh key,
+			// causing every aws:* condition to spuriously fail.
+			resolvedValue := context.ResolveVariable(key)
+			if !ce.evaluateOperator(op, resolvedValue, values) {
 				return false
 			}
 		}
@@ -206,14 +210,18 @@ func (ce *ConditionEvaluator) Evaluate(conditions ConditionMap, context *Evaluat
 	return true
 }
 
-func (ce *ConditionEvaluator) evaluateOperator(op ConditionOperator, key string, values []string, ctx *EvaluationContext) bool {
-	contextValue := ctx.GetContextValue(key)
-	if contextValue == "" {
+// evaluateOperator compares the already-resolved context value against the
+// policy values using the given operator. The caller is responsible for
+// resolving the condition key (via EvaluationContext.ResolveVariable)
+// before invoking this function; passing the raw key here will produce
+// incorrect results.
+func (ce *ConditionEvaluator) evaluateOperator(op ConditionOperator, resolvedValue string, values []string) bool {
+	if resolvedValue == "" {
 		return false
 	}
 
 	for _, value := range values {
-		if ce.matchValue(op, contextValue, value) {
+		if ce.matchValue(op, resolvedValue, value) {
 			return true
 		}
 	}

@@ -51,6 +51,8 @@ func (e *Evaluator) Eval(expr Expr) (interface{}, error) {
 		return e.evalUnary(v)
 	case *FunctionCall:
 		return e.evalFunction(v)
+	case *InExpr:
+		return e.evalIn(v)
 	}
 	return nil, fmt.Errorf("evaluator: unknown expression type %T", expr)
 }
@@ -130,12 +132,6 @@ func (e *Evaluator) evalBinary(expr *BinaryExpr) (interface{}, error) {
 			return nil, err
 		}
 		return toBool(right), nil
-	case "NOT":
-		right, err := e.Eval(expr.Right)
-		if err != nil {
-			return nil, err
-		}
-		return !toBool(right), nil
 	}
 
 	left, err := e.Eval(expr.Left)
@@ -171,6 +167,29 @@ func (e *Evaluator) evalUnary(expr *UnaryExpr) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("evaluator: unknown unary operator %s", expr.Op)
 	}
+}
+
+func (e *Evaluator) evalIn(expr *InExpr) (interface{}, error) {
+	val, err := e.Eval(expr.Expr)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range expr.Values {
+		candidate, err := e.Eval(v)
+		if err != nil {
+			return nil, err
+		}
+		if compareEqual(val, candidate) {
+			if expr.Not {
+				return false, nil
+			}
+			return true, nil
+		}
+	}
+	if expr.Not {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (e *Evaluator) evalFunction(call *FunctionCall) (interface{}, error) {

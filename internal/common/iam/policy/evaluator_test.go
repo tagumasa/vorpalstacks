@@ -5,6 +5,106 @@ import (
 	"time"
 )
 
+// TestPolicyEvaluator_IntraPolicyDenyWins guards H5: an explicit Deny
+// within the same policy must override an Allow, regardless of statement
+// order. Pre-fix the evaluator returned on the first matching statement,
+// letting an earlier Allow short-circuit a later Deny.
+func TestPolicyEvaluator_IntraPolicyDenyWins(t *testing.T) {
+	evaluator := NewPolicyEvaluator()
+	ctx := &EvaluationContext{
+		Principal: "arn:aws:iam::123456789012:user/alice",
+		Action:    "s3:GetObject",
+		Resource:  "arn:aws:s3:::bucket/key",
+	}
+
+	tests := []struct {
+		name   string
+		policy *Document
+		want   DecisionEffect
+	}{
+		{
+			name: "allow first, deny second → deny",
+			policy: &Document{
+				Version: "2012-10-17",
+				Statement: []Statement{
+					{
+						Effect:   EffectAllow,
+						Action:   ActionList{"s3:GetObject"},
+						Resource: ResourceList{"arn:aws:s3:::bucket/key"},
+					},
+					{
+						Effect:   EffectDeny,
+						Action:   ActionList{"s3:GetObject"},
+						Resource: ResourceList{"arn:aws:s3:::bucket/key"},
+					},
+				},
+			},
+			want: DecisionEffectDeny,
+		},
+		{
+			name: "deny first, allow second → deny",
+			policy: &Document{
+				Version: "2012-10-17",
+				Statement: []Statement{
+					{
+						Effect:   EffectDeny,
+						Action:   ActionList{"s3:GetObject"},
+						Resource: ResourceList{"arn:aws:s3:::bucket/key"},
+					},
+					{
+						Effect:   EffectAllow,
+						Action:   ActionList{"s3:GetObject"},
+						Resource: ResourceList{"arn:aws:s3:::bucket/key"},
+					},
+				},
+			},
+			want: DecisionEffectDeny,
+		},
+		{
+			name: "allow only → allow",
+			policy: &Document{
+				Version: "2012-10-17",
+				Statement: []Statement{
+					{
+						Effect:   EffectAllow,
+						Action:   ActionList{"s3:GetObject"},
+						Resource: ResourceList{"arn:aws:s3:::bucket/key"},
+					},
+				},
+			},
+			want: DecisionEffectAllow,
+		},
+		{
+			name: "non-overlapping allow + deny → allow (deny doesn't match)",
+			policy: &Document{
+				Version: "2012-10-17",
+				Statement: []Statement{
+					{
+						Effect:   EffectAllow,
+						Action:   ActionList{"s3:GetObject"},
+						Resource: ResourceList{"arn:aws:s3:::bucket/key"},
+					},
+					{
+						Effect:   EffectDeny,
+						Action:   ActionList{"s3:DeleteObject"},
+						Resource: ResourceList{"arn:aws:s3:::bucket/key"},
+					},
+				},
+			},
+			want: DecisionEffectAllow,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			decision := evaluator.Evaluate(ctx, []*Document{tt.policy})
+			if decision.Effect != tt.want {
+				t.Errorf("effect = %s, want %s (reason: %s)", decision.Effect, tt.want, decision.Reason)
+			}
+		})
+	}
+}
+
 func TestEvaluationContext_ResolveVariable(t *testing.T) {
 	tests := []struct {
 		name string

@@ -4,6 +4,70 @@ import (
 	"testing"
 )
 
+// TestConditionEvaluator_ResolvedAWSVariables exercises the regression for
+// C1: conditions with aws:* keys must be evaluated against the resolved
+// value, not re-resolved as if the value were a fresh key.
+func TestConditionEvaluator_ResolvedAWSVariables(t *testing.T) {
+	evaluator := NewConditionEvaluator()
+
+	tests := []struct {
+		name       string
+		conditions ConditionMap
+		ctx        *EvaluationContext
+		expected   bool
+	}{
+		{
+			name: "aws:SourceIp equals matches",
+			conditions: ConditionMap{
+				"StringEquals": {
+					"aws:SourceIp": []string{"192.168.1.1"},
+				},
+			},
+			ctx:      &EvaluationContext{SourceIP: "192.168.1.1"},
+			expected: true,
+		},
+		{
+			name: "aws:SourceIp equals mismatch",
+			conditions: ConditionMap{
+				"StringEquals": {
+					"aws:SourceIp": []string{"10.0.0.1"},
+				},
+			},
+			ctx:      &EvaluationContext{SourceIP: "192.168.1.1"},
+			expected: false,
+		},
+		{
+			name: "aws:username equals matches",
+			conditions: ConditionMap{
+				"StringEquals": {
+					"aws:username": []string{"alice"},
+				},
+			},
+			ctx:      &EvaluationContext{UserName: "alice"},
+			expected: true,
+		},
+		{
+			name: "aws:MultiFactorAuthPresent true matches when present",
+			conditions: ConditionMap{
+				"Bool": {
+					"aws:MultiFactorAuthPresent": []string{"true"},
+				},
+			},
+			ctx:      &EvaluationContext{MultiFactorAuthPresent: true},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := evaluator.Evaluate(tt.conditions, tt.ctx)
+			if result != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
 func TestConditionEvaluator_Evaluate(t *testing.T) {
 	evaluator := NewConditionEvaluator()
 
@@ -26,14 +90,14 @@ func TestConditionEvaluator_Evaluate(t *testing.T) {
 			expected:   true,
 		},
 		{
-			name: "string equals - missing context",
+			name: "string equals - action context matches",
 			conditions: ConditionMap{
 				"StringEquals": {
 					"action": []string{"s3:GetObject"},
 				},
 			},
 			ctx:      &EvaluationContext{Action: "s3:GetObject"},
-			expected: false,
+			expected: true,
 		},
 		{
 			name: "string equals false",
@@ -46,14 +110,14 @@ func TestConditionEvaluator_Evaluate(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "string not equals - different value returns false",
+			name: "string not equals - different value satisfies condition",
 			conditions: ConditionMap{
 				"StringNotEquals": {
 					"action": []string{"s3:PutObject"},
 				},
 			},
 			ctx:      &EvaluationContext{Action: "s3:GetObject"},
-			expected: false,
+			expected: true,
 		},
 		{
 			name: "missing context value",

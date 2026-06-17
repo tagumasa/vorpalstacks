@@ -122,14 +122,7 @@ func (s *IoTService) ListBillingGroups(ctx context.Context, reqCtx *request.Requ
 
 	groups := make([]map[string]interface{}, 0, len(result.Items))
 	for _, g := range result.Items {
-		groups = append(groups, map[string]interface{}{
-			"billingGroupName": g.GroupName,
-			"billingGroupArn":  g.GroupARN,
-			"billingGroupId":   g.GroupID,
-			"description":      g.Description,
-			"creationDate":     g.CreationDate.Unix(),
-			"lastModifiedDate": g.LastModifiedDate.Unix(),
-		})
+		groups = append(groups, billingGroupResponse(g))
 	}
 
 	return listResponse("billingGroups", groups, result.NextMarker), nil

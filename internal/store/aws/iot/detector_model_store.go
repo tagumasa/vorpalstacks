@@ -2,9 +2,10 @@ package iot
 
 import (
 	"fmt"
-	"vorpalstacks/internal/store/aws/common"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreateDetectorModel(d *DetectorModel) (*DetectorModel, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

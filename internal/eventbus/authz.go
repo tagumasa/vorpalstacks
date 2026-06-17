@@ -297,11 +297,16 @@ func (e *SimplePolicyEvaluator) Evaluate(ctx context.Context, policy *BusPolicyD
 }
 
 // policyStatementMatches checks whether a policy statement matches the
-// given principal, action, and resource. Statements with non-empty
-// Condition blocks are treated as non-matching (fail-closed).
+// given principal, action, and resource. Statements containing
+// Condition blocks cannot be reliably evaluated by this simple matcher,
+// so they are treated conservatively: a conditional Deny is treated as
+// matching (so it can override any Allow), while a conditional Allow is
+// treated as non-matching (so it cannot grant access without the
+// condition being verified). This is the safe fail-closed posture for
+// each effect.
 func policyStatementMatches(stmt BusPolicyStatement, principal, action, resource string) bool {
 	if len(stmt.Condition) > 0 {
-		return false
+		return stmt.Effect == "Deny"
 	}
 	if !principalMatches(stmt.Principal, principal) {
 		return false

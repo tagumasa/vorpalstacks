@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+
 	"time"
+	"vorpalstacks/internal/core/logs"
 
 	sqle "github.com/dolthub/go-mysql-server"
 	"github.com/dolthub/go-mysql-server/sql"
@@ -60,6 +62,7 @@ import (
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	iamstore "vorpalstacks/internal/store/aws/iam"
+	iotstore "vorpalstacks/internal/store/aws/iot"
 	storerds "vorpalstacks/internal/store/aws/rds"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -379,9 +382,15 @@ func (a *App) initIoT(st *serviceState) error {
 		ActionDispatcher: disp,
 	})
 
-	if os.Getenv("TEST_MODE") != "true" {
-		mqttPort := serviceports.IotMQTT
-		if err := mqttBroker.Start(mqttPort); err != nil {
+	mqttBroker.SetAuthProvider(&svciot.IoTAuthBrokerProvider{Service: iotService})
+
+	mqttPort := serviceports.IotMQTT
+	if err := mqttBroker.Start(mqttPort); err != nil {
+		// In TEST_MODE the port may already be in use by a previous test
+		// run; tolerate that so the rest of IoT can still initialise.
+		if os.Getenv("TEST_MODE") == "true" {
+			logs.Warn("iot: MQTT broker failed to start in TEST_MODE (continuing)", logs.Err(err))
+		} else {
 			return fmt.Errorf("failed to start MQTT broker on port %d: %w", mqttPort, err)
 		}
 	}
@@ -398,9 +407,67 @@ func (a *App) initIoT(st *serviceState) error {
 func (a *App) initIoTEvents(st *serviceState) error {
 	iotEventsService := svciotevents.NewIoTEventsService(st.accountID, st.region)
 	iotEventsService.SetStorageManager(a.server.StorageManager())
+
+	eb := a.server.EventBus()
+	if eb != nil {
+		iotEventsService.Init(svciotevents.IoTEventsServiceDeps{
+			EventBus:       eb,
+			StorageManager: a.server.StorageManager(),
+		})
+	}
+
 	st.iotEventsService = iotEventsService
 	st.iotEventsService.RegisterHandlers(a.server.Dispatcher())
+
+	// Wire the rule action dispatcher callbacks now that both IoT and IoT Events
+	// services are initialised. The dispatcher was created in initIoT but the
+	// callbacks require the broker (Republish) and the IoT Events state machine
+	// (BatchPutMessage), which are only available at this point.
+	if st.iotService != nil {
+		var batchPutFn func(context.Context, []map[string]interface{}) error
+		if st.iotEventsService != nil {
+			batchPutFn = makeIoTEventsBatchPutFn(st)
+		}
+		st.iotService.WireActionCallbacks(st.iotService.Broker(), batchPutFn)
+
+		// Wire detector model iotTopicPublish action to the MQTT broker.
+		if st.iotService.Broker() != nil && st.iotEventsService != nil {
+			brk := st.iotService.Broker()
+			st.iotEventsService.SetRepublishFn(func(topic string, payload []byte) error {
+				return brk.Publish(topic, payload)
+			})
+		}
+	}
+
 	return nil
+}
+
+// makeIoTEventsBatchPutFn returns a function that bridges the IoT rule
+// dispatcher to the IoT Events detector state machine. It resolves the
+// IotStore from the iotevents service and calls BatchEvaluate on the
+// state machine for each incoming message batch.
+func makeIoTEventsBatchPutFn(st *serviceState) func(context.Context, []map[string]interface{}) error {
+	return func(ctx context.Context, messages []map[string]interface{}) error {
+		store, err := st.iotEventsService.GetStoreForRegion(st.region)
+		if err != nil {
+			return fmt.Errorf("iot events batch put: %w", err)
+		}
+		concrete, ok := store.(*iotstore.IotStore)
+		if !ok || concrete.StateMachine() == nil {
+			return nil
+		}
+		inputs := make([]iotstore.InputMessage, 0, len(messages))
+		for _, m := range messages {
+			name, _ := m["inputName"].(string)
+			payload := iotstore.ExtractPayload(m["payload"])
+			inputs = append(inputs, iotstore.InputMessage{InputName: name, Payload: payload})
+		}
+		errs := concrete.StateMachine().BatchEvaluate(ctx, inputs)
+		if len(errs) > 0 {
+			return fmt.Errorf("iot events batch evaluate: %d message(s) produced errors", len(errs))
+		}
+		return nil
+	}
 }
 
 // --- gRPC-Web Admin ---

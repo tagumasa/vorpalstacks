@@ -22,16 +22,7 @@ func (s *IoTService) CreateKeysAndCertificate(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	status := boolToActiveStatus(request.GetBoolParam(req.Parameters, "setAsActive"))
-
-	cert := &iotstore.Certificate{
-		CertificateID:    certID,
-		CertificatePEM:   certPEM,
-		Status:           status,
-		CertificateMode:  "DEFAULT",
-		CreationDate:     time.Now().UTC(),
-		LastModifiedDate: time.Now().UTC(),
-	}
+	cert := buildCertificateRecord(certPEM, certID, request.GetBoolParam(req.Parameters, "setAsActive"))
 
 	created, err := store.CreateCertificate(cert)
 	if err != nil {
@@ -96,10 +87,6 @@ func (s *IoTService) UpdateCertificate(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	if newStatus == "REVOKED" && s.deps.CA != nil {
-		s.deps.CA.RevokeCertificate(certID)
-	}
-
 	return map[string]interface{}{}, nil
 }
 
@@ -155,16 +142,8 @@ func (s *IoTService) RegisterCertificate(ctx context.Context, reqCtx *request.Re
 	}
 
 	certID := ca.ComputeCertID(certPEM)
-	status := boolToActiveStatus(request.GetBoolParam(req.Parameters, "setAsActive"))
 
-	cert := &iotstore.Certificate{
-		CertificateID:    certID,
-		CertificatePEM:   certPEM,
-		Status:           status,
-		CertificateMode:  "DEFAULT",
-		CreationDate:     time.Now().UTC(),
-		LastModifiedDate: time.Now().UTC(),
-	}
+	cert := buildCertificateRecord(certPEM, certID, request.GetBoolParam(req.Parameters, "setAsActive"))
 
 	created, err := store.CreateCertificate(cert)
 	if err != nil {
@@ -194,16 +173,7 @@ func (s *IoTService) CreateCertificateFromCsr(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	status := boolToActiveStatus(request.GetBoolParam(req.Parameters, "setAsActive"))
-
-	cert := &iotstore.Certificate{
-		CertificateID:    certID,
-		CertificatePEM:   certPEM,
-		Status:           status,
-		CertificateMode:  "DEFAULT",
-		CreationDate:     time.Now().UTC(),
-		LastModifiedDate: time.Now().UTC(),
-	}
+	cert := buildCertificateRecord(certPEM, certID, request.GetBoolParam(req.Parameters, "setAsActive"))
 
 	created, err := store.CreateCertificate(cert)
 	if err != nil {
@@ -223,4 +193,15 @@ func isValidCertStatus(status string) bool {
 		return true
 	}
 	return false
+}
+
+func buildCertificateRecord(certPEM, certID string, setActive bool) *iotstore.Certificate {
+	return &iotstore.Certificate{
+		CertificateID:    certID,
+		CertificatePEM:   certPEM,
+		Status:           boolToActiveStatus(setActive),
+		CertificateMode:  "DEFAULT",
+		CreationDate:     time.Now().UTC(),
+		LastModifiedDate: time.Now().UTC(),
+	}
 }

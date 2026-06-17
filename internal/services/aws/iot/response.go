@@ -1,6 +1,8 @@
 package iot
 
 import (
+	"fmt"
+
 	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
@@ -172,6 +174,17 @@ func jobResponse(j *iotstore.Job) map[string]interface{} {
 		"targets":         j.Targets,
 		"createdAt":       j.CreatedAt.Unix(),
 		"lastUpdatedAt":   j.LastUpdatedAt.Unix(),
+	}
+}
+
+func policyResponse(p *iotstore.Policy) map[string]interface{} {
+	return map[string]interface{}{
+		"policyName":       p.PolicyName,
+		"policyArn":        p.PolicyARN,
+		"policyDocument":   p.PolicyDocument,
+		"creationDate":     p.CreationDate.Unix(),
+		"lastModifiedDate": p.LastModifiedDate.Unix(),
+		"defaultVersionId": fmt.Sprintf("%d", p.Version),
 	}
 }
 

@@ -1,12 +1,13 @@
 package iot
 
 import (
-		"github.com/google/uuid"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 	"time"
-	"vorpalstacks/internal/store/aws/common"
 	pb "vorpalstacks/internal/pb/storage/storage_iot"
+	"vorpalstacks/internal/store/aws/common"
 )
+
 func (s *IotStore) CreateThingType(tt *ThingType) (*ThingType, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -89,5 +90,3 @@ func (s *IotStore) SetThingTypeDeprecation(name string, deprecated bool) (*Thing
 	}
 	return existing, s.thingTypePS.Update(existing)
 }
-
-// UpdateThingGroup persists changes to an existing thing group with CAS.
