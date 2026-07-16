@@ -58,7 +58,7 @@ func (s *SessionStore) SeedTestDelegatedTokens() {
 }
 
 // Create creates a new STS session.
-func (s *SessionStore) Create(principalType, principalName, principalArn, roleArn, roleSessionName string, durationSeconds int) (*Session, error) {
+func (s *SessionStore) Create(params CreateSessionParams) (*Session, error) {
 	sessionToken, err := generateSessionToken()
 	if err != nil {
 		return nil, err
@@ -74,20 +74,25 @@ func (s *SessionStore) Create(principalType, principalName, principalArn, roleAr
 		return nil, err
 	}
 
+	durationSeconds := params.DurationSeconds
 	if durationSeconds == 0 {
 		durationSeconds = 3600
 	}
 
 	session := &Session{
-		SessionToken:    sessionToken,
-		AccessKeyId:     accessKeyId,
-		SecretAccessKey: secretAccessKey,
-		Expiration:      time.Now().UTC().Add(time.Duration(durationSeconds) * time.Second),
-		PrincipalArn:    principalArn,
-		PrincipalType:   principalType,
-		PrincipalName:   principalName,
-		RoleArn:         roleArn,
-		RoleSessionName: roleSessionName,
+		SessionToken:           sessionToken,
+		AccessKeyId:            accessKeyId,
+		SecretAccessKey:        secretAccessKey,
+		Expiration:             time.Now().UTC().Add(time.Duration(durationSeconds) * time.Second),
+		PrincipalArn:           params.PrincipalArn,
+		PrincipalType:          params.PrincipalType,
+		PrincipalName:          params.PrincipalName,
+		RoleArn:                params.RoleArn,
+		RoleSessionName:        params.RoleSessionName,
+		SourceIdentity:         params.SourceIdentity,
+		Tags:                   params.Tags,
+		MultiFactorAuthPresent: params.MultiFactorAuthPresent,
+		TransitiveTagKeys:      params.TransitiveTagKeys,
 	}
 
 	data, err := json.Marshal(session)

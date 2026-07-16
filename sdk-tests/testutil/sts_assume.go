@@ -169,5 +169,128 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sts", "AssumeRoot_MissingTaskPolicyArn", func() error {
+		_, err := tc.client.AssumeRoot(tc.ctx, &sts.AssumeRootInput{
+			TargetPrincipal: aws.String("000000000000"),
+			DurationSeconds: aws.Int32(900),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for missing TaskPolicyArn")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "AssumeRoot_DurationExceedsMax", func() error {
+		_, err := tc.client.AssumeRoot(tc.ctx, &sts.AssumeRootInput{
+			TargetPrincipal: aws.String("000000000000"),
+			TaskPolicyArn: &types.PolicyDescriptorType{
+				Arn: aws.String("arn:aws:iam::aws:policy/IAMAuditRootUserCredentials"),
+			},
+			DurationSeconds: aws.Int32(43200),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for DurationSeconds exceeding 900")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "AssumeRoot_MissingTargetPrincipal", func() error {
+		_, err := tc.client.AssumeRoot(tc.ctx, &sts.AssumeRootInput{
+			TaskPolicyArn: &types.PolicyDescriptorType{
+				Arn: aws.String("arn:aws:iam::aws:policy/IAMAuditRootUserCredentials"),
+			},
+			DurationSeconds: aws.Int32(900),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for missing TargetPrincipal")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "AssumeRoot_InvalidTaskPolicyArn", func() error {
+		_, err := tc.client.AssumeRoot(tc.ctx, &sts.AssumeRootInput{
+			TargetPrincipal: aws.String("000000000000"),
+			TaskPolicyArn: &types.PolicyDescriptorType{
+				Arn: aws.String("arn:aws:iam::aws:policy/AdministratorAccess"),
+			},
+			DurationSeconds: aws.Int32(900),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for invalid TaskPolicyArn")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "AssumeRole_WithExternalId", func() error {
+		resp, err := tc.client.AssumeRole(tc.ctx, &sts.AssumeRoleInput{
+			RoleArn:         aws.String(tc.roleARN()),
+			RoleSessionName: aws.String("ExtIdSession"),
+			ExternalId:      aws.String("my-external-id-123"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Credentials == nil {
+			return fmt.Errorf("credentials is nil")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "AssumeRole_WithMalformedPolicy", func() error {
+		_, err := tc.client.AssumeRole(tc.ctx, &sts.AssumeRoleInput{
+			RoleArn:         aws.String(tc.roleARN()),
+			RoleSessionName: aws.String("BadPolicySession"),
+			Policy:          aws.String("not-valid-json{"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for malformed policy")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "GetFederationToken_InvalidName", func() error {
+		_, err := tc.client.GetFederationToken(tc.ctx, &sts.GetFederationTokenInput{
+			Name: aws.String("x"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for too-short Name")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "AssumeRole_WithTags", func() error {
+		resp, err := tc.client.AssumeRole(tc.ctx, &sts.AssumeRoleInput{
+			RoleArn:         aws.String(tc.roleARN()),
+			RoleSessionName: aws.String("TagSession"),
+			Tags: []types.Tag{
+				{Key: aws.String("Department"), Value: aws.String("Engineering")},
+				{Key: aws.String("Project"), Value: aws.String("Alpha")},
+			},
+			TransitiveTagKeys: []string{"Department"},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Credentials == nil {
+			return fmt.Errorf("credentials is nil")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "AssumeRole_DuplicateTags", func() error {
+		_, err := tc.client.AssumeRole(tc.ctx, &sts.AssumeRoleInput{
+			RoleArn:         aws.String(tc.roleARN()),
+			RoleSessionName: aws.String("DupTagSession"),
+			Tags: []types.Tag{
+				{Key: aws.String("Dept"), Value: aws.String("Eng")},
+				{Key: aws.String("Dept"), Value: aws.String("Sales")},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for duplicate tag keys")
+		}
+		return nil
+	}))
+
 	return results
 }

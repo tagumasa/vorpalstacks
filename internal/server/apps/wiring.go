@@ -18,7 +18,13 @@ type cognitoCredentialAdapter struct {
 }
 
 func (a *cognitoCredentialAdapter) IssueSession(roleArn, roleSessionName string, durationSeconds int) (*svccognitoidentity.CredentialResult, error) {
-	session, err := a.store.Create("WebIdentity", roleSessionName, "", roleArn, roleSessionName, durationSeconds)
+	session, err := a.store.Create(stsstore.CreateSessionParams{
+		PrincipalType:   "WebIdentity",
+		PrincipalName:   roleSessionName,
+		RoleArn:         roleArn,
+		RoleSessionName: roleSessionName,
+		DurationSeconds: durationSeconds,
+	})
 	if err != nil {
 		return nil, err
 	}
