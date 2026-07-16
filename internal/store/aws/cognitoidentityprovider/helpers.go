@@ -67,6 +67,100 @@ func challengeSessionBucketName(region string) string {
 	return "cognito-challengesessions-" + region
 }
 
+func deviceBucketName(region string) string {
+	return "cognito-devices-" + region
+}
+
+func deviceKey(userPoolID, userID, deviceKey string) string {
+	return userPoolID + "#" + userID + "#" + deviceKey
+}
+
+func devicePrefix(userPoolID, userID string) string {
+	return userPoolID + "#" + userID + "#"
+}
+
+func authEventBucketName(region string) string {
+	return "cognito-authevents-" + region
+}
+
+func authEventKey(userPoolID, userID, eventID string) string {
+	return userPoolID + "#" + userID + "#" + eventID
+}
+
+func authEventPrefix(userPoolID, userID string) string {
+	return userPoolID + "#" + userID + "#"
+}
+
+func logDeliveryKey(userPoolID string) string {
+	return "logdelivery:" + userPoolID
+}
+
+func riskConfigKey(userPoolID, clientID string) string {
+	if clientID == "" {
+		return "riskconfig:" + userPoolID
+	}
+	return "riskconfig:" + userPoolID + "#" + clientID
+}
+
+func uiCustomizationKey(userPoolID, clientID string) string {
+	if clientID == "" {
+		return "uicustomization:" + userPoolID
+	}
+	return "uicustomization:" + userPoolID + "#" + clientID
+}
+
+func userImportJobBucketName(region string) string {
+	return "cognito-userimportjobs-" + region
+}
+
+func userImportJobKey(userPoolID, jobID string) string {
+	return userPoolID + "#" + jobID
+}
+
+func userImportJobPrefix(userPoolID string) string {
+	return userPoolID + "#"
+}
+
+func webauthnCredentialBucketName(region string) string {
+	return "cognito-webauthn-" + region
+}
+
+func webauthnKey(userPoolID, userID, credID string) string {
+	return userPoolID + "#" + userID + "#" + credID
+}
+
+func webauthnPrefix(userPoolID, userID string) string {
+	return userPoolID + "#" + userID + "#"
+}
+
+func managedLoginBrandingKey(userPoolID, brandingID string) string {
+	return "managedlogin:" + userPoolID + "#" + brandingID
+}
+
+func managedLoginBrandingByClientKey(userPoolID, clientID string) string {
+	return "managedlogin-client:" + userPoolID + "#" + clientID
+}
+
+func managedLoginBrandingPrefix(userPoolID string) string {
+	return "managedlogin:" + userPoolID + "#"
+}
+
+func termsKey(userPoolID, termsID string) string {
+	return "terms:" + userPoolID + "#" + termsID
+}
+
+func termsPrefix(userPoolID string) string {
+	return "terms:" + userPoolID + "#"
+}
+
+func userPoolReplicaKey(userPoolID, regionName string) string {
+	return "replica:" + userPoolID + "#" + regionName
+}
+
+func userPoolReplicaPrefix(userPoolID string) string {
+	return "replica:" + userPoolID + "#"
+}
+
 func userPoolUserKey(userPoolID, username string) string {
 	return userPoolID + "#" + username
 }

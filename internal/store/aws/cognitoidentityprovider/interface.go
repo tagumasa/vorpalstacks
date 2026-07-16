@@ -17,7 +17,93 @@ type CognitoStoreInterface interface {
 	DomainOperations
 	ResourceServerOperations
 	IdentityProviderOperations
+	DeviceOperations
+	AuthEventOperations
+	LogDeliveryOperations
+	RiskConfigurationOperations
+	UICustomizationOperations
+	UserImportJobOperations
+	WebAuthnOperations
+	ManagedLoginBrandingOperations
+	TermsOperations
+	UserPoolReplicaOperations
 	Raw() *CognitoStore
+}
+
+// DeviceOperations defines operations for managing tracked devices.
+type DeviceOperations interface {
+	CreateDevice(d *Device) error
+	GetDevice(userPoolID, userID, devKey string) (*Device, error)
+	UpdateDevice(d *Device) error
+	DeleteDevice(userPoolID, userID, devKey string) error
+	ListDevicesPaginated(userPoolID, userID string, opts common.ListOptions) (*common.ListResult[Device], error)
+}
+
+// AuthEventOperations defines operations for managing authentication events.
+type AuthEventOperations interface {
+	CreateAuthEvent(e *AuthEvent) error
+	GetAuthEvent(userPoolID, userID, eventID string) (*AuthEvent, error)
+	UpdateAuthEvent(e *AuthEvent) error
+	ListAuthEventsPaginated(userPoolID, userID string, opts common.ListOptions) (*common.ListResult[AuthEvent], error)
+}
+
+// LogDeliveryOperations defines operations for managing log delivery configuration.
+type LogDeliveryOperations interface {
+	GetLogDeliveryConfiguration(userPoolID string) (*LogDeliveryConfiguration, error)
+	SaveLogDeliveryConfiguration(cfg *LogDeliveryConfiguration) error
+}
+
+// RiskConfigurationOperations defines operations for managing risk configuration.
+type RiskConfigurationOperations interface {
+	GetRiskConfiguration(userPoolID, clientID string) (*RiskConfiguration, error)
+	SaveRiskConfiguration(cfg *RiskConfiguration) error
+}
+
+// UICustomizationOperations defines operations for managing UI customisation.
+type UICustomizationOperations interface {
+	GetUICustomization(userPoolID, clientID string) (*UICustomization, error)
+	SaveUICustomization(ui *UICustomization) error
+}
+
+// UserImportJobOperations defines operations for managing user import jobs.
+type UserImportJobOperations interface {
+	CreateUserImportJob(job *UserImportJob) error
+	GetUserImportJob(userPoolID, jobID string) (*UserImportJob, error)
+	UpdateUserImportJob(job *UserImportJob) error
+	ListUserImportJobs(userPoolID string, maxResults int) ([]*UserImportJob, error)
+}
+
+// WebAuthnOperations defines operations for managing WebAuthn credentials.
+type WebAuthnOperations interface {
+	CreateWebAuthnCredential(c *WebAuthnCredential) error
+	GetWebAuthnCredential(userPoolID, userID, credID string) (*WebAuthnCredential, error)
+	DeleteWebAuthnCredential(userPoolID, userID, credID string) error
+	ListWebAuthnCredentials(userPoolID, userID string, maxResults int) ([]*WebAuthnCredential, error)
+}
+
+// ManagedLoginBrandingOperations defines operations for managing managed login branding.
+type ManagedLoginBrandingOperations interface {
+	SaveManagedLoginBranding(b *ManagedLoginBranding) error
+	GetManagedLoginBranding(userPoolID, brandingID string) (*ManagedLoginBranding, error)
+	GetManagedLoginBrandingByClient(userPoolID, clientID string) (*ManagedLoginBranding, error)
+	DeleteManagedLoginBranding(userPoolID, brandingID string) error
+	ListManagedLoginBrandings(userPoolID string) ([]*ManagedLoginBranding, error)
+}
+
+// TermsOperations defines operations for managing terms documents.
+type TermsOperations interface {
+	SaveTerms(t *Terms) error
+	GetTerms(userPoolID, termsID string) (*Terms, error)
+	DeleteTerms(userPoolID, termsID string) error
+	ListTerms(userPoolID string) ([]*Terms, error)
+}
+
+// UserPoolReplicaOperations defines operations for managing user pool replicas.
+type UserPoolReplicaOperations interface {
+	SaveUserPoolReplica(r *UserPoolReplica) error
+	GetUserPoolReplica(userPoolID, regionName string) (*UserPoolReplica, error)
+	DeleteUserPoolReplica(userPoolID, regionName string) error
+	ListUserPoolReplicas(userPoolID string) ([]*UserPoolReplica, error)
 }
 
 // UserPoolOperations defines operations for managing user pools.

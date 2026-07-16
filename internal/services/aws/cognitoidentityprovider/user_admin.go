@@ -109,11 +109,11 @@ func (s *CognitoService) AdminDeleteUser(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, ErrUserNotFound
 	}
-	if err := store.DeleteUser(userPoolID, username); err != nil {
-		return nil, ErrUserNotFound
-	}
 	if err := store.DeleteUserTokens(userPoolID, user.ID); err != nil {
 		return nil, ErrInternalError
+	}
+	if err := store.DeleteUser(userPoolID, username); err != nil {
+		return nil, ErrUserNotFound
 	}
 
 	return response.EmptyResponse(), nil

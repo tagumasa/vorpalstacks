@@ -28,6 +28,10 @@ type CognitoStore struct {
 	idTokensStore          *common.BaseStore
 	accessTokensStore      *common.BaseStore
 	challengeSessionsStore *common.BaseStore
+	devicesStore           *common.BaseStore
+	authEventsStore        *common.BaseStore
+	userImportJobsStore    *common.BaseStore
+	webauthnStore          *common.BaseStore
 	*common.TagStore
 	arnBuilder *svcarn.ARNBuilder
 	accountID  string
@@ -47,6 +51,10 @@ func NewCognitoStore(store storage.BasicStorage, accountID, region string) *Cogn
 		idTokensStore:          common.NewBaseStore(store.Bucket(idTokenBucketName(region)), "cognito-idtokens"),
 		accessTokensStore:      common.NewBaseStore(store.Bucket(accessTokenBucketName(region)), "cognito-accesstokens"),
 		challengeSessionsStore: common.NewBaseStore(store.Bucket(challengeSessionBucketName(region)), "cognito-challengesessions"),
+		devicesStore:           common.NewBaseStore(store.Bucket(deviceBucketName(region)), "cognito-devices"),
+		authEventsStore:        common.NewBaseStore(store.Bucket(authEventBucketName(region)), "cognito-authevents"),
+		userImportJobsStore:    common.NewBaseStore(store.Bucket(userImportJobBucketName(region)), "cognito-userimportjobs"),
+		webauthnStore:          common.NewBaseStore(store.Bucket(webauthnCredentialBucketName(region)), "cognito-webauthn"),
 		TagStore:               common.NewTagStoreWithRegion(store, "cognito", region),
 		arnBuilder:             svcarn.NewARNBuilder(accountID, region),
 		accountID:              accountID,
@@ -933,4 +941,312 @@ func (s *CognitoStore) ListIdentityProviders(userPoolID string) ([]*IdentityProv
 		return nil, err
 	}
 	return providers, nil
+}
+
+// CreateDevice stores a new device record.
+func (s *CognitoStore) CreateDevice(d *Device) error {
+	return s.devicesStore.Put(deviceKey(d.UserPoolID, d.UserID, d.DeviceKey), d)
+}
+
+// GetDevice retrieves a device by its key.
+func (s *CognitoStore) GetDevice(userPoolID, userID, devKey string) (*Device, error) {
+	var d Device
+	if err := s.devicesStore.Get(deviceKey(userPoolID, userID, devKey), &d); err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
+// UpdateDevice updates an existing device record.
+func (s *CognitoStore) UpdateDevice(d *Device) error {
+	return s.devicesStore.Put(deviceKey(d.UserPoolID, d.UserID, d.DeviceKey), d)
+}
+
+// DeleteDevice removes a device record.
+func (s *CognitoStore) DeleteDevice(userPoolID, userID, devKey string) error {
+	return s.devicesStore.Delete(deviceKey(userPoolID, userID, devKey))
+}
+
+// ListDevicesPaginated lists devices for a user with server-side pagination.
+func (s *CognitoStore) ListDevicesPaginated(userPoolID, userID string, opts common.ListOptions) (*common.ListResult[Device], error) {
+	opts.Prefix = devicePrefix(userPoolID, userID)
+	return common.List[Device](s.devicesStore, opts, nil)
+}
+
+// CreateAuthEvent stores a new authentication event.
+func (s *CognitoStore) CreateAuthEvent(e *AuthEvent) error {
+	return s.authEventsStore.Put(authEventKey(e.UserPoolID, e.UserID, e.EventID), e)
+}
+
+// GetAuthEvent retrieves an auth event by its ID.
+func (s *CognitoStore) GetAuthEvent(userPoolID, userID, eventID string) (*AuthEvent, error) {
+	var e AuthEvent
+	if err := s.authEventsStore.Get(authEventKey(userPoolID, userID, eventID), &e); err != nil {
+		return nil, err
+	}
+	return &e, nil
+}
+
+// UpdateAuthEvent updates an existing auth event record.
+func (s *CognitoStore) UpdateAuthEvent(e *AuthEvent) error {
+	return s.authEventsStore.Put(authEventKey(e.UserPoolID, e.UserID, e.EventID), e)
+}
+
+// ListAuthEventsPaginated lists auth events for a user with server-side pagination.
+func (s *CognitoStore) ListAuthEventsPaginated(userPoolID, userID string, opts common.ListOptions) (*common.ListResult[AuthEvent], error) {
+	opts.Prefix = authEventPrefix(userPoolID, userID)
+	return common.List[AuthEvent](s.authEventsStore, opts, nil)
+}
+
+// GetLogDeliveryConfiguration retrieves the log delivery configuration for a user pool.
+func (s *CognitoStore) GetLogDeliveryConfiguration(userPoolID string) (*LogDeliveryConfiguration, error) {
+	var cfg LogDeliveryConfiguration
+	if err := s.BaseStore.Get(logDeliveryKey(userPoolID), &cfg); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
+// SaveLogDeliveryConfiguration stores the log delivery configuration for a user pool.
+func (s *CognitoStore) SaveLogDeliveryConfiguration(cfg *LogDeliveryConfiguration) error {
+	return s.BaseStore.Put(logDeliveryKey(cfg.UserPoolID), cfg)
+}
+
+// GetRiskConfiguration retrieves the risk configuration for a user pool/client.
+func (s *CognitoStore) GetRiskConfiguration(userPoolID, clientID string) (*RiskConfiguration, error) {
+	var cfg RiskConfiguration
+	if err := s.BaseStore.Get(riskConfigKey(userPoolID, clientID), &cfg); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
+// SaveRiskConfiguration stores the risk configuration for a user pool/client.
+func (s *CognitoStore) SaveRiskConfiguration(cfg *RiskConfiguration) error {
+	cfg.LastModifiedDate = time.Now().UTC()
+	return s.BaseStore.Put(riskConfigKey(cfg.UserPoolID, cfg.ClientID), cfg)
+}
+
+// GetUICustomization retrieves UI customisation for a user pool/client.
+func (s *CognitoStore) GetUICustomization(userPoolID, clientID string) (*UICustomization, error) {
+	var ui UICustomization
+	if err := s.BaseStore.Get(uiCustomizationKey(userPoolID, clientID), &ui); err != nil {
+		return nil, err
+	}
+	return &ui, nil
+}
+
+// SaveUICustomization stores UI customisation for a user pool/client.
+func (s *CognitoStore) SaveUICustomization(ui *UICustomization) error {
+	if ui.CreationDate.IsZero() {
+		ui.CreationDate = time.Now().UTC()
+	}
+	ui.LastModifiedDate = time.Now().UTC()
+	if ui.CSSVersion == "" {
+		ui.CSSVersion = "20200101"
+	}
+	return s.BaseStore.Put(uiCustomizationKey(ui.UserPoolID, ui.ClientID), ui)
+}
+
+// CreateUserImportJob stores a new user import job.
+func (s *CognitoStore) CreateUserImportJob(job *UserImportJob) error {
+	return s.userImportJobsStore.Put(userImportJobKey(job.UserPoolID, job.JobID), job)
+}
+
+// GetUserImportJob retrieves an import job by ID.
+func (s *CognitoStore) GetUserImportJob(userPoolID, jobID string) (*UserImportJob, error) {
+	var job UserImportJob
+	if err := s.userImportJobsStore.Get(userImportJobKey(userPoolID, jobID), &job); err != nil {
+		return nil, err
+	}
+	return &job, nil
+}
+
+// UpdateUserImportJob updates an import job.
+func (s *CognitoStore) UpdateUserImportJob(job *UserImportJob) error {
+	return s.userImportJobsStore.Put(userImportJobKey(job.UserPoolID, job.JobID), job)
+}
+
+// ListUserImportJobs lists import jobs for a user pool.
+func (s *CognitoStore) ListUserImportJobs(userPoolID string, maxResults int) ([]*UserImportJob, error) {
+	var jobs []*UserImportJob
+	prefix := userImportJobPrefix(userPoolID)
+	count := 0
+	err := s.userImportJobsStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		if maxResults > 0 && count >= maxResults {
+			return nil
+		}
+		var job UserImportJob
+		if err := json.Unmarshal(value, &job); err != nil {
+			return err
+		}
+		jobs = append(jobs, &job)
+		count++
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return jobs, nil
+}
+
+// ===================== WebAuthn =====================
+
+func (s *CognitoStore) CreateWebAuthnCredential(c *WebAuthnCredential) error {
+	return s.webauthnStore.Put(webauthnKey(c.UserPoolID, c.UserID, c.CredentialID), c)
+}
+
+func (s *CognitoStore) GetWebAuthnCredential(userPoolID, userID, credID string) (*WebAuthnCredential, error) {
+	var c WebAuthnCredential
+	if err := s.webauthnStore.Get(webauthnKey(userPoolID, userID, credID), &c); err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+func (s *CognitoStore) DeleteWebAuthnCredential(userPoolID, userID, credID string) error {
+	return s.webauthnStore.Delete(webauthnKey(userPoolID, userID, credID))
+}
+
+func (s *CognitoStore) ListWebAuthnCredentials(userPoolID, userID string, maxResults int) ([]*WebAuthnCredential, error) {
+	var creds []*WebAuthnCredential
+	prefix := webauthnPrefix(userPoolID, userID)
+	count := 0
+	err := s.webauthnStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		if maxResults > 0 && count >= maxResults {
+			return nil
+		}
+		var c WebAuthnCredential
+		if err := json.Unmarshal(value, &c); err != nil {
+			return err
+		}
+		creds = append(creds, &c)
+		count++
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return creds, nil
+}
+
+// ===================== Managed Login Branding =====================
+
+func (s *CognitoStore) SaveManagedLoginBranding(b *ManagedLoginBranding) error {
+	if b.CreationDate.IsZero() {
+		b.CreationDate = time.Now().UTC()
+	}
+	b.LastModifiedDate = time.Now().UTC()
+	return s.BaseStore.Put(managedLoginBrandingKey(b.UserPoolID, b.ManagedLoginBrandingId), b)
+}
+
+func (s *CognitoStore) GetManagedLoginBranding(userPoolID, brandingID string) (*ManagedLoginBranding, error) {
+	var b ManagedLoginBranding
+	if err := s.BaseStore.Get(managedLoginBrandingKey(userPoolID, brandingID), &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+func (s *CognitoStore) GetManagedLoginBrandingByClient(userPoolID, clientID string) (*ManagedLoginBranding, error) {
+	var b ManagedLoginBranding
+	if err := s.BaseStore.Get(managedLoginBrandingByClientKey(userPoolID, clientID), &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+func (s *CognitoStore) DeleteManagedLoginBranding(userPoolID, brandingID string) error {
+	return s.BaseStore.Delete(managedLoginBrandingKey(userPoolID, brandingID))
+}
+
+func (s *CognitoStore) ListManagedLoginBrandings(userPoolID string) ([]*ManagedLoginBranding, error) {
+	var brandings []*ManagedLoginBranding
+	prefix := managedLoginBrandingPrefix(userPoolID)
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		var b ManagedLoginBranding
+		if err := json.Unmarshal(value, &b); err != nil {
+			return err
+		}
+		brandings = append(brandings, &b)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return brandings, nil
+}
+
+// ===================== Terms =====================
+
+func (s *CognitoStore) SaveTerms(t *Terms) error {
+	if t.CreationDate.IsZero() {
+		t.CreationDate = time.Now().UTC()
+	}
+	t.LastModifiedDate = time.Now().UTC()
+	return s.BaseStore.Put(termsKey(t.UserPoolID, t.TermsID), t)
+}
+
+func (s *CognitoStore) GetTerms(userPoolID, termsID string) (*Terms, error) {
+	var t Terms
+	if err := s.BaseStore.Get(termsKey(userPoolID, termsID), &t); err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (s *CognitoStore) DeleteTerms(userPoolID, termsID string) error {
+	return s.BaseStore.Delete(termsKey(userPoolID, termsID))
+}
+
+func (s *CognitoStore) ListTerms(userPoolID string) ([]*Terms, error) {
+	var terms []*Terms
+	prefix := termsPrefix(userPoolID)
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		var t Terms
+		if err := json.Unmarshal(value, &t); err != nil {
+			return err
+		}
+		terms = append(terms, &t)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return terms, nil
+}
+
+// ===================== User Pool Replicas =====================
+
+func (s *CognitoStore) SaveUserPoolReplica(r *UserPoolReplica) error {
+	return s.BaseStore.Put(userPoolReplicaKey(r.UserPoolID, r.RegionName), r)
+}
+
+func (s *CognitoStore) GetUserPoolReplica(userPoolID, regionName string) (*UserPoolReplica, error) {
+	var r UserPoolReplica
+	if err := s.BaseStore.Get(userPoolReplicaKey(userPoolID, regionName), &r); err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+func (s *CognitoStore) DeleteUserPoolReplica(userPoolID, regionName string) error {
+	return s.BaseStore.Delete(userPoolReplicaKey(userPoolID, regionName))
+}
+
+func (s *CognitoStore) ListUserPoolReplicas(userPoolID string) ([]*UserPoolReplica, error) {
+	var replicas []*UserPoolReplica
+	prefix := userPoolReplicaPrefix(userPoolID)
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		var r UserPoolReplica
+		if err := json.Unmarshal(value, &r); err != nil {
+			return err
+		}
+		replicas = append(replicas, &r)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return replicas, nil
 }

@@ -100,23 +100,28 @@ func (s *CognitoService) authenticateUser(
 	}
 
 	if !user.Enabled {
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
 		return nil, ErrNotAuthorized
 	}
 
 	if user.UserStatus == "FORCE_CHANGE_PASSWORD" || user.UserStatus == "RESET_REQUIRED" {
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "InProgress")
 		return s.newPasswordChallenge(reqCtx, userPoolID, clientID, user)
 	}
 
 	if user.UserStatus != "CONFIRMED" {
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
 		return nil, ErrUserNotConfirmed
 	}
 
 	attrs := userAttributesMap(user)
 	if err := invokePreAuthentication(ctx, s, userPoolID, username, clientID, lambdaConfig, attrs); err != nil {
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
 		return nil, fmt.Errorf("PreAuthentication trigger failed: %w", err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
 		return nil, ErrIncorrectPassword
 	}
 
@@ -128,6 +133,7 @@ func (s *CognitoService) authenticateUser(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokens: %w", err)
 	}
+	s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Pass")
 	return authResult(accessToken, idToken, refreshToken, expiresIn), nil
 }
 

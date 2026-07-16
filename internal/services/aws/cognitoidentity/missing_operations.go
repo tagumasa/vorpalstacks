@@ -157,16 +157,16 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 
 	identityID := req.GetParam("IdentityId")
 
-	// TokenDuration controls token expiry (range 15-3600 seconds per AWS spec).
+	// TokenDuration controls token expiry (range 1-86400 seconds per AWS spec).
 	tokenDuration := int64(900) // default 15 minutes
 	if td := request.GetIntParam(req.Parameters, "TokenDuration"); td > 0 {
 		tokenDuration = int64(td)
 	}
-	if tokenDuration < 15 {
-		tokenDuration = 15
+	if tokenDuration < 1 {
+		tokenDuration = 1
 	}
-	if tokenDuration > 3600 {
-		tokenDuration = 3600
+	if tokenDuration > 86400 {
+		tokenDuration = 86400
 	}
 
 	for providerName, devUserID := range logins {

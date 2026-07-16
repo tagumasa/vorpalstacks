@@ -21,6 +21,7 @@ type UserPool struct {
 	UsernameAttributes            []string                     `json:"usernameAttributes,omitempty"`
 	AutoVerifiedAttributes        []string                     `json:"autoVerifiedAttributes,omitempty"`
 	Schema                        string                       `json:"schema,omitempty"`
+	SchemaAttributes              []SchemaAttributeType        `json:"schemaAttributes,omitempty"`
 	MfaConfiguration              string                       `json:"mfaConfiguration,omitempty"`
 	PasswordPolicy                *PasswordPolicy              `json:"passwordPolicy,omitempty"`
 	LambdaConfig                  *LambdaConfig                `json:"lambdaConfig,omitempty"`
@@ -152,20 +153,35 @@ type LambdaConfig struct {
 
 // User represents a Cognito user.
 type User struct {
-	ID                     string                    `json:"id"`
-	UserPoolID             string                    `json:"userPoolId"`
-	Username               string                    `json:"username"`
-	Enabled                bool                      `json:"enabled"`
-	UserStatus             string                    `json:"userStatus"`
-	CreatedDate            time.Time                 `json:"createdDate"`
-	LastModifiedDate       time.Time                 `json:"lastModifiedDate"`
-	Attributes             map[string]string         `json:"attributes,omitempty"`
-	PasswordHash           string                    `json:"passwordHash,omitempty"`
-	Groups                 []string                  `json:"groups,omitempty"`
-	MFAOptions             []*MFAOptionType          `json:"mfaOptions,omitempty"`
-	ConfirmationCode       string                    `json:"confirmationCode,omitempty"`
-	ConfirmationCodeExpiry time.Time                 `json:"confirmationCodeExpiry,omitempty"`
-	SoftwareTokenMfa       *SoftwareTokenMfaSettings `json:"softwareTokenMfa,omitempty"`
+	ID                         string                            `json:"id"`
+	UserPoolID                 string                            `json:"userPoolId"`
+	Username                   string                            `json:"username"`
+	Enabled                    bool                              `json:"enabled"`
+	UserStatus                 string                            `json:"userStatus"`
+	CreatedDate                time.Time                         `json:"createdDate"`
+	LastModifiedDate           time.Time                         `json:"lastModifiedDate"`
+	Attributes                 map[string]string                 `json:"attributes,omitempty"`
+	PasswordHash               string                            `json:"passwordHash,omitempty"`
+	Groups                     []string                          `json:"groups,omitempty"`
+	MFAOptions                 []*MFAOptionType                  `json:"mfaOptions,omitempty"`
+	ConfirmationCode           string                            `json:"confirmationCode,omitempty"`
+	ConfirmationCodeExpiry     time.Time                         `json:"confirmationCodeExpiry,omitempty"`
+	SoftwareTokenMfa           *SoftwareTokenMfaSettings         `json:"softwareTokenMfa,omitempty"`
+	SmsMfa                     *SmsMfaSettings                   `json:"smsMfa,omitempty"`
+	EmailMfa                   *EmailMfaSettings                 `json:"emailMfa,omitempty"`
+	WebAuthnMfaEnabled         bool                              `json:"webAuthnMfaEnabled,omitempty"`
+	ProviderName               string                            `json:"providerName,omitempty"`
+	ProviderAttributeName      string                            `json:"providerAttributeName,omitempty"`
+	ProviderAttributeValue     string                            `json:"providerAttributeValue,omitempty"`
+	AttributeVerificationCodes map[string]*AttributeVerification `json:"attributeVerificationCodes,omitempty"`
+}
+
+// AttributeVerification holds a per-attribute verification code, independent
+// from the SignUp confirmation code. Keyed by attribute name (e.g. "email",
+// "phone_number") so that codes for multiple attributes can coexist.
+type AttributeVerification struct {
+	Code   string    `json:"code"`
+	Expiry time.Time `json:"expiry"`
 }
 
 // GetID returns the unique identifier of the user.
@@ -220,6 +236,18 @@ type SoftwareTokenMfaSettings struct {
 	Verified     bool   `json:"verified,omitempty"`
 }
 
+// SmsMfaSettings represents SMS-based MFA settings for a user.
+type SmsMfaSettings struct {
+	Enabled      bool `json:"enabled"`
+	PreferredMfa bool `json:"preferredMfa"`
+}
+
+// EmailMfaSettings represents email-based MFA settings for a user.
+type EmailMfaSettings struct {
+	Enabled      bool `json:"enabled"`
+	PreferredMfa bool `json:"preferredMfa"`
+}
+
 // Group represents a Cognito user group.
 type Group struct {
 	ID               string    `json:"id"`
@@ -235,24 +263,25 @@ type Group struct {
 
 // UserPoolClient represents a Cognito user pool client.
 type UserPoolClient struct {
-	ClientID                        string    `json:"clientId"`
-	UserPoolID                      string    `json:"userPoolId"`
-	ClientName                      string    `json:"clientName"`
-	ClientSecret                    string    `json:"clientSecret,omitempty"`
-	RefreshTokenValidity            int       `json:"refreshTokenValidity"`
-	AccessTokenValidity             int       `json:"accessTokenValidity"`
-	IDTokenValidity                 int       `json:"idTokenValidity"`
-	ExplicitAuthFlows               []string  `json:"explicitAuthFlows,omitempty"`
-	AllowedOAuthFlows               []string  `json:"allowedOAuthFlows,omitempty"`
-	CallbackURLs                    []string  `json:"callbackURLs,omitempty"`
-	LogoutURLs                      []string  `json:"logoutURLs,omitempty"`
-	DefaultRedirectURI              string    `json:"defaultRedirectUri,omitempty"`
-	SupportedIdentityProviders      []string  `json:"supportedIdentityProviders,omitempty"`
-	AllowedOAuthScopes              []string  `json:"allowedOAuthScopes,omitempty"`
-	AllowedOAuthFlowsUserPoolClient bool      `json:"allowedOAuthFlowsUserPoolClient"`
-	PreventUserExistenceErrors      string    `json:"preventUserExistenceErrors,omitempty"`
-	CreationDate                    time.Time `json:"creationDate"`
-	LastModifiedDate                time.Time `json:"lastModifiedDate"`
+	ClientID                        string                   `json:"clientId"`
+	UserPoolID                      string                   `json:"userPoolId"`
+	ClientName                      string                   `json:"clientName"`
+	ClientSecret                    string                   `json:"clientSecret,omitempty"`
+	RefreshTokenValidity            int                      `json:"refreshTokenValidity"`
+	AccessTokenValidity             int                      `json:"accessTokenValidity"`
+	IDTokenValidity                 int                      `json:"idTokenValidity"`
+	ExplicitAuthFlows               []string                 `json:"explicitAuthFlows,omitempty"`
+	AllowedOAuthFlows               []string                 `json:"allowedOAuthFlows,omitempty"`
+	CallbackURLs                    []string                 `json:"callbackURLs,omitempty"`
+	LogoutURLs                      []string                 `json:"logoutURLs,omitempty"`
+	DefaultRedirectURI              string                   `json:"defaultRedirectUri,omitempty"`
+	SupportedIdentityProviders      []string                 `json:"supportedIdentityProviders,omitempty"`
+	AllowedOAuthScopes              []string                 `json:"allowedOAuthScopes,omitempty"`
+	AllowedOAuthFlowsUserPoolClient bool                     `json:"allowedOAuthFlowsUserPoolClient"`
+	PreventUserExistenceErrors      string                   `json:"preventUserExistenceErrors,omitempty"`
+	ClientSecrets                   []ClientSecretDescriptor `json:"clientSecrets,omitempty"`
+	CreationDate                    time.Time                `json:"creationDate"`
+	LastModifiedDate                time.Time                `json:"lastModifiedDate"`
 }
 
 // RefreshToken represents a Cognito refresh token.
@@ -458,4 +487,217 @@ type IdentityProvider struct {
 	ProviderDetails  map[string]string `json:"providerDetails,omitempty"`
 	AttributeMapping map[string]string `json:"attributeMapping,omitempty"`
 	IdpIdentifiers   []string          `json:"idpIdentifiers,omitempty"`
+}
+
+// Device represents a tracked device in a Cognito user pool.
+type Device struct {
+	DeviceKey                   string            `json:"deviceKey"`
+	UserPoolID                  string            `json:"userPoolId"`
+	UserID                      string            `json:"userId"`
+	DeviceName                  string            `json:"deviceName,omitempty"`
+	DeviceAttributes            map[string]string `json:"deviceAttributes,omitempty"`
+	DeviceSecretVerifierB       string            `json:"deviceSecretVerifierB,omitempty"`
+	DeviceSaltVerifier          string            `json:"deviceSaltVerifier,omitempty"`
+	DeviceCreateDate            time.Time         `json:"deviceCreateDate"`
+	DeviceLastModifiedDate      time.Time         `json:"deviceLastModifiedDate"`
+	DeviceLastAuthenticatedDate time.Time         `json:"deviceLastAuthenticatedDate,omitempty"`
+	DeviceRememberedStatus      string            `json:"deviceRememberedStatus,omitempty"`
+}
+
+// AuthEvent represents a user authentication event recorded by Cognito.
+type AuthEvent struct {
+	EventID            string                  `json:"eventId"`
+	UserPoolID         string                  `json:"userPoolId"`
+	UserID             string                  `json:"userId"`
+	EventType          string                  `json:"eventType"`
+	CreationDate       time.Time               `json:"creationDate"`
+	EventResponse      string                  `json:"eventResponse"`
+	RiskDecision       string                  `json:"riskDecision,omitempty"`
+	RiskLevel          string                  `json:"riskLevel,omitempty"`
+	CompromisedFlag    bool                    `json:"compromisedCredentialsDetected,omitempty"`
+	ChallengeResponses []ChallengeResponsePair `json:"challengeResponses,omitempty"`
+	ContextIPAddress   string                  `json:"contextIpAddress,omitempty"`
+	ContextDeviceName  string                  `json:"contextDeviceName,omitempty"`
+	ContextCity        string                  `json:"contextCity,omitempty"`
+	ContextCountry     string                  `json:"contextCountry,omitempty"`
+	ContextTimezone    string                  `json:"contextTimezone,omitempty"`
+	FeedbackValue      string                  `json:"feedbackValue,omitempty"`
+	FeedbackProvider   string                  `json:"feedbackProvider,omitempty"`
+	FeedbackDate       time.Time               `json:"feedbackDate,omitempty"`
+}
+
+// ChallengeResponsePair represents a single challenge-response entry in an auth event.
+type ChallengeResponsePair struct {
+	ChallengeName     string `json:"challengeName"`
+	ChallengeResponse string `json:"challengeResponse"`
+}
+
+// ClientSecretDescriptor represents a client secret in multi-secret support.
+type ClientSecretDescriptor struct {
+	ClientSecretID         string    `json:"clientSecretId"`
+	ClientSecretValue      string    `json:"clientSecretValue"`
+	ClientSecretCreateDate time.Time `json:"clientSecretCreateDate"`
+}
+
+// LogDeliveryConfiguration stores Cognito log delivery settings for a user pool.
+type LogDeliveryConfiguration struct {
+	UserPoolID        string             `json:"userPoolId"`
+	LogConfigurations []LogConfiguration `json:"logConfigurations,omitempty"`
+}
+
+// LogConfiguration represents a single log delivery rule.
+type LogConfiguration struct {
+	LogLevel                    string                `json:"logLevel"`
+	EventSource                 string                `json:"eventSource"`
+	CloudWatchLogsConfiguration *CloudWatchLogsConfig `json:"cloudWatchLogsConfiguration,omitempty"`
+	S3Configuration             *S3Config             `json:"s3Configuration,omitempty"`
+	FirehoseConfiguration       *FirehoseConfig       `json:"firehoseConfiguration,omitempty"`
+}
+
+// CloudWatchLogsConfig holds the CloudWatch Logs destination ARN.
+type CloudWatchLogsConfig struct {
+	LogGroupArn string `json:"logGroupArn,omitempty"`
+}
+
+// S3Config holds the S3 destination ARN.
+type S3Config struct {
+	BucketArn string `json:"bucketArn,omitempty"`
+}
+
+// FirehoseConfig holds the Firehose destination ARN.
+type FirehoseConfig struct {
+	StreamArn string `json:"streamArn,omitempty"`
+}
+
+// RiskConfiguration stores advanced security risk configuration for a user pool.
+type RiskConfiguration struct {
+	UserPoolID                        string    `json:"userPoolId"`
+	ClientID                          string    `json:"clientId,omitempty"`
+	CompromisedCredentialsEventFilter []string  `json:"ccEventFilter,omitempty"`
+	CompromisedCredentialsEventAction string    `json:"ccEventAction,omitempty"`
+	AccountTakeoverLowAction          string    `json:"atLowAction,omitempty"`
+	AccountTakeoverLowNotify          bool      `json:"atLowNotify,omitempty"`
+	AccountTakeoverMediumAction       string    `json:"atMediumAction,omitempty"`
+	AccountTakeoverMediumNotify       bool      `json:"atMediumNotify,omitempty"`
+	AccountTakeoverHighAction         string    `json:"atHighAction,omitempty"`
+	AccountTakeoverHighNotify         bool      `json:"atHighNotify,omitempty"`
+	NotifyFrom                        string    `json:"notifyFrom,omitempty"`
+	NotifyReplyTo                     string    `json:"notifyReplyTo,omitempty"`
+	NotifySourceArn                   string    `json:"notifySourceArn,omitempty"`
+	NotifyBlockEmailSubject           string    `json:"notifyBlockEmailSubject,omitempty"`
+	NotifyBlockEmailHtml              string    `json:"notifyBlockEmailHtml,omitempty"`
+	NotifyNoActionEmailSubject        string    `json:"notifyNoActionEmailSubject,omitempty"`
+	NotifyNoActionEmailHtml           string    `json:"notifyNoActionEmailHtml,omitempty"`
+	NotifyMfaEmailSubject             string    `json:"notifyMfaEmailSubject,omitempty"`
+	NotifyMfaEmailHtml                string    `json:"notifyMfaEmailHtml,omitempty"`
+	BlockedIPRangeList                []string  `json:"blockedIpRangeList,omitempty"`
+	SkippedIPRangeList                []string  `json:"skippedIpRangeList,omitempty"`
+	LastModifiedDate                  time.Time `json:"lastModifiedDate,omitempty"`
+}
+
+// UICustomization stores CSS and image customisation for hosted UI.
+type UICustomization struct {
+	UserPoolID       string    `json:"userPoolId"`
+	ClientID         string    `json:"clientId,omitempty"`
+	CSS              string    `json:"css,omitempty"`
+	CSSVersion       string    `json:"cssVersion,omitempty"`
+	ImageFile        []byte    `json:"imageFile,omitempty"`
+	CreationDate     time.Time `json:"creationDate,omitempty"`
+	LastModifiedDate time.Time `json:"lastModifiedDate,omitempty"`
+}
+
+// SchemaAttributeType represents a custom schema attribute for a user pool.
+type SchemaAttributeType struct {
+	Name                       string                      `json:"name"`
+	AttributeDataType          string                      `json:"attributeDataType"`
+	DeveloperOnlyAttribute     bool                        `json:"developerOnlyAttribute,omitempty"`
+	Mutable                    bool                        `json:"mutable,omitempty"`
+	Required                   bool                        `json:"required,omitempty"`
+	NumberAttributeConstraints *NumberAttributeConstraints `json:"numberAttributeConstraints,omitempty"`
+	StringAttributeConstraints *StringAttributeConstraints `json:"stringAttributeConstraints,omitempty"`
+}
+
+// NumberAttributeConstraints defines min/max for number attributes.
+type NumberAttributeConstraints struct {
+	MinValue string `json:"minValue,omitempty"`
+	MaxValue string `json:"maxValue,omitempty"`
+}
+
+// StringAttributeConstraints defines min/max length for string attributes.
+type StringAttributeConstraints struct {
+	MinLength string `json:"minLength,omitempty"`
+	MaxLength string `json:"maxLength,omitempty"`
+}
+
+// UserImportJob represents a CSV user import job.
+type UserImportJob struct {
+	JobID                 string    `json:"jobId"`
+	JobName               string    `json:"jobName"`
+	UserPoolID            string    `json:"userPoolId"`
+	PreSignedUrl          string    `json:"preSignedUrl,omitempty"`
+	CreationDate          time.Time `json:"creationDate"`
+	StartDate             time.Time `json:"startDate,omitempty"`
+	CompletionDate        time.Time `json:"completionDate,omitempty"`
+	Status                string    `json:"status"`
+	CloudWatchLogsRoleArn string    `json:"cloudWatchLogsRoleArn,omitempty"`
+	ImportedUsers         int64     `json:"importedUsers"`
+	SkippedUsers          int64     `json:"skippedUsers"`
+	FailedUsers           int64     `json:"failedUsers"`
+	CompletionMessage     string    `json:"completionMessage,omitempty"`
+}
+
+// WebAuthnCredential represents a registered FIDO2/WebAuthn credential.
+type WebAuthnCredential struct {
+	CredentialID            string    `json:"credentialId"`
+	FriendlyName            string    `json:"friendlyName,omitempty"`
+	UserPoolID              string    `json:"userPoolId"`
+	UserID                  string    `json:"userId"`
+	PublicKey               string    `json:"publicKey"`
+	SignCount               uint32    `json:"signCount"`
+	RelyingPartyID          string    `json:"relyingPartyId,omitempty"`
+	AuthenticatorAttachment string    `json:"authenticatorAttachment,omitempty"`
+	CreatedAt               time.Time `json:"createdAt"`
+}
+
+// ManagedLoginBranding stores branding configuration for managed login.
+type ManagedLoginBranding struct {
+	ManagedLoginBrandingId   string                 `json:"managedLoginBrandingId"`
+	UserPoolID               string                 `json:"userPoolId"`
+	ClientID                 string                 `json:"clientId,omitempty"`
+	UseCognitoProvidedValues bool                   `json:"useCognitoProvidedValues"`
+	Settings                 map[string]interface{} `json:"settings,omitempty"`
+	Assets                   []BrandingAsset        `json:"assets,omitempty"`
+	CreationDate             time.Time              `json:"creationDate,omitempty"`
+	LastModifiedDate         time.Time              `json:"lastModifiedDate,omitempty"`
+}
+
+// BrandingAsset represents a branding asset (logo, colour, etc).
+type BrandingAsset struct {
+	Category  string `json:"category,omitempty"`
+	Color     string `json:"color,omitempty"`
+	Extension string `json:"extension,omitempty"`
+	Bytes     string `json:"bytes,omitempty"`
+}
+
+// Terms represents a terms document for a user pool.
+type Terms struct {
+	TermsID          string                 `json:"termsId"`
+	UserPoolID       string                 `json:"userPoolId"`
+	ClientID         string                 `json:"clientId,omitempty"`
+	TermsName        string                 `json:"termsName"`
+	TermsSource      map[string]interface{} `json:"termsSource,omitempty"`
+	Enforcement      map[string]interface{} `json:"enforcement,omitempty"`
+	Links            map[string]interface{} `json:"links,omitempty"`
+	CreationDate     time.Time              `json:"creationDate,omitempty"`
+	LastModifiedDate time.Time              `json:"lastModifiedDate,omitempty"`
+}
+
+// UserPoolReplica represents a cross-region replica of a user pool.
+type UserPoolReplica struct {
+	UserPoolID   string    `json:"userPoolId"`
+	RegionName   string    `json:"regionName"`
+	Status       string    `json:"status"`
+	Role         string    `json:"role"`
+	UserPoolArn  string    `json:"userPoolArn,omitempty"`
+	CreationDate time.Time `json:"creationDate,omitempty"`
 }

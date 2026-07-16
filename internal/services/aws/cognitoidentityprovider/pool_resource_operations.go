@@ -542,40 +542,26 @@ func (s *CognitoService) DescribeRiskConfiguration(ctx context.Context, reqCtx *
 		return nil, ErrResourceNotFound
 	}
 
+	clientID := req.GetParam("ClientId")
+
+	cfg, err := store.GetRiskConfiguration(userPoolID, clientID)
+	if err == nil && cfg != nil {
+		return map[string]interface{}{
+			"RiskConfiguration": formatRiskConfiguration(cfg),
+		}, nil
+	}
+
+	if clientID != "" {
+		cfg, err = store.GetRiskConfiguration(userPoolID, "")
+		if err == nil && cfg != nil {
+			return map[string]interface{}{
+				"RiskConfiguration": formatRiskConfiguration(cfg),
+			}, nil
+		}
+	}
+
 	return map[string]interface{}{
-		"RiskConfiguration": map[string]interface{}{
-			"UserPoolId": userPoolID,
-			"CompromisedCredentialsRiskConfiguration": map[string]interface{}{
-				"EventFilter": []string{},
-				"Actions": map[string]interface{}{
-					"EventAction": "NO_ACTION",
-				},
-			},
-			"AccountTakeoverRiskConfiguration": map[string]interface{}{
-				"NotifyConfiguration": map[string]interface{}{
-					"From": "NO_ACTION",
-				},
-				"Actions": map[string]interface{}{
-					"HighAction": map[string]interface{}{
-						"EventAction": "NO_ACTION",
-						"Notify":      false,
-					},
-					"MediumAction": map[string]interface{}{
-						"EventAction": "NO_ACTION",
-						"Notify":      false,
-					},
-					"LowAction": map[string]interface{}{
-						"EventAction": "NO_ACTION",
-						"Notify":      false,
-					},
-				},
-			},
-			"RiskExceptionConfiguration": map[string]interface{}{
-				"BlockedIPRangeList":    []string{},
-				"NotBlockedIPRangeList": []string{},
-			},
-			"LastModifiedDate": time.Now().UTC().Unix(),
-		},
+		"RiskConfiguration": formatRiskConfiguration(&cognitostore.RiskConfiguration{UserPoolID: userPoolID}),
 	}, nil
 }
 
