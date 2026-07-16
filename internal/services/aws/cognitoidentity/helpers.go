@@ -132,9 +132,7 @@ func formatIdentityPool(pool *cognitoidentitystore.IdentityPool) map[string]inte
 		"LastModifiedDate":               pool.LastModifiedDate.Unix(),
 	}
 
-	if pool.AllowClassicFlow {
-		result["AllowClassicFlow"] = pool.AllowClassicFlow
-	}
+	result["AllowClassicFlow"] = pool.AllowClassicFlow
 	if len(pool.CognitoIdentityProviders) > 0 {
 		result["CognitoIdentityProviders"] = formatCognitoIdentityProviders(pool.CognitoIdentityProviders)
 	}
@@ -171,9 +169,7 @@ func formatCognitoIdentityProviders(providers []cognitoidentitystore.CognitoIden
 		if p.ClientID != "" {
 			provider["ClientId"] = p.ClientID
 		}
-		if p.ServerSideTokenCheck {
-			provider["ServerSideTokenCheck"] = p.ServerSideTokenCheck
-		}
+		provider["ServerSideTokenCheck"] = p.ServerSideTokenCheck
 		result = append(result, provider)
 	}
 	return result

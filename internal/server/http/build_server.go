@@ -167,6 +167,12 @@ func (s *Server) IAMStore() iamstore.IAMStoreInterface {
 	return s.iamStore
 }
 
+// STSSessionStore returns the STS session store for temporary credential
+// session creation and resolution.
+func (s *Server) STSSessionStore() stsstore.SessionStoreInterface {
+	return s.stsSessionStore
+}
+
 // S3Store returns the S3 store interface.
 func (s *Server) S3Store() s3store.S3StoreInterface {
 	return s.s3Store

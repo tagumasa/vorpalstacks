@@ -260,6 +260,35 @@ func IdentityPoolIdentityKey(poolID, identityID string) string {
 	return poolID + "#" + identityID
 }
 
+// FindIdentityByLogins scans identities in a pool and returns the first whose
+// logins map matches every entry in the requested logins. Returns
+// ErrIdentityNotFound when no match exists.
+func (s *CognitoIdentityStore) FindIdentityByLogins(poolID string, logins map[string]string) (*Identity, error) {
+	prefix := poolID + "#"
+	var found *Identity
+
+	err := s.identitiesStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		var identity Identity
+		if err := json.Unmarshal(value, &identity); err != nil {
+			return err
+		}
+		for provider, token := range logins {
+			if identity.Logins[provider] != token {
+				return nil
+			}
+		}
+		found = &identity
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if found == nil {
+		return nil, ErrIdentityNotFound
+	}
+	return found, nil
+}
+
 // GetIdentityByID retrieves a Cognito identity by its ID.
 func (s *CognitoIdentityStore) GetIdentityByID(identityID string) (*Identity, error) {
 	var foundIdentity *Identity
@@ -345,14 +374,18 @@ func (s *CognitoIdentityStore) LinkDeveloperIdentity(di *DeveloperIdentity) erro
 	return s.developerIdStore.Put(key, di)
 }
 
-// LookupDeveloperIdentity looks up developer identity mappings.
-func (s *CognitoIdentityStore) LookupDeveloperIdentity(poolID string, identityID, devUserID string, maxResults int) (string, []string, []string, error) {
+// LookupDeveloperIdentity looks up developer identity mappings with pagination support.
+func (s *CognitoIdentityStore) LookupDeveloperIdentity(poolID string, identityID, devUserID string, maxResults int, nextToken string) (matchedIdentityID string, devUserIDs []string, nextTokenOut string, err error) {
 	prefix := poolID + "#"
-	var matchedIdentityID string
-	var devUserIDs []string
-	var identityIDs []string
 
-	err := s.developerIdStore.ScanPrefix(prefix, func(key string, value []byte) error {
+	type entry struct {
+		key        string
+		devUserID  string
+		identityID string
+	}
+	var entries []entry
+
+	scanErr := s.developerIdStore.ScanPrefix(prefix, func(key string, value []byte) error {
 		var di DeveloperIdentity
 		if err := json.Unmarshal(value, &di); err != nil {
 			return err
@@ -363,20 +396,40 @@ func (s *CognitoIdentityStore) LookupDeveloperIdentity(poolID string, identityID
 		if identityID != "" && di.IdentityID != identityID {
 			return nil
 		}
-		devUserIDs = append(devUserIDs, di.DeveloperUserIdentifier)
-		if di.IdentityID != "" {
-			identityIDs = append(identityIDs, di.IdentityID)
-			matchedIdentityID = di.IdentityID
-		}
-		if maxResults > 0 && len(devUserIDs) >= maxResults {
-			return nil
-		}
+		entries = append(entries, entry{key: key, devUserID: di.DeveloperUserIdentifier, identityID: di.IdentityID})
 		return nil
 	})
-	if err != nil {
-		return "", nil, nil, err
+	if scanErr != nil {
+		return "", nil, "", scanErr
 	}
-	return matchedIdentityID, devUserIDs, identityIDs, nil
+
+	startIdx := 0
+	if nextToken != "" {
+		for i, e := range entries {
+			if e.key == nextToken {
+				startIdx = i + 1
+				break
+			}
+		}
+	}
+
+	end := startIdx + maxResults
+	if end > len(entries) {
+		end = len(entries)
+	}
+
+	for _, e := range entries[startIdx:end] {
+		devUserIDs = append(devUserIDs, e.devUserID)
+		if e.identityID != "" {
+			matchedIdentityID = e.identityID
+		}
+	}
+
+	if end < len(entries) {
+		nextTokenOut = entries[end-1].key
+	}
+
+	return matchedIdentityID, devUserIDs, nextTokenOut, nil
 }
 
 // UnlinkDeveloperIdentity removes a developer identity mapping.

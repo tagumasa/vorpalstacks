@@ -2,12 +2,9 @@ package cognitoidentity
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
-
-	"github.com/google/uuid"
 )
 
 // GetId obtains a unique identity ID for a Cognito identity pool.
@@ -27,8 +24,20 @@ func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.Requ
 		return nil, ErrResourceNotFound
 	}
 
+	logins := parseMapParam(req, "Logins")
+
+	// For authenticated identities (Logins provided), AWS reuses the existing
+	// identity whose logins match. Only create a new identity when no match exists.
+	if len(logins) > 0 {
+		if existing, err := store.FindIdentityByLogins(poolID, logins); err == nil && existing != nil {
+			return map[string]interface{}{
+				"IdentityId": existing.ID,
+			}, nil
+		}
+	}
+
 	identity := cognitoidentitystore.NewIdentity(poolID)
-	if logins := parseMapParam(req, "Logins"); len(logins) > 0 {
+	if len(logins) > 0 {
 		identity.Logins = logins
 	}
 
@@ -42,6 +51,8 @@ func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.Requ
 }
 
 // GetCredentialsForIdentity returns temporary credentials for an identity.
+// In the enhanced authflow, this is functionally equivalent to calling
+// GetOpenIdToken followed by AssumeRoleWithWebIdentity.
 func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	identityID := req.GetParam("IdentityId")
 	if identityID == "" {
@@ -53,24 +64,50 @@ func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, 
 		return nil, err
 	}
 
-	_, err = store.GetIdentityByID(identityID)
+	identity, err := store.GetIdentityByID(identityID)
 	if err != nil {
 		return nil, ErrResourceNotFound
 	}
 
-	now := time.Now().UTC()
-	expiration := now.Add(1 * time.Hour)
+	customRoleArn := req.GetParam("CustomRoleArn")
+	_ = parseMapParam(req, "Logins")
 
-	credentials := map[string]interface{}{
-		"AccessKeyId":  "ASIA" + uuid.New().String()[:16],
-		"SecretKey":    uuid.New().String(),
-		"SessionToken": uuid.New().String() + uuid.New().String(),
-		"Expiration":   expiration.Unix(),
+	authRole, unauthRole, _, err := store.GetIdentityPoolRoles(identity.IdentityPoolID)
+	if err != nil {
+		return nil, ErrInvalidIdentityPoolConfig
+	}
+
+	// Determine which role to assume: authenticated if the identity has logins,
+	// unauthenticated otherwise. CustomRoleArn takes precedence when provided.
+	roleArn := customRoleArn
+	if roleArn == "" {
+		if len(identity.Logins) > 0 {
+			roleArn = authRole
+		} else {
+			roleArn = unauthRole
+		}
+	}
+	if roleArn == "" {
+		return nil, ErrInvalidIdentityPoolConfig
+	}
+
+	if s.credentialIssuer == nil {
+		return nil, ErrInternalError
+	}
+
+	result, err := s.credentialIssuer.IssueSession(roleArn, identityID, 3600)
+	if err != nil {
+		return nil, ErrInternalError
 	}
 
 	return map[string]interface{}{
-		"IdentityId":  identityID,
-		"Credentials": credentials,
+		"IdentityId": identityID,
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":  result.AccessKeyID,
+			"SecretKey":    result.SecretAccessKey,
+			"SessionToken": result.SessionToken,
+			"Expiration":   result.Expiration.Unix(),
+		},
 	}, nil
 }
 

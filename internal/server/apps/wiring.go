@@ -5,9 +5,30 @@ import (
 	"fmt"
 
 	"vorpalstacks/internal/core/logs"
+	svccognitoidentity "vorpalstacks/internal/services/aws/cognitoidentity"
 	"vorpalstacks/internal/services/aws/dynamodb"
+	stsstore "vorpalstacks/internal/store/aws/sts"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
+
+// cognitoCredentialAdapter bridges the STS SessionStore to the
+// CredentialIssuer interface required by CognitoIdentityService.
+type cognitoCredentialAdapter struct {
+	store stsstore.SessionStoreInterface
+}
+
+func (a *cognitoCredentialAdapter) IssueSession(roleArn, roleSessionName string, durationSeconds int) (*svccognitoidentity.CredentialResult, error) {
+	session, err := a.store.Create("WebIdentity", roleSessionName, "", roleArn, roleSessionName, durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+	return &svccognitoidentity.CredentialResult{
+		AccessKeyID:     session.AccessKeyId,
+		SecretAccessKey: session.SecretAccessKey,
+		SessionToken:    session.SessionToken,
+		Expiration:      session.Expiration,
+	}, nil
+}
 
 func (a *App) wireCrossServiceDeps() {
 	st := a.state
@@ -87,6 +108,12 @@ func (a *App) wireCrossServiceDeps() {
 			st.cloudWatchService.StopEvaluator()
 			return nil
 		})
+	}
+
+	if st.cognitoIdentityService != nil {
+		if stsStore := a.server.STSSessionStore(); stsStore != nil {
+			st.cognitoIdentityService.SetCredentialIssuer(&cognitoCredentialAdapter{store: stsStore})
+		}
 	}
 
 	if st.cognitoService != nil {

@@ -14,10 +14,12 @@ import (
 
 // CognitoIdentityService provides Cognito Identity service operations.
 type CognitoIdentityService struct {
-	accountID      string
-	region         string
-	stores         sync.Map // region → cognitoidentitystore.CognitoIdentityStoreInterface
-	storageManager *storage.RegionStorageManager
+	accountID        string
+	region           string
+	stores           sync.Map // region → cognitoidentitystore.CognitoIdentityStoreInterface
+	storageManager   *storage.RegionStorageManager
+	tokenMgr         *tokenManager
+	credentialIssuer CredentialIssuer
 }
 
 // NewCognitoIdentityService creates a new Cognito Identity service.
@@ -25,7 +27,14 @@ func NewCognitoIdentityService(accountID, region string) *CognitoIdentityService
 	return &CognitoIdentityService{
 		accountID: accountID,
 		region:    region,
+		tokenMgr:  newTokenManager(),
 	}
+}
+
+// SetCredentialIssuer injects the STS-backed session creator for enhanced
+// authflow (GetCredentialsForIdentity).
+func (s *CognitoIdentityService) SetCredentialIssuer(ci CredentialIssuer) {
+	s.credentialIssuer = ci
 }
 
 // SetStorageManager injects the region storage manager for lazy store creation.

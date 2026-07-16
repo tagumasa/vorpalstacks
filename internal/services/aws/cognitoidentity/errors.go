@@ -2,6 +2,7 @@ package cognitoidentity
 
 import (
 	"net/http"
+	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 )
@@ -17,4 +18,21 @@ var (
 	ErrNotAuthorized = awserrors.NewAWSError("NotAuthorizedException", "Not authorized", http.StatusUnauthorized)
 	// ErrResourceInUse is returned when a resource is already in use.
 	ErrResourceInUse = awserrors.NewAWSError("ResourceInUseException", "Resource already exists", http.StatusConflict)
+	// ErrInvalidIdentityPoolConfig is returned when the identity pool has no roles configured.
+	ErrInvalidIdentityPoolConfig = awserrors.NewAWSError("InvalidIdentityPoolConfigurationException", "Invalid identity pool configuration", http.StatusBadRequest)
 )
+
+// CredentialResult holds temporary credentials issued for a Cognito identity.
+type CredentialResult struct {
+	AccessKeyID     string
+	SecretAccessKey string
+	SessionToken    string
+	Expiration      time.Time
+}
+
+// CredentialIssuer creates temporary STS-backed sessions for the enhanced
+// authflow (GetCredentialsForIdentity). Implemented by an adapter wrapping
+// the STS SessionStore, injected at server startup via SetCredentialIssuer.
+type CredentialIssuer interface {
+	IssueSession(roleArn, roleSessionName string, durationSeconds int) (*CredentialResult, error)
+}

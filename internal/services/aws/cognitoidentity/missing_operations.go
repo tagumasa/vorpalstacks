@@ -3,12 +3,11 @@ package cognitoidentity
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
-
-	"github.com/google/uuid"
 )
 
 // DeleteIdentities deletes the identities from the specified identity pool.
@@ -124,7 +123,10 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 		}
 	}
 
-	token := uuid.New().String()
+	token, err := s.tokenMgr.generateOpenIdToken(identityID, identity.IdentityPoolID, 900, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate OpenID token: %w", err)
+	}
 
 	return map[string]interface{}{
 		"IdentityId": identityID,
@@ -155,6 +157,18 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 
 	identityID := req.GetParam("IdentityId")
 
+	// TokenDuration controls token expiry (range 15-3600 seconds per AWS spec).
+	tokenDuration := int64(900) // default 15 minutes
+	if td := request.GetIntParam(req.Parameters, "TokenDuration"); td > 0 {
+		tokenDuration = int64(td)
+	}
+	if tokenDuration < 15 {
+		tokenDuration = 15
+	}
+	if tokenDuration > 3600 {
+		tokenDuration = 3600
+	}
+
 	for providerName, devUserID := range logins {
 		existing, err := store.GetDeveloperIdentity(poolID, providerName, devUserID)
 		if err == nil && existing.IdentityID != "" {
@@ -181,7 +195,10 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 		}
 	}
 
-	token := uuid.New().String()
+	token, err := s.tokenMgr.generateOpenIdToken(identityID, poolID, tokenDuration, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate OpenID token: %w", err)
+	}
 
 	return map[string]interface{}{
 		"IdentityId": identityID,
@@ -284,8 +301,9 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 	if maxResults <= 0 {
 		maxResults = 60
 	}
+	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 
-	matchedIdentityID, devUserIDs, _, err := store.LookupDeveloperIdentity(poolID, identityID, devUserID, maxResults)
+	matchedIdentityID, devUserIDs, nextTokenOut, err := store.LookupDeveloperIdentity(poolID, identityID, devUserID, maxResults, nextToken)
 	if err != nil {
 		return nil, ErrInternalError
 	}
@@ -296,6 +314,9 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 	}
 	if matchedIdentityID != "" {
 		result["IdentityId"] = matchedIdentityID
+	}
+	if nextTokenOut != "" {
+		result["NextToken"] = nextTokenOut
 	}
 
 	return result, nil
@@ -335,6 +356,26 @@ func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, r
 	}
 
 	if sourceDI.IdentityID != "" && destDI.IdentityID != "" && sourceDI.IdentityID != destDI.IdentityID {
+		// Merge the source identity's logins into the destination identity so that
+		// public provider links (Facebook, Google, etc.) are not lost.
+		sourceIdentity, srcErr := store.GetIdentity(poolID, sourceDI.IdentityID)
+		if srcErr == nil && sourceIdentity != nil {
+			destIdentity, dstErr := store.GetIdentity(poolID, destDI.IdentityID)
+			if dstErr == nil && destIdentity != nil {
+				if destIdentity.Logins == nil {
+					destIdentity.Logins = make(map[string]string)
+				}
+				for provider, token := range sourceIdentity.Logins {
+					if _, exists := destIdentity.Logins[provider]; !exists {
+						destIdentity.Logins[provider] = token
+					}
+				}
+				destIdentity.LastModifiedDate = time.Now().UTC()
+				destKey := cognitoidentitystore.IdentityPoolIdentityKey(poolID, destDI.IdentityID)
+				_ = store.Identities().Put(destKey, destIdentity)
+			}
+		}
+
 		sourceKey := cognitoidentitystore.IdentityPoolIdentityKey(poolID, sourceDI.IdentityID)
 		if err := store.Identities().Delete(sourceKey); err != nil {
 			return nil, fmt.Errorf("failed to delete source identity: %w", err)

@@ -17,6 +17,7 @@ type CognitoIdentityStoreInterface interface {
 	SetIdentityPoolRoles(poolID string, authRole, unauthRole string, mappings map[string]RoleMapping) error
 	GetIdentityPoolRoles(poolID string) (authRole, unauthRole string, mappings map[string]RoleMapping, err error)
 	GetIdentityByID(identityID string) (*Identity, error)
+	FindIdentityByLogins(poolID string, logins map[string]string) (*Identity, error)
 	Exists(id string) bool
 	List(resourceKey string) (map[string]string, error)
 	Tag(resourceKey string, tags map[string]string) error
@@ -27,7 +28,7 @@ type CognitoIdentityStoreInterface interface {
 	DeleteIdentitiesBatch(poolID string, identityIDs []string) ([]string, error)
 	UnlinkLogins(poolID, identityID string, loginsToRemove []string) error
 	LinkDeveloperIdentity(di *DeveloperIdentity) error
-	LookupDeveloperIdentity(poolID string, identityID, devUserID string, maxResults int) (string, []string, []string, error)
+	LookupDeveloperIdentity(poolID string, identityID, devUserID string, maxResults int, nextToken string) (matchedIdentityID string, devUserIDs []string, nextTokenOut string, err error)
 	UnlinkDeveloperIdentity(poolID, providerName, devUserID string) error
 	GetDeveloperIdentity(poolID, providerName, devUserID string) (*DeveloperIdentity, error)
 	SetPrincipalTagAttributeMap(poolID, providerName string, principalTags map[string]string, useDefaults bool) error
