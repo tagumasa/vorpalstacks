@@ -32,7 +32,11 @@ func (s *CognitoService) SetRiskConfiguration(ctx context.Context, reqCtx *reque
 	if ccRaw, ok := req.Parameters["CompromisedCredentialsRiskConfiguration"]; ok {
 		if m, ok := ccRaw.(map[string]interface{}); ok {
 			if actions, ok := m["Actions"].(map[string]interface{}); ok {
-				cfg.CompromisedCredentialsEventAction = getStringParam(actions, "EventAction")
+				action := getStringParam(actions, "EventAction")
+				if action != "BLOCK" && action != "NO_ACTION" {
+					return nil, ErrInvalidParameter
+				}
+				cfg.CompromisedCredentialsEventAction = action
 			}
 			if ef, ok := m["EventFilter"].([]interface{}); ok {
 				for _, v := range ef {
@@ -48,19 +52,31 @@ func (s *CognitoService) SetRiskConfiguration(ctx context.Context, reqCtx *reque
 		if m, ok := atRaw.(map[string]interface{}); ok {
 			if actions, ok := m["Actions"].(map[string]interface{}); ok {
 				if low, ok := actions["LowAction"].(map[string]interface{}); ok {
-					cfg.AccountTakeoverLowAction = getStringParam(low, "EventAction")
+					action := getStringParam(low, "EventAction")
+					if !isValidAccountTakeoverAction(action) {
+						return nil, ErrInvalidParameter
+					}
+					cfg.AccountTakeoverLowAction = action
 					if notify, ok := low["Notify"].(bool); ok {
 						cfg.AccountTakeoverLowNotify = notify
 					}
 				}
 				if med, ok := actions["MediumAction"].(map[string]interface{}); ok {
-					cfg.AccountTakeoverMediumAction = getStringParam(med, "EventAction")
+					action := getStringParam(med, "EventAction")
+					if !isValidAccountTakeoverAction(action) {
+						return nil, ErrInvalidParameter
+					}
+					cfg.AccountTakeoverMediumAction = action
 					if notify, ok := med["Notify"].(bool); ok {
 						cfg.AccountTakeoverMediumNotify = notify
 					}
 				}
 				if high, ok := actions["HighAction"].(map[string]interface{}); ok {
-					cfg.AccountTakeoverHighAction = getStringParam(high, "EventAction")
+					action := getStringParam(high, "EventAction")
+					if !isValidAccountTakeoverAction(action) {
+						return nil, ErrInvalidParameter
+					}
+					cfg.AccountTakeoverHighAction = action
 					if notify, ok := high["Notify"].(bool); ok {
 						cfg.AccountTakeoverHighNotify = notify
 					}
@@ -133,7 +149,8 @@ func formatRiskConfiguration(cfg *cognitostore.RiskConfiguration) map[string]int
 		result["CompromisedCredentialsRiskConfiguration"] = cc
 	}
 
-	if cfg.AccountTakeoverHighAction != "" || cfg.NotifyFrom != "" {
+	if cfg.AccountTakeoverLowAction != "" || cfg.AccountTakeoverMediumAction != "" ||
+		cfg.AccountTakeoverHighAction != "" || cfg.NotifyFrom != "" || cfg.NotifySourceArn != "" {
 		at := map[string]interface{}{}
 		if cfg.NotifyFrom != "" || cfg.NotifySourceArn != "" {
 			notify := map[string]interface{}{}
@@ -179,4 +196,14 @@ func defaultIfEmpty(val, def string) string {
 		return def
 	}
 	return val
+}
+
+// isValidAccountTakeoverAction validates against the Smithy enum
+// AccountTakeoverEventActionType: BLOCK, MFA_IF_CONFIGURED, MFA_REQUIRED, NO_ACTION.
+func isValidAccountTakeoverAction(action string) bool {
+	switch action {
+	case "BLOCK", "MFA_IF_CONFIGURED", "MFA_REQUIRED", "NO_ACTION":
+		return true
+	}
+	return false
 }

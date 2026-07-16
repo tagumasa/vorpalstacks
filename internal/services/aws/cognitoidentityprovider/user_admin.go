@@ -67,6 +67,7 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 
 	if preSignUpResult.AutoConfirmUser {
 		user.UserStatus = "CONFIRMED"
+		markAutoVerifiedAttributes(user, userPool)
 	}
 
 	if err := store.CreateUser(user); err != nil {

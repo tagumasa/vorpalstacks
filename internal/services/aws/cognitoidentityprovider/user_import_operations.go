@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // CreateUserImportJob creates a new user import job.
@@ -92,19 +93,24 @@ func (s *CognitoService) ListUserImportJobs(ctx context.Context, reqCtx *request
 		maxResults = mr
 	}
 
-	jobs, err := store.ListUserImportJobs(userPoolID, maxResults)
+	result, err := store.ListUserImportJobsPaginated(userPoolID, storecommon.ListOptions{
+		MaxItems: maxResults,
+		Marker:   req.GetParam("PaginationToken"),
+	})
 	if err != nil {
 		return nil, ErrInternalError
 	}
 
-	formatted := make([]map[string]interface{}, 0, len(jobs))
-	for _, j := range jobs {
+	formatted := make([]map[string]interface{}, 0, len(result.Items))
+	for _, j := range result.Items {
 		formatted = append(formatted, formatUserImportJob(j))
 	}
 
-	return map[string]interface{}{
-		"UserImportJobs": formatted,
-	}, nil
+	resp := map[string]interface{}{"UserImportJobs": formatted}
+	if result.IsTruncated && result.NextMarker != "" {
+		resp["PaginationToken"] = result.NextMarker
+	}
+	return resp, nil
 }
 
 // StartUserImportJob starts a user import job.

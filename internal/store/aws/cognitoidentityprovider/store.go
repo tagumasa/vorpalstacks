@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -291,6 +292,31 @@ func (s *CognitoStore) GetUserByID(userID string) (*User, error) {
 			return err
 		}
 		if user.ID == userID {
+			found = &user
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if found == nil {
+		return nil, ErrUserNotFound
+	}
+	return found, nil
+}
+
+// GetUserByProvider scans users in a pool and returns the one linked to the
+// given federated provider with the matching attribute value. Returns
+// ErrUserNotFound if no user matches.
+func (s *CognitoStore) GetUserByProvider(userPoolID, providerName, providerAttrValue string) (*User, error) {
+	var found *User
+	prefix := userPoolID + "#"
+	err := s.usersStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		var user User
+		if err := json.Unmarshal(value, &user); err != nil {
+			return err
+		}
+		if user.ProviderName == providerName && user.ProviderAttributeValue == providerAttrValue {
 			found = &user
 		}
 		return nil
@@ -1037,15 +1063,37 @@ func (s *CognitoStore) GetUICustomization(userPoolID, clientID string) (*UICusto
 }
 
 // SaveUICustomization stores UI customisation for a user pool/client.
+// CSSVersion is incremented only when the CSS content actually changes,
+// matching AWS behaviour for cache-busting on the hosted UI.
 func (s *CognitoStore) SaveUICustomization(ui *UICustomization) error {
-	if ui.CreationDate.IsZero() {
-		ui.CreationDate = time.Now().UTC()
-	}
-	ui.LastModifiedDate = time.Now().UTC()
-	if ui.CSSVersion == "" {
+	key := uiCustomizationKey(ui.UserPoolID, ui.ClientID)
+	now := time.Now().UTC()
+
+	var prev UICustomization
+	hasPrev := s.BaseStore.Get(key, &prev) == nil
+
+	if !hasPrev {
+		ui.CreationDate = now
 		ui.CSSVersion = "20200101"
+	} else {
+		if ui.CreationDate.IsZero() {
+			ui.CreationDate = prev.CreationDate
+		}
+		if ui.CSS != prev.CSS {
+			if prev.CSSVersion == "" {
+				ui.CSSVersion = "20200101"
+			} else if v, err := strconv.Atoi(prev.CSSVersion); err == nil {
+				ui.CSSVersion = strconv.Itoa(v + 1)
+			} else {
+				ui.CSSVersion = "20200101"
+			}
+		} else {
+			ui.CSSVersion = prev.CSSVersion
+		}
 	}
-	return s.BaseStore.Put(uiCustomizationKey(ui.UserPoolID, ui.ClientID), ui)
+
+	ui.LastModifiedDate = now
+	return s.BaseStore.Put(key, ui)
 }
 
 // CreateUserImportJob stores a new user import job.
@@ -1068,26 +1116,9 @@ func (s *CognitoStore) UpdateUserImportJob(job *UserImportJob) error {
 }
 
 // ListUserImportJobs lists import jobs for a user pool.
-func (s *CognitoStore) ListUserImportJobs(userPoolID string, maxResults int) ([]*UserImportJob, error) {
-	var jobs []*UserImportJob
-	prefix := userImportJobPrefix(userPoolID)
-	count := 0
-	err := s.userImportJobsStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		if maxResults > 0 && count >= maxResults {
-			return nil
-		}
-		var job UserImportJob
-		if err := json.Unmarshal(value, &job); err != nil {
-			return err
-		}
-		jobs = append(jobs, &job)
-		count++
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return jobs, nil
+func (s *CognitoStore) ListUserImportJobsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserImportJob], error) {
+	opts.Prefix = userImportJobPrefix(userPoolID)
+	return common.List[UserImportJob](s.userImportJobsStore, opts, nil)
 }
 
 // ===================== WebAuthn =====================
@@ -1108,26 +1139,9 @@ func (s *CognitoStore) DeleteWebAuthnCredential(userPoolID, userID, credID strin
 	return s.webauthnStore.Delete(webauthnKey(userPoolID, userID, credID))
 }
 
-func (s *CognitoStore) ListWebAuthnCredentials(userPoolID, userID string, maxResults int) ([]*WebAuthnCredential, error) {
-	var creds []*WebAuthnCredential
-	prefix := webauthnPrefix(userPoolID, userID)
-	count := 0
-	err := s.webauthnStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		if maxResults > 0 && count >= maxResults {
-			return nil
-		}
-		var c WebAuthnCredential
-		if err := json.Unmarshal(value, &c); err != nil {
-			return err
-		}
-		creds = append(creds, &c)
-		count++
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return creds, nil
+func (s *CognitoStore) ListWebAuthnCredentialsPaginated(userPoolID, userID string, opts common.ListOptions) (*common.ListResult[WebAuthnCredential], error) {
+	opts.Prefix = webauthnPrefix(userPoolID, userID)
+	return common.List[WebAuthnCredential](s.webauthnStore, opts, nil)
 }
 
 // ===================== Managed Login Branding =====================
@@ -1149,11 +1163,25 @@ func (s *CognitoStore) GetManagedLoginBranding(userPoolID, brandingID string) (*
 }
 
 func (s *CognitoStore) GetManagedLoginBrandingByClient(userPoolID, clientID string) (*ManagedLoginBranding, error) {
-	var b ManagedLoginBranding
-	if err := s.BaseStore.Get(managedLoginBrandingByClientKey(userPoolID, clientID), &b); err != nil {
+	var found *ManagedLoginBranding
+	prefix := managedLoginBrandingPrefix(userPoolID)
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		var b ManagedLoginBranding
+		if err := json.Unmarshal(value, &b); err != nil {
+			return err
+		}
+		if b.ClientID == clientID {
+			found = &b
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
-	return &b, nil
+	if found == nil {
+		return nil, ErrNotFound
+	}
+	return found, nil
 }
 
 func (s *CognitoStore) DeleteManagedLoginBranding(userPoolID, brandingID string) error {
@@ -1199,21 +1227,9 @@ func (s *CognitoStore) DeleteTerms(userPoolID, termsID string) error {
 	return s.BaseStore.Delete(termsKey(userPoolID, termsID))
 }
 
-func (s *CognitoStore) ListTerms(userPoolID string) ([]*Terms, error) {
-	var terms []*Terms
-	prefix := termsPrefix(userPoolID)
-	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		var t Terms
-		if err := json.Unmarshal(value, &t); err != nil {
-			return err
-		}
-		terms = append(terms, &t)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return terms, nil
+func (s *CognitoStore) ListTermsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[Terms], error) {
+	opts.Prefix = termsPrefix(userPoolID)
+	return common.List[Terms](s.BaseStore, opts, nil)
 }
 
 // ===================== User Pool Replicas =====================
@@ -1234,19 +1250,7 @@ func (s *CognitoStore) DeleteUserPoolReplica(userPoolID, regionName string) erro
 	return s.BaseStore.Delete(userPoolReplicaKey(userPoolID, regionName))
 }
 
-func (s *CognitoStore) ListUserPoolReplicas(userPoolID string) ([]*UserPoolReplica, error) {
-	var replicas []*UserPoolReplica
-	prefix := userPoolReplicaPrefix(userPoolID)
-	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		var r UserPoolReplica
-		if err := json.Unmarshal(value, &r); err != nil {
-			return err
-		}
-		replicas = append(replicas, &r)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return replicas, nil
+func (s *CognitoStore) ListUserPoolReplicasPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserPoolReplica], error) {
+	opts.Prefix = userPoolReplicaPrefix(userPoolID)
+	return common.List[UserPoolReplica](s.BaseStore, opts, nil)
 }

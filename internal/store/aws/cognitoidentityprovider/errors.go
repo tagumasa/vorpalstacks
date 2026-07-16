@@ -89,4 +89,7 @@ var (
 
 	// ErrResourceAlreadyExists is returned when a resource already exists.
 	ErrResourceAlreadyExists = errors.New("resource already exists")
+
+	// ErrNotFound is returned when a generic resource is not found.
+	ErrNotFound = errors.New("not found")
 )

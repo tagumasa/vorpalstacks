@@ -41,6 +41,12 @@ func (s *CognitoService) SetLogDeliveryConfiguration(ctx context.Context, reqCtx
 					LogLevel:    getStringParam(m, "LogLevel"),
 					EventSource: getStringParam(m, "EventSource"),
 				}
+				if lc.LogLevel != "" && lc.LogLevel != "ERROR" && lc.LogLevel != "INFO" {
+					return nil, ErrInvalidParameter
+				}
+				if lc.EventSource != "" && lc.EventSource != "userNotification" && lc.EventSource != "userAuthEvents" {
+					return nil, ErrInvalidParameter
+				}
 				if cw, ok := m["CloudWatchLogsConfiguration"].(map[string]interface{}); ok {
 					lc.CloudWatchLogsConfiguration = &cognitostore.CloudWatchLogsConfig{
 						LogGroupArn: getStringParam(cw, "LogGroupArn"),

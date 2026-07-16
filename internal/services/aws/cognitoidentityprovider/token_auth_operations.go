@@ -107,6 +107,10 @@ func (s *CognitoService) GetUserAttributeVerificationCode(ctx context.Context, r
 		return nil, ErrUserNotFound
 	}
 
+	if user.Attributes[attributeName] == "" {
+		return nil, ErrInvalidParameter
+	}
+
 	code, err := generateConfirmationCode()
 	if err != nil {
 		return nil, ErrInternalError

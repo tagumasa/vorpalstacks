@@ -5,6 +5,27 @@ import (
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
+// markAutoVerifiedAttributes sets the "<name>_verified" flag to "true" for
+// every attribute listed in the pool's AutoVerifiedAttributes that the user
+// actually possesses. Called after user confirmation flows (ConfirmSignUp,
+// AdminConfirmSignUp) and for auto-confirmed admin-created users.
+func markAutoVerifiedAttributes(user *cognitostore.User, pool *cognitostore.UserPool) {
+	if pool == nil {
+		return
+	}
+	for _, attrName := range pool.AutoVerifiedAttributes {
+		if user.Attributes[attrName] != "" {
+			user.Attributes[attrName+"_verified"] = "true"
+		}
+	}
+}
+
+// isAttributeVerified reports whether the user possesses the named attribute
+// AND has it marked as verified.
+func isAttributeVerified(attrs map[string]string, name string) bool {
+	return attrs[name] != "" && attrs[name+"_verified"] == "true"
+}
+
 func (s *CognitoService) setUserEnabled(reqCtx *request.RequestContext, userPoolID, username string, enabled bool) error {
 	store, err := s.store(reqCtx)
 	if err != nil {

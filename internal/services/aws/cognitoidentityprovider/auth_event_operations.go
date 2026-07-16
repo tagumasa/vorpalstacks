@@ -68,6 +68,9 @@ func (s *CognitoService) AdminUpdateAuthEventFeedback(ctx context.Context, reqCt
 	if userPoolID == "" || username == "" || eventID == "" || feedbackValue == "" {
 		return nil, ErrInvalidParameter
 	}
+	if feedbackValue != "Valid" && feedbackValue != "Invalid" {
+		return nil, ErrInvalidParameter
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -101,6 +104,9 @@ func (s *CognitoService) UpdateAuthEventFeedback(ctx context.Context, reqCtx *re
 	eventID := req.GetParam("EventId")
 	feedbackValue := req.GetParam("FeedbackValue")
 	if accessToken == "" || eventID == "" || feedbackValue == "" {
+		return nil, ErrInvalidParameter
+	}
+	if feedbackValue != "Valid" && feedbackValue != "Invalid" {
 		return nil, ErrInvalidParameter
 	}
 

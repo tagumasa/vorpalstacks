@@ -137,10 +137,6 @@ func managedLoginBrandingKey(userPoolID, brandingID string) string {
 	return "managedlogin:" + userPoolID + "#" + brandingID
 }
 
-func managedLoginBrandingByClientKey(userPoolID, clientID string) string {
-	return "managedlogin-client:" + userPoolID + "#" + clientID
-}
-
 func managedLoginBrandingPrefix(userPoolID string) string {
 	return "managedlogin:" + userPoolID + "#"
 }

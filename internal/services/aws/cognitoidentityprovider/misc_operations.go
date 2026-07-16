@@ -110,25 +110,26 @@ func (s *CognitoService) AdminDisableProviderForUser(ctx context.Context, reqCtx
 	}
 
 	providerName := getStringParam(userRaw, "ProviderName")
-	providerAttrName := getStringParam(userRaw, "ProviderAttributeName")
 	providerAttrValue := getStringParam(userRaw, "ProviderAttributeValue")
+	if providerName == "" || providerAttrValue == "" {
+		return nil, ErrInvalidParameter
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := store.GetUser(userPoolID, providerAttrValue)
+	user, err := store.GetUserByProvider(userPoolID, providerName, providerAttrValue)
 	if err != nil {
 		return nil, ErrUserNotFound
 	}
 
-	if user.ProviderName == providerName && user.ProviderAttributeName == providerAttrName {
-		user.ProviderName = ""
-		user.ProviderAttributeName = ""
-		if err := store.UpdateUser(user); err != nil {
-			return nil, ErrInternalError
-		}
+	user.ProviderName = ""
+	user.ProviderAttributeName = ""
+	user.ProviderAttributeValue = ""
+	if err := store.UpdateUser(user); err != nil {
+		return nil, ErrInternalError
 	}
 
 	return response.EmptyResponse(), nil

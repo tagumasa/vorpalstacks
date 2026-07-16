@@ -150,6 +150,7 @@ func (s *CognitoService) ConfirmSignUp(ctx context.Context, reqCtx *request.Requ
 	user.UserStatus = "CONFIRMED"
 	user.ConfirmationCode = ""
 	user.ConfirmationCodeExpiry = time.Time{}
+	markAutoVerifiedAttributes(user, targetPool)
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
 	}
@@ -192,6 +193,7 @@ func (s *CognitoService) AdminConfirmSignUp(ctx context.Context, reqCtx *request
 	}
 
 	user.UserStatus = "CONFIRMED"
+	markAutoVerifiedAttributes(user, userPool)
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
 	}

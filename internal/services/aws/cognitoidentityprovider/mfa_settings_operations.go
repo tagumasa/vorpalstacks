@@ -149,14 +149,20 @@ func (s *CognitoService) SetUserSettings(ctx context.Context, reqCtx *request.Re
 }
 
 // applyMFAPreference parses SMS/SoftwareToken/Email/WebAuthn MFA settings from
-// the request and applies them to the user record.
+// the request and applies them to the user record. Only one factor may be the
+// preferred MFA at a time; setting a new preferred clears the previous.
 func applyMFAPreference(user *cognitostore.User, req *request.ParsedRequest) {
+	newPreferred := ""
+
 	if sms, ok := req.Parameters["SMSMfaSettings"]; ok {
 		if m, ok := sms.(map[string]interface{}); ok {
 			enabled, _ := m["Enabled"].(bool)
 			preferred, _ := m["PreferredMfa"].(bool)
 			if enabled {
 				user.SmsMfa = &cognitostore.SmsMfaSettings{Enabled: true, PreferredMfa: preferred}
+				if preferred {
+					newPreferred = "SMS"
+				}
 			} else {
 				user.SmsMfa = nil
 			}
@@ -173,6 +179,9 @@ func applyMFAPreference(user *cognitostore.User, req *request.ParsedRequest) {
 				}
 				user.SoftwareTokenMfa.Enabled = true
 				user.SoftwareTokenMfa.PreferredMfa = preferred
+				if preferred {
+					newPreferred = "SoftwareToken"
+				}
 			} else {
 				if user.SoftwareTokenMfa != nil {
 					user.SoftwareTokenMfa.Enabled = false
@@ -188,6 +197,9 @@ func applyMFAPreference(user *cognitostore.User, req *request.ParsedRequest) {
 			preferred, _ := m["PreferredMfa"].(bool)
 			if enabled {
 				user.EmailMfa = &cognitostore.EmailMfaSettings{Enabled: true, PreferredMfa: preferred}
+				if preferred {
+					newPreferred = "Email"
+				}
 			} else {
 				user.EmailMfa = nil
 			}
@@ -202,6 +214,25 @@ func applyMFAPreference(user *cognitostore.User, req *request.ParsedRequest) {
 				user.WebAuthnMfaEnabled = false
 			}
 		}
+	}
+
+	// Enforce single preferred MFA: clear all other factors' preferred flag
+	if newPreferred != "" {
+		clearPreferredMfaExcept(user, newPreferred)
+	}
+}
+
+// clearPreferredMfaExcept sets PreferredMfa to false on every MFA factor
+// except the one named by the keep parameter.
+func clearPreferredMfaExcept(user *cognitostore.User, keep string) {
+	if keep != "SMS" && user.SmsMfa != nil {
+		user.SmsMfa.PreferredMfa = false
+	}
+	if keep != "SoftwareToken" && user.SoftwareTokenMfa != nil {
+		user.SoftwareTokenMfa.PreferredMfa = false
+	}
+	if keep != "Email" && user.EmailMfa != nil {
+		user.EmailMfa.PreferredMfa = false
 	}
 }
 
@@ -252,7 +283,7 @@ func validateMFAPrerequisites(req *request.ParsedRequest, user *cognitostore.Use
 
 	if sms, ok := req.Parameters["SMSMfaSettings"].(map[string]interface{}); ok {
 		if enabled, _ := sms["Enabled"].(bool); enabled {
-			if user.Attributes["phone_number"] == "" {
+			if !isAttributeVerified(user.Attributes, "phone_number") {
 				return ErrInvalidParameter
 			}
 		}
@@ -268,7 +299,7 @@ func validateMFAPrerequisites(req *request.ParsedRequest, user *cognitostore.Use
 
 	if em, ok := req.Parameters["EmailMfaSettings"].(map[string]interface{}); ok {
 		if enabled, _ := em["Enabled"].(bool); enabled {
-			if user.Attributes["email"] == "" {
+			if !isAttributeVerified(user.Attributes, "email") {
 				return ErrInvalidParameter
 			}
 		}

@@ -70,7 +70,7 @@ type UserImportJobOperations interface {
 	CreateUserImportJob(job *UserImportJob) error
 	GetUserImportJob(userPoolID, jobID string) (*UserImportJob, error)
 	UpdateUserImportJob(job *UserImportJob) error
-	ListUserImportJobs(userPoolID string, maxResults int) ([]*UserImportJob, error)
+	ListUserImportJobsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserImportJob], error)
 }
 
 // WebAuthnOperations defines operations for managing WebAuthn credentials.
@@ -78,7 +78,7 @@ type WebAuthnOperations interface {
 	CreateWebAuthnCredential(c *WebAuthnCredential) error
 	GetWebAuthnCredential(userPoolID, userID, credID string) (*WebAuthnCredential, error)
 	DeleteWebAuthnCredential(userPoolID, userID, credID string) error
-	ListWebAuthnCredentials(userPoolID, userID string, maxResults int) ([]*WebAuthnCredential, error)
+	ListWebAuthnCredentialsPaginated(userPoolID, userID string, opts common.ListOptions) (*common.ListResult[WebAuthnCredential], error)
 }
 
 // ManagedLoginBrandingOperations defines operations for managing managed login branding.
@@ -95,7 +95,7 @@ type TermsOperations interface {
 	SaveTerms(t *Terms) error
 	GetTerms(userPoolID, termsID string) (*Terms, error)
 	DeleteTerms(userPoolID, termsID string) error
-	ListTerms(userPoolID string) ([]*Terms, error)
+	ListTermsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[Terms], error)
 }
 
 // UserPoolReplicaOperations defines operations for managing user pool replicas.
@@ -103,7 +103,7 @@ type UserPoolReplicaOperations interface {
 	SaveUserPoolReplica(r *UserPoolReplica) error
 	GetUserPoolReplica(userPoolID, regionName string) (*UserPoolReplica, error)
 	DeleteUserPoolReplica(userPoolID, regionName string) error
-	ListUserPoolReplicas(userPoolID string) ([]*UserPoolReplica, error)
+	ListUserPoolReplicasPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserPoolReplica], error)
 }
 
 // UserPoolOperations defines operations for managing user pools.
@@ -121,6 +121,7 @@ type UserOperations interface {
 	CreateUser(user *User) error
 	GetUser(userPoolID, username string) (*User, error)
 	GetUserByID(userID string) (*User, error)
+	GetUserByProvider(userPoolID, providerName, providerAttrValue string) (*User, error)
 	UpdateUser(user *User) error
 	DeleteUser(userPoolID, username string) error
 	ListUsers(userPoolID string) ([]*User, error)

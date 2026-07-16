@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"strconv"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -94,7 +95,11 @@ func (s *CognitoService) DeleteUserPoolClientSecret(ctx context.Context, reqCtx 
 	return response.EmptyResponse(), nil
 }
 
+const maxClientSecretsPerPage = 60
+
 // ListUserPoolClientSecrets lists secrets for a user pool client.
+// The AWS API does not expose a Limit parameter for this operation; page
+// size is controlled server-side.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUserPoolClientSecrets.html
 func (s *CognitoService) ListUserPoolClientSecrets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := req.GetParam("UserPoolId")
@@ -113,14 +118,33 @@ func (s *CognitoService) ListUserPoolClientSecrets(ctx context.Context, reqCtx *
 		return nil, ErrResourceNotFound
 	}
 
-	secrets := make([]map[string]interface{}, 0, len(client.ClientSecrets))
-	for _, d := range client.ClientSecrets {
+	start := 0
+	if token := req.GetParam("NextToken"); token != "" {
+		if n, err := strconv.Atoi(token); err == nil && n >= 0 {
+			start = n
+		}
+	}
+
+	total := len(client.ClientSecrets)
+	if start > total {
+		start = total
+	}
+	end := start + maxClientSecretsPerPage
+	if end > total {
+		end = total
+	}
+
+	page := client.ClientSecrets[start:end]
+	secrets := make([]map[string]interface{}, 0, len(page))
+	for _, d := range page {
 		secrets = append(secrets, formatClientSecretDescriptor(d))
 	}
 
-	return map[string]interface{}{
-		"ClientSecrets": secrets,
-	}, nil
+	resp := map[string]interface{}{"ClientSecrets": secrets}
+	if end < total {
+		resp["NextToken"] = strconv.Itoa(end)
+	}
+	return resp, nil
 }
 
 func formatClientSecretDescriptor(d cognitostore.ClientSecretDescriptor) map[string]interface{} {

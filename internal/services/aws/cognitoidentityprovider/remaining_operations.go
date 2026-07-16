@@ -10,6 +10,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // ===================== Phase 14: WebAuthn =====================
@@ -146,13 +147,16 @@ func (s *CognitoService) ListWebAuthnCredentials(ctx context.Context, reqCtx *re
 		maxResults = mr
 	}
 
-	creds, err := store.ListWebAuthnCredentials(user.UserPoolID, user.ID, maxResults)
+	result, err := store.ListWebAuthnCredentialsPaginated(user.UserPoolID, user.ID, storecommon.ListOptions{
+		MaxItems: maxResults,
+		Marker:   req.GetParam("NextToken"),
+	})
 	if err != nil {
 		return nil, ErrInternalError
 	}
 
-	formatted := make([]map[string]interface{}, 0, len(creds))
-	for _, c := range creds {
+	formatted := make([]map[string]interface{}, 0, len(result.Items))
+	for _, c := range result.Items {
 		formatted = append(formatted, map[string]interface{}{
 			"CredentialId":           c.CredentialID,
 			"FriendlyCredentialName": c.FriendlyName,
@@ -160,9 +164,11 @@ func (s *CognitoService) ListWebAuthnCredentials(ctx context.Context, reqCtx *re
 		})
 	}
 
-	return map[string]interface{}{
-		"Credentials": formatted,
-	}, nil
+	resp := map[string]interface{}{"Credentials": formatted}
+	if result.IsTruncated && result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+	return resp, nil
 }
 
 // DeleteWebAuthnCredential deletes a WebAuthn credential.
@@ -465,17 +471,29 @@ func (s *CognitoService) ListTerms(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
-	termsList, err := store.ListTerms(userPoolID)
+	maxResults := 60
+	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 {
+		maxResults = mr
+	}
+
+	result, err := store.ListTermsPaginated(userPoolID, storecommon.ListOptions{
+		MaxItems: maxResults,
+		Marker:   req.GetParam("NextToken"),
+	})
 	if err != nil {
 		return nil, ErrInternalError
 	}
 
-	formatted := make([]map[string]interface{}, 0, len(termsList))
-	for _, t := range termsList {
+	formatted := make([]map[string]interface{}, 0, len(result.Items))
+	for _, t := range result.Items {
 		formatted = append(formatted, formatTerms(t))
 	}
 
-	return map[string]interface{}{"Terms": formatted}, nil
+	resp := map[string]interface{}{"Terms": formatted}
+	if result.IsTruncated && result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+	return resp, nil
 }
 
 // UpdateTerms updates a terms document.
@@ -614,17 +632,24 @@ func (s *CognitoService) ListUserPoolReplicas(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	replicas, err := store.ListUserPoolReplicas(userPoolID)
+	result, err := store.ListUserPoolReplicasPaginated(userPoolID, storecommon.ListOptions{
+		MaxItems: 60,
+		Marker:   req.GetParam("NextToken"),
+	})
 	if err != nil {
 		return nil, ErrInternalError
 	}
 
-	formatted := make([]map[string]interface{}, 0, len(replicas))
-	for _, r := range replicas {
+	formatted := make([]map[string]interface{}, 0, len(result.Items))
+	for _, r := range result.Items {
 		formatted = append(formatted, formatUserPoolReplica(r))
 	}
 
-	return map[string]interface{}{"UserPoolReplicas": formatted}, nil
+	resp := map[string]interface{}{"UserPoolReplicas": formatted}
+	if result.IsTruncated && result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
+	}
+	return resp, nil
 }
 
 // DeleteUserPoolReplica deletes a cross-region replica.
