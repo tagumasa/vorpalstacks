@@ -284,6 +284,8 @@ func invokePreSignUp(
 	triggerSource, userPoolID, username, clientID string,
 	config *cognitostore.LambdaConfig,
 	userAttrs map[string]string,
+	validationData map[string]string,
+	clientMetadata map[string]string,
 ) (*preSignUpResult, error) {
 	lambdaARN := resolveTriggerARN(config, triggerSource)
 	if lambdaARN == "" {
@@ -292,8 +294,8 @@ func invokePreSignUp(
 
 	request := map[string]interface{}{
 		"userAttributes": userAttrs,
-		"validationData": nil,
-		"clientMetadata": nil,
+		"validationData": validationData,
+		"clientMetadata": clientMetadata,
 	}
 
 	responseDefaults := map[string]interface{}{

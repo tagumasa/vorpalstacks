@@ -338,6 +338,19 @@ func (s *CognitoService) CreateIdentityProvider(ctx context.Context, reqCtx *req
 		ProviderDetails: providerDetails,
 	}
 
+	// Parse AttributeMapping and IdpIdentifiers (CIPD-14)
+	if am, ok := req.Parameters["AttributeMapping"].(map[string]interface{}); ok {
+		ip.AttributeMapping = make(map[string]string)
+		for k, v := range am {
+			if vs, ok := v.(string); ok {
+				ip.AttributeMapping[k] = vs
+			}
+		}
+	}
+	if ids := getStringSliceParam(req, "IdpIdentifiers"); len(ids) > 0 {
+		ip.IdpIdentifiers = ids
+	}
+
 	if err := store.CreateIdentityProvider(ip); err != nil {
 		return nil, err
 	}
@@ -400,6 +413,19 @@ func (s *CognitoService) UpdateIdentityProvider(ctx context.Context, reqCtx *req
 			}
 		}
 		ip.ProviderDetails = providerDetails
+	}
+
+	// Parse AttributeMapping and IdpIdentifiers on update (CIPD-14)
+	if am, ok := req.Parameters["AttributeMapping"].(map[string]interface{}); ok {
+		ip.AttributeMapping = make(map[string]string)
+		for k, v := range am {
+			if vs, ok := v.(string); ok {
+				ip.AttributeMapping[k] = vs
+			}
+		}
+	}
+	if ids := getStringSliceParam(req, "IdpIdentifiers"); len(ids) > 0 {
+		ip.IdpIdentifiers = ids
 	}
 
 	if err := store.UpdateIdentityProvider(ip); err != nil {
@@ -583,6 +609,12 @@ func formatIdentityProvider(ip *cognitostore.IdentityProvider) map[string]interf
 	}
 	if ip.ProviderDetails != nil {
 		result["ProviderDetails"] = ip.ProviderDetails
+	}
+	if ip.AttributeMapping != nil {
+		result["AttributeMapping"] = ip.AttributeMapping
+	}
+	if len(ip.IdpIdentifiers) > 0 {
+		result["IdpIdentifiers"] = ip.IdpIdentifiers
 	}
 	return result
 }

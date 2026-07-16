@@ -103,9 +103,18 @@ func getClientId(req *request.ParsedRequest) string {
 }
 
 func parseUserAttributes(req *request.ParsedRequest) map[string]string {
+	return parseNamedAttributeList(req, "UserAttributes")
+}
+
+// parseValidationData extracts ValidationData from the request (CIPD-8).
+func parseValidationData(req *request.ParsedRequest) map[string]string {
+	return parseNamedAttributeList(req, "ValidationData")
+}
+
+func parseNamedAttributeList(req *request.ParsedRequest, key string) map[string]string {
 	attributes := make(map[string]string)
 
-	if attrs, ok := req.Parameters["UserAttributes"].([]interface{}); ok {
+	if attrs, ok := req.Parameters[key].([]interface{}); ok {
 		for _, attr := range attrs {
 			if m, ok := attr.(map[string]interface{}); ok {
 				name, _ := m["Name"].(string)
@@ -120,8 +129,8 @@ func parseUserAttributes(req *request.ParsedRequest) map[string]string {
 
 	for i := 1; ; i++ {
 		idx := strconv.Itoa(i)
-		nameKey := "UserAttributes." + idx + ".Name"
-		valueKey := "UserAttributes." + idx + ".Value"
+		nameKey := key + "." + idx + ".Name"
+		valueKey := key + "." + idx + ".Value"
 		name := req.GetParam(nameKey)
 		if name == "" {
 			break
@@ -130,6 +139,25 @@ func parseUserAttributes(req *request.ParsedRequest) map[string]string {
 		attributes[name] = value
 	}
 	return attributes
+}
+
+// parseClientMetadata extracts ClientMetadata from the request (CIPD-8).
+func parseClientMetadata(req *request.ParsedRequest) map[string]string {
+	metadata := make(map[string]string)
+	if cm, ok := req.Parameters["ClientMetadata"].(map[string]interface{}); ok {
+		for k, v := range cm {
+			if vs, ok := v.(string); ok {
+				metadata[k] = vs
+			}
+		}
+	}
+	for k := range req.Parameters {
+		if strings.HasPrefix(k, "ClientMetadata.") {
+			attrKey := strings.TrimPrefix(k, "ClientMetadata.")
+			metadata[attrKey] = req.GetParam(k)
+		}
+	}
+	return metadata
 }
 
 func parsePasswordPolicy(req *request.ParsedRequest) *cognitostore.PasswordPolicy {

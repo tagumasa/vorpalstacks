@@ -32,6 +32,13 @@ func (s *CognitoService) CreateUserPoolClient(ctx context.Context, reqCtx *reque
 	client := cognitostore.NewUserPoolClient(userPoolID, clientName)
 	applyUserPoolClientParams(req, client)
 
+	// Suppress client secret when GenerateSecret is explicitly false (CIPD-12)
+	if v, ok := req.Parameters["GenerateSecret"].(bool); ok && !v {
+		client.ClientSecret = ""
+	} else if gs := req.GetParam("GenerateSecret"); gs == "false" || gs == "False" {
+		client.ClientSecret = ""
+	}
+
 	if err := store.CreateUserPoolClient(client); err != nil {
 		if errors.Is(err, cognitostore.ErrClientAlreadyExists) {
 			return nil, ErrClientAlreadyExists
@@ -129,6 +136,12 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 	}
 	if scopes := getStringSliceParam(req, "AllowedOAuthScopes"); len(scopes) > 0 {
 		client.AllowedOAuthScopes = scopes
+	}
+	// Parse AllowedOAuthFlowsUserPoolClient (CIPD-3)
+	client.AllowedOAuthFlowsUserPoolClient = getBoolParam(req, "AllowedOAuthFlowsUserPoolClient")
+	// Parse PreventUserExistenceErrors (CIPD-4)
+	if v := req.GetParam("PreventUserExistenceErrors"); v != "" {
+		client.PreventUserExistenceErrors = v
 	}
 }
 
@@ -261,6 +274,8 @@ func formatUserPoolClient(client *cognitostore.UserPoolClient, includeSecret boo
 	if client.PreventUserExistenceErrors != "" {
 		result["PreventUserExistenceErrors"] = client.PreventUserExistenceErrors
 	}
+	// Always include AllowedOAuthFlowsUserPoolClient (CIPD-5)
+	result["AllowedOAuthFlowsUserPoolClient"] = client.AllowedOAuthFlowsUserPoolClient
 
 	return result
 }

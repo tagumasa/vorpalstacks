@@ -35,7 +35,7 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 	userAttrs := parseUserAttributes(req)
 	userAttrs["sub"] = ""
 
-	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, userAttrs)
+	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, userAttrs, nil, parseClientMetadata(req))
 	if err != nil {
 		return nil, ErrInternalError
 	}
@@ -105,8 +105,15 @@ func (s *CognitoService) AdminDeleteUser(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
+	user, err := store.GetUser(userPoolID, username)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
 	if err := store.DeleteUser(userPoolID, username); err != nil {
 		return nil, ErrUserNotFound
+	}
+	if err := store.DeleteUserTokens(userPoolID, user.ID); err != nil {
+		return nil, ErrInternalError
 	}
 
 	return response.EmptyResponse(), nil

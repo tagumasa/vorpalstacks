@@ -33,6 +33,11 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 		return nil, ErrResourceNotFound
 	}
 
+	// Reject self-registration when admin-only creation is enforced (CIPD-11)
+	if targetPool.AdminCreateUserConfig != nil && targetPool.AdminCreateUserConfig.AllowAdminCreateUserOnly {
+		return nil, ErrNotAuthorized
+	}
+
 	if err := validatePassword(password, targetPool.PasswordPolicy); err != nil {
 		return nil, ErrPasswordPolicyViolation
 	}
@@ -40,7 +45,7 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 	userAttrs := parseUserAttributes(req)
 	userAttrs["sub"] = ""
 
-	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, userAttrs)
+	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, userAttrs, parseValidationData(req), parseClientMetadata(req))
 	if err != nil {
 		return nil, ErrInternalError
 	}

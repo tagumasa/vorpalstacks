@@ -57,7 +57,6 @@ type PasswordPolicy struct {
 	TemporaryPasswordValidityDays int  `json:"temporaryPasswordValidityDays,omitempty"`
 	PasswordHistorySize           int  `json:"passwordHistorySize,omitempty"`
 	MaxPasswordAge                int  `json:"maxPasswordAge,omitempty"`
-	PreventUserExistenceErrors    bool `json:"preventUserExistenceErrors,omitempty"`
 }
 
 // EmailConfiguration represents the email configuration for a user pool.
@@ -453,8 +452,10 @@ type ResourceServerScope struct {
 
 // IdentityProvider represents an external identity provider linked to a Cognito user pool.
 type IdentityProvider struct {
-	UserPoolID      string            `json:"userPoolId"`
-	ProviderName    string            `json:"providerName"`
-	ProviderType    string            `json:"providerType"`
-	ProviderDetails map[string]string `json:"providerDetails,omitempty"`
+	UserPoolID       string            `json:"userPoolId"`
+	ProviderName     string            `json:"providerName"`
+	ProviderType     string            `json:"providerType"`
+	ProviderDetails  map[string]string `json:"providerDetails,omitempty"`
+	AttributeMapping map[string]string `json:"attributeMapping,omitempty"`
+	IdpIdentifiers   []string          `json:"idpIdentifiers,omitempty"`
 }

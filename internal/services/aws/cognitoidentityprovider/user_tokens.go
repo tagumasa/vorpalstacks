@@ -67,30 +67,59 @@ func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID
 		}
 	}
 
-	accessToken, err = jwtManager.GenerateAccessToken(user, clientID, 3600)
+	// Determine token validity from client configuration (CIPD-1)
+	atValidityMin := 60
+	idValidityMin := 60
+	rtValidityDays := 30
+	if client, cerr := store.GetUserPoolClient(userPoolID, clientID); cerr == nil && client != nil {
+		if client.AccessTokenValidity > 0 {
+			atValidityMin = client.AccessTokenValidity
+		}
+		if client.IDTokenValidity > 0 {
+			idValidityMin = client.IDTokenValidity
+		}
+		if client.RefreshTokenValidity > 0 {
+			rtValidityDays = client.RefreshTokenValidity
+		}
+	}
+	atValiditySec := int64(atValidityMin) * 60
+	idValiditySec := int64(idValidityMin) * 60
+	atExpiry := time.Duration(atValidityMin) * time.Minute
+	idExpiry := time.Duration(idValidityMin) * time.Minute
+	rtExpiry := time.Duration(rtValidityDays) * 24 * time.Hour
+
+	accessToken, err = jwtManager.GenerateAccessToken(user, clientID, atValiditySec)
 	if err != nil {
 		return "", "", "", 0, fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	at := cognitostore.NewAccessToken(userPoolID, user.ID, clientID, accessToken, time.Now().Add(time.Hour))
+	at := cognitostore.NewAccessToken(userPoolID, user.ID, clientID, "", time.Now().Add(atExpiry))
+	at.Token = accessToken
 	if err := store.CreateAccessToken(at); err != nil {
 		return "", "", "", 0, fmt.Errorf("failed to store access token: %w", err)
 	}
 
-	idToken, err = jwtManager.GenerateIDToken(user, clientID, 3600)
+	idToken, err = jwtManager.GenerateIDToken(user, clientID, idValiditySec)
 	if err != nil {
 		return "", "", "", 0, fmt.Errorf("failed to generate ID token: %w", err)
 	}
 
+	// Store ID token so it can be validated and revoked (CIPD-10)
+	it := cognitostore.NewIDToken(userPoolID, user.ID, clientID, "", time.Now().Add(idExpiry), user.Groups)
+	it.Token = idToken
+	if err := store.CreateIDToken(it); err != nil {
+		return "", "", "", 0, fmt.Errorf("failed to store ID token: %w", err)
+	}
+
 	refreshToken = jwtManager.GenerateRefreshToken()
 
-	rt := cognitostore.NewRefreshToken(userPoolID, user.ID, clientID, "openid", time.Now().Add(30*24*time.Hour))
+	rt := cognitostore.NewRefreshToken(userPoolID, user.ID, clientID, "openid", time.Now().Add(rtExpiry))
 	rt.Token = refreshToken
 	if err := store.CreateRefreshToken(rt); err != nil {
 		return "", "", "", 0, fmt.Errorf("failed to store refresh token: %w", err)
 	}
 
-	return accessToken, idToken, refreshToken, 3600, nil
+	return accessToken, idToken, refreshToken, atValiditySec, nil
 }
 
 // ValidateAccessToken validates an access token and returns the user ID.

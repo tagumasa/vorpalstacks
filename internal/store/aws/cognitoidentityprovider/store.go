@@ -147,6 +147,27 @@ func (s *CognitoStore) DeleteUserPool(userPoolID string) error {
 		return s.challengeSessionsStore.Delete(key)
 	})
 
+	// Cascade: delete resource servers (CIPD-2)
+	rsPrefix := resourceServerPrefix(userPoolID)
+	_ = s.BaseStore.ScanPrefix(rsPrefix, func(key string, _ []byte) error {
+		return s.BaseStore.Delete(key)
+	})
+
+	// Cascade: delete identity providers (CIPD-2)
+	idpPrefix := identityProviderPrefix(userPoolID)
+	_ = s.BaseStore.ScanPrefix(idpPrefix, func(key string, _ []byte) error {
+		return s.BaseStore.Delete(key)
+	})
+
+	// Cascade: delete domains associated with this pool (CIPD-2)
+	_ = s.BaseStore.ScanPrefix("domain:", func(key string, value []byte) error {
+		var entry UserPoolDomain
+		if err := json.Unmarshal(value, &entry); err == nil && entry.UserPoolID == userPoolID {
+			return s.BaseStore.Delete(key)
+		}
+		return nil
+	})
+
 	if pool, err := s.GetUserPool(userPoolID); err == nil && pool.Arn != "" {
 		_ = s.TagStore.Delete(pool.Arn)
 	}
