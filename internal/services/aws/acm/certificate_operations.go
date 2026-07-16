@@ -12,7 +12,6 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"math/big"
 	"strings"
 	"time"
 
@@ -22,6 +21,8 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
 	"vorpalstacks/internal/utils/aws/types"
+
+	vcrypto "vorpalstacks/internal/utils/crypto"
 
 	"golang.org/x/crypto/pbkdf2"
 )
@@ -128,12 +129,12 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	keyAlgorithm := parseKeyAlgorithm(params)
 
 	now := time.Now().UTC()
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	key, err := vcrypto.GenerateRSAKey(2048)
 	if err != nil {
 		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to generate key", 500)
 	}
 
-	serialBigInt, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	serialBigInt, err := vcrypto.GenerateSerialNumber()
 	if err != nil {
 		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to generate serial", 500)
 	}
@@ -147,12 +148,12 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 		DNSNames:     []string{domainName},
 	}
 
-	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	certDER, err := vcrypto.CreateCertificate(template, template, &key.PublicKey, key)
 	if err != nil {
 		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to create certificate", 500)
 	}
 
-	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+	certPEM := vcrypto.EncodeCertificatePEM(certDER)
 
 	serialStr := acmstorelib.GenerateCertificateSerial()
 	cert := &acmstorelib.Certificate{
@@ -169,7 +170,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 		Issuer:             domainName,
 		AccountID:          reqCtx.GetAccountID(),
 		Region:             reqCtx.GetRegion(),
-		Certificate:        string(certPEM),
+		Certificate:        certPEM,
 		NotBefore:          now,
 		NotAfter:           notAfter,
 		IssuedAt:           now,
@@ -447,7 +448,7 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 		Region:             reqCtx.GetRegion(),
 	}
 
-	if parsedCert := parseCertificatePEM(certificate); parsedCert != nil {
+	if parsedCert, _ := vcrypto.ParseCertificatePEM([]byte(certificate)); parsedCert != nil {
 		cert.NotBefore = parsedCert.NotBefore
 		cert.NotAfter = parsedCert.NotAfter
 		cert.KeyAlgorithm = determineKeyAlgorithmFromParsed(parsedCert)
@@ -654,12 +655,7 @@ func buildDomainValidationOptions(domainName, validationMethod string) []*acmsto
 }
 
 func extractDomainFromCert(cert string) string {
-	block, _ := pem.Decode([]byte(cert))
-	if block == nil {
-		return "unknown"
-	}
-
-	parsed, err := x509.ParseCertificate(block.Bytes)
+	parsed, err := vcrypto.ParseCertificatePEM([]byte(cert))
 	if err != nil {
 		return "unknown"
 	}
@@ -676,23 +672,11 @@ func extractDomainFromCert(cert string) string {
 }
 
 func determineKeyAlgorithm(cert string) string {
-	parsed := parseCertificatePEM(cert)
-	if parsed == nil {
+	parsed, err := vcrypto.ParseCertificatePEM([]byte(cert))
+	if err != nil {
 		return "RSA_2048"
 	}
 	return determineKeyAlgorithmFromParsed(parsed)
-}
-
-func parseCertificatePEM(cert string) *x509.Certificate {
-	block, _ := pem.Decode([]byte(cert))
-	if block == nil {
-		return nil
-	}
-	parsed, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return nil
-	}
-	return parsed
 }
 
 func determineKeyAlgorithmFromParsed(cert *x509.Certificate) string {

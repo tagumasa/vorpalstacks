@@ -11,6 +11,18 @@ import (
 	"vorpalstacks/internal/common/request"
 )
 
+// validateApiKeyExpiry checks that the expires timestamp falls within the
+// AWS-valid range of 1 to 365 days from the current time.
+func validateApiKeyExpiry(expires int64) error {
+	now := time.Now().Unix()
+	minExpiry := now + 86400    // 1 day
+	maxExpiry := now + 31536000 // 365 days
+	if expires < minExpiry || expires > maxExpiry {
+		return ErrApiKeyValidityOutOfBoundsException
+	}
+	return nil
+}
+
 // CreateApiKey generates a new API key for a GraphQL API.
 func (s *AppSyncService) CreateApiKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
@@ -31,6 +43,19 @@ func (s *AppSyncService) CreateApiKey(ctx context.Context, reqCtx *request.Reque
 	expires := request.GetInt64Param(req.Parameters, "expires")
 	if expires == 0 {
 		expires = time.Now().Add(365 * 24 * time.Hour).Unix()
+	} else {
+		if err := validateApiKeyExpiry(expires); err != nil {
+			return nil, err
+		}
+	}
+
+	// Enforce API key count limit (5000 per GraphQL API per AWS spec).
+	keyCount, err := store.CountApiKeys(apiId)
+	if err != nil {
+		return mapStoreError(err)
+	}
+	if keyCount >= 5000 {
+		return nil, ErrApiKeyLimitExceededException
 	}
 
 	apiKey := &appsyncstore.ApiKey{
@@ -111,6 +136,9 @@ func (s *AppSyncService) UpdateApiKey(ctx context.Context, reqCtx *request.Reque
 		apiKey.Description = description
 	}
 	if expires != 0 {
+		if err := validateApiKeyExpiry(expires); err != nil {
+			return nil, err
+		}
 		apiKey.Expires = expires
 		// Deleting an API key happens after the expiry TTL; sync Deletes with Expires.
 		apiKey.Deletes = expires

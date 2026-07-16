@@ -30,6 +30,7 @@ type AppSyncStore struct {
 	envVariablesStore          *common.BaseStore
 	apiKeysStore               *common.BaseStore
 	apiCachesStore             *common.BaseStore
+	resolverCacheStore         *common.BaseStore
 	domainNamesStore           *common.BaseStore
 	apiAssociationsStore       *common.BaseStore
 	mergedApiAssociationsStore *common.BaseStore
@@ -125,6 +126,7 @@ func NewAppSyncStore(store storage.BasicStorage, accountId, region string) *AppS
 		envVariablesStore:          common.NewBaseStore(store.Bucket(envVariablesBucketName(region)), "appsync-env-variables"),
 		apiKeysStore:               common.NewBaseStore(store.Bucket(apiKeyBucketName(region)), "appsync-api-keys"),
 		apiCachesStore:             common.NewBaseStore(store.Bucket(apiCacheBucketName(region)), "appsync-api-caches"),
+		resolverCacheStore:         common.NewBaseStore(store.Bucket(resolverCacheBucketName(region)), "appsync-resolver-cache"),
 		domainNamesStore:           common.NewBaseStore(store.Bucket(domainNameBucketName(region)), "appsync-domain-names"),
 		apiAssociationsStore:       common.NewBaseStore(store.Bucket(apiAssociationBucketName(region)), "appsync-api-associations"),
 		mergedApiAssociationsStore: common.NewBaseStore(store.Bucket(mergedApiAssociationBucketName(region)), "appsync-merged-api-associations"),

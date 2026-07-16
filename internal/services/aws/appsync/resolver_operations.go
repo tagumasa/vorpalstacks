@@ -41,6 +41,10 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 		SyncConfig:              parseSyncConfig(req.Parameters),
 	}
 
+	if err := validateCachingConfig(r.CachingConfig); err != nil {
+		return nil, err
+	}
+
 	created, err := store.CreateResolver(r)
 	if err != nil {
 		return mapStoreError(err)
@@ -108,6 +112,10 @@ func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.Req
 		MetricsConfig:           request.GetStringParam(req.Parameters, "metricsConfig"),
 		PipelineConfig:          parsePipelineConfig(req.Parameters),
 		SyncConfig:              parseSyncConfig(req.Parameters),
+	}
+
+	if err := validateCachingConfig(r.CachingConfig); err != nil {
+		return nil, err
 	}
 
 	updated, err := store.UpdateResolver(r)

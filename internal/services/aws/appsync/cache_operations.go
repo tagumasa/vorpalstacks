@@ -133,6 +133,7 @@ func (s *AppSyncService) DeleteApiCache(ctx context.Context, reqCtx *request.Req
 }
 
 // FlushApiCache flushes the cache for a GraphQL API.
+// Deletes all cached resolver results and invalidates the schema parse cache.
 func (s *AppSyncService) FlushApiCache(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -147,6 +148,15 @@ func (s *AppSyncService) FlushApiCache(ctx context.Context, reqCtx *request.Requ
 	if _, err := store.GetApiCache(apiId); err != nil {
 		return mapStoreError(err)
 	}
+
+	// Flush all cached resolver results for this API.
+	if err := store.FlushResolverCache(apiId); err != nil {
+		return mapStoreError(err)
+	}
+
+	// Invalidate the in-memory schema parse cache so subsequent requests
+	// re-fetch fresh schema and resolver definitions.
+	s.schemaCache.Delete(apiId)
 
 	return map[string]interface{}{}, nil
 }

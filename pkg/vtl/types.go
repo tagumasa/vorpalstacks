@@ -61,11 +61,13 @@ type AppSyncFieldInfo struct {
 }
 
 // AppSyncError represents an error raised by $util.error() or $util.appendError()
-// within an AppSync resolver template.
+// within an AppSync resolver template. FatalError distinguishes $util.error()
+// (halt execution) from $util.appendError() (continue execution, return partial data).
 type AppSyncError struct {
-	Message   string
-	ErrorType string
-	Data      interface{}
+	Message    string
+	ErrorType  string
+	Data       interface{}
+	FatalError bool
 }
 
 // AppSyncContext holds all AppSync-specific resolver context data accessible

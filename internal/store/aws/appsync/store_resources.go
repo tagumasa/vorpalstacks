@@ -308,6 +308,16 @@ func (s *AppSyncStore) ListApiKeys(apiId string, opts common.ListOptions) ([]*Ap
 	return result.Items, nextToken, nil
 }
 
+// CountApiKeys returns the number of API keys for a given GraphQL API.
+func (s *AppSyncStore) CountApiKeys(apiId string) (int, error) {
+	count := 0
+	err := s.apiKeysStore.ScanPrefix(apiId+"/", func(key string, value []byte) error {
+		count++
+		return nil
+	})
+	return count, err
+}
+
 // --- API Cache ---
 
 // CreateApiCache persists a new API cache configuration.

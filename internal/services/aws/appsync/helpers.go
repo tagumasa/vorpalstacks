@@ -1,6 +1,11 @@
 package appsync
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"strings"
+
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
@@ -451,4 +456,57 @@ func parseSyncConfig(params map[string]interface{}) *appsyncstore.SyncConfig {
 		}
 	}
 	return cfg
+}
+
+// validateCachingConfig validates the TTL range (1-3600 seconds) per AWS spec.
+// Returns nil if CachingConfig is nil (no caching configured).
+func validateCachingConfig(cc *appsyncstore.CachingConfig) error {
+	if cc == nil {
+		return nil
+	}
+	if cc.Ttl < 1 || cc.Ttl > 3600 {
+		return NewBadRequestException("cachingConfig.ttl must be between 1 and 3600 seconds")
+	}
+	return nil
+}
+
+// computeResolverCacheKey generates a SHA-256 cache key from the resolver
+// coordinates (typeName/fieldName) and resolved caching context paths.
+// cachingKeys reference $context.arguments.X, $context.identity.X, or
+// $context.source.X — these are resolved to their values at resolution time.
+func computeResolverCacheKey(typeName, fieldName string, cachingKeys []string, args map[string]interface{}, source interface{}) string {
+	h := sha256.New()
+	h.Write([]byte(typeName))
+	h.Write([]byte{0})
+	h.Write([]byte(fieldName))
+	h.Write([]byte{0})
+	for _, key := range cachingKeys {
+		val := resolveContextPath(key, args, source)
+		b, _ := json.Marshal(val)
+		h.Write(b)
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// resolveContextPath resolves a $context.* path to its value from the
+// resolver context. Supports $context.arguments.X and $context.source.X.
+// $context.identity.* returns nil as identity is not currently populated
+// in the resolver context.
+func resolveContextPath(path string, args map[string]interface{}, source interface{}) interface{} {
+	switch {
+	case strings.HasPrefix(path, "$context.arguments."):
+		key := strings.TrimPrefix(path, "$context.arguments.")
+		return args[key]
+	case strings.HasPrefix(path, "$context.identity."):
+		return nil
+	case strings.HasPrefix(path, "$context.source."):
+		key := strings.TrimPrefix(path, "$context.source.")
+		if srcMap, ok := source.(map[string]interface{}); ok {
+			return srcMap[key]
+		}
+		return nil
+	default:
+		return nil
+	}
 }

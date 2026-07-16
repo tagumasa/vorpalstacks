@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -417,6 +418,29 @@ func (e *graphQLEngine) executeUnitResolver(
 		},
 	}
 
+	// Resolve API cache configuration for PER_RESOLVER_CACHING.
+	var cacheCfg *appsyncstore.ApiCache
+	var cacheEnabled bool
+	if resolver.CachingConfig != nil && len(resolver.CachingConfig.CachingKeys) > 0 {
+		if cc, cerr := e.store.GetApiCache(apiId); cerr == nil &&
+			cc.Type != "" && cc.Status == "AVAILABLE" &&
+			cc.ApiCachingBehavior == "PER_RESOLVER_CACHING" {
+			cacheCfg = cc
+			cacheEnabled = true
+		}
+	}
+
+	// Check resolver result cache before dispatch.
+	if cacheEnabled {
+		cacheKey := computeResolverCacheKey(parentTypeName, fieldName, resolver.CachingConfig.CachingKeys, args, parentSource)
+		if entry, gerr := e.store.GetResolverCacheEntry(apiId, cacheKey); gerr == nil && !entry.IsExpired() {
+			var cached interface{}
+			if json.Unmarshal(entry.Result, &cached) == nil {
+				return cached, nil
+			}
+		}
+	}
+
 	var dsPayload interface{}
 
 	if resolver.RequestMappingTemplate != "" {
@@ -425,12 +449,10 @@ func (e *graphQLEngine) executeUnitResolver(
 			return nil, []graphqlError{{Message: fmt.Sprintf("Request template error: %v", err)}}
 		}
 
-		if engine.AppSyncCtx != nil && len(engine.AppSyncCtx.Errors) > 0 {
-			var errs []graphqlError
-			for _, ae := range engine.AppSyncCtx.Errors {
-				errs = append(errs, graphqlError{Message: ae.Message})
-			}
-			return nil, errs
+		// Only $util.error() and $util.unauthorized() halt execution.
+		// $util.appendError() adds errors but allows continued dispatch.
+		if hasFatalAppSyncError(engine.AppSyncCtx) {
+			return nil, collectAppSyncErrors(engine.AppSyncCtx)
 		}
 
 		if result != "" {
@@ -449,6 +471,8 @@ func (e *graphQLEngine) executeUnitResolver(
 		return nil, []graphqlError{{Message: dsErr.Error()}}
 	}
 
+	finalResult := dsResult
+
 	if resolver.ResponseMappingTemplate != "" {
 		engine.AppSyncCtx.Result = dsResult
 		respStr, err := engine.Transform(resolver.ResponseMappingTemplate)
@@ -456,24 +480,39 @@ func (e *graphQLEngine) executeUnitResolver(
 			return nil, []graphqlError{{Message: fmt.Sprintf("Response template error: %v", err)}}
 		}
 
-		if engine.AppSyncCtx != nil && len(engine.AppSyncCtx.Errors) > 0 {
-			var errs []graphqlError
-			for _, ae := range engine.AppSyncCtx.Errors {
-				errs = append(errs, graphqlError{Message: ae.Message})
-			}
-			return nil, errs
+		if hasFatalAppSyncError(engine.AppSyncCtx) {
+			return nil, collectAppSyncErrors(engine.AppSyncCtx)
 		}
 
 		if respStr != "" {
 			var parsed interface{}
 			if jsonErr := json.Unmarshal([]byte(respStr), &parsed); jsonErr != nil {
-				return respStr, nil
+				finalResult = respStr
+			} else {
+				finalResult = parsed
 			}
-			return parsed, nil
 		}
 	}
 
-	return dsResult, nil
+	// Store result in resolver cache if caching is enabled.
+	if cacheEnabled {
+		cacheKey := computeResolverCacheKey(parentTypeName, fieldName, resolver.CachingConfig.CachingKeys, args, parentSource)
+		ttl := resolver.CachingConfig.Ttl
+		if ttl <= 0 {
+			ttl = cacheCfg.Ttl
+		}
+		if ttl > 0 {
+			resultJSON, _ := json.Marshal(finalResult)
+			_ = e.store.PutResolverCacheEntry(apiId, cacheKey, &appsyncstore.ResolverCacheEntry{
+				Result:   resultJSON,
+				CachedAt: time.Now().Unix(),
+				TTL:      ttl,
+			})
+		}
+	}
+
+	// Return data alongside any non-fatal errors from $util.appendError().
+	return finalResult, collectAppSyncErrors(engine.AppSyncCtx)
 }
 
 // executePipelineResolver runs a pipeline resolver: optional before template →
@@ -511,17 +550,18 @@ func (e *graphQLEngine) executePipelineResolver(
 
 	var result interface{} = map[string]interface{}{}
 
+	// Collect non-fatal errors (from $util.appendError) across all templates
+	// and function engines. Fatal errors ($util.error/$util.unauthorized)
+	// cause immediate return with nil data.
+	var collectedErrs []graphqlError
+
 	if resolver.RequestMappingTemplate != "" {
 		resStr, err := engine.Transform(resolver.RequestMappingTemplate)
 		if err != nil {
 			return nil, []graphqlError{{Message: fmt.Sprintf("Pipeline before template error: %v", err)}}
 		}
-		if engine.AppSyncCtx != nil && len(engine.AppSyncCtx.Errors) > 0 {
-			var errs []graphqlError
-			for _, ae := range engine.AppSyncCtx.Errors {
-				errs = append(errs, graphqlError{Message: ae.Message})
-			}
-			return nil, errs
+		if hasFatalAppSyncError(engine.AppSyncCtx) {
+			return nil, collectAppSyncErrors(engine.AppSyncCtx)
 		}
 		if resStr != "" {
 			var parsed interface{}
@@ -559,12 +599,8 @@ func (e *graphQLEngine) executePipelineResolver(
 			if err != nil {
 				return nil, []graphqlError{{Message: fmt.Sprintf("Function %s request template error: %v", functionId, err)}}
 			}
-			if fnEngine.AppSyncCtx != nil && len(fnEngine.AppSyncCtx.Errors) > 0 {
-				var errs []graphqlError
-				for _, ae := range fnEngine.AppSyncCtx.Errors {
-					errs = append(errs, graphqlError{Message: ae.Message})
-				}
-				return nil, errs
+			if hasFatalAppSyncError(fnEngine.AppSyncCtx) {
+				return nil, collectAppSyncErrors(fnEngine.AppSyncCtx)
 			}
 			if fnResult != "" {
 				var parsed interface{}
@@ -587,12 +623,8 @@ func (e *graphQLEngine) executePipelineResolver(
 			if err != nil {
 				return nil, []graphqlError{{Message: fmt.Sprintf("Function %s response template error: %v", functionId, err)}}
 			}
-			if fnEngine.AppSyncCtx != nil && len(fnEngine.AppSyncCtx.Errors) > 0 {
-				var errs []graphqlError
-				for _, ae := range fnEngine.AppSyncCtx.Errors {
-					errs = append(errs, graphqlError{Message: ae.Message})
-				}
-				return nil, errs
+			if hasFatalAppSyncError(fnEngine.AppSyncCtx) {
+				return nil, collectAppSyncErrors(fnEngine.AppSyncCtx)
 			}
 			if respStr != "" {
 				var parsed interface{}
@@ -607,6 +639,10 @@ func (e *graphQLEngine) executePipelineResolver(
 		} else {
 			result = dsResult
 		}
+
+		// Collect non-fatal errors from this function's engine.
+		// fnEngine is local to this iteration so all its errors belong to this function.
+		collectedErrs = append(collectedErrs, collectAppSyncErrors(fnEngine.AppSyncCtx)...)
 	}
 
 	if resolver.ResponseMappingTemplate != "" {
@@ -616,23 +652,51 @@ func (e *graphQLEngine) executePipelineResolver(
 		if err != nil {
 			return nil, []graphqlError{{Message: fmt.Sprintf("Pipeline after template error: %v", err)}}
 		}
-		if engine.AppSyncCtx != nil && len(engine.AppSyncCtx.Errors) > 0 {
-			var errs []graphqlError
-			for _, ae := range engine.AppSyncCtx.Errors {
-				errs = append(errs, graphqlError{Message: ae.Message})
-			}
-			return nil, errs
+		if hasFatalAppSyncError(engine.AppSyncCtx) {
+			return nil, collectAppSyncErrors(engine.AppSyncCtx)
 		}
 		if respStr != "" {
 			var parsed interface{}
 			if jsonErr := json.Unmarshal([]byte(respStr), &parsed); jsonErr != nil {
-				return respStr, nil
+				result = respStr
+			} else {
+				result = parsed
 			}
-			return parsed, nil
 		}
 	}
 
-	return result, nil
+	// Merge non-fatal errors from main engine (before/after templates) with function errors.
+	collectedErrs = append(collectedErrs, collectAppSyncErrors(engine.AppSyncCtx)...)
+
+	return result, collectedErrs
+}
+
+// hasFatalAppSyncError reports whether any error in the VTL engine's context
+// was raised by $util.error() or $util.unauthorized() (FatalError=true),
+// which must halt resolver execution immediately.
+func hasFatalAppSyncError(ctx *vtl.AppSyncContext) bool {
+	if ctx == nil {
+		return false
+	}
+	for _, ae := range ctx.Errors {
+		if ae.FatalError {
+			return true
+		}
+	}
+	return false
+}
+
+// collectAppSyncErrors converts all VTL context errors to graphqlErrors.
+// Used to return both fatal and non-fatal errors alongside (possibly nil) data.
+func collectAppSyncErrors(ctx *vtl.AppSyncContext) []graphqlError {
+	if ctx == nil || len(ctx.Errors) == 0 {
+		return nil
+	}
+	errs := make([]graphqlError, 0, len(ctx.Errors))
+	for _, ae := range ctx.Errors {
+		errs = append(errs, graphqlError{Message: ae.Message})
+	}
+	return errs
 }
 
 // resolveArguments extracts field arguments using the gqlparser Value(vars) method.

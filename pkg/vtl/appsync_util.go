@@ -156,9 +156,10 @@ func (e *Engine) processUtilError(templateStr string) string {
 		}
 		data := parseErrorData(parts)
 		e.AppSyncCtx.Errors = append(e.AppSyncCtx.Errors, AppSyncError{
-			Message:   msg,
-			ErrorType: errType,
-			Data:      data,
+			Message:    msg,
+			ErrorType:  errType,
+			Data:       data,
+			FatalError: true,
 		})
 		return ""
 	})
@@ -180,9 +181,10 @@ func (e *Engine) processUtilAppendError(templateStr string) string {
 		}
 		data := parseErrorData(parts)
 		e.AppSyncCtx.Errors = append(e.AppSyncCtx.Errors, AppSyncError{
-			Message:   msg,
-			ErrorType: errType,
-			Data:      data,
+			Message:    msg,
+			ErrorType:  errType,
+			Data:       data,
+			FatalError: false,
 		})
 		return ""
 	})
@@ -206,8 +208,9 @@ func (e *Engine) processUtilUnauthorized(templateStr string) string {
 			return match
 		}
 		e.AppSyncCtx.Errors = append(e.AppSyncCtx.Errors, AppSyncError{
-			Message:   "Unauthorized",
-			ErrorType: "Unauthorized",
+			Message:    "Unauthorized",
+			ErrorType:  "Unauthorized",
+			FatalError: true,
 		})
 		return match
 	})

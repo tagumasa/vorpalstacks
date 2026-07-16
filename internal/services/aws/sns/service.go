@@ -3,14 +3,11 @@ package sns
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
-	"math/big"
 	"net/http"
 	"sync"
 	"time"
@@ -24,6 +21,7 @@ import (
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
+	vcrypto "vorpalstacks/internal/utils/crypto"
 )
 
 // SNSService provides SNS topic and subscription operations.
@@ -159,23 +157,29 @@ func (s *SNSService) initSigningKey() {
 		bucket := rs.Bucket("sns-signing")
 
 		if keyPEM, err := bucket.Get([]byte("signing_key")); err == nil && keyPEM != nil {
-			if key, err := parseSigningKeyFromPEM(string(keyPEM)); err == nil {
-				s.signingKey = key
-				if certPEM, err := bucket.Get([]byte("signing_cert")); err == nil && certPEM != nil {
-					s.signingCertPEM = certPEM
-					return
+			if parsedKey, err := vcrypto.ParsePrivateKeyPEM(keyPEM); err == nil {
+				if rsaKey, ok := parsedKey.(*rsa.PrivateKey); ok {
+					s.signingKey = rsaKey
+					if certPEM, err := bucket.Get([]byte("signing_cert")); err == nil && certPEM != nil {
+						s.signingCertPEM = certPEM
+						return
+					}
 				}
 			}
 		}
 
-		privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		privateKey, err := vcrypto.GenerateRSAKey(2048)
 		if err != nil {
 			return
 		}
 		s.signingKey = privateKey
 
+		serial, err := vcrypto.GenerateSerialNumber()
+		if err != nil {
+			return
+		}
 		template := x509.Certificate{
-			SerialNumber: big.NewInt(1),
+			SerialNumber: serial,
 			Subject: pkix.Name{
 				Organization: []string{"Vorpalstacks"},
 			},
@@ -186,30 +190,25 @@ func (s *SNSService) initSigningKey() {
 			BasicConstraintsValid: true,
 		}
 
-		certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+		certDER, err := vcrypto.CreateCertificate(&template, &template, &privateKey.PublicKey, privateKey)
 		if err != nil {
 			return
 		}
 
-		keyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
-		certBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+		keyPEM, err := vcrypto.EncodePrivateKeyPEM(privateKey)
+		if err != nil {
+			return
+		}
+		certBytes := []byte(vcrypto.EncodeCertificatePEM(certDER))
 		s.signingCertPEM = certBytes
 
-		if err := bucket.Put([]byte("signing_key"), keyBytes); err != nil {
+		if err := bucket.Put([]byte("signing_key"), []byte(keyPEM)); err != nil {
 			logs.Warn("failed to persist SNS signing key; key regenerated on restart will invalidate existing message signatures", logs.Err(err))
 		}
 		if err := bucket.Put([]byte("signing_cert"), certBytes); err != nil {
 			logs.Warn("failed to persist SNS signing certificate; certificate regenerated on restart will invalidate existing message signatures", logs.Err(err))
 		}
 	})
-}
-
-func parseSigningKeyFromPEM(pemData string) (*rsa.PrivateKey, error) {
-	block, _ := pem.Decode([]byte(pemData))
-	if block == nil {
-		return nil, fmt.Errorf("failed to decode PEM")
-	}
-	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }
 
 // RegisterHandlers registers all SNS operation handlers with the request dispatcher.
