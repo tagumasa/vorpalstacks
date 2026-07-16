@@ -1,0 +1,190 @@
+// Package appsync implements AWS AppSync API operations including GraphQL API
+// management, data sources, resolvers, schema, real-time subscriptions, and
+// code/mapping template evaluation.
+package appsync
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
+	svcerrors "vorpalstacks/internal/common/errors"
+
+	svccommon "vorpalstacks/internal/common"
+	pb "vorpalstacks/internal/pb/aws/appsync"
+	appsyncconnect "vorpalstacks/internal/pb/aws/appsync/appsyncconnect"
+	appsyncstore "vorpalstacks/internal/store/aws/appsync"
+	storecommon "vorpalstacks/internal/store/aws/common"
+)
+
+// AdminHandler implements the AppSync gRPC-Web admin console handler.
+type AdminHandler struct {
+	appsyncconnect.UnimplementedAppSyncServiceHandler
+	service *AppSyncService
+}
+
+var _ appsyncconnect.AppSyncServiceHandler = (*AdminHandler)(nil)
+
+// NewAdminHandler creates a new AppSync admin console handler.
+func NewAdminHandler(svc *AppSyncService) *AdminHandler {
+	return &AdminHandler{service: svc}
+}
+
+func (h *AdminHandler) getStoreByHeader(header http.Header) (*appsyncstore.AppSyncStore, error) {
+	region := svccommon.GetRegionFromHeader(header)
+	return h.service.GetStoreForRegion(region)
+}
+
+// ListApis returns a paginated list of AppSync APIs in the requested region.
+func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.ListApisRequest]) (*connect.Response[pb.ListApisResponse], error) {
+	store, err := h.getStoreByHeader(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	limit := int(req.Msg.Maxresults)
+	if limit <= 0 {
+		limit = 25
+	}
+
+	opts := storecommon.ListOptions{
+		MaxItems: limit,
+		Marker:   req.Msg.Nexttoken,
+	}
+
+	apis, nextToken, err := store.ListApis(opts)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	pbApis := make([]*pb.Api, len(apis))
+	for i, a := range apis {
+		pbApis[i] = &pb.Api{
+			Apiid:        a.ApiId,
+			Name:         a.Name,
+			Apiarn:       a.Arn,
+			Dns:          a.Dns,
+			Tags:         a.Tags,
+			Xrayenabled:  proto.Bool(a.XrayEnabled),
+			Wafwebaclarn: a.WafWebAclArn,
+		}
+	}
+
+	return connect.NewResponse(&pb.ListApisResponse{
+		Apis:      pbApis,
+		Nexttoken: nextToken,
+	}), nil
+}
+
+// ListGraphqlApis returns a paginated list of GraphQL APIs in the requested region.
+func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request[pb.ListGraphqlApisRequest]) (*connect.Response[pb.ListGraphqlApisResponse], error) {
+	store, err := h.getStoreByHeader(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	limit := int(req.Msg.Maxresults)
+	if limit <= 0 {
+		limit = 25
+	}
+
+	opts := storecommon.ListOptions{
+		MaxItems: limit,
+		Marker:   req.Msg.Nexttoken,
+	}
+
+	graphqlApis, nextToken, err := store.ListGraphqlApis(opts, "")
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	pbApis := make([]*pb.GraphqlApi, len(graphqlApis))
+	for i, a := range graphqlApis {
+		pbApis[i] = toPbGraphqlApi(a)
+	}
+
+	return connect.NewResponse(&pb.ListGraphqlApisResponse{
+		Graphqlapis: pbApis,
+		Nexttoken:   nextToken,
+	}), nil
+}
+
+func toPbGraphqlApi(a *appsyncstore.GraphqlApi) *pb.GraphqlApi {
+	return &pb.GraphqlApi{
+		Name:         a.Name,
+		Apiid:        a.ApiId,
+		Arn:          a.Arn,
+		Uris:         a.Uris,
+		Tags:         a.Tags,
+		Xrayenabled:  proto.Bool(a.XrayEnabled),
+		Wafwebaclarn: a.WafWebAclArn,
+	}
+}
+
+// CreateGraphqlApi creates a new AppSync GraphQL API via the admin console.
+func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Request[pb.CreateGraphqlApiRequest]) (*connect.Response[pb.CreateGraphqlApiResponse], error) {
+	if req.Msg.GetName() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+
+	store, err := h.getStoreByHeader(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	authType := "API_KEY"
+	switch req.Msg.GetAuthenticationtype() {
+	case pb.AuthenticationType_AUTHENTICATION_TYPE_AWS_IAM:
+		authType = "AWS_IAM"
+	case pb.AuthenticationType_AUTHENTICATION_TYPE_OPENID_CONNECT:
+		authType = "OPENID_CONNECT"
+	case pb.AuthenticationType_AUTHENTICATION_TYPE_AMAZON_COGNITO_USER_POOLS:
+		authType = "AMAZON_COGNITO_USER_POOLS"
+	case pb.AuthenticationType_AUTHENTICATION_TYPE_AWS_LAMBDA:
+		authType = "AWS_LAMBDA"
+	}
+
+	api := &appsyncstore.GraphqlApi{
+		Name:               req.Msg.GetName(),
+		AuthenticationType: authType,
+		Tags:               req.Msg.GetTags(),
+		XrayEnabled:        req.Msg.GetXrayenabled(),
+	}
+
+	result, err := store.CreateGraphqlApi(api)
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pb.CreateGraphqlApiResponse{
+		Graphqlapi: toPbGraphqlApi(result),
+	}), nil
+}
+
+// DeleteGraphqlApi deletes an AppSync GraphQL API via the admin console.
+func (h *AdminHandler) DeleteGraphqlApi(ctx context.Context, req *connect.Request[pb.DeleteGraphqlApiRequest]) (*connect.Response[pb.DeleteGraphqlApiResponse], error) {
+	if req.Msg.GetApiid() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("ApiId is required"))
+	}
+
+	store, err := h.getStoreByHeader(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	// Tags are cleaned up automatically by DeleteGraphqlApiById.
+	if err := store.DeleteGraphqlApiById(req.Msg.GetApiid()); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	h.service.schemaCache.Delete(req.Msg.GetApiid())
+
+	return connect.NewResponse(&pb.DeleteGraphqlApiResponse{}), nil
+}
+
+// NewConnectHandler creates a gRPC-Web connect handler for the Appsync admin console.
+func NewConnectHandler(svc *AppSyncService) (string, http.Handler) {
+	return appsyncconnect.NewAppSyncServiceHandler(NewAdminHandler(svc))
+}

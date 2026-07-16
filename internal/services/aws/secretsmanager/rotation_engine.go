@@ -1,0 +1,260 @@
+package secretsmanager
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"sync"
+	"time"
+
+	"github.com/google/uuid"
+
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/resilience"
+	"vorpalstacks/internal/store/aws/common"
+	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
+)
+
+const (
+	rotationStepCreate = "createSecret"
+	rotationStepSet    = "setSecret"
+	rotationStepTest   = "testSecret"
+)
+
+// rotationCheckInterval is the interval between scheduled rotation checks.
+// Reduced to 1 second in test mode for faster test execution, matching the
+// scheduler engine and CloudWatch alarm evaluator patterns.
+var rotationCheckInterval = 60 * time.Second
+
+func init() {
+	if os.Getenv("TEST_MODE") == "true" {
+		rotationCheckInterval = 1 * time.Second
+	}
+}
+
+// rotationChecker periodically scans secrets for those whose NextRotationDate
+// has passed and triggers automatic rotation via the rotation engine.
+type rotationChecker struct {
+	svc      *SecretsManagerService
+	logger   logs.Logger
+	stopCh   chan struct{}
+	stopOnce sync.Once
+	wg       sync.WaitGroup
+}
+
+// newRotationChecker creates a new rotation checker bound to the given service.
+func newRotationChecker(svc *SecretsManagerService, logger logs.Logger) *rotationChecker {
+	return &rotationChecker{
+		svc:    svc,
+		logger: logger,
+		stopCh: make(chan struct{}),
+	}
+}
+
+// start launches the background rotation check loop.
+func (rc *rotationChecker) start(ctx context.Context) {
+	rc.wg.Add(1)
+	go rc.loop(ctx)
+}
+
+// stop signals the rotation checker to terminate and waits for it to finish.
+func (rc *rotationChecker) stop() {
+	rc.stopOnce.Do(func() { close(rc.stopCh) })
+	rc.wg.Wait()
+}
+
+// loop ticks at rotationCheckInterval and checks for secrets due for rotation.
+func (rc *rotationChecker) loop(ctx context.Context) {
+	defer rc.wg.Done()
+	defer func() { resilience.RecoverAndRestart("secret rotation checker", &rc.wg, func() { rc.loop(ctx) }) }()
+	ticker := time.NewTicker(rotationCheckInterval)
+	defer ticker.Stop()
+
+	// Perform an immediate first check so that secrets whose NextRotationDate
+	// has already passed are rotated without waiting for the first tick.
+	rc.checkDueRotations(ctx)
+
+	for {
+		select {
+		case <-ticker.C:
+			rc.checkDueRotations(ctx)
+		case <-rc.stopCh:
+			return
+		}
+	}
+}
+
+// checkDueRotations lists all secrets across all regions and triggers
+// rotation for any whose NextRotationDate has passed.
+func (rc *rotationChecker) checkDueRotations(ctx context.Context) {
+	if rc.svc.storageManager == nil {
+		return
+	}
+
+	regions := rc.svc.storageManager.GetActiveRegions()
+	for _, region := range regions {
+		rc.checkDueRotationsForRegion(ctx, region)
+	}
+}
+
+func (rc *rotationChecker) checkDueRotationsForRegion(ctx context.Context, region string) {
+	storage, err := rc.svc.storageManager.GetStorage(region)
+	if err != nil {
+		rc.logError("failed to get storage for rotation check", logs.String("region", region), logs.Err(err))
+		return
+	}
+	var store secretsmanagerstore.SecretStoreInterface
+	if cached, ok := rc.svc.stores.Load(region); ok {
+		store, ok = cached.(secretsmanagerstore.SecretStoreInterface)
+		if !ok {
+			rc.logError("cached store has unexpected type", logs.String("region", region))
+			return
+		}
+	} else {
+		store = secretsmanagerstore.NewSecretStore(storage, rc.svc.accountID, region)
+		if actual, loaded := rc.svc.stores.LoadOrStore(region, store); loaded {
+			var ok2 bool
+			store, ok2 = actual.(secretsmanagerstore.SecretStoreInterface)
+			if !ok2 {
+				rc.logError("LoadOrStore returned unexpected type", logs.String("region", region))
+				return
+			}
+		}
+	}
+
+	now := time.Now().UTC()
+	handler := func(sec *secretsmanagerstore.Secret) error {
+		if !sec.RotationEnabled || sec.RotationLambdaARN == "" {
+			return nil
+		}
+		if sec.DeletedDate != nil {
+			return nil
+		}
+		if !sec.NextRotationDate.IsZero() && sec.NextRotationDate.Before(now) {
+			if err := rc.svc.executeRotation(ctx, store, sec); err != nil {
+				rc.logError("automatic rotation failed",
+					logs.String("secret", sec.Name),
+					logs.Err(err))
+			}
+		}
+		return nil
+	}
+	if err := common.ForEachAll[secretsmanagerstore.Secret](store.GetBaseStore(), "", nil, handler); err != nil {
+		rc.logError("failed to list secrets for rotation check", logs.Err(err))
+	}
+}
+
+// logError logs a structured error message if a logger is available.
+func (rc *rotationChecker) logError(msg string, fields ...logs.Field) {
+	if rc.logger != nil {
+		rc.logger.Error(msg, fields...)
+	}
+}
+
+// rotationPayload represents the JSON payload sent to a rotation Lambda
+// function. This matches the AWS Secrets Manager rotation request format.
+type rotationPayload struct {
+	SecretId           string `json:"SecretId"`
+	ClientRequestToken string `json:"ClientRequestToken"`
+	Step               string `json:"Step"`
+}
+
+// rotationLambdaResponse is the expected JSON response from a rotation Lambda.
+// The function may return an empty object or additional metadata.
+type rotationLambdaResponse struct {
+	SecretId string `json:"SecretId"`
+}
+
+// executeRotation performs the full multi-step rotation sequence for a secret.
+//
+// The AWS rotation protocol requires four sequential steps:
+//  1. createSecret — Lambda generates new secret material and stores it
+//     via PutSecretValue with AWSPENDING stage.
+//  2. setSecret    — Lambda configures the target resource (database, etc.)
+//     with the new secret value from AWSPENDING.
+//  3. testSecret   — Lambda verifies the new secret works by testing
+//     connectivity with the AWSPENDING value.
+//  4. finishSecret — (implicit) the service promotes AWSPENDING to AWSCURRENT
+//     and demotes AWSCURRENT to AWSPREVIOUS.
+//
+// Steps 1-3 invoke the rotation Lambda; step 4 is handled locally by the
+// service after all Lambda invocations succeed.
+func (s *SecretsManagerService) executeRotation(ctx context.Context, store secretsmanagerstore.SecretStoreInterface, secret *secretsmanagerstore.Secret) error {
+	if s.bus == nil {
+		return fmt.Errorf("event bus not configured for secret rotation")
+	}
+
+	lambdaInvoker := s.bus.LambdaInvoker()
+	if lambdaInvoker == nil {
+		return fmt.Errorf("lambda invoker not configured on event bus")
+	}
+
+	clientToken := uuid.New().String()[:32]
+
+	steps := []string{rotationStepCreate, rotationStepSet, rotationStepTest}
+
+	for _, step := range steps {
+		payload := rotationPayload{
+			SecretId:           secret.ARN,
+			ClientRequestToken: clientToken,
+			Step:               step,
+		}
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			return fmt.Errorf("failed to marshal rotation payload for step %s: %w", step, err)
+		}
+
+		statusCode, respBytes, invokeErr := lambdaInvoker.InvokeForGateway(ctx, secret.RotationLambdaARN, payloadBytes)
+		if invokeErr != nil {
+			return fmt.Errorf("rotation Lambda invocation failed at step %s: %w", step, invokeErr)
+		}
+
+		if statusCode != 200 {
+			return fmt.Errorf("rotation Lambda returned status %d at step %s: %s", statusCode, step, string(respBytes))
+		}
+
+		var lambdaResp rotationLambdaResponse
+		if len(respBytes) > 0 {
+			if jsonErr := json.Unmarshal(respBytes, &lambdaResp); jsonErr != nil {
+				return fmt.Errorf("failed to parse rotation Lambda response at step %s: %w", step, jsonErr)
+			}
+		}
+	}
+
+	// Set rotation dates before persisting via finishRotation so that the
+	// store's atomic FinishRotation includes them in a single write.
+	secret.LastRotatedDate = storeClock()
+	if secret.RotationRules != nil && secret.RotationRules.AutomaticallyAfterDays > 0 {
+		secret.NextRotationDate = secret.LastRotatedDate.AddDate(0, 0, secret.RotationRules.AutomaticallyAfterDays)
+	}
+
+	if err := s.finishRotation(store, secret, clientToken); err != nil {
+		return fmt.Errorf("failed to finish rotation: %w", err)
+	}
+
+	return nil
+}
+
+// finishRotation promotes the AWSPENDING version to AWSCURRENT and demotes
+// the current AWSCURRENT to AWSPREVIOUS.  Delegates to the store's atomic
+// FinishRotation method so that all stage transitions and metadata updates
+// execute under a single lock.  Rotation date metadata (LastRotatedDate,
+// NextRotationDate) must be set by the caller before invoking this method.
+func (s *SecretsManagerService) finishRotation(store secretsmanagerstore.SecretStoreInterface, secret *secretsmanagerstore.Secret, pendingVersionID string) error {
+	if err := store.FinishRotation(secret, pendingVersionID); err != nil {
+		return err
+	}
+
+	s.logRotation(secret.Name, pendingVersionID)
+	return nil
+}
+
+// logRotation emits a structured info log for a successful rotation.
+func (s *SecretsManagerService) logRotation(secretName, versionID string) {
+	if s.logger != nil {
+		s.logger.Info("secret rotation completed",
+			logs.String("secret", secretName),
+			logs.String("version", versionID))
+	}
+}

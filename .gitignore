@@ -1,0 +1,47 @@
+# Binaries
+vorpalstacks
+vorpalstacks_server
+pebble-loader
+/proto_generator
+main
+sdk-tests-test
+
+# Test data
+tmp/
+tmp_lambda/
+data/
+data-test/
+database/
+database.db
+
+# Aubade settings
+.aubade/
+
+# Go
+*.out
+coverage.out
+go.work
+
+# IDE
+.idea/
+.vscode/
+.claude/
+.opencode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# webconsole (TypeScript/React)
+webconsole/node_modules/
+webconsole/dist/
+webconsole/.vite/
+webconsole/*.tsbuildinfo
+webconsole/src/gen/
+
+# Ruff
+.ruff_cache/
+sdk-tests/sdk-tests-all
+sdk-tests/tmp/

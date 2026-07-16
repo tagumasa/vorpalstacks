@@ -1,0 +1,69 @@
+package audit
+
+import (
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+)
+
+var _ Recorder = (*CloudTrailRecorder)(nil)
+
+// CloudTrailRecorder records audit events to CloudTrail.
+type CloudTrailRecorder struct {
+	store EventStore
+}
+
+// NewCloudTrailRecorder creates a new CloudTrail recorder backed by the given store.
+func NewCloudTrailRecorder(store EventStore) *CloudTrailRecorder {
+	return &CloudTrailRecorder{store: store}
+}
+
+// RecordEvent records a CloudTrail audit event.
+func (r *CloudTrailRecorder) RecordEvent(event *AuditEvent) error {
+	userIdentity := &UserIdentity{
+		Type:      "AssumedRole",
+		AccountID: event.AccountID,
+		UserName:  event.PrincipalName,
+	}
+	accessKeyID := event.AccessKeyID
+
+	if accessKeyID != "" {
+		if len(accessKeyID) >= 16 {
+			userIdentity.PrincipalID = "AIDAI" + accessKeyID[:16]
+		} else {
+			userIdentity.PrincipalID = "AIDAI" + accessKeyID
+		}
+		userIdentity.ARN = arnutil.NewARNBuilder(event.AccountID, "").STS().AssumedRole("vorpalstacks", accessKeyID)
+	} else {
+		userIdentity.PrincipalID = "vorpalstacks:vorpalstacks"
+		userIdentity.ARN = arnutil.NewARNBuilder(event.AccountID, "").STS().AssumedRole("vorpalstacks", "vorpalstacks")
+	}
+
+	return r.store.RecordServiceEvent(
+		event.EventName,
+		event.EventSource,
+		userIdentity,
+		event.SourceIP,
+		event.AccessKeyID,
+		event.RequestParameters,
+		event.ResponseElements,
+		buildResources(event),
+	)
+}
+
+func buildResources(event *AuditEvent) []ResourceEntry {
+	if len(event.ResourceTypes) == 0 {
+		return nil
+	}
+	var entries []ResourceEntry
+	for name, typ := range event.ResourceTypes {
+		entries = append(entries, ResourceEntry{ResourceType: typ, ResourceName: name})
+	}
+	return entries
+}
+
+// Record records an audit event if it is an AuditEvent.
+func (r *CloudTrailRecorder) Record(event interface{}) error {
+	if e, ok := event.(*AuditEvent); ok {
+		return r.RecordEvent(e)
+	}
+	return nil
+}

@@ -1,0 +1,249 @@
+// Package iam provides IAM service operations for vorpalstacks.
+package iam
+
+import (
+	"net/http"
+
+	awserrors "vorpalstacks/internal/common/errors"
+)
+
+// ErrNoSuchUser is returned when a user with the specified name cannot be found.
+var (
+	// ErrNoSuchUser is returned when a user with the specified name cannot be found.
+	ErrNoSuchUser = awserrors.NewAWSError("NoSuchEntity", "The user with name {UserName} cannot be found.", http.StatusNotFound)
+	// ErrUserAlreadyExists is returned when attempting to create a user that already exists.
+	ErrUserAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "User {UserName} already exists.", http.StatusConflict)
+	// ErrNoSuchAccessKey is returned when an access key with the specified ID cannot be found.
+	ErrNoSuchAccessKey = awserrors.NewAWSError("NoSuchEntity", "The Access Key with id {AccessKeyId} cannot be found.", http.StatusNotFound)
+	// ErrAccessKeyLimitExceeded is returned when the user has reached the maximum number of access keys.
+	ErrAccessKeyLimitExceeded = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for AccessKeysPerUser: 2.", http.StatusForbidden)
+	// ErrNoSuchLoginProfile is returned when a login profile for the specified user does not exist.
+	ErrNoSuchLoginProfile = awserrors.NewAWSError("NoSuchEntity", "Login profile for user {UserName} does not exist.", http.StatusNotFound)
+	// ErrLoginProfileAlreadyExists is returned when a login profile for the user already exists.
+	ErrLoginProfileAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "Login profile for user {UserName} already exists.", http.StatusConflict)
+	// ErrPasswordPolicyViolation is returned when the password does not meet policy requirements.
+	ErrPasswordPolicyViolation = awserrors.NewAWSError("PasswordPolicyViolation", "The password does not meet the password policy requirements.", http.StatusBadRequest)
+	// ErrDeleteConflict is returned when an entity cannot be deleted due to dependencies.
+	ErrDeleteConflict = awserrors.NewAWSError("DeleteConflict", "Cannot delete entity, must delete access keys first.", http.StatusConflict)
+	// ErrInvalidUserPath is returned when the specified user path is invalid.
+	ErrInvalidUserPath = awserrors.NewAWSError("InvalidInput", "The specified value for path is invalid.", http.StatusBadRequest)
+	// ErrInvalidInput is returned when an input parameter is invalid.
+	ErrInvalidInput = awserrors.NewAWSError("InvalidInput", "The input parameter {Parameter} is invalid.", http.StatusBadRequest)
+	// ErrLimitExceeded is returned when the user quota has been exceeded.
+	ErrLimitExceeded = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for Users: 5000.", http.StatusForbidden)
+	// ErrInstanceProfileRoleLimit is returned when attempting to add a second
+	// role to an instance profile (AWS allows only one role per profile).
+	ErrInstanceProfileRoleLimit = awserrors.NewAWSError("LimitExceededException", "Cannot exceed quota for RolesPerInstanceProfile: 1.", http.StatusBadRequest)
+	// ErrNoSuchGroup is returned when a group with the specified name cannot be found.
+	ErrNoSuchGroup = awserrors.NewAWSError("NoSuchEntity", "The group with name {GroupName} cannot be found.", http.StatusNotFound)
+	// ErrGroupAlreadyExists is returned when attempting to create a group that already exists.
+	ErrGroupAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "Group {GroupName} already exists.", http.StatusConflict)
+	// ErrDeleteGroupConflict is returned when a group cannot be deleted due to dependencies.
+	ErrDeleteGroupConflict = awserrors.NewAWSError("DeleteConflict", "Cannot delete entity, must remove users from group first.", http.StatusConflict)
+	// ErrUserNotInGroup is returned when the specified user is not a member of the group.
+	ErrUserNotInGroup = awserrors.NewAWSError("NoSuchEntity", "User {UserName} is not in group {GroupName}.", http.StatusNotFound)
+	// ErrUserAlreadyInGroup is returned when the user is already a member of the group.
+	ErrUserAlreadyInGroup = awserrors.NewAWSError("EntityAlreadyExists", "User {UserName} is already in group {GroupName}.", http.StatusConflict)
+	// ErrNoSuchRole is returned when a role with the specified name cannot be found.
+	ErrNoSuchRole = awserrors.NewAWSError("NoSuchEntity", "The role with name {RoleName} cannot be found.", http.StatusNotFound)
+	// ErrRoleAlreadyExists is returned when attempting to create a role that already exists.
+	ErrRoleAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "Role {RoleName} already exists.", http.StatusConflict)
+	// ErrDeleteRoleConflict is returned when a role cannot be deleted due to dependencies.
+	ErrDeleteRoleConflict = awserrors.NewAWSError("DeleteConflict", "Cannot delete entity, must detach all policies first.", http.StatusConflict)
+	// ErrNoSuchInstanceProfile is returned when an instance profile with the specified name cannot be found.
+	ErrNoSuchInstanceProfile = awserrors.NewAWSError("NoSuchEntity", "Instance Profile {InstanceProfileName} does not exist.", http.StatusNotFound)
+	// ErrInstanceProfileAlreadyExists is returned when attempting to create an instance profile that already exists.
+	ErrInstanceProfileAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "Instance Profile {InstanceProfileName} already exists.", http.StatusConflict)
+	// ErrRoleNotInInstanceProfile is returned when the role is not associated with the instance profile.
+	ErrRoleNotInInstanceProfile = awserrors.NewAWSError("NoSuchEntity", "Role {RoleName} not in instance profile {InstanceProfileName}.", http.StatusNotFound)
+	// ErrRoleAlreadyInInstanceProfile is returned when the role is already associated with an instance profile.
+	ErrRoleAlreadyInInstanceProfile = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for InstanceProfilesPerRole: 1. Already associated with instance profile {InstanceProfileName}.", http.StatusForbidden)
+	// ErrMalformedPolicyDocument is returned when a policy document contains invalid JSON.
+	ErrMalformedPolicyDocument = awserrors.NewAWSError("MalformedPolicyDocument", "This policy contains invalid JSON.", http.StatusBadRequest)
+	// ErrNoSuchPolicy is returned when a policy with the specified ARN cannot be found.
+	ErrNoSuchPolicy = awserrors.NewAWSError("NoSuchEntity", "The policy with ARN {PolicyArn} does not exist.", http.StatusNotFound)
+	// ErrPolicyAlreadyExists is returned when attempting to create a policy that already exists.
+	ErrPolicyAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "A policy with the name {PolicyName} already exists.", http.StatusConflict)
+	// ErrDeletePolicyConflict is returned when a policy cannot be deleted due to attachments.
+	ErrDeletePolicyConflict = awserrors.NewAWSError("DeleteConflict", "Cannot delete policy {PolicyArn}, there are attachments.", http.StatusConflict)
+	// ErrNoSuchPolicyVersion is returned when a policy version with the specified ID cannot be found.
+	ErrNoSuchPolicyVersion = awserrors.NewAWSError("NoSuchEntity", "Policy version {VersionId} does not exist.", http.StatusNotFound)
+	// ErrLimitExceededPolicyVersions is returned when the policy has reached the maximum number of versions.
+	ErrLimitExceededPolicyVersions = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for PolicyVersions: 5.", http.StatusForbidden)
+	// ErrNoSuchMFADevice is returned when an MFA device with the specified serial number cannot be found.
+	ErrNoSuchMFADevice = awserrors.NewAWSError("NoSuchEntity", "MFA Device {SerialNumber} does not exist.", http.StatusNotFound)
+	// ErrMFADeviceAlreadyAssigned is returned when the MFA device is already assigned to a user.
+	ErrMFADeviceAlreadyAssigned = awserrors.NewAWSError("EntityAlreadyExists", "MFA Device {SerialNumber} is already assigned to a user.", http.StatusConflict)
+	// ErrNoSuchPasswordPolicy is returned when a password policy cannot be found.
+	ErrNoSuchPasswordPolicy = awserrors.NewAWSError("NoSuchEntity", "The Password Policy with domain name {Domain} cannot be found.", http.StatusNotFound)
+	// ErrInvalidAuthenticationCode is returned when the MFA authentication code is invalid.
+	ErrInvalidAuthenticationCode = awserrors.NewAWSError("InvalidAuthenticationCode", "Invalid authentication code.", http.StatusBadRequest)
+	// ErrPolicyNotAttached is returned when the policy is not attached to the principal.
+	ErrPolicyNotAttached = awserrors.NewAWSError("NoSuchEntity", "The policy with ARN {PolicyArn} is not attached to the principal.", http.StatusNotFound)
+)
+
+// NewNoSuchUserError creates a new error indicating that a user with the specified name cannot be found.
+func NewNoSuchUserError(userName string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("user", userName)
+}
+
+// NewUserAlreadyExistsError creates a new error indicating that a user with the specified name already exists.
+func NewUserAlreadyExistsError(userName string) *awserrors.AWSError {
+	return awserrors.NewEntityAlreadyExistsException("User " + userName)
+}
+
+// NewNoSuchAccessKeyError creates a new error indicating that an access key with the specified ID cannot be found.
+func NewNoSuchAccessKeyError(accessKeyId string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("Access Key", accessKeyId)
+}
+
+// NewNoSuchLoginProfileError creates a new error indicating that a login profile for the specified user does not exist.
+func NewNoSuchLoginProfileError(userName string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("Login profile for user", userName)
+}
+
+// NewLoginProfileAlreadyExistsError creates a new error indicating that a login profile for the user already exists.
+func NewLoginProfileAlreadyExistsError(userName string) *awserrors.AWSError {
+	return awserrors.NewEntityAlreadyExistsException("Login profile for user " + userName)
+}
+
+// NewDeleteConflictError creates a new error indicating that an entity cannot be deleted due to dependencies.
+func NewDeleteConflictError(message string) *awserrors.AWSError {
+	return awserrors.NewDeleteConflictException(message)
+}
+
+// NewNoSuchGroupError creates a new error indicating that a group with the specified name cannot be found.
+func NewNoSuchGroupError(groupName string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("group", groupName)
+}
+
+// NewGroupAlreadyExistsError creates a new error indicating that a group with the specified name already exists.
+func NewGroupAlreadyExistsError(groupName string) *awserrors.AWSError {
+	return awserrors.NewEntityAlreadyExistsException("Group " + groupName)
+}
+
+// NewDeleteGroupConflictError creates a new error indicating that a group cannot be deleted due to dependencies.
+func NewDeleteGroupConflictError(message string) *awserrors.AWSError {
+	return awserrors.NewDeleteConflictException(message)
+}
+
+// NewUserNotInGroupError creates a new error indicating that the user is not a member of the specified group.
+func NewUserNotInGroupError(userName, groupName string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("User "+userName+" in group", groupName)
+}
+
+// NewUserAlreadyInGroupError creates a new error indicating that the user is already a member of the specified group.
+func NewUserAlreadyInGroupError(userName, groupName string) *awserrors.AWSError {
+	return awserrors.NewEntityAlreadyExistsException("User " + userName + " in group " + groupName)
+}
+
+// NewNoSuchRoleError creates a new error indicating that a role with the specified name cannot be found.
+func NewNoSuchRoleError(roleName string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("role", roleName)
+}
+
+// NewRoleAlreadyExistsError creates a new error indicating that a role with the specified name already exists.
+func NewRoleAlreadyExistsError(roleName string) *awserrors.AWSError {
+	return awserrors.NewEntityAlreadyExistsException("Role " + roleName)
+}
+
+// NewDeleteRoleConflictError creates a new error indicating that a role cannot be deleted due to dependencies.
+func NewDeleteRoleConflictError(message string) *awserrors.AWSError {
+	return awserrors.NewDeleteConflictException(message)
+}
+
+// NewNoSuchInstanceProfileError creates a new error indicating that an instance profile with the specified name cannot be found.
+func NewNoSuchInstanceProfileError(instanceProfileName string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("Instance Profile", instanceProfileName)
+}
+
+// NewDeleteInstanceProfileConflictError creates a new error indicating that an instance profile cannot be deleted due to attached roles.
+func NewDeleteInstanceProfileConflictError(instanceProfileName string) *awserrors.AWSError {
+	return awserrors.NewDeleteConflictException("Cannot delete instance profile " + instanceProfileName + ", it still has roles attached.")
+}
+
+// NewInstanceProfileAlreadyExistsError creates a new error indicating that an instance profile with the specified name already exists.
+func NewInstanceProfileAlreadyExistsError(instanceProfileName string) *awserrors.AWSError {
+	return awserrors.NewEntityAlreadyExistsException("Instance Profile " + instanceProfileName)
+}
+
+// NewRoleNotInInstanceProfileError creates a new error indicating that the role is not associated with the instance profile.
+func NewRoleNotInInstanceProfileError(roleName, instanceProfileName string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("Role "+roleName+" in instance profile", instanceProfileName)
+}
+
+// NewRoleAlreadyInInstanceProfileError creates a new error indicating that the role is already associated with an instance profile.
+func NewRoleAlreadyInInstanceProfileError(roleName, instanceProfileName string) *awserrors.AWSError {
+	return awserrors.NewLimitExceededException("Cannot exceed quota for InstanceProfilesPerRole: 1. Already associated with instance profile " + instanceProfileName + ".")
+}
+
+// NewNoSuchPolicyError creates a new error indicating that a policy with the specified ARN cannot be found.
+func NewNoSuchPolicyError(policyArn string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("policy", policyArn)
+}
+
+// NewPolicyAlreadyExistsError creates a new error indicating that a policy with the specified name already exists.
+func NewPolicyAlreadyExistsError(policyName string) *awserrors.AWSError {
+	return awserrors.NewEntityAlreadyExistsException("Policy " + policyName)
+}
+
+// NewDeletePolicyConflictError creates a new error indicating that a policy cannot be deleted due to attachments.
+func NewDeletePolicyConflictError(policyArn string) *awserrors.AWSError {
+	return awserrors.NewDeleteConflictException("Cannot delete policy " + policyArn + ", there are attachments.")
+}
+
+// NewNoSuchPolicyVersionError creates a new error indicating that a policy version with the specified ID cannot be found.
+func NewNoSuchPolicyVersionError(versionId string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("Policy version", versionId)
+}
+
+// NewNoSuchMFADeviceError creates a new error indicating that an MFA device with the specified serial number cannot be found.
+func NewNoSuchMFADeviceError(serialNumber string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("MFA Device", serialNumber)
+}
+
+// NewMFADeviceAlreadyAssignedError creates a new error indicating that the MFA device is already assigned to a user.
+func NewMFADeviceAlreadyAssignedError(serialNumber string) *awserrors.AWSError {
+	return awserrors.NewEntityAlreadyExistsException("MFA Device " + serialNumber)
+}
+
+// NewMFADeviceStillAssignedError creates a new error indicating that the MFA device is still assigned to a user and must be deactivated first.
+func NewMFADeviceStillAssignedError(serialNumber string) *awserrors.AWSError {
+	return awserrors.NewDeleteConflictException("MFA Device " + serialNumber + " is still assigned to a user. Deactivate it first.")
+}
+
+// NewNoSuchPasswordPolicyError creates a new error indicating that a password policy cannot be found.
+func NewNoSuchPasswordPolicyError() *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("Password Policy", "")
+}
+
+// NewPolicyNotAttachedError creates a new error indicating that the policy is not attached to the principal.
+func NewPolicyNotAttachedError(policyArn string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("Policy attachment for ARN", policyArn)
+}
+
+// NewNoSuchEntityError creates a new error indicating that an entity of the given type cannot be found.
+func NewNoSuchEntityError(entityType, identifier string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException(entityType, identifier)
+}
+
+// NewEntityAlreadyExistsError creates a new error indicating that an entity already exists.
+func NewEntityAlreadyExistsError(entity string) *awserrors.AWSError {
+	return awserrors.NewEntityAlreadyExistsException(entity)
+}
+
+// ErrValidationRequiredParameter is returned when a required parameter is missing.
+var ErrValidationRequiredParameter = awserrors.NewAWSError("ValidationError", "Required parameter {Parameter} is missing.", http.StatusBadRequest)
+
+// ErrNotAuthorized is returned when authentication fails.
+var ErrNotAuthorized = awserrors.NewAWSError("NotAuthorized", "Not authorized to perform this operation.", http.StatusForbidden)
+
+// NewValidationError creates a new error indicating that a required parameter is missing.
+func NewValidationError(parameter string) *awserrors.AWSError {
+	return awserrors.NewAWSError("ValidationError", "Required parameter "+parameter+" is missing.", http.StatusBadRequest)
+}
+
+// NewInvalidInputError creates a new error indicating that an input parameter is invalid.
+func NewInvalidInputError(parameter string, message string) *awserrors.AWSError {
+	return awserrors.NewInvalidInputException("The input parameter " + parameter + " is invalid: " + message)
+}

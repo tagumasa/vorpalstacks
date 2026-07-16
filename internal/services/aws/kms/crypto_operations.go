@@ -1,0 +1,457 @@
+package kms
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
+
+	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/services/aws/kms/hsm"
+	kmsstore "vorpalstacks/internal/store/aws/kms"
+)
+
+// Encrypt encrypts plaintext using the specified KMS key.
+func (s *KMSService) Encrypt(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	key, err := s.resolveKey(stores, req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.validateKeyState(key); err != nil {
+		return nil, err
+	}
+
+	if key.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
+		return nil, ErrInvalidKeyUsage
+	}
+
+	encryptionAlgorithm := determineEncryptionAlgorithm(key, req.Parameters)
+	if !algorithmSupported(encryptionAlgorithm, key.EncryptionAlgorithms) {
+		return nil, ErrInvalidAlgorithm
+	}
+
+	plaintextB64 := request.GetStringParam(req.Parameters, "Plaintext")
+	plaintext, err := base64.StdEncoding.DecodeString(plaintextB64)
+	if err != nil {
+		plaintext, err = base64.RawStdEncoding.DecodeString(plaintextB64)
+		if err != nil {
+			return nil, ErrValidation
+		}
+	}
+
+	encryptionContext := parseEncryptionContext(req.Parameters)
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Encrypt", key.KeyID, encryptionContext); err != nil {
+		return nil, err
+	}
+
+	result, err := s.hsmBackend.Encrypt(key.KeyID, plaintext, encryptionContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"CiphertextBlob":      base64.StdEncoding.EncodeToString(result.Ciphertext),
+		"KeyId":               key.Arn,
+		"EncryptionAlgorithm": encryptionAlgorithm,
+	}, nil
+}
+
+// Decrypt decrypts ciphertext using the specified KMS key.
+func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	ciphertextB64 := request.GetStringParam(req.Parameters, "CiphertextBlob")
+	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextB64)
+	if err != nil {
+		return nil, ErrInvalidCiphertext
+	}
+
+	encryptionContext := parseEncryptionContext(req.Parameters)
+
+	keyID := s.getKeyID(req.Parameters)
+	var result *hsm.DecryptResult
+	var keyArn string
+	var resolvedKey *kmsstore.Key
+
+	if keyID != "" {
+		key, err := s.resolveKey(stores, req.Parameters)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", key.KeyID, encryptionContext); err != nil {
+			return nil, err
+		}
+		if err := s.validateKeyState(key); err != nil {
+			return nil, err
+		}
+		result, err = s.hsmBackend.Decrypt(key.KeyID, ciphertext, encryptionContext)
+		if err != nil {
+			return nil, s.mapHSMError(err)
+		}
+		keyArn = key.Arn
+		resolvedKey = key
+	} else {
+		var resolvedKeyID string
+		result, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, encryptionContext)
+		if err != nil {
+			return nil, s.mapHSMError(err)
+		}
+		key, err := stores.keys.Get(resolvedKeyID)
+		if err != nil {
+			return nil, NewKeyNotFoundError(resolvedKeyID)
+		}
+		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", key.KeyID, encryptionContext); err != nil {
+			return nil, err
+		}
+		if err := s.validateKeyState(key); err != nil {
+			return nil, err
+		}
+		keyArn = key.Arn
+		resolvedKey = key
+	}
+
+	return map[string]interface{}{
+		"Plaintext":           base64.StdEncoding.EncodeToString(result.Plaintext),
+		"KeyId":               keyArn,
+		"EncryptionAlgorithm": determineEncryptionAlgorithm(resolvedKey, req.Parameters),
+	}, nil
+}
+
+// ReEncrypt decrypts ciphertext using the source KMS key and then re-encrypts it using the destination KMS key.
+func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceKeyID := request.GetStringParam(req.Parameters, "SourceKeyId")
+	var sourceKey *kmsstore.Key
+
+	ciphertextB64 := request.GetStringParam(req.Parameters, "CiphertextBlob")
+	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextB64)
+	if err != nil {
+		return nil, ErrInvalidCiphertext
+	}
+
+	sourceEncryptionContext := parseEncryptionContextForPrefix(req.Parameters, "SourceEncryptionContext")
+	destinationEncryptionContext := parseEncryptionContextForPrefix(req.Parameters, "DestinationEncryptionContext")
+
+	var decryptResult *hsm.DecryptResult
+	var sourceKeyArn string
+
+	if sourceKeyID != "" {
+		sourceKey, err = s.resolveKeyByKeyID(stores, sourceKeyID)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", sourceKey.KeyID, sourceEncryptionContext); err != nil {
+			return nil, err
+		}
+		if err := s.validateKeyState(sourceKey); err != nil {
+			return nil, err
+		}
+		if sourceKey.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
+			return nil, ErrInvalidKeyUsage
+		}
+		decryptResult, err = s.hsmBackend.Decrypt(sourceKey.KeyID, ciphertext, sourceEncryptionContext)
+		if err != nil {
+			return nil, err
+		}
+		sourceKeyArn = sourceKey.Arn
+	} else {
+		var resolvedKeyID string
+		decryptResult, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, sourceEncryptionContext)
+		if err != nil {
+			return nil, err
+		}
+		sourceKey, err = stores.keys.Get(resolvedKeyID)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", sourceKey.KeyID, sourceEncryptionContext); err != nil {
+			return nil, err
+		}
+		if err := s.validateKeyState(sourceKey); err != nil {
+			return nil, err
+		}
+		if sourceKey.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
+			return nil, ErrInvalidKeyUsage
+		}
+		sourceKeyArn = sourceKey.Arn
+	}
+
+	destinationKeyID := request.GetStringParam(req.Parameters, "DestinationKeyId")
+	destinationKey, err := s.resolveKeyByKeyID(stores, destinationKeyID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Encrypt", destinationKey.KeyID, destinationEncryptionContext); err != nil {
+		return nil, err
+	}
+
+	if err := s.validateKeyState(destinationKey); err != nil {
+		return nil, err
+	}
+
+	if destinationKey.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
+		return nil, ErrInvalidKeyUsage
+	}
+
+	encryptResult, err := s.hsmBackend.Encrypt(destinationKey.KeyID, decryptResult.Plaintext, destinationEncryptionContext)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceAlgorithm := determineEncryptionAlgorithm(sourceKey, req.Parameters)
+	destinationAlgorithm := determineEncryptionAlgorithm(destinationKey, req.Parameters)
+
+	return map[string]interface{}{
+		"CiphertextBlob":                 base64.StdEncoding.EncodeToString(encryptResult.Ciphertext),
+		"SourceKeyId":                    sourceKeyArn,
+		"KeyId":                          destinationKey.Arn,
+		"SourceEncryptionAlgorithm":      sourceAlgorithm,
+		"DestinationEncryptionAlgorithm": destinationAlgorithm,
+	}, nil
+}
+
+// GenerateDataKey generates a unique data key for encrypting data outside of KMS.
+func (s *KMSService) GenerateDataKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptionContext := parseEncryptionContext(req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKey", encryptionContext)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.validateKeyState(key); err != nil {
+		return nil, err
+	}
+
+	keySpec := request.GetStringParam(req.Parameters, "KeySpec")
+	numberOfBytes := request.GetIntParam(req.Parameters, "NumberOfBytes")
+
+	if keySpec == "" && numberOfBytes == 0 {
+		keySpec = "AES_256"
+	}
+
+	result, err := s.hsmBackend.GenerateDataKey(key.KeyID, keySpec, numberOfBytes, encryptionContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"CiphertextBlob": base64.StdEncoding.EncodeToString(result.Ciphertext),
+		"Plaintext":      base64.StdEncoding.EncodeToString(result.Plaintext),
+		"KeyId":          key.Arn,
+	}, nil
+}
+
+// GenerateDataKeyWithoutPlaintext generates a unique data key but returns only the ciphertext.
+func (s *KMSService) GenerateDataKeyWithoutPlaintext(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptionContext := parseEncryptionContext(req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKeyWithoutPlaintext", encryptionContext)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.validateKeyState(key); err != nil {
+		return nil, err
+	}
+
+	keySpec := request.GetStringParam(req.Parameters, "KeySpec")
+	numberOfBytes := request.GetIntParam(req.Parameters, "NumberOfBytes")
+
+	if keySpec == "" && numberOfBytes == 0 {
+		keySpec = "AES_256"
+	}
+
+	result, err := s.hsmBackend.GenerateDataKey(key.KeyID, keySpec, numberOfBytes, encryptionContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"CiphertextBlob": base64.StdEncoding.EncodeToString(result.Ciphertext),
+		"KeyId":          key.Arn,
+	}, nil
+}
+
+// GenerateRandom returns a random byte string for use in cryptographic operations.
+func (s *KMSService) GenerateRandom(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	numberOfBytes := request.GetIntParam(req.Parameters, "NumberOfBytes")
+	if numberOfBytes == 0 {
+		return nil, ErrValidation
+	}
+	if numberOfBytes < 1 || numberOfBytes > 1024 {
+		return nil, ErrValidation
+	}
+
+	randomBytes := make([]byte, numberOfBytes)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Plaintext": base64.StdEncoding.EncodeToString(randomBytes),
+	}, nil
+}
+
+func (s *KMSService) resolveKeyByKeyID(stores *kmsStores, keyID string) (*kmsstore.Key, error) {
+	return s.resolveKey(stores, map[string]interface{}{"KeyId": keyID})
+}
+
+func parseEncryptionContextForPrefix(params map[string]interface{}, prefix string) map[string]string {
+	if ec, ok := params[prefix]; ok {
+		if ecMap, ok := ec.(map[string]interface{}); ok {
+			return request.CopyStringMap(ecMap)
+		}
+	}
+	return nil
+}
+
+// GenerateDataKeyPair generates an asymmetric key pair and encrypts the private key with the KMS key.
+func (s *KMSService) GenerateDataKeyPair(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptionContext := parseEncryptionContext(req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKeyPair", encryptionContext)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.validateKeyState(key); err != nil {
+		return nil, err
+	}
+
+	if key.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
+		return nil, ErrInvalidKeyUsage
+	}
+
+	keyPairSpec := hsm.KeySpec(request.GetStringParam(req.Parameters, "KeyPairSpec"))
+	if keyPairSpec == "" {
+		return nil, ErrValidation
+	}
+
+	privKeyDER, pubKeyDER, err := s.hsmBackend.GenerateKeyPair(hsm.KeySpec(keyPairSpec))
+	if err != nil {
+		return nil, err
+	}
+
+	encryptedResult, err := s.hsmBackend.Encrypt(key.KeyID, privKeyDER, encryptionContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"PrivateKeyCiphertextBlob": base64.StdEncoding.EncodeToString(encryptedResult.Ciphertext),
+		"PrivateKeyPlaintext":      base64.StdEncoding.EncodeToString(privKeyDER),
+		"PublicKey":                base64.StdEncoding.EncodeToString(pubKeyDER),
+		"KeyId":                    key.Arn,
+		"KeyPairSpec":              keyPairSpec,
+	}, nil
+}
+
+// GenerateDataKeyPairWithoutPlaintext generates an asymmetric key pair but returns only the encrypted private key.
+func (s *KMSService) GenerateDataKeyPairWithoutPlaintext(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptionContext := parseEncryptionContext(req.Parameters)
+	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "GenerateDataKeyPairWithoutPlaintext", encryptionContext)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.validateKeyState(key); err != nil {
+		return nil, err
+	}
+
+	if key.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
+		return nil, ErrInvalidKeyUsage
+	}
+
+	keyPairSpec := hsm.KeySpec(request.GetStringParam(req.Parameters, "KeyPairSpec"))
+	if keyPairSpec == "" {
+		return nil, ErrValidation
+	}
+
+	privKeyDER, pubKeyDER, err := s.hsmBackend.GenerateKeyPair(keyPairSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptedResult, err := s.hsmBackend.Encrypt(key.KeyID, privKeyDER, encryptionContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"PrivateKeyCiphertextBlob": base64.StdEncoding.EncodeToString(encryptedResult.Ciphertext),
+		"PublicKey":                base64.StdEncoding.EncodeToString(pubKeyDER),
+		"KeyId":                    key.Arn,
+		"KeyPairSpec":              keyPairSpec,
+	}, nil
+}
+
+// ListKeyRotations returns the key rotation history for a KMS key.
+// Returns an empty list when no rotations have been performed.
+func (s *KMSService) ListKeyRotations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.resolveAndAuthorizeKey(reqCtx, req, stores, "ListKeyRotations", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Rotations": []interface{}{},
+		"Truncated": false,
+	}, nil
+}
+
+func (s *KMSService) mapHSMError(err error) error {
+	if errors.Is(err, hsm.ErrKeyNotFound) {
+		return NewKeyNotFoundError("")
+	}
+	if errors.Is(err, hsm.ErrDecryptFailed) {
+		return ErrInvalidCiphertext
+	}
+	return ErrKMSInternal
+}
+
+// determineEncryptionAlgorithm returns the encryption algorithm to use for
+// the given key. If the caller specifies one via the EncryptionAlgorithm
+// parameter, it is used. Otherwise, the default for the key spec is returned.
+func determineEncryptionAlgorithm(key *kmsstore.Key, params map[string]interface{}) string {
+	if alg := request.GetStringParam(params, "EncryptionAlgorithm"); alg != "" {
+		return alg
+	}
+	if key.KeySpec == kmsstore.KeySpecSymmetricDefault {
+		return "SYMMETRIC_DEFAULT"
+	}
+	return "RSAES_OAEP_SHA_256"
+}

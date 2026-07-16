@@ -1,0 +1,662 @@
+// Package sts provides STS (Security Token Service) operations for vorpalstacks.
+//
+// STS is an IAM sub-service and directly accesses the IAM store
+// (internal/store/aws/iam) for identity and role resolution.
+// This is an intentional architectural decision: STS fundamentally
+// depends on IAM roles and access keys, and synchronous store access
+// is required for trust policy evaluation and caller identity resolution.
+package sts
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/iam"
+	"vorpalstacks/internal/common/iam/policy"
+	"vorpalstacks/internal/common/request"
+	storecommon "vorpalstacks/internal/store/aws/common"
+	iamstore "vorpalstacks/internal/store/aws/iam"
+	stsstore "vorpalstacks/internal/store/aws/sts"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/timeutils"
+)
+
+// STSService provides AWS Security Token Service operations.
+type STSService struct {
+	stores sync.Map // caches STS SessionStore per region
+}
+
+// NewSTSService creates a new STS service instance.
+func NewSTSService() *STSService {
+	return &STSService{}
+}
+
+// resolveRoleForAssume resolves and validates a role for STS Assume operations.
+// It fetches the role by name, parses its trust policy, and evaluates whether
+// the given principal is allowed to perform the specified action.
+func (s *STSService) resolveRoleForAssume(reqCtx *request.RequestContext, roleArn, principalArn, action string) (*iamstore.Role, error) {
+	roleName := arnutil.ExtractRoleNameFromARN(roleArn)
+	if roleName == "" {
+		return nil, ErrInvalidRoleArn
+	}
+
+	iamStore, err := s.iamStore(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	role, err := iamStore.Roles().Get(roleName)
+	if err != nil {
+		return nil, ErrNoSuchRole
+	}
+
+	trustPolicyDoc, err := iamStore.Roles().GetAssumeRolePolicyDocument(roleName)
+	if err != nil {
+		return nil, ErrNoSuchRole
+	}
+
+	parsedPolicy, err := policy.ParseDocument(trustPolicyDoc)
+	if err != nil {
+		return nil, ErrInvalidRoleArn
+	}
+
+	evalCtx := iam.BuildEvaluationContext(reqCtx.GetAccountID(), principalArn)
+	if err := iam.EvaluateTrustPolicyForAction(parsedPolicy, principalArn, action, evalCtx); err != nil {
+		return nil, ErrAccessDenied
+	}
+
+	return role, nil
+}
+
+func (s *STSService) store(reqCtx *request.RequestContext) (stsstore.SessionStoreInterface, error) {
+	return storecommon.GetOrCreateStoreE(&s.stores, "global", func() (stsstore.SessionStoreInterface, error) {
+		storage, err := reqCtx.GetGlobalStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get global storage: %w", err)
+		}
+		return stsstore.NewSessionStore(storage, reqCtx.GetRegion()), nil
+	})
+}
+
+func (s *STSService) iamStore(reqCtx *request.RequestContext) (iamstore.IAMStoreInterface, error) {
+	storage, err := reqCtx.GetGlobalStorage()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get global storage: %w", err)
+	}
+	return iamstore.GetOrCreateGlobalStore(storage, reqCtx.GetAccountID()), nil
+}
+
+// RegisterHandlers registers all STS operation handlers with the dispatcher.
+func (s *STSService) RegisterHandlers(d handler.Registrar) {
+	d.RegisterHandlerForService("sts", "GetCallerIdentity", s.GetCallerIdentity)
+	d.RegisterHandlerForService("sts", "AssumeRole", s.AssumeRole)
+	d.RegisterHandlerForService("sts", "GetSessionToken", s.GetSessionToken)
+	d.RegisterHandlerForService("sts", "AssumeRoleWithSAML", s.AssumeRoleWithSAML)
+	d.RegisterHandlerForService("sts", "AssumeRoleWithWebIdentity", s.AssumeRoleWithWebIdentity)
+	d.RegisterHandlerForService("sts", "AssumeRoot", s.AssumeRoot)
+	d.RegisterHandlerForService("sts", "DecodeAuthorizationMessage", s.DecodeAuthorizationMessage)
+	d.RegisterHandlerForService("sts", "GetAccessKeyInfo", s.GetAccessKeyInfo)
+	d.RegisterHandlerForService("sts", "GetFederationToken", s.GetFederationToken)
+	d.RegisterHandlerForService("sts", "GetDelegatedAccessToken", s.GetDelegatedAccessToken)
+	d.RegisterHandlerForService("sts", "GetWebIdentityToken", s.GetWebIdentityToken)
+}
+
+// GetCallerIdentity returns details about the IAM user or role whose credentials are used to call the operation.
+func (s *STSService) GetCallerIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	securityToken := req.Headers.Get("X-Amz-Security-Token")
+
+	var userId, arn string
+
+	if securityToken != "" {
+		store, err := s.store(reqCtx)
+		if err != nil {
+			return nil, err
+		}
+		session, err := store.Get(securityToken)
+		if err == nil && session != nil {
+			userId = session.AccessKeyId
+			switch session.PrincipalType {
+			case "AssumedRole":
+				roleName := arnutil.ExtractRoleNameFromARN(session.RoleArn)
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.RoleSessionName)
+			case "SAML":
+				roleName := arnutil.ExtractRoleNameFromARN(session.RoleArn)
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.PrincipalName)
+			case "WebIdentity":
+				roleName := arnutil.ExtractRoleNameFromARN(session.RoleArn)
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.RoleSessionName)
+			case "FederatedUser":
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().FederatedUser(session.PrincipalName)
+			case "Root":
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
+			default:
+				arn = session.PrincipalArn
+			}
+		}
+	}
+
+	if userId == "" && arn == "" {
+		callerArn, callerName := s.resolveCallerIdentity(reqCtx, req)
+		if callerArn != "" {
+			arn = callerArn
+			userId = callerName
+		}
+	}
+
+	if userId == "" {
+		userId = reqCtx.GetAccountID()
+	}
+
+	if arn == "" {
+		arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
+	}
+
+	return map[string]interface{}{
+		"UserId":  userId,
+		"Account": reqCtx.GetAccountID(),
+		"Arn":     arn,
+	}, nil
+}
+
+// AssumeRole returns a set of temporary security credentials that you can use to access AWS resources.
+func (s *STSService) AssumeRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	roleArn := request.GetStringParam(req.Parameters, "RoleArn")
+	roleSessionName := request.GetStringParam(req.Parameters, "RoleSessionName")
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	sessionPolicy := request.GetStringParam(req.Parameters, "Policy")
+	sourceIdentity := request.GetStringParam(req.Parameters, "SourceIdentity")
+
+	validDuration, err := validateDurationSeconds(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	if roleArn == "" {
+		return nil, ErrInvalidRoleArn
+	}
+
+	if roleSessionName == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	callerArn, _ := s.resolveCallerIdentity(reqCtx, req)
+	if callerArn == "" {
+		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
+	}
+
+	role, err := s.resolveRoleForAssume(reqCtx, roleArn, callerArn, "sts:AssumeRole")
+	if err != nil {
+		return nil, err
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	session, err := store.Create("AssumedRole", roleSessionName, roleArn, roleArn, roleSessionName, validDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+		"AssumedRoleUser": map[string]interface{}{
+			"AssumedRoleId": role.ID + ":" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
+		},
+		"PackedPolicySize": computePackedPolicySize(sessionPolicy, req.Parameters),
+		"SourceIdentity":   sourceIdentity,
+	}, nil
+}
+
+// GetSessionToken returns a set of temporary credentials for an AWS account or IAM user.
+func (s *STSService) GetSessionToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+
+	validDuration, err := validateDurationSecondsExtended(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	accessKeyId := req.Headers.Get("X-Amz-Access-Key")
+	if accessKeyId == "" {
+		accessKeyId = request.GetStringParam(req.Parameters, "AccessKeyId")
+	}
+
+	var callerArn, callerName string
+
+	if accessKeyId != "" {
+		callerArn, callerName = s.resolveCallerIdentity(reqCtx, req)
+	}
+
+	if callerArn == "" {
+		callerName = reqCtx.GetAccountID()
+		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	session, err := store.Create("User", callerName, callerArn, "", "", validDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+	}, nil
+}
+
+func computePackedPolicySize(policy string, params map[string]interface{}) int32 {
+	const maxPolicySize = 2048
+	totalSize := len(policy)
+	for i := 1; ; i++ {
+		arnKey := fmt.Sprintf("PolicyArns.member.%d.arn", i)
+		arn := request.GetStringParam(params, arnKey)
+		if arn == "" {
+			break
+		}
+		totalSize += len(arn)
+	}
+	if totalSize == 0 {
+		return 0
+	}
+	return int32((totalSize * 100) / maxPolicySize)
+}
+
+func validateDurationSeconds(durationSeconds int) (int, error) {
+	if durationSeconds == 0 {
+		return DefaultDurationSeconds, nil
+	}
+	if durationSeconds < MinDurationSeconds || durationSeconds > MaxDurationSeconds {
+		return 0, ErrInvalidDuration
+	}
+	return durationSeconds, nil
+}
+
+func (s *STSService) resolveCallerIdentity(reqCtx *request.RequestContext, req *request.ParsedRequest) (arn, name string) {
+	accessKeyId := req.Headers.Get("X-Amz-Access-Key")
+	if accessKeyId == "" {
+		authHeader := req.Headers.Get("Authorization")
+		if authHeader != "" {
+			accessKeyId = request.ExtractAccessKeyIDFromAuth(authHeader)
+		}
+	}
+	if accessKeyId == "" {
+		return "", ""
+	}
+	iamStore, err := s.iamStore(reqCtx)
+	if err != nil {
+		return "", ""
+	}
+	accessKey, err := iamStore.AccessKeys().Get(accessKeyId)
+	if err != nil || accessKey == nil {
+		return "", ""
+	}
+	// Root user access keys use the special RootUserName constant.
+	if accessKey.UserName == iam.RootUserName {
+		return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root(), iam.RootUserName
+	}
+	return arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().User(accessKey.UserName), accessKey.UserName
+}
+
+func validateDurationSecondsExtended(durationSeconds int) (int, error) {
+	if durationSeconds == 0 {
+		return DefaultDurationSeconds, nil
+	}
+	if durationSeconds < MinDurationSeconds || durationSeconds > MaxDurationSecondsExtended {
+		return 0, ErrInvalidDurationExtended
+	}
+	return durationSeconds, nil
+}
+
+// AssumeRoleWithSAML returns a set of temporary security credentials for users who have been authenticated via a SAML authentication response.
+// VorpalStacks cannot validate SAML assertions against external IdPs, so this is only available in TEST_MODE.
+func (s *STSService) AssumeRoleWithSAML(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if os.Getenv("TEST_MODE") != "true" {
+		return nil, ErrIDPCommunicationError
+	}
+
+	roleArn := request.GetStringParam(req.Parameters, "RoleArn")
+	principalArn := request.GetStringParam(req.Parameters, "PrincipalArn")
+	samlAssertion := request.GetStringParam(req.Parameters, "SAMLAssertion")
+	roleSessionName := request.GetStringParam(req.Parameters, "RoleSessionName")
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	sessionPolicy := request.GetStringParam(req.Parameters, "Policy")
+
+	if roleSessionName == "" {
+		roleSessionName = "SAML"
+	}
+
+	validDuration, err := validateDurationSeconds(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	if roleArn == "" {
+		return nil, ErrInvalidRoleArn
+	}
+
+	if principalArn == "" {
+		return nil, ErrInvalidPrincipalArn
+	}
+
+	if samlAssertion == "" {
+		return nil, ErrInvalidSAMLAssertion
+	}
+
+	if _, err := base64.StdEncoding.DecodeString(samlAssertion); err != nil {
+		if _, err := base64.URLEncoding.DecodeString(samlAssertion); err != nil {
+			return nil, ErrInvalidSAMLAssertion
+		}
+	}
+
+	role, err := s.resolveRoleForAssume(reqCtx, roleArn, principalArn, "sts:AssumeRoleWithSAML")
+	if err != nil {
+		return nil, err
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	session, err := store.Create("SAML", principalArn, roleArn, roleArn, roleSessionName, validDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+		"AssumedRoleUser": map[string]interface{}{
+			"AssumedRoleId": role.ID + ":" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
+		},
+		"Subject":          principalArn,
+		"SubjectType":      "persistent",
+		"Issuer":           "VorpalStacks",
+		"NameQualifier":    "SAML",
+		"Audience":         "STS",
+		"PackedPolicySize": computePackedPolicySize(sessionPolicy, req.Parameters),
+	}, nil
+}
+
+// AssumeRoleWithWebIdentity returns a set of temporary security credentials for users who have been authenticated in a mobile or web application with a web identity provider.
+// VorpalStacks cannot validate web identity tokens against external IdPs, so this is only available in TEST_MODE.
+func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	if os.Getenv("TEST_MODE") != "true" {
+		return nil, ErrIDPCommunicationError
+	}
+
+	roleArn := request.GetStringParam(req.Parameters, "RoleArn")
+	roleSessionName := request.GetStringParam(req.Parameters, "RoleSessionName")
+	webIdentityToken := request.GetStringParam(req.Parameters, "WebIdentityToken")
+	providerId := request.GetStringParam(req.Parameters, "ProviderId")
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	sessionPolicy := request.GetStringParam(req.Parameters, "Policy")
+	sourceIdentity := request.GetStringParam(req.Parameters, "SourceIdentity")
+
+	validDuration, err := validateDurationSeconds(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	if roleArn == "" {
+		return nil, ErrInvalidRoleArn
+	}
+
+	if roleSessionName == "" {
+		roleSessionName = "web-identity-session"
+	}
+
+	if webIdentityToken == "" {
+		return nil, ErrInvalidWebIdentityToken
+	}
+
+	if _, err := base64.RawURLEncoding.DecodeString(strings.SplitN(webIdentityToken, ".", 2)[0]); err != nil {
+		return nil, ErrInvalidWebIdentityToken
+	}
+
+	federatedPrincipal := ""
+	if providerId != "" {
+		federatedPrincipal = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().OIDCProvider(providerId)
+	}
+
+	role, err := s.resolveRoleForAssume(reqCtx, roleArn, federatedPrincipal, "sts:AssumeRoleWithWebIdentity")
+	if err != nil {
+		return nil, err
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	session, err := store.Create("WebIdentity", roleSessionName, roleArn, roleArn, roleSessionName, validDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+		"AssumedRoleUser": map[string]interface{}{
+			"AssumedRoleId": role.ID + ":" + roleSessionName,
+			"Arn":           arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(role.RoleName, roleSessionName),
+		},
+		"Provider":                    providerId,
+		"SubjectFromWebIdentityToken": roleSessionName,
+		"Audience":                    "sts.amazonaws.com",
+		"PackedPolicySize":            computePackedPolicySize(sessionPolicy, req.Parameters),
+		"SourceIdentity":              sourceIdentity,
+	}, nil
+}
+
+// AssumeRoot returns a set of temporary security credentials for the root user of an account.
+func (s *STSService) AssumeRoot(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+	targetPrincipal := request.GetStringParam(req.Parameters, "TargetPrincipal")
+
+	validDuration, err := validateDurationSeconds(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	session, err := store.Create("Root", "root", arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root(), "", targetPrincipal, validDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+	}, nil
+}
+
+// DecodeAuthorizationMessage decodes additional information about the authorization status of a request from an encoded message.
+func (s *STSService) DecodeAuthorizationMessage(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	encodedMessage := request.GetStringParam(req.Parameters, "EncodedMessage")
+
+	if encodedMessage == "" {
+		return nil, ErrInvalidEncodedMessage
+	}
+
+	decodedBytes, err := base64.StdEncoding.DecodeString(encodedMessage)
+	if err != nil {
+		decodedBytes, err = base64.URLEncoding.DecodeString(encodedMessage)
+		if err != nil {
+			return nil, ErrInvalidEncodedMessage
+		}
+	}
+
+	return map[string]interface{}{
+		"DecodedMessage": string(decodedBytes),
+	}, nil
+}
+
+// GetAccessKeyInfo returns information about the access key in the request.
+func (s *STSService) GetAccessKeyInfo(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	accessKeyId := request.GetStringParam(req.Parameters, "AccessKeyId")
+
+	if accessKeyId == "" {
+		return nil, ErrInvalidAccessKeyId
+	}
+
+	return map[string]interface{}{
+		"Account": reqCtx.GetAccountID(),
+	}, nil
+}
+
+// GetFederationToken returns a set of temporary security credentials for a federated user.
+func (s *STSService) GetFederationToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	name := request.GetStringParam(req.Parameters, "Name")
+	policy := request.GetStringParam(req.Parameters, "Policy")
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+
+	validDuration, err := validateDurationSecondsExtended(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	if name == "" {
+		return nil, ErrInvalidFederationName
+	}
+
+	if policy != "" {
+		var js interface{}
+		if err := json.Unmarshal([]byte(policy), &js); err != nil {
+			return nil, ErrMalformedPolicyDocument
+		}
+	}
+
+	callerArn, _ := s.resolveCallerIdentity(reqCtx, req)
+	if callerArn == "" {
+		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	session, err := store.Create("FederatedUser", name, callerArn, "", name, validDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	const maxPolicySize = 2048
+
+	packedPolicySize := 0
+	if policy != "" {
+		packedPolicySize = (len(policy) * 100) / maxPolicySize
+	}
+
+	return map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+		"FederatedUser": map[string]interface{}{
+			"FederatedUserId": reqCtx.GetAccountID() + ":" + name,
+			"Arn":             arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().FederatedUser(name),
+		},
+		"PackedPolicySize": packedPolicySize,
+	}, nil
+}
+
+// GetDelegatedAccessToken returns a set of temporary security credentials that represent an IAM identity centre user.
+func (s *STSService) GetDelegatedAccessToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	tradeInToken := request.GetStringParam(req.Parameters, "TradeInToken")
+
+	if tradeInToken == "" {
+		return nil, ErrInvalidTradeInToken
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	principalArn, err := store.RedeemDelegationToken(tradeInToken)
+	if err != nil {
+		if errors.Is(err, stsstore.ErrDelegationTokenExpired) {
+			return nil, ErrExpiredTradeInToken
+		}
+		return nil, ErrInvalidTradeInToken
+	}
+
+	session, err := store.Create("DelegatedAccess", principalArn, principalArn, "", "", 3600)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Credentials": map[string]interface{}{
+			"AccessKeyId":     session.AccessKeyId,
+			"SecretAccessKey": session.SecretAccessKey,
+			"SessionToken":    session.SessionToken,
+			"Expiration":      session.Expiration.Format(timeutils.ISO8601SimpleFormat),
+		},
+		"AssumedPrincipal": principalArn,
+		"PackedPolicySize": 0,
+	}, nil
+}
+
+// GetWebIdentityToken returns a web identity token for the caller.
+func (s *STSService) GetWebIdentityToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	durationSeconds := request.GetIntParam(req.Parameters, "DurationSeconds")
+
+	validDuration, err := validateDurationSeconds(durationSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return nil, err
+	}
+	webIdentityToken := base64.StdEncoding.EncodeToString(tokenBytes)
+
+	expiration := time.Now().UTC().Add(time.Duration(validDuration) * time.Second)
+
+	return map[string]interface{}{
+		"WebIdentityToken": webIdentityToken,
+		"Expiration":       expiration.Format(timeutils.ISO8601SimpleFormat),
+	}, nil
+}

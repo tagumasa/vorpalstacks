@@ -1,0 +1,150 @@
+package athena
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/utils/timeutils"
+
+	"connectrpc.com/connect"
+
+	svccommon "vorpalstacks/internal/common"
+	pb "vorpalstacks/internal/pb/aws/athena"
+	athenaconnect "vorpalstacks/internal/pb/aws/athena/athenaconnect"
+	athenastore "vorpalstacks/internal/store/aws/athena"
+	storecommon "vorpalstacks/internal/store/aws/common"
+)
+
+// AdminHandler implements the Athena admin console gRPC-Web handler.
+// It delegates to the shared AthenaService store cache so that the same
+// per-region store instances are used by both the HTTP API handlers and the
+// admin console gRPC-Web handlers.
+type AdminHandler struct {
+	athenaconnect.UnimplementedAthenaServiceHandler
+	service *AthenaService
+}
+
+var _ athenaconnect.AthenaServiceHandler = (*AdminHandler)(nil)
+
+// NewAdminHandler creates a new Athena admin handler backed by the given
+// service instance.
+func NewAdminHandler(svc *AthenaService) *AdminHandler {
+	return &AdminHandler{
+		service: svc,
+	}
+}
+
+func (h *AdminHandler) getWorkGroupStoreFromHeaders(headers http.Header) (*athenastore.WorkGroupStore, error) {
+	region := svccommon.GetRegionFromHeader(headers)
+	return h.service.GetWorkGroupStoreForRegion(region)
+}
+
+// CreateWorkGroup creates a new Athena work group via the admin console gRPC-Web interface.
+func (h *AdminHandler) CreateWorkGroup(ctx context.Context, req *connect.Request[pb.CreateWorkGroupInput]) (*connect.Response[pb.CreateWorkGroupOutput], error) {
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+
+	store, err := h.getWorkGroupStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	wg := &athenastore.WorkGroup{
+		Name:        req.Msg.Name,
+		Description: req.Msg.Description,
+		State:       athenastore.WorkGroupStateEnabled,
+	}
+	if req.Msg.Configuration != nil {
+		wg.Configuration = &athenastore.WorkGroupConfiguration{}
+		if req.Msg.Configuration.Resultconfiguration != nil {
+			wg.Configuration.ResultConfiguration = &athenastore.ResultConfiguration{
+				OutputLocation: req.Msg.Configuration.Resultconfiguration.Outputlocation,
+			}
+		}
+		wg.Configuration.PublishCloudWatchMetricsEnabled = req.Msg.Configuration.GetPublishcloudwatchmetricsenabled()
+		wg.Configuration.BytesScannedCutoffPerQuery = req.Msg.Configuration.Bytesscannedcutoffperquery
+		wg.Configuration.RequesterPaysEnabled = req.Msg.Configuration.GetRequesterpaysenabled()
+		if req.Msg.Configuration.Engineversion != nil {
+			wg.Configuration.EngineVersion = &athenastore.EngineVersion{
+				SelectedEngineVersion:  req.Msg.Configuration.Engineversion.Selectedengineversion,
+				EffectiveEngineVersion: req.Msg.Configuration.Engineversion.Effectiveengineversion,
+			}
+		}
+	}
+
+	if err := store.CreateWorkGroup(wg); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pb.CreateWorkGroupOutput{}), nil
+}
+
+// DeleteWorkGroup deletes an Athena work group via the admin console gRPC-Web interface.
+func (h *AdminHandler) DeleteWorkGroup(ctx context.Context, req *connect.Request[pb.DeleteWorkGroupInput]) (*connect.Response[pb.DeleteWorkGroupOutput], error) {
+	if req.Msg.Workgroup == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("WorkGroup is required"))
+	}
+
+	store, err := h.getWorkGroupStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	if err := store.DeleteWorkGroup(req.Msg.Workgroup); err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	return connect.NewResponse(&pb.DeleteWorkGroupOutput{}), nil
+}
+
+// ListWorkGroups retrieves Athena work groups with pagination support.
+func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[pb.ListWorkGroupsInput]) (*connect.Response[pb.ListWorkGroupsOutput], error) {
+	store, err := h.getWorkGroupStoreFromHeaders(req.Header())
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	limit := int(req.Msg.Maxresults)
+	if limit <= 0 {
+		limit = 100
+	}
+	result, err := store.ListWorkGroups(storecommon.ListOptions{
+		Marker:   req.Msg.Nexttoken,
+		MaxItems: limit,
+	})
+	if err != nil {
+		return nil, svcerrors.StoreErrorToGRPC(err)
+	}
+
+	var summaries []*pb.WorkGroupSummary
+	for _, wg := range result.Items {
+		state := pb.WorkGroupState_WORK_GROUP_STATE_DISABLED
+		if wg.State == "ENABLED" {
+			state = pb.WorkGroupState_WORK_GROUP_STATE_ENABLED
+		}
+		summary := &pb.WorkGroupSummary{
+			Name:  wg.Name,
+			State: state,
+		}
+		if wg.Description != "" {
+			summary.Description = wg.Description
+		}
+		if !wg.CreatedTime.IsZero() {
+			summary.Creationtime = wg.CreatedTime.Format(timeutils.ISO8601UTCFormat)
+		}
+		summaries = append(summaries, summary)
+	}
+
+	return connect.NewResponse(&pb.ListWorkGroupsOutput{
+		Workgroups: summaries,
+		Nexttoken:  result.NextMarker,
+	}), nil
+}
+
+// NewConnectHandler creates a gRPC-Web connect handler for the Athena admin console.
+func NewConnectHandler(svc *AthenaService) (string, http.Handler) {
+	return athenaconnect.NewAthenaServiceHandler(NewAdminHandler(svc))
+}

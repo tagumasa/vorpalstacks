@@ -1,0 +1,270 @@
+syntax = "proto3";
+
+package storage.timestream;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_timestream";
+
+import "google/protobuf/timestamp.proto";
+
+// RetentionProperties defines the retention period for data in memory and magnetic storage.
+message RetentionProperties {
+  int64 memory_store_retention_period_in_hours = 1;
+  int64 magnetic_store_retention_period_in_days = 2;
+}
+
+// PartitionKey defines a partition key for a Timestream table.
+message PartitionKey {
+  string type = 1;
+  string name = 2;
+  string enforcement_in_record = 3;
+}
+
+// Schema defines the schema for a Timestream table.
+message Schema {
+  repeated PartitionKey composite_partition_key = 1;
+}
+
+// Database represents an Amazon Timestream database.
+message Database {
+  string database_name = 1;
+  string arn = 2;
+  int64 table_count = 3;
+  string kms_key_id = 4;
+  google.protobuf.Timestamp creation_time = 5;
+  google.protobuf.Timestamp last_updated_time = 6;
+}
+
+// Table represents an Amazon Timestream table.
+message Table {
+  string table_name = 1;
+  string database_name = 2;
+  string arn = 3;
+  string table_status = 4;
+  RetentionProperties retention_properties = 5;
+  Schema schema = 6;
+  google.protobuf.Timestamp creation_time = 7;
+  google.protobuf.Timestamp last_updated_time = 8;
+}
+
+// ScheduleConfiguration defines the schedule for a scheduled query.
+message ScheduleConfiguration {
+  string schedule_expression = 1;
+}
+
+// SNSConfiguration defines the SNS topic configuration for notifications.
+message SNSConfiguration {
+  string topic_arn = 1;
+}
+
+// NotificationConfiguration defines the notification settings for a scheduled query.
+message NotificationConfiguration {
+  SNSConfiguration sns_configuration = 1;
+}
+
+// S3ErrorReportConfiguration defines the S3 location for error reports.
+message S3ErrorReportConfiguration {
+  string bucket_name = 1;
+  string object_key_prefix = 2;
+}
+
+// ErrorReportConfiguration defines where to store error reports for failed query executions.
+message ErrorReportConfiguration {
+  S3ErrorReportConfiguration s3_configuration = 1;
+}
+
+// SourceColumn defines the source column name for mapping.
+message SourceColumn {
+  string name = 1;
+}
+
+// DestinationColumn defines the destination column name for mapping.
+message DestinationColumn {
+  string name = 1;
+}
+
+// DimensionMapping defines the mapping from source columns to dimensions.
+message DimensionMapping {
+  SourceColumn source_column = 1;
+  DestinationColumn destination_column = 2;
+}
+
+// MultiMeasureAttributeMapping defines the mapping for a multi-measure attribute.
+message MultiMeasureAttributeMapping {
+  SourceColumn source_column = 1;
+  string target_multi_measure_attribute_name = 2;
+  string measure_value_type = 3;
+}
+
+// MultiMeasureMappings defines mappings for multi-measure records.
+message MultiMeasureMappings {
+  repeated MultiMeasureAttributeMapping multi_measure_attribute_mappings = 1;
+}
+
+// MixedMeasureMapping defines the mapping for mixed measure values.
+message MixedMeasureMapping {
+  string measure_name = 1;
+  string source_column = 2;
+  string target_measure_name = 3;
+  string measure_value_type = 4;
+  repeated MultiMeasureAttributeMapping multi_measure_attribute_mappings = 5;
+}
+
+// TimestreamConfiguration defines the target Timestream table configuration.
+message TimestreamConfiguration {
+  string database_name = 1;
+  string table_name = 2;
+  string time_column = 3;
+  repeated DimensionMapping dimension_mappings = 4;
+  MultiMeasureMappings multi_measure_mappings = 5;
+  repeated MixedMeasureMapping mixed_measure_mappings = 6;
+}
+
+// TargetConfiguration defines the target configuration for a scheduled query.
+message TargetConfiguration {
+  TimestreamConfiguration timestream_configuration = 1;
+}
+
+// ScheduledQuery represents a scheduled query in Timestream.
+message ScheduledQuery {
+  string arn = 1;
+  string name = 2;
+  string query_string = 3;
+  ScheduleConfiguration schedule_configuration = 4;
+  NotificationConfiguration notification_configuration = 5;
+  string scheduled_query_execution_role_arn = 6;
+  string kms_key_id = 7;
+  ErrorReportConfiguration error_report_configuration = 8;
+  TargetConfiguration target_configuration = 9;
+  string client_token = 10;
+  string scheduled_query_status = 11;
+  google.protobuf.Timestamp creation_time = 12;
+  string last_run_status = 13;
+  google.protobuf.Timestamp previous_run_time = 14;
+  google.protobuf.Timestamp next_run_time = 15;
+}
+
+// ExecutionStats contains statistics about a scheduled query execution.
+message ExecutionStats {
+  int64 total_bytes_processed = 1;
+  int64 data_writes = 2;
+  int64 total_records_processed = 3;
+  int64 bytes_metered = 4;
+  int64 query_result_rows = 5;
+  int64 cumulative_bytes_scanned = 6;
+  int64 execution_time_in_millis = 7;
+}
+
+// ScheduledQueryRun represents the execution of a scheduled query.
+message ScheduledQueryRun {
+  string arn = 1;
+  string scheduled_query_arn = 2;
+  google.protobuf.Timestamp invocation_time = 3;
+  google.protobuf.Timestamp trigger_time = 4;
+  string run_status = 5;
+  ExecutionStats execution_stats = 6;
+  string error = 7;
+  google.protobuf.Timestamp completion_time = 8;
+}
+
+// BatchLoadTask represents a batch load task for importing data into Timestream.
+message BatchLoadTask {
+  string task_id = 1;
+  string database_name = 2;
+  string table_name = 3;
+  string task_status = 4;
+  google.protobuf.Timestamp creation_time = 5;
+  google.protobuf.Timestamp last_updated_time = 6;
+  google.protobuf.Timestamp resumable_until = 7;
+}
+
+// BatchLoadProgressReport contains progress information for a batch load task.
+message BatchLoadProgressReport {
+  int64 bytes_metered = 1;
+  int64 file_failures = 2;
+  int64 parse_failures = 3;
+  int64 record_ingestion_failures = 4;
+  int64 records_ingested = 5;
+  int64 records_processed = 6;
+}
+
+// DataSourceS3Configuration defines the S3 location for the data source.
+message DataSourceS3Configuration {
+  string bucket_name = 1;
+  string object_key_prefix = 2;
+}
+
+// CsvConfiguration defines the CSV parsing configuration for batch loading.
+message CsvConfiguration {
+  string column_separator = 1;
+  string escape_char = 2;
+  string null_value = 3;
+  string quote_char = 4;
+  bool trim_white_space = 5;
+}
+
+// DataSourceConfiguration defines the data source configuration for batch loading.
+message DataSourceConfiguration {
+  string data_format = 1;
+  DataSourceS3Configuration data_source_s3_configuration = 2;
+  CsvConfiguration csv_configuration = 3;
+}
+
+// DataModelS3Configuration defines the S3 location for the data model.
+message DataModelS3Configuration {
+  string bucket_name = 1;
+  string object_key = 2;
+}
+
+// DataModel defines the data model for batch loading.
+message DataModel {
+  repeated DimensionMapping dimension_mappings = 1;
+  string measure_name_column = 2;
+  repeated MixedMeasureMapping mixed_measure_mappings = 3;
+  MultiMeasureMappings multi_measure_mappings = 4;
+  string time_column = 5;
+  string time_unit = 6;
+}
+
+// DataModelConfiguration defines the data model configuration for batch loading.
+message DataModelConfiguration {
+  DataModel data_model = 1;
+  DataModelS3Configuration data_model_s3_configuration = 2;
+}
+
+// ReportS3Configuration defines the S3 location for batch load reports.
+message ReportS3Configuration {
+  string bucket_name = 1;
+  string encryption_option = 2;
+  string kms_key_id = 3;
+  string object_key_prefix = 4;
+}
+
+// ReportConfiguration defines the configuration for batch load reports.
+message ReportConfiguration {
+  ReportS3Configuration report_s3_configuration = 1;
+}
+
+// BatchLoadTaskDescription represents the detailed description of a batch load task.
+message BatchLoadTaskDescription {
+  string task_id = 1;
+  string target_database_name = 2;
+  string target_table_name = 3;
+  string task_status = 4;
+  google.protobuf.Timestamp creation_time = 5;
+  google.protobuf.Timestamp last_updated_time = 6;
+  google.protobuf.Timestamp resumable_until = 7;
+  string error_message = 8;
+  int64 record_version = 9;
+  DataSourceConfiguration data_source_configuration = 10;
+  DataModelConfiguration data_model_configuration = 11;
+  ReportConfiguration report_configuration = 12;
+  BatchLoadProgressReport progress_report = 13;
+}
+
+// AccountSettings represents the account settings for Timestream.
+message AccountSettings {
+  int64 max_query_tcu = 1;
+  string query_pricing_mode = 2;
+  string encryption_configuration = 3;
+  string query_compute_type = 4;
+}

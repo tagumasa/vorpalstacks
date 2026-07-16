@@ -1,0 +1,66 @@
+package eventbridge
+
+import (
+	"errors"
+
+	arnutil "vorpalstacks/internal/utils/aws/arn"
+
+	awserrors "vorpalstacks/internal/common/errors"
+	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
+)
+
+var (
+	// ErrValidation is a sentinel validation error for EventBridge operations.
+	ErrValidation = awserrors.NewValidationException("Validation error")
+	// ErrResourceNotFound is a sentinel resource-not-found error.
+	ErrResourceNotFound = awserrors.NewResourceNotFoundException("Resource", "")
+	// ErrResourceAlreadyExists is a sentinel duplicate-resource error.
+	ErrResourceAlreadyExists = awserrors.NewResourceAlreadyExistsException("Resource")
+	// ErrInvalidParameter is a sentinel invalid-parameter error.
+	ErrInvalidParameter = awserrors.NewInvalidParameterException("Invalid parameter")
+)
+
+// NewResourceNotFoundException creates an EventBridge ResourceNotFoundException.
+func NewResourceNotFoundException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("ResourceNotFoundException", message, 404)
+}
+
+// BuildEventBusARN constructs an ARN for an EventBridge event bus.
+func BuildEventBusARN(accountID, region, name string) string {
+	return arnutil.NewARNBuilder(accountID, region).Events().EventBus(name)
+}
+
+// mapStoreError translates store-level errors into AWS API errors.
+func mapStoreError(err error, resourceDesc string) error {
+	if err == nil {
+		return nil
+	}
+	switch {
+	case errors.Is(err, eventsstore.ErrEventBusNotFound):
+		return NewResourceNotFoundException("Event bus '" + resourceDesc + "' does not exist")
+	case errors.Is(err, eventsstore.ErrEventBusAlreadyExists):
+		return awserrors.NewResourceAlreadyExistsException("Event bus '" + resourceDesc + "'")
+	case errors.Is(err, eventsstore.ErrRuleNotFound):
+		return NewResourceNotFoundException("Rule '" + resourceDesc + "' does not exist")
+	case errors.Is(err, eventsstore.ErrRuleAlreadyExists):
+		return awserrors.NewResourceAlreadyExistsException("Rule '" + resourceDesc + "'")
+	case errors.Is(err, eventsstore.ErrArchiveNotFound):
+		return NewResourceNotFoundException("Archive '" + resourceDesc + "' does not exist")
+	case errors.Is(err, eventsstore.ErrArchiveAlreadyExists):
+		return awserrors.NewResourceAlreadyExistsException("Archive '" + resourceDesc + "'")
+	case errors.Is(err, eventsstore.ErrConnectionNotFound):
+		return NewResourceNotFoundException("Connection '" + resourceDesc + "' does not exist")
+	case errors.Is(err, eventsstore.ErrConnectionAlreadyExists):
+		return awserrors.NewResourceAlreadyExistsException("Connection '" + resourceDesc + "'")
+	case errors.Is(err, eventsstore.ErrApiDestinationNotFound):
+		return NewResourceNotFoundException("Api destination '" + resourceDesc + "' does not exist")
+	case errors.Is(err, eventsstore.ErrApiDestinationAlreadyExists):
+		return awserrors.NewResourceAlreadyExistsException("Api destination '" + resourceDesc + "'")
+	case errors.Is(err, eventsstore.ErrReplayNotFound):
+		return NewResourceNotFoundException("Replay '" + resourceDesc + "' does not exist")
+	case errors.Is(err, eventsstore.ErrReplayAlreadyExists):
+		return awserrors.NewResourceAlreadyExistsException("Replay '" + resourceDesc + "' already exists")
+	default:
+		return err
+	}
+}

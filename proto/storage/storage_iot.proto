@@ -1,0 +1,353 @@
+syntax = "proto3";
+
+package storage.iot;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_iot";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Thing represents an IoT thing/device.
+message Thing {
+  string thing_name = 1;
+  string thing_arn = 2;
+  string thing_id = 3;
+  string thing_type_name = 4;
+  repeated string attribute_names = 5;
+  map<string, string> attributes = 6;
+  int64 version = 7;
+  google.protobuf.Timestamp creation_date = 8;
+  google.protobuf.Timestamp last_modified_date = 9;
+}
+
+// ThingType represents an IoT thing type.
+message ThingType {
+  string thing_type_name = 1;
+  string thing_type_arn = 2;
+  string thing_type_id = 3;
+  string description = 4;
+  repeated ThingTypeProperty thing_type_properties = 5;
+  map<string, string> tags = 6;
+  int64 version = 7;
+  google.protobuf.Timestamp creation_date = 8;
+  google.protobuf.Timestamp last_modified_date = 9;
+  bool deprecated = 10;
+  google.protobuf.Timestamp deprecation_date = 11;
+  repeated string searchable_attributes = 12;
+}
+
+// ThingTypeProperty represents a thing type property definition.
+message ThingTypeProperty {
+  string name = 1;
+  string data_type = 2;
+  string description = 3;
+  bool required = 4;
+  string field_name = 5;
+}
+
+// ThingGroup represents a group of IoT things.
+message ThingGroup {
+  string group_name = 1;
+  string group_arn = 2;
+  string group_id = 3;
+  string parent_group_name = 4;
+  string description = 5;
+  map<string, string> attributes = 6;
+  map<string, string> tags = 7;
+  google.protobuf.Timestamp creation_date = 8;
+  google.protobuf.Timestamp last_modified_date = 9;
+  int64 version = 10;
+}
+
+// BillingGroup represents a billing group for IoT things.
+message BillingGroup {
+  string group_name = 1;
+  string group_arn = 2;
+  string group_id = 3;
+  string description = 4;
+  map<string, string> attributes = 5;
+  map<string, string> tags = 6;
+  google.protobuf.Timestamp creation_date = 7;
+  google.protobuf.Timestamp last_modified_date = 8;
+  int64 version = 9;
+}
+
+// Certificate represents an IoT device certificate.
+message Certificate {
+  string certificate_id = 1;
+  string certificate_arn = 2;
+  string certificate_pem = 3;
+  string certificate_mode = 4;
+  google.protobuf.Timestamp creation_date = 5;
+  google.protobuf.Timestamp last_modified_date = 6;
+  string status = 7;
+  string ca_certificate_id = 8;
+  bytes public_key = 9;
+  google.protobuf.Timestamp transfer_date = 10;
+  string transfer_to_account_id = 11;
+  bool auto_active = 12;
+}
+
+// Policy represents an IoT policy document.
+message Policy {
+  string policy_name = 1;
+  string policy_arn = 2;
+  string policy_document = 3;
+  google.protobuf.Timestamp creation_date = 4;
+  google.protobuf.Timestamp last_modified_date = 5;
+  int64 version = 6;
+}
+
+// TopicRule represents an IoT rules engine topic rule.
+message TopicRule {
+  string rule_name = 1;
+  string arn = 2;
+  string topic_pattern = 3;
+  string description = 4;
+  bool rule_disabled = 5;
+  string sql = 6;
+  string created_at = 7;
+  string aws_iot_sql_version = 8;
+  google.protobuf.Struct actions = 9;
+  google.protobuf.Struct error_action = 10;
+}
+
+// Job represents an IoT job.
+message Job {
+  string job_arn = 1;
+  string job_id = 2;
+  string description = 3;
+  int64 version = 4;
+  bool force = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp last_updated_at = 7;
+  string completed_at = 8;
+  string job_template_arn = 9;
+  string status = 10;
+  string target_selection = 11;
+  int64 job_process_details = 12;
+  google.protobuf.Timestamp scheduled_job_launch = 13;
+  google.protobuf.Timestamp started_at = 14;
+  google.protobuf.Timestamp force_canceled_at = 15;
+  map<string, string> tags = 16;
+  string document = 17;
+  repeated string targets = 18;
+}
+
+// JobExecution represents the execution of a job on a thing.
+message JobExecution {
+  string job_id = 1;
+  string thing_arn = 2;
+  string status = 3;
+  int64 version = 4;
+  int64 execution_number = 5;
+  int64 started_at = 6;
+  int64 queued_at = 7;
+  int64 last_updated_at = 8;
+  int64 completed_at = 9;
+  google.protobuf.Struct status_details = 10;
+}
+
+// ShadowDocument represents a device shadow document.
+message ShadowDocument {
+  string thing_name = 1;
+  google.protobuf.Timestamp version = 2;
+  int64 version_number = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  string state = 5;
+  string metadata = 6;
+}
+
+// Authorizer represents a custom authorizer for MQTT connections.
+message Authorizer {
+  string authorizer_name = 1;
+  string authorizer_arn = 2;
+  string authorizer_function_arn = 3;
+  string token_key_name = 4;
+  string token_signature = 5;
+  bool status = 6;
+  google.protobuf.Timestamp creation_date = 7;
+  google.protobuf.Timestamp last_modified_date = 8;
+  bool enable_caching_for_http = 9;
+  int64 caching_disabled = 10;
+}
+
+// RoleAlias represents an IoT role alias for IAM credential mapping.
+message RoleAlias {
+  string role_alias = 1;
+  string role_alias_arn = 2;
+  string role_arn = 3;
+  int64 credential_duration_seconds = 4;
+  string owner = 5;
+  google.protobuf.Timestamp creation_date = 6;
+  google.protobuf.Timestamp last_modified_date = 7;
+}
+
+// ProvisioningTemplate represents a fleet provisioning template.
+message ProvisioningTemplate {
+  string template_name = 1;
+  string template_arn = 2;
+  string description = 3;
+  bool enabled = 4;
+  google.protobuf.Struct pre_provisioning_hook = 5;
+  string provisioning_role_arn = 6;
+  google.protobuf.Struct template_body = 7;
+  map<string, string> tags = 8;
+  google.protobuf.Timestamp creation_date = 9;
+  google.protobuf.Timestamp last_modified_date = 10;
+  string type = 11;
+}
+
+// DetectorModel represents an IoT Events detector model definition.
+message DetectorModel {
+  string detector_model_name = 1;
+  string detector_model_arn = 2;
+  string detector_model_description = 3;
+  string role_arn = 4;
+  google.protobuf.Struct detector_model_definition = 5;
+  map<string, string> tags = 6;
+  google.protobuf.Timestamp creation_date = 7;
+  google.protobuf.Timestamp last_modified_date = 8;
+  string status = 9;
+  string key = 10;
+  string evaluation_method = 11;
+  string detector_model_version = 12;
+}
+
+// Input represents an IoT Events input definition.
+message Input {
+  string input_name = 1;
+  string input_arn = 2;
+  string input_description = 3;
+  google.protobuf.Struct input_definition = 4;
+  map<string, string> tags = 5;
+  google.protobuf.Timestamp creation_date = 6;
+  google.protobuf.Timestamp last_modified_date = 7;
+  string status = 8;
+}
+
+// SecurityProfile represents a Device Defender security profile.
+message SecurityProfile {
+  string security_profile_name = 1;
+  string security_profile_arn = 2;
+  string security_profile_description = 3;
+  repeated Behavior behaviors = 4;
+  map<string, AlertTarget> alert_targets = 5;
+  repeated string additional_metrics_to_retain_v2 = 6;
+  int64 version = 7;
+  google.protobuf.Timestamp creation_date = 8;
+  google.protobuf.Timestamp last_modified_date = 9;
+  map<string, string> tags = 10;
+}
+
+// AlertTarget represents an alert destination for security profile violations.
+message AlertTarget {
+  string alert_target_arn = 1;
+  string role_arn = 2;
+}
+
+// Behavior represents a security profile behavior definition.
+message Behavior {
+  string name = 1;
+  string metric = 2;
+  BehaviorCriteria criteria = 3;
+  bool suppress_alerts = 4;
+  bool export_metric = 5;
+  string metric_dimension = 6;
+}
+
+// BehaviorCriteria defines the conditions that trigger a behaviour alert.
+message BehaviorCriteria {
+  string comparison_operator = 1;
+  double value = 2;
+  int64 duration_seconds = 3;
+  int64 consecutive_datapoints_to_alarm = 4;
+  int64 consecutive_datapoints_to_clear = 5;
+  StatisticalThreshold statistical_threshold = 6;
+  MachineLearningDetectionConfig ml_detection_config = 7;
+}
+
+// StatisticalThreshold configures statistical anomaly detection.
+message StatisticalThreshold {
+  string statistic = 1;
+}
+
+// MachineLearningDetectionConfig configures ML-based anomaly detection.
+message MachineLearningDetectionConfig {
+  string confidence_level = 1;
+}
+
+// MetricValue represents a metric measurement in a violation event.
+message MetricValue {
+  int64 count = 1;
+  repeated string cidrs = 2;
+  repeated int64 ports = 3;
+  double number = 4;
+  repeated double numbers = 5;
+  repeated string strings = 6;
+}
+
+// ViolationEvent represents a Device Defender violation event.
+message ViolationEvent {
+  string violation_id = 1;
+  string thing_name = 2;
+  string security_profile_name = 3;
+  Behavior behavior = 4;
+  MetricValue metric_value = 5;
+  string violation_event_type = 6;
+  string verification_state = 7;
+  string verification_state_description = 8;
+  google.protobuf.Timestamp violation_event_time = 9;
+}
+
+// DomainConfiguration represents an IoT domain configuration.
+message DomainConfiguration {
+  string domain_configuration_name = 1;
+  string domain_configuration_arn = 2;
+  string domain_name = 3;
+  repeated string server_certificate_arns = 4;
+  string validation_certificate_arn = 5;
+  string authorizer_config = 6;
+  string service_type = 7;
+  string domain_configuration_status = 8;
+  string authentication_type = 9;
+  string application_protocol = 10;
+  google.protobuf.Timestamp creation_date = 11;
+  google.protobuf.Timestamp last_modified_date = 12;
+  map<string, string> tags = 13;
+}
+
+// IndexingConfiguration represents the IoT thing indexing configuration.
+message IndexingConfiguration {
+  string thing_indexing_mode = 1;
+  string thing_group_indexing_mode = 2;
+  string thing_connectivity_indexing_mode = 3;
+  string device_defender_indexing_mode = 4;
+  string named_shadow_indexing_mode = 5;
+  repeated string managed_fields = 6;
+  repeated string custom_fields = 7;
+  string thing_indexing_configuration_version = 8;
+}
+
+// ProvisioningTemplateVersion represents a version of a provisioning template.
+message ProvisioningTemplateVersion {
+  string version_id = 1;
+  google.protobuf.Timestamp creation_date = 2;
+  bool is_default_version = 3;
+  string template_body = 4;
+}
+
+// AlarmModel represents an AWS IoT Events alarm model.
+message AlarmModel {
+  string alarm_model_name = 1;
+  string alarm_model_arn = 2;
+  string alarm_model_description = 3;
+  string role_arn = 4;
+  google.protobuf.Struct alarm_model_definition = 5;
+  map<string, string> tags = 6;
+  google.protobuf.Timestamp creation_date = 7;
+  google.protobuf.Timestamp last_modified_date = 8;
+  string status = 9;
+  string severity = 10;
+  string alarm_model_version = 11;
+}

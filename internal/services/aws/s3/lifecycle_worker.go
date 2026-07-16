@@ -1,0 +1,288 @@
+package s3
+
+import (
+	"context"
+	"sync"
+	"time"
+
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
+	s3store "vorpalstacks/internal/store/aws/s3"
+)
+
+// LifecycleWorker periodically scans buckets for objects that have expired
+// according to their LifecycleConfiguration and deletes them.
+type LifecycleWorker struct {
+	svc            *S3Service
+	interval       time.Duration
+	storageManager *storage.RegionStorageManager
+	accountID      string
+	ctx            context.Context
+	cancel         context.CancelFunc
+	wg             sync.WaitGroup
+}
+
+// NewLifecycleWorker creates a new LifecycleWorker with a 5-minute default interval.
+func NewLifecycleWorker(svc *S3Service, sm *storage.RegionStorageManager, accountID string) *LifecycleWorker {
+	return &LifecycleWorker{
+		svc:            svc,
+		interval:       5 * time.Minute,
+		storageManager: sm,
+		accountID:      accountID,
+	}
+}
+
+// Start launches the lifecycle enforcement goroutine.
+func (w *LifecycleWorker) Start() {
+	w.ctx, w.cancel = context.WithCancel(context.Background())
+	w.wg.Add(1)
+	go w.run()
+	logs.Info("s3: lifecycle worker started", logs.Any("interval", w.interval))
+}
+
+// Close gracefully stops the lifecycle worker.
+func (w *LifecycleWorker) Close() {
+	if w.cancel != nil {
+		w.cancel()
+	}
+	w.wg.Wait()
+	logs.Info("s3: lifecycle worker stopped")
+}
+
+func (w *LifecycleWorker) run() {
+	defer w.wg.Done()
+
+	timer := time.NewTimer(30 * time.Second)
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-w.ctx.Done():
+			return
+		case <-timer.C:
+			w.enforceLifecycle()
+			timer.Reset(w.interval)
+		}
+	}
+}
+
+// enforceLifecycle iterates over all buckets with lifecycle configuration
+// and deletes expired objects.
+func (w *LifecycleWorker) enforceLifecycle() {
+	regionStore, err := w.storageManager.GetStorage(w.accountID)
+	if err != nil {
+		logs.Warn("s3: lifecycle worker failed to get storage", logs.Err(err))
+		return
+	}
+
+	bucketStore := s3store.NewBucketStore(regionStore, w.accountID, w.accountID)
+	buckets, err := bucketStore.List()
+	if err != nil {
+		logs.Warn("s3: lifecycle worker failed to list buckets", logs.Err(err))
+		return
+	}
+
+	for _, bucket := range buckets {
+		if bucket.LifecycleConfiguration == nil || len(bucket.LifecycleConfiguration.Rules) == 0 {
+			continue
+		}
+
+		w.processBucketLifecycle(bucket)
+	}
+}
+
+// processBucketLifecycle evaluates lifecycle rules for a single bucket
+// and deletes expired objects.
+func (w *LifecycleWorker) processBucketLifecycle(bucket *s3store.Bucket) {
+	now := time.Now()
+
+	for _, rule := range bucket.LifecycleConfiguration.Rules {
+		if rule.Status != "Enabled" {
+			continue
+		}
+
+		var prefix string
+		if rule.Filter != nil {
+			prefix = rule.Filter.Prefix
+			if rule.Filter.And != nil && rule.Filter.And.Prefix != "" {
+				prefix = rule.Filter.And.Prefix
+			}
+		}
+
+		if rule.Expiration != nil {
+			days := 0
+			if rule.Expiration.Days != nil && *rule.Expiration.Days > 0 {
+				days = *rule.Expiration.Days
+			}
+			if days > 0 {
+				w.expireObjectsByAge(bucket.Name, prefix, days, now)
+			}
+			if rule.Expiration.Date != nil && now.After(*rule.Expiration.Date) {
+				w.expireObjectsAll(bucket.Name, prefix)
+			}
+		}
+
+		if rule.AbortIncompleteMultipartUpload != nil && rule.AbortIncompleteMultipartUpload.DaysAfterInitiation != nil && *rule.AbortIncompleteMultipartUpload.DaysAfterInitiation > 0 {
+			w.abortIncompleteUploads(bucket.Name, *rule.AbortIncompleteMultipartUpload.DaysAfterInitiation, now)
+		}
+
+		if rule.NoncurrentVersionExpiration != nil && rule.NoncurrentVersionExpiration.NoncurrentDays != nil && *rule.NoncurrentVersionExpiration.NoncurrentDays > 0 {
+			w.expireNoncurrentVersions(bucket.Name, prefix, *rule.NoncurrentVersionExpiration.NoncurrentDays, now)
+		}
+	}
+}
+
+// expireObjectsByAge deletes objects older than the specified number of days.
+func (w *LifecycleWorker) expireObjectsByAge(bucketName, prefix string, days int, now time.Time) {
+	regionStore, err := w.storageManager.GetStorage(w.accountID)
+	if err != nil {
+		return
+	}
+
+	objectStore, err := s3store.NewObjectStore(regionStore, w.svc.blobStore, s3store.NewBucketStore(regionStore, w.accountID, w.accountID), w.accountID, w.accountID)
+	if err != nil {
+		return
+	}
+
+	cutoff := now.AddDate(0, 0, -days)
+	marker := ""
+	for {
+		result, err := objectStore.List(bucketName, prefix, "", marker, 1000)
+		if err != nil {
+			logs.Warn("s3: lifecycle list failed", logs.String("bucket", bucketName), logs.Err(err))
+			return
+		}
+
+		for _, obj := range result.Objects {
+			if obj.IsDeleteMarker {
+				continue
+			}
+			if obj.LastModified.Before(cutoff) {
+				if err := objectStore.Delete(context.Background(), bucketName, obj.Key); err != nil {
+					logs.Warn("s3: lifecycle delete failed", logs.String("bucket", bucketName), logs.String("key", obj.Key), logs.Err(err))
+				}
+			}
+		}
+
+		if !result.IsTruncated {
+			break
+		}
+		marker = result.NextMarker
+	}
+}
+
+// expireObjectsAll deletes all objects matching the prefix (for Date-based expiration).
+func (w *LifecycleWorker) expireObjectsAll(bucketName, prefix string) {
+	regionStore, err := w.storageManager.GetStorage(w.accountID)
+	if err != nil {
+		return
+	}
+
+	objectStore, err := s3store.NewObjectStore(regionStore, w.svc.blobStore, s3store.NewBucketStore(regionStore, w.accountID, w.accountID), w.accountID, w.accountID)
+	if err != nil {
+		return
+	}
+
+	marker := ""
+	for {
+		result, err := objectStore.List(bucketName, prefix, "", marker, 1000)
+		if err != nil {
+			logs.Warn("s3: lifecycle list (date) failed", logs.String("bucket", bucketName), logs.Err(err))
+			return
+		}
+
+		for _, obj := range result.Objects {
+			if obj.IsDeleteMarker {
+				continue
+			}
+			if err := objectStore.Delete(context.Background(), bucketName, obj.Key); err != nil {
+				logs.Warn("s3: lifecycle delete (date) failed", logs.String("bucket", bucketName), logs.String("key", obj.Key), logs.Err(err))
+			}
+		}
+
+		if !result.IsTruncated {
+			break
+		}
+		marker = result.NextMarker
+	}
+}
+
+// abortIncompleteUploads aborts multipart uploads older than the specified number of days.
+func (w *LifecycleWorker) abortIncompleteUploads(bucketName string, daysAfterInit int, now time.Time) {
+	regionStore, err := w.storageManager.GetStorage(w.accountID)
+	if err != nil {
+		return
+	}
+
+	objectStore, err := s3store.NewObjectStore(regionStore, w.svc.blobStore, s3store.NewBucketStore(regionStore, w.accountID, w.accountID), w.accountID, w.accountID)
+	if err != nil {
+		return
+	}
+
+	cutoff := now.AddDate(0, 0, -daysAfterInit)
+	keyMarker := ""
+	uploadIdMarker := ""
+	for {
+		result, err := objectStore.ListMultipartUploads(bucketName, "", keyMarker, uploadIdMarker, 1000)
+		if err != nil {
+			logs.Warn("s3: lifecycle multipart list failed", logs.String("bucket", bucketName), logs.Err(err))
+			return
+		}
+
+		for _, upload := range result.Uploads {
+			if upload.Initiated.Before(cutoff) {
+				if err := objectStore.AbortMultipartUpload(context.Background(), bucketName, upload.Key, upload.UploadID); err != nil {
+					logs.Warn("s3: lifecycle abort multipart failed", logs.String("bucket", bucketName), logs.String("key", upload.Key), logs.Err(err))
+				}
+			}
+		}
+
+		if !result.IsTruncated {
+			break
+		}
+		keyMarker = result.NextKeyMarker
+		uploadIdMarker = result.NextUploadIDMarker
+	}
+}
+
+// expireNoncurrentVersions deletes non-current (old) versions older than the
+// specified number of days.
+func (w *LifecycleWorker) expireNoncurrentVersions(bucketName, prefix string, noncurrentDays int, now time.Time) {
+	regionStore, err := w.storageManager.GetStorage(w.accountID)
+	if err != nil {
+		return
+	}
+
+	objectStore, err := s3store.NewObjectStore(regionStore, w.svc.blobStore, s3store.NewBucketStore(regionStore, w.accountID, w.accountID), w.accountID, w.accountID)
+	if err != nil {
+		return
+	}
+
+	cutoff := now.AddDate(0, 0, -noncurrentDays)
+	keyMarker := ""
+	versionIdMarker := ""
+	for {
+		result, err := objectStore.ListObjectVersions(bucketName, prefix, "", keyMarker, versionIdMarker, 1000)
+		if err != nil {
+			logs.Warn("s3: lifecycle version list failed", logs.String("bucket", bucketName), logs.Err(err))
+			return
+		}
+
+		for _, obj := range result.Objects {
+			if obj.IsLatest || obj.IsDeleteMarker {
+				continue
+			}
+			if obj.LastModified.Before(cutoff) {
+				if _, err := objectStore.DeleteWithVersion(context.Background(), bucketName, obj.Key, obj.VersionID); err != nil {
+					logs.Warn("s3: lifecycle version delete failed", logs.String("bucket", bucketName), logs.String("key", obj.Key), logs.String("version", obj.VersionID), logs.Err(err))
+				}
+			}
+		}
+
+		if !result.IsTruncated {
+			break
+		}
+		keyMarker = result.NextVersionKeyMarker
+		versionIdMarker = result.NextVersionIDMarker
+	}
+}

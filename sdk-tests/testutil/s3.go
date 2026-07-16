@@ -1,0 +1,116 @@
+package testutil
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"vorpalstacks-sdk-tests/config"
+)
+
+func s3Bucket(ts string, name string) string {
+	return fmt.Sprintf("s3test-%s-%s", name, ts)
+}
+
+// waitForObject polls GetObject until the object exists or timeout expires.
+// Returns true if the object was found.
+func waitForObject(ctx context.Context, client *s3.Client, bucket, key string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		_, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+		})
+		if err == nil {
+			return true
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	return false
+}
+
+// waitForObjectDeleted polls GetObject until it returns an error (object
+// deleted or delete marker created) or timeout expires. Returns true if
+// the object is no longer accessible.
+func waitForObjectDeleted(ctx context.Context, client *s3.Client, bucket, key string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		_, err := client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+		})
+		if err != nil {
+			return true
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	return false
+}
+
+func s3CleanupBucket(ctx context.Context, client *s3.Client, bucket string) {
+	mpuResp, err := client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: aws.String(bucket)})
+	if err == nil {
+		for _, u := range mpuResp.Uploads {
+			client.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+				Bucket:   aws.String(bucket),
+				Key:      u.Key,
+				UploadId: u.UploadId,
+			})
+		}
+	}
+
+	listResp, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
+	if err != nil {
+		return
+	}
+	if len(listResp.Contents) > 0 {
+		var objs []types.ObjectIdentifier
+		for _, o := range listResp.Contents {
+			objs = append(objs, types.ObjectIdentifier{Key: o.Key})
+		}
+		client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+			Bucket: aws.String(bucket),
+			Delete: &types.Delete{Objects: objs},
+		})
+	}
+	client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+}
+
+func (r *TestRunner) RunS3Tests() []TestResult {
+	var results []TestResult
+
+	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+		Endpoint: r.endpoint,
+		Region:   r.region,
+	})
+	if err != nil {
+		return append(results, TestResult{
+			Service:  "s3",
+			TestName: "Setup",
+			Status:   "FAIL",
+			Error:    fmt.Sprintf("Failed to load config: %v", err),
+		})
+	}
+
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+	ctx := context.Background()
+	ts := fmt.Sprintf("%d", time.Now().UnixNano())
+	bucketName := s3Bucket(ts, "main")
+	defer s3CleanupBucket(ctx, client, bucketName)
+
+	results = append(results, r.s3BucketTests(ctx, client, ts, bucketName)...)
+	results = append(results, r.s3ObjectTests(ctx, client, ts, bucketName)...)
+	results = append(results, r.s3BucketConfigTests(ctx, client, ts, bucketName)...)
+	results = append(results, r.s3ObjectConfigTests(ctx, client, ts, bucketName)...)
+	results = append(results, r.s3MultipartTests(ctx, client, ts)...)
+	results = append(results, r.s3MultibyteTests(ctx, client, ts, bucketName)...)
+	results = append(results, r.s3EncryptionTests(ctx, client, ts)...)
+	results = append(results, r.s3AdvancedTests(ctx, client, ts, bucketName)...)
+
+	return results
+}

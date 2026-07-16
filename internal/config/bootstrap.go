@@ -1,0 +1,207 @@
+// Package config provides bootstrap and runtime configuration for vorpalstacks.
+package config
+
+import (
+	"os"
+	"strconv"
+
+	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/serviceports"
+)
+
+// BootstrapConfig holds all configuration values read from environment variables
+// at server startup, before the storage layer is available.
+type BootstrapConfig struct {
+	Port                  int
+	GRPCWebPort           int
+	DataPath              string
+	AccountID             string
+	Region                string
+	AccessKeyID           string
+	SecretAccessKey       string
+	SignatureVerification bool
+	UseChainGateway       bool
+	TLSEnabled            bool
+	TLSPort               int
+	TLSCertPath           string
+	TLSKeyPath            string
+	TLSHostname           string
+	Route53DNSEnabled     bool
+	DockerHost            string
+	BindMode              string
+	BindInterface         string
+
+	SNS             bool
+	SQS             bool
+	Lambda          bool
+	Events          bool
+	Logs            bool
+	Kinesis         bool
+	StepFunctions   bool
+	APIGateway      bool
+	Cognito         bool
+	CognitoIdentity bool
+	SSM             bool
+	SESv2           bool
+	Scheduler       bool
+	CloudTrail      bool
+	ACM             bool
+	CloudWatch      bool
+	DynamoDB        bool
+	KMS             bool
+	S3              bool
+	SecretsManager  bool
+	STS             bool
+	IAM             bool
+	TimestreamWrite bool
+	TimestreamQuery bool
+	Athena          bool
+	AppSync         bool
+	Neptune         bool
+	NeptuneData     bool
+	NeptuneGraph    bool
+	CloudFront      bool
+	WAFv2           bool
+	Route53         bool
+	EC2             bool
+	RDSMySQL        bool
+	IoT             bool
+	IoTEvents       bool
+}
+
+// LoadBootstrapConfig reads all bootstrap configuration from environment variables
+// and returns a populated BootstrapConfig. Defaults come from serviceports constants.
+//
+// When ALL_SERVICES_ENABLED is set to "true", every service flag is forced on
+// regardless of its individual *_ENABLED variable. This avoids forgetting to
+// enable a specific optional service (e.g. RDS_MYSQL_ENABLED) during testing.
+func LoadBootstrapConfig() *BootstrapConfig {
+	accountId := os.Getenv("AWS_ACCOUNT_ID")
+	if accountId == "" {
+		accountId = "000000000000"
+	}
+
+	cfg := &BootstrapConfig{
+		Port:                  envOrInt("PORT", serviceports.HTTP),
+		GRPCWebPort:           envOrInt("GRPC_WEB_PORT", serviceports.GRPCWeb),
+		DataPath:              envOr("DATA_PATH", "./data"),
+		AccountID:             accountId,
+		Region:                envOr("AWS_REGION", defaults.DefaultRegion),
+		AccessKeyID:           os.Getenv("AWS_ACCESS_KEY_ID"),
+		SecretAccessKey:       os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		SignatureVerification: envBool("SIGNATURE_VERIFICATION_ENABLED", true),
+		UseChainGateway:       envBool("USE_CHAIN_GATEWAY", false),
+		TLSEnabled:            envBool("TLS_ENABLED", false),
+		TLSPort:               envOrInt("TLS_PORT", serviceports.TLS),
+		TLSCertPath:           envOr("TLS_CERT_PATH", "auto"),
+		TLSKeyPath:            envOr("TLS_KEY_PATH", "auto"),
+		TLSHostname:           envOr("TLS_HOSTNAME", ""),
+		Route53DNSEnabled:     envBool("ROUTE53_DNS_ENABLED", false),
+		DockerHost:            envOr("DOCKER_HOST", "unix:///var/run/docker.sock"),
+		BindMode:              envOr("BIND_MODE", "all"),
+		BindInterface:         envOr("BIND_INTERFACE", ""),
+
+		SNS:             envBool("SNS_ENABLED", true),
+		SQS:             envBool("SQS_ENABLED", true),
+		Lambda:          envBool("LAMBDA_ENABLED", true),
+		Events:          envBool("EVENTS_ENABLED", true),
+		Logs:            envBool("LOGS_ENABLED", true),
+		Kinesis:         envBool("KINESIS_ENABLED", true),
+		StepFunctions:   envBool("STEPFUNCTIONS_ENABLED", true),
+		APIGateway:      envBool("APIGATEWAY_ENABLED", true),
+		Cognito:         envBool("COGNITO_ENABLED", true),
+		CognitoIdentity: envBool("COGNITO_IDENTITY_ENABLED", true),
+		SSM:             envBool("SSM_ENABLED", true),
+		SESv2:           envBool("SESV2_ENABLED", true),
+		Scheduler:       envBool("SCHEDULER_ENABLED", true),
+		CloudTrail:      envBool("CLOUDTRAIL_ENABLED", false),
+		ACM:             envBool("ACM_ENABLED", true),
+		CloudWatch:      envBool("CLOUDWATCH_ENABLED", true),
+		DynamoDB:        envBool("DYNAMODB_ENABLED", true),
+		KMS:             envBool("KMS_ENABLED", true),
+		S3:              envBool("S3_ENABLED", true),
+		SecretsManager:  envBool("SECRETSMANAGER_ENABLED", true),
+		STS:             envBool("STS_ENABLED", true),
+		IAM:             envBool("IAM_ENABLED", true),
+		TimestreamWrite: envBool("TIMESTREAM_WRITE_ENABLED", true),
+		TimestreamQuery: envBool("TIMESTREAM_QUERY_ENABLED", true),
+		Athena:          envBool("ATHENA_ENABLED", true),
+		AppSync:         envBool("APPSYNC_ENABLED", true),
+		Neptune:         envBool("NEPTUNE_ENABLED", true),
+		NeptuneData:     envBool("NEPTUNE_DATA_ENABLED", true),
+		NeptuneGraph:    envBool("NEPTUNE_GRAPH_ENABLED", true),
+		CloudFront:      envBool("CLOUDFRONT_ENABLED", true),
+		WAFv2:           envBool("WAFV2_ENABLED", true),
+		Route53:         envBool("ROUTE53_ENABLED", true),
+		EC2:             envBool("EC2_ENABLED", true),
+		RDSMySQL:        envBool("RDS_MYSQL_ENABLED", false),
+		IoT:             envBool("IOT_ENABLED", false),
+		IoTEvents:       envBool("IOT_EVENTS_ENABLED", false),
+	}
+
+	if envBool("ALL_SERVICES_ENABLED", false) {
+		cfg.SNS = true
+		cfg.SQS = true
+		cfg.Lambda = true
+		cfg.Events = true
+		cfg.Logs = true
+		cfg.Kinesis = true
+		cfg.StepFunctions = true
+		cfg.APIGateway = true
+		cfg.Cognito = true
+		cfg.CognitoIdentity = true
+		cfg.SSM = true
+		cfg.SESv2 = true
+		cfg.Scheduler = true
+		cfg.CloudTrail = true
+		cfg.ACM = true
+		cfg.CloudWatch = true
+		cfg.DynamoDB = true
+		cfg.KMS = true
+		cfg.S3 = true
+		cfg.SecretsManager = true
+		cfg.STS = true
+		cfg.IAM = true
+		cfg.TimestreamWrite = true
+		cfg.TimestreamQuery = true
+		cfg.Athena = true
+		cfg.AppSync = true
+		cfg.Neptune = true
+		cfg.NeptuneData = true
+		cfg.NeptuneGraph = true
+		cfg.CloudFront = true
+		cfg.WAFv2 = true
+		cfg.Route53 = true
+		cfg.EC2 = true
+		cfg.RDSMySQL = true
+		cfg.IoT = true
+		cfg.IoTEvents = true
+	}
+
+	return cfg
+}
+
+func envOr(key, defaultVal string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultVal
+}
+
+func envOrInt(key string, defaultVal int) int {
+	if v := os.Getenv(key); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			return i
+		}
+	}
+	return defaultVal
+}
+
+func envBool(key string, defaultVal bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal
+	}
+	b, _ := strconv.ParseBool(v)
+	return b
+}

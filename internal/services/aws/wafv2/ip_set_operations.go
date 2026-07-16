@@ -1,0 +1,213 @@
+package wafv2
+
+import (
+	"context"
+
+	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
+	wafstore "vorpalstacks/internal/store/aws/waf"
+)
+
+func parseAddressList(params map[string]interface{}) []string {
+	var addresses []string
+	if addrRaw := params["Addresses"]; addrRaw != nil {
+		if arr, ok := addrRaw.([]interface{}); ok {
+			for _, a := range arr {
+				if s, ok := a.(string); ok {
+					addresses = append(addresses, s)
+				}
+			}
+		}
+	}
+	return addresses
+}
+
+// CreateIPSet creates a new IP set containing the specified IP addresses.
+func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	name := request.GetStringParam(req.Parameters, "Name")
+	if name == "" {
+		return nil, validationError("Name is required")
+	}
+
+	scope := request.GetStringParam(req.Parameters, "Scope")
+	if scope == "" {
+		scope = "REGIONAL"
+	}
+
+	ipAddressVersion := request.GetStringParam(req.Parameters, "IPAddressVersion")
+	if ipAddressVersion == "" {
+		ipAddressVersion = "IPV4"
+	}
+
+	addresses := parseAddressList(req.Parameters)
+	description := request.GetStringParam(req.Parameters, "Description")
+
+	id, err := generateID()
+	if err != nil {
+		return nil, err
+	}
+
+	ipSet, err := stores.ipSets.Create(id, name, description, ipAddressVersion, addresses, scope)
+	if err != nil {
+		if wafstore.IsAlreadyExists(err) {
+			return nil, newAPIError("WAFDuplicateItemException", "AWS WAF couldn't perform the operation because some resource in your request is a duplicate of an existing one", 400)
+		}
+		return nil, err
+	}
+
+	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
+		if err := stores.tags.TagFromSlice(ipSet.ARN, tags); err != nil {
+			logs.Warn("failed to persist tags for IPSet", logs.String("id", ipSet.ID), logs.Err(err))
+		}
+	}
+
+	return map[string]interface{}{
+		"Summary": buildIPSetSummary(ipSet),
+	}, nil
+}
+
+// GetIPSet retrieves the details of the specified IP set.
+func (s *WAFv2Service) GetIPSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	id := request.GetStringParam(req.Parameters, "Id")
+	if id == "" {
+		return nil, validationError("Id is required")
+	}
+
+	ipSet, err := stores.ipSets.Get(id)
+	if err != nil {
+		if wafstore.IsNotFound(err) {
+			return nil, notFoundError("IPSet")
+		}
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"IPSet": map[string]interface{}{
+			"Id":               ipSet.ID,
+			"Name":             ipSet.Name,
+			"ARN":              ipSet.ARN,
+			"IPAddressVersion": ipSet.IPAddressVersion,
+			"Addresses":        ipSet.Addresses,
+			"Description":      ipSet.Description,
+		},
+		"LockToken": ipSet.LockToken,
+	}, nil
+}
+
+// ListIPSets returns a paginated list of all IP sets.
+func (s *WAFv2Service) ListIPSets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	scope := request.GetStringParam(req.Parameters, "Scope")
+	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
+	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
+
+	result, err := stores.ipSets.List(nextMarker, maxItems)
+	if err != nil {
+		return nil, err
+	}
+
+	filtered := result.IPSets
+	if scope != "" {
+		tmp := make([]*wafstore.IPSet, 0, len(filtered))
+		for _, ips := range filtered {
+			if ips.Scope == scope {
+				tmp = append(tmp, ips)
+			}
+		}
+		filtered = tmp
+	}
+
+	ipSets := make([]interface{}, 0, len(filtered))
+	for _, ips := range filtered {
+		ipSets = append(ipSets, buildIPSetSummary(ips))
+	}
+
+	resp := map[string]interface{}{
+		"IPSets": ipSets,
+	}
+	pagination.SetNextToken(resp, "NextMarker", result.NextMarker)
+	return resp, nil
+}
+
+// UpdateIPSet updates the specified IP set with new addresses, returning a new lock token.
+func (s *WAFv2Service) UpdateIPSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	id := request.GetStringParam(req.Parameters, "Id")
+	if id == "" {
+		return nil, validationError("Id is required")
+	}
+
+	lockToken := request.GetStringParam(req.Parameters, "LockToken")
+	if lockToken == "" {
+		return nil, validationError("LockToken is required")
+	}
+
+	addresses := parseAddressList(req.Parameters)
+
+	ipSet, err := stores.ipSets.Update(id, lockToken, addresses)
+	if err != nil {
+		if wafstore.IsLockTokenMismatch(err) {
+			return nil, lockTokenError()
+		}
+		if wafstore.IsNotFound(err) {
+			return nil, notFoundError("IPSet")
+		}
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"NextLockToken": ipSet.LockToken,
+	}, nil
+}
+
+// DeleteIPSet permanently deletes the specified IP set.
+func (s *WAFv2Service) DeleteIPSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	id := request.GetStringParam(req.Parameters, "Id")
+	if id == "" {
+		return nil, validationError("Id is required")
+	}
+
+	lockToken := request.GetStringParam(req.Parameters, "LockToken")
+	if lockToken == "" {
+		return nil, validationError("LockToken is required")
+	}
+
+	ipSet, err := stores.ipSets.Get(id)
+	if err != nil {
+		if wafstore.IsNotFound(err) {
+			return nil, notFoundError("IPSet")
+		}
+		return nil, err
+	}
+
+	if err := stores.ipSets.Delete(id, lockToken); err != nil {
+		if wafstore.IsLockTokenMismatch(err) {
+			return nil, lockTokenError()
+		}
+		return nil, err
+	}
+
+	_ = stores.tags.Delete(ipSet.ARN)
+
+	return map[string]interface{}{}, nil
+}

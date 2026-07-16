@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package storage.neptune;
+
+option go_package = "vorpalstacks/internal/pb/storage/storage_neptune";
+
+import "google/protobuf/timestamp.proto";
+
+// Neptune-specific messages not shared with other RDS engines.
+
+message DBClusterEndpoint {
+  string db_cluster_endpoint_identifier = 1;
+  string db_cluster_identifier = 2;
+  string endpoint = 3;
+  string status = 4;
+  string endpoint_type = 5;
+  repeated string excluded_members = 6;
+  repeated string static_members = 7;
+  string db_cluster_endpoint_arn = 8;
+}
+
+message QueryState {
+  string query_id = 1;
+  string query_type = 2;
+  string query_string = 3;
+  string status = 4;
+  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  string result = 7;
+  string error = 8;
+}
+
+message LoaderJob {
+  string load_id = 1;
+  string status = 2;
+  string source = 3;
+  string format = 4;
+  google.protobuf.Timestamp submit_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  int64 total_records = 7;
+  int64 total_errors = 8;
+  string overall_status = 9;
+  map<string, string> details = 10;
+}
+
+message GraphStatistics {
+  bool active = 1;
+  bool auto_compute = 2;
+  string date = 3;
+  string note = 4;
+  string statistics_id = 5;
+  int64 node_count = 6;
+  int64 edge_count = 7;
+  map<string, int64> label_counts = 8;
+  map<string, int64> rel_counts = 9;
+  int64 predicate_count = 10;
+  int64 signature_count = 11;
+}

@@ -1,0 +1,55 @@
+package waf
+
+import (
+	"errors"
+
+	"vorpalstacks/internal/store/aws/common"
+)
+
+var (
+	// ErrNotFound is returned when the specified WAF entity does not exist.
+	ErrNotFound = errors.New("entity not found")
+
+	// ErrAlreadyExists is returned when attempting to create a WAF entity
+	// that already exists.
+	ErrAlreadyExists = errors.New("entity already exists")
+
+	// ErrInUse is returned when the entity is in use and cannot be deleted.
+	ErrInUse = errors.New("entity is in use")
+
+	// ErrLockTokenMismatch is returned when the lock token does not match.
+	ErrLockTokenMismatch = errors.New("lock token mismatch")
+
+	// ErrInvalidParameter is returned when a parameter is not valid.
+	ErrInvalidParameter = common.ErrInvalidParameter
+
+	// ErrInternalError is returned when an internal error occurs.
+	ErrInternalError = errors.New("internal error")
+)
+
+// NewStoreError creates a new WAF store error with the given operation and error.
+func NewStoreError(operation string, err error) *common.StoreError {
+	return common.NewStoreError("waf", operation, err)
+}
+
+// IsNotFound checks if the error indicates that a WAF entity was not found.
+func IsNotFound(err error) bool {
+	return common.IsNotFound(err) ||
+		errors.Is(err, ErrNotFound)
+}
+
+// IsAlreadyExists checks if the error indicates that a WAF entity already exists.
+func IsAlreadyExists(err error) bool {
+	return common.IsAlreadyExists(err) ||
+		errors.Is(err, ErrAlreadyExists)
+}
+
+// IsInUse checks if the error indicates that a WAF entity is in use.
+func IsInUse(err error) bool {
+	return errors.Is(err, ErrInUse)
+}
+
+// IsLockTokenMismatch checks if the error indicates a lock token mismatch.
+func IsLockTokenMismatch(err error) bool {
+	return errors.Is(err, ErrLockTokenMismatch)
+}

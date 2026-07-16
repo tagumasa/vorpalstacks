@@ -1,0 +1,266 @@
+package dynamodb
+
+import (
+	"math/big"
+	"regexp"
+	"strconv"
+	"strings"
+
+	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	"vorpalstacks/pkg/sqlparser"
+)
+
+func filterItemsByExpr(items []*dbstore.Item, expr sqlparser.Expr, params *partiQLParams) []*dbstore.Item {
+	var result []*dbstore.Item
+
+	for _, item := range items {
+		if evaluateExpr(item.Attributes, expr, params) {
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
+
+func evaluateExpr(attrs map[string]*dbstore.AttributeValue, expr sqlparser.Expr, params *partiQLParams) bool {
+	switch e := expr.(type) {
+	case *sqlparser.ComparisonExpr:
+		return evaluateComparison(attrs, e, params)
+	case *sqlparser.AndExpr:
+		return evaluateExpr(attrs, e.Left, params) && evaluateExpr(attrs, e.Right, params)
+	case *sqlparser.OrExpr:
+		return evaluateExpr(attrs, e.Left, params) || evaluateExpr(attrs, e.Right, params)
+	case *sqlparser.NotExpr:
+		return !evaluateExpr(attrs, e.Expr, params)
+	case *sqlparser.IsExpr:
+		return evaluateIsExpr(attrs, e, params)
+	case *sqlparser.RangeCond:
+		return evaluateRangeCond(attrs, e, params)
+	default:
+		return false
+	}
+}
+
+func evaluateComparison(attrs map[string]*dbstore.AttributeValue, cmp *sqlparser.ComparisonExpr, params *partiQLParams) bool {
+	attrName := extractColName(cmp.Left)
+	if attrName == "" {
+		return false
+	}
+
+	attr, exists := attrs[attrName]
+	if !exists {
+		return false
+	}
+
+	leftVal := getAttrValue(attr)
+	rightVal := extractValue(cmp.Right, params)
+
+	switch cmp.Operator {
+	case sqlparser.EqualStr:
+		return valuesEqual(leftVal, rightVal)
+	case sqlparser.NotEqualStr:
+		return !valuesEqual(leftVal, rightVal)
+	case sqlparser.LessThanStr:
+		return compareValues(leftVal, rightVal) < 0
+	case sqlparser.GreaterThanStr:
+		return compareValues(leftVal, rightVal) > 0
+	case sqlparser.LessEqualStr:
+		return compareValues(leftVal, rightVal) <= 0
+	case sqlparser.GreaterEqualStr:
+		return compareValues(leftVal, rightVal) >= 0
+	case sqlparser.InStr:
+		return evaluateIn(attrs, cmp, params)
+	case sqlparser.LikeStr:
+		return evaluateLike(leftVal, rightVal)
+	}
+	return false
+}
+
+func extractColName(expr sqlparser.Expr) string {
+	switch e := expr.(type) {
+	case *sqlparser.ColName:
+		return e.Name.String()
+	case *sqlparser.SQLVal:
+		return string(e.Val)
+	}
+	return ""
+}
+
+func extractValue(expr sqlparser.Expr, params *partiQLParams) string {
+	switch e := expr.(type) {
+	case *sqlparser.SQLVal:
+		switch e.Type {
+		case sqlparser.StrVal:
+			return string(e.Val)
+		case sqlparser.IntVal, sqlparser.FloatVal:
+			return string(e.Val)
+		case sqlparser.ValArg:
+			if strings.HasPrefix(string(e.Val), ":") {
+				idxStr := strings.TrimPrefix(string(e.Val), ":v")
+				if idx, err := strconv.Atoi(idxStr); err == nil && params != nil && idx > 0 && idx <= len(params.Parameters) {
+					return paramToString(params.Parameters[idx-1])
+				}
+			}
+			return string(e.Val)
+		}
+	case *sqlparser.ColName:
+		return e.Name.String()
+	}
+	return ""
+}
+
+func getAttrValue(attr *dbstore.AttributeValue) string {
+	switch {
+	case attr.S != nil:
+		return *attr.S
+	case attr.N != nil:
+		return *attr.N
+	case attr.BOOL != nil:
+		if *attr.BOOL {
+			return "true"
+		}
+		return "false"
+	case attr.NULL != nil && *attr.NULL:
+		return "null"
+	}
+	return ""
+}
+
+func compareValues(a, b string) int {
+	numA, okA := new(big.Rat).SetString(a)
+	numB, okB := new(big.Rat).SetString(b)
+	if okA && okB {
+		return numA.Cmp(numB)
+	}
+	if a < b {
+		return -1
+	} else if a > b {
+		return 1
+	}
+	return 0
+}
+
+func valuesEqual(a, b string) bool {
+	numA, okA := new(big.Rat).SetString(a)
+	numB, okB := new(big.Rat).SetString(b)
+	if okA && okB {
+		return numA.Cmp(numB) == 0
+	}
+	return a == b
+}
+
+func evaluateIsExpr(attrs map[string]*dbstore.AttributeValue, is *sqlparser.IsExpr, params *partiQLParams) bool {
+	attrName := extractColName(is.Expr)
+	if attrName == "" {
+		return false
+	}
+
+	attr, exists := attrs[attrName]
+	switch is.Operator {
+	case sqlparser.IsNullStr:
+		return !exists || attr == nil || (attr.NULL != nil && *attr.NULL)
+	case sqlparser.IsNotNullStr:
+		return exists && attr != nil && (attr.NULL == nil || !*attr.NULL)
+	}
+	return false
+}
+
+func evaluateRangeCond(attrs map[string]*dbstore.AttributeValue, rc *sqlparser.RangeCond, params *partiQLParams) bool {
+	attrName := extractColName(rc.Left)
+	if attrName == "" {
+		return false
+	}
+
+	attr, exists := attrs[attrName]
+	if !exists {
+		return false
+	}
+
+	val := getAttrValue(attr)
+	from := extractValue(rc.From, params)
+	to := extractValue(rc.To, params)
+
+	if rc.Operator == sqlparser.BetweenStr {
+		return compareValues(val, from) >= 0 && compareValues(val, to) <= 0
+	}
+	return compareValues(val, from) < 0 || compareValues(val, to) > 0
+}
+
+func evaluateIn(attrs map[string]*dbstore.AttributeValue, cmp *sqlparser.ComparisonExpr, params *partiQLParams) bool {
+	attrName := extractColName(cmp.Left)
+	if attrName == "" {
+		return false
+	}
+
+	attr, exists := attrs[attrName]
+	if !exists {
+		return false
+	}
+
+	val := getAttrValue(attr)
+
+	tuple, ok := cmp.Right.(sqlparser.ValTuple)
+	if !ok {
+		return false
+	}
+
+	for _, item := range tuple {
+		if valuesEqual(extractValue(item, params), val) {
+			return true
+		}
+	}
+	return false
+}
+
+func evaluateLike(value, pattern string) bool {
+	regex := likeToRegex(pattern)
+	matched, _ := regexp.MatchString("^"+regex+"$", value)
+	return matched
+}
+
+func likeToRegex(pattern string) string {
+	var result strings.Builder
+	for _, ch := range pattern {
+		switch ch {
+		case '%':
+			result.WriteString(".*")
+		case '_':
+			result.WriteString(".")
+		default:
+			result.WriteString(regexp.QuoteMeta(string(ch)))
+		}
+	}
+	return result.String()
+}
+
+func paramToString(param interface{}) string {
+	switch v := param.(type) {
+	case map[string]interface{}:
+		if s, ok := v["S"].(string); ok {
+			return s
+		}
+		if n, ok := v["N"].(string); ok {
+			return n
+		}
+		if b, ok := v["BOOL"].(bool); ok {
+			if b {
+				return "true"
+			}
+			return "false"
+		}
+	case string:
+		return v
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case int:
+		return strconv.FormatInt(int64(v), 10)
+	case int64:
+		return strconv.FormatInt(v, 10)
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	}
+	return "null"
+}

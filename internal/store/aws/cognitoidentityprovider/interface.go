@@ -1,0 +1,136 @@
+package cognitoidentityprovider
+
+import (
+	"vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/internal/utils/aws/types"
+)
+
+// CognitoStoreInterface defines operations for managing Cognito User Pools.
+type CognitoStoreInterface interface {
+	UserPoolOperations
+	UserOperations
+	GroupOperations
+	ClientOperations
+	TokenOperations
+	ChallengeOperations
+	TagOperations
+	DomainOperations
+	ResourceServerOperations
+	IdentityProviderOperations
+	Raw() *CognitoStore
+}
+
+// UserPoolOperations defines operations for managing user pools.
+type UserPoolOperations interface {
+	CreateUserPool(userPool *UserPool) (*UserPool, error)
+	GetUserPool(userPoolID string) (*UserPool, error)
+	UpdateUserPool(userPool *UserPool) error
+	DeleteUserPool(userPoolID string) error
+	ListUserPools() ([]*UserPool, error)
+	ListUserPoolsPaginated(opts common.ListOptions) (*common.ListResult[UserPool], error)
+}
+
+// UserOperations defines operations for managing users.
+type UserOperations interface {
+	CreateUser(user *User) error
+	GetUser(userPoolID, username string) (*User, error)
+	GetUserByID(userID string) (*User, error)
+	UpdateUser(user *User) error
+	DeleteUser(userPoolID, username string) error
+	ListUsers(userPoolID string) ([]*User, error)
+	ListUsersPaginated(userPoolID string, opts common.ListOptions, filter func(*User) bool) (*common.ListResult[User], error)
+}
+
+// GroupOperations defines operations for managing groups.
+type GroupOperations interface {
+	CreateGroup(group *Group) error
+	GetGroup(userPoolID, groupName string) (*Group, error)
+	UpdateGroup(group *Group) error
+	DeleteGroup(userPoolID, groupName string) error
+	ListGroups(userPoolID string) ([]*Group, error)
+	ListGroupsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[Group], error)
+	AddUserToGroup(userPoolID, groupName, username string) error
+	RemoveUserFromGroup(userPoolID, groupName, username string) error
+	ListGroupsForUser(userPoolID, username string) ([]*Group, error)
+	ListUsersInGroup(userPoolID, groupName string) ([]*User, error)
+}
+
+// ClientOperations defines operations for managing user pool clients.
+type ClientOperations interface {
+	CreateUserPoolClient(client *UserPoolClient) error
+	GetUserPoolClient(userPoolID, clientID string) (*UserPoolClient, error)
+	GetUserPoolClientByName(userPoolID, clientName string) (*UserPoolClient, error)
+	UpdateUserPoolClient(client *UserPoolClient) error
+	DeleteUserPoolClient(userPoolID, clientID string) error
+	ListUserPoolClients(userPoolID string) ([]*UserPoolClient, error)
+	ListUserPoolClientsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserPoolClient], error)
+	GetUserPoolByClientID(clientID string) (*UserPool, error)
+}
+
+// TokenOperations defines operations for managing tokens.
+type TokenOperations interface {
+	CreateRefreshToken(token *RefreshToken) error
+	GetRefreshToken(userPoolID, userID, token string) (*RefreshToken, error)
+	GetRefreshTokenByValue(token string) (*RefreshToken, error)
+	DeleteRefreshToken(userPoolID, userID, token string) error
+	DeleteAllRefreshTokensForUser(userPoolID, userID string) error
+
+	CreateIDToken(token *IDToken) error
+	GetIDToken(userPoolID, userID, token string) (*IDToken, error)
+	GetIDTokenByValue(token string) (*IDToken, error)
+	DeleteIDToken(userPoolID, userID, token string) error
+
+	CreateAccessToken(token *AccessToken) error
+	GetAccessToken(userPoolID, userID, token string) (*AccessToken, error)
+	GetAccessTokenByValue(token string) (*AccessToken, error)
+	DeleteAccessToken(userPoolID, userID, token string) error
+
+	DeleteUserTokens(userPoolID, userID string) error
+}
+
+// ChallengeOperations defines operations for managing authentication challenges.
+type ChallengeOperations interface {
+	SaveChallengeSession(session *ChallengeSession) error
+	GetChallengeSession(sessionID string) (*ChallengeSession, error)
+	DeleteChallengeSession(sessionID string) error
+}
+
+// TagOperations defines operations for managing tags.
+type TagOperations interface {
+	List(resourceArn string) (map[string]string, error)
+	ListAsSlice(resourceArn string) ([]types.Tag, error)
+	Tag(resourceArn string, tags map[string]string) error
+	Untag(resourceArn string, tagKeys []string) error
+}
+
+// Raw returns the underlying Cognito store.
+func (s *CognitoStore) Raw() *CognitoStore {
+	return s
+}
+
+// DomainOperations defines operations for managing user pool domains.
+type DomainOperations interface {
+	SetUserPoolDomain(domain string, entry *UserPoolDomain) error
+	GetUserPoolDomain(domain string) (*UserPoolDomain, error)
+	DeleteUserPoolDomain(domain string) error
+}
+
+// ResourceServerOperations defines operations for managing resource servers.
+type ResourceServerOperations interface {
+	CreateResourceServer(rs *ResourceServer) error
+	GetResourceServer(userPoolID, identifier string) (*ResourceServer, error)
+	UpdateResourceServer(rs *ResourceServer) error
+	DeleteResourceServer(userPoolID, identifier string) error
+	ListResourceServers(userPoolID string) ([]*ResourceServer, error)
+	ListResourceServersPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[ResourceServer], error)
+}
+
+// IdentityProviderOperations defines operations for managing identity providers.
+type IdentityProviderOperations interface {
+	CreateIdentityProvider(ip *IdentityProvider) error
+	GetIdentityProvider(userPoolID, providerName string) (*IdentityProvider, error)
+	UpdateIdentityProvider(ip *IdentityProvider) error
+	DeleteIdentityProvider(userPoolID, providerName string) error
+	ListIdentityProviders(userPoolID string) ([]*IdentityProvider, error)
+	ListIdentityProvidersPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[IdentityProvider], error)
+}
