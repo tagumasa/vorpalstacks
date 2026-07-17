@@ -41,3 +41,13 @@ func (b *ARNBuilder) BuildOriginAccessControlARN(id string) string {
 func (b *ARNBuilder) BuildResponseHeadersPolicyARN(id string) string {
 	return b.builder.ResponseHeadersPolicy(id)
 }
+
+// BuildPublicKeyARN builds a CloudFront public key ARN from an ID.
+func (b *ARNBuilder) BuildPublicKeyARN(id string) string {
+	return b.builder.PublicKey(id)
+}
+
+// BuildKeyGroupARN builds a CloudFront key group ARN from an ID.
+func (b *ARNBuilder) BuildKeyGroupARN(id string) string {
+	return b.builder.KeyGroup(id)
+}

@@ -2,7 +2,6 @@
 package cloudfront
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -22,6 +21,8 @@ type cloudfrontStores struct {
 	originRequestPolicies   *cloudfrontstore.OriginRequestPolicyStore
 	originAccessControls    *cloudfrontstore.OriginAccessControlStore
 	responseHeadersPolicies *cloudfrontstore.ResponseHeadersPolicyStore
+	publicKeys              *cloudfrontstore.PublicKeyStore
+	keyGroups               *cloudfrontstore.KeyGroupStore
 	tags                    *cloudfrontstore.TagStore
 	arnBuilder              *cloudfrontstore.ARNBuilder
 }
@@ -86,6 +87,8 @@ func (s *CloudFrontService) store(reqCtx *request.RequestContext) (*cloudfrontSt
 			originRequestPolicies:   orpStore,
 			originAccessControls:    cloudfrontstore.NewOriginAccessControlStore(storage, s.accountID),
 			responseHeadersPolicies: cloudfrontstore.NewResponseHeadersPolicyStore(storage, s.accountID),
+			publicKeys:              cloudfrontstore.NewPublicKeyStore(storage, s.accountID),
+			keyGroups:               cloudfrontstore.NewKeyGroupStore(storage, s.accountID),
 			tags:                    cloudfrontstore.NewTagStore(storage),
 			arnBuilder:              arnBuilder,
 		}, nil
@@ -135,21 +138,6 @@ func (s *CloudFrontService) AccountId() string {
 	return s.accountID
 }
 
-// RegisterHandlers registers the CloudFront handlers with the dispatcher.
-func (s *CloudFrontService) ListKeyGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxItems := int(request.GetIntParam(req.Parameters, "MaxItems"))
-	if maxItems == 0 {
-		maxItems = 100
-	}
-	return map[string]interface{}{
-		"KeyGroupList": map[string]interface{}{
-			"MaxItems":    maxItems,
-			"Quantity":    0,
-			"IsTruncated": false,
-		},
-	}, nil
-}
-
 // RegisterHandlers registers all CloudFront API handlers with the dispatcher.
 func (s *CloudFrontService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudfront", "CreateDistribution", s.CreateDistribution)
@@ -197,5 +185,17 @@ func (s *CloudFrontService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudfront", "DeleteResponseHeadersPolicy", s.DeleteResponseHeadersPolicy)
 	d.RegisterHandlerForService("cloudfront", "ListResponseHeadersPolicies", s.ListResponseHeadersPolicies)
 
+	d.RegisterHandlerForService("cloudfront", "CreatePublicKey", s.CreatePublicKey)
+	d.RegisterHandlerForService("cloudfront", "GetPublicKey", s.GetPublicKey)
+	d.RegisterHandlerForService("cloudfront", "GetPublicKeyConfig", s.GetPublicKeyConfig)
+	d.RegisterHandlerForService("cloudfront", "UpdatePublicKey", s.UpdatePublicKey)
+	d.RegisterHandlerForService("cloudfront", "DeletePublicKey", s.DeletePublicKey)
+	d.RegisterHandlerForService("cloudfront", "ListPublicKeys", s.ListPublicKeys)
+
+	d.RegisterHandlerForService("cloudfront", "CreateKeyGroup", s.CreateKeyGroup)
+	d.RegisterHandlerForService("cloudfront", "GetKeyGroup", s.GetKeyGroup)
+	d.RegisterHandlerForService("cloudfront", "GetKeyGroupConfig", s.GetKeyGroupConfig)
+	d.RegisterHandlerForService("cloudfront", "UpdateKeyGroup", s.UpdateKeyGroup)
+	d.RegisterHandlerForService("cloudfront", "DeleteKeyGroup", s.DeleteKeyGroup)
 	d.RegisterHandlerForService("cloudfront", "ListKeyGroups", s.ListKeyGroups)
 }

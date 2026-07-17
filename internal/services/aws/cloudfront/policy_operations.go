@@ -118,15 +118,9 @@ func (s *CloudFrontService) ListCachePolicies(ctx context.Context, reqCtx *reque
 		items = append(items, map[string]interface{}{
 			"Type": policyType,
 			"CachePolicy": map[string]interface{}{
-				"Id":               cp.ID,
-				"LastModifiedTime": cp.ModifiedAt.Format(time.RFC3339),
-				"CachePolicyConfig": map[string]interface{}{
-					"Name":       cp.CachePolicyConfig.Name,
-					"Comment":    cp.CachePolicyConfig.Comment,
-					"DefaultTTL": cp.CachePolicyConfig.DefaultTTL,
-					"MaxTTL":     cp.CachePolicyConfig.MaxTTL,
-					"MinTTL":     cp.CachePolicyConfig.MinTTL,
-				},
+				"Id":                cp.ID,
+				"LastModifiedTime":  cp.ModifiedAt.Format(time.RFC3339),
+				"CachePolicyConfig": cp.CachePolicyConfig,
 			},
 		})
 	}
@@ -348,12 +342,9 @@ func (s *CloudFrontService) ListOriginRequestPolicies(ctx context.Context, reqCt
 		items = append(items, map[string]interface{}{
 			"Type": policyType,
 			"OriginRequestPolicy": map[string]interface{}{
-				"Id":               p.ID,
-				"LastModifiedTime": p.ModifiedAt.Format(time.RFC3339),
-				"OriginRequestPolicyConfig": map[string]interface{}{
-					"Name":    p.OriginRequestPolicyConfig.Name,
-					"Comment": p.OriginRequestPolicyConfig.Comment,
-				},
+				"Id":                        p.ID,
+				"LastModifiedTime":          p.ModifiedAt.Format(time.RFC3339),
+				"OriginRequestPolicyConfig": p.OriginRequestPolicyConfig,
 			},
 		})
 	}

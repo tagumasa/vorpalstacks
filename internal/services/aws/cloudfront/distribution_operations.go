@@ -75,9 +75,29 @@ func formatDistributionConfig(config *cloudfrontstore.DistributionConfig) map[st
 	}
 
 	if config.CustomErrorResponses != nil {
-		m["CustomErrorResponses"] = map[string]interface{}{
+		cerMap := map[string]interface{}{
 			"Quantity": config.CustomErrorResponses.Quantity,
 		}
+		if len(config.CustomErrorResponses.Items) > 0 {
+			items := make([]interface{}, len(config.CustomErrorResponses.Items))
+			for i, r := range config.CustomErrorResponses.Items {
+				itemMap := map[string]interface{}{
+					"ErrorCode": r.ErrorCode,
+				}
+				if r.ResponsePagePath != "" {
+					itemMap["ResponsePagePath"] = r.ResponsePagePath
+				}
+				if r.ResponseCode != "" {
+					itemMap["ResponseCode"] = r.ResponseCode
+				}
+				if r.ErrorCachingMinTTL != 0 {
+					itemMap["ErrorCachingMinTTL"] = r.ErrorCachingMinTTL
+				}
+				items[i] = itemMap
+			}
+			cerMap["Items"] = protocol.XMLElements{ElementName: "CustomErrorResponse", Items: items}
+		}
+		m["CustomErrorResponses"] = cerMap
 	}
 
 	if config.Logging != nil {
@@ -94,11 +114,19 @@ func formatDistributionConfig(config *cloudfrontstore.DistributionConfig) map[st
 	}
 
 	if config.Restrictions != nil {
+		geoMap := map[string]interface{}{
+			"RestrictionType": config.Restrictions.GeoRestriction.RestrictionType,
+			"Quantity":        config.Restrictions.GeoRestriction.Quantity,
+		}
+		if len(config.Restrictions.GeoRestriction.Items) > 0 {
+			items := make([]interface{}, len(config.Restrictions.GeoRestriction.Items))
+			for i, loc := range config.Restrictions.GeoRestriction.Items {
+				items[i] = loc
+			}
+			geoMap["Items"] = protocol.XMLElements{ElementName: "Location", Items: items}
+		}
 		m["Restrictions"] = map[string]interface{}{
-			"GeoRestriction": map[string]interface{}{
-				"RestrictionType": config.Restrictions.GeoRestriction.RestrictionType,
-				"Quantity":        config.Restrictions.GeoRestriction.Quantity,
-			},
+			"GeoRestriction": geoMap,
 		}
 	}
 
@@ -152,8 +180,35 @@ func formatOriginMap(o *cloudfrontstore.Origin) map[string]interface{} {
 		"ConnectionAttempts":    o.ConnectionAttempts,
 		"ConnectionTimeout":     o.ConnectionTimeout,
 		"OriginAccessControlId": o.OriginAccessControlId,
-		"CustomHeaders":         map[string]interface{}{"Quantity": 0},
-		"OriginShield":          map[string]interface{}{"Enabled": false},
+	}
+	if o.CustomHeaders != nil {
+		chm := map[string]interface{}{
+			"Quantity": o.CustomHeaders.Quantity,
+		}
+		if len(o.CustomHeaders.Items) > 0 {
+			items := make([]interface{}, len(o.CustomHeaders.Items))
+			for i, h := range o.CustomHeaders.Items {
+				items[i] = map[string]interface{}{
+					"HeaderName":  h.HeaderName,
+					"HeaderValue": h.HeaderValue,
+				}
+			}
+			chm["Items"] = protocol.XMLElements{ElementName: "OriginCustomHeader", Items: items}
+		}
+		om["CustomHeaders"] = chm
+	} else {
+		om["CustomHeaders"] = map[string]interface{}{"Quantity": 0}
+	}
+	if o.OriginShield != nil {
+		osm := map[string]interface{}{
+			"Enabled": o.OriginShield.Enabled,
+		}
+		if o.OriginShield.OriginShieldRegion != "" {
+			osm["OriginShieldRegion"] = o.OriginShield.OriginShieldRegion
+		}
+		om["OriginShield"] = osm
+	} else {
+		om["OriginShield"] = map[string]interface{}{"Enabled": false}
 	}
 	if o.CustomOriginConfig != nil {
 		coc := map[string]interface{}{
@@ -188,15 +243,13 @@ func formatCacheBehavior(cb *cloudfrontstore.CacheBehavior) map[string]interface
 		return nil
 	}
 	m := map[string]interface{}{
-		"TargetOriginId":             cb.TargetOriginId,
-		"ViewerProtocolPolicy":       cb.ViewerProtocolPolicy,
-		"Compress":                   cb.Compress,
-		"FieldLevelEncryptionId":     "",
-		"RealtimeLogConfigArn":       "",
-		"SmoothStreaming":            cb.SmoothStreaming,
-		"FunctionAssociations":       map[string]interface{}{"Quantity": 0},
-		"LambdaFunctionAssociations": map[string]interface{}{"Quantity": 0},
-		"GrpcConfig":                 map[string]interface{}{"Enabled": false},
+		"TargetOriginId":         cb.TargetOriginId,
+		"ViewerProtocolPolicy":   cb.ViewerProtocolPolicy,
+		"Compress":               cb.Compress,
+		"FieldLevelEncryptionId": "",
+		"RealtimeLogConfigArn":   "",
+		"SmoothStreaming":        cb.SmoothStreaming,
+		"GrpcConfig":             map[string]interface{}{"Enabled": false},
 	}
 	if cb.PathPattern != "" {
 		m["PathPattern"] = cb.PathPattern
@@ -234,10 +287,18 @@ func formatCacheBehavior(cb *cloudfrontstore.CacheBehavior) map[string]interface
 		m["AllowedMethods"] = am
 	}
 	if cb.TrustedSigners != nil {
-		m["TrustedSigners"] = map[string]interface{}{
+		tsm := map[string]interface{}{
 			"Enabled":  cb.TrustedSigners.Enabled,
 			"Quantity": cb.TrustedSigners.Quantity,
 		}
+		if len(cb.TrustedSigners.Items) > 0 {
+			items := make([]interface{}, len(cb.TrustedSigners.Items))
+			for i, item := range cb.TrustedSigners.Items {
+				items[i] = item
+			}
+			tsm["Items"] = protocol.XMLElements{ElementName: "AwsAccountNumber", Items: items}
+		}
+		m["TrustedSigners"] = tsm
 	} else {
 		m["TrustedSigners"] = map[string]interface{}{
 			"Enabled":  false,
@@ -245,10 +306,18 @@ func formatCacheBehavior(cb *cloudfrontstore.CacheBehavior) map[string]interface
 		}
 	}
 	if cb.TrustedKeyGroups != nil {
-		m["TrustedKeyGroups"] = map[string]interface{}{
+		tkgm := map[string]interface{}{
 			"Enabled":  cb.TrustedKeyGroups.Enabled,
 			"Quantity": cb.TrustedKeyGroups.Quantity,
 		}
+		if len(cb.TrustedKeyGroups.Items) > 0 {
+			items := make([]interface{}, len(cb.TrustedKeyGroups.Items))
+			for i, item := range cb.TrustedKeyGroups.Items {
+				items[i] = item
+			}
+			tkgm["Items"] = protocol.XMLElements{ElementName: "KeyGroupId", Items: items}
+		}
+		m["TrustedKeyGroups"] = tkgm
 	} else {
 		m["TrustedKeyGroups"] = map[string]interface{}{
 			"Enabled":  false,
@@ -256,20 +325,101 @@ func formatCacheBehavior(cb *cloudfrontstore.CacheBehavior) map[string]interface
 		}
 	}
 	if cb.ForwardedValues != nil {
-		fv := map[string]interface{}{
-			"QueryString": cb.ForwardedValues.QueryString,
+		m["ForwardedValues"] = formatForwardedValues(cb.ForwardedValues)
+	}
+	if cb.LambdaFunctionAssociations != nil {
+		lfam := map[string]interface{}{
+			"Quantity": cb.LambdaFunctionAssociations.Quantity,
 		}
-		if cb.ForwardedValues.Cookies != nil {
-			fv["Cookies"] = map[string]interface{}{
-				"Forward": cb.ForwardedValues.Cookies.Forward,
+		if len(cb.LambdaFunctionAssociations.Items) > 0 {
+			items := make([]interface{}, len(cb.LambdaFunctionAssociations.Items))
+			for i, item := range cb.LambdaFunctionAssociations.Items {
+				items[i] = map[string]interface{}{
+					"LambdaFunctionARN": item.LambdaFunctionARN,
+					"EventType":         item.EventType,
+					"IncludeBody":       item.IncludeBody,
+				}
 			}
+			lfam["Items"] = protocol.XMLElements{ElementName: "LambdaFunctionAssociation", Items: items}
 		}
-		m["ForwardedValues"] = fv
+		m["LambdaFunctionAssociations"] = lfam
+	} else {
+		m["LambdaFunctionAssociations"] = map[string]interface{}{"Quantity": 0}
+	}
+	if cb.FunctionAssociations != nil {
+		fam := map[string]interface{}{
+			"Quantity": cb.FunctionAssociations.Quantity,
+		}
+		if len(cb.FunctionAssociations.Items) > 0 {
+			items := make([]interface{}, len(cb.FunctionAssociations.Items))
+			for i, item := range cb.FunctionAssociations.Items {
+				items[i] = map[string]interface{}{
+					"FunctionARN": item.FunctionARN,
+					"EventType":   item.EventType,
+				}
+			}
+			fam["Items"] = protocol.XMLElements{ElementName: "FunctionAssociation", Items: items}
+		}
+		m["FunctionAssociations"] = fam
+	} else {
+		m["FunctionAssociations"] = map[string]interface{}{"Quantity": 0}
 	}
 	if cb.MinTTL > 0 || cb.DefaultTTL > 0 || cb.MaxTTL > 0 {
 		m["MinTTL"] = cb.MinTTL
 		m["DefaultTTL"] = cb.DefaultTTL
 		m["MaxTTL"] = cb.MaxTTL
+	}
+	return m
+}
+
+func formatForwardedValues(fv *cloudfrontstore.ForwardedValues) map[string]interface{} {
+	m := map[string]interface{}{
+		"QueryString": fv.QueryString,
+	}
+	if fv.Cookies != nil {
+		cm := map[string]interface{}{
+			"Forward": fv.Cookies.Forward,
+		}
+		if fv.Cookies.WhitelistedNames != nil {
+			wnm := map[string]interface{}{
+				"Quantity": fv.Cookies.WhitelistedNames.Quantity,
+			}
+			if len(fv.Cookies.WhitelistedNames.Items) > 0 {
+				items := make([]interface{}, len(fv.Cookies.WhitelistedNames.Items))
+				for i, name := range fv.Cookies.WhitelistedNames.Items {
+					items[i] = name
+				}
+				wnm["Items"] = protocol.XMLElements{ElementName: "Name", Items: items}
+			}
+			cm["WhitelistedNames"] = wnm
+		}
+		m["Cookies"] = cm
+	}
+	if fv.Headers != nil {
+		hm := map[string]interface{}{
+			"Quantity": fv.Headers.Quantity,
+		}
+		if len(fv.Headers.Items) > 0 {
+			items := make([]interface{}, len(fv.Headers.Items))
+			for i, h := range fv.Headers.Items {
+				items[i] = h
+			}
+			hm["Items"] = protocol.XMLElements{ElementName: "Name", Items: items}
+		}
+		m["Headers"] = hm
+	}
+	if fv.QueryStringCacheKeys != nil {
+		qm := map[string]interface{}{
+			"Quantity": fv.QueryStringCacheKeys.Quantity,
+		}
+		if len(fv.QueryStringCacheKeys.Items) > 0 {
+			items := make([]interface{}, len(fv.QueryStringCacheKeys.Items))
+			for i, k := range fv.QueryStringCacheKeys.Items {
+				items[i] = k
+			}
+			qm["Items"] = protocol.XMLElements{ElementName: "Name", Items: items}
+		}
+		m["QueryStringCacheKeys"] = qm
 	}
 	return m
 }
@@ -337,9 +487,7 @@ func parseDistributionConfig(configMap map[string]interface{}) *cloudfrontstore.
 	}
 
 	if cer := request.GetMapParam(configMap, "CustomErrorResponses"); cer != nil {
-		config.CustomErrorResponses = &cloudfrontstore.CustomErrorResponses{
-			Quantity: request.GetIntParam(cer, "Quantity"),
-		}
+		config.CustomErrorResponses = parseCustomErrorResponses(cer)
 	}
 
 	return config
@@ -379,6 +527,36 @@ func parseLoggingConfig(m map[string]interface{}) *cloudfrontstore.LoggingConfig
 	}
 }
 
+func parseCustomErrorResponses(m map[string]interface{}) *cloudfrontstore.CustomErrorResponses {
+	if m == nil {
+		return nil
+	}
+	cer := &cloudfrontstore.CustomErrorResponses{
+		Quantity: request.GetIntParam(m, "Quantity"),
+	}
+	for _, item := range xmlItemsToSlice(m["Items"], "CustomErrorResponse") {
+		resp := cloudfrontstore.CustomErrorResponse{
+			ErrorCode: request.GetIntParam(item, "ErrorCode"),
+		}
+		if v, ok := item["ResponsePagePath"]; ok {
+			if s, ok := v.(string); ok {
+				resp.ResponsePagePath = s
+			}
+		}
+		if v, ok := item["ResponseCode"]; ok {
+			if s, ok := v.(string); ok {
+				resp.ResponseCode = s
+			}
+		}
+		resp.ErrorCachingMinTTL = request.GetIntParam(item, "ErrorCachingMinTTL")
+		cer.Items = append(cer.Items, resp)
+	}
+	if len(cer.Items) > 0 && cer.Quantity == 0 {
+		cer.Quantity = len(cer.Items)
+	}
+	return cer
+}
+
 func parseViewerCertificate(m map[string]interface{}) *cloudfrontstore.ViewerCertificate {
 	if m == nil {
 		return nil
@@ -400,10 +578,15 @@ func parseRestrictions(m map[string]interface{}) *cloudfrontstore.Restrictions {
 	}
 	restrictions := &cloudfrontstore.Restrictions{}
 	if gr := request.GetMapParam(m, "GeoRestriction"); gr != nil {
-		restrictions.GeoRestriction = cloudfrontstore.GeoRestriction{
+		geo := cloudfrontstore.GeoRestriction{
 			RestrictionType: request.GetStringParam(gr, "RestrictionType"),
 			Quantity:        request.GetIntParam(gr, "Quantity"),
 		}
+		geo.Items = parseStringItemList(gr, "Items", "Location")
+		if len(geo.Items) > 0 && geo.Quantity == 0 {
+			geo.Quantity = len(geo.Items)
+		}
+		restrictions.GeoRestriction = geo
 	}
 	return restrictions
 }
@@ -416,6 +599,27 @@ func parseOrigin(m map[string]interface{}) *cloudfrontstore.Origin {
 		ConnectionAttempts:    request.GetIntParam(m, "ConnectionAttempts"),
 		ConnectionTimeout:     request.GetIntParam(m, "ConnectionTimeout"),
 		OriginAccessControlId: request.GetStringParam(m, "OriginAccessControlId"),
+	}
+	if chMap := request.GetMapParam(m, "CustomHeaders"); chMap != nil {
+		ch := &cloudfrontstore.CustomHeaders{
+			Quantity: request.GetIntParam(chMap, "Quantity"),
+		}
+		for _, item := range xmlItemsToSlice(chMap["Items"], "OriginCustomHeader") {
+			ch.Items = append(ch.Items, cloudfrontstore.OriginCustomHeader{
+				HeaderName:  request.GetStringParam(item, "HeaderName"),
+				HeaderValue: request.GetStringParam(item, "HeaderValue"),
+			})
+		}
+		if len(ch.Items) > 0 && ch.Quantity == 0 {
+			ch.Quantity = len(ch.Items)
+		}
+		origin.CustomHeaders = ch
+	}
+	if osMap := request.GetMapParam(m, "OriginShield"); osMap != nil {
+		origin.OriginShield = &cloudfrontstore.OriginShield{
+			Enabled:            request.GetBoolParam(osMap, "Enabled"),
+			OriginShieldRegion: request.GetStringParam(osMap, "OriginShieldRegion"),
+		}
 	}
 	if s3Config := request.GetMapParam(m, "S3OriginConfig"); s3Config != nil {
 		origin.S3OriginConfig = &cloudfrontstore.S3OriginConfig{
@@ -518,6 +722,33 @@ func xmlStringItemsToSlice(itemsMap map[string]interface{}, elemName string, out
 	}
 }
 
+// parseStringItemList extracts a list of strings from a map's "Items" key,
+// handling both JSON array and XML nested-map forms.
+func parseStringItemList(m map[string]interface{}, key string, elemName string) []string {
+	if m == nil {
+		return nil
+	}
+	itemsVal, ok := m[key]
+	if !ok || itemsVal == nil {
+		return nil
+	}
+	switch v := itemsVal.(type) {
+	case []interface{}:
+		result := make([]string, 0, len(v))
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				result = append(result, s)
+			}
+		}
+		return result
+	case map[string]interface{}:
+		var result []string
+		xmlStringItemsToSlice(v, elemName, &result)
+		return result
+	}
+	return nil
+}
+
 func parseOrigins(originsMap map[string]interface{}) cloudfrontstore.Origins {
 	if originsMap == nil {
 		return cloudfrontstore.Origins{}
@@ -601,25 +832,96 @@ func parseCacheBehavior(cbMap map[string]interface{}) *cloudfrontstore.CacheBeha
 		cb.TrustedSigners = &cloudfrontstore.TrustedSigners{
 			Enabled:  request.GetBoolParam(ts, "Enabled"),
 			Quantity: request.GetIntParam(ts, "Quantity"),
+			Items:    parseStringItemList(ts, "Items", "AwsAccountNumber"),
 		}
 	}
 	if tkg := request.GetMapParam(cbMap, "TrustedKeyGroups"); tkg != nil {
 		cb.TrustedKeyGroups = &cloudfrontstore.TrustedKeyGroups{
 			Enabled:  request.GetBoolParam(tkg, "Enabled"),
 			Quantity: request.GetIntParam(tkg, "Quantity"),
+			Items:    parseStringItemList(tkg, "Items", "KeyGroupId"),
 		}
 	}
 	if fv := request.GetMapParam(cbMap, "ForwardedValues"); fv != nil {
-		cb.ForwardedValues = &cloudfrontstore.ForwardedValues{
-			QueryString: request.GetBoolParam(fv, "QueryString"),
+		cb.ForwardedValues = parseForwardedValues(fv)
+	}
+	if lfa := request.GetMapParam(cbMap, "LambdaFunctionAssociations"); lfa != nil {
+		lfaResult := &cloudfrontstore.LambdaFunctionAssociations{
+			Quantity: request.GetIntParam(lfa, "Quantity"),
 		}
-		if cookies := request.GetMapParam(fv, "Cookies"); cookies != nil {
-			cb.ForwardedValues.Cookies = &cloudfrontstore.CookiePreferences{
-				Forward: request.GetStringParam(cookies, "Forward"),
-			}
+		for _, item := range xmlItemsToSlice(lfa["Items"], "LambdaFunctionAssociation") {
+			lfaResult.Items = append(lfaResult.Items, cloudfrontstore.LambdaFunctionAssociation{
+				LambdaFunctionARN: request.GetStringParam(item, "LambdaFunctionARN"),
+				EventType:         request.GetStringParam(item, "EventType"),
+				IncludeBody:       request.GetBoolParam(item, "IncludeBody"),
+			})
 		}
+		if len(lfaResult.Items) > 0 && lfaResult.Quantity == 0 {
+			lfaResult.Quantity = len(lfaResult.Items)
+		}
+		cb.LambdaFunctionAssociations = lfaResult
+	}
+	if fa := request.GetMapParam(cbMap, "FunctionAssociations"); fa != nil {
+		faResult := &cloudfrontstore.FunctionAssociations{
+			Quantity: request.GetIntParam(fa, "Quantity"),
+		}
+		for _, item := range xmlItemsToSlice(fa["Items"], "FunctionAssociation") {
+			faResult.Items = append(faResult.Items, cloudfrontstore.FunctionAssociation{
+				FunctionARN: request.GetStringParam(item, "FunctionARN"),
+				EventType:   request.GetStringParam(item, "EventType"),
+			})
+		}
+		if len(faResult.Items) > 0 && faResult.Quantity == 0 {
+			faResult.Quantity = len(faResult.Items)
+		}
+		cb.FunctionAssociations = faResult
 	}
 	return cb
+}
+
+func parseForwardedValues(fv map[string]interface{}) *cloudfrontstore.ForwardedValues {
+	if fv == nil {
+		return nil
+	}
+	result := &cloudfrontstore.ForwardedValues{
+		QueryString: request.GetBoolParam(fv, "QueryString"),
+	}
+	if cookies := request.GetMapParam(fv, "Cookies"); cookies != nil {
+		cp := &cloudfrontstore.CookiePreferences{
+			Forward: request.GetStringParam(cookies, "Forward"),
+		}
+		if wn := request.GetMapParam(cookies, "WhitelistedNames"); wn != nil {
+			cp.WhitelistedNames = &cloudfrontstore.WhitelistedNames{
+				Quantity: request.GetIntParam(wn, "Quantity"),
+				Items:    parseStringItemList(wn, "Items", "Name"),
+			}
+			if len(cp.WhitelistedNames.Items) > 0 && cp.WhitelistedNames.Quantity == 0 {
+				cp.WhitelistedNames.Quantity = len(cp.WhitelistedNames.Items)
+			}
+		}
+		result.Cookies = cp
+	}
+	if headers := request.GetMapParam(fv, "Headers"); headers != nil {
+		h := &cloudfrontstore.Headers{
+			Quantity: request.GetIntParam(headers, "Quantity"),
+			Items:    parseStringItemList(headers, "Items", "Name"),
+		}
+		if len(h.Items) > 0 && h.Quantity == 0 {
+			h.Quantity = len(h.Items)
+		}
+		result.Headers = h
+	}
+	if qsck := request.GetMapParam(fv, "QueryStringCacheKeys"); qsck != nil {
+		k := &cloudfrontstore.QueryStringCacheKeys{
+			Quantity: request.GetIntParam(qsck, "Quantity"),
+			Items:    parseStringItemList(qsck, "Items", "Name"),
+		}
+		if len(k.Items) > 0 && k.Quantity == 0 {
+			k.Quantity = len(k.Items)
+		}
+		result.QueryStringCacheKeys = k
+	}
+	return result
 }
 
 func parseCacheBehaviors(cbsMap map[string]interface{}) *cloudfrontstore.CacheBehaviors {

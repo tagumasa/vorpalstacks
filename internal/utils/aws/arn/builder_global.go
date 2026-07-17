@@ -50,6 +50,16 @@ func (b *CloudFrontBuilder) ResponseHeadersPolicy(id string) string {
 	return b.BuildNoRegion("cloudfront", "response-headers-policy/"+id)
 }
 
+// PublicKey constructs an ARN for a CloudFront public key.
+func (b *CloudFrontBuilder) PublicKey(id string) string {
+	return b.BuildNoRegion("cloudfront", "public-key/"+id)
+}
+
+// KeyGroup constructs an ARN for a CloudFront key group.
+func (b *CloudFrontBuilder) KeyGroup(id string) string {
+	return b.BuildNoRegion("cloudfront", "key-group/"+id)
+}
+
 // WAFBuilder provides methods for constructing WAF ARNs.
 type WAFBuilder struct{ *ARNBuilder }
 

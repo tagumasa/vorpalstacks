@@ -221,12 +221,9 @@ func (s *CloudFrontService) ListResponseHeadersPolicies(ctx context.Context, req
 	for _, policy := range result.ResponseHeadersPolicies {
 		items = append(items, map[string]interface{}{
 			"ResponseHeadersPolicy": map[string]interface{}{
-				"Id":               policy.ID,
-				"LastModifiedTime": policy.LastModifiedAt.Format(time.RFC3339),
-				"ResponseHeadersPolicyConfig": map[string]interface{}{
-					"Name":    policy.Name,
-					"Comment": policy.Comment,
-				},
+				"Id":                          policy.ID,
+				"LastModifiedTime":            policy.LastModifiedAt.Format(time.RFC3339),
+				"ResponseHeadersPolicyConfig": buildResponseHeadersPolicyConfigResponse(policy),
 			},
 			"Type": "custom",
 		})
