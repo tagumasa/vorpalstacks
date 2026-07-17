@@ -15,6 +15,8 @@ message LogGroup {
   int64 stored_bytes = 8;
   map<string, string> tags = 9;
   string log_group_class = 10;
+  string kms_key_id = 11;
+  bool deletion_protection_enabled = 12;
 }
 
 message LogStream {

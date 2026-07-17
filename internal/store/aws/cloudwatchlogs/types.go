@@ -14,18 +14,37 @@ const (
 	DefaultRetentionDays = 30
 )
 
+// validRetentionDays is the set of retention values accepted by AWS
+// CloudWatch Logs PutRetentionPolicy. Any value outside this set is
+// rejected with InvalidParameterException.
+var validRetentionDays = map[int32]bool{
+	1: true, 3: true, 5: true, 7: true, 14: true, 30: true,
+	60: true, 90: true, 120: true, 150: true, 180: true,
+	365: true, 400: true, 545: true, 731: true, 1096: true,
+	1827: true, 2192: true, 2557: true, 2922: true, 3288: true,
+	3653: true,
+}
+
+// IsValidRetentionDays returns true if the given value is one of the
+// allowed retention periods per the AWS CloudWatch Logs specification.
+func IsValidRetentionDays(days int32) bool {
+	return validRetentionDays[days]
+}
+
 // LogGroup represents a CloudWatch Logs log group.
 type LogGroup struct {
-	Name              string            `json:"name"`
-	ARN               string            `json:"arn"`
-	Region            string            `json:"region"`
-	AccountID         string            `json:"accountId"`
-	CreatedAt         time.Time         `json:"createdAt"`
-	RetentionInDays   int32             `json:"retentionInDays,omitempty"`
-	MetricFilterCount int32             `json:"metricFilterCount"`
-	StoredBytes       int64             `json:"storedBytes"`
-	LogGroupClass     string            `json:"logGroupClass,omitempty"`
-	Tags              map[string]string `json:"tags,omitempty"`
+	Name                      string            `json:"name"`
+	ARN                       string            `json:"arn"`
+	Region                    string            `json:"region"`
+	AccountID                 string            `json:"accountId"`
+	CreatedAt                 time.Time         `json:"createdAt"`
+	RetentionInDays           int32             `json:"retentionInDays,omitempty"`
+	MetricFilterCount         int32             `json:"metricFilterCount"`
+	StoredBytes               int64             `json:"storedBytes"`
+	LogGroupClass             string            `json:"logGroupClass,omitempty"`
+	KmsKeyId                  string            `json:"kmsKeyId,omitempty"`
+	DeletionProtectionEnabled bool              `json:"deletionProtectionEnabled"`
+	Tags                      map[string]string `json:"tags,omitempty"`
 }
 
 // LogStream represents a CloudWatch Logs log stream.

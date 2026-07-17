@@ -569,7 +569,7 @@ func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endT
 }
 
 // FilterLogEvents filters log events from a log group based on filter pattern.
-func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, startTime, endTime int64, filterPattern string, limit int, nextToken string) ([]*OutputLogEvent, map[string]bool, string, error) {
+func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, startTime, endTime int64, filterPattern string, limit int, startFromHead bool, nextToken string) ([]*OutputLogEvent, map[string]bool, string, error) {
 	if _, err := s.GetLogGroup(logGroupName); err != nil {
 		return nil, nil, "", ErrLogGroupNotFound
 	}
@@ -630,6 +630,12 @@ func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, st
 	}
 
 	sortEventsByTimestamp(allEvents)
+
+	if !startFromHead {
+		for i, j := 0, len(allEvents)-1; i < j; i, j = i+1, j-1 {
+			allEvents[i], allEvents[j] = allEvents[j], allEvents[i]
+		}
+	}
 
 	skipCount := 0
 	if nextToken != "" {

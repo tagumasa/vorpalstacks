@@ -12,16 +12,18 @@ func LogGroupToProto(lg *LogGroup) *pb.LogGroup {
 		return nil
 	}
 	return &pb.LogGroup{
-		Name:              lg.Name,
-		Arn:               lg.ARN,
-		Region:            lg.Region,
-		AccountId:         lg.AccountID,
-		CreatedAt:         lg.CreatedAt.UnixMilli(),
-		RetentionInDays:   lg.RetentionInDays,
-		MetricFilterCount: lg.MetricFilterCount,
-		StoredBytes:       lg.StoredBytes,
-		Tags:              lg.Tags,
-		LogGroupClass:     lg.LogGroupClass,
+		Name:                      lg.Name,
+		Arn:                       lg.ARN,
+		Region:                    lg.Region,
+		AccountId:                 lg.AccountID,
+		CreatedAt:                 lg.CreatedAt.UnixMilli(),
+		RetentionInDays:           lg.RetentionInDays,
+		MetricFilterCount:         lg.MetricFilterCount,
+		StoredBytes:               lg.StoredBytes,
+		Tags:                      lg.Tags,
+		LogGroupClass:             lg.LogGroupClass,
+		KmsKeyId:                  lg.KmsKeyId,
+		DeletionProtectionEnabled: lg.DeletionProtectionEnabled,
 	}
 }
 
@@ -31,16 +33,18 @@ func ProtoToLogGroup(p *pb.LogGroup) *LogGroup {
 		return nil
 	}
 	return &LogGroup{
-		Name:              p.Name,
-		ARN:               p.Arn,
-		Region:            p.Region,
-		AccountID:         p.AccountId,
-		CreatedAt:         time.UnixMilli(p.CreatedAt),
-		RetentionInDays:   p.RetentionInDays,
-		MetricFilterCount: p.MetricFilterCount,
-		StoredBytes:       p.StoredBytes,
-		Tags:              p.Tags,
-		LogGroupClass:     p.LogGroupClass,
+		Name:                      p.Name,
+		ARN:                       p.Arn,
+		Region:                    p.Region,
+		AccountID:                 p.AccountId,
+		CreatedAt:                 time.UnixMilli(p.CreatedAt),
+		RetentionInDays:           p.RetentionInDays,
+		MetricFilterCount:         p.MetricFilterCount,
+		StoredBytes:               p.StoredBytes,
+		Tags:                      p.Tags,
+		LogGroupClass:             p.LogGroupClass,
+		KmsKeyId:                  p.KmsKeyId,
+		DeletionProtectionEnabled: p.DeletionProtectionEnabled,
 	}
 }
 

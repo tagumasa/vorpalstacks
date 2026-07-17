@@ -38,6 +38,11 @@ func (s *LogsService) PutSubscriptionFilter(ctx context.Context, reqCtx *request
 		distribution = "ByLogStream"
 	}
 
+	if distribution != "Random" && distribution != "ByLogStream" {
+		return nil, NewLogsError("InvalidParameterException",
+			fmt.Sprintf("Invalid distribution: %s. Allowed values: Random, ByLogStream", distribution), 400)
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

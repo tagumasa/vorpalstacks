@@ -2,6 +2,7 @@ package cloudwatchlogs
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -21,6 +22,23 @@ func (s *LogsService) CreateLogGroup(ctx context.Context, reqCtx *request.Reques
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
 
 	lg := logsstore.NewLogGroup(logGroupName, reqCtx.GetRegion(), s.accountID)
+	lg.KmsKeyId = request.GetParamLowerFirst(req.Parameters, "KmsKeyId")
+	lg.LogGroupClass = request.GetParamLowerFirst(req.Parameters, "LogGroupClass")
+	if lg.LogGroupClass == "" {
+		lg.LogGroupClass = "STANDARD"
+	}
+
+	if lg.LogGroupClass != "STANDARD" && lg.LogGroupClass != "INFREQUENT_ACCESS" {
+		return nil, NewLogsError("InvalidParameterException",
+			fmt.Sprintf("Invalid log group class: %s. Valid values: STANDARD, INFREQUENT_ACCESS", lg.LogGroupClass), 400)
+	}
+
+	if lg.KmsKeyId != "" && !strings.HasPrefix(lg.KmsKeyId, "arn:aws:kms:") {
+		return nil, NewLogsError("InvalidParameterException",
+			"kmsKeyId must be a valid KMS key ARN", 400)
+	}
+
+	lg.DeletionProtectionEnabled = request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -50,6 +68,15 @@ func (s *LogsService) DeleteLogGroup(ctx context.Context, reqCtx *request.Reques
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	lg, err := store.GetLogGroup(logGroupName)
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	if lg.DeletionProtectionEnabled {
+		return nil, ErrOperationAborted
 	}
 
 	if err := store.DeleteLogGroup(logGroupName); err != nil {
@@ -87,21 +114,28 @@ func (s *LogsService) DescribeLogGroups(ctx context.Context, reqCtx *request.Req
 			"metricFilterCount": lg.MetricFilterCount,
 			"storedBytes":       lg.StoredBytes,
 			"logGroupArn":       lg.ARN,
+			"logGroupClass":     lg.LogGroupClass,
 		}
 		if lg.RetentionInDays > 0 {
 			entry["retentionInDays"] = lg.RetentionInDays
 		}
+		if lg.KmsKeyId != "" {
+			entry["kmsKeyId"] = lg.KmsKeyId
+		}
+		if lg.DeletionProtectionEnabled {
+			entry["deletionProtectionEnabled"] = lg.DeletionProtectionEnabled
+		}
 		logGroups = append(logGroups, entry)
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"logGroups": logGroups,
 	}
 	if nextMarker != "" {
-		response["nextToken"] = nextMarker
+		resp["nextToken"] = nextMarker
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // ListLogGroups returns a list of CloudWatch Logs log groups.
@@ -165,6 +199,12 @@ func (s *LogsService) PutRetentionPolicy(ctx context.Context, reqCtx *request.Re
 	retentionInDays := int32(request.GetIntParam(req.Parameters, "retentionInDays"))
 	if retentionInDays == 0 {
 		retentionInDays = int32(request.GetIntParam(req.Parameters, "RetentionInDays"))
+	}
+
+	if !logsstore.IsValidRetentionDays(retentionInDays) {
+		return nil, NewLogsError("InvalidParameterException",
+			fmt.Sprintf("%d is not a valid retention value. Allowed values: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653", retentionInDays),
+			400)
 	}
 
 	store, err := s.store(reqCtx)

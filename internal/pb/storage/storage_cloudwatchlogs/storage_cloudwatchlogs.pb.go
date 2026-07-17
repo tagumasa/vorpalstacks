@@ -22,19 +22,21 @@ const (
 )
 
 type LogGroup struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Name              string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Arn               string                 `protobuf:"bytes,2,opt,name=arn,proto3" json:"arn,omitempty"`
-	Region            string                 `protobuf:"bytes,3,opt,name=region,proto3" json:"region,omitempty"`
-	AccountId         string                 `protobuf:"bytes,4,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
-	CreatedAt         int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	RetentionInDays   int32                  `protobuf:"varint,6,opt,name=retention_in_days,json=retentionInDays,proto3" json:"retention_in_days,omitempty"`
-	MetricFilterCount int32                  `protobuf:"varint,7,opt,name=metric_filter_count,json=metricFilterCount,proto3" json:"metric_filter_count,omitempty"`
-	StoredBytes       int64                  `protobuf:"varint,8,opt,name=stored_bytes,json=storedBytes,proto3" json:"stored_bytes,omitempty"`
-	Tags              map[string]string      `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	LogGroupClass     string                 `protobuf:"bytes,10,opt,name=log_group_class,json=logGroupClass,proto3" json:"log_group_class,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state                     protoimpl.MessageState `protogen:"open.v1"`
+	Name                      string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Arn                       string                 `protobuf:"bytes,2,opt,name=arn,proto3" json:"arn,omitempty"`
+	Region                    string                 `protobuf:"bytes,3,opt,name=region,proto3" json:"region,omitempty"`
+	AccountId                 string                 `protobuf:"bytes,4,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	CreatedAt                 int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	RetentionInDays           int32                  `protobuf:"varint,6,opt,name=retention_in_days,json=retentionInDays,proto3" json:"retention_in_days,omitempty"`
+	MetricFilterCount         int32                  `protobuf:"varint,7,opt,name=metric_filter_count,json=metricFilterCount,proto3" json:"metric_filter_count,omitempty"`
+	StoredBytes               int64                  `protobuf:"varint,8,opt,name=stored_bytes,json=storedBytes,proto3" json:"stored_bytes,omitempty"`
+	Tags                      map[string]string      `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	LogGroupClass             string                 `protobuf:"bytes,10,opt,name=log_group_class,json=logGroupClass,proto3" json:"log_group_class,omitempty"`
+	KmsKeyId                  string                 `protobuf:"bytes,11,opt,name=kms_key_id,json=kmsKeyId,proto3" json:"kms_key_id,omitempty"`
+	DeletionProtectionEnabled bool                   `protobuf:"varint,12,opt,name=deletion_protection_enabled,json=deletionProtectionEnabled,proto3" json:"deletion_protection_enabled,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *LogGroup) Reset() {
@@ -135,6 +137,20 @@ func (x *LogGroup) GetLogGroupClass() string {
 		return x.LogGroupClass
 	}
 	return ""
+}
+
+func (x *LogGroup) GetKmsKeyId() string {
+	if x != nil {
+		return x.KmsKeyId
+	}
+	return ""
+}
+
+func (x *LogGroup) GetDeletionProtectionEnabled() bool {
+	if x != nil {
+		return x.DeletionProtectionEnabled
+	}
+	return false
 }
 
 type LogStream struct {
@@ -721,7 +737,7 @@ var File_storage_cloudwatchlogs_proto protoreflect.FileDescriptor
 
 const file_storage_cloudwatchlogs_proto_rawDesc = "" +
 	"\n" +
-	"\x1cstorage_cloudwatchlogs.proto\x12\x16storage.cloudwatchlogs\"\xa6\x03\n" +
+	"\x1cstorage_cloudwatchlogs.proto\x12\x16storage.cloudwatchlogs\"\x84\x04\n" +
 	"\bLogGroup\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
 	"\x03arn\x18\x02 \x01(\tR\x03arn\x12\x16\n" +
@@ -735,7 +751,10 @@ const file_storage_cloudwatchlogs_proto_rawDesc = "" +
 	"\fstored_bytes\x18\b \x01(\x03R\vstoredBytes\x12>\n" +
 	"\x04tags\x18\t \x03(\v2*.storage.cloudwatchlogs.LogGroup.TagsEntryR\x04tags\x12&\n" +
 	"\x0flog_group_class\x18\n" +
-	" \x01(\tR\rlogGroupClass\x1a7\n" +
+	" \x01(\tR\rlogGroupClass\x12\x1c\n" +
+	"\n" +
+	"kms_key_id\x18\v \x01(\tR\bkmsKeyId\x12>\n" +
+	"\x1bdeletion_protection_enabled\x18\f \x01(\bR\x19deletionProtectionEnabled\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa0\x02\n" +

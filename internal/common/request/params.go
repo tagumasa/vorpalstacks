@@ -139,6 +139,37 @@ func GetBoolParam(params map[string]interface{}, key string) bool {
 	return false
 }
 
+// GetBoolParamDefault extracts a boolean parameter, returning defaultVal when
+// the key is absent (checked case-insensitively across the three common
+// variants: PascalCase, camelCase, lower-case).
+func GetBoolParamDefault(params map[string]interface{}, key string, defaultVal bool) bool {
+	if v, ok := params[key]; ok {
+		if b, ok := v.(bool); ok {
+			return b
+		}
+		if s, ok := v.(string); ok {
+			return strings.ToLower(s) == "true"
+		}
+	}
+	if v, ok := params[LowerFirst(key)]; ok {
+		if b, ok := v.(bool); ok {
+			return b
+		}
+		if s, ok := v.(string); ok {
+			return strings.ToLower(s) == "true"
+		}
+	}
+	if v, ok := params[strings.ToLower(key)]; ok {
+		if b, ok := v.(bool); ok {
+			return b
+		}
+		if s, ok := v.(string); ok {
+			return strings.ToLower(s) == "true"
+		}
+	}
+	return defaultVal
+}
+
 // GetMapParam extracts a map parameter from the params map.
 func GetMapParam(params map[string]interface{}, key string) map[string]interface{} {
 	if v, ok := params[key]; ok {

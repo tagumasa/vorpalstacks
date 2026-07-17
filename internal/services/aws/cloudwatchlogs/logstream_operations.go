@@ -8,10 +8,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
@@ -22,6 +24,10 @@ import (
 )
 
 const logEventIDSize = 16
+
+// jan012024Millis is Jan 1, 2024 00:00:00 UTC in epoch milliseconds. AWS
+// requires startTime on or after this date when startFromHead=false.
+const jan012024Millis = 1704067200000
 
 func logEventToResponse(e *logsstore.OutputLogEvent) map[string]interface{} {
 	resp := map[string]interface{}{
@@ -107,10 +113,48 @@ func (s *LogsService) DescribeLogStreams(ctx context.Context, reqCtx *request.Re
 	if limit <= 0 {
 		limit = 50
 	}
+	orderBy := request.GetParamLowerFirst(req.Parameters, "OrderBy")
+	descending := request.GetBoolParam(req.Parameters, "Descending")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	if orderBy == "LastEventTime" {
+		if prefix != "" {
+			return nil, NewLogsError("InvalidParameterException",
+				"Cannot specify logStreamNamePrefix when orderBy is LastEventTime", 400)
+		}
+
+		allStreams, err := fetchAllLogStreams(store, logGroupName, "")
+		if err != nil {
+			return nil, mapStoreError(err)
+		}
+
+		sort.Slice(allStreams, func(i, j int) bool {
+			if descending {
+				return allStreams[i].LastEventTs > allStreams[j].LastEventTs
+			}
+			return allStreams[i].LastEventTs < allStreams[j].LastEventTs
+		})
+
+		result := pagination.PaginateSlice(allStreams, nextToken, int(limit), func(ls *logsstore.LogStream) string {
+			return ls.Name
+		})
+
+		logStreams := make([]map[string]interface{}, 0, len(result.Items))
+		for _, ls := range result.Items {
+			logStreams = append(logStreams, logStreamToMap(ls))
+		}
+
+		resp := map[string]interface{}{
+			"logStreams": logStreams,
+		}
+		if result.NextMarker != "" {
+			resp["nextToken"] = result.NextMarker
+		}
+		return resp, nil
 	}
 
 	streams, nextMarker, err := store.ListLogStreams(logGroupName, prefix, nextToken, int(limit))
@@ -120,15 +164,7 @@ func (s *LogsService) DescribeLogStreams(ctx context.Context, reqCtx *request.Re
 
 	logStreams := make([]map[string]interface{}, 0, len(streams))
 	for _, ls := range streams {
-		logStreams = append(logStreams, map[string]interface{}{
-			"logStreamName":       ls.Name,
-			"arn":                 ls.ARN,
-			"creationTime":        ls.CreatedAt.UnixMilli(),
-			"firstEventTimestamp": ls.FirstEventTs,
-			"lastEventTimestamp":  ls.LastEventTs,
-			"lastIngestionTime":   ls.LastIngestionTs,
-			"uploadSequenceToken": ls.UploadSequenceToken,
-		})
+		logStreams = append(logStreams, logStreamToMap(ls))
 	}
 
 	resp := map[string]interface{}{
@@ -139,6 +175,35 @@ func (s *LogsService) DescribeLogStreams(ctx context.Context, reqCtx *request.Re
 	}
 
 	return resp, nil
+}
+
+func fetchAllLogStreams(store *logsstore.Store, logGroupName, prefix string) ([]*logsstore.LogStream, error) {
+	var all []*logsstore.LogStream
+	marker := ""
+	for {
+		streams, nextMarker, err := store.ListLogStreams(logGroupName, prefix, marker, 1000)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, streams...)
+		if nextMarker == "" {
+			break
+		}
+		marker = nextMarker
+	}
+	return all, nil
+}
+
+func logStreamToMap(ls *logsstore.LogStream) map[string]interface{} {
+	return map[string]interface{}{
+		"logStreamName":       ls.Name,
+		"arn":                 ls.ARN,
+		"creationTime":        ls.CreatedAt.UnixMilli(),
+		"firstEventTimestamp": ls.FirstEventTs,
+		"lastEventTimestamp":  ls.LastEventTs,
+		"lastIngestionTime":   ls.LastIngestionTs,
+		"uploadSequenceToken": ls.UploadSequenceToken,
+	}
 }
 
 // ListLogStreams returns a list of CloudWatch Logs log streams.
@@ -266,6 +331,11 @@ func (s *LogsService) PutLogEvents(ctx context.Context, reqCtx *request.RequestC
 	events := parseLogEvents(req)
 	if len(events) == 0 {
 		return nil, ErrMissingParameter
+	}
+
+	if len(events) > logsstore.MaxChunkSize {
+		return nil, NewLogsError("InvalidParameterException",
+			fmt.Sprintf("Maximum number of log events in a single batch is %d", logsstore.MaxChunkSize), 400)
 	}
 
 	// Validate timestamp ordering, time span, and age constraints
@@ -636,6 +706,12 @@ func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.Reque
 	}
 
 	logStreamNames := request.GetStringList(req.Parameters, "LogStreamNames")
+	logStreamNamePrefix := request.GetParamLowerFirst(req.Parameters, "LogStreamNamePrefix")
+
+	if len(logStreamNames) > 0 && logStreamNamePrefix != "" {
+		return nil, NewLogsError("InvalidParameterException",
+			"Cannot specify both logStreamNames and logStreamNamePrefix", 400)
+	}
 
 	startTime := int64(request.GetIntParam(req.Parameters, "StartTime"))
 	endTime := int64(request.GetIntParam(req.Parameters, "EndTime"))
@@ -645,13 +721,32 @@ func (s *LogsService) FilterLogEvents(ctx context.Context, reqCtx *request.Reque
 		limit = 10000
 	}
 	nextToken := request.GetParamLowerFirst(req.Parameters, "NextToken")
+	// AWS spec: startFromHead defaults to true (oldest first / ascending).
+	startFromHead := request.GetBoolParamDefault(req.Parameters, "StartFromHead", true)
+
+	// AWS spec: startFromHead=false is supported only when startTime is on or
+	// after Jan 1, 2024 00:00:00 UTC.
+	if !startFromHead && startTime > 0 && startTime < jan012024Millis {
+		return nil, NewLogsError("InvalidParameterException",
+			"Setting startFromHead to false is supported only when startTime is on or after Jan 1, 2024 00:00:00 UTC", 400)
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	events, searchedStreams, nextMarker, err := store.FilterLogEvents(logGroupName, logStreamNames, startTime, endTime, filterPattern, limit, nextToken)
+	if logStreamNamePrefix != "" {
+		prefixStreams, err := fetchAllLogStreams(store, logGroupName, logStreamNamePrefix)
+		if err != nil {
+			return nil, mapStoreError(err)
+		}
+		for _, ls := range prefixStreams {
+			logStreamNames = append(logStreamNames, ls.Name)
+		}
+	}
+
+	events, searchedStreams, nextMarker, err := store.FilterLogEvents(logGroupName, logStreamNames, startTime, endTime, filterPattern, limit, startFromHead, nextToken)
 	if err != nil {
 		return nil, mapStoreError(err)
 	}

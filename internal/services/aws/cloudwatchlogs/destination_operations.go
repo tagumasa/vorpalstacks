@@ -6,6 +6,7 @@ import (
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	tagutil "vorpalstacks/internal/common/tags"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
@@ -15,6 +16,7 @@ func (s *LogsService) PutDestination(ctx context.Context, reqCtx *request.Reques
 	roleArn := request.GetParamLowerFirst(req.Parameters, "RoleArn")
 	targetArn := request.GetParamLowerFirst(req.Parameters, "TargetArn")
 	accessPolicy := request.GetParamLowerFirst(req.Parameters, "AccessPolicy")
+	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
 
 	if name == "" {
 		return nil, ErrMissingParameter
@@ -33,6 +35,7 @@ func (s *LogsService) PutDestination(ctx context.Context, reqCtx *request.Reques
 		RoleArn:      roleArn,
 		TargetArn:    targetArn,
 		AccessPolicy: accessPolicy,
+		Tags:         tags,
 	}
 
 	if err := store.PutDestination(dest); err != nil {
@@ -133,6 +136,9 @@ func formatDestination(d *logsstore.Destination) map[string]interface{} {
 	}
 	if d.AccessPolicy != "" {
 		result["accessPolicy"] = d.AccessPolicy
+	}
+	if len(d.Tags) > 0 {
+		result["tags"] = d.Tags
 	}
 	return result
 }
