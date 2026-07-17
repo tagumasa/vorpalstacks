@@ -11,7 +11,32 @@ import (
 func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 	var results []TestResult
 
+	var testVPC1, testVPC2 string
+	results = append(results, r.RunTest("route53", "VPCSetup", func() error {
+		var err error
+		testVPC1, err = tc.createTestVPC("10.201.0.0/16")
+		if err != nil {
+			return err
+		}
+		testVPC2, err = tc.createTestVPC("10.202.0.0/16")
+		if err != nil {
+			return err
+		}
+		return nil
+	}))
+	defer func() {
+		if testVPC1 != "" {
+			tc.deleteTestVPC(testVPC1)
+		}
+		if testVPC2 != "" {
+			tc.deleteTestVPC(testVPC2)
+		}
+	}()
+
 	results = append(results, r.RunTest("route53", "AssociateVPCWithHostedZone", func() error {
+		if testVPC1 == "" || testVPC2 == "" {
+			return fmt.Errorf("VPC setup failed")
+		}
 		privateDomain := tc.domain("private")
 		privateRef := fmt.Sprintf("privref-%d", tc.uniq)
 		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
@@ -22,8 +47,8 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 				Comment:     aws.String("private zone for VPC test"),
 			},
 			VPC: &types.VPC{
-				VPCId:     aws.String("vpc-abcdef01"),
-				VPCRegion: types.VPCRegionUsEast1,
+				VPCId:     aws.String(testVPC1),
+				VPCRegion: types.VPCRegion(r.region),
 			},
 		})
 		if err != nil {
@@ -35,15 +60,15 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 			tc.client.DisassociateVPCFromHostedZone(tc.ctx, &route53.DisassociateVPCFromHostedZoneInput{
 				HostedZoneId: aws.String(privateZoneID),
 				VPC: &types.VPC{
-					VPCId:     aws.String("vpc-xyz12345"),
-					VPCRegion: types.VPCRegionUsEast1,
+					VPCId:     aws.String(testVPC2),
+					VPCRegion: types.VPCRegion(r.region),
 				},
 			})
 			tc.client.DisassociateVPCFromHostedZone(tc.ctx, &route53.DisassociateVPCFromHostedZoneInput{
 				HostedZoneId: aws.String(privateZoneID),
 				VPC: &types.VPC{
-					VPCId:     aws.String("vpc-abcdef01"),
-					VPCRegion: types.VPCRegionUsEast1,
+					VPCId:     aws.String(testVPC1),
+					VPCRegion: types.VPCRegion(r.region),
 				},
 			})
 			tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(privateZoneID)})
@@ -52,8 +77,8 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 		assocResp, err := tc.client.AssociateVPCWithHostedZone(tc.ctx, &route53.AssociateVPCWithHostedZoneInput{
 			HostedZoneId: aws.String(privateZoneID),
 			VPC: &types.VPC{
-				VPCId:     aws.String("vpc-xyz12345"),
-				VPCRegion: types.VPCRegionUsEast1,
+				VPCId:     aws.String(testVPC2),
+				VPCRegion: types.VPCRegion(r.region),
 			},
 		})
 		if err != nil {
@@ -76,13 +101,16 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 		for _, v := range getResp.VPCs {
 			vpcIDs[aws.ToString(v.VPCId)] = true
 		}
-		if !vpcIDs["vpc-abcdef01"] || !vpcIDs["vpc-xyz12345"] {
-			return fmt.Errorf("expected VPCs vpc-abcdef01 and vpc-xyz12345, got %v", vpcIDs)
+		if !vpcIDs[testVPC1] || !vpcIDs[testVPC2] {
+			return fmt.Errorf("expected VPCs %s and %s, got %v", testVPC1, testVPC2, vpcIDs)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("route53", "DisassociateVPCFromHostedZone", func() error {
+		if testVPC1 == "" || testVPC2 == "" {
+			return fmt.Errorf("VPC setup failed")
+		}
 		dsDomain := tc.domain("disassoc")
 		dsRef := fmt.Sprintf("dsref-%d", tc.uniq)
 		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
@@ -92,8 +120,8 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 				PrivateZone: true,
 			},
 			VPC: &types.VPC{
-				VPCId:     aws.String("vpc-disassoc1"),
-				VPCRegion: types.VPCRegionUsEast1,
+				VPCId:     aws.String(testVPC1),
+				VPCRegion: types.VPCRegion(r.region),
 			},
 		})
 		if err != nil {
@@ -106,8 +134,8 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 		_, err = tc.client.AssociateVPCWithHostedZone(tc.ctx, &route53.AssociateVPCWithHostedZoneInput{
 			HostedZoneId: aws.String(dsZoneID),
 			VPC: &types.VPC{
-				VPCId:     aws.String("vpc-disassoc2"),
-				VPCRegion: types.VPCRegionUsEast1,
+				VPCId:     aws.String(testVPC2),
+				VPCRegion: types.VPCRegion(r.region),
 			},
 		})
 		if err != nil {
@@ -117,8 +145,8 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 		disassocResp, err := tc.client.DisassociateVPCFromHostedZone(tc.ctx, &route53.DisassociateVPCFromHostedZoneInput{
 			HostedZoneId: aws.String(dsZoneID),
 			VPC: &types.VPC{
-				VPCId:     aws.String("vpc-disassoc2"),
-				VPCRegion: types.VPCRegionUsEast1,
+				VPCId:     aws.String(testVPC2),
+				VPCRegion: types.VPCRegion(r.region),
 			},
 		})
 		if err != nil {
@@ -137,7 +165,7 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 		if len(getResp.VPCs) != 1 {
 			return fmt.Errorf("expected 1 VPC after disassociation, got %d", len(getResp.VPCs))
 		}
-		if aws.ToString(getResp.VPCs[0].VPCId) != "vpc-disassoc1" {
+		if aws.ToString(getResp.VPCs[0].VPCId) != testVPC1 {
 			return fmt.Errorf("remaining VPC mismatch: got %q", aws.ToString(getResp.VPCs[0].VPCId))
 		}
 		return nil

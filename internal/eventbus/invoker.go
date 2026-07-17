@@ -13,11 +13,13 @@ type ServiceInvoker interface {
 	ServiceType() string
 }
 
-// EC2SubnetLookup provides subnet and security group metadata resolution for
-// cross-service consumers that need to map resource IDs to their parent VPC.
+// EC2SubnetLookup provides subnet, security group, and VPC metadata resolution
+// for cross-service consumers that need to validate resource existence or map
+// resource IDs to their parent VPC.
 type EC2SubnetLookup interface {
 	LookupSubnet(ctx context.Context, region string, subnetId string) (vpcId string, availabilityZone string, err error)
 	LookupSecurityGroup(ctx context.Context, region string, groupId string) (vpcId string, err error)
+	LookupVPC(ctx context.Context, region string, vpcId string) error
 }
 
 // EC2InvokerAdapter adapts an EC2SubnetLookup to the ServiceInvoker
@@ -53,6 +55,11 @@ func (a *EC2InvokerAdapter) Invoke(ctx context.Context, action *TargetAction, pa
 			return HandlerResult{Error: fmt.Errorf("ec2: failed to marshal security group lookup result: %w", err)}
 		}
 		return HandlerResult{StatusCode: 200, Payload: data}
+	case "LookupVPC":
+		if err := a.Lookup.LookupVPC(ctx, action.Region, action.Identifier); err != nil {
+			return HandlerResult{Error: err}
+		}
+		return HandlerResult{StatusCode: 200, Payload: []byte(`{}`)}
 	default:
 		return HandlerResult{Error: fmt.Errorf("ec2: unsupported invoker action type: %s", action.Type)}
 	}

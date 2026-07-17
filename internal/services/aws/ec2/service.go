@@ -95,6 +95,19 @@ func (s *EC2Service) LookupSecurityGroup(ctx context.Context, region string, gro
 	return sg.VpcId, nil
 }
 
+// LookupVPC validates that a VPC exists in the given region. Returns nil if
+// the VPC exists, or an error otherwise. Implements eventbus.EC2SubnetLookup
+// for cross-service VPC validation (e.g. Route53 private hosted zone
+// associations).
+func (s *EC2Service) LookupVPC(ctx context.Context, region string, vpcId string) error {
+	store, err := s.storeForRegion(region)
+	if err != nil {
+		return err
+	}
+	_, err = store.GetVPC(vpcId)
+	return err
+}
+
 // RegisterHandlers registers all EC2 API handlers with the dispatcher.
 func (s *EC2Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("ec2", "CreateVpc", s.CreateVpc)

@@ -53,6 +53,17 @@ func (s *Route53Service) CreateHostedZone(ctx context.Context, reqCtx *request.R
 		}
 	}
 
+	if privateZone && len(vpcs) == 0 {
+		return nil, awserrors.NewAWSError("InvalidInput", "A VPC is required when creating a private hosted zone", 400)
+	}
+
+	for _, vpc := range vpcs {
+		if err := s.validateVPC(ctx, reqCtx.GetRegion(), vpc.VPCID, vpc.VPCRegion); err != nil {
+			return nil, awserrors.NewAWSError("InvalidVPCId",
+				fmt.Sprintf("The VPC %s in region %s does not exist", vpc.VPCID, vpc.VPCRegion), 400)
+		}
+	}
+
 	nameServers := generateNameServers(4)
 
 	delegationSetID := ""
@@ -190,17 +201,49 @@ func (s *Route53Service) GetHostedZone(ctx context.Context, reqCtx *request.Requ
 func (s *Route53Service) ListHostedZones(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := request.GetIntParam(req.Parameters, "MaxItems")
+	delegationSetId := request.GetStringParam(req.Parameters, "DelegationSetId")
+	if delegationSetId != "" {
+		delegationSetId = strings.TrimPrefix(delegationSetId, "/delegationset/")
+	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+
+	if delegationSetId != "" {
+		allZones, err := st.HostedZones().ListByName()
+		if err != nil {
+			return nil, mapStoreError(err)
+		}
+		var filtered []*route53store.HostedZone
+		for _, z := range allZones {
+			if z.DelegationSetID == delegationSetId {
+				filtered = append(filtered, z)
+			}
+		}
+
+		effectiveMax := maxItems
+		if effectiveMax <= 0 {
+			effectiveMax = 100
+		}
+		isTruncated := len(filtered) > effectiveMax
+		nextMarker := ""
+		if isTruncated {
+			filtered = filtered[:effectiveMax]
+			if len(filtered) > 0 {
+				nextMarker = filtered[effectiveMax-1].ID
+			}
+		}
+		return s.buildHostedZonesListResponse(filtered, isTruncated, marker, nextMarker, effectiveMax), nil
+	}
+
 	result, err := st.HostedZones().List(marker, maxItems)
 	if err != nil {
 		return nil, mapStoreError(err)
 	}
 
-	return s.buildHostedZonesListResponse(result.HostedZones, result.IsTruncated, result.Marker, maxItems), nil
+	return s.buildHostedZonesListResponse(result.HostedZones, result.IsTruncated, marker, result.Marker, maxItems), nil
 }
 
 // ListHostedZonesByName returns hosted zones sorted by name with optional DNS name filter.

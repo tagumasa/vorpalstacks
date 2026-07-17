@@ -7,6 +7,7 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	route53store "vorpalstacks/internal/store/aws/route53"
@@ -82,7 +83,7 @@ func (s *Route53Service) ListHealthChecks(ctx context.Context, reqCtx *request.R
 		return nil, mapStoreError(err)
 	}
 
-	return s.buildHealthChecksListResponse(result.HealthChecks, result.IsTruncated, result.Marker), nil
+	return s.buildHealthChecksListResponse(result.HealthChecks, result.IsTruncated, marker, result.Marker, maxItems), nil
 }
 
 // DeleteHealthCheck deletes a health check by its ID.
@@ -157,6 +158,9 @@ func (s *Route53Service) healthCheckConfigToResponse(config *route53store.Health
 	if config.FullyQualifiedDomainName != "" {
 		result["FullyQualifiedDomainName"] = config.FullyQualifiedDomainName
 	}
+	if config.SearchString != "" {
+		result["SearchString"] = config.SearchString
+	}
 	if config.RequestInterval > 0 {
 		result["RequestInterval"] = config.RequestInterval
 	}
@@ -174,6 +178,39 @@ func (s *Route53Service) healthCheckConfigToResponse(config *route53store.Health
 	}
 	if config.EnableSNI {
 		result["EnableSNI"] = true
+	}
+	if config.InsufficientDataHealthStatus != "" {
+		result["InsufficientDataHealthStatus"] = config.InsufficientDataHealthStatus
+	}
+	if config.HealthThreshold > 0 {
+		result["HealthThreshold"] = config.HealthThreshold
+	}
+	if config.RoutingControlArn != "" {
+		result["RoutingControlArn"] = config.RoutingControlArn
+	}
+	if len(config.Regions) > 0 {
+		result["Regions"] = protocol.XMLElements{ElementName: "Region", Items: func() []interface{} {
+			items := make([]interface{}, len(config.Regions))
+			for i, r := range config.Regions {
+				items[i] = r
+			}
+			return items
+		}()}
+	}
+	if config.AlarmIdentifier != nil {
+		result["AlarmIdentifier"] = map[string]interface{}{
+			"Region": config.AlarmIdentifier.Region,
+			"Name":   config.AlarmIdentifier.Name,
+		}
+	}
+	if len(config.ChildHealthChecks) > 0 {
+		result["ChildHealthChecks"] = protocol.XMLElements{ElementName: "ChildHealthCheck", Items: func() []interface{} {
+			items := make([]interface{}, len(config.ChildHealthChecks))
+			for i, c := range config.ChildHealthChecks {
+				items[i] = c
+			}
+			return items
+		}()}
 	}
 
 	return result
@@ -201,6 +238,10 @@ func (s *Route53Service) AssociateVPCWithHostedZone(ctx context.Context, reqCtx 
 	}
 
 	vpc := parseVPC(vpcMap)
+	if err := s.validateVPC(ctx, reqCtx.GetRegion(), vpc.VPCID, vpc.VPCRegion); err != nil {
+		return nil, awserrors.NewAWSError("InvalidVPCId",
+			fmt.Sprintf("The VPC %s in region %s does not exist", vpc.VPCID, vpc.VPCRegion), 400)
+	}
 	for _, existing := range zone.VPCs {
 		if existing.VPCID == vpc.VPCID && existing.VPCRegion == vpc.VPCRegion {
 			return nil, awserrors.NewAWSError("VPCAlreadyAssociated", "VPC is already associated with the hosted zone", 400)

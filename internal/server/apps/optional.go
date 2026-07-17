@@ -215,6 +215,9 @@ func (a *App) initRoute53(st *serviceState) error {
 	if err != nil {
 		return fmt.Errorf("failed to create Route53 service: %w", err)
 	}
+	if eb := a.server.EventBus(); eb != nil {
+		route53Service.SetEventBus(eb)
+	}
 	hcPort := a.resolvedPort("ports.route53_healthcheck", serviceports.Route53HC)
 	if hcPort != serviceports.Route53HC {
 		route53Service.SetDefaultHCPort(hcPort)

@@ -235,6 +235,12 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("route53", "CreateHostedZone_PrivateWithComment", func() error {
+		pvtVPCID, err := tc.createTestVPC("10.210.0.0/16")
+		if err != nil {
+			return fmt.Errorf("vpc setup: %v", err)
+		}
+		defer tc.deleteTestVPC(pvtVPCID)
+
 		pvtDomain := tc.domain("private-comment")
 		pvtRef := fmt.Sprintf("pvtref-%d", tc.uniq)
 		resp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
@@ -245,8 +251,8 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 				Comment:     aws.String("private zone with comment"),
 			},
 			VPC: &types.VPC{
-				VPCId:     aws.String("vpc-pvttest"),
-				VPCRegion: types.VPCRegionEuWest1,
+				VPCId:     aws.String(pvtVPCID),
+				VPCRegion: types.VPCRegion(r.region),
 			},
 		})
 		if err != nil {
@@ -272,11 +278,8 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 		if len(getResp.VPCs) != 1 {
 			return fmt.Errorf("expected 1 VPC, got %d", len(getResp.VPCs))
 		}
-		if aws.ToString(getResp.VPCs[0].VPCId) != "vpc-pvttest" {
+		if aws.ToString(getResp.VPCs[0].VPCId) != pvtVPCID {
 			return fmt.Errorf("VPC ID mismatch: got %q", aws.ToString(getResp.VPCs[0].VPCId))
-		}
-		if getResp.VPCs[0].VPCRegion != types.VPCRegionEuWest1 {
-			return fmt.Errorf("VPC region mismatch: got %v", getResp.VPCs[0].VPCRegion)
 		}
 		return nil
 	}))

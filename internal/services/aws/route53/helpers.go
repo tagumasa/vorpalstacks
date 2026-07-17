@@ -139,6 +139,9 @@ func parseHealthCheckConfig(configMap map[string]interface{}, defaultPort int64)
 	if v, ok := configMap["FullyQualifiedDomainName"].(string); ok {
 		config.FullyQualifiedDomainName = v
 	}
+	if v, ok := configMap["SearchString"].(string); ok {
+		config.SearchString = v
+	}
 	if v := request.GetIntParam(configMap, "RequestInterval"); v > 0 {
 		config.RequestInterval = int64(v)
 	}
@@ -149,6 +152,41 @@ func parseHealthCheckConfig(configMap map[string]interface{}, defaultPort int64)
 	config.Inverted = request.GetBoolParam(configMap, "Inverted")
 	config.Disabled = request.GetBoolParam(configMap, "Disabled")
 	config.EnableSNI = request.GetBoolParam(configMap, "EnableSNI")
+
+	if v, ok := configMap["InsufficientDataHealthStatus"].(string); ok {
+		config.InsufficientDataHealthStatus = v
+	}
+
+	if v := request.GetIntParam(configMap, "HealthThreshold"); v > 0 {
+		config.HealthThreshold = int64(v)
+	}
+
+	if v, ok := configMap["RoutingControlArn"].(string); ok {
+		config.RoutingControlArn = v
+	}
+
+	if regionsRaw, ok := configMap["Regions"].([]interface{}); ok {
+		for _, r := range regionsRaw {
+			if region, ok := r.(string); ok {
+				config.Regions = append(config.Regions, region)
+			}
+		}
+	}
+
+	if alarmMap, ok := configMap["AlarmIdentifier"].(map[string]interface{}); ok {
+		config.AlarmIdentifier = &route53store.AlarmIdentifier{
+			Region: request.GetStringParam(alarmMap, "Region"),
+			Name:   request.GetStringParam(alarmMap, "Name"),
+		}
+	}
+
+	if childrenRaw, ok := configMap["ChildHealthChecks"].([]interface{}); ok {
+		for _, c := range childrenRaw {
+			if child, ok := c.(string); ok {
+				config.ChildHealthChecks = append(config.ChildHealthChecks, child)
+			}
+		}
+	}
 
 	return config
 }
@@ -170,6 +208,9 @@ func applyHealthCheckConfigUpdates(config *route53store.HealthCheckConfig, updat
 	if v, ok := updates["FullyQualifiedDomainName"].(string); ok {
 		config.FullyQualifiedDomainName = v
 	}
+	if v, ok := updates["SearchString"].(string); ok {
+		config.SearchString = v
+	}
 	if _, ok := updates["RequestInterval"]; ok {
 		config.RequestInterval = int64(request.GetIntParam(updates, "RequestInterval"))
 	}
@@ -187,6 +228,37 @@ func applyHealthCheckConfigUpdates(config *route53store.HealthCheckConfig, updat
 	}
 	if updates["EnableSNI"] != nil {
 		config.EnableSNI = request.GetBoolParam(updates, "EnableSNI")
+	}
+	if v, ok := updates["InsufficientDataHealthStatus"].(string); ok {
+		config.InsufficientDataHealthStatus = v
+	}
+	if _, ok := updates["HealthThreshold"]; ok {
+		config.HealthThreshold = int64(request.GetIntParam(updates, "HealthThreshold"))
+	}
+	if v, ok := updates["RoutingControlArn"].(string); ok {
+		config.RoutingControlArn = v
+	}
+	if regionsRaw, ok := updates["Regions"].([]interface{}); ok {
+		config.Regions = nil
+		for _, r := range regionsRaw {
+			if region, ok := r.(string); ok {
+				config.Regions = append(config.Regions, region)
+			}
+		}
+	}
+	if alarmMap, ok := updates["AlarmIdentifier"].(map[string]interface{}); ok {
+		config.AlarmIdentifier = &route53store.AlarmIdentifier{
+			Region: request.GetStringParam(alarmMap, "Region"),
+			Name:   request.GetStringParam(alarmMap, "Name"),
+		}
+	}
+	if childrenRaw, ok := updates["ChildHealthChecks"].([]interface{}); ok {
+		config.ChildHealthChecks = nil
+		for _, c := range childrenRaw {
+			if child, ok := c.(string); ok {
+				config.ChildHealthChecks = append(config.ChildHealthChecks, child)
+			}
+		}
 	}
 }
 
@@ -208,7 +280,7 @@ func parseVPC(vpcMap map[string]interface{}) *route53store.VPC {
 	}
 }
 
-func (s *Route53Service) buildHostedZonesListResponse(zones []*route53store.HostedZone, isTruncated bool, nextMarker string, maxItems int) map[string]interface{} {
+func (s *Route53Service) buildHostedZonesListResponse(zones []*route53store.HostedZone, isTruncated bool, requestMarker, nextMarker string, maxItems int) map[string]interface{} {
 	result := make([]interface{}, len(zones))
 	for i, z := range zones {
 		result[i] = s.hostedZoneToResponse(z)
@@ -216,7 +288,7 @@ func (s *Route53Service) buildHostedZonesListResponse(zones []*route53store.Host
 	response := map[string]interface{}{
 		"HostedZones": protocol.XMLElements{ElementName: "HostedZone", Items: result},
 		"IsTruncated": isTruncated,
-		"Marker":      nextMarker,
+		"Marker":      requestMarker,
 		"MaxItems":    maxItems,
 	}
 	if isTruncated && nextMarker != "" {
@@ -225,7 +297,7 @@ func (s *Route53Service) buildHostedZonesListResponse(zones []*route53store.Host
 	return response
 }
 
-func (s *Route53Service) buildHealthChecksListResponse(healthChecks []*route53store.HealthCheck, isTruncated bool, nextMarker string) map[string]interface{} {
+func (s *Route53Service) buildHealthChecksListResponse(healthChecks []*route53store.HealthCheck, isTruncated bool, requestMarker, nextMarker string, maxItems int) map[string]interface{} {
 	result := make([]interface{}, len(healthChecks))
 	for i, hc := range healthChecks {
 		result[i] = s.healthCheckToResponse(hc)
@@ -233,6 +305,8 @@ func (s *Route53Service) buildHealthChecksListResponse(healthChecks []*route53st
 	response := map[string]interface{}{
 		"HealthChecks": protocol.XMLElements{ElementName: "HealthCheck", Items: result},
 		"IsTruncated":  isTruncated,
+		"Marker":       requestMarker,
+		"MaxItems":     maxItems,
 	}
 	if isTruncated && nextMarker != "" {
 		response["NextMarker"] = nextMarker

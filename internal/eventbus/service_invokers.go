@@ -115,12 +115,13 @@ type EventsInvoker interface {
 	PutEvent(ctx context.Context, key string, event any) error
 }
 
-// EC2Invoker provides EC2 subnet and security group lookup operations for
-// cross-service consumers. Consumers call these methods instead of using
+// EC2Invoker provides EC2 subnet, security group, and VPC lookup operations
+// for cross-service consumers. Consumers call these methods instead of using
 // the generic GetInvoker/Invoke pattern.
 type EC2Invoker interface {
 	LookupSubnet(ctx context.Context, region string, subnetId string) (vpcId string, availabilityZone string, err error)
 	LookupSecurityGroup(ctx context.Context, region string, groupId string) (vpcId string, err error)
+	LookupVPC(ctx context.Context, region string, vpcId string) error
 }
 
 // DynamoDBInvoker provides DynamoDB item operations for cross-service

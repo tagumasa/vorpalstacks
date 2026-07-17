@@ -258,6 +258,7 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 	if startRecordType == "" {
 		startRecordType = request.GetStringParam(req.Parameters, "type")
 	}
+	startRecordIdentifier := request.GetStringParam(req.Parameters, "StartRecordIdentifier")
 	maxItems := int(request.GetIntParam(req.Parameters, "MaxItems"))
 	if maxItems == 0 {
 		maxItems = int(request.GetIntParam(req.Parameters, "maxitems"))
@@ -266,6 +267,11 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 		maxItems = 300
 	}
 
+	if startRecordName != "" {
+		startRecordName = normalizeRecordName(startRecordName)
+	}
+	startRecordType = strings.ToUpper(startRecordType)
+
 	var filtered []*route53store.ResourceRecordSet
 	started := startRecordName == "" && startRecordType == ""
 
@@ -273,8 +279,15 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 		if started {
 			filtered = append(filtered, rs)
 		} else if strings.EqualFold(rs.Name, startRecordName) && strings.EqualFold(rs.Type, startRecordType) {
-			started = true
-			filtered = append(filtered, rs)
+			if startRecordIdentifier != "" {
+				if rs.SetIdentifier == startRecordIdentifier {
+					started = true
+					filtered = append(filtered, rs)
+				}
+			} else {
+				started = true
+				filtered = append(filtered, rs)
+			}
 		}
 	}
 
@@ -302,6 +315,9 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 		nextRecord := allRecords[maxItems]
 		result["NextRecordName"] = nextRecord.Name
 		result["NextRecordType"] = nextRecord.Type
+		if nextRecord.SetIdentifier != "" {
+			result["NextRecordIdentifier"] = nextRecord.SetIdentifier
+		}
 	}
 
 	return result, nil
@@ -359,7 +375,7 @@ func (s *Route53Service) recordSetToResponse(rs *route53store.ResourceRecordSet)
 		result["SetIdentifier"] = rs.SetIdentifier
 	}
 
-	if rs.Weight > 0 {
+	if rs.SetIdentifier != "" && rs.Region == "" && rs.Failover == "" && rs.GeoLocation == nil && !rs.MultiValueAnswer {
 		result["Weight"] = rs.Weight
 	}
 
@@ -371,8 +387,16 @@ func (s *Route53Service) recordSetToResponse(rs *route53store.ResourceRecordSet)
 		result["Failover"] = rs.Failover
 	}
 
+	if rs.MultiValueAnswer {
+		result["MultiValueAnswer"] = true
+	}
+
 	if rs.HealthCheckID != "" {
 		result["HealthCheckId"] = rs.HealthCheckID
+	}
+
+	if rs.TrafficPolicyInstanceID != "" {
+		result["TrafficPolicyInstanceId"] = rs.TrafficPolicyInstanceID
 	}
 
 	if rs.GeoLocation != nil {

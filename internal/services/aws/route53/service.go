@@ -2,6 +2,7 @@
 package route53
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -10,6 +11,7 @@ import (
 	"vorpalstacks/internal/common/serviceports"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/route53/dnsserver"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	route53store "vorpalstacks/internal/store/aws/route53"
@@ -22,6 +24,7 @@ type Route53Service struct {
 	dnsStores     *route53store.Route53Stores
 	dnsServer     *dnsserver.DNSServer
 	stores        sync.Map // global — single cached instance for store() fallback
+	eventBus      *eventbus.EventBus
 }
 
 // NewRoute53Service creates a new Route 53 service instance.
@@ -59,6 +62,29 @@ func NewRoute53ServiceWithDNS(store storage.BasicStorage, accountID, bindAddr st
 // SetDefaultHCPort sets the default health check port for new health checks.
 func (s *Route53Service) SetDefaultHCPort(port int) {
 	s.defaultHCPort = int64(port)
+}
+
+// SetEventBus injects the event bus for cross-service operations (e.g. EC2
+// VPC existence validation for private hosted zone associations).
+func (s *Route53Service) SetEventBus(eb *eventbus.EventBus) {
+	s.eventBus = eb
+}
+
+// validateVPC checks that a VPC exists in EC2 for the given region. Returns
+// nil if the VPC exists or if EC2 is not available (best-effort validation).
+func (s *Route53Service) validateVPC(ctx context.Context, region, vpcId, vpcRegion string) error {
+	if s.eventBus == nil {
+		return nil
+	}
+	ec2 := s.eventBus.EC2Invoker()
+	if ec2 == nil {
+		return nil
+	}
+	lookupRegion := vpcRegion
+	if lookupRegion == "" {
+		lookupRegion = region
+	}
+	return ec2.LookupVPC(ctx, lookupRegion, vpcId)
 }
 
 func (s *Route53Service) store(reqCtx *request.RequestContext) (*route53store.Route53Stores, error) {

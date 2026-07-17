@@ -97,6 +97,9 @@ type HealthCheckConfig struct {
 	Regions                      []string         `json:"regions,omitempty"`
 	AlarmIdentifier              *AlarmIdentifier `json:"alarmIdentifier,omitempty"`
 	InsufficientDataHealthStatus string           `json:"insufficientDataHealthStatus,omitempty"`
+	HealthThreshold              int64            `json:"healthThreshold,omitempty"`
+	ChildHealthChecks            []string         `json:"childHealthChecks,omitempty"`
+	RoutingControlArn            string           `json:"routingControlArn,omitempty"`
 }
 
 // CloudWatchAlarmConfiguration holds the CloudWatch alarm configuration for a health check.
