@@ -139,6 +139,53 @@ func (s *LogsService) DescribeLogStreams(ctx context.Context, reqCtx *request.Re
 			return allStreams[i].LastEventTs < allStreams[j].LastEventTs
 		})
 
+		// Use offset-based pagination for LastEventTime ordering because
+		// new events can change the sort order between paginated calls,
+		// making key-based markers unreliable (items shift position).
+		offset := 0
+		if nextToken != "" {
+			if decoded, dErr := base64.StdEncoding.DecodeString(nextToken); dErr == nil {
+				if v, pErr := strconv.Atoi(string(decoded)); pErr == nil {
+					offset = v
+				}
+			}
+		}
+
+		endIdx := offset + int(limit)
+		if endIdx > len(allStreams) {
+			endIdx = len(allStreams)
+		}
+
+		var pageItems []*logsstore.LogStream
+		if offset < len(allStreams) {
+			pageItems = allStreams[offset:endIdx]
+		}
+
+		logStreams := make([]map[string]interface{}, 0, len(pageItems))
+		for _, ls := range pageItems {
+			logStreams = append(logStreams, logStreamToMap(ls))
+		}
+
+		resp := map[string]interface{}{
+			"logStreams": logStreams,
+		}
+		if endIdx < len(allStreams) {
+			resp["nextToken"] = base64.StdEncoding.EncodeToString([]byte(strconv.Itoa(endIdx)))
+		}
+		return resp, nil
+	}
+
+	// orderBy != "LastEventTime" (default: LogStreamName)
+	if descending {
+		allStreams, err := fetchAllLogStreams(store, logGroupName, prefix)
+		if err != nil {
+			return nil, mapStoreError(err)
+		}
+
+		sort.Slice(allStreams, func(i, j int) bool {
+			return allStreams[i].Name > allStreams[j].Name
+		})
+
 		result := pagination.PaginateSlice(allStreams, nextToken, int(limit), func(ls *logsstore.LogStream) string {
 			return ls.Name
 		})
@@ -359,8 +406,23 @@ func (s *LogsService) PutLogEvents(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	region := reqCtx.GetRegion()
-	s.evaluateMetricFilters(store, region, logGroupName, validEvents)
-	s.deliverSubscriptionEvents(store, region, logGroupName, logStreamName, validEvents)
+
+	// Evaluate metric filters and deliver subscription events asynchronously.
+	// These side-effects do not affect the PutLogEvents response and should
+	// not block it — AWS processes them in the background after ingestion.
+	eventsCopy := make([]logsstore.LogEntry, len(validEvents))
+	copy(eventsCopy, validEvents)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("Panic in async metric/subscription processing",
+					logs.String("logGroup", logGroupName),
+					logs.Any("panic", r))
+			}
+		}()
+		s.evaluateMetricFilters(store, region, logGroupName, eventsCopy)
+		s.deliverSubscriptionEvents(store, region, logGroupName, logStreamName, eventsCopy)
+	}()
 
 	resp := map[string]interface{}{
 		"nextSequenceToken": nextToken,
@@ -686,9 +748,12 @@ func (s *LogsService) GetLogEvents(ctx context.Context, reqCtx *request.RequestC
 		outputEvents = append(outputEvents, logEventToResponse(e))
 	}
 
-	nextBackwardToken := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("b-%d", startIndex)))
+	// Tokens are pure numeric offsets (base64-encoded) so the store's
+	// Sscanf("%d") parser can round-trip them correctly.  Direction is
+	// controlled by the startFromHead parameter, not the token value.
+	nextBackwardToken := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", startIndex)))
 	if nextForwardToken == "" {
-		nextForwardToken = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("f-%d", startIndex+len(events))))
+		nextForwardToken = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d", startIndex+len(events))))
 	}
 
 	return map[string]interface{}{

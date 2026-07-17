@@ -22,10 +22,32 @@ func (s *Store) metricFilterPrefixForGroup(logGroupName string) string {
 	return metricFilterPrefix + logGroupName + "#"
 }
 
-// PutMetricFilter creates or updates a metric filter.
+// PutMetricFilter creates or updates a metric filter. When the filter is
+// newly created, MetricFilterCount on the parent LogGroup is incremented
+// atomically under filterMutex.
 func (s *Store) PutMetricFilter(filter *MetricFilter) error {
+	s.filterMutex.Lock()
+	defer s.filterMutex.Unlock()
+
 	key := s.metricFilterKey(filter.LogGroupName, filter.Name)
-	return s.PutProto(key, MetricFilterToProto(filter))
+	isNew := !s.Exists(key)
+
+	if err := s.PutProto(key, MetricFilterToProto(filter)); err != nil {
+		return err
+	}
+
+	if isNew {
+		lg, err := s.GetLogGroup(filter.LogGroupName)
+		if err != nil {
+			return err
+		}
+		lg.MetricFilterCount++
+		if err := s.PutLogGroup(lg); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // GetMetricFilter retrieves a metric filter by log group and filter name.
@@ -38,13 +60,32 @@ func (s *Store) GetMetricFilter(logGroupName, filterName string) (*MetricFilter,
 	return ProtoToMetricFilter(&p), nil
 }
 
-// DeleteMetricFilter deletes a metric filter.
+// DeleteMetricFilter deletes a metric filter and decrements
+// MetricFilterCount on the parent LogGroup atomically under filterMutex.
 func (s *Store) DeleteMetricFilter(logGroupName, filterName string) error {
+	s.filterMutex.Lock()
+	defer s.filterMutex.Unlock()
+
 	key := s.metricFilterKey(logGroupName, filterName)
 	if !s.Exists(key) {
 		return ErrMetricFilterNotFound
 	}
-	return s.Delete(key)
+	if err := s.Delete(key); err != nil {
+		return err
+	}
+
+	lg, err := s.GetLogGroup(logGroupName)
+	if err != nil {
+		return nil
+	}
+	if lg.MetricFilterCount > 0 {
+		lg.MetricFilterCount--
+		if err := s.PutLogGroup(lg); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // ListMetricFilters returns metric filters for a log group.

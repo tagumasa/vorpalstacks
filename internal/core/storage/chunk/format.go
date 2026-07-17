@@ -6,8 +6,13 @@ const (
 	// MagicVLog is the magic bytes identifier for VLog chunk files.
 	// This is written at the beginning of each chunk file for identification.
 	MagicVLog = "VLOG"
-	// VersionV1 is the version number for the current chunk file format.
+	// VersionV1 is the version number for the original chunk file format
+	// (no per-entry ingestion timestamp).
 	VersionV1 = 1
+	// VersionV2 is the version number for the chunk file format that
+	// includes a per-entry ingestion timestamp (8 bytes after the event
+	// timestamp).
+	VersionV2 = 2
 	// EncodingNone indicates no compression is applied to chunk data.
 	EncodingNone = 0
 	// EncodingGzip indicates GZIP compression is applied to chunk data.
@@ -42,7 +47,7 @@ func HeaderSize() int {
 // version number, and encoding type.
 func ValidateHeader(h *Header) bool {
 	return string(h.Magic[:]) == MagicVLog &&
-		h.Version == VersionV1 &&
+		(h.Version == VersionV1 || h.Version == VersionV2) &&
 		(h.Encoding == EncodingGzip || h.Encoding == EncodingZstd || h.Encoding == EncodingNone)
 }
 

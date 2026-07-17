@@ -147,10 +147,14 @@ func (r *TestRunner) RunServicesParallel(services []string, parallelism int) map
 
 	var phase1, phase2, phase3 []string
 	for _, svc := range services {
+		cat := CategorySDK
+		if entry, ok := serviceRegistry[svc]; ok {
+			cat = entry.category
+		}
 		switch {
 		case svc == "iam":
 			phase1 = append(phase1, svc)
-		case svc == "integration":
+		case cat == CategoryIntegration:
 			phase3 = append(phase3, svc)
 		default:
 			phase2 = append(phase2, svc)

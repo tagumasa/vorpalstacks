@@ -30,10 +30,18 @@ type Entry interface {
 	Message() []byte
 }
 
+// Ingestible is an optional interface implemented by entries that carry
+// an ingestion timestamp.  The writer checks for this interface and, when
+// present, serialises the ingestion timestamp into V2 chunk files.
+type Ingestible interface {
+	IngestionTimeUnixMilli() int64
+}
+
 // SimpleEntry implements Entry for basic log entries.
 type SimpleEntry struct {
-	Ts  int64
-	Msg []byte
+	Ts          int64
+	IngestionTs int64
+	Msg         []byte
 }
 
 // Timestamp returns the Unix timestamp in nanoseconds for this entry.
@@ -44,6 +52,11 @@ func (e SimpleEntry) Timestamp() int64 {
 // Message returns the raw byte content of this entry.
 func (e SimpleEntry) Message() []byte {
 	return e.Msg
+}
+
+// IngestionTimeUnixMilli returns the ingestion timestamp in Unix milliseconds.
+func (e SimpleEntry) IngestionTimeUnixMilli() int64 {
+	return e.IngestionTs
 }
 
 // WriterOptions contains configuration options for creating a Writer.
@@ -274,7 +287,7 @@ func (w *Writer) writeEntries(writer io.Writer, entries []Entry) (*Header, error
 	magic := [4]byte{'V', 'L', 'O', 'G'}
 	header := &Header{
 		Magic:      magic,
-		Version:    VersionV1,
+		Version:    VersionV2,
 		Encoding:   w.opts.Encoding.Uint8(),
 		EntryCount: uint32(len(entries)),
 		MinTs:      entries[0].Timestamp(),
@@ -299,6 +312,15 @@ func (w *Writer) writeEntries(writer io.Writer, entries []Entry) (*Header, error
 		if err := binary.Write(writer, binary.BigEndian, e.Timestamp()); err != nil {
 			return nil, err
 		}
+
+		var ingestionTs int64
+		if ig, ok := e.(Ingestible); ok {
+			ingestionTs = ig.IngestionTimeUnixMilli()
+		}
+		if err := binary.Write(writer, binary.BigEndian, ingestionTs); err != nil {
+			return nil, err
+		}
+
 		msgBytes := e.Message()
 		if err := binary.Write(writer, binary.BigEndian, uint32(len(msgBytes))); err != nil {
 			return nil, err

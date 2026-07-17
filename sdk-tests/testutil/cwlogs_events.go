@@ -126,6 +126,79 @@ func (tc *cwlogsTestCtx) eventTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, tc.runner.RunTest("logs", "GetLogEvents_ForwardPagination", func() error {
+		fpName := tc.uniquePrefix("FPLogGroup")
+		fpStream := tc.uniquePrefix("FPLogStream")
+		if err := tc.createLogGroup(fpName); err != nil {
+			return fmt.Errorf("create group: %v", err)
+		}
+		defer tc.deleteLogGroup(fpName)
+
+		if err := tc.createLogStream(fpName, fpStream); err != nil {
+			return fmt.Errorf("create stream: %v", err)
+		}
+
+		ts := time.Now().UnixMilli()
+		putEvents := []types.InputLogEvent{
+			{Message: aws.String("msg-0"), Timestamp: aws.Int64(ts)},
+			{Message: aws.String("msg-1"), Timestamp: aws.Int64(ts + 1)},
+			{Message: aws.String("msg-2"), Timestamp: aws.Int64(ts + 2)},
+			{Message: aws.String("msg-3"), Timestamp: aws.Int64(ts + 3)},
+			{Message: aws.String("msg-4"), Timestamp: aws.Int64(ts + 4)},
+		}
+		if _, err := tc.client.PutLogEvents(tc.ctx, &cloudwatchlogs.PutLogEventsInput{
+			LogGroupName:  aws.String(fpName),
+			LogStreamName: aws.String(fpStream),
+			LogEvents:     putEvents,
+		}); err != nil {
+			return fmt.Errorf("put: %v", err)
+		}
+
+		var collected []string
+		var nextToken *string
+		page := 0
+		for {
+			page++
+			if page > 10 {
+				return fmt.Errorf("too many pages")
+			}
+			resp, err := tc.client.GetLogEvents(tc.ctx, &cloudwatchlogs.GetLogEventsInput{
+				LogGroupName:  aws.String(fpName),
+				LogStreamName: aws.String(fpStream),
+				StartFromHead: aws.Bool(true),
+				Limit:         aws.Int32(2),
+				NextToken:     nextToken,
+			})
+			if err != nil {
+				return fmt.Errorf("get page %d: %v", page, err)
+			}
+			for _, e := range resp.Events {
+				collected = append(collected, *e.Message)
+			}
+			if resp.NextForwardToken == nil || *resp.NextForwardToken == "" {
+				break
+			}
+			if nextToken != nil && *resp.NextForwardToken == *nextToken {
+				return fmt.Errorf("forward token did not advance: %s", *resp.NextForwardToken)
+			}
+			nextToken = resp.NextForwardToken
+			if len(resp.Events) == 0 {
+				break
+			}
+		}
+
+		if len(collected) != 5 {
+			return fmt.Errorf("expected 5 events across pages, got %d: %v", len(collected), collected)
+		}
+		for i, msg := range collected {
+			expected := fmt.Sprintf("msg-%d", i)
+			if msg != expected {
+				return fmt.Errorf("event %d: expected %s, got %s", i, expected, msg)
+			}
+		}
+		return nil
+	}))
+
 	results = append(results, tc.runner.RunTest("logs", "FilterLogEvents_WithFilterPattern", func() error {
 		fepName := tc.uniquePrefix("FEPGroup")
 		fepStream := tc.uniquePrefix("FEPStream")

@@ -52,22 +52,9 @@ func (s *LogsService) PutMetricFilter(ctx context.Context, reqCtx *request.Reque
 		return nil, mapStoreError(err)
 	}
 
-	_, existingErr := store.GetMetricFilter(logGroupName, filterName)
-
 	filter := logsstore.NewMetricFilter(logGroupName, filterName, filterPattern, transformations)
 	if err := store.PutMetricFilter(filter); err != nil {
 		return nil, mapStoreError(err)
-	}
-
-	if existingErr != nil {
-		lg, err := store.GetLogGroup(logGroupName)
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-		lg.MetricFilterCount++
-		if err := store.PutLogGroup(lg); err != nil {
-			return nil, mapStoreError(err)
-		}
 	}
 
 	return response.EmptyResponse(), nil
@@ -135,17 +122,6 @@ func (s *LogsService) DeleteMetricFilter(ctx context.Context, reqCtx *request.Re
 
 	if err := store.DeleteMetricFilter(logGroupName, filterName); err != nil {
 		return nil, mapStoreError(err)
-	}
-
-	lg, err := store.GetLogGroup(logGroupName)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-	if lg.MetricFilterCount > 0 {
-		lg.MetricFilterCount--
-		if err := store.PutLogGroup(lg); err != nil {
-			return nil, mapStoreError(err)
-		}
 	}
 
 	return response.EmptyResponse(), nil

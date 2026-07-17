@@ -61,8 +61,9 @@ type LogStream struct {
 
 // LogEntry represents a single log event entry.
 type LogEntry struct {
-	Timestamp int64  `json:"timestamp"`
-	Message   string `json:"message"`
+	Timestamp     int64  `json:"timestamp"`
+	Message       string `json:"message"`
+	IngestionTime int64  `json:"ingestionTime,omitempty"`
 }
 
 // OutputLogEvent represents an output log event.

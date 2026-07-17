@@ -36,6 +36,7 @@ const (
 	echoHandlerCode = `exports.handler = async (event) => { return JSON.stringify(event); };`
 
 	pollInterval         = 300 * time.Millisecond
+	integTestTimeout     = 3 * time.Minute
 	defaultPollTimeout   = 10 * time.Second
 	schedulerPollTimeout = 15 * time.Second
 )
@@ -266,6 +267,47 @@ func (ic *integClients) putObject(bucket, key string, data []byte) error {
 	return err
 }
 
+// runIntegWithTimeout wraps an integration test function with a deadline.
+// Integration test functions make many HTTP calls and, unlike SDK tests, are
+// not individually wrapped in RunTest. Without this guard, a single hanging
+// HTTP call (e.g. server unresponsive) blocks the entire integration phase
+// indefinitely because context.Background has no deadline and the leaked
+// goroutine keeps running.
+func (r *TestRunner) runIntegWithTimeout(name string, fn func() TestResult) TestResult {
+	if r.verbose {
+		fmt.Printf("  Running: %s...\n", name)
+	}
+	start := time.Now()
+	done := make(chan TestResult, 1)
+	go func() { done <- fn() }()
+	select {
+	case res := <-done:
+		res.Duration = time.Since(start)
+		if res.TestName == "" {
+			res.TestName = name
+		}
+		if r.verbose {
+			if res.Status == "PASS" {
+				fmt.Printf("  ✓ %s (%.2fs)\n", name, res.Duration.Seconds())
+			} else {
+				fmt.Printf("  ✗ %s: %s\n", name, res.Error)
+			}
+		}
+		return res
+	case <-time.After(integTestTimeout):
+		if r.verbose {
+			fmt.Printf("  ✗ %s: timed out after %v\n", name, integTestTimeout)
+		}
+		return TestResult{
+			Service:  integSvc,
+			TestName: name,
+			Status:   "FAIL",
+			Error:    fmt.Sprintf("integration test timed out after %v", integTestTimeout),
+			Duration: integTestTimeout,
+		}
+	}
+}
+
 func (r *TestRunner) pollVerify(testName string, timeout time.Duration, verify func() error) TestResult {
 	deadline := time.Now().Add(timeout)
 	var lastErr error
@@ -320,40 +362,95 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 
 	ts := intTimestamp()
 
-	results = append(results, r.runEventBridgeToLambda(ic, ts))
-	results = append(results, r.runEventBridgeToStepFunctions(ic, ts))
-	results = append(results, r.runEventBridgeToSQS(ic, ts))
-	results = append(results, r.runEventBridgeToSNS(ic, ts))
-	results = append(results, r.runEventBridgeToKinesis(ic, ts))
+	results = append(results, r.runIntegWithTimeout("EventBridge_Lambda", func() TestResult {
+		return r.runEventBridgeToLambda(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("EventBridge_StepFunctions", func() TestResult {
+		return r.runEventBridgeToStepFunctions(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("EventBridge_SQS", func() TestResult {
+		return r.runEventBridgeToSQS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("EventBridge_SNS", func() TestResult {
+		return r.runEventBridgeToSNS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("EventBridge_Kinesis", func() TestResult {
+		return r.runEventBridgeToKinesis(ic, ts)
+	}))
 
-	results = append(results, r.runESMSQSToLambda(ic, ts))
-	results = append(results, r.runESMKinesisToLambda(ic, ts))
+	results = append(results, r.runIntegWithTimeout("ESM_SQS_Lambda", func() TestResult {
+		return r.runESMSQSToLambda(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("ESM_Kinesis_Lambda", func() TestResult {
+		return r.runESMKinesisToLambda(ic, ts)
+	}))
 
-	results = append(results, r.runAlarmToSNS(ic, ts))
-	results = append(results, r.runAlarmToLambda(ic, ts))
-	results = append(results, r.runAlarmToStepFunctions(ic, ts))
+	results = append(results, r.runIntegWithTimeout("Alarm_SNS", func() TestResult {
+		return r.runAlarmToSNS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Alarm_Lambda", func() TestResult {
+		return r.runAlarmToLambda(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Alarm_StepFunctions", func() TestResult {
+		return r.runAlarmToStepFunctions(ic, ts)
+	}))
 
-	results = append(results, r.runSchedulerToLambda(ic, ts))
-	results = append(results, r.runSchedulerToSQS(ic, ts))
-	results = append(results, r.runSchedulerToSNS(ic, ts))
-	results = append(results, r.runSchedulerToStepFunctions(ic, ts))
+	results = append(results, r.runIntegWithTimeout("Scheduler_Lambda", func() TestResult {
+		return r.runSchedulerToLambda(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_SQS", func() TestResult {
+		return r.runSchedulerToSQS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_SNS", func() TestResult {
+		return r.runSchedulerToSNS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_StepFunctions", func() TestResult {
+		return r.runSchedulerToStepFunctions(ic, ts)
+	}))
 
-	results = append(results, r.runSFNTaskLambda(ic, ts))
-	results = append(results, r.runSFNTaskSQS(ic, ts))
-	results = append(results, r.runSFNTaskSNS(ic, ts))
-	results = append(results, r.runSFNTaskEventBridge(ic, ts))
-	results = append(results, r.runSFNTaskDynamoDB(ic, ts))
+	results = append(results, r.runIntegWithTimeout("SFNTask_Lambda", func() TestResult {
+		return r.runSFNTaskLambda(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("SFNTask_SQS", func() TestResult {
+		return r.runSFNTaskSQS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("SFNTask_SNS", func() TestResult {
+		return r.runSFNTaskSNS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("SFNTask_EventBridge", func() TestResult {
+		return r.runSFNTaskEventBridge(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("SFNTask_DynamoDB", func() TestResult {
+		return r.runSFNTaskDynamoDB(ic, ts)
+	}))
 
-	results = append(results, r.runS3NotificationToLambda(ic, ts))
-	results = append(results, r.runS3NotificationToSQS(ic, ts))
-	results = append(results, r.runS3NotificationToSNS(ic, ts))
+	results = append(results, r.runIntegWithTimeout("S3_Notification_Lambda", func() TestResult {
+		return r.runS3NotificationToLambda(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("S3_Notification_SQS", func() TestResult {
+		return r.runS3NotificationToSQS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("S3_Notification_SNS", func() TestResult {
+		return r.runS3NotificationToSNS(ic, ts)
+	}))
 
-	results = append(results, r.runCWLogsToLambda(ic, ts))
-	results = append(results, r.runCWLogsToKinesis(ic, ts))
+	results = append(results, r.runIntegWithTimeout("CWLogs_Lambda", func() TestResult {
+		return r.runCWLogsToLambda(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("CWLogs_Kinesis", func() TestResult {
+		return r.runCWLogsToKinesis(ic, ts)
+	}))
 
-	results = append(results, r.runSNSToSQS(ic, ts))
-	results = append(results, r.runSNSToLambda(ic, ts))
+	results = append(results, r.runIntegWithTimeout("SNS_SQS", func() TestResult {
+		return r.runSNSToSQS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("SNS_Lambda", func() TestResult {
+		return r.runSNSToLambda(ic, ts)
+	}))
 
+	// Neptune direct protocol tests already wrap each sub-test in RunTest
+	// (60s per-test timeout). The cluster creation is the only unguarded
+	// part; under normal conditions it completes in <1s.
 	results = append(results, r.RunNeptuneDirectProtocolTests()...)
 
 	return results

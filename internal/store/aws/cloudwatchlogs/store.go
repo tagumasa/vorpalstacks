@@ -35,6 +35,7 @@ type Store struct {
 	chunkMutex   sync.Mutex
 	activeChunks map[string]*activeChunk
 	chunkCounter uint64
+	filterMutex  sync.Mutex
 }
 
 type activeChunk struct {
@@ -251,7 +252,7 @@ func (s *Store) ListLogStreams(logGroupName, prefix, marker string, maxItems int
 
 	streamPrefix := s.logStreamKey(logGroupName, "")
 	if prefix != "" {
-		streamPrefix += prefix
+		streamPrefix += escapePath(prefix)
 	}
 
 	opts := common.ListOptions{
@@ -287,6 +288,13 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 	s.chunkMutex.Lock()
 	defer s.chunkMutex.Unlock()
 
+	ingestionTs := time.Now().UnixMilli()
+	for i := range events {
+		if events[i].IngestionTime == 0 {
+			events[i].IngestionTime = ingestionTs
+		}
+	}
+
 	streamKey := fmt.Sprintf("%s:%s", logGroupName, logStreamName)
 	ac, exists := s.activeChunks[streamKey]
 	if !exists {
@@ -294,6 +302,16 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 			entries: make([]LogEntry, 0, MaxChunkSize),
 		}
 		s.activeChunks[streamKey] = ac
+	}
+
+	// Flush existing entries first if appending the new batch would
+	// exceed MaxChunkSize, preventing a single chunk from growing
+	// up to ~2× MaxChunkSize.
+	if len(ac.entries)+len(events) > MaxChunkSize && len(ac.entries) > 0 {
+		if err := s.flushChunk(logGroupName, logStreamName, ac); err != nil {
+			return "", err
+		}
+		ac.entries = ac.entries[:0]
 	}
 
 	ac.entries = append(ac.entries, events...)
@@ -319,7 +337,11 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 	ls.UpdateEventTimestamps(minTs, maxTs)
 	ls.LastIngestionTs = time.Now().UnixMilli()
 
-	ls.UploadSequenceToken = incrementToken(ls.UploadSequenceToken)
+	newToken, err := incrementToken(ls.UploadSequenceToken)
+	if err != nil {
+		return "", err
+	}
+	ls.UploadSequenceToken = newToken
 
 	lg.StoredBytes += bytesAdded
 	if err := s.PutLogGroup(lg); err != nil {
@@ -334,15 +356,15 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 	return ls.UploadSequenceToken, nil
 }
 
-func incrementToken(token string) string {
+func incrementToken(token string) (string, error) {
 	if token == "" {
-		return "1"
+		return "1", nil
 	}
-	var val int
-	if _, err := fmt.Sscanf(token, "%d", &val); err != nil {
-		return "1"
+	val, err := strconv.Atoi(token)
+	if err != nil {
+		return "", fmt.Errorf("corrupted upload sequence token %q: %w", token, err)
 	}
-	return fmt.Sprintf("%d", val+1)
+	return strconv.Itoa(val + 1), nil
 }
 
 func (s *Store) flushChunk(logGroupName, logStreamName string, ac *activeChunk) error {
@@ -377,6 +399,12 @@ func (s *Store) flushChunk(logGroupName, logStreamName string, ac *activeChunk) 
 
 	indexKey := s.chunkIndexKey(logGroupName, logStreamName, chunkID)
 	if err := s.PutProto(indexKey, ChunkMetaToProto(meta)); err != nil {
+		// Remove the orphaned chunk file so it does not leak storage
+		// with no index entry pointing to it.
+		if rmErr := os.Remove(actualPath); rmErr != nil {
+			logs.Error("Failed to remove orphaned chunk file after index failure",
+				logs.String("path", actualPath), logs.Err(rmErr))
+		}
 		return err
 	}
 	return nil
@@ -386,8 +414,9 @@ func (s *Store) writeChunkFile(entries []LogEntry) (string, *chunk.Header, error
 	chunkEntries := make([]chunk.Entry, len(entries))
 	for i, e := range entries {
 		chunkEntries[i] = chunk.SimpleEntry{
-			Ts:  e.Timestamp,
-			Msg: []byte(e.Message),
+			Ts:          e.Timestamp,
+			IngestionTs: e.IngestionTime,
+			Msg:         []byte(e.Message),
 		}
 	}
 
@@ -433,9 +462,14 @@ func (s *Store) readChunkFile(chunkPath string) ([]LogEntry, error) {
 
 	entries := make([]LogEntry, len(chunkEntries))
 	for i, ce := range chunkEntries {
+		var ingestionTs int64
+		if ig, ok := ce.(chunk.Ingestible); ok {
+			ingestionTs = ig.IngestionTimeUnixMilli()
+		}
 		entries[i] = LogEntry{
-			Timestamp: ce.Timestamp(),
-			Message:   string(ce.Message()),
+			Timestamp:     ce.Timestamp(),
+			Message:       string(ce.Message()),
+			IngestionTime: ingestionTs,
 		}
 	}
 
@@ -498,7 +532,6 @@ func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endT
 
 	chunks := s.ListChunksForStream(logGroupName, logStreamName)
 	var allEvents []*OutputLogEvent
-	ingestionTime := time.Now().UnixMilli()
 
 	for _, chunk := range chunks {
 		if chunk == nil {
@@ -522,6 +555,10 @@ func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endT
 			}
 			if endTime > 0 && e.Timestamp > endTime {
 				continue
+			}
+			ingestionTime := e.IngestionTime
+			if ingestionTime == 0 {
+				ingestionTime = e.Timestamp
 			}
 			allEvents = append(allEvents, &OutputLogEvent{
 				Timestamp:     e.Timestamp,
@@ -593,7 +630,6 @@ func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, st
 
 	var allEvents []*OutputLogEvent
 	searchedStreams := make(map[string]bool)
-	ingestionTime := time.Now().UnixMilli()
 
 	for _, chunk := range chunks {
 		if endTime > 0 && chunk.MinTs > endTime {
@@ -619,6 +655,10 @@ func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, st
 			}
 			if filterPattern != "" && !matchFilterPattern(e.Message, filterPattern) {
 				continue
+			}
+			ingestionTime := e.IngestionTime
+			if ingestionTime == 0 {
+				ingestionTime = e.Timestamp
 			}
 			allEvents = append(allEvents, &OutputLogEvent{
 				Timestamp:     e.Timestamp,
@@ -902,22 +942,30 @@ func (s *Store) PurgeExpiredChunks(logGroupName string, cutoffTime int64) (int64
 
 // PurgeAllExpiredChunks purges expired chunks from all log groups based on their retention policies.
 func (s *Store) PurgeAllExpiredChunks() error {
-	groups, _, err := s.ListLogGroups("", "", 10000)
-	if err != nil {
-		return err
-	}
-
 	now := time.Now().UnixMilli()
-	for _, lg := range groups {
-		if lg.RetentionInDays <= 0 {
-			continue
+
+	marker := ""
+	for {
+		groups, nextMarker, err := s.ListLogGroups("", marker, 1000)
+		if err != nil {
+			return err
 		}
 
-		cutoffTime := now - int64(lg.RetentionInDays)*24*60*60*1000
-		_, err := s.PurgeExpiredChunks(lg.Name, cutoffTime)
-		if err != nil {
-			continue
+		for _, lg := range groups {
+			if lg.RetentionInDays <= 0 {
+				continue
+			}
+
+			cutoffTime := now - int64(lg.RetentionInDays)*24*60*60*1000
+			if _, err := s.PurgeExpiredChunks(lg.Name, cutoffTime); err != nil {
+				continue
+			}
 		}
+
+		if nextMarker == "" {
+			break
+		}
+		marker = nextMarker
 	}
 
 	return nil

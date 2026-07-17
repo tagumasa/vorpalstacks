@@ -130,7 +130,7 @@ func Decode(data []byte) ([]Entry, error) {
 		return nil, err
 	}
 
-	entries, err := parseEntries(bytes.NewReader(data[HeaderSize():]), header.EntryCount)
+	entries, err := parseEntries(bytes.NewReader(data[HeaderSize():]), header.EntryCount, header.Version)
 	if err != nil {
 		return nil, fmt.Errorf("%w: parse failed: %w", ErrCorruptChunk, err)
 	}
@@ -170,13 +170,20 @@ func readHeader(data []byte) (*Header, error) {
 	return header, nil
 }
 
-func parseEntries(r io.Reader, entryCount uint32) ([]Entry, error) {
+func parseEntries(r io.Reader, entryCount uint32, version uint8) ([]Entry, error) {
 	entries := make([]Entry, 0, entryCount)
 
 	for i := uint32(0); i < entryCount; i++ {
 		var ts int64
 		if err := binary.Read(r, binary.BigEndian, &ts); err != nil {
 			return nil, fmt.Errorf("failed to read timestamp: %w", err)
+		}
+
+		var ingestionTs int64
+		if version >= VersionV2 {
+			if err := binary.Read(r, binary.BigEndian, &ingestionTs); err != nil {
+				return nil, fmt.Errorf("failed to read ingestion timestamp: %w", err)
+			}
 		}
 
 		var msgLen uint32
@@ -190,8 +197,9 @@ func parseEntries(r io.Reader, entryCount uint32) ([]Entry, error) {
 		}
 
 		entries = append(entries, SimpleEntry{
-			Ts:  ts,
-			Msg: msgBytes,
+			Ts:          ts,
+			IngestionTs: ingestionTs,
+			Msg:         msgBytes,
 		})
 	}
 
