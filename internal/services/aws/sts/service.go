@@ -289,7 +289,7 @@ func (s *STSService) GetCallerIdentity(ctx context.Context, reqCtx *request.Requ
 				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.RoleSessionName)
 			case "SAML":
 				roleName := arnutil.ExtractRoleNameFromARN(session.RoleArn)
-				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.PrincipalName)
+				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.RoleSessionName)
 			case "WebIdentity":
 				roleName := arnutil.ExtractRoleNameFromARN(session.RoleArn)
 				arn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").STS().AssumedRole(roleName, session.RoleSessionName)
@@ -489,6 +489,12 @@ func (s *STSService) GetSessionToken(ctx context.Context, reqCtx *request.Reques
 	if callerArn == "" {
 		callerName = reqCtx.GetAccountID()
 		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
+	}
+
+	// AWS caps GetSessionToken duration at 3600 seconds for root users.
+	isRoot := strings.Contains(callerArn, ":root")
+	if isRoot && validDuration > 3600 {
+		return nil, ErrInvalidRootSessionDuration
 	}
 
 	if err := validateMFACredentials(serialNumber, tokenCode); err != nil {
@@ -1027,11 +1033,11 @@ func (s *STSService) GetFederationToken(ctx context.Context, reqCtx *request.Req
 		return nil, ErrInvalidFederationName
 	}
 
-	callerArn, callerName := s.resolveCallerIdentity(reqCtx, req)
+	callerArn, _ := s.resolveCallerIdentity(reqCtx, req)
 	if callerArn == "" {
 		callerArn = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
 	}
-	isRoot := callerName == iam.RootUserName
+	isRoot := strings.Contains(callerArn, ":root")
 
 	validDuration, err := validateFederationDurationSeconds(durationSeconds, isRoot)
 	if err != nil {

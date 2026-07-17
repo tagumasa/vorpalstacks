@@ -119,8 +119,12 @@ var (
 	ErrInvalidSigningAlgorithm = errors.NewAWSError("ValidationError", "SigningAlgorithm must be RS256 or ES384.", http.StatusBadRequest)
 	// ErrInvalidFederationRootDuration is returned when GetFederationToken is
 	// called by the root user with a DurationSeconds exceeding the 3600-second
-	// cap that AWS enforces for root-user federation sessions.
-	ErrInvalidFederationRootDuration = errors.NewAWSError("ValidationError", "Root user federation sessions are limited to a maximum of 3600 seconds.", http.StatusBadRequest)
+	// cap imposed by AWS.
+	ErrInvalidFederationRootDuration = errors.NewAWSError("ValidationError", "DurationSeconds must not exceed 3600 when called with root user credentials.", http.StatusBadRequest)
+	// ErrInvalidRootSessionDuration is returned when GetSessionToken is called
+	// by the root user with a DurationSeconds exceeding the 3600-second cap
+	// imposed by AWS.
+	ErrInvalidRootSessionDuration = errors.NewAWSError("ValidationError", "DurationSeconds must not exceed 3600 when called with root user credentials.", http.StatusBadRequest)
 	// ErrPackedPolicyTooLarge is returned when the combined packed size of
 	// session policies and session tags exceeds the AWS-allowed limit.
 	ErrPackedPolicyTooLarge = errors.NewAWSError("PackedPolicyTooLarge", "The total packed size of the session policies and session tags is too large.", http.StatusBadRequest)

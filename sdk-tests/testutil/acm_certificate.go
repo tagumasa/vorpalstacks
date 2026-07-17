@@ -1,6 +1,8 @@
 package testutil
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"strings"
 
@@ -303,6 +305,111 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		}
 		if exportResp.PrivateKey == nil || aws.ToString(exportResp.PrivateKey) == "" {
 			return fmt.Errorf("PrivateKey is empty")
+		}
+		return nil
+	}))
+
+	// B2: Verify SANs are embedded in the actual x509 certificate
+	results = append(results, r.RunTest("acm", "RequestCertificate_SANsEmbeddedInCert", func() error {
+		domain := acmUniqueDomain("san-embed")
+		san1 := fmt.Sprintf("www.%s", domain)
+		san2 := fmt.Sprintf("api.%s", domain)
+		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+			DomainName:              aws.String(domain),
+			ValidationMethod:        types.ValidationMethodDns,
+			SubjectAlternativeNames: []string{san1, san2},
+		})
+		if err != nil {
+			return err
+		}
+		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+
+		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{CertificateArn: resp.CertificateArn})
+		if err != nil {
+			return err
+		}
+		block, _ := pem.Decode([]byte(aws.ToString(getResp.Certificate)))
+		if block == nil {
+			return fmt.Errorf("failed to decode certificate PEM")
+		}
+		parsed, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return fmt.Errorf("failed to parse certificate: %w", err)
+		}
+		dnsSet := make(map[string]bool)
+		for _, d := range parsed.DNSNames {
+			dnsSet[d] = true
+		}
+		if !dnsSet[domain] {
+			return fmt.Errorf("primary domain %s not in cert DNSNames: %v", domain, parsed.DNSNames)
+		}
+		if !dnsSet[san1] {
+			return fmt.Errorf("SAN %s not in cert DNSNames: %v", san1, parsed.DNSNames)
+		}
+		if !dnsSet[san2] {
+			return fmt.Errorf("SAN %s not in cert DNSNames: %v", san2, parsed.DNSNames)
+		}
+		return nil
+	}))
+
+	// B1: KeyAlgorithm EC_prime256v1
+	results = append(results, r.RunTest("acm", "RequestCertificate_KeyAlgorithm_EC_prime256v1", func() error {
+		domain := acmUniqueDomain("ec256")
+		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+			DomainName:       aws.String(domain),
+			ValidationMethod: types.ValidationMethodDns,
+			KeyAlgorithm:     types.KeyAlgorithmEcPrime256v1,
+		})
+		if err != nil {
+			return err
+		}
+		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: resp.CertificateArn})
+		if err != nil {
+			return err
+		}
+		if desc.Certificate.KeyAlgorithm != types.KeyAlgorithmEcPrime256v1 {
+			return fmt.Errorf("expected EC_prime256v1, got %s", desc.Certificate.KeyAlgorithm)
+		}
+		// Verify the actual cert uses ECDSA
+		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{CertificateArn: resp.CertificateArn})
+		if err != nil {
+			return err
+		}
+		block, _ := pem.Decode([]byte(aws.ToString(getResp.Certificate)))
+		if block == nil {
+			return fmt.Errorf("failed to decode certificate PEM")
+		}
+		parsed, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return fmt.Errorf("failed to parse certificate: %w", err)
+		}
+		if parsed.PublicKeyAlgorithm != x509.ECDSA {
+			return fmt.Errorf("expected ECDSA public key, got %s", parsed.PublicKeyAlgorithm)
+		}
+		return nil
+	}))
+
+	// B1: KeyAlgorithm RSA_4096
+	results = append(results, r.RunTest("acm", "RequestCertificate_KeyAlgorithm_RSA_4096", func() error {
+		domain := acmUniqueDomain("rsa4096")
+		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+			DomainName:       aws.String(domain),
+			ValidationMethod: types.ValidationMethodDns,
+			KeyAlgorithm:     types.KeyAlgorithmRsa4096,
+		})
+		if err != nil {
+			return err
+		}
+		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: resp.CertificateArn})
+		if err != nil {
+			return err
+		}
+		if desc.Certificate.KeyAlgorithm != types.KeyAlgorithmRsa4096 {
+			return fmt.Errorf("expected RSA_4096, got %s", desc.Certificate.KeyAlgorithm)
 		}
 		return nil
 	}))

@@ -2,8 +2,10 @@ package acm
 
 import (
 	"context"
+	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -110,6 +112,20 @@ func (s *ACMService) acmTagConfig(stores *acmStores, arn string) tagutil.TagHand
 	}
 }
 
+// acmGenericTagConfig returns a TagHandlerConfig for the generic TagResource /
+// UntagResource / ListTagsForResource operations. These use "ResourceArn" as
+// the resource parameter and "TagKeys" (a plain list of key strings) for
+// untagging, instead of the certificate-specific parameter names.
+func (s *ACMService) acmGenericTagConfig(stores *acmStores, arn string) tagutil.TagHandlerConfig {
+	config := s.acmTagConfig(stores, arn)
+	config.Param.ResourceParam = "ResourceArn"
+	config.Param.TagKeysParam = "TagKeys"
+	config.ParseTagKeys = func(params map[string]interface{}) []string {
+		return tagutil.ParseTagKeysWithQueryFallback(params, "TagKeys")
+	}
+	return config
+}
+
 // RequestCertificate requests a new certificate from ACM.
 func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
@@ -128,10 +144,30 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 	validationMethod := parseValidationMethod(params)
 	keyAlgorithm := parseKeyAlgorithm(params)
 
+	// Parse SubjectAlternativeNames early so they can be embedded in the x509 template.
+	var sans []string
+	if sansRaw := params["SubjectAlternativeNames"]; sansRaw != nil {
+		if sansArr, ok := sansRaw.([]interface{}); ok {
+			for _, san := range sansArr {
+				if s, ok := san.(string); ok {
+					sans = append(sans, s)
+				}
+			}
+		}
+		if len(sans) > 100 {
+			return nil, awserrors.NewValidationException("SubjectAlternativeNames must not exceed 100 entries")
+		}
+	}
+
+	// Build the complete DNSNames list for the certificate template.
+	dnsNames := make([]string, 0, 1+len(sans))
+	dnsNames = append(dnsNames, domainName)
+	dnsNames = append(dnsNames, sans...)
+
 	now := time.Now().UTC()
-	key, err := vcrypto.GenerateRSAKey(2048)
+	key, err := generateKeyForKeyAlgorithm(keyAlgorithm)
 	if err != nil {
-		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to generate key", 500)
+		return nil, awserrors.NewValidationException(fmt.Sprintf("Unsupported KeyAlgorithm: %s", keyAlgorithm))
 	}
 
 	serialBigInt, err := vcrypto.GenerateSerialNumber()
@@ -145,10 +181,10 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 		NotBefore:    now,
 		NotAfter:     notAfter,
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-		DNSNames:     []string{domainName},
+		DNSNames:     dnsNames,
 	}
 
-	certDER, err := vcrypto.CreateCertificate(template, template, &key.PublicKey, key)
+	certDER, err := vcrypto.CreateCertificate(template, template, key.Public(), key)
 	if err != nil {
 		return nil, awserrors.NewAWSError("InternalErrorException", "Failed to create certificate", 500)
 	}
@@ -163,7 +199,7 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 		Status:             "ISSUED",
 		Type:               "AMAZON_ISSUED",
 		KeyAlgorithm:       keyAlgorithm,
-		SignatureAlgorithm: "SHA256WITHRSA",
+		SignatureAlgorithm: signatureAlgorithmForKeyAlgorithm(keyAlgorithm),
 		RenewalEligibility: "ELIGIBLE",
 		CreatedAt:          now,
 		Subject:            domainName,
@@ -176,20 +212,19 @@ func (s *ACMService) RequestCertificate(ctx context.Context, reqCtx *request.Req
 		IssuedAt:           now,
 	}
 
-	if sansRaw := params["SubjectAlternativeNames"]; sansRaw != nil {
-		if sans, ok := sansRaw.([]interface{}); ok {
-			for _, san := range sans {
-				if s, ok := san.(string); ok {
-					cert.SubjectAlternativeNames = append(cert.SubjectAlternativeNames, s)
-				}
-			}
-		}
-	}
+	cert.SubjectAlternativeNames = sans
 
 	tags := tagutil.ParseTagsWithQueryFallback(params, "Tags")
+	if len(tags) > 50 {
+		return nil, awserrors.NewValidationException("Tags must not exceed 50 entries")
+	}
 	cert.Tags = tags
 
-	domainValidationOptions := buildDomainValidationOptions(domainName, validationMethod)
+	// Build domain validation options. If the user provided explicit
+	// DomainValidationOptions (e.g. ValidationDomain for EMAIL), merge
+	// them with the auto-generated ones.
+	domainValidationOptions := buildDomainValidationOptions(domainName, validationMethod, sans)
+	applyUserDomainValidationOptions(domainValidationOptions, params)
 	for i := range domainValidationOptions {
 		domainValidationOptions[i].ValidationStatus = "SUCCESS"
 	}
@@ -399,6 +434,36 @@ func (s *ACMService) ListTagsForCertificate(ctx context.Context, reqCtx *request
 	return tagutil.HandleList(ctx, req, s.acmTagConfig(stores, arn))
 }
 
+// TagResource adds one or more tags to an ACM resource (generic API).
+func (s *ACMService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	arn, _ := parseCertificateArn(req.Parameters, "ResourceArn")
+	return tagutil.HandleTag(ctx, req, s.acmGenericTagConfig(stores, arn))
+}
+
+// UntagResource removes one or more tags from an ACM resource (generic API).
+func (s *ACMService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	arn, _ := parseCertificateArn(req.Parameters, "ResourceArn")
+	return tagutil.HandleUntag(ctx, req, s.acmGenericTagConfig(stores, arn))
+}
+
+// ListTagsForResource lists the tags associated with an ACM resource (generic API).
+func (s *ACMService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	arn, _ := parseCertificateArn(req.Parameters, "ResourceArn")
+	return tagutil.HandleList(ctx, req, s.acmGenericTagConfig(stores, arn))
+}
+
 // ImportCertificate imports a certificate into ACM.
 func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
@@ -409,6 +474,12 @@ func (s *ACMService) ImportCertificate(ctx context.Context, reqCtx *request.Requ
 	certificate = decodeBase64PEM(certificate)
 
 	privateKey := request.GetStringParam(params, "PrivateKey")
+
+	// For initial import (no existing CertificateArn), PrivateKey is required.
+	existingArn := request.GetStringParam(params, "CertificateArn")
+	if existingArn == "" && privateKey == "" {
+		return nil, awserrors.NewValidationException("PrivateKey is required for initial certificate import")
+	}
 	if privateKey != "" {
 		privateKey = decodeBase64PEM(privateKey)
 	}
@@ -580,8 +651,18 @@ func (s *ACMService) ExportCertificate(ctx context.Context, reqCtx *request.Requ
 	if passphrase == "" {
 		return nil, awserrors.NewValidationException("Passphrase is required")
 	}
+	// Blobs are transmitted as base64-encoded strings. Decode to validate
+	// the actual byte length per the Smithy PassphraseBlob constraint (4-128).
+	passphraseBytes, err := base64.StdEncoding.DecodeString(passphrase)
+	if err != nil {
+		// Already-decoded or raw bytes — use as-is.
+		passphraseBytes = []byte(passphrase)
+	}
+	if passLen := len(passphraseBytes); passLen < 4 || passLen > 128 {
+		return nil, awserrors.NewValidationException("Passphrase must be between 4 and 128 bytes")
+	}
 
-	encryptedKey, err := encryptPrivateKey(cert.PrivateKey, passphrase)
+	encryptedKey, err := encryptPrivateKey(cert.PrivateKey, string(passphraseBytes))
 	if err != nil {
 		return nil, awserrors.NewValidationException("Failed to encrypt private key")
 	}
@@ -621,7 +702,7 @@ func (s *ACMService) RevokeCertificate(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if reasonRaw, ok := req.Parameters["RevocationReason"]; ok {
-		if reason, ok := reasonRaw.(string); ok {
+		if reason, ok := reasonRaw.(string); ok && isValidRevocationReason(reason) {
 			cert.RevocationReason = reason
 		}
 	}
@@ -635,23 +716,103 @@ func (s *ACMService) RevokeCertificate(ctx context.Context, reqCtx *request.Requ
 	return response.EmptyResponse(), nil
 }
 
-func buildDomainValidationOptions(domainName, validationMethod string) []*acmstorelib.DomainValidation {
-	dv := &acmstorelib.DomainValidation{
-		DomainName:       domainName,
-		ValidationDomain: domainName,
-		ValidationMethod: validationMethod,
-		ValidationStatus: "PENDING",
+func buildDomainValidationOptions(domainName, validationMethod string, sans []string) []*acmstorelib.DomainValidation {
+	// Build validation entries for the primary domain and all SANs.
+	allDomains := make([]string, 0, 1+len(sans))
+	allDomains = append(allDomains, domainName)
+	allDomains = append(allDomains, sans...)
+
+	options := make([]*acmstorelib.DomainValidation, 0, len(allDomains))
+	for _, d := range allDomains {
+		dv := &acmstorelib.DomainValidation{
+			DomainName:       d,
+			ValidationDomain: d,
+			ValidationMethod: validationMethod,
+			ValidationStatus: "PENDING",
+		}
+
+		if validationMethod == "DNS" {
+			dv.ResourceRecord = &acmstorelib.ResourceRecord{
+				Name:  acmstorelib.GenerateDomainValidationRecordName(d),
+				Type:  "CNAME",
+				Value: acmstorelib.GenerateDomainValidationRecordValue(),
+			}
+		}
+
+		options = append(options, dv)
 	}
 
-	if validationMethod == "DNS" {
-		dv.ResourceRecord = &acmstorelib.ResourceRecord{
-			Name:  acmstorelib.GenerateDomainValidationRecordName(domainName),
-			Type:  "CNAME",
-			Value: acmstorelib.GenerateDomainValidationRecordValue(),
+	return options
+}
+
+// applyUserDomainValidationOptions merges user-provided DomainValidationOptions
+// (e.g. custom ValidationDomain for EMAIL validation) into the auto-generated
+// options. Matching is by DomainName.
+func applyUserDomainValidationOptions(options []*acmstorelib.DomainValidation, params map[string]interface{}) {
+	raw, ok := params["DomainValidationOptions"]
+	if !ok {
+		return
+	}
+	arr, ok := raw.([]interface{})
+	if !ok {
+		return
+	}
+	// Build a lookup of user-provided ValidationDomain by DomainName.
+	userMap := make(map[string]string)
+	for _, item := range arr {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		dn, _ := m["DomainName"].(string)
+		vd, _ := m["ValidationDomain"].(string)
+		if dn != "" && vd != "" {
+			userMap[strings.ToLower(dn)] = strings.ToLower(vd)
 		}
 	}
+	// Apply user-provided ValidationDomain to matching entries.
+	for _, dv := range options {
+		if vd, ok := userMap[strings.ToLower(dv.DomainName)]; ok {
+			dv.ValidationDomain = vd
+		}
+	}
+}
 
-	return []*acmstorelib.DomainValidation{dv}
+// generateKeyForKeyAlgorithm generates a private key matching the ACM
+// KeyAlgorithm enum value. Returns a crypto.Signer that works with both
+// RSA and ECDSA key types for x509 certificate creation.
+func generateKeyForKeyAlgorithm(keyAlgorithm string) (crypto.Signer, error) {
+	switch keyAlgorithm {
+	case "", "RSA_2048":
+		return vcrypto.GenerateRSAKey(2048)
+	case "RSA_3072":
+		return vcrypto.GenerateRSAKey(3072)
+	case "RSA_4096":
+		return vcrypto.GenerateRSAKey(4096)
+	case "EC_prime256v1":
+		return vcrypto.GenerateECDSAKey(elliptic.P256())
+	case "EC_secp384r1":
+		return vcrypto.GenerateECDSAKey(elliptic.P384())
+	case "EC_secp521r1":
+		return vcrypto.GenerateECDSAKey(elliptic.P521())
+	default:
+		return nil, fmt.Errorf("unsupported key algorithm: %s", keyAlgorithm)
+	}
+}
+
+// signatureAlgorithmForKeyAlgorithm returns the ACM SignatureAlgorithm
+// string that corresponds to the given KeyAlgorithm.
+func signatureAlgorithmForKeyAlgorithm(keyAlgorithm string) string {
+	switch keyAlgorithm {
+	case "EC_prime256v1":
+		return "ECDSAWITHSHA256"
+	case "EC_secp384r1":
+		return "ECDSAWITHSHA384"
+	case "EC_secp521r1":
+		return "ECDSAWITHSHA512"
+	default:
+		return "SHA256WITHRSA"
+	}
 }
 
 func extractDomainFromCert(cert string) string {

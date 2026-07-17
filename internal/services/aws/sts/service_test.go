@@ -46,8 +46,6 @@ func TestValidateRootDurationSeconds(t *testing.T) {
 		expectError bool
 	}{
 		{name: "default when zero", duration: 0, expected: 900},
-		{name: "minimum zero allowed", duration: 0, expected: 900},
-		{name: "explicit zero not special", duration: 0, expected: 900},
 		{name: "one second", duration: 1, expected: 1},
 		{name: "maximum 900", duration: 900, expected: 900},
 		{name: "valid middle", duration: 300, expected: 300},

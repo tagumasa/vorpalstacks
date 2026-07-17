@@ -91,4 +91,8 @@ func (s *ACMService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("acm", "UpdateCertificateOptions", s.UpdateCertificateOptions)
 	d.RegisterHandlerForService("acm", "RenewCertificate", s.RenewCertificate)
 	d.RegisterHandlerForService("acm", "RevokeCertificate", s.RevokeCertificate)
+	d.RegisterHandlerForService("acm", "TagResource", s.TagResource)
+	d.RegisterHandlerForService("acm", "UntagResource", s.UntagResource)
+	d.RegisterHandlerForService("acm", "ListTagsForResource", s.ListTagsForResource)
+	d.RegisterHandlerForService("acm", "SearchCertificates", s.SearchCertificates)
 }

@@ -52,9 +52,10 @@ func (r *TestRunner) runSTSIdentityTests(tc *stsTestContext) []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("sts", "GetSessionToken_ExtendedDuration", func() error {
+	results = append(results, r.RunTest("sts", "GetSessionToken_MaxDuration", func() error {
+		// Root user is capped at 3600 seconds by AWS.
 		resp, err := tc.client.GetSessionToken(tc.ctx, &sts.GetSessionTokenInput{
-			DurationSeconds: aws.Int32(86400),
+			DurationSeconds: aws.Int32(3600),
 		})
 		if err != nil {
 			return err
@@ -75,6 +76,14 @@ func (r *TestRunner) runSTSIdentityTests(tc *stsTestContext) []TestResult {
 			return fmt.Errorf("expiration is zero")
 		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("sts", "GetSessionToken_RootDurationCap", func() error {
+		// Root user requesting >3600 should be rejected.
+		_, err := tc.client.GetSessionToken(tc.ctx, &sts.GetSessionTokenInput{
+			DurationSeconds: aws.Int32(7200),
+		})
+		return AssertErrorContains(err, "ValidationError")
 	}))
 
 	results = append(results, r.RunTest("sts", "GetSessionToken_InvalidDuration", func() error {

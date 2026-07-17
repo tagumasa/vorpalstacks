@@ -1,6 +1,7 @@
 package acm
 
 import (
+	"regexp"
 	"strings"
 	"time"
 
@@ -9,6 +10,31 @@ import (
 	"vorpalstacks/internal/common/request"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
 )
+
+// domainNamePattern validates domain names per the Smithy DomainNameString
+// constraints: optional wildcard prefix, dot-separated labels where each label
+// starts and ends with an alphanumeric character (hyphens allowed in the middle).
+// RE2-compatible rewrite of the Smithy Perl-syntax pattern.
+var domainNamePattern = regexp.MustCompile(`^(\*\.)?([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$`)
+
+// validRevocationReasons contains the Smithy RevocationReason enum values.
+var validRevocationReasons = map[string]bool{
+	"UNSPECIFIED":            true,
+	"KEY_COMPROMISE":         true,
+	"CA_COMPROMISE":          true,
+	"AFFILIATION_CHANGED":    true,
+	"SUPERCEDED":             true,
+	"SUPERSEDED":             true,
+	"CESSATION_OF_OPERATION": true,
+	"CERTIFICATE_HOLD":       true,
+	"REMOVE_FROM_CRL":        true,
+	"PRIVILEGE_WITHDRAWN":    true,
+	"A_A_COMPROMISE":         true,
+}
+
+func isValidRevocationReason(reason string) bool {
+	return validRevocationReasons[reason]
+}
 
 func formatEpochSeconds(t time.Time) float64 {
 	return float64(t.Unix()) + float64(t.Nanosecond())/1e9
@@ -31,7 +57,11 @@ func parseDomainName(params map[string]interface{}) (string, error) {
 	if domain == "" {
 		return "", awserrors.NewValidationException("DomainName is required")
 	}
-	return strings.ToLower(domain), nil
+	domain = strings.ToLower(domain)
+	if len(domain) > 253 || !domainNamePattern.MatchString(domain) {
+		return "", awserrors.NewValidationException("Invalid domain name: " + domain)
+	}
+	return domain, nil
 }
 
 func parseValidationMethod(params map[string]interface{}) string {
@@ -39,7 +69,12 @@ func parseValidationMethod(params map[string]interface{}) string {
 	if method == "" {
 		return "DNS"
 	}
-	return method
+	switch method {
+	case "DNS", "EMAIL", "HTTP":
+		return method
+	default:
+		return "DNS"
+	}
 }
 
 func parseKeyAlgorithm(params map[string]interface{}) string {

@@ -170,5 +170,106 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 		return nil
 	}))
 
+	// Generic tag API: TagResource / UntagResource / ListTagsForResource
+	results = append(results, r.RunTest("acm", "TagResource_AddAndList", func() error {
+		domain := acmUniqueDomain("generic-tag")
+		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+			DomainName:       aws.String(domain),
+			ValidationMethod: types.ValidationMethodDns,
+		})
+		if err != nil {
+			return err
+		}
+		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+
+		_, err = tc.client.TagResource(tc.ctx, &acm.TagResourceInput{
+			ResourceArn: resp.CertificateArn,
+			Tags: []types.Tag{
+				{Key: aws.String("Project"), Value: aws.String("acme")},
+				{Key: aws.String("Owner"), Value: aws.String("devops")},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		listResp, err := tc.client.ListTagsForResource(tc.ctx, &acm.ListTagsForResourceInput{
+			ResourceArn: resp.CertificateArn,
+		})
+		if err != nil {
+			return err
+		}
+		if len(listResp.Tags) != 2 {
+			return fmt.Errorf("expected 2 tags via ListTagsForResource, got %d", len(listResp.Tags))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("acm", "UntagResource_RemoveByKey", func() error {
+		domain := acmUniqueDomain("generic-untag")
+		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+			DomainName:       aws.String(domain),
+			ValidationMethod: types.ValidationMethodDns,
+			Tags: []types.Tag{
+				{Key: aws.String("Keep"), Value: aws.String("yes")},
+				{Key: aws.String("Remove"), Value: aws.String("no")},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+
+		_, err = tc.client.UntagResource(tc.ctx, &acm.UntagResourceInput{
+			ResourceArn: resp.CertificateArn,
+			TagKeys:     []string{"Remove"},
+		})
+		if err != nil {
+			return err
+		}
+
+		listResp, err := tc.client.ListTagsForResource(tc.ctx, &acm.ListTagsForResourceInput{
+			ResourceArn: resp.CertificateArn,
+		})
+		if err != nil {
+			return err
+		}
+		if len(listResp.Tags) != 1 {
+			return fmt.Errorf("expected 1 tag after untag, got %d", len(listResp.Tags))
+		}
+		if aws.ToString(listResp.Tags[0].Key) != "Keep" {
+			return fmt.Errorf("expected Keep tag, got %s", aws.ToString(listResp.Tags[0].Key))
+		}
+		return nil
+	}))
+
+	// SearchCertificates
+	results = append(results, r.RunTest("acm", "SearchCertificates_ReturnsResults", func() error {
+		domain := acmUniqueDomain("search-test")
+		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+			DomainName:       aws.String(domain),
+			ValidationMethod: types.ValidationMethodDns,
+		})
+		if err != nil {
+			return err
+		}
+		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+
+		searchResp, err := tc.client.SearchCertificates(tc.ctx, &acm.SearchCertificatesInput{})
+		if err != nil {
+			return err
+		}
+		if len(searchResp.Results) == 0 {
+			return fmt.Errorf("expected at least 1 search result")
+		}
+		// Verify each result has required fields.
+		for _, r := range searchResp.Results {
+			if aws.ToString(r.CertificateArn) == "" {
+				return fmt.Errorf("CertificateArn empty in search result")
+			}
+		}
+		return nil
+	}))
+
 	return results
 }
